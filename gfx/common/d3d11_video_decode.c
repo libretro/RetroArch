@@ -138,6 +138,7 @@ typedef struct d3d11vd_dec
 static struct
 {
    IDXGIAdapter *adapter;
+   HMODULE dll;
    PFN_D3D11_CREATE_DEVICE create;
    bool up;
    retro_atomic_int_t live;
@@ -649,26 +650,24 @@ static void d3d11vd_close(void *dec)
 
 /* ---- the backend ---- */
 
-bool d3d11_video_decode_init(void *device)
+bool d3d11_video_decode_init_adapter(void *adapter)
 {
-   ID3D11Device *dev  = (ID3D11Device*)device;
-   IDXGIDevice  *dxgi = NULL;
-   HMODULE mod;
+   IDXGIAdapter *a = (IDXGIAdapter*)adapter;
 
-   if (d3d11vd.up || !dev)
+   if (d3d11vd.up || !a)
       return false;
-   if (     !(mod = GetModuleHandleA("d3d11.dll"))
+   /* the driver may be D3D12's: d3d11.dll is ours to load */
+   if (     !(d3d11vd.dll = LoadLibraryA("d3d11.dll"))
          || !(d3d11vd.create = (PFN_D3D11_CREATE_DEVICE)(void (*)(void))
-               GetProcAddress(mod, "D3D11CreateDevice")))
+               GetProcAddress(d3d11vd.dll, "D3D11CreateDevice")))
+   {
+      if (d3d11vd.dll)
+         FreeLibrary(d3d11vd.dll);
+      d3d11vd.dll = NULL;
       return false;
-   if (FAILED(dev->lpVtbl->QueryInterface(dev, &d3d11vd_iid_dxgi_device,
-         (void**)&dxgi)))
-      return false;
-   d3d11vd.adapter = NULL;
-   dxgi->lpVtbl->GetAdapter(dxgi, &d3d11vd.adapter);
-   D3D11VD_RELEASE(dxgi);
-   if (!d3d11vd.adapter)
-      return false;
+   }
+   a->lpVtbl->AddRef(a);
+   d3d11vd.adapter = a;
    retro_atomic_store_release_int(&d3d11vd.live, 0);
    retro_atomic_store_release_int(&d3d11vd.serial, 0);
    retro_atomic_store_release_ptr(&d3d11vd.grave, NULL);
@@ -682,6 +681,24 @@ bool d3d11_video_decode_init(void *device)
    return true;
 }
 
+bool d3d11_video_decode_init(void *device)
+{
+   ID3D11Device *dev     = (ID3D11Device*)device;
+   IDXGIDevice  *dxgi    = NULL;
+   IDXGIAdapter *adapter = NULL;
+   bool ok;
+
+   if (     d3d11vd.up || !dev
+         || FAILED(dev->lpVtbl->QueryInterface(dev, &d3d11vd_iid_dxgi_device,
+               (void**)&dxgi)))
+      return false;
+   dxgi->lpVtbl->GetAdapter(dxgi, &adapter);
+   D3D11VD_RELEASE(dxgi);
+   ok = d3d11_video_decode_init_adapter(adapter);
+   D3D11VD_RELEASE(adapter);
+   return ok;
+}
+
 void d3d11_video_decode_deinit(void)
 {
    if (!d3d11vd.up)
@@ -692,5 +709,8 @@ void d3d11_video_decode_deinit(void)
             retro_atomic_load_acquire_int(&d3d11vd.live));
    d3d11vd_grave_reap(true);
    D3D11VD_RELEASE(d3d11vd.adapter);
-   d3d11vd.up = false;
+   if (d3d11vd.dll)
+      FreeLibrary(d3d11vd.dll);
+   d3d11vd.dll = NULL;
+   d3d11vd.up  = false;
 }

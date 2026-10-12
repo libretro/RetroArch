@@ -20,7 +20,7 @@
  * backend. Each decoder has a device of its own on the driver's
  * adapter, so the driver's device is never shared between threads; the
  * pictures to be shown are copied into shared NV12 textures, ordered
- * with shared fences, and imported by the driver
+ * with shared fences, and imported by the driver - D3D11's or D3D12's
  * (video_poke_interface::import_texture). Windows 10 1703 or later. */
 
 #include <retro_common_api.h>
@@ -32,6 +32,10 @@ RETRO_BEGIN_DECLS
  * ID3D11Device). Main thread, once the device is up; false when the
  * system cannot share the frames. */
 bool d3d11_video_decode_init(void *device);
+
+/* The same for decoders on @adapter (an IDXGIAdapter), for a driver
+ * that is not D3D11's: D3D12 opens the frames' handles as well. */
+bool d3d11_video_decode_init_adapter(void *adapter);
 
 /* Withdraws it and frees what closed decoders left. Every decoder must
  * be closed by then. */

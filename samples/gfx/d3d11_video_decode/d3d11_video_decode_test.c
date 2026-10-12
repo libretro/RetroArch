@@ -8,6 +8,9 @@
  * back by raising its fence. H.264 decodes exactly, so every frame
  * must match the software one to the sample.
  *
+ * Where there is a D3D12 device, every stream is read once more through
+ * it, as the D3D12 driver opens the same handles.
+ *
  * The streams with scaling matrices also decode with the lists in
  * raster order, and the run says which order the GPU took: the
  * backend sends them in coded (zig-zag) order.
@@ -32,6 +35,7 @@ static int test_qm_raster;
 #define D3D11VD_QM_RASTER test_qm_raster
 #include "../../../gfx/common/d3d11_video_decode.c"
 
+#include <d3d12.h>
 #include <formats/rmp4.h>
 #include "d3d11_video_decode_test_data.h"
 
@@ -237,6 +241,244 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
    return 1;
 }
 
+/* ---- the same frames read through D3D12 ---- */
+
+static const GUID test_iid_d12_device =
+   { 0x189819f1, 0x1db6, 0x4b57, { 0xbe, 0x54, 0x18, 0x21, 0x33, 0x9b, 0x85, 0xf7 } };
+static const GUID test_iid_d12_queue =
+   { 0x0ec870a6, 0x5d7e, 0x4c22, { 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed } };
+static const GUID test_iid_d12_alloc =
+   { 0x6102dee4, 0xaf59, 0x4b09, { 0xb9, 0x99, 0xb4, 0x4d, 0x73, 0xf0, 0x9b, 0x24 } };
+static const GUID test_iid_d12_list =
+   { 0x5b160d0f, 0xac1b, 0x4185, { 0x8b, 0xa8, 0xb3, 0xae, 0x42, 0xa5, 0xa4, 0x55 } };
+static const GUID test_iid_d12_fence =
+   { 0x0a753dcf, 0xc4d8, 0x4b91, { 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76 } };
+static const GUID test_iid_d12_resource =
+   { 0x696442be, 0xa72e, 0x4059, { 0xbc, 0x79, 0x5b, 0x5c, 0x98, 0x04, 0x0f, 0xad } };
+
+typedef HRESULT (WINAPI *d3d12_create_device_t)(IUnknown*, D3D_FEATURE_LEVEL,
+      REFIID, void**);
+
+static int use_d3d12;
+static ID3D12Device              *d12;
+static ID3D12CommandQueue        *q12;
+static ID3D12CommandAllocator    *a12;
+static ID3D12GraphicsCommandList *l12;
+static ID3D12Fence               *f12;
+static UINT64                     f12_value;
+static HANDLE                     ev12;
+static ID3D12Resource            *rb12;
+static UINT64                     rb12_size;
+
+typedef struct
+{
+   unsigned gen;
+   int n_tex, n_fence;
+   uint64_t tex_h[8], fence_h[8];
+   ID3D12Resource *tex[8];
+   ID3D12Fence *fence[8];
+} opened12_t;
+
+static opened12_t o12;
+
+static void opened12_clear(opened12_t *o)
+{
+   int i;
+   for (i = 0; i < o->n_tex; i++)
+      D3D11VD_RELEASE(o->tex[i]);
+   for (i = 0; i < o->n_fence; i++)
+      D3D11VD_RELEASE(o->fence[i]);
+   memset(o, 0, sizeof(*o));
+}
+
+static void *open12(uint64_t h, const GUID *iid, uint64_t *hs, void **objs,
+      int *n)
+{
+   void *p = NULL;
+   int i;
+   for (i = 0; i < *n; i++)
+      if (hs[i] == h)
+         return objs[i];
+   if (     *n >= 8
+         || FAILED(d12->lpVtbl->OpenSharedHandle(d12, (HANDLE)(uintptr_t)h,
+               iid, &p)))
+      return NULL;
+   hs[*n]     = h;
+   objs[(*n)++] = p;
+   return p;
+}
+
+/* ID3D12Resource::GetDesc returns a struct; called as what it is */
+static void d12_desc(ID3D12Resource *r, D3D12_RESOURCE_DESC *d)
+{
+   D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get)(ID3D12Resource*,
+         D3D12_RESOURCE_DESC*) = (D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *)(
+         ID3D12Resource*, D3D12_RESOURCE_DESC*))(void (*)(void))
+         r->lpVtbl->GetDesc;
+   get(r, d);
+}
+
+static void d12_transition(ID3D12Resource *r, D3D12_RESOURCE_STATES a,
+      D3D12_RESOURCE_STATES b)
+{
+   D3D12_RESOURCE_BARRIER bar;
+   memset(&bar, 0, sizeof(bar));
+   bar.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+   bar.Transition.pResource   = r;
+   bar.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+   bar.Transition.StateBefore = a;
+   bar.Transition.StateAfter  = b;
+   l12->lpVtbl->ResourceBarrier(l12, 1, &bar);
+}
+
+static int d12_init(void)
+{
+   static const D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_11_0;
+   D3D12_COMMAND_QUEUE_DESC qd;
+   d3d12_create_device_t create;
+   HMODULE mod = LoadLibraryA("d3d12.dll");
+   if (     !mod
+         || !(create = (d3d12_create_device_t)(void (*)(void))GetProcAddress(
+               mod, "D3D12CreateDevice"))
+         || FAILED(create(NULL, fl, &test_iid_d12_device, (void**)&d12)))
+      return 0;
+   memset(&qd, 0, sizeof(qd));
+   qd.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+   return SUCCEEDED(d12->lpVtbl->CreateCommandQueue(d12, &qd,
+            &test_iid_d12_queue, (void**)&q12))
+      && SUCCEEDED(d12->lpVtbl->CreateCommandAllocator(d12,
+            D3D12_COMMAND_LIST_TYPE_DIRECT, &test_iid_d12_alloc,
+            (void**)&a12))
+      && SUCCEEDED(d12->lpVtbl->CreateCommandList(d12, 0,
+            D3D12_COMMAND_LIST_TYPE_DIRECT, a12, NULL, &test_iid_d12_list,
+            (void**)&l12))
+      && SUCCEEDED(l12->lpVtbl->Close(l12))
+      && SUCCEEDED(d12->lpVtbl->CreateFence(d12, 0, D3D12_FENCE_FLAG_NONE,
+            &test_iid_d12_fence, (void**)&f12))
+      && (ev12 = CreateEventA(NULL, FALSE, FALSE, NULL)) != NULL;
+}
+
+static void d12_deinit(void)
+{
+   opened12_clear(&o12);
+   D3D11VD_RELEASE(rb12);
+   D3D11VD_RELEASE(f12);
+   D3D11VD_RELEASE(l12);
+   D3D11VD_RELEASE(a12);
+   D3D11VD_RELEASE(q12);
+   D3D11VD_RELEASE(d12);
+   if (ev12)
+      CloseHandle(ev12);
+   ev12 = NULL;
+}
+
+/* The frame read through D3D12: the producer's fence waited for on the
+ * queue, both planes copied out, the frame given back behind them */
+static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
+{
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT fp[2];
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   D3D12_RESOURCE_DESC desc;
+   ID3D12Resource *tex;
+   ID3D12Fence *wait, *done;
+   UINT64 total = 0;
+   unsigned w = fr->width, h = fr->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
+   unsigned y, p;
+   uint8_t *m;
+   int i;
+
+   if (o12.gen != fr->layout)
+   {
+      opened12_clear(&o12);
+      o12.gen = fr->layout;
+   }
+   if (     !(tex  = (ID3D12Resource*)open12(fr->image,
+               &test_iid_d12_resource, o12.tex_h, (void**)o12.tex,
+               &o12.n_tex))
+         || !(wait = (ID3D12Fence*)open12(fr->wait, &test_iid_d12_fence,
+               o12.fence_h, (void**)o12.fence, &o12.n_fence))
+         || !(done = (ID3D12Fence*)open12(fr->done, &test_iid_d12_fence,
+               o12.fence_h, (void**)o12.fence, &o12.n_fence)))
+   {
+      video_hw_frame_abandon(fr);
+      return 0;
+   }
+   d12_desc(tex, &desc);
+   d12->lpVtbl->GetCopyableFootprints(d12, &desc, 0, 2, 0, fp, NULL, NULL,
+         &total);
+   if (!rb12 || rb12_size < total)
+   {
+      D3D12_HEAP_PROPERTIES hp;
+      D3D12_RESOURCE_DESC bd;
+      D3D11VD_RELEASE(rb12);
+      memset(&hp, 0, sizeof(hp));
+      memset(&bd, 0, sizeof(bd));
+      hp.Type             = D3D12_HEAP_TYPE_READBACK;
+      bd.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER;
+      bd.Width            = total;
+      bd.Height           = 1;
+      bd.DepthOrArraySize = 1;
+      bd.MipLevels        = 1;
+      bd.SampleDesc.Count = 1;
+      bd.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      if (FAILED(d12->lpVtbl->CreateCommittedResource(d12, &hp,
+            D3D12_HEAP_FLAG_NONE, &bd, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+            &test_iid_d12_resource, (void**)&rb12)))
+      {
+         rb12 = NULL;
+         video_hw_frame_abandon(fr);
+         return 0;
+      }
+      rb12_size = total;
+   }
+   a12->lpVtbl->Reset(a12);
+   l12->lpVtbl->Reset(l12, a12, NULL);
+   d12_transition(tex, D3D12_RESOURCE_STATE_COMMON,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+   for (p = 0; p < 2; p++)
+   {
+      src.pResource        = tex;
+      src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      src.SubresourceIndex = p;
+      dst.pResource        = rb12;
+      dst.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+      dst.PlacedFootprint  = fp[p];
+      l12->lpVtbl->CopyTextureRegion(l12, &dst, 0, 0, 0, &src, NULL);
+   }
+   d12_transition(tex, D3D12_RESOURCE_STATE_COPY_SOURCE,
+         D3D12_RESOURCE_STATE_COMMON);
+   l12->lpVtbl->Close(l12);
+   q12->lpVtbl->Wait(q12, wait, fr->wait_value);
+   q12->lpVtbl->ExecuteCommandLists(q12, 1, (ID3D12CommandList**)&l12);
+   q12->lpVtbl->Signal(q12, done, fr->done_value);
+   q12->lpVtbl->Signal(q12, f12, ++f12_value);
+   f12->lpVtbl->SetEventOnCompletion(f12, f12_value, ev12);
+   if (WaitForSingleObject(ev12, 5000) != WAIT_OBJECT_0)
+      return 0;
+   if (FAILED(rb12->lpVtbl->Map(rb12, 0, NULL, (void**)&m)))
+      return 0;
+   if (f->n < MAX_FRAMES)
+   {
+      i        = f->n++;
+      f->w     = w;
+      f->h     = h;
+      f->y[i]  = frame_alloc(f, (size_t)w * h);
+      f->uv[i] = frame_alloc(f, (size_t)cw * 2 * ch);
+      if (f->y[i] && f->uv[i])
+      {
+         for (y = 0; y < h; y++)
+            memcpy(f->y[i] + (size_t)y * w,
+                  m + fp[0].Offset + (size_t)y * fp[0].Footprint.RowPitch, w);
+         for (y = 0; y < ch; y++)
+            memcpy(f->uv[i] + (size_t)y * cw * 2,
+                  m + fp[1].Offset + (size_t)y * fp[1].Footprint.RowPitch,
+                  cw * 2);
+      }
+   }
+   rb12->lpVtbl->Unmap(rb12, 0, NULL);
+   return 1;
+}
+
 /* @mp4 decoded on the backend when @hw, else in software; 1 when it
  * decoded as asked */
 static int decode(const unsigned char *mp4, size_t len, int hw,
@@ -276,7 +518,8 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
       {
          if (!on_hw)
             take_sw(f, v);
-         else if (rh264_video_hw_frame(v, &fr) != 0 || !take_hw(f, &o, &fr))
+         else if (rh264_video_hw_frame(v, &fr) != 0
+               || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
             ok = 0;
       }
    }
@@ -284,12 +527,14 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    {
       if (!on_hw)
          take_sw(f, v);
-      else if (rh264_video_hw_frame(v, &fr) != 0 || !take_hw(f, &o, &fr))
+      else if (rh264_video_hw_frame(v, &fr) != 0
+            || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
          ok = 0;
    }
    rh264_video_close(v);
    rmp4_close(m);
    opened_clear(&o);
+   opened12_clear(&o12);
    return ok;
 }
 
@@ -415,6 +660,31 @@ int main(void)
       frames_free(&sw);
       frames_free(&hw);
    }
+   /* the D3D12 driver's reading of the same handles */
+   if (d12_init())
+   {
+      printf("read through D3D12:\n");
+      use_d3d12 = 1;
+      for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
+      {
+         const stream_t *s = &streams[i];
+         char label[128];
+         int first, worst, on;
+         decode(s->data, s->len, 0, &sw);
+         on = decode(s->data, s->len, 1, &hw);
+         snprintf(label, sizeof(label),
+               "%s: through D3D12, every frame as in software", s->name);
+         check(label, on && sw.n > 0
+               && compare(&sw, &hw, &first, &worst) == 0);
+         frames_free(&sw);
+         frames_free(&hw);
+      }
+      use_d3d12 = 0;
+   }
+   else
+      printf("no D3D12 device: the D3D12 reading is not run\n");
+   d12_deinit();
+
    if (lists_seen)
       printf("scaling lists: the GPU took them in %s order\n",
             (zigzag_ok && !raster_ok) ? "zig-zag (as sent)"

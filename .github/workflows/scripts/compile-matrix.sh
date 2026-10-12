@@ -428,14 +428,18 @@ d3d_video "d3d11 video, no threads"  "$D3DDEFS -DHAVE_D3D11 -UHAVE_THREADS" \
 d3d_video "d3d12 video, no threads"  "$D3DDEFS -DHAVE_D3D12 -UHAVE_THREADS" \
    gfx/drivers/d3d12.c
 # With the MP4 previews: frames from rh264's D3D11 video backend,
-# imported through shared handles and fences (11.4 interfaces from the
-# bundled headers), and the backend itself.
+# imported by D3D11 and D3D12 through shared handles and fences (11.4
+# interfaces from the bundled headers), and the backend itself.
 d3d_video "d3d11 video, frame import"  "$D3DDEFS -DHAVE_D3D11 -DHAVE_RMP4" \
    gfx/drivers/d3d11.c
 d3d_video "d3d11 video, frame import, no threads" \
    "$D3DDEFS -DHAVE_D3D11 -DHAVE_RMP4 -UHAVE_THREADS" gfx/drivers/d3d11.c
 d3d_video "d3d11 video decode backend" "$D3DDEFS -DHAVE_D3D11 -DHAVE_RMP4" \
    gfx/common/d3d11_video_decode.c
+d3d_video "d3d12 video, frame import"  "$D3DDEFS -DHAVE_D3D12 -DHAVE_RMP4" \
+   gfx/drivers/d3d12.c
+d3d_video "d3d12 video, frame import, no threads" \
+   "$D3DDEFS -DHAVE_D3D12 -DHAVE_RMP4 -UHAVE_THREADS" gfx/drivers/d3d12.c
 
 # The context drivers, which no job here compiles either. Each answers
 # the frontend's window and size questions, so a change to what those

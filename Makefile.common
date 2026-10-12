@@ -1890,16 +1890,20 @@ ifeq ($(HAVE_D3D11), 1)
    OBJ += gfx/drivers/d3d11.o \
           gfx/common/d3d11_deferred_proxy.o
    DEFINES += -DHAVE_D3D11
-   # H.264 previews decoded on the GPU, as rh264's backend
-   ifeq ($(HAVE_RMP4), 1)
-      OBJ += gfx/common/d3d11_video_decode.o
-   endif
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
+endif
+
+# H.264 previews decoded on the GPU, as rh264's backend; D3D12 imports
+# its frames as well
+ifneq ($(findstring 1, $(HAVE_D3D11) $(HAVE_D3D12)),)
+   ifeq ($(HAVE_RMP4), 1)
+      OBJ += gfx/common/d3d11_video_decode.o
+   endif
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)

@@ -89,6 +89,16 @@
 #include <compat/strl.h>
 #endif
 
+/* Frames rh264's D3D11 video backend decodes, opened through their
+ * shared NT handles and fences (import_texture) */
+#if defined(HAVE_RMP4) && !defined(__WINRT__)
+#define D3D12_FRAME_IMPORT
+#include "../common/d3d11_video_decode.h"
+#define D3D12_IMPORT_TEXTURES 8
+#define D3D12_IMPORT_FENCES   8
+#define D3D12_IMPORT_LISTS    4
+#endif
+
 #define D3D12_MAX_GPU_COUNT 16
 
 #define D3D12_RESOURCE_TRANSITION(cmd, resource, state_before, state_after) \
@@ -244,6 +254,49 @@ typedef struct d3d12_planar
    UINT32                      constants[16];
 } d3d12_planar_t;
 
+#ifdef D3D12_FRAME_IMPORT
+/* What an imported texture opened of its producer's handles, kept
+ * while they name the same objects: the producer and its generation
+ * (video_frame_import_t::layout) unchanged. Each texture has its two
+ * plane views side by side, rewritten only once the last list that
+ * read them has executed. */
+typedef struct d3d12_import
+{
+   void                       *owner;
+   unsigned                    gen;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_uav;
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_uav;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_planes[D3D12_IMPORT_TEXTURES];
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_planes[D3D12_IMPORT_TEXTURES];
+   uint64_t                    tex_handle[D3D12_IMPORT_TEXTURES];
+   ID3D12Resource             *tex[D3D12_IMPORT_TEXTURES];
+   UINT64                      tex_fence[D3D12_IMPORT_TEXTURES];
+   uint64_t                    fence_handle[D3D12_IMPORT_FENCES];
+   ID3D12Fence                *fence[D3D12_IMPORT_FENCES];
+   unsigned                    num_fences;
+} d3d12_import_t;
+
+/* NV12 in, RGBA out: the luma and the interleaved chroma planes as two
+ * views, each pixel taking the chroma its 2x2 block shares */
+static const char d3d12_nv12_cs_src[] =
+   "Texture2D<float>  Y : register(t0);\n"
+   "Texture2D<float2> C : register(t1);\n"
+   "RWTexture2D<float4> Out : register(u0);\n"
+   "cbuffer K : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; };\n"
+   "[numthreads(8, 8, 1)]\n"
+   "void main(uint3 id : SV_DispatchThreadID)\n"
+   "{\n"
+   "   float y;\n"
+   "   float2 c;\n"
+   "   if (id.x >= a.x || id.y >= a.y)\n"
+   "      return;\n"
+   "   y = Y.Load(int3(id.xy, 0));\n"
+   "   c = C.Load(int3(id.xy >> 1, 0)) - 128.0 / 255.0;\n"
+   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * c.y,\n"
+   "         k0.w * c.x + k1.x * c.y, k1.y * c.x)), 1.0);\n"
+   "}\n";
+#endif
+
 /* 8-bit 4:2:0 in, RGBA out: luma above the chroma in one R8 texture,
  * each pixel taking the chroma its 2x2 block shares, at a step and an
  * offset per channel that serve either layout and order */
@@ -307,6 +360,10 @@ typedef struct
    uint8_t                            lent;
    /* A planar texture's conversion (d3d12_planar_load); NULL else */
    d3d12_planar_t                    *planar;
+#ifdef D3D12_FRAME_IMPORT
+   /* An imported texture's: what it opened of its producer's */
+   struct d3d12_import               *import;
+#endif
 } d3d12_texture_t;
 
 /* A texture is released and freed; anything else is a COM object
@@ -668,6 +725,20 @@ typedef struct
    D3D12PipelineState              mipmapgen_pipe;
    /* Planar textures' conversion; NULL where it did not compile */
    D3D12PipelineState              planar_pipe;
+#ifdef D3D12_FRAME_IMPORT
+   /* Imported NV12 frames' conversion, and the lists it is recorded
+    * in, each free once import_done passes its value. A fence of their
+    * own: a signal on the queue fence between a frame's recording and
+    * its execution would take the value the frame's resources wait for */
+   D3D12PipelineState              nv12_pipe;
+   D3D12CommandAllocator           import_alloc[D3D12_IMPORT_LISTS];
+   D3D12GraphicsCommandList        import_cmd[D3D12_IMPORT_LISTS];
+   UINT64                          import_fence[D3D12_IMPORT_LISTS];
+   D3D12Fence                      import_done;
+   UINT64                          import_value;
+   unsigned                        import_next;
+   bool                            video_decode;
+#endif
    d3d12_uniform_t                 ubo_values;
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
@@ -770,6 +841,11 @@ typedef struct
       unsigned      retired_count;
    } record;
 } d3d12_video_t;
+
+#ifdef D3D12_FRAME_IMPORT
+static void d3d12_frame_import_init(d3d12_video_t *d3d12);
+static void d3d12_frame_import_deinit(d3d12_video_t *d3d12);
+#endif
 
 static void d3d12_record_free(d3d12_video_t *d3d12);
 static void d3d12_sw_fb_free(d3d12_video_t *d3d12);
@@ -974,6 +1050,46 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    return handle;
 }
 
+#ifdef D3D12_FRAME_IMPORT
+/* @n slots side by side, for a descriptor table that spans them */
+static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_range_alloc(
+      d3d12_descriptor_heap_t *heap, unsigned n)
+{
+   D3D12_CPU_DESCRIPTOR_HANDLE handle;
+   unsigned i, j;
+   handle.ptr = 0;
+   for (i = (unsigned)heap->start; i + n <= heap->desc.NumDescriptors; i++)
+   {
+      j = 0;
+      while (j < n && !heap->map[i + j])
+         j++;
+      if (j < n)
+      {
+         i += j;
+         continue;
+      }
+      for (j = 0; j < n; j++)
+         heap->map[i + j] = true;
+      handle.ptr = heap->cpu.ptr + i * heap->stride;
+      break;
+   }
+   return handle;
+}
+
+static void d3d12_descriptor_heap_range_free(d3d12_descriptor_heap_t *heap,
+      D3D12_CPU_DESCRIPTOR_HANDLE handle, unsigned n)
+{
+   unsigned i, j;
+   if (!heap || !handle.ptr)
+      return;
+   i = (unsigned)((handle.ptr - heap->cpu.ptr) / heap->stride);
+   for (j = 0; j < n; j++)
+      heap->map[i + j] = false;
+   if (heap->start > (int)i)
+      heap->start = (int)i;
+}
+#endif
+
 /* Waits on the queue fence, bounded.
  *
  * The GPU signals the fence when the work submitted before the signal
@@ -1093,6 +1209,26 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
       free(texture->planar);
       texture->planar = NULL;
    }
+
+#ifdef D3D12_FRAME_IMPORT
+   /* Released behind the queue as the texture is: nothing reads them */
+   if (texture->import)
+   {
+      d3d12_import_t *imp = texture->import;
+      unsigned i;
+      d3d12_descriptor_heap_range_free(texture->srv_heap, imp->cpu_uav, 1);
+      for (i = 0; i < D3D12_IMPORT_TEXTURES; i++)
+      {
+         d3d12_descriptor_heap_range_free(texture->srv_heap,
+               imp->cpu_planes[i], 2);
+         Release(imp->tex[i]);
+      }
+      for (i = 0; i < imp->num_fences; i++)
+         Release(imp->fence[i]);
+      free(imp);
+      texture->import = NULL;
+   }
+#endif
 
    Release(texture->handle);
    Release(texture->upload_buffer);
@@ -4763,6 +4899,25 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          cs_code = NULL;
       }
    }
+#ifdef D3D12_FRAME_IMPORT
+   /* Imported frames stay on the CPU path without it */
+   {
+      D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
+      d3d12->nv12_pipe = NULL;
+      if (d3d_compile(d3d12_nv12_cs_src, sizeof(d3d12_nv12_cs_src) - 1,
+               NULL, "main", "cs_5_0", &cs_code))
+      {
+         desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
+         desc.CS.BytecodeLength  = cs_code->lpVtbl->GetBufferSize(cs_code);
+         if (FAILED(d3d12->device->lpVtbl->CreateComputePipelineState(
+                     d3d12->device, &desc, uuidof(ID3D12PipelineState),
+                     (void**)&d3d12->nv12_pipe)))
+            d3d12->nv12_pipe = NULL;
+         Release(cs_code);
+         cs_code = NULL;
+      }
+   }
+#endif
 
    return true;
 
@@ -4786,6 +4941,9 @@ static void d3d12_gfx_free(void* data)
       return;
 
    d3d12_queue_drain(d3d12);
+#ifdef D3D12_FRAME_IMPORT
+   d3d12_frame_import_deinit(d3d12);
+#endif
 #ifdef HAVE_OVERLAY
    /* Through the retired list, which goes next */
    d3d12_free_overlays(d3d12);
@@ -4864,6 +5022,9 @@ static void d3d12_gfx_free(void* data)
 
    Release(d3d12->mipmapgen_pipe);
    Release(d3d12->planar_pipe);
+#ifdef D3D12_FRAME_IMPORT
+   Release(d3d12->nv12_pipe);
+#endif
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
@@ -6051,6 +6212,9 @@ static void *d3d12_gfx_init(const video_info_t* video)
       }
    }
 
+#ifdef D3D12_FRAME_IMPORT
+   d3d12_frame_import_init(d3d12);
+#endif
    return d3d12;
 
 error:
@@ -9251,6 +9415,360 @@ error:
    return 0;
 }
 
+#ifdef D3D12_FRAME_IMPORT
+/* An RGBA texture imported frames convert into, with its UAV and a
+ * pair of plane views for each texture it reads */
+static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
+      unsigned h, enum texture_filter_type filter)
+{
+   D3D12Device device = d3d12->device;
+   d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
+   D3D12_UNORDERED_ACCESS_VIEW_DESC uav;
+   d3d12_texture_t *texture;
+   d3d12_import_t  *imp;
+   unsigned i;
+
+   if (!(texture = (d3d12_texture_t*)calloc(1, sizeof(*texture))))
+      return NULL;
+   if (!(imp = (d3d12_import_t*)calloc(1, sizeof(*imp))))
+   {
+      free(texture);
+      return NULL;
+   }
+   texture->sampler = d3d12->samplers[
+         (filter == TEXTURE_FILTER_NEAREST
+          || filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+         ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->desc.Width     = w;
+   texture->desc.Height    = h;
+   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.MipLevels = 1;
+   texture->desc.Flags     = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+   texture->srv_heap       = heap;
+   d3d12_init_texture(device, texture);
+   texture->import         = imp;
+   if (     !texture->handle
+         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM)
+      goto error;
+   /* written on the GPU only: no upload buffer */
+   Release(texture->upload_buffer);
+   texture->upload_buffer = NULL;
+   texture->dirty         = false;
+
+   if (!(imp->cpu_uav = d3d12_descriptor_heap_range_alloc(heap, 1)).ptr)
+      goto error;
+   for (i = 0; i < D3D12_IMPORT_TEXTURES; i++)
+   {
+      if (!(imp->cpu_planes[i] = d3d12_descriptor_heap_range_alloc(heap,
+            2)).ptr)
+         goto error;
+      imp->gpu_planes[i].ptr = imp->cpu_planes[i].ptr - heap->cpu.ptr
+         + heap->gpu.ptr;
+   }
+   memset(&uav, 0, sizeof(uav));
+   uav.Format        = DXGI_FORMAT_R8G8B8A8_UNORM;
+   uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+   device->lpVtbl->CreateUnorderedAccessView(device, texture->handle,
+         NULL, &uav, imp->cpu_uav);
+   imp->gpu_uav.ptr = imp->cpu_uav.ptr - heap->cpu.ptr + heap->gpu.ptr;
+   return texture;
+
+error:
+   d3d12_release_texture(texture);
+   free(texture->import);
+   free(texture);
+   return NULL;
+}
+
+/* What was opened under another producer's handles goes behind the
+ * lists that read it: the queue's next signal follows them */
+static void d3d12_import_forget(d3d12_video_t *d3d12, d3d12_import_t *imp)
+{
+   unsigned i;
+   for (i = 0; i < D3D12_IMPORT_TEXTURES; i++)
+      if (imp->tex[i])
+      {
+         d3d12_retire(d3d12, NULL, (IUnknown*)imp->tex[i],
+               d3d12->queue.fenceValue + 1);
+         imp->tex[i]        = NULL;
+         imp->tex_handle[i] = 0;
+      }
+   for (i = 0; i < imp->num_fences; i++)
+      d3d12_retire(d3d12, NULL, (IUnknown*)imp->fence[i],
+            d3d12->queue.fenceValue + 1);
+   imp->num_fences = 0;
+}
+
+/* The NV12 texture behind @handle and its plane views, opened once;
+ * -1 when it cannot be read as a @w x @h frame, -2 while every pair of
+ * views is still read */
+static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
+      uint64_t handle, unsigned w, unsigned h, UINT64 completed)
+{
+   D3D12_SHADER_RESOURCE_VIEW_DESC vd;
+   D3D12_RESOURCE_DESC desc;
+   D3D12_CPU_DESCRIPTOR_HANDLE c;
+   ID3D12Resource *tex = NULL;
+   int i, free_i = -1;
+
+   for (i = 0; i < D3D12_IMPORT_TEXTURES; i++)
+   {
+      if (imp->tex[i] && imp->tex_handle[i] == handle)
+         return i;
+      if (free_i < 0 && imp->tex_fence[i] <= completed)
+         free_i = i;
+   }
+   if (free_i < 0)
+      return -2;
+   if (FAILED(d3d12->device->lpVtbl->OpenSharedHandle(d3d12->device,
+               (HANDLE)(uintptr_t)handle, uuidof(ID3D12Resource),
+               (void**)&tex)))
+      return -1;
+   d3d12_resource_get_desc(tex, &desc);
+   if (     desc.Format != DXGI_FORMAT_NV12
+         || desc.Width  != w || desc.Height != h)
+   {
+      Release(tex);
+      return -1;
+   }
+   if (imp->tex[free_i])
+      d3d12_retire(d3d12, NULL, (IUnknown*)imp->tex[free_i],
+            d3d12->queue.fenceValue + 1);
+   memset(&vd, 0, sizeof(vd));
+   vd.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+   vd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   vd.Texture2D.MipLevels     = 1;
+   vd.Format                  = DXGI_FORMAT_R8_UNORM;
+   c                          = imp->cpu_planes[free_i];
+   d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device, tex, &vd,
+         c);
+   vd.Format                  = DXGI_FORMAT_R8G8_UNORM;
+   vd.Texture2D.PlaneSlice    = 1;
+   c.ptr                     += d3d12->desc.srv_heap.stride;
+   d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device, tex, &vd,
+         c);
+   imp->tex[free_i]        = tex;
+   imp->tex_handle[free_i] = handle;
+   return free_i;
+}
+
+/* The fence behind @handle, opened once; NULL when it cannot be */
+static ID3D12Fence *d3d12_import_fence(d3d12_video_t *d3d12,
+      d3d12_import_t *imp, uint64_t handle)
+{
+   ID3D12Fence *f = NULL;
+   unsigned i;
+   for (i = 0; i < imp->num_fences; i++)
+      if (imp->fence_handle[i] == handle)
+         return imp->fence[i];
+   if (     imp->num_fences >= D3D12_IMPORT_FENCES
+         || FAILED(d3d12->device->lpVtbl->OpenSharedHandle(d3d12->device,
+               (HANDLE)(uintptr_t)handle, uuidof(ID3D12Fence), (void**)&f))
+         || !f)
+      return NULL;
+   imp->fence[imp->num_fences]        = f;
+   imp->fence_handle[imp->num_fences] = handle;
+   imp->num_fences++;
+   return f;
+}
+
+/* Import list @k and its allocator, made closed */
+static bool d3d12_import_list(d3d12_video_t *d3d12, unsigned k)
+{
+   if (     FAILED(d3d12->device->lpVtbl->CreateCommandAllocator(
+               d3d12->device, D3D12_COMMAND_LIST_TYPE_DIRECT,
+               uuidof(ID3D12CommandAllocator),
+               (void**)&d3d12->import_alloc[k]))
+         || FAILED(d3d12->device->lpVtbl->CreateCommandList(
+               d3d12->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+               d3d12->import_alloc[k], NULL,
+               uuidof(ID3D12GraphicsCommandList),
+               (void**)&d3d12->import_cmd[k])))
+   {
+      Release(d3d12->import_alloc[k]);
+      d3d12->import_alloc[k] = NULL;
+      d3d12->import_cmd[k]   = NULL;
+      return false;
+   }
+   d3d12->import_cmd[k]->lpVtbl->Close(d3d12->import_cmd[k]);
+   return true;
+}
+
+/* Converts @f into texture *@id in a list of its own, executed at once
+ * behind the producer's fence and signalling the reader's: the frame
+ * never reaches the CPU and nothing here waits */
+static enum video_texture_update d3d12_import_texture(void *data,
+      uintptr_t *id, const video_frame_import_t *f,
+      enum texture_filter_type filter)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList cmd;
+   d3d12_texture_t *texture;
+   d3d12_import_t  *imp;
+   ID3D12Fence *wait = NULL, *done = NULL;
+   UINT32 constants[16];
+   UINT64 completed;
+   unsigned w, h, k;
+   float kf[6];
+   int t;
+
+   if (     !d3d12 || !id || !f || !d3d12->video_decode
+         || f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   w = VIDEO_SCALE_W(f->dims);
+   h = VIDEO_SCALE_H(f->dims);
+   if (!w || !h)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   completed = d3d12->import_done->lpVtbl->GetCompletedValue(
+         d3d12->import_done);
+   /* the list due next, once the queue is past its last use */
+   k = d3d12->import_next % D3D12_IMPORT_LISTS;
+   if (d3d12->import_fence[k] > completed)
+      return *id ? VIDEO_TEXTURE_UPDATE_DROPPED : VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!d3d12->import_cmd[k] && !d3d12_import_list(d3d12, k))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   if (*id)
+   {
+      texture = (d3d12_texture_t*)*id;
+      if (     !texture->import
+            || texture->desc.Width != w || texture->desc.Height != h)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else if (!(texture = d3d12_import_new(d3d12, w, h, filter)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   /* another producer's handles: what was opened names other things */
+   imp = texture->import;
+   if (imp->owner != f->owner || imp->gen != f->layout)
+   {
+      d3d12_import_forget(d3d12, imp);
+      imp->owner = f->owner;
+      imp->gen   = f->layout;
+   }
+   if (     (t = d3d12_import_tex(d3d12, imp, f->image, w, h, completed)) < 0
+         || (f->wait && !(wait = d3d12_import_fence(d3d12, imp, f->wait)))
+         || (f->done && !(done = d3d12_import_fence(d3d12, imp, f->done))))
+   {
+      if (*id)
+         return t == -2 ? VIDEO_TEXTURE_UPDATE_DROPPED
+            : VIDEO_TEXTURE_UPDATE_REFUSED;
+      d3d12_release_texture(texture);
+      free(texture);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+
+   image_yuv_coefficients(f->yuv, kf);
+   memset(constants, 0, sizeof(constants));
+   constants[0] = w;
+   constants[1] = h;
+   memcpy(&constants[8], kf, sizeof(kf));
+
+   cmd = d3d12->import_cmd[k];
+   d3d12->import_alloc[k]->lpVtbl->Reset(d3d12->import_alloc[k]);
+   cmd->lpVtbl->Reset(cmd, d3d12->import_alloc[k], d3d12->nv12_pipe);
+   cmd->lpVtbl->SetDescriptorHeaps(cmd, 1, &d3d12->desc.srv_heap.handle);
+   /* shared with another device: common on either side of the read */
+   D3D12_RESOURCE_TRANSITION(cmd, imp->tex[t],
+         D3D12_RESOURCE_STATE_COMMON,
+         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+   cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
+   cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T,
+         imp->gpu_planes[t]);
+   cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T,
+         imp->gpu_uav);
+   cmd->lpVtbl->SetComputeRoot32BitConstants(cmd, CS_ROOT_ID_CONSTANTS,
+         16, constants, 0);
+   cmd->lpVtbl->Dispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   D3D12_RESOURCE_TRANSITION(cmd, imp->tex[t],
+         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COMMON);
+   cmd->lpVtbl->Close(cmd);
+
+   if (wait)
+      d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, wait,
+            f->wait_value);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&cmd);
+   if (done)
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, done,
+            f->done_value);
+   d3d12->import_fence[k] = ++d3d12->import_value;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->import_done, d3d12->import_fence[k]);
+   imp->tex_fence[t]      = d3d12->import_fence[k];
+   d3d12->import_next++;
+   if (!*id)
+      *id = (uintptr_t)texture;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* Frames from rh264's D3D11 video backend, where they can be read: NV12
+ * sampled in a shader, and the conversion's pipeline made */
+static void d3d12_frame_import_init(d3d12_video_t *d3d12)
+{
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
+   memset(&fs, 0, sizeof(fs));
+   fs.Format = DXGI_FORMAT_NV12;
+   if (     !d3d12->nv12_pipe || !d3d12->adapter
+         || FAILED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
+               D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs)))
+         || !(fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD)
+         || FAILED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+               D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence),
+               (void**)&d3d12->import_done)))
+   {
+      d3d12->import_done = NULL;
+      Release(d3d12->nv12_pipe);
+      d3d12->nv12_pipe = NULL;
+      RARCH_LOG("[D3D12] Video previews decode on the CPU.\n");
+      return;
+   }
+   d3d12->video_decode = d3d11_video_decode_init_adapter(d3d12->adapter);
+   RARCH_LOG("[D3D12] Video previews %s.\n", d3d12->video_decode
+         ? "decode on the GPU where it can" : "decode on the CPU");
+}
+
+/* After the queue is drained */
+static void d3d12_frame_import_deinit(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   if (d3d12->video_decode)
+      d3d11_video_decode_deinit();
+   d3d12->video_decode = false;
+   for (i = 0; i < D3D12_IMPORT_LISTS; i++)
+   {
+      Release(d3d12->import_cmd[i]);
+      Release(d3d12->import_alloc[i]);
+      d3d12->import_cmd[i]   = NULL;
+      d3d12->import_alloc[i] = NULL;
+      d3d12->import_fence[i] = 0;
+   }
+   Release(d3d12->import_done);
+   d3d12->import_done  = NULL;
+   d3d12->import_value = 0;
+}
+#endif
+
+static bool d3d12_get_device(void *data, video_device_info_t *info)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12 || !d3d12->device || !info)
+      return false;
+   info->api            = VIDEO_DEVICE_D3D12;
+   info->device         = (void*)d3d12->device;
+#ifdef D3D12_FRAME_IMPORT
+   info->import_formats = d3d12->video_decode ? IMAGE_PIXFMT_NV12 : 0;
+#endif
+   return true;
+}
+
 /* Inner load function -- performs all GPU-touching work.
  * Must run on the same thread that owns the D3D12 command
  * queue (the video thread when threaded video is active,
@@ -10462,7 +10980,13 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_set_frame_format,
    d3d12_frame_mem_alloc,
    d3d12_frame_mem_ready,
-   d3d12_frame_mem_free
+   d3d12_frame_mem_free,
+   d3d12_get_device,
+#ifdef D3D12_FRAME_IMPORT
+   d3d12_import_texture
+#else
+   NULL  /* import_texture */
+#endif
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
