@@ -430,6 +430,42 @@ typedef struct
       bool  smooth;
       bool  rebuild;
    } frame_rect;
+   /* Views, drawn straight from the frame as the stock chain draws it;
+    * with a preset the frame is drawn whole. A view's stock chain is
+    * the driver itself. The canvas holds both eyes for anaglyph and
+    * interlaced, the UI layer the UI drawn once for both eyes. src_dims
+    * is the texture the frame is in, frame_dims the frame. */
+   struct
+   {
+      video_views_chains_t  chains;
+      d3d11_texture_t       canvas;
+      d3d11_texture_t       ui;
+      video_views_target_t  canvas_target;
+      video_views_target_t  ui_target;
+      video_views_ui_dims_t saved;
+      D3D11_VIEWPORT        saved_viewport;
+      D3D11_RECT            saved_scissor;
+      D3D11BlendState       saved_blend;
+      d3d11_shader_t        rect;
+      d3d11_shader_t        layer;
+      d3d11_shader_t        anaglyph;
+      d3d11_shader_t        interlaced;
+      D3D11Buffer           ubo;
+      /* Into the UI layer alpha accumulates as coverage; the layer goes
+       * over the frame premultiplied. */
+      D3D11BlendState       blend_ui;
+      D3D11BlendState       blend_layer;
+      unsigned              src_dims;
+      unsigned              frame_dims;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map was drawn whole. */
+      retro_atomic_int_t    allowed;
+      retro_atomic_int_t    fallback;
+      bool                  tried;
+      bool                  failed;
+      bool                  active;
+      bool                  direct_seen;
+   } views;
    /* A software frame for the stock chain is written straight into
     * this dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
     * reads is renamed rather than waited for, and drawn from it through
@@ -658,6 +694,8 @@ static void d3d11_frame_import_deinit(d3d11_video_t *d3d11);
 #endif
 
 static void d3d11_record_free(d3d11_video_t *d3d11);
+static void d3d11_views_release(d3d11_video_t *d3d11);
+static void d3d11_views_publish(d3d11_video_t *d3d11);
 
 /* Sprite/font shader selection: HDR output uses the encoding
  * entries (driven by sprites.hdr_cb at PS slot b1); SDR uses the
@@ -2181,7 +2219,8 @@ static INLINE void d3d11_release_shader(d3d11_shader_t* shader)
 
 static uint32_t d3d11_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t flags       = 0;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
 
 #if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
    /* a borderless fullscreen toggle restyles the window; see
@@ -2204,6 +2243,10 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
+   if (d3d11 && retro_atomic_load_acquire_int(&d3d11->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (d3d11 && retro_atomic_load_acquire_int(&d3d11->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
 
    return flags;
 }
@@ -3639,6 +3682,7 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_release_texture(&d3d11->frame.texture[0]);
    d3d11_release_texture(&d3d11->sw_direct.texture);
+   d3d11_views_release(d3d11);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
 
@@ -4757,6 +4801,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
 #ifdef D3D11_FRAME_IMPORT
    d3d11_frame_import_init(d3d11);
 #endif
+   d3d11_views_publish(d3d11);
    return d3d11;
 
 error:
@@ -5412,6 +5457,451 @@ static void d3d11_hw_direct_free(d3d11_video_t *d3d11)
    memset(&d3d11->hw_direct, 0, sizeof(d3d11->hw_direct));
 }
 
+/* The views shaders' constants */
+typedef struct
+{
+   math_matrix_4x4 mvp;
+   float rect[4];
+   float clamp[4];
+} d3d11_views_ubo_t;
+
+/* What a frame's placement draws read */
+struct d3d11_views_draw
+{
+   const video_frame_info_t *video_info;
+   unsigned src_dims;
+};
+
+static void d3d11_views_draw_direct(d3d11_video_t *d3d11,
+      const struct d3d11_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool d3d11_views_make(d3d11_video_t *d3d11, d3d11_texture_t *t,
+      unsigned dims);
+static bool d3d11_views_retire(d3d11_video_t *d3d11, d3d11_texture_t *t);
+
+/* The views compositor, with these calls bound in. Views are drawn
+ * straight from the frame only, so a view's chain is the driver. */
+#define VV_FN(name)                     d3d11_vv_##name
+#define VV_DRV                          d3d11_video_t
+#define VV_CHAIN                        d3d11_video_t
+#define VV_CREATE_STOCK(drv)            ((void*)(drv))
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct d3d11_views_draw
+#define VV_DIRECT(p, d, v, r, c)        d3d11_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_TARGET                       d3d11_texture_t
+#define VV_TARGET_MAKE(drv, t, dims)    d3d11_views_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        d3d11_views_retire(drv, t)
+#include "../video_views_draw.h"
+
+/* Views: not with a preset, HDR output, or without their shaders */
+static bool d3d11_views_allowed(const d3d11_video_t *d3d11)
+{
+   return !d3d11->views.failed
+      && !(d3d11->shader_preset && d3d11->shader_preset->passes)
+#ifdef HAVE_DXGI_HDR
+      && !(d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+#endif
+      ;
+}
+
+static void d3d11_views_publish(d3d11_video_t *d3d11)
+{
+   retro_atomic_store_release_int(&d3d11->views.allowed,
+         d3d11_views_allowed(d3d11) ? 1 : 0);
+}
+
+static void d3d11_views_release(d3d11_video_t *d3d11)
+{
+   d3d11_release_shader(&d3d11->views.rect);
+   d3d11_release_shader(&d3d11->views.layer);
+   d3d11_release_shader(&d3d11->views.anaglyph);
+   d3d11_release_shader(&d3d11->views.interlaced);
+   Release(d3d11->views.ubo);
+   Release(d3d11->views.blend_ui);
+   Release(d3d11->views.blend_layer);
+   d3d11_release_texture(&d3d11->views.canvas);
+   d3d11_release_texture(&d3d11->views.ui);
+}
+
+/* The shaders, constants and blend states views draw with, made on
+ * first use: most sessions never draw views. */
+static void d3d11_views_init(d3d11_video_t *d3d11)
+{
+   static const char shader[] =
+#include "d3d_shaders/views_sm4.hlsl.h"
+      ;
+   D3D11_INPUT_ELEMENT_DESC desc[3];
+   D3D11_BUFFER_DESC buf_desc;
+   D3D11_BLEND_DESC blend_desc;
+   D3D11Device dev = d3d11->device;
+   bool ok;
+
+   desc[0].SemanticName         = "POSITION";
+   desc[0].SemanticIndex        = 0;
+   desc[0].Format               = DXGI_FORMAT_R32G32_FLOAT;
+   desc[0].InputSlot            = 0;
+   desc[0].AlignedByteOffset    = offsetof(d3d11_vertex_t, position);
+   desc[0].InputSlotClass       = D3D11_INPUT_PER_VERTEX_DATA;
+   desc[0].InstanceDataStepRate = 0;
+   desc[1]                      = desc[0];
+   desc[1].SemanticName         = "TEXCOORD";
+   desc[1].AlignedByteOffset    = offsetof(d3d11_vertex_t, texcoord);
+   desc[2]                      = desc[0];
+   desc[2].SemanticName         = "COLOR";
+   desc[2].Format               = DXGI_FORMAT_R32G32B32A32_FLOAT;
+   desc[2].AlignedByteOffset    = offsetof(d3d11_vertex_t, color);
+
+   d3d11->views.tried = true;
+   ok = d3d11_init_shader(dev, shader, sizeof(shader), NULL,
+            "VSMain", "PSRect", NULL, desc, 3, &d3d11->views.rect,
+            D3D11_FEATURE_LEVEL_HINT_DONTCARE)
+      && d3d11_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSLayer", NULL, NULL, 0, &d3d11->views.layer,
+            D3D11_FEATURE_LEVEL_HINT_DONTCARE)
+      && d3d11_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSAnaglyph", NULL, NULL, 0, &d3d11->views.anaglyph,
+            D3D11_FEATURE_LEVEL_HINT_DONTCARE)
+      && d3d11_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSInterlaced", NULL, NULL, 0, &d3d11->views.interlaced,
+            D3D11_FEATURE_LEVEL_HINT_DONTCARE);
+
+   buf_desc.ByteWidth           = sizeof(d3d11_views_ubo_t);
+   buf_desc.Usage               = D3D11_USAGE_DYNAMIC;
+   buf_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+   buf_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+   buf_desc.MiscFlags           = 0;
+   buf_desc.StructureByteStride = 0;
+   dev->lpVtbl->CreateBuffer(dev, &buf_desc, NULL, &d3d11->views.ubo);
+
+   memset(&blend_desc, 0, sizeof(blend_desc));
+   blend_desc.RenderTarget[0].BlendEnable           = TRUE;
+   blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_SRC_ALPHA;
+   blend_desc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
+   blend_desc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+   blend_desc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
+   blend_desc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
+   blend_desc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
+   blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+   dev->lpVtbl->CreateBlendState(dev, &blend_desc, &d3d11->views.blend_ui);
+   blend_desc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
+   dev->lpVtbl->CreateBlendState(dev, &blend_desc, &d3d11->views.blend_layer);
+
+   if (     ok
+         && d3d11->views.rect.vs && d3d11->views.rect.ps
+         && d3d11->views.rect.layout
+         && d3d11->views.layer.ps && d3d11->views.anaglyph.ps
+         && d3d11->views.interlaced.ps && d3d11->views.ubo
+         && d3d11->views.blend_ui && d3d11->views.blend_layer)
+      return;
+   RARCH_WARN("[D3D11] Views can't be drawn: their shaders failed.\n");
+   d3d11_views_release(d3d11);
+   memset(&d3d11->views.rect,       0, sizeof(d3d11->views.rect));
+   memset(&d3d11->views.layer,      0, sizeof(d3d11->views.layer));
+   memset(&d3d11->views.anaglyph,   0, sizeof(d3d11->views.anaglyph));
+   memset(&d3d11->views.interlaced, 0, sizeof(d3d11->views.interlaced));
+   d3d11->views.ubo         = NULL;
+   d3d11->views.blend_ui    = NULL;
+   d3d11->views.blend_layer = NULL;
+   d3d11->views.failed      = true;
+}
+
+static bool d3d11_views_retire(d3d11_video_t *d3d11, d3d11_texture_t *t)
+{
+   (void)d3d11;
+   d3d11_release_texture(t);
+   memset(t, 0, sizeof(*t));
+   return true;
+}
+
+/* A render target of RGBA8 sized dims */
+static bool d3d11_views_make(d3d11_video_t *d3d11, d3d11_texture_t *t,
+      unsigned dims)
+{
+   memset(t, 0, sizeof(*t));
+   t->desc.Width     = VIDEO_SCALE_W(dims);
+   t->desc.Height    = VIDEO_SCALE_H(dims);
+   t->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   t->desc.Usage     = D3D11_USAGE_DEFAULT;
+   t->desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+   if (     d3d11_init_texture_ex(d3d11->device, t, false)
+         && t->view && t->rt_view)
+      return true;
+   RARCH_WARN("[D3D11] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   d3d11_views_retire(d3d11, t);
+   return false;
+}
+
+/* Writes the views constants: @mvp, the part of the texture drawn and
+ * where its filtering stops. */
+static void d3d11_views_ubo(d3d11_video_t *d3d11, const math_matrix_4x4 *mvp,
+      const float *rect, const float *clamp)
+{
+   D3D11_MAPPED_SUBRESOURCE m;
+   d3d11_views_ubo_t *ubo;
+   if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+               (D3D11Resource)d3d11->views.ubo, 0, D3D11_MAP_WRITE_DISCARD,
+               0, &m)))
+      return;
+   ubo      = (d3d11_views_ubo_t*)m.pData;
+   ubo->mvp = *mvp;
+   memcpy(ubo->rect,  rect,  sizeof(ubo->rect));
+   memcpy(ubo->clamp, clamp, sizeof(ubo->clamp));
+   d3d11->context->lpVtbl->Unmap(d3d11->context,
+         (D3D11Resource)d3d11->views.ubo, 0);
+}
+
+/* A top-left rectangle as a viewport */
+static void d3d11_views_vp(const video_views_rect_t *r, D3D11_VIEWPORT *vp)
+{
+   vp->TopLeftX = (float)VIDEO_POS_X(r->pos);
+   vp->TopLeftY = (float)VIDEO_POS_Y(r->pos);
+   vp->Width    = (float)VIDEO_SCALE_W(r->dims);
+   vp->Height   = (float)VIDEO_SCALE_H(r->dims);
+   vp->MinDepth = 0.0f;
+   vp->MaxDepth = 1.0f;
+}
+
+/* View @view of the frame over @dst, cut to @cut, as the stock chain
+ * draws a copy of it: the same texels, the same filter, stopping at the
+ * view's edge as at a texture's. */
+static void d3d11_views_draw_direct(d3d11_video_t *d3d11,
+      const struct d3d11_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   D3D11_VIEWPORT vp;
+   D3D11_RECT sc;
+   float rect[4], clamp[4];
+   const struct retro_video_view *v = &d->video_info->views.views[view];
+   float tw = (float)VIDEO_SCALE_W(d->src_dims);
+   float th = (float)VIDEO_SCALE_H(d->src_dims);
+
+   rect[0]  = (float)v->x / tw;
+   rect[1]  = (float)v->y / th;
+   rect[2]  = (float)(v->x + v->width)  / tw;
+   rect[3]  = (float)(v->y + v->height) / th;
+   clamp[0] = rect[0] + 0.5f / tw;
+   clamp[1] = rect[1] + 0.5f / th;
+   clamp[2] = rect[2] - 0.5f / tw;
+   clamp[3] = rect[3] - 0.5f / th;
+   d3d11_views_ubo(d3d11, &d3d11->mvp, rect, clamp);
+
+   d3d11_views_vp(dst, &vp);
+   sc.left   = VIDEO_POS_X(cut->pos);
+   sc.top    = VIDEO_POS_Y(cut->pos);
+   sc.right  = sc.left + (LONG)VIDEO_SCALE_W(cut->dims);
+   sc.bottom = sc.top  + (LONG)VIDEO_SCALE_H(cut->dims);
+   d3d11->context->lpVtbl->RSSetViewports(d3d11->context, 1, &vp);
+   d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &sc);
+   d3d11->context->lpVtbl->Draw(d3d11->context, 4, 0);
+}
+
+/* Draws @view over the whole of @vp through @shader's pixel shader,
+ * unrotated. */
+static void d3d11_views_quad(d3d11_video_t *d3d11, d3d11_shader_t *shader,
+      D3D11ShaderResourceView view, D3D11SamplerState sampler,
+      const D3D11_VIEWPORT *vp)
+{
+   static const float whole[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+   D3D11DeviceContext ctx      = d3d11->context;
+   d3d11_views_ubo(d3d11, &d3d11->ubo_values.mvp, whole, whole);
+   ctx->lpVtbl->PSSetShader(ctx, shader->ps, NULL, 0);
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &view);
+   ctx->lpVtbl->PSSetSamplers(ctx, 0, 1, &sampler);
+   ctx->lpVtbl->RSSetViewports(ctx, 1, vp);
+   ctx->lpVtbl->Draw(ctx, 4, 0);
+}
+
+/* The vertex stage, constants and quad every views draw uses */
+static void d3d11_views_bind(d3d11_video_t *d3d11)
+{
+   UINT stride            = sizeof(d3d11_vertex_t);
+   UINT offset            = 0;
+   D3D11DeviceContext ctx = d3d11->context;
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx,
+         D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   ctx->lpVtbl->IASetVertexBuffers(ctx, 0, 1, &d3d11->frame.vbo,
+         &stride, &offset);
+   ctx->lpVtbl->IASetInputLayout(ctx, d3d11->views.rect.layout);
+   ctx->lpVtbl->VSSetShader(ctx, d3d11->views.rect.vs, NULL, 0);
+   ctx->lpVtbl->GSSetShader(ctx, NULL, NULL, 0);
+   ctx->lpVtbl->VSSetConstantBuffers(ctx, 0, 1, &d3d11->views.ubo);
+   ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d11->views.ubo);
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked, and in *blend whether they draw into the canvas. */
+static bool d3d11_views_setup(d3d11_video_t *d3d11,
+      const video_frame_info_t *video_info, const void *frame,
+      bool *blend, d3d11_video_t **chains, video_views_rect_t *rects)
+{
+   bool views;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+
+   if (video_info->views.num_views && !d3d11->views.tried)
+      d3d11_views_init(d3d11);
+   /* Anaglyph and interlaced draw both eyes into the canvas, or without
+    * one only the left eye's area into the window. */
+   *blend = offscreen && !d3d11->views.failed
+      && d3d11_vv_target_ensure(d3d11, &d3d11->views.canvas_target,
+            &d3d11->views.canvas, layout->canvas_dims);
+   /* A real frame without the blend modes frees the canvas. */
+   if (frame && !offscreen)
+      d3d11_vv_target_drop(d3d11, &d3d11->views.canvas_target,
+            &d3d11->views.canvas);
+   /* A rolling scanline is drawn by the frame's own draw. */
+   views = video_info->views.num_views
+      && d3d11_views_allowed(d3d11)
+      && !(video_info->shader_subframes > 1 && video_info->scan_subframes)
+      && video_views_fit_frame(&video_info->views,
+            d3d11->views.frame_dims)
+      && d3d11_vv_pick_chains(d3d11, &d3d11->views.chains,
+            &video_info->views, layout, true, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend = views && *blend;
+   if (views && !d3d11->views.direct_seen)
+   {
+      d3d11->views.direct_seen = true;
+      RARCH_LOG("[D3D11] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Draws the views into @rtv, sized as the window, or with @blend into
+ * the canvas, whose halves one pass then blends into @rtv. */
+static void d3d11_views_render(d3d11_video_t *d3d11,
+      const video_frame_info_t *video_info, d3d11_video_t **chains,
+      D3D11RenderTargetView rtv, D3D11ShaderResourceView src, bool blend)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   struct d3d11_views_draw d;
+   D3D11DeviceContext ctx             = d3d11->context;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   D3D11RenderTargetView target       = blend
+      ? d3d11->views.canvas.rt_view : rtv;
+
+   d3d11_views_bind(d3d11);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, NULL);
+   if (blend)
+      ctx->lpVtbl->ClearRenderTargetView(ctx, target, clear);
+   ctx->lpVtbl->OMSetBlendState(ctx, d3d11->blend_disable, NULL,
+         D3D11_DEFAULT_SAMPLE_MASK);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->scissor_enabled);
+   ctx->lpVtbl->PSSetShader(ctx, d3d11->views.rect.ps, NULL, 0);
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &src);
+   ctx->lpVtbl->PSSetSamplers(ctx, 0, 1,
+         &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_EDGE]);
+
+   d.video_info = video_info;
+   d.src_dims   = d3d11->views.src_dims;
+   d3d11_vv_draw_placements(d3d11, &d, layout, chains,
+         blend || !layout->offscreen,
+         blend ? layout->canvas_dims : video_info->dims, true);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->scissor_disabled);
+
+   if (blend)
+   {
+      D3D11_VIEWPORT vp;
+      D3D11ShaderResourceView none = NULL;
+      vp.TopLeftX = 0.0f;
+      vp.TopLeftY = 0.0f;
+      vp.Width    = (float)VIDEO_SCALE_W(video_info->dims);
+      vp.Height   = (float)VIDEO_SCALE_H(video_info->dims);
+      vp.MinDepth = 0.0f;
+      vp.MaxDepth = 1.0f;
+      ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &none);
+      ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &rtv, NULL);
+      d3d11_views_quad(d3d11,
+            (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+            ? &d3d11->views.interlaced : &d3d11->views.anaglyph,
+            d3d11->views.canvas.view,
+            d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE], &vp);
+      ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &none);
+   }
+}
+
+/* Moves UI drawing into the UI layer, laid out at one eye's size */
+static void d3d11_views_ui_begin(d3d11_video_t *d3d11,
+      video_frame_info_t *video_info)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   D3D11DeviceContext ctx             = d3d11->context;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   unsigned w                         = VIDEO_SCALE_W(layout->ui_dims);
+   unsigned h                         = VIDEO_SCALE_H(layout->ui_dims);
+
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &d3d11->views.ui.rt_view, NULL);
+   ctx->lpVtbl->ClearRenderTargetView(ctx, d3d11->views.ui.rt_view, clear);
+
+   /* Menus and widgets size from video_info->dims, fonts from the
+    * viewport and vp.full_dims. */
+   video_views_ui_enter(&d3d11->views.saved, &video_info->dims,
+         &d3d11->vp.full_dims, layout->ui_dims);
+   d3d11->views.saved_viewport = d3d11->viewport;
+   d3d11->views.saved_scissor  = d3d11->scissor;
+   d3d11->views.saved_blend    = d3d11->blend_enable;
+   d3d11->viewport.TopLeftX    = 0.0f;
+   d3d11->viewport.TopLeftY    = 0.0f;
+   d3d11->viewport.Width       = (float)w;
+   d3d11->viewport.Height      = (float)h;
+   d3d11->scissor.left         = 0;
+   d3d11->scissor.top          = 0;
+   d3d11->scissor.right        = (LONG)w;
+   d3d11->scissor.bottom       = (LONG)h;
+   d3d11->blend_enable         = d3d11->views.blend_ui;
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d11->viewport);
+}
+
+/* Back onto @rtv, and the UI layer into each eye's area. It was drawn
+ * over transparent black, so its colour is premultiplied. */
+static void d3d11_views_ui_end(d3d11_video_t *d3d11,
+      video_frame_info_t *video_info, D3D11RenderTargetView rtv)
+{
+   unsigned a;
+   D3D11ShaderResourceView none       = NULL;
+   D3D11DeviceContext ctx             = d3d11->context;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   /* Only full side by side places it unscaled. */
+   D3D11SamplerState sampler          = d3d11->samplers[
+      (layout->stereo_mode == VIDEO_STEREO_MODE_SBS_FULL)
+      ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+
+   d3d11->blend_enable  = d3d11->views.saved_blend;
+   d3d11->viewport      = d3d11->views.saved_viewport;
+   d3d11->scissor       = d3d11->views.saved_scissor;
+   video_views_ui_leave(&d3d11->views.saved, &video_info->dims,
+         &d3d11->vp.full_dims);
+
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &rtv, NULL);
+   d3d11_views_bind(d3d11);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->scissor_disabled);
+   ctx->lpVtbl->OMSetBlendState(ctx, d3d11->views.blend_layer, NULL,
+         D3D11_DEFAULT_SAMPLE_MASK);
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      D3D11_VIEWPORT vp;
+      d3d11_views_vp(&layout->areas[a], &vp);
+      d3d11_views_quad(d3d11, &d3d11->views.layer, d3d11->views.ui.view,
+            sampler, &vp);
+   }
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &none);
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &d3d11->viewport);
+   ctx->lpVtbl->RSSetState(ctx, d3d11->scissor_enabled);
+}
+
+static void d3d11_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11)
+      return;
+   d3d11->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = d3d11->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      d3d11->views.chains.stock[i] = NULL;
+}
+
 static bool d3d11_gfx_frame_body(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
@@ -5468,6 +5958,12 @@ static bool d3d11_gfx_frame_body(
    struct font_params* osd_params = (struct font_params*)&video_info->osd_stat_params;
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
+   d3d11_video_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                     = false;
+   bool views_blend               = false;
+   bool views_per_eye             = false;
+   bool views_ui                  = false;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -5661,7 +6157,7 @@ static bool d3d11_gfx_frame_body(
    /* Custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d11->resize_viewport)
 #endif
-      d3d11_update_viewport(d3d11, false);
+      d3d11_update_viewport(d3d11, d3d11->views.active);
 
    if (frame && width && height)
    {
@@ -5797,6 +6293,8 @@ static bool d3d11_gfx_frame_body(
             }
             d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
          }
+         d3d11->views.src_dims   = tex_dims;
+         d3d11->views.frame_dims = VIDEO_SCALE_PACK(width, height);
 #ifdef HAVE_SLANG
          slang_rect_values(d3d11->frame_rect.values,
                VIDEO_SCALE_PACK(width, height), 0, tex_dims);
@@ -5846,6 +6344,18 @@ static bool d3d11_gfx_frame_body(
                   d3d11->format, frame, &d3d11->frame.texture[0]);
       }
    }
+
+   views = d3d11_views_setup(d3d11, video_info, frame, &views_blend,
+         view_chains, view_rects);
+   /* d3d11->vp is the whole window while views draw. */
+   if (views != d3d11->views.active)
+   {
+      d3d11->views.active = views;
+      d3d11_update_viewport(d3d11, views);
+   }
+   retro_atomic_store_release_int(&d3d11->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   d3d11_views_publish(d3d11);
 
 #ifdef D3D11_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
@@ -6115,7 +6625,7 @@ static bool d3d11_gfx_frame_body(
 
    context->lpVtbl->RSSetViewports(context, 1, &d3d11->frame.viewport);
 
-   if (texture)
+   if (texture && !views)
    {
 #ifdef HAVE_DXGI_HDR
       if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
@@ -6219,7 +6729,12 @@ static bool d3d11_gfx_frame_body(
       d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &d3d11->scissor);
 #endif /* D3D11_ROLLING_SCANLINE_SIMULATION */
 
-   context->lpVtbl->Draw(context, 4, 0);
+   if (views)
+      d3d11_views_render(d3d11, video_info, view_chains, rtv,
+            d3d11->hw_direct.view ? d3d11->hw_direct.view
+            : d3d11->frame.texture[0].view, views_blend);
+   else
+      context->lpVtbl->Draw(context, 4, 0);
 
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
@@ -6357,6 +6872,28 @@ static bool d3d11_gfx_frame_body(
    }
 #endif
 
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, d3d11_views_allowed(d3d11));
+   /* A real frame without it frees the UI layer. */
+   if (frame && !views_per_eye)
+      d3d11_vv_target_drop(d3d11, &d3d11->views.ui_target,
+            &d3d11->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden. */
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE), msg, statistics_show,
+#ifdef HAVE_GFX_WIDGETS
+         widgets_active && gfx_widgets_visible(video_info)
+#else
+         false
+#endif
+         )
+      && d3d11_vv_target_ensure(d3d11, &d3d11->views.ui_target,
+            &d3d11->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+      d3d11_views_ui_begin(d3d11, video_info);
+
    context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
    d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &d3d11->scissor);
    context->lpVtbl->OMSetBlendState(context, d3d11->blend_enable,
@@ -6368,6 +6905,27 @@ static bool d3d11_gfx_frame_body(
    {
       if (d3d11->flags & D3D11_ST_FLAG_MENU_FULLSCREEN)
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
+      else if (d3d11->views.active)
+      {
+         /* d3d11->vp is the whole window while views draw, so fit the
+          * menu to this pass's target here. */
+         struct video_viewport vp;
+         D3D11_VIEWPORT menu_vp;
+         memset(&vp, 0, sizeof(vp));
+         vp.full_dims     = VIDEO_SCALE_PACK(
+               (unsigned)d3d11->viewport.Width,
+               (unsigned)d3d11->viewport.Height);
+         video_driver_update_viewport(&vp, false,
+               (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false,
+               false);
+         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
+         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
+         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
+         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
+         menu_vp.MinDepth = 0.0f;
+         menu_vp.MaxDepth = 1.0f;
+         context->lpVtbl->RSSetViewports(context, 1, &menu_vp);
+      }
 
       {
          d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_BLEND];
@@ -6418,7 +6976,9 @@ static bool d3d11_gfx_frame_body(
    d3d11->flags          |= D3D11_ST_FLAG_SPRITES_ENABLE;
 
 #ifdef HAVE_OVERLAY
-   if ((d3d11->flags & D3D11_ST_FLAG_OVERLAYS_ENABLE) && overlay_behind_menu)
+   /* Touch overlays would straddle both eyes. */
+   if (     (d3d11->flags & D3D11_ST_FLAG_OVERLAYS_ENABLE) && overlay_behind_menu
+         && !views_per_eye)
       d3d11_render_overlay(d3d11);
 #endif
 
@@ -6462,7 +7022,8 @@ static bool d3d11_gfx_frame_body(
    }
 
 #ifdef HAVE_OVERLAY
-   if ((d3d11->flags & D3D11_ST_FLAG_OVERLAYS_ENABLE) && !overlay_behind_menu)
+   if (     (d3d11->flags & D3D11_ST_FLAG_OVERLAYS_ENABLE) && !overlay_behind_menu
+         && !views_per_eye)
       d3d11_render_overlay(d3d11);
 #endif
 
@@ -6505,6 +7066,9 @@ static bool d3d11_gfx_frame_body(
       font_driver_render_msg(d3d11, msg, strlen(msg), NULL, NULL);
    }
    d3d11->flags &= ~D3D11_ST_FLAG_SPRITES_ENABLE;
+
+   if (views_ui)
+      d3d11_views_ui_end(d3d11, video_info, rtv);
 
 #if defined(_WIN32) && !defined(__WINRT__)
    video_driver_update_title(NULL);
@@ -8448,7 +9012,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   NULL, /* set_view_count */
+   d3d11_set_view_count,
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    d3d11_set_frame_format,

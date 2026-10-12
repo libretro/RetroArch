@@ -22,6 +22,12 @@ that server. The GPU memory cases are left out there. RA_E2E_ONLY, a
 regular expression, runs only the cases whose names it finds; CI runs a
 set of them that way (Linux-vulkan-validation.yml).
 
+With RA_E2E_WINE=1 the binary is a retroarch.exe run under Wine, on
+Xvfb as above, with the core built by make DLL=1 and paths given as
+Wine's Z: drive has them; a D3DCompiler_47.dll next to the binary is
+taken over Wine's own (Windows-wine-views.yml). The cases that need a
+preset run only on drivers whose views take one.
+
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
 
@@ -40,7 +46,9 @@ import time
 import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CORE = os.path.normpath(os.path.join(HERE, '..', 'video_views_libretro.so'))
+WINE = os.environ.get('RA_E2E_WINE') == '1'
+CORE = os.path.normpath(os.path.join(
+    HERE, '..', 'video_views_libretro.' + ('dll' if WINE else 'so')))
 W, H = 1600, 960
 TOLERANCE = 8
 
@@ -128,6 +136,9 @@ HW_CASES = {
     'vulkan': [(name, 'vulkan')
                for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
                             '3ds-interlaced', '3ds-sbs-full-threaded')],
+    'd3d11': [(name, 'd3d11')
+              for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
+                           '3ds-interlaced', '3ds-sbs-full-threaded')],
 }
 
 # A frame past the declared maximum in the core's own Vulkan image.
@@ -241,13 +252,18 @@ EXACT_CASES = [
     ('exact-3ds', '3ds', NOISE, 'gl'),
     ('exact-3ds', '3ds', NOISE, 'gl_topleft'),
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
+    ('exact-3ds', '3ds', NOISE, 'd3d11'),
     # No map: the frame drawn whole. A core's GL framebuffer as large as
     # its maximum holds the frame in a corner, so the stock chain would
     # copy it out; glcore draws it straight from there instead.
     ('whole-3ds', 'none', NOISE_LARGE, 'gl'),
     ('whole-3ds', 'none', NOISE_LARGE, 'gl_topleft'),
 ]
-EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan')}
+EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
+            'd3d11': ('off', 'd3d11')}
+# Drivers whose views take a preset: on the others a preset draws the
+# frame whole, so the cases that need one are left out there.
+PRESET_DRIVERS = ('glcore', 'vulkan')
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -262,7 +278,7 @@ SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
-DIRECT_DRIVERS = ('glcore', 'vulkan')
+DIRECT_DRIVERS = ('glcore', 'vulkan', 'd3d11')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 WHOLE_DRIVERS = ('glcore',)
 WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')
@@ -449,10 +465,20 @@ def write_cfg(path, d, driver, settings, port):
         'core_assets_directory': d,
         'dynamic_wallpapers_directory': d,
     }
+    if WINE:
+        cfg = {k: winpath(v) for k, v in cfg.items()}
+        cfg.update(video_context_driver='', input_driver='dinput',
+                   # Wine's swap chain has no IDXGISwapChain2.
+                   video_waitable_swapchains='false')
     cfg.update(settings)
     with open(path, 'w') as f:
         for k in sorted(cfg):
             f.write('%s = "%s"\n' % (k, cfg[k]))
+
+
+def winpath(v):
+    """An absolute path as Wine's Z: drive has it; anything else as is."""
+    return 'Z:' + v if WINE and v.startswith('/') else v
 
 
 def expected_status(driver, settings):
@@ -497,7 +523,7 @@ def isolated_env():
     return env
 
 
-XVFB = os.environ.get('RA_E2E_XVFB') == '1'
+XVFB = WINE or os.environ.get('RA_E2E_XVFB') == '1'
 ONLY = os.environ.get('RA_E2E_ONLY')
 
 
@@ -692,6 +718,15 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
     if XVFB:
         xvfb, env['DISPLAY'] = xvfb_start(env)
         cmd = cmd[cmd.index('--') + 1:]
+    if WINE:
+        env['WINEDEBUG'] = '-all'
+        # A D3DCompiler_47.dll next to the binary (vkd3d-utils, say)
+        # over Wine's own.
+        env['WINEDLLOVERRIDES'] = 'd3dcompiler_47=n,b'
+        cmd = cmd[:cmd.index(retroarch)] + [
+            'wine', retroarch, '--config', winpath(cfg), '-L',
+            winpath(CORE), '--verbose'] + [
+                a.replace('=/', '=Z:/') for a in args]
     log = open(os.path.join(d, 'run.log'), 'w')
     p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
                          env=env, start_new_session=True)
@@ -1174,8 +1209,9 @@ def main():
                      if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
             hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
             copy = 'glCopyImageSubData' if driver == 'glcore' else None
-            runs = [('', None, copy, None),
-                    ('-preset', None, copy, HISTORY_PRESET)]
+            runs = [('', None, copy, None)]
+            if driver in PRESET_DRIVERS:
+                runs.append(('-preset', None, copy, HISTORY_PRESET))
             if driver == 'glcore':
                 runs.append(('-preset-blit', NO_COPY_IMAGE,
                              'framebuffer blits', HISTORY_PRESET))
@@ -1230,7 +1266,8 @@ def main():
                     print('    ' + e)
                 failed += bool(errors)
         for case in [c for c in VIEW_RECT_CASES
-                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
+                     if c[3] in EXACT_HW.get(driver, ())
+                     and driver in PRESET_DRIVERS and wanted(c[0])]:
             name, mapopt, opts, hw = case
             for mode, tolerance in VIEW_RECT_PRESETS:
                 rows = {}
@@ -1258,7 +1295,8 @@ def main():
                     print('    ' + e)
                 failed += bool(errors)
         for case in [c for c in SMOOTH_CASES
-                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
+                     if c[3] in EXACT_HW.get(driver, ())
+                     and driver in PRESET_DRIVERS and wanted(c[0])]:
             hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
             errors, rows = run_exact_case(retroarch, root, driver, case,
                                           exact=False)

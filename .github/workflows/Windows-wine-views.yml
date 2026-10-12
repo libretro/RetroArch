@@ -1,0 +1,141 @@
+name: CI Windows views under Wine
+
+# Views on the D3D11 driver, end to end: retroarch.exe cross-built with
+# mingw-w64 runs the video_views test core under Wine, on a virtual
+# display through Mesa's software rasteriser, and
+# samples/cores/video_views/e2e/run.py checks the screen in each stereo
+# mode, from the core's software frames and its D3D11 textures, with
+# the menu laid out per eye and the pointer over it. Wine's own shader
+# compiler can't take the driver's HLSL, so vkd3d's, from its release,
+# is put in as D3DCompiler_47.dll.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/drivers/d3d11.c'
+      - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
+      - 'gfx/video_views.*'
+      - 'gfx/video_views_draw.h'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/cores/video_views/**'
+      - '.github/workflows/Windows-wine-views.yml'
+  pull_request:
+    paths:
+      - 'gfx/drivers/d3d11.c'
+      - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
+      - 'gfx/video_views.*'
+      - 'gfx/video_views_draw.h'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/cores/video_views/**'
+      - '.github/workflows/Windows-wine-views.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  windows-wine-views:
+    name: Views on D3D11 under Wine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb imagemagick libgl1-mesa-dri autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          for i in 1 2 3; do
+            sudo timeout 300 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Build vkd3d's shader compiler for Windows
+        shell: bash
+        run: |
+          set -eu
+          v="$RUNNER_TEMP/vkd3d"
+          git clone -q --depth 1 --branch vkd3d-2.1 \
+            https://gitlab.winehq.org/wine/vkd3d.git "$v"
+          cd "$v"
+          ./autogen.sh > /dev/null
+          # Its headers from the host; vulkan-1.dll is loaded at run
+          # time, so an import library naming it does.
+          mkdir -p inc lib build
+          ln -s /usr/include/vulkan inc/vulkan
+          ln -s /usr/include/vk_video inc/vk_video
+          ln -s /usr/include/spirv inc/spirv
+          printf 'LIBRARY vulkan-1.dll\nEXPORTS\nvkGetInstanceProcAddr\n' \
+            > lib/vulkan-1.def
+          x86_64-w64-mingw32-dlltool -d lib/vulkan-1.def \
+            -l lib/libvulkan-1.a
+          cd build
+          ../configure -q --host=x86_64-w64-mingw32 --disable-tests \
+            --disable-demos WIDL=x86_64-w64-mingw32-widl \
+            CPPFLAGS="-I$v/inc" LDFLAGS="-L$v/lib"
+          make -j$(nproc) > /dev/null
+          cp .libs/libvkd3d-utils-1.dll "$GITHUB_WORKSPACE/D3DCompiler_47.dll"
+          cp .libs/libvkd3d-shader-1.dll .libs/libvkd3d-1.dll \
+            "$GITHUB_WORKSPACE/"
+
+      - name: Build retroarch.exe with mingw-w64 (D3D11, slang)
+        shell: bash
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          ccache -M 500M
+          ./configure --host=x86_64-w64-mingw32 \
+                      --disable-qt --disable-vulkan --disable-ffmpeg \
+                      --disable-cheevos --disable-discord \
+                      --disable-d3d9 --disable-d3d10 \
+                      --disable-sdl --disable-sdl2
+          make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \
+                          CXX="ccache x86_64-w64-mingw32-g++"
+          ccache -s
+          # The C and C++ runtimes it was linked against
+          for f in libstdc++-6.dll libgcc_s_seh-1.dll; do
+            cp "$(ls /usr/lib/gcc/x86_64-w64-mingw32/*-win32/$f | head -n 1)" .
+          done
+          make -C samples/cores/video_views DLL=1 CC=x86_64-w64-mingw32-gcc
+
+      - name: Views on D3D11, end to end (Wine, Xvfb, llvmpipe)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export LIBGL_ALWAYS_SOFTWARE=1
+          # The prefix is made before the first case is timed.
+          WINEDEBUG=-all wineboot -i > /dev/null 2>&1 || true
+          RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d11
