@@ -85,6 +85,42 @@ bool command_event(enum event_command event, void *data)
    return true;
 }
 
+static unsigned core_option_sets;
+
+bool core_option_manager_get_idx(core_option_manager_t *opt,
+      const char *key, size_t *idx)
+{
+   size_t i;
+   for (i = 0; i < opt->size; i++)
+      if (string_is_equal(opt->opts[i].key, key))
+      {
+         *idx = i;
+         return true;
+      }
+   return false;
+}
+
+bool core_option_manager_get_val_idx(core_option_manager_t *opt,
+      size_t idx, const char *val, size_t *val_idx)
+{
+   size_t i;
+   for (i = 0; i < opt->opts[idx].vals->size; i++)
+      if (string_is_equal(opt->opts[idx].vals->elems[i].data, val))
+      {
+         *val_idx = i;
+         return true;
+      }
+   return false;
+}
+
+void core_option_manager_set_val(core_option_manager_t *opt,
+      size_t idx, size_t val_idx, bool refresh_menu)
+{
+   (void)refresh_menu;
+   opt->opts[idx].index = val_idx;
+   core_option_sets++;
+}
+
 static void capture(command_t *cmd, const char *data, size_t len)
 {
    (void)cmd;
@@ -195,6 +231,91 @@ int main(void)
    CHECK(set(&cmd, "slow_motion off"));
    CHECK(!(runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION));
    CHECK(!cmd.state[RARCH_SLOWMOTION_KEY]);
+
+   {
+      static struct string_list_elem res_vals[3];
+      static struct string_list_elem fps_vals[2];
+      static struct string_list res_list;
+      static struct string_list fps_list;
+      static struct core_option opts[2];
+      static core_option_manager_t mgr;
+
+      CHECK(!command_get_core_option(&cmd, ""));
+      CHECK(cmd.error && strstr(reply, "has no options"));
+
+      res_vals[0].data = (char*)"320x240";
+      res_vals[1].data = (char*)"640x480";
+      res_vals[2].data = (char*)"1280x960 (slow)";
+      res_list.elems   = res_vals;
+      res_list.size    = 3;
+      fps_vals[0].data = (char*)"disabled";
+      fps_vals[1].data = (char*)"enabled";
+      fps_list.elems   = fps_vals;
+      fps_list.size    = 2;
+      opts[0].key      = (char*)"core_resolution";
+      opts[0].desc     = (char*)"Internal resolution";
+      opts[0].vals     = &res_list;
+      opts[1].key      = (char*)"core_fps";
+      opts[1].desc     = (char*)"Show FPS";
+      opts[1].vals     = &fps_list;
+      opts[1].index    = 1;
+      mgr.opts         = opts;
+      mgr.size         = 2;
+      runloop_st->core_options = &mgr;
+
+      cmd.error = false;
+      CHECK(command_get_core_option(&cmd, ""));
+      CHECK(!strcmp(reply, "core_resolution\t320x240\tInternal resolution\n"
+               "core_fps\tenabled\tShow FPS\n"));
+      CHECK(command_get_core_option(&cmd, "core_resolution"));
+      CHECK(!strcmp(reply, "core_resolution\t320x240\tInternal resolution"
+               "\t320x240|640x480|1280x960 (slow)\n"));
+      CHECK(!command_get_core_option(&cmd, "core_nope"));
+      CHECK(cmd.error && strstr(reply, "no such core option core_nope"));
+
+      cmd.error = false;
+      CHECK(command_set_core_option(&cmd, "core_resolution 1280x960 (slow)"));
+      CHECK(opts[0].index == 2 && core_option_sets == 1);
+      CHECK(!strcmp(reply,
+               "core_resolution\t1280x960 (slow)\tInternal resolution\n"));
+      CHECK(command_set_core_option(&cmd, "core_resolution 1280x960 (slow)"));
+      CHECK(core_option_sets == 1);
+      CHECK(!command_set_core_option(&cmd, "core_resolution 99x99"));
+      CHECK(cmd.error && strstr(reply, "does not take 99x99"));
+      CHECK(opts[0].index == 2);
+      cmd.error = false;
+      CHECK(!command_set_core_option(&cmd, "core_fps"));
+      CHECK(cmd.error && core_option_sets == 1);
+      runloop_st->core_options = NULL;
+   }
+
+   {
+      static uint8_t wram[16];
+      static rarch_memory_descriptor_t descs[2];
+
+      cmd.error = false;
+      CHECK(!command_get_memory_map(&cmd, ""));
+      CHECK(cmd.error && strstr(reply, "no memory map"));
+
+      descs[0].core.flags     = RETRO_MEMDESC_SYSTEM_RAM;
+      descs[0].core.ptr       = wram;
+      descs[0].core.start     = 0x7e0000;
+      descs[0].core.len       = sizeof(wram);
+      descs[0].core.addrspace = "WRAM";
+      descs[1].core.flags     = RETRO_MEMDESC_CONST | RETRO_MEMDESC_BIGENDIAN;
+      descs[1].core.start     = 0x8000;
+      descs[1].core.select    = 0xff8000;
+      descs[1].core.disconnect= 0x7f0000;
+      descs[1].core.len       = 0x400000;
+      runloop_st->system.mmaps.descriptors     = descs;
+      runloop_st->system.mmaps.num_descriptors = 2;
+
+      cmd.error = false;
+      CHECK(command_get_memory_map(&cmd, ""));
+      CHECK(!strcmp(reply, "7e0000\t10\t0\t0\tsystem\trw\tlittle\tWRAM\n"
+               "8000\t400000\tff8000\t7f0000\tother\tnone\tbig\t\n"));
+      runloop_st->system.mmaps.num_descriptors = 0;
+   }
 
    printf("command_options: %s\n", failures ? "FAIL" : "PASS");
    return failures ? 1 : 0;

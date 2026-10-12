@@ -118,6 +118,24 @@ A hotkey tool that is still a tool answers `<NAME> pressed` for the same
 reason: the press goes out on the next poll, and what it
 changed is read back with `GET_OPTION`.
 
+The running core's own options are `GET_CORE_OPTION` and
+`SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as
+key, value and description, tab separated; with a key it gives that
+option's line with the values it takes after a further tab, separated
+by `|`. `SET_CORE_OPTION <key> <value>` takes one of those values and
+answers with the option's line; asking for the value it already has
+changes nothing. Whether a change applies at once or on the next start
+of the content is the core's to say.
+
+`GET_MEMORY_MAP` lists the regions of the core's memory map, one per
+line: the start address `READ_CORE_MEMORY` and `WRITE_CORE_MEMORY` take,
+the length, the select and disconnect masks (hexadecimal), what the
+region holds (`system`, `save`, `video` or `other`), `rw`, `ro`, or
+`none` when nothing backs it, the byte order, and the address space
+name. A region with a select mask answers every address that agrees
+with its start in the selected bits, not only start to start plus
+length.
+
 To find something to play, an assistant lists the playlists with
 `LIST_PLAYLISTS`, reads one with `GET_PLAYLIST` (index, label, content
 path and core path per entry, 200 at a time; `MORE <next>` gives the
@@ -170,7 +188,8 @@ text, so a client can see the screen without reaching the file - or with
 
 Every tool carries hints for the client:
 
-- **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`);
+- **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`,
+  `GET_MEMORY_MAP`, `GET_CORE_OPTION`);
 - **destructive**: can lose unsaved progress or data, or loads code
   (`QUIT`, `RESET`, `LOAD_STATE_SLOT`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
   `LOAD_CONTENT`).

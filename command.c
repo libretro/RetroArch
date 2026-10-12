@@ -2109,6 +2109,157 @@ bool command_set_option(command_t *cmd, const char *arg)
    return true;
 }
 
+/* The core option @key, or false with the reason replied. */
+static bool command_core_option_find(command_t *cmd, const char *name,
+      const char *key, core_option_manager_t **opt, size_t *idx)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!(*opt = runloop_st ? runloop_st->core_options : NULL) || !(*opt)->size)
+   {
+      command_reply_error(cmd, name, "the running core has no options");
+      return false;
+   }
+   if (key && !core_option_manager_get_idx(*opt, key, idx))
+   {
+      command_reply_error(cmd, name,
+            "no such core option %s; GET_CORE_OPTION with no argument lists "
+            "them", key);
+      return false;
+   }
+   return true;
+}
+
+/* @opt's line: key, value and description, tab separated, and its
+ * values after a tab when @values. Returns what it wrote, or 0 when
+ * that did not fit @len. */
+static size_t command_core_option_line(const struct core_option *opt,
+      char *s, size_t len, bool values)
+{
+   size_t i;
+   size_t _len;
+   int    n = snprintf(s, len, "%s\t%s\t%s", opt->key,
+         opt->vals && opt->index < opt->vals->size
+         ? opt->vals->elems[opt->index].data : "",
+         opt->desc ? opt->desc : "");
+
+   if (n < 0 || (size_t)n >= len)
+      return 0;
+   _len = (size_t)n;
+   if (values && opt->vals)
+      for (i = 0; i < opt->vals->size; i++)
+      {
+         n = snprintf(s + _len, len - _len, "%s%s", i ? "|" : "\t",
+               opt->vals->elems[i].data);
+         if (n < 0 || (size_t)n >= len - _len)
+            return 0;
+         _len += (size_t)n;
+      }
+   if (_len + 1 >= len)
+      return 0;
+   s[_len++] = '\n';
+   s[_len]   = '\0';
+   return _len;
+}
+
+/* GET_CORE_OPTION [key]
+ *
+ * Every option of the running core, one per line: key, value and
+ * description, tab separated. With a key, that option's line alone,
+ * with the values it takes after a further tab, separated by |. */
+bool command_get_core_option(command_t *cmd, const char *arg)
+{
+   core_option_manager_t *opt = NULL;
+   size_t idx                 = 0;
+   size_t _len                = 0;
+   size_t i;
+   char  *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!command_core_option_find(cmd, "GET_CORE_OPTION",
+            arg && *arg ? arg : NULL, &opt, &idx))
+      return false;
+   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   {
+      command_reply_error(cmd, "GET_CORE_OPTION", "out of memory");
+      return false;
+   }
+
+   for (i = (arg && *arg) ? idx : 0; i < opt->size; i++)
+   {
+      size_t n = command_core_option_line(&opt->opts[i], reply + _len,
+            COMMAND_LIST_REPLY_MAX + 1 - _len, arg && *arg);
+      if (!n)
+      {
+         free(reply);
+         command_reply_error(cmd, "GET_CORE_OPTION",
+               "the options did not fit one reply, stopping at %s",
+               opt->opts[i].key);
+         return false;
+      }
+      _len += n;
+      if (arg && *arg)
+         break;
+   }
+
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return true;
+}
+
+/* SET_CORE_OPTION <key> <value>
+ *
+ * The value is one GET_CORE_OPTION <key> lists. Asking for the value
+ * the option already has changes nothing and succeeds. */
+bool command_set_core_option(command_t *cmd, const char *arg)
+{
+   char   key[NAME_MAX_LENGTH];
+   char   reply[NAME_MAX_LENGTH + PATH_MAX_LENGTH];
+   core_option_manager_t *opt = NULL;
+   const char *sp;
+   size_t idx                 = 0;
+   size_t val_idx             = 0;
+   size_t _len;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg || !*arg || !(sp = strchr(arg, ' ')))
+   {
+      command_reply_error(cmd, "SET_CORE_OPTION",
+            "a core option key and a value");
+      return false;
+   }
+   if ((size_t)(sp - arg) >= sizeof(key))
+   {
+      command_reply_error(cmd, "SET_CORE_OPTION", "no such core option");
+      return false;
+   }
+   memcpy(key, arg, (size_t)(sp - arg));
+   key[sp - arg] = '\0';
+   while (*sp == ' ')
+      sp++;
+
+   if (!command_core_option_find(cmd, "SET_CORE_OPTION", key, &opt, &idx))
+      return false;
+   if (!core_option_manager_get_val_idx(opt, idx, sp, &val_idx))
+   {
+      command_reply_error(cmd, "SET_CORE_OPTION",
+            "%s does not take %s; GET_CORE_OPTION %s lists what it takes",
+            key, sp, key);
+      return false;
+   }
+   if (opt->opts[idx].index != val_idx)
+      core_option_manager_set_val(opt, idx, val_idx, true);
+
+   /* the shape GET_CORE_OPTION gives, so one reading serves both */
+   if (!(_len = command_core_option_line(&opt->opts[idx], reply,
+               sizeof(reply), false)))
+      _len = (size_t)snprintf(reply, sizeof(reply), "%s\t%s\n", key, sp);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 /* GET_CONFIG_PARAM <param name>
  *
  * The option that goes by this name, which GET_OPTION also reports;
@@ -2732,6 +2883,84 @@ static uint8_t *command_memory_get_pointer(
 
    *max_bytes = 0;
    return NULL;
+}
+
+/* @v in lowercase hexadecimal, whatever the width of size_t */
+static void command_hex(char *s, size_t v)
+{
+   char   tmp[24];
+   size_t n = 0;
+   do
+   {
+      tmp[n++] = "0123456789abcdef"[v & 15];
+      v      >>= 4;
+   } while (v);
+   while (n)
+      *s++ = tmp[--n];
+   *s = '\0';
+}
+
+/* GET_MEMORY_MAP
+ *
+ * The running core's memory map, one region per line, tab separated:
+ * the first system address READ_CORE_MEMORY takes in it, its length,
+ * its select and disconnect masks (all hexadecimal), what it holds
+ * (system, save, video or other), rw, ro, or none when nothing backs
+ * it, its byte order, and its address space name. */
+bool command_get_memory_map(command_t *cmd, const char *arg)
+{
+   unsigned i;
+   size_t _len                     = 0;
+   char *reply;
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   const rarch_memory_map_t *mmap  = runloop_st ? &runloop_st->system.mmaps
+                                                : NULL;
+
+   if (!mmap || !mmap->num_descriptors)
+   {
+      command_reply_error(cmd, "GET_MEMORY_MAP",
+            "the running core has no memory map");
+      return false;
+   }
+   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   {
+      command_reply_error(cmd, "GET_MEMORY_MAP", "out of memory");
+      return false;
+   }
+
+   for (i = 0; i < mmap->num_descriptors; i++)
+   {
+      const struct retro_memory_descriptor *d = &mmap->descriptors[i].core;
+      const char *kind   = (d->flags & RETRO_MEMDESC_SYSTEM_RAM) ? "system"
+                         : (d->flags & RETRO_MEMDESC_SAVE_RAM)   ? "save"
+                         : (d->flags & RETRO_MEMDESC_VIDEO_RAM)  ? "video"
+                         : "other";
+      const char *access = !d->ptr ? "none"
+                         : (d->flags & RETRO_MEMDESC_CONST) ? "ro" : "rw";
+      char start[24], len[24], sel[24], disc[24];
+      int n;
+      command_hex(start,      d->start);
+      command_hex(len,        d->len);
+      command_hex(sel,        d->select);
+      command_hex(disc,       d->disconnect);
+      n = snprintf(reply + _len, COMMAND_LIST_REPLY_MAX + 1 - _len,
+            "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            start, len, sel, disc, kind, access,
+            (d->flags & RETRO_MEMDESC_BIGENDIAN) ? "big" : "little",
+            d->addrspace ? d->addrspace : "");
+      if (n < 0 || (size_t)n >= COMMAND_LIST_REPLY_MAX + 1 - _len)
+      {
+         free(reply);
+         command_reply_error(cmd, "GET_MEMORY_MAP",
+               "the map did not fit one reply, stopping at region %u", i);
+         return false;
+      }
+      _len += (size_t)n;
+   }
+
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return true;
 }
 
 bool command_get_status(command_t *cmd, const char* arg)

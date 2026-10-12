@@ -541,6 +541,10 @@ struct cmd_action_map
 bool command_get_option(command_t *cmd, const char *arg);
 bool command_set_option(command_t *cmd, const char *arg);
 
+/* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
+bool command_get_core_option(command_t *cmd, const char *arg);
+bool command_set_core_option(command_t *cmd, const char *arg);
+
 /* Replies with a failure and why, and marks the reply as one. The text
  * opens with @name and ERROR, as a deferred reply's does. */
 void command_reply_error(command_t *cmd, const char *name,
@@ -581,6 +585,7 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
+bool command_get_memory_map(command_t *cmd, const char *arg);
 bool command_load_core(command_t *cmd, const char* arg);
 bool command_start_core(command_t *cmd, const char* arg);
 bool command_load_content(command_t *cmd, const char* arg);
@@ -614,6 +619,18 @@ static const struct cmd_param cmd_params_option_set[] = {
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "state", "The state to put it in.",
       CMD_PARAM_STRING, true, NULL, "on|off", NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_core_option[] = {
+   { "option", "A core option key, as GET_CORE_OPTION with no argument "
+      "lists it.", CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_core_option_set[] = {
+   { "option", "A core option key, as GET_CORE_OPTION with no argument "
+      "lists it.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "value", "One of the values GET_CORE_OPTION with the key lists.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_config[] = {
@@ -682,6 +699,8 @@ static const struct cmd_action_map action_map[] = {
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
+   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
+   { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL },
    { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist },
@@ -693,6 +712,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 #endif
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
