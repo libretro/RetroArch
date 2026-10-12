@@ -273,6 +273,14 @@ EXACT_HW = {'gl': ('off', 'gl_compat'),
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
+# gl takes GLSL presets keeping no frames: views through two passes,
+# the first into a framebuffer at the view's size or its placement's,
+# and through one, each from a copy.
+GL_PRESETS = [('-preset', os.path.join(HERE, 'pass.glslp')),
+              ('-preset-viewport', os.path.join(HERE, 'pass_viewport.glslp')),
+              ('-preset-one', os.path.join(HERE, 'pass_one.glslp'))]
+GL_PRESET_CASES = ('3ds-sbs-full', '3ds-top-bottom', '3ds-anaglyph',
+                   '3ds-interlaced', 'ds-horizontal')
 # Drivers whose views' presets read a software frame's views from copies:
 # their chains are the main chain's, which reads a software frame whole.
 COPY_SW_VIEWS = ('d3d11', 'd3d12')
@@ -294,6 +302,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl', 'glcore', 'vulkan', 'd3d11', 'd3d12')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
+GL_PRESET_RE = re.compile(r'\[GL\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
 WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')
 # The core's 2D maps, as (x, y, width, height) in the packed frame.
@@ -1279,6 +1288,16 @@ def driver_jobs(retroarch, root, driver):
                                    else ' (hw ' + hw + ')'), errors), \
             bool(errors)
 
+    def gl_preset(case, suffix, preset):
+        name, mapopt, settings, points = case
+        c = (name + suffix, mapopt,
+             dict(settings, video_shader_enable='true'), points)
+        errors = run_case(retroarch, root, driver, c,
+                          args=('--set-shader=' + preset,))
+        if not direct_drawn(case_dir(root, driver, c[0]), GL_PRESET_RE):
+            errors.append('views not drawn through the preset')
+        return report('%s/%s' % (driver, c[0]), errors), bool(errors)
+
     def exact(case):
         hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
         copy = 'glCopyImageSubData' if driver == 'glcore' else None
@@ -1288,6 +1307,9 @@ def driver_jobs(retroarch, root, driver):
         if driver == 'glcore':
             runs.append(('-preset-blit', NO_COPY_IMAGE,
                          'framebuffer blits', HISTORY_PRESET))
+        if driver == 'gl':
+            runs += [(suffix, None, None, preset)
+                     for suffix, preset in GL_PRESETS]
         first, lines, failed = None, [], 0
         for suffix, env_extra, path, preset in runs:
             errors, rows = run_exact_case(
@@ -1399,6 +1421,10 @@ def driver_jobs(retroarch, root, driver):
         runs += [(case, 'vulkan') for case in VULKAN_CROP_CASES]
     jobs += [lambda c=c, hw=hw: plain(c, hw)
              for c, hw in runs if wanted(c[0])]
+    jobs += [lambda c=c, x=x, p=p: gl_preset(c, x, p)
+             for c in (CASES if driver == 'gl' else [])
+             if c[0] in GL_PRESET_CASES and wanted(c[0])
+             for x, p in GL_PRESETS]
     jobs += [lambda c=c: exact(c) for c in EXACT_CASES
              if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]
     jobs += [lambda p=p, i=i, t=t: rect(p, i, t)

@@ -268,9 +268,10 @@ struct gl2
    } scrgb;
 
    /* Views, drawn straight from the frame as the stock shader draws
-    * it; with a preset the frame is drawn whole. A view's stock chain
-    * is the driver itself. The canvas holds both eyes for anaglyph and
-    * interlaced, the UI layer the UI drawn once for both eyes. */
+    * it, or with a preset through its passes, one view after another.
+    * A view's chain is the driver itself. The canvas holds both eyes
+    * for anaglyph and interlaced, the UI layer the UI drawn once for
+    * both eyes. */
    struct
    {
       video_views_chains_t  chains;
@@ -283,13 +284,18 @@ struct gl2
       struct gl2_views_prog layer;
       struct gl2_views_prog anaglyph;
       struct gl2_views_prog interlaced;
+      /* With a preset each view is drawn from a copy of its own */
+      GLuint                tex[RETRO_VIDEO_VIEWS_MAX];
+      unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX];
+      GLuint                copy_fbo;
       GLuint                vbo;
       /* For get_flags on the main thread: whether views may be drawn,
        * and whether the last frame with a map was drawn whole. */
       retro_atomic_int_t    allowed;
       retro_atomic_int_t    fallback;
-      /* A shader preset is loaded: views are then drawn whole. */
+      /* A shader preset is loaded */
       bool                  preset;
+      bool                  preset_seen;
       bool                  tried;
       bool                  failed;
       bool                  active;

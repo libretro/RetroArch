@@ -5399,19 +5399,23 @@ static void gl2_frame_fit_textures(gl2_t *gl, unsigned width,
 struct gl2_views_draw
 {
    const video_frame_info_t *video_info;
+   GLuint target;
    unsigned target_height;
+   unsigned frame_count;
 };
 
 static void gl2_views_draw_direct(gl2_t *gl,
       const struct gl2_views_draw *d, unsigned view,
       const video_views_rect_t *dst, const video_views_rect_t *cut);
+static void gl2_views_draw_pass(gl2_t *gl, const struct gl2_views_draw *d,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
 static bool gl2_views_target_make(gl2_t *gl, struct gl2_views_fbo *t,
       unsigned dims);
 static bool gl2_views_target_retire(gl2_t *gl, struct gl2_views_fbo *t);
 
-/* The views compositor, with these calls bound in. Views are drawn
- * straight from the frame, so their chain is the driver itself, never
- * drawn. */
+/* The views compositor, with these calls bound in. A view's chain is
+ * the driver: with a preset its passes are drawn for one view at a
+ * time, from that view's copy. */
 #define VV_FN(name)                     gl2_vv_##name
 #define VV_DRV                          gl2_t
 #define VV_CHAIN                        void
@@ -5419,7 +5423,7 @@ static bool gl2_views_target_retire(gl2_t *gl, struct gl2_views_fbo *t);
 #define VV_SYNC_PARAMS(drv, c)          ((void)0)
 #define VV_DRAW                         struct gl2_views_draw
 #define VV_DIRECT(p, d, v, r, c)        gl2_views_draw_direct(p, d, v, r, c)
-#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_PASS(p, d, f, r, c, a)       gl2_views_draw_pass(p, d, r, c)
 #define VV_TARGET                       struct gl2_views_fbo
 #define VV_TARGET_MAKE(drv, t, dims)    gl2_views_target_make(drv, t, dims)
 #define VV_TARGET_RETIRE(drv, t)        gl2_views_target_retire(drv, t)
@@ -5585,6 +5589,22 @@ static bool gl2_views_target_retire(gl2_t *gl, struct gl2_views_fbo *t)
    return true;
 }
 
+/* The views' copies let go */
+static void gl2_views_free_copies(gl2_t *gl)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (gl->views.tex[i])
+         glDeleteTextures(1, &gl->views.tex[i]);
+      gl->views.tex[i]      = 0;
+      gl->views.tex_dims[i] = 0;
+   }
+   if (gl->views.copy_fbo)
+      gl2_delete_fb(1, &gl->views.copy_fbo);
+   gl->views.copy_fbo = 0;
+}
+
 static void gl2_views_release(gl2_t *gl)
 {
    if (gl->views.rect.prog)
@@ -5597,6 +5617,7 @@ static void gl2_views_release(gl2_t *gl)
       glDeleteProgram(gl->views.interlaced.prog);
    if (gl->views.vbo)
       glDeleteBuffers(1, &gl->views.vbo);
+   gl2_views_free_copies(gl);
    gl->views.rect.prog       = 0;
    gl->views.layer.prog      = 0;
    gl->views.anaglyph.prog   = 0;
@@ -5755,6 +5776,7 @@ static void gl2_views_draw_direct(gl2_t *gl,
    gl2_views_gl_rect(dst, d->target_height, vp);
    gl2_views_gl_rect(cut, d->target_height, sc);
    glViewport(vp[0], vp[1], vp[2], vp[3]);
+   glEnable(GL_SCISSOR_TEST);
    glScissor(sc[0], sc[1], sc[2], sc[3]);
    glUseProgram(gl->views.rect.prog);
    if (gl->views.rect.loc_clamp >= 0)
@@ -5762,17 +5784,305 @@ static void gl2_views_draw_direct(gl2_t *gl,
             s0 + 0.5f / tw, MIN(t0, t1) + 0.5f / th,
             s1 - 0.5f / tw, MAX(t0, t1) - 0.5f / th);
    gl2_views_quad(gl, &gl->views.rect, &gl->mvp, coords);
+   glDisable(GL_SCISSOR_TEST);
+}
+
+/* The frame's rows of view v as texture coordinates: those at its top
+ * and at its bottom */
+static void gl2_views_rows(const gl2_t *gl, const struct retro_video_view *v,
+      float *top, float *bottom)
+{
+   float th      = gl->tex_info.tex_size[1];
+   float frame_h = gl->tex_info.input_size[1];
+   /* A hardware frame's rows count from its bottom */
+   if (gl->vertex_ptr == vertexes)
+   {
+      *top    = (frame_h - (float)v->y) / th;
+      *bottom = (frame_h - (float)(v->y + v->height)) / th;
+   }
+   else
+   {
+      *top    = (float)v->y / th;
+      *bottom = (float)(v->y + v->height) / th;
+   }
+}
+
+/* View i copied out of the frame into a texture of its size, its top
+ * row first as a software frame's: the preset reads it as it would a
+ * frame of that size. False when it can't be. */
+static bool gl2_views_copy(gl2_t *gl, unsigned i,
+      const struct retro_video_view *v)
+{
+   GLfloat coords[8];
+   float top, bottom;
+   bool ok;
+   unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+   float tw      = gl->tex_info.tex_size[0];
+   float th      = gl->tex_info.tex_size[1];
+   float s0      = (float)v->x / tw;
+   float s1      = (float)(v->x + v->width) / tw;
+
+   if (!gl->views.tex[i] || gl->views.tex_dims[i] != dims)
+   {
+      if (!gl->views.tex[i])
+         glGenTextures(1, &gl->views.tex[i]);
+      glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, v->width, v->height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      gl->views.tex_dims[i] = dims;
+   }
+   /* As the frame's textures are, for the preset's first pass */
+   glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+
+   if (!gl->views.copy_fbo)
+      gl2_gen_fb(1, &gl->views.copy_fbo);
+   gl2_bind_fb(gl->views.copy_fbo);
+   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, gl->views.tex[i], 0);
+   ok = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
+      == RARCH_GL_FRAMEBUFFER_COMPLETE;
+   if (ok)
+   {
+      /* One texel a pixel: each sample lands on a texel's centre. The
+       * target's bottom row, GL's first, takes the view's top. */
+      gl2_views_rows(gl, v, &top, &bottom);
+      coords[0] = s0;
+      coords[1] = top;
+      coords[2] = s1;
+      coords[3] = top;
+      coords[4] = s0;
+      coords[5] = bottom;
+      coords[6] = s1;
+      coords[7] = bottom;
+      glViewport(0, 0, v->width, v->height);
+      glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+      glUseProgram(gl->views.rect.prog);
+      if (gl->views.rect.loc_clamp >= 0)
+         glUniform4f(gl->views.rect.loc_clamp, 0.0f, 0.0f, 1.0f, 1.0f);
+      gl2_views_quad(gl, &gl->views.rect, &gl->mvp_no_rot, coords);
+   }
+   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, 0, 0);
+   return ok;
+}
+
+/* Whether the preset can draw each view through its passes, one view
+ * after another: its passes keep nothing from one draw to the next -
+ * no frame history, no feedback - and its first takes no mipmaps. */
+static bool gl2_views_preset_ok(const gl2_t *gl)
+{
+   return (gl->flags & GL2_FLAG_HAVE_FBO)
+      && !(gl->flags & (GL2_FLAG_FBO_FEEDBACK_ENABLE
+            | GL2_FLAG_TEXTURE_MIPMAP))
+      && !gl->shader->get_prev_textures(gl->shader_data);
+}
+
+/* The preset's last pass, or its only one, over @dst, cut to @cut, for
+ * the view whose passes were drawn last (gl2_views_preset_view) */
+static void gl2_views_draw_pass(gl2_t *gl, const struct gl2_views_draw *d,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   GLint vp[4], sc[4];
+   video_shader_ctx_params_t params;
+   static GLfloat fbo_coords[8] = { 0.0f, 0.0f, 0.0f, 0.0f,
+                                    0.0f, 0.0f, 0.0f, 0.0f };
+   struct video_tex_info fbo_info[GFX_MAX_SHADERS];
+   gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+      gl->renderchain_data;
+   unsigned pass                 = 1;
+   unsigned i;
+
+   if (d->target)
+      gl2_bind_fb(d->target);
+   else
+      gl2_renderchain_bind_backbuffer();
+   gl2_views_gl_rect(dst, d->target_height, vp);
+   gl2_views_gl_rect(cut, d->target_height, sc);
+
+   params.info          = &gl->tex_info;
+   params.dims          = VIDEO_SCALE_PACK(
+         (unsigned)gl->tex_info.input_size[0],
+         (unsigned)gl->tex_info.input_size[1]);
+   params.tex_dims      = VIDEO_SCALE_PACK(
+         (unsigned)gl->tex_info.tex_size[0],
+         (unsigned)gl->tex_info.tex_size[1]);
+   params.fbo_info      = NULL;
+   params.fbo_info_cnt  = 0;
+   gl->coords.tex_coord = gl->tex_info.coord;
+   glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+   if (gl->flags & GL2_FLAG_FBO_INITED)
+   {
+      const struct video_fbo_rect *r;
+      pass = chain->fbo_pass + 1;
+      for (i = 0; i < (unsigned)chain->fbo_pass; i++)
+      {
+         r                      = &gl->fbo_rect[i];
+         fbo_info[i].tex        = chain->fbo_texture[i];
+         fbo_info[i].input_size[0] = VIDEO_SCALE_W(r->img_dims);
+         fbo_info[i].input_size[1] = VIDEO_SCALE_H(r->img_dims);
+         fbo_info[i].tex_size[0]   = VIDEO_SCALE_W(r->dims);
+         fbo_info[i].tex_size[1]   = VIDEO_SCALE_H(r->dims);
+         SET_TEXTURE_COORDS(fbo_info[i].coord,
+               (GLfloat)VIDEO_SCALE_W(r->img_dims) / VIDEO_SCALE_W(r->dims),
+               (GLfloat)VIDEO_SCALE_H(r->img_dims) / VIDEO_SCALE_H(r->dims));
+         fbo_info[i].coord[0] = 0.0f;
+         fbo_info[i].coord[1] = 0.0f;
+         fbo_info[i].coord[3] = 0.0f;
+         fbo_info[i].coord[4] = 0.0f;
+      }
+      r                    = &gl->fbo_rect[chain->fbo_pass - 1];
+      memcpy(fbo_coords, fbo_info[chain->fbo_pass - 1].coord,
+            sizeof(fbo_coords));
+      params.dims          = r->img_dims;
+      params.tex_dims      = r->dims;
+      params.fbo_info      = fbo_info;
+      params.fbo_info_cnt  = chain->fbo_pass;
+      gl->coords.tex_coord = fbo_coords;
+      glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[chain->fbo_pass - 1]);
+   }
+
+   gl->shader->use(gl, gl->shader_data, pass, true);
+   glViewport(vp[0], vp[1], vp[2], vp[3]);
+   glEnable(GL_SCISSOR_TEST);
+   glScissor(sc[0], sc[1], sc[2], sc[3]);
+   params.vp_dims       = dst->dims;
+   params.out_dims      = dst->dims;
+   params.frame_counter = d->frame_count;
+   params.swap_counter  = (unsigned int)d->video_info->swap_count;
+   params.prev_info     = gl->prev_info;
+   params.feedback_info = &gl->tex_info;
+   gl->shader->set_params(&params, gl->shader_data);
+   /* The copy's top row first, as a software frame's */
+   gl->coords.vertex    = vertexes_flipped;
+   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
+   gl->shader->set_coords(gl->shader_data, &gl->coords);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisable(GL_SCISSOR_TEST);
+}
+
+/* The preset's passes but its last drawn for view i, from its copy, at
+ * the size of @vp_dims, its first placement: gl->tex_info is the
+ * copy's until the caller puts the frame's back. */
+static void gl2_views_preset_view(gl2_t *gl,
+      const video_frame_info_t *video_info, unsigned i, unsigned vp_dims,
+      unsigned frame_count)
+{
+   static const GLfloat fbo_vertexes[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+   static GLfloat fbo_coords[8]         = { 0.0f, 0.0f, 0.0f, 0.0f,
+                                            0.0f, 0.0f, 0.0f, 0.0f };
+   video_shader_ctx_params_t params;
+   struct video_tex_info fbo_info[GFX_MAX_SHADERS];
+   const struct retro_video_view *v = &video_info->views.views[i];
+   gl2_renderchain_data_t *chain    = (gl2_renderchain_data_t*)
+      gl->renderchain_data;
+   unsigned dims                    = VIDEO_SCALE_PACK(v->width, v->height);
+   int p;
+
+   gl->tex_info.tex           = gl->views.tex[i];
+   gl->tex_info.input_size[0] = v->width;
+   gl->tex_info.input_size[1] = v->height;
+   gl->tex_info.tex_size[0]   = v->width;
+   gl->tex_info.tex_size[1]   = v->height;
+   SET_TEXTURE_COORDS(gl->tex_info.coord, 1.0f, 1.0f);
+   gl->tex_info.coord[0]      = 0.0f;
+   gl->tex_info.coord[1]      = 0.0f;
+   gl->tex_info.coord[3]      = 0.0f;
+   gl->tex_info.coord[4]      = 0.0f;
+
+   if (!(gl->flags & GL2_FLAG_FBO_INITED))
+      return;
+
+   gl2_renderchain_recompute_pass_sizes(gl, chain, dims, vp_dims);
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
+   if (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO)
+      glEnable(GL_FRAMEBUFFER_SRGB);
+#endif
+   gl->coords.vertex   = fbo_vertexes;
+   gl->coords.color    = gl->white_color_ptr;
+   gl->coords.vertices = 4;
+   params.vp_dims       = vp_dims;
+   params.frame_counter = frame_count;
+   params.swap_counter  = (unsigned int)video_info->swap_count;
+   params.info          = &gl->tex_info;
+   params.prev_info     = gl->prev_info;
+   params.feedback_info = &gl->tex_info;
+   for (p = 0; p < chain->fbo_pass; p++)
+   {
+      const struct video_fbo_rect *r = &gl->fbo_rect[p];
+      gl2_bind_fb(chain->fbo[p]);
+      gl->shader->use(gl, gl->shader_data, p + 1, true);
+      if (p == 0)
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+         params.dims          = dims;
+         params.tex_dims      = dims;
+         gl->coords.tex_coord = gl->tex_info.coord;
+      }
+      else
+      {
+         const struct video_fbo_rect *prev = &gl->fbo_rect[p - 1];
+         struct video_tex_info *info       = &fbo_info[p - 1];
+         info->tex           = chain->fbo_texture[p - 1];
+         info->input_size[0] = VIDEO_SCALE_W(prev->img_dims);
+         info->input_size[1] = VIDEO_SCALE_H(prev->img_dims);
+         info->tex_size[0]   = VIDEO_SCALE_W(prev->dims);
+         info->tex_size[1]   = VIDEO_SCALE_H(prev->dims);
+         memset(info->coord, 0, sizeof(info->coord));
+         SET_TEXTURE_COORDS(info->coord,
+               (GLfloat)VIDEO_SCALE_W(prev->img_dims)
+               / VIDEO_SCALE_W(prev->dims),
+               (GLfloat)VIDEO_SCALE_H(prev->img_dims)
+               / VIDEO_SCALE_H(prev->dims));
+         memcpy(fbo_coords, info->coord, sizeof(fbo_coords));
+         glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[p - 1]);
+         if (     gl->shader->mipmap_input(gl->shader_data, p + 1)
+               && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
+            glGenerateMipmap(GL_TEXTURE_2D);
+         params.dims          = prev->img_dims;
+         params.tex_dims      = prev->dims;
+         gl->coords.tex_coord = fbo_coords;
+      }
+      glViewport(0, 0, VIDEO_SCALE_W(r->img_dims), VIDEO_SCALE_H(r->img_dims));
+      glClear(GL_COLOR_BUFFER_BIT);
+      params.out_dims      = r->img_dims;
+      params.fbo_info      = p ? fbo_info : NULL;
+      params.fbo_info_cnt  = p;
+      gl->shader->set_params(&params, gl->shader_data);
+      gl->shader->set_coords(gl->shader_data, &gl->coords);
+      gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   }
+   if (     gl->shader->mipmap_input(gl->shader_data, chain->fbo_pass + 1)
+         && (gl->flags & GL2_FLAG_HAVE_MIPMAP))
+   {
+      glBindTexture(GL_TEXTURE_2D, chain->fbo_texture[chain->fbo_pass - 1]);
+      glGenerateMipmap(GL_TEXTURE_2D);
+   }
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
+   if (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO)
+      glDisable(GL_FRAMEBUFFER_SRGB);
+#endif
 }
 
 /* Whether this frame draws its views, with each drawn view's chain
- * picked; in *blend whether they draw into the canvas. */
+ * picked and the rectangle its first placement takes; in *blend
+ * whether they draw into the canvas, in *direct whether straight from
+ * the frame, else through the preset. */
 static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
-      const void *frame, bool *blend, void **chains)
+      const void *frame, bool *blend, bool *direct, void **chains,
+      video_views_rect_t *rects)
 {
-   video_views_rect_t rects[RETRO_VIDEO_VIEWS_MAX];
+   unsigned i;
    bool views;
    const video_views_layout_t *layout = &video_info->views_layout;
    bool offscreen = video_info->views.num_views && layout->offscreen;
+   bool stock     = !video_info->shader_active || !gl->views.preset;
 
    if (video_info->views.num_views && !gl->views.tried)
       gl2_views_init(gl);
@@ -5784,36 +6094,63 @@ static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
    /* A real frame without the blend modes frees the canvas. */
    if (frame && !offscreen)
       gl2_vv_target_drop(gl, &gl->views.canvas_target, &gl->views.canvas);
-   /* The frame drawn whole for a preset or one of its FBO passes. */
+   /* A preset that keeps frames from one draw to the next draws the
+    * frame whole. */
    views = video_info->views.num_views
       && gl2_views_allowed(gl)
-      && !gl->views.preset
-      && !(gl->flags & GL2_FLAG_FBO_INITED)
+      && (stock ? !(gl->flags & GL2_FLAG_FBO_INITED)
+                : gl2_views_preset_ok(gl))
       && video_views_fit_frame(&video_info->views, VIDEO_SCALE_PACK(
                (unsigned)gl->tex_info.input_size[0],
-               (unsigned)gl->tex_info.input_size[1]))
+               (unsigned)gl->tex_info.input_size[1]));
+   for (i = 0; i < gl->views.chains.count; i++)
+      gl->views.chains.preset[i] = gl;
+   views = views
       && gl2_vv_pick_chains(gl, &gl->views.chains, &video_info->views,
-            layout, true, *blend || !layout->offscreen,
+            layout, stock, *blend || !layout->offscreen,
             *blend ? layout->canvas_dims : video_info->dims, chains, rects);
-   *blend = views && *blend;
-   if (views && !gl->views.direct_seen)
+   *blend  = views && *blend;
+   *direct = views && stock;
+   if (*direct && !gl->views.direct_seen)
    {
       gl->views.direct_seen = true;
       RARCH_LOG("[GL] Views drawn straight from the frame.\n");
    }
+   if (views && !stock && !gl->views.preset_seen)
+   {
+      gl->views.preset_seen = true;
+      RARCH_LOG("[GL] Views drawn through the preset, each from a "
+            "copy.\n");
+   }
+   if (!views || stock)
+      gl2_views_free_copies(gl);
    return views;
 }
 
 /* Draws the frame's views into the back buffer, sized dims, or with
  * blend into the canvas, whose halves one pass then blends into the
- * back buffer. */
+ * back buffer: with direct straight from the frame, else each through
+ * the preset from a copy of it, one view after another. */
 static void gl2_views_render(gl2_t *gl,
-      const video_frame_info_t *video_info, void *const *chains, bool blend)
+      const video_frame_info_t *video_info, void *const *chains,
+      const video_views_rect_t *rects, bool blend, bool direct,
+      unsigned frame_count)
 {
    struct gl2_views_draw d;
    const video_views_layout_t *layout = &video_info->views_layout;
    unsigned dims                      = video_info->dims;
    unsigned target_dims               = blend ? layout->canvas_dims : dims;
+
+   /* The window's viewport and projection, which the preset's first
+    * framebuffer took (gl2_renderchain_start_render), as its last pass
+    * gives them back */
+   if (gl->flags & GL2_FLAG_FBO_INITED)
+      gl2_set_viewport(gl, gl->video_dims, false, true);
+
+   d.video_info    = video_info;
+   d.target        = blend ? gl->views.canvas.fbo : 0;
+   d.target_height = VIDEO_SCALE_H(target_dims);
+   d.frame_count   = frame_count;
 
    if (blend)
       gl2_bind_fb(gl->views.canvas.fbo);
@@ -5823,15 +6160,37 @@ static void gl2_views_render(gl2_t *gl,
    glDisable(GL_SCISSOR_TEST);
    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
    glClear(GL_COLOR_BUFFER_BIT);
-   glEnable(GL_SCISSOR_TEST);
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
 
-   d.video_info    = video_info;
-   d.target_height = VIDEO_SCALE_H(target_dims);
-   gl2_vv_draw_placements(gl, &d, layout, chains,
-         blend || !layout->offscreen, target_dims, true, blend);
-   glDisable(GL_SCISSOR_TEST);
+   if (direct)
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+      gl2_vv_draw_placements(gl, &d, layout, chains,
+            blend || !layout->offscreen, target_dims, true, blend);
+   }
+   else
+   {
+      unsigned i, j;
+      void *one[RETRO_VIDEO_VIEWS_MAX];
+      struct video_tex_info frame = gl->tex_info;
+      for (i = 0; i < video_info->views.num_views; i++)
+      {
+         if (     !chains[i]
+               || !gl2_views_copy(gl, i, &video_info->views.views[i]))
+            continue;
+         gl2_views_preset_view(gl, video_info, i, rects[i].dims,
+               frame_count);
+         for (j = 0; j < RETRO_VIDEO_VIEWS_MAX; j++)
+            one[j] = (j == i) ? chains[i] : NULL;
+         gl2_vv_draw_placements(gl, &d, layout, one,
+               blend || !layout->offscreen, target_dims, false, blend);
+         gl->tex_info = frame;
+      }
+      gl->coords.vertex    = gl->vertex_ptr;
+      gl->coords.tex_coord = gl->tex_info.coord;
+      gl->coords.color     = gl->white_color_ptr;
+      gl->coords.vertices  = 4;
+   }
 
    if (blend)
    {
@@ -5950,8 +6309,10 @@ static bool gl2_frame(void *data, const void *frame,
    bool views_per_eye                  = false;
 #ifdef GL2_VIEWS
    void *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
    bool views                          = false;
    bool views_blend                    = false;
+   bool views_direct                   = false;
    bool views_ui                       = false;
 #endif
 #if (defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)) \
@@ -6197,7 +6558,8 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #ifdef GL2_VIEWS
-   views = gl2_views_setup(gl, video_info, frame, &views_blend, view_chains);
+   views = gl2_views_setup(gl, video_info, frame, &views_blend,
+         &views_direct, view_chains, view_rects);
    /* gl->vp is the whole window while views draw. */
    if (views != gl->views.active)
    {
@@ -6208,7 +6570,8 @@ static bool gl2_frame(void *data, const void *frame,
          (video_info->views.num_views && !views) ? 1 : 0);
    gl2_views_publish(gl);
    if (views)
-      gl2_views_render(gl, video_info, view_chains, views_blend);
+      gl2_views_render(gl, video_info, view_chains, view_rects,
+            views_blend, views_direct, (unsigned)frame_count);
    else
 #endif
    {
