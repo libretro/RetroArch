@@ -213,6 +213,7 @@ appstore_cores=(
     geargrafx
     gearlynx
     gearsystem
+    geartowns
     genesis_plus_gx
     genesis_plus_gx_wide
     geolith
