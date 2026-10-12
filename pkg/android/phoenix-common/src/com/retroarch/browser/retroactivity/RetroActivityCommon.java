@@ -81,7 +81,6 @@ import java.util.Locale;
  * Class which provides common methods for RetroActivity related classes.
  */
 public class RetroActivityCommon extends NativeActivity
-        implements InputManager.InputDeviceListener
 {
   static {
     System.loadLibrary("retroarch-activity");
@@ -101,8 +100,9 @@ public class RetroActivityCommon extends NativeActivity
   public static final int REQUEST_CODE_OPEN_DOCUMENT_TREE = 0;
   /* Startup permission flow; distinct from the in-session all-files
    * re-ask loop on requestCode 124, which restarts the app on grant. */
-  private static final int REQUEST_CODE_STARTUP_ALL_FILES = 125;
   private static final int REQUEST_CODE_STARTUP_PERMISSIONS = 126;
+  private boolean mStartupSettingsPending;
+  private boolean mStartupSettingsPaused;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
@@ -176,25 +176,66 @@ public class RetroActivityCommon extends NativeActivity
    * after a module install, so two passes never delete and recreate
    * the same links at once. */
   private final Object mSymlinkLock = new Object();
+  private Object mInputDeviceListener;
+
+  /* Keep the API 16 interface off the activity loaded on Android 2.x. */
+  @TargetApi(16)
+  private static final class DeviceListener implements InputManager.InputDeviceListener
+  {
+    private final RetroActivityCommon activity;
+    private final InputManager manager;
+
+    DeviceListener(RetroActivityCommon activity)
+    {
+      this.activity = activity;
+      manager = (InputManager) activity.getSystemService(Context.INPUT_SERVICE);
+      manager.registerInputDeviceListener(this, null);
+    }
+
+    public void onInputDeviceAdded(int id) { activity.onInputDeviceAdded(id); }
+    public void onInputDeviceChanged(int id) { activity.onInputDeviceChanged(id); }
+    public void onInputDeviceRemoved(int id) { activity.onInputDeviceRemoved(id); }
+    void unregister() { manager.unregisterInputDeviceListener(this); }
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle state)
+  {
+    super.onSaveInstanceState(state);
+    state.putBoolean("startupSettingsPending", mStartupSettingsPending);
+  }
+
+  @Override
+  protected void onPause()
+  {
+    if (mStartupSettingsPending)
+      mStartupSettingsPaused = true;
+    super.onPause();
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    if (savedInstanceState != null)
+      mStartupSettingsPending = savedInstanceState.getBoolean("startupSettingsPending");
     /* The symlink pass walks the app data and native library trees,
      * which is disk I/O that does not belong on the UI thread.  Run
      * it on a worker and let it release its half of the startup gate
      * when done; the native side keeps waiting for it, so cores are
      * still in place before native core enumeration runs. */
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          cleanupSymlinks();
-          updateSymlinks();
-        } finally {
-          startupSymlinksDone();
+    if (Build.VERSION.SDK_INT >= 21)
+      new Thread(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            cleanupSymlinks();
+            updateSymlinks();
+          } finally {
+            startupSymlinksDone();
+          }
         }
-      }
-    }, "RetroArch-symlinks").start();
+      }, "RetroArch-symlinks").start();
+    else
+      startupSymlinksDone();
 
     if (Build.VERSION.SDK_INT >= 33) {
       registerReceiver(
@@ -208,8 +249,8 @@ public class RetroActivityCommon extends NativeActivity
         new IntentFilter(ACTION_USB_PERMISSION)
       );
     }
-    ((InputManager) getSystemService(Context.INPUT_SERVICE))
-            .registerInputDeviceListener(this, null);
+    if (Build.VERSION.SDK_INT >= 16)
+      mInputDeviceListener = new DeviceListener(this);
     /* Bind the hardware volume keys to the game audio stream;
      * previously done by the Java launcher activity. */
     setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -220,15 +261,18 @@ public class RetroActivityCommon extends NativeActivity
     /* super.onCreate has loaded the native library and started the
      * native thread; it now waits on the permission gate until this
      * resolves. */
-    resolveStartupPermissions();
+    if (!mStartupSettingsPending)
+      resolveStartupPermissions();
+    else
+      mStartupSettingsPaused = true;
   }
 
   @Override
   protected void onDestroy() {
     mTouchHapticHandler.removeCallbacks(mTouchHaptic);
     mTouchHapticPending.set(false);
-    ((InputManager) getSystemService(Context.INPUT_SERVICE))
-            .unregisterInputDeviceListener(this);
+    if (Build.VERSION.SDK_INT >= 16 && mInputDeviceListener != null)
+      ((DeviceListener) mInputDeviceListener).unregister();
     unregisterReceiver(mUsbPermissionReceiver);
     closeAllUsbConnections();
     PlayCoreManager.getInstance().onDestroy();
@@ -302,10 +346,11 @@ public class RetroActivityCommon extends NativeActivity
   private void resolveStartupPermissions()
   {
     boolean viaLauncher = getIntent() != null && getIntent().hasExtra("CONFIGFILE");
+    boolean granted = hasStoragePermission();
 
-    if (viaLauncher || isPlayStoreBuild() || hasStoragePermission())
+    if (viaLauncher || isPlayStoreBuild() || granted)
     {
-      startupPermissionResolved(hasStoragePermission());
+      startupPermissionResolved(granted);
       return;
     }
 
@@ -318,22 +363,29 @@ public class RetroActivityCommon extends NativeActivity
           @Override
           public void onClick(android.content.DialogInterface dialog, int which)
           {
+            mStartupSettingsPending = true;
+            mStartupSettingsPaused = false;
+            /* Settings may finish a redirect activity before the user
+             * responds. Resolve on return from its task, not a result. */
             try
             {
               Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
               intent.addCategory("android.intent.category.DEFAULT");
-              intent.setData(Uri.parse(String.format("package:%s", getPackageName())));
-              startActivityForResult(intent, REQUEST_CODE_STARTUP_ALL_FILES);
+              intent.setData(Uri.parse("package:" + getPackageName()));
+              intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              startActivity(intent);
             }
             catch (Exception e)
             {
               try
               {
                 Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                startActivityForResult(intent, REQUEST_CODE_STARTUP_ALL_FILES);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
               }
               catch (Exception e2)
               {
+                mStartupSettingsPending = false;
                 startupPermissionResolved(false);
               }
             }
@@ -380,14 +432,6 @@ public class RetroActivityCommon extends NativeActivity
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent)
   {
-    if (requestCode == REQUEST_CODE_STARTUP_ALL_FILES)
-    {
-      /* The Settings return carries no intent; resolve from the live
-       * state and proceed either way. */
-      startupPermissionResolved(hasStoragePermission());
-      return;
-    }
-
     if (requestCode == 124)
     {
       if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
@@ -859,11 +903,12 @@ public class RetroActivityCommon extends NativeActivity
   /* InputManager.InputDeviceListener — request USB permission as soon as a
    * supported controller is connected, before any rumble call can occur. */
 
-  @Override
   public void onInputDeviceAdded(int deviceId)
   {
     invalidateDeviceCaches(deviceId);
 
+    if (Build.VERSION.SDK_INT < 19)
+      return;
     UsbDevice usbDevice = findUsbDeviceForInputDevice(deviceId);
     if (usbDevice == null)
       return;
@@ -887,6 +932,8 @@ public class RetroActivityCommon extends NativeActivity
    */
   private void requestPermissionForConnectedSonyControllers()
   {
+    if (Build.VERSION.SDK_INT < 19)
+      return;
     UsbManager usbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
     if (usbManager == null)
       return;
@@ -905,19 +952,23 @@ public class RetroActivityCommon extends NativeActivity
   protected void onResume()
   {
     super.onResume();
+    if (mStartupSettingsPending && mStartupSettingsPaused)
+    {
+      mStartupSettingsPending = false;
+      mStartupSettingsPaused = false;
+      startupPermissionResolved(hasStoragePermission());
+    }
     /* Covers controllers connected at startup or while the activity was
      * backgrounded — cases where onInputDeviceAdded() never fires. */
     requestPermissionForConnectedSonyControllers();
   }
 
-  @Override
   public void onInputDeviceChanged(int deviceId)
   {
     /* The vibrator topology can change with the device. */
     invalidateDeviceCaches(deviceId);
   }
 
-  @Override
   public void onInputDeviceRemoved(int deviceId)
   {
     /* Close any cached USB connection so we don't hold a stale handle. */
@@ -1668,8 +1719,6 @@ public class RetroActivityCommon extends NativeActivity
    * @return true if this is a Play Store build, false otherwise
    */
   public boolean isPlayStoreBuild() {
-    Log.i("RetroActivity", "isPlayStoreBuild: " + BuildConfig.PLAY_STORE_BUILD);
-
     return BuildConfig.PLAY_STORE_BUILD;
   }
 
@@ -1679,8 +1728,6 @@ public class RetroActivityCommon extends NativeActivity
    * @return true if this is a Meta Quest build, false otherwise
    */
   public boolean isMetaQuestBuild() {
-    Log.i("RetroActivity", "isMetaQuestBuild: " + BuildConfig.META_QUEST_BUILD);
-
     return BuildConfig.META_QUEST_BUILD;
   }
 
@@ -1999,8 +2046,12 @@ public class RetroActivityCommon extends NativeActivity
     if(!isPlayStoreBuild()) return;
 
     synchronized (mSymlinkLock) {
-      traverseFilesystem(getFilesDir());
-      traverseFilesystem(new File(getApplicationInfo().nativeLibraryDir));
+      List<String> availableCores = Arrays.asList(getAvailableCores());
+      SharedPreferences prefs = UserPreferences.getPreferences(this);
+      String corePath = getCorePath();
+      traverseFilesystem(getFilesDir(), availableCores, prefs, corePath);
+      traverseFilesystem(new File(getApplicationInfo().nativeLibraryDir),
+              availableCores, prefs, corePath);
     }
   }
 
@@ -2019,13 +2070,12 @@ public class RetroActivityCommon extends NativeActivity
    * @param cores List of cores to update.
    * @param filenames List of filenames to update.
    */
-  private void traverseFilesystem(File file) {
+  private void traverseFilesystem(File file, List<String> availableCores,
+          SharedPreferences prefs, String corePath) {
     if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
 
     File[] list = file.listFiles();
     if(list == null) return;
-
-    List<String> availableCores = Arrays.asList(getAvailableCores());
 
     // Check each file in a directory to see if it's a native library.
     for(int i = 0; i < list.length; i++) {
@@ -2037,11 +2087,10 @@ public class RetroActivityCommon extends NativeActivity
         String core = name.subSequence(3, name.length() - 3).toString();
         String filename = child.getAbsolutePath();
 
-        SharedPreferences prefs = UserPreferences.getPreferences(this);
         if(!prefs.getBoolean("core_deleted_" + core, false)
                 && availableCores.contains(core)) {
           // Generate the destination filename and delete any existing symlinks / cores
-          String newFilename = getCorePath() + core + "_libretro_android.so";
+          String newFilename = corePath + core + "_libretro_android.so";
           new File(newFilename).delete();
 
           try {
@@ -2050,9 +2099,9 @@ public class RetroActivityCommon extends NativeActivity
             // Symlink failed to be created. Should never happen.
           }
         }
-      } else if(file.isDirectory()) {
+      } else if(child.isDirectory()) {
         // Found another directory, so traverse it
-        traverseFilesystem(child);
+        traverseFilesystem(child, availableCores, prefs, corePath);
       }
     }
   }
