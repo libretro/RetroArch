@@ -138,9 +138,10 @@ enum slang_rect_result slang_rect_remap(const uint32_t *in, size_t in_len,
  * three vec4s placed as struct slang_rect_place describes: in the push
  * constants past both stages' own, or in the uniform block when those
  * would come out past SLANG_RECT_PUSH_LIMIT. @vs and @fs are malloc'd
- * and replaced by the rewritten stages. False, the stages left as they
- * are, when a stage reads the frame in a way that cannot be kept. */
-bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
+ * and replaced by the rewritten stages: REWRITTEN when either was,
+ * UNCHANGED when neither reads the frame, UNSUPPORTED - the stages left
+ * as they are - when a stage reads it in a way that cannot be kept. */
+enum slang_rect_result slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
       uint32_t **fs, size_t *fs_words,
       bool source, bool linear, enum slang_rect_wrap wrap);
 

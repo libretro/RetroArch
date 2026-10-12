@@ -1466,14 +1466,19 @@ bool slang_process(
    if (!*pass->alias && output.meta.name[0])
       strlcpy(pass->alias, output.meta.name, sizeof(pass->alias) - 1);
 
-   /* Every pass samples the frame as the first does. Its filter must be
-    * the preset's own: an unspecified one follows the smooth setting,
-    * which the driver can change without building the preset again. */
+   /* Every pass samples the frame as the first does; one with the
+    * filter unspecified as the smooth setting the driver gives. */
    out->frame_in_place = false;
-   if (     semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]
-         && shader_info->pass[0].filter != RARCH_FILTER_UNSPEC)
+   out->frame_unspec   = false;
+   out->frame_smooth   = semantics_map->frame_smooth;
+   if (semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT])
    {
-      enum slang_rect_wrap wrap = SLANG_RECT_WRAP_BORDER;
+      enum slang_rect_result res;
+      enum slang_rect_wrap   wrap   = SLANG_RECT_WRAP_BORDER;
+      unsigned               filter = shader_info->pass[0].filter;
+      if (filter == RARCH_FILTER_UNSPEC)
+         filter = semantics_map->frame_smooth
+            ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       switch (shader_info->pass[0].wrap)
       {
          case RARCH_WRAP_EDGE:
@@ -1488,11 +1493,13 @@ bool slang_process(
          default:
             break;
       }
-      out->frame_in_place = slang_rect_remap_pass(
+      res = slang_rect_remap_pass(
             &output.vertex, &output.vertex_len,
             &output.fragment, &output.fragment_len,
-            pass_number == 0,
-            shader_info->pass[0].filter == RARCH_FILTER_LINEAR, wrap);
+            pass_number == 0, filter == RARCH_FILTER_LINEAR, wrap);
+      out->frame_in_place = res != SLANG_RECT_UNSUPPORTED;
+      out->frame_unspec   = res == SLANG_RECT_REWRITTEN
+         && shader_info->pass[0].filter == RARCH_FILTER_UNSPEC;
    }
 
    out->format          = output.meta.rt_format;

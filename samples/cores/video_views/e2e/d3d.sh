@@ -43,10 +43,11 @@ if [ "$native" = 0 ] && [ -z "${DISPLAY:-}" ]; then
 fi
 export WINEDEBUG=-all WINEDLLOVERRIDES="d3dcompiler_47=n"
 
-# run_ra <dir> <threaded> <preset path or empty>: RetroArch on the core
-# with <dir>/opts.cfg; its screenshot at the last frame in <dir>/shot.png.
+# run_ra <dir> <threaded> <preset path or empty> [smooth]: RetroArch on
+# the core with <dir>/opts.cfg; its screenshot at the last frame in
+# <dir>/shot.png.
 run_ra() {
-   local d=$1 threaded=$2 preset=$3
+   local d=$1 threaded=$2 preset=$3 smooth=${4:-false}
    {
       echo "video_driver = \"$driver\""
       echo 'input_joypad_driver = "null"'
@@ -56,7 +57,7 @@ run_ra() {
       echo 'video_windowed_position_width = "1600"'
       echo 'video_windowed_position_height = "960"'
       echo 'video_scale_integer = "true"'
-      echo 'video_smooth = "false"'
+      echo "video_smooth = \"$smooth\""
       echo 'video_gpu_screenshot = "true"'
       echo 'video_waitable_swapchains = "false"'
       echo 'config_save_on_exit = "false"'
@@ -118,24 +119,30 @@ done
 # regular maximum. Each preset runs on that and on the software frame,
 # which comes on its own; the screenshots must match, linear filtering
 # with border wrap to within a step (its blend of the edge texels with
-# the border is the shader's). A filter the preset leaves to the smooth
-# setting has the frame copied out instead.
-# preset:read in place:tolerance
-for case in rect_nearest:1:0 rect_nearest_edge:1:0 rect_nearest_repeat:1:0 \
-            rect_nearest_mirror:1:0 rect_linear:1:0 rect_linear_border:1:1 \
-            rect_full:1:0 rect_two:1:0 rect_unspec:0:0; do
-   IFS=: read -r preset want tol <<EOF
+# the border is the shader's). A filter the preset leaves unspecified is
+# read as the smooth setting has it, each way.
+# preset:read in place:tolerance:smooth
+for case in rect_nearest:1:0:false rect_nearest_edge:1:0:false \
+            rect_nearest_repeat:1:0:false rect_nearest_mirror:1:0:false \
+            rect_linear:1:0:false rect_linear_border:1:1:false \
+            rect_full:1:0:false rect_two:1:0:false \
+            rect_unspec:1:0:false rect_unspec:1:1:true; do
+   IFS=: read -r preset want tol smooth <<EOF
 $case
 EOF
+   name=$preset
+   [ "$smooth" = false ] || name=$preset-smooth
+   # d3d12's passes filter an unspecified filter linearly either way.
+   [ "$driver.$preset" != d3d12.rect_unspec ] || tol=1
    for hw in off "$driver"; do
-      d="$out/rect-$hw-$preset"
+      d="$out/rect-$hw-$name"
       rm -rf "$d"; mkdir -p "$d"
       printf 'video_views_test_map = "ds"\nvideo_views_test_hw = "%s"\nvideo_views_test_pattern = "noise"\nvideo_views_test_max = "large"\n' \
          "$hw" > "$d/opts.cfg"
-      run_ra "$d" false "$here/$preset.slangp"
+      run_ra "$d" false "$here/$preset.slangp" "$smooth"
    done
-   if python3 - "$here/run.py" "$out/rect-off-$preset" \
-         "$out/rect-$driver-$preset" "$want" "$tol" <<'PY'
+   if python3 - "$here/run.py" "$out/rect-off-$name" \
+         "$out/rect-$driver-$name" "$want" "$tol" <<'PY'
 import importlib.util, os, sys
 spec = importlib.util.spec_from_file_location('run', sys.argv[1])
 r = importlib.util.module_from_spec(spec)
@@ -166,8 +173,8 @@ for e in errors:
     print('    ' + e)
 sys.exit(1 if errors else 0)
 PY
-   then echo "pass $driver/rect-$preset"
-   else echo "FAIL $driver/rect-$preset"; failed=$((failed + 1))
+   then echo "pass $driver/rect-$name"
+   else echo "FAIL $driver/rect-$name"; failed=$((failed + 1))
    fi
 done
 

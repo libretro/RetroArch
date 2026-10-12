@@ -1910,7 +1910,7 @@ end:
    return res;
 }
 
-bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
+enum slang_rect_result slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
       uint32_t **fs, size_t *fs_words,
       bool source, bool linear, enum slang_rect_wrap wrap)
 {
@@ -1929,7 +1929,7 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
    vend = slang_rect_block_end(*vs, *vs_words, &place);
    fend = slang_rect_block_end(*fs, *fs_words, &place);
    if (vend == ~0u || fend == ~0u)
-      return false;
+      return SLANG_RECT_UNSUPPORTED;
    place.offset = vend > fend ? vend : fend;
 
    /* Push constants are scarce: the uniform block takes what does not
@@ -1940,13 +1940,13 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
                   &place.set, &place.binding)
             && !slang_rect_uniform_block(*fs, *fs_words,
                   &place.set, &place.binding))
-         return false;
+         return SLANG_RECT_UNSUPPORTED;
       place.where  = SLANG_RECT_UBO;
       place.offset = 0;
       vend = slang_rect_block_end(*vs, *vs_words, &place);
       fend = slang_rect_block_end(*fs, *fs_words, &place);
       if (vend == ~0u || fend == ~0u)
-         return false;
+         return SLANG_RECT_UNSUPPORTED;
       place.offset = vend > fend ? vend : fend;
    }
 
@@ -1958,7 +1958,7 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
    {
       free(vout);
       free(fout);
-      return false;
+      return SLANG_RECT_UNSUPPORTED;
    }
    if (vres == SLANG_RECT_REWRITTEN)
    {
@@ -1972,7 +1972,8 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
       *fs       = fout;
       *fs_words = fout_len;
    }
-   return true;
+   return (vres == SLANG_RECT_REWRITTEN || fres == SLANG_RECT_REWRITTEN)
+      ? SLANG_RECT_REWRITTEN : SLANG_RECT_UNCHANGED;
 }
 
 void slang_rect_values(float v[12], unsigned dims, unsigned origin,

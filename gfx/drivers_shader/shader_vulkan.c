@@ -3655,11 +3655,12 @@ static void slang_pass_read_frame_in_place(struct slang_pass *pass)
    if (pass->frame_tried)
       return;
    pass->frame_tried = true;
-   pass->frame_copy  = !slang_rect_remap_pass(
+   pass->frame_copy  = slang_rect_remap_pass(
          &pass->vertex_shader, &pass->num_vertex_shader,
          &pass->fragment_shader, &pass->num_fragment_shader,
          pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap);
+         pass->common->frame_wrap)
+         == SLANG_RECT_UNSUPPORTED;
 }
 
 static bool slang_pass_build(struct slang_pass *pass)

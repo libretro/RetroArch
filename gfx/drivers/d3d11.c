@@ -425,6 +425,10 @@ typedef struct
    {
       float values[12];
       bool  seen;
+      /* The smooth setting, which a preset leaving the first pass's
+       * filter unspecified is built for; rebuild: it changed. */
+      bool  smooth;
+      bool  rebuild;
    } frame_rect;
    /* A software frame for the stock chain is written straight into
     * this dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
@@ -2643,6 +2647,9 @@ static void d3d11_set_filtering(void* data, unsigned index,
    int i;
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
 
+   d3d11->frame_rect.rebuild |= d3d11->frame_rect.smooth != smooth;
+   d3d11->frame_rect.smooth   = smooth;
+
    if (smooth)
    {
       for (i = 0; i < RARCH_WRAP_MAX; i++)
@@ -2783,6 +2790,33 @@ typedef struct d3d11_deferred_state
    enum d3d11_feature_level_hint feat_level_hint;
 } d3d11_deferred_state_t;
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+/* Feature Level 11.0 and up should all support Shader Model 5.0 */
+static unsigned d3d11_shader_model(d3d11_video_t *d3d11,
+      enum d3d11_feature_level_hint *hint)
+{
+   switch (d3d11->supportedFeatureLevel)
+   {
+      case D3D_FEATURE_LEVEL_11_0:
+         *hint = D3D11_FEATURE_LEVEL_HINT_11_0;
+         return 50;
+      case D3D_FEATURE_LEVEL_11_1:
+         *hint = D3D11_FEATURE_LEVEL_HINT_11_1;
+         return 50;
+      case D3D_FEATURE_LEVEL_12_0:
+         *hint = D3D11_FEATURE_LEVEL_HINT_12_0;
+         return 50;
+      case D3D_FEATURE_LEVEL_12_1:
+         *hint = D3D11_FEATURE_LEVEL_HINT_12_1;
+         return 50;
+      default:
+         break;
+   }
+   *hint = D3D11_FEATURE_LEVEL_HINT_DONTCARE;
+   return 40;
+}
+#endif
+
 static bool d3d11_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
 {
@@ -2816,31 +2850,7 @@ static bool d3d11_shader_load_begin(void *data,
       return false;
    }
 
-   /* Determine shader model from feature level */
-   ds->shader_model    = 40;
-   ds->feat_level_hint = D3D11_FEATURE_LEVEL_HINT_DONTCARE;
-
-   switch (d3d11->supportedFeatureLevel)
-   {
-      case D3D_FEATURE_LEVEL_11_0:
-         ds->shader_model    = 50;
-         ds->feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_0;
-         break;
-      case D3D_FEATURE_LEVEL_11_1:
-         ds->shader_model    = 50;
-         ds->feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_1;
-         break;
-      case D3D_FEATURE_LEVEL_12_0:
-         ds->shader_model    = 50;
-         ds->feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_0;
-         break;
-      case D3D_FEATURE_LEVEL_12_1:
-         ds->shader_model    = 50;
-         ds->feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_1;
-         break;
-      default:
-         break;
-   }
+   ds->shader_model = d3d11_shader_model(d3d11, &ds->feat_level_hint);
 
    deferred->total_passes = ds->shader_preset->passes;
 
@@ -2959,6 +2969,7 @@ static void d3d11_frame_rect_semantics(d3d11_video_t *d3d11,
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d11->frame_rect.values;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d11->frame_rect.values + 4;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d11->frame_rect.values + 8;
+   map->frame_smooth                             = d3d11->frame_rect.smooth;
 }
 #endif
 
@@ -3243,6 +3254,8 @@ static bool d3d11_shader_load_step(void *data,
 #endif
 
    d3d11->flags |= D3D11_ST_FLAG_INIT_HISTORY | D3D11_ST_FLAG_RESIZE_RTS;
+   /* Passes built before a change of the smooth setting. */
+   d3d11->frame_rect.rebuild = true;
 
    deferred->state = SHADER_LOAD_DONE;
    RARCH_LOG("[D3D11] Deferred: shader loaded successfully.\n");
@@ -3256,41 +3269,184 @@ static bool d3d11_shader_load_step(void *data,
 #endif
 }
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+/* Pass @i of the preset built: its stages processed and compiled, its
+ * buffers made. */
+static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
+      unsigned shader_model, enum d3d11_feature_level_hint feat_level_hint)
+{
+   int j;
+   d3d11_texture_t *source = i ? &d3d11->pass[i - 1].rt
+      : &d3d11->frame.texture[0];
+   /* clang-format off */
+   semantics_map_t semantics_map = {
+      {
+         /* Original */
+         { &d3d11->frame.texture[0].view, 0,
+            &d3d11->frame.texture[0].size_data, 0},
+
+         /* Source */
+         { &source->view, 0,
+            &source->size_data, 0},
+
+         /* OriginalHistory */
+         { &d3d11->frame.texture[0].view, sizeof(*d3d11->frame.texture),
+            &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture)},
+
+         /* PassOutput */
+         { &d3d11->pass[0].rt.view, sizeof(*d3d11->pass),
+            &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass)},
+
+         /* PassFeedback */
+         { &d3d11->pass[0].feedback.view, sizeof(*d3d11->pass),
+            &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass)},
+
+         /* User */
+         { &d3d11->luts[0].view, sizeof(*d3d11->luts),
+            &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
+      },
+      {
+         i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp_last_pass : &d3d11->identity, /* MVP */
+         &d3d11->pass[i].rt.size_data,    /* OutputSize */
+         &d3d11->frame.output_size,       /* FinalViewportSize */
+         &d3d11->pass[i].frame_count,     /* FrameCount */
+         &d3d11->pass[i].frame_direction, /* FrameDirection */
+         &d3d11->pass[i].frame_time_delta,/* FrameTimeDelta */
+         &d3d11->pass[i].original_fps,    /* OriginalFPS */
+         &d3d11->pass[i].rotation,        /* Rotation */
+         &d3d11->pass[i].core_aspect,     /* OriginalAspect */
+         &d3d11->pass[i].core_aspect_rot, /* OriginalAspectRotated */
+         &d3d11->pass[i].total_subframes, /* TotalSubFrames */
+         &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
+         &d3d11->pass[i].swap_count, /* SwapCount */
+#ifdef HAVE_DXGI_HDR
+         &d3d11->pass[i].hdr_mode,        /* HDRMode */
+         &d3d11->pass[i].paper_white_nits,/* BrightnessNits */
+         &d3d11->pass[i].scanlines,       /* Scanlines */
+         &d3d11->pass[i].subpixel_layout, /* SubpixelLayout */
+         &d3d11->pass[i].expand_gamut,    /* ExpandGamut */
+         &d3d11->pass[i].inverse_tonemap, /* InverseTonemap */
+         &d3d11->pass[i].hdr10            /* HDR10 */
+#endif /* HAVE_DXGI_HDR */
+      }
+   };
+   /* clang-format on */
+
+   d3d11_frame_rect_semantics(d3d11, &semantics_map);
+   if (!slang_process(
+            d3d11->shader_preset, i, RARCH_SHADER_HLSL, shader_model,
+            &semantics_map,
+            &d3d11->pass[i].semantics))
+      return false;
+
+   {
+      static const D3D11_INPUT_ELEMENT_DESC desc[] = {
+         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+      };
+      char _path[PATH_MAX_LENGTH];
+      const char *slang_path = d3d11->shader_preset->pass[i].source.path;
+      const char *vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
+      const char *ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
+      size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
+      strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+
+      d3d11_init_shader(d3d11->device, vs_src, 0,
+            _path, "main", NULL, NULL, desc, countof(desc),
+            &d3d11->pass[i].shader, feat_level_hint);
+
+      strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+
+      d3d11_init_shader(d3d11->device, ps_src, 0, _path,
+            NULL, "main", NULL, NULL, 0,
+            &d3d11->pass[i].shader, feat_level_hint);
+
+      free(d3d11->shader_preset->pass[i].source.string.vertex);
+      free(d3d11->shader_preset->pass[i].source.string.fragment);
+
+      d3d11->shader_preset->pass[i].source.string.vertex   = NULL;
+      d3d11->shader_preset->pass[i].source.string.fragment = NULL;
+
+      if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
+         return false;
+   }
+
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+   {
+      D3D11_BUFFER_DESC desc;
+      desc.ByteWidth           = d3d11->pass[i].semantics.cbuffers[j].size;
+      desc.Usage               = D3D11_USAGE_DYNAMIC;
+      desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+      desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags           = 0;
+      desc.StructureByteStride = 0;
+
+      if (!desc.ByteWidth)
+         continue;
+
+      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
+   }
+   return true;
+}
+
+/* The passes that read the frame for an unspecified filter, built
+ * again for the smooth setting they were not built for. */
+static void d3d11_frame_rect_rebuild(d3d11_video_t *d3d11)
+{
+   unsigned i;
+   unsigned shader_model;
+   enum d3d11_feature_level_hint hint;
+
+   d3d11->frame_rect.rebuild = false;
+   if (!d3d11->shader_preset)
+      return;
+   shader_model = d3d11_shader_model(d3d11, &hint);
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
+   {
+      int j;
+      pass_semantics_t *sem = &d3d11->pass[i].semantics;
+      if (!sem->frame_unspec || sem->frame_smooth == d3d11->frame_rect.smooth)
+         continue;
+      free(sem->textures);
+      sem->textures = NULL;
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(sem->cbuffers[j].uniforms);
+         sem->cbuffers[j].uniforms = NULL;
+         Release(d3d11->pass[i].buffers[j]);
+         d3d11->pass[i].buffers[j] = NULL;
+      }
+      d3d11_release_shader(&d3d11->pass[i].shader);
+      memset(&d3d11->pass[i].shader, 0, sizeof(d3d11->pass[i].shader));
+      if (!d3d11_pass_build(d3d11, i, shader_model, hint))
+      {
+         /* Built as it was, which it was before. */
+         bool smooth               = d3d11->frame_rect.smooth;
+         RARCH_ERR("[D3D11] Pass %u did not build for the smooth "
+               "setting.\n", i);
+         d3d11->frame_rect.smooth  = !smooth;
+         d3d11_pass_build(d3d11, i, shader_model, hint);
+         d3d11->frame_rect.smooth  = smooth;
+      }
+   }
+}
+
+#endif
+
 static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const char* path)
 {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   enum d3d11_feature_level_hint
-      feat_level_hint      = D3D11_FEATURE_LEVEL_HINT_DONTCARE;
+   enum d3d11_feature_level_hint feat_level_hint;
    unsigned         i;
-   d3d11_texture_t* source = NULL;
+   unsigned         shader_model;
    d3d11_video_t*   d3d11  = (d3d11_video_t*)data;
-   unsigned shader_model   = 40;
 
    if (!d3d11)
       return false;
 
-   /* Feature Level 11.0 and up should all support Shader Model 5.0 */
-   switch (d3d11->supportedFeatureLevel)
-   {
-      case D3D_FEATURE_LEVEL_11_0:
-         shader_model    = 50;
-         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_0;
-         break;
-      case D3D_FEATURE_LEVEL_11_1:
-         shader_model    = 50;
-         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_11_1;
-         break;
-      case D3D_FEATURE_LEVEL_12_0:
-         shader_model    = 50;
-         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_0;
-         break;
-      case D3D_FEATURE_LEVEL_12_1:
-         shader_model    = 50;
-         feat_level_hint = D3D11_FEATURE_LEVEL_HINT_12_1;
-         break;
-      default:
-         break;
-   }
+   shader_model = d3d11_shader_model(d3d11, &feat_level_hint);
 
    d3d11->context->lpVtbl->Flush(d3d11->context);
    d3d11_free_shader_preset(d3d11);
@@ -3330,121 +3486,9 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (!video_shader_load_preset_into_shader(path, d3d11->shader_preset))
       goto error;
 
-   source = &d3d11->frame.texture[0];
-   for (i = 0; i < d3d11->shader_preset->passes; source = &d3d11->pass[i++].rt)
-   {
-      int j;
-      /* clang-format off */
-      semantics_map_t semantics_map = {
-         {
-            /* Original */
-            { &d3d11->frame.texture[0].view, 0,
-               &d3d11->frame.texture[0].size_data, 0},
-
-            /* Source */
-            { &source->view, 0,
-               &source->size_data, 0},
-
-            /* OriginalHistory */
-            { &d3d11->frame.texture[0].view, sizeof(*d3d11->frame.texture),
-               &d3d11->frame.texture[0].size_data, sizeof(*d3d11->frame.texture)},
-
-            /* PassOutput */
-            { &d3d11->pass[0].rt.view, sizeof(*d3d11->pass),
-               &d3d11->pass[0].rt.size_data, sizeof(*d3d11->pass)},
-
-            /* PassFeedback */
-            { &d3d11->pass[0].feedback.view, sizeof(*d3d11->pass),
-               &d3d11->pass[0].feedback.size_data, sizeof(*d3d11->pass)},
-
-            /* User */
-            { &d3d11->luts[0].view, sizeof(*d3d11->luts),
-               &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
-         },
-         {
-            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp_last_pass : &d3d11->identity, /* MVP */
-            &d3d11->pass[i].rt.size_data,    /* OutputSize */
-            &d3d11->frame.output_size,       /* FinalViewportSize */
-            &d3d11->pass[i].frame_count,     /* FrameCount */
-            &d3d11->pass[i].frame_direction, /* FrameDirection */
-            &d3d11->pass[i].frame_time_delta,/* FrameTimeDelta */
-            &d3d11->pass[i].original_fps,    /* OriginalFPS */
-            &d3d11->pass[i].rotation,        /* Rotation */
-            &d3d11->pass[i].core_aspect,     /* OriginalAspect */
-            &d3d11->pass[i].core_aspect_rot, /* OriginalAspectRotated */
-            &d3d11->pass[i].total_subframes, /* TotalSubFrames */
-            &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
-            &d3d11->pass[i].swap_count, /* SwapCount */
-#ifdef HAVE_DXGI_HDR
-            &d3d11->pass[i].hdr_mode,        /* HDRMode */
-            &d3d11->pass[i].paper_white_nits,/* BrightnessNits */
-            &d3d11->pass[i].scanlines,       /* Scanlines */
-            &d3d11->pass[i].subpixel_layout, /* SubpixelLayout */
-            &d3d11->pass[i].expand_gamut,    /* ExpandGamut */
-            &d3d11->pass[i].inverse_tonemap, /* InverseTonemap */
-            &d3d11->pass[i].hdr10            /* HDR10 */
-#endif /* HAVE_DXGI_HDR */ 
-         }
-      };
-      /* clang-format on */
-
-      d3d11_frame_rect_semantics(d3d11, &semantics_map);
-      if (!slang_process(
-               d3d11->shader_preset, i, RARCH_SHADER_HLSL, shader_model,
-               &semantics_map,
-               &d3d11->pass[i].semantics))
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
+      if (!d3d11_pass_build(d3d11, i, shader_model, feat_level_hint))
          goto error;
-
-      {
-         static const D3D11_INPUT_ELEMENT_DESC desc[] = {
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, position),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d11_vertex_t, texcoord),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
-         };
-         char _path[PATH_MAX_LENGTH];
-         const char *slang_path = d3d11->shader_preset->pass[i].source.path;
-         const char *vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
-         const char *ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
-         size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
-
-         d3d11_init_shader(d3d11->device, vs_src, 0,
-               _path, "main", NULL, NULL, desc, countof(desc),
-               &d3d11->pass[i].shader, feat_level_hint);
-
-         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
-
-         d3d11_init_shader(d3d11->device, ps_src, 0, _path,
-               NULL, "main", NULL, NULL, 0,
-               &d3d11->pass[i].shader, feat_level_hint);
-
-         free(d3d11->shader_preset->pass[i].source.string.vertex);
-         free(d3d11->shader_preset->pass[i].source.string.fragment);
-
-         d3d11->shader_preset->pass[i].source.string.vertex   = NULL;
-         d3d11->shader_preset->pass[i].source.string.fragment = NULL;
-
-         if (!d3d11->pass[i].shader.vs || !d3d11->pass[i].shader.ps)
-            goto error;
-      }
-
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-      {
-         D3D11_BUFFER_DESC desc;
-         desc.ByteWidth           = d3d11->pass[i].semantics.cbuffers[j].size;
-         desc.Usage               = D3D11_USAGE_DYNAMIC;
-         desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-         desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-         desc.MiscFlags           = 0;
-         desc.StructureByteStride = 0;
-
-         if (!desc.ByteWidth)
-            continue;
-
-         d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL, &d3d11->pass[i].buffers[j]);
-      }
-   }
 
 #ifdef HAVE_DXGI_HDR
    if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
@@ -5456,6 +5500,11 @@ static bool d3d11_gfx_frame_body(
             true);
       d3d11_hw_v2_yield_end(d3d11);
    }
+
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   if (d3d11->frame_rect.rebuild)
+      d3d11_frame_rect_rebuild(d3d11);
+#endif
 
 #ifdef HAVE_DXGI_HDR
    {

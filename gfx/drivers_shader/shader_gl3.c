@@ -1349,11 +1349,12 @@ static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
  * copied out. */
 static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 {
-   pass->frame_copy = !slang_rect_remap_pass(
+   pass->frame_copy = slang_rect_remap_pass(
          &pass->vertex_shader, &pass->num_vertex_shader,
          &pass->fragment_shader, &pass->num_fragment_shader,
          pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap);
+         pass->common->frame_wrap)
+         == SLANG_RECT_UNSUPPORTED;
 }
 
 static bool gl3_pass_build(struct gl3_pass *pass)

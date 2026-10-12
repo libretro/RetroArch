@@ -3666,6 +3666,8 @@ static void d3d12_frame_rect_semantics(d3d12_video_t *d3d12,
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d12->frame_rect.values;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d12->frame_rect.values + 4;
    map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d12->frame_rect.values + 8;
+   /* The passes' samplers filter an unspecified filter linearly. */
+   map->frame_smooth                             = true;
 }
 #endif
 

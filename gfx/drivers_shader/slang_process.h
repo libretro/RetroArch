@@ -124,11 +124,13 @@ typedef struct
 /* A driver that sets uniforms[SLANG_SEMANTIC_ORIGINAL_RECT] (and the
  * clamp's and texels') may bind the frame inside a larger texture:
  * slang_process() rewrites each pass to read it through them where it
- * can, as slang_rect.h describes. */
+ * can, as slang_rect.h describes. A first pass whose filter the preset
+ * leaves unspecified is read as frame_smooth says. */
 typedef struct
 {
    texture_map_t textures[SLANG_NUM_TEXTURE_SEMANTICS];
    void*         uniforms[SLANG_NUM_BASE_SEMANTICS];
+   bool          frame_smooth;
 } semantics_map_t;
 
 typedef struct
@@ -171,6 +173,10 @@ typedef struct
    /* The pass reads the frame wherever it lies in its texture, through
     * the rect semantics, or does not read it: see semantics_map_t. */
    bool                frame_in_place;
+   /* It was rewritten for an unspecified filter, as frame_smooth was
+    * then: built again when that changes. */
+   bool                frame_unspec;
+   bool                frame_smooth;
 } pass_semantics_t;
 
 
