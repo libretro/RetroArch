@@ -8592,6 +8592,17 @@ int main(int argc, char *argv[])
       fprintf(stderr, "FAIL: retroarch_main_init failed\n");
       return 1;
    }
+   {
+      const char *requested = getenv("HARNESS_VIDEO_DRIVER");
+      const char *actual    = video_driver_get_ident();
+      if (requested && (!actual || strcmp(requested, actual)))
+      {
+         fprintf(stderr, "FAIL: requested video driver %s, initialized %s\n",
+               requested, actual ? actual : "none");
+         failures++;
+         goto shutdown;
+      }
+   }
 
    /* The core starts without content and the menu closed. Run it,
     * then open the menu, which is the state the reported sequence
