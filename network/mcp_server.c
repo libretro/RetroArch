@@ -67,6 +67,8 @@ static const char *const mcp_versions[] = {
    "2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"
 };
 #define MCP_MODERN_VERSION "2026-07-28"
+/* The revision that added outputSchema and structuredContent. */
+#define MCP_STRUCTURED_VERSION "2025-06-18"
 
 /* JSON-RPC and MCP error codes */
 #define MCP_ERR_PARSE            -32700
@@ -96,6 +98,9 @@ struct mcp_conn
    /* for a reply owed by a command: the request it answers */
    char     id[64];      /* raw JSON id */
    bool     modern;
+   bool     structured;  /* its revision takes structuredContent */
+   /* the tool call being answered, for the shape of its reply */
+   const struct cmd_action_map *act;
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -332,12 +337,56 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
    MCP_RAW(w, "]");
 }
 
+/* What a reply that is rows holds, as a JSON Schema: the rows and their
+ * columns, the word that says the reply was cut short, and the cursor
+ * the next page is asked with where there is one. All the columns are
+ * strings: each is the text's own field, which the server never reads
+ * as anything else. */
+static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
+{
+   const struct cmd_column *col;
+   MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{"
+         "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\","
+         "\"properties\":{");
+   for (col = rows->columns; col->name; col++)
+   {
+      if (col != rows->columns)
+         MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, col->name);
+      MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
+      rjsonwriter_add_string(w, col->desc ? col->desc : "");
+      MCP_RAW(w, "}");
+   }
+   MCP_RAW(w, "},\"required\":[");
+   for (col = rows->columns; col->name; col++)
+   {
+      if (col != rows->columns)
+         MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, col->name);
+   }
+   MCP_RAW(w, "],\"additionalProperties\":false}},\"more\":{\"type\":"
+         "\"boolean\",\"description\":\"There are more rows than this "
+         "reply carries.\"}");
+   if (rows->cursor)
+   {
+      MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, rows->cursor);
+      MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
+      rjsonwriter_add_string(w, rows->cursor_desc ? rows->cursor_desc : "");
+      MCP_RAW(w, "}");
+   }
+   MCP_RAW(w, "},\"required\":[\"rows\"],\"additionalProperties\":false}");
+}
+
 /* A tool: its parameters as a JSON Schema, from the table rather than
  * from the prose HELP prints, so a client is told each one's name, type
  * and whether it is needed. A hotkey, and a command that takes nothing,
- * has no properties. */
+ * has no properties. @rows, where the command answers rows, is the
+ * shape of its result; @structured is false for a client of a revision
+ * older than outputSchema. */
 static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
-      const struct cmd_param *params, unsigned flags)
+      const struct cmd_param *params, const struct cmd_rows *rows,
+      unsigned flags, bool structured)
 {
    const struct cmd_param *p;
    bool first = true;
@@ -380,13 +429,15 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    if (!first)
       MCP_RAW(w, "]");
    MCP_RAW(w, ",\"additionalProperties\":false}");
+   if (rows && structured)
+      mcp_schema_rows(w, rows);
    rjsonwriter_rawf(w, ",\"annotations\":{\"readOnlyHint\":%s,"
          "\"destructiveHint\":%s,\"openWorldHint\":false}}",
          ro ? "true" : "false", de ? "true" : "false");
 }
 
 static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
-      bool modern)
+      bool modern, bool structured)
 {
    size_t n, i;
    bool   first = true;
@@ -405,7 +456,8 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       if (!first)
          MCP_RAW(w, ",");
       first = false;
-      mcp_tool(w, acts[i].str, acts[i].desc, acts[i].params, acts[i].flags);
+      mcp_tool(w, acts[i].str, acts[i].desc, acts[i].params, acts[i].rows,
+            acts[i].flags, structured);
    }
    {
       const struct cmd_map *keys = command_hotkey_list(&n);
@@ -416,7 +468,8 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
          if (!first)
             MCP_RAW(w, ",");
          first = false;
-         mcp_tool(w, keys[i].str, keys[i].desc, NULL, keys[i].flags);
+         mcp_tool(w, keys[i].str, keys[i].desc, NULL, NULL, keys[i].flags,
+               structured);
       }
    }
    MCP_RAW(w, "]");
@@ -629,9 +682,118 @@ static bool mcp_tool_known(const char *name)
    return false;
 }
 
-/* {"content":[{"type":"text","text":<text>}],"isError":<b>} */
+/* The same reply taken apart: the rows the text is lines of, as the
+ * command's columns name them, and the cursor its trailing MORE line
+ * carries. The text goes out beside this unchanged. */
+static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
+      const char *name, const char *text, size_t len)
+{
+   const char *p        = text;
+   const char *end      = text + len;
+   const char *next     = NULL;   /* the number on the MORE line */
+   size_t      next_len = 0;
+   size_t      name_len = strlen(name);
+   size_t      ncol     = 0;
+   size_t      slack;
+   bool        first    = true;
+   bool        more     = false;
+
+   while (rows->columns[ncol].name)
+      ncol++;
+   slack = rows->slack < ncol ? rows->slack : ncol - 1;
+
+   MCP_RAW(w, ",\"structuredContent\":{\"rows\":[");
+   while (p < end)
+   {
+      const char *eol  = (const char*)memchr(p, '\n', (size_t)(end - p));
+      const char *line = p;
+      const char *stop = eol ? eol : end;
+      const char *f;
+      size_t      i, tabs = 0;
+
+      p = eol ? eol + 1 : end;
+      if (stop == line)
+         continue;
+      /* the command opens a line that is not a row with its own name */
+      if (     (size_t)(stop - line) > name_len
+            && !strncmp(line, name, name_len) && line[name_len] == ' ')
+         continue;
+      if (!strncmp(line, "MORE", 4) && (stop - line == 4 || line[4] == ' '))
+      {
+         more = true;
+         if (stop - line > 5)
+         {
+            next     = line + 5;
+            next_len = (size_t)(stop - next);
+            for (i = 0; i < next_len; i++)
+               if (next[i] < '0' || next[i] > '9')
+               {
+                  next_len = 0;
+                  break;
+               }
+         }
+         continue;
+      }
+      for (f = line; f < stop; f++)
+         if (*f == '\t')
+            tabs++;
+      /* fewer fields than columns: not a row of this reply */
+      if (tabs + 1 < ncol)
+         continue;
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      MCP_RAW(w, "{");
+      /* the columns before the slack one are read from the start of the
+       * line and those after it from the end, so the field between them
+       * keeps whatever tabs the line has over its columns */
+      for (i = 0; i < ncol; i++)
+      {
+         const char *e = NULL;
+         if (i == slack)
+         {
+            /* back over one tab for each column still to come */
+            size_t n = ncol - 1 - i;
+            e = stop;
+            while (n-- && e > line)
+               while (e > line && *--e != '\t')
+                  ;
+         }
+         else
+            e = (const char*)memchr(line, '\t', (size_t)(stop - line));
+         if (!e)
+            e = stop;
+         if (i)
+            MCP_RAW(w, ",");
+         rjsonwriter_add_string(w, rows->columns[i].name);
+         MCP_RAW(w, ":");
+         rjsonwriter_add_string_len(w, line, (int)(e - line));
+         line = e < stop ? e + 1 : stop;
+      }
+      MCP_RAW(w, "}");
+   }
+   MCP_RAW(w, "]");
+   if (more)
+   {
+      MCP_RAW(w, ",\"more\":true");
+      if (next_len && rows->cursor)
+      {
+         MCP_RAW(w, ",");
+         rjsonwriter_add_string(w, rows->cursor);
+         MCP_RAW(w, ":");
+         rjsonwriter_raw(w, next, (int)next_len);
+      }
+   }
+   MCP_RAW(w, "}");
+}
+
+/* {"content":[{"type":"text","text":<text>}],"isError":<b>}, and the
+ * same reply as structuredContent where the command answers rows and
+ * the client's revision takes it. The text is what every interface
+ * sends, byte for byte: a client that reads it alone sees no change. */
 static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
-      const char *text, size_t text_len, bool is_error)
+      const struct cmd_action_map *act, const char *text, size_t text_len,
+      bool is_error)
 {
    rjsonwriter_t *w = mcp_envelope(id);
    if (!w)
@@ -641,7 +803,11 @@ static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
    }
    MCP_RAW(w, "\"result\":{\"content\":[{\"type\":\"text\",\"text\":");
    rjsonwriter_add_string_len(w, text, (int)text_len);
-   rjsonwriter_rawf(w, "}],\"isError\":%s", is_error ? "true" : "false");
+   MCP_RAW(w, "}]");
+   /* a failure's text is the reason, not rows */
+   if (act && act->rows && c->structured && !is_error)
+      mcp_structured(w, act->rows, act->str, text, text_len);
+   rjsonwriter_rawf(w, ",\"isError\":%s", is_error ? "true" : "false");
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
 }
@@ -692,7 +858,7 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
    /* the connection timed out or was reused meanwhile */
    if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
       return;
-   mcp_tool_result(c, c->id, c->modern, data, len, cmd->error);
+   mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
    cmd->error = false;
 }
 
@@ -942,6 +1108,17 @@ static bool mcp_header_is(const char *v, const char *want)
    return v && mcp_header_len(v) == l && strncmp(v, want, l) == 0;
 }
 
+/* The client's revision gives outputSchema and structuredContent. That
+ * revision also made MCP-Protocol-Version mandatory, so a request
+ * without the header is from the one revision before it, 2025-03-26,
+ * which is sent neither. The revisions are ISO dates and compare as
+ * dates. */
+static bool mcp_structured_header(const char *v)
+{
+   return v && mcp_header_len(v) == 10
+      && strncmp(v, MCP_STRUCTURED_VERSION, 10) >= 0;
+}
+
 /* An Origin naming this machine: http(s)://localhost, 127.0.0.1 or
  * [::1], any port. A browser page elsewhere must not reach the server
  * by pointing a host name at 127.0.0.1. */
@@ -987,7 +1164,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    struct mcp_conn   *c = &mcp->conns[ci];
    struct mcp_request r;
    char *hv, *hm, *hn;
-   bool  modern;
+   bool  modern, structured;
    int   err;
 
    memset(&r, 0, sizeof(r));
@@ -1015,6 +1192,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    hm     = mcp_header(head, "Mcp-Method");
    hn     = mcp_header(head, "Mcp-Name");
    modern = *r.version != '\0';
+   /* the stateless era is newer than the revision either way */
+   structured = modern || mcp_structured_header(hv);
 
    if (modern)
    {
@@ -1094,19 +1273,21 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp_respond_writer(c, w);
    }
    else if (string_is_equal(r.method, "tools/list"))
-      mcp_tools_list(c, &r, modern);
+      mcp_tools_list(c, &r, modern, structured);
    else if (string_is_equal(r.method, "tools/call"))
    {
       bool        ok;
       char       *line    = NULL;
       const char *missing = NULL;
       const char *invalid;
+      const struct cmd_action_map *act;
       if (!mcp_tool_known(r.name))
       {
          mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown tool.", false);
          goto end;
       }
-      if ((invalid = mcp_integer_args(mcp_tool_action(r.name), &r)))
+      act = mcp_tool_action(r.name);
+      if ((invalid = mcp_integer_args(act, &r)))
       {
          char msg[128];
          snprintf(msg, sizeof(msg), "Invalid integer parameter \"%.96s\".",
@@ -1117,7 +1298,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       /* What the client sent by name becomes the line the handler
        * reads; a parameter it needed and left out is answered before
        * the command runs at all. */
-      line = mcp_compose(mcp_tool_action(r.name), &r, &missing);
+      line = mcp_compose(act, &r, &missing);
       if (missing)
       {
          char msg[128];
@@ -1131,17 +1312,19 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp->current   = ci;
       strlcpy(c->id, r.id, sizeof(c->id));
       c->modern      = modern;
+      c->structured  = structured;
+      c->act         = act;
       ok = command_run(cmd, r.name, line);
       free(line);
       mcp->current   = -1;
       if (c->state == MCP_CONN_WAITING)
          goto end;                         /* answered by reply_to */
       if (mcp->reply_len)
-         mcp_tool_result(c, r.id, modern, mcp->reply, mcp->reply_len,
+         mcp_tool_result(c, r.id, modern, act, mcp->reply, mcp->reply_len,
                cmd->error || !ok);
       else
-         mcp_tool_result(c, r.id, modern, ok ? "Done." : "The command failed.",
-               ok ? 5 : 19, !ok);
+         mcp_tool_result(c, r.id, modern, NULL,
+               ok ? "Done." : "The command failed.", ok ? 5 : 19, !ok);
    }
    else
       mcp_error(c, r.id, MCP_ERR_METHOD, "Method not found.", false);
@@ -1297,7 +1480,7 @@ static void mcp_poll(command_t *cmd)
       if (c->state != MCP_CONN_FREE && now - c->since > MCP_TIMEOUT_US)
       {
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern,
+            mcp_tool_result(c, c->id, c->modern, NULL,
                   "The command did not answer in time.", 35, true);
          else
             mcp_conn_close(c);
@@ -1318,7 +1501,8 @@ static void mcp_destroy(command_t *cmd)
                "command answered.";
          struct mcp_conn *c = &mcp->conns[i];
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern, gone, sizeof(gone) - 1, true);
+            mcp_tool_result(c, c->id, c->modern, NULL, gone,
+                  sizeof(gone) - 1, true);
          /* a content load tears this down in the frame of the request
           * that started it, before the next poll would send the answer */
          if (c->state == MCP_CONN_WRITING && c->sent < c->len)

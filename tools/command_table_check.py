@@ -13,7 +13,7 @@ or a structured client is given a tool it cannot call properly; one that
 takes none must have NULL there.
 
 Rows are matched as C initializers:
-  action_map: { "NAME", handler, "arg", "description", flags, params },
+  action_map: { "NAME", handler, "arg", "description", flags, params, rows },
   map:        { "NAME", ID, "description", flags },
 """
 import re
@@ -26,7 +26,7 @@ FLAGS  = {'0', 'CMD_INFO_READ_ONLY', 'CMD_INFO_DESTRUCTIVE',
 ACTION_ROW = re.compile(
     r'\{\s*"([A-Z0-9_]+)"\s*,\s*(\w+)\s*,\s*"([^"]*)"\s*'
     r'(?:,\s*"((?:[^"\\]|\\.)*)"\s*)?(?:,\s*([\w|\s]+?)\s*)?'
-    r'(?:,\s*(\w+)\s*)?\}')
+    r'(?:,\s*(\w+)\s*)?(?:,\s*&?(\w+)\s*)?\}')
 HOTKEY_ROW = re.compile(
     r'\{\s*"([A-Z0-9_]+)"\s*,\s*([A-Z0-9_]+)\s*'
     r'(?:,\s*"((?:[^"\\]|\\.)*)"\s*)?(?:,\s*([\w|\s]+?)\s*)?\}')
@@ -58,7 +58,7 @@ def main():
         return 1
 
     for m in ACTION_ROW.finditer(actions):
-        name, _, arg, desc, flags, params = m.groups()
+        name, _, arg, desc, flags, params, _rows = m.groups()
         count += 1
         if not desc or not desc.strip():
             bad.append('%s: no description' % name)

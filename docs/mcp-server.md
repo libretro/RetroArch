@@ -80,6 +80,43 @@ reads the new one.
 The tool's result is what the command answers; commands that answer
 nothing report `Done.`.
 
+## Results that are rows
+
+The replies that are lines of tab-separated fields - `GET_OPTION`,
+`SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS` and `GET_PLAYLIST` - come
+with `structuredContent` beside the text, so a client is handed the
+rows rather than splitting them itself. Each of those tools declares an
+`outputSchema` naming its columns:
+
+```json
+{ "content": [ { "type": "text",
+    "text": "0\tSuper Mario World\t/games/smw.sfc\t/cores/snes9x.so\n" } ],
+  "structuredContent": { "rows": [ { "index": "0",
+    "label": "Super Mario World", "content": "/games/smw.sfc",
+    "core": "/cores/snes9x.so" } ] } }
+```
+
+The columns are `option` and `value` for the options, `name` and `path`
+for the cores, `playlist` for the playlists, and `index`, `label`,
+`content` and `core` for a playlist's entries. Every field is a string:
+it is the text's own field, which the server does not read as anything
+else.
+
+A reply cut short carries `more`, and `GET_PLAYLIST` also carries
+`next`, the entry its next page starts at - what the text says as
+`MORE 200`. A line the command opens with its own name, such as
+`LIST_CORES none`, is not a row, and a failure is its reason and no
+rows at all.
+
+The text is unchanged: a client that reads it and nothing else sees
+exactly what it always did. A game whose name holds a tab is the one
+thing it will read wrong, and the rows get right - the fields before and
+after the name are read from the ends of the line, so the stray tab
+stays inside the name.
+
+Both come from revision 2025-06-18, which added them; a client of
+2025-03-26 is sent neither.
+
 Not every command is a tool. `HELP` and `VERSION` are not, because
 `tools/list` already lists the commands and every answer names the
 server's version, and neither are the toggle hotkeys or
