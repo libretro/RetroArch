@@ -38,10 +38,14 @@
 
 RETRO_BEGIN_DECLS
 
-/* Returns true when an update image is staged in LAKKA_UPDATE_DIR,
- * i.e. a file matching one of the patterns the Lakka initramfs
- * check_update step installs on the next boot (*.tar, *.img.gz,
- * *.img). */
+/* Looks in LAKKA_UPDATE_DIR for an update image the Lakka initramfs
+ * check_update step installs on the next boot (*.tar, *.img.gz, *.img)
+ * and keeps the answer for lakka_update_pending(). Reads a directory:
+ * called when the menu builds the main list and before a reboot, never
+ * per frame. */
+void lakka_update_check(void);
+
+/* Whether the last lakka_update_check() found an update staged. */
 bool lakka_update_pending(void);
 
 RETRO_END_DECLS

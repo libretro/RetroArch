@@ -17557,10 +17557,14 @@ static bool menu_displaylist_ctl_internal(
 
 #if defined(HAVE_LAKKA)
                if (settings->bools.menu_show_reboot)
+               {
+                  /* What the Reboot entry's value shows. */
+                  lakka_update_check();
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_REBOOT,
                            PARSE_ACTION, false) == 0)
                      count++;
+               }
 
                if (settings->bools.menu_show_shutdown)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

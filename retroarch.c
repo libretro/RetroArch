@@ -280,13 +280,21 @@
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
 
 #ifdef HAVE_LAKKA
+static bool lakka_update_staged = false;
+
 bool lakka_update_pending(void)
+{
+   return lakka_update_staged;
+}
+
+void lakka_update_check(void)
 {
    bool         found = false;
    struct RDIR *dir   = retro_opendir(LAKKA_UPDATE_DIR);
 
+   lakka_update_staged = false;
    if (!dir)
-      return false;
+      return;
 
    while (!found && retro_readdir(dir))
    {
@@ -301,7 +309,7 @@ bool lakka_update_pending(void)
    }
 
    retro_closedir(dir);
-   return found;
+   lakka_update_staged = found;
 }
 #endif
 
@@ -5201,6 +5209,7 @@ bool command_event(enum event_command cmd, void *data)
              * it. If arming fails this is a plain reboot. */
             if (r2p_is_supported())
             {
+               lakka_update_check();
                if (     settings->bools.reboot_force_self_on_update
                      && lakka_update_pending())
                   r2p_arm_self();

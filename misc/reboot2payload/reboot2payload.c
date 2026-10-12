@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
@@ -112,26 +113,21 @@ static char *r2p_trim(char *s)
 
 static void r2p_parse_cmdline(void)
 {
-   RFILE *fp;
-   char   line[1024];
-   char  *tok;
-   char  *saveptr = NULL;
+   void   *buf     = NULL;
+   int64_t _len    = 0;
+   char   *line;
+   char   *tok;
+   char   *saveptr = NULL;
 
    strlcpy(r2p_self_action, R2P_DEFAULT_ACTION, sizeof(r2p_self_action));
    r2p_self_param1 = 0;
    r2p_self_param2 = 0;
 
-   if (!(fp = filestream_open(R2P_CMDLINE_PATH,
-               RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   /* The whole of it: a command line runs to several KiB, and the
+    * pmc_r2p.* values Hekate appends come last. */
+   if (!filestream_read_file(R2P_CMDLINE_PATH, &buf, &_len) || !buf)
       return;
-
-   if (!filestream_gets(fp, line, sizeof(line)))
-   {
-      filestream_close(fp);
-      return;
-   }
-   filestream_close(fp);
+   line = (char*)buf;
 
    for (tok  = strtok_r(line, " \t\r\n", &saveptr);
         tok;
@@ -147,6 +143,7 @@ static void r2p_parse_cmdline(void)
          r2p_self_param2 = (unsigned)strtoul(
                tok + STRLEN_CONST("pmc_r2p.param2="), NULL, 0);
    }
+   free(buf);
 }
 
 /* Appends one entry per [section] of a Hekate INI, numbering them
@@ -261,7 +258,12 @@ static void r2p_ensure_initialized(void)
 
 bool r2p_is_supported(void)
 {
-   return path_is_directory(R2P_SYSFS_DIR);
+   /* The kernel's: it does not come or go while running, and the menu
+    * asks every frame. */
+   static int supported = -1;
+   if (supported < 0)
+      supported = path_is_directory(R2P_SYSFS_DIR) ? 1 : 0;
+   return supported == 1;
 }
 
 void r2p_load_selection(const struct settings *settings)
