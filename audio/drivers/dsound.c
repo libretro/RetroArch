@@ -189,9 +189,11 @@ static bool dsound_imm_start_thread(dsound_t *ds)
    if (!ds->imm_thread)
    {
 #ifdef HAVE_THREADS
-      ds->imm_thread = sthread_create(mmdevice_thread, ds);
+      ds->imm_thread = sthread_create(mmdevice_thread,
+            (void*)&audio_state_get_ptr()->reinit_request);
 #else
-      ds->imm_thread = CreateThread(NULL, 0, mmdevice_thread, ds, 0, NULL);
+      ds->imm_thread = CreateThread(NULL, 0, mmdevice_thread,
+            (void*)&audio_state_get_ptr()->reinit_request, 0, NULL);
 #endif
       if (!ds->imm_thread)
          return false;

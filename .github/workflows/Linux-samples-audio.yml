@@ -1019,6 +1019,18 @@ jobs:
           WINEDEBUG=-all timeout 120 make check
           echo "[pass] wdmks_loop_test (wine)"
 
+      - name: Check MMDevice notification targets on both thread backends
+        shell: bash
+        working-directory: samples/audio/mmdevice_notification
+        run: |
+          set -eu
+          for threads in 0 1; do
+            make clean check THREADS=$threads SANITIZER=address,undefined
+            make clean all THREADS=$threads CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+            WINEDEBUG=-all wine ./mmdevice_notification_test.exe
+          done
+          make clean
+
       - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/audio/wasapi_exclusive_pacing

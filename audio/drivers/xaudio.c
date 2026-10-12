@@ -126,9 +126,11 @@ static bool xaudio_imm_start_thread(xa_t *xa)
    if (!xa->imm_thread)
    {
 #ifdef HAVE_THREADS
-      xa->imm_thread = sthread_create(mmdevice_thread, xa);
+      xa->imm_thread = sthread_create(mmdevice_thread,
+            (void*)&audio_state_get_ptr()->reinit_request);
 #else
-      xa->imm_thread = CreateThread(NULL, 0, mmdevice_thread, xa, 0, NULL);
+      xa->imm_thread = CreateThread(NULL, 0, mmdevice_thread,
+            (void*)&audio_state_get_ptr()->reinit_request, 0, NULL);
 #endif
       if (!xa->imm_thread)
          return false;
