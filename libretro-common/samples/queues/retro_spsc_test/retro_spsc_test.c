@@ -13,6 +13,7 @@
  *   - Run under TSan for race detection.  Run without sanitizer for
  *     throughput sanity. */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -655,8 +656,43 @@ static int run_mirror_stress(size_t min_capacity)
    return 0;
 }
 
+/* The cursor groups cannot share a cache line wherever the struct is
+ * placed: the next group, and whatever the embedder declares after the
+ * struct, start a full line past the previous group's last byte. */
+static int run_layout_checks(void)
+{
+   size_t line  = RETRO_SPSC_CACHE_LINE;
+   size_t head  = offsetof(retro_spsc_t, head);
+   size_t ctail = offsetof(retro_spsc_t, cached_tail);
+   size_t tail  = offsetof(retro_spsc_t, tail);
+   size_t chead = offsetof(retro_spsc_t, cached_head);
+   size_t head_end = (ctail > head ? ctail + sizeof(size_t)
+         : head + sizeof(retro_atomic_size_t));
+   size_t tail_end = (chead > tail ? chead + sizeof(size_t)
+         : tail + sizeof(retro_atomic_size_t));
+
+   if (tail < head_end + line)
+   {
+      printf("layout: tail group at %u, head group ends at %u: within a line\n",
+            (unsigned)tail, (unsigned)head_end);
+      return 1;
+   }
+   if (sizeof(retro_spsc_t) < tail_end + line)
+   {
+      printf("layout: struct ends at %u, tail group ends at %u: within a line\n",
+            (unsigned)sizeof(retro_spsc_t), (unsigned)tail_end);
+      return 1;
+   }
+   printf("layout: head group [%u,%u) tail group [%u,%u) size %u OK\n",
+         (unsigned)head, (unsigned)head_end, (unsigned)tail,
+         (unsigned)tail_end, (unsigned)sizeof(retro_spsc_t));
+   return 0;
+}
+
 int main(void)
 {
+   if (run_layout_checks() != 0)
+      return 1;
    if (     run_mirror_case(1024) != 0 || run_mirror_case(65536) != 0
          || run_mirror_stress(1024) != 0 || run_mirror_stress(4096) != 0)
       return 1;
