@@ -26,18 +26,19 @@
  *      that broke gl2 on Android. So: two pages over one set of
  *      textures, switch, drop, and use the textures afterwards.
  *
- *   3. The lent framebuffer. FrameView lendFramebuffer: hands a core
- *      the contents of a shared-storage MTLBuffer with a linear
- *      texture over it at the tight row pitch (width * bpp), and a
- *      frame pushed as a window into it is blitted out with a source
- *      origin. So: for the widths cores use, in BGRA8 and R16Uint
- *      (RGB565's texture), make the buffer and the linear texture at
- *      the tight pitch, write a pattern from the CPU, blit a window
- *      out with an origin, and read it back - the window's pixels,
- *      not the loan's corner. Then write again after the blit's
- *      command buffer completed and blit again: the second write is
- *      what the GPU reads, which is the ordering the next lend's
- *      waitUntilCompleted relies on.
+ *   3. Frame memory. FrameView lendFramebuffer: hands a core the
+ *      contents of a shared-storage MTLBuffer at the tight row pitch
+ *      (width * bpp), as the threaded wrapper's frame buffers are, and
+ *      a frame pushed from one - a window into it included - is
+ *      blitted out of the buffer with a source offset and the pitch as
+ *      bytes per row. So: for the widths cores use, odd ones too, in
+ *      BGRA8 and R16Uint (RGB565's texture), make the buffer, write a
+ *      pattern from the CPU, blit a window out at its offset, and read
+ *      it back - the window's pixels, not the buffer's corner. Then,
+ *      once the blit's command buffer reports completed, write again
+ *      and blit again: the second write is what the GPU reads, which is
+ *      the ordering a lend that checks the status and never waits
+ *      relies on.
  *
  * A failure here is a real defect in an assumption the design rests
  * on, not a test artefact.
@@ -196,51 +197,22 @@ static void lane_borrowed_textures(id<MTLDevice> dev)
    free(px);
 }
 
-/* The lent framebuffer: a linear texture over a shared buffer at the
- * tight pitch, a window blitted out of it with an origin, and a CPU
- * write after the reader completed. */
+/* Frame memory: a shared buffer at the tight pitch, a window blitted
+ * out of it at its offset, and a CPU write once the reader completed. */
 static void lane_lent_framebuffer(id<MTLDevice> dev, id<MTLCommandQueue> q,
       MTLPixelFormat fmt, unsigned bpp, unsigned width, unsigned height)
 {
-   NSUInteger align  = [dev minimumLinearTextureAlignmentForPixelFormat:fmt];
-   NSUInteger tight  = (NSUInteger)width * bpp;
-   NSUInteger stride;
+   NSUInteger stride = (NSUInteger)width * bpp;
    const unsigned win_x = 8, win_y = 4, win_w = width - 16, win_h = height - 8;
    id<MTLBuffer>  loan;
-   id<MTLTexture> loan_tex, dst;
+   id<MTLTexture> dst;
    MTLTextureDescriptor *td;
    unsigned pass;
-
-   if (align < 16)
-      align = 16;
-   stride = (tight + align - 1) & ~(align - 1);
-   /* The driver declines a padded pitch and the core keeps its own
-    * buffer; nothing to assert then. Widths cores use should not be
-    * padded on any Apple GPU, so report it. */
-   if (stride != tight)
-   {
-      printf("[note] lent framebuffer: %ux%u fmt %u needs a row pitch of %lu, "
-             "not %lu - the driver declines this lend\n",
-             width, height, (unsigned)fmt,
-             (unsigned long)stride, (unsigned long)tight);
-      return;
-   }
 
    loan = [dev newBufferWithLength:stride * height
                            options:MTLResourceStorageModeShared];
    CHECK(loan != nil, "lent framebuffer: buffer %ux%u fmt %u", width, height, (unsigned)fmt);
    if (!loan)
-      return;
-   td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
-                                                           width:width
-                                                          height:height
-                                                       mipmapped:NO];
-   td.storageMode = MTLStorageModeShared;
-   td.usage       = MTLTextureUsageShaderRead;
-   loan_tex = [loan newTextureWithDescriptor:td offset:0 bytesPerRow:stride];
-   CHECK(loan_tex != nil, "lent framebuffer: linear texture over the buffer at pitch %lu",
-         (unsigned long)stride);
-   if (!loan_tex)
       return;
 
    td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
@@ -258,9 +230,9 @@ static void lane_lent_framebuffer(id<MTLDevice> dev, id<MTLCommandQueue> q,
    if (!dst)
       return;
 
-   /* Two passes: the second writes the loan again after the first
-    * blit's command buffer completed, as the driver does between
-    * lends, and must be what the GPU reads. */
+   /* Two passes: the second writes the buffer again once the first
+    * blit's command buffer reports completed, as a lend that never
+    * waits checks, and must be what the GPU reads. */
    for (pass = 1; pass <= 2; pass++)
    {
       unsigned x, y;
@@ -283,21 +255,24 @@ static void lane_lent_framebuffer(id<MTLDevice> dev, id<MTLCommandQueue> q,
 
       cb  = [q commandBuffer];
       bce = [cb blitCommandEncoder];
-      [bce copyFromTexture:loan_tex
-               sourceSlice:0
-               sourceLevel:0
-              sourceOrigin:MTLOriginMake(win_x, win_y, 0)
-                sourceSize:MTLSizeMake(win_w, win_h, 1)
-                 toTexture:dst
-          destinationSlice:0
-          destinationLevel:0
-         destinationOrigin:MTLOriginMake(0, 0, 0)];
+      [bce copyFromBuffer:loan
+             sourceOffset:(NSUInteger)win_y * stride + (NSUInteger)win_x * bpp
+        sourceBytesPerRow:stride
+      sourceBytesPerImage:0
+               sourceSize:MTLSizeMake(win_w, win_h, 1)
+                toTexture:dst
+         destinationSlice:0
+         destinationLevel:0
+        destinationOrigin:MTLOriginMake(0, 0, 0)];
 #if TARGET_OS_OSX
       [bce synchronizeResource:dst];
 #endif
       [bce endEncoding];
       [cb commit];
       [cb waitUntilCompleted];
+      CHECK(cb.status >= MTLCommandBufferStatusCompleted,
+            "lent framebuffer: a completed blit reports status %ld",
+            (long)cb.status);
 
       {
          /* The window's four corners, read back from the blit's target. */
@@ -345,12 +320,15 @@ int main(void)
       lane_in_place_update(dev, q);
       lane_borrowed_textures(dev);
       /* The widths cores lend at: the harness core's 320, beetle-psx's
-       * 700 scanout surface, a 640 line. */
+       * 700 scanout surface, a 640 line, and an odd one, whose pitch no
+       * linear texture would take */
       lane_lent_framebuffer(dev, q, MTLPixelFormatBGRA8Unorm, 4, 320, 240);
       lane_lent_framebuffer(dev, q, MTLPixelFormatBGRA8Unorm, 4, 700, 480);
       lane_lent_framebuffer(dev, q, MTLPixelFormatBGRA8Unorm, 4, 640, 480);
+      lane_lent_framebuffer(dev, q, MTLPixelFormatBGRA8Unorm, 4, 255, 224);
       lane_lent_framebuffer(dev, q, MTLPixelFormatR16Uint,    2, 320, 240);
       lane_lent_framebuffer(dev, q, MTLPixelFormatR16Uint,    2, 700, 480);
+      lane_lent_framebuffer(dev, q, MTLPixelFormatR16Uint,    2, 255, 224);
    }
 
    if (!failures)

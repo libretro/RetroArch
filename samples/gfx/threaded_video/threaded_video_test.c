@@ -4192,8 +4192,8 @@ static void lane_lent_window_paused(void)
    {
       int creates = gfx_instrument_get(GFX_INSTR_FRAME_TEX_CREATE);
       int copies  = gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST);
-      /* Read out of a loan: a window into a lent texture, or (GL)
-       * an upload from the lent frame memory */
+      /* Read out of a loan: a window into a lent texture, or (GL,
+       * Metal) an upload from the lent frame memory */
       int windows = gfx_instrument_get(GFX_INSTR_FRAME_LENT_WINDOW)
                   + gfx_instrument_get(GFX_INSTR_FRAME_MEM);
       /* The core asks every frame and pushes a window on two of
@@ -8624,7 +8624,8 @@ int main(int argc, char *argv[])
          && (  !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan")
             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d12")
             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl")
-            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")))
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "metal")))
       lane_frame_mem();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
