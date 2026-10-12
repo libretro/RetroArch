@@ -7,9 +7,11 @@ import os
 import re
 import sys
 import json
+import subprocess
+import tempfile
 
-sys.path.insert(0, os.path.join(
-      os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
+CHECK_SH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        '..', 'tools', 'check.sh')
 
 p = re.compile(
     r'MSG_HASH\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\(\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*[a-zA-Z0-9_]+\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*,\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\".*\"\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\)')
@@ -441,24 +443,36 @@ def drop_format_mismatches(rows, source, lang):
     falls back to the English row for anything absent from the table,
     which is the safe reading of a translation nobody here can fix, so
     the row is left out rather than emitted. See
-    tools/msg_hash_format_check.py for the rules.
+    tools/msg_hash_format_check.c for the rules.
     """
-    import msg_hash_format_check as fmt
-
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    formatted = fmt.format_site_keys(root)
+    asked = []
+    with tempfile.NamedTemporaryFile(suffix='.rows', delete=False) as f:
+        for key, val, guard in rows:
+            en = source.get(key)
+            if en is None:
+                continue
+            tl = decode_c_literal(val)
+            f.write(b'%s %d %d\n' % (key.encode('ascii'), len(en), len(tl)))
+            f.write(en)
+            f.write(tl)
+            asked.append(key)
+        path = f.name
+    try:
+        r = subprocess.run(['sh', CHECK_SH, 'msg_hash_format_check',
+                            '--rows', path],
+                           stdout=subprocess.PIPE, check=True)
+    finally:
+        os.remove(path)
+    why = {}
+    for line in r.stdout.decode('utf-8').splitlines():
+        key, _tab, reason = line.partition('\t')
+        why[key] = reason
     kept = []
     for key, val, guard in rows:
-        en = source.get(key)
-        if en is not None:
-            why = fmt.row_error(key, en.decode('utf-8', 'replace'),
-                                decode_c_literal(val).decode('utf-8',
-                                                             'replace'),
-                                formatted)
-            if why:
-                print('%s: dropping %s - it %s' % (lang, key, why),
-                      file=sys.stderr)
-                continue
+        if key in why:
+            print('%s: dropping %s - it %s' % (lang, key, why[key]),
+                  file=sys.stderr)
+            continue
         kept.append((key, val, guard))
     return kept
 
@@ -587,16 +601,25 @@ def verify(text, lang, name):
     """Refuse to write a header whose blob and ids[] disagree.
 
     The two are paired by position at runtime and by nothing the
-    compiler can check, so tools/msg_hash_packed_check.py re-derives the
+    compiler can check, so tools/msg_hash_packed_check.c re-derives the
     pairing from the member names and the guards. Running it here means
     a header in the tree has passed it whatever route it arrived by.
     """
-    sys.path.insert(0, os.path.join(
-          os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
-    import msg_hash_packed_check
-    errors = msg_hash_packed_check.check_text(text, lang, name)
-    if errors:
-        for e in errors:
+    tmp = tempfile.mkdtemp()
+    path = os.path.join(tmp, 'msg_hash_%s.h' % lang)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        r = subprocess.run(['sh', CHECK_SH, 'msg_hash_packed_check', path],
+                           stdout=subprocess.PIPE)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+        os.rmdir(tmp)
+    if r.returncode:
+        for e in r.stdout.decode('utf-8').splitlines()[:-1]:
+            if e.startswith(path):
+                e = name + e[len(path):]
             print(e, file=sys.stderr)
         raise SystemExit('packed emitter: %s failed verification' % name)
     return text
