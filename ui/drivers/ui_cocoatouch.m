@@ -1776,6 +1776,8 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
    else
       allocated_buffer[0] = '\0';
 
+   free(*buffer_ptr);
+
    /* Update the keyboard_line buffer pointer to point to our allocated buffer */
    *buffer_ptr = allocated_buffer;
    len = strlen(allocated_buffer);

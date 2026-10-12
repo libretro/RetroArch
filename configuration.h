@@ -833,6 +833,7 @@ typedef struct settings
       bool menu_dynamic_wallpaper_enable;
       bool menu_mouse_enable;
       bool menu_pointer_enable;
+      bool menu_input_preserve_text;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
       bool menu_show_advanced_settings;

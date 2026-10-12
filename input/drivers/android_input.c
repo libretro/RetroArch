@@ -410,6 +410,8 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
    else
       allocated[0] = '\0';
 
+   free(*buffer_ptr);
+
    /* Repoint the keyboard line at our buffer; it is freed later by
     * input_keyboard_line_free(), mirroring the iOS path. */
    *buffer_ptr = allocated;

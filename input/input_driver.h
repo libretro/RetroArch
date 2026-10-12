@@ -1193,7 +1193,7 @@ enum input_text_type
 };
 const char **input_driver_text_entry_open(void *userdata,
       input_keyboard_line_complete_t cb,
-      const char *label, enum input_text_type type);
+      const char *label, enum input_text_type type, const char *initial_text);
 /* The open line's label and type, for a platform's keyboard that shows
  * them; whether a line is open is input_driver_keyboard_line_enabled(). */
 const char *input_driver_text_entry_label(void);

@@ -40,3 +40,10 @@ S_BOOL(menu_pointer_enable, POINTER_ENABLE,
       "Touch Support",
       "Allow the menu to be controlled with a touchscreen.")
 #endif
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_input_preserve_text, MENU_INPUT_PRESERVE_TEXT,
+      "menu_input_preserve_text",
+      DEFAULT_MENU_INPUT_PRESERVE_TEXT, SD_FLAG_NONE, 0, 0,
+      "Preserve Text When Editing",
+      "Start text editors with the current value and the cursor at the end. When disabled, editors open with an empty field.")
+#endif

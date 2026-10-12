@@ -13869,7 +13869,7 @@ static enum input_text_type input_text_entry_type_val;
  * label and type. */
 const char **input_driver_text_entry_open(void *userdata,
       input_keyboard_line_complete_t cb,
-      const char *label, enum input_text_type type)
+      const char *label, enum input_text_type type, const char *initial_text)
 {
    const char **buffer;
 
@@ -13884,6 +13884,8 @@ const char **input_driver_text_entry_open(void *userdata,
    buffer = input_keyboard_start_line(userdata,
          &input_driver_st.keyboard_line, cb);
    input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_TEXT);
+   if (!string_is_empty(initial_text))
+      input_driver_keyboard_line_append(initial_text, strlen(initial_text));
 
 #if defined(HAVE_COCOATOUCH)
    ios_keyboard_start((char**)buffer,

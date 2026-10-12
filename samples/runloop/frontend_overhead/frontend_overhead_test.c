@@ -5146,7 +5146,7 @@ static void lane_keyboard_holders(void)
          "keyboard holders: Game Focus does not keep the keys from the binds");
    CHECK(!input_driver_text_entry_active(),
          "keyboard holders: Game Focus reads as a line being typed");
-   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0, NULL);
    CHECK(input_driver_keyboard_mapping_blocked() && input_driver_text_entry_active(),
          "keyboard holders: a line being typed does not read as one");
    input_driver_keyboard_line_end();
@@ -5159,7 +5159,7 @@ static void lane_keyboard_holders(void)
          "keyboard holders: with Game Focus off and no line the keys are still kept");
 
    /* a line being typed, and Game Focus on and off under it */
-   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0, NULL);
    input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
    input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
    CHECK(input_driver_keyboard_mapping_blocked() && input_driver_text_entry_active(),
@@ -5172,7 +5172,7 @@ static void lane_keyboard_holders(void)
    input_driver_set_keyboard_mapping_blocked(true);
    CHECK(input_driver_keyboard_mapping_blocked() && !input_driver_text_entry_active(),
          "keyboard holders: the wait for a key does not keep the keys, or reads as a line");
-   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0, NULL);
    input_driver_keyboard_line_end();
    CHECK(input_driver_keyboard_mapping_blocked(),
          "keyboard holders: ending a line gave the keys back during the wait for a key");

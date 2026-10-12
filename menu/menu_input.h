@@ -263,6 +263,7 @@ typedef struct menu_input_ctx_line
 {
    const char *label;
    const char *label_setting;
+   const char *initial_text;
    unsigned type;
    unsigned idx;
    enum menu_input_dialog_kb_text_type text_type;

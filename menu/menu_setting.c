@@ -746,6 +746,9 @@ static int setting_generic_action_ok_linefeed(
    line.idx           = 0;
    line.text_type     = text_type;
    line.cb            = cb;
+   line.initial_text  = (setting->type == ST_STRING
+         || setting->type == ST_STRING_OPTIONS)
+         ? setting->value.target.string : NULL;
 
    if (!menu_input_dialog_start(&line))
       return -1;
@@ -3386,6 +3389,7 @@ static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
    line.idx           = 0;
    line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb            = setting_action_ok_color_rgb_cb;
+   line.initial_text  = NULL;
 
    if (!menu_input_dialog_start(&line))
       return -1;
@@ -14037,6 +14041,7 @@ static int setting_action_keychain_passphrase(
    line.idx           = 0;
    line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
    line.cb            = menu_input_st_string_cb_keychain_passphrase;
+   line.initial_text  = NULL;
    if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
