@@ -1887,6 +1887,7 @@ jobs:
           UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./preview_audio_oracle_test fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
           echo "[pass] preview_audio_oracle_test (ASan)"
+          ./preview_audio_feed_test fixtures/audio_large_packet.m4a
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread

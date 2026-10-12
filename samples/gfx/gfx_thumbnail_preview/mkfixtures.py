@@ -66,6 +66,56 @@ def boxes(path):
     return buf, {t: (p, s, h) for (p, s, t, h) in parse(buf, 0, len(buf))}
 
 
+def audio_large_packet(src, dst):
+    """Audio-only test: a video sample larger than the old audio window."""
+    buf, bx = boxes(src)
+    mp, ms, mh = bx[b'mdat']
+    vp, vs, vh = bx[b'moov']
+    first = [None, None]
+
+    def find(start, end, video=False):
+        for pos, sz, typ, hdr in parse(buf, start, end):
+            body = buf[pos + hdr:pos + sz]
+            if typ in CONTAINERS:
+                find(pos + hdr, pos + sz,
+                     b'vide' in body if typ == b'trak' else video)
+            elif video and typ == b'stco':
+                first[0] = struct.unpack_from('>I', body, 8)[0]
+            elif video and typ == b'stsz':
+                first[1] = struct.unpack_from('>I', body, 12)[0]
+
+    find(vp + vh, vp + vs)
+    cut = first[0] + first[1]
+    pad = 3 * 1024 * 1024 - first[1]
+
+    def grow(start, end, video=False):
+        parts = []
+        for pos, sz, typ, hdr in parse(buf, start, end):
+            body = bytearray(buf[pos + hdr:pos + sz])
+            if typ in CONTAINERS:
+                body = grow(pos + hdr, pos + sz,
+                            b'vide' in body if typ == b'trak' else video)
+            elif typ == b'stco':
+                count = struct.unpack_from('>I', body, 4)[0]
+                for i in range(count):
+                    off = struct.unpack_from('>I', body, 8 + i * 4)[0]
+                    if off >= cut:
+                        struct.pack_into('>I', body, 8 + i * 4, off + pad)
+            elif video and typ == b'stsz':
+                struct.pack_into('>I', body, 12, first[1] + pad)
+            parts.append(struct.pack('>I', len(body) + 8) + typ + body)
+        return b''.join(parts)
+
+    # Unreferenced media padding keeps the fixture's bitrate-sized window
+    # above the large sample; the AAC track itself is unchanged.
+    tail = 4 * 1024 * 1024
+    moov = grow(vp + vh, vp + vs)
+    with open(dst, 'wb') as out:
+        out.write(buf[:mp] + struct.pack('>I', ms + pad + tail) + b'mdat')
+        out.write(buf[mp + mh:cut] + bytes(pad) + buf[cut:mp + ms])
+        out.write(bytes(tail) + struct.pack('>I', len(moov) + 8) + b'moov' + moov)
+
+
 def seed(dst, secs, w, h, vbr):
     subprocess.check_call([
         'ffmpeg', '-v', 'error', '-y',
@@ -287,7 +337,8 @@ def main():
     if all(os.path.exists(j(n)) for n in ('long_video.mp4', 'anim_lossless.webp',
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
-            'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
+              'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
+              'audio_large_packet.m4a',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
             'bframes_hevc.mp4', 'hevc_nowpp.mp4', 'mbaff_h264.mp4')):
         print('fixtures present, not rebuilt')
@@ -380,6 +431,7 @@ def main():
 
     # trailing moov, small and fully resident
     os.replace(j('seed_small.mp4'), j('trailing_small.mp4'))
+    audio_large_packet(j('trailing_small.mp4'), j('audio_large_packet.m4a'))
     # trailing moov well past any plausible head
     subprocess.check_call(['ffmpeg', '-v', 'error', '-y', '-stream_loop',
                            '60', '-i', j('seed_4k.mp4'), '-c', 'copy',

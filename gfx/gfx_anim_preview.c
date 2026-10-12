@@ -610,6 +610,13 @@ static void gfx_anim_preview_audio_stop_slot(gfx_anim_preview_t *p)
    p->audio_tell = 0;
    p->audio_slot = -1;
 }
+
+static size_t gfx_anim_preview_audio_lookahead(const gfx_anim_preview_t *p)
+{
+   /* Audio demuxing also walks the interleaved video packets. */
+   return p->feed_ahead > GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD
+      ? p->feed_ahead : GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD;
+}
 #endif
 
 void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
@@ -617,7 +624,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
 #if defined(GFX_ANIM_PREVIEW_AUDIO)
    gfx_anim_preview_audio_win_t *w;
    const uint8_t *base = NULL;
-   size_t blen = 0, floor_off, keep, island_hi = 0;
+   size_t blen = 0, floor_off, keep, island_hi = 0, prime_hi, ahead;
 
    if (!p || !p->stream || !p->path || !*p->path)
       return;
@@ -698,7 +705,20 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       gfx_anim_preview_audio_win_release(w);
       return;
    }
-   p->audio_hi = island_hi ? blen : ((keep < blen) ? keep : blen);
+   ahead = gfx_anim_preview_audio_lookahead(p);
+   prime_hi = floor_off > (size_t)-1 - ahead
+      ? (size_t)-1 : floor_off + ahead;
+   if (prime_hi > blen)
+      prime_hi = blen;
+   if (prime_hi < keep)
+      prime_hi = keep < blen ? keep : blen;
+   data_transfer_window_rebase(w->dt, floor_off);
+   if (!data_transfer_window_extend(w->dt, prime_hi))
+   {
+      gfx_anim_preview_audio_win_release(w);
+      return;
+   }
+   p->audio_hi = island_hi ? blen : prime_hi;
 
    {
       audio_mixer_stream_params_t params;
@@ -733,7 +753,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       p->audio_dt   = w->dt;
       p->audio_slot = out_slot;
       if (island_hi)
-         p->audio_hi = (keep < blen) ? keep : blen;
+         p->audio_hi = prime_hi;
       /* Every windowed stream decodes under a bound from its first
        * read: without one the decoder trusts the demuxer's offsets
        * outright, and the first lap's end shows why that cannot be -
@@ -759,20 +779,25 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
    if (tell >= 0)
    {
       size_t anchor = (size_t)tell;
-      size_t hi     = (anchor > (size_t)-1 - GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD)
-                    ? (size_t)-1 : anchor + GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD;
+      size_t ahead  = gfx_anim_preview_audio_lookahead(p);
+      size_t hi     = (anchor > (size_t)-1 - ahead)
+                    ? (size_t)-1 : anchor + ahead;
       size_t res_hi = 0;
+      size_t budget = GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET;
       if (hi > p->len)
          hi = p->len;
       /* The decoder looped: it stands at the wall until this tick has
        * brought the head back and published a bound for the new lap,
        * so the bound published for the old lap counts for nothing. */
       if (anchor < p->audio_tell)
+      {
          p->audio_hi = 0;
+         budget = 0;
+      }
       p->audio_tell = anchor;
       if (!data_transfer_window_feed_budget(p->audio_dt, anchor,
-               GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
-               GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
+               ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
+               budget, &res_hi))
       {
          /* the window cannot be maintained: stop rather than play
           * against a frozen one */
