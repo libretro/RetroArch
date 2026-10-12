@@ -9,6 +9,8 @@ on:
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
       - 'libretro-common/include/retro_atomic.h'
+      - 'camera/drivers/**'
+      - 'samples/camera/**'
       - 'samples/cores/**'
       - '.github/workflows/Linux-samples-cores.yml'
   pull_request:
@@ -19,6 +21,8 @@ on:
       - 'libretro-common/queues/**'
       - 'libretro-common/include/retro_spsc.h'
       - 'libretro-common/include/retro_atomic.h'
+      - 'camera/drivers/**'
+      - 'samples/camera/**'
       - 'samples/cores/**'
       - '.github/workflows/Linux-samples-cores.yml'
   workflow_dispatch:
@@ -150,6 +154,25 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:suppressions=../../cores/ffmpeg_audio_pipe/tsan.supp \
              timeout 600 ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test (TSan)"
+
+      - name: Build and run camera pipewire_poll_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/camera/pipewire_poll
+        run: |
+          set -eu
+          sudo apt-get install -y -qq libpipewire-0.3-dev
+          # The pipewire camera driver's poll against a scripted
+          # stream, the pw_stream calls link-wrapped: an empty queue
+          # returns at once, and every buffer the poll takes - valid,
+          # corrupted or without CPU data - is queued back. The check
+          # target bounds the run: a poll that waits for a frame is
+          # the failure.
+          make clean check
+          echo "[pass] pipewire_poll_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./pipewire_poll_test
+          echo "[pass] pipewire_poll_test (ASan)"
 
       - name: Build and run ffmpeg_sweep_test (plain, ASan + UBSan, TSan)
         shell: bash

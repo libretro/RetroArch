@@ -144,42 +144,42 @@ static bool preprocess_image(pipewire_camera_t *camera)
 {
    struct spa_buffer    *buf;
    struct spa_meta_header *h;
-   struct pw_buffer       *b = NULL;
+   struct pw_buffer       *b;
    struct scaler_ctx    *ctx = NULL;
+   uint64_t              now;
+   bool                  ret = false;
 
-   for (;;)
-   {
-      if ((b = pw_stream_dequeue_buffer(camera->stream)))
-         break;
-   }
-   if (b == NULL)
-   {
-      RARCH_DBG("[Camera] [PipeWire] Out of buffers.\n");
+   /* The stream thread fills at the camera's rate; a poll with
+    * nothing ready reports no frame rather than waiting for one. */
+   if (!(b = pw_stream_dequeue_buffer(camera->stream)))
       return false;
-   }
 
    buf = b->buffer;
 
    if ((h = spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h))))
    {
-      if (h->flags & SPA_META_HEADER_FLAG_CORRUPTED) {
+      if (h->flags & SPA_META_HEADER_FLAG_CORRUPTED)
+      {
          RARCH_LOG("[Camera] [PipeWire] Dropping corrupted frame.\n");
-         pw_stream_queue_buffer(camera->stream, b);
-         return false;
+         goto done;
       }
-      uint64_t now = pw_stream_get_nsec(camera->stream);
+      now = pw_stream_get_nsec(camera->stream);
       RARCH_DBG("[Camera] [PipeWire] now:%"PRIu64" pts:%"PRIu64" diff:%"PRIi64".\n",
                 now, h->pts, now - h->pts);
    }
 
-   if (buf->datas[0].data == NULL)
-      return false;
+   if (buf->datas[0].data)
+   {
+      ctx = &camera->scaler;
+      scaler_ctx_scale_direct(ctx, camera->buffer_output,
+            (const uint8_t*)buf->datas[0].data);
+      ret = true;
+   }
 
-   ctx = &camera->scaler;
-   scaler_ctx_scale_direct(ctx, camera->buffer_output, (const uint8_t*)buf->datas[0].data);
-
+done:
+   /* Every dequeued buffer goes back, or the stream runs dry. */
    pw_stream_queue_buffer(camera->stream, b);
-   return true;
+   return ret;
 }
 
 static void stream_state_changed_cb(void *data, enum pw_stream_state old,
