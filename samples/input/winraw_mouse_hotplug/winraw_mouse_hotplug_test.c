@@ -224,8 +224,8 @@ int main(void)
    /* it has moved and has a button down */
    a = index_of(M(1));
    g_mice[a].pos    = VIDEO_POS_PACK(123, 456);
-   g_mice[a].flags  = WRAW_MOUSE_FLG_BTN_L;
-   g_mice[a].device = RETRO_DEVICE_LIGHTGUN;
+   retro_atomic_store_relaxed_int(&g_mice[a].buttons, WRAW_MOUSE_FLG_BTN_L);
+   retro_atomic_store_relaxed_int(&g_mice[a].device, RETRO_DEVICE_LIGHTGUN);
 
    /* ---- a second mouse is plugged in ----------------------------- */
    fake_mice[1] = M(2);
@@ -243,14 +243,15 @@ int main(void)
    CHECK(a >= 0 && b >= 0, "the two mice are not both in the list");
    if (a >= 0)
       CHECK(g_mice[a].pos == VIDEO_POS_PACK(123, 456)
-            && g_mice[a].flags == WRAW_MOUSE_FLG_BTN_L
-            && g_mice[a].device == RETRO_DEVICE_LIGHTGUN,
+            && retro_atomic_load_relaxed_int(&g_mice[a].buttons) == WRAW_MOUSE_FLG_BTN_L
+            && retro_atomic_load_relaxed_int(&g_mice[a].device) == RETRO_DEVICE_LIGHTGUN,
             "the mouse that was there lost its state: %ld,%ld flags %#x device %d",
-            (long)VIDEO_POS_X(g_mice[a].pos), (long)VIDEO_POS_Y(g_mice[a].pos), g_mice[a].flags, g_mice[a].device);
+            (long)VIDEO_POS_X(g_mice[a].pos), (long)VIDEO_POS_Y(g_mice[a].pos),
+            retro_atomic_load_relaxed_int(&g_mice[a].buttons), retro_atomic_load_relaxed_int(&g_mice[a].device));
    if (b >= 0)
    {
       /* the device type that makes a report move by its delta */
-      g_mice[b].device = RETRO_DEVICE_MOUSE;
+      retro_atomic_store_relaxed_int(&g_mice[b].device, RETRO_DEVICE_MOUSE);
       move(M(2), 7, -2);
       winraw_poll(wr);
       b = index_of(M(2));

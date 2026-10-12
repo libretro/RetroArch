@@ -35,6 +35,7 @@ extern "C" {
 #include <string/stdstring.h>
 #include <retro_atomic.h>
 #include "winraw_mouse_pending.h"
+#include "winraw_mouse_buttons.h"
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -168,7 +169,9 @@ typedef struct
     * over the accumulated delta, and yields to pos_pending. */
    retro_atomic_int_t abs_pending;
    retro_atomic_int_t abs_pos;
-   int device;
+   retro_atomic_int_t device;
+   retro_atomic_int_t buttons;
+   /* The poll's frame snapshot; never written by the callback. */
    uint8_t flags;
 } winraw_mouse_t;
 
@@ -923,7 +926,11 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       {
          uint32_t pos = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
          for (i = 0; i < mouse_cnt_r; ++i)
+         {
             mice_r[i].pos = pos;
+            retro_atomic_int_init(&mice_r[i].device, 0);
+            retro_atomic_int_init(&mice_r[i].buttons, 0);
+         }
       }
    }
 
@@ -1404,6 +1411,10 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
    bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
+   int device = retro_atomic_load_relaxed_int(&mouse->device);
+   unsigned left = swap_mouse_buttons ? WRAW_MOUSE_FLG_BTN_R : WRAW_MOUSE_FLG_BTN_L;
+   unsigned right = swap_mouse_buttons ? WRAW_MOUSE_FLG_BTN_L : WRAW_MOUSE_FLG_BTN_R;
+   unsigned down = 0, up = 0;
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
@@ -1436,7 +1447,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
        * Whether the menu is up or an overlay is configured is asked
        * once a poll (winraw_poll()), not once a report: a mouse sends
        * a thousand of these a second, or eight thousand. */
-      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER)
+      bool getcursorpos = (device == RETRO_DEVICE_POINTER)
          || retro_atomic_load_relaxed_int(&wr->cursor_for_all);
 
       if (getcursorpos)
@@ -1459,7 +1470,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          retro_atomic_store_release_int(&mouse->abs_pending, 0);
 
          /* Handle different sensitivity for lightguns */
-         if (mouse->device == RETRO_DEVICE_LIGHTGUN)
+         if (device == RETRO_DEVICE_LIGHTGUN)
          {
             retro_atomic_store_release_int(&mouse->dlt,
                   (int)VIDEO_POS_PACK(state->lLastX, state->lLastY));
@@ -1471,45 +1482,32 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       }
    }
 
-   if (swap_mouse_buttons)
-   {
-      if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_R);
-      else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
-         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_R);
+   if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
+      down |= left;
+   else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
+      up |= left;
 
-      if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_L);
-      else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_L);
-   }
-   else
-   {
-      if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_DOWN)
-         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_L);
-      else if (state->usButtonFlags & RI_MOUSE_LEFT_BUTTON_UP)
-         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_L);
-
-      if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
-         mouse->flags |=  (WRAW_MOUSE_FLG_BTN_R);
-      else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
-         mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_R);
-   }
+   if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+      down |= right;
+   else if (state->usButtonFlags & RI_MOUSE_RIGHT_BUTTON_UP)
+      up |= right;
 
    if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
-      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_M);
+      down |= WRAW_MOUSE_FLG_BTN_M;
    else if (state->usButtonFlags & RI_MOUSE_MIDDLE_BUTTON_UP)
-      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_M);
+      up |= WRAW_MOUSE_FLG_BTN_M;
 
    if (state->usButtonFlags & RI_MOUSE_BUTTON_4_DOWN)
-      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_B4);
+      down |= WRAW_MOUSE_FLG_BTN_B4;
    else if (state->usButtonFlags & RI_MOUSE_BUTTON_4_UP)
-      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_B4);
+      up |= WRAW_MOUSE_FLG_BTN_B4;
 
    if (state->usButtonFlags & RI_MOUSE_BUTTON_5_DOWN)
-      mouse->flags |=  (WRAW_MOUSE_FLG_BTN_B5);
+      down |= WRAW_MOUSE_FLG_BTN_B5;
    else if (state->usButtonFlags & RI_MOUSE_BUTTON_5_UP)
-      mouse->flags &= ~(WRAW_MOUSE_FLG_BTN_B5);
+      up |= WRAW_MOUSE_FLG_BTN_B5;
+
+   winraw_mouse_buttons_update(&mouse->buttons, down, up);
 
    if (state->usButtonFlags & RI_MOUSE_WHEEL)
    {
@@ -2327,7 +2325,7 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       unsigned read_as        = input_driver_pointer_read_as(i);
 
       if (read_as)
-         g_mice[i].device     = (int)read_as;
+         retro_atomic_store_relaxed_int(&g_mice[i].device, (int)read_as);
       if (m->flags & WRAW_MOUSE_FLG_BTN_L)
          buttons |= INPUT_POINTER_LEFT;
       if (m->flags & WRAW_MOUSE_FLG_BTN_R)
@@ -2484,10 +2482,6 @@ static void winraw_poll(void *data)
       int dlt;
       enum winraw_mouse_position_source source;
 
-      /* Clear buttons when not focused */
-      if (!winraw_focus)
-         g_mice[i].flags = 0;
-
       /* the frame's motion, both halves in one take */
       dlt = retro_atomic_exchange_int(&g_mice[i].dlt, 0);
       dx  = VIDEO_POS_X(dlt);
@@ -2537,7 +2531,8 @@ static void winraw_poll(void *data)
       wr->mice[i].pos     = g_mice[i].pos;
       wr->mice[i].dlt     = dlt;
       wr->mice[i].whl     = retro_atomic_exchange_int(&g_mice[i].whl, 0);
-      wr->mice[i].flags   = g_mice[i].flags;
+      wr->mice[i].flags   = (uint8_t)winraw_mouse_buttons_snapshot(
+            &g_mice[i].buttons, winraw_focus);
    }
 
    winraw_publish_pointers(wr);
@@ -2643,7 +2638,7 @@ static int16_t winraw_input_state(
             {
                mouse = &wr->mice[i];
                if (mouse && device > RETRO_DEVICE_JOYPAD)
-                  g_mice[i].device = device;
+                  retro_atomic_store_relaxed_int(&g_mice[i].device, (int)device);
                break;
             }
          }
