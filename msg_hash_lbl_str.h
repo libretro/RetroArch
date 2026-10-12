@@ -625,6 +625,8 @@
 #define MENU_ENUM_LABEL_SWITCH_OC_ENABLE_STR "Switch_OC_enable"
 #define MENU_ENUM_LABEL_SWITCH_CEC_ENABLE_STR "Switch_CEC_enable"
 #define MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE_STR "Switch_ERTM_Disable"
+#define MENU_ENUM_LABEL_REBOOT_PAYLOAD_STR "reboot_payload"
+#define MENU_ENUM_LABEL_REBOOT_FORCE_SELF_ON_UPDATE_STR "reboot_force_self_on_update"
 #define MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE_STR "system_bgm_enable"
 #define MENU_ENUM_LABEL_SYSTEM_INFORMATION_STR "system_information"
 #define MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY_STR "system_info_entry"

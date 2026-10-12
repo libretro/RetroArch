@@ -49,6 +49,9 @@
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
 #include "../misc/cpufreq/cpufreq.h"
+#ifdef HAVE_LAKKA_SWITCH
+#include "../../misc/reboot2payload/reboot2payload.h"
+#endif
 
 #ifndef BIND_ACTION_RIGHT
 #define BIND_ACTION_RIGHT(cbs, name) (cbs)->action_right = (name)
@@ -1128,6 +1131,17 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
 }
 #endif
 
+#ifdef HAVE_LAKKA_SWITCH
+static int reboot_payload_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   r2p_cycle_selection(config_get_ptr(), true);
+   menu_st->flags            |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+#endif
+
 static int core_setting_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1470,6 +1484,11 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
             case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
                BIND_ACTION_RIGHT(cbs, cpu_policy_freq_managed_gov);
+               break;
+            #endif
+            #ifdef HAVE_LAKKA_SWITCH
+            case MENU_ENUM_LABEL_REBOOT_PAYLOAD:
+               BIND_ACTION_RIGHT(cbs, reboot_payload_right);
                break;
             #endif
             default:
