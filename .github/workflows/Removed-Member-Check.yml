@@ -55,6 +55,9 @@ jobs:
           # Both ends of the range have to be present, and a pull
           # request's base can be behind by any amount.
           fetch-depth: 0
+          # The history without its file contents: the diff fetches
+          # the few it reads. A fifth of the clone.
+          filter: blob:none
 
       - name: Checker self-test
         shell: bash
