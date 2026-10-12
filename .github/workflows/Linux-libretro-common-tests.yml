@@ -210,8 +210,8 @@ jobs:
           # it does not take the whole state and pick a field out.
           # What is still to be converted is listed in the check, file
           # by file with a count, and the counts only go down.
-          python3 tools/input_state_grab_check.py --selftest
-          python3 tools/input_state_grab_check.py
+          tools/check.sh tools/input_state_grab_check.c --selftest
+          tools/check.sh tools/input_state_grab_check.c
 
       - name: Check the GL drivers take the hardware ring's fence ahead of the swap
         shell: bash
@@ -247,8 +247,8 @@ jobs:
           # translations naming a label the build does not have, and
           # nothing fails until the first translation arrives from
           # Crowdin - then every build without the feature does.
-          python3 tools/settings_def_guard_check.py --selftest
-          python3 tools/settings_def_guard_check.py
+          tools/check.sh tools/settings_def_guard_check.c --selftest
+          tools/check.sh tools/settings_def_guard_check.c
 
       - name: Check no video driver deletes overlay textures it was lent
         shell: bash

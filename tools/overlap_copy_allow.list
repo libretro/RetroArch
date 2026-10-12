@@ -1,6 +1,6 @@
 # tools/overlap_copy_allow.list
 #
-# Allowlist for tools/overlap_copy_check.py: same-buffer copy calls
+# Allowlist for tools/overlap_copy_check.c: same-buffer copy calls
 # that were audited by hand and are safe by construction. One entry
 # per line: file|function|dst-base|src-base (bases as normalized by
 # the checker). An entry allows that combination anywhere in the

@@ -2400,7 +2400,7 @@ static INLINE unsigned input_config_binds_generation(void)
 /* How everything outside input/ gets at a bind: a user's, and the one
  * a pad's autoconfig profile gave it. The arrays are the input code's
  * own, and how the binds are kept is its to change; a check holds that
- * nothing else names them (tools/input_state_grab_check.py). To read
+ * nothing else names them (tools/input_state_grab_check.c). To read
  * one, these; to write one, the _edit calls, which count the change. */
 static INLINE const struct retro_keybind *input_config_bind(
       unsigned user, unsigned id)

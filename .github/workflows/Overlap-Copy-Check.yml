@@ -37,7 +37,7 @@ jobs:
           # allowlist suppresses audited same-base copies but can
           # never suppress an exact alias, and stale allowlist
           # entries are reported.
-          python3 tools/overlap_copy_check.py --selftest
+          tools/check.sh tools/overlap_copy_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -51,4 +51,4 @@ jobs:
           # on Linux/Windows, so nothing else in CI can catch this
           # class before it ships to Mac users. Audited-intentional
           # same-buffer copies live in tools/overlap_copy_allow.list.
-          python3 tools/overlap_copy_check.py
+          tools/check.sh tools/overlap_copy_check.c

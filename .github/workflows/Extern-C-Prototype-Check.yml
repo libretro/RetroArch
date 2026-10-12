@@ -34,7 +34,7 @@ jobs:
           # with a parameter more than its prototype (the shape of the
           # 0b2613d Xbox boot crash) is flagged, and a parameter of
           # another type is flagged.
-          python3 tools/extern_c_prototype_check.py --selftest
+          tools/check.sh tools/extern_c_prototype_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -45,4 +45,4 @@ jobs:
           # never checked against the prototype by any compiler: the
           # linker matches on the name alone. This is the check that
           # compares the two, for every such definition in the tree.
-          python3 tools/extern_c_prototype_check.py
+          tools/check.sh tools/extern_c_prototype_check.c
