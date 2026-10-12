@@ -10,7 +10,9 @@
  * (frames are pushed as fast as they are taken), the blocking wait
  * when the queues are full, and the drain after the encoder thread
  * is joined.  A frame out of order, torn, or from the wrong slot
- * fails the pixel check.
+ * fails the pixel check.  Every other frame is pushed with a padded
+ * pitch, and a PLAIN_RING build has the driver's video ring without
+ * its double mapping, so frames across the wrap take the scratch copy.
  *
  * A second pass runs in drop mode (allow_frame_drop, the smallest
  * video queue): frames the encoder can't take in time are dropped,
@@ -34,6 +36,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_spsc.h>
 
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_ffmpeg.h"
@@ -67,15 +70,20 @@ extern unsigned stub_log_level;
 /* Frame n: a solid colour derived from n in the top half, the pattern
  * inverted in the bottom half, so a frame's number can be read back
  * from any pixel and a torn frame (rows from two frames) is caught. */
-static void paint(uint32_t *fb, unsigned n)
+static void paint(uint32_t *fb, unsigned stride, unsigned n)
 {
    unsigned x, y;
    uint32_t c = 0xff000000u | ((n * 37u) & 0xffu) << 16
               | ((n * 91u) & 0xffu) << 8 | ((n * 13u) & 0xffu);
    for (y = 0; y < H; y++)
       for (x = 0; x < W; x++)
-         fb[y * W + x] = (y < H / 2) ? c : (c ^ 0x00ffffffu);
+         fb[y * stride + x] = (y < H / 2) ? c : (c ^ 0x00ffffffu);
 }
+
+/* Odd frames come with a padded pitch, as cores commonly hand them
+ * over, so the driver's row-wise pack into its ring is exercised next
+ * to the whole-frame copy. */
+#define PAD 24
 
 static int check_frame(const AVFrame *f, unsigned n)
 {
@@ -168,7 +176,8 @@ static int run(bool drop)
    struct record_params params;
    struct record_video_data vid;
    struct record_audio_data aud;
-   uint32_t *fb = (uint32_t*)malloc(W * H * sizeof(uint32_t));
+   uint32_t *fb  = (uint32_t*)malloc(W * H * sizeof(uint32_t));
+   uint32_t *fbp = (uint32_t*)malloc((W + PAD) * H * sizeof(uint32_t));
    int16_t   pcm[800 * 2];
    void     *rec;
    unsigned  n;
@@ -212,10 +221,19 @@ static int run(bool drop)
    memset(pcm, 0, sizeof(pcm));
    for (n = 0; n < FRAMES; n++)
    {
-      paint(fb, n);
-      vid.data    = fb;
+      if (n & 1)
+      {
+         paint(fbp, W + PAD, n);
+         vid.data  = fbp;
+         vid.pitch = (W + PAD) * sizeof(uint32_t);
+      }
+      else
+      {
+         paint(fb, W, n);
+         vid.data  = fb;
+         vid.pitch = W * sizeof(uint32_t);
+      }
       vid.dims    = VIDEO_SCALE_PACK(W, H);
-      vid.pitch   = W * sizeof(uint32_t);
       vid.is_dupe = false;
       if (!record_ffmpeg.push_video(rec, &vid))
       {
@@ -239,6 +257,7 @@ static int run(bool drop)
    record_ffmpeg.finalize(rec);
    record_ffmpeg.free(rec);
    free(fb);
+   free(fbp);
 
    /* Decode it back. */
    {
@@ -443,6 +462,15 @@ static int open_only(void)
          frames, mib);
    return 0;
 }
+
+#ifdef PLAIN_RING
+/* The plain-ring lane: the driver asks for a mirrored video ring and
+ * gets the plain one, as on a platform without a double mapping. */
+bool __wrap_retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity)
+{
+   return retro_spsc_init(q, min_capacity);
+}
+#endif
 
 int main(void)
 {

@@ -1416,7 +1416,10 @@ static bool init_thread(ffmpeg_t *handle)
       handle->fifos_init = false;
       for (; fits && vf >= MIN_VIDEO_FIFO_FRAMES; vf /= 2)
       {
-         if (retro_spsc_init(&handle->video_fifo, (size_t)(frame_bytes * vf)))
+         /* Mirrored, so a frame is one contiguous span across the
+          * wrap: one publish to write, and read in place. */
+         if (retro_spsc_init_mirrored(&handle->video_fifo,
+                  (size_t)(frame_bytes * vf)))
          {
             handle->fifos_init = retro_spsc_init(&handle->attr_fifo,
                   sizeof(struct ff_video_attr) * vf);
@@ -1820,16 +1823,51 @@ static void ffmpeg_fill_audio_gap(ffmpeg_t *handle)
    retro_eventcount_notify(&handle->data);
 }
 
+/* Packs the frame's rows into the video ring: one reservation and one
+ * publish for every row the contiguous span holds, the rest through
+ * the ring's own split copy. On the mirrored ring the span is the
+ * whole frame, so a frame is one publish. */
+static void ffmpeg_video_fifo_write(ffmpeg_t *handle,
+      const uint8_t *src, size_t src_pitch,
+      unsigned rows, size_t row_bytes)
+{
+   void    *dst;
+   unsigned y;
+   size_t   span;
+   unsigned direct;
+
+   if (!rows || !row_bytes)
+      return;
+
+   span   = retro_spsc_write_begin(&handle->video_fifo, &dst);
+   direct = (unsigned)(span / row_bytes);
+   if (direct > rows)
+      direct = rows;
+   if (direct)
+   {
+      uint8_t *d = (uint8_t*)dst;
+      if (src_pitch == row_bytes)
+         memcpy(d, src, (size_t)direct * row_bytes);
+      else
+         for (y = 0; y < direct; y++, src += src_pitch, d += row_bytes)
+            memcpy(d, src, row_bytes);
+      if (src_pitch == row_bytes)
+         src += (size_t)direct * src_pitch;
+   }
+   retro_spsc_write_end(&handle->video_fifo, (size_t)direct * row_bytes);
+
+   for (y = direct; y < rows; y++, src += src_pitch)
+      retro_spsc_write(&handle->video_fifo, src, row_bytes);
+}
+
 static bool ffmpeg_push_video_impl(void *data,
       const struct record_video_data *vid)
 {
-   unsigned y;
    unsigned rows;
    size_t video_bytes;
    struct ff_video_attr attr;
    bool drop_frame  = false;
    ffmpeg_t *handle = (ffmpeg_t*)data;
-   int       offset = 0;
 
    if (!handle || !vid)
       return false;
@@ -1918,9 +1956,8 @@ static bool ffmpeg_push_video_impl(void *data,
    /* Frame first, attr last: the encoder takes the attr as the
     * signal that a whole frame is behind it, and the ring's
     * release/acquire on each write orders the rows before it. */
-   for (y = 0; y < rows; y++, offset += vid->pitch)
-      retro_spsc_write(&handle->video_fifo,
-            (const uint8_t*)vid->data + offset, attr.vid.pitch);
+   ffmpeg_video_fifo_write(handle, (const uint8_t*)vid->data,
+         (size_t)vid->pitch, rows, (size_t)attr.vid.pitch);
 
    retro_spsc_write(&handle->attr_fifo, &attr, sizeof(attr));
    retro_eventcount_notify(&handle->data);
@@ -2591,12 +2628,48 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle)
    encode_audio(handle, true);
 }
 
+/* The frame copy the encoder side reads a frame into when the ring
+ * cannot hand it over in one span; NULL on the mirrored ring, which
+ * always can. Overallocated: FFmpeg reads a little past a frame. */
+static void *ffmpeg_video_scratch(ffmpeg_t *handle)
+{
+   if (handle->video_fifo.mirror)
+      return NULL;
+   return av_malloc(2 * VIDEO_SCALE_AREA(handle->params.fb_dims)
+         * handle->video.pix_size);
+}
+
+/* Takes the frame behind the next attr off the video ring and hands it
+ * to the encoder, in place when the ring holds it in one span (always
+ * on the mirrored ring), else through scratch. */
+static void ffmpeg_video_fifo_take(ffmpeg_t *handle, void *scratch)
+{
+   struct ff_video_attr attr;
+   const void *src;
+   size_t bytes;
+
+   retro_spsc_read(&handle->attr_fifo, &attr, sizeof(attr));
+   bytes = (size_t)VIDEO_SCALE_H(attr.vid.dims) * attr.vid.pitch;
+
+   if (bytes && retro_spsc_read_begin(&handle->video_fifo, &src) >= bytes)
+   {
+      attr.vid.data = src;
+      ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip);
+      retro_spsc_read_end(&handle->video_fifo, bytes);
+      return;
+   }
+
+   if (bytes)
+      retro_spsc_read(&handle->video_fifo, scratch, bytes);
+   attr.vid.data = scratch;
+   ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip);
+}
+
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
    void *audio_buf       = NULL;
    bool did_work         = false;
-   void *video_buf       = av_malloc(2 *
-         VIDEO_SCALE_AREA(handle->params.fb_dims) * handle->video.pix_size);
+   void *video_buf       = ffmpeg_video_scratch(handle);
    size_t audio_buf_size = handle->config.audio_enable ?
       (handle->audio.codec->frame_size *
        handle->params.channels * sizeof(int16_t)) : 0;
@@ -2608,8 +2681,6 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    do
    {
-      struct ff_video_attr attr_buf;
-
       did_work = false;
 
       /* Gate audio-fifo drain on audio_buf non-NULL: audio_buf
@@ -2633,16 +2704,13 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
          }
       }
 
-      /* Gate video-fifo drain on video_buf non-NULL: same
+      /* Gate video-fifo drain on the scratch it may need: same
        * reasoning as the audio branch. */
-      if (video_buf && retro_spsc_read_avail(&handle->attr_fifo) >= sizeof(attr_buf))
+      if (     (handle->video_fifo.mirror || video_buf)
+            && retro_spsc_read_avail(&handle->attr_fifo)
+               >= sizeof(struct ff_video_attr))
       {
-         retro_spsc_read(&handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-         retro_spsc_read(&handle->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
-         attr_buf.vid.data = video_buf;
-         ffmpeg_push_video_thread(handle, &attr_buf.vid, attr_buf.pts_skip);
-
+         ffmpeg_video_fifo_take(handle, video_buf);
          did_work = true;
       }
    }while (did_work);
@@ -2713,10 +2781,7 @@ static bool ffmpeg_finalize(void *data)
 static void ffmpeg_thread(void *data)
 {
    ffmpeg_t *ff          = (ffmpeg_t*)data;
-   /* For some reason, FFmpeg has a tendency to crash
-    * if we don't overallocate a bit. */
-   void *video_buf       = av_malloc(2 *
-         VIDEO_SCALE_AREA(ff->params.fb_dims) * ff->video.pix_size);
+   void *video_buf       = ffmpeg_video_scratch(ff);
    size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
@@ -2729,12 +2794,10 @@ static void ffmpeg_thread(void *data)
 
    while (retro_atomic_load_acquire_int(&ff->alive))
    {
-      struct ff_video_attr attr_buf;
-
       bool avail_video = false;
       bool avail_audio = false;
 
-      if (retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(attr_buf))
+      if (retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(struct ff_video_attr))
          avail_video = true;
 
       if (ff->config.audio_enable)
@@ -2745,7 +2808,8 @@ static void ffmpeg_thread(void *data)
       {
          int key = retro_eventcount_prepare_wait(&ff->data);
          if (     !retro_atomic_load_acquire_int(&ff->alive)
-               || retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(attr_buf)
+               || retro_spsc_read_avail(&ff->attr_fifo)
+                  >= sizeof(struct ff_video_attr)
                || (  ff->config.audio_enable
                   && retro_spsc_read_avail(&ff->audio_fifo) >= audio_buf_size))
             retro_eventcount_cancel_wait(&ff->data);
@@ -2754,15 +2818,10 @@ static void ffmpeg_thread(void *data)
          continue;
       }
 
-      if (avail_video && video_buf)
+      if (avail_video && (ff->video_fifo.mirror || video_buf))
       {
-         retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
-         retro_spsc_read(&ff->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
+         ffmpeg_video_fifo_take(ff, video_buf);
          retro_eventcount_notify(&ff->space);
-
-         attr_buf.vid.data = video_buf;
-         ffmpeg_push_video_thread(ff, &attr_buf.vid, attr_buf.pts_skip);
       }
 
       if (avail_audio && audio_buf)

@@ -55,6 +55,12 @@ CFLAGS   += -Wall $(INCDIRS) $(FF_CFLAGS)
 CFLAGS   += -DRARCH_INTERNAL -DHAVE_FFMPEG -DHAVE_THREADS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 LDFLAGS  += $(FF_LIBS) -lm -lpthread
 
+# PLAIN_RING=1 builds the lane where the video ring cannot be mirrored.
+ifneq ($(PLAIN_RING),)
+CFLAGS  += -DPLAIN_RING
+LDFLAGS += -Wl,--wrap=retro_spsc_init_mirrored
+endif
+
 ifneq ($(SANITIZER),)
 CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
 LDFLAGS += -fsanitize=$(SANITIZER)
