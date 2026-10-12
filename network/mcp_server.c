@@ -1109,7 +1109,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       if ((invalid = mcp_integer_args(mcp_tool_action(r.name), &r)))
       {
          char msg[128];
-         snprintf(msg, sizeof(msg), "Invalid integer parameter \"%s\".",
+         snprintf(msg, sizeof(msg), "Invalid integer parameter \"%.96s\".",
                invalid);
          mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
@@ -1121,7 +1121,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       if (missing)
       {
          char msg[128];
-         snprintf(msg, sizeof(msg), "Missing required parameter \"%s\".",
+         snprintf(msg, sizeof(msg), "Missing required parameter \"%.96s\".",
                missing);
          mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
