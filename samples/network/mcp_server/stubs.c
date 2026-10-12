@@ -20,3 +20,4 @@ void RARCH_ERR(const char *fmt, ...)
    vfprintf(stderr, fmt, ap);
    va_end(ap);
 }
+void verbosity_ring_arm(void) { }

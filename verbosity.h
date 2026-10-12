@@ -57,6 +57,18 @@ void retro_main_log_file_init(const char *path, bool append);
 
 bool is_logging_to_file(void);
 
+#ifdef HAVE_MCP
+/* The last lines logged, kept for GET_LOG once armed: lines are
+ * numbered from 0 as they are logged, and @since is the first wanted.
+ * Writes what fits of them to @s, one per line, and returns its
+ * length; *@next is the number of the line after the last written,
+ * and *@first that of the first, later than @since when older lines
+ * were overwritten. */
+void verbosity_ring_arm(void);
+size_t verbosity_ring_read(size_t since, char *s, size_t len,
+      size_t *first, size_t *next);
+#endif
+
 #if defined(HAVE_LOGGER)
 
 void logger_init (void);

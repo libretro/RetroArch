@@ -541,6 +541,11 @@ struct cmd_action_map
 bool command_get_option(command_t *cmd, const char *arg);
 bool command_set_option(command_t *cmd, const char *arg);
 
+#ifdef HAVE_MCP
+/* GET_LOG [since] */
+bool command_get_log(command_t *cmd, const char *arg);
+#endif
+
 /* RUN_FRAMES <count>; the run loop calls tick after each frame it runs
  * and cancel when the content goes */
 #define COMMAND_RUN_FRAMES_MAX 36000
@@ -632,6 +637,13 @@ static const struct cmd_param cmd_params_option_set[] = {
       CMD_PARAM_STRING, true, NULL, "on|off", NULL },
    { NULL }
 };
+#ifdef HAVE_MCP
+static const struct cmd_param cmd_params_log[] = {
+   { "since", "The first line wanted, as NEXT gave it; 0 when left out.",
+      CMD_PARAM_INT, false, NULL, NULL, "0" },
+   { NULL }
+};
+#endif
 static const struct cmd_param cmd_params_run_frames[] = {
    { "count", "How many frames to run.", CMD_PARAM_INT, true, NULL, NULL,
       NULL },
@@ -730,6 +742,9 @@ static const struct cmd_action_map action_map[] = {
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
+#ifdef HAVE_MCP
+   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time.", CMD_INFO_READ_ONLY, cmd_params_log },
+#endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and run the content the given number of frames, answered once the last has run; it stays paused.", 0, cmd_params_run_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },

@@ -2109,6 +2109,51 @@ bool command_set_option(command_t *cmd, const char *arg)
    return true;
 }
 
+#ifdef HAVE_MCP
+/* GET_LOG [since]
+ *
+ * The lines logged since line @since (0 when left out), as many as one
+ * reply holds, then NEXT and the number to ask from next time. Lines
+ * logged before the first GET_LOG, or the MCP server started, are not
+ * kept; SKIPPED and a count says lines were overwritten before they
+ * were read. */
+bool command_get_log(command_t *cmd, const char *arg)
+{
+   size_t first, next, _len;
+   unsigned since = 0;
+   char  *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg && !command_arg_uint(arg, &since))
+   {
+      command_reply_error(cmd, "GET_LOG", "a line number, not %s", arg);
+      return false;
+   }
+   verbosity_ring_arm();
+   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   {
+      command_reply_error(cmd, "GET_LOG", "out of memory");
+      return false;
+   }
+   /* room kept for the SKIPPED and NEXT lines */
+   _len = verbosity_ring_read(since, reply + 32, COMMAND_LIST_REPLY_MAX - 64,
+         &first, &next);
+   if (first > since)
+   {
+      int n = snprintf(reply, 32, "SKIPPED %u\n", (unsigned)(first - since));
+      memmove(reply + n, reply + 32, _len);
+      _len += (size_t)n;
+   }
+   else
+      memmove(reply, reply + 32, _len);
+   _len += (size_t)snprintf(reply + _len, 32, "NEXT %u\n", (unsigned)next);
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return true;
+}
+#endif
+
 /* RUN_FRAMES in progress: frames still to run, and the reply owed */
 static struct
 {

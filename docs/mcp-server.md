@@ -118,6 +118,13 @@ A hotkey tool that is still a tool answers `<NAME> pressed` for the same
 reason: the press goes out on the next poll, and what it
 changed is read back with `GET_OPTION`.
 
+`GET_LOG [since]` gives the lines RetroArch has logged since line
+`since` (0 when left out), as far as the logging verbosity lets them be
+logged, then `NEXT` and the line number to ask from next time; when
+lines were overwritten before they were read it says `SKIPPED` and how
+many first. The last 256 lines are kept, from when the MCP server
+starts or the first `GET_LOG`.
+
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
 run; it is left paused. With `SET_INPUT` before it, an assistant plays

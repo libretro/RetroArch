@@ -354,6 +354,100 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
 #endif
 #endif
 
+#ifdef HAVE_MCP
+#include <string.h>
+#include <retro_atomic.h>
+
+/* The last lines logged, for GET_LOG, filled by whatever thread logs
+ * and read on the main thread without a lock: a writer claims a line
+ * number, marks the slot busy, writes the text as atomic words and
+ * stamps the slot with its number; a reader takes a slot's text only
+ * when the stamp is the line it wants before and after the copy. */
+#define LOG_RING_SLOTS  256
+#define LOG_RING_WORDS  (256 / sizeof(size_t))
+
+struct log_ring_slot
+{
+   retro_atomic_size_t stamp; /* line number + 1, 0 while written */
+   retro_atomic_size_t text[LOG_RING_WORDS];
+};
+
+static struct
+{
+   struct log_ring_slot slots[LOG_RING_SLOTS];
+   retro_atomic_size_t  head;
+   retro_atomic_int_t   armed;
+} log_ring;
+
+void verbosity_ring_arm(void)
+{
+   retro_atomic_store_release_int(&log_ring.armed, 1);
+}
+
+static void verbosity_ring_put(const char *line)
+{
+   size_t i;
+   size_t seq;
+   size_t words[LOG_RING_WORDS];
+   struct log_ring_slot *slot;
+
+   if (!retro_atomic_load_relaxed_int(&log_ring.armed))
+      return;
+   memset(words, 0, sizeof(words));
+   strlcpy((char*)words, line, sizeof(words));
+   seq  = retro_atomic_fetch_add_size(&log_ring.head, 1);
+   slot = &log_ring.slots[seq % LOG_RING_SLOTS];
+   retro_atomic_store_relaxed_size(&slot->stamp, 0);
+   retro_atomic_thread_fence_release();
+   for (i = 0; i < LOG_RING_WORDS; i++)
+      retro_atomic_store_relaxed_size(&slot->text[i], words[i]);
+   retro_atomic_store_release_size(&slot->stamp, seq + 1);
+}
+
+size_t verbosity_ring_read(size_t since, char *s, size_t len,
+      size_t *first, size_t *next)
+{
+   size_t _len = 0;
+   size_t head = retro_atomic_load_acquire_size(&log_ring.head);
+   size_t seq  = since;
+
+   if (head > LOG_RING_SLOTS && seq < head - LOG_RING_SLOTS)
+      seq = head - LOG_RING_SLOTS;
+   if (seq > head)
+      seq = head;
+   *first = seq;
+   for (; seq < head; seq++)
+   {
+      size_t i, n;
+      size_t words[LOG_RING_WORDS];
+      struct log_ring_slot *slot = &log_ring.slots[seq % LOG_RING_SLOTS];
+      size_t stamp = retro_atomic_load_acquire_size(&slot->stamp);
+      /* still being written, or already a later line: skipped */
+      if (stamp != seq + 1)
+         continue;
+      for (i = 0; i < LOG_RING_WORDS; i++)
+         words[i] = retro_atomic_load_relaxed_size(&slot->text[i]);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_size(&slot->stamp) != stamp)
+         continue;
+      ((char*)words)[sizeof(words) - 1] = '\0';
+      n = strlen((const char*)words);
+      if (_len + n + 2 > len)
+         break;
+      memcpy(s + _len, words, n);
+      _len += n;
+      if (!n || s[_len - 1] != '\n')
+         s[_len++] = '\n';
+   }
+   if (len)
+      s[_len < len ? _len : len - 1] = '\0';
+   *next = seq;
+   return _len;
+}
+#else
+#define verbosity_ring_put(line) ((void)0)
+#endif
+
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if defined(_XBOX1) || defined(__WINRT__)
@@ -420,6 +514,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       char       *heap  = NULL;
       const char *out   = rarch_log_line_format(line, sizeof(line),
             &heap, tag_v, fmt, ap);
+
+      verbosity_ring_put(out);
 
 #ifdef HAVE_COMPANION_WIMP
       /* Mirror the line into the desktop companion's log view, when

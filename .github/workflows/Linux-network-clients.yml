@@ -132,6 +132,17 @@ jobs:
             make -C samples/network/mcp_server check
           make -C samples/network/mcp_server clean
 
+      - name: GET_LOG's ring, written from four threads while read
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          make -C samples/runloop/log_ring clean
+          make -C samples/runloop/log_ring SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            make -C samples/runloop/log_ring check
+          make -C samples/runloop/log_ring clean
+
       - name: Command options and speed setters
         shell: bash
         working-directory: ${{ github.workspace }}
