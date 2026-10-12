@@ -262,7 +262,7 @@ jobs:
           # TASK_CLOUDSYNC_FORCE_LOCK: the locked path on the host's own
           # backend, where TSan sees an append or hand-over the lock
           # does not cover. Same tests, same checks, other path.
-          for t in cloudsync_manifest_adds_test cloudsync_pacing_test; do
+          for t in cloudsync_manifest_adds_test cloudsync_pacing_test cloudsync_commit_test; do
              make clean $t FORCE_LOCK=1
              timeout 120 ./$t
              make clean $t FORCE_LOCK=1 SANITIZER=address,undefined
@@ -273,6 +273,19 @@ jobs:
           done
           make clean >/dev/null
           echo "[pass] cloudsync hand-over, locked path"
+
+      - name: Check cloud-sync commits on the content thread
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          make clean cloudsync_commit_test SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./cloudsync_commit_test
+          make clean cloudsync_commit_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./cloudsync_commit_test
+          make clean cloudsync_commit_test CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          WINEDEBUG=-all wine ./cloudsync_commit_test.exe
+          make clean
 
       - name: Build and run cloudsync_async_test (ASan + UBSan, TSan)
         shell: bash

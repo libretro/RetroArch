@@ -1275,6 +1275,19 @@ static bool task_cloud_sync_fetch_commit(
       task_cloud_sync_carry_manifests_forward(sync_state, key, server_hash);
       return false;
    }
+   if (!sync_state->destructive && path_is_valid(fetch_state->local))
+   {
+      struct item_file local_file = {0};
+      local_file.alt  = (char*)key;
+      local_file.path = fetch_state->local;
+      if (!task_cloud_sync_backup_file(&local_file, sync_state->dir_core_assets))
+      {
+         filestream_delete(tmp);
+         task_cloud_sync_carry_manifests_forward(sync_state, key, server_hash);
+         sync_state->failures = true;
+         return false;
+      }
+   }
    if (filestream_rename(tmp, fetch_state->local) != 0)
    {
       RARCH_WARN(CSPFX "Could not move the download of \"%s\" into place.\n", key);
@@ -1432,7 +1445,6 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
    task_cloud_sync_fetch_state_t *fetch_state = (task_cloud_sync_fetch_state_t *)user_data;
    task_cloud_sync_state_t       *sync_state;
    struct item_file              *server_file;
-   char                          *hash = NULL;
 
    if (!fetch_state)
       return;
@@ -1446,11 +1458,12 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
        * in flight until then */
       if (task_cloud_sync_fetched_push(fetch_state, path, file))
          return;
-      hash = task_cloud_sync_md5_rfile(file);
       filestream_close(file);
-      if (task_cloud_sync_fetch_commit(fetch_state, path))
-         task_cloud_sync_fetched(sync_state, server_file, path, hash);
-      free(hash);
+      task_cloud_sync_fetch_discard(fetch_state);
+      task_cloud_sync_carry_manifests_forward(sync_state, path,
+            CS_FILE_HASH(server_file));
+      sync_state->failures = true;
+      RARCH_WARN(CSPFX "Could not queue the download of \"%s\".\n", path);
    }
    else if (success)
    {
@@ -1547,20 +1560,6 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    if (task_cloud_sync_defer_live_savefile(sync_state, key, filename,
             CS_FILE_HASH(server_file)))
       return;
-
-   if (!sync_state->destructive && path_is_valid(filename))
-   {
-      size_t idx;
-      if (     file_list_search(sync_state->current_manifest, key, &idx)
-            && !task_cloud_sync_backup_file(&sync_state->current_manifest->list[idx],
-                  sync_state->dir_core_assets))
-      {
-         RARCH_ERR(CSPFX "Not fetching \"%s\", the local file could not be backed up.\n", key);
-         task_cloud_sync_carry_manifests_forward(sync_state, key, CS_FILE_HASH(server_file));
-         sync_state->failures = true;
-         return;
-      }
-   }
 
    fill_pathname_basedir(directory, filename, sizeof(directory));
    path_mkdir(directory);
@@ -2460,6 +2459,8 @@ static void task_cloud_sync_task_setup(retro_task_t *task,
    task->callback    = task_cloud_sync_cb;
    task->cleanup     = task_cloud_sync_cleanup;
    task->progress_cb = task_window_progress_cb;
+   /* Save ownership and local mutations share the content thread. */
+   task->flags     |= RETRO_TASK_FLG_MAIN_THREAD;
 }
 
 static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
@@ -2499,8 +2500,7 @@ static bool task_push_cloud_sync_with_mode(int conflict_resolution,
    if (!sync_state)
       return false;
 
-   /* Captured here, on the main thread, for the worker the threaded
-    * task queue runs the handler on. */
+   /* Keep this sync's settings across subsequent frames. */
    {
       settings_t *settings    = config_get_ptr();
       sync_state->destructive = settings->bools.cloud_sync_destructive;
