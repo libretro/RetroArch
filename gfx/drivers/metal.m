@@ -4936,7 +4936,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
 
       MetalView *view               = (MetalView *)apple_platform.renderView;
       view.device                   = _device;
-      view.delegate                 = self;
       _layer                        = RARCH_RETAIN((CAMetalLayer *)view.layer);
 
       /* Configure the layer for HDR (or SDR) BEFORE building any pipelines.
@@ -5004,6 +5003,8 @@ static void metal_pull_cached_frame_cb(void *userdata,
       _viewportMVP.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
 
       _keepAspect                   = _video.force_aspect;
+      /* Resize callbacks require the context and viewport to be ready. */
+      view.delegate                 = self;
 
 #if METAL_HDR_AVAILABLE
       unsigned mode_dims =
@@ -5481,6 +5482,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
 #ifdef HAVE_COCOATOUCH
    [self mtkView:view drawableSizeWillChange:CGSizeMake(
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims))];
+#else
+   /* Restored windows need not resize when the video mode is applied. */
+   [self mtkView:view drawableSizeWillChange:view.drawableSize];
 #endif
 
    return dims;
