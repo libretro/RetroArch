@@ -39,6 +39,7 @@ typedef struct ra_dxgi_bridge {
    IDXGISwapChain3 *chain;
    void *ready, *done, *latency, *lists[2];
    unsigned current_index, present_count;
+   int64_t present_submitted_qpc;
    int failed, tearing, occluded, resized;
    UINT64 sequence, last_use[2];
 } ra_dxgi_bridge_t;
@@ -50,10 +51,11 @@ static unsigned expected_interval = 1, expected_flags;
 static HRESULT count_result, stats_result;
 static DXGI_FRAME_STATISTICS frame_stats;
 static int frequency_valid = 1, clock_valid = 1;
+static int64_t clock_time = 998000;
 static int QueryPerformanceFrequency(LARGE_INTEGER *value)
 { value->QuadPart = 1000000; return frequency_valid; }
 static int QueryPerformanceCounter(LARGE_INTEGER *value)
-{ value->QuadPart = 1000000; return clock_valid; }
+{ value->QuadPart = clock_time; return clock_valid; }
 static HRESULT get_count(IDXGISwapChain3 *chain, unsigned *count)
 { (void)chain; *count = presents; return count_result; }
 static HRESULT get_stats(IDXGISwapChain3 *chain, DXGI_FRAME_STATISTICS *stats)
@@ -141,10 +143,14 @@ int main(void)
    assert(ra_dxgi_bridge_present(&bridge, 11, 0));
    order = 0; expected_interval = 4; expected_flags = 0;
    assert(ra_dxgi_bridge_present(&bridge, 12, 10));
+   clock_time = 1000000;
    frame_stats.PresentCount = bridge.present_count;
    frame_stats.PresentRefreshCount = frame_stats.SyncRefreshCount = 100;
    frame_stats.SyncQPCTime.QuadPart = 999000;
    assert(ra_dxgi_bridge_present_time(&bridge) == 999000);
+   frame_stats.SyncQPCTime.QuadPart = bridge.present_submitted_qpc - 1;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frame_stats.SyncQPCTime.QuadPart = 999000;
    frame_stats.PresentCount--;
    assert(ra_dxgi_bridge_present_time(&bridge) == 0);
    frame_stats.PresentCount++;
