@@ -1182,6 +1182,17 @@ const char *input_config_get_test_input_file(bool joypad);
 /* What a driver may ask the frontend, and tell it, without taking its
  * state (input_state_get_ptr()): each is one thing, by name. */
 void input_driver_set_native_keyboard_available(bool available);
+/* What a command holds for a port's RetroPad, over the player's own
+ * input: control below 16 is a button, down for any value but 0, and
+ * 16 to 19 the sticks' axes at the value. */
+void input_driver_command_hold(unsigned port, unsigned control,
+      int16_t value);
+/* Lets go of what a command holds for a port, or with MAX_USERS for
+ * every port. */
+void input_driver_command_release(unsigned port);
+/* The buttons a command holds for a port, one bit each, and the four
+ * axes into analog. */
+uint16_t input_driver_command_held(unsigned port, int16_t *analog);
 void input_driver_set_native_keyboard_shown(bool shown);
 bool input_driver_native_keyboard_shown(void);
 bool input_driver_keyboard_mapping_blocked(void);

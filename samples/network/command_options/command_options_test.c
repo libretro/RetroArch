@@ -36,6 +36,38 @@ static char reply[1024];
 
 settings_t *config_get_ptr(void) { return &settings; }
 input_driver_state_t *input_state_get_ptr(void) { return &input_st; }
+void input_driver_command_hold(unsigned port, unsigned control,
+      int16_t value)
+{
+   if (control >= 16)
+      input_st.cmd_analog[port][control - 16] = value;
+   else if (value)
+      input_st.cmd_buttons[port] |=  (uint16_t)(1u << control);
+   else
+      input_st.cmd_buttons[port] &= ~(uint16_t)(1u << control);
+   input_st.cmd_input = input_st.cmd_buttons[port]
+      || input_st.cmd_analog[port][0] || input_st.cmd_analog[port][1]
+      || input_st.cmd_analog[port][2] || input_st.cmd_analog[port][3];
+}
+void input_driver_command_release(unsigned port)
+{
+   if (port < MAX_USERS)
+   {
+      input_st.cmd_buttons[port] = 0;
+      memset(input_st.cmd_analog[port], 0, sizeof(input_st.cmd_analog[port]));
+   }
+   else
+   {
+      memset(input_st.cmd_buttons, 0, sizeof(input_st.cmd_buttons));
+      memset(input_st.cmd_analog,  0, sizeof(input_st.cmd_analog));
+   }
+   input_st.cmd_input = false;
+}
+uint16_t input_driver_command_held(unsigned port, int16_t *analog)
+{
+   memcpy(analog, input_st.cmd_analog[port], 4 * sizeof(*analog));
+   return input_st.cmd_buttons[port];
+}
 audio_driver_state_t *audio_state_get_ptr(void) { return &audio_st; }
 video_driver_state_t *video_state_get_ptr(void) { return &video_st; }
 recording_state_t *recording_state_get_ptr(void) { return &rec_st; }

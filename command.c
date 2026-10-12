@@ -2247,15 +2247,16 @@ static const char *const command_input_names[] = {
 /* @port's held controls, the shape SET_INPUT and RELEASE_INPUT answer
  * with: the player, then the buttons and the axes held, tab separated,
  * "none" for either when there are none. */
-static size_t command_input_line(const input_driver_state_t *input_st,
-      unsigned port, char *s, size_t len)
+static size_t command_input_line(unsigned port, char *s, size_t len)
 {
    unsigned i;
+   int16_t  analog[4];
+   uint16_t buttons = input_driver_command_held(port, analog);
    size_t   _len  = (size_t)snprintf(s, len, "%u\t", port + 1);
    bool     any   = false;
 
    for (i = 0; i < 16 && _len < len; i++)
-      if (input_st->cmd_buttons[port] & (1u << i))
+      if (buttons & (1u << i))
       {
          _len += (size_t)snprintf(s + _len, len - _len, "%s%s",
                any ? " " : "", command_input_names[i]);
@@ -2267,11 +2268,11 @@ static size_t command_input_line(const input_driver_state_t *input_st,
       s[_len++] = '\t';
    any = false;
    for (i = 0; i < 4 && _len < len; i++)
-      if (input_st->cmd_analog[port][i])
+      if (analog[i])
       {
          _len += (size_t)snprintf(s + _len, len - _len, "%s%s=%d",
                any ? " " : "", command_input_names[16 + i],
-               (int)input_st->cmd_analog[port][i]);
+               (int)analog[i]);
          any   = true;
       }
    if (!any && _len < len)
@@ -2281,19 +2282,6 @@ static size_t command_input_line(const input_driver_state_t *input_st,
    s[_len++] = '\n';
    s[_len]   = '\0';
    return _len;
-}
-
-static void command_input_update(input_driver_state_t *input_st)
-{
-   unsigned p, a;
-   bool     any = false;
-   for (p = 0; p < MAX_USERS && !any; p++)
-   {
-      any = input_st->cmd_buttons[p] != 0;
-      for (a = 0; a < 4 && !any; a++)
-         any = input_st->cmd_analog[p][a] != 0;
-   }
-   input_st->cmd_input = any;
 }
 
 /* SET_INPUT <player> <control> <value>
@@ -2310,7 +2298,6 @@ bool command_set_input(command_t *cmd, const char *arg)
    long   value;
    char  *end                     = NULL;
    const char *sp;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    while (arg && *arg == ' ')
       arg++;
@@ -2358,19 +2345,10 @@ bool command_set_input(command_t *cmd, const char *arg)
    }
 #endif
 
-   if (i < 16)
-   {
-      if (value)
-         input_st->cmd_buttons[player - 1] |=  (uint16_t)(1u << i);
-      else
-         input_st->cmd_buttons[player - 1] &= ~(uint16_t)(1u << i);
-   }
-   else
-      input_st->cmd_analog[player - 1][i - 16] = (int16_t)value;
-   command_input_update(input_st);
+   input_driver_command_hold(player - 1, i, (int16_t)value);
 
    cmd->replier(cmd, reply,
-         command_input_line(input_st, player - 1, reply, sizeof(reply)));
+         command_input_line(player - 1, reply, sizeof(reply)));
    return true;
 }
 
@@ -2382,7 +2360,6 @@ bool command_release_input(command_t *cmd, const char *arg)
 {
    char   reply[192];
    unsigned player                = 0;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    while (arg && *arg == ' ')
       arg++;
@@ -2395,20 +2372,11 @@ bool command_release_input(command_t *cmd, const char *arg)
                (unsigned)MAX_USERS);
          return false;
       }
-      input_st->cmd_buttons[player - 1] = 0;
-      memset(input_st->cmd_analog[player - 1], 0,
-            sizeof(input_st->cmd_analog[player - 1]));
    }
-   else
-   {
-      memset(input_st->cmd_buttons, 0, sizeof(input_st->cmd_buttons));
-      memset(input_st->cmd_analog,  0, sizeof(input_st->cmd_analog));
-   }
-   command_input_update(input_st);
+   input_driver_command_release(player ? player - 1 : MAX_USERS);
 
    cmd->replier(cmd, reply,
-         command_input_line(input_st, player ? player - 1 : 0, reply,
-            sizeof(reply)));
+         command_input_line(player ? player - 1 : 0, reply, sizeof(reply)));
    return true;
 }
 
