@@ -45,6 +45,8 @@
 
 #include <retro_common_api.h>
 
+#include <formats/video_hw_frame.h>
+
 RETRO_BEGIN_DECLS
 
 typedef struct rh264_video rh264_video;
@@ -140,6 +142,120 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height);
 
 void rh264_video_close(rh264_video *v);
+
+/* ---- Hardware decoding ----
+ *
+ * The decoder keeps the sequencing - parameter sets, picture order
+ * counts, reference marking, output order - and a backend (a GPU
+ * video API) reconstructs the pictures. Progressive 8-bit 4:2:0
+ * streams only; anything else, or a backend that refuses the stream,
+ * decodes in software as before. */
+
+/* The parameter sets as a hardware API takes them. Scaling lists are
+ * in the order they are coded (zig-zag), with the present and
+ * use-default flags of each list as bit masks. */
+typedef struct rh264_hw_scaling
+{
+   uint16_t present_mask;
+   uint16_t default_mask;
+   uint8_t  list4x4[6][16];
+   uint8_t  list8x8[6][64];
+} rh264_hw_scaling_t;
+
+typedef struct rh264_hw_sps
+{
+   int sps_id, profile_idc, constraint_flags, level_idc;
+   int chroma_format_idc, bit_depth;
+   int log2_max_frame_num, poc_type, log2_max_poc_lsb;
+   int delta_pic_order_always_zero, offset_for_non_ref_pic;
+   int offset_for_top_to_bottom_field, num_ref_frames_in_poc_cycle;
+   const int32_t *offset_for_ref_frame;
+   int max_num_ref_frames, gaps_allowed;
+   int width_in_mbs, height_in_mbs;
+   int direct_8x8_inference, transform_bypass;
+   int frame_cropping, crop_left, crop_right, crop_top, crop_bottom;
+   int width, height, crop_x, crop_y;   /* the picture shown */
+   int scaling_present;
+   rh264_hw_scaling_t scaling;
+} rh264_hw_sps_t;
+
+typedef struct rh264_hw_pps
+{
+   int pps_id, sps_id;
+   int entropy_coding_mode, bottom_field_pic_order_in_frame_present;
+   int num_ref_idx_l0_default, num_ref_idx_l1_default;  /* 1.. */
+   int weighted_pred, weighted_bipred_idc;
+   int pic_init_qp, pic_init_qs;
+   int chroma_qp_index_offset, second_chroma_qp_index_offset;
+   int deblocking_filter_control_present, constrained_intra_pred;
+   int transform_8x8_mode;
+   int scaling_present;
+   rh264_hw_scaling_t scaling;
+} rh264_hw_pps_t;
+
+/* A picture the backend holds: the slot it was decoded into. */
+typedef struct rh264_hw_ref
+{
+   int slot;
+   int frame_num;     /* FrameNum, or LongTermFrameIdx when long-term */
+   int poc[2];        /* top, bottom */
+   int long_term;
+} rh264_hw_ref_t;
+
+typedef struct rh264_hw_pic
+{
+   const rh264_hw_sps_t *sps;
+   const rh264_hw_pps_t *pps;
+   /* Raised whenever either parameter set changes. */
+   unsigned params_gen;
+   /* The picture's slice NAL units, each after a 00 00 01 start code,
+    * and where each starts in @data. */
+   const uint8_t *data;
+   size_t size;
+   const uint32_t *slice_offsets;
+   unsigned num_slices;
+   int slot;          /* the slot the picture is decoded into */
+   int frame_num, idr_pic_id;
+   int poc[2];
+   int idr, reference, intra;
+   /* Stored as a long-term reference under @long_term_idx once
+    * decoded (an IDR's long_term_reference_flag, or marking 6). */
+   int long_term, long_term_idx;
+   /* Every picture held for reference, short- and long-term. */
+   const rh264_hw_ref_t *refs;
+   unsigned num_refs;
+} rh264_hw_pic_t;
+
+typedef struct rh264_hw_ops
+{
+   void *user;
+   /* A decoder for @sps's pictures with @slots slots, 0 to slots - 1;
+    * NULL when the backend cannot take the stream. On the decoding
+    * thread, as are the rest. */
+   void *(*open)(void *user, const rh264_hw_sps_t *sps, unsigned slots);
+   /* Decode @pic into its slot; 0, or negative on failure. */
+   int (*decode)(void *dec, const rh264_hw_pic_t *pic);
+   /* The picture in @slot is to be shown: a frame of it into @out that
+    * stays good while the slot is decoded into again. 0, or negative. */
+   int (*output)(void *dec, unsigned slot, video_hw_frame_t *out);
+   void (*close)(void *dec);
+} rh264_hw_ops_t;
+
+/* The backend decoders try when asked to (rh264_video_set_hw);
+ * process-wide. NULL withdraws it: decoders already open on it keep it
+ * until they close, so it outlives them. */
+void rh264_set_hw_backend(const rh264_hw_ops_t *ops);
+
+/* Ask for hardware decoding before the first picture. True when the
+ * stream will decode on the backend - its parameter sets must already
+ * be known (rh264_video_set_extradata) - false when it decodes in
+ * software. Not with a thread pool. */
+int rh264_video_set_hw(rh264_video *v, int enable);
+/* Whether the pictures come from the backend. */
+int rh264_video_is_hw(const rh264_video *v);
+/* The picture decode or drain made ready, as a hardware frame; 0 when
+ * there is one. rh264_video_plane has none to give then. */
+int rh264_video_hw_frame(const rh264_video *v, video_hw_frame_t *out);
 
 RETRO_END_DECLS
 

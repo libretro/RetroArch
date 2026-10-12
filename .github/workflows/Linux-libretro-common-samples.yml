@@ -159,6 +159,8 @@ jobs:
             rh264_lossless_test
             rh264_lossless_test_nothreads
             rh264_lossless_test_volatile
+            # The hardware path's sequencing against a checking backend.
+            rh264_hw_test
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile

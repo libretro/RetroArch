@@ -7,6 +7,8 @@ TARGET_TEST := rh264_lossless_test_nothreads
 # And built threaded on the volatile atomic backend, which has no
 # pointer atomics: the decoder takes no pool there and decodes alone.
 TARGET_VOLATILE := rh264_lossless_test_volatile
+# The hardware path's sequencing, against a backend that checks it.
+TARGET_HW := rh264_hw_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -19,6 +21,8 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+HW_SOURCES := rh264_hw_test.c $(filter-out rh264_lossless_test.c,$(SOURCES))
+HW_OBJS    := $(call sample_objs,$(HW_SOURCES:.c=.o))
 NOTHREADS_SOURCES := $(filter-out %/rthreads.c %/retro_eventcount.c %/tpool.c,$(SOURCES))
 NOTHREADS_OBJS    := $(call sample_objs,$(NOTHREADS_SOURCES:.c=.nt.o))
 VOLATILE_OBJS     := $(call sample_objs,$(SOURCES:.c=.vo.o))
@@ -37,7 +41,7 @@ endif
 
 LDLIBS += -lm -lpthread
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE) $(TARGET_HW)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -47,6 +51,9 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+$(TARGET_HW): $(HW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.nt.o: %.c
@@ -74,6 +81,6 @@ $(TARGET_VOLATILE): $(VOLATILE_OBJS)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) $(NOTHREADS_OBJS) \
-	   $(TARGET_VOLATILE) $(VOLATILE_OBJS)
+	   $(TARGET_VOLATILE) $(VOLATILE_OBJS) $(TARGET_HW) $(HW_OBJS)
 
 .PHONY: clean
