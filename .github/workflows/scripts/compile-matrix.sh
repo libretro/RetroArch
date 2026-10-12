@@ -1110,7 +1110,8 @@ fi
 # built only by C99 toolchains, opt out). And a
 # layout counter a driver has no use for is set but never read. GCC 15
 # and clang warn about that; the runner's GCC does not, so these lanes
-# ask clang, with the warning made an error.
+# ask clang, with the warning made an error. So is a directive inside a
+# macro's arguments, which MSVC's preprocessor takes as tokens.
 font_layout() {
    name="$1"; target="$2"; defs="$3"; tu="$4"
    if ! command -v clang > /dev/null 2>&1; then
@@ -1118,7 +1119,7 @@ font_layout() {
       return
    fi
    if ! out=$(clang $target -Werror=unused-but-set-variable \
-         -Werror=declaration-after-statement \
+         -Werror=declaration-after-statement -Werror=embedded-directive \
          $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
       echo "FAIL  $name"
       echo "      $tu"
