@@ -3725,9 +3725,7 @@ video_driver_t video_gl1 = {
    gl1_read_viewport_hdr,
    &gl1_raster_font,
 #ifdef HAVE_OPENXR
-   NULL, /* get_vr_frame_state */
    NULL, /* set_vr_content_info */
-   NULL, /* get_video_views_status */
 #endif
    gl1_read_viewport_bgrx
 };

@@ -5119,7 +5119,6 @@ typedef struct
 {
    thread_video_t *thr;
    const video_vr_content_info_t *info;
-   struct retro_vr_frame_state *frame;
 } video_thread_vr_call_t;
 
 static uintptr_t video_thread_set_vr_content_info_cb(void *data)
@@ -5141,47 +5140,10 @@ static bool video_thread_set_vr_content_info(void *data,
       return false;
    call.thr   = thr;
    call.info  = info;
-   call.frame = NULL;
    return video_thread_run_blocking(video_thread_set_vr_content_info_cb,
          &call) != 0;
 }
 
-static uintptr_t video_thread_get_vr_frame_state_cb(void *data)
-{
-   video_thread_vr_call_t *call = (video_thread_vr_call_t*)data;
-   return call->thr->driver->get_vr_frame_state(call->thr->driver_data,
-         call->frame);
-}
-
-/* On the video thread: taking the poses marks them for the frame that
- * submits them. */
-static bool video_thread_get_vr_frame_state(void *data,
-      struct retro_vr_frame_state *out)
-{
-   video_thread_vr_call_t call;
-   thread_video_t *thr = (thread_video_t*)data;
-
-   if (     !thr || !thr->driver_data || !thr->driver
-         || !thr->driver->get_vr_frame_state)
-      return false;
-   call.thr   = thr;
-   call.info  = NULL;
-   call.frame = out;
-   return video_thread_run_blocking(video_thread_get_vr_frame_state_cb,
-         &call) != 0;
-}
-
-/* Direct, as cores ask every frame: the drivers answer from the session
- * init made, which only free takes down. */
-static unsigned video_thread_get_video_views_status(void *data)
-{
-   thread_video_t *thr = (thread_video_t*)data;
-
-   if (     thr && thr->driver_data && thr->driver
-         && thr->driver->get_video_views_status)
-      return thr->driver->get_video_views_status(thr->driver_data);
-   return 0;
-}
 #endif
 
 static const video_driver_t video_thread = {
@@ -5224,9 +5186,7 @@ static const video_driver_t video_thread = {
    NULL, /* read_viewport_hdr */
    NULL, /* font_backend: CMD_INIT/CMD_FREE read the driver's */
 #ifdef HAVE_OPENXR
-   video_thread_get_vr_frame_state,
    video_thread_set_vr_content_info,
-   video_thread_get_video_views_status,
 #endif
 };
 

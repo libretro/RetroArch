@@ -673,6 +673,34 @@ static void test_ui_point(void)
    CHECK(ui_point_is(&l, 400, 240, 400, 240));
 }
 
+static void test_eye_pair(void)
+{
+   video_views_map_t map;
+   struct retro_video_view v[4];
+   int eyes[2];
+
+   map_3ds(&map);
+   CHECK(video_views_eye_pair(&map, eyes) && eyes[0] == 0 && eyes[1] == 1);
+   map_vb(&map);
+   CHECK(video_views_eye_pair(&map, eyes) && eyes[0] == 0 && eyes[1] == 1);
+   map_ds(&map);
+   CHECK(!video_views_eye_pair(&map, eyes) && eyes[0] == -1 && eyes[1] == -1);
+
+   /* Two pairs are not one. */
+   v[0] = mkview(  0,   0, 400, 240, 0, RETRO_VIDEO_VIEW_EYE_LEFT);
+   v[1] = mkview(400,   0, 400, 240, 0, RETRO_VIDEO_VIEW_EYE_RIGHT);
+   v[2] = mkview(  0, 240, 400, 240, 1, RETRO_VIDEO_VIEW_EYE_LEFT);
+   v[3] = mkview(400, 240, 400, 240, 1, RETRO_VIDEO_VIEW_EYE_RIGHT);
+   CHECK(video_views_validate(v, 4, &map));
+   CHECK(!video_views_eye_pair(&map, eyes) && eyes[0] == -1 && eyes[1] == -1);
+
+   /* The right eye first. */
+   v[0] = mkview(400, 0, 400, 240, 0, RETRO_VIDEO_VIEW_EYE_RIGHT);
+   v[1] = mkview(  0, 0, 400, 240, 0, RETRO_VIDEO_VIEW_EYE_LEFT);
+   CHECK(video_views_validate(v, 2, &map));
+   CHECK(video_views_eye_pair(&map, eyes) && eyes[0] == 1 && eyes[1] == 0);
+}
+
 /* ---- the compositor, instantiated over fakes ---- */
 
 typedef struct fake_chain
@@ -1018,6 +1046,7 @@ int main(void)
 {
    test_validate();
    test_frame_helpers();
+   test_eye_pair();
    test_layout_screens();
    test_layout_stereo();
    test_layout_one_screen();

@@ -145,7 +145,7 @@ android {
 
       externalNativeBuild {
         ndkBuild {
-          arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_OPENXR=1", "PLAY_STORE_BUILD=1"
+          arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_OPENXR=1", "PLAY_STORE_BUILD=1", "GLES=3"
         }
       }
     }

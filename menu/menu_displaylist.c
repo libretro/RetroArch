@@ -12308,9 +12308,14 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
 #ifdef HAVE_OPENXR
-         /* A headset gives each eye its own image (Vulkan only). */
+         /* A headset gives each eye its own image. */
+#ifdef ANDROID
+         if (!video_context_driver_headset_inline())
+#else
          if (     !settings->bools.video_openxr_enable
-               || !string_is_equal(settings->arrays.video_driver, "vulkan"))
+               || !video_driver_has_headset_path(
+                  settings->arrays.video_driver))
+#endif
 #endif
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -12327,13 +12332,16 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
 #ifdef HAVE_OPENXR
-         /* Headset output is the Vulkan driver's. */
-         if (string_is_equal(settings->arrays.video_driver, "vulkan"))
+         if (video_driver_has_headset_path(settings->arrays.video_driver))
          {
+#ifndef ANDROID
+            /* A headset's own context needs no switch: Android starts
+             * in the headset when there is one. */
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
+#endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE,
                      PARSE_ONLY_UINT, false) == 0)
@@ -12345,6 +12353,10 @@ unsigned menu_displaylist_build_list(
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH,
                      PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT,
+                     PARSE_ONLY_UINT, false) == 0)
                count++;
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,

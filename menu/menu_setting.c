@@ -3816,6 +3816,64 @@ static size_t setting_get_string_representation_video_openxr_laser(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_placement(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_PLACEMENT_FIXED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED), len);
+         case VIDEO_OPENXR_PLACEMENT_FOLLOW:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW), len);
+         case VIDEO_OPENXR_PLACEMENT_LAZY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY), len);
+      }
+   }
+   return 0;
+}
+
+/* Stereo 3D & Screens has no Stereo Mode entry while the headset is
+ * on, so Headset Output is one entry higher: the cursor follows it. */
+static void setting_video_openxr_enable_follow(bool was, bool now)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (now && !was)
+   {
+      if (menu_st->selection_ptr)
+         menu_st->selection_ptr--;
+   }
+   else if (was && !now)
+      menu_st->selection_ptr++;
+}
+
+static int setting_bool_action_ok_video_openxr_enable(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   bool was;
+   if (!setting)
+      return -1;
+   was = *setting->value.target.boolean;
+   setting_bool_action_left_with_refresh(setting, idx, wraparound);
+   setting_video_openxr_enable_follow(was, *setting->value.target.boolean);
+   return 0;
+}
+
+static int setting_action_start_video_openxr_enable(rarch_setting_t *setting)
+{
+   bool was;
+   if (!setting)
+      return -1;
+   was = *setting->value.target.boolean;
+   setting_generic_action_start_default(setting);
+   setting_video_openxr_enable_follow(was, *setting->value.target.boolean);
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_openxr_refresh_rate(
       rarch_setting_t *setting, char *s, size_t len)
 {

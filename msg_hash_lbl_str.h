@@ -1727,6 +1727,7 @@
 #define MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR "video_openxr_distance"
 #define MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR "video_openxr_enable"
 #define MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR "video_openxr_laser"
+#define MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR "video_openxr_placement"
 #define MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR "video_openxr_refresh_rate"
 #define MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR "video_openxr_width"
 #define MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS_STR "video_output_settings"

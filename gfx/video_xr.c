@@ -20,6 +20,8 @@
 #include "video_defines.h"
 #include "../runloop.h"
 
+#define VIDEO_XR_PI 3.14159265358979323846
+
 void video_xr_pose_identity(video_xr_pose_t *pose)
 {
    memset(pose, 0, sizeof(*pose));
@@ -62,6 +64,63 @@ bool video_xr_anchor_from_head(const video_xr_pose_t *head,
    anchor->orientation.z = 0.0f;
    anchor->orientation.w = (float)cos(yaw / 2.0);
    anchor->position      = head->position;
+   return true;
+}
+
+void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
+      video_xr_pose_t *out)
+{
+   video_xr_vec3_t p;
+   video_xr_quat_t q;
+   const video_xr_quat_t *r = &a->orientation;
+   const video_xr_quat_t *s = &b->orientation;
+   video_xr_rotate(r, &b->position, &p);
+   q.x = r->w * s->x + r->x * s->w + r->y * s->z - r->z * s->y;
+   q.y = r->w * s->y - r->x * s->z + r->y * s->w + r->z * s->x;
+   q.z = r->w * s->z + r->x * s->y - r->y * s->x + r->z * s->w;
+   q.w = r->w * s->w - r->x * s->x - r->y * s->y - r->z * s->z;
+   out->position.x  = a->position.x + p.x;
+   out->position.y  = a->position.y + p.y;
+   out->position.z  = a->position.z + p.z;
+   out->orientation = q;
+}
+
+bool video_xr_lazy_follow(video_xr_pose_t *anchor,
+      const video_xr_pose_t *target, double dt, bool gliding)
+{
+   double k;
+   double yaw  = 2.0 * atan2(anchor->orientation.y, anchor->orientation.w);
+   double turn = 2.0 * atan2(target->orientation.y, target->orientation.w)
+      - yaw;
+   double dx   = target->position.x - anchor->position.x;
+   double dy   = target->position.y - anchor->position.y;
+   double dz   = target->position.z - anchor->position.z;
+   double dist = sqrt(dx * dx + dy * dy + dz * dz);
+
+   /* The short way round. */
+   while (turn > VIDEO_XR_PI)
+      turn -= 2.0 * VIDEO_XR_PI;
+   while (turn < -VIDEO_XR_PI)
+      turn += 2.0 * VIDEO_XR_PI;
+   if (     !gliding
+         && fabs(turn) < VIDEO_XR_LAZY_START_DEG * VIDEO_XR_PI / 180.0
+         && dist < VIDEO_XR_LAZY_START_M)
+      return false;
+   if (     fabs(turn) < VIDEO_XR_LAZY_STOP_DEG * VIDEO_XR_PI / 180.0
+         && dist < VIDEO_XR_LAZY_STOP_M)
+   {
+      *anchor = *target;
+      return false;
+   }
+   k    = (dt > 0.0) ? 1.0 - exp(-dt / VIDEO_XR_LAZY_TIME) : 0.0;
+   yaw += turn * k;
+   anchor->orientation.x = 0.0f;
+   anchor->orientation.y = (float)sin(yaw / 2.0);
+   anchor->orientation.z = 0.0f;
+   anchor->orientation.w = (float)cos(yaw / 2.0);
+   anchor->position.x   += (float)(dx * k);
+   anchor->position.y   += (float)(dy * k);
+   anchor->position.z   += (float)(dz * k);
    return true;
 }
 
@@ -210,6 +269,8 @@ static void video_xr_place_screens(const video_xr_params_t *p,
          y    = edge - gap - h / 2.0;
          edge = y - h / 2.0;
       }
+      if (p->skip_screens & (1u << s))
+         continue;
       video_xr_put(p, x, y, -p->distance, &pose);
 
       slot->dims    = video_xr_screen_dims(p, (float)w, (float)h,
@@ -286,7 +347,8 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
       out->slots[0].dims   = video_xr_screen_dims(p, p->width, h,
             p->frame_dims);
       out->slots[0].layers = 1;
-      video_xr_add(out, VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
+      video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
+            : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
             &pose, p->width, h);
    }
 
@@ -399,6 +461,95 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
    return true;
 }
 
+bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v)
+{
+   double fu, fv;
+   unsigned w = VIDEO_SCALE_W(vp->dims);
+   unsigned h = VIDEO_SCALE_H(vp->dims);
+   if (!w || !h)
+      return false;
+   fu = ((double)*u * VIDEO_SCALE_W(vp->full_dims)
+         - VIDEO_POS_X(vp->pos)) / w;
+   fv = ((double)*v * VIDEO_SCALE_H(vp->full_dims)
+         - VIDEO_POS_Y(vp->pos)) / h;
+   if (fu < -1e-4 || fu > 1.0 + 1e-4 || fv < -1e-4 || fv > 1.0 + 1e-4)
+      return false;
+   *u = (float)(fu < 0.0 ? 0.0 : (fu > 1.0 ? 1.0 : fu));
+   *v = (float)(fv < 0.0 ? 0.0 : (fv > 1.0 ? 1.0 : fv));
+   return true;
+}
+
+void video_xr_window_rect(const video_viewport_t *vp, unsigned frame_dims,
+      unsigned rotation, const struct retro_video_view *v,
+      video_views_rect_t *out)
+{
+   unsigned r;
+   int x0, y0, x1, y1;
+   double e[4];
+   double fw = (double)VIDEO_SCALE_W(frame_dims);
+   double fh = (double)VIDEO_SCALE_H(frame_dims);
+   double vx = (double)VIDEO_POS_X(vp->pos);
+   double vy = (double)VIDEO_POS_Y(vp->pos);
+   double vw = (double)VIDEO_SCALE_W(vp->dims);
+   double vh = (double)VIDEO_SCALE_H(vp->dims);
+
+   out->pos  = 0;
+   out->dims = 0;
+   if (fw <= 0.0 || fh <= 0.0)
+      return;
+   /* Its left, top, right and bottom edges, as fractions of the frame. */
+   e[0] = (double)v->x / fw;
+   e[1] = (double)v->y / fh;
+   e[2] = ((double)v->x + (double)v->width) / fw;
+   e[3] = ((double)v->y + (double)v->height) / fh;
+   /* A quarter turn anticlockwise takes u, v to v, 1 - u. */
+   for (r = 0; r < (rotation & 3); r++)
+   {
+      double left = e[1];
+      double top  = 1.0 - e[2];
+      e[2]        = e[3];
+      e[3]        = 1.0 - e[0];
+      e[0]        = left;
+      e[1]        = top;
+   }
+   /* Edges rounded, not sizes: neighbours meet without a gap. */
+   x0        = (int)floor(vx + e[0] * vw + 0.5);
+   y0        = (int)floor(vy + e[1] * vh + 0.5);
+   x1        = (int)floor(vx + e[2] * vw + 0.5);
+   y1        = (int)floor(vy + e[3] * vh + 0.5);
+   out->pos  = VIDEO_POS_PACK(x0, y0);
+   out->dims = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
+}
+
+void video_xr_place_window(const video_xr_params_t *p, bool menu,
+      bool tracked, const video_viewport_t *vp, unsigned frame_dims,
+      video_xr_quad_set_t *out,
+      video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2])
+{
+   unsigned s, l;
+   video_xr_params_t q = *p;
+   /* The menu is drawn over the frame whole, and a tracked map's eyes
+    * are the projection's: the window as it is. */
+   if (menu || tracked)
+      q.map = NULL;
+   video_xr_place(&q, out);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   {
+      for (l = 0; l < 2; l++)
+      {
+         int view = out->slots[s].view[l];
+         if (view >= 0)
+            video_xr_window_rect(vp, frame_dims, q.rotation,
+                  &q.map->views[view], &rects[s][l]);
+         else
+         {
+            rects[s][l].pos  = 0;
+            rects[s][l].dims = vp->full_dims;
+         }
+      }
+   }
+}
+
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open)
 {
@@ -408,6 +559,10 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
    {
       case VIDEO_XR_QUAD_MENU:
          return menu_open;
+      case VIDEO_XR_QUAD_WINDOW:
+         if (menu_open)
+            return true;
+         break;
       case VIDEO_XR_QUAD_SCREEN:
          if (q->screen >= 1)
             return true;
@@ -465,6 +620,30 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
    pose->position.y    = q->pose.position.y + world.y;
    pose->position.z    = q->pose.position.z + world.z;
    return (size < VIDEO_XR_CURSOR_MIN) ? VIDEO_XR_CURSOR_MIN : size;
+}
+
+void video_xr_cursor_pixels(uint8_t *px)
+{
+   unsigned x, y;
+   const float c = (VIDEO_XR_CURSOR_DIM - 1) * 0.5f;
+   const float r = VIDEO_XR_CURSOR_DIM * 0.5f;
+   for (y = 0; y < VIDEO_XR_CURSOR_DIM; y++)
+   {
+      for (x = 0; x < VIDEO_XR_CURSOR_DIM; x++)
+      {
+         float dx   = (float)x - c;
+         float dy   = (float)y - c;
+         float d    = (float)sqrt(dx * dx + dy * dy) / r;
+         float a    = (d < 1.0f - 1.0f / r) ? 1.0f
+            : ((d < 1.0f) ? (1.0f - d) * r : 0.0f);
+         float l    = (d < 0.6f) ? 1.0f : 0.15f;
+         uint8_t *p = px + ((size_t)y * VIDEO_XR_CURSOR_DIM + x) * 4;
+         p[0]       = (uint8_t)(l * a * 255.0f + 0.5f);
+         p[1]       = p[0];
+         p[2]       = p[0];
+         p[3]       = (uint8_t)(a * 255.0f + 0.5f);
+      }
+   }
 }
 
 /* Two rates this close in skew are a tie. */

@@ -32,6 +32,10 @@
 #include <wiiu/pad_strings.h>
 #endif
 
+#ifdef HAVE_OPENXR
+#include "common/input_openxr.h"
+#endif
+
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_BTN_EX(btn, bind, name) "input_" #btn "_btn = " #bind "\ninput_" #btn "_btn_label = \"" name "\"\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
@@ -774,6 +778,39 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#ifdef HAVE_OPENXR
+/* The headset's controllers (input_openxr.c): the RetroPad's ids as
+ * buttons, the sticks as axes 0 to 3 with Y down, L2 and R2 as axes 4
+ * and 5. */
+#define OPENXR_DEFAULT_BINDS \
+DECL_BTN(b, 0) \
+DECL_BTN(y, 1) \
+DECL_BTN(select, 2) \
+DECL_BTN(start, 3) \
+DECL_BTN(up, 4) \
+DECL_BTN(down, 5) \
+DECL_BTN(left, 6) \
+DECL_BTN(right, 7) \
+DECL_BTN(a, 8) \
+DECL_BTN(x, 9) \
+DECL_BTN(l, 10) \
+DECL_BTN(r, 11) \
+DECL_BTN(l2, 12) \
+DECL_BTN(r2, 13) \
+DECL_BTN(l3, 14) \
+DECL_BTN(r3, 15) \
+DECL_AXIS(l2, +4) \
+DECL_AXIS(r2, +5) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
+#endif
+
 #define MFI_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
 DECL_BTN(b, 0) \
@@ -884,6 +921,11 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #if HAVE_MFI
    DECL_AUTOCONF_DEVICE("mFi Controller", "mfi", MFI_DEFAULT_BINDS),
+#endif
+#ifdef HAVE_OPENXR
+   DECL_AUTOCONF_DEVICE(INPUT_OPENXR_JOYPAD_COMBINED, INPUT_OPENXR_JOYPAD, OPENXR_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(INPUT_OPENXR_JOYPAD_LEFT, INPUT_OPENXR_JOYPAD, OPENXR_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE(INPUT_OPENXR_JOYPAD_RIGHT, INPUT_OPENXR_JOYPAD, OPENXR_DEFAULT_BINDS),
 #endif
    NULL
 };

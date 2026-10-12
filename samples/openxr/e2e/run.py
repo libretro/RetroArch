@@ -7,7 +7,7 @@ samples/openxr/test_layer, which records every xrEndFrame's quads and
 saves the images they show. Not run in CI: it needs a GPU, gamescope,
 Monado, and a RetroArch built with HAVE_OPENXR.
 
-Usage: run.py <retroarch> <out dir> <monado.env> [--validate] [case ...]
+Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [case ...]
 
 Build the test core and layer first (make -C samples/cores/video_views,
 make -C samples/openxr/test_layer). monado.env.example here runs
@@ -24,12 +24,16 @@ validation-baseline.txt here: the messages raised without RetroArch's
 headset code, one per line, a VUID and then text the message must
 contain (an object's name), so a VUID alone does not hide RetroArch's
 own.
+--gl runs the desktop GL lanes instead: chosen cases cloned for glcore on
+EGL/Wayland and on GLX, and gl on EGL/X11, each named <lane>-<case>; the
+layer reads their GL images itself. Validation is Vulkan's alone.
 --validate runs RetroArch under the Vulkan validation layer, which must
 be installed, and fails a case on any other message, or when none of the
 baseline's appear: the window's own come every run, so without them the
 layer did not load.
 """
 
+import copy
 import ctypes
 import json
 import math
@@ -72,6 +76,7 @@ RUNTIME_DIR = 'run'
 RED, BLUE, GREEN = (255, 0, 0), (0, 0, 255), (0, 255, 0)
 YELLOW, WHITE, GREY = (255, 255, 0), (255, 255, 255), (32, 32, 32)
 MAGENTA = (255, 0, 255)
+BLACK = (0, 0, 0)
 
 
 def read_env(path):
@@ -142,6 +147,11 @@ class Result(object):
         self.marks = {}
         self.shot = None
         self.events = []
+        # A pixel of the window inside the 2D map's top screen.
+        self.top_px = (800, 240)
+        # Seconds after a video reinit's hotkey that its new session's
+        # first frames are not held to what the session then shows.
+        self.reinit_grace = 0.5
 
 
 def load(res):
@@ -216,6 +226,25 @@ def write_overlay(d):
             'input_overlay_opacity': '1.0'}
 
 
+def capture_errors(res, case):
+    """A GL lane's session on the binding its context driver makes, and
+    every image the layer read."""
+    errors = []
+    failed = [e for e in res.events if e.get('ev') == 'capture_failed']
+    if failed:
+        errors.append('%d GL images could not be read (first: swapchain %d, '
+                      'status %d, error %d)' % (len(failed), failed[0]['sc'],
+                                                failed[0]['status'],
+                                                failed[0]['error']))
+    if case.get('lane'):
+        want = 'glx' if case.get('context') == 'x' else 'egl'
+        got = [e.get('graphics') for e in res.events
+               if e.get('ev') == 'session']
+        if got and any(g != want for g in got):
+            errors.append('sessions on %s, want %s' % (', '.join(got), want))
+    return errors
+
+
 def run_case(retroarch, root, monado, case, validate):
     d = os.path.realpath(os.path.join(root, case['name']))
     if os.path.commonpath([root, d]) != root or d == root:
@@ -231,9 +260,22 @@ def run_case(retroarch, root, monado, case, validate):
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
+    if case.get('context'):
+        settings['video_context_driver'] = case['context']
+    if case.get('context') == 'wayland':
+        # gamescope sends its own Wayland clients no fullscreen size: a
+        # window of the output's instead. A build with SDL3 takes the
+        # size with the saved position.
+        size = case.get('screen', (W, H))
+        settings.update({'video_fullscreen': 'false',
+                         'video_window_show_decorations': 'false',
+                         'video_window_custom_size_enable': 'true',
+                         'video_window_save_positions': 'true',
+                         'video_windowed_position_width': str(size[0]),
+                         'video_windowed_position_height': str(size[1])})
     port = free_port()
     cfg = os.path.join(d, 'retroarch.cfg')
-    write_cfg(cfg, d, 'vulkan', settings, port)
+    write_cfg(cfg, d, case.get('driver', 'vulkan'), settings, port)
     options = {'video_views_test_map': case.get('map', '3ds'),
                'video_views_test_hw': 'off'}
     options.update(case.get('options', {}))
@@ -280,15 +322,22 @@ def run_case(retroarch, root, monado, case, validate):
         helper = ' %s %s --unfocus-when %s &' % (
             shlex.quote(sys.executable), shlex.quote(os.path.abspath(__file__)),
             shlex.quote(os.path.join(d, 'unfocus')))
+    # A Wayland lane's window is gamescope's own client, on its socket.
+    wayland = case.get('context') == 'wayland'
+    own_socket = (' [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ] || exit 97;'
+                  ' export WAYLAND_DISPLAY="$GAMESCOPE_WAYLAND_DISPLAY";'
+                  if wayland else '')
     guard = ('case "$DISPLAY" in ""|:0) echo "refusing DISPLAY=$DISPLAY" >&2;'
              ' exit 99;; esac; cd ' + shlex.quote(d) + ' || exit 98;' + helper +
              ' case "${GAMESCOPE_WAYLAND_DISPLAY:-}" in ""|/*) ;;'
              ' *) GAMESCOPE_WAYLAND_DISPLAY="$XDG_RUNTIME_DIR/'
              '$GAMESCOPE_WAYLAND_DISPLAY"; export GAMESCOPE_WAYLAND_DISPLAY;;'
-             ' esac; export ' + exports + '; exec "$0" "$@"')
+             ' esac; export ' + exports + ';' + own_socket +
+             ' exec "$0" "$@"')
 
     w, h = case.get('screen', (W, H))
-    cmd = ['gamescope', '--backend', 'headless',
+    cmd = ['gamescope', '--backend', 'headless'] + (
+           ['--expose-wayland'] if wayland else []) + [
            '-w', str(w), '-h', str(h), '-W', str(w), '-H', str(h),
            '-r', '60', '--', 'sh', '-c', guard,
            retroarch, '--config', cfg, '-L', case.get('core', CORE),
@@ -301,6 +350,8 @@ def run_case(retroarch, root, monado, case, validate):
     env = isolated_env()
     svc = svc_log = log = p = None
     res = Result(d)
+    res.top_px = case.get('top_px', res.top_px)
+    res.reinit_grace = case.get('reinit_grace', res.reinit_grace)
     try:
         if monado.get('MODE') == 'service':
             svc_env = dict(env)
@@ -337,6 +388,8 @@ def run_case(retroarch, root, monado, case, validate):
                 os.replace(tmp, script)
             elif kind == 'unfocus':
                 open(os.path.join(d, 'unfocus'), 'w').close()
+            elif kind == 'touch':
+                open(os.path.join(d, arg), 'w').close()
             elif kind == 'wait_exit':
                 try:
                     p.wait(arg)
@@ -411,6 +464,730 @@ def no_quads(res):
             % os.path.join(res.dir, 'run.log')]
 
 
+def projections(frame):
+    return [x for x in frame['layers'] if x['type'] == 'projection']
+
+
+def last_projection_snap(res):
+    for fr in reversed(res.frames):
+        if fr['snap'] and projections(fr):
+            return fr
+    return None
+
+
+HMD_RE = re.compile(r'\[video_views\] hmd=(\d) recommended=(\d+)x(\d+)')
+STATUS_RE = re.compile(r'\[video_views\] presents=(\d) stereo=(\d) '
+                       r'accepted=(\d) views=(\d+)')
+EYES_RE = re.compile(r'\[video_views\] vr eyes frame=(\d+) '
+                     r'left=([-\d.]+),([-\d.]+),'
+                     r'([-\d.]+) right=([-\d.]+),([-\d.]+),([-\d.]+) '
+                     r'fov=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) '
+                     r'rfov=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)')
+FLAGS_RE = re.compile(r'\[video_views\] vr frame flags=(\d+)')
+RECENTERED, TARGET_RESIZED = 1, 2
+EYE_W, EYE_H = 400, 240  # the 3DS map's top screen, one eye
+EXACT = 1.5e-5  # the core and the layer both log five decimals
+
+
+def frame_tag(path, v, size):
+    """The frame number's low sixteen bits along the bottom of an eye
+    the core drew, or None where a block is neither white nor black."""
+    tag = 0
+    for b in range(16):
+        c, _ = colour(path, (24 + 20 * b) * v['rect'][2] / EYE_W / size[0],
+                      (EYE_H - 16) * v['rect'][3] / EYE_H / size[1])
+        if near(c, WHITE):
+            tag |= 1 << b
+        elif not near(c, BLACK):
+            return None
+    return tag
+
+
+def tracked_size(res):
+    """The recommended eye size the core was last given with HMD set."""
+    hmd = [m for m in HMD_RE.findall(res.log) if m[0] == '1']
+    return (int(hmd[-1][1]), int(hmd[-1][2])) if hmd else None
+
+
+def check_paused(res, start, end):
+    """The core ran no frame between the marks start and end: the eyes
+    of every snapped projection between them carry one frame tag, and
+    there is one."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    t0, t1 = res.marks[start] * 1e6, res.marks[end] * 1e6
+    tags = set(frame_tag(image(res, f, v), v, size) for f in res.frames
+               if f['snap'] and t0 < f['t_us'] < t1
+               for p in projections(f) for v in p['views'])
+    if not tags:
+        return ['no snapped projection between %s and %s' % (start, end)]
+    if len(tags) != 1 or None in tags:
+        return ['the core ran between %s and %s: the eyes show frames %s'
+                % (start, end, sorted(tags, key=str))]
+    return []
+
+
+def check_tracked(space='local', beside=True):
+    """HMD reaches the core, its tracked map is taken, and its two eyes
+    are a projection behind the other screen: one swapchain per eye at
+    the recommended size, each eye drawn 1:1 from its top-left, with the
+    poses and fields of view the core drew that frame from, in the space
+    it asked for (LOCAL where the runtime has no STAGE). beside False:
+    the eyes are all the headset shows, as gl's window gives way."""
+    def check(res):
+        errors = []
+        size = tracked_size(res)
+        if not size or not size[0] or not size[1]:
+            return ['the core never saw HMD with an eye size: %s'
+                    % HMD_RE.findall(res.log)]
+        status = STATUS_RE.findall(res.log)
+        if not status or status[-1][2] != '1':
+            errors.append('the tracked map was not taken: %s' % status[-1:])
+        fr = last_projection_snap(res)
+        if not fr:
+            return errors + ['no snapped frame with a projection (see %s)'
+                             % os.path.join(res.dir, 'run.log')]
+        if fr['layers'][0]['type'] != 'projection':
+            errors.append('the projection is not behind the screens: %s'
+                          % [x['type'] for x in fr['layers']])
+        p = projections(fr)[0]
+        want = space
+        if space == 'stage' and \
+                'No STAGE space: tracked content is seated.' in res.log:
+            want = 'local'
+        if p['space'] != want:
+            errors.append('the projection is in %s, want %s'
+                          % (p['space'], want))
+        if len(p['views']) != 2:
+            return errors + ['%d projection views' % len(p['views'])]
+        lv, rv = p['views']
+        if lv['sc'] == rv['sc']:
+            errors.append('both eyes come from one swapchain')
+        for v, what in ((lv, 'left'), (rv, 'right')):
+            sc = res.chains.get(v['sc'])
+            if not sc or (sc['w'], sc['h']) != size:
+                errors.append('the %s eye\'s swapchain is %s, want %dx%d'
+                              % (what, sc and (sc['w'], sc['h']), size[0],
+                                 size[1]))
+            if v['rect'] != [0, 0, min(EYE_W, size[0]), min(EYE_H, size[1])]:
+                errors.append('the %s eye shows %s' % (what, v['rect']))
+            if v['layer'] != 0:
+                errors.append('the %s eye shows array layer %d'
+                              % (what, v['layer']))
+        for v, colour_want, what in ((lv, RED, 'left eye'),
+                                     (rv, BLUE, 'right eye')):
+            path = image(res, fr, v)
+            c, _ = colour(path, EYE_W * 0.5 / size[0], EYE_H * 0.5 / size[1])
+            if not near(c, colour_want):
+                errors.append('%s shows %s, want %s' % (what, c, colour_want))
+            c, _ = colour(path, 2.0 / size[0], 2.0 / size[1])
+            if not near(c, WHITE):
+                errors.append('%s top-left is %s, want white' % (what, c))
+        q = [x for x in quads(fr) if not x['flags'] & BLEND]
+        if not beside:
+            if quads(fr):
+                errors.append('quads beside the projection: %s'
+                              % [x['eye'] for x in quads(fr)])
+        elif [x['eye'] for x in q] != ['both']:
+            errors.append('screens beside the projection: %s'
+                          % [x['eye'] for x in q])
+        else:
+            c, _ = colour(image(res, fr, q[0]), 0.5, 0.5)
+            if not near(c, YELLOW):
+                errors.append('the bottom screen shows %s' % (c,))
+        eyes = [(int(m[0]), [float(x) for x in m[1:]])
+                for m in EYES_RE.findall(res.log)]
+        tags = [frame_tag(image(res, fr, v), v, size) for v in (lv, rv)]
+        if not eyes:
+            errors.append('the core logged no eye poses')
+        elif None in tags or tags[0] != tags[1]:
+            errors.append('the eyes are tagged frames %s' % tags)
+        else:
+            # The headset moves a few millimetres a sample: the poses
+            # shown must be the ones logged for the frame shown, which
+            # its tag numbers (a run is far short of 65536 frames).
+            frame = tags[0]
+            upto = [x for x in eyes if x[0] <= frame]
+            if not upto:
+                return errors + ['no eye poses logged by frame %d' % frame]
+            e = max(upto, key=lambda x: x[0])[1]
+            for v, pos, what in ((lv, e[0:3], 'left'), (rv, e[3:6], 'right')):
+                if any(abs(a - b) > EXACT for a, b in zip(v['pose'][:3], pos)):
+                    errors.append('the %s eye is shown at %s, drawn at %s '
+                                  'in frame %d' % (what, v['pose'][:3], pos,
+                                                   frame))
+            for v, drawn, what in ((lv, e[6:10], 'left'),
+                                   (rv, e[10:14], 'right')):
+                tans = [abs(math.tan(a)) for a in v['fov']]
+                if any(abs(a - b) > 0.01 for a, b in zip(tans, drawn)):
+                    errors.append('the %s eye is shown with tangents %s, '
+                                  'drawn with %s' % (what, tans, drawn))
+        return errors
+    return check
+
+
+def check_tracked_flat(res, native=False):
+    """A core's eyes going flat while it runs: the projection goes, and
+    their screen is a quad pair again. native: as check_screens's."""
+    flat = res.marks.get('flat', 0) * 1e6
+    errors = []
+    if not any(projections(f) for f in res.frames if f['t_us'] < flat):
+        errors.append('no projection before the core went flat')
+    if '[video_views] vr flat' not in res.log:
+        return errors + ['the core never went flat']
+    after = [f for f in res.frames if f['t_us'] > flat + 1e6]
+    if any(projections(f) for f in after):
+        errors.append('the projection stayed after the core went flat')
+    fr = last_snap(res)
+    if not after or not fr or fr['t_us'] <= flat + 1e6:
+        return errors + ['no snapped frame after the core went flat']
+    return errors + check_screens(native=native)(res)
+
+
+SLOT_REFUSED = re.compile(r'\[OpenXR\] No (\d+)x(\d+) swapchain with 2 layer')
+
+
+def check_tracked_fallback(res):
+    """Tracked eyes whose projection the runtime refuses stay a quad
+    pair, as a flat map's."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    errors = []
+    if '%dx%d' % size not in ['%sx%s' % m for m in
+                              SLOT_REFUSED.findall(res.log)]:
+        errors.append('the projection slot was not refused: %s'
+                      % SLOT_REFUSED.findall(res.log))
+    status = STATUS_RE.findall(res.log)
+    if not status or status[-1][2] != '1':
+        errors.append('the tracked map was not taken: %s' % status[-1:])
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown')
+    return errors + check_screens()(res)
+
+
+def check_tracked_refused(res):
+    """A TRACKED map without a pair of eyes is refused while HMD is set."""
+    size = tracked_size(res)
+    status = STATUS_RE.findall(res.log)
+    if not size:
+        return ['the core never saw HMD']
+    if not status or status[-1][2] != '0':
+        return ['the map without eyes was taken: %s' % status[-1:]]
+    if any(projections(f) for f in res.frames):
+        return ['a projection was shown']
+    return []
+
+
+def check_flat_size(res, native=False):
+    """A map without TRACKED under HMD is screens, as before, and the core
+    is still given the eye size. native: as check_screens's."""
+    errors = check_screens(native=native)(res)
+    size = tracked_size(res)
+    if not size or not size[0] or not size[1]:
+        errors.append('no eye size with HMD: %s' % HMD_RE.findall(res.log))
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown for a map without TRACKED')
+    return errors
+
+
+def check_tracked_menu(res):
+    """The menu opens in front of the tracked eyes, which stay."""
+    opened = res.marks.get('menu', 0) * 1e6
+    late = [f for f in res.frames if f['t_us'] > opened + 2e6]
+    menu = [f for f in late if any(x['type'] == 'quad' and x['flags'] & BLEND
+                                   for x in f['layers'])]
+    if not menu:
+        return ['no frame with the menu after it opened']
+    errors = []
+    for f in menu[-3:]:
+        kinds = [x['type'] for x in f['layers']]
+        if not kinds or kinds[0] != 'projection':
+            errors.append('frame %d shows %s, want the projection first'
+                          % (f['n'], kinds))
+    return errors
+
+
+def recenter_flags(res):
+    """How many frames the core saw RECENTERED in: it logs a frame's
+    flags whenever there are any."""
+    return sum(1 for m in FLAGS_RE.finditer(res.log)
+               if int(m.group(1)) & RECENTERED)
+
+
+def same_frame_errors(res):
+    """After the recenter mark, the first headset frame where the screens
+    move is the first where the seated world's space moves in STAGE."""
+    def moves(a, b):
+        return (a is not None and b is not None
+                and any(abs(x - y) > 1e-3 for x, y in zip(a[:3], b[:3])))
+    asked = res.marks['recenter'] * 1e6
+    screens = world = was_q = was_s = None
+    for f in res.frames:
+        q = quads(f)[0]['pose'] if quads(f) else None
+        s = projections(f)[0].get('stage') if projections(f) else None
+        if f['t_us'] > asked:
+            if screens is None and moves(was_q, q):
+                screens = f['n']
+            if world is None and moves(was_s, s):
+                world = f['n']
+        was_q = q if q is not None else was_q
+        was_s = s if s is not None else was_s
+    if screens is None or world is None:
+        return ['after the recenter the screens moved at frame %s, the '
+                'world at frame %s' % (screens, world)]
+    if screens != world:
+        return ['the screens moved at frame %d, the seated world at frame '
+                '%d' % (screens, world)]
+    return []
+
+
+def check_tracked_recenter(res, screens=True):
+    """The Recenter hotkey moves the screens and a seated world together,
+    in one headset frame: the core hears RECENTERED once, and the
+    projection goes on. screens False: the eyes are all there is, as
+    with gl, and the world alone moves."""
+    errors = []
+    if 'Headset recenter requested' not in res.log:
+        errors.append('the network command did not reach the hotkey')
+    n = recenter_flags(res)
+    if n != 1:
+        errors.append('the core saw RECENTERED %d times, want 1' % n)
+    shown = [f for f in res.frames if projections(f)]
+    late = [f for f in shown
+            if f['t_us'] > res.marks['recenter'] * 1e6 + 1e6]
+    if not late:
+        errors.append('no projection after the recenter')
+    if screens:
+        return errors + same_frame_errors(res)
+    asked = res.marks['recenter'] * 1e6
+    was = [projections(f)[0].get('stage') for f in shown
+           if f['t_us'] < asked]
+    now = [projections(f)[0].get('stage') for f in late]
+    if not was or not now or not was[-1] or not now[-1]:
+        errors.append('the eyes\' space was not located in STAGE on both '
+                      'sides of the recenter')
+    elif same_place([was[-1]], [now[-1]]):
+        errors.append('the seated world did not move with the recenter')
+    return errors
+
+
+def check_tracked_recenter_eyes(res):
+    return check_tracked_recenter(res, screens=False)
+
+
+# The anchor at the scripted head 0.5, 0.2, 0.3, turned 90 degrees left.
+TURNED = [0.5, 0.2, 0.3, 0.0, 0.70711, 0.0, 0.70711]
+
+
+def check_tracked_recenter_paused(space, screens=True):
+    """A recenter while tracked content is paused keeps its frozen frame
+    on screen, with the poses the core drew it from. In space 'local' the
+    seated world moves with the screens to the turned head's anchor, in
+    the same headset frame; in 'stage' it stays in the room. The core
+    hears RECENTERED once. screens False: the eyes are all there is, as
+    with gl."""
+    def check(res):
+        errors = []
+        if 'Headset recenter requested' not in res.log:
+            errors.append('the network command did not reach the hotkey')
+        errors += check_paused(res, 'recenter', 'resume')
+        asked = res.marks['recenter'] * 1e6
+        resumed = res.marks['resume'] * 1e6
+        paused = [f for f in res.frames
+                  if asked + 5e5 < f['t_us'] < resumed and f['layers']]
+        if not paused:
+            return errors + ['no frames between the recenter and the unpause']
+        blank = [f['n'] for f in paused if not projections(f)]
+        if blank:
+            errors.append('%d frames without the projection while paused, '
+                          'first %d' % (len(blank), blank[0]))
+        before = [f for f in res.frames
+                  if f['t_us'] < asked and projections(f)
+                  and (quads(f) or not screens)]
+        if not before or not projections(before[-1])[0].get('stage'):
+            return errors + ['no projection located in STAGE before the '
+                             'recenter']
+        b = projections(before[-1])[0]
+        # Where the space the eyes are shown in should be in STAGE.
+        want = b['stage']
+        if space == 'local':
+            want = in_stage(b, {'pose': TURNED})
+        shown = [f for f in paused if projections(f)]
+        for f in shown:
+            p = projections(f)[0]
+            if p['space'] != space:
+                errors.append('frame %d shows the eyes in %s, want %s'
+                              % (f['n'], p['space'], space))
+                break
+            if any(abs(x - y) > EXACT for v, w in zip(p['views'], b['views'])
+                   for x, y in zip(v['pose'], w['pose'])):
+                errors.append('frame %d shows the eyes at other poses than '
+                              'the paused frame\'s' % f['n'])
+                break
+            if not same_place([want], [p.get('stage')]):
+                errors.append('frame %d shows the eyes\' space at %s in '
+                              'STAGE, want %s' % (f['n'], p.get('stage'),
+                                                  want))
+                break
+        snapped = [f for f in shown if f['snap']]
+        if snapped:
+            errors += shown_as_drawn(res, snapped[-1])
+        # The screens went to the turned anchor either way.
+        if screens:
+            q0 = quads(before[-1])[0]
+            q1 = [x for x in quads(paused[-1])
+                  if x['eye'] == q0['eye'] and x['flags'] == q0['flags']]
+            moved = in_stage({'stage': TURNED}, q0)
+            if not q1 or not same_place([moved], [q1[0]['pose']]):
+                errors.append('the screen at %s did not go to %s with the '
+                              'recenter: %s' % (q0['pose'], moved,
+                                                q1 and q1[0]['pose']))
+        if not [f for f in res.frames
+                if f['t_us'] > resumed + 1e6 and projections(f)]:
+            errors.append('no projection after the unpause')
+        if recenter_flags(res) != 1:
+            errors.append('the core saw RECENTERED %d times, want 1'
+                          % recenter_flags(res))
+        if space == 'local' and screens:
+            errors += same_frame_errors(res)
+        return errors
+    return check
+
+
+def check_tracked_runtime_recenter(res):
+    """The runtime's LOCAL change is a recenter too; a STAGE change is
+    not one for a seated core."""
+    errors = []
+    n = recenter_flags(res)
+    if n != 1:
+        errors.append('the core saw RECENTERED %d times, want 1 (for '
+                      'the LOCAL change)' % n)
+    if res.log.count('[OpenXR] Recentered by the runtime.') != 1:
+        errors.append('the runtime\'s recenter was not logged once')
+    return errors
+
+
+def check_tracked_exit(res):
+    """EXITING ends the session: HMD goes, no projection is submitted
+    after, and the window keeps running."""
+    errors = check_exit_window(res)
+    hmd = [m[0] for m in HMD_RE.findall(res.log)]
+    if '1' not in hmd or hmd[-1] != '0':
+        errors.append('HMD did not go with the session: %s' % hmd)
+    lost = res.marks['lost'] * 1e6
+    late = [f for f in res.frames if f['t_us'] > lost + 5e5 and projections(f)]
+    if late:
+        errors.append('%d frames with a projection after the session ended'
+                      % len(late))
+    return errors
+
+
+def check_tracked_stopping(res):
+    """A session the runtime stops is alive but not running: HMD goes
+    with it."""
+    errors = []
+    if '[OpenXR] Session stopping.' not in res.log:
+        errors.append('the session did not stop')
+    hmd = [m[0] for m in HMD_RE.findall(res.log)]
+    if '1' not in hmd or hmd[-1] != '0':
+        errors.append('HMD did not go with the session: %s' % hmd)
+    return errors
+
+
+SESSION_CREATED = '[OpenXR] Session created.'
+
+
+def check_tracked_reinit(res):
+    """A video driver reinit while tracked content runs: the new driver
+    takes the map's content info again, so the core sees HMD with an eye
+    size on both sides, and the projection comes back in the space the
+    core asked for (LOCAL where the runtime has no STAGE)."""
+    first = res.log.find(SESSION_CREATED)
+    again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+    if again < 0:
+        return ['the video driver did not restart']
+    errors = []
+    before = [m for m in HMD_RE.findall(res.log[:again]) if m[0] == '1'
+              and int(m[1]) and int(m[2])]
+    if not before:
+        errors.append('the core saw no HMD with an eye size before the '
+                      'reinit: %s' % HMD_RE.findall(res.log[:again]))
+    last = HMD_RE.findall(res.log)[-1:]
+    if not last or last[0][0] != '1' or not int(last[0][1]) \
+            or not int(last[0][2]):
+        errors.append('the core sees %s after the reinit, want HMD with an '
+                      'eye size' % last)
+    for line in ('Unable to set VR content info', 'No eye target size'):
+        if line in res.log:
+            errors.append('"%s" in the log' % line)
+    reinit = res.marks['reinit'] * 1e6
+    late = [p['space'] for f in res.frames if f['t_us'] > reinit + 2e6
+            for p in projections(f)]
+    want = 'stage'
+    if 'No STAGE space: tracked content is seated.' in res.log[:again]:
+        want = 'local'
+    if not late:
+        errors.append('no projection after the reinit')
+    elif set(late) != set([want]):
+        errors.append('the projection is in %s after the reinit, want %s'
+                      % (sorted(set(late)), want))
+    return errors
+
+
+def shown_as_drawn(res, fr):
+    """Errors unless snapped frame fr's projection shows the eyes with
+    the poses and fields of view the core logged for the frame they are
+    tagged with."""
+    size = tracked_size(res)
+    views = projections(fr)[0]['views']
+    if len(views) != 2:
+        return ['%d projection views' % len(views)]
+    tags = [frame_tag(image(res, fr, v), v, size) for v in views]
+    if None in tags or tags[0] != tags[1]:
+        return ['the eyes are tagged frames %s' % tags]
+    upto = [(int(m[0]), [float(x) for x in m[1:]])
+            for m in EYES_RE.findall(res.log) if int(m[0]) <= tags[0]]
+    if not upto:
+        return ['no eye poses logged by frame %d' % tags[0]]
+    e = max(upto, key=lambda x: x[0])[1]
+    errors = []
+    for v, pos, fov, what in ((views[0], e[0:3], e[6:10], 'left'),
+                              (views[1], e[3:6], e[10:14], 'right')):
+        if any(abs(a - b) > EXACT for a, b in zip(v['pose'][:3], pos)):
+            errors.append('the %s eye is shown at %s, drawn at %s in frame '
+                          '%d' % (what, v['pose'][:3], pos, tags[0]))
+        tans = [abs(math.tan(a)) for a in v['fov']]
+        if any(abs(a - b) > 0.01 for a, b in zip(tans, fov)):
+            errors.append('the %s eye is shown with tangents %s, drawn '
+                          'with %s' % (what, tans, fov))
+    return errors
+
+
+def qmul(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return (aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+            aw * bw - ax * bx - ay * by - az * bz)
+
+
+def in_stage(p, v):
+    """Projection p's view v as a pose in STAGE, through the layer's
+    location of p's space there; None without one."""
+    s = p.get('stage')
+    if not s:
+        return None
+    q = s[3:]
+    r = qmul(qmul(q, tuple(v['pose'][:3]) + (0.0,)),
+             (-q[0], -q[1], -q[2], q[3]))
+    return ([a + b for a, b in zip(s[:3], r[:3])]
+            + list(qmul(q, v['pose'][3:])))
+
+
+def same_place(a, b):
+    """Two eyes' STAGE poses are the same within the layer's rounding:
+    0.2 mm, and 0.2 degrees between the orientations."""
+    def turn(x, y):
+        d = sum(i * j for i, j in zip(x, y))
+        n = math.sqrt(sum(i * i for i in x) * sum(j * j for j in y))
+        return abs(d) / n
+    return all(x and y and all(abs(i - j) <= 2e-4 for i, j in zip(x[:3], y[:3]))
+               and turn(x[3:], y[3:]) >= math.cos(math.radians(0.1))
+               for x, y in zip(a, b))
+
+
+def recentered_after(res, pos):
+    """The frames the core saw RECENTERED in, from log offset pos on."""
+    return sum(1 for m in FLAGS_RE.finditer(res.log, pos)
+               if int(m.group(1)) & RECENTERED)
+
+
+def check_tracked_reinit_recentered(space):
+    """A video driver reinit while seated content runs: the new session's
+    LOCAL is wherever the runtime puts it, so the core hears RECENTERED
+    once, with its first sample after; the projection goes on in space,
+    or with None, there is none (a core that only reads the poses)."""
+    def check(res):
+        first = res.log.find(SESSION_CREATED)
+        again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+        if again < 0:
+            return ['the video driver did not restart']
+        errors = []
+        n = recentered_after(res, again)
+        if n != 1:
+            errors.append('the core saw RECENTERED %d times after the '
+                          'reinit, want 1' % n)
+        if recentered_after(res, 0) != n:
+            errors.append('the core saw RECENTERED before the reinit')
+        bad = [x.strip() for x in res.log.splitlines() if '[ERROR]' in x]
+        if bad:
+            errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
+        reinit = res.marks['reinit'] * 1e6
+        late = set(p['space'] for f in res.frames if f['t_us'] > reinit + 2e6
+                   for p in projections(f))
+        if late != (set([space]) if space else set()):
+            errors.append('the projection is in %s after the reinit, want %s'
+                          % (sorted(late), space))
+        return errors
+    return check
+
+
+def check_tracked_reinit_resized(res):
+    """A video driver reinit to a headset that recommends another eye
+    size: the core hears TARGET_RESIZED once, after the reinit, though
+    the new session's first frames have no poses, and it is given the
+    new size."""
+    first = res.log.find(SESSION_CREATED)
+    again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+    if again < 0:
+        return ['the video driver did not restart']
+    errors = []
+    told = [m.start() for m in FLAGS_RE.finditer(res.log)
+            if int(m.group(1)) & TARGET_RESIZED]
+    if len(told) != 1 or told[0] < again:
+        errors.append('the core saw TARGET_RESIZED %d times, %d after the '
+                      'reinit, want once after it'
+                      % (len(told), sum(1 for t in told if t > again)))
+    if tracked_size(res) != RESIZED:
+        errors.append('the core was last given %s, want %s'
+                      % (tracked_size(res), RESIZED))
+    return errors
+
+
+def check_tracked_recenter_unlocated(res):
+    """A recenter while the runtime cannot locate the eyes: the core
+    hears RECENTERED once, when they are located again."""
+    n = recenter_flags(res)
+    return [] if n == 1 else ['the core saw RECENTERED %d times, want 1' % n]
+
+
+def check_tracked_reinit_paused(shown, space):
+    """A video driver reinit while tracked content is paused: the core
+    runs no frame until the unpause, and nothing logs an error. Until
+    then the headset shows, by shown: 'projection', the kept frame's
+    eyes where they were in the room, as STAGE places them in both
+    sessions, from the poses the core drew them from; 'pair', no
+    projection but the eyes as a quad pair, as without STAGE nothing
+    places them; None, no projection, as a hardware frame is not kept.
+    After the unpause the projection is back, in space, and a seated
+    core, whose origin moved, hears RECENTERED once."""
+    def check(res):
+        first = res.log.find(SESSION_CREATED)
+        again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+        if again < 0:
+            return ['the video driver did not restart']
+        errors = check_paused(res, 'paused', 'resume')
+        bad = [x.strip() for x in res.log.splitlines() if '[ERROR]' in x]
+        if bad:
+            errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
+        reinit = res.marks['reinit'] * 1e6
+        resumed = res.marks['resume'] * 1e6
+        # A new session's first frame can show the eyes as a quad pair,
+        # on any driver, while STAGE has not located the kept views yet:
+        # the grace covers the restart and that frame.
+        paused = [f for f in res.frames
+                  if reinit + res.reinit_grace * 1e6 < f['t_us'] < resumed
+                  and f['layers']]
+        if not paused:
+            return errors + ['no frames between the reinit and the unpause']
+        shown_proj = [f for f in paused if projections(f)]
+        if shown == 'projection':
+            blank = [f['n'] for f in paused if not projections(f)]
+            if blank:
+                errors.append('%d frames without the projection while '
+                              'paused, first %d' % (len(blank), blank[0]))
+            spaces = set(p['space'] for f in shown_proj
+                         for p in projections(f))
+            if shown_proj and spaces != set([space]):
+                errors.append('the projection is in %s while paused, want %s'
+                              % (sorted(spaces), space))
+            # The last projection before the reinit shows the poses the
+            # frame was drawn from; every one after shows them at the same
+            # place in the room, never at poses sampled since.
+            before = [f for f in res.frames if f['snap'] and projections(f)
+                      and res.marks['paused'] * 1e6 < f['t_us'] < reinit]
+            # check_paused sees this frame's tags only in a snapped one.
+            if not [f for f in shown_proj if f['snap']]:
+                errors.append('no snapped projection while paused after the '
+                              'reinit')
+            if not before:
+                errors.append('no snapped projection between the pause and '
+                              'the reinit')
+            else:
+                errors += shown_as_drawn(res, before[-1])
+                p = projections(before[-1])[0]
+                want = [in_stage(p, v) for v in p['views']]
+                moved = [f['n'] for f in shown_proj
+                         if not same_place(want, [
+                             in_stage(projections(f)[0], v)
+                             for v in projections(f)[0]['views']])]
+                if None in want:
+                    errors.append('no STAGE pose before the reinit')
+                elif moved:
+                    errors.append('%d frames show the eyes elsewhere in the '
+                                  'room, first %d' % (len(moved), moved[0]))
+        elif shown_proj:
+            errors.append('%d frames with a projection while paused after the '
+                          'reinit, first %d' % (len(shown_proj),
+                                                shown_proj[0]['n']))
+        if shown == 'pair':
+            unpaired = [f['n'] for f in paused
+                        if not set(['left', 'right'])
+                        <= set(x['eye'] for x in quads(f))]
+            if unpaired:
+                errors.append('%d frames without the eyes\' quad pair while '
+                              'paused, first %d' % (len(unpaired),
+                                                    unpaired[0]))
+        late = [p['space'] for f in res.frames if f['t_us'] > resumed + 1e6
+                for p in projections(f)]
+        if not late:
+            errors.append('no projection after the unpause')
+        elif set(late) != set([space]):
+            errors.append('the projection is in %s after the unpause, want %s'
+                          % (sorted(set(late)), space))
+        want = 1 if space == 'local' else 0
+        n = recentered_after(res, again)
+        if n != want or recentered_after(res, 0) != n:
+            errors.append('the core saw RECENTERED %d times after the reinit '
+                          'and %d before, want %d and 0'
+                          % (n, recentered_after(res, 0) - n, want))
+        return errors
+    return check
+
+
+REINIT_RUNNING = [('wait', 6), ('mark', 'reinit'),
+                  ('send', 'FULLSCREEN_TOGGLE'), ('wait', 6)]
+# The next instance's headset recommends another eye size, and its
+# session's first frames have no poses, as SteamVR's take a while.
+RESIZED = (1600, 1680)
+REINIT_RESIZED = [('wait', 6), ('script', 'eyes %d %d' % RESIZED),
+                  ('wait', 1), ('mark', 'reinit'),
+                  ('script', 'eyes %d %d\ninvalid views' % RESIZED),
+                  ('send', 'FULLSCREEN_TOGGLE'), ('wait', 4),
+                  ('script', 'eyes %d %d' % RESIZED), ('wait', 4)]
+
+# The pause hotkey, then the fullscreen one, which restarts the driver.
+REINIT_PAUSED = [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+                 ('mark', 'paused'), ('wait', 3), ('mark', 'reinit'),
+                 ('send', 'FULLSCREEN_TOGGLE'), ('wait', 4), ('mark', 'resume'),
+                 ('send', 'PAUSE_TOGGLE'), ('wait', 3)]
+# The head turns while paused, so the frozen frame was drawn from other
+# poses than the anchor the recenter takes.
+RECENTER_PAUSED = [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+                   ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+                   ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+                   ('wait', 3), ('mark', 'resume'), ('send', 'PAUSE_TOGGLE'),
+                   ('wait', 3)]
+# The new session's first STAGE locations are not had yet.
+REINIT_PAUSED_UNLOCATED = (REINIT_PAUSED[:4]
+                           + [('wait', 2), ('script', 'invalid stage 3'),
+                              ('wait', 1)]
+                           + REINIT_PAUSED[5:])
+
+
 def image_size(res, q, native=None, distance=1.8):
     """Errors unless q's swapchain has the size video_xr_image_dims()
     gives at the density the runtime recommended: the quad's angular
@@ -436,7 +1213,9 @@ def image_size(res, q, native=None, distance=1.8):
     return errors
 
 
-def check_screens(swap=False, horizontal=False):
+def check_screens(swap=False, horizontal=False, native=False):
+    """native: the images are never smaller than their views, as gl's
+    cuts of its window are."""
     def check(res):
         fr = last_snap(res)
         if not fr:
@@ -462,9 +1241,9 @@ def check_screens(swap=False, horizontal=False):
         if not at(bq, want) or not sized(bq, (1.28, 0.96)):
             errors.append('bottom screen at %s size %s, want %s'
                           % (bq['pose'][:3], bq['size'], want))
-        errors += image_size(res, lq)
-        errors += image_size(res, rq)
-        errors += image_size(res, bq)
+        errors += image_size(res, lq, (400, 240) if native else None)
+        errors += image_size(res, rq, (400, 240) if native else None)
+        errors += image_size(res, bq, (320, 240) if native else None)
         if any(res.chains.get(x['sc'], {}).get('layers') != 1
                for x in (lq, rq)):
             errors.append('the eyes\' images are not one layer each')
@@ -798,6 +1577,45 @@ def check_recenter(res):
     return errors
 
 
+def check_recenter_menu(res):
+    """The hotkey recenters while the menu is open: the menu and the
+    screens go to the turned head's anchor. A press with the menu
+    closed is the second, and no press runs twice."""
+    mark = res.marks['recenter'] * 1e6
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    before = [f for f in shown if f['t_us'] < mark]
+    after = [f for f in shown
+             if mark + 1e6 < f['t_us'] < res.marks['closed'] * 1e6]
+    if not before or not after:
+        return ['no frames on both sides of the recenter']
+    errors = []
+    for name, fr, want, turn in (
+            ('before', before[-1], (0.0, 0.0, -1.7), None),
+            ('after', after[-1], (-1.2, 0.2, 0.3),
+             (0.0, 0.70711, 0.0, 0.70711))):
+        menus = [x for x in quads(fr) if x['flags'] & BLEND]
+        if len(menus) != 1:
+            return ['want one blended menu quad %s the recenter, got %d'
+                    % (name, len(menus))]
+        if not at(menus[0], want):
+            errors.append('menu at %s %s the recenter, want %s'
+                          % (menus[0]['pose'][:3], name, want))
+        if turn and not facing(menus[0], turn):
+            errors.append('menu turned %s, want a quarter turn left'
+                          % menus[0]['pose'][3:])
+    screens = [x for x in quads(after[-1])
+               if not x['flags'] & BLEND and x['eye'] == 'left']
+    if not screens or not at(screens[0], (-1.3, 0.2, 0.3)):
+        errors.append('screen 0 at %s after the recenter, want (-1.3, 0.2, 0.3)'
+                      % (screens[0]['pose'][:3] if screens else None))
+    if res.log.count('Headset recenter requested') != 2:
+        errors.append('the hotkey ran %d times for two presses'
+                      % res.log.count('Headset recenter requested'))
+    return errors
+
+
 def check_runtime_recenter(res):
     """The runtime's own recenter moves LOCAL: the screens go back
     straight ahead after a hotkey recenter. A STAGE change leaves them."""
@@ -824,9 +1642,10 @@ def check_runtime_recenter(res):
     return errors
 
 
-def check_pacing(res):
+def check_pacing(res, still=True):
     """The headset's frames keep its own rate while the core is paused,
-    and no new images are drawn for it."""
+    and no new images are drawn for it. still False: images may come all
+    the same, as gl's window is copied whenever it is presented."""
     if 'paused' not in res.marks or 'resumed' not in res.marks:
         return ['the run did not pause']
     t0 = (res.marks['paused'] + 0.5) * 1e6
@@ -843,12 +1662,16 @@ def check_pacing(res):
     if abs(len(frames) - want) > 0.15 * want:
         errors.append('%d headset frames while paused, want about %.0f'
                       % (len(frames), want))
-    if len(released) > 2:
+    if still and len(released) > 2:
         errors.append('%d images released while paused, want none'
                       % len(released))
     if not before:
         errors.append('no images were released before the pause')
     return errors
+
+
+def check_pacing_live(res):
+    return check_pacing(res, still=False)
 
 
 def check_focus(res):
@@ -876,7 +1699,8 @@ def window_is(res, want, what):
     if not res.shot:
         return ['no screenshot']
     w, h, bpp, rows = read_png(res.shot)
-    got = tuple(rows[240][800 * bpp:800 * bpp + 3])
+    x, y = res.top_px
+    got = tuple(rows[y][x * bpp:x * bpp + 3])
     if not near(got, want):
         return ['the window shows %s at the top screen, want %s (%s)'
                 % (got, want, what)]
@@ -953,9 +1777,9 @@ def check_options_follow(res):
         errors.append('no "[OpenXR] The headset session ended" in the log')
     seen = re.findall(r'\[video_views\] options display status=(\d+)',
                       res.log)
-    # Status 3 while the headset shows; 1 only after it ended.
-    if '3' not in seen or '1' not in seen[seen.index('3'):]:
-        errors.append('no options display update from status 3 to 1 (2D) '
+    # Status 7 (HMD) while the headset tracks; 1 only after it ended.
+    if '7' not in seen or '1' not in seen[seen.index('7'):]:
+        errors.append('no options display update from status 7 to 1 (2D) '
                       'after the session ended: %s' % seen)
     return errors
 
@@ -1176,6 +2000,216 @@ def check_no_frame_profile(res):
     return errors
 
 
+TOUCH_PROFILE = '/interaction_profiles/oculus/touch_controller'
+START_MENU = 'action combined/start_menu 1'
+
+
+def touch_start_menu_binds(res):
+    """Touch's one menu button is Start and the RetroArch menu."""
+    got = [e for e in events(res, 'bindings')
+           if e['profile'] == TOUCH_PROFILE]
+    if not got:
+        return ['no bindings suggested for %s' % TOUCH_PROFILE]
+    binds = set(tuple(b) for b in got[0]['binds'])
+    errors = []
+    if ('combined/start_menu',
+            '/user/hand/left/input/menu/click') not in binds:
+        errors.append('Touch\'s menu button is not combined/start_menu')
+    if any(b[0] == 'combined/start' for b in binds):
+        errors.append('Touch still binds combined/start')
+    return errors
+
+
+def start_seen(res):
+    return any(f['buttons'] & RP['START'] for f in pads(res, 0))
+
+
+def check_start_menu_tap(res):
+    """Touch's menu button tapped: Start for the core, no menu."""
+    errors = touch_start_menu_binds(res)
+    if not start_seen(res):
+        errors.append('a tap gave the core no Start')
+    if any(menus(f) for f in res.frames):
+        errors.append('a tap opened the menu')
+    return errors
+
+
+def check_start_menu_hold(res):
+    """Held past a second and let go, the RetroArch menu opens (the
+    input driver toggles on release); the core has Start while it is
+    held."""
+    errors = touch_start_menu_binds(res)
+    release = res.marks['release'] * 1e6
+    opened = [f['t_us'] for f in res.frames if menus(f)]
+    if not opened:
+        errors.append('holding the menu button did not open the menu')
+    elif opened[0] < release:
+        errors.append('the menu opened %.2f s before the release'
+                      % ((release - opened[0]) / 1e6))
+    elif opened[0] - release > 1.5e6:
+        errors.append('the menu opened %.2f s after the release'
+                      % ((opened[0] - release) / 1e6))
+    if not start_seen(res):
+        errors.append('the core had no Start while the button was held')
+    return errors
+
+
+# The headset's controllers as a controller: a joypad device in a slot,
+# read through the port's binds.
+DEVICE_IN_RE = re.compile(r'\[Input\] Device \d+, "([^"]+)" '
+                          r'\([0-9a-f]{4}:[0-9a-f]{4}, (\w+)\): '
+                          r'(?:new|back), in slot (\d+)\.')
+DEVICE_LEFT_RE = re.compile(r'\[Input\] Device \d+, "([^"]+)": '
+                            r'left slot (\d+)\.')
+# The test joypad driver's pad in slot 0, from the start or later.
+PAD_FIRST = os.path.join(HERE, 'pad-first.ratst')
+PAD_LATER = os.path.join(HERE, 'pad-later.ratst')
+# RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
+# Menu, Settings (row 5), Input (3), RetroPad Binds, Port 1 Controls, and
+# B Button (row 14), whose OK starts the capture.
+BIND_B_NAV = ([('send', 'MENU_B'), ('wait', 0.5)]
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
+              + [('send', 'MENU_A'), ('wait', 0.5)]
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 3
+              + [('send', 'MENU_A'), ('wait', 0.5)] * 3
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 14
+              + [('send', 'MENU_A'), ('wait', 1)])
+
+
+def device_lines(res):
+    """The registry's lines, in log order: ('in' or 'left', name, slot),
+    a pad of the test driver's named 'pad'."""
+    out = []
+    for line in res.log.splitlines():
+        m = DEVICE_IN_RE.search(line)
+        if m:
+            out.append(('in', 'pad' if m.group(2) == 'test' else m.group(1),
+                        int(m.group(3))))
+        m = DEVICE_LEFT_RE.search(line)
+        if m:
+            out.append(('left', m.group(1), int(m.group(2))))
+    return out
+
+
+def check_input_device(res):
+    """The session's controllers are one controller, in slot 0 and on
+    port 1, read through the port, and gone with the session."""
+    errors = []
+    if '[Autoconf] OpenXR Controllers configured in port 1.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 1" in the '
+                      'log')
+    seq = [l for l in device_lines(res) if l[1] != 'pad']
+    if seq[:1] != [('in', 'OpenXR Controllers', 0)]:
+        errors.append('the device lines start %s, want the device in slot 0'
+                      % seq[:2])
+    elif ('left', 'OpenXR Controllers', 0) not in seq[1:]:
+        errors.append('the device never left slot 0 when the session ended: '
+                      '%s' % seq)
+    if ('[Autoconf] OpenXR Controllers disconnected from port 1.'
+            not in res.log):
+        errors.append('no "OpenXR Controllers disconnected from port 1" in '
+                      'the log')
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1 through the device')
+    return errors
+
+
+def check_input_device_second(res):
+    """A pad in slot 0 from the start: the headset is the next controller,
+    slot 1 and port 2, which is the core's player 2."""
+    errors = []
+    if device_lines(res)[:2] != [('in', 'pad', 0),
+                                 ('in', 'OpenXR Controllers', 1)]:
+        errors.append('the device lines start %s, want the pad in slot 0 '
+                      'and the headset in slot 1' % device_lines(res)[:3])
+    if '[Autoconf] OpenXR Controllers configured in port 2.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 2" in the '
+                      'log')
+    if find(pads(res, 1), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 2')
+    if any(f['buttons'] for f in pads(res, 0)):
+        errors.append('the headset reached player 1')
+    return errors
+
+
+def check_input_device_taken(res):
+    """A pad the driver puts in the headset's slot takes it; the headset
+    moves to slot 1 and keeps player 1."""
+    errors = []
+    seq = [l for l in device_lines(res) if l[0] == 'in']
+    if seq[:3] != [('in', 'OpenXR Controllers', 0), ('in', 'pad', 0),
+                   ('in', 'OpenXR Controllers', 1)]:
+        errors.append('the device lines are %s, want the headset in slot '
+                      '0, the pad there, the headset in slot 1' % seq[:4])
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1 after the move')
+    if any(f['buttons'] for f in pads(res, 1)):
+        errors.append('the headset reached player 2')
+    return errors
+
+
+def check_input_hotkeys(res):
+    """Hotkey Enable on L3 and Screenshot on X: X alone reaches the core
+    and takes no screenshot; with L3 held it takes one."""
+    errors = []
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['X']) < 0:
+        errors.append('X alone never reached player 1')
+    shots = [os.path.join(res.dir, 'shots', x)
+             for x in os.listdir(os.path.join(res.dir, 'shots'))
+             if x.endswith('.png')]
+    combo = res.marks.get('combo', 0) + time.time() - time.monotonic()
+    early = [s for s in shots if os.path.getmtime(s) < combo]
+    if early:
+        errors.append('X without Hotkey Enable took a screenshot')
+    if len(shots) - len(early) != 1:
+        errors.append('L3 with X took %d screenshots, want 1'
+                      % (len(shots) - len(early)))
+    return errors
+
+
+def check_input_hotkeys_separate(res):
+    """Separate, Menu Toggle on R: the right hand is port 2 and opens
+    nothing; the left hand is port 1, the hotkey port, and opens the
+    menu."""
+    errors = []
+    for name, port in (('Left', 1), ('Right', 2)):
+        if ('[Autoconf] OpenXR %s Controller configured in port %d.'
+                % (name, port)) not in res.log:
+            errors.append('no "OpenXR %s Controller configured in port %d" '
+                          'in the log' % (name, port))
+    left = res.marks.get('left', 0) * 1e6
+    opened = [f['t_us'] for f in res.frames if menus(f)]
+    if any(t < left for t in opened):
+        errors.append('R on the right hand opened the menu')
+    if not any(t >= left for t in opened):
+        errors.append('R on the left hand did not open the menu')
+    return errors
+
+
+def check_input_port_binds(res):
+    """Port 1's own binds with A and B swapped apply to the headset: its
+    A press, then its B press, reach player 1 as B, then A."""
+    presses = []
+    for f in pads(res, 0):
+        if not presses or presses[-1] != f['buttons']:
+            presses.append(f['buttons'])
+    presses = [b for b in presses if b]
+    if presses != [RP['B'], RP['A']]:
+        return ['the headset\'s A then B reached player 1 as %s, want B '
+                'then A' % ['0x%x' % b for b in presses]]
+    return []
+
+
+def check_input_bind_capture(res):
+    """X captured into Port 1's B Button through the menu: X is then B
+    too."""
+    p0 = pads(res, 0)
+    if find(p0, 0, lambda f: f['buttons'] == RP['B'] | RP['X']) < 0:
+        return ['X never reached player 1 as B after the capture: %s'
+                % p0[-3:]]
+    return []
+
+
 def check_combined(res):
     errors = bindings_errors(res) + sync_errors(res, ('combined', 'pointer'))
     p0 = pads(res, 0)
@@ -1238,6 +2272,28 @@ def check_input_focus(res):
         errors.append('not held again once the headset had focus back')
     if 'Controllers released: the headset is not focused' not in res.log:
         errors.append('no "Controllers released" in the log')
+    return errors
+
+
+def check_input_sync_unfocused(res):
+    """xrSyncActions answers XR_SESSION_NOT_FOCUSED (8), which succeeds
+    with nothing active, ahead of the state event: the pads release and
+    nothing is logged as not read."""
+    p0 = pads(res, 0)
+    i = find(p0, 0, lambda f: f['buttons'] == RP['B'] and f['lx'] == 32767)
+    j = find(p0, i + 1, lambda f: not moved(f)) if i >= 0 else -1
+    k = (find(p0, j + 1, lambda f: f['buttons'] == RP['B']
+              and f['lx'] == 32767) if j >= 0 else -1)
+    errors = []
+    if i < 0:
+        errors.append('B and the stick never reached player 1')
+    elif j < 0:
+        errors.append('still held while the sync said not focused')
+    elif k < 0:
+        errors.append('not held again once the sync had focus back')
+    if 'Controllers not read' in res.log:
+        errors.append('"Controllers not read" in the log for a sync that '
+                      'succeeded')
     return errors
 
 
@@ -1677,6 +2733,87 @@ def check_menu_laser(res):
     if not shown or not any(at(c, (0.16, -0.048, -1.7))
                             for c in cursors(shown[-1])):
         errors.append('no dot on the menu where the laser points')
+    return errors
+
+
+HEAD_TURNED = 'head 0.5 0.2 0.3 90'
+# AIM_MENU_HIGH, AIM_MENU_LOW and AIM_BOTTOM from a head at HEAD_TURNED:
+# the same rays relative to the head, given in LOCAL.
+AIM_MENU_HIGH_TURNED = 'aim right 0.2 -0.2 0.1 -1.2 0.392 0.14'
+AIM_MENU_LOW_TURNED = 'aim right 0.2 -0.2 0.1 -1.2 0.152 0.14'
+AIM_BOTTOM_TURNED = 'aim right 0.2 -0.2 0.1 -1.3 -1.032 0.62'
+
+
+def screen0(frame):
+    left = [q for q in quads(frame) if q['eye'] == 'left']
+    return left[0] if left else None
+
+
+def check_placement_follow(res):
+    """Follow Head: the screens ride in VIEW space, straight ahead of
+    the eyes whichever way the head turns, and the laser's dot on
+    screen 1 with them."""
+    shown = [f for f in res.frames if screen0(f)]
+    if not shown:
+        return no_quads(res)
+    errors = []
+    turned = res.marks.get('turned', 0) * 1e6
+    late = [f for f in shown if f['t_us'] > turned + 1e6]
+    if not late:
+        errors.append('no frames after the head turned')
+    for f in [shown[0]] + late[-1:]:
+        q = screen0(f)
+        if q['space'] != 'view':
+            errors.append('screen 0 in %s space, want view' % q['space'])
+        elif not at(q, (0.0, 0.0, -1.8)) or not facing(q, (0, 0, 0, 1)):
+            errors.append('screen 0 at %s, want straight ahead'
+                          % q['pose'])
+    dots = [f for f in late if cursors(f)]
+    if not dots:
+        errors.append('no laser dot after the head turned')
+    else:
+        c = cursors(dots[-1])[0]
+        if c['space'] != 'view' or not at(c, DOT_BOTTOM):
+            errors.append('the dot is at %s in %s space, want %s in view'
+                          % (c['pose'][:3], c['space'], DOT_BOTTOM))
+    return errors
+
+
+def check_placement_lazy(res):
+    """Lazy Follow: a small turn leaves the screens; a large one has them
+    glide, not jump, back in front of the head."""
+    small = res.marks.get('small', 0) * 1e6
+    big = res.marks.get('big', 0) * 1e6
+    held = [screen0(f) for f in res.frames
+            if small + 1e6 < f['t_us'] < big and screen0(f)]
+    after = [screen0(f) for f in res.frames
+             if f['t_us'] > big and screen0(f)]
+    if not held or not after:
+        return no_quads(res)
+    errors = []
+    if any(q['space'] != 'local' for q in held + after):
+        errors.append('a screen outside LOCAL')
+    moved = [q['pose'][:3] for q in held if not at(q, (0.0, 0.0, -1.8))]
+    if moved:
+        errors.append('a 20 degree turn moved screen 0 to %s' % moved[0])
+    end = after[-1]
+    if (     not at(end, (-1.3, 0.2, 0.3))
+            or not facing(end, (0.0, 0.70711, 0.0, 0.70711))):
+        errors.append('screen 0 ends at %s, want in front of the turned '
+                      'head' % end['pose'])
+    if not [q for q in after if not at(q, (0.0, 0.0, -1.8))
+            and not at(q, (-1.3, 0.2, 0.3))]:
+        errors.append('screen 0 jumped instead of gliding')
+    return errors
+
+
+def check_placement_follow_laser(res):
+    """Follow Head with the menu open: the laser points at the menu and
+    its dot sits on it, all in VIEW space."""
+    errors = check_menu_laser(res)
+    shown = [f for f in res.frames if cursors(f)]
+    if shown and any(c['space'] != 'view' for c in cursors(shown[-1])):
+        errors.append('the laser\'s dot is not in VIEW space')
     return errors
 
 
@@ -2208,7 +3345,7 @@ def check_kept_retry(res):
     if seq != ['live', 'released', 'live']:
         errors.append('controllers went %s, want live, released when the '
                       'session ended, live in the new one' % seq)
-    # The laser's dot is VULKAN_OPENXR_CURSOR_DIM square; each start makes
+    # The laser's dot is VIDEO_XR_CURSOR_DIM square; each start makes
     # one, and each start here made a session.
     dots = [e for e in events(res, 'swapchain')
             if (e['w'], e['h']) == (32, 32)]
@@ -2295,8 +3432,12 @@ def headset_hz(res, t0, t1):
             periods[len(periods) // 2] / 1e6)
 
 
-# The window's swapchain going non-blocking under vsync (vk_x).
-MAILBOX = 'VK_DATA_FLAG_EMULATE_MAILBOX requires non-zero swap_interval'
+# The window presenting without waiting under vsync: Vulkan's swapchain
+# going non-blocking (vk_x), or a GL driver's swap interval of 0.
+UNWAITED = ('VK_DATA_FLAG_EMULATE_MAILBOX requires non-zero swap_interval',
+            '[GLCore] Headset pacing on: the window presents without '
+            'waiting.',
+            '[GL] Headset pacing on: the window presents without waiting.')
 TICKS_LINE = "[OpenXR] Pacing on the headset's frames."
 CLOCK_LINE = ('[OpenXR] Pacing on the clock while the headset does not '
               'show the session.')
@@ -2389,7 +3530,7 @@ def check_paced(n, hz, end=None):
         errors = pace_errors(res, t0, t1, n)
         if paced_line(hz, n) not in res.log:
             errors.append('no "%s" in the log' % paced_line(hz, n))
-        if MAILBOX not in res.log:
+        if not any(line in res.log for line in UNWAITED):
             errors.append('the window never presented without waiting')
         log = res.log.split(end)[0] if end else res.log
         if CLOCK_LINE in log:
@@ -2654,6 +3795,13 @@ CASES = [
      'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
                ('send', 'HEADSET_RECENTER'), ('wait', 3)],
      'check': check_recenter},
+    {'name': 'recenter-menu', 'map': '3ds', 'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('send', 'MENU_TOGGLE'), ('wait', 3), ('mark', 'recenter'),
+               ('send', 'HEADSET_RECENTER'), ('wait', 3), ('mark', 'closed'),
+               ('send', 'MENU_TOGGLE'), ('wait', 2),
+               ('send', 'HEADSET_RECENTER'), ('wait', 2)],
+     'check': check_recenter_menu},
     # The runtime's recenter after the hotkey's (space 2 is LOCAL).
     {'name': 'runtime-recenter', 'map': '3ds',
      'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
@@ -2736,6 +3884,12 @@ CASES = [
                ('script', script(HELD, 'state 5')), ('wait', 2),
                ('script', ''), ('wait', 1)],
      'check': check_input_focus},
+    {'name': 'input-sync-unfocused', 'map': '3ds',
+     'steps': [('wait', 6), ('script', HELD), ('wait', 2),
+               ('script', script(HELD, 'sync 8')), ('wait', 2),
+               ('script', script(HELD, 'sync 0')), ('wait', 2),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_sync_unfocused},
     # Output spec section 3, Focus: the headset's focus keeps its
     # controllers and the content going while the window is unfocused;
     # only visible (4), they release and the content pauses.
@@ -3159,6 +4313,231 @@ CASES = [
      'settings': dict(WINDOW1, video_openxr_refresh_rate='10'),
      'script': 'rates 20 10\n', 'steps': PACE_STEPS,
      'check': check_request(10.0, 1, 10.0)},
+    # Head tracking: the 3DS map's top screen as TRACKED eyes.
+    {'name': 'tracked', 'map': '3ds', 'options': {'video_views_test_vr': 'local'},
+     'steps': SETTLE, 'check': check_tracked()},
+    {'name': 'tracked-stage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': SETTLE,
+     'check': check_tracked('stage')},
+    {'name': 'tracked-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': SETTLE,
+     'check': threaded(check_tracked())},
+    {'name': 'tracked-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local', 'video_views_test_hw': 'vulkan'},
+     'steps': SETTLE, 'check': check_tracked()},
+    # 10 fps on the 20 Hz headset: each core frame has its own sample.
+    {'name': 'tracked-paced', 'map': '3ds',
+     'options': dict(FPS10, video_views_test_vr='local'), 'settings': WINDOW1,
+     'steps': SETTLE, 'check': check_tracked()},
+    {'name': 'tracked-nopair', 'map': '3ds',
+     'options': {'video_views_test_vr': 'nopair'}, 'steps': SETTLE,
+     'check': check_tracked_refused},
+    {'name': 'flat-hmd-size', 'map': '3ds', 'steps': SETTLE,
+     'check': check_flat_size},
+    {'name': 'tracked-menu', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'menu'), ('send', 'MENU_TOGGLE'),
+               ('wait', 4)],
+     'check': check_tracked_menu},
+    {'name': 'tracked-flat', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('mark', 'flat'), ('touch', 'vr_flat'),
+               ('wait', 5)],
+     'check': check_tracked_flat},
+    {'name': 'tracked-fallback', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'script': 'fail eyes\n',
+     'steps': SETTLE, 'check': check_tracked_fallback},
+    {'name': 'tracked-recenter', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+               ('wait', 3)],
+     'check': check_tracked_recenter},
+    # space 3 is STAGE, space 2 LOCAL.
+    {'name': 'tracked-runtime-recenter', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'space 3'), ('wait', 2),
+               ('script', 'space 2'), ('wait', 2)],
+     'check': check_tracked_runtime_recenter},
+    {'name': 'tracked-exit', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'env': {'SteamAppId': ''},
+     'steps': [('wait', 6), ('mark', 'lost'), ('script', 'state 8'),
+               ('wait_exit', 3), ('shot', None)],
+     'check': check_tracked_exit},
+    {'name': 'tracked-stopping', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'state 6'), ('wait', 3)],
+     'check': check_tracked_stopping},
+    {'name': 'tracked-recenter-paused', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': RECENTER_PAUSED,
+     'check': check_tracked_recenter_paused('local')},
+    {'name': 'tracked-recenter-paused-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': RECENTER_PAUSED,
+     'check': threaded(check_tracked_recenter_paused('local'))},
+    {'name': 'tracked-recenter-paused-stage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'},
+     'steps': RECENTER_PAUSED,
+     'check': check_tracked_recenter_paused('stage')},
+    {'name': 'tracked-recenter-menu', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('send', 'MENU_TOGGLE') if s == ('send', 'PAUSE_TOGGLE')
+               else s for s in RECENTER_PAUSED],
+     'check': check_tracked_recenter_paused('local')},
+    {'name': 'tracked-reinit', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit},
+    {'name': 'tracked-reinit-resized', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_RESIZED,
+     'check': check_tracked_reinit_resized},
+    # The recenter is taken while the samples fail, and told after.
+    {'name': 'tracked-recenter-unlocated', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6),
+               ('script', 'head 0.5 0.2 0.3 90\ninvalid views'),
+               ('wait', 1), ('mark', 'recenter'),
+               ('send', 'HEADSET_RECENTER'), ('wait', 2),
+               ('script', 'head 0.5 0.2 0.3 90'), ('wait', 3)],
+     'check': check_tracked_recenter_unlocated},
+    {'name': 'tracked-reinit-paused', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('projection', 'stage')},
+    {'name': 'tracked-reinit-paused-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_PAUSED,
+     'check': threaded(check_tracked_reinit_paused('projection', 'stage'))},
+    {'name': 'tracked-reinit-paused-local', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('projection', 'local')},
+    {'name': 'tracked-reinit-paused-local-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_PAUSED,
+     'check': threaded(check_tracked_reinit_paused('projection', 'local'))},
+    {'name': 'tracked-reinit-paused-unlocated', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': REINIT_PAUSED_UNLOCATED,
+     'check': check_tracked_reinit_paused('projection', 'local')},
+    {'name': 'tracked-reinit-paused-nostage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'script': 'fail stage\n',
+     'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('pair', 'local')},
+    {'name': 'tracked-reinit-local', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit_recentered('local')},
+    {'name': 'tracked-reinit-local-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local',
+                 'video_views_test_hw': 'vulkan'},
+     'steps': REINIT_RUNNING, 'check': check_tracked_reinit_recentered('local')},
+    {'name': 'tracked-reinit-local-hw-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local',
+                 'video_views_test_hw': 'vulkan'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_RUNNING,
+     'check': threaded(check_tracked_reinit_recentered('local'))},
+    # Sampled through its pose calls alone: no tracked map.
+    {'name': 'tracked-reinit-poses', 'map': '3ds',
+     'options': {'video_views_test_vr': 'poses'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit_recentered(None)},
+    {'name': 'tracked-reinit-poses-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'poses'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_RUNNING,
+     'check': threaded(check_tracked_reinit_recentered(None))},
+    {'name': 'tracked-reinit-paused-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage',
+                 'video_views_test_hw': 'vulkan'},
+     'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused(None, 'stage')},
+    {'name': 'input-start-menu-tap', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'press'), ('script', START_MENU),
+               ('wait', 0.3), ('script', ''), ('wait', 3)],
+     'check': check_start_menu_tap},
+    {'name': 'input-start-menu-hold', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('script', START_MENU), ('wait', 1.5),
+               ('mark', 'release'), ('script', ''), ('wait', 3)],
+     'check': check_start_menu_hold},
+    {'name': 'placement-follow', 'map': '3ds',
+     'settings': {'video_openxr_placement': '1'},
+     'steps': [('script', script('head 0 0 0 0', AIM_BOTTOM)), ('wait', 6),
+               ('mark', 'turned'),
+               ('script', script(HEAD_TURNED, AIM_BOTTOM_TURNED)),
+               ('wait', 3)],
+     'check': check_placement_follow},
+    {'name': 'placement-lazy', 'map': '3ds',
+     'settings': {'video_openxr_placement': '2'}, 'script': 'head 0 0 0 0',
+     'steps': [('script', 'head 0 0 0 0'), ('wait', 6), ('mark', 'small'),
+               ('script', 'head 0 0 0 20'), ('wait', 2), ('mark', 'big'),
+               ('script', HEAD_TURNED), ('wait', 4)],
+     'check': check_placement_lazy},
+    {'name': 'placement-follow-laser', 'map': '3ds',
+     'settings': {'video_openxr_placement': '1', 'menu_driver': 'ozone',
+                  'frontend_log_level': '0'},
+     'steps': [('script', HEAD_TURNED), ('wait', 6), ('send', 'MENU_TOGGLE'),
+               ('wait', 3),
+               ('script', script(HEAD_TURNED, AIM_MENU_HIGH_TURNED)),
+               ('wait', 2),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED)),
+               ('wait', 2),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED, R2)),
+               ('wait', 1),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED)),
+               ('wait', 2)],
+     'check': check_placement_follow_laser},
+    {'name': 'input-device', 'map': '3ds', 'env': {'SteamAppId': ''},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1), ('script', 'state 8'),
+               ('wait', 3)],
+     'check': check_input_device},
+    {'name': 'input-device-second', 'map': '3ds',
+     'settings': {'test_input_file_joypad': PAD_FIRST},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_device_second},
+    {'name': 'input-device-taken', 'map': '3ds',
+     'settings': {'test_input_file_joypad': PAD_LATER},
+     'steps': [('wait', 14), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_device_taken},
+    {'name': 'input-hotkeys', 'map': '3ds',
+     'settings': {'input_enable_hotkey_btn': '14',
+                  'input_screenshot_btn': '9'},
+     'steps': [('wait', 6), ('script', 'action combined/x 1'), ('wait', 2),
+               ('script', ''), ('wait', 1),
+               ('script', 'action combined/l3 1'), ('wait', 1),
+               ('mark', 'combo'),
+               ('script', script('action combined/l3 1',
+                                 'action combined/x 1')),
+               ('wait', 2), ('script', ''), ('wait', 2)],
+     'check': check_input_hotkeys},
+    {'name': 'input-hotkeys-separate', 'map': '3ds',
+     'settings': {'video_openxr_controllers': '1', 'menu_driver': 'ozone',
+                  'input_menu_toggle_btn': '11'},
+     'steps': [('wait', 6), ('script', 'action separate/r@right 1'),
+               ('wait', 1), ('script', ''), ('wait', 2), ('mark', 'left'),
+               ('script', 'action separate/r@left 1'), ('wait', 0.5),
+               ('script', ''), ('wait', 3)],
+     'check': check_input_hotkeys_separate},
+    {'name': 'input-port-binds', 'map': '3ds',
+     'settings': {'input_player1_b_btn': '8', 'input_player1_a_btn': '0'},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 2),
+               ('script', ''), ('wait', 1),
+               ('script', 'action combined/b 1'), ('wait', 2),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_port_binds},
+    {'name': 'input-bind-capture', 'map': '3ds',
+     'settings': {'menu_driver': 'rgui',
+                  'menu_swap_ok_cancel_buttons': 'false'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3)]
+     + BIND_B_NAV
+     + [('script', 'action combined/x 1'), ('wait', 2), ('script', ''),
+        ('wait', 1), ('send', 'MENU_TOGGLE'), ('wait', 2),
+        ('script', 'action combined/x 1'), ('wait', 2), ('script', ''),
+        ('wait', 1)],
+     'check': check_input_bind_capture},
 ]
 
 
@@ -3167,6 +4546,537 @@ class XFocusChangeEvent(ctypes.Structure):
                 ('send_event', ctypes.c_int), ('display', ctypes.c_void_p),
                 ('window', ctypes.c_ulong), ('mode', ctypes.c_int),
                 ('detail', ctypes.c_int), ('pad', ctypes.c_long * 24)]
+
+
+def check_session_fails_gl(res):
+    """A GL host's refused session: one line, no video rebuild, the
+    window as it was."""
+    errors = []
+    if '[OpenXR] Continuing without headset output.' not in res.log:
+        errors.append('no "Continuing without headset output" line')
+    for line in ('[OpenXR] Rebuilding video without headset output.',
+                 '[Video] Reinitialising the video driver at its request.'):
+        if line in res.log:
+            errors.append('unexpected "%s"' % line)
+    if any(quads(f) for f in res.frames):
+        errors.append('quads were submitted after the session failed')
+    return errors + window_is(res, GREEN, 'the 2D map')
+
+
+def check_menu_reopen(res):
+    """A menu opened again after a while closed shows an image released
+    since it reopened, never the last one's, and nothing while closed."""
+    if 'closed' not in res.marks or 'reopen' not in res.marks:
+        return ['marks missing']
+    closed = res.marks['closed'] * 1e6 + 500000
+    reopen = res.marks['reopen'] * 1e6
+    errors = []
+    hidden = [f for f in res.frames if closed < f['t_us'] < reopen
+              and menus(f)]
+    if hidden:
+        errors.append('%d frames showed the menu while it was closed'
+                      % len(hidden))
+    shown = [f for f in res.frames if f['t_us'] > reopen and menus(f)]
+    if not shown:
+        return errors + ['the menu never came back']
+    sc = menus(shown[0])[0]['sc']
+    fresh = [r for r in res.releases
+             if r['sc'] == sc and reopen < r['t_us'] <= shown[0]['t_us']]
+    if not fresh:
+        errors.append('the menu came back with an image released before '
+                      'it reopened')
+    return errors
+
+
+GL_DESTROY = re.compile(r'\[video_views\] context_destroy at (\d+) us')
+
+
+def check_hw_teardown_gl(res):
+    """A GL core's context_destroy, at a video reinit and at unload: the
+    XR thread, which holds a context in the core's share group, has ended
+    its session first, and the headset's frames start again only in the
+    next one."""
+    times = [int(t) for t in GL_DESTROY.findall(res.log)]
+    if len(times) != 2:
+        return ['%d context_destroy calls, want 2 (reinit, unload)'
+                % len(times)]
+    made = [e['t_us'] for e in events(res, 'session')]
+    ended = [e['t_us'] for e in events(res, 'session_end')]
+    errors = []
+    for i, t in enumerate(times):
+        what = ('reinit', 'unload')[i]
+        alive = (sum(1 for x in made if x < t)
+                 - sum(1 for x in ended if x < t))
+        if alive:
+            errors.append('%d session alive at the core\'s context_destroy '
+                          '(%s)' % (alive, what))
+        later = [x for x in made if x > t]
+        if not later:
+            errors.append('no session after the %s' % what)
+            continue
+        between = [f for f in res.frames if t <= f['t_us'] < later[0]]
+        if between:
+            errors.append('%d headset frames between the core\'s '
+                          'context_destroy and the next session (%s)'
+                          % (len(between), what))
+        end = times[i + 1] if i + 1 < len(times) else float('inf')
+        if not [f for f in res.frames if later[0] < f['t_us'] < end]:
+            errors.append('no headset frames after the %s' % what)
+    return errors
+
+
+def check_tracked_busy(res):
+    """Two recenters while the compositor keeps the eyes' images: the
+    headset goes on showing the image it has with the poses that drew
+    it, never a later frame's, until a new image is released; then that
+    one with its own. The core hears RECENTERED for each."""
+    if marks_missing(res, 'busy', 'recenter', 'free'):
+        return ['the run did not reach its marks']
+    errors = []
+    n = recenter_flags(res)
+    if n != 2:
+        errors.append('the core saw RECENTERED %d times, want 2' % n)
+    size = tracked_size(res)
+    if not size:
+        return errors + ['the core never saw HMD']
+    t0, t1 = res.marks['busy'] * 1e6 + 5e5, res.marks['free'] * 1e6
+    held = [f for f in res.frames if t0 < f['t_us'] < t1 and f['layers']]
+    blank = [f['n'] for f in held if not projections(f)]
+    if blank:
+        errors.append('%d frames without the projection while its images '
+                      'were busy, first %d' % (len(blank), blank[0]))
+    snapped = [f for f in held if f['snap'] and projections(f)]
+    if not snapped:
+        return errors + ['no snapped projection while the eyes were busy']
+    tags, eyes, wrong = set(), set(), []
+    for f in snapped:
+        views = projections(f)[0]['views']
+        wrong += ['frame %d: %s' % (f['n'], e)
+                  for e in shown_as_drawn(res, f)]
+        tags |= set(frame_tag(image(res, f, v), v, size) for v in views)
+        eyes |= set(v['sc'] for v in views)
+    errors += wrong[:4]
+    if len(tags) != 1 or None in tags:
+        errors.append('the eyes changed while their images were busy: '
+                      'frames %s' % sorted(tags, key=str))
+    released = [r for r in res.releases
+                if r['sc'] in eyes and t0 < r['t_us'] < t1]
+    if released:
+        errors.append('%d eye images released while busy: the case did not '
+                      'hold them' % len(released))
+    after = [f for f in res.frames
+             if f['t_us'] > t1 + 1e6 and f['snap'] and projections(f)]
+    if not after:
+        return errors + ['no snapped projection once the eyes were free']
+    errors += shown_as_drawn(res, after[-1])
+    last = set(frame_tag(image(res, after[-1], v), v, size)
+               for v in projections(after[-1])[0]['views'])
+    if last & tags:
+        errors.append('the eyes still show frame %s once free'
+                      % sorted(last, key=str))
+    return errors
+
+
+def window_quad(res, fr):
+    """Errors unless fr shows gl's window whole: one quad for both eyes,
+    not blended, of the window's shape and no smaller than its pixels."""
+    q = quads(fr)
+    if len(q) != 1 or q[0]['eye'] != 'both' or q[0]['flags'] & BLEND:
+        return ['want the window as one unblended quad for both eyes, got '
+                '%s' % [(x['eye'], x['flags']) for x in q]]
+    errors = []
+    if not at(q[0], (0.0, 0.0, -1.8)) or not sized(q[0], (1.6, 0.96)):
+        errors.append('window at %s size %s'
+                      % (q[0]['pose'][:3], q[0]['size']))
+    return errors + image_size(res, q[0], (W, H))
+
+
+def check_window(res):
+    """gl without a map: its window whole, the frame in it as the window
+    draws it."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if errors:
+        return errors
+    q = quads(fr)[0]
+    for fx, fy, want in ((0.25, 0.25, RED), (0.75, 0.25, BLUE),
+                         (0.5, 0.75, YELLOW), (0.1, 0.75, GREY)):
+        c, _ = colour(image(res, fr, q), fx, fy)
+        if not near(c, want):
+            errors.append('(%.2f,%.2f) shows %s, want %s' % (fx, fy, c, want))
+    return errors
+
+
+def check_window_crop(res):
+    """Threaded video crops this frame above its second screen: the map
+    no longer fits, so gl shows the headset its window whole, not two
+    screens cut where the map says."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if 'cropping to 655 rows' not in res.log:
+        errors.append('threaded video did not crop the frame')
+    return errors
+
+
+def check_window_menu(res):
+    """gl's menu is drawn in its window: open, the headset shows the
+    window whole with the menu in it, and no quad of the menu's own; the
+    map's screens were cut from the window before."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if errors:
+        return errors
+    # The top screen's left eye fills the window's top-left quarter in
+    # red; the menu over it leaves no plain red at its middle.
+    c, _ = colour(image(res, fr, quads(fr)[0]), 0.25, 0.25)
+    if near(c, RED):
+        errors.append('the window\'s quad shows the frame without the menu')
+    if not any(len(quads(f)) == 3 for f in res.frames):
+        errors.append('the screens were never shown before the menu opened')
+    return errors
+
+
+def check_window_menu_overlay(res):
+    """gl's overlay is drawn in its window, and so in the window the
+    headset shows whole."""
+    errors = check_window_menu(res)
+    fr = last_snap(res)
+    if fr and len(quads(fr)) == 1:
+        c, _ = colour(image(res, fr, quads(fr)[0]), 0.05, 0.05)
+        if not near(c, MAGENTA):
+            errors.append('the headset\'s window shows %s at the overlay, '
+                          'want %s' % (c, MAGENTA))
+    if not res.shot:
+        errors.append('no window screenshot')
+    else:
+        c, _ = colour(res.shot, 0.05, 0.05)
+        if not near(c, MAGENTA):
+            errors.append('the window shows %s at the overlay, want %s'
+                          % (c, MAGENTA))
+    return errors
+
+
+def check_window_recenter_menu(res):
+    """The hotkey recenters while gl's menu is open: the window, whole,
+    goes to the turned head's anchor, and the screens are there once the
+    menu closes. A press with the menu closed is the second, and no
+    press runs twice."""
+    mark = res.marks['recenter'] * 1e6
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    before = [f for f in shown if f['t_us'] < mark]
+    after = [f for f in shown
+             if mark + 1e6 < f['t_us'] < res.marks['closed'] * 1e6]
+    if not before or not after:
+        return ['no frames on both sides of the recenter']
+    errors = []
+    for name, fr, want, turn in (
+            ('before', before[-1], (0.0, 0.0, -1.8), None),
+            ('after', after[-1], (-1.3, 0.2, 0.3),
+             (0.0, 0.70711, 0.0, 0.70711))):
+        q = quads(fr)
+        if len(q) != 1 or q[0]['flags'] & BLEND:
+            return ['want the window whole %s the recenter, got %d quads'
+                    % (name, len(q))]
+        if not at(q[0], want):
+            errors.append('window at %s %s the recenter, want %s'
+                          % (q[0]['pose'][:3], name, want))
+        if turn and not facing(q[0], turn):
+            errors.append('window turned %s, want a quarter turn left'
+                          % q[0]['pose'][3:])
+    screens = [x for x in quads(shown[-1]) if x['eye'] == 'left']
+    if not screens or not at(screens[0], (-1.3, 0.2, 0.3)):
+        errors.append('screen 0 at %s after the menu closed, want '
+                      '(-1.3, 0.2, 0.3)'
+                      % (screens[0]['pose'][:3] if screens else None))
+    if res.log.count('Headset recenter requested') != 2:
+        errors.append('the hotkey ran %d times for two presses'
+                      % res.log.count('Headset recenter requested'))
+    return errors
+
+
+def check_tracked_window_menu(res):
+    """gl's menu opens in its window, shown whole in front of the tracked
+    eyes, which stay."""
+    opened = res.marks.get('menu', 0) * 1e6
+    late = [f for f in res.frames if f['t_us'] > opened + 2e6]
+    menu = [f for f in late if quads(f)]
+    if not menu:
+        return ['no frame with the window after the menu opened']
+    errors = []
+    for f in menu[-3:]:
+        kinds = [x['type'] for x in f['layers']]
+        if kinds != ['projection', 'quad']:
+            errors.append('frame %d shows %s, want the projection and the '
+                          'window in front' % (f['n'], kinds))
+    snapped = [f for f in menu if f['snap']]
+    if not snapped:
+        return errors + ['no snapped frame with the window']
+    return errors + window_quad(res, snapped[-1])
+
+
+def check_tracked_window_fallback(res):
+    """gl's tracked eyes whose projection the runtime refuses leave its
+    window whole, as while the menu is open."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    errors = []
+    if '%dx%d' % size not in ['%sx%s' % m for m in
+                              SLOT_REFUSED.findall(res.log)]:
+        errors.append('the projection slot was not refused: %s'
+                      % SLOT_REFUSED.findall(res.log))
+    status = STATUS_RE.findall(res.log)
+    if not status or status[-1][2] != '1':
+        errors.append('the tracked map was not taken: %s' % status[-1:])
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown')
+    fr = last_snap(res)
+    if not fr:
+        return errors + no_quads(res)
+    return errors + window_quad(res, fr)
+
+
+def check_flat_size_native(res):
+    return check_flat_size(res, native=True)
+
+
+def check_tracked_flat_native(res):
+    return check_tracked_flat(res, native=True)
+
+
+def check_window_menu_closed(res):
+    """gl's menu closed again: the map's screens, cut from the window,
+    where the window whole was."""
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    if not any(len(quads(f)) == 1 for f in shown):
+        return ['the window was never shown whole for the menu']
+    if len(quads(shown[-1])) != 3:
+        return ['%d quads after the menu closed, want the three screens'
+                % len(quads(shown[-1]))]
+    return []
+
+
+def check_window_reopen(res):
+    """gl's menu opened again after a while closed: the window whole
+    shows an image released since it reopened, and the screens show
+    while it is closed."""
+    if 'closed' not in res.marks or 'reopen' not in res.marks:
+        return ['marks missing']
+    closed = res.marks['closed'] * 1e6 + 500000
+    reopen = res.marks['reopen'] * 1e6
+    errors = []
+    whole = [f for f in res.frames if closed < f['t_us'] < reopen
+             and len(quads(f)) == 1]
+    if whole:
+        errors.append('%d frames showed the window whole while the menu '
+                      'was closed' % len(whole))
+    shown = [f for f in res.frames if f['t_us'] > reopen
+             and len(quads(f)) == 1]
+    if not shown:
+        return errors + ['the window never came back whole']
+    sc = quads(shown[0])[0]['sc']
+    fresh = [r for r in res.releases
+             if r['sc'] == sc and reopen < r['t_us'] <= shown[0]['t_us']]
+    if not fresh:
+        errors.append('the window came back with an image released before '
+                      'the menu reopened')
+    return errors
+
+
+# The desktop GL lanes: (lane, video driver, context driver).
+GL_LANES = (
+    ('glcore-egl', 'glcore', 'wayland'),
+    ('glcore-glx', 'glcore', 'x'),
+    ('gl-egl', 'gl', 'egl_x'),
+    ('gl-glx', 'gl', 'x'),
+)
+# Cases only the GL lanes run.
+GL_EXTRA = [
+    {'name': 'menu-reopen', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3),
+               ('send', 'MENU_TOGGLE'), ('mark', 'closed'), ('wait', 4),
+               ('mark', 'reopen'), ('send', 'MENU_TOGGLE'), ('wait', 3)],
+     'check': check_menu_reopen},
+    # The head turns, the eyes' images stop coming back, and the user
+    # recenters twice, moving between: frames drawn since wait their turn.
+    {'name': 'tracked-recenter-busy', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('mark', 'busy'), ('script', 'busy eyes'), ('wait', 1),
+               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+               ('wait', 1), ('script', 'head 0.1 0.4 0.2 0'), ('wait', 0.5),
+               ('send', 'HEADSET_RECENTER'), ('wait', 1.5),
+               ('mark', 'free'), ('script', 'busy off'), ('wait', 3)],
+     'check': check_tracked_busy},
+]
+# The cases each GL driver's lanes run, by name in CASES or GL_EXTRA.
+GL_BASE = {
+    'glcore': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0',
+               '3ds-swap-index0', '3ds-horizontal', 'no-map',
+               '3ds-stereo-threaded', 'crop-threaded', 'hw-3ds-stereo',
+               'hw-3ds-stereo-threaded', '3ds-output-size',
+               'no-map-output-size', '3ds-shrink', 'no-map-shrink',
+               '3ds-enlarge', 'menu', 'menu-running', 'menu-small',
+               'menu-overlay', 'menu-closes', 'menu-reopen', 'recenter',
+               'recenter-menu', 'runtime-recenter', 'no-runtime',
+               'session-fails', 'session-lost', 'exit-window',
+               'options-follow-headset', 'pacing', 'focus', 'hw-teardown',
+               'hw-teardown-threaded', 'pace-rate-change', 'pace-2',
+               'pace-misfit', 'pace-threaded', 'pace-vsync-off',
+               'pace-hidden', 'pace-hidden-slow', 'pace-stopping',
+               'pace-2-bfi', 'pace-fastforward', 'pace-vrr',
+               'pace-window-back', 'pace-loss-waiting', 'pace-auto',
+               'pace-headset-choice', 'pace-fixed-rate', 'tracked',
+               'tracked-stage', 'tracked-threaded', 'tracked-hw',
+               'tracked-paced', 'tracked-nopair', 'flat-hmd-size',
+               'tracked-menu', 'tracked-flat', 'tracked-fallback',
+               'tracked-recenter', 'tracked-runtime-recenter',
+               'tracked-exit', 'tracked-stopping', 'tracked-recenter-paused',
+               'tracked-recenter-paused-threaded',
+               'tracked-recenter-paused-stage', 'tracked-recenter-menu',
+               'tracked-recenter-busy', 'tracked-reinit',
+               'tracked-reinit-resized', 'tracked-recenter-unlocated',
+               'tracked-reinit-paused', 'tracked-reinit-paused-threaded',
+               'tracked-reinit-paused-local',
+               'tracked-reinit-paused-local-threaded',
+               'tracked-reinit-paused-unlocated',
+               'tracked-reinit-paused-nostage', 'tracked-reinit-local',
+               'tracked-reinit-local-hw', 'tracked-reinit-local-hw-threaded',
+               'tracked-reinit-poses', 'tracked-reinit-poses-threaded',
+               'tracked-reinit-paused-hw', 'placement-follow',
+               'placement-lazy', 'input-touch', 'input-menu',
+               'input-lightgun'],
+    # gl shows the headset its window: whole, or an untracked map's
+    # screens cut from it, and a tracked map's eyes as the projection.
+    'gl': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0', '3ds-horizontal',
+           'no-map', '3ds-stereo-threaded', 'crop-threaded',
+           'hw-3ds-stereo', 'menu',
+           'menu-running', 'menu-overlay', 'menu-closes', 'menu-reopen',
+           'recenter', 'recenter-menu', 'runtime-recenter', 'no-runtime',
+           'session-fails', 'session-lost', 'exit-window', 'pacing',
+           'hw-teardown', 'hw-teardown-threaded', 'pace-rate-change',
+           'pace-2', 'pace-misfit', 'pace-threaded', 'pace-vsync-off',
+           'pace-hidden', 'pace-stopping', 'pace-fastforward',
+           'pace-window-back', 'pace-loss-waiting', 'tracked',
+           'tracked-stage', 'tracked-threaded', 'tracked-hw',
+           'tracked-paced', 'tracked-nopair', 'flat-hmd-size',
+           'tracked-menu', 'tracked-flat', 'tracked-fallback',
+           'tracked-recenter', 'tracked-runtime-recenter',
+           'tracked-stopping', 'tracked-recenter-paused',
+           'tracked-recenter-busy', 'tracked-reinit',
+           'tracked-reinit-resized', 'tracked-reinit-paused',
+           'tracked-reinit-local', 'tracked-reinit-local-hw',
+           'tracked-reinit-poses', 'tracked-reinit-paused-hw'],
+}
+# Where a GL host's answer is its own, by driver.
+GL_CHECKS = {
+    'glcore': {'session-fails': check_session_fails_gl,
+               'hw-teardown': check_hw_teardown_gl,
+               'hw-teardown-threaded': threaded(check_hw_teardown_gl)},
+    'gl': {'session-fails': check_session_fails_gl,
+           'hw-teardown': check_hw_teardown_gl,
+           'hw-teardown-threaded': threaded(check_hw_teardown_gl),
+           '3ds-stereo': check_screens(native=True),
+           '3ds-swap': check_screens(swap=True, native=True),
+           '3ds-stereo-index0': check_screens(native=True),
+           '3ds-horizontal': check_screens(horizontal=True, native=True),
+           '3ds-stereo-threaded': threaded(check_screens(native=True)),
+           'hw-3ds-stereo': check_screens(native=True),
+           'no-map': check_window,
+           'crop-threaded': threaded(check_window_crop),
+           'menu': check_window_menu,
+           'menu-running': check_window_menu,
+           'menu-overlay': check_window_menu_overlay,
+           'menu-closes': check_window_menu_closed,
+           'menu-reopen': check_window_reopen,
+           'recenter-menu': check_window_recenter_menu,
+           'pacing': check_pacing_live,
+           'tracked-menu': check_tracked_window_menu,
+           'tracked': check_tracked(beside=False),
+           'tracked-stage': check_tracked('stage', beside=False),
+           'tracked-threaded': threaded(check_tracked(beside=False)),
+           'tracked-hw': check_tracked(beside=False),
+           'tracked-paced': check_tracked(beside=False),
+           'flat-hmd-size': check_flat_size_native,
+           'tracked-flat': check_tracked_flat_native,
+           'tracked-fallback': check_tracked_window_fallback,
+           'tracked-recenter': check_tracked_recenter_eyes,
+           'tracked-recenter-paused':
+               check_tracked_recenter_paused('local', screens=False)},
+}
+# What a lane cannot run: the unfocus helper sends an X event, and the
+# Wayland lane's window is not an X one.
+GL_SKIP = {'glcore-egl': ('focus',)}
+# A lane that runs only these of its driver's cases: gl's other binding.
+GL_ONLY = {'gl-glx': ('3ds-stereo', 'no-map', 'menu', 'menu-closes',
+                      'tracked', 'tracked-menu', 'tracked-recenter',
+                      'tracked-reinit', 'pace-2', 'session-lost',
+                      'hw-teardown')}
+
+
+def gl_cases():
+    """The GL lanes' clones of their cases, CASES left as they are: a
+    core's own Vulkan images become a GL context's, and Vulkan's layers
+    stay out."""
+    by_name = {c['name']: c for c in CASES + GL_EXTRA}
+    out = []
+    for lane, driver, context in GL_LANES:
+        for name in GL_BASE[driver]:
+            if (name in GL_SKIP.get(lane, ())
+                    or name not in GL_ONLY.get(lane, (name,))):
+                continue
+            base = by_name[name]
+            c = copy.deepcopy(base)
+            c['check'] = GL_CHECKS[driver].get(name, base['check'])
+            c['name'] = '%s-%s' % (lane, name)
+            c['lane'] = lane
+            c['driver'] = driver
+            c['context'] = context
+            opts = c.setdefault('options', {})
+            if opts.get('video_views_test_hw', 'off').startswith('vulkan'):
+                # A core context is glcore's whatever the setting says;
+                # the gl driver takes a compatibility one.
+                opts['video_views_test_hw'] = ('gl' if driver == 'glcore'
+                                               else 'gl_compat')
+                c['gl_hardware'] = True
+            c['env'] = {k: v for k, v in c.get('env', {}).items()
+                        if not k.startswith('VK_')}
+            # gl's window shows the packed frame whole: the top screen is
+            # its top-left quarter.
+            if driver == 'gl':
+                c['top_px'] = (400, 240)
+            # gamescope gives a Wayland client its window back over half
+            # a second after a reinit, where an X one takes some 40 ms:
+            # the new session's first frames come that much later.
+            if context == 'wayland':
+                c['reinit_grace'] = 1.5
+            c.pop('baseline', None)
+            out.append(c)
+    return out
+
+
+def select(names, gl, validate):
+    """The cases to run, or an error: every name must be one."""
+    if gl and validate:
+        return None, '--gl and --validate: validation is Vulkan\'s alone'
+    pool = gl_cases() if gl else CASES
+    known = [c['name'] for c in pool]
+    unknown = [n for n in names if n not in known]
+    if unknown:
+        return None, 'no such case%s: %s' % (
+            's' if len(unknown) > 1 else '', ', '.join(unknown))
+    return [c for c in pool if not names or c['name'] in names], None
 
 
 def unfocus_when(trigger):
@@ -3212,6 +5122,7 @@ def main():
         return unfocus_when(sys.argv[2])
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     validate = '--validate' in sys.argv[1:]
+    gl = '--gl' in sys.argv[1:]
     if len(args) < 3:
         print(__doc__)
         return 2
@@ -3225,13 +5136,15 @@ def main():
             os.path.dirname(os.path.abspath(args[2])),
             monado.get('VALIDATION_BASELINE', os.path.join(
                 HERE, 'validation-baseline.txt'))))
+    cases, error = select(names, gl, validate)
+    if error:
+        print(error)
+        return 2
     os.makedirs(root, exist_ok=True)
     failed = 0
-    for case in CASES:
-        if names and case['name'] not in names:
-            continue
+    for case in cases:
         res = run_case(retroarch, root, monado, case, validate)
-        errors = case['check'](res)
+        errors = case['check'](res) + capture_errors(res, case)
         if 'hung' in res.marks:
             errors.append('RetroArch did not quit')
         if validate:

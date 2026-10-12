@@ -663,6 +663,18 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+#ifdef HAVE_EGL
+static bool gfx_ctx_wl_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   memset(out, 0, sizeof(*out));
+   if (!wl || wl_api != GFX_CTX_OPENGL_API)
+      return false;
+   return egl_shared_context_new(&wl->egl, EGL_OPENGL_API, out);
+}
+#endif
+
 static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
    uint32_t             flags = 0;
@@ -769,5 +781,16 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    gfx_ctx_wl_create_surface,
    gfx_ctx_wl_destroy_surface,
-   gfx_ctx_wl_presentable
+   gfx_ctx_wl_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+#ifdef HAVE_EGL
+   gfx_ctx_wl_shared_context_new,
+   egl_shared_context_bind,
+   egl_shared_context_free
+#else
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL  /* shared_context_free */
+#endif
 };
