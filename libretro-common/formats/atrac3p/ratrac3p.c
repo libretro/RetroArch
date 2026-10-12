@@ -1522,7 +1522,7 @@ static bool r3p_parse_block(r3p_br_t *b, r3p_block_t *blk, r3p_unit_t *u,
    }
    blk->nu = used[0] > used[1] ? used[0] : used[1];
    blk->nb  = r3p_qu_start[nqu - 1] / R3P_BAND_LEN + 1;
-   blk->nbf = r3p_qu_start[nqu - 1] / R3P_BAND_LEN + 1;
+   blk->nbf = blk->nu ? r3p_qu_start[blk->nu - 1] / R3P_BAND_LEN + 1 : 0;
 
    /* with nothing coded, no scale factors, tables or spectra either */
    for (c = 0; blk->nu && c < blk->chans; c++)
@@ -1551,7 +1551,7 @@ static bool r3p_parse_block(r3p_br_t *b, r3p_block_t *blk, r3p_unit_t *u,
       r3p_band_flags(b, blk->nbf, blk->neg);
    }
    for (c = 0; c < blk->chans; c++)
-      r3p_band_flags(b, blk->nbf, u[c].shape);
+      r3p_band_flags(b, blk->nb, u[c].shape);
    if (!r3p_gain_master(b, &u[0].gain))
       return false;
    if (blk->chans == 2 && !r3p_gain_slave(b, &u[1].gain, &u[0].gain))

@@ -351,9 +351,41 @@ static void lane_master_table_default(void)
    ratrac3p_free(d);
 }
 
+/* Two declared subbands, one coded subband. Stereo flags cover only
+ * the coded band; window shapes still cover both declared bands. */
+static void coded_band_flags(void)
+{
+   static const uint8_t frame[31] = {
+      0x28, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x19, 0xB2, 0x06, 0xD9, 0x81, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+   };
+   int16_t pcm[2 * RATRAC3P_SAMPLES];
+   ratrac3p_t *d = ratrac3p_new(2, sizeof(frame));
+   unsigned f, i;
+   int audible = 0;
+   CHECK(d != NULL, "coded bands: allocate");
+   if (!d)
+      return;
+   for (f = 0; f < 3; f++)
+   {
+      CHECK(ratrac3p_decode_s16(d, frame, sizeof(frame), pcm)
+            == RATRAC3P_SAMPLES, "coded bands: frame %u", f);
+      for (i = 0; i < RATRAC3P_SAMPLES; i++)
+      {
+         if (pcm[2 * i] != 0)
+            audible = 1;
+         if (pcm[2 * i] != pcm[2 * i + 1])
+            break;
+      }
+      CHECK(i == RATRAC3P_SAMPLES, "coded bands: copied stereo differs");
+   }
+   CHECK(audible, "coded bands: no decoded audio");
+   ratrac3p_free(d);
+}
+
 int main(void)
 {
    lane_master_table_default();
+   coded_band_flags();
    lane_reference();
    lane_s16();
    lane_fmt();
