@@ -370,9 +370,10 @@ typedef struct
  * released once */
 struct d3d12_retired
 {
-   d3d12_texture_t *texture;
-   IUnknown        *object;
-   UINT64           fence;
+   d3d12_texture_t           *texture;
+   IUnknown                  *object;
+   struct d3d12_filter_chain *chain;
+   UINT64                     fence;
 };
 
 typedef struct ALIGN(16)
@@ -1303,8 +1304,14 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
    texture->pending        = 0;
 }
 
-static void d3d12_retired_release(struct d3d12_retired *r)
+static void d3d12_views_chain_destroy(d3d12_video_t *d3d12,
+      d3d12_filter_chain_t *c);
+
+static void d3d12_retired_release(d3d12_video_t *d3d12,
+      struct d3d12_retired *r)
 {
+   if (r->chain)
+      d3d12_views_chain_destroy(d3d12, r->chain);
    if (r->texture)
    {
       d3d12_release_texture(r->texture);
@@ -1326,7 +1333,7 @@ static void d3d12_retired_tick(d3d12_video_t *d3d12)
    for (i = 0, kept = 0; i < d3d12->retired_count; i++)
    {
       if (done >= d3d12->retired[i].fence)
-         d3d12_retired_release(&d3d12->retired[i]);
+         d3d12_retired_release(d3d12, &d3d12->retired[i]);
       else
          d3d12->retired[kept++] = d3d12->retired[i];
    }
@@ -1338,43 +1345,63 @@ static void d3d12_retired_flush(d3d12_video_t *d3d12)
 {
    unsigned i;
    for (i = 0; i < d3d12->retired_count; i++)
-      d3d12_retired_release(&d3d12->retired[i]);
+      d3d12_retired_release(d3d12, &d3d12->retired[i]);
    d3d12->retired_count = 0;
 }
 
 /* Lets @texture or @object go behind the fence value @fence; without
  * a queue to wait on, or room to remember it, the queue is drained
  * and it goes now. */
+/* Remembers @r; false when there is no queue or no room */
+static bool d3d12_retired_push(d3d12_video_t *d3d12,
+      const struct d3d12_retired *r)
+{
+   if (!d3d12->queue.handle || !d3d12->queue.fence)
+      return false;
+   d3d12_retired_tick(d3d12);
+   if (d3d12->retired_count == d3d12->retired_cap)
+   {
+      unsigned cap = d3d12->retired_cap ? d3d12->retired_cap * 2 : 16;
+      struct d3d12_retired *grown = (struct d3d12_retired*)realloc(
+            d3d12->retired, cap * sizeof(*grown));
+      if (!grown)
+         return false;
+      d3d12->retired     = grown;
+      d3d12->retired_cap = cap;
+   }
+   d3d12->retired[d3d12->retired_count++] = *r;
+   return true;
+}
+
 static void d3d12_retire(d3d12_video_t *d3d12,
       d3d12_texture_t *texture, IUnknown *object, UINT64 fence)
 {
    struct d3d12_retired r;
    r.texture = texture;
    r.object  = object;
+   r.chain   = NULL;
    r.fence   = fence;
 
+   if (d3d12_retired_push(d3d12, &r))
+      return;
    if (d3d12->queue.handle && d3d12->queue.fence)
-   {
-      d3d12_retired_tick(d3d12);
-      if (d3d12->retired_count == d3d12->retired_cap)
-      {
-         unsigned cap = d3d12->retired_cap ? d3d12->retired_cap * 2 : 16;
-         struct d3d12_retired *grown = (struct d3d12_retired*)realloc(
-               d3d12->retired, cap * sizeof(*grown));
-         if (grown)
-         {
-            d3d12->retired     = grown;
-            d3d12->retired_cap = cap;
-         }
-      }
-      if (d3d12->retired_count < d3d12->retired_cap)
-      {
-         d3d12->retired[d3d12->retired_count++] = r;
-         return;
-      }
       d3d12_queue_drain(d3d12);
+   d3d12_retired_release(d3d12, &r);
+}
+
+/* Views' chains retired behind the fence read the preset: after a
+ * queue drain they go before it does. */
+static void d3d12_retired_drop_chains(d3d12_video_t *d3d12)
+{
+   unsigned i, kept;
+   for (i = 0, kept = 0; i < d3d12->retired_count; i++)
+   {
+      if (d3d12->retired[i].chain)
+         d3d12_retired_release(d3d12, &d3d12->retired[i]);
+      else
+         d3d12->retired[kept++] = d3d12->retired[i];
    }
-   d3d12_retired_release(&r);
+   d3d12->retired_count = kept;
 }
 
 static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
@@ -3605,7 +3632,7 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 /* What @c holds let go, but for history[0], which the frame is
  * uploaded into without a chain; @c's preset and lookup textures too
  * unless it is @shared (a view's, which reads another chain's). After a
- * queue drain. */
+ * queue is past it. */
 static void d3d12_chain_free(d3d12_filter_chain_t *c, bool shared)
 {
    unsigned i;
@@ -3650,14 +3677,20 @@ static void d3d12_chain_free(d3d12_filter_chain_t *c, bool shared)
    c->shader_preset = NULL;
 }
 
-static void d3d12_views_free_chains(d3d12_video_t *d3d12, unsigned first);
-
 static void d3d12_free_shader_preset(d3d12_video_t* d3d12)
 {
+   unsigned i;
    if (!d3d12->filter.shader_preset)
       return;
-   /* The views' chains read its preset */
-   d3d12_views_free_chains(d3d12, 0);
+   /* The views' chains read its preset; every caller has drained */
+   d3d12_retired_drop_chains(d3d12);
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (d3d12->views.chains.preset[i])
+         d3d12_views_chain_destroy(d3d12,
+               (d3d12_filter_chain_t*)d3d12->views.chains.preset[i]);
+      d3d12->views.chains.preset[i] = NULL;
+   }
    d3d12_chain_free(&d3d12->filter, false);
    d3d12->flags &= ~(D3D12_ST_FLAG_INIT_HISTORY | D3D12_ST_FLAG_RESIZE_RTS);
 }
@@ -7769,8 +7802,8 @@ static void d3d12_views_bind(d3d12_video_t *d3d12)
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
 }
 
-/* A view's chain let go, with what d3d12_chain_clone gave it. After a
- * queue drain. */
+/* A view's chain let go, with what d3d12_chain_clone gave it, once the
+ * queue is past it. */
 static void d3d12_views_chain_destroy(d3d12_video_t *d3d12,
       d3d12_filter_chain_t *c)
 {
@@ -7885,25 +7918,27 @@ error:
    return NULL;
 }
 
-/* Frees the views' chains from index @first on */
+/* Lets the views' chains from index @first on go behind the fence. One
+ * that can't be remembered stays in its slot until the preset goes. */
 static void d3d12_views_free_chains(d3d12_video_t *d3d12, unsigned first)
 {
    unsigned i;
-   bool drained = false;
    for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
-      d3d12_filter_chain_t *c =
-         (d3d12_filter_chain_t*)d3d12->views.chains.preset[i];
-      if (c)
+      struct d3d12_retired r;
+      r.texture = NULL;
+      r.object  = NULL;
+      r.chain   = (d3d12_filter_chain_t*)d3d12->views.chains.preset[i];
+      r.fence   = d3d12->queue.fenceValue + 1;
+      if (!r.chain)
+         continue;
+      if (d3d12_retired_push(d3d12, &r))
+         d3d12->views.chains.preset[i] = NULL;
+      else if (!(d3d12->queue.handle && d3d12->queue.fence))
       {
-         if (!drained)
-         {
-            d3d12_queue_drain(d3d12);
-            drained = true;
-         }
-         d3d12_views_chain_destroy(d3d12, c);
+         d3d12_views_chain_destroy(d3d12, r.chain);
+         d3d12->views.chains.preset[i] = NULL;
       }
-      d3d12->views.chains.preset[i] = NULL;
    }
 }
 
