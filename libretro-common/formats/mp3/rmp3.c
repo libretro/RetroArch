@@ -3271,3 +3271,20 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
       *wrote = s->out_pos - w0;
    return ret;
 }
+
+void rmp3dec_init(rmp3dec *dec)
+{
+   memset(dec, 0, sizeof(*dec));
+}
+
+int rmp3dec_decode_s16(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
+      int16_t *pcm, rmp3dec_frame_info *info)
+{
+   if (!dec || !mp3 || mp3_bytes <= 0 || !pcm || !info)
+   {
+      if (info)
+         memset(info, 0, sizeof(*info));
+      return 0;
+   }
+   return rmp3dec_decode_frame(dec, mp3, mp3_bytes, pcm, info, 0);
+}

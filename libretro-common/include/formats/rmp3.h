@@ -68,6 +68,22 @@ typedef struct
     } scratch;
 } rmp3dec;
 
+/* One frame at a time, for a caller that frames the stream itself (a
+ * console's audio codec interface hands over a buffer and asks for one
+ * frame out of it). rmp3dec_decode_s16 decodes the first frame in @mp3,
+ * skipping whatever comes before its sync, into @pcm - up to
+ * RMP3_MAX_SAMPLES_PER_FRAME samples, interleaved at the frame's
+ * channel count - and returns the samples a channel. info->frame_bytes
+ * is what the frame and anything skipped before it took of @mp3: 0
+ * when no whole frame was found, and with a return of 0 bytes skipped
+ * without a frame (junk, or a frame whose bit reservoir reaches back
+ * before the decoder joined the stream). The decoder keeps the bit
+ * reservoir from call to call; rmp3dec_init starts it afresh, as at a
+ * seek. s16 only: the synthesis runs in fixed point throughout. */
+void rmp3dec_init(rmp3dec *dec);
+int rmp3dec_decode_s16(rmp3dec *dec, const uint8_t *mp3, int mp3_bytes,
+      int16_t *pcm, rmp3dec_frame_info *info);
+
 /* One decoded MPEG frame, in whichever format the synthesis ran in.
  * The two pipelines share the storage through this union; a format
  * switch converts the contents in place. */
