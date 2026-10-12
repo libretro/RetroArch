@@ -282,6 +282,10 @@ static const struct dspfilter_implementation chorus_plug = {
 #endif
 
 const struct dspfilter_implementation *
-dspfilter_get_implementation(dspfilter_simd_mask_t mask) { return &chorus_plug; }
+dspfilter_get_implementation(dspfilter_simd_mask_t mask)
+{
+   (void)mask;
+   return &chorus_plug;
+}
 
 #undef dspfilter_get_implementation

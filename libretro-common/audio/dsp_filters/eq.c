@@ -445,6 +445,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    double window_mod   = 1.0 / kaiser_window_function(0.0, beta);
    fft_t *fft          = fft_new(size_log2);
    float *time_filter  = (float*)calloc(eq->block_size * 2 + 1, sizeof(*time_filter));
+   (void)filter_path;
    if (!fft || !time_filter)
       goto end;
 
@@ -675,6 +676,7 @@ static const struct dspfilter_implementation eq_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
+   (void)mask;
    return &eq_plug;
 }
 

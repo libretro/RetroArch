@@ -992,8 +992,8 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
    char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
    video_driver_state_t *video_st    = video_state_get_ptr();
-   access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
+   access_state_t *access_st         = access_state_get_ptr();
    /* For the case when ai service pause is disabled. */
    if (     (gfx_widgets_ai_service_overlay_get_state() != 0)
          && (access_st->ai_service_auto == 1))
@@ -1384,8 +1384,8 @@ static bool http_translate(
    int bmp64_len                     = 0;
    bool success                      = false;
    settings_t *settings              = config_get_ptr();
+#ifdef HAVE_GFX_WIDGETS
    video_driver_state_t *video_st    = video_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
 #endif
 #ifdef DEBUG
    access_state_t *access_st         = access_state_get_ptr();

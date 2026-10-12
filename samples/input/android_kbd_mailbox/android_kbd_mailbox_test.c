@@ -117,7 +117,7 @@ struct ui_script { int cancel_session; };
 static void ui_thread(void *arg)
 {
    struct ui_script *sc = (struct ui_script *)arg;
-   char line[KBD_BUFFER_SIZE];
+   char line[KBD_BUFFER_SIZE - 9];
    char msg[KBD_BUFFER_SIZE];
    int  i;
 
@@ -222,7 +222,7 @@ int main(void)
 {
    char final_text[KBD_BUFFER_SIZE];
    char expect[KBD_BUFFER_SIZE];
-   char line[KBD_BUFFER_SIZE];
+   char line[KBD_BUFFER_SIZE - 9];
    bool finished, cancel;
    int  torn, i, fails = 0;
 

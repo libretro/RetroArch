@@ -4,7 +4,7 @@ CFLAGS += -std=gnu89 -O1 -g -Wall -Wextra -Wno-unused-function \
           -Wno-unused-parameter -ffunction-sections -fdata-sections \
           -DRARCH_INTERNAL -DHAVE_OPENXR -DHAVE_MENU \
           -I$(ROOT) -I$(LRC)/include -I$(ROOT)/deps \
-          -I$(ROOT)/deps/openxr/include
+          -I$(ROOT)/deps/openxr/include -I$(ROOT)/gfx/include
 LDFLAGS += -Wl,--gc-sections
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

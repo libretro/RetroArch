@@ -1845,8 +1845,6 @@ static void winraw_joypad_enumerate_devices(void)
 
 static void *winraw_joypad_joypad_init(void *data)
 {
-   unsigned i;
-
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
    memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
    winraw_joypad_pad_count      = 0;

@@ -211,7 +211,9 @@ static int rsnd_connect_server(rsound_t *rd)
 {
    struct sockaddr_in addr;
    struct pollfd fd;
+#ifdef __PS3__
    int i = 1;
+#endif
 
    memset(&addr, 0, sizeof(addr));
    addr.sin_family = AF_INET;
@@ -844,13 +846,15 @@ static int rsnd_send_identity_info(rsound_t *rd)
     * written had the buffer been large enough; clamp to the
     * actually-written length so it can be passed straight to
     * send() without an extra strlen pass. */
-   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
+   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %.*s",
+         (int)(RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 1
+            - sizeof(" IDENTITY ")), rd->identity);
    tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
    tmp_len = (n < 0) ? 0
            : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
 
-   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s",
-         (int)tmp_len, tmpbuf);
+   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%.*s",
+         (int)tmp_len, RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 2, tmpbuf);
    sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
    send_len = (n < 0) ? 0
             : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
@@ -872,7 +876,8 @@ static int rsnd_send_info_query(rsound_t *rd)
 
    snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " INFO %lld", (long long int)rd->total_written);
    tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s", (int)strlen(tmpbuf), tmpbuf);
+   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%.*s", (int)strlen(tmpbuf),
+         RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 2, tmpbuf);
    sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
 
    if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0) != (ssize_t)strlen(sendbuf))

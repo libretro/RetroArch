@@ -111,7 +111,7 @@ static void make_cmd(struct cmd *c, int i)
       c->kind = K_FLAG;
    else
    {
-      char body[24];
+      char body[sizeof(c->value) - 9];
       c->kind = K_SET;
       snprintf(body, sizeof(body), "v%u:%d", c->id, i);
       snprintf(c->value, sizeof(c->value), "%s#%08x",

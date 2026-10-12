@@ -106,6 +106,7 @@ static void *delta_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    struct delta_data *d = (struct delta_data*)calloc(1, sizeof(*d));
+   (void)info;
    if (!d)
       return NULL;
    config->get_float(userdata, "intensity", &d->intensity, 5.0f);
@@ -131,6 +132,7 @@ static const struct dspfilter_implementation delta_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
+   (void)mask;
    return &delta_plug;
 }
 

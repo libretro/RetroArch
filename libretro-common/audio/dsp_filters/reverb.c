@@ -496,6 +496,7 @@ static const struct dspfilter_implementation reverb_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
+   (void)mask;
    return &reverb_plug;
 }
 

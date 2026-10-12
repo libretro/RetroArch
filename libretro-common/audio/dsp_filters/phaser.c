@@ -306,6 +306,7 @@ static const struct dspfilter_implementation phaser_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
+   (void)mask;
    return &phaser_plug;
 }
 

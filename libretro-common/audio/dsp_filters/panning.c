@@ -110,6 +110,7 @@ static void *panning_init(const struct dspfilter_info *info,
    struct panning_data *pan           = (struct panning_data*)
       calloc(1, sizeof(*pan));
 
+   (void)info;
    if (!pan)
       return NULL;
 
@@ -159,6 +160,7 @@ static const struct dspfilter_implementation panning = {
 const struct dspfilter_implementation *
 dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
+   (void)mask;
    return &panning;
 }
 
