@@ -5337,6 +5337,63 @@ static float gl2_desktop_xr_refresh(void *data, float *rates, unsigned cap,
 }
 #endif /* HAVE_GL2_XR */
 
+/* The buffers the frame textures are sized by, at side x side: as init
+ * sizes them, with an extra row on the clear's source */
+static bool gl2_frame_buffers_grow(gl2_t *gl, unsigned side)
+{
+   void *empty_buf = calloc((size_t)side * (side + 1), sizeof(uint32_t));
+   void *conv_buf  = calloc((size_t)side * side, sizeof(uint32_t));
+   if (!empty_buf || !conv_buf)
+   {
+      free(empty_buf);
+      free(conv_buf);
+      return false;
+   }
+   free(gl->empty_buf);
+   free(gl->conv_buffer);
+   gl->empty_buf   = empty_buf;
+   gl->conv_buffer = conv_buf;
+   gl->tex_dims    = VIDEO_SCALE_PACK(side, side);
+   return true;
+}
+
+/* The frame textures made again at tex_dims, with the render chain's
+ * passes around them */
+static void gl2_frame_textures_remake(gl2_t *gl)
+{
+   if (gl->flags & GL2_FLAG_FBO_INITED)
+      gl2_renderchain_deinit_fbo(gl,
+            (gl2_renderchain_data_t*)gl->renderchain_data);
+   glDeleteTextures(gl->textures, gl->texture);
+   gl->tex_index = 0;
+   gl2_init_textures(gl);
+   gl2_init_textures_data(gl);
+   gl2_renderchain_init(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data);
+}
+
+/* A software frame past the textures - a core past the geometry it
+ * declared - has them made again large enough, as glcore does: an
+ * upload past a texture's edge fills none of it. */
+static void gl2_frame_fit_textures(gl2_t *gl, unsigned width,
+      unsigned height)
+{
+   GLint max_size = 0;
+   unsigned side;
+   if (     (width  <= VIDEO_SCALE_W(gl->tex_dims)
+         &&  height <= VIDEO_SCALE_H(gl->tex_dims))
+         || (gl->flags & (GL2_FLAG_HW_RENDER_USE
+               | GL2_FLAG_SHARED_CONTEXT_USE)))
+      return;
+   side = next_pow2(MAX(width, height));
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
+   if (side > (unsigned)max_size || !gl2_frame_buffers_grow(gl, side))
+      return;
+   gl2_frame_textures_remake(gl);
+   RARCH_LOG("[GL] A %ux%u frame is past the textures: made again at "
+         "%ux%u.\n", width, height, side, side);
+}
+
 #ifdef GL2_VIEWS
 /* What a frame's placement draws read */
 struct gl2_views_draw
@@ -5974,6 +6031,9 @@ static bool gl2_frame(void *data, const void *frame,
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 #endif
+
+   if (frame && !(gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT))
+      gl2_frame_fit_textures(gl, frame_width, frame_height);
 
    /* Render to texture in first pass. */
    if (gl->flags & GL2_FLAG_FBO_INITED)
@@ -8826,20 +8886,8 @@ static bool gl2_set_frame_format(void *data, bool rgb32,
    side = RARCH_SCALE_BASE * input_scale;
    if (side > VIDEO_SCALE_W(gl->tex_dims))
    {
-      /* As init sizes them: an extra row on the clear's source */
-      void *empty_buf = calloc((size_t)side * (side + 1), sizeof(uint32_t));
-      void *conv_buf  = calloc((size_t)side * side, sizeof(uint32_t));
-      if (!empty_buf || !conv_buf)
-      {
-         free(empty_buf);
-         free(conv_buf);
+      if (!gl2_frame_buffers_grow(gl, side))
          return false;
-      }
-      free(gl->empty_buf);
-      free(gl->conv_buffer);
-      gl->empty_buf               = empty_buf;
-      gl->conv_buffer             = conv_buf;
-      gl->tex_dims                = VIDEO_SCALE_PACK(side, side);
       gl->video_info.input_scale  = input_scale;
    }
    else if (rgb32 == gl->video_info.rgb32)
@@ -8847,16 +8895,7 @@ static bool gl2_set_frame_format(void *data, bool rgb32,
 
    gl->video_info.rgb32 = rgb32;
    gl2_set_texture_fmts(gl, rgb32);
-
-   if (gl->flags & GL2_FLAG_FBO_INITED)
-      gl2_renderchain_deinit_fbo(gl,
-            (gl2_renderchain_data_t*)gl->renderchain_data);
-   glDeleteTextures(gl->textures, gl->texture);
-   gl->tex_index = 0;
-   gl2_init_textures(gl);
-   gl2_init_textures_data(gl);
-   gl2_renderchain_init(gl,
-         (gl2_renderchain_data_t*)gl->renderchain_data);
+   gl2_frame_textures_remake(gl);
    return true;
 }
 

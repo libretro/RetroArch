@@ -152,10 +152,6 @@ HW_CASES = {
                            '3ds-interlaced', '3ds-sbs-full-threaded')],
 }
 
-# Drivers that can't show a frame past the declared maximum at all (gl
-# draws it black), so the crop map's cases are left out there.
-NO_OVERSIZE_DRIVERS = ('gl',)
-
 # A frame past the declared maximum in the core's own Vulkan image.
 # Nothing is copied out of it, so threaded video does not crop it, and
 # it is laid out as any other.
@@ -1248,8 +1244,7 @@ def main():
     os.makedirs(root, exist_ok=True)
     failed = 0
     for driver in sys.argv[3:]:
-        runs = [(case, 'off') for case in CASES
-                if not (case[1] == 'crop' and driver in NO_OVERSIZE_DRIVERS)]
+        runs = [(case, 'off') for case in CASES]
         runs += [(case, hw) for name, hw in HW_CASES.get(driver, [])
                  for case in CASES if case[0] == name]
         if driver == 'vulkan':
