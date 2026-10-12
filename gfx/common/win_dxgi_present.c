@@ -296,7 +296,7 @@ HANDLE ra_dxgi_bridge_resource(ra_dxgi_bridge_t *b, unsigned index)
 { return index < 2 ? b->resources[index] : NULL; }
 HANDLE ra_dxgi_bridge_ready_fence(ra_dxgi_bridge_t *b) { return b->ready_handle; }
 HANDLE ra_dxgi_bridge_done_fence(ra_dxgi_bridge_t *b) { return b->done_handle; }
-unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b)
+unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 {
    DWORD wait;
    HRESULT result;
@@ -314,7 +314,7 @@ unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b)
       }
    }
    /* ResizeBuffers resets presentation; submit its first frame before pacing. */
-   if (!b->resized)
+   if (!b->resized && (interval || !b->tearing))
    {
       wait = WaitForSingleObject(b->latency, 1000);
       if (wait != WAIT_OBJECT_0)

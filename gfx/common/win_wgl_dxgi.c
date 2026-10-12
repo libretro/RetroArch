@@ -188,7 +188,7 @@ error:
 
 int ra_wgl_dxgi_present(ra_wgl_dxgi_t *p, unsigned interval)
 {
-   unsigned index = ra_dxgi_bridge_index(p->bridge);
+   unsigned index = ra_dxgi_bridge_index(p->bridge, interval);
    uint64_t last_use;
    GLenum layout = RA_WGL_LAYOUT_GENERAL;
    GLint old_read, old_draw, old_buffer;

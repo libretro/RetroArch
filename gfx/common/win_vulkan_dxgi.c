@@ -326,13 +326,13 @@ VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
 { return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
 
 VkResult ra_vulkan_dxgi_acquire(ra_vulkan_dxgi_t *p,
-      VkSemaphore semaphore, VkFence fence, unsigned *index)
+      VkSemaphore semaphore, VkFence fence, unsigned *index, unsigned interval)
 {
    VkD3D12FenceSubmitInfoKHR values;
    VkSubmitInfo submit;
    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
    uint64_t wait_value, signal_value = 0;
-   unsigned acquired = ra_dxgi_bridge_index(p->bridge);
+   unsigned acquired = ra_dxgi_bridge_index(p->bridge, interval);
    if (acquired >= 2) return ra_dxgi_bridge_failed(p->bridge) ? VK_ERROR_OUT_OF_DATE_KHR : VK_NOT_READY;
    *index = acquired;
    wait_value = ra_dxgi_bridge_last_use(p->bridge, *index);

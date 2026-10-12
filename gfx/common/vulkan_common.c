@@ -3133,7 +3133,8 @@ retry:
       if (vk->dxgi_presenter)
       {
          err = ra_vulkan_dxgi_acquire((ra_vulkan_dxgi_t *)vk->dxgi_presenter,
-               semaphore, fence, &vk->context.current_swapchain_index);
+               semaphore, fence, &vk->context.current_swapchain_index,
+               vk->context.swap_interval > 0 ? (unsigned)vk->context.swap_interval : 0);
       }
       else
 #endif
