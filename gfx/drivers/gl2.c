@@ -2179,17 +2179,29 @@ static void gl2_create_fbo_texture(gl2_t *gl,
    }
 }
 
-static void gl2_create_fbo_textures(gl2_t *gl,
-      gl2_renderchain_data_t *chain)
+/* Takes how the passes' textures are to be made from the settings.
+ * Not for the video thread. */
+static void gl2_fbo_settings_latch(gl2_t *gl)
 {
-   int i;
    settings_t *settings          = config_get_ptr();
 #if HAVE_ODROIDGO2
    bool video_smooth             = settings->bools.video_ctx_scaling ? false : settings->bools.video_smooth;
 #else
    bool video_smooth             = settings->bools.video_smooth;
 #endif
-   bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
+   gl->flags &= ~(GL2_FLAG_FBO_SMOOTH | GL2_FLAG_FBO_SRGB_DISABLE);
+   if (video_smooth)
+      gl->flags |= GL2_FLAG_FBO_SMOOTH;
+   if (settings->bools.video_force_srgb_disable)
+      gl->flags |= GL2_FLAG_FBO_SRGB_DISABLE;
+}
+
+static void gl2_create_fbo_textures(gl2_t *gl,
+      gl2_renderchain_data_t *chain)
+{
+   int i;
+   bool video_smooth             = (gl->flags & GL2_FLAG_FBO_SMOOTH) != 0;
+   bool force_srgb_disable       = (gl->flags & GL2_FLAG_FBO_SRGB_DISABLE) != 0;
 
    glGenTextures(chain->fbo_pass, chain->fbo_texture);
 
@@ -8025,6 +8037,7 @@ static void *gl2_init(const video_info_t *video)
             sizeof(uint32_t), false);
    }
 
+   gl2_fbo_settings_latch(gl);
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data);
 
@@ -8315,6 +8328,7 @@ static bool gl2_set_shader(void *data,
          video_thread_call_on_waiter(gl2_init_hw_render_cb, gl);
    }
 
+   gl2_fbo_settings_latch(gl);
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data);
 

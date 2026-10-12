@@ -106,7 +106,12 @@ enum gl2_flags
     * set_texture_frame() is applied by the video thread in
     * thread_update_driver_state(), and reading the setting there races
     * the menu writing it. */
-   GL2_FLAG_MENU_LINEAR_FILTER     = (1 << 26)
+   GL2_FLAG_MENU_LINEAR_FILTER     = (1 << 26),
+   /* How the passes' textures were last made, by init or set_shader:
+    * a frame past the textures makes them again on the video thread,
+    * and reading the settings there races the menu writing them. */
+   GL2_FLAG_FBO_SMOOTH             = (1 << 29),
+   GL2_FLAG_FBO_SRGB_DISABLE       = (1 << 30)
 };
 
 struct gl2
