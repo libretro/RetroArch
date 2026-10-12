@@ -13,6 +13,7 @@ SOURCES_C := \
 	gl2_pbo_readback_test.c \
 	stubs.c \
 	$(CORE_DIR)/gfx/common/gl_common.c \
+	$(CORE_DIR)/gfx/video_views.c \
 	$(LIBRETRO_COMM_DIR)/gfx/gl_capabilities.c \
 	$(LIBRETRO_COMM_DIR)/glsym/glsym_gl.c \
 	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.c \
