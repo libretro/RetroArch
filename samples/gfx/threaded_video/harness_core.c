@@ -716,6 +716,12 @@ RETRO_API void harness_core_set_run_us(unsigned us)
  * the base size, so two ways of drawing it can be compared on screen */
 static unsigned harness_frozen;
 RETRO_API void harness_core_freeze(unsigned n) { harness_frozen = n; }
+/* The access a framebuffer is asked with: read and write by default,
+ * as a core that snapshots its frame for a wipe asks; write only for
+ * one that only draws */
+static unsigned harness_fb_access = RETRO_MEMORY_ACCESS_WRITE
+                                  | RETRO_MEMORY_ACCESS_READ;
+RETRO_API void harness_core_fb_access(unsigned a) { harness_fb_access = a; }
 RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 RETRO_API unsigned harness_core_fb_uncached(void)  { return harness_fb_uncached; }
 
@@ -768,10 +774,7 @@ void retro_run(void)
       memset(&fb, 0, sizeof(fb));
       fb.width        = W;
       fb.height       = H;
-      /* Read as well as write, as a core that snapshots its frame
-       * for a wipe asks: the lend must not be refused for it. */
-      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE
-                      | RETRO_MEMORY_ACCESS_READ;
+      fb.access_flags = harness_fb_access;
       if (     environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
             && fb.format == pixel_format)
       {

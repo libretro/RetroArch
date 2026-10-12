@@ -4107,11 +4107,17 @@ static void lane_lent_window_paused(void)
    void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
    unsigned (*granted)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_granted") : NULL;
    unsigned (*uncached)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_uncached") : NULL;
+   void (*fb_access)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_fb_access") : NULL;
+   const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+   /* GL's loan is a persistent mapping the GL may keep write-combined:
+    * lent only to a core that does not read its frame */
+   bool write_only = drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore"));
    unsigned g0, g1, u0 = 0;
    uint64_t f0, f1;
 
-   CHECK(use_fb && granted, "harness core lacks the framebuffer exports");
-   if (!use_fb || !granted)
+   CHECK(use_fb && granted && fb_access,
+         "harness core lacks the framebuffer exports");
+   if (!use_fb || !granted || !fb_access)
       return;
 
    set_threaded_via_setting(false);
@@ -4123,6 +4129,15 @@ static void lane_lent_window_paused(void)
    /* The loan comes from the driver now, and the core pushes its
     * window into it. Let the swapchain go round a few times. */
    use_fb(2);
+   if (write_only)
+   {
+      g0 = granted();
+      run_frames(3);
+      CHECK(granted() == g0,
+            "lent-window lane: %s lent its framebuffer to a core that reads it",
+            drv);
+      fb_access(RETRO_MEMORY_ACCESS_WRITE);
+   }
    run_frames(3);
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
@@ -4148,6 +4163,7 @@ static void lane_lent_window_paused(void)
    {
       fprintf(stderr, "[skip] lent-window lane (driver lent no framebuffer)\n");
       use_fb(0);
+      fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
       if (!menu_is_up())
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
       return;
@@ -4159,7 +4175,10 @@ static void lane_lent_window_paused(void)
    {
       int creates = gfx_instrument_get(GFX_INSTR_FRAME_TEX_CREATE);
       int copies  = gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST);
-      int windows = gfx_instrument_get(GFX_INSTR_FRAME_LENT_WINDOW);
+      /* Read out of a loan: a window into a lent texture, or (GL)
+       * an upload from the lent frame memory */
+      int windows = gfx_instrument_get(GFX_INSTR_FRAME_LENT_WINDOW)
+                  + gfx_instrument_get(GFX_INSTR_FRAME_MEM);
       /* The core asks every frame and pushes a window on two of
        * three (the third is a dupe); the oversize frame it pushes
        * every 61st is its own buffer and is copied, as it should be. */
@@ -4187,6 +4206,7 @@ static void lane_lent_window_paused(void)
    CHECK(menu_is_up(), "lent-window lane: menu did not open");
    run_frames(4 * LENT_LANE_MAX_IMAGES + 20);
    use_fb(0);
+   fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
 
    if (failures == had)
       fprintf(stderr, "[pass] lent-window lane, paused redraw\n");
@@ -4310,17 +4330,23 @@ static void lane_frame_mem(void)
    dylib_t lib = runloop_state_get_ptr()->lib_handle;
    void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
    void (*freeze)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_freeze") : NULL;
+   void (*fb_access)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_fb_access") : NULL;
+   unsigned (*uncached)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_uncached") : NULL;
    uint8_t *ref[3] = { NULL, NULL, NULL };
    unsigned ref_dims[3] = { 0, 0, 0 };
    unsigned driver_mem = 0, i;
    thread_video_t *thr;
    int mode;
 
-   CHECK(use_fb && freeze, "harness core lacks the framebuffer exports");
-   if (!use_fb || !freeze)
+   CHECK(use_fb && freeze && fb_access && uncached,
+         "harness core lacks the framebuffer exports");
+   if (!use_fb || !freeze || !fb_access || !uncached)
       return;
 
-   /* The same frame every run, drawn each way with threaded video off */
+   /* The same frame every run, drawn each way with threaded video off,
+    * by a core that only draws into a loan: one that reads it back is
+    * lent cached memory, which driver frame memory need not be */
+   fb_access(RETRO_MEMORY_ACCESS_WRITE);
    freeze(0x1234);
    set_threaded_via_setting(false);
    if (menu_is_up())
@@ -4349,6 +4375,18 @@ static void lane_frame_mem(void)
       CHECK(thr->frame.mem[thr->frame.slot[0].mem].id
             && thr->frame.mem[thr->frame.slot[1].mem].id,
             "frame memory lane: the ring slots are not in the driver's frame memory");
+      /* A core that reads its frame back gets cached memory under the
+       * wrapper, whatever the driver's frame memory is */
+      {
+         unsigned u0 = uncached();
+         fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
+         use_fb(1);
+         run_frames(30);
+         CHECK(uncached() == u0,
+               "frame memory lane: %u loans to a core that reads them in uncached memory",
+               uncached() - u0);
+         fb_access(RETRO_MEMORY_ACCESS_WRITE);
+      }
       for (mode = 0; mode < 3; mode++)
          lane_frame_mem_mode(mode, ref[mode], ref_dims[mode], use_fb);
    }
@@ -4357,6 +4395,7 @@ static void lane_frame_mem(void)
       free(ref[mode]);
    freeze(0);
    use_fb(0);
+   fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    set_threaded_via_setting(false);

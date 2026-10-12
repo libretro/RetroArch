@@ -20,6 +20,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <glsym/glsym.h>
 
@@ -301,6 +302,9 @@ void gl_texture_lend_free(gl_texture_lend_t **list)
 #ifndef GL_MAP_READ_BIT
 #define GL_MAP_READ_BIT 0x0001
 #endif
+#ifndef GL_CLIENT_STORAGE_BIT
+#define GL_CLIENT_STORAGE_BIT 0x0200
+#endif
 
 #define GL_FRAME_MEM_MAX 12
 
@@ -318,9 +322,12 @@ void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id)
 {
    unsigned i;
    gl_frame_mem_t *f;
-   /* Readable too: a core may read back the frame it rendered */
+   /* Readable too: a frame lent and pushed is read back as the cached
+    * frame (a screenshot, a paused redraw elsewhere), which client
+    * storage, a hint, keeps in system memory where the GL can */
    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_READ_BIT
       | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+   GLbitfield store = flags | GL_CLIENT_STORAGE_BIT;
 
    if (!fm || !size || !gl_texture_lend_supported())
       return NULL;
@@ -334,7 +341,7 @@ void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id)
       return NULL;
    glGenBuffers(1, &f->pbo[i]);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, f->pbo[i]);
-   glBufferStorage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)size, NULL, flags);
+   glBufferStorage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)size, NULL, store);
    f->mapped[i] = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
          (GLsizeiptr)size, flags);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -422,6 +429,63 @@ void gl_frame_mem_unbind(gl_frame_mem_t *fm, int slot)
       glDeleteSync(fm->fence[slot]);
    fm->busy[slot]  = true;
    fm->fence[slot] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
+
+bool gl_sw_fb_fits(const gl_sw_fb_t *sw, unsigned width, unsigned height,
+      unsigned bpp)
+{
+   return sw->dims == ((width << 16) | height) && sw->bpp == bpp;
+}
+
+void gl_sw_fb_free(gl_frame_mem_t *fm, gl_sw_fb_t *sw)
+{
+   unsigned i;
+   for (i = 0; i < GL_SW_FB_SLOTS; i++)
+      gl_frame_mem_free(fm, sw->id[i]);
+   memset(sw, 0, sizeof(*sw));
+}
+
+void *gl_sw_fb_lend(gl_frame_mem_t **fm, gl_sw_fb_t *sw,
+      unsigned width, unsigned height, unsigned bpp)
+{
+   unsigned i, k;
+   if (!fm || !width || !height || width > 0xffff || height > 0xffff)
+      return NULL;
+   if (!gl_sw_fb_fits(sw, width, height, bpp))
+   {
+      size_t size = (size_t)width * bpp * height;
+      gl_sw_fb_free(*fm, sw);
+      sw->dims    = (width << 16) | height;
+      sw->bpp     = bpp;
+      for (i = 0; i < GL_SW_FB_SLOTS; i++)
+         if (!(sw->mapped[i] = gl_frame_mem_alloc(fm, size, &sw->id[i])))
+         {
+            unsigned dims = sw->dims;
+            gl_sw_fb_free(*fm, sw);
+            sw->dims   = dims;
+            sw->bpp    = bpp;
+            sw->failed = true;
+            return NULL;
+         }
+   }
+   if (sw->failed)
+      return NULL;
+   for (k = 0; k < GL_SW_FB_SLOTS; k++)
+   {
+      i = (sw->next + k) % GL_SW_FB_SLOTS;
+      if (     sw->id[i] != sw->last
+            && gl_frame_mem_ready(*fm, sw->id[i]))
+      {
+         sw->next = (i + 1) % GL_SW_FB_SLOTS;
+         return sw->mapped[i];
+      }
+   }
+   return NULL;
+}
+
+void gl_sw_fb_pushed(gl_sw_fb_t *sw, int slot)
+{
+   sw->last = (slot >= 0) ? (uintptr_t)slot + 1 : 0;
 }
 
 void gl_frame_mem_destroy(gl_frame_mem_t **fm)

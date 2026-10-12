@@ -190,6 +190,7 @@ struct gl2
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
    gl_frame_mem_t *frame_mem;
+   gl_sw_fb_t sw_fb;
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;

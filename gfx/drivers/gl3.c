@@ -333,6 +333,7 @@ typedef struct gl3
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
    gl_frame_mem_t *frame_mem;
+   gl_sw_fb_t sw_fb;
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
@@ -4211,6 +4212,7 @@ static void gl3_free(void *data)
    gl3_fp16_forget_all();
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+   gl_sw_fb_free(gl->frame_mem, &gl->sw_fb);
    gl_frame_mem_destroy(&gl->frame_mem);
 #endif
    if (gl->ctx_driver && gl->ctx_driver->destroy)
@@ -4870,6 +4872,7 @@ static void gl3_update_cpu_texture(gl3_t *gl,
                       width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame);
    }
 #ifdef HAVE_GL_TEXTURE_LEND
+   gl_sw_fb_pushed(&gl->sw_fb, fm_slot);
    if (fm_slot >= 0)
    {
       GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
@@ -7273,6 +7276,35 @@ static void *gl3_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    return gl_frame_mem_alloc(&gl->frame_mem, size, id);
 }
 
+/* The frame lent to the core, unthreaded: frame memory the GL uploads
+ * the pushed frame out of (gl3_update_cpu_texture). Not to a core that
+ * reads its frame, since the GL may keep a persistent mapping
+ * write-combined, nor for a hardware core. */
+static bool gl3_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   gl3_t   *gl = (gl3_t*)data;
+   unsigned bpp;
+   void    *p;
+   if (     !gl || !fb || (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
+         || gl->video_info.source_10bit
+         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ))
+      return false;
+   bpp = gl->video_info.rgb32 ? 4 : 2;
+   /* Remade at a new size: the cached frame may name the old ones */
+   if (!gl_sw_fb_fits(&gl->sw_fb, fb->width, fb->height, bpp))
+      video_driver_cached_frame_retire();
+   if (!(p = gl_sw_fb_lend(&gl->frame_mem, &gl->sw_fb,
+               fb->width, fb->height, bpp)))
+      return false;
+   fb->data         = p;
+   fb->pitch        = (size_t)fb->width * bpp;
+   fb->format       = gl->video_info.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = 0;
+   return true;
+}
+
 static bool gl3_frame_mem_ready(void *data, uintptr_t id)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -7868,7 +7900,11 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_show_mouse,
    NULL, /* grab_mouse_toggle */
    gl3_get_current_shader,
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl3_get_current_software_framebuffer,
+#else
    NULL, /* get_current_software_framebuffer */
+#endif
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */

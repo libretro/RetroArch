@@ -84,6 +84,35 @@ int gl_frame_mem_bind(gl_frame_mem_t *fm, const void *pixels,
       size_t extent, size_t *offset);
 void gl_frame_mem_unbind(gl_frame_mem_t *fm, int slot);
 void gl_frame_mem_destroy(gl_frame_mem_t **fm);
+
+/* The software framebuffer lent to a core (get_current_software_framebuffer):
+ * three frame buffers at the frame's size and tight pitch, one never
+ * the buffer the last frame was pushed from, which the cached frame
+ * names, nor one an upload still reads */
+#define GL_SW_FB_SLOTS 3
+typedef struct gl_sw_fb
+{
+   void     *mapped[GL_SW_FB_SLOTS];
+   uintptr_t id[GL_SW_FB_SLOTS];
+   uintptr_t last;   /* the frame buffer the last frame came from */
+   unsigned  dims;   /* VIDEO_SCALE_PACK'd size they were made for */
+   unsigned  bpp;
+   unsigned  next;
+   bool      failed; /* none could be made at this size */
+} gl_sw_fb_t;
+
+/* Whether the buffers are already made for @width x @height at @bpp:
+ * when not, a lend makes them anew and the caller retires the cached
+ * frame first */
+bool gl_sw_fb_fits(const gl_sw_fb_t *sw, unsigned width, unsigned height,
+      unsigned bpp);
+/* A buffer to lend, never waited for; NULL when none is free */
+void *gl_sw_fb_lend(gl_frame_mem_t **fm, gl_sw_fb_t *sw,
+      unsigned width, unsigned height, unsigned bpp);
+/* The upload of a frame pushed from frame buffer slot @slot
+ * (gl_frame_mem_bind), or -1 */
+void gl_sw_fb_pushed(gl_sw_fb_t *sw, int slot);
+void gl_sw_fb_free(gl_frame_mem_t *fm, gl_sw_fb_t *sw);
 #endif
 
 #if defined(__APPLE__) && !defined(HAVE_OPENGLES)

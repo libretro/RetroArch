@@ -2895,6 +2895,7 @@ static void gl2_renderchain_copy_frame(
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #ifdef HAVE_GL_TEXTURE_LEND
+      gl_sw_fb_pushed(&gl->sw_fb, fm_slot);
       if (fm_slot >= 0)
       {
          GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
@@ -5459,6 +5460,7 @@ static void gl2_free(void *data)
 #endif
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+   gl_sw_fb_free(gl->frame_mem, &gl->sw_fb);
    gl_frame_mem_destroy(&gl->frame_mem);
 #endif
 
@@ -7263,6 +7265,35 @@ static void *gl2_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    return gl_frame_mem_alloc(&gl->frame_mem, size, id);
 }
 
+/* The frame lent to the core, unthreaded: frame memory the GL uploads
+ * the pushed frame out of (gl2_renderchain_copy_frame), where that
+ * upload reads it as it is - not an RGB565 frame the CPU converts
+ * first. Not to a core that reads its frame, since the GL may keep a
+ * persistent mapping write-combined, nor for a hardware core. */
+static bool gl2_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   gl2_t   *gl = (gl2_t*)data;
+   void    *p;
+   if (     !gl || !fb || (gl->flags & GL2_FLAG_HW_RENDER_USE)
+         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+         || (gl->base_size == 2
+            && !(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)))
+      return false;
+   /* Remade at a new size: the cached frame may name the old ones */
+   if (!gl_sw_fb_fits(&gl->sw_fb, fb->width, fb->height, gl->base_size))
+      video_driver_cached_frame_retire();
+   if (!(p = gl_sw_fb_lend(&gl->frame_mem, &gl->sw_fb,
+               fb->width, fb->height, gl->base_size)))
+      return false;
+   fb->data         = p;
+   fb->pitch        = (size_t)fb->width * gl->base_size;
+   fb->format       = (gl->base_size == 4)
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = 0;
+   return true;
+}
+
 static bool gl2_frame_mem_ready(void *data, uintptr_t id)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -7544,7 +7575,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_show_mouse,
    NULL, /* grab_mouse_toggle */
    gl2_get_current_shader,
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl2_get_current_software_framebuffer,
+#else
    NULL, /* get_current_software_framebuffer */
+#endif
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
