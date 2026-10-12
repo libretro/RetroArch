@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb imagemagick libgl1-mesa-dri mesa-vulkan-drivers libvulkan1 autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
+          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb xauth imagemagick libgl1-mesa-dri mesa-vulkan-drivers libvulkan1 autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -139,8 +139,8 @@ jobs:
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           export LIBGL_ALWAYS_SOFTWARE=1
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
-          # The prefix is made before the first case is timed.
-          WINEDEBUG=-all wineboot -i > /dev/null 2>&1 || true
+          # Initialize the prefix with a display and wait for setup to finish.
+          WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d11 d3d12
 
