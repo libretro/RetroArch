@@ -13,7 +13,14 @@ views filled with noise, drawn straight from the frame by the stock
 chain and copied out of it for a preset, on glcore once for each way it
 copies them; and, on glcore, a frame drawn whole out of a core's larger
 framebuffer.
-Not run in CI: it needs a GPU, gamescope and a RetroArch build.
+In full it needs a GPU, gamescope and a RetroArch build.
+
+With RA_E2E_XVFB=1 each case runs on an Xvfb server of its own instead
+of gamescope, with Mesa's software renderers where there is no GPU:
+the screen is read with ImageMagick's import and the pointer moved on
+that server. The GPU memory cases are left out there. RA_E2E_ONLY, a
+regular expression, runs only the cases whose names it finds; CI runs a
+set of them that way (Linux-vulkan-validation.yml).
 
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
@@ -490,9 +497,52 @@ def isolated_env():
     return env
 
 
+XVFB = os.environ.get('RA_E2E_XVFB') == '1'
+ONLY = os.environ.get('RA_E2E_ONLY')
+
+
+def wanted(name):
+    """Whether RA_E2E_ONLY lets case @name run."""
+    return not ONLY or re.search(ONLY, name) is not None
+
+
+def free_display():
+    """An X display number nothing serves."""
+    for n in range(90, 190):
+        if not os.path.exists('/tmp/.X11-unix/X%d' % n) and \
+                not os.path.exists('/tmp/.X%d-lock' % n):
+            return n
+    raise RuntimeError('no free X display')
+
+
+def xvfb_start(env):
+    """An Xvfb of the window's size: its process and DISPLAY."""
+    n = free_display()
+    p = subprocess.Popen(['Xvfb', ':%d' % n, '-screen', '0',
+                          '%dx%dx24' % (W, H), '-nolisten', 'tcp'],
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, env=env,
+                         start_new_session=True)
+    deadline = time.time() + 10
+    while (time.time() < deadline
+           and not os.path.exists('/tmp/.X11-unix/X%d' % n)):
+        time.sleep(0.1)
+    time.sleep(0.5)
+    return p, ':%d' % n
+
+
 def gamescope_shot(d, env, name='menu.png'):
     """What gamescope shows, menu included, in d/name."""
     out = os.path.join(d, name)
+    if XVFB:
+        try:
+            # PNG24: read_png takes 8-bit RGB, not a palette.
+            subprocess.run(['import', '-display', env['DISPLAY'], '-window',
+                            'root', 'PNG24:' + out], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        return out if os.path.exists(out) else None
     try:
         subprocess.run(['gamescopectl', 'screenshot', out],
                        env=dict(env, GAMESCOPE_WAYLAND_DISPLAY='gamescope-0'),
@@ -638,6 +688,10 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
            retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
     env = isolated_env()
     env.update(env_extra or {})
+    xvfb = None
+    if XVFB:
+        xvfb, env['DISPLAY'] = xvfb_start(env)
+        cmd = cmd[cmd.index('--') + 1:]
     log = open(os.path.join(d, 'run.log'), 'w')
     p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
                          env=env, start_new_session=True)
@@ -690,6 +744,12 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             except subprocess.TimeoutExpired:
                 os.killpg(p.pid, signal.SIGKILL)
         log.close()
+        if xvfb:
+            xvfb.terminate()
+            try:
+                xvfb.wait(5)
+            except subprocess.TimeoutExpired:
+                xvfb.kill()
         runtime_dir = env['XDG_RUNTIME_DIR']
         if os.path.basename(runtime_dir).startswith('ra-e2e-'):
             shutil.rmtree(runtime_dir, ignore_errors=True)
@@ -1055,7 +1115,10 @@ def pointer_helper(d):
     dpy = x11.XOpenDisplay(None)
     if not dpy:
         return 1
-    root = gamescope_root(x11, dpy)
+    x11.XDefaultRootWindow.restype = ctypes.c_ulong
+    x11.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
+    root = (x11.XDefaultRootWindow(dpy) if XVFB
+            else gamescope_root(x11, dpy))
     if root is None:
         print('[e2e] refusing %s: not this gamescope\'s X server.'
               % os.environ['DISPLAY'], flush=True)
@@ -1100,7 +1163,7 @@ def main():
                  for case in CASES if case[0] == name]
         if driver == 'vulkan':
             runs += [(case, 'vulkan') for case in VULKAN_CROP_CASES]
-        for case, hw in runs:
+        for case, hw in [r for r in runs if wanted(r[0][0])]:
             errors = run_case(retroarch, root, driver, case, hw)
             print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
                                   case[0], '' if hw == 'off' else ' (hw ' + hw + ')'))
@@ -1108,7 +1171,7 @@ def main():
                 print('    ' + e)
             failed += bool(errors)
         for case in [c for c in EXACT_CASES
-                     if c[3] in EXACT_HW.get(driver, ())]:
+                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
             hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
             copy = 'glCopyImageSubData' if driver == 'glcore' else None
             runs = [('', None, copy, None),
@@ -1134,6 +1197,8 @@ def main():
         for preset, in_place, tolerance in (RECT_PRESETS
                                             if driver in RECT_HW else []):
             name = 'rect-' + preset[:-len('.slangp')]
+            if not wanted(name):
+                continue
             path = os.path.join(HERE, preset)
             errors, first = run_exact_case(
                 retroarch, root, driver, (name, 'none', NOISE_LARGE, 'off'),
@@ -1165,7 +1230,7 @@ def main():
                     print('    ' + e)
                 failed += bool(errors)
         for case in [c for c in VIEW_RECT_CASES
-                     if c[3] in EXACT_HW.get(driver, ())]:
+                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
             name, mapopt, opts, hw = case
             for mode, tolerance in VIEW_RECT_PRESETS:
                 rows = {}
@@ -1193,7 +1258,7 @@ def main():
                     print('    ' + e)
                 failed += bool(errors)
         for case in [c for c in SMOOTH_CASES
-                     if c[3] in EXACT_HW.get(driver, ())]:
+                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
             hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
             errors, rows = run_exact_case(retroarch, root, driver, case,
                                           exact=False)
@@ -1213,7 +1278,8 @@ def main():
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)
-        for case in (MEMORY_CASES if driver in MEMORY_HW else []):
+        for case in [c for c in (MEMORY_CASES if driver in MEMORY_HW
+                                 and not XVFB else []) if wanted(c[0])]:
             errors, peak = run_memory_case(retroarch, root, driver, case)
             print('%s %s/%s (hw %s, GPU %s MiB)'
                   % ('FAIL' if errors else 'pass', driver, case[0],
@@ -1221,7 +1287,8 @@ def main():
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)
-        for case in (MENU_CASES if driver != 'gl' else []):
+        for case in [c for c in (MENU_CASES if driver != 'gl' else [])
+                     if wanted(c[0])]:
             errors = run_menu_case(retroarch, root, driver, case)
             print('%s %s/%s' % ('FAIL' if errors else 'pass', driver,
                                 case[0]))
@@ -1229,7 +1296,7 @@ def main():
                 print('    ' + e)
             failed += bool(errors)
         for menu, case in ([(m, c) for m in sorted(POINTER_MENUS)
-                            for c in POINTER_CASES]
+                            for c in POINTER_CASES if wanted(c[0])]
                            if driver != 'gl' else []):
             errors = run_pointer_case(retroarch, root, driver, menu, case)
             print('%s %s/%s-%s' % ('FAIL' if errors else 'pass', driver,

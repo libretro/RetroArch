@@ -150,13 +150,13 @@ jobs:
   vulkan-validation-harness:
     name: Threaded-video harness on Vulkan (lavapipe, validation layer)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     steps:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev libgl1-mesa-dri libgl-dev imagemagick"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -306,6 +306,24 @@ jobs:
           # it was created with, HDR support included.
           HARNESS_CORE_HW_VULKAN=3 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
+
+      - name: Views on glcore and Vulkan, end to end (Xvfb, llvmpipe, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          # The views compositor (gfx/video_views_draw.h) as glcore and
+          # Vulkan instantiate it: the video_views test core's map in
+          # each stereo mode, a view per eye, the blend canvas, views
+          # read exactly out of the frame in every way the drivers copy
+          # or draw them, the UI layer per eye with the menu open, and a
+          # pointer mapped back through it. Each case runs on an Xvfb of
+          # its own; Vulkan here under the validation layer.
+          make -C samples/cores/video_views
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          export LIBGL_ALWAYS_SOFTWARE=1
+          RA_E2E_XVFB=1 RA_E2E_ONLY='^(3ds-sbs-full|3ds-sbs-half|3ds-top-bottom|3ds-anaglyph|3ds-interlaced|ds-horizontal|exact-3ds|crop-threaded-menu|pointer-sbs-full)$' \
+            python3 samples/cores/video_views/e2e/run.py ./retroarch \
+            "$RUNNER_TEMP/views-e2e" glcore vulkan
 
   vulkan-validation-openxr:
     name: Threaded-video harness on Vulkan built with OpenXR (lavapipe, validation layer)
