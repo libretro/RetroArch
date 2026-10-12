@@ -693,7 +693,7 @@ jobs:
           make -C samples/gfx/threaded_video clean
 
   gl-harness:
-    name: Threaded-video harness on ${{ matrix.driver }} (llvmpipe, ${{ matrix.san }})
+    name: Threaded-video harness on ${{ matrix.driver }} (llvmpipe, ${{ matrix.api }}, ${{ matrix.san }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -701,6 +701,15 @@ jobs:
       matrix:
         driver: [gl, glcore, gl1]
         san: [none, address, thread]
+        api: [desktop]
+        # A GLES 3 build (the Android one): frame memory and the
+        # framebuffer loan through EXT_buffer_storage, which llvmpipe's
+        # GLES 3.2 has, and the harness fails a GL driver without them
+        include:
+          - { driver: gl,     san: none,    api: gles3 }
+          - { driver: glcore, san: none,    api: gles3 }
+          - { driver: gl,     san: address, api: gles3 }
+          - { driver: glcore, san: thread,  api: gles3 }
 
     steps:
       - name: Install dependencies
@@ -778,7 +787,13 @@ jobs:
 
       - name: Configure
         run: |
-          ./configure --disable-qt
+          if [ "${{ matrix.api }}" = gles3 ]; then
+            ./configure --disable-qt --enable-opengles --enable-opengles3 \
+              --disable-opengl1
+            grep -q '^HAVE_OPENGLES3 = 1' config.mk
+          else
+            ./configure --disable-qt
+          fi
           grep -q '^HAVE_OPENGL = 1' config.mk
           grep -q '^HAVE_OPENGL_CORE = 1' config.mk
 

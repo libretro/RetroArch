@@ -2813,12 +2813,34 @@ static void gl2_renderchain_copy_frame(
       }
       else if (gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH)
       {
+         const GLvoid *data_buf = frame;
+#ifdef HAVE_GL_FRAME_MEM
+         /* As on the desktop: a frame in frame memory is read out of
+          * it by the GL */
+         int fm_slot            = -1;
+         size_t off             = 0;
+         size_t extent          = height ? (size_t)(height - 1) * pitch
+            + (size_t)width * gl->base_size : 0;
+         if ((fm_slot = gl_frame_mem_bind(gl->frame_mem, frame,
+                     extent, &off)) >= 0)
+            data_buf            = (const GLvoid*)off;
+#endif
+         /* Rows are pitch bytes apart, whatever the width */
+         glPixelStorei(GL_UNPACK_ALIGNMENT, gl2_get_alignment(pitch));
          glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, frame);
+               gl->texture_fmt, data_buf);
 
          glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#ifdef HAVE_GL_FRAME_MEM
+         gl_sw_fb_pushed(&gl->sw_fb, fm_slot);
+         if (fm_slot >= 0)
+         {
+            GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+            gl_frame_mem_unbind(gl->frame_mem, fm_slot);
+         }
+#endif
       }
       else
       {
@@ -2850,7 +2872,7 @@ static void gl2_renderchain_copy_frame(
 #else
    {
       const GLvoid *data_buf = frame;
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
       int fm_slot            = -1;
 #endif
       glPixelStorei(GL_UNPACK_ALIGNMENT, gl2_get_alignment(pitch));
@@ -2874,7 +2896,7 @@ static void gl2_renderchain_copy_frame(
       else
       {
          glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
          /* A frame in one of the threaded wrapper's buffers is read out
           * of it by the GL, the upload queued rather than copied here */
          {
@@ -2894,7 +2916,7 @@ static void gl2_renderchain_copy_frame(
             gl->texture_fmt, data_buf);
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
       gl_sw_fb_pushed(&gl->sw_fb, fm_slot);
       if (fm_slot >= 0)
       {
@@ -5460,6 +5482,8 @@ static void gl2_free(void *data)
 #endif
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+#endif
+#ifdef HAVE_GL_FRAME_MEM
    gl_sw_fb_free(gl->frame_mem, &gl->sw_fb);
    gl_frame_mem_destroy(&gl->frame_mem);
 #endif
@@ -7249,15 +7273,45 @@ static bool gl2_texture_lend_ready(void *data, uintptr_t id,
    gl2_t *gl = (gl2_t*)data;
    return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
 }
+#endif
+
+#ifdef HAVE_GL_FRAME_MEM
+/* Whether gl2_renderchain_copy_frame uploads a software frame out of
+ * frame memory as it is, rather than the CPU reading it first (to
+ * convert it, repack it, or hand it to an EGL image): memory the GL
+ * may map write-combined is for the GL to read. */
+static bool gl2_frame_mem_uploads(gl2_t *gl)
+{
+   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
+      return false;
+#if defined(HAVE_OPENGLES)
+   if (     (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
+         && gl->base_size == 4)
+      return false;
+   if (!(gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH))
+      return false;
+#if defined(HAVE_EGL)
+   if (     gl->renderchain_data
+         && (((gl2_renderchain_data_t*)gl->renderchain_data)->flags
+            & GL2_CHAIN_FLAG_EGL_IMAGES))
+      return false;
+#endif
+#else
+   if (gl->base_size == 2 && !(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT))
+      return false;
+#endif
+   return true;
+}
 
 /* The threaded wrapper's frame buffers, on the context's thread: a
  * frame pushed from one is uploaded out of it by the GL
- * (gl2_renderchain_copy_frame). Not for a hardware core. */
+ * (gl2_renderchain_copy_frame). Not for a hardware core, nor where
+ * the upload does not read it as it is. */
 static void *gl2_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
       bool *cached, unsigned *pitch_align)
 {
    gl2_t *gl = (gl2_t*)data;
-   if (!gl || (gl->flags & GL2_FLAG_HW_RENDER_USE))
+   if (!gl || !gl2_frame_mem_uploads(gl))
       return NULL;
    /* Where the GL puts a persistent mapping is its own choice */
    *cached      = false;
@@ -7267,18 +7321,16 @@ static void *gl2_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
 
 /* The frame lent to the core, unthreaded: frame memory the GL uploads
  * the pushed frame out of (gl2_renderchain_copy_frame), where that
- * upload reads it as it is - not an RGB565 frame the CPU converts
- * first. Not to a core that reads its frame, since the GL may keep a
- * persistent mapping write-combined, nor for a hardware core. */
+ * upload reads it as it is (gl2_frame_mem_uploads). Not to a core that
+ * reads its frame, since the GL may keep a persistent mapping
+ * write-combined. */
 static bool gl2_get_current_software_framebuffer(void *data,
       struct retro_framebuffer *fb)
 {
    gl2_t   *gl = (gl2_t*)data;
    void    *p;
-   if (     !gl || !fb || (gl->flags & GL2_FLAG_HW_RENDER_USE)
-         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
-         || (gl->base_size == 2
-            && !(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)))
+   if (     !gl || !fb || !gl2_frame_mem_uploads(gl)
+         || (fb->access_flags & RETRO_MEMORY_ACCESS_READ))
       return false;
    /* Remade at a new size: the cached frame may name the old ones */
    if (!gl_sw_fb_fits(&gl->sw_fb, fb->width, fb->height, gl->base_size))
@@ -7575,7 +7627,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_show_mouse,
    NULL, /* grab_mouse_toggle */
    gl2_get_current_shader,
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    gl2_get_current_software_framebuffer,
 #else
    NULL, /* get_current_software_framebuffer */
@@ -7614,7 +7666,7 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    gl2_set_frame_format,
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    gl2_frame_mem_alloc,
    gl2_frame_mem_ready,
    gl2_frame_mem_free

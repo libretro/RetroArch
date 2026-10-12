@@ -332,6 +332,8 @@ typedef struct gl3
 
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
+#endif
+#ifdef HAVE_GL_FRAME_MEM
    gl_frame_mem_t *frame_mem;
    gl_sw_fb_t sw_fb;
 #endif
@@ -4212,6 +4214,8 @@ static void gl3_free(void *data)
    gl3_fp16_forget_all();
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+#endif
+#ifdef HAVE_GL_FRAME_MEM
    gl_sw_fb_free(gl->frame_mem, &gl->sw_fb);
    gl_frame_mem_destroy(&gl->frame_mem);
 #endif
@@ -4790,7 +4794,7 @@ static void gl3_update_cpu_texture(gl3_t *gl,
 {
    unsigned width  = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    int fm_slot     = -1;
 #endif
    if (gl->chain.active)
@@ -4832,7 +4836,7 @@ static void gl3_update_cpu_texture(gl3_t *gl,
    else
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
 
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    /* A frame in one of the threaded wrapper's buffers is read out of it
     * by the GL, the upload queued rather than copied here */
    {
@@ -4871,7 +4875,7 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                       width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame);
    }
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    gl_sw_fb_pushed(&gl->sw_fb, fm_slot);
    if (fm_slot >= 0)
    {
@@ -7259,7 +7263,9 @@ static bool gl3_texture_lend_ready(void *data, uintptr_t id,
    gl3_t *gl = (gl3_t*)data;
    return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
 }
+#endif
 
+#ifdef HAVE_GL_FRAME_MEM
 /* The threaded wrapper's frame buffers, on the context's thread: a
  * frame pushed from one is uploaded out of it by the GL
  * (gl3_update_cpu_texture). Not for a hardware core, whose frames are
@@ -7900,7 +7906,7 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_show_mouse,
    NULL, /* grab_mouse_toggle */
    gl3_get_current_shader,
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    gl3_get_current_software_framebuffer,
 #else
    NULL, /* get_current_software_framebuffer */
@@ -7943,7 +7949,7 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    gl3_set_frame_format,
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
    gl3_frame_mem_alloc,
    gl3_frame_mem_ready,
    gl3_frame_mem_free

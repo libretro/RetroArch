@@ -48,6 +48,7 @@
 #include "../../../verbosity.h"
 #include "../../../input/input_driver.h"
 #include "../../../tasks/task_content.h"
+#include "../../../gfx/common/gl_common.h"
 #ifdef HAVE_VULKAN
 #include <libretro_vulkan.h>
 #include "../../../gfx/common/vulkan_common.h"
@@ -4117,6 +4118,22 @@ static void lane_zero_copy(void)
 /* The Vulkan swapchain image cap, without the driver's header. */
 #define LENT_LANE_MAX_IMAGES 16
 
+/* The GL drivers keep frame memory, and lend it as the framebuffer,
+ * where buffers can be mapped for good: GL 4.4 or ARB_buffer_storage,
+ * GLES 3 with EXT_buffer_storage, both of which llvmpipe has. There a
+ * lane that finds none fails rather than skips, so a GL that stops
+ * offering it - or a build that compiles it out - shows. Not the
+ * macOS GL, which has neither. */
+static bool driver_must_have_frame_mem(const char *drv)
+{
+#if defined(HAVE_GL_FRAME_MEM) && !defined(__APPLE__)
+   return drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore"));
+#else
+   (void)drv;
+   return false;
+#endif
+}
+
 static void lane_lent_window_paused(void)
 {
    unsigned had = failures;
@@ -4178,6 +4195,8 @@ static void lane_lent_window_paused(void)
     * into: nothing here to test. */
    if (g1 == g0)
    {
+      CHECK(!driver_must_have_frame_mem(drv),
+            "lent-window lane: %s lent no framebuffer", drv);
       fprintf(stderr, "[skip] lent-window lane (driver lent no framebuffer)\n");
       use_fb(0);
       fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
@@ -4390,7 +4409,12 @@ static void lane_frame_mem(void)
       if (thr->frame.mem[i].id)
          driver_mem++;
    if (!driver_mem)
+   {
+      CHECK(!driver_must_have_frame_mem(getenv("HARNESS_VIDEO_DRIVER")),
+            "frame memory lane: %s has no frame memory",
+            getenv("HARNESS_VIDEO_DRIVER"));
       fprintf(stderr, "[skip] frame memory lane (driver has no frame memory)\n");
+   }
    else
    {
       CHECK(thr->frame.mem[thr->frame.slot[0].mem].id
@@ -4885,7 +4909,6 @@ static void lane_upload_batch(void)
 
 #include "../../../gfx/gfx_surface.h"
 #include "../../../input/input_overlay.h"
-#include "../../../gfx/common/gl_common.h"
 #ifdef HAVE_GL_TEXTURE_LEND
 #include <glsym/glsym.h>
 #ifndef GL_BGRA
@@ -5799,10 +5822,13 @@ static void lane_surface_lend(void)
    {
       /* The drivers that lend: there the direct half must have. The
        * GL drivers lend where buffers can be mapped for good (GL 4.4
-       * or ARB_buffer_storage), which llvmpipe has. */
+       * or ARB_buffer_storage), which llvmpipe has, and not in a GLES
+       * build (gl_common.h). */
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
       if (drv && (     !strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")
+#ifdef HAVE_GL_TEXTURE_LEND
                     || !strcmp(drv, "gl")     || !strcmp(drv, "glcore")
+#endif
                     || !strcmp(drv, "metal")))
       {
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
@@ -7911,10 +7937,19 @@ static void lane_surface_planar(void)
    }
    set_threaded_via_setting(false);
    run_frames(2);
-   if (drv && (!strcmp(drv, "vulkan") || !strcmp(drv, "gl")
-            || !strcmp(drv, "glcore")))
+   if (drv && !strcmp(drv, "vulkan"))
       CHECK(gpu && checked, "surface planar lane: %s did not convert "
             "on the GPU", drv);
+   /* Read back through the lend's GL entry points: in a GLES build
+    * only that it converts */
+   if (drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+      CHECK(gpu && checked, "surface planar lane: %s did not convert "
+            "on the GPU", drv);
+#else
+      CHECK(gpu, "surface planar lane: %s did not convert on the GPU",
+            drv);
+#endif
    /* No readback here: that it converts, and every submit landed */
    if (drv && (!strcmp(drv, "d3d11") || !strcmp(drv, "d3d12")
             || !strcmp(drv, "metal")))

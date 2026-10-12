@@ -27,12 +27,26 @@ void gl_finish(void);
 
 void gl_flush(void);
 
+/* Upload memory mapped for good: GL 4.4 or ARB_buffer_storage on the
+ * desktop, GLES 3.0 with EXT_buffer_storage (checked at run time).
+ * Texture lending also sizes the texture it lends for (its level
+ * parameters, GLES 3.1), so it stays on the desktop. */
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)) \
       && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-#include <stddef.h>
-#include <boolean.h>
-
+#define HAVE_GL_FRAME_MEM
 #define HAVE_GL_TEXTURE_LEND
+#elif defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES2) \
+      && !defined(HAVE_PSGL)
+#define HAVE_GL_FRAME_MEM
+#endif
+
+#ifdef HAVE_GL_FRAME_MEM
+#include <stddef.h>
+#include <stdint.h>
+#include <boolean.h>
+#endif
+
+#ifdef HAVE_GL_TEXTURE_LEND
 
 /* A streamed texture's upload memory, lent (video_poke_interface_t
  * texture_lend): two pixel unpack buffers per texture, mapped for good,
@@ -62,12 +76,13 @@ void gl_texture_lend_unbind(gl_texture_lend_t *list, unsigned tex,
 /* With the texture, or with every texture */
 void gl_texture_lend_forget(gl_texture_lend_t **list, unsigned tex);
 void gl_texture_lend_free(gl_texture_lend_t **list);
+#endif
 
+#ifdef HAVE_GL_FRAME_MEM
 /* The threaded wrapper's frame buffers (video_poke_interface_t
  * frame_mem_alloc): pixel unpack buffers mapped for good, each with
  * the fence of the last upload from it. Made on first use; used on the
  * thread that owns the context. */
-#include <stdint.h>
 typedef struct gl_frame_mem gl_frame_mem_t;
 
 void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id);

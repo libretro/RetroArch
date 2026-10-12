@@ -189,6 +189,8 @@ struct gl2
    char device_str[128];
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
+#endif
+#ifdef HAVE_GL_FRAME_MEM
    gl_frame_mem_t *frame_mem;
    gl_sw_fb_t sw_fb;
 #endif

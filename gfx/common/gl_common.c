@@ -58,7 +58,7 @@ void gl_finish(void)
    glFinish();
 }
 
-#ifdef HAVE_GL_TEXTURE_LEND
+#ifdef HAVE_GL_FRAME_MEM
 #include <gfx/gl_capabilities.h>
 
 #ifndef GL_MAP_PERSISTENT_BIT
@@ -91,6 +91,56 @@ void gl_finish(void)
 #define GL_CONDITION_SATISFIED        0x911C
 #endif
 
+#ifndef GL_MAP_READ_BIT
+#define GL_MAP_READ_BIT               0x0001
+#endif
+#ifndef GL_CLIENT_STORAGE_BIT
+#define GL_CLIENT_STORAGE_BIT         0x0200
+#endif
+
+#ifdef HAVE_OPENGLES
+/* EXT_buffer_storage: the same storage, flags and values under the
+ * extension's name */
+#define gl_buffer_storage glBufferStorageEXT
+
+/* GLES 3.0 for the mapping and the fences, a version a GLES 3 build
+ * can be handed less than; EXT_buffer_storage for the persistence */
+static bool gl_buffer_storage_supported(void)
+{
+   const char *ver = (const char*)glGetString(GL_VERSION);
+   if (     !glBufferStorageEXT || !ver
+         || strncmp(ver, "OpenGL ES ", 10)
+         || ver[10] < '3' || ver[10] > '9')
+      return false;
+   return gl_query_extension("EXT_buffer_storage");
+}
+#else
+#define gl_buffer_storage glBufferStorage
+
+/* Persistent mapping is GL 4.4 or ARB_buffer_storage, fences GL 3.2
+ * or ARB_sync */
+static bool gl_buffer_storage_supported(void)
+{
+   const char *ver = (const char*)glGetString(GL_VERSION);
+   int major       = 0, minor = 0;
+   if (!glBufferStorage || !glMapBufferRange || !glFenceSync
+         || !glClientWaitSync)
+      return false;
+   if (     ver && ver[0] >= '0' && ver[0] <= '9' && ver[1] == '.'
+         && ver[2] >= '0' && ver[2] <= '9')
+   {
+      major = ver[0] - '0';
+      minor = ver[2] - '0';
+   }
+   if (major > 4 || (major == 4 && minor >= 4))
+      return true;
+   return    gl_query_extension("ARB_buffer_storage")
+          && (major > 3 || (major == 3 && minor >= 2)
+             || gl_query_extension("ARB_sync"));
+}
+#endif
+
+#ifdef HAVE_GL_TEXTURE_LEND
 #define GL_LEND_SLOTS 2
 
 struct gl_texture_lend
@@ -116,28 +166,6 @@ static gl_texture_lend_t *gl_texture_lend_find(gl_texture_lend_t *list,
    return list;
 }
 
-/* Persistent mapping is GL 4.4 or ARB_buffer_storage, fences GL 3.2
- * or ARB_sync */
-static bool gl_texture_lend_supported(void)
-{
-   const char *ver = (const char*)glGetString(GL_VERSION);
-   int major       = 0, minor = 0;
-   if (!glBufferStorage || !glMapBufferRange || !glFenceSync
-         || !glClientWaitSync)
-      return false;
-   if (     ver && ver[0] >= '0' && ver[0] <= '9' && ver[1] == '.'
-         && ver[2] >= '0' && ver[2] <= '9')
-   {
-      major = ver[0] - '0';
-      minor = ver[2] - '0';
-   }
-   if (major > 4 || (major == 4 && minor >= 4))
-      return true;
-   return    gl_query_extension("ARB_buffer_storage")
-          && (major > 3 || (major == 3 && minor >= 2)
-             || gl_query_extension("ARB_sync"));
-}
-
 static void gl_texture_lend_destroy(gl_texture_lend_t *st)
 {
    unsigned i;
@@ -159,7 +187,7 @@ static gl_texture_lend_t *gl_texture_lend_new(unsigned tex, size_t pitch)
    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT
       | GL_MAP_COHERENT_BIT;
 
-   if (!gl_texture_lend_supported())
+   if (!gl_buffer_storage_supported())
       return NULL;
    glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);
@@ -179,7 +207,7 @@ static gl_texture_lend_t *gl_texture_lend_new(unsigned tex, size_t pitch)
    for (i = 0; i < GL_LEND_SLOTS; i++)
    {
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, st->pbo[i]);
-      glBufferStorage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)st->size,
+      gl_buffer_storage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)st->size,
             NULL, flags);
       st->mapped[i] = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
             (GLsizeiptr)st->size, flags);
@@ -299,12 +327,7 @@ void gl_texture_lend_free(gl_texture_lend_t **list)
    }
 }
 
-#ifndef GL_MAP_READ_BIT
-#define GL_MAP_READ_BIT 0x0001
-#endif
-#ifndef GL_CLIENT_STORAGE_BIT
-#define GL_CLIENT_STORAGE_BIT 0x0200
-#endif
+#endif /* HAVE_GL_TEXTURE_LEND */
 
 #define GL_FRAME_MEM_MAX 12
 
@@ -329,7 +352,7 @@ void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id)
       | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
    GLbitfield store = flags | GL_CLIENT_STORAGE_BIT;
 
-   if (!fm || !size || !gl_texture_lend_supported())
+   if (!fm || !size || !gl_buffer_storage_supported())
       return NULL;
    if (!*fm && !(*fm = (gl_frame_mem_t*)calloc(1, sizeof(**fm))))
       return NULL;
@@ -341,7 +364,7 @@ void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id)
       return NULL;
    glGenBuffers(1, &f->pbo[i]);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, f->pbo[i]);
-   glBufferStorage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)size, NULL, store);
+   gl_buffer_storage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)size, NULL, store);
    f->mapped[i] = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
          (GLsizeiptr)size, flags);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
