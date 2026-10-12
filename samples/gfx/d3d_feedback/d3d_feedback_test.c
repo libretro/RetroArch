@@ -55,28 +55,36 @@ struct video_shader_pass
    int feedback, mipmap, filter, wrap;
 };
 struct video_shader { unsigned passes; struct video_shader_pass pass[3]; };
-struct pass_data
+typedef struct pass_data
 {
    d3d11_texture_t rt, feedback;
    struct { unsigned format; } semantics;
    struct { float TopLeftX, TopLeftY, Width, Height, MinDepth, MaxDepth; } viewport;
    struct { unsigned left, top, right, bottom; } scissorRect;
    int sampler;
-};
+} d3d11_pass_t;
+typedef d3d11_pass_t d3d12_pass_t;
+typedef struct chain
+{
+   struct video_shader *shader_preset;
+   d3d11_pass_t pass[3];
+   int mvp_last_pass;
+} d3d11_chain_t;
+typedef d3d11_chain_t d3d12_filter_chain_t;
+struct video_viewport { unsigned dims, pos; };
 struct context;
 struct context_vtable
 {
    void (*ClearRenderTargetView)(struct context *, struct resource *, const float *, ...);
 };
 struct context { struct context_vtable *lpVtbl; };
+typedef struct context *D3D12GraphicsCommandList;
 typedef struct video
 {
-   struct video_shader *shader_preset;
-   struct pass_data pass[3];
-   struct { unsigned dims, pos; } vp;
    struct { int srv_heap; } desc;
    struct { int mvp; } ubo_values;
-   int mvp, mvp_last_pass, samplers[3][3];
+   struct { D3D12GraphicsCommandList cmd; } queue;
+   int mvp, samplers[3][3];
    unsigned flags;
    void *device;
    struct context *context;
@@ -152,69 +160,72 @@ static void run_case(int api, unsigned passes, unsigned feedback_pass)
    struct context context;
    struct video_shader preset;
    struct video v;
+   struct video_viewport vp;
+   d3d11_chain_t c;
    unsigned resize, frame, i, width, height;
    memset(&preset, 0, sizeof(preset));
    memset(&v, 0, sizeof(v));
+   memset(&c, 0, sizeof(c));
    context.lpVtbl = &vtable;
    preset.passes = passes;
    if (feedback_pass < passes)
       preset.pass[feedback_pass].feedback = 1;
-   v.shader_preset = &preset;
+   c.shader_preset = &preset;
    v.context = &context;
+   v.queue.cmd = &context;
 
    for (resize = 0; resize < 2; resize++)
    {
       width = 80 + 40 * resize;
       height = 60 + 30 * resize;
-      v.vp.dims = width | (height << 16);
-      v.vp.pos = 7 | (9 << 16);
+      vp.dims = width | (height << 16);
+      vp.pos = 7 | (9 << 16);
       v.flags = 1;
       if (passes > 1)
          preset.pass[1].mipmap = !resize;
       if (api == 11)
-         d3d11_init_render_targets(&v, width, height);
-      else
       {
-         d3d12_init_render_targets(&v, width, height);
-         prepare_d3d12(&v);
+         d3d11_chain_init_render_targets(&v, &c, width, height, vp.dims);
+         CHECK(!v.flags);
       }
-      CHECK(!v.flags);
+      else
+         d3d12_chain_init_render_targets(&v, &c, width, height, &vp);
       for (i = 0; i < passes; i++)
       {
-         CHECK((v.pass[i].rt.handle != NULL)
+         CHECK((c.pass[i].rt.handle != NULL)
                == (i + 1 < passes || i == feedback_pass));
-         CHECK((v.pass[i].feedback.handle != NULL) == (i == feedback_pass));
-         if (api == 12 && v.pass[i].rt.handle)
+         CHECK((c.pass[i].feedback.handle != NULL) == (i == feedback_pass));
+         if (api == 12 && c.pass[i].rt.handle)
          {
             unsigned requested = i + 1 < passes && preset.pass[i + 1].mipmap
                ? UINT16_MAX : 1;
-            CHECK(v.pass[i].rt.desc.MipLevels == requested);
-            if (v.pass[i].feedback.handle)
-               CHECK(v.pass[i].feedback.desc.MipLevels == requested);
+            CHECK(c.pass[i].rt.desc.MipLevels == requested);
+            if (c.pass[i].feedback.handle)
+               CHECK(c.pass[i].feedback.desc.MipLevels == requested);
          }
       }
       if (feedback_pass >= passes)
          continue;
-      CHECK(v.pass[feedback_pass].feedback.desc.Width == width);
-      CHECK(v.pass[feedback_pass].feedback.desc.Height == height);
+      CHECK(c.pass[feedback_pass].feedback.desc.Width == width);
+      CHECK(c.pass[feedback_pass].feedback.desc.Height == height);
       if (api == 12)
       {
-         CHECK(v.pass[feedback_pass].viewport.TopLeftX == 0.0f);
-         CHECK(v.pass[feedback_pass].viewport.TopLeftY == 0.0f);
-         CHECK(v.pass[feedback_pass].scissorRect.left == 0);
-         CHECK(v.pass[feedback_pass].scissorRect.top == 0);
-         CHECK(v.pass[feedback_pass].scissorRect.right == width);
-         CHECK(v.pass[feedback_pass].scissorRect.bottom == height);
+         CHECK(c.pass[feedback_pass].viewport.TopLeftX == 0.0f);
+         CHECK(c.pass[feedback_pass].viewport.TopLeftY == 0.0f);
+         CHECK(c.pass[feedback_pass].scissorRect.left == 0);
+         CHECK(c.pass[feedback_pass].scissorRect.top == 0);
+         CHECK(c.pass[feedback_pass].scissorRect.right == width);
+         CHECK(c.pass[feedback_pass].scissorRect.bottom == height);
       }
-      if (!v.pass[feedback_pass].feedback.handle || !v.pass[feedback_pass].rt.handle)
+      if (!c.pass[feedback_pass].feedback.handle || !c.pass[feedback_pass].rt.handle)
          continue;
-      CHECK(v.pass[feedback_pass].rt.handle->pixel == 0);
-      CHECK(v.pass[feedback_pass].feedback.handle->pixel == 0);
+      CHECK(c.pass[feedback_pass].rt.handle->pixel == 0);
+      CHECK(c.pass[feedback_pass].feedback.handle->pixel == 0);
       if (api == 12)
       {
-         CHECK(v.pass[feedback_pass].rt.handle->state
+         CHECK(c.pass[feedback_pass].rt.handle->state
                == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-         CHECK(v.pass[feedback_pass].feedback.handle->state
+         CHECK(c.pass[feedback_pass].feedback.handle->state
                == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       }
 
@@ -222,22 +233,22 @@ static void run_case(int api, unsigned passes, unsigned feedback_pass)
       {
          struct resource *feedback;
          if (api == 11)
-            swap_d3d11(&v);
+            swap_d3d11(&c);
          else
-            swap_d3d12(&v);
-         feedback = v.pass[feedback_pass].feedback.handle;
+            swap_d3d12(&c);
+         feedback = c.pass[feedback_pass].feedback.handle;
          /* Sample before any pass is drawn, including a future pass. */
          CHECK(feedback->pixel == frame);
          if (api == 12)
          {
             CHECK(feedback->state == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-            transition(&context, v.pass[feedback_pass].rt.handle,
+            transition(&context, c.pass[feedback_pass].rt.handle,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                   D3D12_RESOURCE_STATE_RENDER_TARGET);
          }
-         v.pass[feedback_pass].rt.handle->pixel = frame + 1;
+         c.pass[feedback_pass].rt.handle->pixel = frame + 1;
          if (api == 12)
-            transition(&context, v.pass[feedback_pass].rt.handle,
+            transition(&context, c.pass[feedback_pass].rt.handle,
                   D3D12_RESOURCE_STATE_RENDER_TARGET,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       }
