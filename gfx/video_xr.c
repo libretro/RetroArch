@@ -185,6 +185,28 @@ static void video_xr_put(const video_xr_params_t *p,
    out->position.z  = p->anchor.position.z + world.z;
 }
 
+static void video_xr_screen_rotate(const video_screen_xr_t *screen,
+      video_xr_pose_t *pose)
+{
+   video_xr_pose_t local;
+   double yaw   = screen->yaw * VIDEO_XR_PI / 360.0;
+   double pitch = screen->pitch * VIDEO_XR_PI / 360.0;
+   double roll  = screen->roll * VIDEO_XR_PI / 360.0;
+   double cy    = cos(yaw);
+   double sy    = sin(yaw);
+   double cp    = cos(pitch);
+   double sp    = sin(pitch);
+   double cr    = cos(roll);
+   double sr    = sin(roll);
+
+   video_xr_pose_identity(&local);
+   local.orientation.x = (float)(cy * sp * cr + sy * cp * sr);
+   local.orientation.y = (float)(sy * cp * cr - cy * sp * sr);
+   local.orientation.z = (float)(cy * cp * sr - sy * sp * cr);
+   local.orientation.w = (float)(cy * cp * cr + sy * sp * sr);
+   video_xr_compose(pose, &local, pose);
+}
+
 static void video_xr_add(video_xr_quad_set_t *out, unsigned kind,
       unsigned eye, unsigned screen, unsigned slot, unsigned layer,
       const video_xr_pose_t *pose, float width, float height)
@@ -207,11 +229,11 @@ static void video_xr_add(video_xr_quad_set_t *out, unsigned kind,
  * smoothly; a preset's passes get at least the source's pixels. Without
  * a density, the source's size either way. */
 static unsigned video_xr_screen_dims(const video_xr_params_t *p,
-      float width, float height, unsigned native_dims)
+      float width, float height, float distance, unsigned native_dims)
 {
    if (p->stock && p->px_per_rad > 0.0f)
       native_dims = 0;
-   return video_xr_image_dims(width, height, p->distance, p->px_per_rad,
+   return video_xr_image_dims(width, height, distance, p->px_per_rad,
          native_dims, p->max_dim);
 }
 
@@ -249,6 +271,8 @@ static void video_xr_place_screens(const video_xr_params_t *p,
    for (s = 0; s < map->num_screens; s++)
    {
       video_xr_pose_t pose;
+      video_screen_xr_t screen;
+      float distance        = p->distance;
       int left              = video_views_find(map, s,
             RETRO_VIDEO_VIEW_EYE_LEFT);
       int right             = video_views_find(map, s,
@@ -257,6 +281,7 @@ static void video_xr_place_screens(const video_xr_params_t *p,
       double h              = disp_h[s] * k;
       double x              = 0.0;
       double y              = 0.0;
+      double z              = -p->distance;
       video_xr_slot_t *slot = &out->slots[s];
 
       if (s == 0)
@@ -273,9 +298,29 @@ static void video_xr_place_screens(const video_xr_params_t *p,
       }
       if (p->skip_screens & (1u << s))
          continue;
-      video_xr_put(p, x, y, -p->distance, &pose);
+      if (p->screens)
+      {
+         screen = p->screens[s];
+         video_views_xr_normalize(&screen);
+         if (!screen.visible)
+            continue;
+         x += screen.x;
+         y += screen.y;
+         z += screen.z;
+         w *= screen.scale;
+         h *= screen.scale;
+         if (screen.x != 0.0f || screen.y != 0.0f || screen.z != 0.0f)
+         {
+            double d = sqrt(x * x + y * y + z * z);
+            distance = (float)(d < 0.05 ? 0.05 : d);
+         }
+      }
+      video_xr_put(p, x, y, z, &pose);
+      if (p->screens && (screen.yaw != 0.0f
+               || screen.pitch != 0.0f || screen.roll != 0.0f))
+         video_xr_screen_rotate(&screen, &pose);
 
-      slot->dims    = video_xr_screen_dims(p, (float)w, (float)h,
+      slot->dims    = video_xr_screen_dims(p, (float)w, (float)h, distance,
             VIDEO_SCALE_PACK((unsigned)(disp_w[s] + 0.5),
                (unsigned)(disp_h[s] + 0.5)));
       slot->view[0] = left;
@@ -347,7 +392,7 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
       h = p->width / aspect;
       video_xr_put(p, 0.0, 0.0, -p->distance, &pose);
       out->slots[0].dims   = video_xr_screen_dims(p, p->width, h,
-            p->frame_dims);
+            p->distance, p->frame_dims);
       out->slots[0].layers = 1;
       video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
             : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,

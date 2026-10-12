@@ -108,6 +108,21 @@ typedef struct video_views_map
    unsigned num_screens;
 } video_views_map_t;
 
+typedef struct video_screen_xr
+{
+   float x;
+   float y;
+   float z;
+   float yaw;
+   float pitch;
+   float roll;
+   float scale;
+   bool visible;
+} video_screen_xr_t;
+
+void video_views_xr_reset(video_screen_xr_t *screens, unsigned count);
+void video_views_xr_normalize(video_screen_xr_t *screen);
+
 bool video_views_validate(const struct retro_video_view *views,
       unsigned num_views, video_views_map_t *out);
 

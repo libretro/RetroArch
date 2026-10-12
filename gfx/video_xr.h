@@ -113,6 +113,8 @@ typedef struct video_xr_params
    /* The frame's views; NULL or empty for one quad of the whole
     * frame, shown at frame_aspect (0: frame_dims' own). */
    const video_views_map_t *map;
+   /* Floating-screen adjustments by screen ID; NULL uses defaults. */
+   const video_screen_xr_t *screens;
    float frame_aspect;
    unsigned frame_dims;
    /* Screen 0 is centred straight ahead of this position and yaw. */

@@ -93,6 +93,222 @@ static int dims_is(unsigned dims, unsigned w, unsigned h)
    return VIDEO_SCALE_W(dims) == w && VIDEO_SCALE_H(dims) == h;
 }
 
+static void test_screen_defaults(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t base, set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   unsigned layout, rotation;
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(800, 480);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   for (layout = 0; layout < VIDEO_SCREEN_LAYOUT_LAST; layout++)
+      for (rotation = 0; rotation < 4; rotation++)
+      {
+         p.screen_layout = layout;
+         p.rotation = rotation;
+         p.screens = NULL;
+         video_xr_place(&p, &base);
+         p.screens = screens;
+         video_xr_place(&p, &set);
+         CHECK(memcmp(&base, &set, sizeof(set)) == 0);
+      }
+   screens[0].visible = false;
+   screens[0].x = 2.0f;
+   p.map = NULL;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 2);
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(NEAR(set.quads[0].width, 1.6f));
+}
+
+static void test_screen_transform(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_xr_vec3_t axis, result, origin, dir;
+   float u, v, t;
+   int16_t fx, fy;
+   map_3ds(&map);
+   params_init(&p, &map);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   p.screens = screens;
+   screens[1].scale = 0.5f;
+   screens[1].x = 0.25f;
+   screens[1].z = 0.4f;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 3);
+   CHECK(NEAR(set.quads[2].width, 0.64f));
+   CHECK(NEAR(set.quads[2].height, 0.48f));
+   CHECK(pos_is(&set.quads[2], 0.25, -0.992, -1.4));
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(set.slots[0].view[0] == 0 && set.slots[0].view[1] == 1);
+   CHECK(pos_is(&set.quads[1], 0.0, 0.0, -1.8));
+   CHECK(NEAR(set.quads[0].width, 1.6) && NEAR(set.quads[1].height, 0.96));
+   axis.x = axis.y = 0.0f;
+   axis.z = 1.0f;
+   screens[1].yaw = 90.0f;
+   video_xr_place(&p, &set);
+   video_xr_rotate(&set.quads[2].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 1.0) && NEAR(result.y, 0.0) && NEAR(result.z, 0.0));
+   origin.x = 1.25f;
+   origin.y = -0.87248f;
+   origin.z = -1.24064f;
+   dir.x = -1.0f;
+   dir.y = dir.z = 0.0f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, false,
+            &origin, &dir, &u, &v, &t) == 2);
+   CHECK(NEAR(u, 0.251) && NEAR(v, 0.251) && NEAR(t, 1.0));
+   CHECK(video_xr_quad_to_frame(&set.quads[2], u, v, &map,
+            VIDEO_SCALE_PACK(800, 480), &fx, &fy));
+   CHECK(fx == -6522 && fy == 8276);
+   screens[1].yaw = 0.0f;
+   screens[1].pitch = 90.0f;
+   video_xr_place(&p, &set);
+   video_xr_rotate(&set.quads[2].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 0.0) && NEAR(result.y, -1.0) && NEAR(result.z, 0.0));
+   screens[1].pitch = 0.0f;
+   screens[1].roll = 90.0f;
+   axis.x = 1.0f;
+   axis.z = 0.0f;
+   video_xr_place(&p, &set);
+   video_xr_rotate(&set.quads[2].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 0.0) && NEAR(result.y, 1.0) && NEAR(result.z, 0.0));
+   screens[1].yaw = screens[1].pitch = 90.0f;
+   video_xr_place(&p, &set);
+   video_xr_rotate(&set.quads[2].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 1.0) && NEAR(result.y, 0.0) && NEAR(result.z, 0.0));
+   screens[1].pitch = screens[1].roll = 0.0f;
+   p.anchor.orientation.y = (float)sin(M_PI / 4.0);
+   p.anchor.orientation.w = (float)cos(M_PI / 4.0);
+   p.anchor.position.x = 3.0f;
+   p.anchor.position.y = 2.0f;
+   p.anchor.position.z = 1.0f;
+   video_xr_place(&p, &set);
+   CHECK(pos_is(&set.quads[2], 1.6, 1.008, 0.75));
+   axis.x = 0.0f;
+   axis.z = 1.0f;
+   video_xr_rotate(&set.quads[2].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 0.0) && NEAR(result.y, 0.0) && NEAR(result.z, -1.0));
+}
+
+static void test_screen_visibility(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   video_viewport_t vp;
+   map_3ds(&map);
+   params_init(&p, &map);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   p.screens = screens;
+   p.ui_dims = VIDEO_SCALE_PACK(800, 480);
+   screens[1].visible = false;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 3);
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(pos_is(&set.quads[1], 0.0, 0.0, -1.8));
+   CHECK(set.quads[2].kind == VIDEO_XR_QUAD_MENU);
+   CHECK(pos_is(&set.quads[2], 0.0, 0.0, -1.7));
+   CHECK(set.slots[1].dims == 0 && set.slots[1].layers == 0);
+   CHECK(set.slots[1].view[0] == -1 && set.slots[1].view[1] == -1);
+   screens[0].visible = false;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 1 && set.quads[0].kind == VIDEO_XR_QUAD_MENU);
+   screens[1].visible = true;
+   screens[0].scale = 10.0f;
+   screens[0].y = 5.0f;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 2 && set.quads[0].screen == 1);
+   CHECK(pos_is(&set.quads[0], 0.0, -0.992, -1.8));
+   screens[0].visible = true;
+   p.skip_screens = 1u;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 2 && set.quads[0].screen == 1);
+   CHECK(set.slots[0].dims == 0);
+   CHECK(pos_is(&set.quads[0], 0.0, -0.992, -1.8));
+   memset(&vp, 0, sizeof(vp));
+   vp.dims = vp.full_dims = VIDEO_SCALE_PACK(800, 480);
+   screens[0].visible = screens[1].visible = false;
+   video_xr_place_window(&p, true, false, &vp, vp.dims, &set, rects);
+   CHECK(set.num_quads == 2);
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(NEAR(set.quads[0].width, 1.6));
+}
+
+static void test_screen_identity(void)
+{
+   video_views_map_t map;
+   struct retro_video_view v[3];
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   map_3ds(&map);
+   v[0] = map.views[2];
+   v[1] = map.views[1];
+   v[2] = map.views[0];
+   CHECK(video_views_validate(v, 3, &map));
+   params_init(&p, &map);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   screens[1].x = 0.25f;
+   screens[1].scale = 0.5f;
+   p.screens = screens;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 3 && set.quads[2].screen == 1);
+   CHECK(pos_is(&set.quads[2], 0.25, -0.992, -1.8));
+   CHECK(NEAR(set.quads[2].width, 0.64));
+   CHECK(set.slots[0].view[0] == 2 && set.slots[0].view[1] == 1);
+   CHECK(set.slots[1].view[0] == 0);
+}
+
+static void test_screen_density(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   map_3ds(&map);
+   params_init(&p, &map);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   p.screens = screens;
+   screens[1].scale = 0.5f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 352, 264));
+   screens[1].x = 0.25f;
+   screens[1].z = 0.4f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 365, 274));
+   p.anchor.position.x = 10.0f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 365, 274));
+   screens[1].scale = 0.1f;
+   screens[1].x = screens[1].z = 0.0f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 320, 240));
+   p.stock = true;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 72, 54));
+   p.px_per_rad = 0.0f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 320, 240));
+   p.stock = false;
+   p.px_per_rad = 1000.0f;
+   screens[1].scale = 1.0f;
+   screens[1].y = 0.992f;
+   screens[1].z = 1.8f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 2986, 2240));
+   p.max_dim = 500;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[1].dims, 500, 375));
+}
+
 static void test_image_dims(void)
 {
    /* 1.6 m at 1.8 m spans 0.8364 rad: 837 px at 1000 px/rad. */
@@ -1159,6 +1375,11 @@ static void test_request_rate(void)
 
 int main(void)
 {
+   test_screen_defaults();
+   test_screen_transform();
+   test_screen_visibility();
+   test_screen_identity();
+   test_screen_density();
    test_image_dims();
    test_shrinks();
    test_place_3ds();
