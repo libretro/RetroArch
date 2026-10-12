@@ -22,7 +22,8 @@
 
 /* ratrac3p against a reference decoder's output for a stereo stream
  * (tonal components, gain points in both channels, explicit and
- * all-band swap and negate masks) and a mono one. Then the s16
+ * all-band swap and negate masks), a mono one and a synthetic one for
+ * the second channel's tonal coding. Then the s16
  * output, the fmt chunk, bad frames, reset, and garbage. */
 
 #include <stdio.h>
@@ -65,12 +66,11 @@ static unsigned n_of(unsigned ch)
    return ch == 2 ? STEREO_N : MONO_N;
 }
 
-static double compare(unsigned ch, const float *ref, unsigned nref,
-      const char *name)
+static double compare(unsigned ch, const uint8_t *s, unsigned ba,
+      unsigned n, const float *ref, unsigned nref, const char *name)
 {
-   static float   pcm[STEREO_N * RATRAC3P_SAMPLES * 2];
-   unsigned       ba = ba_of(ch), n = n_of(ch), f, i;
-   const uint8_t *s  = stream_of(ch);
+   static float   pcm[GHA_N * RATRAC3P_SAMPLES * 2];
+   unsigned       f, i;
    ratrac3p_t    *d  = ratrac3p_new(ch, ba);
    double         err = 0.0, sig = 0.0, worst = 0.0;
 
@@ -100,12 +100,15 @@ static double compare(unsigned ch, const float *ref, unsigned nref,
 
 static void lane_reference(void)
 {
-   double a = compare(2, &ref_st[0][0],
+   double a = compare(2, stream_st, STEREO_BA, STEREO_N, &ref_st[0][0],
          sizeof(ref_st) / sizeof(ref_st[0]), "stereo");
-   double b = compare(1, &ref_mo[0][0],
+   double b = compare(1, stream_mo, MONO_BA, MONO_N, &ref_mo[0][0],
          sizeof(ref_mo) / sizeof(ref_mo[0]), "mono");
-   printf("stereo %.1f dB, mono %.1f dB against the reference\n", a, b);
-   CHECK(a > 100.0 && b > 100.0, "reference match");
+   double c = compare(2, stream_gha, GHA_BA, GHA_N, &ref_gha[0][0],
+         sizeof(ref_gha) / sizeof(ref_gha[0]), "tonal");
+   printf("stereo %.1f dB, mono %.1f dB, tonal %.1f dB against the reference\n",
+         a, b, c);
+   CHECK(a > 100.0 && b > 100.0 && c > 100.0, "reference match");
 }
 
 /* s16 is the float output times 32768, rounded and clamped */

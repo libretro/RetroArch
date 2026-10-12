@@ -1157,7 +1157,11 @@ static bool r3p_gain_slave(r3p_br_t *b, r3p_gain_t *g, const r3p_gain_t *m)
          unsigned v;
          if (mode == 2 && !k)
             flag = g->np[s] > M_NP(s) ? 1 : r3p_bit(b);
-         if (mode == 1 && (M_HAS(s, k) || !k))
+         if (mode == 1 && M_HAS(s, k) && k
+               && g->lev[s][k] > g->lev[s][k - 1])
+            /* where the level rises: the master's, or ascending */
+            v = r3p_bit(b) ? r3p_loc_d(b, g->loc[s][k - 1]) : m->loc[s][k];
+         else if (mode == 1 && (M_HAS(s, k) || !k))
             v = (M_LOC(s, k) + R3P_VLC(b, sloc1, SLOC1)) & 31;
          else if ((mode == 3 || (mode == 2 && !flag)) && M_HAS(s, k))
             v = m->loc[s][k];
@@ -1251,6 +1255,22 @@ static void r3p_tone_freqs(r3p_br_t *b, r3p_tone_t *t, unsigned n)
       }
 }
 
+/* A count's delta to the first channel's:
+ * 0, 10, 110, 1110, 1111xx = 0, 1, -1, 2, then 3, -4, -3, -2 */
+static int r3p_count_delta(r3p_br_t *b)
+{
+   static const int8_t tail[4] = { 3, -4, -3, -2 };
+   if (!r3p_bit(b))
+      return 0;
+   if (!r3p_bit(b))
+      return 1;
+   if (!r3p_bit(b))
+      return -1;
+   if (!r3p_bit(b))
+      return 2;
+   return tail[r3p_get(b, 2)];
+}
+
 /* Amplitudes, then phases, of tones t0..t1 */
 static void r3p_tone_amps(r3p_br_t *b, r3p_unit_t *u, unsigned t0,
       unsigned t1)
@@ -1285,7 +1305,7 @@ static bool r3p_tones_mono(r3p_br_t *b, r3p_unit_t *u, const uint8_t *list,
 static bool r3p_tones_second(r3p_br_t *b, const r3p_unit_t *m,
       r3p_unit_t *u, const uint8_t *list, unsigned n)
 {
-   unsigned i, k, lead, rel;
+   unsigned i, k, lead, rel, same;
 
    if (r3p_bit(b))
       for (i = 0; i < n; i++)
@@ -1297,10 +1317,28 @@ static bool r3p_tones_second(r3p_br_t *b, const r3p_unit_t *m,
       }
    else
       r3p_tone_envelopes(b, u, list, n);
-   if (r3p_bit(b))
-      return false;            /* counts in another coding: unknown */
-   if (!r3p_tone_counts(b, u, list, n))
-      return false;
+   if (!r3p_bit(b))
+   {
+      if (!r3p_tone_counts(b, u, list, n))
+         return false;
+   }
+   else
+   {
+      /* the first channel's counts, all of them or each with a delta */
+      unsigned same = r3p_bit(b), total = u->ntones;
+      for (i = 0; i < n; i++)
+      {
+         unsigned c = m->tband[list[i]].count;
+         if (!same)
+            c = (c + (unsigned)r3p_count_delta(b)) & 15;
+         u->tband[list[i]].first = (uint8_t)total;
+         u->tband[list[i]].count = (uint8_t)c;
+         total                  += c;
+         if (total > R3P_MAX_TONES)
+            return false;
+      }
+      u->ntones = (uint8_t)total;
+   }
    lead = r3p_bit(b);
    for (i = 0; i < n; i++)
    {
@@ -1314,11 +1352,11 @@ static bool r3p_tones_second(r3p_br_t *b, const r3p_unit_t *m,
          r3p_tone_freqs(b, t, tb->count);
          continue;
       }
-      if (tb->count > mb->count)
-         return false;
+      /* tones past the first channel's take its band's last one, or 0 */
       for (k = 0; k < tb->count; k++)
       {
-         unsigned f = m->tone[mb->first + k].freq;
+         unsigned f = !mb->count ? 0
+            : m->tone[mb->first + (k < mb->count ? k : mb->count - 1u)].freq;
          if (r3p_bit(b))
             f += (unsigned)(int8_t)R3P_VLC(b, ghafd, GHAFD);
          t[k].freq = (uint16_t)(f & 1023);
@@ -1330,17 +1368,33 @@ static bool r3p_tones_second(r3p_br_t *b, const r3p_unit_t *m,
       r3p_tone_amps(b, u, 0, u->ntones);
       return true;
    }
-   if (r3p_bit(b))
-      return false;            /* relative amplitudes, other table: unknown */
+   /* the first channel's amplitudes, each with a delta or as they are:
+    * of its tone nearest in frequency, within 7, else of the one in the
+    * same place; tones past its own start from 34 or 32 */
+   same = r3p_bit(b);
    for (i = 0; i < n; i++)
    {
       const r3p_tband_t *mb = &m->tband[list[i]];
       const r3p_tband_t *tb = &u->tband[list[i]];
-      if (tb->count > mb->count)
-         return false;
       for (k = 0; k < tb->count; k++)
-         u->tone[tb->first + k].amp = (uint8_t)((m->tone[mb->first + k].amp
-                  + R3P_VLC(b, ghaad, GHAAD)) & 63);
+      {
+         const r3p_tone_t *mt = m->tone + mb->first;
+         unsigned f = u->tone[tb->first + k].freq, a, j, best = 8;
+         int      at = k < mb->count ? (int)k : -1;
+         for (j = 0; j < mb->count; j++)
+         {
+            unsigned dist = f > mt[j].freq ? f - mt[j].freq : mt[j].freq - f;
+            if (dist < best)
+            {
+               best = dist;
+               at   = (int)j;
+            }
+         }
+         a = at >= 0 ? mt[at].amp : same ? 32u : 34u;
+         if (!same)
+            a += (unsigned)R3P_VLC(b, ghaad, GHAAD);
+         u->tone[tb->first + k].amp = (uint8_t)(a & 63);
+      }
    }
    for (k = 0; k < u->ntones; k++)
       u->tone[k].phase = (uint8_t)r3p_get(b, 5);
@@ -1470,16 +1524,24 @@ static bool r3p_parse_block(r3p_br_t *b, r3p_block_t *blk, r3p_unit_t *u,
    blk->nb  = r3p_qu_start[nqu - 1] / R3P_BAND_LEN + 1;
    blk->nbf = r3p_qu_start[nqu - 1] / R3P_BAND_LEN + 1;
 
-   for (c = 0; c < blk->chans; c++)
+   /* with nothing coded, no scale factors, tables or spectra either */
+   for (c = 0; blk->nu && c < blk->chans; c++)
       if (!(c ? r3p_sf_slave(b, &u[1], u[0].sf, blk->nu)
               : r3p_sf_master(b, &u[0], blk->nu)))
          return false;
-   for (c = 0; c < blk->chans; c++)
+   for (c = 0; blk->nu && c < blk->chans; c++)
       if (!r3p_ct(b, blk, &u[c], c ? &u[0] : NULL))
          return false;
    for (c = 0; c < blk->chans; c++)
-      if (!r3p_spectra(b, blk, &u[c]))
+   {
+      if (!blk->nu)
+      {
+         memset(u[c].q, 0, sizeof(u[c].q));
+         memset(u[c].comp, 15, sizeof(u[c].comp));
+      }
+      else if (!r3p_spectra(b, blk, &u[c]))
          return false;
+   }
 
    memset(blk->swap, 0, sizeof(blk->swap));
    memset(blk->neg, 0, sizeof(blk->neg));
@@ -1819,7 +1881,7 @@ static void r3p_tone_add(const ratrac3p_t *d, const r3p_tone_t *t,
  * up to their stop point unless this frame's carry on into the region.
  * This frame's rise under it, unless they start in their own region. */
 static void r3p_tones_band(const ratrac3p_t *d, const r3p_unit_t *u,
-      r3p_chan_t *c, unsigned band, unsigned count, float *out)
+      r3p_chan_t *c, unsigned band, bool coded, unsigned count, float *out)
 {
    r3p_tenv_t *env = &c->tenv[band];
    unsigned    k, n, pn = c->ptband[band].count;
@@ -1843,8 +1905,9 @@ static void r3p_tones_band(const ratrac3p_t *d, const r3p_unit_t *u,
          r3p_tone_add(d, &u->tone[u->tband[band].first + k], 0, wt, out);
    }
 
-   /* this frame's own region gets this frame's envelope */
-   if (count)
+   /* this frame's own region gets this frame's envelope, even with
+    * no tones in the band */
+   if (coded)
    {
       /* tones that last frame stopped stay silent in this frame's own
        * region unless they start again */
@@ -1995,7 +2058,7 @@ static void r3p_synth(ratrac3p_t *d, const r3p_block_t *blk,
          c->gflat[b] = (uint8_t)flat;
          c->shape[b] = u->shape[b];
 
-         r3p_tones_band(d, u, c, b,
+         r3p_tones_band(d, u, c, b, b < u->tone_bands && b < blk->nb,
                b < u->tone_bands && b < blk->nb ? u->tband[b].count : 0, s);
       }
    }
