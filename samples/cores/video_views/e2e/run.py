@@ -495,6 +495,21 @@ def expected_status(driver, settings):
     return (1, 0 if settings.get('video_stereo_mode', '0') == '0' else 1)
 
 
+def wait_for_views(p, d, timeout=60):
+    """Wait for a Wine launch to reach the core before timing the case."""
+    deadline = time.monotonic() + timeout
+    while p.poll() is None:
+        for name in ('run.log', 'retroarch.log'):
+            path = os.path.join(d, name)
+            if os.path.exists(path):
+                with open(path, errors='replace') as f:
+                    if STATUS_RE.search(f.read()):
+                        return
+        if time.monotonic() >= deadline:
+            return
+        time.sleep(0.1)
+
+
 def status_errors(d, driver, settings):
     """Check the last views status the core logged."""
     found = None
@@ -739,6 +754,8 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
                          env=env, start_new_session=True)
     shot = None
     try:
+        if WINE:
+            wait_for_views(p, d)
         settle = time.time() + 5
         while time.time() < settle:
             time.sleep(0.5)
