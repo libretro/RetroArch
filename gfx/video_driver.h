@@ -962,6 +962,11 @@ typedef struct video_frame_import
    unsigned dims;
    unsigned layout;
    unsigned yuv;           /* IMAGE_YUV_FLAG_* */
+   /* The producer's, for a consumer that will not have the frame read
+    * after all: signals @done in the driver's place. The driver never
+    * calls it. NULL: nothing to do. */
+   void (*abandon)(void *owner, uint64_t done, uint64_t done_value);
+   void *owner;
 } video_frame_import_t;
 
 typedef struct video_poke_interface

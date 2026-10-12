@@ -553,8 +553,10 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       cb.surface = gfx_thumbnail_anim_surface;
       cb.shown   = gfx_thumbnail_anim_shown;
       cb.feed    = thumbnail->anim_sess ? gfx_thumbnail_anim_feed : NULL;
+      /* frames decoded on the GPU where the stream and driver can */
       if (!(thumbnail->anim_player = gfx_surface_player_new(stream, type,
-            loop_count, &thumbnail->anim_surface, &cb, 0)))
+            loop_count, &thumbnail->anim_surface, &cb,
+            GFX_SURFACE_PLAYER_GPU)))
       {
          gfx_thumbnail_anim_close(thumbnail);
          return false;
@@ -759,21 +761,24 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
 }
 
 /* The thumbnail's surface for a @dims animation with @num_slots
- * producer slots in @pixfmt, or with none the still its images go to,
- * made on first use. A surface of another shape - a different
- * animation on a thumbnail that was not reset - is replaced; its
- * texture goes with it, so it is only asked for when a frame is about
- * to be shown. */
+ * producer slots in @pixfmt, or with none the still its images go to
+ * - or, in NV12, the imported surface GPU frames go to - made on first
+ * use. A surface of another shape - a different animation on a
+ * thumbnail that was not reset - is replaced; its texture goes with
+ * it, so it is only asked for when a frame is about to be shown. */
 static gfx_surface_t *gfx_thumbnail_anim_surface(void *user,
       unsigned dims, unsigned num_slots, uint32_t pixfmt)
 {
    gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
    gfx_surface_t *s           = (gfx_surface_t*)thumbnail->anim_surface;
+   bool import                = !num_slots && pixfmt == IMAGE_PIXFMT_NV12;
    if (     s
          && (     (num_slots && s->dims != dims)
                || s->num_slots < num_slots
                || (!num_slots && s->num_slots)
-               || (num_slots && s->pixfmt != pixfmt)))
+               || (num_slots && s->pixfmt != pixfmt)
+               || (s->imported ? 1 : 0) != (import ? 1 : 0)
+               || (import && s->dims != dims)))
    {
       thumbnail->texture = 0;
       gfx_surface_free(s);
@@ -785,7 +790,10 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(void *user,
       /* Animated thumbnails update every frame; always plain linear
        * filtering here, so no per-frame mip-map generation regardless
        * of the menu_texture_mipmapping setting. */
-      if (num_slots)
+      if (import)
+         s = gfx_surface_new_import(dims, TEXTURE_FILTER_LINEAR,
+               gfx_thumbnail_anim_slot_release, thumbnail);
+      else if (num_slots)
          s = gfx_surface_new(dims, num_slots, pixfmt,
                TEXTURE_FILTER_LINEAR,
                gfx_thumbnail_anim_slot_release, thumbnail);

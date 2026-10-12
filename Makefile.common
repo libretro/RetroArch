@@ -1776,6 +1776,11 @@ ifeq ($(HAVE_VULKAN), 1)
           gfx/common/vulkan_common.o \
           $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o
 
+   # H.264 previews decoded on the GPU, as rh264's backend
+   ifeq ($(HAVE_RMP4), 1)
+      OBJ += gfx/common/vulkan_video_decode.o
+   endif
+
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_vulkan.o
    endif

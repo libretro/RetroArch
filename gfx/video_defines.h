@@ -119,6 +119,15 @@ enum video_fse_negotiation
    VIDEO_FSE_LAST
 };
 
+/* Whether video RetroArch plays itself (previews) is decoded on the
+ * GPU where the driver has a hardware decoder for it. */
+enum video_hw_decode
+{
+   VIDEO_HW_DECODE_OFF = 0,
+   VIDEO_HW_DECODE_AUTO,
+   VIDEO_HW_DECODE_LAST
+};
+
 enum autoswitch_refresh_rate
 {
    AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,

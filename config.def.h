@@ -287,6 +287,9 @@
  * where the platform lets the application decide. */
 #define DEFAULT_VIDEO_FSE_NEGOTIATION VIDEO_FSE_RELAXED
 
+/* Previews decoded on the GPU where the video driver can */
+#define DEFAULT_VIDEO_HW_DECODE VIDEO_HW_DECODE_AUTO
+
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
 #define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN

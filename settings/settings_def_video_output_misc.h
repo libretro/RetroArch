@@ -19,3 +19,8 @@ S_UINT_EX(video_scale_integer_scaling, VIDEO_SCALE_INTEGER_SCALING,
       DEFAULT_SCALE_INTEGER_SCALING, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, 0, VIDEO_SCALE_INTEGER_SCALING_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_scale_integer_scaling, NULL, NULL, NULL, NULL, 0,
       "Integer Scale Scaling",
       "Round down or up to the next integer. 'Smart' drops to underscale when image is cropped too much, and finally falls back to non-integer scaling if the underscale margins are too large.")
+S_UINT(video_hw_decode, VIDEO_HW_DECODE,
+      "video_hw_decode",
+      DEFAULT_VIDEO_HW_DECODE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, VIDEO_HW_DECODE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_hw_decode,
+      "Hardware Video Decode",
+      "Decode video previews on the GPU where the video driver can (H.264 with Vulkan), leaving the CPU free; 'Off' decodes them on the CPU. Applies to previews opened from now on.")

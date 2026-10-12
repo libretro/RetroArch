@@ -32,11 +32,17 @@
 
 RETRO_BEGIN_DECLS
 
+/* gfx_surface_player_new flag, beside the video_player ones: frames
+ * decoded on the GPU are taken, into a surface asked for with no slots
+ * in IMAGE_PIXFMT_NV12 (gfx_surface_new_import). */
+#define GFX_SURFACE_PLAYER_GPU (1u << 16)
+
 typedef struct gfx_surface_player_cbs
 {
    void *user;
    /* The surface for @num_slots slots of @dims in @pixfmt, made or
-    * reused; NULL: asked again on a later frame. */
+    * reused; NULL: asked again on a later frame. No slots in
+    * IMAGE_PIXFMT_NV12: an imported surface (GFX_SURFACE_PLAYER_GPU). */
    gfx_surface_t *(*surface)(void *user, unsigned dims,
          unsigned num_slots, uint32_t pixfmt);
    /* A frame has reached the texture. */
@@ -53,8 +59,10 @@ typedef struct gfx_surface_player
    void **surface;            /* the consumer's gfx_surface_t pointer */
    gfx_surface_player_cbs_t cb;
    enum image_type_enum type;
+   unsigned hw_slot;          /* the player's job a queued GPU frame is */
    bool rgba;
    bool threaded;             /* two slots, decoded on the worker */
+   bool hw_resent;            /* the frame in flight was sent again */
 } gfx_surface_player_t;
 
 /* Plays @stream (borrowed) into the surface *@surface names. */
@@ -66,7 +74,8 @@ void gfx_surface_player_free(gfx_surface_player_t *gsp);
 /* The surface's release hook forwards here (@gsp NULL once the player
  * is gone). A frame the driver dropped is sent again, so the texture
  * is not left a frame behind; returns true then, and the slot stays
- * the surface's. */
+ * the surface's. A GPU frame dropped and not sent again goes back to
+ * its decoder. */
 bool gfx_surface_player_release(gfx_surface_player_t *gsp,
       gfx_surface_t *s, unsigned slot);
 

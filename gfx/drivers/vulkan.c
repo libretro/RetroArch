@@ -54,6 +54,9 @@
 
 #include "../common/vulkan_common.h"
 #include "../common/vulkan_memory_type.h"
+#ifdef HAVE_RMP4
+#include "../common/vulkan_video_decode.h"
+#endif
 #include "../common/rgba16_pack.h"
 #ifdef HAVE_OPENXR
 #include "../common/vulkan_openxr.h"
@@ -7054,6 +7057,10 @@ static void vulkan_free(void *data)
    if (vk->context && vk->context->device)
    {
       vulkan_wait_own_submissions(vk);
+#ifdef HAVE_RMP4
+      /* the frames it imported are read: what decoded them goes */
+      vulkan_video_decode_deinit();
+#endif
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
@@ -7778,6 +7785,11 @@ static void *vulkan_init(const video_info_t *video)
       vulkan_init_textures(vk);
 
       vulkan_init_frame_resources(vk, 0);
+
+#ifdef HAVE_RMP4
+      /* previews decoded on the GPU, where the device can */
+      vulkan_video_decode_init(vk->context);
+#endif
    }
 
    if (!vulkan_init_filter_chain(vk))

@@ -370,6 +370,9 @@ VIDEO CONTEXT
 #ifdef HAVE_VULKAN
 #include "../gfx/common/vulkan_common.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
+#ifdef HAVE_RMP4
+#include "../gfx/common/vulkan_video_decode.c"
+#endif
 #ifdef HAVE_OPENXR
 #include "../gfx/video_xr.c"
 #include "../gfx/common/vulkan_openxr.c"

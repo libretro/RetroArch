@@ -325,6 +325,15 @@ typedef struct vulkan_context
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
    /* A present was queued since present_fence was last waited on. */
    bool present_pending;
+   /* Hardware video decode (vulkan_video_decode.c), where the device
+    * was made with it: the family of the H.264 decode queues, and the
+    * family and first index of as many transfer queues beside them,
+    * which decoded pictures are copied out on. One of each per stream
+    * decoding at once; video_lanes 0 when there are none. */
+   uint32_t video_decode_family;
+   uint32_t video_xfer_family;
+   uint32_t video_xfer_first;
+   uint32_t video_lanes;
 } vulkan_context_t;
 
 /* The acquire thread behind emulated mailbox, and the thread that
