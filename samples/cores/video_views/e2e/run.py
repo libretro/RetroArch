@@ -267,7 +267,10 @@ EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
             'd3d11': ('off', 'd3d11'), 'd3d12': ('off', 'd3d12')}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
-PRESET_DRIVERS = ('glcore', 'vulkan')
+PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d11')
+# Drivers whose views' presets read a software frame's views from copies:
+# their chains are the main chain's, which reads a software frame whole.
+COPY_SW_VIEWS = ('d3d11',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -276,6 +279,7 @@ SMOOTH_CASES = [
     ('smooth-ds', 'ds', NOISE, 'off'),
     ('smooth-3ds', '3ds', NOISE, 'gl'),
     ('smooth-3ds', '3ds', NOISE, 'vulkan'),
+    ('smooth-3ds', '3ds', NOISE, 'd3d11'),
     ('smooth-whole-3ds', 'none', NOISE_LARGE, 'gl'),
 ]
 SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
@@ -320,7 +324,8 @@ VIEW_RECT_CASES = [('view-rect-ds', 'ds', NOISE, 'off'),
                    ('view-rect-ds-rgb565', 'ds', NOISE_565, 'off'),
                    ('view-rect-3ds', '3ds', NOISE, 'gl'),
                    ('view-rect-3ds', '3ds', NOISE, 'gl_topleft'),
-                   ('view-rect-3ds', '3ds', NOISE, 'vulkan')]
+                   ('view-rect-3ds', '3ds', NOISE, 'vulkan'),
+                   ('view-rect-3ds', '3ds', NOISE, 'd3d11')]
 VIEW_RECT_PRESETS = (('nearest', 0), ('nearest_repeat', 0), ('linear', 0),
                      ('linear_border', 1))
 VIEW_IN_PLACE_RE = re.compile(
@@ -1281,7 +1286,9 @@ def main():
                                                    preset=preset, exact=False)
                     errors += e
                     d = case_dir(root, driver, c[0], hw)
-                    if direct_drawn(d, VIEW_IN_PLACE_RE) != in_place:
+                    if direct_drawn(d, VIEW_IN_PLACE_RE) != (
+                            in_place and not (hw == 'off'
+                                              and driver in COPY_SW_VIEWS)):
                         errors.append('%s: views %s where they lie' % (
                             kind, 'not read' if in_place else 'read'))
                 if not rows['rect'] or not rows['rect_hist']:
