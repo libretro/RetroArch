@@ -30,6 +30,7 @@
 #else
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #endif
 
 #if defined(__GNUC__)
@@ -521,6 +522,238 @@ CK_FN void **ck_set_add(struct ck_set *set, const char *s, size_t n)
       set->n++;
    }
    return &set->vals[i];
+}
+
+CK_FN void ck_set_free(struct ck_set *set)
+{
+   size_t i;
+   for (i = 0; i < set->cap; i++)
+      free(set->keys[i]);
+   free(set->keys);
+   free(set->vals);
+   memset(set, 0, sizeof(*set));
+}
+
+/* A string as Python's repr() writes it: UTF-8 text, with the
+ * characters str.isprintable() refuses escaped (the common ones). */
+CK_FN void ck_repr(struct ck_sb *sb, const char *b, const char *e)
+{
+   char quote = '\'';
+   const unsigned char *p;
+   if (memchr(b, '\'', (size_t)(e - b)) && !memchr(b, '"', (size_t)(e - b)))
+      quote = '"';
+   ck_sb_putc(sb, quote);
+   for (p = (const unsigned char*)b; p < (const unsigned char*)e; )
+   {
+      char tmp[16];
+      unsigned long cp;
+      size_t n = 1;
+      if (*p < 0x80)
+      {
+         if (*p == (unsigned char)quote || *p == '\\')
+         {
+            ck_sb_putc(sb, '\\');
+            ck_sb_putc(sb, (char)*p);
+         }
+         else if (*p == '\t')
+            ck_sb_puts(sb, "\\t");
+         else if (*p == '\n')
+            ck_sb_puts(sb, "\\n");
+         else if (*p == '\r')
+            ck_sb_puts(sb, "\\r");
+         else if (*p < 0x20 || *p == 0x7f)
+         {
+            sprintf(tmp, "\\x%02x", *p);
+            ck_sb_puts(sb, tmp);
+         }
+         else
+            ck_sb_putc(sb, (char)*p);
+         p++;
+         continue;
+      }
+      if (*p >= 0xf0)
+      {
+         n  = 4;
+         cp = *p & 0x07;
+      }
+      else if (*p >= 0xe0)
+      {
+         n  = 3;
+         cp = *p & 0x0f;
+      }
+      else
+      {
+         n  = 2;
+         cp = *p & 0x1f;
+      }
+      if ((size_t)((const unsigned char*)e - p) < n)
+         n = (size_t)((const unsigned char*)e - p);
+      {
+         size_t k;
+         for (k = 1; k < n; k++)
+            cp = (cp << 6) | (p[k] & 0x3f);
+      }
+      /* the characters str.isprintable() refuses, the common ones */
+      if (     (cp >= 0x80 && cp <= 0xa0) || cp == 0xad || cp == 0x1680
+            || (cp >= 0x2000 && cp <= 0x200f) || (cp >= 0x2028 && cp <= 0x202f)
+            || (cp >= 0x205f && cp <= 0x206f) || cp == 0x3000 || cp == 0xfeff
+            || (cp >= 0xe000 && cp <= 0xf8ff) || (cp >= 0xfff9 && cp <= 0xfffb))
+      {
+         if (cp <= 0xff)
+            sprintf(tmp, "\\x%02lx", cp);
+         else
+            sprintf(tmp, "\\u%04lx", cp);
+         ck_sb_puts(sb, tmp);
+      }
+      else
+         ck_sb_add(sb, (const char*)p, n);
+      p += n;
+   }
+   ck_sb_putc(sb, quote);
+}
+
+
+/* Comments and string bodies blanked, as the GPU driver checkers read
+ * a file: a block comment becomes spaces with its line breaks kept (an
+ * unclosed one runs to the end), a line comment spaces, and a string
+ * literal its two quotes around as many spaces as it had bytes inside -
+ * a line break in it included. Returns new text. */
+CK_FN char *ck_blank_code(const char *t, size_t n, size_t *out_len)
+{
+   struct ck_sb out = {0};
+   size_t i = 0;
+   ck_sb_reserve(&out, n + 2);
+   while (i < n)
+   {
+      size_t j;
+      if (t[i] == '/' && i + 1 < n && t[i + 1] == '*')
+      {
+         for (j = i + 2; j + 1 < n && !(t[j] == '*' && t[j + 1] == '/'); j++);
+         j = j + 1 < n ? j + 2 : n;
+         for (; i < j; i++)
+            ck_sb_putc(&out, t[i] == '\n' ? '\n' : ' ');
+      }
+      else if (t[i] == '/' && i + 1 < n && t[i + 1] == '/')
+      {
+         for (j = i; j < n && t[j] != '\n'; j++)
+            ck_sb_putc(&out, ' ');
+         i = j;
+      }
+      else if (t[i] == '"')
+      {
+         size_t k;
+         for (j = i + 1; j < n && t[j] != '"'; j++)
+         {
+            if (t[j] == '\\')
+               j++;
+         }
+         ck_sb_putc(&out, '"');
+         for (k = i + 1; k < j; k++)
+            ck_sb_putc(&out, ' ');
+         ck_sb_putc(&out, '"');
+         i = j + 1;
+      }
+      else
+         ck_sb_putc(&out, t[i++]);
+   }
+   ck_sb_puts(&out, "");
+   if (out_len)
+      *out_len = out.len;
+   return out.p;
+}
+
+/* The name a function definition line gives, as the GPU driver
+ * checkers find it:
+ *   ^[A-Za-z_][A-Za-z_0-9 \t*]*?\b([A-Za-z_][A-Za-z_0-9]*)\s*\(
+ * Returns 0 when the line has none. */
+CK_FN int ck_def_name(const char *b, const char *e, const char **nb,
+      const char **ne)
+{
+   const char *p;
+   if (b >= e || !CK_IS_IDENT0(*b))
+      return 0;
+   for (p = b + 1; p < e; p++)
+   {
+      if (CK_IS_IDENT0(*p) && !CK_IS_WORD(p[-1]))
+      {
+         const char *r, *q;
+         for (r = p; r < e && CK_IS_WORD(*r); r++);
+         for (q = r; q < e && CK_IS_SPACE(*q); q++);
+         if (q < e && *q == '(')
+         {
+            *nb = p;
+            *ne = r;
+            return 1;
+         }
+      }
+      if (!(CK_IS_WORD(*p) || *p == ' ' || *p == '\t' || *p == '*'))
+         return 0;
+   }
+   return 0;
+}
+
+
+#ifdef _WIN32
+#define CK_POPEN  _popen
+#define CK_PCLOSE _pclose
+#else
+#define CK_POPEN  popen
+#define CK_PCLOSE pclose
+#endif
+
+/* Append s to a shell command line as one quoted word. */
+CK_FN void ck_sb_shq(struct ck_sb *sb, const char *s)
+{
+#ifdef _WIN32
+   ck_sb_putc(sb, '"');
+   for (; *s; s++)
+   {
+      if (*s == '"')
+         ck_sb_putc(sb, '\\');
+      ck_sb_putc(sb, *s);
+   }
+   ck_sb_putc(sb, '"');
+#else
+   ck_sb_putc(sb, '\'');
+   for (; *s; s++)
+   {
+      if (*s == '\'')
+         ck_sb_puts(sb, "'\\''");
+      else
+         ck_sb_putc(sb, *s);
+   }
+   ck_sb_putc(sb, '\'');
+#endif
+}
+
+/* Run a shell command; its stdout, NUL-terminated, and its exit status
+ * (-1 when it could not be run). stderr passes through. */
+CK_FN char *ck_capture(const char *cmd, size_t *len, int *status)
+{
+   struct ck_sb out = {0};
+   char buf[8192];
+   size_t n;
+   int rc;
+   FILE *f;
+   fflush(stdout);
+   fflush(stderr);
+   if (!(f = CK_POPEN(cmd, "r")))
+   {
+      *status = -1;
+      return NULL;
+   }
+   while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+      ck_sb_add(&out, buf, n);
+   rc = CK_PCLOSE(f);
+#if !defined(_WIN32) && defined(WIFEXITED)
+   if (rc != -1)
+      rc = WIFEXITED(rc) ? WEXITSTATUS(rc) : 128;
+#endif
+   *status = rc;
+   ck_sb_add(&out, "", 0);
+   if (len)
+      *len = out.len;
+   return out.p ? out.p : ck_strdup("");
 }
 
 #endif
