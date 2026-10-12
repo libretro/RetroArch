@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential zlib1g-dev"
+          pkgs="build-essential zlib1g-dev gcc-mingw-w64-x86-64 wine64"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
