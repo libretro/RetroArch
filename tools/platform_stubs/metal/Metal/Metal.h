@@ -119,10 +119,6 @@ typedef NS_ENUM(NSUInteger, MTLCullMode) {
 typedef NS_ENUM(NSUInteger, MTLWinding) {
    MTLWindingClockwise
 };
-typedef NS_ENUM(NSUInteger, MTLCommandBufferStatus) {
-   MTLCommandBufferStatusNotEnqueued = 0, MTLCommandBufferStatusEnqueued = 1,
-   MTLCommandBufferStatusCommitted = 2, MTLCommandBufferStatusScheduled = 3,
-   MTLCommandBufferStatusCompleted = 4, MTLCommandBufferStatusError = 5 };
 typedef NS_OPTIONS(NSUInteger, MTLTextureUsage) {
    MTLTextureUsageRenderTarget = 1,
    MTLTextureUsageShaderRead = 2,
@@ -238,7 +234,6 @@ typedef NS_ENUM(NSUInteger, MTLCommandBufferStatus) {
 - (void)addCompletedHandler:(void (^)(id<MTLCommandBuffer>))h;
 - (void)addScheduledHandler:(void (^)(id<MTLCommandBuffer>))h;
 @property (copy) NSString *label;
-@property (readonly) MTLCommandBufferStatus status;
 - (void)enqueue;
 @end
 @protocol MTLCommandQueue <NSObject>
