@@ -7,7 +7,9 @@
  * answered and closed.  Covered: the protocol handshake, the tool list
  * and its hints, tool calls answered at once and later, the JSON-RPC
  * errors, the parameters a tool declares and the line they are put
- * back into, a later answer carrying an image (SCREENSHOT's), the flag
+ * back into, the rows a reply is read into beside the text it leaves
+ * untouched and the outputSchema describing them, a later answer
+ * carrying an image (SCREENSHOT's), the flag
  * that leaves a command out of the tool list, the HTTP gate (method,
  * path, Origin, the bearer token the server will not start without), a
  * body larger than the server takes, a request arriving in pieces, and
@@ -103,6 +105,30 @@ static const struct cmd_param test_params_join[] = {
    { NULL }
 };
 
+/* a reply that is rows of named columns, as the lists' and
+ * GET_PLAYLIST's are */
+static const struct cmd_column test_cols_rows[] = {
+   { "index", "The entry's number." },
+   { "label", "The entry's name." },
+   { "path", "The entry's path." },
+   { NULL, NULL }
+};
+/* the name in the middle is the column that takes a tab of its own */
+static const struct cmd_rows test_rows = { test_cols_rows, 1, "next",
+   "The entry the next page starts at." };
+
+/* a line the command opens with its own name is not a row, a tab in
+ * the name shifts no field, and MORE carries the cursor */
+#define ROWS_TEXT "0\tOne\t/one\nROWS none here\n" \
+                  "1\tTwo\tand a tab\t/two\nMORE 2\n"
+
+static bool act_rows(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, ROWS_TEXT, sizeof(ROWS_TEXT) - 1);
+   return true;
+}
+
 /* answers with the line it was given, so the test can see how the
  * named arguments were put back together */
 static bool act_join(command_t *cmd, const char *arg)
@@ -122,6 +148,8 @@ static struct cmd_action_map test_actions[] = {
    { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
+   { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
+   { "LROWS", act_later, "No argument", "Answer rows on a later frame.", CMD_INFO_READ_ONLY, NULL, &test_rows },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -284,6 +312,22 @@ static int post(command_t *cmd, uint16_t port, const char *extra_headers,
          (unsigned)strlen(body), body);
    socket_send_all_blocking(fd, req, strlen(req), true);
    return collect(cmd, fd, out, cap, deferred_reply);
+}
+
+/* A request from the one revision that sends no MCP-Protocol-Version. */
+static int post_old(command_t *cmd, uint16_t port, const char *body,
+      char *out, size_t cap)
+{
+   char req[4096];
+   int  fd = client_connect(port);
+   if (fd < 0)
+      return -1;
+   snprintf(req, sizeof(req),
+         "POST /mcp HTTP/1.1\r\nHost: 127.0.0.1\r\n"
+         "Content-Type: application/json\r\n" AUTH
+         "Content-Length: %u\r\n\r\n%s", (unsigned)strlen(body), body);
+   socket_send_all_blocking(fd, req, strlen(req), true);
+   return collect(cmd, fd, out, cap, NULL);
 }
 
 static const char *body_of(const char *resp)
@@ -556,6 +600,24 @@ int main(void)
             && strstr(strstr(out, "\"name\":\"PING\""),
                   "\"properties\":{}"));
    }
+   {
+      const char *rw = strstr(out, "\"name\":\"ROWS\"");
+      const char *s  = strstr(out, "\"outputSchema\"");
+      const char *q  = s;
+      int         n  = 0;
+      while (q)
+      {
+         n++;
+         q = strstr(q + 1, "\"outputSchema\"");
+      }
+      check("a command answering rows declares an outputSchema",
+            rw && s && s > rw
+            && strstr(s, "\"index\":{\"type\":\"string\"")
+            && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
+            && strstr(s, "\"next\":{\"type\":\"integer\""));
+      /* ROWS and LROWS, and nothing before them */
+      check("only the commands that answer rows declare one", n == 2);
+   }
 
    printf("tools/call\n");
    st = post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL);
@@ -594,6 +656,42 @@ int main(void)
          && strstr(out, "\"mimeType\":\"image/png\"")
          && strstr(out, "Game-251004.png")
          && strstr(out, "\"isError\":false"));
+
+   printf("structured content\n");
+   st = post(cmd, PORT_OPEN, NULL, call("ROWS", NULL), out, sizeof(out), NULL);
+   check("the text a line client reads is unchanged",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"text\":\"0\\tOne\\t/one\\nROWS none here\\n"
+               "1\\tTwo\\tand a tab\\t/two\\nMORE 2\\n\""));
+   check("the same reply is given as rows of named columns",
+         strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"index\":\"0\",\"label\":\"One\",\"path\":\"/one\"},"
+               "{\"index\":\"1\",\"label\":\"Two\\tand a tab\","
+               "\"path\":\"/two\"}]"));
+   check("the MORE cursor is kept", strstr(out, "\"more\":true,\"next\":2")
+         != NULL);
+   st = post(cmd, PORT_OPEN, NULL, call("LROWS", NULL), out, sizeof(out),
+         "3\tThree\t/three\n");
+   check("an answer that comes later carries them too",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[{\"index\":\"3\","
+               "\"label\":\"Three\",\"path\":\"/three\"}]}")
+         && !strstr(out, "\"more\""));
+   st = post(cmd, PORT_OPEN, NULL, call("LROWS", NULL), out, sizeof(out),
+         "ERR:LROWS ERROR no such thing");
+   check("a failure's text is the reason, and no rows",
+         st == 200 && strstr(out, "\"isError\":true")
+         && !strstr(out, "structuredContent"));
+   /* 2025-03-26 has neither, and is the one revision this server speaks
+    * that sends no MCP-Protocol-Version */
+   check("a revision before them is sent the text alone",
+         post_old(cmd, PORT_OPEN, call("ROWS", NULL), out, sizeof(out)) == 200
+         && strstr(out, "MORE 2") && !strstr(out, "structuredContent"));
+   check("and its tool list declares no outputSchema",
+         post_old(cmd, PORT_OPEN,
+            "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}",
+            out, sizeof(out)) == 200 && json_valid(body_of(out))
+         && !strstr(out, "\"outputSchema\""));
 
    printf("parameters\n");
    st = post(cmd, PORT_OPEN, NULL,

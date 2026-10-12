@@ -524,9 +524,43 @@ struct cmd_param
    const char *def;
 };
 
+/* One column of a reply that is rows: the name a field on the line is
+ * given by an interface that answers in fields rather than in text. */
+struct cmd_column
+{
+   const char *name;
+   const char *desc;
+};
+
+/* The shape of a reply that is rows of named columns - the lines of
+ * tab-separated fields the lists and GET_PLAYLIST answer with - so an
+ * interface can hand a client the same reply taken apart rather than
+ * leaving every client to split the text.
+ *
+ * @slack is the one column whose field may hold a tab itself, a game's
+ * name among them: the columns before it are read from the start of the
+ * line and those after it from the end, so that tab takes the slack
+ * instead of shifting the row.
+ *
+ * A line the command opens with its own name - "LIST_CORES none",
+ * "GET_PLAYLIST ERROR ..." - is not a row, and neither is a trailing
+ * "MORE [next]" saying the reply was cut short. @cursor names the field
+ * that line's number is given as, where the reply is paged, and is NULL
+ * where MORE carries none.
+ *
+ * @columns ends with a row whose @name is NULL. */
+struct cmd_rows
+{
+   const struct cmd_column *columns;
+   unsigned    slack;
+   const char *cursor;
+   const char *cursor_desc;
+};
+
 /* A command with its own handler; @arg_desc names the argument, or
  * "No argument", and @params describes it for a structured client, or
- * is NULL on one that takes none. */
+ * is NULL on one that takes none. @rows is the shape of its reply where
+ * that reply is rows, and NULL where it is prose. */
 struct cmd_action_map
 {
    const char *str;
@@ -535,6 +569,7 @@ struct cmd_action_map
    const char *desc;
    unsigned flags;       /* enum cmd_info_flags */
    const struct cmd_param *params;
+   const struct cmd_rows *rows;
 };
 
 /* GET_OPTION [option] / SET_OPTION <option> on|off */
@@ -729,6 +764,38 @@ static const struct cmd_param cmd_params_content[] = {
    { NULL }
 };
 
+/* The replies that are rows of named columns, in the order the line
+ * gives the fields. */
+static const struct cmd_column cmd_cols_option[] = {
+   { "option", "The option's name, as SET_OPTION takes it." },
+   { "value", "Its state - on or off - or, for one that only reports, "
+      "what it reports." },
+   { NULL, NULL }
+};
+static const struct cmd_column cmd_cols_core[] = {
+   { "name", "The core's display name." },
+   { "path", "The core's path, as LOAD_CORE and LOAD_CONTENT take it." },
+   { NULL, NULL }
+};
+static const struct cmd_column cmd_cols_playlist[] = {
+   { "playlist", "The playlist's name, as GET_PLAYLIST takes it." },
+   { NULL, NULL }
+};
+static const struct cmd_column cmd_cols_entry[] = {
+   { "index", "The entry's number in the playlist." },
+   { "label", "The entry's name." },
+   { "content", "The content's path, as LOAD_CONTENT takes it." },
+   { "core", "The core's path, as LOAD_CONTENT takes it; empty where the "
+      "playlist names none." },
+   { NULL, NULL }
+};
+
+static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, 1, NULL, NULL };
+static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, 0, NULL, NULL };
+static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, 0, NULL, NULL };
+static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, 1, "next",
+   "The entry the next page starts at, as GET_PLAYLIST's first takes it." };
+
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
     * commands itself and names its version in every answer. */
@@ -738,8 +805,8 @@ static const struct cmd_action_map action_map[] = {
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
    { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY, NULL },
-   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option },
-   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set },
+   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
+   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
@@ -751,9 +818,9 @@ static const struct cmd_action_map action_map[] = {
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
-   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL },
-   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL },
-   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist },
+   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_cores },
+   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
