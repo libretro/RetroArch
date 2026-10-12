@@ -890,6 +890,28 @@ static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    return d3d11_init_texture_ex(device, texture, true);
 }
 
+/* Bytes a pixel of @format takes, for the formats a frame or a texture
+ * update arrives in; 0 for any other */
+static unsigned d3d11_format_bytes(DXGI_FORMAT format)
+{
+   switch (format)
+   {
+      case DXGI_FORMAT_B8G8R8A8_UNORM:
+      case DXGI_FORMAT_B8G8R8X8_UNORM:
+      case DXGI_FORMAT_R8G8B8A8_UNORM:
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+         return 4;
+      case DXGI_FORMAT_B5G6R5_UNORM:
+      case DXGI_FORMAT_B4G4R4A4_UNORM:
+         return 2;
+      case DXGI_FORMAT_R16G16B16A16_FLOAT:
+         return 8;
+      default:
+         break;
+   }
+   return 0;
+}
+
 static void d3d11_update_texture(
       D3D11DeviceContext ctx,
       unsigned           width,
@@ -901,18 +923,10 @@ static void d3d11_update_texture(
 {
    D3D11_MAPPED_SUBRESOURCE mapped_texture;
    D3D11_BOX frame_box;
+   HRESULT hr;
 
    if (!texture->staging)
       return;
-
-   if (FAILED(ctx->lpVtbl->Map(
-         ctx, (D3D11Resource)texture->staging, 0, D3D11_MAP_WRITE, 0, &mapped_texture)))
-      return;
-
-   dxgi_copy(
-         width, height, format, pitch, data,
-         texture->desc.Format, mapped_texture.RowPitch,
-         mapped_texture.pData);
 
    frame_box.left   = 0;
    frame_box.top    = 0;
@@ -920,6 +934,36 @@ static void d3d11_update_texture(
    frame_box.right  = width;
    frame_box.bottom = height;
    frame_box.back   = 1;
+
+   /* The staging texture the last update copied from may still be the
+    * GPU's, and a plain map waits for it. A frame in the texture's own
+    * format goes in through the driver instead, which never waits;
+    * only one the copy converts waits for its staging texture. */
+   hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
+         D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped_texture);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+   {
+      unsigned bytes = d3d11_format_bytes(format);
+      if (format == texture->desc.Format && bytes)
+      {
+         ctx->lpVtbl->UpdateSubresource(ctx,
+               (D3D11Resource)texture->handle, 0, &frame_box, data,
+               pitch ? pitch : width * bytes, 0);
+         if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+            ctx->lpVtbl->GenerateMips(ctx, texture->view);
+         return;
+      }
+      hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
+            D3D11_MAP_WRITE, 0, &mapped_texture);
+   }
+   if (FAILED(hr))
+      return;
+
+   dxgi_copy(
+         width, height, format, pitch, data,
+         texture->desc.Format, mapped_texture.RowPitch,
+         mapped_texture.pData);
+
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
    ctx->lpVtbl->CopySubresourceRegion(
          ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0,
@@ -1600,8 +1644,9 @@ static int d3d11_font_get_message_width(void *data, const char *msg,
 }
 
 /* Update only the atlas dirty rectangle of the A8 font texture:
- * map the staging texture preserving its contents, copy the changed
- * rows, and issue a boxed CopySubresourceRegion for just that area.
+ * map the staging texture, copy the changed rows, and issue a boxed
+ * CopySubresourceRegion for just that area - or, with the staging
+ * texture still the GPU's, hand the rows to UpdateSubresource.
  * The generic d3d11_update_texture() re-uploads the whole surface. */
 static void d3d11_font_update_atlas_region(
       D3D11DeviceContext ctx, d3d11_font_t *font, unsigned xy0, unsigned xy1)
@@ -1613,15 +1658,36 @@ static void d3d11_font_update_atlas_region(
    unsigned y1 = VIDEO_SCALE_H(xy1);
    D3D11_MAPPED_SUBRESOURCE mapped;
    D3D11_BOX box;
+   HRESULT hr;
 
    if (     x1 <= x0 || y1 <= y0
          || x1 > (unsigned)font->atlas->width
          || y1 > (unsigned)font->atlas->height)
       return;
 
-   if (FAILED(ctx->lpVtbl->Map(
-         ctx, (D3D11Resource)font->texture.staging, 0,
-         D3D11_MAP_WRITE, 0, &mapped)))
+   box.left   = x0;
+   box.top    = y0;
+   box.front  = 0;
+   box.right  = x1;
+   box.bottom = y1;
+   box.back   = 1;
+
+   /* The staging texture may still be the GPU's from the last glyphs:
+    * those go in through the driver instead, which never waits */
+   hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)font->texture.staging, 0,
+         D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+   {
+      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      ctx->lpVtbl->UpdateSubresource(ctx,
+            (D3D11Resource)font->texture.handle, 0, &box,
+            font->atlas->buffer
+               + ((size_t)y0 * font->atlas->width + x0) * esz,
+            (UINT)(font->atlas->width * esz), 0);
+      return;
+   }
+   if (FAILED(hr))
       return;
 
    {
@@ -1637,12 +1703,6 @@ static void d3d11_font_update_atlas_region(
 
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)font->texture.staging, 0);
 
-   box.left   = x0;
-   box.top    = y0;
-   box.front  = 0;
-   box.right  = x1;
-   box.bottom = y1;
-   box.back   = 1;
    ctx->lpVtbl->CopySubresourceRegion(
          ctx, (D3D11Resource)font->texture.handle, 0, x0, y0, 0,
          (D3D11Resource)font->texture.staging, 0, &box);
