@@ -471,9 +471,7 @@ def write_cfg(path, d, driver, settings, port):
     }
     if WINE:
         cfg = {k: winpath(v) for k, v in cfg.items()}
-        cfg.update(video_context_driver='', input_driver='dinput',
-                   # Wine's swap chain has no IDXGISwapChain2.
-                   video_waitable_swapchains='false')
+        cfg.update(video_context_driver='', input_driver='dinput')
     cfg.update(settings)
     with open(path, 'w') as f:
         for k in sorted(cfg):

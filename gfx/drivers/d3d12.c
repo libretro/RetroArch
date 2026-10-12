@@ -5270,6 +5270,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
    if (     (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
          && (d3d12->flags & D3D12_ST_FLAG_VSYNC)
+         && dxgi_swapchain_waitable(d3d12->chain.handle)
          && (d3d12->chain.frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d12->chain.handle)))
    {
       settings_t* settings      = config_get_ptr();

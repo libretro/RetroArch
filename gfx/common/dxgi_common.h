@@ -516,6 +516,10 @@ void dxgi_copy(
       int         dst_pitch,
       void*       dst_data);
 
+/* Whether @chain has a frame latency waitable object to ask for: an
+ * IDXGISwapChain2, which Windows 7's and Wine's are not */
+bool dxgi_swapchain_waitable(DXGISwapChain chain);
+
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);

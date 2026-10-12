@@ -4074,6 +4074,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 
    if (     (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
          && (d3d11->flags & D3D11_ST_FLAG_VSYNC)
+         && dxgi_swapchain_waitable(d3d11->swapChain)
          && (d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
    {
       settings_t* settings      = config_get_ptr();
