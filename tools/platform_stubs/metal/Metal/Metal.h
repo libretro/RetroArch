@@ -215,7 +215,16 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 - (void)setBytes:(const void *)b length:(NSUInteger)l atIndex:(NSUInteger)i;
 - (void)dispatchThreadgroups:(MTLSize)g threadsPerThreadgroup:(MTLSize)t;
 @end
+typedef NS_ENUM(NSUInteger, MTLCommandBufferStatus) {
+   MTLCommandBufferStatusNotEnqueued = 0,
+   MTLCommandBufferStatusEnqueued    = 1,
+   MTLCommandBufferStatusCommitted   = 2,
+   MTLCommandBufferStatusScheduled   = 3,
+   MTLCommandBufferStatusCompleted   = 4,
+   MTLCommandBufferStatusError       = 5
+};
 @protocol MTLCommandBuffer <NSObject>
+@property (readonly) MTLCommandBufferStatus status;
 - (id<MTLRenderCommandEncoder>)renderCommandEncoderWithDescriptor:(id)d;
 - (id<MTLBlitCommandEncoder>)blitCommandEncoder;
 - (id<MTLComputeCommandEncoder>)computeCommandEncoder;
