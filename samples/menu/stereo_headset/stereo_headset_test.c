@@ -18,9 +18,9 @@
  * Links the shipping objects with only main() replaced (the
  * playlist_nav pattern). A headset gives each eye its own image, so
  * the list leaves Stereo Mode out while Headset Output is on, and
- * pressing Headset Output rebuilds the open list. Headset Refresh Rate
- * sits under Headset Output, and with no headset lists the fixed
- * rates.
+ * pressing Headset Output rebuilds the open list with the cursor still
+ * on it. Headset Refresh Rate sits under Headset Output, and with no
+ * headset lists the fixed rates.
  *
  * The video driver stays null: the list reads only the driver's name,
  * and a press's reinit runs under "null", so no Vulkan device or
@@ -45,6 +45,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <retro_miscellaneous.h>
 
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../configuration.h"
@@ -53,6 +54,7 @@
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../frontend/frontend_driver.h"
 
 static unsigned failures = 0;
@@ -69,6 +71,27 @@ static unsigned failures = 0;
    } while (0)
 
 #ifdef HAVE_OPENXR
+/* The drivers with a headset path, and one without. A build has
+ * Vulkan's, the desktop GL drivers', or both. */
+static const char *const headset_drivers[] = {
+#ifdef HAVE_VULKAN
+   "vulkan",
+#endif
+#ifdef HAVE_OPENXR_GL
+   "glcore", "gl",
+#endif
+   NULL };
+/* The first of them, where one will do. */
+#define HEADSET_DRIVER (headset_drivers[0])
+#ifdef HAVE_OPENXR_GL
+#define NO_PATH_DRIVER "gl1"
+#else
+#define NO_PATH_DRIVER "glcore"
+#endif
+
+/* The driver the off, on and toggle lanes run under. */
+static const char *lane_driver;
+
 static file_list_t *selection_buf(void)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -119,9 +142,9 @@ static void open_stereo_list(void)
    run_frame();
 }
 
-/* OK on the Headset Output row, with the driver name null while its
- * reinit runs. */
-static void press_headset_output(void)
+/* A press on the Headset Output row, with the driver name null while
+ * its reinit runs. */
+static void press_headset_output(unsigned action)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    file_list_t *buf           = selection_buf();
@@ -132,18 +155,24 @@ static void press_headset_output(void)
       return;
    menu_st->selection_ptr = (size_t)i;
    set_driver("null");
-   menu_setting_set(buf->list[i].type, MENU_ACTION_OK, false);
-   set_driver("vulkan");
+   menu_setting_set(buf->list[i].type, action, false);
+   set_driver(lane_driver);
+}
+
+static bool cursor_on_headset_output(void)
+{
+   return (int)menu_state_get_ptr()->selection_ptr
+      == row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR);
 }
 
 static void lane_off(void)
 {
    set_headset(false);
-   set_driver("vulkan");
+   set_driver(lane_driver);
    open_stereo_list();
 
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
-         "fixture: Headset Output is not listed under vulkan");
+         "fixture: Headset Output is not listed under %s", lane_driver);
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not listed with Headset Output off");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES_STR) >= 0,
@@ -155,11 +184,11 @@ static void lane_off(void)
 static void lane_on(void)
 {
    set_headset(true);
-   set_driver("vulkan");
+   set_driver(lane_driver);
    open_stereo_list();
 
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
-         "fixture: Headset Output is not listed under vulkan");
+         "fixture: Headset Output is not listed under %s", lane_driver);
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) < 0,
          "Stereo Mode is listed with Headset Output on");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES_STR) >= 0,
@@ -168,29 +197,115 @@ static void lane_on(void)
          "Screen Layout is not listed with Headset Output on");
 }
 
-/* Headset output is the Vulkan driver's: under another driver the
- * setting has no row to turn it off from, and nothing to hide. */
+/* Under a driver without a headset path the setting has no row to
+ * turn it off from, and nothing to hide. */
 static void lane_on_other_driver(void)
 {
    set_headset(true);
-   set_driver("glcore");
+   set_driver(NO_PATH_DRIVER);
    open_stereo_list();
 
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) < 0,
-         "fixture: Headset Output is listed under glcore");
+         "fixture: Headset Output is listed under " NO_PATH_DRIVER);
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
-         "Stereo Mode is not listed under glcore with the setting on");
+         "Stereo Mode is not listed under " NO_PATH_DRIVER
+         " with the setting on");
+}
+
+/* The headset's rows follow the driver's headset path: all of them, in
+ * order, under one that has it; none under one that has not. */
+static void lane_headset_rows(void)
+{
+   static const char *const rows[] = {
+      MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR };
+   unsigned i, d;
+
+#ifdef HAVE_VULKAN
+   CHECK(video_driver_has_headset_path("vulkan"),
+         "vulkan has no headset path");
+#else
+   CHECK(!video_driver_has_headset_path("vulkan"),
+         "vulkan has a headset path without HAVE_VULKAN");
+#endif
+#ifdef HAVE_OPENXR_GL
+   CHECK(video_driver_has_headset_path("glcore"), "glcore headset path");
+   CHECK(video_driver_has_headset_path("gl"), "gl headset path");
+#else
+   CHECK(     !video_driver_has_headset_path("gl")
+         && !video_driver_has_headset_path("glcore"),
+         "a GL driver has a headset path without HAVE_OPENXR_GL");
+#endif
+   CHECK(!video_driver_has_headset_path("null"), "null headset path");
+   CHECK(!video_driver_has_headset_path("gl1"), "gl1 headset path");
+
+   set_headset(false);
+   for (d = 0; headset_drivers[d]; d++)
+   {
+      int last = -1;
+      set_driver(headset_drivers[d]);
+      open_stereo_list();
+      for (i = 0; i < ARRAY_SIZE(rows); i++)
+      {
+         int r = row(rows[i]);
+         CHECK(r > last, "%s: %s is at row %d, after row %d",
+               headset_drivers[d], rows[i], r, last);
+         last = r;
+      }
+   }
+
+   set_driver(NO_PATH_DRIVER);
+   open_stereo_list();
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+      CHECK(row(rows[i]) < 0, "%s is listed under " NO_PATH_DRIVER,
+            rows[i]);
+   set_driver(HEADSET_DRIVER);
+}
+
+/* Fixed in Room by default; each value shows its own name. */
+static void lane_placement(void)
+{
+   static const char *const shown[] = {
+      "Fixed in Room", "Follow Head", "Lazy Follow" };
+   char s[64];
+   unsigned i;
+   settings_t *settings     = config_get_ptr();
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT);
+
+   CHECK(setting != NULL, "fixture: no Screen Placement setting");
+   if (!setting)
+      return;
+   CHECK(settings->uints.video_openxr_placement
+         == VIDEO_OPENXR_PLACEMENT_FIXED,
+         "Screen Placement is %u by default, want Fixed in Room",
+         settings->uints.video_openxr_placement);
+   for (i = 0; i < ARRAY_SIZE(shown); i++)
+   {
+      configuration_set_uint(settings,
+            settings->uints.video_openxr_placement, i);
+      setting->actions->repr(setting, s, sizeof(s));
+      CHECK(string_is_equal(s, shown[i]),
+            "placement %u shows \"%s\", want \"%s\"", i, s, shown[i]);
+   }
+   configuration_set_uint(settings, settings->uints.video_openxr_placement,
+         VIDEO_OPENXR_PLACEMENT_FIXED);
 }
 
 static void lane_toggle(void)
 {
    set_headset(false);
-   set_driver("vulkan");
+   set_driver(lane_driver);
    open_stereo_list();
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "fixture: Stereo Mode is not listed before the press");
 
-   press_headset_output();
+   press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output did not turn it on");
@@ -198,13 +313,31 @@ static void lane_toggle(void)
          "Stereo Mode is still listed after turning Headset Output on");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
          "the list lost Headset Output after the press");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when it was turned on");
 
-   press_headset_output();
+   press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(!config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output again did not turn it off");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not back after turning Headset Output off");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when it was turned off");
+
+   /* Start puts it back to off, its default. */
+   press_headset_output(MENU_ACTION_RIGHT);
+   run_frame();
+   CHECK(config_get_ptr()->bools.video_openxr_enable,
+         "fixture: right on Headset Output did not turn it on");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when right turned it on");
+   press_headset_output(MENU_ACTION_START);
+   run_frame();
+   CHECK(!config_get_ptr()->bools.video_openxr_enable,
+         "fixture: Start on Headset Output did not turn it off");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when Start turned it off");
 }
 
 /* Right under Headset Output. With no headset to list its rates it
@@ -224,7 +357,7 @@ static void lane_refresh_rate(void)
          MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE);
 
    set_headset(true);
-   set_driver("vulkan");
+   set_driver(HEADSET_DRIVER);
    open_stereo_list();
    enable = row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR);
    rate   = row(MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR);
@@ -373,10 +506,20 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   lane_off();
-   lane_on();
+   {
+      unsigned d;
+      for (d = 0; headset_drivers[d]; d++)
+      {
+         lane_driver = headset_drivers[d];
+         lane_off();
+         lane_on();
+         lane_toggle();
+      }
+      lane_driver = HEADSET_DRIVER;
+   }
    lane_on_other_driver();
-   lane_toggle();
+   lane_headset_rows();
+   lane_placement();
    lane_refresh_rate();
 
    set_driver("null");

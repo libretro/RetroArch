@@ -120,8 +120,6 @@ RETRO_BEGIN_DECLS
 typedef struct video_vr_content_info
 {
    bool stereo_native;
-   bool request_flat;
-   float ipd_hint_m;
    enum retro_vr_reference_space reference_space;
    unsigned recommended_eye_width;
    unsigned recommended_eye_height;
@@ -711,11 +709,12 @@ typedef struct video_frame_info
     * when the frame is drawn whole. */
    video_views_map_t views;
    video_views_layout_t views_layout;
-   /* Headset output: the screens' distance and width in metres, and a
-    * count of recenter requests the driver compares with the last it
-    * saw. */
+   /* Headset output: the screens' distance and width in metres, where
+    * they are kept (enum video_openxr_placement), and a count of
+    * recenter requests the driver compares with the last it saw. */
    float headset_distance;
    float headset_width;
+   unsigned headset_placement;
    unsigned headset_recenter;
    /* Each core frame shows for this many headset frames and waits for
     * them in place of the window's vsync; 0 while the window paces. */
@@ -726,7 +725,34 @@ typedef struct video_frame_info
    bool stereo_swap_eyes;
    /* The last frame sent again (paused, menu), not a new core frame. */
    bool frame_repeat;
+   /* The tracked eyes' views, which the headset shows as its
+    * projection; -1 while it shows none. */
+   int headset_eye[2];
 } video_frame_info_t;
+
+enum gfx_ctx_shared_kind
+{
+   GFX_CTX_SHARED_NONE = 0,
+   GFX_CTX_SHARED_EGL,
+   GFX_CTX_SHARED_GLX
+};
+
+/* A second context in the window context's share group, for a thread
+ * of its own: textures and syncs are shared with the window's context,
+ * framebuffers and vertex arrays are not. The handles are the context
+ * driver's own, kept opaque here. */
+typedef struct gfx_ctx_shared_context
+{
+   enum gfx_ctx_shared_kind kind;
+   void *display;          /* EGLDisplay, or the X Display */
+   void *config;           /* EGLConfig, or GLXFBConfig */
+   void *context;          /* EGLContext, or GLXContext */
+   void *surface;          /* EGL: its own pbuffer, NULL surfaceless */
+   unsigned long drawable; /* GLX: its own pbuffer */
+   unsigned visual_id;     /* GLX: the config's visual */
+   unsigned api;           /* EGL: the client API it binds */
+   gfx_ctx_proc_t (*get_proc_address)(const char *);
+} gfx_ctx_shared_context_t;
 
 typedef void (*update_window_title_cb)(void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
@@ -888,6 +914,16 @@ typedef struct gfx_ctx_driver
     * Optional; the ring lets the context driver's teardown handle a
     * still-current context when it is missing. Placed last, as above. */
    void (*release_current)(void *data);
+
+   /* Optional, desktop GL: a context in the window context's share
+    * group (gfx_ctx_shared_context_t). New and free run on the video
+    * thread with the window's context current, and leave it so; bind
+    * and unbind run on the thread that uses the context, which never
+    * gets the window's surface. NULL where the driver has none. Placed
+    * last, as above. */
+   bool (*shared_context_new)(void *data, gfx_ctx_shared_context_t *out);
+   bool (*shared_context_bind)(gfx_ctx_shared_context_t *ctx, bool bind);
+   void (*shared_context_free)(gfx_ctx_shared_context_t *ctx);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -1382,10 +1418,7 @@ typedef struct video_driver
    const struct font_renderer *font_backend;
 
 #ifdef HAVE_OPENXR
-   bool (*get_vr_frame_state)(void *data, struct retro_vr_frame_state *out);
    bool (*set_vr_content_info)(void *data, const video_vr_content_info_t *info);
-   /* Optional: RETRO_VIDEO_VIEWS_STATUS_ flags for the live session. */
-   unsigned (*get_video_views_status)(void *data);
 #endif
 
    /* Optional: read_viewport as 32-bit B,G,R,X, viewport width * 4
@@ -1396,6 +1429,55 @@ typedef struct video_driver
 } video_driver_t;
 
 #ifdef HAVE_OPENXR
+/* What the headset's host says of it. */
+enum video_xr_headset_bits
+{
+   /* Its frames reach the headset. */
+   VIDEO_XR_HEADSET_PRESENTING = (1 << 0),
+   VIDEO_XR_HEADSET_FOCUSED    = (1 << 1),
+   /* The pose calls answer: a core's RETRO_VIDEO_VIEWS_STATUS_HMD. */
+   VIDEO_XR_HEADSET_TRACKING   = (1 << 2)
+};
+
+/* What owns the OpenXR session: the desktop's XR thread, or a Quest
+ * context's own frame. It registers from its driver's init and clears
+ * itself when it stops; the driver's free forgets it too. */
+typedef struct video_xr_host
+{
+   /* Any thread: VIDEO_XR_HEADSET_ bits. */
+   unsigned (*state)(void *user);
+   /* The thread that draws the host's frames. sample runs once a core
+    * frame, before the core, and writes the frame's RETRO_VR_FRAME_ bits. */
+   bool (*sample)(void *user, uint32_t *frame_flags);
+   bool (*eye_state)(void *user, struct retro_vr_eye_state out[2]);
+   /* The space tracked content is in, and one eye's recommended image
+    * size; what was granted is written back. */
+   bool (*set_space)(void *user, enum retro_vr_reference_space *space,
+         unsigned *eye_width, unsigned *eye_height);
+   /* Main thread, after sample: the head as sampled. */
+   bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
+   /* Any thread: one eye's recommended image size. */
+   bool (*eye_size)(void *user, unsigned *eye_width, unsigned *eye_height);
+   /* The drawing thread, after a reinit set the same content's space
+    * again: the host places the views the core was last given in it,
+    * through the room, and tells a core whose origin moved. NULL if the
+    * host keeps none. */
+   void (*resume)(void *user);
+   void *user;
+} video_xr_host_t;
+
+/* NULL forgets the host. */
+void video_driver_set_xr_host(const video_xr_host_t *host);
+/* Whether the current context is a headset's own (its get_flags). */
+bool video_context_driver_headset_inline(void);
+/* Whether this build shows a headset through the video driver named:
+ * the menu lists the headset's settings for it. */
+bool video_driver_has_headset_path(const char *ident);
+/* VIDEO_XR_HEADSET_ bits; 0 without a host. */
+unsigned video_driver_xr_headset(void);
+/* After a video init: the core's VR content goes to the new driver. */
+void video_driver_vr_driver_changed(void);
+
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);

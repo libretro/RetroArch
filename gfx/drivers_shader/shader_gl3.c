@@ -1372,8 +1372,11 @@ static bool gl3_pass_build(struct gl3_pass *pass)
    pass->framebuffer_feedback = NULL;
 
    if (!pass->final_pass)
-      pass->framebuffer = gl3_framebuffer_new(pass->pass_info.rt_format,
-            pass->pass_info.max_levels);
+   {
+      if (!(pass->framebuffer = gl3_framebuffer_new(
+                  pass->pass_info.rt_format, pass->pass_info.max_levels)))
+         return false;
+   }
 
    for (i = 0; i < pass->num_parameters; i++)
    {
@@ -3807,6 +3810,51 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
       return NULL;
    }
 
+   return chain;
+}
+
+gl3_filter_chain_t *gl3_filter_chain_create_shrink(void)
+{
+   unsigned i;
+   struct gl3_filter_chain_pass_info pass_info;
+   struct gl3_filter_chain *chain = gl3_chain_new(2);
+   if (!chain)
+      return NULL;
+
+   /* A copy at the source's size; max_levels gives its framebuffer
+    * every mip level, which the chain builds after the pass. */
+   pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+   pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
+   pass_info.scale_x       = 1.0f;
+   pass_info.scale_y       = 1.0f;
+   pass_info.rt_format     = GL_RGBA8;
+   pass_info.source_filter = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_NEAREST;
+   pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+   pass_info.max_levels    = ~0u;
+   gl3_chain_set_pass_info(chain, 0, pass_info);
+
+   /* Trilinear from those mips into the viewport. */
+   pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
+   pass_info.rt_format     = 0;
+   pass_info.source_filter = GLSLANG_FILTER_CHAIN_LINEAR;
+   pass_info.mip_filter    = GLSLANG_FILTER_CHAIN_LINEAR;
+   pass_info.max_levels    = 0;
+   gl3_chain_set_pass_info(chain, 1, pass_info);
+
+   for (i = 0; i < 2; i++)
+   {
+      gl3_chain_set_shader(chain, i, GL_VERTEX_SHADER,
+            gl3_opaque_vert, sizeof(gl3_opaque_vert) / sizeof(uint32_t));
+      gl3_chain_set_shader(chain, i, GL_FRAGMENT_SHADER,
+            gl3_opaque_frag, sizeof(gl3_opaque_frag) / sizeof(uint32_t));
+   }
+   if (!gl3_chain_init(chain))
+   {
+      gl3_chain_free(chain);
+      return NULL;
+   }
    return chain;
 }
 

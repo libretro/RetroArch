@@ -246,6 +246,14 @@ struct gl2
       unsigned expand_gamut;
    } scrgb;
 
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   /* The framebuffer the headset's tracked eyes are drawn through. */
+   GLuint xr_fbo;
+#endif
+#if defined(HAVE_OPENXR_GL) && !defined(ANDROID)
+   /* Desktop headset output, while its host runs; gl2.c's own. */
+   struct gl2_desktop_xr *desktop_xr;
+#endif
 };
 
 bool gl2_load_luts(

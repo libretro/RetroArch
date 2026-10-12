@@ -224,6 +224,16 @@ jobs:
           python3 tools/gl_ring_fence_check.py --selftest
           python3 tools/gl_ring_fence_check.py
 
+      - name: Check the GL drivers set their vsync report with the swap interval
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # Set apart, the threaded presenter counts a vsync wait as
+          # drawing time, or subtracts one that was not made.
+          python3 tools/gl_present_vsynced_check.py --selftest
+          python3 tools/gl_present_vsynced_check.py
+
       - name: Check a setting's label exists wherever its translations name it
         shell: bash
         working-directory: ${{ github.workspace }}

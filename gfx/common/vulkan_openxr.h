@@ -33,13 +33,15 @@
 #endif
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+#include "openxr_swapchain.h"
 #include "../video_xr.h"
 
 RETRO_BEGIN_DECLS
 
 /* Headset output through OpenXR: the runtime's instance, the Vulkan
- * instance and device it asks for, its session, and the thread that
- * runs the headset's frame loop, on the loader built into the tree. */
+ * instance and device it asks for, its session, and the XR thread (or
+ * the video frame) that runs the headset's frame loop, on the loader
+ * built into the tree. */
 typedef struct vulkan_openxr vulkan_openxr_t;
 
 #define VULKAN_OPENXR_MAX_EXTS 16
@@ -80,53 +82,53 @@ VkResult vulkan_openxr_create_device(vulkan_openxr_t *xr,
 /* The GPU the headset is attached to, or VK_NULL_HANDLE. */
 VkPhysicalDevice vulkan_openxr_gpu(vulkan_openxr_t *xr, VkInstance instance);
 
-/* What the headset input needs from a session, valid between the hooks'
- * session_created and session_destroying. */
-typedef struct vulkan_openxr_handles
+/* A headset's own context (the Quest's): the runtime's loader and
+ * instance chain, and what it hears when the session ends. A runtime
+ * made while it is set runs in-line, in the video frame. */
+typedef struct vulkan_openxr_platform
 {
-   vulkan_openxr_t *xr;
-   XrInstance instance;
-   XrSession session;
-   XrSpace local_space;
-   PFN_xrGetInstanceProcAddr get_proc;
-   /* XR_VALVE_frame_controller_interaction is enabled. */
-   bool frame_controller;
-} vulkan_openxr_handles_t;
-
-#define VULKAN_OPENXR_MAX_EXTRA_LAYERS 4
-
-typedef struct vulkan_openxr_hooks
-{
-   /* The session and its spaces exist and its frame loop has not
-    * started: make, suggest and attach action sets here, and destroy
-    * them in session_destroying. A kept device's instance gets a new
-    * session after the runtime ends one. */
-   void (*session_created)(void *user, const vulkan_openxr_handles_t *handles);
-   /* The frame loop has stopped; the session is destroyed next. */
-   void (*session_destroying)(void *user, vulkan_openxr_t *xr);
-   /* The XR thread, each headset frame: up to cap layers drawn over
-    * RetroArch's. Returns how many were written. */
-   unsigned (*frame_layers)(void *user, XrTime display_time,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+   openxr_runtime_platform_t runtime;
+   /* The session exited or was lost; only ask to quit, never free xr. */
+   void (*ended)(void *user);
    void *user;
-} vulkan_openxr_hooks_t;
+} vulkan_openxr_platform_t;
 
-/* Main thread, while the XR thread is stopped. NULL clears. */
-void vulkan_openxr_set_hooks(const vulkan_openxr_hooks_t *hooks);
+/* Before vulkan_context_init(); NULL clears. */
+void vulkan_openxr_set_platform(const vulkan_openxr_platform_t *p);
+
+bool vulkan_openxr_inline(const vulkan_openxr_t *xr);
+
+/* In-line, on the video thread, outside the queue lock: begin polls
+ * the session and begins the headset's frame at the top of the video
+ * frame; end, after the frame's submit, ends it with what was
+ * published, or keeps the core on the clock when none was begun. A
+ * second begin before the end does nothing. The core frame then shows
+ * for interval headset frames. */
+void vulkan_openxr_begin_frame(vulkan_openxr_t *xr);
+void vulkan_openxr_end_frame(vulkan_openxr_t *xr, unsigned interval);
+
+/* The video thread, as vulkan_openxr_start does: again for a context
+ * kept across a reinit, which the driver's free made forget it. */
+void vulkan_openxr_host_register(vulkan_openxr_t *xr);
+
+/* One eye's recommended image size. */
+void vulkan_openxr_eye_size(const vulkan_openxr_t *xr, unsigned *width,
+      unsigned *height);
 
 /* Makes the session on the first call, and again when the runtime ended
- * the last one, then (again after a stop) starts the XR thread. Every
- * OpenXR call that may use the queue holds queue_lock. False when the
- * session could not be made. */
+ * the last one, then (again after a stop) starts the XR thread, unless
+ * in-line. Every OpenXR call that may use the queue holds queue_lock.
+ * False when the session could not be made. */
 bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
       VkPhysicalDevice gpu, VkDevice device, uint32_t queue_family,
       slock_t *queue_lock);
 
-/* Stops the XR thread; the session stays. NULL is fine. */
+/* Stops the XR thread, if any; the session stays. NULL is fine. */
 void vulkan_openxr_stop(vulkan_openxr_t *xr);
 
-/* Stops the XR thread alone, before a core's context_destroy: the core
- * may wait on the device there without the queue lock. NULL is fine. */
+/* Stops the XR thread, or an in-line host's frames, and nothing else,
+ * before a core's context_destroy: the core may wait on the device there
+ * without the queue lock. NULL is fine. */
 void vulkan_openxr_stop_thread(vulkan_openxr_t *xr);
 
 /* The session failed on a device made for it: frees, tells the user,
@@ -141,12 +143,10 @@ bool vulkan_openxr_alive(vulkan_openxr_t *xr);
  * made on its device again. */
 bool vulkan_openxr_lost(const vulkan_openxr_t *xr);
 
-/* The session's focus as the XR thread last saw it, and its latest
- * predicted display time. */
+/* The session's focus as the XR thread last saw it. */
 bool vulkan_openxr_focused(vulkan_openxr_t *xr);
-XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr);
 
-#define VULKAN_OPENXR_MAX_IMAGES 8
+#define VULKAN_OPENXR_MAX_IMAGES OPENXR_MAX_IMAGES
 
 /* Video thread: whether to draw for the headset now. */
 bool vulkan_openxr_should_draw(vulkan_openxr_t *xr);
@@ -209,22 +209,37 @@ void vulkan_openxr_slot_forget(vulkan_openxr_t *xr, unsigned slot);
 void vulkan_openxr_publish(vulkan_openxr_t *xr,
       const video_xr_quad_set_t *set);
 
-/* Where screen 0 is centred in front of. */
-void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor);
+/* Video thread: while the driver shows the headset nothing, it is not
+ * said to present or track, so a core sees no HMD. */
+void vulkan_openxr_set_hidden(vulkan_openxr_t *xr, bool hidden);
 
-/* Any thread: the quads the XR thread submits. */
-bool vulkan_openxr_get_quads(vulkan_openxr_t *xr, video_xr_quad_set_t *out);
+/* Video thread, after the frame that drew them is submitted: the
+ * projection slot's two images, each eye width x height from the top
+ * left, with the views the core was last given. Clear: none. */
+void vulkan_openxr_publish_projection(vulkan_openxr_t *xr,
+      unsigned width, unsigned height);
+void vulkan_openxr_clear_projection(vulkan_openxr_t *xr);
+
+/* Video thread: a projection published now would be shown, as the core
+ * was given views in the current track space. */
+bool vulkan_openxr_has_given(const vulkan_openxr_t *xr);
+/* Video thread, each frame: views kept across a reinit are placed in
+ * this session once a frame time locates it (a repeat), and go with a
+ * new core frame, which they did not draw. */
+void vulkan_openxr_place_kept(vulkan_openxr_t *xr);
+void vulkan_openxr_new_frame(vulkan_openxr_t *xr);
+
+/* One eye's recommended image size, no larger than the headset takes;
+ * 0 without one. */
+unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr);
 
 /* Any thread: place the screens in front of where the headset looks, at
  * its next frame. */
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr);
 
-#define VULKAN_OPENXR_CURSOR_DIM 32
-
-/* The laser's round dot: one image, made at each start and freed at
- * each stop, for layers the hooks add. XR_NULL_HANDLE if it could not
- * be made. The XR thread may use it. */
-XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr);
+/* Any thread: where the headset keeps the screens (enum
+ * video_openxr_placement). */
+void vulkan_openxr_set_placement(vulkan_openxr_t *xr, unsigned placement);
 
 RETRO_END_DECLS
 

@@ -4,11 +4,11 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-S_BOOL(video_openxr_enable, VIDEO_OPENXR_ENABLE,
+S_BOOL_EX(video_openxr_enable, VIDEO_OPENXR_ENABLE,
       "video_openxr_enable",
-      false, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
+      false, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT, setting_bool_action_ok_video_openxr_enable, NULL, setting_action_start_video_openxr_enable, NULL, setting_bool_action_ok_video_openxr_enable, setting_bool_action_ok_video_openxr_enable, 0,
       "Headset Output (OpenXR)",
-      "Also show content in an OpenXR headset: each screen as its own floating screen, with both eyes of stereo 3D, and the menu in front of them. Vulkan only. The window keeps its normal output.")
+      "Also show content in an OpenXR headset: each screen as its own floating screen, with both eyes of stereo 3D, and the menu in front of them. Vulkan, or OpenGL on Linux. The window keeps its normal output.")
 S_UINT_EX(video_openxr_refresh_rate, VIDEO_OPENXR_REFRESH_RATE,
       "video_openxr_refresh_rate",
       0, SD_FLAG_NONE, 0, 0, 0, 0, 0, 0, setting_action_ok_video_openxr_refresh_rate, setting_get_string_representation_video_openxr_refresh_rate, NULL, NULL, setting_uint_action_left_video_openxr_refresh_rate, setting_uint_action_right_video_openxr_refresh_rate, 0,
@@ -24,6 +24,11 @@ S_FLOAT(video_openxr_width, VIDEO_OPENXR_WIDTH,
       1.6f, "%.1f m", SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0.3, 10.0, 0.1, NULL, NULL,
       "Screen Width",
       "The width of the main screen in the headset. Other screens are sized to match it.")
+S_UINT_EX(video_openxr_placement, VIDEO_OPENXR_PLACEMENT,
+      "video_openxr_placement",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_placement, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Screen Placement",
+      "Where the headset keeps the screens. Fixed in Room: where Recenter puts them. Follow Head: always in front of you; on a large screen the edges sit where the lenses blur. Lazy Follow: they stay until you turn well away, then glide back in front of you.")
 S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

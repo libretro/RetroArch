@@ -2070,9 +2070,7 @@ video_driver_t video_sdl3 = {
    NULL, /* read_viewport_hdr */
    &sdl3_raster_font,
 #ifdef HAVE_OPENXR
-   NULL, /* get_vr_frame_state */
    NULL, /* set_vr_content_info */
-   NULL, /* get_video_views_status */
 #endif
    sdl3_gfx_read_viewport_bgrx
 };

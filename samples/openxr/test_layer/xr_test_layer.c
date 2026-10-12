@@ -45,6 +45,21 @@
  *   fail waitframe          xrWaitFrame reports XR_ERROR_SESSION_LOST
  *   fail instance           xrPollEvent reports XR_ERROR_INSTANCE_LOST
  *                           while a session exists
+ *   fail eyes               xrCreateSwapchain fails at the recommended
+ *                           view size
+ *   fail stage              xrCreateReferenceSpace has no STAGE
+ *   busy eyes               xrWaitSwapchainImage times out for a
+ *                           swapchain at the recommended view size, as
+ *                           while the compositor still reads its image;
+ *                           busy off: the runtime's own answer
+ *   invalid stage <n>       the next session's first n locations in a
+ *                           STAGE space come back without valid bits
+ *   invalid views           xrLocateViews answers without valid bits
+ *   eyes <w> <h>            xrEnumerateViewConfigurationViews recommends
+ *                           w x h; eyes off: the runtime's own
+ *   sync <n>                xrSyncActions answers XrResult n with nothing
+ *                           active (8: the session is not focused);
+ *                           sync 0: the runtime's own answer
  *   state <n>               queue session state n: while a session
  *                           exists, each xrPollEvent reports the oldest
  *   space <n>               the next xrPollEvent reports reference space
@@ -60,15 +75,23 @@
  *                           an action's state while its set is synced:
  *                           boolean x != 0, float x, vector2f x y
  *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz>
- *                           that hand's pose spaces at p, -Z towards t
+ *                           that hand's pose spaces at p, -Z towards t,
+ *                           in LOCAL; in VIEW through the scripted head
  *   aim <left|right> off    that hand untracked
  *
+ * A session on an OpenGL binding (XR_MNDX_egl_enable's EGL or
+ * XR_KHR_opengl_enable's Xlib) has its images read on the thread that
+ * releases them, which holds the session's context: through a
+ * framebuffer of the layer's own, bottom row last, as the compositor
+ * shows a GL image. A read that fails is recorded as a capture_failed
+ * event, never as an image.
+ *
  * A changed script (a new mtime, inode or size) is applied line by
- * line. head, fail, divide and rates stay in effect until a later line
- * of the same kind replaces them (head off, fail off). state and space
- * fire once per change of the file. Every read starts from no actions
- * and no aims: a script is the whole controller state. Action states
- * and hand poses never come from the runtime.
+ * line. head, fail, busy, sync, divide, rates and eyes stay in effect until
+ * a later line of the same kind replaces them (head off, fail off). state
+ * and space fire once per change of the file. Every read starts from no
+ * actions, no aims and valid views: a script is the whole controller
+ * state. Action states and hand poses never come from the runtime.
  */
 
 #include <math.h>
@@ -82,8 +105,17 @@
 #include <time.h>
 #include <zlib.h>
 
+#include <dlfcn.h>
 #include <vulkan/vulkan.h>
+#include <EGL/egl.h>
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/glx.h>
 #define XR_USE_GRAPHICS_API_VULKAN
+#define XR_USE_GRAPHICS_API_OPENGL
+#define XR_USE_PLATFORM_EGL
+#define XR_USE_PLATFORM_XLIB
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 #include <openxr/openxr_loader_negotiation.h>
@@ -124,6 +156,7 @@ struct chain
    uint32_t width, height, layers;
    int64_t format;
    VkImage images[MAX_IMAGES];
+   GLuint gl_images[MAX_IMAGES];    /* a GL session's */
    uint32_t num_images;
    uint32_t acquired[MAX_IMAGES];   /* indices, oldest first */
    uint32_t num_acquired;
@@ -149,10 +182,20 @@ static struct
    bool fail_session;
    bool fail_waitframe;
    bool fail_instance;
+   bool fail_eyes;
+   bool busy_eyes;
+   bool fail_stage;
+   unsigned invalid_stage_next;  /* for the next session */
+   unsigned invalid_stage;       /* left in this one */
+   bool invalid_views;
+   uint32_t script_eye_w, script_eye_h;  /* 0: the runtime's */
+   uint32_t eye_w, eye_h;    /* the recommended view size */
+   int sync_result;
    int inject_states[8];     /* oldest first */
    unsigned num_inject_states;
    int inject_space;
    XrSession session;
+   XrSpace stage;              /* the layer's own, for "stage" poses */
    XrPosef head;
    uint64_t frames;
    XrDuration period;
@@ -160,6 +203,25 @@ static struct
    unsigned divide;            /* one runtime frame in divide */
    float rates[MAX_RATES];     /* offered in the runtime's place */
    unsigned num_rates;
+
+   /* The session's graphics: 1 Vulkan, 2 OpenGL. */
+   int graphics;
+   struct
+   {
+      void (*GenFramebuffers)(GLsizei, GLuint*);
+      void (*DeleteFramebuffers)(GLsizei, const GLuint*);
+      void (*BindFramebuffer)(GLenum, GLuint);
+      void (*FramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+      GLenum (*CheckFramebufferStatus)(GLenum);
+      void (*ReadBuffer)(GLenum);
+      void (*ReadPixels)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum,
+            void*);
+      void (*PixelStorei)(GLenum, GLint);
+      void (*GetIntegerv)(GLenum, GLint*);
+      GLenum (*GetError)(void);
+   } gl;
+   GLuint gl_fbo;              /* the session context's own */
+   unsigned capture_failures;
 
    VkPhysicalDevice gpu;
    VkDevice device;
@@ -181,14 +243,17 @@ static struct
    PFN_xrPollEvent PollEvent;
    PFN_xrCreateReferenceSpace CreateReferenceSpace;
    PFN_xrLocateSpace LocateSpace;
+   PFN_xrLocateViews LocateViews;
    PFN_xrCreateSwapchain CreateSwapchain;
    PFN_xrDestroySwapchain DestroySwapchain;
    PFN_xrEnumerateSwapchainImages EnumerateSwapchainImages;
    PFN_xrAcquireSwapchainImage AcquireSwapchainImage;
+   PFN_xrWaitSwapchainImage WaitSwapchainImage;
    PFN_xrReleaseSwapchainImage ReleaseSwapchainImage;
    PFN_xrWaitFrame WaitFrame;
    PFN_xrBeginFrame BeginFrame;
    PFN_xrEndFrame EndFrame;
+   PFN_xrEnumerateViewConfigurationViews EnumerateViewConfigurationViews;
 
    XrInstance instance;
    bool frame;               /* the application enabled FRAME_EXT */
@@ -380,6 +445,18 @@ static void script_fail(const char *args)
    L.fail_session   = !strncmp(args, "session", 7);
    L.fail_waitframe = !strncmp(args, "waitframe", 9);
    L.fail_instance  = !strncmp(args, "instance", 8);
+   L.fail_eyes      = !strncmp(args, "eyes", 4);
+   L.fail_stage     = !strncmp(args, "stage", 5);
+}
+
+static void script_busy(const char *args)
+{
+   L.busy_eyes = !strncmp(args, "eyes", 4);
+}
+
+static void script_sync(const char *args)
+{
+   L.sync_result = atoi(args);
 }
 
 /* Queued until a session exists, so a script may lead with states. */
@@ -393,6 +470,27 @@ static void script_state(const char *args)
 static void script_space(const char *args)
 {
    L.inject_space = atoi(args);
+}
+
+static void script_invalid(const char *args)
+{
+   unsigned n;
+   if (sscanf(args, "stage %u", &n) == 1)
+      L.invalid_stage_next = n;
+   else if (!strncmp(args, "views", 5))
+      L.invalid_views = true;
+}
+
+static void script_eyes(const char *args)
+{
+   unsigned w, h;
+   if (!strncmp(args, "off", 3))
+      L.script_eye_w = L.script_eye_h = 0;
+   else if (sscanf(args, "%u %u", &w, &h) == 2 && w && h)
+   {
+      L.script_eye_w = w;
+      L.script_eye_h = h;
+   }
 }
 
 static void script_divide(const char *args)
@@ -420,9 +518,10 @@ static void script_rates(const char *args)
 
 static void script_reset(void)
 {
-   L.num_scripted = 0;
-   L.aim_set[1]   = false;
-   L.aim_set[2]   = false;
+   L.num_scripted  = 0;
+   L.aim_set[1]    = false;
+   L.aim_set[2]    = false;
+   L.invalid_views = false;
 }
 
 static int parse_hand(const char *s)
@@ -496,10 +595,14 @@ static const struct
 } script_cmds[] = {
    { "head", script_head },
    { "fail", script_fail },
+   { "busy", script_busy },
+   { "sync", script_sync },
    { "state", script_state },
    { "action", script_action },
    { "aim", script_aim },
    { "space", script_space },
+   { "invalid", script_invalid },
+   { "eyes", script_eyes },
    { "divide", script_divide },
    { "rates", script_rates },
 };
@@ -550,6 +653,10 @@ static bool rgba8(int64_t format, bool *bgra)
       case VK_FORMAT_B8G8R8A8_UNORM:
       case VK_FORMAT_B8G8R8A8_SRGB:
          *bgra = true;
+         return true;
+      case GL_RGBA8:
+      case GL_SRGB8_ALPHA8:
+         *bgra = false;
          return true;
       default:
          break;
@@ -692,6 +799,104 @@ static void capture(struct chain *c, uint32_t index)
    c->has_pixels = true;
 }
 
+/* GL's procedures through the binding's own loader: EGL's from the
+ * binding, GLX's from the library the application already loaded. */
+static bool gl_load(PFN_xrEglGetProcAddressMNDX egl_proc)
+{
+   typedef void (*(*glx_proc_t)(const GLubyte*))(void);
+   glx_proc_t glx = NULL;
+#define LAYER_GL_LOAD(field, name) do { void (*fn_)(void) = egl_proc \
+      ? (void (*)(void))egl_proc(name) : (glx ? glx((const GLubyte*)name) : NULL); \
+      memcpy(&L.gl.field, &fn_, sizeof(fn_)); \
+      if (!fn_) return false; } while (0)
+   if (!egl_proc)
+      glx = (glx_proc_t)dlsym(RTLD_DEFAULT, "glXGetProcAddressARB");
+   LAYER_GL_LOAD(GenFramebuffers, "glGenFramebuffers");
+   LAYER_GL_LOAD(DeleteFramebuffers, "glDeleteFramebuffers");
+   LAYER_GL_LOAD(BindFramebuffer, "glBindFramebuffer");
+   LAYER_GL_LOAD(FramebufferTexture2D, "glFramebufferTexture2D");
+   LAYER_GL_LOAD(CheckFramebufferStatus, "glCheckFramebufferStatus");
+   LAYER_GL_LOAD(ReadBuffer, "glReadBuffer");
+   LAYER_GL_LOAD(ReadPixels, "glReadPixels");
+   LAYER_GL_LOAD(PixelStorei, "glPixelStorei");
+   LAYER_GL_LOAD(GetIntegerv, "glGetIntegerv");
+   LAYER_GL_LOAD(GetError, "glGetError");
+#undef LAYER_GL_LOAD
+   return true;
+}
+
+static void capture_failed(struct chain *c, GLenum status, GLenum error)
+{
+   c->has_pixels = false;
+   L.capture_failures++;
+   if (L.out)
+   {
+      fprintf(L.out, "{\"ev\":\"capture_failed\",\"sc\":%d,"
+            "\"status\":%u,\"error\":%u,\"t_us\":%lld}\n", c->id,
+            (unsigned)status, (unsigned)error, now_us());
+      fflush(L.out);
+   }
+}
+
+/* Caller holds L.lock, on the thread releasing the image, the session's
+ * context current. The application's read framebuffer, its read buffer
+ * and pack alignment are as they were. */
+static void capture_gl(struct chain *c, uint32_t index)
+{
+   bool bgra;
+   uint32_t y;
+   GLenum status = 0, error;
+   GLint read_fbo = 0, pack = 4;
+   size_t row  = (size_t)c->width * 4;
+   size_t size = row * c->height;
+   unsigned char *tmp;
+
+   if (     L.graphics != 2 || !L.snap_every || index >= c->num_images
+         || c->layers != 1 || !rgba8(c->format, &bgra))
+      return;
+   if (!c->pixels || c->size != size)
+   {
+      free(c->pixels);
+      c->size = 0;
+      if (!(c->pixels = malloc(size)))
+         return;
+      c->size = size;
+   }
+   if (!(tmp = malloc(size)))
+      return;
+   while (L.gl.GetError() != GL_NO_ERROR) { }
+   L.gl.GetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
+   L.gl.GetIntegerv(GL_PACK_ALIGNMENT, &pack);
+   if (!L.gl_fbo)
+      L.gl.GenFramebuffers(1, &L.gl_fbo);
+   L.gl.BindFramebuffer(GL_READ_FRAMEBUFFER, L.gl_fbo);
+   L.gl.FramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, c->gl_images[index], 0);
+   status = L.gl.CheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+   if (status == GL_FRAMEBUFFER_COMPLETE)
+   {
+      L.gl.ReadBuffer(GL_COLOR_ATTACHMENT0);
+      L.gl.PixelStorei(GL_PACK_ALIGNMENT, 1);
+      L.gl.ReadPixels(0, 0, (GLsizei)c->width, (GLsizei)c->height, GL_RGBA,
+            GL_UNSIGNED_BYTE, tmp);
+   }
+   L.gl.FramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, 0, 0);
+   L.gl.BindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read_fbo);
+   L.gl.PixelStorei(GL_PACK_ALIGNMENT, pack);
+   error = L.gl.GetError();
+   if (status != GL_FRAMEBUFFER_COMPLETE || error != GL_NO_ERROR)
+      capture_failed(c, status, error);
+   else
+   {
+      /* GL's first row is the image's bottom: the PNG's is its top. */
+      for (y = 0; y < c->height; y++)
+         memcpy(c->pixels + y * row, tmp + (c->height - 1 - y) * row, row);
+      c->has_pixels = true;
+   }
+   free(tmp);
+}
+
 static void put_be32(unsigned char *p, uint32_t v)
 {
    p[0] = (unsigned char)(v >> 24);
@@ -795,11 +1000,33 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSession(XrInstance instance,
       return res;
    pthread_mutex_lock(&L.lock);
    for (p = (const XrBaseInStructure*)info->next; p; p = p->next)
-      if (p->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR)
+      if (     p->type == XR_TYPE_GRAPHICS_BINDING_EGL_MNDX
+            || p->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR)
+      {
+         PFN_xrEglGetProcAddressMNDX egl_proc = NULL;
+         if (p->type == XR_TYPE_GRAPHICS_BINDING_EGL_MNDX)
+            egl_proc = ((const XrGraphicsBindingEGLMNDX*)p)->getProcAddress;
+         L.session            = *session;
+         L.invalid_stage      = L.invalid_stage_next;
+         L.invalid_stage_next = 0;
+         L.graphics           = gl_load(egl_proc) ? 2 : 0;
+         L.gl_fbo             = 0;
+         if (L.out)
+         {
+            fprintf(L.out, "{\"ev\":\"session\",\"t_us\":%lld,"
+                  "\"graphics\":\"%s\",\"capture\":%s}\n", now_us(),
+                  egl_proc ? "egl" : "glx", L.graphics ? "true" : "false");
+            fflush(L.out);
+         }
+      }
+      else if (p->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR)
       {
          const XrGraphicsBindingVulkanKHR *b =
             (const XrGraphicsBindingVulkanKHR*)p;
-         L.session      = *session;
+         L.session            = *session;
+         L.invalid_stage      = L.invalid_stage_next;
+         L.invalid_stage_next = 0;
+         L.graphics     = 1;
          L.gpu          = b->physicalDevice;
          L.device       = b->device;
          L.queue_family = b->queueFamilyIndex;
@@ -814,6 +1041,17 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_DestroySession(XrSession session)
 {
    int i;
    pthread_mutex_lock(&L.lock);
+   /* The session's context is still current: its framebuffer goes now. */
+   if (L.graphics == 2 && L.gl_fbo)
+      L.gl.DeleteFramebuffers(1, &L.gl_fbo);
+   if (L.out)
+   {
+      fprintf(L.out, "{\"ev\":\"session_end\",\"t_us\":%lld}\n",
+            now_us());
+      fflush(L.out);
+   }
+   L.gl_fbo   = 0;
+   L.graphics = 0;
    /* Before the application destroys its device. */
    if (L.device)
    {
@@ -841,6 +1079,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_DestroySession(XrSession session)
       free(L.chains[i].pixels);
       memset(&L.chains[i], 0, sizeof(L.chains[i]));
    }
+   if (L.stage)
+      L.DestroySpace(L.stage);
+   L.stage           = XR_NULL_HANDLE;
    L.num_spaces      = 0;
    L.num_hand_spaces = 0;
    L.session         = XR_NULL_HANDLE;
@@ -928,7 +1169,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_PollEvent(XrInstance instance,
 static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateReferenceSpace(XrSession session,
       const XrReferenceSpaceCreateInfo *info, XrSpace *space)
 {
-   XrResult res = L.CreateReferenceSpace(session, info, space);
+   XrResult res;
+   bool fail;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   fail = L.fail_stage
+      && info->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE;
+   pthread_mutex_unlock(&L.lock);
+   if (fail)
+      return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
+   res = L.CreateReferenceSpace(session, info, space);
    if (XR_SUCCEEDED(res))
    {
       pthread_mutex_lock(&L.lock);
@@ -941,6 +1191,40 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateReferenceSpace(XrSession sessi
       pthread_mutex_unlock(&L.lock);
    }
    return res;
+}
+
+/* b, a pose in LOCAL, as seen from a, another pose in LOCAL. */
+static XrPosef pose_from(const XrPosef *a, const XrPosef *b)
+{
+   XrPosef out;
+   XrVector3f d;
+   float cx, cy, cz, ccx, ccy, ccz;
+   XrQuaternionf q = a->orientation;
+   q.x = -q.x;
+   q.y = -q.y;
+   q.z = -q.z;
+   d.x = b->position.x - a->position.x;
+   d.y = b->position.y - a->position.y;
+   d.z = b->position.z - a->position.z;
+   /* d turned by q: d + 2w (q x d) + 2 q x (q x d) */
+   cx  = q.y * d.z - q.z * d.y;
+   cy  = q.z * d.x - q.x * d.z;
+   cz  = q.x * d.y - q.y * d.x;
+   ccx = q.y * cz - q.z * cy;
+   ccy = q.z * cx - q.x * cz;
+   ccz = q.x * cy - q.y * cx;
+   out.position.x    = d.x + 2.0f * (q.w * cx + ccx);
+   out.position.y    = d.y + 2.0f * (q.w * cy + ccy);
+   out.position.z    = d.z + 2.0f * (q.w * cz + ccz);
+   out.orientation.x = q.w * b->orientation.x + q.x * b->orientation.w
+      + q.y * b->orientation.z - q.z * b->orientation.y;
+   out.orientation.y = q.w * b->orientation.y - q.x * b->orientation.z
+      + q.y * b->orientation.w + q.z * b->orientation.x;
+   out.orientation.z = q.w * b->orientation.z + q.x * b->orientation.y
+      - q.y * b->orientation.x + q.z * b->orientation.w;
+   out.orientation.w = q.w * b->orientation.w - q.x * b->orientation.x
+      - q.y * b->orientation.y - q.z * b->orientation.z;
+   return out;
 }
 
 static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
@@ -963,12 +1247,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
    }
    else if (XR_SUCCEEDED(res) && hand)
    {
-      /* Hands are only where the script puts them. */
-      bool tracked = L.aim_set[hand]
-         && space_type(base) == XR_REFERENCE_SPACE_TYPE_LOCAL;
+      /* Hands are only where the script puts them: in LOCAL, or in VIEW
+       * through the scripted head. */
+      int base_type = space_type(base);
+      bool tracked  = L.aim_set[hand]
+         && (   base_type == XR_REFERENCE_SPACE_TYPE_LOCAL
+             || (base_type == XR_REFERENCE_SPACE_TYPE_VIEW && L.head_set));
       if (tracked)
       {
-         loc->pose          = L.aim[hand];
+         loc->pose          = (base_type == XR_REFERENCE_SPACE_TYPE_VIEW)
+            ? pose_from(&L.head, &L.aim[hand]) : L.aim[hand];
          loc->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
             | XR_SPACE_LOCATION_POSITION_VALID_BIT
             | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT
@@ -988,6 +1276,49 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
          }
       }
    }
+   else if (     XR_SUCCEEDED(res) && L.invalid_stage
+            && space_type(base) == XR_REFERENCE_SPACE_TYPE_STAGE)
+   {
+      L.invalid_stage--;
+      loc->locationFlags = 0;
+   }
+   pthread_mutex_unlock(&L.lock);
+   return res;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateViewConfigurationViews(
+      XrInstance instance, XrSystemId system, XrViewConfigurationType type,
+      uint32_t capacity, uint32_t *count, XrViewConfigurationView *views)
+{
+   XrResult res = L.EnumerateViewConfigurationViews(instance, system, type,
+         capacity, count, views);
+   if (XR_SUCCEEDED(res) && views && *count)
+   {
+      uint32_t i;
+      pthread_mutex_lock(&L.lock);
+      script_poll();
+      for (i = 0; L.script_eye_w && i < *count && i < capacity; i++)
+      {
+         views[i].recommendedImageRectWidth  = L.script_eye_w;
+         views[i].recommendedImageRectHeight = L.script_eye_h;
+      }
+      L.eye_w = views[0].recommendedImageRectWidth;
+      L.eye_h = views[0].recommendedImageRectHeight;
+      pthread_mutex_unlock(&L.lock);
+   }
+   return res;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateViews(XrSession session,
+      const XrViewLocateInfo *info, XrViewState *state, uint32_t capacity,
+      uint32_t *count, XrView *views)
+{
+   XrResult res = L.LocateViews(session, info, state, capacity, count,
+         views);
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   if (XR_SUCCEEDED(res) && L.invalid_views)
+      state->viewStateFlags = 0;
    pthread_mutex_unlock(&L.lock);
    return res;
 }
@@ -996,8 +1327,15 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSwapchain(XrSession session,
       const XrSwapchainCreateInfo *info, XrSwapchain *sc)
 {
    int i;
+   bool fail;
    XrResult res;
    XrSwapchainCreateInfo ci = *info;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   fail = L.fail_eyes && info->width == L.eye_w && info->height == L.eye_h;
+   pthread_mutex_unlock(&L.lock);
+   if (fail)
+      return XR_ERROR_LIMIT_REACHED;
    /* So released images can be copied back. */
    ci.usageFlags |= XR_SWAPCHAIN_USAGE_TRANSFER_SRC_BIT;
    res = L.CreateSwapchain(session, &ci, sc);
@@ -1054,7 +1392,23 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateSwapchainImages(
    uint32_t i;
    struct chain *c;
    XrResult res = L.EnumerateSwapchainImages(sc, cap, count, images);
-   if (XR_FAILED(res) || !images || images->type != XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR)
+   if (XR_FAILED(res) || !images)
+      return res;
+   if (images->type == XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR)
+   {
+      pthread_mutex_lock(&L.lock);
+      if ((c = find_chain(sc)))
+      {
+         const XrSwapchainImageOpenGLKHR *gl =
+            (const XrSwapchainImageOpenGLKHR*)images;
+         c->num_images = *count < MAX_IMAGES ? *count : MAX_IMAGES;
+         for (i = 0; i < c->num_images; i++)
+            c->gl_images[i] = gl[i].image;
+      }
+      pthread_mutex_unlock(&L.lock);
+      return res;
+   }
+   if (images->type != XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR)
       return res;
    pthread_mutex_lock(&L.lock);
    if ((c = find_chain(sc)))
@@ -1082,6 +1436,21 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_AcquireSwapchainImage(XrSwapchain sc
    return res;
 }
 
+static XRAPI_ATTR XrResult XRAPI_CALL layer_WaitSwapchainImage(XrSwapchain sc,
+      const XrSwapchainImageWaitInfo *info)
+{
+   bool busy;
+   struct chain *c;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   busy = L.busy_eyes && (c = find_chain(sc)) && c->width == L.eye_w
+      && c->height == L.eye_h;
+   pthread_mutex_unlock(&L.lock);
+   if (busy)
+      return XR_TIMEOUT_EXPIRED;
+   return L.WaitSwapchainImage(sc, info);
+}
+
 static XRAPI_ATTR XrResult XRAPI_CALL layer_ReleaseSwapchainImage(XrSwapchain sc,
       const XrSwapchainImageReleaseInfo *info)
 {
@@ -1093,7 +1462,10 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_ReleaseSwapchainImage(XrSwapchain sc
       memmove(c->acquired, c->acquired + 1,
             (c->num_acquired - 1) * sizeof(c->acquired[0]));
       c->num_acquired--;
-      capture(c, index);
+      if (L.graphics == 2)
+         capture_gl(c, index);
+      else
+         capture(c, index);
       if (L.out)
       {
          fprintf(L.out, "{\"ev\":\"release\",\"sc\":%d,\"t_us\":%lld}\n",
@@ -1214,7 +1586,38 @@ static const char *space_name(XrSpace s)
 {
    int t = space_type(s);
    return t == XR_REFERENCE_SPACE_TYPE_LOCAL ? "local"
-      : (t == XR_REFERENCE_SPACE_TYPE_VIEW ? "view" : "other");
+      : (t == XR_REFERENCE_SPACE_TYPE_VIEW ? "view"
+      : (t == XR_REFERENCE_SPACE_TYPE_STAGE ? "stage" : "other"));
+}
+
+/* Where a layer's space is in STAGE at time, so poses from two sessions
+ * compare in the room; false without a STAGE. */
+static bool in_stage(XrSession session, XrSpace space, XrTime time,
+      XrPosef *out)
+{
+   XrSpaceLocation loc;
+   XrSpaceLocationFlags valid = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
+      | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+   if (!L.stage)
+   {
+      XrReferenceSpaceCreateInfo rci;
+      memset(&rci, 0, sizeof(rci));
+      rci.type                   = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+      rci.referenceSpaceType     = XR_REFERENCE_SPACE_TYPE_STAGE;
+      rci.poseInReferenceSpace.orientation.w = 1.0f;
+      if (XR_FAILED(L.CreateReferenceSpace(session, &rci, &L.stage)))
+      {
+         L.stage = XR_NULL_HANDLE;
+         return false;
+      }
+   }
+   memset(&loc, 0, sizeof(loc));
+   loc.type = XR_TYPE_SPACE_LOCATION;
+   if (     XR_FAILED(L.LocateSpace(space, L.stage, time, &loc))
+         || (loc.locationFlags & valid) != valid)
+      return false;
+   *out = loc.pose;
+   return true;
 }
 
 static int chain_id(XrSwapchain h)
@@ -1285,17 +1688,41 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_EndFrame(XrSession session,
          }
          else if (h->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION)
          {
+            XrPosef st;
             const XrCompositionLayerProjection *p =
                (const XrCompositionLayerProjection*)h;
-            fputs("{\"type\":\"projection\",\"views\":[", L.out);
+            fprintf(L.out, "{\"type\":\"projection\",\"space\":\"%s\",",
+                  space_name(p->space));
+            if (in_stage(session, p->space, info->displayTime, &st))
+               fprintf(L.out, "\"stage\":[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f],",
+                     st.position.x, st.position.y, st.position.z,
+                     st.orientation.x, st.orientation.y, st.orientation.z,
+                     st.orientation.w);
+            else
+               fputs("\"stage\":null,", L.out);
+            fputs("\"views\":[", L.out);
             for (v = 0; v < p->viewCount; v++)
             {
-               fprintf(L.out, "%s{\"sc\":%d,\"layer\":%u}", v ? "," : "",
-                     chain_id(p->views[v].subImage.swapchain),
-                     p->views[v].subImage.imageArrayIndex);
+               const XrCompositionLayerProjectionView *pv = &p->views[v];
+               fprintf(L.out, "%s{\"sc\":%d,\"layer\":%u,"
+                     "\"rect\":[%d,%d,%d,%d],"
+                     "\"pose\":[%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f],"
+                     "\"fov\":[%.5f,%.5f,%.5f,%.5f]}", v ? "," : "",
+                     chain_id(pv->subImage.swapchain),
+                     pv->subImage.imageArrayIndex,
+                     pv->subImage.imageRect.offset.x,
+                     pv->subImage.imageRect.offset.y,
+                     pv->subImage.imageRect.extent.width,
+                     pv->subImage.imageRect.extent.height,
+                     pv->pose.position.x, pv->pose.position.y,
+                     pv->pose.position.z, pv->pose.orientation.x,
+                     pv->pose.orientation.y, pv->pose.orientation.z,
+                     pv->pose.orientation.w,
+                     pv->fov.angleLeft, pv->fov.angleRight,
+                     pv->fov.angleUp, pv->fov.angleDown);
                if (do_snap)
-                  snap(n, p->views[v].subImage.swapchain,
-                        p->views[v].subImage.imageArrayIndex);
+                  snap(n, pv->subImage.swapchain,
+                        pv->subImage.imageArrayIndex);
             }
             fputs("]}", L.out);
          }
@@ -1429,6 +1856,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_SyncActions(XrSession session,
    XrResult res = L.SyncActions(session, info);
    pthread_mutex_lock(&L.lock);
    script_poll();
+   if (L.sync_result)
+      res = (XrResult)L.sync_result;
    names[0]     = '\0';
    L.num_synced = 0;
    /* An unfocused or failed sync makes nothing active. */
@@ -1604,13 +2033,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(PollEvent)
    HOOK(CreateReferenceSpace)
    HOOK(LocateSpace)
+   HOOK(LocateViews)
    HOOK(CreateSwapchain)
    HOOK(DestroySwapchain)
    HOOK(EnumerateSwapchainImages)
    HOOK(AcquireSwapchainImage)
+   HOOK(WaitSwapchainImage)
    HOOK(ReleaseSwapchainImage)
    HOOK(WaitFrame)
    HOOK(EndFrame)
+   HOOK(EnumerateViewConfigurationViews)
    HOOK(CreateActionSet)
    HOOK(DestroyActionSet)
    HOOK(CreateAction)
@@ -1667,14 +2099,17 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(PollEvent);
    NEXT(CreateReferenceSpace);
    NEXT(LocateSpace);
+   NEXT(LocateViews);
    NEXT(CreateSwapchain);
    NEXT(DestroySwapchain);
    NEXT(EnumerateSwapchainImages);
    NEXT(AcquireSwapchainImage);
+   NEXT(WaitSwapchainImage);
    NEXT(ReleaseSwapchainImage);
    NEXT(WaitFrame);
    NEXT(BeginFrame);
    NEXT(EndFrame);
+   NEXT(EnumerateViewConfigurationViews);
    NEXT(PathToString);
    NEXT(CreateActionSet);
    NEXT(DestroyActionSet);

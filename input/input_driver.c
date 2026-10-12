@@ -45,9 +45,6 @@
 #endif
 
 #include "input_driver.h"
-#if defined(HAVE_OPENXR) && defined(ANDROID)
-#include "drivers/openxr_input.h"
-#endif
 #ifdef HAVE_THREADS
 #include "input_key_lane.h"
 #endif
@@ -1728,6 +1725,11 @@ static const input_device_driver_t *input_joypad_for_read_(
       return NULL;
    if (st->flags & INP_FLAG_JOYPAD_UNFOCUSED)
       return &idle_joypad;
+#ifdef HAVE_OPENXR
+   /* the headset's controllers, in slots of their own: under the
+    * bridge, which then snapshots them with the driver's */
+   drv = input_openxr_joypad(drv);
+#endif
    if ((bridge = input_snapshot_for(st, drv)))
       return bridge;
    return drv;
@@ -1836,21 +1838,18 @@ bool input_driver_set_rumble(
 
    primary_joypad = input_driver_st.primary_joypad;
 
+#ifdef HAVE_OPENXR
+   /* input_set_rumble_state() leaves the gain to a driver that applies
+    * it in the device; the headset's slots have none. */
+   if (     input_openxr_has_slot(joy_idx)
+         && primary_joypad && primary_joypad->set_rumble_gain)
+      strength = (uint16_t)((config_get_ptr()->uints.input_rumble_gain
+            * strength) / 100);
+   primary_joypad = input_openxr_joypad(primary_joypad);
+#endif
+
    if (primary_joypad && primary_joypad->set_rumble)
       rumble_state = primary_joypad->set_rumble(joy_idx, effect, strength);
-
-#ifdef HAVE_OPENXR
-   /* The headset's controllers rumble too. input_set_rumble_state()
-    * leaves the gain to a driver that applies it in the device. */
-   {
-      uint16_t xr_strength = strength;
-      if (!primary_joypad || primary_joypad->set_rumble_gain)
-         xr_strength = (uint16_t)((config_get_ptr()->uints.input_rumble_gain
-               * strength) / 100);
-      if (input_openxr_set_rumble(port, effect, xr_strength))
-         rumble_state = true;
-   }
-#endif
 
    return rumble_state;
 }
@@ -3106,75 +3105,6 @@ static INLINE unsigned input_analog_dpad_mode_in_effect(unsigned mode,
     && !(input_analog_dpad_modes[mode] & 4) \
     && ((input_analog_dpad_modes[mode] >> (idx)) & 1))
 
-#ifdef HAVE_OPENXR
-unsigned input_driver_analog_dpad_mode(unsigned port)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned mapped_port = settings->uints.input_remap_ports[port];
-   return input_analog_dpad_mode_in_effect(
-         settings->uints.input_analog_dpad_mode[port],
-            mapped_port < MAX_USERS
-         && input_driver_st.analog_requested[mapped_port]);
-}
-
-uint16_t input_driver_analog_dpad_buttons(unsigned mode,
-      const int16_t *analog, float axis_threshold)
-{
-   float analog_x, analog_y;
-   uint16_t buttons = 0;
-
-   switch (mode)
-   {
-      case ANALOG_DPAD_LSTICK:
-      case ANALOG_DPAD_TWINSTICK:
-         analog_x = (float)analog[0] / 0x7fff;
-         analog_y = (float)analog[1] / 0x7fff;
-         break;
-      case ANALOG_DPAD_RSTICK:
-         analog_x = (float)analog[2] / 0x7fff;
-         analog_y = (float)analog[3] / 0x7fff;
-         break;
-      case ANALOG_DPAD_LRSTICK:
-         analog_x = (float)analog[0] / 0x7fff;
-         analog_y = (float)analog[1] / 0x7fff;
-         if (!analog_x)
-            analog_x = (float)analog[2] / 0x7fff;
-         if (!analog_y)
-            analog_y = (float)analog[3] / 0x7fff;
-         break;
-      default:
-         return 0;
-   }
-
-   if (analog_x <= -axis_threshold)
-      buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-   if (analog_x >=  axis_threshold)
-      buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   if (analog_y <= -axis_threshold)
-      buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-   if (analog_y >=  axis_threshold)
-      buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-
-   /* Twin Stick's right stick is the face buttons. */
-   if (mode == ANALOG_DPAD_TWINSTICK)
-   {
-      analog_x = (float)analog[2] / 0x7fff;
-      analog_y = (float)analog[3] / 0x7fff;
-
-      if (analog_x <= -axis_threshold)
-         buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_Y);
-      if (analog_x >=  axis_threshold)
-         buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_A);
-      if (analog_y <= -axis_threshold)
-         buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_X);
-      if (analog_y >=  axis_threshold)
-         buttons |= (1 << RETRO_DEVICE_ID_JOYPAD_B);
-   }
-
-   return buttons;
-}
-#endif
-
 /* A pad button for an analog button's read: a bit of the frame's copy
  * where the read goes through it, without the call. */
 static INLINE bool input_analog_button_key(
@@ -4347,23 +4277,6 @@ static int16_t input_state_device(
                      res |= 1;
                }
 #endif
-#ifdef HAVE_OPENXR
-               /* The headset's controllers, as the overlay's buttons: a
-                * remapped button was mapped in input_driver_poll(). */
-               if (input_openxr_button(port, id))
-               {
-#ifdef HAVE_MENU
-                  bool menu_alive = (menu_state_get_ptr()->flags
-                        & MENU_ST_FLAG_ALIVE) ? true : false;
-#else
-                  bool menu_alive = false;
-#endif
-                  if (     menu_alive
-                        || !settings->bools.input_remap_binds_enable
-                        || (id == remap_button))
-                     res |= 1;
-               }
-#endif
             }
 
             if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
@@ -4660,9 +4573,6 @@ static int16_t input_state_device(
                               }
                            }
                         }
-#endif
-#ifdef HAVE_OPENXR
-                        res = input_openxr_analog(port, idx, id, res);
 #endif
                      }
                   }
@@ -5044,28 +4954,6 @@ static bool input_state_device_mask_plain(
       if (!menu_alive && settings->bools.input_remap_binds_enable)
          held &= ident;
       res |= held;
-   }
-#endif
-
-#ifdef HAVE_OPENXR
-   /* The headset's controllers, by the overlay's rule. */
-   {
-      unsigned held = 0;
-      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
-         if (input_openxr_button(port, id))
-            held |= (1u << id);
-      if (held)
-      {
-#ifdef HAVE_MENU
-         bool menu_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            ? true : false;
-#else
-         bool menu_alive = false;
-#endif
-         if (!menu_alive && settings->bools.input_remap_binds_enable)
-            held &= ident;
-         res |= held;
-      }
    }
 #endif
 
@@ -8390,9 +8278,13 @@ float input_core_get_sensor_state(unsigned port, unsigned id)
 
 const char *joypad_driver_name(unsigned i)
 {
-   if (!input_driver_st.primary_joypad || !input_driver_st.primary_joypad->name)
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
+#ifdef HAVE_OPENXR
+   joypad = input_openxr_joypad(joypad);
+#endif
+   if (!joypad || !joypad->name)
       return NULL;
-   return input_driver_st.primary_joypad->name(i);
+   return joypad->name(i);
 }
 
 static void input_rumble_forget(void);
@@ -8698,6 +8590,10 @@ void input_driver_registry_restart(void)
 
    input_registry_restart(&input_registry, port_of_slot, MAX_USERS);
    input_registry_restart_time = cpu_features_get_time_usec();
+#ifdef HAVE_OPENXR
+   /* no joypad driver reports the headset's controllers */
+   input_openxr_reannounce();
+#endif
 }
 
 /* Every controller the driver had before it restarted is back. */
@@ -8742,6 +8638,34 @@ static void input_driver_registry_restore_ports(void)
             " had.\n");
 }
 
+#ifdef HAVE_OPENXR
+/* For the headset's controllers, moved on by a pad that took their
+ * slot: a runtime matter, as a restart's is. */
+void input_driver_exchange_ports(unsigned a, unsigned b)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   unsigned *index      = settings->uints.input_joypad_index;
+
+   if (a >= MAX_USERS || b >= MAX_USERS || a == b)
+      return;
+   if (     !input_ports_runtime_active
+         || memcmp(index, input_ports_runtime, sizeof(input_ports_runtime)))
+      memcpy(input_ports_configured, index, sizeof(input_ports_configured));
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (index[i] == a)
+         index[i] = b;
+      else if (index[i] == b)
+         index[i] = a;
+   }
+   memcpy(input_ports_runtime, index, sizeof(input_ports_runtime));
+   input_ports_runtime_active = memcmp(input_ports_runtime,
+         input_ports_configured, sizeof(input_ports_runtime)) != 0;
+   input_driver_deadzones_refresh();
+}
+#endif
+
 void input_driver_registry_connect(unsigned slot, const char *provider,
       const char *name, const char *phys, uint16_t vid, uint16_t pid)
 {
@@ -8759,6 +8683,9 @@ void input_driver_registry_connect(unsigned slot, const char *provider,
    rec    = input_registry_get(&input_registry, handle);
 
    input_snapshot_forget_pad(slot);
+#ifdef HAVE_OPENXR
+   input_openxr_slot_connected(slot, provider);
+#endif
 
    if (rec)
       RARCH_LOG("[Input] Device %u, \"%s\" (%04x:%04x, %s): %s slot %u.\n",
@@ -11328,7 +11255,6 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 
 static bool input_keys_pressed_other_sources(
       input_driver_state_t *input_st,
-      unsigned port,
       unsigned i,
       input_bits_t *p_new_state)
 {
@@ -11357,12 +11283,8 @@ static bool input_keys_pressed_other_sources(
 #endif
 
 #ifdef HAVE_OPENXR
-   if (input_openxr_button(port, i))
-   {
-      if (i < 16)
-         input_st->system_buttons_not_overlay |= (uint16_t)(1u << i);
+   if (input_openxr_hotkey(i))
       return true;
-   }
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -11378,7 +11300,7 @@ static bool input_keys_pressed_other_sources(
  * one word: a command interface and the remote pad - whose buttons are
  * not the overlay's alone, which is noted - and then the overlay. */
 static unsigned input_pad_buttons_other_sources(
-      input_driver_state_t *input_st, unsigned port)
+      input_driver_state_t *input_st)
 {
    unsigned held = 0;
 #ifdef HAVE_COMMAND
@@ -11397,15 +11319,6 @@ static unsigned input_pad_buttons_other_sources(
    /* Only process key presses related to game input if using Remote RetroPad */
    if (input_st->remote)
       held |= (unsigned)(input_st->remote_st_ptr.buttons[0] & 0xffff);
-#endif
-
-#ifdef HAVE_OPENXR
-   {
-      unsigned i;
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-         if (input_openxr_button(port, i))
-            held |= (1u << i);
-   }
 #endif
 
    input_st->system_buttons_not_overlay |= (uint16_t)held;
@@ -11473,10 +11386,10 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
    maybe[RARCH_MENU_TOGGLE >> 5] |= (1u << (RARCH_MENU_TOGGLE & 31));
 #ifdef HAVE_OPENXR
    /* The headset's own are behind no key or pad. */
-   if (input_openxr_button(port, RARCH_HEADSET_RECENTER))
+   if (input_openxr_hotkey(RARCH_HEADSET_RECENTER))
       maybe[RARCH_HEADSET_RECENTER >> 5]     |=
          (1u << (RARCH_HEADSET_RECENTER & 31));
-   if (input_openxr_button(port, RARCH_LASER_POINTER_TOGGLE))
+   if (input_openxr_hotkey(RARCH_LASER_POINTER_TOGGLE))
       maybe[RARCH_LASER_POINTER_TOGGLE >> 5] |=
          (1u << (RARCH_LASER_POINTER_TOGGLE & 31));
 #endif
@@ -13071,7 +12984,7 @@ static void input_keys_pressed(
        * the overlay holds. They were gone through a button at a time,
        * each asking every other source in turn. */
       unsigned held    = ((unsigned)ret & 0xffff)
-         | input_pad_buttons_other_sources(input_st, port);
+         | input_pad_buttons_other_sources(input_st);
       unsigned deliver = held;
 
       if (held)
@@ -13126,7 +13039,7 @@ static void input_keys_pressed(
 
          if (     bit_pressed
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button)
-               || input_keys_pressed_other_sources(input_st, port, i, p_new_state))
+               || input_keys_pressed_other_sources(input_st, i, p_new_state))
          {
             if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
                input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
@@ -13219,7 +13132,7 @@ static void input_keys_pressed(
 
          i = (hot_word << 5) + (unsigned)compat_ctz(hot);
 
-         other_pressed = input_keys_pressed_other_sources(input_st, port, i, p_new_state);
+         other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
          bit_pressed   = INPUT_HOT_BIT(input_hotkey_set.valid, i)
                && input_state_wrap(
                      input_st->current_driver,
@@ -13231,12 +13144,6 @@ static void input_keys_pressed(
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
 
-#if defined(HAVE_OPENXR) && defined(ANDROID)
-         /* the headset's menu button, held: on whichever port the
-          * hotkeys are read - this loop runs for that one alone */
-         if (i == RARCH_MENU_TOGGLE)
-            bit_pressed = bit_pressed || openxr_input_menu_long_press();
-#endif
          if (     bit_pressed
                || other_pressed
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
@@ -14545,6 +14452,9 @@ void input_driver_capture_pad(unsigned pad, bool poll,
    unsigned i;
    const input_device_driver_t *joypad = input_driver_st.primary_joypad;
 
+#ifdef HAVE_OPENXR
+   joypad = input_openxr_joypad(joypad);
+#endif
    if (!joypad)
       return;
    {
@@ -14601,6 +14511,11 @@ void input_driver_autoconfigure_pad(unsigned pad)
 {
    const input_device_driver_t *joypad = input_driver_st.primary_joypad;
 
+#ifdef HAVE_OPENXR
+   /* the headset's own, not the joypad driver's */
+   if (input_openxr_autoconfigure(pad))
+      return;
+#endif
    if (joypad)
       input_autoconfigure_connect(joypad->name(pad),
             NULL, NULL, joypad->ident,
@@ -14767,7 +14682,7 @@ void input_driver_poll(void)
    if (input && input->poll)
       input->poll(input_st->current_data);
 #ifdef HAVE_OPENXR
-   input_openxr_poll(settings->uints.video_openxr_controllers,
+   input_openxr_poll(max_users, settings->uints.video_openxr_controllers,
          settings->uints.video_openxr_laser, input_axis_threshold);
 #endif
    input_poll_generation++;
@@ -15254,10 +15169,6 @@ void input_driver_poll(void)
                         current_button_value |= BIT256_GET(ol_state->buttons, j);
                   }
 #endif
-#ifdef HAVE_OPENXR
-                  if (input_openxr_button((unsigned)i, (unsigned)j))
-                     current_button_value = 1;
-#endif
                   /* Press */
                   if ((current_button_value == 1)
                         && !MAPPER_GET_KEY(handle, remap_key))
@@ -15320,10 +15231,6 @@ void input_driver_poll(void)
                      if (ol_state)
                         current_button_value |= BIT256_GET(ol_state->buttons, j);
                   }
-#endif
-#ifdef HAVE_OPENXR
-                  if (input_openxr_button((unsigned)i, (unsigned)j))
-                     current_button_value = 1;
 #endif
                   remap_valid                   =
                         (current_button_value == 1)
@@ -16027,6 +15934,9 @@ size_t input_first_press_describe(unsigned user, unsigned port,
    const char *name     = NULL;
    bool keys            = false;
 
+#ifdef HAVE_OPENXR
+   joypad = input_openxr_joypad(joypad);
+#endif
    if (joypad && joypad->query_pad && joypad->query_pad(joy_idx))
    {
       name = input_config_get_device_display_name(joy_idx);
@@ -16395,9 +16305,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
             {
                int16_t ret = stick_xy[a];
-#ifdef HAVE_OPENXR
-               ret = input_openxr_analog(port, s, a, ret);
-#endif
 
                if (ret)
                {

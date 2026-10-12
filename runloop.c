@@ -1813,6 +1813,22 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
 }
 
 
+#ifdef HAVE_OPENXR
+/* The pose calls answer while the headset tracks. A core asking before
+ * a sampled frame is sampled now, and before each run from then on. */
+static bool runloop_vr_poses(runloop_state_t *runloop_st)
+{
+   if (!(video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
+      return false;
+   if (!runloop_st->core_vr_content)
+   {
+      runloop_st->core_vr_content = true;
+      video_driver_vr_sample_tracking();
+   }
+   return true;
+}
+#endif
+
 #ifdef HAVE_RMP4
 static void *runloop_video_decode_open(void)
 {
@@ -4293,7 +4309,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (!video_driver_set_views((struct retro_video_views*)data))
             return false;
 #ifdef HAVE_OPENXR
-         runloop_st->core_vr_content = video_driver_vr_content_active();
+         if (     video_driver_vr_content_active()
+               && !runloop_st->core_vr_content)
+         {
+            runloop_st->core_vr_content = true;
+            /* A core reading poses later in this run needs a sample */
+            video_driver_vr_sample_tracking();
+         }
 #endif
          break;
 
@@ -4519,12 +4541,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 #ifdef HAVE_OPENXR
       case RETRO_ENVIRONMENT_GET_VR_HEAD_POSE:
-         if (!data || !runloop_st->core_vr_content)
+         if (!data || !runloop_vr_poses(runloop_st))
             return false;
          return video_driver_get_vr_head_pose((struct retro_vr_head_pose*)data);
 
       case RETRO_ENVIRONMENT_GET_VR_FRAME_STATE:
-         if (!data || !runloop_st->core_vr_content)
+         if (!data || !runloop_vr_poses(runloop_st))
             return false;
          return video_driver_get_vr_frame_state(
                (struct retro_vr_frame_state*)data);
@@ -8577,6 +8599,9 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_SCREENSHOT, CMD_EVENT_TAKE_SCREENSHOT, true, NULL);
 #endif
 
+   /* Check headset recenter hotkey: here, so it works in the menu too */
+   HOTKEY_CHECK(RARCH_HEADSET_RECENTER, CMD_EVENT_HEADSET_RECENTER, true, NULL);
+
 #ifdef HAVE_CHEEVOS
    /* Make sure not to evaluate this before calling menu_driver_iterate
     * as that may change its value */
@@ -9161,9 +9186,6 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check VRR runloop hotkey */
    HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);
-
-   /* Check headset recenter hotkey */
-   HOTKEY_CHECK(RARCH_HEADSET_RECENTER, CMD_EVENT_HEADSET_RECENTER, true, NULL);
 
    /* Check bsv movie hotkeys */
    HOTKEY_CHECK(RARCH_PLAY_REPLAY_KEY, CMD_EVENT_PLAY_REPLAY, true, NULL);

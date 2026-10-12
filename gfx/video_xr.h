@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "video_defines.h"
 #include "video_views.h"
 
 RETRO_BEGIN_DECLS
@@ -55,7 +56,9 @@ enum video_xr_kind
 {
    VIDEO_XR_QUAD_SCREEN = 0,
    VIDEO_XR_QUAD_FRAME,
-   VIDEO_XR_QUAD_MENU
+   VIDEO_XR_QUAD_MENU,
+   /* A whole frame that is the window: the menu is drawn over it. */
+   VIDEO_XR_QUAD_WINDOW
 };
 
 typedef struct video_xr_vec3
@@ -123,7 +126,13 @@ typedef struct video_xr_params
    unsigned rotation;
    /* The UI layer's size, or 0 for no menu quad. */
    unsigned ui_dims;
+
+   /* Screens the headset's projection shows, a bit each: no quad, and
+    * the others keep their places. */
+   unsigned skip_screens;
    bool swap_eyes;
+   /* The whole frame is the window, with the menu drawn in it. */
+   bool window;
    /* The screens are drawn by the stock chain, which shrinks smoothly:
     * their images are the shown size, even below the source's. */
    bool stock;
@@ -139,6 +148,26 @@ void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,
  * up or down and has no heading. */
 bool video_xr_anchor_from_head(const video_xr_pose_t *head,
       video_xr_pose_t *anchor);
+
+/* out = b, a pose in a's frame, in a's space; out may be a or b. */
+void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
+      video_xr_pose_t *out);
+
+/* Lazy Follow: the screens stay until the head's heading is this far
+ * from theirs, or the head this far from where they were placed from;
+ * then they glide back, closing about two thirds of the way each
+ * VIDEO_XR_LAZY_TIME seconds, until this close. */
+#define VIDEO_XR_LAZY_START_DEG 30.0
+#define VIDEO_XR_LAZY_START_M   0.5
+#define VIDEO_XR_LAZY_STOP_DEG  1.0
+#define VIDEO_XR_LAZY_STOP_M    0.01
+#define VIDEO_XR_LAZY_TIME      0.3
+
+/* One frame, dt seconds, of Lazy Follow: anchor (level, as
+ * video_xr_anchor_from_head makes them) moves towards target while it
+ * glides. Returns whether it still glides. */
+bool video_xr_lazy_follow(video_xr_pose_t *anchor,
+      const video_xr_pose_t *target, double dt, bool gliding);
 
 /* A quad's image size: its angular width at px_per_rad, never below
  * native_dims' width (the source's; 0 for no floor), the quad's shape,
@@ -167,6 +196,37 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
       const video_views_map_t *map, unsigned frame_dims,
       int16_t *res_x, int16_t *res_y);
 
+/* A point on a window's quad as one on the core's frame, which the
+ * window draws in vp (the video driver's viewport, from the window's
+ * top left). False on the bars around it. */
+bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v);
+
+/* Where view v of a frame of frame_dims shows in a window that draws
+ * the frame in vp, as video_xr_window_point maps it back, the frame
+ * turned rotation quarter turns anticlockwise: in window pixels from
+ * its top left, reaching past the window where vp does. */
+void video_xr_window_rect(const video_viewport_t *vp, unsigned frame_dims,
+      unsigned rotation, const struct retro_video_view *v,
+      video_views_rect_t *out);
+
+/* The quads of a window that holds the frame, the menu and all, as
+ * the Quest's GL host shows it: p's map as video_xr_place puts its screens
+ * while it is untracked and the menu is closed, each slot's layers cut
+ * from the window at rects; else the window whole, its rect the window.
+ * vp and frame_dims as video_xr_window_rect's, turned p->rotation. */
+void video_xr_place_window(const video_xr_params_t *p, bool menu,
+      bool tracked, const video_viewport_t *vp, unsigned frame_dims,
+      video_xr_quad_set_t *out,
+      video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2]);
+
+/* The laser's dot image is this many pixels square. */
+#define VIDEO_XR_CURSOR_DIM 32
+
+/* Its pixels, RGBA8 premultiplied: a white dot with a dark rim and a
+ * one-pixel soft edge, grey so RGBA and BGRA hold the same bytes. px
+ * holds VIDEO_XR_CURSOR_DIM squared times four bytes. */
+void video_xr_cursor_pixels(uint8_t *px);
+
 /* The laser's dot: this wide per metre along the ray, never narrower
  * than VIDEO_XR_CURSOR_MIN, just in front of the quad it is on. */
 #define VIDEO_XR_CURSOR_SCALE 0.012f
@@ -174,8 +234,8 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
 #define VIDEO_XR_CURSOR_LIFT  0.002f
 
 /* Whether a laser (enum video_openxr_laser) can point at q. Auto: the
- * menu while it is open, and screens 1 and up. Always: every screen
- * and a whole frame too. Off: nothing. */
+ * menu or a window while the menu is open, and screens 1 and up.
+ * Always: every screen and a whole frame too. Off: nothing. */
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open);
 

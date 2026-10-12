@@ -78,6 +78,10 @@ typedef struct gfx_ctx_x_data
    GLXContext ctx, hw_ctx;
    GLXFBConfig fbc;
    unsigned swap_mode;
+   /* ctx's attributes, for a shared context of the same kind; unused
+    * where ctx was made without them. */
+   int ctx_attribs[16];
+   bool ctx_attribs_used;
 #endif
 
    int interval;
@@ -801,6 +805,8 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                    * The following code can hopefully be removed in the future:
                    */
                   RARCH_LOG("[GLX] Creating context for requested version %u.%u.\n", g_major, g_minor);
+                  memcpy(x->ctx_attribs, attribs, sizeof(x->ctx_attribs));
+                  x->ctx_attribs_used = true;
                   x->ctx = glx_create_context_attribs(g_x11_dpy,
                         x->fbc, NULL, True, attribs);
 
@@ -857,6 +863,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      else
                         RARCH_LOG("[GLX] Creating context for version %u.%u.\n", g_major, g_minor);
 
+                     memcpy(x->ctx_attribs, attribs, sizeof(x->ctx_attribs));
                      x->ctx = glx_create_context_attribs(g_x11_dpy,
                            x->fbc, NULL, True, attribs);
 
@@ -886,6 +893,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             }
             else
             {
+               x->ctx_attribs_used = false;
                x->ctx = glXCreateNewContext(g_x11_dpy, x->fbc,
                      GLX_RGBA_TYPE, 0, True);
 
@@ -1093,6 +1101,101 @@ static void gfx_ctx_x_release_current(void *data)
    }
 }
 
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+static bool x_shared_error;
+
+static int x_shared_error_handler(Display *dpy, XErrorEvent *event)
+{
+   x_shared_error = true;
+   return x_log_error_handler(dpy, event);
+}
+
+/* The shared context's drawable is a pbuffer of its own on the window's
+ * config: with the window's drawable bound on a second thread, Mesa's
+ * DRI3 loader crashes once the window swaps. */
+static bool gfx_ctx_x_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   static const int pbuffer_attribs[] = {
+      GLX_PBUFFER_WIDTH, 1, GLX_PBUFFER_HEIGHT, 1, None
+   };
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   int (*old_handler)(Display*, XErrorEvent*);
+   GLXContext ctx     = NULL;
+   GLXPbuffer pbuffer = None;
+   int drawable_type  = 0;
+   int visual         = 0;
+
+   memset(out, 0, sizeof(*out));
+   if (!x || !g_x11_dpy || !x->ctx || x_api != GFX_CTX_OPENGL_API)
+      return false;
+   if (     glXGetFBConfigAttrib(g_x11_dpy, x->fbc, GLX_DRAWABLE_TYPE,
+               &drawable_type) != Success
+         || !(drawable_type & GLX_PBUFFER_BIT)
+         || glXGetFBConfigAttrib(g_x11_dpy, x->fbc, GLX_VISUAL_ID,
+               &visual) != Success)
+   {
+      RARCH_ERR("[GLX] The window's config has no pbuffers for a shared context.\n");
+      return false;
+   }
+
+   x_shared_error = false;
+   old_handler    = XSetErrorHandler(x_shared_error_handler);
+   if (x->ctx_attribs_used)
+      ctx = glx_create_context_attribs(g_x11_dpy, x->fbc, x->ctx, True,
+            x->ctx_attribs);
+   else
+      ctx = glXCreateNewContext(g_x11_dpy, x->fbc, GLX_RGBA_TYPE, x->ctx,
+            True);
+   if (ctx)
+      pbuffer = glXCreatePbuffer(g_x11_dpy, x->fbc, pbuffer_attribs);
+   XSync(g_x11_dpy, False);
+   if (!ctx || !pbuffer || x_shared_error)
+   {
+      RARCH_ERR("[GLX] A shared context could not be made.\n");
+      if (pbuffer)
+         glXDestroyPbuffer(g_x11_dpy, pbuffer);
+      if (ctx)
+         glXDestroyContext(g_x11_dpy, ctx);
+      XSync(g_x11_dpy, False);
+      XSetErrorHandler(old_handler);
+      return false;
+   }
+   XSetErrorHandler(old_handler);
+
+   out->kind             = GFX_CTX_SHARED_GLX;
+   out->display          = g_x11_dpy;
+   out->config           = x->fbc;
+   out->context          = ctx;
+   out->drawable         = (unsigned long)pbuffer;
+   out->visual_id        = (unsigned)visual;
+   out->get_proc_address = gfx_ctx_x_get_proc_address;
+   return true;
+}
+
+static bool gfx_ctx_x_shared_context_bind(gfx_ctx_shared_context_t *ctx,
+      bool bind)
+{
+   if (ctx->kind != GFX_CTX_SHARED_GLX)
+      return false;
+   if (!bind)
+      return glXMakeContextCurrent((Display*)ctx->display, None, None,
+            NULL);
+   return glXMakeContextCurrent((Display*)ctx->display,
+         (GLXDrawable)ctx->drawable, (GLXDrawable)ctx->drawable,
+         (GLXContext)ctx->context);
+}
+
+static void gfx_ctx_x_shared_context_free(gfx_ctx_shared_context_t *ctx)
+{
+   if (ctx->kind != GFX_CTX_SHARED_GLX)
+      return;
+   glXDestroyPbuffer((Display*)ctx->display, (GLXPbuffer)ctx->drawable);
+   glXDestroyContext((Display*)ctx->display, (GLXContext)ctx->context);
+   memset(ctx, 0, sizeof(*ctx));
+}
+#endif
+
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
@@ -1254,5 +1357,14 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 #else
    NULL,
 #endif
-   gfx_ctx_x_release_current
+   gfx_ctx_x_release_current,
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+   gfx_ctx_x_shared_context_new,
+   gfx_ctx_x_shared_context_bind,
+   gfx_ctx_x_shared_context_free
+#else
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL  /* shared_context_free */
+#endif
 };

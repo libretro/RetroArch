@@ -67,6 +67,11 @@ typedef struct
    unsigned major;
    unsigned minor;
 
+   /* egl_create_context's attributes, for a shared context of the same
+    * kind; ctx_attribs_ok is false when they did not fit. */
+   EGLint ctx_attribs[32];
+   bool ctx_attribs_ok;
+
    /* egl "private" */
    bool use_hw_ctx;
 } egl_ctx_data_t;
@@ -90,6 +95,15 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
 /* Make no context current on the calling thread; see
  * gfx_ctx_driver_t::release_current. */
 void egl_release_current(egl_ctx_data_t *egl);
+
+/* gfx_ctx_driver_t's shared context: in egl->ctx's share group, made
+ * with egl_create_context's attributes for client API 'api', and
+ * surfaceless where the display allows it, else with a pbuffer of its
+ * own - never the window's surface or the core's. */
+bool egl_shared_context_new(egl_ctx_data_t *egl, EGLenum api,
+      gfx_ctx_shared_context_t *out);
+bool egl_shared_context_bind(gfx_ctx_shared_context_t *ctx, bool bind);
+void egl_shared_context_free(gfx_ctx_shared_context_t *ctx);
 
 void egl_swap_buffers(void *data);
 

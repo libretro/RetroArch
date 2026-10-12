@@ -59,6 +59,15 @@ enum video_openxr_laser
    VIDEO_OPENXR_LASER_LAST
 };
 
+/* video_openxr_placement: where the headset keeps the screens. */
+enum video_openxr_placement
+{
+   VIDEO_OPENXR_PLACEMENT_FIXED = 0,
+   VIDEO_OPENXR_PLACEMENT_FOLLOW,
+   VIDEO_OPENXR_PLACEMENT_LAZY,
+   VIDEO_OPENXR_PLACEMENT_LAST
+};
+
 /* video_openxr_refresh_rate: one of these, or a rate in Hz. */
 enum video_openxr_refresh
 {
@@ -104,6 +113,10 @@ double video_views_aspect(const struct retro_video_view *v);
  * one, else the matching eye, and for EYE_NONE the left. -1 if none. */
 int video_views_find(const video_views_map_t *map,
       unsigned screen, unsigned eye);
+
+/* A tracked map's eyes: true when the map holds exactly one LEFT and
+ * one RIGHT view, their indices in eyes[0] and eyes[1]; else -1. */
+bool video_views_eye_pair(const video_views_map_t *map, int eyes[2]);
 
 /* The map for one frame: a copy scaled from the core's frame size to the
  * size the driver receives. False, with out emptied, when there is no map

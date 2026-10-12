@@ -132,10 +132,9 @@ enum vk_flags
     * cached system memory, never video memory, because the core and the
     * frontend may read a lent frame back. */
    VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21),
-   /* frontend uses openxr */
+   /* A headset's own context: the window is images nothing presents,
+    * and the headset's frame is begun and ended around this one. */
    VK_FLAG_OPEN_XR              = (1 << 22),
-   /* core opted into VR via SET_VIDEO_VIEWS */
-   VK_FLAG_XR_STEREO            = (1 << 23),
    /* Held across creating a texture a compute shader writes */
    VK_FLAG_TEXTURE_FOR_STORAGE  = (1 << 24)
 };
@@ -398,6 +397,12 @@ typedef struct gfx_ctx_vulkan_data
    PFN_vkVoidFunction display_timing_query;
    uint32_t present_id;
    bool display_timing_supported;
+#ifdef HAVE_OPENXR
+   /* A headset's own context (the Quest's): OpenXR starts whatever
+    * Headset Output says, and a failure falls through to the flat
+    * context instead of rebuilding video. */
+   bool openxr_headset;
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
     * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display

@@ -1790,9 +1790,7 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
    endif
    ifeq ($(HAVE_OPENXR), 1)
-      OBJ += gfx/common/vulkan_openxr.o \
-             gfx/video_xr.o \
-             input/common/input_openxr.o
+      OBJ += gfx/common/vulkan_openxr.o
    endif
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
@@ -1968,6 +1966,29 @@ endif
 ifeq ($(HAVE_OPENXR), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_OPENXR
+   OBJ += gfx/common/openxr_runtime.o \
+          gfx/common/openxr_session.o \
+          gfx/common/openxr_tracking.o \
+          gfx/common/openxr_host.o \
+          gfx/common/openxr_swapchain.o \
+          gfx/common/openxr_frame.o \
+          gfx/video_xr.o \
+          input/common/input_openxr.o
+
+   # Desktop GL headset output: a context in the window's share group on
+   # the XR thread, made by an EGL or GLX context driver.
+   ifneq ($(findstring Linux,$(OS)),)
+      ifneq ($(HAVE_OPENGLES), 1)
+         ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL_CORE)),)
+            ifneq ($(filter 1,$(HAVE_EGL) $(HAVE_X11)),)
+               DEFINES += -DHAVE_OPENXR_GL
+               OBJ += gfx/common/openxr_ring.o \
+                      gfx/common/openxr_binding_gl.o \
+                      gfx/common/gl_openxr.o
+            endif
+         endif
+      endif
+   endif
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DXR_OS_WINDOWS -DXR_USE_PLATFORM_WIN32
    else ifneq ($(findstring Darwin,$(OS)),)

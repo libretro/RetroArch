@@ -20,7 +20,8 @@
  * in the packed frame. It sends its map even without
  * RETRO_VIDEO_VIEWS_STATUS_PRESENTS, so the frontend's answer there is
  * logged too. It draws in software, or with the video_views_test_hw
- * option through a GL core context, with either origin, into Vulkan
+ * option through a GL core context, with either origin, or a
+ * compatibility one (gl_compat, which the gl driver takes), into Vulkan
  * images of its own handed over with set_image, or on Windows into
  * D3D11 textures of its own, one per sync index, handed over with
  * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
@@ -44,9 +45,23 @@
  * a one-pixel black and white checkerboard instead of its colour, for
  * the headset's shrinking, and with noise a different colour in every
  * pixel, for e2e/run.py to check views arrive pixel for pixel. A pattern
- * is drawn in software and, in the GL modes, uploaded and blitted into
- * the core's framebuffer. With video_views_test_format rgb565 a software
- * frame is sent in RGB565. */
+ * is drawn in software or its own Vulkan images and, in the GL modes,
+ * uploaded and blitted into the core's framebuffer. With
+ * video_views_test_format rgb565 a software frame is sent in RGB565.
+ *
+ * With video_views_test_vr local or stage it sends its stereo map as
+ * TRACKED while the frontend reports HMD, reads the pose calls first,
+ * and logs what they answer with the frame's number. Each eye carries
+ * that number's low sixteen bits along its bottom (white for a set bit,
+ * low bit first), so what the headset shows can be matched with the
+ * poses it was drawn from. nopair sends a TRACKED map without eyes,
+ * which the frontend must refuse. poses reads the pose calls and sends
+ * its map flat, as a core sampled through them alone. It logs HMD and
+ * the recommended eye size whatever the mode. Once a file named vr_flat
+ * is in its working directory it sends the map flat. With
+ * video_views_test_vr_scene grid, software eyes draw one world-locked
+ * floor grid, axes and a wall ahead from their own poses, instead of
+ * a solid colour, for checking by eye that the world holds still. */
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -70,6 +85,12 @@
 /* Azahar's maximum, at 10x. */
 #define LARGE_MAX_W 8000
 #define LARGE_MAX_H 4800
+
+/* Two eyes of the largest grid size. */
+#define GRID_MAX 1024
+#define GRID_MAX_PIXELS (2 * GRID_MAX * GRID_MAX)
+#define FRAME_MAX_PIXELS ((GRID_MAX_PIXELS > CROP_W * CROP_H) \
+      ? GRID_MAX_PIXELS : CROP_W * CROP_H)
 
 #define COL_BG     0x202020
 #define COL_RED    0xFF0000
@@ -109,6 +130,15 @@ enum pattern_kind
    PATTERN_SOLID = 0,
    PATTERN_CHECKER,
    PATTERN_NOISE
+};
+
+enum vr_kind
+{
+   VR_OFF = 0,
+   VR_LOCAL,
+   VR_STAGE,
+   VR_NOPAIR,
+   VR_POSES
 };
 
 /* The GL the hardware mode uses, loaded through the frontend's
@@ -206,10 +236,12 @@ static retro_input_poll_t    input_poll_cb;
 static retro_input_state_t   input_state_cb;
 static retro_log_printf_t    log_cb;
 
-static uint32_t frame_buf[CROP_W * CROP_H];
-static uint16_t frame_buf16[CROP_W * CROP_H];
+static uint32_t frame_buf[FRAME_MAX_PIXELS];
+static uint16_t frame_buf16[FRAME_MAX_PIXELS];
 static enum map_kind map_kind = MAP_3DS;
 static enum hw_kind hw_kind   = HW_OFF;
+/* HW_GL through a compatibility context. */
+static bool hw_gl_compat;
 static enum pattern_kind pattern = PATTERN_SOLID;
 static bool large_max;
 static bool rgb565;
@@ -251,6 +283,19 @@ static bool pad_logged[2];
 static int last_gun[4];         /* x, y, offscreen, trigger */
 static bool gun_logged;
 static unsigned last_rumble[2];
+static enum vr_kind vr_kind = VR_OFF;
+static int last_hmd         = -1;
+static unsigned last_rec_w, last_rec_h;
+static float last_eyes[14];
+static bool eyes_logged;
+static bool vr_flat;
+static bool grid_scene;
+static unsigned grid_cap = 512;
+static unsigned eye_w, eye_h;
+static unsigned geo_w, geo_h;
+static struct retro_vr_frame_state vr_fs;
+static bool vr_fs_ok;
+static uint32_t last_head_flags = 0xffffffffu;
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -427,6 +472,9 @@ static void context_reset(void)
       log_cb(RETRO_LOG_ERROR, "[video_views] GL entry points missing\n");
 }
 
+static long long now_us(void);
+
+/* When, for a test that orders it against the headset's session. */
 static void context_destroy(void)
 {
    if (gl_ready && gl_upload_tex)
@@ -437,6 +485,8 @@ static void context_destroy(void)
    gl_upload_tex = 0;
    gl_upload_fbo = 0;
    gl_ready      = false;
+   log_cb(RETRO_LOG_INFO, "[video_views] context_destroy at %lld us\n",
+         now_us());
 }
 
 static long long now_us(void)
@@ -753,8 +803,23 @@ static void log_status(unsigned status, int accepted, unsigned n)
    last_accepted = accepted;
 }
 
+/* Whether the grid draws eyes sized by the headset: software only,
+ * where the frame is not tied to an image of the Vulkan modes. */
+static bool grid_sized(void)
+{
+   return grid_scene && (vr_kind == VR_LOCAL || vr_kind == VR_STAGE)
+      && hw_kind == HW_OFF
+      && (map_kind == MAP_3DS || map_kind == MAP_3DS_FORCE);
+}
+
 static void frame_size(unsigned *fw, unsigned *fh)
 {
+   if (eye_w)
+   {
+      *fw = 2 * eye_w;
+      *fh = eye_h;
+      return;
+   }
    switch (map_kind)
    {
       case MAP_DS: *fw = 256; *fh = 384; break;
@@ -800,6 +865,14 @@ static unsigned build_map(struct retro_video_view *v, uint32_t *c,
          c[0] = COL_RED;
          return 1;
       default:
+         if (eye_w)
+         {
+            v[0] = mkview(    0, 0, eye_w, eye_h, 0, RETRO_VIDEO_VIEW_EYE_LEFT);
+            v[1] = mkview(eye_w, 0, eye_w, eye_h, 0, RETRO_VIDEO_VIEW_EYE_RIGHT);
+            c[0] = COL_RED;
+            c[1] = COL_BLUE;
+            return 2;
+         }
          if (stereo || map_kind == MAP_3DS_FORCE)
          {
             v[0] = mkview(  0,   0, 400, 240, 0, RETRO_VIDEO_VIEW_EYE_LEFT);
@@ -823,11 +896,17 @@ static void read_options(void)
    struct retro_variable var;
    var.key   = "video_views_test_hw";
    var.value = NULL;
-   hw_kind   = HW_OFF;
+   hw_kind      = HW_OFF;
+   hw_gl_compat = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (!strcmp(var.value, "gl"))
          hw_kind = HW_GL;
+      else if (!strcmp(var.value, "gl_compat"))
+      {
+         hw_kind      = HW_GL;
+         hw_gl_compat = true;
+      }
       else if (!strcmp(var.value, "gl_topleft"))
          hw_kind = HW_GL_TOPLEFT;
       else if (!strcmp(var.value, "vulkan"))
@@ -871,6 +950,36 @@ static void read_options(void)
    if (core_fps <= 0.0)
       core_fps = 60.0;
 
+   var.key   = "video_views_test_vr";
+   var.value = NULL;
+   vr_kind   = VR_OFF;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "local"))
+         vr_kind = VR_LOCAL;
+      else if (!strcmp(var.value, "stage"))
+         vr_kind = VR_STAGE;
+      else if (!strcmp(var.value, "nopair"))
+         vr_kind = VR_NOPAIR;
+      else if (!strcmp(var.value, "poses"))
+         vr_kind = VR_POSES;
+   }
+
+   var.key    = "video_views_test_vr_scene";
+   var.value  = NULL;
+   grid_scene = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var)
+      && var.value && !strcmp(var.value, "grid");
+
+   var.key   = "video_views_test_vr_scene_size";
+   var.value = NULL;
+   grid_cap  = 512;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      unsigned n = (unsigned)atoi(var.value);
+      if (n >= 384 && n <= GRID_MAX)
+         grid_cap = n;
+   }
+
    var.key   = "video_views_test_map";
    var.value = NULL;
    map_kind  = MAP_3DS;
@@ -908,7 +1017,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep|d3d11|d3d12" },
+        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -917,6 +1026,12 @@ void retro_set_environment(retro_environment_t cb)
         "View fill; solid|checker|noise" },
       { "video_views_test_format",
         "Software pixel format; xrgb8888|rgb565" },
+      { "video_views_test_vr",
+        "Head tracking; off|local|stage|nopair|poses" },
+      { "video_views_test_vr_scene",
+        "Head tracking scene; solid|grid" },
+      { "video_views_test_vr_scene_size",
+        "Grid eye size, at most; 512|384|768|1024" },
       { NULL, NULL }
    };
    struct retro_log_callback logging;
@@ -963,6 +1078,13 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.base_height  = fh;
    info->geometry.max_width    = large_max ? LARGE_MAX_W : MAX_W;
    info->geometry.max_height   = large_max ? LARGE_MAX_H : MAX_H;
+   if (grid_sized())
+   {
+      if (info->geometry.max_width < 2 * grid_cap)
+         info->geometry.max_width = 2 * grid_cap;
+      if (info->geometry.max_height < grid_cap)
+         info->geometry.max_height = grid_cap;
+   }
    info->geometry.aspect_ratio = (float)fw / (float)fh;
    info->timing.fps            = core_fps;
    info->timing.sample_rate    = 48000.0;
@@ -1366,6 +1488,298 @@ static bool d12_send(unsigned fw, unsigned fh)
 }
 #endif
 
+/* The pose calls, as a VR core makes them before drawing; what changed
+ * is logged, rounded so a still headset logs once. */
+static void read_vr(void)
+{
+   unsigned i;
+   float e[14];
+   struct retro_vr_frame_state fs;
+   struct retro_vr_head_pose head;
+
+   memset(&fs, 0, sizeof(fs));
+   vr_fs_ok = environ_cb(RETRO_ENVIRONMENT_GET_VR_FRAME_STATE, &fs);
+   if (vr_fs_ok)
+   {
+      vr_fs = fs;
+      if (fs.flags)
+         log_cb(RETRO_LOG_INFO, "[video_views] vr frame flags=%u\n",
+               (unsigned)fs.flags);
+      for (i = 0; i < 3; i++)
+      {
+         e[i]     = fs.eyes[0].position[i];
+         e[i + 3] = fs.eyes[1].position[i];
+      }
+      for (i = 0; i < 4; i++)
+      {
+         e[i + 6]  = fs.eyes[0].fov_tan[i];
+         e[i + 10] = fs.eyes[1].fov_tan[i];
+      }
+      for (i = 0; i < 14; i++)
+         e[i] = (float)((long)(e[i] * 100000.0f + (e[i] < 0 ? -0.5f : 0.5f)))
+            / 100000.0f;
+      if (!eyes_logged || memcmp(e, last_eyes, sizeof(e)))
+      {
+         log_cb(RETRO_LOG_INFO,
+               "[video_views] vr eyes frame=%u left=%.5f,%.5f,%.5f "
+               "right=%.5f,%.5f,%.5f fov=%.5f,%.5f,%.5f,%.5f "
+               "rfov=%.5f,%.5f,%.5f,%.5f\n",
+               frames_run, e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7],
+               e[8], e[9], e[10], e[11], e[12], e[13]);
+         memcpy(last_eyes, e, sizeof(e));
+         eyes_logged = true;
+      }
+   }
+   memset(&head, 0, sizeof(head));
+   if (     environ_cb(RETRO_ENVIRONMENT_GET_VR_HEAD_POSE, &head)
+         && head.flags != last_head_flags)
+   {
+      log_cb(RETRO_LOG_INFO, "[video_views] vr head flags=%u\n",
+            (unsigned)head.flags);
+      last_head_flags = head.flags;
+   }
+}
+
+#define SCENE_EYE_HEIGHT 1.6f
+#define SCENE_WALL_Z    -2.0f
+
+/* Every mix is a convex blend, so the channels stay within 0..1. */
+static uint32_t scene_rgb(float r, float g, float b)
+{
+   return ((uint32_t)(r * 255.0f) << 16) | ((uint32_t)(g * 255.0f) << 8)
+      | (uint32_t)(b * 255.0f);
+}
+
+static float scene_abs(float x)
+{
+   return x < 0.0f ? -x : x;
+}
+
+static float scene_clamp01(float x)
+{
+   return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x);
+}
+
+/* Coverage of a pixel fp wide by a line of half-width w, dist from its
+ * centre; past a spacing of step it settles at the line's density. */
+static float scene_line(float dist, float w, float fp, float step)
+{
+   float cov, m;
+   if (fp < step * 0.5f && dist >= w + fp * 0.5f)
+      return 0.0f;
+   cov = scene_clamp01((w + fp * 0.5f - dist) / fp);
+   if (cov > 2.0f * w / fp)
+      cov = 2.0f * w / fp;
+   m   = scene_clamp01((fp - step * 0.5f) / (step * 0.5f));
+   return cov + (scene_clamp01(2.0f * w / step) - cov) * m;
+}
+
+static void scene_mix(float *c, float r, float g, float b, float a)
+{
+   if (a <= 0.0f)
+      return;
+   c[0] += (r - c[0]) * a;
+   c[1] += (g - c[1]) * a;
+   c[2] += (b - c[2]) * a;
+}
+
+static void scene_sky(float *c, float elev)
+{
+   float t = elev < 0.0f ? 0.0f : (elev > 1.0f ? 1.0f : elev);
+   c[0] = 0.62f - 0.40f * t;
+   c[1] = 0.70f - 0.32f * t;
+   c[2] = 0.78f - 0.14f * t;
+}
+
+/* Colour of the world ray o + t * d; the floor is the plane y = fy.
+ * ps is the pixel's size on the eye's z = -1 plane, for edge coverage. */
+static uint32_t scene_ray(const float *o, const float *d, float fy,
+      float ps)
+{
+   float c[3], hx, hz, w, fp, a, tw, tf, qx, qz, fx, fz;
+   long ix, iz;
+   float ad1 = scene_abs(d[1]);
+
+   tf = (d[1] < 0.0f && o[1] > fy) ? (fy - o[1]) / d[1] : -1.0f;
+   tw = (d[2] < 0.0f && o[2] > SCENE_WALL_Z)
+      ? (SCENE_WALL_Z - o[2]) / d[2] : -1.0f;
+
+   /* Past the fog only the horizon shows, and the casts below stay
+    * in range. */
+   if (tf >= 40.0f)
+      scene_sky(c, 0.0f);
+   else if (tf <= 0.0f)
+      scene_sky(c, d[1] / (scene_abs(d[0]) + ad1 + scene_abs(d[2])) * 2.0f);
+   else
+   {
+      hx = o[0] + tf * d[0];
+      hz = o[2] + tf * d[2];
+      /* The footprint along the floor, which the grazing view stretches. */
+      fp = tf * ps / ad1;
+      w  = 0.008f;
+      /* Faint checker under the grid lines, flat where it is too fine.
+       * The half-metre index gives the checker cell and which lines are
+       * the thick metre ones. */
+      qx = (hx + 1024.0f) * 2.0f;
+      qz = (hz + 1024.0f) * 2.0f;
+      ix = (long)qx;
+      iz = (long)qz;
+      fx = qx - (float)ix;
+      fz = qz - (float)iz;
+      if (((ix >> 1) + (iz >> 1)) & 1)
+      {
+         c[0] = 0.26f;
+         c[1] = 0.30f;
+         c[2] = 0.28f;
+      }
+      else
+      {
+         c[0] = 0.32f;
+         c[1] = 0.36f;
+         c[2] = 0.34f;
+      }
+      scene_mix(c, 0.29f, 0.33f, 0.31f, scene_clamp01(fp));
+      if (fx > 0.5f)
+      {
+         fx = 1.0f - fx;
+         ix++;
+      }
+      if (fz > 0.5f)
+      {
+         fz = 1.0f - fz;
+         iz++;
+      }
+      if (ix & 1)
+         a = scene_line(fx * 0.5f, w, fp, 0.5f);
+      else
+         a = scene_line(fx * 0.5f, w * 2.5f, fp, 1.0f);
+      scene_mix(c, ix & 1 ? 0.55f : 0.80f, ix & 1 ? 0.58f : 0.82f,
+            ix & 1 ? 0.58f : 0.80f, a);
+      if (iz & 1)
+         a = scene_line(fz * 0.5f, w, fp, 0.5f);
+      else
+         a = scene_line(fz * 0.5f, w * 2.5f, fp, 1.0f);
+      scene_mix(c, iz & 1 ? 0.55f : 0.80f, iz & 1 ? 0.58f : 0.82f,
+            iz & 1 ? 0.58f : 0.80f, a);
+      /* Axes: X red, Z blue, brighter toward -Z, the way ahead. */
+      hx = scene_abs(hx);
+      hz = scene_abs(hz);
+      if (hz < 0.25f + fp)
+      {
+         a = scene_line(hz, w * 3.0f, fp, 1000.0f);
+         scene_mix(c, 0.85f, 0.25f, 0.25f, a);
+      }
+      if (hx < 0.25f + fp)
+      {
+         a = scene_line(hx, w * 3.0f, fp, 1000.0f);
+         if (o[2] + tf * d[2] < 0.0f)
+            scene_mix(c, 0.25f, 0.45f, 1.0f, a);
+         else
+            scene_mix(c, 0.20f, 0.28f, 0.50f, a);
+         if (hz < 0.25f + fp)
+         {
+            a = scene_clamp01((0.25f - hx) / fp + 0.5f)
+               * scene_clamp01((0.25f - hz) / fp + 0.5f);
+            scene_mix(c, 0.95f, 0.95f, 0.85f, a);
+         }
+      }
+      a = tf / 40.0f;
+      scene_mix(c, 0.62f, 0.70f, 0.78f, a);
+   }
+
+   if (tw > 0.0f && (tf < 0.0f || tw < tf))
+   {
+      hx = o[0] + tw * d[0];
+      hz = o[1] + tw * d[1] - (fy + SCENE_EYE_HEIGHT);
+      fp = tw * ps / scene_abs(d[2]);
+      /* The patch hangs 2 m ahead, at eye height over the floor. */
+      a = scene_clamp01((0.5f - scene_abs(hx)) / fp + 0.5f)
+         * scene_clamp01((0.5f - scene_abs(hz)) / fp + 0.5f);
+      if (a > 0.0f)
+      {
+         float in = scene_clamp01((0.1f - scene_abs(hx)) / fp + 0.5f)
+            * scene_clamp01((0.1f - scene_abs(hz)) / fp + 0.5f);
+         scene_mix(c, 0.90f + 0.05f * in, 0.55f + 0.40f * in,
+               0.20f + 0.65f * in, a);
+      }
+   }
+   return scene_rgb(c[0], c[1], c[2]);
+}
+
+/* One eye of the shared world, from the eye's own pose and tangents. */
+static void draw_scene(const struct retro_video_view *v, unsigned fw,
+      const struct retro_vr_eye_state *e, bool stage)
+{
+   unsigned i, j;
+   float fy  = stage ? 0.0f : -SCENE_EYE_HEIGHT;
+   float qx  = e->orientation[0];
+   float qy  = e->orientation[1];
+   float qz  = e->orientation[2];
+   float qw  = e->orientation[3];
+   float l   = e->fov_tan[0];
+   float r   = e->fov_tan[1];
+   float u   = e->fov_tan[2];
+   float dn  = e->fov_tan[3];
+   float sx  = (l + r) / (float)v->width;
+   float sy  = (u + dn) / (float)v->height;
+   float ps  = sx > sy ? sx : sy;
+   float rx[3], ry[3], rz[3];
+   /* The eye's axes in world space: the rotated unit vectors. */
+   rx[0] = 1.0f - 2.0f * (qy * qy + qz * qz);
+   rx[1] = 2.0f * (qx * qy + qw * qz);
+   rx[2] = 2.0f * (qx * qz - qw * qy);
+   ry[0] = 2.0f * (qx * qy - qw * qz);
+   ry[1] = 1.0f - 2.0f * (qx * qx + qz * qz);
+   ry[2] = 2.0f * (qy * qz + qw * qx);
+   rz[0] = 2.0f * (qx * qz + qw * qy);
+   rz[1] = 2.0f * (qy * qz - qw * qx);
+   rz[2] = 1.0f - 2.0f * (qx * qx + qy * qy);
+
+   for (j = 0; j < v->height; j++)
+   {
+      uint32_t *row = &frame_buf[(v->y + j) * fw + v->x];
+      float py = u - sy * ((float)j + 0.5f);
+      float px = -l + sx * 0.5f;
+      float d[3], step[3];
+      /* d = px * right + py * up - forward, advanced along the row. */
+      for (i = 0; i < 3; i++)
+      {
+         d[i]    = px * rx[i] + py * ry[i] - rz[i];
+         step[i] = sx * rx[i];
+      }
+      for (i = 0; i < v->width; i++)
+      {
+         row[i] = scene_ray(e->position, d, fy, ps);
+         d[0] += step[0];
+         d[1] += step[1];
+         d[2] += step[2];
+      }
+   }
+}
+
+static void frame_tag(const struct retro_video_view *v, unsigned fw,
+      unsigned fh)
+{
+   unsigned b;
+   for (b = 0; b < 16; b++)
+      rect(v->x + 16 + 20 * b, v->y + v->height - 24, 16, 16, fw, fh,
+            ((frames_run >> b) & 1) ? COL_WHITE : COL_BLACK);
+}
+
+/* Whether this frame's map is TRACKED: with HMD, until vr_flat exists. */
+static bool vr_tracking(bool hmd)
+{
+   FILE *flat;
+   if (vr_kind == VR_OFF || vr_kind == VR_POSES || !hmd || vr_flat)
+      return false;
+   if (!(flat = fopen("vr_flat", "rb")))
+      return true;
+   fclose(flat);
+   vr_flat = true;
+   log_cb(RETRO_LOG_INFO, "[video_views] vr flat\n");
+   return false;
+}
+
 void retro_run(void)
 {
    struct retro_video_view v[RETRO_VIDEO_VIEWS_MAX];
@@ -1377,6 +1791,8 @@ void retro_run(void)
    int accepted    = 0;
    unsigned status = 0;
    bool stereo;
+   bool hmd;
+   bool vr;
 
    if (core_fps != 60.0 && !(frames_run % 10))
    {
@@ -1392,8 +1808,39 @@ void retro_run(void)
    if (!environ_cb(RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS, &status))
       status = 0;
    stereo = (status & RETRO_VIDEO_VIEWS_STATUS_STEREO) != 0;
+   hmd    = (status & RETRO_VIDEO_VIEWS_STATUS_HMD) != 0;
+   vr     = vr_tracking(hmd);
+   if (vr)
+   {
+      read_vr();
+      /* Tracked eyes, or for nopair two screens without any. */
+      stereo = (vr_kind != VR_NOPAIR);
+   }
+   else if (vr_kind == VR_POSES && hmd)
+      read_vr();
 
+   eye_w = eye_h = 0;
+   if (vr && grid_sized())
+   {
+      /* No narrower than the frame tag, which would spill over. */
+      eye_w = (last_rec_w >= 332 && last_rec_w < grid_cap) ? last_rec_w
+         : grid_cap;
+      eye_h = (last_rec_h >= 64 && last_rec_h < grid_cap) ? last_rec_h
+         : grid_cap;
+   }
    frame_size(&fw, &fh);
+   if (fw != geo_w || fh != geo_h)
+   {
+      /* A grid frame is not the size declared at load. */
+      if (geo_w || grid_sized())
+      {
+         struct retro_system_av_info av;
+         retro_get_system_av_info(&av);
+         environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &av.geometry);
+      }
+      geo_w = fw;
+      geo_h = fh;
+   }
    n = build_map(v, c, stereo);
    if (HW_IS_VULKAN(hw_kind))
    {
@@ -1436,21 +1883,49 @@ void retro_run(void)
    rect(0, 0, fw, fh, fw, fh, COL_BG);
    for (i = 0; i < n; i++)
    {
-      if (pattern == PATTERN_CHECKER)
+      if (     grid_scene && vr && vr_fs_ok
+            && (v[i].eye == RETRO_VIDEO_VIEW_EYE_LEFT
+               || v[i].eye == RETRO_VIDEO_VIEW_EYE_RIGHT)
+            && (hw_kind == HW_OFF || hw_kind >= HW_VULKAN))
+         draw_scene(&v[i], fw,
+               &vr_fs.eyes[v[i].eye == RETRO_VIDEO_VIEW_EYE_RIGHT],
+               vr_kind == VR_STAGE);
+      else if (pattern == PATTERN_CHECKER)
          fill_checker(v[i].x, v[i].y, v[i].width, v[i].height, fw);
       else if (pattern == PATTERN_NOISE)
          fill_noise(v[i].x, v[i].y, v[i].width, v[i].height, fw);
       else
          rect(v[i].x, v[i].y, v[i].width, v[i].height, fw, fh, c[i]);
       rect(v[i].x, v[i].y, 8, 8, fw, fh, COL_WHITE);
+      if (vr && v[i].eye != RETRO_VIDEO_VIEW_EYE_NONE)
+         frame_tag(&v[i], fw, fh);
    }
 
    if (map_kind != MAP_NONE)
    {
+      memset(&views, 0, sizeof(views));
       views.views     = v;
       views.num_views = n;
+      if (vr)
+      {
+         views.flags           = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+         views.reference_space = (vr_kind == VR_STAGE)
+            ? RETRO_VR_REFERENCE_SPACE_STAGE
+            : RETRO_VR_REFERENCE_SPACE_LOCAL;
+      }
       accepted        = environ_cb(RETRO_ENVIRONMENT_SET_VIDEO_VIEWS,
             &views) ? 1 : 0;
+      if (     (int)hmd != last_hmd
+            || views.recommended_view_width != last_rec_w
+            || views.recommended_view_height != last_rec_h)
+      {
+         log_cb(RETRO_LOG_INFO, "[video_views] hmd=%d recommended=%ux%u\n",
+               hmd ? 1 : 0, views.recommended_view_width,
+               views.recommended_view_height);
+         last_hmd   = hmd ? 1 : 0;
+         last_rec_w = views.recommended_view_width;
+         last_rec_h = views.recommended_view_height;
+      }
    }
    log_status(status, accepted, n);
 
@@ -1605,6 +2080,12 @@ bool retro_load_game(const struct retro_game_info *game)
       hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL_CORE;
       hw_render.version_major      = 3;
       hw_render.version_minor      = 2;
+      if (hw_gl_compat)
+      {
+         hw_render.context_type    = RETRO_HW_CONTEXT_OPENGL;
+         hw_render.version_major   = 0;
+         hw_render.version_minor   = 0;
+      }
       hw_render.context_reset      = context_reset;
       hw_render.context_destroy    = context_destroy;
       hw_render.bottom_left_origin = (hw_kind == HW_GL);

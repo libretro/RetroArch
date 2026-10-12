@@ -28,34 +28,65 @@ static unsigned applies[2], stops[2];
 static float amplitudes[2];
 static XrResult apply_result[2], stop_result[2];
 static unsigned failures;
+static openxr_session_t test_session;
+static openxr_frame_t test_host_frame;
+static input_device_driver_t test_pad_driver;
+static char test_device_name[MAX_USERS][64];
+static bool test_device_auto[MAX_USERS];
 
 #define CHECK(c, msg) do { if (!(c)) { \
    fprintf(stderr, "FAIL %s\n", msg); failures++; } } while (0)
 
 retro_time_t cpu_features_get_time_usec(void) { return test_now; }
 uint32_t runloop_get_flags(void) { return RUNLOOP_FLAG_CORE_RUNNING; }
-bool vulkan_openxr_focused(vulkan_openxr_t *xr)
-{ (void)xr; return test_focused; }
-XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr)
-{ (void)xr; return test_frame ? (XrSwapchain)(uintptr_t)1 : XR_NULL_HANDLE; }
-void vulkan_openxr_set_hooks(const vulkan_openxr_hooks_t *hooks)
+bool openxr_session_focused(openxr_session_t *session)
+{ (void)session; return test_focused; }
+bool openxr_session_ended(openxr_session_t *session)
+{ (void)session; return false; }
+XrSwapchain openxr_frame_cursor(const openxr_frame_t *frame)
+{ (void)frame; return test_frame ? (XrSwapchain)(uintptr_t)1 : XR_NULL_HANDLE; }
+void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 { (void)hooks; }
-XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr)
-{ (void)xr; return 0; }
-bool vulkan_openxr_get_quads(vulkan_openxr_t *xr, video_xr_quad_set_t *out)
-{ (void)xr; memset(out, 0, sizeof(*out)); return test_frame; }
+XrTime openxr_frame_predicted_time(openxr_frame_t *frame)
+{ (void)frame; return 0; }
+void openxr_frame_get_shown_quads(openxr_frame_t *frame,
+      video_xr_quad_set_t *out, XrSpace *space)
+{ (void)frame; memset(out, 0, sizeof(*out)); *space = XR_NULL_HANDLE; }
 bool menu_driver_alive(void) { return test_menu_open; }
 bool video_driver_get_views_core(const video_views_map_t **map, unsigned *dims)
 { (void)map; (void)dims; return false; }
-unsigned input_driver_analog_dpad_mode(unsigned port)
-{ (void)port; return 0; }
-uint16_t input_driver_analog_dpad_buttons(unsigned mode,
-      const int16_t *analog, float threshold)
-{ (void)mode; (void)analog; (void)threshold; return 0; }
+bool video_driver_get_viewport_info(struct video_viewport *vp)
+{ (void)vp; return false; }
+bool input_autoconfigure_connect_ex(const char *name,
+      const char *display_name, const char *phys, const char *driver,
+      unsigned port, unsigned vid, unsigned pid, uint8_t flags)
+{
+   (void)display_name; (void)phys; (void)vid; (void)pid;
+   strlcpy(test_device_name[port], name, sizeof(test_device_name[port]));
+   test_device_auto[port] = (flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED) != 0;
+   input_openxr_slot_connected(port, driver);
+   return true;
+}
+bool input_autoconfigure_disconnect(unsigned port, const char *name)
+{
+   (void)name;
+   test_device_name[port][0] = '\0';
+   test_device_auto[port] = false;
+   return true;
+}
+bool input_autoconfigure_pending(void) { return false; }
+const char *input_config_get_device_name(unsigned port)
+{ return test_device_name[port][0] ? test_device_name[port] : NULL; }
+bool input_config_get_device_autoconfigured(unsigned port)
+{ return test_device_auto[port]; }
+void input_driver_exchange_ports(unsigned a, unsigned b)
+{ (void)a; (void)b; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,
       video_xr_vec3_t *out) { (void)q; *out = *v; }
+bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v)
+{ (void)vp; (void)u; (void)v; return false; }
 bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
       const video_views_map_t *map, unsigned dims, int16_t *x, int16_t *y)
 { (void)q; (void)u; (void)v; (void)map; (void)dims; (void)x; (void)y; return false; }
@@ -132,7 +163,22 @@ static void setup(void)
    input_openxr_st.StopHapticFeedback = stop;
    input_openxr_st.hands[0] = 1;
    input_openxr_st.hands[1] = 2;
-   input_openxr_st.xr = (vulkan_openxr_t*)(uintptr_t)1;
+   memset(&test_host_frame, 0, sizeof(test_host_frame));
+   test_host_frame.session = &test_session;
+   input_openxr_st.frame = &test_host_frame;
+   memset(&test_pad_driver, 0, sizeof(test_pad_driver));
+   memset(test_device_name, 0, sizeof(test_device_name));
+   memset(test_device_auto, 0, sizeof(test_device_auto));
+   input_openxr_devs.count = INPUT_OPENXR_PADS;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+   {
+      input_openxr_devs.slot[p] = (int)p;
+      input_openxr_devs.lost[p] = -1;
+      input_openxr_devs.landed[p] = true;
+      strlcpy(test_device_name[p], input_openxr_device_name(p),
+            sizeof(test_device_name[p]));
+      test_device_auto[p] = true;
+   }
    memset(applies, 0, sizeof(applies));
    memset(stops, 0, sizeof(stops));
    for (h = 0; h < 2; h++)
@@ -150,13 +196,17 @@ static void setup(void)
 static void service(bool separate, bool paused)
 { input_openxr_haptics(&input_openxr_st, separate, paused); }
 
+static bool set_rumble(unsigned slot, enum retro_rumble_effect effect,
+      uint16_t strength)
+{ return input_openxr_joypad(&test_pad_driver)->set_rumble(slot, effect, strength); }
+
 static void publish_pointer(unsigned laser, bool menu)
 {
-   vulkan_openxr_t *xr = input_openxr_st.xr;
+   openxr_frame_t *frame = input_openxr_st.frame;
    test_menu_open = menu;
-   input_openxr_st.xr = NULL;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
-   input_openxr_st.xr = xr;
+   input_openxr_st.frame = NULL;
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
+   input_openxr_st.frame = frame;
 }
 static void replace_pointer(void)
 { publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, true); }
@@ -203,13 +253,13 @@ static void pointer_tests(void)
    input_openxr_st.GetActionStateFloat = read_float;
    input_openxr_st.GetActionStateVector2f = read_vector;
    test_navigation = test_menu_open = true;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
    picks = 0;
    input_openxr_frame_layers(NULL, 1, layers, 2);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
    input_openxr_frame_layers(NULL, 1, layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
@@ -220,20 +270,24 @@ int main(void)
 {
    pointer_tests();
    setup();
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 10000);
-   input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 20000);
-   CHECK(!input_openxr_set_rumble(0, (enum retro_rumble_effect)2, 65535),
+   set_rumble(0, RETRO_RUMBLE_STRONG, 10000);
+   set_rumble(0, RETRO_RUMBLE_WEAK, 20000);
+   CHECK(!set_rumble(0, (enum retro_rumble_effect)2, 65535),
          "invalid effect accepted");
-   CHECK(!input_openxr_set_rumble(0, (enum retro_rumble_effect)-1, 65535),
+   CHECK(!set_rumble(0, (enum retro_rumble_effect)-1, 65535),
          "negative effect accepted");
-   CHECK(!input_openxr_set_rumble(INPUT_OPENXR_PADS,
-         RETRO_RUMBLE_STRONG, 65535), "invalid port accepted");
+   CHECK(!set_rumble(INPUT_OPENXR_PADS,
+         RETRO_RUMBLE_STRONG, 65535), "unclaimed slot accepted");
+   CHECK(!set_rumble(MAX_USERS, RETRO_RUMBLE_STRONG, 65535),
+         "invalid slot accepted");
+   CHECK(!set_rumble((unsigned)-1, RETRO_RUMBLE_STRONG, 65535),
+         "negative slot accepted");
    CHECK(retro_atomic_load_acquire_int(&input_openxr_rumble[0][0]) == 10000
          && retro_atomic_load_acquire_int(&input_openxr_rumble[0][1]) == 20000,
          "invalid effect altered a valid motor");
    setup();
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
-   input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 32768);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_WEAK, 32768);
    service(false, false);
    CHECK(applies[0] == 1 && applies[1] == 1, "combined motors did not reach both hands");
    CHECK(amplitudes[0] == 1.0f && amplitudes[1] > 0.49f
@@ -248,15 +302,15 @@ int main(void)
    CHECK(stops[0] == 1 && stops[1] == 1, "pause did not stop once per hand");
 
    setup();
-   input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 65535);
-   input_openxr_set_rumble(1, RETRO_RUMBLE_STRONG, 32768);
+   set_rumble(0, RETRO_RUMBLE_WEAK, 65535);
+   set_rumble(1, RETRO_RUMBLE_STRONG, 32768);
    service(true, false);
    CHECK(amplitudes[0] == 1.0f && amplitudes[1] > 0.49f
          && amplitudes[1] < 0.51f, "separate players lost their stronger motor");
 
    setup();
    apply_result[0] = XR_ERROR_RUNTIME_FAILURE;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 0.0f, "failed apply cached as successful");
    service(false, false);
@@ -281,11 +335,11 @@ int main(void)
 
    setup();
    apply_result[0] = XR_SESSION_NOT_FOCUSED;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 0.0f, "unfocused result cached as applied");
    test_focused = false;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
    test_focused = true;
    apply_result[0] = XR_SUCCESS;
    service(false, false);
@@ -304,7 +358,7 @@ int main(void)
          "unfocused stop did not recover");
 
    setup();
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    test_now += INPUT_OPENXR_HAPTIC_REFRESH;
    apply_result[0] = XR_ERROR_RUNTIME_FAILURE;
@@ -318,27 +372,27 @@ int main(void)
 
    setup();
    apply_result[0] = XR_ERROR_RUNTIME_FAILURE;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    apply_result[0] = XR_SUCCESS;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 32768);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 32768);
    service(false, false);
    CHECK(applies[0] == 2, "new desired amplitude waited for the failed one");
    apply_result[0] = XR_ERROR_RUNTIME_FAILURE;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
-   input_openxr_session_destroying(NULL, input_openxr_st.xr);
-   CHECK(input_openxr_st.haptic[0] == 0.0f && !input_openxr_st.xr,
+   input_openxr_session_destroying(NULL);
+   CHECK(input_openxr_st.haptic[0] == 0.0f && !input_openxr_st.frame,
          "session retirement retained haptic state");
    CHECK(!input_openxr_can_rumble(), "session retirement retained readiness");
    setup();
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    CHECK(applies[0] == 1, "new session retained retired retry backoff");
 
    setup();
    apply_result[0] = XR_SESSION_LOSS_PENDING;
-   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
+   set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 1.0f, "successful loss-pending result rejected");
    puts(failures ? "FAIL openxr_haptics_test" : "PASS openxr_haptics_test");

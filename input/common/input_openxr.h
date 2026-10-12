@@ -24,30 +24,54 @@
 
 RETRO_BEGIN_DECLS
 
-/* The headset's controllers through OpenXR: one RetroPad from both, or
- * one per hand, their haptics, and a laser pointer on the headset's
- * screens. Everything here but the rumble runs on the main thread. */
+/* The headset's controllers through OpenXR: a joypad device from both,
+ * or one per hand, their haptics, and a laser pointer on the headset's
+ * screens. Everything here but can_rumble and active runs on the main
+ * thread. */
 
 #define INPUT_OPENXR_PADS 2
+
+/* The devices' joypad driver, and their names: both hands, or each in
+ * Separate. Each name has a built-in profile, the RetroPad's ids as
+ * buttons, the sticks as axes 0 to 3, L2 and R2 as axes 4 and 5. */
+#define INPUT_OPENXR_JOYPAD          "openxr"
+#define INPUT_OPENXR_JOYPAD_COMBINED "OpenXR Controllers"
+#define INPUT_OPENXR_JOYPAD_LEFT     "OpenXR Left Controller"
+#define INPUT_OPENXR_JOYPAD_RIGHT    "OpenXR Right Controller"
+
+struct rarch_joypad_driver;
 
 /* Joins every headset session video makes from now on. */
 void input_openxr_register(void);
 
-/* Syncs the controllers; once per input poll, with the Headset
- * Controllers and Laser Pointer settings and the axis threshold. */
-void input_openxr_poll(unsigned controllers, unsigned laser,
-      float threshold);
+/* Syncs the controllers, and connects or disconnects their devices;
+ * once per input poll, with Max Users, the Headset Controllers and
+ * Laser Pointer settings and the axis threshold. */
+void input_openxr_poll(unsigned max_users, unsigned controllers,
+      unsigned laser, float threshold);
 
-/* A RetroPad button held on user port's pad, or RARCH_MENU_TOGGLE,
- * RARCH_HEADSET_RECENTER or RARCH_LASER_POINTER_TOGGLE, which answer
- * for any port. */
-bool input_openxr_button(unsigned port, unsigned id);
+/* @joypad, or while the devices have slots a joypad driver that
+ * answers theirs and passes every other to @joypad. */
+const struct rarch_joypad_driver *input_openxr_joypad(
+      const struct rarch_joypad_driver *joypad);
 
-/* A stick axis (idx LEFT/RIGHT, id X/Y) or analog L2/R2 (idx
- * ANALOG_BUTTON) of user port's pad, or res when that is further from
- * zero. */
-int16_t input_openxr_analog(unsigned port, unsigned idx, unsigned id,
-      int16_t res);
+/* Whether a device of the headset's is in @slot. */
+bool input_openxr_has_slot(unsigned slot);
+
+/* @provider's controller was connected to @slot: another driver's
+ * takes it from the headset. */
+void input_openxr_slot_connected(unsigned slot, const char *provider);
+
+/* The joypad driver restarted: the devices are reported again. */
+void input_openxr_reannounce(void);
+
+/* Looks up the profile of the device in @slot again, if it is the
+ * headset's. */
+bool input_openxr_autoconfigure(unsigned slot);
+
+/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER or
+ * RARCH_LASER_POINTER_TOGGLE, from the headset's own actions. */
+bool input_openxr_hotkey(unsigned id);
 
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
  * while it can point (the headset focused, a screen live for the
@@ -59,12 +83,11 @@ bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
  * whether its trigger is held. */
 bool input_openxr_menu_pointer(float *u, float *v, bool *pressed);
 
-/* A core's rumble for user port, applied at the next poll. Any thread. */
-bool input_openxr_set_rumble(unsigned port, enum retro_rumble_effect effect,
-      uint16_t strength);
-
 /* Whether a core's rumble reaches the controllers now. Any thread. */
 bool input_openxr_can_rumble(void);
+
+/* Any thread: the controllers are set up on a live session. */
+bool input_openxr_active(void);
 
 RETRO_END_DECLS
 

@@ -601,6 +601,18 @@ static void gfx_ctx_xegl_release_current(void *data)
 #endif
 }
 
+#ifdef HAVE_EGL
+static bool gfx_ctx_xegl_shared_context_new(void *data,
+      gfx_ctx_shared_context_t *out)
+{
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   memset(out, 0, sizeof(*out));
+   if (!xegl || xegl_api != GFX_CTX_OPENGL_API)
+      return false;
+   return egl_shared_context_new(&xegl->egl, EGL_OPENGL_API, out);
+}
+#endif
+
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
 #ifdef HAVE_EGL
@@ -720,5 +732,14 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_destroy_surface,
    x11_presentable,
    NULL, /* last_present_time */
-   gfx_ctx_xegl_release_current
+   gfx_ctx_xegl_release_current,
+#ifdef HAVE_EGL
+   gfx_ctx_xegl_shared_context_new,
+   egl_shared_context_bind,
+   egl_shared_context_free
+#else
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL  /* shared_context_free */
+#endif
 };
