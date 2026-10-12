@@ -5991,10 +5991,6 @@ static void *d3d12_gfx_init(const video_info_t* video)
       RARCH_LOG("[D3D12] Buffers the CPU writes go to video memory (GPU upload heap).\n");
 
    d3d12_init_descriptors(d3d12);
-
-   if (!d3d12_gfx_init_pipelines(d3d12))
-      goto error;
-
    d3d12_init_queue(d3d12);
 
 #ifdef __WINRT__
@@ -6018,6 +6014,10 @@ static void *d3d12_gfx_init(const video_info_t* video)
          goto error;
    }
 #endif
+
+   /* After the swap chain: the pipes are made for its format. */
+   if (!d3d12_gfx_init_pipelines(d3d12))
+      goto error;
 
 #ifdef HAVE_DXGI_HDR
    /* Now that the swapchain exists, recreate HDR pipes if the actual
