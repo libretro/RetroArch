@@ -26,7 +26,7 @@ typedef struct ra_dxgi_bridge {
    void *resources[2], *ready_handle, *done_handle, *event, *latency;
    void *d3d_dll, *dxgi_dll;
    UINT64 sequence, last_use[2];
-   unsigned width, height, format, chain_flags, current_index;
+   unsigned width, height, format, chain_flags, current_index, present_count;
    int failed, occluded, resized;
 } ra_dxgi_bridge_t;
 static UINT64 completed, expected;

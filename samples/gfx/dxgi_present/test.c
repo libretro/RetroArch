@@ -5,6 +5,9 @@
 
 typedef int HRESULT;
 typedef unsigned DWORD;
+#define S_OK 0
+typedef struct { int64_t QuadPart; } LARGE_INTEGER;
+typedef struct { unsigned PresentCount, PresentRefreshCount, SyncRefreshCount; LARGE_INTEGER SyncQPCTime; } DXGI_FRAME_STATISTICS;
 typedef uint64_t UINT64;
 #define WAIT_OBJECT_0 0u
 #define WAIT_TIMEOUT 258u
@@ -26,6 +29,8 @@ struct queue_vtable {
 struct chain_vtable {
    HRESULT (*Present)(IDXGISwapChain3 *, unsigned, unsigned);
    unsigned (*GetCurrentBackBufferIndex)(IDXGISwapChain3 *);
+   HRESULT (*GetLastPresentCount)(IDXGISwapChain3 *, unsigned *);
+   HRESULT (*GetFrameStatistics)(IDXGISwapChain3 *, DXGI_FRAME_STATISTICS *);
 };
 struct queue { struct queue_vtable *lpVtbl; };
 struct chain { struct chain_vtable *lpVtbl; };
@@ -33,7 +38,7 @@ typedef struct ra_dxgi_bridge {
    ID3D12CommandQueue *queue;
    IDXGISwapChain3 *chain;
    void *ready, *done, *latency, *lists[2];
-   unsigned current_index;
+   unsigned current_index, present_count;
    int failed, tearing, occluded, resized;
    UINT64 sequence, last_use[2];
 } ra_dxgi_bridge_t;
@@ -42,6 +47,17 @@ static DWORD wait_result;
 static HRESULT probe_result, present_result, queue_result, signal_result;
 static unsigned waits, probes, copies, presents, order;
 static unsigned expected_interval = 1, expected_flags;
+static HRESULT count_result, stats_result;
+static DXGI_FRAME_STATISTICS frame_stats;
+static int frequency_valid = 1, clock_valid = 1;
+static int QueryPerformanceFrequency(LARGE_INTEGER *value)
+{ value->QuadPart = 1000000; return frequency_valid; }
+static int QueryPerformanceCounter(LARGE_INTEGER *value)
+{ value->QuadPart = 1000000; return clock_valid; }
+static HRESULT get_count(IDXGISwapChain3 *chain, unsigned *count)
+{ (void)chain; *count = presents; return count_result; }
+static HRESULT get_stats(IDXGISwapChain3 *chain, DXGI_FRAME_STATISTICS *stats)
+{ (void)chain; *stats = frame_stats; return stats_result; }
 static UINT64 signalled, waited;
 static DWORD WaitForSingleObject(void *handle, unsigned timeout)
 {
@@ -74,7 +90,7 @@ static unsigned current(IDXGISwapChain3 *chain) { (void)chain; return 1; }
 int main(void)
 {
    struct queue_vtable queue_methods = { queue_wait, copy, signal_done };
-   struct chain_vtable chain_methods = { present, current };
+   struct chain_vtable chain_methods = { present, current, get_count, get_stats };
    ID3D12CommandQueue queue;
    IDXGISwapChain3 chain;
    ra_dxgi_bridge_t bridge;
@@ -125,6 +141,34 @@ int main(void)
    assert(ra_dxgi_bridge_present(&bridge, 11, 0));
    order = 0; expected_interval = 4; expected_flags = 0;
    assert(ra_dxgi_bridge_present(&bridge, 12, 10));
+   frame_stats.PresentCount = bridge.present_count;
+   frame_stats.PresentRefreshCount = frame_stats.SyncRefreshCount = 100;
+   frame_stats.SyncQPCTime.QuadPart = 999000;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 999000);
+   frame_stats.PresentCount--;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frame_stats.PresentCount++;
+   frame_stats.PresentRefreshCount++;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frame_stats.PresentRefreshCount--;
+   stats_result = -1;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   stats_result = 0; frame_stats.SyncQPCTime.QuadPart = 1000001;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frame_stats.SyncQPCTime.QuadPart = 0;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frame_stats.SyncQPCTime.QuadPart = 999000; frequency_valid = 0;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   frequency_valid = 1; clock_valid = 0;
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   clock_valid = 1;
+   order = 0; count_result = -1;
+   assert(ra_dxgi_bridge_present(&bridge, 13, 10));
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
+   count_result = 0; order = 0; expected_interval = 0;
+   expected_flags = DXGI_PRESENT_ALLOW_TEARING;
+   assert(ra_dxgi_bridge_present(&bridge, 14, 0));
+   assert(ra_dxgi_bridge_present_time(&bridge) == 0);
    puts("PASS: DXGI queue ordering, fence lifetime, pacing, occlusion and failures");
    return 0;
 }

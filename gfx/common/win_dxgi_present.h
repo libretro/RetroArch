@@ -15,6 +15,7 @@ int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *bridge);
 int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *bridge);
 void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *bridge, float peak);
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *bridge, unsigned interval);
+int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *bridge);
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *bridge, unsigned index);
 int ra_dxgi_bridge_present(ra_dxgi_bridge_t *bridge, uint64_t ready,
       unsigned interval);

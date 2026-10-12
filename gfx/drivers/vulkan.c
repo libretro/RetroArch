@@ -53,6 +53,9 @@
 #endif
 
 #include "../common/vulkan_common.h"
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "../common/win_vulkan_dxgi.h"
+#endif
 #include "../common/vulkan_memory_type.h"
 #ifdef HAVE_RMP4
 #include "../common/vulkan_video_decode.h"
@@ -302,6 +305,7 @@ struct vk_effect_template
 
 typedef struct vk
 {
+   retro_time_t presented_at;
    vulkan_filter_chain_t *filter_chain;
    vulkan_filter_chain_t *filter_chain_default;
    /* Views: one chain per view for the preset, one for the stock
@@ -9006,20 +9010,25 @@ static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_
    return true;
 }
 
-/* How long the frame's present and the taking of the next image took.
- * Where the swapchain makes the driver wait for an image - on Metal's
- * layer under MoltenVK, or with two images anywhere - that is waiting,
- * not drawing, and the threaded presenter is told so: it holds the core
- * back by the drawing time before each vblank, and counted the wait in.
- *
- * Whether the frame is on the display as the call returns is not said:
- * with a queue it depends on how deep the queue was, which this does
- * not know. The frame is counted to the next vblank as before. */
+/* Present and next-image acquisition are waiting, not drawing.
+ * DXGI can confirm the current frame's vblank; otherwise its
+ * completion remains unknown and the presenter estimates it. */
 static retro_time_t vulkan_present_wait;
 
 static retro_time_t vulkan_get_last_present_wait(void *data, bool *shown)
 {
    *shown = false;
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (data)
+   {
+      vk_t *vk = (vk_t*)data;
+      gfx_ctx_vulkan_data_t *ctx = VULKAN_CTX_DATA_FROM_CONTEXT(vk->context);
+      if (ctx->dxgi_presenter)
+         vk->presented_at = ra_vulkan_dxgi_present_time(
+               (ra_vulkan_dxgi_t*)ctx->dxgi_presenter);
+      *shown = vk->presented_at > 0;
+   }
+#endif
    return data ? vulkan_present_wait : 0;
 }
 
@@ -9029,6 +9038,8 @@ static retro_time_t vulkan_get_last_present_time(void *data)
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
       return 0;
+   if (vk->presented_at > 0)
+      return vk->presented_at;
    /* The device's own report first, where it has one; failing that,
     * whatever the window system context can say. On Windows that is
     * the compositor's vertical blank, which covers drivers that do not
@@ -12393,6 +12404,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_await_frame_before_present(vk, frame_index);
 
    vulkan_present_wait = 0;
+   vk->presented_at = 0;
 #ifdef HAVE_OPENXR
    if (!xr_stereo)
 #endif

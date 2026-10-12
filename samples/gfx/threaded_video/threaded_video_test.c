@@ -2311,6 +2311,8 @@ static retro_time_t blk_wait_sum;
 static unsigned blk_frames;
 static unsigned blk_missed;
 static bool blk_tells;
+static unsigned blk_post_delay;
+static bool blk_zero_wait;
 
 static bool blk_frame(void *data, const void *frame, unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
@@ -2331,6 +2333,8 @@ static bool blk_frame(void *data, const void *frame, unsigned dims,
    if (blk_wait > BLK_PERIOD / 2)
       blk_missed++;
    blk_vblank    = v;
+   if (blk_post_delay)
+      retro_sleep(blk_post_delay);
    return ret;
 }
 
@@ -2344,7 +2348,7 @@ static retro_time_t blk_present_wait(void *data, bool *shown)
 {
    (void)data;
    *shown = blk_tells;
-   return blk_tells ? blk_wait : 0;
+   return blk_tells && !blk_zero_wait ? blk_wait : 0;
 }
 
 static void blk_get_poke(void *data, const video_poke_interface_t **iface)
@@ -2464,6 +2468,19 @@ static void lane_blocking_present(void)
          " latency %.2f ms, render %.2f ms, %u of 8 counted to it\n",
          lat_untold / 1000.0, render_untold / 1000.0, off_untold / 1000.0,
          lat_told / 1000.0, render_told / 1000.0, met);
+
+   blk_post_delay = 5;
+   run_frames(1);
+   video_thread_wait_idle();
+   CHECK(thr->last_present_end == blk_vblank,
+         "completed present must exclude the next-buffer wait");
+   blk_zero_wait = true;
+   run_frames(1);
+   video_thread_wait_idle();
+   CHECK(thr->last_present_end == blk_vblank,
+         "completed present feedback must work without a measured wait");
+   blk_post_delay = 0;
+   blk_zero_wait = false;
 
    video_thread_wait_idle();
    set_driver(thr, blk_inner);

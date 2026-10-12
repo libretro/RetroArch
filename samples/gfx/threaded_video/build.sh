@@ -104,6 +104,7 @@ fi
 # calloc() through the harness (its __wrap_calloc), for the lanes that
 # fail an allocation; Apple's linker has no --wrap, and the harness
 # leaves those lanes out there.
+rm -f $out/threaded_video_test $out/threaded_video_test.exe
 wrap="-Wl,--wrap=calloc"
 [ "$(uname -s)" = Darwin ] && wrap=""
 sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $cocoa_objs#" \
@@ -116,7 +117,9 @@ sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $coco
 # it left the line alone, the link produced retroarch in the tree
 # root, and this script said "built". Plain patterns now, and a
 # missing object or binary fails here.
-for f in $out/retroarch_nomain.o $out/harness_main.o $cocoa_objs $out/threaded_video_test; do
+executable=$out/threaded_video_test
+[ -f "$executable.exe" ] && executable=$executable.exe
+for f in $out/retroarch_nomain.o $out/harness_main.o $cocoa_objs $executable; do
    if [ ! -f "$f" ]; then
       echo "build.sh: $f was not produced - a compile or link line was not rewritten as intended" >&2
       exit 1

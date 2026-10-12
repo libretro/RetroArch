@@ -322,6 +322,9 @@ void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *p, float peak)
    ra_dxgi_bridge_hdr_metadata(p->bridge, peak);
 }
 
+int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *p)
+{ return p ? ra_dxgi_bridge_present_time(p->bridge) : 0; }
+
 VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
 { return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
 

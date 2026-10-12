@@ -1607,7 +1607,7 @@ static void video_thread_schedule_next(thread_video_t *thr)
    retro_time_t base = 0;
    retro_time_t next;
 
-   if (     thr->present_timing_ask
+   if (     (thr->present_timing_ask || thr->present_shown)
          && thr->driver_data && thr->poke && thr->poke->get_last_present_time)
       base = thr->poke->get_last_present_time(thr->driver_data);
    thr->phase_from_display = base > 0 && base <= now;
@@ -1629,12 +1629,11 @@ static void video_thread_schedule_next(thread_video_t *thr)
     * does not block returns in well under a millisecond, and a number
     * measured to there says nothing about when the frame is seen. */
    thr->last_present_end = thr->present_period > 0 ? next : now;
-   /* ...unless the present waited for the vblank and came back with
-    * the frame out: then it went out now. Taken once: a repeat that
-    * follows has made no such wait. */
+   /* Confirmed completion uses its display timestamp when available,
+    * otherwise the return time. Consume it before any repeat. */
    if (thr->present_shown)
    {
-      thr->last_present_end = now;
+      thr->last_present_end = thr->phase_from_display ? base : now;
       thr->present_shown    = false;
    }
 }
@@ -2686,11 +2685,9 @@ static void video_thread_loop(void *data)
                         thr->driver_data, &shown);
                   if (waited > render_took)
                      waited = render_took;
+                  thr->present_shown = shown;
                   if (waited > 0)
-                  {
-                     render_took       -= waited;
-                     thr->present_shown = shown;
-                  }
+                     render_took -= waited;
                   if (shown)
                      video_thread_margin_learn(thr, waited);
                   /* for the statistics, averaged as the render time is */

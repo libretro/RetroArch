@@ -32,6 +32,7 @@ struct ra_dxgi_bridge
    ID3D12GraphicsCommandList *lists[2];
    HANDLE resources[2], ready_handle, done_handle, event, latency;
    unsigned current_index, width, height, format;
+   unsigned present_count;
    UINT chain_flags;
    int failed;
    BOOL tearing;
@@ -196,6 +197,7 @@ int ra_dxgi_bridge_resize(ra_dxgi_bridge_t *b,
    b->current_index = 0;
    b->occluded = 0;
    b->resized = 1;
+   b->present_count = 0;
    return 1;
 error:
    b->failed = 1;
@@ -344,6 +346,7 @@ int ra_dxgi_bridge_present(ra_dxgi_bridge_t *b, uint64_t ready, unsigned interva
    unsigned index = b->current_index;
    ID3D12CommandList *list = (ID3D12CommandList *)b->lists[index];
    HRESULT hr;
+   b->present_count = 0;
    hr = b->queue->lpVtbl->Wait(b->queue, b->ready, ready);
    if (FAILED(hr)) return 0;
    b->queue->lpVtbl->ExecuteCommandLists(b->queue, 1, &list);
@@ -353,7 +356,29 @@ int ra_dxgi_bridge_present(ra_dxgi_bridge_t *b, uint64_t ready, unsigned interva
    b->last_use[index] = b->sequence;
    hr = b->chain->lpVtbl->Present(b->chain, interval > 4 ? 4 : interval,
          !interval && b->tearing ? DXGI_PRESENT_ALLOW_TEARING : 0);
+   if (hr == S_OK && interval)
+      if (FAILED(b->chain->lpVtbl->GetLastPresentCount(b->chain, &b->present_count)))
+         b->present_count = 0;
    return SUCCEEDED(hr);
+}
+
+int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b)
+{
+   DXGI_FRAME_STATISTICS stats;
+   LARGE_INTEGER frequency, now;
+   if (!b || b->failed || !b->present_count)
+      return 0;
+   memset(&stats, 0, sizeof(stats));
+   if (FAILED(b->chain->lpVtbl->GetFrameStatistics(b->chain, &stats))
+         || stats.PresentCount != b->present_count
+         || stats.PresentRefreshCount != stats.SyncRefreshCount
+         || stats.SyncQPCTime.QuadPart <= 0
+         || !QueryPerformanceFrequency(&frequency) || frequency.QuadPart <= 0
+         || !QueryPerformanceCounter(&now) || stats.SyncQPCTime.QuadPart > now.QuadPart)
+      return 0;
+   /* Only use a clock sample from the submitted frame's own vblank. */
+   return stats.SyncQPCTime.QuadPart / frequency.QuadPart * 1000000
+      + stats.SyncQPCTime.QuadPart % frequency.QuadPart * 1000000 / frequency.QuadPart;
 }
 
 void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak)
