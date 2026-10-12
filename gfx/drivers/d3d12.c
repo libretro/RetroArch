@@ -8788,14 +8788,16 @@ static bool d3d12_gfx_frame(
       d3d12_vv_target_drop(d3d12, &d3d12->views.ui_target,
             &d3d12->views.ui);
    /* Drawn and composited only when there is UI; overlays are hidden. */
+   /* No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE), msg, statistics_show,
-#ifdef HAVE_GFX_WIDGETS
-         widgets_active && gfx_widgets_visible(video_info)
+         widgets_active && gfx_widgets_visible(video_info))
 #else
-         false
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE), msg, statistics_show, false)
 #endif
-         )
       && d3d12->views.rect
       && d3d12_vv_target_ensure(d3d12, &d3d12->views.ui_target,
             &d3d12->views.ui, video_info->views_layout.ui_dims);
