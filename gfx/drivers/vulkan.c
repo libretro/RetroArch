@@ -24,6 +24,7 @@
 #include <encodings/utf.h>
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/scaler/pixconv.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
@@ -14494,10 +14495,12 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
    vk_t *vk = (vk_t*)data;
    struct vk_texture *staging;
    const uint8_t *src;
+   uint8_t *dst;
    void *mapped = NULL;
    uint64_t newest;
+   size_t pitch;
    unsigned i, slot = VULKAN_MAX_SWAPCHAIN_IMAGES;
-   unsigned width, height, x, y;
+   unsigned width, height, vp_w, vp_h, y;
    VkFormat format;
 
    if (!vk || !VIDEO_SCALE_W(vk->vp.dims) || !VIDEO_SCALE_H(vk->vp.dims))
@@ -14564,24 +14567,31 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
          return false;
       }
    }
+   vp_w   = VIDEO_SCALE_W(vk->vp.dims);
+   vp_h   = VIDEO_SCALE_H(vk->vp.dims);
    width  = VIDEO_SCALE_W(vk->readback.record[slot].dims);
    height = VIDEO_SCALE_H(vk->readback.record[slot].dims);
-   if (width > VIDEO_SCALE_W(vk->vp.dims))
-      width = VIDEO_SCALE_W(vk->vp.dims);
-   if (height > VIDEO_SCALE_H(vk->vp.dims))
-      height = VIDEO_SCALE_H(vk->vp.dims);
-   memset(buffer, 0, VIDEO_SCALE_AREA(vk->vp.dims) * 3);
+   if (width > vp_w)
+      width = vp_w;
+   if (height > vp_h)
+      height = vp_h;
+   pitch  = (size_t)vp_w * 3;
+   /* BGR24, bottom row first; only what the readback leaves
+    * uncovered is cleared. */
+   if (height < vp_h)
+      memset(buffer, 0, (size_t)(vp_h - height) * pitch);
+   if (width < vp_w)
+      for (y = 0; y < height; y++)
+         memset(buffer + (size_t)(vp_h - 1 - y) * pitch + (size_t)width * 3,
+               0, (size_t)(vp_w - width) * 3);
    src = (const uint8_t*)mapped + staging->offset;
-   for (y = 0; y < height; y++, src += staging->stride)
-   {
-      uint8_t *dst = buffer + (size_t)(VIDEO_SCALE_H(vk->vp.dims) - 1 - y) * VIDEO_SCALE_W(vk->vp.dims) * 3;
-      for (x = 0; x < width; x++)
-      {
-         dst[3 * x + 0] = src[4 * x + (format == VK_FORMAT_B8G8R8A8_UNORM ? 0 : 2)];
-         dst[3 * x + 1] = src[4 * x + 1];
-         dst[3 * x + 2] = src[4 * x + (format == VK_FORMAT_B8G8R8A8_UNORM ? 2 : 0)];
-      }
-   }
+   dst = buffer + (size_t)(vp_h - 1) * pitch;
+   if (format == VK_FORMAT_B8G8R8A8_UNORM)
+      conv_argb8888_bgr24(dst, src, (int)width, (int)height,
+            -(int)pitch, (int)staging->stride);
+   else
+      conv_abgr8888_bgr24(dst, src, (int)width, (int)height,
+            -(int)pitch, (int)staging->stride);
    vkUnmapMemory(vk->context->device, staging->memory);
    vk->readback.consumed = newest;
    return true;

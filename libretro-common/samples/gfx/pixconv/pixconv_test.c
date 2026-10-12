@@ -210,6 +210,35 @@ static void test_32_sources(uint32_t *in32, uint8_t *out24,
             ((c >> 16) & 0xff) | (c & 0xff00) | ((c & 0xff) << 16));
    }
 
+   /* A negative output stride flips the image: the last row's start
+    * as the destination, each row written above the one before. */
+   memset(out24, 0x5a, NPIX * 3);
+   conv_argb8888_bgr24(out24 + (size_t)(ROWS - 1) * ROW_W * 3, in32,
+         ROW_W, ROWS, -(int)(ROW_W * 3), ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      unsigned       row = i / ROW_W;
+      unsigned       x   = i % ROW_W;
+      const uint8_t *p   = out24 + ((size_t)(ROWS - 1 - row) * ROW_W + x) * 3;
+      check("conv_argb8888_bgr24 bottom-up", i, (uint32_t)p[0]
+            | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16),
+            in32[i] & 0x00ffffffu);
+   }
+
+   memset(out24, 0x5a, NPIX * 3);
+   conv_abgr8888_bgr24(out24 + (size_t)(ROWS - 1) * ROW_W * 3, in32,
+         ROW_W, ROWS, -(int)(ROW_W * 3), ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      unsigned       row = i / ROW_W;
+      unsigned       x   = i % ROW_W;
+      const uint8_t *p   = out24 + ((size_t)(ROWS - 1 - row) * ROW_W + x) * 3;
+      uint32_t       c   = in32[i];
+      check("conv_abgr8888_bgr24 bottom-up", i, (uint32_t)p[0]
+            | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16),
+            ((c >> 16) & 0xff) | (c & 0xff00) | ((c & 0xff) << 16));
+   }
+
    memset(out32, 0x5a, NPIX * sizeof(*out32));
    conv_argb8888_abgr8888(out32, in32, ROW_W, ROWS, ROW_W * 4, ROW_W * 4);
    for (i = 0; i < NPIX; i++)
