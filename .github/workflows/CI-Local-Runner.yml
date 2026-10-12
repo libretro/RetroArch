@@ -41,6 +41,12 @@ jobs:
           # with GitHub's step semantics.
           python3 tools/ci_local.py selftest
 
+      - name: compile_commands.py self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/compile_commands.py --selftest
+
       - name: A checker workflow, run through the runner
         shell: bash
         run: |

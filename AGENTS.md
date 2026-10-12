@@ -14,6 +14,8 @@ RetroArch is primarily written in C89. Preserve the existing language and style 
 Read CODING-GUIDELINES before changing code: brace style, declarations,
 stack budgets and the never-block rule for the main thread are there.
 Subdirectories with rules of their own carry their own AGENTS.md.
+`tools/compile_commands.py`, after ./configure, writes compile_commands.json
+for clangd and other code navigation.
 
 ## Threads
 
