@@ -1569,7 +1569,6 @@ static const struct
    char s_ccfe26d1[23];
    char s_728ca1d3[5];
    char s_5f612db6[14];
-   char s_9f29f708[20];
    char s_a9145c83[11];
    char s_22f52844[14];
    char s_06842e2b[18];
@@ -2756,7 +2755,6 @@ static const struct
    char s_14b5b145[100];
    char s_c7c09eb0[88];
    char s_6f122164[38];
-   char s_61942cf6[65];
    char s_6b7e9271[112];
    char s_3bb4fbf9[139];
    char s_f865440b[23];
@@ -5111,7 +5109,6 @@ static const struct
    "Skaalaa kokonaisluvuin",
    "POIS",
    "Aloituskansio",
-   "Kokoonpanotiedostot",
    "V\303\244riteema",
    "Omenanvihre\303\244",
    "Klassinen sininen",
@@ -6656,7 +6653,6 @@ static const struct
    "Kelattavien kuvien m\303\244\303\244r\303\244 askelta kohden. Suuremmat arvot lis\303\244\303"
    "\244v\303\244t kelausnopeutta.",
    "Aseta tiedostoselaimen aloituskansio.",
-   "Oletusarvoinen kokoonpanotiedosto tallennetaan t\303\244h\303\244n kansioon.",
    "Valitse eri v\303\244riteema. Valitsemalla \"Mukautettu\" valikkoteemojen esiasetustiedostojen k"
    "\303\244ytt\303\266 on mahdollista.",
    "N\303\244yt\303\244 aloitusn\303\244ytt\303\266 valikossa. T\303\244m\303\244 asetus muutetaan a"
@@ -7551,7 +7547,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123809u
+      (sizeof(msg_hash_fi_blob) == (123724u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9443,7 +9439,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -10630,7 +10625,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RUN,

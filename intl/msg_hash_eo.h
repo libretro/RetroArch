@@ -1792,7 +1792,6 @@ static const struct
    char s_ccfe26d1[16];
    char s_728ca1d3[12];
    char s_5f612db6[18];
-   char s_9f29f708[17];
    char s_a9145c83[13];
    char s_22f52844[11];
    char s_06842e2b[13];
@@ -3309,7 +3308,6 @@ static const struct
    char s_c7c09eb0[88];
    char s_7d4adfaf[32];
    char s_6f122164[47];
-   char s_61942cf6[67];
    char s_6b7e9271[103];
    char s_68b6e245[52];
    char s_3bb4fbf9[97];
@@ -6194,7 +6192,6 @@ static const struct
    "Entjera skalado",
    "Mal\305\235altita",
    "Komenca dosierujo",
-   "Konfigurdosieroj",
    "Kolora etoso",
    "Verda pomo",
    "Klasika bluo",
@@ -8055,7 +8052,6 @@ static const struct
    "La nombro da filmeroj revolvotaj per pa\305\235o. Pli altaj valoroj pliigas la revolvrapidon.",
    "\305\234an\304\235i agordojn pri revolvado.",
    "Agordi startan dosierujon por dosieresplorilo.",
-   "Defa\305\255lta konfigurdosiero estas enmemorigita en \304\211i tiu dosierujo.",
    "Elekti malsaman koloran etoson. Elektante \"Propran\" ebligas la uzon de menuetosaj anta\305\255"
    "agorddosieroj.",
    "Elekti menuetosan anta\305\255agordon de dosieresplorilo.",
@@ -9148,7 +9144,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171652u
+      (sizeof(msg_hash_eo_blob) == (171568u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11368,7 +11364,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -12885,7 +12880,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

@@ -563,7 +563,6 @@ static const struct
    char s_ccfe26d1[17];
    char s_728ca1d3[4];
    char s_5f612db6[19];
-   char s_9f29f708[27];
    char s_22f52844[13];
    char s_06842e2b[14];
    char s_d7677494[15];
@@ -1574,7 +1573,6 @@ static const struct
    "Escala d'enteros",
    "Non",
    "Direutoriu inicial",
-   "Ficheros de configuraci\303\263n",
    "Verde mazana",
    "Azul cl\303\241sico",
    "Verde cl\303\241sico",
@@ -2076,7 +2074,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24543u
+      (sizeof(msg_hash_ast_blob) == (24516u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2713,7 +2711,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,

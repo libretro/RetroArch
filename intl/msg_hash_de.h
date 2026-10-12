@@ -285,6 +285,7 @@ static const struct
    char s_079ba7c7[27];
    char s_b271ae95[17];
    char s_fb84857a[8];
+   char s_7ee0d4c8[29];
    char s_3943c7ae[31];
    char s_5b2d8d2f[25];
    char s_6fd9b032[31];
@@ -450,6 +451,7 @@ static const struct
    char s_0a05438c[34];
    char s_1324c306[19];
    char s_152cd261[33];
+   char s_91318729[38];
    char s_7d00b7ed[9];
    char s_7bd7aa88[33];
    char s_0674b554[34];
@@ -802,16 +804,20 @@ static const struct
    char s_87994f40[22];
    char s_19bdcb0b[23];
    char s_6f199f35[40];
+   char s_b5849afd[31];
    char s_b1e1d992[15];
    char s_798643f5[30];
    char s_b61d0a2d[31];
    char s_c68080b6[29];
    char s_b87232ce[30];
+   char s_0d77b260[35];
+   char s_a8ae729b[32];
    char s_231308e8[31];
    char s_27db7cc0[32];
    char s_700d45a9[30];
    char s_2a30a561[31];
    char s_6ae6f953[22];
+   char s_ee635545[23];
 #ifdef ANDROID
    char s_b573f90c[25];
 #endif
@@ -1535,6 +1541,7 @@ static const struct
    char s_9e5d0200[14];
    char s_9fd6f744[12];
    char s_3eb72316[12];
+   char s_46f82582[5];
    char s_21fefe05[11];
    char s_a2bb0576[11];
    char s_fab0ac6c[9];
@@ -1894,7 +1901,7 @@ static const struct
    char s_ccfe26d1[23];
    char s_728ca1d3[4];
    char s_5f612db6[17];
-   char s_9f29f708[22];
+   char s_9f29f708[16];
    char s_a9145c83[11];
    char s_22f52844[11];
    char s_06842e2b[15];
@@ -2390,6 +2397,7 @@ static const struct
    char s_60258de0[6];
    char s_34b2592a[4];
    char s_740ed6e5[21];
+   char s_c7ab7873[31];
    char s_83ecb279[17];
    char s_317b17ed[9];
    char s_94c8d15f[9];
@@ -2399,6 +2407,7 @@ static const struct
    char s_93ac5ec8[26];
    char s_6cdf4f07[20];
    char s_a03f132e[31];
+   char s_39f58459[55];
    char s_b3d1e989[18];
    char s_50eb4c56[5];
    char s_a023adce[12];
@@ -2410,6 +2419,9 @@ static const struct
    char s_eb4eab83[5];
    char s_c6d5bcb5[8];
    char s_7e8c6399[7];
+   char s_74bced1d[30];
+   char s_a9ef6377[20];
+   char s_62b8a0ba[33];
    char s_74dcbca5[18];
    char s_3ea80887[17];
    char s_c0cdc638[25];
@@ -2464,8 +2476,8 @@ static const struct
    char s_6dcc2f9f[23];
    char s_7a23be94[12];
    char s_07483307[20];
-   char s_33da1d6d[21];
-   char s_33dae115[24];
+   char s_33da1d6d[29];
+   char s_33dae115[29];
    char s_b2b1563a[14];
    char s_fa98dce0[26];
    char s_2bf7c29f[18];
@@ -2651,7 +2663,6 @@ static const struct
    char s_f46c7b83_1[130];
    char s_cb67f2a4[34];
    char s_3c3598a9[44];
-   char s_3bac47bd[447];
    char s_90e7db40[465];
    char s_b07cd572_0[500];
    char s_b07cd572_1[89];
@@ -2744,6 +2755,7 @@ static const struct
    char s_19b6373a[123];
    char s_f63531f4[64];
    char s_f83d414f[107];
+   char s_539bbd17[251];
    char s_65e89a5b[51];
    char s_1757ee76[70];
    char s_11fd7702[93];
@@ -2922,8 +2934,12 @@ static const struct
    char s_976074ee[140];
    char s_2269a679[400];
    char s_5c8a1d63[108];
+   char s_56c3b5ab[239];
    char s_744c0f80[64];
+   char s_d69a22ce[276];
+   char s_71d0e309[337];
    char s_2aa39081[50];
+   char s_89e39933[246];
 #ifdef ANDROID
    char s_50f43cfa[309];
 #endif
@@ -3570,7 +3586,7 @@ static const struct
    char s_c7c09eb0[123];
    char s_7d4adfaf[46];
    char s_6f122164[54];
-   char s_61942cf6[72];
+   char s_61942cf6[181];
    char s_6b7e9271[141];
    char s_68b6e245[60];
    char s_3bb4fbf9[124];
@@ -3874,12 +3890,21 @@ static const struct
    char s_34400c79[85];
    char s_34400c7a[86];
    char s_4a09218b[37];
+   char s_dea334de[251];
+   char s_cacc1492[107];
+   char s_c0c6924e[217];
+   char s_c83fcc7e[304];
+   char s_7efaf561[276];
    char s_c90aff27[99];
    char s_19d092ed[36];
    char s_1eebf4f8[186];
    char s_2f2ca2b6[185];
    char s_2c9be635[151];
    char s_c8fb9e1c[369];
+   char s_d575c847[270];
+   char s_3479844b[218];
+   char s_b9a05725[239];
+   char s_68880a28[199];
    char s_05ec12e6[212];
    char s_b5a603de[61];
    char s_d9c2db25[53];
@@ -3923,6 +3948,7 @@ static const struct
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
+   char s_5d342d82[290];
    char s_bd0312ce[115];
    char s_3ba8b64d[166];
    char s_d62ed5dc[404];
@@ -4392,7 +4418,11 @@ static const struct
    char s_8ab54d62[90];
    char s_aa554847[22];
    char s_ac2c797c[21];
+   char s_c5fee1cb[84];
    char s_272dccbd[17];
+   char s_7da2720b[74];
+   char s_9e9f8d9d[301];
+   char s_fdc097e9[124];
    char s_5fe664ca[108];
    char s_80528b14[40];
    char s_eae21890[54];
@@ -4432,6 +4462,7 @@ static const struct
    char s_49a2e6d9[27];
    char s_d6c12228[43];
    char s_af784f91[41];
+   char s_002fd84a[125];
    char s_f1337004[52];
    char s_ada3890a[14];
    char s_bc246801[24];
@@ -4528,6 +4559,8 @@ static const struct
    char s_1a5c7ca6[19];
    char s_1a5c880d[25];
    char s_7b23d9e6[21];
+   char s_77943569[133];
+   char s_04305cd6[197];
    char s_c182bd2e[5];
    char s_0110d0c7[21];
    char s_c6156015[24];
@@ -5061,6 +5094,7 @@ static const struct
    "Anordnung der Lautsprecher",
    "Ausgaberate (Hz)",
    "Ausgabe",
+   "Kurze Pipeline-Warteschlange",
    "Dynamische Audioratensteuerung",
    "Audio-Resampling-Treiber",
    "Hochwertiges Sinc-Oversampling",
@@ -5226,6 +5260,7 @@ static const struct
    "Destruktive Cloud-Synchronisation",
    "Cloud-Sync-Backend",
    "Cloud-Synchronisation aktivieren",
+   "NFS-Synchronisierungsunterverzeichnis",
    "Passwort",
    "Konflikte l\303\266sen: Lokal behalten",
    "Konflikte l\303\266sen: Server behalten",
@@ -5581,16 +5616,20 @@ static const struct
    "Analog-zu-Digital-Typ",
    "Mit Analogstick zielen",
    "Alle Benutzer k\303\266nnen das Men\303\274 steuern",
+   "Anti-Deadzone des Analogsticks",
    "Totzonenregler",
    "Linker Analogstick X- (links)",
    "Linker Analogstick X+ (rechts)",
    "Linker Analogstick Y- (oben)",
    "Linker Analogstick Y+ (unten)",
+   "\303\204u\303\237ere Deadzone des Analogsticks",
+   "Reaktionskurve des Analogsticks",
    "Rechter Analogstick X- (links)",
    "Rechter Analogstick X+ (rechts)",
    "Rechter Analogstick Y- (oben)",
    "Rechter Analogstick Y+ (unten)",
    "Analogempfindlichkeit",
+   "Analogtrigger-Deadzone",
 #ifdef ANDROID
    "Systemtastatur verwenden",
 #endif
@@ -6315,6 +6354,7 @@ static const struct
    "Basic Schwarz",
    "Basic Wei\303\237",
    "Boysenbeere",
+   "Hell",
    "Immergr\303\274n",
    "Dunkelgrau",
    "Hellgrau",
@@ -6682,7 +6722,7 @@ static const struct
    "Ganzzahlige Skalierung",
    "AUS",
    "Startverzeichnis",
-   "Konfigurationsdateien",
+   "Konfigurationen",
    "Farbschema",
    "Apfelgr\303\274n",
    "Klassisch Blau",
@@ -7180,6 +7220,7 @@ static const struct
    "Immer",
    "Aus",
    "Vorgabe des Headsets",
+   "Bildwiederholrate des Headsets",
    "Bildschirmbreite",
    "180 Grad",
    "270 Grad",
@@ -7189,6 +7230,7 @@ static const struct
    "Overscan-Korrektur (oben)",
    "Filter mitaufnehmen",
    "Taktwiederholungen vom Display",
+   "Frames verwerfen, wenn der Encoder nicht Schritt h\303\244lt",
    "Benutzerdefiniert",
    "Hoch",
    "Verlustfrei",
@@ -7200,6 +7242,9 @@ static const struct
    "Hoch",
    "Niedrig",
    "Mittel",
+   "Video-Aufnahmepuffer (Frames)",
+   "Nur Spiel aufnehmen",
+   "Hardware-Video-Encoder verwenden",
    "Aufnahmequalit\303\244t",
    "Aufnahme-Threads",
    "Vertikale Signalfrequenz",
@@ -7254,8 +7299,8 @@ static const struct
    "Soft-Filter aktivieren",
    "Stereomodus",
    "Anaglyph (Rot/Cyan)",
-   "Nebeneinander (Ganz)",
-   "Nebeneinander (H\303\244lfte)",
+   "Nebeneinander (Volle Breite)",
+   "Nebeneinander (Halbe Breite)",
    "\303\234bereinander",
    "Stereo-3D und Bildschirme",
    "Augen vertauschen",
@@ -7515,11 +7560,6 @@ static const struct
    "das Overlay zeigt die Rate als \342\200\236Sink\342\200\234 an.",
    "Audio synchronisieren. Empfohlen.",
    "Audiosynchronisationseinstellungen \303\244ndern.",
-   "Das Resampling, Filtern und Mischen von Audio erfolgt im Audiothread statt innerhalb jedes einze"
-   "lnen Frames. Bei jeder Einstellung der Audiolatenz wird die gleiche Latenz wie beim framesynchro"
-   "nen Pfad erreicht, wobei die Ratensteuerung entsprechend dem ger\303\244teeigenen Takt erfolgt u"
-   "nd der Resampler nicht in das Frame-Budget einflie\303\237t. Audiotreiber, die das Ger\303\244t "
-   "nicht aus dem Ruhezustand wecken k\303\266nnen, behalten den framesynchronen Pfad bei.",
    "Das Betriebssystem wird angewiesen, den Audiothread vor dem Rest des Frontends zu behandeln, sod"
    "ass es weniger wahrscheinlich ist, dass ein ausgelasteter Frame das Audioger\303\244t ausbremst."
    " Die Audiolatenz wird auf Systemen, die dies zulassen, verringert; ein System, das dies ablehnt,"
@@ -7656,6 +7696,9 @@ static const struct
    "Welches Cloud-Speicher-Netzwerkprotokoll verwendet werden soll.",
    "Es wird versucht, Konfigurationen, SRAM und Zust\303\244nde mit einem Cloud-Speicheranbieter zu "
    "synchronisieren.",
+   "Verzeichnis innerhalb der NFS-Freigabe f\303\274r die Cloud-Synchronisierung. Dateien werden im "
+   "Unterordner cloud_sync gespeichert. Leer lassen, um \342\200\236NFS-Unterverzeichnis\342\200\234"
+   " zu verwenden, oder / eingeben, um das Stammverzeichnis der Freigabe zu verwenden.",
    "Das Passwort f\303\274r das eigene Cloud-Speicher-Konto.",
    "Alle Konflikte durch Hochladen lokaler Dateien auf den Server l\303\266sen.",
    "Alle Konflikte durch Herunterladen von Serverdateien und das Ersetzen lokaler Kopien l\303\266se"
@@ -7920,8 +7963,22 @@ static const struct
    " \303\274blich weiter unten zugewiesen.",
    "Jedem Benutzer erm\303\266glichen, das Men\303\274 zu steuern. Wenn deaktiviert, kann nur Benutz"
    "er 1 das Men\303\274 steuern.",
+   "Sobald der Stick die Deadzone verl\303\244sst, beginnt die Bewegung bei diesem Anteil des vollen"
+   " Ausschlags. Bei Cores mit eigener Deadzone, die andernfalls zus\303\244tzlich zu dieser angewen"
+   "det w\303\274rde: Dieser Wert auf den der Core-Deadzone stellen.",
    "Analogstickbewegungen unterhalb des Deadzone-Wertes ignorieren.",
+   "Behandelt einen Stick, der bis auf diesen Abstand zum Rand geneigt wird, als vollst\303\244ndig "
+   "ausgelenkt \342\200\223 f\303\274r abgenutzte Sticks, die den vollen Ausschlag nicht mehr erreic"
+   "hen. Der Bereich zwischen der Deadzone und diesem Grenzwert wird auf den gesamten Wertebereich v"
+   "erteilt.",
+   "Legt fest, wie stark die Stickbewegung mit zunehmender Neigung w\303\244chst. 1,0 entspricht ein"
+   "er geraden Linie. Bei Werten \303\274ber 1,0 f\303\274hren kleine Neigungen zu geringeren Bewegu"
+   "ngen und erm\303\266glichen so eine feinere Steuerung nahe der Mitte. Bei Werten unter 1,0 f\303"
+   "\274hren sie zu st\303\244rkeren Bewegungen und damit zu einer schnelleren Reaktion.",
    "Die Empfindlichkeit von analogen Sticks anpassen.",
+   "Ignoriert den ersten Teil des Bet\303\244tigungswegs eines Analogtriggers oder des Tastendrucks "
+   "einer druckempfindlichen Taste; der verbleibende Weg wird auf den gesamten Wertebereich skaliert"
+   ". Zus\303\244tzlich zur Stick-Deadzone, die nur f\303\274r Sticks gilt.",
 #ifdef ANDROID
    "Die Android-Systemtastatur wird anstelle der integrierten Bildschirmtastatur f\303\274r die Eing"
    "abe von Men\303\274texten verwendet. Erm\303\266glicht das Einf\303\274gen aus der Zwischenablag"
@@ -8999,7 +9056,9 @@ static const struct
    "rh\303\266hen die R\303\274ckspul-Geschwindigkeit.",
    "Einstellungen f\303\274r das Zur\303\274ckspulen \303\244ndern.",
    "Das Startverzeichnis f\303\274r den Dateibrowser festlegen.",
-   "Die Standardkonfigurationsdatei wird in diesem Verzeichnis gespeichert.",
+   "Verzeichnis f\303\274r gespeicherte Konfigurationen, \303\234berschreibungen und Core-/Inhaltsop"
+   "tionen. \342\200\236Hauptkonfiguration speichern\342\200\234 verwendet den Speicherpfad der akti"
+   "ven Konfiguration.",
    "Ein anderes Farbthema w\303\244hlen. Wenn 'Benutzerdefiniert' ausgew\303\244hlt wird, k\303\266n"
    "nen voreingestellte Dateien f\303\274r Men\303\274themen verwendet werden.",
    "Im Dateibrowser ein voreingestelltes Men\303\274thema ausw\303\244hlen.",
@@ -9482,6 +9541,23 @@ static const struct
    "Eine eigene Y-Achsenposition f\303\274r Bildschirmmeldungen w\303\244hlen. 0 ist der untere Rand"
    ".",
    "Den Wiedergabebildschirm ausw\303\244hlen.",
+   "Legt fest, wie die Headset-Controller verwendet werden. Im Modus \342\200\236Kombiniert\342\200"
+   "\234 bilden beide Controller zusammen ein Gamepad f\303\274r Spieler 1. Im Modus \342\200\236Get"
+   "rennt\342\200\234 wird der linke Controller Spieler 1 und der rechte Controller Spieler 2 zugewi"
+   "esen.",
+   "Legt fest, in welcher Entfernung vor dem aktuellen Blickpunkt die Bildschirme im Headset angezei"
+   "gt werden.",
+   "Inhalte zus\303\244tzlich in einem OpenXR-Headset anzeigen: jeden Bildschirm als eigene schweben"
+   "de Leinwand, bei Stereo-3D mit beiden Augenbildern und das Men\303\274 davor. Nur mit Vulkan. Di"
+   "e normale Ausgabe bleibt im Fenster.",
+   "Legt fest, auf welchen Bildschirmen der Trigger eines Controllers als Zeiger und Touch-Eingabe f"
+   "ungiert, statt L2 oder R2 zu bet\303\244tigen. Automatisch: im ge\303\266ffneten Men\303\274 und"
+   " auf Zweitbildschirmen wie einem Touchscreen. Immer: auf allen Bildschirmen, etwa f\303\274r Lic"
+   "htpistolen. Aus: auf keinem Bildschirm.",
+   "Die f\303\274r das Headset angeforderte Bildwiederholfrequenz. \342\200\236Automatisch\342\200"
+   "\234 w\303\244hlt die Frequenz, die am besten zum Inhalt passt; \342\200\236Vorgabe des Headsets"
+   "\342\200\234 fordert keine bestimmte Frequenz an. Die Inhalte laufen im Takt des Headsets, sofer"
+   "n dessen Frequenz zur Bildrate passt.",
    "Breite des Hauptbildschirms im Headset. Die Gr\303\266\303\237e der \303\274brigen Bildschirme w"
    "ird daran angepasst.",
    "Videoausgabe-Einstellungen \303\244ndern.",
@@ -9497,6 +9573,18 @@ static const struct
    "chlich bei ihm angekommen ist, und nicht ab der eigenen Uhr des Frontends. Gilt, sofern der Graf"
    "iktreiber dies melden kann; ansonsten wird \303\274berall die Uhr verwendet, ebenso wie immer da"
    "nn, wenn die Meldung veraltet ist. Diese Option deaktivieren, um stets die Uhr zu verwenden.",
+   "Wenn der Encoder bei Aufnahme oder Streaming nicht Schritt halten kann, werden Videoframes \303"
+   "\274bersprungen und Audiol\303\274cken mit Stille gef\303\274llt, statt das Spiel zu verlangsame"
+   "n. Bei deaktivierter Option bleiben alle Frames erhalten, allerdings kann es zu Rucklern kommen.",
+   "Anzahl der Frames, die zwischen Spiel und Encoder in die Warteschlange gestellt werden. Gr\303"
+   "\266\303\237ere Werte gleichen kurze Aussetzer des Encoders aus, ben\303\266tigen aber mehr Arbe"
+   "itsspeicher. Gilt f\303\274r die n\303\244chste Aufnahme.",
+   "Schlie\303\237t Men\303\274, Benachrichtigungen, Bildschirmmeldungen und Overlays von GPU-Aufnah"
+   "men aus. Auch die im Men\303\274 verbrachte Zeit wird ausgelassen. Bei deaktivierter Option erfa"
+   "ssen Aufnahmen genau das, was auf dem Bildschirm angezeigt wird.",
+   "Kodiert H.264 mit einem Hardware-Encoder, sofern verf\303\274gbar, andernfalls per Software (lib"
+   "x264). Gilt f\303\274r die integrierten Qualit\303\244tsvoreinstellungen, nicht f\303\274r benut"
+   "zerdefinierte Konfigurationen.",
    "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audio-Eing"
    "angsrate verwendet und dient als Anzeigedauer f\303\274r \342\200\236Threaded Video\342\200\234,"
    " wenn der Treiber keine solche melden kann.",
@@ -9576,6 +9664,10 @@ static const struct
    "Dem Bild eine leichte Unsch\303\244rfe hinzuf\303\274gen, um harte Pixelkanten zu gl\303\244tten"
    ". Diese Option hat nur sehr geringe Auswirkungen auf die Leistung. Sollte bei Verwendung von Sha"
    "dern deaktiviert werden.",
+   "Legt fest, wie beide Augenbilder von Stereo-3D-Inhalten angezeigt werden. 2D zeigt nur das linke"
+   " Auge. \342\200\236Nebeneinander (volle Breite)\342\200\234 eignet sich f\303\274r Viewer-Apps a"
+   "uf Headsets und den Kreuzblick; \342\200\236Nebeneinander (halbe Breite)\342\200\234 und \342"
+   "\200\236\303\234bereinander\342\200\234 eignen sich f\303\274r 3D-Fernseher.",
    "Legt fest, wie Stereo-3D und mehrere Bildschirme von Cores dargestellt werden, die diese Funktio"
    "nen unterst\303\274tzen.",
    "Vertauscht die Bilder f\303\274r das linke und rechte Auge. F\303\274r den Kreuzblick oder wenn "
@@ -10136,7 +10228,15 @@ static const struct
    "ucht.",
    "Cores \303\274bersprungen: ",
    "Cores aktualisiert: ",
+   "Die Headsetausgabe konnte nicht gestartet werden. Das Fenster zeigt die Ausgabe an.",
    "Laserpointer: %s",
+   "Die Headsetausgabe wird gestartet, sobald der Inhalt erneut geladen wird.",
+   "Das Headset l\303\244uft mit %u Hz. Diese Bildwiederholfrequenz passt nicht zur Bildrate des Spi"
+   "els von %.2f fps; Bewegungen werden dadurch ruckelig dargestellt. Die Bildwiederholfrequenz des "
+   "Headsets f\303\274r RetroArch auf ein Vielfaches der Spielbildrate einstellen (in SteamVR: \342"
+   "\200\236VR-Videoeinstellungen\342\200\234).",
+   "Die Headset-Sitzung wurde beendet. Die Option \342\200\236Headset-Ausgabe\342\200\234 aus- und w"
+   "ieder einschalten, um es erneut zu versuchen.",
    "Die Headset-Ausgabe ist deaktiviert: Es wurde weder eine OpenXR-Laufzeitumgebung noch ein Headse"
    "t gefunden.",
    "Tastatur-Overlay ist nicht eingestellt.",
@@ -10180,6 +10280,8 @@ static const struct
    "Lese ersten Daten-Track...",
    "Interner Speicherstatus: Schreibgesch\303\274tzt",
    "Interner Speicherstatus: Lesen/Schreiben",
+   "Mit diesem Videotreiber ist \342\200\236Nur Spiel aufnehmen\342\200\234 nicht verf\303\274gbar: "
+   "Das Men\303\274 und Mitteilungen werden mit aufgezeichnet.",
    "Aufzeichnung wurde wegen Gr\303\266\303\237en\303\244nderung beendet.",
    "Aufzeichen in",
    "Cheat-Datei umleiten in",
@@ -10281,6 +10383,11 @@ static const struct
    "Spielstand-Gr\303\266\303\237e",
    "Spielstand-Speicherplatz",
    "Erstelle Screenshot.",
+   "Die \303\234berpr\303\274fung von TLS-Zertifikaten ist deaktiviert. Sichere Verbindungen werden "
+   "nicht \303\274berpr\303\274ft und k\303\266nnen abgefangen werden.",
+   "Sichere Verbindung abgelehnt: Das Zertifikat des Servers konnte nicht \303\274berpr\303\274ft we"
+   "rden. Weitere Informationen finden sich im Protokoll oder in der Einstellung \342\200\236TLS-Zer"
+   "tifikats\303\274berpr\303\274fung\342\200\234.",
    "nach",
    "Metadaten umschalten",
    "Vollbild-Vorschaubilder",
@@ -10322,7 +10429,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (226554u
+      (sizeof(msg_hash_de_blob) == (231343u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11157,6 +11264,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -11322,6 +11430,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -11674,16 +11783,20 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -12407,6 +12520,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
@@ -13261,6 +13375,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -13270,6 +13385,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_ALLOW_FRAME_DROP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -13281,6 +13397,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -13516,7 +13635,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -13607,6 +13725,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -13785,8 +13904,12 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -14733,12 +14856,21 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_ALLOW_FRAME_DROP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -14782,6 +14914,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
@@ -15249,7 +15382,11 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_FAILED,
    (uint32_t)MSG_OPENXR_LASER_POINTER,
+   (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
+   (uint32_t)MSG_OPENXR_RATE_MISFIT,
+   (uint32_t)MSG_OPENXR_SESSION_ENDED,
    (uint32_t)MSG_OPENXR_UNAVAILABLE,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
@@ -15289,6 +15426,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_READING_FIRST_DATA_TRACK,
    (uint32_t)MSG_READ_ONLY,
    (uint32_t)MSG_READ_WRITE,
+   (uint32_t)MSG_RECORDING_GAME_ONLY_UNSUPPORTED,
    (uint32_t)MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    (uint32_t)MSG_RECORDING_TO,
    (uint32_t)MSG_REDIRECTING_CHEATFILE_TO,
@@ -15385,6 +15523,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TLS_VERIFY_DISABLED,
+   (uint32_t)MSG_TLS_VERIFY_FAILED,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,

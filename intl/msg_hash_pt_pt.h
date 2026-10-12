@@ -633,7 +633,6 @@ static const struct
    char s_ccfe26d1[28];
    char s_728ca1d3[10];
    char s_5f612db6[14];
-   char s_9f29f708[28];
    char s_22f52844[12];
    char s_ec1c0efd[13];
    char s_228e251b[12];
@@ -1046,7 +1045,6 @@ static const struct
    char s_1f084654[56];
    char s_3ca87244[35];
    char s_2b36bd4d[41];
-   char s_61942cf6[68];
    char s_3bb4fbf9[116];
    char s_f865440b[22];
 #ifdef HAVE_LAKKA
@@ -2095,7 +2093,6 @@ static const struct
    "Escala em n\303\272meros inteiros",
    "DESLIGADO",
    "Pasta inicial",
-   "Ficheiros de configura\303\247\303\243o",
    "Ma\303\247a verde",
    "Personalizar",
    "Roxo escuro",
@@ -2597,7 +2594,6 @@ static const struct
    "Repor todas as configura\303\247\303\265es para os valores padr\303\243o.",
    "Reiniciar a aplica\303\247\303\243o RetroArch.",
    "Modificar as defini\303\247\303\265es de conquistas.",
-   "O ficheiro de configura\303\247\303\243o predefinido \303\251 armazenado nesta pasta.",
    "Mostrar o ecr\303\243 inicial no menu. Esta op\303\247\303\243o \303\251 desativada automaticame"
    "nte ap\303\263s o primeiro arranque do RetroArch.",
    "Executar o conte\303\272do.",
@@ -3018,7 +3014,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55215u
+      (sizeof(msg_hash_pt_pt_blob) == (55119u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3740,7 +3736,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
@@ -4153,7 +4148,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_RUN,
 #ifdef HAVE_LAKKA

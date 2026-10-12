@@ -1916,7 +1916,6 @@ static const struct
    char s_ccfe26d1[28];
    char s_728ca1d3[4];
    char s_5f612db6[17];
-   char s_9f29f708[23];
    char s_a9145c83[15];
    char s_22f52844[18];
    char s_06842e2b[17];
@@ -2655,7 +2654,6 @@ static const struct
    char s_f46c7b83_1[73];
    char s_cb67f2a4[35];
    char s_3c3598a9[41];
-   char s_3bac47bd[436];
    char s_90e7db40[423];
    char s_b07cd572_0[500];
    char s_b07cd572_1[54];
@@ -3571,7 +3569,6 @@ static const struct
    char s_c7c09eb0[91];
    char s_7d4adfaf[42];
    char s_6f122164[59];
-   char s_61942cf6[66];
    char s_6b7e9271[111];
    char s_68b6e245[59];
    char s_3bb4fbf9[116];
@@ -6766,7 +6763,6 @@ static const struct
    "Celo\304\215\303\255seln\303\251 \305\241k\303\241lovanie",
    "VYP",
    "Hlavn\303\275 adres\303\241r",
-   "Konfigura\304\215n\303\251 s\303\272bory",
    "Farebn\303\241 t\303\251ma",
    "Jablkov\303\241 zelen\303\241",
    "Klasick\303\241 modr\303\241",
@@ -7609,13 +7605,6 @@ static const struct
    "Sink'.",
    "Synchronizuje zvuk. Odpor\303\272\304\215a sa.",
    "Zmen\303\255 nastavenia synchroniz\303\241cie zvuku.",
-   "Prevzorkuje, filtruje a mie\305\241a zvuk vo zvukovom vl\303\241kne namiesto vo vn\303\272tri ka"
-   "\305\276dej sn\303\255mky. Rovnak\303\251 oneskorenie ako pri spracovan\303\255 synchronizovanom"
-   " so sn\303\255mkami pri akomko\304\276vek nastaven\303\255 Oneskorenia zvuku, s riaden\303\255m "
-   "r\303\275chlosti meran\303\275m vlastn\303\275m tempom zariadenia a s prevzorkova\304\215om mimo"
-   " rozpo\304\215tu sn\303\255mky. Zvukov\303\251 ovl\303\241da\304\215e, ktor\303\251 sa nevedia p"
-   "rebudi\305\245 pod\304\276a zariadenia, ponechaj\303\272 spracovanie synchronizovan\303\251 so s"
-   "n\303\255mkami.",
    "Po\305\276iada opera\304\215n\303\275 syst\303\251m, aby pl\303\241noval zvukov\303\251 vl\303"
    "\241kno pred zvy\305\241kom frontendu, aby n\303\241ro\304\215n\303\241 sn\303\255mka menej prav"
    "depodobne vyhladovala zvukov\303\251 zariadenie. Umo\305\276n\303\255 zn\303\255\305\276i\305"
@@ -9313,8 +9302,6 @@ static const struct
    "Zmen\303\255 nastavenia sp\303\244tn\303\251ho prev\303\255jania.",
    "Nastavi\305\245 po\304\215iato\304\215n\303\275 adres\303\241r pre prehliada\304\215 s\303\272bo"
    "rov.",
-   "Predvolen\303\275 konfigura\304\215n\303\275 s\303\272bor je ulo\305\276en\303\275 v tomto adres"
-   "\303\241ri.",
    "Vyberte in\303\275 farebn\303\275 mot\303\255v. Vo\304\276ba \342\200\236Vlastn\303\275\342\200"
    "\234 povo\304\276uje pou\305\276itie predvolen\303\275ch s\303\272borov mot\303\255vu ponuky.",
    "Vyberte predvo\304\276bu mot\303\255vu ponuky z Prehliada\304\215a s\303\272borov.",
@@ -10781,7 +10768,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (209941u
+      (sizeof(msg_hash_sk_blob) == (209416u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13241,7 +13228,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -13975,7 +13961,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14890,7 +14875,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

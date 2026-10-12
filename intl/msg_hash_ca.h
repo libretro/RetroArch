@@ -1939,7 +1939,6 @@ static const struct
    char s_ccfe26d1[16];
    char s_728ca1d3[3];
    char s_5f612db6[18];
-   char s_9f29f708[25];
    char s_a9145c83[15];
    char s_22f52844[10];
    char s_06842e2b[14];
@@ -2704,7 +2703,6 @@ static const struct
    char s_f46c7b83_1[104];
    char s_cb67f2a4[33];
    char s_3c3598a9[51];
-   char s_3bac47bd[425];
    char s_90e7db40[450];
    char s_b07cd572_0[500];
    char s_b07cd572_1[70];
@@ -3617,7 +3615,6 @@ static const struct
    char s_c7c09eb0[98];
    char s_7d4adfaf[39];
    char s_6f122164[58];
-   char s_61942cf6[72];
    char s_6b7e9271[104];
    char s_68b6e245[72];
    char s_3bb4fbf9[129];
@@ -6773,7 +6770,6 @@ static const struct
    "Escalat d'enter",
    "No",
    "Directori d'inici",
-   "Fitxers de configuraci\303\263",
    "Color del tema",
    "Verd poma",
    "Blau cl\303\240ssic",
@@ -7620,11 +7616,6 @@ static const struct
    "com a \"Sink\".",
    "Sincronitza l'\303\240udio. Recomanat.",
    "Canvia les opcions de sincronitzaci\303\263 de l'\303\240udio.",
-   "Remostreja, filtra i mescla l'\303\240udio al fil d'\303\240udio en comptes de dins de cada foto"
-   "grama. La mateixa lat\303\250ncia que la ruta s\303\255ncrona amb fotogrames a qualsevol configu"
-   "raci\303\263 de lat\303\250ncia d'\303\240udio, amb el control de velocitat mesurat al ritme pro"
-   "pi del dispositiu i el remostrejador fora del pressupost de fotogrames. Els controladors d'\303"
-   "\240udio que no es poden activar al dispositiu mantenen la ruta s\303\255ncrona amb fotogrames.",
    "Demana al sistema operatiu que programi el fil d'\303\240udio per davant de la resta del fronten"
    "d, de manera que sigui menys probable que un marc ocupat deixi el dispositiu d'\303\240udio sens"
    "e servei. Permet que la lat\303\250ncia d'\303\240udio disminueixi en els sistemes que la conced"
@@ -9128,7 +9119,6 @@ static const struct
    ".",
    "Canvia la configuraci\303\263 del rebobinat.",
    "Selecciona la carpeta inicial de l'explorador de fitxers.",
-   "El fitxer de configuraci\303\263 predeterminat s'ha desat en aquesta carpeta.",
    "Selecciona un tema de colors diferent. 'Personalitzat' permet fer servir fitxers d'ajustament de"
    " temes.",
    "Selecciona un ajustament del tema del men\303\272 en l'explorador de fitxers.",
@@ -10451,7 +10441,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (230017u
+      (sizeof(msg_hash_ca_blob) == (229495u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12926,7 +12916,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -13686,7 +13675,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14598,7 +14586,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

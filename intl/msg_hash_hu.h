@@ -1754,7 +1754,6 @@ static const struct
    char s_ccfe26d1[16];
    char s_728ca1d3[3];
    char s_5f612db6[18];
-   char s_9f29f708[24];
    char s_a9145c83[22];
    char s_ec1c0efd[7];
    char s_b449bf9e[8];
@@ -3223,7 +3222,6 @@ static const struct
    char s_c7c09eb0[116];
    char s_7d4adfaf[33];
    char s_6f122164[39];
-   char s_61942cf6[70];
    char s_6b7e9271[130];
    char s_68b6e245[73];
    char s_3bb4fbf9[102];
@@ -6224,7 +6222,6 @@ static const struct
    "Eg\303\251sz-szorz\303\263s",
    "Ki",
    "Kezd\305\221 k\303\266nyvt\303\241r",
-   "Konfigur\303\241ci\303\263s f\303\241jlok",
    "Sz\303\255n\303\266ssze\303\241ll\303\255t\303\241s",
    "Egyedi",
    "Drakula",
@@ -8485,8 +8482,6 @@ static const struct
    ".",
    "A visszateker\303\251s be\303\241ll\303\255t\303\241sai.",
    "A f\303\241jlb\303\266ng\303\251sz\305\221 kezd\305\221 k\303\266nyvt\303\241ra.",
-   "Az alap\303\251rtelmezett konfigur\303\241ci\303\263s f\303\241jl ebbe a k\303\266nyvt\303\241rb"
-   "a ker\303\274l.",
    "M\303\241s sz\303\255n\303\266ssze\303\241ll\303\255t\303\241s v\303\241laszt\303\241sa. Az \"Eg"
    "yedi\" lehet\305\221s\303\251gn\303\251l k\303\274l\303\266n f\303\241jlb\303\263l lehet bet\303"
    "\266lteni a sz\303\255n\303\266ssze\303\241ll\303\255t\303\241st.",
@@ -9799,7 +9794,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188029u
+      (sizeof(msg_hash_hu_blob) == (187935u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11981,7 +11976,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA,
@@ -13448,7 +13442,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

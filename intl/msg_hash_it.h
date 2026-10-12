@@ -1725,7 +1725,6 @@ static const struct
    char s_ccfe26d1[13];
    char s_728ca1d3[12];
    char s_5f612db6[21];
-   char s_9f29f708[23];
    char s_a9145c83[16];
    char s_22f52844[11];
    char s_06842e2b[13];
@@ -3166,7 +3165,6 @@ static const struct
    char s_c7c09eb0[119];
    char s_7d4adfaf[44];
    char s_6f122164[55];
-   char s_61942cf6[74];
    char s_6b7e9271[115];
    char s_68b6e245[74];
    char s_3bb4fbf9[132];
@@ -5970,7 +5968,6 @@ static const struct
    "Scala Intera",
    "Disattivato",
    "Cartella predefinita",
-   "File di configurazione",
    "Colore del Tema",
    "Mela Verde",
    "Blu Classico",
@@ -7753,7 +7750,6 @@ static const struct
    "elocit\303\240 del riavvolgimento.",
    "Modifica le impostazioni di riavvolgimento.",
    "Imposta la directory iniziale per l'esplorazione file.",
-   "Il file di configurazione predefinito \303\250 memorizzato in questa directory.",
    "Selezionare un tema di colore diverso. Scegliendo 'Personalizzato' si abilita l'uso di file pred"
    "efiniti tema menu.",
    "Selezionare una preimpostazione del tema del menu dall'esplorazione file.",
@@ -8819,7 +8815,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183102u
+      (sizeof(msg_hash_it_blob) == (183005u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10973,7 +10969,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -12414,7 +12409,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

@@ -1663,7 +1663,6 @@ static const struct
    char s_ccfe26d1[29];
    char s_728ca1d3[8];
    char s_5f612db6[22];
-   char s_9f29f708[23];
    char s_a9145c83[15];
    char s_a26e1351[26];
    char s_22f52844[18];
@@ -2928,7 +2927,6 @@ static const struct
    char s_14b5b145[103];
    char s_c7c09eb0[103];
    char s_6f122164[66];
-   char s_61942cf6[63];
    char s_6b7e9271[126];
    char s_68b6e245[57];
    char s_3bb4fbf9[116];
@@ -5732,7 +5730,6 @@ static const struct
    "Celo\304\215\303\255seln\303\251 \305\241k\303\241lov\303\241n\303\255",
    "Vypnout",
    "Startovac\303\255 adres\303\241\305\231",
-   "Konfigura\304\215n\303\255 soubory",
    "Barevn\303\275 motiv",
    "Proti - Vypalov\303\241n\303\255 zenu",
    "Jablkov\304\233 zelen\303\241",
@@ -7677,8 +7674,6 @@ static const struct
    "\305\241\303\255 hodnoty zvy\305\241uj\303\255 rychlost p\305\231ev\303\255jen\303\255.",
    "Nastaven\303\255 po\304\215\303\241te\304\215n\303\255ho adres\303\241\305\231e pro Pr\305\257zk"
    "umn\303\255ka soubor\305\257.",
-   "V tomto adres\303\241\305\231i je ulo\305\276en v\303\275choz\303\255 konfigura\304\215n\303\255"
-   " soubor.",
    "Vyberte jin\303\275 barevn\303\275 motiv. V\303\275b\304\233r mo\305\276nosti 'Vlastn\303\255' u"
    "mo\305\276\305\210uje pou\305\276it\303\255 soubor\305\257 s p\305\231ednastaven\303\275mi motiv"
    "y nab\303\255dek.",
@@ -8797,7 +8792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162324u
+      (sizeof(msg_hash_cs_blob) == (162238u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10809,7 +10804,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
@@ -12074,7 +12068,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

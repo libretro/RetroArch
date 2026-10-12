@@ -659,7 +659,6 @@ static const struct
    char s_ccfe26d1[18];
    char s_728ca1d3[3];
    char s_5f612db6[11];
-   char s_9f29f708[20];
    char s_b30b56ad[3];
    char s_2c04084b[16];
    char s_404e69aa[10];
@@ -1939,7 +1938,6 @@ static const struct
    "Heltall skalering",
    "AV",
    "Startmappe",
-   "Konfigurasjonsfiler",
    "AV",
    "Vis Startskjerm",
    "Biline\303\246r",
@@ -2627,7 +2625,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29336u
+      (sizeof(msg_hash_no_blob) == (29316u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3416,7 +3414,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,

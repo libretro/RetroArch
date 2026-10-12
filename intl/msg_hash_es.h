@@ -292,6 +292,7 @@ static const struct
    char s_fcd64038[9];
    char s_b271ae95[26];
    char s_fb84857a[7];
+   char s_7ee0d4c8[37];
    char s_3943c7ae[41];
    char s_5b2d8d2f[20];
    char s_6fd9b032[35];
@@ -470,6 +471,7 @@ static const struct
    char s_0a05438c[28];
    char s_1324c306[39];
    char s_152cd261[35];
+   char s_91318729[35];
    char s_7d00b7ed[12];
    char s_7bd7aa88[54];
    char s_0674b554[59];
@@ -839,16 +841,20 @@ static const struct
    char s_87994f40[44];
    char s_19bdcb0b[32];
    char s_6f199f35[45];
+   char s_b5849afd[34];
    char s_b1e1d992[23];
    char s_798643f5[32];
    char s_b61d0a2d[30];
    char s_c68080b6[29];
    char s_b87232ce[28];
+   char s_0d77b260[39];
+   char s_a8ae729b[30];
    char s_231308e8[32];
    char s_27db7cc0[30];
    char s_700d45a9[29];
    char s_2a30a561[28];
    char s_6ae6f953[24];
+   char s_ee635545[30];
 #ifdef ANDROID
    char s_b573f90c[29];
 #endif
@@ -868,6 +874,9 @@ static const struct
    char s_8b9af73a[33];
    char s_66389548[45];
    char s_926f9e93[37];
+   char s_539024ed[20];
+   char s_3703a97b[27];
+   char s_933104ed[27];
    char s_c6b760c9[70];
    char s_1d5a27f5[42];
    char s_18029d7e[24];
@@ -1585,6 +1594,7 @@ static const struct
    char s_d6198fde[22];
    char s_9e5d0200[14];
    char s_9fd6f744[15];
+   char s_46f82582[6];
    char s_bf5e903e[9];
    char s_a2bb0576[12];
    char s_fab0ac6c[11];
@@ -1678,6 +1688,9 @@ static const struct
    char s_64dd7209[32];
    char s_77155e0f[16];
    char s_e2f6ffcd[7];
+   char s_04ef691f[32];
+   char s_af2f5836[46];
+   char s_04f38f4d[28];
    char s_3936fe87[116];
    char s_393985fc[41];
    char s_57110ba8[36];
@@ -1967,7 +1980,7 @@ static const struct
    char s_ccfe26d1[32];
    char s_728ca1d3[3];
    char s_5f612db6[19];
-   char s_9f29f708[27];
+   char s_9f29f708[16];
    char s_a9145c83[16];
    char s_22f52844[14];
    char s_06842e2b[14];
@@ -2487,6 +2500,7 @@ static const struct
    char s_93ac5ec8[39];
    char s_6cdf4f07[33];
    char s_a03f132e[29];
+   char s_39f58459[58];
    char s_b3d1e989[14];
    char s_50eb4c56[5];
    char s_a023adce[13];
@@ -2498,6 +2512,9 @@ static const struct
    char s_eb4eab83[5];
    char s_c6d5bcb5[5];
    char s_7e8c6399[6];
+   char s_74bced1d[44];
+   char s_a9ef6377[21];
+   char s_62b8a0ba[44];
    char s_74dcbca5[22];
    char s_3ea80887[20];
    char s_c0cdc638[38];
@@ -2747,7 +2764,6 @@ static const struct
    char s_f46c7b83_1[219];
    char s_cb67f2a4[43];
    char s_3c3598a9[48];
-   char s_3bac47bd[444];
    char s_90e7db40[499];
    char s_b07cd572_0[500];
    char s_b07cd572_1[155];
@@ -2839,6 +2855,7 @@ static const struct
    char s_19b6373a[136];
    char s_f63531f4[75];
    char s_f83d414f[122];
+   char s_539bbd17[257];
    char s_65e89a5b[58];
    char s_1757ee76[73];
    char s_11fd7702[102];
@@ -3017,8 +3034,12 @@ static const struct
    char s_976074ee[150];
    char s_2269a679[384];
    char s_5c8a1d63[125];
+   char s_56c3b5ab[237];
    char s_744c0f80[90];
+   char s_d69a22ce[270];
+   char s_71d0e309[348];
    char s_2aa39081[50];
+   char s_89e39933[272];
 #ifdef ANDROID
    char s_50f43cfa[274];
 #endif
@@ -3033,6 +3054,9 @@ static const struct
    char s_d0b943e8[84];
    char s_4f2077b6[179];
    char s_5b920f01[131];
+   char s_71b76e1b[309];
+   char s_f96ddf69[109];
+   char s_d84f519b[229];
    char s_5d20ea2c[51];
    char s_b339b327[161];
    char s_a9e0aaa3[71];
@@ -3662,7 +3686,7 @@ static const struct
    char s_c7c09eb0[127];
    char s_7d4adfaf[34];
    char s_6f122164[60];
-   char s_61942cf6[77];
+   char s_61942cf6[211];
    char s_6b7e9271[101];
    char s_68b6e245[72];
    char s_3bb4fbf9[128];
@@ -3975,6 +3999,10 @@ static const struct
    char s_2f2ca2b6[184];
    char s_2c9be635[123];
    char s_c8fb9e1c[411];
+   char s_d575c847[288];
+   char s_3479844b[246];
+   char s_b9a05725[257];
+   char s_68880a28[246];
    char s_05ec12e6[253];
    char s_b5a603de[92];
    char s_d9c2db25[78];
@@ -4349,9 +4377,16 @@ static const struct
    char s_265dbfa3[63];
    char s_b0e45a57[37];
    char s_543fcabd[17];
+   char s_a4487584[94];
+   char s_8b9891bf[66];
    char s_59212b5f[17];
    char s_f26b6cff[42];
+   char s_58909bc7[20];
+   char s_bd1fdff6[27];
+   char s_d9d9a1be[12];
    char s_a63c824a[13];
+   char s_b969706a[294];
+   char s_a3f6ebc3[16];
    char s_a9f3b2c3[26];
    char s_0e7aca8a[24];
    char s_ab1afe7c[22];
@@ -4360,6 +4395,7 @@ static const struct
    char s_026b7f11[26];
    char s_3b7c0dd8[24];
    char s_b43a100a[22];
+   char s_b8bfcaec[284];
    char s_51df877a[52];
    char s_136098cd[45];
    char s_f482576f[49];
@@ -4524,6 +4560,7 @@ static const struct
    char s_49a2e6d9[37];
    char s_d6c12228[48];
    char s_af784f91[53];
+   char s_002fd84a[117];
    char s_f1337004[50];
    char s_ada3890a[12];
    char s_bc246801[33];
@@ -4622,6 +4659,8 @@ static const struct
    char s_1a5c7ca6[29];
    char s_1a5c880d[30];
    char s_7b23d9e6[21];
+   char s_77943569[134];
+   char s_04305cd6[180];
    char s_c182bd2e[3];
    char s_0110d0c7[18];
    char s_c6156015[31];
@@ -5181,6 +5220,7 @@ static const struct
    "Est\303\251reo",
    "Frecuencia de salida (Hz)",
    "Salida",
+   "Cola superficial de la canalizaci\303\263n",
    "Control din\303\241mico de frecuencia de audio",
    "Remuestreo de audio",
    "Sobremuestreo sinc de alta calidad",
@@ -5359,6 +5399,7 @@ static const struct
    "Sincronizaci\303\263n destructiva",
    "Back-end de sincronizaci\303\263n en la nube",
    "Activar sincronizaci\303\263n en la nube",
+   "Subdirectorio a sincronizar en NFS",
    "Contrase\303\261a",
    "Resoluci\303\263n de conflictos: conservar archivos locales",
    "Resoluci\303\263n de conflictos: conservar archivos del servidor",
@@ -5735,16 +5776,20 @@ static const struct
    "Conversi\303\263n de entrada anal\303\263gica a digital",
    "Apuntar con el stick anal\303\263gico",
    "Todos los usuarios pueden controlar el men\303\272",
+   "Antizona muerta de eje anal\303\263gico",
    "Zona muerta anal\303\263gica",
    "Anal\303\263gico izdo. X- (izquierda)",
    "Anal\303\263gico izdo. X+ (derecha)",
    "Anal\303\263gico izdo. Y- (arriba)",
    "Anal\303\263gico izdo. Y+ (abajo)",
+   "Zona muerta exterior de eje anal\303\263gico",
+   "Curva de respuesta anal\303\263gica",
    "Anal\303\263gico dcho. X- (izquierda)",
    "Anal\303\263gico dcho. X+ (derecha)",
    "Anal\303\263gico dcho. Y- (arriba)",
    "Anal\303\263gico dcho. Y+ (abajo)",
    "Sensibilidad anal\303\263gica",
+   "Zona muerta de eje anal\303\263gico",
 #ifdef ANDROID
    "Utilizar teclado del sistema",
 #endif
@@ -5764,6 +5809,9 @@ static const struct
    "Tiempo de espera de asignaciones",
    "Intervalo de espera para introducir entradas",
    "Umbral de entrada de ejes en botones",
+   "Tiempo de respuesta",
+   "Mantener durante un tiempo",
+   "Acci\303\263n de la combinaci\303\263n",
    "Ocultar descriptores de entrada sin asignar especificados en n\303\272cleos",
    "Mostrar etiquetas descriptoras de entrada",
    "\303\215ndice del dispositivo",
@@ -6482,6 +6530,7 @@ static const struct
    "Ocultar barra lateral",
    "Negro b\303\241sico",
    "Blanco b\303\241sico",
+   "Claro",
    "Dr\303\241cula",
    "Gris oscuro",
    "Gris claro",
@@ -6576,6 +6625,9 @@ static const struct
    "Actualizar miniaturas de listas",
    "Soporte t\303\241ctil",
    "Puerto",
+   "- Conectado por Bluetooth a: %s",
+   "- Conectado por Bluetooth a: este equipo (%s)",
+   "- Emparejar con este equipo",
    "Nombre para mostrar del dispositivo: %s\nNombre de configuraci\303\263n del dispositivo: %s\nVID"
    "/PID del dispositivo: %d/%d",
    "Nombre del dispositivo del puerto %d: %s",
@@ -6872,7 +6924,7 @@ static const struct
    "Escalar usando n\303\272meros enteros",
    "No",
    "Directorio inicial",
-   "Archivos de configuraci\303\263n",
+   "Configuraciones",
    "Tema de colores",
    "Verde manzana",
    "Azul cl\303\241sico",
@@ -7394,6 +7446,7 @@ static const struct
    "Correcci\303\263n de sobrebarrido (superior)",
    "Grabaci\303\263n con filtros aplicados",
    "Repetir ritmo de la pantalla",
+   "Omitir fotogramas cuando el codificador se quede rezagado",
    "Personalizado",
    "Alta",
    "Sin p\303\251rdida",
@@ -7405,6 +7458,9 @@ static const struct
    "Alta",
    "Baja",
    "Media",
+   "B\303\272fer de grabaci\303\263n de v\303\255deo (fotogramas)",
+   "Grabar solo el juego",
+   "Utilizar codificador de v\303\255deo por hardware",
    "Calidad de grabaci\303\263n",
    "Hilos de grabaci\303\263n",
    "Frecuencia de actualizaci\303\263n vertical",
@@ -7733,11 +7789,6 @@ static const struct
    "posici\303\263n mostrar\303\241 esta frecuencia como \302\253sink\302\273.",
    "Sincroniza el audio. Se recomienda su uso.",
    "Cambia los ajustes de sincronizaci\303\263n de audio.",
-   "Remuestrea, filtra y mezcla el audio en el hilo de audio en vez de hacerlo en cada fotograma. Ma"
-   "ntiene la misma latencia de la ruta sincronizada a fotogramas en cualquier ajuste de latencia de"
-   " audio, midiendo el control de frecuencias seg\303\272n el valor del dispositivos y ejecutando e"
-   "l remuestreo dentro de los l\303\255mites del fotograma. Los controladores de audio que no pueda"
-   "n activar el dispositivo mantendr\303\241n la ruta sincronizada a fotogramas.",
    "Solicita al sistema operativo que programe el hilo de audio con m\303\241s prioridad que el rest"
    "o del front-end, de esta forma, un fotograma que cargue m\303\241s a la CPU tendr\303\241 menos "
    "probabilidad de privar al dispositivo de audio. Baja la latencia de audio en aquellos sistemas q"
@@ -7880,6 +7931,9 @@ static const struct
    "Indica el protocolo de red de almacenamiento en la nube que se utilizar\303\241.",
    "Intenta sincronizar las configuraciones, las SRAM y los guardados r\303\241pidos con un proveedo"
    "r de almacenamiento en la nube.",
+   "El directorio dentro del exportado NFS que se utilizar\303\241 para sincronizar con la nube. Los"
+   " archivos se almacenar\303\241n en su carpeta cloud_sync. Deja esta opci\303\263n en blanco para"
+   " utilizar el subdirectorio NFS o escribe \"/\" para utilizar la ra\303\255z del exportado.",
    "La contrase\303\261a de tu cuenta de almacenamiento en la nube.",
    "Resuelve todos los conflictos enviando los archivos locales al servidor.",
    "Resuelve todos los conflictos descargando los archivos del servidor, reemplazando las copias loc"
@@ -8165,8 +8219,23 @@ static const struct
    "arma son las de m\303\241s abajo, como siempre.",
    "Permite que cualquier usuario pueda controlar el men\303\272. Si esta opci\303\263n est\303\241 "
    "desactivada, solo podr\303\241 hacerlo el usuario 1.",
+   "Inicia el movimiento de un stick con este valor en cuanto salga de la zona muerta. En el caso de"
+   " aquellos n\303\272cleos que ya tengan otra zona muerta propia, que se solapar\303\255a a esta: "
+   "configura este ajuste seg\303\272n la zona muerta del n\303\272cleo.",
    "Ignora los movimientos del stick anal\303\263gico si su valor es inferior al de la zona muerta.",
+   "Indica que un stick que est\303\251 a esta distancia del extremo debe considerarse que ha llegad"
+   "o al extremo, para aquellos sticks gastados que no detectan que han llegado al final del recorri"
+   "do. Se extender\303\241n los movimientos entre la zona muerta y este eje a todo su rango.",
+   "Establece el crecimiento del movimiento de un stick a medida que se desplaza. 1,0 es una l\303"
+   "\255nea recta. Un valor superior a 1,0 har\303\241 que los movimientos leves reduzcan el movimie"
+   "nto detectado, para tener un control m\303\241s preciso en el centro del stick; un valor inferio"
+   "r a 1,0 har\303\241 que se mueva m\303\241s r\303\241pido, para tener una reacci\303\263n m\303"
+   "\241s r\303\241pida.",
    "Ajusta la sensibilidad de los sticks anal\303\263gicos.",
+   "Ignora la primera parte del recorrido de un gatillo anal\303\263gico o de un bot\303\263n sensib"
+   "le a la presi\303\263n y reescala el resto del recorrido a la totalidad del mismo. Esta opci\303"
+   "\263n va por separado de la zona muerta de los sticks anal\303\263gicos, que se aplica solo a es"
+   "tos \303\272ltimos.",
 #ifdef ANDROID
    "Utiliza el teclado del sistema de Android para introducir textos en los men\303\272s en vez del "
    "integrado. Permite usar el portapapeles y los administradores de contrase\303\261as. Es necesari"
@@ -8197,6 +8266,15 @@ static const struct
    ". Usar en caso de tener problemas para pulsar varios botones a la vez (solo en Android).",
    "Indica la distancia que debe recorrer un eje para producir una pulsaci\303\263n de bot\303\263n "
    "al convertir una entrada anal\303\263gica a digital.",
+   "Instant\303\241neo reaccionar\303\241 en cuanto se pulsen todos los botones. Mantener durante un"
+   " tiempo espera a que todos los botones se hayan mantenido pulsados el tiempo que selecciones en "
+   "la siguiente opci\303\263n, de esta forma, si los pulsas todos a la vez r\303\241pidamente (por "
+   "ejemplo, en plena partida), no pasar\303\241 nada.",
+   "Indica cu\303\241nto tiempo deben mantenerse pulsados todos los botones de la combinaci\303\263n"
+   " para que surtan efecto.",
+   "Establece lo que ocurrir\303\241 cuando se pulsen todos los botones de la combinaci\303\263n a l"
+   "a vez: se activar\303\241 una tecla r\303\241pida, un comando que no tenga tecla r\303\241pida o"
+   " una de tus macros. El juego tambi\303\251n reconocer\303\241 las pulsaciones.",
    "El mando f\303\255sico tal y como lo reconoce RetroArch.",
    "Preferido: en caso de que el dispositivo especificado est\303\251 presente, se asignar\303\241 a"
    " este jugador. Reservado: no se asignar\303\241 ning\303\272n otro mando a este jugador.",
@@ -9292,7 +9370,9 @@ static const struct
    "do aumentar\303\241 la velocidad del rebobinado.",
    "Cambia los ajustes de rebobinado.",
    "Establece el directorio inicial del explorador de archivos.",
-   "En este directorio se guardar\303\241 el archivo de configuraci\303\263n predeterminado.",
+   "El directorio donde se almacenar\303\241n las configuraciones, personalizaciones y las opciones "
+   "de n\303\272cleos y contenidos. Selecciona Guardar configuraci\303\263n principal para utilizar "
+   "la ruta de la configuraci\303\263n activa.",
    "Selecciona otro tema de colores. \302\253Personalizado\302\273 permite utilizar archivos de prea"
    "justes de temas.",
    "Selecciona un preajuste de tema del men\303\272 en el explorador de archivos.",
@@ -9838,6 +9918,20 @@ static const struct
    "sta opci\303\263n se aplicar\303\241 cuando el controlador de v\303\255deo pueda indicar dicho v"
    "alor; se utilizar\303\241 el reloj en el resto de casos y cuando el informe quede obsoleto. Desa"
    "ctiva esta opci\303\263n para utilizar el reloj siempre.",
+   "Si el codificador de grabaci\303\263n o de streaming se retrasa con respecto a la imagen, se omi"
+   "tir\303\241n fotogramas de v\303\255deo y se llenar\303\241n los vac\303\255os en el audio con s"
+   "ilencios en vez de ralentizar el juego. Desactiva esta opci\303\263n para preservar todos los fo"
+   "togramas a costa de sufrir tirones.",
+   "Establece el n\303\272mero de fotogramas que contendr\303\241 la cola entre el juego y el codifi"
+   "cador. Un valor m\303\241s alto podr\303\241 absorber cualquier tropiezo del codificador, pero u"
+   "tilizar\303\241 m\303\241s memoria. Los cambios se aplicar\303\241n en la siguiente grabaci\303"
+   "\263n.",
+   "Omite el men\303\272, las notificaciones, los mensajes en pantalla y las superposiciones en las "
+   "grabaciones de la CPU y omite el tiempo que pases dentro del men\303\272. Al desactivar esta opc"
+   "i\303\263n, las grabaciones capturar\303\241n exactamente lo que se muestre en pantalla.",
+   "Codifica la se\303\261al H.264 con un codificador por hardware si est\303\241 disponible, en cas"
+   "o contrario, se utilizar\303\241 uno por software (libx264). Esta opci\303\263n se aplicar\303"
+   "\241 a los preajustes de calidad integrados, no a las configuraciones personalizadas.",
    "Establece la frecuencia de actualizaci\303\263n vertical de tu pantalla. Con ella se puede calcu"
    "lar una frecuencia de audio de entrada ideal y el periodo de visualizaci\303\263n con el que V"
    "\303\255deo multihilo calcula su ritmo cuando el controlador no pueda indicarla.",
@@ -10350,9 +10444,20 @@ static const struct
    "Pulsa una tecla del teclado o un bot\303\263n del rat\303\263n o del mando",
    "\302\241Suelta todas las teclas y botones!",
    "Tiempo de espera",
+   "El mando del puerto %u se conectar\303\241 a este equipo por Bluetooth cuando se haya desenchufa"
+   "do.",
+   "No se ha podido emparejar el mando del puerto %u con este equipo.",
    "Introducir truco",
    "Introduce el nombre del archivo de trucos",
-   "Instant\303\241nea",
+   "Seleccionar acci\303\263n",
+   "Mantener durante un tiempo",
+   "%s\302\240seconds",
+   "Instant\303\241neo",
+   "Establece los botones que, una vez los pulses a la vez, activar\303\241n una acci\303\263n de te"
+   "cla r\303\241pida, un comando o una macro. Derecha: mant\303\251n los botones que quieres usar y"
+   " luego selecciona lo que quieres que hagan. Izquierda: selecciona qu\303\251 quieres que hagan. "
+   "Aceptar: escribir. START: eliminar.",
+   "Asignar botones",
    "Introduce una contrase\303\261a",
    "Contrase\303\261a incorrecta.",
    "Contrase\303\261a correcta.",
@@ -10361,6 +10466,10 @@ static const struct
    "Introduce una contrase\303\261a",
    "Contrase\303\261a incorrecta.",
    "Contrase\303\261a correcta.",
+   "Los botones que se pulsar\303\241n paso por paso, durante una cantidad concreta de fotogramas de"
+   "l juego, escritos con sus nombres en c\303\263digo con este formato: \"down 2, down+right 2, a 4"
+   " (abajo 2, abajo+derecha 2, bot\303\263n a 4)\" Se activar\303\241n con una combinaci\303\263n d"
+   "e botones. START: eliminar.",
    "Introduce el nombre del archivo de personalizaci\303\263n",
    "Introduce el nombre de archivo del preajuste",
    "Introduce el nombre del archivo de reasignaci\303\263n",
@@ -10544,6 +10653,8 @@ static const struct
    "Leyendo la primera pista de datos...",
    "Estado del almacenamiento interno: solo lectura",
    "Estado del almacenamiento interno: lectura/escritura",
+   "Este controlador de v\303\255deo no puede grabar solo el juego: se grabar\303\241n tambi\303\251"
+   "n el men\303\272 y los mensajes en pantalla.",
    "Grabaci\303\263n terminada debido al cambio de tama\303\261o.",
    "Grabando en",
    "Redirigiendo archivo de trucos a",
@@ -10652,6 +10763,11 @@ static const struct
    "Tama\303\261o del guardado r\303\241pido",
    "Posici\303\263n de guardado r\303\241pido",
    "Capturando pantalla.",
+   "La verificaci\303\263n de certificados TLS est\303\241 desactivada. No se comprobar\303\241n las"
+   " conexiones seguras, as\303\255 que pueden ser interceptadas.",
+   "Conexi\303\263n segura rechazada: no se ha podido verificar el certificado del servidor. Para m"
+   "\303\241s informaci\303\263n, lee el registro o comprueba el ajuste Verificaci\303\263n de certi"
+   "ficados TLS.",
    "en",
    "Mostrar metadatos",
    "Miniaturas a pantalla completa",
@@ -10693,7 +10809,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (245314u
+      (sizeof(msg_hash_es_blob) == (249863u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11530,6 +11646,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -11708,6 +11825,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -12077,16 +12195,20 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -12106,6 +12228,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -12823,6 +12948,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
@@ -12916,6 +13042,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
@@ -13724,6 +13853,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_ALLOW_FRAME_DROP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -13735,6 +13865,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -13978,7 +14111,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14069,6 +14201,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -14247,8 +14380,12 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -14263,6 +14400,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -15203,6 +15343,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_ALLOW_FRAME_DROP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -15573,9 +15717,16 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_BT_PAIRED,
+   (uint32_t)MSG_INPUT_BT_PAIR_FAILED,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_FOR,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_SECONDS,
    (uint32_t)MSG_INPUT_COMBO_INSTANT,
+   (uint32_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
+   (uint32_t)MSG_INPUT_COMBO_SET_BUTTONS,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15584,6 +15735,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_MACRO_ROW_SUBLABEL,
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
@@ -15748,6 +15900,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_READING_FIRST_DATA_TRACK,
    (uint32_t)MSG_READ_ONLY,
    (uint32_t)MSG_READ_WRITE,
+   (uint32_t)MSG_RECORDING_GAME_ONLY_UNSUPPORTED,
    (uint32_t)MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    (uint32_t)MSG_RECORDING_TO,
    (uint32_t)MSG_REDIRECTING_CHEATFILE_TO,
@@ -15846,6 +15999,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TLS_VERIFY_DISABLED,
+   (uint32_t)MSG_TLS_VERIFY_FAILED,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,

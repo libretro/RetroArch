@@ -1830,7 +1830,6 @@ static const struct
    char s_ccfe26d1[33];
    char s_728ca1d3[10];
    char s_5f612db6[19];
-   char s_9f29f708[27];
    char s_a9145c83[12];
    char s_a26e1351[14];
    char s_22f52844[13];
@@ -2529,7 +2528,6 @@ static const struct
    char s_5977d6d8[55];
    char s_cb67f2a4[34];
    char s_3c3598a9[56];
-   char s_3bac47bd[397];
    char s_90e7db40[405];
    char s_4b78ee7f[52];
    char s_aed11d67[129];
@@ -3345,7 +3343,6 @@ static const struct
    char s_c7c09eb0[104];
    char s_7d4adfaf[41];
    char s_6f122164[58];
-   char s_61942cf6[68];
    char s_6b7e9271[95];
    char s_68b6e245[80];
    char s_3bb4fbf9[114];
@@ -6324,7 +6321,6 @@ static const struct
    "Dimensionar com valores inteiros",
    "DESLIGADO",
    "Diret\303\263rio inicial",
-   "Arquivos de configura\303\247\303\243o",
    "Cor do Tema",
    "Anti-Fogo Zen",
    "Verde ma\303\247\303\243",
@@ -7068,11 +7064,6 @@ static const struct
    "Altera as configura\303\247\303\265es da entrada/sa\303\255da de \303\241udio.",
    "Sincroniza o \303\241udio. Recomendado.",
    "Altera as configura\303\247\303\265es de sincroniza\303\247\303\243o de \303\241udio.",
-   "Reamostra, filtra e combina o \303\241udio na thread de \303\241udio em vez de quadro a quadro. "
-   "Mesma lat\303\252ncia do caminho de quadro s\303\255ncrono em qualquer configura\303\247\303\243"
-   "o da \"Lat\303\252ncia de \303\201udio\", com o controle de taxa calculado no ritmo do pr\303"
-   "\263prio dispositivo e a reamostragem fora do recurso de quadro. Os drivers de \303\241udio que "
-   "n\303\243o podem ser ativados no dispositivo mant\303\252m o caminho de quadro s\303\255ncrono.",
    "Pede para o sistema operacional processar a thread de \303\241udio na frente das outras, ent\303"
    "\243o um quadro pesado tem menos probabilidade de frustrar o dispositivo de \303\241udio. Permit"
    "e que a \"Lat\303\252ncia de \303\201udio\" seja mais baixa em sistemas que aprovam; um sistema "
@@ -8332,8 +8323,6 @@ static const struct
    "o retrocesso.",
    "Altera as configura\303\247\303\265es de retrocesso.",
    "Define o Diret\303\263rio Inicial para o Navegador de Arquivos.",
-   "O arquivo de configura\303\247\303\243o padr\303\243o \303\251 armazenado neste diret\303\263rio"
-   ".",
    "Define o tema de cores. \"Personalizado\" permite o uso dos arquivos de predefini\303\247\303"
    "\243o de temas.",
    "Selecione uma predefini\303\247\303\243o de tema do menu a partir do Navegador de Arquivos.",
@@ -9519,7 +9508,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194950u
+      (sizeof(msg_hash_pt_br_blob) == (194458u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11806,7 +11795,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
@@ -12504,7 +12492,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -13320,7 +13307,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

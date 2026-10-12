@@ -295,6 +295,7 @@ static const struct
    char s_fcd64038[9];
    char s_b271ae95[27];
    char s_fb84857a[13];
+   char s_7ee0d4c8[40];
    char s_3943c7ae[37];
    char s_5b2d8d2f[28];
    char s_6fd9b032[43];
@@ -1582,6 +1583,7 @@ static const struct
    char s_9e5d0200[13];
    char s_9fd6f744[14];
    char s_3eb72316[15];
+   char s_46f82582[9];
    char s_a2bb0576[12];
    char s_fab0ac6c[11];
    char s_a51249d0[15];
@@ -1962,7 +1964,6 @@ static const struct
    char s_ccfe26d1[21];
    char s_728ca1d3[12];
    char s_5f612db6[22];
-   char s_9f29f708[26];
    char s_a9145c83[19];
    char s_22f52844[11];
    char s_b46ad5d0[12];
@@ -2740,8 +2741,6 @@ static const struct
    char s_f46c7b83_1[175];
    char s_cb67f2a4[35];
    char s_3c3598a9[49];
-   char s_3bac47bd_0[500];
-   char s_3bac47bd_1[20];
    char s_90e7db40_0[500];
    char s_90e7db40_1[80];
    char s_b07cd572_0[500];
@@ -3670,7 +3669,7 @@ static const struct
    char s_c7c09eb0[104];
    char s_7d4adfaf[39];
    char s_6f122164[58];
-   char s_61942cf6[59];
+   char s_61942cf6[196];
    char s_6b7e9271[139];
    char s_68b6e245[93];
    char s_3bb4fbf9[179];
@@ -5238,6 +5237,7 @@ static const struct
    "St\303\251r\303\251o",
    "Fr\303\251quence de sortie (Hz) ",
    "Sortie audio",
+   "File d'attente de pipeline peu profonde",
    "Contr\303\264le dynamique du d\303\251bit audio ",
    "R\303\251-\303\251chantillonneur audio ",
    "Sur\303\251chantillonnage Sinc de haute qualit\303\251",
@@ -6541,6 +6541,7 @@ static const struct
    "Noir basique",
    "Blanc basique",
    "M\303\273re de Logan",
+   "Lumineux",
    "Gris fonc\303\251",
    "Gris clair",
    "Gruvbox sombre",
@@ -6931,7 +6932,6 @@ static const struct
    "\303\211chelle \303\240 l'entier",
    "D\303\251sactiv\303\251",
    "Dossier de d\303\251marrage",
-   "Fichiers de configuration",
    "Th\303\250me de couleurs",
    "Vert pomme",
    "Brogrammeur",
@@ -7806,14 +7806,6 @@ static const struct
    "orme 'Sink'.",
    "Synchroniser l'audio. Recommand\303\251.",
    "Modifier les r\303\251glages de synchronisation audio.",
-   "Le r\303\251\303\251chantillonnage, le filtrage et le mixage audio sont effectu\303\251s sur le "
-   "fil d'ex\303\251cution audio plut\303\264t qu'au sein de chaque image. On obtient ainsi la m\303"
-   "\252me latence que pour le chemin synchrone aux images, quel que soit le r\303\251glage de laten"
-   "ce audio, tout en mesurant le contr\303\264le de cadence au rythme propre du p\303\251riph\303"
-   "\251rique et en sortant le r\303\251\303\251chantillonneur du budget allou\303\251 \303\240 l'im"
-   "age. Les pilotes audio incapables de sortir le p\303\251riph\303\251rique de veille continuent d"
-   "'utiliser le chemin sy",
-   "nchrone aux images.",
    "Demande au syst\303\250me d'exploitation de planifier le fil d'ex\303\251cution audio avec une p"
    "riorit\303\251 sup\303\251rieure \303\240 celle du reste de l'interface graphique, afin de r\303"
    "\251duire le risque qu'une image gourmande en ressources ne prive le p\303\251riph\303\251rique "
@@ -9485,7 +9477,9 @@ static const struct
    "sse du rembobinage.",
    "Modifier les r\303\251glages de rembobinage.",
    "D\303\251finir le dossier de d\303\251part du navigateur de fichiers.",
-   "Le fichier de configuration par d\303\251faut est conserv\303\251 ici.",
+   "Dossier pour les configurations enregistr\303\251es, les substitutions et les options de c\305"
+   "\223ur/contenu. La fonction Enregistrer la configuration principale utilise le chemin de la conf"
+   "iguration active.",
    "Selectionner un th\303\250me de couleur diff\303\251rent. Choisir 'Personnalis\303\251' permet l"
    "'utilisation de fichiers de pr\303\251r\303\251glages de th\303\250me du menu.",
    "Selectionner un fichier de pr\303\251r\303\251glages de th\303\250me du menu depuis le navigateu"
@@ -10970,7 +10964,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258598u
+      (sizeof(msg_hash_fr_blob) == (258238u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11803,6 +11797,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -13090,6 +13085,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
@@ -13469,7 +13465,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER,
@@ -14241,7 +14236,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,

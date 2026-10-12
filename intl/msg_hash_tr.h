@@ -1723,7 +1723,6 @@ static const struct
    char s_ccfe26d1[20];
    char s_728ca1d3[7];
    char s_5f612db6[20];
-   char s_9f29f708[26];
    char s_a9145c83[11];
    char s_22f52844[13];
    char s_06842e2b[12];
@@ -3069,7 +3068,6 @@ static const struct
    char s_14b5b145[102];
    char s_c7c09eb0[101];
    char s_6f122164[64];
-   char s_61942cf6[58];
    char s_6b7e9271[130];
    char s_68b6e245[61];
    char s_3bb4fbf9[126];
@@ -5980,7 +5978,6 @@ static const struct
    "Tam Say\304\261 \303\226l\303\247e\304\237i",
    "KAPALI",
    "Ba\305\237lang\304\261\303\247 Dizini",
-   "Yap\304\261land\304\261rma Dosyalar\304\261",
    "Tema Rengi",
    "Elma Ye\305\237ili",
    "Klasik Mavi",
@@ -8009,7 +8006,6 @@ static const struct
    "ksek de\304\237erler geri sarma h\304\261z\304\261n\304\261 art\304\261r\304\261r.",
    "Dosya Taray\304\261c\304\261 i\303\247in Ba\305\237lang\304\261\303\247 \342\200\213\342\200\213"
    "Dizini'ni ayarlay\304\261n.",
-   "Varsay\304\261lan yap\304\261land\304\261rma dosyas\304\261 bu dizinde saklan\304\261r.",
    "Farkl\304\261 bir renk temas\304\261 se\303\247in. '\303\226zel' se\303\247imi, men\303\274 tema"
    "s\304\261 \303\266nceden ayarlanm\304\261\305\237 dosyalar\304\261n kullan\304\261m\304\261n\304"
    "\261 m\303\274mk\303\274n k\304\261lar.",
@@ -9178,7 +9174,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170141u
+      (sizeof(msg_hash_tr_blob) == (170057u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11259,7 +11255,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -12605,7 +12600,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,

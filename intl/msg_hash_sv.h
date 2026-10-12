@@ -69,7 +69,7 @@ static const struct
    char s_d1558b35[45];
    char s_4c378b95[95];
    char s_c435566b[339];
-   char s_793f841a[284];
+   char s_793f841a[283];
    char s_b4ed19c0[34];
    char s_3a147fac[89];
    char s_a4a373a7[31];
@@ -141,7 +141,7 @@ static const struct
    char s_4c991c18[392];
    char s_4b299805[154];
    char s_1bd35af2[37];
-   char s_24e40f00[275];
+   char s_24e40f00[269];
    char s_1382c258[220];
    char s_4caab10c[243];
    char s_03580e17[163];
@@ -163,7 +163,7 @@ static const struct
    char s_9eebc6cc[54];
    char s_5fdad539[282];
    char s_353c64eb_0[500];
-   char s_353c64eb_1[93];
+   char s_353c64eb_1[94];
    char s_33a76811[104];
    char s_e180f55d[108];
    char s_11aa0e91[60];
@@ -286,6 +286,7 @@ static const struct
    char s_079ba7c7[35];
    char s_b271ae95[24];
    char s_fb84857a[10];
+   char s_7ee0d4c8[18];
    char s_3943c7ae[30];
    char s_5b2d8d2f[15];
    char s_6fd9b032[34];
@@ -455,6 +456,7 @@ static const struct
    char s_0a05438c[24];
    char s_1324c306[22];
    char s_152cd261[28];
+   char s_91318729[37];
    char s_7d00b7ed[10];
    char s_7bd7aa88[31];
    char s_0674b554[32];
@@ -689,8 +691,9 @@ static const struct
    char s_deed0812[12];
    char s_dfa3c8c3[5];
    char s_52dea05d[25];
-   char s_7ec63ffc[50];
+   char s_7ec63ffc[49];
    char s_7f004a36[124];
+   char s_fcd0c0d6[183];
    char s_a3825f18[13];
    char s_ef2d0a03[23];
    char s_ad17a194[12];
@@ -809,16 +812,20 @@ static const struct
    char s_87994f40[24];
    char s_19bdcb0b[25];
    char s_6f199f35[24];
+   char s_b5849afd[18];
    char s_b1e1d992[15];
    char s_798643f5[30];
    char s_b61d0a2d[28];
    char s_c68080b6[25];
    char s_b87232ce[25];
+   char s_0d77b260[35];
+   char s_a8ae729b[18];
    char s_231308e8[28];
    char s_27db7cc0[26];
    char s_700d45a9[23];
    char s_2a30a561[23];
    char s_6ae6f953[19];
+   char s_ee635545[31];
 #ifdef ANDROID
    char s_b573f90c[26];
 #endif
@@ -838,6 +845,9 @@ static const struct
    char s_8b9af73a[16];
    char s_66389548[32];
    char s_926f9e93[41];
+   char s_539024ed[9];
+   char s_3703a97b[12];
+   char s_933104ed[23];
    char s_c6b760c9[51];
    char s_1d5a27f5[44];
    char s_18029d7e[11];
@@ -914,6 +924,7 @@ static const struct
    char s_b3a9ff57[19];
    char s_f4eaed02[27];
    char s_a9f5617a[25];
+   char s_7b2598f2[30];
    char s_182194b5[21];
    char s_50e34bc5[19];
    char s_00ea00d3[16];
@@ -1012,6 +1023,7 @@ static const struct
    char s_88226df7[29];
    char s_4c92f60e[28];
    char s_9c702ee1[38];
+   char s_b8abf5ac[40];
    char s_b8b18b90[12];
    char s_efa8d516[35];
    char s_d7c1d887[20];
@@ -1068,6 +1080,7 @@ static const struct
    char s_ff1b8ce5[19];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[31];
    char s_19f5e3bc[49];
 #endif
 #endif
@@ -1117,6 +1130,7 @@ static const struct
    char s_dc362405[12];
    char s_e2f51ded[12];
    char s_d9685b01[10];
+   char s_88d4b1c5[29];
    char s_74b6dd31[8];
    char s_3e39918c[15];
    char s_96380b84[16];
@@ -1528,6 +1542,7 @@ static const struct
    char s_d6198fde[18];
    char s_9e5d0200[13];
    char s_9fd6f744[11];
+   char s_46f82582[5];
    char s_a2bb0576[11];
    char s_fab0ac6c[10];
    char s_a51249d0[14];
@@ -1616,6 +1631,9 @@ static const struct
    char s_2010df6a[13];
    char s_64dd7209[30];
    char s_77155e0f[12];
+   char s_04ef691f[32];
+   char s_af2f5836[49];
+   char s_04f38f4d[30];
    char s_3936fe87[78];
    char s_393985fc[23];
    char s_57110ba8[38];
@@ -1893,7 +1911,7 @@ static const struct
    char s_ccfe26d1[13];
    char s_728ca1d3[3];
    char s_5f612db6[13];
-   char s_9f29f708[20];
+   char s_9f29f708[16];
    char s_a9145c83[10];
    char s_22f52844[12];
    char s_06842e2b[14];
@@ -2346,10 +2364,16 @@ static const struct
    char s_4b582a0c[31];
    char s_61213f1d[12];
    char s_95e4b29f[71];
+   char s_1ee69db0[28];
+   char s_0cfd4fd0[11];
+   char s_d64659c4[8];
    char s_0861dea4[15];
+   char s_d7deafe0[23];
    char s_83217fd0[12];
    char s_60258de0[7];
    char s_34b2592a[3];
+   char s_740ed6e5[15];
+   char s_c7ab7873[32];
    char s_83ecb279[12];
    char s_317b17ed[8];
    char s_94c8d15f[8];
@@ -2359,6 +2383,7 @@ static const struct
    char s_93ac5ec8[33];
    char s_6cdf4f07[35];
    char s_a03f132e[42];
+   char s_39f58459[46];
    char s_b3d1e989[8];
    char s_50eb4c56[5];
    char s_a023adce[12];
@@ -2368,6 +2393,9 @@ static const struct
    char s_205caaf6[8];
    char s_eb4eab83[5];
    char s_c6d5bcb5[5];
+   char s_74bced1d[41];
+   char s_a9ef6377[23];
+   char s_62b8a0ba[42];
    char s_74dcbca5[20];
    char s_3ea80887[20];
    char s_c0cdc638[30];
@@ -2388,6 +2416,7 @@ static const struct
    char s_f57f6158[11];
    char s_69b801ef[9];
    char s_a40653a7[25];
+   char s_e67b672d[33];
    char s_52e3d6ea[34];
    char s_f387bafb[13];
    char s_2c868ae4[12];
@@ -2418,6 +2447,13 @@ static const struct
    char s_ef3d53d8[21];
    char s_6dcc2f9f[13];
    char s_7a23be94[12];
+   char s_07483307[20];
+   char s_166f5c6e[14];
+   char s_33da1d6d[20];
+   char s_33dae115[21];
+   char s_b2b1563a[20];
+   char s_fa98dce0[30];
+   char s_2bf7c29f[13];
    char s_48431da6[8];
    char s_21d7a1f6[6];
    char s_d2fe3ed2[18];
@@ -2428,6 +2464,7 @@ static const struct
    char s_258060bf[14];
    char s_3bbc8b05[39];
    char s_e595f6df[36];
+   char s_2a5f7cd7[29];
    char s_f90edcc2[50];
 #if defined(RARCH_MOBILE)
    char s_774121c7[66];
@@ -2467,6 +2504,8 @@ static const struct
    char s_e0609921[15];
    char s_b3c7fa93[21];
    char s_f6a0db44[21];
+   char s_a9af29b1[36];
+   char s_2cdaeb21[34];
    char s_4eecff92[31];
    char s_0ca1128d[17];
    char s_65e6ea7c[6];
@@ -2594,7 +2633,6 @@ static const struct
    char s_f46c7b83_1[92];
    char s_cb67f2a4[34];
    char s_3c3598a9[47];
-   char s_3bac47bd[352];
    char s_90e7db40[416];
    char s_b07cd572_0[500];
    char s_b07cd572_1[20];
@@ -2687,6 +2725,7 @@ static const struct
    char s_19b6373a[87];
    char s_f63531f4[62];
    char s_f83d414f[96];
+   char s_539bbd17[182];
    char s_65e89a5b[44];
    char s_1757ee76[68];
    char s_11fd7702[79];
@@ -2865,8 +2904,12 @@ static const struct
    char s_976074ee[119];
    char s_2269a679[238];
    char s_5c8a1d63[84];
+   char s_56c3b5ab[213];
    char s_744c0f80[53];
+   char s_d69a22ce[189];
+   char s_71d0e309[197];
    char s_2aa39081[43];
+   char s_89e39933[231];
 #ifdef ANDROID
    char s_50f43cfa[255];
 #endif
@@ -2881,6 +2924,9 @@ static const struct
    char s_d0b943e8[68];
    char s_4f2077b6[154];
    char s_5b920f01[113];
+   char s_71b76e1b[210];
+   char s_f96ddf69[90];
+   char s_d84f519b[186];
    char s_5d20ea2c[58];
    char s_b339b327[157];
    char s_a9e0aaa3[92];
@@ -2921,6 +2967,8 @@ static const struct
    char s_a11a7d85[174];
    char s_e25b6b30[161];
    char s_4b347c28[50];
+   char s_44480960[66];
+   char s_94c28c23[65];
    char s_0832c8b3[55];
    char s_109af481[57];
    char s_bcea0a06[28];
@@ -3006,6 +3054,7 @@ static const struct
    char s_47df0525[61];
    char s_03e272fc[52];
    char s_5c2cc60f[80];
+   char s_d6d33eda[159];
    char s_d6d8d4be[139];
    char s_e86d2704[75];
    char s_dda608b5[301];
@@ -3054,6 +3103,7 @@ static const struct
    char s_eaa7274b[44];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_2172fd53[269];
    char s_bb34fe6a[189];
 #endif
 #endif
@@ -3085,6 +3135,7 @@ static const struct
    char s_e29f9539[106];
    char s_824e2e0c[165];
    char s_c5a7263e[45];
+   char s_8eb8e1f3[299];
    char s_d9b9d57a[72];
    char s_858f09e9[147];
    char s_608f698e[113];
@@ -3312,7 +3363,7 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    char s_35a04463[51];
    char s_1b6cda21[53];
-   char s_ac6ebea0[160];
+   char s_ac6ebea0[241];
 #endif
    char s_d2ae640b[76];
    char s_8e5bac99[81];
@@ -3505,7 +3556,7 @@ static const struct
    char s_c7c09eb0[100];
    char s_7d4adfaf[43];
    char s_6f122164[44];
-   char s_61942cf6[52];
+   char s_61942cf6[179];
    char s_6b7e9271[109];
    char s_68b6e245[55];
    char s_3bb4fbf9[110];
@@ -3805,11 +3856,21 @@ static const struct
    char s_34400c79[73];
    char s_34400c7a[70];
    char s_4a09218b[39];
+   char s_dea334de[176];
+   char s_cacc1492[52];
+   char s_c0c6924e[202];
+   char s_c83fcc7e[239];
+   char s_7efaf561[212];
+   char s_c90aff27[75];
    char s_19d092ed[43];
    char s_1eebf4f8[181];
    char s_2f2ca2b6[185];
    char s_2c9be635[133];
    char s_c8fb9e1c[317];
+   char s_d575c847[227];
+   char s_3479844b[143];
+   char s_b9a05725[192];
+   char s_68880a28[189];
    char s_05ec12e6[217];
    char s_b5a603de[68];
    char s_d9c2db25[67];
@@ -3822,7 +3883,9 @@ static const struct
    char s_f4e4e921[217];
    char s_7968f59d[42];
    char s_8cee3615[213];
+   char s_87ba81db[147];
    char s_58c80718[291];
+   char s_dc6f9d69[55];
    char s_894ecb9a[376];
    char s_67d549fd[43];
    char s_afac733c[37];
@@ -3851,6 +3914,9 @@ static const struct
    char s_3c679f0a[291];
    char s_5b059407[132];
    char s_36033606[181];
+   char s_5d342d82[234];
+   char s_bd0312ce[102];
+   char s_3ba8b64d[124];
    char s_d62ed5dc[354];
    char s_2e69508b[331];
    char s_7e96b5ce[48];
@@ -3858,6 +3924,7 @@ static const struct
    char s_3547866d_1[16];
    char s_d73ccef3[394];
    char s_81163acd[402];
+   char s_ecc9b2c5[294];
    char s_c2314d30[215];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[195];
@@ -3892,6 +3959,9 @@ static const struct
    char s_6ac06624[143];
    char s_f765b650[48];
    char s_7059a595[56];
+   char s_c7d672df_0[500];
+   char s_c7d672df_1[49];
+   char s_c85b2f0f[301];
    char s_6d1448c0[39];
    char s_cf0b487b[86];
    char s_840f4569[29];
@@ -4100,12 +4170,14 @@ static const struct
    char s_b0e4eb88[54];
    char s_9589cc66[65];
    char s_a0cd3533[40];
+   char s_29ffdb0d[64];
    char s_135957cd[39];
    char s_96b546df[56];
    char s_731e9836[34];
    char s_ffb4111b[42];
    char s_a363d07a[41];
    char s_9e5bd759[38];
+   char s_b880bab5[52];
    char s_8d7296ed[39];
    char s_21580d7c[99];
    char s_fc5e1d2c[63];
@@ -4172,9 +4244,16 @@ static const struct
    char s_265dbfa3[46];
    char s_b0e45a57[30];
    char s_543fcabd[11];
+   char s_a4487584[96];
+   char s_8b9891bf[77];
    char s_59212b5f[13];
    char s_f26b6cff[28];
+   char s_58909bc7[15];
+   char s_bd1fdff6[12];
+   char s_d9d9a1be[12];
    char s_a63c824a[10];
+   char s_b969706a[243];
+   char s_a3f6ebc3[18];
    char s_a9f3b2c3[15];
    char s_0e7aca8a[21];
    char s_ab1afe7c[19];
@@ -4183,9 +4262,11 @@ static const struct
    char s_026b7f11[15];
    char s_3b7c0dd8[21];
    char s_b43a100a[19];
+   char s_b8bfcaec[192];
    char s_51df877a[39];
    char s_136098cd[31];
    char s_f482576f[34];
+   char s_d2b9475b[100];
    char s_0408afc3[14];
    char s_654f5308[21];
    char s_c4a8e97c[12];
@@ -4302,7 +4383,12 @@ static const struct
    char s_8ab54d62[93];
    char s_aa554847[23];
    char s_ac2c797c[22];
+   char s_c5fee1cb[57];
    char s_272dccbd[16];
+   char s_7da2720b[59];
+   char s_9e9f8d9d[224];
+   char s_fdc097e9[100];
+   char s_5fe664ca[74];
    char s_80528b14[43];
    char s_eae21890[39];
    char s_1451fe0d[42];
@@ -4341,6 +4427,7 @@ static const struct
    char s_49a2e6d9[30];
    char s_d6c12228[41];
    char s_af784f91[39];
+   char s_002fd84a[92];
    char s_f1337004[51];
    char s_ada3890a[15];
    char s_bc246801[26];
@@ -4436,6 +4523,8 @@ static const struct
    char s_1a5c7ca6[19];
    char s_1a5c880d[17];
    char s_7b23d9e6[16];
+   char s_77943569[104];
+   char s_04305cd6[146];
    char s_c182bd2e[5];
    char s_0110d0c7[16];
    char s_c6156015[21];
@@ -4543,8 +4632,8 @@ static const struct
    "nieras som:\ninput rate * (1,0 +/- (max timing skew))",
    "Om detta v\303\244rde s\303\244tts till 0 inaktiveras hastighetskontrollen. Alla andra v\303\244"
    "rden styr delta f\303\266r ljudfrekvensreglering.\nDefinierar hur mycket ing\303\245ngsfrekvense"
-   "n kan justeras dynamiskt. Inmatningshastigheten definieras som:\\inmatningshastighet * (1,0 +/- "
-   "(hastighetskontroll delta))",
+   "n kan justeras dynamiskt. Inmatningshastigheten definieras som:\ninmatningshastighet * (1,0 +/- "
+   "(hastighetskontrolldelta))",
    "Invecklad kosinus implementering.",
    "N\303\244rmsta omsamplings implementering. Denna omsampling ignorerar kvalitetsinst\303\244llnin"
    "gen.",
@@ -4718,10 +4807,10 @@ static const struct
    "ue kommer netplay att starta i \303\245sk\303\245darl\303\244ge. Det g\303\245r alltid att \303"
    "\244ndra l\303\244ge senare.",
    "G\303\245 bak\303\245t till f\303\266r\303\244ldrakatalogen.",
-   "Avsluta RetroArch. D\303\266da programmet p\303\245 ett h\303\245rt s\303\244tt (SIGKILL, etc.) "
-   "kommer att terminera RetroArch utan att spara konfigurationen i n\303\245got fall. P\303\245 Uni"
-   "x-liknande system till\303\245ter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigur"
-   "ationen sparas om aktiverad.",
+   "Avsluta RetroArch. Om programmet avslutas med tv\303\245ng, till exempel med SIGKILL eller likna"
+   "nde, avslutas RetroArch utan att konfigurationen sparas. P\303\245 Unix-liknande system medf\303"
+   "\266r SIGINT/SIGTERM en ordnad avslutning och att konfigurationen sparas om det \303\244r aktive"
+   "rat.",
    "Om kontrollpunkter som lagrats i \303\245teruppspelningar ska avserialiseras under normal uppspe"
    "lning. B\303\266r st\303\244llas in p\303\245 true f\303\266r de flesta k\303\244rnor, men vissa"
    " kan uppvisa oj\303\244mnt beteende vid avserialisering av inneh\303\245ll.",
@@ -4780,15 +4869,15 @@ static const struct
    "\303\266relseklarheten men minskar ljusstyrkan. Inte till\303\244mpligt vid 120 Hz eftersom det "
    "bara finns en enda extra 60 Hz-bildruta, s\303\245 den m\303\245ste vara svart, annars skulle BF"
    "I inte vara aktiv alls.",
-   "Infogar svart(a) ram(ar) mellan bildrutorna f\303\266r \303\266kad r\303\266relseklarhet. Anv"
-   "\303\244nd endast det alternativ som \303\244r avsett f\303\266r din aktuella bildsk\303\244rms "
-   "uppdateringsfrekvens. Anv\303\244nds inte vid uppdateringsfrekvenser som inte \303\244r multipla"
-   "r av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, subframes, Frame De"
-   "lay eller Sync to Exact Content Framerate. Att l\303\245ta systemets VRR vara p\303\245 \303\244"
-   "r ok, men inte med den inst\303\244llningen. Om du m\303\244rker - n\303\245gon - tillf\303\244l"
-   "lig bildretention b\303\266r ",
-   "du inaktivera vid 120 Hz och f\303\266r h\303\266gre Hz justera inst\303\244llningen f\303\266r "
-   "m\303\266rka bilder nedan.",
+   "Infogar svarta ramar mellan bildrutorna f\303\266r \303\266kad r\303\266relseklarhet. Anv\303"
+   "\244nd endast det alternativ som \303\244r avsett f\303\266r bildsk\303\244rmens aktuella uppdat"
+   "eringsfrekvens. Anv\303\244nd inte vid uppdateringsfrekvenser som inte \303\244r multiplar av 60"
+   " Hz, till exempel 144 Hz och 165 Hz. Kombinera inte med Swap Interval > 1, subframes, Frame Dela"
+   "y eller Sync to Exact Content Framerate. Systemets VRR kan vara p\303\245, men inte den h\303"
+   "\244r inst\303\244llningen. Om du m\303\244rker tillf\303\244llig kvarst\303\245ende bild b\303"
+   "\266r du inaktivera funktio",
+   "nen vid 120 Hz. Vid h\303\266gre frekvenser justerar du inst\303\244llningen f\303\266r m\303"
+   "\266rka bildrutor nedan.",
    "Inaktivera komposition med tv\303\245ng. Inaktivering \303\244r endast giltig p\303\245 Windows "
    "Vista/7 f\303\266r tillf\303\244llet.",
    "LibCACA-drivrutin. Ger teckenutmatning ist\303\244llet f\303\266r grafik. Rekommenderas inte f"
@@ -4982,6 +5071,7 @@ static const struct
    "H\303\266gtalarkonfiguration f\303\266r utdata",
    "Utmatningsfrekvens (Hz)",
    "Utmatning",
+   "Grund pipelinek\303\266",
    "Dynamisk ljudfrekvenskontroll",
    "Ljudomsamplare",
    "H\303\266gkvalitativ sinc-\303\266versampling",
@@ -5151,6 +5241,7 @@ static const struct
    "Destruktiv molnsynkning",
    "Backend f\303\266r molnsynk",
    "Aktivera molnsynkronisering",
+   "NFS-underkatalog f\303\266r synkronisering",
    "L\303\266senord",
    "L\303\266s konflikter: Beh\303\245ll lokal",
    "L\303\266s konflikter: Beh\303\245ll server",
@@ -5385,9 +5476,12 @@ static const struct
    "Serienummer",
    "L\303\244s",
    "Standardtidsinst\303\244llning",
-   "Endast en del av EDID-informationen kunde l\303\244sas.",
+   "Endast en del av EDID-informationen kunde l\303\244sas",
    "En inbyggd bildsk\303\244rm i en b\303\244rbar eller allt-i-ett-dator har ingen EDID. En extern "
    "bildsk\303\244rm som ansluts via DDC har det.",
+   "Android till\303\245ter inte appar att l\303\244sa EDID fr\303\245n en telefons eller surfplatta"
+   "s inbyggda sk\303\244rm. En tv-box som driver en bildsk\303\244rm via HDMI exponerar det d\303"
+   "\244r enheten till\303\245ter det.",
    "EDID-version",
    "Bildsk\303\244rmsinformation",
    "Orientering",
@@ -5506,16 +5600,20 @@ static const struct
    "Analog till Digital typ",
    "Sikta fr\303\245n analog pinne",
    "Alla kontrollerar menyn",
+   "Analog motd\303\266dzon",
    "Analog d\303\266dzon",
    "V\303\244nster Analog X- (V\303\244nster)",
    "V\303\244nster Analog X+ (H\303\266ger)",
    "V\303\244nster Analog Y- (Upp)",
    "V\303\244nster Analog Y+ (Ner)",
+   "Yttre d\303\266dzon f\303\266r analog styrspak",
+   "Analog svarskurva",
    "H\303\266ger Analog X- (V\303\244nster)",
    "H\303\266ger Analog X+ (H\303\266ger)",
    "H\303\266ger Analog Y- (Upp)",
    "H\303\266ger Analog Y+ (Ner)",
    "Analog k\303\244nslighet",
+   "D\303\266dzon f\303\266r analog avtryckare",
 #ifdef ANDROID
    "Anv\303\244nd Systemtangentbord",
 #endif
@@ -5535,6 +5633,9 @@ static const struct
    "Bind tidsgr\303\244ns",
    "Tidsgr\303\244ns f\303\266r inmatningsblock",
    "Tr\303\266skelv\303\244rde f\303\266r inmatningsknappsaxel",
+   "Svarstid",
+   "H\303\245ll ned i",
+   "Vad kombinationen g\303\266r",
    "D\303\266lj obundna inmatningsbeskrivningar f\303\266r k\303\244rnor",
    "Visa etiketter f\303\266r inmatningsbeskrivningar",
    "Enhetindex",
@@ -5611,6 +5712,7 @@ static const struct
    "Spelfokus (v\303\244xla)",
    "F\303\245nga muspekaren (v\303\244xla)",
    "Stoppa Inspelning/Repris",
+   "Centrera headsetsk\303\244rmar igen",
    "Laserpekare (v\303\244xla)",
    "L\303\244s in tillst\303\245nd",
    "Visa/d\303\266lj meny",
@@ -5709,6 +5811,7 @@ static const struct
    "Avsluta (spelkontroll kombo)",
    "Ommappningar f\303\266r inmatning",
    "Mappa om kontroller f\303\266r denna k\303\244rna",
+   "Hitta en knapp genom att trycka p\303\245 den",
    "Mappad Port",
    "Sortera ommappningar efter gamepad",
    "RetroPad-bindningar",
@@ -5766,6 +5869,7 @@ static const struct
    "Port %u kontroller",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Spelarlampor f\303\266r handkontroll",
    "XInput f\303\266r Xbox-handkontroller (omstart kr\303\244vs)",
 #endif
 #endif
@@ -5815,6 +5919,7 @@ static const struct
    "2 (Varning)",
    "Huvudsaklig",
    "Huvudmeny",
+   "H\303\266j huvudtr\303\245dens prioritet",
    "Hantera",
    "Standardk\303\244rna",
    "<Ospecificerat>",
@@ -6228,6 +6333,7 @@ static const struct
    "D\303\266lj sidof\303\244ltet",
    "Simpel svart",
    "Simpel vit",
+   "Ljus",
    "Gr\303\245 M\303\266rk",
    "Gr\303\245 Ljus",
    "Gruvbox M\303\266rk",
@@ -6316,6 +6422,9 @@ static const struct
    "Spela repris",
    "Uppdatera spellisteminiatyrer",
    "Touch-st\303\266d",
+   "Ansluter via Bluetooth till: %s",
+   "Ansluter via Bluetooth till den h\303\244r datorn (%s)",
+   "Para ihop med den h\303\244r datorn",
    "Enhetens sk\303\244rmnamn: %s\nEnhetens konfigurationsnamn: %s\nEnhets-VID/PID: %d/%d",
    "Port %d Enhetsnamn: %s",
    "Ingen automatisk konfigurationsprofil",
@@ -6600,7 +6709,7 @@ static const struct
    "Heltalsskala",
    "AV",
    "Startkatalog",
-   "Konfigurationsfiler",
+   "Konfigurationer",
    "F\303\244rgtema",
    "\303\204ppelgr\303\266n",
    "Klassisk bl\303\245",
@@ -7055,10 +7164,16 @@ static const struct
    "Meddelandeposition (vertikalt)",
    "Sk\303\244rmindex",
    "Aktivera helsk\303\244rm utan h\303\244nsyn till notch p\303\245 Android och iOS-enheter",
+   "Handkontroller f\303\266r headset",
+   "Kombinerat",
+   "Separat",
    "Sk\303\244rmavst\303\245nd",
+   "Headsetutdata (OpenXR)",
    "Laserpekare",
    "Alltid",
    "Av",
+   "Headsetets val",
+   "Headsetets uppdateringsfrekvens",
    "Sk\303\244rmbredd",
    "180 gr.",
    "270 gr.",
@@ -7068,6 +7183,7 @@ static const struct
    "\303\226verskanningskorrigering (Topp)",
    "Anv\303\244nd inspelning med efterfilter",
    "Styr upprepningstakten fr\303\245n bildsk\303\244rmen",
+   "Sl\303\244pp bildrutor n\303\244r kodaren inte hinner med",
    "Anpassa",
    "H\303\266g",
    "F\303\266rlustfri",
@@ -7077,6 +7193,9 @@ static const struct
    "Anpassa",
    "H\303\266g",
    "L\303\245g",
+   "Videobuffert f\303\266r inspelning (bildrutor)",
+   "Spela in endast spelet",
+   "Anv\303\244nd maskinvaruaccelererad videokodare",
    "Inspelningskvalitet",
    "Inspelnings-tr\303\245dar",
    "Vertikal uppdateringsfrekvens",
@@ -7097,6 +7216,7 @@ static const struct
    "Underskala",
    "Skalning",
    "Skannlinjesynkronisering",
+   "F\303\266rskjutning f\303\266r Scanline Sync",
    "Rullande skanningslinjesimulering",
    "Sk\303\244rmlayout",
    "Horisontell",
@@ -7127,6 +7247,13 @@ static const struct
    "Bilinj\303\244r-filtrering",
    "Mjukt filter",
    "Stereol\303\244ge",
+   "Anaglyf (r\303\266d/cyan)",
+   "Sammanfl\303\244tad",
+   "Sida vid sida (hel)",
+   "Sida vid sida (halv)",
+   "\303\226verst och nederst",
+   "Stereoskopisk 3D och sk\303\244rmar",
+   "V\303\244xla \303\266gon",
    "Anpassa",
    "Lokal",
    "Streamingkvalitet",
@@ -7137,6 +7264,7 @@ static const struct
    "Tr\303\245dad video",
    "Synkronisering av tr\303\245dad videovisning",
    "Upprepa bildrutor med tr\303\245dad video",
+   "H\303\266j videotr\303\245dens prioritet",
    "Anv\303\244nd Metal-argumentbuffertar (kr\303\244ver omstart)",
 #if defined(RARCH_MOBILE)
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X (st\303\245ende orientering)",
@@ -7176,6 +7304,8 @@ static const struct
    "Aktivera Wi-Fi",
    "Anslut till n\303\244tverk",
    "Anslut till n\303\244tverk",
+   "Energischema med l\303\245g f\303\266rdr\303\266jning",
+   "Inaktivera processorns vilol\303\244gen",
    "Opacitetsfaktor f\303\266r f\303\244rgtema",
    "Aktuell menyikon",
    "Ingen",
@@ -7394,11 +7524,6 @@ static const struct
    "\200\235utdataenhet\342\200\235.",
    "Synkronisera ljud. Rekommenderas.",
    "\303\204ndra inst\303\244llningar f\303\266r ljudsynkronisering.",
-   "Omsampla, filtrera och mixa ljud i ljudtr\303\245den i st\303\244llet f\303\266r i varje bildrut"
-   "a. Ger samma latens som den bildrutesynkrona kedjan vid alla inst\303\244llningar f\303\266r lju"
-   "dlatens, med frekvenskontroll uppm\303\244tt i enhetens egen takt och omsamplaren utanf\303\266r"
-   " bildrutebudgeten. Ljuddrivrutiner som inte kan v\303\244ckas av enheten beh\303\245ller den bil"
-   "drutesynkrona kedjan.",
    "Be operativsystemet prioritera ljudtr\303\245den f\303\266re resten av gr\303\244nssnittet, s"
    "\303\245 att en belastad bildruta mer s\303\244llan g\303\266r att ljudenheten f\303\245r f\303"
    "\266r lite processortid. G\303\266r det m\303\266jligt att anv\303\244nda l\303\244gre ljudlaten"
@@ -7544,6 +7669,9 @@ static const struct
    "Vilket n\303\244tverksprotokoll f\303\266r molnlagring som ska anv\303\244ndas.",
    "F\303\266rs\303\266k att synkronisera konfigurationer, SRAM och tillst\303\245nd till en molnlag"
    "ringsleverant\303\266r.",
+   "Katalog under NFS-exporten f\303\266r molnsynkronisering. Filer lagras i katalogen cloud_sync. L"
+   "\303\244mna tomt f\303\266r att anv\303\244nda NFS-underkatalog eller ange / f\303\266r att anv"
+   "\303\244nda exportens rot.",
    "Ditt l\303\266senord f\303\266r ditt molnlagringskonto.",
    "L\303\266s alla konflikter genom att ladda upp lokala filer till servern.",
    "L\303\266s alla konflikter genom att ladda ner serverfiler, ers\303\244tter lokala kopior.",
@@ -7825,8 +7953,21 @@ static const struct
    "\244r den h\303\245lls p\303\245 sk\303\244rmen, med pinnens mittpunkt i centrum. Flera spelare "
    "kan d\303\245 sikta var f\303\266r sig utan mus. Vapnets knappar binds som vanligt nedan.",
    "Till\303\245t alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn.",
+   "Starta en styrspaks r\303\266relse p\303\245 den h\303\244r andelen av fullt utslag s\303\245 sn"
+   "art den l\303\244mnar d\303\266dzonen. F\303\266r k\303\244rnor som har en egen d\303\266dzon so"
+   "m annars skulle l\303\244ggas ovanp\303\245 denna: st\303\244ll in den p\303\245 k\303\244rnans "
+   "d\303\266dzon.",
    "Ignorera analoga spakr\303\266relser under d\303\266dzon-v\303\244rde.",
+   "Behandla en styrspak som lutas s\303\245 n\303\244ra kanten som helt utslagen, f\303\266r styrsp"
+   "akar som slits och inte n\303\245r hela v\303\244gen. R\303\266relsen mellan d\303\266dzonen och"
+   " kanten sprids \303\266ver hela intervallet.",
+   "Hur en styrspaks r\303\266relse \303\266kar med dess lutning. 1,0 \303\244r en rak linje. \303"
+   "\226ver 1,0 r\303\266r sig sm\303\245 lutningar mindre f\303\266r finare styrning n\303\244ra mi"
+   "tten. Under 1,0 r\303\266r de sig mer f\303\266r snabbare respons.",
    "Justera k\303\244nsligheten f\303\266r analoga spakar.",
+   "Ignorera den f\303\266rsta delen av en analog avtryckares r\303\266relse eller en tryckk\303\244"
+   "nslig knapps nedtryckning. Resten av r\303\266relsen skalas om till hela intervallet. Detta g"
+   "\303\244ller inte styrspakens d\303\266dzon, som endast g\303\244ller styrspakarna.",
 #ifdef ANDROID
    "Anv\303\244nd Androids systemtangentbord f\303\266r textinmatning i menyn i st\303\244llet f\303"
    "\266r det inbyggda sk\303\244rmtangentbordet. Aktiverar inklistring fr\303\245n urklipp och l"
@@ -7858,6 +7999,14 @@ static const struct
    "\303\244nd det om du har problem med samtidiga knapptryckningar (endast Android).",
    "Hur l\303\245ngt en spak m\303\245ste lutas f\303\266r att resultera i en knapptryckning vid anv"
    "\303\244ndning av 'Analog till Digital'.",
+   "Omedelbar aktiveras s\303\245 fort alla knappar \303\244r nedtryckta. H\303\245ll ned v\303\244n"
+   "tar tills de har h\303\245llits ned tillsammans under en tid som du v\303\244ljer h\303\244rn"
+   "\303\244st, s\303\245 att ett kort tryck mitt i ett spel inte g\303\266r n\303\245got.",
+   "Hur l\303\244nge alla knappar i kombinationen m\303\245ste h\303\245llas ned samtidigt innan den"
+   " aktiveras.",
+   "Vad som sker n\303\244r alla knappar i kombinationen h\303\245lls ned samtidigt: en snabbtangent"
+   ", ett kommando utan snabbtangent eller ett av dina makron. Knapparna skickas fortfarande till sp"
+   "elet.",
    "Den fysiska kontrollern som den k\303\244nns igen av RetroArch.",
    "F\303\266redragen: om angiven enhet finns, kommer den att allokeras till denna spelare. Reserver"
    "ad: ingen annan styrenhet kommer att tilldelas f\303\266r denna spelare.",
@@ -7936,6 +8085,8 @@ static const struct
    "\303\266ren och begr\303\244nsas till RetroArch-visningsf\303\266nstret, vilket f\303\266rb\303"
    "\244ttrar relativ musinmatning.",
    "Stoppar inspelning/uppspelning av aktuell repris.",
+   "Placerar headsetets sk\303\244rmar framf\303\266r den plats du tittar p\303\245 nu.",
+   "V\303\244xlar headsetets laserpekare mellan av och dess senaste l\303\244ge.",
    "L\303\244ser in sparat tillst\303\245nd fr\303\245n aktuellt vald plats.",
    "V\303\244xlar den aktuella sk\303\244rmen mellan meny och inneh\303\245ll.",
    "Sl\303\245r p\303\245/av ljudutg\303\245ngen.",
@@ -8073,6 +8224,9 @@ static const struct
    "Ommappningar f\303\266r inmatning lagras i denna katalog.",
    "\303\205sidos\303\244tt nuvarande med de ommappade bindningarna f\303\266r den nuvarande k\303"
    "\244rnan.",
+   "Tryck p\303\245 en knapp eller f\303\266r en styrspak p\303\245 handkontrollen f\303\266r den h"
+   "\303\244r porten, eller en tangent som \303\244r bunden till den, s\303\245 hoppar listan nedan "
+   "till den.",
    "Anger vilken k\303\244rnport som tar emot indata fr\303\245n front-endens handkontrollsport %u. "
    "\342\200\235Ingen\342\200\235 skickar inte indata till n\303\245gon k\303\244rnport.",
    "Ommappningar till\303\244mpas endast till aktiv gamepad till vilken de sparades.",
@@ -8162,6 +8316,10 @@ static const struct
    "\303\204ndra k\303\244rnspecifika inmatningsmappningar.",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Med styrenhetsdrivrutinen \342\200\235raw\342\200\235 visar du varje handkontrolls port p\303"
+   "\245 egna lampor: spelarlamporna p\303\245 en DualSense, ljuslistens f\303\244rg p\303\245 en Du"
+   "alShock 4 (bl\303\245, r\303\266d, gr\303\266n, rosa). De f\303\266ljer handkontrollen n\303\244"
+   "r dess port \303\244ndras och slocknar n\303\244r detta st\303\244ngs av.",
    "Med handkontrolldrivrutinen \342\200\235raw\342\200\235 l\303\244ses Xbox-kompatibla handkontrol"
    "ler via XInput: separata avtryckare och XInputs knapplayout. Andra handkontroller l\303\244ses f"
    "ortfarande med r\303\245 indata.",
@@ -8205,6 +8363,11 @@ static const struct
    "Vid loggning till fil, dirigera utdata fr\303\245n varje RetroArch session till en ny tidsst\303"
    "\244mplad fil. Inaktiverad skrivs loggen \303\266ver varje g\303\245ng RetroArch startas om.",
    "Logga h\303\244ndelser till en terminal eller fil.",
+   "Beg\303\244r att operativsystemet schemal\303\244gger huvudtr\303\245den, som k\303\266r k\303"
+   "\244rnan och menyn, f\303\266re vanliga tr\303\245dar utan realtidsschemal\303\244ggning. Inneh"
+   "\303\245ll som k\303\266rs utan begr\303\244nsning, som vid snabbspolning, tar d\303\245 process"
+   "ortid fr\303\245n andra program f\303\266rst. Ett system som nekar beh\303\245ller standardprior"
+   "iteten.",
    "V\303\244lj en standardk\303\244rna att anv\303\244nda vid start av genoms\303\266kt inneh\303"
    "\245ll.",
    "V\303\244lj en Logiqx eller MAME List XML DAT-fil f\303\266r att m\303\266jligg\303\266ra automa"
@@ -8580,7 +8743,7 @@ static const struct
    "het lyssnar p\303\245 sin egen port, r\303\244knat fr\303\245n basporten.",
    "\303\204ndra server- och n\303\244tverksinst\303\244llningar.",
 #ifdef _3DS
-   "Aktivera New3DS-klockhastighet (804 Mhz) och L2-cache.",
+   "Aktivera New3DS-klockhastighet (804 MHz) och L2-cache.",
 #endif
 #ifdef HAVE_NFSCLIENT
    "Bl\303\244ddra i den konfigurerade NFS-exporten efter inneh\303\245ll.",
@@ -8606,8 +8769,9 @@ static const struct
 #ifdef HAVE_NFSCLIENT
    "S\303\266kv\303\244g till underkatalog under exporten. Valfri.",
    "Sekunder att v\303\244nta p\303\245 servern f\303\266r varje beg\303\244ran.",
-   "Version 3 anv\303\244nder portmapper och MOUNT-tj\303\244nsten; version 4 ansluter direkt till N"
-   "FS-porten och anv\303\244nder exporten som serverns pseudos\303\266kv\303\244g i filsystemet.",
+   "Version 3 anv\303\244nder portmappare och MOUNT-tj\303\244nsten. Version 4 ansluter direkt till "
+   "NFS-porten och anv\303\244nder exporten som serverns pseudos\303\266kv\303\244g i filsystemet. D"
+   "en anv\303\244nder den senaste av versionerna 4.2, 4.1 och 4.0 som servern erbjuder.",
 #endif
    "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r spelkontroller ansluts/kopplas fr\303"
    "\245n.",
@@ -8926,7 +9090,9 @@ static const struct
    "\245terspolningshastigheten.",
    "\303\204ndra inst\303\244llningar f\303\266r bak\303\245tspolning.",
    "St\303\244ll in startkatalog f\303\266r filbl\303\244ddraren.",
-   "Standardkonfigurationsfilen lagras i denna katalog.",
+   "Katalog f\303\266r sparade konfigurationer, \303\245sidos\303\244ttningar samt alternativ f\303"
+   "\266r k\303\244rnor och inneh\303\245ll. Spara huvudkonfiguration anv\303\244nder s\303\266kv"
+   "\303\244gen till den aktiva konfigurationen.",
    "V\303\244lj ett annat f\303\244rgtema. Om du v\303\244ljer \342\200\235Anpassad\342\200\235 kan "
    "du anv\303\244nda f\303\266rinst\303\244llda filer f\303\266r menyteman.",
    "V\303\244lj ett f\303\266rinst\303\244llt menytema fr\303\245n filbl\303\244ddraren.",
@@ -9410,6 +9576,22 @@ static const struct
    "Ange anpassad X-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den v\303\244nstra kanten.",
    "Ange anpassad Y-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den nedre kanten.",
    "V\303\244lj vilken sk\303\244rm som ska anv\303\244ndas.",
+   "Hur headsetets handkontroller anv\303\244nds. Kombinerat g\303\266r b\303\245da till en handkont"
+   "roll f\303\266r spelare 1. Separat g\303\266r v\303\244nster handkontroll till spelare 1 och h"
+   "\303\266ger till spelare 2.",
+   "Hur l\303\245ngt framf\303\266r dig headsetet visar sk\303\244rmarna.",
+   "Visa ocks\303\245 inneh\303\245ll i ett OpenXR-headset: varje sk\303\244rm som en egen flytande "
+   "sk\303\244rm, med b\303\245da \303\266gonen i stereoskopisk 3D och menyn framf\303\266r dem. End"
+   "ast Vulkan. F\303\266nstret beh\303\245ller sin vanliga utdata.",
+   "Var en handkontrolls avtryckare pekar och vidr\303\266r i st\303\244llet f\303\266r att trycka p"
+   "\303\245 L2 eller R2. Automatisk: i menyn n\303\244r den \303\244r \303\266ppen och p\303\245 se"
+   "kund\303\244ra sk\303\244rmar som peksk\303\244rm. Alltid: p\303\245 alla sk\303\244rmar, f\303"
+   "\266r ljuspistoler. Av: ingenstans.",
+   "Uppdateringsfrekvensen som ska beg\303\244ras fr\303\245n headsetet. Automatisk v\303\244ljer de"
+   "n som passar inneh\303\245llet b\303\244st. Headsetets val beg\303\244r aldrig n\303\245gon. Inn"
+   "eh\303\245llet k\303\266rs synkront med headsetet n\303\244r frekvensen passar.",
+   "Bredden p\303\245 huvudsk\303\244rmen i headsetet. \303\226vriga sk\303\244rmar anpassas till de"
+   "n.",
    "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
    "Justera besk\303\244rning av \303\266verskanning av sk\303\244rmen genom att minska bildstorleke"
    "n med ett angivet antal skanlinjer (tagen fr\303\245n sk\303\244rmens nedre kant). Kan orsaka sk"
@@ -9424,6 +9606,17 @@ static const struct
    "ssnittets egen klocka. G\303\244ller d\303\244r videodrivrutinen kan rapportera detta; klockan a"
    "nv\303\244nds annars och n\303\244r rapporten blir inaktuell. Inaktivera f\303\266r att alltid a"
    "nv\303\244nda klockan.",
+   "N\303\244r kodaren f\303\266r inspelning eller str\303\266mning inte hinner med, hoppa \303\266v"
+   "er bildrutor och fyll ljudluckor med tystnad i st\303\244llet f\303\266r att sakta ned spelet. I"
+   "naktivera f\303\266r att beh\303\245lla alla bildrutor p\303\245 bekostnad av ryckighet.",
+   "Bildrutor i k\303\266 mellan spelet och kodaren. St\303\266rre v\303\244rden tar upp korta avbro"
+   "tt i kodaren men anv\303\244nder mer minne. G\303\244ller n\303\244sta inspelning.",
+   "Uteslut menyn, aviseringar, sk\303\244rmmeddelanden och \303\266verl\303\244gg fr\303\245n GPU-i"
+   "nspelningar, och uteslut tiden i menyn. N\303\244r funktionen \303\244r av spelar inspelningar i"
+   "n exakt vad som visas p\303\245 sk\303\244rmen.",
+   "Koda H.264 med en maskinvaruaccelererad kodare n\303\244r en s\303\245dan finns, och anv\303\244"
+   "nd annars programvara (libx264). G\303\244ller de inbyggda kvalitetsf\303\266rinst\303\244llning"
+   "arna, inte egna konfigurationer.",
    "Bildsk\303\244rmens vertikala uppdateringsfrekvens. Anv\303\244nds f\303\266r att ber\303\244kna"
    " en l\303\244mplig ljudinmatningsfrekvens och som den bildsk\303\244rmsperiod som tr\303\245dad "
    "video synkroniseras efter n\303\244r drivrutinen inte kan rapportera en.",
@@ -9446,10 +9639,13 @@ static const struct
    "Synkronisera videopresentationen med f\303\266ruts\303\244gelse av skannlinjeposition baserat p"
    "\303\245 k\303\244rntid. Krav: VSync av, bildrutef\303\266rdr\303\266jning av, bildsk\303\244rme"
    "ns Hz n\303\244ra 1\303\227 k\303\244rnans FPS och GPU med maximal klockfrekvens.",
+   "Justera f\303\266rskjutningen f\303\266r Scanline Sync manuellt. Annars ber\303\244knas f\303"
+   "\266rskjutningen utifr\303\245n storleken p\303\245 vertikal blankning och bildrutekache.",
    "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
    "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
    "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Hur sk\303\244rmarna i system med flera sk\303\244rmar ska ordnas.",
    "L\303\245t SDL-f\303\266nstret v\303\244xla mellan bildsk\303\244rmsl\303\244gena som det listar"
    ". \342\200\235Automatiskt\342\200\235 anv\303\244nder detta endast n\303\244r den inbyggda bilds"
    "k\303\244rmsservern inte kan v\303\244xla l\303\244ge. \342\200\235Alltid\342\200\235 \303\245si"
@@ -9508,6 +9704,13 @@ static const struct
    "L\303\244gg till en liten osk\303\244rpa i bilden f\303\266r att mjuka upp h\303\245rda pixelkan"
    "ter. Det h\303\244r alternativet har mycket liten inverkan p\303\245 prestandan. B\303\266r inak"
    "tiveras n\303\244r Shaders anv\303\244nds.",
+   "Hur b\303\245da \303\266gonen i stereoskopiskt 3D-inneh\303\245ll ska visas. 2D visar endast v"
+   "\303\244nster \303\266ga. Sida vid sida (hel) passar appar f\303\266r headsetvisning och skel"
+   "\303\266gd visning. Sida vid sida (halv) och \303\266verst och nederst passar 3D-tv-apparater.",
+   "\303\204ndra hur stereoskopiskt 3D-inneh\303\245ll och flera sk\303\244rmar fr\303\245n k\303"
+   "\244rnor som har st\303\266d f\303\266r dem visas.",
+   "Byt v\303\244nster och h\303\266ger \303\266gonbild. Anv\303\244nds vid skel\303\266gd visning e"
+   "ller n\303\244r en sk\303\244rm visar \303\266gonen eller raderna omv\303\244nda.",
    "Bitdjup f\303\266r den slutliga utdataytan n\303\244r HDR \303\244r av. 10 bitar tar bort bandni"
    "ng som orsakas av shadrar som m\303\266rkar ned bilden kraftigt, till exempel CRT-str\303\245lpr"
    "ofiler och maskeringsgaller f\303\266r apertur. Faller tillbaka till 8 bitar om bildsk\303\244rm"
@@ -9539,6 +9742,10 @@ static const struct
    "g av svarta bildrutor och shader-effekter f\303\266r uppdateringsfrekvens stabila n\303\244r k"
    "\303\244rnan hackar. G\303\244ller d\303\244r videodrivrutinen kan upprepa en bildruta, men inte"
    " med shader-delbildrutor.",
+   "Beg\303\244r att operativsystemet schemal\303\244gger tr\303\245den Threaded Video f\303\266re v"
+   "anliga tr\303\245dar utan realtidsschemal\303\244ggning: klassen Games i Windows, anv\303\244nda"
+   "rinteraktiv tj\303\244nstekvalitet i Apple-system och ett l\303\244gre nice-v\303\244rde i Linux"
+   " och Android. Ett system som nekar beh\303\245ller standardprioriteten.",
    "F\303\266rs\303\266k att f\303\266rb\303\244ttra prestandan genom att anv\303\244nda Metal-argum"
    "entbuffertar. Vissa k\303\244rnor kan kr\303\244va detta. Detta kan g\303\266ra att vissa shader"
    "s slutar fungera, s\303\244rskilt p\303\245 \303\244ldre h\303\245rdvara eller operativsystem.",
@@ -9601,6 +9808,19 @@ static const struct
    "sk\303\244rmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR).",
    "Wi-Fi-drivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
    "S\303\266k efter tr\303\245dl\303\266sa n\303\244tverk och etablera anslutning.",
+   "V\303\244xlar till en kopia av det aktiva energischemat i Windows som h\303\245ller processorn p"
+   "\303\245 full hastighet: l\303\244gsta och h\303\266gsta processortillst\303\245ndet \303\244r 1"
+   "00 %, energipreferensen \303\244r prestanda och inga k\303\244rnor parkeras. Prestandatillst\303"
+   "\245nd utv\303\244rderas var femte sekund i st\303\244llet f\303\266r var 15:e ms, och PCI Expre"
+   "ss-l\303\244nkar och USB-portar h\303\245lls utanf\303\266r energisparl\303\244get. Detta minska"
+   "r k\303\244rnavbrott och f\303\266rdr\303\266jningar vid v\303\244ckning. G\303\244ller endast n"
+   "\303\244r datorn \303\244r ansluten till n\303\244tstr\303\266m. Det ursprunglig",
+   "a schemat \303\245terst\303\244lls n\303\244r programmet avslutas.",
+   "N\303\244r energischemat med l\303\245g f\303\266rdr\303\266jning \303\244r p\303\245, h\303\245"
+   "ll \303\244ven varje processork\303\244rna utanf\303\266r sina vilol\303\244gen s\303\245 att in"
+   "gen beh\303\266ver vakna innan den k\303\266rs. Processorn drar d\303\245 full effekt och blir v"
+   "arm \303\244ven n\303\244r den inte har n\303\245got att g\303\266ra. G\303\244ller endast n\303"
+   "\244r datorn \303\244r ansluten till n\303\244tstr\303\266m.",
    "\303\204ndra f\303\244rgtemats opacitet i procent.",
    "Aktuell menyikon kan d\303\266ljas, under den horisontella menyn eller i sidhuvudets titel.",
    "Rita ikoner f\303\266r menyposter.",
@@ -9833,12 +10053,14 @@ static const struct
    "Misslyckades med att acceptera inkommande \303\245sk\303\245dare.",
    "Misslyckades med att tilldela minne f\303\266r korrigerat inneh\303\245ll...",
    "Misslyckades med att l\303\244gga till skivan",
+   "Det gick inte att aktivera energischemat med l\303\245g f\303\266rdr\303\266jning",
    "Misslyckades med att till\303\244mpa shader.",
    "Misslyckades med att till\303\244mpa shader f\303\266rinst\303\244llning:",
    "Misslyckades med att binda uttag.",
    "Misslyckades med att ansluta till klient.",
    "Misslyckades med att ansluta till v\303\244rd.",
    "Misslyckades med att skapa katalogen.",
+   "Det gick inte att inaktivera processorns vilol\303\244gen",
    "Misslyckades med att g\303\245 in i GameMode",
    "Misslyckades med att g\303\245 in i GameMode - kontrollera att GameMode-daemon \303\244r install"
    "erad och k\303\266rs",
@@ -9907,9 +10129,20 @@ static const struct
    "Tryck p\303\245 tangentbord, mus eller spelkontroll",
    "Sl\303\244pp tangenter och knappar!",
    "Tidsgr\303\244ns",
+   "Handkontrollen f\303\266r port %u ansluter till den h\303\244r datorn via Bluetooth n\303\244r d"
+   "en kopplas fr\303\245n.",
+   "Det gick inte att para ihop handkontrollen f\303\266r port %u med den h\303\244r datorn.",
    "Mata in fusk",
    "Filnamn f\303\266r inmatningsfusk",
+   "V\303\244lj \303\245tg\303\244rd",
+   "H\303\245ll ned i",
+   "%s sekunder",
    "Omedelbar",
+   "Knappar som h\303\245lls ned samtidigt och aktiverar en snabbtangent, ett kommando eller ett mak"
+   "ro. H\303\266ger: h\303\245ll ned knapparna som ska anv\303\244ndas och v\303\244lj sedan vad de"
+   " ska g\303\266ra. V\303\244nster: v\303\244lj vad de ska g\303\266ra. OK: skriv den. Start: ta b"
+   "ort den.",
+   "St\303\244ll in knappar",
    "Ange l\303\266senord",
    "L\303\266senord felaktigt.",
    "L\303\266senord korrekt.",
@@ -9918,9 +10151,14 @@ static const struct
    "Ange l\303\266senord",
    "L\303\266senord felaktigt.",
    "L\303\266senord korrekt.",
+   "Knappar som trycks \303\245t dig ett steg i taget. Varje knapp h\303\245lls ned ett antal bildru"
+   "tor i spelet, skrivna som \342\200\235ned 2, ned+h\303\266ger 2, a 4\342\200\235. En kombination"
+   " aktiverar den. Start: ta bort den.",
    "Filnamn f\303\266r inmatnings\303\245sidos\303\244ttning",
    "Filnamn f\303\266r inmatningsf\303\266rval",
    "Filnamn f\303\266r inmatningsommappning",
+   "Tryck p\303\245 en knapp eller f\303\266r en styrspak p\303\245 handkontrollen f\303\266r port %"
+   "u\n(Tidsgr\303\244ns: %u sekunder)",
    "D\303\266p om titel",
    "Installerar k\303\244rna: ",
    "Gr\303\244nssnitt",
@@ -10042,7 +10280,15 @@ static const struct
    "\244r spellisteposten.",
    "K\303\244rnor \303\266verhoppade: ",
    "K\303\244rnor uppdaterade: ",
+   "Headsetutdata kunde inte starta. F\303\266nstret visar utdata.",
    "Laserpekare: %s",
+   "Headsetutdata startar n\303\244r inneh\303\245llet har l\303\244sts in igen.",
+   "Headsetet k\303\266rs i %u Hz, vilket inte passar spelets %.2f fps. R\303\266relserna blir rycki"
+   "ga. St\303\244ll in headsetets uppdateringsfrekvens f\303\266r RetroArch p\303\245 en multipel a"
+   "v spelets frekvens (i SteamVR: inst\303\244llningar f\303\266r VR-video).",
+   "Headsetsessionen avslutades. St\303\244ng av headsetutdata och sl\303\245 p\303\245 den igen f"
+   "\303\266r att f\303\266rs\303\266ka igen.",
+   "Headsetutdata \303\244r av. Ingen OpenXR-k\303\266rtid eller n\303\245got headset hittades.",
    "Tangentbords\303\266verl\303\244gg \303\244r inte inst\303\244llt.",
    "Sparar inte. \303\205sidos\303\244ttningar aktiva.",
    "Fel vid borttagning av \303\245sidos\303\244ttningar.",
@@ -10085,6 +10331,8 @@ static const struct
    "L\303\244ser f\303\266rsta datasp\303\245ret...",
    "Status f\303\266r intern lagring: Skrivskyddad",
    "Status f\303\266r intern lagring: L\303\244s/skriv",
+   "Den h\303\244r videodrivrutinen kan inte spela in endast spelet. Menyn och meddelanden spelas in"
+   ".",
    "Inspelning avslutad p\303\245 grund av storleks\303\244ndring.",
    "Spelar in till",
    "Dirigerar om fuskfil till",
@@ -10187,11 +10435,15 @@ static const struct
    "Tillst\303\245ndsstorlek",
    "Tillst\303\245ndsplats",
    "Tar sk\303\244rmdump.",
+   "Verifiering av TLS-certifikat \303\244r inaktiverad. S\303\244kra anslutningar kontrolleras inte"
+   " och kan avlyssnas.",
+   "S\303\244ker anslutning nekades eftersom serverns certifikat inte kunde verifieras. Se loggen el"
+   "ler inst\303\244llningen \342\200\235Verifiering av TLS-certifikat\342\200\235.",
    "till",
    "V\303\244xla metadata",
    "Helsk\303\244rmsminiatyrer",
    "\303\205ngrade inl\303\244sningstillst\303\245nd.",
-   "\303\205ngrar sparl\303\244ge\342\200\246",
+   "\303\205ngrar sparl\303\244ge...",
    "Ok\303\244nd",
    "Ok\303\244nd kompilator",
    "Ok\303\244nt netplay-kommando togs emot",
@@ -10210,7 +10462,7 @@ static const struct
    "Videofilter: Aktivera",
    "Videouppdateringsfrekvens \303\244ndrad till %s Hz.",
    "Ber\303\244kningen av visningsomr\303\245dets storlek misslyckades! Forts\303\244tter att anv"
-   "\303\244nda r\303\245data. Det kommer troligen inte att fungera korrekt\342\200\246",
+   "\303\244nda r\303\245data. Det kommer troligen inte att fungera korrekt...",
    "Misslyckades med att st\303\244nga virtuell skivsl\303\244de.",
    "Misslyckades med att mata ut virtuell skivsl\303\244de.",
    "Synkronisera till inneh\303\245llets exakta bildfrekvens inaktiverat.",
@@ -10228,7 +10480,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (202838u
+      (sizeof(msg_hash_sv_blob) == (211077u
 #ifdef ANDROID
        + 361u
 #endif
@@ -10309,6 +10561,7 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 31u
        + 49u
 #endif
 #endif
@@ -10574,6 +10827,7 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 269u
        + 189u
 #endif
 #endif
@@ -10635,7 +10889,7 @@ typedef char msg_hash_sv_blob_check[
 #ifdef HAVE_NFSCLIENT
        + 51u
        + 53u
-       + 160u
+       + 241u
 #endif
 #ifdef HAVE_GAME_AI
        + 29u
@@ -11056,6 +11310,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -11225,6 +11480,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -11461,6 +11717,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -11579,16 +11836,20 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -11608,6 +11869,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -11684,6 +11948,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
@@ -11782,6 +12047,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -11838,6 +12104,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -11887,6 +12154,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
@@ -12298,6 +12566,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
@@ -12386,6 +12655,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
@@ -13115,10 +13387,16 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -13128,6 +13406,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_ALLOW_FRAME_DROP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -13137,6 +13416,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
@@ -13157,6 +13439,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
@@ -13187,6 +13470,13 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -13197,6 +13487,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13236,6 +13527,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -13358,7 +13651,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -13450,6 +13742,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -13628,8 +13921,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_ANTI_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_OUTER_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_RESPONSE_CURVE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_TRIGGER_DEADZONE,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
@@ -13644,6 +13941,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -13684,6 +13984,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -13769,6 +14071,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
@@ -13817,6 +14120,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -13848,6 +14152,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -14568,11 +14873,21 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_ALLOW_FRAME_DROP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_FIFO_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_GAME_ONLY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RECORD_HW_ENCODER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -14585,7 +14900,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -14614,12 +14931,16 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -14654,6 +14975,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
@@ -14862,12 +15185,14 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   (uint32_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -14934,9 +15259,16 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_BT_PAIRED,
+   (uint32_t)MSG_INPUT_BT_PAIR_FAILED,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_FOR,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_SECONDS,
    (uint32_t)MSG_INPUT_COMBO_INSTANT,
+   (uint32_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
+   (uint32_t)MSG_INPUT_COMBO_SET_BUTTONS,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -14945,9 +15277,11 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_MACRO_ROW_SUBLABEL,
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERFACE,
@@ -15064,7 +15398,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_FAILED,
    (uint32_t)MSG_OPENXR_LASER_POINTER,
+   (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
+   (uint32_t)MSG_OPENXR_RATE_MISFIT,
+   (uint32_t)MSG_OPENXR_SESSION_ENDED,
+   (uint32_t)MSG_OPENXR_UNAVAILABLE,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,
@@ -15103,6 +15442,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_READING_FIRST_DATA_TRACK,
    (uint32_t)MSG_READ_ONLY,
    (uint32_t)MSG_READ_WRITE,
+   (uint32_t)MSG_RECORDING_GAME_ONLY_UNSUPPORTED,
    (uint32_t)MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
    (uint32_t)MSG_RECORDING_TO,
    (uint32_t)MSG_REDIRECTING_CHEATFILE_TO,
@@ -15198,6 +15538,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TLS_VERIFY_DISABLED,
+   (uint32_t)MSG_TLS_VERIFY_FAILED,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,

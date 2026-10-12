@@ -471,6 +471,7 @@ static const struct
    char s_0a05438c[31];
    char s_1324c306[30];
    char s_152cd261[28];
+   char s_91318729[29];
    char s_7d00b7ed[10];
    char s_7bd7aa88[36];
    char s_0674b554[47];
@@ -1982,7 +1983,6 @@ static const struct
    char s_ccfe26d1[19];
    char s_728ca1d3[3];
    char s_5f612db6[16];
-   char s_9f29f708[22];
    char s_a9145c83[16];
    char s_22f52844[10];
    char s_06842e2b[17];
@@ -2771,7 +2771,6 @@ static const struct
    char s_f46c7b83_1[162];
    char s_cb67f2a4[28];
    char s_3c3598a9[42];
-   char s_3bac47bd[393];
    char s_90e7db40[492];
    char s_b07cd572_0[500];
    char s_b07cd572_1[65];
@@ -2864,6 +2863,7 @@ static const struct
    char s_19b6373a[126];
    char s_f63531f4[59];
    char s_f83d414f[97];
+   char s_539bbd17[220];
    char s_65e89a5b[47];
    char s_1757ee76[86];
    char s_11fd7702[113];
@@ -3689,7 +3689,6 @@ static const struct
    char s_c7c09eb0[110];
    char s_7d4adfaf[32];
    char s_6f122164[51];
-   char s_61942cf6[71];
    char s_6b7e9271[139];
    char s_68b6e245[69];
    char s_3bb4fbf9[142];
@@ -4662,6 +4661,8 @@ static const struct
    char s_1a5c7ca6[16];
    char s_1a5c880d[16];
    char s_7b23d9e6[24];
+   char s_77943569[119];
+   char s_04305cd6[145];
    char s_c182bd2e[3];
    char s_0110d0c7[29];
    char s_c6156015[30];
@@ -5491,6 +5492,7 @@ static const struct
    "Sioncr\303\263n\303\272 Scamall Millti\303\272il",
    "C\303\272ltaca Sioncr\303\263naithe Cloud",
    "Cumasaigh Sioncr\303\263n\303\272 Cloud",
+   "Sioncr\303\263naigh Fo-eolaire NFS",
    "Pasfhocal",
    "R\303\251itigh Coimhlint\303\255: Fan \303\201iti\303\272il",
    "R\303\251iteach Coimhlint\303\255: Coinnigh an Freastala\303\255",
@@ -7026,7 +7028,6 @@ static const struct
    "Sc\303\241la Sl\303\241nuimhir",
    "AS",
    "Eolaire Tosaigh",
-   "Comhaid chumra\303\255ochta",
    "T\303\251ama Dathanna",
    "\303\232ll Glas",
    "Gorm Clasaiceach",
@@ -7933,12 +7934,6 @@ static const struct
    "n r\303\241ta mar 'Doirteal'.",
    "Sioncr\303\263naigh fuaim. Molta.",
    "Athraigh socruithe sioncr\303\263naithe fuaime.",
-   "Athshampl\303\241il, scag agus measc fuaim ar an sn\303\241ithe fuaime seachas taobh istigh de g"
-   "ach fr\303\241ma. An moill ch\303\251anna leis an gcos\303\241n fr\303\241ma-shioncr\303\263nach"
-   " ag aon socr\303\272 Moill Fuaime, le rial\303\272 r\303\241ta \303\241 thomhas ag luas an fheis"
-   "te f\303\251in agus an t-athshampl\303\241la\303\255 lasmuigh den bhuis\303\251ad fr\303\241ma. "
-   "Coinn\303\255onn tiom\303\241naithe fuaime nach f\303\251idir leo m\303\272scailt ar an bhfeiste"
-   " an cos\303\241n fr\303\241ma-shioncr\303\263nach.",
    "Iarr ar an gc\303\263ras oibri\303\272ch\303\241in an sn\303\241ithe fuaime a sceideal\303\272 r"
    "oimh an gcuid eile den tosaigh, ionas go mbeidh fr\303\241ma gn\303\263thach n\303\255os l\303"
    "\272 seans ann go gcuirfidh s\303\251 isteach ar an ngl\303\251as fuaime. Ligeann s\303\251 don "
@@ -8109,6 +8104,10 @@ static const struct
    "\303\241id.",
    "D\303\251an iarracht cumra\303\255ochta\303\255, sram, agus st\303\241it a shioncron\303\272 le "
    "sol\303\241thra\303\255 st\303\263r\303\241la scamall.",
+   "Eolaire faoin easp\303\263rt\303\241il NFS le haghaidh sioncr\303\263n\303\272 n\303\251il. St"
+   "\303\263r\303\241iltear comhaid ina fhillte\303\241n *cloud_sync*. F\303\241g folamh \303\251 ch"
+   "un fho-eolaire NFS a \303\272s\303\241id, n\303\263 cuir isteach / chun fr\303\251amh na heasp"
+   "\303\263rt\303\241la a \303\272s\303\241id.",
    "Do phasfhocal do do chuntas st\303\263r\303\241la scamall.",
    "R\303\251itigh gach coimhlint tr\303\255 chomhaid \303\241iti\303\272la a uasl\303\263d\303\241i"
    "l chuig an bhfreastala\303\255.",
@@ -9770,7 +9769,6 @@ static const struct
    "ada\303\255onn luachanna n\303\255os airde luas an athruithe.",
    "Athraigh socruithe athchas\303\241la.",
    "Socraigh Eolaire Tosaigh don Bhrabhs\303\241la\303\255 Comhad.",
-   "St\303\263r\303\241iltear an comhad cumra\303\255ochta r\303\251amhshocraithe san eolaire seo.",
    "Roghnaigh t\303\251ama dathanna difri\303\272il. M\303\241 roghna\303\255onn t\303\272 'Sainchea"
    "ptha', is f\303\251idir comhaid r\303\251amhshocraithe t\303\251ama roghchl\303\241ir a \303\272"
    "s\303\241id.",
@@ -11291,6 +11289,11 @@ static const struct
    "M\303\251id an st\303\241it",
    "Sliot\303\241n st\303\241it",
    "Ag glacadh sc\303\241ile\303\241in.",
+   "T\303\241 f\303\255or\303\272 teastais TLS d\303\255chumasaithe. N\303\255 dh\303\251antar seice"
+   "\303\241il ar naisc shl\303\241vda agus is f\303\251idir iad a idircheapadh.",
+   "Di\303\272lta\303\255odh don nasc sl\303\241n: n\303\255orbh fh\303\251idir deimhni\303\272 an f"
+   "hreastala\303\255 a fh\303\255or\303\272. F\303\251ach an logchomhad n\303\263 an socr\303\272 '"
+   "F\303\255or\303\272 Deimhnithe TLS'.",
    "go",
    "Meiteashonra\303\255 a scor\303\241naigh",
    "Mionsamhlacha l\303\241nsc\303\241ile\303\241in",
@@ -11334,7 +11337,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (241598u
+      (sizeof(msg_hash_ga_blob) == (241625u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12337,6 +12340,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -13847,7 +13851,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
@@ -14631,7 +14634,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14723,6 +14725,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -15546,7 +15549,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
    (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -16516,6 +16518,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TLS_VERIFY_DISABLED,
+   (uint32_t)MSG_TLS_VERIFY_FAILED,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
