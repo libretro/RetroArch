@@ -11,6 +11,21 @@ RetroArch is primarily written in C89. Preserve the existing language and style 
 - Prefer the smallest change that completely solves the task.
 - Preserve existing architecture
 
+Read CODING-GUIDELINES before changing code: brace style, declarations,
+stack budgets and the never-block rule for the main thread are there.
+Subdirectories with rules of their own carry their own AGENTS.md.
+
+## Threads
+
+- Nothing may block: no sleeping, busy-waiting, wait-for-idle or round-trip
+  waits, least of all in the threaded video wrapper and the audio pipeline.
+  A design that needs to block is shaped wrong.
+- Do not add locks. Use retro_atomic.h, the SPSC rings (retro_spsc.h,
+  retro_waitable_spsc.h) and retro_eventcount.h.
+- Guard threaded code with HAVE_THREADS, and check it with a full
+  `./configure --disable-threads` build that links, not a single TU.
+- No logging inside pacing or sync paths.
+
 RetroArch contains deliberately complex, cross-file systems. Do not simplify, consolidate, refactor, or redesign an existing subsystem merely because its structure appears unnecessarily complicated.
 
 Complexity may exist for compatibility, platform, driver, or architectural reasons.
@@ -108,9 +123,10 @@ Regression tests must build on both Windows and Linux.
 
 If a change touches code already covered by the GitHub CI workflow regression tests (`.github/workflows/`), run those tests locally and make sure they still pass before presenting the change.
 
-- Find every workflow that builds or links the touched files, including samples/ and libretro-common/samples/ harnesses and tools/*.sh scripts.
-- Build and run them with the workflow's own configure line and flags, not a local approximation.
+- `tools/ci_local.py which <changed files>` lists the jobs that name them (through a sample's Makefile or a tools/ script too), the full-tree builds and the tree-wide checks.
+- `tools/ci_local.py run <workflow> --job <job>` runs that job's own steps, with its configure line, flags, matrix and environment. `--dry-run` prints them, `--clean-copy` runs on a fresh worktree of HEAD plus your changes, and container jobs run in their image through docker or podman.
 - Do not present a change while any of those tests fail.
+- A workflow construct `ci_local.py` cannot read fails `tools/ci_local.py selftest`, which CI runs; extend the script in the same change.
 
 ## Scope of changes
 

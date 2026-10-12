@@ -1,0 +1,48 @@
+name: CI local workflow runner
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  ci-local-selftest:
+    name: tools/ci_local.py reads and runs every workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: PyYAML for the parser comparison
+        shell: bash
+        run: |
+          set -eu
+          python3 -c 'import yaml' 2>/dev/null || sudo apt-get install -y -qq python3-yaml
+
+      - name: Self-test
+        shell: bash
+        run: |
+          set -eu
+          # Every workflow parses exactly as PyYAML reads it, every job and
+          # matrix combination resolves in a dry run, and a fixture job runs
+          # with GitHub's step semantics.
+          python3 tools/ci_local.py selftest
+
+      - name: A checker workflow, run through the runner
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/ci_local.py run Extern-C-Prototype-Check
