@@ -4297,17 +4297,21 @@ static void lane_frame_mem_mode(int mode, const uint8_t *ref,
 
    use_fb(mode);
    run_frames(10);
+   video_thread_wait_idle();
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
-   run_frames(60);
-   video_thread_wait_idle();
+   /* Measure frame storage without replacing queued frames. */
+   for (i = 0; i < 60; i++)
+   {
+      run_frames(1);
+      video_thread_wait_idle();
+   }
 #ifdef HAVE_GFX_INSTRUMENT
    {
       int fm     = gfx_instrument_get(GFX_INSTR_FRAME_MEM);
       int copies = gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST);
-      /* Every third frame is a dupe; the rest reach the driver unless
-       * the push replaced them first. A frame buffer still in flight
+      /* Every third frame is a dupe. A frame buffer still in flight
        * is swapped for a host one, which is copied, but not often. */
       if (in_place)
       {

@@ -110,6 +110,9 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - name: Match the runner's library deployment target
+      run: echo "MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)" >> "$GITHUB_ENV"
+
     - name: Configure and build (Makefile, no Qt)
       run: |
         set -o pipefail
@@ -117,11 +120,11 @@ jobs:
           --disable-networking --disable-sdl2 --disable-sdl --disable-translate \
           --disable-update_cores --disable-update_assets --disable-online_updater \
           --disable-cdrom --disable-7zip --disable-ssl 2>&1 | tail -5
-        make -j$(sysctl -n hw.ncpu) GFX_INSTRUMENT=1 2>&1 | grep -E "error|warning: unused" || true
+        make -j$(sysctl -n hw.ncpu) MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" GFX_INSTRUMENT=1 2>&1 | grep -E "error|warning: unused" || true
         test -x retroarch
 
     - name: Harness on Metal (RGB565 core, then XRGB8888)
       run: |
         set -o pipefail
-        SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video check-driver
-        HARNESS_CORE_XRGB8888=1 SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video check-driver
+        SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" check-driver
+        HARNESS_CORE_XRGB8888=1 SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" check-driver
