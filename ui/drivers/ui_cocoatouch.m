@@ -1811,6 +1811,8 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
 
    /* Show the keyboard */
    [app.keyboardTextField becomeFirstResponder];
+   if (len)
+      [app.keyboardTextField selectAll:nil];
    return true;
 }
 

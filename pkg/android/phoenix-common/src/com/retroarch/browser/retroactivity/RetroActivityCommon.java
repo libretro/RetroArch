@@ -1838,7 +1838,7 @@ public class RetroActivityCommon extends NativeActivity
         keyboardActive = true;
         keyboardSuppressWatcher = true;
         keyboardEditText.setText(initialText != null ? initialText : "");
-        keyboardEditText.setSelection(keyboardEditText.getText().length());
+        keyboardEditText.setSelection(0, keyboardEditText.getText().length());
         keyboardSuppressWatcher = false;
         if (label != null)
           keyboardEditText.setHint(label);

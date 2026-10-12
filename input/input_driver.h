@@ -309,6 +309,7 @@ struct input_keyboard_line
    size_t size;
    size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
+   bool select_all;
 };
 
 struct rarch_joypad_info
@@ -1287,6 +1288,7 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len);
  * NULL, and where the cursor stands in them. And whether the text box
  * has the focus, and not the on-screen keyboard. */
 const char *input_driver_keyboard_line_view(size_t *cursor);
+bool input_driver_keyboard_line_selected(void);
 bool input_driver_keyboard_textbox_focus(void);
 void input_driver_keyboard_line_end(void);
 bool input_driver_pointer_input_blocked(void);

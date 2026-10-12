@@ -3846,10 +3846,10 @@ void input_keyboard_line_append(struct input_keyboard_line *kb_line,
 {
    /* Need room for current content + inserted text + NUL terminator.
     * new_size is the string length after insertion (not counting NUL). */
-   size_t new_size     = kb_line->size + len;
+   size_t new_size     = kb_line->select_all ? len : kb_line->size + len;
 
    /* Overflow guard */
-   if (new_size < kb_line->size || new_size < len)
+   if ((!kb_line->select_all && new_size < kb_line->size) || new_size < len)
       return;
 
    /* Grow buffer with exponential strategy if needed */
@@ -3869,6 +3869,13 @@ void input_keyboard_line_append(struct input_keyboard_line *kb_line,
 
       kb_line->buffer   = newbuf;
       kb_line->capacity = new_cap;
+   }
+
+   if (kb_line->select_all)
+   {
+      kb_line->ptr        = 0;
+      kb_line->size       = 0;
+      kb_line->select_all = false;
    }
 
    /* Shift existing content after insertion point to make room */
@@ -3893,6 +3900,7 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.ptr          = 0;
    input_st->keyboard_line.size         = 0;
    input_st->keyboard_line.capacity     = 0;
+   input_st->keyboard_line.select_all   = false;
 }
 
 /* A line of text has been opened, or closed. This is the one place the
@@ -3923,6 +3931,7 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    kb_line->cb                 = NULL;
    kb_line->userdata           = NULL;
    kb_line->enabled            = false;
+   kb_line->select_all         = false;
    input_st->osk_textbox_focus = false;
    input_text_entry_changed(false);
 }
@@ -3939,6 +3948,7 @@ const char **input_keyboard_start_line(
    kb_line->cb                       = cb;
    kb_line->userdata                 = userdata;
    kb_line->enabled                  = true;
+   kb_line->select_all               = false;
    input_driver_st.osk_textbox_focus = false;
    input_text_entry_changed(true);
 
@@ -7917,7 +7927,7 @@ static bool input_keyboard_line_event(
 #ifdef HAVE_LANGEXTRA
    static uint32_t composition = 0;
    /* reset composition, when edit box is opened. */
-   if (state->size == 0)
+   if (state->size == 0 || state->select_all)
       composition = 0;
    /* reset composition, when 1 byte(=english) input */
    if (character && character < 0xff)
@@ -7969,7 +7979,14 @@ static bool input_keyboard_line_event(
    }
    else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
-      if (state->ptr && state->buffer)
+      if (state->select_all)
+      {
+         state->buffer[0] = '\0';
+         state->ptr = state->size = 0;
+         state->select_all = false;
+         word = state->buffer;
+      }
+      else if (state->ptr && state->buffer)
       {
          size_t ptr = state->ptr;
 
@@ -7990,20 +8007,10 @@ static bool input_keyboard_line_event(
    }
    else if (ISPRINT(c))
    {
-      char *newbuf = (char*)
-         realloc(state->buffer, state->size + 2);
-      if (!newbuf)
+      size_t new_size = state->select_all ? 1 : state->size + 1;
+      input_keyboard_line_append(state, &c, 1);
+      if (state->select_all || state->size != new_size)
          return false;
-
-      memmove(newbuf + state->ptr + 1,
-            newbuf + state->ptr,
-            state->size - state->ptr + 1);
-      newbuf[state->ptr] = c;
-      state->ptr++;
-      state->size++;
-      newbuf[state->size] = '\0';
-
-      state->buffer = newbuf;
 
       array[0] = c;
       array[1] = 0;
@@ -13839,6 +13846,11 @@ const char *input_driver_keyboard_line_view(size_t *cursor)
    return line->buffer;
 }
 
+bool input_driver_keyboard_line_selected(void)
+{
+   return input_driver_st.keyboard_line.select_all;
+}
+
 /* The keys go to the text and not to the on-screen keyboard: the text
  * box has the focus (Tab moves it). */
 bool input_driver_keyboard_textbox_focus(void)
@@ -13885,19 +13897,25 @@ const char **input_driver_text_entry_open(void *userdata,
          &input_driver_st.keyboard_line, cb);
    input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_TEXT);
    if (!string_is_empty(initial_text))
+   {
       input_driver_keyboard_line_append(initial_text, strlen(initial_text));
+      input_driver_st.keyboard_line.select_all =
+            input_driver_st.keyboard_line.size > 0;
+   }
 
 #if defined(HAVE_COCOATOUCH)
-   ios_keyboard_start((char**)buffer,
+   if (ios_keyboard_start((char**)buffer,
          &input_driver_st.keyboard_line.size,
          &input_driver_st.keyboard_line.ptr,
-         label, cb, userdata);
+         label, cb, userdata))
+      input_driver_st.keyboard_line.select_all = false;
 #elif defined(ANDROID)
-   if (config_get_ptr()->bools.input_android_system_keyboard)
-      android_keyboard_start((char**)buffer,
+   if (     config_get_ptr()->bools.input_android_system_keyboard
+         && android_keyboard_start((char**)buffer,
             &input_driver_st.keyboard_line.size,
             &input_driver_st.keyboard_line.ptr,
-            label, cb, userdata);
+            label, cb, userdata))
+      input_driver_st.keyboard_line.select_all = false;
 #endif
 
    return buffer;
@@ -13940,6 +13958,8 @@ void input_driver_osk_press(enum osk_type *osk_idx, int ptr,
  * remembered as the last one typed, as the on-screen keyboard's are. */
 void input_driver_keyboard_line_type(const char *word, size_t len)
 {
+   if (input_driver_st.keyboard_line.select_all && len)
+      input_driver_st.osk_textbox_focus = true;
    input_keyboard_line_append(&input_driver_st.keyboard_line, word, len);
    osk_update_last_codepoint(&input_driver_st.osk_last_codepoint,
          &input_driver_st.osk_last_codepoint_len, word);
@@ -16932,11 +16952,22 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
          return;
       }
 
+      if (line->select_all
+            && (code == RETROK_LEFT || code == RETROK_RIGHT
+               || (character >= 0x20 && character != 0x7f)))
+         input_st->osk_textbox_focus = true;
+
       if (input_st->osk_textbox_focus)
       {
          switch (code)
          {
             case RETROK_LEFT:
+               if (line->select_all)
+               {
+                  line->select_all = false;
+                  line->ptr = 0;
+                  return;
+               }
                if (line->ptr && line->buffer)
                {
                   line->ptr--;
@@ -16950,6 +16981,12 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
                }
                return;
             case RETROK_RIGHT:
+               if (line->select_all)
+               {
+                  line->select_all = false;
+                  line->ptr = line->size;
+                  return;
+               }
                if (line->buffer && line->ptr < line->size)
                {
                   line->ptr++;
@@ -16963,9 +17000,11 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
                }
                return;
             case RETROK_UP:
+               line->select_all = false;
                line->ptr = 0;
                return;
             case RETROK_DOWN:
+               line->select_all = false;
                line->ptr = line->size;
                return;
             default:

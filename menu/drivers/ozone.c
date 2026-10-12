@@ -7563,6 +7563,8 @@ OZONE_NOINLINE static void ozone_draw_osk(
    unsigned bottom_end            = video_height / 2;
    unsigned y_offset              = 0;
    bool draw_placeholder          = !str || !*str;
+   bool text_selected             = input_driver_keyboard_line_selected();
+   float selection_color[16];
    unsigned cursor_line           = 0;
    int cursor_x                   = -2;
    retro_time_t current_time      = menu_driver_get_current_time();
@@ -7729,6 +7731,9 @@ OZONE_NOINLINE static void ozone_draw_osk(
    if (cursor_line >= list_size)
       cursor_line = list_size - 1;
 
+   memcpy(selection_color, ozone->theme_dynamic.cursor_border, sizeof(selection_color));
+   gfx_display_set_alpha(selection_color, 0.35f);
+
    for (line = message; line; line = next ? next + 1 : NULL)
    {
       char line_buf[2048];
@@ -7745,6 +7750,17 @@ OZONE_NOINLINE static void ozone_draw_osk(
 
       memcpy(line_buf, line, _len);
       line_buf[_len] = '\0';
+
+      if (text_selected && !draw_placeholder && _len)
+         gfx_display_draw_quad(p_disp, userdata, video_dims,
+               margin + (padding * 2),
+               margin + padding + y_offset
+                     + ozone->fonts.entries_label.line_height
+                     - ozone->fonts.entries_label.line_ascender,
+               VIDEO_SCALE_PACK(font_driver_get_message_width(
+                     ozone->fonts.entries_label.font, line_buf, _len, 1.0f),
+                     ozone->fonts.entries_label.line_ascender),
+               video_dims, selection_color, NULL);
 
       gfx_display_draw_text(
             ozone->fonts.entries_label.font,
@@ -7764,7 +7780,8 @@ OZONE_NOINLINE static void ozone_draw_osk(
             false);
 
       /* Cursor/caret */
-      if ((i == cursor_line) && (ozone->flags & OZONE_FLAG_OSK_CURSOR))
+      if (!text_selected && (i == cursor_line)
+            && (ozone->flags & OZONE_FLAG_OSK_CURSOR))
          gfx_display_draw_quad(
                p_disp,
                userdata,
