@@ -53,6 +53,28 @@ shape in their MCP server configuration:
 The server speaks protocol revision 2026-07-28, and 2025-11-25, 2025-06-18
 and 2025-03-26 for clients that open with `initialize`.
 
+## Over stdin and stdout
+
+A client that starts RetroArch itself can talk to it on stdin and
+stdout instead of a port, with no token: only the process that started
+RetroArch holds the other ends.
+
+```json
+{
+  "retroarch": {
+    "command": "/path/to/retroarch",
+    "args": ["--mcp-stdio"]
+  }
+}
+```
+
+Each message is one line of JSON. stdout is kept for them; whatever
+else would write there, RetroArch's own log and any core's included,
+goes to stderr. The MCP Server setting does not need to be on for this.
+Over stdin and stdout RetroArch also offers logging: after
+`logging/setLevel`, what it logs at that level and above arrives as
+`notifications/message`. When the client closes stdin, RetroArch quits.
+
 ## What the tools do
 
 Each command is one tool, named as the command (`GET_STATUS`,

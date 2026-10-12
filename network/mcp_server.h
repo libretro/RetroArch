@@ -38,6 +38,13 @@ RETRO_BEGIN_DECLS
 command_t *command_mcp_new(uint16_t port, const char *bind_address,
       const char *token);
 
+/* The stdio transport (--mcp-stdio): claim takes stdin and stdout for
+ * it, early, and points what else writes to stdout at stderr; new
+ * makes the server on them, NULL until claimed. */
+bool command_mcp_stdio_claim(void);
+bool command_mcp_stdio_claimed(void);
+command_t *command_mcp_stdio_new(void);
+
 RETRO_END_DECLS
 
 #endif

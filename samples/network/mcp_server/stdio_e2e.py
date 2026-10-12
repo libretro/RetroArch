@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""retroarch --mcp-stdio, end to end, against the video_views test core:
+the handshake, the tool list, RUN_FRAMES stepping a running core,
+SET_INPUT reaching it (it logs the pad it reads), GET_LOG, log lines as
+notifications/message, and quitting when stdin closes.
+
+Usage: stdio_e2e.py <retroarch> <video_views_libretro.so>
+"""
+import json, os, subprocess, sys, tempfile, time, select
+
+ra, core = sys.argv[1], sys.argv[2]
+cfgdir = tempfile.mkdtemp()
+cfg = os.path.join(cfgdir, 'retroarch.cfg')
+with open(cfg, 'w') as f:
+    f.write('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\n'
+            'menu_driver = "rgui"\nlog_verbosity = "true"\nfrontend_log_level = "1"\n'
+            'pause_nonactive = "false"\nconfig_save_on_exit = "false"\n')
+p = subprocess.Popen([ra, '--mcp-stdio', '-v', '-c', cfg, '-L', core],
+                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                     stderr=open(os.path.join(cfgdir, 'stderr.log'), 'wb'))
+buf = b''
+fails = 0
+
+
+def check(what, ok):
+    global fails
+    print('%-60s %s' % (what, 'ok' if ok else 'FAIL'))
+    if not ok:
+        fails += 1
+
+
+def send(obj):
+    p.stdin.write((json.dumps(obj) + '\n').encode())
+    p.stdin.flush()
+
+
+def recv(want_id, timeout=20):
+    """Messages until the one answering want_id; returns (answer, notes)."""
+    global buf
+    notes = []
+    end = time.time() + timeout
+    while time.time() < end:
+        while b'\n' in buf:
+            line, buf = buf.split(b'\n', 1)
+            msg = json.loads(line)   # every stdout line is JSON
+            if msg.get('id') == want_id:
+                return msg, notes
+            notes.append(msg)
+        r, _, _ = select.select([p.stdout], [], [], 0.2)
+        if r:
+            chunk = os.read(p.stdout.fileno(), 65536)
+            if not chunk:
+                break
+            buf += chunk
+    return None, notes
+
+
+def call(i, name, args=None):
+    send({'jsonrpc': '2.0', 'id': i, 'method': 'tools/call',
+          'params': {'name': name, 'arguments': args or {}}})
+    msg, notes = recv(i)
+    text = msg and msg['result']['content'][-1]['text']
+    return msg, text, notes
+
+
+send({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
+      'params': {'protocolVersion': '2025-06-18', 'capabilities': {},
+                 'clientInfo': {'name': 'e2e', 'version': '1'}}})
+msg, _ = recv(1, 60)
+check('initialize over stdio', msg and msg['result']['serverInfo']['name'] == 'RetroArch')
+check('logging is offered', msg and 'logging' in msg['result']['capabilities'])
+send({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
+send({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}})
+msg, _ = recv(2)
+names = [t['name'] for t in msg['result']['tools']] if msg else []
+for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
+          'GET_CORE_OPTION', 'GET_MEMORY_MAP'):
+    check('tool %s listed' % n, n in names)
+
+# wait for the core to be running
+st = ''
+for i in range(50):
+    _, st, _ = call(100 + i, 'GET_STATUS')
+    if st and ('PLAYING' in st or 'PAUSED' in st):
+        break
+    time.sleep(0.2)
+check('content running: ' + (st or '').strip(), st and 'PLAYING' in st)
+
+
+def frame_count(i):
+    _, t, _ = call(i, 'GET_OPTION', {'option': 'frame_count'})
+    try:
+        return int(t.split('\t')[1])
+    except Exception:
+        return None
+
+msg, t, _ = call(200, 'RUN_FRAMES', {'count': 30})
+check('RUN_FRAMES answers after the frames: ' + (t or '').strip(),
+      t and t.startswith('RUN_FRAMES 30') and not msg['result']['isError'])
+_, st, _ = call(201, 'GET_STATUS')
+check('and leaves it paused', st and 'PAUSED' in st)
+a = frame_count(202)
+call(203, 'RUN_FRAMES', {'count': 10})
+b = frame_count(204)
+check('10 frames run: %s -> %s' % (a, b), a is not None and b is not None and b - a == 10)
+time.sleep(0.5)
+c = frame_count(205)
+check('and none while paused after', c == b)
+
+msg, t, _ = call(210, 'SET_INPUT', {'player': 1, 'control': 'a', 'value': 1})
+check('SET_INPUT: ' + (t or '').strip(), t and t.startswith('1\ta\t'))
+msg, t, _ = call(211, 'RELEASE_INPUT', {})
+check('RELEASE_INPUT', t and 'none\tnone' in t)
+
+msg, t, _ = call(220, 'GET_LOG', {})
+check('GET_LOG has lines and NEXT', t and '\nNEXT ' in '\n' + t and '[INFO]' in t)
+
+send({'jsonrpc': '2.0', 'id': 230, 'method': 'logging/setLevel',
+      'params': {'level': 'info'}})
+_, notes = recv(230)
+for k, (name, args) in enumerate([('SET_INPUT', {'player': 1, 'control': 'a', 'value': 1}),
+                                  ('RUN_FRAMES', {'count': 3}),
+                                  ('RELEASE_INPUT', {}),
+                                  ('RUN_FRAMES', {'count': 3}),
+                                  ('GET_STATUS', {})]):
+    _, _, n2 = call(240 + k, name, args)
+    notes += n2
+logs = [n['params']['data'] for n in notes if n.get('method') == 'notifications/message']
+print('   notifications:', [l[:72] for l in logs[:4]])
+check('the core reads SET_INPUT\'s A (bit 8) on the frames run',
+      any('buttons=0x0100' in l for l in logs))
+check('log lines arrive as notifications after setLevel',
+      any(n.get('method') == 'notifications/message' for n in notes))
+
+p.stdin.close()
+try:
+    rc = p.wait(30)
+    check('closing stdin quits (exit %d)' % rc, True)
+except subprocess.TimeoutExpired:
+    p.kill()
+    check('closing stdin quits', False)
+with open(os.path.join(cfgdir, 'stderr.log'), 'rb') as f:
+    err = f.read()
+check('the log went to stderr', b'[INFO]' in err)
+print('FAIL' if fails else 'PASS')
+sys.exit(1 if fails else 0)

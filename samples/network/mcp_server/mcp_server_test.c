@@ -29,6 +29,18 @@
 #include <net/net_socket.h>
 #include <formats/rjson.h>
 #include <features/features_cpu.h>
+#if defined(_WIN32)
+#include <io.h>
+#include <fcntl.h>
+#include <windows.h>
+#define read  _read
+#define write _write
+#define close _close
+#define dup2  _dup2
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 #include "../../../command.h"
 #include "../../../network/mcp_server.h"
@@ -121,6 +133,37 @@ const struct cmd_map *command_hotkey_list(size_t *count)
 { *count = sizeof(test_hotkeys) / sizeof(test_hotkeys[0]); return test_hotkeys; }
 
 bool command_interfaces_held(void) { return false; }
+
+/* The log ring, as GET_LOG's notifications read it */
+static const char *ring_lines[8];
+static size_t      ring_head;
+size_t verbosity_ring_read(size_t since, char *s, size_t len,
+      size_t *first, size_t *next)
+{
+   size_t _len = 0;
+   if (since > ring_head)
+      since = ring_head;
+   *first = since;
+   for (; since < ring_head; since++)
+   {
+      size_t n = strlen(ring_lines[since]);
+      if (_len + n + 1 > len)
+         break;
+      memcpy(s + _len, ring_lines[since], n);
+      _len += n;
+   }
+   *next = since;
+   return _len;
+}
+
+static int quits;
+bool command_event(enum event_command action, void *data)
+{
+   (void)data;
+   if (action == CMD_EVENT_QUIT)
+      quits++;
+   return true;
+}
 
 bool command_run(command_t *handle, const char *name, const char *arg)
 {
@@ -273,6 +316,171 @@ static char *call(const char *name, const char *args)
          "\"tools/call\",\"params\":{\"name\":\"%s\",\"arguments\":%s}}",
          name, args ? args : "{}");
    return b;
+}
+
+/* ---- the stdio transport ---- */
+
+static int stdio_in  = -1;   /* the test writes requests here */
+static int stdio_out = -1;   /* and reads answers here */
+
+static void stdio_send(const char *s)
+{
+   if (write(stdio_in, s, (unsigned)strlen(s)) < 0)
+      check("a request was written", false);
+}
+
+/* What the server answers within a few polls, as one string */
+static char *stdio_read(command_t *cmd, char *out, size_t cap)
+{
+   size_t got = 0;
+   int    i;
+   out[0] = '\0';
+   for (i = 0; i < 50; i++)
+   {
+      int n;
+      if (cmd)
+         cmd->poll(cmd);
+#if defined(_WIN32)
+      {
+         DWORD avail = 0;
+         HANDLE h    = (HANDLE)_get_osfhandle(stdio_out);
+         if (!PeekNamedPipe(h, NULL, 0, NULL, &avail, NULL) || !avail)
+         {
+            Sleep(1);
+            continue;
+         }
+      }
+#endif
+      n = (int)read(stdio_out, out + got, (unsigned)(cap - 1 - got));
+      if (n > 0)
+      {
+         got     += (size_t)n;
+         out[got] = '\0';
+      }
+#if !defined(_WIN32)
+      else
+         usleep(1000);
+#endif
+   }
+   return out;
+}
+
+static int count_lines(const char *s)
+{
+   int n = 0;
+   for (; *s; s++)
+      if (*s == '\n')
+         n++;
+   return n;
+}
+
+static void test_stdio(void)
+{
+   static char out[65536];
+   int in_p[2], out_p[2];
+   command_t *cmd;
+
+   printf("stdio transport\n");
+   check("nothing until stdout is claimed",
+         command_mcp_stdio_new() == NULL);
+#if defined(_WIN32)
+   if (_pipe(in_p, 65536, _O_BINARY) || _pipe(out_p, 65536, _O_BINARY))
+#else
+   if (pipe(in_p) || pipe(out_p))
+#endif
+   {
+      check("pipes for the stdio transport", false);
+      return;
+   }
+   /* the server's stdin and stdout are the pipes' other ends */
+   fflush(stdout);
+   dup2(in_p[0],  0);
+   dup2(out_p[1], 1);
+   close(in_p[0]);
+   close(out_p[1]);
+#if defined(_WIN32)
+   SetStdHandle(STD_INPUT_HANDLE,  (HANDLE)_get_osfhandle(0));
+   SetStdHandle(STD_OUTPUT_HANDLE, (HANDLE)_get_osfhandle(1));
+#else
+   fcntl(out_p[0], F_SETFL, fcntl(out_p[0], F_GETFL) | O_NONBLOCK);
+#endif
+   stdio_in  = in_p[1];
+   stdio_out = out_p[0];
+
+   check("stdout is claimed", command_mcp_stdio_claim());
+   fprintf(stdout, "a stray line for stdout\n");
+   fflush(stdout);
+   cmd = command_mcp_stdio_new();
+   check("the stdio server starts", cmd != NULL);
+   if (!cmd)
+      return;
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
+         "\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},"
+         "\"clientInfo\":{\"name\":\"t\",\"version\":\"1\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("initialize is answered on one line", count_lines(out) == 1
+         && strstr(out, "\"protocolVersion\":\"2025-06-18\""));
+   check("what else wrote to stdout is not in it",
+         !strstr(out, "stray"));
+   check("with logging among its capabilities",
+         strstr(out, "\"logging\":{}") != NULL);
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
+   check("a notification is not answered",
+         !*stdio_read(cmd, out, sizeof(out)));
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n"
+         "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",");
+   stdio_send("\"params\":{\"name\":\"PING\",\"arguments\":{}}}\r\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("two requests, one in pieces, are answered in order",
+         count_lines(out) == 2 && strstr(out, "\"id\":2")
+         && strstr(out, "\"id\":3")
+         && strstr(out, "\"id\":2") < strstr(out, "\"id\":3"));
+
+   stdio_send("not json\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("broken JSON is a parse error", strstr(out, "-32700") != NULL);
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"logging/setLevel\","
+         "\"params\":{\"level\":\"warning\"}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("setLevel is answered", strstr(out, "\"id\":4")
+         && strstr(out, "\"level\":\"warning\""));
+   ring_lines[ring_head++] = "[WARN] [Test] low on something\n";
+   ring_lines[ring_head++] = "[INFO] [Test] all is well\n";
+   ring_lines[ring_head++] = "[ERROR] [Test] it broke\n";
+   stdio_read(cmd, out, sizeof(out));
+   check("the log at the level asked and above arrives as notifications",
+         count_lines(out) == 2
+         && strstr(out, "\"level\":\"warning\"")
+         && strstr(out, "\"level\":\"error\"")
+         && !strstr(out, "all is well")
+         && strstr(out, "notifications/message"));
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"LATER\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("a command answering later is waited for", later_dest != NULL
+         && !*out);
+   cmd->destroy(cmd);
+   free(later_dest);
+   later_dest = NULL;
+   cmd = command_mcp_stdio_new();
+   stdio_read(cmd, out, sizeof(out));
+   check("torn down meanwhile, it is answered with an error",
+         strstr(out, "\"id\":5") && strstr(out, "\"isError\":true"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and the next server goes on", strstr(out, "\"id\":6") != NULL);
+
+   close(stdio_in);
+   stdio_read(cmd, out, sizeof(out));
+   check("stdin closed, RetroArch is asked to quit, once", quits == 1);
+   cmd->destroy(cmd);
 }
 
 int main(void)
@@ -626,6 +834,8 @@ int main(void)
       check("and is answered with an error when the server goes",
             strstr(out, "\"isError\":true") != NULL);
    }
+
+   test_stdio();
 
    printf(failures ? "FAIL (%d)\n" : "PASS\n", failures);
    return failures ? 1 : 0;

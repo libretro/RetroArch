@@ -193,6 +193,9 @@
 #include "network/cloud_sync_driver.h"
 #endif
 #endif
+#ifdef HAVE_MCP
+#include "network/mcp_server.h"
+#endif
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -388,7 +391,8 @@ enum
    RA_OPT_DATABASE_SCAN,
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR,
-   RA_OPT_CLOUDSYNC
+   RA_OPT_CLOUDSYNC,
+   RA_OPT_MCP_STDIO
 };
 
 /* DRIVERS */
@@ -7788,6 +7792,11 @@ static void retroarch_print_help(const char *arg0)
          "Detach program from the running console. Not relevant for all platforms.\n"
          "      --max-frames=NUMBER        "
          "Runs for the specified number of frames, then exits.\n");
+#ifdef HAVE_MCP
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --mcp-stdio                "
+         "Serves MCP on stdin and stdout, for a client that starts RetroArch.\n");
+#endif
 
 #ifdef HAVE_PATCH
    strlcpy_append(buf, sizeof(buf), &_len,
@@ -8140,6 +8149,9 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_CLOUDSYNC
       { "cloudsync",          0, NULL, RA_OPT_CLOUDSYNC },
 #endif
+#ifdef HAVE_MCP
+      { "mcp-stdio",          0, NULL, RA_OPT_MCP_STDIO },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -8339,6 +8351,13 @@ static bool retroarch_parse_input_and_config(
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
 #endif
                break;
+#ifdef HAVE_MCP
+            case RA_OPT_MCP_STDIO:
+               /* before anything else writes to stdout */
+               if (!command_mcp_stdio_claim())
+                  RARCH_ERR("[MCP] Could not take stdin and stdout.\n");
+               break;
+#endif
 
             /* Must handle '?' otherwise you get an infinite loop */
             case '?':
@@ -8742,6 +8761,9 @@ static bool retroarch_parse_input_and_config(
             case 'S':
             case 'v':
             case RA_OPT_LOG_FILE:
+#ifdef HAVE_MCP
+            case RA_OPT_MCP_STDIO:
+#endif
                break; /* Handled in the first pass */
 
             case '?':

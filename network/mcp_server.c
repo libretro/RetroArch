@@ -47,6 +47,14 @@
 #include <net/net_socket.h>
 #include <formats/rjson.h>
 #include <features/features_cpu.h>
+#if defined(_WIN32)
+#include <io.h>
+#include <windows.h>
+#else
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 #include "mcp_server.h"
 #include "../command.h"
@@ -96,6 +104,7 @@ struct mcp_conn
    /* for a reply owed by a command: the request it answers */
    char     id[64];      /* raw JSON id */
    bool     modern;
+   bool     stdio;       /* the stdio transport's one connection */
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -118,6 +127,7 @@ struct mcp_request
    char name[64];        /* params.name */
    char version[16];     /* params._meta protocolVersion */
    char init_version[16];/* params.protocolVersion (initialize) */
+   char level[16];       /* params.level (logging/setLevel) */
    struct mcp_arg args[MCP_MAX_ARGS];
    unsigned num_args;
    bool has_id;
@@ -154,7 +164,41 @@ typedef struct
    int      current;     /* connection whose request is running, or -1 */
    unsigned serials;
    char     token[128];
+   bool     stdio;       /* serving stdin and stdout, not a port */
 } mcp_server_t;
+
+/* The stdio transport: newline-delimited JSON-RPC on stdin and on the
+ * stdout taken by command_mcp_stdio_claim(). This outlives the server,
+ * which the command interfaces are torn down and made again around
+ * (a content load): a request half read and answers not yet written
+ * carry over to the next one. */
+#define MCP_STDIO_OUT_MAX (32 * 1024 * 1024)
+
+static const char *const mcp_log_levels[] = {
+   "debug", "info", "notice", "warning", "error", "critical", "alert",
+   "emergency"
+};
+
+static struct
+{
+   char    *in;          /* read, up to the next newline */
+   char    *out;         /* answers queued for stdout */
+   char    *log;         /* the log lines read for notifications */
+   size_t   in_len;
+   size_t   out_len;
+   size_t   out_sent;
+   size_t   log_next;    /* the next log line to send */
+#if defined(_WIN32)
+   HANDLE   in_h;
+   HANDLE   out_h;
+#else
+   int      out_fd;
+#endif
+   int      log_level;   /* index into mcp_log_levels; -1: no logging */
+   bool     claimed;
+   bool     eof;
+   bool     quit_sent;
+} mcp_stdio;
 
 /* The destination a command owing its reply is handed. */
 struct mcp_owed
@@ -203,6 +247,16 @@ static void mcp_wipe(void *p, size_t len)
 
 static void mcp_conn_close(struct mcp_conn *c)
 {
+   /* stdin stays open: what follows is read as the next request */
+   if (c->stdio)
+   {
+      free(c->buf);
+      c->buf   = NULL;
+      c->len   = 0;
+      c->sent  = 0;
+      c->state = MCP_CONN_READING;
+      return;
+   }
    if (c->fd >= 0)
       socket_close(c->fd);
    free(c->buf);
@@ -217,7 +271,32 @@ static void mcp_respond(struct mcp_conn *c, int status, const char *reason,
 {
    char   head[512];
    char  *out;
-   int    n = snprintf(head, sizeof(head),
+   int    n;
+
+   /* stdio has no status line: an answer is its body and a newline,
+    * queued; a notification's acceptance is nothing at all */
+   if (c->stdio)
+   {
+      (void)status;
+      (void)reason;
+      (void)extra_headers;
+      if (body && mcp_stdio.out_len + body_len + 1 <= MCP_STDIO_OUT_MAX)
+      {
+         char *nb = (char*)realloc(mcp_stdio.out,
+               mcp_stdio.out_len + body_len + 1);
+         if (nb)
+         {
+            memcpy(nb + mcp_stdio.out_len, body, body_len);
+            nb[mcp_stdio.out_len + body_len] = '\n';
+            mcp_stdio.out      = nb;
+            mcp_stdio.out_len += body_len + 1;
+         }
+      }
+      mcp_conn_close(c);
+      return;
+   }
+
+   n = snprintf(head, sizeof(head),
          "HTTP/1.1 %d %s\r\n"
          "Content-Length: %u\r\n"
          "%s"
@@ -837,6 +916,8 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
             mcp_take(j, r->name, sizeof(r->name));
          else if (string_is_equal(key[1], "protocolVersion") && t == RJSON_STRING)
             mcp_take(j, r->init_version, sizeof(r->init_version));
+         else if (string_is_equal(key[1], "level") && t == RJSON_STRING)
+            mcp_take(j, r->level, sizeof(r->level));
       }
       else if (depth == 3 && string_is_equal(key[0], "params"))
       {
@@ -1052,11 +1133,11 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
             MCP_RAW(w, ",");
          rjsonwriter_add_string(w, mcp_versions[i]);
       }
-      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}},"
+      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}%s},"
             "\"instructions\":\"Controls a running RetroArch: each tool is a "
             "RetroArch command. Tools marked destructive can lose unsaved "
             "progress or load code.\",\"ttlMs\":%d,\"cacheScope\":\"public\"",
-            MCP_TOOLS_TTL_MS);
+            c->stdio ? ",\"logging\":{}" : "", MCP_TOOLS_TTL_MS);
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
    }
@@ -1076,8 +1157,10 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       }
       MCP_RAW(w, "\"result\":{\"protocolVersion\":");
       rjsonwriter_add_string(w, v);
-      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}},"
-            "\"serverInfo\":{\"name\":\"RetroArch\",\"version\":\""
+      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}");
+      if (c->stdio)
+         MCP_RAW(w, ",\"logging\":{}");
+      MCP_RAW(w, "},\"serverInfo\":{\"name\":\"RetroArch\",\"version\":\""
             PACKAGE_VERSION "\"}");
       mcp_result_end(w, false);
       mcp_respond_writer(c, w);
@@ -1091,6 +1174,39 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          goto end;
       }
       MCP_RAW(w, "\"result\":{}}");
+      mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "logging/setLevel") && c->stdio)
+   {
+      /* what RetroArch logs from here on, at @level and above, goes to
+       * the client as notifications/message */
+      unsigned i;
+      rjsonwriter_t *w;
+      for (i = 0; i < sizeof(mcp_log_levels) / sizeof(mcp_log_levels[0]); i++)
+         if (string_is_equal(r.level, mcp_log_levels[i]))
+            break;
+      if (i == sizeof(mcp_log_levels) / sizeof(mcp_log_levels[0]))
+      {
+         mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown log level.", false);
+         goto end;
+      }
+      if (mcp_stdio.log_level < 0)
+      {
+         size_t first;
+         verbosity_ring_arm();
+         /* from now: the lines already kept were not asked for */
+         verbosity_ring_read((size_t)-1, NULL, 0, &first,
+               &mcp_stdio.log_next);
+      }
+      mcp_stdio.log_level = (int)i;
+      if (!(w = mcp_envelope(r.id)))
+      {
+         mcp_conn_close(c);
+         goto end;
+      }
+      MCP_RAW(w, "\"result\":{\"level\":");
+      rjsonwriter_add_string(w, mcp_log_levels[i]);
+      mcp_result_end(w, modern);
       mcp_respond_writer(c, w);
    }
    else if (string_is_equal(r.method, "tools/list"))
@@ -1212,11 +1328,243 @@ static long mcp_want(struct mcp_conn *c)
    return n;
 }
 
+/* ------------------------------------------------------------------ */
+/* The stdio transport                                                 */
+
+/* Writes what stdout takes now of the queued answers. */
+static void mcp_stdio_flush(void)
+{
+   size_t left = mcp_stdio.out_len - mcp_stdio.out_sent;
+   long   put  = 0;
+   if (!left)
+      return;
+#if defined(_WIN32)
+   {
+      DWORD n = 0;
+      if (WriteFile(mcp_stdio.out_h, mcp_stdio.out + mcp_stdio.out_sent,
+               (DWORD)(left > 65536 ? 65536 : left), &n, NULL))
+         put = (long)n;
+   }
+#else
+   put = (long)write(mcp_stdio.out_fd, mcp_stdio.out + mcp_stdio.out_sent,
+         left);
+   if (put < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
+   {
+      /* the client is gone: nothing more will be read */
+      mcp_stdio.out_sent = mcp_stdio.out_len = 0;
+      mcp_stdio.eof      = true;
+      return;
+   }
+#endif
+   if (put > 0)
+      mcp_stdio.out_sent += (size_t)put;
+   if (mcp_stdio.out_sent == mcp_stdio.out_len)
+      mcp_stdio.out_sent = mcp_stdio.out_len = 0;
+}
+
+/* Reads what stdin holds now, after what is already read. */
+static void mcp_stdio_fill(void)
+{
+   size_t room = MCP_MAX_REQUEST - mcp_stdio.in_len;
+   long   got  = 0;
+   if (!room || mcp_stdio.eof)
+      return;
+#if defined(_WIN32)
+   {
+      DWORD avail = 0, n = 0;
+      if (!PeekNamedPipe(mcp_stdio.in_h, NULL, 0, NULL, &avail, NULL))
+      {
+         mcp_stdio.eof = true;
+         return;
+      }
+      if (!avail)
+         return;
+      if (avail < room)
+         room = avail;
+      if (!ReadFile(mcp_stdio.in_h, mcp_stdio.in + mcp_stdio.in_len,
+               (DWORD)room, &n, NULL))
+      {
+         mcp_stdio.eof = true;
+         return;
+      }
+      got = (long)n;
+   }
+#else
+   got = (long)read(STDIN_FILENO, mcp_stdio.in + mcp_stdio.in_len, room);
+   if (got == 0)
+      mcp_stdio.eof = true;
+   if (got <= 0)
+      return;
+#endif
+   mcp_stdio.in_len += (size_t)got;
+}
+
+/* The log lines since the last, at the level asked for and above, as
+ * notifications/message. */
+static void mcp_stdio_log(void)
+{
+   size_t first, next, n;
+   char  *s, *end;
+   if (mcp_stdio.log_level < 0)
+      return;
+   if (!mcp_stdio.log && !(mcp_stdio.log = (char*)malloc(MCP_MAX_REQUEST)))
+      return;
+   n = verbosity_ring_read(mcp_stdio.log_next, mcp_stdio.log,
+         MCP_MAX_REQUEST, &first, &next);
+   mcp_stdio.log_next = next;
+   for (s = mcp_stdio.log, end = s + n; s < end; )
+   {
+      char          *eol   = (char*)memchr(s, '\n', (size_t)(end - s));
+      int            level = 1;
+      int            wl    = 0;
+      char          *body;
+      rjsonwriter_t *w;
+      if (!eol)
+         eol = end;
+      *eol = '\0';
+      if (strstr(s, FILE_PATH_LOG_ERROR))
+         level = 4;
+      else if (strstr(s, FILE_PATH_LOG_WARN))
+         level = 3;
+      else if (strstr(s, FILE_PATH_LOG_DBG))
+         level = 0;
+      if (level >= mcp_stdio.log_level && (w = rjsonwriter_open_memory()))
+      {
+         MCP_RAW(w, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\","
+               "\"params\":{\"level\":");
+         rjsonwriter_add_string(w, mcp_log_levels[level]);
+         MCP_RAW(w, ",\"logger\":\"retroarch\",\"data\":");
+         rjsonwriter_add_string_len(w, s, (int)(eol - s));
+         MCP_RAW(w, "}}");
+         if ((body = rjsonwriter_get_memory_buffer(w, &wl)) && wl > 0
+               && mcp_stdio.out_len + (size_t)wl + 1 <= MCP_STDIO_OUT_MAX)
+         {
+            char *nb = (char*)realloc(mcp_stdio.out,
+                  mcp_stdio.out_len + (size_t)wl + 1);
+            if (nb)
+            {
+               memcpy(nb + mcp_stdio.out_len, body, (size_t)wl);
+               nb[mcp_stdio.out_len + (size_t)wl] = '\n';
+               mcp_stdio.out      = nb;
+               mcp_stdio.out_len += (size_t)wl + 1;
+            }
+         }
+         rjsonwriter_free(w);
+      }
+      s = eol + 1;
+   }
+}
+
+static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
+      retro_time_t now)
+{
+   struct mcp_conn *c = &mcp->conns[0];
+
+   mcp_stdio_log();
+   mcp_stdio_flush();
+
+   if (c->state == MCP_CONN_WAITING)
+   {
+      if (now - c->since > MCP_TIMEOUT_US)
+         mcp_tool_result(c, c->id, c->modern,
+               "The command did not answer in time.", 35, true);
+      return;
+   }
+
+   mcp_stdio_fill();
+   while (c->state == MCP_CONN_READING)
+   {
+      char  *nl = (char*)memchr(mcp_stdio.in, '\n', mcp_stdio.in_len);
+      size_t line;
+      if (!nl)
+      {
+         if (mcp_stdio.in_len >= MCP_MAX_REQUEST)
+         {
+            mcp_stdio.in_len = 0;
+            mcp_error(c, NULL, MCP_ERR_PARSE, "The message is too long.",
+                  false);
+         }
+         break;
+      }
+      line = (size_t)(nl - mcp_stdio.in);
+      *nl  = '\0';
+      if (line && mcp_stdio.in[line - 1] == '\r')
+         mcp_stdio.in[--line] = '\0';
+      if (line)
+      {
+         c->serial = ++mcp->serials;
+         c->since  = now;
+         mcp_handle(mcp, cmd, 0, (char*)"", mcp_stdio.in, line);
+      }
+      mcp_stdio.in_len -= (size_t)(nl + 1 - mcp_stdio.in);
+      memmove(mcp_stdio.in, nl + 1, mcp_stdio.in_len);
+      /* the other requests wait out the content load */
+      if (command_interfaces_held())
+         break;
+   }
+   mcp_stdio_flush();
+
+   /* the client closed stdin: it is done with RetroArch */
+   if (     mcp_stdio.eof && !mcp_stdio.in_len && !mcp_stdio.quit_sent
+         && c->state == MCP_CONN_READING)
+   {
+      mcp_stdio.quit_sent = true;
+      command_event(CMD_EVENT_QUIT, NULL);
+   }
+}
+
+bool command_mcp_stdio_claim(void)
+{
+   if (mcp_stdio.claimed)
+      return true;
+   if (!(mcp_stdio.in = (char*)malloc(MCP_MAX_REQUEST + 1)))
+      return false;
+   fflush(stdout);
+#if defined(_WIN32)
+   {
+      DWORD mode = PIPE_READMODE_BYTE | PIPE_NOWAIT;
+      int   fd   = _dup(_fileno(stdout));
+      if (fd < 0)
+         return false;
+      mcp_stdio.out_h = (HANDLE)_get_osfhandle(fd);
+      mcp_stdio.in_h  = GetStdHandle(STD_INPUT_HANDLE);
+      /* a write the pipe cannot take now returns short, not waits */
+      SetNamedPipeHandleState(mcp_stdio.out_h, &mode, NULL, NULL);
+      _dup2(_fileno(stderr), _fileno(stdout));
+      SetStdHandle(STD_OUTPUT_HANDLE, GetStdHandle(STD_ERROR_HANDLE));
+   }
+#else
+   {
+      int fd = dup(STDOUT_FILENO);
+      if (fd < 0)
+         return false;
+      mcp_stdio.out_fd = fd;
+      dup2(STDERR_FILENO, STDOUT_FILENO);
+      fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+      fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+   }
+#endif
+   mcp_stdio.log_level = -1;
+   mcp_stdio.claimed   = true;
+   return true;
+}
+
+bool command_mcp_stdio_claimed(void)
+{
+   return mcp_stdio.claimed;
+}
+
 static void mcp_poll(command_t *cmd)
 {
    mcp_server_t *mcp = (mcp_server_t*)cmd->userptr;
    retro_time_t  now = cpu_features_get_time_usec();
    int i;
+
+   if (mcp->stdio)
+   {
+      mcp_stdio_poll(mcp, cmd, now);
+      return;
+   }
 
    /* new connections, into free slots */
    for (;;)
@@ -1319,6 +1667,11 @@ static void mcp_destroy(command_t *cmd)
          struct mcp_conn *c = &mcp->conns[i];
          if (c->state == MCP_CONN_WAITING)
             mcp_tool_result(c, c->id, c->modern, gone, sizeof(gone) - 1, true);
+         if (c->stdio)
+         {
+            mcp_conn_close(c);
+            continue;
+         }
          /* a content load tears this down in the frame of the request
           * that started it, before the next poll would send the answer */
          if (c->state == MCP_CONN_WRITING && c->sent < c->len)
@@ -1327,6 +1680,10 @@ static void mcp_destroy(command_t *cmd)
          if (c->state != MCP_CONN_FREE)
             mcp_conn_close(c);
       }
+      /* the answers queued stay for the next server; as much as stdout
+       * takes now goes before this one is gone */
+      if (mcp->stdio)
+         mcp_stdio_flush();
       if (mcp->listen_fd >= 0)
          socket_close(mcp->listen_fd);
       mcp_wipe(mcp->token, sizeof(mcp->token));
@@ -1334,6 +1691,44 @@ static void mcp_destroy(command_t *cmd)
       free(mcp);
    }
    free(cmd);
+}
+
+/* The server on stdin and stdout, once claimed: no token, as only the
+ * process that started RetroArch holds the other ends. */
+command_t *command_mcp_stdio_new(void)
+{
+   command_t    *cmd;
+   mcp_server_t *mcp;
+   int           i;
+
+   if (!mcp_stdio.claimed)
+      return NULL;
+   if (!(cmd = (command_t*)calloc(1, sizeof(*cmd))))
+      return NULL;
+   if (!(mcp = (mcp_server_t*)calloc(1, sizeof(*mcp))))
+   {
+      free(cmd);
+      return NULL;
+   }
+   mcp->listen_fd = -1;
+   mcp->current   = -1;
+   mcp->stdio     = true;
+   for (i = 0; i < MCP_MAX_CONNS; i++)
+      mcp->conns[i].fd = -1;
+   mcp->conns[0].stdio  = true;
+   mcp->conns[0].state  = MCP_CONN_READING;
+   mcp->conns[0].serial = ++mcp->serials;
+
+   cmd->userptr        = mcp;
+   cmd->poll           = mcp_poll;
+   cmd->replier        = mcp_reply;
+   cmd->reply_dest     = mcp_reply_dest;
+   cmd->reply_to       = mcp_reply_to;
+   cmd->reply_image_to = mcp_reply_image_to;
+   cmd->destroy        = mcp_destroy;
+   cmd->structured     = true;
+   verbosity_ring_arm();
+   return cmd;
 }
 
 command_t *command_mcp_new(uint16_t port, const char *bind_address,

@@ -10466,6 +10466,11 @@ void input_driver_init_command(input_driver_state_t *input_st,
 #ifdef HAVE_STDIN_CMD
    bool input_stdin_cmd_enable       = settings->bools.stdin_cmd_enable;
 
+#ifdef HAVE_MCP
+   /* --mcp-stdio has stdin */
+   if (command_mcp_stdio_claimed())
+      input_stdin_cmd_enable = false;
+#endif
    if (input_stdin_cmd_enable)
    {
       input_driver_state_t *input_st = &input_driver_st;
@@ -10488,6 +10493,16 @@ void input_driver_init_command(input_driver_state_t *input_st,
             started = false;
          }
       }
+   }
+#endif
+
+#ifdef HAVE_MCP
+   /* in the slot the stdin interface, which it replaces, would take */
+   if (     command_mcp_stdio_claimed()
+         && !(input_st->command[0] = command_mcp_stdio_new()))
+   {
+      RARCH_ERR("[MCP] Failed to start the MCP server on stdio.\n");
+      started = false;
    }
 #endif
 

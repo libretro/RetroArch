@@ -1,0 +1,52 @@
+name: CI Linux MCP over stdio
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  mcp-stdio:
+    name: retroarch --mcp-stdio driving a core
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential pkg-config zlib1g-dev \
+            libfreetype6-dev python3 ccache
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build RetroArch and the views test core
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --disable-ffmpeg --disable-vulkan \
+            --disable-wayland --disable-x11 --disable-opengl
+          grep -q '^HAVE_MCP = 1' config.mk
+          make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"
+          make -C samples/cores/video_views
+
+      - name: MCP over stdin and stdout, end to end
+        shell: bash
+        run: |
+          set -eu
+          # null drivers: no display on the runner
+          timeout 300 python3 samples/network/mcp_server/stdio_e2e.py \
+            ./retroarch samples/cores/video_views/video_views_libretro.so
