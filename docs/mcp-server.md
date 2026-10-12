@@ -118,6 +118,13 @@ A hotkey tool that is still a tool answers `<NAME> pressed` for the same
 reason: the press goes out on the next poll, and what it
 changed is read back with `GET_OPTION`.
 
+`SET_INPUT <player> <control> <value>` holds a RetroPad button (`a`,
+`b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
+axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
+it go) for the core, over the player's own controller, until it is set
+again or `RELEASE_INPUT [player]` lets go of it. Both answer with what
+the player then holds. Achievements hardcore mode refuses it.
+
 The running core's own options are `GET_CORE_OPTION` and
 `SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as
 key, value and description, tab separated; with a key it gives that

@@ -317,6 +317,34 @@ int main(void)
       runloop_st->system.mmaps.num_descriptors = 0;
    }
 
+   cmd.error = false;
+   CHECK(command_set_input(&cmd, "2 a 1"));
+   CHECK(!strcmp(reply, "2\ta\tnone\n"));
+   CHECK(input_st.cmd_input && input_st.cmd_buttons[1] == (1u << 8));
+   CHECK(command_set_input(&cmd, "2 right 1"));
+   CHECK(command_set_input(&cmd, "2 left_x -32768"));
+   CHECK(!strcmp(reply, "2\tright a\tleft_x=-32768\n"));
+   CHECK(command_set_input(&cmd, "2 a 0"));
+   CHECK(!strcmp(reply, "2\tright\tleft_x=-32768\n"));
+   CHECK(!command_set_input(&cmd, "2 a 2"));
+   CHECK(cmd.error && strstr(reply, "a takes 1"));
+   cmd.error = false;
+   CHECK(!command_set_input(&cmd, "2 left_x 40000"));
+   CHECK(!command_set_input(&cmd, "2 turbo 1"));
+   CHECK(!command_set_input(&cmd, "0 a 1"));
+   cmd.error = false;
+   CHECK(command_release_input(&cmd, "2"));
+   CHECK(!strcmp(reply, "2\tnone\tnone\n"));
+   CHECK(!input_st.cmd_input && !input_st.cmd_buttons[1]
+         && !input_st.cmd_analog[1][0]);
+   CHECK(command_set_input(&cmd, "1 start 1"));
+   CHECK(command_release_input(&cmd, ""));
+   CHECK(!input_st.cmd_input);
+   hardcore = true;
+   CHECK(!command_set_input(&cmd, "1 start 1"));
+   CHECK(cmd.error && !input_st.cmd_input);
+   hardcore = false;
+
    printf("command_options: %s\n", failures ? "FAIL" : "PASS");
    return failures ? 1 : 0;
 }

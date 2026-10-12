@@ -410,6 +410,36 @@ static void lane_input_cost(void)
    measure_input(128, 8, &poll_us, &first_us, &q8, &heap);
    report_input("eight pads", 128, poll_us, first_us, q8, heap);
 
+   /* what SET_INPUT holds reaches the core over the pad's own */
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      int16_t own = input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
+      input_st->cmd_buttons[0]   = 1 << RETRO_DEVICE_ID_JOYPAD_X;
+      input_st->cmd_analog[0][1] = 1234;
+      input_st->cmd_input        = true;
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK)
+            == (int16_t)((uint16_t)own | (1 << RETRO_DEVICE_ID_JOYPAD_X)),
+            "SET_INPUT: a held button is not in the mask");
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_X) == 1,
+            "SET_INPUT: a held button does not read as pressed");
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y)
+            == 1234, "SET_INPUT: a held axis does not stand in");
+      CHECK(input_driver_state_wrapper(1, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_X) == input_driver_state_wrapper(1,
+               RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X),
+            "SET_INPUT: another port changed");
+      input_st->cmd_buttons[0]   = 0;
+      input_st->cmd_analog[0][1] = 0;
+      input_st->cmd_input        = false;
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK) == own,
+            "SET_INPUT: let go, the pad's own mask is not back");
+   }
+
    fast_forward(false);
 #ifdef HARNESS_COUNT_HEAP
    heap_scope = NULL;

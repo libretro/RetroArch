@@ -15552,6 +15552,41 @@ static int16_t input_socd_clean(input_driver_state_t *input_st,
    return (int16_t)((uint16_t)view & ~drop);
 }
 
+/* What SET_INPUT holds, over what the port reads */
+static int16_t input_cmd_state(input_driver_state_t *input_st,
+      unsigned port, unsigned device, unsigned idx, unsigned id,
+      int16_t result)
+{
+   uint16_t held = input_st->cmd_buttons[port];
+
+   switch (device & RETRO_DEVICE_MASK)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         if (idx == 0)
+         {
+            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+               return (int16_t)((uint16_t)result | held);
+            if (id < 16 && (held & (1u << id)))
+               return 1;
+         }
+         break;
+      case RETRO_DEVICE_ANALOG:
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+         {
+            if (id < 16 && (held & (1u << id)))
+               return 0x7fff;
+         }
+         else if (   idx <= RETRO_DEVICE_INDEX_ANALOG_RIGHT
+                  && id  <= RETRO_DEVICE_ID_ANALOG_Y
+                  && input_st->cmd_analog[port][idx * 2 + id])
+            return input_st->cmd_analog[port][idx * 2 + id];
+         break;
+      default:
+         break;
+   }
+   return result;
+}
+
 int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -15705,6 +15740,9 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          }
       }
    }
+
+   if (input_st->cmd_input)
+      result = input_cmd_state(input_st, port, device, idx, id, result);
 
    /* Register any analog stick input requests for
     * this 'virtual' (core) port.  The first one switches

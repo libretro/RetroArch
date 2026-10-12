@@ -541,6 +541,10 @@ struct cmd_action_map
 bool command_get_option(command_t *cmd, const char *arg);
 bool command_set_option(command_t *cmd, const char *arg);
 
+/* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player] */
+bool command_set_input(command_t *cmd, const char *arg);
+bool command_release_input(command_t *cmd, const char *arg);
+
 /* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
 bool command_get_core_option(command_t *cmd, const char *arg);
 bool command_set_core_option(command_t *cmd, const char *arg);
@@ -621,6 +625,21 @@ static const struct cmd_param cmd_params_option_set[] = {
       CMD_PARAM_STRING, true, NULL, "on|off", NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_input[] = {
+   { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "control", "The RetroPad button or stick axis.",
+      CMD_PARAM_STRING, true, NULL,
+      "b|y|select|start|up|down|left|right|a|x|l|r|l2|r2|l3|r3|"
+      "left_x|left_y|right_x|right_y", NULL },
+   { "value", "1 holds a button and 0 lets it go; an axis takes -32768 "
+      "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_input_release[] = {
+   { "player", "The player, from 1; every player when left out.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_core_option[] = {
    { "option", "A core option key, as GET_CORE_OPTION with no argument "
       "lists it.", CMD_PARAM_STRING, false, NULL, NULL, NULL },
@@ -699,6 +718,8 @@ static const struct cmd_action_map action_map[] = {
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
+   { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
+   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL },

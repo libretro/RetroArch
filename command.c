@@ -2109,6 +2109,182 @@ bool command_set_option(command_t *cmd, const char *arg)
    return true;
 }
 
+/* RetroPad controls by the names SET_INPUT takes them by: the sixteen
+ * buttons in RETRO_DEVICE_ID_JOYPAD order, then the four stick axes. */
+static const char *const command_input_names[] = {
+   "b", "y", "select", "start", "up", "down", "left", "right",
+   "a", "x", "l", "r", "l2", "r2", "l3", "r3",
+   "left_x", "left_y", "right_x", "right_y"
+};
+
+/* @port's held controls, the shape SET_INPUT and RELEASE_INPUT answer
+ * with: the player, then the buttons and the axes held, tab separated,
+ * "none" for either when there are none. */
+static size_t command_input_line(const input_driver_state_t *input_st,
+      unsigned port, char *s, size_t len)
+{
+   unsigned i;
+   size_t   _len  = (size_t)snprintf(s, len, "%u\t", port + 1);
+   bool     any   = false;
+
+   for (i = 0; i < 16 && _len < len; i++)
+      if (input_st->cmd_buttons[port] & (1u << i))
+      {
+         _len += (size_t)snprintf(s + _len, len - _len, "%s%s",
+               any ? " " : "", command_input_names[i]);
+         any   = true;
+      }
+   if (!any && _len < len)
+      _len += strlcpy(s + _len, "none", len - _len);
+   if (_len < len)
+      s[_len++] = '\t';
+   any = false;
+   for (i = 0; i < 4 && _len < len; i++)
+      if (input_st->cmd_analog[port][i])
+      {
+         _len += (size_t)snprintf(s + _len, len - _len, "%s%s=%d",
+               any ? " " : "", command_input_names[16 + i],
+               (int)input_st->cmd_analog[port][i]);
+         any   = true;
+      }
+   if (!any && _len < len)
+      _len += strlcpy(s + _len, "none", len - _len);
+   if (_len + 1 >= len)
+      _len = len - 2;
+   s[_len++] = '\n';
+   s[_len]   = '\0';
+   return _len;
+}
+
+static void command_input_update(input_driver_state_t *input_st)
+{
+   unsigned p, a;
+   bool     any = false;
+   for (p = 0; p < MAX_USERS && !any; p++)
+   {
+      any = input_st->cmd_buttons[p] != 0;
+      for (a = 0; a < 4 && !any; a++)
+         any = input_st->cmd_analog[p][a] != 0;
+   }
+   input_st->cmd_input = any;
+}
+
+/* SET_INPUT <player> <control> <value>
+ *
+ * Holds a RetroPad button (1, or 0 to let it go) or a stick axis
+ * (-32768 to 32767, 0 to let it go) for the core, over the player's own
+ * input, until it is set again or RELEASE_INPUT lets it go. */
+bool command_set_input(command_t *cmd, const char *arg)
+{
+   char   reply[192];
+   char   control[16];
+   unsigned player;
+   unsigned i;
+   long   value;
+   char  *end                     = NULL;
+   const char *sp;
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   while (arg && *arg == ' ')
+      arg++;
+   player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
+   if (!end || end == arg || *end != ' ' || player < 1 || player > MAX_USERS)
+   {
+      command_reply_error(cmd, "SET_INPUT",
+            "a player from 1 to %u, a control and a value",
+            (unsigned)MAX_USERS);
+      return false;
+   }
+   while (*end == ' ')
+      end++;
+   if (!(sp = strchr(end, ' ')) || (size_t)(sp - end) >= sizeof(control))
+   {
+      command_reply_error(cmd, "SET_INPUT", "a control and a value");
+      return false;
+   }
+   memcpy(control, end, (size_t)(sp - end));
+   control[sp - end] = '\0';
+   for (i = 0; i < ARRAY_SIZE(command_input_names); i++)
+      if (string_is_equal(control, command_input_names[i]))
+         break;
+   if (i == ARRAY_SIZE(command_input_names))
+   {
+      command_reply_error(cmd, "SET_INPUT", "no control named %s", control);
+      return false;
+   }
+   value = strtol(sp + 1, &end, 10);
+   if (     end == sp + 1 || *end
+         || (i <  16 && value != 0 && value != 1)
+         || (i >= 16 && (value < -32768 || value > 32767)))
+   {
+      command_reply_error(cmd, "SET_INPUT", i < 16
+            ? "%s takes 1 to hold it or 0 to let it go"
+            : "%s takes -32768 to 32767", control);
+      return false;
+   }
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      command_reply_error(cmd, "SET_INPUT",
+            "achievements hardcore mode forbids input from a command");
+      return false;
+   }
+#endif
+
+   if (i < 16)
+   {
+      if (value)
+         input_st->cmd_buttons[player - 1] |=  (uint16_t)(1u << i);
+      else
+         input_st->cmd_buttons[player - 1] &= ~(uint16_t)(1u << i);
+   }
+   else
+      input_st->cmd_analog[player - 1][i - 16] = (int16_t)value;
+   command_input_update(input_st);
+
+   cmd->replier(cmd, reply,
+         command_input_line(input_st, player - 1, reply, sizeof(reply)));
+   return true;
+}
+
+/* RELEASE_INPUT [player]
+ *
+ * Lets go of everything SET_INPUT holds for the player, or for every
+ * player. */
+bool command_release_input(command_t *cmd, const char *arg)
+{
+   char   reply[192];
+   unsigned player                = 0;
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg)
+   {
+      if (!command_arg_uint(arg, &player) || player < 1 || player > MAX_USERS)
+      {
+         command_reply_error(cmd, "RELEASE_INPUT",
+               "a player from 1 to %u, or nothing for every player",
+               (unsigned)MAX_USERS);
+         return false;
+      }
+      input_st->cmd_buttons[player - 1] = 0;
+      memset(input_st->cmd_analog[player - 1], 0,
+            sizeof(input_st->cmd_analog[player - 1]));
+   }
+   else
+   {
+      memset(input_st->cmd_buttons, 0, sizeof(input_st->cmd_buttons));
+      memset(input_st->cmd_analog,  0, sizeof(input_st->cmd_analog));
+   }
+   command_input_update(input_st);
+
+   cmd->replier(cmd, reply,
+         command_input_line(input_st, player ? player - 1 : 0, reply,
+            sizeof(reply)));
+   return true;
+}
+
 /* The core option @key, or false with the reason replied. */
 static bool command_core_option_find(command_t *cmd, const char *name,
       const char *key, core_option_manager_t **opt, size_t *idx)

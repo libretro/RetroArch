@@ -830,6 +830,8 @@ typedef struct
    uint32_t core_hold_gun[MAX_USERS];
    uint8_t  core_hold_pointer[MAX_USERS];
    bool core_hold_armed;
+   /* any of cmd_buttons or cmd_analog is held */
+   bool cmd_input;
    /* The same for what the run loop and the menu see - the RetroPad
     * bits and the hotkeys: 1 takes what is down at the next frame, 2
     * holds it back, 0 is no hold. */
@@ -848,6 +850,11 @@ typedef struct
     * input_driver_poll(), and when the core's first analog request
     * changes analog-to-d-pad for the port. */
    int16_t frame_view_joypad[MAX_USERS];
+   /* What SET_INPUT holds for each port: stick axes (left X and Y,
+    * right X and Y) standing in for the port's own while not 0, and
+    * RetroPad buttons added to its own. */
+   int16_t  cmd_analog[MAX_USERS][4];
+   uint16_t cmd_buttons[MAX_USERS];
    /* Full-range triggers, per controller, as bits by axis: axes bound
     * to L2 or R2 that were seen resting at the far end from their
     * bind (the pull is counted from there), and axes not to be looked
