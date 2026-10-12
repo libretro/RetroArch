@@ -139,6 +139,9 @@ HW_CASES = {
     'd3d11': [(name, 'd3d11')
               for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
                            '3ds-interlaced', '3ds-sbs-full-threaded')],
+    'd3d12': [(name, 'd3d12')
+              for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
+                           '3ds-interlaced', '3ds-sbs-full-threaded')],
 }
 
 # A frame past the declared maximum in the core's own Vulkan image.
@@ -253,6 +256,7 @@ EXACT_CASES = [
     ('exact-3ds', '3ds', NOISE, 'gl_topleft'),
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
     ('exact-3ds', '3ds', NOISE, 'd3d11'),
+    ('exact-3ds', '3ds', NOISE, 'd3d12'),
     # No map: the frame drawn whole. A core's GL framebuffer as large as
     # its maximum holds the frame in a corner, so the stock chain would
     # copy it out; glcore draws it straight from there instead.
@@ -260,7 +264,7 @@ EXACT_CASES = [
     ('whole-3ds', 'none', NOISE_LARGE, 'gl_topleft'),
 ]
 EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
-            'd3d11': ('off', 'd3d11')}
+            'd3d11': ('off', 'd3d11'), 'd3d12': ('off', 'd3d12')}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan')
@@ -278,7 +282,7 @@ SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
-DIRECT_DRIVERS = ('glcore', 'vulkan', 'd3d11')
+DIRECT_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 WHOLE_DRIVERS = ('glcore',)
 WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')

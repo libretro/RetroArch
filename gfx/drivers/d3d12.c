@@ -470,6 +470,43 @@ typedef struct
       float values[12];
       bool  seen;
    } frame_rect;
+   /* Views, drawn straight from the frame as the stock chain draws it;
+    * with a preset the frame is drawn whole. A view's stock chain is
+    * the driver itself. The canvas holds both eyes for anaglyph and
+    * interlaced, the UI layer the UI drawn once for both eyes, both in
+    * the swap chain's format, which the pipes are made for (format).
+    * Each draw's constants take a slot of cb, from the first each
+    * frame: the last frame is done with them. src_dims is the texture
+    * the frame is in, frame_dims the frame. */
+   struct
+   {
+      video_views_chains_t      chains;
+      d3d12_texture_t           canvas;
+      d3d12_texture_t           ui;
+      video_views_target_t      canvas_target;
+      video_views_target_t      ui_target;
+      video_views_ui_dims_t     saved;
+      D3D12_VIEWPORT            saved_viewport;
+      D3D12_RECT                saved_scissor;
+      D3D12PipelineState        rect;
+      D3D12PipelineState        layer;
+      D3D12PipelineState        anaglyph;
+      D3D12PipelineState        interlaced;
+      DXGI_FORMAT               format;
+      D3D12Resource             cb;
+      uint8_t                  *cb_mapped;
+      D3D12_GPU_VIRTUAL_ADDRESS cb_va;
+      unsigned                  cb_next;
+      unsigned                  src_dims;
+      unsigned                  frame_dims;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map was drawn whole. */
+      retro_atomic_int_t        allowed;
+      retro_atomic_int_t        fallback;
+      bool                      failed;
+      bool                      active;
+      bool                      direct_seen;
+   } views;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -850,6 +887,8 @@ static void d3d12_frame_import_deinit(d3d12_video_t *d3d12);
 static void d3d12_record_free(d3d12_video_t *d3d12);
 static void d3d12_sw_fb_free(d3d12_video_t *d3d12);
 static void d3d12_record_teardown(d3d12_video_t *d3d12);
+static void d3d12_views_release(d3d12_video_t *d3d12);
+static void d3d12_views_publish(d3d12_video_t *d3d12);
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
 
@@ -2973,7 +3012,8 @@ static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **m
 
 static uint32_t d3d12_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t flags       = 0;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 
 #if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
    /* a borderless fullscreen toggle restyles the window; see
@@ -2995,6 +3035,10 @@ static uint32_t d3d12_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
+   if (d3d12 && retro_atomic_load_acquire_int(&d3d12->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (d3d12 && retro_atomic_load_acquire_int(&d3d12->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
 
    return flags;
 }
@@ -4708,6 +4752,9 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 #endif
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
+   /* Alpha keeps coverage, which the views UI layer is composited by;
+    * the swap chain's alpha is not shown. */
+   desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
    /* The format these draw into, not an assumption about it. Every
     * pipeline below targets the swapchain, and the swapchain is not
     * always 8-bit: with HDR off and video_swapchain_bit_depth set to
@@ -4776,6 +4823,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
             && d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
       {
          desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+         desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
          desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
          desc.InputLayout.pInputElementDescs = inputElementDesc;
          desc.InputLayout.NumElements        = countof(inputElementDesc);
@@ -4941,6 +4989,7 @@ static void d3d12_gfx_free(void* data)
       return;
 
    d3d12_queue_drain(d3d12);
+   d3d12_views_release(d3d12);
 #ifdef D3D12_FRAME_IMPORT
    d3d12_frame_import_deinit(d3d12);
 #endif
@@ -5568,7 +5617,8 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
     * + 1 reserved at the end for the HDR readback tonemap target used by
     * d3d12_gfx_read_viewport().  The reserved slot is at fixed offset
     * (countof(renderTargets) + GFX_MAX_SHADERS * 2). */
-   d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1;
+   d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1
+      + 2; /* the views canvas and UI layer (d3d12_views_make) */
    d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
@@ -6215,6 +6265,7 @@ static void *d3d12_gfx_init(const video_info_t* video)
 #ifdef D3D12_FRAME_IMPORT
    d3d12_frame_import_init(d3d12);
 #endif
+   d3d12_views_publish(d3d12);
    return d3d12;
 
 error:
@@ -6992,6 +7043,506 @@ static bool d3d12_frame_mem_window(d3d12_video_t *d3d12,
    return true;
 }
 
+/* Views: what each draw's constants slot holds, and how many slots a
+ * frame has: every placement, the blend and both eyes' UI layer. */
+typedef struct
+{
+   math_matrix_4x4 mvp;
+   float rect[4];
+   float clamp[4];
+} d3d12_views_ubo_t;
+#define D3D12_VIEWS_CB_SLOTS (VIDEO_VIEWS_MAX_PLACEMENTS + 3)
+
+/* What a frame's placement draws read */
+struct d3d12_views_draw
+{
+   const video_frame_info_t *video_info;
+   unsigned src_dims;
+};
+
+static void d3d12_views_draw_direct(d3d12_video_t *d3d12,
+      const struct d3d12_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool d3d12_views_make(d3d12_video_t *d3d12, d3d12_texture_t *t,
+      unsigned dims);
+static bool d3d12_views_retire(d3d12_video_t *d3d12, d3d12_texture_t *t);
+
+/* The views compositor, with these calls bound in. Views are drawn
+ * straight from the frame only, so a view's chain is the driver. */
+#define VV_FN(name)                     d3d12_vv_##name
+#define VV_DRV                          d3d12_video_t
+#define VV_CHAIN                        d3d12_video_t
+#define VV_CREATE_STOCK(drv)            ((void*)(drv))
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct d3d12_views_draw
+#define VV_DIRECT(p, d, v, r, c)        d3d12_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_TARGET                       d3d12_texture_t
+#define VV_TARGET_MAKE(drv, t, dims)    d3d12_views_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        d3d12_views_retire(drv, t)
+#include "../video_views_draw.h"
+
+/* The swap chain's format, which views draw in */
+static DXGI_FORMAT d3d12_views_format(const d3d12_video_t *d3d12)
+{
+#ifdef HAVE_DXGI_HDR
+   return d3d12->chain.formats[d3d12->chain.bit_depth];
+#else
+   return DXGI_FORMAT_R8G8B8A8_UNORM;
+#endif
+}
+
+/* Views: not with a preset, HDR output, or without their pipes */
+static bool d3d12_views_allowed(const d3d12_video_t *d3d12)
+{
+   return !d3d12->views.failed
+      && !(d3d12->shader_preset && d3d12->shader_preset->passes)
+#ifdef HAVE_DXGI_HDR
+      && !(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+#endif
+      ;
+}
+
+static void d3d12_views_publish(d3d12_video_t *d3d12)
+{
+   retro_atomic_store_release_int(&d3d12->views.allowed,
+         d3d12_views_allowed(d3d12) ? 1 : 0);
+}
+
+static void d3d12_views_release_pipes(d3d12_video_t *d3d12)
+{
+   Release(d3d12->views.rect);
+   Release(d3d12->views.layer);
+   Release(d3d12->views.anaglyph);
+   Release(d3d12->views.interlaced);
+   d3d12->views.rect       = NULL;
+   d3d12->views.layer      = NULL;
+   d3d12->views.anaglyph   = NULL;
+   d3d12->views.interlaced = NULL;
+   d3d12->views.format     = DXGI_FORMAT_UNKNOWN;
+}
+
+/* After a queue drain */
+static void d3d12_views_release(d3d12_video_t *d3d12)
+{
+   d3d12_views_release_pipes(d3d12);
+   Release(d3d12->views.cb);
+   d3d12->views.cb        = NULL;
+   d3d12->views.cb_mapped = NULL;
+   d3d12_release_texture(&d3d12->views.canvas);
+   d3d12_release_texture(&d3d12->views.ui);
+}
+
+/* The pipes views draw with, made for the swap chain's format on first
+ * use and again when it changes, and the constants they read. False
+ * when they can't be: views are then drawn whole. */
+static bool d3d12_views_init(d3d12_video_t *d3d12)
+{
+   static const char shader[] =
+#include "d3d_shaders/views_sm4.hlsl.h"
+      ;
+   static const D3D12_INPUT_ELEMENT_DESC input[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d12_vertex_t, position),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+         offsetof(d3d12_vertex_t, texcoord),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,
+         offsetof(d3d12_vertex_t, color),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
+   D3DBlob vs = NULL, ps_rect = NULL, ps_layer = NULL;
+   D3DBlob ps_anaglyph = NULL, ps_interlaced = NULL;
+   DXGI_FORMAT format = d3d12_views_format(d3d12);
+
+   if (d3d12->views.failed)
+      return false;
+   if (d3d12->views.rect && d3d12->views.format == format)
+      return true;
+   d3d12_views_release_pipes(d3d12);
+
+   if (!d3d12->views.cb)
+   {
+      D3D12_RANGE read_range;
+      void *mapped      = NULL;
+      read_range.Begin  = 0;
+      read_range.End    = 0;
+      d3d12->views.cb_va = d3d12_create_buffer(d3d12->device,
+            d3d12->cpu_write_heap,
+            D3D12_VIEWS_CB_SLOTS * D3D12_MESH_CB_SIZE, &d3d12->views.cb);
+      if (     d3d12->views.cb
+            && SUCCEEDED(D3D12Map(d3d12->views.cb, 0, &read_range, &mapped)))
+         d3d12->views.cb_mapped = (uint8_t*)mapped;
+   }
+
+   if (     d3d12->views.cb_mapped
+         && d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs)
+         && d3d_compile(shader, sizeof(shader), NULL, "PSRect", "ps_5_0",
+            &ps_rect)
+         && d3d_compile(shader, sizeof(shader), NULL, "PSLayer", "ps_5_0",
+            &ps_layer)
+         && d3d_compile(shader, sizeof(shader), NULL, "PSAnaglyph", "ps_5_0",
+            &ps_anaglyph)
+         && d3d_compile(shader, sizeof(shader), NULL, "PSInterlaced",
+            "ps_5_0", &ps_interlaced))
+   {
+      memset(&desc, 0, sizeof(desc));
+      desc.pRootSignature                 = d3d12->desc.rootSignature;
+      desc.BlendState.RenderTarget[0]     = d3d12_blend_disable_desc;
+      desc.RTVFormats[0]                  = format;
+      desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+      desc.InputLayout.pInputElementDescs = input;
+      desc.InputLayout.NumElements        = countof(input);
+      d3d12_init_pipeline(d3d12->device, vs, ps_rect, NULL, &desc,
+            &d3d12->views.rect);
+      d3d12_init_pipeline(d3d12->device, vs, ps_anaglyph, NULL, &desc,
+            &d3d12->views.anaglyph);
+      d3d12_init_pipeline(d3d12->device, vs, ps_interlaced, NULL, &desc,
+            &d3d12->views.interlaced);
+      /* The UI layer, premultiplied */
+      desc.BlendState.RenderTarget[0]          = d3d12_blend_enable_desc;
+      desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+      d3d12_init_pipeline(d3d12->device, vs, ps_layer, NULL, &desc,
+            &d3d12->views.layer);
+   }
+   Release(vs);
+   Release(ps_rect);
+   Release(ps_layer);
+   Release(ps_anaglyph);
+   Release(ps_interlaced);
+
+   if (     d3d12->views.rect && d3d12->views.layer
+         && d3d12->views.anaglyph && d3d12->views.interlaced)
+   {
+      d3d12->views.format = format;
+      return true;
+   }
+   RARCH_WARN("[D3D12] Views can't be drawn: their pipes failed.\n");
+   d3d12_views_release_pipes(d3d12);
+   d3d12->views.failed = true;
+   return false;
+}
+
+/* Let go behind this frame, which may still draw from it */
+static bool d3d12_views_retire(d3d12_video_t *d3d12, d3d12_texture_t *t)
+{
+   d3d12_texture_t *copy = (d3d12_texture_t*)malloc(sizeof(*copy));
+   if (!copy)
+      return false;
+   *copy = *t;
+   d3d12_retire(d3d12, copy, NULL, d3d12->queue.fenceValue + 1);
+   memset(t, 0, sizeof(*t));
+   return true;
+}
+
+/* A render target in the swap chain's format sized dims, at rest as
+ * one, with an RTV slot of its own past the readback's */
+static bool d3d12_views_make(d3d12_video_t *d3d12, d3d12_texture_t *t,
+      unsigned dims)
+{
+   unsigned slot = countof(d3d12->chain.renderTargets)
+      + GFX_MAX_SHADERS * 2 + 1 + (t == &d3d12->views.ui ? 1 : 0);
+   memset(t, 0, sizeof(*t));
+   t->desc.Width       = VIDEO_SCALE_W(dims);
+   t->desc.Height      = VIDEO_SCALE_H(dims);
+   t->desc.Format      = d3d12_views_format(d3d12);
+   t->desc.Flags       = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   t->srv_heap         = &d3d12->desc.srv_heap;
+   t->rt_view.ptr      = d3d12->desc.rtv_heap.cpu.ptr
+      + slot * d3d12->desc.rtv_heap.stride;
+   d3d12_init_texture(d3d12->device, t);
+   if (t->handle && t->desc.Format == d3d12_views_format(d3d12))
+      return true;
+   RARCH_WARN("[D3D12] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   d3d12_release_texture(t);
+   memset(t, 0, sizeof(*t));
+   return false;
+}
+
+/* The next constants slot, written: @mvp, the part of the texture
+ * drawn and where its filtering stops. 0 when the frame has used them
+ * all, which its placements can't. */
+static D3D12_GPU_VIRTUAL_ADDRESS d3d12_views_cb(d3d12_video_t *d3d12,
+      const math_matrix_4x4 *mvp, const float *rect, const float *clamp)
+{
+   d3d12_views_ubo_t *ubo;
+   unsigned slot = d3d12->views.cb_next;
+   if (slot >= D3D12_VIEWS_CB_SLOTS)
+      return 0;
+   d3d12->views.cb_next = slot + 1;
+   ubo = (d3d12_views_ubo_t*)(d3d12->views.cb_mapped
+         + slot * D3D12_MESH_CB_SIZE);
+   ubo->mvp = *mvp;
+   memcpy(ubo->rect,  rect,  sizeof(ubo->rect));
+   memcpy(ubo->clamp, clamp, sizeof(ubo->clamp));
+   return d3d12->views.cb_va + slot * D3D12_MESH_CB_SIZE;
+}
+
+/* A top-left rectangle as a viewport and as a scissor */
+static void d3d12_views_vp(const video_views_rect_t *r, D3D12_VIEWPORT *vp,
+      D3D12_RECT *sc)
+{
+   vp->TopLeftX = (float)VIDEO_POS_X(r->pos);
+   vp->TopLeftY = (float)VIDEO_POS_Y(r->pos);
+   vp->Width    = (float)VIDEO_SCALE_W(r->dims);
+   vp->Height   = (float)VIDEO_SCALE_H(r->dims);
+   vp->MinDepth = 0.0f;
+   vp->MaxDepth = 1.0f;
+   sc->left     = VIDEO_POS_X(r->pos);
+   sc->top      = VIDEO_POS_Y(r->pos);
+   sc->right    = sc->left + (LONG)VIDEO_SCALE_W(r->dims);
+   sc->bottom   = sc->top  + (LONG)VIDEO_SCALE_H(r->dims);
+}
+
+/* View @view of the frame over @dst, cut to @cut, as the stock chain
+ * draws a copy of it: the same texels, the same filter, stopping at the
+ * view's edge as at a texture's. */
+static void d3d12_views_draw_direct(d3d12_video_t *d3d12,
+      const struct d3d12_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   D3D12_VIEWPORT vp, vp_cut;
+   D3D12_RECT sc_dst, sc;
+   D3D12_GPU_VIRTUAL_ADDRESS cb;
+   float rect[4], clamp[4];
+   D3D12GraphicsCommandList cmd     = d3d12->queue.cmd;
+   const struct retro_video_view *v = &d->video_info->views.views[view];
+   float tw = (float)VIDEO_SCALE_W(d->src_dims);
+   float th = (float)VIDEO_SCALE_H(d->src_dims);
+
+   rect[0]  = (float)v->x / tw;
+   rect[1]  = (float)v->y / th;
+   rect[2]  = (float)(v->x + v->width)  / tw;
+   rect[3]  = (float)(v->y + v->height) / th;
+   clamp[0] = rect[0] + 0.5f / tw;
+   clamp[1] = rect[1] + 0.5f / th;
+   clamp[2] = rect[2] - 0.5f / tw;
+   clamp[3] = rect[3] - 0.5f / th;
+   if (!(cb = d3d12_views_cb(d3d12, &d3d12->mvp, rect, clamp)))
+      return;
+   d3d12_views_vp(dst, &vp, &sc_dst);
+   d3d12_views_vp(cut, &vp_cut, &sc);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO, cb);
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+}
+
+/* Draws @view over the whole of @r through @pipe, unrotated */
+static void d3d12_views_quad(d3d12_video_t *d3d12, D3D12PipelineState pipe,
+      D3D12_GPU_DESCRIPTOR_HANDLE view, D3D12_GPU_DESCRIPTOR_HANDLE sampler,
+      const video_views_rect_t *r)
+{
+   static const float whole[4]  = { 0.0f, 0.0f, 1.0f, 1.0f };
+   D3D12_VIEWPORT vp;
+   D3D12_RECT sc;
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   D3D12_GPU_VIRTUAL_ADDRESS cb = d3d12_views_cb(d3d12, &d3d12->mvp_no_rot,
+         whole, whole);
+   if (!cb)
+      return;
+   d3d12_views_vp(r, &vp, &sc);
+   cmd->lpVtbl->SetPipelineState(cmd, pipe);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO, cb);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, view);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         sampler);
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+}
+
+/* The root signature and quad every views draw uses */
+static void d3d12_views_bind(d3d12_video_t *d3d12)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+         D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked, and in *blend whether they draw into the canvas. */
+static bool d3d12_views_setup(d3d12_video_t *d3d12,
+      const video_frame_info_t *video_info, const void *frame,
+      bool *blend, d3d12_video_t **chains, video_views_rect_t *rects)
+{
+   bool views;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+
+   d3d12->views.cb_next = 0;
+   /* A target made for another format is made again. */
+   if (     d3d12->views.format
+         && d3d12->views.format != d3d12_views_format(d3d12))
+   {
+      d3d12_vv_target_drop(d3d12, &d3d12->views.canvas_target,
+            &d3d12->views.canvas);
+      d3d12_vv_target_drop(d3d12, &d3d12->views.ui_target,
+            &d3d12->views.ui);
+   }
+   views = video_info->views.num_views
+      && d3d12_views_allowed(d3d12)
+      && d3d12_views_init(d3d12);
+   /* Anaglyph and interlaced draw both eyes into the canvas, or without
+    * one only the left eye's area into the window. */
+   *blend = views && offscreen
+      && d3d12_vv_target_ensure(d3d12, &d3d12->views.canvas_target,
+            &d3d12->views.canvas, layout->canvas_dims);
+   /* A real frame without the blend modes frees the canvas. */
+   if (frame && !offscreen)
+      d3d12_vv_target_drop(d3d12, &d3d12->views.canvas_target,
+            &d3d12->views.canvas);
+   /* A rolling scanline is drawn by the frame's own draw. */
+   views = views
+      && !(video_info->shader_subframes > 1 && video_info->scan_subframes)
+      && video_views_fit_frame(&video_info->views,
+            d3d12->views.frame_dims)
+      && d3d12_vv_pick_chains(d3d12, &d3d12->views.chains,
+            &video_info->views, layout, true, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend = views && *blend;
+   if (views && !d3d12->views.direct_seen)
+   {
+      d3d12->views.direct_seen = true;
+      RARCH_LOG("[D3D12] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Draws the views into @rtv, sized as the window, or with @blend into
+ * the canvas, whose halves one pass then blends into @rtv. */
+static void d3d12_views_render(d3d12_video_t *d3d12,
+      const video_frame_info_t *video_info, d3d12_video_t **chains,
+      D3D12_CPU_DESCRIPTOR_HANDLE rtv, D3D12_GPU_DESCRIPTOR_HANDLE src,
+      bool blend)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   struct d3d12_views_draw d;
+   D3D12GraphicsCommandList cmd       = d3d12->queue.cmd;
+   const video_views_layout_t *layout = &video_info->views_layout;
+
+   d3d12_views_bind(d3d12);
+   if (blend)
+   {
+      cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &d3d12->views.canvas.rt_view,
+            FALSE, NULL);
+      cmd->lpVtbl->ClearRenderTargetView(cmd, d3d12->views.canvas.rt_view,
+            clear, 0, NULL);
+   }
+   cmd->lpVtbl->SetPipelineState(cmd, d3d12->views.rect);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, src);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_EDGE]);
+
+   d.video_info = video_info;
+   d.src_dims   = d3d12->views.src_dims;
+   d3d12_vv_draw_placements(d3d12, &d, layout, chains,
+         blend || !layout->offscreen,
+         blend ? layout->canvas_dims : video_info->dims, true);
+
+   if (blend)
+   {
+      video_views_rect_t whole;
+      whole.pos  = 0;
+      whole.dims = video_info->dims;
+      D3D12_RESOURCE_TRANSITION(cmd, d3d12->views.canvas.handle,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &rtv, FALSE, NULL);
+      d3d12_views_quad(d3d12,
+            (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+            ? d3d12->views.interlaced : d3d12->views.anaglyph,
+            d3d12->views.canvas.gpu_descriptor[0],
+            d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE], &whole);
+      D3D12_RESOURCE_TRANSITION(cmd, d3d12->views.canvas.handle,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+   }
+}
+
+/* Moves UI drawing into the UI layer, laid out at one eye's size */
+static void d3d12_views_ui_begin(d3d12_video_t *d3d12,
+      video_frame_info_t *video_info)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   D3D12GraphicsCommandList cmd       = d3d12->queue.cmd;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   unsigned w                         = VIDEO_SCALE_W(layout->ui_dims);
+   unsigned h                         = VIDEO_SCALE_H(layout->ui_dims);
+
+   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &d3d12->views.ui.rt_view,
+         FALSE, NULL);
+   cmd->lpVtbl->ClearRenderTargetView(cmd, d3d12->views.ui.rt_view, clear,
+         0, NULL);
+
+   /* Menus and widgets size from video_info->dims, fonts from the
+    * chain's viewport and vp.full_dims. */
+   video_views_ui_enter(&d3d12->views.saved, &video_info->dims,
+         &d3d12->vp.full_dims, layout->ui_dims);
+   d3d12->views.saved_viewport       = d3d12->chain.viewport;
+   d3d12->views.saved_scissor        = d3d12->chain.scissorRect;
+   d3d12->chain.viewport.TopLeftX    = 0.0f;
+   d3d12->chain.viewport.TopLeftY    = 0.0f;
+   d3d12->chain.viewport.Width       = (float)w;
+   d3d12->chain.viewport.Height      = (float)h;
+   d3d12->chain.scissorRect.left     = 0;
+   d3d12->chain.scissorRect.top      = 0;
+   d3d12->chain.scissorRect.right    = (LONG)w;
+   d3d12->chain.scissorRect.bottom   = (LONG)h;
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+}
+
+/* Back onto @rtv, and the UI layer into each eye's area. It was drawn
+ * over transparent black with the alpha the SDR pipes keep, so it is
+ * premultiplied. */
+static void d3d12_views_ui_end(d3d12_video_t *d3d12,
+      video_frame_info_t *video_info, D3D12_CPU_DESCRIPTOR_HANDLE rtv)
+{
+   unsigned a;
+   D3D12GraphicsCommandList cmd       = d3d12->queue.cmd;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   /* Only full side by side places it unscaled. */
+   D3D12_GPU_DESCRIPTOR_HANDLE sampler = d3d12->samplers[
+      (layout->stereo_mode == VIDEO_STEREO_MODE_SBS_FULL)
+      ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+
+   d3d12->chain.viewport    = d3d12->views.saved_viewport;
+   d3d12->chain.scissorRect = d3d12->views.saved_scissor;
+   video_views_ui_leave(&d3d12->views.saved, &video_info->dims,
+         &d3d12->vp.full_dims);
+
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->views.ui.handle,
+         D3D12_RESOURCE_STATE_RENDER_TARGET,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &rtv, FALSE, NULL);
+   d3d12_views_bind(d3d12);
+   for (a = 0; a < layout->num_areas; a++)
+      d3d12_views_quad(d3d12, d3d12->views.layer,
+            d3d12->views.ui.gpu_descriptor[0], sampler, &layout->areas[a]);
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->views.ui.handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_RENDER_TARGET);
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+}
+
+static void d3d12_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return;
+   d3d12->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = d3d12->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      d3d12->views.chains.stock[i] = NULL;
+}
+
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
@@ -7017,6 +7568,12 @@ static bool d3d12_gfx_frame(
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
    D3D12GraphicsCommandList cmd;
+   d3d12_video_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                     = false;
+   bool views_blend               = false;
+   bool views_per_eye             = false;
+   bool views_ui                  = false;
    bool message_visible;
    bool draw_direct               = false;
 #ifdef HAVE_GFX_WIDGETS
@@ -7301,7 +7858,7 @@ static bool d3d12_gfx_frame(
    /* Custom viewport doesn't call apply_state_changes, so we can't rely on this for now */
    if (d3d12->resize_viewport)
 #endif
-      d3d12_update_viewport(d3d12, false);
+      d3d12_update_viewport(d3d12, d3d12->views.active);
 
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
@@ -7462,6 +8019,8 @@ static bool d3d12_gfx_frame(
                }
             }
          }
+         d3d12->views.src_dims   = tex_dims;
+         d3d12->views.frame_dims = VIDEO_SCALE_PACK(width, height);
 #ifdef HAVE_SLANG
          slang_rect_values(d3d12->frame_rect.values,
                VIDEO_SCALE_PACK(width, height), 0, tex_dims);
@@ -7562,6 +8121,18 @@ static bool d3d12_gfx_frame(
       }
    }
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
+
+   views = d3d12_views_setup(d3d12, video_info, frame, &views_blend,
+         view_chains, view_rects);
+   /* d3d12->vp is the whole window while views draw. */
+   if (views != d3d12->views.active)
+   {
+      d3d12->views.active = views;
+      d3d12_update_viewport(d3d12, views);
+   }
+   retro_atomic_store_release_int(&d3d12->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   d3d12_views_publish(d3d12);
 
    texture = d3d12->frame.texture;
 
@@ -7907,7 +8478,7 @@ static bool d3d12_gfx_frame(
                D3D12_RESOURCE_STATE_COPY_SOURCE);
    }
 
-   if (texture)
+   if (texture && !views)
    {
       cmd->lpVtbl->SetGraphicsRootSignature(cmd,
             d3d12->desc.rootSignature);
@@ -8062,6 +8633,13 @@ static bool d3d12_gfx_frame(
     * COPY_SOURCE, and expects to find it there. It is made readable for
     * this one draw and put back, on every frame that draws from it,
     * repeats included. */
+   /* Views read the core's texture as the stock draw does. */
+   if (views && d3d12->hw_direct.current)
+   {
+      draw_direct                     = true;
+      d3d12->hw_v2.frame_took_texture = true;
+   }
+
    if (draw_direct)
       D3D12_RESOURCE_TRANSITION(
             cmd,
@@ -8069,7 +8647,13 @@ static bool d3d12_gfx_frame(
             D3D12_RESOURCE_STATE_COPY_SOURCE,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+   if (views)
+      d3d12_views_render(d3d12, video_info, view_chains,
+            d3d12->chain.desc_handles[d3d12->chain.frame_index],
+            draw_direct ? d3d12->hw_direct.current_gpu
+            : d3d12->frame.texture[0].gpu_descriptor[0], views_blend);
+   else
+      cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
 
    if (draw_direct)
       D3D12_RESOURCE_TRANSITION(
@@ -8195,6 +8779,29 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, d3d12_views_allowed(d3d12));
+   /* A real frame without it frees the UI layer. */
+   if (frame && !views_per_eye)
+      d3d12_vv_target_drop(d3d12, &d3d12->views.ui_target,
+            &d3d12->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden. */
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE), msg, statistics_show,
+#ifdef HAVE_GFX_WIDGETS
+         widgets_active && gfx_widgets_visible(video_info)
+#else
+         false
+#endif
+         )
+      && d3d12->views.rect
+      && d3d12_vv_target_ensure(d3d12, &d3d12->views.ui_target,
+            &d3d12->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+      d3d12_views_ui_begin(d3d12, video_info);
+
 #ifdef HAVE_DXGI_HDR
    /* When HDR is on the menu/overlay draws into the HDR-format
     * back_buffer.  D3D12 requires PSO RTVFormats to match the bound
@@ -8282,6 +8889,33 @@ static bool d3d12_gfx_frame(
          cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
          cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
       }
+      else if (d3d12->views.active)
+      {
+         /* d3d12->vp is the whole window while views draw, so fit the
+          * menu to this pass's target here. */
+         struct video_viewport vp;
+         D3D12_VIEWPORT menu_vp;
+         D3D12_RECT menu_sc;
+         memset(&vp, 0, sizeof(vp));
+         vp.full_dims     = VIDEO_SCALE_PACK(
+               (unsigned)d3d12->chain.viewport.Width,
+               (unsigned)d3d12->chain.viewport.Height);
+         video_driver_update_viewport(&vp, false,
+               (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false,
+               false);
+         menu_vp.TopLeftX = (float)VIDEO_POS_X(vp.pos);
+         menu_vp.TopLeftY = (float)VIDEO_POS_Y(vp.pos);
+         menu_vp.Width    = (float)VIDEO_SCALE_W(vp.dims);
+         menu_vp.Height   = (float)VIDEO_SCALE_H(vp.dims);
+         menu_vp.MinDepth = 0.0f;
+         menu_vp.MaxDepth = 1.0f;
+         menu_sc.left     = VIDEO_POS_X(vp.pos);
+         menu_sc.top      = VIDEO_POS_Y(vp.pos);
+         menu_sc.right    = menu_sc.left + (LONG)VIDEO_SCALE_W(vp.dims);
+         menu_sc.bottom   = menu_sc.top  + (LONG)VIDEO_SCALE_H(vp.dims);
+         cmd->lpVtbl->RSSetViewports(cmd, 1, &menu_vp);
+         cmd->lpVtbl->RSSetScissorRects(cmd, 1, &menu_sc);
+      }
 
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->menu.texture.gpu_descriptor[0]);
@@ -8303,7 +8937,9 @@ static bool d3d12_gfx_frame(
    d3d12->flags |= D3D12_ST_FLAG_SPRITES_ENABLE;
 
 #ifdef HAVE_OVERLAY
-   if ((d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) && overlay_behind_menu)
+   /* Touch overlays would straddle both eyes. */
+   if (     (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) && overlay_behind_menu
+         && !views_per_eye)
       d3d12_render_overlay(d3d12);
 #endif
 
@@ -8341,7 +8977,8 @@ static bool d3d12_gfx_frame(
          }
       }
 #ifdef HAVE_OVERLAY
-   if ((d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) && !overlay_behind_menu)
+   if (     (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) && !overlay_behind_menu
+         && !views_per_eye)
       d3d12_render_overlay(d3d12);
 #endif
 
@@ -8390,6 +9027,10 @@ static bool d3d12_gfx_frame(
       font_driver_render_msg(d3d12, msg, strlen(msg), NULL, NULL);
    }
    d3d12->flags &= ~D3D12_ST_FLAG_SPRITES_ENABLE;
+
+   if (views_ui)
+      d3d12_views_ui_end(d3d12, video_info,
+            d3d12->chain.desc_handles[d3d12->chain.frame_index]);
 
 #if defined(_WIN32) && !defined(__WINRT__)
    video_driver_update_title(NULL);
@@ -10974,7 +11615,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_texture_lend,
    d3d12_texture_lend_ready,
    NULL, /* get_last_present_wait */
-   NULL, /* set_view_count */
+   d3d12_set_view_count,
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    d3d12_set_frame_format,

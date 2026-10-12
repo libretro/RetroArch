@@ -1,13 +1,14 @@
 name: CI Windows views under Wine
 
-# Views on the D3D11 driver, end to end: retroarch.exe cross-built with
-# mingw-w64 runs the video_views test core under Wine, on a virtual
-# display through Mesa's software rasteriser, and
-# samples/cores/video_views/e2e/run.py checks the screen in each stereo
-# mode, from the core's software frames and its D3D11 textures, with
-# the menu laid out per eye and the pointer over it. Wine's own shader
-# compiler can't take the driver's HLSL, so vkd3d's, from its release,
-# is put in as D3DCompiler_47.dll.
+# Views on the D3D11 and D3D12 drivers, end to end: retroarch.exe
+# cross-built with mingw-w64 runs the video_views test core under Wine,
+# on a virtual display through Mesa's software rasterisers (D3D12 on
+# Wine's vkd3d over lavapipe), and samples/cores/video_views/e2e/run.py
+# checks the screen in each stereo mode, from the core's software
+# frames and its D3D11 and D3D12 textures, with the menu laid out per
+# eye and the pointer over it. Wine's own shader compiler can't take the
+# drivers' HLSL, so vkd3d's, from its release, is put in as
+# D3DCompiler_47.dll.
 
 on:
   push:
@@ -15,6 +16,7 @@ on:
       - master
     paths:
       - 'gfx/drivers/d3d11.c'
+      - 'gfx/drivers/d3d12.c'
       - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
       - 'gfx/video_views.*'
       - 'gfx/video_views_draw.h'
@@ -25,6 +27,7 @@ on:
   pull_request:
     paths:
       - 'gfx/drivers/d3d11.c'
+      - 'gfx/drivers/d3d12.c'
       - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
       - 'gfx/video_views.*'
       - 'gfx/video_views_draw.h'
@@ -43,15 +46,15 @@ concurrency:
 
 jobs:
   windows-wine-views:
-    name: Views on D3D11 under Wine
+    name: Views on D3D11 and D3D12 under Wine
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 150
 
     steps:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb imagemagick libgl1-mesa-dri autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
+          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb imagemagick libgl1-mesa-dri mesa-vulkan-drivers libvulkan1 autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -109,7 +112,7 @@ jobs:
           cp .libs/libvkd3d-shader-1.dll .libs/libvkd3d-1.dll \
             "$GITHUB_WORKSPACE/"
 
-      - name: Build retroarch.exe with mingw-w64 (D3D11, slang)
+      - name: Build retroarch.exe with mingw-w64 (D3D11, D3D12, slang)
         shell: bash
         run: |
           set -eu
@@ -129,13 +132,14 @@ jobs:
           done
           make -C samples/cores/video_views DLL=1 CC=x86_64-w64-mingw32-gcc
 
-      - name: Views on D3D11, end to end (Wine, Xvfb, llvmpipe)
+      - name: Views on D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash
         run: |
           set -eu
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           export LIBGL_ALWAYS_SOFTWARE=1
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           # The prefix is made before the first case is timed.
           WINEDEBUG=-all wineboot -i > /dev/null 2>&1 || true
           RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
-            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d11
+            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d11 d3d12
