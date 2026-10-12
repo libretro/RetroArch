@@ -47,6 +47,11 @@ RETRO_BEGIN_DECLS
  * - linear filtering, clamp to edge: the coordinate is moved into the
  *   rectangle and clamped to just past its first and last texel
  *   centres, where the filter gives the texel beyond no weight;
+ * - linear filtering, clamp to border: as clamp to edge, times the
+ *   share of the filter's footprint inside the rectangle, the border's
+ *   transparent black being the rest. That blend's weight is the
+ *   shader's own, where a sampler's is quantised: the outermost texels'
+ *   blend with the border may differ by a step of 8 bits;
  * - nearest filtering, any wrap: the texel the sampler would pick is
  *   fetched, repeat and mirror wrapping the coordinate before it is
  *   scaled as samplers do;
@@ -56,7 +61,7 @@ RETRO_BEGIN_DECLS
  * The texel picked where a coordinate falls exactly on a texel's edge is
  * the one the shader's float arithmetic gives; a sampler rounding the
  * other way there would differ (seen only for mirrored gathers).
- * Anything else - linear filtering with another wrap, depth compares,
+ * Anything else - linear filtering with repeat or mirror, depth compares,
  * projective sampling, a frame texture used in a way this does not
  * know - is reported unsupported, and the chain keeps its copy. */
 

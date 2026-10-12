@@ -13,8 +13,10 @@
  * rewritten, reading that texture's texels at (x, y) of a larger one
  * filled with noise around them. Read in floats over spans and scales
  * that put coordinates outside the frame, on texel edges and on texel
- * centres, the two must match bit for bit. --require-gl fails when no
- * context can be had rather than skipping. */
+ * centres, the two must match bit for bit - linear filtering with border
+ * wrap to within one step of 8 bits, which is how far its blend with
+ * the border may round otherwise. --require-gl fails when no context can
+ * be had rather than skipping. */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -40,7 +42,7 @@
 enum expect
 {
    X_ALL = 0,     /* rewritten every way */
-   X_SAMPLES,     /* samples: rewritten but for linear with other wraps */
+   X_SAMPLES,     /* samples: rewritten but for linear, repeat or mirror */
    X_NONE,        /* never reads the frame: left alone */
    X_REFUSED      /* reads it as cannot be kept: refused */
 };
@@ -122,7 +124,9 @@ static enum slang_rect_result expected(const struct shader *s,
       case X_ALL:
          return SLANG_RECT_REWRITTEN;
       case X_SAMPLES:
-         return (m->linear && m->wrap != SLANG_RECT_WRAP_EDGE)
+         return (    m->linear
+                  && (m->wrap == SLANG_RECT_WRAP_REPEAT
+                     || m->wrap == SLANG_RECT_WRAP_MIRROR))
             ? SLANG_RECT_UNSUPPORTED : SLANG_RECT_REWRITTEN;
       case X_NONE:
          return SLANG_RECT_UNCHANGED;
@@ -476,6 +480,11 @@ static int gl_run(void)
             float s0 = sp->s0, s1 = sp->s1;
             float t0 = sp->s0 * 0.9f, t1 = sp->s1 * 1.07f;
             int   bad = 0, first = -1, k;
+            /* Linear with border: the edge texels' blend with the border
+             * is the shader's, its weight unquantised, which a sampler
+             * may round to its own steps - within one of 8 bits. */
+            float tolerance = (m->linear && m->wrap == SLANG_RECT_WRAP_BORDER)
+               ? 1.0f / 255.0f : 0.0f;
             if (sp->scale)
             {
                s0 = t0 = 0.0f;
@@ -494,12 +503,23 @@ static int gl_run(void)
             bind_frame(t_big);
             draw(prog, s0, t0, s1, t1, true, b);
             for (k = 0; k < OW * OH; k++)
-               if (memcmp(a + k * 4, b + k * 4, 4 * sizeof(float)))
+            {
+               int c;
+               for (c = 0; c < 4; c++)
+               {
+                  float d = a[k * 4 + c] - b[k * 4 + c];
+                  if (d < 0.0f)
+                     d = -d;
+                  if (d > tolerance)
+                     break;
+               }
+               if (c < 4)
                {
                   if (first < 0)
                      first = k;
                   bad++;
                }
+            }
             drawn++;
             if (bad)
                fail("%s, %s, span %u: %d of %d pixels differ, the first "

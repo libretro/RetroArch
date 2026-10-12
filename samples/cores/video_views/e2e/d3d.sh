@@ -116,13 +116,17 @@ done
 # A preset reads a hardware frame in the corner of a larger texture
 # where it lies: the core draws its DS frame into a texture of its
 # regular maximum. Each preset runs on that and on the software frame,
-# which comes on its own; the screenshots must match. Linear filtering
-# with border wrap, and a filter the preset leaves to the smooth
-# setting, have the frame copied out instead.
-for case in rect_nearest:1 rect_nearest_edge:1 rect_nearest_repeat:1 \
-            rect_nearest_mirror:1 rect_linear:1 rect_linear_border:0 \
-            rect_full:1 rect_two:1 rect_unspec:0; do
-   preset=${case%:*}; want=${case#*:}
+# which comes on its own; the screenshots must match, linear filtering
+# with border wrap to within a step (its blend of the edge texels with
+# the border is the shader's). A filter the preset leaves to the smooth
+# setting has the frame copied out instead.
+# preset:read in place:tolerance
+for case in rect_nearest:1:0 rect_nearest_edge:1:0 rect_nearest_repeat:1:0 \
+            rect_nearest_mirror:1:0 rect_linear:1:0 rect_linear_border:1:1 \
+            rect_full:1:0 rect_two:1:0 rect_unspec:0:0; do
+   IFS=: read -r preset want tol <<EOF
+$case
+EOF
    for hw in off "$driver"; do
       d="$out/rect-$hw-$preset"
       rm -rf "$d"; mkdir -p "$d"
@@ -131,7 +135,7 @@ for case in rect_nearest:1 rect_nearest_edge:1 rect_nearest_repeat:1 \
       run_ra "$d" false "$here/$preset.slangp"
    done
    if python3 - "$here/run.py" "$out/rect-off-$preset" \
-         "$out/rect-$driver-$preset" "$want" <<'PY'
+         "$out/rect-$driver-$preset" "$want" "$tol" <<'PY'
 import importlib.util, os, sys
 spec = importlib.util.spec_from_file_location('run', sys.argv[1])
 r = importlib.util.module_from_spec(spec)
@@ -152,8 +156,10 @@ for name in os.listdir(sys.argv[3]):
             logs += f.read()
 in_place = 'Preset reads frames where the core leaves them' in logs
 errors = []
-if sw != hw:
-    errors.append('the hardware frame draws other than the software one')
+bad = r.rows_differ(sw, hw, int(sys.argv[5]))
+if bad or len(sw) != len(hw):
+    errors.append('the hardware frame draws other than the software one'
+                  ' (%d pixels)' % bad)
 if in_place != (sys.argv[4] == '1'):
     errors.append('frame %s where it lies' % ('read' if in_place else 'not read'))
 for e in errors:

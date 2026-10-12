@@ -269,30 +269,33 @@ NOISE_COLOURS = [BLACK, RED, GREEN, BLUE, (0, 255, 255), (255, 0, 255),
 # A preset reads a frame inside a larger texture where it lies. Each
 # preset runs on the core's frame drawn in hardware into a framebuffer
 # as large as its maximum, and again on its software frame, which comes
-# on its own: the screenshots must match. Linear filtering with border
-# wrap mixes in what lies past the frame, so that preset has the frame
-# copied out. [(preset, read in place)]
-RECT_PRESETS = [('rect_nearest.slangp', True),
-                ('rect_nearest_edge.slangp', True),
-                ('rect_nearest_repeat.slangp', True),
-                ('rect_nearest_mirror.slangp', True),
-                ('rect_linear.slangp', True),
-                ('rect_linear_border.slangp', False),
-                ('rect_full.slangp', True),
-                ('rect_two.slangp', True)]
+# on its own: the screenshots must match, but for linear filtering with
+# border wrap, whose blend of the edge texels with the border is the
+# shader's and may round a step from the sampler's.
+# [(preset, read in place, tolerance)]
+RECT_PRESETS = [('rect_nearest.slangp', True, 0),
+                ('rect_nearest_edge.slangp', True, 0),
+                ('rect_nearest_repeat.slangp', True, 0),
+                ('rect_nearest_mirror.slangp', True, 0),
+                ('rect_linear.slangp', True, 0),
+                ('rect_linear_border.slangp', True, 1),
+                ('rect_full.slangp', True, 0),
+                ('rect_two.slangp', True, 0)]
 RECT_HW = {'glcore': ('gl', 'gl_topleft')}
 IN_PLACE_RE = re.compile(
     r'\[GLCore\] Preset reads frames where the core leaves them\.')
 # A view's preset reads the view where it lies in the frame. Each runs
 # a rect preset, read in place, and its rect_hist twin, which reads a
 # frame of history too and so has the views copied out: the screenshots
-# must match. [(name, map option, core options, hw)]
+# must match, linear with border to within a step as above.
+# [(name, map option, core options, hw)]
 VIEW_RECT_CASES = [('view-rect-ds', 'ds', NOISE, 'off'),
                    ('view-rect-ds-rgb565', 'ds', NOISE_565, 'off'),
                    ('view-rect-3ds', '3ds', NOISE, 'gl'),
                    ('view-rect-3ds', '3ds', NOISE, 'gl_topleft'),
                    ('view-rect-3ds', '3ds', NOISE, 'vulkan')]
-VIEW_RECT_PRESETS = ('nearest', 'nearest_repeat', 'linear')
+VIEW_RECT_PRESETS = (('nearest', 0), ('nearest_repeat', 0), ('linear', 0),
+                     ('linear_border', 1))
 VIEW_IN_PLACE_RE = re.compile(
     r'\] Views\' presets read the frame where it lies\.')
 
@@ -1128,8 +1131,8 @@ def main():
                 for e in errors:
                     print('    ' + e)
                 failed += bool(errors)
-        for preset, in_place in (RECT_PRESETS if driver in RECT_HW
-                                 else []):
+        for preset, in_place, tolerance in (RECT_PRESETS
+                                            if driver in RECT_HW else []):
             name = 'rect-' + preset[:-len('.slangp')]
             path = os.path.join(HERE, preset)
             errors, first = run_exact_case(
@@ -1149,7 +1152,7 @@ def main():
                                   ('not read' if in_place else 'read'))
                 # A copied frame upside down filters to within a step
                 # of the software frame's: weights round the other way.
-                bad = rows_differ(rows, first, 0 if in_place else 1) \
+                bad = rows_differ(rows, first, tolerance if in_place else 1) \
                     if rows and first else None
                 if bad is None:
                     errors.append('no screenshot to compare')
@@ -1164,7 +1167,7 @@ def main():
         for case in [c for c in VIEW_RECT_CASES
                      if c[3] in EXACT_HW.get(driver, ())]:
             name, mapopt, opts, hw = case
-            for mode in VIEW_RECT_PRESETS:
+            for mode, tolerance in VIEW_RECT_PRESETS:
                 rows = {}
                 errors = []
                 for kind, in_place in (('rect', True), ('rect_hist', False)):
@@ -1179,10 +1182,10 @@ def main():
                             kind, 'not read' if in_place else 'read'))
                 if not rows['rect'] or not rows['rect_hist']:
                     errors.append('no screenshot to compare')
-                elif rows['rect'] != rows['rect_hist']:
+                elif rows_differ(rows['rect'], rows['rect_hist'], tolerance):
                     errors.append('%d pixels differ from the copied views\''
                                   % rows_differ(rows['rect'],
-                                                rows['rect_hist'], 0))
+                                                rows['rect_hist'], tolerance))
                 print('%s %s/%s-%s%s' % ('FAIL' if errors else 'pass', driver,
                                          name, mode, '' if hw == 'off'
                                          else ' (hw ' + hw + ')'))
