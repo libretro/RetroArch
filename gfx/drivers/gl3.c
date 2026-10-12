@@ -6650,14 +6650,14 @@ static bool gl3_frame(void *data, const void *frame,
    if (frame && !views_per_eye)
       gl3_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
    /* Drawn and composited only when there is UI; overlays are hidden. */
+#ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
          (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
-#ifdef HAVE_GFX_WIDGETS
-         widgets_active && gfx_widgets_visible(video_info)
+         widgets_active && gfx_widgets_visible(video_info))
 #else
-         false
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show, false)
 #endif
-         )
       && gl3_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             video_info->views_layout.ui_dims);
    if (views_ui)
