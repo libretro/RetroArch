@@ -430,6 +430,25 @@ jobs:
           timeout 60 ./vulkan_texture_size_test
           echo "[pass] vulkan_texture_size_test"
 
+      - name: Build and run gl2_pbo_readback_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gl2_pbo_readback
+        run: |
+          set -eu
+          sudo apt-get install -y -qq libgl-dev
+          # gfx/drivers/gl2.c's PBO readback ring against a scripted
+          # GL: a slot is read only once the fence placed after its
+          # readback has signalled, and never waited on in the map. A
+          # read that maps a pending slot, waits in glClientWaitSync
+          # or calls glFinish fails the run; teardown must delete
+          # every fence it issued.
+          make clean check
+          echo "[pass] gl2_pbo_readback_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./gl2_pbo_readback_test
+          echo "[pass] gl2_pbo_readback_test (ASan)"
+
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash
         working-directory: samples/gfx/slang_texture_index_bounds

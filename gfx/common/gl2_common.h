@@ -149,6 +149,9 @@ struct gl2
     * between the two contexts. */
    void *hw_ring_sync[3];
    void *hw_ring_done_sync; /* taken ahead of the swap */
+   /* Placed after each PBO readback: a slot is read only once its
+    * fence has signalled, so mapping it never waits on the GPU. */
+   void *pbo_readback_sync[4];
 
    uint32_t flags;
 

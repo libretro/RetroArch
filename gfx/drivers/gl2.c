@@ -351,6 +351,13 @@ static GLuint gl2_linear_program(gl2_t *gl);
 
 #endif
 
+/* Sync objects for the threaded wrapper's hardware ring and the PBO
+ * readback: the same condition the driver's own fence path compiles
+ * under. GLES builds finish instead. */
+#if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
+#define GL2_HW_RING_SYNC 1
+#endif
+
 #define GL_RASTER_FONT_EMIT(c, vx, vy) \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
@@ -373,6 +380,7 @@ typedef struct __GLsync *GLsync;
 
 /* Forward declaration for lazy init in read_viewport */
 static bool gl2_init_pbo_readback(gl2_t *gl);
+static void gl2_free_pbo_readback(gl2_t *gl);
 
 #if defined(HAVE_PSGL)
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DOES(a, b, c, d, e)
@@ -2566,6 +2574,20 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer, bool bgrx)
    if (!gl->pbo_readback_valid[gl->pbo_readback_index])
       return false;
 
+#ifdef GL2_HW_RING_SYNC
+   /* Four frames behind is usually done; when the GPU is further back
+    * than that the frame is left for the next readback rather than
+    * waited on in the map. */
+   if (gl->pbo_readback_sync[gl->pbo_readback_index])
+   {
+      GLsync sync = (GLsync)gl->pbo_readback_sync[gl->pbo_readback_index];
+      if (glClientWaitSync(sync, 0, 0) == GL_TIMEOUT_EXPIRED)
+         return false;
+      glDeleteSync(sync);
+      gl->pbo_readback_sync[gl->pbo_readback_index] = NULL;
+   }
+#endif
+
    gl->pbo_readback_valid[gl->pbo_readback_index] = false;
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
          gl->pbo_readback[gl->pbo_readback_index]);
@@ -2652,8 +2674,7 @@ static bool gl2_renderchain_read_viewport(
          /* Tear down old PBO resources before reinitializing */
          if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
          {
-            glDeleteBuffers(4, gl->pbo_readback);
-            scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+            gl2_free_pbo_readback(gl);
          }
          gl->flags |= GL2_FLAG_PBO_READBACK_ENABLE;
          if (gl2_init_pbo_readback(gl))
@@ -3560,12 +3581,6 @@ static bool gl2_core_context_is_mains(gl2_t *gl)
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
 
-/* Sync objects for the ring: the same condition the driver's own fence
- * path compiles under. GLES builds finish instead. */
-#if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
-#define GL2_HW_RING_SYNC 1
-#endif
-
 /* The core's context, current on the caller - the main thread. The
  * context driver created it shared with this thread's at init, with
  * the HW-render FBOs already made inside it. From here on the frame
@@ -4099,8 +4114,7 @@ static void gl2_record_readback(gl2_t *gl, bool skip_in_menu)
 
    if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
    {
-      glDeleteBuffers(4, gl->pbo_readback);
-      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      gl2_free_pbo_readback(gl);
       gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
    }
 #ifdef HAVE_MENU
@@ -4126,8 +4140,7 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    if ((unsigned)gl->pbo_readback_scaler.in_width != VIDEO_SCALE_W(gl->vp.dims)
          || (unsigned)gl->pbo_readback_scaler.in_height != VIDEO_SCALE_H(gl->vp.dims))
    {
-      glDeleteBuffers(4, gl->pbo_readback);
-      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      gl2_free_pbo_readback(gl);
       if (!gl2_init_pbo_readback(gl))
       {
          gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
@@ -4139,12 +4152,22 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    gl2_renderchain_bind_pbo(
          gl->pbo_readback[gl->pbo_readback_index]);
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
-   gl->pbo_readback_index = (gl->pbo_readback_index + 1) & 3;
 
    gl2_renderchain_readback(gl, gl->renderchain_data,
          gl2_get_alignment(VIDEO_SCALE_W(gl->vp.dims) * sizeof(uint32_t)),
          fmt, type, NULL);
    gl2_renderchain_unbind_pbo();
+
+#ifdef GL2_HW_RING_SYNC
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   {
+      if (gl->pbo_readback_sync[gl->pbo_readback_index])
+         glDeleteSync((GLsync)gl->pbo_readback_sync[gl->pbo_readback_index]);
+      gl->pbo_readback_sync[gl->pbo_readback_index] =
+            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   }
+#endif
+   gl->pbo_readback_index = (gl->pbo_readback_index + 1) & 3;
 }
 
 /* GLSL 1.20 scRGB encode: mirror of the glcore / hdr_sm5 SDR branch
@@ -6047,8 +6070,7 @@ static void gl2_free(void *data)
 
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
-      glDeleteBuffers(4, gl->pbo_readback);
-      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      gl2_free_pbo_readback(gl);
    }
 
 #ifndef HAVE_OPENGLES
@@ -6252,6 +6274,26 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 #endif
 }
 
+static void gl2_pbo_readback_free_syncs(gl2_t *gl)
+{
+#ifdef GL2_HW_RING_SYNC
+   int i;
+   for (i = 0; i < 4; i++)
+   {
+      if (gl->pbo_readback_sync[i])
+         glDeleteSync((GLsync)gl->pbo_readback_sync[i]);
+      gl->pbo_readback_sync[i] = NULL;
+   }
+#endif
+}
+
+static void gl2_free_pbo_readback(gl2_t *gl)
+{
+   gl2_pbo_readback_free_syncs(gl);
+   glDeleteBuffers(4, gl->pbo_readback);
+   scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+}
+
 static bool gl2_init_pbo_readback(gl2_t *gl)
 {
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
@@ -6259,6 +6301,7 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
 
    gl->pbo_readback_index = 0;
    memset(gl->pbo_readback_valid, 0, sizeof(gl->pbo_readback_valid));
+   gl2_pbo_readback_free_syncs(gl);
    glGenBuffers(4, gl->pbo_readback);
 
    for (i = 0; i < 4; i++)
@@ -7287,8 +7330,7 @@ static bool gl2_record_read(void *data, uint8_t *buffer)
    {
       if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
       {
-         glDeleteBuffers(4, gl->pbo_readback);
-         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+         gl2_free_pbo_readback(gl);
       }
       gl->flags |= GL2_FLAG_PBO_READBACK_ENABLE;
       if (!gl2_init_pbo_readback(gl))
