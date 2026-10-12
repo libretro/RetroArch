@@ -1779,6 +1779,7 @@ struct raac
    unsigned sample_rate;
    unsigned channels;
    int      sfi;                  /* sampling frequency index            */
+   size_t   used;                 /* bytes the last unit took            */
    raac_ch  ch[RAAC_MAX_CH];
    raac_cce cce[RAAC_MAX_CCE];
    raac_sbr sbr[RAAC_MAX_SBR];
@@ -5340,6 +5341,7 @@ unsigned raac_frame_len(const raac_t *a)
    return a ? (a->frame_len << (a->sbr_mode ? 1 : 0)) : 0;
 }
 unsigned raac_sample_rate(const raac_t *a) { return a ? a->out_rate : 0; }
+size_t raac_last_size(const raac_t *a) { return a ? a->used : 0; }
 
 /* Shared worker: parse and synthesise one access unit into per-channel
  * float PCM in full-scale (+-32768) units. Both public entry points
@@ -5357,7 +5359,10 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
    unsigned  next = 0;
    int       s, t, e;
 
-   if (!a || !pkt || !size)
+   if (!a)
+      return -1;
+   a->used = 0;
+   if (!pkt || !size)
       return -1;
    raac_bits_init(&b, pkt, size);
    memset(got, 0, sizeof(got));
@@ -5521,6 +5526,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
       if (b.pos > b.size * 8)
          return -1;
    }
+   a->used = (b.pos + 7) >> 3;
 
    /* the coupling channels first: their own TNS, and the synthesis
     * feeding time-domain coupling, so targets can consume them */

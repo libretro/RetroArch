@@ -112,6 +112,10 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
  * again from its first packet, e.g. for looping. */
 void raac_reset(raac_t *a);
 
+/* Bytes the last decoded access unit took, through its END element:
+ * less than the size given when more follows it. 0 after a failure. */
+size_t raac_last_size(const raac_t *a);
+
 void raac_close(raac_t *a);
 
 RETRO_END_DECLS

@@ -164,6 +164,8 @@ jobs:
             rh264_hw_test
             # rmp3's frame-at-a-time API against its pull API.
             rmp3_frame_test
+            # raac_last_size over units followed by more.
+            raac_size_test
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile
