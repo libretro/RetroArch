@@ -4,8 +4,9 @@
 Runs the video_views test core in headless gamescope for each case,
 takes a GPU screenshot over the network command port (gamescope's own
 with the menu open), checks the colour where each view should land,
-and checks the views status the core logged. One case also bounds the
-GPU memory RetroArch holds, and the pointer cases move the pointer of
+and checks the views status the core logged; a case is shot once that
+status is final, not after a fixed wait. One case also bounds the GPU
+memory RetroArch holds, and the pointer cases move the pointer of
 gamescope's own X server and look for the menu's cursor under it. The
 gl driver doesn't present views, so it runs one case that expects the
 packed frame and no PRESENTS. The exact cases check every pixel of
@@ -51,6 +52,10 @@ CORE = os.path.normpath(os.path.join(
     HERE, '..', 'video_views_libretro.' + ('dll' if WINE else 'so')))
 W, H = 1600, 960
 TOLERANCE = 8
+# How long a case runs on once its views status is final: the frames
+# that take up the layout, with threaded video's one behind. Wine's
+# software D3D draws a frame in far longer.
+SETTLE = 2.0 if WINE else 0.5
 
 RED, BLUE, GREEN = (255, 0, 0), (0, 0, 255), (0, 255, 0)
 YELLOW, WHITE = (255, 255, 0), (255, 255, 255)
@@ -512,8 +517,8 @@ def wait_for_views(p, d, timeout=60):
         time.sleep(0.1)
 
 
-def status_errors(d, driver, settings):
-    """Check the last views status the core logged."""
+def last_status(d):
+    """The last views status the core logged, or None."""
     found = None
     for name in ('run.log', 'retroarch.log'):
         path = os.path.join(d, name)
@@ -521,6 +526,35 @@ def status_errors(d, driver, settings):
             with open(path, errors='replace') as f:
                 for m in STATUS_RE.finditer(f.read()):
                     found = tuple(int(g) for g in m.groups())
+    return found
+
+
+def wait_settled(p, d, want, timeout=20):
+    """Until the core reports the views status want, and the frames
+    that take up its layout are drawn; at most timeout seconds, after
+    which the case's checks report what went wrong."""
+    deadline = time.monotonic() + timeout
+    while p.poll() is None and time.monotonic() < deadline:
+        found = last_status(d)
+        if found and found[:2] == want:
+            time.sleep(SETTLE)
+            return
+        time.sleep(0.05)
+
+
+def png_done(path):
+    """Whether the PNG at path is written to its end."""
+    try:
+        with open(path, 'rb') as f:
+            f.seek(-12, os.SEEK_END)
+            return f.read(12)[4:8] == b'IEND'
+    except OSError:
+        return False
+
+
+def status_errors(d, driver, settings):
+    """Check the last views status the core logged."""
+    found = last_status(d)
     if found is None:
         return ['no "[video_views] presents=" line in the logs']
     want = expected_status(driver, settings)
@@ -758,10 +792,12 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
     try:
         if WINE:
             wait_for_views(p, d)
+        if gpu is None:
+            wait_settled(p, d, expected_status(driver, settings))
         settle = time.time() + 5
-        while time.time() < settle:
+        while gpu is not None and time.time() < settle:
             time.sleep(0.5)
-            pid = retroarch_pid(p.pid, cfg) if gpu is not None else None
+            pid = retroarch_pid(p.pid, cfg)
             mib = gpu_mib(pid) if pid else None
             if mib is not None:
                 gpu.append(mib)
@@ -784,11 +820,10 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             send('SCREENSHOT', port)
         deadline = time.time() + 10
         while time.time() < deadline and not shot:
-            time.sleep(0.5)
+            time.sleep(0.05)
             pngs = [x for x in os.listdir(os.path.join(d, 'shots'))
                     if x.endswith('.png')]
-            if pngs:
-                time.sleep(1)
+            if pngs and png_done(os.path.join(d, 'shots', pngs[0])):
                 shot = os.path.join(d, 'shots', pngs[0])
         send('QUIT', port)
         try:
