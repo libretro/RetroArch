@@ -924,14 +924,15 @@ enum video_texture_update
 enum video_device_api
 {
    VIDEO_DEVICE_NONE = 0,
-   VIDEO_DEVICE_VULKAN
+   VIDEO_DEVICE_VULKAN,
+   VIDEO_DEVICE_D3D11
 };
 
 typedef struct video_device_info
 {
    enum video_device_api api;
    /* Vulkan: VkInstance, VkPhysicalDevice, VkDevice, and the loader's
-    * vkGetInstanceProcAddr. */
+    * vkGetInstanceProcAddr. D3D11: the ID3D11Device in @device. */
    void *instance;
    void *physical_device;
    void *device;
@@ -950,7 +951,11 @@ typedef struct video_device_info
  * timeline semaphores - the driver's reads wait for @wait to reach
  * @wait_value, and it signals @done with @done_value once it reads the
  * frame no more. The frame is left in @layout, or in GENERAL from
- * UNDEFINED or PREINITIALIZED. */
+ * UNDEFINED or PREINITIALIZED.
+ * D3D11: NT handles - a shared DXGI_FORMAT_NV12 texture, and two
+ * shared ID3D11Fences waited for and signalled as above; @layout names
+ * the producer's set of handles, so that what a driver opened of them
+ * is opened again when it changes. */
 typedef struct video_frame_import
 {
    uint64_t image;

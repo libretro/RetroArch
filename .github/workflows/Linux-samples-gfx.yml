@@ -1123,6 +1123,18 @@ jobs:
           make -C samples/gfx/d3d12_mipmaps clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d12_mipmaps clean
 
+      - name: D3D11 video decode backend (Linux and mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # rh264's DXVA backend: the buffers it writes, byte by byte
+          # and against dxva.h, and the backend itself on a D3D11 that
+          # records what it is told. The GPU oracle builds here and
+          # skips; it runs on a Windows machine with a video decoder.
+          make -C samples/gfx/d3d11_video_decode clean check SANITIZER=address,undefined
+          make -C samples/gfx/d3d11_video_decode clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/gfx/d3d11_video_decode clean
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |

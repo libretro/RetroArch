@@ -33,7 +33,12 @@
  * @wait_value before it reads, and signals @done with @done_value once
  * it reads the frame no more: until then the decoder does not write
  * the image again. A frame that will never be read is given back with
- * video_hw_frame_abandon, which signals @done in the reader's place. */
+ * video_hw_frame_abandon, which signals @done in the reader's place.
+ *
+ * D3D11: NT handles of a shared DXGI_FORMAT_NV12 texture and of two
+ * shared ID3D11Fences, used as above; @layout names the decoder's set
+ * of handles, so that a reader keeping what it opened of them opens
+ * them again when it changes. */
 
 #include <stdint.h>
 #include <stddef.h>

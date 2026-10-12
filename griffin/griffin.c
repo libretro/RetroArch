@@ -626,6 +626,9 @@ VIDEO DRIVER
 #if defined(HAVE_D3D11)
 #include "../gfx/drivers/d3d11.c"
 #include "../gfx/common/d3d11_deferred_proxy.c"
+#if defined(HAVE_RMP4) && !defined(__WINRT__)
+#include "../gfx/common/d3d11_video_decode.c"
+#endif
 #endif
 
 #if defined(HAVE_D3D12)

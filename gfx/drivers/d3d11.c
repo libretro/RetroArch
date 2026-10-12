@@ -80,6 +80,14 @@
 #include "../video_thread_wrapper.h"
 #endif
 
+/* Frames a hardware decoder made on a device of its own, through
+ * shared NT handles and fences (import_texture) */
+#if defined(HAVE_RMP4) && !defined(__WINRT__)
+#define D3D11_FRAME_IMPORT
+#include <d3d11_4.h>
+#include "../common/d3d11_video_decode.h"
+#endif
+
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #else
@@ -291,6 +299,10 @@ typedef struct d3d11_planar
    D3D11Texture2D           plane[3];
    D3D11ShaderResourceView  plane_view[3];
    D3D11UnorderedAccessView uav;
+#ifdef D3D11_FRAME_IMPORT
+   /* An imported texture's: what it opened of its producer's */
+   struct d3d11_import     *import;
+#endif
    bool                     interleaved;
 } d3d11_planar_t;
 
@@ -437,6 +449,12 @@ typedef struct
    D3D11ComputeShader    planar_cs;
    D3D11Buffer           planar_cb;
    bool                  planar_failed;
+#ifdef D3D11_FRAME_IMPORT
+   /* Set when frames on another device can be imported */
+   ID3D11Device5        *device5;
+   ID3D11DeviceContext4 *context4;
+   bool                  video_decode;
+#endif
    D3D11DeviceContext    context;
    D3D11RasterizerState  scissor_enabled;
    D3D11RasterizerState  scissor_disabled;
@@ -629,6 +647,11 @@ typedef struct
       bool            enable;
    } record;
 } d3d11_video_t;
+
+#ifdef D3D11_FRAME_IMPORT
+static void d3d11_frame_import_init(d3d11_video_t *d3d11);
+static void d3d11_frame_import_deinit(d3d11_video_t *d3d11);
+#endif
 
 static void d3d11_record_free(d3d11_video_t *d3d11);
 
@@ -3559,6 +3582,9 @@ static void d3d11_gfx_free(void* data)
    d3d11->retained = NULL;
    d3d11_hw_ring_free(d3d11);
    d3d11_record_free(d3d11);
+#ifdef D3D11_FRAME_IMPORT
+   d3d11_frame_import_deinit(d3d11);
+#endif
 
 
 #ifdef HAVE_OVERLAY
@@ -4684,6 +4710,9 @@ static void *d3d11_gfx_init(const video_info_t* video)
       }
    }
 
+#ifdef D3D11_FRAME_IMPORT
+   d3d11_frame_import_init(d3d11);
+#endif
    return d3d11;
 
 error:
@@ -7152,6 +7181,43 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    return true;
 }
 
+#ifdef D3D11_FRAME_IMPORT
+#define D3D11_IMPORT_TEXTURES 8
+#define D3D11_IMPORT_FENCES   8
+
+/* What an imported texture opened of its producer's handles, kept
+ * while they name the same objects: the producer and its generation
+ * (video_frame_import_t::layout) unchanged. */
+typedef struct d3d11_import
+{
+   void                     *owner;
+   unsigned                  gen;
+   unsigned                  num_tex;
+   unsigned                  num_fences;
+   uint64_t                  tex_handle[D3D11_IMPORT_TEXTURES];
+   ID3D11Texture2D          *tex[D3D11_IMPORT_TEXTURES];
+   D3D11ShaderResourceView   luma[D3D11_IMPORT_TEXTURES];
+   D3D11ShaderResourceView   chroma[D3D11_IMPORT_TEXTURES];
+   uint64_t                  fence_handle[D3D11_IMPORT_FENCES];
+   ID3D11Fence              *fence[D3D11_IMPORT_FENCES];
+} d3d11_import_t;
+
+static void d3d11_import_clear(d3d11_import_t *imp)
+{
+   unsigned i;
+   for (i = 0; i < imp->num_tex; i++)
+   {
+      Release(imp->luma[i]);
+      Release(imp->chroma[i]);
+      Release(imp->tex[i]);
+   }
+   for (i = 0; i < imp->num_fences; i++)
+      Release(imp->fence[i]);
+   imp->num_tex    = 0;
+   imp->num_fences = 0;
+}
+#endif
+
 static void d3d11_planar_destroy(d3d11_planar_t *p)
 {
    unsigned i;
@@ -7161,6 +7227,13 @@ static void d3d11_planar_destroy(d3d11_planar_t *p)
       Release(p->plane[i]);
    }
    Release(p->uav);
+#ifdef D3D11_FRAME_IMPORT
+   if (p->import)
+   {
+      d3d11_import_clear(p->import);
+      free(p->import);
+   }
+#endif
    free(p);
 }
 
@@ -7200,6 +7273,55 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
             (D3D11Resource)*tex, NULL, view));
 }
 
+/* The dispatch that converts @views' planes into @uav's texture */
+static bool d3d11_planar_convert(d3d11_video_t *d3d11,
+      D3D11UnorderedAccessView uav, D3D11ShaderResourceView *views,
+      unsigned width, unsigned height, unsigned yuv, bool interleaved,
+      bool swap)
+{
+   D3D11DeviceContext ctx          = d3d11->context;
+   D3D11ShaderResourceView none[3];
+   D3D11UnorderedAccessView no_uav = NULL;
+   D3D11Buffer no_cb               = NULL;
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   float k[6];
+
+   if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->planar_cb, 0,
+         D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+      return false;
+   {
+      float    *f = (float*)mapped.pData;
+      uint32_t *u = (uint32_t*)mapped.pData + 8;
+      image_yuv_coefficients(yuv, k);
+      f[0] = k[0];
+      f[1] = k[1];
+      f[2] = k[2];
+      f[3] = k[3];
+      f[4] = k[4];
+      f[5] = k[5];
+      f[6] = interleaved ? 1.0f : 0.0f;
+      f[7] = swap ? 1.0f : 0.0f;
+      u[0] = width;
+      u[1] = height;
+      u[2] = 0;
+      u[3] = 0;
+   }
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->planar_cb, 0);
+
+   ctx->lpVtbl->CSSetShader(ctx, d3d11->planar_cs, NULL, 0);
+   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &d3d11->planar_cb);
+   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, views);
+   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &uav, NULL);
+   ctx->lpVtbl->Dispatch(ctx, (width + 7) / 8, (height + 7) / 8, 1);
+   /* Nothing of it stays bound: the texture is drawn from next */
+   none[0] = none[1] = none[2] = NULL;
+   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &no_uav, NULL);
+   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, none);
+   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &no_cb);
+   ctx->lpVtbl->CSSetShader(ctx, NULL, NULL, 0);
+   return true;
+}
+
 /* The planes of @image into @p's, from where they lie, and the dispatch
  * that converts them into its texture */
 static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
@@ -7207,14 +7329,9 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
 {
    const struct texture_planar *tp = image->planar;
    D3D11DeviceContext ctx          = d3d11->context;
-   D3D11ShaderResourceView none[3];
-   D3D11UnorderedAccessView no_uav = NULL;
-   D3D11Buffer no_cb               = NULL;
-   D3D11_MAPPED_SUBRESOURCE mapped;
    const uint8_t *c0;
    unsigned c0_stride;
    bool swap;
-   float k[6];
 
    if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
          || p->texture->desc.Width  != image->width
@@ -7243,28 +7360,6 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    else
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->planar_cb, 0,
-         D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-      return VIDEO_TEXTURE_UPDATE_REFUSED;
-   {
-      float    *f = (float*)mapped.pData;
-      uint32_t *u = (uint32_t*)mapped.pData + 8;
-      image_yuv_coefficients(tp->yuv, k);
-      f[0] = k[0];
-      f[1] = k[1];
-      f[2] = k[2];
-      f[3] = k[3];
-      f[4] = k[4];
-      f[5] = k[5];
-      f[6] = p->interleaved ? 1.0f : 0.0f;
-      f[7] = swap ? 1.0f : 0.0f;
-      u[0] = image->width;
-      u[1] = image->height;
-      u[2] = 0;
-      u[3] = 0;
-   }
-   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->planar_cb, 0);
-
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[0], 0, NULL,
          tp->planes[0], tp->strides[0], 0);
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[1], 0, NULL,
@@ -7272,20 +7367,9 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    if (!p->interleaved)
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
-
-   ctx->lpVtbl->CSSetShader(ctx, d3d11->planar_cs, NULL, 0);
-   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &d3d11->planar_cb);
-   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, p->plane_view);
-   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &p->uav, NULL);
-   ctx->lpVtbl->Dispatch(ctx, (image->width + 7) / 8,
-         (image->height + 7) / 8, 1);
-   /* Nothing of it stays bound: the texture is drawn from next */
-   none[0] = none[1] = none[2] = NULL;
-   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &no_uav, NULL);
-   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, none);
-   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &no_cb);
-   ctx->lpVtbl->CSSetShader(ctx, NULL, NULL, 0);
-   return VIDEO_TEXTURE_UPDATE_DONE;
+   return d3d11_planar_convert(d3d11, p->uav, p->plane_view, image->width,
+         image->height, tp->yuv, p->interleaved, swap)
+      ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
 /* A texture for planar frames: RGBA8 a compute shader writes, its planes
@@ -7343,6 +7427,270 @@ static uintptr_t d3d11_planar_load(d3d11_video_t *d3d11,
    p->next       = d3d11->planar;
    d3d11->planar = p;
    return (uintptr_t)texture;
+}
+
+#ifdef D3D11_FRAME_IMPORT
+static const GUID d3d11_iid_texture2d =
+   { 0x6f15aaf2, 0xd208, 0x4e89, { 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c } };
+static const GUID d3d11_iid_fence =
+   { 0xaffde9d1, 0x1df7, 0x4bb7, { 0x8a, 0x34, 0x0f, 0x46, 0x25, 0x1d, 0xab, 0x80 } };
+static const GUID d3d11_iid_device5 =
+   { 0x8ffde202, 0xa0e7, 0x45df, { 0x9e, 0x01, 0xe8, 0x37, 0x80, 0x1b, 0x5e, 0xa0 } };
+static const GUID d3d11_iid_context4 =
+   { 0x917600da, 0xf58c, 0x4c33, { 0x98, 0xd8, 0x3e, 0x15, 0xb3, 0x90, 0xfa, 0x24 } };
+
+/* The NV12 texture behind @handle, opened once, and its planes' views;
+ * -1 when it cannot be read as a @w x @h frame */
+static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
+      uint64_t handle, unsigned w, unsigned h)
+{
+   D3D11_SHADER_RESOURCE_VIEW_DESC vd;
+   D3D11_TEXTURE2D_DESC desc;
+   ID3D11Texture2D *tex = NULL;
+   unsigned i;
+
+   for (i = 0; i < imp->num_tex; i++)
+      if (imp->tex_handle[i] == handle)
+         return (int)i;
+   if (imp->num_tex >= D3D11_IMPORT_TEXTURES)
+      return -1;
+   if (FAILED(d3d11->device5->lpVtbl->OpenSharedResource1(d3d11->device5,
+         (HANDLE)(uintptr_t)handle, &d3d11_iid_texture2d, (void**)&tex)))
+      return -1;
+   tex->lpVtbl->GetDesc(tex, &desc);
+   if (     desc.Format != DXGI_FORMAT_NV12
+         || desc.Width  != w || desc.Height != h)
+   {
+      Release(tex);
+      return -1;
+   }
+   i = imp->num_tex;
+   memset(&vd, 0, sizeof(vd));
+   vd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+   vd.Texture2D.MipLevels       = 1;
+   vd.Format                    = DXGI_FORMAT_R8_UNORM;
+   if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
+         (D3D11Resource)tex, &vd, &imp->luma[i])))
+      imp->luma[i] = NULL;
+   vd.Format                    = DXGI_FORMAT_R8G8_UNORM;
+   if (     !imp->luma[i]
+         || FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(
+               d3d11->device, (D3D11Resource)tex, &vd, &imp->chroma[i])))
+   {
+      Release(imp->luma[i]);
+      imp->luma[i]   = NULL;
+      imp->chroma[i] = NULL;
+      Release(tex);
+      return -1;
+   }
+   imp->tex[i]        = tex;
+   imp->tex_handle[i] = handle;
+   imp->num_tex++;
+   return (int)i;
+}
+
+/* The fence behind @handle, opened once; NULL when it cannot be */
+static ID3D11Fence *d3d11_import_fence(d3d11_video_t *d3d11,
+      d3d11_import_t *imp, uint64_t handle)
+{
+   ID3D11Fence *f = NULL;
+   unsigned i;
+   for (i = 0; i < imp->num_fences; i++)
+      if (imp->fence_handle[i] == handle)
+         return imp->fence[i];
+   if (     imp->num_fences >= D3D11_IMPORT_FENCES
+         || FAILED(d3d11->device5->lpVtbl->OpenSharedFence(d3d11->device5,
+               (HANDLE)(uintptr_t)handle, &d3d11_iid_fence, (void**)&f))
+         || !f)
+      return NULL;
+   imp->fence[imp->num_fences]        = f;
+   imp->fence_handle[imp->num_fences] = handle;
+   imp->num_fences++;
+   return f;
+}
+
+/* An RGBA texture imported frames convert into */
+static d3d11_planar_t *d3d11_import_new(d3d11_video_t *d3d11, unsigned w,
+      unsigned h, enum texture_filter_type filter)
+{
+   D3D11Device device = d3d11->device;
+   d3d11_texture_t *texture;
+   d3d11_planar_t  *p;
+
+   if (!(texture = (d3d11_texture_t*)calloc(1, sizeof(*texture))))
+      return NULL;
+   if (     !(p = (d3d11_planar_t*)calloc(1, sizeof(*p)))
+         || !(p->import = (d3d11_import_t*)calloc(1, sizeof(*p->import))))
+   {
+      free(p);
+      free(texture);
+      return NULL;
+   }
+   p->texture       = texture;
+   p->interleaved   = true;
+   texture->sampler = d3d11->samplers[
+         (filter == TEXTURE_FILTER_NEAREST
+          || filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+         ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->desc.Width     = w;
+   texture->desc.Height    = h;
+   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+   if (     !d3d11_init_texture_ex(device, texture, false)
+         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM
+         || FAILED(device->lpVtbl->CreateUnorderedAccessView(device,
+               (D3D11Resource)texture->handle, NULL, &p->uav)))
+   {
+      d3d11_planar_destroy(p);
+      d3d11_release_texture(texture);
+      free(texture);
+      return NULL;
+   }
+   p->next       = d3d11->planar;
+   d3d11->planar = p;
+   return p;
+}
+
+static enum video_texture_update d3d11_import_texture(void *data,
+      uintptr_t *id, const video_frame_import_t *f,
+      enum texture_filter_type filter)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11ShaderResourceView views[3];
+   d3d11_planar_t *p    = NULL;
+   d3d11_import_t *imp;
+   ID3D11Fence *wait    = NULL;
+   ID3D11Fence *done    = NULL;
+   unsigned w, h;
+   bool ok;
+   int t;
+
+   if (     !d3d11 || !id || !f || !d3d11->context4
+         || f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image
+         || !d3d11_planar_init(d3d11))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   w = VIDEO_SCALE_W(f->dims);
+   h = VIDEO_SCALE_H(f->dims);
+   if (!w || !h)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (*id)
+   {
+      for (p = d3d11->planar; p; p = p->next)
+         if ((uintptr_t)p->texture == *id)
+            break;
+      if (     !p || !p->import
+            || p->texture->desc.Width  != w
+            || p->texture->desc.Height != h)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else if (!(p = d3d11_import_new(d3d11, w, h, filter)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   /* another producer's handles: what was opened names other things */
+   imp = p->import;
+   if (imp->owner != f->owner || imp->gen != f->layout)
+   {
+      d3d11_import_clear(imp);
+      imp->owner = f->owner;
+      imp->gen   = f->layout;
+   }
+   if ((t = d3d11_import_tex(d3d11, imp, f->image, w, h)) < 0)
+   {
+      d3d11_import_clear(imp);
+      t = d3d11_import_tex(d3d11, imp, f->image, w, h);
+   }
+   if (     t < 0
+         || (f->wait && !(wait = d3d11_import_fence(d3d11, imp, f->wait)))
+         || (f->done && !(done = d3d11_import_fence(d3d11, imp, f->done))))
+   {
+      if (!*id)
+      {
+         uintptr_t made = (uintptr_t)p->texture;
+         d3d11_planar_forget(d3d11, made);
+         d3d11_release_texture((d3d11_texture_t*)made);
+         free((d3d11_texture_t*)made);
+      }
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+
+   if (wait)
+      d3d11->context4->lpVtbl->Wait(d3d11->context4, wait, f->wait_value);
+   views[0] = imp->luma[t];
+   views[1] = imp->chroma[t];
+   views[2] = NULL;
+   ok       = d3d11_planar_convert(d3d11, p->uav, views, w, h, f->yuv,
+         true, false);
+   /* read or not, the producer may have it back */
+   if (done)
+      d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);
+   if (!ok)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!*id)
+      *id = (uintptr_t)p->texture;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* Frames from another device's decoders, where both ends can share
+ * them: the driver's device and context at the 11.4 interfaces, NV12
+ * shared and read in a shader */
+static void d3d11_frame_import_init(d3d11_video_t *d3d11)
+{
+   D3D11_FEATURE_DATA_D3D11_OPTIONS4 opt4;
+   UINT support = 0;
+
+   if (     d3d11->supportedFeatureLevel < D3D_FEATURE_LEVEL_11_0
+         || FAILED(d3d11->device->lpVtbl->QueryInterface(d3d11->device,
+               &d3d11_iid_device5, (void**)&d3d11->device5)))
+   {
+      d3d11->device5 = NULL;
+      return;
+   }
+   memset(&opt4, 0, sizeof(opt4));
+   if (     FAILED(d3d11->context->lpVtbl->QueryInterface(d3d11->context,
+               &d3d11_iid_context4, (void**)&d3d11->context4))
+         || FAILED(d3d11->device->lpVtbl->CheckFeatureSupport(d3d11->device,
+               D3D11_FEATURE_D3D11_OPTIONS4, &opt4, sizeof(opt4)))
+         || !opt4.ExtendedNV12SharedTextureSupported
+         || FAILED(d3d11->device->lpVtbl->CheckFormatSupport(d3d11->device,
+               DXGI_FORMAT_NV12, &support))
+         || !(support & D3D11_FORMAT_SUPPORT_SHADER_LOAD)
+         || !d3d11_planar_init(d3d11))
+   {
+      RARCH_LOG("[D3D11] No NV12 frames shared between devices: video previews decode on the CPU.\n");
+      Release(d3d11->context4);
+      Release(d3d11->device5);
+      d3d11->context4 = NULL;
+      d3d11->device5  = NULL;
+      return;
+   }
+   d3d11->video_decode = d3d11_video_decode_init(d3d11->device);
+   RARCH_LOG("[D3D11] Video previews %s.\n", d3d11->video_decode
+         ? "decode on the GPU where it can" : "decode on the CPU");
+}
+
+static void d3d11_frame_import_deinit(d3d11_video_t *d3d11)
+{
+   if (d3d11->video_decode)
+      d3d11_video_decode_deinit();
+   d3d11->video_decode = false;
+   Release(d3d11->context4);
+   Release(d3d11->device5);
+   d3d11->context4     = NULL;
+   d3d11->device5      = NULL;
+}
+#endif
+
+static bool d3d11_get_device(void *data, video_device_info_t *info)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11 || !d3d11->device || !info)
+      return false;
+   info->api            = VIDEO_DEVICE_D3D11;
+   info->device         = (void*)d3d11->device;
+#ifdef D3D11_FRAME_IMPORT
+   info->import_formats = d3d11->context4 ? IMAGE_PIXFMT_NV12 : 0;
+#endif
+   return true;
 }
 
 /* Inner load function -- performs all DeviceContext-touching work.
@@ -8054,7 +8402,16 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* set_view_count */
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
-   d3d11_set_frame_format
+   d3d11_set_frame_format,
+   NULL, /* frame_mem_alloc */
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+   d3d11_get_device,
+#ifdef D3D11_FRAME_IMPORT
+   d3d11_import_texture
+#else
+   NULL  /* import_texture */
+#endif
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,
