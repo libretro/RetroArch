@@ -16,6 +16,7 @@
 *.swp
 *.cache
 *.gcda
+gmon.out
 # clang --analyze drops a .plist report per translation unit into the
 # working directory. Anchored to the repository root so the tracked
 # Info.plist / ExportOptions.plist files under pkg/apple are unaffected.
