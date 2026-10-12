@@ -1,5 +1,5 @@
-/* Exercises the screens' own windows through shipping configuration
- * and video objects. */
+/* Exercises indexed XR settings and the screens' own windows through
+ * shipping configuration and video objects. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -179,6 +179,223 @@ static void test_window_config(void)
    CHECK(settings->uints.video_screen_window_dims[1] == 0);
    CHECK(settings->uints.video_screen_window_pos[2] == VIDEO_POS_PACK(-32768, 32767));
    CHECK(settings->uints.video_screen_window_dims[2] == VIDEO_SCALE_PACK(65535, 65535));
+}
+
+static void test_xr_config_roundtrip(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned i;
+   load_fixture(
+         "video_screen1_xr_x = \"1.5\"\n"
+         "video_screen1_xr_y = \"-2\"\n"
+         "video_screen1_xr_z = \"3\"\n"
+         "video_screen1_xr_yaw = \"90\"\n"
+         "video_screen1_xr_pitch = \"-45\"\n"
+         "video_screen1_xr_roll = \"180\"\n"
+         "video_screen1_xr_scale = \"2\"\n"
+         "video_screen1_xr_visible = \"false\"\n"
+         "video_screen2_xr_x = \"0.25\"\n"
+         "video_screen8_xr_y = \"4\"\n"
+         "video_screen8_xr_yaw = \"-30\"\n");
+   CHECK(settings->floats.video_screen_xr_x[0] == 1.5f);
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.25f);
+   CHECK(settings->floats.video_screen_xr_scale[7] == 1.0f);
+   CHECK(settings->bools.video_screen_xr_visible[7]);
+   settings->bools.config_save_minimal = false;
+   CHECK(config_save_file(saved_path));
+   path_set(RARCH_PATH_CONFIG, saved_path);
+   config_load();
+   CHECK(settings->floats.video_screen_xr_x[0] == 1.5f);
+   CHECK(settings->floats.video_screen_xr_y[0] == -2.0f);
+   CHECK(settings->floats.video_screen_xr_z[0] == 3.0f);
+   CHECK(settings->floats.video_screen_xr_yaw[0] == 90.0f);
+   CHECK(settings->floats.video_screen_xr_pitch[0] == -45.0f);
+   CHECK(settings->floats.video_screen_xr_roll[0] == 180.0f);
+   CHECK(settings->floats.video_screen_xr_scale[0] == 2.0f);
+   CHECK(!settings->bools.video_screen_xr_visible[0]);
+   CHECK(settings->floats.video_screen_xr_y[7] == 4.0f);
+   CHECK(settings->floats.video_screen_xr_yaw[7] == -30.0f);
+   config_reset_video_screen_xr(settings, 0, 1);
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.25f);
+   CHECK(settings->floats.video_screen_xr_x[0] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_scale[7] == 1.0f);
+   CHECK(settings->bools.video_screen_xr_visible[7]);
+   settings->floats.video_screen_xr_x[0] = 3.0f;
+   config_reset_video_screen_xr(settings, 1, 1);
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_x[0] == 3.0f);
+   config_reset_video_screen_xr(settings, RETRO_VIDEO_VIEWS_MAX, UINT_MAX);
+   CHECK(settings->floats.video_screen_xr_y[7] == 4.0f);
+   config_reset_video_screen_xr(settings, 7, UINT_MAX);
+   CHECK(settings->floats.video_screen_xr_y[7] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_x[0] == 3.0f);
+   config_reset_video_screen_xr(settings, 0, RETRO_VIDEO_VIEWS_MAX);
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      CHECK(settings->floats.video_screen_xr_x[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_y[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_z[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_yaw[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_pitch[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_roll[i] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_scale[i] == 1.0f);
+      CHECK(settings->bools.video_screen_xr_visible[i]);
+   }
+
+   write_config(override_path, "video_screen2_xr_x = \"0.5\"\n");
+   path_set(RARCH_PATH_CONFIG_APPEND, override_path);
+   config_load();
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.5f);
+   write_config(fixture_path, "video_screen2_xr_x = \"0.75\"\n");
+   CHECK(config_load_override_file(fixture_path));
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.75f);
+   CHECK(config_unload_override());
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.5f);
+   path_clear(RARCH_PATH_CONFIG_APPEND);
+}
+
+static void test_xr_minimal_save(void)
+{
+   static const char *fields[] = {"x", "y", "z", "yaw", "pitch", "roll", "scale", "visible"};
+   settings_t *settings = config_get_ptr();
+   config_file_t *conf;
+   unsigned i, j;
+   char key[64];
+   float value = 0.0f;
+   bool visible = true;
+   load_fixture("config_save_minimal = \"true\"\n");
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      for (i = 1; i <= RETRO_VIDEO_VIEWS_MAX; i++)
+         for (j = 0; j < sizeof(fields) / sizeof(fields[0]); j++)
+         {
+            snprintf(key, sizeof(key), "video_screen%u_xr_%s", i, fields[j]);
+            CHECK(config_get_entry(conf, key) == NULL);
+         }
+      config_file_free(conf);
+   }
+   settings->floats.video_screen_xr_x[1] = 0.25f;
+   settings->bools.video_screen_xr_visible[7] = false;
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_float(conf, "video_screen2_xr_x", &value));
+      CHECK(value == 0.25f);
+      CHECK(config_get_bool(conf, "video_screen8_xr_visible", &visible));
+      CHECK(!visible);
+      CHECK(config_get_entry(conf, "video_screen8_xr_scale") == NULL);
+      config_file_free(conf);
+   }
+   path_set(RARCH_PATH_CONFIG, saved_path);
+   config_load();
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.25f);
+   CHECK(settings->floats.video_screen_xr_scale[7] == 1.0f);
+   CHECK(!settings->bools.video_screen_xr_visible[7]);
+}
+
+static void test_xr_override_unload(void)
+{
+   settings_t *settings = config_get_ptr();
+   static rarch_system_info_t system_info;
+   config_file_t *conf;
+   float value = -1.0f;
+   bool visible = false;
+   unsigned minimal;
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   path_set(RARCH_PATH_BASENAME, "screen_game.rom");
+   for (minimal = 0; minimal < 2; minimal++)
+   {
+      load_fixture(minimal
+            ? "config_save_minimal = \"true\"\nvideo_screen1_xr_x = \"1.5\"\nvideo_screen8_xr_scale = \"2\"\nvideo_screen8_xr_visible = \"false\"\n"
+            : "config_save_minimal = \"false\"\nvideo_screen1_xr_x = \"1.5\"\nvideo_screen8_xr_scale = \"2\"\nvideo_screen8_xr_visible = \"false\"\n");
+      write_config(override_path,
+            "video_screen1_xr_x = \"0\"\n"
+            "video_screen2_xr_y = \"-3\"\n"
+            "video_screen8_xr_scale = \"1\"\n"
+            "video_screen8_xr_visible = \"true\"\n");
+      CHECK(config_load_override_file(override_path));
+      CHECK(settings->floats.video_screen_xr_x[0] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_y[1] == -3.0f);
+      CHECK(settings->floats.video_screen_xr_scale[7] == 1.0f);
+      CHECK(settings->bools.video_screen_xr_visible[7]);
+      CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+      strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(generated_path));
+      conf = config_file_new_from_path_to_string(generated_path);
+      CHECK(conf != NULL);
+      if (conf)
+      {
+         CHECK(config_get_float(conf, "video_screen1_xr_x", &value));
+         CHECK(value == 0.0f);
+         CHECK(config_get_float(conf, "video_screen8_xr_scale", &value));
+         CHECK(value == 1.0f);
+         CHECK(config_get_bool(conf, "video_screen8_xr_visible", &visible));
+         CHECK(visible);
+         CHECK(config_get_entry(conf, "video_screen1_xr_scale") == NULL);
+         config_file_free(conf);
+      }
+      CHECK(config_unload_override());
+      CHECK(settings->floats.video_screen_xr_x[0] == 1.5f);
+      CHECK(settings->floats.video_screen_xr_y[1] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_scale[7] == 2.0f);
+      CHECK(!settings->bools.video_screen_xr_visible[7]);
+      CHECK(config_load_override_file(generated_path));
+      CHECK(settings->floats.video_screen_xr_x[0] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_y[1] == -3.0f);
+      CHECK(settings->floats.video_screen_xr_scale[7] == 1.0f);
+      CHECK(settings->bools.video_screen_xr_visible[7]);
+      CHECK(config_unload_override());
+      CHECK(settings->floats.video_screen_xr_x[0] == 1.5f);
+      CHECK(settings->floats.video_screen_xr_y[1] == 0.0f);
+      CHECK(settings->floats.video_screen_xr_scale[7] == 2.0f);
+      CHECK(!settings->bools.video_screen_xr_visible[7]);
+   }
+   path_clear(RARCH_PATH_BASENAME);
+}
+
+static void test_xr_config_invalid(void)
+{
+   settings_t *settings = config_get_ptr();
+   load_fixture(
+         "video_screen1_xr_x = \"100\"\n"
+         "video_screen1_xr_y = \"-100\"\n"
+         "video_screen1_xr_z = \"nan\"\n"
+         "video_screen1_xr_yaw = \"999\"\n"
+         "video_screen1_xr_pitch = \"-999\"\n"
+         "video_screen1_xr_roll = \"inf\"\n"
+         "video_screen1_xr_scale = \"-1\"\n"
+         "video_screen1_xr_visible = \"false\"\n"
+         "video_screen2_xr_x = \"nan\"\n"
+         "video_screen2_xr_y = \"inf\"\n"
+         "video_screen2_xr_z = \"-inf\"\n"
+         "video_screen2_xr_yaw = \"nan\"\n"
+         "video_screen2_xr_pitch = \"inf\"\n"
+         "video_screen2_xr_roll = \"-inf\"\n"
+         "video_screen2_xr_scale = \"nan\"\n"
+         "video_screen8_xr_scale = \"999\"\n"
+         "video_screen9_xr_x = \"5\"\n");
+   CHECK(settings->floats.video_screen_xr_x[0] == 10.0f);
+   CHECK(settings->floats.video_screen_xr_y[0] == -10.0f);
+   CHECK(settings->floats.video_screen_xr_z[0] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_yaw[0] == 180.0f);
+   CHECK(settings->floats.video_screen_xr_pitch[0] == -180.0f);
+   CHECK(settings->floats.video_screen_xr_roll[0] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_scale[0] == 0.1f);
+   CHECK(!settings->bools.video_screen_xr_visible[0]);
+   CHECK(settings->floats.video_screen_xr_x[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_y[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_z[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_yaw[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_pitch[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_roll[1] == 0.0f);
+   CHECK(settings->floats.video_screen_xr_scale[1] == 1.0f);
+   CHECK(settings->floats.video_screen_xr_scale[7] == 10.0f);
+   CHECK(settings->floats.video_screen_xr_x[7] == 0.0f);
 }
 
 /* A driver that draws views itself, and the screens' own windows while
@@ -1269,6 +1486,10 @@ int main(int argc, char **argv)
    menu_state_get_ptr()->entries.list_settings = menu_setting_new();
    CHECK(menu_state_get_ptr()->entries.list_settings != NULL);
    test_window_config();
+   test_xr_config_roundtrip();
+   test_xr_minimal_save();
+   test_xr_override_unload();
+   test_xr_config_invalid();
    test_window_layout();
    test_window_frame();
    test_window_displays();

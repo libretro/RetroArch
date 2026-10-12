@@ -4,6 +4,7 @@
  * defaults without ever swapping the pointer other threads read. */
 #include "../../../configuration.c"
 #include "../../../libretro-common/compat/compat_strl.c"
+#include "../../../gfx/video_views.c"
 
 #include <stdio.h>
 

@@ -582,6 +582,14 @@ typedef struct settings
    struct
    {
       float placeholder;
+      float video_screen_xr_x[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_y[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_z[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_yaw[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_pitch[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_roll[RETRO_VIDEO_VIEWS_MAX];
+      float video_screen_xr_scale[RETRO_VIDEO_VIEWS_MAX];
+
       float video_aspect_ratio;
       float video_vp_bias_x;
       float video_vp_bias_y;
@@ -677,6 +685,7 @@ typedef struct settings
    struct
    {
       bool placeholder;
+      bool video_screen_xr_visible[RETRO_VIDEO_VIEWS_MAX];
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
@@ -1727,6 +1736,8 @@ bool config_overlay_enable_default(void);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
 bool config_metal_arg_buffers_default(void);
 #endif
+
+void config_reset_video_screen_xr(settings_t *settings, unsigned first, unsigned count);
 
 void config_set_defaults(settings_t *target);
 

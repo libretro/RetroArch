@@ -6,7 +6,8 @@ CFLAGS   += -O1 -Wall
 
 all: defaults_target_test
 
-defaults_target_test: defaults_target_test.c $(ROOT)/configuration.c $(ROOT)/configuration.h
+defaults_target_test: defaults_target_test.c $(ROOT)/configuration.c $(ROOT)/configuration.h \
+	$(ROOT)/gfx/video_views.c $(ROOT)/gfx/video_views.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fwhole-program $< $(LDFLAGS) -lm -o $@
 
 check: defaults_target_test
