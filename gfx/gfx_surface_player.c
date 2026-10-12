@@ -151,6 +151,7 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
    sink.present    = gfx_surface_player_present;
    sink.feed       = cb->feed ? gfx_surface_player_feed : NULL;
    sink.decoded    = gfx_surface_player_decoded;
+   sink.start_hw   = NULL;
    if (!(gsp->vp = video_player_new(stream, type, loop_count, &sink,
          flags)))
    {

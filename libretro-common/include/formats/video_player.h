@@ -98,6 +98,11 @@ typedef struct video_player_frame
    /* pixels are in the order the flags asked for; a canvas from a
     * stream that cannot emit it is R,G,B,A in memory */
    bool native;
+   /* A frame decoded on the GPU (start_hw), NULL otherwise. DONE or
+    * QUEUED makes it the sink's, to read or abandon; on BUSY a frame
+    * decoded on the worker is offered again, any other is given back
+    * by the player. */
+   const video_hw_frame_t *hw;
 } video_player_frame_t;
 
 typedef struct video_player_sink
@@ -122,6 +127,14 @@ typedef struct video_player_sink
    bool (*feed)(void *user);
    /* Optional, on the decoding thread after each decode. */
    void (*decoded)(void *user, enum video_player_how how);
+   /* Optional: the sink takes frames decoded on the GPU. Once, before
+    * the first decode, instead of start when the stream's decoder has
+    * a hardware backend for it (image_transfer_anim_stream_set_hw):
+    * frames then come as video_player_frame_t::hw, into no slot;
+    * @jobs is 2 when they are decoded on the worker, a frame ahead,
+    * and 1 in line. As start returns. */
+   int (*start_hw)(void *user, unsigned width, unsigned height,
+         unsigned jobs);
 } video_player_sink_t;
 
 /* Plays @stream (borrowed; freed by the caller after the player) from

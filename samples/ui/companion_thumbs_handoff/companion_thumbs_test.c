@@ -250,6 +250,18 @@ bool image_transfer_anim_stream_set_blit_pool(void *stream,
    (void)stream; (void)type; (void)pool; (void)bands;
    return false;
 }
+bool image_transfer_anim_stream_set_hw(void *stream,
+      enum image_type_enum type, bool enable)
+{
+   (void)stream; (void)type; (void)enable;
+   return false;
+}
+bool image_transfer_anim_stream_hw_frame(void *stream,
+      enum image_type_enum type, video_hw_frame_t *out)
+{
+   (void)stream; (void)type; (void)out;
+   return false;
+}
 
 /* Live on the way in and still live on the way out: a close while the
  * call is inside it counts too. */

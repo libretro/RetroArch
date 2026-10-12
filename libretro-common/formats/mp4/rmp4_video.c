@@ -53,6 +53,8 @@
 #include <formats/rh265.h>
 #include <formats/rmp4_video.h>
 #include <formats/image_blit_bands.h>
+#include <formats/image_yuv_blit.h>
+#include <formats/video_hw_frame.h>
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
  * duration is known without lookahead decoding; cap the table so a
@@ -105,6 +107,12 @@ struct rmp4_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
+   int          want_hw;    /* H.264 on the hardware backend          */
+   /* The hardware frame of the picture the last step produced
+    * (rndr_kind 5), and whether the caller has yet to take it: one
+    * passed over is given back to the decoder. */
+   video_hw_frame_t hwf;
+   int          hwf_untaken;
 };
 
 /* Still-image decode progress across sliced process calls. */
@@ -527,6 +535,8 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          if (t && t->codec_private && t->codec_private_size)
             rh264_video_set_extradata(s->h264, t->codec_private,
                   t->codec_private_size);
+         if (s->want_hw)
+            rh264_video_set_hw(s->h264, 1);
          return true;
       }
       case RMP4_CODEC_H265:
@@ -547,8 +557,46 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
    return false;
 }
 
+/* A hardware frame the caller never took goes back to the decoder. */
+static void rmp4_video_hwf_drop(rmp4_video_stream_t *s)
+{
+   if (s->hwf_untaken)
+      video_hw_frame_abandon(&s->hwf);
+   s->hwf_untaken = 0;
+}
+
+/* The picture rh264 just showed, when it is on the backend: kept for
+ * the caller to take. -1 when the frame cannot stand for the track. */
+static int rmp4_video_hwf_take(rmp4_video_stream_t *s)
+{
+   video_hw_frame_t f;
+   unsigned yuv = 0;
+   if (rh264_video_hw_frame(s->h264, &f) != 0)
+      return -1;
+   rmp4_video_hwf_drop(s);
+   /* the track's size is the frame's: a picture smaller cannot be one */
+   if (f.width < s->width || f.height < s->height)
+   {
+      video_hw_frame_abandon(&f);
+      return -1;
+   }
+   f.width  = s->width;
+   f.height = s->height;
+   if (     s->matrix == 1
+         || (s->matrix != 5 && s->matrix != 6 && s->height >= 720))
+      yuv |= IMAGE_YUV_FLAG_BT709;
+   if (s->range)
+      yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+   f.yuv          = yuv;
+   s->hwf         = f;
+   s->hwf_untaken = 1;
+   s->rndr_kind   = 5;
+   return 0;
+}
+
 static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 {
+   rmp4_video_hwf_drop(s);
    if (s->vp8)
    {
       rvp8_video_close(s->vp8);
@@ -904,6 +952,8 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
             return 0;
          }
       }
+      if (rh264_video_is_hw(s->h264))
+         return rmp4_video_hwf_take(s) == 0 ? 1 : -1;
       /* Planes stay valid until the next decode; defer conversion. */
       if (!rh264_video_plane(s->h264, 0, NULL, NULL, NULL))
          return -1;
@@ -990,6 +1040,15 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
    if (s->h264 && rh264_video_drain(s->h264) == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
+      if (rh264_video_is_hw(s->h264))
+      {
+         if (rmp4_video_hwf_take(s) != 0)
+            return -1;
+         if (duration_ms)
+            *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+         s->disp_idx++;
+         return 1;
+      }
       if (rh264_video_plane(s->h264, 0, NULL, NULL, NULL))
       {
          s->rndr_kind = 3;
@@ -1027,6 +1086,40 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
    while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
    return r;
+}
+
+int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
+{
+   if (!s || s->codec != RMP4_CODEC_H264)
+      return 0;
+   if (!enable)
+      return s->h264 && rh264_video_is_hw(s->h264);
+   /* the GPU frame carries the BT.601 and BT.709 matrices only, and
+    * no transfer of its own: anything else is the blit's */
+   if (     (s->matrix != 0 && s->matrix != 1
+            && s->matrix != 5 && s->matrix != 6)
+         || rmp4_video_stream_is_hdr(s))
+      return 0;
+   if (s->want_hw)
+      return s->h264 && rh264_video_is_hw(s->h264);
+   s->want_hw = 1;
+   /* a stream already under way starts over: the decoder takes the
+    * backend only before its first picture */
+   if (s->disp_idx || s->rndr_kind)
+      rmp4_video_stream_rewind(s);
+   else if (s->h264)
+      rh264_video_set_hw(s->h264, 1);
+   return s->h264 && rh264_video_is_hw(s->h264);
+}
+
+int rmp4_video_stream_hw_frame(rmp4_video_stream_t *s,
+      video_hw_frame_t *out)
+{
+   if (!s || s->rndr_kind != 5 || !s->hwf_untaken || !out)
+      return 0;
+   *out           = s->hwf;
+   s->hwf_untaken = 0;
+   return 1;
 }
 
 void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
@@ -1242,6 +1335,9 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
    s->is_fp16 = 0;
    switch (s->rndr_kind)
    {
+      case 5:  /* on the GPU: nothing to convert here, the frame is
+                * taken with rmp4_video_stream_hw_frame */
+         return dst;
       case 1:  /* VP8: planes valid until the next decode call */
       {
          const uint8_t *y, *u, *v;
@@ -1434,6 +1530,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
 {
    if (!s)
       return;
+   rmp4_video_hwf_drop(s);
    s->rndr_kind = 0;   /* decoder reset invalidates the planes */
    rmp4_rewind(s->demux);
    s->disp_idx = 0;

@@ -33,6 +33,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <formats/video_hw_frame.h>
+
 RETRO_BEGIN_DECLS
 
 /* ---- Still image (first displayed frame) ---- */
@@ -154,6 +156,21 @@ void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
+
+/* H.264 on the hardware backend (rh264_video_set_hw): true when the
+ * frames will come from it, false when they stay in software - another
+ * codec, a colour the GPU frame cannot carry, or a backend that will
+ * not take the stream. A stream already under way starts over from
+ * its first frame. Each shown frame is then taken with
+ * rmp4_video_stream_hw_frame after _next; _next returns a pointer
+ * that only says a frame came, its pixels untouched. */
+int rmp4_video_stream_set_hw(rmp4_video_stream_t *stream, int enable);
+/* The hardware frame of the frame _next just showed, handed over: 1,
+ * and the caller reads or abandons it (video_hw_frame_abandon); 0 when
+ * that frame is not one. One not taken by the next step is abandoned
+ * by the stream. */
+int rmp4_video_stream_hw_frame(rmp4_video_stream_t *stream,
+      struct video_hw_frame *out);
 
 /* Linear scRGB half floats for an HDR source: a 10-bit PQ or HLG
  * frame - VP9, H.264 or H.265 - decoded into the caller's frame

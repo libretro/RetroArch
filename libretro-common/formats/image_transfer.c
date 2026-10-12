@@ -987,6 +987,42 @@ void image_transfer_anim_stream_set_catchup(void *stream,
    }
 }
 
+bool image_transfer_anim_stream_set_hw(void *stream,
+      enum image_type_enum type, bool enable)
+{
+   if (!stream)
+      return false;
+   switch (type)
+   {
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         return rmp4_video_stream_set_hw((rmp4_video_stream_t*)stream,
+               enable ? 1 : 0) != 0;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+bool image_transfer_anim_stream_hw_frame(void *stream,
+      enum image_type_enum type, video_hw_frame_t *out)
+{
+   if (!stream)
+      return false;
+   switch (type)
+   {
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         return rmp4_video_stream_hw_frame((rmp4_video_stream_t*)stream,
+               out) != 0;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out)
 {

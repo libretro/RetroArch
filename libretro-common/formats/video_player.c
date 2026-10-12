@@ -54,6 +54,7 @@
 #define VP_STARTED     (1 << 8)
 #define VP_THREADED    (1 << 9)
 #define VP_BEHIND      (1 << 10)
+#define VP_HW          (1 << 11)
 
 enum vp_job_status
 {
@@ -90,6 +91,8 @@ typedef struct vp_job
    retro_atomic_int_t status;
    bool rgba;
    bool fp16;
+   bool gpu;               /* frames come on the GPU (VP_HW)        */
+   bool hw;                /* the READY frame is the player's hw[]   */
 } vp_job_t;
 
 struct video_player
@@ -103,6 +106,9 @@ struct video_player
    int32_t loops_left;     /* -1 forever                            */
    enum image_type_enum type;
    uint8_t upload;         /* the job whose frame is shown next     */
+   /* GPU frames, one per job (or [0] decoding in line): written by
+    * the side that decodes, as the job's frame is */
+   video_hw_frame_t hw[2];
 };
 
 /* The fallback decode's shared budget; only ever the polling thread's. */
@@ -170,6 +176,24 @@ static void vp_schedule(video_player_t *p, int duration_ms, int64_t now)
    }
 }
 
+/* Worker or polling thread: a GPU frame into hw[@idx]. */
+static bool vp_step_hw(video_player_t *p, unsigned idx, int32_t *loops_left,
+      int *duration_ms)
+{
+   if (p->sink.feed && !p->sink.feed(p->sink.user))
+      return false;
+   if (!vp_next(p->stream, p->type, loops_left, duration_ms))
+      return false;
+   /* a frame that came in software, which a backend that took the
+    * stream once and not after a rewind gives, ends the playback */
+   if (!image_transfer_anim_stream_hw_frame(p->stream, p->type,
+            &p->hw[idx]))
+      return false;
+   if (p->sink.decoded)
+      p->sink.decoded(p->sink.user, VIDEO_PLAYER_DIRECT);
+   return true;
+}
+
 #ifdef VIDEO_PLAYER_WORKER
 /* The queue takes no lock. The poll posts a job by pushing it on the
  * inbox; the worker takes the inbox whole and works through it oldest
@@ -228,16 +252,25 @@ static bool vp_job_step(vp_job_t *job)
    enum image_type_enum type = p->type;
    const uint32_t *frame;
    int duration_ms      = 0;
+   bool native, direct;
+   enum video_player_how how;
+
+   if (job->gpu)
+   {
+      job->hw = vp_step_hw(p, (job == p->job[1]) ? 1 : 0,
+            &job->loops_left, &duration_ms);
+      job->duration_ms = duration_ms;
+      return job->hw;
+   }
    /* Every stream emits the order asked for; one that cannot is
     * swizzled below. Asked a frame at a time, and a repeat ask of the
     * order already emitted answers yes. */
-   bool native          = image_transfer_anim_stream_set_argb(stream, type,
+   native = image_transfer_anim_stream_set_argb(stream, type,
          job->rgba ? 0 : 1);
    /* The video streams decode into the slot; APNG and WEBP hand out
     * their canvas, copied below. */
-   bool direct          = image_transfer_anim_stream_set_output(stream,
-         type, job->frame);
-   enum video_player_how how;
+   direct = image_transfer_anim_stream_set_output(stream, type,
+         job->frame);
 
    vp_pool_sync();
    image_transfer_anim_stream_set_blit_pool(stream, type, vp_pool,
@@ -448,8 +481,10 @@ static bool vp_job_release(vp_job_t *job)
 static bool vp_job_start(video_player_t *p, vp_job_t *job)
 {
    unsigned slot = (job == p->job[1]) ? 1 : 0;
-   uint32_t *buf = p->sink.slot_begin(p->sink.user, slot);
-   if (!buf)
+   uint32_t *buf = NULL;
+   job->hw       = false;
+   if (     !(p->flags & VP_HW)
+         && !(buf = p->sink.slot_begin(p->sink.user, slot)))
       return false;
    job->frame = buf;
    vp_job_enqueue(job);
@@ -470,6 +505,7 @@ static bool vp_jobs_new(video_player_t *p)
    p->job[0]->loops_left = p->loops_left;
    p->job[0]->rgba       = p->job[1]->rgba = (p->flags & VIDEO_PLAYER_RGBA) ? true : false;
    p->job[0]->fp16       = p->job[1]->fp16 = (p->flags & VIDEO_PLAYER_FP16) ? true : false;
+   p->job[0]->gpu        = p->job[1]->gpu  = (p->flags & VP_HW) ? true : false;
    retro_atomic_store_relaxed_int(&p->job[0]->status, VP_JOB_IDLE);
    retro_atomic_store_relaxed_int(&p->job[1]->status, VP_JOB_IDLE);
    p->upload             = 0;
@@ -502,7 +538,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    su = retro_atomic_load_acquire_int(&ju->status);
    so = retro_atomic_load_acquire_int(&jo->status);
    /* a job that writes its slot no more lets the sink keep it no more */
-   if (p->sink.slot_end)
+   if (p->sink.slot_end && !(p->flags & VP_HW))
    {
       if (vp_job_settled(ju))
          p->sink.slot_end(p->sink.user, p->upload);
@@ -535,11 +571,18 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    fr.duration_ms = ju->duration_ms;
    fr.how         = VIDEO_PLAYER_DIRECT;
    fr.native      = true;
+   fr.hw          = ju->hw ? &p->hw[p->upload] : NULL;
    res            = p->sink.present(p->sink.user, &fr);
    if (res == VIDEO_PLAYER_PRESENT_BUSY)
       return VIDEO_PLAYER_PLAYING;
    if (res == VIDEO_PLAYER_PRESENT_FAILED)
+   {
+      if (fr.hw)
+         video_hw_frame_abandon(fr.hw);
+      ju->hw = false;
       return VIDEO_PLAYER_ENDED;
+   }
+   ju->hw         = false;   /* the sink's now */
    vp_schedule(p, ju->duration_ms, now);
    /* a QUEUED frame keeps its slot until the sink lets it go */
    retro_atomic_store_relaxed_int(&ju->status,
@@ -589,6 +632,34 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       }
       if (vp_budget_used_us > VP_BUDGET_US)
          return VIDEO_PLAYER_PLAYING;
+   }
+
+   fr.hw = NULL;
+   if (p->flags & VP_HW)
+   {
+      if (!vp_step_hw(p, 0, &p->loops_left, &duration_ms))
+         return VIDEO_PLAYER_ENDED;
+      fr.pixels      = NULL;
+      fr.slot        = 0;
+      fr.width       = p->width;
+      fr.height      = p->height;
+      fr.duration_ms = duration_ms;
+      fr.native      = true;
+      fr.how         = VIDEO_PLAYER_DIRECT;
+      fr.hw          = &p->hw[0];
+      res            = p->sink.present(p->sink.user, &fr);
+      /* decoded in line, a frame not taken now is gone */
+      if (     res == VIDEO_PLAYER_PRESENT_BUSY
+            || res == VIDEO_PLAYER_PRESENT_FAILED)
+         video_hw_frame_abandon(fr.hw);
+      if (res == VIDEO_PLAYER_PRESENT_BUSY)
+         return VIDEO_PLAYER_PLAYING;
+      if (res == VIDEO_PLAYER_PRESENT_FAILED)
+         return VIDEO_PLAYER_ENDED;
+      vp_schedule(p, duration_ms, now);
+      if (budgeted)
+         vp_budget_used_us += cpu_features_get_time_usec() - now;
+      return VIDEO_PLAYER_PLAYING;
    }
 
    native = image_transfer_anim_stream_set_argb(p->stream, p->type,
@@ -680,15 +751,23 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
    {
       int r;
       bool threaded = false;
+      /* frames on the GPU where the sink and the stream both can */
+      bool hw       = p->sink.start_hw
+         && image_transfer_anim_stream_set_hw(p->stream, p->type, true);
 #ifdef VIDEO_PLAYER_WORKER
       threaded = !(p->flags & VIDEO_PLAYER_INLINE)
-         && p->sink.slot_begin && vp_worker_init();
+         && (p->sink.slot_begin || hw) && vp_worker_init();
 #endif
-      if ((r = p->sink.start(p->sink.user, p->width, p->height,
-               threaded ? 2 : (p->sink.slot_begin ? 1 : 0))) < 0)
+      if (hw)
+         r = p->sink.start_hw(p->sink.user, p->width, p->height,
+               threaded ? 2 : 1);
+      else
+         r = p->sink.start(p->sink.user, p->width, p->height,
+               threaded ? 2 : (p->sink.slot_begin ? 1 : 0));
+      if (r < 0)
          return VIDEO_PLAYER_PLAYING;
-      p->flags = (p->flags & VIDEO_PLAYER_INLINE)
-         | ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16));
+      p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
+         : ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16)));
       /* told once, before any decode */
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
@@ -738,10 +817,17 @@ void video_player_free(video_player_t *p)
 #ifdef VIDEO_PLAYER_WORKER
    if (p->job[0])
    {
+      unsigned i;
       vp_job_t *j0  = p->job[0];
       bool free_now = vp_job_release(p->job[1]);
       if (!vp_job_release(j0))
          free_now = false;
+      /* a GPU frame decoded and never shown goes back */
+      for (i = 0; i < 2; i++)
+         if (     p->job[i]->hw
+               && retro_atomic_load_acquire_int(&p->job[i]->status)
+                  == VP_JOB_READY)
+            video_hw_frame_abandon(&p->hw[i]);
       if (free_now)
          free(j0);
       else
@@ -752,7 +838,7 @@ void video_player_free(video_player_t *p)
       vp_retired_reap();
       /* a running decode was waited out and a queued one will not run:
        * neither slot is written any more */
-      if (p->sink.slot_end)
+      if (p->sink.slot_end && !(p->flags & VP_HW))
       {
          p->sink.slot_end(p->sink.user, 0);
          p->sink.slot_end(p->sink.user, 1);
