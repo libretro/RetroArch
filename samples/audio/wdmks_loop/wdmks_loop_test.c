@@ -35,8 +35,13 @@
 #include <string.h>
 #include <windows.h>
 
+#include <rthreads/retro_eventcount.h>
+static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec);
+#define retro_eventcount_commit_wait_timeout test_wait_timeout
+
 /* The driver whole, as wdmks_abi_check.c includes it. */
 #include "audio/drivers/wdmks.c"
+#undef retro_eventcount_commit_wait_timeout
 
 /* What the driver reaches for in RetroArch. */
 void RARCH_LOG(const char *f, ...)  { (void)f; }
@@ -119,6 +124,62 @@ static void loop_teardown(wdmks_t *w)
    retro_eventcount_free(&w->rt_park);
    retro_spsc_free(&w->rt_ring);
    free(w->rt_buf);
+}
+
+static wdmks_t *wait_model;
+static int64_t wait_elapsed;
+
+static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec)
+{
+   if (wait_model)
+   {
+      unsigned char drained[RATE / 200 * FRAME];
+      retro_eventcount_cancel_wait(ec);
+      wait_elapsed += usec;
+      /* A healthy 64 ms pin cannot free room before its notification. */
+      if (wait_elapsed >= 64000)
+      {
+         retro_spsc_read(&wait_model->rt_ring, drained, sizeof(drained));
+         return true;
+      }
+      return false;
+   }
+   return retro_eventcount_commit_wait_timeout(ec, key, usec);
+}
+
+static void run_fragment_wait(void)
+{
+   wdmks_t w;
+   unsigned char tone[RATE / 200 * FRAME];
+   unsigned mode;
+   printf("-- 5 ms write waiting on a 64 ms fragment --\n");
+   memset(tone, 0, sizeof(tone));
+   for (mode = 0; mode < 2; mode++)
+   {
+      loop_setup(&w);
+      w.rt_ahead = RATE * 64 / 1000 * FRAME;
+      w.rt_thread = (sthread_t*)(uintptr_t)1;
+      w.nonblock = false;
+      while (wdmks_rt_ring_room(&w))
+      {
+         size_t n = wdmks_rt_ring_room(&w);
+         if (n > sizeof(tone))
+            n = sizeof(tone);
+         retro_spsc_write(&w.rt_ring, tone, n);
+      }
+      retro_atomic_store_release_int(&w.rt_run, 1);
+      wait_model = &w;
+      wait_elapsed = 0;
+      if (mode == 0)
+         check(wdmks_wait_writable(&w, sizeof(tone)) >= sizeof(tone),
+               "writable wait survives a normal fragment");
+      else
+         check(wdmks_write(&w, tone, sizeof(tone)) == sizeof(tone),
+               "blocking write survives a normal fragment");
+      wait_model = NULL;
+      w.rt_thread = NULL;
+      loop_teardown(&w);
+   }
 }
 
 /* A byte pattern no silence matches: every byte non-zero. */
@@ -887,6 +948,7 @@ static void run_lend(void)
 
 int main(void)
 {
+   run_fragment_wait();
    run_lend();
    run_ranges();
    run_wide_pcm_pin();

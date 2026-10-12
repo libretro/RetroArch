@@ -2559,9 +2559,9 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
                retro_eventcount_cancel_wait(&w->rt_park);
                continue;
             }
-            /* In the pin's own units, as every bound here is. */
+            /* Room arrives at the fragment cadence, not the write size. */
             retro_eventcount_commit_wait_timeout(&w->rt_park, key,
-                  (int64_t)wdmks_watchdog_ms(w, size - done) * 1000);
+                  (int64_t)wdmks_watchdog_ms(w, w->rt_ahead) * 1000);
             continue;
          }
          if (take > room)
@@ -3429,7 +3429,7 @@ static size_t wdmks_wait_writable(void *data, size_t len)
             continue;
          }
          retro_eventcount_commit_wait_timeout(&w->rt_park, key,
-               (int64_t)wdmks_watchdog_ms(w, len) * 1000);
+               (int64_t)wdmks_watchdog_ms(w, w->rt_ahead) * 1000);
          continue;
       }
 #endif
