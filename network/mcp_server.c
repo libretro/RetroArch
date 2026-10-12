@@ -424,23 +424,27 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
 static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
 {
    const struct cmd_column *col;
+   bool first = true;
    MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{"
          "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\","
          "\"properties\":{");
    for (col = rows->columns; col->name; col++)
    {
-      if (col != rows->columns)
+      if (!first)
          MCP_RAW(w, ",");
+      first = false;
       rjsonwriter_add_string(w, col->name);
       MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
       rjsonwriter_add_string(w, col->desc ? col->desc : "");
       MCP_RAW(w, "}");
    }
    MCP_RAW(w, "},\"required\":[");
+   first = true;
    for (col = rows->columns; col->name; col++)
    {
-      if (col != rows->columns)
+      if (!first)
          MCP_RAW(w, ",");
+      first = false;
       rjsonwriter_add_string(w, col->name);
    }
    MCP_RAW(w, "],\"additionalProperties\":false}},\"more\":{\"type\":"
@@ -764,6 +768,41 @@ static bool mcp_tool_known(const char *name)
 /* The same reply taken apart: the rows the text is lines of, as the
  * command's columns name them, and the cursor its trailing MORE line
  * carries. The text goes out beside this unchanged. */
+/* One line as one row. The columns before the slack one are read from
+ * the line's start and those after it from the end, so the field
+ * between them keeps whatever tabs the line has over its columns. */
+static void mcp_row(rjsonwriter_t *w, const struct cmd_rows *rows,
+      const char *line, const char *stop, size_t ncol, size_t slack)
+{
+   size_t i;
+
+   MCP_RAW(w, "{");
+   for (i = 0; i < ncol; i++)
+   {
+      const char *e = NULL;
+      if (i == slack)
+      {
+         /* back over one tab for each column still to come */
+         size_t n = ncol - 1 - i;
+         e = stop;
+         while (n-- && e > line)
+            while (e > line && *--e != '\t')
+               ;
+      }
+      else
+         e = (const char*)memchr(line, '\t', (size_t)(stop - line));
+      if (!e)
+         e = stop;
+      if (i)
+         MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, rows->columns[i].name);
+      MCP_RAW(w, ":");
+      rjsonwriter_add_string_len(w, line, (int)(e - line));
+      line = e < stop ? e + 1 : stop;
+   }
+   MCP_RAW(w, "}");
+}
+
 static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       const char *name, const char *text, size_t len)
 {
@@ -788,7 +827,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       const char *line = p;
       const char *stop = eol ? eol : end;
       const char *f;
-      size_t      i, tabs = 0;
+      size_t      tabs = 0;
 
       p = eol ? eol + 1 : end;
       if (stop == line)
@@ -802,6 +841,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          more = true;
          if (stop - line > 5)
          {
+            size_t i;
             next     = line + 5;
             next_len = (size_t)(stop - next);
             for (i = 0; i < next_len; i++)
@@ -822,34 +862,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       if (!first)
          MCP_RAW(w, ",");
       first = false;
-      MCP_RAW(w, "{");
-      /* the columns before the slack one are read from the start of the
-       * line and those after it from the end, so the field between them
-       * keeps whatever tabs the line has over its columns */
-      for (i = 0; i < ncol; i++)
-      {
-         const char *e = NULL;
-         if (i == slack)
-         {
-            /* back over one tab for each column still to come */
-            size_t n = ncol - 1 - i;
-            e = stop;
-            while (n-- && e > line)
-               while (e > line && *--e != '\t')
-                  ;
-         }
-         else
-            e = (const char*)memchr(line, '\t', (size_t)(stop - line));
-         if (!e)
-            e = stop;
-         if (i)
-            MCP_RAW(w, ",");
-         rjsonwriter_add_string(w, rows->columns[i].name);
-         MCP_RAW(w, ":");
-         rjsonwriter_add_string_len(w, line, (int)(e - line));
-         line = e < stop ? e + 1 : stop;
-      }
-      MCP_RAW(w, "}");
+      mcp_row(w, rows, line, stop, ncol, slack);
    }
    MCP_RAW(w, "]");
    if (more)

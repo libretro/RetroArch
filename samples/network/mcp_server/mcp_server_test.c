@@ -111,7 +111,7 @@ static const struct cmd_column test_cols_rows[] = {
    { "index", "The entry's number." },
    { "label", "The entry's name." },
    { "path", "The entry's path." },
-   { NULL, NULL }
+   { NULL }
 };
 /* the name in the middle is the column that takes a tab of its own */
 static const struct cmd_rows test_rows = { test_cols_rows, 1, "next",

@@ -749,6 +749,12 @@ static const struct cmd_param cmd_params_frame[] = {
    { "frame", "The frame to seek to.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_cores[] = {
+   { "content", "A content path. Left out, every installed core; given, "
+      "only the cores that support it.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_core[] = {
    { "core", "Path to a core library, as LIST_CORES gives it.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
@@ -770,16 +776,16 @@ static const struct cmd_column cmd_cols_option[] = {
    { "option", "The option's name, as SET_OPTION takes it." },
    { "value", "Its state - on or off - or, for one that only reports, "
       "what it reports." },
-   { NULL, NULL }
+   { NULL }
 };
 static const struct cmd_column cmd_cols_core[] = {
    { "name", "The core's display name." },
    { "path", "The core's path, as LOAD_CORE and LOAD_CONTENT take it." },
-   { NULL, NULL }
+   { NULL }
 };
 static const struct cmd_column cmd_cols_playlist[] = {
    { "playlist", "The playlist's name, as GET_PLAYLIST takes it." },
-   { NULL, NULL }
+   { NULL }
 };
 static const struct cmd_column cmd_cols_entry[] = {
    { "index", "The entry's number in the playlist." },
@@ -787,7 +793,7 @@ static const struct cmd_column cmd_cols_entry[] = {
    { "content", "The content's path, as LOAD_CONTENT takes it." },
    { "core", "The core's path, as LOAD_CONTENT takes it; empty where the "
       "playlist names none." },
-   { NULL, NULL }
+   { NULL }
 };
 
 static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, 1, NULL, NULL };
@@ -818,7 +824,7 @@ static const struct cmd_action_map action_map[] = {
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
-   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_cores },
+   { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
    { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },

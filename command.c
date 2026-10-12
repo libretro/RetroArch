@@ -2565,19 +2565,43 @@ bool command_get_config_param(command_t *cmd, const char* arg)
  *
  * The installed cores, one per line: display name, a tab, the path
  * LOAD_CONTENT takes. The list is already in memory. */
+/* LIST_CORES [content path]
+ *
+ * The installed cores, one per line: display name, a tab, the path
+ * LOAD_CONTENT takes. With a content path, only the cores that support
+ * it - the candidates LOAD_CONTENT names when it is handed content and
+ * no core to load it with. The list is already in memory.
+ *
+ * Asking which cores support something sorts the list those come first
+ * in, so what this answers without a path is in a different order
+ * afterwards. Nothing reads that order as meaning anything, and the
+ * menu sorts the same list for the same reason. */
 bool command_list_cores(command_t *cmd, const char *arg)
 {
-   core_info_list_t *list = NULL;
+   core_info_list_t  *list  = NULL;
+   const core_info_t *infos = NULL;
+   size_t             count = 0;
    size_t i, len = 0;
    char  *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
 
    if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
       return false;
    reply[0] = '\0';
    if (core_info_get_list(&list) && list)
-      for (i = 0; i < list->count; i++)
+   {
+      if (arg && *arg)
+         core_info_list_get_supported_cores(list, arg, &infos, &count);
+      else
       {
-         const core_info_t *ci = &list->list[i];
+         infos = list->list;
+         count = list->count;
+      }
+      for (i = 0; i < count; i++)
+      {
+         const core_info_t *ci = &infos[i];
          int n;
          if (!ci->path)
             continue;
@@ -2590,6 +2614,7 @@ bool command_list_cores(command_t *cmd, const char *arg)
          }
          len += (size_t)n;
       }
+   }
    if (!len)
       len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
    cmd->replier(cmd, reply, len);
@@ -3001,8 +3026,8 @@ bool command_load_content(command_t *cmd, const char* arg)
     * that, and nothing at all, as a request for a core that supports
     * the content.  The menu asks the user to pick one where the
     * playlist's default core does not settle it; nobody is here to
-    * answer that, so an ambiguous one is reported with the candidates
-    * for the caller to choose from. */
+    * answer that, so an ambiguous one says so and leaves the choice;
+    * LIST_CORES, given the same content path, lists the candidates. */
    if (!*core_path || string_is_equal(core_path, FILE_PATH_DETECT))
    {
       core_info_list_t *core_info_list = NULL;
@@ -3022,12 +3047,21 @@ bool command_load_content(command_t *cmd, const char* arg)
       if (count > 1)
       {
          command_reply_error(cmd, "LOAD_CONTENT",
-               "%u cores support %s, name one of them, such as %s or %s",
-               (unsigned)count, content_path,
-               supported[0].path, supported[1].path);
+               "%u cores support %s, name one of them; LIST_CORES with "
+               "that content path lists them", (unsigned)count,
+               content_path);
          return false;
       }
 
+      /* An entry whose core file is gone keeps its info and loses its
+       * path; it supports the content and cannot be loaded. */
+      if (!supported[0].path)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "the only core that supports %s is not installed",
+               content_path);
+         return false;
+      }
       strlcpy(core_path, supported[0].path, sizeof(core_path));
    }
    /* A built-in core is not a file on disk */

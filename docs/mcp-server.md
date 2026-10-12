@@ -227,11 +227,17 @@ gives the installed cores and their paths.
 
 An entry with no core of its own gives `DETECT` as its core path, and
 `LOAD_CONTENT` takes an entry as it reads: `DETECT`, or no `core` at
-all, loads the content with an installed core that supports it, and
-says which cores do where more than one is a candidate. Both paths are
-checked before anything is unloaded, so content that cannot be found
-and a core that is not installed are answered with what is wrong while
-the running game keeps playing.
+all, loads the content with an installed core that supports it. Both
+paths are checked before anything is unloaded, so content that cannot
+be found and a core that is not installed are answered with what is
+wrong while the running game keeps playing.
+
+Where more than one installed core supports the content, `LOAD_CONTENT`
+says so and leaves the choice: `LIST_CORES` with that same content path
+answers the candidates as rows, so a client reads the list from the tool
+whose job it is rather than out of an error message. Where none does,
+`LIST_CORES` answers no rows, as it does when no cores are installed at
+all.
 
 Over MCP, `playlist` and `first` are separate parameters, so a name is
 never mistaken for an entry number. On the network and stdin interfaces
