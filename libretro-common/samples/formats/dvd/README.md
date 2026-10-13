@@ -81,4 +81,9 @@ metadata and optional first-play chains. VTS chapter lookup resolves PTT
 pairs through PGCIT into program/cell ranges without copying input tables.
 Title/chapter numbers are one-based. These readers do not open VIDEO_TS
 files, apply BUP fallback, choose angles, execute VM commands or render menus.
-Menu-language tables and full management attributes remain unimplemented.
+Borrowed PGCI_UT readers expose language codes, extensions, menu flags and
+bounded nested PGCITs. Menu lookup takes an explicit language index and
+finds the first entry PGC for the requested VMG title or VTS menu ID. It
+applies no language fallback, parental policy or UOP policy. Shared and
+unsorted offsets are supported; malformed selected chains fail closed.
+Full management attributes remain unimplemented.

@@ -416,3 +416,30 @@ bool rdvd_menu_language_read(const rdvd_menu_table_t *table, unsigned index,
    *out = language;
    return true;
 }
+
+
+bool rdvd_ifo_menu_read(const rdvd_ifo_t *ifo, unsigned language_index,
+      enum rdvd_menu_id menu, rdvd_pgci_entry_t *out)
+{
+   rdvd_ifo_t f;
+   rdvd_ifo_span_t span;
+   rdvd_menu_table_t table;
+   rdvd_menu_language_t language;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!ifo || !rdvd_ifo_read(ifo->data, ifo->size, &f)) return false;
+   if ((f.kind == RDVD_IFO_VMG && menu != RDVD_MENU_TITLE)
+         || (f.kind == RDVD_IFO_VTS
+            && (menu < RDVD_MENU_ROOT || menu > RDVD_MENU_CHAPTER))) return false;
+   if (!rdvd_ifo_table_read(&f, RDVD_IFO_MENU, &span)
+         || !rdvd_menu_table_read(span.data, span.size, &table)
+         || !rdvd_menu_language_read(&table, language_index, &language)) return false;
+   for (i = 0; i < language.chains.entries; i++)
+   {
+      unsigned id = language.chains.data[8 + (size_t)i * 8];
+      if ((id & 0x80) && (id & 15) == (unsigned)menu)
+         return rdvd_pgci_entry_read(&language.chains, i, out);
+   }
+   return false;
+}

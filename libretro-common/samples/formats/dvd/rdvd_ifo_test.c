@@ -299,6 +299,36 @@ static void test_menu_languages(void)
    CHECK(!rdvd_menu_language_read(&table, 0, &language));
    CHECK(!rdvd_menu_language_read(NULL, 0, &language));
 }
+static void test_menu_lookup(void)
+{
+   rdvd_ifo_t f;
+   rdvd_pgci_entry_t entry;
+   const uint8_t *command;
+   uint8_t *chains;
+   file_fixture(true); menu_chains_fixture();
+   memcpy(file_bytes + 6144, menu_bytes, sizeof(menu_bytes));
+   chains = file_bytes + 6144 + 512;
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_menu_read(&f, 0, RDVD_MENU_ROOT, &entry));
+   CHECK(entry.pgc.data == chains + 16);
+   CHECK(rdvd_pgc_command_read(&entry.pgc, RDVD_PGC_PRE, 0, &command));
+   CHECK(command == chains + 16 + 330);
+   CHECK(!rdvd_ifo_menu_read(&f, 0, RDVD_MENU_AUDIO, &entry) && !entry.pgc.data);
+   CHECK(!rdvd_ifo_menu_read(&f, 3, RDVD_MENU_ROOT, &entry));
+   CHECK(!rdvd_ifo_menu_read(&f, 0, RDVD_MENU_TITLE, &entry));
+   chains[8] = 3; /* Non-entry chains do not advertise a menu. */
+   CHECK(!rdvd_ifo_menu_read(&f, 0, RDVD_MENU_ROOT, &entry));
+   chains[8] = 0x83; chains[16 + 2] = 255;
+   CHECK(!rdvd_ifo_menu_read(&f, 0, RDVD_MENU_ROOT, &entry) && !entry.pgc.data);
+   file_fixture(false); menu_chains_fixture();
+   memcpy(file_bytes + 4096, menu_bytes, sizeof(menu_bytes));
+   file_bytes[4096 + 512 + 8] = 0x82;
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_menu_read(&f, 0, RDVD_MENU_TITLE, &entry));
+   CHECK(!rdvd_ifo_menu_read(&f, 0, RDVD_MENU_ROOT, &entry));
+   CHECK(!rdvd_ifo_menu_read(&f, 0, (enum rdvd_menu_id)-1, &entry));
+   CHECK(!rdvd_ifo_menu_read(NULL, 0, RDVD_MENU_TITLE, &entry));
+}
 int main(void)
 {
    test_bounds();
@@ -309,6 +339,7 @@ int main(void)
    test_chapters();
    test_menu_table();
    test_menu_languages();
+   test_menu_lookup();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

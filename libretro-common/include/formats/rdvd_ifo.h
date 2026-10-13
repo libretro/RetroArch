@@ -159,5 +159,16 @@ typedef struct rdvd_menu_language
  * Metadata and nested PGCIT borrow immutable table input. Failure clears out. */
 bool rdvd_menu_language_read(const rdvd_menu_table_t *table, unsigned index,
       rdvd_menu_language_t *out);
+enum rdvd_menu_id
+{
+   RDVD_MENU_TITLE = 2, RDVD_MENU_ROOT, RDVD_MENU_SUBPICTURE,
+   RDVD_MENU_AUDIO, RDVD_MENU_ANGLE, RDVD_MENU_CHAPTER
+};
+
+/* Selects the first entry PGC matching a menu ID in an explicit zero-based
+ * language index. No language fallback or parental/UOP policy is applied.
+ * VMG supports title menus; VTS supports root through chapter menus. */
+bool rdvd_ifo_menu_read(const rdvd_ifo_t *ifo, unsigned language_index,
+      enum rdvd_menu_id menu, rdvd_pgci_entry_t *out);
 RETRO_END_DECLS
 #endif
