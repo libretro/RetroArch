@@ -1,0 +1,57 @@
+name: CI prune caches
+
+# Every master push saves a ccache per job under a key ending in the
+# commit, and only the newest of each is ever restored. The older ones
+# fill the repository's cache store, which then evicts the newest cache
+# of any workflow that has not run for a few hours. This keeps only the
+# newest entry for each job and branch.
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Delete superseded caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete all but the newest cache of each job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          # Only ccache keys ending in a commit, with the commit cut off;
+          # jq does it, as some mawk versions have no {n} in a regex.
+          gh api --paginate \
+             "repos/$REPO/actions/caches?per_page=100&sort=created_at&direction=desc" \
+             --jq '.actions_caches[]
+                | select(.key | test("^ccache-.*-[0-9a-f]{40}$"))
+                | [.id, .ref, (.key | sub("-[0-9a-f]{40}$"; "")), .size_in_bytes]
+                | @tsv' \
+             > caches.tsv
+          # Newest first: a cache is superseded once a newer one of the
+          # same key on the same branch has been seen. A cache saved
+          # while paging can list one twice, so each id counts once.
+          awk -F '\t' '!ids[$1]++ && seen[$2 FS $3]++ { print $1 "\t" $4 }' \
+             caches.tsv > prune.tsv
+          awk -F '\t' '{ n++; s += $2 } END {
+             printf "%d commit-keyed ccaches, %d superseded (%.2f GB)\n",
+                NR0, n, s / 1e9 }' \
+             NR0="$(wc -l < caches.tsv)" prune.tsv
+          cut -f1 prune.tsv | while read -r id; do
+             gh api -X DELETE "repos/$REPO/actions/caches/$id" > /dev/null || \
+                echo "could not delete cache $id (gone already?)"
+          done

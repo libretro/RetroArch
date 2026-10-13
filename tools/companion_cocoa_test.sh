@@ -93,11 +93,11 @@ CSRCS="ui/companion/companion_core.c \
 OBJS=""
 for f in $CSRCS; do
    o="$OUT/$(echo "$f" | tr '/' '_').o"
-   $CC -std=gnu99 -O1 -g -w $SAN $INC $DEFS -c "$f" -o "$o"
+   $CC -std=gnu99 -O1 -g1 -w $SAN $INC $DEFS -c "$f" -o "$o"
    OBJS="$OBJS $o"
 done
-$CC -x objective-c -O1 -g $OBJCFLAGS $INC $DEFS -c ui/drivers/ui_cocoa_companion.m -o "$OUT/driver.o"
-$CC -x objective-c -O1 -g $OBJCFLAGS $INC $DEFS -c ui/companion/test/companion_cocoa_test.m -o "$OUT/test.o"
+$CC -x objective-c -O1 -g1 $OBJCFLAGS $INC $DEFS -c ui/drivers/ui_cocoa_companion.m -o "$OUT/driver.o"
+$CC -x objective-c -O1 -g1 $OBJCFLAGS $INC $DEFS -c ui/companion/test/companion_cocoa_test.m -o "$OUT/test.o"
 $CC $SAN -o "$OUT/companion_cocoa_test" "$OUT/driver.o" "$OUT/test.o" $OBJS $LDFLAGS -lobjc -lgnustep-base -lgnustep-gui
 
 # Headless: GNUstep needs a display for AppKit; Xvfb provides one.

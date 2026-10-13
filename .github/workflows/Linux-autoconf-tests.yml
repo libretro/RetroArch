@@ -133,7 +133,7 @@ jobs:
       - name: Build
         run: |
           if [ -n "${{ matrix.sanitizer }}" ]; then
-            make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
+            CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1" make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
           else
             make -j"$(nproc)"
           fi
@@ -150,6 +150,11 @@ jobs:
           else
             ./tests-other/test_autoconf.sh ./retroarch
           fi
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore

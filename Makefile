@@ -78,6 +78,13 @@ endif
 
 include Makefile.common
 
+# Only version_git.c reads the commit hash: on every other command
+# line it would make a new commit miss ccache's direct mode.
+ifneq ($(GIT_VERSION),)
+   DEFINES := $(filter-out -DGIT_VERSION=%,$(DEFINES))
+   $(OBJDIR)/version_git.o: DEFINES += -DGIT_VERSION=$(GIT_VERSION)
+endif
+
 ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
    DEF_FLAGS += -Wno-invalid-source-encoding -Wno-incompatible-ms-struct
 endif

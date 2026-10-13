@@ -84,8 +84,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
-  vulkan-idle-waits:
-    name: Vulkan idle-wait allowlist
+  wait-checkers:
+    name: Vulkan and D3D12 wait and teardown checkers
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -96,61 +96,43 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Checker self-test
+      - name: Vulkan idle-wait allowlist, self-test
         shell: bash
         run: |
           set -eu
           tools/check.sh tools/vulkan_idle_wait_check.c --selftest
 
-      - name: Tree check
+      - name: Vulkan idle-wait allowlist, tree check
+        # Each checker runs even when one before it fails.
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -eu
           tools/check.sh tools/vulkan_idle_wait_check.c
 
-  d3d12-idle-waits:
-    name: D3D12 wait allowlist
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Link with lld
-        run: sh .github/workflows/scripts/use-lld.sh
-
-      - name: Checker self-test
+      - name: D3D12 wait allowlist, self-test
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -eu
           tools/check.sh tools/d3d12_idle_wait_check.c --selftest
 
-      - name: Tree check
+      - name: D3D12 wait allowlist, tree check
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -eu
           tools/check.sh tools/d3d12_idle_wait_check.c
 
-  vulkan-teardown-order:
-    name: Vulkan teardown order
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Link with lld
-        run: sh .github/workflows/scripts/use-lld.sh
-
-      - name: Checker self-test
+      - name: Vulkan teardown order, self-test
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -eu
           tools/check.sh tools/vulkan_teardown_order_check.c --selftest
 
-      - name: Tree check
+      - name: Vulkan teardown order, tree check
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -eu
@@ -337,6 +319,11 @@ jobs:
             python3 samples/cores/video_views/e2e/run.py ./retroarch \
             "$RUNNER_TEMP/views-e2e" gl glcore vulkan
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -436,6 +423,11 @@ jobs:
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           SAN=none VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -538,6 +530,12 @@ jobs:
     name: Threaded-video harness on Vulkan under ASan+UBSan (lavapipe)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    env:
+      # Line tables are all a sanitizer report needs. configure and
+      # make take these in place of DEBUG=1's -O0 -g, adding their own.
+      CFLAGS: -O0 -g1
+      CXXFLAGS: -O0 -g1
 
     steps:
       - name: Install dependencies
@@ -644,6 +642,11 @@ jobs:
           HARNESS_CORE_HW_VULKAN=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -657,6 +660,12 @@ jobs:
     name: Threaded-video harness on Vulkan under TSan (lavapipe)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    env:
+      # Line tables are all a sanitizer report needs. configure and
+      # make take these in place of DEBUG=1's -O0 -g, adding their own.
+      CFLAGS: -O0 -g1
+      CXXFLAGS: -O0 -g1
 
     steps:
       - name: Install dependencies
@@ -761,6 +770,11 @@ jobs:
           SAN=thread VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -771,23 +785,24 @@ jobs:
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
 
   gl-harness:
-    name: Threaded-video harness on ${{ matrix.driver }} (llvmpipe, ${{ matrix.api }}, ${{ matrix.san }})
+    name: Threaded-video harness on ${{ matrix.drivers }} (llvmpipe, ${{ matrix.api }}, ${{ matrix.san }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        driver: [gl, glcore, gl1]
-        san: [none, address, thread]
-        api: [desktop]
-        # A GLES 3 build (the Android one): frame memory and the
-        # framebuffer loan through EXT_buffer_storage, which llvmpipe's
-        # GLES 3.2 has, and the harness fails a GL driver without them
+        # One build per API and sanitizer, the harness run on each
+        # driver it serves. The GLES 3 build is the Android one: frame
+        # memory and the framebuffer loan through EXT_buffer_storage,
+        # which llvmpipe's GLES 3.2 has, and the harness fails a GL
+        # driver without them.
         include:
-          - { driver: gl,     san: none,    api: gles3 }
-          - { driver: glcore, san: none,    api: gles3 }
-          - { driver: gl,     san: address, api: gles3 }
-          - { driver: glcore, san: thread,  api: gles3 }
+          - { api: desktop, san: none,    drivers: gl glcore gl1 }
+          - { api: desktop, san: address, drivers: gl glcore gl1 }
+          - { api: desktop, san: thread,  drivers: gl glcore gl1 }
+          - { api: gles3,   san: none,    drivers: gl glcore }
+          - { api: gles3,   san: address, drivers: gl }
+          - { api: gles3,   san: thread,  drivers: glcore }
 
     steps:
       - name: Install dependencies
@@ -880,6 +895,8 @@ jobs:
 
       - name: Build
         run: |
+          # The sanitizer builds are DEBUG=1: -g1, as in the other jobs.
+          [ "${{ matrix.san }}" = none ] || export CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1"
           case "${{ matrix.san }}" in
             thread)  make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1 ;;
             address) make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 ;;
@@ -887,7 +904,7 @@ jobs:
           esac
           test -x retroarch
 
-      - name: Run the harness on ${{ matrix.driver }}
+      - name: Run the harness on ${{ matrix.drivers }}
         shell: bash
         run: |
           set -eu
@@ -900,9 +917,24 @@ jobs:
           done
           export DISPLAY=:99
           export LIBGL_ALWAYS_SOFTWARE=1
-          SAN=${{ matrix.san }} DRIVER=${{ matrix.driver }} CYCLES=1 \
-            make -C samples/gfx/threaded_video check-driver
-          make -C samples/gfx/threaded_video clean
+          # The harness takes its compile line from the build's own.
+          [ "${{ matrix.san }}" = none ] || export CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1"
+          # Every driver runs, so one failing does not hide another.
+          fail=0
+          for driver in ${{ matrix.drivers }}; do
+            echo "::group::$driver"
+            SAN=${{ matrix.san }} DRIVER=$driver CYCLES=1 \
+              make -C samples/gfx/threaded_video check-driver ||
+              { echo "::error::the harness failed on $driver"; fail=1; }
+            make -C samples/gfx/threaded_video clean
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore

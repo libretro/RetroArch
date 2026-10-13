@@ -279,6 +279,11 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_tile_gx_test
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.

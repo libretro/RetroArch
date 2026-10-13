@@ -789,6 +789,11 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -886,6 +891,11 @@ jobs:
              -Wall -Wextra -Werror \
              -I include -c vfs/vfs_implementation.c \
              -o "$RUNNER_TEMP/vfs_implementation.o"
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -1012,7 +1022,7 @@ jobs:
         run: |
           set -eu
           LC=../../..
-          clang -O1 -g -fsanitize=fuzzer,address,undefined \
+          clang -O1 -g1 -fsanitize=fuzzer,address,undefined \
             -fno-sanitize-recover=all \
             -I$LC/include -o config_file_fuzz config_file_fuzz.c \
             $LC/file/config_file.c \
@@ -1048,6 +1058,11 @@ jobs:
           # divergence or sanitizer report fails the job.
           ./config_file_fuzz -max_len=512 -max_total_time=60 \
             -print_final_stats=1 corpus/
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -1235,9 +1250,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ github.workflow }}-${{ github.job }}-
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-
 
       - name: Enable ccache
         run: |
@@ -1298,6 +1313,11 @@ jobs:
             exit 1
           fi
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -1305,7 +1325,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-${{ github.sha }}
 
   # encoding_crc32() picks a different implementation per target: the
   # ARMv8 CRC32 instructions when the compiler advertises +crc, a
@@ -1420,9 +1440,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ github.workflow }}-${{ github.job }}-
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-
 
       - name: Enable ccache
         run: |
@@ -1490,12 +1510,26 @@ jobs:
              flags="-mfpu=neon"
              asm=1
           fi
-          for d in sinc_dispatch sinc_hq sinc_fastforward sinc_sibling; do
+          tests="sinc_dispatch sinc_hq sinc_fastforward sinc_sibling"
+          for d in $tests; do
              make -C $d clean
              CFLAGS="$flags" make -C $d CC="${{ matrix.cc }}" NEON_ASM=$asm
-             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test
+          done
+          # Each test is one qemu-user process on one CPU: run them all
+          # at once, and print each one's output once it is done.
+          declare -A pid
+          for d in $tests; do
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test \
+                > "$RUNNER_TEMP/$d.log" 2>&1 &
+             pid[$d]=$!
+          done
+          fail=0
+          for d in $tests; do
+             wait "${pid[$d]}" || { echo "FAIL $d"; fail=1; }
+             cat "$RUNNER_TEMP/$d.log"
              make -C $d clean
           done
+          exit $fail
 
       - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
         shell: bash
@@ -1535,6 +1569,11 @@ jobs:
             echo "[pass] vfs_v5_metadata_test (FAKE_CFR=$mode, ASan)"
           done
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -1542,4 +1581,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-${{ github.sha }}

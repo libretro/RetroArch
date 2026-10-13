@@ -283,6 +283,13 @@ endif
 
 include Makefile.common
 
+# Only version_git.c reads the commit hash: on every other command
+# line it would make a new commit miss ccache's direct mode.
+ifneq ($(GIT_VERSION),)
+   DEFINES := $(filter-out -DGIT_VERSION=%,$(DEFINES))
+   $(OBJDIR)/version_git.o: DEFINES += -DGIT_VERSION=$(GIT_VERSION)
+endif
+
 DEF_FLAGS += $(INCLUDE_DIRS)
 LDFLAGS += $(CFLAGS) $(CXXFLAGS) $(DEF_FLAGS)
 CFLAGS += $(DEF_FLAGS)

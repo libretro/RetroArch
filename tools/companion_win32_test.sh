@@ -54,7 +54,7 @@ CSRCS="ui/companion/companion_core.c \
 OBJS=""
 for f in $CSRCS ui/drivers/ui_win32_companion.c ui/companion/test/companion_win32_test.c; do
    o="$OUT/$(echo "$f" | tr '/' '_').o"
-   $CC -std=gnu99 -O1 -g -w $INC $DEFS -c "$f" -o "$o"
+   $CC -std=gnu99 -O1 -g1 -w $INC $DEFS -c "$f" -o "$o"
    OBJS="$OBJS $o"
 done
 # realloc and calloc are wrapped so the test can fail one (see the

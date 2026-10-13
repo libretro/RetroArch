@@ -65,11 +65,53 @@ jobs:
           --disable-glslang --disable-crtswitchres --disable-al \
           --disable-cdrom
 
+    - name: Restore ccache
+      uses: actions/cache/restore@v4
+      with:
+        path: .ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.deployment_target }}-${{ github.sha }}
+        restore-keys: |
+          ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.deployment_target }}-
+
+    - name: Set up ccache
+      run: |
+        # Best effort: without ccache, ccache-make.sh runs plain make.
+        command -v ccache > /dev/null || {
+          s=$(command -v sudo || true)
+          for i in 1 2 3; do
+            $s timeout 90 apt-get -yq update \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 &&
+            $s timeout 120 apt-get -yq install --no-install-recommends \
+              ccache > /dev/null && break
+            echo "installing ccache failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+        }
+        echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
+        echo "CCACHE_MAXSIZE=250M" >> "$GITHUB_ENV"
+        if command -v ccache > /dev/null; then
+          CCACHE_DIR="$GITHUB_WORKSPACE/.ccache" ccache -z
+        fi
+
     - name: Compile RA
       run: |
-        make ARCH=ppc -j$(getconf _NPROCESSORS_ONLN)
+        bash .github/workflows/scripts/ccache-make.sh ARCH=ppc -j$(getconf _NPROCESSORS_ONLN)
         file retroarch
         $TARGET-otool -l retroarch | grep -A2 LC_VERSION_MIN_MACOSX
+
+    - name: ccache statistics
+      if: ${{ !cancelled() }}
+      continue-on-error: true
+      run: ccache -sv || ccache -s
+
+    - name: Save ccache
+      # Only master's pushes keep a cache: pull requests restore
+      # master's, so one push does not evict the next one's.
+      if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: actions/cache/save@v4
+      with:
+        path: .ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.deployment_target }}-${{ github.sha }}
 
     - name: Audit imports against the 10.4u SDK
       if: matrix.deployment_target == '10.4'
