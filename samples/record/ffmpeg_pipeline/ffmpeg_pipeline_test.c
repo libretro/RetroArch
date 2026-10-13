@@ -612,11 +612,12 @@ bool __wrap_retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity)
 #endif
 
 int record_finalize_test_run(void);
+int record_audio_growth_test_run(void);
 
 int main(void)
 {
    producer_thread_id = sthread_get_current_thread_id();
-   if (record_finalize_test_run())
+   if (record_audio_growth_test_run() || record_finalize_test_run())
       return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;

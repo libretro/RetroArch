@@ -2285,10 +2285,10 @@ static void planarize_s16(int16_t *out, const int16_t *in, size_t frames)
    }
 }
 
-static void planarize_audio(ffmpeg_t *handle)
+static bool planarize_audio(ffmpeg_t *handle)
 {
    if (!handle->audio.is_planar)
-      return;
+      return true;
 
    if (handle->audio.frames_in_buffer > handle->audio.planar_buf_frames)
    {
@@ -2305,7 +2305,7 @@ static void planarize_audio(ffmpeg_t *handle)
             handle->audio.frames_in_buffer * handle->params.channels *
             handle->audio.sample_size);
       if (!new_buf)
-         return;
+         return false;
       handle->audio.planar_buf = new_buf;
 
       handle->audio.planar_buf_frames = handle->audio.frames_in_buffer;
@@ -2319,6 +2319,7 @@ static void planarize_audio(ffmpeg_t *handle)
       planarize_s16((int16_t*)handle->audio.planar_buf,
             (const int16_t*)handle->audio.buffer,
             handle->audio.frames_in_buffer);
+   return true;
 }
 
 static bool encode_audio(ffmpeg_t *handle, bool dry)
@@ -2338,7 +2339,11 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       frame->nb_samples     = (int)handle->audio.frames_in_buffer;
       frame->pts            = handle->audio.frame_cnt;
 
-      planarize_audio(handle);
+      if (!planarize_audio(handle))
+      {
+         handle->encode_failed = true;
+         return false;
+      }
 
       samples_size          = av_samples_get_buffer_size(
             NULL,
@@ -2410,7 +2415,7 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    return true;
 }
 
-static void ffmpeg_audio_resample(ffmpeg_t *handle,
+static bool ffmpeg_audio_resample(ffmpeg_t *handle,
       struct record_audio_data *aud)
 {
    /* Integer path: s16 encoder with an integer resampler.  Resample
@@ -2426,7 +2431,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
          int16_t *new_fixed = (int16_t*)av_realloc(handle->audio.fixed_conv,
                needed_out * handle->params.channels * sizeof(int16_t));
          if (!new_fixed)
-            return;
+            return false;
          handle->audio.fixed_conv        = new_fixed;
          handle->audio.fixed_conv_frames = needed_out;
       }
@@ -2441,64 +2446,42 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
       aud->data   = handle->audio.fixed_conv;
       aud->frames = info.output_frames;
-      return;
+      return true;
    }
 
    if (!handle->audio.use_float && !handle->audio.resampler)
-      return;
+      return true;
 
-   if (aud->frames > handle->audio.float_conv_frames)
    {
-      /* Three stacked realloc-assign-self patterns pre-patch, all
-       * leaked on OOM and all left the associated *_frames
-       * counter out of sync with the actual allocation.  Worst
-       * case: the second or third av_realloc fails after the
-       * first (or first two) succeeded, float_conv_frames was
-       * already bumped to the new size, and the next call would
-       * skip this whole 'if (aud->frames > ..._frames)' block
-       * and pass a NULL buffer to the downstream convert/
-       * resample calls.
-       *
-       * Fix: realloc into tmp locals, commit each pointer only
-       * after its own alloc succeeds, and defer the
-       * float_conv_frames / resample_out_frames /
-       * fixed_conv_frames counter bumps until the corresponding
-       * allocation has succeeded. */
-      float   *new_float_conv;
-      float   *new_resample_out;
-      int16_t *new_fixed_conv;
-      size_t   new_resample_out_frames;
-      size_t   new_fixed_conv_frames;
-
-      new_float_conv = (float*)av_realloc(handle->audio.float_conv,
-            aud->frames * handle->params.channels * sizeof(float));
-      if (!new_float_conv)
-         return;
-      handle->audio.float_conv        = new_float_conv;
-      handle->audio.float_conv_frames = aud->frames;
-
-      /* To make sure we don't accidentally overflow. */
-      new_resample_out_frames = aud->frames * handle->audio.ratio + 16;
-      new_resample_out        = (float*)
-         av_realloc(handle->audio.resample_out,
-               new_resample_out_frames *
-               handle->params.channels * sizeof(float));
-      if (!new_resample_out)
-         return;
-      handle->audio.resample_out        = new_resample_out;
-      handle->audio.resample_out_frames = new_resample_out_frames;
-
-      new_fixed_conv_frames = MAX(
-            handle->audio.resample_out_frames,
-            handle->audio.float_conv_frames);
-      new_fixed_conv        = (int16_t*)av_realloc(
-            handle->audio.fixed_conv,
-            new_fixed_conv_frames *
-            handle->params.channels * sizeof(int16_t));
-      if (!new_fixed_conv)
-         return;
-      handle->audio.fixed_conv        = new_fixed_conv;
-      handle->audio.fixed_conv_frames = new_fixed_conv_frames;
+      size_t needed_out = (size_t)(aud->frames * handle->audio.ratio) + 16;
+      size_t needed_fixed = MAX(needed_out, aud->frames);
+      if (aud->frames > handle->audio.float_conv_frames)
+      {
+         float *buf = (float*)av_realloc(handle->audio.float_conv,
+               aud->frames * handle->params.channels * sizeof(float));
+         if (!buf)
+            return false;
+         handle->audio.float_conv = buf;
+         handle->audio.float_conv_frames = aud->frames;
+      }
+      if (needed_out > handle->audio.resample_out_frames)
+      {
+         float *buf = (float*)av_realloc(handle->audio.resample_out,
+               needed_out * handle->params.channels * sizeof(float));
+         if (!buf)
+            return false;
+         handle->audio.resample_out = buf;
+         handle->audio.resample_out_frames = needed_out;
+      }
+      if (needed_fixed > handle->audio.fixed_conv_frames)
+      {
+         int16_t *buf = (int16_t*)av_realloc(handle->audio.fixed_conv,
+               needed_fixed * handle->params.channels * sizeof(int16_t));
+         if (!buf)
+            return false;
+         handle->audio.fixed_conv = buf;
+         handle->audio.fixed_conv_frames = needed_fixed;
+      }
    }
 
    if (handle->audio.use_float || handle->audio.resampler)
@@ -2532,12 +2515,17 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
          size_t need_out = (size_t)(aud->frames * handle->audio.ratio) + 16;
          if (aud->frames > handle->audio.pair_frames)
          {
-            float *ni = (float*)av_realloc(handle->audio.pair_in, aud->frames * 2 * sizeof(float));
-            float *no = (float*)av_realloc(handle->audio.pair_out, need_out * 2 * sizeof(float));
-            if (!ni || !no)
-               return;
-            handle->audio.pair_in     = ni;
-            handle->audio.pair_out    = no;
+            float *ni = (float*)av_realloc(handle->audio.pair_in,
+                  aud->frames * 2 * sizeof(float));
+            float *no;
+            if (!ni)
+               return false;
+            handle->audio.pair_in = ni;
+            no = (float*)av_realloc(handle->audio.pair_out,
+                  need_out * 2 * sizeof(float));
+            if (!no)
+               return false;
+            handle->audio.pair_out = no;
             handle->audio.pair_frames = aud->frames;
          }
          for (i = 0; i < npairs; i++)
@@ -2580,6 +2568,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
          aud->data = handle->audio.fixed_conv;
       }
    }
+   return true;
 }
 
 static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
@@ -2587,7 +2576,11 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 {
    size_t written_frames = 0;
 
-   ffmpeg_audio_resample(handle, aud);
+   if (!ffmpeg_audio_resample(handle, aud))
+   {
+      handle->encode_failed = true;
+      return false;
+   }
 
    while (written_frames < aud->frames)
    {

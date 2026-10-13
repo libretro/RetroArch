@@ -12,6 +12,7 @@ TARGET    := ffmpeg_pipeline_test
 SOURCES_C := \
 	ffmpeg_pipeline_test.c \
 	record_finalize_test.c \
+	record_audio_growth_test.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/record/drivers/record_ffmpeg.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
@@ -59,7 +60,7 @@ LDFLAGS  += $(FF_LIBS) -lm -lpthread \
    -Wl,--wrap=av_write_trailer -Wl,--wrap=avio_closep \
    -Wl,--wrap=avcodec_send_frame -Wl,--wrap=avcodec_receive_packet \
    -Wl,--wrap=av_interleaved_write_frame \
-   -Wl,--wrap=av_malloc -Wl,--wrap=sthread_join
+   -Wl,--wrap=av_malloc -Wl,--wrap=sthread_join -Wl,--wrap=av_realloc
 
 # PLAIN_RING=1 builds the lane where the video ring cannot be mirrored.
 ifneq ($(PLAIN_RING),)
@@ -78,6 +79,7 @@ record_finalize_fragment.c: $(CORE_DIR)/record/record_driver.c
 	sed -n '/^bool recording_deinit(void)/,/^void streaming_set_state/p' $< | sed '$$d' > $@
 
 record_finalize_test.o: record_finalize_fragment.c
+record_audio_growth_test.o: $(CORE_DIR)/record/drivers/record_ffmpeg.c
 
 all: $(TARGET)
 
