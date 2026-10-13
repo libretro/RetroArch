@@ -248,6 +248,8 @@ typedef struct ffmpeg
    retro_spsc_t video_fifo;
    retro_spsc_t attr_fifo;
    bool fifos_init;
+   /* Encoder-owned until the thread is joined. */
+   bool encode_failed;
    sthread_t *thread;
 
    /* Set by init_thread(), cleared by deinit_thread(); the encoder
@@ -2086,6 +2088,7 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
       char msg[AV_ERROR_MAX_STRING_SIZE];
       av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
       RARCH_ERR("[FFmpeg] Cannot send video frame. Error code: %s.\n", msg);
+      handle->encode_failed = true;
       return false;
    }
 
@@ -2099,6 +2102,7 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot receive video packet. Error code: %s.\n", msg);
+         handle->encode_failed = true;
          return false;
       }
 
@@ -2118,6 +2122,7 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", msg);
+         handle->encode_failed = true;
          return false;
       }
 
@@ -2359,6 +2364,7 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
 
       av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
       RARCH_ERR("[FFmpeg] Cannot send audio frame. Return code: %s.\n", msg);
+      handle->encode_failed = true;
       return false;
    }
 
@@ -2373,6 +2379,7 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
 
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot receive audio packet. Return code: %s.\n", msg);
+         handle->encode_failed = true;
          return false;
       }
 
@@ -2393,6 +2400,7 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
 
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", msg);
+         handle->encode_failed = true;
          return false;
       }
 
@@ -2654,7 +2662,8 @@ static void ffmpeg_video_fifo_take(ffmpeg_t *handle, void *scratch)
    if (bytes && retro_spsc_read_begin(&handle->video_fifo, &src) >= bytes)
    {
       attr.vid.data = src;
-      ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip);
+      if (!ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip))
+         handle->encode_failed = true;
       retro_spsc_read_end(&handle->video_fifo, bytes);
       return;
    }
@@ -2662,7 +2671,8 @@ static void ffmpeg_video_fifo_take(ffmpeg_t *handle, void *scratch)
    if (bytes)
       retro_spsc_read(&handle->video_fifo, scratch, bytes);
    attr.vid.data = scratch;
-   ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip);
+   if (!ffmpeg_push_video_thread(handle, &attr.vid, attr.pts_skip))
+      handle->encode_failed = true;
 }
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
@@ -2768,6 +2778,8 @@ static bool ffmpeg_finalize(void *data)
 
    /* Flush out data still in buffers (internal, and FFmpeg internal). */
    ffmpeg_flush_buffers(handle);
+   if (handle->encode_failed)
+      success = false;
 
    deinit_thread_buf(handle);
 

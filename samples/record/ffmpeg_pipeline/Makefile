@@ -56,7 +56,9 @@ INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
 CFLAGS   += -Wall $(INCDIRS) $(FF_CFLAGS)
 CFLAGS   += -DRARCH_INTERNAL -DHAVE_FFMPEG -DHAVE_THREADS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 LDFLAGS  += $(FF_LIBS) -lm -lpthread \
-   -Wl,--wrap=av_write_trailer -Wl,--wrap=avio_closep
+   -Wl,--wrap=av_write_trailer -Wl,--wrap=avio_closep \
+   -Wl,--wrap=avcodec_send_frame -Wl,--wrap=avcodec_receive_packet \
+   -Wl,--wrap=av_interleaved_write_frame
 
 # PLAIN_RING=1 builds the lane where the video ring cannot be mirrored.
 ifneq ($(PLAIN_RING),)

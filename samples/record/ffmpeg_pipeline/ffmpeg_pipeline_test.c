@@ -206,6 +206,45 @@ int __wrap_avio_closep(AVIOContext **ctx)
    return fault_mode == 2 ? AVERROR(EIO) : result;
 }
 
+int __real_avcodec_send_frame(AVCodecContext *ctx, const AVFrame *frame);
+int __wrap_avcodec_send_frame(AVCodecContext *ctx, const AVFrame *frame)
+{
+   if (!fault_writes
+         && ((frame && fault_mode == 4 && ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            || (frame && fault_mode == 6 && ctx->codec_type == AVMEDIA_TYPE_AUDIO)
+            || (!frame && fault_mode == 10 && ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            || (!frame && fault_mode == 11 && ctx->codec_type == AVMEDIA_TYPE_AUDIO)))
+   {
+      fault_writes++;
+      return AVERROR(ENOMEM);
+   }
+   return __real_avcodec_send_frame(ctx, frame);
+}
+int __real_avcodec_receive_packet(AVCodecContext *ctx, AVPacket *pkt);
+int __wrap_avcodec_receive_packet(AVCodecContext *ctx, AVPacket *pkt)
+{
+   if (!fault_writes
+         && ((fault_mode == 8 && ctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            || (fault_mode == 9 && ctx->codec_type == AVMEDIA_TYPE_AUDIO)))
+   {
+      fault_writes++;
+      return AVERROR(ENOMEM);
+   }
+   return __real_avcodec_receive_packet(ctx, pkt);
+}
+int __real_av_interleaved_write_frame(AVFormatContext *ctx, AVPacket *pkt);
+int __wrap_av_interleaved_write_frame(AVFormatContext *ctx, AVPacket *pkt)
+{
+   if (pkt && !fault_writes
+         && ((fault_mode == 5 && ctx->streams[pkt->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            || (fault_mode == 7 && ctx->streams[pkt->stream_index]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)))
+   {
+      fault_writes++;
+      return AVERROR(EIO);
+   }
+   return __real_av_interleaved_write_frame(ctx, pkt);
+}
+
 static int run(bool drop)
 {
    struct record_params params;
@@ -298,7 +337,7 @@ static int run(bool drop)
    {
       remove(OUT);
       if (finalized || fault_closes != 1 || !fault_closed
-            || (fault_mode == 1 && !fault_writes))
+            || ((fault_mode == 1 || fault_mode >= 4) && !fault_writes))
       {
          fprintf(stderr, "finalize fault %u: success=%d writes=%u closes=%u\n",
                fault_mode, finalized, fault_writes, fault_closes);
@@ -534,7 +573,7 @@ int main(void)
       return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;
-   for (fault_mode = 1; fault_mode <= 3; fault_mode++)
+   for (fault_mode = 1; fault_mode <= 11; fault_mode++)
    {
       fault_writes = fault_closes = 0;
       fault_closed = false;
