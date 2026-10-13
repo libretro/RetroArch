@@ -36,6 +36,17 @@ static enum pw_stream_state    script_state   = PW_STREAM_STATE_STREAMING;
 static unsigned                script_dequeues;
 static unsigned                script_queued;
 static struct pw_buffer       *script_queued_last;
+static int                     script_stride;
+
+int __wrap_pw_stream_update_params(struct pw_stream *stream,
+      const struct spa_pod **params, uint32_t n_params)
+{
+   (void)stream;
+   if (n_params > 0)
+      spa_pod_parse_object(params[0], SPA_TYPE_OBJECT_ParamBuffers, NULL,
+            SPA_PARAM_BUFFERS_stride, SPA_POD_Int(&script_stride));
+   return 0;
+}
 
 struct pw_buffer *__wrap_pw_stream_dequeue_buffer(struct pw_stream *stream)
 {
@@ -99,6 +110,77 @@ static void script_reset(struct pw_buffer *next)
    script_queued      = 0;
    script_queued_last = NULL;
    frame_cb_count     = 0;
+}
+
+static void check_formats(void)
+{
+   static const uint32_t formats[] = { SPA_VIDEO_FORMAT_ARGB,
+      SPA_VIDEO_FORMAT_BGR, SPA_VIDEO_FORMAT_YUY2 };
+   static const unsigned bytes_per_pixel[] = { 4, 3, 2 };
+   unsigned i;
+
+   printf("negotiated packed formats:\n");
+   for (i = 0; i < sizeof(formats) / sizeof(formats[0]); i++)
+   {
+      uint8_t storage[1024];
+      struct spa_pod_builder builder = SPA_POD_BUILDER_INIT(storage, sizeof(storage));
+      struct spa_video_info_raw info;
+      pipewire_camera_t camera;
+      const struct spa_pod *param;
+
+      memset(&camera, 0, sizeof(camera));
+      memset(&info, 0, sizeof(info));
+      info.format = formats[i];
+      info.size = SPA_RECTANGLE(W, H);
+      param = spa_format_video_raw_build(&builder, SPA_PARAM_Format, &info);
+      script_stride = 0;
+      stream_param_changed_cb(&camera, SPA_PARAM_Format, param);
+      CHECK(camera.buffer_output != NULL, "format creates output buffer");
+      CHECK(camera.scaler.in_stride == (int)(W * bytes_per_pixel[i]),
+            "scaler stride matches negotiated pixel size");
+      CHECK(script_stride == (int)(W * bytes_per_pixel[i]),
+            "requested buffer stride matches negotiated pixel size");
+      if ((formats[i] == SPA_VIDEO_FORMAT_ARGB
+               || formats[i] == SPA_VIDEO_FORMAT_BGR) && camera.buffer_output)
+      {
+         uint32_t pixels[W * H];
+         uint8_t bgr[W * H * 3];
+         struct spa_chunk chunk;
+         struct spa_data data;
+         struct spa_buffer buffer;
+         struct pw_buffer pwb;
+         unsigned j;
+         for (j = 0; j < W * H; j++)
+         {
+            bgr[j * 3] = j;
+            bgr[j * 3 + 1] = j + 1;
+            bgr[j * 3 + 2] = j + 2;
+            pixels[j] = formats[i] == SPA_VIDEO_FORMAT_ARGB
+               ? 0xff000000u | j
+               : 0xff000000u | ((j + 2) << 16) | ((j + 1) << 8) | j;
+         }
+         memset(&chunk, 0, sizeof(chunk));
+         memset(&data, 0, sizeof(data));
+         memset(&buffer, 0, sizeof(buffer));
+         memset(&pwb, 0, sizeof(pwb));
+         chunk.size = formats[i] == SPA_VIDEO_FORMAT_ARGB
+            ? sizeof(pixels) : sizeof(bgr);
+         data.data = formats[i] == SPA_VIDEO_FORMAT_ARGB
+            ? (void*)pixels : (void*)bgr;
+         data.maxsize = chunk.size;
+         data.chunk = &chunk;
+         buffer.n_datas = 1;
+         buffer.datas = &data;
+         pwb.buffer = &buffer;
+         script_reset(&pwb);
+         CHECK(preprocess_image(&camera), "negotiated packed frame converts");
+         CHECK(memcmp(camera.buffer_output, pixels, sizeof(pixels)) == 0,
+               "negotiated packed format preserves every pixel");
+         CHECK(script_queued == 1, "negotiated frame returned once");
+      }
+      scaler_ctx_gen_reset(&camera.scaler);
+      free(camera.buffer_output);
+   }
 }
 
 int main(void)
@@ -263,6 +345,7 @@ int main(void)
    CHECK(script_active_calls == 0, "started camera needs no transition");
 
    scaler_ctx_gen_reset(&camera.scaler);
+   check_formats();
 
    if (fails)
    {

@@ -28,7 +28,8 @@ LDFLAGS += $(PW_LIBS) -lm -lpthread
 LDFLAGS += -Wl,--wrap=pw_stream_dequeue_buffer \
 	-Wl,--wrap=pw_stream_queue_buffer \
 	-Wl,--wrap=pw_stream_get_state \
-	-Wl,--wrap=pw_stream_get_nsec
+	-Wl,--wrap=pw_stream_get_nsec \
+	-Wl,--wrap=pw_stream_update_params
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)

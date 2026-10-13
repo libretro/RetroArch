@@ -234,6 +234,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
 {
    uint8_t params_buffer[1024];
    const struct spa_pod *params[5];
+   unsigned input_stride;
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(params_buffer, sizeof(params_buffer));
 
@@ -284,10 +285,24 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
       return;
    }
 
+   switch (camera->scaler.in_fmt)
+   {
+      case SCALER_FMT_ARGB8888:
+      case SCALER_FMT_ABGR8888:
+         input_stride = camera->size.width * 4;
+         break;
+      case SCALER_FMT_BGR24:
+         input_stride = camera->size.width * 3;
+         break;
+      default:
+         input_stride = camera->size.width * 2;
+         break;
+   }
+
    struct spa_pod_frame frame;
    spa_pod_builder_push_object(&b, &frame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers);
    spa_pod_builder_add(&b,
-         SPA_PARAM_BUFFERS_stride,   SPA_POD_Int(camera->size.width * 2),
+         SPA_PARAM_BUFFERS_stride,   SPA_POD_Int(input_stride),
          0);
 
    spa_pod_builder_add(&b,
@@ -319,7 +334,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
    camera->scaler.in_width   = camera->scaler.out_width = camera->size.width;
    camera->scaler.in_height  = camera->scaler.out_height = camera->size.height;
    camera->scaler.out_fmt    = SCALER_FMT_ARGB8888;
-   camera->scaler.in_stride  = camera->size.width * 2;
+   camera->scaler.in_stride  = input_stride;
    camera->scaler.out_stride = camera->size.width * 4;
    if (!scaler_ctx_gen_filter(&camera->scaler))
    {
