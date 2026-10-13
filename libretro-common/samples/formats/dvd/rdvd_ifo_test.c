@@ -424,6 +424,34 @@ static void test_vob_map(void)
    CHECK(!rdvd_vob_map_read(NULL, 1, &map));
    CHECK(!rdvd_vob_map_read(sizes, 1, NULL));
 }
+static void test_vob_spans(void)
+{
+   uint64_t sizes[3];
+   uint64_t offset, left, read;
+   rdvd_vob_map_t map;
+   rdvd_vob_span_t span;
+   sizes[0] = 4096; sizes[1] = 2048; sizes[2] = 4096;
+   CHECK(rdvd_vob_map_read(sizes, 3, &map));
+   CHECK(rdvd_vob_span_read(&map, 4095, 10, &span));
+   CHECK(span.segment == 1 && span.file_offset == 4095 && span.bytes == 1);
+   CHECK(rdvd_vob_span_read(&map, 4096, 10, &span));
+   CHECK(span.segment == 2 && !span.file_offset && span.bytes == 10);
+   CHECK(rdvd_vob_span_read(&map, 10239, UINT64_MAX, &span) && span.bytes == 1);
+   CHECK(!rdvd_vob_span_read(&map, 10240, 1, &span) && !span.segment);
+   CHECK(!rdvd_vob_span_read(&map, UINT64_MAX, 1, &span));
+   CHECK(!rdvd_vob_span_read(&map, 0, 0, &span));
+   offset = 2048; left = 8192; read = 0;
+   while (left && rdvd_vob_span_read(&map, offset, left, &span))
+   {
+      offset += span.bytes; left -= span.bytes; read += span.bytes;
+   }
+   CHECK(!left && read == 8192 && offset == 10240);
+   map.total_bytes = 1;
+   CHECK(rdvd_vob_span_read(&map, 6144, 2048, &span) && span.segment == 3);
+   sizes[1] = 2049;
+   CHECK(!rdvd_vob_span_read(&map, 0, 1, &span) && !span.bytes);
+   CHECK(!rdvd_vob_span_read(NULL, 0, 1, &span));
+}
 int main(void)
 {
    test_bounds();
@@ -439,6 +467,7 @@ int main(void)
    test_language_find();
    test_file_names();
    test_vob_map();
+   test_vob_spans();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

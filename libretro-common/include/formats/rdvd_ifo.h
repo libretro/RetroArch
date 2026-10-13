@@ -200,5 +200,17 @@ typedef struct rdvd_vob_map
  * nonzero multiples of 2048. Borrows immutable sizes, not file contents. */
 bool rdvd_vob_map_read(const uint64_t *sizes, unsigned count,
       rdvd_vob_map_t *out);
+typedef struct rdvd_vob_span
+{
+   uint64_t file_offset, bytes;
+   unsigned segment;
+} rdvd_vob_span_t;
+
+/* Returns the first nonempty file-local span of a logical byte request,
+ * stopping at the segment boundary/EOF. Segment numbers are one-based.
+ * Revalidates geometry; callers advance by bytes to continue the request.
+ * No payload allocation, copy or I/O occurs. Failure clears out. */
+bool rdvd_vob_span_read(const rdvd_vob_map_t *map, uint64_t offset,
+      uint64_t bytes, rdvd_vob_span_t *out);
 RETRO_END_DECLS
 #endif

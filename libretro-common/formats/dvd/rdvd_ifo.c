@@ -540,3 +540,29 @@ bool rdvd_vob_map_read(const uint64_t *sizes, unsigned count,
    out->sizes = sizes; out->total_bytes = total; out->segments = count;
    return true;
 }
+
+
+bool rdvd_vob_span_read(const rdvd_vob_map_t *map, uint64_t offset,
+      uint64_t bytes, rdvd_vob_span_t *out)
+{
+   rdvd_vob_map_t validated;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!map || !bytes
+         || !rdvd_vob_map_read(map->sizes, map->segments, &validated)
+         || offset >= validated.total_bytes) return false;
+   for (i = 0; i < validated.segments; i++)
+   {
+      uint64_t size = validated.sizes[i];
+      if (offset < size)
+      {
+         uint64_t remaining = size - offset;
+         out->segment = i + 1; out->file_offset = offset;
+         out->bytes = bytes < remaining ? bytes : remaining;
+         return true;
+      }
+      offset -= size;
+   }
+   return false;
+}
