@@ -23,6 +23,9 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Link with lld
+      run: sh .github/workflows/scripts/use-lld.sh
+
     - name: archive
       id: archive
       run: |

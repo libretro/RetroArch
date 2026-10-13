@@ -29,6 +29,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Run input/common/input_openxr.c against a stand-in runtime
         working-directory: samples/input/openxr_input
         shell: bash
@@ -89,6 +92,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Install Windows cross compiler
         run: sudo apt-get install -y -qq gcc-mingw-w64-x86-64
 
@@ -114,6 +120,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Run deps/openxr's loader from several threads
         working-directory: samples/openxr/loader_threads
         shell: bash
@@ -138,6 +147,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Install dependencies
         shell: bash
@@ -209,6 +221,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Install dependencies
         shell: bash

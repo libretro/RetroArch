@@ -49,6 +49,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
       - name: state_rewind
         run: make -C samples/state_rewind clean check
       - name: runahead
@@ -62,6 +65,9 @@ jobs:
       UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
     steps:
       - uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
       - name: state_rewind (ASan + UBSan)
         run: make -C samples/state_rewind clean check SANITIZER=address,undefined
       - name: runahead (ASan + UBSan)

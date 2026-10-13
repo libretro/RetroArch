@@ -30,6 +30,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Link with lld
+      run: sh .github/workflows/scripts/use-lld.sh
+
     # Authenticated pulls avoid the shared per-IP anonymous rate limit;
     # without the secrets (fork pull requests) the pull stays anonymous
     - name: Log in to Docker Hub

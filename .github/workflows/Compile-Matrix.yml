@@ -80,5 +80,8 @@ jobs:
             $pkgs
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
       - name: Compile matrix
         run: ./.github/workflows/scripts/compile-matrix.sh

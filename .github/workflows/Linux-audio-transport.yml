@@ -24,6 +24,9 @@ jobs:
         sanitizer: ['', 'address,undefined']
     steps:
       - uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
       - name: Build the shipping frontend and real audio wrapper fixture
         working-directory: samples/audio/pipeline_wakeups
         run: make clean all SANITIZER='${{ matrix.sanitizer }}'

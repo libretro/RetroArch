@@ -38,6 +38,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Check no input driver's table outgrows the structure
         shell: bash
         run: |

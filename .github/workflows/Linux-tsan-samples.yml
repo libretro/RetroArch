@@ -93,5 +93,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Build and run each suite under TSan
         run: tools/tsan-samples.sh

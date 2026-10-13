@@ -25,6 +25,9 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v7
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Download ares-cli-rs
         uses: robinraju/release-downloader@v1
         with:

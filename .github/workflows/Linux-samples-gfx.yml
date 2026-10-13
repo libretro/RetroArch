@@ -29,6 +29,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Tree check
         shell: bash
         run: |
@@ -53,6 +56,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Self-test
         shell: bash
@@ -109,6 +115,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Build and run slang_rect_test (ASan + UBSan, llvmpipe)
         shell: bash
@@ -208,6 +217,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Restore ccache
         uses: actions/cache/restore@v4

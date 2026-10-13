@@ -107,6 +107,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Configure
         # Same trimmed surface as the ASan job, for the same reason:
         # a finding should be a RetroArch bug rather than noise from a

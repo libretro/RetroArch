@@ -93,6 +93,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Checker self-test
         shell: bash
         run: |
@@ -114,6 +117,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Checker self-test
         shell: bash
         run: |
@@ -134,6 +140,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Checker self-test
         shell: bash
@@ -207,6 +216,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Restore ccache
         uses: actions/cache/restore@v4
@@ -374,6 +386,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Restore ccache
         uses: actions/cache/restore@v4
         with:
@@ -492,6 +507,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
       - name: Build and run
         shell: bash
         run: |
@@ -576,6 +594,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Restore ccache
         uses: actions/cache/restore@v4
@@ -692,6 +713,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Restore ccache
         uses: actions/cache/restore@v4
@@ -820,6 +844,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
 
       - name: Restore ccache
         uses: actions/cache/restore@v4
