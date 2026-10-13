@@ -313,19 +313,9 @@ static INLINE void d3d9_recompute_pass_sizes(
    unsigned out_width                = 0;
    unsigned out_height               = 0;
 
+   /* The first pass's texture is the frame's, which
+    * d3d9_hlsl_renderchain_fit_frame sizes. */
    link_info.pass                    = &d3d->shader.pass[0];
-   link_info.tex_dims                = VIDEO_SCALE_PACK(current_width,
-         current_height);
-
-   if (!d3d9_hlsl_renderchain_set_pass_size(dev,
-            (struct shader_pass*)&chain->passes->data[0],
-            (struct shader_pass*)&chain->passes->data[
-            chain->passes->count - 1],
-            link_info.tex_dims))
-   {
-      RARCH_ERR("[D3D9] Failed to set pass size.\n");
-      return;
-   }
 
    for (i = 1; i < (int) d3d->shader.passes; i++)
    {
@@ -372,6 +362,39 @@ static INLINE void d3d9_recompute_pass_sizes(
 
       link_info.pass = &d3d->shader.pass[i];
    }
+}
+
+/* The frame's textures grown to hold a frame of @width x @height, past
+ * the size the core declared; false if they couldn't be, and the frame
+ * is cut to them. */
+static bool d3d9_hlsl_renderchain_fit_frame(d3d9_hlsl_renderchain_t *chain,
+      unsigned width, unsigned height)
+{
+   unsigned i, tw, th;
+   D3DSURFACE_DESC desc;
+   struct shader_pass *first = (struct shader_pass*)&chain->passes->data[0];
+   tw = VIDEO_SCALE_W(first->info.tex_dims);
+   th = VIDEO_SCALE_H(first->info.tex_dims);
+   if (width <= tw && height <= th)
+      return true;
+   if (FAILED(IDirect3DTexture9_GetLevelDesc(chain->prev.tex[0], 0, &desc)))
+      return false;
+   tw = next_pow2(MAX(width, tw));
+   th = next_pow2(MAX(height, th));
+   for (i = 0; i < TEXTURES; i++)
+   {
+      LPDIRECT3DTEXTURE9 tex = NULL;
+      if (FAILED(IDirect3DDevice9_CreateTexture(chain->dev, tw, th, 1, 0,
+                  desc.Format, D3DPOOL_MANAGED, &tex, NULL)))
+         return false;
+      IDirect3DTexture9_Release(chain->prev.tex[i]);
+      chain->prev.tex[i]       = tex;
+      chain->prev.last_dims[i] = 0;
+   }
+   first->tex             = chain->prev.tex[chain->prev.ptr];
+   first->last_dims       = 0;
+   first->info.tex_dims   = VIDEO_SCALE_PACK(tw, th);
+   return true;
 }
 
 /* =====================================================================
@@ -6605,20 +6628,64 @@ static bool d3d9_hlsl_load_program_from_file_ex(
 
 /* END HLSL RENDERCHAIN */
 
+#ifdef D3D9_VIEWS
+/* Views pixel shader @i from @src, and its constant's register */
+static bool d3d9_hlsl_views_ps_make(d3d9_video_t *d3d, unsigned i,
+      const char *src)
+{
+   bool ok;
+   D3DBlob code = NULL;
+   if (!d3d_compile(src, strlen(src), "views", "main_fragment", "ps_2_0",
+            &code))
+      return false;
+   ok = SUCCEEDED(IDirect3DDevice9_CreatePixelShader(d3d->dev,
+            (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+            (LPDIRECT3DPIXELSHADER9*)&d3d->views.ps[i]));
+   d3d->views.ps_reg[i] = d3d9_hlsl_ctab_find_register(
+         (const DWORD*)code->lpVtbl->GetBufferPointer(code),
+         code->lpVtbl->GetBufferSize(code) / sizeof(DWORD), "views_c",
+         NULL, NULL);
+   code->lpVtbl->Release(code);
+   return ok;
+}
+
+#define D3D9V_FN(name)             d3d9_hlsl_##name
+#define D3D9V_TAG                  "[D3D9 HLSL]"
+#define D3D9V_PS_MAKE(d, i, src)   d3d9_hlsl_views_ps_make(d, i, src)
+#define D3D9V_PS_FREE(d, i)        IDirect3DPixelShader9_Release( \
+      (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
+#define D3D9V_PS_BIND(d, i)        IDirect3DDevice9_SetPixelShader((d)->dev, \
+      (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
+#include "../common/d3d9_views.h"
+#endif
+
 static uint32_t d3d9_hlsl_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef D3D9_VIEWS
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_HLSL);
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
+#ifdef D3D9_VIEWS
+   if (d3d && retro_atomic_load_acquire_int(&d3d->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (d3d && retro_atomic_load_acquire_int(&d3d->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+#endif
 
    return flags;
 }
 
 static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 {
+#ifdef D3D9_VIEWS
+   /* Its targets are in the default pool, which a reset drops. */
+   d3d9_hlsl_views_release(d3d);
+#endif
 
    hlsl_d3d9_renderchain_free(d3d->renderchain_data);
 
@@ -7051,7 +7118,13 @@ static bool d3d9_hlsl_initialize(
    /* d3d->vp.full_* was written by the caller (d3d9_hlsl_init_internal
     * has already called set_size at this point). */
    d3d9_hlsl_set_viewport(d3d,
-      d3d->vp.full_dims, false, true);
+      d3d->vp.full_dims,
+#ifdef D3D9_VIEWS
+      d3d->views.active,
+#else
+      false,
+#endif
+      true);
 
 
    {
@@ -7320,6 +7393,9 @@ static void *d3d9_hlsl_init(const video_info_t *info)
       goto error;
 
    d3d->keep_aspect       = info->force_aspect;
+#ifdef D3D9_VIEWS
+   d3d9_hlsl_views_publish(d3d);
+#endif
 
    return d3d;
 
@@ -7769,6 +7845,14 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
 #endif
+   bool views_per_eye                  = false;
+#ifdef D3D9_VIEWS
+   d3d9_video_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                          = false;
+   bool views_blend                    = false;
+   bool views_ui                       = false;
+#endif
 
    if (!frame)
       return true;
@@ -7790,12 +7874,46 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       }
    }
 
+   /* A frame past the size the core declared */
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      if (!d3d9_hlsl_renderchain_fit_frame(&_chain->chain,
+               frame_width, frame_height))
+      {
+         unsigned tex_dims = _chain->chain.passes->data[0].info.tex_dims;
+         frame_width       = MIN(frame_width,  VIDEO_SCALE_W(tex_dims));
+         frame_height      = MIN(frame_height, VIDEO_SCALE_H(tex_dims));
+      }
+   }
+
+#ifdef D3D9_VIEWS
+   d3d->views.frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
+   views = d3d9_hlsl_views_setup(d3d, video_info, msg,
+         d3d->menu && d3d->menu->enabled, &views_blend, view_chains,
+         view_rects);
+   /* The viewport is the whole window while views draw. */
+   if (views != d3d->views.active)
+   {
+      d3d->views.active  = views;
+      d3d->should_resize = true;
+   }
+   retro_atomic_store_release_int(&d3d->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   d3d9_hlsl_views_publish(d3d);
+#endif
+
    if (d3d->should_resize)
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
       d3d9_hlsl_renderchain_t *chain  = (d3d9_hlsl_renderchain_t*)&_chain->chain;
 
-      d3d9_hlsl_set_viewport(d3d, VIDEO_SCALE_PACK(width, height), false, true);
+      d3d9_hlsl_set_viewport(d3d, VIDEO_SCALE_PACK(width, height),
+#ifdef D3D9_VIEWS
+            d3d->views.active,
+#else
+            false,
+#endif
+            true);
 
       if (chain)
          chain->out_vp           = (D3DVIEWPORT9*)&d3d->out_vp;
@@ -7819,6 +7937,31 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
    IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
          (const float*)&d3d->mvp, 4);
+#ifdef D3D9_VIEWS
+   /* The frame into its texture as ever, each view drawn from there */
+   if (views)
+   {
+      struct d3d9_views_draw d;
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      struct shader_pass *first  = &_chain->chain.passes->data[0];
+      d.video_info = video_info;
+      d.tex        = _chain->chain.prev.tex[_chain->chain.prev.ptr];
+      d.tex_dims   = first->info.tex_dims;
+      d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
+      d.rotation   = d3d->dev_rotation;
+      d3d9_hlsl_views_upload(d.tex, frame, frame_height,
+            (size_t)frame_width * _chain->chain.pixel_size, pitch);
+      d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend);
+      IDirect3DDevice9_SetVertexShader(d3d->dev,
+            (LPDIRECT3DVERTEXSHADER9)_chain->stock_shader.vprg);
+      IDirect3DDevice9_SetPixelShader(d3d->dev,
+            (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
+      if (_chain->stock_data.vs_map.mvp >= 0)
+         IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
+               _chain->stock_data.vs_map.mvp, (const float*)&d3d->mvp, 4);
+   }
+   else
+#endif
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
          pitch, d3d->dev_rotation);
@@ -7842,8 +7985,39 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       }
    }
 
+#ifdef D3D9_VIEWS
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, d3d9_hlsl_views_allowed(d3d));
+   if (!views_per_eye)
+      d3d9_hlsl_vv_target_drop(d3d, &d3d->views.ui_target, &d3d->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden.
+    * No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         d3d->menu->enabled, msg, statistics_show,
+         widgets_active && gfx_widgets_visible(video_info))
+#else
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         d3d->menu->enabled, msg, statistics_show, false)
+#endif
+      && d3d->views.layer
+      && d3d9_hlsl_vv_target_ensure(d3d, &d3d->views.ui_target,
+            &d3d->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+   {
+      d3d9_hlsl_views_ui_begin(d3d, video_info);
+      width            = VIDEO_SCALE_W(video_info->dims);
+      height           = VIDEO_SCALE_H(video_info->dims);
+      screen_vp.Width  = width;
+      screen_vp.Height = height;
+   }
+#endif
+
 #ifdef HAVE_OVERLAY
-   if (d3d->overlays_enabled && overlay_behind_menu)
+   if (d3d->overlays_enabled && overlay_behind_menu && !views_per_eye)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp_transposed, 4);
@@ -7857,6 +8031,10 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp, 4);
+#ifdef D3D9_VIEWS
+      if (d3d->views.active || views_ui)
+         d3d9_hlsl_views_menu_viewport(d3d, video_info->dims);
+#endif
       d3d9_hlsl_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;
@@ -7883,7 +8061,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (d3d->overlays_enabled && !overlay_behind_menu)
+   if (d3d->overlays_enabled && !overlay_behind_menu && !views_per_eye)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
             (const float*)&d3d->mvp_transposed, 4);
@@ -7943,6 +8121,18 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       font_driver_render_msg(d3d, msg, strlen(msg), NULL, NULL);
       IDirect3DDevice9_EndScene(d3d->dev);
    }
+
+#ifdef D3D9_VIEWS
+   if (views_ui)
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      d3d9_hlsl_views_ui_end(d3d, video_info);
+      IDirect3DDevice9_SetVertexShader(d3d->dev,
+            (LPDIRECT3DVERTEXSHADER9)_chain->stock_shader.vprg);
+      IDirect3DDevice9_SetPixelShader(d3d->dev,
+            (LPDIRECT3DPIXELSHADER9)_chain->stock_shader.fprg);
+   }
+#endif
 
    video_driver_update_title(NULL);
 
@@ -8353,6 +8543,13 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    NULL, /* hw_ring_framebuffer */
    d3d9_hlsl_update_texture,
    d3d9_hlsl_get_swap_interval_cap
+#ifdef D3D9_VIEWS
+   ,
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   d3d9_hlsl_set_view_count
+#endif
 };
 
 static void d3d9_hlsl_get_poke_interface(void *data,

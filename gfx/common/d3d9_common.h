@@ -31,6 +31,13 @@
 #include "d3d_common.h"
 #include "../../verbosity.h"
 
+/* Views on the PC: Xbox 360 cores have none */
+#ifndef _XBOX
+#define D3D9_VIEWS
+#include <retro_atomic.h>
+#include "../video_views.h"
+#endif
+
 #ifdef _XBOX
 #define D3D9_RGB565_FORMAT D3DFMT_LIN_R5G6B5
 #define D3D9_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
@@ -44,6 +51,51 @@
 #endif
 
 RETRO_BEGIN_DECLS
+
+#ifdef D3D9_VIEWS
+/* A render target views draw into: a texture and its surface */
+typedef struct d3d9_views_target
+{
+   LPDIRECT3DTEXTURE9 tex;
+   LPDIRECT3DSURFACE9 surf;
+} d3d9_views_target_t;
+
+enum d3d9_views_ps
+{
+   D3D9_VIEWS_PS_RECT = 0,
+   D3D9_VIEWS_PS_BLEND,
+   D3D9_VIEWS_PS_LAYER,
+   D3D9_VIEWS_PS_COUNT
+};
+
+typedef struct d3d9_views
+{
+   video_views_chains_t  chains;
+   video_views_target_t  canvas_target;
+   video_views_target_t  ui_target;
+   video_views_ui_dims_t saved;
+   d3d9_views_target_t   canvas;
+   d3d9_views_target_t   ui;
+   /* The render target the UI layer was entered from */
+   LPDIRECT3DSURFACE9    back;
+   /* The pixel shaders, the driver's handles, and each one's constant
+    * register */
+   void                  *ps[D3D9_VIEWS_PS_COUNT];
+   int                   ps_reg[D3D9_VIEWS_PS_COUNT];
+   unsigned              frame_dims;
+   /* For get_flags on the main thread: whether views may be drawn, and
+    * whether the last frame with a map drew it whole */
+   retro_atomic_int_t    allowed;
+   retro_atomic_int_t    fallback;
+   bool                  tried;
+   bool                  failed;
+   /* The canvas, and the UI layer with its alpha kept apart */
+   bool                  blend;
+   bool                  layer;
+   bool                  active;
+   bool                  direct_seen;
+} d3d9_views_t;
+#endif
 
 typedef struct d3d9_video
 {
@@ -101,6 +153,9 @@ typedef struct d3d9_video
     * with a different `rgb32` value.  Defaults to false; the first
     * call will see a NULL tex and create one regardless. */
    bool menu_tex_rgb32;
+#ifdef D3D9_VIEWS
+   d3d9_views_t views;
+#endif
 } d3d9_video_t;
 
 bool d3d9_create_device(void *dev,

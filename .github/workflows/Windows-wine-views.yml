@@ -1,24 +1,26 @@
 name: CI Windows views under Wine
 
-# Views on the D3D10, D3D11 and D3D12 drivers, end to end: retroarch.exe
-# cross-built with mingw-w64 runs the video_views test core under Wine,
-# on a virtual display through Mesa's software rasterisers (D3D12 on
-# Wine's vkd3d over lavapipe), and samples/cores/video_views/e2e/run.py
-# checks the screen in each stereo mode, from the core's software
-# frames and its D3D11 and D3D12 textures, with the menu laid out per
-# eye and the pointer over it. Wine's own shader compiler can't take the
-# drivers' HLSL, so vkd3d's, from its release, is put in as
-# D3DCompiler_47.dll.
+# Views on the D3D9 HLSL, D3D10, D3D11 and D3D12 drivers, end to end:
+# retroarch.exe cross-built with mingw-w64 runs the video_views test core
+# under Wine, on a virtual display through Mesa's software rasterisers
+# (D3D12 on Wine's vkd3d over lavapipe), and
+# samples/cores/video_views/e2e/run.py checks the screen in each stereo
+# mode, from the core's software frames and its D3D11 and D3D12
+# textures, with the menu laid out per eye and the pointer over it.
+# Wine's own shader compiler can't take the drivers' HLSL, so vkd3d's,
+# from its release, is put in as D3DCompiler_47.dll.
 
 on:
   push:
     branches:
       - master
     paths:
+      - 'gfx/common/d3d9_*'
+      - 'gfx/drivers/d3d9hlsl.c'
       - 'gfx/drivers/d3d10.c'
       - 'gfx/drivers/d3d11.c'
       - 'gfx/drivers/d3d12.c'
-      - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
+      - 'gfx/drivers/d3d_shaders/views_sm*.hlsl.h'
       - 'gfx/video_views.*'
       - 'gfx/video_views_draw.h'
       - 'gfx/video_driver.c'
@@ -27,10 +29,12 @@ on:
       - '.github/workflows/Windows-wine-views.yml'
   pull_request:
     paths:
+      - 'gfx/common/d3d9_*'
+      - 'gfx/drivers/d3d9hlsl.c'
       - 'gfx/drivers/d3d10.c'
       - 'gfx/drivers/d3d11.c'
       - 'gfx/drivers/d3d12.c'
-      - 'gfx/drivers/d3d_shaders/views_sm4.hlsl.h'
+      - 'gfx/drivers/d3d_shaders/views_sm*.hlsl.h'
       - 'gfx/video_views.*'
       - 'gfx/video_views_draw.h'
       - 'gfx/video_driver.c'
@@ -48,7 +52,7 @@ concurrency:
 
 jobs:
   windows-wine-views:
-    name: Views on D3D10, D3D11 and D3D12 under Wine
+    name: Views on D3D9, D3D10, D3D11 and D3D12 under Wine
     runs-on: ubuntu-24.04
     timeout-minutes: 150
 
@@ -117,7 +121,7 @@ jobs:
           cp .libs/libvkd3d-shader-1.dll .libs/libvkd3d-1.dll \
             "$GITHUB_WORKSPACE/"
 
-      - name: Build retroarch.exe with mingw-w64 (D3D10, D3D11, D3D12, slang)
+      - name: Build retroarch.exe with mingw-w64 (D3D9, D3D10, D3D11, D3D12, slang)
         shell: bash
         run: |
           set -eu
@@ -126,7 +130,6 @@ jobs:
           ./configure --host=x86_64-w64-mingw32 \
                       --disable-qt --disable-vulkan --disable-ffmpeg \
                       --disable-cheevos --disable-discord \
-                      --disable-d3d9 \
                       --disable-sdl --disable-sdl2
           make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \
                           CXX="ccache x86_64-w64-mingw32-g++"
@@ -137,7 +140,7 @@ jobs:
           done
           make -C samples/cores/video_views DLL=1 CC=x86_64-w64-mingw32-gcc
 
-      - name: Views on D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
+      - name: Views on D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash
         run: |
           set -eu
@@ -147,7 +150,7 @@ jobs:
           # Initialize the prefix with a display and wait for setup to finish.
           WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
-            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d10 d3d11 d3d12
+            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d9_hlsl d3d10 d3d11 d3d12
 
       - name: Preserve views logs on failure
         if: failure()
