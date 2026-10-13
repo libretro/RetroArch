@@ -48,6 +48,8 @@ bool rdvd_source_complete(rdvd_source_t *source, uint64_t ticket, int64_t bytes)
    size_t requested;
    if (!source || !source->pending || ticket != source->ticket) return false;
    requested = source->pending_bytes;
+   if (source->pending_backend && source->pending_backend->owner == source)
+      source->pending_backend->owner = NULL;
    source->pending = false; source->pending_bytes = 0;
    source->pending_backend = NULL;
    if (source->cancelled) return true;
@@ -105,13 +107,13 @@ bool rdvd_source_submit(rdvd_source_t *source, rdvd_source_backend_t *backend,
 {
    rdvd_source_request_t request;
    unsigned i;
-   if (!source || !backend || !backend->ops.submit || !backend->ops.poll
+   if (!source || !backend || backend->owner || !backend->ops.submit || !backend->ops.poll
          || !backend->files || source->map.sizes != backend->map.sizes
          || source->map.segments != backend->map.segments) return false;
    for (i = 0; i < source->map.segments; i++)
       if (!backend->files[i]) return false;
    if (!rdvd_source_prepare(source, destination, capacity, &request)) return false;
-   source->pending_backend = backend;
+   source->pending_backend = backend; backend->owner = source;
    if (!backend->ops.submit(backend->context, backend->files[request.segment - 1],
             request.file_offset, request.destination, request.bytes, request.ticket))
    {
@@ -119,4 +121,22 @@ bool rdvd_source_submit(rdvd_source_t *source, rdvd_source_backend_t *backend,
       return false;
    }
    return true;
+}
+
+
+bool rdvd_source_poll(rdvd_source_t *source, rdvd_source_backend_t *backend)
+{
+   uint64_t ticket = 0;
+   int64_t bytes = 0;
+   enum rdvd_backend_status status;
+   if (!source || !backend || !source->pending || source->pending_backend != backend
+         || backend->owner != source || !backend->ops.poll) return false;
+   status = backend->ops.poll(backend->context, &ticket, &bytes);
+   if (status == RDVD_BACKEND_PENDING) return false;
+   if (status != RDVD_BACKEND_COMPLETE && status != RDVD_BACKEND_ERROR)
+   {
+      source->failed = true;
+      return false;
+   }
+   return rdvd_source_complete(source, ticket, status == RDVD_BACKEND_ERROR ? -1 : bytes);
 }

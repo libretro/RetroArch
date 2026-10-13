@@ -8,7 +8,7 @@ struct rdvd_source_backend;
 typedef struct rdvd_source
 {
    rdvd_vob_map_t map;
-   const struct rdvd_source_backend *pending_backend;
+   struct rdvd_source_backend *pending_backend;
    uint64_t offset, remaining, completed, ticket;
    size_t pending_bytes;
    bool pending, failed, cancelled;
@@ -60,6 +60,7 @@ typedef struct rdvd_backend_ops
 typedef struct rdvd_source_backend
 {
    rdvd_backend_ops_t ops;
+   rdvd_source_t *owner;
    void *context;
    void *const *files;
    rdvd_vob_map_t map;
@@ -67,7 +68,8 @@ typedef struct rdvd_source_backend
 
 /* Borrows immutable file-handle and size arrays in title segment order.
  * Handles/context stay alive through every pending completion. Operations
- * must not wait or perform blocking I/O on the caller's thread. */
+ * must not wait or perform blocking I/O on the caller's thread. Initialize
+ * fresh/drained backend state only. */
 bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
       const rdvd_backend_ops_t *ops, void *context, void *const *files,
       const uint64_t *sizes, unsigned count);
@@ -77,5 +79,9 @@ bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
  * Backend callbacks must not reenter source operations. */
 bool rdvd_source_submit(rdvd_source_t *source, rdvd_source_backend_t *backend,
       void *destination, size_t capacity);
+/* Polls once without waiting. True means a matching terminal completion
+ * was consumed, including read errors. Pending/stale results return false.
+ * A backend permits one outstanding source; cancellation still drains it. */
+bool rdvd_source_poll(rdvd_source_t *source, rdvd_source_backend_t *backend);
 RETRO_END_DECLS
 #endif

@@ -126,3 +126,12 @@ completion before storage can be reused. Initialization requires fresh or
 drained state; map sizes and pending destinations must stay alive. No locks,
 waits, file-opening or staging copies are added. A backend/task adapter and
 player integration are still required.
+
+Backend binding borrows segment handles and shares the source's immutable
+size array. Submit/poll callbacks must return immediately and schedule I/O
+externally; no synchronous filestream adapter is introduced. Dispatch uses
+the correct segment handle and the original consumer destination. One source
+may own a backend at a time. Poll consumes matching terminal tickets and
+releases ownership; cancellation retains ownership until the read drains.
+Concrete filesystem adapters, handle opening/closing and player task wiring
+remain to be implemented. Backend callbacks must not reenter source calls.
