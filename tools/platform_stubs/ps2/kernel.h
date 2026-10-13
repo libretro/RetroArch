@@ -9,6 +9,8 @@
 #define STUB_PS2_KERNEL
 #include <tamtypes.h>
 
+#define ALIGNED(x) __attribute__((aligned((x))))
+
 extern int DIntr(void);
 extern s32 DeleteSema(s32 sema_id);
 extern int EIntr(void);

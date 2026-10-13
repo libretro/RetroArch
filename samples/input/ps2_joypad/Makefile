@@ -1,12 +1,13 @@
-# The PS2 joypad driver, with libpad and libmtap replaced by the test's.
-# The test includes the driver's source itself.
+# The PS2 joypad driver, against the tree's PS2 stubs, with the libpad
+# and libmtap calls defined by the test, which includes the driver's
+# source itself.
 TARGET := ps2_joypad_test
 
 RARCH_DIR         := ../../..
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DPS2 \
-           -Ips2sdk -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
+           -I$(RARCH_DIR)/tools/platform_stubs/ps2 -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

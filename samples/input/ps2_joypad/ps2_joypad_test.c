@@ -1,7 +1,8 @@
-/* The PS2 joypad driver (input/drivers_joypad/ps2_joypad.c), with
- * libpad and libmtap replaced by the test's. padRead() hands over the
- * whole 32-byte report as padman does, whatever mode the pad is in, so
- * the bytes behind the sticks can be anything the test puts there.
+/* The PS2 joypad driver (input/drivers_joypad/ps2_joypad.c), against
+ * the tree's PS2 stubs, with the libpad and libmtap calls defined by the
+ * test. padRead() hands over the whole 32-byte report as padman does,
+ * whatever mode the pad is in, so the bytes behind the sticks can be
+ * anything the test puts there.
  * Held to:
  *
  * - a DualShock in analog mode (0x73) and in pressure mode (0x79)
@@ -31,6 +32,8 @@ static unsigned char t_report[2][4][32];
 static int           t_state[2][4];
 static unsigned char t_read_len[2][4];
 
+int DIntr(void)             { return 0; }
+int EIntr(void)             { return 0; }
 int mtapPortOpen(int port)  { (void)port; return 1; }
 int mtapPortClose(int port) { (void)port; return 1; }
 int padPortOpen(int port, int slot, void *area)

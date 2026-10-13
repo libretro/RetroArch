@@ -1,7 +1,8 @@
-/* Stand-in for the PS2 SDK's libpad.h: the constants and the report
- * layout as ps2sdk declares them; the test defines the calls. */
-#ifndef PS2_JOYPAD_TEST_LIBPAD_H
-#define PS2_JOYPAD_TEST_LIBPAD_H
+/* Compile-only PS2 stub of ps2sdk's libpad.h: the constants, report
+ * layout and calls ps2_joypad.c uses, as ps2sdk declares them. The
+ * pressure bytes are one array here, not the real header's names. */
+#ifndef STUB_PS2_LIBPAD
+#define STUB_PS2_LIBPAD
 
 #define PAD_LEFT      0x0080
 #define PAD_DOWN      0x0040
@@ -45,9 +46,9 @@ struct padButtonStatus
    unsigned char unkn16[12];
 } __attribute__((packed));
 
-int padPortOpen(int port, int slot, void *padArea);
-int padPortClose(int port, int slot);
-unsigned char padRead(int port, int slot, struct padButtonStatus *data);
-int padGetState(int port, int slot);
+extern int padPortOpen(int port, int slot, void *padArea);
+extern int padPortClose(int port, int slot);
+extern unsigned char padRead(int port, int slot, struct padButtonStatus *data);
+extern int padGetState(int port, int slot);
 
 #endif
