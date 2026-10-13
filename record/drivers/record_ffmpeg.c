@@ -2768,15 +2768,15 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
    if (handle->config.audio_enable && audio_buf)
    {
       memset(audio_buf, 0, audio_buf_size);
-      while (handle->audio_silence_pending >= audio_buf_size)
+      while (handle->audio_silence_pending)
       {
          struct record_audio_data aud = {0};
-         aud.frames = handle->audio.codec->frame_size;
+         size_t bytes = MIN(handle->audio_silence_pending, audio_buf_size);
+         aud.frames = bytes / (sizeof(int16_t) * handle->params.channels);
          aud.data   = audio_buf;
          ffmpeg_push_audio_thread(handle, &aud, true);
-         handle->audio_silence_pending -= audio_buf_size;
+         handle->audio_silence_pending -= bytes;
       }
-      handle->audio_silence_pending = 0;
    }
 
    /* Flush out last audio: a short final frame, then the encoder. */
