@@ -6,7 +6,7 @@ REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
 SOURCES := wayland_resize_test.c
-CFLAGS  += -Wall -std=gnu89 -g -O0 \
+CFLAGS  += -Wall -std=gnu89 -g1 -O0 \
            -I$(REPO_ROOT) -I$(LRC)/include \
            $(shell pkg-config --cflags wayland-client wayland-server)
 LDFLAGS += $(shell pkg-config --libs wayland-client wayland-server) -lpthread

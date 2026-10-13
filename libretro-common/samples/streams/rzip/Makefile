@@ -92,7 +92,7 @@ ifneq ($(SANITIZER),)
 endif
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
+	CFLAGS += -O0 -g1 -DDEBUG -D_DEBUG
 else
 	CFLAGS += -O2 -DNDEBUG
 endif

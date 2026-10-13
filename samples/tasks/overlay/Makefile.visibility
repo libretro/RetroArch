@@ -15,7 +15,7 @@ SOURCES := overlay_visibility_bounds_test.c \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -DHAVE_OVERLAY -Wall -pedantic -std=c89 -Wno-long-long -g -O1 -fno-omit-frame-pointer \
+CFLAGS += -DHAVE_OVERLAY -Wall -pedantic -std=c89 -Wno-long-long -g1 -O1 -fno-omit-frame-pointer \
           -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) -I$(REPO_ROOT)/deps
 
 ifneq ($(SANITIZER),)

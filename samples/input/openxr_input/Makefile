@@ -3,7 +3,7 @@
 # host's compiler, the vendored OpenXR headers, no headset.
 TARGET := openxr_input_test
 ROOT   := ../../..
-CFLAGS += -std=gnu99 -O1 -g -Wall -Wno-unused-function -Wno-unused-parameter \
+CFLAGS += -std=gnu99 -O1 -g1 -Wall -Wno-unused-function -Wno-unused-parameter \
           -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_OPENXR -DHAVE_MENU \
           -I$(ROOT) -I$(ROOT)/libretro-common/include -I$(ROOT)/deps \
           -I$(ROOT)/deps/openxr/include

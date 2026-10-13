@@ -43,7 +43,7 @@ SOURCES := video_hdr_fp16_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -ffunction-sections \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -ffunction-sections \
 	-DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RH265 -DHAVE_RVP9 -DHAVE_THREADS \
 	-I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections -lm -lpthread

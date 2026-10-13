@@ -59,8 +59,8 @@ C_SOURCES := \
 
 OBJS := $(call sample_objs,$(C_SOURCES:.c=.o) $(LOADER_SOURCES:.cpp=.o))
 
-CFLAGS   += -g -O1 -Wall $(DEFINES) $(INCLUDES)
-CXXFLAGS += -g -O1 -Wall -std=gnu++17 -fno-exceptions $(DEFINES) $(INCLUDES)
+CFLAGS   += -g1 -O1 -Wall $(DEFINES) $(INCLUDES)
+CXXFLAGS += -g1 -O1 -Wall -std=gnu++17 -fno-exceptions $(DEFINES) $(INCLUDES)
 LDFLAGS  +=
 
 ifneq ($(SANITIZER),)
@@ -89,7 +89,7 @@ $(TARGET)$(EXE): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 $(STUB): stub_runtime.c
-	$(CC) -g -O1 -Wall -fvisibility=hidden -I$(XR)/include $(STUB_LD) -o $@ $<
+	$(CC) -g1 -O1 -Wall -fvisibility=hidden -I$(XR)/include $(STUB_LD) -o $@ $<
 
 check: all
 	TSAN_OPTIONS=halt_on_error=1 ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 \

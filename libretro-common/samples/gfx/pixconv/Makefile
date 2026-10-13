@@ -8,7 +8,7 @@ SOURCES := \
 	pixconv_test.c \
 	$(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.c
 
-CFLAGS += -Wall -pedantic -std=c89 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=c89 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

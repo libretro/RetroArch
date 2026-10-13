@@ -29,7 +29,7 @@ INCLUDES := -I. -I$(LIBRETRO_COMM_DIR)/include \
             -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/SPIRV-Cross
 
 # The test and slang_rect.c are C89; the vendored headers are not.
-CFLAGS   += -Wall -Wextra -std=c89 -pedantic -g -O1 -I. \
+CFLAGS   += -Wall -Wextra -std=c89 -pedantic -g1 -O1 -I. \
             -I$(LIBRETRO_COMM_DIR)/include -isystem $(REPO_ROOT)/deps/SPIRV-Cross
 # SPIRV-Cross is a vendored dependency, built plain and unoptimised.
 DEPFLAGS := -O0 -w -DHAVE_SPIRV_CROSS -DHAVE_D3D11 $(INCLUDES)

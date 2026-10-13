@@ -10,7 +10,7 @@ LRC      := $(CORE_DIR)/libretro-common
 SOURCES := rsound_thread_test.c \
            $(LRC)/rthreads/rthreads.c \
            $(LRC)/compat/compat_strl.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS \
            -I$(CORE_DIR) -I$(LRC)/include
 LDFLAGS += -lpthread
 OBJS    := $(call sample_objs,$(SOURCES:.c=.o))

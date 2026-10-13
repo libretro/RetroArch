@@ -38,7 +38,7 @@ SOURCES := \
 # -Wno-unused-function: the whole driver is included and the test
 # calls only its loop bookkeeping.
 CFLAGS  += -std=gnu99 -Wall -Wno-unused-function -Wno-unused-const-variable \
-           -g -O1 -DHAVE_THREADS -DRARCH_INTERNAL \
+           -g1 -O1 -DHAVE_THREADS -DRARCH_INTERNAL \
            -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(RARCH_DIR)/deps
 LIBS    += -lole32 -lwinmm -lsetupapi -lm
 

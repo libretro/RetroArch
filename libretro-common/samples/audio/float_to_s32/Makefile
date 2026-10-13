@@ -12,7 +12,7 @@ COMMON_SOURCES := \
 COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
 OBJS        := float_to_s32_test.o $(COMMON_OBJS)
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O2 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O2 -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)

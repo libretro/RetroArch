@@ -38,7 +38,7 @@ SOURCES := image_avail_test.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE \
            -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RTGA -DHAVE_RBMP \
            -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lz -lm

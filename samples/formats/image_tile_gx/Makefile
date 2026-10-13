@@ -12,7 +12,7 @@ SOURCES := image_tile_gx_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -ffunction-sections \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -ffunction-sections \
            -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections
 

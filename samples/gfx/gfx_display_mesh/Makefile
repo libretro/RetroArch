@@ -4,7 +4,7 @@
 # non-PIE).
 RA     := ../../..
 SAN    ?= address,undefined
-CFLAGS := -std=gnu99 -g -O1 -fsanitize=$(SAN) -DRARCH_INTERNAL -DHAVE_MENU \
+CFLAGS := -std=gnu99 -g1 -O1 -fsanitize=$(SAN) -DRARCH_INTERNAL -DHAVE_MENU \
           -DHAVE_SHADERPIPELINE \
           -I$(RA) -I$(RA)/libretro-common/include -I$(RA)/deps
 SRC    := gfx_display_mesh_test.c $(RA)/gfx/gfx_display.c \

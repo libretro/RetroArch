@@ -10,7 +10,7 @@ REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 CC        := x86_64-w64-mingw32-gcc
 
-CFLAGS  += -Wall -Wno-unused -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
            -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_THREADS -DHAVE_XINPUT \
            -DHAVE_DYLIB -D_WIN32_WINNT=0x0601 \
            -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \

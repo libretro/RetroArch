@@ -16,7 +16,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--wrap=sthread_create
 LIBS    += -lpthread

@@ -1,6 +1,6 @@
 CC ?= cc
 PYTHON ?= python3
-CFLAGS ?= -O2 -g
+CFLAGS ?= -O2 -g1
 CFLAGS += -Wall -Wextra -std=gnu89 -I../../.. -I../../../libretro-common/include
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

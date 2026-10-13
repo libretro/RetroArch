@@ -23,7 +23,7 @@ SOURCES := dbus_screensaver_test.c \
            $(LRC)/compat/compat_strl.c \
            $(LRC)/string/stdstring.c \
            $(LRC)/encodings/encoding_utf.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_DYLIB \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_DYLIB \
            -DHAVE_DBUS -I$(CORE_DIR) -I$(LRC)/include $(DBUS_CFLAGS)
 LDFLAGS += -lpthread -ldl $(DBUS_LIBS)
 OBJS    := $(call sample_objs,$(SOURCES:.c=.o))

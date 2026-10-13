@@ -5,7 +5,7 @@ CFLAGS += -O2 -std=gnu99 -Wall -fwhole-program -ffunction-sections -fdata-sectio
 CPPFLAGS += -D_GNU_SOURCE -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MICROPHONE -I../../.. -I../../../libretro-common/include -I../../../deps $(SDL_CFLAGS)
 LDFLAGS += -Wl,--gc-sections
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 sdl3_mic_wait_test: sdl3_mic_wait_test.c ../../../audio/drivers/sdl3_audio.c ../../../audio/audio_driver.h

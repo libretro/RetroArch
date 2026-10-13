@@ -21,7 +21,7 @@ SOURCES := x11_refresh_rate_test.c \
            $(REPO_ROOT)/libretro-common/encodings/encoding_utf.c \
            $(REPO_ROOT)/libretro-common/rthreads/rthreads.c
 
-CFLAGS  += -Wall -g -O0 -DHAVE_XRANDR -DHAVE_XINERAMA -DHAVE_THREADS \
+CFLAGS  += -Wall -g1 -O0 -DHAVE_XRANDR -DHAVE_XINERAMA -DHAVE_THREADS \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include
 

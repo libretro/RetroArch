@@ -23,7 +23,7 @@ SOURCES := \
 
 # image_texture.c is here for image_texture_free() alone; its loaders
 # are dropped at the link rather than chased through the transfer code.
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_OVERLAY -ffunction-sections \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_OVERLAY -ffunction-sections \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections -lm
 

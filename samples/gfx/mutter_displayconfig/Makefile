@@ -34,7 +34,7 @@ SOURCES := mutter_displayconfig_test.c \
            wlr-output-management-unstable-v1-protocol.c \
            $(LRC)/compat/compat_strl.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_XRANDR -DHAVE_XINERAMA -DHAVE_WAYLAND \
            -DTEST_X11 -DTEST_WL \
            -I$(REPO_ROOT) -I$(LRC)/include \

@@ -10,7 +10,7 @@ SOURCES := window_driver_test.c $(ROOT)/input/input_driver_choice.c
 INCLUDES := -I$(ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(ROOT)/input/include
 DEFINES  := -DRARCH_INTERNAL
 
-CFLAGS += -Wall -std=gnu99 -g -O1 $(INCLUDES) $(DEFINES)
+CFLAGS += -Wall -std=gnu99 -g1 -O1 $(INCLUDES) $(DEFINES)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

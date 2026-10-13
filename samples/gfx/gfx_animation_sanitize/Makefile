@@ -13,7 +13,7 @@ SOURCES := gfx_animation_sanitize_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 

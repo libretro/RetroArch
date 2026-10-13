@@ -13,7 +13,7 @@ SOURCES := image_decode_fuzz_test.c \
            $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
            $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -I$(LIBRETRO_COMM_DIR)/include
 
 CFLAGS += $(EXTRA_CFLAGS)

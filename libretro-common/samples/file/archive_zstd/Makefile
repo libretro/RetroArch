@@ -4,7 +4,7 @@ SOURCES := archive_zstd_test.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and

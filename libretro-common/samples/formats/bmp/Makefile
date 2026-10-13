@@ -44,7 +44,7 @@ TEST2_SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 TEST2_OBJS := $(call sample_objs,$(TEST2_SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and

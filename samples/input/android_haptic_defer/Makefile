@@ -9,7 +9,7 @@ SOURCES := android_haptic_defer_test.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -Wextra -std=c89 -pedantic -g -O1 \
+CFLAGS += -Wall -Wextra -std=c89 -pedantic -g1 -O1 \
           -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)

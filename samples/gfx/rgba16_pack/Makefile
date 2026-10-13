@@ -13,7 +13,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 # The reference is c * 65535 + 0.5 as two roundings; a contracted
 # multiply-add would move the boundaries it is checking.
 CFLAGS  += -Wall -std=c89 -pedantic -Wno-long-long \
-           -Wdeclaration-after-statement -ffp-contract=off -g -O2 \
+           -Wdeclaration-after-statement -ffp-contract=off -g1 -O2 \
            -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_CFLAGS)
 

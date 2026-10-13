@@ -17,7 +17,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O2 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O2 -I$(LIBRETRO_COMM_DIR)/include
 
 ifeq ($(HAVE_THREADS),1)
    CFLAGS  += -DHAVE_THREADS

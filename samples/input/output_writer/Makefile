@@ -1,6 +1,6 @@
 REPO_ROOT := ../../..
 LRC := $(REPO_ROOT)/libretro-common
-CFLAGS += -Wall -Wextra -Wno-unused-function -std=gnu89 -O1 -g \
+CFLAGS += -Wall -Wextra -Wno-unused-function -std=gnu89 -O1 -g1 \
           -I$(REPO_ROOT) -I$(LRC)/include
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

@@ -8,7 +8,7 @@ CFLAGS += -O2 -Wall -Wextra -std=c89 -pedantic -D_POSIX_C_SOURCE=199309L \
           -DHAVE_THREADS -I$(COMMON)/include
 LDFLAGS += -lpthread
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -g -fno-omit-frame-pointer
+CFLAGS += -fsanitize=$(SANITIZER) -g1 -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SOURCES = pipeline_layout_test.c $(COMMON)/queues/retro_spsc.c $(COMMON)/rthreads/rthreads.c

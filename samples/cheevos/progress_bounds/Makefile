@@ -7,7 +7,7 @@ REPO_ROOT := ../../..
 RC        := $(REPO_ROOT)/deps/rcheevos
 LRC       := $(REPO_ROOT)/libretro-common
 
-CFLAGS += -Wall -std=gnu99 -g -O1 -I$(RC)/include -I$(LRC)/include -DRC_DISABLE_LUA
+CFLAGS += -Wall -std=gnu99 -g1 -O1 -I$(RC)/include -I$(LRC)/include -DRC_DISABLE_LUA
 
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

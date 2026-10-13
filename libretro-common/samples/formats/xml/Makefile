@@ -20,7 +20,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and

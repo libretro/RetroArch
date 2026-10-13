@@ -8,7 +8,7 @@ SOURCES := image_blit_bands_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
-CFLAGS  += -Wall -W -std=gnu99 -g -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
 # malloc/free are wrapped so the test can count heap traffic per blit.
 LDFLAGS += -lpthread -lrt -Wl,--wrap=malloc,--wrap=free
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))

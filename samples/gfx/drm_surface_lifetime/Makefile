@@ -11,7 +11,7 @@ SOURCES   := drm_surface_lifetime_test.c \
              $(LRC)/compat/compat_strl.c \
              $(LRC)/string/stdstring.c \
              $(LRC)/encodings/encoding_utf.c
-CFLAGS    += -Wall -std=gnu99 -g -O0 -I$(REPO_ROOT) -I$(LRC)/include \
+CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(LRC)/include \
              -DHAVE_THREADS $(shell pkg-config --cflags libdrm)
 LDFLAGS   += -lpthread -Wl,--wrap=mmap,--wrap=munmap
 ifneq ($(SANITIZER),)

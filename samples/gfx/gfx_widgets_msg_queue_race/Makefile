@@ -13,7 +13,7 @@ SOURCES := \
 	gfx_widgets_msg_queue_race_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
-CFLAGS  += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+CFLAGS  += -std=gnu89 -Wall -g1 -O1 -flto -ffunction-sections -fdata-sections \
            -DHAVE_THREADS -DHAVE_MENU -DHAVE_GFX_WIDGETS \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -flto -Wl,--gc-sections -lpthread

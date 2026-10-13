@@ -13,7 +13,7 @@ OBJS     := $(SOURCES:.c=.o)
 DEPS     := $(OBJS:.o=.d)
 
 # fake_psp.c includes a file from the tree, so track that dependency.
-CFLAGS  += -Wall -std=gnu99 -g -O1 -MMD -MP \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -MMD -MP \
            -I$(STUBS) -I$(ROOT) -I$(ROOT)/libretro-common/include \
            -I$(ROOT)/deps -I$(ROOT)/deps/rcheevos/include \
            -I$(ROOT)/input/include \

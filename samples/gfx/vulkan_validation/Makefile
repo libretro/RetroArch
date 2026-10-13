@@ -27,7 +27,7 @@ SOURCES := vulkan_validation_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_VULKAN -DVULKAN_DEBUG -DHAVE_THREADS -DHAVE_DYLIB \
            -DHAVE_XLIB \
            -I$(REPO_ROOT) \

@@ -2,7 +2,7 @@ ROOT := ../../..
 PYTHON ?= python3
 THREADS ?= 1
 TARGET := mmdevice_notification_test
-CFLAGS += -std=gnu89 -O1 -g -Wall -Wextra -I$(ROOT)/libretro-common/include
+CFLAGS += -std=gnu89 -O1 -g1 -Wall -Wextra -I$(ROOT)/libretro-common/include
 ifeq ($(THREADS),1)
 CFLAGS += -DHAVE_THREADS
 endif

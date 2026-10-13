@@ -139,7 +139,7 @@ TEST_OBJS := $(call sample_objs,$(TEST_SOURCES_C:.c=.o))
 TEST2_OBJS := $(call sample_objs,$(TEST2_SOURCES_C:.c=.o))
 TEST3_OBJS := $(call sample_objs,$(TEST3_SOURCES_C:.c=.corpus.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 # The corpus test decodes ~2000 generated images.  RPNG_TEST turns on
 # rpng.c's per-image IHDR trace, which would bury the CI log (and any

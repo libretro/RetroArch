@@ -5,7 +5,7 @@ TARGET := keyboard_devices_test
 #    make && make check
 REPO_ROOT := ../../..
 
-CFLAGS += -Wall -std=gnu89 -Wdeclaration-after-statement -g -O1 \
+CFLAGS += -Wall -std=gnu89 -Wdeclaration-after-statement -g1 -O1 \
           -I$(REPO_ROOT)/libretro-common/include
 
 all: $(TARGET)

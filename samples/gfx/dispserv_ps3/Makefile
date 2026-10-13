@@ -10,7 +10,7 @@ SOURCES := dispserv_ps3_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_ps3.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_ps3_modes.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -D__PS3__ -D__PSL1GHT__ \
            -I$(REPO_ROOT)/tools/platform_stubs/ps3 \
            -I$(REPO_ROOT) \

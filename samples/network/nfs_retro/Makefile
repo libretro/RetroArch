@@ -1,6 +1,6 @@
 ROOT   = ../../..
 COMMON = $(ROOT)/libretro-common
-CFLAGS ?= -O2 -g
+CFLAGS ?= -O2 -g1
 CPPFLAGS += -I$(COMMON)/include -D_GNU_SOURCE
 SRC = nfs_test.c $(COMMON)/net/net_nfs3.c $(COMMON)/net/net_socket.c $(COMMON)/net/net_compat.c \
       $(COMMON)/features/features_cpu.c $(COMMON)/time/rtime.c $(COMMON)/compat/compat_strl.c \

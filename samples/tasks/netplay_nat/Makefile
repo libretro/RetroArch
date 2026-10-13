@@ -37,7 +37,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 DEFINES := -DHAVE_NETWORKING -DHAVE_NETPLAY -DHAVE_THREADS
 
-CFLAGS  += -Wall -std=gnu99 -g $(DEFINES) \
+CFLAGS  += -Wall -std=gnu99 -g1 $(DEFINES) \
            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
 LDFLAGS += -lpthread -lm
 

@@ -31,8 +31,8 @@ LDFLAGS += -O2
 endif
 
 ifeq (debug,$(build))
-CFLAGS += -O0 -g
-LDFLAGS += -O0 -g
+CFLAGS += -O0 -g1
+LDFLAGS += -O0 -g1
 endif
 
 ifneq ($(SANITIZER),)

@@ -11,7 +11,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=c89 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=c89 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

@@ -5,7 +5,7 @@
 # across threads and goes up in order.
 RA     := ../../..
 CC     ?= gcc
-CFLAGS += -Wall -Wextra -g -O1 -std=gnu99 -I$(RA) -I$(RA)/libretro-common/include \
+CFLAGS += -Wall -Wextra -g1 -O1 -std=gnu99 -I$(RA) -I$(RA)/libretro-common/include \
           -I$(RA)/deps -DHAVE_THREADS -DRARCH_INTERNAL $(EXTRA_CFLAGS)
 SRC    := gfx_surface_still_test.c \
           $(RA)/gfx/gfx_surface.c $(RA)/libretro-common/formats/image/image_yuv_blit.c $(RA)/gfx/gfx_instrument.c \

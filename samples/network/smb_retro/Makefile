@@ -1,6 +1,6 @@
 ROOT   = ../../..
 COMMON = $(ROOT)/libretro-common
-CFLAGS ?= -O2 -g
+CFLAGS ?= -O2 -g1
 CPPFLAGS += -I$(COMMON)/include -DHAVE_CRYPTO -D_GNU_SOURCE
 SRC = smb_test.c $(COMMON)/net/net_smb2.c $(COMMON)/net/net_krb5.c $(COMMON)/net/net_socket.c $(COMMON)/net/net_compat.c \
       $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/hash/lrc_hash.c $(COMMON)/utils/md5.c $(COMMON)/streams/file_stream.c \

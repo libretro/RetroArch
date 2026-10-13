@@ -100,7 +100,7 @@ endif
 # stderr (which path, what was asked, what came back); a frontend
 # build never defines this.
 CFLAGS += -DVFS_COPY_DEBUG
-CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir; without this block the variable was silently ignored

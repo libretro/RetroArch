@@ -23,7 +23,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
-CFLAGS  += -std=gnu99 -Wall -g -O1 -DHAVE_THREADS -DHAVE_DSOUND -DRARCH_INTERNAL \
+CFLAGS  += -std=gnu99 -Wall -g1 -O1 -DHAVE_THREADS -DHAVE_DSOUND -DRARCH_INTERNAL \
            -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(RARCH_DIR)/deps
 LIBS    += -ldsound -ldxguid -lole32 -lwinmm -luser32
 

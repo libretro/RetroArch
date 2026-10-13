@@ -58,7 +58,7 @@ SOURCES := image_decode_slice_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 \
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 \
           -DHAVE_RPNG \
           -I$(REPO_ROOT) \
           -I$(LIBRETRO_COMM_DIR)/include

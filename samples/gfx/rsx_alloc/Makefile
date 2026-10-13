@@ -9,7 +9,7 @@ REPO_ROOT := ../../..
 
 SOURCES := rsx_alloc_test.c
 
-CFLAGS  += -Wall -Wno-unused-function -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -Wno-unused-function -std=gnu99 -g1 -O0 \
            -D__PS3__ -D__PSL1GHT__ -DRARCH_INTERNAL \
            -DRARCH_CONSOLE -DHAVE_THREADS -DHAVE_MENU -DHAVE_MENU_BUFFER \
            -DHAVE_OVERLAY -DHAVE_GFX_WIDGETS -DHAVE_SYSUTILS \

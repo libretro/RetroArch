@@ -22,7 +22,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -U_FORTIFY_SOURCE -D_GNU_SOURCE \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -U_FORTIFY_SOURCE -D_GNU_SOURCE \
            -DHAVE_HID -DHAVE_HIDRAW -DHAVE_THREADS \
            -I$(RARCH_DIR) -I$(RARCH_DIR)/input -I$(LRC)/include
 WRAP    := open read write ioctl close opendir readdir closedir

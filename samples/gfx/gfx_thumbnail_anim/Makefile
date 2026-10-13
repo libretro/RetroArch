@@ -64,7 +64,7 @@ SOURCES := gfx_thumbnail_anim_test.c \
 # The counters are what lane 4 reads; a tree built without
 # HAVE_GFX_INSTRUMENT has none of them, which is the point of the
 # define, so the sample names it for itself.
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_RWEBP -DHAVE_THREADS -D_GNU_SOURCE \
            -DHAVE_GFX_INSTRUMENT \
            -I$(REPO_ROOT) \

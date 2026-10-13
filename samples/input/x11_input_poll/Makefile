@@ -12,7 +12,7 @@ SOURCES := x11_input_poll_test.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
            $(REPO_ROOT)/libretro-common/encodings/encoding_utf.c
 
-CFLAGS  += -Wall -g -O0 -DHAVE_X11 -DHAVE_XI2 \
+CFLAGS  += -Wall -g1 -O0 -DHAVE_X11 -DHAVE_XI2 \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include
 

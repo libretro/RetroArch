@@ -9,7 +9,7 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS +=
 

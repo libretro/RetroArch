@@ -4,7 +4,7 @@ SOURCES := task_queue_snapshot_test.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c
-CFLAGS += -std=gnu89 -Wall -Wextra -g -O1 -DHAVE_THREADS \
+CFLAGS += -std=gnu89 -Wall -Wextra -g1 -O1 -DHAVE_THREADS \
           -I$(LIBRETRO_COMM_DIR)/include
 LDLIBS += -lpthread
 

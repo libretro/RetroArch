@@ -82,7 +82,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RAAC -DHAVE_RH264 -DHAVE_RWEBP \
            -DHAVE_AUDIOMIXER \
            $(MMAP_DEF) -D_GNU_SOURCE -DMEMMAP_TEST_NO_RESERVE \
@@ -137,7 +137,7 @@ DECODE_SOURCES := preview_audio_decode_test.c \
 DECODE_SOURCES_WEBM := $(DECODE_SOURCES) \
            $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c
 
-DECODE_CFLAGS_COMMON := -Wall -std=gnu99 -g -O1 \
+DECODE_CFLAGS_COMMON := -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_RMP4 -DHAVE_RAAC -DHAVE_AUDIOMIXER \
            $(MMAP_DEF) -D_GNU_SOURCE \
            -I$(LIBRETRO_COMM_DIR)/include $(EXTRA_CFLAGS)
@@ -192,7 +192,7 @@ ANIM_WINDOW_SOURCES := preview_anim_window_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-ANIM_WINDOW_CFLAGS := -Wall -std=gnu99 -g -O1 \
+ANIM_WINDOW_CFLAGS := -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RWEBM -DRARCH_INTERNAL \
            $(MMAP_DEF) -D_GNU_SOURCE \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include $(EXTRA_CFLAGS)
@@ -318,7 +318,7 @@ bench: $(BENCH_TARGET) fixtures
 
 $(BLIT_BANDS_TARGET): $(BLIT_BANDS_SOURCES)
 	$(CC) -o $@ $(BLIT_BANDS_SOURCES) \
-	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RH265 -DHAVE_RVP9 -DHAVE_THREADS \
+	      -Wall -std=gnu99 -g1 -O1 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RH265 -DHAVE_RVP9 -DHAVE_THREADS \
 	      $(MMAP_DEF) -D_GNU_SOURCE -I$(LIBRETRO_COMM_DIR)/include \
 	      $(EXTRA_CFLAGS) $(LDFLAGS) -lpthread
 

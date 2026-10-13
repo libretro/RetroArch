@@ -46,7 +46,7 @@ SOURCES := save_state_io_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include

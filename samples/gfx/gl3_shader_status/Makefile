@@ -25,7 +25,7 @@ SOURCES := gl3_shader_status_test.c \
 # with calloc() routed through it.
 CHAIN_SOURCES := gl3_chain_alloc_test.c $(COMMON)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DRARCH_INTERNAL \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \
            -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_GLSLANG \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps \
            -I$(REPO_ROOT)/deps/SPIRV-Cross -I$(REPO_ROOT)/gfx/include \

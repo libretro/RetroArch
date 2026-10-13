@@ -9,7 +9,7 @@ SOURCES := x11_frame_poll_test.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
            $(REPO_ROOT)/libretro-common/encodings/encoding_utf.c
 
-CFLAGS  += -Wall -g -O0 \
+CFLAGS  += -Wall -g1 -O0 \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include
 

@@ -8,7 +8,7 @@ SOURCES := \
 	rmp4_fragment_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_RMP4 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

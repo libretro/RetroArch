@@ -7,7 +7,7 @@ TARGET := udev_devices_test
 #    make && make check
 REPO_ROOT := ../../..
 
-CFLAGS += -Wall -Wno-unused -std=gnu99 -g -O1 \
+CFLAGS += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
           -DRARCH_INTERNAL -DHAVE_UDEV -DHAVE_EPOLL -DHAVE_THREADS \
           -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
           -I$(REPO_ROOT)/gfx/include \

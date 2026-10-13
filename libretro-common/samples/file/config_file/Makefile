@@ -26,7 +26,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 # CONFIG_FILE_TEST_HOOKS exposes config_file_force_linked_sort, which
 # lets the suite reach config_file.c's zero-allocation sort fallback
 # without having to make malloc() fail.  Test builds only.
-CFLAGS += -Wall -pedantic -std=gnu99 -g -DCONFIG_FILE_TEST_HOOKS -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DCONFIG_FILE_TEST_HOOKS -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

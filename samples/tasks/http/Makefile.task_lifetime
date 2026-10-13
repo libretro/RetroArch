@@ -43,7 +43,7 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
            -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps \
            -DHAVE_THREADS -DHAVE_NETWORKING -DRARCH_INTERNAL
 LIBS    += -lpthread -lm

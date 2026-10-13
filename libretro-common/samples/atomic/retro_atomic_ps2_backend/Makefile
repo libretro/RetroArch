@@ -7,7 +7,7 @@ LIBRETRO_COMM_DIR := ../../..
 # any system include path that might carry another one.
 SOURCES := retro_atomic_ps2_backend_test.c ps2stub/kernel_stub.c
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O0 \
            -I$(LIBRETRO_COMM_DIR)/include -Ips2stub \
            -DRETRO_ATOMIC_FORCE_PS2
 

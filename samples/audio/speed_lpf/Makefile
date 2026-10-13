@@ -5,7 +5,7 @@ CFLAGS += -O2 -std=c89 -Wall -Wextra -Werror
 LDLIBS += -lm
 WRAP = -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 all: speed_lpf_test

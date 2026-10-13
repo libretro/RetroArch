@@ -2,7 +2,7 @@ TARGET := bind_trigger_axis_test
 
 REPO_ROOT := ../../..
 
-CFLAGS += -Wall -Wno-unused -std=gnu99 -g -O1 \
+CFLAGS += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
    -I$(REPO_ROOT)/libretro-common/include
 
 ifneq ($(SANITIZER),)

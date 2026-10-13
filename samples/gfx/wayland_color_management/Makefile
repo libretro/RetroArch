@@ -19,7 +19,7 @@ SOURCES := wayland_color_management_test.c \
            color-management-v1-protocol.c \
            $(REPO_ROOT)/gfx/common/wayland_color.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DRARCH_INTERNAL -DHAVE_WAYLAND -D_GNU_SOURCE \
            -I. -I$(REPO_ROOT) -I$(LRC)/include \
            $(shell pkg-config --cflags wayland-client wayland-server)

@@ -8,7 +8,7 @@ CFLAGS += -O2 -std=gnu99 -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 LDLIBS += -lm
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SOURCES = $(COMMON)/audio/resampler/drivers/sinc_resampler.c \

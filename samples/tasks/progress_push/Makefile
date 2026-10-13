@@ -19,7 +19,7 @@ SOURCES := task_progress_push_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -DHAVE_THREADS $(EXTRA_CFLAGS) \
+CFLAGS  += -Wall -std=gnu99 -g1 -DHAVE_THREADS $(EXTRA_CFLAGS) \
            -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lm
 

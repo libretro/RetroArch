@@ -9,7 +9,7 @@ SOURCES := image_hdr_blit_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)

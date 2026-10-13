@@ -8,7 +8,7 @@ SOURCES := log_ring_test.c $(ROOT)/verbosity.c \
    $(LC)/streams/file_stream.c $(LC)/vfs/vfs_implementation.c \
    $(LC)/string/stdstring.c $(LC)/encodings/encoding_utf.c \
    $(LC)/compat/fopen_utf8.c $(LC)/time/rtime.c $(LC)/string/rstrtod.c
-CFLAGS += -std=gnu89 -Wall -g -O1 -I$(ROOT) -I$(LC)/include -DHAVE_MCP \
+CFLAGS += -std=gnu89 -Wall -g1 -O1 -I$(ROOT) -I$(LC)/include -DHAVE_MCP \
    -DHAVE_THREADS
 LDFLAGS += -lpthread
 ifneq ($(SANITIZER),)

@@ -9,7 +9,7 @@ SOURCES := \
 	hw_ring_fence_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lrt
 

@@ -31,7 +31,7 @@ SOURCES := http_emscripten_headers_test.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
 OBJS    := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include -DHAVE_NETWORKING
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include -DHAVE_NETWORKING
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

@@ -14,7 +14,7 @@ SOURCES := display_servers_sdl3_live_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_sdl3.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_SDL3 \
            $(SDL_CFLAGS) \
            -I$(REPO_ROOT) \

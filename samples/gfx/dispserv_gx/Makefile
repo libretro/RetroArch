@@ -10,7 +10,7 @@ SOURCES := dispserv_gx_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_gx_libogc.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_gx_modes.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DGEKKO -DHW_RVL \
            -Istubs \
            -I$(REPO_ROOT) \

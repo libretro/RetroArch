@@ -2,7 +2,7 @@ CC = gcc
 ROOT = ../../..
 FILTERS = $(ROOT)/libretro-common/audio/dsp_filters
 CPPFLAGS += -I$(ROOT)/libretro-common/include -DHAVE_FILTERS_BUILTIN
-CFLAGS += -O1 -g -std=gnu89 -Wall -Wextra
+CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra
 LDLIBS += -lm
 ifneq ($(SANITIZER),)
 # -fno-sanitize-recover turns a report into a trap, so the filter dies in

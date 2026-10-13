@@ -27,7 +27,7 @@ SOURCES := audio_transfer_flac_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O1 -ffunction-sections \
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -ffunction-sections \
 	-I$(LIBRETRO_COMM_DIR)/include $(DEFINES)
 LDFLAGS += -Wl,--gc-sections -lm
 

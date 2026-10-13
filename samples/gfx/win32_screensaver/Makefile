@@ -10,7 +10,7 @@ SOURCES := win32_screensaver_test.c $(GEN)
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=c89 -pedantic -g -O1 \
+CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=c89 -pedantic -g1 -O1 \
           -I. -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)

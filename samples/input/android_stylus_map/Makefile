@@ -10,7 +10,7 @@ SOURCES := android_stylus_map_test.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -Wextra -std=c89 -pedantic -g -O1 \
+CFLAGS += -Wall -Wextra -std=c89 -pedantic -g1 -O1 \
           -I$(LIBRETRO_COMM_DIR)/include -I$(DRIVER_DIR)
 
 ifneq ($(SANITIZER),)

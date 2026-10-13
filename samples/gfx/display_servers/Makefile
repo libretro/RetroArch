@@ -17,7 +17,7 @@ REPO_ROOT := ../../..
 SOURCES := display_servers_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_XRANDR \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include

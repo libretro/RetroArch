@@ -30,7 +30,7 @@ SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 override CPPFLAGS += -DHAVE_COMPRESSION -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS            += -Wall -pedantic -std=gnu99 -g
+CFLAGS            += -Wall -pedantic -std=gnu99 -g1
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

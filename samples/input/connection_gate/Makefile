@@ -1,7 +1,7 @@
 TARGET := connection_gate_test
 REPO_ROOT := ../../..
 LRC := $(REPO_ROOT)/libretro-common
-CFLAGS += -Wall -std=gnu89 -g -O1 -DHAVE_THREADS -DHAVE_HID \
+CFLAGS += -Wall -std=gnu89 -g1 -O1 -DHAVE_THREADS -DHAVE_HID \
    -I$(REPO_ROOT) -I$(REPO_ROOT)/input -I$(LRC)/include
 LDLIBS += -lpthread -lm
 SOURCES := connection_gate_test.c $(LRC)/rthreads/rthreads.c \

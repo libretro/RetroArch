@@ -18,13 +18,13 @@ SOURCES_C := \
 CFLAGS  += -Wall -Wextra -Wno-unused-parameter
 
 ifneq ($(DEBUG),)
-   CFLAGS += -O0 -g
+   CFLAGS += -O0 -g1
 else
    CFLAGS += -O2
 endif
 
 ifneq ($(SANITIZER),)
-   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g $(CFLAGS)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 

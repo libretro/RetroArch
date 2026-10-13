@@ -56,7 +56,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
            -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps \
            -DHAVE_ZLIB -DHAVE_COMPRESSION -DRARCH_INTERNAL -DHAVE_THREADS
 LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec \

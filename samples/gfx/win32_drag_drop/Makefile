@@ -16,7 +16,7 @@ SOURCES := win32_drag_drop_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=c89 -pedantic -g -O1 \
+CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=c89 -pedantic -g1 -O1 \
           -I. -I$(LIBRETRO_COMM_DIR)/include -DHAVE_DYLIB -DHAVE_MENU
 
 ifneq ($(SANITIZER),)

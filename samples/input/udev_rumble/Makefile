@@ -7,7 +7,7 @@ TARGET := udev_rumble_test
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
-CFLAGS += -Wall -Wno-unused -std=gnu99 -g -O1 \
+CFLAGS += -Wall -Wno-unused -std=gnu99 -g1 -O1 \
           -DRARCH_INTERNAL -DHAVE_UDEV -DHAVE_MENU \
           -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
           -I$(REPO_ROOT)/gfx/include \

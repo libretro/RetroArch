@@ -18,7 +18,7 @@ SOURCES := task_ordering_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -DHAVE_THREADS \
+CFLAGS  += -Wall -std=gnu99 -g1 -DHAVE_THREADS \
            -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lm
 

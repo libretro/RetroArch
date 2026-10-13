@@ -4,7 +4,7 @@ SOURCES := bsv_checkpoint_bounds_test.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

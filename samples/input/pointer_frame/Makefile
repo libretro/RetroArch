@@ -1,6 +1,6 @@
 TARGET    := pointer_frame_test
 REPO_ROOT := ../../..
-CFLAGS    += -Wall -std=gnu99 -O1 -g -DRARCH_INTERNAL \
+CFLAGS    += -Wall -std=gnu99 -O1 -g1 -DRARCH_INTERNAL \
              -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include -I$(REPO_ROOT)/deps
 
 ifeq ($(SANITIZER),address)

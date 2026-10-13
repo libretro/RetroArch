@@ -3,7 +3,7 @@ include ../../sample_objdir.mk
 TARGET := sthread_ex_test
 LIBRETRO_COMM_DIR := ../../..
 SOURCES := sthread_ex_test.c $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
-CFLAGS  += -Wall -W -std=gnu99 -g -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lrt
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(SAN),)

@@ -14,7 +14,7 @@ SOURCES := android_lifecycle_test.c \
            $(LRC)/compat/compat_strl.c \
            $(LRC)/string/stdstring.c \
            $(LRC)/encodings/encoding_utf.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS -I$(LRC)/include
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS -I$(LRC)/include
 LDFLAGS += -lpthread
 OBJS    := $(call sample_objs,$(SOURCES:.c=.o))
 

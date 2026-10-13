@@ -13,7 +13,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_HID \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_HID \
            -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lm
 

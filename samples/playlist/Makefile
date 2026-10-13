@@ -42,7 +42,7 @@ OBJECTS  := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 DEFINES  := -DHAVE_COMPRESSION -DHAVE_ZLIB -DHAVE_THREADS -DRARCH_INTERNAL
 INCDIRS  := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
-CFLAGS   += -Wall -std=gnu99 -g $(DEFINES) $(INCDIRS)
+CFLAGS   += -Wall -std=gnu99 -g1 $(DEFINES) $(INCDIRS)
 LDFLAGS  += -lz -lm -lpthread -Wl,--wrap=strdup
 
 # The samples workflow passes SANITIZER=address,undefined to every

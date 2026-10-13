@@ -5,7 +5,7 @@ LIBRETRO_COMM_DIR := ../../..
 # tree the test writes under $(SYSFS) before each case.
 SYSFS   := $(CURDIR)/fixture_sysfs/system/cpu
 SOURCES := fast_cores_test.c
-CFLAGS  += -Wall -W -std=gnu99 -g -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include \
+CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include \
            -I$(LIBRETRO_COMM_DIR)/rthreads -DRTHREADS_CPU_SYSFS='"$(SYSFS)"' -DCPU_CLASS_SYSFS='"$(SYSFS)"'
 LDFLAGS += -lpthread -lrt
 OBJS := $(SOURCES:.c=.o)

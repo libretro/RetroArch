@@ -20,7 +20,7 @@ COMMON_SOURCES := \
 
 COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -DRARCH_INTERNAL -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DRARCH_INTERNAL -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and

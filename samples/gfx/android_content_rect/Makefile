@@ -10,7 +10,7 @@ TARGET := android_content_rect_test
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
-CFLAGS  += -Wall -std=gnu89 -Wdeclaration-after-statement -g -O1 \
+CFLAGS  += -Wall -std=gnu89 -Wdeclaration-after-statement -g1 -O1 \
            -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I.
 LDFLAGS +=
 

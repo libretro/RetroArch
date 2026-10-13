@@ -25,10 +25,10 @@ LDFLAGS  += -Wl,--wrap=snd_pcm_open -Wl,--wrap=snd_pcm_readi -Wl,--wrap=snd_pcm_
             -Wl,--wrap=pthread_mutex_lock -lv4l2 -lasound -lm -lpthread
 
 ifneq ($(SANITIZER),)
-CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 else
-CFLAGS  += -g -O1
+CFLAGS  += -g1 -O1
 endif
 
 all: $(TARGET)

@@ -2,7 +2,7 @@ TARGET := auto_state_load_test
 ROOT := ../../..
 SOURCES := auto_state_load_test.c $(ROOT)/command.c \
            $(ROOT)/libretro-common/compat/compat_strl.c
-CFLAGS += -O2 -g -std=gnu89 -Wall -flto \
+CFLAGS += -O2 -g1 -std=gnu89 -Wall -flto \
           -ffunction-sections -fdata-sections \
           -I$(ROOT) -I$(ROOT)/menu -I$(ROOT)/libretro-common/include $(EXTRA_CFLAGS)
 LDFLAGS += -flto -Wl,--gc-sections

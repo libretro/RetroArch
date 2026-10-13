@@ -3,7 +3,7 @@ include ../../sample_objdir.mk
 TARGET := fastjmp_test
 LIBRETRO_COMM_DIR := ../../..
 SOURCES := fastjmp_test.c $(LIBRETRO_COMM_DIR)/fastjmp/fastjmp.c
-CFLAGS  += -Wall -W -std=gnu99 -g -O2 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -W -std=gnu99 -g1 -O2 -I$(LIBRETRO_COMM_DIR)/include
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(SAN),)
    SANITIZER := $(SAN)

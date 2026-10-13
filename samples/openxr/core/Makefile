@@ -3,7 +3,7 @@
 # OpenXR and Vulkan headers.
 TARGET := openxr_core_test
 ROOT   := ../../..
-CFLAGS += -std=gnu99 -O1 -g -Wall -Wno-unused-function -Wno-unused-parameter \
+CFLAGS += -std=gnu99 -O1 -g1 -Wall -Wno-unused-function -Wno-unused-parameter \
           -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_OPENXR \
           -I$(ROOT) -I$(ROOT)/libretro-common/include -I$(ROOT)/deps \
           -I$(ROOT)/deps/openxr/include -I$(ROOT)/gfx/include

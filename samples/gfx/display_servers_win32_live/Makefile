@@ -29,7 +29,7 @@ SOURCES := display_servers_win32_live_test.c \
            $(REPO_ROOT)/libretro-common/features/features_cpu.c \
            $(REPO_ROOT)/libretro-common/time/rtime.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_MODELINE -DHAVE_THREADS -DRARCH_INTERNAL -DHAVE_MENU \
            -DMODELINE_STANDALONE -include live_log.h \
            -I$(REPO_ROOT) \

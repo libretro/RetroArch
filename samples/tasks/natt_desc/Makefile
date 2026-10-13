@@ -4,7 +4,7 @@ SOURCES := natt_desc_parse_test.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I../../../libretro-common/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 -I../../../libretro-common/include
 
 all: $(TARGET)
 

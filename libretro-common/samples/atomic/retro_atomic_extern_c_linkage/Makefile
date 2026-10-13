@@ -24,7 +24,7 @@ SOURCE := retro_atomic_extern_c_linkage_test.cpp
 # C++11 is the minimum that engages retro_atomic.h's CXX11 backend.
 # -Wall -Wextra to catch any incidental warning the test's macro
 # expansions might produce on a future toolchain.
-CXXFLAGS += -Wall -Wextra -pedantic -std=c++11 -g -O0 \
+CXXFLAGS += -Wall -Wextra -pedantic -std=c++11 -g1 -O0 \
             -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)

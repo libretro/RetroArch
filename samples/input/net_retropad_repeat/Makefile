@@ -6,7 +6,7 @@ TARGET := net_retropad_repeat_test
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
-CFLAGS += -Wall -std=gnu99 -g -O1 -I$(LRC)/include
+CFLAGS += -Wall -std=gnu99 -g1 -O1 -I$(LRC)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

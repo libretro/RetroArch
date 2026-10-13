@@ -19,7 +19,7 @@ SOURCES_C := \
 	$(LRC)/encodings/encoding_utf.c \
 	$(LRC)/compat/compat_strldup.c
 
-CFLAGS  += -g -O1 -Wall -std=gnu99 -D_GNU_SOURCE -DANDROID -DHAVE_THREADS \
+CFLAGS  += -g1 -O1 -Wall -std=gnu99 -D_GNU_SOURCE -DANDROID -DHAVE_THREADS \
            -DRARCH_INTERNAL -I$(CORE_DIR)/tools/platform_stubs/android \
            -I$(CORE_DIR) -I$(LRC)/include
 LDFLAGS += -lpthread

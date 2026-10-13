@@ -19,7 +19,7 @@ CC  := x86_64-w64-mingw32-gcc
 RUN := WINEDEBUG=-all $(or $(WINE),wine)
 endif
 
-CFLAGS += -Wall -Wextra -std=c89 -pedantic -Wno-long-long -g -O1 \
+CFLAGS += -Wall -Wextra -std=c89 -pedantic -Wno-long-long -g1 -O1 \
           -I$(REPO_ROOT)/libretro-common/include
 LDLIBS += -ld3d12 -ldxguid -luuid
 

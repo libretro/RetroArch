@@ -11,10 +11,10 @@ INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 CFLAGS   += -Wall $(INCDIRS)
 
 ifneq ($(SANITIZER),)
-CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 else
-CFLAGS  += -g -O1
+CFLAGS  += -g1 -O1
 endif
 
 all: $(TARGET)

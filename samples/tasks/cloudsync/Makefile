@@ -89,7 +89,7 @@ ifneq ($(FORCE_LOCK),)
    ADDS_DEFS += -DTASK_CLOUDSYNC_FORCE_LOCK
 endif
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
           -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 
 ifneq ($(SANITIZER),)

@@ -21,7 +21,7 @@ SOURCES := display_servers_x11_live_test.c \
 # MODELINE_STANDALONE keeps the engine off verbosity.h and the
 # filestream VFS; the logging macros come from live_log.h so the
 # engine and the driver share one sink.
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_XRANDR -DHAVE_XINERAMA -DMODELINE_STANDALONE \
            -include live_log.h \
            -I$(REPO_ROOT) \

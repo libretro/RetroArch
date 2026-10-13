@@ -5,7 +5,7 @@ TARGET    := coremidi_queue_test
 REPO_ROOT := ../../..
 
 SOURCES := coremidi_queue_test.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include
 LDFLAGS += -lpthread
 OBJS    := $(SOURCES:.c=.o)
 ifneq ($(SANITIZER),)

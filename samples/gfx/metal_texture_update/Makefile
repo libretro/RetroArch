@@ -6,7 +6,7 @@ OBJS    := $(SOURCES:.m=.o)
 # Apple's clang with ARC: the sample keeps its own references and does
 # not use the driver's RARCH_* ownership layer, so there is nothing to
 # match between them.
-CFLAGS  += -Wall -g -O1 -fobjc-arc
+CFLAGS  += -Wall -g1 -O1 -fobjc-arc
 LDFLAGS += -framework Foundation -framework Metal
 
 all: $(TARGET)

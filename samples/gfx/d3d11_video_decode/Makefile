@@ -12,7 +12,7 @@
 #                                               all three
 RA     := ../../..
 CC     ?= cc
-CFLAGS ?= -O1 -g
+CFLAGS ?= -O1 -g1
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=gnu99 \
           -I$(RA) -I$(RA)/libretro-common/include \
           -DHAVE_RMP4 -DHAVE_RH264 $(EXTRA_CFLAGS)

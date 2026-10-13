@@ -20,7 +20,7 @@ SOURCES := wayland_present_test.c \
            $(LRC)/features/features_cpu.c \
            $(LRC)/compat/compat_strl.c
 
-CFLAGS  += -Wall -std=gnu89 -g -O1 \
+CFLAGS  += -Wall -std=gnu89 -g1 -O1 \
            -DRARCH_INTERNAL -DHAVE_WAYLAND -D_GNU_SOURCE \
            -I. -I$(REPO_ROOT) -I$(LRC)/include \
            $(shell pkg-config --cflags wayland-client wayland-server)

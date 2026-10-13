@@ -25,7 +25,7 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # -DHAVE_MMAP so the local branch really produces a mapping; without
 # it the zero-copy check has nothing to assert and only reports a skip.
-CFLAGS += -Wall -pedantic -std=gnu99 -g -DHAVE_MMAP \
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DHAVE_MMAP \
 	-I$(LIBRETRO_COMM_DIR)/include
 
 # The wrapper-allocation failure cases exist because that path is

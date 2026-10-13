@@ -29,7 +29,7 @@ VOLATILE_OBJS     := $(call sample_objs,$(SOURCES:.c=.vo.o))
 
 # HAVE_THREADS: the oracle decodes every case on a pool as well, and
 # the threaded output has to be the single-thread output to the byte.
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_THREADS -D_GNU_SOURCE \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_THREADS -D_GNU_SOURCE \
            -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every

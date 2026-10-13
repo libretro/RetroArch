@@ -4,7 +4,7 @@ REPO_ROOT := ../../..
 
 # input/input_keymaps.c is compiled into the test (it reaches the
 # file's static table); no platform's key headers are pulled in.
-CFLAGS += -Wall -Wno-unused-function -std=gnu99 -g -O1 -DRARCH_INTERNAL \
+CFLAGS += -Wall -Wno-unused-function -std=gnu99 -g1 -O1 -DRARCH_INTERNAL \
    -I$(REPO_ROOT)/libretro-common/include -I$(REPO_ROOT)
 
 SOURCES := keymaps_lut_test.c \

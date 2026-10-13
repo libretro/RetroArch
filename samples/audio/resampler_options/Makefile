@@ -5,7 +5,7 @@ CPPFLAGS += -I$(COMMON)/include -DHAVE_NEAREST_RESAMPLER -DHAVE_CC_RESAMPLER
 CFLAGS += -O2 -std=c89
 LDLIBS += -lm
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SOURCES = resampler_options_test.c $(COMMON)/audio/resampler/audio_resampler.c \

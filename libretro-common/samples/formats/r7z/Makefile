@@ -24,7 +24,7 @@ ARCHIVE_SOURCES := \
 OBJS         := $(call sample_objs,$(SOURCES:.c=.o))
 ARCHIVE_OBJS := $(call sample_objs,$(ARCHIVE_SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)

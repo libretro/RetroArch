@@ -27,7 +27,7 @@ SOURCES_C := \
 
 OBJS := $(call sample_objs,$(SOURCES_M:.m=.o) $(SOURCES_C:.c=.o))
 
-CFLAGS  += -Wall -g $(INCDIRS) -DHAVE_CLOUDSYNC
+CFLAGS  += -Wall -g1 $(INCDIRS) -DHAVE_CLOUDSYNC
 OBJCFLAGS := $(CFLAGS) -fobjc-arc
 LDFLAGS += -framework Foundation
 

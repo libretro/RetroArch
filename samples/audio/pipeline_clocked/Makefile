@@ -9,7 +9,7 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) \
 	-I$(CORE_DIR)/deps -I$(CORE_DIR)/deps/stb
 
 CC      := $(compiler)
-flags   += -std=gnu99 -g
+flags   += -std=gnu99 -g1
 
 SOURCES_C := \
 	pipeline_clocked_test.c \
@@ -58,7 +58,7 @@ ifneq ($(SAN),)
    SANITIZER := $(SAN)
 endif
 ifneq ($(SANITIZER),)
-   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g $(CFLAGS)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 

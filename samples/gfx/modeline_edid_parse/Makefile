@@ -10,7 +10,7 @@ REPO_ROOT := ../../..
 SOURCES := modeline_edid_parse_test.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include \
            -I$(REPO_ROOT)/deps

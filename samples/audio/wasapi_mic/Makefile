@@ -33,10 +33,10 @@ INCDIRS   := -I. -I$(FAKE_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(
 CFLAGS   += -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_WASAPI -DHAVE_MICROPHONE -D_GNU_SOURCE
 
 ifneq ($(SANITIZER),)
-CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 else
-CFLAGS  += -g -O1
+CFLAGS  += -g1 -O1
 endif
 
 all: $(TARGET)

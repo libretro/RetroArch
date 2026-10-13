@@ -5,7 +5,7 @@ TARGET    := retro_triple_buffer_test
 CORE_DIR  := ../../..
 
 SOURCES := retro_triple_buffer_test.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -I$(CORE_DIR)/include
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -I$(CORE_DIR)/include
 LDFLAGS += -lpthread
 OBJS    := $(SOURCES:.c=.o)
 ifneq ($(SANITIZER),)

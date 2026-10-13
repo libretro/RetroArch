@@ -22,7 +22,7 @@ SOURCES := gfx_widgets_sanitize_test.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS -DHAVE_MENU -DHAVE_GFX_WIDGETS \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include

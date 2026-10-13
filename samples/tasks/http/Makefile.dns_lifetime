@@ -1,7 +1,7 @@
 TARGET := http_dns_lifetime_test
 ROOT := ../../..
 SSL ?= 1
-CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+CFLAGS += -std=gnu89 -Wall -g1 -O1 -flto -ffunction-sections -fdata-sections \
           -DHAVE_THREADS -I$(ROOT)/libretro-common/include
 LDFLAGS += -Wl,--gc-sections
 LDLIBS += -lpthread

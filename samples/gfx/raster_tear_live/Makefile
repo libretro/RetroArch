@@ -5,7 +5,7 @@
 TARGET    := raster_tear_live
 REPO_ROOT := ../../..
 SOURCES   := raster_tear_live.c
-CFLAGS    += -Wall -std=gnu99 -g -O2 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include \
+CFLAGS    += -Wall -std=gnu99 -g1 -O2 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include \
              $(shell pkg-config --cflags libdrm)
 LDFLAGS   += $(shell pkg-config --libs libdrm)
 

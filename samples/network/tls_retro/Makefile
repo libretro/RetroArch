@@ -1,6 +1,6 @@
 ROOT   = ../../..
 COMMON = $(ROOT)/libretro-common
-CFLAGS ?= -O2 -g
+CFLAGS ?= -O2 -g1
 CPPFLAGS += -I$(COMMON)/include -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -D_GNU_SOURCE
 SRC = tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/net/net_socket.c $(COMMON)/net/net_compat.c \
       $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/crypto/pk.c $(COMMON)/crypto/x509.c \

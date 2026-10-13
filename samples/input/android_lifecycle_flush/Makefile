@@ -17,7 +17,7 @@ SOURCES := android_lifecycle_flush_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS += -Wall -std=gnu89 -g -O1 \
+CFLAGS += -Wall -std=gnu89 -g1 -O1 \
           -D_GNU_SOURCE -DHAVE_THREADS \
           -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -pthread

@@ -41,7 +41,7 @@ TEST2_SOURCES := \
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 TEST2_OBJS := $(call sample_objs,$(TEST2_SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lz
 
 ifneq ($(SANITIZER),)

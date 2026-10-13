@@ -19,7 +19,7 @@ SOURCES := companion_thumbs_test.c \
            $(LRC)/compat/compat_strldup.c \
            $(LRC)/string/stdstring.c \
            $(LRC)/encodings/encoding_utf.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS \
            -I$(CORE_DIR) -I$(LRC)/include
 LDFLAGS += -lpthread
 OBJS    := $(call sample_objs,$(SOURCES:.c=.o))

@@ -49,7 +49,7 @@ SOURCES := task_file_transfer_test.c \
 # absent from that switch while both push paths set them, so those
 # loads finished without the mixer handler ever running.  HAVE_RMP4
 # and HAVE_RH264 build the real demuxer for the moov-at-EOF lane.
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MMAP \
            -DHAVE_64BIT_OFFSETS -DHAVE_RMP4 -DHAVE_RH264 -D_GNU_SOURCE \
            -I$(REPO_ROOT) \

@@ -36,7 +36,7 @@ SOURCES := bsv_statestream_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
            -DHAVE_BSV_MOVIE -DHAVE_RZSTD -DHAVE_STATESTREAM -DHAVE_THREADS \
            -I$(REPO_ROOT) -I$(REPO_ROOT)/deps \
            -I$(LIBRETRO_COMM_DIR)/include

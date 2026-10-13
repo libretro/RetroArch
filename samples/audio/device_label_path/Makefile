@@ -10,7 +10,7 @@ LIBRETRO_COMM_DIR = $(CORE_DIR)/libretro-common
 
 CC      := $(compiler)
 CFLAGS  += -std=gnu99 -Wall -Wno-unused-function -Wno-unused-parameter \
-           -Wno-missing-field-initializers -g -O1 -DRARCH_INTERNAL \
+           -Wno-missing-field-initializers -g1 -O1 -DRARCH_INTERNAL \
            -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)/deps \
            -Ishim -U_FORTIFY_SOURCE
 SANITIZER ?=

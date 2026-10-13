@@ -1,7 +1,7 @@
 # Font lifecycle tests: create, reload in place, free, under sanitizers.
 RA      := ../../..
 SAN     ?= address,undefined
-CFLAGS  := -std=gnu99 -g -O1 -pthread -fsanitize=$(SAN) -DHAVE_STB_FONT -DRARCH_INTERNAL \
+CFLAGS  := -std=gnu99 -g1 -O1 -pthread -fsanitize=$(SAN) -DHAVE_STB_FONT -DRARCH_INTERNAL \
            -I$(RA) -I$(RA)/libretro-common/include -I$(RA)/gfx/include \
            -I$(RA)/deps -I$(RA)/deps/stb
 SRC     := $(RA)/gfx/font_driver.c \

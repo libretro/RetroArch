@@ -1,5 +1,5 @@
 ROOT := ../../..
-CFLAGS += -std=gnu89 -O1 -g -Wall -Wextra -I$(ROOT) \
+CFLAGS += -std=gnu89 -O1 -g1 -Wall -Wextra -I$(ROOT) \
           -I$(ROOT)/libretro-common/include
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

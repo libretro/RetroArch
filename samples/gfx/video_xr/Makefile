@@ -13,7 +13,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=c89 -pedantic -Werror=declaration-after-statement -g -O1 \
+CFLAGS  += -Wall -std=c89 -pedantic -Werror=declaration-after-statement -g1 -O1 \
            -I$(LIBRETRO_COMM_DIR)/include -I$(RARCH_DIR)
 LDFLAGS += -lm
 

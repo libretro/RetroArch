@@ -14,7 +14,7 @@ TARGET  := http_url_dedup_test
 SOURCES := http_url_dedup_test.c
 OBJS    := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 $(CFLAGS_EXTRA)
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 $(CFLAGS_EXTRA)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

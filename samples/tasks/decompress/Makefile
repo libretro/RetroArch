@@ -34,7 +34,7 @@ WINDOW_SOURCES := decompress_window_test.c \
 
 WINDOW_OBJS := $(call sample_objs,$(WINDOW_SOURCES:.c=.o))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 WINDOW_CFLAGS := -DHAVE_THREADS -DHAVE_COMPRESSION \
            -DRARCH_INTERNAL \

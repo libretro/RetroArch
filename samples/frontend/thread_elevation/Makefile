@@ -17,7 +17,7 @@ SOURCES_C := \
 	$(CORE_DIR)/frontend/thread_elevation/eevdf.c \
 	$(CORE_DIR)/libretro-common/rthreads/rthreads.c
 
-CFLAGS  += -g -O1 -Wall -Wextra -std=c89 -pedantic -Wno-long-long \
+CFLAGS  += -g1 -O1 -Wall -Wextra -std=c89 -pedantic -Wno-long-long \
            -D_GNU_SOURCE -DHAVE_THREADS -DTHREAD_ELEVATION_BACKENDS_EXTERNAL \
            -I$(CORE_DIR) -I$(CORE_DIR)/libretro-common/include
 LDFLAGS += -lpthread

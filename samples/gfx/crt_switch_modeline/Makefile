@@ -30,7 +30,7 @@ SOURCES := crt_switch_modeline_test.c \
            $(LRC)/time/rtime.c \
            $(LRC)/vfs/vfs_implementation.c
 
-CFLAGS  += -Wall -std=gnu89 -g -O0 \
+CFLAGS  += -Wall -std=gnu89 -g1 -O0 \
            -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE \
            -DHAVE_CONFIGFILE -DHAVE_DYNAMIC -D_GNU_SOURCE \
            -I$(REPO_ROOT) \

@@ -21,7 +21,7 @@ SOURCES := badge_cache_test.c \
 
 OBJECTS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DHAVE_THREADS -DRARCH_INTERNAL \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DHAVE_THREADS -DRARCH_INTERNAL \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
            -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/rcheevos/include
 LDFLAGS += -lm -lpthread

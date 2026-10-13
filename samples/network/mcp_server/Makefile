@@ -21,7 +21,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-CFLAGS += -std=gnu99 -Wall -g -O1 -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) \
+CFLAGS += -std=gnu99 -Wall -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) \
 	-DHAVE_NETWORKING -DHAVE_COMMAND -DHAVE_NETWORK_CMD -DHAVE_MCP -DRARCH_INTERNAL
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

@@ -44,7 +44,7 @@ SOURCES := content_prefetch_test.c \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -DHAVE_THREADS -DHAVE_COMPRESSION \
+CFLAGS  += -Wall -std=gnu99 -g1 -DHAVE_THREADS -DHAVE_COMPRESSION \
            -DHAVE_ZLIB -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
 LDFLAGS += -lz -lpthread -lm
 

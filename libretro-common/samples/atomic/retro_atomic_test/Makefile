@@ -13,7 +13,7 @@ HAVE_THREADS ?= 1
 
 SOURCES := retro_atomic_test.c
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include
 
 ifeq ($(HAVE_THREADS),1)
    CFLAGS  += -DHAVE_THREADS

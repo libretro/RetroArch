@@ -9,7 +9,7 @@ SOURCES_C := retro_sleep_until_test.c \
 	$(CORE_DIR)/compat/compat_strl.c \
 	$(CORE_DIR)/encodings/encoding_utf.c
 OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
-CFLAGS  += -Wall -I$(CORE_DIR)/include -D_GNU_SOURCE -O1 -g
+CFLAGS  += -Wall -I$(CORE_DIR)/include -D_GNU_SOURCE -O1 -g1
 LDFLAGS += -lm -lpthread
 all: $(TARGET)
 $(TARGET): $(OBJS)

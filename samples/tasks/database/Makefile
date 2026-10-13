@@ -59,10 +59,10 @@ LDFLAGS += -O2
 endif
 
 ifeq (debug,$(build))
-extra_flags += -O0 -g
-CFLAGS += -O0 -g
-CXXFLAGS += -O0 -g
-LDFLAGS += -O0 -g
+extra_flags += -O0 -g1
+CFLAGS += -O0 -g1
+CXXFLAGS += -O0 -g1
+LDFLAGS += -O0 -g1
 endif
 
 ifneq ($(SANITIZER),)

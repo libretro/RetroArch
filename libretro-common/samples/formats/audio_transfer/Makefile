@@ -32,7 +32,7 @@ COMMON_SOURCES := \
 COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
 OBJS        := audio_transfer_window_test.o $(COMMON_OBJS)
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include \
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include \
 	$(DEFINES)
 LDFLAGS += -lm
 

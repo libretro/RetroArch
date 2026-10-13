@@ -13,7 +13,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(THREADS),0)
    CFLAGS  += -DHAVE_THREADS

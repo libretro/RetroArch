@@ -8,7 +8,7 @@ CFLAGS += -O2 -std=c89 -Wall -Wextra -D_POSIX_C_SOURCE=199309L
 WRAP_LDFLAGS = -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free
 LDLIBS += -lm
 ifneq ($(SANITIZER),)
-CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SOURCES = stretch_test.c $(ROOT)/audio/audio_stretch.c

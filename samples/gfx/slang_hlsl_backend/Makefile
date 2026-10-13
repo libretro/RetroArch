@@ -23,7 +23,7 @@ DEFINES  := -DRARCH_INTERNAL -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_SPIRV_CROSS
 INCLUDES := -I. -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
             -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/SPIRV-Cross
 
-CFLAGS   += -Wall -std=gnu99 -g -O1 $(DEFINES) $(INCLUDES)
+CFLAGS   += -Wall -std=gnu99 -g1 -O1 $(DEFINES) $(INCLUDES)
 # SPIRV-Cross is a vendored dependency, built plain and unoptimised:
 # what is under test is which of its emitters a configuration gets.
 DEPFLAGS := -O0 -w -DHAVE_SPIRV_CROSS $(INCLUDES)

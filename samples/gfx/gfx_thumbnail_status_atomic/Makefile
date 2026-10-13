@@ -19,7 +19,7 @@ HAVE_THREADS ?= 1
 
 SOURCES := gfx_thumbnail_status_atomic_test.c
 
-CFLAGS  += -Wall -pedantic -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O0 \
            -I$(LIBRETRO_COMM_DIR)/include
 
 ifeq ($(HAVE_THREADS),1)

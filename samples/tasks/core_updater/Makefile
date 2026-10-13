@@ -44,7 +44,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
            -I$(LIBRETRO_COMM_DIR)/include -DHAVE_ZLIB
 LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec
 LIBS    += -lz -lm

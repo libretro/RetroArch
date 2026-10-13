@@ -22,7 +22,7 @@ DRM_CFLAGS ?= $(shell pkg-config --cflags libdrm 2>/dev/null || echo -I/usr/incl
 # HAVE_MODELINE compiles the modeline ops: set fills the CRT
 # consumer's drmModeModeInfo mirror in the video state and asks the
 # video driver for a mode set, both of which the test supplies.
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_KMS -DHAVE_MODELINE \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include \

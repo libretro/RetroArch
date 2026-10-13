@@ -5,7 +5,7 @@
 TARGET    := drm_hdr_test
 REPO_ROOT := ../../..
 SOURCES   := drm_hdr_test.c $(REPO_ROOT)/gfx/common/drm_hdr.c
-CFLAGS    += -Wall -std=gnu99 -g -O0 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include \
+CFLAGS    += -Wall -std=gnu99 -g1 -O0 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include \
              $(shell pkg-config --cflags libdrm)
 LDFLAGS   += -lm
 ifneq ($(SANITIZER),)

@@ -3,7 +3,7 @@ include ../../sample_objdir.mk
 TARGET := memshm_area_test
 LIBRETRO_COMM_DIR := ../../..
 SOURCES := memshm_area_test.c $(LIBRETRO_COMM_DIR)/memmap/memmap.c
-CFLAGS  += -Wall -W -std=gnu99 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS  += -Wall -W -std=gnu99 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lrt
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(SAN),)

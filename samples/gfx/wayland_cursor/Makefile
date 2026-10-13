@@ -6,7 +6,7 @@ REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
 SOURCES := wayland_cursor_test.c
-CFLAGS  += -Wall -std=c89 -pedantic -g -O0 \
+CFLAGS  += -Wall -std=c89 -pedantic -g1 -O0 \
            -I$(REPO_ROOT) -I$(LRC)/include
 OBJS    := $(SOURCES:.c=.o)
 ifneq ($(SANITIZER),)

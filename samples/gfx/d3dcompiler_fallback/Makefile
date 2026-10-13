@@ -23,7 +23,7 @@ SOURCES := d3dcompiler_fallback_test.c \
            $(LRC)/encodings/encoding_utf.c \
            $(LRC)/compat/compat_strl.c
 
-CFLAGS += -Wall -g -O1 -DHAVE_DYLIB -I$(LRC)/include
+CFLAGS += -Wall -g1 -O1 -DHAVE_DYLIB -I$(LRC)/include
 
 ALL_47_TO_33 := d3dcompiler_47,d3dcompiler_46,d3dcompiler_45,d3dcompiler_44,d3dcompiler_43,d3dcompiler_42,d3dcompiler_41,d3dcompiler_40,d3dcompiler_39,d3dcompiler_38,d3dcompiler_37,d3dcompiler_36,d3dcompiler_35,d3dcompiler_34,d3dcompiler_33
 

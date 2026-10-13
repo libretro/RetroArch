@@ -28,7 +28,7 @@ SOURCES := \
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS \
+CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS \
            -DIIO_DEVICES_DIR='"$(IIO_TEST_DIR)"' -DIIO_TEST_DIR='"$(IIO_TEST_DIR)"' \
            -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lm

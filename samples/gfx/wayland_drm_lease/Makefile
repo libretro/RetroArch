@@ -43,7 +43,7 @@ SOURCES := wayland_drm_lease_test.c \
            $(LRC)/rthreads/rthreads.c \
            $(LRC)/compat/compat_strl.c
 
-CFLAGS  += -Wall -std=gnu99 -g -O0 \
+CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DRARCH_INTERNAL -DHAVE_WAYLAND -DHAVE_THREADS -D_GNU_SOURCE \
            -I. \
            -I$(REPO_ROOT) \
