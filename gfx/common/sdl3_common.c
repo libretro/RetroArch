@@ -258,7 +258,22 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
          | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
    if (fullscreen)
+   {
       flags |= SDL_WINDOW_FULLSCREEN;
+      /* Desktop full screen at the desktop's size: a window made
+       * smaller is only grown by a window manager, and without one it
+       * keeps the size it was made at. */
+      if (settings->bools.video_windowed_fullscreen)
+      {
+         const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(
+               SDL_GetPrimaryDisplay());
+         if (mode)
+         {
+            width  = (unsigned)mode->w;
+            height = (unsigned)mode->h;
+         }
+      }
+   }
 
    if (!settings->bools.video_window_show_decorations)
       flags |= SDL_WINDOW_BORDERLESS;

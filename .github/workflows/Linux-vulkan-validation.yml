@@ -66,6 +66,10 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 #    sit in the frame path's present chain, so the window path is only
 #    proven in a build that compiles them; the GPU readback lane is
 #    where a misplaced one sent a read-back frame to present twice.
+#
+# 8. SDL3 views: the views e2e cases on the SDL3 driver, against an SDL3
+#    built from a pinned release with its renderer, the tree configured
+#    with SDL3 in place of SDL2.
 
 on:
   push:
@@ -1007,3 +1011,78 @@ jobs:
           HARNESS_CORE_XRGB8888=${{ matrix.core_xrgb8888 || '' }} \
             SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
+
+  views-sdl3:
+    name: Views on SDL3, end to end (Xvfb, llvmpipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential ninja-build cmake xvfb x11-utils libx11-dev libxext-dev libxrandr-dev libxi-dev libxss-dev libxcursor-dev libxfixes-dev libxkbcommon-dev libgl1-mesa-dri libgl-dev libegl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Build SDL3
+        # The runner image ships no libsdl3-dev: a pinned release, with
+        # the renderer the driver draws through.
+        run: |
+          set -eu
+          SDL3_VER=3.2.20
+          curl -sL -o /tmp/sdl3.tar.gz \
+             "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
+          tar -C /tmp -xzf /tmp/sdl3.tar.gz
+          cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
+             -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+             -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=OFF -DSDL_CAMERA=OFF \
+             -DSDL_WAYLAND=OFF -DSDL_X11=ON -DSDL_RENDER=ON -DSDL_OPENGL=ON \
+             -DSDL_OPENGLES=ON -DSDL_VULKAN=OFF -DCMAKE_INSTALL_PREFIX=/opt/sdl3 \
+             > /tmp/sdl3-cmake.log
+          ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
+          sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
+
+      - name: Build retroarch with SDL3
+        run: |
+          set -eu
+          export PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig
+          ./configure --enable-sdl3 --disable-sdl2 --disable-sdl --disable-qt \
+                      --disable-vulkan --disable-ffmpeg
+          grep -q '^HAVE_SDL3 = 1' config.mk
+          make -j$(getconf _NPROCESSORS_ONLN)
+          make -C samples/cores/video_views
+
+      - name: Views on SDL3, end to end
+        shell: bash
+        run: |
+          set -eu
+          # The views compositor as the SDL3 driver instantiates it: each
+          # view written straight into a texture of its own, the
+          # interlaced canvas, views read exactly out of the frame, the
+          # UI layer per eye with the menu open, and a pointer mapped
+          # back through it. Anaglyph draws the frame whole there.
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export LD_LIBRARY_PATH=/opt/sdl3/lib
+          RA_E2E_XVFB=1 RA_E2E_ONLY='^(3ds-sbs-full|3ds-sbs-half|3ds-top-bottom|3ds-interlaced|ds-horizontal|exact-3ds|exact-3ds-rgb565|crop-threaded-menu|pointer-sbs-full)$' \
+            python3 samples/cores/video_views/e2e/run.py ./retroarch \
+            "$RUNNER_TEMP/views-e2e" sdl3
+
+      - name: Preserve views logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: views-sdl3-logs
+          path: ${{ runner.temp }}/views-e2e/**/*.log
+          if-no-files-found: ignore
