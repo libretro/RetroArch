@@ -91,19 +91,30 @@ uint64_t __wrap_pw_stream_get_nsec(struct pw_stream *stream)
 }
 
 /* What the driver delivered. */
+#define W 8
+#define H 4
 static unsigned frame_cb_count;
 static uint32_t frame_cb_first_pixel;
+static const uint32_t *frame_cb_buffer;
+static size_t frame_cb_pitch;
+static unsigned frame_cb_queued;
+static uint32_t frame_cb_pixels[W * H];
 
 static void frame_raw_cb(const uint32_t *buffer,
       unsigned width, unsigned height, size_t pitch)
 {
-   (void)width; (void)height; (void)pitch;
+   unsigned y;
    frame_cb_count++;
    frame_cb_first_pixel = buffer[0];
+   frame_cb_buffer = buffer;
+   frame_cb_pitch = pitch;
+   frame_cb_queued = script_queued;
+   if (width == W && height == H)
+      for (y = 0; y < H; y++)
+         memcpy(frame_cb_pixels + y * W,
+               (const uint8_t*)buffer + y * pitch, W * sizeof(uint32_t));
 }
 
-#define W 8
-#define H 4
 
 static int fails;
 
@@ -189,9 +200,13 @@ static void check_formats(void)
          buffer.datas = &data;
          pwb.buffer = &buffer;
          script_reset(&pwb);
-         CHECK(preprocess_image(&camera), "negotiated packed frame converts");
-         CHECK(memcmp(camera.buffer_output, pixels, sizeof(pixels)) == 0,
+         CHECK(preprocess_image(&camera, frame_raw_cb), "negotiated packed frame converts");
+         CHECK(memcmp(frame_cb_pixels, pixels, sizeof(pixels)) == 0,
                "negotiated packed format preserves every pixel");
+         CHECK(frame_cb_queued == 0, "capture returned after callback");
+         CHECK(frame_cb_buffer == (formats[i] == TEST_NATIVE_ARGB
+               ? (const uint32_t*)data.data : camera.buffer_output),
+               "native frames borrowed; other formats converted");
          CHECK(script_queued == 1, "negotiated frame returned once");
       }
       scaler_ctx_gen_reset(&camera.scaler);
@@ -303,6 +318,7 @@ int main(void)
    CHECK(frame_cb_count == 1, "frame delivered once");
    CHECK(frame_cb_first_pixel == 0x11223344u, "frame pixels converted");
    printf("offset and padded rows:\n");
+   memset(out, 0x3c, sizeof(out));
    memset(padded, 0xa5, sizeof(padded));
    for (y = 0; y < H; y++)
       for (x = 0; x < W; x++)
@@ -316,8 +332,13 @@ int main(void)
    script_reset(&pwb);
    polled = pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL);
    CHECK(polled && frame_cb_count == 1, "padded frame delivered once");
-   CHECK(memcmp(out, pixels, sizeof(pixels)) == 0,
+   CHECK(memcmp(frame_cb_pixels, pixels, sizeof(pixels)) == 0,
          "chunk offset and row stride preserved all pixels");
+   CHECK(frame_cb_buffer == padded + 4 && frame_cb_pitch == (W + 2) * 4,
+         "native padded frame borrows capture pointer and pitch");
+   CHECK(frame_cb_queued == 0, "capture remains owned during callback");
+   CHECK(out[0] == 0x3c3c3c3cu && out[W * H - 1] == 0x3c3c3c3cu,
+         "native frame bypasses conversion output");
    CHECK(script_queued == 1, "padded buffer returned once");
    data.data = pixels;
    data.maxsize = sizeof(pixels);
@@ -330,7 +351,7 @@ int main(void)
    script_reset(&pwb);
    polled = pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL);
    CHECK(polled && frame_cb_count == 1, "packed frame delivered once");
-   CHECK(memcmp(out, pixels, sizeof(pixels)) == 0,
+   CHECK(memcmp(frame_cb_pixels, pixels, sizeof(pixels)) == 0,
          "zero stride uses restored negotiated layout");
    CHECK(script_queued == 1, "packed buffer returned once");
 

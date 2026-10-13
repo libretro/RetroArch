@@ -146,7 +146,8 @@ static int build_format(struct spa_pod_builder *b, const struct spa_pod **params
    return 1;
 }
 
-static bool preprocess_image(pipewire_camera_t *camera)
+static bool preprocess_image(pipewire_camera_t *camera,
+      retro_camera_frame_raw_framebuffer_t frame_raw_cb)
 {
    struct spa_buffer    *buf;
    struct spa_meta_header *h;
@@ -198,11 +199,25 @@ static bool preprocess_image(pipewire_camera_t *camera)
       if (required > chunk->size || required > data->maxsize - offset)
          goto done;
 
+      if (ctx->unscaled && ctx->in_fmt == SCALER_FMT_ARGB8888
+            && ctx->out_fmt == SCALER_FMT_ARGB8888
+            && !((uintptr_t)((const uint8_t*)data->data + offset)
+               % sizeof(uint32_t)) && !(stride % sizeof(uint32_t)))
+      {
+         /* The capture buffer is borrowed only until the callback returns. */
+         frame_raw_cb((const uint32_t*)((const uint8_t*)data->data + offset),
+               camera->size.width, camera->size.height, stride);
+         ret = true;
+         goto done;
+      }
+
       /* Chunk layout may differ from the negotiated packed layout. */
       ctx->in_stride = stride;
       scaler_ctx_scale_direct(ctx, camera->buffer_output,
             (const uint8_t*)data->data + offset);
       ctx->in_stride = saved_stride;
+      frame_raw_cb(camera->buffer_output, camera->size.width,
+            camera->size.height, camera->size.width * 4);
       ret = true;
    }
 
@@ -507,12 +522,7 @@ static bool pwire_camera_poll(void *data,
    if (pw_stream_get_state(camera->stream, &error) != PW_STREAM_STATE_STREAMING)
       return false;
 
-   if (!frame_raw_cb || !preprocess_image(camera))
-      return false;
-
-   frame_raw_cb(camera->buffer_output, camera->size.width,
-         camera->size.height, camera->size.width * 4);
-   return true;
+   return frame_raw_cb && preprocess_image(camera, frame_raw_cb);
 }
 
 camera_driver_t camera_pipewire = {
