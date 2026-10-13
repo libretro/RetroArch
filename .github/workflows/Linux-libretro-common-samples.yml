@@ -1250,9 +1250,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ github.workflow }}-${{ github.job }}-
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-
 
       - name: Enable ccache
         run: |
@@ -1325,7 +1325,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.arch }}-${{ github.sha }}
 
   # encoding_crc32() picks a different implementation per target: the
   # ARMv8 CRC32 instructions when the compiler advertises +crc, a
@@ -1440,9 +1440,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ github.workflow }}-${{ github.job }}-
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-
 
       - name: Enable ccache
         run: |
@@ -1581,4 +1581,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ matrix.name }}-${{ github.sha }}
