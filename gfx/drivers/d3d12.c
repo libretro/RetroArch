@@ -578,6 +578,7 @@ typedef struct
       bool                      active;
       bool                      direct_seen;
       bool                      in_place_seen;
+      bool                      written_seen;
    } views;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
@@ -7954,10 +7955,48 @@ static void d3d12_views_build_chains(d3d12_video_t *d3d12)
          break;
 }
 
+/* Where a software frame is, until the views say where it goes: a
+ * buffer the GPU copies it out of, laid out as @layout with the frame at
+ * @window, or with no buffer the frame in memory. */
+struct d3d12_sw_src
+{
+   D3D12Resource                      buffer;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+   D3D12_BOX                          window;
+   const void                        *frame;
+   unsigned                           pitch;
+};
+
+/* The @w x @h texels of software frame @src at (x, y) into @texture,
+ * which is their size */
+static void d3d12_sw_upload(d3d12_video_t *d3d12, d3d12_texture_t *texture,
+      const struct d3d12_sw_src *src, unsigned x, unsigned y, unsigned w,
+      unsigned h)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   if (src->buffer)
+   {
+      D3D12_BOX box  = src->window;
+      box.left      += x;
+      box.top       += y;
+      box.right      = box.left + w;
+      box.bottom     = box.top  + h;
+      d3d12_upload_texture_from(cmd, texture, d3d12, src->buffer,
+            &src->layout, &box);
+      return;
+   }
+   if (texture->upload_buffer)
+      d3d12_update_texture(w, h, src->pitch, d3d12->format,
+            (const uint8_t*)src->frame + (size_t)y * src->pitch
+            + (size_t)x * ((d3d12->format == DXGI_FORMAT_B5G6R5_UNORM)
+               ? 2 : 4), texture);
+   d3d12_upload_texture(cmd, texture, d3d12);
+}
+
 /* View @v's chain made ready: the view read where it lies in @src, or
  * for a @fresh frame its history made and turned, true when it is to be
- * copied out of @src into history[0]. @vp_dims is the size its first
- * placement is drawn at. */
+ * copied out of @src, or written out of software frame @sw, into
+ * history[0]. @vp_dims is the size its first placement is drawn at. */
 static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
       d3d12_filter_chain_t *c, const struct retro_video_view *v,
       unsigned vp_dims, D3D12Resource src, unsigned src_dims,
@@ -8151,14 +8190,14 @@ static bool d3d12_views_setup(d3d12_video_t *d3d12,
  * @rtv, sized as the window, or with @blend into the canvas, whose
  * halves one pass then blends into @rtv: with @direct straight from it,
  * else each through its chain, whose passes are drawn first, for a
- * @fresh frame from a new copy of its view unless they read it
- * @in_place. */
+ * @fresh frame from its view written straight out of software frame @sw
+ * or else a new copy of it, unless they read it @in_place. */
 static void d3d12_views_render(d3d12_video_t *d3d12,
       const video_frame_info_t *video_info, d3d12_filter_chain_t **chains,
       const video_views_rect_t *rects, D3D12_CPU_DESCRIPTOR_HANDLE rtv,
       D3D12Resource src_res, D3D12_GPU_DESCRIPTOR_HANDLE src, bool blend,
-      bool direct, bool in_place, bool fresh, uint64_t frame_count,
-      bool one_subframe)
+      bool direct, bool in_place, bool fresh, const struct d3d12_sw_src *sw,
+      uint64_t frame_count, bool one_subframe)
 {
    static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
    unsigned i;
@@ -8174,6 +8213,18 @@ static void d3d12_views_render(d3d12_video_t *d3d12,
             &video_info->views.views[i], rects[i].dims, src_res,
             d3d12->views.src_dims, in_place, fresh);
       copy     |= copies[i];
+   }
+   /* Each view written straight in: the frame is not copied */
+   if (copy && sw)
+   {
+      copy = false;
+      for (i = 0; i < video_info->views.num_views; i++)
+      {
+         const struct retro_video_view *v = &video_info->views.views[i];
+         if (copies[i])
+            d3d12_sw_upload(d3d12, &chains[i]->history[0], sw, v->x, v->y,
+                  v->width, v->height);
+      }
    }
    /* Each view copied out of the frame, readable again after */
    if (copy)
@@ -8373,6 +8424,9 @@ static bool d3d12_gfx_frame(
    bool views_blend               = false;
    bool views_direct              = false;
    bool views_in_place            = false;
+   /* A software frame put off until the views are known */
+   struct d3d12_sw_src sw_src;
+   bool sw_pending                = false;
    bool views_per_eye             = false;
    bool views_ui                  = false;
    bool message_visible;
@@ -8858,42 +8912,58 @@ static bool d3d12_gfx_frame(
           * pointer partway into the loan with the window's size
           * (beetle-psx does) - the copy takes that window. */
          D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+         memset(&sw_src, 0, sizeof(sw_src));
+         sw_src.frame = frame;
+         sw_src.pitch = pitch;
          if (d3d12_frame_mem_window(d3d12, frame, width, height, pitch,
                   &slot, &layout, &window))
          {
             /* In one of the threaded wrapper's frame buffers: copied
              * out where the push or the core put it */
             GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
-            d3d12_upload_texture_from(cmd, &d3d12->filter.history[0],
-                  d3d12, d3d12->frame_mem[slot].buffer, &layout, &window);
+            sw_src.buffer                = d3d12->frame_mem[slot].buffer;
+            sw_src.layout                = layout;
+            sw_src.window                = window;
             d3d12->frame_mem[slot].fence = d3d12->queue.fenceValue + 1;
          }
          else if (d3d12_sw_fb_window(d3d12, frame, width, height, pitch,
                   &slot, &window))
          {
             GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
-            d3d12_upload_texture_from(cmd, &d3d12->filter.history[0],
-                  d3d12, d3d12->sw_fb.buffer[slot], &d3d12->sw_fb.layout,
-                  &window);
+            sw_src.buffer            = d3d12->sw_fb.buffer[slot];
+            sw_src.layout            = d3d12->sw_fb.layout;
+            sw_src.window            = window;
             /* This frame's list copies out of it, and signals the
              * next fence value at its end. */
             d3d12->sw_fb.fence[slot] = d3d12->queue.fenceValue + 1;
             d3d12->sw_fb.last        = slot;
          }
          else
-         {
             GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
-            if (d3d12->filter.history[0].upload_buffer)
-               d3d12_update_texture(width, height, pitch, d3d12->format,
-                     frame, &d3d12->filter.history[0]);
-            d3d12_upload_texture(cmd, &d3d12->filter.history[0], d3d12);
-         }
+         /* Copied into history[0] once the views are known: through a
+          * preset they may have each view written straight in */
+         sw_pending = true;
       }
    }
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
 
    views = d3d12_views_setup(d3d12, video_info, frame, &views_blend,
          &views_direct, &views_in_place, view_chains, view_rects);
+   if (sw_pending && views && !views_direct && !views_in_place)
+   {
+      if (!d3d12->views.written_seen)
+      {
+         d3d12->views.written_seen = true;
+         RARCH_LOG("[D3D12] Views' presets have each view of a software "
+               "frame written straight in.\n");
+      }
+   }
+   else if (sw_pending)
+   {
+      sw_pending = false;
+      d3d12_sw_upload(d3d12, &d3d12->filter.history[0], &sw_src, 0, 0,
+            width, height);
+   }
    /* d3d12->vp is the whole window while views draw. */
    if (views != d3d12->views.active)
    {
@@ -9122,7 +9192,8 @@ static bool d3d12_gfx_frame(
             : d3d12->filter.history[0].handle,
             draw_direct ? d3d12->hw_direct.current_gpu
             : d3d12->filter.history[0].gpu_descriptor[0], views_blend,
-            views_direct, views_in_place, frame != NULL, frame_count,
+            views_direct, views_in_place, frame != NULL,
+            sw_pending ? &sw_src : NULL, frame_count,
             black_frame_insertion || nonblock_state || runloop_is_slowmotion
             || runloop_is_paused || (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE));
    else

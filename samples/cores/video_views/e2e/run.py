@@ -10,9 +10,9 @@ memory RetroArch holds, and the pointer cases move the pointer of
 gamescope's own X server and look for the menu's cursor under it. The
 exact cases check every pixel of
 views filled with noise, drawn straight from the frame by the stock
-chain and copied out of it for a preset, on glcore once for each way it
-copies them; and, on glcore, a frame drawn whole out of a core's larger
-framebuffer.
+chain and for a preset copied out of it, on glcore once for each way it
+copies them, or a software frame's written straight in; and, on glcore,
+a frame drawn whole out of a core's larger framebuffer.
 In full it needs a GPU, gamescope and a RetroArch build.
 
 With RA_E2E_XVFB=1 each case runs on an Xvfb server of its own instead
@@ -273,9 +273,9 @@ EXACT_HW = {'gl': ('off', 'gl_compat'),
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
-# gl takes GLSL presets keeping no frames: views through two passes,
-# the first into a framebuffer at the view's size or its placement's,
-# and through one, each from a copy.
+# gl takes GLSL presets: views through two passes, the first into a
+# framebuffer at the view's size or its placement's, and through one,
+# each with earlier frames and feedback of its own.
 GL_PRESETS = [('-preset', os.path.join(HERE, 'pass.glslp')),
               ('-preset-viewport', os.path.join(HERE, 'pass_viewport.glslp')),
               ('-preset-one', os.path.join(HERE, 'pass_one.glslp')),
@@ -285,9 +285,17 @@ GL_PRESETS = [('-preset', os.path.join(HERE, 'pass.glslp')),
               ('-preset-feedback', os.path.join(HERE, 'feedback.glslp'))]
 GL_PRESET_CASES = ('3ds-sbs-full', '3ds-top-bottom', '3ds-anaglyph',
                    '3ds-interlaced', 'ds-horizontal')
-# Drivers whose views' presets read a software frame's views from copies:
-# their chains are the main chain's, which reads a software frame whole.
-COPY_SW_VIEWS = ('d3d11', 'd3d12')
+# Drivers whose views' presets have each view of a software frame written
+# straight out of it into a texture of its own, not read in place. Not
+# vulkan's, which does from a staging buffer but copies from a linear
+# image, as for lavapipe's XRGB8888 frames.
+WRITE_SW_VIEWS = ('gl', 'glcore', 'd3d11', 'd3d12')
+# Drivers whose views' presets read a software frame's views where they
+# lie when they can.
+SW_IN_PLACE_DRIVERS = ('glcore', 'vulkan')
+WRITE_SW_RE = re.compile(
+    r'\] Views\' presets have each view of a software frame written '
+    r'straight in\.')
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -1012,11 +1020,13 @@ def direct_drawn(d, regex):
 
 
 def run_exact_case(retroarch, root, driver, case, suffix='',
-                   env_extra=None, path=None, preset=None, exact=True):
+                   env_extra=None, path=None, preset=None, exact=True,
+                   in_place=False):
     """The errors, and the screenshot's rows for comparing runs. path is
     how glcore must say it copies views. preset, a preset's path, has the
     views copied; without one a driver in DIRECT_DRIVERS must draw them
-    straight from the frame. exact checks each view pixel for pixel."""
+    straight from the frame. exact checks each view pixel for pixel.
+    in_place: the preset can read views where they lie."""
     name, mapopt, opts, hw = case
     name += suffix
     settings = EXACT_SETTINGS if exact else SMOOTH_SETTINGS
@@ -1038,6 +1048,12 @@ def run_exact_case(retroarch, root, driver, case, suffix='',
     if direct != (driver in drivers and not preset):
         errors.append('%s %s straight from the frame' %
                       (what, 'drawn' if direct else 'not drawn'))
+    written = bool(preset) and mapopt != 'none' and hw == 'off' \
+        and driver in WRITE_SW_VIEWS \
+        and not (in_place and driver in SW_IN_PLACE_DRIVERS)
+    if driver in WRITE_SW_VIEWS and direct_drawn(d, WRITE_SW_RE) != written:
+        errors.append('views %s straight in'
+                      % ('not written' if written else 'written'))
     shots = sorted(x for x in os.listdir(os.path.join(d, 'shots'))
                    if x.endswith('.png'))
     if not shots:
@@ -1300,6 +1316,8 @@ def driver_jobs(retroarch, root, driver):
                           args=('--set-shader=' + preset,))
         if not direct_drawn(case_dir(root, driver, c[0]), GL_PRESET_RE):
             errors.append('views not drawn through the preset')
+        if not direct_drawn(case_dir(root, driver, c[0]), WRITE_SW_RE):
+            errors.append('views not written straight in')
         return report('%s/%s' % (driver, c[0]), errors), bool(errors)
 
     def exact(case):
@@ -1366,12 +1384,12 @@ def driver_jobs(retroarch, root, driver):
             preset = os.path.join(HERE, '%s_%s.slangp' % (kind, mode))
             c = ('%s-%s-%s' % (name, kind, mode), mapopt, opts, hw)
             e, rows[kind] = run_exact_case(retroarch, root, driver, c,
-                                           preset=preset, exact=False)
+                                           preset=preset, exact=False,
+                                           in_place=in_place)
             errors += e
             d = case_dir(root, driver, c[0], hw)
-            if direct_drawn(d, VIEW_IN_PLACE_RE) != (
-                    in_place and not (hw == 'off'
-                                      and driver in COPY_SW_VIEWS)):
+            sw_out = hw == 'off' and driver not in SW_IN_PLACE_DRIVERS
+            if direct_drawn(d, VIEW_IN_PLACE_RE) != (in_place and not sw_out):
                 errors.append('%s: views %s where they lie' % (
                     kind, 'not read' if in_place else 'read'))
         if not rows['rect'] or not rows['rect_hist']:

@@ -5613,8 +5613,9 @@ static void gl2_views_free_copies(gl2_t *gl)
       {
          if (gl->views.tex[i][k])
             glDeleteTextures(1, &gl->views.tex[i][k]);
-         gl->views.tex[i][k]      = 0;
-         gl->views.tex_dims[i][k] = 0;
+         gl->views.tex[i][k]         = 0;
+         gl->views.tex_dims[i][k]    = 0;
+         gl->views.tex_written[i][k] = false;
       }
       gl2_views_target_retire(gl, &gl->views.feedback[i]);
       gl->views.feedback_dims[i] = 0;
@@ -5829,22 +5830,16 @@ static void gl2_views_rows(const gl2_t *gl, const struct retro_video_view *v,
    }
 }
 
-/* View i copied out of the frame into a texture of its size, its top
- * row first as a software frame's: the preset reads it as it would a
- * frame of that size. A new frame takes the next of @depth copies,
- * the oldest; a dupe the newest again. False when it can't be. */
-static bool gl2_views_copy(gl2_t *gl, unsigned i,
-      const struct retro_video_view *v, unsigned depth, bool fresh)
+/* View i's texture for this draw, of the @depth it keeps: a new
+ * frame's the next, the oldest, a dupe's the newest again. Made at the
+ * view's size, as the frame's textures are when a software frame's view
+ * is @written straight in, else for a copy drawn into it; bound. */
+static GLuint gl2_views_slot(gl2_t *gl, unsigned i,
+      const struct retro_video_view *v, unsigned depth, bool fresh,
+      bool written)
 {
-   GLfloat coords[8];
-   float top, bottom;
-   bool ok;
    GLuint *tex;
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
-   float tw      = gl->tex_info.tex_size[0];
-   float th      = gl->tex_info.tex_size[1];
-   float s0      = (float)v->x / tw;
-   float s1      = (float)(v->x + v->width) / tw;
    unsigned k    = gl->views.head[i] % depth;
 
    if (fresh && depth > 1)
@@ -5852,14 +5847,23 @@ static bool gl2_views_copy(gl2_t *gl, unsigned i,
    gl->views.head[i] = k;
    gl->views.copies  = true;
    tex               = &gl->views.tex[i][k];
-   if (!*tex || gl->views.tex_dims[i][k] != dims)
+   if (     !*tex || gl->views.tex_dims[i][k] != dims
+         || gl->views.tex_written[i][k] != written)
    {
-      if (!*tex)
-         glGenTextures(1, tex);
+      /* A new name: the storage may be immutable */
+      if (*tex)
+         glDeleteTextures(1, tex);
+      glGenTextures(1, tex);
       glBindTexture(GL_TEXTURE_2D, *tex);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, v->width, v->height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-      gl->views.tex_dims[i][k] = dims;
+      if (written)
+         gl2_load_texture_image(GL_TEXTURE_2D, 0, gl->internal_fmt,
+               v->width, v->height, 0, gl->texture_type, gl->texture_fmt,
+               NULL);
+      else
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, v->width, v->height, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      gl->views.tex_dims[i][k]    = dims;
+      gl->views.tex_written[i][k] = written;
    }
    /* As the frame's textures are, for the preset's first pass */
    glBindTexture(GL_TEXTURE_2D, *tex);
@@ -5867,12 +5871,73 @@ static bool gl2_views_copy(gl2_t *gl, unsigned i,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
+   return *tex;
+}
+
+/* Whether software frames a preset may draw as views have each view
+ * written straight into a texture of its own, the frame itself once
+ * that is known: where it goes in as it is, unconverted, and not through
+ * EGL images. */
+static bool gl2_views_write_wanted(const gl2_t *gl,
+      const gl2_renderchain_data_t *chain,
+      const video_frame_info_t *video_info, bool use_rgba)
+{
+   return video_info->views.num_views
+      && gl->views.preset && video_info->shader_active
+      && !(gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
+      && !(chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
+#ifdef HAVE_OPENGLES
+      && !(gl->base_size == 4 && use_rgba)
+#else
+      && !(gl->base_size == 2 && !(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT))
+#endif
+      ;
+}
+
+/* View i of software frame @frame written straight into its texture,
+ * its top row first as the frame's: no copy */
+static void gl2_views_write(gl2_t *gl, unsigned i,
+      const struct retro_video_view *v, unsigned depth,
+      const void *frame, unsigned pitch, bool use_rgba)
+{
+   gl2_views_slot(gl, i, v, depth, true, true);
+   gl2_renderchain_copy_frame(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data, use_rgba,
+         (const uint8_t*)frame + (size_t)v->y * pitch
+         + (size_t)v->x * gl->base_size, v->width, v->height, pitch);
+}
+
+/* Whether a dupe finds view i's newest texture at its size: the frame
+ * it was taken from again, nothing to copy */
+static bool gl2_views_kept(gl2_t *gl, unsigned i,
+      const struct retro_video_view *v, unsigned depth)
+{
+   unsigned k        = gl->views.head[i] % depth;
+   gl->views.head[i] = k;
+   return gl->views.tex[i][k]
+      && gl->views.tex_dims[i][k] == VIDEO_SCALE_PACK(v->width, v->height);
+}
+
+/* View i copied out of the frame into a texture of its size, its top
+ * row first as a software frame's: the preset reads it as it would a
+ * frame of that size. False when it can't be. */
+static bool gl2_views_copy(gl2_t *gl, unsigned i,
+      const struct retro_video_view *v, unsigned depth, bool fresh)
+{
+   GLfloat coords[8];
+   float top, bottom;
+   bool ok;
+   float tw   = gl->tex_info.tex_size[0];
+   float th   = gl->tex_info.tex_size[1];
+   float s0   = (float)v->x / tw;
+   float s1   = (float)(v->x + v->width) / tw;
+   GLuint tex = gl2_views_slot(gl, i, v, depth, fresh, false);
 
    if (!gl->views.copy_fbo)
       gl2_gen_fb(1, &gl->views.copy_fbo);
    gl2_bind_fb(gl->views.copy_fbo);
    gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
-         GL_TEXTURE_2D, *tex, 0);
+         GL_TEXTURE_2D, tex, 0);
    ok = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
       == RARCH_GL_FRAMEBUFFER_COMPLETE;
    if (ok)
@@ -6238,11 +6303,13 @@ static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
 /* Draws the frame's views into the back buffer, sized dims, or with
  * blend into the canvas, whose halves one pass then blends into the
  * back buffer: with direct straight from the frame, else each through
- * the preset from a copy of it, one view after another. */
+ * the preset, one view after another, from its view of software frame
+ * @sw written straight in or else a copy of it. */
 static void gl2_views_render(gl2_t *gl,
       const video_frame_info_t *video_info, void *const *chains,
       const video_views_rect_t *rects, bool blend, bool direct,
-      bool fresh, unsigned frame_count)
+      bool fresh, const void *sw, unsigned pitch, bool use_rgba,
+      unsigned frame_count)
 {
    struct gl2_views_draw d;
    const video_views_layout_t *layout = &video_info->views_layout;
@@ -6288,8 +6355,14 @@ static void gl2_views_render(gl2_t *gl,
          && (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE);
       for (i = 0; i < video_info->views.num_views; i++)
       {
-         if (     !chains[i]
-               || !gl2_views_copy(gl, i, &video_info->views.views[i],
+         if (!chains[i])
+            continue;
+         if (sw)
+            gl2_views_write(gl, i, &video_info->views.views[i], depth,
+                  sw, pitch, use_rgba);
+         else if (     !(!fresh && gl2_views_kept(gl, i,
+                        &video_info->views.views[i], depth))
+               && !gl2_views_copy(gl, i, &video_info->views.views[i],
                   depth, fresh))
             continue;
          gl2_views_preset_view(gl, video_info, i, rects[i].dims,
@@ -6431,6 +6504,8 @@ static bool gl2_frame(void *data, const void *frame,
    bool views                          = false;
    bool views_blend                    = false;
    bool views_direct                   = false;
+   /* A software frame put off until the views are known */
+   const void *views_sw                = NULL;
    bool views_ui                       = false;
 #endif
 #if (defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)) \
@@ -6599,6 +6674,11 @@ static bool gl2_frame(void *data, const void *frame,
       {
          gl2_update_input_size(gl, frame_width, frame_height, pitch, true);
 
+#ifdef GL2_VIEWS
+         if (gl2_views_write_wanted(gl, chain, video_info, use_rgba))
+            views_sw = frame;
+         else
+#endif
          gl2_renderchain_copy_frame(gl, chain, use_rgba,
                frame, frame_width, frame_height, pitch);
       }
@@ -6678,6 +6758,21 @@ static bool gl2_frame(void *data, const void *frame,
 #ifdef GL2_VIEWS
    views = gl2_views_setup(gl, video_info, frame, &views_blend,
          &views_direct, view_chains, view_rects);
+   /* Views through the preset have theirs written straight in; drawn
+    * any other way the frame is written now. */
+   if (views_sw && (!views || views_direct))
+   {
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+      gl2_renderchain_copy_frame(gl, chain, use_rgba,
+            views_sw, frame_width, frame_height, pitch);
+      views_sw = NULL;
+   }
+   else if (views_sw && !gl->views.written_seen)
+   {
+      gl->views.written_seen = true;
+      RARCH_LOG("[GL] Views' presets have each view of a software frame "
+            "written straight in.\n");
+   }
    /* gl->vp is the whole window while views draw. */
    if (views != gl->views.active)
    {
@@ -6689,8 +6784,8 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_views_publish(gl);
    if (views)
       gl2_views_render(gl, video_info, view_chains, view_rects,
-            views_blend, views_direct, frame != NULL,
-            (unsigned)frame_count);
+            views_blend, views_direct, frame != NULL, views_sw, pitch,
+            use_rgba, (unsigned)frame_count);
    else
 #endif
    {

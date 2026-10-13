@@ -338,6 +338,7 @@ typedef struct vk
        * presets' views read where they lie in it. */
       bool direct_seen;
       bool in_place_seen;
+      bool written_seen;
    } views;
 #ifdef HAVE_OPENXR
    /* Headset output: each slot's swapchain images, with a view and a
@@ -2995,10 +2996,11 @@ static int vulkan_frame_mem_find(vk_t *vk, const void *frame,
 
 /* The frame out of frame buffer @i into this frame index's texture, on
  * the GPU, which reads it where the wrapper's push or the core put it.
- * The texture is made once at the frame's size. */
+ * The texture is made once at the frame's size. With @defer the copy is
+ * left to the caller, from the buffer put there. */
 static void vulkan_frame_mem_upload(vk_t *vk, struct vk_per_frame *chain,
       unsigned frame_index, int i, unsigned dims, size_t pitch,
-      unsigned x, unsigned y)
+      unsigned x, unsigned y, struct vk_texture *defer)
 {
    struct vk_texture src;
    struct vk_frame_mem *fm = &vk->frame_mem[i];
@@ -3031,8 +3033,11 @@ static void vulkan_frame_mem_upload(vk_t *vk, struct vk_per_frame *chain,
    src.stride = pitch;
    src.format = vk->tex_fmt;
    src.dims   = dims;
-   vulkan_copy_staging_to_dynamic(vk, vk->cmd, &chain->texture_optimal,
-         &src, x, y);
+   if (defer)
+      *defer = src;
+   else
+      vulkan_copy_staging_to_dynamic(vk, vk->cmd, &chain->texture_optimal,
+            &src, x, y);
    fm->index  = (int)frame_index;
 }
 
@@ -9766,6 +9771,52 @@ static unsigned vulkan_views_copy(vk_t *vk, struct vk_per_frame *pf,
    return copied;
 }
 
+/* Whether a software frame a preset may draw as views has its copy
+ * into texture_optimal put off until the views are known */
+static bool vulkan_views_write_wanted(const vk_t *vk,
+      const video_frame_info_t *video_info)
+{
+   return video_info->views.num_views && video_info->shader_active
+      && vk->filter_chain && vk->filter_chain != vk->filter_chain_default
+      && vulkan_views_allowed(vk);
+}
+
+/* Each view in copy_views of the software frame in @src's buffer, whose
+ * frame starts at (x, y), straight into the image vulkan_views_images()
+ * made: the frame is not copied, nor the views out of it. False when it
+ * can't be, as for an R5G6B5 view not starting on a word, which the
+ * conversion can't. */
+static bool vulkan_views_write(vk_t *vk, struct vk_per_frame *pf,
+      const video_frame_info_t *video_info, unsigned copy_views,
+      struct vk_texture *src, unsigned x, unsigned y)
+{
+   unsigned i;
+   bool convert = VK_REMAP_TO_TEXFMT(src->format) != src->format;
+   /* The conversion takes a word, two texels, at a time */
+   for (i = 0; convert && i < video_info->views.num_views; i++)
+   {
+      const struct retro_video_view *v = &video_info->views.views[i];
+      if (     (copy_views & (1u << i))
+            && (((size_t)(y + v->y) * src->stride
+               + (size_t)(x + v->x) * 2) & 3))
+         return false;
+   }
+   for (i = 0; i < video_info->views.num_views; i++)
+   {
+      const struct retro_video_view *v = &video_info->views.views[i];
+      if (copy_views & (1u << i))
+         vulkan_copy_staging_to_dynamic(vk, vk->cmd, &pf->view_images[i],
+               src, x + v->x, y + v->y);
+   }
+   if (!vk->views.written_seen)
+   {
+      vk->views.written_seen = true;
+      RARCH_LOG("[Vulkan] Views' presets have each view of a software "
+            "frame written straight in.\n");
+   }
+   return true;
+}
+
 static void vulkan_views_vp(const video_views_rect_t *r, VkViewport *vp)
 {
    vp->x        = (float)VIDEO_POS_X(r->pos);
@@ -10839,6 +10890,13 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned num_setup_chains, num_setup, c;
    /* The views copied out of the frame. */
    unsigned copy_views                           = 0;
+   /* A software frame's copy into texture_optimal, put off until the
+    * views are known: theirs come straight out of the same buffer */
+   struct vk_texture views_buf;
+   unsigned views_buf_x                          = 0;
+   unsigned views_buf_y                          = 0;
+   bool views_pending                            = false;
+   bool views_written                            = false;
    /* The frame's texture, when stock views draw straight from it. */
    struct vk_texture views_src;
    struct vk_texture *views_direct_tex           = NULL;
@@ -11067,8 +11125,12 @@ static bool vulkan_frame(void *data, const void *frame,
       /* In one of the threaded wrapper's frame buffers: the GPU copies
        * it out from there */
       GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+      views_pending = vulkan_views_write_wanted(vk, video_info);
       vulkan_frame_mem_upload(vk, chain, frame_index, frame_mem, dims,
-            pitch, frame_mem_x, frame_mem_y);
+            pitch, frame_mem_x, frame_mem_y,
+            views_pending ? &views_buf : NULL);
+      views_buf_x          = frame_mem_x;
+      views_buf_y          = frame_mem_y;
       vk->last_valid_index = frame_index;
    }
    else if (frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
@@ -11201,12 +11263,21 @@ static bool vulkan_frame(void *data, const void *frame,
          vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
       }
 
-      /* If we have an optimal texture, copy to that now. */
+      /* If we have an optimal texture, copy to that now, or once the
+       * views are known. */
       if (chain->texture_optimal.memory != VK_NULL_HANDLE)
       {
          struct vk_texture *dynamic = &chain->texture_optimal;
          struct vk_texture *source  = &chain->texture;
-         if (source->type == VULKAN_TEXTURE_STAGING)
+         if (     source->type == VULKAN_TEXTURE_STAGING
+               && vulkan_views_write_wanted(vk, video_info))
+         {
+            views_pending = true;
+            views_buf     = *source;
+            views_buf_x   = win_x;
+            views_buf_y   = win_y;
+         }
+         else if (source->type == VULKAN_TEXTURE_STAGING)
             vulkan_copy_staging_to_dynamic(vk, vk->cmd, dynamic, source,
                   win_x, win_y);
          else
@@ -11337,8 +11408,29 @@ static bool vulkan_frame(void *data, const void *frame,
    /* A view image that can't be made draws this frame whole. */
    if (     views && frame && !views_direct && !views_in_place
          && !vulkan_views_images(vk, chain, video_info, copy_views,
-               vulkan_views_src_format(vk)))
+            /* Made from the source format, a converting upload can
+             * write them */
+               views_pending ? views_buf.format
+               : vulkan_views_src_format(vk)))
       views = false;
+   /* Views that would be copied out of the frame come straight out of
+    * the buffer it was put into instead; otherwise the frame goes into
+    * texture_optimal now, as it would have. */
+   if (views_pending)
+   {
+      views_written = views && !views_direct && !views_in_place
+         && vulkan_views_write(vk, chain, video_info, copy_views,
+               &views_buf, views_buf_x, views_buf_y);
+      if (views_written)
+      {
+         vk->views.copied     = copy_views;
+         vk->views.last_index = frame_index;
+      }
+      else
+         vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+               &chain->texture_optimal, &views_buf,
+               views_buf_x, views_buf_y);
+   }
    /* A repeat needs every view it draws copied by an earlier frame. */
    if (views && !frame && !views_direct && !views_in_place)
    {
@@ -11630,7 +11722,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          unsigned i;
          struct vk_per_frame *vf;
-         if (frame)
+         if (frame && !views_written)
          {
             vk->views.copied     = vulkan_views_copy(vk, chain, video_info,
                   copy_views, input.image, input.layout);

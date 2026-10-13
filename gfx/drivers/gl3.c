@@ -158,6 +158,7 @@ typedef struct gl3
        * presets have read it where it lies. */
       bool direct_seen;
       bool in_place_seen;
+      bool written_seen;
       bool active;
       /* Drawing into the UI layer. */
       bool ui_pass;
@@ -4949,55 +4950,14 @@ static bool gl3_read_viewport_bgrx(void *data, uint8_t *buffer,
    return gl3_read_viewport_internal(gl, buffer, is_idle, true);
 }
 
-static void gl3_update_cpu_texture(gl3_t *gl,
-      struct gl3_streamed_texture *streamed,
-      const void *frame, unsigned dims, unsigned pitch)
+/* @width x @height texels of a software frame, @pitch bytes a row, into
+ * the texture bound at (0, 0): read out of a frame memory buffer by the
+ * GL where the frame is in one. */
+static void gl3_write_cpu_texture(gl3_t *gl, const void *frame,
+      unsigned width, unsigned height, unsigned pitch)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
 #ifdef HAVE_GL_FRAME_MEM
    int fm_slot     = -1;
-#endif
-   if (gl->chain.active)
-   {
-      /* The input texture is expected to be square with a power of 2 size when not using Slang */
-      unsigned max = width > height ? width : height;
-      unsigned pow2_size = next_pow2(max);
-      width = pow2_size;
-      height = pow2_size;
-      dims  = VIDEO_SCALE_PACK(width, height);
-   }
-
-   if (dims != streamed->dims)
-   {
-      if (streamed->tex != 0)
-         glDeleteTextures(1, &streamed->tex);
-      glGenTextures(1, &streamed->tex);
-      glBindTexture(GL_TEXTURE_2D, streamed->tex);
-      glTexStorage2D(GL_TEXTURE_2D, 1,
-            gl->video_info.source_10bit
-            ? GL_RGB10_A2
-            : (gl->video_info.rgb32
-               ? GL_RGBA8
-               : GL_RGB565),
-            width, height);
-      streamed->dims = dims;
-
-      /* Both 32-bit source formats arrive with the red and blue channels
-       * the other way round from what GL reads back out of the packed
-       * type (XRGB8888 vs GL_RGBA/UNSIGNED_BYTE, and XRGB2101010 =
-       * A2R10G10B10 vs GL_RGBA/UNSIGNED_INT_2_10_10_10_REV, which places
-       * A in 31:30 but R in 9:0), so both want the same view swizzle. */
-      if (gl->video_info.rgb32 || gl->video_info.source_10bit)
-      {
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-      }
-   }
-   else
-      glBindTexture(GL_TEXTURE_2D, streamed->tex);
-
-#ifdef HAVE_GL_FRAME_MEM
    /* A frame in one of the threaded wrapper's buffers is read out of it
     * by the GL, the upload queued rather than copied here */
    {
@@ -5044,6 +5004,57 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       gl_frame_mem_unbind(gl->frame_mem, fm_slot);
    }
 #endif
+}
+
+/* The streamed texture made for a frame of @dims, bound, and with
+ * @write the frame written into it */
+static void gl3_update_cpu_texture(gl3_t *gl,
+      struct gl3_streamed_texture *streamed,
+      const void *frame, unsigned dims, unsigned pitch, bool write)
+{
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   if (gl->chain.active)
+   {
+      /* The input texture is expected to be square with a power of 2 size when not using Slang */
+      unsigned max = width > height ? width : height;
+      unsigned pow2_size = next_pow2(max);
+      width = pow2_size;
+      height = pow2_size;
+      dims  = VIDEO_SCALE_PACK(width, height);
+   }
+
+   if (dims != streamed->dims)
+   {
+      if (streamed->tex != 0)
+         glDeleteTextures(1, &streamed->tex);
+      glGenTextures(1, &streamed->tex);
+      glBindTexture(GL_TEXTURE_2D, streamed->tex);
+      glTexStorage2D(GL_TEXTURE_2D, 1,
+            gl->video_info.source_10bit
+            ? GL_RGB10_A2
+            : (gl->video_info.rgb32
+               ? GL_RGBA8
+               : GL_RGB565),
+            width, height);
+      streamed->dims = dims;
+
+      /* Both 32-bit source formats arrive with the red and blue channels
+       * the other way round from what GL reads back out of the packed
+       * type (XRGB8888 vs GL_RGBA/UNSIGNED_BYTE, and XRGB2101010 =
+       * A2R10G10B10 vs GL_RGBA/UNSIGNED_INT_2_10_10_10_REV, which places
+       * A in 31:30 but R in 9:0), so both want the same view swizzle. */
+      if (gl->video_info.rgb32 || gl->video_info.source_10bit)
+      {
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+      }
+   }
+   else
+      glBindTexture(GL_TEXTURE_2D, streamed->tex);
+
+   if (write)
+      gl3_write_cpu_texture(gl, frame, width, height, pitch);
 }
 
 #ifdef HAVE_SLANG
@@ -5757,6 +5768,38 @@ static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
    return gl3_views_blit(gl, video_info, which, src, bottom_up, swizzle);
 }
 
+/* Each view in which, a bit a view, of software frame @sw written
+ * straight out of it into its own texture, as the frame would have been
+ * written into @src: no copy. */
+static void gl3_views_write(gl3_t *gl, const video_frame_info_t *video_info,
+      unsigned which, const struct gl3_filter_chain_texture *src,
+      const void *sw, unsigned pitch)
+{
+   unsigned i;
+   unsigned bpp = (gl->video_info.rgb32 || gl->video_info.source_10bit)
+      ? 4 : 2;
+   for (i = 0; i < video_info->views.num_views; i++)
+   {
+      const struct retro_video_view *v = &video_info->views.views[i];
+      if (!(which & (1u << i)))
+         continue;
+      gl3_views_tex(gl, i, v, src->format,
+            gl->video_info.rgb32 || gl->video_info.source_10bit);
+      glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+      gl3_write_cpu_texture(gl, (const uint8_t*)sw
+            + (size_t)v->y * pitch + (size_t)v->x * bpp,
+            v->width, v->height, pitch);
+   }
+   glBindTexture(GL_TEXTURE_2D, 0);
+   gl->views.copied = which;
+   if (!gl->views.written_seen)
+   {
+      gl->views.written_seen = true;
+      RARCH_LOG("[GLCore] Views' presets have each view of a software "
+            "frame written straight in.\n");
+   }
+}
+
 /* A texture and framebuffer let go. GL keeps a deleted texture alive
  * for commands that still use it. */
 static bool gl3_views_target_retire(gl3_t *gl, struct gl3_views_fbo *t)
@@ -5892,12 +5935,14 @@ static bool gl3_stock_rect_ready(gl3_t *gl,
  * and in *in_place whether the preset's chains read each view where it
  * lies in the frame: either way with no copy. */
 /* xr_views, a bit a view: the views the headset draws, from copies, so
- * those are copied too and none is read in place. */
+ * those are copied too and none is read in place. @sw: a software frame
+ * not yet written, whose views are written straight into their own
+ * textures instead of copied. */
 static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
       const void *frame, const struct gl3_filter_chain_texture *texture,
       unsigned dims, bool *blend, bool *direct, bool *in_place,
       gl3_filter_chain_t **chains, video_views_rect_t *rects,
-      unsigned xr_views)
+      unsigned xr_views, const void *sw, unsigned pitch)
 {
    unsigned i;
    bool views;
@@ -5941,7 +5986,9 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
    copies |= xr_views;
    if (views && !*direct && !*in_place)
    {
-      if (frame)
+      if (sw)
+         gl3_views_write(gl, video_info, copies, texture, sw, pitch);
+      else if (frame)
          views = gl3_views_copy(gl, video_info, copies, texture,
                hw && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT),
                !hw && (gl->video_info.rgb32 || gl->video_info.source_10bit));
@@ -6812,6 +6859,9 @@ static bool gl3_frame(void *data, const void *frame,
    bool views_in_place                     = false;
    bool views_ui                           = false;
    unsigned ui_layer_dims                  = 0;
+   /* A software frame a preset may draw as views, written once they are
+    * known: straight into each view's texture if they need copies */
+   const void *views_sw                    = NULL;
 #endif
 #ifdef HAVE_GL3_XR
    gl3_filter_chain_t *xr_chains[RETRO_VIDEO_VIEWS_MAX];
@@ -6929,7 +6979,20 @@ static bool gl3_frame(void *data, const void *frame,
          streamed->dims     = dims;
       }
       else
-         gl3_update_cpu_texture(gl, streamed, frame, dims, pitch);
+      {
+         bool write = true;
+#ifdef HAVE_SLANG
+         if (     video_info->views.num_views && video_info->shader_active
+               && !gl->chain.active
+               && gl->filter_chain
+               && gl->filter_chain != gl->filter_chain_default)
+         {
+            views_sw = frame;
+            write    = false;
+         }
+#endif
+         gl3_update_cpu_texture(gl, streamed, frame, dims, pitch, write);
+      }
    }
 
    if (gl->flags & GL3_FLAG_SHOULD_RESIZE)
@@ -7075,11 +7138,18 @@ static bool gl3_frame(void *data, const void *frame,
          video_info->dims, &views_blend, &views_direct, &views_in_place,
          view_chains, view_rects,
 #ifdef HAVE_GL3_XR
-         xr_views
+         xr_views,
 #else
-         0
+         0,
 #endif
-         );
+         views_sw, pitch);
+   /* Views that would have been copied have theirs written straight
+    * in; drawn any other way the frame is written now. */
+   if (views_sw && !(views && !views_direct && !views_in_place))
+   {
+      glBindTexture(GL_TEXTURE_2D, streamed->tex);
+      gl3_write_cpu_texture(gl, views_sw, frame_width, frame_height, pitch);
+   }
    /* gl->vp is the whole window while views draw. */
    if (views != gl->views.active)
    {

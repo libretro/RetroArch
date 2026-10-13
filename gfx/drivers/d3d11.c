@@ -399,6 +399,9 @@ typedef struct d3d11_chain
    bool                 history_made;
    D3D11ShaderResourceView frame_view;
    d3d11_texture_t     *final;
+   /* The format a view's history was made for, which the textures may
+    * hold as another */
+   DXGI_FORMAT          frame_format;
    /* Where the frame lies in the texture a preset's passes read it
     * from: slang_rect.h's three vec4s, for the passes slang_process()
     * rewrote to read it there. A hardware frame in the corner of a
@@ -522,6 +525,7 @@ typedef struct
       bool                  active;
       bool                  direct_seen;
       bool                  in_place_seen;
+      bool                  written_seen;
    } views;
    /* A software frame for the stock chain is written straight into
     * this dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
@@ -6103,13 +6107,14 @@ static void d3d11_views_build_chains(d3d11_video_t *d3d11)
 
 /* View @v's chain made ready and its passes drawn into their render
  * targets, but for a last pass that draws into each placement: the
- * view read where it lies in @src, or for a real frame copied out of it
- * into history[0], behind the history the preset keeps. @vp_dims is the
- * size its first placement is drawn at. */
+ * view read where it lies in @src, or for a real frame put into
+ * history[0], behind the history the preset keeps - a software frame's
+ * @sw written straight in, a hardware frame's copied out of @src.
+ * @vp_dims is the size its first placement is drawn at. */
 static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
       const struct retro_video_view *v, unsigned vp_dims,
       D3D11ShaderResourceView src, unsigned src_dims, bool in_place,
-      bool fresh)
+      bool fresh, const void *sw, unsigned pitch)
 {
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
 
@@ -6131,12 +6136,21 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
          D3D11_TEXTURE2D_DESC desc;
          D3D11_BOX box;
          D3D11Resource res = NULL;
-         src->lpVtbl->GetResource(src, &res);
-         ((D3D11Texture2D)res)->lpVtbl->GetDesc((D3D11Texture2D)res, &desc);
+         /* Written by the CPU, or copied into by the GPU */
+         D3D11_USAGE usage = sw ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
+         if (sw)
+            desc.Format = d3d11->format;
+         else
+         {
+            src->lpVtbl->GetResource(src, &res);
+            ((D3D11Texture2D)res)->lpVtbl->GetDesc((D3D11Texture2D)res,
+                  &desc);
+         }
          if (     !c->history_made
                || c->history[0].desc.Width  != v->width
                || c->history[0].desc.Height != v->height
-               || c->history[0].desc.Format != desc.Format)
+               || c->history[0].desc.Usage  != usage
+               || c->frame_format           != desc.Format)
          {
             for (k = 0; k < n; k++)
             {
@@ -6145,9 +6159,10 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
                c->history[k].desc.Width  = v->width;
                c->history[k].desc.Height = v->height;
                c->history[k].desc.Format = desc.Format;
-               c->history[k].desc.Usage  = D3D11_USAGE_DEFAULT;
+               c->history[k].desc.Usage  = usage;
                d3d11_init_texture_ex(d3d11->device, &c->history[k], false);
             }
+            c->frame_format = desc.Format;
             c->history_made = true;
          }
          else if (n > 1)
@@ -6157,17 +6172,39 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
                c->history[k] = c->history[k - 1];
             c->history[0] = tmp;
          }
-         box.left   = v->x;
-         box.top    = v->y;
-         box.front  = 0;
-         box.right  = v->x + v->width;
-         box.bottom = v->y + v->height;
-         box.back   = 1;
-         if (c->history[0].handle)
-            d3d11->context->lpVtbl->CopySubresourceRegion(d3d11->context,
-                  (D3D11Resource)c->history[0].handle, 0, 0, 0, 0, res, 0,
-                  &box);
-         Release(res);
+         if (sw)
+         {
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            unsigned bpp = (d3d11->format == DXGI_FORMAT_B5G6R5_UNORM)
+               ? 2 : 4;
+            if (     c->history[0].handle
+                  && SUCCEEDED(d3d11->context->lpVtbl->Map(d3d11->context,
+                        (D3D11Resource)c->history[0].handle, 0,
+                        D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+            {
+               dxgi_copy(v->width, v->height, d3d11->format, pitch,
+                     (const uint8_t*)sw + (size_t)v->y * pitch
+                     + (size_t)v->x * bpp,
+                     c->history[0].desc.Format, mapped.RowPitch,
+                     mapped.pData);
+               d3d11->context->lpVtbl->Unmap(d3d11->context,
+                     (D3D11Resource)c->history[0].handle, 0);
+            }
+         }
+         else
+         {
+            box.left   = v->x;
+            box.top    = v->y;
+            box.front  = 0;
+            box.right  = v->x + v->width;
+            box.bottom = v->y + v->height;
+            box.back   = 1;
+            if (c->history[0].handle)
+               d3d11->context->lpVtbl->CopySubresourceRegion(d3d11->context,
+                     (D3D11Resource)c->history[0].handle, 0, 0, 0, 0, res, 0,
+                     &box);
+            Release(res);
+         }
       }
 #ifdef HAVE_SLANG
       slang_rect_values(c->frame_rect.values, dims, 0, dims);
@@ -6300,13 +6337,15 @@ static bool d3d11_views_setup(d3d11_video_t *d3d11,
 /* Draws the views of frame @src into @rtv, sized as the window, or with
  * @blend into the canvas, whose halves one pass then blends into @rtv:
  * with @direct straight from @src, else each through its chain, whose
- * passes are drawn first, for a @fresh frame from a new copy of its view
- * unless they read it @in_place. */
+ * passes are drawn first, for a @fresh frame from its view written
+ * straight out of software frame @sw or copied out of @src, unless they
+ * read it @in_place. */
 static void d3d11_views_render(d3d11_video_t *d3d11,
       const video_frame_info_t *video_info, d3d11_chain_t **chains,
       const video_views_rect_t *rects, D3D11RenderTargetView rtv,
       D3D11ShaderResourceView src, bool blend, bool direct, bool in_place,
-      bool fresh, uint64_t frame_count, bool one_subframe)
+      bool fresh, const void *sw, unsigned pitch, uint64_t frame_count,
+      bool one_subframe)
 {
    static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
    unsigned i;
@@ -6322,7 +6361,8 @@ static void d3d11_views_render(d3d11_video_t *d3d11,
       if (!c)
          continue;
       d3d11_views_chain_frame(d3d11, c, &video_info->views.views[i],
-            rects[i].dims, src, d3d11->views.src_dims, in_place, fresh);
+            rects[i].dims, src, d3d11->views.src_dims, in_place, fresh,
+            sw, pitch);
       d3d11_chain_frame(d3d11, c, video_info, frame_count, one_subframe);
       c->final = d3d11_chain_render(d3d11, c, c->frame_view, NULL);
    }
@@ -6514,6 +6554,9 @@ static bool d3d11_gfx_frame_body(
    bool views_in_place            = false;
    bool views_per_eye             = false;
    bool views_ui                  = false;
+   /* A software frame a preset may draw as views: written once the
+    * views are decided, straight into each view's texture if they are */
+   bool sw_pending                = false;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -6887,23 +6930,38 @@ static bool d3d11_gfx_frame_body(
       }
       else if (d3d11->chain.history[0].staging
             && frame != RETRO_HW_FRAME_BUFFER_VALID)
-      {
-         /* A software frame is drawn from where it was written, by
-          * the stock chain or a preset that reads it in place. */
-         if (     (   !(d3d11->chain.shader_preset && video_info->shader_active)
-                   || d3d11_preset_reads_in_place(d3d11, NULL,
-                      width, height))
-               && d3d11_sw_direct_upload(d3d11, context,
-                  width, height, pitch, frame))
-            d3d11->hw_direct.view = d3d11->sw_direct.texture.view;
-         else
-            d3d11_update_texture(context, width, height, pitch,
-                  d3d11->format, frame, &d3d11->chain.history[0]);
-      }
+         sw_pending = true;
    }
 
    views = d3d11_views_setup(d3d11, video_info, frame, &views_blend,
          &views_direct, &views_in_place, view_chains, view_rects);
+   /* Views through a preset have theirs written straight in
+    * (d3d11_views_chain_frame); otherwise a software frame is drawn from
+    * where it was written, by the stock chain or a preset that reads it
+    * in place. */
+   if (sw_pending && views && !views_direct && !views_in_place)
+   {
+      d3d11->hw_direct.view = NULL;
+      if (!d3d11->views.written_seen)
+      {
+         d3d11->views.written_seen = true;
+         RARCH_LOG("[D3D11] Views' presets have each view of a software "
+               "frame written straight in.\n");
+      }
+   }
+   else if (sw_pending)
+   {
+      sw_pending = false;
+      if (     (   !(d3d11->chain.shader_preset && video_info->shader_active)
+                || d3d11_preset_reads_in_place(d3d11, NULL,
+                   width, height))
+            && d3d11_sw_direct_upload(d3d11, context,
+               width, height, pitch, frame))
+         d3d11->hw_direct.view = d3d11->sw_direct.texture.view;
+      else
+         d3d11_update_texture(context, width, height, pitch,
+               d3d11->format, frame, &d3d11->chain.history[0]);
+   }
    /* d3d11->vp is the whole window while views draw. */
    if (views != d3d11->views.active)
    {
@@ -7086,7 +7144,8 @@ static bool d3d11_gfx_frame_body(
       d3d11_views_render(d3d11, video_info, view_chains, view_rects, rtv,
             d3d11->hw_direct.view ? d3d11->hw_direct.view
             : d3d11->chain.history[0].view, views_blend, views_direct,
-            views_in_place, frame != NULL, frame_count,
+            views_in_place, frame != NULL, sw_pending ? frame : NULL, pitch,
+            frame_count,
             black_frame_insertion || nonblock_state || runloop_is_slowmotion
             || runloop_is_paused || (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE));
    else

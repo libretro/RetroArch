@@ -298,6 +298,9 @@ struct gl2
        * the newest, prev what the preset reads as earlier ones. */
       GLuint                tex[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
+      /* Made for a software frame's view written straight in, as the
+       * frame's textures are, not for a copy drawn into it */
+      bool                  tex_written[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       unsigned              head[RETRO_VIDEO_VIEWS_MAX];
       struct video_tex_info prev[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
       /* What a feedback pass drew for each view the frame before */
@@ -321,6 +324,7 @@ struct gl2
       /* Drawing into the UI layer */
       bool                  ui_pass;
       bool                  direct_seen;
+      bool                  written_seen;
       /* Some copy or feedback target is held */
       bool                  copies;
       /* Each view's prev is filled */
