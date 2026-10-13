@@ -1,0 +1,53 @@
+name: CI builtin media player
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'cores/libretro-webm/**'
+      - 'samples/cores/webm_player/**'
+      - 'libretro-common/formats/**'
+      - 'libretro-common/include/formats/**'
+      - '.github/workflows/Linux-webm-player.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'cores/libretro-webm/**'
+      - 'samples/cores/webm_player/**'
+      - 'libretro-common/formats/**'
+      - 'libretro-common/include/formats/**'
+      - '.github/workflows/Linux-webm-player.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential ffmpeg gcc-mingw-w64-x86-64 wine64
+      - name: Generate media
+        working-directory: samples/cores/webm_player
+        run: python3 mkfixtures.py
+      - name: Run the builtin core without FFmpeg
+        working-directory: samples/cores/webm_player
+        run: |
+          set -eu
+          make -j2 check SANITIZER=address,undefined SAMPLE_OBJDIR=obj-ci-asan TARGET=webm_player_ci_asan
+          make -j2 check AUDIO=0 SAMPLE_OBJDIR=obj-noaudio TARGET=webm_player_noaudio SANITIZER=address,undefined
+          make -j2 check MP4=0 SAMPLE_OBJDIR=obj-webm TARGET=webm_player_webm SANITIZER=address,undefined
+          make -j2 check THREADS=0 SAMPLE_OBJDIR=obj-nothreads TARGET=webm_player_nothreads SANITIZER=address,undefined
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      - name: Windows core host
+        working-directory: samples/cores/webm_player
+        run: |
+          set -eu
+          make -j2 check CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-win RUNNER=wine

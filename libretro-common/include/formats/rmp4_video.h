@@ -228,10 +228,14 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 /* Seek to the display position at or before 'ms' milliseconds: the
  * stream restarts at the preceding key frame and decodes forward,
  * discarding pictures, so the next rmp4_video_stream_next call
- * returns the first frame past the position.  Returns the position in
- * ms actually reached (the presented slot's timestamp), or -1 on a
+ * returns the frame at the position. Returns the position in
+ * ms actually reached (the next slot's timestamp), or -1 on a
  * stream without timing. */
 int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *stream, int64_t ms);
+
+/* Seek to a zero-based display slot, clamped to the timeline. The next
+ * decode returns that frame. As seek_ms, returns its timestamp in ms. */
+int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *stream, int frame);
 
 /* Timestamp span of the display timeline: last frame's presentation
  * time minus the first's, in ms.  (frames-1)/span is the stream's true

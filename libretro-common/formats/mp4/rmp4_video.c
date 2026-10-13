@@ -1548,29 +1548,16 @@ int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)
    return (int64_t)((s->ts[s->ts_count - 1] - s->ts[0]) / 1000000);
 }
 
-int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
+int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *s, int frame)
 {
-   int64_t target_ns;
    int tidx, kf, n;
    rmp4_packet pkt;
 
    if (!s || s->ts_count <= 0)
       return -1;
-   if (ms < 0)
-      ms = 0;
-   /* Callers clock this stream by summing the quantised per-frame
-    * durations, which floors fractional milliseconds, so a position
-    * taken from that clock sits up to a millisecond below the true
-    * timestamp.  Bias the slot search by just under a millisecond so
-    * a position on a frame boundary selects that frame, not the one
-    * before it. */
-   target_ns = ms * 1000000 + 999999;
-
-   /* Target display slot: the last frame whose presentation time is at
-    * or before the requested position. */
-   tidx = 0;
-   while (tidx + 1 < s->ts_count && s->ts[tidx + 1] <= target_ns)
-      tidx++;
+   tidx = frame < 0 ? 0 : frame;
+   if (tidx >= s->ts_count)
+      tidx = s->ts_count - 1;
 
    /* Pass 1: the last key frame at or before the target, by sample
     * ordinal.  Decode order stands in for the display slot here; with
@@ -1611,6 +1598,22 @@ int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
     * converted, and none of them is renderable now. */
    s->rndr_kind = 0;
    return s->disp_idx < s->ts_count ? s->ts[s->disp_idx] / 1000000 : 0;
+}
+
+int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
+{
+   int64_t target_ns;
+   int tidx = 0;
+   if (!s || s->ts_count <= 0)
+      return -1;
+   if (ms < 0)
+      ms = 0;
+   /* Include a timestamp's fractional millisecond at a frame boundary. */
+   target_ns = ms > (INT64_MAX - 999999) / 1000000
+      ? INT64_MAX : ms * 1000000 + 999999;
+   while (tidx + 1 < s->ts_count && s->ts[tidx + 1] <= target_ns)
+      tidx++;
+   return rmp4_video_stream_seek_frame(s, tidx);
 }
 
 /* ------------------------------------------------------------------ */

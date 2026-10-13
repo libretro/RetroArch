@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,6 +43,8 @@
 
 #if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC)
 #define WEBM_HAVE_AUDIO 1
+#include <formats/audio.h>
+#endif
 
 /* Bounded-memory playback: how far behind the consumed position the
  * physical pages are kept before release.  Covers the demuxers'
@@ -56,8 +59,6 @@
  * window.  Seeks lift the gate (the pending-seek machinery must
  * reach its target). */
 #define WEBM_FILL_LOOKAHEAD (16 * 1024 * 1024)
-#include <formats/audio.h>
-#endif
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
@@ -71,6 +72,7 @@
 #endif
 
 #define WEBM_AUDIO_RATE 48000
+#define WEBM_AUDIO_CHUNK 256
 
 #ifdef WEBM_HAVE_AUDIO
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3):
@@ -753,6 +755,37 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
  * rewinds and decodes forward discarding samples (every codec here
  * decodes far faster than real time, so even a long skip is a
  * fraction of a second).  Returns the position actually reached. */
+#ifdef WEBM_HAVE_AUDIO
+static bool webm_seek_audio(webm_player_t *p, int64_t want)
+{
+   int16_t scratch[WEBM_AUDIO_CHUNK * 2];
+   if (!p->actx)
+      return true;
+   if (!audio_transfer_seek(p->actx, p->atype, 0))
+      return false;
+   p->apos = 0;
+   p->aeof = 0;
+   if (p->atotal >= 0 && want > p->atotal)
+      want = p->atotal;
+   while (p->apos < want)
+   {
+      size_t chunk = (size_t)(want - p->apos);
+      size_t got   = 0;
+      int r;
+      if (chunk > WEBM_AUDIO_CHUNK)
+         chunk = WEBM_AUDIO_CHUNK;
+      r = audio_transfer_read_s16(p->actx, p->atype, scratch, chunk, &got);
+      p->apos += (int64_t)got;
+      if (r != AUDIO_PROCESS_NEXT || !got)
+      {
+         p->aeof = 1;
+         break;
+      }
+   }
+   return p->apos == want;
+}
+#endif
+
 /* Seek: when to_slot is negative, target_ns selects the display slot
  * (the last one at or before it); otherwise to_slot is the display
  * slot itself and target_ns only clamps (save-state restore, where
@@ -908,28 +941,7 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
    {
       int64_t want = (int64_t)((double)p->vpts_ns * 1e-9
             * (double)p->arate);
-      int16_t scratch[1024 * 2];
-      audio_transfer_seek(p->actx, p->atype, 0);
-      p->apos = 0;
-      p->aeof = 0;
-      if (p->atotal >= 0 && want > p->atotal)
-         want = p->atotal;
-      while (p->apos < want)
-      {
-         size_t chunk = (size_t)(want - p->apos);
-         size_t got   = 0;
-         int r;
-         if (chunk > 1024)
-            chunk = 1024;
-         r = audio_transfer_read_s16(p->actx, p->atype, scratch,
-               chunk, &got);
-         p->apos += (int64_t)got;
-         if (r != AUDIO_PROCESS_NEXT || !got)
-         {
-            p->aeof = 1;
-            break;
-         }
-      }
+      webm_seek_audio(p, want);
    }
 #endif
    return p->vpts_ns;
@@ -1117,13 +1129,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          }
          if (have)
          {
-            /* The stream emits XRGB8888 words directly (selected at
-             * open via rmp4_video_stream_set_argb), so the copy into
-             * the core's framebuffer is verbatim. */
-            const uint32_t *frame = rmp4_video_stream_render(p->mp4vs);
-            if (frame)
-               memcpy(p->fb, frame,
-                     (size_t)p->width * p->height * sizeof(uint32_t));
+            rmp4_video_stream_render(p->mp4vs);
          }
       }
       WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
@@ -1305,8 +1311,8 @@ audio:
        * one nominal frame of lead; at video EOF, drain about a frame
        * interval per run so the frontend's audio pacing continues to
        * throttle us through the tail. */
-      int16_t buf[1024 * 2];
-      int16_t st[1024 * 2];
+      int16_t buf[WEBM_AUDIO_CHUNK * 2];
+      int16_t st[WEBM_AUDIO_CHUNK * 2];
       /* the wall clock, not the picture's timestamp: through a slow
        * stretch of a variable-rate file the picture holds while real
        * time - and the audience's audio - keeps moving */
@@ -1323,8 +1329,8 @@ audio:
          size_t want = (size_t)(target - p->apos);
          size_t got = 0;
          int r;
-         if (want > 1024)
-            want = 1024;
+         if (want > WEBM_AUDIO_CHUNK)
+            want = WEBM_AUDIO_CHUNK;
          r = audio_transfer_read_s16(p->actx, p->atype, buf, want, &got);
          if (got)
          {
@@ -1709,6 +1715,7 @@ static bool webm_load_mp4(webm_player_t *p)
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
    if (!p->fb || !p->silence)
       return false;
+   rmp4_video_stream_set_output(p->mp4vs, p->fb);
 
    if (WEBM_CORE_PREFIX(log_cb))
       WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
@@ -2084,7 +2091,7 @@ size_t WEBM_CORE_PREFIX(retro_get_memory_size)(unsigned id)
  * frontend's save-state machinery a resume feature - saving on exit
  * and loading on start picks playback up where it left off, restored
  * through the same seek path the transport controls use. */
-#define WEBM_STATE_SIZE 24
+#define WEBM_STATE_SIZE 40
 
 size_t WEBM_CORE_PREFIX(retro_serialize_size)(void)
 {
@@ -2097,21 +2104,32 @@ bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
    uint8_t *d = (uint8_t*)data;
    uint64_t v = (uint64_t)p->vpts_ns;
    uint64_t s = (uint64_t)p->vshown;
+   uint64_t clock = (uint64_t)p->play_ns;
+   uint64_t audio_pos = 0;
    int i;
-   if (size < WEBM_STATE_SIZE)
+   if (size < WEBM_STATE_SIZE || !d || !p->file_buf)
       return false;
+#ifdef WEBM_HAVE_AUDIO
+   audio_pos = (uint64_t)p->apos;
+#endif
    d[0] = 'W'; d[1] = 'P'; d[2] = 'O'; d[3] = 'S';
-   d[4] = 2;   d[6] = 0;   d[7] = 0;
+   d[4] = 3;   d[6] = 0;   d[7] = 0;
    /* Whether playback had already ended.  The clock and slot below
     * describe a position, and at the end of a movie that position is
     * the last frame - restoring from them alone resumes just before
     * the end instead of at it.  Older states leave this zero, which is
     * what they meant. */
    d[5] = (uint8_t)(p->eof ? 1 : 0);
+#ifdef WEBM_HAVE_AUDIO
+   if (p->aeof)
+      d[5] |= 2;
+#endif
    for (i = 0; i < 8; i++)
    {
       d[8 + i]  = (uint8_t)(v >> (8 * i));
       d[16 + i] = (uint8_t)(s >> (8 * i));
+      d[24 + i] = (uint8_t)(clock >> (8 * i));
+      d[32 + i] = (uint8_t)(audio_pos >> (8 * i));
    }
    return true;
 }
@@ -2120,18 +2138,73 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 {
    webm_player_t *p = &webm_player;
    const uint8_t *d = (const uint8_t*)data;
-   uint64_t v = 0, s = 0;
+   uint64_t v = 0, s = 0, clock = 0, audio_pos = 0;
    int i;
-   if (size < 16 || !d)
+   if (size < 16 || !d || !p->file_buf)
       return false;
    if (d[0] != 'W' || d[1] != 'P' || d[2] != 'O' || d[3] != 'S')
       return false;
    for (i = 0; i < 8; i++)
       v |= (uint64_t)d[8 + i] << (8 * i);
-   if (d[4] == 2 && size >= WEBM_STATE_SIZE)
+   if (v > INT64_MAX)
+      return false;
+   if (d[4] == 3)
+   {
+      if (size < WEBM_STATE_SIZE)
+         return false;
+      for (i = 0; i < 8; i++)
+      {
+         s         |= (uint64_t)d[16 + i] << (8 * i);
+         clock     |= (uint64_t)d[24 + i] << (8 * i);
+         audio_pos |= (uint64_t)d[32 + i] << (8 * i);
+      }
+      if (     s > INT_MAX || clock > (uint64_t)(INT64_MAX - p->frame_ns)
+            || audio_pos > INT64_MAX || (d[5] & ~3))
+         return false;
+      p->pending_seek_ns = -1;
+#ifdef HAVE_RMP4
+      if (p->mp4vs)
+      {
+         if (p->dt && p->discarded)
+         {
+            data_transfer_refill(p->dt, 0);
+            p->discarded = 0;
+         }
+         if (rmp4_video_stream_seek_frame(p->mp4vs,
+               s > 0 ? (int)s - 1 : 0) < 0)
+            return false;
+         if (s > 0)
+         {
+            if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1)
+               return false;
+            if (!rmp4_video_stream_render(p->mp4vs))
+               return false;
+         }
+      }
+      else
+#endif
+      if (s > 0)
+         webm_seek_internal(p, (int64_t)v, (int64_t)s - 1);
+      else
+         WEBM_CORE_PREFIX(retro_reset)();
+      p->vpts_ns = (int64_t)v;
+      p->vshown  = (int64_t)s;
+      p->play_ns = (int64_t)clock;
+      p->eof     = (d[5] & 1) != 0;
+#ifdef WEBM_HAVE_AUDIO
+      if (!webm_seek_audio(p, (int64_t)audio_pos))
+         return false;
+      p->apos = (int64_t)audio_pos;
+      p->aeof = (d[5] & 2) != 0;
+#endif
+      return true;
+   }
+   if (d[4] == 2 && size >= 24)
    {
       for (i = 0; i < 8; i++)
          s |= (uint64_t)d[16 + i] << (8 * i);
+      if (s > INT_MAX)
+         return false;
       /* the slot is exact where the pts clock can run ahead of the
        * display position (H.264 reordering); the mp4 branch keeps
        * using the timestamp, whose own table is exact */

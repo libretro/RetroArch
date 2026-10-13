@@ -1,0 +1,4 @@
+fixtures/
+obj*/
+webm_player_*
+!webm_player_test.c
