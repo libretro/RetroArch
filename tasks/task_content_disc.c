@@ -87,7 +87,7 @@ typedef struct
    RFILE *file;
    RFILE *output_file;
    libretro_vfs_implementation_file *stream;
-   const cdrom_toc_t *toc;
+   cdrom_toc_t toc;
 
    enum cdrom_dump_state state;
    unsigned char cur_track;
@@ -167,8 +167,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   return;
                }
             }
-            cdrom_device_fillpath(cue_path, sizeof(cue_path),
-                  state->drive_letter[0], 1, false);
+            cdrom_device_filldevicepath(cue_path, sizeof(cue_path),
+                  state->drive_letter[0]);
             probe = filestream_open(cue_path, RETRO_VFS_FILE_ACCESS_READ, 0);
             if (probe)
             {
@@ -224,14 +224,22 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             char *output_file = state->output_path;
             char cue_filename[NAME_MAX_LENGTH + 8];
             const char *directory_core_assets = state->dir_core_assets;
+            const cdrom_toc_t *toc;
             state->stream        = filestream_get_vfs_handle(state->file);
-            state->toc           = retro_vfs_file_get_cdrom_toc();
+            toc = retro_vfs_file_get_cdrom_toc(state->stream);
+            if (!toc)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+               return;
+            }
+            memcpy(&state->toc, toc, sizeof(state->toc));
 
             if (cdrom_has_atip(state->stream))
                RARCH_LOG("[CDROM] This disc is not genuine.\n");
 
             filestream_close(state->file);
             state->file = NULL;
+            state->stream = NULL;
 
             fill_pathname(cue_filename, state->title,
                   ".cue", sizeof(cue_filename));
@@ -251,20 +259,20 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   return;
                }
 
-               for (point = 1; point <= state->toc->num_tracks; point++)
+               for (point = 1; point <= state->toc.num_tracks; point++)
                {
                   const char *track_type = "MODE1/2352";
                   char track_filename[PATH_MAX_LENGTH];
 
-                  state->disc_total_bytes += state->toc->track[point - 1].track_bytes;
+                  state->disc_total_bytes += state->toc.track[point - 1].track_bytes;
 
                   track_filename[0] = '\0';
 
-                  if (state->toc->track[point - 1].audio)
+                  if (state->toc.track[point - 1].audio)
                      track_type = "AUDIO";
-                  else if (state->toc->track[point - 1].mode == 1)
+                  else if (state->toc.track[point - 1].mode == 1)
                      track_type = "MODE1/2352";
-                  else if (state->toc->track[point - 1].mode == 2)
+                  else if (state->toc.track[point - 1].mode == 2)
                      track_type = "MODE2/2352";
 
                   snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, point);
@@ -273,9 +281,9 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   cue_ok &= task_cdrom_dump_printf(state, file, "  TRACK %02d %s\n", point, track_type);
 
                   {
-                     unsigned pregap_lba_len = state->toc->track[point - 1].lba - state->toc->track[point - 1].lba_start;
+                     unsigned pregap_lba_len = state->toc.track[point - 1].lba - state->toc.track[point - 1].lba_start;
 
-                     if (state->toc->track[point - 1].audio && pregap_lba_len > 0)
+                     if (state->toc.track[point - 1].audio && pregap_lba_len > 0)
                      {
                         unsigned char min = 0;
                         unsigned char sec = 0;
@@ -311,7 +319,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             state->cur_track++;
 
             /* no more tracks to dump, we're done */
-            if (state->toc && state->cur_track > state->toc->num_tracks)
+            if (state->cur_track > state->toc.num_tracks)
             {
                task_set_progress(task, 100);
                return;

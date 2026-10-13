@@ -23,6 +23,10 @@ static uint32_t last_lba = 3000000, sector_size = 2048;
 static int fail_at, short_transfer;
 static int toc_bad;
 static uint16_t media_profile = 0x10;
+static unsigned active_drive = 1;
+#ifndef _WIN32
+static unsigned drive_map[128];
+#endif
 static void *direct_buffer;
 static int saw_direct;
 #define CHECK(x) do { if (!(x)) { \
@@ -49,8 +53,13 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
       dst[7] = (unsigned char)media_profile;
       return 0;
    }
-   if (cmd[0] == 0xBB)
+   if (cmd[0] == 0xBB || cmd[0] == 0x00)
       return 0;
+   if (cmd[0] == 0x5A)
+   {
+      memset(dst, 0, len);
+      return 0;
+   }
    if (cmd[0] == 0x43)
    {
       CHECK(len == 2352);
@@ -68,7 +77,8 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
          dst[12] = 1;
          dst[16] = 0x14;
          dst[18] = 1;
-         dst[24] = 2;
+         dst[24] = active_drive == 2 ? 3 : 2;
+         dst[25] = active_drive == 2 ? 25 : 0;
          if (toc_bad == 2)
          {
             dst[1] = 35;
@@ -85,8 +95,17 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
       memset(dst, 0, len);
       dst[1] = 34;
       dst[6] = 1;
-      dst[26] = 3;
-      dst[27] = 0xe8; /* 1000 sectors, device LBA zero */
+      if (active_drive == 2)
+      {
+         dst[11] = 100;
+         dst[26] = 1;
+         dst[27] = 0xf4; /* 500 sectors at device LBA 100 */
+      }
+      else
+      {
+         dst[26] = 3;
+         dst[27] = 0xe8; /* 1000 sectors at device LBA zero */
+      }
       return 0;
    }
    if (cmd[0] == 0xB9)
@@ -132,10 +151,11 @@ static BOOL WINAPI drive_ioctl(HANDLE h, DWORD code, LPVOID in,
 {
    SCSI_PASS_THROUGH_DIRECT *s = (SCSI_PASS_THROUGH_DIRECT*)in;
    int rv;
-   (void)h; (void)insize; (void)out; (void)outsize; (void)overlapped;
-   CHECK(code == IOCTL_SCSI_PASS_THROUGH_DIRECT && (s->CdbLength == 10 || s->CdbLength == 12));
+   active_drive = (unsigned)(uintptr_t)h;
+   (void)insize; (void)out; (void)outsize; (void)overlapped;
+   CHECK(code == IOCTL_SCSI_PASS_THROUGH_DIRECT && (s->CdbLength == 9 || s->CdbLength == 10 || s->CdbLength == 12));
    CHECK(s->DataIn == SCSI_IOCTL_DATA_IN
-         || s->DataIn == SCSI_IOCTL_DATA_OUT || s->Cdb[0] == 0xBB);
+         || s->DataIn == SCSI_IOCTL_DATA_OUT || s->Cdb[0] == 0xBB || s->Cdb[0] == 0x00);
    rv = drive_command(s->Cdb, s->DataBuffer, s->DataTransferLength);
    s->ScsiStatus = rv ? 2 : 0;
    if (rv)
@@ -150,9 +170,9 @@ static HANDLE WINAPI drive_open(LPCSTR path, DWORD access, DWORD share,
 {
    (void)access; (void)share; (void)security; (void)creation;
    (void)flags; (void)templ;
-   CHECK(strcmp(path, "\\\\.\\D:") == 0);
+   CHECK(strcmp(path, "\\\\.\\D:") == 0 || strcmp(path, "\\\\.\\E:") == 0);
    opens++;
-   return (HANDLE)(uintptr_t)1;
+   return (HANDLE)(uintptr_t)(path[4] == 'E' ? 2 : 1);
 }
 static BOOL WINAPI drive_close(HANDLE h)
 {
@@ -165,6 +185,13 @@ static BOOL WINAPI drive_close(HANDLE h)
 #define CreateFile drive_open
 #define CloseHandle drive_close
 #define IMAGE_PATH "D:/drive.iso"
+#define BIN_A "cdrom://D:/drive-track01.bin"
+#define BIN_B "cdrom://E:/drive-track01.bin"
+#define CUE_A "cdrom://D:/drive.cue"
+#define DEVICE_A "cdrom://D:/drive.device"
+#define DRIVE_A 'D'
+#define BAD_TRACK "cdrom://D:/drive-track00.bin"
+#define OUT_TRACK "cdrom://D:/drive-track02.bin"
 #else
 #include <stdarg.h>
 static int drive_ioctl(int fd, unsigned long request, ...)
@@ -172,13 +199,13 @@ static int drive_ioctl(int fd, unsigned long request, ...)
    va_list ap;
    sg_io_hdr_t *s;
    int rv;
-   (void)fd;
+   active_drive = fd >= 0 && fd < 128 ? drive_map[fd] : 1;
    va_start(ap, request);
    s = va_arg(ap, sg_io_hdr_t*);
    va_end(ap);
-   CHECK(request == SG_IO && (s->cmd_len == 10 || s->cmd_len == 12));
+   CHECK(request == SG_IO && (s->cmd_len == 9 || s->cmd_len == 10 || s->cmd_len == 12));
    CHECK(s->dxfer_direction == SG_DXFER_FROM_DEV
-         || s->dxfer_direction == SG_DXFER_TO_DEV || s->cmdp[0] == 0xBB);
+         || s->dxfer_direction == SG_DXFER_TO_DEV || s->cmdp[0] == 0xBB || s->cmdp[0] == 0x00);
    rv = drive_command(s->cmdp, s->dxferp, s->dxfer_len);
    s->info = rv ? SG_INFO_CHECK : 0;
    if (rv) s->sbp[2] = 5;
@@ -187,19 +214,98 @@ static int drive_ioctl(int fd, unsigned long request, ...)
 }
 static FILE *drive_open(const char *path, const char *mode)
 {
-   CHECK(strcmp(path, "/dev/sg1") == 0);
+   FILE *file;
+   int fd;
+   CHECK(strcmp(path, "/dev/sg1") == 0 || strcmp(path, "/dev/sg2") == 0);
    (void)mode;
    opens++;
-   return tmpfile();
+   file = tmpfile();
+   if (file)
+   {
+      fd = fileno(file);
+      CHECK(fd >= 0 && fd < 128);
+      if (fd >= 0 && fd < 128) drive_map[fd] = path[7] == '2' ? 2 : 1;
+   }
+   return file;
 }
 #define ioctl drive_ioctl
 #undef fopen_utf8
 #define fopen_utf8 drive_open
 #define IMAGE_PATH "drive1.iso"
+#define BIN_A "cdrom://drive1-track01.bin"
+#define BIN_B "cdrom://drive2-track01.bin"
+#define CUE_A "cdrom://drive1.cue"
+#define DEVICE_A "cdrom://drive1.device"
+#define DRIVE_A '1'
+#define BAD_TRACK "cdrom://drive1-track00.bin"
+#define OUT_TRACK "cdrom://drive1-track02.bin"
 #endif
 
 #include "../../../cdrom/cdrom.c"
 #include "../../../vfs/vfs_implementation_cdrom.c"
+
+static void test_handle_geometry(unsigned char *buf)
+{
+   libretro_vfs_implementation_file *a, *b, *probe;
+   const cdrom_toc_t *a_toc, *b_toc;
+   uint16_t profile;
+   unsigned before;
+   toc_bad = 0;
+   a = retro_vfs_file_open_impl(BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   b = retro_vfs_file_open_impl(BIN_B, RETRO_VFS_FILE_ACCESS_READ, 0);
+   CHECK(a && b);
+   if (a && b)
+   {
+      a_toc = retro_vfs_file_get_cdrom_toc(a);
+      b_toc = retro_vfs_file_get_cdrom_toc(b);
+      CHECK(a_toc && b_toc && a_toc != b_toc);
+      CHECK(a_toc->track[0].lba == 150 && b_toc->track[0].lba == 250);
+      CHECK(retro_vfs_file_size_impl(a) == 2352000);
+      CHECK(retro_vfs_file_size_impl(b) == 1176000);
+      CHECK(retro_vfs_file_seek_impl(a, 0, RETRO_VFS_SEEK_POSITION_START) == 0);
+      CHECK(retro_vfs_file_read_impl(a, buf, 2352) == 2352 && buf[0] == 0);
+      CHECK(retro_vfs_file_read_impl(b, buf, 2352) == 2352 && buf[0] == 25);
+      CHECK(retro_vfs_file_close_impl(b) == 0);
+      b = NULL;
+      CHECK(retro_vfs_file_get_cdrom_toc(a) == a_toc);
+      CHECK(retro_vfs_file_seek_impl(a, -2352, RETRO_VFS_SEEK_POSITION_END) == 0);
+      CHECK(retro_vfs_file_tell_impl(a) == 2349648);
+      CHECK(a->cdrom->cur_lba == 1149);
+      CHECK(retro_vfs_file_close_impl(a) == 0);
+      a = NULL;
+   }
+   if (a) retro_vfs_file_close_impl(a);
+   if (b) retro_vfs_file_close_impl(b);
+   before = opens;
+   CHECK(retro_vfs_file_open_impl(BAD_TRACK, RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   CHECK(retro_vfs_file_open_impl("cdrom://not-a-drive.cue", RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   CHECK(opens == before);
+   CHECK(retro_vfs_file_open_impl(OUT_TRACK, RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   toc_bad = 1;
+   CHECK(retro_vfs_file_open_impl(CUE_A, RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   CHECK(retro_vfs_file_open_impl(BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   probe = retro_vfs_file_open_impl(DEVICE_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   CHECK(probe != NULL);
+   if (probe)
+   {
+      CHECK(retro_vfs_file_get_cdrom_toc(probe) == NULL);
+      CHECK(retro_vfs_file_size_impl(probe) == 0);
+      CHECK(cdrom_get_media_profile(probe, &profile) == 0 && profile == 0x10);
+      CHECK(retro_vfs_file_read_impl(probe, buf, 1) == -1);
+      CHECK(retro_vfs_file_error_impl(probe) != 0);
+      CHECK(retro_vfs_file_close_impl(probe) == 0);
+   }
+   CHECK(cdrom_drive_has_media(DRIVE_A));
+   toc_bad = 0;
+   a = retro_vfs_file_open_impl(CUE_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   CHECK(a != NULL);
+   if (a)
+   {
+      CHECK(retro_vfs_file_get_cdrom_toc(a) != NULL);
+      CHECK(retro_vfs_file_read_impl(a, buf, 100) > 0);
+      CHECK(retro_vfs_file_close_impl(a) == 0);
+   }
+}
 
 int main(void)
 {
@@ -318,7 +424,7 @@ int main(void)
       disc.logical_blocks = false;
       disc.cur_track = 1;
       stream.orig_path = "drive1-track01.bin";
-      vfs_cdrom_toc = *toc;
+      disc.toc = toc;
       CHECK(retro_vfs_file_seek_cdrom(&stream, -2352, SEEK_END) == 0);
       CHECK(retro_vfs_file_tell_cdrom(&stream) == 2349648);
       CHECK(disc.cur_lba == 1149);
@@ -329,13 +435,12 @@ int main(void)
       CHECK(retro_vfs_file_tell_cdrom(&stream) == 2349648);
       CHECK(retro_vfs_file_error_cdrom(&stream) == 1);
       fail_at = 0;
-      vfs_cdrom_toc.track[0].audio = true;
-      vfs_cdrom_toc.track[0].lba = 200;
+      disc.toc->track[0].audio = true;
+      disc.toc->track[0].lba = 200;
       CHECK(retro_vfs_file_seek_cdrom(&stream, 0, SEEK_SET) == 0);
       CHECK(disc.cur_lba == 150);
       stream.orig_path = IMAGE_PATH;
       free(cue);
-      free(toc);
    }
    CHECK(retro_vfs_file_close_cdrom(&stream) == 0);
    memset(&stream, 0, sizeof(stream));
@@ -368,6 +473,7 @@ int main(void)
    sector_size = 2352;
    CHECK(retro_vfs_file_open_impl("cdrom://" IMAGE_PATH,
          RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
+   test_handle_geometry(buf);
    memalign_free(buf);
    printf("DVD block/VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;

@@ -158,7 +158,7 @@ cdfs_track_t* cdfs_open_data_track(const char* path);
  *
  * supported files:
  *   real CD - path will be in the form "cdrom://drive1-track01.bin" or "cdrom://d:/drive-track01.bin"
- *             NOTE: cue file for CD must be opened first to populate vfs_cdrom_toc.
+ *             BIN handles obtain their own validated geometry.
  *   bin     - path will point to the bin file
  *   iso     - path will point to the iso file
  */

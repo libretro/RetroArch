@@ -33,7 +33,8 @@ int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int6
 /* Linux: cdrom://driveN.iso (sg device N), Windows: cdrom://D:/drive.iso.
  * Read-only cooked 2048-byte image; capacity is probed per handle.
  * No UDF parsing, DVD navigation or decryption is performed here.
- * macOS cooked images are not yet supported. CD cue/bin paths are unchanged. */
+ * macOS cooked images are not yet supported. A .device URI is for metadata
+ * queries only and does not require readable CD geometry. */
 void retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);
@@ -47,7 +48,11 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
 int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream);
 
-const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(void);
+/* Borrowed immutable geometry, valid until this handle closes. NULL for
+ * metadata-only probes and cooked images. BIN opens obtain their own TOC;
+ * no preceding CUE open is required. */
+const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(
+      const libretro_vfs_implementation_file *stream);
 
 const vfs_cdrom_t* retro_vfs_file_get_cdrom_position(const libretro_vfs_implementation_file *stream);
 

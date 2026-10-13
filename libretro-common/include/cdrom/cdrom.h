@@ -60,7 +60,7 @@ typedef struct
    bool audio;
 } cdrom_track_t;
 
-typedef struct
+typedef struct cdrom_toc
 {
    cdrom_track_t track[99];         /* unsigned alignment */
    cdrom_group_timeouts_t timeouts; /* unsigned short alignment */
@@ -141,6 +141,9 @@ bool cdrom_set_read_cache(libretro_vfs_implementation_file *stream, bool enabled
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
 bool cdrom_has_atip(libretro_vfs_implementation_file *stream);
+
+/* Metadata/control handle: no track or filesystem data is exposed. */
+size_t cdrom_device_filldevicepath(char *s, size_t len, char drive);
 
 /* Build a cooked-image URI for a Linux/Windows drive. Returns required
  * length excluding NUL, or zero for invalid/unsupported arguments. */

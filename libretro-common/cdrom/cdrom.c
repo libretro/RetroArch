@@ -2124,7 +2124,7 @@ bool cdrom_drive_has_media(const char drive)
    RFILE *file;
    char cdrom_path_bin[256] = {0};
 
-   cdrom_device_fillpath(cdrom_path_bin, sizeof(cdrom_path_bin), drive, 1, false);
+   cdrom_device_filldevicepath(cdrom_path_bin, sizeof(cdrom_path_bin), drive);
 
    file = filestream_open(cdrom_path_bin, RETRO_VFS_FILE_ACCESS_READ, 0);
 
@@ -2291,6 +2291,23 @@ bool cdrom_has_atip(libretro_vfs_implementation_file *stream)
       return false;
 
    return true;
+}
+
+size_t cdrom_device_filldevicepath(char *s, size_t len, char drive)
+{
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+#if defined(_WIN32) && !defined(_XBOX)
+   if ((drive >= 'A' && drive <= 'Z') || (drive >= 'a' && drive <= 'z'))
+      return snprintf(s, len, "cdrom://%c:/drive.device", drive);
+#elif (defined(__linux__) && !defined(ANDROID)) || defined(__APPLE__)
+   if (drive >= '0' && drive <= '9')
+      return snprintf(s, len, "cdrom://drive%c.device", drive);
+#else
+   (void)drive;
+#endif
+   return 0;
 }
 
 size_t cdrom_device_fillimagepath(char *s, size_t len, char drive)

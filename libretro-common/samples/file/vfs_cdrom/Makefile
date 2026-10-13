@@ -1,6 +1,6 @@
 include ../../sample_objdir.mk
 
-TARGET := cdrom_cuesheet_overflow_test
+TARGET := cdrom_cuesheet_overflow_test$(EXE)
 .DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -32,9 +32,9 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c
 
-OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+OBJS := $(SAMPLE_OBJDIR)/cdrom_cuesheet_overflow_test.o $(call sample_objs,$(filter-out cdrom_cuesheet_overflow_test.o,$(SOURCES:.c=.o)))
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g1 -DHAVE_CDROM -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -MMD -MP -Wall -pedantic -std=gnu99 -g1 -DHAVE_CDROM -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
 # sample dir.  Without this block the variable was accepted and
@@ -84,8 +84,10 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
+-include $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d)
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) disc_dump_test$(EXE) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS)
+	rm -f $(TARGET) disc_dump_test$(EXE) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS) $(DUMP_OBJS) $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d)
 
 .PHONY: clean

@@ -41,10 +41,12 @@ typedef void* HANDLE;
 #endif
 
 #ifdef HAVE_CDROM
+struct cdrom_toc;
 typedef struct
 {
    int64_t byte_pos;
    uint64_t disc_bytes; /* cooked 2048-byte image; zero for CD paths */
+   struct cdrom_toc *toc;
    char *cue_buf;
    size_t cue_len;
    unsigned cur_lba;
@@ -57,6 +59,7 @@ typedef struct
    char drive;
    bool last_frame_valid;
    bool logical_blocks;
+   bool device_only;
    bool io_error;
 } vfs_cdrom_t;
 #endif

@@ -15009,12 +15009,11 @@ static bool menu_displaylist_ctl_internal(
                               0)))
                   {
                      unsigned i;
-                     const cdrom_toc_t *toc    = retro_vfs_file_get_cdrom_toc();
+                     const cdrom_toc_t *toc    = retro_vfs_file_get_cdrom_toc(
+                           filestream_get_vfs_handle(file));
                      unsigned first_data_track = 1;
                      atip                      = cdrom_has_atip(
                            filestream_get_vfs_handle(file));
-
-                     filestream_close(file);
 
                      for (i = 0; i < toc->num_tracks; i++)
                      {
@@ -15121,6 +15120,7 @@ static bool menu_displaylist_ctl_internal(
                      }
                      else
                         RARCH_ERR("[CDROM] Could not detect any disc info.\n");
+                     filestream_close(file);
                   }
                   else
                      RARCH_ERR("[CDROM] Error opening file for reading: %s.\n", file_path);

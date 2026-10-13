@@ -58,7 +58,8 @@ static int dump_flush(RFILE *file)
 { return flush_fail ? -1 : filestream_flush(file); }
 static int dump_profile(libretro_vfs_implementation_file *file, uint16_t *profile)
 { (void)file; *profile = medium; return 0; }
-static const cdrom_toc_t *dump_toc(void) { return &fake_toc; }
+static const cdrom_toc_t *dump_toc(const libretro_vfs_implementation_file *file)
+{ (void)file; return &fake_toc; }
 static bool dump_atip(libretro_vfs_implementation_file *file)
 { (void)file; return false; }
 static void *dump_alloc(size_t align, size_t bytes)
@@ -104,6 +105,7 @@ static void run_dump(int cancel)
    task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)calloc(1, sizeof(*state));
    unsigned tick = 0, logs = finished_logs;
    write_opens = 0;
+   fake_toc.num_tracks = 2;
    CHECK(task && state);
    if (!task || !state) return;
    state->drive_letter[0] =
@@ -118,6 +120,8 @@ static void run_dump(int cancel)
    while (!(task_get_flags(task) & RETRO_TASK_FLG_FINISHED) && tick++ < 32)
    {
       task_cdrom_dump_handler(task);
+      if (medium == 8 && tick == 2)
+         fake_toc.num_tracks = 0; /* unrelated metadata refresh */
       if (cancel && tick == 2)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
