@@ -278,7 +278,11 @@ PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
 # and through one, each from a copy.
 GL_PRESETS = [('-preset', os.path.join(HERE, 'pass.glslp')),
               ('-preset-viewport', os.path.join(HERE, 'pass_viewport.glslp')),
-              ('-preset-one', os.path.join(HERE, 'pass_one.glslp'))]
+              ('-preset-one', os.path.join(HERE, 'pass_one.glslp')),
+              # Each view's own earlier frames and feedback
+              ('-preset-prev', os.path.join(HERE, 'prev.glslp')),
+              ('-preset-prev-one', os.path.join(HERE, 'prev_one.glslp')),
+              ('-preset-feedback', os.path.join(HERE, 'feedback.glslp'))]
 GL_PRESET_CASES = ('3ds-sbs-full', '3ds-top-bottom', '3ds-anaglyph',
                    '3ds-interlaced', 'ds-horizontal')
 # Drivers whose views' presets read a software frame's views from copies:

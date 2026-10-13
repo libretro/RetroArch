@@ -5601,20 +5601,30 @@ static bool gl2_views_target_retire(gl2_t *gl, struct gl2_views_fbo *t)
    return true;
 }
 
-/* The views' copies let go */
+/* The views' copies and feedback let go */
 static void gl2_views_free_copies(gl2_t *gl)
 {
-   unsigned i;
+   unsigned i, k;
+   if (!gl->views.copies)
+      return;
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
-      if (gl->views.tex[i])
-         glDeleteTextures(1, &gl->views.tex[i]);
-      gl->views.tex[i]      = 0;
-      gl->views.tex_dims[i] = 0;
+      for (k = 0; k < GL2_VIEWS_HISTORY; k++)
+      {
+         if (gl->views.tex[i][k])
+            glDeleteTextures(1, &gl->views.tex[i][k]);
+         gl->views.tex[i][k]      = 0;
+         gl->views.tex_dims[i][k] = 0;
+      }
+      gl2_views_target_retire(gl, &gl->views.feedback[i]);
+      gl->views.feedback_dims[i] = 0;
+      gl->views.head[i]          = 0;
+      gl->views.prev_live[i]     = false;
    }
    if (gl->views.copy_fbo)
       gl2_delete_fb(1, &gl->views.copy_fbo);
    gl->views.copy_fbo = 0;
+   gl->views.copies   = false;
 }
 
 static void gl2_views_release(gl2_t *gl)
@@ -5821,30 +5831,38 @@ static void gl2_views_rows(const gl2_t *gl, const struct retro_video_view *v,
 
 /* View i copied out of the frame into a texture of its size, its top
  * row first as a software frame's: the preset reads it as it would a
- * frame of that size. False when it can't be. */
+ * frame of that size. A new frame takes the next of @depth copies,
+ * the oldest; a dupe the newest again. False when it can't be. */
 static bool gl2_views_copy(gl2_t *gl, unsigned i,
-      const struct retro_video_view *v)
+      const struct retro_video_view *v, unsigned depth, bool fresh)
 {
    GLfloat coords[8];
    float top, bottom;
    bool ok;
+   GLuint *tex;
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
    float tw      = gl->tex_info.tex_size[0];
    float th      = gl->tex_info.tex_size[1];
    float s0      = (float)v->x / tw;
    float s1      = (float)(v->x + v->width) / tw;
+   unsigned k    = gl->views.head[i] % depth;
 
-   if (!gl->views.tex[i] || gl->views.tex_dims[i] != dims)
+   if (fresh && depth > 1)
+      k = (k + 1) % depth;
+   gl->views.head[i] = k;
+   gl->views.copies  = true;
+   tex               = &gl->views.tex[i][k];
+   if (!*tex || gl->views.tex_dims[i][k] != dims)
    {
-      if (!gl->views.tex[i])
-         glGenTextures(1, &gl->views.tex[i]);
-      glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+      if (!*tex)
+         glGenTextures(1, tex);
+      glBindTexture(GL_TEXTURE_2D, *tex);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, v->width, v->height, 0,
             GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-      gl->views.tex_dims[i] = dims;
+      gl->views.tex_dims[i][k] = dims;
    }
    /* As the frame's textures are, for the preset's first pass */
-   glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+   glBindTexture(GL_TEXTURE_2D, *tex);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
@@ -5854,7 +5872,7 @@ static bool gl2_views_copy(gl2_t *gl, unsigned i,
       gl2_gen_fb(1, &gl->views.copy_fbo);
    gl2_bind_fb(gl->views.copy_fbo);
    gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
-         GL_TEXTURE_2D, gl->views.tex[i], 0);
+         GL_TEXTURE_2D, *tex, 0);
    ok = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
       == RARCH_GL_FRAMEBUFFER_COMPLETE;
    if (ok)
@@ -5883,14 +5901,78 @@ static bool gl2_views_copy(gl2_t *gl, unsigned i,
 }
 
 /* Whether the preset can draw each view through its passes, one view
- * after another: its passes keep nothing from one draw to the next -
- * no frame history, no feedback - and its first takes no mipmaps. */
+ * after another, each with earlier frames and feedback of its own:
+ * its first pass takes no mipmaps, and it reads no further back than
+ * the views keep. */
 static bool gl2_views_preset_ok(const gl2_t *gl)
 {
    return (gl->flags & GL2_FLAG_HAVE_FBO)
-      && !(gl->flags & (GL2_FLAG_FBO_FEEDBACK_ENABLE
-            | GL2_FLAG_TEXTURE_MIPMAP))
-      && !gl->shader->get_prev_textures(gl->shader_data);
+      && !(gl->flags & GL2_FLAG_TEXTURE_MIPMAP)
+      && gl->shader->get_prev_textures(gl->shader_data)
+         < GL2_VIEWS_HISTORY;
+}
+
+/* View i's copy just drawn, as the preset reads earlier frames: as the
+ * frame's are, pushed every draw, dupes too */
+static void gl2_views_push_prev(gl2_t *gl, unsigned i)
+{
+   struct video_tex_info *prev = gl->views.prev[i];
+   memmove(prev + 1, prev, sizeof(*prev) * (GL2_VIEWS_HISTORY - 1));
+   memcpy(&prev[0], &gl->tex_info, sizeof(*prev));
+}
+
+/* What view i's feedback pass drew is kept for its next draw, as the
+ * frame's is (gl2_renderchain_bind_prev_texture) */
+static void gl2_views_swap_feedback(gl2_t *gl, unsigned i)
+{
+   gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+      gl->renderchain_data;
+   struct gl2_views_fbo *f       = &gl->views.feedback[i];
+   unsigned fp                   = gl->fbo_feedback_pass;
+   GLuint fbo                    = f->fbo;
+   GLuint tex                    = f->tex;
+   f->fbo                        = chain->fbo[fp];
+   f->tex                        = chain->fbo_texture[fp];
+   chain->fbo[fp]                = fbo;
+   chain->fbo_texture[fp]        = tex;
+}
+
+/* View i's feedback target at the feedback pass's size, made cleared,
+ * then what the passes read as feedback */
+static void gl2_views_feedback(gl2_t *gl, unsigned i)
+{
+   struct gl2_views_fbo *f        = &gl->views.feedback[i];
+   const struct video_fbo_rect *r = &gl->fbo_rect[gl->fbo_feedback_pass];
+   struct video_tex_info *info    = &gl->views.feedback_cur;
+
+   if (!f->fbo || gl->views.feedback_dims[i] != r->dims)
+   {
+      /* Made as the chain's own target for that pass is, whose place it
+       * takes every draw */
+      gl2_views_target_retire(gl, f);
+      glGenTextures(1, &f->tex);
+      gl2_create_fbo_texture(gl,
+            (gl2_renderchain_data_t*)gl->renderchain_data,
+            gl->fbo_feedback_pass, f->tex,
+            (gl->flags & GL2_FLAG_FBO_SMOOTH) != 0,
+            (gl->flags & GL2_FLAG_FBO_SRGB_DISABLE) != 0);
+      gl2_gen_fb(1, &f->fbo);
+      gl2_bind_fb(f->fbo);
+      gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, f->tex, 0);
+      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+      gl->views.feedback_dims[i] = r->dims;
+   }
+   info->tex           = f->tex;
+   info->input_size[0] = VIDEO_SCALE_W(r->img_dims);
+   info->input_size[1] = VIDEO_SCALE_H(r->img_dims);
+   info->tex_size[0]   = VIDEO_SCALE_W(r->dims);
+   info->tex_size[1]   = VIDEO_SCALE_H(r->dims);
+   memset(info->coord, 0, sizeof(info->coord));
+   SET_TEXTURE_COORDS(info->coord,
+         (GLfloat)VIDEO_SCALE_W(r->img_dims) / VIDEO_SCALE_W(r->dims),
+         (GLfloat)VIDEO_SCALE_H(r->img_dims) / VIDEO_SCALE_H(r->dims));
 }
 
 /* The preset's last pass, or its only one, over @dst, cut to @cut, for
@@ -5965,8 +6047,8 @@ static void gl2_views_draw_pass(gl2_t *gl, const struct gl2_views_draw *d,
    params.out_dims      = dst->dims;
    params.frame_counter = d->frame_count;
    params.swap_counter  = (unsigned int)d->video_info->swap_count;
-   params.prev_info     = gl->prev_info;
-   params.feedback_info = &gl->tex_info;
+   params.prev_info     = gl->views.prev_cur;
+   params.feedback_info = &gl->views.feedback_cur;
    gl->shader->set_params(&params, gl->shader_data);
    /* The copy's top row first, as a software frame's */
    gl->coords.vertex    = vertexes_flipped;
@@ -5996,7 +6078,7 @@ static void gl2_views_preset_view(gl2_t *gl,
    unsigned dims                    = VIDEO_SCALE_PACK(v->width, v->height);
    int p;
 
-   gl->tex_info.tex           = gl->views.tex[i];
+   gl->tex_info.tex           = gl->views.tex[i][gl->views.head[i]];
    gl->tex_info.input_size[0] = v->width;
    gl->tex_info.input_size[1] = v->height;
    gl->tex_info.tex_size[0]   = v->width;
@@ -6007,10 +6089,24 @@ static void gl2_views_preset_view(gl2_t *gl,
    gl->tex_info.coord[3]      = 0.0f;
    gl->tex_info.coord[4]      = 0.0f;
 
+   /* Earlier frames are this view's own: before its first draw, all
+    * this one, as the frame's are before its first */
+   if (!gl->views.prev_live[i])
+   {
+      unsigned k;
+      for (k = 0; k < GL2_VIEWS_HISTORY; k++)
+         gl->views.prev[i][k] = gl->tex_info;
+      gl->views.prev_live[i] = true;
+   }
+   gl->views.prev_cur     = gl->views.prev[i];
+   gl->views.feedback_cur = gl->tex_info;
+
    if (!(gl->flags & GL2_FLAG_FBO_INITED))
       return;
 
    gl2_renderchain_recompute_pass_sizes(gl, chain, dims, vp_dims);
+   if (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
+      gl2_views_feedback(gl, i);
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
    if (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO)
       glEnable(GL_FRAMEBUFFER_SRGB);
@@ -6022,8 +6118,8 @@ static void gl2_views_preset_view(gl2_t *gl,
    params.frame_counter = frame_count;
    params.swap_counter  = (unsigned int)video_info->swap_count;
    params.info          = &gl->tex_info;
-   params.prev_info     = gl->prev_info;
-   params.feedback_info = &gl->tex_info;
+   params.prev_info     = gl->views.prev_cur;
+   params.feedback_info = &gl->views.feedback_cur;
    for (p = 0; p < chain->fbo_pass; p++)
    {
       const struct video_fbo_rect *r = &gl->fbo_rect[p];
@@ -6146,7 +6242,7 @@ static bool gl2_views_setup(gl2_t *gl, const video_frame_info_t *video_info,
 static void gl2_views_render(gl2_t *gl,
       const video_frame_info_t *video_info, void *const *chains,
       const video_views_rect_t *rects, bool blend, bool direct,
-      unsigned frame_count)
+      bool fresh, unsigned frame_count)
 {
    struct gl2_views_draw d;
    const video_views_layout_t *layout = &video_info->views_layout;
@@ -6185,10 +6281,16 @@ static void gl2_views_render(gl2_t *gl,
       unsigned i, j;
       void *one[RETRO_VIDEO_VIEWS_MAX];
       struct video_tex_info frame = gl->tex_info;
+      /* The copies a preset reading earlier frames keeps: the newest
+       * and as many as it reads before it */
+      unsigned depth = gl->shader->get_prev_textures(gl->shader_data) + 1;
+      bool feedback  = (gl->flags & GL2_FLAG_FBO_INITED)
+         && (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE);
       for (i = 0; i < video_info->views.num_views; i++)
       {
          if (     !chains[i]
-               || !gl2_views_copy(gl, i, &video_info->views.views[i]))
+               || !gl2_views_copy(gl, i, &video_info->views.views[i],
+                  depth, fresh))
             continue;
          gl2_views_preset_view(gl, video_info, i, rects[i].dims,
                frame_count);
@@ -6196,6 +6298,10 @@ static void gl2_views_render(gl2_t *gl,
             one[j] = (j == i) ? chains[i] : NULL;
          gl2_vv_draw_placements(gl, &d, layout, one,
                blend || !layout->offscreen, target_dims, false, blend);
+         if (depth > 1)
+            gl2_views_push_prev(gl, i);
+         if (feedback)
+            gl2_views_swap_feedback(gl, i);
          gl->tex_info = frame;
       }
       gl->coords.vertex    = gl->vertex_ptr;
@@ -6583,7 +6689,8 @@ static bool gl2_frame(void *data, const void *frame,
    gl2_views_publish(gl);
    if (views)
       gl2_views_render(gl, video_info, view_chains, view_rects,
-            views_blend, views_direct, (unsigned)frame_count);
+            views_blend, views_direct, frame != NULL,
+            (unsigned)frame_count);
    else
 #endif
    {
@@ -8290,6 +8397,10 @@ static bool gl2_set_shader(void *data,
    gl->shader       = init_data.shader;
    gl->shader_data  = init_data.shader_data;
    gl->views.preset = path && *path;
+#ifdef GL2_VIEWS
+   /* The views' earlier frames and feedback were the last preset's */
+   gl2_views_free_copies(gl);
+#endif
 
    gl2_update_tex_filter_frame(gl, video_smooth);
 

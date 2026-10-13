@@ -39,6 +39,10 @@ RETRO_BEGIN_DECLS
 
 typedef struct gl2 gl2_t;
 
+/* How many of each view's copies a preset can read: the newest and
+ * up to seven before it */
+#define GL2_VIEWS_HISTORY 8
+
 /* A render target views draw into: a texture and its framebuffer */
 struct gl2_views_fbo
 {
@@ -289,9 +293,19 @@ struct gl2
       struct gl2_views_prog layer;
       struct gl2_views_prog anaglyph;
       struct gl2_views_prog interlaced;
-      /* With a preset each view is drawn from a copy of its own */
-      GLuint                tex[RETRO_VIDEO_VIEWS_MAX];
-      unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX];
+      /* With a preset each view is drawn from a copy of its own, the
+       * last few kept for a preset that reads earlier frames: head is
+       * the newest, prev what the preset reads as earlier ones. */
+      GLuint                tex[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
+      unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
+      unsigned              head[RETRO_VIDEO_VIEWS_MAX];
+      struct video_tex_info prev[RETRO_VIDEO_VIEWS_MAX][GL2_VIEWS_HISTORY];
+      /* What a feedback pass drew for each view the frame before */
+      struct gl2_views_fbo  feedback[RETRO_VIDEO_VIEWS_MAX];
+      unsigned              feedback_dims[RETRO_VIDEO_VIEWS_MAX];
+      /* For the view being drawn: its earlier frames and feedback */
+      const struct video_tex_info *prev_cur;
+      struct video_tex_info feedback_cur;
       GLuint                copy_fbo;
       GLuint                vbo;
       /* For get_flags on the main thread: whether views may be drawn,
@@ -307,6 +321,10 @@ struct gl2
       /* Drawing into the UI layer */
       bool                  ui_pass;
       bool                  direct_seen;
+      /* Some copy or feedback target is held */
+      bool                  copies;
+      /* Each view's prev is filled */
+      bool                  prev_live[RETRO_VIDEO_VIEWS_MAX];
    } views;
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
