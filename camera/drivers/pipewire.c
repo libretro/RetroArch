@@ -146,6 +146,12 @@ static bool preprocess_image(pipewire_camera_t *camera)
    struct spa_meta_header *h;
    struct pw_buffer       *b;
    struct scaler_ctx    *ctx = NULL;
+   struct spa_data     *data;
+   struct spa_chunk   *chunk;
+   uint32_t           offset;
+   int                stride;
+   int           saved_stride;
+   uint64_t         required;
    uint64_t              now;
    bool                  ret = false;
 
@@ -155,6 +161,8 @@ static bool preprocess_image(pipewire_camera_t *camera)
       return false;
 
    buf = b->buffer;
+   if (!buf || !buf->n_datas || !buf->datas)
+      goto done;
 
    if ((h = spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h))))
    {
@@ -168,11 +176,27 @@ static bool preprocess_image(pipewire_camera_t *camera)
                 now, h->pts, now - h->pts);
    }
 
-   if (buf->datas[0].data)
+   data = &buf->datas[0];
+   chunk = data->chunk;
+   ctx = &camera->scaler;
+   if (data->data && chunk && data->maxsize
+         && ctx->in_stride > 0 && ctx->in_height > 0)
    {
-      ctx = &camera->scaler;
+      saved_stride = ctx->in_stride;
+      stride = chunk->stride ? chunk->stride : saved_stride;
+      if (stride < saved_stride
+            || (chunk->flags & SPA_CHUNK_FLAG_CORRUPTED))
+         goto done;
+      offset = chunk->offset % data->maxsize;
+      required = (uint64_t)(ctx->in_height - 1) * stride + saved_stride;
+      if (required > chunk->size || required > data->maxsize - offset)
+         goto done;
+
+      /* Chunk layout may differ from the negotiated packed layout. */
+      ctx->in_stride = stride;
       scaler_ctx_scale_direct(ctx, camera->buffer_output,
-            (const uint8_t*)buf->datas[0].data);
+            (const uint8_t*)data->data + offset);
+      ctx->in_stride = saved_stride;
       ret = true;
    }
 

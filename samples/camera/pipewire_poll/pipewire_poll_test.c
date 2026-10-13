@@ -103,10 +103,13 @@ int main(void)
    struct pw_buffer        pwb;
    struct spa_buffer       buf;
    struct spa_data         data;
+   struct spa_chunk        chunk;
    struct spa_meta         meta;
    struct spa_meta_header  header;
    uint32_t                pixels[W * H];
    uint32_t                out[W * H];
+   uint32_t                padded[4 + (W + 2) * H];
+   unsigned                x, y;
    bool                    polled;
 
    memset(&camera, 0, sizeof(camera));
@@ -129,6 +132,7 @@ int main(void)
    memset(&pwb, 0, sizeof(pwb));
    memset(&buf, 0, sizeof(buf));
    memset(&data, 0, sizeof(data));
+   memset(&chunk, 0, sizeof(chunk));
    memset(&meta, 0, sizeof(meta));
    memset(&header, 0, sizeof(header));
    memset(pixels, 0x5a, sizeof(pixels));
@@ -142,6 +146,10 @@ int main(void)
    meta.size     = sizeof(header);
    meta.data     = &header;
    data.data     = pixels;
+   data.maxsize  = sizeof(pixels);
+   data.chunk    = &chunk;
+   chunk.size    = sizeof(pixels);
+   chunk.stride  = W * 4;
 
    printf("empty queue:\n");
    script_reset(NULL);
@@ -188,6 +196,37 @@ int main(void)
          "buffer queued back once");
    CHECK(frame_cb_count == 1, "frame delivered once");
    CHECK(frame_cb_first_pixel == 0x11223344u, "frame pixels converted");
+   printf("offset and padded rows:\n");
+   memset(padded, 0xa5, sizeof(padded));
+   for (y = 0; y < H; y++)
+      for (x = 0; x < W; x++)
+         padded[4 + y * (W + 2) + x] = pixels[y * W + x]
+            = 0xff000000u | (y << 16) | x;
+   data.data = padded;
+   data.maxsize = sizeof(padded);
+   chunk.offset = 4 * sizeof(uint32_t);
+   chunk.stride = (W + 2) * sizeof(uint32_t);
+   chunk.size = (H - 1) * chunk.stride + W * sizeof(uint32_t);
+   script_reset(&pwb);
+   polled = pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL);
+   CHECK(polled && frame_cb_count == 1, "padded frame delivered once");
+   CHECK(memcmp(out, pixels, sizeof(pixels)) == 0,
+         "chunk offset and row stride preserved all pixels");
+   CHECK(script_queued == 1, "padded buffer returned once");
+   data.data = pixels;
+   data.maxsize = sizeof(pixels);
+   chunk.offset = 0;
+   chunk.stride = W * sizeof(uint32_t);
+   chunk.size = sizeof(pixels);
+
+   printf("packed frame after padded frame:\n");
+   chunk.stride = 0;
+   script_reset(&pwb);
+   polled = pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL);
+   CHECK(polled && frame_cb_count == 1, "packed frame delivered once");
+   CHECK(memcmp(out, pixels, sizeof(pixels)) == 0,
+         "zero stride uses restored negotiated layout");
+   CHECK(script_queued == 1, "packed buffer returned once");
 
    printf("valid frame, no raw callback:\n");
    script_reset(&pwb);
