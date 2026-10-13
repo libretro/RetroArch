@@ -138,5 +138,16 @@ typedef struct rdvd_chapter
  * Unsorted/shared title offsets are bounded at the nearest later start. */
 bool rdvd_ifo_chapter_read(const rdvd_ifo_t *ifo, unsigned title,
       unsigned chapter, rdvd_chapter_t *out);
+typedef struct rdvd_menu_table
+{
+   const uint8_t *data;
+   size_t size;
+   unsigned languages;
+} rdvd_menu_table_t;
+
+/* Reads a borrowed PGCI_UT language table. Referenced PGCIT headers must
+ * fit their record spans; nested program chains are checked on access. */
+bool rdvd_menu_table_read(const uint8_t *data, size_t size,
+      rdvd_menu_table_t *out);
 RETRO_END_DECLS
 #endif

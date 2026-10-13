@@ -234,6 +234,35 @@ static void test_chapters(void)
    ptt[15] = 23;
    CHECK(!rdvd_ifo_chapter_read(&f, 2, 1, &chapter));
 }
+static uint8_t menu_bytes[1024];
+static void menu_fixture(void)
+{
+   memset(menu_bytes, 0, sizeof(menu_bytes));
+   menu_bytes[1] = 3; menu_bytes[6] = 3; menu_bytes[7] = 0xff;
+   menu_bytes[8] = 'e'; menu_bytes[9] = 'n'; menu_bytes[11] = 0xf8;
+   menu_bytes[14] = 2; /* English at 512. */
+   menu_bytes[16] = 'f'; menu_bytes[17] = 'r'; menu_bytes[23] = 32;
+   menu_bytes[24] = 'e'; menu_bytes[25] = 'n'; menu_bytes[30] = 2;
+}
+static void test_menu_table(void)
+{
+   rdvd_menu_table_t table;
+   unsigned i;
+   menu_fixture();
+   CHECK(rdvd_menu_table_read(menu_bytes, sizeof(menu_bytes), &table));
+   CHECK(table.data == menu_bytes && table.size == 1024 && table.languages == 3);
+   for (i = 0; i < sizeof(menu_bytes); i++)
+      CHECK(!rdvd_menu_table_read(menu_bytes, i, &table) && !table.data);
+   menu_bytes[23] = 31;
+   CHECK(!rdvd_menu_table_read(menu_bytes, sizeof(menu_bytes), &table));
+   menu_fixture(); menu_bytes[14] = 4;
+   CHECK(!rdvd_menu_table_read(menu_bytes, sizeof(menu_bytes), &table));
+   menu_fixture(); memset(menu_bytes + 4, 0xff, 4);
+   CHECK(!rdvd_menu_table_read(menu_bytes, sizeof(menu_bytes), &table));
+   memset(menu_bytes, 0, sizeof(menu_bytes)); menu_bytes[7] = 7;
+   CHECK(rdvd_menu_table_read(menu_bytes, 8, &table) && !table.languages);
+   CHECK(!rdvd_menu_table_read(NULL, 8, &table));
+}
 int main(void)
 {
    test_bounds();
@@ -242,6 +271,7 @@ int main(void)
    test_file();
    test_titles();
    test_chapters();
+   test_menu_table();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

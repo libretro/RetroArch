@@ -361,3 +361,29 @@ bool rdvd_ifo_chapter_read(const rdvd_ifo_t *ifo, unsigned title,
    *out = result;
    return true;
 }
+
+
+bool rdvd_menu_table_read(const uint8_t *data, size_t size,
+      rdvd_menu_table_t *out)
+{
+   uint32_t last;
+   size_t total, header;
+   unsigned count, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!data || size < 8) return false;
+   last = rdvd_ifo_u32(data + 4);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   if (total < 8 || total > size) return false;
+   count = rdvd_ifo_u16(data);
+   if (count > (total - 8) / 8) return false;
+   header = 8 + (size_t)count * 8;
+   for (i = 0; i < count; i++)
+   {
+      size_t start = rdvd_ifo_u32(data + 12 + (size_t)i * 8);
+      if (start < header || start > total - 8) return false;
+   }
+   out->data = data; out->size = total; out->languages = count;
+   return true;
+}
