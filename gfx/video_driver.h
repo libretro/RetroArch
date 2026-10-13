@@ -2175,6 +2175,13 @@ const video_views_layout_t *video_driver_get_views_layout(void);
  * the display the custom viewport is in. */
 void video_driver_views_layout_flat(const video_views_map_t *map,
       unsigned dims, bool window, video_views_layout_t *out);
+#ifdef WIIU
+/* A GamePad touch, -0x7fff to 0x7fff across its screen, to the core's
+ * pointer in its packed frame, while the GamePad shows its views;
+ * -0x8000 off them. False, with @res_x and @res_y as they were, when
+ * it shows none. */
+bool gx2_views_touch(int16_t x, int16_t y, int16_t *res_x, int16_t *res_y);
+#endif
 #ifdef HAVE_OPENXR
 /* Main thread: the core's own view map and frame size the last frame
  * presented with views used, or NULL and the last frame's size when it
