@@ -4,9 +4,11 @@
 #include <formats/rdvd_ifo.h>
 RETRO_BEGIN_DECLS
 
+struct rdvd_source_backend;
 typedef struct rdvd_source
 {
    rdvd_vob_map_t map;
+   const struct rdvd_source_backend *pending_backend;
    uint64_t offset, remaining, completed, ticket;
    size_t pending_bytes;
    bool pending, failed, cancelled;
@@ -69,5 +71,11 @@ typedef struct rdvd_source_backend
 bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
       const rdvd_backend_ops_t *ops, void *context, void *const *files,
       const uint64_t *sizes, unsigned count);
+/* Reserves and submits one read. Source/backend share the same immutable
+ * size array. False submission drains the reservation as a source error.
+ * Accepted backend/context remains alive until completion is polled.
+ * Backend callbacks must not reenter source operations. */
+bool rdvd_source_submit(rdvd_source_t *source, rdvd_source_backend_t *backend,
+      void *destination, size_t capacity);
 RETRO_END_DECLS
 #endif

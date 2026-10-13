@@ -49,6 +49,7 @@ bool rdvd_source_complete(rdvd_source_t *source, uint64_t ticket, int64_t bytes)
    if (!source || !source->pending || ticket != source->ticket) return false;
    requested = source->pending_bytes;
    source->pending = false; source->pending_bytes = 0;
+   source->pending_backend = NULL;
    if (source->cancelled) return true;
    if (bytes <= 0 || (uint64_t)bytes > requested)
    {
@@ -95,5 +96,27 @@ bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
       if (!files[i]) return false;
    backend->ops = *ops; backend->context = context;
    backend->files = files; backend->map = map;
+   return true;
+}
+
+
+bool rdvd_source_submit(rdvd_source_t *source, rdvd_source_backend_t *backend,
+      void *destination, size_t capacity)
+{
+   rdvd_source_request_t request;
+   unsigned i;
+   if (!source || !backend || !backend->ops.submit || !backend->ops.poll
+         || !backend->files || source->map.sizes != backend->map.sizes
+         || source->map.segments != backend->map.segments) return false;
+   for (i = 0; i < source->map.segments; i++)
+      if (!backend->files[i]) return false;
+   if (!rdvd_source_prepare(source, destination, capacity, &request)) return false;
+   source->pending_backend = backend;
+   if (!backend->ops.submit(backend->context, backend->files[request.segment - 1],
+            request.file_offset, request.destination, request.bytes, request.ticket))
+   {
+      rdvd_source_complete(source, request.ticket, -1);
+      return false;
+   }
    return true;
 }

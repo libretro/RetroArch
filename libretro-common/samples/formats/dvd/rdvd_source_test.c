@@ -159,12 +159,73 @@ static void test_backend_init(void)
    CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 2));
    CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 10));
 }
+typedef struct fake_backend
+{
+   void *destination, *file;
+   size_t bytes;
+   uint64_t offset, ticket;
+   unsigned submissions, polls;
+   bool accept, ready;
+   int64_t result;
+} fake_backend_t;
+static bool queued_submit(void *context, void *file, uint64_t offset,
+      void *destination, size_t bytes, uint64_t ticket)
+{
+   fake_backend_t *queue = (fake_backend_t*)context;
+   queue->submissions++;
+   if (!queue->accept) return false;
+   queue->destination = destination; queue->file = file;
+   queue->offset = offset; queue->bytes = bytes; queue->ticket = ticket;
+   return true;
+}
+static enum rdvd_backend_status queued_poll(void *context, uint64_t *ticket, int64_t *bytes)
+{
+   fake_backend_t *queue = (fake_backend_t*)context;
+   queue->polls++;
+   if (!queue->ready) return RDVD_BACKEND_PENDING;
+   queue->ready = false;
+   *ticket = queue->ticket; *bytes = queue->result;
+   return RDVD_BACKEND_COMPLETE;
+}
+static void test_submit(void)
+{
+   uint64_t sizes[2], other_sizes[2];
+   unsigned storage[2];
+   void *files[2];
+   uint8_t buffer[32];
+   rdvd_backend_ops_t ops;
+   rdvd_source_backend_t backend;
+   rdvd_source_t source;
+   fake_backend_t queue;
+   memset(&queue, 0, sizeof(queue)); queue.accept = true;
+   sizes[0] = sizes[1] = 2048; memcpy(other_sizes, sizes, sizeof(sizes));
+   files[0] = storage; files[1] = storage + 1;
+   ops.submit = queued_submit; ops.poll = queued_poll;
+   CHECK(rdvd_source_backend_init(&backend, &ops, &queue, files, sizes, 2));
+   CHECK(rdvd_source_init(&source, &backend.map, 2040, 40));
+   CHECK(rdvd_source_submit(&source, &backend, buffer, sizeof(buffer)));
+   CHECK(queue.destination == buffer && queue.file == files[0]);
+   CHECK(queue.offset == 2040 && queue.bytes == 8 && queue.submissions == 1);
+   CHECK(!rdvd_source_submit(&source, &backend, buffer, sizeof(buffer)) && queue.submissions == 1);
+   CHECK(rdvd_source_complete(&source, queue.ticket, 8));
+   CHECK(rdvd_source_submit(&source, &backend, buffer, sizeof(buffer)));
+   CHECK(queue.file == files[1] && !queue.offset && queue.bytes == 32);
+   CHECK(rdvd_source_complete(&source, queue.ticket, 32));
+   CHECK(rdvd_source_init(&source, &backend.map, 0, 40));
+   queue.accept = false;
+   CHECK(!rdvd_source_submit(&source, &backend, buffer, sizeof(buffer)));
+   CHECK(source.failed && !source.pending && !source.completed);
+   CHECK(rdvd_source_init(&source, &backend.map, 0, 40));
+   backend.map.sizes = other_sizes;
+   CHECK(!rdvd_source_submit(&source, &backend, buffer, sizeof(buffer)) && !source.pending);
+}
 int main(void)
 {
    test_prepare();
    test_completion();
    test_title_reads();
    test_backend_init();
+   test_submit();
    printf("DVD source tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
