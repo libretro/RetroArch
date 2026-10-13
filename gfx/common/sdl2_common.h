@@ -25,6 +25,13 @@
 #include "../font_driver.h"
 #include "../../retroarch.h"
 
+/* Views need SDL_SetTextureScaleMode and a custom blend mode */
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+#define SDL2_VIEWS
+#include <retro_atomic.h>
+#include "../video_views.h"
+#endif
+
 enum sd2l_flags
 {
    SDL2_FLAG_QUITTING      = (1 << 0),
@@ -116,6 +123,44 @@ typedef struct _sdl2_video
    size_t  display_verts_cap;
    int    *display_indices;
    size_t  display_indices_cap;
+
+#ifdef SDL2_VIEWS
+   struct
+   {
+      video_views_chains_t  chains;
+      video_views_target_t  canvas_target;
+      video_views_target_t  ui_target;
+      video_views_ui_dims_t saved;
+      /* What the last frame drew, kept for the viewport readback to
+       * draw again: its map, layout, chains and the window's size */
+      video_views_map_t     map;
+      video_views_layout_t  layout;
+      void                 *drawn[RETRO_VIDEO_VIEWS_MAX];
+      unsigned              dims;
+      /* Each view of the frame, written straight into its own texture */
+      SDL_Texture          *tex[RETRO_VIDEO_VIEWS_MAX];
+      unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX];
+      bool                  tex_rgb32[RETRO_VIDEO_VIEWS_MAX];
+      SDL_Texture          *canvas;
+      SDL_Texture          *ui;
+      SDL_BlendMode         premultiplied;
+      unsigned              frame_dims;
+      /* The game viewport's size while the UI layer is drawn */
+      unsigned              vp_dims;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map drew it whole */
+      retro_atomic_int_t    allowed;
+      retro_atomic_int_t    fallback;
+      bool                  tried;
+      /* Render targets, for the canvas, and the premultiplied blend the
+       * UI layer is placed with */
+      bool                  targets;
+      bool                  layer;
+      bool                  active;
+      bool                  blend;
+      bool                  direct_seen;
+   } views;
+#endif
 } sdl2_video_t;
 
 /* Keeps the pointer in the SDL2 video driver's window, or lets it go.

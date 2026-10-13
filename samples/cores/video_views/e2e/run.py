@@ -271,7 +271,8 @@ EXACT_CASES = [
 EXACT_HW = {'gl': ('off', 'gl_compat'),
             'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
             'gl1': ('off',), 'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
-            'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',)}
+            'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',),
+            'sdl2': ('off',)}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
@@ -309,6 +310,9 @@ WRITE_SW_RE = re.compile(
 # Drivers on shader model 4, where the rect presets' gathers of more than
 # the red component do not compile.
 SM4_DRIVERS = ('d3d10',)
+# Drivers that draw anaglyph's frames whole: no blend of theirs makes its
+# colours, which mix the channels.
+WHOLE_ANAGLYPH_DRIVERS = ('sdl2',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -326,7 +330,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
-                  'd3d11', 'd3d12')
+                  'd3d11', 'd3d12', 'sdl2')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
@@ -1481,7 +1485,8 @@ def driver_jobs(retroarch, root, driver):
         return report('%s/%s-%s' % (driver, case[0], menu), errors), \
             bool(errors)
 
-    runs = [(case, 'off') for case in CASES]
+    runs = [(case, 'off') for case in CASES
+            if not (driver in WHOLE_ANAGLYPH_DRIVERS and 'anaglyph' in case[0])]
     runs += [(case, hw) for name, hw in HW_CASES.get(driver, [])
              for case in CASES if case[0] == name]
     if driver == 'vulkan':

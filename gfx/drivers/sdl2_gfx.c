@@ -21,6 +21,7 @@
 
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/scaler/pixconv.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
 
@@ -317,7 +318,14 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
    vid->vp.full_dims   = VIDEO_SCALE_PACK(win_w, win_h);
-   video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
+   /* The whole window while views draw */
+   video_driver_update_viewport(&vid->vp,
+#ifdef SDL2_VIEWS
+         vid->views.active,
+#else
+         false,
+#endif
+         vid->video.force_aspect, true);
 
    /* Tell the rest of the engine about our actual window dimensions.
     * Without this, the output size keeps whatever value was
@@ -487,8 +495,24 @@ static void *sdl2_gfx_init(const video_info_t *video)
    else
       flags = SDL_WINDOW_RESIZABLE;
 
-   vid->window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims), flags);
+   {
+      int win_w = (int)VIDEO_SCALE_W(video->dims);
+      int win_h = (int)VIDEO_SCALE_H(video->dims);
+      /* Made at the desktop's size: a window made smaller is only grown
+       * by a window manager, and without one its drawable keeps the
+       * size it was made at while SDL renders to the desktop's. */
+      if (flags == SDL_WINDOW_FULLSCREEN_DESKTOP)
+      {
+         SDL_DisplayMode mode;
+         if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
+         {
+            win_w = mode.w;
+            win_h = mode.h;
+         }
+      }
+      vid->window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED, win_w, win_h, flags);
+   }
 
    if (!vid->window)
    {
@@ -552,6 +576,9 @@ static void *sdl2_gfx_init(const video_info_t *video)
     * this is the same wiring every other modern driver does. */
 #endif
 
+#ifdef SDL2_VIEWS
+   retro_atomic_store_release_int(&vid->views.allowed, 1);
+#endif
 
    return vid;
 
@@ -632,6 +659,361 @@ static void sdl2_blit_frame(sdl2_video_t *vid)
    }
 }
 
+#ifdef SDL2_VIEWS
+/* What a frame's placement draws read */
+struct sdl2_views_draw
+{
+   const video_views_map_t *map;
+};
+
+static void sdl2_views_draw_direct(sdl2_video_t *vid,
+      const struct sdl2_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool sdl2_views_target_make(sdl2_video_t *vid, SDL_Texture **t,
+      unsigned dims);
+static bool sdl2_views_target_retire(sdl2_video_t *vid, SDL_Texture **t);
+
+/* The views compositor, with these calls bound in. SDL2 takes no
+ * preset: every view is drawn straight from its texture, its chain the
+ * driver itself. */
+#define VV_FN(name)                     sdl2_vv_##name
+#define VV_DRV                          sdl2_video_t
+#define VV_CHAIN                        void
+#define VV_CREATE_STOCK(drv)            ((void*)(drv))
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct sdl2_views_draw
+#define VV_DIRECT(p, d, v, r, c)        sdl2_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_TARGET                       SDL_Texture *
+#define VV_TARGET_MAKE(drv, t, dims)    sdl2_views_target_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        sdl2_views_target_retire(drv, t)
+#include "../video_views_draw.h"
+
+/* Render targets and the premultiplied blend, found on first use: most
+ * sessions never draw views */
+static void sdl2_views_init(sdl2_video_t *vid)
+{
+   SDL_Texture *probe;
+   vid->views.tried         = true;
+   vid->views.targets       = SDL_RenderTargetSupported(vid->renderer)
+      == SDL_TRUE;
+   vid->views.premultiplied = SDL_ComposeCustomBlendMode(
+         SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+         SDL_BLENDOPERATION_ADD,
+         SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+         SDL_BLENDOPERATION_ADD);
+   if (!vid->views.targets)
+   {
+      RARCH_LOG("[SDL2] Views drawn without the canvas and UI layer: the "
+            "renderer draws into no textures.\n");
+      return;
+   }
+   if ((probe = SDL_CreateTexture(vid->renderer, SDL_PIXELFORMAT_ARGB8888,
+               SDL_TEXTUREACCESS_TARGET, 1, 1)))
+   {
+      vid->views.layer = SDL_SetTextureBlendMode(probe,
+            vid->views.premultiplied) == 0;
+      SDL_DestroyTexture(probe);
+   }
+   if (!vid->views.layer)
+      RARCH_LOG("[SDL2] Views drawn without the UI layer: the renderer "
+            "blends no premultiplied colour.\n");
+}
+
+static bool sdl2_views_target_retire(sdl2_video_t *vid, SDL_Texture **t)
+{
+   if (*t)
+      SDL_DestroyTexture(*t);
+   *t = NULL;
+   return true;
+}
+
+/* A render target of ARGB8 sized @dims */
+static bool sdl2_views_target_make(sdl2_video_t *vid, SDL_Texture **t,
+      unsigned dims)
+{
+   if (!vid->views.targets)
+      return false;
+   if ((*t = SDL_CreateTexture(vid->renderer, SDL_PIXELFORMAT_ARGB8888,
+               SDL_TEXTUREACCESS_TARGET, (int)VIDEO_SCALE_W(dims),
+               (int)VIDEO_SCALE_H(dims))))
+      return true;
+   RARCH_WARN("[SDL2] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   return false;
+}
+
+static void sdl2_views_release(sdl2_video_t *vid)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (vid->views.tex[i])
+         SDL_DestroyTexture(vid->views.tex[i]);
+      vid->views.tex[i]      = NULL;
+      vid->views.tex_dims[i] = 0;
+   }
+   sdl2_vv_target_drop(vid, &vid->views.canvas_target, &vid->views.canvas);
+   sdl2_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
+}
+
+/* An SDL rectangle from a top-left one */
+static void sdl2_views_rect(const video_views_rect_t *r, SDL_Rect *out)
+{
+   out->x = VIDEO_POS_X(r->pos);
+   out->y = VIDEO_POS_Y(r->pos);
+   out->w = (int)VIDEO_SCALE_W(r->dims);
+   out->h = (int)VIDEO_SCALE_H(r->dims);
+}
+
+/* View @view over @dst, cut to @cut, from its texture, turned as the
+ * frame is: about @dst's centre, the turned view filling it */
+static void sdl2_views_draw_direct(sdl2_video_t *vid,
+      const struct sdl2_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   SDL_Rect r, c;
+   int deg = ((int)vid->rotation) % 360;
+   if (!vid->views.tex[view])
+      return;
+   if (deg < 0)
+      deg += 360;
+   sdl2_views_rect(dst, &r);
+   sdl2_views_rect(cut, &c);
+   if (deg == 90 || deg == 270)
+   {
+      int w = r.w;
+      r.x  += (r.w - r.h) / 2;
+      r.y  += (r.h - w) / 2;
+      r.w   = r.h;
+      r.h   = w;
+   }
+   SDL_RenderSetClipRect(vid->renderer, &c);
+   SDL_RenderCopyEx(vid->renderer, vid->views.tex[view], NULL, &r,
+         vid->rotation, NULL, SDL_FLIP_NONE);
+   SDL_RenderSetClipRect(vid->renderer, NULL);
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked and the rectangle its first placement takes, and in *blend
+ * whether into the canvas. Drawn whole for anaglyph, whose colours no
+ * blend makes, and when the stereo mode or the UI would need a canvas
+ * or layer the renderer can't make. */
+static bool sdl2_views_setup(sdl2_video_t *vid,
+      video_frame_info_t *video_info, const char *msg, bool *blend,
+      void **chains, video_views_rect_t *rects)
+{
+   bool views, per_eye, ui;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+
+   if (video_info->views.num_views && !vid->views.tried)
+      sdl2_views_init(vid);
+   *blend = offscreen
+      && layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED
+      && sdl2_vv_target_ensure(vid, &vid->views.canvas_target,
+            &vid->views.canvas, layout->canvas_dims);
+   /* A frame without the blend modes frees the canvas. */
+   if (!offscreen)
+      sdl2_vv_target_drop(vid, &vid->views.canvas_target,
+            &vid->views.canvas);
+   per_eye = video_views_ui_per_eye(&video_info->views, layout, true);
+   /* No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye, vid->menu.active, msg,
+         video_info->statistics_show,
+         video_info->widgets_active && gfx_widgets_visible(video_info));
+#else
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye, vid->menu.active, msg,
+         video_info->statistics_show, false);
+#endif
+#ifdef HAVE_MENU
+   ui = ui || (per_eye
+         && (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE));
+#endif
+   views = video_info->views.num_views
+      && (!offscreen || *blend)
+      && (!ui || vid->views.layer)
+      && video_views_fit_frame(&video_info->views, vid->views.frame_dims)
+      && sdl2_vv_pick_chains(vid, &vid->views.chains, &video_info->views,
+            layout, true, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend = views && *blend;
+   if (views && !vid->views.direct_seen)
+   {
+      vid->views.direct_seen = true;
+      RARCH_LOG("[SDL2] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Each drawn view of the frame at @frame, @pitch bytes a row, written
+ * straight into its own texture: no copy. An RGB565 view is widened on
+ * the way in, its bits repeated as every other driver's are, and not by
+ * SDL's own conversion, which falls short of full brightness. */
+static void sdl2_views_write(sdl2_video_t *vid, const video_views_map_t *map,
+      void *const *chains, const void *frame, unsigned pitch)
+{
+   unsigned i;
+   bool rgb32  = vid->video.rgb32;
+   size_t bpp  = rgb32 ? 4 : 2;
+   for (i = 0; i < map->num_views; i++)
+   {
+      const struct retro_video_view *v = &map->views[i];
+      unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+      if (!chains[i])
+         continue;
+      if (     !vid->views.tex[i] || vid->views.tex_dims[i] != dims
+            || vid->views.tex_rgb32[i] != rgb32)
+      {
+         if (vid->views.tex[i])
+            SDL_DestroyTexture(vid->views.tex[i]);
+         vid->views.tex_dims[i]  = 0;
+         if (!(vid->views.tex[i] = SDL_CreateTexture(vid->renderer,
+                     SDL_PIXELFORMAT_ARGB8888,
+                     SDL_TEXTUREACCESS_STREAMING, (int)v->width,
+                     (int)v->height)))
+            continue;
+         SDL_SetTextureScaleMode(vid->views.tex[i], vid->video.smooth
+               ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+         vid->views.tex_dims[i]  = dims;
+         vid->views.tex_rgb32[i] = rgb32;
+      }
+      if (rgb32)
+         SDL_UpdateTexture(vid->views.tex[i], NULL, (const uint8_t*)frame
+               + (size_t)v->y * pitch + (size_t)v->x * bpp, (int)pitch);
+      else
+      {
+         void *pixels;
+         int out_pitch;
+         if (SDL_LockTexture(vid->views.tex[i], NULL, &pixels,
+                  &out_pitch) != 0)
+            continue;
+         conv_rgb565_argb8888(pixels, (const uint8_t*)frame
+               + (size_t)v->y * pitch + (size_t)v->x * bpp,
+               (int)v->width, (int)v->height, out_pitch, (int)pitch);
+         SDL_UnlockTexture(vid->views.tex[i]);
+      }
+   }
+}
+
+/* Draws the last frame's views into the window, or with a canvas into
+ * that, whose halves then go to the window's even and odd rows */
+static void sdl2_views_render(sdl2_video_t *vid)
+{
+   struct sdl2_views_draw d;
+   const video_views_layout_t *layout = &vid->views.layout;
+   bool blend    = vid->views.blend;
+   unsigned dims = blend ? layout->canvas_dims : vid->views.dims;
+
+   d.map = &vid->views.map;
+   if (blend)
+   {
+      SDL_SetRenderTarget(vid->renderer, vid->views.canvas);
+      SDL_SetRenderDrawColor(vid->renderer, 0, 0, 0, 255);
+      SDL_RenderClear(vid->renderer);
+   }
+   else
+      SDL_RenderSetViewport(vid->renderer, NULL);
+   sdl2_vv_draw_placements(vid, &d, layout, vid->views.drawn,
+         blend || !layout->offscreen, dims, true);
+   if (blend)
+   {
+      SDL_Rect src, dst;
+      int y, w = (int)VIDEO_SCALE_W(vid->views.dims);
+      int h    = (int)VIDEO_SCALE_H(vid->views.dims);
+      SDL_SetRenderTarget(vid->renderer, NULL);
+      SDL_RenderSetViewport(vid->renderer, NULL);
+      SDL_SetTextureBlendMode(vid->views.canvas, SDL_BLENDMODE_NONE);
+      SDL_SetTextureScaleMode(vid->views.canvas, SDL_ScaleModeNearest);
+      /* Even rows from the left half, odd from the right, from the top */
+      src.x = 0;
+      src.y = 0;
+      src.w = w;
+      src.h = h;
+      SDL_RenderCopy(vid->renderer, vid->views.canvas, &src, &src);
+      src.x = w;
+      src.h = 1;
+      dst.x = 0;
+      dst.w = w;
+      dst.h = 1;
+      for (y = 1; y < h; y += 2)
+      {
+         src.y = dst.y = y;
+         SDL_RenderCopy(vid->renderer, vid->views.canvas, &src, &dst);
+      }
+   }
+}
+
+/* Moves UI drawing into the UI layer, laid out at one eye's size */
+static void sdl2_views_ui_begin(sdl2_video_t *vid,
+      video_frame_info_t *video_info)
+{
+   SDL_SetRenderTarget(vid->renderer, vid->views.ui);
+   SDL_SetRenderDrawColor(vid->renderer, 0, 0, 0, 0);
+   SDL_RenderClear(vid->renderer);
+   SDL_SetRenderDrawColor(vid->renderer, 0, 0, 0, 255);
+   /* Menus and widgets size from video_info->dims, fonts and the
+    * passes below from vp.full_dims. */
+   video_views_ui_enter(&vid->views.saved, &video_info->dims,
+         &vid->vp.full_dims, video_info->views_layout.ui_dims);
+   vid->views.vp_dims = vid->vp.dims;
+   vid->vp.dims       = video_info->views_layout.ui_dims;
+}
+
+/* Back onto the window, and the UI layer into each eye's area. It was
+ * drawn over transparent black, so its colour is premultiplied. */
+static void sdl2_views_ui_end(sdl2_video_t *vid,
+      video_frame_info_t *video_info)
+{
+   unsigned a;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   video_views_ui_leave(&vid->views.saved, &video_info->dims,
+         &vid->vp.full_dims);
+   vid->vp.dims = vid->views.vp_dims;
+   SDL_SetRenderTarget(vid->renderer, NULL);
+   SDL_RenderSetViewport(vid->renderer, NULL);
+   SDL_SetTextureBlendMode(vid->views.ui, vid->views.premultiplied);
+   /* Only full side by side places it unscaled. */
+   SDL_SetTextureScaleMode(vid->views.ui,
+         (layout->stereo_mode == VIDEO_STEREO_MODE_SBS_FULL)
+         ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      SDL_Rect r;
+      sdl2_views_rect(&layout->areas[a], &r);
+      SDL_RenderCopy(vid->renderer, vid->views.ui, NULL, &r);
+   }
+}
+
+/* Where a menu texture not drawn full screen goes while views draw:
+ * fitted to its target, of @dims, as the game viewport would be */
+static void sdl2_views_menu_rect(sdl2_video_t *vid, unsigned dims,
+      SDL_Rect *out)
+{
+   struct video_viewport vp;
+   memset(&vp, 0, sizeof(vp));
+   vp.full_dims = dims;
+   video_driver_update_viewport(&vp, false, vid->video.force_aspect, true);
+   out->x = VIDEO_POS_X(vp.pos);
+   out->y = VIDEO_POS_Y(vp.pos);
+   out->w = (int)VIDEO_SCALE_W(vp.dims);
+   out->h = (int)VIDEO_SCALE_H(vp.dims);
+}
+
+static void sdl2_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   if (!vid)
+      return;
+   vid->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = vid->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      vid->views.chains.stock[i] = NULL;
+}
+#endif
+
 static bool sdl2_gfx_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -641,18 +1023,88 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
+   bool views_per_eye = false;
+#ifdef SDL2_VIEWS
+   void *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views         = false;
+   bool views_blend   = false;
+   bool views_ui      = false;
+
+   if (frame)
+      vid->views.frame_dims = dims;
+   views = sdl2_views_setup(vid, video_info, msg, &views_blend,
+         view_chains, view_rects);
+   /* vid->vp is the whole window while views draw. */
+   if (views != vid->views.active)
+   {
+      vid->views.active = views;
+      vid->flags       |= SDL2_FLAG_SHOULD_RESIZE;
+   }
+   retro_atomic_store_release_int(&vid->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+#endif
 
    if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
       sdl_refresh_viewport(vid);
 
-   if (frame)
+#ifdef SDL2_VIEWS
+   if (views)
    {
+      /* Kept for the viewport readback to draw again */
+      unsigned i;
+      vid->views.map    = video_info->views;
+      vid->views.layout = video_info->views_layout;
+      vid->views.dims   = video_info->dims;
+      vid->views.blend  = views_blend;
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         vid->views.drawn[i] = view_chains[i];
       SDL_RenderClear(vid->renderer);
-      sdl_refresh_input_size(vid, false, vid->video.rgb32, dims, pitch);
-      SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
+      if (frame)
+         sdl2_views_write(vid, &video_info->views, view_chains, frame,
+               pitch);
+      sdl2_views_render(vid);
+   }
+   else
+#endif
+   {
+      if (frame)
+      {
+         SDL_RenderClear(vid->renderer);
+         sdl_refresh_input_size(vid, false, vid->video.rgb32, dims, pitch);
+         SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
+      }
+
+      sdl2_blit_frame(vid);
    }
 
-   sdl2_blit_frame(vid);
+#ifdef SDL2_VIEWS
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, true);
+   if (!views_per_eye)
+      sdl2_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden.
+    * No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, vid->menu.active, msg,
+         video_info->statistics_show,
+         video_info->widgets_active && gfx_widgets_visible(video_info));
+#else
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye, vid->menu.active, msg,
+         video_info->statistics_show, false);
+#endif
+#ifdef HAVE_MENU
+   views_ui = views_ui || (views_per_eye && menu_is_alive);
+#endif
+   views_ui = views_ui && vid->views.layer
+      && sdl2_vv_target_ensure(vid, &vid->views.ui_target,
+            &vid->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+      sdl2_views_ui_begin(vid, video_info);
+#endif
 
 #ifdef HAVE_MENU
    {
@@ -683,7 +1135,23 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
 #endif
 
    if (vid->menu.active)
+   {
+#ifdef SDL2_VIEWS
+      /* Its viewport is the whole target while views draw. */
+      if (views || views_ui)
+      {
+         SDL_Rect menu_rect;
+         SDL_Rect saved_vp_menu;
+         SDL_RenderGetViewport(vid->renderer, &saved_vp_menu);
+         SDL_RenderSetViewport(vid->renderer, NULL);
+         sdl2_views_menu_rect(vid, video_info->dims, &menu_rect);
+         SDL_RenderCopy(vid->renderer, vid->menu.tex, NULL, &menu_rect);
+         SDL_RenderSetViewport(vid->renderer, &saved_vp_menu);
+      }
+      else
+#endif
       SDL_RenderCopy(vid->renderer, vid->menu.tex, NULL, NULL);
+   }
 
 #if SDL_VERSION_ATLEAST(2, 0, 18)
    /* "Display Statistics" overlay (Settings -> Onscreen Notifications
@@ -743,7 +1211,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
     * pixel coordinates.  Going through the game viewport (the
     * default sdl_refresh_renderer state) would clip overlay
     * buttons drawn on the pillar/letter bars. */
-   if (vid->overlays_enabled && vid->overlays && vid->overlays_size)
+   /* Touch overlays would straddle both eyes. */
+   if (     vid->overlays_enabled && vid->overlays && vid->overlays_size
+         && !views_per_eye)
    {
       SDL_Rect screen_vp_ov;
       SDL_Rect saved_vp_ov;
@@ -807,6 +1277,11 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
    if (msg)
       sdl2_render_msg(vid, msg, video_info->font_msg_pos_x,
             video_info->font_msg_pos_y);
+
+#ifdef SDL2_VIEWS
+   if (views_ui)
+      sdl2_views_ui_end(vid, video_info);
+#endif
 
    SDL_RenderPresent(vid->renderer);
 
@@ -874,6 +1349,11 @@ static void sdl2_gfx_free(void *data)
    vid->display_indices_cap = 0;
 #endif
 
+#ifdef SDL2_VIEWS
+   if (vid->renderer)
+      sdl2_views_release(vid);
+#endif
+
    if (vid->renderer)
       SDL_DestroyRenderer(vid->renderer);
 
@@ -918,8 +1398,13 @@ static bool sdl2_capture_viewport(sdl2_video_t *vid, uint8_t *buffer,
    Uint32 fmt = bgrx ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_BGR24;
 #endif
 
-   if (!vid || !vid->renderer || !vid->frame.tex
+   if (!vid || !vid->renderer
          || !VIDEO_SCALE_W(vid->vp.dims) || !VIDEO_SCALE_H(vid->vp.dims))
+      return false;
+#ifdef SDL2_VIEWS
+   if (!vid->views.active)
+#endif
+   if (!vid->frame.tex)
       return false;
 
    pitch     = (int)VIDEO_SCALE_W(vid->vp.dims) * (bgrx ? 4 : 3);
@@ -931,6 +1416,14 @@ static bool sdl2_capture_viewport(sdl2_video_t *vid, uint8_t *buffer,
    SDL_RenderGetViewport(vid->renderer, &saved_vp);
    SDL_RenderSetViewport(vid->renderer, &game_vp);
    SDL_RenderClear(vid->renderer);
+#ifdef SDL2_VIEWS
+   if (vid->views.active)
+   {
+      sdl2_views_render(vid);
+      SDL_RenderSetViewport(vid->renderer, &game_vp);
+   }
+   else
+#endif
    sdl2_blit_frame(vid);
    /* NULL rect: the current viewport, the size of the caller's buffer. */
    ok = SDL_RenderReadPixels(vid->renderer, NULL, fmt, buffer, pitch) == 0;
@@ -980,6 +1473,15 @@ static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth, boo
    vid->video.smooth = smooth;
 
    sdl_tex_zero(&vid->frame);
+#ifdef SDL2_VIEWS
+   {
+      unsigned i;
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         if (vid->views.tex[i])
+            SDL_SetTextureScaleMode(vid->views.tex[i], smooth
+                  ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+   }
+#endif
 }
 
 static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1077,7 +1579,16 @@ static void sdl2_grab_mouse_toggle(void *data)
 static uint32_t sdl2_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef SDL2_VIEWS
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+#endif
    BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+#ifdef SDL2_VIEWS
+   if (vid && retro_atomic_load_acquire_int(&vid->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+#endif
    return flags;
 }
 
@@ -1202,6 +1713,14 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_update_texture
 #else
    NULL  /* update_texture */
+#endif
+#ifdef SDL2_VIEWS
+   ,
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   sdl2_set_view_count
 #endif
 };
 
