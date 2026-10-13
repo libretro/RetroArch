@@ -840,22 +840,27 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       if (     (size_t)(stop - line) > name_len
             && !strncmp(line, name, name_len) && line[name_len] == ' ')
          continue;
-      if (!strncmp(line, "MORE", 4) && (stop - line == 4 || line[4] == ' '))
+      /* "MORE", or "MORE <next>", saying the reply was cut short. The
+       * commands that send it send it last and nowhere else, and what
+       * follows it is digits, so a line is only the cursor when it is
+       * both - a playlist named "MORE games" is a row. */
+      if (     p >= end
+            && !strncmp(line, "MORE", 4)
+            && (stop - line == 4 || line[4] == ' '))
       {
-         more = true;
-         if (stop - line > 5)
+         const char *num = line + 5;
+         size_t      n   = stop - line > 5 ? (size_t)(stop - num) : 0;
+         size_t      i;
+         for (i = 0; i < n; i++)
+            if (num[i] < '0' || num[i] > '9')
+               break;
+         if (i == n)
          {
-            size_t i;
-            next     = line + 5;
-            next_len = (size_t)(stop - next);
-            for (i = 0; i < next_len; i++)
-               if (next[i] < '0' || next[i] > '9')
-               {
-                  next_len = 0;
-                  break;
-               }
+            more     = true;
+            next     = n ? num : NULL;
+            next_len = n;
+            continue;
          }
-         continue;
       }
       for (f = line; f < stop; f++)
          if (*f == '\t')

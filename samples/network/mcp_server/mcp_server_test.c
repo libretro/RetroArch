@@ -130,6 +130,23 @@ static const struct cmd_rows test_rows_short =
 
 #define SHORT_TEXT "a\tone\nb\ttwo\tand more\nc\n"
 
+/* one column, and a row that opens with the cursor's own word: only the
+ * last line, with nothing or digits after MORE, is the cursor */
+static const struct cmd_column test_cols_one[] = {
+   { "name", "The name." },
+   { NULL }
+};
+static const struct cmd_rows test_rows_one = { test_cols_one, 0, NULL, NULL, 0 };
+
+#define ONE_TEXT "Atari.lpl\nMORE games.lpl\nMORE\n"
+
+static bool act_one(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, ONE_TEXT, sizeof(ONE_TEXT) - 1);
+   return true;
+}
+
 static bool act_short(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -171,6 +188,7 @@ static struct cmd_action_map test_actions[] = {
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
    { "LROWS", act_later, "No argument", "Answer rows on a later frame.", CMD_INFO_READ_ONLY, NULL, &test_rows },
    { "SHORT", act_short, "No argument", "Answer rows that may end short.", CMD_INFO_READ_ONLY, NULL, &test_rows_short },
+   { "ONE",   act_one,   "No argument", "Answer one-column rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_one },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -636,8 +654,8 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS and SHORT, and nothing before them */
-      check("only the commands that answer rows declare one", n == 3);
+      /* ROWS, LROWS, SHORT and ONE, and nothing before them */
+      check("only the commands that answer rows declare one", n == 4);
    }
 
    printf("tools/call\n");
@@ -819,6 +837,12 @@ int main(void)
       check("the schema requires only the columns every row has",
             sh && strstr(sh, "\"required\":[\"key\",\"value\"]"));
    }
+
+   st = post(cmd, PORT_OPEN, NULL, call("ONE", NULL), out, sizeof(out), NULL);
+   check("a row opening with the cursor's word is still a row",
+         st == 200 && strstr(out, "{\"name\":\"MORE games.lpl\"}"));
+   check("and the cursor on the last line is still the cursor",
+         st == 200 && strstr(out, "\"more\":true"));
 
    printf("commands that are not tools\n");
    /* The flag is what leaves a command out, so the same two the list
