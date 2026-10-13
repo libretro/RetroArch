@@ -198,6 +198,7 @@ jobs:
             rdvd_ifo_test
             rdvd_source_test
             rdvd_vfs_test
+            rdvd_vfs_real_test
             cdfs_dir_record_test
             cdfs_pure_api_test
             cdfs_io_error_test
@@ -1202,6 +1203,7 @@ jobs:
           timeout 120 wine ./rdvd_ifo_test.exe
           timeout 120 wine ./rdvd_source_test.exe
           timeout 120 wine ./rdvd_vfs_test.exe
+          timeout 120 wine ./rdvd_vfs_real_test.exe
 
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})

@@ -4,6 +4,7 @@ TARGET_TEST2 := rdvd_spu_test$(EXE)
 TARGET_TEST3 := rdvd_ifo_test$(EXE)
 TARGET_TEST4 := rdvd_source_test$(EXE)
 TARGET_TEST5 := rdvd_vfs_test$(EXE)
+TARGET_TEST6 := rdvd_vfs_real_test$(EXE)
 CC ?= cc
 CFLAGS += -std=c89 -pedantic -Wall -Wextra -Werror -I../../../include
 ifneq ($(SANITIZER),)
@@ -13,7 +14,7 @@ endif
 SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_packet.c \
            ../../../formats/mpeg1/rmpeg1_ps.c
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
 
 $(TARGET): $(SOURCES) ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
@@ -33,13 +34,23 @@ $(TARGET_TEST4): rdvd_source_test.c ../../../formats/dvd/rdvd_source.c ../../../
 $(TARGET_TEST5): rdvd_vfs_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c ../../../include/formats/rdvd_vfs.h
 	$(CC) $(CFLAGS) -DHAVE_THREADS rdvd_vfs_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c -o $@ $(LDFLAGS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
+ifneq ($(findstring mingw,$(shell $(CC) -dumpmachine)),)
+VFS_REAL_LIBS :=
+else
+VFS_REAL_LIBS := -lpthread -lrt
+endif
+VFS_REAL_SOURCES := ../../../rthreads/rthreads.c ../../../features/features_cpu.c ../../../compat/fopen_utf8.c ../../../compat/compat_strl.c ../../../encodings/encoding_utf.c ../../../file/file_path.c ../../../file/file_path_io.c ../../../file/retro_dirent.c ../../../streams/file_stream.c ../../../string/rstrtod.c ../../../time/rtime.c ../../../vfs/vfs_implementation.c
+$(TARGET_TEST6): rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES)
+	$(CC) $(filter-out -std=c89 -Werror,$(CFLAGS)) -std=gnu99 -DHAVE_THREADS rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES) -o $@ $(LDFLAGS) $(VFS_REAL_LIBS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
 	./$(TARGET_TEST4)
 	./$(TARGET_TEST5)
+	./$(TARGET_TEST6)
 
 clean:
 	rm -f rdvd_packet_test rdvd_packet_test.exe
@@ -50,5 +61,7 @@ clean:
 	rm -f rdvd_source_test rdvd_source_test.exe
 
 	rm -f rdvd_vfs_test rdvd_vfs_test.exe
+
+	rm -f rdvd_vfs_real_test rdvd_vfs_real_test.exe
 
 .PHONY: all check clean

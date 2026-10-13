@@ -13,3 +13,7 @@ rdvd_source_test.exe
 
 rdvd_vfs_test
 rdvd_vfs_test.exe
+
+rdvd_vfs_real_test
+rdvd_vfs_real_test.exe
+rdvd-vfs-*.tmp

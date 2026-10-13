@@ -124,7 +124,7 @@ serially by ticket. Positive short reads preserve progress; errors retain
 the completed prefix. Cancellation stops new requests and drains a pending
 completion before storage can be reused. Initialization requires fresh or
 drained state; map sizes and pending destinations must stay alive. No locks,
-waits, file-opening or staging copies are added. A backend/task adapter and
+waits, file-opening or staging copies are added. The VFS backend below supplies file reads; worker scheduling and
 player integration are still required.
 
 Backend binding borrows segment handles and shares the source's immutable
@@ -133,5 +133,16 @@ externally; no synchronous filestream adapter is introduced. Dispatch uses
 the correct segment handle and the original consumer destination. One source
 may own a backend at a time. Poll consumes matching terminal tickets and
 releases ownership; cancellation retains ownership until the read drains.
-Concrete filesystem adapters, handle opening/closing and player task wiring
-remain to be implemented. Backend callbacks must not reenter source calls.
+The VFS adapter below supplies file opening/closing and reads. Player task
+wiring remains to be implemented. Backend callbacks must not reenter source calls.
+
+The VFS adapter reuses RFILE/filestream routing. Bind borrows existing read-only
+handles; open obtains and owns measured paths through the configured VFS.
+Open and close run in source setup/teardown with the I/O worker quiescent.
+Owner submit/poll exchange only descriptors through SPSC queues; worker-only
+service performs one seek/read of at most 64 KiB into consumer storage.
+Short reads and errors follow the existing source completion contract. Close
+refuses pending ownership and clears the adapter pointer even if a consumed
+RFILE close reports failure. Threadless/no-real-atomics builds return unsupported.
+The caller still supplies a dedicated I/O worker and its scheduling/lifetime.
+Player task wiring remains pending. VFS providers may perform internal copies.

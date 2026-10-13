@@ -21,6 +21,7 @@ struct rdvd_vfs
    retro_spsc_t requests, results;
    void *files[9];
    uint64_t sizes[9];
+   bool owns_files;
 };
 static bool rdvd_vfs_submit(void *context, void *file, uint64_t offset,
       void *destination, size_t bytes, uint64_t ticket)
@@ -92,14 +93,21 @@ rdvd_source_backend_t *rdvd_vfs_backend(rdvd_vfs_t *vfs)
 }
 bool rdvd_vfs_close(rdvd_vfs_t **vfs)
 {
+#ifdef RDVD_VFS_ENABLED
+   bool clean = true;
+   unsigned i;
+#endif
    if (!vfs) return false;
    if (!*vfs) return true;
 #ifdef RDVD_VFS_ENABLED
    if ((*vfs)->backend.owner || retro_spsc_read_avail(&(*vfs)->requests)
          || retro_spsc_read_avail(&(*vfs)->results)) return false;
+   if ((*vfs)->owns_files)
+      for (i = 0; i < (*vfs)->backend.map.segments; i++)
+         if (filestream_close((RFILE*)(*vfs)->files[i]) != 0) clean = false;
    retro_spsc_free(&(*vfs)->requests); retro_spsc_free(&(*vfs)->results);
    free(*vfs); *vfs = NULL;
-   return true;
+   return clean;
 #else
    return false;
 #endif
@@ -120,7 +128,8 @@ bool rdvd_vfs_service(rdvd_vfs_t *vfs)
    result.ticket = request.ticket; result.bytes = -1;
    bytes = request.bytes < 65536 ? request.bytes : 65536;
    if (filestream_seek(request.file, (int64_t)request.offset,
-            RETRO_VFS_SEEK_POSITION_START) == (int64_t)request.offset)
+            RETRO_VFS_SEEK_POSITION_START) == 0
+         && filestream_tell(request.file) == (int64_t)request.offset)
    {
       result.bytes = filestream_read(request.file, request.destination, (int64_t)bytes);
       if (result.bytes > (int64_t)bytes) result.bytes = -1;
@@ -130,5 +139,37 @@ bool rdvd_vfs_service(rdvd_vfs_t *vfs)
 #else
    (void)vfs;
    return false;
+#endif
+}
+
+
+rdvd_vfs_t *rdvd_vfs_open(const char *const *paths, unsigned count)
+{
+#ifdef RDVD_VFS_ENABLED
+   RFILE *files[9];
+   uint64_t sizes[9];
+   rdvd_vfs_t *vfs = NULL;
+   unsigned i, opened = 0;
+   if (!paths || !count || count > 9) return NULL;
+   memset(files, 0, sizeof(files));
+   for (i = 0; i < count; i++)
+   {
+      int64_t size;
+      if (!paths[i] || !*paths[i]) break;
+      files[i] = filestream_open(paths[i], RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (!files[i]) break;
+      opened++;
+      size = filestream_get_size(files[i]);
+      if (size <= 0 || size % 2048) break;
+      sizes[i] = (uint64_t)size;
+   }
+   if (i == count) vfs = rdvd_vfs_bind(files, sizes, count);
+   if (vfs) vfs->owns_files = true;
+   else
+      for (i = 0; i < opened; i++) filestream_close(files[i]);
+   return vfs;
+#else
+   (void)paths; (void)count;
+   return NULL;
 #endif
 }

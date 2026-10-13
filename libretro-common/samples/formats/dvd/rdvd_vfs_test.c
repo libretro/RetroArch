@@ -5,8 +5,8 @@
 struct RFILE
 {
    uint64_t size, position;
-   unsigned tag, reads;
-   bool seek_error, read_error, oversize;
+   unsigned tag, reads, closes;
+   bool seek_error, read_error, oversize, close_error;
    void *destination;
 };
 static unsigned failures;
@@ -16,8 +16,9 @@ int64_t filestream_seek(RFILE *file, int64_t offset, int whence)
 {
    if (file->seek_error || offset < 0 || whence != RETRO_VFS_SEEK_POSITION_START) return -1;
    file->position = (uint64_t)offset;
-   return offset;
+   return 0;
 }
+int64_t filestream_tell(RFILE *file) { return (int64_t)file->position; }
 int64_t filestream_read(RFILE *file, void *destination, int64_t bytes)
 {
    uint64_t count;
@@ -29,6 +30,20 @@ int64_t filestream_read(RFILE *file, void *destination, int64_t bytes)
    memset(destination, (int)file->tag, (size_t)count);
    file->position += count;
    return (int64_t)count;
+}
+static RFILE opened_files[2];
+RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
+{
+   if (mode != RETRO_VFS_FILE_ACCESS_READ || hints != RETRO_VFS_FILE_ACCESS_HINT_NONE) return NULL;
+   if (!strcmp(path, "one")) return opened_files;
+   if (!strcmp(path, "two")) return opened_files + 1;
+   return NULL;
+}
+int64_t filestream_get_size(RFILE *file) { return (int64_t)file->size; }
+int filestream_close(RFILE *file)
+{
+   file->closes++;
+   return file->close_error ? -1 : 0;
 }
 static void test_reads(void)
 {
@@ -72,9 +87,73 @@ static void test_reads(void)
    CHECK(rdvd_vfs_close(&vfs) && !vfs);
    CHECK(rdvd_vfs_close(&vfs));
 }
+static void test_open_close(void)
+{
+   const char *paths[2];
+   rdvd_vfs_t *vfs;
+   rdvd_source_backend_t *backend;
+   rdvd_source_t source;
+   uint8_t buffer[32];
+   memset(opened_files, 0, sizeof(opened_files));
+   opened_files[0].size = opened_files[1].size = 2048;
+   paths[0] = "one"; paths[1] = "two";
+   vfs = rdvd_vfs_open(paths, 2);
+   CHECK(vfs != NULL); if (!vfs) return;
+   backend = rdvd_vfs_backend(vfs);
+   CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(!rdvd_vfs_close(&vfs) && vfs && !opened_files[0].closes);
+   rdvd_source_cancel(&source);
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend));
+   opened_files[0].close_error = true;
+   CHECK(!rdvd_vfs_close(&vfs) && !vfs);
+   CHECK(opened_files[0].closes == 1 && opened_files[1].closes == 1);
+   CHECK(rdvd_vfs_close(&vfs) && opened_files[0].closes == 1);
+   opened_files[0].close_error = false;
+   paths[1] = "missing";
+   CHECK(!rdvd_vfs_open(paths, 2) && opened_files[0].closes == 2);
+   paths[1] = "two"; opened_files[1].size = 2049;
+   CHECK(!rdvd_vfs_open(paths, 2));
+   CHECK(opened_files[0].closes == 3 && opened_files[1].closes == 2);
+   CHECK(!rdvd_vfs_open(paths, 10));
+}
+static void test_short_and_errors(void)
+{
+   static uint8_t buffer[131072];
+   RFILE file, *handle;
+   uint64_t size = sizeof(buffer);
+   rdvd_vfs_t *vfs;
+   rdvd_source_backend_t *backend;
+   rdvd_source_t source;
+   memset(&file, 0, sizeof(file)); file.size = size; handle = &file;
+   vfs = rdvd_vfs_bind(&handle, &size, 1);
+   CHECK(vfs != NULL); if (!vfs) return;
+   backend = rdvd_vfs_backend(vfs);
+   CHECK(rdvd_source_init(&source, &backend->map, 0, size));
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend));
+   CHECK(source.completed == 65536 && source.remaining == 65536);
+   file.read_error = true;
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend));
+   CHECK(source.failed && source.completed == 65536);
+   file.read_error = false; file.size = 16;
+   CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend) && source.completed == 16);
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend) && source.failed);
+   file.oversize = true;
+   CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
+   CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
+   CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend) && source.failed);
+   CHECK(rdvd_vfs_close(&vfs) && !file.closes);
+}
 int main(void)
 {
    test_reads();
+   test_open_close();
+   test_short_and_errors();
    printf("DVD VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
