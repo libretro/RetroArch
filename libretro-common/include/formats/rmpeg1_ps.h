@@ -52,7 +52,7 @@ enum rmpeg1_ps_packet_type
 };
 
 /* Timestamps are in the 90 kHz system clock. RMPEG1_PS_NO_PTS marks absent. */
-#define RMPEG1_PS_NO_PTS ((uint64_t)UINT64_C(0xFFFFFFFFFFFFFFFF))
+#define RMPEG1_PS_NO_PTS ((uint64_t)-1)
 
 typedef struct rmpeg1_ps rmpeg1_ps_t;
 

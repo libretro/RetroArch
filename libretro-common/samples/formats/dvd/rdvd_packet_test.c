@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <formats/rdvd_packet.h>
+#include <formats/rmpeg1_ps.h>
 
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
@@ -126,11 +127,163 @@ static void test_nav(void)
    CHECK(!rdvd_nav_read(&view, NULL));
 }
 
+static void check_pes(const rmpeg1_ps_packet_t *pes)
+{
+   rdvd_packet_t dvd;
+   CHECK(pes->type == RMPEG1_PS_PRIVATE_1 && pes->stream_id == 0xbd);
+   CHECK(pes->pts == 90000 && pes->dts == 45000);
+   CHECK(rdvd_packet_read(pes->stream_id, pes->data, pes->size, &dvd));
+   CHECK(dvd.kind == RDVD_PACKET_AC3 && dvd.index == 0);
+   CHECK(dvd.data == pes->data + 4 && dvd.size == 2);
+   CHECK(dvd.data[0] == 0x0b && dvd.data[1] == 0x77);
+}
+
+static void test_program_stream(void)
+{
+   static const uint8_t input[] = {
+      0, 0, 1, 0xbd, 0, 19, 0x80, 0xc0, 10,
+      0x31, 0, 5, 0xbf, 0x21, 0x11, 0, 3, 0x5f, 0x91,
+      0x80, 1, 0, 1, 0x0b, 0x77
+   };
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rmpeg1_ps_packet_t pes;
+   unsigned split;
+   CHECK(ps != NULL);
+   if (!ps) return;
+   CHECK(rmpeg1_ps_borrow(ps, input, sizeof(input)) == sizeof(input));
+   CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+   CHECK(pes.data == input + 19);
+   check_pes(&pes);
+   CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+   for (split = 1; split < sizeof(input); split++)
+   {
+      rmpeg1_ps_reset(ps);
+      CHECK(rmpeg1_ps_borrow(ps, input, split) == split);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+      CHECK(rmpeg1_ps_borrow(ps, input + split, sizeof(input) - split) == sizeof(input) - split);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+      check_pes(&pes);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+   }
+   rmpeg1_ps_reset(ps);
+   for (split = 0; split < sizeof(input); split++)
+   {
+      CHECK(rmpeg1_ps_write(ps, input + split, 1) == 1);
+      CHECK(rmpeg1_ps_next(ps, &pes) == (split == sizeof(input) - 1));
+   }
+   check_pes(&pes);
+   rmpeg1_ps_free(ps);
+}
+
+static void test_timestamp_damage(void)
+{
+   static const uint8_t good[] = {
+      0, 0, 1, 0xbd, 0, 19, 0x80, 0xc0, 10,
+      0x31, 0, 5, 0xbf, 0x21, 0x11, 0, 3, 0x5f, 0x91,
+      0x80, 1, 0, 1, 0x0b, 0x77
+   };
+   static const unsigned markers[] = {9, 11, 13, 14, 16, 18};
+   uint8_t input[sizeof(good) * 2];
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rmpeg1_ps_packet_t pes;
+   unsigned i;
+   CHECK(ps != NULL);
+   if (!ps) return;
+   for (i = 0; i < 8; i++)
+   {
+      memcpy(input, good, sizeof(good));
+      memcpy(input + sizeof(good), good, sizeof(good));
+      if (i < 6) input[markers[i]] &= 0xfe;
+      else input[i == 6 ? 9 : 14] ^= 0x10;
+      rmpeg1_ps_reset(ps);
+      CHECK(rmpeg1_ps_borrow(ps, input, sizeof(input)) == sizeof(input));
+      CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+      CHECK(pes.data == input + sizeof(good) + 19);
+      check_pes(&pes);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+   }
+   rmpeg1_ps_free(ps);
+}
+
+static void test_mpeg1_timestamps(void)
+{
+   static const uint8_t good[] = {
+      0, 0, 1, 0xbd, 0, 16,
+      0x31, 0, 5, 0xbf, 0x21, 0x11, 0, 3, 0x5f, 0x91,
+      0x80, 1, 0, 1, 0x0b, 0x77
+   };
+   static const uint8_t pts_only[] = {
+      0, 0, 1, 0xbd, 0, 11,
+      0x2f, 0xff, 0xff, 0xff, 0xff, 0x80, 1, 0, 1, 0x0b, 0x77
+   };
+   static const unsigned markers[] = {6, 8, 10, 11, 13, 15};
+   uint8_t input[sizeof(good) * 2];
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rmpeg1_ps_packet_t pes;
+   unsigned i;
+   CHECK(ps != NULL);
+   if (!ps) return;
+   CHECK(rmpeg1_ps_borrow(ps, good, sizeof(good)) == sizeof(good));
+   CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+   check_pes(&pes);
+   for (i = 0; i < 7; i++)
+   {
+      memcpy(input, good, sizeof(good));
+      memcpy(input + sizeof(good), good, sizeof(good));
+      if (i < 6) input[markers[i]] &= 0xfe;
+      else input[11] ^= 0x10;
+      rmpeg1_ps_reset(ps);
+      CHECK(rmpeg1_ps_borrow(ps, input, sizeof(input)) == sizeof(input));
+      CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+      CHECK(pes.data == input + sizeof(good) + 16);
+      check_pes(&pes);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+   }
+   rmpeg1_ps_reset(ps);
+   CHECK(rmpeg1_ps_borrow(ps, pts_only, sizeof(pts_only)) == sizeof(pts_only));
+   CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+   CHECK(pes.pts == (((uint64_t)1 << 33) - 1) && pes.dts == RMPEG1_PS_NO_PTS);
+   rmpeg1_ps_free(ps);
+}
+
+static void test_nav_program_stream(void)
+{
+   static uint8_t input[6 + RDVD_DSI_BYTES];
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rmpeg1_ps_packet_t pes;
+   rdvd_packet_t view;
+   rdvd_nav_t nav;
+   unsigned id;
+   CHECK(ps != NULL);
+   if (!ps) return;
+   for (id = 0; id < 2; id++)
+   {
+      size_t size = id ? RDVD_DSI_BYTES : RDVD_PCI_BYTES;
+      memset(input, 0, sizeof(input));
+      input[2] = 1; input[3] = 0xbf;
+      input[4] = (uint8_t)(size >> 8); input[5] = (uint8_t)size;
+      input[6] = (uint8_t)id;
+      rmpeg1_ps_reset(ps);
+      CHECK(rmpeg1_ps_borrow(ps, input, size + 6) == size + 6);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 1 && pes.type == RMPEG1_PS_PRIVATE_2);
+      CHECK(pes.data == input + 6 && pes.size == size);
+      CHECK(rdvd_packet_read(pes.stream_id, pes.data, pes.size, &view));
+      CHECK(view.data == input + 7 && rdvd_nav_read(&view, &nav));
+      CHECK(nav.kind == (id ? RDVD_PACKET_DSI : RDVD_PACKET_PCI));
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+   }
+   rmpeg1_ps_free(ps);
+}
+
 int main(void)
 {
    test_private_streams();
    test_lpcm();
    test_nav();
+   test_program_stream();
+   test_timestamp_damage();
+   test_mpeg1_timestamps();
+   test_nav_program_stream();
    printf("DVD packet tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

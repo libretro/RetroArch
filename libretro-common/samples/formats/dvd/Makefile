@@ -5,11 +5,12 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_packet.c
+SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_packet.c \
+           ../../../formats/mpeg1/rmpeg1_ps.c
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) ../../../include/formats/rdvd_packet.h
+$(TARGET): $(SOURCES) ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
 
 check: $(TARGET)

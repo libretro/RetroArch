@@ -204,6 +204,12 @@ size_t rmpeg1_ps_write(rmpeg1_ps_t *ps, const uint8_t *data, size_t len)
 
 /* 33-bit timestamp spread over 5 bytes with marker bits at 0, 23 and 39.
  * The caller has already checked that 5 bytes are present. */
+static bool rmpeg1_ps_valid_ts(const uint8_t *p, unsigned prefix)
+{
+   return (p[0] >> 4) == prefix && (p[0] & 1)
+      && (p[2] & 1) && (p[4] & 1);
+}
+
 static uint64_t rmpeg1_ps_read_ts(const uint8_t *p)
 {
    uint64_t ts;
@@ -466,7 +472,10 @@ static int rmpeg1_ps_parse(rmpeg1_ps_t *ps, const uint8_t *buf,
          if (     hdr + hlen > payload_end
                || flags == 1
                || (flags == 2 && hlen < 5)
-               || (flags == 3 && hlen < 10))
+               || (flags == 3 && hlen < 10)
+               || (flags == 2 && !rmpeg1_ps_valid_ts(buf + hdr, 2))
+               || (flags == 3 && (!rmpeg1_ps_valid_ts(buf + hdr, 3)
+                  || !rmpeg1_ps_valid_ts(buf + hdr + 5, 1))))
          {
             *rdp = payload_end;
             ps->resyncs++;
@@ -498,7 +507,7 @@ static int rmpeg1_ps_parse(rmpeg1_ps_t *ps, const uint8_t *buf,
 
             if (flag == 0x20)
             {
-               if (pos + 5 > payload_end)
+               if (pos + 5 > payload_end || !rmpeg1_ps_valid_ts(buf + pos, 2))
                {
                   *rdp = payload_end;
                   ps->resyncs++;
@@ -509,7 +518,8 @@ static int rmpeg1_ps_parse(rmpeg1_ps_t *ps, const uint8_t *buf,
             }
             else if (flag == 0x30)
             {
-               if (pos + 10 > payload_end)
+               if (pos + 10 > payload_end || !rmpeg1_ps_valid_ts(buf + pos, 3)
+                     || !rmpeg1_ps_valid_ts(buf + pos + 5, 1))
                {
                   *rdp = payload_end;
                   ps->resyncs++;
