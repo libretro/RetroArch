@@ -300,6 +300,50 @@ static void test_saturation(void)
    tpool_destroy(tp);
 }
 
+#ifdef RETRO_ATOMIC_LOCK_FREE
+static retro_atomic_int_t try_ran;
+static void try_job(void *arg)
+{
+   (void)arg;
+   retro_atomic_fetch_add_int(&try_ran, 1);
+}
+static void test_try_post(void)
+{
+   tpool_t *tp = tpool_create(1);
+   unsigned i, accepted = 0;
+   retro_time_t start;
+   if (!tp) { check("try pool created", 0); return; }
+   retro_atomic_store_release_int(&try_ran, 0);
+   retro_atomic_store_release_int(&sat_gate, 0);
+   retro_atomic_store_release_int(&sat_parked, 0);
+   tpool_add_work(tp, sat_stall, NULL);
+   start = cpu_features_get_time_usec();
+   while (!retro_atomic_load_acquire_int(&sat_parked)
+         && cpu_features_get_time_usec() - start < DEADLINE_US) sthread_yield();
+   check("try worker is stalled", retro_atomic_load_acquire_int(&sat_parked) == 1);
+   for (i = 0; i < TPOOL_QUEUE_SIZE; i++)
+      if (tpool_try_add_work(tp, try_job, NULL)) accepted++;
+   check("try fills the ring without allocating overflow", accepted == TPOOL_QUEUE_SIZE
+         && !retro_atomic_load_acquire_int(&tp->over));
+   check("try refuses a full ring without changing accounting",
+         !tpool_try_add_work(tp, try_job, NULL)
+         && retro_atomic_load_acquire_int(&tp->count.n.outstanding) == TPOOL_QUEUE_SIZE + 1);
+   check("try rejects missing pool or callback", !tpool_try_add_work(NULL, try_job, NULL)
+         && !tpool_try_add_work(tp, NULL, NULL));
+   tpool_add_work(tp, try_job, NULL);
+   check("try does not bypass pending overflow", !tpool_try_add_work(tp, try_job, NULL));
+   retro_atomic_store_release_int(&sat_gate, 1);
+   tpool_wait(tp);
+   check("every accepted try job runs once", retro_atomic_load_acquire_int(&try_ran)
+         == TPOOL_QUEUE_SIZE + 1);
+   check("try accepts again after draining", tpool_try_add_work(tp, try_job, NULL));
+   tpool_wait(tp);
+   check("drained try count balances", retro_atomic_load_acquire_int(&try_ran)
+         == TPOOL_QUEUE_SIZE + 2 && !retro_atomic_load_acquire_int(&tp->count.n.outstanding));
+   tpool_destroy(tp);
+}
+#endif
+
 int main(void)
 {
    test_no_lost_wakeup();
@@ -307,6 +351,9 @@ int main(void)
    test_in_order();
    test_destroy_pending();
    test_saturation();
+#ifdef RETRO_ATOMIC_LOCK_FREE
+   test_try_post();
+#endif
    if (fails)
    {
       printf("tpool_handoff_test: FAIL (%d)\n", fails);

@@ -458,6 +458,30 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
    return true;
 }
 
+bool tpool_try_add_work(tpool_t *tp, thread_func_t func, void *arg)
+{
+   tpool_slot_t *slot;
+   unsigned pos;
+   if (!tp || !func || retro_atomic_load_acquire_int(&tp->stop)
+         || retro_atomic_load_acquire_int(&tp->over)) return false;
+   pos = (unsigned)retro_atomic_load_relaxed_int(&tp->enq.v);
+   slot = &tp->slots[pos & (TPOOL_QUEUE_SIZE - 1)];
+   if ((unsigned)retro_atomic_load_acquire_int(&slot->seq) != pos) return false;
+   retro_atomic_fetch_add_int(&tp->count.n.outstanding, 1);
+   if (!retro_atomic_cas_int(&tp->enq.v, (int)pos, (int)(pos + 1)))
+   {
+      tpool_retire(tp);
+      return false;
+   }
+   TPOOL_FUZZ();
+   slot->func = func; slot->arg = arg;
+   retro_atomic_store_release_int(&slot->seq, (int)(pos + 1));
+   TPOOL_FUZZ();
+   retro_atomic_fetch_add_seq_cst_int(&tp->count.n.queued, 1);
+   tpool_wake_one(tp);
+   return true;
+}
+
 bool tpool_help(tpool_t *tp)
 {
    thread_func_t func;
@@ -763,6 +787,12 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
    slock_unlock(tp->work_mutex);
 
    return true;
+}
+
+bool tpool_try_add_work(tpool_t *tp, thread_func_t func, void *arg)
+{
+   (void)tp; (void)func; (void)arg;
+   return false;
 }
 
 bool tpool_help(tpool_t *tp)

@@ -99,6 +99,11 @@ void tpool_destroy(tpool_t *tp);
  **/
 bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg);
 
+/* One ring claim attempt, without allocation or overflow locks. False on
+ * fullness/contention, stopping, or a backend without lock-free atomics.
+ * A refused job is never queued; caller retains it and may retry later. */
+bool tpool_try_add_work(tpool_t *tp, thread_func_t func, void *arg);
+
 /**
  * tpool_wait:
  * @tp Thread pool.
