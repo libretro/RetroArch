@@ -76,6 +76,28 @@ names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP'):
     check('tool %s listed' % n, n in names)
+# A hotkey that steps a selection nothing can read back is a command on
+# every line interface and not a tool.
+for n in ('SAVE_STATE', 'STATE_SLOT_PLUS', 'SHADER_NEXT', 'READ_CORE_RAM',
+          'NETPLAY_HOST_TOGGLE'):
+    check('%s is not offered as a tool' % n, n not in names)
+send({'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
+      'params': {'name': 'SAVE_STATE', 'arguments': {}}})
+msg2, _ = recv(3)
+check('and calling one is an unknown tool',
+      msg2 and 'error' in msg2 and msg2['error']['code'] == -32602)
+
+# The revision agreed at initialize is the one answered in: over stdio
+# there is no header to carry it on every request.
+schemas = [t['name'] for t in msg['result']['tools'] if t.get('outputSchema')]
+check('the rows commands declare an outputSchema: %d' % len(schemas),
+      'GET_LOG' in schemas and 'SET_INPUT' in schemas
+      and 'GET_PLAYLIST' in schemas)
+# Every tool's description and schema is context a client pays for
+# before it does anything. Raise this deliberately, not by accident.
+size = len(json.dumps(msg, separators=(',', ':')))
+check('the tool list stays within budget: %d bytes, %d tools'
+      % (size, len(names)), size < 22000)
 
 # wait for the core to be running
 st = ''
@@ -109,11 +131,17 @@ check('and none while paused after', c == b)
 
 msg, t, _ = call(210, 'SET_INPUT', {'player': 1, 'control': 'a', 'value': 1})
 check('SET_INPUT: ' + (t or '').strip(), t and t.startswith('1\ta\t'))
+sc = msg and msg['result'].get('structuredContent')
+check('and the same reply in fields',
+      sc and sc['rows'] == [{'player': '1', 'buttons': 'a', 'axes': 'none'}])
 msg, t, _ = call(211, 'RELEASE_INPUT', {})
 check('RELEASE_INPUT', t and 'none\tnone' in t)
 
 msg, t, _ = call(220, 'GET_LOG', {})
 check('GET_LOG has lines and NEXT', t and '\nNEXT ' in '\n' + t and '[INFO]' in t)
+sc = msg and msg['result'].get('structuredContent')
+check('GET_LOG answers where it got to, and not the page over again',
+      sc == {'next': int(t.rsplit('NEXT ', 1)[1])} and len(t) > 100)
 
 send({'jsonrpc': '2.0', 'id': 230, 'method': 'logging/setLevel',
       'params': {'level': 'info'}})

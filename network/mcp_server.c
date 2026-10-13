@@ -107,6 +107,7 @@ struct mcp_conn
    bool     modern;
    bool     stdio;       /* the stdio transport's one connection */
    bool     structured;  /* its revision takes structuredContent */
+   bool     agreed;      /* stdio: initialize agreed on such a revision */
    /* the tool call being answered, for the shape of its reply */
    const struct cmd_action_map *act;
 };
@@ -422,44 +423,68 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
  * as anything else. */
 static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
 {
-   const struct cmd_column *col;
-   bool first = true;
-   MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{"
-         "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\","
-         "\"properties\":{");
-   for (col = rows->columns; col->name; col++)
+   const struct cmd_column  *col;
+   const struct cmd_trailer *tr;
+   bool wrote = false;
+
+   MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{");
+   if (rows->columns)
    {
-      if (!first)
-         MCP_RAW(w, ",");
-      first = false;
-      rjsonwriter_add_string(w, col->name);
-      MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
-      rjsonwriter_add_string(w, col->desc ? col->desc : "");
-      MCP_RAW(w, "}");
+      bool first = true;
+      MCP_RAW(w, "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\","
+            "\"properties\":{");
+      for (col = rows->columns; col->name; col++)
+      {
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+         MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
+         rjsonwriter_add_string(w, col->desc ? col->desc : "");
+         MCP_RAW(w, "}");
+      }
+      MCP_RAW(w, "},\"required\":[");
+      first = true;
+      for (col = rows->columns; col->name; col++)
+      {
+         if (rows->required && (size_t)(col - rows->columns) >= rows->required)
+            break;
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+      }
+      MCP_RAW(w, "],\"additionalProperties\":false}}");
+      wrote = true;
    }
-   MCP_RAW(w, "},\"required\":[");
-   first = true;
-   for (col = rows->columns; col->name; col++)
+   /* the lines that are not rows, as mcp_structured answers them */
+   for (tr = rows->trailers; tr && tr->word; tr++)
    {
-      if (rows->required && (size_t)(col - rows->columns) >= rows->required)
-         break;
-      if (!first)
-         MCP_RAW(w, ",");
-      first = false;
-      rjsonwriter_add_string(w, col->name);
+      if (tr->flag)
+      {
+         if (wrote)
+            MCP_RAW(w, ",");
+         wrote = true;
+         rjsonwriter_add_string(w, tr->flag);
+         MCP_RAW(w, ":{\"type\":\"boolean\",\"description\":\"The reply "
+               "was cut short.\"}");
+      }
+      if (tr->name)
+      {
+         if (wrote)
+            MCP_RAW(w, ",");
+         wrote = true;
+         rjsonwriter_add_string(w, tr->name);
+         MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
+         rjsonwriter_add_string(w, tr->desc ? tr->desc : "");
+         MCP_RAW(w, "}");
+      }
    }
-   MCP_RAW(w, "],\"additionalProperties\":false}},\"more\":{\"type\":"
-         "\"boolean\",\"description\":\"There are more rows than this "
-         "reply carries.\"}");
-   if (rows->cursor)
-   {
-      MCP_RAW(w, ",");
-      rjsonwriter_add_string(w, rows->cursor);
-      MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
-      rjsonwriter_add_string(w, rows->cursor_desc ? rows->cursor_desc : "");
-      MCP_RAW(w, "}");
-   }
-   MCP_RAW(w, "},\"required\":[\"rows\"],\"additionalProperties\":false}");
+   MCP_RAW(w, "}");
+   /* only the rows are always there */
+   if (rows->columns)
+      MCP_RAW(w, ",\"required\":[\"rows\"]");
+   MCP_RAW(w, ",\"additionalProperties\":false}");
 }
 
 /* A tool: its parameters as a JSON Schema, from the table rather than
@@ -804,27 +829,84 @@ static void mcp_row(rjsonwriter_t *w, const struct cmd_rows *rows,
    MCP_RAW(w, "}");
 }
 
+/* Which of @tr the line from @line to @stop is - its word, then a
+ * number - or -1 for none, which makes it a row. A trailer counts only
+ * where it belongs, at the reply's @opening line or its @closing one,
+ * and only with digits after the word: a playlist named "MORE games" is
+ * a row, and so is a log line that happens to start with NEXT. The
+ * number found is left in @num and @num_len for the caller. */
+static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
+      const char *line, const char *stop, bool opening, bool closing,
+      const char **num, size_t *num_len)
+{
+   size_t i;
+   size_t len = (size_t)(stop - line);
+
+   for (i = 0; i < n; i++)
+   {
+      size_t k;
+      size_t wl = strlen(tr[i].word);
+      if (tr[i].first ? !opening : !closing)
+         continue;
+      if (len < wl || strncmp(line, tr[i].word, wl))
+         continue;
+      /* the word by itself, from a reply with nowhere to resume */
+      if (len == wl)
+      {
+         if (!tr[i].flag)
+            continue;
+         return (int)i;
+      }
+      if (line[wl] != ' ')
+         continue;
+      for (k = wl + 1; k < len; k++)
+         if (line[k] < '0' || line[k] > '9')
+            break;
+      if (k < len || k == wl + 1)
+         continue;
+      *num     = line + wl + 1;
+      *num_len = k - wl - 1;
+      return (int)i;
+   }
+   return -1;
+}
+
 static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       const char *name, const char *text, size_t len)
 {
    const char *p        = text;
    const char *end      = text + len;
-   const char *next     = NULL;   /* the number on the MORE line */
-   size_t      next_len = 0;
+   /* A trailer is the reply's first line or its last, so a reply has at
+    * most two: which they are, and the number each carried. */
+   int         found[2];
+   const char *num[2];
+   size_t      num_len[2];
    size_t      name_len = strlen(name);
    size_t      ncol     = 0;
+   size_t      ntr      = 0;
    size_t      slack;
    size_t      req;
    size_t      present;
+   size_t      i;
    bool        first    = true;
-   bool        more     = false;
+   bool        wrote    = false;
 
-   while (rows->columns[ncol].name)
+   while (rows->columns && rows->columns[ncol].name)
       ncol++;
-   slack = rows->slack < ncol ? rows->slack : ncol - 1;
+   while (rows->trailers && rows->trailers[ntr].word)
+      ntr++;
+   for (i = 0; i < 2; i++)
+   {
+      found[i]   = -1;
+      num[i]     = NULL;
+      num_len[i] = 0;
+   }
+   slack = ncol && rows->slack < ncol ? rows->slack : (ncol ? ncol - 1 : 0);
    req   = rows->required && rows->required < ncol ? rows->required : ncol;
 
-   MCP_RAW(w, ",\"structuredContent\":{\"rows\":[");
+   MCP_RAW(w, ",\"structuredContent\":{");
+   if (ncol)
+      MCP_RAW(w, "\"rows\":[");
    while (p < end)
    {
       const char *eol  = (const char*)memchr(p, '\n', (size_t)(end - p));
@@ -840,31 +922,22 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       if (     (size_t)(stop - line) > name_len
             && !strncmp(line, name, name_len) && line[name_len] == ' ')
          continue;
-      /* "MORE", or "MORE <next>", saying the reply was cut short. The
-       * commands that send it send it last and nowhere else, and what
-       * follows it is digits, so a line is only the cursor when it is
-       * both - a playlist named "MORE games" is a row. */
-      if (     p >= end
-            && !strncmp(line, "MORE", 4)
-            && (stop - line == 4 || line[4] == ' '))
+      /* one of the command's trailers rather than a row */
       {
-         const char *num = line + 5;
-         size_t      n   = stop - line > 5 ? (size_t)(stop - num) : 0;
-         size_t      i;
-         for (i = 0; i < n; i++)
-            if (num[i] < '0' || num[i] > '9')
-               break;
-         if (i == n)
+         size_t slot = line == text ? 0 : 1;
+         int    t    = mcp_trailer(rows->trailers, ntr, line, stop,
+               line == text, p >= end, &num[slot], &num_len[slot]);
+         if (t >= 0)
          {
-            more     = true;
-            next     = n ? num : NULL;
-            next_len = n;
+            found[slot] = t;
             continue;
          }
       }
       for (f = line; f < stop; f++)
          if (*f == '\t')
             tabs++;
+      if (!ncol)
+         continue;
       /* fewer fields than the reply always has: not a row of it */
       if (tabs + 1 < req)
          continue;
@@ -877,16 +950,34 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       mcp_row(w, rows, line, stop, present,
             slack < present ? slack : present - 1);
    }
-   MCP_RAW(w, "]");
-   if (more)
+   if (ncol)
    {
-      MCP_RAW(w, ",\"more\":true");
-      if (next_len && rows->cursor)
+      MCP_RAW(w, "]");
+      wrote = true;
+   }
+   /* in the order the table names them, whichever line they came on */
+   for (i = 0; i < ntr; i++)
+   {
+      size_t slot;
+      if      (found[0] >= 0 && (size_t)found[0] == i) slot = 0;
+      else if (found[1] >= 0 && (size_t)found[1] == i) slot = 1;
+      else                                             continue;
+      if (rows->trailers[i].flag)
       {
-         MCP_RAW(w, ",");
-         rjsonwriter_add_string(w, rows->cursor);
+         if (wrote)
+            MCP_RAW(w, ",");
+         wrote = true;
+         rjsonwriter_add_string(w, rows->trailers[i].flag);
+         MCP_RAW(w, ":true");
+      }
+      if (num_len[slot] && rows->trailers[i].name)
+      {
+         if (wrote)
+            MCP_RAW(w, ",");
+         wrote = true;
+         rjsonwriter_add_string(w, rows->trailers[i].name);
          MCP_RAW(w, ":");
-         rjsonwriter_raw(w, next, (int)next_len);
+         rjsonwriter_raw(w, num[slot], (int)num_len[slot]);
       }
    }
    MCP_RAW(w, "}");
@@ -1216,7 +1307,7 @@ static bool mcp_header_is(const char *v, const char *want)
 }
 
 /* The client's revision gives outputSchema and structuredContent. That
- * revision also made MCP-Protocol-Version mandatory, so a request
+ * revision also made MCP-Protocol-Version mandatory, so an HTTP request
  * without the header is from the one revision before it, 2025-03-26,
  * which is sent neither. The revisions are ISO dates and compare as
  * dates. */
@@ -1224,6 +1315,13 @@ static bool mcp_structured_header(const char *v)
 {
    return v && mcp_header_len(v) == 10
       && strncmp(v, MCP_STRUCTURED_VERSION, 10) >= 0;
+}
+
+/* The same of a revision named in a request body or at a handshake,
+ * where there is no header length to check. */
+static bool mcp_structured_version(const char *v)
+{
+   return v && strncmp(v, MCP_STRUCTURED_VERSION, 10) >= 0;
 }
 
 /* An Origin naming this machine: http(s)://localhost, 127.0.0.1 or
@@ -1299,8 +1397,12 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    hm     = mcp_header(head, "Mcp-Method");
    hn     = mcp_header(head, "Mcp-Name");
    modern = *r.version != '\0';
-   /* the stateless era is newer than the revision either way */
-   structured = modern || mcp_structured_header(hv);
+   /* The stateless era is newer than the revision either way, and a
+    * classic HTTP client names its revision in a header on every
+    * request. Over stdio there are no headers and no second request to
+    * carry one: the revision agreed at initialize holds for the session,
+    * which is the connection. */
+   structured = modern || mcp_structured_header(hv) || c->agreed;
 
    if (modern)
    {
@@ -1360,6 +1462,9 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          mcp_conn_close(c);
          goto end;
       }
+      /* what this session answers with from here on */
+      if (c->stdio)
+         c->agreed = mcp_structured_version(v);
       MCP_RAW(w, "\"result\":{\"protocolVersion\":");
       rjsonwriter_add_string(w, v);
       MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}");

@@ -106,7 +106,8 @@ nothing report `Done.`.
 
 The replies that are lines of tab-separated fields - `GET_OPTION`,
 `SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
-`GET_CORE_OPTION` and `GET_MEMORY_MAP` - come
+`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT` and
+`RELEASE_INPUT` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns:
@@ -122,20 +123,42 @@ rows rather than splitting them itself. Each of those tools declares an
 The columns are `option` and `value` for the options, `name` and `path`
 for the cores, `playlist` for the playlists, `index`, `label`, `content`
 and `core` for a playlist's entries, `key`, `value`, `description` and
-`values` for a core's options, and `start`, `length`, `select`,
-`disconnect`, `kind`, `access`, `order` and `space` for the memory map.
-Every field is a string: it is the text's own field, which the server
-does not read as anything else.
+`values` for a core's options, `start`, `length`, `select`,
+`disconnect`, `kind`, `access`, `order` and `space` for the memory map,
+and `player`, `buttons` and `axes` for what a player holds. Every field
+is a string: it is the text's own field, which the server does not read
+as anything else.
+
+**A tool answers with `structuredContent` exactly when it declared an
+`outputSchema`**, so a client reads the schema it was handed at
+`tools/list` and does not have to probe each reply. A tool with no
+`outputSchema` answers with text alone, because its reply is prose or a
+confirmation rather than rows.
 
 A reply may end short of its columns, and the schema requires only the
 ones every row carries: `GET_CORE_OPTION` gives an option's `values`
 only where it was asked for that option by key.
 
-A reply cut short carries `more`, and `GET_PLAYLIST` also carries
-`next`, the entry its next page starts at - what the text says as
-`MORE 200`. A line the command opens with its own name, such as
-`LIST_CORES none`, is not a row, and a failure is its reason and no
-rows at all.
+A line the command opens with its own name, such as `LIST_CORES none`,
+is not a row, and a failure is its reason and no rows at all. Neither
+are the lines that carry a number about the reply rather than a row of
+it, which become fields of their own:
+
+| Line | Field | Where |
+| --- | --- | --- |
+| `MORE` | `more: true` | a list cut short with nowhere to resume |
+| `MORE 200` | `more: true`, `next: 200` | `GET_PLAYLIST`'s next page |
+| `NEXT 48` | `next: 48` | where `GET_LOG` reached |
+| `SKIPPED 12` | `skipped: 12` | log lines gone before the first kept |
+
+`GET_LOG` always says where to go on from, so it carries `next` without
+carrying `more`: a client asks again from `next` and gets whatever has
+been written since.
+
+`GET_LOG` carries no rows: the log is its lines, and a page of them runs
+to 60 kB, so answering with a row apiece would send the whole page
+twice. Its `structuredContent` is the trailers alone - `{"next": 482}`
+- and its `outputSchema` declares only those.
 
 The text is unchanged: a client that reads it and nothing else sees
 exactly what it always did. A game whose name holds a tab is the one
@@ -144,13 +167,37 @@ after the name are read from the ends of the line, so the stray tab
 stays inside the name.
 
 Both come from revision 2025-06-18, which added them; a client of
-2025-03-26 is sent neither.
+2025-03-26 is sent neither. Over HTTP the revision is the one the
+client names in `MCP-Protocol-Version` on each request; over stdin and
+stdout it is the one agreed at `initialize`, and it holds for the
+session.
 
 Not every command is a tool. `HELP` and `VERSION` are not, because
 `tools/list` already lists the commands and every answer names the
 server's version, and neither are the toggle hotkeys or
 `GET_CONFIG_PARAM`, whose work `SET_OPTION` and `GET_OPTION` do below.
-All of them are still commands on the network and stdin interfaces.
+
+Nor is a hotkey that steps a selection. A person presses
+`STATE_SLOT_PLUS` while watching the slot on screen; for a program the
+command that takes the value outright is the tool, and stepping towards
+it is only a way to get the value wrong: `SAVE_STATE_SLOT` over
+`STATE_SLOT_PLUS` and `SAVE_STATE`, `SEEK_REPLAY` over
+`NEXT_REPLAY_CHECKPOINT`, `PLAY_REPLAY_SLOT` over `PLAY_REPLAY`. Where
+nothing reports the selection either - which cheat is picked, which
+shader preset is loaded - there is nothing worth offering yet, and a
+tool that writes where it cannot read is worse than none.
+
+`READ_CORE_RAM` and `WRITE_CORE_RAM` are not tools either: they take an
+achievement address, which looks like `READ_CORE_MEMORY`'s system
+address and is not one, and `GET_MEMORY_MAP` answers the addresses
+`READ_CORE_MEMORY` takes.
+
+The disc and the menu are the exceptions: `DISK_NEXT`, `MENU_DOWN` and
+the rest step blind, and until something answers where they landed,
+stepping is all there is - and a disc swap is part of playing a game.
+
+All of them are still commands on the network and stdin interfaces,
+where a person is typing and can see what happened.
 
 ## Options
 

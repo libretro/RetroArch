@@ -113,9 +113,14 @@ static const struct cmd_column test_cols_rows[] = {
    { "path", "The entry's path." },
    { NULL }
 };
+/* a reply that can be cut short and resumed, as GET_PLAYLIST's is */
+static const struct cmd_trailer test_trailers[] = {
+   { "MORE", "more", "next", "The entry the next page starts at." },
+   { NULL }
+};
 /* the name in the middle is the column that takes a tab of its own */
-static const struct cmd_rows test_rows = { test_cols_rows, 1, "next",
-   "The entry the next page starts at.", 0 };
+static const struct cmd_rows test_rows =
+   { test_cols_rows, 1, test_trailers, 0 };
 
 /* a reply whose last column is only sometimes there, as
  * GET_CORE_OPTION's values are */
@@ -126,7 +131,7 @@ static const struct cmd_column test_cols_short[] = {
    { NULL }
 };
 static const struct cmd_rows test_rows_short =
-   { test_cols_short, 2, NULL, NULL, 2 };
+   { test_cols_short, 2, NULL, 2 };
 
 #define SHORT_TEXT "a\tone\nb\ttwo\tand more\nc\n"
 
@@ -136,9 +141,36 @@ static const struct cmd_column test_cols_one[] = {
    { "name", "The name." },
    { NULL }
 };
-static const struct cmd_rows test_rows_one = { test_cols_one, 0, NULL, NULL, 0 };
+static const struct cmd_rows test_rows_one =
+   { test_cols_one, 0, test_trailers, 0 };
 
 #define ONE_TEXT "Atari.lpl\nMORE games.lpl\nMORE\n"
+
+/* a reply that opens with one trailer and closes with another, as
+ * GET_LOG's SKIPPED and NEXT do, and neither says it was cut short */
+static const struct cmd_trailer test_trailers_log[] = {
+   { "NEXT", NULL, "next", "The line to ask for next." },
+   { "SKIPPED", NULL, "lost", "Lines already gone.", true },
+   { NULL }
+};
+static const struct cmd_rows test_rows_log =
+   { test_cols_one, 0, test_trailers_log, 0 };
+
+/* the word with a line after it instead of a number is a row, and so
+ * is a line that only ends with one */
+#define LOG_TEXT "SKIPPED 3\nNEXT is a line\nfine\nNEXT 9\n"
+
+/* a reply whose lines are prose: the trailers are all a client is
+ * given, as GET_LOG's are */
+static const struct cmd_rows test_rows_bare =
+   { NULL, 0, test_trailers_log, 0 };
+
+static bool act_log(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, LOG_TEXT, sizeof(LOG_TEXT) - 1);
+   return true;
+}
 
 static bool act_one(command_t *cmd, const char *arg)
 {
@@ -189,6 +221,8 @@ static struct cmd_action_map test_actions[] = {
    { "LROWS", act_later, "No argument", "Answer rows on a later frame.", CMD_INFO_READ_ONLY, NULL, &test_rows },
    { "SHORT", act_short, "No argument", "Answer rows that may end short.", CMD_INFO_READ_ONLY, NULL, &test_rows_short },
    { "ONE",   act_one,   "No argument", "Answer one-column rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_one },
+   { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
+   { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -654,8 +688,8 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT and ONE, and nothing before them */
-      check("only the commands that answer rows declare one", n == 4);
+      /* ROWS, LROWS, SHORT, ONE, LOGR and BARE, and none before them */
+      check("only the commands that answer rows declare one", n == 6);
    }
 
    printf("tools/call\n");
@@ -843,6 +877,38 @@ int main(void)
          st == 200 && strstr(out, "{\"name\":\"MORE games.lpl\"}"));
    check("and the cursor on the last line is still the cursor",
          st == 200 && strstr(out, "\"more\":true"));
+
+   st = post(cmd, PORT_OPEN, NULL, call("LOGR", NULL), out, sizeof(out), NULL);
+   check("a trailer opening the reply is no row, and carries its number",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"lost\":3") && !strstr(out, "{\"name\":\"SKIPPED"));
+   check("a trailer closing it carries its own",
+         st == 200 && strstr(out, "\"next\":9"));
+   check("the word with anything but a number after it is a row",
+         st == 200 && strstr(out, "{\"name\":\"NEXT is a line\"}")
+         && strstr(out, "{\"name\":\"fine\"}"));
+   check("a reply that cannot be cut short says nothing about more",
+         st == 200 && !strstr(out, "\"more\""));
+   st = post(cmd, PORT_OPEN, NULL, call("BARE", NULL), out, sizeof(out), NULL);
+   check("a reply with no columns is answered by its trailers alone",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"next\":9,\"lost\":3}"));
+   check("and its text is the whole of the reply, as ever",
+         st == 200 && strstr(out, "NEXT is a line"));
+   st = post(cmd, PORT_OPEN, NULL,
+         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
+         out, sizeof(out), NULL);
+   {
+      const char *br = strstr(out, "\"name\":\"BARE\"");
+      const char *lg = strstr(out, "\"name\":\"LOGR\"");
+      check("its schema declares the trailers and no rows",
+            br && strstr(br, "\"next\":{\"type\":\"integer\"")
+            && !strstr(br, "\"rows\""));
+      check("its schema declares both trailers and no more",
+            lg && strstr(lg, "\"next\":{\"type\":\"integer\"")
+            && strstr(lg, "\"lost\":{\"type\":\"integer\"")
+            && !strstr(lg, "\"more\""));
+   }
 
    printf("commands that are not tools\n");
    /* The flag is what leaves a command out, so the same two the list
