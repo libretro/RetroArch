@@ -42,6 +42,7 @@
 
 #include "../font_driver.h"
 #include "../video_views.h"
+#include "../video_views_cpu.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -59,8 +60,7 @@ typedef struct sdl_video
    sdl_menu_frame_t menu;
    struct
    {
-      /* Each placement's scaler, kept while its sizes stay */
-      struct scaler_ctx scalers[VIDEO_VIEWS_MAX_PLACEMENTS];
+      video_views_cpu_t cpu;
       video_views_chains_t chains;
       video_views_target_t canvas_target;
       video_views_target_t ui_target;
@@ -68,10 +68,6 @@ typedef struct sdl_video
       SDL_Surface *canvas;
       /* The menu at one eye's size, for side by side and top-bottom */
       SDL_Surface *ui;
-      /* A placement the window cuts, scaled whole */
-      uint32_t *scratch;
-      size_t scratch_size;
-      unsigned next;
       unsigned frame_dims;
       /* For get_flags: the last frame with a map was drawn whole */
       retro_atomic_int_t fallback;
@@ -95,16 +91,11 @@ static void sdl_gfx_free(void *data)
 
    if (vid->menu.frame)
       SDL_FreeSurface(vid->menu.frame);
-   {
-      unsigned i;
-      for (i = 0; i < VIDEO_VIEWS_MAX_PLACEMENTS; i++)
-         scaler_ctx_gen_reset(&vid->views.scalers[i]);
-   }
+   video_views_cpu_free(&vid->views.cpu);
    if (vid->views.canvas)
       SDL_FreeSurface(vid->views.canvas);
    if (vid->views.ui)
       SDL_FreeSurface(vid->views.ui);
-   free(vid->views.scratch);
 
    if (vid->font)
       vid->font_driver->free(vid->font);
@@ -450,93 +441,13 @@ static bool sdl_views_target_make(sdl_video_t *vid, SDL_Surface **t,
    return *t != NULL;
 }
 
-/* A scaler from @in_w x @in_h to @out_w x @out_h: one kept from an
- * earlier frame, or the oldest made again */
-static struct scaler_ctx *sdl_views_scaler(sdl_video_t *vid,
-      enum scaler_pix_fmt fmt, int in_w, int in_h, int in_stride,
-      int out_w, int out_h, int out_stride)
-{
-   unsigned i;
-   struct scaler_ctx *ctx;
-   for (i = 0; i < VIDEO_VIEWS_MAX_PLACEMENTS; i++)
-   {
-      ctx = &vid->views.scalers[i];
-      if (     ctx->in_width   == in_w   && ctx->in_height  == in_h
-            && ctx->in_stride  == in_stride
-            && ctx->out_width  == out_w  && ctx->out_height == out_h
-            && ctx->out_stride == out_stride
-            && ctx->in_fmt     == fmt
-            && ctx->scaler_type == vid->scaler.scaler_type)
-         return ctx;
-   }
-   ctx              = &vid->views.scalers[vid->views.next];
-   vid->views.next  = (vid->views.next + 1) % VIDEO_VIEWS_MAX_PLACEMENTS;
-   scaler_ctx_gen_reset(ctx);
-   ctx->in_fmt      = fmt;
-   ctx->out_fmt     = SCALER_FMT_ARGB8888;
-   ctx->scaler_type = vid->scaler.scaler_type;
-   ctx->in_width    = in_w;
-   ctx->in_height   = in_h;
-   ctx->in_stride   = in_stride;
-   ctx->out_width   = out_w;
-   ctx->out_height  = out_h;
-   ctx->out_stride  = out_stride;
-   if (!scaler_ctx_gen_filter(ctx))
-   {
-      ctx->in_width = 0;
-      return NULL;
-   }
-   return ctx;
-}
-
 static void sdl_views_draw_direct(sdl_video_t *vid,
       const struct sdl_views_draw *d, unsigned view,
       const video_views_rect_t *dst, const video_views_rect_t *cut)
 {
-   unsigned y;
-   struct scaler_ctx *ctx;
-   const struct retro_video_view *v = &d->map->views[view];
-   int bpp           = (d->fmt == SCALER_FMT_RGB565) ? 2 : 4;
-   const uint8_t *in = d->frame + (size_t)v->y * d->pitch
-      + (size_t)v->x * bpp;
-   int dw            = (int)VIDEO_SCALE_W(dst->dims);
-   int dh            = (int)VIDEO_SCALE_H(dst->dims);
-   int cx            = VIDEO_POS_X(cut->pos);
-   int cy            = VIDEO_POS_Y(cut->pos);
-   unsigned cw       = VIDEO_SCALE_W(cut->dims);
-   unsigned ch       = VIDEO_SCALE_H(cut->dims);
-   size_t size       = (size_t)dw * dh * sizeof(uint32_t);
-
-   /* Whole: straight into the target */
-   if (cut->pos == dst->pos && cut->dims == dst->dims)
-   {
-      if ((ctx = sdl_views_scaler(vid, d->fmt, (int)v->width,
-               (int)v->height, (int)d->pitch, dw, dh, (int)d->stride)))
-         scaler_ctx_scale_direct(ctx, d->pixels + (size_t)cy * d->stride
-               + (size_t)cx * sizeof(uint32_t), in);
-      return;
-   }
-   /* Cut by the window: scaled whole aside, the part shown copied */
-   if (size > vid->views.scratch_size)
-   {
-      uint32_t *grown = (uint32_t*)realloc(vid->views.scratch, size);
-      if (!grown)
-         return;
-      vid->views.scratch      = grown;
-      vid->views.scratch_size = size;
-   }
-   if (!(ctx = sdl_views_scaler(vid, d->fmt, (int)v->width,
-            (int)v->height, (int)d->pitch, dw, dh,
-            dw * (int)sizeof(uint32_t))))
-      return;
-   scaler_ctx_scale_direct(ctx, vid->views.scratch, in);
-   for (y = 0; y < ch; y++)
-      memcpy(d->pixels + (size_t)(cy + y) * d->stride
-            + (size_t)cx * sizeof(uint32_t),
-            vid->views.scratch
-            + (size_t)(cy - VIDEO_POS_Y(dst->pos) + y) * dw
-            + (cx - VIDEO_POS_X(dst->pos)),
-            cw * sizeof(uint32_t));
+   video_views_cpu_draw_view(&vid->views.cpu, d->fmt,
+         vid->scaler.scaler_type, &d->map->views[view], d->frame, d->pitch,
+         d->pixels, d->stride, dst, cut);
 }
 
 /* Whether this frame draws its views, with each drawn view's chain in
@@ -615,9 +526,9 @@ static void sdl_views_menu(sdl_video_t *vid, const video_views_layout_t *layout)
    if (!sdl_vv_target_ensure(vid, &vid->views.ui_target, &vid->views.ui,
             dims))
       return;
-   if (!(ctx = sdl_views_scaler(vid, SCALER_FMT_ARGB8888, menu->w,
-            menu->h, menu->pitch, vid->views.ui->w, vid->views.ui->h,
-            vid->views.ui->pitch)))
+   if (!(ctx = video_views_cpu_scaler(&vid->views.cpu, SCALER_FMT_ARGB8888,
+            vid->scaler.scaler_type, menu->w, menu->h, menu->pitch,
+            vid->views.ui->w, vid->views.ui->h, vid->views.ui->pitch)))
       return;
    if (SDL_MUSTLOCK(vid->views.ui))
       SDL_LockSurface(vid->views.ui);

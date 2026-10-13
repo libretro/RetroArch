@@ -1088,7 +1088,7 @@ jobs:
           if-no-files-found: ignore
 
   views-sdl1:
-    name: Views on SDL 1.2, end to end (Xvfb, sdl12-compat)
+    name: Views on SDL 1.2 and XShm, end to end (Xvfb, sdl12-compat)
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -1111,27 +1111,28 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Build retroarch with SDL 1.2
+      - name: Build retroarch with SDL 1.2 and XShm
         run: |
           set -eu
-          ./configure --enable-sdl --disable-sdl2 --disable-sdl3 --disable-qt \
-                      --disable-vulkan --disable-ffmpeg
+          ./configure --enable-sdl --disable-sdl2 --disable-sdl3 --enable-xshm \
+                      --disable-qt --disable-vulkan --disable-ffmpeg
           grep -q '^HAVE_SDL = 1' config.mk
+          grep -q '^HAVE_XSHM = 1' config.mk
           make -j$(getconf _NPROCESSORS_ONLN)
           make -C samples/cores/video_views
 
-      - name: Views on SDL 1.2, end to end
+      - name: Views on SDL 1.2 and XShm, end to end
         shell: bash
         run: |
           set -eu
-          # The views compositor as the SDL 1.2 driver instantiates it:
-          # each view scaled straight out of the frame into the window
-          # surface, the anaglyph and interlaced canvas blended on the
-          # CPU, views read exactly out of the frame, and the menu with
-          # it open. Under openbox, which sizes sdl12-compat's fullscreen
-          # window.
+          # The CPU drivers' views: each view scaled straight out of the
+          # frame into the window's surface or image, the anaglyph and
+          # interlaced canvas blended on the CPU, views read exactly out
+          # of the frame, and SDL 1.2's menu with it open, under openbox,
+          # which sizes sdl12-compat's fullscreen window. XShm ("x11")
+          # draws no menu.
           RA_E2E_XVFB=1 python3 samples/cores/video_views/e2e/run.py \
-            ./retroarch "$RUNNER_TEMP/views-e2e" sdl
+            ./retroarch "$RUNNER_TEMP/views-e2e" sdl x11
 
       - name: Preserve views logs on failure
         if: failure()

@@ -273,7 +273,7 @@ EXACT_HW = {'gl': ('off', 'gl_compat'),
             'gl1': ('off',), 'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
             'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',),
             'sdl2': ('off',), 'sdl3': ('off',), 'd3d8': ('off',),
-            'gdi': ('off',), 'sdl': ('off',)}
+            'gdi': ('off',), 'sdl': ('off',), 'x11': ('off',)}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
@@ -318,6 +318,8 @@ WHOLE_ANAGLYPH_DRIVERS = ('d3d8', 'sdl2', 'sdl3')
 # window (SDL2's sdl12-compat) reports no pointer motion, even with a
 # window manager.
 NO_POINTER_DRIVERS = ('sdl',)
+# Drivers that draw no menu: the menu and pointer cases are left out.
+MENULESS_DRIVERS = ('x11',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -335,7 +337,8 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
-                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi', 'sdl')
+                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi', 'sdl',
+                  'x11')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
@@ -1541,10 +1544,12 @@ def driver_jobs(retroarch, root, driver):
     jobs += [lambda c=c: memory(c)
              for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
                        else []) if wanted(c[0])]
-    jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
+    jobs += [lambda c=c: menu_case(c) for c in MENU_CASES
+             if wanted(c[0]) and driver not in MENULESS_DRIVERS]
     jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
              for c in POINTER_CASES
-             if wanted(c[0]) and driver not in NO_POINTER_DRIVERS]
+             if wanted(c[0]) and driver not in NO_POINTER_DRIVERS
+             and driver not in MENULESS_DRIVERS]
     return jobs
 
 
