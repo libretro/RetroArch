@@ -43,5 +43,31 @@ void rdvd_source_cancel(rdvd_source_t *source);
 bool rdvd_source_init_title(rdvd_source_t *source, const rdvd_ifo_t *ifo,
       const rdvd_vob_map_t *map, unsigned title, unsigned chapter,
       unsigned cell_number, uint32_t target);
+enum rdvd_backend_status
+{
+   RDVD_BACKEND_PENDING = 0, RDVD_BACKEND_COMPLETE, RDVD_BACKEND_ERROR
+};
+typedef struct rdvd_backend_ops
+{
+   /* Submit must return immediately. False means no reader retains storage. */
+   bool (*submit)(void *context, void *file, uint64_t offset,
+         void *destination, size_t bytes, uint64_t ticket);
+   /* Terminal results mean the reader has relinquished destination storage. */
+   enum rdvd_backend_status (*poll)(void *context, uint64_t *ticket, int64_t *bytes);
+} rdvd_backend_ops_t;
+typedef struct rdvd_source_backend
+{
+   rdvd_backend_ops_t ops;
+   void *context;
+   void *const *files;
+   rdvd_vob_map_t map;
+} rdvd_source_backend_t;
+
+/* Borrows immutable file-handle and size arrays in title segment order.
+ * Handles/context stay alive through every pending completion. Operations
+ * must not wait or perform blocking I/O on the caller's thread. */
+bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
+      const rdvd_backend_ops_t *ops, void *context, void *const *files,
+      const uint64_t *sizes, unsigned count);
 RETRO_END_DECLS
 #endif

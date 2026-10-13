@@ -79,3 +79,21 @@ bool rdvd_source_init_title(rdvd_source_t *source, const rdvd_ifo_t *ifo,
       return false;
    return rdvd_source_init(source, map, resolved.remaining.offset, resolved.remaining.bytes);
 }
+
+
+bool rdvd_source_backend_init(rdvd_source_backend_t *backend,
+      const rdvd_backend_ops_t *ops, void *context, void *const *files,
+      const uint64_t *sizes, unsigned count)
+{
+   rdvd_vob_map_t map;
+   unsigned i;
+   if (!backend) return false;
+   memset(backend, 0, sizeof(*backend));
+   if (!ops || !ops->submit || !ops->poll || !files
+         || !rdvd_vob_map_read(sizes, count, &map)) return false;
+   for (i = 0; i < count; i++)
+      if (!files[i]) return false;
+   backend->ops = *ops; backend->context = context;
+   backend->files = files; backend->map = map;
+   return true;
+}

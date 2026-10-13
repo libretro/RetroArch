@@ -126,11 +126,45 @@ static void test_title_reads(void)
    CHECK(!rdvd_source_init_title(&source, &ifo, &map, 1, 1, 1, 9) && source.failed);
    CHECK(!rdvd_source_prepare(&source, buffer, sizeof(buffer), &request));
 }
+static bool fake_submit(void *context, void *file, uint64_t offset,
+      void *destination, size_t bytes, uint64_t ticket)
+{
+   (void)context; (void)file; (void)offset; (void)destination;
+   (void)bytes; (void)ticket;
+   return false;
+}
+static enum rdvd_backend_status fake_poll(void *context, uint64_t *ticket, int64_t *bytes)
+{
+   (void)context; (void)ticket; (void)bytes;
+   return RDVD_BACKEND_PENDING;
+}
+static void test_backend_init(void)
+{
+   uint64_t sizes[2];
+   unsigned storage[2];
+   void *files[2];
+   rdvd_backend_ops_t ops;
+   rdvd_source_backend_t backend;
+   sizes[0] = sizes[1] = 2048;
+   files[0] = storage; files[1] = storage + 1;
+   ops.submit = fake_submit; ops.poll = fake_poll;
+   CHECK(rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 2));
+   CHECK(backend.files == files && backend.map.sizes == sizes);
+   CHECK(backend.ops.submit == fake_submit && backend.map.total_bytes == 4096);
+   files[1] = NULL;
+   CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 2) && !backend.files);
+   files[1] = storage + 1; ops.poll = NULL;
+   CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 2));
+   ops.poll = fake_poll; sizes[1] = 2049;
+   CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 2));
+   CHECK(!rdvd_source_backend_init(&backend, &ops, NULL, files, sizes, 10));
+}
 int main(void)
 {
    test_prepare();
    test_completion();
    test_title_reads();
+   test_backend_init();
    printf("DVD source tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
