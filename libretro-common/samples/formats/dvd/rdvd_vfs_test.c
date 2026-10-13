@@ -45,6 +45,11 @@ int filestream_close(RFILE *file)
    file->closes++;
    return file->close_error ? -1 : 0;
 }
+bool tpool_try_add_work(tpool_t *pool, thread_func_t func, void *arg)
+{
+   (void)pool; (void)func; (void)arg;
+   return false;
+}
 static void test_reads(void)
 {
    RFILE files[2], *handles[2];
@@ -64,6 +69,8 @@ static void test_reads(void)
    CHECK(rdvd_source_init(&source, &backend->map, 2040, 40));
    CHECK(rdvd_source_submit(&source, backend, buffer, sizeof(buffer)));
    CHECK(!files[0].reads && !rdvd_source_poll(&source, backend));
+   CHECK(!rdvd_vfs_schedule(vfs, (tpool_t*)vfs));
+   CHECK(source.pending && !source.failed && !files[0].reads);
    CHECK(!rdvd_vfs_close(&vfs) && vfs != NULL);
    CHECK(rdvd_vfs_service(vfs));
    CHECK(files[0].reads == 1 && files[0].destination == buffer);

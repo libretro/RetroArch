@@ -3,6 +3,7 @@
 #define LIBRETRO_RDVD_VFS_H
 #include <formats/rdvd_source.h>
 #include <streams/file_stream.h>
+#include <rthreads/tpool.h>
 RETRO_BEGIN_DECLS
 typedef struct rdvd_vfs rdvd_vfs_t;
 /* Setup-worker only: binds existing read-only RFILE handles in title segment order. Geometry
@@ -21,5 +22,10 @@ bool rdvd_vfs_service(rdvd_vfs_t *vfs);
  * consumed teardown clears the pointer, including close errors (false).
  * A retained pointer means busy. Borrowed handles stay open. */
 bool rdvd_vfs_close(rdvd_vfs_t **vfs);
+/* Owner-side: try to schedule one queued read on a dedicated I/O pool.
+ * False retains the request for a later retry. Do not destroy the pool or
+ * run tpool_help on the main thread while this adapter uses it. Never mix
+ * scheduled and manual service; pool lifetime extends through drained jobs. */
+bool rdvd_vfs_schedule(rdvd_vfs_t *vfs, tpool_t *pool);
 RETRO_END_DECLS
 #endif

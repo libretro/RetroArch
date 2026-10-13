@@ -21,6 +21,7 @@ struct rdvd_vfs
    retro_spsc_t requests, results;
    void *files[9];
    uint64_t sizes[9];
+   retro_atomic_int_t scheduled;
    bool owns_files;
 };
 static bool rdvd_vfs_submit(void *context, void *file, uint64_t offset,
@@ -39,6 +40,7 @@ static enum rdvd_backend_status rdvd_vfs_poll(void *context, uint64_t *ticket, i
 {
    rdvd_vfs_t *vfs = (rdvd_vfs_t*)context;
    rdvd_vfs_result_t result;
+   if (retro_atomic_load_acquire_int(&vfs->scheduled)) return RDVD_BACKEND_PENDING;
    if (retro_spsc_read_avail(&vfs->results) < sizeof(result)) return RDVD_BACKEND_PENDING;
    if (retro_spsc_read(&vfs->results, &result, sizeof(result)) != sizeof(result))
       return RDVD_BACKEND_PENDING;
@@ -59,6 +61,7 @@ rdvd_vfs_t *rdvd_vfs_bind(RFILE *const *files, const uint64_t *sizes, unsigned c
       if (!files[i] || sizes[i] > INT64_MAX) return NULL;
    vfs = (rdvd_vfs_t*)calloc(1, sizeof(*vfs));
    if (!vfs) return NULL;
+   retro_atomic_int_init(&vfs->scheduled, 0);
    if (!retro_spsc_init(&vfs->requests, sizeof(rdvd_vfs_request_t))
          || !retro_spsc_init(&vfs->results, sizeof(rdvd_vfs_result_t)))
    {
@@ -100,7 +103,8 @@ bool rdvd_vfs_close(rdvd_vfs_t **vfs)
    if (!vfs) return false;
    if (!*vfs) return true;
 #ifdef RDVD_VFS_ENABLED
-   if ((*vfs)->backend.owner || retro_spsc_read_avail(&(*vfs)->requests)
+   if ((*vfs)->backend.owner || retro_atomic_load_acquire_int(&(*vfs)->scheduled)
+         || retro_spsc_read_avail(&(*vfs)->requests)
          || retro_spsc_read_avail(&(*vfs)->results)) return false;
    if ((*vfs)->owns_files)
       for (i = 0; i < (*vfs)->backend.map.segments; i++)
@@ -171,5 +175,32 @@ rdvd_vfs_t *rdvd_vfs_open(const char *const *paths, unsigned count)
 #else
    (void)paths; (void)count;
    return NULL;
+#endif
+}
+
+
+#ifdef RDVD_VFS_ENABLED
+static void rdvd_vfs_job(void *context)
+{
+   rdvd_vfs_t *vfs = (rdvd_vfs_t*)context;
+   rdvd_vfs_service(vfs);
+   retro_atomic_store_release_int(&vfs->scheduled, 0);
+}
+#endif
+bool rdvd_vfs_schedule(rdvd_vfs_t *vfs, tpool_t *pool)
+{
+#ifdef RDVD_VFS_ENABLED
+   if (!vfs || !pool || !vfs->backend.owner
+         || retro_spsc_read_avail(&vfs->requests) < sizeof(rdvd_vfs_request_t)
+         || !retro_atomic_cas_int(&vfs->scheduled, 0, 1)) return false;
+   if (!tpool_try_add_work(pool, rdvd_vfs_job, vfs))
+   {
+      retro_atomic_store_release_int(&vfs->scheduled, 0);
+      return false;
+   }
+   return true;
+#else
+   (void)vfs; (void)pool;
+   return false;
 #endif
 }
