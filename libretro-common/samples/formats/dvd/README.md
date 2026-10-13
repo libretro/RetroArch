@@ -34,7 +34,16 @@ changes (command 7) report unsupported. `rdvd_spu_decode_row` writes indices
 0..3 directly into caller storage with no allocation or RGB expansion. Keep
 separate top/bottom field cursors and discard a row on decode failure.
 
-These readers do not decode audio/video, interpret IFOs,
+`rdvd_pgc_read` validates supplied serialized IFO program-chain spans,
+including non-overlapping tables and increasing program cell maps. Accessors
+expose program ranges, bounded cell sectors/IDs, raw YCrCb palettes and
+borrowed pre/post/cell commands. `rdvd_pgci_table_read`/`rdvd_pgci_entry_read`
+bound selected chains using the nearest later record, supporting unsorted
+entries and shared records. All data is borrowed; no I/O or allocation occurs.
+The caller must retain immutable IFO storage. Angle selection, parental
+policy and command execution are not inferred from these metadata readers.
+
+These readers do not decode audio/video, open VMGI/VTSI files or route titles,
 execute VM commands, render menus or decrypt discs. Audio access-unit pointers
 retain their DVD wire value; consumers must interpret their origin before
 using them as offsets. Borrowed spans expire with the originating PES input.
@@ -62,6 +71,7 @@ Format references checked for this implementation:
 - [FFmpeg MPEG demux format handling](https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mpeg.c)
 - [FFmpeg DVD LPCM header fields](https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/pcm-dvd.c)
 - [Published NAV wire layouts](https://github.com/xbmc/libdvdread/blob/master/src/dvdread/nav_types.h)
+- [Published IFO wire layouts](https://github.com/xbmc/libdvdread/blob/master/src/dvdread/ifo_types.h)
 
 References describe wire fields; this implementation does not include or call
 the referenced libraries.

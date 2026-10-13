@@ -55,5 +55,32 @@ bool rdvd_pgc_cell_read(const rdvd_pgc_t *pgc, unsigned number, rdvd_cell_t *out
 bool rdvd_pgc_command_read(const rdvd_pgc_t *pgc, enum rdvd_pgc_command_kind kind,
       unsigned index, const uint8_t **out);
 bool rdvd_pgc_palette_read(const rdvd_pgc_t *pgc, unsigned index, uint32_t *out);
+
+typedef struct rdvd_pgci_table
+{
+   const uint8_t *data;
+   size_t size;
+   unsigned entries;
+} rdvd_pgci_table_t;
+
+typedef struct rdvd_pgci_entry
+{
+   rdvd_pgc_t pgc;
+   unsigned entry_id;
+   unsigned block_mode;
+   unsigned block_type;
+   unsigned parental_mask;
+} rdvd_pgci_entry_t;
+
+/* Reads a PGCIT span using its inclusive last-byte field. Validates the
+ * entry table and fixed-header bounds of every referenced PGC. */
+bool rdvd_pgci_table_read(const uint8_t *data, size_t size, rdvd_pgci_table_t *out);
+
+/* Index is zero-based. Bounds a selected record at the nearest later
+ * record, regardless of entry ordering; duplicate offsets may share a PGC.
+ * Returned metadata and commands borrow the table input. No navigation or
+ * parental-policy decision is made. Failure clears the output. */
+bool rdvd_pgci_entry_read(const rdvd_pgci_table_t *table, unsigned index,
+      rdvd_pgci_entry_t *out);
 RETRO_END_DECLS
 #endif

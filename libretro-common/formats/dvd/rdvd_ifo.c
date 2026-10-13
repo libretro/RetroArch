@@ -138,3 +138,56 @@ bool rdvd_pgc_palette_read(const rdvd_pgc_t *pgc, unsigned index, uint32_t *out)
    *out = rdvd_ifo_u32(p.data + 164 + 4 * index);
    return true;
 }
+
+bool rdvd_pgci_table_read(const uint8_t *data, size_t size, rdvd_pgci_table_t *out)
+{
+   size_t total, header;
+   uint32_t last;
+   unsigned count, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!data || size < 8) return false;
+   last = rdvd_ifo_u32(data + 4);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   if (total < 8 || total > size) return false;
+   count = rdvd_ifo_u16(data);
+   if (count > (total - 8) / 8) return false;
+   header = 8 + (size_t)count * 8;
+   for (i = 0; i < count; i++)
+   {
+      uint32_t start = rdvd_ifo_u32(data + 8 + (size_t)i * 8 + 4);
+      if (total < 236 || start < header || start > total - 236) return false;
+   }
+   out->data = data; out->size = total; out->entries = count;
+   return true;
+}
+
+bool rdvd_pgci_entry_read(const rdvd_pgci_table_t *table, unsigned index,
+      rdvd_pgci_entry_t *out)
+{
+   rdvd_pgci_table_t t;
+   rdvd_pgci_entry_t entry;
+   const uint8_t *record;
+   size_t start, end;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!table || !rdvd_pgci_table_read(table->data, table->size, &t) || index >= t.entries)
+      return false;
+   record = t.data + 8 + (size_t)index * 8;
+   start = rdvd_ifo_u32(record + 4); end = t.size;
+   for (i = 0; i < t.entries; i++)
+   {
+      size_t candidate = rdvd_ifo_u32(t.data + 8 + (size_t)i * 8 + 4);
+      if (candidate > start && candidate < end) end = candidate;
+   }
+   memset(&entry, 0, sizeof(entry));
+   if (!rdvd_pgc_read(t.data + start, end - start, &entry.pgc)) return false;
+   entry.entry_id = record[0];
+   entry.block_mode = record[1] >> 6;
+   entry.block_type = (record[1] >> 4) & 3;
+   entry.parental_mask = rdvd_ifo_u16(record + 2);
+   *out = entry;
+   return true;
+}
