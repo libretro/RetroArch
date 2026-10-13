@@ -824,6 +824,18 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       padded_req_bytes = len + skip;
    }
 
+   /* A complete cache hit needs neither transport nor staging, including
+    * unaligned and partial destinations. The sector remains handle-owned. */
+   if (read_cd && frames == 1 && s && stream && stream->cdrom
+         && stream->cdrom->last_frame_valid
+         && cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5])
+            == stream->cdrom->last_frame_lba)
+   {
+      memmove(s, stream->cdrom->last_frame + skip, len);
+      increment_msf(&cmd[6], &cmd[7], &cmd[8]);
+      return 0;
+   }
+
    /* Each raw command addresses one 2352-byte sector. Only a complete,
     * aligned single-sector destination is safe for every command here;
     * later sectors in a larger buffer would lose page alignment. */

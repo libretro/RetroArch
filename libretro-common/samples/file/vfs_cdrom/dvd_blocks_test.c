@@ -302,6 +302,13 @@ static void test_bounded_staging(unsigned char *buf)
    CHECK(cdrom_send_command(file, DIRECTION_OUT, buf, SIZE_MAX, command, 12, 1) == 1);
    CHECK(calls == before && staging_allocations == 0);
    CHECK(retro_vfs_file_read_impl(file, buf, 2352) == 2352 && staging_allocations == 0);
+   before = calls;
+   staging_limit = 1; /* A cache hit succeeds even when staging cannot allocate. */
+   CHECK(retro_vfs_file_seek_impl(file, 511, RETRO_VFS_SEEK_POSITION_START) == 0);
+   CHECK(retro_vfs_file_read_impl(file, buf + 1, 100) == 100);
+   CHECK(calls == before && staging_allocations == 0);
+   for (i = 0; i < 100; i++) CHECK(buf[i + 1] == 0);
+   staging_limit = 2352;
    CHECK(retro_vfs_file_seek_impl(file, 511, RETRO_VFS_SEEK_POSITION_START) == 0);
    CHECK(retro_vfs_file_read_impl(file, buf + 1, 4704) == 4704);
    CHECK(staging_max == 2352 && staging_allocations == 1);
@@ -316,6 +323,11 @@ static void test_bounded_staging(unsigned char *buf)
    CHECK(retro_vfs_file_read_impl(file, buf + 1, 7000) == 7000);
    for (i = 0; i < 7000; i++) CHECK(buf[i + 1] == (unsigned char)(i / 2352));
    CHECK(staging_max == 2352 && staging_allocations == 3);
+   before = calls;
+   CHECK(retro_vfs_file_seek_impl(file, 7034, RETRO_VFS_SEEK_POSITION_START) == 0);
+   CHECK(retro_vfs_file_read_impl(file, buf + 1, 32) == 32);
+   CHECK(calls == before + 1 && staging_allocations == 4);
+   for (i = 0; i < 32; i++) CHECK(buf[i + 1] == (i < 22 ? 2 : 3));
    staging_limit = 0;
    CHECK(retro_vfs_file_close_impl(file) == 0);
 }
