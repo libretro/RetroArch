@@ -112,5 +112,20 @@ bool rdvd_ifo_read(const uint8_t *data, size_t size, rdvd_ifo_t *out);
  * PGCIT is only valid for VTS. Failure/absent tables clear the output. */
 bool rdvd_ifo_table_read(const rdvd_ifo_t *ifo, enum rdvd_ifo_table_kind kind,
       rdvd_ifo_span_t *out);
+typedef struct rdvd_title
+{
+   unsigned angles, chapters, parental_id, title_set, local_title;
+   unsigned playback_flags;
+   uint32_t title_set_sector;
+} rdvd_title_t;
+
+/* VMG title numbers are one-based. Returns metadata only; sector addresses
+ * belong to the disc domain. Zero chapter counts are retained. */
+bool rdvd_ifo_title_read(const rdvd_ifo_t *ifo, unsigned number,
+      rdvd_title_t *out);
+
+/* Returns an optional VMG first-play PGC, borrowing the management input.
+ * Does not execute commands or select a playback domain. */
+bool rdvd_ifo_first_play_read(const rdvd_ifo_t *ifo, rdvd_pgc_t *out);
 RETRO_END_DECLS
 #endif

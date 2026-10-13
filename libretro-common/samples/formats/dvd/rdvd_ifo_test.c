@@ -168,12 +168,47 @@ static void test_file(void)
    file_fixture(false); file_bytes[0] = 0;
    CHECK(!rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
 }
+static void test_titles(void)
+{
+   rdvd_ifo_t f;
+   rdvd_title_t title;
+   rdvd_pgc_t pgc;
+   uint8_t *table;
+   file_fixture(false);
+   table = file_bytes + 2048;
+   table[1] = 1; table[7] = 19;
+   table[9] = 1; table[14] = 1; table[15] = 2;
+   table[16] = 0xff; /* External sector need not fit the IFO. */
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_title_read(&f, 1, &title));
+   CHECK(title.angles == 1 && title.chapters == 0 && title.local_title == 2);
+   CHECK(title.title_set_sector == UINT32_C(0xff000000));
+   CHECK(!rdvd_ifo_title_read(&f, 0, &title) && !title.title_set);
+   CHECK(!rdvd_ifo_title_read(&f, 2, &title));
+   table[9] = 10;
+   CHECK(!rdvd_ifo_title_read(&f, 1, &title));
+   table[9] = 1; table[7] = 18;
+   CHECK(!rdvd_ifo_title_read(&f, 1, &title));
+   table[7] = 19; table[14] = 2;
+   CHECK(!rdvd_ifo_title_read(&f, 1, &title));
+   CHECK(!rdvd_ifo_first_play_read(&f, &pgc) && !pgc.data);
+   file_bytes[0x86] = 2; /* First-play begins at byte 512. */
+   CHECK(rdvd_ifo_first_play_read(&f, &pgc));
+   CHECK(pgc.data == file_bytes + 512 && pgc.size == 1536);
+   file_bytes[512 + 2] = 1; /* No program map. */
+   CHECK(!rdvd_ifo_first_play_read(&f, &pgc) && !pgc.data);
+   file_fixture(true);
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(!rdvd_ifo_title_read(&f, 1, &title));
+   CHECK(!rdvd_ifo_first_play_read(&f, &pgc));
+}
 int main(void)
 {
    test_bounds();
    test_accessors();
    test_table();
    test_file();
+   test_titles();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

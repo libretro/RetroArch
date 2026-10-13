@@ -258,3 +258,57 @@ bool rdvd_ifo_table_read(const rdvd_ifo_t *ifo, enum rdvd_ifo_table_kind kind,
    out->data = f.data + start; out->size = end - start;
    return true;
 }
+
+
+bool rdvd_ifo_title_read(const rdvd_ifo_t *ifo, unsigned number,
+      rdvd_title_t *out)
+{
+   rdvd_ifo_t f;
+   rdvd_ifo_span_t span;
+   rdvd_title_t title;
+   const uint8_t *record;
+   uint32_t last;
+   size_t total;
+   unsigned count;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!ifo || !rdvd_ifo_read(ifo->data, ifo->size, &f)
+         || f.kind != RDVD_IFO_VMG
+         || !rdvd_ifo_table_read(&f, RDVD_IFO_TITLES, &span)) return false;
+   last = rdvd_ifo_u32(span.data + 4);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   count = rdvd_ifo_u16(span.data);
+   if (total < 8 || total > span.size || count > (total - 8) / 12
+         || !number || number > count) return false;
+   record = span.data + 8 + (size_t)(number - 1) * 12;
+   memset(&title, 0, sizeof(title));
+   title.playback_flags = record[0]; title.angles = record[1];
+   title.chapters = rdvd_ifo_u16(record + 2);
+   title.parental_id = rdvd_ifo_u16(record + 4);
+   title.title_set = record[6]; title.local_title = record[7];
+   title.title_set_sector = rdvd_ifo_u32(record + 8);
+   if (!title.angles || title.angles > 9 || !title.title_set
+         || title.title_set > f.title_sets || !title.local_title
+         || title.local_title > 99) return false;
+   *out = title;
+   return true;
+}
+
+bool rdvd_ifo_first_play_read(const rdvd_ifo_t *ifo, rdvd_pgc_t *out)
+{
+   rdvd_ifo_t f;
+   size_t end;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!ifo || !rdvd_ifo_read(ifo->data, ifo->size, &f)
+         || f.kind != RDVD_IFO_VMG || !f.first_play) return false;
+   end = f.size;
+   for (i = 0; i < f.table_count; i++)
+   {
+      if (f.tables[i] == f.first_play) return false;
+      if (f.tables[i] > f.first_play && f.tables[i] < end) end = f.tables[i];
+   }
+   return rdvd_pgc_read(f.data + f.first_play, end - f.first_play, out);
+}
