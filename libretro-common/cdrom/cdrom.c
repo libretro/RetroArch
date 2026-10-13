@@ -791,6 +791,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t padded_req_bytes;
    size_t copied_bytes         = 0;
    bool read_cd                = false;
+   bool direct_read            = false;
 
    if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
@@ -818,13 +819,20 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       padded_req_bytes = len + skip;
    }
 
-   xfer_buf     = (unsigned char*)memalign_alloc(4096, padded_req_bytes);
+   /* Each raw command addresses one 2352-byte sector. Only a complete,
+    * aligned single-sector destination is safe for every command here;
+    * later sectors in a larger buffer would lose page alignment. */
+   direct_read = read_cd && dir == DIRECTION_IN && s && skip == 0
+      && len == 2352 && ((uintptr_t)s & 4095) == 0;
+   xfer_buf     = direct_read ? (unsigned char*)s
+      : (unsigned char*)memalign_alloc(4096, padded_req_bytes);
    xfer_buf_pos = xfer_buf;
 
    if (!xfer_buf)
       return 1;
 
-   memset(xfer_buf, 0, padded_req_bytes);
+   if (!direct_read)
+      memset(xfer_buf, 0, padded_req_bytes);
    if (dir == DIRECTION_OUT && s && len)
       memcpy(xfer_buf + skip, s, len);
 #ifdef CDROM_DEBUG
@@ -875,7 +883,8 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
             fflush(stdout);
 #endif
             /* assumes request_len is always equal to the size of last_frame */
-            memcpy(xfer_buf_pos, stream->cdrom->last_frame, sizeof(stream->cdrom->last_frame));
+            if (xfer_buf_pos != stream->cdrom->last_frame)
+               memcpy(xfer_buf_pos, stream->cdrom->last_frame, sizeof(stream->cdrom->last_frame));
          }
 
       }
@@ -918,7 +927,8 @@ retry:
             printf("offsetting %" PRId64 " from buf, copying at xfer_buf offset %" PRId64 ", copying %" PRId64 " bytes\n", copied_bytes, (xfer_buf_pos + skip) - xfer_buf, copy_len);
             fflush(stdout);
 #endif
-            memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
+            if (!direct_read)
+               memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
             /* The sector cache only exists on cdrom:// handles. The
@@ -932,7 +942,8 @@ retry:
                   unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
 
                   /* cache the last received frame */
-                  memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
+                  if (stream->cdrom->last_frame != xfer_buf_pos)
+                     memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
                   stream->cdrom->last_frame_valid = true;
                   /* the ending frame is never actually read, so what we really just read is the one right before that */
                   stream->cdrom->last_frame_lba = frame_end - 1;
@@ -1002,7 +1013,7 @@ retry:
       }
    }
 
-   if (xfer_buf)
+   if (xfer_buf && !direct_read)
       memalign_free(xfer_buf);
    return rv;
 }
@@ -1834,7 +1845,8 @@ int cdrom_read(libretro_vfs_implementation_file *stream,
 #endif
    }
 
-   /* regardless of the length specified here, a new buffer will be allocated and padded to a sector multiple inside cdrom_send_command */
+   /* The dispatcher stages partial/unaligned or multi-sector reads; a
+    * complete page-aligned single sector can use the caller's buffer. */
    rv = cdrom_send_command(stream, DIRECTION_IN, s, len, cdb, sizeof(cdb), skip);
 
 #ifdef CDROM_DEBUG

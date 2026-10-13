@@ -112,6 +112,7 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
    }
    if (cmd[0] == 0xB9)
    {
+      if (buf == direct_buffer) saw_direct = 1;
       CHECK(len == 2352);
       memset(dst, cmd[5], len);
       return 0;
@@ -577,6 +578,29 @@ int main(void)
    CHECK(retro_vfs_file_open_impl("cdrom://" IMAGE_PATH,
          RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
    test_handle_geometry(buf);
+   {
+      libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
+            BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+      CHECK(file != NULL);
+      if (file)
+      {
+         saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf, 2352) == 2352 && saw_direct);
+         CHECK(retro_vfs_file_seek_impl(file, 0, RETRO_VFS_SEEK_POSITION_START) == 0);
+         before = calls;
+         CHECK(retro_vfs_file_read_impl(file, buf, 2352) == 2352 && calls == before);
+         CHECK(retro_vfs_file_seek_impl(file, 2352, RETRO_VFS_SEEK_POSITION_START) == 0);
+         direct_buffer = buf + 1; saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf + 1, 2352) == 2352 && !saw_direct);
+         CHECK(retro_vfs_file_seek_impl(file, 4704, RETRO_VFS_SEEK_POSITION_START) == 0);
+         direct_buffer = buf; saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf, 100) == 100 && !saw_direct);
+         CHECK(retro_vfs_file_seek_impl(file, 7056, RETRO_VFS_SEEK_POSITION_START) == 0);
+         saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf, 4704) == 4704 && !saw_direct);
+         CHECK(retro_vfs_file_close_impl(file) == 0);
+      }
+   }
    test_media_change(buf);
    {
       libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
