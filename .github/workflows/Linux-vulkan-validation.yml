@@ -1128,9 +1128,9 @@ jobs:
           # The CPU drivers' views: each view scaled straight out of the
           # frame into the window's surface or image, the anaglyph and
           # interlaced canvas blended on the CPU, views read exactly out
-          # of the frame, and SDL 1.2's menu with it open, under openbox,
-          # which sizes sdl12-compat's fullscreen window. XShm ("x11")
-          # draws no menu.
+          # of the frame, and the menu with it open. XShm ("x11") also
+          # has the pointer cases; SDL 1.2 runs under openbox, which
+          # sizes sdl12-compat's fullscreen window.
           RA_E2E_XVFB=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch "$RUNNER_TEMP/views-e2e" sdl x11
 

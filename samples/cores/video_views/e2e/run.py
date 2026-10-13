@@ -318,8 +318,6 @@ WHOLE_ANAGLYPH_DRIVERS = ('d3d8', 'sdl2', 'sdl3')
 # window (SDL2's sdl12-compat) reports no pointer motion, even with a
 # window manager.
 NO_POINTER_DRIVERS = ('sdl',)
-# Drivers that draw no menu: the menu and pointer cases are left out.
-MENULESS_DRIVERS = ('x11',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -1544,12 +1542,10 @@ def driver_jobs(retroarch, root, driver):
     jobs += [lambda c=c: memory(c)
              for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
                        else []) if wanted(c[0])]
-    jobs += [lambda c=c: menu_case(c) for c in MENU_CASES
-             if wanted(c[0]) and driver not in MENULESS_DRIVERS]
+    jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
     jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
              for c in POINTER_CASES
-             if wanted(c[0]) and driver not in NO_POINTER_DRIVERS
-             and driver not in MENULESS_DRIVERS]
+             if wanted(c[0]) and driver not in NO_POINTER_DRIVERS]
     return jobs
 
 
