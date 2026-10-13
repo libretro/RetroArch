@@ -792,7 +792,6 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t allocation_bytes;
    size_t copied_bytes         = 0;
    bool read_cd                = false;
-   bool direct_read            = false;
 
    if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
@@ -836,22 +835,17 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       return 0;
    }
 
-   /* A single complete sector needs no fallback allocation. Multi-sector
-    * requests retain one fallback sector for unaligned destinations. */
-   direct_read = read_cd && dir == DIRECTION_IN && s && skip == 0
-      && len == 2352 && ((uintptr_t)s & 4095) == 0;
-   allocation_bytes = read_cd ? 2352 : padded_req_bytes;
-   xfer_buf     = direct_read ? (unsigned char*)s
-      : (unsigned char*)memalign_alloc(4096, allocation_bytes);
-   xfer_buf_pos = xfer_buf;
-
-   if (!xfer_buf)
-      return 1;
-
-   if (!direct_read)
+   allocation_bytes = padded_req_bytes;
+   if (!read_cd)
+   {
+      xfer_buf = (unsigned char*)memalign_alloc(4096, allocation_bytes);
+      if (!xfer_buf)
+         return 1;
       memset(xfer_buf, 0, allocation_bytes);
-   if (dir == DIRECTION_OUT && s && len)
-      memcpy(xfer_buf + skip, s, len);
+      if (dir == DIRECTION_OUT && s && len)
+         memcpy(xfer_buf + skip, s, len);
+   }
+   xfer_buf_pos = xfer_buf;
 #ifdef CDROM_DEBUG
    printf("Number of frames to read: %d\n", frames);
    fflush(stdout);
@@ -860,8 +854,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    {
       size_t request_len = padded_req_bytes;
       size_t copy_len = request_len;
-      bool cached_read = false;
-      bool direct_sector = direct_read;
+      bool direct_sector = false;
 
       if (read_cd)
       {
@@ -888,35 +881,33 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
             copy_len = len - copied_bytes;
          }
 
-         direct_sector = s && !skip && copy_len == 2352
-            && (((uintptr_t)s + copied_bytes) & 4095) == 0;
-         xfer_buf_pos = direct_sector ? (unsigned char*)s + copied_bytes
-            : xfer_buf;
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
-         /* Reuse one aligned sector instead of retaining every received
-          * sector. Preserve the old zero-filled fallback on each command. */
-         if (!direct_sector)
-            memset(xfer_buf_pos, 0, 2352);
-
-         if (     stream->cdrom
-               && stream->cdrom->last_frame_valid
+         if (s && stream->cdrom && stream->cdrom->last_frame_valid
                && lba_req == stream->cdrom->last_frame_lba)
          {
-            /* use cached frame */
-            cached_read = true;
-#ifdef CDROM_DEBUG
-            printf("[CDROM] Using cached frame\n");
-            fflush(stdout);
-#endif
-            /* assumes request_len is always equal to the size of last_frame */
-            if (xfer_buf_pos != stream->cdrom->last_frame)
-               memcpy(xfer_buf_pos, stream->cdrom->last_frame, sizeof(stream->cdrom->last_frame));
+            memmove((unsigned char*)s + copied_bytes,
+                  stream->cdrom->last_frame + skip, copy_len);
+            copied_bytes += copy_len;
+            continue;
          }
-
+         direct_sector = s && !skip && copy_len == 2352
+            && (((uintptr_t)s + copied_bytes) & 4095) == 0;
+         if (!direct_sector)
+         {
+            if (!xfer_buf)
+               xfer_buf = (unsigned char*)memalign_alloc(4096, 2352);
+            if (!xfer_buf)
+            {
+               rv = 1;
+               break;
+            }
+            memset(xfer_buf, 0, 2352);
+         }
+         xfer_buf_pos = direct_sector ? (unsigned char*)s + copied_bytes
+            : xfer_buf;
       }
 
 #ifdef CDROM_DEBUG
-      if (!cached_read)
       {
          unsigned j;
 
@@ -938,11 +929,11 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 
 retry:
 #if defined(__linux__) && !defined(ANDROID)
-      if (cached_read || !cdrom_send_command_linux(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
+      if (!cdrom_send_command_linux(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
 #elif defined(_WIN32) && !defined(_XBOX)
-      if (cached_read || !cdrom_send_command_win32(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
+      if (!cdrom_send_command_win32(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
 #elif defined(__APPLE__)
-      if (cached_read || !cdrom_send_command_macos(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
+      if (!cdrom_send_command_macos(stream, dir, xfer_buf_pos, request_len, cmd, cmd_len, sense, sizeof(sense)))
 #endif
       {
          rv = 0;
@@ -963,7 +954,7 @@ retry:
              * of /dev/sg* or \\.\X:, where stream->cdrom is NULL. */
             if (stream->cdrom)
             {
-               if (read_cd && !cached_read && request_len >= 2352)
+               if (read_cd && request_len >= 2352)
                {
                   unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
 
@@ -1040,7 +1031,7 @@ retry:
       }
    }
 
-   if (xfer_buf && !direct_read)
+   if (xfer_buf)
       memalign_free(xfer_buf);
    return rv;
 }
