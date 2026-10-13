@@ -491,3 +491,33 @@ bool rdvd_ifo_menu_language_find(const rdvd_ifo_t *ifo, unsigned code,
    }
    return false;
 }
+
+
+bool rdvd_file_name(unsigned title_set, unsigned segment,
+      enum rdvd_file_kind kind, char *out, size_t capacity)
+{
+   char name[13];
+   const char *extension;
+   if (!out || !capacity) return false;
+   *out = '\0';
+   if (capacity < sizeof(name) || title_set > 99 || segment > 9
+         || (!title_set && segment)) return false;
+   switch (kind)
+   {
+      case RDVD_FILE_IFO: extension = "IFO"; break;
+      case RDVD_FILE_BUP: extension = "BUP"; break;
+      case RDVD_FILE_VOB: extension = "VOB"; break;
+      default: return false;
+   }
+   if (kind != RDVD_FILE_VOB && segment) return false;
+   memcpy(name, title_set ? "VTS_00_0.IFO" : "VIDEO_TS.IFO", sizeof(name));
+   if (title_set)
+   {
+      name[4] = (char)('0' + title_set / 10);
+      name[5] = (char)('0' + title_set % 10);
+      name[7] = (char)('0' + segment);
+   }
+   memcpy(name + 9, extension, 3);
+   memcpy(out, name, sizeof(name));
+   return true;
+}

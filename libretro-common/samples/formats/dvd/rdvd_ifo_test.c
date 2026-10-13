@@ -377,6 +377,33 @@ static void test_language_find(void)
    CHECK(!rdvd_ifo_menu_language_find(NULL, 0, 0, &index));
    CHECK(!rdvd_ifo_menu_language_find(&f, 0, 0, NULL));
 }
+static void test_file_names(void)
+{
+   char name[16];
+   unsigned n;
+   memset(name, 'x', sizeof(name));
+   CHECK(rdvd_file_name(0, 0, RDVD_FILE_IFO, name, sizeof(name)));
+   CHECK(!strcmp(name, "VIDEO_TS.IFO") && name[13] == 'x');
+   CHECK(rdvd_file_name(0, 0, RDVD_FILE_BUP, name, sizeof(name)));
+   CHECK(!strcmp(name, "VIDEO_TS.BUP"));
+   CHECK(rdvd_file_name(0, 0, RDVD_FILE_VOB, name, sizeof(name)));
+   CHECK(!strcmp(name, "VIDEO_TS.VOB"));
+   CHECK(rdvd_file_name(1, 0, RDVD_FILE_IFO, name, sizeof(name)));
+   CHECK(!strcmp(name, "VTS_01_0.IFO"));
+   CHECK(rdvd_file_name(99, 0, RDVD_FILE_BUP, name, sizeof(name)));
+   CHECK(!strcmp(name, "VTS_99_0.BUP"));
+   CHECK(rdvd_file_name(12, 9, RDVD_FILE_VOB, name, sizeof(name)));
+   CHECK(!strcmp(name, "VTS_12_9.VOB"));
+   for (n = 1; n < 13; n++)
+      CHECK(!rdvd_file_name(1, 0, RDVD_FILE_IFO, name, n) && !name[0]);
+   CHECK(!rdvd_file_name(100, 0, RDVD_FILE_IFO, name, sizeof(name)));
+   CHECK(!rdvd_file_name(1, 10, RDVD_FILE_VOB, name, sizeof(name)));
+   CHECK(!rdvd_file_name(0, 1, RDVD_FILE_VOB, name, sizeof(name)));
+   CHECK(!rdvd_file_name(1, 1, RDVD_FILE_BUP, name, sizeof(name)));
+   CHECK(!rdvd_file_name(1, 0, (enum rdvd_file_kind)-1, name, sizeof(name)));
+   CHECK(!rdvd_file_name(1, 0, RDVD_FILE_IFO, NULL, 13));
+   CHECK(!rdvd_file_name(1, 0, RDVD_FILE_IFO, name, 0));
+}
 int main(void)
 {
    test_bounds();
@@ -390,6 +417,7 @@ int main(void)
    test_menu_lookup();
    test_backup();
    test_language_find();
+   test_file_names();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

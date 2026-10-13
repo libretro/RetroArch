@@ -181,5 +181,13 @@ bool rdvd_ifo_select(const uint8_t *primary, size_t primary_size,
  * Validates the matched nested PGCIT; failure sets index to zero. */
 bool rdvd_ifo_menu_language_find(const rdvd_ifo_t *ifo, unsigned code,
       unsigned extension, unsigned *index);
+enum rdvd_file_kind { RDVD_FILE_IFO = 0, RDVD_FILE_BUP, RDVD_FILE_VOB };
+
+/* Produces a basename for caller-managed VIDEO_TS filesystem routing.
+ * Title set zero is VMG; VTS numbers are 1..99. Only title VOBs use segments
+ * 1..9; menus and IFO/BUP use zero. Requires 13 bytes including terminator.
+ * Failure clears a nonempty output buffer. No path or filesystem I/O occurs. */
+bool rdvd_file_name(unsigned title_set, unsigned segment,
+      enum rdvd_file_kind kind, char *out, size_t capacity);
 RETRO_END_DECLS
 #endif
