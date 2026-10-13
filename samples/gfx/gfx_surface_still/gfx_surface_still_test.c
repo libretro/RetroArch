@@ -25,6 +25,8 @@ static int       st_live, st_loads, st_unloads, st_async;
 static int       st_drop, st_updates, st_null_updates;
 static enum video_texture_update st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
 static unsigned st_abandoned, st_released;
+static bool st_lend;
+static uint32_t st_lent_pixels[2][16];
 static uintptr_t st_last_unloaded;
 static video_thread_async_load_t *st_head, *st_tail;
 /* The first and last word of the last frame the driver read */
@@ -111,7 +113,8 @@ bool video_driver_texture_fit(struct texture_image *ti)
 }
 void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
 {
-   (void)id; (void)slot; (void)pitch;
+   if (st_lend && id && slot < 2 && pitch == 4 * sizeof(uint32_t))
+      return st_lent_pixels[slot];
    return NULL;
 }
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
@@ -372,12 +375,50 @@ static void st_retired_imports(void)
    st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
    st_async = 0;
 }
+static void st_retired_lent_textures(void)
+{
+   unsigned order;
+   for (order = 0; order < 3; order++)
+   {
+      uint32_t pixels[16] = {0};
+      uintptr_t old;
+      gfx_surface_t *surface = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
+            IMAGE_PIXFMT_8888, TEXTURE_FILTER_NEAREST, NULL, NULL);
+      CHECK(surface != NULL, "lent surface allocation failed");
+      if (!surface) continue;
+      st_async = 0;
+      st_lend = true;
+      memcpy(surface->slots[0], pixels, sizeof(pixels));
+      CHECK(gfx_surface_submit(surface, 0, false) == GFX_SURFACE_SUBMIT_DONE
+            && surface->lent, "initial texture memory was not lent");
+      old = surface->handle;
+      CHECK(gfx_surface_slot_begin(surface, 0) == st_lent_pixels[0],
+            "producer did not get the lent slot");
+      st_async = 1;
+      CHECK(gfx_surface_submit(surface, 0, true) == GFX_SURFACE_SUBMIT_QUEUED,
+            "replacement texture was not queued");
+      if (order)
+         CHECK(gfx_surface_submit_path(surface, "4.png", false),
+               "lent surface decode was not queued");
+      /* The producer has stopped; cancellation owns its remaining slot. */
+      gfx_surface_free(surface);
+      if (order == 2) st_decode_done(4);
+      st_flush();
+      if (order == 1) st_decode_done(4);
+      CHECK(st_live == 0, "cancelled lent replacement order %u leaked %d textures",
+            order, st_live);
+      if (st_live) video_driver_texture_unload(&old);
+      st_lend = false;
+   }
+   st_async = 0;
+}
 int main(void)
 {
    uintptr_t a, b;
 
    st_decode_lock = slock_new();
    st_retired_imports();
+   st_retired_lent_textures();
    st_async = 1;
 
    /* 1. threaded: a same-size image updates the texture up in place

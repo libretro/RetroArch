@@ -486,6 +486,8 @@ static void gfx_surface_done(void *user, uintptr_t handle)
          return;
       if (s->handle)
          video_driver_texture_unload(&s->handle);
+      if (s->retired_handle)
+         video_driver_texture_unload(&s->retired_handle);
       free(s->rgb);
       free(s);
       return;
