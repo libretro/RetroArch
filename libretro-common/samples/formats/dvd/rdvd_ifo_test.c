@@ -591,6 +591,25 @@ static void test_cell_find(void)
    CHECK(!rdvd_cell_address_find(&table, 1, 2, &address));
    CHECK(!rdvd_cell_address_find(NULL, 1, 1, &address));
 }
+static void test_vobu_cell_find(void)
+{
+   uint8_t data[16];
+   rdvd_vobu_map_t map;
+   uint32_t sector;
+   unsigned index;
+   memset(data, 0, sizeof(data)); data[3] = 15;
+   data[7] = 10; data[11] = 20; data[15] = 30;
+   CHECK(rdvd_vobu_map_read(data, sizeof(data), &map));
+   CHECK(rdvd_vobu_find_in_cell(&map, 25, 20, 29, &sector, &index));
+   CHECK(sector == 20 && index == 1);
+   CHECK(!rdvd_vobu_find_in_cell(&map, 25, 21, 29, &sector, &index) && !sector && !index);
+   CHECK(!rdvd_vobu_find_in_cell(&map, 19, 20, 29, &sector, &index));
+   CHECK(!rdvd_vobu_find_in_cell(&map, 30, 20, 29, &sector, &index));
+   CHECK(!rdvd_vobu_find_in_cell(&map, 25, 29, 20, &sector, &index));
+   CHECK(rdvd_vobu_find_in_cell(&map, 20, 20, 20, &sector, &index) && sector == 20);
+   CHECK(!rdvd_vobu_find_in_cell(&map, 20, 20, 20, NULL, &index) && !index);
+   CHECK(!rdvd_vobu_find_in_cell(&map, 20, 20, 20, &sector, NULL) && !sector);
+}
 int main(void)
 {
    test_bounds();
@@ -612,6 +631,7 @@ int main(void)
    test_cell_addresses();
    test_vobu_map();
    test_cell_find();
+   test_vobu_cell_find();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -262,5 +262,9 @@ bool rdvd_vobu_find(const rdvd_vobu_map_t *map, uint32_t target,
  * results retain their own menu/title domain's inclusive sector bounds. */
 bool rdvd_cell_address_find(const rdvd_cell_table_t *table, unsigned vob_id,
       unsigned cell_id, rdvd_cell_address_t *out);
+/* Cell-bounded floor lookup. Target must lie inside inclusive first/last;
+ * a preceding VOBU in another cell is rejected. Failure clears outputs. */
+bool rdvd_vobu_find_in_cell(const rdvd_vobu_map_t *map, uint32_t target,
+      uint32_t first, uint32_t last, uint32_t *sector, unsigned *index);
 RETRO_END_DECLS
 #endif

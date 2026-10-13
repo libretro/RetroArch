@@ -709,3 +709,18 @@ bool rdvd_cell_address_find(const rdvd_cell_table_t *table, unsigned vob_id,
    out->last_sector = rdvd_ifo_u32(found + 8);
    return true;
 }
+
+
+bool rdvd_vobu_find_in_cell(const rdvd_vobu_map_t *map, uint32_t target,
+      uint32_t first, uint32_t last, uint32_t *sector, unsigned *index)
+{
+   uint32_t found;
+   unsigned position;
+   if (sector) *sector = 0;
+   if (index) *index = 0;
+   if (!sector || !index || first > last || target < first || target > last
+         || !rdvd_vobu_find(map, target, &found, &position) || found < first)
+      return false;
+   *sector = found; *index = position;
+   return true;
+}
