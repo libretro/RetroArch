@@ -39,6 +39,7 @@
 #include <lists/string_list.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+#include <retro_atomic.h>
 #include <sstream>
 #include <iomanip>
 
@@ -928,7 +929,8 @@ extern "C" {
        * https://github.com/libretro/RetroArch/issues/13491 */
       float surface_scale    = 0;
       int ret                = -1;
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
             CoreDispatcherPriority::Normal,
             DispatchedHandler([&surface_scale, &ret, &finished]()
@@ -948,10 +950,10 @@ extern "C" {
                      CoreWindow::GetForCurrentThread().Bounds().Height
                      * surface_scale);
                }
-               finished = true;
+               retro_atomic_store_release_int(&finished, 1);
                }));
       auto corewindow = CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
@@ -972,7 +974,8 @@ extern "C" {
        * https://github.com/libretro/RetroArch/issues/13491 */
       float surface_scale    = 0;
       int returnValue        = -1;
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
             CoreDispatcherPriority::Normal,
             DispatchedHandler([&surface_scale, &returnValue, &finished]()
@@ -992,10 +995,10 @@ extern "C" {
                      CoreWindow::GetForCurrentThread().Bounds().Width
                      * surface_scale);
                }
-               finished = true;
+               retro_atomic_store_release_int(&finished, 1);
                }));
       auto corewindow = CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
@@ -1007,7 +1010,8 @@ extern "C" {
    float uwp_get_refresh_rate(void)
    {
       float ret              = 0.0f;
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
             CoreDispatcherPriority::Normal,
             DispatchedHandler([&ret, &finished]()
@@ -1018,10 +1022,10 @@ extern "C" {
                   if (hdi)
                      ret = static_cast<float>(hdi.GetCurrentDisplayMode().RefreshRate());
                }
-               finished = true;
+               retro_atomic_store_release_int(&finished, 1);
                }));
       auto corewindow = CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
@@ -1032,16 +1036,17 @@ extern "C" {
    float uwp_get_dpi(void)
    {
       float ret              = 0.0f;
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       CoreApplication::MainView().CoreWindow().Dispatcher().RunAsync(
             CoreDispatcherPriority::Normal,
             DispatchedHandler([&ret, &finished]()
                {
                ret     = DisplayInformation::GetForCurrentView().RawDpiX();
-               finished = true;
+               retro_atomic_store_release_int(&finished, 1);
                }));
       auto corewindow = CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
