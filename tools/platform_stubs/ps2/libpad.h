@@ -28,6 +28,20 @@
 #define PAD_STATE_STABLE    0x06
 #define PAD_STATE_ERROR     0x07
 
+#define PAD_RSTAT_COMPLETE  0x00
+#define PAD_RSTAT_FAILED    0x01
+#define PAD_RSTAT_BUSY      0x02
+
+#define PAD_MODECURID       1
+#define PAD_MODECUREXID     2
+#define PAD_MODECUROFFS     3
+#define PAD_MODETABLE       4
+
+#define PAD_MMODE_DIGITAL   0
+#define PAD_MMODE_DUALSHOCK 1
+#define PAD_MMODE_UNLOCK    2
+#define PAD_MMODE_LOCK      3
+
 #define PAD_TYPE_NEJICON    0x2
 #define PAD_TYPE_DIGITAL    0x4
 #define PAD_TYPE_ANALOG     0x5
@@ -50,5 +64,8 @@ extern int padPortOpen(int port, int slot, void *padArea);
 extern int padPortClose(int port, int slot);
 extern unsigned char padRead(int port, int slot, struct padButtonStatus *data);
 extern int padGetState(int port, int slot);
+extern unsigned char padGetReqState(int port, int slot);
+extern int padInfoMode(int port, int slot, int infoMode, int index);
+extern int padSetMainMode(int port, int slot, int mode, int lock);
 
 #endif

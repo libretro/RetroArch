@@ -16,7 +16,12 @@
  * - a pad disconnected, executing a command, in error or unreadable
  *   holds nothing and reads centred;
  * - a pad is there with nothing held, and while it changes mode, and
- *   not once it is disconnected, in error or unreadable. */
+ *   not once it is disconnected, in error or unreadable;
+ * - a stable DualShock in digital mode is asked for analog mode once,
+ *   unlocked, and asked again only after it is disconnected; one with a
+ *   request in flight is asked once it completes; a pad with no
+ *   DualShock mode, one already in analog mode and one not yet stable
+ *   are not asked, and none of them is queried again. */
 
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +36,11 @@
 static unsigned char t_report[2][4][32];
 static int           t_state[2][4];
 static unsigned char t_read_len[2][4];
+static int           t_modes[4];
+static int           t_nmodes;
+static unsigned char t_req = PAD_RSTAT_COMPLETE;
+static unsigned      t_info_calls, t_set_calls;
+static int           t_set_mode, t_set_lock;
 
 int DIntr(void)             { return 0; }
 int EIntr(void)             { return 0; }
@@ -43,6 +53,29 @@ int padPortOpen(int port, int slot, void *area)
 }
 int padPortClose(int port, int slot) { (void)port; (void)slot; return 1; }
 int padGetState(int port, int slot)  { return t_state[port][slot]; }
+unsigned char padGetReqState(int port, int slot)
+{
+   (void)port; (void)slot;
+   return t_req;
+}
+int padInfoMode(int port, int slot, int info, int index)
+{
+   (void)port; (void)slot;
+   t_info_calls++;
+   if (info != PAD_MODETABLE)
+      return 0;
+   if (index == -1)
+      return t_nmodes;
+   return (index >= 0 && index < t_nmodes) ? t_modes[index] : 0;
+}
+int padSetMainMode(int port, int slot, int mode, int lock)
+{
+   (void)port; (void)slot;
+   t_set_calls++;
+   t_set_mode = mode;
+   t_set_lock = lock;
+   return 1;
+}
 unsigned char padRead(int port, int slot, struct padButtonStatus *data)
 {
    unsigned char len = t_read_len[port][slot];
@@ -201,6 +234,73 @@ int main(void)
    t_read_len[0][0] = 0;
    ps2_joypad.poll();
    check(!ps2_joypad.query_pad(0) && all_centred(), "failed read clears");
+
+   /* Analog mode: a DualShock that offers it, in digital mode. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_modes[0] = PAD_TYPE_DIGITAL;
+   t_modes[1] = PAD_TYPE_DUALSHOCK;
+   t_nmodes   = 2;
+   t_set_calls = t_info_calls = 0;
+   report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 1, "dualshock: asked for analog");
+   check(t_set_mode == PAD_MMODE_DUALSHOCK && t_set_lock == PAD_MMODE_UNLOCK,
+         "dualshock: analog, unlocked");
+   {
+      unsigned info = t_info_calls;
+      for (i = 0; i < 5; i++)
+         report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+      check(t_set_calls == 1 && t_info_calls == info,
+            "dualshock switched back by hand: not asked again");
+   }
+
+   /* Unplugged and back: asked again. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 2, "reconnected: asked again");
+
+   /* A request in flight: asked once it completes. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_req = PAD_RSTAT_BUSY;
+   t_set_calls = t_info_calls = 0;
+   report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 0 && t_info_calls == 0, "busy: not asked yet");
+   t_req = PAD_RSTAT_COMPLETE;
+   report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 1, "busy then done: asked");
+
+   /* Not yet stable: not asked. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_set_calls = t_info_calls = 0;
+   report(PAD_STATE_FINDCTP1, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 0 && t_info_calls == 0, "not stable: not asked");
+
+   /* Already in analog mode: nothing asked, nothing queried. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_set_calls = t_info_calls = 0;
+   report(PAD_STATE_STABLE, 0x73, 0, 0x80, 0x80, 0x80, 0x80);
+   report(PAD_STATE_STABLE, 0x73, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 0 && t_info_calls == 0, "already analog: not asked");
+
+   /* A digital-only pad: queried once, never asked, never again. */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_nmodes    = 0;
+   t_set_calls = t_info_calls = 0;
+   report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   {
+      unsigned info = t_info_calls;
+      for (i = 0; i < 5; i++)
+         report(PAD_STATE_STABLE, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+      check(t_set_calls == 0, "digital only: not asked");
+      check(info == 1 && t_info_calls == info, "digital only: queried once");
+   }
+
+   /* A pad with modes but none of them DualShock (a neGcon). */
+   report(PAD_STATE_DISCONN, 0x41, 0, 0x80, 0x80, 0x80, 0x80);
+   t_modes[0] = PAD_TYPE_NEJICON;
+   t_nmodes   = 1;
+   t_set_calls = 0;
+   report(PAD_STATE_STABLE, 0x23, 0, 0x80, 0x80, 0x80, 0x80);
+   check(t_set_calls == 0, "no dualshock mode: not asked");
 
    ps2_joypad.destroy();
 

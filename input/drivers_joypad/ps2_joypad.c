@@ -36,12 +36,38 @@ static unsigned char padBuf[PS2_MAX_PORT][PS2_MAX_SLOT][256] ALIGNED(64);
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
 static bool pad_present[DEFAULT_MAX_PADS];
+static bool pad_mode_asked[DEFAULT_MAX_PADS];
 
 static INLINE int16_t convert_u8_to_s16(uint8_t val)
 {
    if (val == 0)
       return -0x7fff;
    return val * 0x0101 - 0x8000;
+}
+
+/* Once per connection, unlocked so the Analog button still switches:
+ * padInfoMode() is an IOP round trip with the old padman. */
+static void ps2_joypad_ask_analog(int port, int slot, unsigned pad, int type)
+{
+   int i, modes;
+
+   if (padGetReqState(port, slot) == PAD_RSTAT_BUSY)
+      return;
+
+   pad_mode_asked[pad] = true;
+
+   if (type == PAD_TYPE_ANALOG || type == PAD_TYPE_DUALSHOCK)
+      return;
+
+   modes = padInfoMode(port, slot, PAD_MODETABLE, -1);
+   for (i = 0; i < modes; i++)
+   {
+      if (padInfoMode(port, slot, PAD_MODETABLE, i) == PAD_TYPE_DUALSHOCK)
+      {
+         padSetMainMode(port, slot, PAD_MMODE_DUALSHOCK, PAD_MMODE_UNLOCK);
+         return;
+      }
+   }
 }
 
 static const char *ps2_joypad_name(unsigned pad)
@@ -198,6 +224,8 @@ static void ps2_joypad_poll(void)
       /* A pad changing mode is still there. */
       if (state != PAD_STATE_EXECCMD)
          pad_present[i] = false;
+      if (state == PAD_STATE_DISCONN)
+         pad_mode_asked[i] = false;
 
       if (     state != PAD_STATE_DISCONN
             && state != PAD_STATE_EXECCMD
@@ -208,6 +236,9 @@ static void ps2_joypad_poll(void)
          int     type      = buttons.mode >> 4;
 
          pad_present[i]    = true;
+
+         if (!pad_mode_asked[i] && state == PAD_STATE_STABLE)
+            ps2_joypad_ask_analog(ps2_port, ps2_slot, i, type);
 
          bits |= (state_tmp & PAD_LEFT)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0;
          bits |= (state_tmp & PAD_DOWN)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0;
