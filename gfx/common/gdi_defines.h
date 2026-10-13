@@ -23,7 +23,17 @@
 #include <retro_environment.h>
 #include <boolean.h>
 
+#include <retro_atomic.h>
+
 #include "../video_defines.h"
+#include "../video_views.h"
+
+/* A DIB section views draw into, and its pixels */
+struct gdi_views_dib
+{
+   HBITMAP   bmp;
+   uint32_t *pixels;
+};
 
 #ifdef HAVE_OVERLAY
 /* On-screen input overlay entry. Defined at file scope (not inside
@@ -170,6 +180,33 @@ typedef struct gdi
    video_viewport_t vp;
    bool keep_aspect;
    bool should_resize;
+
+   struct
+   {
+      video_views_chains_t  chains;
+      video_views_target_t  canvas_target;
+      video_views_target_t  ui_target;
+      video_views_ui_dims_t saved;
+      /* Both eyes side by side, blended into the window by the CPU */
+      struct gdi_views_dib  canvas;
+      /* The UI, drawn once and placed in each eye */
+      struct gdi_views_dib  ui;
+      /* The DC the canvas draws through, and the window surface while
+       * the UI layer stands in for it */
+      HDC                   dc;
+      HBITMAP               surface;
+      uint32_t             *surface_pixels;
+      unsigned              surface_dims;
+      video_viewport_t      vp;
+      unsigned              frame_dims;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map drew it whole */
+      retro_atomic_int_t    allowed;
+      retro_atomic_int_t    fallback;
+      bool                  active;
+      bool                  ui_pass;
+      bool                  direct_seen;
+   } views;
 
 #ifdef HAVE_OVERLAY
    /* On-screen input overlay state.  Each entry holds an HBITMAP

@@ -1258,7 +1258,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
        *      directly express. */
       bool     gradient = gdi_color_is_gradient(bl, br, tl, tr);
 
-      if (!gradient && avg_a == 255)
+      /* A fill leaves a DIB's alpha at zero: the UI layer's, which
+       * must be opaque there, is blended instead. */
+      if (!gradient && avg_a == 255 && !gdi->views.ui_pass)
       {
          RECT rect;
          rect.left   = dst_x;
@@ -2477,6 +2479,7 @@ static void *gdi_init(const video_info_t *video)
 
 
    RARCH_LOG("[GDI] Init complete.\n");
+   retro_atomic_store_release_int(&gdi->views.allowed, 1);
 
    return gdi;
 
@@ -2485,6 +2488,363 @@ error:
    if (gdi)
       free(gdi);
    return NULL;
+}
+
+/* What a frame's placement draws read: the frame, its rows' bytes and
+ * bits a pixel, and the DC drawn into */
+struct gdi_views_draw
+{
+   const video_views_map_t *map;
+   const void *frame;
+   unsigned pitch;
+   unsigned bits;
+   HDC dc;
+};
+
+static void gdi_views_draw_direct(gdi_t *gdi,
+      const struct gdi_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool gdi_views_target_make(gdi_t *gdi, struct gdi_views_dib *t,
+      unsigned dims);
+static bool gdi_views_target_retire(gdi_t *gdi, struct gdi_views_dib *t);
+
+/* The views compositor, with these calls bound in. GDI takes no preset:
+ * every view is drawn straight from the frame, its chain the driver
+ * itself. */
+#define VV_FN(name)                     gdi_vv_##name
+#define VV_DRV                          gdi_t
+#define VV_CHAIN                        void
+#define VV_CREATE_STOCK(drv)            ((void*)(drv))
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct gdi_views_draw
+#define VV_DIRECT(p, d, v, r, c)        gdi_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_TARGET                       struct gdi_views_dib
+#define VV_TARGET_MAKE(drv, t, dims)    gdi_views_target_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        gdi_views_target_retire(drv, t)
+#include "../video_views_draw.h"
+
+static bool gdi_views_target_retire(gdi_t *gdi, struct gdi_views_dib *t)
+{
+   if (t->bmp)
+      DeleteObject(t->bmp);
+   t->bmp    = NULL;
+   t->pixels = NULL;
+   return true;
+}
+
+/* A top-down 32-bit DIB section sized @dims */
+static bool gdi_views_target_make(gdi_t *gdi, struct gdi_views_dib *t,
+      unsigned dims)
+{
+   BITMAPINFO bmi;
+   void *pixels = NULL;
+   memset(&bmi, 0, sizeof(bmi));
+   bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+   bmi.bmiHeader.biWidth       =  (LONG)VIDEO_SCALE_W(dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(dims);
+   bmi.bmiHeader.biPlanes      = 1;
+   bmi.bmiHeader.biBitCount    = 32;
+   bmi.bmiHeader.biCompression = BI_RGB;
+   if (     gdi->memDC
+         && (t->bmp = CreateDIBSection(gdi->memDC, &bmi, DIB_RGB_COLORS,
+               &pixels, NULL, 0))
+         && pixels)
+   {
+      t->pixels = (uint32_t*)pixels;
+      return true;
+   }
+   gdi_views_target_retire(gdi, t);
+   RARCH_WARN("[GDI] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   return false;
+}
+
+static void gdi_views_release(gdi_t *gdi)
+{
+   gdi_vv_target_drop(gdi, &gdi->views.canvas_target, &gdi->views.canvas);
+   gdi_vv_target_drop(gdi, &gdi->views.ui_target, &gdi->views.ui);
+   if (gdi->views.dc)
+      DeleteDC(gdi->views.dc);
+   gdi->views.dc = NULL;
+}
+
+/* View @view over @dst, cut to @cut, straight from the frame: the
+ * view's first row is where the DIB starts, so a top-down DIB's source
+ * rectangle needs no row from its bottom */
+static void gdi_views_draw_direct(gdi_t *gdi,
+      const struct gdi_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   struct bitmap_info info;
+   const struct retro_video_view *v = &d->map->views[view];
+   int saved                        = SaveDC(d->dc);
+
+   memset(&info, 0, sizeof(info));
+   info.header.biSize      = sizeof(BITMAPINFOHEADER);
+   info.header.biWidth     = (LONG)(d->pitch / (d->bits / 8));
+   info.header.biHeight    = -(LONG)v->height;
+   info.header.biPlanes    = 1;
+   info.header.biBitCount  = (WORD)d->bits;
+   if (d->bits == 16)
+   {
+      info.header.biCompression = BI_BITFIELDS;
+      info.u.masks[0]           = 0xF800;
+      info.u.masks[1]           = 0x07E0;
+      info.u.masks[2]           = 0x001F;
+   }
+   else
+      info.header.biCompression = BI_RGB;
+
+   IntersectClipRect(d->dc, VIDEO_POS_X(cut->pos), VIDEO_POS_Y(cut->pos),
+         VIDEO_POS_X(cut->pos) + (int)VIDEO_SCALE_W(cut->dims),
+         VIDEO_POS_Y(cut->pos) + (int)VIDEO_SCALE_H(cut->dims));
+   SetStretchBltMode(d->dc, COLORONCOLOR);
+   StretchDIBits(d->dc,
+         VIDEO_POS_X(dst->pos), VIDEO_POS_Y(dst->pos),
+         (int)VIDEO_SCALE_W(dst->dims), (int)VIDEO_SCALE_H(dst->dims),
+         (int)v->x, 0, (int)v->width, (int)v->height,
+         (const uint8_t*)d->frame + (size_t)v->y * d->pitch,
+         (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
+   RestoreDC(d->dc, saved);
+}
+
+/* Whether the UI is drawn this frame once, into the layer placed in
+ * each eye */
+static bool gdi_views_ui_wanted(gdi_t *gdi, video_frame_info_t *video_info,
+      const char *msg)
+{
+   bool ui;
+   bool per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, true);
+   /* No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye, gdi->menu_enable, msg,
+         video_info->statistics_show,
+         video_info->widgets_active && gfx_widgets_visible(video_info));
+#else
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye, gdi->menu_enable, msg,
+         video_info->statistics_show, false);
+#endif
+#ifdef HAVE_MENU
+   ui = ui || (per_eye
+         && (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE));
+#endif
+   return ui;
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked and the rectangle its first placement takes, and in *blend
+ * whether through the canvas. The UI layer takes AlphaBlend; without
+ * it a frame whose UI is drawn per eye is drawn whole. */
+static bool gdi_views_setup(gdi_t *gdi, video_frame_info_t *video_info,
+      const char *msg, bool *blend, void **chains, video_views_rect_t *rects)
+{
+   bool views;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+
+   *blend = offscreen
+      && gdi_vv_target_ensure(gdi, &gdi->views.canvas_target,
+            &gdi->views.canvas, layout->canvas_dims);
+   /* A frame without the blend modes frees the canvas. */
+   if (!offscreen)
+      gdi_vv_target_drop(gdi, &gdi->views.canvas_target,
+            &gdi->views.canvas);
+   views = video_info->views.num_views
+      && (!offscreen || *blend)
+#if !GDI_HAS_ALPHABLEND
+      && !gdi_views_ui_wanted(gdi, video_info, msg)
+#endif
+      && video_views_fit_frame(&video_info->views, gdi->views.frame_dims)
+      && gdi_vv_pick_chains(gdi, &gdi->views.chains, &video_info->views,
+            layout, true, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend = views && *blend;
+   if (views && !gdi->views.direct_seen)
+   {
+      gdi->views.direct_seen = true;
+      RARCH_LOG("[GDI] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* The canvas's halves into the window surface's @dims: anaglyph by
+ * Dubois' least-squares red/cyan matrices, or interlaced, even rows
+ * from the left half and odd from the right, counted from the top */
+static void gdi_views_blend(gdi_t *gdi, const video_views_layout_t *layout,
+      unsigned dims)
+{
+   unsigned x, y;
+   unsigned w     = VIDEO_SCALE_W(dims);
+   unsigned h     = VIDEO_SCALE_H(dims);
+   unsigned cw    = VIDEO_SCALE_W(layout->canvas_dims);
+   unsigned ch    = VIDEO_SCALE_H(layout->canvas_dims);
+   unsigned sw    = VIDEO_SCALE_W(gdi->menu_surface_dims);
+   bool anaglyph  = layout->stereo_mode != VIDEO_STEREO_MODE_INTERLACED;
+   if (cw < 2 * w || ch < h || sw < w)
+      return;
+   for (y = 0; y < h; y++)
+   {
+      const uint32_t *l = gdi->views.canvas.pixels + (size_t)y * cw;
+      const uint32_t *r = l + w;
+      uint32_t *out     = gdi->menu_pixels + (size_t)y * sw;
+      if (!anaglyph)
+      {
+         memcpy(out, (y & 1) ? r : l, (size_t)w * sizeof(uint32_t));
+         continue;
+      }
+      for (x = 0; x < w; x++)
+      {
+         float lr = (float)((l[x] >> 16) & 0xff);
+         float lg = (float)((l[x] >>  8) & 0xff);
+         float lb = (float)( l[x]        & 0xff);
+         float rr = (float)((r[x] >> 16) & 0xff);
+         float rg = (float)((r[x] >>  8) & 0xff);
+         float rb = (float)( r[x]        & 0xff);
+         float c[3];
+         unsigned k;
+         uint32_t px = 0;
+         c[0] =  0.456100f * lr + 0.500484f * lg + 0.176381f * lb
+               - 0.0434706f * rr - 0.0879388f * rg - 0.00155529f * rb;
+         c[1] = -0.0400822f * lr - 0.0378246f * lg - 0.0157589f * lb
+               + 0.378476f * rr + 0.73364f * rg - 0.0184503f * rb;
+         c[2] = -0.0152161f * lr - 0.0205971f * lg - 0.00546856f * lb
+               - 0.0721527f * rr - 0.112961f * rg + 1.2264f * rb;
+         for (k = 0; k < 3; k++)
+         {
+            int v = (int)(c[k] + 0.5f);
+            v     = (v < 0) ? 0 : (v > 255) ? 255 : v;
+            px    = (px << 8) | (uint32_t)v;
+         }
+         out[x] = px;
+      }
+   }
+}
+
+/* Draws the frame's views into the window surface, selected in memDC,
+ * or through the canvas, whose halves the CPU then blends into it */
+static void gdi_views_render(gdi_t *gdi, video_frame_info_t *video_info,
+      void **chains, bool blend, const void *frame, unsigned pitch,
+      unsigned bits)
+{
+   struct gdi_views_draw d;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   HBITMAP old                        = NULL;
+
+   d.map   = &video_info->views;
+   d.frame = frame;
+   d.pitch = pitch;
+   d.bits  = bits;
+   d.dc    = gdi->memDC;
+   if (blend)
+   {
+      if (!gdi->views.dc)
+         gdi->views.dc = CreateCompatibleDC(gdi->winDC);
+      if (!gdi->views.dc)
+         return;
+      old  = (HBITMAP)SelectObject(gdi->views.dc, gdi->views.canvas.bmp);
+      d.dc = gdi->views.dc;
+      GdiFlush();
+      memset(gdi->views.canvas.pixels, 0,
+            VIDEO_SCALE_AREA(layout->canvas_dims) * sizeof(uint32_t));
+   }
+   gdi_vv_draw_placements(gdi, &d, layout, chains,
+         blend || !layout->offscreen,
+         blend ? layout->canvas_dims : video_info->dims, true);
+   if (blend)
+   {
+      GdiFlush();
+      gdi_views_blend(gdi, layout, video_info->dims);
+      SelectObject(gdi->views.dc, old);
+   }
+}
+
+#if GDI_HAS_ALPHABLEND
+/* Moves UI drawing into the UI layer, laid out at one eye's size: the
+ * layer stands in for the window surface, cleared to transparent, and
+ * the opaque fills that would leave its alpha at zero are blended. */
+static void gdi_views_ui_begin(gdi_t *gdi, video_frame_info_t *video_info)
+{
+   unsigned ui_dims = video_info->views_layout.ui_dims;
+   struct video_viewport vp;
+
+   SelectObject(gdi->memDC, gdi->bmp_menu_old);
+   gdi->views.surface        = gdi->bmp_menu;
+   gdi->views.surface_pixels = gdi->menu_pixels;
+   gdi->views.surface_dims   = gdi->menu_surface_dims;
+   gdi->bmp_menu             = gdi->views.ui.bmp;
+   gdi->menu_pixels          = gdi->views.ui.pixels;
+   gdi->menu_surface_dims    = ui_dims;
+   gdi->bmp_menu_old         = (HBITMAP)SelectObject(gdi->memDC,
+         gdi->bmp_menu);
+   GdiFlush();
+   memset(gdi->menu_pixels, 0, VIDEO_SCALE_AREA(ui_dims) * sizeof(uint32_t));
+   /* Menus and widgets size from video_info->dims, a menu texture
+    * from the game viewport, fitted to the layer. */
+   video_views_ui_enter(&gdi->views.saved, &video_info->dims,
+         &gdi->vp.full_dims, ui_dims);
+   gdi->views.vp = gdi->vp;
+   memset(&vp, 0, sizeof(vp));
+   vp.full_dims  = ui_dims;
+   video_driver_update_viewport(&vp, false, gdi->keep_aspect, true);
+   gdi->vp       = vp;
+   gdi->views.ui_pass = true;
+}
+
+/* Back onto the window surface, and the UI layer into each eye's area,
+ * its colour premultiplied */
+static void gdi_views_ui_end(gdi_t *gdi, video_frame_info_t *video_info)
+{
+   unsigned a;
+   BLENDFUNCTION blend;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   unsigned ui_dims                   = gdi->menu_surface_dims;
+
+   gdi->views.ui_pass     = false;
+   gdi->vp                = gdi->views.vp;
+   video_views_ui_leave(&gdi->views.saved, &video_info->dims,
+         &gdi->vp.full_dims);
+   SelectObject(gdi->memDC, gdi->bmp_menu_old);
+   gdi->bmp_menu          = gdi->views.surface;
+   gdi->menu_pixels       = gdi->views.surface_pixels;
+   gdi->menu_surface_dims = gdi->views.surface_dims;
+   gdi->bmp_menu_old      = (HBITMAP)SelectObject(gdi->memDC,
+         gdi->bmp_menu);
+
+   if (!gdi->views.dc)
+      gdi->views.dc = CreateCompatibleDC(gdi->winDC);
+   if (!gdi->views.dc)
+      return;
+   blend.BlendOp             = AC_SRC_OVER;
+   blend.BlendFlags          = 0;
+   blend.SourceConstantAlpha = 255;
+   blend.AlphaFormat         = AC_SRC_ALPHA;
+   {
+      HBITMAP old = (HBITMAP)SelectObject(gdi->views.dc, gdi->views.ui.bmp);
+      for (a = 0; a < layout->num_areas; a++)
+      {
+         const video_views_rect_t *r = &layout->areas[a];
+         AlphaBlend(gdi->memDC, VIDEO_POS_X(r->pos), VIDEO_POS_Y(r->pos),
+               (int)VIDEO_SCALE_W(r->dims), (int)VIDEO_SCALE_H(r->dims),
+               gdi->views.dc, 0, 0, (int)VIDEO_SCALE_W(ui_dims),
+               (int)VIDEO_SCALE_H(ui_dims), blend);
+      }
+      SelectObject(gdi->views.dc, old);
+   }
+}
+#endif
+
+static void gdi_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   gdi_t *gdi = (gdi_t*)data;
+   if (!gdi)
+      return;
+   gdi->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = gdi->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      gdi->views.chains.stock[i] = NULL;
 }
 
 static bool gdi_frame(void *data, const void *frame,
@@ -2536,6 +2896,12 @@ static bool gdi_frame(void *data, const void *frame,
                                       ;
    unsigned surface_width;
    unsigned surface_height;
+   void *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                       = false;
+   bool views_blend                 = false;
+   bool views_per_eye               = false;
+   bool views_ui                    = false;
 
    /* GDI has no programmable shader pipeline, so the animated XMB
     * backgrounds (Ribbon / Snow / Bokeh / etc.) can't run — force
@@ -2585,9 +2951,24 @@ static bool gdi_frame(void *data, const void *frame,
     * for the core frame inside the window; everything outside it
     * is filled black at present time to produce letterbox /
     * pillarbox bars.  Mirrors d3d8's should_resize pattern. */
+   /* The viewport is the whole window while views draw. */
+   gdi->views.frame_dims = dims;
+   views = gdi_views_setup(gdi, video_info, msg, &views_blend,
+         view_chains, view_rects);
+   if (views != gdi->views.active)
+   {
+      gdi->views.active  = views;
+      gdi->should_resize = true;
+   }
+   retro_atomic_store_release_int(&gdi->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, true);
+
    if (gdi->should_resize)
    {
-      gdi_set_viewport(gdi, VIDEO_SCALE_PACK(surface_width, surface_height), false, true);
+      gdi_set_viewport(gdi, VIDEO_SCALE_PACK(surface_width, surface_height),
+            gdi->views.active, true);
       gdi->should_resize = false;
    }
    /* Defensive: if vp was never populated (e.g. should_resize
@@ -2651,6 +3032,9 @@ static bool gdi_frame(void *data, const void *frame,
          need_bmp_menu = true;
       if (show_stats)
          need_bmp_menu = true;
+      /* Views draw into the window surface. */
+      if (views)
+         need_bmp_menu = true;
 
       if (need_bmp_menu)
          gdi_ensure_menu_surface(gdi, surface_width, surface_height);
@@ -2672,7 +3056,12 @@ static bool gdi_frame(void *data, const void *frame,
        * here because the clear is a fully-opaque FillRect, not an
        * AlphaBlend source. */
       gdi_menu_surface_clear(gdi, 0, 0, 0);
+      if (views)
+         gdi_views_render(gdi, video_info, view_chains, views_blend,
+               frame, pitch, gdi->frame_bits);
    }
+   else if (views)
+      views = false;
 
    /* --- Step 4b: menu-over-running-game underlay.
     *
@@ -2704,6 +3093,7 @@ static bool gdi_frame(void *data, const void *frame,
    if (     gdi->menu_textured_active
          && gdi->bmp_menu
          && menu_is_alive
+         && !views
          && frame
          && frame_width  > 4
          && frame_height > 4)
@@ -2711,6 +3101,20 @@ static bool gdi_frame(void *data, const void *frame,
       gdi_upload_core_frame_to_menu(gdi, frame,
             frame_width, frame_height, pitch, gdi->frame_bits);
    }
+#endif
+
+   /* The UI drawn once, into the layer placed in each eye; touch
+    * overlays, which would straddle both eyes, hidden. A frame drawn
+    * whole lays its UI out per eye as the main thread did. */
+   if (!views_per_eye)
+      gdi_vv_target_drop(gdi, &gdi->views.ui_target, &gdi->views.ui);
+#if GDI_HAS_ALPHABLEND
+   views_ui = gdi->menu_textured_active && gdi->bmp_menu
+      && gdi_views_ui_wanted(gdi, video_info, msg)
+      && gdi_vv_target_ensure(gdi, &gdi->views.ui_target, &gdi->views.ui,
+            video_info->views_layout.ui_dims);
+   if (views_ui)
+      gdi_views_ui_begin(gdi, video_info);
 #endif
 
    /* --- Step 5: invoke the menu driver.  This is what actually
@@ -2764,6 +3168,9 @@ static bool gdi_frame(void *data, const void *frame,
       if (menu_is_alive)
          draw = false;
 #endif
+      /* The views were drawn already. */
+      if (views)
+         draw = false;
    }
 
    /* --- Step 8: resize bmp if its current size doesn't match the
@@ -2822,6 +3229,15 @@ static bool gdi_frame(void *data, const void *frame,
     * was already set in Step 7 because menu_is_alive is true and
     * menu_frame is NULL — the menu itself owns the bmp_menu image
     * and we have no underlying core frame to upload. */
+   /* The viewport is the whole window while views draw: a menu frame
+    * is fitted to it here. The UI layer fitted its own. */
+   if (draw && views && !views_ui)
+   {
+      gdi->views.vp = gdi->vp;
+      memset(&gdi->vp, 0, sizeof(gdi->vp));
+      gdi->vp.full_dims = gdi->views.vp.full_dims;
+      video_driver_update_viewport(&gdi->vp, false, gdi->keep_aspect, true);
+   }
    if (draw)
    {
       memset(&info, 0, sizeof(info));
@@ -2937,6 +3353,9 @@ static bool gdi_frame(void *data, const void *frame,
       }
    }
 
+   if (draw && views && !views_ui)
+      gdi->vp = gdi->views.vp;
+
    /* --- Step 10: Display Statistics overlay (statistics_show +
     * stat_text).  Gated by Settings → User Interface → Onscreen
     * Notifications → Display Statistics.  Rendered through the
@@ -2959,7 +3378,7 @@ static bool gdi_frame(void *data, const void *frame,
     * backends means an overlay-on-d3d9 config carries over here
     * unchanged). */
 #ifdef HAVE_OVERLAY
-   if (gdi->overlays_enabled)
+   if (gdi->overlays_enabled && !views_per_eye)
       gdi_overlays_render(gdi, surface_width, surface_height);
 #endif
 
@@ -3007,6 +3426,11 @@ static bool gdi_frame(void *data, const void *frame,
     * needs to be visible. */
    if (msg)
       font_driver_render_msg(gdi, msg, strlen(msg), NULL, NULL);
+
+#if GDI_HAS_ALPHABLEND
+   if (views_ui)
+      gdi_views_ui_end(gdi, video_info);
+#endif
 
    /* --- Step 13: final deselection.  If bmp_menu is still selected,
     * pop it now so memDC is back to its baseline (no bitmap selected,
@@ -3140,6 +3564,7 @@ static void gdi_free(void *data)
 
    /* Tear down menu surface (DIB section + selection state) before
     * the DC it's selected into goes away. */
+   gdi_views_release(gdi);
    gdi_release_menu_surface(gdi);
    gdi_release_brush(gdi);
 
@@ -3382,7 +3807,91 @@ static void gdi_unload_texture(void *data,
    free(texture);
 }
 
-static uint32_t gdi_get_flags(void *data) { return 0; }
+static uint32_t gdi_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   gdi_t *gdi     = (gdi_t*)data;
+   if (gdi && retro_atomic_load_acquire_int(&gdi->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (gdi && retro_atomic_load_acquire_int(&gdi->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   return flags;
+}
+
+/* The viewport's pixels, bottom row first as BGR24: from the window
+ * surface the last frame was composed in, or from the frame's bitmap
+ * scaled into the viewport as WM_PAINT draws it */
+static bool gdi_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   unsigned x, y;
+   gdi_t *gdi = (gdi_t*)data;
+   unsigned vx, vy, vw, vh;
+   if (!gdi)
+      return false;
+   vx = (VIDEO_POS_X(gdi->vp.pos) > 0) ? (unsigned)VIDEO_POS_X(gdi->vp.pos) : 0;
+   vy = (VIDEO_POS_Y(gdi->vp.pos) > 0) ? (unsigned)VIDEO_POS_Y(gdi->vp.pos) : 0;
+   vw = VIDEO_SCALE_W(gdi->vp.dims);
+   vh = VIDEO_SCALE_H(gdi->vp.dims);
+   if (gdi->menu_textured_active && gdi->menu_pixels)
+   {
+      unsigned sw = VIDEO_SCALE_W(gdi->menu_surface_dims);
+      unsigned sh = VIDEO_SCALE_H(gdi->menu_surface_dims);
+      GdiFlush();
+      for (y = 0; y < vh; y++)
+      {
+         unsigned sy = vy + vh - 1 - y;
+         for (x = 0; x < vw; x++)
+         {
+            unsigned sx = vx + x;
+            uint32_t px = (sy < sh && sx < sw)
+               ? gdi->menu_pixels[(size_t)sy * sw + sx] : 0;
+            *buffer++   = (uint8_t)(px);
+            *buffer++   = (uint8_t)(px >> 8);
+            *buffer++   = (uint8_t)(px >> 16);
+         }
+      }
+      return true;
+   }
+   if (gdi->bmp && gdi->memDC && vw && vh)
+   {
+      struct gdi_views_dib dib;
+      HDC dc;
+      HBITMAP old_dst, old_src;
+      unsigned src_dims = gdi->bmp_dims ? gdi->bmp_dims : gdi->frame_dims;
+      dib.bmp    = NULL;
+      dib.pixels = NULL;
+      if (     !(dc = CreateCompatibleDC(gdi->winDC))
+            || !gdi_views_target_make(gdi, &dib, VIDEO_SCALE_PACK(vw, vh)))
+      {
+         if (dc)
+            DeleteDC(dc);
+         return false;
+      }
+      old_dst = (HBITMAP)SelectObject(dc, dib.bmp);
+      old_src = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp);
+      SetStretchBltMode(dc, COLORONCOLOR);
+      StretchBlt(dc, 0, 0, (int)vw, (int)vh, gdi->memDC, 0, 0,
+            (int)VIDEO_SCALE_W(src_dims), (int)VIDEO_SCALE_H(src_dims),
+            SRCCOPY);
+      GdiFlush();
+      SelectObject(gdi->memDC, old_src);
+      SelectObject(dc, old_dst);
+      for (y = 0; y < vh; y++)
+      {
+         const uint32_t *row = dib.pixels + (size_t)(vh - 1 - y) * vw;
+         for (x = 0; x < vw; x++)
+         {
+            *buffer++ = (uint8_t)(row[x]);
+            *buffer++ = (uint8_t)(row[x] >> 8);
+            *buffer++ = (uint8_t)(row[x] >> 16);
+         }
+      }
+      gdi_views_target_retire(gdi, &dib);
+      DeleteDC(dc);
+      return true;
+   }
+   return false;
+}
 
 #ifdef HAVE_GFX_WIDGETS
 /* gfx_widgets is enabled whenever the driver can route the widget
@@ -3452,7 +3961,12 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   gdi_update_texture
+   gdi_update_texture,
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   gdi_set_view_count
 };
 
 static void gdi_get_poke_interface(void *data,
@@ -3881,7 +4395,7 @@ video_driver_t video_gdi = {
    gdi_set_viewport,
    NULL, /* set_rotation */
    gdi_viewport_info,
-   NULL, /* read_viewport */
+   gdi_read_viewport,
 #ifdef HAVE_OVERLAY
    gdi_get_overlay_interface,
 #endif

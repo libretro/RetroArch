@@ -272,7 +272,8 @@ EXACT_HW = {'gl': ('off', 'gl_compat'),
             'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
             'gl1': ('off',), 'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
             'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',),
-            'sdl2': ('off',), 'sdl3': ('off',), 'd3d8': ('off',)}
+            'sdl2': ('off',), 'sdl3': ('off',), 'd3d8': ('off',),
+            'gdi': ('off',)}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
@@ -330,7 +331,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
-                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8')
+                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)

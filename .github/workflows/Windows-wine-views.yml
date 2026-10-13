@@ -1,9 +1,9 @@
 name: CI Windows views under Wine
 
-# Views on the D3D8, D3D9 HLSL, D3D10, D3D11 and D3D12 drivers, end to end:
-# retroarch.exe cross-built with mingw-w64 runs the video_views test core
-# under Wine, on a virtual display through Mesa's software rasterisers
-# (D3D12 on Wine's vkd3d over lavapipe), and
+# Views on the GDI, D3D8, D3D9 HLSL, D3D10, D3D11 and D3D12 drivers, end
+# to end: retroarch.exe cross-built with mingw-w64 runs the video_views
+# test core under Wine, on a virtual display through Mesa's software
+# rasterisers (D3D12 on Wine's vkd3d over lavapipe), and
 # samples/cores/video_views/e2e/run.py checks the screen in each stereo
 # mode, from the core's software frames and its D3D11 and D3D12
 # textures, with the menu laid out per eye and the pointer over it.
@@ -16,6 +16,8 @@ on:
       - master
     paths:
       - 'gfx/common/d3d9_*'
+      - 'gfx/drivers/gdi_gfx.c'
+      - 'gfx/common/gdi_defines.h'
       - 'gfx/drivers/d3d8.c'
       - 'gfx/drivers/d3d9hlsl.c'
       - 'gfx/drivers/d3d10.c'
@@ -31,6 +33,8 @@ on:
   pull_request:
     paths:
       - 'gfx/common/d3d9_*'
+      - 'gfx/drivers/gdi_gfx.c'
+      - 'gfx/common/gdi_defines.h'
       - 'gfx/drivers/d3d8.c'
       - 'gfx/drivers/d3d9hlsl.c'
       - 'gfx/drivers/d3d10.c'
@@ -54,7 +58,7 @@ concurrency:
 
 jobs:
   windows-wine-views:
-    name: Views on D3D8, D3D9, D3D10, D3D11 and D3D12 under Wine
+    name: Views on GDI, D3D8, D3D9, D3D10, D3D11 and D3D12 under Wine
     runs-on: ubuntu-24.04
     timeout-minutes: 150
 
@@ -142,7 +146,7 @@ jobs:
           done
           make -C samples/cores/video_views DLL=1 CC=x86_64-w64-mingw32-gcc
 
-      - name: Views on D3D8, D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
+      - name: Views on GDI, D3D8, D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash
         run: |
           set -eu
@@ -152,7 +156,7 @@ jobs:
           # Initialize the prefix with a display and wait for setup to finish.
           WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
-            ./retroarch.exe "$RUNNER_TEMP/views-e2e" d3d8 d3d9_hlsl d3d10 d3d11 d3d12
+            ./retroarch.exe "$RUNNER_TEMP/views-e2e" gdi d3d8 d3d9_hlsl d3d10 d3d11 d3d12
 
       - name: Preserve views logs on failure
         if: failure()
