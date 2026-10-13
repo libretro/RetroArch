@@ -10,7 +10,7 @@
  *     slot's view, the four buffers submitted with their sizes, the
  *     bitstream padded to 128 bytes with zeros the last slice takes, a
  *     slice entry for each NAL unit's start code;
- *   - DecoderBeginFrame's E_PENDING waited out, and given up on;
+ *   - DecoderBeginFrame's E_PENDING returned for a later retry;
  *   - a bitstream buffer too small refused, one with no room for the
  *     padding taking none;
  *   - each frame shown copied from its slot's visible window, the
@@ -727,6 +727,8 @@ static void test_direct(void)
 
    subs_free();
    pending_left = 3;
+   for (i = 0; i < 3; i++)
+      check("E_PENDING: no submission", ops->decode(dec, &pic) == 1 && !n_subs);
    r = ops->decode(dec, &pic);
    check("E_PENDING three times, then decoded", !r && n_subs == 1
          && !pending_left);
@@ -741,8 +743,8 @@ static void test_direct(void)
    stub_quiet = 1;
    r = ops->decode(dec, &pic);
    stub_quiet = 0;
-   check("E_PENDING for good: given up on", r < 0
-         && GetTickCount() - t0 < 5000);
+   check("E_PENDING for good: retryable at once", r == 1
+         && pending_left == 99999 && GetTickCount() - t0 < 100);
    pending_left = 0;
 
    subs_free();
@@ -770,8 +772,8 @@ static void test_direct(void)
    stub_quiet = 1;
    r = ops->output(dec, 0, &fr[4]);
    stub_quiet = 0;
-   check("a fifth with none read: waited for, then given up",
-         r < 0 && GetTickCount() - t0 >= 900);
+   check("a fifth with none read: retryable at once",
+         r == 1 && GetTickCount() - t0 < 100);
    video_hw_frame_abandon(&fr[1]);
    t0 = GetTickCount();
    r  = ops->output(dec, 2, &fr[4]);

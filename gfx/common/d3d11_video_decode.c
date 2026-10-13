@@ -64,8 +64,6 @@
 #define D3D11VD_MAX_SLOTS  32
 #define D3D11VD_MAX_SLICES 64     /* rh264 gathers no more */
 #define D3D11VD_OUTS       4      /* shared output textures per decoder */
-#define D3D11VD_WAIT_MS    1000
-#define D3D11VD_BEGIN_TRIES 500   /* DecoderBeginFrame's E_PENDING, 1 ms */
 /* The scaling lists in coded (zig-zag) order; a sample sets it to try
  * raster order on a GPU */
 #ifndef D3D11VD_QM_RASTER
@@ -129,7 +127,6 @@ typedef struct d3d11vd_dec
    ID3D11Fence *ready;            /* raised behind each copy          */
    HANDLE       ready_handle;
    uint64_t     ready_value;
-   HANDLE       event;
 
    uint8_t pp[DXVA_H264_PP_SIZE];
    uint8_t qm[DXVA_H264_QM_SIZE];
@@ -164,8 +161,6 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    }
    if (d->ready_handle)
       CloseHandle(d->ready_handle);
-   if (d->event)
-      CloseHandle(d->event);
    D3D11VD_RELEASE(d->ready);
    for (i = 0; i < D3D11VD_MAX_SLOTS; i++)
       D3D11VD_RELEASE(d->view[i]);
@@ -243,27 +238,6 @@ static void d3d11vd_abandon(void *owner, uint64_t done, uint64_t value)
          retro_atomic_store_release_int(&d->out_abandoned[o], (int)value);
          return;
       }
-}
-
-/* Output texture @o free to be copied into: waits, on the decoding
- * thread, for its reader. */
-static bool d3d11vd_out_wait(d3d11vd_dec_t *d, unsigned o)
-{
-   unsigned waited = 0;
-   if (d3d11vd_out_settled(d, o))
-      return true;
-   if (FAILED(d->out_done[o]->lpVtbl->SetEventOnCompletion(d->out_done[o],
-         d->out_value[o], d->event)))
-      return false;
-   /* in slices: an abandon raises no event */
-   while (waited < D3D11VD_WAIT_MS)
-   {
-      WaitForSingleObject(d->event, 10);
-      waited += 10;
-      if (d3d11vd_out_settled(d, o))
-         return true;
-   }
-   return false;
 }
 
 /* ---- open ---- */
@@ -409,8 +383,7 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
          goto end;
       retro_atomic_store_release_int(&d->out_abandoned[o], 0);
    }
-   ok = d3d11vd_shared_fence(dev5, &d->ready, &d->ready_handle)
-      && (d->event = CreateEventA(NULL, FALSE, FALSE, NULL)) != NULL;
+   ok = d3d11vd_shared_fence(dev5, &d->ready, &d->ready_handle);
 end:
    D3D11VD_RELEASE(dev5);
    return ok;
@@ -523,14 +496,10 @@ static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)
       if (pic->refs[i].slot < 0 || (unsigned)pic->refs[i].slot >= d->slots)
          return -1;
 
-   for (i = 0; ; i++)
-   {
-      hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
-            d->view[pic->slot], 0, NULL);
-      if (hr != E_PENDING || i >= D3D11VD_BEGIN_TRIES)
-         break;
-      Sleep(1);
-   }
+   hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
+         d->view[pic->slot], 0, NULL);
+   if (hr == E_PENDING)
+      return 1;
    if (FAILED(hr))
       return -1;
 
@@ -597,17 +566,16 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
    D3D11_BOX box;
-   unsigned o;
+   unsigned o, n;
 
    if (slot >= d->slots)
       return -1;
-   /* the oldest texture, once its last reader is done */
-   o = d->out_next++ % D3D11VD_OUTS;
-   if (!d3d11vd_out_wait(d, o))
-   {
-      RARCH_WARN("[D3D11] Video decode: an output frame was never given back.\n");
-      return -1;
-   }
+   for (n = 0; n < D3D11VD_OUTS; n++)
+      if (d3d11vd_out_settled(d, (d->out_next + n) % D3D11VD_OUTS))
+         break;
+   if (n == D3D11VD_OUTS)
+      return 1;
+   o = (d->out_next + n) % D3D11VD_OUTS;
    box.left   = d->crop_x;
    box.top    = d->crop_y;
    box.front  = 0;
@@ -621,6 +589,7 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
       return -1;
    d->ready_value++;
    d->ctx->lpVtbl->Flush(d->ctx);
+   d->out_next = (o + 1) % D3D11VD_OUTS;
 
    memset(out, 0, sizeof(*out));
    out->image      = (uint64_t)(uintptr_t)d->out_handle[o];

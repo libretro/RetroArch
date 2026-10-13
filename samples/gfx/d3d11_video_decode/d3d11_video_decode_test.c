@@ -514,7 +514,18 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    {
       if (pkt.track != trk)
          continue;
-      if ((r = rh264_video_decode(v, pkt.data, pkt.size)) < 0)
+      {
+         unsigned tries = 0;
+         do
+         {
+            r = rh264_video_decode(v, pkt.data, pkt.size);
+            if (r == 2)
+               Sleep(1);
+         } while (r == 2 && ++tries < 1000);
+         if (r == 2)
+            r = -1;
+      }
+      if (r < 0)
          ok = 0;
       else if (r == 1)
       {
@@ -525,8 +536,16 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
             ok = 0;
       }
    }
-   while (ok && rh264_video_drain(v) == 0)
+   while (ok)
    {
+      r = rh264_video_drain(v);
+      if (r == 2)
+      {
+         Sleep(1);
+         continue;
+      }
+      if (r != 0)
+         break;
       if (!on_hw || hw == 2)
          take_sw(f, v);
       else if (rh264_video_hw_frame(v, &fr) != 0

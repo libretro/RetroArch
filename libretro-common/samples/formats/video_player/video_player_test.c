@@ -67,6 +67,9 @@ typedef struct
    uint32_t *out;
    int frames;
    int pos;
+   int wait_left;
+   int wait_at;
+   bool waiting;
    int duration_ms;
    int catchup;        /* last value set */
    int catchup_sets;
@@ -111,6 +114,12 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    uint32_t *dst;
    unsigned i;
    (void)type;
+   f->waiting = f->wait_left > 0 && f->pos == f->wait_at;
+   if (f->waiting)
+   {
+      f->wait_left--;
+      return NULL;
+   }
    if (f->pos >= f->frames)
       return NULL;
    if (f->hw_on)
@@ -135,6 +144,13 @@ static void fake_abandon(void *owner, uint64_t done, uint64_t value)
    (void)done;
    (void)value;
    f->hw_abandoned++;
+}
+
+bool image_transfer_anim_stream_waiting(const void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   return ((const fake_t*)stream)->waiting;
 }
 
 bool image_transfer_anim_stream_set_hw(void *stream,
@@ -525,6 +541,8 @@ static void lane_hw_inline(void)
 
    fake_init(&f, 6, 10);
    f.hw_can = true;
+   f.wait_left = 3;
+   f.wait_at = 2;
    sink_init_hw(&k, &s);
    k.hw_busy_every = 4;
    p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s, VIDEO_PLAYER_INLINE);
@@ -589,6 +607,8 @@ static void lane_hw_threaded(void)
 
    fake_init(&f, 7, 5);
    f.hw_can = true;
+   f.wait_left = 3;
+   f.wait_at = 2;
    sink_init_hw(&k, &s);
    k.queue_every   = 3;
    k.hw_busy_every = 5;

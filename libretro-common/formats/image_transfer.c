@@ -1386,6 +1386,19 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
    return NULL;
 }
 
+bool image_transfer_anim_stream_waiting(const void *stream,
+      enum image_type_enum type)
+{
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_waiting((const rmp4_video_stream_t*)stream) != 0;
+#else
+   (void)stream;
+   (void)type;
+#endif
+   return false;
+}
+
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type){
    switch (type)

@@ -125,6 +125,8 @@ void rmp4_video_stream_get_info(const rmp4_video_stream_t *stream,
  * memory order R,G,B,A by default; see rmp4_video_stream_set_argb. */
 const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
       int *duration_ms);
+/* NULL from next with waiting set is backpressure, not end of pass. */
+int rmp4_video_stream_waiting(const rmp4_video_stream_t *stream);
 
 /* Select the channel order of subsequent frames: non-zero emits ARGB
  * words (memory order B,G,R,A on little-endian), zero restores the

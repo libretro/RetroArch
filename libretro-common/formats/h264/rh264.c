@@ -10484,6 +10484,10 @@ typedef struct rh264_hw
    int out_gen[RH264_OUT_SLOTS];
    uint8_t out_used[RH264_OUT_SLOTS];
    int out_len;
+   int pending_out;
+   const uint8_t *retry_data;
+   size_t retry_len, retry_pos;
+   int retrying, retry_got;
    rh264_hw_ref_t refs[RH264_MAX_REFS];
    video_hw_frame_t shown;
    int have_shown;
@@ -10683,8 +10687,8 @@ static int rh264_hw_out_pick(const rh264_hw *hw)
 static int rh264_hw_show(rh264_video *v, int i)
 {
    rh264_hw *hw     = v->hw;
-   hw->out_used[i]  = 0;
-   hw->out_len--;
+   video_hw_frame_t shown;
+   int r;
    if (v->hw_readback)
    {
       int w = hw->sps.width, h = hw->sps.height;
@@ -10710,17 +10714,24 @@ static int rh264_hw_show(rh264_video *v, int i)
       }
       hw->have_cpu = 1;
       hw->fresh = 1;
+      hw->out_used[i] = 0;
+      hw->out_len--;
       return 0;
    }
    /* two pictures in one call: the first is passed over */
-   if (hw->fresh)
-      video_hw_frame_abandon(&hw->shown);
-   hw->have_shown   = 0;
-   if (hw->ops->output(hw->dec, (unsigned)hw->out_slot[i], &hw->shown) != 0)
+   r = hw->ops->output(hw->dec, (unsigned)hw->out_slot[i], &shown);
+   if (r > 0)
+      return 2;
+   if (r < 0)
    {
       hw->broken = 1;
       return -1;
    }
+   if (hw->fresh)
+      video_hw_frame_abandon(&hw->shown);
+   hw->shown = shown;
+   hw->out_used[i] = 0;
+   hw->out_len--;
    hw->have_shown = 1;
    hw->fresh      = 1;
    return 0;
@@ -10730,7 +10741,7 @@ static int rh264_hw_show(rh264_video *v, int i)
 static int rh264_hw_out_push(rh264_video *v, int poc, int is_idr)
 {
    rh264_hw *hw = v->hw;
-   int i, slot = -1;
+   int i, r, slot = -1;
    for (i = 0; i < RH264_OUT_SLOTS; i++)
       if (!hw->out_used[i]) { slot = i; break; }
    if (slot < 0)
@@ -10742,8 +10753,12 @@ static int rh264_hw_out_push(rh264_video *v, int poc, int is_idr)
    hw->out_len++;
    if (hw->out_len <= v->reorder_delay && !(is_idr && hw->out_len == 1))
       return 0;
-   if (rh264_hw_show(v, rh264_hw_out_pick(hw)) != 0)
-      return -1;
+   i = rh264_hw_out_pick(hw);
+   r = rh264_hw_show(v, i);
+   if (r == 2)
+      hw->pending_out = i + 1;
+   if (r != 0)
+      return r;
    return 1;
 }
 
@@ -10756,11 +10771,22 @@ static int rh264_hw_finish(rh264_video *v, int *got_pic)
    int j, r;
    unsigned n = 0;
 
+   if (hw->pending_out)
+   {
+      r = rh264_hw_show(v, hw->pending_out - 1);
+      if (r != 0)
+         return r;
+      hw->pending_out = 0;
+      *got_pic = 1;
+      return 0;
+   }
    if (!hw->pic_open)
       return 0;
-   hw->pic_open = 0;
    if (hw->skip)
+   {
+      hw->pic_open = 0;
       return 0;
+   }
 
    /* an IDR predicts from nothing: the DPB empties under it */
    for (j = 0; j < v->dpb_len && !hw->idr; j++)
@@ -10801,11 +10827,15 @@ static int rh264_hw_finish(rh264_video *v, int *got_pic)
             pic.long_term     = 1;
             pic.long_term_idx = v->pend_mmco_a[j];
          }
-   if (hw->ops->decode(hw->dec, &pic) != 0)
+   r = hw->ops->decode(hw->dec, &pic);
+   if (r > 0)
+      return 2;
+   if (r < 0)
    {
       hw->broken = 1;
       return -1;
    }
+   hw->pic_open = 0;
 
    if (hw->idr)
    {
@@ -10840,8 +10870,8 @@ static int rh264_hw_finish(rh264_video *v, int *got_pic)
       }
       r = rh264_hw_out_push(v, v->last_poc, epoch);
    }
-   if (r < 0)
-      return -1;
+   if (r < 0 || r == 2)
+      return r;
    if (r > 0)
       *got_pic = 1;
    return 0;
@@ -10876,8 +10906,11 @@ static int rh264_hw_slice(rh264_video *v, const uint8_t *nal, size_t len,
    if (sh->first_mb_in_slice == 0)
    {
       /* a picture the last access unit left open ends here */
-      if (rh264_hw_finish(v, got_pic) != 0)
-         return -1;
+      {
+         int r = rh264_hw_finish(v, got_pic);
+         if (r != 0)
+            return r;
+      }
       hw->skip = 0;
       if (nri == 0 && retro_atomic_load_acquire_int(&v->skip_nonref))
       {
@@ -11083,7 +11116,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (type == 7 || type == 8)
          return rh264_hw_take_ps(v, nal, nl) != 0 ? -1 : 0;
       if (type == 5 || type == 1)
-         return rh264_hw_slice(v, nal, nl, got_pic) != 0 ? -1 : 0;
+         return rh264_hw_slice(v, nal, nl, got_pic);
       return 0;
    }
    /* a switching slice was refused earlier: everything after it would
@@ -11112,6 +11145,17 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
    return 0;
 }
 
+static int rh264_hw_retry(rh264_video *v, const uint8_t *data,
+      size_t len, size_t pos, int got)
+{
+   v->hw->retry_data = data;
+   v->hw->retry_len  = len;
+   v->hw->retry_pos  = pos;
+   v->hw->retry_got  = got;
+   v->hw->retrying   = 1;
+   return 2;
+}
+
 int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
 {
    size_t p = 0;
@@ -11119,7 +11163,17 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
    if (!v || !data) return -1;
    v->dropped = 0;
    if (v->hw)
-      v->hw->fresh = 0;
+   {
+      if (v->hw->retrying)
+      {
+         if (data != v->hw->retry_data || len != v->hw->retry_len)
+            return -1;
+         p = v->hw->retry_pos;
+         got_pic = v->hw->retry_got;
+      }
+      else
+         v->hw->fresh = 0;
+   }
 
    if (v->nal_length_size > 0 && len >= (size_t)v->nal_length_size)
    {
@@ -11132,12 +11186,14 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
       int ls = v->nal_length_size, i;
       while (p + ls <= len)
       {
-         size_t nl = 0;
+         size_t nl = 0, at = p;
          for (i = 0; i < ls; i++) nl = (nl << 8) | data[p + i];
          p += ls;
          if (nl == 0 || p + nl > len) break;
          {
             int r = rh264_video_handle_slice_nal(v, data + p, nl, &got_pic);
+            if (r == 2)
+               return rh264_hw_retry(v, data, len, at, got_pic);
             if (r < 0) return -1;
             /* One coded picture per call: sequentially the picture
              * shown is this sample's, complete at its last slice, and
@@ -11166,6 +11222,8 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
          if (s < e)
          {
             int r = rh264_video_handle_slice_nal(v, data + s, e - s, &got_pic);
+            if (r == 2)
+               return rh264_hw_retry(v, data, len, p, got_pic);
             if (r < 0) return -1;
             /* One coded picture per call: sequentially the picture
              * shown is this sample's, complete at its last slice, and
@@ -11179,8 +11237,15 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
       }
    }
    /* on the backend a picture is whole at the end of its access unit */
-   if (v->hw && rh264_hw_finish(v, &got_pic) != 0)
-      return -1;
+   if (v->hw)
+   {
+      int r = rh264_hw_finish(v, &got_pic);
+      if (r == 2)
+         return rh264_hw_retry(v, data, len, len, got_pic);
+      v->hw->retrying = 0;
+      if (r < 0)
+         return -1;
+   }
    return got_pic ? 1 : 0;
 }
 
@@ -11338,9 +11403,15 @@ int rh264_video_drain(rh264_video *v)
    if (v->hw)
    {
       int got = 0;
+      int r;
+      if (v->hw->retrying)
+         return 2;
       v->hw->fresh = 0;
-      if (v->hw->broken || rh264_hw_finish(v, &got) != 0)
+      if (v->hw->broken)
          return -1;
+      r = rh264_hw_finish(v, &got);
+      if (r != 0)
+         return r;
       if (got)
          return 0;
       if ((i = rh264_hw_out_pick(v->hw)) < 0)

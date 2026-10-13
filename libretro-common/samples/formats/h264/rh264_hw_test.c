@@ -107,6 +107,8 @@ typedef struct
 } fake_t;
 
 static fake_t fake;
+static int inject_busy;
+static int decode_busy, output_busy;
 /* the sample the next decode call is for, as the test feeds them */
 static int cur_sample;
 
@@ -139,6 +141,12 @@ static int fake_decode(void *dec, const rh264_hw_pic_t *pic)
    unsigned i, j;
    fake_t *f = (fake_t*)dec;
    (void)f;
+   if (inject_busy && !decode_busy)
+   {
+      decode_busy = 1;
+      return 1;
+   }
+   decode_busy = 0;
    if (pic->slot < 0 || (unsigned)pic->slot >= fake.slots)
    {
       fake_err("picture %d: slot %d out of range", cur_sample, pic->slot);
@@ -211,6 +219,12 @@ static void fake_abandon(void *owner, uint64_t done, uint64_t value)
 static int fake_output(void *dec, unsigned slot, video_hw_frame_t *out)
 {
    (void)dec;
+   if (inject_busy && !output_busy)
+   {
+      output_busy = 1;
+      return 1;
+   }
+   output_busy = 0;
    if (slot >= fake.slots || !fake.pending[slot])
    {
       fake_err("slot %u shown without a picture waiting", slot);
@@ -316,7 +330,14 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
       cur_sample = res->n;
       rh264_video_set_skip_nonref(v,
             res->n >= skip_lo && res->n < skip_hi);
-      r = rh264_video_decode(v, pkt.data, pkt.size);
+      {
+         unsigned tries = 0;
+         do
+            r = rh264_video_decode(v, pkt.data, pkt.size);
+         while (r == 2 && ++tries < 100);
+         if (r == 2)
+            r = -1;
+      }
       res->n++;
       if (rh264_video_dropped(v))
          res->dropped++;
@@ -328,8 +349,15 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
       if (r == 1)
          res->shown++;
    }
-   while (!res->failed && rh264_video_drain(v) == 0)
+   while (!res->failed)
+   {
+      int r = rh264_video_drain(v);
+      if (r == 2)
+         continue;
+      if (r != 0)
+         break;
       res->shown++;
+   }
    if (hw == 2)
       res->hw = rh264_video_is_hw(v);
    if (res->hw)
@@ -494,6 +522,16 @@ int main(void)
    decode(mp4, 1, -1, -1, 1, &r);
    check("no backend: stays in software", !r.hw && !r.failed && r.shown == r.n);
 
+   inject_busy = 1;
+   rh264_set_hw_backend(&fake_ops);
+   decode_busy = output_busy = 0;
+   hw_case("busy_baseline", "testsrc2=s=176x144:r=25", 24,
+         "-profile:v baseline -preset medium -x264-params bframes=0", 1);
+   hw_case("busy_bpyr", "testsrc2=s=176x144:r=25", 48,
+         "-profile:v main -preset slow -x264-params bframes=3:b-pyramid=normal:ref=4", 1);
+   hw_case("busy_slices", "testsrc2=s=192x160:r=25", 24,
+         "-profile:v high -preset medium -x264-params slices=4:bframes=2", 1);
+   inject_busy = 0;
    run("rm -rf '%s'", dir);
    printf("rh264_hw_test: %s (%d failure%s)\n", fails ? "FAIL" : "PASS",
          fails, fails == 1 ? "" : "s");

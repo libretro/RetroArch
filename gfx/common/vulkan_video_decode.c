@@ -224,6 +224,16 @@ static bool vvd_wait(VkSemaphore sem, uint64_t value, uint64_t timeout_ns)
    return vvd.wait_sems(vvd.device, &info, timeout_ns) == VK_SUCCESS;
 }
 
+static int vvd_try_wait(VkSemaphore sem, uint64_t value)
+{
+   uint64_t now;
+   VkResult r;
+   if (!value)
+      return 0;
+   r = vvd.counter(vvd.device, sem, &now);
+   return r == VK_SUCCESS ? (now < value ? 1 : 0) : -1;
+}
+
 static bool vvd_reached(VkSemaphore sem, uint64_t value)
 {
    uint64_t now = 0;
@@ -897,7 +907,7 @@ static bool vvd_make_params(vvd_dec_t *d, const rh264_hw_pic_t *pic)
     * it is done */
    if (d->params)
    {
-      if (!vvd_wait(d->tl, d->tl_value, VVD_WAIT_NS))
+      if (!vvd_reached(d->tl, d->tl_value))
          return false;
       vvd.destroy_params(vvd.device, d->params, NULL);
       d->params = VK_NULL_HANDLE;
@@ -1105,18 +1115,26 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
    VkCommandBuffer cb;
    VkDeviceSize size;
    unsigned i, n, k;
+   int ready;
    unsigned setup = (unsigned)pic->slot;
 
    if (setup >= d->slots || pic->num_refs > 16 || !pic->num_slices)
       return -1;
+   if (d->have_params && pic->params_gen != d->params_gen)
+   {
+      ready = vvd_try_wait(d->tl, d->tl_value);
+      if (ready != 0)
+         return ready;
+   }
    if (     (!d->have_params || pic->params_gen != d->params_gen)
          && !vvd_make_params(d, pic))
       return -1;
 
    /* the ring entry, once the work it last held is done */
-   k = d->dring++ % VVD_RING;
-   if (!vvd_wait(d->tl, d->dcb_value[k], VVD_WAIT_NS))
-      return -1;
+   k = d->dring % VVD_RING;
+   ready = vvd_try_wait(d->tl, d->dcb_value[k]);
+   if (ready != 0)
+      return ready;
    size = (pic->size + d->bs_size_align - 1) / d->bs_size_align
         * d->bs_size_align;
    if (!vvd_bitstream(d, k, size))
@@ -1245,6 +1263,7 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
       return -1;
    d->reset        = true;
    d->dcb_value[k] = d->tl_value;
+   d->dring++;
    return 0;
 }
 
@@ -1256,20 +1275,26 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    VkCommandBuffer cb;
    VkImage src;
    uint32_t layer;
-   unsigned o, k;
+   unsigned o, k, n;
+   int ready;
 
    if (slot >= d->slots)
       return -1;
-   /* the oldest output image, once its last reader is done */
-   o = d->out_next++ % VVD_OUTS;
-   if (!vvd_wait(d->out_done[o], d->out_value[o], VVD_WAIT_NS))
+   for (n = 0; n < VVD_OUTS; n++)
    {
-      RARCH_WARN("[Vulkan] Video decode: an output frame was never given back.\n");
-      return -1;
+      o = (d->out_next + n) % VVD_OUTS;
+      ready = vvd_try_wait(d->out_done[o], d->out_value[o]);
+      if (ready < 0)
+         return -1;
+      if (!ready)
+         break;
    }
-   k = d->xring++ % VVD_RING;
-   if (!vvd_wait(d->tl, d->xcb_value[k], VVD_WAIT_NS))
-      return -1;
+   if (n == VVD_OUTS)
+      return 1;
+   k = d->xring % VVD_RING;
+   ready = vvd_try_wait(d->tl, d->xcb_value[k]);
+   if (ready != 0)
+      return ready;
 
    src   = d->dpb[d->dpb_array ? 0 : slot];
    layer = d->dpb_array ? slot : 0;
@@ -1322,6 +1347,8 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
          || !vvd_submit(d, d->xq, cb))
       return -1;
    d->xcb_value[k] = d->tl_value;
+   d->out_next = (o + 1) % VVD_OUTS;
+   d->xring++;
 
    memset(out, 0, sizeof(*out));
    memcpy(&out->image, &d->out[o], sizeof(d->out[o]));

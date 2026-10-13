@@ -199,6 +199,12 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    return gfx_anim_preview_next((gfx_anim_preview_t*)stream, duration_ms,
          &native);
 }
+bool image_transfer_anim_stream_waiting(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type;
+   return false;
+}
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type)
 {

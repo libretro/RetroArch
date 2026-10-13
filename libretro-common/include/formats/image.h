@@ -620,6 +620,8 @@ bool image_transfer_anim_stream_set_output(void *stream,
  * frame came - and read or abandoned by the caller. */
 bool image_transfer_anim_stream_set_hw(void *stream,
       enum image_type_enum type, bool enable);
+bool image_transfer_anim_stream_waiting(const void *stream,
+      enum image_type_enum type);
 bool image_transfer_anim_stream_hw_frame(void *stream,
       enum image_type_enum type, struct video_hw_frame *out);
 

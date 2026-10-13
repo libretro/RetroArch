@@ -30,6 +30,7 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
 TARGETS := dxva_h264_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
+TARGETS += d3d11_backpressure_test$(EXE)
 LDFLAGS += -lwinmm
 WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
@@ -49,15 +50,35 @@ d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
 	   $(DECODERS) $(LDFLAGS) -ld3d11 -lm
 
+PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
+   $(RA)/libretro-common/formats/image_transfer.c \
+   $(RA)/libretro-common/formats/mp4/rmp4_video.c \
+   $(RA)/libretro-common/formats/h265/rh265.c \
+   $(RA)/libretro-common/formats/vp8/rvp8.c \
+   $(RA)/libretro-common/formats/webm/rwebm_video.c \
+   $(RA)/libretro-common/formats/webm/rwebm.c \
+   $(RA)/libretro-common/formats/image/image_blit_bands.c \
+   $(RA)/libretro-common/formats/image/image_hdr_blit.c \
+   $(RA)/libretro-common/features/features_cpu.c \
+   $(RA)/libretro-common/time/rtime.c
+
+d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
+      d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES)
+	$(CC) $(CFLAGS) $(WINFLAGS) -ffunction-sections -fdata-sections -o $@ \
+	   d3d11_backpressure_test.c $(DECODERS) $(PLAYER_SOURCES) \
+	   $(LDFLAGS) -Wl,--gc-sections $(if $(filter .exe,$(EXE)),-ld3d11) -lm
+
 check: all
 	$(RUNNER) ./dxva_h264_test$(EXE)
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
+	$(RUNNER) ./d3d11_backpressure_test$(EXE)
 endif
 
 clean:
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
+	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe
 
 .PHONY: all check clean

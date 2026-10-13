@@ -64,6 +64,7 @@ enum vp_job_status
    VP_JOB_FINISHED,    /* loops done, or the stream failed           */
    VP_JOB_HELD,        /* presented as QUEUED: the slot is the sink's */
    VP_JOB_IDLE,        /* neither the worker's nor holding a frame   */
+   VP_JOB_WAITING,     /* hardware busy; the next poll retries       */
    VP_JOB_CANCELLED,   /* released while queued: the worker still
                           holds its place in the queue               */
    VP_JOB_DROPPED      /* the worker came to it and let it go        */
@@ -124,6 +125,8 @@ static const uint32_t *vp_next(void *stream, enum image_type_enum type,
          duration_ms);
    if (frame)
       return frame;
+   if (image_transfer_anim_stream_waiting(stream, type))
+      return NULL;
    if (*loops_left > 0)
       (*loops_left)--;
    if (*loops_left == 0)
@@ -177,13 +180,13 @@ static void vp_schedule(video_player_t *p, int duration_ms, int64_t now)
 }
 
 /* Worker or polling thread: a GPU frame into hw[@idx]. */
-static bool vp_step_hw(video_player_t *p, unsigned idx, int32_t *loops_left,
+static int vp_step_hw(video_player_t *p, unsigned idx, int32_t *loops_left,
       int *duration_ms)
 {
    if (p->sink.feed && !p->sink.feed(p->sink.user))
       return false;
    if (!vp_next(p->stream, p->type, loops_left, duration_ms))
-      return false;
+      return image_transfer_anim_stream_waiting(p->stream, p->type) ? 2 : 0;
    /* a frame that came in software, which a backend that took the
     * stream once and not after a rewind gives, ends the playback */
    if (!image_transfer_anim_stream_hw_frame(p->stream, p->type,
@@ -245,7 +248,7 @@ static void vp_pool_sync(void)
 /* Worker: one shown frame into job->frame in its final order. false
  * when the playback is over. The job is RUNNING: the stream is the
  * worker's alone. */
-static bool vp_job_step(vp_job_t *job)
+static int vp_job_step(vp_job_t *job)
 {
    video_player_t *p    = job->owner;
    void *stream         = p->stream;
@@ -257,10 +260,11 @@ static bool vp_job_step(vp_job_t *job)
 
    if (job->gpu)
    {
-      job->hw = vp_step_hw(p, (job == p->job[1]) ? 1 : 0,
+      int r = vp_step_hw(p, (job == p->job[1]) ? 1 : 0,
             &job->loops_left, &duration_ms);
+      job->hw = r == 1;
       job->duration_ms = duration_ms;
-      return job->hw;
+      return r;
    }
    /* Every stream emits the order asked for; one that cannot is
     * swizzled below. Asked a frame at a time, and a repeat ask of the
@@ -334,7 +338,7 @@ static void vp_worker(void *unused)
    (void)unused;
    for (;;)
    {
-      bool alive;
+      int alive;
       vp_job_t *job = vp_worker_local;
 
       if (!job)
@@ -380,7 +384,7 @@ static void vp_worker(void *unused)
       /* Publishes the frame to the poll, and wakes a release waiting
        * the decode out. */
       retro_atomic_store_release_int(&job->status,
-            alive ? VP_JOB_READY : VP_JOB_FINISHED);
+            alive == 2 ? VP_JOB_WAITING : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
       retro_eventcount_notify(&vp_worker_done);
    }
 }
@@ -537,6 +541,11 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
     * READY one is done; the pair needs no joint snapshot */
    su = retro_atomic_load_acquire_int(&ju->status);
    so = retro_atomic_load_acquire_int(&jo->status);
+   if (su == VP_JOB_WAITING)
+   {
+      vp_job_enqueue(ju);
+      return VIDEO_PLAYER_PLAYING;
+   }
    /* a job that writes its slot no more lets the sink keep it no more */
    if (p->sink.slot_end && !(p->flags & VP_HW))
    {
@@ -637,7 +646,10 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    fr.hw = NULL;
    if (p->flags & VP_HW)
    {
-      if (!vp_step_hw(p, 0, &p->loops_left, &duration_ms))
+      int r = vp_step_hw(p, 0, &p->loops_left, &duration_ms);
+      if (r == 2)
+         return VIDEO_PLAYER_PLAYING;
+      if (!r)
          return VIDEO_PLAYER_ENDED;
       fr.pixels      = NULL;
       fr.slot        = 0;

@@ -68,6 +68,9 @@
 struct rmp4_video_stream
 {
    rmp4_t      *demux;
+   rmp4_packet pending_packet;
+   size_t pending_floor;
+   int pending, waiting;
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
@@ -934,6 +937,8 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
             return 0;
          }
          dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
+         if (dec == 2)
+            return 2;
          if (dec < 0)
          {
             if (pkt->keyframe)
@@ -1010,10 +1015,21 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       int *duration_ms)
 {
    rmp4_packet pkt;
+   int drained;
 
    for (;;)
    {
-      int r = rmp4_read_packet(s->demux, &pkt);
+      int r;
+      if (s->pending)
+      {
+         pkt = s->pending_packet;
+         r = 1;
+      }
+      else
+      {
+         s->pending_floor = rmp4_consumed(s->demux);
+         r = rmp4_read_packet(s->demux, &pkt);
+      }
       if (r == RMP4_READ_AGAIN)
          /* The sample's bytes are not buffered yet.  Do NOT fall
           * through to the drain below: packets remain, and flushing
@@ -1025,6 +1041,13 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (pkt.track != s->track)
          continue;
       r = rmp4_video_decode_packet(s, &pkt);
+      if (r == 2)
+      {
+         s->pending_packet = pkt;
+         s->pending = 1;
+         return 2;
+      }
+      s->pending = 0;
       if (r < 0)
          return -1;      /* decode error: end the animation */
       if (r == 0)
@@ -1037,7 +1060,9 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
    /* Out of packets. Display reordering can leave the last few pictures
     * queued inside the H.264 decoder; hand them out before ending the
     * pass, one per call, on the same presentation clock. */
-   if (s->h264 && rh264_video_drain(s->h264) == 0)
+   if (s->h264 && (drained = rh264_video_drain(s->h264)) == 2)
+      return 2;
+   if (s->h264 && drained == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
       if (rh264_video_is_hw(s->h264))
@@ -1079,13 +1104,20 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
 
    if (!s)
       return -1;
+   s->waiting = 0;
 
    /* 2 (not yet resident) also ends the loop: nothing was consumed,
     * and the caller retries after feeding more bytes.  Fully-resident
     * streams never see it. */
    while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
+   s->waiting = r == 2;
    return r;
+}
+
+int rmp4_video_stream_waiting(const rmp4_video_stream_t *s)
+{
+   return s && s->waiting;
 }
 
 int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
@@ -1318,7 +1350,7 @@ size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s)
 
 size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
 {
-   return s ? rmp4_consumed(s->demux) : 0;
+   return s ? (s->pending ? s->pending_floor : rmp4_consumed(s->demux)) : 0;
 }
 
 int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
@@ -1530,6 +1562,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
 {
    if (!s)
       return;
+   s->pending = s->waiting = 0;
    rmp4_video_hwf_drop(s);
    s->rndr_kind = 0;   /* decoder reset invalidates the planes */
    rmp4_rewind(s->demux);
