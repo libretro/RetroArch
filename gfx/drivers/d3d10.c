@@ -90,7 +90,9 @@ enum d3d10_video_flags
    D3D10_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 8),
    D3D10_ST_FLAG_MENU_ENABLE         = (1 << 9),
    D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10),
-   D3D10_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 11)
+   D3D10_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 11),
+   /* read_viewport wants the frame drawn again copied */
+   D3D10_ST_FLAG_READBACK_PENDING    = (1 << 12)
 };
 
 typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
@@ -199,6 +201,49 @@ typedef struct d3d10_shader_t
    D3D10InputLayout    layout;
 } d3d10_shader_t;
 
+typedef struct d3d10_pass
+{
+   d3d10_shader_t             shader;
+   D3D10Buffer                buffers[SLANG_CBUFFER_MAX];
+   d3d10_texture_t            rt;
+   d3d10_texture_t            feedback;
+   D3D10_VIEWPORT             viewport;
+   pass_semantics_t           semantics;
+   uint32_t                   frame_count;
+   int32_t                    frame_direction;
+   uint32_t                   frame_time_delta;
+   float                      original_fps;
+   uint32_t                   rotation;
+   uint32_t                   total_subframes;
+   uint32_t                   current_subframe;
+   uint32_t                   swap_count;
+   float                      core_aspect;
+   float                      core_aspect_rot;
+} d3d10_pass_t;
+
+/* A preset's passes and what they read: the driver's own, or a view's
+ * (d3d10_chain_clone), whose semantics point into it. history[0] is the
+ * frame the first pass reads. */
+typedef struct d3d10_chain
+{
+   d3d10_pass_t         pass[GFX_MAX_SHADERS];
+   struct video_shader *shader_preset;
+   d3d10_texture_t      history[GFX_MAX_FRAME_HISTORY + 1];
+   d3d10_texture_t      luts[GFX_MAX_TEXTURES];
+   /* FinalViewportSize */
+   float4_t             output_size;
+   /* A view's chain: the view and viewport its render targets are sized
+    * for, whether its history is made, and its last pass's render target
+    * this frame, NULL when the last pass draws into each placement. */
+   unsigned             rt_frame_dims;
+   unsigned             rt_vp_dims;
+   bool                 history_made;
+   d3d10_texture_t     *final;
+   /* The format a view's history was made for, which the textures may
+    * hold as another */
+   DXGI_FORMAT          frame_format;
+} d3d10_chain_t;
+
 typedef struct
 {
    unsigned              cur_mon_id;
@@ -277,37 +322,14 @@ typedef struct
    } menu;
    struct
    {
-      d3d10_texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       D3D10Buffer       vbo;
       D3D10Buffer       ubo;
       D3D10_VIEWPORT    viewport;
-      float4_t          output_size;
       int               rotation;
    } frame;
 
-   struct
-   {
-      d3d10_shader_t             shader;
-      D3D10Buffer                buffers[SLANG_CBUFFER_MAX];
-      d3d10_texture_t            rt;
-      d3d10_texture_t            feedback;
-      D3D10_VIEWPORT             viewport;
-      pass_semantics_t           semantics;
-      uint32_t                   frame_count;
-      int32_t                    frame_direction;
-      uint32_t                   frame_time_delta;
-      float                      original_fps;
-      uint32_t                   rotation;
-      uint32_t                   total_subframes;
-      uint32_t                   current_subframe;
-      uint32_t                   swap_count;
-      float                      core_aspect;
-      float                      core_aspect_rot;
-
-   } pass[GFX_MAX_SHADERS];
-
-   struct video_shader* shader_preset;
-   d3d10_texture_t      luts[GFX_MAX_TEXTURES];
+   /* The preset's passes; without one history[0] is the frame */
+   d3d10_chain_t        chain;
    /* A software frame without a preset is written straight into this
     * dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
     * reads is renamed rather than waited for, and drawn from it: no
@@ -320,6 +342,57 @@ typedef struct
       DXGI_FORMAT     format;
       bool            active;
    } sw_direct;
+   /* Views: the stock chain draws each straight from the frame; a
+    * preset each through a chain of its own, whose history a software
+    * frame's view is written straight into. The canvas holds both eyes
+    * for anaglyph and interlaced, the UI layer the UI drawn once for
+    * both eyes. frame_dims is the frame. */
+   struct
+   {
+      video_views_chains_t  chains;
+      d3d10_texture_t       canvas;
+      d3d10_texture_t       ui;
+      video_views_target_t  canvas_target;
+      video_views_target_t  ui_target;
+      video_views_ui_dims_t saved;
+      D3D10_VIEWPORT        saved_viewport;
+      D3D10BlendState       saved_blend;
+      d3d10_shader_t        rect;
+      d3d10_shader_t        layer;
+      d3d10_shader_t        anaglyph;
+      d3d10_shader_t        interlaced;
+      D3D10Buffer           ubo;
+      /* Into the UI layer alpha accumulates as coverage; the layer goes
+       * over the frame premultiplied. */
+      D3D10BlendState       blend_ui;
+      D3D10BlendState       blend_layer;
+      unsigned              frame_dims;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map was drawn whole. */
+      retro_atomic_int_t    allowed;
+      retro_atomic_int_t    fallback;
+      bool                  tried;
+      bool                  failed;
+      bool                  active;
+      bool                  direct_seen;
+      bool                  preset_seen;
+   } views;
+   /* GPU recording and screenshots. While recording, each presented
+    * frame is copied from the back buffer into the next staging
+    * texture of this ring before Present; read_viewport maps the one
+    * copied D3D10_RECORD_RING frames ago without waiting on the GPU.
+    * A GPU screenshot has one frame copied into it and waits for that
+    * copy; the next frame not recorded frees the ring. */
+#define D3D10_RECORD_RING 3
+   struct
+   {
+      D3D10Texture2D  staging[D3D10_RECORD_RING];
+      bool            valid[D3D10_RECORD_RING];
+      unsigned        index;
+      unsigned        dims;
+      DXGI_FORMAT     format;
+      bool            enable;
+   } record;
    struct string_list *gpu_list;
    IDXGIAdapter1 *adapters[D3D10_MAX_GPU_COUNT];
    IDXGIAdapter1 *current_adapter;
@@ -1866,64 +1939,75 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
    d3d10->frame.viewport.MinDepth  = 0.0f;
    d3d10->frame.viewport.MaxDepth  = 1.0f;
 
-   if (d3d10->shader_preset && (d3d10->frame.output_size.x != VIDEO_SCALE_W(d3d10->vp.dims)
-            || d3d10->frame.output_size.y != VIDEO_SCALE_H(d3d10->vp.dims)))
+   if (d3d10->chain.shader_preset && (d3d10->chain.output_size.x != VIDEO_SCALE_W(d3d10->vp.dims)
+            || d3d10->chain.output_size.y != VIDEO_SCALE_H(d3d10->vp.dims)))
       d3d10->flags                |= D3D10_ST_FLAG_RESIZE_RTS;
 
-   d3d10->frame.output_size.x      = VIDEO_SCALE_W(d3d10->vp.dims);
-   d3d10->frame.output_size.y      = VIDEO_SCALE_H(d3d10->vp.dims);
-   d3d10->frame.output_size.z      = 1.0f / VIDEO_SCALE_W(d3d10->vp.dims);
-   d3d10->frame.output_size.w      = 1.0f / VIDEO_SCALE_H(d3d10->vp.dims);
+   d3d10->chain.output_size.x      = VIDEO_SCALE_W(d3d10->vp.dims);
+   d3d10->chain.output_size.y      = VIDEO_SCALE_H(d3d10->vp.dims);
+   d3d10->chain.output_size.z      = 1.0f / VIDEO_SCALE_W(d3d10->vp.dims);
+   d3d10->chain.output_size.w      = 1.0f / VIDEO_SCALE_H(d3d10->vp.dims);
    d3d10->flags                   &= ~D3D10_ST_FLAG_RESIZE_VIEWPORT;
 }
 
-static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
+/* What @c holds let go, but for history[0], which the frame is
+ * uploaded into without a chain; @c's preset too unless it is @shared
+ * (another chain's, which a view's chain reads). */
+static void d3d10_chain_free(d3d10_chain_t *c, bool shared)
 {
-   size_t i;
-   if (!d3d10->shader_preset)
+   unsigned i;
+
+   if (!c->shader_preset)
       return;
 
-   for (i = 0; i < d3d10->shader_preset->passes; i++)
+   for (i = 0; i < c->shader_preset->passes; i++)
    {
-      int j;
-
-      free(d3d10->shader_preset->pass[i].source.string.vertex);
-      free(d3d10->shader_preset->pass[i].source.string.fragment);
-      free(d3d10->pass[i].semantics.textures);
-      d3d10->shader_preset->pass[i].source.string.vertex   = NULL;
-      d3d10->shader_preset->pass[i].source.string.fragment = NULL;
-      d3d10->pass[i].semantics.textures                    = NULL;
-      d3d10_release_shader(&d3d10->pass[i].shader);
-      d3d10_release_texture(&d3d10->pass[i].rt);
-      d3d10_release_texture(&d3d10->pass[i].feedback);
-
+      unsigned j;
+      if (!shared)
+      {
+         free(c->shader_preset->pass[i].source.string.vertex);
+         free(c->shader_preset->pass[i].source.string.fragment);
+         c->shader_preset->pass[i].source.string.vertex   = NULL;
+         c->shader_preset->pass[i].source.string.fragment = NULL;
+      }
+      free(c->pass[i].semantics.textures);
+      d3d10_release_shader(&c->pass[i].shader);
+      d3d10_release_texture(&c->pass[i].rt);
+      d3d10_release_texture(&c->pass[i].feedback);
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         free(d3d10->pass[i].semantics.cbuffers[j].uniforms);
-         d3d10->pass[i].semantics.cbuffers[j].uniforms = NULL;
-         Release(d3d10->pass[i].buffers[j]);
+         free(c->pass[i].semantics.cbuffers[j].uniforms);
+         Release(c->pass[i].buffers[j]);
       }
    }
+   memset(c->pass, 0, sizeof(c->pass));
 
-   memset(d3d10->pass, 0, sizeof(d3d10->pass));
+   for (i = 1; (int)i <= c->shader_preset->history_size; i++)
+      d3d10_release_texture(&c->history[i]);
+   memset(&c->history[1], 0,
+         sizeof(c->history[1]) * c->shader_preset->history_size);
 
-   /* only free the history textures here */
-   for (i = 1; i <= (unsigned)d3d10->shader_preset->history_size; i++)
-      d3d10_release_texture(&d3d10->frame.texture[i]);
+   for (i = 0; i < c->shader_preset->luts; i++)
+      d3d10_release_texture(&c->luts[i]);
+   memset(c->luts, 0, sizeof(c->luts));
 
-   memset(
-         &d3d10->frame.texture[1], 0,
-         sizeof(d3d10->frame.texture[1]) * d3d10->shader_preset->history_size);
+   if (!shared)
+      free(c->shader_preset);
+   c->shader_preset = NULL;
+}
 
-   for (i = 0; i < d3d10->shader_preset->luts; i++)
-      d3d10_release_texture(&d3d10->luts[i]);
+static void d3d10_views_free_chains(d3d10_video_t *d3d10, unsigned first);
+static void d3d10_views_release(d3d10_video_t *d3d10);
+static void d3d10_views_publish(d3d10_video_t *d3d10);
+static void d3d10_record_free(d3d10_video_t *d3d10);
+static void d3d10_record_capture(d3d10_video_t *d3d10);
 
-   memset(d3d10->luts, 0, sizeof(d3d10->luts));
-
-   free(d3d10->shader_preset);
-   d3d10->shader_preset         = NULL;
-   d3d10->flags                &= ~(D3D10_ST_FLAG_INIT_HISTORY
-                                  | D3D10_ST_FLAG_RESIZE_RTS);
+static void d3d10_free_shader_preset(d3d10_video_t* d3d10)
+{
+   /* The views' chains read its preset */
+   d3d10_views_free_chains(d3d10, 0);
+   d3d10_chain_free(&d3d10->chain, false);
+   d3d10->flags &= ~(D3D10_ST_FLAG_INIT_HISTORY | D3D10_ST_FLAG_RESIZE_RTS);
 }
 
 /* ---- Deferred (per-frame) shader loading for D3D10 ---- */
@@ -2103,45 +2187,45 @@ static bool d3d10_shader_load_step(void *data,
             pass + 1, deferred->total_passes);
 
       source = (i == 0)
-         ? &d3d10->frame.texture[0]
-         : &d3d10->pass[i - 1].rt;
+         ? &d3d10->chain.history[0]
+         : &d3d10->chain.pass[i - 1].rt;
 
       {
          unsigned j;
          semantics_map_t semantics_map = {
             {
-               { &d3d10->frame.texture[0].view, 0,
-                  &d3d10->frame.texture[0].size_data, 0 },
+               { &d3d10->chain.history[0].view, 0,
+                  &d3d10->chain.history[0].size_data, 0 },
                { &source->view, 0,
                   &source->size_data, 0 },
-               { &d3d10->frame.texture[0].view,
-                  sizeof(*d3d10->frame.texture),
-                  &d3d10->frame.texture[0].size_data,
-                  sizeof(*d3d10->frame.texture) },
-               { &d3d10->pass[0].rt.view, sizeof(*d3d10->pass),
-                  &d3d10->pass[0].rt.size_data,
-                  sizeof(*d3d10->pass) },
-               { &d3d10->pass[0].feedback.view, sizeof(*d3d10->pass),
-                  &d3d10->pass[0].feedback.size_data,
-                  sizeof(*d3d10->pass) },
-               /* Point at d3d10->luts, not ds->luts */
-               { &d3d10->luts[0].view, sizeof(*d3d10->luts),
-                  &d3d10->luts[0].size_data, sizeof(*d3d10->luts) },
+               { &d3d10->chain.history[0].view,
+                  sizeof(*d3d10->chain.history),
+                  &d3d10->chain.history[0].size_data,
+                  sizeof(*d3d10->chain.history) },
+               { &d3d10->chain.pass[0].rt.view, sizeof(*d3d10->chain.pass),
+                  &d3d10->chain.pass[0].rt.size_data,
+                  sizeof(*d3d10->chain.pass) },
+               { &d3d10->chain.pass[0].feedback.view, sizeof(*d3d10->chain.pass),
+                  &d3d10->chain.pass[0].feedback.size_data,
+                  sizeof(*d3d10->chain.pass) },
+               /* Point at d3d10->chain.luts, not ds->luts */
+               { &d3d10->chain.luts[0].view, sizeof(*d3d10->chain.luts),
+                  &d3d10->chain.luts[0].size_data, sizeof(*d3d10->chain.luts) },
             },
             {
                &d3d10->mvp,
-               &d3d10->pass[i].rt.size_data,
-               &d3d10->frame.output_size,
-               &d3d10->pass[i].frame_count,
-               &d3d10->pass[i].frame_direction,
-               &d3d10->pass[i].frame_time_delta,
-               &d3d10->pass[i].original_fps,
-               &d3d10->pass[i].rotation,
-               &d3d10->pass[i].core_aspect,
-               &d3d10->pass[i].core_aspect_rot,
-               &d3d10->pass[i].total_subframes,
-               &d3d10->pass[i].current_subframe,
-               &d3d10->pass[i].swap_count,
+               &d3d10->chain.pass[i].rt.size_data,
+               &d3d10->chain.output_size,
+               &d3d10->chain.pass[i].frame_count,
+               &d3d10->chain.pass[i].frame_direction,
+               &d3d10->chain.pass[i].frame_time_delta,
+               &d3d10->chain.pass[i].original_fps,
+               &d3d10->chain.pass[i].rotation,
+               &d3d10->chain.pass[i].core_aspect,
+               &d3d10->chain.pass[i].core_aspect_rot,
+               &d3d10->chain.pass[i].total_subframes,
+               &d3d10->chain.pass[i].current_subframe,
+               &d3d10->chain.pass[i].swap_count,
             }
          };
 
@@ -2243,11 +2327,11 @@ static bool d3d10_shader_load_step(void *data,
    d3d10_free_shader_preset(d3d10);
 
    /* Install preset */
-   d3d10->shader_preset = ds->shader_preset;
+   d3d10->chain.shader_preset = ds->shader_preset;
    ds->shader_preset    = NULL;
 
    /* Install LUTs */
-   memcpy(d3d10->luts, ds->luts, sizeof(ds->luts));
+   memcpy(d3d10->chain.luts, ds->luts, sizeof(ds->luts));
    memset(ds->luts, 0, sizeof(ds->luts));
    ds->luts_loaded = false;
 
@@ -2256,15 +2340,15 @@ static bool d3d10_shader_load_step(void *data,
       unsigned i;
       for (i = 0; i < deferred->total_passes; i++)
       {
-         d3d10->pass[i].shader = ds->passes[i].shader;
+         d3d10->chain.pass[i].shader = ds->passes[i].shader;
          memset(&ds->passes[i].shader, 0,
                sizeof(ds->passes[i].shader));
 
-         d3d10->pass[i].semantics = ds->passes[i].semantics;
+         d3d10->chain.pass[i].semantics = ds->passes[i].semantics;
          memset(&ds->passes[i].semantics, 0,
                sizeof(ds->passes[i].semantics));
 
-         memcpy(d3d10->pass[i].buffers,
+         memcpy(d3d10->chain.pass[i].buffers,
                ds->passes[i].buffers,
                sizeof(ds->passes[i].buffers));
          memset(ds->passes[i].buffers, 0,
@@ -2309,64 +2393,64 @@ static bool d3d10_gfx_set_shader(void* data,
       return false;
    }
 
-   d3d10->shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->shader_preset));
+   d3d10->chain.shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->chain.shader_preset));
 
-   if (!video_shader_load_preset_into_shader(path, d3d10->shader_preset))
+   if (!video_shader_load_preset_into_shader(path, d3d10->chain.shader_preset))
       goto error;
 
-   source = &d3d10->frame.texture[0];
-   for (i = 0; i < d3d10->shader_preset->passes; source = &d3d10->pass[i++].rt)
+   source = &d3d10->chain.history[0];
+   for (i = 0; i < d3d10->chain.shader_preset->passes; source = &d3d10->chain.pass[i++].rt)
    {
       unsigned j;
       /* clang-format off */
       semantics_map_t semantics_map = {
          {
             /* Original */
-            { &d3d10->frame.texture[0].view, 0,
-               &d3d10->frame.texture[0].size_data, 0},
+            { &d3d10->chain.history[0].view, 0,
+               &d3d10->chain.history[0].size_data, 0},
 
             /* Source */
             { &source->view, 0,
                &source->size_data, 0},
 
             /* OriginalHistory */
-            { &d3d10->frame.texture[0].view, sizeof(*d3d10->frame.texture),
-               &d3d10->frame.texture[0].size_data, sizeof(*d3d10->frame.texture)},
+            { &d3d10->chain.history[0].view, sizeof(*d3d10->chain.history),
+               &d3d10->chain.history[0].size_data, sizeof(*d3d10->chain.history)},
 
             /* PassOutput */
-            { &d3d10->pass[0].rt.view, sizeof(*d3d10->pass),
-               &d3d10->pass[0].rt.size_data, sizeof(*d3d10->pass)},
+            { &d3d10->chain.pass[0].rt.view, sizeof(*d3d10->chain.pass),
+               &d3d10->chain.pass[0].rt.size_data, sizeof(*d3d10->chain.pass)},
 
             /* PassFeedback */
-            { &d3d10->pass[0].feedback.view, sizeof(*d3d10->pass),
-               &d3d10->pass[0].feedback.size_data, sizeof(*d3d10->pass)},
+            { &d3d10->chain.pass[0].feedback.view, sizeof(*d3d10->chain.pass),
+               &d3d10->chain.pass[0].feedback.size_data, sizeof(*d3d10->chain.pass)},
 
             /* User */
-            { &d3d10->luts[0].view, sizeof(*d3d10->luts),
-               &d3d10->luts[0].size_data, sizeof(*d3d10->luts)},
+            { &d3d10->chain.luts[0].view, sizeof(*d3d10->chain.luts),
+               &d3d10->chain.luts[0].size_data, sizeof(*d3d10->chain.luts)},
          },
          {
             &d3d10->mvp,                     /* MVP */
-            &d3d10->pass[i].rt.size_data,    /* OutputSize */
-            &d3d10->frame.output_size,       /* FinalViewportSize */
-            &d3d10->pass[i].frame_count,     /* FrameCount */
-            &d3d10->pass[i].frame_direction, /* FrameDirection */
-            &d3d10->pass[i].frame_time_delta,/* FrameTimeDelta */
-            &d3d10->pass[i].original_fps,    /* OriginalFPS */
-            &d3d10->pass[i].rotation,        /* Rotation */
-            &d3d10->pass[i].core_aspect,     /* OriginalAspect */
-            &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
-            &d3d10->pass[i].total_subframes, /* TotalSubFrames */
-            &d3d10->pass[i].current_subframe,/* CurrentSubFrame */
-            &d3d10->pass[i].swap_count, /* SwapCount */
+            &d3d10->chain.pass[i].rt.size_data,    /* OutputSize */
+            &d3d10->chain.output_size,       /* FinalViewportSize */
+            &d3d10->chain.pass[i].frame_count,     /* FrameCount */
+            &d3d10->chain.pass[i].frame_direction, /* FrameDirection */
+            &d3d10->chain.pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d10->chain.pass[i].original_fps,    /* OriginalFPS */
+            &d3d10->chain.pass[i].rotation,        /* Rotation */
+            &d3d10->chain.pass[i].core_aspect,     /* OriginalAspect */
+            &d3d10->chain.pass[i].core_aspect_rot, /* OriginalAspectRotated */
+            &d3d10->chain.pass[i].total_subframes, /* TotalSubFrames */
+            &d3d10->chain.pass[i].current_subframe,/* CurrentSubFrame */
+            &d3d10->chain.pass[i].swap_count, /* SwapCount */
          }
       };
       /* clang-format on */
 
       if (!slang_process(
-               d3d10->shader_preset, i, RARCH_SHADER_HLSL,
+               d3d10->chain.shader_preset, i, RARCH_SHADER_HLSL,
                40, &semantics_map,
-               &d3d10->pass[i].semantics))
+               &d3d10->chain.pass[i].semantics))
          goto error;
 
       {
@@ -2377,37 +2461,37 @@ static bool d3d10_gfx_set_shader(void* data,
                D3D10_INPUT_PER_VERTEX_DATA, 0 },
          };
          char _path[PATH_MAX_LENGTH];
-         const char *slang_path = d3d10->shader_preset->pass[i].source.path;
-         const char *vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
-         const char *ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
+         const char *slang_path = d3d10->chain.shader_preset->pass[i].source.path;
+         const char *vs_src     = d3d10->chain.shader_preset->pass[i].source.string.vertex;
+         const char *ps_src     = d3d10->chain.shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
          strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, vs_src, 0,
                _path, "main", NULL, NULL, desc,
-               countof(desc), &d3d10->pass[i].shader);
+               countof(desc), &d3d10->chain.pass[i].shader);
 
          strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, ps_src,
                0, _path, NULL, "main",
                NULL, NULL, 0,
-               &d3d10->pass[i].shader);
+               &d3d10->chain.pass[i].shader);
 
-         free(d3d10->shader_preset->pass[i].source.string.vertex);
-         free(d3d10->shader_preset->pass[i].source.string.fragment);
+         free(d3d10->chain.shader_preset->pass[i].source.string.vertex);
+         free(d3d10->chain.shader_preset->pass[i].source.string.fragment);
 
-         d3d10->shader_preset->pass[i].source.string.vertex   = NULL;
-         d3d10->shader_preset->pass[i].source.string.fragment = NULL;
+         d3d10->chain.shader_preset->pass[i].source.string.vertex   = NULL;
+         d3d10->chain.shader_preset->pass[i].source.string.fragment = NULL;
 
-         if (!d3d10->pass[i].shader.vs || !d3d10->pass[i].shader.ps)
+         if (!d3d10->chain.pass[i].shader.vs || !d3d10->chain.pass[i].shader.ps)
             goto error;
       }
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          D3D10_BUFFER_DESC desc;
-         desc.ByteWidth           = d3d10->pass[i].semantics.cbuffers[j].size;
+         desc.ByteWidth           = d3d10->chain.pass[i].semantics.cbuffers[j].size;
          desc.Usage               = D3D10_USAGE_DYNAMIC;
          desc.BindFlags           = D3D10_BIND_CONSTANT_BUFFER;
          desc.CPUAccessFlags      = D3D10_CPU_ACCESS_WRITE;
@@ -2417,35 +2501,35 @@ static bool d3d10_gfx_set_shader(void* data,
             continue;
 
          d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
-               NULL, &d3d10->pass[i].buffers[j]);
+               NULL, &d3d10->chain.pass[i].buffers[j]);
       }
    }
 
-   for (i = 0; i < d3d10->shader_preset->luts; i++)
+   for (i = 0; i < d3d10->chain.shader_preset->luts; i++)
    {
       struct texture_image image;
       memset(&image, 0, sizeof(image));
       image.supports_rgba        = true;
 
-      if (!image_texture_load(&image, d3d10->shader_preset->lut[i].path))
+      if (!image_texture_load(&image, d3d10->chain.shader_preset->lut[i].path))
          goto error;
 
-      d3d10->luts[i].desc.Width  = image.width;
-      d3d10->luts[i].desc.Height = image.height;
-      d3d10->luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      d3d10->chain.luts[i].desc.Width  = image.width;
+      d3d10->chain.luts[i].desc.Height = image.height;
+      d3d10->chain.luts[i].desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-      if (d3d10->shader_preset->lut[i].mipmap)
-         d3d10->luts[i].desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
+      if (d3d10->chain.shader_preset->lut[i].mipmap)
+         d3d10->chain.luts[i].desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
-      d3d10_release_texture(&d3d10->luts[i]);
-      d3d10_init_texture(d3d10->device, &d3d10->luts[i]);
+      d3d10_release_texture(&d3d10->chain.luts[i]);
+      d3d10_init_texture(d3d10->device, &d3d10->chain.luts[i]);
 
-      if (d3d10->luts[i].staging)
+      if (d3d10->chain.luts[i].staging)
          d3d10_update_texture(
                d3d10->device,
                image.width, image.height, 0,
                DXGI_FORMAT_R8G8B8A8_UNORM, image.pixels,
-               &d3d10->luts[i]);
+               &d3d10->chain.luts[i]);
 
       image_texture_free(&image);
    }
@@ -2480,8 +2564,10 @@ static void d3d10_gfx_free(void* data)
 
    d3d10_free_shader_preset(d3d10);
 
-   d3d10_release_texture(&d3d10->frame.texture[0]);
+   d3d10_release_texture(&d3d10->chain.history[0]);
    d3d10_release_texture(&d3d10->sw_direct.texture);
+   d3d10_views_release(d3d10);
+   d3d10_record_free(d3d10);
    Release(d3d10->frame.ubo);
    Release(d3d10->frame.vbo);
 
@@ -2712,13 +2798,13 @@ static void *d3d10_gfx_init(const video_info_t* video)
    d3d10->format          = video->rgb32 ?
       DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
 
-   d3d10->frame.texture[0].desc.Format = d3d10->format;
-   d3d10->frame.texture[0].desc.Usage  = D3D10_USAGE_DEFAULT;
-   d3d10->frame.texture[0].desc.Width  = 4;
-   d3d10->frame.texture[0].desc.Height = 4;
+   d3d10->chain.history[0].desc.Format = d3d10->format;
+   d3d10->chain.history[0].desc.Usage  = D3D10_USAGE_DEFAULT;
+   d3d10->chain.history[0].desc.Width  = 4;
+   d3d10->chain.history[0].desc.Height = 4;
 
-   d3d10_release_texture(&d3d10->frame.texture[0]);
-   d3d10_init_texture(d3d10->device, &d3d10->frame.texture[0]);
+   d3d10_release_texture(&d3d10->chain.history[0]);
+   d3d10_init_texture(d3d10->device, &d3d10->chain.history[0]);
 
    d3d10->menu.texture.desc.Usage  = D3D10_USAGE_DEFAULT;
 
@@ -3051,6 +3137,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       }
    }
 
+   d3d10_views_publish(d3d10);
    return d3d10;
 
 error:
@@ -3066,26 +3153,27 @@ static void d3d10_init_history(d3d10_video_t* d3d10,
    /* TODO/FIXME: should we init history to max_width/max_height instead ?
     * to prevent out of memory errors happening several frames later
     * and to reduce memory fragmentation */
-   for (i = 0; i < (int)d3d10->shader_preset->history_size + 1; i++)
+   for (i = 0; i < (int)d3d10->chain.shader_preset->history_size + 1; i++)
    {
-      d3d10->frame.texture[i].desc.Width  = width;
-      d3d10->frame.texture[i].desc.Height = height;
-      d3d10->frame.texture[i].desc.Format = d3d10->frame.texture[0].desc.Format;
-      d3d10->frame.texture[i].desc.Usage  = d3d10->frame.texture[0].desc.Usage;
-      d3d10_release_texture(&d3d10->frame.texture[i]);
-      d3d10_init_texture(d3d10->device, &d3d10->frame.texture[i]);
+      d3d10->chain.history[i].desc.Width  = width;
+      d3d10->chain.history[i].desc.Height = height;
+      d3d10->chain.history[i].desc.Format = d3d10->chain.history[0].desc.Format;
+      d3d10->chain.history[i].desc.Usage  = d3d10->chain.history[0].desc.Usage;
+      d3d10_release_texture(&d3d10->chain.history[i]);
+      d3d10_init_texture(d3d10->device, &d3d10->chain.history[i]);
       /* TODO/FIXME: clear texture ?  */
    }
    d3d10->flags &= ~D3D10_ST_FLAG_INIT_HISTORY;
 }
 
-static void d3d10_init_render_targets(d3d10_video_t* d3d10,
-      unsigned width, unsigned height)
+/* @c's render targets for a frame of width x height drawn over vp_dims */
+static void d3d10_chain_init_render_targets(d3d10_video_t* d3d10,
+      d3d10_chain_t *c, unsigned width, unsigned height, unsigned vp_dims)
 {
    size_t i;
-   for (i = 0; i < d3d10->shader_preset->passes; i++)
+   for (i = 0; i < c->shader_preset->passes; i++)
    {
-      struct video_shader_pass* pass = &d3d10->shader_preset->pass[i];
+      struct video_shader_pass* pass = &c->shader_preset->pass[i];
 
       if (pass->fbo.flags & FBO_SCALE_FLAG_VALID)
       {
@@ -3096,7 +3184,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = VIDEO_SCALE_W(d3d10->vp.dims) * pass->fbo.scale_x;
+               width = VIDEO_SCALE_W(vp_dims) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3108,7 +3196,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          }
 
          if (!width)
-            width = VIDEO_SCALE_W(d3d10->vp.dims);
+            width = VIDEO_SCALE_W(vp_dims);
 
          switch (pass->fbo.type_y)
          {
@@ -3117,7 +3205,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = VIDEO_SCALE_H(d3d10->vp.dims) * pass->fbo.scale_y;
+               height = VIDEO_SCALE_H(vp_dims) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3129,50 +3217,953 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          }
 
          if (!height)
-            height = VIDEO_SCALE_H(d3d10->vp.dims);
+            height = VIDEO_SCALE_H(vp_dims);
       }
-      else if (i == (d3d10->shader_preset->passes - 1))
+      else if (i == (c->shader_preset->passes - 1))
       {
-         width  = VIDEO_SCALE_W(d3d10->vp.dims);
-         height = VIDEO_SCALE_H(d3d10->vp.dims);
+         width  = VIDEO_SCALE_W(vp_dims);
+         height = VIDEO_SCALE_H(vp_dims);
       }
 
       RARCH_LOG("[D3D10] Updating framebuffer size %ux%u.\n", width, height);
 
-      if (     (i != (d3d10->shader_preset->passes - 1))
-            || (width  != VIDEO_SCALE_W(d3d10->vp.dims))
-            || (height != VIDEO_SCALE_H(d3d10->vp.dims)))
+      /* A last pass reading its own feedback needs a target to keep */
+      if (     (i != (c->shader_preset->passes - 1))
+            || pass->feedback
+            || (width  != VIDEO_SCALE_W(vp_dims))
+            || (height != VIDEO_SCALE_H(vp_dims)))
       {
-         d3d10->pass[i].viewport.Width    = width;
-         d3d10->pass[i].viewport.Height   = height;
-         d3d10->pass[i].viewport.MinDepth = 0.0;
-         d3d10->pass[i].viewport.MaxDepth = 1.0;
-         d3d10->pass[i].rt.desc.Width     = width;
-         d3d10->pass[i].rt.desc.Height    = height;
-         d3d10->pass[i].rt.desc.BindFlags = D3D10_BIND_RENDER_TARGET;
-         d3d10->pass[i].rt.desc.Format    = glslang_format_to_dxgi(
-               d3d10->pass[i].semantics.format);
-         d3d10_release_texture(&d3d10->pass[i].rt);
-         d3d10_init_texture(d3d10->device, &d3d10->pass[i].rt);
+         c->pass[i].viewport.Width    = width;
+         c->pass[i].viewport.Height   = height;
+         c->pass[i].viewport.MinDepth = 0.0;
+         c->pass[i].viewport.MaxDepth = 1.0;
+         c->pass[i].rt.desc.Width     = width;
+         c->pass[i].rt.desc.Height    = height;
+         c->pass[i].rt.desc.BindFlags = D3D10_BIND_RENDER_TARGET;
+         c->pass[i].rt.desc.Format    = glslang_format_to_dxgi(
+               c->pass[i].semantics.format);
+         d3d10_release_texture(&c->pass[i].rt);
+         d3d10_init_texture(d3d10->device, &c->pass[i].rt);
 
          if (pass->feedback)
          {
-            d3d10->pass[i].feedback.desc = d3d10->pass[i].rt.desc;
-            d3d10_release_texture(&d3d10->pass[i].feedback);
-            d3d10_init_texture(d3d10->device, &d3d10->pass[i].feedback);
-            /* TODO/FIXME: Do we need to clear it to black here ? */
+            static const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            c->pass[i].feedback.desc = c->pass[i].rt.desc;
+            d3d10_release_texture(&c->pass[i].feedback);
+            d3d10_init_texture(d3d10->device, &c->pass[i].feedback);
+            /* Fed back from the first frame: black, not what the
+             * memory held */
+            if (c->pass[i].rt.rt_view)
+               d3d10->device->lpVtbl->ClearRenderTargetView(d3d10->device,
+                     c->pass[i].rt.rt_view, clear_color);
+            if (c->pass[i].feedback.rt_view)
+               d3d10->device->lpVtbl->ClearRenderTargetView(d3d10->device,
+                     c->pass[i].feedback.rt_view, clear_color);
          }
       }
       else
       {
-         d3d10->pass[i].rt.size_data.x = width;
-         d3d10->pass[i].rt.size_data.y = height;
-         d3d10->pass[i].rt.size_data.z = 1.0f / width;
-         d3d10->pass[i].rt.size_data.w = 1.0f / height;
+         c->pass[i].rt.size_data.x = width;
+         c->pass[i].rt.size_data.y = height;
+         c->pass[i].rt.size_data.z = 1.0f / width;
+         c->pass[i].rt.size_data.w = 1.0f / height;
+      }
+   }
+}
+
+/* Each pass's values for this frame: every pass of one frame sees the
+ * same frame. @one_subframe: shader sub-frames are not drawn. */
+static void d3d10_chain_frame(d3d10_video_t *d3d10, d3d10_chain_t *c,
+      const video_frame_info_t *video_info, uint64_t frame_count,
+      bool one_subframe)
+{
+   unsigned i;
+   uint32_t frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+   float    original_fps     = video_driver_get_original_fps();
+   uint32_t rotation         = retroarch_get_rotation();
+   float    core_aspect      = video_driver_get_core_aspect();
+   float    core_aspect_rot  = core_aspect;
+#ifdef HAVE_REWIND
+   int32_t  frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+   int32_t  frame_direction  = 1;
+#endif
+   /* OriginalAspectRotated: 1 / aspect for 90 and 270 rotated content */
+   if (rotation == 1 || rotation == 3)
+      core_aspect_rot = 1 / core_aspect_rot;
+
+   for (i = 0; i < c->shader_preset->passes; i++)
+   {
+      d3d10_pass_t *pass = &c->pass[i];
+      if (c->shader_preset->pass[i].feedback)
+      {
+         d3d10_texture_t tmp = pass->feedback;
+         pass->feedback      = pass->rt;
+         pass->rt            = tmp;
+      }
+      if (c->shader_preset->pass[i].frame_count_mod)
+         pass->frame_count = frame_count
+            % c->shader_preset->pass[i].frame_count_mod;
+      else
+         pass->frame_count = frame_count;
+      pass->frame_direction  = frame_direction;
+      pass->frame_time_delta = frame_time_delta;
+      pass->original_fps     = original_fps;
+      pass->rotation         = rotation;
+      pass->core_aspect      = core_aspect;
+      pass->core_aspect_rot  = core_aspect_rot;
+      /* Sub-frame info for multiframe shaders (per real content
+       * frame); 1 when sub-frames are not used */
+      if (!(d3d10->flags & D3D10_ST_FLAG_FRAME_DUPE_LOCK))
+      {
+         pass->total_subframes  = one_subframe
+            ? 1 : video_info->shader_subframes;
+         pass->current_subframe = 1;
+         pass->swap_count       = (uint32_t)video_info->swap_count;
+      }
+   }
+}
+
+/* Pass @i's shaders, constants, textures and samplers, bound */
+static void d3d10_chain_bind_pass(d3d10_video_t *d3d10, d3d10_chain_t *c,
+      unsigned i)
+{
+   unsigned j;
+   D3D10RenderTargetView null_rt                        = NULL;
+   D3D10ShaderResourceView textures[SLANG_NUM_BINDINGS] = { NULL };
+   D3D10SamplerState       samplers[SLANG_NUM_BINDINGS] = { NULL };
+   D3D10Device context                                  = d3d10->device;
+   d3d10_pass_t *pass                                   = &c->pass[i];
+   texture_sem_t *texture_sem;
+
+   d3d10_set_shader(context, &pass->shader);
+
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+   {
+      D3D10Buffer    buffer     = pass->buffers[j];
+      cbuffer_sem_t* buffer_sem = &pass->semantics.cbuffers[j];
+
+      if (buffer_sem->stage_mask && buffer_sem->uniforms)
+      {
+         void*          uniform_data = NULL;
+         uniform_sem_t* uniform      = buffer_sem->uniforms;
+
+         if (SUCCEEDED(buffer->lpVtbl->Map(buffer,
+                     D3D10_MAP_WRITE_DISCARD, 0, (void**)&uniform_data)))
+         {
+            while (uniform->size)
+            {
+               if (uniform->data)
+                  memcpy((uint8_t*)uniform_data + uniform->offset,
+                        uniform->data, uniform->size);
+               uniform++;
+            }
+            buffer->lpVtbl->Unmap(buffer);
+         }
+
+         if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
+            context->lpVtbl->VSSetConstantBuffers(context,
+                  buffer_sem->binding, 1, &buffer);
+         if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+            context->lpVtbl->PSSetConstantBuffers(context,
+                  buffer_sem->binding, 1, &buffer);
       }
    }
 
-   d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_RTS;
+   context->lpVtbl->OMSetRenderTargets(context, 1, &null_rt, NULL);
+
+   for (texture_sem = pass->semantics.textures; texture_sem->stage_mask;
+         texture_sem++)
+   {
+      int binding       = texture_sem->binding;
+      textures[binding] = *(D3D10ShaderResourceView*)
+         texture_sem->texture_data;
+      samplers[binding] = d3d10->samplers[texture_sem->filter][texture_sem->wrap];
+   }
+   context->lpVtbl->PSSetShaderResources(context, 0, SLANG_NUM_BINDINGS,
+         textures);
+   context->lpVtbl->PSSetSamplers(context, 0, SLANG_NUM_BINDINGS, samplers);
+}
+
+/* Draws @c's passes, each into its render target, and returns the last
+ * one's; NULL when the last pass draws into the target bound after, its
+ * state left bound for that draw. @rolling: the frame's info, when a
+ * rolling scanline cuts each pass to this sub-frame's rows. */
+static d3d10_texture_t *d3d10_chain_render(d3d10_video_t *d3d10,
+      d3d10_chain_t *c, const video_frame_info_t *rolling)
+{
+   unsigned i;
+   d3d10_texture_t *texture = c->history;
+   D3D10Device context      = d3d10->device;
+
+   for (i = 0; i < c->shader_preset->passes; i++)
+   {
+      d3d10_pass_t *pass = &c->pass[i];
+
+      d3d10_chain_bind_pass(d3d10, c, i);
+      if (!pass->rt.handle)
+         return NULL;
+
+      context->lpVtbl->OMSetRenderTargets(context, 1, &pass->rt.rt_view,
+            NULL);
+      context->lpVtbl->RSSetViewports(context, 1, &pass->viewport);
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION
+      {
+         D3D10_RECT scissor_rect;
+         scissor_rect.left  = 0;
+         scissor_rect.right = pass->viewport.Width;
+         if (rolling)
+         {
+            scissor_rect.top    = (unsigned int)(((float)pass->viewport.Height
+                     / (float)rolling->shader_subframes)
+                  * (float)rolling->current_subframe);
+            scissor_rect.bottom = (unsigned int)(((float)pass->viewport.Height
+                     / (float)rolling->shader_subframes)
+                  * (float)(rolling->current_subframe + 1));
+         }
+         else
+         {
+            scissor_rect.top    = 0;
+            scissor_rect.bottom = pass->viewport.Height;
+         }
+         context->lpVtbl->RSSetScissorRects(context, 1, &scissor_rect);
+      }
+#else
+      (void)rolling;
+#endif
+      context->lpVtbl->Draw(context, 4, 0);
+      texture = &pass->rt;
+   }
+   return texture;
+}
+
+/* The views shaders' constants */
+typedef struct
+{
+   math_matrix_4x4 mvp;
+   float rect[4];
+   float clamp[4];
+} d3d10_views_ubo_t;
+
+/* What a frame's placement draws read: the frame and the target the
+ * placements go into */
+struct d3d10_views_draw
+{
+   const video_frame_info_t *video_info;
+   D3D10RenderTargetView target;
+   unsigned src_dims;
+};
+
+static void d3d10_views_draw_direct(d3d10_video_t *d3d10,
+      const struct d3d10_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static void d3d10_views_draw_pass(d3d10_video_t *d3d10,
+      const struct d3d10_views_draw *d, d3d10_chain_t *c,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool d3d10_views_make(d3d10_video_t *d3d10, d3d10_texture_t *t,
+      unsigned dims);
+static bool d3d10_views_retire(d3d10_video_t *d3d10, d3d10_texture_t *t);
+
+/* The views compositor, with these calls bound in. The stock chain's
+ * views are drawn straight from the frame, so their chain is the main
+ * one, never drawn; a preset's are copies of the main chain's, which
+ * read its parameters. */
+#define VV_FN(name)                     d3d10_vv_##name
+#define VV_DRV                          d3d10_video_t
+#define VV_CHAIN                        d3d10_chain_t
+#define VV_CREATE_STOCK(drv)            ((void*)&(drv)->chain)
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct d3d10_views_draw
+#define VV_DIRECT(p, d, v, r, c)        d3d10_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       d3d10_views_draw_pass(p, d, f, r, c)
+#define VV_TARGET                       d3d10_texture_t
+#define VV_TARGET_MAKE(drv, t, dims)    d3d10_views_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        d3d10_views_retire(drv, t)
+#include "../video_views_draw.h"
+
+static bool d3d10_views_allowed(const d3d10_video_t *d3d10)
+{
+   return !d3d10->views.failed;
+}
+
+static void d3d10_views_publish(d3d10_video_t *d3d10)
+{
+   retro_atomic_store_release_int(&d3d10->views.allowed,
+         d3d10_views_allowed(d3d10) ? 1 : 0);
+}
+
+static void d3d10_views_release(d3d10_video_t *d3d10)
+{
+   d3d10_release_shader(&d3d10->views.rect);
+   d3d10_release_shader(&d3d10->views.layer);
+   d3d10_release_shader(&d3d10->views.anaglyph);
+   d3d10_release_shader(&d3d10->views.interlaced);
+   Release(d3d10->views.ubo);
+   Release(d3d10->views.blend_ui);
+   Release(d3d10->views.blend_layer);
+   d3d10_release_texture(&d3d10->views.canvas);
+   d3d10_release_texture(&d3d10->views.ui);
+}
+
+/* The shaders, constants and blend states views draw with, made on
+ * first use: most sessions never draw views. */
+static void d3d10_views_init(d3d10_video_t *d3d10)
+{
+   static const char shader[] =
+#include "d3d_shaders/views_sm4.hlsl.h"
+      ;
+   D3D10_INPUT_ELEMENT_DESC desc[3];
+   D3D10_BUFFER_DESC buf_desc;
+   D3D10_BLEND_DESC blend_desc;
+   D3D10Device dev = d3d10->device;
+   bool ok;
+
+   desc[0].SemanticName         = "POSITION";
+   desc[0].SemanticIndex        = 0;
+   desc[0].Format               = DXGI_FORMAT_R32G32_FLOAT;
+   desc[0].InputSlot            = 0;
+   desc[0].AlignedByteOffset    = offsetof(d3d10_vertex_t, position);
+   desc[0].InputSlotClass       = D3D10_INPUT_PER_VERTEX_DATA;
+   desc[0].InstanceDataStepRate = 0;
+   desc[1]                      = desc[0];
+   desc[1].SemanticName         = "TEXCOORD";
+   desc[1].AlignedByteOffset    = offsetof(d3d10_vertex_t, texcoord);
+   desc[2]                      = desc[0];
+   desc[2].SemanticName         = "COLOR";
+   desc[2].Format               = DXGI_FORMAT_R32G32B32A32_FLOAT;
+   desc[2].AlignedByteOffset    = offsetof(d3d10_vertex_t, color);
+
+   d3d10->views.tried = true;
+   ok = d3d10_init_shader(dev, shader, sizeof(shader), NULL,
+            "VSMain", "PSRect", NULL, desc, 3, &d3d10->views.rect)
+      && d3d10_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSLayer", NULL, NULL, 0, &d3d10->views.layer)
+      && d3d10_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSAnaglyph", NULL, NULL, 0, &d3d10->views.anaglyph)
+      && d3d10_init_shader(dev, shader, sizeof(shader), NULL,
+            NULL, "PSInterlaced", NULL, NULL, 0, &d3d10->views.interlaced);
+
+   buf_desc.ByteWidth      = sizeof(d3d10_views_ubo_t);
+   buf_desc.Usage          = D3D10_USAGE_DYNAMIC;
+   buf_desc.BindFlags      = D3D10_BIND_CONSTANT_BUFFER;
+   buf_desc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+   buf_desc.MiscFlags      = 0;
+   dev->lpVtbl->CreateBuffer(dev, &buf_desc, NULL, &d3d10->views.ubo);
+
+   memset(&blend_desc, 0, sizeof(blend_desc));
+   blend_desc.BlendEnable[0]           = TRUE;
+   blend_desc.SrcBlend                 = D3D10_BLEND_SRC_ALPHA;
+   blend_desc.DestBlend                = D3D10_BLEND_INV_SRC_ALPHA;
+   blend_desc.BlendOp                  = D3D10_BLEND_OP_ADD;
+   blend_desc.SrcBlendAlpha            = D3D10_BLEND_ONE;
+   blend_desc.DestBlendAlpha           = D3D10_BLEND_INV_SRC_ALPHA;
+   blend_desc.BlendOpAlpha             = D3D10_BLEND_OP_ADD;
+   blend_desc.RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
+   dev->lpVtbl->CreateBlendState(dev, &blend_desc, &d3d10->views.blend_ui);
+   blend_desc.SrcBlend                 = D3D10_BLEND_ONE;
+   dev->lpVtbl->CreateBlendState(dev, &blend_desc, &d3d10->views.blend_layer);
+
+   if (     ok
+         && d3d10->views.rect.vs && d3d10->views.rect.ps
+         && d3d10->views.rect.layout
+         && d3d10->views.layer.ps && d3d10->views.anaglyph.ps
+         && d3d10->views.interlaced.ps && d3d10->views.ubo
+         && d3d10->views.blend_ui && d3d10->views.blend_layer)
+      return;
+   RARCH_WARN("[D3D10] Views can't be drawn: their shaders failed.\n");
+   d3d10_views_release(d3d10);
+   memset(&d3d10->views.rect,       0, sizeof(d3d10->views.rect));
+   memset(&d3d10->views.layer,      0, sizeof(d3d10->views.layer));
+   memset(&d3d10->views.anaglyph,   0, sizeof(d3d10->views.anaglyph));
+   memset(&d3d10->views.interlaced, 0, sizeof(d3d10->views.interlaced));
+   d3d10->views.ubo         = NULL;
+   d3d10->views.blend_ui    = NULL;
+   d3d10->views.blend_layer = NULL;
+   d3d10->views.failed      = true;
+}
+
+static bool d3d10_views_retire(d3d10_video_t *d3d10, d3d10_texture_t *t)
+{
+   (void)d3d10;
+   d3d10_release_texture(t);
+   memset(t, 0, sizeof(*t));
+   return true;
+}
+
+/* A render target of RGBA8 sized dims */
+static bool d3d10_views_make(d3d10_video_t *d3d10, d3d10_texture_t *t,
+      unsigned dims)
+{
+   memset(t, 0, sizeof(*t));
+   t->desc.Width     = VIDEO_SCALE_W(dims);
+   t->desc.Height    = VIDEO_SCALE_H(dims);
+   t->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   t->desc.Usage     = D3D10_USAGE_DEFAULT;
+   t->desc.BindFlags = D3D10_BIND_RENDER_TARGET;
+   d3d10_init_texture(d3d10->device, t);
+   if (t->handle && t->view && t->rt_view)
+      return true;
+   RARCH_WARN("[D3D10] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   d3d10_views_retire(d3d10, t);
+   return false;
+}
+
+/* Writes the views constants: @mvp, the part of the texture drawn and
+ * where its filtering stops. */
+static void d3d10_views_ubo(d3d10_video_t *d3d10, const math_matrix_4x4 *mvp,
+      const float *rect, const float *clamp)
+{
+   d3d10_views_ubo_t *ubo = NULL;
+   if (FAILED(d3d10->views.ubo->lpVtbl->Map(d3d10->views.ubo,
+               D3D10_MAP_WRITE_DISCARD, 0, (void**)&ubo)))
+      return;
+   ubo->mvp = *mvp;
+   memcpy(ubo->rect,  rect,  sizeof(ubo->rect));
+   memcpy(ubo->clamp, clamp, sizeof(ubo->clamp));
+   d3d10->views.ubo->lpVtbl->Unmap(d3d10->views.ubo);
+}
+
+/* A top-left rectangle as a viewport */
+static void d3d10_views_vp(const video_views_rect_t *r, D3D10_VIEWPORT *vp)
+{
+   vp->TopLeftX = VIDEO_POS_X(r->pos);
+   vp->TopLeftY = VIDEO_POS_Y(r->pos);
+   vp->Width    = VIDEO_SCALE_W(r->dims);
+   vp->Height   = VIDEO_SCALE_H(r->dims);
+   vp->MinDepth = 0.0f;
+   vp->MaxDepth = 1.0f;
+}
+
+/* A top-left rectangle as a scissor rectangle */
+static void d3d10_views_cut(D3D10Device dev, const video_views_rect_t *r)
+{
+   D3D10_RECT sc;
+   sc.left   = VIDEO_POS_X(r->pos);
+   sc.top    = VIDEO_POS_Y(r->pos);
+   sc.right  = sc.left + (LONG)VIDEO_SCALE_W(r->dims);
+   sc.bottom = sc.top  + (LONG)VIDEO_SCALE_H(r->dims);
+   dev->lpVtbl->RSSetScissorRects(dev, 1, &sc);
+}
+
+/* View @view of the frame over @dst, cut to @cut, as the stock chain
+ * draws a copy of it: the same texels, the same filter, stopping at the
+ * view's edge as at a texture's. */
+static void d3d10_views_draw_direct(d3d10_video_t *d3d10,
+      const struct d3d10_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   D3D10_VIEWPORT vp;
+   float rect[4], clamp[4];
+   const struct retro_video_view *v = &d->video_info->views.views[view];
+   float tw = (float)VIDEO_SCALE_W(d->src_dims);
+   float th = (float)VIDEO_SCALE_H(d->src_dims);
+
+   rect[0]  = (float)v->x / tw;
+   rect[1]  = (float)v->y / th;
+   rect[2]  = (float)(v->x + v->width)  / tw;
+   rect[3]  = (float)(v->y + v->height) / th;
+   clamp[0] = rect[0] + 0.5f / tw;
+   clamp[1] = rect[1] + 0.5f / th;
+   clamp[2] = rect[2] - 0.5f / tw;
+   clamp[3] = rect[3] - 0.5f / th;
+   d3d10_views_ubo(d3d10, &d3d10->mvp, rect, clamp);
+
+   d3d10_views_vp(dst, &vp);
+   d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &vp);
+   d3d10_views_cut(d3d10->device, cut);
+   d3d10->device->lpVtbl->Draw(d3d10->device, 4, 0);
+}
+
+/* Draws @view over the whole of @vp through @shader's pixel shader,
+ * unrotated. */
+static void d3d10_views_quad(d3d10_video_t *d3d10, d3d10_shader_t *shader,
+      D3D10ShaderResourceView view, D3D10SamplerState sampler,
+      const D3D10_VIEWPORT *vp)
+{
+   static const float whole[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+   D3D10Device dev             = d3d10->device;
+   d3d10_views_ubo(d3d10, &d3d10->ubo_values.mvp, whole, whole);
+   dev->lpVtbl->PSSetShader(dev, shader->ps);
+   dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &view);
+   dev->lpVtbl->PSSetSamplers(dev, 0, 1, &sampler);
+   dev->lpVtbl->RSSetViewports(dev, 1, vp);
+   dev->lpVtbl->Draw(dev, 4, 0);
+}
+
+/* The vertex stage, constants and quad every views draw uses */
+static void d3d10_views_bind(d3d10_video_t *d3d10)
+{
+   UINT stride     = sizeof(d3d10_vertex_t);
+   UINT offset     = 0;
+   D3D10Device dev = d3d10->device;
+   dev->lpVtbl->IASetPrimitiveTopology(dev,
+         D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   dev->lpVtbl->IASetVertexBuffers(dev, 0, 1, &d3d10->frame.vbo,
+         &stride, &offset);
+   dev->lpVtbl->IASetInputLayout(dev, d3d10->views.rect.layout);
+   dev->lpVtbl->VSSetShader(dev, d3d10->views.rect.vs);
+   dev->lpVtbl->GSSetShader(dev, NULL);
+   dev->lpVtbl->VSSetConstantBuffers(dev, 0, 1, &d3d10->views.ubo);
+   dev->lpVtbl->PSSetConstantBuffers(dev, 0, 1, &d3d10->views.ubo);
+}
+
+/* A COM reference more, where there is the object */
+static void d3d10_add_ref(void *object)
+{
+   if (object)
+      ((IUnknown*)object)->lpVtbl->AddRef((IUnknown*)object);
+}
+
+/* A view's chain: @src's passes and lookup textures, referenced, with
+ * semantics that read this chain's own values and textures - where
+ * @src's point into @src, these point at the same place in the copy -
+ * and constant buffers, render targets and history of its own. The
+ * preset is @src's: its parameters are the ones edited. NULL when it
+ * can't be made. */
+static d3d10_chain_t *d3d10_chain_clone(d3d10_video_t *d3d10,
+      const d3d10_chain_t *src)
+{
+   unsigned i, j;
+   const char *lo   = (const char*)src;
+   const char *hi   = lo + sizeof(*src);
+   d3d10_chain_t *c = (d3d10_chain_t*)calloc(1, sizeof(*c));
+   if (!c)
+      return NULL;
+#define D3D10_REBASE(ptr) (((const char*)(ptr) >= lo && (const char*)(ptr) < hi) \
+      ? (void*)((char*)c + ((const char*)(ptr) - lo)) : (void*)(ptr))
+
+   c->shader_preset = src->shader_preset;
+   for (i = 0; i < src->shader_preset->luts; i++)
+   {
+      c->luts[i] = src->luts[i];
+      d3d10_add_ref(c->luts[i].handle);
+      d3d10_add_ref(c->luts[i].staging);
+      d3d10_add_ref(c->luts[i].view);
+      d3d10_add_ref(c->luts[i].rt_view);
+   }
+   for (i = 0; i < src->shader_preset->passes; i++)
+   {
+      const d3d10_pass_t *sp = &src->pass[i];
+      d3d10_pass_t *pass     = &c->pass[i];
+      pass->shader           = sp->shader;
+      d3d10_add_ref(pass->shader.vs);
+      d3d10_add_ref(pass->shader.ps);
+      d3d10_add_ref(pass->shader.gs);
+      d3d10_add_ref(pass->shader.layout);
+      pass->semantics          = sp->semantics;
+      pass->semantics.textures = NULL;
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+         pass->semantics.cbuffers[j].uniforms = NULL;
+      if (sp->semantics.textures)
+      {
+         int k;
+         int n = sp->semantics.texture_count + 1;
+         if (!(pass->semantics.textures = (texture_sem_t*)malloc(
+                     n * sizeof(*pass->semantics.textures))))
+            goto error;
+         memcpy(pass->semantics.textures, sp->semantics.textures,
+               n * sizeof(*pass->semantics.textures));
+         for (k = 0; k < n; k++)
+            pass->semantics.textures[k].texture_data =
+               D3D10_REBASE(pass->semantics.textures[k].texture_data);
+      }
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         const cbuffer_sem_t *sb = &sp->semantics.cbuffers[j];
+         if (sb->uniforms)
+         {
+            int k;
+            int n = sb->uniform_count + 1;
+            uniform_sem_t *u = (uniform_sem_t*)malloc(n * sizeof(*u));
+            if (!u)
+               goto error;
+            memcpy(u, sb->uniforms, n * sizeof(*u));
+            for (k = 0; k < n; k++)
+               u[k].data = D3D10_REBASE(u[k].data);
+            pass->semantics.cbuffers[j].uniforms = u;
+         }
+         if (sp->buffers[j])
+         {
+            D3D10_BUFFER_DESC desc;
+            sp->buffers[j]->lpVtbl->GetDesc(sp->buffers[j], &desc);
+            if (FAILED(d3d10->device->lpVtbl->CreateBuffer(d3d10->device,
+                        &desc, NULL, &pass->buffers[j])))
+               goto error;
+         }
+      }
+   }
+#undef D3D10_REBASE
+   return c;
+
+error:
+   d3d10_chain_free(c, true);
+   free(c);
+   return NULL;
+}
+
+/* Frees the views' chains from index @first on */
+static void d3d10_views_free_chains(d3d10_video_t *d3d10, unsigned first)
+{
+   unsigned i;
+   for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      d3d10_chain_t *c = (d3d10_chain_t*)d3d10->views.chains.preset[i];
+      if (c)
+      {
+         d3d10_chain_free(c, true);
+         d3d10_release_texture(&c->history[0]);
+         free(c);
+      }
+      d3d10->views.chains.preset[i] = NULL;
+   }
+}
+
+/* A preset chain for each of views [0, count) that has none, copied
+ * from the main chain: nothing is compiled or read again. */
+static void d3d10_views_build_chains(d3d10_video_t *d3d10)
+{
+   unsigned i;
+   for (i = 0; i < d3d10->views.chains.count; i++)
+      if (     !d3d10->views.chains.preset[i]
+            && !(d3d10->views.chains.preset[i] =
+               d3d10_chain_clone(d3d10, &d3d10->chain)))
+         break;
+}
+
+/* View @v of @frame written into @t, which is its size */
+static void d3d10_views_upload(d3d10_video_t *d3d10, d3d10_texture_t *t,
+      const struct retro_video_view *v, const void *frame, unsigned pitch)
+{
+   D3D10_MAPPED_TEXTURE2D mapped;
+   unsigned bpp = (d3d10->format == DXGI_FORMAT_B5G6R5_UNORM) ? 2 : 4;
+   if (     !t->handle
+         || FAILED(t->handle->lpVtbl->Map(t->handle, 0,
+               D3D10_MAP_WRITE_DISCARD, 0, &mapped)))
+      return;
+   dxgi_copy(v->width, v->height, d3d10->format, pitch,
+         (const uint8_t*)frame + (size_t)v->y * pitch + (size_t)v->x * bpp,
+         t->desc.Format, mapped.RowPitch, mapped.pData);
+   t->handle->lpVtbl->Unmap(t->handle, 0);
+}
+
+/* View @v's chain made ready and its passes drawn into their render
+ * targets, but for a last pass that draws into each placement: for a
+ * real @frame its view written straight into history[0], behind the
+ * history the preset keeps. @vp_dims is the size its first placement
+ * is drawn at. */
+static void d3d10_views_chain_frame(d3d10_video_t *d3d10, d3d10_chain_t *c,
+      const struct retro_video_view *v, unsigned vp_dims,
+      const void *frame, unsigned pitch)
+{
+   unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+
+   if (frame)
+   {
+      unsigned k;
+      unsigned n = c->shader_preset->history_size + 1;
+      if (     !c->history_made
+            || c->history[0].desc.Width  != v->width
+            || c->history[0].desc.Height != v->height
+            || c->frame_format           != d3d10->format)
+      {
+         for (k = 0; k < n; k++)
+         {
+            d3d10_release_texture(&c->history[k]);
+            memset(&c->history[k], 0, sizeof(c->history[k]));
+            c->history[k].desc.Width  = v->width;
+            c->history[k].desc.Height = v->height;
+            c->history[k].desc.Format = d3d10->format;
+            c->history[k].desc.Usage  = D3D10_USAGE_DYNAMIC;
+            d3d10_init_texture(d3d10->device, &c->history[k]);
+            /* Written in place: the staging twin is never used. */
+            Release(c->history[k].staging);
+            c->history[k].staging = NULL;
+         }
+         c->frame_format = d3d10->format;
+         c->history_made = true;
+      }
+      else if (n > 1)
+      {
+         d3d10_texture_t tmp = c->history[n - 1];
+         for (k = n - 1; k > 0; k--)
+            c->history[k] = c->history[k - 1];
+         c->history[0] = tmp;
+      }
+      d3d10_views_upload(d3d10, &c->history[0], v, frame, pitch);
+   }
+
+   if (c->rt_frame_dims != dims || c->rt_vp_dims != vp_dims)
+   {
+      d3d10_chain_init_render_targets(d3d10, c, v->width, v->height,
+            vp_dims);
+      c->rt_frame_dims = dims;
+      c->rt_vp_dims    = vp_dims;
+   }
+   c->output_size.x = VIDEO_SCALE_W(vp_dims);
+   c->output_size.y = VIDEO_SCALE_H(vp_dims);
+   c->output_size.z = 1.0f / VIDEO_SCALE_W(vp_dims);
+   c->output_size.w = 1.0f / VIDEO_SCALE_H(vp_dims);
+}
+
+/* A placement through its view's chain: its last pass drawn into the
+ * placement, or the render target it drew into placed there */
+static void d3d10_views_draw_pass(d3d10_video_t *d3d10,
+      const struct d3d10_views_draw *d, d3d10_chain_t *c,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   D3D10_VIEWPORT vp;
+   UINT stride     = sizeof(d3d10_vertex_t);
+   UINT offset     = 0;
+   D3D10Device dev = d3d10->device;
+
+   if (c->final)
+   {
+      static const float whole[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+      float clamp[4];
+      float tw = (float)c->final->desc.Width;
+      float th = (float)c->final->desc.Height;
+      clamp[0] = 0.5f / tw;
+      clamp[1] = 0.5f / th;
+      clamp[2] = 1.0f - 0.5f / tw;
+      clamp[3] = 1.0f - 0.5f / th;
+      d3d10_views_bind(d3d10);
+      d3d10_views_ubo(d3d10, &d3d10->mvp, whole, clamp);
+      dev->lpVtbl->PSSetShader(dev, d3d10->views.rect.ps);
+      dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &c->final->view);
+      dev->lpVtbl->PSSetSamplers(dev, 0, 1,
+            &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_EDGE]);
+   }
+   else
+   {
+      d3d10_chain_bind_pass(d3d10, c, c->shader_preset->passes - 1);
+      dev->lpVtbl->IASetPrimitiveTopology(dev,
+            D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      dev->lpVtbl->IASetVertexBuffers(dev, 0, 1, &d3d10->frame.vbo,
+            &stride, &offset);
+   }
+   dev->lpVtbl->OMSetRenderTargets(dev, 1, &d->target, NULL);
+   d3d10_views_vp(dst, &vp);
+   dev->lpVtbl->RSSetViewports(dev, 1, &vp);
+   d3d10_views_cut(dev, cut);
+   dev->lpVtbl->Draw(dev, 4, 0);
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked and the rectangle its first placement takes; in *blend whether
+ * they draw into the canvas, in *direct whether straight from the frame
+ * (the stock chain). */
+static bool d3d10_views_setup(d3d10_video_t *d3d10,
+      const video_frame_info_t *video_info, const void *frame,
+      bool *blend, bool *direct, d3d10_chain_t **chains,
+      video_views_rect_t *rects)
+{
+   bool views;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+   bool stock     = !d3d10->chain.shader_preset
+      || !d3d10->chain.shader_preset->passes;
+
+   if (video_info->views.num_views && !d3d10->views.tried)
+      d3d10_views_init(d3d10);
+   /* Anaglyph and interlaced draw both eyes into the canvas, or without
+    * one only the left eye's area into the window. */
+   *blend = offscreen && !d3d10->views.failed
+      && d3d10_vv_target_ensure(d3d10, &d3d10->views.canvas_target,
+            &d3d10->views.canvas, layout->canvas_dims);
+   /* A real frame without the blend modes frees the canvas. */
+   if (frame && !offscreen)
+      d3d10_vv_target_drop(d3d10, &d3d10->views.canvas_target,
+            &d3d10->views.canvas);
+   /* A rolling scanline is drawn by the frame's own draw. */
+   views = video_info->views.num_views
+      && d3d10_views_allowed(d3d10)
+      && !(video_info->shader_subframes > 1 && video_info->scan_subframes)
+      && video_views_fit_frame(&video_info->views,
+            d3d10->views.frame_dims);
+   if (views && !stock)
+      d3d10_views_build_chains(d3d10);
+   views = views
+      && d3d10_vv_pick_chains(d3d10, &d3d10->views.chains,
+            &video_info->views, layout, stock, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend  = views && *blend;
+   *direct = views && stock;
+   if (*direct && !d3d10->views.direct_seen)
+   {
+      d3d10->views.direct_seen = true;
+      RARCH_LOG("[D3D10] Views drawn straight from the frame.\n");
+   }
+   if (views && !stock && !d3d10->views.preset_seen)
+   {
+      d3d10->views.preset_seen = true;
+      RARCH_LOG("[D3D10] Views' presets have each view of a software "
+            "frame written straight in.\n");
+   }
+   return views;
+}
+
+/* Draws the frame's views into the back buffer, sized as the window, or
+ * with @blend into the canvas, whose halves one pass then blends into
+ * the back buffer: with @direct straight from @src, else each through
+ * its chain, whose passes are drawn first, for a real @frame from its
+ * view written straight out of it. */
+static void d3d10_views_render(d3d10_video_t *d3d10,
+      const video_frame_info_t *video_info, d3d10_chain_t **chains,
+      const video_views_rect_t *rects, D3D10ShaderResourceView src,
+      bool blend, bool direct, const void *frame, unsigned pitch,
+      uint64_t frame_count, bool one_subframe)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   unsigned i;
+   struct d3d10_views_draw d;
+   D3D10Device dev                    = d3d10->device;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   D3D10RenderTargetView rtv          = d3d10->renderTargetView;
+   D3D10RenderTargetView target       = blend
+      ? d3d10->views.canvas.rt_view : rtv;
+
+   if (!direct)
+   {
+      UINT stride = sizeof(d3d10_vertex_t);
+      UINT offset = 0;
+      dev->lpVtbl->IASetPrimitiveTopology(dev,
+            D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+      dev->lpVtbl->IASetVertexBuffers(dev, 0, 1, &d3d10->frame.vbo,
+            &stride, &offset);
+   }
+   for (i = 0; !direct && i < video_info->views.num_views; i++)
+   {
+      d3d10_chain_t *c = chains[i];
+      if (!c)
+         continue;
+      d3d10_views_chain_frame(d3d10, c, &video_info->views.views[i],
+            rects[i].dims, frame, pitch);
+      d3d10_chain_frame(d3d10, c, video_info, frame_count, one_subframe);
+      c->final = d3d10_chain_render(d3d10, c, NULL);
+   }
+
+   d3d10_views_bind(d3d10);
+   dev->lpVtbl->OMSetRenderTargets(dev, 1, &target, NULL);
+   if (blend)
+      dev->lpVtbl->ClearRenderTargetView(dev, target, clear);
+   dev->lpVtbl->OMSetBlendState(dev, d3d10->blend_disable, NULL,
+         D3D10_DEFAULT_SAMPLE_MASK);
+   dev->lpVtbl->PSSetShader(dev, d3d10->views.rect.ps);
+   dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &src);
+   dev->lpVtbl->PSSetSamplers(dev, 0, 1,
+         &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_EDGE]);
+
+   d.video_info = video_info;
+   d.target     = target;
+   d.src_dims   = d3d10->views.frame_dims;
+   d3d10_vv_draw_placements(d3d10, &d, layout, chains,
+         blend || !layout->offscreen,
+         blend ? layout->canvas_dims : video_info->dims, direct);
+
+   if (blend)
+   {
+      D3D10_VIEWPORT vp;
+      D3D10ShaderResourceView none = NULL;
+      vp.TopLeftX = 0;
+      vp.TopLeftY = 0;
+      vp.Width    = VIDEO_SCALE_W(video_info->dims);
+      vp.Height   = VIDEO_SCALE_H(video_info->dims);
+      vp.MinDepth = 0.0f;
+      vp.MaxDepth = 1.0f;
+      dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &none);
+      dev->lpVtbl->OMSetRenderTargets(dev, 1, &rtv, NULL);
+      d3d10_views_bind(d3d10);
+      {
+         video_views_rect_t whole;
+         whole.pos  = 0;
+         whole.dims = video_info->dims;
+         d3d10_views_cut(dev, &whole);
+      }
+      d3d10_views_quad(d3d10,
+            (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+            ? &d3d10->views.interlaced : &d3d10->views.anaglyph,
+            d3d10->views.canvas.view,
+            d3d10->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE], &vp);
+      dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &none);
+   }
+}
+
+/* Moves UI drawing into the UI layer, laid out at one eye's size */
+static void d3d10_views_ui_begin(d3d10_video_t *d3d10,
+      video_frame_info_t *video_info)
+{
+   static const float clear[4]        = { 0.0f, 0.0f, 0.0f, 0.0f };
+   D3D10Device dev                    = d3d10->device;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   unsigned w                         = VIDEO_SCALE_W(layout->ui_dims);
+   unsigned h                         = VIDEO_SCALE_H(layout->ui_dims);
+
+   dev->lpVtbl->OMSetRenderTargets(dev, 1, &d3d10->views.ui.rt_view, NULL);
+   dev->lpVtbl->ClearRenderTargetView(dev, d3d10->views.ui.rt_view, clear);
+
+   /* Menus and widgets size from video_info->dims, fonts from the
+    * viewport and vp.full_dims. */
+   video_views_ui_enter(&d3d10->views.saved, &video_info->dims,
+         &d3d10->vp.full_dims, layout->ui_dims);
+   d3d10->views.saved_viewport = d3d10->viewport;
+   d3d10->views.saved_blend    = d3d10->blend_enable;
+   d3d10->viewport.TopLeftX    = 0;
+   d3d10->viewport.TopLeftY    = 0;
+   d3d10->viewport.Width       = w;
+   d3d10->viewport.Height      = h;
+   d3d10->blend_enable         = d3d10->views.blend_ui;
+   dev->lpVtbl->RSSetViewports(dev, 1, &d3d10->viewport);
+}
+
+/* Back onto the back buffer, and the UI layer into each eye's area. It
+ * was drawn over transparent black, so its colour is premultiplied. */
+static void d3d10_views_ui_end(d3d10_video_t *d3d10,
+      video_frame_info_t *video_info)
+{
+   unsigned a;
+   video_views_rect_t whole;
+   D3D10ShaderResourceView none       = NULL;
+   D3D10Device dev                    = d3d10->device;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   /* Only full side by side places it unscaled. */
+   D3D10SamplerState sampler          = d3d10->samplers[
+      (layout->stereo_mode == VIDEO_STEREO_MODE_SBS_FULL)
+      ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+
+   d3d10->blend_enable = d3d10->views.saved_blend;
+   d3d10->viewport     = d3d10->views.saved_viewport;
+   video_views_ui_leave(&d3d10->views.saved, &video_info->dims,
+         &d3d10->vp.full_dims);
+
+   dev->lpVtbl->OMSetRenderTargets(dev, 1, &d3d10->renderTargetView, NULL);
+   d3d10_views_bind(d3d10);
+   whole.pos  = 0;
+   whole.dims = video_info->dims;
+   d3d10_views_cut(dev, &whole);
+   dev->lpVtbl->OMSetBlendState(dev, d3d10->views.blend_layer, NULL,
+         D3D10_DEFAULT_SAMPLE_MASK);
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      D3D10_VIEWPORT vp;
+      d3d10_views_vp(&layout->areas[a], &vp);
+      d3d10_views_quad(d3d10, &d3d10->views.layer, d3d10->views.ui.view,
+            sampler, &vp);
+   }
+   dev->lpVtbl->PSSetShaderResources(dev, 0, 1, &none);
+   dev->lpVtbl->RSSetViewports(dev, 1, &d3d10->viewport);
+}
+
+static void d3d10_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   if (!d3d10)
+      return;
+   d3d10->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = d3d10->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      d3d10->views.chains.stock[i] = NULL;
+   d3d10_views_free_chains(d3d10, d3d10->views.chains.count);
 }
 
 static bool d3d10_gfx_frame(
@@ -3210,6 +4201,16 @@ static bool d3d10_gfx_frame(
    bool nonblock_state            = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    bool runloop_is_paused         = video_info->runloop_is_paused;
+   d3d10_chain_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                     = false;
+   bool views_blend               = false;
+   bool views_direct              = false;
+   bool views_per_eye             = false;
+   bool views_ui                  = false;
+   bool one_subframe              = black_frame_insertion || nonblock_state
+      || runloop_is_slowmotion || runloop_is_paused
+      || (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE);
 
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active        = video_info->widgets_active;
@@ -3247,10 +4248,24 @@ static bool d3d10_gfx_frame(
       so we can't rely on this for now */
    if (d3d10->resize_viewport)
 #endif
-      d3d10_update_viewport(d3d10, false);
+      d3d10_update_viewport(d3d10, d3d10->views.active);
 
    context->lpVtbl->IASetPrimitiveTopology(context,
          D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+   if (frame && width && height)
+      d3d10->views.frame_dims = VIDEO_SCALE_PACK(width, height);
+   views = d3d10_views_setup(d3d10, video_info, frame, &views_blend,
+         &views_direct, view_chains, view_rects);
+   /* d3d10->vp is the whole window while views draw. */
+   if (views != d3d10->views.active)
+   {
+      d3d10->views.active = views;
+      d3d10_update_viewport(d3d10, views);
+   }
+   retro_atomic_store_release_int(&d3d10->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   d3d10_views_publish(d3d10);
 
 #if 0
    if (d3d10->hw.enable)
@@ -3261,12 +4276,14 @@ static bool d3d10_gfx_frame(
    }
 #endif
 
-   if (frame && width && height)
+   /* Views through the preset have each view written straight into a
+    * texture of its own instead (d3d10_views_chain_frame). */
+   if (frame && width && height && (!views || views_direct))
    {
-      if (d3d10->shader_preset)
+      if (d3d10->chain.shader_preset)
       {
-         if (     (d3d10->frame.texture[0].desc.Width  != width)
-               || (d3d10->frame.texture[0].desc.Height != height))
+         if (     (d3d10->chain.history[0].desc.Width  != width)
+               || (d3d10->chain.history[0].desc.Height != height))
             d3d10->flags |= D3D10_ST_FLAG_RESIZE_RTS;
 
          if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
@@ -3274,16 +4291,16 @@ static bool d3d10_gfx_frame(
             int i;
             /* Release all render targets first to avoid
              * memory fragmentation */
-            for (i = 0; i < (int) d3d10->shader_preset->passes; i++)
+            for (i = 0; i < (int) d3d10->chain.shader_preset->passes; i++)
             {
-               d3d10_release_texture(&d3d10->pass[i].rt);
-               d3d10_release_texture(&d3d10->pass[i].feedback);
-               memset(&d3d10->pass[i].rt, 0, sizeof(d3d10->pass[i].rt));
-               memset(&d3d10->pass[i].feedback, 0, sizeof(d3d10->pass[i].feedback));
+               d3d10_release_texture(&d3d10->chain.pass[i].rt);
+               d3d10_release_texture(&d3d10->chain.pass[i].feedback);
+               memset(&d3d10->chain.pass[i].rt, 0, sizeof(d3d10->chain.pass[i].rt));
+               memset(&d3d10->chain.pass[i].feedback, 0, sizeof(d3d10->chain.pass[i].feedback));
             }
          }
 
-         if (d3d10->shader_preset->history_size)
+         if (d3d10->chain.shader_preset->history_size)
          {
             if (d3d10->flags & D3D10_ST_FLAG_INIT_HISTORY)
                d3d10_init_history(d3d10, width, height);
@@ -3292,40 +4309,44 @@ static bool d3d10_gfx_frame(
                int k;
                /* TODO/FIXME: what about frame-duping ?
                 * maybe clone d3d10_texture_t with AddRef */
-               d3d10_texture_t tmp = d3d10->frame.texture[d3d10->shader_preset->history_size];
-               for (k = d3d10->shader_preset->history_size; k > 0; k--)
-                  d3d10->frame.texture[k] = d3d10->frame.texture[k - 1];
-               d3d10->frame.texture[0] = tmp;
+               d3d10_texture_t tmp = d3d10->chain.history[d3d10->chain.shader_preset->history_size];
+               for (k = d3d10->chain.shader_preset->history_size; k > 0; k--)
+                  d3d10->chain.history[k] = d3d10->chain.history[k - 1];
+               d3d10->chain.history[0] = tmp;
             }
          }
       }
 
       /* either no history, or we moved a texture of
        * a different size in the front slot */
-      if (     (d3d10->frame.texture[0].desc.Width  != width)
-            || (d3d10->frame.texture[0].desc.Height != height))
+      if (     (d3d10->chain.history[0].desc.Width  != width)
+            || (d3d10->chain.history[0].desc.Height != height))
       {
-         d3d10->frame.texture[0].desc.Width  = width;
-         d3d10->frame.texture[0].desc.Height = height;
-         d3d10_release_texture(&d3d10->frame.texture[0]);
-         d3d10_init_texture(d3d10->device, &d3d10->frame.texture[0]);
+         d3d10->chain.history[0].desc.Width  = width;
+         d3d10->chain.history[0].desc.Height = height;
+         d3d10_release_texture(&d3d10->chain.history[0]);
+         d3d10_init_texture(d3d10->device, &d3d10->chain.history[0]);
       }
 
       if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
-         d3d10_init_render_targets(d3d10, width, height);
+      {
+         d3d10_chain_init_render_targets(d3d10, &d3d10->chain, width, height,
+               d3d10->vp.dims);
+         d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_RTS;
+      }
 
       /* Without a preset a software frame is drawn from where it was
        * written; a preset's passes read frame.texture[0]. */
-      d3d10->sw_direct.active = !d3d10->shader_preset
+      d3d10->sw_direct.active = !d3d10->chain.shader_preset
          && frame != RETRO_HW_FRAME_BUFFER_VALID
          && d3d10_sw_direct_upload(d3d10, width, height, pitch, frame);
       if (     !d3d10->sw_direct.active
             && frame != RETRO_HW_FRAME_BUFFER_VALID
-            && d3d10->frame.texture[0].staging)
+            && d3d10->chain.history[0].staging)
          d3d10_update_texture(
                d3d10->device,
                width, height, pitch, d3d10->format,
-               frame, &d3d10->frame.texture[0]);
+               frame, &d3d10->chain.history[0]);
    }
 
    stride = sizeof(d3d10_vertex_t);
@@ -3335,203 +4356,27 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_disable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
-   texture = d3d10->frame.texture;
+   texture = d3d10->chain.history;
 
-   if (d3d10->shader_preset)
+   if (d3d10->chain.shader_preset && !views)
    {
-      /* Loop-invariant for the whole chain: every pass of one frame
-       * sees the same frame. Gathered once rather than once per pass. */
-      uint32_t pass_frame_time_delta;
-      uint32_t pass_rotation;
-      int32_t  pass_frame_direction;
-      float    pass_original_fps;
-      float    pass_core_aspect;
-      float    pass_core_aspect_rot;
-
-      for (i = 0; i < d3d10->shader_preset->passes; i++)
-      {
-         if (d3d10->shader_preset->pass[i].feedback)
-         {
-            d3d10_texture_t tmp     = d3d10->pass[i].feedback;
-            d3d10->pass[i].feedback = d3d10->pass[i].rt;
-            d3d10->pass[i].rt       = tmp;
-         }
-      }
-
-      pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
-      pass_original_fps     = video_driver_get_original_fps();
-      pass_rotation         = retroarch_get_rotation();
-      pass_core_aspect      = video_driver_get_core_aspect();
-      pass_core_aspect_rot  = pass_core_aspect;
-#ifdef HAVE_REWIND
-      pass_frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
-#else
-      pass_frame_direction  = 1;
-#endif
-      /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-      if (pass_rotation == 1 || pass_rotation == 3)
-         pass_core_aspect_rot = 1 / pass_core_aspect_rot;
-
-      for (i = 0; i < d3d10->shader_preset->passes; i++)
-      {
-         int j;
-
-         d3d10_set_shader(context, &d3d10->pass[i].shader);
-
-         if (d3d10->shader_preset->pass[i].frame_count_mod)
-            d3d10->pass[i].frame_count   =
-               frame_count % d3d10->shader_preset->pass[i].frame_count_mod;
-         else
-            d3d10->pass[i].frame_count   = frame_count;
-
-         d3d10->pass[i].frame_direction  = pass_frame_direction;
-         d3d10->pass[i].frame_time_delta = pass_frame_time_delta;
-         d3d10->pass[i].original_fps     = pass_original_fps;
-         d3d10->pass[i].rotation         = pass_rotation;
-         d3d10->pass[i].core_aspect      = pass_core_aspect;
-         d3d10->pass[i].core_aspect_rot  = pass_core_aspect_rot;
-
-         /* Sub-frame info for multiframe shaders (per real content frame).
-            Should always be 1 for non-use of subframes */
-         if (!(d3d10->flags & D3D10_ST_FLAG_FRAME_DUPE_LOCK))
-         {
-           if (     black_frame_insertion
-                 || nonblock_state
-                 || runloop_is_slowmotion
-                 || runloop_is_paused
-                 || (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE))
-              d3d10->pass[i].total_subframes = 1;
-           else
-              d3d10->pass[i].total_subframes = video_info->shader_subframes;
-
-           d3d10->pass[i].current_subframe = 1;
-           d3d10->pass[i].swap_count       = (uint32_t)video_info->swap_count;
-         }
-
-         for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-         {
-            D3D10Buffer    buffer     = d3d10->pass[i].buffers[j];
-            cbuffer_sem_t* buffer_sem = &d3d10->pass[i].semantics.cbuffers[j];
-
-            if (buffer_sem->stage_mask && buffer_sem->uniforms)
-            {
-               void*               uniform_data = NULL;
-               uniform_sem_t*           uniform = buffer_sem->uniforms;
-
-               buffer->lpVtbl->Map(buffer,
-                     D3D10_MAP_WRITE_DISCARD, 0, (void**)&uniform_data);
-
-               while (uniform->size)
-               {
-                  if (uniform->data)
-                     memcpy((uint8_t*)uniform_data + uniform->offset,
-                           uniform->data, uniform->size);
-                  uniform++;
-               }
-               buffer->lpVtbl->Unmap(buffer);
-
-               if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-                  context->lpVtbl->VSSetConstantBuffers(context,
-                        buffer_sem->binding, 1, &buffer);
-
-               if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-                  context->lpVtbl->PSSetConstantBuffers(context,
-                        buffer_sem->binding, 1, &buffer);
-            }
-         }
-
-         {
-            D3D10RenderTargetView null_rt = NULL;
-            context->lpVtbl->OMSetRenderTargets(context, 1,
-                  &null_rt, NULL);
-         }
-
-         {
-            D3D10ShaderResourceView textures[SLANG_NUM_BINDINGS] = { NULL };
-            D3D10SamplerState       samplers[SLANG_NUM_BINDINGS] = { NULL };
-
-            texture_sem_t* texture_sem = d3d10->pass[i].semantics.textures;
-            while (texture_sem->stage_mask)
-            {
-               int binding       = texture_sem->binding;
-               textures[binding] = *(D3D10ShaderResourceView*)
-                  texture_sem->texture_data;
-               samplers[binding] = d3d10->samplers[texture_sem->filter][texture_sem->wrap];
-               texture_sem++;
-            }
-
-#if 0
-            if (d3d10->hw.enable && (i == 0))
-               context->lpVtbl->PSSetShaderResources(context, 1,
-                     SLANG_NUM_BINDINGS - 1, textures + 1);
-            else
-#endif
-               context->lpVtbl->PSSetShaderResources(context, 0,
-                     SLANG_NUM_BINDINGS, textures);
-
-            context->lpVtbl->PSSetSamplers(context, 0,
-                  SLANG_NUM_BINDINGS, samplers);
-         }
-
-         if (d3d10->pass[i].rt.handle)
-         {
-            context->lpVtbl->OMSetRenderTargets(context, 1,
-                  &d3d10->pass[i].rt.rt_view, NULL);
-            context->lpVtbl->RSSetViewports(context, 1,
-                  &d3d10->pass[i].viewport);
-
+      const video_frame_info_t *rolling = NULL;
 #ifdef D3D10_ROLLING_SCANLINE_SIMULATION
-            if (      (video_info->shader_subframes > 1)
-                  &&  (video_info->scan_subframes)
-                  &&  !black_frame_insertion
-                  &&  !nonblock_state
-                  &&  !runloop_is_slowmotion
-                  &&  !runloop_is_paused
-                  &&  (!(d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)))
-            {
-               D3D10_RECT scissor_rect;
-
-               scissor_rect.left   = 0;
-               scissor_rect.top    = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes)
-                                       * (float)video_info->current_subframe);
-               scissor_rect.right  = d3d10->pass[i].viewport.Width ;
-               scissor_rect.bottom = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes)
-                                       * (float)(video_info->current_subframe + 1));
-
-               d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
-                     &scissor_rect);
-            }
-            else
-            {
-               D3D10_RECT scissor_rect;
-
-               scissor_rect.left   = 0;
-               scissor_rect.top    = 0;
-               scissor_rect.right  = d3d10->pass[i].viewport.Width;
-               scissor_rect.bottom = d3d10->pass[i].viewport.Height;
-
-               d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
-                     &scissor_rect);
-            }
-#endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
-
-            context->lpVtbl->Draw(context, 4, 0);
-            texture = &d3d10->pass[i].rt;
-         }
-         else
-         {
-            texture = NULL;
-            break;
-         }
-      }
+      if (     !one_subframe && video_info->shader_subframes > 1
+            && video_info->scan_subframes)
+         rolling = video_info;
+#endif
+      d3d10_chain_frame(d3d10, &d3d10->chain, video_info, frame_count,
+            one_subframe);
+      texture = d3d10_chain_render(d3d10, &d3d10->chain, rolling);
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d10->renderTargetView, NULL);
    }
 
-   if (texture)
+   if (texture && !views)
    {
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
-      if (d3d10->sw_direct.active && texture == d3d10->frame.texture)
+      if (d3d10->sw_direct.active && texture == d3d10->chain.history)
          context->lpVtbl->PSSetShaderResources(context, 0, 1,
                &d3d10->sw_direct.texture.view);
       else
@@ -3582,7 +4427,13 @@ static bool d3d10_gfx_frame(
             &scissor_rect);
    }
 
-   context->lpVtbl->Draw(context, 4, 0);
+   if (views)
+      d3d10_views_render(d3d10, video_info, view_chains, view_rects,
+            d3d10->sw_direct.active ? d3d10->sw_direct.texture.view
+            : d3d10->chain.history[0].view, views_blend, views_direct,
+            frame, pitch, frame_count, one_subframe);
+   else
+      context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
@@ -3600,12 +4451,58 @@ static bool d3d10_gfx_frame(
    }
 #endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, d3d10_views_allowed(d3d10));
+   /* A real frame without it frees the UI layer. */
+   if (frame && !views_per_eye)
+      d3d10_vv_target_drop(d3d10, &d3d10->views.ui_target,
+            &d3d10->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden.
+    * No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE), msg, statistics_show,
+         widgets_active && gfx_widgets_visible(video_info))
+#else
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE), msg, statistics_show,
+         false)
+#endif
+      && d3d10_vv_target_ensure(d3d10, &d3d10->views.ui_target,
+            &d3d10->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+      d3d10_views_ui_begin(d3d10, video_info);
+
    if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
          && d3d10->menu.texture.handle)
    {
       UINT offset = 0, stride = sizeof(d3d10_vertex_t);
       if (d3d10->flags & D3D10_ST_FLAG_MENU_FULLSCREEN)
          context->lpVtbl->RSSetViewports(context, 1, &d3d10->viewport);
+      else if (d3d10->views.active)
+      {
+         /* d3d10->vp is the whole window while views draw, so fit the
+          * menu to this pass's target here. */
+         struct video_viewport vp;
+         D3D10_VIEWPORT menu_vp;
+         memset(&vp, 0, sizeof(vp));
+         vp.full_dims     = VIDEO_SCALE_PACK(
+               (unsigned)d3d10->viewport.Width,
+               (unsigned)d3d10->viewport.Height);
+         video_driver_update_viewport(&vp, false,
+               (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false,
+               false);
+         menu_vp.TopLeftX = VIDEO_POS_X(vp.pos);
+         menu_vp.TopLeftY = VIDEO_POS_Y(vp.pos);
+         menu_vp.Width    = VIDEO_SCALE_W(vp.dims);
+         menu_vp.Height   = VIDEO_SCALE_H(vp.dims);
+         menu_vp.MinDepth = 0.0f;
+         menu_vp.MaxDepth = 1.0f;
+         context->lpVtbl->RSSetViewports(context, 1, &menu_vp);
+      }
 
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
       context->lpVtbl->IASetVertexBuffers(
@@ -3627,8 +4524,9 @@ static bool d3d10_gfx_frame(
    d3d10->flags |= D3D10_ST_FLAG_SPRITES_ENABLE;
 
 #ifdef HAVE_OVERLAY
+   /* Touch overlays would straddle both eyes. */
    if (    (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_ENABLE)
-         && overlay_behind_menu)
+         && overlay_behind_menu && !views_per_eye)
       d3d10_render_overlay(d3d10);
 #endif
 
@@ -3672,7 +4570,7 @@ static bool d3d10_gfx_frame(
 
 #ifdef HAVE_OVERLAY
    if (     (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_ENABLE)
-         && !overlay_behind_menu)
+         && !overlay_behind_menu && !views_per_eye)
       d3d10_render_overlay(d3d10);
 #endif
 
@@ -3723,9 +4621,24 @@ static bool d3d10_gfx_frame(
    }
    d3d10->flags &= ~D3D10_ST_FLAG_SPRITES_ENABLE;
 
+   if (views_ui)
+      d3d10_views_ui_end(d3d10, video_info);
+
 #ifndef __WINRT__
    video_driver_update_title(NULL);
 #endif
+   /* The recorder's copy of this frame, queued behind the render so
+    * the GPU does it in its own time; read_viewport picks it up frames
+    * later. Torn down when recording stops. */
+   if (     video_info->gpu_recording
+         || (d3d10->flags & D3D10_ST_FLAG_READBACK_PENDING))
+   {
+      d3d10->flags &= ~D3D10_ST_FLAG_READBACK_PENDING;
+      d3d10_record_capture(d3d10);
+   }
+   else if (d3d10->record.enable)
+      d3d10_record_free(d3d10);
+
    DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
 
    if (
@@ -3790,12 +4703,12 @@ static bool d3d10_gfx_frame(
          video_info->current_subframe = k;
 #endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
-         if (d3d10->shader_preset)
-            for (m = 0; m < d3d10->shader_preset->passes; m++)
+         if (d3d10->chain.shader_preset)
+            for (m = 0; m < d3d10->chain.shader_preset->passes; m++)
             {
-               d3d10->pass[m].total_subframes = video_info->shader_subframes;
-               d3d10->pass[m].current_subframe = k+1;
-               d3d10->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
+               d3d10->chain.pass[m].total_subframes = video_info->shader_subframes;
+               d3d10->chain.pass[m].current_subframe = k+1;
+               d3d10->chain.pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
          if (!d3d10_gfx_frame(d3d10, NULL, 0, frame_count, 0, msg,
                   video_info))
@@ -3862,7 +4775,7 @@ static struct video_shader* d3d10_gfx_get_current_shader(void* data)
    if (!d3d10)
       return NULL;
 
-   return d3d10->shader_preset;
+   return d3d10->chain.shader_preset;
 }
 
 static void d3d10_gfx_viewport_info(void* data, struct video_viewport* vp)
@@ -3870,6 +4783,186 @@ static void d3d10_gfx_viewport_info(void* data, struct video_viewport* vp)
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    *vp = d3d10->vp;
+}
+
+static void d3d10_record_free(d3d10_video_t *d3d10)
+{
+   unsigned i;
+   for (i = 0; i < D3D10_RECORD_RING; i++)
+   {
+      Release(d3d10->record.staging[i]);
+      d3d10->record.staging[i] = NULL;
+      d3d10->record.valid[i]   = false;
+   }
+   d3d10->record.index  = 0;
+   d3d10->record.dims   = 0;
+   d3d10->record.enable = false;
+}
+
+/* Queue a copy of this frame's back buffer into the ring, before it is
+ * presented. Recreates the ring when the back buffer changes size or
+ * format. */
+static void d3d10_record_capture(d3d10_video_t *d3d10)
+{
+   D3D10Texture2D back_buffer = NULL;
+   D3D10_TEXTURE2D_DESC desc;
+   unsigned dims;
+
+   d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain, 0,
+         uuidof(ID3D10Texture2D), (void**)&back_buffer);
+   if (!back_buffer)
+      return;
+   back_buffer->lpVtbl->GetDesc(back_buffer, &desc);
+   dims = VIDEO_SCALE_PACK(desc.Width, desc.Height);
+
+   if (     !d3d10->record.enable
+         || d3d10->record.dims   != dims
+         || d3d10->record.format != desc.Format)
+   {
+      unsigned i;
+      d3d10_record_free(d3d10);
+      desc.Usage          = D3D10_USAGE_STAGING;
+      desc.BindFlags      = 0;
+      desc.CPUAccessFlags = D3D10_CPU_ACCESS_READ;
+      desc.MiscFlags      = 0;
+      for (i = 0; i < D3D10_RECORD_RING; i++)
+      {
+         if (FAILED(d3d10->device->lpVtbl->CreateTexture2D(d3d10->device,
+                     &desc, NULL, &d3d10->record.staging[i])))
+         {
+            RARCH_ERR("[D3D10] Recording staging texture failed.\n");
+            d3d10_record_free(d3d10);
+            Release(back_buffer);
+            return;
+         }
+      }
+      d3d10->record.dims   = dims;
+      d3d10->record.format = desc.Format;
+      d3d10->record.enable = true;
+   }
+
+   d3d10->device->lpVtbl->CopyResource(d3d10->device,
+         (D3D10Resource)d3d10->record.staging[d3d10->record.index],
+         (D3D10Resource)back_buffer);
+   d3d10->record.valid[d3d10->record.index] = true;
+   d3d10->record.index = (d3d10->record.index + 1) % D3D10_RECORD_RING;
+   Release(back_buffer);
+}
+
+static bool d3d10_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
+{
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+   D3D10Texture2D staging;
+   D3D10_TEXTURE2D_DESC desc;
+   D3D10_MAPPED_TEXTURE2D mapped;
+   const uint8_t *src;
+   unsigned slot, x, y;
+   unsigned vp_x, vp_y, vp_width, vp_height, full_w, full_h;
+   bool wait;
+   bool ret = true;
+   HRESULT hr;
+
+   if (!d3d10)
+      return false;
+
+   if (d3d10->record.enable)
+   {
+      /* Recording: the oldest copy, made RING frames ago. The recorder
+       * treats false as "not this frame" and tries again. */
+      slot = d3d10->record.index;
+      wait = false;
+   }
+   else
+   {
+      /* A screenshot: the frame drawn again, its back buffer copied
+       * before Present; idle, the back buffer as it stands. That copy
+       * is waited for. */
+      d3d10->flags |= D3D10_ST_FLAG_READBACK_PENDING;
+      if (!is_idle)
+         video_driver_cached_frame();
+      if (d3d10->flags & D3D10_ST_FLAG_READBACK_PENDING)
+      {
+         d3d10->flags &= ~D3D10_ST_FLAG_READBACK_PENDING;
+         d3d10_record_capture(d3d10);
+      }
+      if (!d3d10->record.enable)
+         return false;
+      slot = (d3d10->record.index + D3D10_RECORD_RING - 1)
+         % D3D10_RECORD_RING;
+      wait = true;
+   }
+
+   staging = d3d10->record.staging[slot];
+   if (!d3d10->record.valid[slot] || !staging)
+      return false;
+
+   /* Recording never waits for the GPU: a copy still being made is
+    * read on a later frame. */
+   hr = staging->lpVtbl->Map(staging, 0, D3D10_MAP_READ,
+         wait ? 0 : D3D10_MAP_FLAG_DO_NOT_WAIT, &mapped);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+      return false;
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[D3D10] Recording staging map failed: 0x%08lx.\n",
+            (unsigned long)hr);
+      d3d10->record.valid[slot] = false;
+      return false;
+   }
+   d3d10->record.valid[slot] = false;
+
+   staging->lpVtbl->GetDesc(staging, &desc);
+   src       = (const uint8_t*)mapped.pData;
+   vp_x      = (VIDEO_POS_X(d3d10->vp.pos) > 0) ? VIDEO_POS_X(d3d10->vp.pos) : 0;
+   vp_y      = (VIDEO_POS_Y(d3d10->vp.pos) > 0) ? VIDEO_POS_Y(d3d10->vp.pos) : 0;
+   vp_width  = VIDEO_SCALE_W(d3d10->vp.dims);
+   vp_height = VIDEO_SCALE_H(d3d10->vp.dims);
+   full_w    = VIDEO_SCALE_W(d3d10->vp.full_dims);
+   full_h    = VIDEO_SCALE_H(d3d10->vp.full_dims);
+   if (vp_width  > full_w)
+      vp_width   = full_w;
+   if (vp_height > full_h)
+      vp_height  = full_h;
+   dxgi_readback_clamp_window(desc.Width, desc.Height,
+         &vp_x, &vp_y, &vp_width, &vp_height);
+
+   /* BGR24, bottom-up */
+   src += mapped.RowPitch * vp_y;
+   switch (desc.Format)
+   {
+      case DXGI_FORMAT_R8G8B8A8_UNORM:
+         for (y = 0; y < vp_height; y++, src += mapped.RowPitch)
+         {
+            uint8_t *row = buffer + 3 * (vp_height - y - 1) * vp_width;
+            for (x = 0; x < vp_width; x++)
+            {
+               row[3 * x + 2] = src[4 * (x + vp_x) + 0];
+               row[3 * x + 1] = src[4 * (x + vp_x) + 1];
+               row[3 * x + 0] = src[4 * (x + vp_x) + 2];
+            }
+         }
+         break;
+      case DXGI_FORMAT_B8G8R8A8_UNORM:
+         for (y = 0; y < vp_height; y++, src += mapped.RowPitch)
+         {
+            uint8_t *row = buffer + 3 * (vp_height - y - 1) * vp_width;
+            for (x = 0; x < vp_width; x++)
+            {
+               row[3 * x + 0] = src[4 * (x + vp_x) + 0];
+               row[3 * x + 1] = src[4 * (x + vp_x) + 1];
+               row[3 * x + 2] = src[4 * (x + vp_x) + 2];
+            }
+         }
+         break;
+      default:
+         RARCH_ERR("[D3D10] Unexpected swapchain format %u.\n",
+               (unsigned)desc.Format);
+         ret = false;
+         break;
+   }
+
+   staging->lpVtbl->Unmap(staging, 0);
+   return ret;
 }
 
 static void d3d10_set_menu_texture_frame(
@@ -4186,7 +5279,8 @@ d3d10_get_hw_render_interface(void* data,
 
 static uint32_t d3d10_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t flags       = 0;
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
 
 #if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
    /* a borderless fullscreen toggle restyles the window; see
@@ -4205,6 +5299,10 @@ static uint32_t d3d10_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 #endif
+   if (d3d10 && retro_atomic_load_acquire_int(&d3d10->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (d3d10 && retro_atomic_load_acquire_int(&d3d10->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
 
    return flags;
 }
@@ -4421,7 +5519,11 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    d3d10_gfx_update_texture,
-   d3d10_get_swap_interval_cap
+   d3d10_get_swap_interval_cap,
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   d3d10_set_view_count
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
@@ -4463,7 +5565,7 @@ video_driver_t video_d3d10 = {
    NULL, /* set_viewport */
    d3d10_gfx_set_rotation,
    d3d10_gfx_viewport_info,
-   NULL, /* read_viewport  */
+   d3d10_gfx_read_viewport,
 #ifdef HAVE_OVERLAY
    d3d10_get_overlay_interface,
 #endif

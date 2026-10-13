@@ -269,10 +269,11 @@ EXACT_CASES = [
 ]
 EXACT_HW = {'gl': ('off', 'gl_compat'),
             'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
-            'd3d11': ('off', 'd3d11'), 'd3d12': ('off', 'd3d12')}
+            'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
+            'd3d12': ('off', 'd3d12')}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
-PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
+PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
 # gl takes GLSL presets: views through two passes, the first into a
 # framebuffer at the view's size or its placement's, and through one,
 # each with earlier frames and feedback of its own.
@@ -289,13 +290,16 @@ GL_PRESET_CASES = ('3ds-sbs-full', '3ds-top-bottom', '3ds-anaglyph',
 # straight out of it into a texture of its own, not read in place. Not
 # vulkan's, which does from a staging buffer but copies from a linear
 # image, as for lavapipe's XRGB8888 frames.
-WRITE_SW_VIEWS = ('gl', 'glcore', 'd3d11', 'd3d12')
+WRITE_SW_VIEWS = ('gl', 'glcore', 'd3d10', 'd3d11', 'd3d12')
 # Drivers whose views' presets read a software frame's views where they
 # lie when they can.
 SW_IN_PLACE_DRIVERS = ('glcore', 'vulkan')
 WRITE_SW_RE = re.compile(
     r'\] Views\' presets have each view of a software frame written '
     r'straight in\.')
+# Drivers on shader model 4, where the rect presets' gathers of more than
+# the red component do not compile.
+SM4_DRIVERS = ('d3d10',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -312,7 +316,7 @@ SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
-DIRECT_DRIVERS = ('gl', 'glcore', 'vulkan', 'd3d11', 'd3d12')
+DIRECT_DRIVERS = ('gl', 'glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 GL_PRESET_RE = re.compile(r'\[GL\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
@@ -1455,7 +1459,8 @@ def driver_jobs(retroarch, root, driver):
     jobs += [lambda c=c, m=m, t=t: view_rect(c, m, t)
              for c in VIEW_RECT_CASES
              if c[3] in EXACT_HW.get(driver, ())
-             and driver in PRESET_DRIVERS and wanted(c[0])
+             and driver in PRESET_DRIVERS and driver not in SM4_DRIVERS
+             and wanted(c[0])
              for m, t in VIEW_RECT_PRESETS]
     jobs += [lambda c=c: smooth(c) for c in SMOOTH_CASES
              if c[3] in EXACT_HW.get(driver, ())
