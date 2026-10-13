@@ -9,6 +9,7 @@
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
 #include "../../../command.h"
+#include "../../../input/input_driver.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../runahead.h"
@@ -41,6 +42,7 @@ int main(int argc, char **argv)
    char *args[7];
    FILE *cfg;
    unsigned i, before;
+   int16_t axes[4];
    command_t cmd;
    runloop_state_t *loop;
    if (argc < 2) return 2;
@@ -149,6 +151,63 @@ int main(int argc, char **argv)
    CHECK(command_set_input(&cmd,"1 start 1")
          && !strcmp(reply,"1\tstart\tnone\n"));
    CHECK(command_release_input(&cmd,""));
+
+   /* PRESS holds, runs its frames and lets go, answered on the last */
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 b+a 2"));
+   CHECK(!reply[0] && input_driver_command_held(0,axes) == 0x0101);
+   runloop_iterate();
+   CHECK(!reply[0] && input_driver_command_held(0,axes) == 0x0101);
+   runloop_iterate();
+   CHECK(!strcmp(reply,"PRESS 1 b+a 2\n")
+         && input_driver_command_held(0,axes) == 0);
+   /* the controls as resolved, not as written */
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 +a++a+ 1"));
+   runloop_iterate();
+   CHECK(!strcmp(reply,"PRESS 1 a+a 1\n"));
+   /* an axis is held at a value, so it is SET_INPUT's */
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"1 left_x 2") && strstr(reply,"PRESS ERROR"));
+   CHECK(!command_press(&cmd,"1 a 0") && strstr(reply,"frame count"));
+   /* a press holds input for every frame it runs, so it is bounded by
+    * what a client waits for, not by RUN_FRAMES' ten minutes */
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"SET_INPUT"));
+   CHECK(command_press(&cmd,"1 a 600"));
+   /* A line interface waits as long as it likes, so RUN_FRAMES keeps
+    * the ten minutes there; a structured one is told at once rather
+    * than failing once the frames are already running. */
+   reply[0]=0;
+   CHECK(command_run_frames(&cmd,"36000")
+         && input_driver_command_held(0,axes) == 0);
+   command_run_frames_cancel("tidying up");
+   CHECK(!strcmp(reply,"RUN_FRAMES ERROR tidying up"));
+   cmd.structured=true;
+   reply[0]=0;
+   CHECK(!command_run_frames(&cmd,"36000")
+         && strstr(reply,"at most 600 frames in one request"));
+   CHECK(command_run_frames(&cmd,"600"));
+   command_run_frames_cancel("tidying up");
+   cmd.structured=false;
+   /* one at a time: the second replaces the first, which is answered */
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 a 30"));
+   CHECK(command_press(&cmd,"1 b 1")
+         && strstr(reply,"PRESS ERROR replaced by PRESS"));
+   /* and what the replaced one held was let go of */
+   CHECK(input_driver_command_held(0,axes) == 0x0001);
+   runloop_iterate();
+   CHECK(!strcmp(reply,"PRESS 1 b 1\n")
+         && input_driver_command_held(0,axes) == 0);
+   /* RUN_FRAMES and PRESS are the same one frame job */
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 a 30"));
+   CHECK(command_run_frames(&cmd,"1")
+         && strstr(reply,"PRESS ERROR replaced by another RUN_FRAMES")
+         && input_driver_command_held(0,axes) == 0);
+   runloop_iterate();
+   CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
 
    before=calls; reply[0]=0;
    CHECK(command_run_frames(&cmd,"3"));

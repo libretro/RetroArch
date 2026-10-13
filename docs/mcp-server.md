@@ -238,14 +238,44 @@ lines were overwritten before they were read it says `SKIPPED` and how
 many first. The last 256 lines are kept, from when the MCP server
 starts or the first `GET_LOG`.
 
+`PRESS <player> <control>[+<control>...] <frames>` is how an assistant
+taps a button: it holds the buttons, runs that many frames and lets
+them go, answered once the last frame has run. A tap is 2 to 4 frames;
+`PRESS 1 right+a 6` runs and jumps.
+
+This is one request where four were needed - `SET_INPUT`, `RUN_FRAMES`,
+`SET_INPUT` to release, `RUN_FRAMES` again - and each of those is its
+own HTTP connection, so it is latency saved as much as tokens. The
+buttons are let go of however the press ends, including the error that
+ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
+than pressed, so `PRESS` refuses one.
+
+**A single request runs at most 600 frames** - about ten seconds at
+60fps - because that is as long as a reply is waited for. An MCP client
+is told the command did not answer after ten seconds and the frames run
+on regardless, so both commands refuse more than that outright rather
+than failing later with hundreds of frames already run. Ask again to
+run more.
+
+`PRESS` holds the limit on every interface, because it holds input
+through every frame it runs and a press nobody is waiting for would go
+on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
+network and stdin interfaces, which have no deadline, and leaves
+nothing held if its reply is dropped - so that pair is the way to hold
+a control for longer than ten seconds.
+
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
-run; it is left paused. With `SET_INPUT` before it, an assistant plays
-in steps: hold the input, run some frames, look with `SCREENSHOT` or
-`READ_CORE_MEMORY`. It is refused while the menu is open, without
-content, and in achievements hardcore mode; a second `RUN_FRAMES`
-replaces one still running, which is answered with an error, as it is
-when the content closes.
+run; it is left paused. Use it to let the game run on its own - a
+cutscene, a fall - where `PRESS` is for holding something while it
+does. Both are refused while the menu is open, without content, and in
+achievements hardcore mode, and both are the same one job: a second
+`RUN_FRAMES` or `PRESS` replaces one still running, which is answered
+with an error, as it is when the content closes.
+
+`SET_INPUT` with `RUN_FRAMES` is still the way to hold something across
+several steps - a direction held while reading memory between frames -
+and to put a stick anywhere but centre.
 
 `SET_INPUT <player> <control> <value>` holds a RetroPad button (`a`,
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
@@ -258,7 +288,7 @@ Several controls join with `+` to be held together:
 `SET_INPUT 1 right+a 1` runs and jumps in one request, where two
 requests would take two frames. Every control is checked before any is
 held, so a combination with a name or a value wrong in it holds
-nothing.
+nothing. `PRESS` takes the same combinations.
 
 The running core's own options are `GET_CORE_OPTION` and
 `SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as

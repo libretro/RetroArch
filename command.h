@@ -630,6 +630,27 @@ void command_run_frames_cancel(const char *why);
 bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
 
+/* The most frames a single request can run and still be answered.
+ *
+ * A structured interface gives a command ten seconds before it tells
+ * the client the command did not answer, and the frames run on
+ * regardless: the work outlives the reply it was for. 600 is about ten
+ * seconds at 60fps.
+ *
+ * So RUN_FRAMES asks for no more than this where the reply has a
+ * deadline, and answers at once rather than failing ten seconds later
+ * with hundreds of frames already run. A line interface has no
+ * deadline and keeps the full COMMAND_RUN_FRAMES_MAX.
+ *
+ * PRESS holds this to every interface, because it holds input for
+ * every frame it runs and a press nobody is waiting for would go on
+ * holding buttons down. A longer hold is SET_INPUT with RUN_FRAMES,
+ * which leaves nothing held if its reply is dropped. */
+#define COMMAND_FRAMES_REPLY_MAX 600
+
+/* PRESS <player> <control> <frames>: hold, run and let go, in one. */
+bool command_press(command_t *cmd, const char *arg);
+
 /* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
 bool command_get_core_option(command_t *cmd, const char *arg);
 bool command_set_core_option(command_t *cmd, const char *arg);
@@ -718,8 +739,9 @@ static const struct cmd_param cmd_params_log[] = {
 };
 #endif
 static const struct cmd_param cmd_params_run_frames[] = {
-   { "count", "How many frames to run.", CMD_PARAM_INT, true, NULL, NULL,
-      NULL },
+   { "count", "How many frames to run, up to 600 - about ten seconds, "
+      "which is as long as this interface waits for a reply. Ask again "
+      "to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input[] = {
@@ -733,6 +755,20 @@ static const struct cmd_param cmd_params_input[] = {
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "value", "1 holds a button and 0 lets it go; an axis takes -32768 "
       "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_press[] = {
+   { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "control", "A RetroPad button, or several joined by \"+\" to press "
+      "together: b, y, select, start, up, down, left, right, a, x, l, r, "
+      "l2, r2, l3, r3. \"right+a\" runs and jumps. An axis is "
+      "SET_INPUT's: it is held at a value rather than pressed.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "frames", "How many frames to hold them for, from 1 to 600 - about "
+      "ten seconds, which is as long as a reply is waited for. A tap is "
+      "2 to 4. For a longer hold use SET_INPUT and RUN_FRAMES, which "
+      "does not answer late with the buttons still down.",
+      CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input_release[] = {
@@ -869,6 +905,7 @@ static const struct cmd_trailer cmd_trailers_cut[] = {
    { "MORE", "more", NULL, NULL },
    { NULL }
 };
+/* A list cut short with the entry to resume from. */
 static const struct cmd_trailer cmd_trailers_page[] = {
    { "MORE", "more", "next",
       "The entry the next page starts at, as GET_PLAYLIST's first "
@@ -916,6 +953,7 @@ static const struct cmd_action_map action_map[] = {
 #endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input, &cmd_rows_input },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },

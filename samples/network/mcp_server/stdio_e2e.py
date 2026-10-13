@@ -74,7 +74,7 @@ send({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}})
 msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
-          'GET_CORE_OPTION', 'GET_MEMORY_MAP'):
+          'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS'):
     check('tool %s listed' % n, n in names)
 # A hotkey that steps a selection nothing can read back is a command on
 # every line interface and not a tool.
@@ -137,6 +137,29 @@ check('and the same reply in fields',
 msg, t, _ = call(211, 'RELEASE_INPUT', {})
 check('RELEASE_INPUT', t and 'none\tnone' in t)
 
+# PRESS is SET_INPUT, RUN_FRAMES, SET_INPUT and RUN_FRAMES in one. The
+# content is paused by here, so the frames it runs are its own.
+a = frame_count(212)
+msg, t, notes = call(213, 'PRESS', {'player': 1, 'control': 'right+a',
+                                    'frames': 4})
+b = frame_count(214)
+check('PRESS answers after its frames: ' + (t or '').strip(),
+      t and t.strip() == 'PRESS 1 right+a 4' and not msg['result']['isError'])
+check('and ran exactly those: %s -> %s' % (a, b), b - a == 4)
+_, t, _ = call(215, 'RELEASE_INPUT', {})
+check('and let the buttons go', t and 'none\tnone' in t)
+# More frames than the reply is waited for is refused outright, rather
+# than failing ten seconds later with the frames already running.
+_, t, _ = call(216, 'RUN_FRAMES', {'count': 36000})
+check('RUN_FRAMES past what a reply waits for is refused now',
+      t and t.startswith('RUN_FRAMES ERROR') and 'at most 600' in t)
+_, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
+check('and a press is bounded the same way',
+      t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)
+_, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
+check('an axis is SET_INPUT\'s, not PRESS\'s',
+      t and t.startswith('PRESS ERROR') and 'axis' in t)
+
 msg, t, _ = call(220, 'GET_LOG', {})
 check('GET_LOG has lines and NEXT', t and '\nNEXT ' in '\n' + t and '[INFO]' in t)
 sc = msg and msg['result'].get('structuredContent')
@@ -146,17 +169,18 @@ check('GET_LOG answers where it got to, and not the page over again',
 send({'jsonrpc': '2.0', 'id': 230, 'method': 'logging/setLevel',
       'params': {'level': 'info'}})
 _, notes = recv(230)
-for k, (name, args) in enumerate([('SET_INPUT', {'player': 1, 'control': 'a', 'value': 1}),
-                                  ('RUN_FRAMES', {'count': 3}),
-                                  ('RELEASE_INPUT', {}),
+for k, (name, args) in enumerate([('PRESS', {'player': 1, 'control': 'a',
+                                              'frames': 3}),
                                   ('RUN_FRAMES', {'count': 3}),
                                   ('GET_STATUS', {})]):
     _, _, n2 = call(240 + k, name, args)
     notes += n2
 logs = [n['params']['data'] for n in notes if n.get('method') == 'notifications/message']
 print('   notifications:', [l[:72] for l in logs[:4]])
-check('the core reads SET_INPUT\'s A (bit 8) on the frames run',
+check('the core reads PRESS\'s A (bit 8) on the frames it runs',
       any('buttons=0x0100' in l for l in logs))
+check('and reads it let go of afterwards',
+      any('buttons=0x0000' in l for l in logs))
 check('log lines arrive as notifications after setLevel',
       any(n.get('method') == 'notifications/message' for n in notes))
 

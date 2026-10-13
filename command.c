@@ -2155,18 +2155,35 @@ bool command_get_log(command_t *cmd, const char *arg)
 }
 #endif
 
-/* RUN_FRAMES in progress: frames still to run, and the reply owed */
+/* RUN_FRAMES or PRESS in progress: the frames still to run, the
+ * buttons PRESS holds until they have, and the reply owed. One at a
+ * time, so one of these: a second replaces the first. */
 static struct
 {
    command_deferred_t deferred;
-   unsigned           asked;
    unsigned           left;
+   const char        *name;      /* whichever command owes the reply */
+   char               reply[256];
+   unsigned           port;      /* PRESS: the player holding, from 0 */
+   uint16_t           held;      /* PRESS: which buttons, by bit */
 } command_run_frames_st;
+
+/* PRESS lets go of what it held, on the last of its frames or on
+ * whatever ended it early. */
+static void command_run_frames_release(void)
+{
+   unsigned i;
+   for (i = 0; i < 16; i++)
+      if (command_run_frames_st.held & (1u << i))
+         input_driver_command_hold(command_run_frames_st.port, i, 0);
+   command_run_frames_st.held = 0;
+}
 
 static void command_run_frames_answer(const char *msg, bool is_error)
 {
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
+   command_run_frames_release();
    command_deferred_send(&command_run_frames_st.deferred, msg, strlen(msg),
          is_error);
 }
@@ -2174,18 +2191,51 @@ static void command_run_frames_answer(const char *msg, bool is_error)
 void command_run_frames_cancel(const char *why)
 {
    char msg[128];
-   snprintf(msg, sizeof(msg), "RUN_FRAMES ERROR %s", why);
+   snprintf(msg, sizeof(msg), "%s ERROR %s",
+         command_run_frames_st.name ? command_run_frames_st.name
+                                    : "RUN_FRAMES", why);
    command_run_frames_answer(msg, true);
 }
 
 /* A frame has run: the reply goes once the last of them has */
 void command_run_frames_tick(void)
 {
-   char msg[64];
    if (--command_run_frames_st.left)
       return;
-   snprintf(msg, sizeof(msg), "RUN_FRAMES %u\n", command_run_frames_st.asked);
-   command_run_frames_answer(msg, false);
+   command_run_frames_answer(command_run_frames_st.reply, false);
+}
+
+/* What a command needs before it can run a frame of content: content
+ * to run, no menu over it, and achievements not in hardcore mode.
+ * False with the reason answered to @cmd. */
+static bool command_frames_ready(command_t *cmd, const char *name)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, name, "no content is running");
+      return false;
+   }
+#ifdef HAVE_MENU
+   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+   {
+      command_reply_error(cmd, name, "the menu is open");
+      return false;
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      command_reply_error(cmd, name,
+            "achievements hardcore mode forbids frame advance");
+      return false;
+   }
+#endif
+   return true;
 }
 
 /* RUN_FRAMES <count>
@@ -2197,9 +2247,6 @@ bool command_run_frames(command_t *cmd, const char *arg)
 {
    unsigned n                  = 0;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-#ifdef HAVE_MENU
-   struct menu_state *menu_st  = menu_state_get_ptr();
-#endif
 
    if (!command_arg_uint(arg, &n) || n < 1 || n > COMMAND_RUN_FRAMES_MAX)
    {
@@ -2207,31 +2254,24 @@ bool command_run_frames(command_t *cmd, const char *arg)
             COMMAND_RUN_FRAMES_MAX);
       return false;
    }
-   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+   /* more than the reply will be waited for: answered now rather than
+    * as a failure once the frames are already running */
+   if (cmd->structured && n > COMMAND_FRAMES_REPLY_MAX)
    {
-      command_reply_error(cmd, "RUN_FRAMES", "no content is running");
+      command_reply_error(cmd, "RUN_FRAMES", "at most %u frames in one "
+            "request; ask again to run more", COMMAND_FRAMES_REPLY_MAX);
       return false;
    }
-#ifdef HAVE_MENU
-   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
-   {
-      command_reply_error(cmd, "RUN_FRAMES", "the menu is open");
+   if (!command_frames_ready(cmd, "RUN_FRAMES"))
       return false;
-   }
-#endif
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-   {
-      command_reply_error(cmd, "RUN_FRAMES",
-            "achievements hardcore mode forbids frame advance");
-      return false;
-   }
-#endif
 
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("replaced by another RUN_FRAMES");
-   command_run_frames_st.asked = n;
-   command_run_frames_st.left  = n;
+   command_run_frames_st.left = n;
+   command_run_frames_st.name = "RUN_FRAMES";
+   command_run_frames_st.held = 0;
+   snprintf(command_run_frames_st.reply,
+         sizeof(command_run_frames_st.reply), "RUN_FRAMES %u\n", n);
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    return true;
@@ -2290,49 +2330,53 @@ static size_t command_input_line(unsigned port, char *s, size_t len)
  * Holds a RetroPad button (1, or 0 to let it go) or a stick axis
  * (-32768 to 32767, 0 to let it go) for the core, over the player's own
  * input, until it is set again or RELEASE_INPUT lets it go. */
-bool command_set_input(command_t *cmd, const char *arg)
+/* "<player> <control>[+<control>...] <number>", the request SET_INPUT
+ * and PRESS both take: the player in @player, the controls in @ids and
+ * how many of them in @count, and the number in @number. False with the
+ * reason answered to @cmd, naming @what - what that command's own
+ * number is - and @name.
+ *
+ * Several controls at once, joined by "+", so a combination a game
+ * wants together - right+a to run and jump - is one request and one
+ * frame rather than two of each. Every one is resolved before the
+ * caller acts on any, so a combination with something wrong in it does
+ * nothing at all. */
+static bool command_input_args(command_t *cmd, const char *name,
+      const char *what, const char *arg, unsigned *player,
+      unsigned *ids, unsigned *count, long *number)
 {
-   char   reply[192];
    char   control[160];
-   unsigned ids[ARRAY_SIZE(command_input_names)];
-   unsigned count                 = 0;
-   unsigned player;
    unsigned i;
-   long   value;
    char  *end                     = NULL;
    char  *tok;
    const char *sp;
 
+   *count = 0;
    while (arg && *arg == ' ')
       arg++;
-   player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
-   if (!end || end == arg || *end != ' ' || player < 1 || player > MAX_USERS)
+   *player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
+   if (!end || end == arg || *end != ' ' || *player < 1 || *player > MAX_USERS)
    {
-      command_reply_error(cmd, "SET_INPUT",
-            "a player from 1 to %u, a control and a value",
-            (unsigned)MAX_USERS);
+      command_reply_error(cmd, name,
+            "a player from 1 to %u, a control and %s",
+            (unsigned)MAX_USERS, what);
       return false;
    }
    while (*end == ' ')
       end++;
    if (!(sp = strchr(end, ' ')) || (size_t)(sp - end) >= sizeof(control))
    {
-      command_reply_error(cmd, "SET_INPUT", "a control and a value");
+      command_reply_error(cmd, name, "a control and %s", what);
       return false;
    }
    memcpy(control, end, (size_t)(sp - end));
    control[sp - end] = '\0';
-   value = strtol(sp + 1, &end, 10);
+   *number = strtol(sp + 1, &end, 10);
    if (end == sp + 1 || *end)
    {
-      command_reply_error(cmd, "SET_INPUT", "a value after the control");
+      command_reply_error(cmd, name, "%s after the control", what);
       return false;
    }
-   /* Several controls at once, joined by "+", so a combination a game
-    * wants together - right+a to run and jump - is one request and one
-    * frame rather than two of each. Every one is resolved and checked
-    * before any is held, so a combination with something wrong in it
-    * holds nothing. */
    for (tok = control; *tok; )
    {
       char *plus = strchr(tok, '+');
@@ -2349,34 +2393,53 @@ bool command_set_input(command_t *cmd, const char *arg)
             break;
       if (i == ARRAY_SIZE(command_input_names))
       {
-         command_reply_error(cmd, "SET_INPUT", "no control named %s", tok);
-         return false;
-      }
-      if (     (i <  16 && value != 0 && value != 1)
-            || (i >= 16 && (value < -32768 || value > 32767)))
-      {
-         command_reply_error(cmd, "SET_INPUT", i < 16
-               ? "%s takes 1 to hold it or 0 to let it go"
-               : "%s takes -32768 to 32767", command_input_names[i]);
+         command_reply_error(cmd, name, "no control named %s", tok);
          return false;
       }
       /* a control named over and over would run past the array */
-      if (count >= ARRAY_SIZE(ids))
+      if (*count >= ARRAY_SIZE(command_input_names))
       {
-         command_reply_error(cmd, "SET_INPUT", "at most %u controls at once",
-               (unsigned)ARRAY_SIZE(ids));
+         command_reply_error(cmd, name, "at most %u controls at once",
+               (unsigned)ARRAY_SIZE(command_input_names));
          return false;
       }
-      ids[count++] = i;
+      ids[(*count)++] = i;
       if (!plus)
          break;
       tok = plus + 1;
    }
-   if (!count)
+   if (!*count)
    {
-      command_reply_error(cmd, "SET_INPUT", "a control, or several "
+      command_reply_error(cmd, name, "a control, or several "
             "joined by \"+\"");
       return false;
+   }
+   return true;
+}
+
+bool command_set_input(command_t *cmd, const char *arg)
+{
+   char   reply[192];
+   unsigned ids[ARRAY_SIZE(command_input_names)];
+   unsigned count                 = 0;
+   unsigned player;
+   unsigned i;
+   long   value;
+
+   if (!command_input_args(cmd, "SET_INPUT", "a value", arg, &player,
+            ids, &count, &value))
+      return false;
+   for (i = 0; i < count; i++)
+   {
+      unsigned id = ids[i];
+      if (     (id <  16 && value != 0 && value != 1)
+            || (id >= 16 && (value < -32768 || value > 32767)))
+      {
+         command_reply_error(cmd, "SET_INPUT", id < 16
+               ? "%s takes 1 to hold it or 0 to let it go"
+               : "%s takes -32768 to 32767", command_input_names[id]);
+         return false;
+      }
    }
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -2392,6 +2455,71 @@ bool command_set_input(command_t *cmd, const char *arg)
 
    cmd->replier(cmd, reply,
          command_input_line(player - 1, reply, sizeof(reply)));
+   return true;
+}
+
+/* PRESS <player> <control>[+<control>...] <frames>
+ *
+ * Holds the buttons, runs that many frames and lets them go, answered
+ * once the last of them has run. One request where a tap took four:
+ * SET_INPUT, RUN_FRAMES, SET_INPUT to release and RUN_FRAMES again.
+ * Axes are SET_INPUT's: they are held at a value, not pressed. */
+bool command_press(command_t *cmd, const char *arg)
+{
+   unsigned ids[ARRAY_SIZE(command_input_names)];
+   unsigned count              = 0;
+   unsigned player;
+   unsigned i;
+   size_t   _len;
+   long     frames;
+   uint16_t mask               = 0;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!command_input_args(cmd, "PRESS", "a frame count", arg, &player,
+            ids, &count, &frames))
+      return false;
+   if (frames < 1 || frames > COMMAND_FRAMES_REPLY_MAX)
+   {
+      command_reply_error(cmd, "PRESS", "a frame count from 1 to %u; a "
+            "longer hold is SET_INPUT with RUN_FRAMES",
+            COMMAND_FRAMES_REPLY_MAX);
+      return false;
+   }
+   for (i = 0; i < count; i++)
+      if (ids[i] >= 16)
+      {
+         command_reply_error(cmd, "PRESS",
+               "%s is an axis, which SET_INPUT holds at a value",
+               command_input_names[ids[i]]);
+         return false;
+      }
+   if (!command_frames_ready(cmd, "PRESS"))
+      return false;
+
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_cancel("replaced by PRESS");
+   for (i = 0; i < count; i++)
+      mask |= (uint16_t)(1u << ids[i]);
+   /* the controls as they were resolved, so "a++b" comes back "a+b" */
+   _len = (size_t)snprintf(command_run_frames_st.reply,
+         sizeof(command_run_frames_st.reply), "PRESS %u ", player);
+   for (i = 0; i < count
+         && _len < sizeof(command_run_frames_st.reply); i++)
+      _len += (size_t)snprintf(command_run_frames_st.reply + _len,
+            sizeof(command_run_frames_st.reply) - _len, "%s%s",
+            i ? "+" : "", command_input_names[ids[i]]);
+   if (_len < sizeof(command_run_frames_st.reply))
+      snprintf(command_run_frames_st.reply + _len,
+            sizeof(command_run_frames_st.reply) - _len, " %u\n",
+            (unsigned)frames);
+   command_run_frames_st.left = (unsigned)frames;
+   command_run_frames_st.name = "PRESS";
+   command_run_frames_st.port = player - 1;
+   command_run_frames_st.held = mask;
+   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   for (i = 0; i < count; i++)
+      input_driver_command_hold(player - 1, ids[i], 1);
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    return true;
 }
 
