@@ -2263,26 +2263,44 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
    return true;
 }
 
-static void planarize_float(float *out, const float *in, size_t frames)
+static void planarize_float(float *out, const float *in,
+      size_t frames, unsigned channels)
 {
    size_t i;
+   unsigned ch;
 
-   for (i = 0; i < frames; i++)
+   if (channels == 2)
    {
-      out[i] = in[2 * i + 0];
-      out[i + frames] = in[2 * i + 1];
+      for (i = 0; i < frames; i++)
+      {
+         out[i] = in[2 * i + 0];
+         out[i + frames] = in[2 * i + 1];
+      }
+      return;
    }
+   for (ch = 0; ch < channels; ch++)
+      for (i = 0; i < frames; i++)
+         out[ch * frames + i] = in[i * channels + ch];
 }
 
-static void planarize_s16(int16_t *out, const int16_t *in, size_t frames)
+static void planarize_s16(int16_t *out, const int16_t *in,
+      size_t frames, unsigned channels)
 {
    size_t i;
+   unsigned ch;
 
-   for (i = 0; i < frames; i++)
+   if (channels == 2)
    {
-      out[i] = in[2 * i + 0];
-      out[i + frames] = in[2 * i + 1];
+      for (i = 0; i < frames; i++)
+      {
+         out[i] = in[2 * i + 0];
+         out[i + frames] = in[2 * i + 1];
+      }
+      return;
    }
+   for (ch = 0; ch < channels; ch++)
+      for (i = 0; i < frames; i++)
+         out[ch * frames + i] = in[i * channels + ch];
 }
 
 static bool planarize_audio(ffmpeg_t *handle)
@@ -2314,11 +2332,11 @@ static bool planarize_audio(ffmpeg_t *handle)
    if (handle->audio.use_float)
       planarize_float((float*)handle->audio.planar_buf,
             (const float*)handle->audio.buffer,
-            handle->audio.frames_in_buffer);
+            handle->audio.frames_in_buffer, handle->params.channels);
    else
       planarize_s16((int16_t*)handle->audio.planar_buf,
             (const int16_t*)handle->audio.buffer,
-            handle->audio.frames_in_buffer);
+            handle->audio.frames_in_buffer, handle->params.channels);
    return true;
 }
 
@@ -2345,21 +2363,31 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
          return false;
       }
 
+      /* Match the tightly packed sample buffers. */
       samples_size          = av_samples_get_buffer_size(
             NULL,
             nb_channels,
             (int)handle->audio.frames_in_buffer,
-            handle->audio.codec->sample_fmt, 0);
+            handle->audio.codec->sample_fmt, 1);
 
       /* The frame wraps the handle's own sample buffer; the encoder
        * copies out of a frame that does not own its data. */
-      avcodec_fill_audio_frame(frame,
+      if (samples_size < 0)
+      {
+         handle->encode_failed = true;
+         return false;
+      }
+      if (avcodec_fill_audio_frame(frame,
             nb_channels,
             handle->audio.codec->sample_fmt,
             handle->audio.is_planar
             ? (uint8_t*)handle->audio.planar_buf :
             handle->audio.buffer,
-            samples_size, 0);
+            samples_size, 1) < 0)
+      {
+         handle->encode_failed = true;
+         return false;
+      }
    }
 
    ret = avcodec_send_frame(handle->audio.codec, dry ? NULL : frame);
@@ -2497,7 +2525,7 @@ static bool ffmpeg_audio_resample(ffmpeg_t *handle,
       struct resampler_data info = {0};
       const unsigned ch = handle->params.channels;
 
-      if (ch <= 2)
+      if (ch == 2)
       {
          info.data_in      = (const float*)aud->data;
          info.data_out     = handle->audio.resample_out;
@@ -2507,8 +2535,7 @@ static bool ffmpeg_audio_resample(ffmpeg_t *handle,
       }
       else
       {
-         /* a wider frame: each pair through its own instance, the
-          * last channel of an odd count paired with itself */
+         /* Each pair has its own instance; duplicate an unpaired channel. */
          const float *in = (const float*)aud->data;
          unsigned npairs = (ch + 1) / 2, i, c0, c1;
          size_t f, out_frames = 0;

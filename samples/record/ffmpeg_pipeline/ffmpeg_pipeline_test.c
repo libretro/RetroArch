@@ -207,9 +207,38 @@ int __wrap_avio_closep(AVIOContext **ctx)
    return fault_mode == 2 ? AVERROR(EIO) : result;
 }
 
+static unsigned planar_channels, planar_samples;
+static bool planar_mismatch, planar_signal_seen;
 int __real_avcodec_send_frame(AVCodecContext *ctx, const AVFrame *frame);
 int __wrap_avcodec_send_frame(AVCodecContext *ctx, const AVFrame *frame)
 {
+   if (planar_channels && frame && ctx->codec_type == AVMEDIA_TYPE_AUDIO)
+   {
+      unsigned ch, i;
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+      unsigned channels = frame->ch_layout.nb_channels;
+#else
+      unsigned channels = frame->channels;
+#endif
+      if (frame->format != AV_SAMPLE_FMT_FLTP || channels != planar_channels)
+         planar_mismatch = true;
+      else for (ch = 0; ch < planar_channels; ch++)
+      {
+         const float *plane = (const float*)frame->extended_data[ch];
+         if (!plane) { planar_mismatch = true; break; }
+         if (ch == 0 && frame->nb_samples > 0
+               && plane[frame->nb_samples - 1] > 1.0f / 128.0f)
+            planar_signal_seen = true;
+         for (i = 0; i < (unsigned)frame->nb_samples; i++)
+         {
+            float expected = ((const float*)frame->extended_data[0])[i] * (ch + 1);
+            float difference = plane[i] - expected;
+            if (difference < -0.00001f || difference > 0.00001f)
+               planar_mismatch = true;
+         }
+      }
+      planar_samples += frame->nb_samples;
+   }
    if (!fault_writes
          && ((frame && fault_mode == 4 && ctx->codec_type == AVMEDIA_TYPE_VIDEO)
             || (frame && fault_mode == 6 && ctx->codec_type == AVMEDIA_TYPE_AUDIO)
@@ -611,6 +640,59 @@ bool __wrap_retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity)
 }
 #endif
 
+static int planar_recording(unsigned channels)
+{
+   struct record_params params = {0};
+   struct record_audio_data aud;
+   struct record_video_data vid;
+   int16_t *pcm = (int16_t*)malloc(800 * channels * sizeof(int16_t));
+   uint32_t *pixels = (uint32_t*)calloc(W * H, sizeof(uint32_t));
+   void *rec;
+   unsigned i, ch, n;
+   bool ok = true;
+   if (!pixels || !pcm) { free(pixels); free(pcm); return 1; }
+   params.fps = FPS;
+   params.samplerate = RATE;
+   params.filename = OUT;
+   params.audio_resampler = "sinc";
+   params.out_dims = params.fb_dims = VIDEO_SCALE_PACK(W, H);
+   params.channels = channels;
+   params.video_record_scale_factor = params.video_stream_scale_factor = 1;
+   params.video_record_threads = 1;
+   params.video_fifo_frames = 8;
+   params.aspect_ratio = (float)W / H;
+   params.preset = RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY;
+   params.pix_fmt = FFEMU_PIX_ARGB8888;
+   planar_channels = channels;
+   planar_samples = 0;
+   planar_mismatch = planar_signal_seen = false;
+   rec = record_ffmpeg.init(&params);
+   if (!rec) { free(pixels); free(pcm); planar_channels = 0; return 1; }
+   for (i = 0; i < 800; i++)
+      for (ch = 0; ch < channels; ch++)
+         pcm[i * channels + ch] = (int16_t)((ch + 1) * 512);
+   aud.data = pcm; aud.frames = 800;
+   vid.data = pixels; vid.pitch = W * sizeof(uint32_t);
+   vid.dims = VIDEO_SCALE_PACK(W, H); vid.is_dupe = false;
+   for (n = 0; n < 20; n++)
+      if (!record_ffmpeg.push_video(rec, &vid) || !record_ffmpeg.push_audio(rec, &aud))
+      { ok = false; break; }
+   if (!record_ffmpeg.finalize(rec)) ok = false;
+   record_ffmpeg.free(rec);
+   if (planar_mismatch || !planar_signal_seen || (planar_samples < 15999 || planar_samples > 16001)) ok = false;
+   planar_channels = 0;
+   free(pixels);
+   free(pcm);
+   remove(OUT);
+   if (!ok)
+   {
+      fprintf(stderr, "AAC planar recording: channels=%u samples=%u mismatch=%d\n", channels, planar_samples, planar_mismatch);
+      return 1;
+   }
+   printf("[pass] AAC recording input: %u channels, %u samples per channel, correct planar proportions\n", channels, planar_samples);
+   return 0;
+}
+
 int record_finalize_test_run(void);
 int record_audio_growth_test_run(void);
 
@@ -633,6 +715,9 @@ int main(void)
          return 1;
    }
    fault_mode = 0;
+   if (planar_recording(1) || planar_recording(2)
+         || planar_recording(3) || planar_recording(6))
+      return 1;
    printf("ALL OK\n");
    return 0;
 }
