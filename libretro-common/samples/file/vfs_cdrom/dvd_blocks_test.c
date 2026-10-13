@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <memalign.h>
 #include <compat/fopen_utf8.h>
 #include <vfs/vfs_implementation.h>
 #if defined(_WIN32)
@@ -266,8 +267,58 @@ static int drive_fclose(FILE *file)
 #define OUT_TRACK "cdrom://drive1-track02.bin"
 #endif
 
+static size_t staging_limit, staging_max;
+static unsigned staging_allocations;
+static void *tracked_alloc(size_t align, size_t bytes)
+{
+   staging_allocations++;
+   if (bytes > staging_max) staging_max = bytes;
+   if (staging_limit && bytes > staging_limit) return NULL;
+   return memalign_alloc(align, bytes);
+}
+#define memalign_alloc tracked_alloc
 #include "../../../cdrom/cdrom.c"
 #include "../../../vfs/vfs_implementation_cdrom.c"
+#undef memalign_alloc
+
+static void test_bounded_staging(unsigned char *buf)
+{
+   libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
+         BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   unsigned before, i;
+   unsigned char command[12] = {0xb9};
+   CHECK(file != NULL);
+   if (!file) return;
+   staging_limit = 1; staging_max = 0; staging_allocations = 0;
+   before = calls;
+   CHECK(cdrom_send_command(file, DIRECTION_IN, buf, (size_t)INT_MAX + 2352,
+            command, 12, 0) == 1);
+   CHECK(calls == before && staging_max == 2352 && staging_allocations == 1);
+   staging_limit = 2352; staging_max = 0; staging_allocations = 0;
+   before = calls;
+   CHECK(cdrom_send_command(file, DIRECTION_OUT, buf, 2352, command, 12, 0) == 1);
+   CHECK(cdrom_send_command(file, DIRECTION_IN, buf, 0, command, 12, 0) == 0);
+   command[0] = 0x55;
+   CHECK(cdrom_send_command(file, DIRECTION_OUT, buf, SIZE_MAX, command, 12, 1) == 1);
+   CHECK(calls == before && staging_allocations == 0);
+   CHECK(retro_vfs_file_read_impl(file, buf, 2352) == 2352 && staging_allocations == 0);
+   CHECK(retro_vfs_file_seek_impl(file, 511, RETRO_VFS_SEEK_POSITION_START) == 0);
+   CHECK(retro_vfs_file_read_impl(file, buf + 1, 4704) == 4704);
+   CHECK(staging_max == 2352 && staging_allocations == 1);
+   for (i = 0; i < 4704; i++)
+      CHECK(buf[i + 1] == (unsigned char)((i + 511) / 2352));
+   CHECK(retro_vfs_file_seek_impl(file, 0, RETRO_VFS_SEEK_POSITION_START) == 0);
+   before = calls; fail_at = (int)calls + 2;
+   CHECK(retro_vfs_file_read_impl(file, buf + 1, 7000) == -1);
+   CHECK(calls == before + 2 && retro_vfs_file_tell_impl(file) == 0);
+   CHECK(!file->cdrom->last_frame_valid);
+   fail_at = 0;
+   CHECK(retro_vfs_file_read_impl(file, buf + 1, 7000) == 7000);
+   for (i = 0; i < 7000; i++) CHECK(buf[i + 1] == (unsigned char)(i / 2352));
+   CHECK(staging_max == 2352 && staging_allocations == 3);
+   staging_limit = 0;
+   CHECK(retro_vfs_file_close_impl(file) == 0);
+}
 
 static void test_media_change(unsigned char *buf)
 {
@@ -578,6 +629,7 @@ int main(void)
    CHECK(retro_vfs_file_open_impl("cdrom://" IMAGE_PATH,
          RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
    test_handle_geometry(buf);
+   test_bounded_staging(buf);
    {
       libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
             BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);

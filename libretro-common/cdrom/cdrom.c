@@ -789,11 +789,14 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
    unsigned char retries_left  = CDROM_MAX_RETRIES;
    size_t padded_req_bytes;
+   size_t allocation_bytes;
    size_t copied_bytes         = 0;
    bool read_cd                = false;
    bool direct_read            = false;
 
    if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
+      return 1;
+   if (len > SIZE_MAX - skip)
       return 1;
 
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
@@ -801,13 +804,15 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       size_t count;
       if (stream && stream->cdrom && stream->cdrom->media_changed)
          return 1;
-      if (skip >= 2352 || len > SIZE_MAX - skip)
+      if (dir != DIRECTION_IN || skip >= 2352)
          return 1;
+      if (!len)
+         return 0;
       count = (len + skip) / 2352 + ((len + skip) % 2352 != 0);
       if (count > INT_MAX || count > SIZE_MAX / 2352)
          return 1;
       frames = (int)count;
-      padded_req_bytes = 2352 * frames;
+      padded_req_bytes = (size_t)2352 * count;
       read_cd = true;
       /* these will be incremented below */
       cmd[6] = cmd[3];
@@ -824,15 +829,16 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
     * later sectors in a larger buffer would lose page alignment. */
    direct_read = read_cd && dir == DIRECTION_IN && s && skip == 0
       && len == 2352 && ((uintptr_t)s & 4095) == 0;
+   allocation_bytes = read_cd ? 2352 : padded_req_bytes;
    xfer_buf     = direct_read ? (unsigned char*)s
-      : (unsigned char*)memalign_alloc(4096, padded_req_bytes);
+      : (unsigned char*)memalign_alloc(4096, allocation_bytes);
    xfer_buf_pos = xfer_buf;
 
    if (!xfer_buf)
       return 1;
 
    if (!direct_read)
-      memset(xfer_buf, 0, padded_req_bytes);
+      memset(xfer_buf, 0, allocation_bytes);
    if (dir == DIRECTION_OUT && s && len)
       memcpy(xfer_buf + skip, s, len);
 #ifdef CDROM_DEBUG
@@ -871,6 +877,10 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
          }
 
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
+         /* Reuse one aligned sector instead of retaining every received
+          * sector. Preserve the old zero-filled fallback on each command. */
+         if (i > 0 && !direct_read)
+            memset(xfer_buf_pos, 0, 2352);
 
          if (     stream->cdrom
                && stream->cdrom->last_frame_valid
@@ -956,7 +966,8 @@ retry:
             printf("Frame %d, adding %" PRId64 " to buf_pos, is now %" PRId64 ". skip is %" PRId64 "\n", i, request_len, (xfer_buf_pos + request_len) - xfer_buf, skip);
             fflush(stdout);
 #endif
-            xfer_buf_pos += request_len;
+            if (!read_cd)
+               xfer_buf_pos += request_len;
          }
       }
       else
