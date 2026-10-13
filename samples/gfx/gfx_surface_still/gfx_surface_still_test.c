@@ -325,7 +325,7 @@ static void st_retired_imports(void)
       VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DROPPED,
       VIDEO_TEXTURE_UPDATE_DONE };
    unsigned i;
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < 9; i++)
    {
       video_frame_import_t frame = {0};
       gfx_surface_t *surface = gfx_surface_new_import(VIDEO_SCALE_PACK(4, 4),
@@ -340,7 +340,7 @@ static void st_retired_imports(void)
       frame.owner = &st_abandoned;
       frame.abandon = st_abandon_import;
       st_abandoned = st_released = 0;
-      if (i == 1)
+      if (i % 3 == 1)
       {
          st_async = 0;
          st_import_result = VIDEO_TEXTURE_UPDATE_DONE;
@@ -348,15 +348,24 @@ static void st_retired_imports(void)
                "initial import failed");
       }
       st_async = 1;
-      st_import_result = results[i];
+      st_import_result = results[i % 3];
       CHECK(gfx_surface_submit_import(surface, &frame) == GFX_SURFACE_SUBMIT_QUEUED,
             "retired import was not queued");
+      if (i >= 3)
+         CHECK(gfx_surface_submit_path(surface, "4.png", false),
+               "retired surface decode was not queued");
       gfx_surface_free(surface);
       CHECK(st_abandoned == 0, "import released before wrapper completion");
       memset(&frame, 0, sizeof(frame));
+      if (i >= 6)
+         st_decode_done(4);
       st_flush();
-      CHECK(st_abandoned == (i == 2 ? 0 : 1),
+      CHECK(st_abandoned == (i % 3 == 2 ? 0 : 1),
             "retired import result %u abandoned %u times", i, st_abandoned);
+      if (i >= 3 && i < 6)
+         st_decode_done(4);
+      CHECK(st_abandoned == (i % 3 == 2 ? 0 : 1),
+            "decode completion changed import release count");
       CHECK(st_released == 0, "retired surface called its owner");
       CHECK(st_live == 0, "%d live textures after retired import", st_live);
    }

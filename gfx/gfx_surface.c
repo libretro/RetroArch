@@ -478,12 +478,12 @@ static void gfx_surface_done(void *user, uintptr_t handle)
       if (s->next_img)
          gfx_surface_image_free(s->next_img);
       s->next_img = NULL;
-      /* A decode still out answers to this surface: it frees it */
-      if (s->decoding)
-         return;
       if (s->imported && s->dropped && s->import.abandon)
          s->import.abandon(s->import.owner, s->import.done,
                s->import.done_value);
+      /* A decode still out answers to this surface: it frees it */
+      if (s->decoding)
+         return;
       if (s->handle)
          video_driver_texture_unload(&s->handle);
       free(s->rgb);
