@@ -11,6 +11,7 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 list=${1:-$root/tools/tsan-samples.list}
 fail=0
 built=""
+jobs=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 
 # The Wayland suites run an in-process compositor, whose socket goes in
 # XDG_RUNTIME_DIR.
@@ -26,7 +27,7 @@ while read -r dir bin args; do
       *" $dir "*) ;;
       *)
          make -C "$dir" clean </dev/null >/dev/null 2>&1
-         if ! out=$(make -C "$dir" SANITIZER=thread </dev/null 2>&1); then
+         if ! out=$(make -C "$dir" -j"$jobs" SANITIZER=thread </dev/null 2>&1); then
             echo "FAIL  $dir: build"
             printf '%s\n' "$out" | grep -E 'error' | head -5 | sed 's/^/      /'
             fail=1
