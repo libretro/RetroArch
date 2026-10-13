@@ -84,6 +84,14 @@ typedef struct rdvd_button_color
    uint8_t alpha[4];
 } rdvd_button_color_t;
 
+enum rdvd_button_direction
+{
+   RDVD_BUTTON_UP = 0,
+   RDVD_BUTTON_DOWN,
+   RDVD_BUTTON_LEFT,
+   RDVD_BUTTON_RIGHT
+};
+
 /* Parses DVD-Video private_stream_1/2 payloads after the PES header.
  * No allocation or copying. The input must remain valid while the view is
  * used; a demuxer-owned view expires with its originating PES packet.
@@ -117,6 +125,18 @@ bool rdvd_button_read(const rdvd_packet_t *packet, unsigned group,
  * A button color of zero has no table entry. Failure clears the output. */
 bool rdvd_button_color_read(const rdvd_packet_t *packet, unsigned color,
       bool activated, rdvd_button_color_t *out);
+
+/* Resolves a group-local neighbor and validates its button record. A zero
+ * neighbor keeps the current button. No selection state or VM is changed.
+ * Failure clears *out_number; group and number follow rdvd_button_read. */
+bool rdvd_button_neighbor(const rdvd_packet_t *packet, unsigned group,
+      unsigned number, enum rdvd_button_direction direction, unsigned *out_number);
+
+/* Finds the lowest-numbered button containing DVD-image coordinates.
+ * Rectangles include both endpoints. No match or an invalid scanned record
+ * returns false and clears *out_number. Frontends must map their viewport. */
+bool rdvd_button_find(const rdvd_packet_t *packet, unsigned group,
+      unsigned x, unsigned y, unsigned *out_number);
 
 RETRO_END_DECLS
 #endif

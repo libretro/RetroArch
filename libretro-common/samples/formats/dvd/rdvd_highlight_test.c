@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <formats/rdvd_packet.h>
+#include <formats/rmpeg1_ps.h>
 
 static uint8_t pci[RDVD_PCI_BYTES - 1];
 static unsigned failures;
@@ -162,11 +163,86 @@ static void test_colors(void)
    CHECK(!rdvd_button_color_read(&p, 1, false, NULL));
 }
 
+static void test_input_lookup(void)
+{
+   rdvd_packet_t p = fixture(1, 4);
+   unsigned result, direction;
+   fill_buttons();
+   for (direction = 0; direction < 4; direction++)
+   {
+      CHECK(rdvd_button_neighbor(&p, 0, 1, (enum rdvd_button_direction)direction, &result));
+      CHECK(result == direction + 1);
+   }
+   pci[148] = 0;
+   CHECK(rdvd_button_neighbor(&p, 0, 1, RDVD_BUTTON_UP, &result) && result == 1);
+   pci[142 + 18 + 2] = 1; /* The referenced button has an inverted rectangle. */
+   CHECK(!rdvd_button_neighbor(&p, 0, 1, RDVD_BUTTON_DOWN, &result) && !result);
+   p = fixture(1, 36); fill_buttons(); pci[148] = 36;
+   CHECK(rdvd_button_neighbor(&p, 0, 1, RDVD_BUTTON_UP, &result) && result == 36);
+   CHECK(!rdvd_button_neighbor(&p, 0, 1, (enum rdvd_button_direction)-1, &result));
+   CHECK(!rdvd_button_neighbor(&p, 0, 1, (enum rdvd_button_direction)4, &result));
+   CHECK(!rdvd_button_neighbor(&p, 1, 1, RDVD_BUTTON_UP, &result));
+   CHECK(!rdvd_button_neighbor(&p, 0, 0, RDVD_BUTTON_UP, &result));
+   CHECK(!rdvd_button_neighbor(&p, 0, 1, RDVD_BUTTON_UP, NULL));
+   p = fixture(2, 18); fill_buttons();
+   pci[142] = 0; pci[143] = 0; pci[144] = 50;
+   pci[145] = 0; pci[146] = 0; pci[147] = 50;
+   CHECK(rdvd_button_find(&p, 0, 0, 0, &result) && result == 1);
+   CHECK(rdvd_button_find(&p, 0, 100, 100, &result) && result == 2);
+   CHECK(rdvd_button_find(&p, 1, 100, 100, &result) && result == 1);
+   CHECK(rdvd_button_find(&p, 1, 85, 86, &result) && result == 1);
+   CHECK(rdvd_button_find(&p, 1, 170, 187, &result) && result == 1);
+   CHECK(!rdvd_button_find(&p, 1, 171, 187, &result) && !result);
+   CHECK(!rdvd_button_find(&p, 1, 1024, 0, &result));
+   CHECK(!rdvd_button_find(&p, 1, 0, (unsigned)-1, &result));
+   CHECK(!rdvd_button_find(&p, 2, 100, 100, &result));
+   CHECK(!rdvd_button_find(NULL, 0, 100, 100, &result));
+   CHECK(!rdvd_button_find(&p, 0, 100, 100, NULL));
+   pci[144] = 1; pci[143] = 0x50;
+   CHECK(!rdvd_button_find(&p, 0, 100, 100, &result) && !result);
+}
+
+static void test_pes_highlight(void)
+{
+   static uint8_t input[6 + RDVD_PCI_BYTES];
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rmpeg1_ps_packet_t pes;
+   rdvd_packet_t p;
+   rdvd_button_t b;
+   unsigned split;
+   CHECK(ps != NULL);
+   if (!ps) return;
+   p = fixture(3, 12);
+   fill_buttons();
+   memset(input, 0, sizeof(input));
+   input[2] = 1; input[3] = 0xbf;
+   input[4] = 3; input[5] = 0xd4;
+   memcpy(input + 7, p.data, p.size);
+   CHECK(rmpeg1_ps_borrow(ps, input, sizeof(input)) == sizeof(input));
+   CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+   CHECK(rdvd_packet_read(pes.stream_id, pes.data, pes.size, &p));
+   CHECK(rdvd_button_read(&p, 2, 12, &b) && b.command == input + 789);
+   for (split = 1; split < sizeof(input); split++)
+   {
+      rmpeg1_ps_reset(ps);
+      CHECK(rmpeg1_ps_borrow(ps, input, split) == split);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 0);
+      CHECK(rmpeg1_ps_borrow(ps, input + split, sizeof(input) - split) == sizeof(input) - split);
+      CHECK(rmpeg1_ps_next(ps, &pes) == 1);
+      CHECK(rdvd_packet_read(pes.stream_id, pes.data, pes.size, &p));
+      CHECK(rdvd_button_read(&p, 2, 12, &b));
+      CHECK(b.command[0] == 35 && b.command[7] == 42);
+   }
+   rmpeg1_ps_free(ps);
+}
+
 int main(void)
 {
    test_highlight();
    test_buttons();
    test_colors();
+   test_input_lookup();
+   test_pes_highlight();
    printf("DVD highlight tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

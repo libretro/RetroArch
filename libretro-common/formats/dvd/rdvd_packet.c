@@ -200,3 +200,54 @@ bool rdvd_button_color_read(const rdvd_packet_t *packet, unsigned color,
    }
    return true;
 }
+
+bool rdvd_button_neighbor(const rdvd_packet_t *packet, unsigned group,
+      unsigned number, enum rdvd_button_direction direction, unsigned *out_number)
+{
+   rdvd_button_t b;
+   unsigned target;
+   if (!out_number)
+      return false;
+   *out_number = 0;
+   if (!rdvd_button_read(packet, group, number, &b))
+      return false;
+   switch (direction)
+   {
+      case RDVD_BUTTON_UP:    target = b.up; break;
+      case RDVD_BUTTON_DOWN:  target = b.down; break;
+      case RDVD_BUTTON_LEFT:  target = b.left; break;
+      case RDVD_BUTTON_RIGHT: target = b.right; break;
+      default: return false;
+   }
+   if (!target)
+      target = number;
+   if (!rdvd_button_read(packet, group, target, &b))
+      return false;
+   *out_number = target;
+   return true;
+}
+
+bool rdvd_button_find(const rdvd_packet_t *packet, unsigned group,
+      unsigned x, unsigned y, unsigned *out_number)
+{
+   rdvd_highlight_t h;
+   rdvd_button_t b;
+   unsigned number;
+   if (!out_number)
+      return false;
+   *out_number = 0;
+   if (x > 1023 || y > 1023 || !rdvd_highlight_read(packet, &h)
+         || !h.status || group >= h.groups)
+      return false;
+   for (number = 1; number <= h.buttons; number++)
+   {
+      if (!rdvd_button_read(packet, group, number, &b))
+         return false;
+      if (x >= b.x_start && x <= b.x_end && y >= b.y_start && y <= b.y_end)
+      {
+         *out_number = number;
+         return true;
+      }
+   }
+   return false;
+}

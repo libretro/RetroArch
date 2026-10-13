@@ -325,7 +325,10 @@ static void test_vob(const char *path)
          if (dvd.kind == RDVD_PACKET_AC3) audio++;
          if (dvd.kind == RDVD_PACKET_PCI || dvd.kind == RDVD_PACKET_DSI)
          {
+            rdvd_highlight_t highlight;
             CHECK(dvd.data == pes.data + 1 && rdvd_nav_read(&dvd, &nav));
+            if (dvd.kind == RDVD_PACKET_PCI)
+               CHECK(rdvd_highlight_read(&dvd, &highlight));
             if (dvd.kind == RDVD_PACKET_PCI) pci++;
             else dsi++;
          }

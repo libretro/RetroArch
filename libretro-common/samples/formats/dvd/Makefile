@@ -14,8 +14,8 @@ all: $(TARGET) $(TARGET_TEST)
 $(TARGET): $(SOURCES) ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
 
-$(TARGET_TEST): rdvd_highlight_test.c ../../../formats/dvd/rdvd_packet.c ../../../include/formats/rdvd_packet.h
-	$(CC) $(CFLAGS) rdvd_highlight_test.c ../../../formats/dvd/rdvd_packet.c -o $@ $(LDFLAGS)
+$(TARGET_TEST): rdvd_highlight_test.c $(filter-out rdvd_packet_test.c,$(SOURCES)) ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
+	$(CC) $(CFLAGS) rdvd_highlight_test.c $(filter-out rdvd_packet_test.c,$(SOURCES)) -o $@ $(LDFLAGS)
 
 check: $(TARGET) $(TARGET_TEST)
 	./$(TARGET)
