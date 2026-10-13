@@ -1490,12 +1490,26 @@ jobs:
              flags="-mfpu=neon"
              asm=1
           fi
-          for d in sinc_dispatch sinc_hq sinc_fastforward sinc_sibling; do
+          tests="sinc_dispatch sinc_hq sinc_fastforward sinc_sibling"
+          for d in $tests; do
              make -C $d clean
              CFLAGS="$flags" make -C $d CC="${{ matrix.cc }}" NEON_ASM=$asm
-             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test
+          done
+          # Each test is one qemu-user process on one CPU: run them all
+          # at once, and print each one's output once it is done.
+          declare -A pid
+          for d in $tests; do
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test \
+                > "$RUNNER_TEMP/$d.log" 2>&1 &
+             pid[$d]=$!
+          done
+          fail=0
+          for d in $tests; do
+             wait "${pid[$d]}" || { echo "FAIL $d"; fail=1; }
+             cat "$RUNNER_TEMP/$d.log"
              make -C $d clean
           done
+          exit $fail
 
       - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
         shell: bash
