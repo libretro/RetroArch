@@ -10,7 +10,7 @@
 #include <libtransistor/nx.h>
 #endif
 
-#include "../configuration.h"
+#include "../../configuration.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -30,7 +30,7 @@ static HidVibrationValue vibration_values[DEFAULT_MAX_PADS][2];
 static HidVibrationValue vibration_stop;
 static int previous_handheld                         = -1;
 /* 1 = handheld, 0 = docked, -1 = first use */
-static uint previous_split_joycon_setting[MAX_USERS] = { 0 };
+static unsigned previous_split_joycon_setting[MAX_USERS] = { 0 };
 #endif
 
 static const char *switch_joypad_name(unsigned pad)
@@ -337,6 +337,9 @@ static void switch_joypad_poll(void)
 
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = -stick_left_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = -stick_left_state.x;
+            /* A lone Joy-Con has one stick. */
+            analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+            analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
          }
          else if (hidGetNpadDeviceType((HidNpadIdType)i) & HidDeviceTypeBits_JoyRight)
          {
@@ -360,6 +363,9 @@ static void switch_joypad_poll(void)
             /* Throw JoyRight state into retro left analog */
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = stick_right_state.y;
             analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = stick_right_state.x;
+            /* A lone Joy-Con has one stick. */
+            analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+            analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
          }
          else /* Handle other types via Default Input Handling */
             goto lblDefaultInputHandling;

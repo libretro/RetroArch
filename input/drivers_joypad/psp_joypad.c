@@ -302,10 +302,8 @@ static void psp_joypad_poll(void)
          analog_state[i][1][0] = analog_state[i][1][1] = 
          analog_state[i][2][0] = analog_state[i][2][1] = 0;
 
-#if defined(SN_TARGET_PSP2) || defined(VITA)
       if (ret < 0)
          continue;
-#endif
 #if defined(VITA)
       /* The system keyboard (psp_input.c) is modal and reads the pad
        * itself; the buttons that drive it must not also drive the

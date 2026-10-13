@@ -32,9 +32,7 @@
 
 #ifdef GEKKO
 #define WPADInit WPAD_Init
-#define WPADDisconnect WPAD_Disconnect
 #define WPADProbe WPAD_Probe
-#define WPADSetDataFormat WPAD_SetDataFormat
 #endif
 
 #define WPAD_EXP_SICKSAXIS     252
@@ -119,7 +117,7 @@ enum
    GX_NUNCHUK_LEFT         = 43,
    GX_NUNCHUK_RIGHT        = 44,
 #endif
-   GX_QUIT_KEY             = 62,
+   GX_QUIT_KEY             = 62
 };
 
 #define GC_JOYSTICK_THRESHOLD (48 * 256)
@@ -139,7 +137,7 @@ static void power_callback(void) { g_quit = true; }
 static void reset_cb(u32 a, void *b) { (void)a; (void)b; g_menu = true; }
 
 #ifdef HW_RVL
-static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
+static INLINE void gx_mouse_info(uint32_t joybutton, unsigned port)
 {
    uint8_t i;
    ir_t ir;
@@ -469,6 +467,12 @@ static void gx_joypad_poll(void)
       uint32_t down = 0, ptype = WPAD_EXP_NOCONTROLLER;
       uint64_t *state_cur = &pad_state[port];
 
+      /* Centred unless the pad read below has the stick. */
+      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
+      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
+      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
+
       if (gcpad & (1 << port))
       {
          int16_t ls_x, ls_y, rs_x, rs_y;
@@ -638,22 +642,7 @@ static void *gx_joypad_init(void *data)
    return (void*)-1;
 }
 
-static void gx_joypad_destroy(void)
-{
-#ifdef HW_RVL
-#if 0
-   int i;
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-   {
-      /* Commenting this out fixes the Wii
-       * remote not reconnecting after
-       * core load, exit, etc. */
-      WPAD_Flush(i);
-      WPADDisconnect(i);
-   }
-#endif
-#endif
-}
+static void gx_joypad_destroy(void) { }
 
 input_device_driver_t gx_joypad = {
    gx_joypad_init,

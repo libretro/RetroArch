@@ -33,6 +33,7 @@
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t  analog_state[DEFAULT_MAX_PADS][2][2];
 static uint64_t pads_connected[DEFAULT_MAX_PADS];
+static uint8_t  rumble_motor[DEFAULT_MAX_PADS][2];
 #if 0
 sensor_t accelerometer_state[DEFAULT_MAX_PADS];
 #endif
@@ -182,6 +183,8 @@ static void ps3_joypad_poll(void)
          {
             input_autoconfigure_disconnect(port, ps3_joypad.ident);
             pads_connected[port] = 0;
+            rumble_motor[port][0] = 0;
+            rumble_motor[port][1] = 0;
          }
          else if ((pad_info.port_status[port] & CELL_PAD_STATUS_CONNECTED) > 0 )
          {
@@ -192,9 +195,12 @@ static void ps3_joypad_poll(void)
 
       if (pads_connected[port] == 0)
       {
-         /* Clear the cached buttons, otherwise whatever was held
-          * at disconnect stays readable until the pad returns. */
+         /* Nothing held and sticks centred until the pad returns. */
          pad_state[port] = 0;
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = 0;
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
          continue;
       }
 
@@ -237,15 +243,10 @@ static void ps3_joypad_poll(void)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         uint8_t lsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
-         uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
-         uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
-         uint8_t rsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(lsx);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(lsy);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(rsx);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(rsy);
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
+         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
 
 #if 0
          accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
@@ -269,24 +270,30 @@ static bool ps3_joypad_query_pad(unsigned pad)
 static bool ps3_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+   int i;
    CellPadActParam params;
+
+   if (pad >= DEFAULT_MAX_PADS)
+      return false;
 
    switch (effect)
    {
       case RETRO_RUMBLE_WEAK:
-         if (strength > 1)
-            strength = 1;
-         params.motor[0] = strength;
+         /* The small motor is on or off. */
+         rumble_motor[pad][0] = strength ? 1 : 0;
          break;
       case RETRO_RUMBLE_STRONG:
-         if (strength > 255)
-            strength = 255;
-         params.motor[1] = strength;
+         rumble_motor[pad][1] = (uint8_t)(strength >> 8);
          break;
-      case RETRO_RUMBLE_DUMMY:
       default:
-	 break;
+         return false;
    }
+
+   /* Both motors are set at once: the other keeps its last value. */
+   params.motor[0] = rumble_motor[pad][0];
+   params.motor[1] = rumble_motor[pad][1];
+   for (i = 0; i < (int)sizeof(params.reserved); i++)
+      params.reserved[i] = 0;
 
    cellPadSetActDirect(pad, &params);
 

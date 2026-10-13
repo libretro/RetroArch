@@ -75,7 +75,7 @@ static const char *ps4_joypad_name(unsigned pad)
 
 static void *ps4_joypad_init(void *data)
 {
-   int result, handle;
+   int result;
    SceUserServiceLoginUserIdList user_id_list;
 
    num_players = 0;
@@ -235,7 +235,6 @@ static void ps4_joypad_poll(void)
 {
    unsigned player;
    ScePadData buttons;
-   unsigned players_count = num_players;
 
    for (player = 0; player < SCE_USER_SERVICE_MAX_LOGIN_USERS; player++)
    {
@@ -248,17 +247,7 @@ static void ps4_joypad_poll(void)
 
       ret     = scePadReadState(ds_joypad_states[player].handle[0],&buttons);
 
-      if (!~buttons.connected)
-      {
-         ds_joypad_states[player].connected = false;
-         /* ps4_joypad_button() reads pad_state[] without checking
-          * the connected flag, so it must be cleared here or the
-          * buttons held at disconnect stay readable indefinitely. */
-         pad_state[i] = 0;
-         continue;
-      }
-
-      if (ret == 0)
+      if (ret == 0 && buttons.connected)
       {
          int32_t state_tmp = buttons.buttons;
          pad_state[i] = 0;
@@ -285,9 +274,14 @@ static void ps4_joypad_poll(void)
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ry);
       }
       else
-         /* Read failed: drop the cached buttons rather than
-          * leaving the previous frame's state latched. */
+      {
+         /* Unread or not reporting: the handle stays for when it does. */
          pad_state[i] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
+      }
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)

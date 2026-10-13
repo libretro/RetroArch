@@ -203,6 +203,12 @@ static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
                0, 0, 0, 0, 0, 0);
          break;
+      default:
+         /* A device this driver does not read holds nothing. */
+         joypad_state.kpad.wiimotes[channel].button_state = 0;
+         pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
+               0, 0, 0, 0, 0, 0);
+         break;
    }
 }
 

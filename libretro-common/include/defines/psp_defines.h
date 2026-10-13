@@ -141,7 +141,8 @@ int sceClibPrintf ( const char * format, ... );
 #define DEFAULT_SAMPLING_MODE (PSP_CTRL_MODE_ANALOG)
 
 #define CtrlSetSamplingMode(mode) sceCtrlSetSamplingMode(mode)
-#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(pad_data, bufs)
+/* The PSP has one pad: the port is evaluated and not passed. */
+#define CtrlPeekBufferPositive(port, pad_data, bufs) ((void)(port), sceCtrlPeekBufferPositive(pad_data, bufs))
 #endif
 
 #endif
