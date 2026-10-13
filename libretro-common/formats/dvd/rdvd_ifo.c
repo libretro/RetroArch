@@ -635,3 +635,50 @@ bool rdvd_cell_address_read(const rdvd_cell_table_t *table, unsigned index,
    out->last_sector = rdvd_ifo_u32(record + 8);
    return true;
 }
+
+
+bool rdvd_vobu_map_read(const uint8_t *data, size_t size, rdvd_vobu_map_t *out)
+{
+   uint32_t last, previous = 0;
+   size_t total;
+   unsigned count, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!data || size < 4) return false;
+   last = rdvd_ifo_u32(data);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   if (total < 4 || total > size || (total - 4) % 4) return false;
+   count = (unsigned)((total - 4) / 4);
+   for (i = 0; i < count; i++)
+   {
+      uint32_t sector = rdvd_ifo_u32(data + 4 + (size_t)i * 4);
+      if (i && sector <= previous) return false;
+      previous = sector;
+   }
+   out->data = data; out->size = total; out->entries = count;
+   return true;
+}
+
+bool rdvd_vobu_find(const rdvd_vobu_map_t *map, uint32_t target,
+      uint32_t *sector, unsigned *index)
+{
+   rdvd_vobu_map_t validated;
+   unsigned low = 0, high;
+   if (sector) *sector = 0;
+   if (index) *index = 0;
+   if (!sector || !index || !map
+         || !rdvd_vobu_map_read(map->data, map->size, &validated)) return false;
+   high = validated.entries;
+   while (low < high)
+   {
+      unsigned middle = low + (high - low) / 2;
+      uint32_t value = rdvd_ifo_u32(validated.data + 4 + (size_t)middle * 4);
+      if (value <= target) low = middle + 1;
+      else high = middle;
+   }
+   if (!low) return false;
+   *index = low - 1;
+   *sector = rdvd_ifo_u32(validated.data + 4 + (size_t)*index * 4);
+   return true;
+}

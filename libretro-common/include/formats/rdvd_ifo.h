@@ -244,5 +244,19 @@ bool rdvd_cell_table_read(const uint8_t *data, size_t size,
 /* Zero-based index. Revalidates the borrowed table; failure clears out. */
 bool rdvd_cell_address_read(const rdvd_cell_table_t *table, unsigned index,
       rdvd_cell_address_t *out);
+typedef struct rdvd_vobu_map
+{
+   const uint8_t *data;
+   size_t size;
+   unsigned entries;
+} rdvd_vobu_map_t;
+
+/* Reads a borrowed VOBU_ADMAP with strictly increasing sector addresses. */
+bool rdvd_vobu_map_read(const uint8_t *data, size_t size, rdvd_vobu_map_t *out);
+/* Finds the last VOBU start at/before target. Revalidates the map, then
+ * searches its ordered entries. Caller checks the result's cell/domain.
+ * Failure clears sector/index; success may return sector zero. */
+bool rdvd_vobu_find(const rdvd_vobu_map_t *map, uint32_t target,
+      uint32_t *sector, unsigned *index);
 RETRO_END_DECLS
 #endif

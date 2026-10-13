@@ -101,3 +101,10 @@ payloads. Cell range lookup checks inclusive PGC sector bounds against the
 whole title source using 64-bit arithmetic. Callers supply the matching VTS
 title domain, own file handles and read each span into consumer storage.
 Menu VOBs, angle/interleave policy and physical-disc routing are separate.
+
+IFO table selection distinguishes menu/title C_ADT and VOBU_ADMAP domains.
+Borrowed cell-address readers validate record IDs and inclusive bounds.
+VOBU maps validate strict sector ordering; floor lookup returns the last
+start at or before a target, including valid sector zero. Callers check
+cell/domain and source geometry before I/O. Lookup revalidates the complete
+map before its binary search; no latency or playable-seeking claim is made.
