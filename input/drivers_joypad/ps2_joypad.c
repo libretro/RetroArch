@@ -185,70 +185,63 @@ static void ps2_joypad_poll(void)
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      int ps2_slot = i >> 1;
-      int ps2_port = i & 0x1;
+      uint64_t bits = 0;
+      int16_t  lx   = 0;
+      int16_t  ly   = 0;
+      int16_t  rx   = 0;
+      int16_t  ry   = 0;
+      int ps2_slot  = i >> 1;
+      int ps2_port  = i & 0x1;
+      int state     = padGetState(ps2_port, ps2_slot);
 
-      int state = padGetState(ps2_port, ps2_slot);
-      /* Note: this must be '&&'. Chaining '!=' with '||' is always
-       * true, since no single value can equal all three constants
-       * at once, so the guard previously admitted every state
-       * including PAD_STATE_DISCONN. */
       if (     state != PAD_STATE_DISCONN
             && state != PAD_STATE_EXECCMD
-            && state != PAD_STATE_ERROR)
+            && state != PAD_STATE_ERROR
+            && padRead(ps2_port, ps2_slot, &buttons) != 0)
       {
-         int ret = padRead(ps2_port, ps2_slot, &buttons); /* port, slot, buttons */
-         if (ret != 0)
+         int32_t state_tmp = 0xffff ^ buttons.btns;
+         int     type      = buttons.mode >> 4;
+
+         bits |= (state_tmp & PAD_LEFT)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0;
+         bits |= (state_tmp & PAD_DOWN)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0;
+         bits |= (state_tmp & PAD_RIGHT)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT)  : 0;
+         bits |= (state_tmp & PAD_UP)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP)     : 0;
+         bits |= (state_tmp & PAD_START)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
+         bits |= (state_tmp & PAD_SELECT)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+         bits |= (state_tmp & PAD_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X)      : 0;
+         bits |= (state_tmp & PAD_SQUARE)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y)      : 0;
+         bits |= (state_tmp & PAD_CROSS)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B)      : 0;
+         bits |= (state_tmp & PAD_CIRCLE)   ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A)      : 0;
+         bits |= (state_tmp & PAD_R1)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R)      : 0;
+         bits |= (state_tmp & PAD_L1)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L)      : 0;
+         bits |= (state_tmp & PAD_R2)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2)     : 0;
+         bits |= (state_tmp & PAD_L2)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2)     : 0;
+         bits |= (state_tmp & PAD_R3)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3)     : 0;
+         bits |= (state_tmp & PAD_L3)       ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3)     : 0;
+
+         /* The stick bytes are the pad's only while it reports in an
+          * analog mode (0x5x analog, 0x7x DualShock, 0x79 included).
+          * In digital mode (0x41) padman passes on whatever its
+          * receive buffer last held there, and other pad types carry
+          * other controls in those bytes: both read as centred. */
+         if (type == PAD_TYPE_ANALOG || type == PAD_TYPE_DUALSHOCK)
          {
-            int32_t state_tmp = 0xffff ^ buttons.btns;
-            pad_state[i] = 0;
-
-            pad_state[i] |= (state_tmp & PAD_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-            pad_state[i] |= (state_tmp & PAD_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-            pad_state[i] |= (state_tmp & PAD_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-            pad_state[i] |= (state_tmp & PAD_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-            pad_state[i] |= (state_tmp & PAD_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-            pad_state[i] |= (state_tmp & PAD_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-            pad_state[i] |= (state_tmp & PAD_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-            pad_state[i] |= (state_tmp & PAD_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-            pad_state[i] |= (state_tmp & PAD_CROSS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-            pad_state[i] |= (state_tmp & PAD_CIRCLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-            pad_state[i] |= (state_tmp & PAD_R1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-            pad_state[i] |= (state_tmp & PAD_L1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-            pad_state[i] |= (state_tmp & PAD_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-            pad_state[i] |= (state_tmp & PAD_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-            pad_state[i] |= (state_tmp & PAD_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-            pad_state[i] |= (state_tmp & PAD_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-
-            /* Analog */
-            if (buttons.ljoy_h || buttons.ljoy_v || buttons.rjoy_h || buttons.rjoy_v)
-            {
-               analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.ljoy_h);
-               analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ljoy_v);;
-               analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rjoy_h);;
-               analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.rjoy_v);;
-            }
-
+            lx = convert_u8_to_s16(buttons.ljoy_h);
+            ly = convert_u8_to_s16(buttons.ljoy_v);
+            rx = convert_u8_to_s16(buttons.rjoy_h);
+            ry = convert_u8_to_s16(buttons.rjoy_v);
          }
-         else
-            /* Read failed: drop the cached state rather than leaving
-             * the previous frame's buttons latched. */
-            pad_state[i] = 0;
       }
-      else
-      {
-         /* Disconnected, executing a command, or in error - clear
-          * the cached state. ps2_joypad_query_pad() reports a pad
-          * as present based on pad_state[], so stale bits would
-          * also keep a removed pad looking connected. */
-         pad_state[i] = 0;
-         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
-         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
-         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
-         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
-      }
-   }
 
+      /* Disconnected, executing a command, in error or unreadable:
+       * nothing held and sticks centred. ps2_joypad_query_pad()
+       * reports a pad as present from pad_state[]. */
+      pad_state[i] = bits;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = lx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = ly;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rx;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = ry;
+   }
 }
 
 static bool ps2_joypad_query_pad(unsigned pad)
