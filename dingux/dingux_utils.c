@@ -261,8 +261,7 @@ static uint64_t read_battery_ignore_size(const char *path)
 
    file_len = filestream_read(file, file_buf, sizeof(file_buf) - 1);
    if (filestream_close(file) != 0)
-      if (file)
-         free(file);
+      return -1;
 
    if (file_len <= 0)
       return -1;
