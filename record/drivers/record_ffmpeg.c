@@ -2760,6 +2760,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 static bool ffmpeg_finalize(void *data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
+   bool success     = true;
    if (!handle)
       return false;
 
@@ -2771,11 +2772,14 @@ static bool ffmpeg_finalize(void *data)
    deinit_thread_buf(handle);
 
    /* Write final data. */
-   av_write_trailer(handle->muxer.ctx);
+   if (av_write_trailer(handle->muxer.ctx) < 0)
+      success = false;
+   if (handle->muxer.ctx->pb && handle->muxer.ctx->pb->error < 0)
+      success = false;
+   if (avio_closep(&handle->muxer.ctx->pb) < 0)
+      success = false;
 
-   avio_closep(&handle->muxer.ctx->pb);
-
-   return true;
+   return success;
 }
 
 static void ffmpeg_thread(void *data)

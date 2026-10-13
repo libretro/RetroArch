@@ -171,6 +171,41 @@ static unsigned threads_lowered(void)
 }
 #endif
 
+static unsigned fault_mode, fault_writes, fault_closes;
+static bool fault_closed;
+#if LIBAVFORMAT_VERSION_MAJOR >= 61
+static int fail_write(void *opaque, const uint8_t *buf, int size)
+#else
+static int fail_write(void *opaque, uint8_t *buf, int size)
+#endif
+{
+   (void)opaque; (void)buf; (void)size;
+   fault_writes++;
+   return AVERROR(EIO);
+}
+int __real_av_write_trailer(AVFormatContext *ctx);
+int __wrap_av_write_trailer(AVFormatContext *ctx)
+{
+   int result;
+   if (fault_mode == 1)
+      ctx->pb->write_packet = fail_write;
+   result = __real_av_write_trailer(ctx);
+   if (fault_mode == 3)
+      ctx->pb->error = AVERROR(EIO);
+   return result;
+}
+int __real_avio_closep(AVIOContext **ctx);
+int __wrap_avio_closep(AVIOContext **ctx)
+{
+   int result = __real_avio_closep(ctx);
+   if (fault_mode)
+   {
+      fault_closes++;
+      fault_closed = *ctx == NULL;
+   }
+   return fault_mode == 2 ? AVERROR(EIO) : result;
+}
+
 static int run(bool drop)
 {
    struct record_params params;
@@ -181,6 +216,7 @@ static int run(bool drop)
    int16_t   pcm[800 * 2];
    void     *rec;
    unsigned  n;
+   bool finalized;
 
    memset(&params, 0, sizeof(params));
    params.fps                        = FPS;
@@ -254,10 +290,28 @@ static int run(bool drop)
             " while recording\n", stub_warn_calls, stub_msg_calls);
       return 1;
    }
-   record_ffmpeg.finalize(rec);
+   finalized = record_ffmpeg.finalize(rec);
    record_ffmpeg.free(rec);
    free(fb);
    free(fbp);
+   if (fault_mode)
+   {
+      remove(OUT);
+      if (finalized || fault_closes != 1 || !fault_closed
+            || (fault_mode == 1 && !fault_writes))
+      {
+         fprintf(stderr, "finalize fault %u: success=%d writes=%u closes=%u\n",
+               fault_mode, finalized, fault_writes, fault_closes);
+         return 1;
+      }
+      printf("[pass] finalize fault %u reported failure and closed output\n", fault_mode);
+      return 0;
+   }
+   if (!finalized)
+   {
+      fprintf(stderr, "finalize failed\n");
+      return 1;
+   }
 
    /* Decode it back. */
    {
@@ -472,10 +526,22 @@ bool __wrap_retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity)
 }
 #endif
 
+int record_finalize_test_run(void);
+
 int main(void)
 {
+   if (record_finalize_test_run())
+      return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;
+   for (fault_mode = 1; fault_mode <= 3; fault_mode++)
+   {
+      fault_writes = fault_closes = 0;
+      fault_closed = false;
+      if (run(false))
+         return 1;
+   }
+   fault_mode = 0;
    printf("ALL OK\n");
    return 0;
 }

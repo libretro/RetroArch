@@ -137,6 +137,7 @@ static bool record_driver_init(
 bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
+   bool success                   = true;
 #ifdef HAVE_FFMPEG
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
@@ -152,7 +153,7 @@ bool recording_deinit(void)
       return false;
 
    if (recording_st->driver->finalize)
-      recording_st->driver->finalize(recording_st->data);
+      success = recording_st->driver->finalize(recording_st->data);
 
    if (recording_st->driver->free)
       recording_st->driver->free(recording_st->data);
@@ -162,9 +163,12 @@ bool recording_deinit(void)
 
    video_driver_gpu_record_deinit();
 
+   if (!success)
+      RARCH_ERR("[Recording] Failed to finalize recording.\n");
+
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
-   if (     history_list_enable
+   if (     success && history_list_enable
          && *recording_st->path)
    {
       struct playlist_entry entry = {0};
@@ -181,7 +185,7 @@ bool recording_deinit(void)
    /* Forget cached path to create a new one next */
    recording_st->path[0] = '\0';
 
-   return true;
+   return success;
 }
 
 void streaming_set_state(bool state)

@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := all
 # record_ffmpeg end to end: frames and audio pushed from this thread,
 # taken by the driver's encoder thread, decoded back and checked.
 
@@ -10,6 +11,7 @@ TARGET    := ffmpeg_pipeline_test
 
 SOURCES_C := \
 	ffmpeg_pipeline_test.c \
+	record_finalize_test.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/record/drivers/record_ffmpeg.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
@@ -53,7 +55,8 @@ FF_LIBS   := $(shell pkg-config --libs   libavcodec libavformat libavutil libsws
 INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
 CFLAGS   += -Wall $(INCDIRS) $(FF_CFLAGS)
 CFLAGS   += -DRARCH_INTERNAL -DHAVE_FFMPEG -DHAVE_THREADS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
-LDFLAGS  += $(FF_LIBS) -lm -lpthread
+LDFLAGS  += $(FF_LIBS) -lm -lpthread \
+   -Wl,--wrap=av_write_trailer -Wl,--wrap=avio_closep
 
 # PLAIN_RING=1 builds the lane where the video ring cannot be mirrored.
 ifneq ($(PLAIN_RING),)
@@ -67,6 +70,11 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 else
 CFLAGS  += -g1 -O1
 endif
+
+record_finalize_fragment.c: $(CORE_DIR)/record/record_driver.c
+	sed -n '/^bool recording_deinit(void)/,/^void streaming_set_state/p' $< | sed '$$d' > $@
+
+record_finalize_test.o: record_finalize_fragment.c
 
 all: $(TARGET)
 
@@ -82,6 +90,6 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) ffmpeg_pipeline_test.mkv
+	rm -f $(TARGET) $(TARGET).exe $(OBJS) ffmpeg_pipeline_test.mkv record_finalize_fragment.c
 
 .PHONY: clean
