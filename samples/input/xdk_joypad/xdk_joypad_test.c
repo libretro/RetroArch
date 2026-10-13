@@ -7,7 +7,8 @@
  * - a pad whose poll or read fails holds nothing and reads centred,
  *   and is read again once it answers;
  * - a pad removed is closed, holds nothing and reads centred;
- * - destroy closes what is open. */
+ * - destroy closes what is open;
+ * - a port past the four the console has: no pad, no name, no axis. */
 
 #include <stdio.h>
 #include <string.h>
@@ -151,6 +152,13 @@ int main(void)
    check(!xdk_joypad.query_pad(0), "removed: gone");
    check(all_centred() && !xdk_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_START),
          "removed: nothing held, centred");
+
+   /* Past the four ports. */
+   for (i = DEFAULT_MAX_PADS; i < MAX_USERS; i++)
+      if (     xdk_joypad.query_pad(i) || xdk_joypad.name(i)
+            || xdk_joypad.axis(i, AXIS_NEG(1)))
+         break;
+   check(i == MAX_USERS, "past the ports: no pad, no name, no axis");
 
    /* Destroy closes what is open. */
    t_insert = 1;

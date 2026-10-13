@@ -40,6 +40,8 @@ static const char *xdk_joypad_name(unsigned pad)
       "XInput Controller (User 3)",
       "XInput Controller (User 4)"
    };
+   if (pad >= DEFAULT_MAX_PADS)
+      return NULL;
    return XBOX_CONTROLLER_NAMES[pad];
 }
 
@@ -187,10 +189,10 @@ static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
 
 static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   XINPUT_GAMEPAD *pad = &(g_xinput_states[port].xstate.Gamepad);
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return xdk_joypad_axis_state(pad, port, joyaxis);
+   return xdk_joypad_axis_state(&g_xinput_states[port].xstate.Gamepad,
+         port, joyaxis);
 }
 
 static int16_t xdk_joypad_state(
@@ -296,7 +298,7 @@ static void xdk_joypad_poll(void)
 
 static bool xdk_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_USERS && g_xinput_states[pad].connected;
+   return pad < DEFAULT_MAX_PADS && g_xinput_states[pad].connected;
 }
 
 static void xdk_joypad_destroy(void)

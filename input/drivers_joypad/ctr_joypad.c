@@ -191,11 +191,7 @@ static void ctr_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -ctr_joypad_fix_range(state_tmp_right_analog.dy);
 }
 
-static bool ctr_joypad_query_pad(unsigned pad)
-{
-   /* FIXME */
-   return pad < MAX_USERS && pad_state;
-}
+static bool ctr_joypad_query_pad(unsigned pad) { return pad == 0; }
 
 static void ctr_joypad_destroy(void) { }
 
