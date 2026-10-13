@@ -1,0 +1,53 @@
+name: CI CDFS sector I/O
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/formats/cdfs/**'
+      - 'libretro-common/include/formats/cdfs.h'
+      - 'libretro-common/samples/formats/cdfs/**'
+      - 'cheevos/cheevos.c'
+      - '.github/workflows/Linux-cdfs-io.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'libretro-common/formats/cdfs/**'
+      - 'libretro-common/include/formats/cdfs.h'
+      - 'libretro-common/samples/formats/cdfs/**'
+      - 'cheevos/cheevos.c'
+      - '.github/workflows/Linux-cdfs-io.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cdfs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential gcc-mingw-w64-x86-64 wine64
+      - name: Linux sectors and faults
+        working-directory: libretro-common/samples/formats/cdfs
+        run: |
+          set -eu
+          make -j2 SANITIZER=address,undefined SAMPLE_OBJDIR=obj-ci-asan
+          ./cdfs_dir_record_test
+          ./cdfs_pure_api_test
+          ./cdfs_io_error_test
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      - name: Windows sectors and faults
+        working-directory: libretro-common/samples/formats/cdfs
+        run: |
+          set -eu
+          make -j2 CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-ci-win
+          WINEDEBUG=-all wine ./cdfs_dir_record_test.exe
+          WINEDEBUG=-all wine ./cdfs_pure_api_test.exe
+          WINEDEBUG=-all wine ./cdfs_io_error_test.exe

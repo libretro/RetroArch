@@ -194,6 +194,7 @@ jobs:
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             cdfs_pure_api_test
+            cdfs_io_error_test
             chd_meta_overflow_test
             strlcpy_append_test
             http_parse_test

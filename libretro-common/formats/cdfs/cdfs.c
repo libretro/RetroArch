@@ -45,7 +45,9 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
     */
 
    /* The boot record or primary volume descriptor is always at sector 16 and will contain a "CD001" marker */
-   intfstream_seek(track->stream, toc_sector * 2352 + track->first_sector_offset, SEEK_SET);
+   if (intfstream_seek(track->stream, (int64_t)toc_sector * 2352
+            + track->first_sector_offset, SEEK_SET) < 0)
+      return;
    if (intfstream_read(track->stream, &buffer, sizeof(buffer)) != (int64_t)sizeof(buffer))
       return;
 
@@ -98,7 +100,9 @@ static void cdfs_determine_sector_size(cdfs_track_t* track)
 static void cdfs_determine_sector_size_from_file_size(cdfs_track_t* track)
 {
    /* attempt to determine stream_sector_size from file size */
-   size_t _len = intfstream_get_size(track->stream);
+   int64_t _len = intfstream_get_size(track->stream);
+   if (_len <= 0)
+      return;
 
    if ((_len % 2352) == 0)
    {
@@ -120,18 +124,26 @@ static void cdfs_determine_sector_size_from_file_size(cdfs_track_t* track)
    }
 }
 
-static void cdfs_seek_track_sector(cdfs_track_t* track, unsigned int sector)
+static bool cdfs_seek_track_sector(cdfs_track_t* track, unsigned int sector)
 {
-   intfstream_seek(track->stream,
-           sector * track->stream_sector_size
-         + track->stream_sector_header_size
-         + track->first_sector_offset, SEEK_SET);
+   uint64_t offset = (uint64_t)sector * track->stream_sector_size
+      + track->stream_sector_header_size + track->first_sector_offset;
+   if (offset > INT64_MAX)
+      return false;
+   return intfstream_seek(track->stream, (int64_t)offset, SEEK_SET) >= 0;
+}
+
+static bool cdfs_read_track_sector(cdfs_track_t* track,
+      unsigned int sector, void *buffer)
+{
+   return cdfs_seek_track_sector(track, sector)
+      && intfstream_read(track->stream, buffer, 2048) == 2048;
 }
 
 void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
 {
    /* only allowed if open_file was called with a NULL path */
-   if (file->first_sector == 0)
+   if (file && file->first_sector == 0 && sector <= INT_MAX)
    {
       if (file->current_sector != (int)sector)
       {
@@ -139,21 +151,26 @@ void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector)
          file->sector_buffer_valid = 0;
       }
 
-      file->pos                    = sector * 2048;
+      file->pos                    = (uint64_t)sector * 2048;
       file->current_sector_offset  = 0;
    }
 }
 
 uint32_t cdfs_get_num_sectors(cdfs_file_t* file)
 {
-   uint32_t frame_size = intfstream_get_frame_size(file->track->stream);
-   if (frame_size == 0)
-   {
+   uint32_t frame_size;
+   int64_t size;
+   uint64_t sectors;
+   if (!file || !file->track)
+      return 0;
+   frame_size = intfstream_get_frame_size(file->track->stream);
+   if (!frame_size)
       frame_size = file->track->stream_sector_size;
-      if (frame_size == 0)
-         frame_size = 1; /* prevent divide by 0 error if sector size is unknown */
-   }
-   return (uint32_t)(intfstream_get_size(file->track->stream) / frame_size);
+   size = intfstream_get_size(file->track->stream);
+   if (!frame_size || size < 0 || (uint64_t)size < file->track->first_sector_offset)
+      return 0;
+   sectors = ((uint64_t)size - file->track->first_sector_offset) / frame_size;
+   return sectors <= UINT32_MAX ? (uint32_t)sectors : 0;
 }
 
 uint32_t cdfs_get_first_sector(cdfs_file_t* file)
@@ -204,8 +221,8 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
       int offset;
 
       /* find the CD information (always 16 frames in) */
-      cdfs_seek_track_sector(file->track, 16);
-      intfstream_read(file->track->stream, buffer, 2048);
+      if (!cdfs_read_track_sector(file->track, 16, buffer))
+         { free(buffer); return -1; }
 
       /* the directory_record starts at 156 bytes into the sector.
        * the sector containing the root directory contents is a
@@ -215,8 +232,8 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
    }
 
    /* process the contents of the directory */
-   cdfs_seek_track_sector(file->track, sector);
-   intfstream_read(file->track->stream, buffer, 2048);
+   if (!cdfs_read_track_sector(file->track, sector, buffer))
+      { free(buffer); return -1; }
 
    path_length = strlen(path);
    tmp         = buffer;
@@ -281,7 +298,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
               (tmp[10])
             | (tmp[11] << 8)
             | (tmp[12] << 16)
-            | (tmp[13] << 24);
+            | ((uint32_t)tmp[13] << 24);
 
          /* the file contents are in the sector identified
           * in bytes 2-4 of the record */
@@ -298,7 +315,9 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 
 int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)
 {
-   if (!file || !track)
+   if (!file || !track || !track->stream
+         || track->stream_sector_header_size > track->stream_sector_size
+         || track->stream_sector_size - track->stream_sector_header_size < 2048)
       return 0;
 
    memset(file, 0, sizeof(*file));
@@ -311,10 +330,16 @@ int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)
       file->first_sector = cdfs_find_file(file, path);
    else if (file->track->stream_sector_size)
    {
+      int64_t stream_size = intfstream_get_size(file->track->stream);
+      uint64_t sectors;
+      if (stream_size < 0 || (uint64_t)stream_size < track->first_sector_offset)
+         return 0;
+      sectors = ((uint64_t)stream_size - track->first_sector_offset)
+         / track->stream_sector_size;
+      if (sectors > INT_MAX)
+         return 0;
       file->first_sector = 0;
-      file->size         = (unsigned int)((intfstream_get_size(
-               file->track->stream) / file->track->stream_sector_size)
-         * 2048);
+      file->size = sectors * 2048;
       return 1;
    }
 
@@ -323,95 +348,64 @@ int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)
 
 int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
 {
-   int bytes_read = 0;
-
+   uint64_t bytes_read = 0;
+   uint8_t *dst = (uint8_t*)buffer;
    if (!file || file->first_sector < 0 || !buffer)
       return 0;
-
+   if (file->pos >= file->size)
+      return 0;
    if (len > file->size - file->pos)
       len = file->size - file->pos;
-
-   if (len == 0)
-      return 0;
-
-   /* A seek that changed sectors leaves the position mid-sector with
-    * no cached data.  Refill the cache for the current sector first so
-    * the consume path below starts at current_sector_offset; without
-    * this the refill at the bottom of this function copies from the
-    * start of the sector regardless of the seek target. */
-   if (     !file->sector_buffer_valid
-         &&  file->current_sector_offset != 0
-         &&  file->current_sector >= file->first_sector)
+   if (len > SIZE_MAX)
+      len = SIZE_MAX;
+   if (file->current_sector < file->first_sector)
    {
-      cdfs_seek_track_sector(file->track, file->current_sector);
-      intfstream_read(file->track->stream, file->sector_buffer, 2048);
-      file->sector_buffer_valid = 1;
+      file->current_sector = file->first_sector;
+      file->current_sector_offset = 0;
+      file->sector_buffer_valid = 0;
    }
-
-   if (file->sector_buffer_valid)
+   while (bytes_read < len)
    {
-      size_t remaining = 2048 - file->current_sector_offset;
-      if (remaining > 0)
+      size_t n;
+      if (!file->current_sector_offset && !file->sector_buffer_valid
+            && len - bytes_read >= 2048)
       {
-         if (remaining >= len)
-         {
-            memcpy(buffer,
-                  &file->sector_buffer[file->current_sector_offset],
-                  (size_t)len);
-            file->current_sector_offset += len;
-            /* This early return previously skipped the position
-             * accounting at the bottom of the function, leaving
-             * file->pos (and thus cdfs_tell / SEEK_CUR) stale after
-             * any read served entirely from the sector cache. */
-            file->pos                   += (unsigned int)len;
-            return len;
-         }
-
-         memcpy(buffer,
-               &file->sector_buffer[file->current_sector_offset], remaining);
-         buffer      = (char*)buffer + remaining;
-         bytes_read += remaining;
-         len        -= remaining;
-
-         file->current_sector_offset += remaining;
+         file->sector_buffer_valid = 0;
+         if (!cdfs_read_track_sector(file->track, file->current_sector,
+                  dst + (size_t)bytes_read))
+            break;
+         n = 2048;
       }
-
-      ++file->current_sector;
-      file->current_sector_offset = 0;
-      file->sector_buffer_valid   = 0;
+      else
+      {
+         if (!file->sector_buffer_valid)
+         {
+            if (!cdfs_read_track_sector(file->track, file->current_sector,
+                     file->sector_buffer))
+               break;
+            file->sector_buffer_valid = 1;
+         }
+         n = 2048 - file->current_sector_offset;
+         if (n > len - bytes_read)
+            n = (size_t)(len - bytes_read);
+         memcpy(dst + (size_t)bytes_read,
+               file->sector_buffer + file->current_sector_offset, n);
+      }
+      bytes_read += n;
+      file->pos += n;
+      file->current_sector_offset += (unsigned int)n;
+      if (file->current_sector_offset == 2048)
+      {
+         file->current_sector++;
+         file->current_sector_offset = 0;
+         file->sector_buffer_valid = 0;
+      }
    }
-   else if (file->current_sector < file->first_sector)
-   {
-      file->current_sector        = file->first_sector;
-      file->current_sector_offset = 0;
-   }
-
-   while (len >= 2048)
-   {
-      cdfs_seek_track_sector(file->track, file->current_sector);
-      intfstream_read(file->track->stream, buffer, 2048);
-
-      buffer      = (char*)buffer + 2048;
-      bytes_read += 2048;
-
-      ++file->current_sector;
-
-      len        -= 2048;
-   }
-
-   if (len > 0)
-   {
-      cdfs_seek_track_sector(file->track, file->current_sector);
-      intfstream_read(file->track->stream, file->sector_buffer, 2048);
-      memcpy(buffer, file->sector_buffer, (size_t)len);
-      file->current_sector_offset = (unsigned int)len;
-      file->sector_buffer_valid   = 1;
-
-      bytes_read += len;
-   }
-
-   file->pos += bytes_read;
-   return bytes_read;
+   /* A failed sector is not published or advanced. A complete prefix
+    * is returned first; the next call retries the failed sector. */
+   if (!bytes_read && len)
+      return -1;
+   return (int64_t)bytes_read;
 }
 
 void cdfs_close_file(cdfs_file_t* file)
@@ -439,38 +433,36 @@ int64_t cdfs_tell(cdfs_file_t* file)
 
 int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
 {
-   int64_t new_pos;
+   int64_t base, new_pos;
    int new_sector;
-
-   if (!file || file->first_sector < 0)
+   uint64_t sector;
+   if (!file || file->first_sector < 0 || file->pos > INT64_MAX
+         || file->size > INT64_MAX)
       return -1;
-
    switch (whence)
    {
       case SEEK_SET:
-         new_pos = offset;
+         base = 0;
          break;
-
       case SEEK_CUR:
-         new_pos = file->pos + offset;
+         base = (int64_t)file->pos;
          break;
-
       case SEEK_END:
-         new_pos = file->size - offset;
+         base = (int64_t)file->size;
          break;
-
       default:
          return -1;
    }
-
-   if (new_pos < 0)
+   if (offset < -base || offset > INT64_MAX - base)
       return -1;
-   else if (new_pos > file->size)
+   new_pos = base + offset;
+   if ((uint64_t)new_pos > file->size)
       return -1;
-
-   file->pos = (unsigned int)new_pos;
-   file->current_sector_offset = file->pos % 2048;
-
+   sector = (uint64_t)file->first_sector + (uint64_t)new_pos / 2048;
+   if (sector > INT_MAX)
+      return -1;
+   file->pos = (uint64_t)new_pos;
+   file->current_sector_offset = (unsigned int)(file->pos % 2048);
    /* current_sector holds a disc-absolute sector index (it is handed
     * straight to cdfs_seek_track_sector by the read path), so the
     * byte position must be rebased onto the file's first sector.
@@ -479,7 +471,7 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
     * spaces: the subsequent read saw current_sector < first_sector,
     * clamped back to the start of the file and reset the intra-sector
     * offset, returning data from offset 0 instead of the seek target. */
-   new_sector = file->first_sector + file->pos / 2048;
+   new_sector = (int)sector;
    if (new_sector != file->current_sector)
    {
       file->current_sector      = new_sector;

@@ -39,10 +39,18 @@ int main(int argc, char **argv)
    for (s = 0; s < nsec && s < 4096; s++)
    {
       uint32_t k = (s * 2654435761u) % (nsec < 4096 ? nsec : 4096);
-      size_t got;
+      int64_t got;
       cdfs_seek_sector(&f, k);
-      got = (size_t)cdfs_read_file(&f, buf, sizeof(buf));
-      if (got) { d = h64(buf, got, d); hit++; }
+      got = cdfs_read_file(&f, buf, sizeof(buf));
+      if (got != sizeof(buf))
+      {
+         printf("    sector read failed\n");
+         cdfs_close_file(&f);
+         cdfs_close_track(t);
+         return 1;
+      }
+      d = h64(buf, (size_t)got, d);
+      hit++;
    }
    printf("    %u scattered sector reads  %016llx\n", hit, d);
    cdfs_close_file(&f);

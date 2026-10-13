@@ -1,7 +1,9 @@
 include ../../sample_objdir.mk
 
-TARGET := cdfs_dir_record_test
-TARGET_TEST2 := cdfs_pure_api_test
+TARGET := cdfs_dir_record_test$(EXE)
+TARGET_TEST2 := cdfs_pure_api_test$(EXE)
+TARGET_TEST3 := cdfs_io_error_test$(EXE)
+.DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -38,18 +40,31 @@ TEST2_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
-OBJS := $(call sample_objs,$(SOURCES:.c=.o))
-TEST2_OBJS := $(call sample_objs,$(TEST2_SOURCES:.c=.o))
+OBJS := $(SAMPLE_OBJDIR)/cdfs_dir_record_test.o
+TEST2_OBJS := $(SAMPLE_OBJDIR)/cdfs_pure_api_test.o $(call sample_objs,$(filter-out cdfs_pure_api_test.o,$(TEST2_SOURCES:.c=.o)))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0 -I$(LIBRETRO_COMM_DIR)/include
-LDFLAGS += -lz
+
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST2)
+TEST3_OBJS := $(SAMPLE_OBJDIR)/cdfs_io_error_test.o $(call sample_objs,$(filter-out cdfs_pure_api_test.o $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o,$(TEST2_SOURCES:.c=.o)))
+
+ifeq ($(OS),Windows_NT)
+   LDLIBS += -lwinmm
+endif
+
+$(SAMPLE_OBJDIR)/cdfs_io_error_test.o: cdfs_io_error_test.c $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.c $(LIBRETRO_COMM_DIR)/include/formats/cdfs.h
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET_TEST3): $(TEST3_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -59,13 +74,13 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(TARGET_TEST2): $(TEST2_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST2) $(OBJS) $(TEST2_OBJS)
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS) $(TEST2_OBJS) $(TEST3_OBJS)
 
 .PHONY: clean

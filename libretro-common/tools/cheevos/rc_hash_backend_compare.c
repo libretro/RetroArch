@@ -47,7 +47,10 @@ static size_t chd_read_sector(void* h, uint32_t sector, void* buf, size_t want)
    sector -= cdfs_get_first_sector(f);
    if (sector >= n) return 0;
    cdfs_seek_sector(f, sector);
-   return cdfs_read_file(f, buf, want);
+   {
+      int64_t got = cdfs_read_file(f, buf, want);
+      return got > 0 ? (size_t)got : 0;
+   }
 }
 static void chd_close_track(void* h)
 {

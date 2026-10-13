@@ -45,13 +45,13 @@ typedef struct cdfs_track_t
 
 typedef struct cdfs_file_t
 {
+   uint64_t size;
+   uint64_t pos;
    struct cdfs_track_t* track;
    int first_sector;
    int current_sector;
    int sector_buffer_valid;
    unsigned int current_sector_offset;
-   unsigned int size;
-   unsigned int pos;
    uint8_t sector_buffer[2048];
 } cdfs_file_t;
 
@@ -64,12 +64,17 @@ int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* stream, const char* path);
 
 void cdfs_close_file(cdfs_file_t* file);
 
+/* Returns complete bytes, 0 at EOF, or -1 if no bytes precede an I/O error.
+ * Only complete sectors enter the cache. A successful prefix advances the
+ * cursor; the failed sector is retried on the next call. Ignore destination
+ * bytes beyond the returned count, which may contain an incomplete sector. */
 int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len);
 
 int64_t cdfs_get_size(cdfs_file_t* file);
 
 int64_t cdfs_tell(cdfs_file_t* file);
 
+/* Seek within the file; SEEK_END offsets are relative to the end. */
 int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence);
 
 void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector);
