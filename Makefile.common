@@ -2457,7 +2457,8 @@ ifeq ($(HAVE_RMPEG1), 1)
    DEFINES += -DHAVE_RMPEG1
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_ps.o \
           $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_video.o \
-          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_packet.o
+          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_packet.o \
+          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_spu.o
    # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
    # wants sound from an MPEG-1 stream needs HAVE_RMP3 as well.
 endif

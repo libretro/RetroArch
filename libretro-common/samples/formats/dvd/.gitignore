@@ -2,4 +2,6 @@ rdvd_packet_test
 rdvd_packet_test.exe
 rdvd_highlight_test
 rdvd_highlight_test.exe
+rdvd_spu_test
+rdvd_spu_test.exe
 *.vob
