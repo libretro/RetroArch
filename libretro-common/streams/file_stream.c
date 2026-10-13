@@ -1976,11 +1976,9 @@ int filestream_close(RFILE *stream)
       output = retro_vfs_file_close_impl(
             (libretro_vfs_implementation_file*)fp);
 
-   if (output == 0)
-   {
-      free(stream->rbuf);
-      free(stream);
-   }
+   /* VFS close consumes the handle even on failure (VFS API v1). */
+   free(stream->rbuf);
+   free(stream);
 
    return output;
 }

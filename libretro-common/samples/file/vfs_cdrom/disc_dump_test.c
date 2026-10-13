@@ -18,6 +18,8 @@ static cdrom_toc_t reopened_toc;
 static unsigned toc_queries;
 static int changed_geometry;
 static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
+static int output_close_fail, input_close_fail;
+static RFILE *output_handles[4];
 static unsigned write_opens;
 static unsigned failures, finished_logs, cue_opens;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); failures++; } } while (0)
@@ -44,7 +46,27 @@ static RFILE *dump_open(const char *path, unsigned mode, unsigned hints)
    if (mode == RETRO_VFS_FILE_ACCESS_WRITE
          && ++write_opens == (unsigned)open_fail)
       return NULL;
-   return filestream_open(path, mode, hints);
+   {
+      RFILE *file = filestream_open(path, mode, hints);
+      if (file && mode == RETRO_VFS_FILE_ACCESS_WRITE)
+         output_handles[write_opens - 1] = file;
+      return file;
+   }
+}
+static int dump_close(RFILE *file)
+{
+   unsigned i;
+   int result;
+   int fail = input_close_fail && medium == 8 && toc_queries == 1;
+   for (i = 0; i < 4; i++)
+      if (output_handles[i] == file)
+      {
+         output_handles[i] = NULL;
+         fail = output_close_fail == (int)i + 1;
+         break;
+      }
+   result = filestream_close(file);
+   return fail ? -1 : result;
 }
 static int64_t dump_read(RFILE *file, void *buf, int64_t len)
 {
@@ -83,6 +105,7 @@ static void *dump_alloc(size_t align, size_t bytes)
 #define filestream_read dump_read
 #define filestream_write dump_write
 #define filestream_flush dump_flush
+#define filestream_close dump_close
 #define cdrom_get_media_profile dump_profile
 #define retro_vfs_file_get_cdrom_toc dump_toc
 #define cdrom_has_atip dump_atip
@@ -93,6 +116,7 @@ static void *dump_alloc(size_t align, size_t bytes)
 #undef filestream_write
 #undef memalign_alloc
 #undef filestream_flush
+#undef filestream_close
 settings_t *config_get_ptr(void) { return NULL; }
 
 static void fixture(const char *path, unsigned size)
@@ -143,9 +167,11 @@ static void run_dump(int cancel)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
-   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry)
+   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail)
    {
       CHECK(finished_logs == logs);
+      if ((output_close_fail || input_close_fail) && !cancel)
+         CHECK(state->failed);
       if (changed_geometry)
       {
          CHECK(state->failed && state->disc_read_bytes == 4704);
@@ -168,6 +194,7 @@ static void run_dump(int cancel)
       }
    }
    task_cdrom_dump_callback(task, NULL, NULL, NULL);
+   CHECK(!output_handles[0] && !output_handles[1] && !output_handles[2]);
    task_free_title(task);
    task_free_error(task);
    free(task);
@@ -219,9 +246,14 @@ int main(void)
    open_fail = 1; run_dump(0); open_fail = 0;
    alloc_fail = 1; run_dump(0); alloc_fail = 0;
    flush_fail = 1; run_dump(0); flush_fail = 0;
+   output_close_fail = 1; run_dump(0); run_dump(1); output_close_fail = 0;
    run_dump(1);
    medium = 8;
    run_dump(0);
+   for (output_close_fail = 1; output_close_fail <= 3; output_close_fail++)
+      run_dump(0);
+   output_close_fail = 0;
+   input_close_fail = 1; run_dump(0); input_close_fail = 0;
    for (changed_geometry = 1; changed_geometry <= 5; changed_geometry++)
       run_dump(0);
    changed_geometry = 0;

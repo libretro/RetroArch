@@ -51,6 +51,14 @@ LDLIBS += -lm
 DVD_SOURCES := dvd_blocks_test.c $(filter-out cdrom_cuesheet_overflow_test.c $(LIBRETRO_COMM_DIR)/cdrom/cdrom.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c,$(SOURCES))
 DVD_OBJS := $(SAMPLE_OBJDIR)/dvd_blocks_test.o $(call sample_objs,$(filter-out dvd_blocks_test.o,$(DVD_SOURCES:.c=.o)))
 
+CLOSE_SOURCES := $(filter-out cdrom_cuesheet_overflow_test.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c,$(SOURCES))
+CLOSE_OBJS := $(SAMPLE_OBJDIR)/vfs_close_test.o $(call sample_objs,$(CLOSE_SOURCES:.c=.o))
+
+$(SAMPLE_OBJDIR)/vfs_close_test.o: vfs_close_test.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+
+vfs_close_test$(EXE): $(CLOSE_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
 ifeq ($(OS),Windows_NT)
    LDLIBS += -lwinmm
 endif
@@ -84,10 +92,11 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
--include $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d)
+-include $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d) $(CLOSE_OBJS:.o=.d)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
+	rm -f vfs_close_test$(EXE) $(CLOSE_OBJS) $(CLOSE_OBJS:.o=.d)
 	rm -f $(TARGET) disc_dump_test$(EXE) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS) $(DUMP_OBJS) $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d)
 
 .PHONY: clean

@@ -42,6 +42,7 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream, int
  * filestream_get_sparse_granularity. 0 when unknown. */
 int64_t retro_vfs_file_get_sparse_granularity_impl(libretro_vfs_implementation_file *stream);
 
+/* Consumes stream even when reporting final I/O failure; do not retry close. */
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream);

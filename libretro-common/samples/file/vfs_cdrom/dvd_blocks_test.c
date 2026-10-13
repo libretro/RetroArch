@@ -21,6 +21,7 @@ static unsigned closes;
 #endif
 static uint32_t last_lba = 3000000, sector_size = 2048;
 static int fail_at, short_transfer;
+static int close_error;
 static unsigned char error_key = 5, error_asc, error_response = 0x70;
 static int toc_bad;
 static uint16_t media_profile = 0x10;
@@ -195,7 +196,7 @@ static BOOL WINAPI drive_close(HANDLE h)
 {
    (void)h;
    closes++;
-   return TRUE;
+   return close_error ? FALSE : TRUE;
 }
 #define DeviceIoControl drive_ioctl
 #undef CreateFile
@@ -248,6 +249,12 @@ static FILE *drive_open(const char *path, const char *mode)
 #define ioctl drive_ioctl
 #undef fopen_utf8
 #define fopen_utf8 drive_open
+static int drive_fclose(FILE *file)
+{
+   int result = fclose(file);
+   return close_error ? EOF : result;
+}
+#define fclose drive_fclose
 #define IMAGE_PATH "drive1.iso"
 #define BIN_A "cdrom://drive1-track01.bin"
 #define BIN_B "cdrom://drive2-track01.bin"
@@ -571,6 +578,17 @@ int main(void)
          RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
    test_handle_geometry(buf);
    test_media_change(buf);
+   {
+      libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
+            BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+      CHECK(file != NULL);
+      if (file)
+      {
+         close_error = 1;
+         CHECK(retro_vfs_file_close_impl(file) == -1);
+         close_error = 0;
+      }
+   }
    memalign_free(buf);
    printf("DVD block/VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;

@@ -2,3 +2,5 @@ dvd_blocks_test
 dvd_blocks_test.exe
 disc_dump_test
 disc_dump_test.exe
+vfs_close_test
+vfs_close_test.exe

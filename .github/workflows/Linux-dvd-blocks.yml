@@ -44,6 +44,8 @@ jobs:
           ./dvd_blocks_test
           make -j2 disc_dump_test SANITIZER=address,undefined SAMPLE_OBJDIR=obj-dvd-asan
           ./disc_dump_test
+          make -j2 vfs_close_test SANITIZER=address,undefined SAMPLE_OBJDIR=obj-dvd-asan
+          ./vfs_close_test
           make -j2 SANITIZER=address,undefined SAMPLE_OBJDIR=obj-dvd-asan
           ./cdrom_cuesheet_overflow_test
         env:
@@ -57,3 +59,5 @@ jobs:
           WINEDEBUG=-all wine ./dvd_blocks_test.exe
           make -j2 disc_dump_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-dvd-win
           WINEDEBUG=-all wine ./disc_dump_test.exe
+          make -j2 vfs_close_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-dvd-win
+          WINEDEBUG=-all wine ./vfs_close_test.exe

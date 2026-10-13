@@ -148,6 +148,14 @@ static bool task_cdrom_dump_same_geometry(const cdrom_toc_t *a,
    return true;
 }
 
+/* Native filestream close consumes the handle on both success and failure. */
+static int task_cdrom_dump_close(RFILE **file)
+{
+   RFILE *owned = *file;
+   *file = NULL;
+   return owned ? filestream_close(owned) : 0;
+}
+
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
@@ -157,12 +165,16 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
    if (task_get_progress(task) == 100)
    {
-      if (state->file)
-         filestream_close(state->file);
-      if (state->output_file)
-         filestream_close(state->output_file);
-      state->file        = NULL;
-      state->output_file = NULL;
+      int read_error  = task_cdrom_dump_close(&state->file);
+      int write_error = task_cdrom_dump_close(&state->output_file);
+      state->stream = NULL;
+      if (!state->failed && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      {
+         if (write_error)
+            task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+         else if (read_error)
+            task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+      }
 
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -260,9 +272,12 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             if (cdrom_has_atip(state->stream))
                RARCH_LOG("[CDROM] This disc is not genuine.\n");
 
-            filestream_close(state->file);
-            state->file = NULL;
             state->stream = NULL;
+            if (task_cdrom_dump_close(&state->file) != 0)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+               return;
+            }
 
             fill_pathname(cue_filename, state->title,
                   ".cue", sizeof(cue_filename));
@@ -328,7 +343,11 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
                   return;
                }
-               filestream_close(file);
+               if (task_cdrom_dump_close(&file) != 0)
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+                  return;
+               }
             }
 
             state->file  = NULL;
@@ -428,11 +447,10 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
          else if (state->cur_track_bytes == state->track_written_bytes)
          {
-            /* TODO: FIXME: this stops after only the first track */
-            if (state->file)
+            if (task_cdrom_dump_close(&state->file) != 0)
             {
-               filestream_close(state->file);
-               state->file = NULL;
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+               return;
             }
             if (state->output_file)
             {
@@ -441,8 +459,11 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
                   return;
                }
-               filestream_close(state->output_file);
-               state->output_file = NULL;
+               if (task_cdrom_dump_close(&state->output_file) != 0)
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+                  return;
+               }
             }
 
             state->state = DUMP_STATE_NEXT_TRACK;
