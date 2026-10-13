@@ -21,7 +21,8 @@ typedef struct rdvd_source_request
 
 /* Single-owner request state; serialize calls through the owning task.
  * Initialize fresh/drained state only. Sizes remain immutable and alive.
- * The requested logical range must fit the entire title source. */
+ * Discard all prior completions before reinitializing: tickets are scoped
+ * to one initialization. The logical range must fit the entire source. */
 bool rdvd_source_init(rdvd_source_t *source, const rdvd_vob_map_t *map,
       uint64_t offset, uint64_t bytes);
 /* Reserves one file-local read into consumer-owned storage. No I/O occurs.
@@ -36,5 +37,11 @@ bool rdvd_source_complete(rdvd_source_t *source, uint64_t ticket, int64_t bytes)
 /* Stops new requests without waiting. Pending storage remains owned by
  * the outstanding reader until its matching completion is consumed. */
 void rdvd_source_cancel(rdvd_source_t *source);
+/* Starts at a checked title NAV target and reads through that cell's end.
+ * Source sizes must belong to the supplied VTS. Fresh/drained state only;
+ * angle/interleaved cells are rejected by the target resolver. */
+bool rdvd_source_init_title(rdvd_source_t *source, const rdvd_ifo_t *ifo,
+      const rdvd_vob_map_t *map, unsigned title, unsigned chapter,
+      unsigned cell_number, uint32_t target);
 RETRO_END_DECLS
 #endif

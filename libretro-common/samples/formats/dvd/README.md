@@ -116,3 +116,13 @@ first file-local read span without staging data. The caller owns the VTS
 source and must preserve that domain pairing. Angle/block and interleaved
 cells are rejected until navigation policy exists. No time seek, file read,
 VM execution or playable title/menu integration is implemented by this API.
+
+The rdvd_source request/completion interface starts from a logical range
+or checked title target and reserves one file-local read into consumer-owned
+storage. The owning task dispatches I/O externally and reports completions
+serially by ticket. Positive short reads preserve progress; errors retain
+the completed prefix. Cancellation stops new requests and drains a pending
+completion before storage can be reused. Initialization requires fresh or
+drained state; map sizes and pending destinations must stay alive. No locks,
+waits, file-opening or staging copies are added. A backend/task adapter and
+player integration are still required.

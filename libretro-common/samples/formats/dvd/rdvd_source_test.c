@@ -82,10 +82,55 @@ static void test_completion(void)
    CHECK(!rdvd_source_prepare(&source, buffer, sizeof(buffer), &request));
    rdvd_source_cancel(NULL);
 }
+static void test_title_reads(void)
+{
+   static uint8_t file[12288];
+   uint64_t sizes[2];
+   uint8_t buffer[2048], *ptt, *pgcit, *pgc, *cadt, *vobus;
+   rdvd_ifo_t ifo;
+   rdvd_vob_map_t map;
+   rdvd_source_t source;
+   rdvd_source_request_t request;
+   unsigned count = 0;
+   memset(file, 0, sizeof(file)); memcpy(file, "DVDVIDEO-VTS", 12);
+   file[0x1f] = 5; file[0x83] = 255;
+   file[0xcb] = 1; file[0xcf] = 2; file[0xe3] = 4; file[0xe7] = 5;
+   ptt = file + 2048; pgcit = file + 4096; pgc = pgcit + 16;
+   cadt = file + 8192; vobus = file + 10240;
+   ptt[1] = 1; ptt[7] = 15; ptt[11] = 12; ptt[13] = ptt[15] = 1;
+   pgcit[1] = 1; pgcit[6] = 1; pgcit[7] = 24; pgcit[15] = 16;
+   pgc[2] = pgc[3] = 1; pgc[231] = 236; pgc[233] = 237;
+   pgc[234] = 1; pgc[235] = 5; pgc[236] = 1;
+   pgc[248] = 10; pgc[256] = 15; pgc[260] = 20;
+   pgc[262] = pgc[264] = 1;
+   cadt[1] = 1; cadt[7] = 19; cadt[9] = cadt[10] = 1;
+   cadt[15] = 10; cadt[19] = 20;
+   vobus[3] = 15; vobus[7] = 10; vobus[11] = 15; vobus[15] = 20;
+   sizes[0] = 16 * 2048; sizes[1] = 5 * 2048;
+   CHECK(rdvd_ifo_read(file, sizeof(file), &ifo));
+   CHECK(rdvd_vob_map_read(sizes, 2, &map));
+   CHECK(rdvd_source_init_title(&source, &ifo, &map, 1, 1, 1, 18));
+   CHECK(source.offset == 15 * 2048 && source.remaining == 6 * 2048);
+   while (rdvd_source_prepare(&source, buffer, sizeof(buffer), &request))
+   {
+      CHECK(request.destination == buffer && request.bytes == 2048);
+      CHECK(request.segment == (count ? 2 : 1));
+      CHECK(request.file_offset == (count ? (count - 1) * 2048 : 15 * 2048));
+      /* Simulate a backend writing directly to the reserved consumer storage. */
+      memset(request.destination, (int)request.segment, request.bytes);
+      CHECK(rdvd_source_complete(&source, request.ticket, (int64_t)request.bytes));
+      CHECK(buffer[0] == request.segment && buffer[2047] == request.segment);
+      count++;
+   }
+   CHECK(count == 6 && source.completed == 6 * 2048 && !source.failed);
+   CHECK(!rdvd_source_init_title(&source, &ifo, &map, 1, 1, 1, 9) && source.failed);
+   CHECK(!rdvd_source_prepare(&source, buffer, sizeof(buffer), &request));
+}
 int main(void)
 {
    test_prepare();
    test_completion();
+   test_title_reads();
    printf("DVD source tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

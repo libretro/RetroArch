@@ -65,3 +65,17 @@ void rdvd_source_cancel(rdvd_source_t *source)
 {
    if (source) source->cancelled = true;
 }
+
+
+bool rdvd_source_init_title(rdvd_source_t *source, const rdvd_ifo_t *ifo,
+      const rdvd_vob_map_t *map, unsigned title, unsigned chapter,
+      unsigned cell_number, uint32_t target)
+{
+   rdvd_title_target_t resolved;
+   if (!source) return false;
+   memset(source, 0, sizeof(*source));
+   source->failed = true;
+   if (!rdvd_ifo_title_target(ifo, map, title, chapter, cell_number, target, &resolved))
+      return false;
+   return rdvd_source_init(source, map, resolved.remaining.offset, resolved.remaining.bytes);
+}
