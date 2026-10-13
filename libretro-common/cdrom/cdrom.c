@@ -408,7 +408,7 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
  * so there is no cdrom_send_command_macos analogous to the linux/win32
  * ones: dispatch by CDB opcode to either the curated MMC plug-in
  * (metadata) or a DKIOC ioctl on /dev/rdiskN (sector reads, speed).
- * Unmappable CDBs are stubbed success or illegal-request. */
+ * Unmappable CDBs return illegal-request, never a synthetic success. */
 static int cdrom_send_command_macos(libretro_vfs_implementation_file *stream,
       CDROM_CMD_Direction dir, void *buf, size_t len,
       unsigned char *cmd, size_t cmd_len,
@@ -459,12 +459,6 @@ static int cdrom_send_command_macos(libretro_vfs_implementation_file *stream,
                   | ((UInt32)cmd[4] << 8) | (UInt32)cmd[5],
                buf, (SCSICmdField2Byte)len, &ts, &ss);
          break;
-
-      case 0x55: /* MODE SELECT(10) - MMC only exposes the write-
-                  * parameters page, which RetroArch never sets.  Stub
-                  * success so read-cache-disable etc. don't error. */
-         (void)sense; (void)sense_len;
-         return 0;
 
       case 0x5A: /* MODE SENSE(10) */
          if (!mmc || !buf) return 1;
@@ -545,6 +539,7 @@ static int cdrom_send_command_macos(libretro_vfs_implementation_file *stream,
                   memset(sense, 0, sense_len);
                   sense[0]  = 0x70; /* current error               */
                   sense[2]  = 0x03; /* MEDIUM ERROR                */
+                  sense[7]  = 6;    /* bytes through ASC/ASCQ      */
                   sense[12] = 0x11; /* UNRECOVERED READ            */
                }
                return 1;
@@ -560,6 +555,7 @@ static int cdrom_send_command_macos(libretro_vfs_implementation_file *stream,
             memset(sense, 0, sense_len);
             sense[0]  = 0x70;
             sense[2]  = 0x05; /* ILLEGAL REQUEST                   */
+            sense[7]  = 6;    /* bytes through ASC/ASCQ             */
             sense[12] = 0x20; /* INVALID COMMAND OPERATION CODE    */
          }
          return 1;

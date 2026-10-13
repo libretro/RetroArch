@@ -4,6 +4,16 @@ TARGET := cdrom_cuesheet_overflow_test$(EXE)
 .DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../..
+PYTHON ?= python3
+
+$(SAMPLE_OBJDIR)/macos_command_body.inc: extract_macos_command.py $(LIBRETRO_COMM_DIR)/cdrom/cdrom.c
+	$(PYTHON) extract_macos_command.py $@
+
+$(SAMPLE_OBJDIR)/macos_command_test.o: macos_command_test.c $(SAMPLE_OBJDIR)/macos_command_body.inc
+	$(CC) -c -o $@ $< $(CFLAGS) -I$(SAMPLE_OBJDIR)
+
+macos_command_test$(EXE): $(SAMPLE_OBJDIR)/macos_command_test.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 # vfs_implementation_cdrom.c pulls in cdrom.c transitively for its
 # helper functions (cdrom_read, cdrom_write_cue, etc.).  We only
@@ -92,10 +102,11 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
--include $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d) $(CLOSE_OBJS:.o=.d)
+-include $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d) $(CLOSE_OBJS:.o=.d) $(SAMPLE_OBJDIR)/macos_command_test.d
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
+	rm -f macos_command_test$(EXE)
 	rm -f vfs_close_test$(EXE) $(CLOSE_OBJS) $(CLOSE_OBJS:.o=.d)
 	rm -f $(TARGET) disc_dump_test$(EXE) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS) $(DUMP_OBJS) $(OBJS:.o=.d) $(DVD_OBJS:.o=.d) $(DUMP_OBJS:.o=.d)
 

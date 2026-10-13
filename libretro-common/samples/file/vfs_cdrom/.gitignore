@@ -4,3 +4,6 @@ disc_dump_test
 disc_dump_test.exe
 vfs_close_test
 vfs_close_test.exe
+macos_command_test
+macos_command_test.exe
+macos_command_body.inc
