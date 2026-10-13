@@ -64,7 +64,6 @@
 #define MCP_MAX_CONNS      4
 #define MCP_MAX_REQUEST    65536
 #define MCP_TIMEOUT_US     10000000
-#define MCP_TOOLS_TTL_MS   3600000
 
 /* a literal, its length from the compiler rather than counted by hand */
 #define MCP_RAW(w, lit)    rjsonwriter_raw((w), (lit), (int)(sizeof(lit) - 1))
@@ -558,10 +557,10 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       }
    }
    MCP_RAW(w, "]");
-   /* the list is fixed for this build: cacheable by anyone */
-   if (modern)
-      rjsonwriter_rawf(w, ",\"ttlMs\":%d,\"cacheScope\":\"public\"",
-            MCP_TOOLS_TTL_MS);
+   /* No ttlMs or cacheScope: what the tools are and what they take is
+    * compiled in, so it changes when RetroArch is upgraded, and
+    * listChanged is false - a client holding a cached list would have
+    * no way of learning that it had. */
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
 }
@@ -1337,8 +1336,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}%s},"
             "\"instructions\":\"Controls a running RetroArch: each tool is a "
             "RetroArch command. Tools marked destructive can lose unsaved "
-            "progress or load code.\",\"ttlMs\":%d,\"cacheScope\":\"public\"",
-            c->stdio ? ",\"logging\":{}" : "", MCP_TOOLS_TTL_MS);
+            "progress or load code.\"",
+            c->stdio ? ",\"logging\":{}" : "");
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
    }
