@@ -613,11 +613,12 @@ build-retroarch-miyoo-arm32:
 build-retroarch-android-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
+  variables:
+    GRADLE_USER_HOME: /opt/gradle
   artifacts:
     paths:
     - retroarch-precompiled/
     expire_in: 10 min
-  script:
   script:
     - |
       set -e
@@ -631,6 +632,8 @@ build-retroarch-android-normal:
 build-retroarch-android-aarch64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
+  variables:
+    GRADLE_USER_HOME: /opt/gradle
   artifacts:
     paths:
     - retroarch-precompiled/
@@ -648,6 +651,8 @@ build-retroarch-android-aarch64:
 build-retroarch-android-ra32:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
+  variables:
+    GRADLE_USER_HOME: /opt/gradle
   artifacts:
     paths:
     - retroarch-precompiled/
@@ -665,6 +670,8 @@ build-retroarch-android-ra32:
 build-retroarch-android-playstore-normal:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
+  variables:
+    GRADLE_USER_HOME: /opt/gradle
   artifacts:
     paths:
     - retroarch-precompiled/
@@ -682,6 +689,8 @@ build-retroarch-android-playstore-normal:
 build-retroarch-android-playstore-plus:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-android:latest
   stage: build
+  variables:
+    GRADLE_USER_HOME: /opt/gradle
   artifacts:
     paths:
     - retroarch-precompiled/
