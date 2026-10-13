@@ -20,10 +20,27 @@ typedef struct rdvd_spu_packet
 typedef struct rdvd_spu_stream rdvd_spu_stream_t;
 enum rdvd_spu_result
 {
+   RDVD_SPU_UNSUPPORTED = -2,
    RDVD_SPU_ERROR = -1,
    RDVD_SPU_MORE = 0,
    RDVD_SPU_READY = 1
 };
+
+typedef struct rdvd_spu_control
+{
+   rdvd_spu_packet_t packet;
+   unsigned cursor;
+   unsigned end;
+   unsigned delay;
+   unsigned next_offset;
+   bool stopped;
+} rdvd_spu_control_t;
+
+typedef struct rdvd_spu_event
+{
+   unsigned command;
+   unsigned values[4];
+} rdvd_spu_event_t;
 
 /* Reads one exact standard DVD-Video SPU unit, borrowing its bytes.
  * This validates framing, not the control program or bitmap data. */
@@ -44,5 +61,19 @@ void rdvd_spu_stream_reset(rdvd_spu_stream_t *stream);
 enum rdvd_spu_result rdvd_spu_stream_feed(rdvd_spu_stream_t *stream,
       const uint8_t *data, size_t size, uint64_t pts, size_t *consumed,
       rdvd_spu_packet_t *out);
+
+/* offset 0 selects the first control sequence. delay is in 1024/90000 s
+ * units relative to packet PTS. next_offset equals this offset on the last
+ * sequence; otherwise it moves forward. The control view borrows input. */
+bool rdvd_spu_control_begin(const rdvd_spu_packet_t *packet, unsigned offset,
+      rdvd_spu_control_t *out);
+
+/* READY emits commands 0..6: force/start/stop, palette[4], alpha[4],
+ * rectangle {x0,x1,y0,y1}, field offsets {top,bottom}. MORE terminates a
+ * sequence; ERROR/UNSUPPORTED stop it. Validate through the terminator
+ * before applying events. Command 7 (regional colour changes) is not yet
+ * implemented. No display state is changed by this reader. */
+enum rdvd_spu_result rdvd_spu_control_next(rdvd_spu_control_t *control,
+      rdvd_spu_event_t *out);
 RETRO_END_DECLS
 #endif

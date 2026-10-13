@@ -76,9 +76,57 @@ static void test_bad_input(void)
    rdvd_spu_stream_free(NULL);
 }
 
+static void test_controls(void)
+{
+   static const uint8_t input[] = {
+      0, 32, 0, 6, 0x90, 0xa0, 0, 1, 0, 6,
+      0, 1, 3, 0x12, 0x34, 4, 0x56, 0x78,
+      5, 0, 0x10, 3, 0, 0x20, 4, 6, 0, 4, 0, 5, 2, 0xff
+   };
+   static const unsigned commands[] = {0, 1, 3, 4, 5, 6, 2};
+   uint8_t bad[sizeof(input)];
+   rdvd_spu_packet_t packet;
+   rdvd_spu_control_t c;
+   rdvd_spu_event_t e;
+   unsigned i, n;
+   CHECK(rdvd_spu_packet_read(input, sizeof(input), &packet));
+   CHECK(rdvd_spu_control_begin(&packet, 0, &c));
+   CHECK(c.delay == 1 && c.next_offset == 6);
+   for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
+   {
+      CHECK(rdvd_spu_control_next(&c, &e) == RDVD_SPU_READY && e.command == commands[i]);
+      if (e.command == 3 || e.command == 4)
+         for (n = 0; n < 4; n++) CHECK(e.values[n] == (e.command == 3 ? 4u : 8u) - n);
+      if (e.command == 5)
+         CHECK(e.values[0] == 1 && e.values[1] == 3 && e.values[2] == 2 && e.values[3] == 4);
+      if (e.command == 6) CHECK(e.values[0] == 4 && e.values[1] == 5);
+   }
+   CHECK(rdvd_spu_control_next(&c, &e) == RDVD_SPU_MORE);
+   for (n = 11; n < sizeof(input); n++)
+   {
+      enum rdvd_spu_result result;
+      memcpy(bad, input, sizeof(input)); bad[1] = (uint8_t)n;
+      CHECK(rdvd_spu_packet_read(bad, n, &packet));
+      CHECK(rdvd_spu_control_begin(&packet, 0, &c));
+      do { result = rdvd_spu_control_next(&c, &e); } while (result == RDVD_SPU_READY);
+      CHECK(result == RDVD_SPU_ERROR);
+   }
+   memcpy(bad, input, sizeof(input)); bad[10] = 7;
+   CHECK(rdvd_spu_packet_read(bad, sizeof(bad), &packet));
+   CHECK(rdvd_spu_control_begin(&packet, 0, &c));
+   CHECK(rdvd_spu_control_next(&c, &e) == RDVD_SPU_UNSUPPORTED);
+   bad[9] = 5;
+   CHECK(!rdvd_spu_control_begin(&packet, 0, &c));
+   bad[9] = 7;
+   CHECK(!rdvd_spu_control_begin(&packet, 0, &c));
+   CHECK(!rdvd_spu_control_begin(NULL, 0, &c));
+   CHECK(!rdvd_spu_control_begin(&packet, 0, NULL));
+}
+
 int main(void)
 {
    test_framing(); test_bad_input();
+   test_controls();
    printf("DVD SPU tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
