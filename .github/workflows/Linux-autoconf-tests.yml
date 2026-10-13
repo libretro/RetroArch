@@ -151,6 +151,11 @@ jobs:
             ./tests-other/test_autoconf.sh ./retroarch
           fi
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.

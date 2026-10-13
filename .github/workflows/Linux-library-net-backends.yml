@@ -166,6 +166,11 @@ jobs:
              WITH_LIBSMB2=1 samples/network/smb_retro/local_samba_test.sh
           sudo make -C samples/network/smb_retro clean
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.

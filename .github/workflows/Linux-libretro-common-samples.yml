@@ -789,6 +789,11 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -886,6 +891,11 @@ jobs:
              -Wall -Wextra -Werror \
              -I include -c vfs/vfs_implementation.c \
              -o "$RUNNER_TEMP/vfs_implementation.o"
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -1048,6 +1058,11 @@ jobs:
           # divergence or sanitizer report fails the job.
           ./config_file_fuzz -max_len=512 -max_total_time=60 \
             -print_final_stats=1 corpus/
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -1297,6 +1312,11 @@ jobs:
             echo '::error title=No barrier instructions emitted::retro_atomic_test.s contains no acquire/release/barrier mnemonics for ${{ matrix.arch }}; retro_atomic.h may have fallen through to a no-barrier backend.'
             exit 1
           fi
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
@@ -1548,6 +1568,11 @@ jobs:
                ./vfs_v5_metadata_test
             echo "[pass] vfs_v5_metadata_test (FAKE_CFR=$mode, ASan)"
           done
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore

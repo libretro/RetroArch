@@ -1710,6 +1710,11 @@ jobs:
              ./save_state_io_test conc
           echo "[pass] save_state_io_test (TSan)"
 
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
+
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
         # master's, so one push does not evict the next one's.
@@ -2189,6 +2194,11 @@ jobs:
              ./http_dns_evict_deadlock_test
           make -f Makefile.dns_evict clean
           echo "[pass] http_dns_evict_deadlock_test (TSan)"
+
+      - name: ccache statistics
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: ccache -sv
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore
