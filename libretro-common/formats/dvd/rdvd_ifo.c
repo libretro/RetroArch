@@ -566,3 +566,21 @@ bool rdvd_vob_span_read(const rdvd_vob_map_t *map, uint64_t offset,
    }
    return false;
 }
+
+
+bool rdvd_vob_cell_range(const rdvd_vob_map_t *map, const rdvd_pgc_t *pgc,
+      unsigned cell_number, rdvd_vob_range_t *out)
+{
+   rdvd_vob_map_t validated;
+   rdvd_cell_t cell;
+   uint64_t start, end;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!map || !rdvd_vob_map_read(map->sizes, map->segments, &validated)
+         || !rdvd_pgc_cell_read(pgc, cell_number, &cell)) return false;
+   start = (uint64_t)cell.first_sector * 2048;
+   end = ((uint64_t)cell.last_sector + 1) * 2048;
+   if (end > validated.total_bytes) return false;
+   out->offset = start; out->bytes = end - start;
+   return true;
+}

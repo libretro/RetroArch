@@ -94,3 +94,10 @@ matches, and generate validated VIDEO_TS basenames. Backup selection checks
 management validity only; a corrupt nested table in a valid primary is not
 automatically retried against BUP. Filesystem opening, case-insensitive
 lookup, full-table validation and title-VOB concatenation remain caller work.
+
+Title VOB geometry borrows 1..9 nonempty sector-aligned file sizes. Span
+lookup splits logical byte requests at file boundaries without staging
+payloads. Cell range lookup checks inclusive PGC sector bounds against the
+whole title source using 64-bit arithmetic. Callers supply the matching VTS
+title domain, own file handles and read each span into consumer storage.
+Menu VOBs, angle/interleave policy and physical-disc routing are separate.

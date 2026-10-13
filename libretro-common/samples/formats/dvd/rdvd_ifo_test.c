@@ -452,6 +452,38 @@ static void test_vob_spans(void)
    CHECK(!rdvd_vob_span_read(&map, 0, 1, &span) && !span.bytes);
    CHECK(!rdvd_vob_span_read(NULL, 0, 1, &span));
 }
+static void test_vob_cells(void)
+{
+   uint64_t sizes[2];
+   rdvd_vob_map_t map;
+   rdvd_pgc_t pgc;
+   rdvd_vob_range_t range;
+   rdvd_vob_span_t span;
+   fixture();
+   bytes[249] = 10; bytes[257] = 15; bytes[261] = 20;
+   put16(310, 1); bytes[313] = 1;
+   sizes[0] = 16 * 2048; sizes[1] = 5 * 2048;
+   CHECK(rdvd_pgc_read(bytes, 354, &pgc));
+   CHECK(rdvd_vob_map_read(sizes, 2, &map));
+   CHECK(rdvd_vob_cell_range(&map, &pgc, 1, &range));
+   CHECK(range.offset == 10 * 2048 && range.bytes == 11 * 2048);
+   CHECK(rdvd_vob_span_read(&map, range.offset, range.bytes, &span));
+   CHECK(span.segment == 1 && span.bytes == 6 * 2048);
+   CHECK(rdvd_vob_span_read(&map, range.offset + span.bytes,
+            range.bytes - span.bytes, &span));
+   CHECK(span.segment == 2 && span.bytes == 5 * 2048 && !span.file_offset);
+   sizes[1] = 4 * 2048;
+   CHECK(!rdvd_vob_cell_range(&map, &pgc, 1, &range) && !range.bytes);
+   sizes[1] = 5 * 2048;
+   CHECK(!rdvd_vob_cell_range(&map, &pgc, 0, &range));
+   CHECK(!rdvd_vob_cell_range(&map, &pgc, 2, &range));
+   memset(bytes + 258, 0xff, 4);
+   sizes[0] = ((uint64_t)UINT32_MAX + 1) * 2048; sizes[1] = 2048;
+   CHECK(rdvd_vob_cell_range(&map, &pgc, 1, &range));
+   CHECK(range.offset + range.bytes == ((uint64_t)UINT32_MAX + 1) * 2048);
+   CHECK(!rdvd_vob_cell_range(NULL, &pgc, 1, &range));
+   CHECK(!rdvd_vob_cell_range(&map, NULL, 1, &range));
+}
 int main(void)
 {
    test_bounds();
@@ -468,6 +500,7 @@ int main(void)
    test_file_names();
    test_vob_map();
    test_vob_spans();
+   test_vob_cells();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

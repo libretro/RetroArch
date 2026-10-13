@@ -212,5 +212,13 @@ typedef struct rdvd_vob_span
  * No payload allocation, copy or I/O occurs. Failure clears out. */
 bool rdvd_vob_span_read(const rdvd_vob_map_t *map, uint64_t offset,
       uint64_t bytes, rdvd_vob_span_t *out);
+typedef struct rdvd_vob_range { uint64_t offset, bytes; } rdvd_vob_range_t;
+
+/* Converts a title-domain cell's inclusive sector bounds to a logical byte
+ * range, checking the entire cell against the supplied title VOB geometry.
+ * Caller must pair the PGC with its own VTS title domain. Angle/interleave
+ * selection is separate; this range is not a playback sequence. */
+bool rdvd_vob_cell_range(const rdvd_vob_map_t *map, const rdvd_pgc_t *pgc,
+      unsigned cell_number, rdvd_vob_range_t *out);
 RETRO_END_DECLS
 #endif
