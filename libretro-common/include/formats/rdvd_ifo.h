@@ -176,5 +176,10 @@ bool rdvd_ifo_menu_read(const rdvd_ifo_t *ifo, unsigned language_index,
 bool rdvd_ifo_select(const uint8_t *primary, size_t primary_size,
       const uint8_t *backup, size_t backup_size, enum rdvd_ifo_kind kind,
       rdvd_ifo_t *out, bool *used_backup);
+/* Finds the first exact language-code/extension match. Language code is
+ * the big-endian two-byte DVD value. No implicit fallback is applied.
+ * Validates the matched nested PGCIT; failure sets index to zero. */
+bool rdvd_ifo_menu_language_find(const rdvd_ifo_t *ifo, unsigned code,
+      unsigned extension, unsigned *index);
 RETRO_END_DECLS
 #endif

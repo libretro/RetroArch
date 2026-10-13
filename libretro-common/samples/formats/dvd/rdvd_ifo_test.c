@@ -356,6 +356,27 @@ static void test_backup(void)
    CHECK(!rdvd_ifo_select(NULL, 0, backup, sizeof(backup),
             RDVD_IFO_VMG, NULL, &used) && !used);
 }
+static void test_language_find(void)
+{
+   rdvd_ifo_t f;
+   unsigned index;
+   file_fixture(true); menu_chains_fixture();
+   menu_bytes[26] = 1;
+   memcpy(file_bytes + 6144, menu_bytes, sizeof(menu_bytes));
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_menu_language_find(&f, 0x656e, 0, &index) && index == 0);
+   CHECK(rdvd_ifo_menu_language_find(&f, 0x6672, 0, &index) && index == 1);
+   CHECK(rdvd_ifo_menu_language_find(&f, 0x656e, 1, &index) && index == 2);
+   CHECK(!rdvd_ifo_menu_language_find(&f, 0x6465, 0, &index) && !index);
+   CHECK(!rdvd_ifo_menu_language_find(&f, 0x656e, 2, &index));
+   CHECK(!rdvd_ifo_menu_language_find(&f, 65536, 0, &index));
+   CHECK(!rdvd_ifo_menu_language_find(&f, 0x656e, 256, &index));
+   file_bytes[6144 + 512 + 4] = 0xff;
+   CHECK(!rdvd_ifo_menu_language_find(&f, 0x656e, 0, &index));
+   CHECK(rdvd_ifo_menu_language_find(&f, 0x6672, 0, &index) && index == 1);
+   CHECK(!rdvd_ifo_menu_language_find(NULL, 0, 0, &index));
+   CHECK(!rdvd_ifo_menu_language_find(&f, 0, 0, NULL));
+}
 int main(void)
 {
    test_bounds();
@@ -368,6 +389,7 @@ int main(void)
    test_menu_languages();
    test_menu_lookup();
    test_backup();
+   test_language_find();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

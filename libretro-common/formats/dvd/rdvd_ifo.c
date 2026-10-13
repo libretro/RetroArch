@@ -465,3 +465,29 @@ bool rdvd_ifo_select(const uint8_t *primary, size_t primary_size,
    if (used_backup) *used_backup = true;
    return true;
 }
+
+
+bool rdvd_ifo_menu_language_find(const rdvd_ifo_t *ifo, unsigned code,
+      unsigned extension, unsigned *index)
+{
+   rdvd_ifo_span_t span;
+   rdvd_menu_table_t table;
+   rdvd_menu_language_t language;
+   unsigned i;
+   if (!index) return false;
+   *index = 0;
+   if (code > 65535 || extension > 255
+         || !rdvd_ifo_table_read(ifo, RDVD_IFO_MENU, &span)
+         || !rdvd_menu_table_read(span.data, span.size, &table)) return false;
+   for (i = 0; i < table.languages; i++)
+   {
+      const uint8_t *record = table.data + 8 + (size_t)i * 8;
+      if (rdvd_ifo_u16(record) == code && record[2] == extension)
+      {
+         if (!rdvd_menu_language_read(&table, i, &language)) return false;
+         *index = i;
+         return true;
+      }
+   }
+   return false;
+}
