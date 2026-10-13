@@ -16,6 +16,7 @@
 #ifndef __VIDEO_VIEWS_H
 #define __VIDEO_VIEWS_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <boolean.h>
@@ -226,6 +227,14 @@ bool video_views_map_point(const video_views_layout_t *layout,
  * or a UI drawn once, leaves the point as it is. */
 void video_views_ui_point(const video_views_layout_t *layout,
       int x, int y, int *res_x, int *res_y);
+
+/* A canvas's two halves, each of size @dims, into @out for the CPU
+ * drivers, XRGB8888 with strides in pixels: anaglyph by Dubois'
+ * least-squares red/cyan matrices, or interlaced, even rows from the
+ * left half and odd from the right. */
+void video_views_blend_xrgb8888(const uint32_t *canvas,
+      size_t canvas_stride, uint32_t *out, size_t out_stride,
+      unsigned dims, unsigned stereo_mode);
 
 /* ---- The compositor: what drivers that draw views share ----
  * A driver keeps the GPU objects; the decisions are written once, in

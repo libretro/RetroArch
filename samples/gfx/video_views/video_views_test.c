@@ -754,6 +754,41 @@ static void test_select_screens(void)
    }
 }
 
+/* The CPU drivers' blend of a canvas's halves. */
+static void test_blend(void)
+{
+   /* Two 2x2 halves side by side, and an output wider than the eye. */
+   uint32_t canvas[2 * 4];
+   uint32_t out[2 * 3];
+   unsigned i;
+
+   for (i = 0; i < 2; i++)
+   {
+      canvas[i * 4 + 0] = 0xffffff;
+      canvas[i * 4 + 1] = 0x000000;
+      canvas[i * 4 + 2] = 0x000000;
+      canvas[i * 4 + 3] = 0xffffff;
+   }
+   for (i = 0; i < 6; i++)
+      out[i] = 0x123456;
+
+   video_views_blend_xrgb8888(canvas, 4, out, 3, VIDEO_SCALE_PACK(2, 2),
+         VIDEO_STEREO_MODE_ANAGLYPH);
+   /* White left only is red, white right only cyan. */
+   CHECK(out[0] == 0xff0000 && out[1] == 0x00ffff);
+   CHECK(out[3] == 0xff0000 && out[4] == 0x00ffff);
+   /* Past the eye's width is left alone. */
+   CHECK(out[2] == 0x123456 && out[5] == 0x123456);
+
+   canvas[4] = 0x0000ff;
+   canvas[6] = 0x00ff00;
+   video_views_blend_xrgb8888(canvas, 4, out, 3, VIDEO_SCALE_PACK(2, 2),
+         VIDEO_STEREO_MODE_INTERLACED);
+   /* Row 0 from the left half, row 1 from the right. */
+   CHECK(out[0] == 0xffffff && out[1] == 0x000000);
+   CHECK(out[3] == 0x00ff00 && out[4] == 0xffffff);
+}
+
 /* ---- the compositor, instantiated over fakes ---- */
 
 typedef struct fake_chain
@@ -1101,6 +1136,7 @@ int main(void)
    test_frame_helpers();
    test_eye_pair();
    test_select_screens();
+   test_blend();
    test_layout_screens();
    test_layout_stereo();
    test_layout_one_screen();

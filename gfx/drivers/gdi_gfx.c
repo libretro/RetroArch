@@ -2670,57 +2670,19 @@ static bool gdi_views_setup(gdi_t *gdi, video_frame_info_t *video_info,
    return views;
 }
 
-/* The canvas's halves into the window surface's @dims: anaglyph by
- * Dubois' least-squares red/cyan matrices, or interlaced, even rows
- * from the left half and odd from the right, counted from the top */
+/* The canvas's halves into the window surface's @dims */
 static void gdi_views_blend(gdi_t *gdi, const video_views_layout_t *layout,
       unsigned dims)
 {
-   unsigned x, y;
    unsigned w     = VIDEO_SCALE_W(dims);
    unsigned h     = VIDEO_SCALE_H(dims);
    unsigned cw    = VIDEO_SCALE_W(layout->canvas_dims);
    unsigned ch    = VIDEO_SCALE_H(layout->canvas_dims);
    unsigned sw    = VIDEO_SCALE_W(gdi->menu_surface_dims);
-   bool anaglyph  = layout->stereo_mode != VIDEO_STEREO_MODE_INTERLACED;
    if (cw < 2 * w || ch < h || sw < w)
       return;
-   for (y = 0; y < h; y++)
-   {
-      const uint32_t *l = gdi->views.canvas.pixels + (size_t)y * cw;
-      const uint32_t *r = l + w;
-      uint32_t *out     = gdi->menu_pixels + (size_t)y * sw;
-      if (!anaglyph)
-      {
-         memcpy(out, (y & 1) ? r : l, (size_t)w * sizeof(uint32_t));
-         continue;
-      }
-      for (x = 0; x < w; x++)
-      {
-         float lr = (float)((l[x] >> 16) & 0xff);
-         float lg = (float)((l[x] >>  8) & 0xff);
-         float lb = (float)( l[x]        & 0xff);
-         float rr = (float)((r[x] >> 16) & 0xff);
-         float rg = (float)((r[x] >>  8) & 0xff);
-         float rb = (float)( r[x]        & 0xff);
-         float c[3];
-         unsigned k;
-         uint32_t px = 0;
-         c[0] =  0.456100f * lr + 0.500484f * lg + 0.176381f * lb
-               - 0.0434706f * rr - 0.0879388f * rg - 0.00155529f * rb;
-         c[1] = -0.0400822f * lr - 0.0378246f * lg - 0.0157589f * lb
-               + 0.378476f * rr + 0.73364f * rg - 0.0184503f * rb;
-         c[2] = -0.0152161f * lr - 0.0205971f * lg - 0.00546856f * lb
-               - 0.0721527f * rr - 0.112961f * rg + 1.2264f * rb;
-         for (k = 0; k < 3; k++)
-         {
-            int v = (int)(c[k] + 0.5f);
-            v     = (v < 0) ? 0 : (v > 255) ? 255 : v;
-            px    = (px << 8) | (uint32_t)v;
-         }
-         out[x] = px;
-      }
-   }
+   video_views_blend_xrgb8888(gdi->views.canvas.pixels, cw,
+         gdi->menu_pixels, sw, dims, layout->stereo_mode);
 }
 
 /* Draws the frame's views into the window surface, selected in memDC,

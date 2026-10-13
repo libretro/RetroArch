@@ -1086,3 +1086,57 @@ jobs:
           name: views-sdl3-logs
           path: ${{ runner.temp }}/views-e2e/**/*.log
           if-no-files-found: ignore
+
+  views-sdl1:
+    name: Views on SDL 1.2, end to end (Xvfb, sdl12-compat)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Build retroarch with SDL 1.2
+        run: |
+          set -eu
+          ./configure --enable-sdl --disable-sdl2 --disable-sdl3 --disable-qt \
+                      --disable-vulkan --disable-ffmpeg
+          grep -q '^HAVE_SDL = 1' config.mk
+          make -j$(getconf _NPROCESSORS_ONLN)
+          make -C samples/cores/video_views
+
+      - name: Views on SDL 1.2, end to end
+        shell: bash
+        run: |
+          set -eu
+          # The views compositor as the SDL 1.2 driver instantiates it:
+          # each view scaled straight out of the frame into the window
+          # surface, the anaglyph and interlaced canvas blended on the
+          # CPU, views read exactly out of the frame, and the menu with
+          # it open. Under openbox, which sizes sdl12-compat's fullscreen
+          # window.
+          RA_E2E_XVFB=1 python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch "$RUNNER_TEMP/views-e2e" sdl
+
+      - name: Preserve views logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: views-sdl1-logs
+          path: ${{ runner.temp }}/views-e2e/**/*.log
+          if-no-files-found: ignore

@@ -416,6 +416,50 @@ void video_views_layout(const video_views_layout_params_t *p,
    }
 }
 
+void video_views_blend_xrgb8888(const uint32_t *canvas,
+      size_t canvas_stride, uint32_t *out, size_t out_stride,
+      unsigned dims, unsigned stereo_mode)
+{
+   unsigned x, y;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   for (y = 0; y < h; y++, canvas += canvas_stride, out += out_stride)
+   {
+      const uint32_t *l = canvas;
+      const uint32_t *r = canvas + w;
+      if (stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+      {
+         memcpy(out, (y & 1) ? r : l, (size_t)w * sizeof(uint32_t));
+         continue;
+      }
+      for (x = 0; x < w; x++)
+      {
+         unsigned k;
+         float c[3];
+         uint32_t px = 0;
+         float lr    = (float)((l[x] >> 16) & 0xff);
+         float lg    = (float)((l[x] >>  8) & 0xff);
+         float lb    = (float)( l[x]        & 0xff);
+         float rr    = (float)((r[x] >> 16) & 0xff);
+         float rg    = (float)((r[x] >>  8) & 0xff);
+         float rb    = (float)( r[x]        & 0xff);
+         c[0] =  0.456100f * lr + 0.500484f * lg + 0.176381f * lb
+               - 0.0434706f * rr - 0.0879388f * rg - 0.00155529f * rb;
+         c[1] = -0.0400822f * lr - 0.0378246f * lg - 0.0157589f * lb
+               + 0.378476f * rr + 0.73364f * rg - 0.0184503f * rb;
+         c[2] = -0.0152161f * lr - 0.0205971f * lg - 0.00546856f * lb
+               - 0.0721527f * rr - 0.112961f * rg + 1.2264f * rb;
+         for (k = 0; k < 3; k++)
+         {
+            int v = (int)(c[k] + 0.5f);
+            v     = (v < 0) ? 0 : (v > 255) ? 255 : v;
+            px    = (px << 8) | (uint32_t)v;
+         }
+         out[x] = px;
+      }
+   }
+}
+
 unsigned video_views_ui_dims(const video_views_layout_t *layout,
       unsigned dims)
 {

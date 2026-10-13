@@ -273,7 +273,7 @@ EXACT_HW = {'gl': ('off', 'gl_compat'),
             'gl1': ('off',), 'd3d10': ('off',), 'd3d11': ('off', 'd3d11'),
             'd3d12': ('off', 'd3d12'), 'd3d9_hlsl': ('off',),
             'sdl2': ('off',), 'sdl3': ('off',), 'd3d8': ('off',),
-            'gdi': ('off',)}
+            'gdi': ('off',), 'sdl': ('off',)}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
 PRESET_DRIVERS = ('glcore', 'vulkan', 'd3d10', 'd3d11', 'd3d12')
@@ -314,6 +314,10 @@ SM4_DRIVERS = ('d3d10',)
 # Drivers that draw anaglyph's frames whole: no blend of theirs makes its
 # colours, which mix the channels.
 WHOLE_ANAGLYPH_DRIVERS = ('d3d8', 'sdl2', 'sdl3')
+# Drivers left out of the pointer cases: on Xvfb SDL 1.2's fullscreen
+# window (SDL2's sdl12-compat) reports no pointer motion, even with a
+# window manager.
+NO_POINTER_DRIVERS = ('sdl',)
 # Filtered, a view drawn straight from the frame must stop at its edge
 # as its copy does: the ds screens touch in the frame, so a bottom row
 # blended with the other screen's top shows. Compared, not checked
@@ -331,7 +335,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
-                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi')
+                  'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi', 'sdl')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
@@ -686,6 +690,20 @@ def free_display():
     raise RuntimeError('no free X display')
 
 
+# Drivers whose fullscreen window a window manager sizes: SDL 1.2's
+# (SDL2's sdl12-compat) stays 1x1 without one.
+WM_DRIVERS = ('sdl',)
+
+
+def wm_start(env):
+    """openbox on env's display."""
+    p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, env=env,
+                         start_new_session=True)
+    time.sleep(0.5)
+    return p
+
+
 def release_display(display):
     with TAKEN_LOCK:
         TAKEN_DISPLAYS.discard(int(display.lstrip(':')))
@@ -864,9 +882,11 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
            retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
     env = isolated_env()
     env.update(env_extra or {})
-    xvfb = None
+    xvfb = wm = None
     if XVFB:
         xvfb, env['DISPLAY'] = xvfb_start(env)
+        if driver in WM_DRIVERS:
+            wm = wm_start(env)
         cmd = cmd[cmd.index('--') + 1:]
     if WINE:
         env['WINEPREFIX'] = wine_prefix()
@@ -933,6 +953,12 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             except subprocess.TimeoutExpired:
                 os.killpg(p.pid, signal.SIGKILL)
         log.close()
+        if wm:
+            wm.terminate()
+            try:
+                wm.wait(5)
+            except subprocess.TimeoutExpired:
+                wm.kill()
         if xvfb:
             xvfb.terminate()
             try:
@@ -1517,7 +1543,8 @@ def driver_jobs(retroarch, root, driver):
                        else []) if wanted(c[0])]
     jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
     jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
-             for c in POINTER_CASES if wanted(c[0])]
+             for c in POINTER_CASES
+             if wanted(c[0]) and driver not in NO_POINTER_DRIVERS]
     return jobs
 
 
