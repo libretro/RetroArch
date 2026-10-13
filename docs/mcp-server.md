@@ -105,7 +105,8 @@ nothing report `Done.`.
 ## Results that are rows
 
 The replies that are lines of tab-separated fields - `GET_OPTION`,
-`SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS` and `GET_PLAYLIST` - come
+`SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
+`GET_CORE_OPTION` and `GET_MEMORY_MAP` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns:
@@ -119,10 +120,16 @@ rows rather than splitting them itself. Each of those tools declares an
 ```
 
 The columns are `option` and `value` for the options, `name` and `path`
-for the cores, `playlist` for the playlists, and `index`, `label`,
-`content` and `core` for a playlist's entries. Every field is a string:
-it is the text's own field, which the server does not read as anything
-else.
+for the cores, `playlist` for the playlists, `index`, `label`, `content`
+and `core` for a playlist's entries, `key`, `value`, `description` and
+`values` for a core's options, and `start`, `length`, `select`,
+`disconnect`, `kind`, `access`, `order` and `space` for the memory map.
+Every field is a string: it is the text's own field, which the server
+does not read as anything else.
+
+A reply may end short of its columns, and the schema requires only the
+ones every row carries: `GET_CORE_OPTION` gives an option's `values`
+only where it was asked for that option by key.
 
 A reply cut short carries `more`, and `GET_PLAYLIST` also carries
 `next`, the entry its next page starts at - what the text says as

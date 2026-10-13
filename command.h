@@ -548,6 +548,11 @@ struct cmd_column
  * that line's number is given as, where the reply is paged, and is NULL
  * where MORE carries none.
  *
+ * @required is how many of the columns every row has, where a reply
+ * ends short of them: GET_CORE_OPTION gives an option's key, value and
+ * description, and the values it takes only when asked for that option
+ * by key. Zero means every column, which is what the rest answer.
+ *
  * @columns ends with a row whose @name is NULL. */
 struct cmd_rows
 {
@@ -555,6 +560,7 @@ struct cmd_rows
    unsigned    slack;
    const char *cursor;
    const char *cursor_desc;
+   unsigned    required;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -796,9 +802,33 @@ static const struct cmd_column cmd_cols_entry[] = {
    { NULL }
 };
 
-static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, 1, NULL, NULL };
-static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, 0, NULL, NULL };
-static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, 0, NULL, NULL };
+static const struct cmd_column cmd_cols_core_option[] = {
+   { "key", "The option's key, as SET_CORE_OPTION takes it." },
+   { "value", "The value it has now." },
+   { "description", "What the option is called in the menu." },
+   { "values", "The values it takes, separated by \"|\"; given only "
+      "where the option was asked for by key." },
+   { NULL }
+};
+static const struct cmd_column cmd_cols_memory[] = {
+   { "start", "The region's first address, in hexadecimal." },
+   { "length", "How many bytes it covers, in hexadecimal." },
+   { "select", "Which address bits name the region, in hexadecimal." },
+   { "disconnect", "Which address bits it ignores, in hexadecimal." },
+   { "kind", "system, save, video or other." },
+   { "access", "rw, ro, or none where the core exposes no memory." },
+   { "order", "big or little." },
+   { "space", "The address space the core names it in, or empty." },
+   { NULL }
+};
+
+static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, 1, NULL, NULL, 0 };
+static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, 0, NULL, NULL, 0 };
+static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, 0, NULL, NULL, 0 };
+/* the values, where given, are last and take whatever is left */
+static const struct cmd_rows cmd_rows_core_option =
+   { cmd_cols_core_option, 3, NULL, NULL, 3 };
+static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, 7, NULL, NULL, 0 };
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, 1, "next",
    "The entry the next page starts at, as GET_PLAYLIST's first takes it." };
 
@@ -822,7 +852,7 @@ static const struct cmd_action_map action_map[] = {
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
-   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
+   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
@@ -835,7 +865,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 #endif
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY, cmd_params_read },
-   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },

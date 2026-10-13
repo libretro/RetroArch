@@ -115,7 +115,27 @@ static const struct cmd_column test_cols_rows[] = {
 };
 /* the name in the middle is the column that takes a tab of its own */
 static const struct cmd_rows test_rows = { test_cols_rows, 1, "next",
-   "The entry the next page starts at." };
+   "The entry the next page starts at.", 0 };
+
+/* a reply whose last column is only sometimes there, as
+ * GET_CORE_OPTION's values are */
+static const struct cmd_column test_cols_short[] = {
+   { "key", "The key." },
+   { "value", "The value." },
+   { "extra", "Only sometimes given." },
+   { NULL }
+};
+static const struct cmd_rows test_rows_short =
+   { test_cols_short, 2, NULL, NULL, 2 };
+
+#define SHORT_TEXT "a\tone\nb\ttwo\tand more\nc\n"
+
+static bool act_short(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, SHORT_TEXT, sizeof(SHORT_TEXT) - 1);
+   return true;
+}
 
 /* a line the command opens with its own name is not a row, a tab in
  * the name shifts no field, and MORE carries the cursor */
@@ -150,6 +170,7 @@ static struct cmd_action_map test_actions[] = {
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
    { "LROWS", act_later, "No argument", "Answer rows on a later frame.", CMD_INFO_READ_ONLY, NULL, &test_rows },
+   { "SHORT", act_short, "No argument", "Answer rows that may end short.", CMD_INFO_READ_ONLY, NULL, &test_rows_short },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -615,8 +636,8 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS and LROWS, and nothing before them */
-      check("only the commands that answer rows declare one", n == 2);
+      /* ROWS, LROWS and SHORT, and nothing before them */
+      check("only the commands that answer rows declare one", n == 3);
    }
 
    printf("tools/call\n");
@@ -782,6 +803,22 @@ int main(void)
          call("JOIN", "{\"argument\":\"one|two 7\"}"), out, sizeof(out), NULL);
    check("the single argument older clients send still works",
          st == 200 && strstr(out, "JOIN[one|two 7]"));
+
+   st = post(cmd, PORT_OPEN, NULL, call("SHORT", NULL), out, sizeof(out), NULL);
+   check("a row ending short of its columns carries what it has",
+         st == 200 && strstr(out, "{\"key\":\"a\",\"value\":\"one\"}"));
+   check("a full row still carries all of them",
+         strstr(out, "{\"key\":\"b\",\"value\":\"two\",\"extra\":\"and more\"}"));
+   check("a row short of what every row has is no row",
+         st == 200 && !strstr(out, "\"key\":\"c\""));
+   st = post(cmd, PORT_OPEN, NULL,
+         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
+         out, sizeof(out), NULL);
+   {
+      const char *sh = strstr(out, "\"name\":\"SHORT\"");
+      check("the schema requires only the columns every row has",
+            sh && strstr(sh, "\"required\":[\"key\",\"value\"]"));
+   }
 
    printf("commands that are not tools\n");
    /* The flag is what leaves a command out, so the same two the list

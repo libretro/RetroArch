@@ -442,6 +442,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
    first = true;
    for (col = rows->columns; col->name; col++)
    {
+      if (rows->required && (size_t)(col - rows->columns) >= rows->required)
+         break;
       if (!first)
          MCP_RAW(w, ",");
       first = false;
@@ -813,12 +815,15 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    size_t      name_len = strlen(name);
    size_t      ncol     = 0;
    size_t      slack;
+   size_t      req;
+   size_t      present;
    bool        first    = true;
    bool        more     = false;
 
    while (rows->columns[ncol].name)
       ncol++;
    slack = rows->slack < ncol ? rows->slack : ncol - 1;
+   req   = rows->required && rows->required < ncol ? rows->required : ncol;
 
    MCP_RAW(w, ",\"structuredContent\":{\"rows\":[");
    while (p < end)
@@ -856,13 +861,17 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       for (f = line; f < stop; f++)
          if (*f == '\t')
             tabs++;
-      /* fewer fields than columns: not a row of this reply */
-      if (tabs + 1 < ncol)
+      /* fewer fields than the reply always has: not a row of it */
+      if (tabs + 1 < req)
          continue;
+      /* a reply may end short of its columns, and then the last one it
+       * does carry takes whatever the line has left */
+      present = tabs + 1 < ncol ? tabs + 1 : ncol;
       if (!first)
          MCP_RAW(w, ",");
       first = false;
-      mcp_row(w, rows, line, stop, ncol, slack);
+      mcp_row(w, rows, line, stop, present,
+            slack < present ? slack : present - 1);
    }
    MCP_RAW(w, "]");
    if (more)
