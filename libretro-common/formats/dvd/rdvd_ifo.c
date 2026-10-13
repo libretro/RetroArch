@@ -7,6 +7,12 @@ static unsigned rdvd_ifo_u16(const uint8_t *p)
    return ((unsigned)p[0] << 8) | p[1];
 }
 
+static uint32_t rdvd_ifo_u32(const uint8_t *p)
+{
+   return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+      | ((uint32_t)p[2] << 8) | p[3];
+}
+
 bool rdvd_pgc_read(const uint8_t *data, size_t size, rdvd_pgc_t *out)
 {
    rdvd_pgc_t p;
@@ -51,5 +57,84 @@ bool rdvd_pgc_read(const uint8_t *data, size_t size, rdvd_pgc_t *out)
    }
    p.data = data; p.size = size;
    *out = p;
+   return true;
+}
+
+static bool rdvd_pgc_validate(const rdvd_pgc_t *pgc, rdvd_pgc_t *out)
+{
+   return pgc && rdvd_pgc_read(pgc->data, pgc->size, out);
+}
+
+bool rdvd_pgc_program_cells(const rdvd_pgc_t *pgc, unsigned number,
+      unsigned *first, unsigned *last)
+{
+   rdvd_pgc_t p;
+   if (first) *first = 0;
+   if (last) *last = 0;
+   if (!first || !last || !rdvd_pgc_validate(pgc, &p) || !number || number > p.programs)
+      return false;
+   *first = p.data[p.offsets[1] + number - 1];
+   *last = number == p.programs ? p.cells : (unsigned)p.data[p.offsets[1] + number] - 1;
+   return true;
+}
+
+bool rdvd_pgc_cell_read(const rdvd_pgc_t *pgc, unsigned number, rdvd_cell_t *out)
+{
+   rdvd_pgc_t p;
+   rdvd_cell_t c;
+   const uint8_t *play, *position;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!rdvd_pgc_validate(pgc, &p) || !number || number > p.cells) return false;
+   play = p.data + p.offsets[2] + (number - 1) * 24;
+   position = p.data + p.offsets[3] + (number - 1) * 4;
+   memset(&c, 0, sizeof(c));
+   c.first_sector = rdvd_ifo_u32(play + 8);
+   c.first_ilvu_end = rdvd_ifo_u32(play + 12);
+   c.last_vobu_start = rdvd_ifo_u32(play + 16);
+   c.last_sector = rdvd_ifo_u32(play + 20);
+   c.vob_id = rdvd_ifo_u16(position);
+   c.cell_id = position[3];
+   c.still_time = play[2]; c.command_number = play[3];
+   c.block_mode = play[0] >> 6; c.block_type = (play[0] >> 4) & 3;
+   c.seamless = (play[0] & 8) != 0;
+   c.interleaved = (play[0] & 4) != 0;
+   c.stc_discontinuity = (play[0] & 2) != 0;
+   if (!c.vob_id || !c.cell_id || c.first_sector > c.last_sector
+         || c.last_vobu_start < c.first_sector || c.last_vobu_start > c.last_sector
+         || (c.interleaved && (c.first_ilvu_end < c.first_sector || c.first_ilvu_end > c.last_sector))
+         || c.command_number > p.command_counts[2])
+      return false;
+   *out = c;
+   return true;
+}
+
+bool rdvd_pgc_command_read(const rdvd_pgc_t *pgc, enum rdvd_pgc_command_kind kind,
+      unsigned index, const uint8_t **out)
+{
+   rdvd_pgc_t p;
+   unsigned base;
+   if (!out) return false;
+   *out = NULL;
+   if (!rdvd_pgc_validate(pgc, &p)) return false;
+   switch (kind)
+   {
+      case RDVD_PGC_PRE: base = 0; break;
+      case RDVD_PGC_POST: base = p.command_counts[0]; break;
+      case RDVD_PGC_CELL: base = p.command_counts[0] + p.command_counts[1]; break;
+      default: return false;
+   }
+   if (index >= p.command_counts[kind]) return false;
+   *out = p.data + p.offsets[0] + 8 + (size_t)(base + index) * 8;
+   return true;
+}
+
+bool rdvd_pgc_palette_read(const rdvd_pgc_t *pgc, unsigned index, uint32_t *out)
+{
+   rdvd_pgc_t p;
+   if (!out) return false;
+   *out = 0;
+   if (index >= 16 || !rdvd_pgc_validate(pgc, &p)) return false;
+   *out = rdvd_ifo_u32(p.data + 164 + 4 * index);
    return true;
 }
