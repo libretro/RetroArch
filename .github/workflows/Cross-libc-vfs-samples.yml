@@ -144,18 +144,24 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
-          update: true
+          update: false
 
-      - name: Install packages
+      - name: Update and install packages
         shell: msys2 {0}
         run: |
           # A mirror that stalls fails pacman's whole transaction; what it
           # fetched stays in the cache, so a retry fetches only the rest.
+          # The database sync is retried here too, and pacman waits out a
+          # slow mirror instead of aborting; timeout-minutes bounds a hang.
+          # -Syuu runs twice because a core runtime update ends the first.
           p=$MINGW_PACKAGE_PREFIX
           pkgs="base-devel $p-toolchain"
           for i in 1 2 3; do
-            pacman -S --noconfirm --needed $pkgs && exit 0
-            echo "package install failed (attempt $i); retrying in 10s"
+            pacman -Syuu --noconfirm --disable-download-timeout &&
+            pacman -Syuu --noconfirm --disable-download-timeout &&
+            pacman -S --noconfirm --needed --disable-download-timeout $pkgs &&
+            exit 0
+            echo "package update/install failed (attempt $i); retrying in 10s"
             sleep 10
           done
           exit 1
