@@ -247,6 +247,7 @@ int __wrap_av_interleaved_write_frame(AVFormatContext *ctx, AVPacket *pkt)
 }
 
 static bool drain_oom_requested, drain_oom_armed;
+static uintptr_t producer_thread_id;
 void __real_sthread_join(sthread_t *thread);
 void __wrap_sthread_join(sthread_t *thread)
 {
@@ -261,9 +262,14 @@ void *__real_av_malloc(size_t size);
 void *__wrap_av_malloc(size_t size)
 {
    size_t video_size = 2 * W * H * sizeof(uint32_t);
-   if (drain_oom_armed
-         && ((fault_mode == 12 && size != video_size)
-            || (fault_mode == 13 && size == video_size)))
+   if ((drain_oom_armed
+            && ((fault_mode == 12 && size != video_size)
+               || (fault_mode == 13 && size == video_size)))
+         || (fault_mode >= 14
+            && sthread_get_current_thread_id() != producer_thread_id
+            && !fault_writes
+            && ((fault_mode == 14 && size != video_size)
+               || (fault_mode == 15 && size == video_size))))
    {
       drain_oom_armed = false;
       fault_writes++;
@@ -283,6 +289,7 @@ static int run(bool drop)
    void     *rec;
    unsigned  n;
    bool finalized;
+   bool producer_failed = false;
 
    memset(&params, 0, sizeof(params));
    params.fps                        = FPS;
@@ -339,6 +346,11 @@ static int run(bool drop)
       vid.is_dupe = false;
       if (!record_ffmpeg.push_video(rec, &vid))
       {
+         if (fault_mode >= 14)
+         {
+            producer_failed = true;
+            break;
+         }
          fprintf(stderr, "push_video %u failed\n", n);
          return 1;
       }
@@ -346,6 +358,11 @@ static int run(bool drop)
       aud.frames = 800;
       if (!record_ffmpeg.push_audio(rec, &aud))
       {
+         if (fault_mode >= 14)
+         {
+            producer_failed = true;
+            break;
+         }
          fprintf(stderr, "push_audio %u failed\n", n);
          return 1;
       }
@@ -365,6 +382,7 @@ static int run(bool drop)
    {
       remove(OUT);
       if (finalized || fault_closes != 1 || !fault_closed
+            || (fault_mode >= 14 && !producer_failed)
             || ((fault_mode == 1 || fault_mode >= 4) && !fault_writes))
       {
          fprintf(stderr, "finalize fault %u: success=%d writes=%u closes=%u\n",
@@ -597,15 +615,16 @@ int record_finalize_test_run(void);
 
 int main(void)
 {
+   producer_thread_id = sthread_get_current_thread_id();
    if (record_finalize_test_run())
       return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;
-   for (fault_mode = 1; fault_mode <= 13; fault_mode++)
+   for (fault_mode = 1; fault_mode <= 15; fault_mode++)
    {
 #ifndef PLAIN_RING
-      if (fault_mode == 13)
-         break;
+      if (fault_mode == 13 || fault_mode == 15)
+         continue;
 #endif
       fault_writes = fault_closes = 0;
       fault_closed = false;

@@ -2805,6 +2805,17 @@ static void ffmpeg_thread(void *data)
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
+   if ((audio_buf_size && !audio_buf)
+         || (!ff->video_fifo.mirror && !video_buf))
+   {
+      ff->encode_failed = true;
+      retro_atomic_store_release_int(&ff->alive, 0);
+      retro_eventcount_notify(&ff->space);
+      av_free(video_buf);
+      av_free(audio_buf);
+      return;
+   }
+
 #ifdef FFMPEG_HAVE_THREAD_NICE
    /* Also covers threads an encoder spawns lazily from here. */
    if (ff->allow_frame_drop)
