@@ -18,7 +18,7 @@ static cdrom_toc_t reopened_toc;
 static unsigned toc_queries;
 static int changed_geometry;
 static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
-static int output_close_fail, input_close_fail, publish_fail;
+static int output_close_fail, input_close_fail, publish_fail, short_read;
 static RFILE *output_handles[4];
 static RFILE *image_input;
 static unsigned write_opens;
@@ -79,7 +79,9 @@ static int dump_close(RFILE *file)
 static int64_t dump_read(RFILE *file, void *buf, int64_t len)
 {
    CHECK(((uintptr_t)buf & 4095) == 0 || medium == 8);
+   CHECK(len <= filestream_get_size(file) - filestream_tell(file));
    if (read_fail) return -1;
+   if (short_read) return filestream_read(file, buf, len / 2);
    return filestream_read(file, buf, len);
 }
 static int64_t dump_write(RFILE *file, const void *buf, int64_t len)
@@ -183,11 +185,11 @@ static void run_dump(int cancel)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
-   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail || publish_fail)
+   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail || publish_fail || short_read)
    {
       CHECK(finished_logs == logs);
       if (medium == 0x10) verify("dump_result.iso", 17);
-      if ((output_close_fail || input_close_fail) && !cancel)
+      if ((output_close_fail || input_close_fail || short_read) && !cancel)
          CHECK(state->failed);
       if (changed_geometry)
       {
@@ -270,6 +272,7 @@ int main(void)
    input_close_fail = 1; run_dump(0); input_close_fail = 0;
    medium = 8;
    run_dump(0);
+   short_read = 1; run_dump(0); short_read = 0;
    for (output_close_fail = 1; output_close_fail <= 3; output_close_fail++)
       run_dump(0);
    output_close_fail = 0;

@@ -443,10 +443,12 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          /* read data from track and write it to a file in chunks */
          if (state->cur_track_bytes > state->track_written_bytes)
          {
-            int64_t read_bytes  = filestream_read(state->file, state->data, 2352 * 2);
+            int64_t remaining = state->cur_track_bytes - state->track_written_bytes;
+            int64_t want = remaining > 2352 * 2 ? 2352 * 2 : remaining;
+            int64_t read_bytes = filestream_read(state->file, state->data, want);
             int progress        = 0;
 
-            if (read_bytes <= 0)
+            if (read_bytes != want)
             {
                task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
                return;
