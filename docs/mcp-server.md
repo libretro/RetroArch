@@ -207,6 +207,12 @@ it go) for the core, over the player's own controller, until it is set
 again or `RELEASE_INPUT [player]` lets go of it. Both answer with what
 the player then holds. Achievements hardcore mode refuses it.
 
+Several controls join with `+` to be held together:
+`SET_INPUT 1 right+a 1` runs and jumps in one request, where two
+requests would take two frames. Every control is checked before any is
+held, so a combination with a name or a value wrong in it holds
+nothing.
+
 The running core's own options are `GET_CORE_OPTION` and
 `SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as
 key, value and description, tab separated; with a key it gives that

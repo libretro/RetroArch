@@ -125,6 +125,31 @@ int main(int argc, char **argv)
       preempt_deinit(loop);
    }
 
+   /* several controls at once */
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 b+a 1") && !strcmp(reply,"1\tb a\tnone\n"));
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 +a++b+ 1") && !strcmp(reply,"1\tb a\tnone\n"));
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 left_x+right_y 2000")
+         && !strcmp(reply,"1\tnone\tleft_x=2000 right_y=2000\n"));
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(!command_set_input(&cmd,"1 + 1") && strstr(reply,"SET_INPUT ERROR"));
+   /* a combination with something wrong in it holds nothing: the next
+    * request answers with only what it asked for */
+   reply[0]=0;
+   CHECK(!command_set_input(&cmd,"1 a+nope 1") && strstr(reply,"nope"));
+   reply[0]=0;
+   CHECK(!command_set_input(&cmd,"1 a+left_x 50")
+         && strstr(reply,"SET_INPUT ERROR"));
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 start 1")
+         && !strcmp(reply,"1\tstart\tnone\n"));
+   CHECK(command_release_input(&cmd,""));
+
    before=calls; reply[0]=0;
    CHECK(command_run_frames(&cmd,"3"));
    runloop_iterate();

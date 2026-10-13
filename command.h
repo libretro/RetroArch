@@ -691,10 +691,13 @@ static const struct cmd_param cmd_params_run_frames[] = {
 };
 static const struct cmd_param cmd_params_input[] = {
    { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "control", "The RetroPad button or stick axis.",
-      CMD_PARAM_STRING, true, NULL,
-      "b|y|select|start|up|down|left|right|a|x|l|r|l2|r2|l3|r3|"
-      "left_x|left_y|right_x|right_y", NULL },
+   /* No enum: a combination is not one of the names, and a client that
+    * held the schema to one would refuse to send it. */
+   { "control", "A RetroPad button or stick axis, or several joined by "
+      "\"+\" to hold together: b, y, select, start, up, down, left, "
+      "right, a, x, l, r, l2, r2, l3, r3, left_x, left_y, right_x, "
+      "right_y. \"right+a\" runs and jumps in one request.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "value", "1 holds a button and 0 lets it go; an axis takes -32768 "
       "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
@@ -850,7 +853,7 @@ static const struct cmd_action_map action_map[] = {
    { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time.", CMD_INFO_READ_ONLY, cmd_params_log },
 #endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
-   { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
+   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },

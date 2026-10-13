@@ -2293,11 +2293,14 @@ static size_t command_input_line(unsigned port, char *s, size_t len)
 bool command_set_input(command_t *cmd, const char *arg)
 {
    char   reply[192];
-   char   control[16];
+   char   control[160];
+   unsigned ids[ARRAY_SIZE(command_input_names)];
+   unsigned count                 = 0;
    unsigned player;
    unsigned i;
    long   value;
    char  *end                     = NULL;
+   char  *tok;
    const char *sp;
 
    while (arg && *arg == ' ')
@@ -2319,22 +2322,60 @@ bool command_set_input(command_t *cmd, const char *arg)
    }
    memcpy(control, end, (size_t)(sp - end));
    control[sp - end] = '\0';
-   for (i = 0; i < ARRAY_SIZE(command_input_names); i++)
-      if (string_is_equal(control, command_input_names[i]))
-         break;
-   if (i == ARRAY_SIZE(command_input_names))
+   value = strtol(sp + 1, &end, 10);
+   if (end == sp + 1 || *end)
    {
-      command_reply_error(cmd, "SET_INPUT", "no control named %s", control);
+      command_reply_error(cmd, "SET_INPUT", "a value after the control");
       return false;
    }
-   value = strtol(sp + 1, &end, 10);
-   if (     end == sp + 1 || *end
-         || (i <  16 && value != 0 && value != 1)
-         || (i >= 16 && (value < -32768 || value > 32767)))
+   /* Several controls at once, joined by "+", so a combination a game
+    * wants together - right+a to run and jump - is one request and one
+    * frame rather than two of each. Every one is resolved and checked
+    * before any is held, so a combination with something wrong in it
+    * holds nothing. */
+   for (tok = control; *tok; )
    {
-      command_reply_error(cmd, "SET_INPUT", i < 16
-            ? "%s takes 1 to hold it or 0 to let it go"
-            : "%s takes -32768 to 32767", control);
+      char *plus = strchr(tok, '+');
+      if (plus)
+         *plus = '\0';
+      if (!*tok)
+      {
+         /* "a++b", and a "+" at either end: nothing between them */
+         tok = plus + 1;
+         continue;
+      }
+      for (i = 0; i < ARRAY_SIZE(command_input_names); i++)
+         if (string_is_equal(tok, command_input_names[i]))
+            break;
+      if (i == ARRAY_SIZE(command_input_names))
+      {
+         command_reply_error(cmd, "SET_INPUT", "no control named %s", tok);
+         return false;
+      }
+      if (     (i <  16 && value != 0 && value != 1)
+            || (i >= 16 && (value < -32768 || value > 32767)))
+      {
+         command_reply_error(cmd, "SET_INPUT", i < 16
+               ? "%s takes 1 to hold it or 0 to let it go"
+               : "%s takes -32768 to 32767", command_input_names[i]);
+         return false;
+      }
+      /* a control named over and over would run past the array */
+      if (count >= ARRAY_SIZE(ids))
+      {
+         command_reply_error(cmd, "SET_INPUT", "at most %u controls at once",
+               (unsigned)ARRAY_SIZE(ids));
+         return false;
+      }
+      ids[count++] = i;
+      if (!plus)
+         break;
+      tok = plus + 1;
+   }
+   if (!count)
+   {
+      command_reply_error(cmd, "SET_INPUT", "a control, or several "
+            "joined by \"+\"");
       return false;
    }
 #ifdef HAVE_CHEEVOS
@@ -2346,7 +2387,8 @@ bool command_set_input(command_t *cmd, const char *arg)
    }
 #endif
 
-   input_driver_command_hold(player - 1, i, (int16_t)value);
+   for (i = 0; i < count; i++)
+      input_driver_command_hold(player - 1, ids[i], (int16_t)value);
 
    cmd->replier(cmd, reply,
          command_input_line(player - 1, reply, sizeof(reply)));
