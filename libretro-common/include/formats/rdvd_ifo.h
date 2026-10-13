@@ -127,5 +127,16 @@ bool rdvd_ifo_title_read(const rdvd_ifo_t *ifo, unsigned number,
 /* Returns an optional VMG first-play PGC, borrowing the management input.
  * Does not execute commands or select a playback domain. */
 bool rdvd_ifo_first_play_read(const rdvd_ifo_t *ifo, rdvd_pgc_t *out);
+typedef struct rdvd_chapter
+{
+   unsigned pgc_number, program_number, first_cell, last_cell;
+   rdvd_pgc_t pgc;
+} rdvd_chapter_t;
+
+/* Resolves one-based local title/chapter numbers through VTS PTT and PGCIT.
+ * Cell ranges include angle blocks. No navigation policy or VOB I/O occurs.
+ * Unsorted/shared title offsets are bounded at the nearest later start. */
+bool rdvd_ifo_chapter_read(const rdvd_ifo_t *ifo, unsigned title,
+      unsigned chapter, rdvd_chapter_t *out);
 RETRO_END_DECLS
 #endif

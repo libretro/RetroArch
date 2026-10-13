@@ -312,3 +312,52 @@ bool rdvd_ifo_first_play_read(const rdvd_ifo_t *ifo, rdvd_pgc_t *out)
    }
    return rdvd_pgc_read(f.data + f.first_play, end - f.first_play, out);
 }
+
+
+bool rdvd_ifo_chapter_read(const rdvd_ifo_t *ifo, unsigned title,
+      unsigned chapter, rdvd_chapter_t *out)
+{
+   rdvd_ifo_t f;
+   rdvd_ifo_span_t span, chains;
+   rdvd_pgci_table_t table;
+   rdvd_pgci_entry_t entry;
+   rdvd_chapter_t result;
+   size_t total, header, start, end;
+   uint32_t last;
+   unsigned count, i;
+   const uint8_t *record;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!ifo || !rdvd_ifo_read(ifo->data, ifo->size, &f)
+         || f.kind != RDVD_IFO_VTS || !title || !chapter
+         || !rdvd_ifo_table_read(&f, RDVD_IFO_TITLES, &span)) return false;
+   last = rdvd_ifo_u32(span.data + 4);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   count = rdvd_ifo_u16(span.data);
+   if (total < 8 || total > span.size || count > (total - 8) / 4
+         || title > count) return false;
+   header = 8 + (size_t)count * 4;
+   start = rdvd_ifo_u32(span.data + 8 + (size_t)(title - 1) * 4);
+   end = total;
+   for (i = 0; i < count; i++)
+   {
+      size_t candidate = rdvd_ifo_u32(span.data + 8 + (size_t)i * 4);
+      if (candidate < header || candidate > total) return false;
+      if (candidate > start && candidate < end) end = candidate;
+   }
+   if ((end - start) % 4 || chapter > (end - start) / 4) return false;
+   record = span.data + start + (size_t)(chapter - 1) * 4;
+   memset(&result, 0, sizeof(result));
+   result.pgc_number = rdvd_ifo_u16(record);
+   result.program_number = rdvd_ifo_u16(record + 2);
+   if (!result.pgc_number || !result.program_number
+         || !rdvd_ifo_table_read(&f, RDVD_IFO_PGCIT, &chains)
+         || !rdvd_pgci_table_read(chains.data, chains.size, &table)
+         || !rdvd_pgci_entry_read(&table, result.pgc_number - 1, &entry)
+         || !rdvd_pgc_program_cells(&entry.pgc, result.program_number,
+               &result.first_cell, &result.last_cell)) return false;
+   result.pgc = entry.pgc;
+   *out = result;
+   return true;
+}

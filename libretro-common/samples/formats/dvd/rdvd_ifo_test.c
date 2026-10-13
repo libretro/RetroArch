@@ -202,6 +202,38 @@ static void test_titles(void)
    CHECK(!rdvd_ifo_title_read(&f, 1, &title));
    CHECK(!rdvd_ifo_first_play_read(&f, &pgc));
 }
+static void test_chapters(void)
+{
+   rdvd_ifo_t f;
+   rdvd_chapter_t chapter;
+   uint8_t *ptt, *chains;
+   file_fixture(true); fixture();
+   ptt = file_bytes + 2048; chains = file_bytes + 4096;
+   ptt[1] = 3; ptt[7] = 27;
+   ptt[11] = 24; ptt[15] = 20; ptt[19] = 24;
+   ptt[21] = 1; ptt[23] = 1; ptt[25] = 1; ptt[27] = 2;
+   chains[1] = 1; chains[6] = 1; chains[7] = 0x71;
+   chains[15] = 16; memcpy(chains + 16, bytes, 354);
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_chapter_read(&f, 1, 1, &chapter));
+   CHECK(chapter.pgc_number == 1 && chapter.program_number == 2);
+   CHECK(chapter.first_cell == 3 && chapter.last_cell == 3);
+   CHECK(chapter.pgc.data == chains + 16);
+   CHECK(rdvd_ifo_chapter_read(&f, 2, 1, &chapter));
+   CHECK(chapter.first_cell == 1 && chapter.last_cell == 2);
+   CHECK(rdvd_ifo_chapter_read(&f, 3, 1, &chapter));
+   CHECK(!rdvd_ifo_chapter_read(&f, 1, 2, &chapter) && !chapter.pgc.data);
+   CHECK(!rdvd_ifo_chapter_read(&f, 0, 1, &chapter));
+   CHECK(!rdvd_ifo_chapter_read(&f, 1, 0, &chapter));
+   ptt[25] = 2;
+   CHECK(!rdvd_ifo_chapter_read(&f, 1, 1, &chapter));
+   ptt[25] = 1; ptt[27] = 3;
+   CHECK(!rdvd_ifo_chapter_read(&f, 1, 1, &chapter));
+   ptt[27] = 2; ptt[15] = 19;
+   CHECK(!rdvd_ifo_chapter_read(&f, 1, 1, &chapter));
+   ptt[15] = 23;
+   CHECK(!rdvd_ifo_chapter_read(&f, 2, 1, &chapter));
+}
 int main(void)
 {
    test_bounds();
@@ -209,6 +241,7 @@ int main(void)
    test_table();
    test_file();
    test_titles();
+   test_chapters();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

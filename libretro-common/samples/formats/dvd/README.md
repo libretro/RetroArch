@@ -75,3 +75,10 @@ Format references checked for this implementation:
 
 References describe wire fields; this implementation does not include or call
 the referenced libraries.
+
+IFO helpers now read borrowed VMGI/VTSI management prefixes, VMG title
+metadata and optional first-play chains. VTS chapter lookup resolves PTT
+pairs through PGCIT into program/cell ranges without copying input tables.
+Title/chapter numbers are one-based. These readers do not open VIDEO_TS
+files, apply BUP fallback, choose angles, execute VM commands or render menus.
+Menu-language tables and full management attributes remain unimplemented.
