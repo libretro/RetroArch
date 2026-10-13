@@ -2374,7 +2374,6 @@ static const struct
    char s_c017f975[12];
    char s_730df420[16];
    char s_bcddf275[8];
-   char s_258060bf[20];
    char s_f90edcc2[61];
    char s_ad14307a[31];
 #if defined(RARCH_MOBILE)
@@ -6867,7 +6866,6 @@ static const struct
    "Autom\303\241tico",
    "Sincroniza\303\247\303\243o",
    "V\303\255deos",
-   "V\303\255deo paralelizado",
    "Usar Buffers de Argumento do Metal (Requer renicializa\303\247\303\243o)",
    "Reduzir tremula\303\247\303\243o de v\303\255deo",
 #if defined(RARCH_MOBILE)
@@ -9508,7 +9506,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194458u
+      (sizeof(msg_hash_pt_br_blob) == (194438u
 #ifdef ANDROID
        + 352u
 #endif
@@ -12339,7 +12337,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)

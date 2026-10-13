@@ -2084,7 +2084,6 @@ static const struct
    char s_c017f975[7];
    char s_730df420[7];
    char s_bcddf275[7];
-   char s_258060bf[28];
    char s_ad14307a[19];
 #if defined(RARCH_MOBILE)
    char s_774121c7[40];
@@ -7735,8 +7734,6 @@ static const struct
    "\350\207\252\345\213\225",
    "\345\220\214\346\234\237",
    "\345\213\225\347\224\273",
-   "\343\203\223\343\203\207\343\202\252\343\201\256\343\202\271\343\203\254\343\203\203\343\203\211"
-   "\345\214\226",
    "\343\201\241\343\202\211\343\201\244\343\201\215\346\212\221\345\210\266",
 #if defined(RARCH_MOBILE)
    "\350\241\250\347\244\272\351\240\230\345\237\237 X \345\272\247\346\250\231\350\243\234\346\255"
@@ -13939,7 +13936,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (200153u
+      (sizeof(msg_hash_ja_blob) == (200125u
 #ifdef ANDROID
        + 484u
 #endif
@@ -16347,7 +16344,6 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

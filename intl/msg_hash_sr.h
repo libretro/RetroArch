@@ -314,7 +314,6 @@ static const struct
    char s_ef3d53d8[18];
    char s_730df420[15];
    char s_bcddf275[6];
-   char s_258060bf[20];
    char s_92a02470[30];
    char s_b7ef9e17[31];
    char s_8f37930f[34];
@@ -772,7 +771,6 @@ static const struct
    "Bilinearni filter",
    "Sinhronizacija",
    "Video",
-   "Podeli video u niti",
    "Postavi odnos ekrana (visina)",
    "Postavi odnos ekrana (\305\241irina)",
    "Postavi odnos ekrana (X pozicija)",
@@ -962,7 +960,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12125u
+      (sizeof(msg_hash_sr_blob) == (12105u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1331,7 +1329,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

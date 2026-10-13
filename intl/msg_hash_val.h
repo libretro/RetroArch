@@ -462,7 +462,6 @@ static const struct
    char s_c017f975[22];
    char s_730df420[16];
    char s_bcddf275[8];
-   char s_258060bf[16];
    char s_92a02470[45];
    char s_b7ef9e17[45];
    char s_8f37930f[46];
@@ -1166,7 +1165,6 @@ static const struct
    "Selecci\303\263 autom\303\240tica",
    "Sincronitzaci\303\263",
    "V\303\255deos",
-   "V\303\255deo multifil",
    "Relaci\303\263 d'aspecte personalitzat (al\303\247\303\240ria)",
    "Relaci\303\263 d'aspecte personalitzat (ampl\303\240ria)",
    "Relaci\303\263 d'aspecte personalitzat (posici\303\263 X)",
@@ -1518,7 +1516,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25408u
+      (sizeof(msg_hash_val_blob) == (25392u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2063,7 +2061,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

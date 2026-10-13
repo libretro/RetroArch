@@ -68,7 +68,7 @@ static const struct
    char s_d32da48f[18];
    char s_d1558b35[45];
    char s_4c378b95[95];
-   char s_c435566b[339];
+   char s_c435566b[347];
    char s_793f841a[283];
    char s_b4ed19c0[34];
    char s_3a147fac[89];
@@ -108,7 +108,7 @@ static const struct
    char s_b3e89428[271];
    char s_7af11c30[89];
    char s_91bc1342[293];
-   char s_78cabcca[384];
+   char s_78cabcca[371];
    char s_0e85a0d1[44];
    char s_ff583ef3_0[500];
    char s_ff583ef3_1[31];
@@ -135,10 +135,10 @@ static const struct
 #endif
    char s_3f5ab0a6[155];
    char s_39308167[407];
-   char s_60255deb_0[500];
-   char s_60255deb_1[15];
-   char s_f39c636f[401];
-   char s_4c991c18[392];
+   char s_60255deb_0[499];
+   char s_60255deb_1[21];
+   char s_f39c636f[353];
+   char s_4c991c18[389];
    char s_4b299805[154];
    char s_1bd35af2[37];
    char s_24e40f00[269];
@@ -190,7 +190,7 @@ static const struct
    char s_e18c0fd3[40];
    char s_2d9d0a50[229];
    char s_0e7699a6[218];
-   char s_16721de3[224];
+   char s_16721de3[218];
    char s_abab74fb[172];
    char s_c0a60ee2[211];
    char s_14a6bfe2[256];
@@ -205,7 +205,7 @@ static const struct
    char s_9834febe[455];
    char s_93805cc8_0[499];
    char s_93805cc8_1[12];
-   char s_b495662b[367];
+   char s_b495662b[366];
    char s_9953f4e2[236];
    char s_de76d2dc[21];
    char s_79e212bd[5];
@@ -214,10 +214,10 @@ static const struct
    char s_cd77e985[26];
    char s_6be7f013[13];
    char s_9f689905[16];
-   char s_5edaf90a[16];
+   char s_5edaf90a[19];
    char s_27ea651d[6];
    char s_1997a873[24];
-   char s_fc24216f[16];
+   char s_fc24216f[19];
    char s_728aa9b3[17];
    char s_929e8e7a[21];
    char s_51edb70d[15];
@@ -389,7 +389,7 @@ static const struct
    char s_67e4657f[38];
    char s_f30ab1c8[24];
    char s_2ce0b4f4[25];
-   char s_c90e4caf[14];
+   char s_c90e4caf[17];
    char s_6afa2137[28];
    char s_d75d3923[28];
    char s_b133119b[28];
@@ -1395,8 +1395,8 @@ static const struct
    char s_2bc31697[16];
    char s_69e645f2[18];
    char s_d48223f9[26];
-   char s_28adc26d[34];
-   char s_0b9c6082[30];
+   char s_28adc26d[35];
+   char s_0b9c6082[31];
    char s_8974ac0f[15];
    char s_b80a2fc4[16];
    char s_02b33f2e[39];
@@ -1492,7 +1492,7 @@ static const struct
    char s_d92341ca[31];
    char s_c813b6c6[15];
    char s_fd533325[25];
-   char s_ed43994d[32];
+   char s_ed43994d[33];
    char s_78ccdecc[31];
    char s_15345f7c[23];
    char s_b78a0248[24];
@@ -1632,7 +1632,7 @@ static const struct
    char s_64dd7209[30];
    char s_77155e0f[12];
    char s_04ef691f[32];
-   char s_af2f5836[49];
+   char s_af2f5836[52];
    char s_04f38f4d[30];
    char s_3936fe87[78];
    char s_393985fc[23];
@@ -1860,6 +1860,12 @@ static const struct
    char s_0a2aa953[7];
    char s_ffd0dac4[9];
    char s_80a2b273[10];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_7c66e948[54];
+   char s_35d14c7c[25];
+#endif
+#endif
    char s_91dd478e[19];
    char s_865cee49[13];
    char s_1b8a5cb5[11];
@@ -2308,6 +2314,7 @@ static const struct
 #endif
    char s_f4341e25[33];
    char s_b9d37039[174];
+   char s_1249554a[18];
    char s_d0a04fe4[12];
    char s_c682e4e2[12];
    char s_cf6bc52a[21];
@@ -2349,6 +2356,7 @@ static const struct
    char s_fad361a0[27];
    char s_bb929824[16];
    char s_fe2ec9bd[33];
+   char s_1e3a9360[29];
    char s_5741c1d0[14];
    char s_a1a7717d[19];
    char s_e6ca3876[32];
@@ -2368,16 +2376,20 @@ static const struct
    char s_0cfd4fd0[11];
    char s_d64659c4[8];
    char s_0861dea4[15];
-   char s_d7deafe0[23];
+   char s_d7deafe0[24];
    char s_83217fd0[12];
    char s_60258de0[7];
    char s_34b2592a[3];
+   char s_be406532[16];
+   char s_13ce50e1[14];
+   char s_8dfe8b04[14];
+   char s_bacb5991[16];
    char s_740ed6e5[15];
    char s_c7ab7873[32];
    char s_83ecb279[12];
-   char s_317b17ed[8];
-   char s_94c8d15f[8];
-   char s_1f66aac3[7];
+   char s_317b17ed[7];
+   char s_94c8d15f[7];
+   char s_1f66aac3[6];
    char s_57665cff[10];
    char s_0e2c0fca[35];
    char s_93ac5ec8[33];
@@ -2461,7 +2473,7 @@ static const struct
    char s_45816e1d[21];
    char s_730df420[15];
    char s_bcddf275[7];
-   char s_258060bf[14];
+   char s_258060bf[22];
    char s_3bbc8b05[39];
    char s_e595f6df[36];
    char s_2a5f7cd7[29];
@@ -2622,6 +2634,8 @@ static const struct
    char s_f0838a35_1[43];
    char s_95821d83[36];
    char s_bdeebb68[42];
+   char s_84b03e36_0[500];
+   char s_84b03e36_1[37];
    char s_f9005edc[175];
    char s_6ade80dd[29];
    char s_ec7aa7a0[467];
@@ -2633,6 +2647,7 @@ static const struct
    char s_f46c7b83_1[92];
    char s_cb67f2a4[34];
    char s_3c3598a9[47];
+   char s_3bac47bd[370];
    char s_90e7db40[416];
    char s_b07cd572_0[500];
    char s_b07cd572_1[20];
@@ -2695,8 +2710,8 @@ static const struct
    char s_0d18752c[56];
    char s_0339e08c[91];
    char s_11a7b0a0[159];
-   char s_f6e584ef[90];
-   char s_f6e584fd[90];
+   char s_f6e584ef[101];
+   char s_f6e584fd[101];
    char s_c9868f82[78];
    char s_05186758[57];
    char s_6f85964e[33];
@@ -3242,7 +3257,7 @@ static const struct
    char s_8f707459[31];
    char s_5aa622cc[201];
    char s_2b908073[258];
-   char s_64bea160[176];
+   char s_64bea160[178];
    char s_2826de99[317];
    char s_97c62766[163];
    char s_6f458a85[92];
@@ -3311,10 +3326,10 @@ static const struct
    char s_be3d7079[85];
    char s_ff04d19c[42];
    char s_8fd135b7[52];
-   char s_61771e16[38];
+   char s_61771e16[39];
    char s_57922b21[36];
-   char s_71e4e031[210];
-   char s_7ef3d15a[218];
+   char s_71e4e031[208];
+   char s_7ef3d15a[212];
    char s_a166bef0[40];
    char s_20212574[50];
    char s_48f7693a[96];
@@ -3324,16 +3339,16 @@ static const struct
    char s_b3502258[93];
    char s_49ea5fc5[68];
    char s_4cf6b4e0[49];
-   char s_da518d67[159];
-   char s_1195a4db[36];
-   char s_ce069670[28];
+   char s_da518d67[155];
+   char s_1195a4db[37];
+   char s_ce069670[29];
    char s_8f44157d[132];
    char s_77c6c6f2[56];
    char s_126432dc[132];
    char s_7b4c2ad6[262];
    char s_c0817362[355];
    char s_bc33055d[86];
-   char s_be8c2b47[33];
+   char s_be8c2b47[34];
    char s_02526a85[73];
    char s_8b64010b[149];
    char s_09c9a0f9[260];
@@ -3352,7 +3367,7 @@ static const struct
    char s_ad621411[59];
    char s_f6ec26c1[45];
    char s_4f7fb41f[57];
-   char s_70f70009[286];
+   char s_70f70009[343];
    char s_3487ce71[36];
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -3517,6 +3532,12 @@ static const struct
    char s_a5962f42[77];
    char s_0c7750cd[79];
    char s_f3b31ef1[49];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_458959b6[190];
+   char s_4598722a[209];
+#endif
+#endif
    char s_331c623c[51];
    char s_279c08f7[37];
    char s_60a8a963[39];
@@ -3666,7 +3687,7 @@ static const struct
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
-   char s_706ff4dc[278];
+   char s_706ff4dc[277];
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -3678,11 +3699,11 @@ static const struct
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
-   char s_b5966528[194];
+   char s_b5966528[193];
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
-   char s_743b6f84[286];
+   char s_743b6f84[343];
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -3704,7 +3725,7 @@ static const struct
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
-   char s_9bb85635[202];
+   char s_9bb85635[201];
    char s_22a05685[63];
 #endif
    char s_f3bfa8b9[81];
@@ -3808,6 +3829,7 @@ static const struct
 #endif
    char s_ab839b13[131];
    char s_135d20b8[47];
+   char s_5767a1f8[216];
    char s_17663212[175];
    char s_e4aa2e10[49];
    char s_b853a798[110];
@@ -3827,7 +3849,7 @@ static const struct
    char s_0d96ed73[44];
    char s_9f0fd076[136];
    char s_9f0fd077[135];
-   char s_c315b54c[427];
+   char s_c315b54c[426];
    char s_7a2050af[38];
    char s_d2859556[49];
    char s_ef13be35[56];
@@ -3842,6 +3864,7 @@ static const struct
    char s_82fab47a[38];
    char s_72e21512[180];
    char s_9f6de46b[288];
+   char s_26e66ece[211];
    char s_66f2b57e[38];
    char s_a776daeb[88];
    char s_88095324[88];
@@ -3858,8 +3881,9 @@ static const struct
    char s_4a09218b[39];
    char s_dea334de[176];
    char s_cacc1492[52];
-   char s_c0c6924e[202];
+   char s_c0c6924e[220];
    char s_c83fcc7e[239];
+   char s_cdf158e0[305];
    char s_7efaf561[212];
    char s_c90aff27[75];
    char s_19d092ed[43];
@@ -3869,8 +3893,8 @@ static const struct
    char s_c8fb9e1c[317];
    char s_d575c847[227];
    char s_3479844b[143];
-   char s_b9a05725[192];
-   char s_68880a28[189];
+   char s_b9a05725[191];
+   char s_68880a28[188];
    char s_05ec12e6[217];
    char s_b5a603de[68];
    char s_d9c2db25[67];
@@ -3886,7 +3910,7 @@ static const struct
    char s_87ba81db[147];
    char s_58c80718[291];
    char s_dc6f9d69[55];
-   char s_894ecb9a[376];
+   char s_894ecb9a[375];
    char s_67d549fd[43];
    char s_afac733c[37];
    char s_3aaf6bf1[126];
@@ -3921,8 +3945,8 @@ static const struct
    char s_2e69508b[331];
    char s_7e96b5ce[48];
    char s_3547866d_0[500];
-   char s_3547866d_1[16];
-   char s_d73ccef3[394];
+   char s_3547866d_1[15];
+   char s_d73ccef3[393];
    char s_81163acd[402];
    char s_ecc9b2c5[294];
    char s_c2314d30[215];
@@ -3960,7 +3984,7 @@ static const struct
    char s_f765b650[48];
    char s_7059a595[56];
    char s_c7d672df_0[500];
-   char s_c7d672df_1[49];
+   char s_c7d672df_1[48];
    char s_c85b2f0f[301];
    char s_6d1448c0[39];
    char s_cf0b487b[86];
@@ -4050,7 +4074,7 @@ static const struct
    char s_96df643a[104];
    char s_150b4ebe[92];
    char s_0d212ca9[102];
-   char s_be02ba0f[107];
+   char s_be02ba0f[108];
    char s_059f98c0[67];
    char s_b077bb95[99];
    char s_48720114[53];
@@ -4190,7 +4214,7 @@ static const struct
    char s_bcf709c3[32];
    char s_5bd95c11[47];
    char s_ac935d4d[44];
-   char s_1cf93e21[28];
+   char s_1cf93e21[45];
    char s_7530ae6d[50];
    char s_2814f14c[49];
    char s_e4a3fbd9[39];
@@ -4341,28 +4365,28 @@ static const struct
    char s_59ac0f0c[13];
    char s_03c57bc8[8];
    char s_f9a13828[21];
-   char s_f5ab7ff9[65];
-   char s_d277f01e[110];
-   char s_680d4c36[105];
-   char s_0c53fe6c[59];
+   char s_f5ab7ff9[69];
+   char s_d277f01e[114];
+   char s_680d4c36[109];
+   char s_0c53fe6c[60];
    char s_5b678bc4[30];
    char s_a6abc697[30];
-   char s_e3bb7f4c[39];
+   char s_e3bb7f4c[40];
    char s_d15060ee[35];
    char s_a068841f[33];
-   char s_be840037[26];
+   char s_be840037[27];
    char s_11d0d482[20];
    char s_4d7ee7e2[22];
-   char s_9d7c6772[31];
+   char s_9d7c6772[32];
    char s_4bc518be[33];
-   char s_c8812645[56];
-   char s_dd3ee761[132];
-   char s_f9aa7e70[80];
-   char s_509dd374[29];
-   char s_a1aa4c42[59];
+   char s_c8812645[57];
+   char s_dd3ee761[133];
+   char s_f9aa7e70[84];
+   char s_509dd374[33];
+   char s_a1aa4c42[60];
    char s_ef0f5f52[11];
    char s_52453850[32];
-   char s_9cfca240[36];
+   char s_9cfca240[37];
    char s_bab020a4[23];
    char s_4118132b[25];
    char s_daafc17a[27];
@@ -4370,7 +4394,7 @@ static const struct
    char s_3d1657dc[10];
    char s_529fb939[34];
    char s_35e8cecb[46];
-   char s_b1b24b70[37];
+   char s_b1b24b70[38];
    char s_6933100b[32];
    char s_3f47f1dd[44];
    char s_12552dca[22];
@@ -4383,12 +4407,12 @@ static const struct
    char s_8ab54d62[93];
    char s_aa554847[23];
    char s_ac2c797c[22];
-   char s_c5fee1cb[57];
+   char s_c5fee1cb[60];
    char s_272dccbd[16];
-   char s_7da2720b[59];
+   char s_7da2720b[62];
    char s_9e9f8d9d[224];
-   char s_fdc097e9[100];
-   char s_5fe664ca[74];
+   char s_fdc097e9[103];
+   char s_5fe664ca[77];
    char s_80528b14[43];
    char s_eae21890[39];
    char s_1451fe0d[42];
@@ -4516,7 +4540,7 @@ static const struct
    char s_75bc15aa[25];
    char s_50ebaaa1[30];
    char s_842b54ed[32];
-   char s_b30573ed[95];
+   char s_b30573ed[96];
    char s_914b3efd[29];
    char s_8f35069c[29];
    char s_6cc672f6[28];
@@ -4524,7 +4548,7 @@ static const struct
    char s_1a5c880d[17];
    char s_7b23d9e6[16];
    char s_77943569[104];
-   char s_04305cd6[146];
+   char s_04305cd6[138];
    char s_c182bd2e[5];
    char s_0110d0c7[16];
    char s_c6156015[21];
@@ -4532,7 +4556,7 @@ static const struct
    char s_ca50dc6d[21];
    char s_9d2c8cfb[7];
    char s_7675f215[18];
-   char s_843b6a7b[34];
+   char s_843b6a7b[35];
    char s_4d7ff150[9];
    char s_88494936[33];
    char s_29c753ae[24];
@@ -4541,6 +4565,7 @@ static const struct
    char s_a2250ebd[45];
    char s_cc5d39b1[59];
    char s_2bf9a406[35];
+   char s_038f0580[23];
    char s_94fc1cd0[14];
    char s_2aaf8414[16];
    char s_28a4c280[24];
@@ -4625,11 +4650,11 @@ static const struct
    "ALSA-drivrutin implementerad utan beroenden.",
    "Windows Audio Session API-drivrutin. WASAPI anv\303\244nds huvudsakligen fr\303\245n Windows 7 o"
    "ch senare.",
-   "Maximum audio timing skew.\nDefinierar den maximala f\303\266r\303\244ndringen i ing\303\245ngsh"
-   "astighet. Du kanske vill \303\266ka detta f\303\266r att m\303\266jligg\303\266ra mycket stora f"
-   "\303\266r\303\244ndringar i timing, till exempel att k\303\266ra PAL-k\303\244rnor p\303\245 NTS"
-   "C-sk\303\244rmar, p\303\245 bekostnad av felaktig ljudh\303\266jd.\nIng\303\245ngshastighet defi"
-   "nieras som:\ninput rate * (1,0 +/- (max timing skew))",
+   "Maximal tidsf\303\266rskjutning f\303\266r ljudet.\nAnger den maximala \303\244ndringen av ing"
+   "\303\245ngshastigheten. Du kan \303\266ka v\303\244rdet f\303\266r att till\303\245ta mycket sto"
+   "ra tidsf\303\266r\303\244ndringar, till exempel att k\303\266ra PAL-k\303\244rnor p\303\245 NTSC"
+   "-sk\303\244rmar, men ljudh\303\266jden blir d\303\245 felaktig.\nIng\303\245ngshastigheten defin"
+   "ieras som:\ning\303\245ngshastighet * (1,0 +/- (maximal tidsf\303\266rskjutning))",
    "Om detta v\303\244rde s\303\244tts till 0 inaktiveras hastighetskontrollen. Alla andra v\303\244"
    "rden styr delta f\303\266r ljudfrekvensreglering.\nDefinierar hur mycket ing\303\245ngsfrekvense"
    "n kan justeras dynamiskt. Inmatningshastigheten definieras som:\ninmatningshastighet * (1,0 +/- "
@@ -4712,11 +4737,12 @@ static const struct
    "\303\266der ocks\303\245 tangentbords\303\245teruppringning, m\303\266ss och pekplattor.\nSom st"
    "andard i de flesta distros \303\244r /dev/input-noder endast root (l\303\244ge 600). Du kan konf"
    "igurera en udev-regel som g\303\266r dessa tillg\303\244ngliga f\303\266r icke-root.",
-   "P\303\245verkar hur input polling utf\303\266rs i RetroArch.\nEarly - Input polling utf\303\266r"
-   "s innan ramen bearbetas.\nNormal - Input polling utf\303\266rs n\303\244r polling beg\303\244rs."
-   "\nLate - Input polling utf\303\266rs vid f\303\266rsta beg\303\244ran om inputstatus per ram.\nA"
-   "tt st\303\244lla in den p\303\245 'Early' eller 'Late' kan resultera i mindre latens, beroende p"
-   "\303\245 din konfiguration. Kommer att ignoreras n\303\244r du anv\303\244nder netplay.",
+   "P\303\245verkar hur inmatningen l\303\244ses av i RetroArch.\nTidig: Inmatningen l\303\244ses av"
+   " innan bildrutan bearbetas.\nNormal: Inmatningen l\303\244ses av n\303\244r det beg\303\244rs.\n"
+   "Sen: Inmatningen l\303\244ses av vid den f\303\266rsta beg\303\244ran om inmatningsstatus f\303"
+   "\266r varje bildruta.\nInst\303\244llningen \342\200\235Tidig\342\200\235 eller \342\200\235Sen"
+   "\342\200\235 kan ge l\303\244gre f\303\266rdr\303\266jning beroende p\303\245 konfigurationen. I"
+   "gnoreras vid n\303\244tspel.",
    "Anv\303\244nd fr\303\244mre ist\303\244llet f\303\266r bakre tryck.",
    "Libretro anv\303\244nder en virtuell gamepad-abstraktion k\303\244nd som \"RetroPad\" f\303\266r"
    " att kommunicera fr\303\245n frontends (som RetroArch) till k\303\244rnor och vice versa. Den h"
@@ -4784,25 +4810,26 @@ static const struct
    "\266der MIDI-utg\303\245ng, kommer en del eller alla ljud (beroende p\303\245 spel/app) att gene"
    "reras av MIDI-enhet. I h\303\244ndelse av 'null' MIDI-drivrutin betyder detta att dessa ljud int"
    "e kommer att h\303\266ras.",
-   "Frekvensen i bildrutor med vilken netplay kommer att verifiera att v\303\244rden och klienten "
-   "\303\244r synkroniserade. Med de flesta k\303\244rnor har detta v\303\244rde ingen synlig effekt"
-   " och kan ignoreras. Med icke-best\303\244mbara k\303\244rnor avg\303\266r detta v\303\244rde hur"
-   " ofta netplay-peers kommer att synkroniseras. Med buggiga k\303\244rnor kommer det att orsaka al"
-   "lvarliga prestandaproblem om detta v\303\244rde s\303\244tts till n\303\245got annat \303\244n n"
-   "oll. St\303\244ll in p\303\245 noll f\303\266r att inte utf\303\266ra n\303\245gra kontroller. D"
-   "etta v\303\244rde anv\303\244nds endast p\303\245 ne",
-   "tplay-v\303\244rden.",
-   "Antalet bildrutor med inmatningsf\303\266rdr\303\266jning som netplay ska anv\303\244nda f\303"
-   "\266r att d\303\266lja n\303\244tverksf\303\266rdr\303\266jning.\nN\303\244r det h\303\244r alte"
-   "rnativet anv\303\244nds i netplay f\303\266rdr\303\266jer det lokal inmatning s\303\245 att den "
-   "bildruta som k\303\266rs ligger n\303\244rmare de bildrutor som tas emot fr\303\245n n\303\244tv"
-   "erket. Detta minskar jitter och g\303\266r netplay mindre CPU-intensivt, men till priset av en m"
-   "\303\244rkbar f\303\266rdr\303\266jning av inmatningen.",
-   "Det intervall av bildrutor med inmatningslatens som kan anv\303\244ndas av netplay f\303\266r at"
-   "t d\303\266lja n\303\244tverkslatens.\nOm det \303\244r inst\303\244llt kommer netplay att juste"
-   "ra antalet bildrutor med inmatningslatens dynamiskt f\303\266r att balansera CPU-tid, inmatnings"
-   "latens och n\303\244tverkslatens. Detta minskar jitter och g\303\266r netplay mindre CPU-intensi"
-   "vt, men till priset av of\303\266ruts\303\244gbar inmatningsf\303\266rdr\303\266jning.",
+   "Frekvensen i bildrutor med vilken n\303\244tspel kommer att verifiera att v\303\244rden och klie"
+   "nten \303\244r synkroniserade. Med de flesta k\303\244rnor har detta v\303\244rde ingen synlig e"
+   "ffekt och kan ignoreras. Med icke-best\303\244mbara k\303\244rnor avg\303\266r detta v\303\244rd"
+   "e hur ofta n\303\244tspelspartner kommer att synkroniseras. Med buggiga k\303\244rnor kommer det"
+   " att orsaka allvarliga prestandaproblem om detta v\303\244rde s\303\244tts till n\303\245got ann"
+   "at \303\244n noll. St\303\244ll in p\303\245 noll f\303\266r att inte utf\303\266ra n\303\245gra"
+   " kontroller. Detta v\303\244rde anv\303\244nds endast p",
+   "\303\245 n\303\244tspelsv\303\244rden.",
+   "Antalet bildrutor med inmatningsf\303\266rdr\303\266jning som n\303\244tspel anv\303\244nder f"
+   "\303\266r att d\303\266lja n\303\244tverksf\303\266rdr\303\266jning.\nVid n\303\244tspel f\303"
+   "\266rdr\303\266jer alternativet lokal inmatning s\303\245 att den bildruta som k\303\266rs ligge"
+   "r n\303\244rmare bildrutorna fr\303\245n n\303\244tverket. Det minskar tidsvariationer och g\303"
+   "\266r n\303\244tspel mindre CPU-intensivt, men ger en m\303\244rkbar inmatningsf\303\266rdr\303"
+   "\266jning.",
+   "Intervallet av bildrutor med inmatningslatens som n\303\244tspel kan anv\303\244nda f\303\266r a"
+   "tt d\303\266lja n\303\244tverkslatens.\nN\303\244r alternativet \303\244r inst\303\244llt juster"
+   "ar n\303\244tspel antalet bildrutor med inmatningslatens dynamiskt f\303\266r att balansera CPU-"
+   "tid, inmatningslatens och n\303\244tverkslatens. Det minskar tidsvariationer och g\303\266r n"
+   "\303\244tspel mindre CPU-intensivt, men ger en of\303\266ruts\303\244gbar inmatningsf\303\266rdr"
+   "\303\266jning.",
    "Huruvida netplay ska startas i \303\245sk\303\245darl\303\244ge. Om inst\303\244llt p\303\245 tr"
    "ue kommer netplay att starta i \303\245sk\303\245darl\303\244ge. Det g\303\245r alltid att \303"
    "\244ndra l\303\244ge senare.",
@@ -4925,9 +4952,9 @@ static const struct
    "Anv\303\244nd ett CPU-drivet videofilter. Kan inneb\303\244ra en h\303\266g prestandakostnad. Vi"
    "ssa videofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars elle"
    "r 16-bitars f\303\244rg. Inbyggda videofilterbibliotek kan v\303\244ljas.",
-   "St\303\244ller in hur m\303\245nga millisekunder som ska sovas innan k\303\244rnan k\303\266rs e"
-   "fter videopresentation. Minskar latensen p\303\245 bekostnad av h\303\266gre risk f\303\266r stu"
-   "ttering.\nV\303\244rden 20 och h\303\266gre behandlas som procentandelar f\303\266r bildtid.",
+   "Anger hur m\303\245nga millisekunder k\303\244rnan ska v\303\244nta efter bildpresentationen inn"
+   "an den k\303\266rs. Minskar f\303\266rdr\303\266jningen men \303\266kar risken f\303\266r hackni"
+   "ngar.\nV\303\244rden p\303\245 20 eller h\303\266gre behandlas som procent av bildrutetiden.",
    "F\303\266rs\303\266k att h\303\245lla \303\266nskat m\303\245l f\303\266r 'Bildrutef\303\266rdr"
    "\303\266jning' och minimera bildf\303\266rluster. Utg\303\245ngspunkten \303\244r 3/4 av bildrut"
    "ans tid n\303\244r bildf\303\266rdr\303\266jningen \303\244r 0 (Auto).",
@@ -4984,7 +5011,7 @@ static const struct
    "en inte den inst",
    "\303\244llningen.",
    "K\303\266r videodrivrutinen i en egen tr\303\245d. Bildsk\303\244rmen beh\303\245ller sin takt n"
-   "\303\244r k\303\244rnan hackar, och k\303\244rnan k\303\266r n\303\244sta bildruta medan den f"
+   "\303\244r k\303\244rnan hackar och k\303\244rnan k\303\266r n\303\244sta bildruta medan den f"
    "\303\266reg\303\245ende g\303\245r genom shaderkedjan och presentationen. Med \342\200\235Tr\303"
    "\245dad synkronisering av videovisning\342\200\235 startar k\303\244rnan s\303\245 sent som n"
    "\303\244sta uppdatering till\303\245ter, vilket h\303\245ller latensen p\303\245 samma niv\303"
@@ -4999,10 +5026,10 @@ static const struct
    "Minskar med Rumble-v\303\244rde",
    "\303\204ndras inte",
    "= Rumble-v\303\244rde",
-   "> Rumble-v\303\244rde",
+   "> Vibrationsstyrka",
    "\303\226kar",
    "\303\226kar med Rumble-v\303\244rde",
-   "< Rumble-v\303\244rde",
+   "< Vibrationsstyrka",
    "!= Rumble-v\303\244rde",
    "Aktivera hj\303\244lpmedel",
    "Talsyntesmotor",
@@ -5174,7 +5201,7 @@ static const struct
    "Tidsl\303\244ngd f\303\266r sekund\303\244r Rumble (ms)",
    "Sekund\303\244r Rumble-styrka",
    "Vibrera vid minnesv\303\244rde",
-   "Rumble-v\303\244rde",
+   "Vibrationsstyrka",
    "S\303\266k i minnet efter v\303\244rden",
    "S\303\266k i minnet efter v\303\244rden",
    "S\303\266k i minnet efter v\303\244rden",
@@ -6186,8 +6213,8 @@ static const struct
    "Serverl\303\266senord",
    "Visa Netplay Ping",
    "Annonsera Netplay publikt",
-   "Uppdatera Netplay-listan f\303\266r LAN",
-   "Uppdatera Netplay-v\303\244rdlistan",
+   "Uppdatera N\303\244tspelslistan f\303\266r LAN",
+   "Uppdatera N\303\244tspelsv\303\244rdlistan",
    "Beg\303\244r enheter",
    "Beg\303\244r enhet %u",
    "Till\303\245t inte klienter i icke-slavl\303\244ge",
@@ -6283,7 +6310,7 @@ static const struct
    "Ingen information tillg\303\244nglig",
    "Inga f\303\266rem\303\245l",
    "Ingen musik tillg\303\244nglig",
-   "Inga netplay-klienter hittades.",
+   "Inga n\303\244tspelsklienter hittades.",
    "Inga Netplay v\303\244rdar hittades.",
    "Inga n\303\244tverk hittades",
    "Inga prestandar\303\244knare.",
@@ -6423,7 +6450,7 @@ static const struct
    "Uppdatera spellisteminiatyrer",
    "Touch-st\303\266d",
    "Ansluter via Bluetooth till: %s",
-   "Ansluter via Bluetooth till den h\303\244r datorn (%s)",
+   "- Ansluter via Bluetooth till: den h\303\244r datorn (%s)",
    "Para ihop med den h\303\244r datorn",
    "Enhetens sk\303\244rmnamn: %s\nEnhetens konfigurationsnamn: %s\nEnhets-VID/PID: %d/%d",
    "Port %d Enhetsnamn: %s",
@@ -6658,6 +6685,12 @@ static const struct
    "Fordon",
    "Visuellt",
    "Starta om",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Tvinga omstart till Lakka om det finns en uppdatering",
+   "Starta om till nyttolast",
+#endif
+#endif
    "Inspelning Configs",
    "Inspelningar",
    "Inspelning",
@@ -7108,6 +7141,7 @@ static const struct
    "Din grafikdrivrutin \303\244r inte kompatibel med aktuella videodrivrutinen i RetroArch, faller "
    "tillbaka p\303\245 drivrutinen %s. Starta om RetroArch f\303\266r att \303\244ndringen ska ta ef"
    "fekt.",
+   "DXGI presentation",
    "Videofilter",
    "Videofilter",
    "Videofilter aktivera",
@@ -7149,6 +7183,7 @@ static const struct
    "Skicka bildrutans luminans",
    "Subpixel-layout",
    "Anv\303\244nd bildsk\303\244rmens toppv\303\244rde",
+   "Maskinvaruavkodning av video",
    "Videolayouter",
    "Max bildrutelatens",
    "Maximalt antal swapchain-bilder",
@@ -7168,16 +7203,20 @@ static const struct
    "Kombinerat",
    "Separat",
    "Sk\303\244rmavst\303\245nd",
-   "Headsetutdata (OpenXR)",
+   "Headsetutg\303\245ng (OpenXR)",
    "Laserpekare",
    "Alltid",
    "Av",
+   "Sk\303\244rmplacering",
+   "Fast i rummet",
+   "F\303\266lj huvudet",
+   "Tr\303\266g f\303\266ljning",
    "Headsetets val",
    "Headsetets uppdateringsfrekvens",
    "Sk\303\244rmbredd",
-   "180 gr.",
-   "270 gr.",
-   "90 gr.",
+   "180 gr",
+   "270 gr",
+   "90 gr",
    "Utmatning",
    "\303\226verskanningskorrigering (Botten)",
    "\303\226verskanningskorrigering (Topp)",
@@ -7261,7 +7300,7 @@ static const struct
    "VSynk bytesintervall",
    "Synkronisering",
    "Videor",
-   "Tr\303\245dad video",
+   "Tr\303\245dad videopipeline",
    "Synkronisering av tr\303\245dad videovisning",
    "Upprepa bildrutor med tr\303\245dad video",
    "H\303\266j videotr\303\245dens prioritet",
@@ -7496,6 +7535,15 @@ static const struct
    "kan \303\266ppna mer \303\244n stereo f\303\266rblir stereo.",
    "Samplingsfrekvens f\303\266r ljudutg\303\245ng.",
    "\303\204ndra inst\303\244llningar f\303\266r ljudutg\303\245ngen.",
+   "H\303\245ll den tr\303\245dade pipelinens k\303\266 p\303\245 samma niv\303\245 som den bildrute"
+   "synkrona v\303\244gen f\303\266r l\303\244gsta f\303\266rdr\303\266jning: hastighetsregleringen "
+   "k\303\266ar halva ljudf\303\266rdr\303\266jningen i st\303\244llet f\303\266r n\303\244stan hela"
+   " den plus en bildruta. N\303\244r synkronisering \303\244r p\303\245 och ljudet styr k\303\244rn"
+   "ans tempo, till exempel n\303\244r vertikal synkronisering \303\244r av, h\303\245lls k\303\244r"
+   "nan d\303\244r en bildrutesynkron skrivning skulle h\303\245lla den i st\303\244llet f\303\266r "
+   "vid full k\303\266. N\303\244r synkronisering \303\244r av beh\303\245ller k\303\266n inte l\303"
+   "\244ngre en extra ljudf\303\266rdr\303\266jn",
+   "ing som marginal mot sena bildrutor.",
    "Hj\303\244lper till att j\303\244mna ut brister i timing n\303\244r ljud och video synkroniseras"
    ". T\303\244nk p\303\245 att korrekt synkronisering \303\244r n\303\244stan om\303\266jlig att f"
    "\303\245 till om den \303\244r inaktiverad.",
@@ -7524,6 +7572,11 @@ static const struct
    "\200\235utdataenhet\342\200\235.",
    "Synkronisera ljud. Rekommenderas.",
    "\303\204ndra inst\303\244llningar f\303\266r ljudsynkronisering.",
+   "Omsampla, filtrera och mixa ljud i ljudtr\303\245den i st\303\244llet f\303\266r i varje bildrut"
+   "a, med hastighetsreglering som m\303\244ts i enhetens egen takt och med omsamplaren utanf\303"
+   "\266r bildrutans tidsbudget. N\303\244r grund pipelinek\303\266 \303\244r av h\303\245lls mer lj"
+   "ud f\303\266re enheten \303\244n i den bildrutesynkrona v\303\244gen. Ljuddrivrutiner som inte k"
+   "an v\303\244ckas av enheten beh\303\245ller den bildrutesynkrona v\303\244gen.",
    "Be operativsystemet prioritera ljudtr\303\245den f\303\266re resten av gr\303\244nssnittet, s"
    "\303\245 att en belastad bildruta mer s\303\244llan g\303\266r att ljudenheten f\303\245r f\303"
    "\266r lite processortid. G\303\266r det m\303\266jligt att anv\303\244nda l\303\244gre ljudlaten"
@@ -7620,10 +7673,10 @@ static const struct
    "Ange om prestationsmeddelanden ska \303\266verensst\303\244mma med andra typer av sk\303\244rmme"
    "ddelanden. Inaktivera f\303\266r att st\303\244lla in manuella utfyllnads-/positionsv\303\244rde"
    "n.",
-   "Avst\303\245nd fr\303\245n v\303\244nster/h\303\266ger sk\303\244rmkant, vilket kan kompensera f"
-   "\303\266r sk\303\244rmens overscan.",
-   "Avst\303\245nd fr\303\245n sk\303\244rmens \303\266vre/nedre kant, vilket kan kompensera f\303"
-   "\266r sk\303\244rmens overscan.",
+   "Avst\303\245nd fr\303\245n v\303\244nster eller h\303\266ger sk\303\244rmkant, vilket kan kompen"
+   "sera f\303\266r sk\303\244rmens \303\266verskanning.",
+   "Avst\303\245nd fr\303\245n sk\303\244rmens \303\266vre eller nedre kant, vilket kan kompensera f"
+   "\303\266r sk\303\244rmens \303\266verskanning.",
    "\303\204ndra position och f\303\266rskjutningar f\303\266r prestationsmeddelanden p\303\245 sk"
    "\303\244rmen.",
    "Ta automatiskt en sk\303\244rmbild n\303\244r en prestation tj\303\244nas.",
@@ -8563,8 +8616,8 @@ static const struct
    "f\303\266rb\303\244ttrar menyutseendet n\303\244r du tittar p\303\245 miniatyrbilder av blandat "
    "inneh\303\245ll med olika basm\303\245tt.",
    "Spelar upp ljudsp\303\245ret f\303\266r animerade WebM-miniatyrbilder medan de visas. Ljud i Vor"
-   "bis och Opus st\303\266ds. Ljudet loopas med animeringen och stoppas n\303\244r miniatyrbilden s"
-   "t\303\244ngs.",
+   "bis och Opus st\303\266ds. Ljudet upprepas med animeringen och stoppas n\303\244r miniatyrbilden"
+   " st\303\244ngs.",
    "Antalet tr\303\245dar som en animerad miniatyrbild f\303\245r avkoda med. En tr\303\245d beh\303"
    "\245ller hela avkodningen i sin egen tr\303\245d. Fler tr\303\245dar f\303\266rdelar arbetet "
    "\303\266ver k\303\244rnor, s\303\245 att stora f\303\266rhandsvisningar kan spelas upp snabbt. M"
@@ -8674,14 +8727,14 @@ static const struct
    "Ange adressen till din anpassade rel\303\244server h\303\244r. Format: adress eller adress|port.",
    "Koppla fr\303\245n en aktiv Netplay anslutning.",
    "Ange Netplay-serveradress och anslut i klientl\303\244ge.",
-   "Starta netplay i v\303\244rdl\303\244ge (server).",
+   "Starta n\303\244tspel i v\303\244rdl\303\244ge (server).",
    "Tona ut chattmeddelanden \303\266ver tid.",
-   "Antalet bildrutor med inmatningslatens som netplay ska anv\303\244nda f\303\266r att d\303\266lj"
-   "a n\303\244tverkslatens. Minskar jitter och g\303\266r netplay mindre CPU-kr\303\244vande, men p"
-   "\303\245 bekostnad av m\303\244rkbar f\303\266rdr\303\266jning i inmatningen.",
-   "Det intervall av bildrutor med inmatningslatens som kan anv\303\244ndas f\303\266r att d\303\266"
-   "lja n\303\244tverkslatens. Minskar jitter och g\303\266r netplay mindre CPU-kr\303\244vande, men"
-   " p\303\245 bekostnad av of\303\266ruts\303\244gbar f\303\266rdr\303\266jning i inmatningen.",
+   "Antalet bildrutor med inmatningslatens som n\303\244tspel anv\303\244nder f\303\266r att d\303"
+   "\266lja n\303\244tverkslatens. Minskar tidsvariationer och g\303\266r n\303\244tspel mindre CPU-"
+   "kr\303\244vande, men ger en m\303\244rkbar f\303\266rdr\303\266jning i inmatningen.",
+   "Intervallet av bildrutor med inmatningslatens som kan anv\303\244ndas f\303\266r att d\303\266lj"
+   "a n\303\244tverkslatens. Minskar tidsvariationer och g\303\266r n\303\244tspel mindre CPU-kr\303"
+   "\244vande, men ger en of\303\266ruts\303\244gbar inmatningsf\303\266rdr\303\266jning.",
    "Adressen f\303\266r v\303\244rden att ansluta till.",
    "Sparka ut en klient fr\303\245n ditt aktuella v\303\244rdrum.",
    "Det maximala antalet aktiva anslutningar som v\303\244rden accepterar innan nya anslutningar avv"
@@ -8697,11 +8750,11 @@ static const struct
    "r Netplay-sessioner.",
    "L\303\266senordet som anv\303\244nds av klienter f\303\266r att ansluta till v\303\244rden.",
    "Visa pingen f\303\266r den aktuella Netplay sessionen.",
-   "Om netplay-spel ska annonseras offentligt. Om inst\303\244llningen \303\244r avaktiverad m\303"
+   "Om n\303\244tspel ska annonseras offentligt. Om inst\303\244llningen \303\244r avaktiverad m\303"
    "\245ste klienter ansluta manuellt i st\303\244llet f\303\266r att anv\303\244nda den publika lob"
    "byn.",
-   "Leta efter netplay-v\303\244rdar p\303\245 LAN.",
-   "Leta efter netplay-v\303\244rdar.",
+   "Leta efter n\303\244tspelsv\303\244rdar p\303\245 LAN.",
+   "Leta efter n\303\244tspelsv\303\244rdar.",
    "Spelarplatserna att beg\303\244ra fr\303\245n v\303\244rden n\303\244r du ansluter till en n\303"
    "\244tspelssession. Om inga v\303\244ljs ger v\303\244rden den f\303\266rsta lediga.",
    "Beg\303\244r att f\303\245 spela med den angivna inmatningsenheten.",
@@ -8719,7 +8772,7 @@ static const struct
    "n egen plats.",
    "L\303\266senordet som anv\303\244nds av klienter f\303\266r att ansluta till v\303\244rden som e"
    "n \303\245sk\303\245dare.",
-   "Starta netplay i \303\245sk\303\245darl\303\244ge.",
+   "Starta n\303\244tspel i \303\245sk\303\245darl\303\244ge.",
    "Porten f\303\266r v\303\244rdens IP-adress. Kan vara antingen en TCP eller UDP-port.",
    "Vidarebefordra n\303\244tverksanslutningar via en mellanliggande server. Anv\303\244ndbart om v"
    "\303\244rden ligger bakom en brandv\303\244gg eller har problem med NAT/UPnP.",
@@ -8758,7 +8811,8 @@ static const struct
    "\245 delar. En bakgrundstr\303\245d f\303\266rbereder n\303\244sta f\303\266nster. Kan g\303\266"
    "ra stora skivavbildningar mjukare \303\266ver en l\303\245ngsam l\303\244nk, men anv\303\244nder"
    " s\303\245 mycket minne och ytterligare en anslutning per \303\266ppen fil. 0 st\303\244nger av "
-   "funktionen.",
+   "funktionen: varje l\303\244sning \303\244r en beg\303\244ran, som f\303\266re f\303\266rh\303"
+   "\244mtning.",
    "Serverns IP-adress eller v\303\244rdnamn.",
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -9029,6 +9083,16 @@ static const struct
    "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut \303\244r aktiverat.",
    "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut \303\244r inaktiverat.",
    "Visa databasinformation f\303\266r aktuellt inneh\303\245ll.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "N\303\244r en Lakka-uppdatering har f\303\266rberetts startas Lakka om i st\303\244llet f\303"
+   "\266r den valda nyttolasten s\303\245 att uppdateringen installeras. Inaktivera om den valda nyt"
+   "tolasten alltid ska anv\303\244ndas.",
+   "V\303\244lj vilken Hekate-post som \342\200\235Starta om\342\200\235 i huvudmenyn startar till. "
+   "Anv\303\244nd v\303\244nster/h\303\266ger f\303\266r att v\303\244xla mellan posterna i hekate_i"
+   "pl.ini och bootloader/ini/. Som standard anv\303\244nds posten som k\303\266rs nu.",
+#endif
+#endif
    "Inspelningskonfigurationer lagras i denna katalog.",
    "Inspelningar lagras i denna katalog.",
    "\303\204ndra inst\303\244llningar f\303\266r inspelning.",
@@ -9256,8 +9320,8 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Aktivera \303\245tkomst till SMB-n\303\244tverksresurser. Ethernet rekommenderas starkt framf"
    "\303\266r Wi-Fi f\303\266r en tillf\303\266rlitligare anslutning. Obs: \303\204ndringarna tr\303"
-   "\244der i kraft n\303\244sta g\303\245ng en resurs bl\303\244ddras, och inneh\303\245ll som reda"
-   "n k\303\266rs fr\303\245n en resurs beh\303\245ller sin aktuella anslutning.",
+   "\244der i kraft n\303\244sta g\303\245ng en resurs bl\303\244ddras och inneh\303\245ll som redan"
+   " k\303\266rs fr\303\245n en resurs beh\303\245ller sin aktuella anslutning.",
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -9271,8 +9335,8 @@ static const struct
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "L\303\266senord f\303\266r autentisering. Detta \303\244r valfritt n\303\244r g\303\244st\303"
-   "\245tkomst \303\244r aktiverad p\303\245 servern. I Windows 10 och senare \303\244r g\303\244st"
-   "\303\245tkomst inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett l\303\266senord.",
+   "\245tkomst \303\244r aktiverad p\303\245 servern. Windows 10 och senare: g\303\244st\303\245tkom"
+   "st \303\244r inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett l\303\266senord.",
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
@@ -9280,7 +9344,8 @@ static const struct
    "\245 delar. En bakgrundstr\303\245d f\303\266rbereder n\303\244sta f\303\266nster. Kan g\303\266"
    "ra stora skivavbildningar mjukare \303\266ver en l\303\245ngsam l\303\244nk, men anv\303\244nder"
    " s\303\245 mycket minne och ytterligare en anslutning per \303\266ppen fil. 0 st\303\244nger av "
-   "funktionen.",
+   "funktionen: varje l\303\244sning \303\244r en beg\303\244ran, som f\303\266re f\303\266rh\303"
+   "\244mtning.",
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -9306,9 +9371,9 @@ static const struct
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Anv\303\244ndarnamn f\303\266r autentisering. Detta \303\244r valfritt n\303\244r g\303\244st"
-   "\303\245tkomst \303\244r aktiverad p\303\245 servern. I Windows 10 och senare \303\244r g\303"
-   "\244st\303\245tkomst inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett anv\303\244"
-   "ndarnamn.",
+   "\303\245tkomst \303\244r aktiverad p\303\245 servern. Windows 10 och senare: g\303\244st\303\245"
+   "tkomst \303\244r inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett anv\303\244ndar"
+   "namn.",
    "Arbetsgrupp eller dom\303\244nnamn. Valfritt i vissa inst\303\244llningar.",
 #endif
    "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
@@ -9458,6 +9523,9 @@ static const struct
    "F\303\266nsterhanterare anv\303\244nder komposition f\303\266r att till\303\244mpa visuella effe"
    "kter, uppt\303\244cka f\303\266nster som inte svarar och mycket annat.",
    "Videodrivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
+   "Anv\303\244nd DXGI presentation med kompatibla drivrutiner f\303\266r OpenGL och Vulkan i Window"
+   "s. \303\205terg\303\245r till intern presentation om funktionen inte st\303\266ds. Kan \303\244n"
+   "dra bildrutef\303\266rdr\303\266jningen och \303\244r avst\303\244ngd som standard.",
    "Anv\303\244nd ett CPU-drivet videofilter. Kan inneb\303\244ra en h\303\266g prestandakostnad. Vi"
    "ssa videofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars elle"
    "r 16-bitars f\303\244rg.",
@@ -9508,9 +9576,9 @@ static const struct
    "Skicka shaders till grafikdrivrutinen som SPIR-V i st\303\244llet f\303\266r att f\303\266rst ko"
    "rskompilera dem till GLSL, vilket kan f\303\266rkorta inl\303\244sningstiden f\303\266r shader-f"
    "\303\266rinst\303\244llningar. Detta \303\244r endast en rekommendation: det kr\303\244ver drivr"
-   "utinstill\303\244gget \342\200\235GL_ARB_gl_spirv\342\200\235, och en shader eller drivrutin som"
-   " inte kan anv\303\244nda det \303\245terg\303\245r tyst till korskompilering. Tr\303\244der i kr"
-   "aft n\303\244sta g\303\245ng en shader-f\303\266rinst\303\244llning l\303\244ses in.",
+   "utinstill\303\244gget \342\200\235GL_ARB_gl_spirv\342\200\235 och en shader eller drivrutin som "
+   "inte kan anv\303\244nda det \303\245terg\303\245r tyst till korskompilering. Tr\303\244der i kra"
+   "ft n\303\244sta g\303\245ng en shader-f\303\266rinst\303\244llning l\303\244ses in.",
    "V\303\244lj vilket grafikkort att anv\303\244nda.",
    "Spela in GPU-skuggade material om tillg\303\244ngligt.",
    "Sk\303\244rmdumpar f\303\245ngar GPU-skuggat material om det finns.",
@@ -9549,10 +9617,13 @@ static const struct
    "du inte vet vad din sk\303\244rms subpixel-layout \303\244r, se Rtings.com f\303\266r din sk\303"
    "\244rms \342\200\235subpixel-layout\342\200\235",
    "Anv\303\244nd toppv\303\244rdet f\303\266r ljusstyrka som bildsk\303\244rmen rapporterar i st"
-   "\303\244llet f\303\266r Toppljusstyrka n\303\244r ett v\303\244rde rapporteras. Det \303\244r v"
+   "\303\244llet f\303\266r Toppljusstyrka n\303\244r ett v\303\244rde rapporteras: det \303\244r v"
    "\303\244rdet som rapporteras till k\303\244rnor och skickas som HDR-metadata till bildsk\303\244"
    "rmen. N\303\244r alternativet \303\244r av anv\303\244nds angivet v\303\244rde f\303\266r Topplj"
    "usstyrka.",
+   "Avkoda videof\303\266rhandsvisningar p\303\245 GPU:n n\303\244r grafikdrivrutinen kan g\303\266r"
+   "a det (H.264 med Vulkan), s\303\245 att CPU:n avlastas. \342\200\235Av\342\200\235 avkodar dem p"
+   "\303\245 CPU:n. G\303\244ller f\303\266rhandsvisningar som \303\266ppnas fr\303\245n och med nu.",
    "Videolayouter lagras i denna katalog.",
    "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
    "\303\244ge.",
@@ -9580,13 +9651,17 @@ static const struct
    "roll f\303\266r spelare 1. Separat g\303\266r v\303\244nster handkontroll till spelare 1 och h"
    "\303\266ger till spelare 2.",
    "Hur l\303\245ngt framf\303\266r dig headsetet visar sk\303\244rmarna.",
-   "Visa ocks\303\245 inneh\303\245ll i ett OpenXR-headset: varje sk\303\244rm som en egen flytande "
-   "sk\303\244rm, med b\303\245da \303\266gonen i stereoskopisk 3D och menyn framf\303\266r dem. End"
-   "ast Vulkan. F\303\266nstret beh\303\245ller sin vanliga utdata.",
+   "Visa \303\244ven inneh\303\245llet i ett OpenXR-headset: varje sk\303\244rm som en egen flytande"
+   " sk\303\244rm, stereo 3D med b\303\245da \303\266gonen och menyn framf\303\266r sk\303\244rmarna"
+   ". Vulkan eller OpenGL p\303\245 Linux. F\303\266nstret beh\303\245ller sin vanliga utmatning.",
    "Var en handkontrolls avtryckare pekar och vidr\303\266r i st\303\244llet f\303\266r att trycka p"
    "\303\245 L2 eller R2. Automatisk: i menyn n\303\244r den \303\244r \303\266ppen och p\303\245 se"
    "kund\303\244ra sk\303\244rmar som peksk\303\244rm. Alltid: p\303\245 alla sk\303\244rmar, f\303"
    "\266r ljuspistoler. Av: ingenstans.",
+   "Var headsetet h\303\245ller sk\303\244rmarna. Fast i rummet: d\303\244r Centrera om placerar dem"
+   ". F\303\266lj huvudet: alltid framf\303\266r dig; p\303\245 en stor sk\303\244rm hamnar kanterna"
+   " d\303\244r linserna g\303\266r bilden suddig. Tr\303\266g f\303\266ljning: sk\303\244rmarna lig"
+   "ger kvar tills du vrider bort huvudet ordentligt och glider sedan tillbaka framf\303\266r dig.",
    "Uppdateringsfrekvensen som ska beg\303\244ras fr\303\245n headsetet. Automatisk v\303\244ljer de"
    "n som passar inneh\303\245llet b\303\244st. Headsetets val beg\303\244r aldrig n\303\245gon. Inn"
    "eh\303\245llet k\303\266rs synkront med headsetet n\303\244r frekvensen passar.",
@@ -9612,11 +9687,11 @@ static const struct
    "Bildrutor i k\303\266 mellan spelet och kodaren. St\303\266rre v\303\244rden tar upp korta avbro"
    "tt i kodaren men anv\303\244nder mer minne. G\303\244ller n\303\244sta inspelning.",
    "Uteslut menyn, aviseringar, sk\303\244rmmeddelanden och \303\266verl\303\244gg fr\303\245n GPU-i"
-   "nspelningar, och uteslut tiden i menyn. N\303\244r funktionen \303\244r av spelar inspelningar i"
-   "n exakt vad som visas p\303\245 sk\303\244rmen.",
-   "Koda H.264 med en maskinvaruaccelererad kodare n\303\244r en s\303\245dan finns, och anv\303\244"
-   "nd annars programvara (libx264). G\303\244ller de inbyggda kvalitetsf\303\266rinst\303\244llning"
-   "arna, inte egna konfigurationer.",
+   "nspelningar och uteslut tiden i menyn. N\303\244r funktionen \303\244r av spelar inspelningar in"
+   " exakt vad som visas p\303\245 sk\303\244rmen.",
+   "Koda H.264 med en maskinvaruaccelererad kodare n\303\244r en s\303\245dan finns och anv\303\244n"
+   "d annars programvara (libx264). G\303\244ller de inbyggda kvalitetsf\303\266rinst\303\244llninga"
+   "rna, inte egna konfigurationer.",
    "Bildsk\303\244rmens vertikala uppdateringsfrekvens. Anv\303\244nds f\303\266r att ber\303\244kna"
    " en l\303\244mplig ljudinmatningsfrekvens och som den bildsk\303\244rmsperiod som tr\303\245dad "
    "video synkroniseras efter n\303\244r drivrutinen inte kan rapportera en.",
@@ -9650,8 +9725,8 @@ static const struct
    ". \342\200\235Automatiskt\342\200\235 anv\303\244nder detta endast n\303\244r den inbyggda bilds"
    "k\303\244rmsservern inte kan v\303\244xla l\303\244ge. \342\200\235Alltid\342\200\235 \303\245si"
    "dos\303\244tter den inbyggda servern: CRT SwitchRes v\303\244ljer d\303\245 bland de listade l"
-   "\303\244gena, \303\244ven l\303\244gen utan k\303\244nda tidsinst\303\244llningar, och anpassade"
-   " CRT-tidsinst\303\244llningar \303\244r inte tillg\303\244ngliga.",
+   "\303\244gena, \303\244ven l\303\244gen utan k\303\244nda tidsinst\303\244llningar och anpassade "
+   "CRT-tidsinst\303\244llningar \303\244r inte tillg\303\244ngliga.",
    "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
    "Aktivera pipeline f\303\266r video shader.",
    "F\303\266rdr\303\266j automatisk inl\303\244sning av Shaders (i ms). Kan kringg\303\245 grafiska"
@@ -9723,19 +9798,19 @@ static const struct
    "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
    "\303\204ndra inst\303\244llningar f\303\266r videosynkronisering.",
    "K\303\266r k\303\244rnan och videodrivrutinen i separata tr\303\245dar s\303\245 att bildsk\303"
-   "\244rmen beh\303\245ller sin takt n\303\244r k\303\244rnan hackar, och s\303\245 att k\303\244rn"
-   "an \303\266verlappar shaderkedjan och presentationen. Med \342\200\235Tr\303\245dad synkroniseri"
-   "ng av videovisning\342\200\235 startar k\303\244rnan s\303\245 sent som n\303\244sta uppdatering"
-   " till\303\245ter, vilket ger samma latens som bildrutef\303\266rdr\303\266jning. K\303\244rnor s"
-   "om renderar p\303\245 GPU:n k\303\266rs tr\303\245dat med drivrutinerna Vulkan, Direct3D 11, Dir"
-   "ect3D 12 och gl; med andra drivrutiner k\303\266rs de entr\303\245dat oavsett den h\303\244r ",
-   "inst\303\244llningen.",
+   "\244rmen beh\303\245ller sin takt n\303\244r k\303\244rnan hackar och s\303\245 att k\303\244rna"
+   "n \303\266verlappar shaderkedjan och presentationen. Med \342\200\235Tr\303\245dad synkroniserin"
+   "g av videovisning\342\200\235 startar k\303\244rnan s\303\245 sent som n\303\244sta uppdatering "
+   "till\303\245ter, vilket ger samma latens som bildrutef\303\266rdr\303\266jning. K\303\244rnor so"
+   "m renderar p\303\245 GPU:n k\303\266rs tr\303\245dat med drivrutinerna Vulkan, Direct3D 11, Dire"
+   "ct3D 12 och gl; med andra drivrutiner k\303\266rs de entr\303\245dat oavsett den h\303\244r i",
+   "nst\303\244llningen.",
    "Med tr\303\245dad video startar varje bildruta fr\303\245n k\303\244rnan s\303\245 sent som n"
    "\303\244sta bildsk\303\244rmsuppdatering till\303\245ter, utifr\303\245n uppm\303\244tta tider f"
    "\303\266r k\303\244rna och rendering, i st\303\244llet f\303\266r med en fast timer. Det s\303"
    "\244nker latensen till samma niv\303\245 som bildrutef\303\266rdr\303\266jning med entr\303\245d"
-   "ad video, och en bildruta som tar f\303\266r l\303\245ng tid upprepas i st\303\244llet f\303\266"
-   "r att missas. Av: timern styr takten som tidigare.",
+   "ad video och en bildruta som tar f\303\266r l\303\245ng tid upprepas i st\303\244llet f\303\266r"
+   " att missas. Av: timern styr takten som tidigare.",
    "Med tr\303\245dad video forts\303\244tter den senaste bildrutan att visas med bildsk\303\244rmen"
    "s uppdateringsfrekvens n\303\244r k\303\244rnan hamnar efter, i st\303\244llet f\303\266r att de"
    "n tidigare presentationen l\303\244mnas p\303\245 sk\303\244rmen. H\303\245ller ins\303\244ttnin"
@@ -9811,11 +9886,11 @@ static const struct
    "V\303\244xlar till en kopia av det aktiva energischemat i Windows som h\303\245ller processorn p"
    "\303\245 full hastighet: l\303\244gsta och h\303\266gsta processortillst\303\245ndet \303\244r 1"
    "00 %, energipreferensen \303\244r prestanda och inga k\303\244rnor parkeras. Prestandatillst\303"
-   "\245nd utv\303\244rderas var femte sekund i st\303\244llet f\303\266r var 15:e ms, och PCI Expre"
-   "ss-l\303\244nkar och USB-portar h\303\245lls utanf\303\266r energisparl\303\244get. Detta minska"
-   "r k\303\244rnavbrott och f\303\266rdr\303\266jningar vid v\303\244ckning. G\303\244ller endast n"
-   "\303\244r datorn \303\244r ansluten till n\303\244tstr\303\266m. Det ursprunglig",
-   "a schemat \303\245terst\303\244lls n\303\244r programmet avslutas.",
+   "\245nd utv\303\244rderas var femte sekund i st\303\244llet f\303\266r var 15:e ms och PCI Expres"
+   "s-l\303\244nkar och USB-portar h\303\245lls utanf\303\266r energisparl\303\244get. Detta minskar"
+   " k\303\244rnavbrott och f\303\266rdr\303\266jningar vid v\303\244ckning. G\303\244ller endast n"
+   "\303\244r datorn \303\244r ansluten till n\303\244tstr\303\266m. Det ursprungliga",
+   " schemat \303\245terst\303\244lls n\303\244r programmet avslutas.",
    "N\303\244r energischemat med l\303\245g f\303\266rdr\303\266jning \303\244r p\303\245, h\303\245"
    "ll \303\244ven varje processork\303\244rna utanf\303\266r sina vilol\303\244gen s\303\245 att in"
    "gen beh\303\266ver vakna innan den k\303\266rs. Processorn drar d\303\245 full effekt och blir v"
@@ -9918,8 +9993,8 @@ static const struct
    "uell session.",
    "Hardcore-l\303\244get f\303\266r prestationer aktiverades, sparade tillst\303\245nd och tillbaka"
    "spolning inaktiverades.",
-   "Netplay-v\303\244rden beh\303\266ver uppdateras. Hardcore-l\303\244get f\303\266r prestationer i"
-   "naktiverades f\303\266r aktuell session.",
+   "N\303\244tspelsv\303\244rden beh\303\266ver uppdateras. Hardcore-l\303\244get f\303\266r prestat"
+   "ioner inaktiverades f\303\266r aktuell session.",
    "Hardcore pausad. Infogning av svarta bildrutor \303\244r inte till\303\245tet.",
    "Hardcore pausad. Manuell inst\303\244llning av f\303\266rdr\303\266jning av bildrutor f\303\266r"
    " video \303\244r inte till\303\245ten.",
@@ -10074,7 +10149,7 @@ static const struct
    "Det gick inte att l\303\244sa in SRAM",
    "Misslyckades med att l\303\244sa in tillst\303\245nd fr\303\245n",
    "Misslyckades med att \303\266ppna libretro-k\303\244rna",
-   "Misslyckades med att patcha",
+   "Misslyckades med att till\303\244mpa korrigeringen",
    "Misslyckades med att ta emot rubrik fr\303\245n klient.",
    "Misslyckades med att ta bort rubrik fr\303\245n v\303\244rd.",
    "Misslyckades med att ta emot smeknamn.",
@@ -10234,31 +10309,32 @@ static const struct
    "Chatt st\303\266ds",
    "Enheter",
    "Netplay fr\303\245nkopplad",
-   "En netplay-peer k\303\266r en annan k\303\244rna. Det g\303\245r inte att ansluta.",
-   "VARNING: En netplay-peer k\303\266r en annan version av k\303\244rnan. Om problem uppst\303\245r"
-   " ska du anv\303\244nda samma version.",
-   "VARNING: En netplay-peer k\303\266r en annan version av RetroArch. Om problem uppst\303\245r, an"
-   "v\303\244nd samma version.",
-   "Denna k\303\244rna st\303\266der inte netplay mellan dessa plattformar",
+   "En n\303\244tspelspartner k\303\266r en annan k\303\244rna. Det g\303\245r inte att ansluta.",
+   "VARNING: En n\303\244tspelspartner k\303\266r en annan version av k\303\244rnan. Om problem upps"
+   "t\303\245r ska du anv\303\244nda samma version.",
+   "VARNING: En n\303\244tspelspartner k\303\266r en annan version av RetroArch. Om problem uppst"
+   "\303\245r, anv\303\244nd samma version.",
+   "Denna k\303\244rna st\303\266der inte n\303\244tspel mellan dessa plattformar",
    "Ange Netplay-chattmeddelande:",
    "Ange Netplay-serverl\303\266senord:",
-   "Misslyckades med att initiera netplay.",
+   "Misslyckades med att initiera n\303\244tspel.",
    "Misslyckades blockera klient: \"%s\"",
    "Misslyckades sparka klient: \"%s\"",
-   "Netplay-v\303\244rden \303\244r full.",
+   "N\303\244tspelsv\303\244rden \303\244r full.",
    "Felaktigt l\303\266senord",
    "Sparkade klient: \"%s\"",
-   "Letar efter netplay-v\303\244rdar...",
+   "Letar efter n\303\244tspelsv\303\244rdar...",
    "Netplay-s\303\266kning f\303\244rdigst\303\244lld.",
-   "Inneh\303\245llet m\303\245ste l\303\244sas in innan netplay kan startas.",
-   "Ett f\303\266rs\303\266k till Netplay-anslutning misslyckades eftersom motparten inte k\303\266r"
-   " RetroArch eller k\303\266r en gammal version av RetroArch.",
-   "En netplay-peer k\303\266r en gammal version av RetroArch. Det g\303\245r inte att ansluta.",
-   "Netplay-peer \342\200\235%s\342\200\235 pausad",
-   "Denna k\303\244rna st\303\266der inte netplay mellan olika plattformar",
+   "Inneh\303\245llet m\303\245ste l\303\244sas in innan n\303\244tspel kan startas.",
+   "Ett f\303\266rs\303\266k till n\303\244tspelsanslutning misslyckades eftersom motparten inte k"
+   "\303\266r RetroArch eller k\303\266r en gammal version av RetroArch.",
+   "En n\303\244tspelspartner k\303\266r en gammal version av RetroArch. Det g\303\245r inte att ans"
+   "luta.",
+   "N\303\244tspelspartner \342\200\235%s\342\200\235 pausad",
+   "Denna k\303\244rna st\303\266der inte n\303\244tspel mellan olika plattformar",
    "%d spelare",
    "Spelare %.*s har l\303\244mnat spelet",
-   "En netplay-klient har kopplat fr\303\245n",
+   "En n\303\244tspelsklient har kopplat fr\303\245n",
    "\"%s\" har kopplat fr\303\245n",
    "F\303\266rdr\303\266jningar orsakade",
    "%d spelare (%d \303\245sk\303\245dare)",
@@ -10266,7 +10342,7 @@ static const struct
    "\303\205sk\303\245dar",
    "%.*s \303\244r ansluten, som spelare %u",
    "%.*s \303\244r ansluten, med inmatningsenheter %.*s",
-   "K\303\244rnan har inte st\303\266d f\303\266r netplay.",
+   "K\303\244rnan har inte st\303\266d f\303\266r n\303\244tspel.",
    "Du \303\244r ansluten, som spelare %u",
    "Du \303\244r ansluten, med inmatningsenheter %.*s",
    "Du har l\303\244mnat spelet",
@@ -10280,15 +10356,16 @@ static const struct
    "\244r spellisteposten.",
    "K\303\244rnor \303\266verhoppade: ",
    "K\303\244rnor uppdaterade: ",
-   "Headsetutdata kunde inte starta. F\303\266nstret visar utdata.",
+   "Headsetutg\303\245ngen kunde inte starta. F\303\266nstret visar utdata.",
    "Laserpekare: %s",
-   "Headsetutdata startar n\303\244r inneh\303\245llet har l\303\244sts in igen.",
+   "Headsetutg\303\245ngen startar n\303\244r inneh\303\245llet har l\303\244sts in igen.",
    "Headsetet k\303\266rs i %u Hz, vilket inte passar spelets %.2f fps. R\303\266relserna blir rycki"
    "ga. St\303\244ll in headsetets uppdateringsfrekvens f\303\266r RetroArch p\303\245 en multipel a"
    "v spelets frekvens (i SteamVR: inst\303\244llningar f\303\266r VR-video).",
-   "Headsetsessionen avslutades. St\303\244ng av headsetutdata och sl\303\245 p\303\245 den igen f"
-   "\303\266r att f\303\266rs\303\266ka igen.",
-   "Headsetutdata \303\244r av. Ingen OpenXR-k\303\266rtid eller n\303\245got headset hittades.",
+   "Headsetsessionen avslutades. St\303\244ng av headsetutg\303\245ngen och sl\303\245 p\303\245 den"
+   " igen f\303\266r att f\303\266rs\303\266ka igen.",
+   "Headsetutg\303\245ngen \303\244r av: ingen OpenXR-k\303\266rtid eller n\303\245got headset hitta"
+   "des.",
    "Tangentbords\303\266verl\303\244gg \303\244r inte inst\303\244llt.",
    "Sparar inte. \303\205sidos\303\244ttningar aktiva.",
    "Fel vid borttagning av \303\245sidos\303\244ttningar.",
@@ -10331,7 +10408,7 @@ static const struct
    "L\303\244ser f\303\266rsta datasp\303\245ret...",
    "Status f\303\266r intern lagring: Skrivskyddad",
    "Status f\303\266r intern lagring: L\303\244s/skriv",
-   "Den h\303\244r videodrivrutinen kan inte spela in endast spelet. Menyn och meddelanden spelas in"
+   "Den h\303\244r videodrivrutinen kan inte spela in endast spelet: menyn och meddelanden spelas in"
    ".",
    "Inspelning avslutad p\303\245 grund av storleks\303\244ndring.",
    "Spelar in till",
@@ -10428,7 +10505,7 @@ static const struct
    "Hoppar \303\266ver SRAM-inl\303\244sning.",
    "Tillbakaspolning i slow-motion.",
    "Tyv\303\244rr, inte implementerat: k\303\244rnor som inte efterfr\303\245gar inneh\303\245ll kan"
-   " inte delta i netplay.",
+   " inte delta i n\303\244tspel.",
    "SRAM kommer inte att sparas.",
    "Startar uppspelning av film.",
    "Startar filminspelning till",
@@ -10437,8 +10514,8 @@ static const struct
    "Tar sk\303\244rmdump.",
    "Verifiering av TLS-certifikat \303\244r inaktiverad. S\303\244kra anslutningar kontrolleras inte"
    " och kan avlyssnas.",
-   "S\303\244ker anslutning nekades eftersom serverns certifikat inte kunde verifieras. Se loggen el"
-   "ler inst\303\244llningen \342\200\235Verifiering av TLS-certifikat\342\200\235.",
+   "S\303\244ker anslutning nekades: serverns certifikat kunde inte verifieras. Se loggen eller inst"
+   "\303\244llningen \342\200\235Verifiering av TLS-certifikat\342\200\235.",
    "till",
    "V\303\244xla metadata",
    "Helsk\303\244rmsminiatyrer",
@@ -10446,7 +10523,7 @@ static const struct
    "\303\205ngrar sparl\303\244ge...",
    "Ok\303\244nd",
    "Ok\303\244nd kompilator",
-   "Ok\303\244nt netplay-kommando togs emot",
+   "Ok\303\244nt n\303\244tspelskommando togs emot",
    "Opausad.",
    "Ok\303\244nt kommando \"%s\" togs emot.\n",
    "Videol\303\244get st\303\266ds inte",
@@ -10455,6 +10532,7 @@ static const struct
    "Anv\303\244nder k\303\244rnnamnet f\303\266r ny konfiguration.",
    "Anv\303\244nder libretros dummy-k\303\244rna. Hoppar \303\266ver inspelning.",
    "Anslut enhet fr\303\245n en giltig port.",
+   "Installera uppdatering",
    "Startar om...",
    "St\303\244nger ner...",
    "Version av libretro API",
@@ -10480,7 +10558,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (211077u
+      (sizeof(msg_hash_sv_blob) == (212889u
 #ifdef ANDROID
        + 361u
 #endif
@@ -10633,6 +10711,12 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 15u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 54u
+       + 25u
+#endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -10878,7 +10962,7 @@ typedef char msg_hash_sv_blob_check[
        + 59u
        + 45u
        + 57u
-       + 286u
+       + 343u
        + 36u
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -10893,6 +10977,12 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 29u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 190u
+       + 209u
+#endif
 #endif
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
        + 245u
@@ -10917,7 +11007,7 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
-       + 278u
+       + 277u
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -10929,11 +11019,11 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
-       + 194u
+       + 193u
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
-       + 286u
+       + 343u
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -10955,7 +11045,7 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
-       + 202u
+       + 201u
        + 63u
 #endif
 #ifdef HAVE_LAKKA
@@ -12883,6 +12973,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -13331,6 +13427,7 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
@@ -13372,6 +13469,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13395,6 +13493,10 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
@@ -13641,6 +13743,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_PIPELINE_FILL_CAP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
@@ -13651,6 +13754,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
@@ -14534,6 +14638,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    (uint32_t)MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
@@ -14825,6 +14935,7 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DXGI_PRESENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
@@ -14859,6 +14970,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -14877,6 +14989,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
@@ -15556,6 +15669,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    (uint32_t)MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    (uint32_t)MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_VALUE_INSTALL_UPDATE,
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,

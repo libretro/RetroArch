@@ -2279,7 +2279,6 @@ static const struct
    char s_c017f975[12];
    char s_730df420[17];
    char s_bcddf275[8];
-   char s_258060bf[28];
    char s_f90edcc2[65];
    char s_ad14307a[24];
 #if defined(RARCH_MOBILE)
@@ -6756,7 +6755,6 @@ static const struct
    "Automatikus",
    "Szinkroniz\303\241l\303\241s",
    "Vide\303\263k",
-   "T\303\266bbsz\303\241las megjelen\303\255t\303\251s",
    "Metal argumens pufferek haszn\303\241lata (\303\272jraind\303\255t\303\241s sz\303\274ks\303\251"
    "ges)",
    "Vill\303\263dz\303\241smentes\303\255t\303\251s",
@@ -9794,7 +9792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187935u
+      (sizeof(msg_hash_hu_blob) == (187907u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12501,7 +12499,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)

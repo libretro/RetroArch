@@ -2178,7 +2178,6 @@ static const struct
    char s_c017f975[9];
    char s_730df420[27];
    char s_bcddf275[11];
-   char s_258060bf[41];
    char s_ad14307a[17];
 #if defined(RARCH_MOBILE)
    char s_774121c7[82];
@@ -9090,8 +9089,6 @@ static const struct
    "\320\241\321\226\320\275\321\205\321\200\320\260\320\275\321\226\320\267\320\260\321\206\321\213"
    "\321\217",
    "\320\222\321\226\320\264\321\215\320\260",
-   "\320\222\321\226\320\264\321\215\320\260 \320\260\321\201\320\276\320\261\320\275\321\213\320"
-   "\274 \320\277\320\260\321\202\320\276\320\272\320\260\320\274",
    "\320\224\321\215\321\204\320\273\321\226\320\272\320\265\321\200",
 #if defined(RARCH_MOBILE)
    "\320\227\321\200\321\203\321\205 \320\262\320\276\320\261\320\273\320\260\321\201\321\206\321"
@@ -16525,7 +16522,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_be_blob_check[
-      (sizeof(msg_hash_be_blob) == (260232u
+      (sizeof(msg_hash_be_blob) == (260191u
 #ifdef ANDROID
        + 531u
 #endif
@@ -19039,7 +19036,6 @@ static const uint32_t msg_hash_be_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

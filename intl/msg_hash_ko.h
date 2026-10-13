@@ -2480,7 +2480,6 @@ static const struct
    char s_c017f975[7];
    char s_730df420[10];
    char s_bcddf275[10];
-   char s_258060bf[33];
    char s_3bbc8b05[37];
    char s_e595f6df[37];
    char s_f90edcc2[49];
@@ -8615,8 +8614,6 @@ static const struct
    "\354\236\220\353\217\231",
    "\353\217\231\352\270\260\355\231\224",
    "\353\271\204\353\224\224\354\230\244",
-   "\354\212\244\353\240\210\353\223\234\354\227\220\354\204\234 \353\271\204\353\224\224\354\230"
-   "\244 \354\262\230\353\246\254",
    "\354\212\244\353\240\210\353\223\234 \353\271\204\353\224\224\354\230\244 \355\221\234\354\213"
    "\234 \355\216\230\354\235\264\354\213\261",
    "\354\212\244\353\240\210\353\223\234 \353\271\204\353\224\224\354\230\244 \355\224\204\353\240"
@@ -15497,7 +15494,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (218114u
+      (sizeof(msg_hash_ko_blob) == (218081u
 #ifdef ANDROID
        + 436u
 #endif
@@ -18437,7 +18434,6 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,

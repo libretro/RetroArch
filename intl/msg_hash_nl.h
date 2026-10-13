@@ -2210,7 +2210,6 @@ static const struct
    char s_c017f975[12];
    char s_730df420[21];
    char s_bcddf275[8];
-   char s_258060bf[23];
    char s_f90edcc2[49];
    char s_ad14307a[11];
 #if defined(RARCH_MOBILE)
@@ -6385,7 +6384,6 @@ static const struct
    "Automatisch",
    "Audio Synchronizatie",
    "Video's",
-   "Video met Schroefdraad",
    "Gebruik Metal-Argumentbuffers (herstart vereist)",
    "Ontflikker",
 #if defined(RARCH_MOBILE)
@@ -8646,7 +8644,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173381u
+      (sizeof(msg_hash_nl_blob) == (173358u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11287,7 +11285,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)

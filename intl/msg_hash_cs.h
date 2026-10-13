@@ -2098,7 +2098,6 @@ static const struct
    char s_45816e1d[24];
    char s_730df420[14];
    char s_bcddf275[6];
-   char s_258060bf[15];
 #if defined(RARCH_MOBILE)
    char s_774121c7[62];
    char s_774121c8[62];
@@ -6173,7 +6172,6 @@ static const struct
    "Interval v\303\275m\304\233ny VSync",
    "Synchronizace",
    "Videa",
-   "Threaded video",
 #if defined(RARCH_MOBILE)
    "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 X (orientace na v\303\275\305\241ku)",
    "P\305\231edsazen\303\255 kotvy panelu zobrazen\303\255 Y (orientace na v\303\275\305\241ku)",
@@ -8792,7 +8790,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162238u
+      (sizeof(msg_hash_cs_blob) == (162223u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11239,7 +11237,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

@@ -2190,7 +2190,6 @@ static const struct
    char s_c017f975[9];
    char s_730df420[12];
    char s_bcddf275[9];
-   char s_258060bf[14];
    char s_f90edcc2[64];
 #if defined(RARCH_MOBILE)
    char s_774121c7[49];
@@ -6450,7 +6449,6 @@ static const struct
    "Otomatik",
    "E\305\237itleyici",
    "Videolar",
-   "Bask\304\261n Video",
    "Metal Arg\303\274man Arabelleklerini Kullan (Yeniden ba\305\237lat\304\261lmal\304\261)",
 #if defined(RARCH_MOBILE)
    "G\303\266r\303\274n\303\274m Ba\304\237lant\304\261 Noktas\304\261 X (Portre Y\303\266n\303\274)",
@@ -9174,7 +9172,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170057u
+      (sizeof(msg_hash_tr_blob) == (170043u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11722,7 +11720,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

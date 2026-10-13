@@ -2251,7 +2251,6 @@ static const struct
    char s_45816e1d[25];
    char s_730df420[23];
    char s_bcddf275[6];
-   char s_258060bf[18];
    char s_f90edcc2[51];
    char s_ad14307a[21];
 #if defined(RARCH_MOBILE)
@@ -6495,7 +6494,6 @@ static const struct
    "Intervallo Scambio VSync",
    "Sincronizzazione audio",
    "Video",
-   "Video multithread",
    "Usa i buffer di argomenti Metal (richiede riavvio)",
    "Eliminazione flicker",
 #if defined(RARCH_MOBILE)
@@ -8815,7 +8813,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183005u
+      (sizeof(msg_hash_it_blob) == (182987u
 #ifdef ANDROID
        + 376u
 #endif
@@ -11495,7 +11493,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)

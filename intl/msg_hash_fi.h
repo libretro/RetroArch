@@ -2054,7 +2054,6 @@ static const struct
    char s_c017f975[14];
    char s_730df420[13];
    char s_bcddf275[7];
-   char s_258060bf[20];
    char s_ad14307a[21];
    char s_92a02470[31];
    char s_b7ef9e17[30];
@@ -5596,7 +5595,6 @@ static const struct
    "Automaattinen",
    "Synkronointi",
    "Videot",
-   "S\303\244ikeistetty video",
    "Vilkkumisen poistaja",
    "Mukautettu kuvasuhde (Korkeus)",
    "Mukautettu kuvasuhde (Leveys)",
@@ -7547,7 +7545,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123724u
+      (sizeof(msg_hash_fi_blob) == (123704u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9924,7 +9922,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,

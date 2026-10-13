@@ -1849,6 +1849,12 @@ static const struct
    char s_0a2aa953[12];
    char s_ffd0dac4[8];
    char s_80a2b273[9];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_7c66e948[60];
+   char s_35d14c7c[20];
+#endif
+#endif
    char s_91dd478e[25];
    char s_865cee49[10];
    char s_1b8a5cb5[9];
@@ -2373,6 +2379,7 @@ static const struct
    char s_fad361a0[20];
    char s_bb929824[16];
    char s_fe2ec9bd[34];
+   char s_1e3a9360[26];
    char s_5741c1d0[14];
    char s_a1a7717d[26];
    char s_e6ca3876[36];
@@ -2396,6 +2403,10 @@ static const struct
    char s_83217fd0[13];
    char s_60258de0[6];
    char s_34b2592a[4];
+   char s_be406532[19];
+   char s_13ce50e1[16];
+   char s_8dfe8b04[12];
+   char s_bacb5991[20];
    char s_740ed6e5[21];
    char s_c7ab7873[31];
    char s_83ecb279[17];
@@ -2491,7 +2502,7 @@ static const struct
    char s_45816e1d[21];
    char s_c017f975[12];
    char s_730df420[16];
-   char s_258060bf[26];
+   char s_258060bf[23];
    char s_3bbc8b05[30];
    char s_e595f6df[37];
    char s_2a5f7cd7[38];
@@ -3547,6 +3558,12 @@ static const struct
    char s_a5962f42[85];
    char s_0c7750cd[91];
    char s_f3b31ef1[55];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_458959b6[200];
+   char s_4598722a[222];
+#endif
+#endif
    char s_331c623c[71];
    char s_279c08f7[57];
    char s_60a8a963[50];
@@ -3876,6 +3893,7 @@ static const struct
    char s_82fab47a[43];
    char s_72e21512[217];
    char s_9f6de46b[376];
+   char s_26e66ece[222];
    char s_66f2b57e[56];
    char s_a776daeb[73];
    char s_88095324[73];
@@ -3892,8 +3910,9 @@ static const struct
    char s_4a09218b[37];
    char s_dea334de[251];
    char s_cacc1492[107];
-   char s_c0c6924e[217];
+   char s_c0c6924e[267];
    char s_c83fcc7e[304];
+   char s_cdf158e0[391];
    char s_7efaf561[276];
    char s_c90aff27[99];
    char s_19d092ed[36];
@@ -4577,6 +4596,7 @@ static const struct
    char s_a2250ebd[45];
    char s_cc5d39b1[64];
    char s_2bf9a406[42];
+   char s_038f0580[20];
    char s_94fc1cd0[12];
    char s_2aaf8414[11];
    char s_28a4c280[25];
@@ -6670,6 +6690,12 @@ static const struct
    "Fahrzeugtyp",
    "Ansicht",
    "Neustart",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Neustart zu Lakka erzwingen, wenn ein Update verf\303\274gbar ist",
+   "Payload neu starten",
+#endif
+#endif
    "Aufnahme-Konfigurationen",
    "Aufnahmen",
    "Aufnahme",
@@ -7196,6 +7222,7 @@ static const struct
    "Bildluminanz senden",
    "Subpixel-Layout",
    "Spitzenwert vom Display verwenden",
+   "Hardware-Videodekodierung",
    "Video-Layouts",
    "Maximale Frame-Latenzzeit",
    "Maximale Anzahl von Zwischenbildern",
@@ -7219,6 +7246,10 @@ static const struct
    "Laserpointer",
    "Immer",
    "Aus",
+   "Bildschirmposition",
+   "Im Raum fixiert",
+   "Kopf folgen",
+   "Verz\303\266gertes Folgen",
    "Vorgabe des Headsets",
    "Bildwiederholrate des Headsets",
    "Bildschirmbreite",
@@ -7314,7 +7345,7 @@ static const struct
    "VSync Swap-Intervall",
    "Automatisch",
    "Synchronisation",
-   "Video in separatem Thread",
+   "Threaded-Videopipeline",
    "Threaded-Video-Anzeigetaktung",
    "Bildwiederholung f\303\274r Threaded Video",
    "Priorit\303\244t des Video-Threads erh\303\266hen",
@@ -9000,6 +9031,16 @@ static const struct
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert.",
    "RetroArch-Anwendung beenden. Das Speichern der Konfiguration beim Beenden ist deaktiviert.",
    "Datenbankinformationen f\303\274r aktuellen Inhalt anzeigen.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Wenn ein Lakka-Update bereitliegt, wird beim Neustart Lakka statt des ausgew\303\244hlten Payloa"
+   "ds gestartet, damit das Update installiert wird. Deaktivieren, um immer den ausgew\303\244hlten "
+   "Payload zu starten.",
+   "Legt fest, welchen Hekate-Eintrag \342\200\236Neu starten\342\200\234 im Hauptmen\303\274 starte"
+   "t. Mit Links/Rechts durch die Eintr\303\244ge in hekate_ipl.ini und bootloader/ini/ wechseln. St"
+   "andardm\303\244\303\237ig ist der aktuell laufende Eintrag ausgew\303\244hlt.",
+#endif
+#endif
    "Aufzeichnungskonfigurationen werden in diesem Verzeichnis gespeichert.",
    "Videoaufnahmen werden in diesem Verzeichnis gespeichert.",
    "Einstellungen f\303\274r die Aufnahme-Funktion \303\244ndern.",
@@ -9523,6 +9564,9 @@ static const struct
    " der den Cores mitgeteilt wird und der in den an das Display gesendeten HDR-Metadaten enthalten "
    "ist. Ist diese Option deaktiviert, wird die Einstellung \342\200\236Spitzenhelligkeit\342\200"
    "\234 wie festgelegt verwendet.",
+   "Videovorschauen auf der GPU dekodieren, sofern der Videotreiber dies unterst\303\274tzt (H.264 m"
+   "it Vulkan), damit die CPU entlastet wird. Bei \342\200\236Aus\342\200\234 werden sie auf der CPU"
+   " dekodiert. Gilt f\303\274r k\303\274nftig ge\303\266ffnete Vorschauen.",
    "Video-Layouts werden in diesem Verzeichnis gespeichert.",
    "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
    "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
@@ -9547,13 +9591,18 @@ static const struct
    "esen.",
    "Legt fest, in welcher Entfernung vor dem aktuellen Blickpunkt die Bildschirme im Headset angezei"
    "gt werden.",
-   "Inhalte zus\303\244tzlich in einem OpenXR-Headset anzeigen: jeden Bildschirm als eigene schweben"
-   "de Leinwand, bei Stereo-3D mit beiden Augenbildern und das Men\303\274 davor. Nur mit Vulkan. Di"
-   "e normale Ausgabe bleibt im Fenster.",
+   "Inhalte zus\303\244tzlich in einem OpenXR-Headset anzeigen: Jeder Bildschirm wird als eigener sc"
+   "hwebender Bildschirm dargestellt, mit stereoskopischem 3D f\303\274r beide Augen und dem Men\303"
+   "\274 davor. Vulkan oder unter Linux OpenGL. Das Fenster zeigt weiterhin die normale Ausgabe.",
    "Legt fest, auf welchen Bildschirmen der Trigger eines Controllers als Zeiger und Touch-Eingabe f"
    "ungiert, statt L2 oder R2 zu bet\303\244tigen. Automatisch: im ge\303\266ffneten Men\303\274 und"
    " auf Zweitbildschirmen wie einem Touchscreen. Immer: auf allen Bildschirmen, etwa f\303\274r Lic"
    "htpistolen. Aus: auf keinem Bildschirm.",
+   "Legt fest, wo das Headset die Bildschirme platziert. Im Raum fixiert: dort, wo sie durch \342"
+   "\200\236Neu zentrieren\342\200\234 platziert werden. Kopf folgen: immer vor Ihnen; bei einem gro"
+   "\303\237en Bildschirm liegen die R\303\244nder dort, wo die Linsen unscharf abbilden. Verz\303"
+   "\266gertes Folgen: Die Bildschirme bleiben an ihrer Position, bis eine deutliche Abwendung erfol"
+   "gt. Anschlie\303\237end gleiten sie wieder nach vorn.",
    "Die f\303\274r das Headset angeforderte Bildwiederholfrequenz. \342\200\236Automatisch\342\200"
    "\234 w\303\244hlt die Frequenz, die am besten zum Inhalt passt; \342\200\236Vorgabe des Headsets"
    "\342\200\234 fordert keine bestimmte Frequenz an. Die Inhalte laufen im Takt des Headsets, sofer"
@@ -10404,6 +10453,7 @@ static const struct
    "Verwende Core-Namen f\303\274r neue Konfiguration.",
    "Libretro-Dummy-Core wird verwendet. Aufzeichnung \303\274bersprungen.",
    "Verbinde Ger\303\244t mit einem g\303\274ltigen Port.",
+   "Update installieren",
    "Neustart...",
    "Beenden...",
    "Version der Libretro-API",
@@ -10429,7 +10479,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (231343u
+      (sizeof(msg_hash_de_blob) == (232116u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10582,6 +10632,12 @@ typedef char msg_hash_de_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 24u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 60u
+       + 20u
+#endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -10847,6 +10903,12 @@ typedef char msg_hash_de_blob_check[
 #endif
 #ifdef HAVE_GAME_AI
        + 36u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 200u
+       + 222u
+#endif
 #endif
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
        + 276u
@@ -12827,6 +12889,12 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -13351,6 +13419,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13374,6 +13443,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
@@ -14517,6 +14590,12 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    (uint32_t)MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REBOOT_PAYLOAD,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
@@ -14842,6 +14921,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HW_DECODE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -14860,6 +14940,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_PLACEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
@@ -15541,6 +15622,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    (uint32_t)MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
    (uint32_t)MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_VALUE_INSTALL_UPDATE,
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,

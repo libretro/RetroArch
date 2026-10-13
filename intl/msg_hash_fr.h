@@ -2562,7 +2562,6 @@ static const struct
    char s_45816e1d[29];
    char s_730df420[23];
    char s_bcddf275[8];
-   char s_258060bf[39];
    char s_3bbc8b05[82];
    char s_e595f6df[66];
    char s_2a5f7cd7[50];
@@ -3977,7 +3976,6 @@ static const struct
    char s_4a09218b[36];
    char s_dea334de[211];
    char s_cacc1492[67];
-   char s_c0c6924e[260];
    char s_c83fcc7e[255];
    char s_7efaf561[275];
    char s_c90aff27[113];
@@ -7533,7 +7531,6 @@ static const struct
    "Intervalle d'\303\251change V-Sync",
    "Synchronisation vid\303\251o",
    "Vid\303\251os",
-   "Vid\303\251o sur plusieurs fils d'ex\303\251cution",
    "R\303\251gulation de la cadence d'affichage avec vid\303\251o sur plusieurs fils d'ex\303\251cut"
    "ion",
    "R\303\251p\303\251tition d'images avec vid\303\251o sur plusieurs fils d'ex\303\251cution",
@@ -10013,10 +10010,6 @@ static const struct
    "ette pour le joueur 1. En mode s\303\251par\303\251, la manette de gauche est attribu\303\251e a"
    "u joueur 1 et celle de droite au joueur 2.",
    "La distance \303\240 laquelle le casque affiche les \303\251crans devant vous.",
-   "Afficher \303\251galement le contenu dans un casque OpenXR : chaque \303\251cran appara\303\256t"
-   " comme un \303\251cran flottant distinct, en 3D st\303\251r\303\251oscopique (pour les deux yeux"
-   "), avec le menu positionn\303\251 devant eux. Vulkan uniquement. La fen\303\252tre conserve son "
-   "affichage habituel.",
    "Utilise les zones tactiles de la manette au lieu d'appuyer sur L2 ou R2. Auto : dans le menu lor"
    "squ'il est ouvert, ainsi que les \303\251crans secondaires comme un \303\251cran tactile. Toujou"
    "rs : dans tous les \303\251crans (pour les pistolets). D\303\251sactiv\303\251 : nulle part.",
@@ -10964,7 +10957,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (258238u
+      (sizeof(msg_hash_fr_blob) == (257939u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14063,7 +14056,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
@@ -15460,7 +15452,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,

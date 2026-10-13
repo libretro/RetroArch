@@ -2489,7 +2489,6 @@ static const struct
    char s_c017f975[23];
    char s_730df420[27];
    char s_bcddf275[11];
-   char s_258060bf[34];
    char s_3bbc8b05[93];
    char s_e595f6df[64];
    char s_f90edcc2[111];
@@ -10765,8 +10764,6 @@ static const struct
    "\320\241\320\270\320\275\321\205\321\200\320\276\320\275\321\226\320\267\320\260\321\206\321\226"
    "\321\217",
    "\320\222\321\226\320\264\320\265\320\276",
-   "\320\222\320\270\320\276\320\272\321\200\320\265\320\274\320\273\320\265\320\275\320\265 \320"
-   "\262\321\226\320\264\320\265\320\276",
    "\320\221\320\260\320\263\320\260\321\202\320\276\320\277\320\276\321\202\320\276\320\272\320\276"
    "\320\262\320\265 \321\200\320\265\320\263\321\203\320\273\321\216\320\262\320\260\320\275\320"
    "\275\321\217 \321\202\320\265\320\274\320\277\321\203 \320\262\320\270\320\262\320\265\320\264"
@@ -21335,7 +21332,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_uk_blob_check[
-      (sizeof(msg_hash_uk_blob) == (349670u
+      (sizeof(msg_hash_uk_blob) == (349636u
 #ifdef ANDROID
        + 610u
 #endif
@@ -24254,7 +24251,6 @@ static const uint32_t msg_hash_uk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,

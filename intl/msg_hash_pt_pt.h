@@ -840,7 +840,6 @@ static const struct
    char s_c017f975[12];
    char s_730df420[16];
    char s_bcddf275[8];
-   char s_258060bf[18];
    char s_92a02470[45];
    char s_b7ef9e17[46];
    char s_8f37930f[50];
@@ -2300,7 +2299,6 @@ static const struct
    "Autom\303\241tico",
    "Sincroniza\303\247\303\243o",
    "V\303\255deos",
-   "V\303\255deo segmentado",
    "Propor\303\247\303\243o personalizada da altura do ecr\303\243",
    "Propor\303\247\303\243o personalizada da largura do ecr\303\243",
    "Propor\303\247\303\243o personalizada do ecr\303\243 na posi\303\247\303\243o X",
@@ -3014,7 +3012,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55119u
+      (sizeof(msg_hash_pt_pt_blob) == (55101u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3943,7 +3941,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,

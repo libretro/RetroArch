@@ -2491,7 +2491,6 @@ static const struct
    char s_c017f975[13];
    char s_730df420[15];
    char s_bcddf275[6];
-   char s_258060bf[15];
    char s_f90edcc2[54];
    char s_ad14307a[26];
 #if defined(RARCH_MOBILE)
@@ -7230,7 +7229,6 @@ static const struct
    "Automatyczny",
    "Synchronizacja",
    "Filmy",
-   "W\304\205tkowe wideo",
    "U\305\274ywaj bufor\303\263w argument\303\263w Metal (Wymagany restart)",
    "Pozbywanie si\304\231 migotania",
 #if defined(RARCH_MOBILE)
@@ -10210,7 +10208,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200545u
+      (sizeof(msg_hash_pl_blob) == (200530u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13202,7 +13200,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
