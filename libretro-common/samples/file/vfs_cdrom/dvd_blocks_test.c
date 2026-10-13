@@ -113,6 +113,7 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
    }
    if (cmd[0] == 0xB9)
    {
+      CHECK(((uintptr_t)buf & 4095) == 0);
       if (buf == direct_buffer) saw_direct = 1;
       CHECK(len == 2352);
       memset(dst, cmd[5], len);
@@ -685,7 +686,19 @@ int main(void)
          CHECK(retro_vfs_file_read_impl(file, buf, 100) == 100 && !saw_direct);
          CHECK(retro_vfs_file_seek_impl(file, 7056, RETRO_VFS_SEEK_POSITION_START) == 0);
          saw_direct = 0;
-         CHECK(retro_vfs_file_read_impl(file, buf, 4704) == 4704 && !saw_direct);
+         CHECK(retro_vfs_file_read_impl(file, buf, 4704) == 4704 && saw_direct);
+         for (i = 0; i < 4704; i++)
+            CHECK(buf[i] == (i < 2352 ? 3 : 4));
+         CHECK(retro_vfs_file_seek_impl(file, 5 * 2352, RETRO_VFS_SEEK_POSITION_START) == 0);
+         direct_buffer = buf + 1; saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf + 1, 4704) == 4704 && !saw_direct);
+         for (i = 0; i < 4704; i++)
+            CHECK(buf[i + 1] == (i < 2352 ? 5 : 6));
+         CHECK(retro_vfs_file_seek_impl(file, 7 * 2352, RETRO_VFS_SEEK_POSITION_START) == 0);
+         direct_buffer = buf; saw_direct = 0;
+         CHECK(retro_vfs_file_read_impl(file, buf, 2352 + 100) == 2352 + 100 && saw_direct);
+         for (i = 0; i < 2352 + 100; i++)
+            CHECK(buf[i] == (i < 2352 ? 7 : 8));
          CHECK(retro_vfs_file_close_impl(file) == 0);
       }
    }
