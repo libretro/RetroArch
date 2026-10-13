@@ -142,7 +142,7 @@ def main():
         return ('/samples/' in path or '/test/' in path
                 or os.path.basename(path).startswith('stubs_')
                 or os.path.basename(path).endswith('_test.c')
-                or '/platform_stubs/' in path or '/scripts/stubs/' in path)
+                or '/platform_stubs/' in path)
 
     arity, varargs, renamed = {}, set(), set()
     for p, t in masked.items():

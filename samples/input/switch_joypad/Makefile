@@ -1,12 +1,13 @@
-# The Switch joypad driver (the libnx build), with libnx
-# replaced by the test's. The test includes the driver's source itself.
+# The Switch joypad driver (the libnx build), against the tree's libnx
+# stubs, with the libnx calls defined by the test, which includes the
+# driver's source itself.
 TARGET := switch_joypad_test
 
 RARCH_DIR         := ../../..
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DSWITCH -DHAVE_LIBNX \
-           -Ilibnx -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
+           -I$(RARCH_DIR)/tools/platform_stubs/libnx -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

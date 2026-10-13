@@ -1,5 +1,6 @@
 /* The Switch joypad driver (input/drivers_joypad/switch_joypad.c, the
- * libnx build), with libnx replaced by the test's. Held to:
+ * libnx build), against the tree's libnx stubs, with the libnx calls
+ * defined by the test. Held to:
  *
  * - Joy-Con joined: both sticks;
  * - split, a lone left Joy-Con held sideways: its stick turned onto the

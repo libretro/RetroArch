@@ -102,7 +102,7 @@ echo "== mem_stats platform arms =="
 # have. Three console failures reached CI as missing or wrong headers -
 # 3ds.h absent, gccore.h guessed, SYSMEM1_SIZE taken from the SDK when
 # it is RetroArch's own - and each would have shown up here.
-STUBS="$(dirname "$0")/stubs"
+STUBS="$(dirname "$0")/../../../tools/platform_stubs"
 # host headers are the real ones and deprecate things the target's do not
 ARMWARN="$WARN -Wno-deprecated-declarations"
 

@@ -1,6 +1,6 @@
 /* Hermetic stand-in for libctru's <3ds.h>: only what retro_timers.h,
- * features_cpu.h and ctr_joypad.c name, so a matrix lane can compile
- * the 3DS branches without devkitARM present. */
+ * features_cpu.h, mem_stats.c and ctr_joypad.c name, so a matrix lane
+ * can compile the 3DS branches without devkitARM present. */
 #ifndef STUB_3DS_H
 #define STUB_3DS_H
 #include <stdint.h>
