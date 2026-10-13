@@ -6,6 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <retro_endianness.h>
+
+#ifdef MSB_FIRST
+#define TEST_NATIVE_ARGB SPA_VIDEO_FORMAT_ARGB
+#define TEST_NATIVE_ABGR SPA_VIDEO_FORMAT_ABGR
+#else
+#define TEST_NATIVE_ARGB SPA_VIDEO_FORMAT_BGRA
+#define TEST_NATIVE_ABGR SPA_VIDEO_FORMAT_RGBA
+#endif
 
 #include "../../../camera/drivers/pipewire.c"
 
@@ -114,12 +123,16 @@ static void script_reset(struct pw_buffer *next)
 
 static void check_formats(void)
 {
-   static const uint32_t formats[] = { SPA_VIDEO_FORMAT_ARGB,
-      SPA_VIDEO_FORMAT_BGR, SPA_VIDEO_FORMAT_YUY2, SPA_VIDEO_FORMAT_ABGR };
+   static const uint32_t formats[] = { TEST_NATIVE_ARGB,
+      SPA_VIDEO_FORMAT_BGR, SPA_VIDEO_FORMAT_YUY2, TEST_NATIVE_ABGR };
    static const unsigned bytes_per_pixel[] = { 4, 3, 2, 4 };
    unsigned i;
 
    printf("negotiated packed formats:\n");
+   CHECK(scaler_video_formats[0].id == TEST_NATIVE_ARGB,
+         "advertised ARGB word format matches native byte order");
+   CHECK(scaler_video_formats[1].id == TEST_NATIVE_ABGR,
+         "advertised ABGR word format matches native byte order");
    for (i = 0; i < sizeof(formats) / sizeof(formats[0]); i++)
    {
       uint8_t storage[1024];
@@ -140,8 +153,8 @@ static void check_formats(void)
             "scaler stride matches negotiated pixel size");
       CHECK(script_stride == (int)(W * bytes_per_pixel[i]),
             "requested buffer stride matches negotiated pixel size");
-      if ((formats[i] == SPA_VIDEO_FORMAT_ARGB
-               || formats[i] == SPA_VIDEO_FORMAT_ABGR
+      if ((formats[i] == TEST_NATIVE_ARGB
+               || formats[i] == TEST_NATIVE_ABGR
                || formats[i] == SPA_VIDEO_FORMAT_BGR) && camera.buffer_output)
       {
          uint32_t pixels[W * H];
@@ -168,8 +181,8 @@ static void check_formats(void)
          memset(&pwb, 0, sizeof(pwb));
          chunk.size = formats[i] != SPA_VIDEO_FORMAT_BGR
             ? sizeof(pixels) : sizeof(bgr);
-         data.data = formats[i] == SPA_VIDEO_FORMAT_ABGR ? (void*)abgr
-            : formats[i] == SPA_VIDEO_FORMAT_ARGB ? (void*)pixels : (void*)bgr;
+         data.data = formats[i] == TEST_NATIVE_ABGR ? (void*)abgr
+            : formats[i] == TEST_NATIVE_ARGB ? (void*)pixels : (void*)bgr;
          data.maxsize = chunk.size;
          data.chunk = &chunk;
          buffer.n_datas = 1;
@@ -363,7 +376,7 @@ int main(void)
          struct spa_video_info_raw info;
          const struct spa_pod *param;
          memset(&info, 0, sizeof(info));
-         info.format = cycle & 1 ? SPA_VIDEO_FORMAT_ABGR : SPA_VIDEO_FORMAT_ARGB;
+         info.format = cycle & 1 ? TEST_NATIVE_ABGR : TEST_NATIVE_ARGB;
          info.size = SPA_RECTANGLE(W + (cycle & 1) * 2, H);
          param = spa_format_video_raw_build(&builder, SPA_PARAM_Format, &info);
          stream_param_changed_cb(&changing, SPA_PARAM_Format, param);

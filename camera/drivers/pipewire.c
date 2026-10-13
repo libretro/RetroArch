@@ -27,6 +27,7 @@
 #include <libretro.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
+#include <retro_endianness.h>
 
 #include "../camera_driver.h"
 #include "../../audio/common/pipewire.h"
@@ -59,8 +60,13 @@ static struct
    uint32_t format;
    uint32_t id;
 } scaler_video_formats[] = {
+#ifdef MSB_FIRST
    { SCALER_FMT_ARGB8888, SPA_VIDEO_FORMAT_ARGB },
    { SCALER_FMT_ABGR8888, SPA_VIDEO_FORMAT_ABGR },
+#else
+   { SCALER_FMT_ARGB8888, SPA_VIDEO_FORMAT_BGRA },
+   { SCALER_FMT_ABGR8888, SPA_VIDEO_FORMAT_RGBA },
+#endif
    { SCALER_FMT_0RGB1555, SPA_VIDEO_FORMAT_UNKNOWN },
    { SCALER_FMT_RGB565,   SPA_VIDEO_FORMAT_UNKNOWN },
    { SCALER_FMT_BGR24,    SPA_VIDEO_FORMAT_BGR },
