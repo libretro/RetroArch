@@ -60,6 +60,7 @@ typedef struct
    bool last_frame_valid;
    bool logical_blocks;
    bool device_only;
+   bool media_changed; /* bound geometry is stale; reopen before reading */
    bool io_error;
 } vfs_cdrom_t;
 #endif

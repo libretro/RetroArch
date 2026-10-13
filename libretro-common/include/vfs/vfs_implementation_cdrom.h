@@ -50,7 +50,9 @@ int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream);
 
 /* Borrowed immutable geometry, valid until this handle closes. NULL for
  * metadata-only probes and cooked images. BIN opens obtain their own TOC;
- * no preceding CUE open is required. */
+ * no preceding CUE open is required. Drive-reported medium changes, resets
+ * or removal make bound data handles unreadable until reopened. Other
+ * handles and changes not reported to this handle are not tracked here. */
 const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(
       const libretro_vfs_implementation_file *stream);
 

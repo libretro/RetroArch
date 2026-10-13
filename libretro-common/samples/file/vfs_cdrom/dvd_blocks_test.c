@@ -21,6 +21,7 @@ static unsigned closes;
 #endif
 static uint32_t last_lba = 3000000, sector_size = 2048;
 static int fail_at, short_transfer;
+static unsigned char error_key = 5, error_asc, error_response = 0x70;
 static int toc_bad;
 static uint16_t media_profile = 0x10;
 static unsigned active_drive = 1;
@@ -144,6 +145,22 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
    return 0;
 }
 
+static void drive_sense(unsigned char *sense)
+{
+   sense[0] = error_response;
+   if (error_response == 0x72 || error_response == 0x73)
+   {
+      sense[1] = error_key;
+      sense[2] = error_asc;
+   }
+   else
+   {
+      sense[2] = error_key;
+      sense[7] = 10;
+      sense[12] = error_asc;
+   }
+}
+
 #if defined(_WIN32)
 static BOOL WINAPI drive_ioctl(HANDLE h, DWORD code, LPVOID in,
       DWORD insize, LPVOID out, DWORD outsize, LPDWORD bytes,
@@ -159,7 +176,7 @@ static BOOL WINAPI drive_ioctl(HANDLE h, DWORD code, LPVOID in,
    rv = drive_command(s->Cdb, s->DataBuffer, s->DataTransferLength);
    s->ScsiStatus = rv ? 2 : 0;
    if (rv)
-      ((unsigned char*)in)[s->SenseInfoOffset + 2] = 5;
+      drive_sense((unsigned char*)in + s->SenseInfoOffset);
    if (short_transfer)
       s->DataTransferLength--;
    *bytes = insize;
@@ -208,7 +225,7 @@ static int drive_ioctl(int fd, unsigned long request, ...)
          || s->dxfer_direction == SG_DXFER_TO_DEV || s->cmdp[0] == 0xBB || s->cmdp[0] == 0x00);
    rv = drive_command(s->cmdp, s->dxferp, s->dxfer_len);
    s->info = rv ? SG_INFO_CHECK : 0;
-   if (rv) s->sbp[2] = 5;
+   if (rv) drive_sense(s->sbp);
    s->resid = short_transfer ? 1 : 0;
    return 0;
 }
@@ -243,6 +260,85 @@ static FILE *drive_open(const char *path, const char *mode)
 
 #include "../../../cdrom/cdrom.c"
 #include "../../../vfs/vfs_implementation_cdrom.c"
+
+static void test_media_change(unsigned char *buf)
+{
+   unsigned format, condition, dvd, before;
+   libretro_vfs_implementation_file *file;
+   sector_size = 2048;
+   for (format = 0; format < 4; format++)
+      for (condition = 0; condition < 3; condition++)
+         for (dvd = 0; dvd < 2; dvd++)
+         {
+            unsigned bytes = dvd ? 2048 : 2352;
+            const char *path = dvd ? "cdrom://" IMAGE_PATH : BIN_A;
+            file = retro_vfs_file_open_impl(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+            CHECK(file != NULL);
+            if (!file) continue;
+            CHECK(retro_vfs_file_read_impl(file, buf, bytes) == bytes);
+            error_response = (unsigned char)(0x70 + format);
+            error_key = condition == 2 ? 2 : 6;
+            error_asc = condition == 2 ? 0x3a : (unsigned char)(0x28 + condition);
+            before = calls;
+            fail_at = (int)calls + 1;
+            CHECK(retro_vfs_file_read_impl(file, buf, bytes) == -1);
+            CHECK(calls == before + 1); /* no retry onto another medium */
+            CHECK(retro_vfs_file_tell_impl(file) == bytes);
+            CHECK(file->cdrom->media_changed && !file->cdrom->last_frame_valid);
+            CHECK(retro_vfs_file_error_impl(file));
+            fail_at = 0;
+            CHECK(retro_vfs_file_seek_impl(file, 0, RETRO_VFS_SEEK_POSITION_START) == 0);
+            before = calls;
+            CHECK(retro_vfs_file_read_impl(file, buf, bytes) == -1);
+            CHECK(calls == before && retro_vfs_file_tell_impl(file) == 0);
+            CHECK(retro_vfs_file_read_impl(file, buf, 0) == 0);
+            if (dvd)
+               CHECK(cdrom_read_blocks(file, 0, 1, buf) != 0);
+            else
+               CHECK(cdrom_read(file, NULL, 0, 2, 0, buf, 2352, 0) != 0);
+            CHECK(calls == before); /* low-level readers also reject stale geometry */
+            CHECK(cdrom_is_media_inserted(file)); /* readiness cannot revive geometry */
+            CHECK(file->cdrom->media_changed);
+            CHECK(retro_vfs_file_close_impl(file) == 0);
+            file = retro_vfs_file_open_impl(path, RETRO_VFS_FILE_ACCESS_READ, 0);
+            CHECK(file != NULL);
+            if (file)
+            {
+               CHECK(!file->cdrom->media_changed);
+               CHECK(retro_vfs_file_read_impl(file, buf, bytes) == bytes);
+               CHECK(retro_vfs_file_close_impl(file) == 0);
+            }
+         }
+   error_key = 5; error_asc = 0; error_response = 0x70;
+   file = retro_vfs_file_open_impl(BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   CHECK(file != NULL);
+   if (file)
+   {
+      fail_at = (int)calls + 1;
+      CHECK(retro_vfs_file_read_impl(file, buf, 2352) == -1);
+      CHECK(!file->cdrom->media_changed);
+      fail_at = 0;
+      CHECK(retro_vfs_file_read_impl(file, buf, 2352) == 2352);
+      error_key = 6; error_asc = 0x28;
+      fail_at = (int)calls + 1;
+      CHECK(!cdrom_is_media_inserted(file));
+      CHECK(file->cdrom->media_changed && !file->cdrom->last_frame_valid);
+      fail_at = 0;
+      CHECK(retro_vfs_file_close_impl(file) == 0);
+   }
+   file = retro_vfs_file_open_impl(DEVICE_A, RETRO_VFS_FILE_ACCESS_READ, 0);
+   CHECK(file != NULL);
+   if (file)
+   {
+      fail_at = (int)calls + 1;
+      CHECK(!cdrom_is_media_inserted(file));
+      CHECK(!file->cdrom->media_changed);
+      fail_at = 0;
+      CHECK(cdrom_is_media_inserted(file));
+      CHECK(retro_vfs_file_close_impl(file) == 0);
+   }
+   error_key = 5; error_asc = 0; error_response = 0x70;
+}
 
 static void test_handle_geometry(unsigned char *buf)
 {
@@ -474,6 +570,7 @@ int main(void)
    CHECK(retro_vfs_file_open_impl("cdrom://" IMAGE_PATH,
          RETRO_VFS_FILE_ACCESS_READ, 0) == NULL);
    test_handle_geometry(buf);
+   test_media_change(buf);
    memalign_free(buf);
    printf("DVD block/VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;

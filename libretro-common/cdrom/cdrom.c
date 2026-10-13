@@ -751,6 +751,38 @@ void cdrom_macos_close(void *plugin, void *mmc, int fd)
 }
 #endif
 
+/* Preserve bound geometry until close, but never reuse it after an observed
+ * medium change/removal or device reset. Probes without geometry may retry.
+ * This is local to the handle, not a cross-handle media generation. */
+static bool cdrom_observe_media_change(libretro_vfs_implementation_file *stream,
+      const unsigned char *sense)
+{
+   unsigned key, asc;
+   unsigned response = sense[0] & 0x7f;
+   if (!stream || !stream->cdrom || (!stream->cdrom->logical_blocks
+            && (!stream->cdrom->toc || !stream->cdrom->toc->num_tracks)))
+      return false;
+   if ((response == 0x70 || response == 0x71) && sense[7] >= 5)
+   {
+      key = sense[2] & 0xf;
+      asc = sense[12];
+   }
+   else if (response == 0x72 || response == 0x73)
+   {
+      key = sense[1] & 0xf;
+      asc = sense[2];
+   }
+   else
+      return false;
+   if (!((key == 6 && (asc == 0x28 || asc == 0x29))
+            || (key == 2 && asc == 0x3a)))
+      return false;
+   stream->cdrom->media_changed = true;
+   stream->cdrom->last_frame_valid = false;
+   stream->cdrom->io_error = true;
+   return true;
+}
+
 static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir,
       void *s, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
@@ -770,6 +802,8 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
    {
       size_t count;
+      if (stream && stream->cdrom && stream->cdrom->media_changed)
+         return 1;
       if (skip >= 2352 || len > SIZE_MAX - skip)
          return 1;
       count = (len + skip) / 2352 + ((len + skip) % 2352 != 0);
@@ -920,6 +954,11 @@ retry:
       }
       else
       {
+         if (cdrom_observe_media_change(stream, sense))
+         {
+            rv = 1;
+            break;
+         }
 #ifdef CDROM_DEBUG
          cdrom_print_sense_data(sense, sizeof(sense));
 #endif
@@ -1631,17 +1670,20 @@ static int cdrom_transfer_blocks(libretro_vfs_implementation_file *stream,
       void *s, size_t len, unsigned char *cdb, size_t cdb_len)
 {
    unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
+   int rv;
    if (!stream || !s)
+      return 1;
+   if (stream->cdrom && stream->cdrom->media_changed && cdb[0] == 0x28)
       return 1;
 #if defined(__linux__) && !defined(ANDROID)
    if (!stream->fp)
       return 1;
-   return cdrom_send_command_linux(stream, DIRECTION_IN,
+   rv = cdrom_send_command_linux(stream, DIRECTION_IN,
          s, len, cdb, cdb_len, sense, sizeof(sense));
 #elif defined(_WIN32) && !defined(_XBOX)
    if (!stream->fh || stream->fh == INVALID_HANDLE_VALUE)
       return 1;
-   return cdrom_send_command_win32(stream, DIRECTION_IN,
+   rv = cdrom_send_command_win32(stream, DIRECTION_IN,
          s, len, cdb, cdb_len, sense, sizeof(sense));
 #else
    (void)len;
@@ -1650,6 +1692,9 @@ static int cdrom_transfer_blocks(libretro_vfs_implementation_file *stream,
    (void)sense;
    return 1;
 #endif
+   if (rv)
+      cdrom_observe_media_change(stream, sense);
+   return rv;
 }
 
 int cdrom_get_media_profile(libretro_vfs_implementation_file *stream,

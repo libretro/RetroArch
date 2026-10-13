@@ -333,6 +333,13 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
    int rv;
    const char *ext = path_get_extension(stream->orig_path);
    const cdrom_toc_t *toc = retro_vfs_file_get_cdrom_toc(stream);
+   if (!len)
+      return 0;
+   if (stream->cdrom->media_changed)
+   {
+      stream->cdrom->io_error = true;
+      return -1;
+   }
    if (stream->cdrom->device_only)
    {
       if (len)
