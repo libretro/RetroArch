@@ -21,7 +21,7 @@ static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
 static int output_close_fail, input_close_fail, publish_fail, short_read;
 static RFILE *output_handles[4];
 static RFILE *image_input;
-static unsigned write_opens;
+static unsigned write_opens, publish_calls;
 static unsigned failures, finished_logs, cue_opens;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); failures++; } } while (0)
 
@@ -113,7 +113,7 @@ static void *dump_alloc(size_t align, size_t bytes)
 { return alloc_fail ? NULL : memalign_alloc(align, bytes); }
 static int dump_finish(const char *path, bool ok)
 {
-   if (publish_fail && ok) return 1;
+   if (ok && ++publish_calls == (unsigned)publish_fail) return 1;
    return filestream_finish_atomic(path, ok);
 }
 #define filestream_finish_atomic dump_finish
@@ -161,6 +161,12 @@ static void run_dump(int cancel)
    task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)calloc(1, sizeof(*state));
    unsigned tick = 0, logs = finished_logs;
    if (medium == 0x10) fixture("dump_result.iso", 17);
+   else
+   {
+      fixture("dump_result (Track 01).bin", 17);
+      fixture("dump_result (Track 02).bin", 17);
+   }
+   publish_calls = 0;
    write_opens = 0;
    fake_toc.num_tracks = 2;
    reopened_toc = fake_toc;
@@ -181,7 +187,7 @@ static void run_dump(int cancel)
       task_cdrom_dump_handler(task);
       if (medium == 8 && tick == 2)
          fake_toc.num_tracks = 0; /* unrelated metadata refresh */
-      if (cancel && tick == 2)
+      if (cancel && tick == (cancel == 1 ? 2u : cancel == 2 ? 4u : 7u))
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
@@ -189,6 +195,11 @@ static void run_dump(int cancel)
    {
       CHECK(finished_logs == logs);
       if (medium == 0x10) verify("dump_result.iso", 17);
+      else
+      {
+         verify("dump_result (Track 01).bin", state->cur_track > 1 ? 4704 : 17);
+         verify("dump_result (Track 02).bin", 17);
+      }
       if ((output_close_fail || input_close_fail || short_read) && !cancel)
          CHECK(state->failed);
       if (changed_geometry)
@@ -212,7 +223,9 @@ static void run_dump(int cancel)
          verify("dump_result (Track 02).bin", 7056);
       }
    }
-   if (medium == 0x10) CHECK(!filestream_exists("dump_result.iso.tmp"));
+   CHECK(!filestream_exists("dump_result.iso.tmp"));
+   CHECK(!filestream_exists("dump_result (Track 01).bin.tmp"));
+   CHECK(!filestream_exists("dump_result (Track 02).bin.tmp"));
    task_cdrom_dump_callback(task, NULL, NULL, NULL);
    CHECK(!output_handles[0] && !output_handles[1] && !output_handles[2]);
    task_free_title(task);
@@ -273,6 +286,10 @@ int main(void)
    medium = 8;
    run_dump(0);
    short_read = 1; run_dump(0); short_read = 0;
+   run_dump(2);
+   run_dump(3);
+   publish_fail = 1; run_dump(0); publish_fail = 0;
+   publish_fail = 2; run_dump(0); publish_fail = 0;
    for (output_close_fail = 1; output_close_fail <= 3; output_close_fail++)
       run_dump(0);
    output_close_fail = 0;

@@ -94,7 +94,7 @@ typedef struct
    char drive_letter[2];
    char cdrom_path[64];
    char output_path[PATH_MAX_LENGTH];
-   char image_temp_path[PATH_MAX_LENGTH];
+   char output_temp_path[PATH_MAX_LENGTH];
    char title[NAME_MAX_LENGTH];
    /* Captured on the main thread at push: the handler runs on the
     * threaded task queue's worker and writes dumps under this, never
@@ -102,7 +102,7 @@ typedef struct
    char dir_core_assets[DIR_MAX_LENGTH];
    bool next;
    bool failed;
-   bool image_pending;
+   bool output_pending;
 } task_cdrom_dump_state_t;
 
 static void task_cdrom_dump_fail(retro_task_t *task, enum msg_hash_enums msg)
@@ -178,11 +178,11 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
       }
 
-      if (state->image_pending)
+      if (state->output_pending)
       {
          bool publish = !state->failed &&
             !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED);
-         state->image_pending = false;
+         state->output_pending = false;
          if (filestream_finish_atomic(state->output_path, publish) != 0)
          {
             filestream_finish_atomic(state->output_path, false);
@@ -244,15 +244,15 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                fill_pathname_join_special(output_path, state->dir_core_assets,
                      filename, sizeof(state->output_path));
                if (state->disc_total_bytes <= 0 ||
-                     !filestream_atomic_temp_name(state->image_temp_path,
-                        sizeof(state->image_temp_path), output_path))
+                     !filestream_atomic_temp_name(state->output_temp_path,
+                        sizeof(state->output_temp_path), output_path))
                {
                   task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
                   return;
                }
-               state->output_file = filestream_open(state->image_temp_path,
+               state->output_file = filestream_open(state->output_temp_path,
                      RETRO_VFS_FILE_ACCESS_WRITE, 0);
-               state->image_pending = state->output_file != NULL;
+               state->output_pending = state->output_file != NULL;
                if (!state->output_file)
                {
                   task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
@@ -422,7 +422,16 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                fill_pathname_join_special(output_path,
                      directory_core_assets, track_filename, sizeof(state->output_path));
 
-               if (!(state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0)))
+               if (!filestream_atomic_temp_name(state->output_temp_path,
+                        sizeof(state->output_temp_path), output_path))
+               {
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
+                  return;
+               }
+               state->output_file = filestream_open(state->output_temp_path,
+                     RETRO_VFS_FILE_ACCESS_WRITE, 0);
+               state->output_pending = state->output_file != NULL;
+               if (!state->output_file)
                {
                   RARCH_ERR("[CDROM] Error opening file for writing: %s.\n", output_path);
                   task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
@@ -491,6 +500,12 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                }
             }
 
+            if (filestream_finish_atomic(state->output_path, true) != 0)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+               return;
+            }
+            state->output_pending = false;
             state->state = DUMP_STATE_NEXT_TRACK;
          }
          break;
