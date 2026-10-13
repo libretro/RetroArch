@@ -404,6 +404,26 @@ static void test_file_names(void)
    CHECK(!rdvd_file_name(1, 0, RDVD_FILE_IFO, NULL, 13));
    CHECK(!rdvd_file_name(1, 0, RDVD_FILE_IFO, name, 0));
 }
+static void test_vob_map(void)
+{
+   uint64_t sizes[9];
+   rdvd_vob_map_t map;
+   unsigned i;
+   for (i = 0; i < 9; i++) sizes[i] = (uint64_t)1073741824;
+   CHECK(rdvd_vob_map_read(sizes, 9, &map));
+   CHECK(map.sizes == sizes && map.segments == 9);
+   CHECK(map.total_bytes == (uint64_t)1073741824 * 9);
+   CHECK(!rdvd_vob_map_read(sizes, 10, &map) && !map.sizes);
+   CHECK(!rdvd_vob_map_read(sizes, 0, &map));
+   sizes[0] = 0;
+   CHECK(!rdvd_vob_map_read(sizes, 1, &map));
+   sizes[0] = 2049;
+   CHECK(!rdvd_vob_map_read(sizes, 1, &map));
+   sizes[0] = UINT64_MAX - 2047; sizes[1] = 2048;
+   CHECK(!rdvd_vob_map_read(sizes, 2, &map));
+   CHECK(!rdvd_vob_map_read(NULL, 1, &map));
+   CHECK(!rdvd_vob_map_read(sizes, 1, NULL));
+}
 int main(void)
 {
    test_bounds();
@@ -418,6 +438,7 @@ int main(void)
    test_backup();
    test_language_find();
    test_file_names();
+   test_vob_map();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

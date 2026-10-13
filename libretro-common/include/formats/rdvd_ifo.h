@@ -189,5 +189,16 @@ enum rdvd_file_kind { RDVD_FILE_IFO = 0, RDVD_FILE_BUP, RDVD_FILE_VOB };
  * Failure clears a nonempty output buffer. No path or filesystem I/O occurs. */
 bool rdvd_file_name(unsigned title_set, unsigned segment,
       enum rdvd_file_kind kind, char *out, size_t capacity);
+typedef struct rdvd_vob_map
+{
+   const uint64_t *sizes;
+   uint64_t total_bytes;
+   unsigned segments;
+} rdvd_vob_map_t;
+
+/* Title VOB files are supplied in segment order (1..9). Sizes must be
+ * nonzero multiples of 2048. Borrows immutable sizes, not file contents. */
+bool rdvd_vob_map_read(const uint64_t *sizes, unsigned count,
+      rdvd_vob_map_t *out);
 RETRO_END_DECLS
 #endif

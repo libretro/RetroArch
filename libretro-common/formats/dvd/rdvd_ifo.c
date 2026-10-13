@@ -521,3 +521,22 @@ bool rdvd_file_name(unsigned title_set, unsigned segment,
    memcpy(out, name, sizeof(name));
    return true;
 }
+
+
+bool rdvd_vob_map_read(const uint64_t *sizes, unsigned count,
+      rdvd_vob_map_t *out)
+{
+   uint64_t total = 0;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!sizes || !count || count > 9) return false;
+   for (i = 0; i < count; i++)
+   {
+      if (!sizes[i] || sizes[i] % 2048 || sizes[i] > UINT64_MAX - total)
+         return false;
+      total += sizes[i];
+   }
+   out->sizes = sizes; out->total_bytes = total; out->segments = count;
+   return true;
+}
