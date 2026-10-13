@@ -754,6 +754,56 @@ static void test_select_screens(void)
    }
 }
 
+/* A console's touchscreen through the views it shows: the 3DS's bottom
+ * screen showing the DS map's second screen. */
+static void test_touch(void)
+{
+   video_views_map_t map, sub;
+   video_views_layout_params_t p;
+   video_views_layout_t l;
+   video_views_touch_t t;
+   unsigned index[RETRO_VIDEO_VIEWS_MAX];
+   int16_t x = 123, y = 456;
+   unsigned frame = VIDEO_SCALE_PACK(256, 384);
+
+   memset(&t, 0, sizeof(t));
+   CHECK(!video_views_touch_point(&t, 0, 0, &x, &y));
+   CHECK(x == 123 && y == 456);
+
+   map_ds(&map);
+   CHECK(video_views_select_screens(&map, 1, 1, &sub, index));
+   memset(&p, 0, sizeof(p));
+   p.map         = &sub;
+   p.dims        = VIDEO_SCALE_PACK(320, 240);
+   p.stereo_mode = VIDEO_STEREO_MODE_2D;
+   video_views_layout(&p, &l);
+   /* 256x192 into 320x240: the whole screen, aspect kept. */
+   CHECK(l.num_placements == 1
+         && l.placements[0].dst.dims == VIDEO_SCALE_PACK(320, 240));
+   video_views_touch_publish(&t, &map, &l, index, p.dims, frame);
+   CHECK(!(retro_atomic_load_acquire_int(&t.seq) & 1));
+
+   /* The display's middle is the second screen's: (128, 288) packed. */
+   CHECK(video_views_touch_point(&t, 0, 0, &x, &y));
+   CHECK(x >= -2 && x <= 2);
+   CHECK(y >= 16383 - 200 && y <= 16383 + 200);
+   /* The top left corner is the second screen's: (0, 192). */
+   CHECK(video_views_touch_point(&t, -0x7fff, -0x7fff, &x, &y));
+   CHECK(x == -0x7fff && y >= -2 && y <= 2);
+
+   /* Pillarboxed: off the view is off the frame. */
+   p.dims = VIDEO_SCALE_PACK(400, 240);
+   video_views_layout(&p, &l);
+   video_views_touch_publish(&t, &map, &l, index, p.dims, frame);
+   CHECK(video_views_touch_point(&t, -0x7fff, 0, &x, &y));
+   CHECK(x == -0x8000 && y == -0x8000);
+
+   /* Taken back: none. */
+   video_views_touch_publish(&t, NULL, NULL, NULL, 0, 0);
+   x = 7;
+   CHECK(!video_views_touch_point(&t, 0, 0, &x, &y) && x == 7);
+}
+
 /* The CPU drivers' blend of a canvas's halves. */
 static void test_blend(void)
 {
@@ -1137,6 +1187,7 @@ int main(void)
    test_eye_pair();
    test_select_screens();
    test_blend();
+   test_touch();
    test_layout_screens();
    test_layout_stereo();
    test_layout_one_screen();

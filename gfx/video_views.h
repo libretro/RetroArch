@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <retro_common_api.h>
 #include <libretro.h>
 
@@ -227,6 +228,33 @@ bool video_views_map_point(const video_views_layout_t *layout,
  * or a UI drawn once, leaves the point as it is. */
 void video_views_ui_point(const video_views_layout_t *layout,
       int x, int y, int *res_x, int *res_y);
+
+/* Where touches on a display of a console's own land in the core's
+ * packed frame: the views it shows, written by the video driver and read
+ * by the input driver without a lock, behind a sequence count that is
+ * odd while they change. Zeroed, it holds none. */
+typedef struct video_views_touch
+{
+   video_views_rect_t dst[RETRO_VIDEO_VIEWS_MAX];
+   struct retro_video_view src[RETRO_VIDEO_VIEWS_MAX];
+   unsigned count;
+   unsigned dims;
+   unsigned frame_dims;
+   retro_atomic_int_t seq;
+} video_views_touch_t;
+
+/* @layout's placements, of @map's views through @index (the selection's
+ * to the map's), on a display of size @dims; @frame_dims the packed
+ * frame's. A NULL @layout holds none. */
+void video_views_touch_publish(video_views_touch_t *t,
+      const video_views_map_t *map, const video_views_layout_t *layout,
+      const unsigned *index, unsigned dims, unsigned frame_dims);
+
+/* A touch, -0x7fff to 0x7fff across the display, to the core's pointer
+ * in its packed frame, -0x8000 off the views. False, with @res_x and
+ * @res_y as they were, when the display shows no views. */
+bool video_views_touch_point(video_views_touch_t *t, int x, int y,
+      int16_t *res_x, int16_t *res_y);
 
 /* A canvas's two halves, each of size @dims, into @out for the CPU
  * drivers, XRGB8888 with strides in pixels: anaglyph by Dubois'

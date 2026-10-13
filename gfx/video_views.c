@@ -416,6 +416,76 @@ void video_views_layout(const video_views_layout_params_t *p,
    }
 }
 
+void video_views_touch_publish(video_views_touch_t *t,
+      const video_views_map_t *map, const video_views_layout_t *layout,
+      const unsigned *index, unsigned dims, unsigned frame_dims)
+{
+   unsigned i;
+   retro_atomic_fetch_add_seq_cst_int(&t->seq, 1);
+   t->count = 0;
+   for (i = 0; layout && i < layout->num_placements
+         && i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      t->dst[i] = layout->placements[i].dst;
+      t->src[i] = map->views[index[layout->placements[i].view]];
+      t->count++;
+   }
+   t->dims       = dims;
+   t->frame_dims = frame_dims;
+   retro_atomic_fetch_add_seq_cst_int(&t->seq, 1);
+}
+
+bool video_views_touch_point(video_views_touch_t *t, int x, int y,
+      int16_t *res_x, int16_t *res_y)
+{
+   unsigned i, tries;
+   for (tries = 0; tries < 4; tries++)
+   {
+      long px, py;
+      video_views_rect_t dst[RETRO_VIDEO_VIEWS_MAX];
+      struct retro_video_view src[RETRO_VIDEO_VIEWS_MAX];
+      int seq        = retro_atomic_load_acquire_int(&t->seq);
+      unsigned count = t->count;
+      unsigned dims  = t->dims;
+      unsigned fdims = t->frame_dims;
+      if (seq & 1)
+         continue;
+      memcpy(dst, t->dst, sizeof(dst));
+      memcpy(src, t->src, sizeof(src));
+      /* A full barrier: the copy is read before the count is again */
+      if (retro_atomic_fetch_add_seq_cst_int(&t->seq, 0) != seq)
+         continue;
+      if (     !count || count > RETRO_VIDEO_VIEWS_MAX
+            || !VIDEO_SCALE_W(fdims) || !VIDEO_SCALE_H(fdims))
+         return false;
+      /* The touch in the display's pixels */
+      px     = ((long)x + 0x7fff) * (long)VIDEO_SCALE_W(dims) / 0xfffe;
+      py     = ((long)y + 0x7fff) * (long)VIDEO_SCALE_H(dims) / 0xfffe;
+      *res_x = -0x8000;
+      *res_y = -0x8000;
+      for (i = 0; i < count; i++)
+      {
+         long fx, fy;
+         long dx = VIDEO_POS_X(dst[i].pos);
+         long dy = VIDEO_POS_Y(dst[i].pos);
+         long dw = (long)VIDEO_SCALE_W(dst[i].dims);
+         long dh = (long)VIDEO_SCALE_H(dst[i].dims);
+         if (px < dx || py < dy || px >= dx + dw || py >= dy + dh)
+            continue;
+         /* That point of the view, in the packed frame */
+         fx     = (long)src[i].x + (px - dx) * (long)src[i].width / dw;
+         fy     = (long)src[i].y + (py - dy) * (long)src[i].height / dh;
+         *res_x = (int16_t)(fx * 0xfffe / (long)VIDEO_SCALE_W(fdims)
+               - 0x7fff);
+         *res_y = (int16_t)(fy * 0xfffe / (long)VIDEO_SCALE_H(fdims)
+               - 0x7fff);
+         break;
+      }
+      return true;
+   }
+   return false;
+}
+
 void video_views_blend_xrgb8888(const uint32_t *canvas,
       size_t canvas_stride, uint32_t *out, size_t out_stride,
       unsigned dims, unsigned stereo_mode)

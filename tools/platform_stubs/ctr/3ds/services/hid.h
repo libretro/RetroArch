@@ -1,6 +1,6 @@
 /* Host stand-in for libctru's 3ds/services/hid.h: the key bits, the
- * position records and the reads ctr_joypad.c uses, as libctru
- * declares them. */
+ * position records and the reads ctr_joypad.c and ctr_input.c use, as
+ * libctru declares them. */
 #ifndef PLATFORM_STUB_3DS_HID_H
 #define PLATFORM_STUB_3DS_HID_H
 #include <3ds/types.h>
@@ -20,7 +20,8 @@ enum
    KEY_X      = 1u << 10,
    KEY_Y      = 1u << 11,
    KEY_ZL     = 1u << 14,
-   KEY_ZR     = 1u << 15
+   KEY_ZR     = 1u << 15,
+   KEY_TOUCH  = 1u << 20
 };
 
 typedef struct

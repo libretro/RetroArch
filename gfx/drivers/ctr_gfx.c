@@ -1696,6 +1696,14 @@ task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
  * is on. Each view is a quad sampling the frame's texture.
  */
 
+/* Where the bottom screen's touches land, for the input driver */
+static video_views_touch_t ctr_views_touch_map;
+
+bool ctr_views_touch(int16_t x, int16_t y, int16_t *res_x, int16_t *res_y)
+{
+   return video_views_touch_point(&ctr_views_touch_map, x, y, res_x, res_y);
+}
+
 /* @q over @dst, sampling @v, turned as ctr_set_screen_coords turns the
  * frame */
 static void ctr_views_quad(ctr_vertex_t *q, unsigned rotation,
@@ -1747,6 +1755,9 @@ static void ctr_views_place(ctr_video_t *ctr, const video_views_map_t *map,
    if (!video_views_select_screens(map, first, screens, &sub, index))
       return;
    video_driver_views_layout_flat(&sub, dims, window, &layout);
+   if (left == CTR_VIEWS_BOTTOM)
+      video_views_touch_publish(&ctr_views_touch_map, map, &layout, index,
+            dims, ctr->views.frame_dims);
    for (e = 0; e < 2 && targets[e] < CTR_VIEWS_TARGETS; e++)
    {
       ctr_vertex_t *q = ctr->views.coords
@@ -1787,6 +1798,9 @@ static bool ctr_views_setup(ctr_video_t *ctr,
    if (bottom != ctr->views.bottom)
    {
       ctr->views.bottom = bottom;
+      if (!bottom)
+         video_views_touch_publish(&ctr_views_touch_map, NULL, NULL, NULL,
+               0, 0);
       if (bottom && ctr->bottom_is_idle)
       {
          ctr->bottom_is_idle = false;
@@ -2752,6 +2766,7 @@ static void ctr_free(void* data)
    linearFree(ctr->vertex_cache.buffer);
    if (ctr->views.coords)
       linearFree(ctr->views.coords);
+   video_views_touch_publish(&ctr_views_touch_map, NULL, NULL, NULL, 0, 0);
    if (ctr->white_texture)
    {
       linearFree(ctr->white_texture->data);
