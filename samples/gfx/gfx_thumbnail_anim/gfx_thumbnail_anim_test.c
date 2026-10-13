@@ -62,6 +62,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <process.h>
+#define getpid _getpid
+#else
+#include <unistd.h>
+#endif
 #include <retro_timers.h>
 #include <boolean.h>
 #include <queues/task_queue.h>
