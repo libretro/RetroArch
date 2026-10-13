@@ -443,3 +443,25 @@ bool rdvd_ifo_menu_read(const rdvd_ifo_t *ifo, unsigned language_index,
    }
    return false;
 }
+
+
+bool rdvd_ifo_select(const uint8_t *primary, size_t primary_size,
+      const uint8_t *backup, size_t backup_size, enum rdvd_ifo_kind kind,
+      rdvd_ifo_t *out, bool *used_backup)
+{
+   rdvd_ifo_t selected;
+   if (used_backup) *used_backup = false;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (kind != RDVD_IFO_VMG && kind != RDVD_IFO_VTS) return false;
+   if (rdvd_ifo_read(primary, primary_size, &selected) && selected.kind == kind)
+   {
+      *out = selected;
+      return true;
+   }
+   if (!rdvd_ifo_read(backup, backup_size, &selected) || selected.kind != kind)
+      return false;
+   *out = selected;
+   if (used_backup) *used_backup = true;
+   return true;
+}

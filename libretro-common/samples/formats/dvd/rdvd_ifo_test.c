@@ -329,6 +329,33 @@ static void test_menu_lookup(void)
    CHECK(!rdvd_ifo_menu_read(&f, 0, (enum rdvd_menu_id)-1, &entry));
    CHECK(!rdvd_ifo_menu_read(NULL, 0, RDVD_MENU_TITLE, &entry));
 }
+static void test_backup(void)
+{
+   static uint8_t backup[8192];
+   rdvd_ifo_t selected;
+   bool used;
+   file_fixture(false); memcpy(backup, file_bytes, sizeof(backup));
+   CHECK(rdvd_ifo_select(file_bytes, sizeof(file_bytes), backup, sizeof(backup),
+            RDVD_IFO_VMG, &selected, &used));
+   CHECK(selected.data == file_bytes && !used);
+   file_bytes[0] = 0;
+   CHECK(rdvd_ifo_select(file_bytes, sizeof(file_bytes), backup, sizeof(backup),
+            RDVD_IFO_VMG, &selected, &used));
+   CHECK(selected.data == backup && used);
+   CHECK(rdvd_ifo_select(NULL, 0, backup, sizeof(backup),
+            RDVD_IFO_VMG, &selected, NULL));
+   CHECK(!rdvd_ifo_select(NULL, 0, backup, 2048,
+            RDVD_IFO_VMG, &selected, &used) && !selected.data && !used);
+   file_fixture(true);
+   CHECK(rdvd_ifo_select(file_bytes, sizeof(file_bytes), backup, sizeof(backup),
+            RDVD_IFO_VMG, &selected, &used) && used);
+   CHECK(!rdvd_ifo_select(NULL, 0, backup, sizeof(backup),
+            RDVD_IFO_VTS, &selected, &used) && !used);
+   CHECK(!rdvd_ifo_select(NULL, 0, backup, sizeof(backup),
+            RDVD_IFO_NONE, &selected, &used));
+   CHECK(!rdvd_ifo_select(NULL, 0, backup, sizeof(backup),
+            RDVD_IFO_VMG, NULL, &used) && !used);
+}
 int main(void)
 {
    test_bounds();
@@ -340,6 +367,7 @@ int main(void)
    test_menu_table();
    test_menu_languages();
    test_menu_lookup();
+   test_backup();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

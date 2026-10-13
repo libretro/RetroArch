@@ -170,5 +170,11 @@ enum rdvd_menu_id
  * VMG supports title menus; VTS supports root through chapter menus. */
 bool rdvd_ifo_menu_read(const rdvd_ifo_t *ifo, unsigned language_index,
       enum rdvd_menu_id menu, rdvd_pgci_entry_t *out);
+/* Chooses a valid management prefix of the requested kind, preferring IFO
+ * over BUP. Does not check every nested table or perform filesystem I/O.
+ * Both sources are caller-owned; the selected view borrows one input. */
+bool rdvd_ifo_select(const uint8_t *primary, size_t primary_size,
+      const uint8_t *backup, size_t backup_size, enum rdvd_ifo_kind kind,
+      rdvd_ifo_t *out, bool *used_backup);
 RETRO_END_DECLS
 #endif
