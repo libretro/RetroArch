@@ -18,8 +18,9 @@ static cdrom_toc_t reopened_toc;
 static unsigned toc_queries;
 static int changed_geometry;
 static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
-static int output_close_fail, input_close_fail;
+static int output_close_fail, input_close_fail, publish_fail;
 static RFILE *output_handles[4];
+static RFILE *image_input;
 static unsigned write_opens;
 static unsigned failures, finished_logs, cue_opens;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); failures++; } } while (0)
@@ -48,6 +49,8 @@ static RFILE *dump_open(const char *path, unsigned mode, unsigned hints)
       return NULL;
    {
       RFILE *file = filestream_open(path, mode, hints);
+      if (file && medium == 0x10 && !strcmp(path, "dump_source.bin"))
+         image_input = file;
       if (file && mode == RETRO_VFS_FILE_ACCESS_WRITE)
          output_handles[write_opens - 1] = file;
       return file;
@@ -58,6 +61,11 @@ static int dump_close(RFILE *file)
    unsigned i;
    int result;
    int fail = input_close_fail && medium == 8 && toc_queries == 1;
+   if (file == image_input)
+   {
+      image_input = NULL;
+      fail = input_close_fail;
+   }
    for (i = 0; i < 4; i++)
       if (output_handles[i] == file)
       {
@@ -101,6 +109,12 @@ static bool dump_atip(libretro_vfs_implementation_file *file)
 { (void)file; return false; }
 static void *dump_alloc(size_t align, size_t bytes)
 { return alloc_fail ? NULL : memalign_alloc(align, bytes); }
+static int dump_finish(const char *path, bool ok)
+{
+   if (publish_fail && ok) return 1;
+   return filestream_finish_atomic(path, ok);
+}
+#define filestream_finish_atomic dump_finish
 #define filestream_open dump_open
 #define filestream_read dump_read
 #define filestream_write dump_write
@@ -111,6 +125,7 @@ static void *dump_alloc(size_t align, size_t bytes)
 #define cdrom_has_atip dump_atip
 #define memalign_alloc dump_alloc
 #include "../../../../tasks/task_content_disc.c"
+#undef filestream_finish_atomic
 #undef filestream_open
 #undef filestream_read
 #undef filestream_write
@@ -143,6 +158,7 @@ static void run_dump(int cancel)
    retro_task_t *task = task_init();
    task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)calloc(1, sizeof(*state));
    unsigned tick = 0, logs = finished_logs;
+   if (medium == 0x10) fixture("dump_result.iso", 17);
    write_opens = 0;
    fake_toc.num_tracks = 2;
    reopened_toc = fake_toc;
@@ -167,9 +183,10 @@ static void run_dump(int cancel)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
-   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail)
+   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail || publish_fail)
    {
       CHECK(finished_logs == logs);
+      if (medium == 0x10) verify("dump_result.iso", 17);
       if ((output_close_fail || input_close_fail) && !cancel)
          CHECK(state->failed);
       if (changed_geometry)
@@ -193,6 +210,7 @@ static void run_dump(int cancel)
          verify("dump_result (Track 02).bin", 7056);
       }
    }
+   if (medium == 0x10) CHECK(!filestream_exists("dump_result.iso.tmp"));
    task_cdrom_dump_callback(task, NULL, NULL, NULL);
    CHECK(!output_handles[0] && !output_handles[1] && !output_handles[2]);
    task_free_title(task);
@@ -248,6 +266,8 @@ int main(void)
    flush_fail = 1; run_dump(0); flush_fail = 0;
    output_close_fail = 1; run_dump(0); run_dump(1); output_close_fail = 0;
    run_dump(1);
+   publish_fail = 1; run_dump(0); publish_fail = 0;
+   input_close_fail = 1; run_dump(0); input_close_fail = 0;
    medium = 8;
    run_dump(0);
    for (output_close_fail = 1; output_close_fail <= 3; output_close_fail++)
