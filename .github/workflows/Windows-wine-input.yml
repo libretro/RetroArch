@@ -152,7 +152,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Restore ccache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
@@ -191,7 +191,7 @@ jobs:
         run: |
           set -eu
           export CCACHE_DIR="$HOME/.ccache"
-          ccache -M 500M
+          ccache -M 250M
           ccache -z
           # What the test runs has to be real: the Win32 window code,
           # the GDI and OpenGL drivers, the raw input drivers, the
@@ -223,3 +223,12 @@ jobs:
           # open.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           timeout 900 samples/input/windows_wine_smoke/run.sh
+
+      - name: Save ccache
+        # Only master's pushes keep a cache: pull requests restore
+        # master's, so one push does not evict the next one's.
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}

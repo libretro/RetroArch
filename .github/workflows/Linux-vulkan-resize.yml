@@ -117,7 +117,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Restore ccache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
@@ -129,7 +129,7 @@ jobs:
         run: |
           set -eu
           export CCACHE_DIR="$HOME/.ccache"
-          ccache -M 1G
+          ccache -M 500M
           ccache -z
           # (--enable-vulkan makes configure look for the Vulkan
           # loader to link against: libvulkan-dev above)
@@ -145,3 +145,12 @@ jobs:
         run: |
           set -eu
           timeout 600 samples/gfx/vulkan_resize/run.sh
+
+      - name: Save ccache
+        # Only master's pushes keep a cache: pull requests restore
+        # master's, so one push does not evict the next one's.
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
