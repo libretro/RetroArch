@@ -95,6 +95,7 @@ typedef struct
    char cdrom_path[64];
    char output_path[PATH_MAX_LENGTH];
    char output_temp_path[PATH_MAX_LENGTH];
+   char cue_path[PATH_MAX_LENGTH];
    char title[NAME_MAX_LENGTH];
    /* Captured on the main thread at push: the handler runs on the
     * threaded task queue's worker and writes dumps under this, never
@@ -103,6 +104,7 @@ typedef struct
    bool next;
    bool failed;
    bool output_pending;
+   bool cue_pending;
 } task_cdrom_dump_state_t;
 
 static void task_cdrom_dump_fail(retro_task_t *task, enum msg_hash_enums msg)
@@ -186,6 +188,19 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          if (filestream_finish_atomic(state->output_path, publish) != 0)
          {
             filestream_finish_atomic(state->output_path, false);
+            if (publish)
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+         }
+      }
+
+      if (state->cue_pending)
+      {
+         bool publish = !state->failed &&
+            !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED);
+         state->cue_pending = false;
+         if (filestream_finish_atomic(state->cue_path, publish) != 0)
+         {
+            filestream_finish_atomic(state->cue_path, false);
             if (publish)
                task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
          }
@@ -309,10 +324,20 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                   directory_core_assets, cue_filename, sizeof(state->output_path));
 
             {
-               RFILE         *file = filestream_open(output_file, RETRO_VFS_FILE_ACCESS_WRITE, 0);
+               RFILE         *file;
                unsigned char point = 0;
                bool cue_ok = true;
 
+               strlcpy(state->cue_path, output_file, sizeof(state->cue_path));
+               if (!filestream_atomic_temp_name(state->output_temp_path,
+                        sizeof(state->output_temp_path), output_file))
+               {
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
+                  return;
+               }
+               file = filestream_open(state->output_temp_path,
+                     RETRO_VFS_FILE_ACCESS_WRITE, 0);
+               state->cue_pending = file != NULL;
                if (!file)
                {
                   RARCH_ERR("[CDROM] Error opening file for writing: %s.\n", output_file);

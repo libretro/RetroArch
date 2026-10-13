@@ -163,6 +163,7 @@ static void run_dump(int cancel)
    if (medium == 0x10) fixture("dump_result.iso", 17);
    else
    {
+      fixture("dump_result.cue", 17);
       fixture("dump_result (Track 01).bin", 17);
       fixture("dump_result (Track 02).bin", 17);
    }
@@ -198,7 +199,8 @@ static void run_dump(int cancel)
       else
       {
          verify("dump_result (Track 01).bin", state->cur_track > 1 ? 4704 : 17);
-         verify("dump_result (Track 02).bin", 17);
+         verify("dump_result (Track 02).bin", state->cur_track > 2 ? 7056 : 17);
+         verify("dump_result.cue", 17);
       }
       if ((output_close_fail || input_close_fail || short_read) && !cancel)
          CHECK(state->failed);
@@ -221,8 +223,16 @@ static void run_dump(int cancel)
          CHECK(state->disc_read_bytes == 11760);
          verify("dump_result (Track 01).bin", 4704);
          verify("dump_result (Track 02).bin", 7056);
+         {
+            void *text = NULL;
+            int64_t len = 0;
+            CHECK(filestream_read_file("dump_result.cue", &text, &len));
+            CHECK(text && len > 17 && strstr((char*)text, "TRACK 02"));
+            free(text);
+         }
       }
    }
+   CHECK(!filestream_exists("dump_result.cue.tmp"));
    CHECK(!filestream_exists("dump_result.iso.tmp"));
    CHECK(!filestream_exists("dump_result (Track 01).bin.tmp"));
    CHECK(!filestream_exists("dump_result (Track 02).bin.tmp"));
@@ -290,6 +300,7 @@ int main(void)
    run_dump(3);
    publish_fail = 1; run_dump(0); publish_fail = 0;
    publish_fail = 2; run_dump(0); publish_fail = 0;
+   publish_fail = 3; run_dump(0); publish_fail = 0;
    for (output_close_fail = 1; output_close_fail <= 3; output_close_fail++)
       run_dump(0);
    output_close_fail = 0;
