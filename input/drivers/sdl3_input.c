@@ -51,6 +51,13 @@ typedef struct sdl3_input
    const bool *kb_state;
    int kb_num_keys;
    SDL_Scancode key_scancode_lut[RETROK_LAST];
+   /* The way back, for the key events. SDL3's keycodes for the keys
+    * that are not characters are 0x4000_00xx, past what the shared
+    * reverse lookup covers (input_keymaps_init_keyboard_lut), so
+    * translating a keycode there walks the whole table. The pair this
+    * is built from is the one above, which the layout already
+    * decided. */
+   uint16_t scancode_rk_lut[SDL_SCANCODE_COUNT];
    /* Whole-pixel relative motion, x and y: VIDEO_POS_PACK. */
    uint32_t mouse_delta;
    /* Sub-pixel remainder carried into the next frame. */
@@ -179,10 +186,37 @@ static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
 static void sdl3_build_scancode_lut(sdl3_input_t *sdl)
 {
    int i;
+
+   memset(sdl->scancode_rk_lut, 0, sizeof(sdl->scancode_rk_lut));
+
    for (i = 0; i < RETROK_LAST; i++)
-      sdl->key_scancode_lut[i] = rarch_keysym_lut[i]
+   {
+      SDL_Scancode sc = rarch_keysym_lut[i]
             ? SDL_GetScancodeFromKey((SDL_Keycode)rarch_keysym_lut[i], NULL)
             : SDL_SCANCODE_UNKNOWN;
+
+      sdl->key_scancode_lut[i] = sc;
+
+      /* First one wins: a shifted character and the key it is on land
+       * on the same scancode (RETROK_EXCLAIM and RETROK_1 on a US
+       * layout), and the key is the lower of the two. */
+      if (     sc > SDL_SCANCODE_UNKNOWN
+            && sc < SDL_SCANCODE_COUNT
+            && !sdl->scancode_rk_lut[sc])
+         sdl->scancode_rk_lut[sc] = (uint16_t)i;
+   }
+}
+
+/* The key an event is for, from its scancode. Falls back to the shared
+ * keycode table for anything the layout did not place. */
+static unsigned sdl3_translate_scancode(sdl3_input_t *sdl,
+      SDL_Scancode scancode, SDL_Keycode key)
+{
+   if (     scancode > SDL_SCANCODE_UNKNOWN
+         && scancode < SDL_SCANCODE_COUNT
+         && sdl->scancode_rk_lut[scancode])
+      return sdl->scancode_rk_lut[scancode];
+   return input_keymaps_translate_keysym_to_rk(key);
 }
 
 static void *sdl3_input_init(const char *joypad_driver)
@@ -902,8 +936,8 @@ static void sdl3_input_poll(void *data)
             || event.type == SDL_EVENT_KEY_UP)
       {
          uint16_t mod        = sdl3_translate_mod(event.key.mod);
-         unsigned code       = input_keymaps_translate_keysym_to_rk(
-               event.key.key);
+         unsigned code       = sdl3_translate_scancode(sdl,
+               event.key.scancode, event.key.key);
          uint32_t character  = 0;
 
 #ifdef WEBOS
