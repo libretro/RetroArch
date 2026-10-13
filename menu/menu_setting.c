@@ -354,9 +354,7 @@ SETTINGS_ACTION_SETTER(sel, action_select_handler_t)
 SETTINGS_ACTION_SETTER(left, action_left_handler_t)
 SETTINGS_ACTION_SETTER(right, action_right_handler_t)
 SETTINGS_ACTION_SETTER(change, change_handler_t)
-#ifdef ANDROID
 SETTINGS_ACTION_SETTER(read, change_handler_t)
-#endif
 SETTINGS_ACTION_SETTER(repr, get_string_representation_t)
 
 #define SETTINGS_ACTION_SET(field, s, fn) \
@@ -9376,6 +9374,10 @@ static const enum settings_list_type settings_list_build_order[] =
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
 
+static bool setting_append_list_video_screen_settings(
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group);
+
 static bool setting_append_list(settings_t *settings,
       enum settings_list_type type, rarch_setting_t **list,
       rarch_setting_info_t *list_info, const char *parent_group);
@@ -10265,6 +10267,183 @@ static size_t get_string_representation_input_mouse_index(
    if (!s || !*s)
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
    return _len;
+}
+
+static unsigned setting_video_screen_mask(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const video_views_map_t *map = &video_st->views_core;
+   unsigned i, mask = 0;
+   if (!video_st->views_presented)
+      return 0;
+   for (i = 0; i < map->num_views && i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (map->views[i].screen < RETRO_VIDEO_VIEWS_MAX)
+         mask |= 1u << map->views[i].screen;
+#ifdef HAVE_OPENXR
+   if (     video_driver_vr_content_active()
+         && (video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
+   {
+      int eyes[2];
+      if (video_views_eye_pair(map, eyes))
+         mask &= ~(1u << map->views[eyes[0]].screen);
+   }
+#endif
+   return mask;
+}
+
+static unsigned setting_video_screen_bind(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned screen = menu_st->video_screen_selected;
+   unsigned mask = setting_video_screen_mask();
+   if (screen >= RETRO_VIDEO_VIEWS_MAX || !(mask & (1u << screen)))
+   {
+      for (screen = 0; screen < RETRO_VIDEO_VIEWS_MAX; screen++)
+         if (mask & (1u << screen))
+            break;
+      menu_st->video_screen_selected = screen < RETRO_VIDEO_VIEWS_MAX
+         ? screen : 0;
+   }
+   if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED)
+   {
+      setting->value.target.unsigned_integer = mask
+         ? &menu_st->video_screen_selected : NULL;
+      return mask;
+   }
+   if (!mask)
+      return 0;
+   screen = menu_st->video_screen_selected;
+   setting->index_offset = screen;
+   switch (setting->enum_idx)
+   {
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_X:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_x[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Y:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_y[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Z:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_z[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_YAW:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_yaw[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_PITCH:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_pitch[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_ROLL:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_roll[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_SCALE:
+         setting->value.target.fraction = &settings->floats.video_screen_xr_scale[screen];
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SCREEN_XR_VISIBLE:
+         setting->value.target.boolean = &settings->bools.video_screen_xr_visible[screen];
+         break;
+   }
+   return mask;
+}
+
+static void setting_video_screen_read(rarch_setting_t *setting)
+{
+   setting_video_screen_bind(setting);
+}
+
+static void setting_video_screen_change(rarch_setting_t *setting)
+{
+   if (setting->enum_idx != MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED)
+      config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+}
+
+static size_t setting_video_screen_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting_video_screen_bind(setting))
+      return strlcpy(s, "", len);
+   if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED)
+      return snprintf(s, len, "%u", menu_state_get_ptr()->video_screen_selected + 1);
+   if (setting->type == ST_FLOAT)
+      return setting_get_string_representation_st_float(setting, s, len);
+   if (setting->type == ST_BOOL)
+      return setting_get_string_representation_st_bool(setting, s, len);
+   return strlcpy(s, "", len);
+}
+
+static int setting_video_screen_step(rarch_setting_t *setting,
+      size_t idx, bool right)
+{
+   unsigned mask = setting_video_screen_bind(setting);
+   if (!mask)
+      return -1;
+   if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED)
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      unsigned screen = menu_st->video_screen_selected;
+      unsigned i;
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      {
+         screen = (screen + (right ? 1 : RETRO_VIDEO_VIEWS_MAX - 1))
+            % RETRO_VIDEO_VIEWS_MAX;
+         if (mask & (1u << screen))
+            break;
+      }
+      if (i == RETRO_VIDEO_VIEWS_MAX)
+         return -1;
+      menu_st->video_screen_selected = screen;
+      menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+         | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      return 0;
+   }
+   if (setting->type == ST_BOOL)
+      return setting_bool_action_ok_default(setting, idx, false);
+   if (right)
+      return setting_fraction_action_right_default(setting, idx, false);
+   return setting_fraction_action_left_default(setting, idx, false);
+}
+
+static int setting_video_screen_left(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   return setting_video_screen_step(setting, idx, false);
+}
+
+static int setting_video_screen_right(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   return setting_video_screen_step(setting, idx, true);
+}
+
+static int setting_video_screen_start(rarch_setting_t *setting)
+{
+   if (!setting_video_screen_bind(setting))
+      return -1;
+   if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED)
+   {
+      menu_state_get_ptr()->video_screen_selected = RETRO_VIDEO_VIEWS_MAX;
+      setting_video_screen_bind(setting);
+      return 0;
+   }
+   return setting_generic_action_start_default(setting);
+}
+
+static int setting_video_screen_reset(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL)
+      config_reset_video_screen_xr(settings, 0, RETRO_VIDEO_VIEWS_MAX);
+   else
+   {
+      if (!setting_video_screen_bind(setting))
+         return -1;
+      config_reset_video_screen_xr(settings, menu_st->video_screen_selected, 1);
+   }
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+      | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
 }
 
 static void general_read_handler(rarch_setting_t *setting)
@@ -13495,6 +13674,10 @@ static const setting_desc_t upscaler_desc[] = {
 };
 #endif
 
+static const setting_desc_t video_screens_desc[] = {
+#include "../settings/settings_def_video_screens.h"
+};
+
 static const setting_desc_t headset_desc[] = {
 /* GENERATED: rows come from settings_def_video_headset.h in order. */
 #include "../settings/settings_def_video_headset.h"
@@ -16502,6 +16685,7 @@ static void settings_build_video(
          setting_append_list_video_screen_windows(settings, list, list_info,
                &group_info, &subgroup_info, parent_group);
 #endif
+         setting_append_list_video_screen_settings(list, list_info, parent_group);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -19642,6 +19826,49 @@ static void settings_build_desc_group(
       settings_list_add_desc(list, list_info, settings,
             e->rows, e->count, &group_info, &subgroup_info, parent_group);
    GROUP_END();
+}
+
+static bool setting_append_list_video_screen_settings(
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   settings_t *settings = config_get_ptr();
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   unsigned first = list_info->index;
+   int i;
+   group_info.name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS);
+   subgroup_info.name = "Stereo 3D & Screens";
+   CONFIG_UINT(list, list_info, &menu_state_get_ptr()->video_screen_selected,
+         MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED,
+         MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SELECTED, 0,
+         &group_info, &subgroup_info, parent_group,
+         setting_video_screen_change, setting_video_screen_read);
+   settings_list_add_desc(list, list_info, settings, video_screens_desc + 1,
+         ARRAY_SIZE(video_screens_desc) - 1, &group_info, &subgroup_info,
+         parent_group);
+   for (i = first; i < list_info->index; i++)
+   {
+      rarch_setting_t *setting = &(*list)[i];
+      SETTINGS_ACTION_SET(read, setting, setting_video_screen_read)
+      SETTINGS_ACTION_SET(change, setting, setting_video_screen_change)
+      if (setting->type == ST_ACTION)
+      {
+         SETTINGS_ACTION_SET(ok, setting, setting_video_screen_reset)
+         SETTINGS_ACTION_SET(sel, setting, setting_video_screen_reset)
+      }
+      else
+      {
+         SETTINGS_ACTION_SET(repr, setting, setting_video_screen_repr)
+         SETTINGS_ACTION_SET(left, setting, setting_video_screen_left)
+         SETTINGS_ACTION_SET(right, setting, setting_video_screen_right)
+         SETTINGS_ACTION_SET(ok, setting, setting_video_screen_right)
+         SETTINGS_ACTION_SET(sel, setting, setting_video_screen_right)
+         SETTINGS_ACTION_SET(start, setting, setting_video_screen_start)
+      }
+      setting_video_screen_bind(setting);
+   }
+   return true;
 }
 
 static const settings_build_entry_t settings_build_registry[] = {

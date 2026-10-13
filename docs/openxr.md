@@ -28,6 +28,54 @@ default.
 Without a runtime or a headset, RetroArch says so once and shows its
 window as usual.
 
+## Adjusting floating screens
+
+In **Settings > Video > Stereo 3D & Screens**, use **Screen** to choose
+which floating screen to adjust. The number is the core's logical screen
+ID plus one, from 1 to 8. Only screens in the current frame's map are
+listed; a tracked projection's eyes are excluded. Changing the order of
+views, or temporarily removing a screen, preserves that screen's saved
+adjustments.
+
+- **Horizontal Offset**, **Vertical Offset** and **Depth Offset** move
+  the selected screen relative to its normal placement, from -10 to +10
+  metres. Positive values move it right, up and towards you respectively,
+  in the shared placement anchor's coordinates.
+- **Yaw**, **Pitch** and **Roll** rotate it from -180 to +180 degrees.
+  **Scale** changes its width and height together, from 0.1 to 10 times
+  its normal size.
+- **Visible** hides or shows it. The menu remains available even when
+  every floating screen is hidden or moved out of sight.
+- **Reset Screen** restores the selected screen's zero offsets, zero
+  rotations, unit scale and visibility. **Reset All Screens** does this
+  for all eight screen IDs, including those absent from the current map.
+  Reset All Screens remains available when there is no floating screen
+  to select.
+
+These adjustments apply to floating screens, including the two eyes of
+a stereoscopic screen together. They do not change a tracked core's eye
+poses or fields of view. Changes also take effect while content is paused.
+The shared Screen Distance, Screen Width, Screen Placement and layout
+settings still determine the base placement. **Recenter Headset Screens**
+updates the shared anchor for all screens while preserving their relative
+offsets, rotations, scales and visibility; it does not reset them.
+
+Screen adjustments are configuration settings. Save the configuration to
+keep them as defaults, or use **Quick Menu > Overrides** to save core,
+content-directory or game overrides. Loading an override applies its
+screen values; unloading it restores the inherited values. The selector
+itself is only a menu choice and is not saved. Configuration keys use
+`video_screenN_xr_x`, `_xr_y`, `_xr_z`, `_xr_yaw`, `_xr_pitch`, `_xr_roll`,
+`_xr_scale` and `_xr_visible`, with `N` from 1 to 8. Finite values outside
+the supported ranges are clamped; non-finite values use the defaults.
+
+With the legacy **gl** driver on desktop or Quest, opening the menu shows
+the whole window on an unadjusted floating screen. Per-screen adjustments
+resume when the menu closes. This keeps the menu and resets reachable
+without applying the primary content screen's hidden state or transform
+to the menu. The desktop **glcore** and **vulkan** paths use a separate
+menu screen.
+
 ## What a core sees
 
 A core describes its frame with `RETRO_ENVIRONMENT_SET_VIDEO_VIEWS`: a

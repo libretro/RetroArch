@@ -12593,6 +12593,31 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+            {
+               rarch_setting_t *screen = menu_setting_find_enum(
+                     MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED);
+               if (screen && screen->value.target.unsigned_integer)
+               {
+                  static const menu_displaylist_settings_row_t screen_rows[] = {
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_X, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Y, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_Z, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_YAW, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_PITCH, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_ROLL, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_SCALE, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_VISIBLE, PARSE_ONLY_BOOL, false },
+                     { MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET, PARSE_ACTION, false },
+                  };
+                  count += menu_displaylist_parse_settings_rows(list, settings,
+                        screen_rows, (unsigned)ARRAY_SIZE(screen_rows));
+               }
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+            }
          }
 #endif
          break;

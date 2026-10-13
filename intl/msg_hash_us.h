@@ -7742,6 +7742,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_upscaler.h"
 #include "../settings/settings_def_video_stereo.h"
 #include "../settings/settings_def_video_headset.h"
+#include "../settings/settings_def_video_screens.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H

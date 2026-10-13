@@ -9403,6 +9403,7 @@ enum msg_hash_enums
 #include "settings/settings_def_video_upscaler.h"
 #include "settings/settings_def_video_stereo.h"
 #include "settings/settings_def_video_headset.h"
+#include "settings/settings_def_video_screens.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
