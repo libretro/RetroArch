@@ -135,7 +135,7 @@ jobs:
           # multi-character values are untouched. The rule under test
           # is restated from config_load_file(), which needs most of the
           # frontend to run; a change to one must be made in the other.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x pipeline_migration_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \

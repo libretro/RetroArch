@@ -119,13 +119,13 @@ jobs:
         run: |
           set -eu
           case "${{ matrix.lane }}" in mbedtls) be=mbed ;; bearssl) be=bear ;; esac
-          make clean all SSL_BACKEND=$be SANITIZER=address,undefined
+          make clean SSL_BACKEND=$be SANITIZER=address,undefined && make -j$(nproc) all SSL_BACKEND=$be SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=$be
           echo "[pass] ${{ matrix.lane }}: cheevos login transport over a local HTTPS server"
           # A server that goes silent mid-handshake: the read bound ends it.
-          make -C ../tls_retro clean tls_stall SSL_BACKEND=$be
+          make -C ../tls_retro clean SSL_BACKEND=$be && make -C ../tls_retro -j$(nproc) tls_stall SSL_BACKEND=$be
           ../tls_retro/tls_stall
           # A refused certificate reaches the verify hook.
           make -C ../tls_retro clean

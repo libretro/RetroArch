@@ -121,7 +121,7 @@ jobs:
           # refused as it should and cross-compiles; and drawn by Mesa,
           # every rewritten stage reads the frame bit for bit as the
           # stage it was reads a texture of its own.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 600 make check CHECK_ARGS=--require-gl
           make clean
@@ -131,7 +131,7 @@ jobs:
         working-directory: samples/gfx/slang_rect
         run: |
           set -eu
-          make clean all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
+          make clean CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
              LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./slang_rect_test.exe
           make clean
@@ -331,7 +331,7 @@ jobs:
           # of the duplicate write is caught at the bounds level.  If
           # vulkan_common.c amends the append-to-enabled[] block, the
           # verbatim copy in vulkan_extension_count_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x vulkan_extension_count_test
           timeout 60 ./vulkan_extension_count_test
           echo "[pass] vulkan_extension_count_test"
@@ -344,7 +344,7 @@ jobs:
           # gfx/video_views.c decides which rectangle of the core's
           # frame lands where, and maps touch back through that layout.
           # Pure logic, so every mode and edge case runs here.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x video_views_test
           timeout 60 ./video_views_test
           echo "[pass] video_views_test"
@@ -357,7 +357,7 @@ jobs:
           # gfx/video_xr.c places a core's screens in a headset, sizes
           # their images and maps a pointer on them back to the frame.
           # Pure maths, so every layout and edge runs here.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x video_xr_test
           timeout 60 ./video_xr_test
           echo "[pass] video_xr_test"
@@ -382,7 +382,7 @@ jobs:
           # caught at the bounds level.  If vulkan_common.c amends
           # the cap or the post-create clamp, the verbatim copies in
           # vulkan_swapchain_clamp_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x vulkan_swapchain_clamp_test
           timeout 60 ./vulkan_swapchain_clamp_test
           echo "[pass] vulkan_swapchain_clamp_test"
@@ -397,7 +397,7 @@ jobs:
           # each allocation it makes failed in turn: a chain comes back
           # with every pass and every deferred-disposal queue, or not
           # at all, and nothing is left behind.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./vulkan_chain_alloc_test
           make clean
@@ -425,7 +425,7 @@ jobs:
           # at the bounds level.  If vulkan.c amends the size
           # calculation or upload-loop strides, the verbatim copies
           # in vulkan_texture_size_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x vulkan_texture_size_test
           timeout 60 ./vulkan_texture_size_test
           echo "[pass] vulkan_texture_size_test"
@@ -444,7 +444,7 @@ jobs:
           # every fence it issued.
           make clean check
           echo "[pass] gl2_pbo_readback_test"
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./gl2_pbo_readback_test
           echo "[pass] gl2_pbo_readback_test (ASan)"
@@ -476,7 +476,7 @@ jobs:
           # If slang_process.cpp amends the cap table or the
           # dispatch structure, the verbatim copy in
           # slang_texture_index_bounds_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x slang_texture_index_bounds_test
           timeout 60 ./slang_texture_index_bounds_test
           echo "[pass] slang_texture_index_bounds_test"
@@ -508,7 +508,7 @@ jobs:
           # The setting is also toggled mid-run: the list is built
           # under one value and must be dropped when it changes, or
           # turning it on never leaves the root it was cycling.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x shader_dir_cycle_test
           # The tree is built under a scratch dir, never in the repo.
           T=$(mktemp -d)
@@ -544,7 +544,7 @@ jobs:
           # reintroduction is caught at the leak level.  If
           # vulkan_common.c amends the init or deinit, the verbatim
           # copies in vulkan_mailbox_init_leak_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x vulkan_mailbox_init_leak_test
           ASAN_OPTIONS=detect_leaks=1 timeout 60 \
              ./vulkan_mailbox_init_leak_test
@@ -578,7 +578,7 @@ jobs:
           # set_video_mode error path to once again destroy
           # ctx_data, the verbatim copy in
           # vulkan_ctx_double_free_test.c must follow.
-          make clean all SANITIZER=address
+          make clean SANITIZER=address && make -j$(nproc) all SANITIZER=address
           test -x vulkan_ctx_double_free_test
           timeout 60 ./vulkan_ctx_double_free_test
           echo "[pass] vulkan_ctx_double_free_test"
@@ -620,7 +620,7 @@ jobs:
           # in ~2.4 s under TSan on one core and still routes every
           # round trip through the instrumented release/acquire
           # pair; the default stays at 1000000 for local soak runs.
-          make clean all SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000"
+          make clean SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000" && make -j$(nproc) all SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000"
           test -x gfx_thumbnail_status_atomic_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_thumbnail_status_atomic_test
@@ -644,7 +644,7 @@ jobs:
           # acquire pairing, or a cursor published before its slot is
           # written, is a race it reports and the value checks may not.
           # halt_on_error=1 fails the run on the first race.
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           test -x gfx_widgets_msg_queue_race_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_widgets_msg_queue_race_test
@@ -684,7 +684,7 @@ jobs:
           # subjects while their animation is in flight, and deinits
           # with animations still running.  If gfx_animation.c amends
           # the destination sizing, this goes red.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x gfx_animation_sanitize_test
           ASAN_OPTIONS=detect_leaks=1 timeout 120 \
              ./gfx_animation_sanitize_test
@@ -715,12 +715,12 @@ jobs:
           # entered), and gfx_widgets_init() returning false makes
           # the whole run vacuous -- hence the asserted push and
           # frame counters.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x gfx_widgets_sanitize_test
           ASAN_OPTIONS=detect_leaks=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
@@ -739,12 +739,12 @@ jobs:
         working-directory: samples/gfx/gfx_widgets_task_bar_stack
         run: |
           set -eu
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x gfx_widgets_task_bar_stack_test
           ASAN_OPTIONS=detect_leaks=1 timeout 120 \
              ./gfx_widgets_task_bar_stack_test
           echo "[pass] gfx_widgets_task_bar_stack_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_task_bar_stack_test
           echo "[pass] gfx_widgets_task_bar_stack_test (TSan)"
@@ -757,10 +757,10 @@ jobs:
           # the video thread frees the widget bound to it: the task
           # queue must not read the link the widgets clear, and a
           # muted task's empty retirement puts nothing up.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 timeout 120 ./gfx_widgets_task_gate_test
           echo "[pass] gfx_widgets_task_gate_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_widgets_task_gate_test
           echo "[pass] gfx_widgets_task_gate_test (TSan)"
       - name: Build and run win32_msg_route_test (ASan + UBSan)
@@ -781,7 +781,7 @@ jobs:
           # keys made into keyboard events a second time, which is
           # what routing them like another driver's would do, is put
           # back and asserted to be caught.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 ./win32_msg_route_test
           make clean
@@ -855,7 +855,7 @@ jobs:
           # double free or leak is attributed to the case that caused
           # it.  If dispserv_x11.c amends the query handling, this
           # goes red.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x display_servers_test
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
@@ -882,7 +882,7 @@ jobs:
              echo "::error::strtoul inside a VIDEO_SCALE macro runs twice"
              exit 1
           fi
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./dispserv_gx_test
           make clean
@@ -904,7 +904,7 @@ jobs:
           # RSX driver ignored the setting and kept the system menu's
           # mode) and falls back to the system mode when the display
           # does not take it.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./dispserv_ps3_test
           make clean
@@ -921,7 +921,7 @@ jobs:
           # memory is not handed out, a core frame whose texture got
           # none is not drawn, and a frame bigger than its texture's
           # buffer gets a new buffer.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./rsx_alloc_test
           make clean
@@ -1111,10 +1111,10 @@ jobs:
           # asked, close and reopen release the old inhibit, and no
           # service answers FAILED.
           sudo apt-get install -y -qq libdbus-1-dev dbus > /dev/null
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 300 ./run.sh
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./run.sh
           echo "[pass] dbus_screensaver_test"
 
@@ -1271,7 +1271,7 @@ jobs:
           # check feeds modes in descending size, which a working sort
           # must reverse and a broken one leaves untouched.  If
           # dispserv_kms.c amends either, this goes red.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
@@ -1284,7 +1284,7 @@ jobs:
           # gfx/common/drm_hdr.c: which EDIDs take HDR10 and what they
           # declare, malformed ones refused without an overread, and the
           # HDR_OUTPUT_METADATA blob, whose layout must be the kernel's.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_hdr_test
           echo "[pass] drm_hdr_test"
@@ -1300,7 +1300,7 @@ jobs:
           # the framebuffer the plane scans out is never removed from
           # under it, and the driver's free leaves nothing - LeakSanitizer
           # holds the plane queries' libdrm objects to the same.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./drm_surface_lifetime_test
           make clean
@@ -1315,7 +1315,7 @@ jobs:
           # resolution list and mode switch on wlroots compositors, against
           # an in-process compositor that checks every configuration names
           # each head exactly once, as the protocol requires.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_wlr_output_test
           echo "[pass] wayland_wlr_output_test"
@@ -1329,7 +1329,7 @@ jobs:
           # context loads its cursor theme at when the compositor has no
           # cursor-shape-v1 - XCURSOR_SIZE honoured, fractional scales
           # rounded up to a whole buffer scale.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_cursor_test
           echo "[pass] wayland_cursor_test"
@@ -1345,7 +1345,7 @@ jobs:
           # scaling, and the buffer scale goes only to a surface on the
           # whole-scale path that is new enough to take it.
           export XDG_RUNTIME_DIR=$(mktemp -d)
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_resize_test
           echo "[pass] wayland_resize_test"
@@ -1358,7 +1358,7 @@ jobs:
           # gfx/common/video_mode_select.c: which listed mode a size and
           # rate name, and the order a resolution list is shown in - the
           # code every display server's mode switch goes through.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./video_mode_select_test
           echo "[pass] video_mode_select_test"
@@ -1372,7 +1372,7 @@ jobs:
           # resolution list and mode switch on KWin, against an in-process
           # compositor speaking KWin's output protocols in both the
           # registry form and the older per-output globals.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_kwin_output_test
           echo "[pass] wayland_kwin_output_test"
@@ -1385,7 +1385,7 @@ jobs:
           # gfx/common/wayland_color.c, which tags an HDR GL surface as
           # Windows-scRGB, against an in-process compositor that records
           # every fatal wp_color_manager_v1 rule the client could break.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_color_management_test
           echo "[pass] wayland_color_management_test"
@@ -1402,9 +1402,9 @@ jobs:
           # requests, waits on and frees them.
           # TSan catches a feedback event dispatched off that thread;
           # ASan the feedback left behind at teardown.
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 60 ./wayland_present_test
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wayland_present_test
           echo "[pass] wayland_present_test"
@@ -1425,7 +1425,7 @@ jobs:
           # generated here from deps/wayland-protocols, which needs
           # wayland-scanner and the client and server libraries -
           # libwayland-dev carries all three.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x wayland_drm_lease_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./wayland_drm_lease_test
@@ -1446,7 +1446,7 @@ jobs:
           # whatever an OS reader returns, so every length and offset
           # in the data is hostile; under ASan a read past the buffer
           # is the failure this lane exists to catch.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x modeline_edid_parse_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./modeline_edid_parse_test
@@ -1464,7 +1464,7 @@ jobs:
           # aspect-corrected width (256x224 at 64:49 is 293), giving
           # 1172x896 at 1080p - a 4.58x horizontal scale and uneven
           # pixel columns - on every video driver.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x integer_scale_axis_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./integer_scale_axis_test
@@ -1480,7 +1480,7 @@ jobs:
           # and an append onto an empty array or one that has to grow,
           # with each of its allocations failed in turn, reports the
           # failure, keeps what the array held, and frees clean.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./coord_array_test
           make clean
@@ -1497,7 +1497,7 @@ jobs:
           # had, turns away every truncated prefix and a set of corrupt
           # entries, and keeps keys from naming anything outside the
           # cache. Built mapped (HAVE_MMAP) and reading.
-          make clean all SAN=address,undefined
+          make clean SAN=address,undefined && make -j$(nproc) all SAN=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 300 make check
           make clean
@@ -1515,7 +1515,7 @@ jobs:
           # the eye dropped, the tint), each effect program reaching the
           # driver's pipeline under its id, and nothing handed to a
           # driver that takes no strips.
-          make clean all
+          make clean && make -j$(nproc) all
           timeout 120 make check
           make clean
 
@@ -1539,7 +1539,7 @@ jobs:
           # every glyph texel lands where it should.
           sudo apt-get install -y -qq fonts-dejavu-core fonts-dejavu-mono \
              > /dev/null 2>&1 || sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
           make clean
@@ -1564,10 +1564,10 @@ jobs:
           # fixture and holds that contract: distinct frames, a pass
           # that ends and replays, one texture across the submits, and
           # a free with a frame still in flight.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 ./overlay_apng_test fixtures/anim.png
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./overlay_apng_test fixtures/anim.png
           make clean
 
@@ -1615,12 +1615,12 @@ jobs:
           # before the timeout would.  Both pre-fix trees score zero
           # uploads in 240 vsyncs.  If gfx_thumbnail.c amends the
           # pending decision or the request plumbing, this goes red.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x gfx_thumbnail_anim_test
           ASAN_OPTIONS=detect_leaks=1 timeout 120 \
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (TSan)"
@@ -1675,7 +1675,7 @@ jobs:
           # given, a 0 reported as a short wait only while a file on
           # disk is loading, and a refused async upload treated as a
           # failure.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x badge_cache_test
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test
           echo "[pass] badge_cache_test (ASan)"
@@ -1693,7 +1693,7 @@ jobs:
           # length that wraps the offset back before itself, and a
           # digest cut short. A read past a blob fails under ASan; the
           # wrap would loop forever, which the timeout ends.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./progress_bounds_test
           make clean
           make CC=x86_64-w64-mingw32-gcc TARGET=progress_bounds_test.exe
@@ -1724,7 +1724,7 @@ jobs:
           # staying inside the buffers they target, cache-line ownership
           # of everything the GE writes, and init failing cleanly when
           # an allocation does.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           rc=0
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./psp1_gfx_contracts_test || rc=$?
@@ -1797,7 +1797,7 @@ jobs:
           # at AUDIO_BYTES_PER_TICK, not per frame).  The job timeout
           # goes to 20 min to leave headroom for the slowest runner.
           sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 ffmpeg
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           make fixtures
           test -x gfx_thumbnail_preview_test
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
@@ -1909,7 +1909,7 @@ jobs:
           ./preview_audio_feed_test fixtures/audio_large_packet.m4a
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           make fixtures
           TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 FRAMES=60 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
@@ -1950,12 +1950,12 @@ jobs:
           # signalled only while idle, waited only once signalled, and
           # never inside two calls at once - with no lock. The single
           # re-signalled fence it replaced is built too and must fail.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           timeout 120 make check SANITIZER=address,undefined
           echo "[pass] hw_ring_fence_test (ASan + UBSan)"
           # The two threads share nothing but atomics, and TSan is
           # what says so.
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 make check SANITIZER=thread
           echo "[pass] hw_ring_fence_test (TSan)"
           make clean

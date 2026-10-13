@@ -143,14 +143,14 @@ jobs:
           # decoded, and a slow poll the thread must not wait on. Leak
           # checking is on: a packet or plane kept per frame or per
           # start is a leak report.
-          make clean all
+          make clean && make -j$(nproc) all
           ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test"
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 600 ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1:suppressions=../../cores/ffmpeg_audio_pipe/tsan.supp \
              timeout 600 ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test (TSan)"
@@ -169,7 +169,7 @@ jobs:
           # the failure.
           make clean check
           echo "[pass] pipewire_poll_test"
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./pipewire_poll_test
           echo "[pass] pipewire_poll_test (ASan)"
@@ -193,14 +193,14 @@ jobs:
           # contexts and hardware devices. The libav* TSan
           # suppressions are the audio-pipe lane's, for the same
           # reason.
-          make clean all
+          make clean && make -j$(nproc) all
           ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test"
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
              timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (TSan)"
@@ -223,10 +223,10 @@ jobs:
           # The main thread's wait for a finished video slot ends when
           # the decode thread does, at the end of a clip, instead of
           # holding retro_run() on a slot nothing will finish.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./ffmpeg_finished_wait_test
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
              timeout 60 ./ffmpeg_finished_wait_test
           echo "[pass] ffmpeg_finished_wait_test"
@@ -244,13 +244,13 @@ jobs:
           # teardown mid-stream, all on a watchdog.  Needs the ffmpeg
           # CLI to generate the clip.  Leak detection off: libavutil's
           # own HW-device probing allocates and keeps a few objects.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x ffmpeg_audio_pipe_test
           ASAN_OPTIONS=detect_leaks=0:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           # The libav* libraries are uninstrumented, so TSan cannot see
           # the atomics that order an AVBufferRef's reference count and
           # reports the allocation and the release as a race. Only
@@ -272,12 +272,12 @@ jobs:
           # lands mid-read included - and no lock taken by the callback.
           # The device is ALSA's null PCM; the capture read is a
           # stand-in.
-          make clean all
+          make clean && make -j$(nproc) all
           timeout 120 ./videoproc_audio_test
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 ./videoproc_audio_test
           echo "[pass] videoproc_audio_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./videoproc_audio_test
           echo "[pass] videoproc_audio_test (TSan)"

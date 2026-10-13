@@ -39,7 +39,7 @@ jobs:
           # in for: what the actions give the RetroPad, Touch's menu
           # button, the laser on a frame and on the menu, rumble, and
           # nothing held when the runtime has nothing to give.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
             ./openxr_input_test | tee openxr_input.log
           grep -q "PASS openxr_input_test" openxr_input.log
@@ -61,7 +61,7 @@ jobs:
           # The Makefile leaves the desktop GL host's tests out where
           # these are not found, and the run still passes.
           pkg-config --exists egl x11 gl
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
             ./openxr_core_test | tee openxr_core.log
           grep -q "PASS openxr_core_test" openxr_core.log
@@ -75,7 +75,7 @@ jobs:
           set -euo pipefail
           # The XR thread, the tick waiters and the lock gaps.
           pkg-config --exists egl x11 gl
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           ./openxr_core_test | tee openxr_core.log
           grep -q "PASS openxr_core_test" openxr_core.log
           make clean
@@ -194,9 +194,9 @@ jobs:
           set -eu
           # The API layer the Monado end-to-end check records through,
           # against the vendored headers, and the core it drives.
-          make -C samples/openxr/test_layer clean all
+          make -C samples/openxr/test_layer clean && make -C samples/openxr/test_layer -j$(nproc) all
           test -f samples/openxr/test_layer/libxr_test_layer.so
-          make -C samples/cores/video_views clean all
+          make -C samples/cores/video_views clean && make -C samples/cores/video_views -j$(nproc) all
           test -f samples/cores/video_views/video_views_libretro.so
           make -C samples/openxr/test_layer clean
           make -C samples/cores/video_views clean

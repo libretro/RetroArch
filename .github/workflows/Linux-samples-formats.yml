@@ -133,10 +133,10 @@ jobs:
           # decoder is for: every frame repacked to the plain core,
           # put in the IEC 61937 burst its sample count calls for, and
           # read back out of that burst byte for byte.
-          make clean all
+          make clean && make -j$(nproc) all
           ./dts_lpcm_test
           echo "[pass] dts_lpcm_test"
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./dts_lpcm_test
           echo "[pass] dts_lpcm_test (ASan)"
 
@@ -173,7 +173,7 @@ jobs:
           # paths and report a pass.  That count is kept per format, not
           # just in total, so one decoder quietly ceasing to accept its
           # seed cannot hide behind the other three.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x image_decode_fuzz_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_decode_fuzz_test
@@ -238,7 +238,7 @@ jobs:
           # begin on, it must accept before the whole file has arrived
           # (or partial decoding is silently off), and it must be
           # monotonic in the prefix length.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x image_avail_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_avail_test
@@ -255,7 +255,7 @@ jobs:
           # SDR-tagged twins, and any stream decoding into its own
           # canvas, keep the 32-bit paths. Fixtures made with ffmpeg
           # (libx265, libvpx-vp9) from known 10-bit grey.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./video_hdr_fp16_test
 
@@ -271,7 +271,7 @@ jobs:
           # 70x44 so widths and heights off a multiple of four - where
           # the source pitch and the tile width part ways - are all
           # covered.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x image_tile_gx_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_tile_gx_test

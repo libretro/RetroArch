@@ -130,19 +130,19 @@ jobs:
           # under contention, the full-queue wait, and the drain after
           # the encoder thread is joined.  Needs libavcodec with
           # libx264rgb (Ubuntu's has it).
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x ffmpeg_pipeline_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./ffmpeg_pipeline_test
           echo "[pass] ffmpeg_pipeline_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./ffmpeg_pipeline_test
           echo "[pass] ffmpeg_pipeline_test (TSan)"
           # The same run on a video ring that cannot be mirrored, as on
           # a platform without a double mapping: frames that straddle
           # the wrap go through the encoder side's scratch copy.
-          make clean all SANITIZER=address,undefined PLAIN_RING=1
+          make clean SANITIZER=address,undefined PLAIN_RING=1 && make -j$(nproc) all SANITIZER=address,undefined PLAIN_RING=1
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./ffmpeg_pipeline_test

@@ -120,13 +120,13 @@ jobs:
           # WebDAV methods, HTTP/2 lowercase field names, plain HTTP
           # with and without PUT, empty and NULL header lists, and
           # whole-token matching (PROPFINDX must not match PROPFIND).
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x webdav_options_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./webdav_options_test
           echo "[pass] webdav_options_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_options_test
           echo "[pass] webdav_options_test (TSan)"
 
@@ -148,13 +148,13 @@ jobs:
           # A malformed challenge (a value with no closing quote, a
           # trailing unquoted parameter) must be refused, not crash the
           # parser or send it reading past the end of the line.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x webdav_reauth_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./webdav_reauth_test
           echo "[pass] webdav_reauth_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_reauth_test
           echo "[pass] webdav_reauth_test (TSan)"
 
@@ -173,13 +173,13 @@ jobs:
           # back up", a failed backup stopping the upload, destructive
           # sync and the server manifest skipping the backup, and COPY
           # and PUT each getting their own Digest retry.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x webdav_backup_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./webdav_backup_test
           echo "[pass] webdav_backup_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_backup_test
           echo "[pass] webdav_backup_test (TSan)"
 
@@ -198,13 +198,13 @@ jobs:
           # failed copy (including a 200 with an <Error> body) stopping
           # the delete or upload, and destructive sync and the server
           # manifest skipping the copy.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x s3_backup_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./s3_backup_test
           echo "[pass] s3_backup_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./s3_backup_test
           echo "[pass] s3_backup_test (TSan)"
 
@@ -225,13 +225,13 @@ jobs:
           # the old file intact with no temporary file left, no backup
           # for destructive sync, a new file or the manifest, an empty
           # upload and the configured subdirectory.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x smb_backup_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./smb_backup_test
           echo "[pass] smb_backup_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
           echo "[pass] smb_backup_test (TSan)"
 
@@ -252,13 +252,13 @@ jobs:
           # and final rename leaving the old file and no temporary, the
           # manifest skipping the backup, refused over-long names, the
           # subdirectory and a concurrent MKDIR.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x nfs_backup_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./nfs_backup_test
           echo "[pass] nfs_backup_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./nfs_backup_test
           echo "[pass] nfs_backup_test (TSan)"
 
@@ -277,13 +277,13 @@ jobs:
           # copy and on the PATCH each refreshing the token once (the
           # PATCH retry repeating only the PATCH, not the backup), and
           # destructive sync, a new file and the manifest skipping it.
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x gdrive_backup_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./gdrive_backup_test
           echo "[pass] gdrive_backup_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gdrive_backup_test
           echo "[pass] gdrive_backup_test (TSan)"
 
@@ -307,22 +307,22 @@ jobs:
           # net_http must send the same upload a slice per update, plain
           # and over TLS - it used to go out in one blocking send, a call
           # of a second or more (spinning at 100% CPU on a plain socket).
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x cheevos_login_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check
           echo "[pass] cheevos_login_test (BearSSL, ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 180 make check
           echo "[pass] cheevos_login_test (BearSSL, TSan)"
-          make clean all SSL_BACKEND=mbed SANITIZER=address,undefined
+          make clean SSL_BACKEND=mbed SANITIZER=address,undefined && make -j$(nproc) all SSL_BACKEND=mbed SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=mbed
           echo "[pass] cheevos_login_test (mbedTLS, ASan)"
           # The built-in client, RetroArch's default backend.
-          make clean all SSL_BACKEND=retro SANITIZER=address,undefined
+          make clean SSL_BACKEND=retro SANITIZER=address,undefined && make -j$(nproc) all SSL_BACKEND=retro SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=retro
@@ -342,7 +342,7 @@ jobs:
              echo "$mbed_sha  $mbed_tar" | sha256sum -c -
              tar -xjf "$mbed_tar" -C "$RUNNER_TEMP"
              make -C "$RUNNER_TEMP/mbedtls-$mbed_ver" -j"$(nproc)" lib >/dev/null
-             make clean all SSL_BACKEND=mbed SANITIZER=address,undefined \
+             make clean SSL_BACKEND=mbed SANITIZER=address,undefined && make -j$(nproc) all SSL_BACKEND=mbed SANITIZER=address,undefined \
                 MBEDTLS_DIR="$RUNNER_TEMP/mbedtls-$mbed_ver"
              ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
                 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
@@ -397,11 +397,11 @@ jobs:
              echo "::error title=net_http lock::net_http.c must not take locks"
              exit 1
           fi
-          make clean all SANITIZER=address,undefined
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              ./net_http_semantics_test
           echo "[pass] net_http_semantics_test (ASan)"
-          make clean all SANITIZER=thread
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./net_http_semantics_test
           echo "[pass] net_http_semantics_test (TSan)"

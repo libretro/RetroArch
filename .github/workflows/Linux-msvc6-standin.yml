@@ -75,7 +75,7 @@ jobs:
           pactl load-module module-null-sink sink_name=ci >/dev/null
           pactl set-default-sink ci
           WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
-          make clean all
+          make clean && make -j$(nproc) all
           WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee waveout.log
           grep -q "PASS waveout_test" waveout.log
           make clean
@@ -95,7 +95,7 @@ jobs:
           # failure here.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
-          make clean all
+          make clean && make -j$(nproc) all
           WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee win32_input.log
           grep -q "PASS win32_input_test" win32_input.log
           if grep -q "^\[skip\]" win32_input.log; then
@@ -119,7 +119,7 @@ jobs:
           # that are not there not asked at every poll.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
-          make clean all
+          make clean && make -j$(nproc) all
           WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee winmm_joypad.log
           grep -q "PASS winmm_joypad_test" winmm_joypad.log
           make clean
