@@ -484,6 +484,30 @@ static void test_vob_cells(void)
    CHECK(!rdvd_vob_cell_range(NULL, &pgc, 1, &range));
    CHECK(!rdvd_vob_cell_range(&map, NULL, 1, &range));
 }
+static void test_address_domains(void)
+{
+   rdvd_ifo_t f;
+   rdvd_ifo_span_t span;
+   file_fixture(false);
+   file_bytes[0xdb] = 1; file_bytes[0xdf] = 3;
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_MENU_CELLS, &span));
+   CHECK(span.data == file_bytes + 2048 && span.size == 2048);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_MENU_VOBUS, &span));
+   CHECK(span.data == file_bytes + 6144);
+   CHECK(!rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_CELLS, &span));
+   CHECK(!rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_VOBUS, &span));
+   file_fixture(true);
+   file_bytes[0xdb] = 1; file_bytes[0xdf] = 2;
+   file_bytes[0xe3] = 3; file_bytes[0xe7] = 1;
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_MENU_CELLS, &span) && span.data == file_bytes + 2048);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_MENU_VOBUS, &span) && span.data == file_bytes + 4096);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_CELLS, &span) && span.data == file_bytes + 6144);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_VOBUS, &span) && span.data == file_bytes + 2048);
+   file_bytes[0xe7] = 0;
+   CHECK(!rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_VOBUS, &span) && !span.data);
+}
 int main(void)
 {
    test_bounds();
@@ -501,6 +525,7 @@ int main(void)
    test_vob_map();
    test_vob_spans();
    test_vob_cells();
+   test_address_domains();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

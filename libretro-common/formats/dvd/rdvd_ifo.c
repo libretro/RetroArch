@@ -249,6 +249,14 @@ bool rdvd_ifo_table_read(const rdvd_ifo_t *ifo, enum rdvd_ifo_table_kind kind,
          if (f.kind != RDVD_IFO_VTS) return false;
          index = 1; break;
       case RDVD_IFO_MENU: index = f.kind == RDVD_IFO_VMG ? 1 : 2; break;
+      case RDVD_IFO_MENU_CELLS: index = f.kind == RDVD_IFO_VMG ? 5 : 4; break;
+      case RDVD_IFO_MENU_VOBUS: index = f.kind == RDVD_IFO_VMG ? 6 : 5; break;
+      case RDVD_IFO_TITLE_CELLS:
+         if (f.kind != RDVD_IFO_VTS) return false;
+         index = 6; break;
+      case RDVD_IFO_TITLE_VOBUS:
+         if (f.kind != RDVD_IFO_VTS) return false;
+         index = 7; break;
       default: return false;
    }
    start = f.tables[index]; end = f.size;
