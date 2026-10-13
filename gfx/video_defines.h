@@ -430,7 +430,13 @@ enum display_flags
    /* Set by a headset's own context driver (the Quest's): the headset is
     * all it shows, the headset's frames are begun and ended in the video
     * frame, and the platform's flat context follows it in the list. */
-   GFX_CTX_FLAGS_HEADSET_INLINE
+   GFX_CTX_FLAGS_HEADSET_INLINE,
+   /* Set by a video driver that shows each eye on a display of its own,
+    * as the 3DS's top screen does, and places the views on its displays
+    * itself: the views are laid out flat, whatever the stereo mode. */
+   GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES,
+   /* Set while such a driver shows both eyes. */
+   GFX_CTX_FLAGS_VIDEO_VIEWS_STEREO
 };
 
 enum shader_uniform_type

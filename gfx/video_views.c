@@ -194,6 +194,30 @@ bool video_views_eye_pair(const video_views_map_t *map, int eyes[2])
    return true;
 }
 
+bool video_views_select_screens(const video_views_map_t *map,
+      unsigned first, unsigned count, video_views_map_t *out,
+      unsigned *index)
+{
+   unsigned i;
+   memset(out, 0, sizeof(*out));
+   if (!map || first >= map->num_screens || !count)
+      return false;
+   if (count > map->num_screens - first)
+      count = map->num_screens - first;
+   for (i = 0; i < map->num_views; i++)
+   {
+      const struct retro_video_view *v = &map->views[i];
+      if (v->screen < first || v->screen - first >= count)
+         continue;
+      index[out->num_views]               = i;
+      out->views[out->num_views]          = *v;
+      out->views[out->num_views++].screen = v->screen - first;
+   }
+   /* Every screen of a validated map has a view. */
+   out->num_screens = count;
+   return out->num_views != 0;
+}
+
 bool video_views_snapshot(const video_views_map_t *map,
       unsigned frame_dims, unsigned out_dims,
       video_views_map_t *out)

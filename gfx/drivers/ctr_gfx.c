@@ -22,6 +22,7 @@
 #include <3ds.h>
 
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <encodings/utf.h>
 #include <retro_math.h>
 #include <compat/strl.h>
@@ -40,6 +41,7 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_views.h"
 #define DEPRECATED
 #include "../../ctr/gpu_old.h"
 #undef DEPRECATED
@@ -100,6 +102,16 @@ typedef struct
    s16 x0, y0, x1, y1;
    s16 u0, v0, u1, v1;
 } ctr_vertex_t;
+
+/* What a core's views are drawn into: the top screen's eyes and the
+ * bottom screen */
+enum
+{
+   CTR_VIEWS_TOP_LEFT = 0,
+   CTR_VIEWS_TOP_RIGHT,
+   CTR_VIEWS_BOTTOM,
+   CTR_VIEWS_TARGETS
+};
 
 #ifdef USE_CTRULIB_2
 extern u8* gfxTopLeftFramebuffers[2];
@@ -175,6 +187,22 @@ typedef struct ctr_video
       ctr_vertex_t* current;
       size_t size;
    }vertex_cache;
+
+   struct
+   {
+      /* Each target's quads, RETRO_VIDEO_VIEWS_MAX apiece, in linear
+       * memory the GPU reads; made on the first frame with views */
+      ctr_vertex_t *coords;
+      unsigned count[CTR_VIEWS_TARGETS];
+      /* The part of the last frame the texture holds */
+      unsigned frame_dims;
+      /* For get_flags: the last frame with a map was drawn whole */
+      retro_atomic_int_t fallback;
+      bool active;
+      /* The bottom screen shows the core's screens past the first */
+      bool bottom;
+      bool direct_seen;
+   } views;
 
    int state_slot;
    u64  idle_timestamp;
@@ -864,7 +892,8 @@ static void ctr_free_overlay(ctr_video_t *ctr)
 
 static void ctr_update_viewport(ctr_video_t* ctr)
 {
-   video_driver_update_viewport(&ctr->vp, false, ctr->keep_aspect, true);
+   video_driver_update_viewport(&ctr->vp, ctr->views.active,
+         ctr->keep_aspect, true);
 
    ctr_set_screen_coords(ctr);
 
@@ -1658,6 +1687,199 @@ task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
 
+/*
+ * VIEWS
+ *
+ * A core's first screen goes to the top screen, its left eye into the
+ * left framebuffer and its right eye into the right one while the 3D
+ * slider is up; the screens after it go to the bottom screen when that
+ * is on. Each view is a quad sampling the frame's texture.
+ */
+
+/* @q over @dst, sampling @v, turned as ctr_set_screen_coords turns the
+ * frame */
+static void ctr_views_quad(ctr_vertex_t *q, unsigned rotation,
+      const video_views_rect_t *dst, const struct retro_video_view *v)
+{
+   s16 x0 = (s16)VIDEO_POS_X(dst->pos);
+   s16 y0 = (s16)VIDEO_POS_Y(dst->pos);
+   s16 x1 = (s16)(x0 + (int)VIDEO_SCALE_W(dst->dims));
+   s16 y1 = (s16)(y0 + (int)VIDEO_SCALE_H(dst->dims));
+
+   if (rotation == 1 || rotation == 2)
+   {
+      q->x0 = x1;
+      q->y0 = y1;
+      q->x1 = x0;
+      q->y1 = y0;
+   }
+   else
+   {
+      q->x0 = x0;
+      q->y0 = y0;
+      q->x1 = x1;
+      q->y1 = y1;
+   }
+   q->u0 = (s16)v->x;
+   q->v0 = (s16)v->y;
+   q->u1 = (s16)(v->x + v->width);
+   q->v1 = (s16)(v->y + v->height);
+}
+
+/* Screens [@first, @first + @screens) of @map laid out on a display of
+ * size @dims, their left eye's quads into target @left and, unless it
+ * is CTR_VIEWS_TARGETS, their right eye's into @right. @window: the
+ * display the custom viewport is in. */
+static void ctr_views_place(ctr_video_t *ctr, const video_views_map_t *map,
+      unsigned first, unsigned screens, unsigned dims, bool window,
+      unsigned left, unsigned right)
+{
+   unsigned i, e;
+   video_views_map_t sub;
+   video_views_layout_t layout;
+   unsigned index[RETRO_VIDEO_VIEWS_MAX];
+   unsigned targets[2];
+   static const unsigned eyes[2] = {
+      RETRO_VIDEO_VIEW_EYE_LEFT, RETRO_VIDEO_VIEW_EYE_RIGHT };
+
+   targets[0] = left;
+   targets[1] = right;
+   if (!video_views_select_screens(map, first, screens, &sub, index))
+      return;
+   video_driver_views_layout_flat(&sub, dims, window, &layout);
+   for (e = 0; e < 2 && targets[e] < CTR_VIEWS_TARGETS; e++)
+   {
+      ctr_vertex_t *q = ctr->views.coords
+         + targets[e] * RETRO_VIDEO_VIEWS_MAX;
+      unsigned *n     = &ctr->views.count[targets[e]];
+      for (i = 0; i < layout.num_placements
+            && *n < RETRO_VIDEO_VIEWS_MAX; i++)
+      {
+         const video_views_placement_t *p = &layout.placements[i];
+         int k = video_views_find(&sub, sub.views[p->view].screen, eyes[e]);
+         if (k >= 0)
+            ctr_views_quad(&q[(*n)++], ctr->rotation, &p->dst,
+                  &map->views[index[k]]);
+      }
+   }
+}
+
+/* Whether this frame draws its views: the map fits the part of the
+ * frame the texture holds, and there is memory for the quads. Sets
+ * views.bottom, waking the bottom screen when it takes it, and redrawing
+ * the bottom menu when it gives it back. */
+static bool ctr_views_setup(ctr_video_t *ctr,
+      const video_views_map_t *map, bool lcd_bottom)
+{
+   bool bottom = false;
+   bool views  = map->num_views
+      && video_views_fit_frame(map, ctr->views.frame_dims);
+
+   if (views && !ctr->views.coords)
+   {
+      ctr->views.coords = (ctr_vertex_t*)linearAlloc(CTR_VIEWS_TARGETS
+            * RETRO_VIDEO_VIEWS_MAX * sizeof(ctr_vertex_t));
+      views             = ctr->views.coords != NULL;
+   }
+#ifndef CONSOLE_LOG
+   bottom = views && lcd_bottom && map->num_screens > 1;
+#endif
+   if (bottom != ctr->views.bottom)
+   {
+      ctr->views.bottom = bottom;
+      if (bottom && ctr->bottom_is_idle)
+      {
+         ctr->bottom_is_idle = false;
+         ctr_set_bottom_screen_enable(true, true);
+      }
+      ctr->bottom_check_idle   = false;
+      ctr->refresh_bottom_menu = true;
+   }
+   if (views != ctr->views.active)
+   {
+      ctr->views.active  = views;
+      /* The viewport is the whole top screen while views draw. */
+      ctr->should_resize = true;
+   }
+   retro_atomic_store_release_int(&ctr->views.fallback,
+         (map->num_views && !views) ? 1 : 0);
+   if (views && !ctr->views.direct_seen)
+   {
+      ctr->views.direct_seen = true;
+      RARCH_LOG("[CTR] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Draws @map's views from the bound frame texture, with the frame's
+ * shader state set: the bottom screen's, then the top screen's eyes,
+ * leaving the top screen's scale and viewport as the frame's draw
+ * does. */
+static void ctr_views_draw(ctr_video_t *ctr, const video_views_map_t *map)
+{
+   unsigned i, t;
+   unsigned top_screens = ctr->views.bottom ? 1 : map->num_screens;
+   bool stereo          = ctr->video_mode == CTR_VIDEO_MODE_3D;
+
+   for (t = 0; t < CTR_VIEWS_TARGETS; t++)
+      ctr->views.count[t] = 0;
+   ctr_views_place(ctr, map, 0, top_screens,
+         VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,
+            CTR_TOP_FRAMEBUFFER_HEIGHT), true,
+         CTR_VIEWS_TOP_LEFT,
+         stereo ? CTR_VIEWS_TOP_RIGHT : CTR_VIEWS_TARGETS);
+   if (ctr->views.bottom)
+      ctr_views_place(ctr, map, 1, map->num_screens - 1,
+            VIDEO_SCALE_PACK(CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+               CTR_BOTTOM_FRAMEBUFFER_HEIGHT), false,
+            CTR_VIEWS_BOTTOM, CTR_VIEWS_TARGETS);
+   GSPGPU_FlushDataCache(ctr->views.coords, CTR_VIEWS_TARGETS
+         * RETRO_VIDEO_VIEWS_MAX * sizeof(ctr_vertex_t));
+
+   for (t = CTR_VIEWS_TARGETS; t-- > 0; )
+   {
+      ctr_vertex_t *q = ctr->views.coords + t * RETRO_VIDEO_VIEWS_MAX;
+      if (!ctr->views.count[t])
+         continue;
+      if (t == CTR_VIEWS_BOTTOM)
+      {
+         ctr_scale_vector_t vec;
+         CTR_SET_SCALE_VECTOR(&vec,
+               CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+               CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+               ctr->texture_width,
+               ctr->texture_height);
+         ctrGuSetVertexShaderFloatUniform(0, (float*)&vec, 1);
+         GPU_SetViewport(NULL,
+               VIRT_TO_PHYS(ctr->drawbuffers.bottom),
+               0, 0, CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+               CTR_BOTTOM_FRAMEBUFFER_WIDTH);
+      }
+      else
+      {
+         ctrGuSetVertexShaderFloatUniform(0,
+               (float*)&ctr->scale_vector, 1);
+         if (t == CTR_VIEWS_TOP_RIGHT)
+            GPU_SetViewport(NULL,
+                  VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+                  0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                  CTR_TOP_FRAMEBUFFER_WIDTH);
+         else
+            GPU_SetViewport(NULL,
+                  VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+                  0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                  ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+                  ? CTR_TOP_FRAMEBUFFER_WIDTH * 2
+                  : CTR_TOP_FRAMEBUFFER_WIDTH);
+      }
+      for (i = 0; i < ctr->views.count[t]; i++)
+      {
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&q[i]));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      }
+   }
+}
+
 static void* ctr_init(const video_info_t* video)
 {
    float refresh_rate;
@@ -1906,6 +2128,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
    bool lcd_bottom                = false;
+   bool views                     = false;
    uint32_t flags                 = runloop_get_flags();
 
    if (!width || !height || !settings)
@@ -1926,7 +2149,21 @@ static bool ctr_frame(void* data, const void* frame,
       else
          ctr_bottom_screen_enabled = lcd_bottom;
    }
-   ctr_bottom_menu_control(data, lcd_bottom, flags);
+
+   if (frame)
+      ctr->views.frame_dims = VIDEO_SCALE_PACK(
+            width  < ctr->texture_width  ? width  : ctr->texture_width,
+            height < ctr->texture_height ? height : ctr->texture_height);
+   views = ctr_views_setup(ctr, &video_info->views, lcd_bottom);
+   /* The core's screen takes the bottom screen and its touches: drawn
+    * and shown every frame. */
+   if (ctr->views.bottom)
+   {
+      input_driver_set_platform_menu_button(false);
+      ctr->refresh_bottom_menu = true;
+   }
+   else
+      ctr_bottom_menu_control(data, lcd_bottom, flags);
 
    if (ctr->p3d_event_pending)
    {
@@ -2178,35 +2415,40 @@ static bool ctr_frame(void* data, const void* frame,
                     0xFF0000);
    }
 
-   GPU_SetViewport(NULL,
-                   VIRT_TO_PHYS(ctr->drawbuffers.top.left),
-                   0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                   ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
-                   ? CTR_TOP_FRAMEBUFFER_WIDTH * 2
-                   : CTR_TOP_FRAMEBUFFER_WIDTH);
-
-   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+   if (views)
+      ctr_views_draw(ctr, &video_info->views);
+   else
    {
-      if (ctr->menu_texture_enable)
+      GPU_SetViewport(NULL,
+                      VIRT_TO_PHYS(ctr->drawbuffers.top.left),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                      ctr->video_mode == CTR_VIDEO_MODE_2D_800X240
+                      ? CTR_TOP_FRAMEBUFFER_WIDTH * 2
+                      : CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      if (ctr->video_mode == CTR_VIDEO_MODE_3D)
       {
-         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[1]));
-         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
-         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[2]));
+         if (ctr->menu_texture_enable)
+         {
+            ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[1]));
+            GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+            ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[2]));
+         }
+         else
+         {
+            ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
+            GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+         }
+         GPU_SetViewport(NULL,
+                         VIRT_TO_PHYS(ctr->drawbuffers.top.right),
+                         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                         CTR_TOP_FRAMEBUFFER_WIDTH);
       }
       else
-      {
          ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
-         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
-      }
-      GPU_SetViewport(NULL,
-                      VIRT_TO_PHYS(ctr->drawbuffers.top.right),
-                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
-                      CTR_TOP_FRAMEBUFFER_WIDTH);
-   }
-   else
-      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
 
-   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+   }
 
    /* restore */
    if (ctr->rgb32)
@@ -2277,6 +2519,7 @@ static bool ctr_frame(void* data, const void* frame,
 
 #ifndef CONSOLE_LOG
    if (     ctr_bottom_screen_enabled
+         && !ctr->views.bottom
          && (flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
       if (!ctr->bottom_is_idle)
@@ -2507,6 +2750,8 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
    linearFree(ctr->vertex_cache.buffer);
+   if (ctr->views.coords)
+      linearFree(ctr->views.coords);
    if (ctr->white_texture)
    {
       linearFree(ctr->white_texture->data);
@@ -3034,8 +3279,23 @@ static void ctr_set_osd_msg(void *data, const char *msg, size_t msg_len,
 static uint32_t ctr_get_flags(void *data)
 {
    uint32_t             flags   = 0;
+   ctr_video_t          *ctr    = (ctr_video_t*)data;
+   settings_t       *settings   = config_get_ptr();
 
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   if (ctr)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES);
+      if (retro_atomic_load_acquire_int(&ctr->views.fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+      /* Both eyes show in 3D mode with the slider up, as
+       * ctr_check_3D_slider decides each frame */
+      if (     settings
+            && settings->uints.video_3ds_display_mode == CTR_VIDEO_MODE_3D
+            && *(volatile float*)0x1FF81080 != 0.0f)
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_STEREO);
+   }
 
    return flags;
 }

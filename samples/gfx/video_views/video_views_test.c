@@ -701,6 +701,59 @@ static void test_eye_pair(void)
    CHECK(video_views_eye_pair(&map, eyes) && eyes[0] == 1 && eyes[1] == 0);
 }
 
+/* A screen's views as a map of their own: the 3DS driver's top and
+ * bottom screens. */
+static void test_select_screens(void)
+{
+   video_views_map_t map, sub;
+   struct retro_video_view v[4];
+   unsigned index[RETRO_VIDEO_VIEWS_MAX];
+
+   map_3ds(&map);
+   CHECK(video_views_select_screens(&map, 0, 1, &sub, index));
+   CHECK(sub.num_views == 2 && sub.num_screens == 1);
+   CHECK(index[0] == 0 && index[1] == 1);
+   CHECK(sub.views[1].eye == RETRO_VIDEO_VIEW_EYE_RIGHT);
+   CHECK(video_views_find(&sub, 0, RETRO_VIDEO_VIEW_EYE_RIGHT) == 1);
+
+   CHECK(video_views_select_screens(&map, 1, 1, &sub, index));
+   CHECK(sub.num_views == 1 && sub.num_screens == 1);
+   CHECK(index[0] == 2 && sub.views[0].screen == 0);
+   CHECK(sub.views[0].x == 240 && sub.views[0].y == 240);
+
+   /* The count is cut to the screens there are. */
+   CHECK(video_views_select_screens(&map, 1, 5, &sub, index));
+   CHECK(sub.num_screens == 1 && sub.num_views == 1);
+   CHECK(!video_views_select_screens(&map, 2, 1, &sub, index));
+   CHECK(sub.num_views == 0 && sub.num_screens == 0);
+   CHECK(!video_views_select_screens(&map, 0, 0, &sub, index));
+
+   /* Screens 1 and 2 of three, in the map's order, which needn't be the
+    * screens'. */
+   v[0] = mkview(0,   0, 100, 50, 2, RETRO_VIDEO_VIEW_EYE_NONE);
+   v[1] = mkview(0,  50, 100, 50, 0, RETRO_VIDEO_VIEW_EYE_NONE);
+   v[2] = mkview(0, 100, 100, 50, 1, RETRO_VIDEO_VIEW_EYE_LEFT);
+   v[3] = mkview(100, 100, 100, 50, 1, RETRO_VIDEO_VIEW_EYE_RIGHT);
+   CHECK(video_views_validate(v, 4, &map));
+   CHECK(video_views_select_screens(&map, 1, 2, &sub, index));
+   CHECK(sub.num_views == 3 && sub.num_screens == 2);
+   CHECK(index[0] == 0 && sub.views[0].screen == 1);
+   CHECK(index[1] == 2 && sub.views[1].screen == 0);
+   CHECK(index[2] == 3 && sub.views[2].screen == 0);
+   /* A layout of the selection places its screens like a map of two. */
+   {
+      video_views_layout_params_t p;
+      video_views_layout_t l;
+      memset(&p, 0, sizeof(p));
+      p.map         = &sub;
+      p.dims        = VIDEO_SCALE_PACK(320, 240);
+      p.stereo_mode = VIDEO_STEREO_MODE_2D;
+      video_views_layout(&p, &l);
+      CHECK(l.num_placements == 2);
+      CHECK(l.placements[0].view == 1 && l.placements[1].view == 0);
+   }
+}
+
 /* ---- the compositor, instantiated over fakes ---- */
 
 typedef struct fake_chain
@@ -1047,6 +1100,7 @@ int main(void)
    test_validate();
    test_frame_helpers();
    test_eye_pair();
+   test_select_screens();
    test_layout_screens();
    test_layout_stereo();
    test_layout_one_screen();

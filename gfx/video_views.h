@@ -118,6 +118,15 @@ int video_views_find(const video_views_map_t *map,
  * one RIGHT view, their indices in eyes[0] and eyes[1]; else -1. */
 bool video_views_eye_pair(const video_views_map_t *map, int eyes[2]);
 
+/* The views of screens [@first, @first + @count) of @map as a map of
+ * their own in @out, their screens counted from 0 and in @map's order;
+ * @index[i] is @out's view i's index in @map. For a driver that shows
+ * some screens on one display and the rest on another. False, with
+ * @out emptied, when none of those screens has a view. */
+bool video_views_select_screens(const video_views_map_t *map,
+      unsigned first, unsigned count, video_views_map_t *out,
+      unsigned *index);
+
 /* The map for one frame: a copy scaled from the core's frame size to the
  * size the driver receives. False, with out emptied, when there is no map
  * or it does not fit the frame. */

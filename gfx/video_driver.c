@@ -3180,6 +3180,7 @@ void video_driver_clear_views(void)
 
 unsigned video_driver_views_status(void)
 {
+   gfx_ctx_flags_t flags;
    settings_t *settings = config_get_ptr();
    unsigned status      = 0;
    bool headset         = false;
@@ -3192,11 +3193,20 @@ unsigned video_driver_views_status(void)
               | RETRO_VIDEO_VIEWS_STATUS_PRESENTS
               | RETRO_VIDEO_VIEWS_STATUS_STEREO;
 #endif
-   if (!video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS))
+   flags.flags = 0;
+   video_context_driver_get_flags(&flags);
+   if (!BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS))
       return status;
    status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
-   /* A headset shows both eyes whatever the window's mode. */
-   if (     settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
+   /* A display of the driver's own per eye shows both while the driver
+    * says so (the 3DS's 3D slider); a headset whatever the window's
+    * mode. */
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES))
+   {
+      if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_STEREO))
+         status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
+   }
+   else if (settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
          || headset)
       status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
    return status;
@@ -3333,9 +3343,11 @@ void video_driver_headset_poll(void)
 }
 #endif
 
+/* @custom_vp: the custom viewport, in the window's pixels, applies to
+ * a one-screen map laid out in the window. */
 static void video_driver_views_layout(settings_t *settings,
-      const video_views_map_t *map, unsigned dims,
-      video_views_layout_t *out)
+      const video_views_map_t *map, unsigned dims, unsigned stereo_mode,
+      bool custom_vp, video_views_layout_t *out)
 {
    video_views_layout_params_t params;
    video_views_rect_t custom;
@@ -3346,7 +3358,7 @@ static void video_driver_views_layout(settings_t *settings,
    params.single_aspect = 0.0f;
    params.stretch       = !settings->bools.video_force_aspect;
    params.dims          = dims;
-   params.stereo_mode   = settings->uints.video_stereo_mode;
+   params.stereo_mode   = stereo_mode;
    params.screen_layout = settings->uints.video_screen_layout;
    params.rotation      = retroarch_get_rotation() % 4;
    params.swap_eyes     = settings->bools.video_stereo_swap_eyes;
@@ -3358,7 +3370,7 @@ static void video_driver_views_layout(settings_t *settings,
    {
       custom.pos  = settings->video_vp_custom.pos;
       custom.dims = settings->video_vp_custom.dims;
-      if (VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
+      if (custom_vp && VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
          params.custom_vp = &custom;
    }
    else if (aspect_idx != ASPECT_RATIO_CORE
@@ -3366,6 +3378,13 @@ static void video_driver_views_layout(settings_t *settings,
       params.single_aspect = video_driver_get_aspect_ratio();
 
    video_views_layout(&params, out);
+}
+
+void video_driver_views_layout_flat(const video_views_map_t *map,
+      unsigned dims, bool window, video_views_layout_t *out)
+{
+   video_driver_views_layout(config_get_ptr(), map, dims,
+         VIDEO_STEREO_MODE_2D, window, out);
 }
 
 /* Fills the frame's views and layout. A repeated frame (no data), or one
@@ -3416,7 +3435,10 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
          video_views_eye_pair(&video_info->views, video_info->headset_eye);
 #endif
       video_driver_views_layout(settings, &video_st->views_core,
-            video_info->dims, &video_info->views_layout);
+            video_info->dims,
+            BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES)
+            ? VIDEO_STEREO_MODE_2D : settings->uints.video_stereo_mode,
+            true, &video_info->views_layout);
       if (!redraw)
          video_st->views_layout = video_info->views_layout;
       /* The menu was laid out whole for this frame. */

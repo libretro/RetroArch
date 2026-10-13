@@ -2169,6 +2169,12 @@ unsigned video_driver_get_ui_dims(void);
 /* Main thread: the layout the last frame presented a core's views
  * with, or NULL when it was drawn whole. */
 const video_views_layout_t *video_driver_get_views_layout(void);
+/* @map laid out flat into a display of size @dims by the user's
+ * aspect, scaling and rotation settings, for a driver that places views
+ * on displays of its own (GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES); @window:
+ * the display the custom viewport is in. */
+void video_driver_views_layout_flat(const video_views_map_t *map,
+      unsigned dims, bool window, video_views_layout_t *out);
 #ifdef HAVE_OPENXR
 /* Main thread: the core's own view map and frame size the last frame
  * presented with views used, or NULL and the last frame's size when it
