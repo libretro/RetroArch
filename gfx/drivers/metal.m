@@ -498,6 +498,13 @@ typedef struct metal_view_chain metal_view_chain_t;
 - (BOOL)setShaderFromPath:(NSString *)path;
 - (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
+/* A frame the preset may draw as views, put off until they are known.
+ * commitFrame writes it as updateFrame:pitch: would; the views' chains
+ * instead write each view straight in (renderViewChain:), and dropFrame
+ * lets it go. */
+- (bool)deferFrame:(void const *)src pitch:(NSUInteger)pitch;
+- (void)commitFrame;
+- (void)dropFrame;
 /* The frames from now on are in @format (a software filter changed
  * it): the 16-bit staging texture is made again or dropped */
 - (void)setSourceFormat:(RPixelFormat)format;
@@ -5947,8 +5954,14 @@ static void metal_views_render(metal_views_t *vs,
       _frameView.currentSubframe = video_info->current_subframe + 1;
       if (frame && width && height)
       {
+         struct video_shader *shader = _frameView.shader;
          _frameView.size      = CGSizeMake(width, height);
-         [_frameView updateFrame:frame pitch:pitch];
+         /* Views through the preset have each view written straight
+          * in: the frame waits until they are known */
+         if (!(   video_info->views.num_views && video_info->shader_active
+               && shader && shader->passes
+               && [_frameView deferFrame:frame pitch:pitch]))
+            [_frameView updateFrame:frame pitch:pitch];
          _frameEverUploaded   = true;
       }
       else if (!_frameEverUploaded)
@@ -5980,6 +5993,9 @@ static void metal_views_render(metal_views_t *vs,
                VIDEO_SCALE_PACK((unsigned)size.width, (unsigned)size.height),
                &views_blend, &views_direct, view_chains, view_rects);
       }
+      /* Drawn any other way, the frame is written now */
+      if (!views || views_direct)
+         [_frameView commitFrame];
       /* The viewport is the whole window while views draw. */
       if (views != _views.active)
       {
@@ -6008,6 +6024,7 @@ static void metal_views_render(metal_views_t *vs,
          metal_views_render(&_views, video_info, view_chains, view_rects,
                views_blend, views_direct, frame && width && height,
                _frameView.filter != RTextureFilterNearest);
+         [_frameView dropFrame];
       }
       else
          [_frameView drawWithContext:_context];
@@ -6344,6 +6361,8 @@ typedef struct MTLALIGN(16)
 struct metal_view_chain
 {
    engine_t engine;
+   /* A 16-bit view as written, converted from into history[0] */
+   texture_t src16;
    unsigned rt_frame_dims;
    unsigned rt_vp_dims;
    bool history_made;
@@ -6361,6 +6380,13 @@ struct metal_view_chain
 
    id<MTLTexture> _src; /* source texture */
    bool _srcDirty;
+   /* A frame put off by deferFrame:pitch:, and where it lies in frame
+    * memory (_pendingMem, -1 for none, at _pendingOff) */
+   void const *_pendingSrc;
+   NSUInteger  _pendingPitch;
+   int         _pendingMem;
+   NSUInteger  _pendingOff;
+   bool        _writtenSeen;
 
    /* Frame memory: shared-storage buffers a frame pushed from is
     * blitted out of, with no host copy - the threaded wrapper's frame
@@ -6691,7 +6717,13 @@ struct metal_view_chain
       }
    }
 
-   /* Either no history, or we moved a texture of a different size in the front slot */
+   [self _ensureFront];
+}
+
+/* The front slot at the frame's size: no history, or one of another
+ * size moved there */
+- (void)_ensureFront
+{
    if (   _engine.frame.texture[0].size_data.x != _size.width
        || _engine.frame.texture[0].size_data.y != _size.height)
    {
@@ -6809,6 +6841,31 @@ struct metal_view_chain
 
    if (resize_render_targets)
       [self _updateRenderTargets];
+}
+
+- (bool)deferFrame:(void const *)src pitch:(NSUInteger)pitch
+{
+   [self syncViewport];
+   [self _ensureFront];
+   _pendingSrc   = src;
+   _pendingPitch = pitch;
+   _pendingMem   = [self _frameMemFind:src pitch:pitch offset:&_pendingOff];
+   _loanLast     = _pendingMem;
+   return true;
+}
+
+- (void)commitFrame
+{
+   void const *src = _pendingSrc;
+   if (!src)
+      return;
+   _pendingSrc = NULL;
+   [self updateFrame:src pitch:_pendingPitch];
+}
+
+- (void)dropFrame
+{
+   _pendingSrc = NULL;
 }
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
@@ -7511,13 +7568,15 @@ error:
       RARCH_STRUCT_ASSIGN(c->engine.luts[i].view, nil);
    for (i = 0; i < GFX_MAX_FRAME_HISTORY + 1; i++)
       RARCH_STRUCT_ASSIGN(c->engine.frame.texture[i].view, nil);
+   RARCH_STRUCT_ASSIGN(c->src16.view, nil);
    free(c);
 }
 
 /* View @v's chain made ready and its passes drawn into their render
  * targets, but for a last pass that draws into each placement: the view
- * copied out of the frame into the chain's history, behind the history
- * the preset keeps for a @fresh frame. @vp_dims is the size its first
+ * put into the chain's history, behind the history the preset keeps for
+ * a @fresh frame - written straight out of a frame deferFrame:pitch: put
+ * off, else copied out of the frame. @vp_dims is the size its first
  * placement is drawn at. */
 - (void)renderViewChain:(metal_view_chain_t *)c
                    view:(const struct retro_video_view *)v
@@ -7541,7 +7600,8 @@ error:
          MTLTextureDescriptor *td = [MTLTextureDescriptor
             texture2DDescriptorWithPixelFormat:src.pixelFormat
             width:v->width height:v->height mipmapped:NO];
-         td.usage = MTLTextureUsageShaderRead;
+         /* Written by a 16-bit format's conversion too */
+         td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
          for (k = 0; k < n; k++)
             [self _initTexture:&c->engine.frame.texture[k] withDescriptor:td];
          c->history_made = true;
@@ -7553,7 +7613,62 @@ error:
             c->engine.frame.texture[k] = c->engine.frame.texture[k - 1];
          c->engine.frame.texture[0] = tmp;
       }
-      if (c->engine.frame.texture[0].view)
+      if (c->engine.frame.texture[0].view && fresh && _pendingSrc)
+      {
+         id<MTLTexture> dst = c->engine.frame.texture[0].view;
+         NSUInteger at      = (NSUInteger)v->y * _pendingPitch
+            + (NSUInteger)v->x * _bpp;
+         bool convert       = (   _format != RPixelFormatBGRA8Unorm
+                               && _format != RPixelFormatBGRX8Unorm
+                               && _format != RPixelFormatBGR10A2Unorm);
+         /* A 16-bit view goes in as it is, then is converted as the
+          * frame would have been */
+         if (convert)
+         {
+            if (     !c->src16.view
+                  || c->src16.view.width  != v->width
+                  || c->src16.view.height != v->height)
+            {
+               MTLTextureDescriptor *td = [MTLTextureDescriptor
+                  texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
+                  width:v->width height:v->height mipmapped:NO];
+               [self _initTexture:&c->src16 withDescriptor:td];
+            }
+            dst = c->src16.view;
+         }
+         if (_pendingMem >= 0)
+         {
+            /* Already where the GPU reads it: blitted out of there */
+            id<MTLCommandBuffer> cb = _context.blitCommandBuffer;
+            bce = [cb blitCommandEncoder];
+            [bce copyFromBuffer:_mem[_pendingMem]
+                   sourceOffset:_pendingOff + at
+              sourceBytesPerRow:_pendingPitch
+            sourceBytesPerImage:0
+                     sourceSize:MTLSizeMake(v->width, v->height, 1)
+                      toTexture:dst
+               destinationSlice:0
+               destinationLevel:0
+              destinationOrigin:MTLOriginMake(0, 0, 0)];
+            [bce endEncoding];
+            RARCH_ASSIGN(_memReader[_pendingMem], cb);
+         }
+         else
+            [dst replaceRegion:MTLRegionMake2D(0, 0, v->width, v->height)
+                   mipmapLevel:0
+                     withBytes:(const uint8_t*)_pendingSrc + at
+                   bytesPerRow:_pendingPitch];
+         if (convert)
+            [_context convertFormat:_format from:dst
+                                 to:c->engine.frame.texture[0].view];
+         if (!_writtenSeen)
+         {
+            _writtenSeen = true;
+            RARCH_LOG("[Metal] Views' presets have each view of a software "
+                  "frame written straight in.\n");
+         }
+      }
+      else if (c->engine.frame.texture[0].view)
       {
          bce = [_context.blitCommandBuffer blitCommandEncoder];
          [bce copyFromTexture:src
