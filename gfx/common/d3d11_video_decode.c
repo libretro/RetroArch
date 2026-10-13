@@ -175,22 +175,24 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    free(d);
 }
 
-/* Whether output texture @o's last frame was read or given back. */
-static bool d3d11vd_out_settled(d3d11vd_dec_t *d, unsigned o)
+/* Output texture @o: 0 settled, 1 held, -1 device removed. */
+static int d3d11vd_out_status(d3d11vd_dec_t *d, unsigned o)
 {
-   if (!d->out_done[o])
-      return true;
-   return d->out_done[o]->lpVtbl->GetCompletedValue(d->out_done[o])
-         >= d->out_value[o]
-      || (uint64_t)(unsigned)retro_atomic_load_acquire_int(
-            &d->out_abandoned[o]) == d->out_value[o];
+   uint64_t completed;
+   if (!d->out_done[o] || (uint64_t)(unsigned)retro_atomic_load_acquire_int(
+            &d->out_abandoned[o]) == d->out_value[o])
+      return 0;
+   completed = d->out_done[o]->lpVtbl->GetCompletedValue(d->out_done[o]);
+   if (completed == UINT64_MAX)
+      return -1;
+   return completed >= d->out_value[o] ? 0 : 1;
 }
 
 static bool d3d11vd_settled(d3d11vd_dec_t *d)
 {
    unsigned o;
    for (o = 0; o < D3D11VD_OUTS; o++)
-      if (!d3d11vd_out_settled(d, o))
+      if (d3d11vd_out_status(d, o) != 0)
          return false;
    return true;
 }
@@ -567,12 +569,18 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
    D3D11_BOX box;
    unsigned o, n;
+   int status;
 
    if (slot >= d->slots)
       return -1;
    for (n = 0; n < D3D11VD_OUTS; n++)
-      if (d3d11vd_out_settled(d, (d->out_next + n) % D3D11VD_OUTS))
+   {
+      status = d3d11vd_out_status(d, (d->out_next + n) % D3D11VD_OUTS);
+      if (status < 0)
+         return -1;
+      if (!status)
          break;
+   }
    if (n == D3D11VD_OUTS)
       return 1;
    o = (d->out_next + n) % D3D11VD_OUTS;

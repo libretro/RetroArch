@@ -246,6 +246,7 @@ static int copies, copy_src_sub, copy_box_ok;
 static mock_t *copy_dst;
 static unsigned want_crop_x, want_crop_y, want_w, want_h;
 static uint64_t ready_signalled;
+static HRESULT signal_hr = S_OK;
 
 static void STDMETHODCALLTYPE m_copy_region(mock_t *m, mock_t *dst,
       UINT dst_sub, UINT x, UINT y, UINT z, mock_t *src, UINT src_sub,
@@ -266,6 +267,8 @@ static void STDMETHODCALLTYPE m_copy_region(mock_t *m, mock_t *dst,
 static HRESULT STDMETHODCALLTYPE m_signal(mock_t *m, mock_t *fence,
       UINT64 v)
 {
+   if (FAILED(signal_hr))
+      return signal_hr;
    ready_signalled = v;
    fence_reach(fence, v);
    return S_OK;
@@ -335,6 +338,7 @@ static HRESULT STDMETHODCALLTYPE m_create_view(mock_t *m, mock_t *res,
 static uint8_t bufs[BUF_TYPES][1 << 17];
 static UINT buf_cap[BUF_TYPES];
 static int pending_left, begins, ends;
+static HRESULT begin_hr = S_OK;
 static int begin_slice;
 
 typedef struct
@@ -362,6 +366,8 @@ static HRESULT STDMETHODCALLTYPE m_get_buffer(mock_t *m, void *dec,
 static HRESULT STDMETHODCALLTYPE m_begin(mock_t *m, void *dec, mock_t *view,
       UINT n, const void *key)
 {
+   if (FAILED(begin_hr))
+      return begin_hr;
    if (pending_left > 0)
    {
       pending_left--;
@@ -800,6 +806,44 @@ static void test_direct(void)
    min_targets = 20;
 }
 
+static void test_device_loss(void)
+{
+   const rh264_hw_ops_t *ops = &d3d11vd.ops;
+   video_hw_frame_t fr[4], untouched;
+   void *dec;
+   int i, before = live, retained;
+   make_pic(0);
+   want_w = 64; want_h = 48; want_crop_x = want_crop_y = 0;
+   dec = ops->open(NULL, &sps, 4);
+   check("loss: decoder opens", dec != NULL);
+   if (!dec)
+      return;
+   memset(&untouched, 0x5a, sizeof(untouched));
+   signal_hr = DXGI_ERROR_DEVICE_REMOVED;
+   check("loss: a failed signal takes no lease", ops->output(dec, 0, &untouched) < 0
+         && untouched.image == UINT64_C(0x5a5a5a5a5a5a5a5a));
+   signal_hr = S_OK;
+   for (i = 0; i < 4; i++)
+      check("loss: outstanding lease", ops->output(dec, 0, &fr[i]) == 0);
+   subs_free();
+   begin_hr = DXGI_ERROR_DEVICE_REMOVED;
+   check("loss: decode is fatal without submission", ops->decode(dec, &pic) < 0 && n_subs == 0);
+   begin_hr = S_OK;
+   for (i = 0; i < 4; i++)
+      by_handle(fr[i].done)->completed = UINT64_MAX;
+   memset(&untouched, 0x5a, sizeof(untouched));
+   check("loss: removed fence is fatal without a lease", ops->output(dec, 0, &untouched) < 0
+         && untouched.image == UINT64_C(0x5a5a5a5a5a5a5a5a));
+   ops->close(dec);
+   retained = live > before;
+   check("loss: held callbacks keep their owner", retained);
+   if (retained)
+      for (i = 0; i < 4; i++)
+         video_hw_frame_abandon(&fr[i]);
+   d3d11vd_grave_reap(false);
+   check("loss: all resources retire", live == before);
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -835,6 +879,7 @@ int main(void)
    test_stream("cropped", stream_cropped, sizeof(stream_cropped),
          170, 122, 0, 0, 88, 1, 12);
    test_direct();
+   test_device_loss();
 
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);
