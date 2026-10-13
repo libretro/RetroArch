@@ -24,7 +24,8 @@ regular expression, runs only the cases whose names it finds; CI runs a
 set of them that way (Linux-vulkan-validation.yml).
 
 With RA_E2E_WINE=1 the binary is a retroarch.exe run under Wine, on
-Xvfb as above, with the core built by make DLL=1 and paths given as
+Xvfb as above, each worker in a copy of WINEPREFIX of its own, with
+the core built by make DLL=1 and paths given as
 Wine's Z: drive has them; a D3DCompiler_47.dll next to the binary is
 taken over Wine's own (Windows-wine-views.yml). The cases that need a
 preset run only on drivers whose views take one.
@@ -624,16 +625,47 @@ def isolated_env():
 XVFB = WINE or os.environ.get('RA_E2E_XVFB') == '1'
 # Cases run side by side, each on an Xvfb of its own, four at a time:
 # most of a case is waiting, so more than the cores still gains. One at
-# a time in gamescope, whose screenshot names one display, and under
-# Wine, whose prefix is shared. RA_E2E_JOBS sets how many.
-JOBS = int(os.environ.get('RA_E2E_JOBS') or 0) or (
-    4 if XVFB and not WINE else 1)
+# a time in gamescope, whose screenshot names one display. Under Wine
+# each worker has a prefix of its own: cases sharing a wineserver move
+# each other's pointer. RA_E2E_JOBS sets how many.
+JOBS = int(os.environ.get('RA_E2E_JOBS') or 0) or (4 if XVFB else 1)
+WINE_PREFIXES = []
+WINE_COPIES = []
+WINE_WORKER = threading.local()
 ONLY = os.environ.get('RA_E2E_ONLY')
 
 
 def wanted(name):
     """Whether RA_E2E_ONLY lets case @name run."""
     return not ONLY or re.search(ONLY, name) is not None
+
+
+def wine_prefixes():
+    """Gives each worker a copy of the prepared prefix, or the prefix
+    itself when there is one worker. The copies go in WINE_COPIES."""
+    base = os.environ.get('WINEPREFIX') or os.path.expanduser('~/.wine')
+    if JOBS == 1:
+        WINE_PREFIXES.append(base)
+        return
+    prepared = os.path.isdir(base)
+    if prepared:
+        subprocess.run(['wineserver', '-w'],
+                       env=dict(os.environ, WINEPREFIX=base))
+    for _ in range(JOBS):
+        p = os.path.join(tempfile.mkdtemp(prefix='ra-e2e-wine-'), 'prefix')
+        WINE_COPIES.append(p)
+        # With no prefix prepared, Wine makes each worker its own.
+        if prepared:
+            shutil.copytree(base, p, symlinks=True)
+        WINE_PREFIXES.append(p)
+
+
+def wine_prefix():
+    """This worker's prefix."""
+    if not hasattr(WINE_WORKER, 'prefix'):
+        with TAKEN_LOCK:
+            WINE_WORKER.prefix = WINE_PREFIXES.pop()
+    return WINE_WORKER.prefix
 
 
 def free_display():
@@ -832,6 +864,7 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
         xvfb, env['DISPLAY'] = xvfb_start(env)
         cmd = cmd[cmd.index('--') + 1:]
     if WINE:
+        env['WINEPREFIX'] = wine_prefix()
         env['WINEDEBUG'] = '-all'
         # A D3DCompiler_47.dll next to the binary (vkd3d-utils, say)
         # over Wine's own.
@@ -1494,12 +1527,21 @@ def main():
     jobs = [j for driver in sys.argv[3:]
             for j in driver_jobs(retroarch, root, driver)]
     failed = 0
-    with ThreadPoolExecutor(max_workers=JOBS) as pool:
-        for future in [pool.submit(j) for j in jobs]:
-            lines, n = future.result()
-            for line in lines:
-                print(line, flush=True)
-            failed += n
+    try:
+        if WINE:
+            wine_prefixes()
+        with ThreadPoolExecutor(max_workers=JOBS) as pool:
+            for future in [pool.submit(j) for j in jobs]:
+                lines, n = future.result()
+                for line in lines:
+                    print(line, flush=True)
+                failed += n
+    finally:
+        for p in WINE_COPIES:
+            subprocess.run(['wineserver', '-k'],
+                           env=dict(os.environ, WINEPREFIX=p),
+                           stderr=subprocess.DEVNULL)
+            shutil.rmtree(os.path.dirname(p), ignore_errors=True)
     print('%d failed' % failed)
     return 1 if failed else 0
 
