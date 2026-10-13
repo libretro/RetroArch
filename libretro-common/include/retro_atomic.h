@@ -1081,14 +1081,14 @@ typedef volatile size_t retro_atomic_size_t;
 static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
-   *p      = old + v;
+   *p      = (int)((unsigned)old + (unsigned)v);
    return old;
 }
 
 static INLINE int retro_atomic_fetch_sub_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
-   *p      = old - v;
+   *p      = (int)((unsigned)old - (unsigned)v);
    return old;
 }
 
