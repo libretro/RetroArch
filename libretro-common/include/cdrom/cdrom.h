@@ -68,6 +68,7 @@ typedef struct
    char drive;
 } cdrom_toc_t;
 
+/* Legacy helpers use absolute MSF frames (device LBA + 150). */
 void cdrom_lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsigned char *frame);
 
 unsigned cdrom_msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame);
@@ -81,6 +82,8 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 /* needs 32 bytes for full vendor, product and version */
 int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t len, bool *is_cdrom);
 
+/* Returns 0 only for a complete read. On error the destination may be
+ * partly filled and must be discarded; VFS leaves the position unchanged. */
 int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
 /* Cooked optical-disc access (DVD uses 2048-byte logical blocks).
@@ -88,6 +91,11 @@ int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t 
  * Capacity is a block count, including the last LBA.  Returns 0 on
  * success, 1 on error/unsupported transport; outputs stay zero on error.
  * READ CAPACITY (10)'s saturated capacity is rejected, not truncated. */
+/* MMC current media profile, zeroed on error. DVD profiles are 0x10-0x17,
+ * 0x1a, 0x1b, 0x2a and 0x2b; CD profiles are 0x08-0x0a. */
+int cdrom_get_media_profile(libretro_vfs_implementation_file *stream,
+      uint16_t *profile);
+
 int cdrom_get_capacity(libretro_vfs_implementation_file *stream,
       uint64_t *blocks, uint32_t *block_size);
 
@@ -133,6 +141,10 @@ bool cdrom_set_read_cache(libretro_vfs_implementation_file *stream, bool enabled
 bool cdrom_get_timeouts(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts);
 
 bool cdrom_has_atip(libretro_vfs_implementation_file *stream);
+
+/* Build a cooked-image URI for a Linux/Windows drive. Returns required
+ * length excluding NUL, or zero for invalid/unsupported arguments. */
+size_t cdrom_device_fillimagepath(char *s, size_t len, char drive);
 
 size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char track, bool is_cue);
 

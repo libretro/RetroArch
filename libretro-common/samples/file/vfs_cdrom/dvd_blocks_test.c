@@ -21,6 +21,8 @@ static unsigned closes;
 #endif
 static uint32_t last_lba = 3000000, sector_size = 2048;
 static int fail_at, short_transfer;
+static int toc_bad;
+static uint16_t media_profile = 0x10;
 static void *direct_buffer;
 static int saw_direct;
 #define CHECK(x) do { if (!(x)) { \
@@ -32,10 +34,72 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
    uint32_t lba, count;
    size_t i;
    calls++;
-   CHECK(cmd[1] == 0 && cmd[6] == 0 && cmd[9] == 0);
-   CHECK(((uintptr_t)buf & 4095) == 0);
+   if (cmd[0] == 0x25 || cmd[0] == 0x28 || cmd[0] == 0x46)
+      CHECK(cmd[1] == 0 && cmd[6] == 0 && cmd[9] == 0);
+   if (cmd[0] != 0xB9)
+      CHECK(((uintptr_t)buf & 4095) == 0);
    if (fail_at && (int)calls == fail_at)
       return 1;
+   if (cmd[0] == 0x46)
+   {
+      CHECK(len == 8);
+      memset(dst, 0, len);
+      dst[3] = 4;
+      dst[6] = (unsigned char)(media_profile >> 8);
+      dst[7] = (unsigned char)media_profile;
+      return 0;
+   }
+   if (cmd[0] == 0xBB)
+      return 0;
+   if (cmd[0] == 0x43)
+   {
+      CHECK(len == 2352);
+      memset(dst, 0, len);
+      if (toc_bad == 1)
+      {
+         dst[0] = 0xff;
+         dst[1] = 0xff;
+      }
+      else
+      {
+         dst[1] = 24;
+         dst[5] = 0x10;
+         dst[7] = 0xa1;
+         dst[12] = 1;
+         dst[16] = 0x14;
+         dst[18] = 1;
+         dst[24] = 2;
+         if (toc_bad == 2)
+         {
+            dst[1] = 35;
+            dst[27] = 0x14;
+            dst[29] = 1;
+            dst[35] = 2;
+         }
+      }
+      return 0;
+   }
+   if (cmd[0] == 0x52)
+   {
+      CHECK(len == 384);
+      memset(dst, 0, len);
+      dst[1] = 34;
+      dst[6] = 1;
+      dst[26] = 3;
+      dst[27] = 0xe8; /* 1000 sectors, device LBA zero */
+      return 0;
+   }
+   if (cmd[0] == 0xB9)
+   {
+      CHECK(len == 2352);
+      memset(dst, cmd[5], len);
+      return 0;
+   }
+   if (cmd[0] == 0x55)
+   {
+      CHECK(len == 8 && dst[0] == 0x5a && dst[7] == 0x7f);
+      return 0;
+   }
    if (cmd[0] == 0x25)
    {
       CHECK(len == 8);
@@ -69,10 +133,13 @@ static BOOL WINAPI drive_ioctl(HANDLE h, DWORD code, LPVOID in,
    SCSI_PASS_THROUGH_DIRECT *s = (SCSI_PASS_THROUGH_DIRECT*)in;
    int rv;
    (void)h; (void)insize; (void)out; (void)outsize; (void)overlapped;
-   CHECK(code == IOCTL_SCSI_PASS_THROUGH_DIRECT && s->CdbLength == 10);
-   CHECK(s->DataIn == SCSI_IOCTL_DATA_IN);
+   CHECK(code == IOCTL_SCSI_PASS_THROUGH_DIRECT && (s->CdbLength == 10 || s->CdbLength == 12));
+   CHECK(s->DataIn == SCSI_IOCTL_DATA_IN
+         || s->DataIn == SCSI_IOCTL_DATA_OUT || s->Cdb[0] == 0xBB);
    rv = drive_command(s->Cdb, s->DataBuffer, s->DataTransferLength);
    s->ScsiStatus = rv ? 2 : 0;
+   if (rv)
+      ((unsigned char*)in)[s->SenseInfoOffset + 2] = 5;
    if (short_transfer)
       s->DataTransferLength--;
    *bytes = insize;
@@ -109,10 +176,12 @@ static int drive_ioctl(int fd, unsigned long request, ...)
    va_start(ap, request);
    s = va_arg(ap, sg_io_hdr_t*);
    va_end(ap);
-   CHECK(request == SG_IO && s->cmd_len == 10);
-   CHECK(s->dxfer_direction == SG_DXFER_FROM_DEV);
+   CHECK(request == SG_IO && (s->cmd_len == 10 || s->cmd_len == 12));
+   CHECK(s->dxfer_direction == SG_DXFER_FROM_DEV
+         || s->dxfer_direction == SG_DXFER_TO_DEV || s->cmdp[0] == 0xBB);
    rv = drive_command(s->cmdp, s->dxferp, s->dxfer_len);
    s->info = rv ? SG_INFO_CHECK : 0;
+   if (rv) s->sbp[2] = 5;
    s->resid = short_transfer ? 1 : 0;
    return 0;
 }
@@ -138,6 +207,11 @@ int main(void)
    static vfs_cdrom_t disc;
    uint64_t blocks;
    uint32_t size;
+   uint16_t profile;
+   cdrom_toc_t *toc;
+   char *cue = NULL;
+   size_t cue_len = 0;
+   unsigned char tracks = 0;
    unsigned char *buf;
    unsigned before;
    size_t i;
@@ -152,6 +226,10 @@ int main(void)
    CHECK(disc.disc_bytes == UINT64_C(6144002048));
    CHECK(cdrom_get_capacity(&stream, &blocks, &size) == 0);
    CHECK(blocks == 3000001 && size == 2048);
+   CHECK(cdrom_get_media_profile(&stream, &profile) == 0 && profile == 0x10);
+   short_transfer = 1;
+   CHECK(cdrom_get_media_profile(&stream, &profile) == 1 && profile == 0);
+   short_transfer = 0;
    last_lba = UINT32_MAX;
    CHECK(cdrom_get_capacity(&stream, &blocks, &size) == 1);
    CHECK(blocks == 0 && size == 0);
@@ -174,6 +252,8 @@ int main(void)
    CHECK(cdrom_read_blocks(&stream, UINT32_MAX, 2, buf) == 1);
    CHECK(cdrom_read_blocks(&stream, 0, 1, NULL) == 1);
    CHECK(cdrom_read_blocks(&stream, 0, 0, NULL) == 0);
+   CHECK(cdrom_read(&stream, NULL, 0, 2, 0, buf, SIZE_MAX, 1) == 1);
+   CHECK(cdrom_read(&stream, NULL, 0, 60, 0, buf, 2352, 0) == 1);
 #if SIZE_MAX == UINT32_MAX
    CHECK(cdrom_read_blocks(&stream, 0, UINT32_MAX, buf) == 1);
 #endif
@@ -199,6 +279,64 @@ int main(void)
    CHECK(retro_vfs_file_read_cdrom(&stream, buf, 2048) == -1);
    CHECK(retro_vfs_file_tell_cdrom(&stream) == 32 * 2048);
    fail_at = 0;
+   disc.last_frame_valid = false;
+   memset(buf, 0xa5, 2352 * 2);
+   fail_at = (int)calls + 1;
+   before = calls;
+   CHECK(cdrom_read(&stream, NULL, 0, 2, 0, buf, 2352 * 2, 0) == 1);
+   CHECK(calls == before + 1 && buf[0] == 0xa5 && buf[2352] == 0xa5);
+   fail_at = 0;
+   disc.last_frame_valid = false;
+   before = calls;
+   CHECK(cdrom_read(&stream, NULL, 0, 2, 0, buf, 2352, 0) == 0);
+   CHECK(cdrom_read(&stream, NULL, 0, 2, 0, buf, 2352, 0) == 0);
+   CHECK(cdrom_read(&stream, NULL, 0, 2, 0, buf, 2352, 0) == 0);
+   CHECK(calls == before + 1);
+   {
+      unsigned char cdb[10] = {0x55, 0, 0, 0, 0, 0, 0, 0, 8, 0};
+      unsigned char payload[8] = {0x5a, 0, 0, 0, 0, 0, 0, 0x7f};
+      CHECK(cdrom_send_command(&stream, DIRECTION_OUT, payload, 8,
+               cdb, sizeof(cdb), 0) == 0);
+      CHECK(payload[0] == 0x5a && payload[7] == 0x7f);
+   }
+   toc = (cdrom_toc_t*)calloc(1, sizeof(*toc));
+   CHECK(toc != NULL);
+   if (toc)
+   {
+      toc_bad = 1;
+      CHECK(cdrom_write_cue(&stream, &cue, &cue_len, '1', &tracks, toc) == 1);
+      CHECK(!cue && !cue_len && !tracks);
+      toc_bad = 2;
+      CHECK(cdrom_write_cue(&stream, &cue, &cue_len, '1', &tracks, toc) == 1);
+      CHECK(!cue && !cue_len && !tracks);
+      toc_bad = 0;
+      short_transfer = 1;
+      CHECK(cdrom_write_cue(&stream, &cue, &cue_len, '1', &tracks, toc) == 0);
+      short_transfer = 0;
+      CHECK(tracks == 1 && toc->track[0].lba_start == 150);
+      CHECK(toc->track[0].track_bytes == 2352000);
+      disc.logical_blocks = false;
+      disc.cur_track = 1;
+      stream.orig_path = "drive1-track01.bin";
+      vfs_cdrom_toc = *toc;
+      CHECK(retro_vfs_file_seek_cdrom(&stream, -2352, SEEK_END) == 0);
+      CHECK(retro_vfs_file_tell_cdrom(&stream) == 2349648);
+      CHECK(disc.cur_lba == 1149);
+      CHECK(retro_vfs_file_seek_cdrom(&stream, -2352001, SEEK_END) == -1);
+      CHECK(retro_vfs_file_tell_cdrom(&stream) == 2349648);
+      fail_at = (int)calls + 1;
+      CHECK(retro_vfs_file_read_cdrom(&stream, buf, 2352) == -1);
+      CHECK(retro_vfs_file_tell_cdrom(&stream) == 2349648);
+      CHECK(retro_vfs_file_error_cdrom(&stream) == 1);
+      fail_at = 0;
+      vfs_cdrom_toc.track[0].audio = true;
+      vfs_cdrom_toc.track[0].lba = 200;
+      CHECK(retro_vfs_file_seek_cdrom(&stream, 0, SEEK_SET) == 0);
+      CHECK(disc.cur_lba == 150);
+      stream.orig_path = IMAGE_PATH;
+      free(cue);
+      free(toc);
+   }
    CHECK(retro_vfs_file_close_cdrom(&stream) == 0);
    memset(&stream, 0, sizeof(stream));
    memset(&disc, 0, sizeof(disc));

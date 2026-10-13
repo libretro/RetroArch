@@ -105,70 +105,36 @@ int64_t retro_vfs_file_seek_cdrom(
          &&  (ext[2] == 'n' || ext[2] == 'N')
          &&   ext[3] == '\0')
    {
-      int lba               = (int)(offset / 2352);
-      unsigned char min     = 0;
-      unsigned char sec     = 0;
-      unsigned char frame   = 0;
-#ifdef CDROM_DEBUG
-      const char *seek_type = "SEEK_SET";
-#endif
-
+      int64_t base, pos;
+      unsigned origin;
+      const cdrom_track_t *track;
+      if (!stream->cdrom->cur_track || stream->cdrom->cur_track > vfs_cdrom_toc.num_tracks)
+         return -1;
+      track = &vfs_cdrom_toc.track[stream->cdrom->cur_track - 1];
       switch (whence)
       {
+         case SEEK_SET:
+            base = 0;
+            break;
          case SEEK_CUR:
-            {
-               unsigned new_lba;
-#ifdef CDROM_DEBUG
-               seek_type               = "SEEK_CUR";
-#endif
-               stream->cdrom->byte_pos += offset;
-               new_lba                 = vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (unsigned)(stream->cdrom->byte_pos / 2352);
-               cdrom_lba_to_msf(new_lba, &min, &sec, &frame);
-            }
+            base = stream->cdrom->byte_pos;
             break;
          case SEEK_END:
-            {
-               ssize_t pregap_lba_len = (vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].audio
-                      ? 0
-                      : (vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba - vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba_start));
-               ssize_t lba_len        = vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].track_size - pregap_lba_len;
-#ifdef CDROM_DEBUG
-               seek_type              = "SEEK_END";
-#endif
-               cdrom_lba_to_msf((unsigned)(lba_len + lba), &min, &sec, &frame);
-               stream->cdrom->byte_pos = lba_len * 2352;
-            }
+            base = track->track_bytes;
             break;
-         case SEEK_SET:
          default:
-            {
-#ifdef CDROM_DEBUG
-               seek_type = "SEEK_SET";
-#endif
-               stream->cdrom->byte_pos = offset;
-               cdrom_lba_to_msf(vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (unsigned)(stream->cdrom->byte_pos / 2352), &min, &sec, &frame);
-            }
-            break;
+            return -1;
       }
-
-      stream->cdrom->cur_min   = min;
-      stream->cdrom->cur_sec   = sec;
-      stream->cdrom->cur_frame = frame;
-      stream->cdrom->cur_lba   = cdrom_msf_to_lba(min, sec, frame);
-
-#ifdef CDROM_DEBUG
-      printf(
-            "[CDROM] Seek %s: Path %s Offset %" PRIu64 " is now at %" PRIu64 " (MSF %02u:%02u:%02u) (LBA %u)...\n",
-            seek_type,
-            stream->orig_path,
-            offset,
-            stream->cdrom->byte_pos,
-            (unsigned)stream->cdrom->cur_min,
-            (unsigned)stream->cdrom->cur_sec,
-            (unsigned)stream->cdrom->cur_frame,
-            stream->cdrom->cur_lba);
-      fflush(stdout);
-#endif
+      if (offset < -base || offset > INT64_MAX - base)
+         return -1;
+      pos = base + offset;
+      origin = track->audio ? track->lba_start : track->lba;
+      if ((uint64_t)(pos / 2352) > UINT32_MAX - origin)
+         return -1;
+      stream->cdrom->byte_pos = pos;
+      stream->cdrom->cur_lba = origin + (unsigned)(pos / 2352);
+      cdrom_lba_to_msf(stream->cdrom->cur_lba, &stream->cdrom->cur_min,
+            &stream->cdrom->cur_sec, &stream->cdrom->cur_frame);
    }
    else
       return -1;
@@ -235,6 +201,8 @@ void retro_vfs_file_open_cdrom(
                 * in place on reject. */
                if (parsed >= 1 && parsed <= 99)
                   stream->cdrom->cur_track = parsed;
+               else
+                  return;
 #ifdef CDROM_DEBUG
                printf("[CDROM] Opening track %d\n", stream->cdrom->cur_track);
                fflush(stdout);
@@ -301,6 +269,8 @@ void retro_vfs_file_open_cdrom(
    size_t path_len   = strlen(path);
    const char *ext   = path_get_extension(path);
 
+   stream->cdrom->cur_track = 1;
+
    if (!retro_vfs_cdrom_valid_image(path, mode))
       return;
 
@@ -323,6 +293,8 @@ void retro_vfs_file_open_cdrom(
              * place on reject. */
             if (parsed >= 1 && parsed <= 99)
                stream->cdrom->cur_track = parsed;
+            else
+               return;
 #ifdef CDROM_DEBUG
             printf("[CDROM] Opening track %d\n", stream->cdrom->cur_track);
             fflush(stdout);
@@ -408,6 +380,8 @@ void retro_vfs_file_open_cdrom(
                 * in place on reject. */
                if (parsed >= 1 && parsed <= 99)
                   stream->cdrom->cur_track = parsed;
+               else
+                  return;
             }
          }
       }
@@ -729,12 +703,15 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
          printf("[CDROM] Failed to read %" PRIu64 " bytes from CD.\n", len);
          fflush(stdout);
 #endif
-         return 0;
+         stream->cdrom->io_error = true;
+         return -1;
       }
 
       stream->cdrom->byte_pos += len;
       stream->cdrom->cur_lba   = 
-         vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba 
+         (vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].audio
+          ? vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba_start
+          : vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba)
          + (unsigned)(stream->cdrom->byte_pos / 2352);
 
       cdrom_lba_to_msf(stream->cdrom->cur_lba,
