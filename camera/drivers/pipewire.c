@@ -347,7 +347,7 @@ static void pwire_camera_stop(void *data)
    retro_assert(camera->stream);
    retro_assert(camera->pw);
 
-   if (pw_stream_get_state(camera->stream, &error) == PW_STREAM_STATE_PAUSED)
+   if (pw_stream_get_state(camera->stream, &error) == PW_STREAM_STATE_STREAMING)
       pipewire_stream_set_active(camera->pw->thread_loop, camera->stream, false);
 }
 

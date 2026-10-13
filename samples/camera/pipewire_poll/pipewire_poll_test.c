@@ -19,10 +19,14 @@ bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name,
 }
 void pipewire_core_deinit(pipewire_core_t *pw) { (void)pw; }
 bool pipewire_core_wait_resync(pipewire_core_t *pw) { (void)pw; return true; }
+static unsigned script_active_calls;
+static bool script_active;
 bool pipewire_stream_set_active(struct pw_thread_loop *loop,
       struct pw_stream *stream, bool active)
 {
-   (void)loop; (void)stream; (void)active;
+   (void)loop; (void)stream;
+   script_active_calls++;
+   script_active = active;
    return true;
 }
 
@@ -100,6 +104,7 @@ static void script_reset(struct pw_buffer *next)
 int main(void)
 {
    pipewire_camera_t       camera;
+   pipewire_core_t         core;
    struct pw_buffer        pwb;
    struct spa_buffer       buf;
    struct spa_data         data;
@@ -113,6 +118,9 @@ int main(void)
    bool                    polled;
 
    memset(&camera, 0, sizeof(camera));
+   memset(&core, 0, sizeof(core));
+   camera.pw = &core;
+   camera.stream = (struct pw_stream*)&camera;
    camera.size.width         = W;
    camera.size.height        = H;
    camera.buffer_output      = out;
@@ -233,6 +241,26 @@ int main(void)
    polled = pwire_camera_poll(&camera, NULL, NULL, NULL);
    CHECK(!polled, "poll reports no frame");
    CHECK(script_dequeues == 0, "no dequeue without a consumer");
+
+   printf("stop streaming camera:\n");
+   script_state = PW_STREAM_STATE_STREAMING;
+   script_active_calls = 0;
+   script_active = true;
+   pwire_camera_stop(&camera);
+   CHECK(script_active_calls == 1 && !script_active,
+         "streaming stop requests deactivation once");
+   printf("stop paused camera:\n");
+   script_state = PW_STREAM_STATE_PAUSED;
+   script_active_calls = 0;
+   pwire_camera_stop(&camera);
+   CHECK(script_active_calls == 0, "paused stop needs no transition");
+   CHECK(pwire_camera_start(&camera), "paused camera can restart");
+   CHECK(script_active_calls == 1 && script_active,
+         "restart requests activation once");
+   script_state = PW_STREAM_STATE_STREAMING;
+   script_active_calls = 0;
+   CHECK(pwire_camera_start(&camera), "streaming camera remains started");
+   CHECK(script_active_calls == 0, "started camera needs no transition");
 
    scaler_ctx_gen_reset(&camera.scaler);
 
