@@ -63,6 +63,27 @@ typedef struct rdvd_highlight
    unsigned display_types[3];
 } rdvd_highlight_t;
 
+typedef struct rdvd_button
+{
+   const uint8_t *command;
+   unsigned x_start;
+   unsigned x_end;
+   unsigned y_start;
+   unsigned y_end;
+   unsigned color;
+   unsigned auto_action;
+   unsigned up;
+   unsigned down;
+   unsigned left;
+   unsigned right;
+} rdvd_button_t;
+
+typedef struct rdvd_button_color
+{
+   uint8_t indices[4];
+   uint8_t alpha[4];
+} rdvd_button_color_t;
+
 /* Parses DVD-Video private_stream_1/2 payloads after the PES header.
  * No allocation or copying. The input must remain valid while the view is
  * used; a demuxer-owned view expires with its originating PES packet.
@@ -83,6 +104,19 @@ bool rdvd_nav_read(const rdvd_packet_t *packet, rdvd_nav_t *out);
  * Display types retain the DVD aspect/letterbox/pan-scan bit masks.
  * Button numbers are local to a group; button_offset is retained verbatim. */
 bool rdvd_highlight_read(const rdvd_packet_t *packet, rdvd_highlight_t *out);
+
+/* Group is zero-based; number is one-based within that group.
+ * Coordinates and neighbors are validated. command borrows eight bytes
+ * from the PCI input with the same lifetime as its originating PES view.
+ * No command or auto-action is executed. Failure clears the output. */
+bool rdvd_button_read(const rdvd_packet_t *packet, unsigned group,
+      unsigned number, rdvd_button_t *out);
+
+/* color is 1..3; activated selects the action rather than selection entry.
+ * Indices address the IFO/PGC palette, not RGB values. Alpha is 0..15.
+ * A button color of zero has no table entry. Failure clears the output. */
+bool rdvd_button_color_read(const rdvd_packet_t *packet, unsigned color,
+      bool activated, rdvd_button_color_t *out);
 
 RETRO_END_DECLS
 #endif

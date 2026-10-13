@@ -74,9 +74,99 @@ static void test_highlight(void)
    CHECK(!rdvd_highlight_read(&p, NULL));
 }
 
+static void fill_buttons(void)
+{
+   static const uint8_t geometry[10] = {
+      0x85, 0x50, 0xaa, 0x45, 0x60, 0xbb, 1, 2, 3, 4
+   };
+   unsigned i, n;
+   for (i = 0; i < 36; i++)
+   {
+      uint8_t *p = pci + 142 + 18 * i;
+      memcpy(p, geometry, sizeof(geometry));
+      for (n = 0; n < 8; n++) p[10 + n] = (uint8_t)(i + n);
+   }
+}
+
+static void test_buttons(void)
+{
+   rdvd_packet_t p;
+   rdvd_button_t b;
+   unsigned groups, group, number, n;
+   for (groups = 1; groups <= 3; groups++)
+   {
+      p = fixture(groups, 36 / groups);
+      fill_buttons();
+      for (group = 0; group < groups; group++)
+         for (number = 1; number <= 36 / groups; number++)
+         {
+            unsigned slot = group * (36 / groups) + number - 1;
+            CHECK(rdvd_button_read(&p, group, number, &b));
+            CHECK(b.x_start == 85 && b.x_end == 170 && b.color == 2);
+            CHECK(b.y_start == 86 && b.y_end == 187 && b.auto_action == 1);
+            CHECK(b.up == 1 && b.down == 2 && b.left == 3 && b.right == 4);
+            CHECK(b.command == pci + 142 + slot * 18 + 10);
+            for (n = 0; n < 8; n++) CHECK(b.command[n] == slot + n);
+         }
+      CHECK(!rdvd_button_read(&p, groups, 1, &b) && !b.command);
+      CHECK(!rdvd_button_read(&p, 0, 0, &b));
+      CHECK(!rdvd_button_read(&p, 0, 36 / groups + 1, &b));
+      CHECK(!rdvd_button_read(&p, (unsigned)-1, 1, &b));
+      CHECK(!rdvd_button_read(&p, 0, (unsigned)-1, &b));
+   }
+   for (n = 0; n < 4; n++)
+   {
+      p = fixture(1, 4); fill_buttons();
+      pci[142 + 6 + n] = 5;
+      CHECK(!rdvd_button_read(&p, 0, 1, &b) && !b.command);
+   }
+   p = fixture(1, 4); fill_buttons(); pci[142 + 2] = 1;
+   CHECK(!rdvd_button_read(&p, 0, 1, &b));
+   p = fixture(1, 4); fill_buttons(); pci[142 + 5] = 1;
+   CHECK(!rdvd_button_read(&p, 0, 1, &b));
+   p = fixture(1, 4); fill_buttons(); pci[142 + 3] = 0x85;
+   CHECK(!rdvd_button_read(&p, 0, 1, &b));
+   p = fixture(1, 4); fill_buttons();
+   pci[142] = 0xbf; pci[143] = 0xf3; pci[144] = 0xff;
+   pci[145] = 0x7f; pci[146] = 0xf3; pci[147] = 0xff;
+   CHECK(rdvd_button_read(&p, 0, 1, &b));
+   CHECK(b.x_start == 1023 && b.x_end == 1023 && b.y_start == 1023 && b.y_end == 1023);
+   p = fixture(1, 4); fill_buttons(); pci[97] = 0;
+   CHECK(!rdvd_button_read(&p, 0, 1, &b));
+   CHECK(!rdvd_button_read(NULL, 0, 1, &b));
+   CHECK(!rdvd_button_read(&p, 0, 1, NULL));
+}
+
+static void test_colors(void)
+{
+   rdvd_packet_t p = fixture(1, 4);
+   rdvd_button_color_t c;
+   unsigned color, state, i;
+   for (color = 1; color <= 3; color++)
+      for (state = 0; state < 2; state++)
+      {
+         unsigned offset = 118 + (color - 1) * 8 + state * 4;
+         pci[offset] = (uint8_t)(0x10 + color); pci[offset + 1] = (uint8_t)(0x30 + state);
+         pci[offset + 2] = (uint8_t)(0x50 + color); pci[offset + 3] = (uint8_t)(0x70 + state);
+         CHECK(rdvd_button_color_read(&p, color, state != 0, &c));
+         for (i = 0; i < 4; i++)
+         {
+            CHECK(c.indices[i] == (i == 0 ? state : i == 1 ? 3 : i == 2 ? color : 1));
+            CHECK(c.alpha[i] == (i == 0 ? state : i == 1 ? 7 : i == 2 ? color : 5));
+         }
+      }
+   CHECK(!rdvd_button_color_read(&p, 0, false, &c) && !c.indices[0]);
+   CHECK(!rdvd_button_color_read(&p, 4, false, &c));
+   CHECK(!rdvd_button_color_read(&p, (unsigned)-1, false, &c));
+   CHECK(!rdvd_button_color_read(NULL, 1, false, &c));
+   CHECK(!rdvd_button_color_read(&p, 1, false, NULL));
+}
+
 int main(void)
 {
    test_highlight();
+   test_buttons();
+   test_colors();
    printf("DVD highlight tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

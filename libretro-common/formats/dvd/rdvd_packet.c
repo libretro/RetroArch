@@ -143,3 +143,60 @@ bool rdvd_highlight_read(const rdvd_packet_t *packet, rdvd_highlight_t *out)
    *out = h;
    return true;
 }
+
+bool rdvd_button_read(const rdvd_packet_t *packet, unsigned group,
+      unsigned number, rdvd_button_t *out)
+{
+   rdvd_highlight_t h;
+   rdvd_button_t b;
+   const uint8_t *p;
+   uint32_t x, y;
+   if (!out)
+      return false;
+   memset(out, 0, sizeof(*out));
+   if (!rdvd_highlight_read(packet, &h) || !h.status || group >= h.groups
+         || !number || number > h.buttons)
+      return false;
+   p = packet->data + 142 + (group * (36 / h.groups) + number - 1) * 18;
+   memset(&b, 0, sizeof(b));
+   x = ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | p[2];
+   y = ((uint32_t)p[3] << 16) | ((uint32_t)p[4] << 8) | p[5];
+   b.color = x >> 22;
+   b.x_start = (x >> 12) & 1023;
+   b.x_end = x & 1023;
+   b.auto_action = y >> 22;
+   b.y_start = (y >> 12) & 1023;
+   b.y_end = y & 1023;
+   b.up = p[6] & 63;
+   b.down = p[7] & 63;
+   b.left = p[8] & 63;
+   b.right = p[9] & 63;
+   if (b.x_start > b.x_end || b.y_start > b.y_end || b.auto_action > 1
+         || b.up > h.buttons || b.down > h.buttons
+         || b.left > h.buttons || b.right > h.buttons)
+      return false;
+   b.command = p + 10;
+   *out = b;
+   return true;
+}
+
+bool rdvd_button_color_read(const rdvd_packet_t *packet, unsigned color,
+      bool activated, rdvd_button_color_t *out)
+{
+   rdvd_highlight_t h;
+   uint32_t word;
+   unsigned i;
+   if (!out)
+      return false;
+   memset(out, 0, sizeof(*out));
+   if (!color || color > 3 || !rdvd_highlight_read(packet, &h)
+         || !h.status || !h.buttons)
+      return false;
+   word = rdvd_u32(packet->data + 118 + (color - 1) * 8 + (activated ? 4 : 0));
+   for (i = 0; i < 4; i++)
+   {
+      out->indices[i] = (uint8_t)((word >> (16 + 4 * i)) & 15);
+      out->alpha[i] = (uint8_t)((word >> (4 * i)) & 15);
+   }
+   return true;
+}
