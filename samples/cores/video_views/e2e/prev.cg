@@ -1,0 +1,21 @@
+/* Draws the frame seven back instead of its input: on a still frame
+ * the same, unless the history is another view's or the whole frame's */
+struct prev
+{
+   float2 video_size;
+   float2 texture_size;
+   sampler2D texture;
+};
+
+void main_vertex(float4 position : POSITION, float2 texCoord : TEXCOORD0,
+      uniform float4x4 modelViewProj,
+      out float4 oPosition : POSITION, out float2 oTexCoord : TEXCOORD0)
+{
+   oPosition = mul(modelViewProj, position);
+   oTexCoord = texCoord;
+}
+
+float4 main_fragment(float2 texCoord : TEXCOORD0, uniform prev PREV6) : COLOR
+{
+   return tex2D(PREV6.texture, texCoord);
+}

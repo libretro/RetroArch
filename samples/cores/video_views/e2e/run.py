@@ -284,13 +284,21 @@ GL_PRESETS = [('-preset', os.path.join(HERE, 'pass.glslp')),
               ('-preset-prev', os.path.join(HERE, 'prev.glslp')),
               ('-preset-prev-one', os.path.join(HERE, 'prev_one.glslp')),
               ('-preset-feedback', os.path.join(HERE, 'feedback.glslp'))]
+# d3d9_hlsl takes Cg presets the same, but for feedback, which it has not.
+D3D9_PRESETS = [('-preset', os.path.join(HERE, 'pass.cgp')),
+                ('-preset-viewport', os.path.join(HERE, 'pass_viewport.cgp')),
+                ('-preset-one', os.path.join(HERE, 'pass_one.cgp')),
+                ('-preset-prev', os.path.join(HERE, 'prev.cgp')),
+                ('-preset-prev-one', os.path.join(HERE, 'prev_one.cgp'))]
+# {driver: its presets of its own shader language}
+DRIVER_PRESETS = {'gl': GL_PRESETS, 'd3d9_hlsl': D3D9_PRESETS}
 GL_PRESET_CASES = ('3ds-sbs-full', '3ds-top-bottom', '3ds-anaglyph',
                    '3ds-interlaced', 'ds-horizontal')
 # Drivers whose views' presets have each view of a software frame written
 # straight out of it into a texture of its own, not read in place. Not
 # vulkan's, which does from a staging buffer but copies from a linear
 # image, as for lavapipe's XRGB8888 frames.
-WRITE_SW_VIEWS = ('gl', 'glcore', 'd3d10', 'd3d11', 'd3d12')
+WRITE_SW_VIEWS = ('gl', 'glcore', 'd3d9_hlsl', 'd3d10', 'd3d11', 'd3d12')
 # Drivers whose views' presets read a software frame's views where they
 # lie when they can.
 SW_IN_PLACE_DRIVERS = ('glcore', 'vulkan')
@@ -319,7 +327,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
                   'd3d11', 'd3d12')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
-GL_PRESET_RE = re.compile(r'\[GL\] Views drawn through the preset')
+PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
 WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')
 # The core's 2D maps, as (x, y, width, height) in the packed frame.
@@ -1313,13 +1321,13 @@ def driver_jobs(retroarch, root, driver):
                                    else ' (hw ' + hw + ')'), errors), \
             bool(errors)
 
-    def gl_preset(case, suffix, preset):
+    def own_preset(case, suffix, preset):
         name, mapopt, settings, points = case
         c = (name + suffix, mapopt,
              dict(settings, video_shader_enable='true'), points)
         errors = run_case(retroarch, root, driver, c,
                           args=('--set-shader=' + preset,))
-        if not direct_drawn(case_dir(root, driver, c[0]), GL_PRESET_RE):
+        if not direct_drawn(case_dir(root, driver, c[0]), PRESET_RE):
             errors.append('views not drawn through the preset')
         if not direct_drawn(case_dir(root, driver, c[0]), WRITE_SW_RE):
             errors.append('views not written straight in')
@@ -1334,9 +1342,8 @@ def driver_jobs(retroarch, root, driver):
         if driver == 'glcore':
             runs.append(('-preset-blit', NO_COPY_IMAGE,
                          'framebuffer blits', HISTORY_PRESET))
-        if driver == 'gl':
-            runs += [(suffix, None, None, preset)
-                     for suffix, preset in GL_PRESETS]
+        runs += [(suffix, None, None, preset)
+                 for suffix, preset in DRIVER_PRESETS.get(driver, [])]
         first, lines, failed = None, [], 0
         for suffix, env_extra, path, preset in runs:
             errors, rows = run_exact_case(
@@ -1448,10 +1455,10 @@ def driver_jobs(retroarch, root, driver):
         runs += [(case, 'vulkan') for case in VULKAN_CROP_CASES]
     jobs += [lambda c=c, hw=hw: plain(c, hw)
              for c, hw in runs if wanted(c[0])]
-    jobs += [lambda c=c, x=x, p=p: gl_preset(c, x, p)
-             for c in (CASES if driver == 'gl' else [])
+    jobs += [lambda c=c, x=x, p=p: own_preset(c, x, p)
+             for c in (CASES if driver in DRIVER_PRESETS else [])
              if c[0] in GL_PRESET_CASES and wanted(c[0])
-             for x, p in GL_PRESETS]
+             for x, p in DRIVER_PRESETS[driver]]
     jobs += [lambda c=c: exact(c) for c in EXACT_CASES
              if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]
     jobs += [lambda p=p, i=i, t=t: rect(p, i, t)

@@ -94,6 +94,7 @@ typedef struct d3d9_views
    bool                  layer;
    bool                  active;
    bool                  direct_seen;
+   bool                  preset_seen;
 } d3d9_views_t;
 #endif
 

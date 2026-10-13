@@ -13,11 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* D3D9's views, shared by its HLSL and Cg drivers, which differ only in
- * how a pixel shader is made and bound. Each view is drawn straight from
- * the frame's texture; anaglyph and interlaced blend a canvas of both
- * eyes; the UI is drawn once into a layer placed in each eye. Quads are
- * pretransformed, so no vertex shader is bound.
+/* D3D9's views, shared by its HLSL and Cg drivers, which differ in how
+ * a pixel shader is made and bound, and in whether a preset draws views.
+ * The stock chain draws each view straight from the frame's texture, a
+ * preset each through a chain of its own; anaglyph and interlaced blend
+ * a canvas of both eyes; the UI is drawn once into a layer placed in
+ * each eye. The views' own quads are pretransformed, so no vertex shader
+ * is bound for them.
  *
  * Define before including, then include once per driver:
  *   D3D9V_FN(name)             the driver's prefix for name
@@ -28,6 +30,13 @@
  *                              if it can't be made
  *   D3D9V_PS_FREE(d3d, i)      views.ps[i] let go
  *   D3D9V_PS_BIND(d3d, i)      views.ps[i] bound
+ *   D3D9V_PRESETS              defined where a preset draws views:
+ *   D3D9V_CHAINS_BUILD(d3d, map)   a preset chain in views.chains for
+ *                              each of the map's views that has none
+ *   D3D9V_CHAINS_FREE(d3d, first)  the preset chains from @first on
+ *                              let go
+ *   D3D9V_PASS(d3d, d, c, dst, cut, again)  as video_views_draw.h's
+ *                              VV_PASS
  * The macros are undefined again at the end. */
 
 #include <string.h>
@@ -36,12 +45,16 @@
 #include "../video_defines.h"
 #include "../drivers/d3d_shaders/views_sm2.hlsl.h"
 
-/* What a frame's placement draws read: the frame's texture, its size,
- * filter and rotation */
+/* What a frame's placement draws read: the frame, @pitch bytes a row,
+ * its texture, that's size, filter and rotation, and the rectangle each
+ * view's chain is sized for */
 struct d3d9_views_draw
 {
    const video_frame_info_t *video_info;
+   const void *frame;
+   const video_views_rect_t *rects;
    LPDIRECT3DTEXTURE9 tex;
+   unsigned pitch;
    unsigned tex_dims;
    DWORD filter;
    unsigned rotation;
@@ -61,27 +74,38 @@ static bool D3D9V_FN(views_target_make)(d3d9_video_t *d3d,
 static bool D3D9V_FN(views_target_retire)(d3d9_video_t *d3d,
       d3d9_views_target_t *t);
 
-/* The views compositor, with these calls bound in. A preset draws the
- * frame whole: every view is drawn straight from the frame, its chain
- * the driver itself. */
+/* The views compositor, with these calls bound in. The stock chain's
+ * views are drawn straight from the frame, so their chain is the driver
+ * itself; a preset's chains are the driver's. Parameters are read from
+ * the preset as each pass draws. */
 #define VV_FN(name)                     D3D9V_FN(vv_##name)
 #define VV_DRV                          d3d9_video_t
-#define VV_CHAIN                        d3d9_video_t
+#define VV_CHAIN                        void
 #define VV_CREATE_STOCK(drv)            ((void*)(drv))
 #define VV_SYNC_PARAMS(drv, c)          ((void)0)
 #define VV_DRAW                         struct d3d9_views_draw
 #define VV_DIRECT(p, d, v, r, c)        D3D9V_FN(views_draw_direct)(p, d, v, r, c)
-#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_PASS(p, d, f, r, c, a)       D3D9V_PASS(p, d, f, r, c, a)
 #define VV_TARGET                       d3d9_views_target_t
 #define VV_TARGET_MAKE(drv, t, dims)    D3D9V_FN(views_target_make)(drv, t, dims)
 #define VV_TARGET_RETIRE(drv, t)        D3D9V_FN(views_target_retire)(drv, t)
 #include "../video_views_draw.h"
 
-/* Not with a preset, which draws the frame whole, nor once the shaders
- * couldn't be made */
+/* Whether a preset is loaded */
+static bool D3D9V_FN(views_preset)(const d3d9_video_t *d3d)
+{
+   return d3d->shader_path && *d3d->shader_path;
+}
+
+/* Not once the shaders couldn't be made, nor with a preset where a
+ * preset draws the frame whole */
 static bool D3D9V_FN(views_allowed)(const d3d9_video_t *d3d)
 {
-   return !d3d->views.failed && !(d3d->shader_path && *d3d->shader_path);
+#ifdef D3D9V_PRESETS
+   return !d3d->views.failed;
+#else
+   return !d3d->views.failed && !D3D9V_FN(views_preset)(d3d);
+#endif
 }
 
 static void D3D9V_FN(views_publish)(d3d9_video_t *d3d)
@@ -124,6 +148,7 @@ static bool D3D9V_FN(views_target_make)(d3d9_video_t *d3d,
 static void D3D9V_FN(views_release)(d3d9_video_t *d3d)
 {
    unsigned i;
+   D3D9V_CHAINS_FREE(d3d, 0);
    D3D9V_FN(vv_target_drop)(d3d, &d3d->views.canvas_target,
          &d3d->views.canvas);
    D3D9V_FN(vv_target_drop)(d3d, &d3d->views.ui_target, &d3d->views.ui);
@@ -135,9 +160,9 @@ static void D3D9V_FN(views_release)(d3d9_video_t *d3d)
       d3d->views.ps_reg[i] = -1;
    }
    d3d->views.tried  = false;
-   d3d->views.failed = false;
-   d3d->views.blend  = false;
-   d3d->views.layer  = false;
+   d3d->views.failed      = false;
+   d3d->views.blend       = false;
+   d3d->views.layer       = false;
 }
 
 /* The shaders views draw with, made on first use: most sessions never
@@ -259,15 +284,16 @@ static void D3D9V_FN(views_draw_direct)(d3d9_video_t *d3d,
 }
 
 /* Whether this frame draws its views, with each drawn view's chain
- * picked and the rectangle its first placement takes, and in *blend
- * whether into the canvas. Drawn whole when the stereo mode or the UI
- * would need a canvas or layer that can't be had. @menu: the menu is
- * up. */
+ * picked and the rectangle its first placement takes, in *blend
+ * whether into the canvas, and in *direct whether straight from the
+ * frame. Drawn whole when the stereo mode or the UI would need a canvas
+ * or layer that can't be had. @menu: the menu is up. */
 static bool D3D9V_FN(views_setup)(d3d9_video_t *d3d,
       video_frame_info_t *video_info, const char *msg, bool menu,
-      bool *blend, d3d9_video_t **chains, video_views_rect_t *rects)
+      bool *blend, bool *direct, void **chains, video_views_rect_t *rects)
 {
    bool views, per_eye, ui;
+   bool stock = !D3D9V_FN(views_preset)(d3d);
    const video_views_layout_t *layout = &video_info->views_layout;
    bool offscreen = video_info->views.num_views && layout->offscreen;
 
@@ -296,15 +322,29 @@ static bool D3D9V_FN(views_setup)(d3d9_video_t *d3d,
       && D3D9V_FN(views_allowed)(d3d)
       && (!offscreen || *blend)
       && (!ui || d3d->views.layer)
-      && video_views_fit_frame(&video_info->views, d3d->views.frame_dims)
+      && video_views_fit_frame(&video_info->views, d3d->views.frame_dims);
+#ifdef D3D9V_PRESETS
+   if (views && !stock)
+      D3D9V_CHAINS_BUILD(d3d, &video_info->views);
+#endif
+   views = views
       && D3D9V_FN(vv_pick_chains)(d3d, &d3d->views.chains,
-            &video_info->views, layout, true, *blend || !layout->offscreen,
+            &video_info->views, layout, stock, *blend || !layout->offscreen,
             *blend ? layout->canvas_dims : video_info->dims, chains, rects);
-   *blend = views && *blend;
-   if (views && !d3d->views.direct_seen)
+   *blend  = views && *blend;
+   *direct = views && stock;
+   if (*direct && !d3d->views.direct_seen)
    {
       d3d->views.direct_seen = true;
       RARCH_LOG(D3D9V_TAG " Views drawn straight from the frame.\n");
+   }
+   if (views && !stock && !d3d->views.preset_seen)
+   {
+      d3d->views.preset_seen = true;
+      RARCH_LOG(D3D9V_TAG " Views drawn through the preset, each by a "
+            "chain of its own.\n");
+      RARCH_LOG(D3D9V_TAG " Views' presets have each view of a software "
+            "frame written straight in.\n");
    }
    return views;
 }
@@ -338,10 +378,12 @@ static void D3D9V_FN(views_viewport)(d3d9_video_t *d3d, unsigned dims)
 }
 
 /* Draws the views into the back buffer, or with @blend into the canvas,
- * whose halves one pass then blends into the back buffer. Leaves no
- * vertex or pixel shader bound. */
+ * whose halves one pass then blends into the back buffer: with @direct
+ * each straight from the frame, else through its chain. Leaves the
+ * driver's shaders to be bound again. */
 static void D3D9V_FN(views_render)(d3d9_video_t *d3d,
-      const struct d3d9_views_draw *d, d3d9_video_t **chains, bool blend)
+      const struct d3d9_views_draw *d, void **chains, bool blend,
+      bool direct)
 {
    video_views_rect_t whole;
    LPDIRECT3DSURFACE9 back            = NULL;
@@ -365,11 +407,16 @@ static void D3D9V_FN(views_render)(d3d9_video_t *d3d,
    if (blend)
       IDirect3DDevice9_Clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0);
 
-   IDirect3DDevice9_BeginScene(d3d->dev);
-   D3D9V_PS_BIND(d3d, D3D9_VIEWS_PS_RECT);
-   D3D9V_FN(views_sample)(d3d, d->tex, d->filter);
+   if (direct)
+   {
+      IDirect3DDevice9_BeginScene(d3d->dev);
+      D3D9V_PS_BIND(d3d, D3D9_VIEWS_PS_RECT);
+      D3D9V_FN(views_sample)(d3d, d->tex, d->filter);
+   }
    D3D9V_FN(vv_draw_placements)(d3d, d, layout, chains,
-         blend || !layout->offscreen, dims, true);
+         blend || !layout->offscreen, dims, direct);
+   if (direct)
+      IDirect3DDevice9_EndScene(d3d->dev);
 
    if (blend)
    {
@@ -386,6 +433,10 @@ static void D3D9V_FN(views_render)(d3d9_video_t *d3d,
       uv[3] = 1.0f;
       IDirect3DDevice9_SetRenderTarget(d3d->dev, 0, back);
       IDirect3DSurface9_Release(back);
+      IDirect3DDevice9_SetVertexShader(d3d->dev, NULL);
+      IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE,
+            FALSE);
+      IDirect3DDevice9_BeginScene(d3d->dev);
       D3D9V_FN(views_viewport)(d3d, info->dims);
       whole.dims = info->dims;
       D3D9V_FN(views_cut)(d3d, &whole);
@@ -394,8 +445,8 @@ static void D3D9V_FN(views_render)(d3d9_video_t *d3d,
             d3d->views.ps_reg[D3D9_VIEWS_PS_BLEND], c, 1);
       D3D9V_FN(views_sample)(d3d, d3d->views.canvas.tex, D3DTEXF_POINT);
       D3D9V_FN(views_quad)(d3d, &whole, uv, 0);
+      IDirect3DDevice9_EndScene(d3d->dev);
    }
-   IDirect3DDevice9_EndScene(d3d->dev);
    whole.dims = info->dims;
    D3D9V_FN(views_cut)(d3d, &whole);
    IDirect3DDevice9_SetTexture(d3d->dev, 0, NULL);
@@ -503,6 +554,7 @@ static void D3D9V_FN(set_view_count)(void *data, unsigned count)
    if (!d3d)
       return;
    d3d->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   D3D9V_CHAINS_FREE(d3d, d3d->views.chains.count);
    for (i = d3d->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
       d3d->views.chains.stock[i] = NULL;
 }
@@ -512,3 +564,7 @@ static void D3D9V_FN(set_view_count)(void *data, unsigned count)
 #undef D3D9V_PS_MAKE
 #undef D3D9V_PS_FREE
 #undef D3D9V_PS_BIND
+#undef D3D9V_PRESETS
+#undef D3D9V_CHAINS_BUILD
+#undef D3D9V_CHAINS_FREE
+#undef D3D9V_PASS

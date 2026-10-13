@@ -3282,6 +3282,8 @@ static bool d3d9_cg_views_ps_make(d3d9_video_t *d3d, unsigned i,
 #define D3D9V_PS_MAKE(d, i, src)   d3d9_cg_views_ps_make(d, i, src)
 #define D3D9V_PS_FREE(d, i)        cgDestroyProgram((CGprogram)(d)->views.ps[i])
 #define D3D9V_PS_BIND(d, i)        cgD3D9BindProgram((CGprogram)(d)->views.ps[i])
+#define D3D9V_CHAINS_FREE(d, first) ((void)0)
+#define D3D9V_PASS(p, d, c, r, cut, again) ((void)0)
 #include "../common/d3d9_views.h"
 #endif
 
@@ -4486,10 +4488,11 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #endif
    bool views_per_eye                  = false;
 #ifdef D3D9_VIEWS
-   d3d9_video_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   void *view_chains[RETRO_VIDEO_VIEWS_MAX];
    video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
    bool views                          = false;
    bool views_blend                    = false;
+   bool views_direct                   = false;
    bool views_ui                       = false;
 #endif
 
@@ -4526,8 +4529,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 #ifdef D3D9_VIEWS
    d3d->views.frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
    views = d3d9_cg_views_setup(d3d, video_info, msg,
-         d3d->menu && d3d->menu->enabled, &views_blend, view_chains,
-         view_rects);
+         d3d->menu && d3d->menu->enabled, &views_blend, &views_direct,
+         view_chains, view_rects);
    /* The viewport is the whole window while views draw. */
    if (views != d3d->views.active)
    {
@@ -4592,13 +4595,16 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       cg_renderchain_t *_chain  = (cg_renderchain_t*)d3d->renderchain_data;
       struct shader_pass *first = &_chain->chain.passes->data[0];
       d.video_info = video_info;
+      d.frame      = frame;
+      d.rects      = view_rects;
+      d.pitch      = pitch;
       d.tex        = _chain->chain.prev.tex[_chain->chain.prev.ptr];
       d.tex_dims   = first->info.tex_dims;
       d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
       d.rotation   = d3d->dev_rotation;
       d3d9_cg_views_upload(d.tex, frame, frame_height,
             (size_t)frame_width * _chain->chain.pixel_size, pitch);
-      d3d9_cg_views_render(d3d, &d, view_chains, views_blend);
+      d3d9_cg_views_render(d3d, &d, view_chains, views_blend, views_direct);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
    }
@@ -5142,14 +5148,16 @@ bool d3d9_cg_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    {
       unsigned x, y;
-      unsigned vp_width       = (d3d->out_vp.Width  > width)  ? width  : d3d->out_vp.Width;
-      unsigned vp_height      = (d3d->out_vp.Height > height) ? height : d3d->out_vp.Height;
+      /* The viewport's rows bottom up, kept inside the surface */
+      unsigned vp_x           = MIN(d3d->out_vp.X, width);
+      unsigned vp_y           = MIN(d3d->out_vp.Y, height);
+      unsigned vp_width       = MIN(d3d->out_vp.Width,  width  - vp_x);
+      unsigned vp_height      = MIN(d3d->out_vp.Height, height - vp_y);
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->out_vp.X;
-      pixels                 += (vp_height - 1) * pitchpix;
-      pixels                 -= d3d->out_vp.Y * pitchpix;
+      pixels                 += vp_x;
+      pixels                 += (size_t)(vp_y + vp_height - 1) * pitchpix;
 
       for (y = 0; y < vp_height; y++, pixels -= pitchpix)
       {

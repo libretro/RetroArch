@@ -1,0 +1,14 @@
+/* Copies its input: a Cg pass for d3d9's preset cases */
+void main_vertex(float4 position : POSITION, float2 texCoord : TEXCOORD0,
+      uniform float4x4 modelViewProj,
+      out float4 oPosition : POSITION, out float2 oTexCoord : TEXCOORD0)
+{
+   oPosition = mul(modelViewProj, position);
+   oTexCoord = texCoord;
+}
+
+float4 main_fragment(float2 texCoord : TEXCOORD0,
+      uniform sampler2D decal : TEXUNIT0) : COLOR
+{
+   return tex2D(decal, texCoord);
+}

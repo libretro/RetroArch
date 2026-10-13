@@ -273,7 +273,8 @@ static INLINE bool d3d9_hlsl_renderchain_set_pass_size(
 {
    if (pass->info.tex_dims != dims)
    {
-      IDirect3DTexture9_Release(pass->tex);
+      if (pass->tex)
+         IDirect3DTexture9_Release(pass->tex);
 
       pass->info.tex_dims = dims;
       pass->pool          = D3DPOOL_DEFAULT;
@@ -299,30 +300,33 @@ static INLINE bool d3d9_hlsl_renderchain_set_pass_size(
    return true;
 }
 
+/* The passes' textures sized for @shader's scales, from the frame's
+ * texture to a viewport @vp */
 static INLINE void d3d9_recompute_pass_sizes(
       LPDIRECT3DDEVICE9 dev,
       d3d9_hlsl_renderchain_t *chain,
-      d3d9_video_t *d3d)
+      struct video_shader *shader,
+      const D3DVIEWPORT9 *vp)
 {
    int i;
    struct LinkInfo link_info;
-   unsigned input_scale              = d3d->video_info.input_scale
-      * RARCH_SCALE_BASE;
-   unsigned current_width            = input_scale;
-   unsigned current_height           = input_scale;
+   /* The first pass's texture is the frame's, which
+    * d3d9_hlsl_renderchain_fit_frame sizes. */
+   unsigned current_width            = VIDEO_SCALE_W(
+         chain->passes->data[0].info.tex_dims);
+   unsigned current_height           = VIDEO_SCALE_H(
+         chain->passes->data[0].info.tex_dims);
    unsigned out_width                = 0;
    unsigned out_height               = 0;
 
-   /* The first pass's texture is the frame's, which
-    * d3d9_hlsl_renderchain_fit_frame sizes. */
-   link_info.pass                    = &d3d->shader.pass[0];
+   link_info.pass                    = &shader->pass[0];
 
-   for (i = 1; i < (int) d3d->shader.passes; i++)
+   for (i = 1; i < (int) shader->passes; i++)
    {
       switch (link_info.pass->fbo.type_x)
       {
          case RARCH_SCALE_VIEWPORT:
-            out_width = link_info.pass->fbo.scale_x * d3d->out_vp.Width;
+            out_width = link_info.pass->fbo.scale_x * vp->Width;
             break;
          case RARCH_SCALE_ABSOLUTE:
             out_width = link_info.pass->fbo.abs_x;
@@ -334,7 +338,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       switch (link_info.pass->fbo.type_y)
       {
          case RARCH_SCALE_VIEWPORT:
-            out_height = link_info.pass->fbo.scale_y * d3d->out_vp.Height;
+            out_height = link_info.pass->fbo.scale_y * vp->Height;
             break;
          case RARCH_SCALE_ABSOLUTE:
             out_height = link_info.pass->fbo.abs_y;
@@ -360,7 +364,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       current_width  = out_width;
       current_height = out_height;
 
-      link_info.pass = &d3d->shader.pass[i];
+      link_info.pass = &shader->pass[i];
    }
 }
 
@@ -676,6 +680,14 @@ typedef struct hlsl_renderchain
     * tried; one bit each, MENU at bit 0 */
    uint8_t           pipeline_ready;
    uint8_t           pipeline_tried;
+   /* A view's chain: its view, the viewport its passes are sized for,
+    * that viewport's size packed, its last pass's input size, and
+    * whether it ran this frame */
+   D3DVIEWPORT9      view_vp;
+   unsigned          view;
+   unsigned          sized_dims;
+   unsigned          last_dims;
+   bool              ran;
 } hlsl_renderchain_t;
 
 static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
@@ -2196,6 +2208,31 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    return true;
 }
 
+/* The MVP a pass draws with, its quad turned @rotation quarter turns */
+static const float *d3d9_hlsl_rotation_mvp(d3d9_video_t *d3d,
+      unsigned rotation)
+{
+   /* Flat arrays matching register/column layout for
+    * SetVertexShaderConstantF + HLSL mul(matrix, vector).
+    * Each group of 4 = one register = one column.
+    * clip.x = c0.x*x + c1.x*y + c2.x*z + c3.x*w
+    * clip.y = c0.y*x + c1.y*y + c2.y*z + c3.y*w */
+   static const float rot90[16]  = {
+       0, 2, 0, 0, -2, 0, 0, 0, 0, 0, 1, 0, 1,-1, 0, 1 };
+   static const float rot180[16] = {
+      -2, 0, 0, 0,  0,-2, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1 };
+   static const float rot270[16] = {
+       0,-2, 0, 0,  2, 0, 0, 0, 0, 0, 1, 0,-1, 1, 0, 1 };
+   switch (rotation)
+   {
+      case 1: return rot90;
+      case 2: return rot180;
+      case 3: return rot270;
+      default: break;
+   }
+   return (const float*)&d3d->mvp;
+}
+
 static void d3d9_hlsl_renderchain_render_pass(
       d3d9_video_t *d3d,
       hlsl_renderchain_t *chain,
@@ -2203,41 +2240,17 @@ static void d3d9_hlsl_renderchain_render_pass(
       unsigned pass_index,
       unsigned width, unsigned height,
       D3DVIEWPORT9 *vp,
-      unsigned rotation)
+      const float *mvp_data,
+      unsigned out_dims)
 {
    unsigned i;
    const hlsl_pass_data_t *pd = NULL;
    int32_t filter;
-   unsigned vp_width          = vp->Width;
-   unsigned vp_height         = vp->Height;
-   const float *mvp_data;
+   /* The output's size: the viewport's, unless it is cut from it */
+   unsigned vp_width          = out_dims ? VIDEO_SCALE_W(out_dims) : vp->Width;
+   unsigned vp_height         = out_dims ? VIDEO_SCALE_H(out_dims) : vp->Height;
 
    IDirect3DDevice9_SetViewport(chain->chain.dev, vp);
-
-   /* Compute MVP */
-   if (rotation == 0)
-      mvp_data = (const float*)&d3d->mvp;
-   else
-   {
-      /* Flat arrays matching register/column layout for
-       * SetVertexShaderConstantF + HLSL mul(matrix, vector).
-       * Each group of 4 = one register = one column.
-       * clip.x = c0.x*x + c1.x*y + c2.x*z + c3.x*w
-       * clip.y = c0.y*x + c1.y*y + c2.y*z + c3.y*w */
-      static const float rot90[16]  = {
-          0, 2, 0, 0, -2, 0, 0, 0, 0, 0, 1, 0, 1,-1, 0, 1 };
-      static const float rot180[16] = {
-         -2, 0, 0, 0,  0,-2, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1 };
-      static const float rot270[16] = {
-          0,-2, 0, 0,  2, 0, 0, 0, 0, 0, 1, 0,-1, 1, 0, 1 };
-      switch (rotation)
-      {
-         case 1: mvp_data = rot90;  break;
-         case 2: mvp_data = rot180; break;
-         case 3: mvp_data = rot270; break;
-         default: mvp_data = (const float*)&d3d->mvp; break;
-      }
-   }
 
    /* === Set vertices === */
    if (pass->last_dims != VIDEO_SCALE_PACK(width, height))
@@ -2871,33 +2884,61 @@ static bool hlsl_d3d9_renderchain_init(
    return true;
 }
 
-static void hlsl_d3d9_renderchain_render(
-      d3d9_video_t *d3d,
-      const void *frame,
-      unsigned width, unsigned height,
-      unsigned pitch, unsigned rotation)
+/* The output size of @pass's scale for an input of @in_w x @in_h, into
+ * *out_w and *out_h */
+static void d3d9_hlsl_pass_out_size(const hlsl_renderchain_t *chain,
+      const struct shader_pass *pass, unsigned in_w, unsigned in_h,
+      unsigned *out_w, unsigned *out_h)
 {
+   switch (pass->info.pass->fbo.type_x)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_w = pass->info.pass->fbo.scale_x * chain->chain.out_vp->Width;
+         break;
+      case RARCH_SCALE_ABSOLUTE:
+         *out_w = pass->info.pass->fbo.abs_x;
+         break;
+      case RARCH_SCALE_INPUT:
+         *out_w = pass->info.pass->fbo.scale_x * in_w;
+         break;
+   }
+   switch (pass->info.pass->fbo.type_y)
+   {
+      case RARCH_SCALE_VIEWPORT:
+         *out_h = pass->info.pass->fbo.scale_y * chain->chain.out_vp->Height;
+         break;
+      case RARCH_SCALE_ABSOLUTE:
+         *out_h = pass->info.pass->fbo.abs_y;
+         break;
+      case RARCH_SCALE_INPUT:
+         *out_h = pass->info.pass->fbo.scale_y * in_h;
+         break;
+   }
+}
+
+/* @chain's frame, @width x @height at @frame @pitch bytes a row, into
+ * its first pass's texture, and every pass before the last run. The
+ * last pass's input size goes into *last_dims. The render target is
+ * left as it was. */
+static void d3d9_hlsl_renderchain_run(d3d9_video_t *d3d,
+      hlsl_renderchain_t *chain, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned *last_dims)
+{
+   unsigned i;
    LPDIRECT3DSURFACE9 back_buffer = NULL;
    LPDIRECT3DSURFACE9 target;
-   unsigned i, current_width, current_height,
-          out_width = 0, out_height = 0;
-   struct shader_pass *last_pass    = NULL;
-   struct shader_pass *first_pass   = NULL;
-   hlsl_renderchain_t *chain        = (hlsl_renderchain_t*)
-      d3d->renderchain_data;
-
-   chain->chain.passes->data[0].tex         = chain->chain.prev.tex[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].vertex_buf  = chain->chain.prev.vertex_buf[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].last_dims   = chain->chain.prev.last_dims[
-      chain->chain.prev.ptr];
-
-   current_width                  = width;
-   current_height                 = height;
-
-   first_pass                     = (struct shader_pass*)
+   unsigned current_width         = width;
+   unsigned current_height        = height;
+   unsigned out_width             = 0;
+   unsigned out_height            = 0;
+   struct shader_pass *first_pass = (struct shader_pass*)
       &chain->chain.passes->data[0];
+
+   first_pass->tex         = chain->chain.prev.tex[chain->chain.prev.ptr];
+   first_pass->vertex_buf  = chain->chain.prev.vertex_buf[
+      chain->chain.prev.ptr];
+   first_pass->last_dims   = chain->chain.prev.last_dims[
+      chain->chain.prev.ptr];
 
    /* Blit frame to first pass texture */
    {
@@ -2921,8 +2962,7 @@ static void hlsl_d3d9_renderchain_render(
       IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
    }
 
-   /* Grab back buffer. */
-   if (chain->chain.dev)
+   if (chain->chain.passes->count > 1 && chain->chain.dev)
    {
       if (!SUCCEEDED(IDirect3DDevice9_GetRenderTarget(chain->chain.dev,
                   0, (LPDIRECT3DSURFACE9*)&back_buffer)))
@@ -2939,33 +2979,11 @@ static void hlsl_d3d9_renderchain_render(
          &chain->chain.passes->data[i + 1];
 
       IDirect3DTexture9_GetSurfaceLevel(
-		      (LPDIRECT3DTEXTURE9)to_pass->tex, 0, (IDirect3DSurface9**)&target);
+			      (LPDIRECT3DTEXTURE9)to_pass->tex, 0, (IDirect3DSurface9**)&target);
       IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, target);
 
-      switch (from_pass->info.pass->fbo.type_x)
-      {
-         case RARCH_SCALE_VIEWPORT:
-            out_width = from_pass->info.pass->fbo.scale_x * chain->chain.out_vp->Width;
-            break;
-         case RARCH_SCALE_ABSOLUTE:
-            out_width = from_pass->info.pass->fbo.abs_x;
-            break;
-         case RARCH_SCALE_INPUT:
-            out_width = from_pass->info.pass->fbo.scale_x * current_width;
-            break;
-      }
-      switch (from_pass->info.pass->fbo.type_y)
-      {
-         case RARCH_SCALE_VIEWPORT:
-            out_height = from_pass->info.pass->fbo.scale_y * chain->chain.out_vp->Height;
-            break;
-         case RARCH_SCALE_ABSOLUTE:
-            out_height = from_pass->info.pass->fbo.abs_y;
-            break;
-         case RARCH_SCALE_INPUT:
-            out_height = from_pass->info.pass->fbo.scale_y * current_height;
-            break;
-      }
+      d3d9_hlsl_pass_out_size(chain, from_pass, current_width,
+            current_height, &out_width, &out_height);
 
       /* Clear out whole FBO. */
       viewport.Width  = VIDEO_SCALE_W(to_pass->info.tex_dims);
@@ -2987,58 +3005,59 @@ static void hlsl_d3d9_renderchain_render(
             chain, from_pass,
             i + 1,
             current_width, current_height,
-            &viewport, 0);
+            &viewport, (const float*)&d3d->mvp, 0);
 
       current_width  = out_width;
       current_height = out_height;
       IDirect3DSurface9_Release(target);
    }
 
-   /* Final pass */
-   IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, back_buffer);
-
-   last_pass = (struct shader_pass*)&chain->chain.passes->
-      data[chain->chain.passes->count - 1];
-
-   switch (last_pass->info.pass->fbo.type_x)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         out_width = last_pass->info.pass->fbo.scale_x * chain->chain.out_vp->Width;
-         break;
-      case RARCH_SCALE_ABSOLUTE:
-         out_width = last_pass->info.pass->fbo.abs_x;
-         break;
-      case RARCH_SCALE_INPUT:
-         out_width = last_pass->info.pass->fbo.scale_x * current_width;
-         break;
-   }
-   switch (last_pass->info.pass->fbo.type_y)
-   {
-      case RARCH_SCALE_VIEWPORT:
-         out_height = last_pass->info.pass->fbo.scale_y * chain->chain.out_vp->Height;
-         break;
-      case RARCH_SCALE_ABSOLUTE:
-         out_height = last_pass->info.pass->fbo.abs_y;
-         break;
-      case RARCH_SCALE_INPUT:
-         out_height = last_pass->info.pass->fbo.scale_y * current_height;
-         break;
-   }
-
-   d3d9_hlsl_renderchain_render_pass(
-         d3d,
-         chain, last_pass,
-         chain->chain.passes->count,
-         current_width, current_height,
-         chain->chain.out_vp, rotation);
-
-   chain->chain.frame_count++;
-
    if (back_buffer)
+   {
+      IDirect3DDevice9_SetRenderTarget(chain->chain.dev, 0, back_buffer);
       IDirect3DSurface9_Release(back_buffer);
+   }
+   *last_dims = VIDEO_SCALE_PACK(current_width, current_height);
+}
 
-   chain->chain.prev.last_dims[chain->chain.prev.ptr]   = chain->chain.passes->data[0].last_dims;
-   chain->chain.prev.ptr                                = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
+/* @chain's last pass, of an input @last_dims, into the render target's
+ * @vp with @mvp; @out_dims its output's size, 0 for @vp's */
+static void d3d9_hlsl_renderchain_last(d3d9_video_t *d3d,
+      hlsl_renderchain_t *chain, unsigned last_dims, D3DVIEWPORT9 *vp,
+      const float *mvp, unsigned out_dims)
+{
+   struct shader_pass *last_pass = (struct shader_pass*)
+      &chain->chain.passes->data[chain->chain.passes->count - 1];
+   d3d9_hlsl_renderchain_render_pass(d3d, chain, last_pass,
+         chain->chain.passes->count,
+         VIDEO_SCALE_W(last_dims), VIDEO_SCALE_H(last_dims),
+         vp, mvp, out_dims);
+}
+
+/* Past @chain's frame: its count, and its history moved on */
+static void d3d9_hlsl_renderchain_end(hlsl_renderchain_t *chain)
+{
+   chain->chain.frame_count++;
+   chain->chain.prev.last_dims[chain->chain.prev.ptr] =
+      chain->chain.passes->data[0].last_dims;
+   chain->chain.prev.ptr = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
+}
+
+static void hlsl_d3d9_renderchain_render(
+      d3d9_video_t *d3d,
+      const void *frame,
+      unsigned width, unsigned height,
+      unsigned pitch, unsigned rotation)
+{
+   unsigned last_dims;
+   hlsl_renderchain_t *chain        = (hlsl_renderchain_t*)
+      d3d->renderchain_data;
+
+   d3d9_hlsl_renderchain_run(d3d, chain, frame, width, height, pitch,
+         &last_dims);
+   d3d9_hlsl_renderchain_last(d3d, chain, last_dims, chain->chain.out_vp,
+         d3d9_hlsl_rotation_mvp(d3d, rotation), 0);
+   d3d9_hlsl_renderchain_end(chain);
 
    IDirect3DDevice9_SetVertexShader(chain->chain.dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(chain->chain.dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
@@ -6649,14 +6668,261 @@ static bool d3d9_hlsl_views_ps_make(d3d9_video_t *d3d, unsigned i,
    return ok;
 }
 
+/* A chain of its own for a view @width x @height, a copy of the
+ * preset's: its frame's textures, render targets and history its own,
+ * its programs, declarations and lookup textures the preset's */
+static hlsl_renderchain_t *d3d9_hlsl_views_chain_new(d3d9_video_t *d3d,
+      unsigned view, unsigned width, unsigned height)
+{
+   unsigned i;
+   D3DSURFACE_DESC desc;
+   hlsl_renderchain_t *main = (hlsl_renderchain_t*)d3d->renderchain_data;
+   hlsl_renderchain_t *c    = (hlsl_renderchain_t*)calloc(1, sizeof(*c));
+   unsigned tw              = next_pow2(width);
+   unsigned th              = next_pow2(height);
+
+   if (!c)
+      return NULL;
+   c->chain.passes     = shader_pass_vector_list_new();
+   c->chain.luts       = lut_info_vector_list_new();
+   c->chain.bound_tex  = unsigned_vector_list_new();
+   c->chain.bound_vert = unsigned_vector_list_new();
+   if (     !c->chain.passes || !c->chain.luts
+         || !c->chain.bound_tex || !c->chain.bound_vert)
+   {
+      shader_pass_vector_list_free(c->chain.passes);
+      lut_info_vector_list_free(c->chain.luts);
+      unsigned_vector_list_free(c->chain.bound_tex);
+      unsigned_vector_list_free(c->chain.bound_vert);
+      free(c);
+      return NULL;
+   }
+   c->chain.dev         = main->chain.dev;
+   c->chain.pixel_size  = main->chain.pixel_size;
+   c->chain.out_vp      = &c->view_vp;
+   c->view_vp.MaxZ      = 1.0f;
+   c->view              = view;
+   hlsl_uniform_map_init(&c->stock_data.vs_map);
+   hlsl_uniform_map_init(&c->stock_data.ps_map);
+   c->stock_shader      = main->stock_shader;
+   if (c->stock_shader.vprg)
+      IDirect3DVertexShader9_AddRef(
+            (LPDIRECT3DVERTEXSHADER9)c->stock_shader.vprg);
+   if (c->stock_shader.fprg)
+      IDirect3DPixelShader9_AddRef(
+            (LPDIRECT3DPIXELSHADER9)c->stock_shader.fprg);
+
+   for (i = 0; i < main->chain.passes->count; i++)
+   {
+      struct shader_pass pass = main->chain.passes->data[i];
+      pass.last_dims  = 0;
+      pass.tex        = NULL;
+      pass.vertex_buf = NULL;
+      pass.attrib_map = unsigned_vector_list_new();
+      pass.info.tex_dims = i ? 0 : VIDEO_SCALE_PACK(tw, th);
+      if (pass.vertex_decl)
+         IDirect3DVertexDeclaration9_AddRef(pass.vertex_decl);
+      if (pass.vprg)
+         IDirect3DVertexShader9_AddRef((LPDIRECT3DVERTEXSHADER9)pass.vprg);
+      if (pass.fprg)
+         IDirect3DPixelShader9_AddRef((LPDIRECT3DPIXELSHADER9)pass.fprg);
+      if (i && FAILED(IDirect3DDevice9_CreateVertexBuffer(c->chain.dev,
+                  4 * sizeof(struct Vertex), D3DUSAGE_WRITEONLY, 0,
+                  D3DPOOL_DEFAULT, &pass.vertex_buf, NULL)))
+         pass.vertex_buf = NULL;
+      shader_pass_vector_list_append(c->chain.passes, pass);
+      if (i && !pass.vertex_buf)
+         goto error;
+   }
+
+   for (i = 0; i < main->pass_data_count; i++)
+   {
+      hlsl_pass_data_t *pd       = &c->pass_data[i];
+      const hlsl_pass_data_t *md = &main->pass_data[i];
+      *pd             = *md;
+      pd->vs_bytecode = NULL;
+      pd->ps_bytecode = NULL;
+      c->pass_data_count++;
+      if (md->vs_bytecode && (pd->vs_bytecode = (DWORD*)malloc(
+                  md->vs_bytecode_dwords * sizeof(DWORD))))
+         memcpy(pd->vs_bytecode, md->vs_bytecode,
+               md->vs_bytecode_dwords * sizeof(DWORD));
+      if (md->ps_bytecode && (pd->ps_bytecode = (DWORD*)malloc(
+                  md->ps_bytecode_dwords * sizeof(DWORD))))
+         memcpy(pd->ps_bytecode, md->ps_bytecode,
+               md->ps_bytecode_dwords * sizeof(DWORD));
+      if (     (md->vs_bytecode && !pd->vs_bytecode)
+            || (md->ps_bytecode && !pd->ps_bytecode))
+         goto error;
+   }
+
+   for (i = 0; i < main->chain.luts->count; i++)
+   {
+      struct lut_info lut = main->chain.luts->data[i];
+      IDirect3DTexture9_AddRef(lut.tex);
+      lut_info_vector_list_append(c->chain.luts, lut);
+   }
+
+   if (FAILED(IDirect3DTexture9_GetLevelDesc(main->chain.prev.tex[0], 0,
+               &desc)))
+      goto error;
+   for (i = 0; i < TEXTURES; i++)
+   {
+      if (     FAILED(IDirect3DDevice9_CreateVertexBuffer(c->chain.dev,
+                  4 * sizeof(struct Vertex), D3DUSAGE_WRITEONLY, 0,
+                  D3DPOOL_DEFAULT, &c->chain.prev.vertex_buf[i], NULL))
+            || FAILED(IDirect3DDevice9_CreateTexture(c->chain.dev, tw, th, 1,
+                  0, desc.Format, D3DPOOL_MANAGED, &c->chain.prev.tex[i],
+                  NULL)))
+         goto error;
+   }
+   return c;
+
+error:
+   hlsl_d3d9_renderchain_free(c);
+   return NULL;
+}
+
+/* The views' preset chains from @first on let go */
+static void d3d9_hlsl_views_free_chains(d3d9_video_t *d3d, unsigned first)
+{
+   unsigned i;
+   for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (d3d->views.chains.preset[i])
+         hlsl_d3d9_renderchain_free(d3d->views.chains.preset[i]);
+      d3d->views.chains.preset[i] = NULL;
+   }
+}
+
+/* A preset chain for each of the map's views [0, count) that has none */
+static void d3d9_hlsl_views_build_chains(d3d9_video_t *d3d,
+      const video_views_map_t *map)
+{
+   unsigned i;
+   for (i = 0; i < d3d->views.chains.count && i < map->num_views; i++)
+      if (!d3d->views.chains.preset[i])
+         d3d->views.chains.preset[i] = d3d9_hlsl_views_chain_new(d3d, i,
+               map->views[i].width, map->views[i].height);
+}
+
+/* The MVP that puts a pass's quad over @dst within viewport @vp, turned
+ * @rotation quarter turns as the frame is */
+static void d3d9_hlsl_views_mvp(float *m, const video_views_rect_t *dst,
+      const D3DVIEWPORT9 *vp, unsigned rotation)
+{
+   /* The turned quad: q.x = r0 x + r1 y + r2, q.y = r3 x + r4 y + r5 */
+   static const float turns[4][6] = {
+      {  1.0f,  0.0f, 0.0f,  0.0f,  1.0f, 0.0f },
+      {  0.0f, -1.0f, 1.0f,  1.0f,  0.0f, 0.0f },
+      { -1.0f,  0.0f, 1.0f,  0.0f, -1.0f, 1.0f },
+      {  0.0f,  1.0f, 0.0f, -1.0f,  0.0f, 1.0f }
+   };
+   const float *r = turns[rotation & 3];
+   float ax = 2.0f * (float)VIDEO_SCALE_W(dst->dims) / (float)vp->Width;
+   float bx = 2.0f * (float)(VIDEO_POS_X(dst->pos) - (int)vp->X)
+      / (float)vp->Width - 1.0f;
+   float ay = 2.0f * (float)VIDEO_SCALE_H(dst->dims) / (float)vp->Height;
+   float by = 1.0f - 2.0f * (float)(VIDEO_POS_Y(dst->pos) - (int)vp->Y
+         + (int)VIDEO_SCALE_H(dst->dims)) / (float)vp->Height;
+   m[0]  = ax * r[0];
+   m[1]  = ay * r[3];
+   m[2]  = 0.0f;
+   m[3]  = 0.0f;
+   m[4]  = ax * r[1];
+   m[5]  = ay * r[4];
+   m[6]  = 0.0f;
+   m[7]  = 0.0f;
+   m[8]  = 0.0f;
+   m[9]  = 0.0f;
+   m[10] = 1.0f;
+   m[11] = 0.0f;
+   m[12] = ax * r[2] + bx;
+   m[13] = ay * r[5] + by;
+   m[14] = 0.0f;
+   m[15] = 1.0f;
+}
+
+struct d3d9_views_draw;
+static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
+      const struct d3d9_views_draw *d, void *data,
+      const video_views_rect_t *dst, const video_views_rect_t *cut,
+      bool again);
+
 #define D3D9V_FN(name)             d3d9_hlsl_##name
 #define D3D9V_TAG                  "[D3D9 HLSL]"
+#define D3D9V_PRESETS
+#define D3D9V_CHAINS_BUILD(d, map) d3d9_hlsl_views_build_chains(d, map)
+#define D3D9V_CHAINS_FREE(d, first) d3d9_hlsl_views_free_chains(d, first)
+#define D3D9V_PASS(p, d, c, r, cut, again) \
+   d3d9_hlsl_views_draw_pass(p, d, c, r, cut, again)
 #define D3D9V_PS_MAKE(d, i, src)   d3d9_hlsl_views_ps_make(d, i, src)
 #define D3D9V_PS_FREE(d, i)        IDirect3DPixelShader9_Release( \
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #define D3D9V_PS_BIND(d, i)        IDirect3DDevice9_SetPixelShader((d)->dev, \
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
+
+/* @c's last pass over @dst, cut to @cut; with @again its frame was run
+ * for an earlier placement. Each view of a software frame is written
+ * straight from it into the chain's own texture. */
+static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
+      const struct d3d9_views_draw *d, void *data,
+      const video_views_rect_t *dst, const video_views_rect_t *cut,
+      bool again)
+{
+   float mvp[16];
+   D3DVIEWPORT9 vp;
+   hlsl_renderchain_t *c            = (hlsl_renderchain_t*)data;
+   const struct retro_video_view *v = &d->video_info->views.views[c->view];
+
+   if (!again)
+   {
+      unsigned old  = c->chain.passes->data[0].info.tex_dims;
+      unsigned size = d->rects[c->view].dims;
+      if (!d3d9_hlsl_renderchain_fit_frame(&c->chain, v->width, v->height))
+         return;
+      if (     c->sized_dims != size
+            || c->chain.passes->data[0].info.tex_dims != old
+            || !c->sized_dims)
+      {
+         c->view_vp.Width  = VIDEO_SCALE_W(size);
+         c->view_vp.Height = VIDEO_SCALE_H(size);
+         d3d9_recompute_pass_sizes(c->chain.dev, &c->chain, &d3d->shader,
+               &c->view_vp);
+         c->sized_dims     = size;
+      }
+      d3d9_hlsl_renderchain_run(d3d, c, (const uint8_t*)d->frame
+            + (size_t)v->y * d->pitch + (size_t)v->x * c->chain.pixel_size,
+            v->width, v->height, d->pitch, &c->last_dims);
+      c->ran = true;
+   }
+   else if (!c->ran)
+      return;
+   vp.X      = VIDEO_POS_X(cut->pos);
+   vp.Y      = VIDEO_POS_Y(cut->pos);
+   vp.Width  = VIDEO_SCALE_W(cut->dims);
+   vp.Height = VIDEO_SCALE_H(cut->dims);
+   vp.MinZ   = 0.0f;
+   vp.MaxZ   = 1.0f;
+   d3d9_hlsl_views_mvp(mvp, dst, &vp, d->rotation);
+   d3d9_hlsl_renderchain_last(d3d, c, c->last_dims, &vp, mvp, dst->dims);
+}
+
+/* Past the frame for each view's chain that ran */
+static void d3d9_hlsl_views_end(void **chains)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      hlsl_renderchain_t *c = (hlsl_renderchain_t*)chains[i];
+      if (c && c->ran)
+      {
+         d3d9_hlsl_renderchain_end(c);
+         c->ran = false;
+      }
+   }
+}
 #endif
 
 static uint32_t d3d9_hlsl_get_flags(void *data)
@@ -7847,10 +8113,11 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #endif
    bool views_per_eye                  = false;
 #ifdef D3D9_VIEWS
-   d3d9_video_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   void *view_chains[RETRO_VIDEO_VIEWS_MAX];
    video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
    bool views                          = false;
    bool views_blend                    = false;
+   bool views_direct                   = false;
    bool views_ui                       = false;
 #endif
 
@@ -7877,8 +8144,15 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    /* A frame past the size the core declared */
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      if (!d3d9_hlsl_renderchain_fit_frame(&_chain->chain,
+      unsigned old_dims = _chain->chain.passes->data[0].info.tex_dims;
+      if (d3d9_hlsl_renderchain_fit_frame(&_chain->chain,
                frame_width, frame_height))
+      {
+         /* Passes scaled from it are sized again. */
+         if (_chain->chain.passes->data[0].info.tex_dims != old_dims)
+            d3d->should_resize = true;
+      }
+      else
       {
          unsigned tex_dims = _chain->chain.passes->data[0].info.tex_dims;
          frame_width       = MIN(frame_width,  VIDEO_SCALE_W(tex_dims));
@@ -7889,8 +8163,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 #ifdef D3D9_VIEWS
    d3d->views.frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
    views = d3d9_hlsl_views_setup(d3d, video_info, msg,
-         d3d->menu && d3d->menu->enabled, &views_blend, view_chains,
-         view_rects);
+         d3d->menu && d3d->menu->enabled, &views_blend, &views_direct,
+         view_chains, view_rects);
    /* The viewport is the whole window while views draw. */
    if (views != d3d->views.active)
    {
@@ -7918,7 +8192,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       if (chain)
          chain->out_vp           = (D3DVIEWPORT9*)&d3d->out_vp;
 
-      d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
+      d3d9_recompute_pass_sizes(chain->dev, chain, &d3d->shader,
+            &d3d->out_vp);
 
       d3d->should_resize         = false;
    }
@@ -7938,20 +8213,28 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
          (const float*)&d3d->mvp, 4);
 #ifdef D3D9_VIEWS
-   /* The frame into its texture as ever, each view drawn from there */
+   /* The stock chain's frame into its texture as ever, each view drawn
+    * from there; a preset's views each through its own chain */
    if (views)
    {
       struct d3d9_views_draw d;
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
       struct shader_pass *first  = &_chain->chain.passes->data[0];
       d.video_info = video_info;
+      d.frame      = frame;
+      d.rects      = view_rects;
+      d.pitch      = pitch;
       d.tex        = _chain->chain.prev.tex[_chain->chain.prev.ptr];
       d.tex_dims   = first->info.tex_dims;
       d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
       d.rotation   = d3d->dev_rotation;
-      d3d9_hlsl_views_upload(d.tex, frame, frame_height,
-            (size_t)frame_width * _chain->chain.pixel_size, pitch);
-      d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend);
+      if (views_direct)
+         d3d9_hlsl_views_upload(d.tex, frame, frame_height,
+               (size_t)frame_width * _chain->chain.pixel_size, pitch);
+      d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend,
+            views_direct);
+      if (!views_direct)
+         d3d9_hlsl_views_end(view_chains);
       IDirect3DDevice9_SetVertexShader(d3d->dev,
             (LPDIRECT3DVERTEXSHADER9)_chain->stock_shader.vprg);
       IDirect3DDevice9_SetPixelShader(d3d->dev,
@@ -8699,14 +8982,16 @@ static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    {
       unsigned x, y;
-      unsigned vp_width       = (d3d->out_vp.Width  > width)  ? width  : d3d->out_vp.Width;
-      unsigned vp_height      = (d3d->out_vp.Height > height) ? height : d3d->out_vp.Height;
+      /* The viewport's rows bottom up, kept inside the surface */
+      unsigned vp_x           = MIN(d3d->out_vp.X, width);
+      unsigned vp_y           = MIN(d3d->out_vp.Y, height);
+      unsigned vp_width       = MIN(d3d->out_vp.Width,  width  - vp_x);
+      unsigned vp_height      = MIN(d3d->out_vp.Height, height - vp_y);
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->out_vp.X;
-      pixels                 += (vp_height - 1) * pitchpix;
-      pixels                 -= d3d->out_vp.Y * pitchpix;
+      pixels                 += vp_x;
+      pixels                 += (size_t)(vp_y + vp_height - 1) * pitchpix;
 
       for (y = 0; y < vp_height; y++, pixels -= pitchpix)
       {

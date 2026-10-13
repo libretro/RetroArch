@@ -1,0 +1,3 @@
+shaders = 1
+shader0 = prev.cg
+filter_linear0 = false
