@@ -191,7 +191,11 @@ static int16_t switch_joypad_state(
 
 static bool switch_joypad_query_pad(unsigned pad)
 {
+#ifdef HAVE_LIBNX
+   return pad < DEFAULT_MAX_PADS && padIsConnected(&pad_states[pad]);
+#else
    return pad < DEFAULT_MAX_PADS && button_state[pad];
+#endif
 }
 
 static void switch_joypad_destroy(void)

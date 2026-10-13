@@ -13,7 +13,9 @@
  * - a pad of another type (0x23) reads centred sticks;
  * - the buttons map to the RetroPad, active low;
  * - a pad disconnected, executing a command, in error or unreadable
- *   holds nothing and reads centred. */
+ *   holds nothing and reads centred;
+ * - a pad is there with nothing held, and while it changes mode, and
+ *   not once it is disconnected, in error or unreadable. */
 
 #include <stdio.h>
 #include <string.h>
@@ -169,6 +171,13 @@ int main(void)
    check(ps2_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_UP) == 0,    "up free");
    check(ps2_joypad.query_pad(0),                                 "pad there");
 
+   /* Nothing held: still there; changing mode: still there. */
+   report(PAD_STATE_STABLE, 0x73, 0, 0x80, 0x80, 0x80, 0x80);
+   check(ps2_joypad.query_pad(0),  "idle pad: there");
+   check(!ps2_joypad.query_pad(1), "no pad: not there");
+   report(PAD_STATE_EXECCMD, 0x73, 0, 0x80, 0x80, 0x80, 0x80);
+   check(ps2_joypad.query_pad(0),  "changing mode: there");
+
    /* Every state that is not read lets everything go. */
    {
       static const int gone[] = {
@@ -177,7 +186,10 @@ int main(void)
       {
          report(PAD_STATE_STABLE, 0x73, PAD_CROSS, 0xFF, 0xFF, 0xFF, 0xFF);
          report(gone[i], 0x73, PAD_CROSS, 0xFF, 0xFF, 0xFF, 0xFF);
-         check(!ps2_joypad.query_pad(0) && all_centred(), "unread state clears");
+         check(ps2_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_B) == 0
+               && all_centred(), "unread state: nothing held, centred");
+         check(ps2_joypad.query_pad(0) == (gone[i] == PAD_STATE_EXECCMD),
+               "unread state: there only while changing mode");
       }
    }
 

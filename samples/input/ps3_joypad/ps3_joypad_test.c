@@ -6,6 +6,7 @@
  * - a report of length 0 (nothing new) keeps the last state;
  * - a pad that disconnects holds nothing and reads centred, whatever it
  *   held at the time, and still does on the polls after;
+ * - a connected pad is there with nothing held, and not once it is gone;
  * - rumble sets both motors at once: the one asked for (the small one on
  *   or off, the large one scaled to its 0-255), the other at its last
  *   value, the reserved bytes zero; nothing is sent for a pad out of
@@ -146,6 +147,11 @@ int main(void)
    check(axis(AXIS_NEG(2)) == -0x7fff, "right x left");
    check(axis(AXIS_NEG(3)) == -0x7fff, "right y up");
 
+   /* Connected with nothing held: still there. */
+   check(ps3_joypad.query_pad(0), "connected: there");
+   check(!ps3_joypad.query_pad(1), "no pad: not there");
+   check(!ps3_joypad.query_pad(DEFAULT_MAX_PADS + 3), "past the pads: not there");
+
    /* Nothing new: the state stands. */
    status(CELL_PAD_STATUS_CONNECTED);
    ps3_joypad.poll();
@@ -153,11 +159,17 @@ int main(void)
    check(ps3_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_DOWN) != 0,
          "no new report keeps the buttons");
 
+   /* Nothing held: still there. */
+   report(0, 0, 0x80, 0x80, 0x80, 0x80);
+   ps3_joypad.poll();
+   check(ps3_joypad.query_pad(0), "idle pad: there");
+
    /* Pulled with the stick held down. */
    status(CELL_PAD_STATUS_ASSIGN_CHANGES);
    ps3_joypad.poll();
    check(ps3_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_DOWN) == 0, "disconnect: down let go");
    check(all_centred(), "disconnect: sticks centred");
+   check(!ps3_joypad.query_pad(0), "disconnect: not there");
 
    status(0);
    ps3_joypad.poll();

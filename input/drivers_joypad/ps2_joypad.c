@@ -35,6 +35,7 @@
 static unsigned char padBuf[PS2_MAX_PORT][PS2_MAX_SLOT][256] ALIGNED(64);
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
+static bool pad_present[DEFAULT_MAX_PADS];
 
 static INLINE int16_t convert_u8_to_s16(uint8_t val)
 {
@@ -194,6 +195,10 @@ static void ps2_joypad_poll(void)
       int ps2_port  = i & 0x1;
       int state     = padGetState(ps2_port, ps2_slot);
 
+      /* A pad changing mode is still there. */
+      if (state != PAD_STATE_EXECCMD)
+         pad_present[i] = false;
+
       if (     state != PAD_STATE_DISCONN
             && state != PAD_STATE_EXECCMD
             && state != PAD_STATE_ERROR
@@ -201,6 +206,8 @@ static void ps2_joypad_poll(void)
       {
          int32_t state_tmp = 0xffff ^ buttons.btns;
          int     type      = buttons.mode >> 4;
+
+         pad_present[i]    = true;
 
          bits |= (state_tmp & PAD_LEFT)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0;
          bits |= (state_tmp & PAD_DOWN)     ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0;
@@ -234,8 +241,7 @@ static void ps2_joypad_poll(void)
       }
 
       /* Disconnected, executing a command, in error or unreadable:
-       * nothing held and sticks centred. ps2_joypad_query_pad()
-       * reports a pad as present from pad_state[]. */
+       * nothing held and sticks centred. */
       pad_state[i] = bits;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = lx;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = ly;
@@ -246,7 +252,7 @@ static void ps2_joypad_poll(void)
 
 static bool ps2_joypad_query_pad(unsigned pad)
 {
-   return pad < DEFAULT_MAX_PADS && pad_state[pad];
+   return pad < DEFAULT_MAX_PADS && pad_present[pad];
 }
 
 static bool ps2_joypad_rumble(unsigned pad,

@@ -52,7 +52,8 @@ typedef struct
 {
    SceUserServiceUserId userId;
    int handle[PS4_MAX_PAD_PORT_TYPES];
-   bool connected;
+   bool connected; /* the handle is open */
+   bool reporting; /* the last read came from a connected pad */
 } ds_joypad_state;
 
 /* TODO/FIXME - static globals */
@@ -247,7 +248,9 @@ static void ps4_joypad_poll(void)
 
       ret     = scePadReadState(ds_joypad_states[player].handle[0],&buttons);
 
-      if (ret == 0 && buttons.connected)
+      ds_joypad_states[player].reporting = (ret == 0 && buttons.connected);
+
+      if (ds_joypad_states[player].reporting)
       {
          int32_t state_tmp = buttons.buttons;
          pad_state[i] = 0;
@@ -291,7 +294,7 @@ static void ps4_joypad_poll(void)
 
 static bool ps4_joypad_query_pad(unsigned pad)
 {
-   return pad < PS4_MAX_ORBISPADS && pad_state[pad];
+   return pad < PS4_MAX_ORBISPADS && ds_joypad_states[pad].reporting;
 }
 
 static bool ps4_joypad_rumble(unsigned pad,

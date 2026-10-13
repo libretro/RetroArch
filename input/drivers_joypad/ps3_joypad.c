@@ -264,7 +264,7 @@ static void ps3_joypad_poll(void)
 
 static bool ps3_joypad_query_pad(unsigned pad)
 {
-   return pad < MAX_USERS && pad_state[pad];
+   return pad < DEFAULT_MAX_PADS && pads_connected[pad];
 }
 
 static bool ps3_joypad_rumble(unsigned pad,

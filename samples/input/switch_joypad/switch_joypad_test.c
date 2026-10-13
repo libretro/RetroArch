@@ -4,7 +4,9 @@
  * - Joy-Con joined: both sticks;
  * - split, a lone left Joy-Con held sideways: its stick turned onto the
  *   left stick, and the right stick centred whatever it held joined;
- * - the same for a lone right Joy-Con. */
+ * - the same for a lone right Joy-Con;
+ * - a pad is there while connected, with nothing held, and not once it
+ *   is not. */
 
 #include <stdio.h>
 #include <string.h>
@@ -19,6 +21,7 @@
 /* ---- the stand-ins: pad 0 is the one the test moves ---- */
 static HidAnalogStickState t_stick[2];
 static u32                 t_device_type;
+static bool                t_connected;
 static unsigned            t_split;
 
 void padConfigureInput(u32 m, u32 s)          { (void)m; (void)s; }
@@ -27,6 +30,7 @@ void padInitializeDefault(PadState *pad)      { memset(pad, 0, sizeof(*pad)); }
 void padUpdate(PadState *pad)                 { (void)pad; }
 bool padIsHandheld(const PadState *pad)       { (void)pad; return false; }
 bool padIsNpadActive(const PadState *p, HidNpadIdType id) { (void)p; (void)id; return true; }
+bool padIsConnected(const PadState *pad) { return pad == &pad_states[0] && t_connected; }
 u64  padGetButtons(const PadState *pad)       { (void)pad; return 0; }
 HidAnalogStickState padGetStickPos(const PadState *pad, unsigned i)
 {
@@ -103,6 +107,17 @@ int main(void)
    switch_joypad.poll();
    check(axis(AXIS_POS(3)) == 0 && axis(AXIS_NEG(3)) == 0,
       "split right: right stick centred");
+
+   /* Connected and idle: there. Not connected: not. */
+   t_split     = 0;
+   t_connected = true;
+   sticks(0, 0, 0, 0);
+   switch_joypad.poll();
+   check(switch_joypad.query_pad(0), "idle pad: there");
+   check(!switch_joypad.query_pad(1), "no pad: not there");
+   t_connected = false;
+   switch_joypad.poll();
+   check(!switch_joypad.query_pad(0), "disconnected: not there");
 
    switch_joypad.destroy();
 

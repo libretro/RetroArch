@@ -7,7 +7,9 @@
  *   holds nothing and reads centred, whatever its report's stick bytes
  *   hold and whatever it held last;
  * - a read that fails does the same;
- * - a pad that reports again is read again on the same handle. */
+ * - a pad that reports again is read again on the same handle;
+ * - a pad is there while it reports, with nothing held, and not while
+ *   it does not. */
 
 #include <stdio.h>
 #include <string.h>
@@ -111,14 +113,21 @@ int main(void)
    check(axis(AXIS_POS(1)) == 0x7fff,  "left y down");
    check(axis(AXIS_NEG(3)) == -0x7fff, "right y up");
 
+   /* Reporting with nothing held: there. */
+   poll_with(0, 1, 0, 0x80, 0x80, 0x80, 0x80);
+   check(ps4_joypad.query_pad(0), "idle pad: there");
+   check(!ps4_joypad.query_pad(1), "no pad: not there");
+
    /* Stops reporting: the report still carries the last bytes. */
    poll_with(0, 0, ORBISPAD_CROSS, 0xFF, 0xFF, 0x00, 0x00);
    check(ps4_joypad.button(0, RETRO_DEVICE_ID_JOYPAD_B) == 0, "not reporting: nothing held");
    check(all_centred(), "not reporting: sticks centred");
+   check(!ps4_joypad.query_pad(0), "not reporting: not there");
 
    /* Reports again. */
    poll_with(0, 1, 0, 0x80, 0xFF, 0x80, 0x80);
    check(axis(AXIS_POS(1)) == 0x7fff, "reporting again: read again");
+   check(ps4_joypad.query_pad(0), "reporting again: there");
 
    /* A failed read. */
    poll_with(-1, 1, ORBISPAD_CROSS, 0xFF, 0xFF, 0x00, 0x00);

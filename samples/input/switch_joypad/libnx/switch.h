@@ -58,6 +58,7 @@ enum
 #define HidNpadButton_RightSR (1ull << 27)
 
 #define HidNpadJoyHoldType_Horizontal 1
+#define HidNpadAttribute_IsConnected  (1u << 0)
 #define HidDeviceTypeBits_JoyLeft     (1u << 4)
 #define HidDeviceTypeBits_JoyRight    (1u << 5)
 
@@ -75,6 +76,7 @@ typedef struct
 {
    u8                  id_mask;
    bool                read_handheld;
+   u32                 attributes;
    u64                 buttons_cur;
    HidAnalogStickState sticks[2];
 } PadState;
@@ -85,6 +87,7 @@ void padInitializeDefault(PadState *pad);
 void padUpdate(PadState *pad);
 bool padIsHandheld(const PadState *pad);
 bool padIsNpadActive(const PadState *pad, HidNpadIdType id);
+bool padIsConnected(const PadState *pad);
 u64  padGetButtons(const PadState *pad);
 HidAnalogStickState padGetStickPos(const PadState *pad, unsigned i);
 
