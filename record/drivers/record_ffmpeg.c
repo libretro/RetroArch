@@ -2686,6 +2686,9 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    if (audio_buf_size)
       audio_buf = av_malloc(audio_buf_size);
+   if ((audio_buf_size && !audio_buf)
+         || (!handle->video_fifo.mirror && !video_buf))
+      handle->encode_failed = true;
    /* Try pushing data in an interleaving pattern to
     * ease the work of the muxer a bit. */
 

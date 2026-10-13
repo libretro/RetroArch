@@ -58,7 +58,8 @@ CFLAGS   += -DRARCH_INTERNAL -DHAVE_FFMPEG -DHAVE_THREADS -D_GNU_SOURCE -D_FILE_
 LDFLAGS  += $(FF_LIBS) -lm -lpthread \
    -Wl,--wrap=av_write_trailer -Wl,--wrap=avio_closep \
    -Wl,--wrap=avcodec_send_frame -Wl,--wrap=avcodec_receive_packet \
-   -Wl,--wrap=av_interleaved_write_frame
+   -Wl,--wrap=av_interleaved_write_frame \
+   -Wl,--wrap=av_malloc -Wl,--wrap=sthread_join
 
 # PLAIN_RING=1 builds the lane where the video ring cannot be mirrored.
 ifneq ($(PLAIN_RING),)

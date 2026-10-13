@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_spsc.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_ffmpeg.h"
@@ -245,6 +246,32 @@ int __wrap_av_interleaved_write_frame(AVFormatContext *ctx, AVPacket *pkt)
    return __real_av_interleaved_write_frame(ctx, pkt);
 }
 
+static bool drain_oom_requested, drain_oom_armed;
+void __real_sthread_join(sthread_t *thread);
+void __wrap_sthread_join(sthread_t *thread)
+{
+   __real_sthread_join(thread);
+   if (drain_oom_requested)
+   {
+      drain_oom_requested = false;
+      drain_oom_armed = true;
+   }
+}
+void *__real_av_malloc(size_t size);
+void *__wrap_av_malloc(size_t size)
+{
+   size_t video_size = 2 * W * H * sizeof(uint32_t);
+   if (drain_oom_armed
+         && ((fault_mode == 12 && size != video_size)
+            || (fault_mode == 13 && size == video_size)))
+   {
+      drain_oom_armed = false;
+      fault_writes++;
+      return NULL;
+   }
+   return __real_av_malloc(size);
+}
+
 static int run(bool drop)
 {
    struct record_params params;
@@ -329,6 +356,7 @@ static int run(bool drop)
             " while recording\n", stub_warn_calls, stub_msg_calls);
       return 1;
    }
+   drain_oom_requested = fault_mode == 12 || fault_mode == 13;
    finalized = record_ffmpeg.finalize(rec);
    record_ffmpeg.free(rec);
    free(fb);
@@ -573,8 +601,12 @@ int main(void)
       return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;
-   for (fault_mode = 1; fault_mode <= 11; fault_mode++)
+   for (fault_mode = 1; fault_mode <= 13; fault_mode++)
    {
+#ifndef PLAIN_RING
+      if (fault_mode == 13)
+         break;
+#endif
       fault_writes = fault_closes = 0;
       fault_closed = false;
       if (run(false))
