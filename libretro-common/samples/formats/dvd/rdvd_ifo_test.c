@@ -610,6 +610,51 @@ static void test_vobu_cell_find(void)
    CHECK(!rdvd_vobu_find_in_cell(&map, 20, 20, 20, NULL, &index) && !index);
    CHECK(!rdvd_vobu_find_in_cell(&map, 20, 20, 20, &sector, NULL) && !sector);
 }
+static void test_title_target(void)
+{
+   static uint8_t file[12288];
+   uint64_t sizes[2];
+   uint8_t *ptt, *pgcit, *cadt, *vobus;
+   rdvd_ifo_t ifo;
+   rdvd_vob_map_t source;
+   rdvd_title_target_t result;
+   file_fixture(true); fixture();
+   memset(file, 0, sizeof(file)); memcpy(file, file_bytes, sizeof(file_bytes));
+   file[0x1f] = 5; file[0xe3] = 4; file[0xe7] = 5;
+   ptt = file + 2048; pgcit = file + 4096;
+   cadt = file + 8192; vobus = file + 10240;
+   ptt[1] = 1; ptt[7] = 15; ptt[11] = 12; ptt[13] = ptt[15] = 1;
+   pgcit[1] = 1; pgcit[6] = 1; pgcit[7] = 0x71; pgcit[15] = 16;
+   bytes[249] = 10; bytes[257] = 15; bytes[261] = 20;
+   put16(310, 1); bytes[313] = 1;
+   memcpy(pgcit + 16, bytes, 354);
+   cadt[1] = 1; cadt[7] = 19; cadt[9] = cadt[10] = 1;
+   cadt[15] = 10; cadt[19] = 20;
+   vobus[3] = 15; vobus[7] = 10; vobus[11] = 15; vobus[15] = 20;
+   sizes[0] = 16 * 2048; sizes[1] = 5 * 2048;
+   CHECK(rdvd_ifo_read(file, sizeof(file), &ifo));
+   CHECK(rdvd_vob_map_read(sizes, 2, &source));
+   CHECK(rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   CHECK(result.nav_sector == 15 && result.cell.cell_id == 1);
+   CHECK(result.span.segment == 1 && result.span.file_offset == 15 * 2048);
+   CHECK(result.span.bytes == 2048 && result.remaining.bytes == 6 * 2048);
+   CHECK(rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 20, &result));
+   CHECK(result.span.segment == 2 && result.span.file_offset == 4 * 2048);
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 9, &result) && !result.span.bytes);
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 3, 18, &result));
+   sizes[1] = 4 * 2048;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   sizes[1] = 5 * 2048; cadt[19] = 19;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   cadt[19] = 20; cadt[10] = 2;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   cadt[10] = 1; pgcit[16 + 238] = 0x10;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   pgcit[16 + 238] = 4;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 18, &result));
+   pgcit[16 + 238] = 0; vobus[7] = 9;
+   CHECK(!rdvd_ifo_title_target(&ifo, &source, 1, 1, 1, 10, &result));
+}
 int main(void)
 {
    test_bounds();
@@ -632,6 +677,7 @@ int main(void)
    test_vobu_map();
    test_cell_find();
    test_vobu_cell_find();
+   test_title_target();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -108,3 +108,11 @@ VOBU maps validate strict sector ordering; floor lookup returns the last
 start at or before a target, including valid sector zero. Callers check
 cell/domain and source geometry before I/O. Lookup revalidates the complete
 map before its binary search; no latency or playable-seeking claim is made.
+
+Title-target resolution combines chapter/program mapping, a selected cell,
+a unique title C_ADT identity, cell-bounded VOBU lookup and VOB geometry.
+It returns the NAV sector, logical bytes remaining in the cell and the
+first file-local read span without staging data. The caller owns the VTS
+source and must preserve that domain pairing. Angle/block and interleaved
+cells are rejected until navigation policy exists. No time seek, file read,
+VM execution or playable title/menu integration is implemented by this API.

@@ -724,3 +724,41 @@ bool rdvd_vobu_find_in_cell(const rdvd_vobu_map_t *map, uint32_t target,
    *sector = found; *index = position;
    return true;
 }
+
+
+bool rdvd_ifo_title_target(const rdvd_ifo_t *ifo, const rdvd_vob_map_t *source,
+      unsigned title, unsigned chapter, unsigned cell_number, uint32_t target,
+      rdvd_title_target_t *out)
+{
+   rdvd_chapter_t position;
+   rdvd_title_target_t result;
+   rdvd_vob_range_t range;
+   rdvd_ifo_span_t span;
+   rdvd_cell_table_t cells;
+   rdvd_cell_address_t address;
+   rdvd_vobu_map_t vobus;
+   unsigned index;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   memset(&result, 0, sizeof(result));
+   if (!rdvd_ifo_chapter_read(ifo, title, chapter, &position)
+         || cell_number < position.first_cell || cell_number > position.last_cell
+         || !rdvd_pgc_cell_read(&position.pgc, cell_number, &result.cell)
+         || result.cell.interleaved || result.cell.block_type
+         || !rdvd_vob_cell_range(source, &position.pgc, cell_number, &range)
+         || !rdvd_ifo_table_read(ifo, RDVD_IFO_TITLE_CELLS, &span)
+         || !rdvd_cell_table_read(span.data, span.size, &cells)
+         || !rdvd_cell_address_find(&cells, result.cell.vob_id, result.cell.cell_id, &address)
+         || result.cell.first_sector < address.first_sector
+         || result.cell.last_sector > address.last_sector
+         || !rdvd_ifo_table_read(ifo, RDVD_IFO_TITLE_VOBUS, &span)
+         || !rdvd_vobu_map_read(span.data, span.size, &vobus)
+         || !rdvd_vobu_find_in_cell(&vobus, target, result.cell.first_sector,
+               result.cell.last_sector, &result.nav_sector, &index)) return false;
+   result.remaining.offset = (uint64_t)result.nav_sector * 2048;
+   result.remaining.bytes = range.offset + range.bytes - result.remaining.offset;
+   if (!rdvd_vob_span_read(source, result.remaining.offset,
+            result.remaining.bytes, &result.span)) return false;
+   *out = result;
+   return true;
+}

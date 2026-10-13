@@ -266,5 +266,20 @@ bool rdvd_cell_address_find(const rdvd_cell_table_t *table, unsigned vob_id,
  * a preceding VOBU in another cell is rejected. Failure clears outputs. */
 bool rdvd_vobu_find_in_cell(const rdvd_vobu_map_t *map, uint32_t target,
       uint32_t first, uint32_t last, uint32_t *sector, unsigned *index);
+typedef struct rdvd_title_target
+{
+   rdvd_vob_span_t span;
+   rdvd_vob_range_t remaining;
+   rdvd_cell_t cell;
+   uint32_t nav_sector;
+} rdvd_title_target_t;
+
+/* Resolves a chapter/cell/sector through PTT, PGC, title C_ADT and VOBU
+ * tables into a first file-local span. Numbers are one-based. Source sizes
+ * must belong to this VTS. Only ordinary noninterleaved cells are accepted;
+ * angle policy, time seeking, I/O and playback scheduling are separate. */
+bool rdvd_ifo_title_target(const rdvd_ifo_t *ifo, const rdvd_vob_map_t *source,
+      unsigned title, unsigned chapter, unsigned cell_number, uint32_t target,
+      rdvd_title_target_t *out);
 RETRO_END_DECLS
 #endif
