@@ -7,3 +7,6 @@ rdvd_spu_test.exe
 rdvd_ifo_test
 rdvd_ifo_test.exe
 *.vob
+
+rdvd_source_test
+rdvd_source_test.exe
