@@ -1,6 +1,7 @@
 include ../../sample_objdir.mk
 
 TARGET := cdrom_cuesheet_overflow_test
+.DEFAULT_GOAL := all
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -54,6 +55,15 @@ ifeq ($(OS),Windows_NT)
    LDLIBS += -lwinmm
 endif
 
+DUMP_OBJS := $(SAMPLE_OBJDIR)/disc_dump_test.o $(call sample_objs,$(filter-out cdrom_cuesheet_overflow_test.o,$(SOURCES:.c=.o))) $(SAMPLE_OBJDIR)/__/__/__/queues/task_queue.o $(SAMPLE_OBJDIR)/__/__/__/features/features_cpu.o
+
+$(SAMPLE_OBJDIR)/disc_dump_test.o: disc_dump_test.c ../../../../tasks/task_content_disc.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -ffunction-sections -fdata-sections -I../../../..
+
+disc_dump_test$(EXE): $(DUMP_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS) -Wl,--gc-sections
+
 all: $(TARGET)
 
 $(SAMPLE_OBJDIR)/dvd_blocks_test.o: dvd_blocks_test.c $(LIBRETRO_COMM_DIR)/cdrom/cdrom.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c $(LIBRETRO_COMM_DIR)/include/vfs/vfs.h
@@ -76,6 +86,6 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS)
+	rm -f $(TARGET) disc_dump_test$(EXE) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS)
 
 .PHONY: clean

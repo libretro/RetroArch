@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -54,6 +55,7 @@
 
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
+#include <memalign.h>
 
 #include <string/stdstring.h>
 
@@ -70,7 +72,8 @@ enum cdrom_dump_state
    DUMP_STATE_TOC_PENDING = 0,
    DUMP_STATE_WRITE_CUE,
    DUMP_STATE_NEXT_TRACK,
-   DUMP_STATE_READ_TRACK
+   DUMP_STATE_READ_TRACK,
+   DUMP_STATE_READ_IMAGE
 };
 
 typedef struct
@@ -80,6 +83,7 @@ typedef struct
    int64_t disc_total_bytes;
    int64_t disc_read_bytes;
 
+   void *data;
    RFILE *file;
    RFILE *output_file;
    libretro_vfs_implementation_file *stream;
@@ -89,17 +93,44 @@ typedef struct
    unsigned char cur_track;
    char drive_letter[2];
    char cdrom_path[64];
+   char output_path[PATH_MAX_LENGTH];
    char title[NAME_MAX_LENGTH];
    /* Captured on the main thread at push: the handler runs on the
     * threaded task queue's worker and writes dumps under this, never
     * under a live settings read. */
    char dir_core_assets[DIR_MAX_LENGTH];
    bool next;
+   bool failed;
 } task_cdrom_dump_state_t;
+
+static void task_cdrom_dump_fail(retro_task_t *task, enum msg_hash_enums msg)
+{
+   task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)task->state;
+   state->failed = true;
+   task_set_error(task, strdup(msg_hash_to_str(msg)));
+   task_set_progress(task, 100);
+   task_free_title(task);
+   task_set_title(task, strdup(msg_hash_to_str(msg)));
+}
+
+static bool task_cdrom_dump_printf(task_cdrom_dump_state_t *state,
+      RFILE *file, const char *fmt, ...)
+{
+   va_list ap;
+   int len;
+   va_start(ap, fmt);
+   len = vsnprintf((char*)state->data, 32 * 2048, fmt, ap);
+   va_end(ap);
+   return len >= 0 && len < 32 * 2048
+      && filestream_write(file, state->data, len) == len;
+}
 
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
+
+   if (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+      task_set_progress(task, 100);
 
    if (task_get_progress(task) == 100)
    {
@@ -112,7 +143,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
-      RARCH_LOG("[CDROM] Dump finished.\n");
+      if (!state->failed && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+         RARCH_LOG("[CDROM] Dump finished.\n");
 
       return;
    }
@@ -122,7 +154,55 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       case DUMP_STATE_TOC_PENDING:
          {
             /* open cuesheet file from drive */
-            char cue_path[PATH_MAX_LENGTH] = {0};
+            char cue_path[64] = {0};
+            uint16_t profile = 0;
+            RFILE *probe;
+
+            if (!state->data)
+            {
+               state->data = memalign_alloc(4096, 32 * 2048);
+               if (!state->data)
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+                  return;
+               }
+            }
+            cdrom_device_fillpath(cue_path, sizeof(cue_path),
+                  state->drive_letter[0], 1, false);
+            probe = filestream_open(cue_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+            if (probe)
+            {
+               cdrom_get_media_profile(filestream_get_vfs_handle(probe), &profile);
+               filestream_close(probe);
+            }
+            if ((profile >= 0x10 && profile <= 0x17)
+                  || profile == 0x1a || profile == 0x1b
+                  || profile == 0x2a || profile == 0x2b)
+            {
+               char *output_path = state->output_path;
+               char filename[NAME_MAX_LENGTH];
+               cdrom_device_fillimagepath(cue_path, sizeof(cue_path),
+                     state->drive_letter[0]);
+               state->file = filestream_open(cue_path, RETRO_VFS_FILE_ACCESS_READ, 0);
+               if (!state->file)
+               {
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED);
+                  return;
+               }
+               state->disc_total_bytes = filestream_get_size(state->file);
+               fill_pathname(filename, state->title, ".iso", sizeof(filename));
+               fill_pathname_join_special(output_path, state->dir_core_assets,
+                     filename, sizeof(state->output_path));
+               state->output_file = filestream_open(output_path,
+                     RETRO_VFS_FILE_ACCESS_WRITE, 0);
+               if (!state->output_file || state->disc_total_bytes <= 0)
+               {
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
+                  return;
+               }
+               state->state = DUMP_STATE_READ_IMAGE;
+               break;
+            }
 
             cdrom_device_fillpath(cue_path, sizeof(cue_path), state->drive_letter[0], 0, true);
 
@@ -131,9 +211,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             if (!state->file)
             {
                RARCH_ERR("[CDROM] Error opening file for reading: %s.\n", cue_path);
-               task_set_progress(task, 100);
-               task_free_title(task);
-               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED)));
+               task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED);
                return;
             }
 
@@ -143,23 +221,9 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
-            char output_file[PATH_MAX_LENGTH];
-            char cue_filename[PATH_MAX_LENGTH];
+            char *output_file = state->output_path;
+            char cue_filename[NAME_MAX_LENGTH + 8];
             const char *directory_core_assets = state->dir_core_assets;
-            /* write cuesheet to a file */
-            int64_t cue_size     = filestream_get_size(state->file);
-            char *cue_data       = (char*)calloc(1, cue_size);
-
-            /* NULL-check: filestream_read below writes into
-             * cue_data via fread which NULL-derefs on the
-             * destination pointer.  If alloc fails skip the
-             * read - cue_data is actually unused after the read
-             * (only passed to free at the bottom of this block,
-             * line ~226), so the only consequence of the skip
-             * is that the read happens to not be performed. */
-            if (cue_data)
-               filestream_read(state->file, cue_data, cue_size);
-
             state->stream        = filestream_get_vfs_handle(state->file);
             state->toc           = retro_vfs_file_get_cdrom_toc();
 
@@ -167,23 +231,23 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                RARCH_LOG("[CDROM] This disc is not genuine.\n");
 
             filestream_close(state->file);
+            state->file = NULL;
 
             fill_pathname(cue_filename, state->title,
                   ".cue", sizeof(cue_filename));
 
             fill_pathname_join_special(output_file,
-                  directory_core_assets, cue_filename, sizeof(output_file));
+                  directory_core_assets, cue_filename, sizeof(state->output_path));
 
             {
                RFILE         *file = filestream_open(output_file, RETRO_VFS_FILE_ACCESS_WRITE, 0);
                unsigned char point = 0;
+               bool cue_ok = true;
 
                if (!file)
                {
                   RARCH_ERR("[CDROM] Error opening file for writing: %s.\n", output_file);
-                  task_set_progress(task, 100);
-                  task_free_title(task);
-                  task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED)));
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
                   return;
                }
 
@@ -205,8 +269,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
                   snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, point);
 
-                  filestream_printf(file, "FILE \"%s\" BINARY\n", track_filename);
-                  filestream_printf(file, "  TRACK %02d %s\n", point, track_type);
+                  cue_ok &= task_cdrom_dump_printf(state, file, "FILE \"%s\" BINARY\n", track_filename);
+                  cue_ok &= task_cdrom_dump_printf(state, file, "  TRACK %02d %s\n", point, track_type);
 
                   {
                      unsigned pregap_lba_len = state->toc->track[point - 1].lba - state->toc->track[point - 1].lba_start;
@@ -219,21 +283,26 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
                         cdrom_lba_to_msf(pregap_lba_len, &min, &sec, &frame);
 
-                        filestream_printf(file, "    INDEX 00 00:00:00\n");
-                        filestream_printf(file, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
+                        cue_ok &= task_cdrom_dump_printf(state, file, "    INDEX 00 00:00:00\n");
+                        cue_ok &= task_cdrom_dump_printf(state, file, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
                      }
                      else
-                        filestream_printf(file, "    INDEX 01 00:00:00\n");
+                        cue_ok &= task_cdrom_dump_printf(state, file, "    INDEX 01 00:00:00\n");
                   }
                }
 
+               if (!cue_ok || filestream_flush(file) != 0)
+               {
+                  filestream_close(file);
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+                  return;
+               }
                filestream_close(file);
             }
 
             state->file  = NULL;
             state->state = DUMP_STATE_NEXT_TRACK;
 
-            free(cue_data);
          }
          break;
       case DUMP_STATE_NEXT_TRACK:
@@ -260,7 +329,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             /* open a new file for writing for this next track */
             if (state->file)
             {
-               char output_path[PATH_MAX_LENGTH];
+               char *output_path = state->output_path;
                char track_filename[PATH_MAX_LENGTH];
                const char *directory_core_assets = state->dir_core_assets;
 
@@ -271,23 +340,19 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                state->cur_track_bytes = filestream_get_size(state->file);
 
                fill_pathname_join_special(output_path,
-                     directory_core_assets, track_filename, sizeof(output_path));
+                     directory_core_assets, track_filename, sizeof(state->output_path));
 
                if (!(state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0)))
                {
                   RARCH_ERR("[CDROM] Error opening file for writing: %s.\n", output_path);
-                  task_set_progress(task, 100);
-                  task_free_title(task);
-                  task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED)));
+                  task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
                   return;
                }
             }
             else
             {
                RARCH_ERR("[CDROM] Error opening file for writing: %s.\n", state->cdrom_path);
-               task_set_progress(task, 100);
-               task_free_title(task);
-               task_set_title(task, strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED)));
+               task_cdrom_dump_fail(task, MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED);
                return;
             }
 
@@ -298,33 +363,28 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          /* read data from track and write it to a file in chunks */
          if (state->cur_track_bytes > state->track_written_bytes)
          {
-            char data[2352 * 2] = {0};
-            int64_t read_bytes  = filestream_read(state->file, data, sizeof(data));
+            int64_t read_bytes  = filestream_read(state->file, state->data, 2352 * 2);
             int progress        = 0;
 
             if (read_bytes <= 0)
             {
-               task_set_progress(task, 100);
-               task_free_title(task);
-               task_set_title(task, strdup(msg_hash_to_str(MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE)));
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+               return;
+            }
+
+            if (filestream_write(state->output_file, state->data, read_bytes) != read_bytes)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
                return;
             }
 
             state->track_written_bytes += read_bytes;
             state->disc_read_bytes += read_bytes;
-            progress = (state->disc_read_bytes / (double)state->disc_total_bytes) * 100.0;
+            progress = (state->disc_read_bytes / (double)state->disc_total_bytes) * 99.0;
 
 #ifdef CDROM_DEBUG
             RARCH_LOG("[CDROM] Read %" PRId64 " bytes, totalling %" PRId64 " of %" PRId64 " bytes. Progress: %d%%\n", read_bytes, state->track_written_bytes, state->cur_track_bytes, progress);
 #endif
-
-            if (filestream_write(state->output_file, data, read_bytes) <= 0)
-            {
-               task_set_progress(task, 100);
-               task_free_title(task);
-               task_set_title(task, strdup(msg_hash_to_str(MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK)));
-               return;
-            }
 
             task_set_progress(task, progress);
          }
@@ -338,11 +398,44 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             }
             if (state->output_file)
             {
+               if (filestream_flush(state->output_file) != 0)
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+                  return;
+               }
                filestream_close(state->output_file);
-               state->file = NULL;
+               state->output_file = NULL;
             }
 
             state->state = DUMP_STATE_NEXT_TRACK;
+         }
+         break;
+      case DUMP_STATE_READ_IMAGE:
+         {
+            int64_t remaining = state->disc_total_bytes - state->disc_read_bytes;
+            int64_t bytes;
+            int64_t want = remaining > 32 * 2048 ? 32 * 2048 : remaining;
+            if (!remaining)
+            {
+               if (filestream_flush(state->output_file) != 0)
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+               task_set_progress(task, 100);
+               return;
+            }
+            bytes = filestream_read(state->file, state->data, want);
+            if (bytes != want)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+               return;
+            }
+            if (filestream_write(state->output_file, state->data, bytes) != bytes)
+            {
+               task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK);
+               return;
+            }
+            state->disc_read_bytes += bytes;
+            task_set_progress(task, (int8_t)((state->disc_read_bytes /
+                     (double)state->disc_total_bytes) * 99.0));
          }
          break;
    }
@@ -355,7 +448,11 @@ static void task_cdrom_dump_callback(retro_task_t *task,
    task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)task->state;
 
    if (state)
+   {
+      if (state->data)
+         memalign_free(state->data);
       free(state);
+   }
 }
 
 void task_push_cdrom_dump(const char *drive)
@@ -363,6 +460,12 @@ void task_push_cdrom_dump(const char *drive)
    retro_task_t *task             = task_init();
    task_cdrom_dump_state_t *state = (task_cdrom_dump_state_t*)calloc(1, sizeof(*state));
 
+   if (!task || !state || !drive || !*drive)
+   {
+      free(task);
+      free(state);
+      return;
+   }
    state->drive_letter[0]         = drive[0];
    state->next                    = true;
    state->cur_track               = 0;
