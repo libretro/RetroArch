@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_cdrom.h>
 #include <file/file_path.h>
 #include <compat/fopen_utf8.h>
 #include <cdrom/cdrom.h>
@@ -51,6 +52,28 @@ int64_t retro_vfs_file_seek_cdrom(
       int64_t offset, int whence)
 {
    const char *ext = path_get_extension(stream->orig_path);
+   if (stream->cdrom->logical_blocks)
+   {
+      int64_t base;
+      switch (whence)
+      {
+         case SEEK_SET:
+            base = 0;
+            break;
+         case SEEK_CUR:
+            base = stream->cdrom->byte_pos;
+            break;
+         case SEEK_END:
+            base = (int64_t)stream->cdrom->disc_bytes;
+            break;
+         default:
+            return -1;
+      }
+      if (offset < -base || offset > INT64_MAX - base)
+         return -1;
+      stream->cdrom->byte_pos = base + offset;
+      return 0;
+   }
 
    if (     (ext[0] == 'c' || ext[0] == 'C')
          && (ext[1] == 'u' || ext[1] == 'U')
@@ -153,6 +176,31 @@ int64_t retro_vfs_file_seek_cdrom(
    return 0;
 }
 
+#if (defined(__linux__) && !defined(ANDROID)) || (defined(_WIN32) && !defined(_XBOX))
+static bool retro_vfs_cdrom_valid_image(const char *path, unsigned mode)
+{
+   if (strcmp(path_get_extension(path), "iso") == 0)
+   {
+      if (mode != RETRO_VFS_FILE_ACCESS_READ)
+         return false;
+#if defined(__linux__) && !defined(ANDROID)
+      if (strlen(path) != 10 || memcmp(path, "drive", 5)
+            || path[5] < '0' || path[5] > '9'
+            || strcmp(path + 6, ".iso"))
+         return false;
+#elif defined(_WIN32) && !defined(_XBOX)
+      if (strlen(path) != 12 || strcmp(path + 1, ":/drive.iso")
+            || !((path[0] >= 'A' && path[0] <= 'Z')
+               || (path[0] >= 'a' && path[0] <= 'z')))
+         return false;
+#else
+      return false;
+#endif
+   }
+   return true;
+}
+#endif
+
 void retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints)
@@ -162,10 +210,13 @@ void retro_vfs_file_open_cdrom(
    size_t path_len         = strlen(path);
    const char *ext         = path_get_extension(path);
 
+   if (!retro_vfs_cdrom_valid_image(path, mode))
+      return;
    stream->cdrom->cur_track = 1;
 
    if (     !(ext[0] == 'c' && ext[1] == 'u' && ext[2] == 'e' && ext[3] == '\0')
-         && !(ext[0] == 'b' && ext[1] == 'i' && ext[2] == 'n' && ext[3] == '\0'))
+         && !(ext[0] == 'b' && ext[1] == 'i' && ext[2] == 'n' && ext[3] == '\0')
+         && !(ext[0] == 'i' && ext[1] == 's' && ext[2] == 'o' && ext[3] == '\0'))
       return;
 
    if (path_len >= (sizeof("drive1-track01.bin")-1))
@@ -250,8 +301,12 @@ void retro_vfs_file_open_cdrom(
    size_t path_len   = strlen(path);
    const char *ext   = path_get_extension(path);
 
+   if (!retro_vfs_cdrom_valid_image(path, mode))
+      return;
+
    if (     !(ext[0] == 'c' && ext[1] == 'u' && ext[2] == 'e' && ext[3] == '\0')
-         && !(ext[0] == 'b' && ext[1] == 'i' && ext[2] == 'n' && ext[3] == '\0'))
+         && !(ext[0] == 'b' && ext[1] == 'i' && ext[2] == 'n' && ext[3] == '\0')
+         && !(ext[0] == 'i' && ext[1] == 's' && ext[2] == 'o' && ext[3] == '\0'))
       return;
 
    if (path_len >= (sizeof("d:/drive-track01.bin")-1))
@@ -408,6 +463,23 @@ void retro_vfs_file_open_cdrom(
 #endif
    }
 #endif
+   if (strcmp(path_get_extension(path), "iso") == 0)
+   {
+      uint64_t blocks = 0;
+      uint32_t size = 0;
+      if (cdrom_get_capacity(stream, &blocks, &size) || size != 2048)
+      {
+         retro_vfs_file_close_cdrom(stream);
+         stream->fp = NULL;
+#if defined(_WIN32) && !defined(_XBOX)
+         stream->fh = NULL;
+#endif
+         return;
+      }
+      stream->cdrom->logical_blocks = true;
+      stream->cdrom->disc_bytes = blocks * size;
+      return;
+   }
    if (vfs_cdrom_toc.num_tracks > 1 && stream->cdrom->cur_track)
    {
       stream->cdrom->cur_min   = vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].min;
@@ -455,6 +527,9 @@ int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream)
    if (!stream)
       return -1;
 
+   if (stream->cdrom->logical_blocks)
+      return stream->cdrom->byte_pos;
+
    ext = path_get_extension(stream->orig_path);
 
    if (     (ext[0] == 'c' || ext[0] == 'C')
@@ -488,6 +563,62 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 {
    int rv;
    const char *ext = path_get_extension(stream->orig_path);
+   if (stream->cdrom->logical_blocks)
+   {
+      unsigned char *dst = (unsigned char*)s;
+      uint64_t done = 0;
+      uint64_t pos = (uint64_t)stream->cdrom->byte_pos;
+      if (!len || pos >= stream->cdrom->disc_bytes)
+         return 0;
+      if (!s)
+         return -1;
+      if (len > stream->cdrom->disc_bytes - pos)
+         len = stream->cdrom->disc_bytes - pos;
+      if (len > SIZE_MAX)
+         len = SIZE_MAX;
+      while (done < len)
+      {
+         uint32_t lba = (uint32_t)(pos / 2048);
+         size_t skip = (size_t)(pos % 2048);
+         size_t n;
+         if (skip || len - done < 2048)
+         {
+            if (!stream->cdrom->last_frame_valid
+                  || stream->cdrom->last_frame_lba != lba)
+            {
+               stream->cdrom->last_frame_valid = false;
+               if (cdrom_read_blocks(stream, lba, 1,
+                        stream->cdrom->last_frame))
+                  break;
+               stream->cdrom->last_frame_lba = lba;
+               stream->cdrom->last_frame_valid = true;
+            }
+            n = 2048 - skip;
+            if (n > len - done)
+               n = (size_t)(len - done);
+            memcpy(dst + (size_t)done, stream->cdrom->last_frame + skip, n);
+         }
+         else
+         {
+            uint32_t blocks = (uint32_t)((len - done) / 2048 > 32
+                  ? 32 : (len - done) / 2048);
+            n = (size_t)blocks * 2048;
+            if (cdrom_read_blocks(stream, lba, blocks, dst + (size_t)done))
+               break;
+         }
+         done += n;
+         pos  += n;
+      }
+      stream->cdrom->byte_pos += (int64_t)done;
+      if (done != len)
+      {
+         stream->cdrom->io_error = true;
+         stream->cdrom->last_frame_valid = false;
+         if (!done)
+            return -1;
+      }
+      return (int64_t)done;
+   }
 
    if (     (ext[0] == 'c' || ext[0] == 'C')
          && (ext[1] == 'u' || ext[1] == 'U')
@@ -635,7 +766,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
 int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream)
 {
-   return 0;
+   return stream && stream->cdrom && stream->cdrom->io_error ? 1 : 0;
 }
 
 const vfs_cdrom_t* retro_vfs_file_get_cdrom_position(

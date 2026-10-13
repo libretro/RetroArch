@@ -47,7 +47,22 @@ endif
 
 LDLIBS += -lm
 
+DVD_SOURCES := dvd_blocks_test.c $(filter-out cdrom_cuesheet_overflow_test.c $(LIBRETRO_COMM_DIR)/cdrom/cdrom.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c,$(SOURCES))
+DVD_OBJS := $(SAMPLE_OBJDIR)/dvd_blocks_test.o $(call sample_objs,$(filter-out dvd_blocks_test.o,$(DVD_SOURCES:.c=.o)))
+
+ifeq ($(OS),Windows_NT)
+   LDLIBS += -lwinmm
+endif
+
 all: $(TARGET)
+
+$(SAMPLE_OBJDIR)/dvd_blocks_test.o: dvd_blocks_test.c $(LIBRETRO_COMM_DIR)/cdrom/cdrom.c $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_cdrom.c $(LIBRETRO_COMM_DIR)/include/vfs/vfs.h
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+dvd_blocks_test$(EXE): $(DVD_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -61,6 +76,6 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) dvd_blocks_test$(EXE) $(OBJS) $(DVD_OBJS)
 
 .PHONY: clean

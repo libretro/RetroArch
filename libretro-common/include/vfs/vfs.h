@@ -44,6 +44,7 @@ typedef void* HANDLE;
 typedef struct
 {
    int64_t byte_pos;
+   uint64_t disc_bytes; /* cooked 2048-byte image; zero for CD paths */
    char *cue_buf;
    size_t cue_len;
    unsigned cur_lba;
@@ -55,6 +56,8 @@ typedef struct
    unsigned char last_frame[2352];
    char drive;
    bool last_frame_valid;
+   bool logical_blocks;
+   bool io_error;
 } vfs_cdrom_t;
 #endif
 

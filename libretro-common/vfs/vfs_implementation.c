@@ -859,7 +859,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          case VFS_SCHEME_CDROM:
             retro_vfs_file_open_cdrom(stream, path, mode, hints);
 #if defined(_WIN32) && !defined(_XBOX)
-            if (!stream->fh)
+            if (!stream->fh || stream->fh == INVALID_HANDLE_VALUE)
                goto error;
 #elif defined(__APPLE__)
             if (!stream->iokit_mmc)

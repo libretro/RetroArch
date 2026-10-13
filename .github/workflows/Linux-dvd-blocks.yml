@@ -1,0 +1,53 @@
+name: CI optical DVD blocks
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/cdrom/**'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/include/cdrom/**'
+      - 'libretro-common/include/vfs/**'
+      - 'libretro-common/samples/file/vfs_cdrom/**'
+      - '.github/workflows/Linux-dvd-blocks.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'libretro-common/cdrom/**'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/include/cdrom/**'
+      - 'libretro-common/include/vfs/**'
+      - 'libretro-common/samples/file/vfs_cdrom/**'
+      - '.github/workflows/Linux-dvd-blocks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blocks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential gcc-mingw-w64-x86-64 wine64
+      - name: Linux commands and VFS
+        working-directory: libretro-common/samples/file/vfs_cdrom
+        run: |
+          set -eu
+          make -j2 dvd_blocks_test SANITIZER=address,undefined SAMPLE_OBJDIR=obj-dvd-asan
+          ./dvd_blocks_test
+          make -j2 SANITIZER=address,undefined SAMPLE_OBJDIR=obj-dvd-asan
+          ./cdrom_cuesheet_overflow_test
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      - name: Windows commands and VFS
+        working-directory: libretro-common/samples/file/vfs_cdrom
+        run: |
+          set -eu
+          make -j2 dvd_blocks_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe SAMPLE_OBJDIR=obj-dvd-win
+          WINEDEBUG=-all wine ./dvd_blocks_test.exe

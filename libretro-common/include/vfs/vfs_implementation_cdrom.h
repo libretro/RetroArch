@@ -30,6 +30,10 @@ RETRO_BEGIN_DECLS
 
 int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
+/* Linux: cdrom://driveN.iso (sg device N), Windows: cdrom://D:/drive.iso.
+ * Read-only cooked 2048-byte image; capacity is probed per handle.
+ * No UDF parsing, DVD navigation or decryption is performed here.
+ * macOS cooked images are not yet supported. CD cue/bin paths are unchanged. */
 void retro_vfs_file_open_cdrom(
       libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints);

@@ -348,7 +348,8 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
    increment_msf(&last_min, &last_sec, &last_frame);
 #endif
 
-   if (!ioctl_rv || sptd.s.ScsiStatus != 0)
+   if (!ioctl_rv || sptd.s.ScsiStatus != 0
+         || sptd.s.DataTransferLength != len)
       return 1;
 
    return 0;
@@ -386,7 +387,8 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 
    rv = ioctl(fileno(stream->fp), SG_IO, &sgio);
 
-   if (rv == -1 || sgio.info & SG_INFO_CHECK)
+   if (rv == -1 || (sgio.info & SG_INFO_CHECK) || sgio.resid != 0
+         || sgio.status || sgio.host_status || sgio.driver_status)
       return 1;
 
    return 0;
@@ -1558,6 +1560,110 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t 
    printf("[CDROM] Device Model: %s (is CD-ROM? %s)\n", s, (cdrom ? "yes" : "no"));
 #endif
    return 0;
+}
+
+/* Unlike READ CD, cooked DVD reads carry a logical block address and
+ * never use CD MSF, pregaps, or the 2352-byte raw-sector cache. */
+static int cdrom_transfer_blocks(libretro_vfs_implementation_file *stream,
+      void *s, size_t len, unsigned char *cdb, size_t cdb_len)
+{
+   unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
+   if (!stream || !s)
+      return 1;
+#if defined(__linux__) && !defined(ANDROID)
+   if (!stream->fp)
+      return 1;
+   return cdrom_send_command_linux(stream, DIRECTION_IN,
+         s, len, cdb, cdb_len, sense, sizeof(sense));
+#elif defined(_WIN32) && !defined(_XBOX)
+   if (!stream->fh || stream->fh == INVALID_HANDLE_VALUE)
+      return 1;
+   return cdrom_send_command_win32(stream, DIRECTION_IN,
+         s, len, cdb, cdb_len, sense, sizeof(sense));
+#else
+   (void)len;
+   (void)cdb;
+   (void)cdb_len;
+   (void)sense;
+   return 1;
+#endif
+}
+
+int cdrom_get_capacity(libretro_vfs_implementation_file *stream,
+      uint64_t *blocks, uint32_t *block_size)
+{
+   unsigned char cdb[10] = {0x25, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+   unsigned char *buf;
+   uint32_t last, size;
+   int rv;
+   if (blocks)
+      *blocks = 0;
+   if (block_size)
+      *block_size = 0;
+   if (!stream || !blocks || !block_size)
+      return 1;
+   buf = (unsigned char*)memalign_alloc(4096, 8);
+   if (!buf)
+      return 1;
+   memset(buf, 0, 8);
+   rv = cdrom_transfer_blocks(stream, buf, 8, cdb, sizeof(cdb));
+   last = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
+        | ((uint32_t)buf[2] << 8) | buf[3];
+   size = ((uint32_t)buf[4] << 24) | ((uint32_t)buf[5] << 16)
+        | ((uint32_t)buf[6] << 8) | buf[7];
+   memalign_free(buf);
+   if (rv || last == UINT32_MAX || !size)
+      return 1;
+   *blocks     = (uint64_t)last + 1;
+   *block_size = size;
+   return 0;
+}
+
+int cdrom_read_blocks(libretro_vfs_implementation_file *stream,
+      uint32_t lba, uint32_t count, void *s)
+{
+   unsigned char cdb[10] = {0x28, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+   unsigned char *dst = (unsigned char*)s;
+   unsigned char *bounce = NULL;
+   int rv = 0;
+   if (!stream || (!s && count)
+         || (uint64_t)lba + count > (uint64_t)UINT32_MAX + 1
+         || (uint64_t)count * 2048 > SIZE_MAX)
+      return 1;
+   if (!count)
+      return 0;
+   /* Bounded 64KiB commands suit older optical adapters as well as DVD.
+    * A conservative page alignment avoids imposing device-specific
+    * alignment requirements on VFS callers. */
+   if ((uintptr_t)dst & 4095)
+   {
+      bounce = (unsigned char*)memalign_alloc(4096, (count > 32 ? 32 : count) * 2048);
+      if (!bounce)
+         return 1;
+   }
+   while (count)
+   {
+      uint32_t n = count > 32 ? 32 : count;
+      size_t bytes = (size_t)n * 2048;
+      cdb[2] = (unsigned char)(lba >> 24);
+      cdb[3] = (unsigned char)(lba >> 16);
+      cdb[4] = (unsigned char)(lba >> 8);
+      cdb[5] = (unsigned char)lba;
+      cdb[7] = (unsigned char)(n >> 8);
+      cdb[8] = (unsigned char)n;
+      rv = cdrom_transfer_blocks(stream, bounce ? bounce : dst,
+            bytes, cdb, sizeof(cdb));
+      if (rv)
+         break;
+      if (bounce)
+         memcpy(dst, bounce, bytes);
+      dst   += bytes;
+      lba   += n;
+      count -= n;
+   }
+   if (bounce)
+      memalign_free(bounce);
+   return rv;
 }
 
 int cdrom_read(libretro_vfs_implementation_file *stream,

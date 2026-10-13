@@ -83,6 +83,22 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t 
 
 int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip);
 
+/* Cooked optical-disc access (DVD uses 2048-byte logical blocks).
+ * Supported transports: Linux SG_IO and Windows SCSI pass-through.
+ * Capacity is a block count, including the last LBA.  Returns 0 on
+ * success, 1 on error/unsupported transport; outputs stay zero on error.
+ * READ CAPACITY (10)'s saturated capacity is rejected, not truncated. */
+int cdrom_get_capacity(libretro_vfs_implementation_file *stream,
+      uint64_t *blocks, uint32_t *block_size);
+
+/* Read count DVD blocks from a 32-bit LBA.  The caller supplies count*2048
+ * writable bytes.  Aligned buffers go directly to the device; other buffers
+ * use a bounded bounce buffer.  Returns 0 only after the complete transfer.
+ * On failure the destination may contain a partially completed transfer.
+ * Does not retry or sleep: recovery belongs to the off-thread caller. */
+int cdrom_read_blocks(libretro_vfs_implementation_file *stream,
+      uint32_t lba, uint32_t count, void *s);
+
 int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned speed);
 
 int cdrom_stop(libretro_vfs_implementation_file *stream);
