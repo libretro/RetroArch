@@ -23,6 +23,7 @@
 #pragma once
 
 #include <functional>
+#include <retro_atomic.h>
 #include "uwp_main.h"
 #include "uwp_func.h"
 
@@ -38,7 +39,8 @@ namespace
    template<typename T>
    T RunAsync(std::function<winrt::Windows::Foundation::IAsyncOperation<T>()> func)
    {
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       std::exception_ptr exception = nullptr;
       T result{};
 
@@ -58,12 +60,13 @@ namespace
          {
             exception = std::current_exception();
          }
-         finished = true;
+         /* Publish result/error before the waiter observes completion. */
+         retro_atomic_store_release_int(&finished, 1);
       });
 
       /* Don't stall the UI thread - prevents a deadlock */
       auto corewindow = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
@@ -77,7 +80,8 @@ namespace
    /* Overload for IAsyncAction (void return) */
    inline void RunAsync(std::function<winrt::Windows::Foundation::IAsyncAction()> func)
    {
-      volatile bool finished = false;
+      retro_atomic_int_t finished;
+      retro_atomic_int_init(&finished, 0);
       std::exception_ptr exception = nullptr;
 
       auto op = func();
@@ -94,12 +98,13 @@ namespace
          {
             exception = std::current_exception();
          }
-         finished = true;
+         /* Publish result/error before the waiter observes completion. */
+         retro_atomic_store_release_int(&finished, 1);
       });
 
       /* Don't stall the UI thread - prevents a deadlock */
       auto corewindow = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
-      while (!finished)
+      while (!retro_atomic_load_acquire_int(&finished))
       {
          if (corewindow)
             corewindow.Dispatcher().ProcessEvents(winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
