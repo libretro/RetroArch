@@ -4,4 +4,6 @@ rdvd_highlight_test
 rdvd_highlight_test.exe
 rdvd_spu_test
 rdvd_spu_test.exe
+rdvd_ifo_test
+rdvd_ifo_test.exe
 *.vob
