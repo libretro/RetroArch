@@ -146,3 +146,11 @@ refuses pending ownership and clears the adapter pointer even if a consumed
 RFILE close reports failure. Threadless/no-real-atomics builds return unsupported.
 The caller still supplies a dedicated I/O worker and its scheduling/lifetime.
 Player task wiring remains pending. VFS providers may perform internal copies.
+
+Owner-side rdvd_vfs_schedule uses a single-attempt thread-pool enqueue with
+no allocation or overflow locks. A refused post leaves the read queued for
+a later tick. Completion polling and close retain ownership until the job's
+last adapter access has finished. Use a dedicated I/O pool; keep it alive
+until jobs drain and never call tpool_help on the main thread for that pool.
+Pool creation/destruction and player ownership still belong to the caller;
+this adapter does not add a wait or pool teardown to the frame loop.

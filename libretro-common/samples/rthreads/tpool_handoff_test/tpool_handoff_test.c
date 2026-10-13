@@ -307,6 +307,48 @@ static void try_job(void *arg)
    (void)arg;
    retro_atomic_fetch_add_int(&try_ran, 1);
 }
+#define TRY_JOBS 2000
+static retro_atomic_int_t try_counts[PRODUCERS * TRY_JOBS];
+static unsigned char try_accepted[PRODUCERS * TRY_JOBS];
+static tpool_t *try_pool;
+static void try_count_job(void *arg)
+{
+   retro_atomic_fetch_add_int((retro_atomic_int_t*)arg, 1);
+}
+static void try_producer(void *arg)
+{
+   unsigned i, base = (unsigned)(size_t)arg * TRY_JOBS;
+   for (i = 0; i < TRY_JOBS; i++)
+      try_accepted[base + i] = tpool_try_add_work(try_pool, try_count_job, &try_counts[base + i]);
+}
+static void test_try_contention(void)
+{
+   sthread_t *threads[PRODUCERS];
+   unsigned i, wrong = 0, accepted = 0;
+   try_pool = tpool_create(4);
+   if (!try_pool) { check("contended try pool created", 0); return; }
+   for (i = 0; i < PRODUCERS * TRY_JOBS; i++)
+      retro_atomic_store_release_int(&try_counts[i], 0);
+   memset(try_accepted, 0, sizeof(try_accepted));
+   for (i = 0; i < PRODUCERS; i++)
+   {
+      threads[i] = sthread_create(try_producer, (void*)(size_t)i);
+      if (!threads[i]) wrong++;
+   }
+   for (i = 0; i < PRODUCERS; i++)
+      if (threads[i]) sthread_join(threads[i]);
+   tpool_wait(try_pool);
+   for (i = 0; i < PRODUCERS * TRY_JOBS; i++)
+   {
+      accepted += try_accepted[i];
+      if (retro_atomic_load_acquire_int(&try_counts[i]) != try_accepted[i]) wrong++;
+   }
+   check("contended try posts execute exactly the accepted jobs", !wrong && accepted);
+   check("contended try posts never use overflow or leave counts",
+         !retro_atomic_load_acquire_int(&try_pool->over)
+         && !retro_atomic_load_acquire_int(&try_pool->count.n.outstanding));
+   tpool_destroy(try_pool);
+}
 static void test_try_post(void)
 {
    tpool_t *tp = tpool_create(1);
@@ -353,6 +395,7 @@ int main(void)
    test_saturation();
 #ifdef RETRO_ATOMIC_LOCK_FREE
    test_try_post();
+   test_try_contention();
 #endif
    if (fails)
    {
