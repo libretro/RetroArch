@@ -30,6 +30,7 @@
 #endif
 
 #include <libretro.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
 #include <formats/image.h>
@@ -43,6 +44,7 @@
 #endif
 
 #include "../bitmapfont.h"
+#include "../video_views.h"
 #include "../display_servers/dispserv_gx.h"
 #include "../../configuration.h"
 #include "../../driver.h"
@@ -98,6 +100,13 @@ typedef struct gekko_video
    unsigned              tex_w, tex_h;  /* what frame_tex describes */
    unsigned              overscan_top, overscan_bottom;
    unsigned              orientation;
+   /* The size the frontend lays views out at: the EFB's lines, as wide
+    * as the display's aspect makes them in square pixels */
+   unsigned              out_dims;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t    views_fallback;
+   bool                  views_active;
+   bool                  views_seen;
    unsigned              cur_xfb;
    int                   system_xorigin;
    bool                  should_resize;
@@ -175,6 +184,16 @@ static void wait_swap(gekko_video_t *gx)
       gk_vi_wait_retrace();
 }
 
+/* The aspect the TV shows the EFB at */
+static float gekko_device_aspect(void)
+{
+#ifdef HW_RVL
+   if (gk_conf_wide() > 0)
+      return 16.0f / 9.0f;
+#endif
+   return 4.0f / 3.0f;
+}
+
 static void gekko_set_video_mode(void *data, unsigned dims, bool fullscreen)
 {
    static const uint8_t vfilter_soft[7] = { 8, 8, 10, 12, 10, 8, 8 };
@@ -247,6 +266,13 @@ static void gekko_set_video_mode(void *data, unsigned dims, bool fullscreen)
 
    gx->vp.full_dims  = VIDEO_SCALE_PACK(gx->mode.fb_width, gx->efb_lines);
    gx->should_resize = true;
+   /* Views are laid out in square pixels; below 192 lines is a custom
+    * mode, shown as it is */
+   gx->out_dims      = gx->vp.full_dims;
+   if (gx->efb_lines >= 192)
+      gx->out_dims   = VIDEO_SCALE_PACK((unsigned)((float)gx->efb_lines
+               * gekko_device_aspect() + 0.5f), gx->efb_lines);
+   video_driver_set_output_dims(gx->out_dims);
 
    /* The menu's surface: as tall as the EFB allows up to RGUI's 240,
     * as wide as its aspect ratio asks, in whole tiles. */
@@ -346,12 +372,8 @@ static void viewport_resize(gekko_video_t *gx, unsigned overscan_top,
    /* Below 192 lines is a custom mode: as it is. */
    if (gx->efb_lines >= 192)
    {
-      float device_aspect  = 4.0f / 3.0f;
+      float device_aspect  = gekko_device_aspect();
       float desired_aspect = video_driver_get_aspect_ratio();
-#ifdef HW_RVL
-      if (gk_conf_wide() > 0)
-         device_aspect = 16.0f / 9.0f;
-#endif
       if (desired_aspect == 0.0f)
          desired_aspect = 1.0f;
       if (     gx->orientation == ORIENTATION_VERTICAL
@@ -400,13 +422,15 @@ static void quad(float x, float y, float w, float h, const float *u,
    gk_gx_u32(rgba);  gk_gx_f32(u[3]);  gk_gx_f32(v[3]);
 }
 
-static void draw_frame(gekko_video_t *gx)
+/* The texture coordinates of the corners top-left, top-right,
+ * bottom-right, bottom-left of the part of the frame from (u0, v0) to
+ * (u1, v1); each quarter turn moves the texture one corner on. */
+static void corners(const gekko_video_t *gx, float u0, float v0,
+      float u1, float v1, float *u, float *v)
 {
-   /* Corners top-left, top-right, bottom-right, bottom-left; each
-    * quarter turn moves the texture one corner on. */
-   static const float cu[4] = { 0, 1, 1, 0 }, cv[4] = { 0, 0, 1, 1 };
-   float u[4], v[4];
    unsigned i, turn;
+   const float cu[4] = { u0, u1, u1, u0 };
+   const float cv[4] = { v0, v0, v1, v1 };
    switch (gx->orientation)
    {
       case ORIENTATION_VERTICAL:        turn = 1; break;
@@ -419,14 +443,80 @@ static void draw_frame(gekko_video_t *gx)
       u[i] = cu[(i + turn) & 3];
       v[i] = cv[(i + turn) & 3];
    }
+}
+
+static void draw_frame(gekko_video_t *gx)
+{
+   float u[4], v[4];
+   corners(gx, 0, 0, 1, 1, u, v);
    gk_gx_tex_load(&gx->frame_tex, 0, 0);
    quad((float)VIDEO_POS_X(gx->vp.pos), (float)VIDEO_POS_Y(gx->vp.pos),
          (float)VIDEO_SCALE_W(gx->vp.dims), (float)VIDEO_SCALE_H(gx->vp.dims),
          u, v, 0xffffffffu);
 }
 
-static void draw_menu(gekko_video_t *gx)
+/* ---- views ---- */
+
+/* The EFB's pixels a pixel of the views' layout is wide */
+static float views_sx(const gekko_video_t *gx)
 {
+   return (float)gx->mode.fb_width / (float)VIDEO_SCALE_W(gx->out_dims);
+}
+
+/* Whether this frame draws its views: a map that fits the frame the
+ * texture holds, laid out without a canvas - anaglyph and interlaced
+ * draw the frame whole. */
+static bool views_setup(gekko_video_t *gx, const video_frame_info_t *info)
+{
+   const video_views_layout_t *layout = &info->views_layout;
+   bool views = info->views.num_views && !layout->offscreen
+      && gx->tex_w
+      && video_views_fit_frame(&info->views,
+            VIDEO_SCALE_PACK(gx->tex_w, gx->tex_h));
+   if (views != gx->views_active)
+   {
+      gx->views_active  = views;
+      gx->should_resize = true;
+   }
+   retro_atomic_store_release_int(&gx->views_fallback,
+         (info->views.num_views && !views) ? 1 : 0);
+   if (views && !gx->views_seen)
+   {
+      gx->views_seen = true;
+      RARCH_LOG("[Gekko] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Each placement a quad of its part of the frame's texture */
+static void draw_views(gekko_video_t *gx, const video_frame_info_t *info)
+{
+   unsigned i;
+   float sx                           = views_sx(gx);
+   const video_views_layout_t *layout = &info->views_layout;
+   gk_gx_tex_load(&gx->frame_tex, 0, 0);
+   for (i = 0; i < layout->num_placements; i++)
+   {
+      float u[4], v[4];
+      const video_views_placement_t *p = &layout->placements[i];
+      const struct retro_video_view *rv = &info->views.views[p->view];
+      corners(gx,
+            (float)rv->x / gx->tex_w, (float)rv->y / gx->tex_h,
+            (float)(rv->x + rv->width)  / gx->tex_w,
+            (float)(rv->y + rv->height) / gx->tex_h, u, v);
+      quad((float)VIDEO_POS_X(p->dst.pos) * sx,
+            (float)VIDEO_POS_Y(p->dst.pos),
+            (float)VIDEO_SCALE_W(p->dst.dims) * sx,
+            (float)VIDEO_SCALE_H(p->dst.dims), u, v, 0xffffffffu);
+   }
+}
+
+/* RGUI's surface over each of @num rectangles: the EFB, or each eye's
+ * area while views draw the UI per eye */
+static void draw_menu(gekko_video_t *gx, const float (*rects)[4],
+      unsigned num)
+{
+   unsigned i;
    static const float u[4] = { 0, 1, 1, 0 }, v[4] = { 0, 0, 1, 1 };
    gfx_display_t *p_disp = disp_get_ptr();
    unsigned w = VIDEO_SCALE_W(p_disp->framebuf_dims) & ~3u;
@@ -441,8 +531,9 @@ static void draw_menu(gekko_video_t *gx)
    gk_gx_tex_filter(&gx->menu_tex, gx->smooth ? GK_GX_LINEAR : GK_GX_NEAR,
          gx->smooth ? GK_GX_LINEAR : GK_GX_NEAR);
    gk_gx_tex_load(&gx->menu_tex, 0, 0);
-   quad(0, 0, (float)gx->mode.fb_width, (float)gx->efb_lines, u, v,
-         0xffffffffu);
+   for (i = 0; i < num; i++)
+      quad(rects[i][0], rects[i][1], rects[i][2], rects[i][3], u, v,
+            0xffffffffu);
 }
 
 #ifdef HAVE_OVERLAY
@@ -589,6 +680,10 @@ static bool gekko_frame(void *data, const void *frame, unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned a;
+   float ui[2][4];
+   unsigned num_ui   = 1;
+   bool views        = false;
    gekko_video_t *gx = (gekko_video_t*)data;
    unsigned width    = VIDEO_SCALE_W(dims) & ~3u;
    unsigned height   = VIDEO_SCALE_H(dims) & ~3u;
@@ -612,13 +707,6 @@ static bool gekko_frame(void *data, const void *frame, unsigned dims,
       gx->smooth = video_info->video_smooth;
       gx->tex_w  = 0;
    }
-   if (gx->should_resize)
-   {
-      setup_gx(gx);
-      viewport_resize(gx, gx->overscan_top, gx->overscan_bottom,
-            video_info->video_gamma, video_info->video_soft_filter);
-   }
-
    if (gx->vsync || gx->menu_enable)
       wait_swap(gx);
 
@@ -648,14 +736,54 @@ static bool gekko_frame(void *data, const void *frame, unsigned dims,
       }
    }
 
+   /* Once the texture holds this frame */
+   views = views_setup(gx, video_info);
+   if (gx->should_resize)
+   {
+      setup_gx(gx);
+      viewport_resize(gx, gx->overscan_top, gx->overscan_bottom,
+            video_info->video_gamma, video_info->video_soft_filter);
+      /* The viewport is the whole EFB while views draw */
+      if (gx->views_active)
+      {
+         gx->vp.pos  = VIDEO_POS_PACK(0, 0);
+         gx->vp.dims = gx->vp.full_dims;
+      }
+   }
+
+   /* Where the UI goes: the EFB, or each eye's area */
+   ui[0][0] = 0;
+   ui[0][1] = 0;
+   ui[0][2] = (float)gx->mode.fb_width;
+   ui[0][3] = (float)gx->efb_lines;
+   if (views && video_views_ui_per_eye(&video_info->views,
+            &video_info->views_layout, true))
+   {
+      float sx = views_sx(gx);
+      num_ui   = MIN(video_info->views_layout.num_areas, 2);
+      for (a = 0; a < num_ui; a++)
+      {
+         const video_views_rect_t *r = &video_info->views_layout.areas[a];
+         ui[a][0] = (float)VIDEO_POS_X(r->pos) * sx;
+         ui[a][1] = (float)VIDEO_POS_Y(r->pos);
+         ui[a][2] = (float)VIDEO_SCALE_W(r->dims) * sx;
+         ui[a][3] = (float)VIDEO_SCALE_H(r->dims);
+      }
+   }
+
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (frame && gx->tex_w)
-      draw_frame(gx);
+   {
+      if (views)
+         draw_views(gx, video_info);
+      else
+         draw_frame(gx);
+   }
    if (gx->menu_enable && gx->menu_data)
-      draw_menu(gx);
+      draw_menu(gx, (const float (*)[4])ui, num_ui);
 #ifdef HAVE_OVERLAY
    if (gx->overlay_enable && gx->overlay)
       draw_overlays(gx);
@@ -663,8 +791,12 @@ static bool gekko_frame(void *data, const void *frame, unsigned dims,
 
    gk_gx_draw_done();
    if (msg && *msg && !gx->menu_enable)
-      blit_line(gx, 7 * (gx->double_strike ? 1 : 2),
-            gx->efb_lines - 35 * (gx->double_strike ? 1 : 2), msg);
+      for (a = 0; a < num_ui; a++)
+         if (     ui[a][0] >= 0 && ui[a][1] >= 0
+               && ui[a][3] > 35 * (gx->double_strike ? 1 : 2))
+            blit_line(gx, (unsigned)ui[a][0] + 7 * (gx->double_strike ? 1 : 2),
+                  (unsigned)(ui[a][1] + ui[a][3])
+                  - 35 * (gx->double_strike ? 1 : 2), msg);
 
    gx->cur_xfb ^= 1;
    gk_gx_copy_xfb(g_xfb[gx->cur_xfb], gx->mode.fb_width, 0, 0,
@@ -730,8 +862,15 @@ static bool gekko_set_shader(void *data, enum rarch_shader_type type,
 
 static uint32_t gekko_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t flags    = 0;
+   gekko_video_t *gx = (gekko_video_t*)data;
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   if (gx)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&gx->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
    return flags;
 }
 

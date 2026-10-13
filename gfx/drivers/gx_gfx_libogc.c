@@ -22,6 +22,7 @@
 #include <ogcsys.h>
 
 #include <libretro.h>
+#include <retro_atomic.h>
 #include <verbosity.h>
 #include <encodings/utf.h>
 #include <formats/image.h>
@@ -41,6 +42,7 @@
 #include <defines/gx_defines.h>
 
 #include "../bitmapfont.h"
+#include "../video_views.h"
 #include "../display_servers/dispserv_gx.h"
 #include "../../configuration.h"
 #include "../../driver.h"
@@ -121,6 +123,11 @@ typedef struct gx_video
    unsigned overlays;
 #endif
    uint32_t orientation;
+   /* The size the frontend lays views out at: the XFB's lines, as wide
+    * as the display's aspect makes them in square pixels */
+   unsigned out_dims;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
    uint16_t xOrigin;
    uint16_t yOrigin;
    int8_t system_xOrigin;
@@ -132,6 +139,8 @@ typedef struct gx_video
 
    bool should_resize;
    bool keep_aspect;
+   bool views_active;
+   bool views_seen;
    bool double_strike;
    bool rgb32;
    bool menu_texture_enable;
@@ -240,6 +249,17 @@ static bool gx_is_valid_yorigin(int origin)
 	if (origin < 0 || gx_mode.viHeight + origin > max_height)
 	   return false;
 	return true;
+}
+
+/* The aspect the TV shows the EFB at */
+static float gx_device_aspect(void)
+{
+#ifdef HW_RVL
+   return CONF_GetAspectRatio() == CONF_ASPECT_4_3
+      ? 4.0f / 3.0f : 16.0f / 9.0f;
+#else
+   return 4.0f / 3.0f;
+#endif
 }
 
 static void gx_set_video_mode(void *data, unsigned dims,
@@ -396,6 +416,13 @@ static void gx_set_video_mode(void *data, unsigned dims,
    gx->vp.full_dims   = VIDEO_SCALE_PACK(gx_mode.fbWidth, gx_mode.xfbHeight);
    gx->double_strike  = (modetype == VI_NON_INTERLACE);
    gx->should_resize  = true;
+   /* Views are laid out in square pixels; below 192 lines is a custom
+    * mode, shown as it is */
+   gx->out_dims       = gx->vp.full_dims;
+   if (gx_mode.efbHeight >= 192)
+      gx->out_dims    = VIDEO_SCALE_PACK((unsigned)((float)gx_mode.xfbHeight
+               * gx_device_aspect() + 0.5f), gx_mode.xfbHeight);
+   video_driver_set_output_dims(gx->out_dims);
 
    /* Calculate menu dimensions
     * > Height is set as large as possible, limited to
@@ -842,15 +869,11 @@ static void gx_resize(gx_video_t *gx,
 	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
 #endif
 
-   /* Ignore this for custom resolutions */
-   if (gx->keep_aspect && gx_mode.efbHeight >= 192)
+   /* Ignore this for custom resolutions; while views draw, the
+    * viewport is the whole EFB */
+   if (gx->keep_aspect && gx_mode.efbHeight >= 192 && !gx->views_active)
    {
-#ifdef HW_RVL
-      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
-         4.0 / 3.0 : 16.0 / 9.0;
-#else
-      float device_aspect = 4.0 / 3.0;
-#endif
+      float device_aspect  = gx_device_aspect();
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect    = 1.0;
@@ -865,8 +888,9 @@ static void gx_resize(gx_video_t *gx,
    }
 
    /* Overscan correction */
-   if (   (overscan_corr_top    > 0)
-       || (overscan_corr_bottom > 0))
+   if (     !gx->views_active
+         && (  (overscan_corr_top    > 0)
+            || (overscan_corr_bottom > 0)))
    {
       float current_aspect = (float)width / (float)height;
       int new_height       = height -
@@ -1097,8 +1121,15 @@ static void gx_viewport_info(void *data, struct video_viewport *vp)
 static uint32_t gx_get_flags(void *data)
 {
    uint32_t             flags   = 0;
+   gx_video_t           *gx     = (gx_video_t*)data;
 
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   if (gx)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&gx->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
 
    return flags;
 }
@@ -1521,6 +1552,98 @@ static void gx_free(void *data)
    free(data);
 }
 
+/*
+ * VIEWS
+ *
+ * Each placement is a quad of its part of the frame's texture, drawn
+ * through a viewport over it in the EFB; the frontend lays them out in
+ * square pixels (out_dims), which the EFB's width stretches to the TV's
+ * aspect. Anaglyph and interlaced, which need a canvas, draw the frame
+ * whole.
+ */
+
+/* The EFB's pixels a pixel of the views' layout is wide */
+static float gx_views_sx(const gx_video_t *gx)
+{
+   return (float)VIDEO_SCALE_W(gx->vp.full_dims)
+      / (float)VIDEO_SCALE_W(gx->out_dims);
+}
+
+/* Whether this frame draws its views: a map that fits @frame_dims, the
+ * part of the frame the texture holds */
+static bool gx_views_setup(gx_video_t *gx, const video_frame_info_t *info,
+      unsigned frame_dims)
+{
+   bool views = info->views.num_views && !info->views_layout.offscreen
+      && video_views_fit_frame(&info->views, frame_dims);
+   if (views != gx->views_active)
+   {
+      gx->views_active  = views;
+      gx->should_resize = true;
+   }
+   retro_atomic_store_release_int(&gx->views_fallback,
+         (info->views.num_views && !views) ? 1 : 0);
+   if (views && !gx->views_seen)
+   {
+      gx->views_seen = true;
+      RARCH_LOG("[GX] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* The viewport over the layout's rectangle @r */
+static void gx_views_viewport(const gx_video_t *gx,
+      const video_views_rect_t *r)
+{
+   float sx = gx_views_sx(gx);
+   GX_SetViewportJitter((float)VIDEO_POS_X(r->pos) * sx,
+         (float)VIDEO_POS_Y(r->pos),
+         (float)VIDEO_SCALE_W(r->dims) * sx,
+         (float)VIDEO_SCALE_H(r->dims), 0, 1, 1);
+}
+
+static void gx_views_draw(gx_video_t *gx, const video_frame_info_t *info,
+      unsigned frame_dims)
+{
+   unsigned i;
+   float tw = (float)VIDEO_SCALE_W(frame_dims);
+   float th = (float)VIDEO_SCALE_H(frame_dims);
+   const video_views_layout_t *layout = &info->views_layout;
+
+   GX_SetVtxDesc(GX_VA_POS,  GX_DIRECT);
+   GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+   GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+   for (i = 0; i < layout->num_placements; i++)
+   {
+      const video_views_placement_t *p  = &layout->placements[i];
+      const struct retro_video_view *rv = &info->views.views[p->view];
+      float u0 = (float)rv->x / tw;
+      float v0 = (float)rv->y / th;
+      float u1 = (float)(rv->x + rv->width)  / tw;
+      float v1 = (float)(rv->y + rv->height) / th;
+      gx_views_viewport(gx, &p->dst);
+      GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+      GX_Position3f32(-1,  1, -0.5);
+      GX_Color4u8(255, 255, 255, 255);
+      GX_TexCoord2f32(u0, v0);
+      GX_Position3f32( 1,  1, -0.5);
+      GX_Color4u8(255, 255, 255, 255);
+      GX_TexCoord2f32(u1, v0);
+      GX_Position3f32(-1, -1, -0.5);
+      GX_Color4u8(255, 255, 255, 255);
+      GX_TexCoord2f32(u0, v1);
+      GX_Position3f32( 1, -1, -0.5);
+      GX_Color4u8(255, 255, 255, 255);
+      GX_TexCoord2f32(u1, v1);
+      GX_End();
+   }
+   GX_SetVtxDesc(GX_VA_POS,  GX_INDEX8);
+   GX_SetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+   GX_SetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+   GX_SetViewportJitter(VIDEO_POS_X(gx->vp.pos), VIDEO_POS_Y(gx->vp.pos),
+         VIDEO_SCALE_W(gx->vp.dims), VIDEO_SCALE_H(gx->vp.dims), 0, 1, 1);
+}
+
 static bool gx_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count, unsigned pitch,
@@ -1530,6 +1653,10 @@ static bool gx_frame(void *data, const void *frame,
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    char fps_text_buf[128];
+   unsigned a;
+   unsigned frame_dims                = 0;
+   bool views                         = false;
+   bool per_eye                       = false;
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    uint32_t level                     = 0;
@@ -1549,6 +1676,13 @@ static bool gx_frame(void *data, const void *frame,
 
    if (!frame)
       width = height = 4; /* draw a black square in the background */
+
+   /* The part of the frame the texture takes, whole tiles */
+   frame_dims = VIDEO_SCALE_PACK(MIN(g_tex.width, width) & ~3u,
+         MIN(g_tex.height, height) & ~3u);
+   views      = frame && gx_views_setup(gx, video_info, frame_dims);
+   per_eye    = views && video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, true);
 
    if (   (gx->overscan_correction_top    != overscan_corr_top)
        || (gx->overscan_correction_bottom != overscan_corr_bottom))
@@ -1628,13 +1762,29 @@ static bool gx_frame(void *data, const void *frame,
 
    GX_SetCurrentMtx(GX_PNMTX0);
    GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
-   GX_CallDispList(display_list, display_list_size);
+   if (views)
+      gx_views_draw(gx, video_info, frame_dims);
+   else
+      GX_CallDispList(display_list, display_list_size);
 
    if (gx->menu_texture_enable)
    {
       GX_SetCurrentMtx(GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
-      GX_CallDispList(display_list, display_list_size);
+      if (per_eye)
+      {
+         /* In each eye's area */
+         for (a = 0; a < video_info->views_layout.num_areas; a++)
+         {
+            gx_views_viewport(gx, &video_info->views_layout.areas[a]);
+            GX_CallDispList(display_list, display_list_size);
+         }
+         GX_SetViewportJitter(VIDEO_POS_X(gx->vp.pos),
+               VIDEO_POS_Y(gx->vp.pos), VIDEO_SCALE_W(gx->vp.dims),
+               VIDEO_SCALE_H(gx->vp.dims), 0, 1, 1);
+      }
+      else
+         GX_CallDispList(display_list, display_list_size);
    }
 
 #ifdef HAVE_OVERLAY
@@ -1681,7 +1831,22 @@ static bool gx_frame(void *data, const void *frame,
       unsigned x = 7 * (gx->double_strike ? 1 : 2);
       unsigned y = VIDEO_SCALE_H(gx->vp.full_dims) - (35 * (gx->double_strike ? 1 : 2));
 
-      gx_blit_line(gx, x, y, msg);
+      if (per_eye)
+      {
+         /* In each eye's area */
+         float sx = gx_views_sx(gx);
+         for (a = 0; a < video_info->views_layout.num_areas; a++)
+         {
+            const video_views_rect_t *r = &video_info->views_layout.areas[a];
+            int ax = (int)((float)VIDEO_POS_X(r->pos) * sx);
+            int ay = VIDEO_POS_Y(r->pos) + (int)VIDEO_SCALE_H(r->dims);
+            if (ax >= 0 && ay >= (int)(35 * (gx->double_strike ? 1 : 2)))
+               gx_blit_line(gx, (unsigned)ax + x,
+                     (unsigned)ay - (35 * (gx->double_strike ? 1 : 2)), msg);
+         }
+      }
+      else
+         gx_blit_line(gx, x, y, msg);
       clear_efb = GX_TRUE;
    }
 
