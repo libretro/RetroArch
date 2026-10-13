@@ -125,6 +125,29 @@ static bool task_cdrom_dump_printf(task_cdrom_dump_state_t *state,
       && filestream_write(file, state->data, len) == len;
 }
 
+/* Compare geometry, not padding or device timeout preferences. This catches
+ * changed layouts between track opens; it is not a media identity check. */
+static bool task_cdrom_dump_same_geometry(const cdrom_toc_t *a,
+      const cdrom_toc_t *b)
+{
+   unsigned i;
+   if (!a || !b || !a->num_tracks || a->num_tracks > 99
+         || a->num_tracks != b->num_tracks)
+      return false;
+   for (i = 0; i < a->num_tracks; i++)
+   {
+      const cdrom_track_t *x = &a->track[i];
+      const cdrom_track_t *y = &b->track[i];
+      if (x->lba_start != y->lba_start || x->lba != y->lba
+            || x->track_size != y->track_size || x->track_bytes != y->track_bytes
+            || x->track_num != y->track_num || x->min != y->min
+            || x->sec != y->sec || x->frame != y->frame
+            || x->mode != y->mode || x->audio != y->audio)
+         return false;
+   }
+   return true;
+}
+
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
@@ -341,6 +364,13 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                char track_filename[PATH_MAX_LENGTH];
                const char *directory_core_assets = state->dir_core_assets;
 
+               if (!task_cdrom_dump_same_geometry(&state->toc,
+                        retro_vfs_file_get_cdrom_toc(
+                           filestream_get_vfs_handle(state->file))))
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+                  return;
+               }
                track_filename[0] = '\0';
 
                snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, state->cur_track);

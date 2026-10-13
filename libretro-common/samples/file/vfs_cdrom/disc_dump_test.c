@@ -14,6 +14,9 @@
 
 static uint16_t medium = 0x10;
 static cdrom_toc_t fake_toc;
+static cdrom_toc_t reopened_toc;
+static unsigned toc_queries;
+static int changed_geometry;
 static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
 static unsigned write_opens;
 static unsigned failures, finished_logs, cue_opens;
@@ -59,7 +62,19 @@ static int dump_flush(RFILE *file)
 static int dump_profile(libretro_vfs_implementation_file *file, uint16_t *profile)
 { (void)file; *profile = medium; return 0; }
 static const cdrom_toc_t *dump_toc(const libretro_vfs_implementation_file *file)
-{ (void)file; return &fake_toc; }
+{
+   (void)file;
+   if (!toc_queries++) return &fake_toc;
+   if (changed_geometry && toc_queries == 3)
+   {
+      if (changed_geometry == 1) reopened_toc.num_tracks--;
+      if (changed_geometry == 2) reopened_toc.track[1].lba++;
+      if (changed_geometry == 3) reopened_toc.track[1].mode++;
+      if (changed_geometry == 4) return NULL;
+      if (changed_geometry == 5) reopened_toc.track[0].track_bytes++;
+   }
+   return &reopened_toc;
+}
 static bool dump_atip(libretro_vfs_implementation_file *file)
 { (void)file; return false; }
 static void *dump_alloc(size_t align, size_t bytes)
@@ -106,6 +121,8 @@ static void run_dump(int cancel)
    unsigned tick = 0, logs = finished_logs;
    write_opens = 0;
    fake_toc.num_tracks = 2;
+   reopened_toc = fake_toc;
+   toc_queries = 0;
    CHECK(task && state);
    if (!task || !state) return;
    state->drive_letter[0] =
@@ -126,8 +143,15 @@ static void run_dump(int cancel)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
-   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel)
+   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry)
+   {
       CHECK(finished_logs == logs);
+      if (changed_geometry)
+      {
+         CHECK(state->failed && state->disc_read_bytes == 4704);
+         CHECK(write_opens == 2); /* CUE and first track only */
+      }
+   }
    else
    {
       CHECK(finished_logs == logs + 1);
@@ -152,6 +176,34 @@ static void run_dump(int cancel)
    remove("dump_result (Track 01).bin");
    remove("dump_result (Track 02).bin");
 }
+static void test_geometry(void)
+{
+   static const size_t fields[] = {
+      offsetof(cdrom_track_t, lba_start), offsetof(cdrom_track_t, lba),
+      offsetof(cdrom_track_t, track_size), offsetof(cdrom_track_t, track_bytes),
+      offsetof(cdrom_track_t, track_num), offsetof(cdrom_track_t, min),
+      offsetof(cdrom_track_t, sec), offsetof(cdrom_track_t, frame),
+      offsetof(cdrom_track_t, mode), offsetof(cdrom_track_t, audio)
+   };
+   unsigned i;
+   CHECK(!task_cdrom_dump_same_geometry(NULL, &fake_toc));
+   CHECK(!task_cdrom_dump_same_geometry(&fake_toc, NULL));
+   for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++)
+   {
+      reopened_toc = fake_toc;
+      ((unsigned char*)&reopened_toc.track[0])[fields[i]] ^= 1;
+      CHECK(!task_cdrom_dump_same_geometry(&fake_toc, &reopened_toc));
+   }
+   reopened_toc = fake_toc;
+   reopened_toc.drive = 'X';
+   reopened_toc.timeouts.g1_timeout = 1;
+   CHECK(task_cdrom_dump_same_geometry(&fake_toc, &reopened_toc));
+   reopened_toc.num_tracks = 0;
+   CHECK(!task_cdrom_dump_same_geometry(&fake_toc, &reopened_toc));
+   reopened_toc.num_tracks = 100;
+   CHECK(!task_cdrom_dump_same_geometry(&reopened_toc, &reopened_toc));
+}
+
 int main(void)
 {
    fixture("dump_source.bin", 133120);
@@ -160,6 +212,7 @@ int main(void)
    fake_toc.num_tracks = 2;
    fake_toc.track[0].track_bytes = 4704;
    fake_toc.track[1].track_bytes = 7056;
+   test_geometry();
    run_dump(0);
    read_fail = 1; run_dump(0); read_fail = 0;
    write_fail = 1; run_dump(0); write_fail = 0;
@@ -169,6 +222,9 @@ int main(void)
    run_dump(1);
    medium = 8;
    run_dump(0);
+   for (changed_geometry = 1; changed_geometry <= 5; changed_geometry++)
+      run_dump(0);
+   changed_geometry = 0;
    open_fail = 1; run_dump(0); open_fail = 0;
    open_fail = 3; run_dump(0); open_fail = 0;
    write_fail = 1; run_dump(0); write_fail = 0;
