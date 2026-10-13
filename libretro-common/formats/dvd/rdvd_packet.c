@@ -108,3 +108,38 @@ bool rdvd_nav_read(const rdvd_packet_t *packet, rdvd_nav_t *out)
    *out = nav;
    return true;
 }
+
+bool rdvd_highlight_read(const rdvd_packet_t *packet, rdvd_highlight_t *out)
+{
+   rdvd_highlight_t h;
+   const uint8_t *p;
+   if (!out)
+      return false;
+   memset(out, 0, sizeof(*out));
+   if (!packet || !packet->data || packet->kind != RDVD_PACKET_PCI
+         || packet->size != RDVD_PCI_BYTES - 1)
+      return false;
+   memset(&h, 0, sizeof(h));
+   p = packet->data + 96;
+   h.status = p[1] & 3;
+   if (!h.status)
+      return true;
+   h.start_pts = rdvd_u32(p + 2);
+   h.end_pts = rdvd_u32(p + 6);
+   h.selection_end_pts = rdvd_u32(p + 10);
+   h.groups = (p[14] >> 4) & 3;
+   h.display_types[0] = p[14] & 7;
+   h.display_types[1] = (p[15] >> 4) & 7;
+   h.display_types[2] = p[15] & 7;
+   h.button_offset = p[16];
+   h.buttons = p[17] & 63;
+   h.selectable_buttons = p[18] & 63;
+   h.forced_select = p[20] & 63;
+   h.forced_activate = p[21] & 63;
+   if ((h.buttons && (!h.groups || h.buttons > 36 / h.groups))
+         || h.selectable_buttons > h.buttons || h.forced_select > h.buttons
+         || h.forced_activate > h.buttons)
+      return false;
+   *out = h;
+   return true;
+}

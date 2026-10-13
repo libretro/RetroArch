@@ -48,6 +48,21 @@ typedef struct rdvd_nav
    enum rdvd_packet_kind kind;
 } rdvd_nav_t;
 
+typedef struct rdvd_highlight
+{
+   uint32_t start_pts;
+   uint32_t end_pts;
+   uint32_t selection_end_pts;
+   unsigned status;
+   unsigned groups;
+   unsigned buttons;
+   unsigned selectable_buttons;
+   unsigned button_offset;
+   unsigned forced_select;
+   unsigned forced_activate;
+   unsigned display_types[3];
+} rdvd_highlight_t;
+
 /* Parses DVD-Video private_stream_1/2 payloads after the PES header.
  * No allocation or copying. The input must remain valid while the view is
  * used; a demuxer-owned view expires with its originating PES packet.
@@ -61,6 +76,13 @@ bool rdvd_packet_read(uint8_t stream_id, const uint8_t *data, size_t size,
  * The DSI end-sector field is relative to the NAV sector, not an address.
  * Failure clears the output. */
 bool rdvd_nav_read(const rdvd_packet_t *packet, rdvd_nav_t *out);
+
+/* Reads PCI highlight metadata, clearing the output on malformed input.
+ * Status 0 means no highlight; 1/2/3 are the DVD update modes. This parser
+ * does not merge inherited highlight state from preceding NAV packets.
+ * Display types retain the DVD aspect/letterbox/pan-scan bit masks.
+ * Button numbers are local to a group; button_offset is retained verbatim. */
+bool rdvd_highlight_read(const rdvd_packet_t *packet, rdvd_highlight_t *out);
 
 RETRO_END_DECLS
 #endif
