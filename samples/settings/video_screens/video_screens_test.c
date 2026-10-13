@@ -681,6 +681,48 @@ static void test_xr_menu_tracked_screen(void)
 }
 #endif
 
+#ifdef VIDEO_SCREENS_RUNTIME_TEST
+int rarch_main(int argc, char *argv[], void *data);
+
+int video_screens_test_iterate(void)
+{
+   static unsigned applied;
+   const char *path = getenv("RA_SCREEN_TEST_SCRIPT");
+   int result = runloop_iterate();
+   RFILE *file = path ? filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE) : NULL;
+   if (file)
+   {
+      char text[128];
+      unsigned serial, screen, visible, i;
+      float x, scale;
+      if (filestream_gets(file, text, sizeof(text))
+            && sscanf(text, "%u %u %f %f %u",
+               &serial, &screen, &x, &scale, &visible) == 5
+            && serial > applied && screen <= RETRO_VIDEO_VIEWS_MAX)
+      {
+         settings_t *settings = config_get_ptr();
+         const char *ack = getenv("RA_SCREEN_TEST_ACK");
+         char value[32];
+         for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+            if (screen == i || screen == RETRO_VIDEO_VIEWS_MAX)
+            {
+               settings->floats.video_screen_xr_x[i] = x;
+               settings->floats.video_screen_xr_scale[i] = scale;
+               settings->bools.video_screen_xr_visible[i] = visible != 0;
+            }
+         applied = serial;
+         snprintf(value, sizeof(value), "%u %u", applied,
+               (unsigned)video_driver_get_frame_count());
+         if (ack)
+            filestream_write_file(ack, value, strlen(value));
+      }
+      filestream_close(file);
+   }
+   return result;
+}
+#endif
+
 /* A driver that draws views itself, and the screens' own windows while
  * window_test_flags says so: frame() keeps the windows it was handed. */
 static uint32_t window_test_flags;
@@ -1663,6 +1705,102 @@ static void test_window_frame_snapshot(void)
 }
 
 #ifdef HAVE_THREADS
+static video_frame_info_t snapshot_queued;
+
+static bool snapshot_queue_frame(void *data, const void *frame, unsigned dims,
+      uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   (void)data;
+   (void)frame;
+   (void)dims;
+   (void)count;
+   (void)pitch;
+   (void)msg;
+   slock_lock(snapshot_lock);
+   snapshot_queued = *info;
+   snapshot_done = true;
+   scond_signal(snapshot_ready);
+   slock_unlock(snapshot_lock);
+   return true;
+}
+#endif
+
+static void test_screen_frame_snapshot(void)
+{
+   static video_frame_info_t frame;
+   settings_t *settings = config_get_ptr();
+   load_fixture("video_screen2_xr_x = \"0.25\"\n");
+   settings->floats.video_screen_xr_scale[7] = 20.0f;
+   settings->floats.video_screen_xr_y[1] = -0.3f;
+   settings->floats.video_screen_xr_z[1] = 0.4f;
+   settings->floats.video_screen_xr_yaw[1] = 45.0f;
+   settings->floats.video_screen_xr_pitch[1] = -30.0f;
+   settings->floats.video_screen_xr_roll[1] = 90.0f;
+   settings->floats.video_screen_xr_x[7] = (float)HUGE_VAL;
+   memset(&frame, 0, sizeof(frame));
+   video_driver_build_info(&frame);
+   CHECK(frame.headset_screens[1].x == 0.25f);
+   CHECK(frame.headset_screens[7].scale == 10.0f);
+   CHECK(frame.headset_screens[7].x == 0.0f);
+   CHECK(frame.headset_screens[1].y == -0.3f);
+   CHECK(frame.headset_screens[1].z == 0.4f);
+   CHECK(frame.headset_screens[1].yaw == 45.0f);
+   CHECK(frame.headset_screens[1].pitch == -30.0f);
+   CHECK(frame.headset_screens[1].roll == 90.0f);
+   CHECK(frame.headset_screens[0].visible);
+#ifdef HAVE_THREADS
+   {
+      static video_driver_t driver;
+      const video_driver_t *threaded = NULL;
+      void *data = NULL;
+      video_info_t info;
+      uint32_t pixel = 0;
+      bool initialized;
+      memset(&driver, 0, sizeof(driver));
+      memset(&info, 0, sizeof(info));
+      driver.init = snapshot_init;
+      driver.frame = snapshot_queue_frame;
+      driver.free = snapshot_free;
+      driver.ident = "snapshot";
+      info.input_scale = 1;
+      info.rgb32 = true;
+      snapshot_lock = slock_new();
+      snapshot_ready = scond_new();
+      snapshot_done = false;
+      initialized = video_init_thread(&threaded, &data, &driver, info);
+      CHECK(initialized);
+      if (initialized)
+      {
+         frame.views.num_views = 2;
+         frame.views.views[0].screen = 1;
+         frame.views.views[1].screen = 0;
+         slock_lock(snapshot_lock);
+         CHECK(threaded->frame(data, &pixel, VIDEO_SCALE_PACK(1, 1),
+                  1, sizeof(pixel), NULL, &frame));
+         settings->floats.video_screen_xr_x[1] = 0.75f;
+         video_state_get_ptr()->views_core.num_views = 1;
+         video_state_get_ptr()->views_core.views[0].screen = 0;
+         frame.headset_screens[1].x = 0.9f;
+         frame.views.views[0].screen = 0;
+         frame.views.num_views = 1;
+         if (!snapshot_done)
+            scond_wait_timeout(snapshot_ready, snapshot_lock, 2000000);
+         CHECK(snapshot_done);
+         CHECK(snapshot_queued.headset_screens[1].x == 0.25f);
+         CHECK(settings->floats.video_screen_xr_x[1] == 0.75f);
+         CHECK(snapshot_queued.views.num_views == 2);
+         CHECK(snapshot_queued.views.views[0].screen == 1);
+         slock_unlock(snapshot_lock);
+         threaded->free(data);
+      }
+      scond_free(snapshot_ready);
+      slock_free(snapshot_lock);
+   }
+#endif
+}
+
+#ifdef HAVE_THREADS
 static void redraw_viewport(void *data, struct video_viewport *vp)
 {
    (void)data;
@@ -1756,6 +1894,10 @@ static void test_window_redraw(void)
 
 int main(int argc, char **argv)
 {
+#ifdef VIDEO_SCREENS_RUNTIME_TEST
+   if (getenv("RA_SCREEN_TEST_SCRIPT"))
+      return rarch_main(argc, argv, NULL);
+#endif
    if (argc != 2 && argc != 3)
       return 2;
    fill_pathname_join(fixture_path, argv[1], "fixture.cfg", sizeof(fixture_path));
@@ -1785,6 +1927,7 @@ int main(int argc, char **argv)
    test_window_menu_settings();
    test_window_menu_list();
    test_window_redraw();
+   test_screen_frame_snapshot();
    test_xr_screen_menu();
    test_xr_menu_map_change();
 #ifdef HAVE_OPENXR

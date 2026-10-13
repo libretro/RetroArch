@@ -786,6 +786,8 @@ typedef struct video_frame_info
     * none, or no views are presented. Owned by video_driver_state_t,
     * or under the threaded wrapper by the frame's slot. */
    const video_windows_frame_t *windows;
+   /* Each screen's placement from its menu rows, normalized. */
+   video_screen_xr_t headset_screens[RETRO_VIDEO_VIEWS_MAX];
    /* Headset output: the screens' distance and width in metres, where
     * they are kept (enum video_openxr_placement), and a count of
     * recenter requests the driver compares with the last it saw. */

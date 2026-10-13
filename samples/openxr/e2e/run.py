@@ -9,6 +9,12 @@ Monado, and a RetroArch built with HAVE_OPENXR.
 
 Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [case ...]
 
+The custom-repeat case needs the opt-in shipping harness. Build it with
+python3 samples/settings/video_screens/build.py --runtime --output-dir <build>
+and pass <build>/video_screens_test as <retroarch>. The runner supplies
+RA_SCREEN_TEST_SCRIPT and RA_SCREEN_TEST_ACK for bounded, acknowledged
+main-thread edits; the ordinary frontend and its objects are unchanged.
+
 Build the test core and layer first (make -C samples/cores/video_views,
 make -C samples/openxr/test_layer). monado.env.example here runs
 Monado's null compositor and simulated headset; RetroArch reaches Monado
@@ -145,6 +151,7 @@ class Result(object):
         self.releases = []
         self.chains = {}
         self.marks = {}
+        self.screen_frames = {}
         self.shot = None
         self.events = []
         # A pixel of the window inside the 2D map's top screen.
@@ -273,6 +280,9 @@ def run_case(retroarch, root, monado, case, validate):
                          'video_window_save_positions': 'true',
                          'video_windowed_position_width': str(size[0]),
                          'video_windowed_position_height': str(size[1])})
+    screen_script = os.path.join(d, 'screens.txt')
+    screen_ack = os.path.join(d, 'screens.ack')
+    open(screen_script, 'w').close()
     port = free_port()
     cfg = os.path.join(d, 'retroarch.cfg')
     write_cfg(cfg, d, case.get('driver', 'vulkan'), settings, port)
@@ -307,6 +317,8 @@ def run_case(retroarch, root, monado, case, validate):
         'XDG_RUNTIME_DIR': RUNTIME_DIR,
         'WAYLAND_DISPLAY': 'openxr-e2e-no-socket',
     }
+    child.update(RA_SCREEN_TEST_SCRIPT=screen_script,
+                 RA_SCREEN_TEST_ACK=screen_ack)
     child.update(case.get('env', {}))
     child.update(pairs(monado.get('CLIENT_ENV', '')))
     if validate:
@@ -386,6 +398,24 @@ def run_case(retroarch, root, monado, case, validate):
                 with open(tmp, 'w') as f:
                     f.write(arg + '\n')
                 os.replace(tmp, script)
+            elif kind == 'screen':
+                serial = str(arg[0])
+                tmp = screen_script + '.tmp'
+                with open(tmp, 'w') as f:
+                    f.write(' '.join(map(str, arg)))
+                os.replace(tmp, screen_script)
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    if os.path.exists(screen_ack):
+                        with open(screen_ack) as f:
+                            ack = f.read().split()
+                            if len(ack) == 2 and ack[0] == serial:
+                                res.screen_frames[int(serial)] = int(ack[1])
+                                break
+                    time.sleep(0.01)
+                else:
+                    raise RuntimeError('screen edit not acknowledged; use the '
+                                       'video_screens --runtime test binary')
             elif kind == 'unfocus':
                 open(os.path.join(d, 'unfocus'), 'w').close()
             elif kind == 'touch':
@@ -415,6 +445,8 @@ def run_case(retroarch, root, monado, case, validate):
         if os.path.basename(runtime_dir).startswith('ra-e2e-'):
             shutil.rmtree(runtime_dir, ignore_errors=True)
     load(res)
+    with open(os.path.join(d, 'marks.json'), 'w') as f:
+        json.dump({'marks': res.marks, 'screen_frames': res.screen_frames}, f)
     return res
 
 
@@ -3836,6 +3868,152 @@ THREADED_HW = [
     ('VUID-vkQueueSubmit-pSignalSemaphores-00067',
      'pSubmits[0].pSignalSemaphores[0]')]
 
+def check_custom(kind, legacy=False):
+    def check(res):
+        if kind == 'tracked':
+            return check_tracked(beside=not legacy)(res)
+        fr = last_snap(res)
+        if not fr:
+            return no_quads(res)
+        qs = [q for q in quads(fr) if not q['flags'] & BLEND]
+        if kind == 'menu':
+            if legacy:
+                errors = window_quad(res, fr)
+                if not errors and near(colour(image(res, fr, quads(fr)[0]), .25, .25)[0], RED):
+                    errors.append('combined fallback is missing its menu')
+                return errors
+            ms = menus(fr)
+            return ([] if not qs and len(ms) == 1 and
+                    at(ms[0], (0, 0, -1.7)) else
+                    ['hidden screens must leave the centered menu available'])
+        if kind == 'hidden':
+            return ([] if len(qs) == 1 and qs[0]['eye'] == 'both' else
+                    ['hidden stereo screen still submitted'])
+        eyes = {q['eye']: q for q in qs}
+        if not all(e in eyes for e in ('left', 'right')):
+            return ['custom stereo pair missing']
+        errors = []
+        if kind == 'offset':
+            presses = [f for f in kinds(core_events(res), 'pointer') if f['pressed']]
+            if not presses or not close((presses[0]['cx'], presses[0]['cy']), (320, 420), 3):
+                errors.append('custom screen did not map the touch to 320,420')
+        position = (0.25, 0.1, -1.5)
+        rotation = (0, 0, 0, 1)
+        size = (1.6, 0.96)
+        if kind == 'rotation':
+            rotation = (0, math.sin(math.pi / 8), 0, math.cos(math.pi / 8))
+            size = (2.4, 1.44)
+        if kind == 'repeat':
+            position = (0.75, 0.1, -1.5)
+            size = (6.4, 3.84)
+        if kind == 'recenter':
+            position = (-1.0, 0.3, 0.05)
+            rotation = (0, math.sin(math.pi / 4), 0, math.cos(math.pi / 4))
+        for eye in ('left', 'right'):
+            q = eyes[eye]
+            if not at(q, position) or not facing(q, rotation) or not sized(q, size):
+                errors.append('%s custom pose/size: %s %s' %
+                              (eye, q['pose'], q['size']))
+        if kind == 'repeat':
+            held = {sc for sc, c in res.chains.items() if (c['w'], c['h']) == (400, 240)}
+            if not held or any(r['sc'] in held and
+                               res.marks['busy'] * 1e6 < r['t_us'] < res.marks['free'] * 1e6
+                               for r in res.releases):
+                errors.append('screen images were not held during the repeat')
+            if not legacy:
+                for eye in ('left', 'right'):
+                    errors += image_size(res, eyes[eye], (400, 240),
+                                         distance=math.sqrt(sum(v * v for v in position)))
+            resized = [f for f in res.frames if f['snap'] and
+                       res.marks['resized'] * 1e6 < f['t_us'] <
+                       res.marks['restored'] * 1e6 and len(quads(f)) == 3]
+            if not resized:
+                errors.append('three resized layers did not become available')
+            elif not legacy:
+                for q in quads(resized[-1]):
+                    native = (320, 240) if q['eye'] == 'both' else (400, 240)
+                    errors += image_size(res, q, native,
+                                         distance=math.sqrt(sum(v * v for v in q['pose'][:3])))
+            hidden = [f for f in res.frames if
+                      (res.marks['hidden'] + .3) * 1e6 < f['t_us'] <
+                      res.marks['shown'] * 1e6]
+            first_hidden = next((i for i, f in enumerate(hidden)
+                                 if quads(f) and all(q['eye'] == 'both' for q in quads(f))), None)
+            if first_hidden is None or any(q['eye'] != 'both' for f in hidden[first_hidden:] for q in quads(f)):
+                errors.append('paused screen did not stay hidden')
+            before = [f for f in res.frames if f['snap'] and
+                      res.marks['paused'] * 1e6 < f['t_us'] <
+                      res.marks['moved'] * 1e6 and quads(f)]
+            if not before:
+                errors.append('no paused image before moving')
+            else:
+                old = next(q for q in quads(before[-1]) if q['eye'] == 'left')
+                feedback_before = colour(image(res, before[-1], old), .5, .5)
+                feedback_after = colour(image(res, fr, eyes['left']), .5, .5)
+                if feedback_after != feedback_before:
+                    errors.append('paused feedback image advanced')
+                if not legacy:
+                    expected = round((res.screen_frames[4] % 251) * 255 / 250)
+                    if abs(feedback_before[0][1] - expected) > 3:
+                        errors.append('re-shown frame tag %d, want %d from latest source'
+                                      % (feedback_before[0][1], expected))
+                if at(old, eyes['left']['pose'][:3]):
+                    errors.append('paused quad did not move')
+        return errors
+    return check
+
+
+CUSTOM_OFFSET = {'video_screen1_xr_x': '0.25',
+                 'video_screen1_xr_y': '0.1', 'video_screen1_xr_z': '0.3',
+                 'video_screen2_xr_x': '-0.2', 'video_screen2_xr_y': '0.1',
+                 'video_screen2_xr_z': '0.2'}
+CUSTOM_AIM = 'aim right 0.2 -0.4 -0.3 -0.52 -1.132 -1.6'
+CUSTOM_CASES = [
+    {'name': 'custom-offset', 'settings': CUSTOM_OFFSET,
+     'steps': [('wait', 6), ('script', CUSTOM_AIM), ('wait', 1),
+               ('script', script(CUSTOM_AIM, R2)), ('wait', 1),
+               ('script', ''), ('wait', 2)], 'check': check_custom('offset')},
+    {'name': 'custom-rotation',
+     'settings': dict(CUSTOM_OFFSET, video_screen1_xr_yaw='45',
+                      video_screen1_xr_scale='1.5'),
+     'steps': SETTLE, 'check': check_custom('rotation')},
+    {'name': 'custom-hidden', 'settings': {'video_screen1_xr_visible': 'false'},
+     'steps': SETTLE, 'check': check_custom('hidden')},
+    {'name': 'custom-recenter', 'settings': CUSTOM_OFFSET,
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('send', 'HEADSET_RECENTER'), ('wait', 3)],
+     'check': check_custom('recenter')},
+    {'name': 'custom-menu',
+     'settings': {'video_screen1_xr_visible': 'false',
+                  'video_screen2_xr_visible': 'false', 'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 4)],
+     'check': check_custom('menu')},
+    {'name': 'custom-tracked',
+     'settings': {'video_screen1_xr_x': '10', 'video_screen1_xr_yaw': '180',
+                  'video_screen1_xr_scale': '10', 'video_screen1_xr_visible': 'false'},
+     'options': {'video_views_test_vr': 'local'},
+     'steps': SETTLE, 'check': check_custom('tracked')},
+    {'name': 'custom-repeat', 'settings': CUSTOM_OFFSET,
+     'script': 'eyes 400 240',
+     'args': ['--set-shader=' + os.path.join(HERE, 'feedback.slangp')],
+     'steps': [('wait', 6), ('screen', (1, 8, 0.25, 4.0, 1)),
+               ('mark', 'resized'), ('wait', 2), ('mark', 'restored'),
+               ('screen', (2, 8, 0.25, 1.0, 1)), ('wait', 2),
+               ('mark', 'running_hidden'),
+               ('script', 'state 3\neyes 400 240\nbusy eyes'),
+               ('screen', (3, 0, 0.25, 1.0, 0)), ('wait', 2),
+               ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+               ('script', 'state 5'), ('screen', (4, 0, 0.25, 1.0, 1)),
+               ('mark', 'busy'), ('wait', 0.5), ('mark', 'free'),
+               ('script', 'state 5\nbusy off'), ('wait', 2),
+               ('mark', 'paused'), ('wait', 2),
+               ('mark', 'moved'), ('screen', (5, 0, 0.75, 1.0, 1)), ('wait', 2),
+               ('screen', (6, 0, 0.75, 1.0, 0)), ('mark', 'hidden'), ('wait', 2),
+               ('mark', 'shown'), ('screen', (7, 0, 0.75, 4.0, 1)), ('wait', 3)],
+     'check': check_custom('repeat')},
+]
+
+
 CASES = [
     {'name': '3ds-stereo', 'map': '3ds', 'steps': SETTLE,
      'check': check_screens()},
@@ -5046,6 +5224,8 @@ GL_EXTRA = [
                ('mark', 'free'), ('script', 'busy off'), ('wait', 3)],
      'check': check_tracked_busy},
 ]
+CASES += CUSTOM_CASES
+
 # The cases each GL driver's lanes run, by name in CASES or GL_EXTRA.
 GL_BASE = {
     'glcore': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0',
@@ -5106,12 +5286,18 @@ GL_BASE = {
            'tracked-reinit-local', 'tracked-reinit-local-hw',
            'tracked-reinit-poses', 'tracked-reinit-paused-hw'],
 }
+for custom_driver in GL_BASE:
+    GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES]
+
 # Where a GL host's answer is its own, by driver.
 GL_CHECKS = {
     'glcore': {'session-fails': check_session_fails_gl,
                'hw-teardown': check_hw_teardown_gl,
                'hw-teardown-threaded': threaded(check_hw_teardown_gl)},
-    'gl': {'session-fails': check_session_fails_gl,
+    'gl': {'custom-repeat': check_custom('repeat', legacy=True),
+           'custom-menu': check_custom('menu', legacy=True),
+           'custom-tracked': check_custom('tracked', legacy=True),
+           'session-fails': check_session_fails_gl,
            'hw-teardown': check_hw_teardown_gl,
            'hw-teardown-threaded': threaded(check_hw_teardown_gl),
            '3ds-stereo': check_screens(native=True),
@@ -5149,7 +5335,7 @@ GL_SKIP = {'glcore-egl': ('focus',)}
 GL_ONLY = {'gl-glx': ('3ds-stereo', 'no-map', 'menu', 'menu-closes',
                       'tracked', 'tracked-menu', 'tracked-recenter',
                       'tracked-reinit', 'pace-2', 'session-lost',
-                      'hw-teardown')}
+                      'hw-teardown') + tuple(c['name'] for c in CUSTOM_CASES)}
 
 
 def gl_cases():
@@ -5182,6 +5368,8 @@ def gl_cases():
             # gl's window shows the packed frame whole: the top screen is
             # its top-left quarter.
             if driver == 'gl':
+                if name == 'custom-repeat':
+                    c['args'] = []
                 c['top_px'] = (400, 240)
             # gamescope gives a Wayland client its window back over half
             # a second after a reinit, where an X one takes some 40 ms:

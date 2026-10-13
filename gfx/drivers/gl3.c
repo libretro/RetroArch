@@ -206,6 +206,21 @@ typedef struct gl3
          unsigned num_quads;
          bool published;
       } shown[VIDEO_XR_MAX_SLOTS];
+      struct
+      {
+         GLuint tex[2];
+         unsigned dims;
+         unsigned layers;
+         unsigned failed_dims;
+         unsigned failed_layers;
+         bool valid;
+         bool copied;
+      } cached[RETRO_VIDEO_VIEWS_MAX];
+      video_views_map_t cached_map;
+      unsigned cached_dims;
+      unsigned cached_rotation;
+      bool cached_views;
+      GLuint copy_fbo;
       /* The window's projection for the frame, which the headset's
        * screens are drawn with. */
       float mvp[16];
@@ -3093,6 +3108,10 @@ static void gl3_views_free_chains(gl3_t *gl, unsigned first)
 {
    unsigned i;
    video_views_chains_t *set = &gl->views.chains;
+#ifdef HAVE_GL3_XR
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      gl->xr.cached[i].valid = false;
+#endif
    for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       if (set->preset[i])
@@ -6530,6 +6549,7 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
          / (float)VIDEO_SCALE_H(frame_dims);
    p.frame_dims    = src_dims;
    video_xr_pose_identity(&p.anchor);
+   p.screens       = video_info->headset_screens;
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = gl_openxr_pixels_per_radian(xr);
@@ -6595,7 +6615,7 @@ static void gl3_xr_forget(gl3_t *gl, unsigned s, bool yield)
  * headset chain or the whole frame's: its passes at the image's size. */
 static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       gl3_filter_chain_t **chains, gl3_filter_chain_t *frame_chain,
-      const struct gl3_filter_chain_texture *frame_tex)
+      const struct gl3_filter_chain_texture *frame_tex, bool new_frame)
 {
    unsigned l;
    struct gl3_viewport vp;
@@ -6634,9 +6654,86 @@ static void gl3_xr_draw_screen(gl3_t *gl, unsigned s, const uint32_t *tex,
       if (chain)
       {
          gl3_filter_chain_build_viewport_pass(chain, &vp, gl->xr.mvp);
-         gl3_filter_chain_end_frame(chain);
+         if (new_frame)
+            gl3_filter_chain_end_frame(chain);
       }
    }
+}
+
+/* Retained on the video thread, including while a screen is hidden. */
+static bool gl3_xr_cache(gl3_t *gl, unsigned s, bool new_frame,
+      gl3_filter_chain_t **chains, gl3_filter_chain_t *frame_chain,
+      const struct gl3_filter_chain_texture *frame_tex)
+{
+   unsigned l;
+   const video_xr_slot_t *plan = &gl->xr.set.slots[s];
+   if (gl->xr.cached[s].valid)
+      return true;
+   if (     gl->xr.cached[s].dims != plan->dims
+         || gl->xr.cached[s].layers != plan->layers)
+   {
+      GLint bound = 0;
+      if (     gl->xr.cached[s].failed_dims == plan->dims
+            && gl->xr.cached[s].failed_layers == plan->layers)
+         return false;
+      gl->xr.cached[s].failed_dims   = plan->dims;
+      gl->xr.cached[s].failed_layers = plan->layers;
+      glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound);
+      glDeleteTextures(2, gl->xr.cached[s].tex);
+      memset(gl->xr.cached[s].tex, 0, sizeof(gl->xr.cached[s].tex));
+      gl->xr.cached[s].dims   = 0;
+      gl->xr.cached[s].layers = 0;
+      glGenTextures(plan->layers, gl->xr.cached[s].tex);
+      for (l = 0; l < plan->layers; l++)
+      {
+         glBindTexture(GL_TEXTURE_2D, gl->xr.cached[s].tex[l]);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+               VIDEO_SCALE_W(plan->dims), VIDEO_SCALE_H(plan->dims),
+               0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+         glBindFramebuffer(GL_FRAMEBUFFER, gl->xr.fbo);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, gl->xr.cached[s].tex[l], 0);
+         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+         {
+            glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
+            return false;
+         }
+      }
+      glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
+      gl->xr.cached[s].dims          = plan->dims;
+      gl->xr.cached[s].layers        = plan->layers;
+      gl->xr.cached[s].failed_dims   = 0;
+      gl->xr.cached[s].failed_layers = 0;
+   }
+   gl3_xr_draw_screen(gl, s, gl->xr.cached[s].tex, chains, frame_chain,
+         frame_tex, new_frame);
+   gl->xr.cached[s].valid  = true;
+   gl->xr.cached[s].copied = false;
+   return true;
+}
+
+static void gl3_xr_copy_cached(gl3_t *gl, unsigned s, const uint32_t *tex)
+{
+   unsigned l;
+   unsigned dims = gl->xr.cached[s].dims;
+   const video_xr_slot_t *plan = &gl->xr.set.slots[s];
+   glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->xr.fbo);
+   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->xr.copy_fbo);
+   for (l = 0; l < plan->layers; l++)
+   {
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, gl->xr.cached[s].tex[l], 0);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, tex[l], 0);
+      glBlitFramebuffer(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+            0, 0, VIDEO_SCALE_W(plan->dims), VIDEO_SCALE_H(plan->dims),
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+   }
+   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, 0, 0);
 }
 
 /* The UI layer this frame drew, into the menu slot's tex: copied at the
@@ -6751,10 +6848,24 @@ static void gl3_xr_draw(gl3_t *gl, const video_frame_info_t *video_info,
 {
    unsigned s;
    GLint fbo     = 0;
+   GLint read_fbo = 0;
    GLint vp[4]   = { 0, 0, 0, 0 };
    GLboolean scissor, blend;
    gl_openxr_t *xr = gl->xr.host;
 
+   if (     gl->xr.cached_views != map
+         || gl->xr.cached_dims != frame_tex->dims
+         || gl->xr.cached_rotation != gl->rotation_raw
+         || memcmp(&gl->xr.cached_map, &video_info->views,
+            sizeof(gl->xr.cached_map)))
+   {
+      for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+         gl->xr.cached[s].valid = false;
+      gl->xr.cached_views    = map;
+      gl->xr.cached_map      = video_info->views;
+      gl->xr.cached_dims     = frame_tex->dims;
+      gl->xr.cached_rotation = gl->rotation_raw;
+   }
    gl3_xr_plan(gl, video_info, map, eyes, frame_dims, frame_tex->dims,
          ui_dims);
    if (     frame_shrink
@@ -6763,12 +6874,15 @@ static void gl3_xr_draw(gl3_t *gl, const video_frame_info_t *video_info,
       frame_chain = frame_shrink;
 
    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &fbo);
+   glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
    glGetIntegerv(GL_VIEWPORT, vp);
    scissor = glIsEnabled(GL_SCISSOR_TEST);
    blend   = glIsEnabled(GL_BLEND);
    glDisable(GL_SCISSOR_TEST);
    if (!gl->xr.fbo)
       glGenFramebuffers(1, &gl->xr.fbo);
+   if (!gl->xr.copy_fbo)
+      glGenFramebuffers(1, &gl->xr.copy_fbo);
 
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {
@@ -6787,15 +6901,22 @@ static void gl3_xr_draw(gl3_t *gl, const video_frame_info_t *video_info,
          if (!ui_dims)
             continue;
       }
-      else if (!new_frame && gl->xr.shown[s].published && gl3_xr_same(gl, s))
+      else if (     !new_frame && gl->xr.cached[s].valid
+            && gl->xr.cached[s].copied
+            && gl->xr.shown[s].published && gl3_xr_same(gl, s))
+         continue;
+      if (     s != VIDEO_XR_MENU_SLOT
+            && !gl3_xr_cache(gl, s, new_frame, chains, frame_chain, frame_tex))
          continue;
       if (!gl_openxr_slot_target(xr, s, plan->dims, plan->layers, tex))
          continue;
       if (s == VIDEO_XR_MENU_SLOT)
          gl3_xr_copy_ui(gl, s, tex[0], ui_dims);
       else
-         gl3_xr_draw_screen(gl, s, tex, chains, frame_chain, frame_tex);
+         gl3_xr_copy_cached(gl, s, tex);
       gl_openxr_slot_publish(xr, s, &gl->xr.set, NULL);
+      if (s != VIDEO_XR_MENU_SLOT)
+         gl->xr.cached[s].copied = true;
       gl3_xr_keep(gl, s);
    }
    /* A repeat draws the eyes only for a projection not shown yet, with
@@ -6814,7 +6935,8 @@ static void gl3_xr_draw(gl3_t *gl, const video_frame_info_t *video_info,
    glBindFramebuffer(GL_FRAMEBUFFER, gl->xr.fbo);
    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
          GL_TEXTURE_2D, 0, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)fbo);
+   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)fbo);
+   glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read_fbo);
    glViewport(vp[0], vp[1], vp[2], vp[3]);
    if (scissor)
       glEnable(GL_SCISSOR_TEST);
@@ -6912,6 +7034,13 @@ static void gl3_xr_start(gl3_t *gl)
  * its context goes. The window's context is current. */
 static void gl3_xr_free(gl3_t *gl)
 {
+   unsigned s;
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+      glDeleteTextures(2, gl->xr.cached[s].tex);
+   memset(gl->xr.cached, 0, sizeof(gl->xr.cached));
+   if (gl->xr.copy_fbo)
+      glDeleteFramebuffers(1, &gl->xr.copy_fbo);
+   gl->xr.copy_fbo = 0;
    if (gl->xr.fbo)
       glDeleteFramebuffers(1, &gl->xr.fbo);
    if (gl->xr.samplers[0])
@@ -7003,6 +7132,9 @@ static bool gl3_frame(void *data, const void *frame,
    gl->frame_menu_linear_filter = video_info->menu_linear_filter;
 
 #ifdef HAVE_GL3_XR
+   if (frame && !video_info->frame_repeat)
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         gl->xr.cached[i].valid = false;
    gl3_xr_recenter(gl, video_info);
    xr_draw = gl3_xr_ready(gl);
    gl3_xr_pace_setup(gl, video_info);

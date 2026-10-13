@@ -22,6 +22,18 @@ class GlLanes(unittest.TestCase):
             [{k: v for k, v in c.items() if k != 'check'} for c in run.CASES])
         self.gl_cases = run.gl_cases()
 
+    def test_custom_selection(self):
+        names = ['custom-' + k for k in ('offset', 'rotation', 'hidden',
+                 'recenter', 'menu', 'tracked', 'repeat')]
+        selected, error = run.select(names, False, False)
+        self.assertIsNone(error)
+        self.assertEqual([c['name'] for c in selected], names)
+        for lane, driver, context in run.GL_LANES:
+            wanted = [lane + '-' + n for n in names]
+            selected, error = run.select(wanted, True, False)
+            self.assertIsNone(error)
+            self.assertEqual([c['name'] for c in selected], wanted)
+
     def test_names(self):
         names = [c['name'] for c in self.gl_cases]
         self.assertEqual(len(set(names)), len(names))
@@ -107,7 +119,7 @@ class GlLanes(unittest.TestCase):
     def test_extra_cases_gl_only(self):
         names = {c['name'] for c in run.CASES}
         self.assertTrue(all(c['name'] not in names for c in run.GL_EXTRA))
-        self.assertEqual(len(run.CASES), 141)
+        self.assertEqual(len(run.CASES), 148)
 
 
 class Select(unittest.TestCase):

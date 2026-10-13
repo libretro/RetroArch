@@ -5241,6 +5241,7 @@ static void gl2_desktop_xr_plan(gl2_t *gl,
       p.map           = map ? &video_info->views : NULL;
       p.frame_dims    = gl->video_dims;
       video_xr_pose_identity(&p.anchor);
+      p.screens       = video_info->headset_screens;
       p.distance      = video_info->headset_distance;
       p.width         = video_info->headset_width;
       p.px_per_rad    = gl_openxr_pixels_per_radian(xr->host);
@@ -7370,7 +7371,7 @@ static bool gl2_frame(void *data, const void *frame,
          ? 0 : video_info->headset_interval, video_info->headset_request_hz);
    gl_android_openxr_set_views(&video_info->views, dims, &xr_vp,
          gl->rotation / 90, video_info->screen_layout,
-         video_info->stereo_swap_eyes);
+         video_info->stereo_swap_eyes, video_info->headset_screens);
    if (gl_android_openxr_active())
    {
       bool new_frame = frame && !video_info->frame_repeat;

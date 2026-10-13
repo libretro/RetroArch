@@ -4693,6 +4693,128 @@ static void test_swapchain_filled(void)
    openxr_runtime_deinit(&rt);
 }
 
+static void test_custom_screen_recenter(void)
+{
+   struct custom_fixture
+   {
+      openxr_runtime_t rt;
+      openxr_session_t session;
+      openxr_swapchains_t sc;
+      openxr_frame_t frame;
+      video_xr_params_t params;
+      video_xr_quad_set_t set;
+      video_xr_quad_set_t shown;
+      video_views_map_t map;
+      video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+      openxr_projection_t projection;
+   } *fixture = (struct custom_fixture*)calloc(1, sizeof(*fixture));
+   struct retro_video_view views[2];
+   unsigned i, n = 0;
+   int user = 0;
+   XrPosef origin;
+   XrSpace space;
+   enum retro_vr_reference_space track = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   CHECK(fixture, "custom fixture");
+   if (!fixture)
+      return;
+   t_frame_fresh(&fixture->rt, &fixture->session, &fixture->sc, &fixture->frame);
+   memset(views, 0, sizeof(views));
+   for (i = 0; i < 2; i++)
+   {
+      views[i].x = i * 400;
+      views[i].width = 400;
+      views[i].height = 240;
+      views[i].eye = i ? RETRO_VIDEO_VIEW_EYE_RIGHT : RETRO_VIDEO_VIEW_EYE_LEFT;
+   }
+   CHECK(video_views_validate(views, 2, &fixture->map), "custom stereo map");
+   video_views_xr_reset(fixture->screens, RETRO_VIDEO_VIEWS_MAX);
+   fixture->screens[0].x = 0.25f;
+   fixture->screens[0].y = 0.1f;
+   fixture->screens[0].z = 0.3f;
+   fixture->screens[0].yaw = 30.0f;
+   fixture->screens[0].scale = 1.5f;
+   fixture->params.map = &fixture->map;
+   fixture->params.screens = fixture->screens;
+   fixture->params.distance = 1.8f;
+   fixture->params.width = 1.6f;
+   fixture->params.px_per_rad = 1000.0f;
+   fixture->params.max_dim = 4096;
+   video_xr_pose_identity(&fixture->params.anchor);
+   video_xr_place(&fixture->params, &fixture->set);
+   CHECK(fixture->set.num_quads == 2, "custom stereo quads");
+   CHECK(openxr_slot_create(&fixture->sc, 0, 44, false,
+            fixture->set.slots[0].dims, 2, t_images_cb, &user, &n), "quad slot");
+   retro_atomic_store_release_int(&fixture->sc.slots[0].content, 1);
+   openxr_frame_publish(&fixture->frame, &fixture->set);
+   openxr_session_set_alive(&fixture->session, true);
+   retro_atomic_store_release_int(&fixture->session.state, XR_SESSION_STATE_FOCUSED);
+   t_head_tracked = true;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   t_head.position.x = 0.5f;
+   t_head.position.y = 0.2f;
+   t_head.position.z = 0.3f;
+   openxr_frame_request_recenter(&fixture->frame);
+   openxr_frame_run(&fixture->frame);
+   openxr_frame_get_shown_quads(&fixture->frame, &fixture->shown, &space);
+   CHECK(fixture->shown.num_quads == 2, "recenter kept both eyes");
+   for (i = 0; i < 2; i++)
+   {
+      const video_xr_pose_t *pose = &fixture->shown.quads[i].pose;
+      CHECK(t_near(pose->position.x, -1.0f)
+            && t_near(pose->position.y, 0.3f)
+            && t_near(pose->position.z, 0.05f)
+            && t_near(pose->orientation.x, 0.0f)
+            && t_near(pose->orientation.y, 0.8660254f)
+            && t_near(pose->orientation.z, 0.0f)
+            && t_near(pose->orientation.w, 0.5f),
+            "eye %u lost its relative adjustment", i);
+      CHECK(t_near(fixture->shown.quads[i].width, 2.4f)
+            && t_near(fixture->shown.quads[i].height, 1.44f), "custom size");
+   }
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   openxr_session_swap_track_space(&fixture->session, &track, &origin, NULL, NULL);
+   CHECK(openxr_slot_create(&fixture->sc, OPENXR_PROJECTION_SLOT, 44, false,
+            VIDEO_SCALE_PACK(400, 240), 2, t_images_cb, &user, &n), "eye slot");
+   retro_atomic_store_release_int(&fixture->sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   fixture->projection.active = true;
+   fixture->projection.width = 400;
+   fixture->projection.height = 240;
+   fixture->projection.track_seq = retro_atomic_load_acquire_int(&fixture->session.track_seq);
+   for (i = 0; i < 2; i++)
+   {
+      fixture->projection.pose[i].orientation.w = 1.0f;
+      fixture->projection.pose[i].position.x = i ? 0.032f : -0.032f;
+      fixture->projection.fov[i].angleLeft = -0.9f;
+      fixture->projection.fov[i].angleRight = 0.8f;
+      fixture->projection.fov[i].angleUp = 0.7f;
+      fixture->projection.fov[i].angleDown = -0.6f;
+   }
+   openxr_frame_publish_projection(&fixture->frame, &fixture->projection);
+   fixture->screens[0].x = 10.0f;
+   fixture->screens[0].yaw = 180.0f;
+   fixture->screens[0].scale = 10.0f;
+   fixture->screens[0].visible = false;
+   video_xr_place(&fixture->params, &fixture->set);
+   openxr_frame_publish(&fixture->frame, &fixture->set);
+   openxr_frame_run(&fixture->frame);
+   CHECK(t_proj.viewCount == 2, "projection kept both eyes");
+   for (i = 0; i < 2; i++)
+   {
+      CHECK(!memcmp(&t_proj_views[i].pose, &fixture->projection.pose[i],
+               sizeof(t_proj_views[i].pose)), "tracked eye %u pose changed", i);
+      CHECK(!memcmp(&t_proj_views[i].fov, &fixture->projection.fov[i],
+               sizeof(t_proj_views[i].fov)), "tracked eye %u FOV changed", i);
+   }
+   openxr_slot_destroy(&fixture->sc, 0);
+   openxr_slot_destroy(&fixture->sc, OPENXR_PROJECTION_SLOT);
+   t_head_tracked = false;
+   t_frame_free(&fixture->rt, &fixture->session, &fixture->frame);
+   free(fixture);
+}
+
 static void test_screen_placement(void)
 {
    openxr_runtime_t rt;
@@ -6696,7 +6818,29 @@ static void test_gl_host_records(void)
          && t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 3, NULL)
          && t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 4, NULL),
          "draws 2-4");
+   /* A paused edit copies the latest retained pixels into its own
+    * target before either record is consumed. */
+   {
+      uint32_t tex[2] = { 0, 0 };
+      video_xr_quad_set_t set;
+      CHECK(gl_openxr_slot_target(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, tex),
+            "repeat target");
+      slock_lock(t_gl_lock);
+      t_tex_content[tex[0]] = 40;
+      slock_unlock(t_gl_lock);
+      memset(&set, 0, sizeof(set));
+      set.slots[0].dims                 = VIDEO_SCALE_PACK(64, 32);
+      set.slots[0].layers               = 1;
+      set.quads[0].kind                 = VIDEO_XR_QUAD_SCREEN;
+      set.quads[0].pose.orientation.w   = 1.0f;
+      set.quads[0].pose.position.x      = 0.75f;
+      set.quads[0].width                = 1.0f;
+      set.quads[0].height               = 1.0f;
+      set.num_quads                    = 1;
+      gl_openxr_slot_publish(xr, 0, &set, NULL);
+   }
    CHECK(t_gate_step(1), "frame");
+   CHECK(t_quad.pose.position.x == 0.75f, "repeat pose");
    CHECK(t_gl_copies == 2 && t_gl_image_content(xr, 0, 0) == 40,
          "copies %u, image %u", t_gl_copies, t_gl_image_content(xr, 0, 0));
 
@@ -7069,6 +7213,7 @@ int main(void)
    test_vulkan_inline();
    test_input_hooks();
    test_swapchain_filled();
+   test_custom_screen_recenter();
    test_screen_placement();
    test_screen_placement_seated();
    test_screen_placement_inline();

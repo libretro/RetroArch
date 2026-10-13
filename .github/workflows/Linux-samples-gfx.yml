@@ -947,6 +947,18 @@ jobs:
           timeout 60 ./vulkan_texture_size_test
           echo "[pass] vulkan_texture_size_test"
 
+      - name: Build and run vulkan_views_target_test
+        shell: bash
+        working-directory: samples/gfx/vulkan_views_target
+        run: |
+          set -eu
+          # gfx/drivers/vulkan.c's retained view targets, copied out of
+          # the driver, against a mocked device: a failed allocation
+          # is not retried at the same size and only a desktop one
+          # logs, and a resize waits while both retired slots are full.
+          make clean && timeout 60 make check
+          echo "[pass] vulkan_views_target_test"
+
       - name: GLES persistent loan pixel oracle (Mesa EGL)
         shell: bash
         run: |

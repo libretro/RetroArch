@@ -114,6 +114,7 @@ typedef struct gl_android_openxr
     * has the frame: gl2 sets them in its frame, before the swap that
     * draws with them, both on the video thread. */
    video_views_map_t views;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
    video_viewport_t views_vp;
    unsigned views_dims;
    unsigned rotation;
@@ -601,6 +602,7 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
       p.map           = &xr->views;
       p.frame_dims    = xr->dims;
       video_xr_pose_identity(&p.anchor);
+      p.screens       = xr->screens;
       p.distance      = xr->distance;
       p.width         = xr->width;
       p.px_per_rad    = openxr_frame_pixels_per_radian(&xr->frame);
@@ -691,10 +693,15 @@ void gl_android_openxr_set_placement(unsigned placement, float distance,
 
 void gl_android_openxr_set_views(const video_views_map_t *map,
       unsigned frame_dims, const video_viewport_t *vp, unsigned rotation,
-      unsigned screen_layout, bool swap_eyes)
+      unsigned screen_layout, bool swap_eyes,
+      const video_screen_xr_t *screens)
 {
    gl_android_openxr_t *xr = &gl_xr;
    xr->views               = *map;
+   if (screens)
+      memcpy(xr->screens, screens, sizeof(xr->screens));
+   else
+      video_views_xr_reset(xr->screens, RETRO_VIDEO_VIEWS_MAX);
    xr->views_dims          = frame_dims;
    xr->views_vp            = *vp;
    xr->rotation            = rotation;

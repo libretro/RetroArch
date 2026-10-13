@@ -12,6 +12,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--build-only', action='store_true')
+    parser.add_argument('--runtime', action='store_true',
+                        help='build opt-in XR output test frontend')
     parser.add_argument('--runner', help='executable runner, for example wine')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[3]
@@ -47,6 +49,10 @@ def main():
                 cmd[cmd.index(flag) + 1] = str(obj.with_suffix('.d') if flag == '-MF' else obj)
         if rename:
             cmd.append('-Dmain=rarch_harness_unused_main')
+            if args.runtime:
+                cmd.append('-Drunloop_iterate=video_screens_test_iterate')
+        elif args.runtime:
+            cmd.append('-DVIDEO_SCREENS_RUNTIME_TEST')
         subprocess.run(cmd, cwd=root, check=True)
     cmd = []
     for token in link_cmd:
@@ -57,7 +63,7 @@ def main():
     cmd[cmd.index('-o') + 1] = str(binary)
     subprocess.run(cmd, cwd=root, check=True)
     print('built ' + str(binary), flush=True)
-    if not args.build_only:
+    if not args.build_only and not args.runtime:
         env = os.environ.copy()
         for name, directory in (('XDG_CONFIG_HOME', 'config'), ('XDG_CACHE_HOME', 'cache'),
                                 ('XDG_DATA_HOME', 'data'), ('XDG_STATE_HOME', 'state')):
