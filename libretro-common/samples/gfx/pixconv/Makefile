@@ -6,9 +6,14 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	pixconv_test.c \
-	$(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.c
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.c \
+	$(LIBRETRO_COMM_DIR)/memmap/memalign.c
 
 CFLAGS += -Wall -pedantic -std=c89 -g1 -I$(LIBRETRO_COMM_DIR)/include
+LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

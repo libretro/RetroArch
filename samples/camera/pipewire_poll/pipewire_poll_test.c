@@ -115,8 +115,8 @@ static void script_reset(struct pw_buffer *next)
 static void check_formats(void)
 {
    static const uint32_t formats[] = { SPA_VIDEO_FORMAT_ARGB,
-      SPA_VIDEO_FORMAT_BGR, SPA_VIDEO_FORMAT_YUY2 };
-   static const unsigned bytes_per_pixel[] = { 4, 3, 2 };
+      SPA_VIDEO_FORMAT_BGR, SPA_VIDEO_FORMAT_YUY2, SPA_VIDEO_FORMAT_ABGR };
+   static const unsigned bytes_per_pixel[] = { 4, 3, 2, 4 };
    unsigned i;
 
    printf("negotiated packed formats:\n");
@@ -141,9 +141,11 @@ static void check_formats(void)
       CHECK(script_stride == (int)(W * bytes_per_pixel[i]),
             "requested buffer stride matches negotiated pixel size");
       if ((formats[i] == SPA_VIDEO_FORMAT_ARGB
+               || formats[i] == SPA_VIDEO_FORMAT_ABGR
                || formats[i] == SPA_VIDEO_FORMAT_BGR) && camera.buffer_output)
       {
          uint32_t pixels[W * H];
+         uint32_t abgr[W * H];
          uint8_t bgr[W * H * 3];
          struct spa_chunk chunk;
          struct spa_data data;
@@ -155,7 +157,8 @@ static void check_formats(void)
             bgr[j * 3] = j;
             bgr[j * 3 + 1] = j + 1;
             bgr[j * 3 + 2] = j + 2;
-            pixels[j] = formats[i] == SPA_VIDEO_FORMAT_ARGB
+            abgr[j] = 0xff000000u | (j << 16);
+            pixels[j] = formats[i] != SPA_VIDEO_FORMAT_BGR
                ? 0xff000000u | j
                : 0xff000000u | ((j + 2) << 16) | ((j + 1) << 8) | j;
          }
@@ -163,10 +166,10 @@ static void check_formats(void)
          memset(&data, 0, sizeof(data));
          memset(&buffer, 0, sizeof(buffer));
          memset(&pwb, 0, sizeof(pwb));
-         chunk.size = formats[i] == SPA_VIDEO_FORMAT_ARGB
+         chunk.size = formats[i] != SPA_VIDEO_FORMAT_BGR
             ? sizeof(pixels) : sizeof(bgr);
-         data.data = formats[i] == SPA_VIDEO_FORMAT_ARGB
-            ? (void*)pixels : (void*)bgr;
+         data.data = formats[i] == SPA_VIDEO_FORMAT_ABGR ? (void*)abgr
+            : formats[i] == SPA_VIDEO_FORMAT_ARGB ? (void*)pixels : (void*)bgr;
          data.maxsize = chunk.size;
          data.chunk = &chunk;
          buffer.n_datas = 1;

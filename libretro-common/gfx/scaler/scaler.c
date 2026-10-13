@@ -247,6 +247,10 @@ static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
             case SCALER_FMT_ABGR8888:
                switch (ctx->out_fmt)
                {
+                  case SCALER_FMT_ARGB8888:
+                     /* Swapping red and blue is its own inverse. */
+                     ctx->direct_pixconv = conv_argb8888_abgr8888;
+                     break;
                   case SCALER_FMT_BGR24:
                      ctx->direct_pixconv = conv_abgr8888_bgr24;
                      break;

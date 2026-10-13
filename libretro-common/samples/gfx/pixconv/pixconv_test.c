@@ -12,12 +12,55 @@
 #include <stdint.h>
 
 #include <gfx/scaler/pixconv.h>
+#include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 
 #define ROW_W 263
 #define ROWS  ((0x10000 + ROW_W - 1) / ROW_W)
 #define NPIX  (ROW_W * ROWS)
 
 static unsigned failures;
+
+static void test_abgr_scaler(void)
+{
+   struct scaler_ctx ctx;
+   struct scaler_ctx *scaler = &ctx;
+   uint32_t input[27], output[30];
+   unsigned alpha, x, y;
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.in_width = ctx.out_width = 7;
+   ctx.in_height = ctx.out_height = 3;
+   ctx.in_fmt = SCALER_FMT_ABGR8888;
+   ctx.out_fmt = SCALER_FMT_ARGB8888;
+   ctx.in_stride = 9 * sizeof(uint32_t);
+   ctx.out_stride = 10 * sizeof(uint32_t);
+   if (!scaler_ctx_gen_filter(&ctx))
+   {
+      printf("FAIL: ABGR to ARGB scaler unavailable\n");
+      failures++;
+      return;
+   }
+   for (alpha = 0; alpha < 256; alpha++)
+   {
+      memset(input, 0xa5, sizeof(input));
+      memset(output, 0x5a, sizeof(output));
+      for (y = 0; y < 3; y++)
+         for (x = 0; x < 7; x++)
+            input[y * 9 + x] = (alpha << 24) | ((x + 17) << 16)
+               | ((y + 33) << 8) | (x + y + 49);
+      scaler_ctx_scale_direct(scaler, output, input);
+      for (y = 0; y < 3; y++)
+         for (x = 0; x < 10; x++)
+         {
+            uint32_t expected = x < 7 ? (alpha << 24)
+               | ((x + y + 49) << 16) | ((y + 33) << 8) | (x + 17)
+               : 0x5a5a5a5au;
+            if (output[y * 10 + x] != expected)
+               failures++;
+         }
+   }
+   scaler_ctx_gen_reset(&ctx);
+}
 
 static uint32_t x5(uint32_t v) { return (v << 3) | (v >> 2); }
 static uint32_t x6(uint32_t v) { return (v << 2) | (v >> 4); }
@@ -350,6 +393,7 @@ int main(void)
       in16[i] = (uint16_t)i;
 
    test_helpers();
+   test_abgr_scaler();
 
    test_16_to_32("conv_rgb565_argb8888", conv_rgb565_argb8888,
          in16, out32, ref_565_rgb, 0xff000000u);
