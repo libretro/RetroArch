@@ -200,6 +200,23 @@ typedef void   (APIENTRY *gl1_scrgb_glActiveTexture_t)(GLenum texture);
 #define GL_CLAMP_TO_EDGE        0x812F
 #endif
 
+#ifndef VITA
+/* Views, from textures of their own each frame's view is written into */
+#define GL1_VIEWS
+#endif
+
+#ifdef GL1_VIEWS
+typedef void (APIENTRY *gl1_glBlendFuncSeparate_t)(GLenum sfactor_rgb,
+      GLenum dfactor_rgb, GLenum sfactor_alpha, GLenum dfactor_alpha);
+
+/* A render target views draw into: a texture and its framebuffer */
+struct gl1_views_fbo
+{
+   GLuint fbo;
+   GLuint tex;
+};
+#endif
+
 typedef struct gl1
 {
    struct video_viewport vp;
@@ -331,6 +348,38 @@ typedef struct gl1
    bool frame_menu_linear_filter;
    /* The pending readback is a GPU recording's (read_viewport_bgrx) */
    bool readback_record;
+#ifdef GL1_VIEWS
+   /* Views, each drawn from a texture of its own its view of a frame is
+    * written straight into, with the size and format its storage was
+    * made for. Anaglyph and interlaced blend a canvas of both eyes, and
+    * the UI is drawn once into a layer placed in each eye: those need
+    * framebuffer objects, and the blend GLSL, where the GL has them. */
+   struct
+   {
+      video_views_chains_t      chains;
+      GLuint                    tex[RETRO_VIDEO_VIEWS_MAX];
+      unsigned                  tex_store_dims[RETRO_VIDEO_VIEWS_MAX];
+      unsigned                  tex_store_fmt[RETRO_VIDEO_VIEWS_MAX];
+      struct gl1_views_fbo      canvas;
+      struct gl1_views_fbo      ui;
+      video_views_target_t      canvas_target;
+      video_views_target_t      ui_target;
+      video_views_ui_dims_t     saved;
+      gl1_glBlendFuncSeparate_t BlendFuncSeparate;
+      GLuint                    blend_prog;
+      GLint                     loc_mode;
+      GLint                     loc_height;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map was drawn whole. */
+      retro_atomic_int_t        allowed;
+      retro_atomic_int_t        fallback;
+      bool                      tried;
+      bool                      fbo;
+      bool                      active;
+      bool                      ui_pass;
+      bool                      direct_seen;
+   } views;
+#endif
 } gl1_t;
 
 #ifdef VITA
@@ -489,10 +538,25 @@ static void *gfx_display_gl1_get_default_mvp(void *data)
    return &gl1->mvp_no_rot;
 }
 
+/* Straight alpha. Into the transparent UI layer, alpha accumulates as
+ * coverage, so the layer composites as the UI drawn directly would. */
+static void gl1_blend_alpha(const gl1_t *gl1)
+{
+#ifdef GL1_VIEWS
+   if (gl1 && gl1->views.ui_pass)
+   {
+      gl1->views.BlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+            GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      return;
+   }
+#endif
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
 static void gfx_display_gl1_blend_begin(void *data)
 {
    glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   gl1_blend_alpha((const gl1_t*)data);
 }
 
 static void gfx_display_gl1_blend_end(void *data)
@@ -938,7 +1002,7 @@ static void gl1_raster_font_setup_viewport(
 {
    gl1_set_viewport(gl, dims, full_screen, false);
    glEnable(GL_BLEND);
-   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   gl1_blend_alpha(gl);
    glEnable(GL_TEXTURE_2D);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 }
@@ -1265,6 +1329,10 @@ static void gl1_overlay_tex_geom(void *data,
 }
 #endif
 
+#ifdef GL1_VIEWS
+static void gl1_views_publish(gl1_t *gl1);
+#endif
+
 static void *gl1_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
@@ -1503,6 +1571,9 @@ static void *gl1_init(const video_info_t *video)
    gl1->coords.lut_tex_coord  = gl1_tex_coords;
    gl1->coords.vertices       = 4;
 
+#ifdef GL1_VIEWS
+   gl1_views_publish(gl1);
+#endif
    return gl1;
 
 error:
@@ -1650,14 +1721,35 @@ static void gl1_tonemap_pq_rows(gl1_t *gl1, const void *frame,
    }
 }
 
+/* The texture's storage size and format, as last specified: the
+ * core's, the menu's or a view's */
+static void gl1_tex_store(gl1_t *gl1, GLuint tex, unsigned **dims,
+      unsigned **fmt)
+{
+#ifdef GL1_VIEWS
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (tex && tex == gl1->views.tex[i])
+      {
+         *dims = &gl1->views.tex_store_dims[i];
+         *fmt  = &gl1->views.tex_store_fmt[i];
+         return;
+      }
+#endif
+   *dims = (tex == gl1->tex) ? &gl1->tex_store_dims : &gl1->menu_tex_store_dims;
+   *fmt  = (tex == gl1->tex) ? &gl1->tex_store_fmt  : &gl1->menu_tex_store_fmt;
+}
+
 /* 'frame_to_copy' holds width x height pixels of 'src_fmt' with rows
  * 'src_row' pixels apart.  Callers pass the core or menu frame itself
  * wherever the GL can take its layout, so no staging copy is made;
  * the Vita build has no GL_UNPACK_ROW_LENGTH and always passes a
- * pot_width-strided staging buffer. */
+ * pot_width-strided staging buffer. @frame_tex: the core's frame or a
+ * view of it, else the menu's; without @draw it is uploaded only. */
 static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
       int width, int height, GLuint tex, const void *frame_to_copy,
-      unsigned src_row, enum gl1_src_fmt src_fmt)
+      unsigned src_row, enum gl1_src_fmt src_fmt, bool frame_tex,
+      bool draw)
 {
    bool   fb_4444         = (src_fmt == GL1_SRC_RGBA4444);
    bool   fb_565          = (src_fmt == GL1_SRC_RGB565);
@@ -1680,7 +1772,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
     * (and unlike glcore) no swizzle is needed. GL 1.2, and the native
     * predicate already requires BGRA, so the CPU-swizzle fallback
     * below can never see these words (it would corrupt them). */
-   bool   src_10bit       = (tex == gl1->tex)
+   bool   src_10bit       = frame_tex
                          && gl1_source_10bit_native(gl1);
    GLenum format          = fb_4444
                               ? GL_RGBA
@@ -1807,11 +1899,9 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
 #else
    {
       unsigned dims        = VIDEO_SCALE_PACK(pot_width, pot_height);
-      bool     is_core     = (tex == gl1->tex);
-      unsigned *store_dims = is_core
-            ? &gl1->tex_store_dims : &gl1->menu_tex_store_dims;
-      unsigned *store_fmt  = is_core
-            ? &gl1->tex_store_fmt  : &gl1->menu_tex_store_fmt;
+      unsigned *store_dims;
+      unsigned *store_fmt;
+      gl1_tex_store(gl1, tex, &store_dims, &store_fmt);
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
       if (*store_dims != dims || *store_fmt != (unsigned)internalFormat)
@@ -1837,7 +1927,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
    }
 #endif
 
-   if (tex == gl1->tex)
+   if (frame_tex)
    {
       if (gl1->flags & GL1_FLAG_SMOOTH)
       {
@@ -1866,6 +1956,9 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+   if (!draw)
+      return;
 
    glMatrixMode(GL_PROJECTION);
    glPushMatrix();
@@ -2221,6 +2314,477 @@ static GLuint gl1_frame_target_fbo(gl1_t *gl1, unsigned dims)
 }
 #endif /* !VITA */
 
+#ifdef GL1_VIEWS
+/* What a frame's placement draws read: the target's height, its rows
+ * counting from its bottom */
+struct gl1_views_draw
+{
+   const video_frame_info_t *video_info;
+   unsigned target_height;
+};
+
+static void gl1_views_draw_direct(gl1_t *gl1,
+      const struct gl1_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut);
+static bool gl1_views_target_make(gl1_t *gl1, struct gl1_views_fbo *t,
+      unsigned dims);
+static bool gl1_views_target_retire(gl1_t *gl1, struct gl1_views_fbo *t);
+
+/* The views compositor, with these calls bound in. gl1 takes no preset:
+ * every view is drawn straight from its texture, its chain the driver
+ * itself. */
+#define VV_FN(name)                     gl1_vv_##name
+#define VV_DRV                          gl1_t
+#define VV_CHAIN                        gl1_t
+#define VV_CREATE_STOCK(drv)            ((void*)(drv))
+#define VV_SYNC_PARAMS(drv, c)          ((void)0)
+#define VV_DRAW                         struct gl1_views_draw
+#define VV_DIRECT(p, d, v, r, c)        gl1_views_draw_direct(p, d, v, r, c)
+#define VV_PASS(p, d, f, r, c, a)       ((void)0)
+#define VV_TARGET                       struct gl1_views_fbo
+#define VV_TARGET_MAKE(drv, t, dims)    gl1_views_target_make(drv, t, dims)
+#define VV_TARGET_RETIRE(drv, t)        gl1_views_target_retire(drv, t)
+#include "../video_views_draw.h"
+
+/* Not under scRGB, whose offscreen the whole frame goes into */
+static bool gl1_views_allowed(const gl1_t *gl1)
+{
+   return !gl1->scrgb.active;
+}
+
+static void gl1_views_publish(gl1_t *gl1)
+{
+   retro_atomic_store_release_int(&gl1->views.allowed,
+         gl1_views_allowed(gl1) ? 1 : 0);
+}
+
+/* Anaglyph and interlaced, the canvas's halves blended into the window:
+ * Dubois least-squares red/cyan matrices, or even rows from the left
+ * half and odd from the right, counted from the top. */
+static const char *gl1_views_blend_vert_src[] = {
+   "varying vec2 vTex;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = vec4(gl_Vertex.xy, 0.0, 1.0);\n"
+   "   vTex = gl_MultiTexCoord0.xy;\n"
+   "}\n"
+};
+static const char *gl1_views_blend_frag_src[] = {
+   "uniform sampler2D uTex;\n"
+   "uniform float uMode;\n"
+   "uniform float uHeight;\n"
+   "varying vec2 vTex;\n"
+   "void main()\n"
+   "{\n"
+   "   vec2 uv = vec2(vTex.x * 0.5, vTex.y);\n"
+   "   if (uMode > 0.5)\n"
+   "   {\n"
+   "      float row = floor((1.0 - vTex.y) * uHeight);\n"
+   "      uv.x += 0.5 * mod(row, 2.0);\n"
+   "      gl_FragColor = vec4(texture2D(uTex, uv).rgb, 1.0);\n"
+   "      return;\n"
+   "   }\n",
+   "   {\n"
+   "      vec3 l = texture2D(uTex, uv).rgb;\n"
+   "      vec3 r = texture2D(uTex, uv + vec2(0.5, 0.0)).rgb;\n"
+   "      vec3 c = vec3(\n"
+   "            dot(l, vec3( 0.456100,  0.500484,  0.176381))\n"
+   "          + dot(r, vec3(-0.0434706, -0.0879388, -0.00155529)),\n"
+   "            dot(l, vec3(-0.0400822, -0.0378246, -0.0157589))\n"
+   "          + dot(r, vec3( 0.378476,   0.73364,   -0.0184503)),\n"
+   "            dot(l, vec3(-0.0152161, -0.0205971, -0.00546856))\n"
+   "          + dot(r, vec3(-0.0721527, -0.112961,   1.2264)));\n"
+   "      gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);\n"
+   "   }\n"
+   "}\n"
+};
+
+/* The framebuffer objects, blending and program the canvas and the UI
+ * layer take, found on first use: most sessions never draw views */
+static void gl1_views_init(gl1_t *gl1)
+{
+   GLint status = 0;
+   GLuint vs, fs, prog;
+
+   gl1->views.tried = true;
+   if (     !gl1_scrgb_resolve(gl1)
+         || !(gl1->views.BlendFuncSeparate = (gl1_glBlendFuncSeparate_t)
+            gl1->ctx_driver->get_proc_address("glBlendFuncSeparate")))
+   {
+      RARCH_LOG("[GL1] Views drawn without the canvas and UI layer: the "
+            "GL has no framebuffer objects.\n");
+      return;
+   }
+   gl1->views.fbo = true;
+   if (!(vs = gl1_scrgb_compile_stage(gl1, GL_VERTEX_SHADER,
+               gl1_views_blend_vert_src,
+               (GLsizei)ARRAY_SIZE(gl1_views_blend_vert_src))))
+      return;
+   if (!(fs = gl1_scrgb_compile_stage(gl1, GL_FRAGMENT_SHADER,
+               gl1_views_blend_frag_src,
+               (GLsizei)ARRAY_SIZE(gl1_views_blend_frag_src))))
+   {
+      gl1->scrgb.DeleteShader(vs);
+      return;
+   }
+   prog = gl1->scrgb.CreateProgram();
+   gl1->scrgb.AttachShader(prog, vs);
+   gl1->scrgb.AttachShader(prog, fs);
+   gl1->scrgb.LinkProgram(prog);
+   gl1->scrgb.DeleteShader(vs);
+   gl1->scrgb.DeleteShader(fs);
+   gl1->scrgb.GetProgramiv(prog, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      gl1->scrgb.DeleteProgram(prog);
+      return;
+   }
+   gl1->views.blend_prog = prog;
+   gl1->views.loc_mode   = gl1->scrgb.GetUniformLocation(prog, "uMode");
+   gl1->views.loc_height = gl1->scrgb.GetUniformLocation(prog, "uHeight");
+   gl1->scrgb.UseProgram(prog);
+   gl1->scrgb.Uniform1i(gl1->scrgb.GetUniformLocation(prog, "uTex"), 0);
+   gl1->scrgb.UseProgram(0);
+}
+
+static bool gl1_views_target_retire(gl1_t *gl1, struct gl1_views_fbo *t)
+{
+   if (t->fbo)
+      gl1->scrgb.DeleteFramebuffers(1, &t->fbo);
+   if (t->tex)
+      glDeleteTextures(1, &t->tex);
+   t->fbo = 0;
+   t->tex = 0;
+   return true;
+}
+
+/* A render target of RGBA8 sized dims */
+static bool gl1_views_target_make(gl1_t *gl1, struct gl1_views_fbo *t,
+      unsigned dims)
+{
+   bool ok;
+   if (!gl1->views.fbo)
+      return false;
+   glGenTextures(1, &t->tex);
+   glBindTexture(GL_TEXTURE_2D, t->tex);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims), 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   gl1->scrgb.GenFramebuffers(1, &t->fbo);
+   gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+   gl1->scrgb.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, t->tex, 0);
+   ok = gl1->scrgb.CheckFramebufferStatus(GL_FRAMEBUFFER)
+      == GL_FRAMEBUFFER_COMPLETE;
+   gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+   if (ok)
+      return true;
+   RARCH_WARN("[GL1] Views can't draw into a %ux%u image. "
+         "Drawing without it.\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   gl1_views_target_retire(gl1, t);
+   return false;
+}
+
+static void gl1_views_release(gl1_t *gl1)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (gl1->views.tex[i])
+         glDeleteTextures(1, &gl1->views.tex[i]);
+      gl1->views.tex[i]            = 0;
+      gl1->views.tex_store_dims[i] = 0;
+   }
+   if (gl1->views.fbo)
+   {
+      gl1_vv_target_drop(gl1, &gl1->views.canvas_target, &gl1->views.canvas);
+      gl1_vv_target_drop(gl1, &gl1->views.ui_target, &gl1->views.ui);
+   }
+   if (gl1->views.blend_prog)
+      gl1->scrgb.DeleteProgram(gl1->views.blend_prog);
+   gl1->views.blend_prog = 0;
+}
+
+/* @tex over the whole viewport, unblended: s and t to @s1 and @t1, with
+ * @flip its first row at the top, as a frame's is uploaded, else at the
+ * bottom, as a framebuffer's is drawn. @rotate: as the frame is. */
+static void gl1_views_quad(gl1_t *gl1, GLuint tex, float s1, float t1,
+      bool flip, bool rotate)
+{
+   static const float vertices[] = {
+      -1.0f, -1.0f, 0.0f,
+      -1.0f,  1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       1.0f,  1.0f, 0.0f,
+   };
+   static const float colors[]   = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f
+   };
+   float texcoords[8];
+   texcoords[0] = 0.0f;
+   texcoords[1] = flip ? t1 : 0.0f;
+   texcoords[2] = 0.0f;
+   texcoords[3] = flip ? 0.0f : t1;
+   texcoords[4] = s1;
+   texcoords[5] = flip ? t1 : 0.0f;
+   texcoords[6] = s1;
+   texcoords[7] = flip ? 0.0f : t1;
+
+   glDisable(GL_DEPTH_TEST);
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_STENCIL_TEST);
+   glEnable(GL_TEXTURE_2D);
+   glBindTexture(GL_TEXTURE_2D, tex);
+
+   glMatrixMode(GL_PROJECTION);
+   glPushMatrix();
+   glLoadIdentity();
+   glMatrixMode(GL_MODELVIEW);
+   glPushMatrix();
+   glLoadIdentity();
+   if (rotate && gl1->rotation)
+      glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
+
+   glEnableClientState(GL_COLOR_ARRAY);
+   glEnableClientState(GL_VERTEX_ARRAY);
+   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   glColorPointer(4, GL_FLOAT, 0, colors);
+   glVertexPointer(3, GL_FLOAT, 0, vertices);
+   glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+   glDisableClientState(GL_VERTEX_ARRAY);
+   glDisableClientState(GL_COLOR_ARRAY);
+
+   glMatrixMode(GL_MODELVIEW);
+   glPopMatrix();
+   glMatrixMode(GL_PROJECTION);
+   glPopMatrix();
+}
+
+/* A top-left rectangle of a target @height high, as GL's bottom-left
+ * x, y, width, height */
+static void gl1_views_gl_rect(const video_views_rect_t *r, unsigned height,
+      GLint *out)
+{
+   out[0] = VIDEO_POS_X(r->pos);
+   out[1] = (GLint)height - VIDEO_POS_Y(r->pos)
+      - (GLint)VIDEO_SCALE_H(r->dims);
+   out[2] = VIDEO_SCALE_W(r->dims);
+   out[3] = VIDEO_SCALE_H(r->dims);
+}
+
+/* View @view over @dst, cut to @cut, from its texture */
+static void gl1_views_draw_direct(gl1_t *gl1,
+      const struct gl1_views_draw *d, unsigned view,
+      const video_views_rect_t *dst, const video_views_rect_t *cut)
+{
+   GLint vp[4], sc[4];
+   const struct retro_video_view *v = &d->video_info->views.views[view];
+   unsigned pot_w = GET_POT(v->width);
+   unsigned pot_h = GET_POT(v->height);
+   if (!gl1->views.tex[view])
+      return;
+   gl1_views_gl_rect(dst, d->target_height, vp);
+   gl1_views_gl_rect(cut, d->target_height, sc);
+   glViewport(vp[0], vp[1], vp[2], vp[3]);
+   glEnable(GL_SCISSOR_TEST);
+   glScissor(sc[0], sc[1], sc[2], sc[3]);
+   gl1_views_quad(gl1, gl1->views.tex[view], (float)v->width / pot_w,
+         (float)v->height / pot_h, true, true);
+   glDisable(GL_SCISSOR_TEST);
+}
+
+/* Whether this frame draws its views, with each drawn view's chain
+ * picked and the rectangle its first placement takes, and in *blend
+ * whether into the canvas. Drawn whole when the stereo mode or the UI
+ * would need a canvas or layer the GL can't make. */
+static bool gl1_views_setup(gl1_t *gl1, video_frame_info_t *video_info,
+      const void *frame, const char *msg, bool *blend,
+      gl1_t **chains, video_views_rect_t *rects)
+{
+   bool views, per_eye, ui;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   bool offscreen = video_info->views.num_views && layout->offscreen;
+
+   if (video_info->views.num_views && !gl1->views.tried)
+      gl1_views_init(gl1);
+   *blend = offscreen && gl1->views.blend_prog
+      && gl1_vv_target_ensure(gl1, &gl1->views.canvas_target,
+            &gl1->views.canvas, layout->canvas_dims);
+   /* A real frame without the blend modes frees the canvas. */
+   if (frame && !offscreen && gl1->views.fbo)
+      gl1_vv_target_drop(gl1, &gl1->views.canvas_target,
+            &gl1->views.canvas);
+   per_eye = video_views_ui_per_eye(&video_info->views, layout,
+         gl1_views_allowed(gl1));
+   /* No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye,
+         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
+         video_info->statistics_show,
+         video_info->widgets_active && gfx_widgets_visible(video_info));
+#else
+   ui = VIDEO_VIEWS_UI_WANTED(per_eye,
+         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
+         video_info->statistics_show, false);
+#endif
+   views = video_info->views.num_views
+      && gl1_views_allowed(gl1)
+      && (!offscreen || *blend)
+      && (!ui || gl1->views.fbo)
+      && video_views_fit_frame(&video_info->views, gl1->frame_dims)
+      && gl1_vv_pick_chains(gl1, &gl1->views.chains, &video_info->views,
+            layout, true, *blend || !layout->offscreen,
+            *blend ? layout->canvas_dims : video_info->dims, chains, rects);
+   *blend = views && *blend;
+   if (views && !gl1->views.direct_seen)
+   {
+      gl1->views.direct_seen = true;
+      RARCH_LOG("[GL1] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
+/* Each drawn view of the frame's pixels at @frame, @src_row texels a
+ * row, written straight into its texture: no copy */
+static void gl1_views_write(gl1_t *gl1, const video_frame_info_t *video_info,
+      gl1_t *const *chains, const void *frame, unsigned src_row,
+      enum gl1_src_fmt src_fmt)
+{
+   unsigned i;
+   size_t bpp = (src_fmt == GL1_SRC_RGB565) ? 2 : 4;
+   for (i = 0; i < video_info->views.num_views; i++)
+   {
+      const struct retro_video_view *v = &video_info->views.views[i];
+      if (!chains[i])
+         continue;
+      if (!gl1->views.tex[i])
+         glGenTextures(1, &gl1->views.tex[i]);
+      gl1_draw_tex(gl1, GET_POT(v->width), GET_POT(v->height),
+            v->width, v->height, gl1->views.tex[i],
+            (const uint8_t*)frame + ((size_t)v->y * src_row + v->x) * bpp,
+            src_row, src_fmt, true, false);
+   }
+}
+
+/* Draws the views into the window, or with @blend into the canvas,
+ * whose halves one pass then blends into the window */
+static void gl1_views_render(gl1_t *gl1, const video_frame_info_t *video_info,
+      gl1_t **chains, bool blend)
+{
+   struct gl1_views_draw d;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   unsigned dims                      = blend ? layout->canvas_dims
+      : video_info->dims;
+
+   if (blend)
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->views.canvas.fbo);
+   glDisable(GL_SCISSOR_TEST);
+   glDisable(GL_BLEND);
+   glViewport(0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   glClearColor(0.0f, 0.0f, 0.0f, blend ? 0.0f : 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   d.video_info    = video_info;
+   d.target_height = VIDEO_SCALE_H(dims);
+   gl1_vv_draw_placements(gl1, &d, layout, chains,
+         blend || !layout->offscreen, dims, true);
+
+   if (blend)
+   {
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+      glViewport(0, 0, VIDEO_SCALE_W(video_info->dims),
+            VIDEO_SCALE_H(video_info->dims));
+      glBindTexture(GL_TEXTURE_2D, gl1->views.canvas.tex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      gl1->scrgb.UseProgram(gl1->views.blend_prog);
+      if (gl1->views.loc_mode >= 0)
+         gl1->scrgb.Uniform1f(gl1->views.loc_mode,
+               (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+               ? 1.0f : 0.0f);
+      if (gl1->views.loc_height >= 0)
+         gl1->scrgb.Uniform1f(gl1->views.loc_height,
+               (float)VIDEO_SCALE_H(layout->canvas_dims));
+      gl1_views_quad(gl1, gl1->views.canvas.tex, 1.0f, 1.0f, false, false);
+      gl1->scrgb.UseProgram(0);
+   }
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos),
+         VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
+}
+
+/* Moves UI drawing into the UI layer, laid out at one eye's size */
+static void gl1_views_ui_begin(gl1_t *gl1, video_frame_info_t *video_info)
+{
+   unsigned ui_dims = video_info->views_layout.ui_dims;
+   gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->views.ui.fbo);
+   glDisable(GL_SCISSOR_TEST);
+   glViewport(0, 0, VIDEO_SCALE_W(ui_dims), VIDEO_SCALE_H(ui_dims));
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT);
+   /* Menus and widgets size from video_info->dims, fonts from the
+    * viewport and vp.full_dims. */
+   video_views_ui_enter(&gl1->views.saved, &video_info->dims,
+         &gl1->vp.full_dims, ui_dims);
+   gl1_set_viewport(gl1, ui_dims, true, false);
+   gl1->views.ui_pass = true;
+   glEnable(GL_BLEND);
+   gl1_blend_alpha(gl1);
+}
+
+/* Back onto the window, and the UI layer into each eye's area. It was
+ * drawn over transparent black, so its colour is premultiplied. */
+static void gl1_views_ui_end(gl1_t *gl1, video_frame_info_t *video_info)
+{
+   unsigned a;
+   const video_views_layout_t *layout = &video_info->views_layout;
+   /* Only full side by side places it unscaled. */
+   GLint filter = (layout->stereo_mode == VIDEO_STEREO_MODE_SBS_FULL)
+      ? GL_NEAREST : GL_LINEAR;
+
+   gl1->views.ui_pass = false;
+   video_views_ui_leave(&gl1->views.saved, &video_info->dims,
+         &gl1->vp.full_dims);
+   gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+   glDisable(GL_SCISSOR_TEST);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+   glBindTexture(GL_TEXTURE_2D, gl1->views.ui.tex);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      GLint vp[4];
+      gl1_views_gl_rect(&layout->areas[a], VIDEO_SCALE_H(video_info->dims),
+            vp);
+      glViewport(vp[0], vp[1], vp[2], vp[3]);
+      gl1_views_quad(gl1, gl1->views.ui.tex, 1.0f, 1.0f, false, false);
+   }
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   gl1_set_viewport(gl1, video_info->dims, gl1->views.active, true);
+}
+
+static void gl1_set_view_count(void *data, unsigned count)
+{
+   unsigned i;
+   gl1_t *gl1 = (gl1_t*)data;
+   if (!gl1)
+      return;
+   gl1->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   for (i = gl1->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      gl1->views.chains.stock[i] = NULL;
+}
+#endif
+
 static bool gl1_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -2256,6 +2820,14 @@ static bool gl1_frame(void *data, const void *frame,
    struct font_params *osd_params   = (struct font_params*)
       &video_info->osd_stat_params;
    bool overlay_behind_menu         = video_info->overlay_behind_menu;
+   bool views_per_eye               = false;
+#ifdef GL1_VIEWS
+   gl1_t *view_chains[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t view_rects[RETRO_VIDEO_VIEWS_MAX];
+   bool views                       = false;
+   bool views_blend                 = false;
+   bool views_ui                    = false;
+#endif
 
    /* These travel with the frame, so this thread does not read what the
     * main thread writes: the scRGB encode below and gl1_tonemap_pq_rows()
@@ -2281,7 +2853,13 @@ static bool gl1_frame(void *data, const void *frame,
          gl1->ctx_driver->set_resize(gl1->ctx_data, video_info->dims);
 
       gl1_set_viewport(gl1,
-            video_info->dims, false, true);
+            video_info->dims,
+#ifdef GL1_VIEWS
+            gl1->views.active,
+#else
+            false,
+#endif
+            true);
    }
 
 #ifndef VITA
@@ -2393,14 +2971,40 @@ static bool gl1_frame(void *data, const void *frame,
 
    gl1->screen_dims            = mode_dims;
 
+#ifdef GL1_VIEWS
+   views = gl1_views_setup(gl1, video_info, frame, msg, &views_blend,
+         view_chains, view_rects);
+   /* gl1->vp is the whole window while views draw. */
+   if (views != gl1->views.active)
+   {
+      gl1->views.active = views;
+      gl1_set_viewport(gl1, video_info->dims, views, true);
+   }
+   retro_atomic_store_release_int(&gl1->views.fallback,
+         (video_info->views.num_views && !views) ? 1 : 0);
+   gl1_views_publish(gl1);
+#endif
+
    if (draw)
    {
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifdef GL1_VIEWS
+      /* Each view written straight into its own texture, the frame
+       * itself not at all */
+      if (views && frame_to_copy)
+      {
+         gl1_views_write(gl1, video_info, view_chains, frame_to_copy,
+               src_row, src_fmt);
+         gl1_views_render(gl1, video_info, view_chains, views_blend);
+      }
+      else
+#endif
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
-               width, height, gl1->tex, frame_to_copy, src_row, src_fmt);
+               width, height, gl1->tex, frame_to_copy, src_row, src_fmt,
+               true, true);
    }
 
    /* Record Game Only: a recording's readback takes the core's image
@@ -2433,6 +3037,33 @@ static bool gl1_frame(void *data, const void *frame,
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
+#endif
+
+#ifdef GL1_VIEWS
+   /* As the main thread laid the UI out, also in a frame drawn whole:
+    * it lays out later frames whole once it reads the fallback. */
+   views_per_eye = video_views_ui_per_eye(&video_info->views,
+         &video_info->views_layout, gl1_views_allowed(gl1));
+   /* A real frame without it frees the UI layer. */
+   if (frame && !views_per_eye && gl1->views.fbo)
+      gl1_vv_target_drop(gl1, &gl1->views.ui_target, &gl1->views.ui);
+   /* Drawn and composited only when there is UI; overlays are hidden.
+    * No directive inside the macro's arguments: MSVC's preprocessor
+    * takes it as tokens. */
+#ifdef HAVE_GFX_WIDGETS
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
+         video_info->statistics_show,
+         widgets_active && gfx_widgets_visible(video_info))
+#else
+   views_ui = VIDEO_VIEWS_UI_WANTED(views_per_eye,
+         (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE), msg,
+         video_info->statistics_show, false)
+#endif
+      && gl1_vv_target_ensure(gl1, &gl1->views.ui_target,
+            &gl1->views.ui, video_info->views_layout.ui_dims);
+   if (views_ui)
+      gl1_views_ui_begin(gl1, video_info);
 #endif
 
 #ifdef HAVE_MENU
@@ -2498,21 +3129,49 @@ static bool gl1_frame(void *data, const void *frame,
 
          if (gl1->flags & GL1_FLAG_MENU_TEXTURE_FULLSCREEN)
          {
-            glViewport(0, 0, video_width, video_height);
+            /* The UI layer's size while views draw it per eye */
+            glViewport(0, 0, VIDEO_SCALE_W(video_info->dims),
+                  VIDEO_SCALE_H(video_info->dims));
             gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy, src_row,
-                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888);
+                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888,
+                  false, true);
             glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos), VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
          }
          else
+         {
+#ifdef GL1_VIEWS
+            /* gl1->vp is the whole window while views draw, so fit the
+             * menu to this pass's target here. */
+            if (gl1->views.active)
+            {
+               struct video_viewport vp;
+               memset(&vp, 0, sizeof(vp));
+               vp.full_dims = video_info->dims;
+               video_driver_update_viewport(&vp, false,
+                     (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false,
+                     false);
+               glViewport(VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos),
+                     VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
+            }
+#endif
             gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy, src_row,
-                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888);
+                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888,
+                  false, true);
+#ifdef GL1_VIEWS
+            if (gl1->views.active)
+               glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos),
+                     VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
+#endif
+         }
       }
    }
 
 #ifdef HAVE_OVERLAY
-   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
+   /* Touch overlays would straddle both eyes. */
+   if (     (gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && overlay_behind_menu
+         && !views_per_eye)
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
@@ -2549,12 +3208,18 @@ static bool gl1_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if ((gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
+   if (     (gl1->flags & GL1_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu
+         && !views_per_eye)
       gl1_render_overlay(gl1, video_width, video_height);
 #endif
 
    if (msg)
       font_driver_render_msg(gl1, msg, strlen(msg), NULL, NULL);
+
+#ifdef GL1_VIEWS
+   if (views_ui)
+      gl1_views_ui_end(gl1, video_info);
+#endif
 
    if (gl1->ctx_driver->update_window_title)
       gl1->ctx_driver->update_window_title(
@@ -2795,6 +3460,9 @@ static void gl1_free(void *data)
    if (!gl1)
       return;
 
+#ifdef GL1_VIEWS
+   gl1_views_release(gl1);
+#endif
 #ifndef VITA
    if (gl1->scrgb.program && gl1->scrgb.DeleteProgram)
       gl1->scrgb.DeleteProgram(gl1->scrgb.program);
@@ -3326,6 +3994,12 @@ static uint32_t gl1_get_flags(void *data)
    if (gl1 && !gl1->scrgb.active)
       BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
 #endif
+#ifdef GL1_VIEWS
+   if (gl1 && retro_atomic_load_acquire_int(&gl1->views.allowed))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   if (gl1 && retro_atomic_load_acquire_int(&gl1->views.fallback))
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+#endif
 
    return flags;
 }
@@ -3371,7 +4045,14 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   gl1_update_texture
+   gl1_update_texture,
+#ifdef GL1_VIEWS
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   gl1_set_view_count
+#endif
 };
 
 static void gl1_get_poke_interface(void *data,
