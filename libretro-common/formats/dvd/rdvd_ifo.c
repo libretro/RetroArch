@@ -387,3 +387,32 @@ bool rdvd_menu_table_read(const uint8_t *data, size_t size,
    out->data = data; out->size = total; out->languages = count;
    return true;
 }
+
+
+bool rdvd_menu_language_read(const rdvd_menu_table_t *table, unsigned index,
+      rdvd_menu_language_t *out)
+{
+   rdvd_menu_table_t t;
+   rdvd_menu_language_t language;
+   const uint8_t *record;
+   size_t start, end;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!table || !rdvd_menu_table_read(table->data, table->size, &t)
+         || index >= t.languages) return false;
+   record = t.data + 8 + (size_t)index * 8;
+   start = rdvd_ifo_u32(record + 4); end = t.size;
+   for (i = 0; i < t.languages; i++)
+   {
+      size_t candidate = rdvd_ifo_u32(t.data + 12 + (size_t)i * 8);
+      if (candidate > start && candidate < end) end = candidate;
+   }
+   memset(&language, 0, sizeof(language));
+   if (!rdvd_pgci_table_read(t.data + start, end - start, &language.chains))
+      return false;
+   language.language_code = rdvd_ifo_u16(record);
+   language.extension = record[2]; language.menu_flags = record[3];
+   *out = language;
+   return true;
+}

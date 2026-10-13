@@ -149,5 +149,15 @@ typedef struct rdvd_menu_table
  * fit their record spans; nested program chains are checked on access. */
 bool rdvd_menu_table_read(const uint8_t *data, size_t size,
       rdvd_menu_table_t *out);
+typedef struct rdvd_menu_language
+{
+   rdvd_pgci_table_t chains;
+   unsigned language_code, extension, menu_flags;
+} rdvd_menu_language_t;
+
+/* Zero-based index; shared and unsorted language records are supported.
+ * Metadata and nested PGCIT borrow immutable table input. Failure clears out. */
+bool rdvd_menu_language_read(const rdvd_menu_table_t *table, unsigned index,
+      rdvd_menu_language_t *out);
 RETRO_END_DECLS
 #endif

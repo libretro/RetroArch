@@ -263,6 +263,42 @@ static void test_menu_table(void)
    CHECK(rdvd_menu_table_read(menu_bytes, 8, &table) && !table.languages);
    CHECK(!rdvd_menu_table_read(NULL, 8, &table));
 }
+static void menu_chains_fixture(void)
+{
+   uint8_t *chains;
+   menu_fixture(); fixture();
+   chains = menu_bytes + 512;
+   chains[1] = 1; chains[6] = 1; chains[7] = 0x71;
+   chains[8] = 0x83; chains[15] = 16;
+   memcpy(chains + 16, bytes, 354);
+   chains = menu_bytes + 32;
+   chains[1] = 1; chains[6] = 1; chains[7] = 0x71;
+   chains[8] = 0x83; chains[15] = 16;
+   memcpy(chains + 16, bytes, 354);
+}
+static void test_menu_languages(void)
+{
+   rdvd_menu_table_t table;
+   rdvd_menu_language_t language;
+   rdvd_pgci_entry_t entry;
+   menu_chains_fixture();
+   CHECK(rdvd_menu_table_read(menu_bytes, sizeof(menu_bytes), &table));
+   CHECK(rdvd_menu_language_read(&table, 0, &language));
+   CHECK(language.language_code == 0x656e && language.menu_flags == 0xf8);
+   CHECK(language.chains.data == menu_bytes + 512 && language.chains.size == 370);
+   CHECK(rdvd_pgci_entry_read(&language.chains, 0, &entry));
+   CHECK(entry.pgc.data == menu_bytes + 528);
+   CHECK(rdvd_menu_language_read(&table, 1, &language));
+   CHECK(language.language_code == 0x6672 && language.chains.data == menu_bytes + 32);
+   CHECK(rdvd_menu_language_read(&table, 2, &language));
+   CHECK(language.chains.data == menu_bytes + 512);
+   CHECK(!rdvd_menu_language_read(&table, 3, &language) && !language.chains.data);
+   table.languages = 99; /* Descriptor counts are not trusted. */
+   CHECK(!rdvd_menu_language_read(&table, 3, &language));
+   menu_bytes[31] = 1; /* Shared offset moves to 513: bounds previous record. */
+   CHECK(!rdvd_menu_language_read(&table, 0, &language));
+   CHECK(!rdvd_menu_language_read(NULL, 0, &language));
+}
 int main(void)
 {
    test_bounds();
@@ -272,6 +308,7 @@ int main(void)
    test_titles();
    test_chapters();
    test_menu_table();
+   test_menu_languages();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
