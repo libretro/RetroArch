@@ -199,3 +199,37 @@ error:
    control->stopped = true;
    return RDVD_SPU_ERROR;
 }
+
+bool rdvd_spu_decode_row(const rdvd_spu_packet_t *packet, unsigned start,
+      unsigned width, uint8_t *output, size_t capacity, unsigned *next)
+{
+   static const unsigned thresholds[4] = {1, 4, 16, 64};
+   rdvd_spu_packet_t p;
+   unsigned nibble, written = 0;
+   if (next) *next = 0;
+   if (!packet || !output || !next || !width || width > 4096 || capacity < width
+         || !rdvd_spu_packet_read(packet->data, packet->size, &p)
+         || start < 4 || start >= p.control_offset)
+      return false;
+   nibble = start * 2;
+   while (written < width)
+   {
+      unsigned code = 0, step, run;
+      for (step = 0; step < 4 && code < thresholds[step]; step++)
+      {
+         unsigned value;
+         if (nibble / 2 >= p.control_offset) return false;
+         value = p.data[nibble / 2];
+         value = nibble & 1 ? value & 15 : value >> 4;
+         nibble++;
+         code = (code << 4) | value;
+      }
+      run = code >> 2;
+      if (!run) run = width - written;
+      if (run > width - written) return false;
+      memset(output + written, (int)(code & 3), run);
+      written += run;
+   }
+   *next = (nibble + 1) / 2;
+   return true;
+}

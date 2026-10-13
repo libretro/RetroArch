@@ -75,5 +75,14 @@ bool rdvd_spu_control_begin(const rdvd_spu_packet_t *packet, unsigned offset,
  * implemented. No display state is changed by this reader. */
 enum rdvd_spu_result rdvd_spu_control_next(rdvd_spu_control_t *control,
       rdvd_spu_event_t *out);
+
+/* Decodes one standard 2-bit SPU row directly to caller-owned indices 0..3.
+ * start/next are byte offsets within the unit; rows end on byte boundaries.
+ * Width is 1..4096. Use separate cursors for the two interlaced fields.
+ * Output must not overlap input. No allocation or RGB expansion.
+ * Failure clears next; discard the row's
+ * contents, which may contain a successfully decoded prefix. */
+bool rdvd_spu_decode_row(const rdvd_spu_packet_t *packet, unsigned start,
+      unsigned width, uint8_t *output, size_t capacity, unsigned *next);
 RETRO_END_DECLS
 #endif
