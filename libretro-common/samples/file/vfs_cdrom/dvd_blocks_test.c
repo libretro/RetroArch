@@ -536,6 +536,30 @@ int main(void)
    for (i = 0; i < 10000; i++)
       CHECK(buf[i + 1] == (unsigned char)(4095 + i));
    CHECK(retro_vfs_file_tell_cdrom(&stream) == 14095);
+   /* The final partial read cached sector six. */
+   before = calls;
+   CHECK(retro_vfs_file_seek_cdrom(&stream, 6 * 2048, SEEK_SET) == 0);
+   CHECK(retro_vfs_file_read_cdrom(&stream, buf, 2048) == 2048);
+   CHECK(calls == before);
+   for (i = 0; i < 2048; i++)
+      CHECK(buf[i] == (unsigned char)(6 * 2048 + i));
+   CHECK(retro_vfs_file_seek_cdrom(&stream, 6 * 2048, SEEK_SET) == 0);
+   CHECK(retro_vfs_file_read_cdrom(&stream, buf + 1, 2048 + 19) == 2048 + 19);
+   CHECK(calls == before + 1);
+   for (i = 0; i < 2048 + 19; i++)
+      CHECK(buf[i + 1] == (unsigned char)(6 * 2048 + i));
+   before = calls;
+   fail_at = (int)calls + 1;
+   CHECK(retro_vfs_file_seek_cdrom(&stream, 7 * 2048, SEEK_SET) == 0);
+   CHECK(retro_vfs_file_read_cdrom(&stream, buf, 2 * 2048) == 2048);
+   CHECK(calls == before + 1 && !disc.last_frame_valid);
+   CHECK(retro_vfs_file_tell_cdrom(&stream) == 8 * 2048);
+   fail_at = 0;
+   CHECK(retro_vfs_file_seek_cdrom(&stream, 7 * 2048, SEEK_SET) == 0);
+   CHECK(retro_vfs_file_read_cdrom(&stream, buf, 2048) == 2048);
+   CHECK(calls == before + 2);
+   CHECK(retro_vfs_file_seek_cdrom(&stream, 14095, SEEK_SET) == 0);
+
    CHECK(retro_vfs_file_seek_cdrom(&stream, -1, SEEK_SET) == -1);
    CHECK(retro_vfs_file_seek_cdrom(&stream, INT64_MAX, SEEK_CUR) == -1);
    CHECK(retro_vfs_file_seek_cdrom(&stream, 0, 99) == -1);

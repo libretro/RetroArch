@@ -367,7 +367,9 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
          uint32_t lba = (uint32_t)(pos / 2048);
          size_t skip = (size_t)(pos % 2048);
          size_t n;
-         if (skip || len - done < 2048)
+         if (skip || len - done < 2048
+               || (stream->cdrom->last_frame_valid
+                  && stream->cdrom->last_frame_lba == lba))
          {
             if (!stream->cdrom->last_frame_valid
                   || stream->cdrom->last_frame_lba != lba)
