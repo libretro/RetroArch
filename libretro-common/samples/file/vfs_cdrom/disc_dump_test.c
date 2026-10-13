@@ -16,7 +16,7 @@ static uint16_t medium = 0x10;
 static cdrom_toc_t fake_toc;
 static cdrom_toc_t reopened_toc;
 static unsigned toc_queries;
-static int changed_geometry;
+static int changed_geometry, bad_size;
 static int read_fail, write_fail, open_fail, alloc_fail, flush_fail;
 static int output_close_fail, input_close_fail, publish_fail, short_read;
 static RFILE *output_handles[4];
@@ -116,6 +116,16 @@ static int dump_finish(const char *path, bool ok)
    if (ok && ++publish_calls == (unsigned)publish_fail) return 1;
    return filestream_finish_atomic(path, ok);
 }
+static int64_t dump_size(RFILE *file)
+{
+   int64_t size = filestream_get_size(file);
+   if (bad_size == 1) return -1;
+   if (bad_size == 2) return 0;
+   if (bad_size == 3) return size - 1;
+   if (bad_size == 4) return size + 2352;
+   return size;
+}
+#define filestream_get_size dump_size
 #define filestream_finish_atomic dump_finish
 #define filestream_open dump_open
 #define filestream_read dump_read
@@ -127,6 +137,7 @@ static int dump_finish(const char *path, bool ok)
 #define cdrom_has_atip dump_atip
 #define memalign_alloc dump_alloc
 #include "../../../../tasks/task_content_disc.c"
+#undef filestream_get_size
 #undef filestream_finish_atomic
 #undef filestream_open
 #undef filestream_read
@@ -192,9 +203,10 @@ static void run_dump(int cancel)
          task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    }
    CHECK(tick < 32 && !state->file && !state->output_file);
-   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail || publish_fail || short_read)
+   if (read_fail || write_fail || open_fail || alloc_fail || flush_fail || cancel || changed_geometry || output_close_fail || input_close_fail || publish_fail || short_read || bad_size)
    {
       CHECK(finished_logs == logs);
+      if (bad_size) CHECK(state->failed && write_opens == (medium == 8 ? 1u : 0u));
       if (medium == 0x10) verify("dump_result.iso", 17);
       else
       {
@@ -293,8 +305,12 @@ int main(void)
    run_dump(1);
    publish_fail = 1; run_dump(0); publish_fail = 0;
    input_close_fail = 1; run_dump(0); input_close_fail = 0;
+   for (bad_size = 1; bad_size <= 4; bad_size++) run_dump(0);
+   bad_size = 0;
    medium = 8;
    run_dump(0);
+   for (bad_size = 1; bad_size <= 4; bad_size++) run_dump(0);
+   bad_size = 0;
    short_read = 1; run_dump(0); short_read = 0;
    run_dump(2);
    run_dump(3);

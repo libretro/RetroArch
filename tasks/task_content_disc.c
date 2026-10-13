@@ -258,7 +258,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                fill_pathname(filename, state->title, ".iso", sizeof(filename));
                fill_pathname_join_special(output_path, state->dir_core_assets,
                      filename, sizeof(state->output_path));
-               if (state->disc_total_bytes <= 0 ||
+               if (state->disc_total_bytes <= 0 || state->disc_total_bytes % 2048 ||
                      !filestream_atomic_temp_name(state->output_temp_path,
                         sizeof(state->output_temp_path), output_path))
                {
@@ -443,6 +443,12 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, state->cur_track);
 
                state->cur_track_bytes = filestream_get_size(state->file);
+               if (state->cur_track_bytes <= 0 ||
+                     state->cur_track_bytes != state->toc.track[state->cur_track - 1].track_bytes)
+               {
+                  task_cdrom_dump_fail(task, MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE);
+                  return;
+               }
 
                fill_pathname_join_special(output_path,
                      directory_core_assets, track_filename, sizeof(state->output_path));
