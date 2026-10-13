@@ -258,5 +258,9 @@ bool rdvd_vobu_map_read(const uint8_t *data, size_t size, rdvd_vobu_map_t *out);
  * Failure clears sector/index; success may return sector zero. */
 bool rdvd_vobu_find(const rdvd_vobu_map_t *map, uint32_t target,
       uint32_t *sector, unsigned *index);
+/* Finds a unique C_ADT VOB/cell pair. Missing or ambiguous IDs fail;
+ * results retain their own menu/title domain's inclusive sector bounds. */
+bool rdvd_cell_address_find(const rdvd_cell_table_t *table, unsigned vob_id,
+      unsigned cell_id, rdvd_cell_address_t *out);
 RETRO_END_DECLS
 #endif

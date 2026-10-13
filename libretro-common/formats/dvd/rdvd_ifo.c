@@ -682,3 +682,30 @@ bool rdvd_vobu_find(const rdvd_vobu_map_t *map, uint32_t target,
    *sector = rdvd_ifo_u32(validated.data + 4 + (size_t)*index * 4);
    return true;
 }
+
+
+bool rdvd_cell_address_find(const rdvd_cell_table_t *table, unsigned vob_id,
+      unsigned cell_id, rdvd_cell_address_t *out)
+{
+   rdvd_cell_table_t validated;
+   const uint8_t *found = NULL;
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!vob_id || vob_id > 65535 || !cell_id || cell_id > 255 || !table
+         || !rdvd_cell_table_read(table->data, table->size, &validated)) return false;
+   for (i = 0; i < validated.entries; i++)
+   {
+      const uint8_t *record = validated.data + 8 + (size_t)i * 12;
+      if (rdvd_ifo_u16(record) == vob_id && record[2] == cell_id)
+      {
+         if (found) return false;
+         found = record;
+      }
+   }
+   if (!found) return false;
+   out->vob_id = vob_id; out->cell_id = cell_id;
+   out->first_sector = rdvd_ifo_u32(found + 4);
+   out->last_sector = rdvd_ifo_u32(found + 8);
+   return true;
+}
