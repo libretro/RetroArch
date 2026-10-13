@@ -10,3 +10,6 @@ rdvd_ifo_test.exe
 
 rdvd_source_test
 rdvd_source_test.exe
+
+rdvd_vfs_test
+rdvd_vfs_test.exe

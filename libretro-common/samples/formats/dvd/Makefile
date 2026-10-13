@@ -3,6 +3,7 @@ TARGET_TEST := rdvd_highlight_test$(EXE)
 TARGET_TEST2 := rdvd_spu_test$(EXE)
 TARGET_TEST3 := rdvd_ifo_test$(EXE)
 TARGET_TEST4 := rdvd_source_test$(EXE)
+TARGET_TEST5 := rdvd_vfs_test$(EXE)
 CC ?= cc
 CFLAGS += -std=c89 -pedantic -Wall -Wextra -Werror -I../../../include
 ifneq ($(SANITIZER),)
@@ -12,7 +13,7 @@ endif
 SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_packet.c \
            ../../../formats/mpeg1/rmpeg1_ps.c
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
 
 $(TARGET): $(SOURCES) ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
@@ -29,12 +30,16 @@ $(TARGET_TEST3): rdvd_ifo_test.c ../../../formats/dvd/rdvd_ifo.c ../../../includ
 $(TARGET_TEST4): rdvd_source_test.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../include/formats/rdvd_source.h ../../../include/formats/rdvd_ifo.h
 	$(CC) $(CFLAGS) rdvd_source_test.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c -o $@ $(LDFLAGS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
+$(TARGET_TEST5): rdvd_vfs_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c ../../../include/formats/rdvd_vfs.h
+	$(CC) $(CFLAGS) -DHAVE_THREADS rdvd_vfs_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c -o $@ $(LDFLAGS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
 	./$(TARGET_TEST4)
+	./$(TARGET_TEST5)
 
 clean:
 	rm -f rdvd_packet_test rdvd_packet_test.exe
@@ -43,5 +48,7 @@ clean:
 	rm -f rdvd_ifo_test rdvd_ifo_test.exe
 
 	rm -f rdvd_source_test rdvd_source_test.exe
+
+	rm -f rdvd_vfs_test rdvd_vfs_test.exe
 
 .PHONY: all check clean

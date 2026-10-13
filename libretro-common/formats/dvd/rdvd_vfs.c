@@ -104,3 +104,31 @@ bool rdvd_vfs_close(rdvd_vfs_t **vfs)
    return false;
 #endif
 }
+
+
+bool rdvd_vfs_service(rdvd_vfs_t *vfs)
+{
+#ifdef RDVD_VFS_ENABLED
+   rdvd_vfs_request_t request;
+   rdvd_vfs_result_t result;
+   size_t bytes;
+   if (!vfs || retro_spsc_write_avail(&vfs->results) < sizeof(result)
+         || retro_spsc_read_avail(&vfs->requests) < sizeof(request)) return false;
+   if (retro_spsc_read(&vfs->requests, &request, sizeof(request)) != sizeof(request))
+      return false;
+   memset(&result, 0, sizeof(result));
+   result.ticket = request.ticket; result.bytes = -1;
+   bytes = request.bytes < 65536 ? request.bytes : 65536;
+   if (filestream_seek(request.file, (int64_t)request.offset,
+            RETRO_VFS_SEEK_POSITION_START) == (int64_t)request.offset)
+   {
+      result.bytes = filestream_read(request.file, request.destination, (int64_t)bytes);
+      if (result.bytes > (int64_t)bytes) result.bytes = -1;
+   }
+   retro_spsc_write(&vfs->results, &result, sizeof(result));
+   return true;
+#else
+   (void)vfs;
+   return false;
+#endif
+}
