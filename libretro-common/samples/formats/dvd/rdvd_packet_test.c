@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: MIT */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <formats/rdvd_packet.h>
 #include <formats/rmpeg1_ps.h>
@@ -275,7 +276,68 @@ static void test_nav_program_stream(void)
    rmpeg1_ps_free(ps);
 }
 
-int main(void)
+static void test_vob(const char *path)
+{
+   FILE *file = fopen(path, "rb");
+   uint8_t *input;
+   long length;
+   rmpeg1_ps_t *ps;
+   rmpeg1_ps_packet_t pes;
+   unsigned video = 0, audio = 0, pci = 0, dsi = 0;
+   CHECK(file != NULL);
+   if (!file) return;
+   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+         || length > 8 * 1024 * 1024 || fseek(file, 0, SEEK_SET))
+   {
+      CHECK(false);
+      fclose(file);
+      return;
+   }
+   input = (uint8_t*)malloc((size_t)length);
+   CHECK(input != NULL);
+   if (!input)
+   {
+      fclose(file);
+      return;
+   }
+   if (fread(input, 1, (size_t)length, file) != (size_t)length)
+   {
+      CHECK(false);
+      free(input);
+      fclose(file);
+      return;
+   }
+   CHECK(fclose(file) == 0);
+   ps = rmpeg1_ps_init(0);
+   CHECK(ps != NULL);
+   if (ps)
+   {
+      CHECK(rmpeg1_ps_borrow(ps, input, (size_t)length) == (size_t)length);
+      while (rmpeg1_ps_next(ps, &pes))
+      {
+         rdvd_packet_t dvd;
+         rdvd_nav_t nav;
+         if (pes.type == RMPEG1_PS_VIDEO)
+            video++;
+         if (pes.type != RMPEG1_PS_PRIVATE_1 && pes.type != RMPEG1_PS_PRIVATE_2)
+            continue;
+         CHECK(rdvd_packet_read(pes.stream_id, pes.data, pes.size, &dvd));
+         if (dvd.kind == RDVD_PACKET_AC3) audio++;
+         if (dvd.kind == RDVD_PACKET_PCI || dvd.kind == RDVD_PACKET_DSI)
+         {
+            CHECK(dvd.data == pes.data + 1 && rdvd_nav_read(&dvd, &nav));
+            if (dvd.kind == RDVD_PACKET_PCI) pci++;
+            else dsi++;
+         }
+      }
+      CHECK(video && audio && pci && dsi);
+      printf("VOB packets: video=%u AC3=%u PCI=%u DSI=%u\n", video, audio, pci, dsi);
+      rmpeg1_ps_free(ps);
+   }
+   free(input);
+}
+
+int main(int argc, char **argv)
 {
    test_private_streams();
    test_lpcm();
@@ -284,6 +346,8 @@ int main(void)
    test_timestamp_damage();
    test_mpeg1_timestamps();
    test_nav_program_stream();
+   if (argc == 2) test_vob(argv[1]);
+   else CHECK(argc == 1);
    printf("DVD packet tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

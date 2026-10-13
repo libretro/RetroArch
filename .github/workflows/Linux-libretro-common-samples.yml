@@ -192,6 +192,7 @@ jobs:
             filestream_rbuf_fault_test
             vfs_rename_replace_test
             cdrom_cuesheet_overflow_test
+            rdvd_packet_test
             cdfs_dir_record_test
             cdfs_pure_api_test
             cdfs_io_error_test
@@ -469,6 +470,18 @@ jobs:
           if [[ $fails -gt 0 ]]; then
             exit 1
           fi
+
+      - name: Parse a generated DVD VOB with the native readers
+        shell: bash
+        working-directory: libretro-common/samples/formats/dvd
+        run: |
+          set -euo pipefail
+          fixture=$(mktemp --suffix=.vob)
+          trap 'rm -f "$fixture"' EXIT
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=720x576:rate=25 \
+            -f lavfi -i sine=sample_rate=48000 -t 0.4 \
+            -c:v mpeg2video -b:v 2000k -c:a ac3 -ac 2 -ar 48000 -f dvd -y "$fixture"
+          ./rdvd_packet_test "$fixture"
 
       - name: Compile-test retro_atomic.h from a C++11 TU
         shell: bash
@@ -1170,6 +1183,15 @@ jobs:
             fi
           done
           [[ $fails -eq 0 ]]
+
+      - name: Build and run native DVD packets under Wine
+        shell: bash
+        working-directory: libretro-common/samples/formats/dvd
+        env:
+          WINEDEBUG: -all
+        run: |
+          make CC=x86_64-w64-mingw32-gcc EXE=.exe all
+          timeout 120 wine ./rdvd_packet_test.exe
 
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
