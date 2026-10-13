@@ -70,7 +70,8 @@ RETRO_BEGIN_DECLS
 
 typedef bool(*runahead_load_state_function)(const void*, size_t);
 
-void runahead_run(
+/* Whether the primary core advanced. */
+bool runahead_run(
       void *data,
       int runahead_count,
       bool runahead_hide_warnings,
@@ -91,7 +92,8 @@ void runahead_secondary_core_destroy(void *data);
 bool preempt_init(void *data);
 void preempt_deinit(void *data);
 
-void preempt_run(preempt_t *preempt, void *data);
+/* Whether the normal frame ran, excluding replay. */
+bool preempt_run(preempt_t *preempt, void *data);
 
 RETRO_END_DECLS
 

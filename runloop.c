@@ -9439,6 +9439,7 @@ int runloop_iterate(void)
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    bool audio_sync                        = settings->bools.audio_sync;
+   bool frame_advanced;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
    runloop_msg_queue_drain_deferred();
@@ -9803,23 +9804,25 @@ int runloop_iterate(void)
 #endif
 
       if (want_runahead)
-         runahead_run(
+         frame_advanced = runahead_run(
                runloop_st,
                run_ahead_num_frames,
                run_ahead_hide_warnings,
                run_ahead_secondary_instance);
       else if (runloop_st->preempt_data)
-         preempt_run(runloop_st->preempt_data, runloop_st);
+         frame_advanced = preempt_run(runloop_st->preempt_data, runloop_st);
       else
 #endif
-         core_run();
+         frame_advanced = core_run();
    }
 
    runloop_load_deferred_auto_state();
 
 #ifdef HAVE_COMMAND
-   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+   if (frame_advanced && (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES))
       command_run_frames_tick();
+#else
+   (void)frame_advanced;
 #endif
 
    /* Increment runtime tick counter after each call to
@@ -10706,7 +10709,7 @@ static void runloop_load_deferred_auto_state(void)
    runloop_st->auto_state_load_core_ran  = false;
 }
 
-void core_run(void)
+bool core_run(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
    struct retro_core_t *
@@ -10718,6 +10721,7 @@ void core_run(void)
       : (enum poll_type)(current_core->poll_type);
    bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
    bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
+   bool ran                    = false;
 #ifdef HAVE_NETWORKING
    /* Declared with the other locals and assigned below, so the
     * closing guard can return before netplay's pre-frame call
@@ -10742,7 +10746,7 @@ void core_run(void)
    {
       input_driver_poll_between_frames(input_driver_poll);
       video_driver_cached_frame();
-      return;
+      return false;
    }
 
 #ifdef HAVE_NETWORKING
@@ -10755,7 +10759,7 @@ void core_run(void)
        * netplay peer pausing doesn't just hang. */
       input_driver_poll_between_frames(input_driver_poll);
       video_driver_cached_frame();
-      return;
+      return false;
    }
 #endif
 
@@ -10779,6 +10783,7 @@ void core_run(void)
        * all, reach the frame's own audio rather than the next frame's. */
       audio_driver_publish_runloop();
       current_core->retro_run();
+      ran = true;
       if (runloop_st->auto_state_load_pending)
          runloop_st->auto_state_load_core_ran = true;
       audio_driver_frame_end();
@@ -10818,6 +10823,7 @@ void core_run(void)
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
+   return ran;
 }
 
 bool core_has_set_input_descriptor(void)

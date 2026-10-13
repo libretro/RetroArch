@@ -22,6 +22,7 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
@@ -44,6 +45,7 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
@@ -437,6 +439,13 @@ jobs:
           samples/menu/explore_build/build.sh
           ./samples/menu/explore_build/explore_build_test
           make -C samples/menu/explore_build clean
+
+      - name: Frame command progress through the real runloop
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/network/command_frames check
+          make -C samples/network/command_frames clean
 
       - name: Save ccache
         # Only master's pushes keep a cache: pull requests restore

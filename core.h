@@ -35,8 +35,8 @@ bool core_unset_netplay_callbacks(void);
 
 bool core_set_poll_type(unsigned type);
 
-/* Runs the core for one frame. */
-void core_run(void);
+/* Runs the core for one frame; false when it did not run. */
+bool core_run(void);
 
 void core_reset(void);
 

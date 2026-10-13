@@ -546,8 +546,7 @@ bool command_set_option(command_t *cmd, const char *arg);
 bool command_get_log(command_t *cmd, const char *arg);
 #endif
 
-/* RUN_FRAMES <count>; the run loop calls tick after each frame it runs
- * and cancel when the content goes */
+/* RUN_FRAMES <count>; tick after a frontend advance, cancel on close. */
 #define COMMAND_RUN_FRAMES_MAX 36000
 bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);
@@ -745,7 +744,7 @@ static const struct cmd_action_map action_map[] = {
 #ifdef HAVE_MCP
    { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time.", CMD_INFO_READ_ONLY, cmd_params_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and run the content the given number of frames, answered once the last has run; it stays paused.", 0, cmd_params_run_frames },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },

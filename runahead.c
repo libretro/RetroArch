@@ -1749,7 +1749,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 
-void runahead_run(void *data,
+bool runahead_run(void *data,
       int runahead_count,
       bool runahead_hide_warnings,
       bool use_secondary)
@@ -1758,6 +1758,7 @@ void runahead_run(void *data,
    int frame_number        = 0;
    bool last_frame         = false;
    bool suspended_frame    = false;
+   bool advanced           = false;
 #if defined(HAVE_DYNAMIC)
    const bool have_dynamic = true;
    settings_t *settings    = config_get_ptr();
@@ -1865,7 +1866,7 @@ void runahead_run(void *data,
          }
 
          if (frame_number == 0)
-            core_run();
+            advanced = core_run();
          else
             runahead_core_run_use_last_input(runloop_st);
 
@@ -1879,6 +1880,9 @@ void runahead_run(void *data,
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
          }
 
+         if (!advanced)
+            return false;
+
          if (frame_number == 0)
          {
             if (!runahead_save_state(runloop_st))
@@ -1888,7 +1892,7 @@ void runahead_run(void *data,
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
-               return;
+               return advanced;
             }
          }
 
@@ -1900,7 +1904,7 @@ void runahead_run(void *data,
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
-               return;
+               return advanced;
             }
          }
       }
@@ -1912,11 +1916,14 @@ void runahead_run(void *data,
 
       /* run main core with video suspended */
       video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
-      core_run();
+      advanced = core_run();
       if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
          video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
       else
          video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+
+      if (!advanced)
+         return false;
 
       if (     (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY)
             || (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY))
@@ -1929,7 +1936,7 @@ void runahead_run(void *data,
             runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_WARN("[Run-Ahead] %s\n", _msg);
-            return;
+            return advanced;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
@@ -1938,7 +1945,7 @@ void runahead_run(void *data,
             runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_WARN("[Run-Ahead] %s\n", _msg);
-            return;
+            return advanced;
          }
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
@@ -1965,11 +1972,12 @@ void runahead_run(void *data,
 #endif
    }
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
-   return;
+   return advanced;
 
 force_input_dirty:
-   core_run();
+   advanced = core_run();
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
+   return advanced;
 }
 
 /* Preemptive Frames */
@@ -2303,7 +2311,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
  *
  * Call in place of core_run() for preemptive frames.
  **/
-void preempt_run(preempt_t *preempt, void *data)
+bool preempt_run(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
    struct retro_core_t *current_core = &runloop_st->current_core;
@@ -2374,7 +2382,7 @@ void preempt_run(preempt_t *preempt, void *data)
       runloop_st->auto_state_load_core_ran = true;
    audio_driver_frame_end();
    preempt->frame_count++;
-   return;
+   return true;
 
 error:
    runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
@@ -2387,6 +2395,7 @@ error:
       runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_ERR("[Run-Ahead Preemptive] %s\n", _msg);
+   return false;
 }
 
 void runahead_clear_variables(void *data)
