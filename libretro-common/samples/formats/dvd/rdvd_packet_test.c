@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <formats/rdvd_packet.h>
+#include <formats/rdvd_demux.h>
 #include <formats/rmpeg1_ps.h>
 
 static unsigned failures;
@@ -340,8 +341,35 @@ static void test_vob(const char *path)
    free(input);
 }
 
+static void test_demux_bridge(void)
+{
+   uint8_t data[30] = {0,0,1,0xbd,0,12,0x80,0,0,0x80,1,0,0,0x11,0x22,0x33,0x44,0x55,
+      0,0,1,0xe0,0,6,0x80,0,0,0xaa,0xbb,0xcc};
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rdvd_demux_t demux;
+   rdvd_demux_packet_t packet;
+   CHECK(ps != NULL); if (!ps) return;
+   CHECK(rdvd_demux_init(&demux, ps));
+   CHECK(rdvd_demux_feed(&demux, data, sizeof(data)));
+   CHECK(!rdvd_demux_feed(&demux, data, sizeof(data)));
+   CHECK(rdvd_demux_next(&demux, &packet));
+   CHECK(packet.dvd_valid && packet.dvd.kind == RDVD_PACKET_AC3);
+   CHECK(packet.dvd.data == data + 13 && packet.dvd.size == 5);
+   CHECK(rdvd_demux_next(&demux, &packet));
+   CHECK(!packet.dvd_valid && packet.pes.data == data + 27 && packet.pes.size == 3);
+   CHECK(!rdvd_demux_next(&demux, &packet) && !demux.borrowing && !packet.pes.data);
+   rdvd_demux_reset(&demux);
+   CHECK(rdvd_demux_feed(&demux, data, 5));
+   CHECK(!rdvd_demux_next(&demux, &packet));
+   CHECK(rdvd_demux_feed(&demux, data + 5, sizeof(data) - 5));
+   CHECK(rdvd_demux_next(&demux, &packet) && packet.dvd_valid && packet.dvd.data[0] == 0x11);
+   rdvd_demux_reset(&demux);
+   CHECK(!demux.borrowing && !rdvd_demux_next(&demux, &packet));
+   rmpeg1_ps_free(ps);
+}
 int main(int argc, char **argv)
 {
+   test_demux_bridge();
    test_private_streams();
    test_lpcm();
    test_nav();
