@@ -23,6 +23,8 @@ static int       st_live, st_loads, st_unloads, st_async;
 /* Updates the stub driver drops, and updates it was handed without
  * an image to read */
 static int       st_drop, st_updates, st_null_updates;
+static enum video_texture_update st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
+static unsigned st_abandoned, st_released;
 static uintptr_t st_last_unloaded;
 static video_thread_async_load_t *st_head, *st_tail;
 /* The first and last word of the last frame the driver read */
@@ -112,12 +114,16 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
    (void)id; (void)slot; (void)pitch;
    return NULL;
 }
-/* No device to import into */
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
       const video_frame_import_t *frame, enum texture_filter_type filter)
 {
-   (void)id; (void)frame; (void)filter;
-   return VIDEO_TEXTURE_UPDATE_REFUSED;
+   (void)frame; (void)filter;
+   if (st_import_result == VIDEO_TEXTURE_UPDATE_DONE && !*id)
+   {
+      *id = st_next++;
+      st_live++;
+   }
+   return st_import_result;
 }
 
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
@@ -154,7 +160,16 @@ static void st_flush(void)
       video_thread_async_load_t *next = n->link.next
          ? (video_thread_async_load_t*)n->link.next : NULL;
       uintptr_t id = 0;
-      if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
+      if (n->kind == VIDEO_THREAD_ASYNC_IMPORT)
+      {
+         enum video_texture_update result;
+         id = n->handle;
+         result = video_driver_texture_import(&id,
+               (const video_frame_import_t*)n->img, n->filter);
+         n->dropped = result != VIDEO_TEXTURE_UPDATE_DONE;
+         n->made = result == VIDEO_TEXTURE_UPDATE_DONE && id != n->handle;
+      }
+      else if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
       {
          id         = n->handle;
          n->dropped = video_driver_texture_update(id, n->img)
@@ -293,11 +308,67 @@ static void st_set_path(unsigned i, void *ud, char *buf, size_t len)
       snprintf(buf, len, "%u.png", 8 + i);
 }
 
+static void st_abandon_import(void *owner, uint64_t done, uint64_t value)
+{
+   CHECK(owner == &st_abandoned && done == 42 && value == 7,
+         "retired import lost its release destination");
+   st_abandoned++;
+}
+static void st_release_import(void *user, gfx_surface_t *surface, unsigned slot)
+{
+   (void)user; (void)surface; (void)slot;
+   st_released++;
+}
+static void st_retired_imports(void)
+{
+   enum video_texture_update results[3] = {
+      VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DROPPED,
+      VIDEO_TEXTURE_UPDATE_DONE };
+   unsigned i;
+   for (i = 0; i < 3; i++)
+   {
+      video_frame_import_t frame = {0};
+      gfx_surface_t *surface = gfx_surface_new_import(VIDEO_SCALE_PACK(4, 4),
+            TEXTURE_FILTER_NEAREST, st_release_import, NULL);
+      CHECK(surface != NULL, "import surface allocation failed");
+      if (!surface) continue;
+      frame.dims = VIDEO_SCALE_PACK(4, 4);
+      frame.pixfmt = IMAGE_PIXFMT_NV12;
+      frame.image = 1;
+      frame.done = 42;
+      frame.done_value = 7;
+      frame.owner = &st_abandoned;
+      frame.abandon = st_abandon_import;
+      st_abandoned = st_released = 0;
+      if (i == 1)
+      {
+         st_async = 0;
+         st_import_result = VIDEO_TEXTURE_UPDATE_DONE;
+         CHECK(gfx_surface_submit_import(surface, &frame) == GFX_SURFACE_SUBMIT_DONE,
+               "initial import failed");
+      }
+      st_async = 1;
+      st_import_result = results[i];
+      CHECK(gfx_surface_submit_import(surface, &frame) == GFX_SURFACE_SUBMIT_QUEUED,
+            "retired import was not queued");
+      gfx_surface_free(surface);
+      CHECK(st_abandoned == 0, "import released before wrapper completion");
+      memset(&frame, 0, sizeof(frame));
+      st_flush();
+      CHECK(st_abandoned == (i == 2 ? 0 : 1),
+            "retired import result %u abandoned %u times", i, st_abandoned);
+      CHECK(st_released == 0, "retired surface called its owner");
+      CHECK(st_live == 0, "%d live textures after retired import", st_live);
+   }
+   st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
+   st_async = 0;
+}
 int main(void)
 {
    uintptr_t a, b;
 
    st_decode_lock = slock_new();
+   st_retired_imports();
    st_async = 1;
 
    /* 1. threaded: a same-size image updates the texture up in place
