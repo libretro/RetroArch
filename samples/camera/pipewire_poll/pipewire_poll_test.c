@@ -355,6 +355,7 @@ int main(void)
       pipewire_camera_t changing;
       unsigned cycle;
       memset(&changing, 0, sizeof(changing));
+      changing.stream = (struct pw_stream*)&changing;
       for (cycle = 0; cycle < 16; cycle++)
       {
          uint8_t storage[1024];
@@ -369,6 +370,26 @@ int main(void)
          CHECK(changing.buffer_output != NULL
                && changing.scaler.in_width == (int)info.size.width,
                "replacement format creates matching output");
+         if (cycle == 0)
+         {
+            uint32_t *output = changing.buffer_output;
+            stream_param_changed_cb(&changing, SPA_PARAM_Latency, NULL);
+            CHECK(changing.buffer_output == output,
+                  "unrelated null parameter preserves format");
+            stream_param_changed_cb(&changing, SPA_PARAM_Format, NULL);
+            CHECK(changing.buffer_output == NULL,
+                  "cleared format releases output");
+            CHECK(changing.size.width == 0 && changing.size.height == 0,
+                  "cleared format resets geometry");
+            script_reset(&pwb);
+            CHECK(!pwire_camera_poll(&changing, frame_raw_cb, NULL, NULL)
+                  && frame_cb_count == 0, "cleared format delivers no frame");
+            CHECK(script_queued == 1, "buffer returned after format clear");
+            stream_param_changed_cb(&changing, SPA_PARAM_Format, NULL);
+            stream_param_changed_cb(&changing, SPA_PARAM_Format, param);
+            CHECK(changing.buffer_output != NULL,
+                  "format can be negotiated again after repeated clear");
+         }
       }
       scaler_ctx_gen_reset(&changing.scaler);
       free(changing.buffer_output);

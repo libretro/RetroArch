@@ -179,7 +179,7 @@ static bool preprocess_image(pipewire_camera_t *camera)
    data = &buf->datas[0];
    chunk = data->chunk;
    ctx = &camera->scaler;
-   if (data->data && chunk && data->maxsize
+   if (camera->buffer_output && data->data && chunk && data->maxsize
          && ctx->in_stride > 0 && ctx->in_height > 0)
    {
       saved_stride = ctx->in_stride;
@@ -250,9 +250,18 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          RARCH_DBG("[Camera] [PipeWire] Got latency: %"PRIu64".\n", (info.min_ns + info.max_ns) / 2);
       return;
    }
-   /* NULL means to clear the format */
-   if (param == NULL || id != SPA_PARAM_Format)
+   if (id != SPA_PARAM_Format)
       return;
+   if (!param)
+   {
+      free(camera->buffer_output);
+      camera->buffer_output = NULL;
+      scaler_ctx_gen_reset(&camera->scaler);
+      memset(&camera->scaler, 0, sizeof(camera->scaler));
+      memset(&camera->format, 0, sizeof(camera->format));
+      camera->size = SPA_RECTANGLE(0, 0);
+      return;
+   }
 
    RARCH_DBG("[Camera] [PipeWire] Got format:\n");
    spa_debug_format(2, NULL, param);
