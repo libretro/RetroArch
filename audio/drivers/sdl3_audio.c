@@ -989,14 +989,39 @@ audio_driver_t audio_sdl3 = {
 /**
  * Stream callback for the microphone to drop stale audio to allow
  * space within the buffer.
+ *
+ * Only the frames past the cap go, oldest first, rather than the
+ * backlog entire: a core that reads in bursts crosses the cap for a
+ * moment at a time, and clearing the stream would cost it every
+ * sample captured since its last read instead of the few it is behind
+ * by.
  */
 static void SDLCALL sdl3_microphone_stream_cb(void *userdata,
       SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
    sdl3_audio_t *mic = (sdl3_audio_t*)userdata;
+   int over          = SDL_GetAudioStreamAvailable(stream)
+         - (int)mic->buffer_size;
+   int frame_bytes   = (int)SDL_AUDIO_FRAMESIZE(mic->spec);
 
-   if (SDL_GetAudioStreamAvailable(stream) > (int)mic->buffer_size)
-      SDL_ClearAudioStream(stream);
+   while (over > 0)
+   {
+      /* Read away and discard. Whole frames only: a partial one
+       * would be refused and the loop would not end. */
+      char scratch[1024];
+      int  chunk = (over < (int)sizeof(scratch))
+            ? over : (int)sizeof(scratch);
+      int  got;
+
+      if (frame_bytes > 0)
+         chunk -= chunk % frame_bytes;
+      if (chunk <= 0)
+         break;
+
+      if ((got = SDL_GetAudioStreamData(stream, scratch, chunk)) <= 0)
+         break;
+      over -= got;
+   }
 
    sdl3_audio_stream_cb(userdata, stream, additional_amount, total_amount);
 }

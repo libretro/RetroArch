@@ -77,6 +77,15 @@ typedef struct _sdl3_video
    bool overlays_enabled;
 #endif
 
+   /* What a display draw hands SDL_RenderGeometry. Grown as needed and
+    * kept, rather than built on the stack and malloc'd past it: the
+    * count comes from the caller, so the cost was whatever geometry
+    * someone asked to draw, paid on the frame path. */
+   void   *display_verts;
+   size_t  display_verts_cap;
+   int    *display_indices;
+   size_t  display_indices_cap;
+
    uint8_t flags;
 } sdl3_video_t;
 
