@@ -45,6 +45,7 @@ static enum pw_stream_state    script_state   = PW_STREAM_STATE_STREAMING;
 static unsigned                script_dequeues;
 static unsigned                script_queued;
 static struct pw_buffer       *script_queued_last;
+static bool                    script_recycle;
 static int                     script_stride;
 
 int __wrap_pw_stream_update_params(struct pw_stream *stream,
@@ -72,6 +73,9 @@ int __wrap_pw_stream_queue_buffer(struct pw_stream *stream,
    (void)stream;
    script_queued++;
    script_queued_last = buffer;
+   if (script_recycle)
+      memset(buffer->buffer->datas[0].data, 0xcc,
+            buffer->buffer->datas[0].maxsize);
    return 0;
 }
 
@@ -330,7 +334,9 @@ int main(void)
    chunk.stride = (W + 2) * sizeof(uint32_t);
    chunk.size = (H - 1) * chunk.stride + W * sizeof(uint32_t);
    script_reset(&pwb);
+   script_recycle = true;
    polled = pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL);
+   script_recycle = false;
    CHECK(polled && frame_cb_count == 1, "padded frame delivered once");
    CHECK(memcmp(frame_cb_pixels, pixels, sizeof(pixels)) == 0,
          "chunk offset and row stride preserved all pixels");
@@ -340,6 +346,8 @@ int main(void)
    CHECK(out[0] == 0x3c3c3c3cu && out[W * H - 1] == 0x3c3c3c3cu,
          "native frame bypasses conversion output");
    CHECK(script_queued == 1, "padded buffer returned once");
+   CHECK(padded[4] == 0xccccccccu,
+         "producer recycled capture memory after callback");
    data.data = pixels;
    data.maxsize = sizeof(pixels);
    chunk.offset = 0;
