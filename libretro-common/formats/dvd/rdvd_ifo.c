@@ -592,3 +592,46 @@ bool rdvd_vob_cell_range(const rdvd_vob_map_t *map, const rdvd_pgc_t *pgc,
    out->offset = start; out->bytes = end - start;
    return true;
 }
+
+
+bool rdvd_cell_table_read(const uint8_t *data, size_t size,
+      rdvd_cell_table_t *out)
+{
+   uint32_t last;
+   size_t total;
+   unsigned count, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!data || size < 8) return false;
+   last = rdvd_ifo_u32(data + 4);
+   if (last == UINT32_MAX) return false;
+   total = (size_t)last + 1;
+   if (total < 8 || total > size || (total - 8) % 12) return false;
+   count = (unsigned)((total - 8) / 12);
+   if (count && !rdvd_ifo_u16(data)) return false;
+   for (i = 0; i < count; i++)
+   {
+      const uint8_t *record = data + 8 + (size_t)i * 12;
+      if (!rdvd_ifo_u16(record) || !record[2]
+            || rdvd_ifo_u32(record + 4) > rdvd_ifo_u32(record + 8)) return false;
+   }
+   out->data = data; out->size = total;
+   out->entries = count; out->vobs = rdvd_ifo_u16(data);
+   return true;
+}
+
+bool rdvd_cell_address_read(const rdvd_cell_table_t *table, unsigned index,
+      rdvd_cell_address_t *out)
+{
+   rdvd_cell_table_t validated;
+   const uint8_t *record;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!table || !rdvd_cell_table_read(table->data, table->size, &validated)
+         || index >= validated.entries) return false;
+   record = validated.data + 8 + (size_t)index * 12;
+   out->vob_id = rdvd_ifo_u16(record); out->cell_id = record[2];
+   out->first_sector = rdvd_ifo_u32(record + 4);
+   out->last_sector = rdvd_ifo_u32(record + 8);
+   return true;
+}

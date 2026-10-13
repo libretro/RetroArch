@@ -508,6 +508,36 @@ static void test_address_domains(void)
    file_bytes[0xe7] = 0;
    CHECK(!rdvd_ifo_table_read(&f, RDVD_IFO_TITLE_VOBUS, &span) && !span.data);
 }
+static void test_cell_addresses(void)
+{
+   uint8_t data[32];
+   rdvd_cell_table_t table;
+   rdvd_cell_address_t address;
+   unsigned i;
+   memset(data, 0, sizeof(data)); data[1] = 1; data[7] = 31;
+   data[9] = data[10] = data[21] = 1; data[22] = 2;
+   data[15] = 10; data[19] = 20;
+   data[27] = 30; data[31] = 40;
+   CHECK(rdvd_cell_table_read(data, sizeof(data), &table));
+   CHECK(table.data == data && table.entries == 2 && table.vobs == 1);
+   CHECK(rdvd_cell_address_read(&table, 1, &address));
+   CHECK(address.vob_id == 1 && address.cell_id == 2);
+   CHECK(address.first_sector == 30 && address.last_sector == 40);
+   CHECK(!rdvd_cell_address_read(&table, 2, &address) && !address.vob_id);
+   for (i = 0; i < sizeof(data); i++) CHECK(!rdvd_cell_table_read(data, i, &table));
+   CHECK(rdvd_cell_table_read(data, sizeof(data), &table));
+   table.entries = 99;
+   CHECK(!rdvd_cell_address_read(&table, 2, &address));
+   data[31] = 29;
+   CHECK(!rdvd_cell_address_read(&table, 0, &address));
+   data[31] = 40; data[22] = 0;
+   CHECK(!rdvd_cell_table_read(data, sizeof(data), &table));
+   data[22] = 2; data[7] = 30;
+   CHECK(!rdvd_cell_table_read(data, sizeof(data), &table));
+   memset(data, 0, sizeof(data)); data[7] = 7;
+   CHECK(rdvd_cell_table_read(data, sizeof(data), &table) && !table.entries);
+   CHECK(!rdvd_cell_address_read(&table, 0, &address));
+}
 int main(void)
 {
    test_bounds();
@@ -526,6 +556,7 @@ int main(void)
    test_vob_spans();
    test_vob_cells();
    test_address_domains();
+   test_cell_addresses();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

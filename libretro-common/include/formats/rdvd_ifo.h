@@ -225,5 +225,24 @@ typedef struct rdvd_vob_range { uint64_t offset, bytes; } rdvd_vob_range_t;
  * selection is separate; this range is not a playback sequence. */
 bool rdvd_vob_cell_range(const rdvd_vob_map_t *map, const rdvd_pgc_t *pgc,
       unsigned cell_number, rdvd_vob_range_t *out);
+typedef struct rdvd_cell_table
+{
+   const uint8_t *data;
+   size_t size;
+   unsigned entries, vobs;
+} rdvd_cell_table_t;
+typedef struct rdvd_cell_address
+{
+   uint32_t first_sector, last_sector;
+   unsigned vob_id, cell_id;
+} rdvd_cell_address_t;
+
+/* C_ADT records retain domain-relative inclusive sector bounds. Validates
+ * all record IDs/ranges; declared VOB count is metadata, not an index. */
+bool rdvd_cell_table_read(const uint8_t *data, size_t size,
+      rdvd_cell_table_t *out);
+/* Zero-based index. Revalidates the borrowed table; failure clears out. */
+bool rdvd_cell_address_read(const rdvd_cell_table_t *table, unsigned index,
+      rdvd_cell_address_t *out);
 RETRO_END_DECLS
 #endif
