@@ -27,7 +27,6 @@
 #include "../../retroarch.h"
 #include "../input_driver.h"
 
-#ifdef HAVE_LIBNX
 #include <switch.h>
 
 /* Supports up to this many fingers at once */
@@ -97,7 +96,6 @@ typedef struct
    FingerType tfinger;
 } TouchEvent;
 /* end of touch mouse defines and types */
-#endif
 
 #include "../input_keymaps.h"
 
@@ -106,7 +104,6 @@ typedef struct
 
 typedef struct switch_input
 {
-#ifdef HAVE_LIBNX
    /* pointer */
    bool touch_state[MULTITOUCH_LIMIT];
    bool previous_touch_state[MULTITOUCH_LIMIT];
@@ -140,12 +137,8 @@ typedef struct switch_input
    /* sensor handles */
    HidSixAxisSensorHandle sixaxis_handles[DEFAULT_MAX_PADS][4];
    unsigned sixaxis_handles_count[DEFAULT_MAX_PADS];
-#else
-   void *empty;
-#endif
 } switch_input_t;
 
-#ifdef HAVE_LIBNX
 /* beginning of touch mouse function declarations */
 static void switch_handle_touch_mouse(switch_input_t *sw);
 static void switch_normalize_touch_mouse_xy(float *normalized_x, float *normalized_y, int reported_x, int reported_y);
@@ -156,9 +149,7 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
 static void switch_normalized_to_screen_xy(int *screenX, int *screenY, float x, float y);
 static void switch_finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime);
 /* end of touch mouse function declarations */
-#endif
 
-#ifdef HAVE_LIBNX
 static void switch_input_poll(void *data)
 {
    HidTouchScreenState touch_screen_state;
@@ -290,7 +281,6 @@ static void switch_input_poll(void *data)
 
    sw->mouse_wheel = mouse_state.wheel_delta_y;
 }
-#endif
 
 static int16_t switch_input_state(
       void *data,
@@ -312,7 +302,6 @@ static int16_t switch_input_state(
       case RETRO_DEVICE_JOYPAD:
       case RETRO_DEVICE_ANALOG:
          break;
-#ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
@@ -391,13 +380,11 @@ static int16_t switch_input_state(
             }
          }
          break;
-#endif
    }
 
    return 0;
 }
 
-#ifdef HAVE_LIBNX
 static void switch_handle_touch_mouse(switch_input_t *sw)
 {
    unsigned int i;
@@ -762,7 +749,6 @@ static void switch_finish_simulated_mouse_clicks(
       sw->simulated_click_start_time[i] = 0;
    }
 }
-#endif
 
 static void switch_input_free_input(void *data)
 {
@@ -782,14 +768,11 @@ static void switch_input_free_input(void *data)
 
 static void* switch_input_init(const char *joypad_driver)
 {
-#ifdef HAVE_LIBNX
    unsigned int i;
-#endif
    switch_input_t *sw = (switch_input_t*) calloc(1, sizeof(*sw));
    if (!sw)
       return NULL;
 
-#ifdef HAVE_LIBNX
     hidInitializeTouchScreen();
     hidInitializeMouse();
     hidInitializeKeyboard();
@@ -815,7 +798,6 @@ static void* switch_input_init(const char *joypad_driver)
       sw->simulated_click_start_time[i] = 0;
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       sw->sixaxis_handles_count[i]      = 0;
-#endif
 
    return sw;
 }
@@ -823,11 +805,9 @@ static void* switch_input_init(const char *joypad_driver)
 static uint64_t switch_input_get_capabilities(void *data)
 {
    return
-#ifdef HAVE_LIBNX
            (1 << RETRO_DEVICE_POINTER) 
          | (1 << RETRO_DEVICE_KEYBOARD) 
          | (1 << RETRO_DEVICE_MOUSE) |
-#endif
            (1 << RETRO_DEVICE_JOYPAD) 
          | (1 << RETRO_DEVICE_ANALOG);
 }
@@ -835,7 +815,6 @@ static uint64_t switch_input_get_capabilities(void *data)
 static bool switch_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate)
 {
-#ifdef HAVE_LIBNX
    unsigned i, handles_count;
    switch_input_t *sw = (switch_input_t*) data;
 
@@ -878,7 +857,6 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
             break;
       }
    }
-#endif
 
    return false;
 }
@@ -886,7 +864,6 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
 static float switch_input_get_sensor_input(void *data,
       unsigned port, unsigned id)
 {
-#ifdef HAVE_LIBNX
    float f;
    unsigned int i;
    HidSixAxisSensorState sixaxis;
@@ -924,18 +901,13 @@ static float switch_input_get_sensor_input(void *data,
       appletGetCurrentIlluminance(&f);
       return f;
    }
-#endif
 
    return 0.0f;
 }
 
 input_driver_t input_switch = {
    switch_input_init,
-#ifdef HAVE_LIBNX
    switch_input_poll,
-#else
-   NULL,                            /* poll       */
-#endif
    switch_input_state,
    switch_input_free_input,
    switch_input_set_sensor_state,

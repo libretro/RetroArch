@@ -4,11 +4,7 @@
 
 #include "../../config.def.h"
 
-#ifdef HAVE_LIBNX
 #include <switch.h>
-#else
-#include <libtransistor/nx.h>
-#endif
 
 #include "../../configuration.h"
 
@@ -22,7 +18,6 @@
 /* TODO/FIXME - static globals */
 static uint16_t button_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
-#ifdef HAVE_LIBNX
 static PadState pad_states[DEFAULT_MAX_PADS];
 static HidVibrationDeviceHandle vibration_handles[DEFAULT_MAX_PADS][2];
 static HidVibrationDeviceHandle vibration_handleheld[2];
@@ -31,7 +26,6 @@ static HidVibrationValue vibration_stop;
 static int previous_handheld                         = -1;
 /* 1 = handheld, 0 = docked, -1 = first use */
 static unsigned previous_split_joycon_setting[MAX_USERS] = { 0 };
-#endif
 
 static const char *switch_joypad_name(unsigned pad)
 {
@@ -51,7 +45,6 @@ static void switch_joypad_autodetect_add(unsigned autoconf_pad)
 
 static void *switch_joypad_init(void *data)
 {
-#ifdef HAVE_LIBNX
    unsigned i;
    hidSetNpadJoyHoldType(HidNpadJoyHoldType_Horizontal);
    padConfigureInput(DEFAULT_MAX_PADS, HidNpadStyleSet_NpadStandard);
@@ -82,11 +75,6 @@ static void *switch_joypad_init(void *data)
    }
    hidInitializeVibrationDevices(vibration_handleheld,
          2, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld | HidNpadStyleTag_NpadJoyDual);
-#else
-   hid_init();
-   switch_joypad_autodetect_add(0);
-   switch_joypad_autodetect_add(1);
-#endif
 
    return (void*)-1;
 }
@@ -191,16 +179,11 @@ static int16_t switch_joypad_state(
 
 static bool switch_joypad_query_pad(unsigned pad)
 {
-#ifdef HAVE_LIBNX
    return pad < DEFAULT_MAX_PADS && padIsConnected(&pad_states[pad]);
-#else
-   return pad < DEFAULT_MAX_PADS && button_state[pad];
-#endif
 }
 
 static void switch_joypad_destroy(void)
 {
-#ifdef HAVE_LIBNX
    unsigned i;
 
    previous_handheld = -1;
@@ -217,12 +200,7 @@ static void switch_joypad_destroy(void)
       hidSendVibrationValues(vibration_handles[i], vibration_values[i], 2);
    }
    hidSendVibrationValues(vibration_handleheld, vibration_values[0], 2);
-#else
-   hid_finalize();
-#endif
 }
-
-#ifdef HAVE_LIBNX
 
 static void switch_joypad_poll(void)
 {
@@ -387,47 +365,7 @@ lblDefaultInputHandling:
       }
    }
 }
-#else
-static void switch_joypad_poll(void)
-{
-   int16_t lsx, lsy, rsx, rsy;
-   hid_controller_t    *controllers  = hid_get_shared_memory()->controllers;
-   hid_controller_t           *cont  = &controllers[0];
-   hid_controller_state_entry_t ent  = cont->main.entries[cont->main.latest_idx];
-   hid_controller_state_entry_t ent8 = (cont+8)->main.entries[(cont+8)->main.latest_idx];
-   button_state[0]                   = ent.button_state | ent8.button_state;
 
-   lsx                               = ent.left_stick_x;
-   lsy                               = ent.left_stick_y;
-   rsx                               = ent.right_stick_x;
-   rsy                               = ent.right_stick_y;
-
-   if (ent8.left_stick_x != 0 || ent8.left_stick_y != 0)
-   {
-      /* handheld overrides player 1 */
-      lsx                            = ent8.left_stick_x;
-      lsy                            = ent8.left_stick_y;
-   }
-
-   if (ent8.right_stick_x != 0 || ent8.right_stick_y != 0)
-   {
-      /* handheld overrides player 1 */
-      rsx                            = ent8.right_stick_x;
-      rsy                            = ent8.right_stick_y;
-   }
-
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]
-      [RETRO_DEVICE_ID_ANALOG_X]     = lsx;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT]
-      [RETRO_DEVICE_ID_ANALOG_Y]     = -lsy;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
-      [RETRO_DEVICE_ID_ANALOG_X]     = rsx;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT]
-      [RETRO_DEVICE_ID_ANALOG_Y]     = -rsy;
-}
-#endif
-
-#ifdef HAVE_LIBNX
 bool switch_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
@@ -455,7 +393,6 @@ bool switch_joypad_set_rumble(unsigned pad,
       ? vibration_handleheld : vibration_handles[pad];
    return R_SUCCEEDED(hidSendVibrationValues(handle, vibration_values[pad], 2));
 }
-#endif
 
 input_device_driver_t switch_joypad = {
    switch_joypad_init,
@@ -466,11 +403,7 @@ input_device_driver_t switch_joypad = {
    switch_joypad_get_buttons,
    switch_joypad_axis,
    switch_joypad_poll,
-#ifdef HAVE_LIBNX
    switch_joypad_set_rumble,
-#else
-   NULL, /* set_rumble */
-#endif
    NULL, /* set_rumble_gain */
    NULL, /* set_sensor_state */
    NULL, /* get_sensor_input */

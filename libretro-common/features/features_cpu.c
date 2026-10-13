@@ -120,9 +120,6 @@ extern long syscall(long number, ...);
 
 #if defined(HAVE_LIBNX)
 #include <switch.h>
-#elif defined(SWITCH)
-#include <libtransistor/types.h>
-#include <libtransistor/svc.h>
 #endif
 
 #if defined(_3DS)

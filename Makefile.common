@@ -1196,12 +1196,10 @@ ifeq ($(TARGET), retroarch_wiiu)
 endif
 
 ifeq ($(TARGET), retroarch_switch)
-   ifeq ($(HAVE_LIBNX), 1)
-      OBJ += gfx/drivers/switch_nx_gfx.o \
-             audio/drivers/switch_libnx_audren_audio.o
-      ifeq ($(HAVE_OPENGL), 1)
-         OBJ += gfx/drivers_context/switch_ctx.o
-      endif
+   OBJ += gfx/drivers/switch_nx_gfx.o \
+          audio/drivers/switch_libnx_audren_audio.o
+   ifeq ($(HAVE_OPENGL), 1)
+      OBJ += gfx/drivers_context/switch_ctx.o
    endif
    OBJ += audio/drivers/switch_audio.o \
           input/drivers/switch_input.o \

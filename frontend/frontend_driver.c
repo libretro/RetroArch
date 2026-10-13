@@ -110,7 +110,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(_3DS)
    &frontend_ctx_ctr,
 #endif
-#if defined(SWITCH) && defined(HAVE_LIBNX)
+#if defined(SWITCH)
    &frontend_ctx_switch,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -124,9 +124,6 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #endif
 #ifdef DJGPP
    &frontend_ctx_dos,
-#endif
-#ifdef SWITCH
-   &frontend_ctx_switch,
 #endif
 #if defined(ORBIS)
    &frontend_ctx_orbis,

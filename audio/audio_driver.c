@@ -361,9 +361,7 @@ audio_driver_t *audio_drivers[] = {
 #endif
 #ifdef SWITCH
    &audio_switch,
-#ifdef HAVE_LIBNX
    &audio_switch_libnx_audren,
-#endif
 #endif
    &audio_null,
    NULL,

@@ -1624,7 +1624,7 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 	   return 0;
    }
 #endif
-#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
+#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS)
    if (stream && stream->fp && ftruncate(fileno(stream->fp), (off_t)len) == 0)
    {
       stream->size = len;
@@ -2228,7 +2228,7 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
       free(aside);
       return ret;
    }
-#elif defined(_3DS) || defined(PS2) || defined(WIIU) || defined(GEKKO) || defined(__PSL1GHT__) || defined(__PS3__) || (defined(SWITCH) && defined(HAVE_LIBNX))
+#elif defined(_3DS) || defined(PS2) || defined(WIIU) || defined(GEKKO) || defined(__PSL1GHT__) || defined(__PS3__) || defined(SWITCH)
    /* The filesystems here refuse to rename onto an existing entry -
     * FS on 3DS and Switch, FatFs behind bdmfs_fatfs on PS2, libfat
     * on Wii and GameCube, LV2's sys_fs_rename on PS3 - and libnx,

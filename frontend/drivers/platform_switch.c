@@ -25,16 +25,11 @@
 
 #include <formats/image.h>
 
-#ifdef HAVE_LIBNX
 #include <switch.h>
 #include "../../switch_performance_profiles.h"
 #include "../../configuration.h"
 #include <unistd.h>
 #include <malloc.h>
-#else
-#include <libtransistor/nx.h>
-#include <libtransistor/ipc_helpers.h>
-#endif
 
 #include <file/file_path.h>
 
@@ -60,23 +55,18 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#if defined(HAVE_LIBNX) && defined(HAVE_NETWORKING)
+#ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #endif
 #endif
 
-#ifdef HAVE_LIBNX
 #define SD_PREFIX
 #include "../../gfx/common/switch_defines.h"
 #include <compat/strl.h>
-#else
-#define SD_PREFIX "/sd"
-#endif
 
 static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
 bool platform_switch_has_focus = true;
 
-#ifdef HAVE_LIBNX
 char *SWITCH_CPU_PROFILES[] = {
     "Maximum Performance",
     "High Performance",
@@ -183,8 +173,6 @@ static void on_applet_hook(AppletHookType hook, void *param)
          break;
    }
 }
-
-#endif /* HAVE_LIBNX */
 
 #ifdef IS_SALAMANDER
 static void get_first_valid_core(char *path_return, size_t len)
@@ -323,7 +311,6 @@ static void frontend_switch_deinit(void *data)
 {
    (void)data;
 
-#ifdef HAVE_LIBNX
    nifmExit();
 
    if (hosversionBefore(8, 0, 0))
@@ -348,10 +335,8 @@ static void frontend_switch_deinit(void *data)
        psmExit();
 
    appletUnlockExit();
-#endif
 }
 
-#ifdef HAVE_LIBNX
 static void frontend_switch_exec(const char *path, bool should_load_game)
 {
    if (path && *path)
@@ -584,8 +569,6 @@ error:
    return NULL;
 }
 
-#endif /* HAVE_LIBNX */
-
 static void frontend_switch_shutdown(bool unused)
 {
    (void)unused;
@@ -596,7 +579,6 @@ extern void retro_get_system_info(struct retro_system_info *info);
 
 static void frontend_switch_init(void *data)
 {
-#ifdef HAVE_LIBNX
    Result rc;
    bool recording_supported      = false;
 
@@ -628,7 +610,6 @@ static void frontend_switch_init(void *data)
        psmInitialized = true;
    else
        RARCH_WARN("Error initializing psm.\n");
-#endif /* HAVE_LIBNX (splash) */
 }
 
 enum frontend_architecture frontend_switch_get_arch(void)
@@ -694,79 +675,16 @@ static size_t frontend_switch_get_os(
       char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
-#ifdef HAVE_LIBNX
    u32 hosVersion;
-#else
-   int patch;
-   char firmware_version[0x100];
-   result_t r; /* used by LIB_ASSERT_OK macros */
-   ipc_object_t set_sys;
-   ipc_request_t rq;
-#endif
 
    _len       = strlcpy_lit(s, "Horizon OS", len);
 
-#ifdef HAVE_LIBNX
    *major     = 0;
    *minor     = 0;
 
    hosVersion = hosversionGet();
    *major     = HOSVER_MAJOR(hosVersion);
    *minor     = HOSVER_MINOR(hosVersion);
-#else
-   /* defaults in case we error out */
-   *major     = 0;
-   *minor     = 0;
-
-   LIB_ASSERT_OK(fail, sm_init());
-   LIB_ASSERT_OK(fail_sm, sm_get_service(&set_sys, "set:sys"));
-
-   rq                     = ipc_make_request(3);
-   ipc_buffer_t buffers[] = {
-      ipc_make_buffer(firmware_version, 0x100, 0x1a),
-   };
-   ipc_msg_set_buffers(rq, buffers, buffer_ptrs);
-
-   LIB_ASSERT_OK(fail_object, ipc_send(set_sys, &rq, &ipc_default_response_fmt));
-
-   /* Parse "<major>.<minor>.<patch>" without sscanf.
-    * Matches prior best-effort semantics: a field that fails to
-    * parse leaves itself and subsequent fields at their current
-    * values. */
-   {
-      const char *p = firmware_version + 0x68;
-      char       *endp;
-      long        v;
-
-      v = strtol(p, &endp, 10);
-      if (endp != p)
-      {
-         *major = (int)v;
-         if (*endp == '.')
-         {
-            p = endp + 1;
-            v = strtol(p, &endp, 10);
-            if (endp != p)
-            {
-               *minor = (int)v;
-               if (*endp == '.')
-               {
-                  p = endp + 1;
-                  v = strtol(p, &endp, 10);
-                  if (endp != p)
-                     patch = (int)v;
-               }
-            }
-         }
-      }
-   }
-
-fail_object:
-   ipc_close(set_sys);
-fail_sm:
-   sm_finalize();
-fail:
-#endif
    return _len;
 }
 
@@ -797,7 +715,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
    frontend_switch_get_env,
    frontend_switch_init,
    frontend_switch_deinit,
-#ifdef HAVE_LIBNX
    frontend_switch_exitspawn,
    frontend_switch_process_args,
    frontend_switch_exec,
@@ -806,12 +723,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
 #else
    frontend_switch_set_fork,
 #endif
-#else /* HAVE_LIBNX */
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif /* HAVE_LIBNX */
    frontend_switch_shutdown,
    frontend_switch_get_name,
    frontend_switch_get_os,

@@ -54,8 +54,6 @@
 #define MEM_STATS_VITA        1
 #elif defined(HAVE_LIBNX)
 #define MEM_STATS_LIBNX       1
-#elif defined(SWITCH)
-#define MEM_STATS_SWITCH      1
 #elif defined(ORBIS)
 #define MEM_STATS_ORBIS       1
 #elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
@@ -96,8 +94,6 @@
 extern char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 #elif defined(MEM_STATS_LIBNX)
 #include <switch.h>
-#elif defined(MEM_STATS_SWITCH)
-#include <malloc.h>
 #elif defined(MEM_STATS_ORBIS)
 #include <orbis/libkernel.h>
 #elif defined(MEM_STATS_PS3)
@@ -326,11 +322,6 @@ uint64_t mem_stats_total(void)
          return total;
       return 0;
    }
-#elif defined(MEM_STATS_SWITCH)
-   {
-      struct mallinfo mem_info = mallinfo();
-      return mem_info.usmblks;
-   }
 #elif defined(MEM_STATS_WIN32)
    /* the Ex form arrived with 2000, and the one before it cannot
     * describe more than 4GB */
@@ -466,11 +457,6 @@ uint64_t mem_stats_free(void)
                   CUR_PROCESS_HANDLE, 0)))
          return total - used;
       return 0;
-   }
-#elif defined(MEM_STATS_SWITCH)
-   {
-      struct mallinfo mem_info = mallinfo();
-      return mem_info.fordblks;
    }
 #elif defined(MEM_STATS_WIN32)
 #if _WIN32_WINNT >= 0x0500
