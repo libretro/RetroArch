@@ -618,6 +618,9 @@ typedef struct video_frame_info
    /* The A/V encoder's trap filter, set beside video_gamma */
    bool video_soft_filter;
 #endif
+#ifdef WIIU
+   bool video_wiiu_prefer_drc;
+#endif
    bool widgets_active;
    bool notifications_hidden;
    bool menu_mouse_enable;

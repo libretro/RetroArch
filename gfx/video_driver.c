@@ -5866,6 +5866,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->dingux_rs90_softfilter_type  = settings->uints.video_dingux_rs90_softfilter_type;
    video_info->scale_integer                = settings->bools.video_scale_integer;
    video_info->video_smooth                 = settings->bools.video_smooth;
+#ifdef WIIU
+   video_info->video_wiiu_prefer_drc         = settings->bools.video_wiiu_prefer_drc;
+#endif
    video_info->swapchain_bit_depth          = settings->uints.video_swapchain_bit_depth;
 #ifdef GEKKO
    video_info->overscan_correction_top      = settings->uints.video_overscan_correction_top;

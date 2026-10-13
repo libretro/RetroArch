@@ -2222,7 +2222,7 @@ static bool gx2_frame(void *data, const void *frame,
    if (frame)
       wiiu->views.frame_dims = dims;
    views = gx2_views_setup(wiiu, &video_info->views,
-         config_get_ptr()->bools.video_wiiu_prefer_drc);
+         video_info->video_wiiu_prefer_drc);
 
    if (wiiu->should_resize)
       gx2_update_viewport(wiiu);
