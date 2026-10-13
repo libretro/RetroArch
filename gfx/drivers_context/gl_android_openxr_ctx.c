@@ -139,6 +139,7 @@ static gl_android_openxr_t gl_xr;
 
 static bool gl_xr_egl_init(gl_android_openxr_t *xr)
 {
+   const char *ext;
    EGLint num_configs = 0;
    EGLint major = 0, minor = 0;
 
@@ -173,7 +174,7 @@ static bool gl_xr_egl_init(gl_android_openxr_t *xr)
       return false;
    }
 
-   const char *ext = eglQueryString(xr->egl_display, EGL_EXTENSIONS);
+   ext = eglQueryString(xr->egl_display, EGL_EXTENSIONS);
 
    if (ext && strstr(ext, "EGL_KHR_surfaceless_context"))
       RARCH_DBG("[XR] EGL_KHR_surfaceless_context supported\n");
