@@ -10597,6 +10597,7 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
       input_st->command[i] = NULL;
     }
    input_st->command_config[0] = '\0';
+   input_driver_command_release(MAX_USERS);
 }
 #endif
 

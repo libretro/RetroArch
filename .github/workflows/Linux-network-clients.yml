@@ -187,8 +187,7 @@ jobs:
           make -C samples/network/mcp_server compiler=x86_64-w64-mingw32-gcc
           (cd samples/network/mcp_server && wine ./mcp_server_test.exe)
           make -C samples/network/mcp_server clean
-          make -C samples/network/command_options compiler=x86_64-w64-mingw32-gcc
-          (cd samples/network/command_options && wine ./command_options_test.exe)
+          make -C samples/network/command_options check compiler=x86_64-w64-mingw32-gcc RUNNER=wine
           make -C samples/network/command_options clean
           export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
           make -C samples/network/tls_retro clean

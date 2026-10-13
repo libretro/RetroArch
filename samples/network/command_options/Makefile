@@ -1,6 +1,7 @@
 compiler ?= gcc
 ROOT := ../../..
 TARGET := command_options_test
+TEARDOWN_TARGET := command_teardown_test
 SOURCES := command_options_test.c $(ROOT)/command.c $(ROOT)/runloop.c \
    $(ROOT)/libretro-common/string/stdstring.c \
    $(ROOT)/libretro-common/compat/compat_strl.c
@@ -15,13 +16,18 @@ ifneq ($(SANITIZER),)
 endif
 ifneq ($(findstring mingw,$(compiler)),)
    TARGET := $(TARGET).exe
+   TEARDOWN_TARGET := $(TEARDOWN_TARGET).exe
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TEARDOWN_TARGET)
 $(TARGET): $(SOURCES) $(ROOT)/runloop.h $(ROOT)/command.h
 	$(compiler) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
-check: $(TARGET)
-	./$(TARGET)
+$(TEARDOWN_TARGET): command_teardown_test.c $(ROOT)/input/input_driver.c $(ROOT)/input/input_driver.h
+	$(compiler) $(CFLAGS) command_teardown_test.c $(ROOT)/input/input_driver.c -o $@ $(LDFLAGS)
+check: all
+	$(RUNNER) ./$(TARGET)
+	$(RUNNER) ./$(TEARDOWN_TARGET)
 clean:
 	rm -f command_options_test command_options_test.exe
+	rm -f command_teardown_test command_teardown_test.exe
 .PHONY: all check clean
