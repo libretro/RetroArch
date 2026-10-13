@@ -350,6 +350,30 @@ int main(void)
    scaler_ctx_gen_reset(&camera.scaler);
    check_formats();
 
+   printf("repeated format changes:\n");
+   {
+      pipewire_camera_t changing;
+      unsigned cycle;
+      memset(&changing, 0, sizeof(changing));
+      for (cycle = 0; cycle < 16; cycle++)
+      {
+         uint8_t storage[1024];
+         struct spa_pod_builder builder = SPA_POD_BUILDER_INIT(storage, sizeof(storage));
+         struct spa_video_info_raw info;
+         const struct spa_pod *param;
+         memset(&info, 0, sizeof(info));
+         info.format = cycle & 1 ? SPA_VIDEO_FORMAT_ABGR : SPA_VIDEO_FORMAT_ARGB;
+         info.size = SPA_RECTANGLE(W + (cycle & 1) * 2, H);
+         param = spa_format_video_raw_build(&builder, SPA_PARAM_Format, &info);
+         stream_param_changed_cb(&changing, SPA_PARAM_Format, param);
+         CHECK(changing.buffer_output != NULL
+               && changing.scaler.in_width == (int)info.size.width,
+               "replacement format creates matching output");
+      }
+      scaler_ctx_gen_reset(&changing.scaler);
+      free(changing.buffer_output);
+   }
+
    if (fails)
    {
       printf("%d check(s) failed\n", fails);

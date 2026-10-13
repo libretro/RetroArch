@@ -323,6 +323,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          SPA_PARAM_META_size,        SPA_POD_Int(sizeof(struct spa_meta_videotransform)));
 #endif
 
+   free(camera->buffer_output);
    camera->buffer_output = (uint32_t *)
          malloc(camera->size.width * camera->size.height * sizeof(uint32_t));
    if (!camera->buffer_output)
