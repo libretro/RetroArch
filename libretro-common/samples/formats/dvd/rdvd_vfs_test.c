@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <formats/rdvd_vfs.h>
+#include <formats/rdvd_stream.h>
 struct RFILE
 {
    uint64_t size, position;
@@ -156,11 +157,43 @@ static void test_short_and_errors(void)
    CHECK(rdvd_vfs_service(vfs) && rdvd_source_poll(&source, backend) && source.failed);
    CHECK(rdvd_vfs_close(&vfs) && !file.closes);
 }
+static void test_stream_lifecycle(void)
+{
+   RFILE file, *handle;
+   uint64_t size = 2048;
+   uint8_t buffer[32];
+   rdvd_vfs_t *vfs;
+   rdvd_source_backend_t *backend;
+   rdvd_source_t source;
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   rdvd_stream_t stream;
+   rdvd_demux_packet_t packet;
+   memset(&file, 0, sizeof(file)); file.size = size; handle = &file;
+   vfs = rdvd_vfs_bind(&handle, &size, 1);
+   CHECK(vfs && ps); if (!vfs || !ps) return;
+   backend = rdvd_vfs_backend(vfs);
+   CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
+   CHECK(rdvd_stream_init(&stream, &source, vfs, (tpool_t*)vfs, ps, buffer, sizeof(buffer)));
+   CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_WAIT && !file.reads);
+   rdvd_stream_cancel(&stream);
+   CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_WAIT);
+   CHECK(!rdvd_vfs_close(&vfs));
+   CHECK(rdvd_vfs_service(vfs));
+   CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_CANCELLED && !source.pending);
+   CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
+   CHECK(rdvd_stream_init(&stream, &source, vfs, (tpool_t*)vfs, ps, buffer, sizeof(buffer)));
+   file.read_error = true;
+   CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_WAIT);
+   CHECK(rdvd_vfs_service(vfs));
+   CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_ERROR && !source.pending);
+   CHECK(rdvd_vfs_close(&vfs)); rmpeg1_ps_free(ps);
+}
 int main(void)
 {
    test_reads();
    test_open_close();
    test_short_and_errors();
+   test_stream_lifecycle();
    printf("DVD VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -2461,6 +2461,7 @@ ifeq ($(HAVE_RMPEG1), 1)
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_packet.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_spu.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_ifo.o \
+          $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_stream.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_source.o \
           $(LIBRETRO_COMM_DIR)/formats/dvd/rdvd_vfs.o
    # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
