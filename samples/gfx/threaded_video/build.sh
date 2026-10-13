@@ -134,7 +134,7 @@ core_cc=$(awk '{print $1}' "$cc_line")
 # gfx/include carries the tree's own Vulkan headers, for the core's
 # hardware mode (HARNESS_CORE_HW_VULKAN); it calls Vulkan through the
 # frontend's interface and links nothing.
-$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -Igfx/include -o $out/harness_core.so $out/harness_core.c
+$core_cc -O1 -g1 -shared -fPIC -Ilibretro-common/include -Igfx/include -o $out/harness_core.so $out/harness_core.c
 [ -f $out/harness_core.so ] || { echo "build.sh: $out/harness_core.so was not produced" >&2; exit 1; }
 
 echo "built $out/threaded_video_test and $out/harness_core.so"

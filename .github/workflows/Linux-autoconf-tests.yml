@@ -133,7 +133,7 @@ jobs:
       - name: Build
         run: |
           if [ -n "${{ matrix.sanitizer }}" ]; then
-            make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
+            CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1" make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
           else
             make -j"$(nproc)"
           fi

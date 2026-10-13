@@ -521,6 +521,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    env:
+      # Line tables are all a sanitizer report needs. configure and
+      # make take these in place of DEBUG=1's -O0 -g, adding their own.
+      CFLAGS: -O0 -g1
+      CXXFLAGS: -O0 -g1
+
     steps:
       - name: Install dependencies
         timeout-minutes: 20
@@ -639,6 +645,12 @@ jobs:
     name: Threaded-video harness on Vulkan under TSan (lavapipe)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    env:
+      # Line tables are all a sanitizer report needs. configure and
+      # make take these in place of DEBUG=1's -O0 -g, adding their own.
+      CFLAGS: -O0 -g1
+      CXXFLAGS: -O0 -g1
 
     steps:
       - name: Install dependencies
@@ -863,6 +875,8 @@ jobs:
 
       - name: Build
         run: |
+          # The sanitizer builds are DEBUG=1: -g1, as in the other jobs.
+          [ "${{ matrix.san }}" = none ] || export CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1"
           case "${{ matrix.san }}" in
             thread)  make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1 ;;
             address) make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 ;;
@@ -883,6 +897,8 @@ jobs:
           done
           export DISPLAY=:99
           export LIBGL_ALWAYS_SOFTWARE=1
+          # The harness takes its compile line from the build's own.
+          [ "${{ matrix.san }}" = none ] || export CFLAGS="-O0 -g1" CXXFLAGS="-O0 -g1"
           # Every driver runs, so one failing does not hide another.
           fail=0
           for driver in ${{ matrix.drivers }}; do

@@ -84,7 +84,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/rthreads/tpool.c \
       $LC/rthreads/retro_eventcount.c"
 
-$CC -std=gnu99 -O1 -g $SAN -Wall -Wno-unused-parameter -Wno-unused-function \
+$CC -std=gnu99 -O1 -g1 $SAN -Wall -Wno-unused-parameter -Wno-unused-function \
    $INC $DEFS $SRCS -o "$OUT/companion_core_test" -lpthread -lm -lz
 
 "$OUT/companion_core_test"

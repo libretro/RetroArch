@@ -1012,7 +1012,7 @@ jobs:
         run: |
           set -eu
           LC=../../..
-          clang -O1 -g -fsanitize=fuzzer,address,undefined \
+          clang -O1 -g1 -fsanitize=fuzzer,address,undefined \
             -fno-sanitize-recover=all \
             -I$LC/include -o config_file_fuzz config_file_fuzz.c \
             $LC/file/config_file.c \

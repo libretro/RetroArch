@@ -36,6 +36,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
+    env:
+      # Line tables are all a sanitizer report needs. configure and
+      # make take these in place of DEBUG=1's -O0 -g, adding their own.
+      CFLAGS: -O0 -g1
+      CXXFLAGS: -O0 -g1
+
     steps:
       - name: Install dependencies
         timeout-minutes: 20

@@ -45,12 +45,12 @@ CSRCS="ui/companion/companion_core.c \
 OBJS=""
 for f in $CSRCS; do
    o="$OUT/$(echo "$f" | tr '/' '_').o"
-   $CC -std=gnu99 -O1 -g -w $INC $DEFS -c "$f" -o "$o"
+   $CC -std=gnu99 -O1 -g1 -w $INC $DEFS -c "$f" -o "$o"
    OBJS="$OBJS $o"
 done
 # MRC (no -fobjc-arc): the file supports both; the GNUstep run is MRC too.
-$CC -x objective-c -O1 -g -w $INC $DEFS -c ui/drivers/ui_cocoa_companion.m -o "$OUT/driver.o"
-$CC -x objective-c -O1 -g -w $INC $DEFS -c ui/companion/test/companion_cocoa_test.m -o "$OUT/test.o"
+$CC -x objective-c -O1 -g1 -w $INC $DEFS -c ui/drivers/ui_cocoa_companion.m -o "$OUT/driver.o"
+$CC -x objective-c -O1 -g1 -w $INC $DEFS -c ui/companion/test/companion_cocoa_test.m -o "$OUT/test.o"
 $CC -o "$OUT/companion_cocoa_test" "$OUT/driver.o" "$OUT/test.o" $OBJS \
    -framework Cocoa -framework QuartzCore -lz -lpthread -lobjc
 
