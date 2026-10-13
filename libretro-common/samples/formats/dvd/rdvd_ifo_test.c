@@ -4,6 +4,7 @@
 #include <formats/rdvd_ifo.h>
 static unsigned failures;
 static uint8_t bytes[1024];
+static uint8_t file_bytes[8192];
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
@@ -133,11 +134,46 @@ static void test_table(void)
    CHECK(!rdvd_pgci_table_read(NULL, 8, &t));
    CHECK(!rdvd_pgci_entry_read(NULL, 0, &e));
 }
+
+static void file_fixture(bool vts)
+{
+   memset(file_bytes, 0, sizeof(file_bytes));
+   memcpy(file_bytes, vts ? "DVDVIDEO-VTS" : "DVDVIDEO-VMG", 12);
+   file_bytes[0x1f] = 3; file_bytes[0x82] = 3; file_bytes[0x83] = 0xff;
+   file_bytes[0x3f] = 1;
+   file_bytes[vts ? 0xcb : 0xc7] = 1;
+   file_bytes[vts ? 0xcf : 0xcb] = 2;
+   if (vts) file_bytes[0xd3] = 3;
+}
+static void test_file(void)
+{
+   rdvd_ifo_t f;
+   rdvd_ifo_span_t span;
+   unsigned i;
+   file_fixture(false);
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f) && f.kind == RDVD_IFO_VMG);
+   CHECK(f.title_sets == 1 && f.data == file_bytes);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_TITLES, &span));
+   CHECK(span.data == file_bytes + 2048 && span.size == 2048);
+   CHECK(!rdvd_ifo_table_read(&f, RDVD_IFO_PGCIT, &span) && !span.data);
+   for (i = 0; i < sizeof(file_bytes); i++) CHECK(!rdvd_ifo_read(file_bytes, i, &f));
+   file_fixture(true);
+   CHECK(rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f) && f.kind == RDVD_IFO_VTS);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_PGCIT, &span) && span.data == file_bytes + 4096 && span.size == 2048);
+   CHECK(rdvd_ifo_table_read(&f, RDVD_IFO_MENU, &span) && span.data == file_bytes + 6144);
+   file_bytes[0xcf] = 4;
+   CHECK(!rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   file_fixture(true); file_bytes[0x1c] = 0xff;
+   CHECK(!rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+   file_fixture(false); file_bytes[0] = 0;
+   CHECK(!rdvd_ifo_read(file_bytes, sizeof(file_bytes), &f));
+}
 int main(void)
 {
    test_bounds();
    test_accessors();
    test_table();
+   test_file();
    printf("DVD IFO tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -191,3 +191,70 @@ bool rdvd_pgci_entry_read(const rdvd_pgci_table_t *table, unsigned index,
    *out = entry;
    return true;
 }
+
+bool rdvd_ifo_read(const uint8_t *data, size_t size, rdvd_ifo_t *out)
+{
+   rdvd_ifo_t f;
+   uint64_t extent;
+   uint32_t management_last;
+   unsigned base, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!data || size < 2048) return false;
+   memset(&f, 0, sizeof(f));
+   if (!memcmp(data, "DVDVIDEO-VMG", 12))
+   {
+      f.kind = RDVD_IFO_VMG; f.table_count = 7; base = 0xc4;
+      f.title_sets = rdvd_ifo_u16(data + 0x3e);
+      if (!f.title_sets || f.title_sets > 99) return false;
+      f.first_play = rdvd_ifo_u32(data + 0x84);
+   }
+   else if (!memcmp(data, "DVDVIDEO-VTS", 12))
+   {
+      f.kind = RDVD_IFO_VTS; f.table_count = 8; base = 0xc8;
+      f.title_vob_sector = rdvd_ifo_u32(data + 0xc4);
+   }
+   else return false;
+   extent = ((uint64_t)rdvd_ifo_u32(data + 0x1c) + 1) * 2048;
+   if (extent > size || extent > SIZE_MAX) return false;
+   f.size = (size_t)extent;
+   management_last = rdvd_ifo_u32(data + 0x80);
+   if (management_last < 255 || management_last >= f.size) return false;
+   if (f.first_play && (f.first_play < 512 || f.first_play > f.size - 236)) return false;
+   for (i = 0; i < f.table_count; i++)
+   {
+      uint64_t offset = (uint64_t)rdvd_ifo_u32(data + base + i * 4) * 2048;
+      if (offset && (offset > f.size || f.size - (size_t)offset < 8)) return false;
+      f.tables[i] = (size_t)offset;
+   }
+   f.menu_vob_sector = rdvd_ifo_u32(data + 0xc0);
+   f.version = data[0x21]; f.data = data;
+   *out = f;
+   return true;
+}
+
+bool rdvd_ifo_table_read(const rdvd_ifo_t *ifo, enum rdvd_ifo_table_kind kind,
+      rdvd_ifo_span_t *out)
+{
+   rdvd_ifo_t f;
+   size_t start, end;
+   unsigned index, i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!ifo || !rdvd_ifo_read(ifo->data, ifo->size, &f)) return false;
+   switch (kind)
+   {
+      case RDVD_IFO_TITLES: index = 0; break;
+      case RDVD_IFO_PGCIT:
+         if (f.kind != RDVD_IFO_VTS) return false;
+         index = 1; break;
+      case RDVD_IFO_MENU: index = f.kind == RDVD_IFO_VMG ? 1 : 2; break;
+      default: return false;
+   }
+   start = f.tables[index]; end = f.size;
+   if (!start) return false;
+   for (i = 0; i < f.table_count; i++)
+      if (f.tables[i] > start && f.tables[i] < end) end = f.tables[i];
+   out->data = f.data + start; out->size = end - start;
+   return true;
+}

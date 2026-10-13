@@ -82,5 +82,35 @@ bool rdvd_pgci_table_read(const uint8_t *data, size_t size, rdvd_pgci_table_t *o
  * parental-policy decision is made. Failure clears the output. */
 bool rdvd_pgci_entry_read(const rdvd_pgci_table_t *table, unsigned index,
       rdvd_pgci_entry_t *out);
+
+enum rdvd_ifo_kind { RDVD_IFO_NONE = 0, RDVD_IFO_VMG, RDVD_IFO_VTS };
+enum rdvd_ifo_table_kind { RDVD_IFO_TITLES = 0, RDVD_IFO_PGCIT, RDVD_IFO_MENU };
+typedef struct rdvd_ifo
+{
+   const uint8_t *data;
+   size_t size;
+   size_t tables[8];
+   uint32_t first_play;
+   uint32_t menu_vob_sector;
+   uint32_t title_vob_sector;
+   unsigned table_count;
+   unsigned title_sets;
+   unsigned version;
+   enum rdvd_ifo_kind kind;
+} rdvd_ifo_t;
+typedef struct rdvd_ifo_span { const uint8_t *data; size_t size; } rdvd_ifo_span_t;
+
+/* Parses the management prefix of a complete borrowed VMGI/VTSI file.
+ * Checks the declared IFO sector extent and all management table pointers.
+ * Attributes, BUP fallback and filesystem/VOB I/O are not interpreted here.
+ * VOB sector fields are external-domain addresses, not IFO-buffer offsets. */
+bool rdvd_ifo_read(const uint8_t *data, size_t size, rdvd_ifo_t *out);
+
+/* Selects a present table, bounded by the nearest later management table.
+ * Borrowed input must remain immutable and alive through all view use.
+ * TITLES selects VMG title records or VTS chapter pointers by file kind;
+ * PGCIT is only valid for VTS. Failure/absent tables clear the output. */
+bool rdvd_ifo_table_read(const rdvd_ifo_t *ifo, enum rdvd_ifo_table_kind kind,
+      rdvd_ifo_span_t *out);
 RETRO_END_DECLS
 #endif
