@@ -417,9 +417,11 @@ jobs:
             #   TARGETS = a b c
             #   TARGET_TEST := foo_test     (second target in same Makefile)
             #   TARGET_TEST2 := foo_test2   (third target, fourth, ...)
+            # EXE is empty on Linux.
             mapfile -t targets < <(
               grep -hE '^(TARGET|TARGETS|TARGET_TEST[0-9]*)[[:space:]]*[:?]?=' "$d/Makefile" \
               | sed -E 's/^[^=]*=[[:space:]]*//' \
+              | sed 's/$(EXE)//g' \
               | tr -s ' \t' '\n' \
               | grep -v '^$' \
               | sort -u
