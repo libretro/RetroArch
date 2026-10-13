@@ -185,20 +185,21 @@ static void qnx_process_gamepad_event(
 
 static void qnx_process_joystick_event(qnx_input_t *qnx, screen_event_t screen_event, int type)
 {
-    int displacement[2];
+    int buttons         = 0;
+    int displacement[2] = {0, 0};
     screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_DISPLACEMENT, displacement);
 
-    if (displacement != 0)
+    if (displacement[0] || displacement[1])
     {
         qnx->trackpad_acc[0] += displacement[0];
         if (abs(qnx->trackpad_acc[0]) > TRACKPAD_THRESHOLD)
         {
-            if (qnx->trackpad_acc < 0)
+            if (qnx->trackpad_acc[0] < 0)
             {
                 input_keyboard_event(true, RETROK_LEFT, 0, 0, RETRO_DEVICE_KEYBOARD);
                 input_keyboard_event(false, RETROK_LEFT, 0, 0, RETRO_DEVICE_KEYBOARD);
             }
-            else if (qnx->trackpad_acc > 0)
+            else
             {
                 input_keyboard_event(true, RETROK_RIGHT, 0, 0, RETRO_DEVICE_KEYBOARD);
                 input_keyboard_event(false, RETROK_RIGHT, 0, 0, RETRO_DEVICE_KEYBOARD);
@@ -210,12 +211,12 @@ static void qnx_process_joystick_event(qnx_input_t *qnx, screen_event_t screen_e
         qnx->trackpad_acc[1] += displacement[1];
         if (abs(qnx->trackpad_acc[1]) > TRACKPAD_THRESHOLD)
         {
-            if (qnx->trackpad_acc < 0)
+            if (qnx->trackpad_acc[1] < 0)
             {
                 input_keyboard_event(true, RETROK_UP, 0, 0, RETRO_DEVICE_KEYBOARD);
                 input_keyboard_event(false, RETROK_UP, 0, 0, RETRO_DEVICE_KEYBOARD);
             }
-            else if (qnx->trackpad_acc > 0)
+            else
             {
                 input_keyboard_event(true, RETROK_DOWN, 0, 0, RETRO_DEVICE_KEYBOARD);
                 input_keyboard_event(false, RETROK_DOWN, 0, 0, RETRO_DEVICE_KEYBOARD);
@@ -225,7 +226,6 @@ static void qnx_process_joystick_event(qnx_input_t *qnx, screen_event_t screen_e
         }
     }
 
-    int buttons = 0;
     screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_BUTTONS, &buttons);
     input_keyboard_event(buttons != 0, RETROK_RETURN, 0, 0, RETRO_DEVICE_KEYBOARD);
 }
@@ -247,9 +247,10 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
            strlcpy_lit(name_buf, "QNX Gamepad", sizeof(name_buf));
    }
 
-   if (name_buf && *name_buf)
+   if (*name_buf)
    {
-      controller->port = qnx->pads_connected;
+      /* The port is the slot: the joypad driver reads devices[port]. */
+      controller->port = (int)(controller - qnx->devices);
 
       input_autoconfigure_connect(
             name_buf,
@@ -321,6 +322,7 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
    int deviceCount = 0;
    int ret;
    unsigned i;
+   screen_device_t *devices_found;
 
    ret = screen_get_context_property_iv(screen_ctx,
          SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
@@ -330,7 +332,7 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
 	       errno, strerror(errno));
      return false;
    }
-   screen_device_t* devices_found = (screen_device_t*)
+   devices_found = (screen_device_t*)
       calloc(deviceCount, sizeof(screen_device_t));
    if (!devices_found)
    {
@@ -345,6 +347,7 @@ static int qnx_discover_controllers(qnx_input_t *qnx)
    {
      RARCH_ERR("Error querying SCREEN_PROPERTY_DEVICES: [%d] %s\n",
 	       errno, strerror(errno));
+     free(devices_found);
      return false;
    }
 
@@ -555,6 +558,9 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                   {
                      RARCH_DBG("Device %s: Disconnected.\n",
                            qnx->devices[i].id);
+                     if (qnx->devices[i].port >= 0)
+                        input_autoconfigure_disconnect(
+                              (unsigned)qnx->devices[i].port, "qnx");
                      qnx_init_controller(qnx, &qnx->devices[i]);
                      break;
                   }

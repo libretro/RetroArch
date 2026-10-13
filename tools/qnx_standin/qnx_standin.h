@@ -60,7 +60,7 @@ int bps_get_event();
 int navigator_event_get_syskey_key();
 int navigator_event_get_window_state();
 int navigator_get_domain();
-int screen_event_get_event();
+screen_event_t screen_event_get_event();
 int screen_get_context_property_iv();
 int screen_get_context_property_pv();
 int screen_get_device_property_cv();
