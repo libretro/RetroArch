@@ -41,3 +41,27 @@ bool rdvd_source_prepare(rdvd_source_t *source, void *destination,
    out->segment = span.segment;
    return true;
 }
+
+
+bool rdvd_source_complete(rdvd_source_t *source, uint64_t ticket, int64_t bytes)
+{
+   size_t requested;
+   if (!source || !source->pending || ticket != source->ticket) return false;
+   requested = source->pending_bytes;
+   source->pending = false; source->pending_bytes = 0;
+   if (source->cancelled) return true;
+   if (bytes <= 0 || (uint64_t)bytes > requested)
+   {
+      source->failed = true;
+      return true;
+   }
+   source->offset += (uint64_t)bytes;
+   source->remaining -= (uint64_t)bytes;
+   source->completed += (uint64_t)bytes;
+   return true;
+}
+
+void rdvd_source_cancel(rdvd_source_t *source)
+{
+   if (source) source->cancelled = true;
+}

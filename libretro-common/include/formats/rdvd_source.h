@@ -29,5 +29,12 @@ bool rdvd_source_init(rdvd_source_t *source, const rdvd_vob_map_t *map,
  * A pending read prevents another reservation. Failure clears request. */
 bool rdvd_source_prepare(rdvd_source_t *source, void *destination,
       size_t capacity, rdvd_source_request_t *out);
+/* Accepts the matching completion exactly once. Positive short reads
+ * advance by actual bytes; zero/negative/oversized results fail the source.
+ * Returns true when consumed, including errors. Stale tickets do nothing. */
+bool rdvd_source_complete(rdvd_source_t *source, uint64_t ticket, int64_t bytes);
+/* Stops new requests without waiting. Pending storage remains owned by
+ * the outstanding reader until its matching completion is consumed. */
+void rdvd_source_cancel(rdvd_source_t *source);
 RETRO_END_DECLS
 #endif
