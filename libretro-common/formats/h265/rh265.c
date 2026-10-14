@@ -1768,6 +1768,9 @@ typedef struct rh265_slice_job
    rh265_shdr sh;
    rh265_pic *ref_list[2][RH265_MAX_REFS];
    rh265_pic *col_ref;
+   int ref_poc[2][RH265_MAX_REFS];
+   int nb_refs[2];
+   int max_merge, slice_tmvp;
 } rh265_slice_job;
 
 /* A reference read waits for the rows it reaches (defined with the
@@ -4687,6 +4690,10 @@ static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
    j->slice_seq = d->slice_seq;
    j->sh        = d->sh;
    memcpy(j->ref_list, d->ref_list, sizeof(j->ref_list));
+   memcpy(j->ref_poc, d->ref_poc, sizeof(j->ref_poc));
+   memcpy(j->nb_refs, d->nb_refs, sizeof(j->nb_refs));
+   j->max_merge = d->max_merge;
+   j->slice_tmvp = d->slice_tmvp;
    j->col_ref   = d->col_ref;
    v->nal_scratch     = spare;
    v->nal_scratch_cap = spare_cap;
@@ -4696,6 +4703,18 @@ static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
       d->jobs = j;
    d->jobs_tail = j;
    return j;
+}
+
+static void rh265_ctx_restore_slice(rh265_dec *d, const rh265_slice_job *j)
+{
+   d->sh        = j->sh;
+   d->slice_seq = j->slice_seq;
+   memcpy(d->ref_list, j->ref_list, sizeof(d->ref_list));
+   memcpy(d->ref_poc, j->ref_poc, sizeof(d->ref_poc));
+   memcpy(d->nb_refs, j->nb_refs, sizeof(d->nb_refs));
+   d->max_merge = j->max_merge;
+   d->slice_tmvp = j->slice_tmvp;
+   d->col_ref   = j->col_ref;
 }
 
 /* A picture done with its references lets them go. */
@@ -4722,10 +4741,7 @@ static void rh265_ctx_run_slices(rh265_video *v, rh265_dec *d)
       if (d->job_rc == 0)
       {
          int r;
-         d->sh        = j->sh;
-         d->slice_seq = j->slice_seq;
-         memcpy(d->ref_list, j->ref_list, sizeof(d->ref_list));
-         d->col_ref   = j->col_ref;
+         rh265_ctx_restore_slice(d, j);
          r = rh265_decode_slice_data(v, d, j->buf + j->rbsp_off, j->rbsp_size,
                j->data_bit, j->esc_count ? (const uint32_t*)(j->buf + j->esc_off) : NULL,
                j->esc_count);

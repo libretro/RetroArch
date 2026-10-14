@@ -87,6 +87,7 @@ static int run(const char *fmt, ...)
  * and would be shared between pictures decoding concurrently. Every
  * case is decoded at both. */
 static int g_contexts = 1;
+static unsigned g_expected_slices;
 /* Pool threads for the decode under test; 0 is the calling thread. With
  * a pool the pictures decode concurrently, a picture reading from one
  * still decoding waits for the rows it needs, and the output must be
@@ -152,7 +153,8 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          const rmp4_track *track = rmp4_get_track(m, trk);
          unsigned length_size = (track->codec_private[21] & 3) + 1;
          if (rh265_video_get_access_unit(h, pkt.data, pkt.size, length_size,
-                  slices, 128, &au) || !au.num_slices)
+                  slices, 128, &au) || !au.num_slices
+               || (g_expected_slices && au.num_slices != g_expected_slices))
          {
             bad = -1;
             goto done;
@@ -317,6 +319,7 @@ static void oracle_case(const char *name, const char *src, int frames,
    size_t rlen;
    int nf = 0;
    long bad;
+   g_expected_slices = strstr(x265, "slices=2") ? 2 : 0;
    snprintf(mp4, sizeof(mp4), "%s/%s.mp4", dir, name);
    snprintf(yuv, sizeof(yuv), "%s/%s.yuv", dir, name);
    snprintf(label, sizeof(label), "%s (%s %s) byte-exact vs ffmpeg",
@@ -462,6 +465,10 @@ int main(void)
          "-x265-params crf=24:sao=1:deblock=1:bframes=3:b-pyramid=1:wpp=0:frame-threads=1");
    oracle_case("lossy_ctu16",   "mandelbrot=s=176x144:r=10", 6, "yuv420p",
          "-x265-params crf=24:ctu=16:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
+   oracle_case("multi_slice_b", "mandelbrot=s=256x256:r=10", 12, "yuv420p",
+         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1");
+   oracle_case("multi_slice_10", "mandelbrot=s=256x256:r=10", 12, "yuv420p10le",
+         "-x265-params crf=24:slices=2:bframes=3:b-pyramid=1:wpp=1:frame-threads=1");
    #ifdef HAVE_THREADS
    if (g_pool)
       tpool_destroy((tpool_t*)g_pool);
