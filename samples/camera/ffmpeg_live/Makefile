@@ -36,6 +36,7 @@ LDFLAGS += -Wl,--wrap=av_read_frame
 LDFLAGS += -Wl,--wrap=avcodec_send_packet
 LDFLAGS += -Wl,--wrap=avformat_open_input
 LDFLAGS += -Wl,--wrap=avcodec_receive_frame
+LDFLAGS += -Wl,--wrap=avformat_find_stream_info
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)

@@ -656,6 +656,7 @@ static bool ffmpeg_camera_start(void *data)
 
    return true;
 error:
+   av_dict_free(&options);
    ffmpeg_camera_stop(ffmpeg);
 
    return false;
@@ -678,7 +679,7 @@ static void ffmpeg_camera_stop(void *data)
    {
       RARCH_LOG("[FFMPEG] Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
    }
-   else
+   else if (ffmpeg->decoder_context)
    {
       int ret = avcodec_send_packet(ffmpeg->decoder_context, NULL);
       if (ret < 0 && ret != AVERROR_EOF)

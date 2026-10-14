@@ -46,6 +46,16 @@ static retro_atomic_int_t fail_next_open;
 static retro_atomic_int_t removed_device;
 static retro_atomic_int_t removed_reads;
 static retro_atomic_int_t changing_size;
+static retro_atomic_int_t fail_stream_info;
+static retro_atomic_int_t null_decoder_calls;
+
+int __real_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options);
+int __wrap_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options)
+{
+   if (retro_atomic_exchange_int(&fail_stream_info, 0))
+      return AVERROR(EIO);
+   return __real_avformat_find_stream_info(ctx, options);
+}
 
 int __real_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame);
 int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
@@ -101,6 +111,11 @@ int __real_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet);
 int __wrap_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet)
 {
    int ret;
+   if (!ctx)
+   {
+      retro_atomic_fetch_add_int(&null_decoder_calls, 1);
+      return AVERROR(EINVAL);
+   }
    if (retro_atomic_load_acquire_int(&duplicate_output) && extra_frame)
       return AVERROR(EAGAIN);
    if (packet && retro_atomic_load_acquire_int(&mixed_source)
@@ -595,6 +610,27 @@ int main(void)
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
       retro_atomic_store_release_int(&changing_size, 0);
+   }
+   current = "failed stream discovery";
+   h = open_camera();
+   CHECK(h != NULL, "failure source initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&fail_stream_info, 1);
+      CHECK(!camera_ffmpeg.start(h), "failed stream discovery reported success");
+      CHECK(!retro_atomic_load_acquire_int(&null_decoder_calls),
+            "cleanup called decoder API without a decoder");
+      CHECK(camera_ffmpeg.start(h), "restart after discovery failure failed");
+      checksum = 0;
+      for (attempt = 0; attempt < 100 && !checksum; attempt++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+         usleep(1000);
+      }
+      CHECK(checksum != 0, "restart produced no decoded pixels");
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);
