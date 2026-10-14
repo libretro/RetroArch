@@ -6,6 +6,7 @@
 #include "../../../gfx/common/vksym.h"
 #include "../../../gfx/common/vulkan_common.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../gfx/drivers_shader/shader_vulkan.h"
 #include "../../../gfx/common/vulkan_video_import.h"
 #define VK_STREAM_SLOTS 2
 #define VK_PLANAR_HEADER VULKAN_VIDEO_HEADER_WORDS
@@ -315,6 +316,7 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    vulkan_context_t *ctx = (vulkan_context_t*)calloc(1, sizeof(*ctx));
    import_oracle_t *t = (import_oracle_t*)calloc(1, sizeof(*t));
    video_device_info_t advertised;
+   struct vulkan_filter_chain_texture input;
    vulkan_video_layout_t capacity;
    float priority = 1.0f;
    unsigned i;
@@ -342,6 +344,7 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    vkGetDeviceQueue(device, family, 0, &ctx->queue);
    t->vk.context = ctx; t->width = 5; t->height = 3;
    t->output.dims = VIDEO_SCALE_PACK(t->width, t->height);
+   t->output.format = VK_FORMAT_R8G8B8A8_UNORM;
    if (!vulkan_video_layout(&capacity, t->width, t->height, IMAGE_PIXFMT_P010, 0)
          || !oracle_buffer(t, &t->upload, &t->upload_memory, &t->mapped_upload, capacity.bytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
          || !oracle_buffer(t, &t->readback, &t->readback_memory, &t->mapped_readback, t->width * t->height * 4, VK_BUFFER_USAGE_TRANSFER_DST_BIT)
@@ -371,6 +374,11 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,
                ((i / 3) & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
                | ((i / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1)) ok = 0;
+   vulkan_movie_input(&t->output, &input);
+   if (input.image != t->output.image || input.view != t->output.view
+         || input.layout != t->output.layout || input.dims != t->output.dims
+         || input.format != VK_FORMAT_R8G8B8A8_UNORM
+         || input.padded_dims || input.origin) ok = 0;
    if (import_errors) ok = 0;
 cleanup:
    vkDeviceWaitIdle(device); oracle_cleanup(t);

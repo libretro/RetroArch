@@ -1,4 +1,4 @@
-/* Production frontend/D3D handoff without a window or graphics SDK. */
+/* Production frontend/D3D/Vulkan handoff without a window or graphics SDK. */
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -154,7 +154,58 @@ static void drivers(void)
    CHECK(d3d12_movie_prepare(&v12, &f) == &f && !v12.movie_texture && image.refs == 0
          && v12.filter.history[0].desc.Format == 1 && v12.filter.history[0].desc.Width == 0 && v12.flags == 3);
 }
+#define VK_FLAG_HW_ENABLE 1
+struct vk_texture { unsigned image, view, layout, dims, format; };
+struct vulkan_filter_chain_texture
+{
+   unsigned image, view, layout, dims, format, padded_dims, origin;
+};
+typedef struct { unsigned flags; uintptr_t movie_texture; bool movie_pending; } vk_t;
+static struct vk_texture movie = { 1, 2, 3, 4, 5 };
+static unsigned retired;
+static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t id)
+{ (void)vk; if (id) { CHECK(id == (uintptr_t)&movie); retired++; } }
+static enum video_texture_update vulkan_import_texture(void *vk, uintptr_t *id,
+      const video_frame_import_t *f, enum texture_filter_type filter)
+{
+   (void)vk; CHECK(filter == TEXTURE_FILTER_LINEAR);
+   if (outcome == VIDEO_TEXTURE_UPDATE_DONE)
+   { movie.dims = f->dims; *id = (uintptr_t)&movie; }
+   return outcome;
+}
+#include "vulkan.inc"
+static void vulkan_movie(void)
+{
+   vk_t vk;
+   video_frame_import_t f;
+   struct vulkan_filter_chain_texture input;
+   memset(&vk, 0, sizeof(vk)); memset(&f, 0, sizeof(f));
+   CHECK(vulkan_import_movie_frame(NULL, &f) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.dims = 4; outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == outcome && vk.movie_pending);
+   vulkan_movie_input((struct vk_texture*)vk.movie_texture, &input);
+   CHECK(input.image == 1 && input.view == 2 && input.layout == 3
+         && input.dims == 4 && input.format == 5 && !input.origin && !input.padded_dims);
+   CHECK(vulkan_movie_prepare(&vk, NULL) == NULL);
+   CHECK(vulkan_movie_prepare(&vk, RETRO_HW_FRAME_BUFFER_VALID) == NULL
+         && vk.movie_texture == (uintptr_t)&movie && !retired);
+   vk.movie_pending = false; outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == outcome && !vk.movie_pending
+         && vk.movie_texture == (uintptr_t)&movie && !retired);
+   outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == outcome && !retired);
+   vk.flags = VK_FLAG_HW_ENABLE; outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   vk.flags = 0; f.dims = 8;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == outcome && retired == 1
+         && movie.dims == 8 && vk.movie_pending);
+   CHECK(vulkan_movie_prepare(&vk, &f) == &f && retired == 2
+         && !vk.movie_texture && !vk.movie_pending);
+   CHECK(vulkan_import_movie_frame(&vk, NULL) == outcome && retired == 2
+         && !vk.movie_texture && !vk.movie_pending);
+   CHECK(vulkan_import_movie_frame(&vk, NULL) == outcome && retired == 2);
+}
 int main(void)
 {
-   frontend(); drivers(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
+   frontend(); drivers(); vulkan_movie(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
 }

@@ -685,6 +685,8 @@ typedef struct vk
     * pair and fences each one streams through. Frame-recording thread
     * only, like the two lists above. */
    struct vk_stream_state *stream_states;
+   uintptr_t movie_texture;
+   bool movie_pending;
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
     * host buffers a frame is copied out of on the GPU, never by the
     * CPU. index is the frame fence the last copy out of one was
@@ -745,6 +747,9 @@ static unsigned track_seq;
  * VULKAN COMMON
  */
 
+
+static enum video_texture_update vulkan_import_movie_frame(void *data,
+      const video_frame_import_t *f);
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static void vulkan_track_alloc(VkImage image)
@@ -7103,6 +7108,7 @@ static void vulkan_free(void *data)
 
    if (vk->context && vk->context->device)
    {
+      vulkan_import_movie_frame(vk, NULL);
       vulkan_wait_own_submissions(vk);
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
@@ -9646,6 +9652,8 @@ static unsigned vulkan_views_src_dims(vk_t *vk, const void *frame,
    struct vk_per_frame *pf;
    if (frame)
       return dims;
+   if (vk->movie_texture)
+      return ((struct vk_texture*)vk->movie_texture)->dims;
    if (vk->flags & VK_FLAG_HW_ENABLE)
       return vk->hw.last_dims;
    pf = &vk->swapchain[vk->last_valid_index];
@@ -9658,6 +9666,8 @@ static unsigned vulkan_views_src_dims(vk_t *vk, const void *frame,
 static VkFormat vulkan_views_src_format(vk_t *vk)
 {
    struct vk_per_frame *pf = &vk->swapchain[vk->last_valid_index];
+   if (vk->movie_texture)
+      return ((struct vk_texture*)vk->movie_texture)->format;
    if (vk->flags & VK_FLAG_HW_ENABLE)
       return vk->hw.image->create_info.format;
    if (pf->texture_optimal.memory != VK_NULL_HANDLE)
@@ -10825,6 +10835,30 @@ static void vulkan_xr_pace_setup(vk_t *vk,
 }
 #endif
 
+static const void *vulkan_movie_prepare(vk_t *vk, const void *frame)
+{
+   if (!vk->movie_texture)
+      return frame;
+   if (frame && frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      vulkan_import_movie_frame(vk, NULL);
+      return frame;
+   }
+   return NULL;
+}
+
+static void vulkan_movie_input(const struct vk_texture *texture,
+      struct vulkan_filter_chain_texture *input)
+{
+   input->image       = texture->image;
+   input->view        = texture->view;
+   input->layout      = texture->layout;
+   input->dims        = texture->dims;
+   input->padded_dims = 0;
+   input->origin      = 0;
+   input->format      = texture->format;
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -10924,6 +10958,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    /* Recording's readback was already taken this frame, before the UI. */
    bool record_readback_done                     = false;
+   bool movie_frame                              = vk->movie_pending;
 
 #ifdef HAVE_OPENXR
    bool xr_window = (vk->flags & VK_FLAG_OPEN_XR) != 0;
@@ -10936,6 +10971,9 @@ static bool vulkan_frame(void *data, const void *frame,
    if (xr_window)
       vk->context->flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
 #endif
+
+   frame = vulkan_movie_prepare(vk, frame);
+   vk->movie_pending = false;
 
    /* A swapchain the context makes while this frame draws is made from
     * the frame's settings */
@@ -11295,14 +11333,14 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Views kept across a reinit drew only the frame a repeat shows. */
    if (vk->context->xr)
    {
-      if (frame && !video_info->frame_repeat)
+      if ((frame || movie_frame) && !video_info->frame_repeat)
          vulkan_openxr_new_frame(vk->context->xr);
       else
          vulkan_openxr_place_kept(vk->context->xr);
    }
    xr_eyes = xr_draw && vulkan_xr_eye_screens(video_info)
-      && vulkan_xr_projection_ok(vk, frame && !video_info->frame_repeat,
-            frame != NULL);
+      && vulkan_xr_projection_ok(vk, (frame || movie_frame) && !video_info->frame_repeat,
+            (frame || movie_frame));
    /* Each view the headset shows has a chain of its own there. */
    if (xr_draw && video_info->views.num_views)
    {
@@ -11379,7 +11417,7 @@ static bool vulkan_frame(void *data, const void *frame,
       views = false;
    /* The map was checked against the core's frame; threaded video can
     * crop it. A repeat drawn straight from the frame checks it again. */
-   if (     views && (frame || views_direct || views_in_place)
+   if (     views && (frame || movie_frame || views_direct || views_in_place)
          && !video_views_fit_frame(&video_info->views,
             vulkan_views_src_dims(vk, frame, dims)))
       views = false;
@@ -11406,7 +11444,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   | (1u << video_info->headset_eye[1]);
 #endif
    /* A view image that can't be made draws this frame whole. */
-   if (     views && frame && !views_direct && !views_in_place
+   if (     views && (frame || movie_frame) && !views_direct && !views_in_place
          && !vulkan_views_images(vk, chain, video_info, copy_views,
             /* Made from the source format, a converting upload can
              * write them */
@@ -11432,7 +11470,7 @@ static bool vulkan_frame(void *data, const void *frame,
                views_buf_x, views_buf_y);
    }
    /* A repeat needs every view it draws copied by an earlier frame. */
-   if (views && !frame && !views_direct && !views_in_place)
+   if (views && !(frame || movie_frame) && !views_direct && !views_in_place)
    {
       unsigned i;
       for (i = 0; i < video_info->views.num_views; i++)
@@ -11445,7 +11483,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_OPENXR
    /* Nor may the headset: a view only it shows waits for a real frame,
     * rather than one eye drawing from nothing. */
-   if (views && xr_map && !frame)
+   if (views && xr_map && !(frame || movie_frame))
    {
       unsigned i;
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -11457,7 +11495,7 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
    /* A later repeat must not draw view images this frame outdates. */
-   if (frame && (!views || views_direct || views_in_place))
+   if ((frame || movie_frame) && (!views || views_direct || views_in_place))
       vk->views.copied = 0;
    views_direct     = views && views_direct;
    views_in_place   = views && views_in_place;
@@ -11627,7 +11665,9 @@ static bool vulkan_frame(void *data, const void *frame,
       input.padded_dims = 0;
       input.origin      = 0;
 
-      if (vk->flags & VK_FLAG_HW_ENABLE)
+      if (vk->movie_texture)
+         vulkan_movie_input((struct vk_texture*)vk->movie_texture, &input);
+      else if (vk->flags & VK_FLAG_HW_ENABLE)
       {
          /* Does this make that this can happen at all? */
          if (vk->hw.image && vk->hw.image->create_info.image)
@@ -11674,7 +11714,7 @@ static bool vulkan_frame(void *data, const void *frame,
          input.view   = tex->view;
          input.layout = tex->layout;
          input.dims   = tex->dims;
-         input.format = VK_FORMAT_UNDEFINED; /* It's already configured. */
+         input.format = tex->format;
       }
 
 #ifdef HAVE_OPENXR
@@ -11722,7 +11762,7 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          unsigned i;
          struct vk_per_frame *vf;
-         if (frame && !views_written)
+         if ((frame || movie_frame) && !views_written)
          {
             vk->views.copied     = vulkan_views_copy(vk, chain, video_info,
                   copy_views, input.image, input.layout);
@@ -11743,10 +11783,7 @@ static bool vulkan_frame(void *data, const void *frame,
             vin.dims        = img->dims;
             vin.padded_dims = 0;
             vin.origin      = 0;
-            /* As for the whole frame: software formats are already
-             * configured, a hardware frame says its own. */
-            vin.format = (vk->flags & VK_FLAG_HW_ENABLE)
-               ? img->format : VK_FORMAT_UNDEFINED;
+            vin.format      = img->format;
             if (view_chains[i])
                vulkan_filter_chain_set_input_texture(view_chains[i], &vin);
 #ifdef HAVE_OPENXR
@@ -11854,7 +11891,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* A real frame without them frees them. The canvas goes only with
     * the blend modes: it is made before the checks that can turn views
     * off, so freeing it with views would remake it every such frame. */
-   if (frame)
+   if (frame || movie_frame)
    {
       if (!(video_info->views.num_views
                && video_info->views_layout.offscreen))
@@ -12204,7 +12241,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_OPENXR
    if (xr_draw)
-      vulkan_xr_draw(vk, video_info, frame && !video_info->frame_repeat,
+      vulkan_xr_draw(vk, video_info, (frame || movie_frame) && !video_info->frame_repeat,
             xr_map, xr_eyes, xr_chains, xr_frame, xr_frame_shrink,
             xr_frame_dims, xr_src_dims, xr_ui_dims, xr_window_drawn);
    else
@@ -13906,6 +13943,31 @@ static enum video_texture_update vulkan_import_texture(void *data,
    return r;
 }
 
+static enum video_texture_update vulkan_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   vk_t *vk = (vk_t*)data;
+   enum video_texture_update result;
+   if (!vk)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f)
+   {
+      vulkan_unload_texture_internal(vk, vk->movie_texture);
+      vk->movie_texture = 0;
+      vk->movie_pending = false;
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   if (vk->flags & VK_FLAG_HW_ENABLE)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (vk->movie_texture
+         && ((struct vk_texture*)vk->movie_texture)->dims != f->dims)
+      vulkan_import_movie_frame(vk, NULL);
+   result = vulkan_import_texture(vk, &vk->movie_texture, f, TEXTURE_FILTER_LINEAR);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+      vk->movie_pending = true;
+   return result;
+}
+
 static bool vulkan_get_device(void *data, video_device_info_t *info)
 {
    vk_t *vk = (vk_t*)data;
@@ -14589,7 +14651,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_device,
    vulkan_import_texture,
    vulkan_get_last_present_sync,
-   vulkan_record_read
+   vulkan_record_read,
+   vulkan_import_movie_frame
 };
 
 static void vulkan_get_poke_interface(void *data,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise production frontend and D3D movie handoff decisions."""
+"""Exercise production frontend, D3D and Vulkan movie handoff decisions."""
 from pathlib import Path
 import os, shlex, subprocess, tempfile
 root = Path(__file__).resolve().parents[3]
@@ -13,11 +13,13 @@ with tempfile.TemporaryDirectory() as directory:
     source = (root / 'gfx/video_driver.c').read_text()
     (tmp / 'front.inc').write_text('\n'.join(body(source, s) for s in
         ('bool video_driver_movie_refresh(', 'void video_driver_movie_clear(')))
-    for api in ('d3d11', 'd3d12'):
+    for api in ('d3d11', 'd3d12', 'vulkan'):
         source = (root / 'gfx/drivers' / (api + '.c')).read_text()
         (tmp / (api + '.inc')).write_text('\n'.join(body(source, s) for s in
             ('static enum video_texture_update ' + api + '_import_movie_frame(void *data,',
              'static const void *' + api + '_movie_prepare(')))
+    with (tmp / 'vulkan.inc').open('a') as output:
+        output.write('\n' + body(source, 'static void vulkan_movie_input('))
     source = (root / 'gfx/video_driver.h').read_text()
     start = source.index('typedef struct video_frame_import\n')
     (tmp / 'frame.inc').write_text(source[start:source.index('} video_frame_import_t;', start) + len('} video_frame_import_t;')])

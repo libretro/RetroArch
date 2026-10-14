@@ -71,9 +71,8 @@ when either is set; each file is limited to 64 MiB, and the even-dimension
 Main8 reference is limited to 32 frames. The existing D3D11 sample's
 `prepare_hevc_conformance.py` creates these files without downloading media.
 The 24-picture LTRPSPS_A_Qualcomm_1 case also matches every exported Vulkan
-sample. Actual File Browser presentation, Vulkan
-movie-core GPU handoff, loss/reset coverage and other GPU vendors remain
-separate acceptance work. The device test skips without a selected HEVC
+sample. Actual File Browser presentation, movie UI/shader validation,
+loss/reset coverage and other GPU vendors remain separate acceptance work. The device test skips without a selected HEVC
 family; it fails when an advertised device cannot run the backend fixtures.
 
 References:
@@ -95,3 +94,14 @@ Direct plane sampling remains a further zero-copy opportunity. The importer
 reserves P010 capacity for format switching where storage-buffer limits permit;
 larger NV12-only allocations remain usable and refuse oversized P010 frames.
 P010 import does not imply HDR tone mapping or a 10-bit display path.
+
+Unthreaded builtin movie playback now reuses this importer through
+`import_movie_frame`. The converted texture is the filter-chain input,
+including view dimensions and format, without an additional upload/copy.
+NULL refreshes retain the current image; cached hardware sentinels redraw
+it without treating them as CPU pointers. Resizes and software-frame changes
+retire textures through the existing deferred lifetime path. Both whole-frame
+and per-view history receive the actual source format when switching back.
+Threaded movie handoff, HDR and full hardware movie UI/shader validation
+remain separate acceptance work. The portable `movie_gpu_handoff/run.py`
+checks production callback, retry, resize, clear and cached-redraw decisions.

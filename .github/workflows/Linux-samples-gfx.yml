@@ -1288,6 +1288,13 @@ jobs:
           make -C samples/gfx/d3d11_video_decode clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d11_video_decode clean
 
+      - name: Movie GPU handoff (Linux and mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/movie_gpu_handoff/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/movie_gpu_handoff/run.py
+
       - name: Vulkan video negotiation and HEVC parameters (Linux and mingw + Wine)
         shell: bash
         run: |

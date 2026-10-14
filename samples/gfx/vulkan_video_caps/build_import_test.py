@@ -25,7 +25,8 @@ with tempfile.TemporaryDirectory() as directory:
     bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback(')]
     for signature in ('static struct vk_stream_state *vulkan_import_state_get(',
                       'static enum video_texture_update vulkan_import_convert(',
-                      'static bool vulkan_get_device('):
+                      'static bool vulkan_get_device(',
+                      'static void vulkan_movie_input('):
         bodies.append(function(source, signature))
     (tmp / 'import_functions.inc').write_text('\n'.join(bodies))
     cc = shlex.split(os.environ.get('CC', 'cc'))
