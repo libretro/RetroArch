@@ -36,12 +36,86 @@ typedef struct video_window_settings
    bool fullscreen;
 } video_window_settings_t;
 
+enum video_window_native_kind
+{
+   VIDEO_WINDOW_NATIVE_X11 = 1,
+   VIDEO_WINDOW_NATIVE_WAYLAND,
+   VIDEO_WINDOW_NATIVE_WIN32,
+   VIDEO_WINDOW_NATIVE_SDL2,
+   VIDEO_WINDOW_NATIVE_SDL3
+};
+
+enum video_window_event_kind
+{
+   VIDEO_WINDOW_EVENT_CLOSE = 1,
+   VIDEO_WINDOW_EVENT_GEOMETRY,
+   VIDEO_WINDOW_EVENT_FOCUS_GAIN,
+   VIDEO_WINDOW_EVENT_FOCUS_LOSS,
+   VIDEO_WINDOW_EVENT_SUSPEND,
+   VIDEO_WINDOW_EVENT_RESUME
+};
+
+typedef struct video_window_request
+{
+   unsigned screen;
+   unsigned generation;
+   video_window_settings_t settings;
+} video_window_request_t;
+
+typedef struct video_window_native
+{
+   void *state;
+   void *display;
+   void *surface;
+   unsigned kind;
+   unsigned generation;
+   unsigned dims;
+   bool configured;
+   bool focused;
+   bool presentable;
+} video_window_native_t;
+
+typedef struct video_window_event
+{
+   unsigned screen;
+   unsigned generation;
+   unsigned kind;
+   unsigned pos;
+   unsigned dims;
+} video_window_event_t;
+
+/* A context's optional operations on secondary windows, on the thread
+ * that runs the context. The record passed to create is zeroed, and
+ * stays in place until destroy, which comes only after the renderer has
+ * retired the window's GPU resources. present_gl follows bind_gl of the
+ * same window: EGL needs the surface current, and the contract is the
+ * stricter API's. present_gl false means not presentable or closed, so
+ * the frame skips the window; a failure arrives as a close event.
+ * bind_gl(NULL) makes the main window's drawable current again, with its
+ * own swap interval; secondaries swap at interval 0. Events poll() has
+ * no room for wait for the next call. */
+typedef struct gfx_ctx_window_driver
+{
+   bool (*create)(void *owner, const video_window_request_t *request,
+         video_window_native_t *window);
+   void (*update)(void *owner, video_window_native_t *window,
+         const video_window_request_t *request);
+   unsigned (*poll)(void *owner, video_window_event_t *events,
+         unsigned capacity);
+   bool (*bind_gl)(void *owner, video_window_native_t *window);
+   bool (*present_gl)(void *owner, video_window_native_t *window);
+   void (*destroy)(void *owner, video_window_native_t *window);
+} gfx_ctx_window_driver_t;
+
 typedef struct video_windows_plan
 {
    unsigned main_mask;
    unsigned separate_mask;
    unsigned hidden_mask;
 } video_windows_plan_t;
+
+/* Frontend owner only; zero means the lifetime counter is exhausted. */
+unsigned video_driver_window_generation(void);
 
 void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,

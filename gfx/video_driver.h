@@ -45,6 +45,7 @@
 
 #include "video_defines.h"
 #include "video_views.h"
+#include "video_windows.h"
 
 #ifdef HAVE_MODELINE
 #include "video_crt_switch.h"
@@ -993,6 +994,9 @@ typedef struct gfx_ctx_driver
    bool (*shared_context_new)(void *data, gfx_ctx_shared_context_t *out);
    bool (*shared_context_bind)(gfx_ctx_shared_context_t *ctx, bool bind);
    void (*shared_context_free)(gfx_ctx_shared_context_t *ctx);
+   /* Optional: windows of their own for secondary screens, on the
+    * thread that runs the context. Placed last, as above. */
+   const gfx_ctx_window_driver_t *windows;
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -1984,6 +1988,9 @@ typedef struct
    unsigned views_driver_count;
    /* The status video_driver_views_status_changed() last saw. */
    unsigned views_status_seen;
+   /* The last video_driver_window_generation(); never reset, so a
+    * replacement window never reuses one. */
+   unsigned window_generation;
    bool views_presented;
    /* The driver drew frames with the map whole
     * (GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK), so touch, overlays and the

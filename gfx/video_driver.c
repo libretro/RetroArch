@@ -926,6 +926,14 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+unsigned video_driver_window_generation(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->window_generation == UINT_MAX)
+      return 0;
+   return ++video_st->window_generation;
+}
+
 /**
  * video_driver_shader_deferred_tick:
  *
