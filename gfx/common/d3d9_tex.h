@@ -113,6 +113,37 @@ typedef struct d3d9_dev_ex_vtbl
          IDirect3DDevice9 *self, UINT *max_latency);
 } d3d9_dev_ex_vtbl_t;
 
+/* IDirect3DSwapChain9Ex, and the present statistics it keeps, laid
+ * out as Microsoft's d3d9types.h does: packed to 4 bytes on 32-bit
+ * x86, natural elsewhere */
+static const GUID d3d9_iid_swap_chain_ex = { 0x91886caf, 0x1c3d, 0x4d2e,
+   { 0xa0, 0xab, 0x3e, 0x4c, 0x7d, 0x8d, 0x33, 0x03 } };
+
+#if defined(_X86_) || defined(_M_IX86) || defined(__i386__)
+#pragma pack(push, 4)
+#endif
+typedef struct d3d9_present_stats
+{
+   UINT          PresentCount;
+   UINT          PresentRefreshCount;
+   UINT          SyncRefreshCount;
+   LARGE_INTEGER SyncQPCTime;
+   LARGE_INTEGER SyncGPUTime;
+} d3d9_present_stats_t;
+#if defined(_X86_) || defined(_M_IX86) || defined(__i386__)
+#pragma pack(pop)
+#endif
+
+typedef struct d3d9_chain_ex_vtbl
+{
+   IDirect3DSwapChain9Vtbl base;
+   HRESULT (STDMETHODCALLTYPE *GetLastPresentCount)(
+         IDirect3DSwapChain9 *self, UINT *count);
+   HRESULT (STDMETHODCALLTYPE *GetPresentStats)(
+         IDirect3DSwapChain9 *self, d3d9_present_stats_t *stats);
+   void *GetDisplayModeEx;
+} d3d9_chain_ex_vtbl_t;
+
 /* The flip model's swap effect, and the present that skips the
  * interval, which only it takes */
 #define D3D9_SWAPEFFECT_FLIPEX      ((D3DSWAPEFFECT)5)

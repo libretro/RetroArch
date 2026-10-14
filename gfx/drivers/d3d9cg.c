@@ -3756,7 +3756,10 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    /* Whatever device comes, it is taken up below */
    d3d->dev_ex          = NULL;
+   d3d->chain_ex        = NULL;
+   d3d->present_wait    = 0;
    d3d->wait_for_vblank = 0;
+   d3d->present_shown   = false;
 
    if (!d3d->d3d9)
       ret = d3d9_cg_init_base(d3d, info);
@@ -5050,19 +5053,23 @@ static unsigned d3d9_cg_get_swap_interval_cap(void *data)
    return 4;
 }
 
-/* The vblank the most recent present went out on, for display pacing:
- * Direct3D 9 has no frame statistics to say, so the compositor's own
- * last vblank, as the other Windows drivers read it when theirs do not.
- * 0 where there is no compositor to ask, and the presenter keeps its
- * own clock. */
+/* The vblank the most recent present went out on, for display pacing
+ * (d3d9_last_present_time) */
 static retro_time_t d3d9_cg_get_last_present_time(void *data)
 {
-   (void)data;
-#if !defined(__WINRT__) && !defined(_XBOX)
-   return win32_dwm_last_vblank_time();
-#else
-   return 0;
-#endif
+   return d3d9_last_present_time((d3d9_video_t*)data);
+}
+
+/* How long the last frame's present waited for the display, and
+ * whether its frame was out as it returned (d3d9_present) */
+static retro_time_t d3d9_cg_get_last_present_wait(void *data, bool *shown)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   *shown            = false;
+   if (!d3d)
+      return 0;
+   *shown            = d3d->present_shown;
+   return d3d->present_wait;
 }
 
 #ifdef D3D9_VIEWS
@@ -5150,7 +5157,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    ,
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
-   NULL, /* get_last_present_wait */
+   d3d9_cg_get_last_present_wait,
    d3d9_cg_set_view_count,
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */

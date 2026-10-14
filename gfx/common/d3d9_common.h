@@ -20,6 +20,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
+#include <features/features_cpu.h>
 
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
@@ -162,7 +163,13 @@ typedef struct d3d9_video
     * wait for the display beside Present: 1 after it, -1 before it
     * (presenting at once), 0 not. Set by d3d9_present_init. */
    LPDIRECT3DDEVICE9 dev_ex;
+   /* and its swap chain's Ex interface, held the same way */
+   LPDIRECT3DSWAPCHAIN9 chain_ex;
+   /* How long the last d3d9_present waited for the display with
+    * V-Sync on, and whether its frame was out as it returned */
+   retro_time_t present_wait;
    int wait_for_vblank;
+   bool present_shown;
    d3d9_sw_fb_t sw_fb;
 #ifdef D3D9_VIEWS
    d3d9_views_t views;
@@ -239,23 +246,42 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
  * the frame latency, and whether frames wait for the display */
 void d3d9_present_init(d3d9_video_t *d3d, bool vsync);
 
-/* A frame's Present, as d3d9_present_init set it up */
+/* When the most recent present reached the display, on the
+ * cpu_features_get_time_usec() clock: from the swap chain's statistics
+ * under Direct3D 9Ex Presentation, else the compositor's last vblank;
+ * 0 where neither can say. Never blocks. */
+retro_time_t d3d9_last_present_time(d3d9_video_t *d3d);
+
+/* A frame's Present, as d3d9_present_init set it up. Under Direct3D
+ * 9Ex Presentation it is timed for the threaded presenter
+ * (get_last_present_wait): with V-Sync on the time is spent waiting
+ * for the display, and the frame is out as it returns only where it
+ * waited for the vblank after it. */
 static INLINE HRESULT d3d9_present(d3d9_video_t *d3d)
 {
 #ifndef _XBOX
-   if (d3d->wait_for_vblank && d3d->dev_ex)
+   if (d3d->dev_ex)
    {
       HRESULT hr;
       const d3d9_dev_ex_vtbl_t *vt =
             (const d3d9_dev_ex_vtbl_t*)d3d->dev_ex->lpVtbl;
+      retro_time_t at = cpu_features_get_time_usec();
       if (d3d->wait_for_vblank < 0)
       {
          vt->WaitForVBlank(d3d->dev_ex, 0);
-         return vt->PresentEx(d3d->dev_ex, NULL, NULL, NULL, NULL,
+         hr = vt->PresentEx(d3d->dev_ex, NULL, NULL, NULL, NULL,
                D3D9_PRESENT_FORCEIMMEDIATE);
       }
-      hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
-      vt->WaitForVBlank(d3d->dev_ex, 0);
+      else
+      {
+         hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+         if (d3d->wait_for_vblank > 0)
+            vt->WaitForVBlank(d3d->dev_ex, 0);
+      }
+      d3d->present_wait  = d3d->video_info.vsync
+         ? cpu_features_get_time_usec() - at : 0;
+      d3d->present_shown = d3d->video_info.vsync
+         && d3d->wait_for_vblank > 0;
       return hr;
    }
 #endif

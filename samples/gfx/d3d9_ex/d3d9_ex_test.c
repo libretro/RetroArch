@@ -8,6 +8,7 @@
  * of its ways. Needs a display: run it under Wine on Xvfb, or on
  * Windows. */
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +19,16 @@ static int fails;
 static unsigned retires;
 
 void video_driver_cached_frame_retire(void)     { retires++; }
+
+/* d3d9_present times itself on this clock */
+retro_time_t cpu_features_get_time_usec(void)
+{
+   LARGE_INTEGER c, f;
+   QueryPerformanceCounter(&c);
+   QueryPerformanceFrequency(&f);
+   return (retro_time_t)(c.QuadPart / f.QuadPart * 1000000
+         + c.QuadPart % f.QuadPart * 1000000 / f.QuadPart);
+}
 void video_driver_cached_frame_invalidate(void) { }
 
 #define CHECK(cond, what) do { \
@@ -287,6 +298,46 @@ static void run(HWND w, bool ex)
    IDirect3DDevice9_Release(dev);
 }
 
+/* The Ex tables and statistics d3d9_tex.h lays out by hand, against
+ * the SDK's own where it has them */
+static void layout_run(void)
+{
+   printf("Ex layouts against the SDK's:\n");
+#ifndef D3D_DISABLE_9EX
+   CHECK(     offsetof(d3d9_dev_ex_vtbl_t, PresentEx)
+           == offsetof(IDirect3DDevice9ExVtbl, PresentEx)
+         &&   offsetof(d3d9_dev_ex_vtbl_t, WaitForVBlank)
+           == offsetof(IDirect3DDevice9ExVtbl, WaitForVBlank)
+         &&   offsetof(d3d9_dev_ex_vtbl_t, SetMaximumFrameLatency)
+           == offsetof(IDirect3DDevice9ExVtbl, SetMaximumFrameLatency)
+         &&   offsetof(d3d9_dev_ex_vtbl_t, GetMaximumFrameLatency)
+           == offsetof(IDirect3DDevice9ExVtbl, GetMaximumFrameLatency),
+         "the device's Ex table");
+   CHECK(     offsetof(d3d9_ex_vtbl_t, CreateDeviceEx)
+           == offsetof(IDirect3D9ExVtbl, CreateDeviceEx),
+         "the object's Ex table");
+   CHECK(     offsetof(d3d9_chain_ex_vtbl_t, GetLastPresentCount)
+           == offsetof(IDirect3DSwapChain9ExVtbl, GetLastPresentCount)
+         &&   offsetof(d3d9_chain_ex_vtbl_t, GetPresentStats)
+           == offsetof(IDirect3DSwapChain9ExVtbl, GetPresentStats),
+         "the swap chain's Ex table");
+#endif
+   /* As Microsoft's d3d9types.h lays them out (gfx/include/d3d9 has
+    * it): packed to 4 bytes on 32-bit x86, which mingw-w64's copy
+    * leaves out, natural elsewhere */
+#if defined(_X86_) || defined(_M_IX86) || defined(__i386__)
+   CHECK(     sizeof(d3d9_present_stats_t) == 28
+         &&   offsetof(d3d9_present_stats_t, SyncQPCTime) == 12
+         &&   offsetof(d3d9_present_stats_t, SyncGPUTime) == 20,
+         "the present statistics");
+#else
+   CHECK(     sizeof(d3d9_present_stats_t) == 32
+         &&   offsetof(d3d9_present_stats_t, SyncQPCTime) == 16
+         &&   offsetof(d3d9_present_stats_t, SyncGPUTime) == 24,
+         "the present statistics");
+#endif
+}
+
 /* Direct3D 9Ex Presentation (d3d9_present_init, d3d9_present): a
  * window in the flip model, the frame latency through the device's Ex
  * table, and a frame presented in each way it can wait for the display */
@@ -303,6 +354,7 @@ static void present_run(HWND w)
    IDirect3DSwapChain9 *chain = NULL;
    const d3d9_dev_ex_vtbl_t *vt;
    void *ex                   = NULL;
+   void *chain_ex             = NULL;
    UINT lat                   = 0;
    unsigned i;
 
@@ -340,15 +392,59 @@ static void present_run(HWND w)
          "and one of 1");
 
    memset(&d3d, 0, sizeof(d3d));
-   d3d.dev    = dev;
-   d3d.dev_ex = (LPDIRECT3DDEVICE9)ex;
+   d3d.dev              = dev;
+   d3d.dev_ex           = (LPDIRECT3DDEVICE9)ex;
+   d3d.video_info.vsync = true;
    for (i = 0; i < 3; i++)
    {
       d3d.wait_for_vblank = waits[i];
+      d3d.present_wait    = -1;
       IDirect3DDevice9_Clear(dev, 0, NULL, D3DCLEAR_TARGET,
             0xff000000 | (i * 0x40), 1.0f, 0);
       CHECK(SUCCEEDED(d3d9_present(&d3d)), names[i]);
+      CHECK(d3d.present_wait >= 0
+            && d3d.present_shown == (waits[i] > 0),
+            "  and is timed, out as it returns only after the wait");
    }
+   d3d.wait_for_vblank  = 0;
+   d3d.video_info.vsync = false;
+   d3d9_present(&d3d);
+   CHECK(d3d.present_wait == 0 && !d3d.present_shown,
+         "without V-Sync a present waits for nothing");
+
+   /* The present statistics, through the swap chain's Ex table */
+   chain = NULL;
+   if (     SUCCEEDED(IDirect3DDevice9_GetSwapChain(dev, 0, &chain))
+         && chain
+         && SUCCEEDED(IDirect3DSwapChain9_QueryInterface(chain,
+               &d3d9_iid_swap_chain_ex, &chain_ex))
+         && chain_ex)
+   {
+      const d3d9_chain_ex_vtbl_t *cvt = (const d3d9_chain_ex_vtbl_t*)
+            ((LPDIRECT3DSWAPCHAIN9)chain_ex)->lpVtbl;
+      d3d9_present_stats_t stats;
+      UINT count = 0;
+      HRESULT shr;
+      /* What they hold is the runtime's to fill (Wine leaves them
+       * zero, and d3d9_last_present_time goes to the compositor) */
+      CHECK(SUCCEEDED(cvt->GetLastPresentCount(
+                  (LPDIRECT3DSWAPCHAIN9)chain_ex, &count)),
+            "its swap chain's present count is read through its table");
+      memset(&stats, 0, sizeof(stats));
+      shr = cvt->GetPresentStats((LPDIRECT3DSWAPCHAIN9)chain_ex, &stats);
+      printf("  (present statistics: %08lx, count %u of %u, "
+            "qpc %08lx%08lx)\n", (unsigned long)shr, stats.PresentCount,
+            count, (unsigned long)stats.SyncQPCTime.HighPart,
+            (unsigned long)stats.SyncQPCTime.LowPart);
+      ((IUnknown*)chain_ex)->lpVtbl->Release((IUnknown*)chain_ex);
+   }
+   else
+   {
+      printf("  [FAIL] its swap chain has its Ex interface\n");
+      fails++;
+   }
+   if (chain)
+      IDirect3DSwapChain9_Release(chain);
    IDirect3DDevice9_Release(dev);
 }
 
@@ -364,6 +460,7 @@ int main(void)
    run(w, false);
    run(w, true);
    present_run(w);
+   layout_run();
    DestroyWindow(w);
    return fails ? 1 : 0;
 }

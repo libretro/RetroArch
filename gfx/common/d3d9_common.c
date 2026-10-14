@@ -450,7 +450,10 @@ void d3d9_present_init(d3d9_video_t *d3d, bool vsync)
    UINT cur_latency             = 0;
 
    d3d->dev_ex                  = NULL;
+   d3d->chain_ex                = NULL;
+   d3d->present_wait            = 0;
    d3d->wait_for_vblank         = 0;
+   d3d->present_shown           = false;
 
    if (     !settings
          || !settings->bools.video_d3d9ex_present
@@ -467,8 +470,17 @@ void d3d9_present_init(d3d9_video_t *d3d, bool vsync)
    if (SUCCEEDED(IDirect3DDevice9_GetSwapChain(d3d->dev, 0, &chain))
          && chain)
    {
+      void *chain_ex = NULL;
       if (SUCCEEDED(IDirect3DSwapChain9_GetPresentParameters(chain, &pp)))
          flip = (pp.SwapEffect == D3D9_SWAPEFFECT_FLIPEX);
+      /* Its present statistics, for d3d9_last_present_time; the
+       * device holds its swap chain as it holds itself */
+      if (SUCCEEDED(IDirect3DSwapChain9_QueryInterface(chain,
+                  &d3d9_iid_swap_chain_ex, &chain_ex)) && chain_ex)
+      {
+         ((IUnknown*)chain_ex)->lpVtbl->Release((IUnknown*)chain_ex);
+         d3d->chain_ex = (LPDIRECT3DSWAPCHAIN9)chain_ex;
+      }
       IDirect3DSwapChain9_Release(chain);
    }
    RARCH_LOG("[D3D9] Presenting %s.\n", flip
@@ -503,7 +515,47 @@ void d3d9_present_init(d3d9_video_t *d3d, bool vsync)
 #else
    (void)vsync;
    d3d->dev_ex          = NULL;
+   d3d->chain_ex        = NULL;
+   d3d->present_wait    = 0;
    d3d->wait_for_vblank = 0;
+   d3d->present_shown   = false;
+#endif
+}
+
+retro_time_t d3d9_last_present_time(d3d9_video_t *d3d)
+{
+#ifndef _XBOX
+   static LARGE_INTEGER freq;
+   d3d9_present_stats_t stats;
+   UINT last = 0;
+
+   if (!d3d)
+      return 0;
+   /* Only while the statistics describe that present: one made at
+    * once, on no vblank, leaves them at the last that was */
+   if (d3d->chain_ex)
+   {
+      const d3d9_chain_ex_vtbl_t *vt =
+            (const d3d9_chain_ex_vtbl_t*)d3d->chain_ex->lpVtbl;
+      memset(&stats, 0, sizeof(stats));
+      if (     SUCCEEDED(vt->GetPresentStats(d3d->chain_ex, &stats))
+            && SUCCEEDED(vt->GetLastPresentCount(d3d->chain_ex, &last))
+            && stats.PresentCount == last
+            && stats.SyncQPCTime.QuadPart
+            && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
+         return (retro_time_t)(
+                 stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000
+               + stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000
+               / freq.QuadPart);
+   }
+#ifndef __WINRT__
+   return win32_dwm_last_vblank_time();
+#else
+   return 0;
+#endif
+#else
+   (void)d3d;
+   return 0;
 #endif
 }
 
