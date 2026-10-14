@@ -13,11 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 #include <retro_miscellaneous.h>
 #include <compat/intrinsics.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -607,6 +609,136 @@ bool glslang_read_shader_pragmas_cached(const char *path,
       slang_include_cache_free(&own);
       return ret;
    }
+}
+
+#define GLSLANG_IDENT_CHAR(c) (   ((c) >= 'a' && (c) <= 'z') \
+                               || ((c) >= 'A' && (c) <= 'Z') \
+                               || ((c) >= '0' && (c) <= '9') \
+                               || (c) == '_')
+
+/* Whether @line holds @tok as a whole identifier. */
+static bool glslang_line_has_ident(const char *line,
+      const char *tok, size_t tok_len)
+{
+   const char *p = line;
+   while ((p = strstr(p, tok)))
+   {
+      if (   (p == line || !GLSLANG_IDENT_CHAR(p[-1]))
+          && !GLSLANG_IDENT_CHAR(p[tok_len]))
+         return true;
+      p++;
+   }
+   return false;
+}
+
+bool glslang_last_pass_needs_target(const struct video_shader *shader,
+      void *cache)
+{
+   size_t i, k;
+   unsigned last;
+   const struct video_shader_pass *pass;
+   struct shader_line_buf lines;
+   /* A pass reads the last pass's feedback by index or by name; the
+    * size semantics are matched too, so a pass that asks only for the
+    * size keeps the target it had. */
+   char tok[4][96];
+   size_t tok_len[4];
+   size_t num_tok    = 2;
+   char name[64];
+   void *own         = NULL;
+   bool found        = false;
+   bool needs        = true;
+
+   if (!shader || !shader->passes)
+      return false;
+
+   last = shader->passes - 1;
+   pass = &shader->pass[last];
+
+   if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+      return false;
+   if (     pass->fbo.type_x  != RARCH_SCALE_VIEWPORT
+         || pass->fbo.type_y  != RARCH_SCALE_VIEWPORT
+         || pass->fbo.scale_x != 1.0f
+         || pass->fbo.scale_y != 1.0f
+         || (pass->fbo.flags & (FBO_SCALE_FLAG_FP_FBO
+               | FBO_SCALE_FLAG_SRGB_FBO | FBO_SCALE_FLAG_RGB10_FBO)))
+      return true;
+
+   if (!cache && !(cache = own = glslang_include_cache_new()))
+      return true;
+
+   /* The preset's alias names the pass ahead of its '#pragma name'. */
+   strlcpy(name, pass->alias, sizeof(name));
+
+   if (!shader_line_buf_init(&lines))
+      goto end;
+   if (!glslang_read_shader_pragmas_cached(pass->source.path, &lines, cache))
+   {
+      shader_line_buf_free(&lines);
+      goto end;
+   }
+   for (k = 0; k < lines.num_lines && !found; k++)
+   {
+      const char *line = shader_line_buf_get(&lines, k);
+      if (!line)
+         continue;
+      if (!memcmp(line, "#pragma format ", sizeof("#pragma format ") - 1))
+         found = true;
+      if (     !name[0]
+            && !memcmp(line, "#pragma name ", sizeof("#pragma name ") - 1))
+      {
+         const char *str = line + (sizeof("#pragma name ") - 1);
+         while (*str == ' ' || *str == '\t')
+            str++;
+         strlcpy(name, str, sizeof(name));
+      }
+   }
+   shader_line_buf_free(&lines);
+   if (found)
+      goto end;
+
+   tok_len[0] = (size_t)snprintf(tok[0], sizeof(tok[0]),
+         "PassFeedback%u", last);
+   tok_len[1] = (size_t)snprintf(tok[1], sizeof(tok[1]),
+         "PassFeedbackSize%u", last);
+   if (name[0])
+   {
+      tok_len[2] = (size_t)snprintf(tok[2], sizeof(tok[2]),
+            "%sFeedback", name);
+      tok_len[3] = (size_t)snprintf(tok[3], sizeof(tok[3]),
+            "%sFeedbackSize", name);
+      num_tok    = 4;
+   }
+
+   for (i = 0; i < shader->passes; i++)
+   {
+      if (!shader_line_buf_init(&lines))
+         goto end;
+      if (!glslang_read_shader_file_cached(shader->pass[i].source.path,
+               &lines, true, false, cache))
+      {
+         shader_line_buf_free(&lines);
+         goto end;
+      }
+      for (k = 0; k < lines.num_lines && !found; k++)
+      {
+         size_t t;
+         const char *line = shader_line_buf_get(&lines, k);
+         if (!line || !strstr(line, "Feedback"))
+            continue;
+         for (t = 0; t < num_tok && !found; t++)
+            found = glslang_line_has_ident(line, tok[t], tok_len[t]);
+      }
+      shader_line_buf_free(&lines);
+      if (found)
+         goto end;
+   }
+
+   needs = false;
+end:
+   glslang_include_cache_free(own);
+   return needs;
 }
 
 static bool glslang_read_shader_file_internal(const char *path,

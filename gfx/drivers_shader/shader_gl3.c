@@ -3416,7 +3416,10 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
    if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
       output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-   if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+   /* A last pass with no target of its own renders to the framebuffer,
+    * whatever scale the preset gave it. */
+   if (     !(pass->fbo.flags & FBO_SCALE_FLAG_VALID)
+         || pass_idx + 1 == chain->num_passes)
    {
       bool scale_viewport = pass_idx + 1 == shader->passes;
       if (scale_viewport)
@@ -3867,6 +3870,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    bool explicit_format;
    struct video_shader_parameter *itr;
    struct gl3_filter_chain *chain;
+   void *include_cache;
    struct video_shader *shader = (struct video_shader*)calloc(1, sizeof(*shader));
    if (!shader)
       return NULL;
@@ -3877,12 +3881,19 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       return NULL;
    }
 
-   last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
-      FBO_SCALE_FLAG_VALID;
+   /* One include cache for every pass of this preset.  The passes share
+    * helper .inc files, so without this each pass re-reads them: a
+    * 24-pass preset over 8 shared helpers issues 216 reads for 32
+    * distinct files.  Each exit below frees it explicitly, next to the
+    * chain and preset it already releases. */
+   include_cache    = glslang_include_cache_new();
+
+   last_pass_is_fbo = glslang_last_pass_needs_target(shader, include_cache);
 
    chain = gl3_chain_new(shader->passes + (last_pass_is_fbo ? 1 : 0));
    if (!chain)
       {
+         glslang_include_cache_free(include_cache);
          free(shader);
          gl3_chain_free(chain);
          return NULL;
@@ -3892,6 +3903,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    if (      shader->luts
          && !gl3_filter_chain_load_luts(chain, shader))
       {
+         glslang_include_cache_free(include_cache);
          free(shader);
          gl3_chain_free(chain);
          return NULL;
@@ -3899,16 +3911,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
    shader->num_parameters = 0;
 
-   /* One include cache for every pass of this preset.  The passes share
-    * helper .inc files, so without this each pass re-reads them: a
-    * 24-pass preset over 8 shared helpers issues 216 reads for 32
-    * distinct files.  The guard frees it on every exit from here,
-    * including the error paths below. */
    {
-   /* The C++ guard freed this on every exit; in C each exit below frees
-    * it explicitly, next to the chain and preset it already released. */
-   void *include_cache = glslang_include_cache_new();
-
    for (i = 0; i < shader->passes; i++)
    {
       glslang_output output;
@@ -4061,7 +4064,10 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
          output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-      if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+      /* A last pass with no target of its own renders to the
+       * framebuffer, whatever scale the preset gave it. */
+      if (     !(pass->fbo.flags & FBO_SCALE_FLAG_VALID)
+            || (i + 1 == shader->passes && !last_pass_is_fbo))
       {
          bool scale_viewport       = i + 1 == shader->passes;
          if (scale_viewport)
@@ -4214,8 +4220,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       return NULL;
    }
 
-   last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
-      FBO_SCALE_FLAG_VALID;
+   last_pass_is_fbo = glslang_last_pass_needs_target(shader, NULL);
 
    total_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
    chain = gl3_chain_new(total_passes);

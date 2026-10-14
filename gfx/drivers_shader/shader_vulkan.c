@@ -2549,7 +2549,10 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
    if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
       output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-   if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+   /* A last pass with no target of its own renders to the swapchain,
+    * whatever scale the preset gave it. */
+   if (     !(pass->fbo.flags & FBO_SCALE_FLAG_VALID)
+         || pass_idx + 1 == chain->pass_count)
    {
       p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
       p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
@@ -4803,8 +4806,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
     if (!video_shader_load_preset_into_shader(path, shader))
         goto error;
 
-   last_pass_is_fbo   = shader->pass[shader->passes - 1].fbo.flags &
-      FBO_SCALE_FLAG_VALID;
+   /* One include cache for every pass of this preset.  The passes share
+    * helper .inc files, so without this each pass re-reads them: a
+    * 24-pass preset over 8 shared helpers issues 216 reads for 32
+    * distinct files.  It is freed on every exit from here, including
+    * the error paths below. */
+   include_cache      = glslang_include_cache_new();
+
+   last_pass_is_fbo   = glslang_last_pass_needs_target(shader, include_cache);
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
@@ -4817,13 +4826,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    shader->num_parameters = 0;
 
-   /* One include cache for every pass of this preset.  The passes share
-    * helper .inc files, so without this each pass re-reads them: a
-    * 24-pass preset over 8 shared helpers issues 216 reads for 32
-    * distinct files.  The guard frees it on every exit from here,
-    * including the error paths below. */
    {
-   include_cache = glslang_include_cache_new();
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -4961,7 +4964,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
          output.meta.rt_format     = SLANG_FORMAT_R8G8B8A8_UNORM;
 
-      if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
+      /* A last pass with no target of its own renders to the
+       * swapchain, whatever scale the preset gave it. */
+      if (     !(pass->fbo.flags & FBO_SCALE_FLAG_VALID)
+            || (i + 1 == shader->passes && !last_pass_is_fbo))
       {
          pass_info.scale_type_x    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_type_y    = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
@@ -5156,8 +5162,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       return NULL;
    }
 
-   last_pass_is_fbo   = shader->pass[shader->passes - 1].fbo.flags &
-      FBO_SCALE_FLAG_VALID;
+   last_pass_is_fbo   = glslang_last_pass_needs_target(shader, NULL);
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
