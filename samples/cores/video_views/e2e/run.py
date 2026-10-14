@@ -19,7 +19,9 @@ With RA_E2E_XVFB=1 each case runs on an Xvfb server of its own instead
 of gamescope, with Mesa's software renderers where there is no GPU:
 the screen is read with ImageMagick's import and the pointer moved on
 that server, several cases at once (RA_E2E_JOBS, 4 by default). The
-GPU memory cases are left out there. RA_E2E_ONLY, a
+GPU memory cases are left out there. Xvfb has no XVideo adaptor: for
+the xvideo driver RA_E2E_XV_STANDIN names samples/gfx/xv_standin's
+library, preloaded to be one. RA_E2E_ONLY, a
 regular expression, runs only the cases whose names it finds; CI runs a
 set of them that way (Linux-vulkan-validation.yml).
 
@@ -336,7 +338,7 @@ LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('gl1', 'gl', 'glcore', 'vulkan', 'd3d9_hlsl', 'd3d10',
                   'd3d11', 'd3d12', 'sdl2', 'sdl3', 'd3d8', 'gdi', 'sdl',
-                  'x11')
+                  'x11', 'xvideo')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 PRESET_RE = re.compile(r'\] Views drawn through the preset')
 WHOLE_DRIVERS = ('glcore',)
@@ -640,6 +642,8 @@ def isolated_env():
 
 
 XVFB = WINE or os.environ.get('RA_E2E_XVFB') == '1'
+# samples/gfx/xv_standin's library, for the xvideo driver on Xvfb
+XV_STANDIN = os.environ.get('RA_E2E_XV_STANDIN')
 # Cases run side by side, each on an Xvfb of its own, four at a time:
 # most of a case is waiting, so more than the cores still gains. One at
 # a time in gamescope, whose screenshot names one display. Under Wine
@@ -890,6 +894,9 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
            retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
     env = isolated_env()
     env.update(env_extra or {})
+    # Xvfb has no XVideo adaptor: the stand-in's, preloaded
+    if driver == 'xvideo' and XV_STANDIN:
+        env['LD_PRELOAD'] = XV_STANDIN
     xvfb = wm = None
     if XVFB:
         xvfb, env['DISPLAY'] = xvfb_start(env)

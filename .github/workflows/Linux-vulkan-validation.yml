@@ -1088,7 +1088,7 @@ jobs:
           if-no-files-found: ignore
 
   views-sdl1:
-    name: Views on SDL 1.2 and XShm, end to end (Xvfb, sdl12-compat)
+    name: Views on SDL 1.2, XShm and XVideo, end to end (Xvfb, sdl12-compat)
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -1096,7 +1096,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
+          pkgs="build-essential xvfb x11-utils imagemagick openbox libx11-dev libxext-dev libxv-dev libsdl1.2-dev libgl1-mesa-dri libgl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -1111,15 +1111,17 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Build retroarch with SDL 1.2 and XShm
+      - name: Build retroarch with SDL 1.2, XShm and XVideo
         run: |
           set -eu
           ./configure --enable-sdl --disable-sdl2 --disable-sdl3 --enable-xshm \
-                      --disable-qt --disable-vulkan --disable-ffmpeg
+                      --enable-xvideo --disable-qt --disable-vulkan --disable-ffmpeg
           grep -q '^HAVE_SDL = 1' config.mk
           grep -q '^HAVE_XSHM = 1' config.mk
+          grep -q '^HAVE_XVIDEO = 1' config.mk
           make -j$(getconf _NPROCESSORS_ONLN)
           make -C samples/cores/video_views
+          make -C samples/gfx/xv_standin
 
       - name: Views on SDL 1.2 and XShm, end to end
         shell: bash
@@ -1133,6 +1135,25 @@ jobs:
           # sizes sdl12-compat's fullscreen window.
           RA_E2E_XVFB=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch "$RUNNER_TEMP/views-e2e" sdl x11
+
+      - name: Views on XVideo, end to end
+        shell: bash
+        run: |
+          set -eu
+          # Xvfb has no XVideo adaptor: samples/gfx/xv_standin's,
+          # preloaded, takes the image and scales it to the window.
+          # Views are converted straight from the frame into the
+          # image, packed (YUY2, UYVY) and planar (I420); the stand-in
+          # aborts on a put that reads outside the image.
+          export RA_E2E_XVFB=1
+          export RA_E2E_XV_STANDIN="$PWD/samples/gfx/xv_standin/libxv_standin.so"
+          XV_STANDIN_FORMAT=YUY2 python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch "$RUNNER_TEMP/views-e2e/yuy2" xvideo
+          XV_STANDIN_FORMAT=I420 python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch "$RUNNER_TEMP/views-e2e/i420" xvideo
+          XV_STANDIN_FORMAT=UYVY RA_E2E_ONLY='3ds-2d|anaglyph|interlaced|pointer-sbs-half' \
+            python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch "$RUNNER_TEMP/views-e2e/uyvy" xvideo
 
       - name: Preserve views logs on failure
         if: failure()

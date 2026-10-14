@@ -28,6 +28,7 @@
 #include <X11/extensions/Xv.h>
 #include <X11/extensions/Xvlib.h>
 
+#include <retro_atomic.h>
 #include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
@@ -41,6 +42,8 @@
 #include <encodings/utf.h>
 
 #include "../font_driver.h"
+#include "../video_views.h"
+#include "../video_views_cpu.h"
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
@@ -94,12 +97,41 @@ typedef struct xv
    uint8_t font_u;
    uint8_t font_v;
    bool keep_aspect;
+   /* The core's frames are XRGB8888, not RGB565 */
+   bool rgb32;
 
    void *tex_frame;
    unsigned tex_width;
    unsigned tex_height;
    unsigned tex_pitch;
    unsigned tex_rgb32;
+   float tex_alpha;
+
+   /* Anaglyph's eyes side by side and the row they blend to, and the
+    * menu scaled over the views */
+   video_views_cpu_t views_cpu;
+   uint32_t *views_row;
+   size_t views_row_size;
+   uint32_t *views_canvas;
+   size_t views_canvas_size;
+   uint32_t *menu_scaled;
+   size_t menu_scaled_size;
+
+   /* A core's views laid out on the window, converted straight from
+    * the frame into the image at twice the scale they are composed at:
+    * the placements of the last frame, to clear the image only when
+    * they move */
+   video_views_placement_t views_last[VIDEO_VIEWS_MAX_PLACEMENTS];
+   unsigned views_last_count;
+   /* The window's size, which the views are laid out on */
+   unsigned out_dims;
+   /* The part of the image last put to the window */
+   unsigned put_width;
+   unsigned put_height;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
+   bool views_on;
+   bool views_seen;
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
@@ -586,6 +618,7 @@ static void *xv_init(const video_info_t *video)
    }
 
    xv->keep_aspect = video->force_aspect;
+   xv->rgb32       = video->rgb32;
 
    /* Find an appropriate Xv port. */
    xv->port = 0;
@@ -666,8 +699,14 @@ static void *xv_init(const video_info_t *video)
 
    if (video->fullscreen)
    {
-      width      = (((VIDEO_SCALE_W(video->dims)  == 0) && geom) ? geom->base_width : VIDEO_SCALE_W(video->dims));
-      height     = (((VIDEO_SCALE_H(video->dims) == 0) && geom) ? geom->base_height : VIDEO_SCALE_H(video->dims));
+      /* Fullscreen at the desktop's size is asked for as 0x0 */
+      width      = VIDEO_SCALE_W(video->dims);
+      height     = VIDEO_SCALE_H(video->dims);
+      if (!width || !height)
+      {
+         width   = DisplayWidth(g_x11_dpy,  DefaultScreen(g_x11_dpy));
+         height  = DisplayHeight(g_x11_dpy, DefaultScreen(g_x11_dpy));
+      }
    }
    else
    {
@@ -921,6 +960,395 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    }
 }
 
+/* BT.601 limited range, from eight bits a channel */
+#define XV_RGB_TO_YUV(r, g, b, y, u, v) \
+   do \
+   { \
+      (y) = (( 66 * (r) + 129 * (g) +  25 * (b) + 128) >> 8) +  16; \
+      (u) = ((-38 * (r) -  74 * (g) + 112 * (b) + 128) >> 8) + 128; \
+      (v) = ((112 * (r) -  94 * (g) -  18 * (b) + 128) >> 8) + 128; \
+   } while (0)
+
+/* Grows *@buf to at least @size bytes */
+static bool xv_grow(uint32_t **buf, size_t *have, size_t size)
+{
+   uint32_t *grown;
+   if (size <= *have)
+      return true;
+   if (!(grown = (uint32_t*)realloc(*buf, size)))
+      return false;
+   *buf  = grown;
+   *have = size;
+   return true;
+}
+
+/* One pixel of the frame in the image's format: for packed formats the
+ * whole macropixel, both luma slots the same; for planar Y, U, V. At
+ * 32 bits a pixel from all eight bits a channel, not through the 16-bit
+ * table. */
+static INLINE uint32_t xv_views_pixel(const xv_t *xv,
+      const uint8_t *row, unsigned x, bool rgb32)
+{
+   uint32_t e;
+   uint8_t *b = (uint8_t*)&e;
+   int r, g, bl, y, u, v;
+   if (!rgb32)
+      return xv->yuv_table[((const uint16_t*)row)[x]];
+   {
+      uint32_t p = ((const uint32_t*)row)[x];
+      r  = (int)((p >> 16) & 0xff);
+      g  = (int)((p >>  8) & 0xff);
+      bl = (int)( p        & 0xff);
+   }
+   XV_RGB_TO_YUV(r, g, bl, y, u, v);
+   if (xv->fmt_format == XvPlanar)
+   {
+      b[0] = (uint8_t)y;
+      b[1] = (uint8_t)u;
+      b[2] = (uint8_t)v;
+      b[3] = 0;
+   }
+   else
+   {
+      b[xv->luma_index[0]] = (uint8_t)y;
+      b[xv->luma_index[1]] = (uint8_t)y;
+      b[xv->chroma_u_index] = (uint8_t)u;
+      b[xv->chroma_v_index] = (uint8_t)v;
+   }
+   return e;
+}
+
+/* The image black */
+static void xv_views_clear(xv_t *xv)
+{
+   size_t i;
+   uint8_t *img = (uint8_t*)xv->image->data;
+   size_t luma  = (size_t)xv->width * xv->height;
+   if (xv->fmt_format == XvPlanar)
+   {
+      memset(img, 16, luma);
+      memset(img + luma, 128, luma / 2);
+   }
+   else
+   {
+      uint32_t black = xv->yuv_table[0];
+      for (i = 0; i < luma / 2; i++)
+         memcpy(img + i * 4, &black, sizeof(black));
+   }
+}
+
+/* View @v into the image where @cut of @dst, both in the canvas's
+ * pixels less @shift_x, lies: each canvas pixel a 2x2 block of the
+ * image, nearest sampled straight from the frame. With @parity 0 or 1
+ * only the canvas rows of that parity. */
+static void xv_views_place(xv_t *xv, const void *frame, unsigned pitch,
+      bool rgb32, const struct retro_video_view *v,
+      const video_views_rect_t *dst, const video_views_rect_t *cut,
+      int shift_x, int parity)
+{
+   int cx, cy;
+   int dx        = VIDEO_POS_X(dst->pos);
+   int dy        = VIDEO_POS_Y(dst->pos);
+   unsigned dw   = VIDEO_SCALE_W(dst->dims);
+   unsigned dh   = VIDEO_SCALE_H(dst->dims);
+   int x0        = VIDEO_POS_X(cut->pos);
+   int y0        = VIDEO_POS_Y(cut->pos);
+   int x1        = x0 + (int)VIDEO_SCALE_W(cut->dims);
+   int y1        = y0 + (int)VIDEO_SCALE_H(cut->dims);
+   uint8_t *img  = (uint8_t*)xv->image->data;
+   size_t iw     = xv->width;
+   size_t luma   = iw * xv->height;
+   uint32_t step = (uint32_t)(((uint64_t)v->width << 16) / dw);
+   uint32_t fx0  = (uint32_t)(((uint64_t)(x0 - dx) * v->width << 16) / dw);
+
+   for (cy = y0; cy < y1; cy++)
+   {
+      uint32_t fx      = fx0;
+      unsigned sy      = v->y + (unsigned)(((uint64_t)(cy - dy)
+               * v->height) / dh);
+      const uint8_t *row = (const uint8_t*)frame + (size_t)sy * pitch;
+      if (parity >= 0 && (cy & 1) != parity)
+         continue;
+      if (xv->fmt_format == XvPlanar)
+      {
+         uint8_t *l0 = img + (size_t)(2 * cy) * iw + 2 * (x0 - shift_x);
+         uint8_t *l1 = l0 + iw;
+         uint8_t *ou = img + luma + (size_t)cy * (iw / 2) + (x0 - shift_x);
+         uint8_t *ov = img + luma + luma / 4 + (size_t)cy * (iw / 2)
+            + (x0 - shift_x);
+         for (cx = x0; cx < x1; cx++, fx += step)
+         {
+            unsigned sx    = fx >> 16;
+            uint32_t e;
+            const uint8_t *b = (const uint8_t*)&e;
+            if (sx >= v->width)
+               sx = v->width - 1;
+            e     = xv_views_pixel(xv, row, v->x + sx, rgb32);
+            l0[0] = l0[1] = l1[0] = l1[1] = b[0];
+            *ou++ = b[1];
+            *ov++ = b[2];
+            l0   += 2;
+            l1   += 2;
+         }
+      }
+      else
+      {
+         uint8_t *o0 = img + (size_t)(2 * cy) * iw * 2
+            + (size_t)(x0 - shift_x) * 4;
+         uint8_t *o1 = o0 + iw * 2;
+         for (cx = x0; cx < x1; cx++, fx += step)
+         {
+            unsigned sx = fx >> 16;
+            uint32_t e;
+            if (sx >= v->width)
+               sx = v->width - 1;
+            e = xv_views_pixel(xv, row, v->x + sx, rgb32);
+            memcpy(o0, &e, sizeof(e));
+            memcpy(o1, &e, sizeof(e));
+            o0 += 4;
+            o1 += 4;
+         }
+      }
+   }
+}
+
+/* The menu's texture scaled over the @w x @h rectangle of the canvas
+ * at @x0, @y0 and blended by its alpha into the image, each canvas
+ * pixel a 2x2 block of it */
+static void xv_views_blend_menu(xv_t *xv, int x0, int y0, int w, int h,
+      unsigned cdims)
+{
+   int x, y;
+   struct scaler_ctx *ctx;
+   unsigned alpha  = (unsigned)(xv->tex_alpha * 256.0f);
+   uint8_t *img    = (uint8_t*)xv->image->data;
+   size_t iw       = xv->width;
+   size_t luma     = iw * xv->height;
+   int cx0         = x0 < 0 ? 0 : x0;
+   int cy0         = y0 < 0 ? 0 : y0;
+   int cx1         = x0 + w > (int)VIDEO_SCALE_W(cdims)
+      ? (int)VIDEO_SCALE_W(cdims) : x0 + w;
+   int cy1         = y0 + h > (int)VIDEO_SCALE_H(cdims)
+      ? (int)VIDEO_SCALE_H(cdims) : y0 + h;
+
+   if (     !xv->tex_frame || w <= 0 || h <= 0 || cx1 <= cx0 || cy1 <= cy0
+         || !xv_grow(&xv->menu_scaled, &xv->menu_scaled_size,
+            (size_t)w * h * sizeof(uint32_t))
+         || !(ctx = video_views_cpu_scaler(&xv->views_cpu,
+               xv->tex_rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444,
+               SCALER_TYPE_BILINEAR, (int)xv->tex_width,
+               (int)xv->tex_height, (int)xv->tex_pitch, w, h,
+               w * (int)sizeof(uint32_t))))
+      return;
+   scaler_ctx_scale_direct(ctx, xv->menu_scaled, xv->tex_frame);
+   if (alpha > 256)
+      alpha = 256;
+   for (y = cy0; y < cy1; y++)
+   {
+      const uint32_t *src = xv->menu_scaled + (size_t)(y - y0) * w
+         + (cx0 - x0);
+      for (x = cx0; x < cx1; x++, src++)
+      {
+         int sy, su, sv;
+         int a = (int)(((*src >> 24) * alpha) >> 8);
+         if (!a)
+            continue;
+         XV_RGB_TO_YUV((int)((*src >> 16) & 0xff),
+               (int)((*src >> 8) & 0xff), (int)(*src & 0xff), sy, su, sv);
+#define XV_BLEND(p, val) (p) = (uint8_t)(((val) * a + (p) * (255 - a)) / 255)
+         if (xv->fmt_format == XvPlanar)
+         {
+            uint8_t *l = img + (size_t)(2 * y) * iw + 2 * x;
+            size_t   c = (size_t)y * (iw / 2) + x;
+            XV_BLEND(l[0], sy);
+            XV_BLEND(l[1], sy);
+            XV_BLEND(l[iw], sy);
+            XV_BLEND(l[iw + 1], sy);
+            XV_BLEND(img[luma + c], su);
+            XV_BLEND(img[luma + luma / 4 + c], sv);
+         }
+         else
+         {
+            unsigned r;
+            uint8_t *m = img + (size_t)(2 * y) * iw * 2 + (size_t)x * 4;
+            for (r = 0; r < 2; r++, m += iw * 2)
+            {
+               XV_BLEND(m[xv->luma_index[0]], sy);
+               XV_BLEND(m[xv->luma_index[1]], sy);
+               XV_BLEND(m[xv->chroma_u_index], su);
+               XV_BLEND(m[xv->chroma_v_index], sv);
+            }
+         }
+#undef XV_BLEND
+      }
+   }
+}
+
+/* The menu over the views: where the game's viewport would be in the
+ * window or, laid out at one eye's UI size, in each eye */
+static void xv_views_menu(xv_t *xv, const video_frame_info_t *info,
+      unsigned cdims)
+{
+   unsigned a;
+   struct video_viewport fit;
+   const video_views_layout_t *layout = &info->views_layout;
+   bool per_eye = video_views_ui_per_eye(&info->views, layout, true);
+
+   memset(&fit, 0, sizeof(fit));
+   fit.full_dims = per_eye ? layout->ui_dims : cdims;
+   video_driver_update_viewport(&fit, false, true, true);
+   if (!per_eye)
+   {
+      xv_views_blend_menu(xv, VIDEO_POS_X(fit.pos), VIDEO_POS_Y(fit.pos),
+            (int)VIDEO_SCALE_W(fit.dims), (int)VIDEO_SCALE_H(fit.dims),
+            cdims);
+      return;
+   }
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      const video_views_rect_t *r = &layout->areas[a];
+      double sx = (double)VIDEO_SCALE_W(r->dims)
+         / VIDEO_SCALE_W(layout->ui_dims);
+      double sy = (double)VIDEO_SCALE_H(r->dims)
+         / VIDEO_SCALE_H(layout->ui_dims);
+      xv_views_blend_menu(xv,
+            VIDEO_POS_X(r->pos) + (int)(VIDEO_POS_X(fit.pos) * sx),
+            VIDEO_POS_Y(r->pos) + (int)(VIDEO_POS_Y(fit.pos) * sy),
+            (int)(VIDEO_SCALE_W(fit.dims) * sx + 0.5),
+            (int)(VIDEO_SCALE_H(fit.dims) * sy + 0.5), cdims);
+   }
+}
+
+/* A core's views: laid out on the window, at the scale that draws no
+ * view larger than it is - the window's own with @menu over them -
+ * converted into the image at twice that, which the adaptor scales to
+ * the window. Each view straight from the frame, interlaced's into its
+ * eye's rows; anaglyph's eyes drawn side by side and blended a row at a
+ * time into the image.
+ * Returns the canvas's size, 0 when the frame is to be drawn whole. */
+static unsigned xv_views_frame(xv_t *xv, const void *frame,
+      unsigned dims, unsigned pitch, bool rgb32,
+      const video_frame_info_t *info, bool menu)
+{
+   unsigned i, cdims;
+   float scale;
+   const video_views_layout_t *layout = &info->views_layout;
+   bool views = frame && info->views.num_views && xv->yuv_table
+      && video_views_fit_frame(&info->views, dims);
+
+   retro_atomic_store_release_int(&xv->views_fallback,
+         (info->views.num_views && !views) ? 1 : 0);
+   xv->views_on = views;
+   if (!views)
+      return 0;
+
+   scale = menu ? 1.0f : video_views_cpu_scale(&info->views, layout);
+   cdims = video_views_cpu_dims(info->dims, scale);
+   if (     xv->width  != VIDEO_SCALE_W(cdims) << 1
+         || xv->height != VIDEO_SCALE_H(cdims) << 1)
+   {
+      if (!xv_check_resize(xv, VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims)))
+         return 0;
+      xv->views_last_count = (unsigned)-1;
+   }
+   /* An adaptor that gave a smaller image draws the frame whole */
+   if (     xv->width  != VIDEO_SCALE_W(cdims) << 1
+         || xv->height != VIDEO_SCALE_H(cdims) << 1)
+   {
+      retro_atomic_store_release_int(&xv->views_fallback, 1);
+      xv->views_on = false;
+      return 0;
+   }
+   if (!xv->views_seen)
+   {
+      xv->views_seen = true;
+      RARCH_LOG("[XVideo] Views drawn straight from the frame.\n");
+   }
+
+   /* Interlaced: each eye's placements straight into its own rows */
+   if (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
+   {
+      if (     menu
+            || xv->views_last_count != layout->num_placements + 1
+            || memcmp(xv->views_last, layout->placements,
+               layout->num_placements * sizeof(*layout->placements)))
+      {
+         xv_views_clear(xv);
+         xv->views_last_count = menu
+            ? (unsigned)-1 : layout->num_placements + 1;
+         memcpy(xv->views_last, layout->placements,
+               layout->num_placements * sizeof(*layout->placements));
+      }
+      for (i = 0; i < layout->num_placements; i++)
+      {
+         video_views_rect_t dst, cut;
+         const video_views_placement_t *p = &layout->placements[i];
+         if (video_views_cpu_cut(layout, p, scale, cdims, true, &dst, &cut))
+            xv_views_place(xv, frame, pitch, rgb32,
+                  &info->views.views[p->view], &dst, &cut,
+                  p->area ? (int)VIDEO_SCALE_W(cdims) : 0, (int)p->area);
+      }
+      return cdims;
+   }
+
+   /* Anaglyph mixes both eyes' channels: the eyes drawn side by side,
+    * then blended a row at a time straight into the image */
+   if (layout->offscreen)
+   {
+      struct retro_video_view row;
+      video_views_rect_t at;
+      unsigned y, w = VIDEO_SCALE_W(cdims);
+      size_t size   = (size_t)VIDEO_SCALE_AREA(cdims) * sizeof(uint32_t);
+      if (     !xv_grow(&xv->views_canvas, &xv->views_canvas_size,
+               2 * size)
+            || !xv_grow(&xv->views_row, &xv->views_row_size,
+               w * sizeof(uint32_t)))
+         return 0;
+      video_views_cpu_draw_placements(&xv->views_cpu, &info->views, layout,
+            frame, pitch, rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
+            info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
+            scale, cdims, true, xv->views_canvas, 2 * w);
+      memset(&row, 0, sizeof(row));
+      row.width  = w;
+      row.height = 1;
+      for (y = 0; y < VIDEO_SCALE_H(cdims); y++)
+      {
+         video_views_blend_xrgb8888(xv->views_canvas + (size_t)y * 2 * w,
+               2 * w, xv->views_row, w, VIDEO_SCALE_PACK(w, 1),
+               layout->stereo_mode);
+         at.pos  = VIDEO_POS_PACK(0, y);
+         at.dims = VIDEO_SCALE_PACK(w, 1);
+         xv_views_place(xv, xv->views_row, w * 4, true, &row, &at, &at,
+               0, -1);
+      }
+      /* Laid out anew when the eyes are no longer blended */
+      xv->views_last_count = (unsigned)-1;
+      return cdims;
+   }
+
+   /* Cleared where the placements move, and under the menu, which is
+    * blended into it */
+   if (     menu
+         || xv->views_last_count != layout->num_placements
+         || memcmp(xv->views_last, layout->placements,
+            layout->num_placements * sizeof(*layout->placements)))
+   {
+      xv_views_clear(xv);
+      xv->views_last_count = menu ? (unsigned)-1 : layout->num_placements;
+      memcpy(xv->views_last, layout->placements,
+            layout->num_placements * sizeof(*layout->placements));
+   }
+   for (i = 0; i < layout->num_placements; i++)
+   {
+      video_views_rect_t dst, cut;
+      const video_views_placement_t *p = &layout->placements[i];
+      if (video_views_cpu_cut(layout, p, scale, cdims, false, &dst, &cut))
+         xv_views_place(xv, frame, pitch, rgb32,
+               &info->views.views[p->view], &dst, &cut, 0, -1);
+   }
+   return cdims;
+}
+
 static bool xv_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -928,42 +1356,72 @@ static bool xv_frame(void *data, const void *frame,
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    XWindowAttributes target;
+   unsigned views_dims       = 0;
+   bool menu                 = false;
    xv_t *xv                  = (xv_t*)data;
-   bool rgb32                = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
+   bool rgb32                = xv->rgb32;
 #ifdef HAVE_MENU
    bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    menu_driver_frame(menu_is_alive, video_info);
+   menu                      = menu_is_alive && xv->tex_frame;
+#endif
 
-   if (menu_is_alive && xv->tex_frame)
+   if (!frame && !menu)
+      return true;
+
+   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+   /* What views are laid out on */
+   if (xv->out_dims != VIDEO_SCALE_PACK(target.width, target.height))
    {
+      xv->out_dims = VIDEO_SCALE_PACK(target.width, target.height);
+      video_driver_set_output_dims(xv->out_dims);
+   }
+
+   views_dims = xv_views_frame(xv, frame, dims, pitch, rgb32, video_info,
+         menu);
+   if (views_dims && menu)
+      xv_views_menu(xv, video_info, views_dims);
+   else if (menu)
+   {
+      /* The menu in place of the frame */
       frame  = xv->tex_frame;
       width  = xv->tex_width;
       height = xv->tex_height;
       pitch  = xv->tex_pitch;
       rgb32  = xv->tex_rgb32;
    }
-#endif
 
-   if (!frame)
-      return true;
-
-   if (!xv_check_resize(xv, width, height))
-      return false;
-
-   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-
-   if (rgb32)
-      xv->render_func32(xv, frame, width, height, pitch);
+   if (views_dims)
+   {
+      /* The whole window */
+      width              = VIDEO_SCALE_W(views_dims);
+      height             = VIDEO_SCALE_H(views_dims);
+      xv->vp.pos         = VIDEO_POS_PACK(0, 0);
+      xv->vp.dims        = xv->out_dims;
+      xv->vp.full_dims   = xv->out_dims;
+   }
    else
-      xv->render_func16(xv, frame, width, height, pitch);
+   {
+      if (!xv_check_resize(xv, width, height))
+         return false;
+      /* The views' image is laid out anew when they come back */
+      xv->views_last_count = (unsigned)-1;
 
-   xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_dims   = VIDEO_SCALE_PACK(target.width, target.height);
+      if (rgb32)
+         xv->render_func32(xv, frame, width, height, pitch);
+      else
+         xv->render_func16(xv, frame, width, height, pitch);
+
+      xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
+      xv->vp.full_dims   = VIDEO_SCALE_PACK(target.width, target.height);
+   }
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1, video_info);
 
+   xv->put_width  = width << 1;
+   xv->put_height = height << 1;
    XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
          VIDEO_POS_X(xv->vp.pos), VIDEO_POS_Y(xv->vp.pos), VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
@@ -997,11 +1455,65 @@ static void xv_free(void *data)
    XCloseDisplay(g_x11_dpy);
 
    free(xv->yuv_table);
+   video_views_cpu_free(&xv->views_cpu);
+   free(xv->views_row);
+   free(xv->views_canvas);
+   free(xv->menu_scaled);
 
    if (xv->font)
       xv->font_driver->free(xv->font);
 
    free(xv);
+}
+
+/* The viewport as the adaptor shows it: the part of the image last put,
+ * scaled to it nearest-sampled and taken back to RGB, BGR24 bottom-up */
+static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   int x, y;
+   unsigned vw, vh;
+   size_t iw, luma;
+   const uint8_t *img;
+   xv_t *xv = (xv_t*)data;
+
+   if (!xv || !xv->image || !xv->put_width || !xv->put_height)
+      return false;
+   vw   = VIDEO_SCALE_W(xv->vp.dims);
+   vh   = VIDEO_SCALE_H(xv->vp.dims);
+   img  = (const uint8_t*)xv->image->data;
+   iw   = xv->width;
+   luma = iw * xv->height;
+   for (y = (int)vh - 1; y >= 0; y--)
+   {
+      unsigned sy = (unsigned)(((uint64_t)y * xv->put_height) / vh);
+      for (x = 0; x < (int)vw; x++)
+      {
+         int c, d, e, r, g, b;
+         unsigned sx = (unsigned)(((uint64_t)x * xv->put_width) / vw);
+         if (xv->fmt_format == XvPlanar)
+         {
+            size_t ci = (size_t)(sy >> 1) * (iw >> 1) + (sx >> 1);
+            c = img[(size_t)sy * iw + sx] - 16;
+            d = img[luma + ci] - 128;
+            e = img[luma + luma / 4 + ci] - 128;
+         }
+         else
+         {
+            const uint8_t *m = img + (size_t)sy * iw * 2 + (sx >> 1) * 4;
+            c = m[xv->luma_index[sx & 1]] - 16;
+            d = m[xv->chroma_u_index] - 128;
+            e = m[xv->chroma_v_index] - 128;
+         }
+         r = (298 * c + 409 * e + 128) >> 8;
+         g = (298 * c - 100 * d - 208 * e + 128) >> 8;
+         b = (298 * c + 516 * d + 128) >> 8;
+         *buffer++ = (uint8_t)(b < 0 ? 0 : (b > 255 ? 255 : b));
+         *buffer++ = (uint8_t)(g < 0 ? 0 : (g > 255 ? 255 : g));
+         *buffer++ = (uint8_t)(r < 0 ? 0 : (r > 255 ? 255 : r));
+      }
+   }
+   (void)is_idle;
+   return true;
 }
 
 static void xv_viewport_info(void *data, struct video_viewport *vp)
@@ -1012,7 +1524,15 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
 
 static uint32_t xv_poke_get_flags(void *data)
 {
-   return 0;
+   uint32_t flags = 0;
+   xv_t *xv       = (xv_t*)data;
+   if (xv)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&xv->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
 }
 
 static void xv_poke_set_texture_frame(void *data,
@@ -1025,6 +1545,7 @@ static void xv_poke_set_texture_frame(void *data,
    xv->tex_width = VIDEO_SCALE_W(dims);
    xv->tex_height = VIDEO_SCALE_H(dims);
    xv->tex_pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
+   xv->tex_alpha = alpha;
 }
 
 static video_poke_interface_t xv_video_poke_interface = {
@@ -1091,7 +1612,7 @@ video_driver_t video_xvideo = {
    NULL, /* set_viewport */
    NULL, /* set_rotation */
    xv_viewport_info,
-   NULL, /* read_viewport */
+   xv_read_viewport,
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif
