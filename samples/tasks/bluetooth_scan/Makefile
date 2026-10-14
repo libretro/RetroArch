@@ -20,7 +20,8 @@ OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -D_GNU_SOURCE -DHAVE_THREADS -DRARCH_INTERNAL \
            -DBLUETOOTH_SCAN_WINDOW_US=300000 \
            -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
-LDFLAGS += -lpthread -lm
+# --wrap=task_get_flags so the test can count the scan's passes.
+LDFLAGS += -Wl,--wrap=task_get_flags -lpthread -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

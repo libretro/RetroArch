@@ -13,6 +13,7 @@
  *   begin, then end        -> once each, a window apart
  *   during the window      -> another task runs at once
  *   the callback           -> fires after end, with the task done
+ *   the end of the window  -> a pass or two, not a run of them
  */
 
 #include <stdio.h>
@@ -67,6 +68,16 @@ static void scan_cb(retro_task_t *task, void *td, void *ud, const char *err)
    retro_atomic_store_release_int(&scan_done, 1);
 }
 
+/* The scan's passes: it asks its flags on each one after the first. */
+static retro_atomic_int_t scan_passes = RETRO_ATOMIC_INT_INITIALIZER(0);
+uint8_t __real_task_get_flags(retro_task_t *task);
+uint8_t __wrap_task_get_flags(retro_task_t *task)
+{
+   if (task->callback == scan_cb)
+      retro_atomic_fetch_add_int(&scan_passes, 1);
+   return __real_task_get_flags(task);
+}
+
 static unsigned failures = 0;
 
 static void check(bool cond, const char *what)
@@ -112,6 +123,10 @@ int main(void)
          "a window after it began");
    check(retro_atomic_load_acquire_int(&scan_done), "the scan's callback fires");
    check(retro_atomic_load_acquire_int(&begins) == 1, "and it began only once");
+   /* The queue may start the end of the window a little early; the
+    * scan waits out the rest parked, not in a run of passes. */
+   check(retro_atomic_load_acquire_int(&scan_passes) <= 4,
+         "the window ends in a pass or two");
 
    task_queue_deinit();
 

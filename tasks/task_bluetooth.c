@@ -41,9 +41,17 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
       return;
    }
 
-   if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
-         && cpu_features_get_time_usec() < task->when)
-      return;
+   /* The queue may run a timed task a little early: wait out the rest
+    * of the window parked.  A cancel wakes it and ends the window. */
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now < task->when)
+      {
+         task_queue_park(task, task->when - now);
+         return;
+      }
+   }
 
    driver_bluetooth_scan_end();
    task->state = NULL;
