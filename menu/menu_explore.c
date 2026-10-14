@@ -1307,7 +1307,7 @@ static void explore_action_find_complete(void *userdata, const char *line)
 static int explore_action_ok_find(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
    line.label_setting         = NULL;
    line.type                  = 0;
@@ -1519,7 +1519,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
 static int explore_action_ok_saveview(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_NEW_VIEW);
    line.label_setting         = NULL;
    line.type                  = 0;

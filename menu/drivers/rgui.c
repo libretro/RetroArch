@@ -5509,9 +5509,17 @@ RGUI_NOINLINE static void rgui_render_osk(
       input_str_y                    = osk_y + input_offset_y + rgui->font_height_stride;
       input_str_visible              = utf8skip(input_str, input_str_char_offset);
 
+      if (input_driver_keyboard_line_selected())
+         rgui_color_rect(frame_buf_data, fb_dims,
+               input_str_x, input_str_y,
+               input_str_length * rgui->font_width_stride,
+               VIDEO_SCALE_H(rgui->font_dims), rgui->colors.hover_color);
+
       if (input_str_visible && *input_str_visible)
          rgui_blit_line(rgui, fb_width, input_str_x, input_str_y, input_str_visible,
-               rgui->colors.hover_color, rgui->colors.shadow_color);
+               input_driver_keyboard_line_selected()
+               ? rgui->colors.bg_dark_color : rgui->colors.hover_color,
+               rgui->colors.shadow_color);
 
       /* Draw text cursor */
       text_cursor_x                  = osk_x + input_offset_x
@@ -5561,7 +5569,8 @@ RGUI_NOINLINE static void rgui_render_osk(
          }
       }
 
-      if (!(((current_time - last_cursor_time) / 500000) & 1))
+      if (!input_driver_keyboard_line_selected()
+            && !(((current_time - last_cursor_time) / 500000) & 1))
          rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
                rgui->colors.normal_color, rgui->colors.shadow_color);
    }

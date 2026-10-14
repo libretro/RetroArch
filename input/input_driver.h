@@ -309,7 +309,12 @@ struct input_keyboard_line
    size_t size;
    size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
+   bool select_all;
+   bool fixed;       /* a native keyboard owns the buffer: it cannot move */
 };
+
+/* The buffer a native (Android, iOS) keyboard puts under the line */
+#define INPUT_NATIVE_KEYBOARD_BUFFER_SIZE 512
 
 struct rarch_joypad_info
 {
@@ -1211,7 +1216,7 @@ enum input_text_type
 };
 const char **input_driver_text_entry_open(void *userdata,
       input_keyboard_line_complete_t cb,
-      const char *label, enum input_text_type type);
+      const char *label, enum input_text_type type, const char *initial_text);
 /* The open line's label and type, for a platform's keyboard that shows
  * them; whether a line is open is input_driver_keyboard_line_enabled(). */
 const char *input_driver_text_entry_label(void);
@@ -1305,6 +1310,7 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len);
  * NULL, and where the cursor stands in them. And whether the text box
  * has the focus, and not the on-screen keyboard. */
 const char *input_driver_keyboard_line_view(size_t *cursor);
+bool input_driver_keyboard_line_selected(void);
 bool input_driver_keyboard_textbox_focus(void);
 void input_driver_keyboard_line_end(void);
 bool input_driver_pointer_input_blocked(void);

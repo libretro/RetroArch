@@ -1327,6 +1327,14 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    int slice_y                         = 0;
    int slice_w                         = 0;
    int slice_h                         = 0;
+   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned selection_first_line = 1;
+   float selection_color[16] = {
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+   };
    unsigned cursor_line                = 0;
    int cursor_x                        = 0;
    struct menu_state *menu_st          = menu_state_get_ptr();
@@ -1395,7 +1403,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       draw_caret = false;
 
       if (input && line_text
-            && ((menu_driver_get_current_time() / 500000) & 1))
+            && (draw_selection || ((menu_driver_get_current_time() / 500000) & 1)))
       {
          char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_message[MENU_LABEL_MAX_LENGTH];
@@ -1411,6 +1419,17 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
              * non-overlapping source and destination
              * buffers, so stage the source separately */
             memcpy(cursor_src, message, len);
+            if (draw_selection)
+            {
+               cursor_src[len] = '\0';
+               (xmb->word_wrap)(cursor_message, sizeof(cursor_message),
+                     cursor_src, len, usable_width / (xmb->font_size * 0.85f),
+                     xmb->wideglyph_width, 0);
+               selection_first_line = string_count_occurrences_single_character(
+                     cursor_message, '\n');
+               if (!selection_first_line)
+                  selection_first_line = 1;
+            }
             memcpy(cursor_src + len, line_text, ptr);
             cursor_src[len + ptr] = '\0';
 
@@ -1430,7 +1449,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             input    = input ? input + 1 : cursor_message;
             cursor_x = font_driver_get_message_width(xmb->font, input, strlen(input), 1.0f);
 
-            draw_caret = true;
+            draw_caret = !draw_selection;
          }
       }
    }
@@ -1525,6 +1544,16 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
+      if (draw_selection && i >= selection_first_line && msg && *msg)
+      {
+         gfx_display_blend_begin(dispctx, userdata);
+         gfx_display_draw_quad(p_disp, userdata, video_dims,
+               x - (longest_width / 2.0), y + (i * line_height),
+               VIDEO_SCALE_PACK(font_driver_get_message_width(
+                     xmb->font, msg, strlen(msg), 1.0f), line_height),
+               video_dims, selection_color, NULL);
+         gfx_display_blend_end(dispctx, userdata);
+      }
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),

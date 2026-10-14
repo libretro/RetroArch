@@ -2863,6 +2863,14 @@ static void materialui_render_messagebox(
    int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
+   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned selection_first_line = 1;
+   float selection_color[16] = {
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+      0.20f, 0.40f, 0.80f, 0.35f,
+   };
    unsigned cursor_line       = 0;
    int cursor_x               = 0;
    size_t wrapped_len         = 0;
@@ -2947,7 +2955,7 @@ static void materialui_render_messagebox(
       draw_caret = false;
 
       if (input && line_text
-            && ((menu_driver_get_current_time() / 500000) & 1))
+            && (draw_selection || ((menu_driver_get_current_time() / 500000) & 1)))
       {
          char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_msg[MENU_LABEL_MAX_LENGTH];
@@ -2963,6 +2971,17 @@ static void materialui_render_messagebox(
              * non-overlapping source and destination
              * buffers, so stage the source separately */
             memcpy(cursor_src, msg, len);
+            if (draw_selection)
+            {
+               cursor_src[len] = '\0';
+               (mui->word_wrap)(cursor_msg, sizeof(cursor_msg),
+                     cursor_src, len, usable_width / (int)mui->font_data.list.glyph_width,
+                     mui->font_data.list.wideglyph_width, 0);
+               selection_first_line = string_count_occurrences_single_character(
+                     cursor_msg, '\n');
+               if (!selection_first_line)
+                  selection_first_line = 1;
+            }
             memcpy(cursor_src + len, line_text, ptr);
             cursor_src[len + ptr] = '\0';
 
@@ -2984,7 +3003,7 @@ static void materialui_render_messagebox(
                   mui->font_data.list.font,
                   input, strlen(input), 1.0f);
 
-            draw_caret = true;
+            draw_caret = !draw_selection;
          }
       }
    }
@@ -3047,6 +3066,15 @@ static void materialui_render_messagebox(
    /* Print each line of the message */
    for (i = 0; i < line_count; i++)
    {
+      if (draw_selection && (unsigned)i >= selection_first_line && lengths[i] > 0)
+         gfx_display_draw_quad(p_disp, userdata, video_dims,
+               x - longest_width / 2.0f,
+               y + (i * mui->font_data.list.line_height),
+               VIDEO_SCALE_PACK(font_driver_get_message_width(
+                     mui->font_data.list.font, lines[i], lengths[i], 1.0f),
+                     mui->font_data.list.line_ascender),
+               video_dims, selection_color, NULL);
+
       if (lengths[i] > 0)
          gfx_display_draw_text(
                mui->font_data.list.font, lines[i],

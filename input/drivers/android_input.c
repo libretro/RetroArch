@@ -308,7 +308,7 @@ static void *libandroid_handle;
  * publication. The session fields below the mailbox - the line
  * buffer and its cursors, the callback, the open flag's writers -
  * all live on the input thread alone. */
-#define ANDROID_KBD_BUFFER_SIZE 512
+#define ANDROID_KBD_BUFFER_SIZE INPUT_NATIVE_KEYBOARD_BUFFER_SIZE
 
 struct android_kbd_msg
 {
@@ -406,6 +406,8 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
       strlcpy(allocated, *buffer_ptr, ANDROID_KBD_BUFFER_SIZE);
    else
       allocated[0] = '\0';
+
+   free(*buffer_ptr);
 
    /* Repoint the keyboard line at our buffer; it is freed later by
     * input_keyboard_line_free(), mirroring the iOS path. */

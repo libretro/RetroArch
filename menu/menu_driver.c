@@ -9119,7 +9119,7 @@ bool menu_input_dialog_start_search(void)
       input_driver_text_entry_open(menu,
             menu_input_search_cb,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-            INPUT_TEXT_TYPE_TEXT);
+            INPUT_TEXT_TYPE_TEXT, NULL);
 
 
    return true;
@@ -9200,7 +9200,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
       input_driver_text_entry_open(menu,
             line->cb,
             line->label,
-            (enum input_text_type)line->text_type);
+            (enum input_text_type)line->text_type,
+            line->dialog_type == MENU_INPUT_DIALOG_TYPE_EDIT
+            ? line->initial_text : NULL);
 
 
    return true;

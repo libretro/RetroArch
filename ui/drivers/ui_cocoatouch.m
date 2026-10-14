@@ -1627,7 +1627,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
    if (utf8Text)
    {
       size_t newLen;
-      strlcpy(self.keyboardAllocatedBuffer, utf8Text, 512);
+      strlcpy(self.keyboardAllocatedBuffer, utf8Text, INPUT_NATIVE_KEYBOARD_BUFFER_SIZE);
       newLen = strlen(self.keyboardAllocatedBuffer);
       *self.keyboardSizePtr = newLen;
       /* Keep ptr in sync with size to prevent buffer overrun when appending */
@@ -1649,7 +1649,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
          if (finalText)
          {
             size_t finalLen;
-            strlcpy(self.keyboardAllocatedBuffer, finalText, 512);
+            strlcpy(self.keyboardAllocatedBuffer, finalText, INPUT_NATIVE_KEYBOARD_BUFFER_SIZE);
             finalLen = strlen(self.keyboardAllocatedBuffer);
             *self.keyboardSizePtr = finalLen;
             if (self.keyboardPtrPtr)
@@ -1766,15 +1766,17 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
       return false;
 
    /* Allocate a fixed-size buffer for keyboard input */
-   char *allocated_buffer = (char *)malloc(512);
+   char *allocated_buffer = (char *)malloc(INPUT_NATIVE_KEYBOARD_BUFFER_SIZE);
    if (!allocated_buffer)
       return false;
 
    /* Initialize buffer with existing content if any */
    if (*buffer_ptr && **buffer_ptr)
-      strlcpy(allocated_buffer, *buffer_ptr, 512);
+      strlcpy(allocated_buffer, *buffer_ptr, INPUT_NATIVE_KEYBOARD_BUFFER_SIZE);
    else
       allocated_buffer[0] = '\0';
+
+   free(*buffer_ptr);
 
    /* Update the keyboard_line buffer pointer to point to our allocated buffer */
    *buffer_ptr = allocated_buffer;
@@ -1809,6 +1811,8 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
 
    /* Show the keyboard */
    [app.keyboardTextField becomeFirstResponder];
+   if (len)
+      [app.keyboardTextField selectAll:nil];
    return true;
 }
 

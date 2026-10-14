@@ -190,7 +190,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
 #define DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, _text_type) \
 static int (funcname)(const char *path, const char *label_setting, unsigned type, size_t idx, size_t entry_idx) \
 { \
-   menu_input_ctx_line_t line; \
+   menu_input_ctx_line_t line = {0}; \
    line.label         = _label; \
    line.label_setting = label_setting; \
    line.type          = type; \
@@ -3594,7 +3594,7 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 static int action_ok_wifi(const char *path, const char *label_setting,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    wifi_network_scan_t* scan = driver_wifi_get_ssids();
    if (idx >= RBUF_LEN(scan->net_list))
       return -1;
@@ -4069,7 +4069,7 @@ DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_disable_kiosk_mode,
 static int action_ok_rename_entry(const char *path,
       const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    playlist_t *playlist;
    const struct playlist_entry *entry = NULL;
 
@@ -4079,14 +4079,15 @@ static int action_ok_rename_entry(const char *path,
    line.idx                           = (unsigned)entry_idx;
    line.text_type                     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                            = menu_input_st_string_cb_rename_entry;
-
-   if (!menu_input_dialog_start(&line))
-      return -1;
+   line.dialog_type                   = MENU_INPUT_DIALOG_TYPE_EDIT;
 
    if ((playlist = playlist_get_cached()))
       playlist_get_index(playlist, entry_idx, &entry);
-   if (entry && entry->label && *entry->label)
-      input_driver_keyboard_line_append(entry->label, strlen(entry->label));
+   if (entry)
+      line.initial_text = entry->label;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
 
    return 0;
 }
@@ -6869,7 +6870,7 @@ static void action_input_add_entry_to_new_playlist_quickmenu(void *userdata, con
 static int action_ok_add_entry_to_new_playlist(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST);
    line.label_setting         = NULL;
    line.type                  = 0;

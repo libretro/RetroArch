@@ -259,13 +259,21 @@ enum menu_input_dialog_kb_text_type
    MENU_INPUT_DIALOG_KB_TYPE_NUMBER
 };
 
+enum menu_input_dialog_type
+{
+   MENU_INPUT_DIALOG_TYPE_NEW = 0,
+   MENU_INPUT_DIALOG_TYPE_EDIT
+};
+
 typedef struct menu_input_ctx_line
 {
    const char *label;
    const char *label_setting;
+   const char *initial_text;
    unsigned type;
    unsigned idx;
    enum menu_input_dialog_kb_text_type text_type;
+   enum menu_input_dialog_type dialog_type;
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
