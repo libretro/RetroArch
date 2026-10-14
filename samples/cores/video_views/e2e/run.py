@@ -1562,6 +1562,11 @@ def main():
     if len(sys.argv) < 4:
         print(__doc__)
         return 2
+    if XVFB and not shutil.which('import'):
+        # The menu and pointer cases read the screen through
+        # ImageMagick's import.
+        print('import (ImageMagick) is needed under Xvfb')
+        return 1
     retroarch = os.path.abspath(sys.argv[1])
     root = os.path.realpath(sys.argv[2])
     os.makedirs(root, exist_ok=True)

@@ -1021,7 +1021,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ninja-build cmake xvfb x11-utils libx11-dev libxext-dev libxrandr-dev libxi-dev libxss-dev libxcursor-dev libxfixes-dev libxkbcommon-dev libgl1-mesa-dri libgl-dev libegl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
+          pkgs="build-essential ninja-build cmake xvfb x11-utils imagemagick libx11-dev libxext-dev libxrandr-dev libxi-dev libxss-dev libxcursor-dev libxfixes-dev libxkbcommon-dev libgl1-mesa-dri libgl-dev libegl-dev zlib1g-dev libfreetype6-dev libasound2-dev"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
