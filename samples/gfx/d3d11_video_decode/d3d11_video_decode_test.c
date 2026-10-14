@@ -655,7 +655,7 @@ static int take_sw_hevc(frames_t *f, rh265_video *v, int depth)
 }
 
 static int decode_hevc(const uint8_t *data, size_t size, int hardware,
-      int depth, frames_t *f)
+      int depth, int expected, frames_t *f)
 {
    opened_t opened;
    video_hw_frame_t frame;
@@ -703,7 +703,7 @@ static int decode_hevc(const uint8_t *data, size_t size, int hardware,
                  && (use_d3d12 ? take_hw12(f, &frame) : take_hw(f, &opened, &frame))
                : take_sw_hevc(f, v, depth))) goto done;
    }
-   ok = ret == -1 && f->n == 12;
+   ok = ret == -1 && f->n == expected;
 done:
    rh265_video_close(v);
    rmp4_close(mp4);
@@ -720,10 +720,10 @@ static void test_hevc_stream(const char *name, const uint8_t *data,
    size_t at, samples;
    printf("HEVC %s through D3D%s:\n", name, use_d3d12 ? "12" : "11");
    memset(&hw, 0, sizeof(hw));
-   ret = decode_hevc(data, size, 0, depth, &sw);
+   ret = decode_hevc(data, size, 0, depth, 12, &sw);
    check("HEVC stream: all software pictures", ret == 1);
    if (ret != 1) goto done;
-   ret = decode_hevc(data, size, 1, depth, &hw);
+   ret = decode_hevc(data, size, 1, depth, 12, &hw);
    if (ret == -1)
    {
       printf("HEVC %s: SKIP (device configuration unavailable)\n", name);
@@ -764,6 +764,83 @@ static void test_hevc_streams(void)
    HEVC_STREAM(wpp, 10);
    HEVC_STREAM(crop, 10);
 #undef HEVC_STREAM
+}
+
+static uint8_t *read_fixture_file(const char *path, size_t *size)
+{
+   FILE *f = fopen(path, "rb");
+   uint8_t *data = NULL;
+   long length;
+   *size = 0;
+   if (!f) return NULL;
+   if (fseek(f, 0, SEEK_END) || (length = ftell(f)) <= 0
+         || length > 64 * 1024 * 1024 || fseek(f, 0, SEEK_SET)) goto done;
+   data = (uint8_t*)malloc((size_t)length);
+   if (!data) goto done;
+   if (fread(data, 1, (size_t)length, f) != (size_t)length)
+   { free(data); data = NULL; goto done; }
+   *size = (size_t)length;
+done:
+   fclose(f);
+   return data;
+}
+
+/* External conformance vectors stay outside the repository. */
+static void test_hevc_conformance(void)
+{
+   const char *mp4_path = getenv("HEVC_CONFORMANCE_MP4");
+   const char *raw_path = getenv("HEVC_CONFORMANCE_NV12");
+   uint8_t *data = NULL, *raw = NULL;
+   size_t size, raw_size, frame_size = 0;
+   rmp4_t *m = NULL;
+   rh265_video *v = NULL;
+   const rmp4_track *track;
+   rmp4_packet packet;
+   static rh265_access_unit_t au;
+   static rh265_nal_t slices[128];
+   frames_t hw;
+   unsigned width = 0, height = 0, lt_used = 0, packets = 0, i;
+   int ret, matches = 1;
+   if (!mp4_path && !raw_path) return;
+   memset(&hw, 0, sizeof(hw));
+   if (!mp4_path || !raw_path) { check("HEVC conformance: both input paths", 0); return; }
+   data = read_fixture_file(mp4_path, &size);
+   raw = read_fixture_file(raw_path, &raw_size);
+   if (!data || !raw || !(m = rmp4_open_memory(data, size))
+         || !(v = rh265_video_open())) goto invalid;
+   track = rmp4_get_track(m, 0);
+   if (!track || track->type != RMP4_TRACK_VIDEO
+         || rh265_video_set_extradata(v, track->codec_private, track->codec_private_size)) goto invalid;
+   width = track->width; height = track->height;
+   if (!width || !height || width > 8192 || height > 8192 || (width & 1) || (height & 1)) goto invalid;
+   frame_size = (size_t)width * height * 3 / 2;
+   if (raw_size % frame_size || !raw_size || raw_size / frame_size > MAX_FRAMES) goto invalid;
+   while ((ret = rmp4_read_packet(m, &packet)) == 1)
+   {
+      if (packet.track != 0) continue;
+      if (rh265_video_get_access_unit(v, packet.data, packet.size,
+               (track->codec_private[21] & 3) + 1, slices, 128, &au) || !au.num_slices) goto invalid;
+      for (i = 0; i < au.first.long_term.count; i++) lt_used += au.first.long_term.used[i];
+      packets++;
+   }
+   if (ret || !lt_used || !packets) goto invalid;
+   printf("HEVC external long-term stream through D3D%s: %u pictures, %u active LT entries\n",
+         use_d3d12 ? "12" : "11", packets, lt_used);
+   ret = decode_hevc(data, size, 1, 8, (int)(raw_size / frame_size), &hw);
+   if (ret == -1)
+   { printf("SKIP HEVC conformance: device configuration unavailable\n"); goto done; }
+   check("HEVC conformance: every hardware picture", ret == 1);
+   if (ret != 1) goto done;
+   matches = hw.w == width && hw.h == height && (size_t)hw.n == raw_size / frame_size;
+   for (i = 0; matches && i < (unsigned)hw.n; i++)
+      matches = !memcmp(hw.y[i], raw + i * frame_size, (size_t)width * height)
+         && !memcmp(hw.uv[i], raw + i * frame_size + (size_t)width * height, (size_t)width * height / 2);
+   check("HEVC conformance: FFmpeg NV12 display order and every sample", matches);
+   goto done;
+invalid:
+   check("HEVC conformance: valid MP4/NV12 with active long-term references", 0);
+done:
+   frames_free(&hw); rh265_video_close(v); rmp4_close(m); free(raw); free(data);
 }
 
 static void test_hevc_main(int depth)
@@ -874,6 +951,7 @@ int main(void)
    test_hevc_main(8);
    test_hevc_main(10);
    test_hevc_streams();
+   test_hevc_conformance();
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
@@ -932,6 +1010,7 @@ int main(void)
       test_hevc_main(8);
       test_hevc_main(10);
       test_hevc_streams();
+      test_hevc_conformance();
       for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
       {
          const stream_t *s = &streams[i];

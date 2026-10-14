@@ -156,7 +156,26 @@ Long-term hardware metadata now includes SPS table indices, slice-signaled
 LSBs, usage flags and cumulative MSB cycles. Owner tests cover retained
 references, wrap, missing/ambiguous references and rejected transactions;
 DXVA tests check long-term flags and current sets, including later slices.
-Software reconstruction still refuses actual long-term sets. Real long-term
-GPU streams remain a device acceptance gate; the existing native oracle
-covers the previously supported short-term streams.
+Software reconstruction still refuses actual long-term sets. The optional
+native conformance oracle compares actual long-term hardware output to external FFmpeg NV12 rather than rh265 software reconstruction.
 Syntax reference: https://github.com/FFmpeg/FFmpeg/blob/n7.1/libavcodec/hevc/hevcdec.c#L268
+
+To exercise an external Main8 long-term stream (up to 32 displayed pictures),
+run `python3 prepare_hevc_conformance.py INPUT.bit OUTPUT_DIR`. It prepares
+an hvc1 MP4 with parameter sets in extradata and no edit list, plus an NV12
+reference and SHA-256 manifest. Set `HEVC_CONFORMANCE_MP4` and
+`HEVC_CONFORMANCE_NV12` to the generated paths, then run the native Windows
+`d3d11_video_decode_test.exe`. Both variables are required when either is
+set. The oracle requires active long-term entries, checks frame count,
+geometry, display order and every sample through D3D11 and D3D12 imports.
+Unsupported devices retain the existing skip behavior. Input media is not
+bundled or fetched by the script; default tests remain self-contained.
+
+Validated input: the first 24 coded pictures of
+`LTRPSPS_A_Qualcomm_1.bit` from the
+[FFmpeg conformance suite](https://fate-suite.ffmpeg.org/hevc-conformance/),
+416x240 Main8 with an eight-entry SPS long-term table and seven active
+long-term entries across the selected access units. All 24 output pictures
+match FFmpeg through both native readers. This does not validate Main10
+long-term streams, all cycle/wrap cases or software long-term reconstruction.
+The manifest identifies the exact source and prepared output bytes.
