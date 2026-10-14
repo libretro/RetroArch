@@ -6,10 +6,8 @@
 #include <stddef.h>
 
 int  accessibility_speak_priority(void) { return 0; }
-int  audio_driver_is_ai_service_speech_running(void) { return 0; }
 int  audio_driver_mixer_add_stream(void) { return 0; }
 void *base64(void) { return NULL; }
-int  command_event(void) { return 0; }
 void *core_info_get_current_core(void) { return NULL; }
 void *frontend_state_get_ptr(void) { return NULL; }
 int  input_driver_ai_gamepad_held(void) { return 0; }
@@ -34,11 +32,7 @@ void rjsonwriter_raw(void) { }
 void rjsonwriter_rawf(void) { }
 void *rpng_save_image_bgr24_string(void) { return NULL; }
 void runloop_msg_queue_push(void) { }
-int  task_get_flags(void) { return 0; }
-void *task_init(void) { return NULL; }
 void *task_push_http_post_transfer(void) { return NULL; }
-int  task_queue_push(void) { return 0; }
-void task_set_flags(void) { }
 void *unbase64(void) { return NULL; }
 int  video_driver_cached_frame_read(void) { return 0; }
 int  video_driver_get_viewport_info(void) { return 0; }

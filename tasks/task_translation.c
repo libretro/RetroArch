@@ -213,6 +213,9 @@ bool is_narrator_running(bool accessibility_enable)
 }
 #endif
 
+/* Between looks at whether the speech or the narration has ended. */
+#define AUTO_TRANSLATE_PARK_USEC 50000
+
 static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
@@ -244,6 +247,9 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
    }
 
+   /* Nothing signals the end of the speech or the narration, so look
+    * again shortly. */
+   task_queue_park(task, AUTO_TRANSLATE_PARK_USEC);
    return;
 
 task_finished:
@@ -274,22 +280,22 @@ static void ai_service_call_auto_translate_task(access_state_t *access_st,
    }
    else /* Speech or Narrator Mode */
    {
-      int* mode          = NULL;
+      int* mode          = (int*)malloc(sizeof(int));
       retro_task_t  *t   = task_init();
-      if (!t)
-         return;
-
-      mode               = (int*)malloc(sizeof(int));
-
-      t->user_data       = NULL;
-      t->handler         = task_auto_translate_handler;
-      t->flags          |= RETRO_TASK_FLG_MUTE;
-
-      if (mode)
+      if (!t || !mode)
       {
-         *mode           = ai_service_mode;
-         t->user_data    = mode;
+         free(t);
+         free(mode);
+         return;
       }
+
+      *mode              = ai_service_mode;
+      t->user_data       = mode;
+      t->handler         = task_auto_translate_handler;
+      /* It waits on the mixer and the narrator, then sets the next
+       * request off: the frontend's state, read and written where the
+       * frontend runs. */
+      t->flags          |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_MAIN_THREAD;
 
       task_queue_push(t);
    }

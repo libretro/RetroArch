@@ -11,7 +11,8 @@
  * the reply through the real scaler and leaves nothing allocated,
  * which ASan's leak check holds to.
  *
- * The frontend edges and rpng are stood in for here. */
+ * The frontend edges and rpng are stood in for here.  One lane runs
+ * the auto-translate task, which waits for the speech it follows. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,6 +49,23 @@ settings_t *config_get_ptr(void) { return &g_settings; }
 video_driver_state_t *video_state_get_ptr(void) { return &g_video; }
 access_state_t *access_state_get_ptr(void) { return &g_access; }
 uint32_t runloop_get_flags(void) { return 0; }
+
+/* The task queue and the mixer, for the auto-translate lane: a task the
+ * test runs by hand, and speech that is playing until the lane says. */
+static retro_task_t *g_pushed      = NULL;
+static unsigned      g_parks       = 0;
+static unsigned      g_calls       = 0;
+static int           g_speech      = 0;
+bool audio_driver_is_ai_service_speech_running(void) { return g_speech != 0; }
+bool command_event(enum event_command cmd, void *data)
+{ (void)data; if (cmd == CMD_EVENT_AI_SERVICE_CALL) g_calls++; return true; }
+retro_task_t *task_init(void) { return (retro_task_t*)calloc(1, sizeof(retro_task_t)); }
+bool task_queue_push(retro_task_t *task) { g_pushed = task; return true; }
+uint8_t task_get_flags(retro_task_t *task) { return (uint8_t)task->flags; }
+void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
+{ if (set) task->flags |= flags; else task->flags &= ~flags; }
+void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{ (void)task; (void)horizon_usec; g_parks++; }
 bool video_driver_cached_frame_is_hw_render(void) { return false; }
 bool video_driver_cached_frame_info(unsigned *dims, size_t *pitch,
       bool *has_cpu_pixels)
@@ -242,6 +260,38 @@ static void lane_refused(const char *tag, const void *data, size_t len)
    printf("      %-48s done\n", tag);
 }
 
+/* Speech mode: the follow-up request waits for the speech to end.  It
+ * runs on the main thread, where the request it sets off belongs, and
+ * parks between looks. */
+static void lane_auto_translate_waits(void)
+{
+   bool was_paused = false;
+
+   g_pushed = NULL;
+   g_parks  = 0;
+   g_calls  = 0;
+   g_speech = 1;
+   ai_service_call_auto_translate_task(&g_access, 1, &was_paused);
+   check(g_pushed != NULL, "auto-translate: no task pushed");
+   if (!g_pushed)
+      return;
+   check((g_pushed->flags & RETRO_TASK_FLG_MAIN_THREAD) != 0,
+         "auto-translate: the task is not a main-thread task");
+
+   g_pushed->handler(g_pushed);
+   check(g_parks == 1, "auto-translate: %u parks while speech plays", g_parks);
+   check(!(g_pushed->flags & RETRO_TASK_FLG_FINISHED) && g_calls == 0,
+         "auto-translate: finished while speech plays");
+
+   g_speech = 0;
+   g_pushed->handler(g_pushed);
+   check((g_pushed->flags & RETRO_TASK_FLG_FINISHED) && g_calls == 1,
+         "auto-translate: the next request did not follow the speech");
+   free(g_pushed);
+   g_pushed = NULL;
+   printf("      %-48s done\n", "auto-translate waits for the speech");
+}
+
 int main(void)
 {
    size_t   len;
@@ -256,6 +306,7 @@ int main(void)
    lane_same_size("same size, RGB565",                64, 48,
          RETRO_PIXEL_FORMAT_RGB565);
    lane_scaled("narrower than the frame",             32, 48, 64, 48);
+   lane_auto_translate_waits();
    lane_scaled("larger than the frame",               128, 96, 64, 48);
 
    bmp = make_bmp(64, 48, &len);
