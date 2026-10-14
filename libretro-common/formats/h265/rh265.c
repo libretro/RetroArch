@@ -4941,13 +4941,11 @@ static int rh265_build_ref_lists(rh265_video *v)
          return -1;
       d->col_ref = d->ref_list[cl][d->sh.collocated_ref_idx];
    }
-   if (d->npinned == 0)
    {
-      /* the pictures this one reads, held for the length of its
-       * decode: a slot with a reader is nobody's to take */
+      /* Retain the union of references used by queued slices. */
       int l, r, k;
       for (l = 0; l < 2; l++)
-         for (r = 0; r < RH265_MAX_REFS; r++)
+         for (r = 0; r < d->nb_refs[l]; r++)
          {
             rh265_pic *q = d->ref_list[l][r];
             if (!q) continue;

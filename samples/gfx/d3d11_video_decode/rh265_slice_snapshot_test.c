@@ -64,9 +64,43 @@ done:
    rh265_video_close(v);
 }
 
+static void test_reference_union(void)
+{
+   rh265_video *v = rh265_video_open();
+   rh265_dec *d;
+   unsigned i;
+   if (!v) { CHECK(v); return; }
+   d = v->cur = &v->ctx[0];
+   d->sh.slice_type = RH265_SLICE_B;
+   d->sh.nb_refs[0] = d->sh.nb_refs[1] = 1;
+   v->nb_st_bef = 2; v->nb_st_aft = 1;
+   v->st_bef[0] = 0; v->st_bef[1] = 2; v->st_aft[0] = 1;
+   d->ref_list[0][RH265_MAX_REFS - 1] = &v->dpb[4];
+   CHECK(!rh265_build_ref_lists(v));
+   CHECK(d->npinned == 2);
+   CHECK(retro_atomic_load_acquire_int(&v->dpb[0].readers) == 1);
+   CHECK(retro_atomic_load_acquire_int(&v->dpb[1].readers) == 1);
+   CHECK(!retro_atomic_load_acquire_int(&v->dpb[4].readers));
+   d->sh.slice_type = RH265_SLICE_P;
+   d->sh.rpl_mod[0] = 1; d->sh.list_entry[0][0] = 1;
+   CHECK(!rh265_build_ref_lists(v));
+   CHECK(d->npinned == 3 && d->nb_refs[1] == 0);
+   for (i = 0; i < 3; i++)
+      CHECK(retro_atomic_load_acquire_int(&v->dpb[i].readers) == 1);
+   CHECK(!rh265_build_ref_lists(v));
+   CHECK(d->npinned == 3);
+   for (i = 0; i < 3; i++)
+      CHECK(retro_atomic_load_acquire_int(&v->dpb[i].readers) == 1);
+   rh265_ctx_unpin(d);
+   CHECK(!d->npinned);
+   for (i = 0; i < RH265_MAX_DPB; i++)
+      CHECK(!retro_atomic_load_acquire_int(&v->dpb[i].readers));
+   rh265_video_close(v);
+}
+
 int main(void)
 {
-   test_snapshots();
+   test_snapshots(); test_reference_union();
    printf("HEVC slice reference snapshots: %u failures\n", failures);
    return failures ? 1 : 0;
 }
