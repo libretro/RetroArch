@@ -189,6 +189,23 @@ static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDevice
    strlcpy(ffmpeg->url, device->device_description, sizeof(ffmpeg->url));
 }
 
+static int ffmpeg_camera_interrupt(void *opaque)
+{
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)opaque;
+   return retro_atomic_load_acquire_int(&ffmpeg->done);
+}
+
+static int ffmpeg_camera_open_input(ffmpeg_camera_t *ffmpeg, AVDictionary **options)
+{
+   ffmpeg->format_context = avformat_alloc_context();
+   if (!ffmpeg->format_context)
+      return AVERROR(ENOMEM);
+   ffmpeg->format_context->interrupt_callback.callback = ffmpeg_camera_interrupt;
+   ffmpeg->format_context->interrupt_callback.opaque = ffmpeg;
+   return avformat_open_input(&ffmpeg->format_context, ffmpeg->url,
+         ffmpeg->input_format, options);
+}
+
 static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
 {
    AVDictionaryEntry *e  = NULL;
@@ -242,7 +259,7 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
    }
 #endif
 
-   ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+   ret = ffmpeg_camera_open_input(ffmpeg, &options);
    if (ret < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -259,7 +276,7 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
          /* Try with just the basic framerate option */
          av_dict_set(&options, "framerate", "30", 0);
 
-         ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+         ret = ffmpeg_camera_open_input(ffmpeg, &options);
          if (ret < 0)
          {
             av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
@@ -267,7 +284,7 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
             av_dict_free(&options);
 
             /* Last resort: try with no options at all */
-            ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+            ret = ffmpeg_camera_open_input(ffmpeg, NULL);
             if (ret < 0)
             {
                av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
@@ -287,7 +304,7 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
       /* If we're not already requesting the default format... */
       if (ffmpeg->options)
       {
-         ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+         ret = ffmpeg_camera_open_input(ffmpeg, NULL);
          if (ret < 0)
          {
             char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -459,6 +476,7 @@ static bool ffmpeg_camera_start(void *data)
       return true;
    }
 
+   retro_atomic_store_release_int(&ffmpeg->done, 0);
    ret = ffmpeg_camera_open_device(ffmpeg);
    if (ret < 0)
       goto error;
@@ -629,7 +647,6 @@ static bool ffmpeg_camera_start(void *data)
    retro_triple_buffer_init(&ffmpeg->frames, ffmpeg->target_buffers[0],
          ffmpeg->target_buffers[1], ffmpeg->target_buffers[2]);
 
-   retro_atomic_store_release_int(&ffmpeg->done, 0);
    ffmpeg->poll_thread = sthread_create(ffmpeg_camera_poll_thread, ffmpeg);
    if (!ffmpeg->poll_thread)
    {
@@ -711,6 +728,8 @@ static void ffmpeg_camera_poll_thread(void *data)
       bool draining = ret == AVERROR_EOF;
       bool retry_packet = false;
       bool progress = false;
+      if (ret == AVERROR_EXIT && retro_atomic_load_acquire_int(&ffmpeg->done))
+         break;
       /* Read the raw data from the camera. If that fails... */
       if (ret < 0 && !draining)
       {

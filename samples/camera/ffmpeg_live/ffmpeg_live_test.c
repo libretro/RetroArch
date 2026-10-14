@@ -37,6 +37,12 @@ static retro_atomic_int_t duplicate_output;
 static retro_atomic_int_t accepted_packets;
 static retro_atomic_int_t decoded_outputs;
 static AVFrame *extra_frame;
+static retro_atomic_int_t blocked_read;
+static retro_atomic_int_t read_entered;
+static retro_atomic_int_t read_cancelled;
+static retro_atomic_int_t read_timed_out;
+static retro_atomic_int_t missing_interrupt;
+static retro_atomic_int_t fail_next_open;
 
 int __real_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame);
 int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
@@ -66,6 +72,23 @@ int __wrap_avformat_open_input(AVFormatContext **ctx, const char *url,
       const AVInputFormat *input, AVDictionary **options)
 {
    const char prefix[] = "regression-file:";
+   if (retro_atomic_load_acquire_int(&blocked_read))
+   {
+      if (!*ctx || !(*ctx)->interrupt_callback.callback)
+         retro_atomic_fetch_add_int(&missing_interrupt, 1);
+      else if ((*ctx)->interrupt_callback.callback((*ctx)->interrupt_callback.opaque))
+      {
+         avformat_free_context(*ctx);
+         *ctx = NULL;
+         return AVERROR_EXIT;
+      }
+      if (retro_atomic_exchange_int(&fail_next_open, 0))
+      {
+         avformat_free_context(*ctx);
+         *ctx = NULL;
+         return AVERROR(EINVAL);
+      }
+   }
    if (strncmp(url, prefix, sizeof(prefix) - 1) == 0)
       return __real_avformat_open_input(ctx, url + sizeof(prefix) - 1, NULL, options);
    return __real_avformat_open_input(ctx, url, input, options);
@@ -92,7 +115,25 @@ int __wrap_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet)
 int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
 int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
 {
-   int ret = __real_av_read_frame(ctx, packet);
+   int ret;
+   if (retro_atomic_load_acquire_int(&blocked_read))
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&read_entered, 1);
+      for (attempt = 0; attempt < 500; attempt++)
+      {
+         if (ctx->interrupt_callback.callback
+               && ctx->interrupt_callback.callback(ctx->interrupt_callback.opaque))
+         {
+            retro_atomic_store_release_int(&read_cancelled, 1);
+            return AVERROR_EXIT;
+         }
+         usleep(1000);
+      }
+      retro_atomic_store_release_int(&read_timed_out, 1);
+      return AVERROR(EIO);
+   }
+   ret = __real_av_read_frame(ctx, packet);
    if (ret == AVERROR_EOF)
       retro_atomic_fetch_add_int(&eof_reads, 1);
    if (ret >= 0 && retro_atomic_load_acquire_int(&mixed_source)
@@ -456,6 +497,36 @@ int main(void)
             "delayed final frame is grey 112, got %d", last_px);
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
+   }
+   current = "blocked capture read";
+   h = open_camera();
+   CHECK(h != NULL, "blocked camera initialization failed");
+   if (h)
+   {
+      unsigned cycle;
+      retro_atomic_store_release_int(&blocked_read, 1);
+      retro_atomic_store_release_int(&fail_next_open, 1);
+      for (cycle = 0; cycle < 2; cycle++)
+      {
+         unsigned attempt;
+         retro_atomic_store_release_int(&read_entered, 0);
+         retro_atomic_store_release_int(&read_cancelled, 0);
+         retro_atomic_store_release_int(&read_timed_out, 0);
+         CHECK(camera_ffmpeg.start(h), "blocked camera start/restart failed");
+         for (attempt = 0; attempt < 100
+               && !retro_atomic_load_acquire_int(&read_entered); attempt++)
+            usleep(1000);
+         CHECK(retro_atomic_load_acquire_int(&read_entered), "worker did not enter read");
+         camera_ffmpeg.stop(h);
+         CHECK(retro_atomic_load_acquire_int(&read_cancelled),
+               "stop did not interrupt capture read");
+         CHECK(!retro_atomic_load_acquire_int(&read_timed_out),
+               "capture read needed the fixture timeout");
+      }
+      CHECK(!retro_atomic_load_acquire_int(&missing_interrupt),
+            "input open/retry lacked interrupt callback");
+      camera_ffmpeg.free(h);
+      retro_atomic_store_release_int(&blocked_read, 0);
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);
