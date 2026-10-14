@@ -38,6 +38,7 @@ static int test_qm_raster;
 #include <d3d12.h>
 #include <formats/rmp4.h>
 #include "d3d11_video_decode_test_data.h"
+#include "dxva_hevc_access_unit_data.h"
 
 #include "frontend_stubs.h"
 
@@ -614,6 +615,74 @@ static const stream_t streams[] = {
    STREAM(cropped,     0)
 };
 
+static void test_hevc_main(void)
+{
+   static rh265_video_params_t params;
+   static rh265_hw_session_t session;
+   rh265_hw_ops_t ops;
+   rh265_access_unit_t au;
+   rh265_nal_t slices[4];
+   rh265_video *v = rh265_video_open();
+   video_hw_frame_t frame;
+   frames_t hw;
+   opened_t opened;
+   int ret, stride, w, h, plane, matches = 1;
+   unsigned attempt, x, y;
+   const uint8_t *sw;
+   memset(&hw, 0, sizeof(hw));
+   memset(&opened, 0, sizeof(opened));
+   memset(&ops, 0, sizeof(ops));
+   check("HEVC Main: parser opens", v != NULL);
+   if (!v) return;
+   if (rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8))
+         || rh265_video_get_access_unit(v, hevc_sample8, sizeof(hevc_sample8),
+            4, slices, 4, &au)
+         || rh265_video_get_params(v, au.first.pps_id, &params))
+   {
+      check("HEVC Main: fixture parses", 0);
+      goto done;
+   }
+   if (!d3d11_video_decode_hevc_open(&params, 32, &ops))
+   {
+      printf("HEVC Main: SKIP (no shared NV12 HEVC decoder)\n");
+      goto done;
+   }
+   check("HEVC Main: owner initializes", rh265_hw_session_init(&session, &ops, 32));
+   ret = 1;
+   for (attempt = 0; ret == 1 && attempt < 2048; attempt++)
+      ret = rh265_hw_session_submit(&session, hevc_sample8,
+            sizeof(hevc_sample8), &params, &au, slices);
+   check("HEVC Main: hardware submission accepts", ret == 0);
+   if (ret) goto done;
+   check("HEVC Main: exports shared frame", !rh265_hw_session_output(&session, true, &frame));
+   if (!frame.image) goto done;
+   check("HEVC Main: shared handles and fences import", take_hw(&hw, &opened, &frame));
+   ret = rh265_video_decode(v, hevc_sample8, sizeof(hevc_sample8));
+   if (ret == 0) ret = rh265_video_drain(v) == 0 ? 1 : -1;
+   check("HEVC Main: software picture", ret == 1);
+   if (ret != 1 || hw.n != 1) goto done;
+   for (plane = 0; plane < 3; plane++)
+   {
+      sw = rh265_video_plane(v, plane, &stride, &w, &h);
+      if (!sw || w != (int)(plane ? hw.w / 2 : hw.w)
+            || h != (int)(plane ? hw.h / 2 : hw.h))
+      { matches = 0; break; }
+      for (y = 0; y < (unsigned)h; y++)
+         for (x = 0; x < (unsigned)w; x++)
+         {
+            uint8_t value = plane ? hw.uv[0][y * hw.w + 2 * x + plane - 1]
+               : hw.y[0][y * hw.w + x];
+            if (sw[y * stride + x] != value) matches = 0;
+         }
+   }
+   check("HEVC Main: every imported pixel equals software", matches);
+done:
+   opened_clear(&opened);
+   frames_free(&hw);
+   d3d11_video_decode_hevc_close(&ops);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
    static const D3D_FEATURE_LEVEL levels[2] = {
@@ -638,6 +707,8 @@ int main(void)
       printf("d3d11_video_decode_test: SKIP (the backend did not start)\n");
       return 0;
    }
+
+   test_hevc_main();
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {

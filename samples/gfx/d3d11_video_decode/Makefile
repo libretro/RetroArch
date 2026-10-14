@@ -25,7 +25,10 @@ DECODERS := $(RA)/libretro-common/formats/mp4/rmp4.c \
             $(RA)/libretro-common/formats/h264/rh264.c
 DEPS     := $(RA)/gfx/common/dxva_h264.h d3d11_video_decode_test_data.h
 BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
-            $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h
+            $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h \
+            $(RA)/gfx/common/dxva_hevc.h $(RA)/gfx/common/dxva_hevc_rh265.h \
+            $(RA)/libretro-common/include/formats/rh265.h \
+            $(RA)/libretro-common/include/formats/rh265_hw.h
 
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
@@ -64,14 +67,16 @@ dxva_h264_test$(EXE): dxva_h264_test.c $(DECODERS) $(DEPS)
 	$(CC) $(CFLAGS) -o $@ dxva_h264_test.c $(DECODERS) $(LDFLAGS) -lm
 
 d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
-      $(DECODERS) $(DEPS) $(BACKEND)
+      $(DECODERS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
+      $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_mock_test.c \
-	   $(DECODERS) $(LDFLAGS) -lm
+	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
-      $(DECODERS) $(DEPS) $(BACKEND)
+      $(DECODERS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
+      $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
-	   $(DECODERS) $(LDFLAGS) -ld3d11 -lm
+	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -ld3d11 -lm
 
 PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/formats/image_transfer.c \

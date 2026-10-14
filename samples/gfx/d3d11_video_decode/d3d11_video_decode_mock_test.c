@@ -39,6 +39,7 @@
 #include <formats/rmp4.h>
 #include "frontend_stubs.h"
 #include "d3d11_video_decode_test_data.h"
+#include "dxva_hevc_access_unit_data.h"
 
 static int fails;
 
@@ -283,7 +284,8 @@ static int min_targets = 20;
 static HRESULT STDMETHODCALLTYPE m_check_format(mock_t *m, const GUID *g,
       DXGI_FORMAT f, BOOL *ok)
 {
-   *ok = !memcmp(g, &d3d11vd_h264_vld_nofgt, sizeof(*g))
+   *ok = (!memcmp(g, &d3d11vd_h264_vld_nofgt, sizeof(*g))
+      || !memcmp(g, &d3d11vd_hevc_main, sizeof(*g)))
       && f == DXGI_FORMAT_NV12;
    return S_OK;
 }
@@ -324,7 +326,7 @@ static HRESULT STDMETHODCALLTYPE m_create_view(mock_t *m, mock_t *res,
    v->slice  = d->Texture2D.ArraySlice;
    if (     d->ViewDimension == D3D11_VDOV_DIMENSION_TEXTURE2D
          && v->slice == (unsigned)views
-         && !memcmp(&d->DecodeProfile, &d3d11vd_h264_vld_nofgt,
+         && !memcmp(&d->DecodeProfile, &dec_desc.Guid,
                sizeof(GUID)))
       views_ok++;
    views++;
@@ -354,10 +356,20 @@ typedef struct
 #define MAX_SUBMITS 64
 static submit_t subs[MAX_SUBMITS];
 static int n_subs;
+static HRESULT release_hr = S_OK, submit_hr = S_OK, end_hr = S_OK;
+static int buffer_gets, releases;
+
+static HRESULT STDMETHODCALLTYPE m_release_buffer(mock_t *m, void *dec,
+      D3D11_VIDEO_DECODER_BUFFER_TYPE t)
+{
+   releases++;
+   return release_hr;
+}
 
 static HRESULT STDMETHODCALLTYPE m_get_buffer(mock_t *m, void *dec,
       D3D11_VIDEO_DECODER_BUFFER_TYPE t, UINT *size, void **p)
 {
+   buffer_gets++;
    *size = buf_cap[t];
    *p    = bufs[t];
    return S_OK;
@@ -381,7 +393,7 @@ static HRESULT STDMETHODCALLTYPE m_begin(mock_t *m, void *dec, mock_t *view,
 static HRESULT STDMETHODCALLTYPE m_end(void)
 {
    ends++;
-   return S_OK;
+   return end_hr;
 }
 
 static HRESULT STDMETHODCALLTYPE m_submit(mock_t *m, void *dec, UINT n,
@@ -389,6 +401,8 @@ static HRESULT STDMETHODCALLTYPE m_submit(mock_t *m, void *dec, UINT n,
 {
    submit_t *s;
    UINT i;
+   if (FAILED(submit_hr))
+      return submit_hr;
    if (n_subs >= MAX_SUBMITS || n > 4)
       return S_OK;
    s        = &subs[n_subs++];
@@ -470,6 +484,7 @@ static void mocks_init(void)
    vt[K_VDEVICE][SLOT(ID3D11VideoDeviceVtbl, GetVideoDecoderConfig)]      = (void*)m_config;
    vt[K_VDEVICE][SLOT(ID3D11VideoDeviceVtbl, CreateVideoDecoder)]         = (void*)m_create_decoder;
    vt[K_VDEVICE][SLOT(ID3D11VideoDeviceVtbl, CreateVideoDecoderOutputView)] = (void*)m_create_view;
+   vt[K_VCONTEXT][SLOT(ID3D11VideoContextVtbl, ReleaseDecoderBuffer)] = (void*)m_release_buffer;
    vt[K_VCONTEXT][SLOT(ID3D11VideoContextVtbl, GetDecoderBuffer)]     = (void*)m_get_buffer;
    vt[K_VCONTEXT][SLOT(ID3D11VideoContextVtbl, DecoderBeginFrame)]    = (void*)m_begin;
    vt[K_VCONTEXT][SLOT(ID3D11VideoContextVtbl, DecoderEndFrame)]      = (void*)m_end;
@@ -844,6 +859,116 @@ static void test_device_loss(void)
    check("loss: all resources retire", live == before);
 }
 
+static void test_hevc(void)
+{
+   static rh265_video_params_t params;
+   static rh265_hw_session_t session;
+   rh265_hw_ops_t ops;
+   rh265_access_unit_t au;
+   rh265_nal_t slices[4];
+   rh265_video *v = rh265_video_open();
+   video_hw_frame_t frame;
+   d3d11vd_dec_t *d;
+   const D3D11_VIDEO_DECODER_BUFFER_DESC *desc;
+   unsigned i;
+   int before = live, old_gets, old_begins;
+   check("HEVC: parser opens", v != NULL);
+   if (!v) return;
+   check("HEVC: config", !rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8)));
+   check("HEVC: borrowed AU", !rh265_video_get_access_unit(v, hevc_sample8,
+         sizeof(hevc_sample8), 4, slices, 4, &au));
+   check("HEVC: params", !rh265_video_get_params(v, au.first.pps_id, &params));
+   params.bit_depth = 10;
+   check("HEVC: Main10 refused before resource allocation",
+         !d3d11_video_decode_hevc_open(&params, 32, &ops) && live == before && !ops.decoder);
+   params.bit_depth = 8;
+   check("HEVC: undersized DPB refused", !d3d11_video_decode_hevc_open(&params, 1, &ops));
+   views = views_ok = 0;
+   if (!d3d11_video_decode_hevc_open(&params, 32, &ops))
+   {
+      check("HEVC: device opens", 0);
+      rh265_video_close(v);
+      return;
+   }
+   d = (d3d11vd_dec_t*)ops.decoder;
+   check("HEVC: Main profile, raw 1, matching views", dec_raw == 1
+         && !memcmp(&dec_desc.Guid, &d3d11vd_hevc_main, sizeof(GUID))
+         && views == 32 && views_ok == 32);
+   check("HEVC: session", rh265_hw_session_init(&session, &ops, 32));
+   subs_free(); old_gets = buffer_gets; old_begins = begins;
+   pending_left = 1;
+   check("HEVC: busy neither commits nor acquires buffers",
+         rh265_hw_session_submit(&session, hevc_sample8, sizeof(hevc_sample8),
+            &params, &au, slices) == 1 && buffer_gets == old_gets
+         && begins == old_begins && d->feedback == 0 && session.state.serial == 1);
+   check("HEVC: retry submits once", !rh265_hw_session_submit(&session,
+         hevc_sample8, sizeof(hevc_sample8), &params, &au, slices)
+         && n_subs == 1 && session.state.serial == 2);
+   check("HEVC: disabled scaling list omits matrix", subs[0].nbufs == 3
+         && !find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX));
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS);
+   check("HEVC: 232-byte picture parameters", desc && desc->DataSize == DXVA_HEVC_PP_SIZE);
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_BITSTREAM);
+   check("HEVC: borrowed NAL packed directly", desc && !(desc->DataSize & 127)
+         && subs[0].bs[2] == 1 && !memcmp(subs[0].bs + 3,
+            slices[0].data, slices[0].size));
+   if (desc)
+      for (i = (unsigned)slices[0].size + 3; i < desc->DataSize; i++)
+         if (subs[0].bs[i]) { check("HEVC: zero padding", 0); break; }
+   check("HEVC: output gets shared lease", !rh265_hw_session_output(&session, true, &frame)
+         && frame.image && frame.width == 64 && frame.height == 64);
+   d3d11_video_decode_hevc_close(&ops);
+   check("HEVC: close retains unread handles", !ops.decoder && live > before);
+   video_hw_frame_abandon(&frame);
+   d3d11vd_grave_reap(false);
+   check("HEVC: abandon retires resources", live == before);
+
+   params.scaling_list_enabled = 1;
+   memset(params.list4, 16, sizeof(params.list4));
+   memset(params.list8, 16, sizeof(params.list8));
+   memset(params.list16, 16, sizeof(params.list16));
+   memset(params.list32, 16, sizeof(params.list32));
+   memset(params.dc16, 16, sizeof(params.dc16));
+   memset(params.dc32, 16, sizeof(params.dc32));
+   views = views_ok = 0;
+   check("HEVC: scaling session opens", d3d11_video_decode_hevc_open(&params, 32, &ops));
+   check("HEVC: scaling owner initializes", rh265_hw_session_init(&session, &ops, 32));
+   subs_free();
+   check("HEVC: enabled scaling lists submit", !rh265_hw_session_submit(&session,
+         hevc_sample8, sizeof(hevc_sample8), &params, &au, slices) && n_subs == 1);
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX);
+   check("HEVC: 1000-byte matrix included", subs[0].nbufs == 4
+         && desc && desc->DataSize == DXVA_HEVC_QM_SIZE);
+   check("HEVC: raster scaling coefficients converted", bufs[
+         D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX][0] == params.list4[0][0]
+         && bufs[D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX][998] == params.dc32[0]);
+   d3d11_video_decode_hevc_close(&ops);
+   params.scaling_list_enabled = 0;
+
+   for (i = 0; i < 4; i++)
+   {
+      views = views_ok = 0;
+      check("HEVC: fault session opens", d3d11_video_decode_hevc_open(&params, 32, &ops));
+      check("HEVC: fault owner initializes", rh265_hw_session_init(&session, &ops, 32));
+      old_begins = begins;
+      if (i == 0) buf_cap[D3D11_VIDEO_DECODER_BUFFER_BITSTREAM] = 1;
+      if (i == 1) release_hr = E_FAIL;
+      if (i == 2) submit_hr = E_FAIL;
+      if (i == 3) end_hr = E_FAIL;
+      check("HEVC: driver failure ends frame without committing",
+            rh265_hw_session_submit(&session, hevc_sample8, sizeof(hevc_sample8),
+               &params, &au, slices) < 0 && session.state.serial == 1
+            && begins == old_begins + 1 && begins == ends && session.broken);
+      buf_cap[D3D11_VIDEO_DECODER_BUFFER_BITSTREAM] = sizeof(bufs[0]);
+      release_hr = submit_hr = end_hr = S_OK;
+      d3d11_video_decode_hevc_close(&ops);
+      check("HEVC: failure closes without leaks", live == before);
+   }
+   check("HEVC: buffers always released", buffer_gets == releases);
+   rh265_video_close(v);
+   subs_free();
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -880,6 +1005,7 @@ int main(void)
          170, 122, 0, 0, 88, 1, 12);
    test_direct();
    test_device_loss();
+   test_hevc();
 
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);

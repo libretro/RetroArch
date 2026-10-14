@@ -13,12 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* rh264's hardware backend on D3D11 video.
+/* H.264/HEVC hardware backend on D3D11 video.
  *
  * A decoder is one stream, on a device of its own made on the driver's
  * adapter: its immediate context is used by the decoding thread alone,
  * and the driver's device never sees another thread. The DPB is one
- * NV12 texture array, a slice per rh264 slot, decoded into through one
+ * NV12 texture array, a slice per decoder slot, decoded into through one
  * output view each.
  *
  * A picture to be shown is copied, from the visible window, into one

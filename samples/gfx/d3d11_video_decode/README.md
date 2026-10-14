@@ -79,13 +79,24 @@ preservation and parser integration; it does not execute a GPU decoder.
 It now exercises busy decode/output callbacks, direct packing, one-time
 commit and caller abandonment through the session dispatcher.
 
-This is the HEVC parameter/access-unit/callback-dispatch layer. Device
-backends and the main decoder/player still need to use these callbacks.
-D3D11 decode/profile setup, GPU slot scheduling,
-NV12/P010 export, main-player integration and real GPU reference checks
-remain. It does not register or advertise a working HEVC hardware decoder.
-Frame ownership should follow the existing H.264 fences/release protocol;
-compatible paths must stay GPU-resident through presentation/encoding.
+`d3d11_video_decode_hevc_open` supplies Main 8-bit callbacks on the initialized
+adapter, selecting the HEVC Main profile and raw-bitstream configuration 1.
+It reuses the H.264 NV12 array, shared output textures and fence retirement.
+Compressed NAL spans are packed directly into the acquired driver buffer;
+picture, optional scaling matrix and short-slice buffers are submitted once.
+Busy BeginFrame leaves ownership uncommitted. Driver failures end an opened
+frame and stop the session. Close retains unread export handles until their
+lease is consumed or abandoned. Close every session before adapter deinit.
+
+The mock tests cover profile/configuration, buffer sizes/padding, optional
+matrices, busy retry, driver failures and deferred close. The device oracle
+compares an imported Main picture with software through shared handles and
+fences; it skips if device setup is unavailable. Oracle readback is test-only.
+Main10/P010, player registration, Vulkan HEVC and real inter-picture GPU
+reference coverage remain. The main decoder/player does not select this
+backend yet. Export performs one GPU crop/copy into the shared texture pool;
+it never reads pixels back to the CPU. Removing that copy requires array-layer
+and crop transport plus compatible sharing and retained DPB ownership.
 
 Format references:
 
