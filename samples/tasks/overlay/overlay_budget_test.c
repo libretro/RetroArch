@@ -26,6 +26,7 @@
  *                  progress, so the loader cannot stall.
  *   one read     - a still is read once, by its decode; only a file
  *                  the decode found animated is read for its bytes.
+ *   error        - a load that fails retires, once, with no overlay.
  *   predecode    - with a threaded task queue a pack's distinct
  *                  images are decoded together across the cores before
  *                  the first overlay is parsed, each exactly once, and
@@ -496,6 +497,65 @@ static void lane_still_read_once(void)
       fprintf(stderr, "[pass] one-read lane\n");
 }
 
+/* A load that fails retires: its callback runs once, with no overlay. */
+static unsigned error_cb_calls;
+static void error_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   error_cb_calls++;
+   overlay_cb(task, task_data, user_data, err);
+}
+
+static void lane_error_retires(void)
+{
+   char     cfg[512];
+   unsigned had   = failures;
+   unsigned ticks = 0;
+   FILE    *f;
+
+   snprintf(cfg, sizeof(cfg), "%s/bad.cfg", fixture_dir);
+   if (!(f = fopen(cfg, "wb")))
+   {
+      CHECK(false, "fixture write failed");
+      return;
+   }
+   /* One descriptor with two of its six fields. */
+   fprintf(f, "overlays = 1\n");
+   fprintf(f, "overlay0_name = ol0\n");
+   fprintf(f, "overlay0_full_screen = true\n");
+   fprintf(f, "overlay0_rect = \"0.0,0.0,1.0,1.0\"\n");
+   fprintf(f, "overlay0_overlay = img.png\n");
+   fprintf(f, "overlay0_descs = 1\n");
+   fprintf(f, "overlay0_desc0 = \"a,0.5\"\n");
+   fclose(f);
+
+   error_cb_calls  = 0;
+   loaded_overlays = 0;
+   task_queue_init(false, NULL);
+   clock_now  = 0;
+   clock_step = 0;
+   CHECK(task_push_overlay_load_default(error_cb, cfg, false, NULL),
+         "overlay task push failed");
+   while (queue_busy() && ticks < 100000)
+   {
+      task_queue_check();
+      ticks++;
+   }
+   /* The retire runs on the check after the handler finished. */
+   task_queue_check();
+   task_queue_deinit();
+   release_tracked_images();
+
+   CHECK(ticks < 100000, "a failed load never retired (%u checks)", ticks);
+   CHECK(error_cb_calls == 1, "callback ran %u times, wanted 1",
+         error_cb_calls);
+   CHECK(loaded_overlays == 0, "a failed load handed over %u overlays",
+         loaded_overlays);
+   if (failures == had)
+      fprintf(stderr, "[pass] error lane: a failed load retires (%u checks)\n",
+            ticks);
+}
+
 static void lane_completeness(void)
 {
    unsigned had = failures;
@@ -703,6 +763,7 @@ int main(void)
    lane_work_per_tick_does_not_scale();
    lane_exhausted_window_progresses();
    lane_still_read_once();
+   lane_error_retires();
    decode_lock = slock_new();
    lane_predecode();
    slock_free(decode_lock);

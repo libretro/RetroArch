@@ -1597,7 +1597,9 @@ static void task_overlay_handler(retro_task_t *task)
          task_overlay_resolve_iterate(task);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+         /* The queue retires a task on FINISHED alone. */
+         task_set_flags(task,
+               RETRO_TASK_FLG_CANCELLED | RETRO_TASK_FLG_FINISHED, true);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
       default:
