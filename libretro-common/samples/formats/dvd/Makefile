@@ -5,6 +5,7 @@ TARGET_TEST3 := rdvd_ifo_test$(EXE)
 TARGET_TEST4 := rdvd_source_test$(EXE)
 TARGET_TEST5 := rdvd_vfs_test$(EXE)
 TARGET_TEST6 := rdvd_vfs_real_test$(EXE)
+TARGET_TEST7 := rdvd_ac3_test$(EXE)
 CC ?= cc
 CFLAGS += -std=c89 -pedantic -Wall -Wextra -Werror -I../../../include
 ifneq ($(SANITIZER),)
@@ -14,7 +15,7 @@ endif
 SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_demux.c ../../../formats/dvd/rdvd_packet.c \
            ../../../formats/mpeg1/rmpeg1_ps.c
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7)
 
 $(TARGET): $(SOURCES) ../../../include/formats/rdvd_demux.h ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
@@ -46,7 +47,11 @@ VFS_REAL_SOURCES := ../../../rthreads/tpool.c ../../../rthreads/retro_eventcount
 $(TARGET_TEST6): $(DVD_STREAM_HEADERS) $(DVD_STREAM_SOURCES) rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES)
 	$(CC) $(filter-out -std=c89 -Werror,$(CFLAGS)) -std=gnu99 -DHAVE_THREADS $(DVD_STREAM_SOURCES) rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES) -o $@ $(LDFLAGS) $(VFS_REAL_LIBS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6)
+AC3_SOURCES := ../../../formats/dvd/rdvd_ac3.c ../../../formats/ac3/rac3_frame.c
+$(TARGET_TEST7): rdvd_ac3_test.c $(AC3_SOURCES) ../../../include/formats/rdvd_ac3.h
+	$(CC) $(CFLAGS) rdvd_ac3_test.c $(AC3_SOURCES) -o $@ $(LDFLAGS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
@@ -54,6 +59,7 @@ check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) 
 	./$(TARGET_TEST4)
 	./$(TARGET_TEST5)
 	./$(TARGET_TEST6)
+	./$(TARGET_TEST7)
 
 clean:
 	rm -f rdvd_packet_test rdvd_packet_test.exe
@@ -66,5 +72,7 @@ clean:
 	rm -f rdvd_vfs_test rdvd_vfs_test.exe
 
 	rm -f rdvd_vfs_real_test rdvd_vfs_real_test.exe
+
+	rm -f rdvd_ac3_test rdvd_ac3_test.exe
 
 .PHONY: all check clean
