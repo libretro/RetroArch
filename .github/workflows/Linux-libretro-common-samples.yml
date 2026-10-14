@@ -382,6 +382,9 @@ jobs:
           # Samples that are currently broken at build time on a stock
           # Ubuntu host and are therefore neither built nor run.
           declare -a SKIP_DIRS=(
+            # A 3DS homebrew, built with devkitARM and run on the
+            # console or an emulator.
+            queues/task_queue_ctr_prio_test
           )
 
           is_in() {
