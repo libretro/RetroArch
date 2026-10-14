@@ -10,9 +10,11 @@
 gfx/drivers/d3d12.c|d3d12_fence_wait|SetEventOnCompletion|1
 #
 # Lifecycle drains: driver teardown, a shader preset swapped, the font
-# rebuilt, a hardware core's textures changing size, and the retired
-# list unable to grow.
+# rebuilt, a hardware core's textures changing size, the retired list
+# unable to grow, and the swap chain resized (the last Present still
+# holds a back buffer; the check also requires this one).
 gfx/drivers/d3d12.c|d3d12_gfx_free|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_gfx_frame_body|d3d12_queue_drain|1
 gfx/drivers/d3d12.c|d3d12_gfx_set_shader|d3d12_queue_drain|1
 gfx/drivers/d3d12.c|d3d12_shader_load_step|d3d12_queue_drain|1
 gfx/drivers/d3d12.c|d3d12_font_free|d3d12_queue_drain|1

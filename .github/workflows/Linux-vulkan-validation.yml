@@ -15,7 +15,11 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 #    tools/d3d12_idle_wait_check.c holds the D3D12 driver to the same:
 #    a queue drain or a fence wait not on
 #    tools/d3d12_idle_wait_allow.list fails, so the frame paths, which
-#    wait only for their predecessor's own signal, stay that way.
+#    wait only for their predecessor's own signal, stay that way. A
+#    ResizeBuffers with no drain before it in its function fails too:
+#    that signal is behind the frame's list, not its Present, and the
+#    swap chain resized on a software core's first frame while the
+#    Present still held a back buffer.
 #
 # 2. Validation harness: the threaded-video harness (real frontend,
 #    real driver, only main() replaced) run on the Vulkan driver over

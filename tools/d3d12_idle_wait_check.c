@@ -20,6 +20,12 @@
  * `file|function|call|count` entries, one per line. A new site fails the
  * check; so does a stale entry, so the list shrinks with the code.
  *
+ * One drain is required rather than allowed: a ResizeBuffers must
+ * follow a d3d12_queue_drain in its function. The frame's own signal
+ * is behind its command list, not its Present, and resizing a back
+ * buffer a Present still holds is a device error (it crashed the
+ * driver on a software core's first frame).
+ *
  * Usage:
  *   tools/check.sh d3d12_idle_wait_check [--root DIR] [--allow FILE]
  *   tools/check.sh d3d12_idle_wait_check --selftest
@@ -32,20 +38,26 @@ static const char *const files[] = {
    "gfx/drivers/d3d12.c"
 };
 
-/* \b(d3d12_queue_drain|SetEventOnCompletion)\s*\(  each on the line,
- * by name; NULL when none is left from p. */
+static const char *const wait_names[] = {
+   "d3d12_queue_drain", "SetEventOnCompletion"
+};
+
+static const char *const resize_names[] = {
+   "DXGIResizeBuffers", "ResizeBuffers"
+};
+
+/* \b(name)\s*\(  each on the line, by name; NULL when none is left
+ * from p. */
 static const char *next_call(const char *p, const char *e, const char **nb,
-      const char **ne, const char *b)
+      const char **ne, const char *b, const char *const *names,
+      size_t count)
 {
-   static const char *const names[] = {
-      "d3d12_queue_drain", "SetEventOnCompletion"
-   };
    for (; p < e; p++)
    {
       size_t i;
       if (!CK_IS_WORD(*p) || (p > b && CK_IS_WORD(p[-1])))
          continue;
-      for (i = 0; i < 2; i++)
+      for (i = 0; i < count; i++)
       {
          size_t n = strlen(names[i]);
          const char *q;
@@ -95,13 +107,16 @@ static unsigned long get(const struct ck_set *set, const char *key)
    return slot ? *(unsigned long*)*slot : 0;
 }
 
-/* {file|function|call: count} of waits in one file */
-static void scan_file(const char *path, const char *rel, struct ck_set *found)
+/* {file|function|call: count} of waits in one file, and of resizes
+ * with no drain before them in their function in @undrained */
+static void scan_file(const char *path, const char *rel, struct ck_set *found,
+      struct ck_set *undrained)
 {
    struct ck_sb func = {0};
    size_t len;
    char *raw = ck_read_file(path, &len);
    char *text, *line;
+   int drained = 0;
 
    if (!raw)
       return;
@@ -118,18 +133,37 @@ static void scan_file(const char *path, const char *rel, struct ck_set *found)
       {
          func.len = 0;
          ck_sb_add(&func, nb, (size_t)(ne - nb));
+         drained  = 0;
          /* the definition of the drain itself is not a call */
          p = e;
       }
-      while ((p = next_call(p, e, &nb, &ne, line)))
+      for (;;)
       {
          struct ck_sb key = {0};
+         const char *w, *r, *wb = NULL, *we = NULL, *rb = NULL, *re = NULL;
+         w = next_call(p, e, &wb, &we, line, wait_names, 2);
+         r = next_call(p, e, &rb, &re, line, resize_names, 2);
+         if (!w && !r)
+            break;
          ck_sb_puts(&key, rel);
          ck_sb_putc(&key, '|');
          ck_sb_puts(&key, func.p);
          ck_sb_putc(&key, '|');
-         ck_sb_add(&key, nb, (size_t)(ne - nb));
-         add(found, key.p, 1);
+         if (w && (!r || wb < rb))
+         {
+            ck_sb_add(&key, wb, (size_t)(we - wb));
+            add(found, key.p, 1);
+            if (!memcmp(wb, wait_names[0], (size_t)(we - wb)))
+               drained = 1;
+            p = w;
+         }
+         else
+         {
+            ck_sb_puts(&key, "ResizeBuffers");
+            if (!drained)
+               add(undrained, key.p, 1);
+            p = r;
+         }
          ck_sb_free(&key);
       }
       line = nl ? nl + 1 : NULL;
@@ -209,6 +243,7 @@ static int check(const char *root, const char *allow_path)
 {
    struct ck_set allow = {0};
    struct ck_set found = {0};
+   struct ck_set undrained = {0};
    struct ck_strv keys = {0};
    size_t i;
    int bad = 0;
@@ -221,9 +256,18 @@ static int check(const char *root, const char *allow_path)
       ck_sb_putc(&path, '/');
       ck_sb_puts(&path, files[i]);
       if (ck_is_file(path.p) || ck_is_dir(path.p))
-         scan_file(path.p, files[i], &found);
+         scan_file(path.p, files[i], &found, &undrained);
       ck_sb_free(&path);
    }
+   sorted_keys(&undrained, &keys);
+   for (i = 0; i < keys.n; i++)
+   {
+      fprintf(stderr, "resize: %s: %lu call(s) with no d3d12_queue_drain"
+            " before them in the function\n", keys.v[i],
+            get(&undrained, keys.v[i]));
+      bad++;
+   }
+   ck_strv_free(&keys);
    sorted_keys(&found, &keys);
    for (i = 0; i < keys.n; i++)
    {
@@ -252,6 +296,7 @@ static int check(const char *root, const char *allow_path)
    ck_strv_free(&keys);
    free_set(&allow);
    free_set(&found);
+   free_set(&undrained);
    return bad;
 }
 
@@ -273,12 +318,33 @@ static const char selftest_src[] =
    "   d3d12_queue" "_drain(d3d12);\n"
    "}\n";
 
+static const char selftest_resize_src[] =
+   "\n"
+   "static void resize_ok(void *p)\n"
+   "{\n"
+   "   d3d12_queue" "_drain(d3d12);\n"
+   "   DXGIResize" "Buffers(c, 2, w, h, f, 0);\n"
+   "}\n"
+   "\n"
+   "static void resize_late(void *p)\n"
+   "{\n"
+   "   c->lpVtbl->Resize" "Buffers(c, 2, w, h, f, 0); d3d12_queue" "_drain(d3d12);\n"
+   "}\n"
+   "\n"
+   "static void resize_none(void *p)\n"
+   "{\n"
+   "   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);\n"
+   "   DXGIResize" "Buffers(c, 2, w, h, f, 0);\n"
+   "}\n";
+
 static int selftest(void)
 {
    static const char rel[] = "gfx/drivers/d3d12.c";
    struct ck_set found = {0};
+   struct ck_set undrained = {0};
    struct ck_sb src    = {0};
    struct ck_sb allow  = {0};
+   struct ck_sb text   = {0};
    char *tmp           = ck_tmpdir();
    int rc              = 0;
 
@@ -286,15 +352,24 @@ static int selftest(void)
    ck_sb_putc(&src, '/');
    ck_sb_puts(&src, rel);
    ck_mkdirs_for(src.p);
-   ck_write_file(src.p, selftest_src);
+   ck_sb_puts(&text, selftest_src);
+   ck_sb_puts(&text, selftest_resize_src);
+   ck_write_file(src.p, text.p);
    ck_sb_puts(&allow, tmp);
    ck_sb_puts(&allow, "/allow.list");
    ck_write_file(allow.p,
          "gfx/drivers/d3d12.c|d3d12_queue_drain|SetEventOnCompletion|1\n"
          "gfx/drivers/d3d12.c|keep_me|d3d12_queue_drain|1\n"
+         "gfx/drivers/d3d12.c|resize_ok|d3d12_queue_drain|1\n"
+         "gfx/drivers/d3d12.c|resize_late|d3d12_queue_drain|1\n"
          "gfx/drivers/d3d12.c|gone|d3d12_queue_drain|1\n");
-   scan_file(src.p, rel, &found);
-   if (found.n != 3
+   scan_file(src.p, rel, &found, &undrained);
+   if (found.n != 5
+         || undrained.n != 2
+         || get(&undrained, "gfx/drivers/d3d12.c|resize_late|"
+            "ResizeBuffers") != 1
+         || get(&undrained, "gfx/drivers/d3d12.c|resize_none|"
+            "ResizeBuffers") != 1
          || get(&found, "gfx/drivers/d3d12.c|d3d12_queue_drain|"
             "SetEventOnCompletion") != 1
          || get(&found, "gfx/drivers/d3d12.c|keep_me|d3d12_queue_drain") != 1
@@ -304,19 +379,21 @@ static int selftest(void)
       fprintf(stderr, "selftest: scan mismatch\n");
       rc = 1;
    }
-   /* one new offender, one stale entry: two findings */
-   else if (check(tmp, allow.p) != 2)
+   /* one new offender, one stale entry, two undrained resizes */
+   else if (check(tmp, allow.p) != 4)
    {
-      fprintf(stderr, "selftest: expected 2 findings\n");
+      fprintf(stderr, "selftest: expected 4 findings\n");
       rc = 1;
    }
    else
       fprintf(stderr, "selftest: ok\n");
    free_set(&found);
+   free_set(&undrained);
    ck_rmtree(tmp);
    free(tmp);
    ck_sb_free(&src);
    ck_sb_free(&allow);
+   ck_sb_free(&text);
    return rc;
 }
 

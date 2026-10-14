@@ -600,9 +600,8 @@ typedef struct
       D3D12Fence               fence;
       HANDLE                   fenceEvent;
       UINT64                   fenceValue;
-      /* fenceValue the present signals once its frame's command list
-       * has executed: the frame in flight is done when the fence has
-       * reached it. */
+      /* fenceValue signalled once the frame's command list has
+       * executed, before its Present */
       UINT64                   frameSignal;
    } queue;
 
@@ -8512,10 +8511,9 @@ static bool d3d12_gfx_frame_body(
             1000,
             true);
 
-   /* What the last frame read - its constants, its upload buffers, the
-    * back buffers a resize gives up - is free once its own signal is
-    * reached; the queue is not drained, so a hardware core's work
-    * queued since runs on */
+   /* What the last frame read - its constants, its upload buffers - is
+    * free once its own signal is reached; the queue is not drained, so
+    * a hardware core's work queued since runs on */
    d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
    d3d12_retired_tick(d3d12);
 
@@ -8590,6 +8588,10 @@ static bool d3d12_gfx_frame_body(
 
             d3d12->chain.bit_depth     = desired_bit_depth;
 #endif
+
+            /* frameSignal is behind the last list, not its Present,
+             * which still holds a back buffer */
+            d3d12_queue_drain(d3d12);
 
             for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
                Release(d3d12->chain.renderTargets[i]);
