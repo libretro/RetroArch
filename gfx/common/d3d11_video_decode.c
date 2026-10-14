@@ -154,6 +154,7 @@ static struct
    retro_atomic_ptr_t grave;
    rh264_hw_ops_t ops;
    rh265_hw_backend_t hevc;
+   unsigned import_formats;
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -837,16 +838,17 @@ void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops)
 static bool d3d11vd_hevc_open(void *user, const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
-   (void)user;
-   /* Player importers currently accept NV12 only. */
-   if (!params || params->bit_depth != 8)
+   const unsigned *formats = (const unsigned*)user;
+   if (!params || !formats
+         || !(*formats & (params->bit_depth == 10
+                  ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)))
       return false;
    return d3d11_video_decode_hevc_open(params, slots, ops);
 }
 
 /* ---- the backend ---- */
 
-bool d3d11_video_decode_init_adapter(void *adapter)
+bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
 {
    IDXGIAdapter *a = (IDXGIAdapter*)adapter;
 
@@ -875,14 +877,20 @@ bool d3d11_video_decode_init_adapter(void *adapter)
    d3d11vd.ops.readback = d3d11vd_readback;
    d3d11vd.up         = true;
    rh264_set_hw_backend(&d3d11vd.ops);
-   d3d11vd.hevc.user = NULL;
+   d3d11vd.import_formats = formats;
+   d3d11vd.hevc.user = &d3d11vd.import_formats;
    d3d11vd.hevc.open = d3d11vd_hevc_open;
    d3d11vd.hevc.close = d3d11_video_decode_hevc_close;
    rh265_set_hw_backend(&d3d11vd.hevc);
    return true;
 }
 
-bool d3d11_video_decode_init(void *device)
+bool d3d11_video_decode_init_adapter(void *adapter)
+{
+   return d3d11_video_decode_init_adapter_formats(adapter, IMAGE_PIXFMT_NV12);
+}
+
+bool d3d11_video_decode_init_formats(void *device, unsigned formats)
 {
    ID3D11Device *dev     = (ID3D11Device*)device;
    IDXGIDevice  *dxgi    = NULL;
@@ -895,9 +903,14 @@ bool d3d11_video_decode_init(void *device)
       return false;
    dxgi->lpVtbl->GetAdapter(dxgi, &adapter);
    D3D11VD_RELEASE(dxgi);
-   ok = d3d11_video_decode_init_adapter(adapter);
+   ok = d3d11_video_decode_init_adapter_formats(adapter, formats);
    D3D11VD_RELEASE(adapter);
    return ok;
+}
+
+bool d3d11_video_decode_init(void *device)
+{
+   return d3d11_video_decode_init_formats(device, IMAGE_PIXFMT_NV12);
 }
 
 void d3d11_video_decode_deinit(void)

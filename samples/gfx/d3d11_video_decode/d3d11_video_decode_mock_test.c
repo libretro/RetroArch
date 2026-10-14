@@ -1100,6 +1100,33 @@ int main(void)
    test_hevc_registry();
 
    d3d11_video_decode_deinit();
+   check("P010 renderer backend starts", d3d11_video_decode_init_formats(dev,
+         IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010));
+   the_adapter = (mock_t*)d3d11vd.adapter;
+   d3d11vd.create = mock_create;
+   {
+      rh265_video *v = rh265_video_open();
+      video_hw_frame_t frame;
+      int before = live;
+      check("P010 renderer: config", v && !rh265_video_set_extradata(v,
+            hevc_config10, sizeof(hevc_config10)));
+      check("P010 renderer: automatic Main10", rh265_video_set_hw(v, 1)
+            && rh265_video_is_hw(v));
+      pending_left = 1;
+      check("P010 renderer: busy", rh265_video_decode(v,
+            hevc_sample10, sizeof(hevc_sample10)) == 2);
+      check("P010 renderer: accepted", rh265_video_decode(v,
+            hevc_sample10, sizeof(hevc_sample10)) == 1);
+      check("P010 renderer: lease", !rh265_video_hw_frame(v, &frame)
+            && frame.pixfmt == IMAGE_PIXFMT_P010);
+      rh265_video_close(v);
+      check("P010 renderer: close retains lease", live > before);
+      video_hw_frame_abandon(&frame);
+      d3d11vd_grave_reap(false);
+      check("P010 renderer: abandonment retires owner", live == before);
+   }
+
+   d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);
    m_release(m);
    check("no mock object left", live == 0);

@@ -124,6 +124,8 @@ check: all
 	$(RUNNER) ./video_hw_format_test$(EXE)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" RUNNER="$(RUNNER)" \
 	   python3 ../d3d_texture_update_formats/run.py
+	CC="$(CC)" CFLAGS="$(CFLAGS)" RUNNER="$(RUNNER)" \
+	   python3 ../d3d_p010_import/run.py
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)

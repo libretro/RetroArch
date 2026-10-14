@@ -554,6 +554,7 @@ typedef struct
    /* Set when frames on another device can be imported */
    ID3D11Device5        *device5;
    ID3D11DeviceContext4 *context4;
+   unsigned              import_formats;
    bool                  video_decode;
 #endif
    D3D11DeviceContext    context;
@@ -8170,7 +8171,13 @@ static const char d3d11_planar_cs_src[] =
    "   ch = k1.z > 0.5 ? C0.Load(c) : float2(C0.Load(c).x, C1.Load(c));\n"
    "   if (k1.w > 0.5)\n"
    "      ch = ch.yx;\n"
-   "   ch -= 128.0 / 255.0;\n"
+   "   if (size.z != 0)\n"
+   "   {\n"
+   "      float scale = size.w != 0 ? 65535.0 / 65472.0 : 65535.0 / 65280.0;\n"
+   "      y *= scale;\n"
+   "      ch *= scale;\n"
+   "   }\n"
+   "   ch -= size.z != 0 && size.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
    "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
    "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x)), 1.0);\n"
    "}\n";
@@ -8307,7 +8314,7 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
 static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       D3D11UnorderedAccessView uav, D3D11ShaderResourceView *views,
       unsigned width, unsigned height, unsigned yuv, bool interleaved,
-      bool swap)
+      bool swap, bool p010)
 {
    D3D11DeviceContext ctx          = d3d11->context;
    D3D11ShaderResourceView none[3];
@@ -8333,8 +8340,8 @@ static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       f[7] = swap ? 1.0f : 0.0f;
       u[0] = width;
       u[1] = height;
-      u[2] = 0;
-      u[3] = 0;
+      u[2] = p010 ? 1 : 0;
+      u[3] = (yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0;
    }
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->planar_cb, 0);
 
@@ -8398,7 +8405,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
    return d3d11_planar_convert(d3d11, p->uav, p->plane_view, image->width,
-         image->height, tp->yuv, p->interleaved, swap)
+         image->height, tp->yuv, p->interleaved, swap, false)
       ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
@@ -8469,10 +8476,10 @@ static const GUID d3d11_iid_device5 =
 static const GUID d3d11_iid_context4 =
    { 0x917600da, 0xf58c, 0x4c33, { 0x98, 0xd8, 0x3e, 0x15, 0xb3, 0x90, 0xfa, 0x24 } };
 
-/* The NV12 texture behind @handle, opened once, and its planes' views;
+/* The NV12/P010 texture behind @handle, opened once, and its planes' views;
  * -1 when it cannot be read as a @w x @h frame */
 static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
-      uint64_t handle, unsigned w, unsigned h)
+      uint64_t handle, unsigned w, unsigned h, unsigned pixfmt)
 {
    D3D11_SHADER_RESOURCE_VIEW_DESC vd;
    D3D11_TEXTURE2D_DESC desc;
@@ -8481,14 +8488,20 @@ static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
 
    for (i = 0; i < imp->num_tex; i++)
       if (imp->tex_handle[i] == handle)
-         return (int)i;
+      {
+         imp->tex[i]->lpVtbl->GetDesc(imp->tex[i], &desc);
+         return desc.Width == w && desc.Height == h
+            && desc.Format == (pixfmt == IMAGE_PIXFMT_P010
+                  ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12) ? (int)i : -1;
+      }
    if (imp->num_tex >= D3D11_IMPORT_TEXTURES)
       return -1;
    if (FAILED(d3d11->device5->lpVtbl->OpenSharedResource1(d3d11->device5,
          (HANDLE)(uintptr_t)handle, &d3d11_iid_texture2d, (void**)&tex)))
       return -1;
    tex->lpVtbl->GetDesc(tex, &desc);
-   if (     desc.Format != DXGI_FORMAT_NV12
+   if (     desc.Format != (pixfmt == IMAGE_PIXFMT_P010
+               ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12)
          || desc.Width  != w || desc.Height != h)
    {
       Release(tex);
@@ -8498,11 +8511,13 @@ static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
    memset(&vd, 0, sizeof(vd));
    vd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
    vd.Texture2D.MipLevels       = 1;
-   vd.Format                    = DXGI_FORMAT_R8_UNORM;
+   vd.Format                    = pixfmt == IMAGE_PIXFMT_P010
+      ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM;
    if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
          (D3D11Resource)tex, &vd, &imp->luma[i])))
       imp->luma[i] = NULL;
-   vd.Format                    = DXGI_FORMAT_R8G8_UNORM;
+   vd.Format                    = pixfmt == IMAGE_PIXFMT_P010
+      ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R8G8_UNORM;
    if (     !imp->luma[i]
          || FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(
                d3d11->device, (D3D11Resource)tex, &vd, &imp->chroma[i])))
@@ -8596,7 +8611,9 @@ static enum video_texture_update d3d11_import_texture(void *data,
    int t;
 
    if (     !d3d11 || !id || !f || !d3d11->context4
-         || f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image
+         || (f->pixfmt != IMAGE_PIXFMT_NV12
+            && f->pixfmt != IMAGE_PIXFMT_P010)
+         || !(d3d11->import_formats & f->pixfmt) || !f->image
          || !d3d11_planar_init(d3d11))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    w = VIDEO_SCALE_W(f->dims);
@@ -8624,10 +8641,10 @@ static enum video_texture_update d3d11_import_texture(void *data,
       imp->owner = f->owner;
       imp->gen   = f->layout;
    }
-   if ((t = d3d11_import_tex(d3d11, imp, f->image, w, h)) < 0)
+   if ((t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt)) < 0)
    {
       d3d11_import_clear(imp);
-      t = d3d11_import_tex(d3d11, imp, f->image, w, h);
+      t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt);
    }
    if (     t < 0
          || (f->wait && !(wait = d3d11_import_fence(d3d11, imp, f->wait)))
@@ -8649,7 +8666,7 @@ static enum video_texture_update d3d11_import_texture(void *data,
    views[1] = imp->chroma[t];
    views[2] = NULL;
    ok       = d3d11_planar_convert(d3d11, p->uav, views, w, h, f->yuv,
-         true, false);
+         true, false, f->pixfmt == IMAGE_PIXFMT_P010);
    /* read or not, the producer may have it back */
    if (done)
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);
@@ -8661,7 +8678,7 @@ static enum video_texture_update d3d11_import_texture(void *data,
 }
 
 /* Frames from another device's decoders, where both ends can share
- * them: the driver's device and context at the 11.4 interfaces, NV12
+ * them: the driver's device and context at the 11.4 interfaces, NV12/P010
  * shared and read in a shader */
 static void d3d11_frame_import_init(d3d11_video_t *d3d11)
 {
@@ -8693,7 +8710,14 @@ static void d3d11_frame_import_init(d3d11_video_t *d3d11)
       d3d11->device5  = NULL;
       return;
    }
-   d3d11->video_decode = d3d11_video_decode_init(d3d11->device);
+   d3d11->import_formats = IMAGE_PIXFMT_NV12;
+   support = 0;
+   if (SUCCEEDED(d3d11->device->lpVtbl->CheckFormatSupport(d3d11->device,
+            DXGI_FORMAT_P010, &support))
+         && (support & D3D11_FORMAT_SUPPORT_SHADER_LOAD))
+      d3d11->import_formats |= IMAGE_PIXFMT_P010;
+   d3d11->video_decode = d3d11_video_decode_init_formats(d3d11->device,
+         d3d11->import_formats);
    RARCH_LOG("[D3D11] Video previews %s.\n", d3d11->video_decode
          ? "decode on the GPU where it can" : "decode on the CPU");
 }
@@ -8703,6 +8727,7 @@ static void d3d11_frame_import_deinit(d3d11_video_t *d3d11)
    if (d3d11->video_decode)
       d3d11_video_decode_deinit();
    d3d11->video_decode = false;
+   d3d11->import_formats = 0;
    Release(d3d11->context4);
    Release(d3d11->device5);
    d3d11->context4     = NULL;
@@ -8718,7 +8743,7 @@ static bool d3d11_get_device(void *data, video_device_info_t *info)
    info->api            = VIDEO_DEVICE_D3D11;
    info->device         = (void*)d3d11->device;
 #ifdef D3D11_FRAME_IMPORT
-   info->import_formats = d3d11->context4 ? IMAGE_PIXFMT_NV12 : 0;
+   info->import_formats = d3d11->import_formats;
 #endif
    return true;
 }

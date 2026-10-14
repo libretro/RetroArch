@@ -93,7 +93,7 @@ The mock tests cover profile/configuration, buffer sizes/padding, optional
 matrices, busy retry, driver failures and deferred close. The device oracle
 compares imported Main and Main10 pictures with software through shared handles and
 fences; it skips if device setup is unavailable. Oracle readback is test-only.
-The D3D11 adapter registers its Main8 offer with rh265. MP4 hardware opt-in
+The D3D11 adapter registers Main8 and, with P010 imports, Main10 with rh265. MP4 hardware opt-in
 opens it before the first picture and keeps compressed packet storage across
 decode/output backpressure. DPB pressure may export an older picture while
 retaining the unconsumed packet; the presentation clock advances only for
@@ -106,12 +106,20 @@ drain, rewind and untouched CPU pixel buffers with portable mocks.
 GPU frames carry an explicit image pixel format; zero retains legacy NV12.
 D3D11 and Vulkan NV12 producers label their frames explicitly. The surface
 player forwards P010 metadata instead of labeling it NV12; unknown formats
-are refused. Existing D3D11/D3D12/Vulkan renderer imports still accept only
-NV12, so the registered D3D11 player factory deliberately refuses Main10.
-Direct Main10 callbacks/export are available for device tests and later
-renderer/encoder integration. Main10 needs no CPU pixel readback in that path.
+are refused. D3D11/D3D12 import NV12 or P010 through shared GPU handles and
+convert their planes into RGBA8 without CPU pixel readback. P010 sampling
+preserves limited/full-range normalization and 10-bit neutral chroma.
+Renderer format support is frozen before publishing the decoder factory;
+NV12-only consumers retain Main10 software fallback. Vulkan imports remain
+NV12-only. HDR playback remains gated; this is SDR presentation.
+`../d3d_p010_import/run.py` extracts the production shaders, D3D11 import and
+constant/dispatch functions. Windows checks shared NV12/P010 handles, cache
+format/dimension refusal and GPU colors in BT.601/709 limited/full range.
+The D3D12 shader is executed with its constant layout on the D3D11 compute
+oracle; full D3D12 P010 queue/device validation remains pending. Linux and
+unsupported Windows devices skip GPU execution. Readback is test-only.
 
-P010 renderer conversion/import, main movie-core GPU presentation, Vulkan HEVC and real
+Remaining: main movie-core GPU presentation, Vulkan HEVC and real
 inter-picture GPU reference coverage remain. Export performs one GPU
 crop/copy into the shared texture pool;
 it never reads pixels back to the CPU. Removing that copy requires array-layer

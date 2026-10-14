@@ -38,12 +38,17 @@ bool d3d11_video_decode_init(void *device);
  * that is not D3D11's: D3D12 opens the frames' handles as well. */
 bool d3d11_video_decode_init_adapter(void *adapter);
 
+/* Renderer import formats, frozen before publishing the backend. Main10
+ * is offered only when @formats includes IMAGE_PIXFMT_P010. */
+bool d3d11_video_decode_init_formats(void *device, unsigned formats);
+bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats);
+
 /* Withdraws it and frees what closed decoders left. Every decoder must
  * be closed by then. */
 void d3d11_video_decode_deinit(void);
 
-/* Main/NV12 and Main10/P010. Automatic player selection remains Main8
- * until P010 renderer import is available. The adapter must be initialized.
+/* Main/NV12 and Main10/P010. Automatic selection requires the renderer
+ * to offer the matching import format. The adapter must be initialized.
  * Owner-thread
  * calls; close before deinit. A session borrows ops->decoder until close.
  * Output leases keep shared handles alive through the existing fences. */

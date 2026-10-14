@@ -291,7 +291,14 @@ static const char d3d12_nv12_cs_src[] =
    "   if (id.x >= a.x || id.y >= a.y)\n"
    "      return;\n"
    "   y = Y.Load(int3(id.xy, 0));\n"
-   "   c = C.Load(int3(id.xy >> 1, 0)) - 128.0 / 255.0;\n"
+   "   c = C.Load(int3(id.xy >> 1, 0));\n"
+   "   if (a.z != 0)\n"
+   "   {\n"
+   "      float scale = a.w != 0 ? 65535.0 / 65472.0 : 65535.0 / 65280.0;\n"
+   "      y *= scale;\n"
+   "      c *= scale;\n"
+   "   }\n"
+   "   c -= a.z != 0 && a.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
    "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * c.y,\n"
    "         k0.w * c.x + k1.x * c.y, k1.y * c.x)), 1.0);\n"
    "}\n";
@@ -803,6 +810,7 @@ typedef struct
    D3D12Fence                      import_done;
    UINT64                          import_value;
    unsigned                        import_next;
+   unsigned                        import_formats;
    bool                            video_decode;
 #endif
    d3d12_uniform_t                 ubo_values;
@@ -10686,11 +10694,12 @@ static void d3d12_import_forget(d3d12_video_t *d3d12, d3d12_import_t *imp)
    imp->num_fences = 0;
 }
 
-/* The NV12 texture behind @handle and its plane views, opened once;
+/* The NV12/P010 texture behind @handle and its plane views, opened once;
  * -1 when it cannot be read as a @w x @h frame, -2 while every pair of
  * views is still read */
 static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
-      uint64_t handle, unsigned w, unsigned h, UINT64 completed)
+      uint64_t handle, unsigned w, unsigned h, unsigned pixfmt,
+      UINT64 completed)
 {
    D3D12_SHADER_RESOURCE_VIEW_DESC vd;
    D3D12_RESOURCE_DESC desc;
@@ -10701,7 +10710,12 @@ static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
    for (i = 0; i < D3D12_IMPORT_TEXTURES; i++)
    {
       if (imp->tex[i] && imp->tex_handle[i] == handle)
-         return i;
+      {
+         d3d12_resource_get_desc(imp->tex[i], &desc);
+         return desc.Width == w && desc.Height == h
+            && desc.Format == (pixfmt == IMAGE_PIXFMT_P010
+                  ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12) ? i : -1;
+      }
       if (free_i < 0 && imp->tex_fence[i] <= completed)
          free_i = i;
    }
@@ -10712,7 +10726,8 @@ static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
                (void**)&tex)))
       return -1;
    d3d12_resource_get_desc(tex, &desc);
-   if (     desc.Format != DXGI_FORMAT_NV12
+   if (     desc.Format != (pixfmt == IMAGE_PIXFMT_P010
+               ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12)
          || desc.Width  != w || desc.Height != h)
    {
       Release(tex);
@@ -10725,11 +10740,13 @@ static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
    vd.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
    vd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
    vd.Texture2D.MipLevels     = 1;
-   vd.Format                  = DXGI_FORMAT_R8_UNORM;
+   vd.Format                  = pixfmt == IMAGE_PIXFMT_P010
+      ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM;
    c                          = imp->cpu_planes[free_i];
    d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device, tex, &vd,
          c);
-   vd.Format                  = DXGI_FORMAT_R8G8_UNORM;
+   vd.Format                  = pixfmt == IMAGE_PIXFMT_P010
+      ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R8G8_UNORM;
    vd.Texture2D.PlaneSlice    = 1;
    c.ptr                     += d3d12->desc.srv_heap.stride;
    d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device, tex, &vd,
@@ -10800,7 +10817,9 @@ static enum video_texture_update d3d12_import_texture(void *data,
    int t;
 
    if (     !d3d12 || !id || !f || !d3d12->video_decode
-         || f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image)
+         || (f->pixfmt != IMAGE_PIXFMT_NV12
+            && f->pixfmt != IMAGE_PIXFMT_P010)
+         || !(d3d12->import_formats & f->pixfmt) || !f->image)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    w = VIDEO_SCALE_W(f->dims);
    h = VIDEO_SCALE_H(f->dims);
@@ -10833,7 +10852,8 @@ static enum video_texture_update d3d12_import_texture(void *data,
       imp->owner = f->owner;
       imp->gen   = f->layout;
    }
-   if (     (t = d3d12_import_tex(d3d12, imp, f->image, w, h, completed)) < 0
+   if (     (t = d3d12_import_tex(d3d12, imp, f->image, w, h,
+                  f->pixfmt, completed)) < 0
          || (f->wait && !(wait = d3d12_import_fence(d3d12, imp, f->wait)))
          || (f->done && !(done = d3d12_import_fence(d3d12, imp, f->done))))
    {
@@ -10849,6 +10869,8 @@ static enum video_texture_update d3d12_import_texture(void *data,
    memset(constants, 0, sizeof(constants));
    constants[0] = w;
    constants[1] = h;
+   constants[2] = f->pixfmt == IMAGE_PIXFMT_P010 ? 1 : 0;
+   constants[3] = (f->yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0;
    memcpy(&constants[8], kf, sizeof(kf));
 
    cmd = d3d12->import_cmd[k];
@@ -10896,7 +10918,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
-/* Frames from rh264's D3D11 video backend, where they can be read: NV12
+/* Frames from D3D11 video, where they can be read: NV12/P010
  * sampled in a shader, and the conversion's pipeline made */
 static void d3d12_frame_import_init(d3d12_video_t *d3d12)
 {
@@ -10917,7 +10939,15 @@ static void d3d12_frame_import_init(d3d12_video_t *d3d12)
       RARCH_LOG("[D3D12] Video previews decode on the CPU.\n");
       return;
    }
-   d3d12->video_decode = d3d11_video_decode_init_adapter(d3d12->adapter);
+   d3d12->import_formats = IMAGE_PIXFMT_NV12;
+   memset(&fs, 0, sizeof(fs));
+   fs.Format = DXGI_FORMAT_P010;
+   if (SUCCEEDED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
+            D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs)))
+         && (fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD))
+      d3d12->import_formats |= IMAGE_PIXFMT_P010;
+   d3d12->video_decode = d3d11_video_decode_init_adapter_formats(d3d12->adapter,
+         d3d12->import_formats);
    RARCH_LOG("[D3D12] Video previews %s.\n", d3d12->video_decode
          ? "decode on the GPU where it can" : "decode on the CPU");
 }
@@ -10929,6 +10959,7 @@ static void d3d12_frame_import_deinit(d3d12_video_t *d3d12)
    if (d3d12->video_decode)
       d3d11_video_decode_deinit();
    d3d12->video_decode = false;
+   d3d12->import_formats = 0;
    for (i = 0; i < D3D12_IMPORT_LISTS; i++)
    {
       Release(d3d12->import_cmd[i]);
@@ -10951,7 +10982,7 @@ static bool d3d12_get_device(void *data, video_device_info_t *info)
    info->api            = VIDEO_DEVICE_D3D12;
    info->device         = (void*)d3d12->device;
 #ifdef D3D12_FRAME_IMPORT
-   info->import_formats = d3d12->video_decode ? IMAGE_PIXFMT_NV12 : 0;
+   info->import_formats = d3d12->video_decode ? d3d12->import_formats : 0;
 #endif
    return true;
 }
