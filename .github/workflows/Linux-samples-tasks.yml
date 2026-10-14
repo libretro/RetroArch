@@ -670,6 +670,22 @@ jobs:
              ./task_file_transfer_test conc
           echo "[pass] task_file_transfer_test (TSan)"
 
+      - name: Build and run pl_thumbnail_wait_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/pl_thumbnail
+        run: |
+          set -eu
+          # The thumbnail tasks park while a transfer runs, and a
+          # cancelled one keeps its handle until the transfer's
+          # callback has written into it.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./pl_thumbnail_wait_test
+          echo "[pass] pl_thumbnail_wait_test (ASan + UBSan)"
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./pl_thumbnail_wait_test
+          echo "[pass] pl_thumbnail_wait_test (TSan)"
+
       - name: Build and run core_crc_slice_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/core_updater
