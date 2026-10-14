@@ -942,7 +942,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL },
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
    { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
