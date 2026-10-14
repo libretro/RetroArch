@@ -2729,6 +2729,15 @@ static bool win32_window_change_fullscreen(unsigned dims, bool fullscreen,
       windowed_rect_of = hwnd;
    }
 
+   /* A fullscreen size of 0x0 means the monitor's own: the display
+    * mode asked for and the window put over it are the monitor's
+    * current size, as a driver starting up resolves it. */
+   if (fullscreen && (!width || !height))
+   {
+      width  = mon_rect.right  - mon_rect.left;
+      height = mon_rect.bottom - mon_rect.top;
+   }
+
    if (!win32_set_style(&current_mon, &hm_to_use, &width, &height,
             fullscreen, windowed_full, &rect, &mon_rect, &style))
       return false;

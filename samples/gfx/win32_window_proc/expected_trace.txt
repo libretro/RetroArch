@@ -2697,6 +2697,7 @@
  same window 20, right style 20, right size 20, resize seen 20
  a window grown to fit a bigger core: grew yes, driver told its real size yes
  exclusive fullscreen left to a restart: yes
+ exclusive fullscreen in place at the monitor's size: toggled yes, window kept yes, monitor-sized yes, back windowed yes
  destroyed: window gone
 == a window left up and not taken
  kept yes, next made yes, kept gone yes

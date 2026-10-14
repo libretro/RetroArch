@@ -321,6 +321,10 @@ int main(int argc, char **argv)
       int cycle, same = 0, styled = 0, sized = 0, resized = 0;
       const int cycles = 20;
       bool refused;
+      bool excl_in_place = false;
+      bool excl_visible  = false;
+      bool excl_sized    = false;
+      bool excl_back     = false;
       bool big_grew = false;
       bool big_told = false;
 
@@ -408,6 +412,33 @@ int main(int argc, char **argv)
           * place, left to the driver restart */
          settings->bools.video_windowed_fullscreen = false;
          refused = !win32_window_set_fullscreen(VIDEO_SCALE_PACK(640, 480), true);
+
+         /* The exclusive toggle done in place, with the fullscreen
+          * size left at its default of 0x0, which stands for the
+          * monitor's own size: the window has to stay, be visible, and
+          * be the size of the monitor - not a 0x0 window nobody can
+          * see - and come back windowed at the size it had. */
+         {
+            RECT client;
+            win32_window_reset();
+            settings->bools.video_fullscreen = true;
+            excl_in_place = win32_window_set_fullscreen_exclusive(0, true);
+            pump();
+            GetClientRect(hwnd, &client);
+            excl_visible  = win32_get_window() == hwnd && IsWindow(hwnd)
+               && IsWindowVisible(hwnd);
+            excl_sized    = client.right  > 0 && client.bottom > 0
+               && client.right  == mon.rcMonitor.right  - mon.rcMonitor.left
+               && client.bottom == mon.rcMonitor.bottom - mon.rcMonitor.top;
+            win32_window_reset();
+            settings->bools.video_fullscreen = false;
+            excl_back     = win32_window_set_fullscreen_exclusive(
+                  VIDEO_SCALE_PACK(640, 480), false);
+            pump();
+            GetClientRect(hwnd, &client);
+            excl_back     = excl_back && IsWindowVisible(hwnd)
+               && client.right == 640 && client.bottom == 480;
+         }
          settings->bools.video_windowed_fullscreen = true;
 
          win32_monitor_from_window();
@@ -422,6 +453,9 @@ int main(int argc, char **argv)
                big_grew ? "yes" : "no", big_told ? "yes" : "no");
          trace(" exclusive fullscreen left to a restart: %s\n",
                refused ? "yes" : "no");
+         trace(" exclusive fullscreen in place at the monitor's size: toggled %s, window kept %s, monitor-sized %s, back windowed %s\n",
+               excl_in_place ? "yes" : "no", excl_visible ? "yes" : "no",
+               excl_sized ? "yes" : "no", excl_back ? "yes" : "no");
          trace(" destroyed: window %s\n", IsWindow(hwnd) ? "still there" : "gone");
       }
       else
