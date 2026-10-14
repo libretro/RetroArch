@@ -60,19 +60,13 @@ static void ra_vulkan_dxgi_destroy_images(ra_vulkan_dxgi_t *p)
    }
 }
 
+static VkResult ra_vulkan_dxgi_drain(ra_vulkan_dxgi_t *p);
+
 void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *p)
 {
    if (!p) return;
    if (p->submitted)
-   {
-#ifdef HAVE_THREADS
-      if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
-#endif
-      vkQueueWaitIdle(p->queue);
-#ifdef HAVE_THREADS
-      if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
-#endif
-   }
+      ra_vulkan_dxgi_drain(p);
    ra_dxgi_bridge_destroy(p->bridge);
    ra_vulkan_dxgi_destroy_images(p);
    if (p->resize_fence) vkDestroyFence(p->device, p->resize_fence, NULL);
@@ -224,7 +218,9 @@ error:
    return 0;
 }
 
-static VkResult ra_vulkan_dxgi_wait_resize(ra_vulkan_dxgi_t *p)
+/* A fence, not vkQueueWaitIdle: queue_lock is held for the submit
+ * only, so a core in lock_queue is never parked behind the drain. */
+static VkResult ra_vulkan_dxgi_drain(ra_vulkan_dxgi_t *p)
 {
    VkResult result;
    if (!p->resize_fence)
@@ -264,7 +260,7 @@ int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p,
       return 0;
    if (p->width == width && p->height == height)
       return !ra_dxgi_bridge_failed(p->bridge);
-   result = ra_vulkan_dxgi_wait_resize(p);
+   result = ra_vulkan_dxgi_drain(p);
    if (result != VK_SUCCESS)
       return 0;
    if (vkResetCommandPool(p->device, p->pool, 0) != VK_SUCCESS)
