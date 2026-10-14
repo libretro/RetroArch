@@ -2394,9 +2394,23 @@ static void gl2_renderchain_init(
       return;
    }
 
+   /* The last pass gets an FBO of its own, drawn to the backbuffer by
+    * the stock pass after it, only when the image would differ drawn
+    * straight there: a scale other than the viewport at 1.0, an FBO
+    * format, or the feedback the preset asks of it. */
    chain->fbo_pass = shader_info_num - 1;
    if (scale_last.flags & FBO_SCALE_FLAG_VALID)
-      chain->fbo_pass++;
+   {
+      unsigned feedback_pass;
+      if (     !GFX_FBO_SCALE_IS_VIEWPORT(&scale_last)
+            || (  gl->shader->get_feedback_pass(gl->shader_data,
+                     &feedback_pass)
+               && feedback_pass == shader_info_num - 1))
+         chain->fbo_pass++;
+   }
+
+   if (!chain->fbo_pass)
+      return;
 
    if (!(scale.flags & FBO_SCALE_FLAG_VALID))
    {

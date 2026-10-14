@@ -657,12 +657,7 @@ bool glslang_last_pass_needs_target(const struct video_shader *shader,
 
    if (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID))
       return false;
-   if (     pass->fbo.type_x  != RARCH_SCALE_VIEWPORT
-         || pass->fbo.type_y  != RARCH_SCALE_VIEWPORT
-         || pass->fbo.scale_x != 1.0f
-         || pass->fbo.scale_y != 1.0f
-         || (pass->fbo.flags & (FBO_SCALE_FLAG_FP_FBO
-               | FBO_SCALE_FLAG_SRGB_FBO | FBO_SCALE_FLAG_RGB10_FBO)))
+   if (!GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
       return true;
 
    if (!cache && !(cache = own = glslang_include_cache_new()))

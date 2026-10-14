@@ -146,7 +146,7 @@ jobs:
           make clean
 
   slang-last-pass-target:
-    name: Last slang pass renders to the backbuffer
+    name: Last shader pass renders to the backbuffer
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -155,7 +155,7 @@ jobs:
         timeout-minutes: 10
         run: |
           set -eu
-          pkgs="build-essential gcc-mingw-w64-x86-64 wine64"
+          pkgs="build-essential libgl-dev gcc-mingw-w64-x86-64 wine64"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -189,6 +189,30 @@ jobs:
           set -eu
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
+          make clean
+
+      - name: Build and run gl2_last_pass_fbo_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gl2_last_pass_fbo
+        run: |
+          set -eu
+          # gfx/drivers/gl2.c's render chain against a scripted GL and
+          # shader backend: the last pass gets an FBO only for a scale
+          # other than viewport at 1.0, an FBO format, or the feedback
+          # the preset asks of it; a one-pass preset that needs none
+          # sets up no chain.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 60 make check
+          make clean
+
+      - name: Build and run gl2_last_pass_fbo_test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/gl2_last_pass_fbo
+        run: |
+          set -eu
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          WINEDEBUG=-all timeout 300 wine ./gl2_last_pass_fbo_test.exe
           make clean
 
   samples-gfx:

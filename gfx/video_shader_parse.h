@@ -124,6 +124,19 @@ struct gfx_fbo_scale
    uint8_t flags;
 };
 
+/* Whether @s, a pass's scale, is the viewport at 1.0 with no render
+ * target format of its own: as the last pass, such a pass draws the
+ * same image straight into the backbuffer as through a target of its
+ * own copied there. */
+#define GFX_FBO_SCALE_IS_VIEWPORT(s) ( \
+         ((s)->flags & (FBO_SCALE_FLAG_VALID | FBO_SCALE_FLAG_FP_FBO \
+            | FBO_SCALE_FLAG_SRGB_FBO | FBO_SCALE_FLAG_RGB10_FBO)) \
+            == FBO_SCALE_FLAG_VALID \
+      && (s)->type_x  == RARCH_SCALE_VIEWPORT \
+      && (s)->type_y  == RARCH_SCALE_VIEWPORT \
+      && (s)->scale_x == 1.0f \
+      && (s)->scale_y == 1.0f)
+
 struct video_shader_parameter
 {
    int pass;

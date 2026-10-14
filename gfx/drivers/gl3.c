@@ -3476,8 +3476,20 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
    scale_last.flags = 0;
    gl->chain.shader->shader_scale(gl->chain.shader_data, gl->chain.num_fbo_passes, &scale_last);
 
-   if (!(scale_last.flags & FBO_SCALE_FLAG_VALID) && --gl->chain.num_fbo_passes == 0)
-      return true;
+   /* The last pass gets an FBO of its own, drawn to the backbuffer by
+    * the stock pass after it, only when the image would differ drawn
+    * straight there: a scale other than the viewport at 1.0, an FBO
+    * format, or the feedback the preset asks of it. */
+   {
+      unsigned feedback_pass;
+      bool last_fbo = (scale_last.flags & FBO_SCALE_FLAG_VALID)
+         && (  !GFX_FBO_SCALE_IS_VIEWPORT(&scale_last)
+             || (  gl->chain.shader->get_feedback_pass(gl->chain.shader_data,
+                      &feedback_pass)
+                && feedback_pass == gl->chain.num_fbo_passes - 1));
+      if (!last_fbo && --gl->chain.num_fbo_passes == 0)
+         return true;
+   }
 
    scale.flags = 0;
    gl->chain.shader->shader_scale(gl->chain.shader_data, 1, &scale);
