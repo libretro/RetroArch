@@ -2491,6 +2491,7 @@ bool command_press(command_t *cmd, const char *arg)
    unsigned i;
    size_t   _len;
    long     frames;
+   int16_t  analog[4];
    uint16_t mask               = 0;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
@@ -2519,6 +2520,8 @@ bool command_press(command_t *cmd, const char *arg)
       command_run_frames_cancel("replaced by PRESS");
    for (i = 0; i < count; i++)
       mask |= (uint16_t)(1u << ids[i]);
+   /* what SET_INPUT already holds stays held after the press */
+   mask &= (uint16_t)~input_driver_command_held(player - 1, analog);
    /* the controls as they were resolved, so "a++b" comes back "a+b" */
    _len = (size_t)snprintf(command_run_frames_st.reply,
          sizeof(command_run_frames_st.reply), "PRESS %u ", player);

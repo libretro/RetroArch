@@ -236,6 +236,15 @@ int main(int argc, char **argv)
    runloop_iterate();
    CHECK(!strcmp(reply,"PRESS 1 b 1\n")
          && input_driver_command_held(0,axes) == 0);
+   /* a press over a button SET_INPUT holds leaves that hold in place */
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 a 1"));
+   CHECK(command_press(&cmd,"1 a+b 1")
+         && input_driver_command_held(0,axes) == 0x0101);
+   runloop_iterate();
+   CHECK(!strcmp(reply,"PRESS 1 a+b 1\n")
+         && input_driver_command_held(0,axes) == 0x0100);
+   CHECK(command_release_input(&cmd,""));
    /* RUN_FRAMES and PRESS are the same one frame job */
    reply[0]=0;
    CHECK(command_press(&cmd,"1 a 30"));
