@@ -293,7 +293,7 @@ int main(void)
    CHECK(h != NULL, "odd-size camera initialization failed");
    if (h)
    {
-      for (i = 0; i < 1; i++)
+      for (i = 0; i < 2; i++)
       {
          CHECK(camera_ffmpeg.start(h), "resized camera start failed");
          red_frame = false;

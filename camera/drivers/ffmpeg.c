@@ -627,6 +627,7 @@ static bool ffmpeg_camera_start(void *data)
    retro_triple_buffer_init(&ffmpeg->frames, ffmpeg->target_buffers[0],
          ffmpeg->target_buffers[1], ffmpeg->target_buffers[2]);
 
+   retro_atomic_store_release_int(&ffmpeg->done, 0);
    ffmpeg->poll_thread = sthread_create(ffmpeg_camera_poll_thread, ffmpeg);
    if (!ffmpeg->poll_thread)
    {
