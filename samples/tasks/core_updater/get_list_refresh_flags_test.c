@@ -180,14 +180,31 @@ void __wrap_task_set_flags(retro_task_t *task, uint8_t flags, bool set)
 {
    __real_task_set_flags(task, flags, set);
 
+   /* park_state first: its release store publishes park_updater. */
    if (     set
          && (flags & RETRO_TASK_FLG_FINISHED)
-         && task != park_updater
-         && retro_atomic_load_acquire_int(&park_state) == PARK_ARMED)
+         && retro_atomic_load_acquire_int(&park_state) == PARK_ARMED
+         && task != park_updater)
    {
       park_updater->when = cpu_features_get_time_usec() + PARK_USEC;
       retro_atomic_store_release_int(&park_state, PARK_PARKED);
    }
+}
+
+/* The HTTP callback wakes the updater, which would end the hold.  While
+ * the updater is held the wake is kept back - it is issued and read on
+ * the main thread - and the lane issues it once the HTTP task is gone. */
+static bool     wake_held  = false;
+void __real_task_queue_wake(uint32_t ident);
+void __wrap_task_queue_wake(uint32_t ident)
+{
+   if (     retro_atomic_load_acquire_int(&park_state) == PARK_PARKED
+         && ident == park_updater->ident)
+   {
+      wake_held = true;
+      return;
+   }
+   __real_task_queue_wake(ident);
 }
 
 static bool find_other_than_updater(retro_task_t *task, void *user_data)
@@ -260,6 +277,12 @@ static void run_lane(bool refresh_menu, bool park)
             CHECK(cpu_features_get_time_usec() < park_updater->when,
                   "HTTP task freed before the updater's next tick");
             retro_atomic_store_release_int(&park_state, PARK_OFF);
+            CHECK(wake_held, "the HTTP callback woke the updater");
+            if (wake_held)
+            {
+               wake_held = false;
+               __real_task_queue_wake(park_updater->ident);
+            }
          }
          task_queue_check();
          retro_sleep(10);

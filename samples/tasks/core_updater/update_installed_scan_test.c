@@ -457,6 +457,10 @@ static void run_lane(bool threaded, bool open_window)
 
    retro_atomic_store_release_int(&force_open, 0);
    CHECK(gathers < 4 * NUM_ENTRIES, "update installed cores completed");
+   /* The wait on the core list parks with a one-second watchdog; the
+    * list task's callback wakes it, which is what ends it here. */
+   if (threaded && !open_window)
+      CHECK(gathers < 30, "the wait on the core list ended at its wake");
    if (open_window)
    {
       snprintf(name, sizeof(name),

@@ -205,6 +205,23 @@ void __wrap_task_set_flags(retro_task_t *task, uint8_t flags, bool set)
    }
 }
 
+/* The backup's callback wakes the download, which would end the hold.
+ * While it is held the wake is kept back - it is issued on this thread,
+ * at the callback - and the lane issues it once the backup is freed. */
+static bool     wake_held  = false;
+static uint32_t wake_ident = 0;
+void __real_task_queue_wake(uint32_t ident);
+void __wrap_task_queue_wake(uint32_t ident)
+{
+   if (retro_atomic_load_acquire_int(&park_state) == PARK_PARKED)
+   {
+      wake_held  = true;
+      wake_ident = ident;
+      return;
+   }
+   __real_task_queue_wake(ident);
+}
+
 /* ---------------- helpers ---------------------------------------- */
 
 static char g_dir[] = "/tmp/download_backup_wait_XXXXXX";
@@ -310,8 +327,14 @@ static void lane_backup_retired_before_next_tick(void)
    CHECK(i < 1000, "backup task retired while the download was parked");
    CHECK(cpu_features_get_time_usec() < park_until,
          "backup freed before the download's next tick");
+   CHECK(wake_held, "the backup's callback woke the download");
 
    retro_atomic_store_release_int(&park_state, PARK_OFF);
+   if (wake_held)
+   {
+      wake_held = false;
+      __real_task_queue_wake(wake_ident);
+   }
    CHECK(pump_until_idle(10000), "download completed after the backup");
 
    task_queue_deinit();
