@@ -85,12 +85,20 @@ typedef struct rlpcm_format
    size_t   payload_bytes;
 } rlpcm_format_t;
 
-/* Bytes one frame of every channel takes on the wire. 20-bit samples
+/* Unpacked frame size; DVD high-depth callers use dvd_block_shape.
+ * 20-bit samples
  * are packed two to five bytes, so a frame of an odd channel count at
  * 20 bits is not a whole number of bytes and the pair is the unit;
  * rlpcm_frame_bits() is exact where that matters. */
 unsigned rlpcm_frame_bits(const rlpcm_format_t *fmt);
 size_t   rlpcm_frame_bytes(const rlpcm_format_t *fmt);
+
+/* DVD high-depth packing uses groups of four samples (mono: two pairs).
+ * Returns the smallest complete channel-aligned block. Decode/encode round
+ * DVD requests down to multiples of its frame count; bytes are not simply
+ * frame_bytes times frames for a partial packed block. Failure clears outputs. */
+bool rlpcm_dvd_block_shape(const rlpcm_format_t *fmt,
+      size_t *bytes, unsigned *frames);
 
 /* Reads the header at src. RLPCM_NEED_MORE when len is shorter than
  * the header, RLPCM_NO_SYNC when the bytes cannot be one of that

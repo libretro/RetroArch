@@ -91,6 +91,23 @@ size_t rlpcm_frame_bytes(const rlpcm_format_t *fmt)
    return (size_t)((bits + 7u) / 8u);
 }
 
+bool rlpcm_dvd_block_shape(const rlpcm_format_t *fmt,
+      size_t *bytes, unsigned *frames)
+{
+   unsigned divisor, count;
+   if (bytes) *bytes = 0;
+   if (frames) *frames = 0;
+   if (!fmt || !bytes || !frames || fmt->kind != RLPCM_KIND_DVD
+         || !fmt->big_endian || fmt->channels < 1 || fmt->channels > 8
+         || (fmt->bits != 16 && fmt->bits != 20 && fmt->bits != 24))
+      return false;
+   divisor = fmt->channels % 2 ? 1 : (fmt->channels % 4 ? 2 : 4);
+   count = fmt->bits == 16 ? 1 : 4 / divisor;
+   *frames = count;
+   *bytes = (size_t)count * fmt->channels * fmt->bits / 8;
+   return true;
+}
+
 /* ---- headers ------------------------------------------------------ */
 
 static enum rlpcm_status rlpcm_parse_dvd(const uint8_t *src, size_t len,
@@ -239,15 +256,8 @@ enum rlpcm_status rlpcm_parse_format(enum rlpcm_kind kind,
 
 /* ---- samples ------------------------------------------------------ */
 
-/* One sample, sign-extended into an int32 whose full scale is the
- * format's own: 16, 20 or 24 bits.
- *
- * 16 and 24 bits are whole bytes and go either way round. 20-bit is
- * the awkward one: both disc formats carry it as pairs of samples in
- * five bytes - two whole bytes of each sample's top bits, then a
- * fifth byte holding the two sets of low nibbles, the first sample's
- * in the high half. That is why the pair, not the sample, is the unit
- * there. */
+/* Generic byte-aligned samples and raw packed 20-bit pairs.
+ * DVD high-depth groups are handled separately. */
 static int32_t rlpcm_sample_16(const uint8_t *p, bool be)
 {
    int32_t v = be ? ((int32_t)p[0] << 8 | p[1])
@@ -283,11 +293,36 @@ static void rlpcm_pair_20(const uint8_t *p, bool be, int32_t *a, int32_t *b)
    *b = y;
 }
 
+static int32_t rlpcm_dvd_sample(const rlpcm_format_t *fmt,
+      const uint8_t *src, size_t sample)
+{
+   unsigned group = fmt->channels == 1 ? 2 : 4;
+   unsigned slot = (unsigned)(sample % group);
+   const uint8_t *p = src + (sample / group) * (group * fmt->bits / 8);
+   unsigned low_bits = fmt->bits - 16;
+   int32_t value = ((int32_t)p[slot * 2] << 8) | p[slot * 2 + 1];
+   value *= (int32_t)(1u << low_bits);
+   if (low_bits == 8)
+      value |= p[group * 2 + slot];
+   else
+      value |= (p[group * 2 + slot / 2] >> (slot % 2 ? 0 : 4)) & 15;
+   if (value & (1 << (fmt->bits - 1)))
+      value -= (1 << fmt->bits);
+   return value;
+}
+
 /* How many whole frames the bytes hold. At 20 bits the samples come in
  * pairs, so what the bytes hold is a whole number of pairs of samples
  * and the frames are however many of those cover the channels. */
 static size_t rlpcm_frames_available(const rlpcm_format_t *fmt, size_t bytes)
 {
+   if (fmt->kind == RLPCM_KIND_DVD)
+   {
+      size_t block;
+      unsigned frames;
+      if (!rlpcm_dvd_block_shape(fmt, &block, &frames)) return 0;
+      return (bytes / block) * frames;
+   }
    if (fmt->bits == 20)
    {
       size_t pairs   = bytes / 5;
@@ -310,6 +345,23 @@ size_t rlpcm_decode_f32(const rlpcm_format_t *fmt,
       frames = have;
    if (!frames)
       return 0;
+   if (fmt->kind == RLPCM_KIND_DVD)
+   {
+      size_t block;
+      unsigned count;
+      if (!rlpcm_dvd_block_shape(fmt, &block, &count)) return 0;
+      frames -= frames % count;
+   }
+
+
+   if (fmt->kind == RLPCM_KIND_DVD && fmt->bits != 16)
+   {
+      float scale = fmt->bits == 20 ? 1.0f / 524288.0f : 1.0f / 8388608.0f;
+      size_t i, samples = frames * fmt->channels;
+      for (i = 0; i < samples; i++)
+         out[i] = (float)rlpcm_dvd_sample(fmt, src, i) * scale;
+      return frames;
+   }
 
    if (fmt->bits == 20)
    {
@@ -368,6 +420,29 @@ size_t rlpcm_decode_s16(const rlpcm_format_t *fmt,
       frames = have;
    if (!frames)
       return 0;
+   if (fmt->kind == RLPCM_KIND_DVD)
+   {
+      size_t block;
+      unsigned count;
+      if (!rlpcm_dvd_block_shape(fmt, &block, &count)) return 0;
+      frames -= frames % count;
+   }
+
+
+   if (fmt->kind == RLPCM_KIND_DVD && fmt->bits != 16)
+   {
+      unsigned shift = fmt->bits - 16;
+      size_t i, samples = frames * fmt->channels;
+      for (i = 0; i < samples; i++)
+      {
+         int32_t v = rlpcm_dvd_sample(fmt, src, i);
+         v = (v + (1 << (shift - 1))) >> shift;
+         if (v > 32767) v = 32767;
+         if (v < -32768) v = -32768;
+         out[i] = (int16_t)v;
+      }
+      return frames;
+   }
 
    if (fmt->bits == 16)
    {
@@ -445,6 +520,39 @@ size_t rlpcm_encode_f32(const rlpcm_format_t *fmt,
       frames = room;
    if (!frames)
       return 0;
+   if (fmt->kind == RLPCM_KIND_DVD)
+   {
+      size_t block;
+      unsigned count;
+      if (!rlpcm_dvd_block_shape(fmt, &block, &count)) return 0;
+      frames -= frames % count;
+   }
+
+
+   if (fmt->kind == RLPCM_KIND_DVD && fmt->bits != 16)
+   {
+      unsigned group = fmt->channels == 1 ? 2 : 4;
+      unsigned shift = fmt->bits - 16;
+      size_t i, samples = frames * fmt->channels;
+      double scale = fmt->bits == 20 ? 524288.0 : 8388608.0;
+      int32_t lo = fmt->bits == 20 ? -524288 : -8388608;
+      int32_t hi = fmt->bits == 20 ? 524287 : 8388607;
+      for (i = 0; i < samples; i++)
+      {
+         unsigned slot = (unsigned)(i % group);
+         uint8_t *p = out + (i / group) * (group * fmt->bits / 8);
+         int32_t v = rlpcm_clip((double)src[i] * scale, lo, hi);
+         p[slot * 2] = (uint8_t)(v >> (shift + 8));
+         p[slot * 2 + 1] = (uint8_t)(v >> shift);
+         if (shift == 8)
+            p[group * 2 + slot] = (uint8_t)v;
+         else if (!(slot % 2))
+            p[group * 2 + slot / 2] = (uint8_t)((v & 15) << 4);
+         else
+            p[group * 2 + slot / 2] |= (uint8_t)(v & 15);
+      }
+      return frames;
+   }
 
    if (fmt->bits == 20)
    {
