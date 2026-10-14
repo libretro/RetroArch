@@ -19,6 +19,9 @@
 #include "../runloop.h"
 #include "../steam/steam.h"
 
+/* Between asks for the download's progress. */
+#define STEAM_DLC_PROGRESS_PARK_USEC 250000
+
 typedef struct steam_core_dlc_install_state
 {
    AppId app_id;
@@ -70,6 +73,9 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
 
    task_set_progress(task, progress);
 
+   /* Steam has nothing to wake the task with, so it asks again at the
+    * rate a progress bar wants. */
+   task_queue_park(task, STEAM_DLC_PROGRESS_PARK_USEC);
    return;
 task_finished:
    if (task)

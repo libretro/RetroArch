@@ -79,6 +79,7 @@ samples/tasks/bsv_replay_init bsv_replay_init_test
 samples/tasks/image_decode_slice image_decode_slice_test
 samples/tasks/netplay_nat nat_task_serialisation_test
 samples/tasks/progress_push task_progress_push_test
+samples/tasks/steam_dlc steam_dlc_park_test
 samples/frontend/android_lifecycle android_lifecycle_test
 samples/ui/companion_thumbs_handoff companion_thumbs_test
 samples/midi/fmsynth_queue fmsynth_queue_test
