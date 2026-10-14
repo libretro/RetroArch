@@ -247,9 +247,9 @@ jobs:
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
 
-      - name: VP9 reference-slot dimensions (ASan + UBSan)
+      - name: VP9 reference slots and hardware sessions (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
-        run: make check SANITIZER=address,undefined
+        run: make check stream-check SANITIZER=address,undefined
 
       - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
         shell: bash

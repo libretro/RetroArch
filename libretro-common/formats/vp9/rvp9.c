@@ -1265,22 +1265,21 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
    rb.data = data; rb.size = len; rb.pos = 0; rb.error = 0;
 
    {
-      /* bit_depth is sequence-sticky (only keyframe / intra_only frames
-       * re-signal it); preserve it across the per-frame reset */
+      /* Inter headers inherit the sequence color configuration. */
       int prev_bd = hd->bit_depth;
+      int color_space = hd->color_space, color_range = hd->color_range;
+      int sub_x = hd->subsampling_x, sub_y = hd->subsampling_y;
       memset(hd, 0, sizeof(*hd));
       hd->bit_depth = prev_bd;
+      hd->color_space = color_space; hd->color_range = color_range;
+      hd->subsampling_x = sub_x; hd->subsampling_y = sub_y;
    }
 
    if (rvp9_rb_lit(&rb, 2) != 2) return -1;      /* frame marker */
    hd->profile  = rvp9_rb_bit(&rb);
    hd->profile |= rvp9_rb_bit(&rb) << 1;
    if (hd->profile > 2) hd->profile += rvp9_rb_bit(&rb);
-   /* Profile 0 (8-bit 4:2:0) decodes; profile 2 (10/12-bit 4:2:0)
-    * parses fully so callers can identify HDR streams, but
-    * reconstruction is gated in rvp9_decode_frame until the
-    * high-bit-depth pixel path exists.  Profiles 1/3 (4:4:4 / 4:2:2)
-    * are rejected outright. */
+   /* Only 4:2:0 profiles are supported. */
    if (hd->profile == 1 || hd->profile >= 3) return -15;
    /* bit_depth is signalled only in keyframe / intra_only color configs;
     * inter frames inherit it, so default it once and keep it sticky. */
@@ -1290,7 +1289,8 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
    if (hd->show_existing_frame)
    {
       hd->frame_to_show = rvp9_rb_lit(&rb, 3);
-      return 1;
+      hd->uncomp_size = (rb.pos + 7) >> 3;
+      return rb.error ? -1 : 1;
    }
 
    hd->frame_type      = rvp9_rb_bit(&rb);
@@ -1306,6 +1306,8 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
        * 4:2:0 subsampling is implied for both profile 0 and 2. */
       if (hd->profile >= 2)
          hd->bit_depth = rvp9_rb_bit(&rb) ? 12 : 10;
+      else
+         hd->bit_depth = 8;
       hd->color_space = rvp9_rb_lit(&rb, 3);
       if (hd->color_space != 7)                  /* != SRGB */
       {
@@ -1346,6 +1348,8 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
          {
             /* profile 0: BT601 4:2:0 8-bit implied (normative) */
             hd->color_space = 1;
+            hd->color_range = 0;
+            hd->bit_depth = 8;
             hd->subsampling_x = hd->subsampling_y = 1;
          }
          hd->refresh_frame_flags = rvp9_rb_lit(&rb, RVP9_REF_FRAMES);
@@ -1494,6 +1498,22 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
    hd->first_partition_size = rvp9_rb_lit(&rb, 16);
    hd->uncomp_size = (rb.pos + 7) >> 3;
    return rb.error ? -1 : 0;
+}
+
+int rvp9_parse_frame_header(const uint8_t *data, size_t len,
+      const rvp9_hdr *previous, const int *ref_dims, rvp9_hdr *out)
+{
+   int ret;
+   if (!data || !len || !out || previous == out) return -1;
+   if (previous) *out = *previous;
+   else memset(out, 0, sizeof(*out));
+   ret = rvp9_parse_uncompressed(data, len, out, ref_dims);
+   if (ret) return ret;
+   if (out->w <= 0 || out->h <= 0 || !out->first_partition_size
+         || out->uncomp_size >= len
+         || (size_t)out->first_partition_size >= len - out->uncomp_size)
+      return -1;
+   return 0;
 }
 
 /* ==================================================================== */

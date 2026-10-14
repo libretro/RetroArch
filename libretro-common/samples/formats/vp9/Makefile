@@ -1,22 +1,29 @@
 CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -std=c89
 CFLAGS += -I../../../include
-TARGET := rvp9_reference_test
+TARGETS := rvp9_reference_test rvp9_hw_session_test
 
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): rvp9_reference_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h
+rvp9_reference_test: rvp9_reference_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h
 	$(CC) $(CFLAGS) rvp9_reference_test.c -o $@ $(LDFLAGS)
 
-check: $(TARGET)
-	./$(TARGET)
+rvp9_hw_session_test: rvp9_hw_session_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h ../../../include/formats/rvp9_hw.h
+	$(CC) $(CFLAGS) rvp9_hw_session_test.c ../../../formats/vp9/rvp9.c -o $@ $(LDFLAGS)
+
+check: $(TARGETS)
+	./rvp9_reference_test
+	./rvp9_hw_session_test
+
+stream-check: rvp9_hw_session_test
+	python3 check_streams.py ./rvp9_hw_session_test
 
 clean:
-	rm -f $(TARGET) $(TARGET).exe
+	rm -f $(TARGETS) $(addsuffix .exe,$(TARGETS))
 
-.PHONY: all check clean
+.PHONY: all check stream-check clean
