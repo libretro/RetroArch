@@ -976,32 +976,32 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                rx[k] = (ox[k] * c - oy[k] * s) * inv_vw;
                ry[k] = (ox[k] * s + oy[k] * c) * inv_vh;
             }
-            quad[0].x = cx + rx[0]; quad[0].y = cy + ry[0]; quad[0].z = 0.5f;
-            quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
+            quad[0].x = cx + rx[2]; quad[0].y = cy + ry[2]; quad[0].z = 0.5f;
+            quad[0].u = 0.0f; quad[0].v = 1.0f; quad[0].color = col[2];
 
-            quad[1].x = cx + rx[1]; quad[1].y = cy + ry[1]; quad[1].z = 0.5f;
-            quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
+            quad[1].x = cx + rx[3]; quad[1].y = cy + ry[3]; quad[1].z = 0.5f;
+            quad[1].u = 1.0f; quad[1].v = 1.0f; quad[1].color = col[3];
 
-            quad[2].x = cx + rx[2]; quad[2].y = cy + ry[2]; quad[2].z = 0.5f;
-            quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
+            quad[2].x = cx + rx[0]; quad[2].y = cy + ry[0]; quad[2].z = 0.5f;
+            quad[2].u = 0.0f; quad[2].v = 0.0f; quad[2].color = col[0];
 
-            quad[3].x = cx + rx[3]; quad[3].y = cy + ry[3]; quad[3].z = 0.5f;
-            quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+            quad[3].x = cx + rx[1]; quad[3].y = cy + ry[1]; quad[3].z = 0.5f;
+            quad[3].u = 1.0f; quad[3].v = 0.0f; quad[3].color = col[1];
          }
       }
       else
       {
-         quad[0].x = x1; quad[0].y = y1; quad[0].z = 0.5f;
-         quad[0].u = 0.0f; quad[0].v = 0.0f; quad[0].color = col[0];
+         quad[0].x = x1; quad[0].y = y2; quad[0].z = 0.5f;
+         quad[0].u = 0.0f; quad[0].v = 1.0f; quad[0].color = col[2];
 
-         quad[1].x = x2; quad[1].y = y1; quad[1].z = 0.5f;
-         quad[1].u = 1.0f; quad[1].v = 0.0f; quad[1].color = col[1];
+         quad[1].x = x2; quad[1].y = y2; quad[1].z = 0.5f;
+         quad[1].u = 1.0f; quad[1].v = 1.0f; quad[1].color = col[3];
 
-         quad[2].x = x1; quad[2].y = y2; quad[2].z = 0.5f;
-         quad[2].u = 0.0f; quad[2].v = 1.0f; quad[2].color = col[2];
+         quad[2].x = x1; quad[2].y = y1; quad[2].z = 0.5f;
+         quad[2].u = 0.0f; quad[2].v = 0.0f; quad[2].color = col[0];
 
-         quad[3].x = x2; quad[3].y = y2; quad[3].z = 0.5f;
-         quad[3].u = 1.0f; quad[3].v = 1.0f; quad[3].color = col[3];
+         quad[3].x = x2; quad[3].y = y1; quad[3].z = 0.5f;
+         quad[3].u = 1.0f; quad[3].v = 0.0f; quad[3].color = col[1];
       }
 
       /* Top-down ortho: maps X [0,1]->[-1,1], Y [0,1]->[1,-1] (Y=0 at top).
