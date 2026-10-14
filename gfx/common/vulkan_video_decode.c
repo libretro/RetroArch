@@ -528,14 +528,21 @@ static bool vvd_pick_profile(vvd_dec_t *d, const rh264_hw_sps_t *sps,
       d->profile.lumaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
       d->profile.chromaBitDepth      = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
 
-      memset(&hcaps, 0, sizeof(hcaps));
-      memset(dcaps, 0, sizeof(*dcaps));
-      memset(caps, 0, sizeof(*caps));
-      hcaps.sType  = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR;
-      dcaps->sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
-      dcaps->pNext = &hcaps;
-      caps->sType  = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
-      caps->pNext  = dcaps;
+      hcaps.sType                      = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR;
+      hcaps.pNext                      = NULL;
+      hcaps.maxLevelIdc                = STD_VIDEO_H264_LEVEL_IDC_1_0;
+      dcaps->sType                     = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+      dcaps->pNext                     = &hcaps;
+      dcaps->flags                     = 0;
+      caps->sType                      = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+      caps->pNext                      = dcaps;
+      caps->flags                      = 0;
+      caps->minCodedExtent.width       = 0;
+      caps->minCodedExtent.height      = 0;
+      caps->maxCodedExtent.width       = 0;
+      caps->maxCodedExtent.height      = 0;
+      caps->maxDpbSlots                = 0;
+      caps->maxActiveReferencePictures = 0;
       if (vvd.get_caps(vvd.gpu, &d->profile, caps) != VK_SUCCESS)
          continue;
       if (     d->coded.width  < caps->minCodedExtent.width
@@ -572,8 +579,12 @@ static bool vvd_format_ok(vvd_dec_t *d, VkImageUsageFlags usage)
    info.imageUsage = usage;
    for (i = 0; i < 16; i++)
    {
-      memset(&props[i], 0, sizeof(props[i]));
-      props[i].sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+      props[i].sType           = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+      props[i].pNext           = NULL;
+      props[i].format          = VK_FORMAT_UNDEFINED;
+      props[i].imageType       = VK_IMAGE_TYPE_1D;
+      props[i].imageTiling     = VK_IMAGE_TILING_OPTIMAL;
+      props[i].imageUsageFlags = 0;
    }
    {
       VkResult r = vvd.get_formats(vvd.gpu, &info, &n, props);
@@ -669,8 +680,12 @@ static bool vvd_make_session(vvd_dec_t *d,
       return false;
    for (i = 0; i < n; i++)
    {
-      memset(&reqs[i], 0, sizeof(reqs[i]));
-      reqs[i].sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR;
+      reqs[i].sType                             = VK_STRUCTURE_TYPE_VIDEO_SESSION_MEMORY_REQUIREMENTS_KHR;
+      reqs[i].pNext                             = NULL;
+      reqs[i].memoryBindIndex                   = 0;
+      reqs[i].memoryRequirements.size           = 0;
+      reqs[i].memoryRequirements.alignment      = 0;
+      reqs[i].memoryRequirements.memoryTypeBits = 0;
    }
    if (vvd.session_mem_reqs(vvd.device, d->session, &n, reqs) != VK_SUCCESS)
       return false;
@@ -716,8 +731,9 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
       fi.tiling = VK_IMAGE_TILING_OPTIMAL;
       fi.usage  = usage;
       fi.flags  = 0;
-      memset(&fp, 0, sizeof(fp));
-      fp.sType  = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+      fp.sType                                = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+      fp.pNext                                = NULL;
+      fp.imageFormatProperties.maxArrayLayers = 0;
       if (     !get || get(vvd.gpu, &fi, &fp) != VK_SUCCESS
             || fp.imageFormatProperties.maxArrayLayers < d->slots)
          return false;
@@ -1330,17 +1346,23 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
 
    src   = d->dpb[d->dpb_array ? 0 : slot];
    layer = d->dpb_array ? slot : 0;
-   memset(regions, 0, sizeof(regions));
-   regions[0].srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].srcSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].srcSubresource.mipLevel       = 0;
    regions[0].srcSubresource.baseArrayLayer = layer;
-   regions[0].srcSubresource.layerCount = 1;
-   regions[0].srcOffset.x               = (int32_t)d->crop_x;
-   regions[0].srcOffset.y               = (int32_t)d->crop_y;
-   regions[0].dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
-   regions[0].dstSubresource.layerCount = 1;
-   regions[0].extent.width              = d->visible_w;
-   regions[0].extent.height             = d->visible_h;
-   regions[0].extent.depth              = 1;
+   regions[0].srcSubresource.layerCount     = 1;
+   regions[0].srcOffset.x                   = (int32_t)d->crop_x;
+   regions[0].srcOffset.y                   = (int32_t)d->crop_y;
+   regions[0].srcOffset.z                   = 0;
+   regions[0].dstSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].dstSubresource.mipLevel       = 0;
+   regions[0].dstSubresource.baseArrayLayer = 0;
+   regions[0].dstSubresource.layerCount     = 1;
+   regions[0].dstOffset.x                   = 0;
+   regions[0].dstOffset.y                   = 0;
+   regions[0].dstOffset.z                   = 0;
+   regions[0].extent.width                  = d->visible_w;
+   regions[0].extent.height                 = d->visible_h;
+   regions[0].extent.depth                  = 1;
    /* the chroma plane, in its own half-size samples */
    regions[1]                           = regions[0];
    regions[1].srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
@@ -1417,11 +1439,14 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
       VkBufferCreateInfo info;
       VkMemoryRequirements req;
       VkMemoryAllocateInfo alloc;
-      memset(&info, 0, sizeof(info));
-      info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-      info.size = uv_offset + (VkDeviceSize)cw * ch * 2;
-      info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      info.pNext                 = NULL;
+      info.flags                 = 0;
+      info.queueFamilyIndexCount = 0;
+      info.pQueueFamilyIndices   = NULL;
+      info.size                  = uv_offset + (VkDeviceSize)cw * ch * 2;
+      info.usage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+      info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
       if (vkCreateBuffer(vvd.device, &info, NULL, &d->readback) != VK_SUCCESS)
          return -1;
       vkGetBufferMemoryRequirements(vvd.device, d->readback, &req);
@@ -1434,9 +1459,9 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
                VK_MEMORY_PROPERTY_PROTECTED_BIT);
       if (type == UINT32_MAX)
          return -1;
-      memset(&alloc, 0, sizeof(alloc));
-      alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-      alloc.allocationSize = req.size;
+      alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      alloc.pNext           = NULL;
+      alloc.allocationSize  = req.size;
       alloc.memoryTypeIndex = type;
       if (vkAllocateMemory(vvd.device, &alloc, NULL, &d->readback_mem) != VK_SUCCESS
             || vkBindBufferMemory(vvd.device, d->readback, d->readback_mem, 0) != VK_SUCCESS
@@ -1449,15 +1474,19 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
       return -1;
    src = d->dpb[d->dpb_array ? 0 : slot];
    layer = d->dpb_array ? slot : 0;
-   memset(regions, 0, sizeof(regions));
-   regions[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].bufferOffset                    = 0;
+   regions[0].bufferRowLength                 = 0;
+   regions[0].bufferImageHeight               = 0;
+   regions[0].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].imageSubresource.mipLevel       = 0;
    regions[0].imageSubresource.baseArrayLayer = layer;
-   regions[0].imageSubresource.layerCount = 1;
-   regions[0].imageOffset.x = d->crop_x;
-   regions[0].imageOffset.y = d->crop_y;
-   regions[0].imageExtent.width = d->visible_w;
-   regions[0].imageExtent.height = d->visible_h;
-   regions[0].imageExtent.depth = 1;
+   regions[0].imageSubresource.layerCount     = 1;
+   regions[0].imageOffset.x                   = d->crop_x;
+   regions[0].imageOffset.y                   = d->crop_y;
+   regions[0].imageOffset.z                   = 0;
+   regions[0].imageExtent.width               = d->visible_w;
+   regions[0].imageExtent.height              = d->visible_h;
+   regions[0].imageExtent.depth               = 1;
    regions[1] = regions[0];
    regions[1].bufferOffset = uv_offset;
    regions[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
@@ -1476,20 +1505,26 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    {
       VkBufferMemoryBarrier2KHR barrier;
       VkDependencyInfoKHR dep;
-      memset(&barrier, 0, sizeof(barrier));
-      barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
-      barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
-      barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
-      barrier.dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
-      barrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT_KHR;
+      barrier.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+      barrier.pNext               = NULL;
+      barrier.offset              = 0;
+      barrier.srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
+      barrier.srcAccessMask       = VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
+      barrier.dstStageMask        = VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
+      barrier.dstAccessMask       = VK_ACCESS_2_HOST_READ_BIT_KHR;
       barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
       barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-      barrier.buffer = d->readback;
-      barrier.size = VK_WHOLE_SIZE;
-      memset(&dep, 0, sizeof(dep));
-      dep.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+      barrier.buffer              = d->readback;
+      barrier.size                = VK_WHOLE_SIZE;
+      dep.sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+      dep.pNext                    = NULL;
+      dep.dependencyFlags          = 0;
+      dep.memoryBarrierCount       = 0;
+      dep.pMemoryBarriers          = NULL;
+      dep.imageMemoryBarrierCount  = 0;
+      dep.pImageMemoryBarriers     = NULL;
       dep.bufferMemoryBarrierCount = 1;
-      dep.pBufferMemoryBarriers = &barrier;
+      dep.pBufferMemoryBarriers    = &barrier;
       vvd.cmd_barrier2(cb, &dep);
    }
    vvd_barrier(cb, src, layer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1503,10 +1538,11 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    if (!d->readback_coherent)
    {
       VkMappedMemoryRange range;
-      memset(&range, 0, sizeof(range));
-      range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.offset = 0;
       range.memory = d->readback_mem;
-      range.size = VK_WHOLE_SIZE;
+      range.size   = VK_WHOLE_SIZE;
       if (vkInvalidateMappedMemoryRanges(vvd.device, 1, &range) != VK_SUCCESS)
          return -1;
    }

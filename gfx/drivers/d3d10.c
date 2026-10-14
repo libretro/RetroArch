@@ -5391,7 +5391,6 @@ static uintptr_t d3d10_gfx_load_texture_compressed(void* video_data,
 
    {
       D3D10_SHADER_RESOURCE_VIEW_DESC view_desc;
-      memset(&view_desc, 0, sizeof(view_desc));
       view_desc.Format                    = dxgi;
       view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip = 0;

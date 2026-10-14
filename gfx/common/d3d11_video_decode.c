@@ -277,7 +277,7 @@ static bool d3d11vd_make_device(d3d11vd_dec_t *d)
             NULL, D3D11_CREATE_DEVICE_VIDEO_SUPPORT, levels, 2,
             D3D11_SDK_VERSION, &d->dev, NULL, &d->ctx)))
       return false;
-   memset(&opt4, 0, sizeof(opt4));
+   opt4.ExtendedNV12SharedTextureSupported = FALSE;
    return SUCCEEDED(d->ctx->lpVtbl->QueryInterface(d->ctx,
             &d3d11vd_iid_context4, (void**)&d->ctx4))
       && SUCCEEDED(d->dev->lpVtbl->QueryInterface(d->dev,
@@ -302,7 +302,6 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
                &d->profile, d->format, &ok))
          || !ok)
       return false;
-   memset(&desc, 0, sizeof(desc));
    desc.Guid         = d->profile;
    desc.SampleWidth  = d->decoder_w ? d->decoder_w : d->coded_w;
    desc.SampleHeight = d->decoder_h ? d->decoder_h : d->coded_h;
@@ -334,21 +333,22 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    D3D11_VIDEO_DECODER_OUTPUT_VIEW_DESC vd;
    unsigned i;
 
-   memset(&desc, 0, sizeof(desc));
-   desc.Width            = d->coded_w;
-   desc.Height           = d->coded_h;
-   desc.MipLevels        = 1;
-   desc.ArraySize        = d->slots > min_targets ? d->slots : min_targets;
-   desc.Format           = d->format;
-   desc.SampleDesc.Count = 1;
-   desc.Usage            = D3D11_USAGE_DEFAULT;
-   desc.BindFlags        = D3D11_BIND_DECODER;
+   desc.Width              = d->coded_w;
+   desc.Height             = d->coded_h;
+   desc.MipLevels          = 1;
+   desc.ArraySize          = d->slots > min_targets ? d->slots : min_targets;
+   desc.Format             = d->format;
+   desc.SampleDesc.Count   = 1;
+   desc.Usage              = D3D11_USAGE_DEFAULT;
+   desc.BindFlags          = D3D11_BIND_DECODER;
+   desc.SampleDesc.Quality = 0;
+   desc.CPUAccessFlags     = 0;
+   desc.MiscFlags          = 0;
    if (FAILED(d->dev->lpVtbl->CreateTexture2D(d->dev, &desc, NULL,
          &d->dpb)))
       return false;
    for (i = 0; i < d->slots; i++)
    {
-      memset(&vd, 0, sizeof(vd));
       vd.DecodeProfile         = d->profile;
       vd.ViewDimension         = D3D11_VDOV_DIMENSION_TEXTURE2D;
       vd.Texture2D.ArraySlice  = i;
@@ -380,17 +380,18 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
    if (FAILED(d->dev->lpVtbl->QueryInterface(d->dev, &d3d11vd_iid_device5,
          (void**)&dev5)))
       return false;
-   memset(&desc, 0, sizeof(desc));
-   desc.Width            = d->visible_w;
-   desc.Height           = d->visible_h;
-   desc.MipLevels        = 1;
-   desc.ArraySize        = 1;
-   desc.Format           = d->format;
-   desc.SampleDesc.Count = 1;
-   desc.Usage            = D3D11_USAGE_DEFAULT;
-   desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
-   desc.MiscFlags        = D3D11_RESOURCE_MISC_SHARED
-                         | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+   desc.Width              = d->visible_w;
+   desc.Height             = d->visible_h;
+   desc.MipLevels          = 1;
+   desc.ArraySize          = 1;
+   desc.Format             = d->format;
+   desc.SampleDesc.Count   = 1;
+   desc.Usage              = D3D11_USAGE_DEFAULT;
+   desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+   desc.MiscFlags          = D3D11_RESOURCE_MISC_SHARED
+                           | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+   desc.SampleDesc.Quality = 0;
+   desc.CPUAccessFlags     = 0;
    for (o = 0; o < D3D11VD_OUTS; o++)
    {
       IDXGIResource1 *res = NULL;
@@ -504,10 +505,22 @@ static bool d3d11vd_fill(d3d11vd_dec_t *d,
 static void d3d11vd_desc(D3D11_VIDEO_DECODER_BUFFER_DESC *b,
       D3D11_VIDEO_DECODER_BUFFER_TYPE type, UINT size, UINT mbs)
 {
-   memset(b, 0, sizeof(*b));
-   b->BufferType     = type;
-   b->DataSize       = size;
-   b->NumMBsInBuffer = mbs;
+   b->BufferType                                      = type;
+   b->DataSize                                        = size;
+   b->NumMBsInBuffer                                  = mbs;
+   b->BufferIndex                                     = 0;
+   b->DataOffset                                      = 0;
+   b->FirstMBaddress                                  = 0;
+   b->Width                                           = 0;
+   b->Height                                          = 0;
+   b->Stride                                          = 0;
+   b->ReservedBits                                    = 0;
+   b->pIV                                             = NULL;
+   b->IVSize                                          = 0;
+   b->PartialEncryption                               = FALSE;
+   b->EncryptedBlockInfo.NumEncryptedBytesAtBeginning = 0;
+   b->EncryptedBlockInfo.NumBytesInSkipPattern        = 0;
+   b->EncryptedBlockInfo.NumBytesInEncryptPattern     = 0;
 }
 
 static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)

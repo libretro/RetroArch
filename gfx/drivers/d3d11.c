@@ -965,7 +965,6 @@ static bool d3d11_init_texture_ex(D3D11Device device,
 
    {
       D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
-      memset(&view_desc, 0, sizeof(view_desc));
       view_desc.Format                          = texture->desc.Format;
       view_desc.ViewDimension                   = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip       = 0;
@@ -8211,11 +8210,12 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    Release(blob);
    if (!d3d11->planar_cs)
       return false;
-   memset(&desc, 0, sizeof(desc));
-   desc.ByteWidth      = 48;
-   desc.Usage          = D3D11_USAGE_DYNAMIC;
-   desc.BindFlags      = D3D11_BIND_CONSTANT_BUFFER;
-   desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+   desc.ByteWidth           = 48;
+   desc.Usage               = D3D11_USAGE_DYNAMIC;
+   desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+   desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+   desc.MiscFlags           = 0;
+   desc.StructureByteStride = 0;
    if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc,
          NULL, &d3d11->planar_cb)))
    {
@@ -8304,15 +8304,17 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
       DXGI_FORMAT fmt, D3D11Texture2D *tex, D3D11ShaderResourceView *view)
 {
    D3D11_TEXTURE2D_DESC desc;
-   memset(&desc, 0, sizeof(desc));
-   desc.Width            = w;
-   desc.Height           = h;
-   desc.MipLevels        = 1;
-   desc.ArraySize        = 1;
-   desc.Format           = fmt;
-   desc.SampleDesc.Count = 1;
-   desc.Usage            = D3D11_USAGE_DEFAULT;
-   desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
+   desc.Width              = w;
+   desc.Height             = h;
+   desc.MipLevels          = 1;
+   desc.ArraySize          = 1;
+   desc.Format             = fmt;
+   desc.SampleDesc.Count   = 1;
+   desc.Usage              = D3D11_USAGE_DEFAULT;
+   desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+   desc.SampleDesc.Quality = 0;
+   desc.CPUAccessFlags     = 0;
+   desc.MiscFlags          = 0;
    return SUCCEEDED(device->lpVtbl->CreateTexture2D(device, &desc, NULL,
             tex))
       && SUCCEEDED(device->lpVtbl->CreateShaderResourceView(device,
@@ -8517,11 +8519,11 @@ static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
       return -1;
    }
    i = imp->num_tex;
-   memset(&vd, 0, sizeof(vd));
    vd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
    vd.Texture2D.MipLevels       = 1;
    vd.Format                    = pixfmt == IMAGE_PIXFMT_P010
       ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM;
+   vd.Texture2D.MostDetailedMip = 0;
    if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
          (D3D11Resource)tex, &vd, &imp->luma[i])))
       imp->luma[i] = NULL;
@@ -8749,7 +8751,7 @@ static void d3d11_frame_import_init(d3d11_video_t *d3d11)
       d3d11->device5 = NULL;
       return;
    }
-   memset(&opt4, 0, sizeof(opt4));
+   opt4.ExtendedNV12SharedTextureSupported = FALSE;
    if (     FAILED(d3d11->context->lpVtbl->QueryInterface(d3d11->context,
                &d3d11_iid_context4, (void**)&d3d11->context4))
          || FAILED(d3d11->device->lpVtbl->CheckFeatureSupport(d3d11->device,
@@ -9386,7 +9388,6 @@ static uintptr_t d3d11_gfx_load_texture_compressed(void* video_data,
 
    {
       D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
-      memset(&view_desc, 0, sizeof(view_desc));
       view_desc.Format                    = dxgi;
       view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
       view_desc.Texture2D.MostDetailedMip = 0;
