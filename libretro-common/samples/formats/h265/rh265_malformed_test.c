@@ -24,7 +24,7 @@ static int failures;
 /* An RBSP built a bit at a time */
 typedef struct
 {
-   uint8_t buf[256];
+   uint8_t buf[512];
    size_t  bits;
 } bitw;
 
@@ -112,7 +112,7 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 }
 
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
-   F_LATENCY_HUGE };
+   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -132,7 +132,12 @@ static void sps(bitw *w, enum field f, int depth)
    putue(w, 1);                      /* chroma_format_idc 4:2:0 */
    putue(w, f == F_WIDTH_HUGE ? 0x1ffffffu : 64);
    putue(w, 64);
-   put1(w, 0);                       /* conformance_window */
+   put1(w, f == F_CROP || f == F_BAD_CROP);
+   if (f == F_CROP || f == F_BAD_CROP)
+   {
+      putue(w, f == F_CROP ? 1 : 32); putue(w, f == F_CROP ? 2 : 0);
+      putue(w, 3); putue(w, 4);
+   }
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_luma_minus8 */
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_chroma_minus8 */
    putue(w, 4);                      /* log2_max_poc_lsb_minus4 */
@@ -146,7 +151,8 @@ static void sps(bitw *w, enum field f, int depth)
    putue(w, 2);                      /* log2_diff_max_min_tb */
    putue(w, 0);                      /* max_transform_hierarchy_depth_inter */
    putue(w, 0);                      /* ..._intra */
-   put1(w, 0);                       /* scaling_list_enabled */
+   put1(w, f == F_SCALING);
+   if (f == F_SCALING) put1(w, 0);   /* default SPS matrices */
    put1(w, 0);                       /* amp */
    put1(w, 0);                       /* sao */
    put1(w, 0);                       /* pcm */
@@ -191,8 +197,118 @@ static void expect(const char *what, int got, int want)
       printf("[pass] %s\n", what);
 }
 
+
+static void putse(bitw *w, int value)
+{
+   putue(w, (uint32_t)(value <= 0 ? -2 * value : 2 * value - 1));
+}
+
+static void pps(bitw *w, int override, unsigned sps_id)
+{
+   unsigned size, m, i;
+   memset(w, 0, sizeof(*w));
+   putue(w, 0); putue(w, sps_id);
+   put1(w, 0); put1(w, 1); putn(w, 2, 3);
+   put1(w, 1); put1(w, 1); putue(w, 1); putue(w, 2); putse(w, -2);
+   put1(w, 1); put1(w, 1); put1(w, 1); putue(w, 1);
+   putse(w, -2); putse(w, 3); put1(w, 1);
+   put1(w, 1); put1(w, 1); put1(w, 1);
+   put1(w, 0); put1(w, 1); put1(w, 1);
+   put1(w, 1); put1(w, 1); put1(w, 0); putse(w, -1); putse(w, 2);
+   put1(w, override);
+   if (override)
+      for (size = 0; size < 4; size++)
+         for (m = 0; m < 6; m += size == 3 ? 3 : 1)
+         {
+            int value = 20 + (int)(size * 6 + m);
+            put1(w, 1);
+            if (size >= 2) putse(w, value - 8);
+            for (i = 0; i < (size ? 64u : 16u); i++)
+               putse(w, !i && size < 2 ? value - 8 : 0);
+         }
+   put1(w, 1); putue(w, 1); put1(w, 1);
+   trailing(w);
+}
+
+static void test_params(void)
+{
+   static rh265_video_params_t out, saved;
+   bitw w;
+   static uint8_t units_buf[2][1024], buf[2200];
+   const uint8_t *units[2];
+   size_t lens[2], n;
+   unsigned depth, m, i;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = units_buf[0]; units[1] = units_buf[1];
+   memset(&out, 0xaa, sizeof(out));
+   expect("missing PPS snapshot", rh265_video_get_params(v, 0, &out), -1);
+   for (i = 0; i < sizeof(out); i++)
+      if (((uint8_t*)&out)[i]) { failures++; break; }
+   for (depth = 8; depth <= 10; depth += 2)
+   {
+      sps(&w, F_SCALING, (int)depth); lens[0] = nal(units_buf[0], 33, &w);
+      pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+      n = hvcc(buf, units, lens, 2);
+      expect("snapshot parameter input", rh265_video_set_extradata(v, buf, n), 0);
+      expect("snapshot parsed PPS/SPS", rh265_video_get_params(v, 0, &out), 0);
+      if (out.bit_depth != (int)depth || out.width != 64 || out.height != 64
+            || out.log2_min_cb != 3 || out.log2_ctb != 4 || out.log2_max_tb != 4
+            || out.log2_max_poc_lsb != 8 || out.init_qp != 24
+            || out.num_ref_idx_l0_default != 2 || out.num_ref_idx_l1_default != 3
+            || out.cb_qp_offset != -2 || out.cr_qp_offset != 3
+            || out.beta_offset_div2 != -1 || out.tc_offset_div2 != 2
+            || out.log2_parallel_merge_level != 3 || !out.entropy_coding_sync_enabled
+            || !out.scaling_list_enabled || out.list8[0][63] != 115
+            || out.list8[3][63] != 91 || out.dc32[0] != 16 || out.dc32[1] != 16)
+         failures++;
+      saved = out;
+      out.width = 999; out.list8[0][0] = 255;
+      expect("snapshot independent ownership", rh265_video_get_params(v, 0, &out), 0);
+      if (memcmp(&saved, &out, sizeof(out))) failures++;
+      pps(&w, 1, 0); lens[1] = nal(units_buf[1], 34, &w);
+      n = hvcc(buf, units, lens, 2);
+      expect("PPS scaling override input", rh265_video_set_extradata(v, buf, n), 0);
+      expect("PPS scaling override snapshot", rh265_video_get_params(v, 0, &out), 0);
+      for (m = 0; m < 6; m++)
+      {
+         for (i = 0; i < 16; i++) if (out.list4[m][i] != 20 + m) failures++;
+         for (i = 0; i < 64; i++)
+            if (out.list8[m][i] != 26 + m || out.list16[m][i] != 32 + m) failures++;
+         if (out.dc16[m] != 32 + m) failures++;
+      }
+      for (m = 0; m < 2; m++)
+      {
+         for (i = 0; i < 64; i++) if (out.list32[m][i] != 38 + 3 * m) failures++;
+         if (out.dc32[m] != 38 + 3 * m) failures++;
+      }
+   }
+   sps(&w, F_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
+   pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("crop input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("crop snapshot", rh265_video_get_params(v, 0, &out), 0);
+   if (out.crop_left != 2 || out.crop_right != 4 || out.crop_top != 6
+         || out.crop_bottom != 8 || out.scaling_list_enabled) failures++;
+   for (i = 0; i < sizeof(out.list8); i++)
+      if (((uint8_t*)out.list8)[i]) { failures++; break; }
+   sps(&w, F_BAD_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("invalid crop input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("invalid crop snapshot", rh265_video_get_params(v, 0, &out), -1);
+   pps(&w, 0, 1); lens[0] = nal(units_buf[0], 34, &w);
+   n = hvcc(buf, units, lens, 1);
+   expect("missing SPS input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("missing SPS snapshot", rh265_video_get_params(v, 0, &out), -1);
+   expect("invalid PPS ID", rh265_video_get_params(v, ~0u, &out), -1);
+   expect("null decoder", rh265_video_get_params(NULL, 0, &out), -1);
+   expect("null snapshot", rh265_video_get_params(v, 0, NULL), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
+   test_params();
    expect("a well-formed SPS is read",
          feed_sps(F_NONE, 9), -1);
    expect("sps_id coded as 32 zero bits is malformed",

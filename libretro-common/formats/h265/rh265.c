@@ -5121,6 +5121,99 @@ void rh265_video_close(rh265_video *v)
    free(v);
 }
 
+int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
+      rh265_video_params_t *out)
+{
+   const rh265_sps *s;
+   const rh265_pps *p;
+   const rh265_scaling *sl;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!v || pps_id >= RH265_MAX_PPS || !v->pps[pps_id].valid)
+      return -1;
+   p = &v->pps[pps_id];
+   if (p->sps_id < 0 || p->sps_id >= RH265_MAX_SPS || !v->sps[p->sps_id].valid)
+      return -1;
+   s = &v->sps[p->sps_id];
+   if (s->chroma_format_idc != 1 || s->bit_depth_luma != s->bit_depth_chroma
+         || (s->bit_depth_luma != 8 && s->bit_depth_luma != 10)
+         || s->crop_left < 0 || s->crop_right < 0 || s->crop_top < 0 || s->crop_bottom < 0
+         || 2 * ((int64_t)s->crop_left + s->crop_right) >= s->width
+         || 2 * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
+      return -1;
+   out->pps_id = (int)pps_id;
+   out->sps_id = p->sps_id;
+   out->chroma_format_idc = s->chroma_format_idc;
+   out->bit_depth = s->bit_depth_luma;
+   out->width = s->width;
+   out->height = s->height;
+   out->crop_left = 2 * s->crop_left;
+   out->crop_right = 2 * s->crop_right;
+   out->crop_top = 2 * s->crop_top;
+   out->crop_bottom = 2 * s->crop_bottom;
+   out->log2_min_cb = s->log2_min_cb;
+   out->log2_ctb = s->log2_ctb;
+   out->log2_min_tb = s->log2_min_tb;
+   out->log2_max_tb = s->log2_max_tb;
+   out->log2_max_poc_lsb = s->log2_max_poc_lsb;
+   out->max_dec_pic_buffering = s->max_dec_pic_buffering;
+   out->max_num_reorder_pics = s->max_num_reorder_pics;
+   out->max_sub_layers_minus1 = s->max_sub_layers_minus1;
+   out->max_transform_hierarchy_depth_inter = s->max_transform_hierarchy_depth_inter;
+   out->max_transform_hierarchy_depth_intra = s->max_transform_hierarchy_depth_intra;
+   out->num_st_rps = s->num_st_rps;
+   out->num_long_term_ref_pics = s->num_long_term_ref_pics;
+   out->long_term_ref_pics_present = s->long_term_ref_pics_present;
+   out->scaling_list_enabled = s->scaling_list_enabled;
+   out->amp_enabled = s->amp_enabled;
+   out->sao_enabled = s->sao_enabled;
+   out->pcm_enabled = s->pcm_enabled;
+   out->temporal_mvp_enabled = s->temporal_mvp_enabled;
+   out->strong_intra_smoothing = s->strong_intra_smoothing;
+   out->dependent_slice_segments_enabled = p->dependent_slice_segments_enabled;
+   out->output_flag_present = p->output_flag_present;
+   out->num_extra_slice_header_bits = p->num_extra_slice_header_bits;
+   out->sign_data_hiding = p->sign_data_hiding;
+   out->cabac_init_present = p->cabac_init_present;
+   out->num_ref_idx_l0_default = p->num_ref_idx_l0_default;
+   out->num_ref_idx_l1_default = p->num_ref_idx_l1_default;
+   out->init_qp = p->init_qp;
+   out->constrained_intra_pred = p->constrained_intra_pred;
+   out->transform_skip_enabled = p->transform_skip_enabled;
+   out->cu_qp_delta_enabled = p->cu_qp_delta_enabled;
+   out->diff_cu_qp_delta_depth = p->diff_cu_qp_delta_depth;
+   out->cb_qp_offset = p->cb_qp_offset;
+   out->cr_qp_offset = p->cr_qp_offset;
+   out->slice_chroma_qp_offsets_present = p->slice_chroma_qp_offsets_present;
+   out->weighted_pred = p->weighted_pred;
+   out->weighted_bipred = p->weighted_bipred;
+   out->transquant_bypass_enabled = p->transquant_bypass_enabled;
+   out->tiles_enabled = p->tiles_enabled;
+   out->entropy_coding_sync_enabled = p->entropy_coding_sync_enabled;
+   out->loop_filter_across_slices = p->loop_filter_across_slices;
+   out->deblocking_filter_control_present = p->deblocking_filter_control_present;
+   out->deblocking_filter_override_enabled = p->deblocking_filter_override_enabled;
+   out->deblocking_filter_disabled = p->deblocking_filter_disabled;
+   out->beta_offset_div2 = p->beta_offset_div2;
+   out->tc_offset_div2 = p->tc_offset_div2;
+   out->lists_modification_present = p->lists_modification_present;
+   out->log2_parallel_merge_level = p->log2_parallel_merge_level;
+   out->slice_segment_header_extension_present = p->slice_segment_header_extension_present;
+   if (s->scaling_list_enabled)
+   {
+      sl = p->has_scaling ? &p->sl : &s->sl;
+      memcpy(out->list4, sl->l4, sizeof(out->list4));
+      memcpy(out->list8, sl->l8, sizeof(out->list8));
+      memcpy(out->list16, sl->l16, sizeof(out->list16));
+      memcpy(out->list32[0], sl->l32[0], 64);
+      memcpy(out->list32[1], sl->l32[3], 64);
+      memcpy(out->dc16, sl->dc16, sizeof(out->dc16));
+      out->dc32[0] = sl->dc32[0];
+      out->dc32[1] = sl->dc32[3];
+   }
+   return 0;
+}
+
 /* hvcC: HEVCDecoderConfigurationRecord (ISO/IEC 14496-15 8.3.3.1) */
 int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len)
 {

@@ -41,6 +41,40 @@ RETRO_BEGIN_DECLS
 
 typedef struct rh265_video rh265_video;
 
+/* Parameter metadata for hardware adapters; coefficients are effective
+ * raster-order SPS/PPS values. 32x32 entries correspond to matrix IDs 0, 3. */
+typedef struct rh265_video_params
+{
+   int pps_id, sps_id, chroma_format_idc, bit_depth;
+   int width, height, crop_left, crop_right, crop_top, crop_bottom;
+   int log2_min_cb, log2_ctb, log2_min_tb, log2_max_tb, log2_max_poc_lsb;
+   int max_dec_pic_buffering, max_num_reorder_pics, max_sub_layers_minus1;
+   int max_transform_hierarchy_depth_inter, max_transform_hierarchy_depth_intra;
+   int num_st_rps, num_long_term_ref_pics, long_term_ref_pics_present;
+   int scaling_list_enabled, amp_enabled, sao_enabled, pcm_enabled;
+   int temporal_mvp_enabled, strong_intra_smoothing;
+   int dependent_slice_segments_enabled, output_flag_present, num_extra_slice_header_bits;
+   int sign_data_hiding, cabac_init_present;
+   int num_ref_idx_l0_default, num_ref_idx_l1_default, init_qp;
+   int constrained_intra_pred, transform_skip_enabled, cu_qp_delta_enabled;
+   int diff_cu_qp_delta_depth, cb_qp_offset, cr_qp_offset;
+   int slice_chroma_qp_offsets_present, weighted_pred, weighted_bipred;
+   int transquant_bypass_enabled, tiles_enabled, entropy_coding_sync_enabled;
+   int loop_filter_across_slices, deblocking_filter_control_present;
+   int deblocking_filter_override_enabled, deblocking_filter_disabled;
+   int beta_offset_div2, tc_offset_div2, lists_modification_present;
+   int log2_parallel_merge_level, slice_segment_header_extension_present;
+   uint8_t list4[6][16], list8[6][64], list16[6][64], list32[2][64];
+   uint8_t dc16[6], dc32[2];
+} rh265_video_params_t;
+
+/* Copy a parsed PPS and its SPS on the decoder owner thread. No allocation
+ * or pixel access. Crop offsets are in luma samples. Disabled scaling lists
+ * are zero. Returns 0 on success, -1 for missing sets/invalid arguments;
+ * failure clears out. Success does not establish hardware eligibility. */
+int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
+      rh265_video_params_t *out);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh265_video *rh265_video_open(void);
 
