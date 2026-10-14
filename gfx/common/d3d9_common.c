@@ -157,7 +157,6 @@ static bool d3d9_create_device_internal(
    {
       /* A full screen of its own is given its mode; a window none */
       d3d9_display_mode_ex_t mode;
-      memset(&mode, 0, sizeof(mode));
       mode.Size             = sizeof(mode);
       mode.Width            = d3dpp->BackBufferWidth;
       mode.Height           = d3dpp->BackBufferHeight;
@@ -532,7 +531,11 @@ retro_time_t d3d9_last_present_time(d3d9_video_t *d3d)
       {
          const d3d9_chain_ex_vtbl_t *vt =
             (const d3d9_chain_ex_vtbl_t*)d3d->chain_ex->lpVtbl;
-         memset(&stats, 0, sizeof(stats));
+         stats.PresentCount         = 0;
+         stats.PresentRefreshCount  = 0;
+         stats.SyncRefreshCount     = 0;
+         stats.SyncQPCTime.QuadPart = 0;
+         stats.SyncGPUTime.QuadPart = 0;
          if (     SUCCEEDED(vt->GetPresentStats(d3d->chain_ex, &stats))
                && SUCCEEDED(vt->GetLastPresentCount(d3d->chain_ex, &last))
                && stats.PresentCount == last

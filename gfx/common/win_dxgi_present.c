@@ -181,16 +181,18 @@ static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
          CHECK(b->device->lpVtbl->CreateCommandList(b->device, 0,
                   D3D12_COMMAND_LIST_TYPE_DIRECT, b->allocators[i], NULL,
                   &bridge_ID3D12GraphicsCommandList, (void **)&b->lists[i]));
-      memset(barriers, 0, sizeof(barriers));
-      barriers[0].Type = barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-      barriers[0].Transition.pResource = b->shared[i];
+      barriers[0].Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+      barriers[0].Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+      barriers[0].Transition.pResource   = b->shared[i];
       barriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
       barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-      barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-      barriers[1].Transition.pResource = b->buffers[i];
+      barriers[0].Transition.StateAfter  = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      barriers[1].Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+      barriers[1].Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+      barriers[1].Transition.pResource   = b->buffers[i];
       barriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
       barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-      barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+      barriers[1].Transition.StateAfter  = D3D12_RESOURCE_STATE_COPY_DEST;
       b->lists[i]->lpVtbl->ResourceBarrier(b->lists[i], 2, barriers);
       b->lists[i]->lpVtbl->CopyResource(b->lists[i], b->buffers[i], b->shared[i]);
       barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
@@ -283,19 +285,25 @@ ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
    CHECK(create_device((IUnknown *)adapter, D3D_FEATURE_LEVEL_11_0,
             &bridge_ID3D12Device, (void **)&b->device));
    DROP(adapter);
-   memset(&queue_desc, 0, sizeof(queue_desc));
-   queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+   queue_desc.Type               = D3D12_COMMAND_LIST_TYPE_DIRECT;
+   queue_desc.Priority           = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+   queue_desc.Flags              = D3D12_COMMAND_QUEUE_FLAG_NONE;
+   queue_desc.NodeMask           = 0;
    CHECK(b->device->lpVtbl->CreateCommandQueue(b->device, &queue_desc,
             &bridge_ID3D12CommandQueue, (void **)&b->queue));
-   memset(&chain_desc, 0, sizeof(chain_desc));
-   chain_desc.Width = width;
-   chain_desc.Height = height;
-   chain_desc.Format = (DXGI_FORMAT)format;
-   chain_desc.SampleDesc.Count = 1;
-   chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-   chain_desc.BufferCount = 2;
-   chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-   chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+
+   chain_desc.Width              = width;
+   chain_desc.Height             = height;
+   chain_desc.Format             = (DXGI_FORMAT)format;
+   chain_desc.Stereo             = FALSE;
+   chain_desc.SampleDesc.Count   = 1;
+   chain_desc.SampleDesc.Quality = 0;
+   chain_desc.BufferUsage        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   chain_desc.BufferCount        = 2;
+   chain_desc.Scaling            = DXGI_SCALING_STRETCH;
+   chain_desc.SwapEffect         = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+   chain_desc.AlphaMode          = DXGI_ALPHA_MODE_UNSPECIFIED;
+   chain_desc.Flags              = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
    if (b->tearing)
       chain_desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
    b->chain_flags = chain_desc.Flags;
