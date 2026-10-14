@@ -37,8 +37,12 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#if defined(__EMSCRIPTEN__) || defined(_3DS)
+#ifdef __EMSCRIPTEN__
 #include <retro_timers.h>
+#endif
+#if defined(_3DS) && defined(HAVE_THREADS)
+#include <3ds/types.h>
+#include <3ds/svc.h>
 #endif
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
@@ -125,6 +129,15 @@ struct task_worker
    slock_t           *finished_lock;
    scond_t           *worker_cond;
    scond_t           *finished_cond;
+#ifdef _3DS
+   /* The priority the worker runs at: one step below its creator.
+    * The kernel never time-slices, and on Old 3DS the worker shares a
+    * core with the main thread, so above it a handler that keeps
+    * working would hold the core until its task finished.  Below it,
+    * tasks run whenever the main thread waits - for the next frame,
+    * for audio, or in task_queue_wait. */
+   s32                prio;
+#endif
 };
 
 static struct task_worker *worker_self      = NULL;
@@ -1223,6 +1236,9 @@ static void threaded_worker(void *userdata)
    struct task_worker *self = (struct task_worker*)userdata;
 
    sthread_setname("ra-task");
+#ifdef _3DS
+   svcSetThreadPriority(CUR_THREAD_HANDLE, self->prio);
+#endif
    if (retro_atomic_load_acquire_int(&task_worker_prefer_fast_cores))
       sthread_prefer_fast_cores();
 
@@ -1299,7 +1315,7 @@ static void threaded_worker(void *userdata)
          free(self);
          return;
       }
-#if defined(__EMSCRIPTEN__) || defined(_3DS)
+#ifdef __EMSCRIPTEN__
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
          happening. Maybe due to lack of signals implementation in
@@ -1391,6 +1407,13 @@ static bool retro_task_threaded_init(void)
    worker_self->finished_lock = finished_lock;
    worker_self->worker_cond   = worker_cond;
    worker_self->finished_cond = finished_cond;
+#ifdef _3DS
+   worker_self->prio          = 0x30;
+   svcGetThreadPriority(&worker_self->prio, CUR_THREAD_HANDLE);
+   /* 0x3F is the lowest an application thread may take. */
+   if (worker_self->prio < 0x3F)
+      worker_self->prio++;
+#endif
 
    slock_lock(running_lock);
    worker_continue = true;
