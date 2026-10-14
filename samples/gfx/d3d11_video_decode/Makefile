@@ -27,7 +27,7 @@ DEPS     := $(RA)/gfx/common/dxva_h264.h d3d11_video_decode_test_data.h
 BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
             $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h
 
-TARGETS := dxva_h264_test$(EXE)
+TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -36,6 +36,10 @@ WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
 
 all: $(TARGETS)
+
+dxva_hevc_test$(EXE): dxva_hevc_test.c $(RA)/gfx/common/dxva_hevc.h
+	$(CC) $(CFLAGS) -o $@ dxva_hevc_test.c $(LDFLAGS)
+
 
 dxva_h264_test$(EXE): dxva_h264_test.c $(DECODERS) $(DEPS)
 	$(CC) $(CFLAGS) -o $@ dxva_h264_test.c $(DECODERS) $(LDFLAGS) -lm
@@ -70,6 +74,7 @@ d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
 
 check: all
 	$(RUNNER) ./dxva_h264_test$(EXE)
+	$(RUNNER) ./dxva_hevc_test$(EXE)
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
@@ -77,6 +82,7 @@ ifeq ($(EXE),.exe)
 endif
 
 clean:
+	rm -f dxva_hevc_test dxva_hevc_test.exe
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe

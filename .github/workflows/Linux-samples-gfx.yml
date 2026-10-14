@@ -1158,7 +1158,7 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # rh264's DXVA backend: the buffers it writes, byte by byte
+          # H.264 backend and HEVC submission buffers, byte by byte
           # and against dxva.h, and the backend itself on a D3D11 that
           # records what it is told. The GPU oracle builds here and
           # skips; it runs on a Windows machine with a video decoder.
