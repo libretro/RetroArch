@@ -8,7 +8,9 @@
 #include <dlfcn.h>
 #endif
 #include "../../../gfx/common/vulkan_video_caps.h"
-#ifdef HEVC_SESSION_TEST
+#ifdef HEVC_DECODE_TEST
+#include "hevc_decode.h"
+#elif defined(HEVC_SESSION_TEST)
 #include "hevc_session.h"
 #endif
 
@@ -88,7 +90,11 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
    ok = 1;
 #ifdef HEVC_SESSION_TEST
    if (selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
+#ifdef HEVC_DECODE_TEST
+      ok = hevc_decode_probe(instance, gpu, (uint32_t)family, graphics, selected, get_proc);
+#else
       ok = hevc_session_probe(instance, gpu, (uint32_t)family, get_proc);
+#endif
    else puts("SKIP: no selected HEVC decode family; no sessions created");
 #endif
 done:
@@ -122,7 +128,12 @@ int main(void)
    create_instance = (PFN_vkCreateInstance)get_proc(VK_NULL_HANDLE, "vkCreateInstance");
    if (!create_instance) { result = 1; goto unload; }
    memset(&app, 0, sizeof(app)); memset(&info, 0, sizeof(info));
-   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO; app.apiVersion = VK_API_VERSION_1_1;
+   app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+#ifdef HEVC_DECODE_TEST
+   app.apiVersion = VK_API_VERSION_1_3;
+#else
+   app.apiVersion = VK_API_VERSION_1_1;
+#endif
    info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO; info.pApplicationInfo = &app;
    if (create_instance(&info, NULL, &instance) != VK_SUCCESS)
    { puts("SKIP: Vulkan 1.1 instance unavailable"); goto unload; }

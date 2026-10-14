@@ -132,7 +132,7 @@ static INLINE bool vulkan_hevc_params_build(vulkan_hevc_params_t *out,
          || rh265_video_get_sequence(video, pps_id, &out->sequence)
          || rh265_video_get_vps(video, pps_id, &out->video)) goto fail;
    p = &out->params; q = &out->sequence; v = &out->video.sequence;
-   if (p->pcm_enabled || p->tiles_enabled || p->dependent_slice_segments_enabled
+   if (q->field_seq || p->pcm_enabled || p->tiles_enabled || p->dependent_slice_segments_enabled
          || p->max_transform_hierarchy_depth_inter > 4 || p->max_transform_hierarchy_depth_intra > 4
          || p->num_ref_idx_l0_default < 1 || p->num_ref_idx_l0_default > 15
          || p->num_ref_idx_l1_default < 1 || p->num_ref_idx_l1_default > 15

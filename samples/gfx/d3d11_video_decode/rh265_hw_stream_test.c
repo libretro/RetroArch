@@ -49,10 +49,11 @@ static int output(void *decoder, unsigned slot, video_hw_frame_t *frame)
    return 0;
 }
 
-static bool open_backend(void *user, const rh265_video_params_t *params,
+static bool open_backend(void *user, const rh265_video *source, const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
    mock_decoder_t *d;
+   CHECK(source != NULL);
    CHECK(user == &opened && slots == (unsigned)params->max_dec_pic_buffering + 1);
    if (refuse) return false;
    d = (mock_decoder_t*)calloc(1, sizeof(*d));

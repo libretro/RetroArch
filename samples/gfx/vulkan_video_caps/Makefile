@@ -4,7 +4,8 @@ TARGET := vulkan_video_caps_test$(EXE)
 PARAMS := hevc_params_test$(EXE)
 SESSION := hevc_session_test$(EXE)
 DECODERS := $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/formats/mp4/rmp4.c
-HEVC_DEPS := $(RA)/gfx/common/vulkan_hevc_params.h $(RA)/libretro-common/include/formats/rh265.h \
+HEVC_DEPS := $(RA)/gfx/common/vulkan_hevc_params.h $(RA)/gfx/common/vulkan_hevc_picture.h \
+             $(RA)/libretro-common/include/formats/rh265.h $(RA)/libretro-common/include/formats/rh265_hw.h \
              ../d3d11_video_decode/hevc_device_data.h
 CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra -Werror=declaration-after-statement \
           -I$(RA)/libretro-common/include -I$(RA)/gfx/include
@@ -21,6 +22,14 @@ $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS)
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
+hevc_decode_test$(EXE): probe.c hevc_decode.h h264_decode.h $(DECODERS) $(HEVC_DEPS) \
+      $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
+      $(RA)/gfx/common/vulkan_hevc_picture.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
+      $(RA)/libretro-common/formats/h264/rh264.c $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c
+	$(CC) $(CFLAGS) -I$(RA) -DHEVC_DECODE_TEST -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_VULKAN \
+	   -o $@ probe.c $(DECODERS) $(RA)/libretro-common/formats/h264/rh264.c \
+	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
+
 $(TARGET): vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
@@ -34,8 +43,12 @@ check: all
 session-check: $(SESSION)
 	$(RUNNER) ./$(SESSION)
 
+decode-check: hevc_decode_test$(EXE)
+	$(RUNNER) ./hevc_decode_test$(EXE)
+
 clean:
 	rm -f vulkan_video_caps_test vulkan_video_caps_test.exe probe probe.exe
 	rm -f hevc_params_test hevc_params_test.exe hevc_session_test hevc_session_test.exe
+	rm -f hevc_decode_test hevc_decode_test.exe
 
-.PHONY: all check session-check clean
+.PHONY: all check session-check decode-check clean

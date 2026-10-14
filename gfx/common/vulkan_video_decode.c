@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* rh264's hardware backend on Vulkan Video.
+/* rh264/rh265 hardware backends on Vulkan Video.
  *
  * A decoder is one stream: a video session, its parameters, the DPB -
  * one picture per rh264 slot, decoded output and reference picture in
@@ -45,6 +45,7 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <formats/rh264.h>
+#include <formats/rh265_hw.h>
 #include <formats/image.h>
 #include <formats/video_hw_frame.h>
 
@@ -53,6 +54,8 @@
 #endif
 
 #include "vulkan_video_decode.h"
+#include "vulkan_hevc_params.h"
+#include "vulkan_hevc_picture.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #include "../video_defines.h"
@@ -73,6 +76,10 @@ typedef struct vvd_dec
 
    /* the profile, chained as every create that names it wants */
    VkVideoDecodeH264ProfileInfoKHR h264_profile;
+   VkVideoDecodeH265ProfileInfoKHR h265_profile;
+   const rh265_video *hevc_source;
+   vulkan_hevc_params_t *hevc;
+   StdVideoH265LevelIdc hevc_max_level;
    VkVideoProfileInfoKHR profile;
    VkVideoProfileListInfoKHR profiles;
 
@@ -124,6 +131,9 @@ typedef struct vvd_dec
    VkVideoPictureResourceInfoKHR res[17];
    StdVideoDecodeH264ReferenceInfo std_ref[17];
    VkVideoDecodeH264DpbSlotInfoKHR h264_slot[17];
+   StdVideoDecodeH265ReferenceInfo hevc_ref[17];
+   VkVideoDecodeH265DpbSlotInfoKHR hevc_slot[17];
+   uint32_t hevc_offsets[64];
    VkVideoReferenceSlotInfoKHR slots_info[17], begin_slots[17];
 } vvd_dec_t;
 
@@ -140,6 +150,8 @@ static struct
    retro_atomic_int_t live;
    retro_atomic_ptr_t grave;
    rh264_hw_ops_t ops;
+   rh265_hw_backend_t hevc;
+   VkVideoCodecOperationFlagsKHR codecs;
 
    PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR       get_caps;
    PFN_vkGetPhysicalDeviceVideoFormatPropertiesKHR   get_formats;
@@ -412,6 +424,7 @@ static void vvd_destroy(vvd_dec_t *d)
       vkFreeMemory(dev, d->session_mem[i], NULL);
    if (d->tl)
       vkDestroySemaphore(dev, d->tl, NULL);
+   free(d->hevc);
    free(d);
 }
 
@@ -617,9 +630,13 @@ static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
 static bool vvd_make_session(vvd_dec_t *d,
       const VkVideoCapabilitiesKHR *caps)
 {
-   static const VkExtensionProperties std = {
+   static const VkExtensionProperties h264_std = {
       VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME,
       VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION
+   };
+   static const VkExtensionProperties h265_std = {
+      VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
+      VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION
    };
    VkVideoSessionCreateInfoKHR info;
    VkVideoSessionMemoryRequirementsKHR reqs[16];
@@ -635,9 +652,10 @@ static bool vvd_make_session(vvd_dec_t *d,
    info.maxCodedExtent             = d->coded;
    info.referencePictureFormat     = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
    info.maxDpbSlots                = d->slots;
-   info.maxActiveReferencePictures = caps->maxActiveReferencePictures < 16
-      ? caps->maxActiveReferencePictures : 16;
-   info.pStdHeaderVersion          = &std;
+   info.maxActiveReferencePictures = d->hevc
+      ? (unsigned)(d->hevc->params.max_dec_pic_buffering - 1)
+      : (caps->maxActiveReferencePictures < 16 ? caps->maxActiveReferencePictures : 16);
+   info.pStdHeaderVersion          = d->hevc ? &h265_std : &h264_std;
    if (vvd.create_session(vvd.device, &info, NULL, &d->session) != VK_SUCCESS)
    {
       d->session = VK_NULL_HANDLE;
@@ -1100,6 +1118,70 @@ static VkVideoPictureResourceInfoKHR vvd_resource(const vvd_dec_t *d,
    return r;
 }
 
+static int vvd_record(vvd_dec_t *d, unsigned k, VkDeviceSize size,
+      unsigned n, unsigned setup, const void *codec_picture)
+{
+   VkVideoBeginCodingInfoKHR begin;
+   VkVideoEndCodingInfoKHR end;
+   VkVideoDecodeInfoKHR info;
+   VkCommandBuffer cb;
+   VkVideoReferenceSlotInfoKHR *slots = d->slots_info;
+   VkVideoReferenceSlotInfoKHR *begin_slots = d->begin_slots;
+   VkVideoPictureResourceInfoKHR *res = d->res;
+   cb = d->dcb[k];
+   if (!vvd_begin(cb))
+      return -1;
+   /* the slot's last picture is gone: it is written whole - after the
+    * submission wait, so not under a copy out of it still running */
+   vvd_barrier(cb, d->dpb[d->dpb_array ? 0 : setup],
+         d->dpb_array ? setup : 0,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0,
+         VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
+         VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR);
+
+   begin.sType                  = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
+   begin.pNext                  = NULL;
+   begin.flags                  = 0;
+   begin.videoSession           = d->session;
+   begin.videoSessionParameters = d->params;
+   begin.referenceSlotCount     = n + 1;
+   begin.pReferenceSlots        = begin_slots;
+   vvd.cmd_begin(cb, &begin);
+   if (!d->reset)
+   {
+      VkVideoCodingControlInfoKHR ctl;
+      ctl.sType = VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR;
+      ctl.pNext = NULL;
+      ctl.flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR;
+      vvd.cmd_control(cb, &ctl);
+   }
+
+   info.sType               = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
+   info.pNext               = codec_picture;
+   info.flags               = 0;
+   info.srcBuffer           = d->bs[k];
+   info.srcBufferOffset     = 0;
+   info.srcBufferRange      = size;
+   info.dstPictureResource  = res[n];
+   info.pSetupReferenceSlot = &slots[n];
+   info.referenceSlotCount  = n;
+   info.pReferenceSlots     = n ? slots : NULL;
+   vvd.cmd_decode(cb, &info);
+
+   end.sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR;
+   end.pNext = NULL;
+   end.flags = 0;
+   vvd.cmd_end(cb, &end);
+   if (     vkEndCommandBuffer(cb) != VK_SUCCESS
+         || !vvd_submit(d, d->dq, cb))
+      return -1;
+   d->reset        = true;
+   d->dcb_value[k] = d->tl_value;
+   d->dring++;
+   return 0;
+}
+
 static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
 {
    vvd_dec_t *d = (vvd_dec_t*)dec;
@@ -1110,10 +1192,6 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
    VkVideoReferenceSlotInfoKHR *begin_slots   = d->begin_slots;
    StdVideoDecodeH264PictureInfo std_pic;
    VkVideoDecodeH264PictureInfoKHR h264_pic;
-   VkVideoBeginCodingInfoKHR begin;
-   VkVideoEndCodingInfoKHR end;
-   VkVideoDecodeInfoKHR info;
-   VkCommandBuffer cb;
    VkDeviceSize size;
    unsigned i, n, k;
    int ready;
@@ -1214,58 +1292,7 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
    h264_pic.sliceCount         = pic->num_slices;
    h264_pic.pSliceOffsets      = pic->slice_offsets;
 
-   cb = d->dcb[k];
-   if (!vvd_begin(cb))
-      return -1;
-   /* the slot's last picture is gone: it is written whole - after the
-    * submission wait, so not under a copy out of it still running */
-   vvd_barrier(cb, d->dpb[d->dpb_array ? 0 : setup],
-         d->dpb_array ? setup : 0,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0,
-         VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
-         VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR);
-
-   begin.sType                  = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
-   begin.pNext                  = NULL;
-   begin.flags                  = 0;
-   begin.videoSession           = d->session;
-   begin.videoSessionParameters = d->params;
-   begin.referenceSlotCount     = n + 1;
-   begin.pReferenceSlots        = begin_slots;
-   vvd.cmd_begin(cb, &begin);
-   if (!d->reset)
-   {
-      VkVideoCodingControlInfoKHR ctl;
-      ctl.sType = VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR;
-      ctl.pNext = NULL;
-      ctl.flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR;
-      vvd.cmd_control(cb, &ctl);
-   }
-
-   info.sType               = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR;
-   info.pNext               = &h264_pic;
-   info.flags               = 0;
-   info.srcBuffer           = d->bs[k];
-   info.srcBufferOffset     = 0;
-   info.srcBufferRange      = size;
-   info.dstPictureResource  = res[n];
-   info.pSetupReferenceSlot = &slots[n];
-   info.referenceSlotCount  = n;
-   info.pReferenceSlots     = n ? slots : NULL;
-   vvd.cmd_decode(cb, &info);
-
-   end.sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR;
-   end.pNext = NULL;
-   end.flags = 0;
-   vvd.cmd_end(cb, &end);
-   if (     vkEndCommandBuffer(cb) != VK_SUCCESS
-         || !vvd_submit(d, d->dq, cb))
-      return -1;
-   d->reset        = true;
-   d->dcb_value[k] = d->tl_value;
-   d->dring++;
-   return 0;
+   return vvd_record(d, k, size, n, setup, &h264_pic);
 }
 
 /* The visible window of @slot into an output image of its own. */
@@ -1510,6 +1537,8 @@ static void vvd_close(void *dec)
 
 /* ---- the backend ---- */
 
+#include "vulkan_video_decode_hevc.h"
+
 #define VVD_DEV_PROC(var, type, name) \
    ((vvd.var = (type)vkGetDeviceProcAddr(vvd.device, name)) != NULL)
 #define VVD_INST_PROC(var, type, name) \
@@ -1520,13 +1549,15 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
 {
    unsigned i;
    if (!ctx || !ctx->video_lanes || !ctx->device
-         || !(ctx->video_codec_operations & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
+         || !(ctx->video_codec_operations & (VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR
+               | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)))
       return false;
    if (vvd.up)
       return vvd.device == ctx->device;
    vvd.instance    = ctx->instance;
    vvd.gpu         = ctx->gpu;
    vvd.device      = ctx->device;
+   vvd.codecs      = ctx->video_codec_operations;
    vvd.mem         = ctx->memory_properties;
    vvd.gfx_family  = ctx->graphics_queue_index;
    vvd.dec_family  = ctx->video_decode_family;
@@ -1583,7 +1614,13 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.ops.close  = vvd_close;
    vvd.ops.readback = vvd_readback;
    vvd.up         = true;
-   rh264_set_hw_backend(&vvd.ops);
+   vvd.hevc.user = NULL;
+   vvd.hevc.open = vvd_hevc_open;
+   vvd.hevc.close = vvd_hevc_close;
+   if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
+      rh264_set_hw_backend(&vvd.ops);
+   if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
+      rh265_set_hw_backend(&vvd.hevc);
    return true;
 }
 
@@ -1592,6 +1629,7 @@ void vulkan_video_decode_deinit(void)
    if (!vvd.up)
       return;
    rh264_set_hw_backend(NULL);
+   rh265_set_hw_backend(NULL);
    if (retro_atomic_load_acquire_int(&vvd.live))
       RARCH_ERR("[Vulkan] Video decode: %d decoder(s) still open at teardown.\n",
             retro_atomic_load_acquire_int(&vvd.live));

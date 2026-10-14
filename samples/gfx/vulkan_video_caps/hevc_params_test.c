@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <formats/rmp4.h>
 #include "../../../gfx/common/vulkan_hevc_params.h"
+#include "../../../gfx/common/vulkan_hevc_picture.h"
 #include "../d3d11_video_decode/hevc_device_data.h"
 
 typedef struct hevc_fixture
@@ -11,8 +12,10 @@ typedef struct hevc_fixture
    const uint8_t *data;
    size_t size;
    unsigned depth;
+   const uint32_t *hash;
+   unsigned frames;
 } hevc_fixture_t;
-#define FIXTURE(kind, depth) {#kind #depth, hevc_##kind##depth, sizeof(hevc_##kind##depth), depth}
+#define FIXTURE(kind, depth) {#kind #depth, hevc_##kind##depth, sizeof(hevc_##kind##depth), depth, hevc_##kind##depth##_hash, 12}
 static const hevc_fixture_t fixtures[] = {
    FIXTURE(ip, 8), FIXTURE(bpyr, 8), FIXTURE(wpp, 8), FIXTURE(crop, 8), FIXTURE(repeat, 8),
    FIXTURE(ip, 10), FIXTURE(bpyr, 10), FIXTURE(wpp, 10), FIXTURE(crop, 10), FIXTURE(repeat, 10)
@@ -46,6 +49,9 @@ int main(void)
    rh265_short_term_set_t set;
    StdVideoH265ProfileTierLevel ptl;
    rh265_sequence_info_t seq;
+   rh265_hw_picture_t picture;
+   rh265_access_unit_t au;
+   StdVideoDecodeH265PictureInfo std_pic;
    if (!p) return 1;
    for (i = 0; i < sizeof(fixtures) / sizeof(fixtures[0]); i++)
    {
@@ -98,6 +104,26 @@ int main(void)
    if (vulkan_hevc_ptl(&ptl, &seq)) failures++;
    seq.level_idc = 93; seq.profile_space = 1;
    if (vulkan_hevc_ptl(&ptl, &seq)) failures++;
+   memset(&picture, 0, sizeof(picture)); memset(&au, 0, sizeof(au));
+   picture.poc = 10; picture.reference = 1; picture.num_refs = 3;
+   picture.refs[0].poc = 8; picture.refs[0].slot = 9;
+   picture.refs[1].poc = 12; picture.refs[1].slot = 2;
+   picture.refs[2].poc = 4; picture.refs[2].slot = 12; picture.refs[2].long_term = 1;
+   au.first.poc_lsb = 10; au.first.short_term_rps_sps_idx = -1;
+   au.first.num_negative = au.first.num_positive = 1;
+   au.first.delta_poc_before[0] = -2; au.first.delta_poc_after[0] = 2;
+   au.first.used_before[0] = au.first.used_after[0] = 1;
+   au.first.long_term.count = 1; au.first.long_term.poc_lsb[0] = 4; au.first.long_term.used[0] = 1;
+   if (!vulkan_hevc_picture(&std_pic, 0, &p->params, &au, &picture)
+         || std_pic.RefPicSetStCurrBefore[0] != 9 || std_pic.RefPicSetStCurrAfter[0] != 2
+         || std_pic.RefPicSetLtCurr[0] != 12 || std_pic.RefPicSetLtCurr[1] != 255
+         || std_pic.PicOrderCntVal != 10 || !std_pic.flags.IsReference) failures++;
+   picture.refs[2].poc = 5;
+   if (vulkan_hevc_picture(&std_pic, 0, &p->params, &au, &picture)) failures++;
+   picture.refs[2].poc = 4; picture.refs[0].slot = 16;
+   if (vulkan_hevc_picture(&std_pic, 0, &p->params, &au, &picture)) failures++;
+   picture.refs[0].slot = 9; au.first.short_term_rps_bits = 65536;
+   if (vulkan_hevc_picture(&std_pic, 0, &p->params, &au, &picture)) failures++;
    memset(p, 0xaa, sizeof(*p));
    if (vulkan_hevc_params_build(p, NULL, 0)) failures++;
    for (j = 0; j < sizeof(*p); j++)

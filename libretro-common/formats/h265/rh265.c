@@ -869,6 +869,11 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
             s->color.matrix = rh265_un(&b, 8);
          }
       }
+      if (rh265_u1(&b))               /* chroma_loc_info_present_flag */
+      { rh265_ue(&b); rh265_ue(&b); }
+      rh265_u1(&b);                    /* neutral_chroma_indication_flag */
+      s->sequence.field_seq = rh265_u1(&b);
+      rh265_u1(&b);                    /* frame_field_info_present_flag */
    }
    /* Remaining VUI and SPS extensions do not affect reconstruction. */
    if (rh265_bits_overrun(&b)) return -1;
@@ -5386,7 +5391,7 @@ int rh265_video_set_hw(rh265_video *v, int enable)
       return 0;
    }
    slots = (unsigned)hw->params.max_dec_pic_buffering + 1;
-   if (!hw->backend.open(hw->backend.user, &hw->params, slots, &ops))
+   if (!hw->backend.open(hw->backend.user, v, &hw->params, slots, &ops))
    {
       free(hw);
       return 0;

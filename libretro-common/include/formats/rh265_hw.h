@@ -279,7 +279,8 @@ typedef struct rh265_hw_ops
 typedef struct rh265_hw_backend
 {
    void *user;
-   bool (*open)(void *user, const rh265_video_params_t *params,
+   /* source permits owner-thread parameter queries while the decoder lives. */
+   bool (*open)(void *user, const rh265_video *source, const rh265_video_params_t *params,
          unsigned slots, rh265_hw_ops_t *ops);
    void (*close)(rh265_hw_ops_t *ops);
 } rh265_hw_backend_t;

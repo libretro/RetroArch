@@ -95,6 +95,7 @@ typedef struct rh265_sequence_info
    uint32_t max_latency_increase_plus1[7], lt_poc_lsb[32];
    unsigned vps_id, profile_space, profile_idc, tier_flag, level_idc;
    unsigned constraint_flags_lo, temporal_id_nesting, max_sub_layers_minus1;
+   unsigned field_seq; /* SPS VUI field_seq_flag; zero when absent */
    unsigned max_dec_pic_buffering[7], max_num_reorder_pics[7];
    unsigned num_short_term_sets, num_long_term_pics;
    uint8_t lt_used[32];

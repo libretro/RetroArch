@@ -1,4 +1,4 @@
-# Vulkan video codec negotiation
+# Vulkan video negotiation and HEVC decoding
 
 `make check SANITIZER=address,undefined` tests the production extension and
 queue-family selection helpers. `make check CC=x86_64-w64-mingw32-gcc
@@ -12,9 +12,12 @@ The context records the selected queue family's codec mask after successful
 device creation, including core-created devices and device caching. An HEVC
 extension on another family does not advertise HEVC on the selected family.
 The existing H.264 backend registers only when that codec is selected.
-The HEVC parameter mapper and session tests below prepare the next backend
-stage. Decode submission and renderer integration remain pending; this does
-not register an HEVC backend.
+The HEVC backend registers independently on a selected HEVC family. It offers
+progressive Main 8-bit/NV12 sessions. Main10 remains software until Vulkan
+P010 import is implemented. Unsupported profiles, field sequences, missing
+VPS metadata and sessions exceeding device/slot limits fall back at open.
+The owner currently requests one spare DPB slot, so a 16-picture SPS needs
+17 slots and falls back on devices limited to 16.
 
 `make probe` builds an optional read-only Vulkan loader/physical-device probe;
 run `./probe`. Build with `make probe.exe CC=x86_64-w64-mingw32-gcc EXE=.exe`
@@ -25,8 +28,8 @@ queried separately for Main8 and Main10 profile capabilities.
 Native Windows evidence: NVIDIA GeForce RTX 5090 exposes H.264 and HEVC on
 family 3; both HEVC Main8/Main10 capability queries succeed, with maximum
 8192x8192 coded extent and 16 DPB slots. Linux llvmpipe exposes neither codec
-and selects no decode family. These are capability queries; actual HEVC
-decoding and import validation remain required.
+and selects no decode family. These capability queries are separate from the
+decoded-picture evidence below.
 
 `make check` also tests the production HEVC StdVideo parameter mapper against
 ten Main/Main10 MP4 fixtures, including WPP, B-pictures, crop and repeated
@@ -50,6 +53,29 @@ including Main10/P010. This proves setup acceptance, not decoded pixels or
 P010 renderer support. llvmpipe skips because it has no HEVC decode family.
 Keep this loader/driver check separate from the sanitizer-based portable
 tests: Mesa's loader path can retain process-lifetime allocations.
+
+`make decode-check` compiles the real backend and exercises registration,
+rh265 opt-in, MP4 packets, decode/drain and exported frame leases. GPU pixels
+are read back only by the test oracle, after the ready timeline, then the
+done lease is signaled after reading finishes. All 60 Main8 fixture frames
+match the independent FFmpeg hashes, including B-frame order, WPP, crop and
+repeated headers, on the RTX 5090. All five Main10 cases stay on software.
+All six native Vulkan H.264 regression streams also match software after
+sharing the command-recording helper. Hardware decode
+and output share existing nonblocking timeline/ring/graveyard ownership.
+Output uses one GPU crop/copy into an independent leased NV12 image; no CPU
+readback or RGB staging is added to production HEVC playback.
+
+Optional `HEVC_CONFORMANCE_MP4` and `HEVC_CONFORMANCE_NV12` point to matching
+caller-supplied MP4 and FFmpeg NV12 display-order files. Both are required
+when either is set; each file is limited to 64 MiB, and the even-dimension
+Main8 reference is limited to 32 frames. The existing D3D11 sample's
+`prepare_hevc_conformance.py` creates these files without downloading media.
+The 24-picture LTRPSPS_A_Qualcomm_1 case also matches every exported Vulkan
+sample. Main10 decoding/import, actual File Browser presentation, Vulkan
+movie-core GPU handoff, loss/reset coverage and other GPU vendors remain
+separate acceptance work. The device test skips without a selected HEVC
+family; it fails when an advertised device cannot run the backend fixtures.
 
 References:
 - https://docs.vulkan.org/refpages/latest/refpages/source/VkQueueFamilyVideoPropertiesKHR.html

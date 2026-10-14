@@ -838,10 +838,11 @@ void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops)
    memset(ops, 0, sizeof(*ops));
 }
 
-static bool d3d11vd_hevc_open(void *user, const rh265_video_params_t *params,
+static bool d3d11vd_hevc_open(void *user, const rh265_video *source, const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
    const unsigned *formats = (const unsigned*)user;
+   (void)source;
    if (!params || !formats
          || !(*formats & (params->bit_depth == 10
                   ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)))

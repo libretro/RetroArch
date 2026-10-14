@@ -114,7 +114,7 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
    F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE,
    F_SEQUENCE, F_INFERRED, F_BAD_LAYERS, F_DPB_HUGE, F_BAD_REORDER, F_RPS_PRED,
-   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
+   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_FIELD, F_VUI_SHORT };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -216,7 +216,12 @@ static void sps(bitw *w, enum field f, int depth)
             putn(w, f == F_VUI_HDR ? 9 : 1, 8);
          }
       }
-      if (f != F_VUI_SHORT) put1(w, 0); /* chroma location info */
+      if (f != F_VUI_SHORT)
+      {
+         put1(w, f == F_VUI_FIELD);
+         if (f == F_VUI_FIELD) { putue(w, 2); putue(w, 3); }
+         put1(w, 0); put1(w, f == F_VUI_FIELD); put1(w, 0);
+      }
    }
    put1(w, 0);                       /* sps_extension_present */
    trailing(w);
@@ -697,6 +702,11 @@ static void test_color_info(void)
       expect("VUI range", color.full_range, f != F_VUI_HDR);
       expect("VUI matrix", color.matrix, f == F_VUI_HDR ? 9 : f == F_VUI_RANGE ? 2 : 1);
       expect("VUI transfer", color.transfer, f == F_VUI_HDR ? 16 : f == F_VUI_RANGE ? 2 : 1);
+      {
+         rh265_sequence_info_t sequence;
+         expect("VUI sequence", rh265_video_get_sequence(v, 0, &sequence), 0);
+         expect("VUI field sequence", sequence.field_seq, f == F_VUI_FIELD);
+      }
    }
    memset(&color, 0xa5, sizeof(color));
    expect("null color decoder", rh265_video_get_color(NULL, 0, &color), -1);
