@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <retro_assert.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 #include <queues/retro_triple_buffer.h>
 #include <lists/string_list.h>
@@ -109,6 +110,9 @@ typedef struct ffmpeg_camera
    /* The poll thread's loop condition: the main thread sets it in
     * stop(), the thread reads it every turn. */
    retro_atomic_int_t done;
+   retro_atomic_int_t poll_epoch;
+   retro_eventcount_t read_retry;
+   bool read_retry_init;
 } ffmpeg_camera_t;
 
 static void ffmpeg_camera_free(void *data);
@@ -356,6 +360,12 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned dims
    }
 
    ffmpeg->requested_dims   = dims;
+   ffmpeg->read_retry_init = retro_eventcount_init(&ffmpeg->read_retry);
+   if (!ffmpeg->read_retry_init)
+   {
+      RARCH_ERR("[FFMPEG] Failed to initialize capture wakeup.\n");
+      goto error;
+   }
 
    avdevice_register_all();
    RARCH_LOG("[FFMPEG] Initialized libavdevice.\n");
@@ -453,6 +463,7 @@ static void ffmpeg_camera_free(void *data)
    ffmpeg_camera_stop(ffmpeg);
 
    av_dict_free(&ffmpeg->options);
+   retro_eventcount_free(&ffmpeg->read_retry);
 
    free(ffmpeg);
 }
@@ -673,6 +684,8 @@ static void ffmpeg_camera_stop(void *data)
     * cannot happen while the thread is still in there. This used to
     * flush and then join. */
    retro_atomic_store_release_int(&ffmpeg->done, 1);
+   if (ffmpeg->read_retry_init)
+      retro_eventcount_notify(&ffmpeg->read_retry);
    sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
 
    if (!ffmpeg->format_context)
@@ -725,22 +738,35 @@ static void ffmpeg_camera_poll_thread(void *data)
 
    while (!retro_atomic_load_acquire_int(&ffmpeg->done))
    {
+      int poll_epoch = retro_atomic_load_acquire_int(&ffmpeg->poll_epoch);
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
       bool draining = ret == AVERROR_EOF;
       bool retry_packet = false;
       bool progress = false;
       if (ret == AVERROR_EXIT && retro_atomic_load_acquire_int(&ffmpeg->done))
          break;
+      if (ret == AVERROR(EAGAIN) || ret == AVERROR(EINTR))
+      {
+         /* Retry unavailable input only when the frontend requests a frame. */
+         while (!retro_atomic_load_acquire_int(&ffmpeg->done)
+               && retro_atomic_load_acquire_int(&ffmpeg->poll_epoch) == poll_epoch)
+         {
+            int key = retro_eventcount_prepare_wait(&ffmpeg->read_retry);
+            if (retro_atomic_load_acquire_int(&ffmpeg->done)
+                  || retro_atomic_load_acquire_int(&ffmpeg->poll_epoch) != poll_epoch)
+               retro_eventcount_cancel_wait(&ffmpeg->read_retry);
+            else
+               retro_eventcount_commit_wait(&ffmpeg->read_retry, key);
+         }
+         continue;
+      }
       /* Read the raw data from the camera. If that fails... */
       if (ret < 0 && !draining)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFMPEG] Failed to read frame: %s.\n", msg);
-         /* A removed device cannot recover within this capture session. */
-         if (ret == AVERROR(ENODEV))
-            break;
-         continue;
+         break;
       }
 
       if (!draining && ffmpeg->packet->stream_index != ffmpeg->video_stream_index)
@@ -863,6 +889,8 @@ static bool ffmpeg_camera_poll(void *data,
       return false;
    }
 
+   retro_atomic_fetch_add_int(&ffmpeg->poll_epoch, 1);
+   retro_eventcount_notify(&ffmpeg->read_retry);
    frame_raw_cb((uint32_t*)retro_triple_buffer_front(&ffmpeg->frames),
          VIDEO_SCALE_W(ffmpeg->target_dims), VIDEO_SCALE_H(ffmpeg->target_dims),
          ffmpeg->target_linesizes[0]);

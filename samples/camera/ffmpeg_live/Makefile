@@ -13,6 +13,7 @@ SOURCES_C := \
 	stubs_retroarch.c \
 	$(CORE_DIR)/camera/drivers/ffmpeg.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \

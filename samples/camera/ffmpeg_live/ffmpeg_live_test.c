@@ -48,6 +48,9 @@ static retro_atomic_int_t removed_reads;
 static retro_atomic_int_t changing_size;
 static retro_atomic_int_t fail_stream_info;
 static retro_atomic_int_t null_decoder_calls;
+static retro_atomic_int_t scripted_read_error;
+static retro_atomic_int_t scripted_error_reads;
+extern retro_atomic_int_t camera_read_errors;
 
 int __real_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options);
 int __wrap_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options)
@@ -134,6 +137,14 @@ int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
 int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
 {
    int ret;
+   int error = retro_atomic_load_acquire_int(&scripted_read_error);
+   if (error)
+   {
+      /* Bound the unfixed retry loop and its log output. */
+      if (retro_atomic_fetch_add_int(&scripted_error_reads, 1) < 32)
+         return AVERROR(error);
+      return AVERROR_EOF;
+   }
    if (retro_atomic_load_acquire_int(&changing_size))
       usleep(50000);
    if (retro_atomic_load_acquire_int(&removed_device))
@@ -631,6 +642,65 @@ int main(void)
       CHECK(checksum != 0, "restart produced no decoded pixels");
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
+   }
+   current = "capture read errors";
+   {
+      const int errors[] = { EAGAIN, EINTR, EIO, EINVAL };
+      unsigned lane;
+      for (lane = 0; lane < sizeof(errors) / sizeof(errors[0]); lane++)
+      {
+         unsigned attempt, polls;
+         bool transient = errors[lane] == EAGAIN || errors[lane] == EINTR;
+         h = open_camera();
+         CHECK(h != NULL, "error source initialization failed");
+         if (!h)
+            continue;
+         retro_atomic_store_release_int(&scripted_error_reads, 0);
+         retro_atomic_store_release_int(&camera_read_errors, 0);
+         retro_atomic_store_release_int(&scripted_read_error, errors[lane]);
+         CHECK(camera_ffmpeg.start(h), "error source start failed");
+         for (attempt = 0; attempt < 100
+               && !retro_atomic_load_acquire_int(&scripted_error_reads); attempt++)
+            usleep(1000);
+         usleep(20000);
+         CHECK(retro_atomic_load_acquire_int(&scripted_error_reads) == 1,
+               "idle error source made %d reads (errno %d)",
+               retro_atomic_load_acquire_int(&scripted_error_reads), errors[lane]);
+         for (polls = 0; polls < 10; polls++)
+         {
+            camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+            usleep(1000);
+         }
+         CHECK(retro_atomic_load_acquire_int(&scripted_error_reads) <= (transient ? 11 : 1),
+               "read errors exceeded frontend retry requests (errno %d)", errors[lane]);
+         CHECK(retro_atomic_load_acquire_int(&camera_read_errors) == (transient ? 0 : 1),
+               "wrong read-error log count %d (errno %d)",
+               retro_atomic_load_acquire_int(&camera_read_errors), errors[lane]);
+         if (transient && errors[lane] == EAGAIN)
+         {
+            /* Stop must wake a worker parked for unavailable input. */
+            camera_ffmpeg.stop(h);
+            retro_atomic_store_release_int(&scripted_read_error, 0);
+            CHECK(camera_ffmpeg.start(h), "restart after parked stop failed");
+         }
+         else
+         {
+            if (!transient)
+               camera_ffmpeg.stop(h);
+            retro_atomic_store_release_int(&scripted_read_error, 0);
+            if (!transient)
+               CHECK(camera_ffmpeg.start(h), "restart after terminal error failed");
+         }
+         checksum = 0;
+         for (attempt = 0; attempt < 100 && !checksum; attempt++)
+         {
+            camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+            usleep(1000);
+         }
+         CHECK(checksum != 0, "capture did not recover after errno %d", errors[lane]);
+         camera_ffmpeg.stop(h);
+         camera_ffmpeg.free(h);
+      }
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);
