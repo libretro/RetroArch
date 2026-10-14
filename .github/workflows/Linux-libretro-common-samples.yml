@@ -491,6 +491,17 @@ jobs:
             -c:v mpeg2video -b:v 2000k -c:a ac3 -ac 2 -ar 48000 -f dvd -y "$fixture"
           ./rdvd_packet_test "$fixture"
           ./rdvd_vfs_real_test "$fixture"
+          reference=$(mktemp --suffix=.f32)
+          trap 'rm -f "$fixture" "$reference"' EXIT
+          for sample_format in s16 s32; do
+            ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=720x576:rate=25 \
+              -f lavfi -i sine=sample_rate=48000 -t 0.4 \
+              -c:v mpeg2video -b:v 2000k -c:a pcm_dvd -sample_fmt "$sample_format" \
+              -ac 2 -ar 48000 -f dvd -y "$fixture"
+            ffmpeg -hide_banner -loglevel error -i "$fixture" -map 0:a:0 \
+              -c:a pcm_f32le -f f32le -y "$reference"
+            ./rdvd_vfs_real_test "$fixture" "$reference"
+          done
 
       - name: Compile-test retro_atomic.h from a C++11 TU
         shell: bash

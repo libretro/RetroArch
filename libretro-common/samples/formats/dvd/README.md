@@ -183,3 +183,27 @@ leftover fragments at EOF. The 0.4-second fixture above yields 13 audio
 frames, nine borrowed and four assembled; this is not playable DVD output.
 The pointer origin is also observable in the
 [FFmpeg MPEG muxer](https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mpegenc.c).
+
+rdvd_lpcm frames selected LPCM packets into channel-aligned packing blocks.
+DVD 20/24-bit packing is handled by rlpcm separately from raw PCM. Whole
+blocks borrow PES bytes; fragments use at most 84 bytes in the stable state
+object. Initial pointer four means the first payload byte; later packets
+must be contiguous. Reset after seek, loss, stream or format changes. Drain
+to MORE before advancing PES and reject nonzero used storage at EOF. Output
+is bounded by a caller-supplied frame limit rounded to whole packing blocks.
+No allocation, I/O, waits, channel remapping or player output are added.
+
+The LPCM tests cover independent 20/24-bit wire vectors, all 1..8 channel
+counts and depths, block-size/truncation checks and every two-block split.
+The worker fixture can compare PCM bytes against an external reference:
+
+```sh
+ffmpeg -i fixture.vob -map 0:a:0 -c:a pcm_f32le -f f32le reference.f32
+./rdvd_vfs_real_test fixture.vob reference.f32
+```
+
+CI generates 16-bit and 24-bit stereo DVD fixtures and compares every PCM
+sample against FFmpeg output, including exact EOF. The test reference is
+little-endian float32 and runs on Linux x86 and Windows x86/x64. Packet views
+supply the format here; legacy standalone LPCM header inference and mixer
+seeking are separate interfaces requiring further DVD integration review.

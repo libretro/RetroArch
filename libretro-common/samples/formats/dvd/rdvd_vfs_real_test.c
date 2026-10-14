@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <formats/rdvd_ac3.h>
+#include <formats/rdvd_lpcm.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -117,11 +118,19 @@ static void test_stream_files(const char *const *paths)
    tpool_wait(pool); tpool_destroy(pool);
    CHECK(rdvd_vfs_close(&vfs)); rmpeg1_ps_free(ps);
 }
-static void test_vob_stream(const char *path)
+static void test_vob_stream(const char *path, const char *reference)
 {
    uint8_t buffer[2048];
    uint8_t *assembly = (uint8_t*)malloc(RDVD_AC3_BUFFER_BYTES);
-   float *pcm = (float*)malloc(1536 * 6 * sizeof(float));
+   float *pcm = (float*)malloc(1536 * 8 * sizeof(float));
+   float *expected = (float*)malloc(1536 * 8 * sizeof(float));
+   RFILE *oracle = reference ? filestream_open(reference, RETRO_VFS_FILE_ACCESS_READ,
+      RETRO_VFS_FILE_ACCESS_HINT_NONE) : NULL;
+   rdvd_lpcm_t lpcm;
+   rdvd_lpcm_block_t lpcm_block;
+   enum rdvd_lpcm_result lpcm_result;
+   size_t lpcm_frames = 0;
+   unsigned lpcm_packets = 0, lpcm_borrowed = 0, lpcm_assembled = 0;
    rac3_decoder_t *decoder = rac3_decoder_new();
    rdvd_ac3_t ac3;
    rdvd_ac3_frame_t frame;
@@ -137,9 +146,11 @@ static void test_vob_stream(const char *path)
    enum rdvd_stream_status status = RDVD_STREAM_WAIT;
    unsigned video = 0, audio = 0, pci = 0, dsi = 0;
    retro_time_t start;
-   CHECK(vfs && ps && pool && assembly && pcm && decoder);
-   if (!vfs || !ps || !pool || !assembly || !pcm || !decoder) return;
+   CHECK(vfs && ps && pool && assembly && pcm && expected && decoder);
+   CHECK(!reference || oracle);
+   if (!vfs || !ps || !pool || !assembly || !pcm || !expected || !decoder || (reference && !oracle)) return;
    CHECK(rdvd_ac3_init(&ac3, 0, assembly, RDVD_AC3_BUFFER_BYTES));
+   CHECK(rdvd_lpcm_init(&lpcm, 0));
    backend = rdvd_vfs_backend(vfs);
    CHECK(rdvd_source_init(&source, &backend->map, 0, backend->map.total_bytes));
    CHECK(rdvd_stream_init(&stream, &source, vfs, pool, ps, buffer, sizeof(buffer)));
@@ -171,6 +182,31 @@ static void test_vob_stream(const char *path)
                }
                CHECK(audio_result == RDVD_AC3_MORE && !ac3.borrowing);
             }
+            if (packet.dvd.kind == RDVD_PACKET_LPCM)
+            {
+               lpcm_packets++;
+               CHECK(rdvd_lpcm_feed(&lpcm, &packet.dvd));
+               while ((lpcm_result = rdvd_lpcm_next(&lpcm, 1536, &lpcm_block)) == RDVD_LPCM_BLOCK)
+               {
+                  size_t count, samples, i;
+                  count = rlpcm_decode_f32(&lpcm_block.format, lpcm_block.data,
+                     lpcm_block.size, pcm, lpcm_block.frames);
+                  CHECK(count == lpcm_block.frames);
+                  samples = count * lpcm_block.format.channels;
+                  for (i = 0; i < samples; i++)
+                     CHECK(pcm[i] == pcm[i] && pcm[i] >= -1.0f && pcm[i] <= 1.0f);
+                  if (oracle)
+                  {
+                     CHECK(filestream_read(oracle, expected, samples * sizeof(float))
+                        == (int64_t)(samples * sizeof(float)));
+                     CHECK(!memcmp(pcm, expected, samples * sizeof(float)));
+                  }
+                  if (lpcm_block.data == lpcm.buffer) lpcm_assembled++;
+                  else lpcm_borrowed++;
+                  lpcm_frames += count;
+               }
+               CHECK(lpcm_result == RDVD_LPCM_MORE && !lpcm.borrowing);
+            }
             if (packet.dvd.kind == RDVD_PACKET_PCI) pci++;
             if (packet.dvd.kind == RDVD_PACKET_DSI) dsi++;
          }
@@ -178,8 +214,17 @@ static void test_vob_stream(const char *path)
       else if (status != RDVD_STREAM_WAIT) break;
       else sthread_yield();
    }
-   CHECK(status == RDVD_STREAM_END && video && audio && pci && dsi);
-   CHECK(frames && !ac3.used);
+   CHECK(status == RDVD_STREAM_END && video && (audio || lpcm_packets) && pci && dsi);
+   CHECK((frames || lpcm_frames) && !ac3.used && !lpcm.used);
+   if (oracle)
+   {
+      uint8_t extra;
+      CHECK(lpcm_frames && filestream_read(oracle, &extra, 1) == 0);
+      CHECK(filestream_close(oracle) == 0);
+   }
+   printf("Worker LPCM: frames=%lu borrowed=%u assembled=%u\n",
+      (unsigned long)lpcm_frames, lpcm_borrowed, lpcm_assembled);
+   free(expected);
    printf("Worker AC3 frames: total=%u borrowed=%u assembled=%u\n", frames, borrowed, assembled);
    rac3_decoder_free(decoder); free(pcm); free(assembly);
    printf("Worker VOB stream: video=%u AC3=%u PCI=%u DSI=%u\n", video, audio, pci, dsi);
@@ -232,7 +277,7 @@ int main(int argc, char **argv)
       CHECK(rdvd_vfs_close(&vfs) && !vfs);
    }
    test_stream_files(paths);
-   if (argc > 1) test_vob_stream(argv[1]);
+   if (argc > 1) test_vob_stream(argv[1], argc > 2 ? argv[2] : NULL);
    for (i = 0; i < 2; i++) CHECK(filestream_delete(paths[i]) == 0);
    printf("DVD real VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;

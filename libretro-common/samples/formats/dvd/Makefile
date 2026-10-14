@@ -44,7 +44,7 @@ VFS_REAL_LIBS :=
 else
 VFS_REAL_LIBS := -lpthread -lrt
 endif
-VFS_REAL_SOURCES := ../../../formats/dvd/rdvd_ac3.c ../../../formats/ac3/rac3_frame.c ../../../formats/ac3/rac3_decode.c ../../../rthreads/tpool.c ../../../rthreads/retro_eventcount.c ../../../rthreads/rthreads.c ../../../features/features_cpu.c ../../../compat/fopen_utf8.c ../../../compat/compat_strl.c ../../../encodings/encoding_utf.c ../../../file/file_path.c ../../../file/file_path_io.c ../../../file/retro_dirent.c ../../../streams/file_stream.c ../../../string/rstrtod.c ../../../time/rtime.c ../../../vfs/vfs_implementation.c
+VFS_REAL_SOURCES := ../../../formats/dvd/rdvd_lpcm.c ../../../formats/lpcm/rlpcm.c ../../../formats/dvd/rdvd_ac3.c ../../../formats/ac3/rac3_frame.c ../../../formats/ac3/rac3_decode.c ../../../rthreads/tpool.c ../../../rthreads/retro_eventcount.c ../../../rthreads/rthreads.c ../../../features/features_cpu.c ../../../compat/fopen_utf8.c ../../../compat/compat_strl.c ../../../encodings/encoding_utf.c ../../../file/file_path.c ../../../file/file_path_io.c ../../../file/retro_dirent.c ../../../streams/file_stream.c ../../../string/rstrtod.c ../../../time/rtime.c ../../../vfs/vfs_implementation.c
 $(TARGET_TEST6): $(DVD_STREAM_HEADERS) $(DVD_STREAM_SOURCES) rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES)
 	$(CC) $(filter-out -std=c89 -Werror,$(CFLAGS)) -std=gnu99 -DHAVE_THREADS $(DVD_STREAM_SOURCES) rdvd_vfs_real_test.c ../../../formats/dvd/rdvd_vfs.c ../../../formats/dvd/rdvd_source.c ../../../formats/dvd/rdvd_ifo.c ../../../queues/retro_spsc.c $(VFS_REAL_SOURCES) -o $@ $(LDFLAGS) $(VFS_REAL_LIBS) -lm
 
