@@ -29,6 +29,7 @@
 #ifdef HAVE_RMP4
 #include "vulkan_video_decode.h"
 #endif
+#include "vulkan_video_caps.h"
 #include "vulkan_memory_type.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
@@ -95,7 +96,7 @@ static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 static bool                          cached_instance_hdr_vk;
 static bool                          cached_timeline_vk;
 /* The video decode queues a cached device was made with */
-static uint32_t                      cached_video_vk[4];
+static uint32_t                      cached_video_vk[5];
 #ifdef HAVE_OPENXR
 /* Kept with a cached device: the runtime made it. */
 static vulkan_openxr_t              *cached_xr;
@@ -894,17 +895,10 @@ static const char *vulkan_optional_device_extensions[] = {
 };
 
 
-/* Hardware video decode: H.264 decode queues, transfer queues to copy
+/* Hardware video decode: codec-aware decode queues, transfer queues to copy
  * the pictures out on, the extensions and the synchronization2 feature
  * they need. On a device of our own with timeline semaphores only. */
 #define VULKAN_VIDEO_MAX_LANES 2
-
-static const char *vulkan_video_device_extensions[] = {
-   "VK_KHR_synchronization2",
-   "VK_KHR_video_queue",
-   "VK_KHR_video_decode_queue",
-   "VK_KHR_video_decode_h264"
-};
 
 /* Copies of any even offset and size: a family that moves whole
  * blocks only (some DMA queues) cannot copy a cropped picture out. */
@@ -919,6 +913,7 @@ typedef struct vulkan_video_probe
    uint32_t xfer_family;
    uint32_t xfer_first;
    uint32_t lanes;
+   uint32_t codecs;
 } vulkan_video_probe_t;
 
 static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
@@ -966,8 +961,7 @@ static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
                nprops * sizeof(*props)))
          || vkEnumerateDeviceExtensionProperties(vk->context.gpu, NULL,
                &nprops, props) != VK_SUCCESS
-         || !vulkan_find_extensions(vulkan_video_device_extensions,
-               ARRAY_SIZE(vulkan_video_device_extensions), props, nprops))
+         || !(out->codecs = vulkan_video_supported_codecs(props, nprops)))
       goto end;
 
    sync2.sType            =
@@ -994,17 +988,8 @@ static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
    get_families(vk->context.gpu, &n, qp);
 
    /* a decode family of its own: the driver's queue is not to share */
-   for (i = 0; i < n && dec < 0; i++)
-      if (     i != gfx
-            && (qp[i].queueFamilyProperties.queueFlags
-               & VK_QUEUE_VIDEO_DECODE_BIT_KHR)
-            && (vp[i].videoCodecOperations
-               & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
-            && qp[i].queueFamilyProperties.queueCount)
-      {
-         dec       = (int)i;
-         dec_count = qp[i].queueFamilyProperties.queueCount;
-      }
+   dec = vulkan_video_select_decode_family(qp, vp, n, gfx, out->codecs, &out->codecs);
+   if (dec >= 0) dec_count = qp[dec].queueFamilyProperties.queueCount;
    if (dec < 0)
       goto end;
 
@@ -1211,6 +1196,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          for (j = 0; j < ARRAY_SIZE(vulkan_video_device_extensions); j++)
          {
             unsigned k;
+            if (!vulkan_video_extension_enabled(j, video.codecs)) continue;
             for (k = 0; k < next; k++)
                if (!strcmp(device_extensions[k], vulkan_video_device_extensions[j]))
                   break;
@@ -1237,6 +1223,7 @@ static VkDevice vulkan_context_create_device_wrapper(
             vk->context.video_xfer_family = video.xfer_family;
             vk->context.video_xfer_first = video.xfer_first;
             vk->context.video_lanes = video.lanes;
+            vk->context.video_codec_operations = video.codecs;
             RARCH_LOG("[Vulkan] Core device: %u hardware video decode lane(s).\n", video.lanes);
             free((void*)device_extensions);
             return device;
@@ -1318,6 +1305,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    /* Set below for a device made here; a core's has none of ours */
    vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
    vk->context.video_lanes         = 0;
+   vk->context.video_codec_operations = 0;
    vk->context.video_decode_family = 0;
    vk->context.video_xfer_family   = 0;
    vk->context.video_xfer_first    = 0;
@@ -1631,6 +1619,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.video_xfer_family   = cached_video_vk[1];
          vk->context.video_xfer_first    = cached_video_vk[2];
          vk->context.video_lanes         = cached_video_vk[3];
+         vk->context.video_codec_operations = cached_video_vk[4];
          cached_gpu_vk      = VK_NULL_HANDLE;
 
          if (cached_destroy_device_vk)
@@ -1655,8 +1644,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             unsigned j, nq = 1, next = enabled_device_extension_count;
 
             for (j = 0; j < ARRAY_SIZE(vulkan_video_device_extensions); j++)
-               enabled_device_extensions[next++] =
-                  vulkan_video_device_extensions[j];
+               if (vulkan_video_extension_enabled(j, video.codecs))
+                  enabled_device_extensions[next++] = vulkan_video_device_extensions[j];
             qi[0]               = queue_info;
             qi[0].pQueuePriorities = prios;
             if (video.xfer_family == vk->context.graphics_queue_index)
@@ -1689,6 +1678,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                vk->context.video_xfer_family   = video.xfer_family;
                vk->context.video_xfer_first    = video.xfer_first;
                vk->context.video_lanes         = video.lanes;
+               vk->context.video_codec_operations = video.codecs;
                RARCH_LOG("[Vulkan] Video decode: family %u, copies on family %u from queue %u, %u at once.\n",
                      video.decode_family, video.xfer_family,
                      video.xfer_first, video.lanes);
@@ -4572,6 +4562,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_video_vk[1]       = vk->context.video_xfer_family;
       cached_video_vk[2]       = vk->context.video_xfer_first;
       cached_video_vk[3]       = vk->context.video_lanes;
+      cached_video_vk[4]       = vk->context.video_codec_operations;
 #ifdef HAVE_OPENXR
       cached_xr                = vk->context.xr;
       vk->context.xr           = NULL;

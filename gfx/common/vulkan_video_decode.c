@@ -1519,7 +1519,8 @@ static void vvd_close(void *dec)
 bool vulkan_video_decode_init(const vulkan_context_t *ctx)
 {
    unsigned i;
-   if (!ctx || !ctx->video_lanes || !ctx->device)
+   if (!ctx || !ctx->video_lanes || !ctx->device
+         || !(ctx->video_codec_operations & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR))
       return false;
    if (vvd.up)
       return vvd.device == ctx->device;
