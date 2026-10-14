@@ -331,10 +331,26 @@ do_transfer:
          case NBIO_TYPE_TGA:
          case NBIO_TYPE_BMP:
          case NBIO_TYPE_WEBP:
-         case NBIO_TYPE_WEBM:
          case NBIO_TYPE_MP4:
             if (!task_image_load_handler(task))
                task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+            break;
+         case NBIO_TYPE_WEBM:
+            /* A video thumbnail and a .weba/.mka sound both read WebM;
+             * the image task marks its own handle. */
+            if (BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
+            {
+               if (!task_image_load_handler(task))
+                  task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+            }
+#ifdef HAVE_AUDIOMIXER
+            else if (!task_audio_mixer_load_handler(task))
+               task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+#else
+            else if (     nbio->is_finished
+                  || nbio->status == NBIO_STATUS_TRANSFER_FINISHED)
+               task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+#endif
             break;
          case NBIO_TYPE_MP3:
          case NBIO_TYPE_FLAC:

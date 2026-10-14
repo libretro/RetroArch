@@ -207,6 +207,29 @@ static void nbio_cleanup(void *ud)
    free(nbio);
 }
 
+/* The image task marks its handle; a WebM handle without the mark is a
+ * sound.  pump() marks the image types as the image push does, unless
+ * a row asks for a WebM sound. */
+static int pump_webm_sound = 0;
+
+static bool is_image_type(enum nbio_type type)
+{
+   switch (type)
+   {
+      case NBIO_TYPE_PNG:
+      case NBIO_TYPE_JPEG:
+      case NBIO_TYPE_TGA:
+      case NBIO_TYPE_BMP:
+      case NBIO_TYPE_WEBP:
+      case NBIO_TYPE_WEBM:
+      case NBIO_TYPE_MP4:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
 static int pump(const char *label, const char *path, enum nbio_type type,
       int max_ticks, void (*mid)(const char *path, int tick))
 {
@@ -219,6 +242,8 @@ static int pump(const char *label, const char *path, enum nbio_type type,
    nbio->type = type;
    nbio->cb   = test_cb;
    nbio->status = NBIO_STATUS_INIT;
+   if (is_image_type(type) && !(pump_webm_sound && type == NBIO_TYPE_WEBM))
+      BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK);
    task->state   = nbio;
    task->handler = task_file_load_handler;
 
@@ -285,6 +310,8 @@ static void conc_worker(void *ud)
       nbio->path = strdup(a->path);
       nbio->type = a->type;
       nbio->cb   = test_cb;
+      if (is_image_type(a->type))
+         BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK);
       task->state = nbio;
       task->handler = task_file_load_handler;
       while (!(task_get_flags(task) & RETRO_TASK_FLG_FINISHED)
@@ -488,6 +515,22 @@ int main(int argc, char **argv)
       pump("WAV",                    small,  NBIO_TYPE_WAV,  64, NULL);
       pump("M4A",                    small,  NBIO_TYPE_M4A,  64, NULL);
       pump("OPUS",                   small,  NBIO_TYPE_OPUS, 64, NULL);
+      pump_webm_sound = 1;
+      pump("WEBM sound",             small,  NBIO_TYPE_WEBM, 64, NULL);
+      pump_webm_sound = 0;
+      if (mixer_calls == 0 || img_calls != 0)
+      {
+         printf("  [FAIL] a WebM sound took the image arm (img=%d mix=%d)\n",
+               img_calls, mixer_calls);
+         oracle_bad = 1;
+      }
+      pump("WEBM video",             small,  NBIO_TYPE_WEBM, 64, NULL);
+      if (img_calls == 0 || mixer_calls != 0)
+      {
+         printf("  [FAIL] a WebM image took the mixer arm (img=%d mix=%d)\n",
+               img_calls, mixer_calls);
+         oracle_bad = 1;
+      }
       puts("   (mix=0 on any row above means that type never reaches "
            "the mixer)");
       puts("-- failure paths --");
