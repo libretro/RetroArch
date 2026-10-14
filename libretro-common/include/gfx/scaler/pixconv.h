@@ -178,6 +178,20 @@ void conv_copy(void *output, const void *input,
       int width, int height,
       int out_stride, int in_stride);
 
+/* conv_copy() of the @width pixels of each row only, for 16, 24 and 32
+ * bits a pixel: the output may be a rectangle inside a larger image */
+void conv_copy_16(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
+void conv_copy_24(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
+void conv_copy_32(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride);
+
 RETRO_END_DECLS
 
 #endif

@@ -62,6 +62,63 @@ static void test_abgr_scaler(void)
    scaler_ctx_gen_reset(&ctx);
 }
 
+/* A same-format conversion at one size copies each row's own pixels:
+ * into a rectangle inside a larger image the rest of every row stays
+ * as it was, and the last row stops at the rectangle's edge rather than
+ * running a stride past it. For each pixel size. */
+static void test_copy_into_rect(void)
+{
+   static const enum scaler_pix_fmt fmts[3] = {
+      SCALER_FMT_RGB565, SCALER_FMT_BGR24, SCALER_FMT_ARGB8888
+   };
+   static const unsigned bpps[3] = { 2, 3, 4 };
+   unsigned f;
+   for (f = 0; f < 3; f++)
+   {
+      struct scaler_ctx ctx;
+      struct scaler_ctx *scaler = &ctx;
+      unsigned bpp = bpps[f];
+      /* 5x3 into an image 12x4 at column 2 */
+      uint8_t input[3 * 16 * 4];
+      uint8_t output[4 * 12 * 4];
+      unsigned x, y, b;
+      memset(&ctx, 0, sizeof(ctx));
+      ctx.in_width   = ctx.out_width  = 5;
+      ctx.in_height  = ctx.out_height = 3;
+      ctx.in_fmt     = ctx.out_fmt    = fmts[f];
+      ctx.in_stride  = (int)(16 * bpp);
+      ctx.out_stride = (int)(12 * bpp);
+      if (!scaler_ctx_gen_filter(&ctx))
+      {
+         printf("FAIL: same-format copy unavailable (%u bpp)\n", bpp);
+         failures++;
+         continue;
+      }
+      for (b = 0; b < sizeof(input); b++)
+         input[b] = (uint8_t)(b * 7 + 1);
+      memset(output, 0x5a, sizeof(output));
+      scaler_ctx_scale_direct(scaler, output + 2 * bpp, input);
+      for (y = 0; y < 4; y++)
+         for (x = 0; x < 12; x++)
+            for (b = 0; b < bpp; b++)
+            {
+               uint8_t got  = output[(y * 12 + x) * bpp + b];
+               uint8_t want = (y < 3 && x >= 2 && x < 7)
+                  ? input[y * 16 * bpp + (x - 2) * bpp + b] : 0x5a;
+               if (got != want)
+               {
+                  printf("FAIL: %u bpp copy at (%u,%u) byte %u: %02x, "
+                        "want %02x\n", bpp, x, y, b, got, want);
+                  failures++;
+                  x = 12;
+                  y = 4;
+                  break;
+               }
+            }
+      scaler_ctx_gen_reset(&ctx);
+   }
+}
+
 /* A converter made before its size is known, as the frontend makes its
  * 0RGB1555 one: generated at 0 x 0, then given each frame's size and
  * run. It must come up, own no intermediate frames (an unscaled
@@ -446,6 +503,7 @@ int main(void)
    test_helpers();
    test_sizeless_converter();
    test_abgr_scaler();
+   test_copy_into_rect();
 
    test_16_to_32("conv_rgb565_argb8888", conv_rgb565_argb8888,
          in16, out32, ref_565_rgb, 0xff000000u);

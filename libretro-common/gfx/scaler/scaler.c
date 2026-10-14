@@ -153,8 +153,26 @@ static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
    {
       ctx->unscaled     = true; /* Only pixel format conversion ... */
 
+      /* The rows' own pixels: the output may be a rectangle inside a
+       * larger image, whose stride is more than the row */
       if (ctx->in_fmt == ctx->out_fmt)
-         ctx->direct_pixconv = conv_copy;
+      {
+         switch (ctx->in_fmt)
+         {
+            case SCALER_FMT_BGR24:
+               ctx->direct_pixconv = conv_copy_24;
+               break;
+            case SCALER_FMT_0RGB1555:
+            case SCALER_FMT_RGB565:
+            case SCALER_FMT_YUYV:
+            case SCALER_FMT_RGBA4444:
+               ctx->direct_pixconv = conv_copy_16;
+               break;
+            default:
+               ctx->direct_pixconv = conv_copy_32;
+               break;
+         }
+      }
       else
       {
          /* Bind a pixel converter callback function to the

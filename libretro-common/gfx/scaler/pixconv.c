@@ -1384,6 +1384,42 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
    }
 }
 
+/* Each row's own @width pixels of @bpp bytes: a rectangle inside a
+ * larger image is copied without the rest of its rows */
+static void conv_copy_bpp(void *output_, const void *input_,
+      int width, int height, int out_stride, int in_stride, int bpp)
+{
+   int h;
+   size_t copy_len      = (size_t)width * bpp;
+   const uint8_t *input = (const uint8_t*)input_;
+   uint8_t *output      = (uint8_t*)output_;
+
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride)
+      memcpy(output, input, copy_len);
+}
+
+void conv_copy_16(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   conv_copy_bpp(output, input, width, height, out_stride, in_stride, 2);
+}
+
+void conv_copy_24(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   conv_copy_bpp(output, input, width, height, out_stride, in_stride, 3);
+}
+
+void conv_copy_32(void *output, const void *input,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   conv_copy_bpp(output, input, width, height, out_stride, in_stride, 4);
+}
+
 void conv_copy(void *output_, const void *input_,
       int width, int height,
       int out_stride, int in_stride)
