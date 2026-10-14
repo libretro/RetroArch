@@ -736,6 +736,9 @@ static void ffmpeg_camera_poll_thread(void *data)
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFMPEG] Failed to read frame: %s.\n", msg);
+         /* A removed device cannot recover within this capture session. */
+         if (ret == AVERROR(ENODEV))
+            break;
          continue;
       }
 

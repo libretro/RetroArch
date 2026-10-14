@@ -43,6 +43,8 @@ static retro_atomic_int_t read_cancelled;
 static retro_atomic_int_t read_timed_out;
 static retro_atomic_int_t missing_interrupt;
 static retro_atomic_int_t fail_next_open;
+static retro_atomic_int_t removed_device;
+static retro_atomic_int_t removed_reads;
 
 int __real_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame);
 int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
@@ -116,6 +118,13 @@ int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
 int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
 {
    int ret;
+   if (retro_atomic_load_acquire_int(&removed_device))
+   {
+      /* Bound a broken worker to avoid flooding the regression log. */
+      if (retro_atomic_fetch_add_int(&removed_reads, 1) < 4)
+         return AVERROR(ENODEV);
+      return AVERROR_EOF;
+   }
    if (retro_atomic_load_acquire_int(&blocked_read))
    {
       unsigned attempt;
@@ -527,6 +536,34 @@ int main(void)
             "input open/retry lacked interrupt callback");
       camera_ffmpeg.free(h);
       retro_atomic_store_release_int(&blocked_read, 0);
+   }
+   current = "removed capture device";
+   h = open_camera();
+   CHECK(h != NULL, "removed camera initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&removed_device, 1);
+      CHECK(camera_ffmpeg.start(h), "removed camera start failed");
+      for (attempt = 0; attempt < 100
+            && !retro_atomic_load_acquire_int(&removed_reads); attempt++)
+         usleep(1000);
+      usleep(20000);
+      camera_ffmpeg.stop(h);
+      CHECK(retro_atomic_load_acquire_int(&removed_reads) == 1,
+            "removed device was read %d times",
+            retro_atomic_load_acquire_int(&removed_reads));
+      retro_atomic_store_release_int(&removed_device, 0);
+      CHECK(camera_ffmpeg.start(h), "camera restart after removal failed");
+      last_px = -1;
+      for (attempt = 0; attempt < 100 && last_px < 0; attempt++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+         usleep(1000);
+      }
+      CHECK(last_px >= 0, "camera restart produced no frame");
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);
