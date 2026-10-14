@@ -712,12 +712,7 @@ struct audio_transfer_mod
  * the s16 pipeline below never touches float. */
 
 #ifdef HAVE_RLPCM
-/* Linear PCM: the samples are the file, so the state is where in it
- * the reader is. What the caller handed over may be raw - a shape it
- * knows from somewhere else - or may open with a DVD or Blu-ray
- * header, which rlpcm reads; either way the samples start at
- * header_bytes and every frame after that is the same size, which is
- * what makes seeking exact rather than approximate. */
+/* Raw PCM advances by bytes; DVD packing also retains a partial block. */
 struct audio_transfer_lpcm
 {
    const uint8_t  *buf;
@@ -726,6 +721,10 @@ struct audio_transfer_lpcm
    size_t          pos;          /* the next frame's byte offset */
    rlpcm_format_t  fmt;
    size_t          total_frames;
+   float           pending[32];
+   unsigned        pending_n;
+   unsigned        pending_off;
+   unsigned        skip;
    bool            ready;
 };
 
@@ -745,6 +744,66 @@ static size_t audio_transfer_lpcm_frames_left(const struct audio_transfer_lpcm *
       return 0;
    return (size_t)(((uint64_t)(end - at) * 8) / rlpcm_frame_bits(&l->fmt));
 }
+static int audio_transfer_dvd_lpcm_read(struct audio_transfer_lpcm *l,
+      float *f32, int16_t *s16, size_t frames, size_t *frames_out)
+{
+   size_t block, end, done = 0;
+   unsigned count;
+   if (frames_out) *frames_out = 0;
+   if ((!f32 && !s16) || !rlpcm_dvd_block_shape(&l->fmt, &block, &count))
+      return AUDIO_PROCESS_ERROR;
+   end = audio_transfer_lpcm_end(l);
+   while (done < frames)
+   {
+      size_t take, i, samples;
+      if (l->pending_off < l->pending_n)
+      {
+         take = l->pending_n - l->pending_off;
+         if (take > frames - done) take = frames - done;
+         samples = take * l->fmt.channels;
+         for (i = 0; i < samples; i++)
+         {
+            float value = l->pending[l->pending_off * l->fmt.channels + i];
+            if (f32) f32[done * l->fmt.channels + i] = value;
+            else
+            {
+               int32_t v = (int32_t)((double)value * 32768.0 + 32768.5) - 32768;
+               if (v > 32767) v = 32767;
+               if (v < -32768) v = -32768;
+               s16[done * l->fmt.channels + i] = (int16_t)v;
+            }
+         }
+         l->pending_off += (unsigned)take;
+         done += take;
+         continue;
+      }
+      l->pending_n = l->pending_off = 0;
+      if (l->pos > end || end - l->pos < block) break;
+      take = (end - l->pos) / block;
+      if (take > (frames - done) / count) take = (frames - done) / count;
+      if (take && !l->skip)
+      {
+         size_t decoded = f32 ? rlpcm_decode_f32(&l->fmt, l->buf + l->pos,
+               end - l->pos, f32 + done * l->fmt.channels, take * count)
+            : rlpcm_decode_s16(&l->fmt, l->buf + l->pos,
+               end - l->pos, s16 + done * l->fmt.channels, take * count);
+         if (decoded != take * count) return AUDIO_PROCESS_ERROR;
+         l->pos += take * block;
+         done += decoded;
+         continue;
+      }
+      if (rlpcm_decode_f32(&l->fmt, l->buf + l->pos, block,
+               l->pending, count) != count)
+         return AUDIO_PROCESS_ERROR;
+      l->pos += block;
+      l->pending_n = count;
+      l->pending_off = l->skip;
+      l->skip = 0;
+   }
+   if (frames_out) *frames_out = done;
+   return done || !frames ? AUDIO_PROCESS_NEXT : AUDIO_PROCESS_END;
+}
+
 #endif
 
 void *audio_transfer_lpcm_format(void *data)
@@ -3638,19 +3697,34 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_LPCM:
       {
          struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
-         size_t end;
+         size_t end, block;
+         unsigned count;
          if (!l || !l->buf || !l->buf_size)
             return false;
+         l->ready = false;
+         l->pending_n = l->pending_off = l->skip = 0;
          /* A caller that filled in a shape before starting keeps it -
           * that is the raw case, where nothing in the bytes says what
           * they are. Otherwise the disc headers are tried, Blu-ray's
           * first: its four bytes carry a payload length that has to
           * agree with the buffer, which a DVD header does not, so it
           * is the one that can be told apart. */
-         if (l->fmt.bits && l->fmt.channels && l->fmt.sample_rate)
+         if (l->fmt.bits && l->fmt.channels && l->fmt.sample_rate
+               && !l->fmt.header_bytes)
          {
+            enum rlpcm_kind kind = l->fmt.kind;
             if (rlpcm_parse_format(RLPCM_KIND_RAW, NULL, 0, &l->fmt) != RLPCM_OK)
                return false;
+            if (kind == RLPCM_KIND_DVD)
+            {
+               l->fmt.kind = kind;
+               if (!rlpcm_dvd_block_shape(&l->fmt, &block, &count)) return false;
+            }
+         }
+         else if (l->fmt.kind == RLPCM_KIND_DVD)
+         {
+            if (rlpcm_parse_format(RLPCM_KIND_DVD, l->buf, l->buf_size,
+                     &l->fmt) != RLPCM_OK) return false;
          }
          else if (rlpcm_parse_format(RLPCM_KIND_BLURAY, l->buf, l->buf_size,
                   &l->fmt) == RLPCM_OK
@@ -3670,8 +3744,15 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          if (l->fmt.payload_bytes
                && l->fmt.header_bytes + l->fmt.payload_bytes < end)
             end = l->fmt.header_bytes + l->fmt.payload_bytes;
-         l->total_frames = (size_t)(((uint64_t)(end - l->fmt.header_bytes) * 8)
-               / rlpcm_frame_bits(&l->fmt));
+         if (end < l->fmt.header_bytes) return false;
+         if (l->fmt.kind == RLPCM_KIND_DVD)
+         {
+            if (!rlpcm_dvd_block_shape(&l->fmt, &block, &count)) return false;
+            l->total_frames = ((end - l->fmt.header_bytes) / block) * count;
+         }
+         else
+            l->total_frames = (size_t)(((uint64_t)(end - l->fmt.header_bytes) * 8)
+                  / rlpcm_frame_bits(&l->fmt));
          l->ready        = true;
          return true;
       }
@@ -4902,6 +4983,8 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          size_t take;
          if (!l || !l->ready)
             return AUDIO_PROCESS_ERROR;
+         if (l->fmt.kind == RLPCM_KIND_DVD)
+            return audio_transfer_dvd_lpcm_read(l, NULL, out, frames, frames_out);
          take = audio_transfer_lpcm_frames_left(l, l->pos);
          if (take > frames)
             take = frames;
@@ -5231,6 +5314,8 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          size_t take;
          if (!l || !l->ready)
             return AUDIO_PROCESS_ERROR;
+         if (l->fmt.kind == RLPCM_KIND_DVD)
+            return audio_transfer_dvd_lpcm_read(l, out, NULL, frames, frames_out);
          take = audio_transfer_lpcm_frames_left(l, l->pos);
          if (take > frames)
             take = frames;
@@ -5743,13 +5828,21 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          size_t at;
          if (!l || !l->ready)
             return false;
-         /* Every frame is the same size, so the offset is arithmetic
-          * and the seek is exact - there is nothing to decode up to
-          * and no state to carry across it. */
          if (frame > l->total_frames)
             return false;
-         at = l->fmt.header_bytes
-            + (size_t)(((uint64_t)frame * rlpcm_frame_bits(&l->fmt)) / 8);
+         if (l->fmt.kind == RLPCM_KIND_DVD)
+         {
+            size_t block;
+            unsigned count;
+            if (!rlpcm_dvd_block_shape(&l->fmt, &block, &count)) return false;
+            at = l->fmt.header_bytes + (size_t)(frame / count) * block;
+            if (at > audio_transfer_lpcm_end(l)) return false;
+            l->pending_n = l->pending_off = 0;
+            l->skip = (unsigned)(frame % count);
+         }
+         else
+            at = l->fmt.header_bytes
+               + (size_t)(((uint64_t)frame * rlpcm_frame_bits(&l->fmt)) / 8);
          if (at > audio_transfer_lpcm_end(l))
             return false;
          l->pos = at;

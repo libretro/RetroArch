@@ -96,7 +96,9 @@ enum audio_type_enum
  * disc, a core's own buffer - to fill in before starting. NULL for
  * any other type. A buffer that opens with a DVD or Blu-ray header
  * needs none of this: leave the format zeroed and the header is
- * read. */
+ * read. Set kind to DVD explicitly when the header's origin is known;
+ * fully supplied DVD shapes describe headerless packed sample storage.
+ * DVD short reads retain a bounded decoded block; seeks remain exact. */
 void *audio_transfer_lpcm_format(void *data);
 
 /* Guess the codec from a file-name/extension (counterpart of
@@ -245,7 +247,8 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
  * around the read position.  Returns 0 if the codec does not track
  * a buffer offset: the demuxed arms and MOD.  A WebM buffer reports
  * the demuxer's walk position, which never falls below the header
- * material the demuxer keeps borrowed pointers into. */
+ * material the demuxer keeps borrowed pointers into. DVD LPCM reports the
+ * encoded read frontier; a partially emitted block lives in owned carry. */
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
