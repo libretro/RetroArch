@@ -344,6 +344,7 @@ typedef struct
    int pcm_enabled;
    int num_st_rps;
    rh265_st_rps st_rps[RH265_MAX_ST_RPS];
+   rh265_video_color_t color;
    int long_term_ref_pics_present;
    int num_long_term_ref_pics;
    int lt_ref_poc_lsb[32];
@@ -773,8 +774,30 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, rh265_sps *s,
    }
    s->temporal_mvp_enabled   = (int)rh265_u1(&b);
    s->strong_intra_smoothing = (int)rh265_u1(&b);
-   /* vui_parameters and sps extensions carry nothing this decoder needs;
-    * stop parsing here. */
+   s->color.primaries = s->color.transfer = s->color.matrix = 2;
+   if (rh265_u1(&b))
+   {
+      if (rh265_u1(&b))                 /* aspect_ratio_info_present */
+      {
+         if (rh265_un(&b, 8) == 255)
+         { rh265_un(&b, 16); rh265_un(&b, 16); }
+      }
+      if (rh265_u1(&b)) rh265_u1(&b);   /* overscan */
+      s->color.video_signal_present = (int)rh265_u1(&b);
+      if (s->color.video_signal_present)
+      {
+         rh265_un(&b, 3);              /* video_format */
+         s->color.full_range = rh265_u1(&b);
+         s->color.description_present = (int)rh265_u1(&b);
+         if (s->color.description_present)
+         {
+            s->color.primaries = rh265_un(&b, 8);
+            s->color.transfer = rh265_un(&b, 8);
+            s->color.matrix = rh265_un(&b, 8);
+         }
+      }
+   }
+   /* Remaining VUI and SPS extensions do not affect reconstruction. */
    if (rh265_bits_overrun(&b)) return -1;
 
    /* pic dims must be multiples of MinCbSizeY (A.4.1) */
@@ -5497,6 +5520,19 @@ int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
 fail:
    memset(out, 0, sizeof(*out));
    return ret;
+}
+
+int rh265_video_get_color(const rh265_video *v, unsigned pps_id,
+      rh265_video_color_t *out)
+{
+   int sps_id;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!v || pps_id >= RH265_MAX_PPS || !v->pps[pps_id].valid) return -1;
+   sps_id = v->pps[pps_id].sps_id;
+   if (sps_id < 0 || sps_id >= RH265_MAX_SPS || !v->sps[sps_id].valid) return -1;
+   *out = v->sps[sps_id].color;
+   return 0;
 }
 
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,

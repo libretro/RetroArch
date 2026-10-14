@@ -352,10 +352,14 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
             if (ct == RMP4_FOURCC('n','c','l','x')
                   || ct == RMP4_FOURCC('n','c','l','c'))
             {
+               t->pub.color_description_present = 1;
                t->pub.transfer_characteristics = rmp4_be16(colr.body + 6);
                t->pub.matrix_coefficients      = rmp4_be16(colr.body + 8);
                if (ct == RMP4_FOURCC('n','c','l','x') && colr.size >= 11)
+               {
+                  t->pub.range_present = 1;
                   t->pub.full_range = (colr.body[10] >> 7) & 1;
+               }
             }
          }
       }

@@ -191,7 +191,7 @@ int rmp4_video_stream_hw_frame(rmp4_video_stream_t *stream,
  * through rwebm_video_blit_i420_fp16 - no tone map. Every other frame,
  * and every frame without a caller's output, takes the paths it always
  * did. is_fp16 answers for the last frame decoded; is_hdr for the
- * source, from its colr transfer. */
+ * source, from its colr or HEVC SPS VUI transfer. */
 void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *stream,
       int want);
 int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *stream);

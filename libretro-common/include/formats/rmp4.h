@@ -69,6 +69,7 @@ typedef struct
    unsigned               matrix_coefficients;
    unsigned               transfer_characteristics;
    unsigned               full_range;
+   unsigned               color_description_present, range_present;
    /* Audio */
    unsigned               sample_rate;
    unsigned               channels;

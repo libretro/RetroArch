@@ -145,3 +145,9 @@ FFmpeg hashes. Regenerate these fixtures with python3 gen_hevc_data.py
 (FFmpeg/libx265 are generation tools, not player dependencies). Tiny 64x64
 parser fixtures remain in the mock tests; real drivers may expose no
 HEVC decoder configuration at that size.
+
+hevc_color_stream_test covers SPS VUI fallback for missing/unspecified MP4
+color descriptions, explicit container/range precedence, full-range NV12
+and P010 metadata, and software PQ/HLG scRGB fallback. It also checks SDR
+scalar/SIMD conversions against color-matrix equations, including tails
+and output padding. gen_hevc_color_data.py regenerates its fixtures.

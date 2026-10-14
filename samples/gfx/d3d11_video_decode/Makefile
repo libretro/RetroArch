@@ -35,7 +35,7 @@ TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
 TARGETS += rh265_hw_stream_test$(EXE)
-TARGETS += video_hw_format_test$(EXE) hevc_device_fixture_test$(EXE)
+TARGETS += video_hw_format_test$(EXE) hevc_device_fixture_test$(EXE) hevc_color_stream_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -115,6 +115,13 @@ rh265_hw_stream_test$(EXE): rh265_hw_stream_test.c dxva_hevc_access_unit_data.h 
 	   $(filter-out $(RA)/libretro-common/formats/h265/rh265.c,$(PLAYER_SOURCES)) \
 	   $(LDFLAGS) -Wl,--gc-sections -lm
 
+hevc_color_stream_test$(EXE): hevc_color_stream_test.c hevc_color_data.h \
+      rh265_hw_stream_test.c $(DECODERS) $(PLAYER_SOURCES)
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -o $@ \
+	   hevc_color_stream_test.c $(DECODERS) \
+	   $(filter-out $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/formats/mp4/rmp4_video.c,$(PLAYER_SOURCES)) \
+	   $(LDFLAGS) -Wl,--gc-sections -lm
+
 d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
       d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES)
 	$(CC) $(CFLAGS) $(WINFLAGS) -ffunction-sections -fdata-sections -o $@ \
@@ -129,6 +136,8 @@ check: all
 	$(RUNNER) ./rh265_hw_session_test$(EXE)
 	$(RUNNER) ./rh265_hw_stream_test$(EXE)
 	$(RUNNER) ./video_hw_format_test$(EXE)
+	$(RUNNER) ./hevc_device_fixture_test$(EXE)
+	$(RUNNER) ./hevc_color_stream_test$(EXE)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" RUNNER="$(RUNNER)" \
 	   python3 ../d3d_texture_update_formats/run.py
 	CC="$(CC)" CFLAGS="$(CFLAGS)" RUNNER="$(RUNNER)" \

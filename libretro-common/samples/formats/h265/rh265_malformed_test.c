@@ -112,7 +112,7 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 }
 
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
-   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT };
+   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -165,7 +165,26 @@ static void sps(bitw *w, enum field f, int depth)
    if (f == F_LT) putue(w, 0);
    put1(w, 0);                       /* temporal_mvp */
    put1(w, 0);                       /* strong_intra_smoothing */
-   put1(w, 0);                       /* vui_parameters_present */
+   put1(w, f >= F_VUI_SDR);           /* vui_parameters_present */
+   if (f >= F_VUI_SDR)
+   {
+      put1(w, 1); putn(w, 255, 8);    /* extended SAR */
+      putn(w, 1, 16); putn(w, 1, 16);
+      put1(w, 1); put1(w, 0);         /* overscan */
+      put1(w, 1); putn(w, 5, 3);      /* video signal */
+      put1(w, f != F_VUI_HDR);
+      put1(w, f != F_VUI_RANGE);
+      if (f != F_VUI_RANGE)
+      {
+         putn(w, f == F_VUI_HDR ? 9 : 1, 8);
+         if (f != F_VUI_SHORT)
+         {
+            putn(w, f == F_VUI_HDR ? 16 : 1, 8);
+            putn(w, f == F_VUI_HDR ? 9 : 1, 8);
+         }
+      }
+      if (f != F_VUI_SHORT) put1(w, 0); /* chroma location info */
+   }
    put1(w, 0);                       /* sps_extension_present */
    trailing(w);
 }
@@ -575,10 +594,45 @@ static void test_access_unit(void)
    rh265_video_close(v);
 }
 
+static void test_color_info(void)
+{
+   static uint8_t units_buf[2][1024], buf[2200];
+   const uint8_t *units[2];
+   size_t lens[2], size;
+   bitw w;
+   rh265_video_color_t color;
+   rh265_video *v = rh265_video_open();
+   int f;
+   if (!v) abort();
+   units[0] = units_buf[0]; units[1] = units_buf[1];
+   slice_pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+   for (f = F_VUI_SDR; f <= F_VUI_SHORT; f++)
+   {
+      sps(&w, (enum field)f, 10); lens[0] = nal(units_buf[0], 33, &w);
+      size = hvcc(buf, units, lens, 2);
+      rh265_video_close(v); v = rh265_video_open();
+      if (!v) abort();
+      expect("VUI extradata", rh265_video_set_extradata(v, buf, size), 0);
+      expect("VUI getter", rh265_video_get_color(v, 0, &color), f == F_VUI_SHORT ? -1 : 0);
+      if (f == F_VUI_SHORT) continue;
+      expect("VUI signal", color.video_signal_present, 1);
+      expect("VUI description", color.description_present, f != F_VUI_RANGE);
+      expect("VUI range", color.full_range, f != F_VUI_HDR);
+      expect("VUI matrix", color.matrix, f == F_VUI_HDR ? 9 : f == F_VUI_RANGE ? 2 : 1);
+      expect("VUI transfer", color.transfer, f == F_VUI_HDR ? 16 : f == F_VUI_RANGE ? 2 : 1);
+   }
+   memset(&color, 0xa5, sizeof(color));
+   expect("null color decoder", rh265_video_get_color(NULL, 0, &color), -1);
+   expect("failed color cleared", color.matrix, 0);
+   expect("null color output", rh265_video_get_color(v, 0, NULL), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
    test_nal_iterator(); test_access_unit();
    test_slice_info();
+   test_color_info();
    test_params();
    expect("a well-formed SPS is read",
          feed_sps(F_NONE, 9), -1);

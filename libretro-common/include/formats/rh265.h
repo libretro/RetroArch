@@ -42,6 +42,18 @@ RETRO_BEGIN_DECLS
 
 typedef struct rh265_video rh265_video;
 
+typedef struct rh265_video_color
+{
+   unsigned primaries, transfer, matrix, full_range;
+   int video_signal_present, description_present;
+} rh265_video_color_t;
+
+/* SPS VUI metadata for a parsed PPS. Unspecified CICP values are 2.
+ * Failure clears out. This query does not decode or allocate pixels. */
+int rh265_video_get_color(const rh265_video *v, unsigned pps_id,
+      rh265_video_color_t *out);
+
+
 /* Parameter metadata for hardware adapters; coefficients are effective
  * raster-order SPS/PPS values. 32x32 entries correspond to matrix IDs 0, 3. */
 typedef struct rh265_video_params

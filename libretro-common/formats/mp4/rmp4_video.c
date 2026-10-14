@@ -97,9 +97,9 @@ struct rmp4_video_stream
    int          wait_key;   /* a reference failed; hold out for a key */
    int          catchup;    /* dropping droppable pictures to catch up */
    int          track;      /* index of the chosen video track        */
-   unsigned     matrix;     /* colr matrix_coefficients; 0 untagged   */
-   unsigned     transfer;   /* colr transfer_characteristics          */
-   unsigned     range;      /* colr full-range flag                   */
+   unsigned     matrix;     /* matrix coefficients; 0 untagged        */
+   unsigned     transfer;   /* transfer characteristics              */
+   unsigned     range;      /* container or SPS full-range flag      */
    enum rmp4_codec codec;
    unsigned     width;
    unsigned     height;
@@ -181,22 +181,27 @@ static const int16_t rmp4_video_coef_601[4]  = { 409, 100, 208, 516 };
 static const int16_t rmp4_video_coef_709[4]  = { 459,  55, 136, 541 };
 static const int16_t rmp4_video_coef_2020[4] = { 431,  48, 167, 548 };
 
-static const int16_t *rmp4_video_coefs(unsigned matrix, unsigned height)
+static const int16_t rmp4_video_full_601[4]  = { 359, 88, 183, 454 };
+static const int16_t rmp4_video_full_709[4]  = { 403, 48, 120, 475 };
+static const int16_t rmp4_video_full_2020[4] = { 377, 42, 146, 482 };
+
+static const int16_t *rmp4_video_coefs(unsigned matrix, unsigned height, int range)
 {
    switch (matrix)
    {
-      case 1:            return rmp4_video_coef_709;
-      case 5: case 6:    return rmp4_video_coef_601;
-      case 9: case 10:   return rmp4_video_coef_2020;
+      case 1:            return range ? rmp4_video_full_709 : rmp4_video_coef_709;
+      case 5: case 6:    return range ? rmp4_video_full_601 : rmp4_video_coef_601;
+      case 9: case 10:   return range ? rmp4_video_full_2020 : rmp4_video_coef_2020;
       default:           return height >= 720
-                            ? rmp4_video_coef_709 : rmp4_video_coef_601;
+                            ? (range ? rmp4_video_full_709 : rmp4_video_coef_709)
+                            : (range ? rmp4_video_full_601 : rmp4_video_coef_601);
    }
 }
 
 static INLINE uint32_t rmp4_video_yuv_px(int y, int u, int v,
-      const int16_t *k, int argb)
+      const int16_t *k, int range, int argb)
 {
-   int c = 298 * (y - 16);
+   int c = (range ? 256 : 298) * (y - (range ? 0 : 16));
    int d = u - 128;
    int e = v - 128;
    int r = (c + k[0] * e + 128) >> 8;
@@ -234,9 +239,9 @@ static INLINE uint32_t rmp4_video_yuv_px(int y, int u, int v,
  * without distortion. */
 static void rmp4_video_yuv_row_sse2(uint32_t *dr,
       const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w,
-      const int16_t *k, int argb)
+      const int16_t *k, int range, int argb)
 {
-   const __m128i k16   = _mm_set1_epi16(16);
+   const __m128i k16   = _mm_set1_epi16(range ? 0 : 16);
    const __m128i k128  = _mm_set1_epi16(128);
    const __m128i zero  = _mm_setzero_si128();
    const __m128i ones  = _mm_set1_epi16(1);
@@ -246,10 +251,10 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
 #define RMP4_PAIR16(hi, lo) \
    ((int32_t)(((uint32_t)(uint16_t)(int16_t)(hi) << 16) \
             |  (uint32_t)(uint16_t)(int16_t)(lo)))
-   const __m128i c_r   = _mm_set1_epi32(RMP4_PAIR16( k[0], 298));
-   const __m128i c_g1  = _mm_set1_epi32(RMP4_PAIR16(-k[1], 298));
+   const __m128i c_r   = _mm_set1_epi32(RMP4_PAIR16( k[0], range ? 256 : 298));
+   const __m128i c_g1  = _mm_set1_epi32(RMP4_PAIR16(-k[1], range ? 256 : 298));
    const __m128i c_g2  = _mm_set1_epi32(RMP4_PAIR16( 128, -k[2]));
-   const __m128i c_b   = _mm_set1_epi32(RMP4_PAIR16( k[3], 298));
+   const __m128i c_b   = _mm_set1_epi32(RMP4_PAIR16( k[3], range ? 256 : 298));
 #undef RMP4_PAIR16
    const __m128i rnd   = _mm_set1_epi32(128);
    unsigned i;
@@ -262,7 +267,7 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
       __m128i r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
       __m128i r16, g16, b16, r8, g8, b8, rg, ba;
 
-      /* ysub: 8 x i16 = y - 16 */
+      /* ysub: 8 x i16, range-adjusted luma */
       y8   = _mm_loadl_epi64((const __m128i*)(yr + i));
       ysub = _mm_sub_epi16(_mm_unpacklo_epi8(y8, zero), k16);
       /* d/e: 4 chroma samples each duplicated to 8 x i16, minus 128
@@ -283,7 +288,7 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
       e1_lo = _mm_unpacklo_epi16(e, ones);
       e1_hi = _mm_unpackhi_epi16(e, ones);
 
-      /* r = (298*ysub + 409*e + 128) >> 8 */
+      /* matrix and rounding */
       r_lo = _mm_srai_epi32(_mm_add_epi32(
             _mm_madd_epi16(ye_lo, c_r), rnd), 8);
       r_hi = _mm_srai_epi32(_mm_add_epi32(
@@ -319,7 +324,7 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
             _mm_unpackhi_epi16(rg, ba));
    }
    for (; i < w; i++)
-      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, argb);
+      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, range, argb);
 }
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 /* NEON translation of the SSE2 kernel above: identical integer
@@ -328,9 +333,9 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
  * the scalar path. */
 static void rmp4_video_yuv_row_neon(uint32_t *dr,
       const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w,
-      const int16_t *kc, int argb)
+      const int16_t *kc, int range, int argb)
 {
-   const int16x8_t k16  = vdupq_n_s16(16);
+   const int16x8_t k16  = vdupq_n_s16(range ? 0 : 16);
    const int16x8_t k128 = vdupq_n_s16(128);
    const int32x4_t rnd  = vdupq_n_s32(128);
    unsigned i;
@@ -357,9 +362,9 @@ static void rmp4_video_yuv_row_neon(uint32_t *dr,
       d  = vsubq_s16(vreinterpretq_s16_u16(vmovl_u8(u8)), k128);
       e  = vsubq_s16(vreinterpretq_s16_u16(vmovl_u8(v8)), k128);
 
-      /* c = 298*ysub + 128 (rounding folded in) */
-      c_lo = vmlal_n_s16(rnd, vget_low_s16(ysub),  298);
-      c_hi = vmlal_n_s16(rnd, vget_high_s16(ysub), 298);
+      /* range-adjusted luma and rounding */
+      c_lo = vmlal_n_s16(rnd, vget_low_s16(ysub),  range ? 256 : 298);
+      c_hi = vmlal_n_s16(rnd, vget_high_s16(ysub), range ? 256 : 298);
 
       r_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(e),   kc[0]), 8);
       r_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(e),  kc[0]), 8);
@@ -383,7 +388,7 @@ static void rmp4_video_yuv_row_neon(uint32_t *dr,
       vst4_u8((uint8_t*)(dr + i), out);
    }
    for (; i < w; i++)
-      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], kc, argb);
+      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], kc, range, argb);
 }
 #endif
 
@@ -395,9 +400,9 @@ static void rmp4_video_blit_yuv444(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
       const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix, int argb)
+      unsigned matrix, int range, int argb)
 {
-   const int16_t *k = rmp4_video_coefs(matrix, h);
+   const int16_t *k = rmp4_video_coefs(matrix, h, range);
    unsigned j, i;
    for (j = 0; j < h; j++)
    {
@@ -406,7 +411,7 @@ static void rmp4_video_blit_yuv444(uint32_t *dst, unsigned dst_stride,
       const uint8_t *vr = v + (size_t)j * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
       for (i = 0; i < w; i++)
-         dr[i] = rmp4_video_yuv_px(yr[i], ur[i], vr[i], k, argb);
+         dr[i] = rmp4_video_yuv_px(yr[i], ur[i], vr[i], k, range, argb);
    }
 }
 
@@ -419,9 +424,9 @@ static void rmp4_video_blit_yuv_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
-      int chsh, int cvsh, int bd, unsigned matrix, int argb)
+      int chsh, int cvsh, int bd, unsigned matrix, int range, int argb)
 {
-   const int16_t *k = rmp4_video_coefs(matrix, h);
+   const int16_t *k = rmp4_video_coefs(matrix, h, range);
    int sh = bd - 8;
    unsigned j, i;
    for (j = 0; j < h; j++)
@@ -432,7 +437,7 @@ static void rmp4_video_blit_yuv_hbd(uint32_t *dst, unsigned dst_stride,
       uint32_t       *dr = dst + (size_t)j * dst_stride;
       for (i = 0; i < w; i++)
          dr[i] = rmp4_video_yuv_px(yr[i] >> sh, ur[i >> chsh] >> sh,
-               vr[i >> chsh] >> sh, k, argb);
+               vr[i >> chsh] >> sh, k, range, argb);
    }
 }
 
@@ -440,9 +445,9 @@ static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
       const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix, int cvsh, int argb)
+      unsigned matrix, int cvsh, int range, int argb)
 {
-   const int16_t *k = rmp4_video_coefs(matrix, h);
+   const int16_t *k = rmp4_video_coefs(matrix, h, range);
    unsigned j;
    for (j = 0; j < h; j++)
    {
@@ -451,14 +456,14 @@ static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       const uint8_t *vr = v + (size_t)(j >> cvsh) * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
 #if defined(__SSE2__)
-      rmp4_video_yuv_row_sse2(dr, yr, ur, vr, w, k, argb);
+      rmp4_video_yuv_row_sse2(dr, yr, ur, vr, w, k, range, argb);
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
-      rmp4_video_yuv_row_neon(dr, yr, ur, vr, w, k, argb);
+      rmp4_video_yuv_row_neon(dr, yr, ur, vr, w, k, range, argb);
 #else
       {
          unsigned i;
          for (i = 0; i < w; i++)
-            dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, argb);
+            dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, range, argb);
       }
 #endif
    }
@@ -512,6 +517,36 @@ whole:
 /* ------------------------------------------------------------------ */
 /* Decoder lifecycle                                                   */
 /* ------------------------------------------------------------------ */
+static bool rmp4_video_hw_color_allowed(const rmp4_video_stream_t *s)
+{
+   return (s->matrix == 0 || s->matrix == 1 || s->matrix == 5 || s->matrix == 6)
+      && !rmp4_video_stream_is_hdr(s);
+}
+
+static void rmp4_video_hevc_color(rmp4_video_stream_t *s, const rmp4_track *t)
+{
+   rh265_video_color_t color;
+   unsigned pps;
+   if (!t) return;
+   s->matrix = t->matrix_coefficients;
+   s->transfer = t->transfer_characteristics;
+   s->range = t->full_range;
+   for (pps = 0; pps < 64; pps++)
+      if (!rh265_video_get_color(s->h265, pps, &color))
+      {
+         if (color.description_present)
+         {
+            if (!t->color_description_present || t->matrix_coefficients == 2)
+               s->matrix = color.matrix == 2 ? 0 : color.matrix;
+            if (!t->color_description_present || t->transfer_characteristics == 2)
+               s->transfer = color.transfer == 2 ? 0 : color.transfer;
+         }
+         if (!t->range_present && color.video_signal_present)
+            s->range = color.full_range;
+         break;
+      }
+}
+
 static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
 {
    switch (s->codec)
@@ -550,9 +585,10 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          if (t && t->codec_private && t->codec_private_size)
             rh265_video_set_extradata(s->h265, t->codec_private,
                   t->codec_private_size);
+         rmp4_video_hevc_color(s, t);
          rh265_video_set_thread_pool(s->h265, s->blit_pool, s->blit_bands);
          rh265_video_set_skip_nonref(s->h265, s->catchup);
-         if (s->want_hw)
+         if (s->want_hw && rmp4_video_hw_color_allowed(s))
             rh265_video_set_hw(s->h265, 1);
          return true;
       }
@@ -1166,9 +1202,7 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
          : s->h264 && rh264_video_is_hw(s->h264);
    /* the GPU frame carries the BT.601 and BT.709 matrices only, and
     * no transfer of its own: anything else is the blit's */
-   if (     (s->matrix != 0 && s->matrix != 1
-            && s->matrix != 5 && s->matrix != 6)
-         || rmp4_video_stream_is_hdr(s))
+   if (!rmp4_video_hw_color_allowed(s))
       return 0;
    if (s->want_hw)
       return s->h265 ? rh265_video_is_hw(s->h265)
@@ -1298,35 +1332,35 @@ static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                (const uint8_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint8_t*)c->u + crow * c->uvs,
                (const uint8_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->cvsh, c->argb);
+               c->matrix, c->cvsh, c->range, c->argb);
          break;
       case 1:
          rmp4_video_blit_yuv444(dst, c->dst_stride, c->w, rows,
                (const uint8_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint8_t*)c->u + (size_t)row0 * c->uvs,
                (const uint8_t*)c->v + (size_t)row0 * c->uvs, c->uvs,
-               c->matrix, c->argb);
+               c->matrix, c->range, c->argb);
          break;
       case 2:
          rmp4_video_blit_yuv_hbd(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->chsh, c->cvsh, c->bd, c->matrix, c->argb);
+               c->chsh, c->cvsh, c->bd, c->matrix, c->range, c->argb);
          break;
       case 3:
          rwebm_video_blit_i420_hbd(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, 0, c->argb);
+               c->matrix, c->transfer, c->range ? 2 : 1, 0, c->argb);
          break;
       case 4:
          rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, 0);
+               c->matrix, c->transfer, c->range ? 2 : 1, 0);
          break;
       default:
          rwebm_video_blit_i420_fp16(
@@ -1335,7 +1369,7 @@ static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range);
+               c->matrix, c->transfer, c->range ? 2 : 1);
          break;
    }
 }
