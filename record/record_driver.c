@@ -394,13 +394,23 @@ bool recording_init(void)
       /* The driver's 32-bit readback skips a per-frame BGR24
        * conversion; FFEMU_PIX_ARGB8888 is a native-endian word, so B,G,R,X
        * bytes only on little-endian hosts. The threaded wrapper reads back
-       * on its own thread and hands over BGR24. */
+       * on its own thread, in either format when the driver gives it a
+       * reader. */
 #ifdef MSB_FIRST
       recording_st->gpu_bgrx              = false;
 #else
-      recording_st->gpu_bgrx              =
-            !video_driver_thread_wrapper_active()
-         && video_st->current_video->read_viewport_bgrx;
+      if (video_driver_thread_wrapper_active())
+      {
+#ifdef HAVE_THREADS
+         recording_st->gpu_bgrx           =
+               video_thread_record_has_reader(video_st->data);
+#else
+         recording_st->gpu_bgrx           = false;
+#endif
+      }
+      else
+         recording_st->gpu_bgrx           =
+               video_st->current_video->read_viewport_bgrx != NULL;
 #endif
       params.pix_fmt                      = recording_st->gpu_bgrx
          ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_BGR24;

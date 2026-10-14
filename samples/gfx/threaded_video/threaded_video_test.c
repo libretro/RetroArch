@@ -7530,11 +7530,10 @@ static void readback_once(bool threaded)
 /* Lane: a GPU recording's frames keep the format it was opened for   */
 /*   A GPU recording opened unthreaded on a driver with the 32-bit    */
 /*   readback takes B,G,R,X frames. Threaded Video switched on during */
-/*   it puts the wrapper's readback in charge, which hands over BGR24 */
-/*   from a buffer of its own: those frames were pushed as 32-bit,    */
-/*   reading a third more than the wrapper's buffer holds and showing */
-/*   garbage. The recorder must get 32-bit rows of its own buffer     */
-/*   either way, every row of them readable.                          */
+/*   it puts the wrapper's readback in charge: 32-bit rows straight   */
+/*   from its read when the driver has a record reader, else BGR24    */
+/*   widened into the recording's own buffer. The recorder must get   */
+/*   32-bit rows either way, every row of them readable.              */
 /* ------------------------------------------------------------------ */
 
 static unsigned       reclane_pushes;
@@ -7634,9 +7633,10 @@ static void record_format_once(bool threaded)
             || reclane_pitch == -(int)VIDEO_SCALE_W(vp.dims) * 4,
             "record format lane (%s): rows of %d bytes for a %u wide "
             "32-bit recording", mode, reclane_pitch, VIDEO_SCALE_W(vp.dims));
-      CHECK(reclane_data >= buf && reclane_data < buf + area * 4,
-            "record format lane (%s): the frame is not in the recording's "
-            "own buffer", mode);
+      if (!threaded || !video_thread_record_has_reader(video_st->data))
+         CHECK(reclane_data >= buf && reclane_data < buf + area * 4,
+               "record format lane (%s): the frame is not in the "
+               "recording's own buffer", mode);
    }
    free(buf);
 }
@@ -7652,6 +7652,215 @@ static void lane_record_format(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] gpu record format lane\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: the wrapper reads back in the recording's own format         */
+/*   A driver whose poke has record_read is read back on the video    */
+/*   thread, and a GPU recording opened for 32-bit frames gets them   */
+/*   from that read as B,G,R,X, in the row order the driver wrote -   */
+/*   never as BGR24 widened on the main thread. A BGR24 recording     */
+/*   gets BGR24, bottom row first.                                    */
+/* ------------------------------------------------------------------ */
+
+#define RECREAD_W 64
+#define RECREAD_H 48
+
+static video_driver_t                recread_driver;
+static const video_driver_t         *recread_inner;
+static video_poke_interface_t        recread_poke;
+static retro_atomic_int_t            recread_bgrx_reads;
+static retro_atomic_int_t            recread_bgr24_reads;
+
+static void recread_viewport_info(void *data, struct video_viewport *vp)
+{
+   (void)data;
+   vp->pos       = VIDEO_POS_PACK(0, 0);
+   vp->dims      = VIDEO_SCALE_PACK(RECREAD_W, RECREAD_H);
+   vp->full_dims = vp->dims;
+}
+
+/* B = x, G = the row from the top, R = 0x5a: B,G,R,X top row first, or
+ * BGR24 bottom row first. */
+static bool recread_read(void *data, uint8_t *buffer, bool bgrx,
+      bool *bottom_up)
+{
+   unsigned x, y;
+   (void)data;
+   for (y = 0; y < RECREAD_H; y++)
+      for (x = 0; x < RECREAD_W; x++)
+      {
+         if (bgrx)
+         {
+            uint8_t *p = buffer + ((size_t)y * RECREAD_W + x) * 4;
+            p[0] = (uint8_t)x;
+            p[1] = (uint8_t)y;
+            p[2] = 0x5a;
+            p[3] = 0xff;
+         }
+         else
+         {
+            uint8_t *p = buffer
+               + ((size_t)(RECREAD_H - 1 - y) * RECREAD_W + x) * 3;
+            p[0] = (uint8_t)x;
+            p[1] = (uint8_t)y;
+            p[2] = 0x5a;
+         }
+      }
+   *bottom_up = !bgrx;
+   retro_atomic_inc_int(bgrx ? &recread_bgrx_reads : &recread_bgr24_reads);
+   return true;
+}
+
+static void recread_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   const video_poke_interface_t *inner = NULL;
+   if (recread_inner->poke_interface)
+      recread_inner->poke_interface(data, &inner);
+   if (inner)
+      recread_poke = *inner;
+   else
+      memset(&recread_poke, 0, sizeof(recread_poke));
+   recread_poke.record_read = recread_read;
+   *iface                   = &recread_poke;
+}
+
+static int            recread_pitch;
+static const uint8_t *recread_data;
+static unsigned       recread_pushes;
+static unsigned       recread_bad;
+
+static bool recread_push_video(void *data,
+      const struct record_video_data *v)
+{
+   unsigned x, y;
+   unsigned bpp;
+   (void)data;
+   if (v->is_dupe || !v->data)
+      return true;
+   recread_pushes++;
+   recread_pitch = v->pitch;
+   recread_data  = (const uint8_t*)v->data;
+   bpp           = (unsigned)((v->pitch < 0 ? -v->pitch : v->pitch)
+         / RECREAD_W);
+   /* Every pixel, walked with the pitch the encoder is handed */
+   for (y = 0; y < RECREAD_H; y++)
+      for (x = 0; x < RECREAD_W; x++)
+      {
+         const uint8_t *p = (const uint8_t*)v->data
+            + (ptrdiff_t)y * v->pitch + (ptrdiff_t)x * bpp;
+         if (p[0] != (uint8_t)x || p[1] != (uint8_t)y || p[2] != 0x5a)
+            recread_bad++;
+      }
+   return true;
+}
+
+static const record_driver_t recread_rec_driver = {
+   NULL, NULL, recread_push_video, reclane_push_audio, NULL, "recread"
+};
+
+static void record_reader_once(thread_video_t *thr, bool bgrx)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t    *rec_st   = recording_state_get_ptr();
+   const char *mode               = bgrx ? "BGRX" : "BGR24";
+   size_t      size               = (size_t)RECREAD_W * RECREAD_H * 4;
+   recording_state_t saved;
+   uint8_t *saved_buf;
+   uint8_t *buf;
+   unsigned i;
+
+   if (!(buf = (uint8_t*)malloc(size)))
+      return;
+   memset(buf, 0, size);
+   retro_atomic_store_release_int(&recread_bgrx_reads, 0);
+   retro_atomic_store_release_int(&recread_bgr24_reads, 0);
+   recread_pushes = 0;
+   recread_bad    = 0;
+
+   saved                       = *rec_st;
+   saved_buf                   = video_st->record_gpu_buffer;
+   rec_st->driver              = &recread_rec_driver;
+   rec_st->gpu_dims            = VIDEO_SCALE_PACK(RECREAD_W, RECREAD_H);
+   rec_st->gpu_bgrx            = bgrx;
+   rec_st->enable              = true;
+   video_st->record_gpu_buffer = buf;
+   rec_st->data                = (void*)&recread_rec_driver;
+
+   /* The wrapper's readback starts a few frames behind */
+   for (i = 0; i < 64 && !recread_pushes; i++)
+      run_frames(1);
+
+   rec_st->data                = NULL;
+   video_thread_wait_idle();
+   video_thread_record_stop(thr);
+   *rec_st                     = saved;
+   video_st->record_gpu_buffer = saved_buf;
+
+   CHECK(recread_pushes > 0, "record reader lane (%s): no frame recorded",
+         mode);
+   if (recread_pushes)
+   {
+      int pitch = bgrx ? RECREAD_W * 4 : -(RECREAD_W * 3);
+      CHECK(recread_pitch == pitch,
+            "record reader lane (%s): rows of %d bytes, not %d", mode,
+            recread_pitch, pitch);
+      CHECK(!recread_bad,
+            "record reader lane (%s): %u pixels not as the driver read "
+            "them", mode, recread_bad);
+      CHECK(recread_data < buf || recread_data >= buf + size,
+            "record reader lane (%s): the frame went through the main "
+            "thread's buffer rather than straight from the read", mode);
+   }
+   CHECK(retro_atomic_load_acquire_int(bgrx
+            ? &recread_bgr24_reads : &recread_bgrx_reads) == 0,
+         "record reader lane (%s): the driver was asked for the other "
+         "format", mode);
+   free(buf);
+}
+
+static void lane_record_reader(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   bool menu_was_up;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "record reader lane");
+   /* Frames the core makes are recorded; the menu's dupes are not */
+   if ((menu_was_up = menu_is_up()))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+
+   CHECK(!video_thread_record_has_reader(thr) || real_driver(),
+         "record reader lane: the null driver reports a reader");
+
+   video_thread_wait_idle();
+   recread_inner                 = thr->driver;
+   recread_driver                = *thr->driver;
+   recread_driver.viewport_info  = recread_viewport_info;
+   recread_driver.poke_interface = recread_get_poke;
+   set_driver(thr, &recread_driver);
+   set_poke_from(thr, &recread_driver);
+
+   CHECK(video_thread_record_has_reader(thr),
+         "record reader lane: a poke with record_read is not a reader");
+   record_reader_once(thr, true);
+   record_reader_once(thr, false);
+
+   set_driver(thr, recread_inner);
+   set_poke_from(thr, recread_inner);
+   run_frames(2);
+   if (menu_was_up)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] gpu record reader lane\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -9110,6 +9319,8 @@ int main(int argc, char *argv[])
    lane_stats_snapshot();
    lane_stat_text_bounds();
    lane_viewport_publish();
+   if (!real_driver())
+      lane_record_reader();
    lane_context_api_behind_wrapper();
    lane_headset_calls();
    lane_async_texture_load();

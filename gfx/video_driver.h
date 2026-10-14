@@ -1275,6 +1275,14 @@ typedef struct video_poke_interface
     * video thread next to get_last_present_wait. Optional. */
    void (*get_last_present_sync)(void *video_data,
          retro_time_t *fence_wait, retro_time_t *lock_wait);
+
+   /* Reads back the frame just drawn for a GPU recording, never
+    * redrawing it: BGR24 bottom up, or with @bgrx 32-bit B,G,R,X with
+    * *bottom_up set to the row order written; viewport width * 3 or * 4
+    * per row. Called on the video thread; the threaded wrapper records
+    * through it. Optional. */
+   bool (*record_read)(void *data, uint8_t *buffer, bool bgrx,
+         bool *bottom_up);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

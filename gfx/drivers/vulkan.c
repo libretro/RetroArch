@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../video_record.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
@@ -14517,6 +14516,9 @@ static bool vulkan_set_frame_format(void *data, bool rgb32,
    return true;
 }
 
+static bool vulkan_record_read(void *data, uint8_t *buffer, bool bgrx,
+      bool *bottom_up);
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -14585,7 +14587,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_frame_mem_free,
    vulkan_get_device,
    vulkan_import_texture,
-   vulkan_get_last_present_sync
+   vulkan_get_last_present_sync,
+   vulkan_record_read
 };
 
 static void vulkan_get_poke_interface(void *data,
@@ -14614,7 +14617,8 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
 }
 
-static bool vulkan_record_read(void *data, uint8_t *buffer)
+static bool vulkan_record_read(void *data, uint8_t *buffer, bool bgrx,
+      bool *bottom_up)
 {
    vk_t *vk = (vk_t*)data;
    struct vk_texture *staging;
@@ -14699,6 +14703,19 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       width = vp_w;
    if (height > vp_h)
       height = vp_h;
+   src = (const uint8_t*)mapped + staging->offset;
+   if (bgrx)
+   {
+      /* B,G,R,X top row first, as the staging copy is: rows are copied
+       * as they are when the swapchain is BGRA. */
+      *bottom_up = false;
+      video_frame_copy_to_bgrx(buffer, vp_w, vp_h, src, staging->stride,
+            width, height, format != VK_FORMAT_B8G8R8A8_UNORM);
+      vkUnmapMemory(vk->context->device, staging->memory);
+      vk->readback.consumed = newest;
+      return true;
+   }
+   *bottom_up = true;
    pitch  = (size_t)vp_w * 3;
    /* BGR24, bottom row first; only what the readback leaves
     * uncovered is cleared. */
@@ -14708,7 +14725,6 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       for (y = 0; y < height; y++)
          memset(buffer + (size_t)(vp_h - 1 - y) * pitch + (size_t)width * 3,
                0, (size_t)(vp_w - width) * 3);
-   src = (const uint8_t*)mapped + staging->offset;
    dst = buffer + (size_t)(vp_h - 1) * pitch;
    if (format == VK_FORMAT_B8G8R8A8_UNORM)
       conv_argb8888_bgr24(dst, src, (int)width, (int)height,
@@ -14719,11 +14735,6 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
    vkUnmapMemory(vk->context->device, staging->memory);
    vk->readback.consumed = newest;
    return true;
-}
-
-video_record_read_t vulkan_get_record_read(void)
-{
-   return vulkan_record_read;
 }
 
 /* bgrx: write top-down 32-bit BGRX (read_viewport_bgrx) instead of

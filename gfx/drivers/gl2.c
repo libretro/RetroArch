@@ -30,7 +30,6 @@
 #endif
 #endif
 
-#include "../video_record.h"
 #include "../gfx_instrument.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -8606,7 +8605,8 @@ static bool gl2_read_viewport_bgrx(void *data, uint8_t *buffer,
 }
 
 #if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-static bool gl2_record_read(void *data, uint8_t *buffer)
+static bool gl2_record_read(void *data, uint8_t *buffer, bool bgrx,
+      bool *bottom_up)
 {
    gl2_t *gl = (gl2_t*)data;
    if (!gl || !VIDEO_SCALE_W(gl->vp.dims) || !VIDEO_SCALE_H(gl->vp.dims))
@@ -8624,18 +8624,11 @@ static bool gl2_record_read(void *data, uint8_t *buffer)
          gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
       return false;
    }
-   return gl2_read_pbo(gl, buffer, false);
+   /* glReadPixels returns the bottom row first, in either format. */
+   *bottom_up = true;
+   return gl2_read_pbo(gl, buffer, bgrx);
 }
 #endif
-
-video_record_read_t gl2_get_record_read(void)
-{
-#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-   return gl2_record_read;
-#else
-   return NULL;
-#endif
-}
 
 #ifdef HAVE_OVERLAY
 /* The texture names and the vertex, texture and colour coordinate
@@ -9571,11 +9564,19 @@ static const video_poke_interface_t gl2_poke_interface = {
 #ifdef HAVE_GL_FRAME_MEM
    gl2_frame_mem_alloc,
    gl2_frame_mem_ready,
-   gl2_frame_mem_free
+   gl2_frame_mem_free,
 #else
    NULL, /* frame_mem_alloc */
    NULL, /* frame_mem_ready */
-   NULL  /* frame_mem_free */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   gl2_record_read
+#else
+   NULL  /* record_read */
 #endif
 };
 

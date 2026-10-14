@@ -1120,16 +1120,20 @@ void video_thread_wait_idle(void);
 void video_thread_invalidate_hw_render_cache(void *data);
 
 /* GPU recording under the wrapper, main thread. The video thread reads
- * back each frame it draws through a dedicated recording reader; this
+ * back each frame it draws through the driver's poke record_read; this
  * takes the newest since the last call without waiting for one.
- * Returns 1 with *frame set (width * height BGR24 rows, bottom up, as
- * read_viewport() leaves them), 0 when nothing new has arrived since a
- * frame was last taken, -1 when there is nothing to record yet, and -2
- * when the driver has no recording reader, for the caller to use
- * read_viewport(). Starts the readbacks on first use and again at a new
- * output size. Viewport changes are scaled and letterboxed by the worker. */
-int video_thread_record_take(void *data, unsigned dims,
-      const uint8_t **frame);
+ * Returns 1 with *frame set (width * height rows, B,G,R,X with @bgrx,
+ * else BGR24) and *bottom_up to their order, 0 when nothing new has
+ * arrived since a frame was last taken, -1 when there is nothing to
+ * record yet, and -2 when the driver has no recording reader, for the
+ * caller to use read_viewport(). Starts the readbacks on first use and
+ * again at a new output size or format. Viewport changes are scaled and
+ * letterboxed by the worker. */
+int video_thread_record_take(void *data, unsigned dims, bool bgrx,
+      const uint8_t **frame, bool *bottom_up);
+/* Whether video_thread_record_take() reads back on the video thread,
+ * in either format, rather than returning -2. Main thread. */
+bool video_thread_record_has_reader(void *data);
 /* Stops the readbacks; the buffers go once no frame names them. */
 void video_thread_record_stop(void *data);
 

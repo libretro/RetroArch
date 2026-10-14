@@ -1843,9 +1843,12 @@ static void recording_dump_frame(
       bool bottom_up           = true;
 #ifdef HAVE_THREADS
       int taken = -2;
+      /* The wrapper reads back on its own thread, in the format the
+       * recording was opened for. */
       if (video_st->thread_wrapper_active)
          taken = video_thread_record_take(video_st->data,
-               record_st->gpu_dims, &gpu_frame);
+               record_st->gpu_dims, record_st->gpu_bgrx, &gpu_frame,
+               &bottom_up);
       if (taken == -1)
          return;
       if (!taken)
@@ -1853,15 +1856,6 @@ static void recording_dump_frame(
          ffemu_data.is_dupe = true;
          record_st->driver->push_video(record_st->data, &ffemu_data);
          return;
-      }
-      /* The wrapper reads back BGR24 on its own thread; a recording
-       * opened for 32-bit frames (threaded video switched on since)
-       * has it widened into the buffer sized for those. */
-      if (taken == 1 && record_st->gpu_bgrx)
-      {
-         recording_bgr24_to_bgrx(video_st->record_gpu_buffer, gpu_frame,
-               VIDEO_SCALE_AREA(record_st->gpu_dims));
-         gpu_frame = video_st->record_gpu_buffer;
       }
       if (taken == -2)
 #endif
