@@ -37,6 +37,8 @@
  * would only collide with those. */
 #ifdef HAVE_THREADS
 
+#include "video_thread_movie.h"
+
 RETRO_BEGIN_DECLS
 
 enum video_thread_win_flags
@@ -485,6 +487,8 @@ typedef struct thread_video
    unsigned drain_cooldown;
    /* Video thread sets it, the hold takes it with a fetch_and */
    retro_atomic_int_t drain_pending;
+   retro_atomic_int_t movie_capable;
+   video_thread_movie_t movie_next;
    /* Fast-forward, from the frame info at the push: the hold stands
     * down for it. Distinct from nonblock, which vsync-off also sets. */
    bool fast_forward;
@@ -766,6 +770,8 @@ typedef struct thread_video
       size_t   buffer_size;
       struct video_thread_frame_slot
       {
+         video_thread_movie_t movie;
+         bool movie_control; /* immutable while queued or claimed */
          uint64_t count;
          /* When the core handed this frame over, on the main thread's
           * clock; the latency readout measures from here. */
@@ -1042,6 +1048,8 @@ bool video_thread_is_video_thread(void);
  * Main thread; video_thread_frame() calls it, callers that upload
  * while no frames are being pushed can call it themselves. */
 void video_thread_async_poll(void);
+
+bool video_thread_movie_supported(void);
 
 /* Barrier: wait until the video thread is idle (no pending frame).
  * Must be called from the main thread before freeing GPU resources

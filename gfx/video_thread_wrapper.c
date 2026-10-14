@@ -963,6 +963,8 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_FREE:
+         video_thread_movie_discard(&thr->frame.slot[0].movie);
+         video_thread_movie_discard(&thr->frame.slot[1].movie);
          /* Before the driver goes: the font owns GPU objects created
           * against it, and this is the thread they belong to. */
          if (     thr->driver
@@ -2567,6 +2569,8 @@ static void video_thread_loop(void *data)
           * keeps no pointer, so the slot taken here is free again by
           * the next take. */
          thread_update_driver_state(thr);
+         video_thread_movie_apply(&thr->frame.slot[slot].movie,
+               thr->driver_data, thr->poke);
 
          if (thr->driver_data && thr->driver)
          {
@@ -3403,7 +3407,8 @@ static VIDEO_NOINLINE unsigned video_thread_ring_pick(thread_video_t *thr,
        * and show the frame before it for two periods. Without the
        * wrapper a NULL push never loses a frame; here the dupe is what
        * gets dropped, and the real frame stays queued. */
-      if (dupe && !thr->frame.slot[slot].dupe)
+      if (dupe && (!thr->frame.slot[slot].dupe
+               || thr->frame.slot[slot].movie_control))
       {
          *dupe_dropped = true;
          return slot;
@@ -3651,7 +3656,8 @@ static bool video_thread_frame(void *data, const void *frame_,
     * already in it */
    if (!(zero_copy && !spare_in))
    {
-      slot = video_thread_ring_pick(thr, !frame_ && hw_slot < 0,
+      slot = video_thread_ring_pick(thr, !frame_ && hw_slot < 0
+            && !thr->movie_next.pending && !thr->movie_next.reset,
             &dropped, &dupe_dropped);
       if (dropped)
          thr->miss_count++;
@@ -3710,7 +3716,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       rows                 = video_thread_slot_rows(thr, width,
             filter_bpp, &copy_stride);
 
-      if (hw_slot < 0 && height > rows)
+      if (hw_slot < 0 && !thr->movie_next.pending && height > rows)
       {
          if (!thr->clamp_logged)
          {
@@ -3770,6 +3776,9 @@ static bool video_thread_frame(void *data, const void *frame_,
          copied = (size_t)height * copy_stride;
       }
 
+      video_thread_movie_move(&thr->frame.slot[slot].movie, &thr->movie_next);
+      thr->frame.slot[slot].movie_control = thr->frame.slot[slot].movie.pending
+         || thr->frame.slot[slot].movie.reset;
       thr->frame.slot[slot].dims   = VIDEO_SCALE_PACK(width, height);
       thr->frame.slot[slot].offset = zero_copy ? lent_off : 0;
       thr->frame.slot[slot].count  = frame_count;
@@ -4124,6 +4133,7 @@ static void video_thread_free(void *data)
 
    if (thr)
    {
+      video_thread_movie_discard(&thr->movie_next);
       if (thr->thread)
       {
          thread_packet_t pkt;
@@ -4140,6 +4150,8 @@ static void video_thread_free(void *data)
       }
       else
       {
+         video_thread_movie_discard(&thr->frame.slot[0].movie);
+         video_thread_movie_discard(&thr->frame.slot[1].movie);
          /* If we don't have a thread,
             we must call the driver's free function ourselves. */
          if (thr->driver_data && thr->driver && thr->driver->free)
@@ -4967,6 +4979,25 @@ static bool thread_supports_texture_format(void *video_data,
 
 /* The handles stand for the driver's life, which the main thread
  * starts and ends: read from here. */
+bool video_thread_movie_supported(void)
+{
+   thread_video_t *thr = video_thread_thr_capture;
+   return thr && retro_atomic_load_acquire_int(&thr->movie_capable);
+}
+
+static enum video_texture_update thread_import_movie_frame(void *data,
+      const video_frame_import_t *frame)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (!thr || !retro_atomic_load_acquire_int(&thr->movie_capable))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (video_thread_is_self(thr))
+      return thr->driver_data && thr->poke && thr->poke->import_movie_frame
+         ? thr->poke->import_movie_frame(thr->driver_data, frame)
+         : VIDEO_TEXTURE_UPDATE_REFUSED;
+   return video_thread_movie_stage(&thr->movie_next, frame);
+}
+
 static bool thread_get_device(void *video_data, video_device_info_t *info)
 {
    thread_video_t *thr = (thread_video_t*)video_data;
@@ -5087,7 +5118,9 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* frame_mem_free */
    thread_get_device,
    NULL, /* import_texture: a node (VIDEO_THREAD_ASYNC_IMPORT) */
-   NULL  /* get_last_present_sync: read on the video thread */
+   NULL, /* get_last_present_sync: read on the video thread */
+   NULL, /* record_read: read on the video thread */
+   thread_import_movie_frame
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the
@@ -5102,6 +5135,8 @@ static uintptr_t video_thread_set_poke(void *data)
 {
    video_thread_set_poke_t *set = (video_thread_set_poke_t*)data;
    set->thr->poke               = set->poke;
+   retro_atomic_store_release_int(&set->thr->movie_capable,
+         set->poke && set->poke->import_movie_frame ? 1 : 0);
    return 0;
 }
 

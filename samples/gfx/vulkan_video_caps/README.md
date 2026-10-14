@@ -95,13 +95,27 @@ reserves P010 capacity for format switching where storage-buffer limits permit;
 larger NV12-only allocations remain usable and refuse oversized P010 frames.
 P010 import does not imply HDR tone mapping or a 10-bit display path.
 
-Unthreaded builtin movie playback now reuses this importer through
+Builtin movie playback reuses this importer through
 `import_movie_frame`. The converted texture is the filter-chain input,
 including view dimensions and format, without an additional upload/copy.
 NULL refreshes retain the current image; cached hardware sentinels redraw
 it without treating them as CPU pointers. Resizes and software-frame changes
 retire textures through the existing deferred lifetime path. Both whole-frame
 and per-view history receive the actual source format when switching back.
-Threaded movie handoff, HDR and full hardware movie UI/shader validation
-remain separate acceptance work. The portable `movie_gpu_handoff/run.py`
+The video-thread wrapper carries import metadata and leases in its existing
+frame ring, pairing imports and clears with the refresh that consumes them.
+It copies no video pixels between threads and adds no GPU copy. Staging
+backpressure retains the caller's lease for retry; a replaced ring frame or
+a busy/refused worker import abandons its accepted lease once, without
+waiting. Clears survive replacement, and teardown releases staged/pending
+leases. Unsupported drivers and software filters retain software fallback.
+HDR and full hardware movie UI/shader validation remain acceptance work. The portable `movie_gpu_handoff/run.py`
 checks production callback, retry, resize, clear and cached-redraw decisions.
+
+The shipping `threaded_video` harness checks 130 leases through the real
+wrapper, including staging backpressure, GPU-busy/refused imports, oversized
+movie dimensions, clear and teardown. `HARNESS_MOVIE_ONLY=1` selects this lane
+for focused sanitizer runs. Linux ASan/UBSan and TSan pass; the full plain
+wrapper suite passes. TSan on this WSL host needs `setarch x86_64 -R` to avoid
+its startup address-map conflict. These metadata/ownership tests do not
+claim end-to-end hardware movie presentation on Windows or other devices.

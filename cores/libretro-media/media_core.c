@@ -1066,6 +1066,9 @@ static void media_check_input(media_player_t *p)
    {
       int64_t target = p->vpts_ns + delta;
       int64_t pos    = media_seek(p, target);
+      struct retro_message_ext msg;
+      char text[64];
+      unsigned ps;
       /* The walk stops at the partial-read wall, landing as far as
        * the file has arrived; remember the real target and keep
        * retrying from the fill pump until it is reachable, so a seek
@@ -1078,9 +1081,7 @@ static void media_check_input(media_player_t *p)
          p->pending_seek_ns = target;
       else
          p->pending_seek_ns = -1;
-      struct retro_message_ext msg;
-      char text[64];
-      unsigned ps = (unsigned)(pos / 1000000000);
+      ps = (unsigned)(pos / 1000000000);
       sprintf(text, "%u:%02u", ps / 60, ps % 60);
       if (p->dur_ns > 0)
       {

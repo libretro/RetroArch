@@ -66,6 +66,7 @@
 #include <rthreads/rthreads.h>
 #include <file/config_file.h>
 #include <formats/image_yuv_blit.h>
+#include <formats/video_hw_frame.h>
 #include <queues/task_queue.h>
 
 static unsigned failures = 0;
@@ -556,7 +557,11 @@ static uintptr_t worker_install_run(void *data)
    if (w->set_driver)
       w->thr->driver = w->driver;
    if (w->set_poke)
+   {
       w->thr->poke   = w->poke;
+      retro_atomic_store_release_int(&w->thr->movie_capable,
+            w->poke && w->poke->import_movie_frame ? 1 : 0);
+   }
    return 0;
 }
 
@@ -9333,6 +9338,112 @@ static void lane_display_past_top(void)
             unthreaded, threaded);
 }
 
+#define MOVIE_RING_FRAMES 130
+static retro_atomic_int_t movie_ring_released[MOVIE_RING_FRAMES + 1];
+static retro_atomic_int_t movie_ring_errors;
+static video_driver_t movie_ring_driver;
+static video_poke_interface_t movie_ring_poke;
+static const video_driver_t *movie_ring_inner;
+static unsigned movie_ring_active;
+static void movie_ring_release(void *owner, uint64_t done, uint64_t value)
+{
+   (void)owner;
+   if (done != 88 || value > MOVIE_RING_FRAMES || !value
+         || !retro_atomic_cas_int(&movie_ring_released[value], 0, 2))
+      retro_atomic_fetch_add_int(&movie_ring_errors, 1);
+}
+static bool movie_ring_device(void *data, video_device_info_t *info)
+{
+   (void)data;
+   memset(info, 0, sizeof(*info));
+   info->import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
+   return true;
+}
+static enum video_texture_update movie_ring_import(void *data,
+      const video_frame_import_t *frame)
+{
+   unsigned id;
+   (void)data;
+   if (!frame) { movie_ring_active = 0; return VIDEO_TEXTURE_UPDATE_DONE; }
+   id = (unsigned)frame->image;
+   if (sthread_get_thread_id(((thread_video_t*)video_state_get_ptr()->data)->thread)
+            != sthread_get_current_thread_id()
+         || frame->dims != VIDEO_SCALE_PACK(1920, 1080)
+         || frame->wait_value != id || frame->done_value != id
+         || frame->wait != 34 || frame->done != 88 || !id || id > MOVIE_RING_FRAMES)
+   {
+      retro_atomic_fetch_add_int(&movie_ring_errors, 1);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   if (!(id % 3)) return VIDEO_TEXTURE_UPDATE_DROPPED;
+   if (!(id % 5)) return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!retro_atomic_cas_int(&movie_ring_released[id], 0, 1))
+      retro_atomic_fetch_add_int(&movie_ring_errors, 1);
+   movie_ring_active = id;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+static bool movie_ring_frame(void *data, const void *frame, unsigned dims,
+      uint64_t count, unsigned pitch, const char *msg, video_frame_info_t *info)
+{
+   if (movie_ring_active && (frame || dims != VIDEO_SCALE_PACK(1920, 1080)))
+      retro_atomic_fetch_add_int(&movie_ring_errors, 1);
+   return movie_ring_inner->frame(data, NULL, dims, count, pitch, msg, info);
+}
+static void lane_movie_ring(void)
+{
+   unsigned had = failures;
+   unsigned i;
+   video_hw_frame_t hw;
+   thread_video_t *thr;
+   const video_poke_interface_t *inner_poke;
+   bool menu_was_up;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   menu_was_up = menu_is_up();
+   if (menu_was_up) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   if (!thr) return;
+   movie_ring_inner = thr->driver; inner_poke = thr->poke;
+   movie_ring_driver = *thr->driver; movie_ring_driver.frame = movie_ring_frame;
+   if (inner_poke) movie_ring_poke = *inner_poke;
+   else memset(&movie_ring_poke, 0, sizeof(movie_ring_poke));
+   movie_ring_poke.get_device = movie_ring_device;
+   movie_ring_poke.import_movie_frame = movie_ring_import;
+   set_driver(thr, &movie_ring_driver); set_poke(thr, &movie_ring_poke);
+   CHECK(video_driver_movie_refresh(NULL, NULL), "movie ring: capability missing");
+   memset(&hw, 0, sizeof(hw));
+   hw.width = 1920; hw.height = 1080; hw.pixfmt = IMAGE_PIXFMT_P010;
+   hw.wait = 34; hw.done = 88; hw.abandon = movie_ring_release;
+   for (i = 1; i <= MOVIE_RING_FRAMES - 2; i++)
+   {
+      hw.image = i; hw.wait_value = hw.done_value = i;
+      CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: staging refused %u", i);
+      CHECK(!video_driver_movie_refresh(NULL, &hw), "movie ring: staging overwrite %u", i);
+      video_driver_frame(NULL, 1920, 1080, 0);
+   }
+   video_thread_wait_idle();
+   /* Clear releases a staged lease before its frame is published. */
+   hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES - 1;
+   CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before clear");
+   video_driver_movie_clear();
+   video_driver_frame(NULL, 1920, 1080, 0);
+   video_thread_wait_idle();
+   /* Teardown releases a lease that never reached the frame ring. */
+   hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES;
+   CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before teardown");
+   set_driver(thr, movie_ring_inner); set_poke(thr, inner_poke);
+   set_threaded_via_setting(false);
+   for (i = 1; i <= MOVIE_RING_FRAMES; i++)
+      CHECK(retro_atomic_load_acquire_int(&movie_ring_released[i]) != 0,
+            "movie ring: lease %u not released", i);
+   CHECK(!retro_atomic_load_acquire_int(&movie_ring_errors), "movie ring: ordering or duplicate release");
+   run_frames(2);
+   if (menu_was_up && !menu_is_up()) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had) fprintf(stderr, "[pass] threaded movie ring: metadata, backpressure, clear and teardown\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -9466,6 +9577,12 @@ int main(int argc, char *argv[])
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
 
+   if (getenv("HARNESS_MOVIE_ONLY"))
+   {
+      lane_movie_ring();
+      goto shutdown;
+   }
+
    /* The harness core as a hardware core: its own lanes, alone. */
    if (getenv("HARNESS_CORE_HW_VULKAN"))
    {
@@ -9584,6 +9701,7 @@ int main(int argc, char *argv[])
       lane_frame_path_heap();
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
+      lane_movie_ring();
       lane_suppress_screensaver();
       lane_window_answers();
       lane_size_pair_round_trip();

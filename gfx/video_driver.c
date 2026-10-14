@@ -4967,14 +4967,14 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
    video_device_info_t info;
    enum video_texture_update result;
    (void)user;
-#ifdef HAVE_THREADS
-   if (video_driver_thread_wrapper_active())
-      return false;
-#endif
    if (!video_st->data || !poke || !poke->import_movie_frame)
       return false;
    if (!hw)
    {
+#ifdef HAVE_THREADS
+      if (video_driver_thread_wrapper_active() && !video_thread_movie_supported())
+         return false;
+#endif
 #ifdef HAVE_VIDEO_FILTER
       if (video_st->state_filter)
          return false;
