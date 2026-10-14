@@ -5165,7 +5165,7 @@ static enum video_texture_update d3d10_gfx_update_texture_internal(
    if (FAILED(hr))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   dxgi_copy(image->width, image->height, texture->desc.Format, 0,
+   dxgi_copy(image->width, image->height, DXGI_FORMAT_B8G8R8A8_UNORM, 0,
          image->pixels, texture->desc.Format, mapped.RowPitch,
          mapped.pData);
    texture->staging->lpVtbl->Unmap(texture->staging, 0);

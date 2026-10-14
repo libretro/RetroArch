@@ -11166,7 +11166,9 @@ static enum video_texture_update d3d12_gfx_update_texture_internal(
                < texture->upload_fence)
          return VIDEO_TEXTURE_UPDATE_DROPPED;
       d3d12_update_texture(image->width, image->height, 0,
-            texture->desc.Format, image->pixels, texture);
+            image->fp16 ? DXGI_FORMAT_R16G16B16A16_FLOAT
+            : image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
+            : DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
    if (!d3d12)

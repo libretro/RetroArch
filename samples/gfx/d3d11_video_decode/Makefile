@@ -122,6 +122,8 @@ check: all
 	$(RUNNER) ./rh265_hw_session_test$(EXE)
 	$(RUNNER) ./rh265_hw_stream_test$(EXE)
 	$(RUNNER) ./video_hw_format_test$(EXE)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" RUNNER="$(RUNNER)" \
+	   python3 ../d3d_texture_update_formats/run.py
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
