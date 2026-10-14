@@ -1254,8 +1254,8 @@ static void rvp9_render_size(rvp9_rb *rb, rvp9_hdr *hd)
 }
 
 /* Parse the uncompressed header. Returns 0 on success, -1 on failure,
- * 1 for show_existing_frame (no further data).  ref_dims: 3 pairs of
- * w,h for LAST/GOLDEN/ALT (used to resolve size-from-ref); may be NULL
+ * 1 for show_existing_frame (no further data).  ref_dims: 8 slot pairs of
+ * w,h (used to resolve size-from-ref); may be NULL
  * when the caller knows the frame cannot reference (keyframes). */
 static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
       rvp9_hdr *hd, const int *ref_dims)
@@ -1367,8 +1367,9 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
             if (rvp9_rb_bit(&rb))
             {
                if (!ref_dims) return -9;
-               hd->w = ref_dims[i * 2 + 0];
-               hd->h = ref_dims[i * 2 + 1];
+               hd->w = ref_dims[hd->ref_idx[i] * 2 + 0];
+               hd->h = ref_dims[hd->ref_idx[i] * 2 + 1];
+               if (hd->w <= 0 || hd->h <= 0) return -9;
                found = 1;
                break;
             }
@@ -2999,20 +3000,18 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 {
    rvp9_hdr *hd = &d->hd;
    int i, r;
-   int ref_dims[6];
+   int ref_dims[RVP9_REF_FRAMES * 2];
 
    *show_fb = -1;
 
-   for (i = 0; i < 3; i++)
+   for (i = 0; i < RVP9_REF_FRAMES; i++)
    {
-      int fb = d->frame_refs[i];
-      ref_dims[i * 2 + 0] = (fb >= 0 && d->fbs[fb].valid) ? d->fbs[fb].w : 0;
-      ref_dims[i * 2 + 1] = (fb >= 0 && d->fbs[fb].valid) ? d->fbs[fb].h : 0;
+      int fb = d->ref_frame_map[i];
+      int valid = fb >= 0 && fb < RVP9_FRAME_BUFS && d->fbs[fb].valid;
+      ref_dims[i * 2 + 0] = valid ? d->fbs[fb].w : 0;
+      ref_dims[i * 2 + 1] = valid ? d->fbs[fb].h : 0;
    }
 
-   /* Resolve frame_refs BEFORE parse for size-from-refs: the header
-    * names slots first; parse needs dims of the named slots.  We parse
-    * in two steps: peek the ref slots, then full parse. */
    r = rvp9_parse_uncompressed(data, len, hd, ref_dims);
    if (r < 0) return r;
    /* 10-bit (profile 2) dispatches to the high-bit-depth pipeline;
