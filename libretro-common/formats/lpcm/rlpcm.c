@@ -115,20 +115,19 @@ static enum rlpcm_status rlpcm_parse_dvd(const uint8_t *src, size_t len,
 {
    unsigned quant, rate, channels;
 
-   if (len < 5)
+   unsigned pointer;
+   if (!src) return RLPCM_BAD;
+   if (len < 6)
       return RLPCM_NEED_MORE;
-
-   /* [0] frame number, [1..2] first access unit pointer, [3] the
-    * shape, [4] dynamic range. The pointer counts from the byte after
-    * itself and is one-based; zero means no access unit begins here,
-    * which is a continuation packet and not a header to read a shape
-    * from. */
-   if (((unsigned)src[1] << 8 | src[2]) == 0)
-      return RLPCM_NO_SYNC;
-
-   quant    = (src[3] >> 6) & 3u;
-   rate     = (src[3] >> 4) & 3u;
-   channels = (src[3] & 7u) + 1u;
+   /* Private-stream header after the substream ID: count, pointer,
+    * audio flags/frame number, configuration and dynamic range. */
+   pointer = ((unsigned)src[1] << 8) | src[2];
+   if (!pointer) return RLPCM_NO_SYNC;
+   if (pointer < 4) return RLPCM_BAD;
+   if ((size_t)pointer + 2 > len) return RLPCM_NEED_MORE;
+   quant    = (src[4] >> 6) & 3u;
+   rate     = (src[4] >> 4) & 3u;
+   channels = (src[4] & 7u) + 1u;
 
    switch (quant)
    {
@@ -151,7 +150,7 @@ static enum rlpcm_status rlpcm_parse_dvd(const uint8_t *src, size_t len,
    fmt->channels      = channels;
    fmt->layout        = rlpcm_layout_of_count(channels);
    fmt->big_endian    = true;
-   fmt->header_bytes  = 5;
+   fmt->header_bytes  = pointer + 2;
    /* The packet's length belongs to the container above this one. */
    fmt->payload_bytes = 0;
    return RLPCM_OK;

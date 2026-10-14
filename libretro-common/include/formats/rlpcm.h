@@ -39,12 +39,11 @@ RETRO_BEGIN_DECLS
  * in the bytes it takes, which speaker each one belongs to - and the
  * two disc formats say all of that in a header of their own.
  *
- * DVD-Video carries LPCM in a private stream, each PES packet opening
- * with five bytes (ISO/IEC 13818-1's private stream 1, the LPCM
- * variant): a frame number, the first access unit's offset, and two
- * bytes saying the sample size, rate and channel count. Blu-ray's
- * HDMV LPCM opens each access unit with four: the payload's length,
- * then a channel assignment, a sampling frequency and a sample size.
+ * DVD-Video carries LPCM in a private stream. After the substream ID,
+ * six bytes carry a frame count, access-unit pointer, audio flags/frame
+ * number, sample configuration and dynamic range. Blu-ray's HDMV LPCM
+ * opens each access unit with four bytes: payload length, channel assignment,
+ * sampling frequency and sample size.
  * Both are big-endian, which is the opposite of WAV and of every
  * device the frontend writes to.
  *
@@ -54,7 +53,7 @@ RETRO_BEGIN_DECLS
 enum rlpcm_kind
 {
    RLPCM_KIND_RAW = 0,   /* no header; the caller supplies the shape */
-   RLPCM_KIND_DVD,       /* DVD-Video private stream 1, five-byte header */
+   RLPCM_KIND_DVD,       /* DVD-Video private stream 1, six-byte header */
    RLPCM_KIND_BLURAY     /* HDMV LPCM, four-byte header */
 };
 
@@ -78,7 +77,7 @@ typedef struct rlpcm_format
     * own ascending-bit order. */
    uint32_t layout;
    bool     big_endian;     /* the disc formats are; a raw caller says */
-   /* Bytes of header before the samples, and bytes of payload after
+   /* Bytes before the first samples (including DVD continuation prefix), and bytes of payload after
     * it where the header says (Blu-ray does; DVD's packet length is
     * the container's business, so 0 means "to the end of the buffer"). */
    unsigned header_bytes;
