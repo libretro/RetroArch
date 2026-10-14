@@ -15,8 +15,10 @@ Output buffers must not overlap input descriptors.
 Scaling lists must already include SPS/PPS inference and defaults in
 HEVC `ScalingList` order, plus DC values. Submit a matrix buffer only
 when scaling lists are enabled; disabled scaling lists require no buffer.
-The rh265 parser's raster coefficients need explicit conversion in its
-future hardware adapter. The slice helper borrows complete VCL NALs with
+`dxva_hevc_qmatrix_raster` converts effective raster coefficients directly
+to the submission buffer. Pack 32x32 matrix IDs 0 and 3 into the two
+`list32` entries; retain their DC values separately. The parser adapter
+still needs to select the active SPS/PPS lists. The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
 without copying the coded payload or touching decoded frames.

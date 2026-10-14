@@ -11,7 +11,7 @@ static unsigned failures;
       (unsigned)__LINE__, #c); failures++; } } while (0)
 static dxva_hevc_picture_t p;
 static dxva_hevc_scaling_t scaling;
-static uint8_t bytes[DXVA_HEVC_QM_SIZE];
+static uint8_t bytes[DXVA_HEVC_QM_SIZE + 1];
 
 static unsigned get16(const uint8_t *b) { return b[0] | (unsigned)b[1] << 8; }
 static uint32_t get32(const uint8_t *b)
@@ -205,6 +205,60 @@ static void test_scaling(void)
    for (i = 0; i < DXVA_HEVC_QM_SIZE; i++) CHECK(!bytes[i]);
 }
 
+static void test_raster_scaling(void)
+{
+   static const uint8_t scan4[16] =
+      {0,4,1,8,5,2,12,9,6,3,13,10,7,14,11,15};
+   static const uint8_t scan8[64] =
+   {
+      0,8,1,16,9,2,24,17,10,3,32,25,18,11,4,40,
+      33,26,19,12,5,48,41,34,27,20,13,6,56,49,42,35,
+      28,21,14,7,57,50,43,36,29,22,15,58,51,44,37,30,
+      23,59,52,45,38,31,60,53,46,39,61,54,47,62,55,63
+   };
+   static dxva_hevc_scaling_t saved;
+   unsigned m, i;
+   for (m = 0; m < 6; m++)
+   {
+      for (i = 0; i < 16; i++) scaling.list4[m][i] = (uint8_t)(1 + m * 16 + i);
+      for (i = 0; i < 64; i++)
+      {
+         scaling.list8[m][i] = (uint8_t)(1 + m + i);
+         scaling.list16[m][i] = (uint8_t)(80 + m + i);
+      }
+      scaling.dc16[m] = (uint8_t)(200 + m);
+   }
+   for (m = 0; m < 2; m++)
+   {
+      for (i = 0; i < 64; i++) scaling.list32[m][i] = (uint8_t)(150 + m + i);
+      scaling.dc32[m] = (uint8_t)(230 + m);
+   }
+   saved = scaling;
+   bytes[1000] = 0xa5;
+   CHECK(dxva_hevc_qmatrix_raster(bytes, &scaling));
+   CHECK(!memcmp(&saved, &scaling, sizeof(saved)) && bytes[1000] == 0xa5);
+   for (m = 0; m < 6; m++)
+   {
+      for (i = 0; i < 16; i++) CHECK(bytes[m * 16 + i] == scaling.list4[m][scan4[i]]);
+      for (i = 0; i < 64; i++)
+      {
+         CHECK(bytes[96 + m * 64 + i] == scaling.list8[m][scan8[i]]);
+         CHECK(bytes[480 + m * 64 + i] == scaling.list16[m][scan8[i]]);
+      }
+      CHECK(bytes[992 + m] == scaling.dc16[m]);
+   }
+   for (m = 0; m < 2; m++)
+   {
+      for (i = 0; i < 64; i++) CHECK(bytes[864 + m * 64 + i] == scaling.list32[m][scan8[i]]);
+      CHECK(bytes[998 + m] == scaling.dc32[m]);
+   }
+   scaling.list16[5][63] = 0;
+   CHECK(!dxva_hevc_qmatrix_raster(bytes, &scaling));
+   for (i = 0; i < 1000; i++) CHECK(!bytes[i]);
+   CHECK(!dxva_hevc_qmatrix_raster(bytes, NULL));
+   CHECK(!dxva_hevc_qmatrix_raster(NULL, &saved));
+}
+
 static void test_slices(void)
 {
    uint8_t data[] = {0,0,1,0x26,1,0xab,0,0,0,1,2,1,0xcd};
@@ -234,7 +288,7 @@ static void test_slices(void)
 }
 int main(void)
 {
-   test_picture(); test_rejection(); test_scaling(); test_slices();
+   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_slices();
    printf("HEVC DXVA buffers: %u failures\n", failures);
    return failures ? 1 : 0;
 }

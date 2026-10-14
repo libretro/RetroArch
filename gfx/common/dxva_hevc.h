@@ -161,6 +161,44 @@ static INLINE bool dxva_hevc_qmatrix(uint8_t *out, const dxva_hevc_scaling_t *s)
    memcpy(out, bytes, DXVA_HEVC_QM_SIZE);
    return true;
 }
+/* Raster input uses the same size classes, with 32x32 matrix IDs 0 and 3
+ * packed into list32[0] and list32[1]. Output must not overlap input. */
+static INLINE bool dxva_hevc_qmatrix_raster(uint8_t *out,
+      const dxva_hevc_scaling_t *s)
+{
+   unsigned size, matrix, diagonal, x, y, n;
+   const uint8_t *src;
+   uint8_t *dst;
+   if (!out) return false;
+   memset(out, 0, DXVA_HEVC_QM_SIZE);
+   if (!s) return false;
+   src = (const uint8_t*)s;
+   for (n = 0; n < DXVA_HEVC_QM_SIZE; n++) if (!src[n]) return false;
+   for (size = 0; size < 4; size++)
+   {
+      unsigned width = size ? 8 : 4;
+      unsigned count = size == 3 ? 2 : 6;
+      unsigned base = size == 0 ? 0 : size == 1 ? 96 : size == 2 ? 480 : 864;
+      for (matrix = 0; matrix < count; matrix++)
+      {
+         src = size == 0 ? s->list4[matrix] : size == 1 ? s->list8[matrix]
+            : size == 2 ? s->list16[matrix] : s->list32[matrix];
+         dst = out + base + matrix * width * width;
+         n = 0;
+         for (diagonal = 0; diagonal < 2 * width - 1; diagonal++)
+            for (x = 0; x < width; x++)
+            {
+               if (diagonal < x) continue;
+               y = diagonal - x;
+               if (y < width) dst[n++] = src[y * width + x];
+            }
+      }
+   }
+   memcpy(out + 992, s->dc16, 6);
+   memcpy(out + 998, s->dc32, 2);
+   return true;
+}
+
 /* Slice offsets point to Annex-B start codes. Data stays borrowed; only
  * slice descriptors are written. The backend supplies zero padding through
  * padded_bytes (a multiple of 128); the last slice accounts for it. */
