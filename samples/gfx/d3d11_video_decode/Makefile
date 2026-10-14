@@ -29,6 +29,7 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
 
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
+TARGETS += rh265_hw_session_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -40,6 +41,10 @@ all: $(TARGETS)
 
 rh265_hw_state_test$(EXE): rh265_hw_state_test.c $(RA)/libretro-common/include/formats/rh265_hw.h
 	$(CC) $(CFLAGS) -o $@ rh265_hw_state_test.c $(LDFLAGS)
+
+rh265_hw_session_test$(EXE): rh265_hw_session_test.c $(RA)/libretro-common/include/formats/rh265_hw.h \
+      $(RA)/libretro-common/include/formats/video_hw_frame.h
+	$(CC) $(CFLAGS) -o $@ rh265_hw_session_test.c $(LDFLAGS)
 
 dxva_hevc_test$(EXE): dxva_hevc_test.c $(RA)/gfx/common/dxva_hevc.h \
       $(RA)/gfx/common/dxva_hevc_rh265.h $(RA)/libretro-common/include/formats/rh265.h \
@@ -91,6 +96,7 @@ check: all
 	$(RUNNER) ./dxva_hevc_test$(EXE)
 	$(RUNNER) ./dxva_hevc_access_unit_test$(EXE)
 	$(RUNNER) ./rh265_hw_state_test$(EXE)
+	$(RUNNER) ./rh265_hw_session_test$(EXE)
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
@@ -101,6 +107,7 @@ clean:
 	rm -f dxva_hevc_test dxva_hevc_test.exe
 	rm -f dxva_hevc_access_unit_test dxva_hevc_access_unit_test.exe
 	rm -f rh265_hw_state_test rh265_hw_state_test.exe
+	rm -f rh265_hw_session_test rh265_hw_session_test.exe
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe

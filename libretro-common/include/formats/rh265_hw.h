@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <formats/rh265.h>
+#include <formats/video_hw_frame.h>
 
 /* Owner-thread sequencing only. The backend still protects GPU writes and
  * exported frame leases with its fences; these masks are not GPU completion. */
@@ -232,5 +233,136 @@ static INLINE bool rh265_hw_output_release(rh265_hw_state_t *s, unsigned slot)
    if (!(s->outputs & bit)) return false;
    s->outputs &= ~bit;
    return true;
+}
+typedef struct rh265_hw_ops
+{
+   void *decoder;
+   /* 0 accepted, 1 busy without submission/lease, negative failure. */
+   /* Acceptance finishes borrowed CPU reads; asynchronous work owns its input. */
+   int (*decode)(void *decoder, const rh265_video_params_t *params,
+         const rh265_access_unit_t *au, const rh265_nal_t *slices,
+         const rh265_hw_picture_t *picture);
+   int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
+} rh265_hw_ops_t;
+
+typedef struct rh265_hw_session
+{
+   rh265_hw_state_t state;
+   rh265_hw_picture_t pending;
+   rh265_hw_ops_t ops;
+   const uint8_t *packet;
+   size_t packet_size;
+   const rh265_video_params_t *params;
+   const rh265_access_unit_t *au;
+   const rh265_nal_t *slices;
+   unsigned max_reorder;
+   int phase, pressure, broken;
+} rh265_hw_session_t;
+
+/* Caller owns session/backend storage. Reset requires retired transactions;
+ * exported frames remain the backend's leases and may outlive this session. */
+static INLINE bool rh265_hw_session_init(rh265_hw_session_t *s,
+      const rh265_hw_ops_t *ops, unsigned slots)
+{
+   if (!s) return false;
+   memset(s, 0, sizeof(*s));
+   if (!ops || !ops->decode || !ops->output || !rh265_hw_state_init(&s->state, slots))
+      return false;
+   s->ops = *ops;
+   return true;
+}
+
+static INLINE void rh265_hw_session_clear_packet(rh265_hw_session_t *s)
+{
+   s->packet = NULL; s->packet_size = 0; s->params = NULL;
+   s->au = NULL; s->slices = NULL; s->phase = s->pressure = 0;
+}
+
+/* Cancel an unaccepted packet only. Backend busy means no submission;
+ * references, pending display pictures and external leases stay intact. */
+static INLINE bool rh265_hw_session_cancel(rh265_hw_session_t *s)
+{
+   if (!s || !s->phase) return false;
+   rh265_hw_session_clear_packet(s);
+   memset(&s->pending, 0, sizeof(s->pending));
+   return true;
+}
+
+/* 0 consumed, 1 busy, negative failure. On busy, retain immutable packet,
+ * parameters, AU and slice storage and retry with the same pointers/size.
+ * Exactly one decode callback per call; no waits or internal retry loops. */
+static INLINE int rh265_hw_session_submit(rh265_hw_session_t *s,
+      const uint8_t *packet, size_t size, const rh265_video_params_t *params,
+      const rh265_access_unit_t *au, const rh265_nal_t *slices)
+{
+   int ret;
+   if (!s || s->broken || !s->ops.decode || !packet || !size || !params || !au || !slices)
+      return -1;
+   if (s->phase)
+   {
+      if (packet != s->packet || size != s->packet_size || params != s->params
+            || au != s->au || slices != s->slices) return -1;
+   }
+   else
+   {
+      if (!au->num_slices) return 0;
+      s->packet = packet; s->packet_size = size; s->params = params;
+      s->au = au; s->slices = slices; s->phase = 1;
+   }
+   if (s->phase == 1)
+   {
+      ret = rh265_hw_prepare(&s->state, params, au, &s->pending);
+      if (ret == 1) { s->pressure = 1; return 1; }
+      if (ret == 2) { rh265_hw_session_clear_packet(s); return 0; }
+      if (ret < 0) { rh265_hw_session_clear_packet(s); return ret; }
+      s->phase = 2; s->pressure = 0;
+   }
+   ret = s->ops.decode(s->ops.decoder, s->params, s->au, s->slices, &s->pending);
+   if (ret > 0) return 1;
+   if (ret < 0 || !rh265_hw_commit(&s->state, &s->pending))
+   {
+      s->broken = 1;
+      rh265_hw_session_clear_packet(s);
+      return -1;
+   }
+   s->max_reorder = (unsigned)params->max_num_reorder_pics;
+   rh265_hw_session_clear_packet(s);
+   return 0;
+}
+
+/* 0 frame (caller owns its lease), 1 not available, negative failure.
+ * Consume/abandon any previous frame before reusing out.
+ * Busy output keeps the slot held. Backend callbacks must not acquire a
+ * lease on busy/error. Partial invalid success is abandoned without waiting. */
+static INLINE int rh265_hw_session_output(rh265_hw_session_t *s,
+      bool drain, video_hw_frame_t *out)
+{
+   video_hw_frame_t frame;
+   int slot, ret;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!s || s->broken || !s->ops.output) return -1;
+   slot = rh265_hw_output_pick(&s->state, s->max_reorder, drain || s->pressure);
+   if (slot < 0) return 1;
+   memset(&frame, 0, sizeof(frame));
+   ret = s->ops.output(s->ops.decoder, (unsigned)slot, &frame);
+   if (ret > 0) return 1;
+   if (ret < 0)
+   {
+      s->broken = 1;
+      rh265_hw_session_clear_packet(s);
+      return -1;
+   }
+   if (!frame.image || !frame.width || !frame.height
+         || !rh265_hw_output_release(&s->state, (unsigned)slot))
+   {
+      video_hw_frame_abandon(&frame);
+      s->broken = 1;
+      rh265_hw_session_clear_packet(s);
+      return -1;
+   }
+   s->pressure = 0;
+   *out = frame;
+   return 0;
 }
 #endif
