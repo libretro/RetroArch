@@ -45,6 +45,7 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <formats/rh264.h>
+#include <formats/image.h>
 #include <formats/video_hw_frame.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1360,6 +1361,7 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->owner       = NULL;
    out->width       = d->visible_w;
    out->height      = d->visible_h;
+   out->pixfmt      = IMAGE_PIXFMT_NV12;
    out->layout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    return 0;
 }

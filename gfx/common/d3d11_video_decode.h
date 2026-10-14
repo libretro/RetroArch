@@ -42,7 +42,9 @@ bool d3d11_video_decode_init_adapter(void *adapter);
  * be closed by then. */
 void d3d11_video_decode_deinit(void);
 
-/* Main 8-bit/NV12 only. The adapter must be initialized. Owner-thread
+/* Main/NV12 and Main10/P010. Automatic player selection remains Main8
+ * until P010 renderer import is available. The adapter must be initialized.
+ * Owner-thread
  * calls; close before deinit. A session borrows ops->decoder until close.
  * Output leases keep shared handles alive through the existing fences. */
 bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,

@@ -35,7 +35,7 @@
  * the image again. A frame that will never be read is given back with
  * video_hw_frame_abandon, which signals @done in the reader's place.
  *
- * D3D11: NT handles of a shared DXGI_FORMAT_NV12 texture and of two
+ * D3D11: NT handles of a shared DXGI_FORMAT_NV12 or P010 texture and of two
  * shared ID3D11Fences, used as above; @layout names the decoder's set
  * of handles, so that a reader keeping what it opened of them opens
  * them again when it changes. */
@@ -61,6 +61,7 @@ typedef struct video_hw_frame
    unsigned width, height;
    unsigned layout;
    unsigned yuv;             /* IMAGE_YUV_FLAG_* (image_yuv_blit.h) */
+   unsigned pixfmt;          /* image_pixfmt; zero means legacy NV12 */
 } video_hw_frame_t;
 
 static INLINE void video_hw_frame_abandon(const video_hw_frame_t *f)

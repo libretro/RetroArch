@@ -74,12 +74,16 @@ static enum video_player_present gfx_surface_player_present_hw(
    video_frame_import_t imp;
    const video_hw_frame_t *hw = fr->hw;
 
+   uint32_t pixfmt = hw->pixfmt ? hw->pixfmt : IMAGE_PIXFMT_NV12;
+   if (pixfmt != IMAGE_PIXFMT_NV12 && pixfmt != IMAGE_PIXFMT_P010)
+      return VIDEO_PLAYER_PRESENT_FAILED;
+
    imp.image      = hw->image;
    imp.wait       = hw->wait;
    imp.wait_value = hw->wait_value;
    imp.done       = hw->done;
    imp.done_value = hw->done_value;
-   imp.pixfmt     = IMAGE_PIXFMT_NV12;
+   imp.pixfmt     = pixfmt;
    imp.dims       = VIDEO_SCALE_PACK(hw->width, hw->height);
    imp.layout     = hw->layout;
    imp.yuv        = hw->yuv;

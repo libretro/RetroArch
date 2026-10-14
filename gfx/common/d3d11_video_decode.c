@@ -18,11 +18,11 @@
  * A decoder is one stream, on a device of its own made on the driver's
  * adapter: its immediate context is used by the decoding thread alone,
  * and the driver's device never sees another thread. The DPB is one
- * NV12 texture array, a slice per decoder slot, decoded into through one
+ * NV12/P010 texture array, a slice per decoder slot, decoded through one
  * output view each.
  *
  * A picture to be shown is copied, from the visible window, into one
- * of a few shared NV12 textures, and a shared fence raised behind the
+ * of a few shared output textures, and a shared fence raised behind the
  * copy. The driver opens both through their NT handles, waits for the
  * fence on its own queue, converts, and raises the texture's own
  * fence; a texture is copied into again once that has come, or once
@@ -49,6 +49,7 @@
 
 #include <retro_atomic.h>
 #include <formats/rh264.h>
+#include <formats/image.h>
 #include <formats/video_hw_frame.h>
 
 #ifdef HAVE_CONFIG_H
@@ -83,6 +84,8 @@ static const GUID d3d11vd_h264_vld_nofgt =
    { 0x1b81be68, 0xa0c7, 0x11d3, { 0xb9, 0x84, 0x00, 0xc0, 0x4f, 0x2e, 0x73, 0xc5 } };
 static const GUID d3d11vd_hevc_main =
    { 0x5b11d51b, 0x2f4c, 0x4452, { 0xbc, 0xc3, 0x09, 0xf2, 0xa1, 0x16, 0x0c, 0xc0 } };
+static const GUID d3d11vd_hevc_main10 =
+   { 0x107af0e0, 0xef1a, 0x4d19, { 0xab, 0xa8, 0x67, 0xa1, 0x63, 0x07, 0x3d, 0x13 } };
 static const GUID d3d11vd_iid_dxgi_device =
    { 0x54ec77fa, 0x1377, 0x44e6, { 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c } };
 static const GUID d3d11vd_iid_dxgi_resource1 =
@@ -113,6 +116,8 @@ typedef struct d3d11vd_dec
    ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS];
 
    GUID profile;
+   DXGI_FORMAT format;
+   unsigned bit_depth;
    unsigned bitstream_raw;
    unsigned coded_w, coded_h, mbs;
    unsigned visible_w, visible_h;
@@ -282,14 +287,14 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
    UINT n  = 0, i;
 
    if (     FAILED(d->vdev->lpVtbl->CheckVideoDecoderFormat(d->vdev,
-               &d->profile, DXGI_FORMAT_NV12, &ok))
+               &d->profile, d->format, &ok))
          || !ok)
       return false;
    memset(&desc, 0, sizeof(desc));
    desc.Guid         = d->profile;
    desc.SampleWidth  = d->coded_w;
    desc.SampleHeight = d->coded_h;
-   desc.OutputFormat = DXGI_FORMAT_NV12;
+   desc.OutputFormat = d->format;
    if (FAILED(d->vdev->lpVtbl->GetVideoDecoderConfigCount(d->vdev,
          &desc, &n)))
       return false;
@@ -319,7 +324,7 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    desc.Height           = d->coded_h;
    desc.MipLevels        = 1;
    desc.ArraySize        = d->slots > min_targets ? d->slots : min_targets;
-   desc.Format           = DXGI_FORMAT_NV12;
+   desc.Format           = d->format;
    desc.SampleDesc.Count = 1;
    desc.Usage            = D3D11_USAGE_DEFAULT;
    desc.BindFlags        = D3D11_BIND_DECODER;
@@ -365,7 +370,7 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
    desc.Height           = d->visible_h;
    desc.MipLevels        = 1;
    desc.ArraySize        = 1;
-   desc.Format           = DXGI_FORMAT_NV12;
+   desc.Format           = d->format;
    desc.SampleDesc.Count = 1;
    desc.Usage            = D3D11_USAGE_DEFAULT;
    desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
@@ -413,6 +418,8 @@ static void *d3d11vd_open(void *user, const rh264_hw_sps_t *sps,
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
       return NULL;
    d->profile   = d3d11vd_h264_vld_nofgt;
+   d->format    = DXGI_FORMAT_NV12;
+   d->bit_depth = 8;
    d->bitstream_raw = 2;
    d->slots     = slots;
    d->coded_w   = (unsigned)sps->width_in_mbs  * 16;
@@ -617,6 +624,8 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->owner      = d;
    out->width      = d->visible_w;
    out->height     = d->visible_h;
+   out->pixfmt     = d->format == DXGI_FORMAT_P010
+      ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    out->layout     = d->gen;
    return 0;
 }
@@ -627,7 +636,7 @@ static int d3d11vd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    D3D11_MAPPED_SUBRESOURCE map;
    const uint8_t *uv;
    unsigned x, y, cw = d->visible_w / 2, ch = d->visible_h / 2;
-   if (slot >= d->slots)
+   if (slot >= d->slots || d->format != DXGI_FORMAT_NV12)
       return -1;
    if (!d->readback)
    {
@@ -678,7 +687,7 @@ static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
    bool ok, scaling;
 
    if (!d || !params || !au || !slices || !pending
-         || params->bit_depth != 8 || params->width != (int)d->coded_w
+         || params->bit_depth != (int)d->bit_depth || params->width != (int)d->coded_w
          || params->height != (int)d->coded_h
          || params->crop_left != (int)d->crop_x
          || params->crop_top != (int)d->crop_y
@@ -773,7 +782,8 @@ bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
       return false;
    memset(ops, 0, sizeof(*ops));
    memset(&picture, 0, sizeof(picture));
-   if (!d3d11vd.up || !params || params->bit_depth != 8
+   if (!d3d11vd.up || !params
+         || (params->bit_depth != 8 && params->bit_depth != 10)
          || !slots || slots > D3D11VD_MAX_SLOTS
          || params->max_dec_pic_buffering > (int)slots
          || params->crop_left < 0 || params->crop_right < 0
@@ -791,7 +801,9 @@ bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
       return false;
-   d->profile = d3d11vd_hevc_main;
+   d->bit_depth = (unsigned)params->bit_depth;
+   d->profile = d->bit_depth == 10 ? d3d11vd_hevc_main10 : d3d11vd_hevc_main;
+   d->format = d->bit_depth == 10 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
    d->bitstream_raw = 1;
    d->slots = slots;
    d->coded_w = (unsigned)params->width;
@@ -826,6 +838,9 @@ static bool d3d11vd_hevc_open(void *user, const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
    (void)user;
+   /* Player importers currently accept NV12 only. */
+   if (!params || params->bit_depth != 8)
+      return false;
    return d3d11_video_decode_hevc_open(params, slots, ops);
 }
 
