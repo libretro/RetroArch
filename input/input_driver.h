@@ -310,7 +310,11 @@ struct input_keyboard_line
    size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
    bool select_all;
+   bool fixed;       /* a native keyboard owns the buffer: it cannot move */
 };
+
+/* The buffer a native (Android, iOS) keyboard puts under the line */
+#define INPUT_NATIVE_KEYBOARD_BUFFER_SIZE 512
 
 struct rarch_joypad_info
 {

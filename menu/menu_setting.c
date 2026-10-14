@@ -733,10 +733,14 @@ static int setting_generic_action_ok_linefeed(
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
-         line.dialog_type  = MENU_INPUT_DIALOG_TYPE_EDIT;
-         line.initial_text = setting->value.target.string;
+         /* a stored password is not put on screen to be edited */
          if (setting->ui_type == ST_UI_TYPE_PASSWORD_LINE_EDIT)
             text_type = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
+         else
+         {
+            line.dialog_type  = MENU_INPUT_DIALOG_TYPE_EDIT;
+            line.initial_text = setting->value.target.string;
+         }
          break;
       default:
          break;

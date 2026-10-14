@@ -3852,9 +3852,14 @@ void input_keyboard_line_append(struct input_keyboard_line *kb_line,
    if ((!kb_line->select_all && new_size < kb_line->size) || new_size < len)
       return;
 
+   /* A native keyboard's buffer cannot grow or move under it */
+   if (new_size > kb_line->capacity && kb_line->fixed)
+      return;
+
    /* Grow buffer with exponential strategy if needed */
    if (new_size > kb_line->capacity)
    {
+
       /* At least double the current capacity, with a minimum of 64 */
       size_t new_cap = kb_line->capacity ? kb_line->capacity * 2 : 64;
       char *newbuf;
@@ -3901,6 +3906,7 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.size         = 0;
    input_st->keyboard_line.capacity     = 0;
    input_st->keyboard_line.select_all   = false;
+   input_st->keyboard_line.fixed        = false;
 }
 
 /* A line of text has been opened, or closed. This is the one place the
@@ -3932,6 +3938,7 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    kb_line->userdata           = NULL;
    kb_line->enabled            = false;
    kb_line->select_all         = false;
+   kb_line->fixed              = false;
    input_st->osk_textbox_focus = false;
    input_text_entry_changed(false);
 }
@@ -3949,6 +3956,7 @@ const char **input_keyboard_start_line(
    kb_line->userdata                 = userdata;
    kb_line->enabled                  = true;
    kb_line->select_all               = false;
+   kb_line->fixed                    = false;
    input_driver_st.osk_textbox_focus = false;
    input_text_entry_changed(true);
 
@@ -13908,14 +13916,24 @@ const char **input_driver_text_entry_open(void *userdata,
          &input_driver_st.keyboard_line.size,
          &input_driver_st.keyboard_line.ptr,
          label, cb, userdata))
+   {
       input_driver_st.keyboard_line.select_all = false;
+      input_driver_st.keyboard_line.capacity   =
+            INPUT_NATIVE_KEYBOARD_BUFFER_SIZE - 1;
+      input_driver_st.keyboard_line.fixed      = true;
+   }
 #elif defined(ANDROID)
    if (     config_get_ptr()->bools.input_android_system_keyboard
          && android_keyboard_start((char**)buffer,
             &input_driver_st.keyboard_line.size,
             &input_driver_st.keyboard_line.ptr,
             label, cb, userdata))
+   {
       input_driver_st.keyboard_line.select_all = false;
+      input_driver_st.keyboard_line.capacity   =
+            INPUT_NATIVE_KEYBOARD_BUFFER_SIZE - 1;
+      input_driver_st.keyboard_line.fixed      = true;
+   }
 #endif
 
    return buffer;

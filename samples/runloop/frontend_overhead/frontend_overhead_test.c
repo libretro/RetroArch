@@ -5133,6 +5133,91 @@ static void kh_line_done(void *userdata, const char *line)
    (void)userdata; (void)line;
 }
 
+/* A line opened over existing text holds it selected: typing replaces
+ * it, Backspace clears it, and a line a native keyboard owns is never
+ * grown past the buffer that keyboard put under it. */
+static void lane_text_selection(void)
+{
+   unsigned had = failures;
+   size_t cursor;
+   const char *text;
+   struct input_keyboard_line fixed;
+
+   input_driver_text_entry_open(NULL, kh_line_done, "test",
+         (enum input_text_type)0, "abc");
+   text = input_driver_keyboard_line_view(&cursor);
+   CHECK(text && !strcmp(text, "abc") && input_driver_keyboard_line_selected(),
+         "text selection: the existing text is not there, selected");
+   input_driver_keyboard_line_type("x", 1);
+   text = input_driver_keyboard_line_view(&cursor);
+   CHECK(text && !strcmp(text, "x") && cursor == 1
+         && !input_driver_keyboard_line_selected(),
+         "text selection: typing does not replace the selection");
+   input_driver_keyboard_line_type("y", 1);
+   text = input_driver_keyboard_line_view(&cursor);
+   CHECK(text && !strcmp(text, "xy") && cursor == 2,
+         "text selection: typing after the replacement does not insert");
+   input_driver_keyboard_line_end();
+
+   input_driver_text_entry_open(NULL, kh_line_done, "test",
+         (enum input_text_type)0, NULL);
+   text = input_driver_keyboard_line_view(&cursor);
+   CHECK((!text || !*text) && !input_driver_keyboard_line_selected(),
+         "text selection: a new line opens with text, or selected");
+   input_driver_keyboard_line_end();
+
+#ifdef HAVE_MENU
+   {
+      /* a string setting opens on its value; a password one does not */
+      rarch_setting_t *name = menu_setting_find("netplay_nickname");
+      rarch_setting_t *pass = menu_setting_find("menu_disable_kiosk_mode_password");
+      CHECK(name && pass && name->actions && pass->actions && name->actions->ok && pass->actions->ok,
+            "text selection: the settings to open are not there");
+      if (name && pass && name->actions && pass->actions && name->actions->ok && pass->actions->ok)
+      {
+         char saved_name[256], saved_pass[256];
+         strlcpy(saved_name, name->value.target.string, sizeof(saved_name));
+         strlcpy(saved_pass, pass->value.target.string, sizeof(saved_pass));
+         strlcpy(name->value.target.string, "player", name->size);
+         strlcpy(pass->value.target.string, "secret", pass->size);
+
+         name->actions->ok(name, 0, false);
+         text = input_driver_keyboard_line_view(&cursor);
+         CHECK(input_driver_keyboard_line_enabled() && text
+               && !strcmp(text, "player") && input_driver_keyboard_line_selected(),
+               "text selection: a string setting does not open on its value");
+         input_driver_keyboard_line_end();
+         menu_input_dialog_end();
+
+         pass->actions->ok(pass, 0, false);
+         text = input_driver_keyboard_line_view(&cursor);
+         CHECK(input_driver_keyboard_line_enabled() && (!text || !*text)
+               && !input_driver_keyboard_line_selected(),
+               "text selection: a stored password is put on screen");
+         input_driver_keyboard_line_end();
+         menu_input_dialog_end();
+
+         strlcpy(name->value.target.string, saved_name, name->size);
+         strlcpy(pass->value.target.string, saved_pass, pass->size);
+         run_frames(2);
+      }
+   }
+#endif
+
+   memset(&fixed, 0, sizeof(fixed));
+   fixed.buffer   = (char*)calloc(8, 1);
+   fixed.capacity = 7;
+   fixed.fixed    = true;
+   input_keyboard_line_append(&fixed, "abcdef", 6);
+   input_keyboard_line_append(&fixed, "gh", 2);
+   CHECK(fixed.size == 6 && fixed.capacity == 7 && !strcmp(fixed.buffer, "abcdef"),
+         "text selection: a native keyboard's buffer was grown or written past");
+   free(fixed.buffer);
+
+   if (failures == had)
+      printf("[pass] text selection: replaced by typing, and a native buffer kept its size\n");
+}
+
 static void lane_keyboard_holders(void)
 {
    unsigned had = failures;
@@ -8707,6 +8792,7 @@ int main(int argc, char *argv[])
       lane_mask_and_buttons();
       lane_keys_current();
       lane_keyboard_holders();
+      lane_text_selection();
       lane_hotkeys_one_set();
       lane_save_minimal_binds();
       lane_bind_names();

@@ -311,7 +311,7 @@ static void *libandroid_handle;
  * publication. The session fields below the mailbox - the line
  * buffer and its cursors, the callback, the open flag's writers -
  * all live on the input thread alone. */
-#define ANDROID_KBD_BUFFER_SIZE 512
+#define ANDROID_KBD_BUFFER_SIZE INPUT_NATIVE_KEYBOARD_BUFFER_SIZE
 
 struct android_kbd_msg
 {
