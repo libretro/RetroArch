@@ -45,7 +45,7 @@ typedef struct rh265_hw_picture
    uint32_t keep_references, keep_outputs;
    unsigned slot, num_refs, width, height, bit_depth, poc_log2;
    int reference, output, rasl_skip;
-   struct { int32_t poc; unsigned slot; } refs[15];
+   struct { int32_t poc; unsigned slot, long_term; } refs[15];
 } rh265_hw_picture_t;
 
 /* Reset only after pending transactions and backend leases are retired. */
@@ -69,7 +69,7 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
    int64_t poc, prev_lsb, prev_msb, msb, max_lsb;
    unsigned type, i, list, held = 0;
    bool anchor, idr;
-   uint32_t occupied;
+   uint32_t occupied, long_term = 0;
    if (!out) return -1;
    memset(out, 0, sizeof(*out));
    if (!s || !params || !au || !s->slots || s->slots > 32 || !s->serial
@@ -92,10 +92,11 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
          || h->no_output_of_prior_pics > 1
          || h->num_negative < 0 || h->num_negative > 16
          || h->num_positive < 0 || h->num_positive > 16
+         || h->long_term.count > 16
+         || (h->long_term.count && !params->long_term_ref_pics_present)
          || h->pic_output_flag < 0 || h->pic_output_flag > 1)
       return -1;
    if (params->pcm_enabled || params->tiles_enabled || params->dependent_slice_segments_enabled
-         || params->num_long_term_ref_pics
          || s->slots < (unsigned)params->max_dec_pic_buffering
          || (!s->started && type < 16) || (type >= 16 && !au->intra)
          || (s->started && (s->width != (unsigned)params->width
@@ -104,7 +105,7 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
       return -2;
    if (s->rasl_skip && (type == 8 || type == 9)) return 2;
    idr = type == 19 || type == 20;
-   if (idr && (h->num_negative || h->num_positive || h->short_term_rps_bits
+   if (idr && (h->num_negative || h->num_positive || h->long_term.count || h->short_term_rps_bits
          || h->predictor_delta_pocs)) return -1;
    anchor = type >= 16 && (type != 21 || !s->started);
    max_lsb = (int64_t)1 << params->log2_max_poc_lsb;
@@ -158,12 +159,40 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
          else if (used[i]) goto invalid;
       }
    }
+   for (i = 0; i < h->long_term.count; i++)
+   {
+      unsigned j, found = s->slots;
+      int64_t ref_poc = poc - h->poc_lsb + h->long_term.poc_lsb[i]
+         - (int64_t)h->long_term.msb_cycle[i] * max_lsb;
+      if (h->long_term.used[i] > 1 || h->long_term.msb_present[i] > 1
+            || h->long_term.poc_lsb[i] >= (uint32_t)max_lsb
+            || (h->long_term.msb_present[i] && (ref_poc < INT32_MIN || ref_poc > INT32_MAX)))
+         goto invalid;
+      if (!anchor)
+         for (j = 0; j < s->slots; j++)
+            if ((s->references & (UINT32_C(1) << j)) &&
+                  (h->long_term.msb_present[i] ? s->poc[j] == ref_poc
+                   : ((uint32_t)s->poc[j] & (uint32_t)(max_lsb - 1)) == h->long_term.poc_lsb[i]))
+            {
+               if (found != s->slots) goto invalid;
+               found = j;
+            }
+      if (found < s->slots)
+      {
+         uint32_t bit = UINT32_C(1) << found;
+         if (out->keep_references & bit) goto invalid;
+         out->keep_references |= bit;
+         long_term |= bit;
+      }
+      else if (h->long_term.used[i]) goto invalid;
+   }
    for (i = 0; i < s->slots; i++)
       if (out->keep_references & (UINT32_C(1) << i))
       {
          unsigned n = out->num_refs++;
          if (n >= 15) goto invalid;
          out->refs[n].poc = s->poc[i]; out->refs[n].slot = i;
+         out->refs[n].long_term = !!(long_term & (UINT32_C(1) << i));
       }
    if (out->num_refs >= (unsigned)params->max_dec_pic_buffering) goto invalid;
    occupied = out->keep_references | out->keep_outputs;

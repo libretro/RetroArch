@@ -81,6 +81,7 @@ static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
          || s->first_slice_in_pic < 0 || s->first_slice_in_pic > 1
          || s->num_negative < 0 || s->num_negative > 16
          || s->num_positive < 0 || s->num_positive > 16
+         || s->long_term.count > 16
          || s->predictor_delta_pocs < 0 || s->predictor_delta_pocs > 32
          || s->short_term_rps_sps_idx < -1) return false;
    type = (unsigned)s->nal_type;
@@ -93,7 +94,7 @@ static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
    if (type == 19 || type == 20)
    {
       if (s->slice_type != 2 || p.poc || s->poc_lsb || s->num_negative
-            || s->num_positive || s->short_term_rps_bits || s->predictor_delta_pocs)
+            || s->num_positive || s->long_term.count || s->short_term_rps_bits || s->predictor_delta_pocs)
          return false;
    }
    else if ((s->short_term_rps_sps_idx == -1 && !s->short_term_rps_bits)
@@ -141,12 +142,35 @@ static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
          set[(*num)++] = (uint8_t)found;
       }
    }
+   for (i = 0; i < s->long_term.count; i++)
+   {
+      unsigned found = p.num_refs;
+      uint32_t max_lsb = 1u << p.max_poc_lsb_log2;
+      int64_t poc = (int64_t)p.poc - s->poc_lsb + s->long_term.poc_lsb[i]
+         - (int64_t)s->long_term.msb_cycle[i] * max_lsb;
+      if (s->long_term.used[i] > 1 || s->long_term.msb_present[i] > 1
+            || s->long_term.poc_lsb[i] >= max_lsb
+            || !(p.coding_tools & (1u << 17))) return false;
+      if (!s->long_term.used[i]) continue;
+      if (p.num_longterm == 8) return false;
+      for (j = 0; j < p.num_refs; j++)
+         if (p.refs[j].long_term && (s->long_term.msb_present[i]
+                  ? p.refs[j].poc == poc
+                  : ((uint32_t)p.refs[j].poc & (max_lsb - 1)) == s->long_term.poc_lsb[i]))
+         {
+            if (found != p.num_refs) return false;
+            found = j;
+         }
+      if (found == p.num_refs) return false;
+      p.longterm[p.num_longterm++] = (uint8_t)found;
+   }
    if (!s->first_slice_in_pic &&
          (picture->rps_bits != p.rps_bits || picture->delta_pocs != p.delta_pocs
           || picture->num_before != p.num_before || picture->num_after != p.num_after
-          || picture->num_longterm
+          || picture->num_longterm != p.num_longterm
           || memcmp(picture->before, p.before, p.num_before)
-          || memcmp(picture->after, p.after, p.num_after))) return false;
+          || memcmp(picture->after, p.after, p.num_after)
+          || memcmp(picture->longterm, p.longterm, p.num_longterm))) return false;
    if (!dxva_hevc_pic_params(validation, &p, 1)) return false;
    *picture = p;
    return true;
@@ -172,6 +196,7 @@ static INLINE bool dxva_hevc_picture_from_state(dxva_hevc_picture_t *out,
    for (i = 0; i < p.num_refs; i++)
    {
       p.refs[i].poc = state->refs[i].poc; p.refs[i].slot = state->refs[i].slot;
+      p.refs[i].long_term = state->refs[i].long_term;
    }
    if (!dxva_hevc_params_from_rh265(&p, params)
          || !dxva_hevc_slice_from_rh265(&p, &au->first)) return false;

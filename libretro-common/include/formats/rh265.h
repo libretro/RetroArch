@@ -88,6 +88,13 @@ typedef struct rh265_video_params
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
       rh265_video_params_t *out);
 
+typedef struct rh265_long_term_refs
+{
+   uint32_t poc_lsb[16], msb_cycle[16];
+   uint8_t used[16], msb_present[16];
+   unsigned count;
+} rh265_long_term_refs_t;
+
 typedef struct rh265_slice_info
 {
    size_t header_bytes, header_bits;
@@ -99,6 +106,7 @@ typedef struct rh265_slice_info
    int num_negative, num_positive;
    int32_t delta_poc_before[16], delta_poc_after[16];
    uint8_t used_before[16], used_after[16];
+   rh265_long_term_refs_t long_term;
 } rh265_slice_info_t;
 
 /* Parse a borrowed complete VCL NAL (two-byte header, no start code or
@@ -107,7 +115,8 @@ typedef struct rh265_slice_info
  * bytes; header bits count unescaped syntax including byte alignment.
  * Headers over 64 KiB are refused. Return 0, -1 malformed/missing input,
  * or -2 unsupported syntax. Failure clears out; payload validity is not
- * established. Long-term reference syntax is currently unsupported. */
+ * established. Long-term syntax is exposed for hardware adapters;
+ * software pixel reconstruction still refuses actual long-term sets. */
 int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
       rh265_slice_info_t *out);
 

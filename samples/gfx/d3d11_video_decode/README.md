@@ -151,3 +151,12 @@ color descriptions, explicit container/range precedence, full-range NV12
 and P010 metadata, and software PQ/HLG scRGB fallback. It also checks SDR
 scalar/SIMD conversions against color-matrix equations, including tails
 and output padding. gen_hevc_color_data.py regenerates its fixtures.
+
+Long-term hardware metadata now includes SPS table indices, slice-signaled
+LSBs, usage flags and cumulative MSB cycles. Owner tests cover retained
+references, wrap, missing/ambiguous references and rejected transactions;
+DXVA tests check long-term flags and current sets, including later slices.
+Software reconstruction still refuses actual long-term sets. Real long-term
+GPU streams remain a device acceptance gate; the existing native oracle
+covers the previously supported short-term streams.
+Syntax reference: https://github.com/FFmpeg/FFmpeg/blob/n7.1/libavcodec/hevc/hevcdec.c#L268

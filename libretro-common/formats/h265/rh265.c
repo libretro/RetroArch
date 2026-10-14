@@ -890,6 +890,7 @@ typedef struct
    int colour_plane_id;
    int poc_lsb;
    rh265_st_rps rps;          /* resolved RPS for this slice */
+   rh265_long_term_refs_t long_term;
    int short_term_rps_sps_idx;   /* -1 when coded in the slice header */
    unsigned short_term_rps_bits;
    int predictor_delta_pocs, no_output_of_prior_pics;
@@ -981,7 +982,7 @@ static int rh265_parse_pred_weight_table(rh265_bits *b, rh265_shdr *sh,
  * malformed data, -2 on valid-but-unsupported. */
 static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       const rh265_sps *s, const rh265_pps *p, rh265_pps *pps_tab,
-      rh265_sps *sps_tab, rh265_shdr *sh)
+      rh265_sps *sps_tab, rh265_shdr *sh, int hardware)
 {
    int i;
    memset(sh, 0, sizeof(*sh));
@@ -1043,11 +1044,38 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       {
          unsigned num_sps = s->num_long_term_ref_pics ? rh265_ue(b) : 0;
          unsigned num_pics = rh265_ue(b);
+         unsigned n, index_bits = 0;
+         uint64_t cycle = 0;
          if (rh265_bits_overrun(b) || num_sps > (unsigned)s->num_long_term_ref_pics
                || num_pics > RH265_MAX_REFS || num_sps > RH265_MAX_REFS - num_pics)
             return -1;
-         if (num_sps || num_pics)
-            return -2;
+         if ((num_sps || num_pics) && !hardware) return -2;
+         while ((1u << index_bits) < (unsigned)s->num_long_term_ref_pics) index_bits++;
+         sh->long_term.count = num_sps + num_pics;
+         for (n = 0; n < sh->long_term.count; n++)
+         {
+            if (n < num_sps)
+            {
+               unsigned index = index_bits ? rh265_un(b, index_bits) : 0;
+               if (index >= (unsigned)s->num_long_term_ref_pics) return -1;
+               sh->long_term.poc_lsb[n] = (uint32_t)s->lt_ref_poc_lsb[index];
+               sh->long_term.used[n] = (uint8_t)s->lt_used_by_curr[index];
+            }
+            else
+            {
+               sh->long_term.poc_lsb[n] = rh265_un(b, s->log2_max_poc_lsb);
+               sh->long_term.used[n] = (uint8_t)rh265_u1(b);
+            }
+            sh->long_term.msb_present[n] = (uint8_t)rh265_u1(b);
+            if (sh->long_term.msb_present[n])
+            {
+               unsigned delta = rh265_ue(b);
+               if (!n || n == num_sps) cycle = delta;
+               else cycle += delta;
+            }
+            if (cycle > UINT32_MAX || rh265_bits_overrun(b)) return -1;
+            sh->long_term.msb_cycle[n] = sh->long_term.msb_present[n] ? (uint32_t)cycle : 0;
+         }
       }
       if (s->temporal_mvp_enabled)
          sh->slice_tmvp = (int)rh265_u1(b);
@@ -1078,6 +1106,8 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       for (i = 0; i < sh->rps.num_positive; i++)
          if (sh->rps.used_s1[i])
             num_pics_total_curr++;
+      for (i = 0; i < (int)sh->long_term.count; i++)
+         num_pics_total_curr += sh->long_term.used[i];
       if (p->lists_modification_present && num_pics_total_curr > 1)
       {
          int nbits = 0, list, j;
@@ -4976,7 +5006,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       rh265_shdr *shp = &v->sh_tmp;
       rh265_bits_init(&b, rbsp, rbsp_size);
       ret = rh265_parse_slice_header(&b, nal_type, NULL, NULL,
-            v->pps, v->sps, shp);
+            v->pps, v->sps, shp, 0);
       if (ret == 0)
       {
          const rh265_pps *pps = &v->pps[shp->pps_id];
@@ -5377,7 +5407,7 @@ int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
    sh = &v->sh_tmp;
    rh265_bits_init(&b, nal + 2, len - 2 > 65534 ? 65534 : len - 2);
    b.escaped = 1;
-   ret = rh265_parse_slice_header(&b, type, NULL, NULL, v->pps, v->sps, sh);
+   ret = rh265_parse_slice_header(&b, type, NULL, NULL, v->pps, v->sps, sh, 1);
    if (ret) return ret;
    out->header_bytes = b.bytepos + 2;
    out->header_bits = b.bitpos;
@@ -5396,6 +5426,7 @@ int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
    out->short_term_rps_sps_idx = sh->short_term_rps_sps_idx;
    out->predictor_delta_pocs = sh->predictor_delta_pocs;
    out->short_term_rps_bits = sh->short_term_rps_bits;
+   out->long_term = sh->long_term;
    out->num_negative = sh->rps.num_negative;
    out->num_positive = sh->rps.num_positive;
    for (i = 0; i < (unsigned)sh->rps.num_negative; i++)
@@ -5504,7 +5535,8 @@ int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
                || memcmp(info.delta_poc_before, first->delta_poc_before, sizeof(info.delta_poc_before))
                || memcmp(info.delta_poc_after, first->delta_poc_after, sizeof(info.delta_poc_after))
                || memcmp(info.used_before, first->used_before, sizeof(info.used_before))
-               || memcmp(info.used_after, first->used_after, sizeof(info.used_after)))
+               || memcmp(info.used_after, first->used_after, sizeof(info.used_after))
+               || memcmp(&info.long_term, &first->long_term, sizeof(info.long_term)))
          { ret = -1; goto fail; }
       }
       slices[count++] = nal;

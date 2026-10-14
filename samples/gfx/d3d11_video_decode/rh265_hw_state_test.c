@@ -145,8 +145,32 @@ static void test_empty_long_term(void)
    CHECK(rh265_hw_commit(&state, &picture));
    params.num_long_term_ref_pics = 1;
    saved = state;
-   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -2);
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
    CHECK(!memcmp(&state, &saved, sizeof(state)));
+}
+
+static void test_long_term(void)
+{
+   setup(4); params.long_term_ref_pics_present = 1;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture) && rh265_hw_commit(&state, &picture));
+   frame(1, 0, 0);
+   au.first.long_term.count = 1; au.first.long_term.used[0] = 1;
+   au.first.long_term.msb_present[0] = 1;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(picture.num_refs == 1 && picture.refs[0].poc == 0 && picture.refs[0].long_term);
+   CHECK(rh265_hw_commit(&state, &picture));
+   frame(2, 0, 0); au.first.long_term.count = 1; au.first.long_term.used[0] = 1;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(picture.keep_references == 1 && picture.refs[0].long_term);
+   state.poc[0] = -16; state.prev_poc_tid0 = 17;
+   au.first.poc_lsb = 2; au.first.long_term.msb_present[0] = 1; au.first.long_term.msb_cycle[0] = 2;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture) && picture.refs[0].poc == -16);
+   au.first.long_term.msb_cycle[0] = 1; saved = state;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -1);
+   CHECK(!memcmp(&state, &saved, sizeof(state)));
+   state.references |= 4; state.poc[2] = 0; au.first.long_term.msb_present[0] = 0;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -1);
+   CHECK(!picture.serial);
 }
 
 static void test_invalid(void)
@@ -172,7 +196,7 @@ static void test_invalid(void)
 
 int main(void)
 {
-   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_invalid();
+   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_invalid();
    printf("HEVC hardware owner state: %u failures\n", failures);
    return failures ? 1 : 0;
 }

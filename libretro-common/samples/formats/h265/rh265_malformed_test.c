@@ -112,7 +112,7 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 }
 
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
-   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
+   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE, F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -161,8 +161,13 @@ static void sps(bitw *w, enum field f, int depth)
    {
       putue(w, 1); putue(w, 0); putue(w, 1); put1(w, 1);
    }
-   put1(w, f == F_LT);
-   if (f == F_LT) putue(w, 0);
+   put1(w, f == F_LT || f == F_LT_TABLE);
+   if (f == F_LT || f == F_LT_TABLE) putue(w, f == F_LT_TABLE ? 2 : 0);
+   if (f == F_LT_TABLE)
+   {
+      putn(w, 3, 8); put1(w, 1);
+      putn(w, 4, 8); put1(w, 1);
+   }
    put1(w, 0);                       /* temporal_mvp */
    put1(w, 0);                       /* strong_intra_smoothing */
    put1(w, f >= F_VUI_SDR);           /* vui_parameters_present */
@@ -368,7 +373,19 @@ static void slice_header(bitw *w, int type, int first, int slice_type, int rps_m
          putue(w, 0); put1(w, 1); putue(w, 1); put1(w, 0);
          putue(w, 2); put1(w, 1);
       }
-      if (rps_mode >= 3) putue(w, (unsigned)(rps_mode - 3));
+      if (rps_mode >= 3)
+      {
+         int n, count = rps_mode == 7 ? 3 : rps_mode - 3;
+         if (rps_mode == 7) putue(w, 2);
+         putue(w, rps_mode == 7 ? 1 : (unsigned)count);
+         for (n = 0; n < count; n++)
+         {
+            if (rps_mode == 7 && n < 2) putn(w, n, 1);
+            else { putn(w, 5 + n, 8); put1(w, 1); }
+            put1(w, !(rps_mode == 6 && n == 1));
+            if (!(rps_mode == 6 && n == 1)) putue(w, n == 0 || n == 2 ? 2 : 1);
+         }
+      }
    }
    if (slice_type != 2)
    {
@@ -481,7 +498,25 @@ static void test_slice_info(void)
    expect("empty long-term set", rh265_video_get_slice(v, unit, len, &out), 0);
    expect("empty long-term set preserves short-term RPS", out.num_negative, 2);
    slice_header(&w, 1, 1, 2, 4, 1); len = nal(unit, 1, &w);
-   expect("unsupported long-term slice", rh265_video_get_slice(v, unit, len, &out), -2);
+   expect("hardware long-term slice", rh265_video_get_slice(v, unit, len, &out), 0);
+   expect("hardware long-term count", out.long_term.count, 1);
+   expect("hardware long-term lsb", out.long_term.poc_lsb[0], 5);
+   buf[0] = buf[1] = 0; buf[2] = (uint8_t)(len >> 8); buf[3] = (uint8_t)len;
+   memcpy(buf + 4, unit, len);
+   expect("software long-term stays unsupported", rh265_video_decode(v, buf, len + 4), -2);
+   slice_header(&w, 1, 1, 2, 6, 1); len = nal(unit, 1, &w);
+   expect("long-term MSB sequence", rh265_video_get_slice(v, unit, len, &out), 0);
+   expect("long-term first cycle", out.long_term.msb_cycle[0], 2);
+   expect("long-term absent cycle", out.long_term.msb_cycle[1], 0);
+   expect("long-term continued cycle", out.long_term.msb_cycle[2], 4);
+   sps(&w, F_LT_TABLE, 8); lens[0] = nal(units_buf[0], 33, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("long-term SPS table", rh265_video_set_extradata(v, buf, n), 0);
+   slice_header(&w, 1, 1, 2, 7, 1); len = nal(unit, 1, &w);
+   expect("long-term SPS indices", rh265_video_get_slice(v, unit, len, &out), 0);
+   expect("long-term table lsb", out.long_term.poc_lsb[1], 4);
+   expect("long-term table cycle", out.long_term.msb_cycle[1], 3);
+   expect("long-term slice group resets cycle", out.long_term.msb_cycle[2], 2);
    expect("null slice decoder", rh265_video_get_slice(NULL, unit, len, &out), -1);
    expect("null slice input", rh265_video_get_slice(v, NULL, len, &out), -1);
    expect("null slice output", rh265_video_get_slice(v, unit, len, NULL), -1);
