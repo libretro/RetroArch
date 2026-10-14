@@ -428,6 +428,58 @@ static void test_rps_adapter(void)
    CHECK(!dxva_hevc_slice_from_rh265(&p, NULL));
 }
 
+
+static void test_borrowed_packing(void)
+{
+   uint8_t a[] = {0x26,1,0xaa,0,0,3,1}, b[] = {2,1,0xbb};
+   uint8_t original_a[sizeof(a)], original_b[sizeof(b)];
+   uint8_t packed[129], records[22], expected[20];
+   uint8_t full[125];
+   rh265_nal_t slices[2];
+   uint32_t offsets[2] = {0,10};
+   size_t written;
+   unsigned i;
+   memcpy(original_a, a, sizeof(a)); memcpy(original_b, b, sizeof(b));
+   slices[0].data = a; slices[0].size = sizeof(a);
+   slices[1].data = b; slices[1].size = sizeof(b);
+   memset(packed, 0xa5, sizeof(packed)); memset(records, 0xa5, sizeof(records));
+   CHECK(dxva_hevc_pack_slices(packed, 128, records, 20, slices, 2, &written));
+   CHECK(written == 128 && packed[128] == 0xa5 && records[20] == 0xa5 && records[21] == 0xa5);
+   CHECK(!packed[0] && !packed[1] && packed[2] == 1 && !memcmp(packed + 3, a, sizeof(a)));
+   CHECK(!packed[10] && !packed[11] && packed[12] == 1 && !memcmp(packed + 13, b, sizeof(b)));
+   for (i = 16; i < 128; i++) CHECK(!packed[i]);
+   CHECK(!memcmp(original_a, a, sizeof(a)) && !memcmp(original_b, b, sizeof(b)));
+   CHECK(dxva_hevc_slices(expected, 20, packed, 16, offsets, 2, 128));
+   CHECK(!memcmp(expected, records, sizeof(expected)));
+#ifdef _WIN32
+   {
+      DXVA_Slice_HEVC_Short sdk[2];
+      memset(sdk, 0, sizeof(sdk)); sdk[0].SliceBytesInBuffer = 10;
+      sdk[1].BSNALunitDataLocation = 10; sdk[1].SliceBytesInBuffer = 118;
+      CHECK(!memcmp(sdk, records, sizeof(sdk)));
+   }
+#endif
+#define PACK_BAD(cap, rec_cap, count) do { \
+   memset(packed, 0xa5, sizeof(packed)); memset(records, 0xa5, sizeof(records)); written = 999; \
+   CHECK(!dxva_hevc_pack_slices(packed, cap, records, rec_cap, slices, count, &written)); \
+   CHECK(!written); for (i = 0; i < sizeof(packed); i++) CHECK(packed[i] == 0xa5); \
+   for (i = 0; i < sizeof(records); i++) CHECK(records[i] == 0xa5); } while (0)
+   PACK_BAD(127, 20, 2); PACK_BAD(128, 19, 2); PACK_BAD(128, 20, 0);
+   b[1] = 0; PACK_BAD(128, 20, 2); b[1] = 1;
+   b[0] = 66; PACK_BAD(128, 20, 2); b[0] = 2;
+   slices[1].size = UINT32_MAX; PACK_BAD(128, 20, 2); slices[1].size = sizeof(b);
+   slices[0].size = UINT32_MAX - 3; PACK_BAD(128, 20, 1); slices[0].size = sizeof(a);
+   slices[1].data = NULL; PACK_BAD(128, 20, 2); slices[1].data = b;
+   memset(full, 0xab, sizeof(full)); full[0] = 2; full[1] = 1;
+   slices[0].data = full; slices[0].size = sizeof(full);
+   CHECK(dxva_hevc_pack_slices(packed, 128, records, 10, slices, 1, &written));
+   CHECK(written == 128 && get32(records + 4) == 128 && !memcmp(packed + 3, full, sizeof(full)));
+   CHECK(!dxva_hevc_pack_slices(packed, 128, records, 10, slices, 1, NULL));
+   CHECK(!dxva_hevc_pack_slices(NULL, 128, records, 10, slices, 1, &written));
+   CHECK(!dxva_hevc_pack_slices(packed, 128, NULL, 10, slices, 1, &written));
+   CHECK(!dxva_hevc_pack_slices(packed, 128, records, 10, NULL, 1, &written));
+}
+
 static void test_slices(void)
 {
    uint8_t data[] = {0,0,1,0x26,1,0xab,0,0,0,1,2,1,0xcd};
@@ -457,7 +509,7 @@ static void test_slices(void)
 }
 int main(void)
 {
-   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_parser_adapter(); test_rps_adapter(); test_slices();
+   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_parser_adapter(); test_rps_adapter(); test_borrowed_packing(); test_slices();
    printf("HEVC DXVA buffers: %u failures\n", failures);
    return failures ? 1 : 0;
 }

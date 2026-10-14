@@ -151,6 +151,49 @@ static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
    return true;
 }
 
+/* Write borrowed VCL NALs straight to the backend's bitstream buffer.
+ * Input/output spans must not overlap. Failure changes only written (zero).
+ * Descriptors include final 128-byte padding; payload bytes stay escaped. */
+static INLINE bool dxva_hevc_pack_slices(uint8_t *bitstream, size_t capacity,
+      uint8_t *records, size_t records_capacity, const rh265_nal_t *slices,
+      unsigned count, size_t *written)
+{
+   unsigned i, type;
+   size_t total = 0, padded, pos = 0;
+   if (!written) return false;
+   *written = 0;
+   if (!bitstream || !records || !slices || !count
+         || count > records_capacity / DXVA_HEVC_SLICE_SIZE) return false;
+   for (i = 0; i < count; i++)
+   {
+      const uint8_t *data = slices[i].data;
+      size_t size = slices[i].size;
+      if (!data || size < 2 || size > UINT32_MAX - 3
+            || total > UINT32_MAX - 3 - size) return false;
+      type = (data[0] >> 1) & 63;
+      if ((data[0] & 0x81) || (data[1] >> 3) || !(data[1] & 7)
+            || !(type <= 9 || (type >= 16 && type <= 21))) return false;
+      total += 3 + size;
+   }
+   if (total > UINT32_MAX - 127) return false;
+   padded = (total + 127) & ~(size_t)127;
+   if (padded > capacity) return false;
+   for (i = 0; i < count; i++)
+   {
+      uint8_t *record = records + (size_t)i * DXVA_HEVC_SLICE_SIZE;
+      size_t bytes = 3 + slices[i].size;
+      bitstream[pos] = bitstream[pos+1] = 0; bitstream[pos+2] = 1;
+      memcpy(bitstream + pos + 3, slices[i].data, slices[i].size);
+      dxva_hevc_put32(record, (uint32_t)pos);
+      dxva_hevc_put32(record + 4, (uint32_t)(i + 1 == count ? padded - pos : bytes));
+      dxva_hevc_put16(record + 8, 0);
+      pos += bytes;
+   }
+   memset(bitstream + total, 0, padded - total);
+   *written = padded;
+   return true;
+}
+
 /* Enabled effective lists only. Caller owns the fixed submission buffer. */
 static INLINE bool dxva_hevc_qmatrix_from_rh265(uint8_t *out,
       const rh265_video_params_t *s)

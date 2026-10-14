@@ -33,6 +33,14 @@ table. Apply it to every slice in order so mixed I/P/B slices cannot mark
 an inter picture as intra. Later slices must agree on picture flags and
 current RPS. Full POC derivation, DPB marking and slot leases belong to
 the decoder owner; missing/ambiguous references leave descriptors unchanged.
+`rh265_video_get_access_unit` validates ordered slices for one picture and
+returns borrowed VCL spans. Select Annex-B or the container's length size
+explicitly; in-band SPS/PPS changes are refused. Retain the immutable packet
+across busy retries and use the summary's `intra` flag for mixed slices.
+`dxva_hevc_pack_slices` writes these spans directly to the backend's acquired
+compressed-input buffer, adding start codes, zero padding and SDK slice
+records. It preflights all slices and capacities before changing buffers.
+This requires a compressed upload but avoids a separate host staging copy.
 The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
@@ -45,8 +53,9 @@ fields, signed QP/POC, full reference capacity, short/long-term sets,
 scaling/DC matrices, malformed NALs, padding and output bounds. Windows
 compares complete buffers against native SDK structures.
 
-This is the HEVC parameter/slice/submission-buffer layer. Access-unit
-ownership, hardware dispatch, D3D11 decode/profile setup, GPU slot scheduling,
+This is the HEVC parameter/access-unit/submission-buffer layer. The decoder
+owner still needs packet retry/lifetime integration, hardware dispatch,
+D3D11 decode/profile setup, GPU slot scheduling,
 NV12/P010 export, main-player integration and real GPU reference checks
 remain. It does not register or advertise a working HEVC hardware decoder.
 Frame ownership should follow the existing H.264 fences/release protocol;
