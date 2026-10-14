@@ -38,6 +38,7 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    bool downloading                      = false;
    uint64_t bytes_downloaded             = 0;
    uint64_t bytes_total                  = 0;
+   bool cancelled                        = false;
 
    if (!task)
       goto task_finished;
@@ -48,7 +49,10 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    flg = task_get_flags(task);
 
    if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+   {
+      cancelled = true;
       goto task_finished;
+   }
 
    result = mist_steam_apps_get_dlc_download_progress(state->app_id, &downloading, &bytes_downloaded, &bytes_total);
    if (MIST_IS_ERROR(result))
@@ -81,8 +85,8 @@ task_finished:
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
-   /* If finished successfully */
-   if (MIST_IS_SUCCESS(result))
+   /* If finished successfully; a cancelled install did not finish */
+   if (MIST_IS_SUCCESS(result) && !cancelled)
    {
       char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),

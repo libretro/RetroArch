@@ -5,7 +5,7 @@
  * while and then complete.  Steam gives the task nothing to wake it
  * with, so it asks for the download's progress at a progress bar's
  * rate, parked in between: a handful of asks over the download, not
- * one per worker spin. */
+ * one per worker spin.  A cancelled install reports nothing. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,6 +69,14 @@ static bool any_task(retro_task_t *task, void *user_data)
    return true;
 }
 
+static bool find_install(retro_task_t *task, void *user_data)
+{
+   if (task->handler != task_steam_core_dlc_install_handler)
+      return false;
+   *(retro_task_t**)user_data = task;
+   return true;
+}
+
 static void lane_progress_polled_parked(void)
 {
    task_finder_data_t find_data;
@@ -109,10 +117,47 @@ static void lane_progress_polled_parked(void)
       fprintf(stderr, "[pass] progress asked at a progress bar's rate: %d asks\n", n);
 }
 
+/* A cancelled install ends without reporting the core installed. */
+static void lane_cancel_reports_nothing(void)
+{
+   task_finder_data_t find_data;
+   unsigned           had = failures;
+   retro_task_t      *task = NULL;
+   retro_time_t       start;
+
+   retro_atomic_store_release_int(&complete, 0);
+   retro_atomic_store_release_int(&installed_msgs, 0);
+   task_push_steam_core_dlc_install(1234, "Lane Core");
+
+   find_data.func     = find_install;
+   find_data.userdata = &task;
+   task_queue_find(&find_data);
+   CHECK(task != NULL, "the install task was not found");
+   if (task)
+      task_queue_cancel_task(task);
+
+   find_data.func     = any_task;
+   find_data.userdata = NULL;
+   start = cpu_features_get_time_usec();
+   while (task_queue_find(&find_data)
+         && cpu_features_get_time_usec() - start < 2000000)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(!task_queue_find(&find_data), "the cancelled task did not finish");
+   CHECK(retro_atomic_load_acquire_int(&installed_msgs) == 0,
+         "a cancelled install was reported installed");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] a cancelled install reports nothing\n");
+}
+
 int main(void)
 {
    task_queue_init(true, NULL);
    lane_progress_polled_parked();
+   lane_cancel_reports_nothing();
    task_queue_deinit();
 
    if (failures)
