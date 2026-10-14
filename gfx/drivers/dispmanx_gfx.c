@@ -30,6 +30,9 @@
 
 #include "../../driver.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
+#include "../video_views.h"
+#include "../video_views_cpu.h"
 
 struct dispmanx_page
 {
@@ -92,6 +95,18 @@ struct dispmanx_video
    struct dispmanx_surface *main_surface;
    struct dispmanx_surface *menu_surface;
    struct dispmanx_surface *back_surface;
+   /* A core's views composed for the element to scale to the screen,
+    * from the buffer the composer draws in */
+   struct dispmanx_surface *views_surface;
+   video_views_cpu_t views_cpu;
+   uint32_t *views_pixels;
+   size_t views_pixels_size;
+   /* Both eyes side by side, for anaglyph and interlaced */
+   uint32_t *views_canvas;
+   size_t views_canvas_size;
+   unsigned views_dims;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
 
    /* For console blanking */
    uint8_t *fb_addr;
@@ -131,6 +146,7 @@ struct dispmanx_video
    /* Menu */
    bool menu_active;
    bool rgb32;
+   bool views_seen;
 };
 
 /* Park until every issued flip has been reported by the vsync
@@ -468,8 +484,100 @@ static void *dispmanx_init(const video_info_t *video)
    dispmanx_blank_console(_dispvars);
 
    video_driver_display_type_set(RARCH_DISPLAY_VIDEOCORE);
+   /* What views are laid out on */
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(_dispvars->dispmanx_width,
+            _dispvars->dispmanx_height));
 
    return _dispvars;
+}
+
+/* Grows *@buf to at least @size bytes */
+static bool dispmanx_views_grow(uint32_t **buf, size_t *have, size_t size)
+{
+   uint32_t *grown;
+   if (size <= *have)
+      return true;
+   if (!(grown = (uint32_t*)realloc(*buf, size)))
+      return false;
+   *buf  = grown;
+   *have = size;
+   return true;
+}
+
+/* A core's views: laid out on the screen, composed at the scale that
+ * draws no view larger than it is, into a surface whose element the
+ * HVS enlarges to the whole screen. Each view straight from the frame.
+ * False when the frame is to be drawn whole. */
+static bool dispmanx_views_frame(struct dispmanx_video *_dispvars,
+      const void *frame, unsigned dims, unsigned pitch,
+      const video_frame_info_t *info)
+{
+   float scale;
+   unsigned cdims;
+   const video_views_layout_t *layout;
+   bool views = info && frame && info->views.num_views
+      && video_views_fit_frame(&info->views, dims);
+
+   retro_atomic_store_release_int(&_dispvars->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   if (!views)
+   {
+      if (_dispvars->views_surface)
+      {
+         dispmanx_surface_free(_dispvars, &_dispvars->views_surface);
+         /* The frame's surface is set up again on its way back */
+         _dispvars->core_width = 0;
+      }
+      return false;
+   }
+
+   layout = &info->views_layout;
+   scale  = video_views_cpu_scale(&info->views, layout);
+   cdims  = video_views_cpu_dims(info->dims, scale);
+   if (!_dispvars->views_surface || _dispvars->views_dims != cdims)
+   {
+      if (_dispvars->views_surface)
+         dispmanx_surface_free(_dispvars, &_dispvars->views_surface);
+      /* The views take the frame's place on the screen */
+      if (_dispvars->main_surface)
+         dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
+      dispmanx_surface_setup(_dispvars,
+            VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims),
+            VIDEO_SCALE_W(cdims) * 4, 32, VC_IMAGE_XRGB8888, 255,
+            (float)_dispvars->dispmanx_width / _dispvars->dispmanx_height,
+            info->max_swapchain_images, 0, &_dispvars->views_surface);
+      if (!_dispvars->views_surface)
+         return false;
+      _dispvars->views_dims = cdims;
+      /* The menu goes back on top: set_texture_frame sets it up again */
+      if (_dispvars->menu_surface)
+         dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
+   }
+   if (!dispmanx_views_grow(&_dispvars->views_pixels,
+            &_dispvars->views_pixels_size,
+            (size_t)_dispvars->views_surface->pitch * VIDEO_SCALE_H(cdims)))
+      return false;
+   if (     layout->offscreen
+         && !dispmanx_views_grow(&_dispvars->views_canvas,
+            &_dispvars->views_canvas_size,
+            (size_t)2 * VIDEO_SCALE_AREA(cdims) * sizeof(uint32_t)))
+      return false;
+   if (!_dispvars->views_seen)
+   {
+      _dispvars->views_seen = true;
+      RARCH_LOG("[Dispmanx] Views drawn straight from the frame.\n");
+   }
+
+   video_views_cpu_compose(&_dispvars->views_cpu, &info->views, layout,
+         frame, pitch,
+         _dispvars->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
+         info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
+         scale, cdims, _dispvars->views_pixels,
+         _dispvars->views_surface->pitch / 4,
+         layout->offscreen ? _dispvars->views_canvas : NULL);
+   dispmanx_surface_update(_dispvars, _dispvars->views_pixels,
+         _dispvars->views_surface);
+   return true;
 }
 
 static bool dispmanx_frame(void *data, const void *frame,
@@ -485,6 +593,14 @@ static bool dispmanx_frame(void *data, const void *frame,
 
    if (!frame)
       return true;
+
+   if (dispmanx_views_frame(_dispvars, frame, dims, pitch, video_info))
+   {
+#ifdef HAVE_MENU
+      menu_driver_frame(menu_is_alive, video_info);
+#endif
+      return true;
+   }
 
    if (     (width  != _dispvars->core_width)
          || (height != _dispvars->core_height)
@@ -592,8 +708,10 @@ static void dispmanx_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->core_width,
-         vid->core_height);
+   /* The whole screen while views draw */
+   vp->dims   = vp->full_dims   = vid->views_surface
+      ? VIDEO_SCALE_PACK(vid->dispmanx_width, vid->dispmanx_height)
+      : VIDEO_SCALE_PACK(vid->core_width, vid->core_height);
 }
 
 static bool dispmanx_suppress_screensaver(void *data, bool enable) { return false; }
@@ -603,7 +721,13 @@ static bool dispmanx_set_shader(void *data,
 static uint32_t dispmanx_get_flags(void *data)
 {
    uint32_t             flags = 0;
-
+   struct dispmanx_video *_dispvars = data;
+   if (_dispvars)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&_dispvars->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
    return flags;
 }
 
@@ -649,8 +773,14 @@ static void dispmanx_free(void *data)
    if (!_dispvars)
       return;
 
-   dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
+   if (_dispvars->main_surface)
+      dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
+   if (_dispvars->views_surface)
+      dispmanx_surface_free(_dispvars, &_dispvars->views_surface);
    dispmanx_surface_free(_dispvars, &_dispvars->back_surface);
+   video_views_cpu_free(&_dispvars->views_cpu);
+   free(_dispvars->views_pixels);
+   free(_dispvars->views_canvas);
 
    if (_dispvars->menu_surface)
       dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);

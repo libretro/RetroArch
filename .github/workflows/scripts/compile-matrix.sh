@@ -343,16 +343,26 @@ platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
    gfx/drivers/sdl_rs90_gfx.c /usr/include/SDL/SDL.h
-# libdrm's exynos module and its G2D headers, which distros ship only
-# where the hardware exists. A runner building libdrm with -Dexynos=true
-# turns this on.
 platform_video "wiiu gx2 video" "-DWIIU $HOSTOFF" \
    "-Iwiiu/include -Iwiiu" gfx/drivers/gx2_gfx.c ""
 platform_video "hub75 video" "" "" gfx/drivers/hub75_gfx.c ""
 platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
    "-Itools/platform_stubs/openvg" gfx/drivers/vg.c ""
-platform_video "exynos video"   "-DHAVE_EXYNOS" "-I/usr/include/libdrm" \
-   gfx/drivers/exynos_gfx.c /usr/include/exynos/exynos_fimg2d.h
+# The KMS and framebuffer drivers of the ARM boards, each against stubs
+# of the vendor library it drives - libdrm's exynos module and its G2D,
+# the Pi's VideoCore userland, Rockchip's librga - in the shapes the
+# real headers give them, as nothing here installs those. Each draws a
+# core's views, through calls these lanes check.
+platform_video "drm video" "" "-I/usr/include/libdrm" \
+   gfx/drivers/drm_gfx.c /usr/include/xf86drm.h
+platform_video "exynos video" "-DHAVE_EXYNOS" \
+   "-I$STUBS/exynos -I/usr/include/libdrm" \
+   gfx/drivers/exynos_gfx.c /usr/include/libdrm/drm_fourcc.h
+platform_video "dispmanx video" "-DHAVE_DISPMANX" "-I$STUBS/videocore" \
+   gfx/drivers/dispmanx_gfx.c ""
+platform_video "oga video" "-DHAVE_ODROIDGO2" \
+   "-I$STUBS/rga -I/usr/include/libdrm" \
+   gfx/drivers/oga_gfx.c /usr/include/xf86drm.h
 
 # The Direct3D drivers, against the DirectX headers the tree vendors in
 # gfx/include/dxsdk. Six drivers no other lane compiles, and they read

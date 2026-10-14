@@ -44,6 +44,7 @@
 #include <encodings/utf.h>
 
 #include "../font_driver.h"
+#include "../video_views.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -153,6 +154,8 @@ struct exynos_data
   unsigned pitch, size;
 
   bool sync;
+  /* A core's views are drawn, the menu over the whole screen */
+  bool views_on;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
   struct exynos_perf perf;
@@ -910,7 +913,8 @@ static void exynos_set_fake_blit(struct exynos_data *pdata)
       pdata->pages[i].clear = true;
 }
 
-static int exynos_blit_frame(
+/* The frame into the GEM buffer the G2D reads it from */
+static int exynos_upload_frame(
       struct exynos_data *pdata,
       const void *frame,
       unsigned src_pitch)
@@ -935,6 +939,19 @@ static int exynos_blit_frame(
    exynos_perf_memcpy(&pdata->perf, false);
 #endif
 
+   return 0;
+}
+
+static int exynos_blit_frame(
+      struct exynos_data *pdata,
+      const void *frame,
+      unsigned src_pitch)
+{
+   struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
+
+   if (exynos_upload_frame(pdata, frame, src_pitch) != 0)
+      return -1;
+
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
    exynos_perf_g2d(&pdata->perf, true);
 #endif
@@ -956,19 +973,66 @@ static int exynos_blit_frame(
    return 0;
 }
 
+/* A core's views, laid out on the screen: the page cleared, then each
+ * placement scaled by the G2D straight from the frame's GEM buffer, cut
+ * to its own eye's area and the screen. */
+static int exynos_blit_views(
+      struct exynos_data *pdata,
+      const void *frame,
+      unsigned src_pitch,
+      const video_views_map_t *map,
+      const video_views_layout_t *layout)
+{
+   unsigned i;
+   struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
+
+   if (exynos_upload_frame(pdata, frame, src_pitch) != 0)
+      return -1;
+   if (exynos_clear_buffer(pdata->g2d, pdata->dst) != 0)
+      return -1;
+
+   for (i = 0; i < layout->num_placements; i++)
+   {
+      video_views_rect_t cut, from;
+      const video_views_placement_t *p = &layout->placements[i];
+
+      if (!video_views_visible(layout, p, pdata->dims, &cut))
+         continue;
+      video_views_cut_source(&map->views[p->view], &p->dst, &cut, &from);
+
+      if (g2d_copy_with_scale(pdata->g2d, src, pdata->dst,
+               VIDEO_POS_X(from.pos), VIDEO_POS_Y(from.pos),
+               VIDEO_SCALE_W(from.dims), VIDEO_SCALE_H(from.dims),
+               VIDEO_POS_X(cut.pos), VIDEO_POS_Y(cut.pos),
+               VIDEO_SCALE_W(cut.dims), VIDEO_SCALE_H(cut.dims), 0)
+            || g2d_exec(pdata->g2d))
+      {
+         RARCH_ERR("[Exynos] Failed to blit view.\n");
+         return -1;
+      }
+   }
+
+   return 0;
+}
+
 static int exynos_blend_menu(struct exynos_data *pdata,
                              unsigned rotation)
 {
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
+   /* Over the frame, or the whole screen the views are laid out on */
+   unsigned x = pdata->views_on ? 0 : pdata->blit_params[0];
+   unsigned y = pdata->views_on ? 0 : pdata->blit_params[1];
+   unsigned w = pdata->views_on
+      ? VIDEO_SCALE_W(pdata->dims) : pdata->blit_params[2];
+   unsigned h = pdata->views_on
+      ? VIDEO_SCALE_H(pdata->dims) : pdata->blit_params[3];
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
    exynos_perf_g2d(&pdata->perf, true);
 #endif
 
    if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
-            src->width, src->height, pdata->blit_params[0],
-            pdata->blit_params[1], pdata->blit_params[2],
-            pdata->blit_params[3], G2D_OP_INTERPOLATE) ||
+            src->width, src->height, x, y, w, h, G2D_OP_INTERPOLATE) ||
          g2d_exec(pdata->g2d))
    {
       RARCH_ERR("[Exynos] Failed to blend menu.\n");
@@ -1050,6 +1114,9 @@ struct exynos_video
    bool menu_active;
 
    bool aspect_changed;
+   bool views_seen;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
 };
 
 static int exynos_init_font(struct exynos_video *vid)
@@ -1251,6 +1318,9 @@ static void *exynos_init(const video_info_t *video)
       goto fail_font;
    }
 
+   /* What views are laid out on */
+   video_driver_set_output_dims(vid->data->dims);
+
    return vid;
 
 fail_font:
@@ -1305,6 +1375,38 @@ static void exynos_free(void *data)
    free(vid);
 }
 
+/* Whether a core's views draw this frame: each placement blitted by the
+ * G2D. Anaglyph and interlaced, which blend the eyes, draw the frame
+ * whole. */
+static bool exynos_views_frame(struct exynos_video *vid,
+      const void *frame, unsigned dims, unsigned pitch,
+      const video_frame_info_t *info, struct exynos_page *page)
+{
+   unsigned i;
+   struct exynos_data *pdata = vid->data;
+   bool views = info && frame && info->views.num_views
+      && !info->views_layout.offscreen
+      && video_views_fit_frame(&info->views, dims);
+
+   retro_atomic_store_release_int(&vid->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   if (views != pdata->views_on)
+   {
+      /* What the last one drew outside the other's rectangle goes */
+      for (i = 0; i < pdata->num_pages; ++i)
+         pdata->pages[i].clear = true;
+      if (!views && exynos_clear_buffer(pdata->g2d, pdata->dst) == 0)
+         page->clear = false;
+      pdata->views_on = views;
+   }
+   if (views && !vid->views_seen)
+   {
+      vid->views_seen = true;
+      RARCH_LOG("[Exynos] Views drawn straight from the frame.\n");
+   }
+   return views;
+}
+
 static bool exynos_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
@@ -1338,7 +1440,13 @@ static bool exynos_frame(void *data, const void *frame,
 
       page = exynos_free_page(vid->data);
 
-      if (exynos_blit_frame(vid->data, frame, pitch) != 0)
+      if (exynos_views_frame(vid, frame, dims, pitch, video_info, page))
+      {
+         if (exynos_blit_views(vid->data, frame, pitch,
+                  &video_info->views, &video_info->views_layout) != 0)
+            goto fail;
+      }
+      else if (exynos_blit_frame(vid->data, frame, pitch) != 0)
          goto fail;
    }
 
@@ -1421,7 +1529,9 @@ static void exynos_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims   = vp->full_dims   = vid->dims;
+   /* The whole screen while views draw */
+   vp->dims   = vp->full_dims   = vid->data->views_on
+      ? vid->data->dims : vid->dims;
 }
 
 static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1481,8 +1591,21 @@ static void exynos_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void exynos_show_mouse(void *data, bool state) { }
 
+static uint32_t exynos_get_flags(void *data)
+{
+   uint32_t flags           = 0;
+   struct exynos_video *vid = (struct exynos_video*)data;
+   if (vid)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&vid->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
+}
+
 static const video_poke_interface_t exynos_poke_interface = {
-   NULL, /* get_flags */
+   exynos_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */

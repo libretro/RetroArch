@@ -29,6 +29,7 @@ void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 drmModeModeInfo *g_drm_mode;
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
+void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 
 /* ---- the fake kernel ------------------------------------------------- */
 
@@ -283,6 +284,73 @@ int main(void)
    if (failures == before)
       printf("   ok   closing the menu takes its surface down with it\n");
    before = failures;
+
+   /* a core's views: composed into a surface of their own, which the
+    * plane scans out, and given back to the frame */
+   {
+      static video_frame_info_t info;
+      struct retro_video_view vv[2];
+      video_views_layout_params_t lp;
+      struct drm_page *page;
+      uint32_t px;
+      unsigned x, y, off;
+      bool same = true;
+
+      memset(vv, 0, sizeof(vv));
+      vv[0].width = vv[1].width = 256;
+      vv[0].height = vv[1].height = 192;
+      vv[1].y = 192;
+      vv[1].screen = 1;
+      video_views_validate(vv, 2, &info.views);
+      memset(&lp, 0, sizeof(lp));
+      lp.map         = &info.views;
+      lp.dims        = VIDEO_SCALE_PACK(1920, 1080);
+      lp.stereo_mode = VIDEO_STEREO_MODE_2D;
+      video_views_layout(&lp, &info.views_layout);
+      info.dims      = lp.dims;
+      for (i = 0; i < 256 * 384; i++)
+         frame_px[i] = 0x10000u * (i / 256) + (i % 256);
+
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
+            &info);
+      CHECK(v->views_surface && plane_fb
+            == v->views_surface->pages[!v->views_surface->flip_page].buf.fb_id,
+            "the plane does not scan out the views' surface");
+      /* The screens stacked, 384 rows of the surface's: each view's
+       * pixels as they are, the plane enlarging them */
+      if (v->views_surface)
+      {
+         CHECK(VIDEO_SCALE_H(v->views_surface->src_dims) == 384,
+               "the views composed at %u rows, want 384",
+               VIDEO_SCALE_H(v->views_surface->src_dims));
+         page = &v->views_surface->pages[!v->views_surface->flip_page];
+         off  = (VIDEO_SCALE_W(v->views_surface->src_dims) - 256) / 2;
+         for (y = 0; y < 384; y += 37)
+            for (x = 0; x < 256; x += 29)
+            {
+               px = ((const uint32_t*)page->buf.map)[(size_t)y
+                  * (page->buf.stride / 4) + off + x];
+               if ((px & 0xffffff) != (frame_px[y * 256 + x] & 0xffffff))
+                  same = false;
+            }
+         CHECK(same, "the composed views differ from the frame's");
+      }
+      CHECK(count(dumb_alive) == 6 && count(fb_alive) == 6,
+            "the frame's surface and the views': %u buffers, %u fbs",
+            count(dumb_alive), count(fb_alive));
+
+      /* the map goes: the frame is shown whole again */
+      memset(&info.views, 0, sizeof(info.views));
+      drm_frame(v, frame_px, VIDEO_SCALE_PACK(256, 384), 0, 256 * 4, NULL,
+            &info);
+      CHECK(!v->views_surface && count(dumb_alive) == 3,
+            "the views' surface outlives the map: %u buffers",
+            count(dumb_alive));
+      CHECK(blanks == 0, "the plane's fb was removed from under it %u time(s)", blanks);
+      if (failures == before)
+         printf("   ok   views composed for the plane, and given back to the frame\n");
+      before = failures;
+   }
 
    drm_gfx_free(v);
    CHECK(count(dumb_alive) == 0 && count(fb_alive) == 0 && maps_alive == 0,

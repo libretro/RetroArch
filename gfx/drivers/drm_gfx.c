@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 
 #include <compat/strl.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 
@@ -38,6 +39,8 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../common/drm_common.h"
+#include "../video_views.h"
+#include "../video_views_cpu.h"
 
 #include "drm_pixformats.h"
 
@@ -126,6 +129,15 @@ struct drm_video
    /* Abstract surface management stuff */
    struct drm_surface *main_surface;
    struct drm_surface *menu_surface;
+   /* A core's views composed for the plane to scale to the screen */
+   struct drm_surface *views_surface;
+   video_views_cpu_t views_cpu;
+   /* Both eyes side by side, for anaglyph and interlaced */
+   uint32_t *views_canvas;
+   size_t views_canvas_size;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
+   bool views_seen;
 
    /* Total dispmanx video dimensions.
     * Not counting overscan settings. */
@@ -795,8 +807,88 @@ static void *drm_init(const video_info_t *video)
 
    _drmvars->kms_dims   = VIDEO_SCALE_PACK(drm.current_mode->hdisplay,
          drm.current_mode->vdisplay);
+   /* What views are laid out on */
+   video_driver_set_output_dims(_drmvars->kms_dims);
 
    return _drmvars;
+}
+
+/* A core's views: laid out on the screen, composed at the scale that
+ * draws no view larger than it is, into a surface the plane enlarges to
+ * the whole screen. Each view straight from the frame. False when the
+ * frame is to be drawn whole. */
+static bool drm_views_frame(struct drm_video *v, const void *frame,
+      unsigned dims, unsigned pitch, const video_frame_info_t *info)
+{
+   float scale;
+   unsigned cdims;
+   struct drm_page *page;
+   const video_views_layout_t *layout;
+   bool views = info && frame && info->views.num_views
+      && video_views_fit_frame(&info->views, dims);
+
+   retro_atomic_store_release_int(&v->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   if (!views)
+   {
+      if (v->views_surface)
+      {
+         /* The plane goes back to the frame before the surface goes */
+         if (v->main_surface)
+            drm_plane_setup(v->main_surface);
+         drm_surface_free(v, &v->views_surface);
+      }
+      return false;
+   }
+
+   layout = &info->views_layout;
+   scale  = video_views_cpu_scale(&info->views, layout);
+   cdims  = video_views_cpu_dims(info->dims, scale);
+   if (!v->views_surface || v->views_surface->src_dims != cdims)
+   {
+      struct drm_surface *old = v->views_surface;
+      v->views_surface        = NULL;
+      if (!drm_surface_setup(v, cdims, VIDEO_SCALE_W(cdims) * 4, 4,
+               DRM_FORMAT_XRGB8888, 255,
+               (float)VIDEO_SCALE_W(v->kms_dims) / VIDEO_SCALE_H(v->kms_dims),
+               3, 0, &v->views_surface))
+      {
+         v->views_surface = old;
+         return false;
+      }
+      if (!v->menu_active)
+         drm_plane_setup(v->views_surface);
+      drm_surface_free(v, &old);
+   }
+   if (layout->offscreen)
+   {
+      size_t size = (size_t)2 * VIDEO_SCALE_AREA(cdims) * sizeof(uint32_t);
+      if (size > v->views_canvas_size)
+      {
+         uint32_t *grown = (uint32_t*)realloc(v->views_canvas, size);
+         if (!grown)
+            return false;
+         v->views_canvas      = grown;
+         v->views_canvas_size = size;
+      }
+   }
+   if (!v->views_seen)
+   {
+      v->views_seen = true;
+      RARCH_LOG("[DRM] Views drawn straight from the frame.\n");
+   }
+
+   page = &v->views_surface->pages[v->views_surface->flip_page];
+   video_views_cpu_compose(&v->views_cpu, &info->views, layout, frame,
+         pitch, v->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
+         info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
+         scale, cdims, (uint32_t*)page->buf.map, page->buf.stride / 4,
+         layout->offscreen ? v->views_canvas : NULL);
+   if (!v->menu_active)
+      drm_page_flip(v->views_surface);
+   else
+      v->views_surface->flip_page = !v->views_surface->flip_page;
+   return true;
 }
 
 static bool drm_frame(void *data, const void *frame,
@@ -844,13 +936,17 @@ static bool drm_frame(void *data, const void *frame,
       }
 
       /* We need to change the plane to read from the main surface */
-      drm_plane_setup(_drmvars->main_surface);
+      if (!_drmvars->views_surface)
+         drm_plane_setup(_drmvars->main_surface);
       drm_surface_free(_drmvars, &old_surface);
    }
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
 #endif
+
+   if (drm_views_frame(_drmvars, frame, dims, pitch, video_info))
+      return true;
 
    /* Update main surface: locate free page, blit and flip. */
    drm_surface_update(_drmvars, frame, _drmvars->main_surface);
@@ -864,8 +960,10 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
    /* If menu was active but it's not anymore... */
    if (!state && _drmvars->menu_active)
    {
-      /* We tell only the plane we have to read from the main surface again */
-      drm_plane_setup(_drmvars->main_surface);
+      /* We tell only the plane we have to read from the main surface
+       * again, or the views' */
+      drm_plane_setup(_drmvars->views_surface
+            ? _drmvars->views_surface : _drmvars->main_surface);
       /* We free the menu surface buffers */
       drm_surface_free(_drmvars, &_drmvars->menu_surface);
    }
@@ -978,7 +1076,9 @@ static void drm_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims   = vp->full_dims   = vid->core_dims;
+   /* The whole screen while views draw */
+   vp->dims   = vp->full_dims   = vid->views_surface
+      ? vid->kms_dims : vid->core_dims;
 }
 
 static bool drm_suppress_screensaver(void *a, bool b) { return false; }
@@ -1003,8 +1103,21 @@ static void drm_set_aspect_ratio (void *data, unsigned aspect_ratio_idx)
    }
 }
 
+static uint32_t drm_get_flags(void *data)
+{
+   uint32_t flags             = 0;
+   struct drm_video *_drmvars = data;
+   if (_drmvars)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&_drmvars->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
+}
+
 static const video_poke_interface_t drm_poke_interface = {
-   NULL, /* get_flags */
+   drm_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */
@@ -1049,6 +1162,9 @@ static void drm_gfx_free(void *data)
 
    if (_drmvars->menu_surface)
       drm_surface_free(_drmvars, &_drmvars->menu_surface);
+   drm_surface_free(_drmvars, &_drmvars->views_surface);
+   video_views_cpu_free(&_drmvars->views_cpu);
+   free(_drmvars->views_canvas);
 
    /* Destroy mutexes and conditions. */
    slock_free(_drmvars->pending_mutex);

@@ -5,10 +5,15 @@ TARGET := video_views_test
 RARCH_DIR         := ../../..
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 
-# gfx/video_views.c is pure logic, so it builds alone.
+# gfx/video_views.c is pure logic, so it builds alone; the CPU drivers'
+# composer (gfx/video_views_cpu.h) takes the scaler.
 SOURCES := \
 	video_views_test.c \
-	$(RARCH_DIR)/gfx/video_views.c
+	$(RARCH_DIR)/gfx/video_views.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.c \
+	$(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

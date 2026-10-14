@@ -24,6 +24,7 @@
 
 #include "gfx/video_views.h"
 #include "gfx/video_defines.h"
+#include "gfx/video_views_cpu.h"
 
 static int failures = 0;
 
@@ -804,6 +805,108 @@ static void test_touch(void)
    CHECK(!video_views_touch_point(&t, 0, 0, &x, &y) && x == 7);
 }
 
+/* The CPU drivers' composer: a layout made for a screen twice the DS
+ * map's size is composed at half that, each view copied as it is, for
+ * display hardware to enlarge; and side by side at full size. */
+/* What a blitter scales into each placement's visible part */
+static void test_cut_source(void)
+{
+   struct retro_video_view v = { 0 };
+   video_views_rect_t dst, cut, out;
+
+   v.x = 10; v.y = 20; v.width = 100; v.height = 50;
+   /* Drawn whole, at twice its size: all of it */
+   dst.pos  = VIDEO_POS_PACK(4, 6);
+   dst.dims = VIDEO_SCALE_PACK(200, 100);
+   video_views_cut_source(&v, &dst, &dst, &out);
+   CHECK(VIDEO_POS_X(out.pos) == 10 && VIDEO_POS_Y(out.pos) == 20);
+   CHECK(VIDEO_SCALE_W(out.dims) == 100 && VIDEO_SCALE_H(out.dims) == 50);
+   /* Its right half and bottom half cut away */
+   cut.pos  = dst.pos;
+   cut.dims = VIDEO_SCALE_PACK(100, 50);
+   video_views_cut_source(&v, &dst, &cut, &out);
+   CHECK(VIDEO_POS_X(out.pos) == 10 && VIDEO_POS_Y(out.pos) == 20);
+   CHECK(VIDEO_SCALE_W(out.dims) == 50 && VIDEO_SCALE_H(out.dims) == 25);
+   /* Off the left and top of the screen: the view's far quarter */
+   dst.pos  = VIDEO_POS_PACK(-150, -75);
+   cut.pos  = VIDEO_POS_PACK(0, 0);
+   cut.dims = VIDEO_SCALE_PACK(50, 25);
+   video_views_cut_source(&v, &dst, &cut, &out);
+   CHECK(VIDEO_POS_X(out.pos) == 85 && VIDEO_POS_Y(out.pos) == 57);
+   CHECK(VIDEO_SCALE_W(out.dims) == 25 && VIDEO_SCALE_H(out.dims) == 13);
+   /* Shrunk to less than a pixel's worth: still a pixel */
+   dst.pos  = VIDEO_POS_PACK(0, 0);
+   dst.dims = VIDEO_SCALE_PACK(10, 5);
+   cut.pos  = VIDEO_POS_PACK(9, 4);
+   cut.dims = VIDEO_SCALE_PACK(1, 1);
+   video_views_cut_source(&v, &dst, &cut, &out);
+   CHECK(VIDEO_POS_X(out.pos) == 100 && VIDEO_POS_Y(out.pos) == 60);
+   CHECK(VIDEO_SCALE_W(out.dims) == 10 && VIDEO_SCALE_H(out.dims) == 10);
+   /* A one-pixel view stays one pixel */
+   v.width  = 1;
+   v.height = 1;
+   dst.dims = VIDEO_SCALE_PACK(40, 40);
+   cut.pos  = VIDEO_POS_PACK(39, 39);
+   video_views_cut_source(&v, &dst, &cut, &out);
+   CHECK(VIDEO_POS_X(out.pos) == 10 && VIDEO_POS_Y(out.pos) == 20);
+   CHECK(VIDEO_SCALE_W(out.dims) == 1 && VIDEO_SCALE_H(out.dims) == 1);
+}
+
+static void test_cpu_compose(void)
+{
+   unsigned i, x, y;
+   video_views_map_t map;
+   video_views_layout_params_t p;
+   video_views_layout_t l;
+   video_views_cpu_t cpu;
+   static uint32_t frame[256 * 384];
+   static uint32_t out[512 * 384];
+   unsigned dims;
+   float scale;
+   bool ok = true;
+
+   memset(&cpu, 0, sizeof(cpu));
+   for (y = 0; y < 384; y++)
+      for (x = 0; x < 256; x++)
+         frame[y * 256 + x] = (y << 12) | (x << 1) | (y >= 192);
+
+   map_ds(&map);
+   memset(&p, 0, sizeof(p));
+   p.map         = &map;
+   p.dims        = VIDEO_SCALE_PACK(512, 768);
+   p.stereo_mode = VIDEO_STEREO_MODE_2D;
+   video_views_layout(&p, &l);
+   scale = video_views_cpu_scale(&map, &l);
+   CHECK(scale == 0.5f);
+   dims  = video_views_cpu_dims(p.dims, scale);
+   CHECK(dims == VIDEO_SCALE_PACK(256, 384));
+   video_views_cpu_compose(&cpu, &map, &l, frame, 256 * 4,
+         SCALER_FMT_ARGB8888, SCALER_TYPE_POINT, scale, dims, out, 256,
+         NULL);
+   /* The screens stacked as they are packed: the frame itself */
+   for (i = 0; i < 256 * 384; i++)
+      if ((out[i] & 0xffffff) != (frame[i] & 0xffffff))
+         ok = false;
+   CHECK(ok);
+
+   /* Side by side, full: each eye's half its own. */
+   p.dims        = VIDEO_SCALE_PACK(512, 384);
+   p.stereo_mode = VIDEO_STEREO_MODE_SBS_FULL;
+   video_views_layout(&p, &l);
+   video_views_cpu_compose(&cpu, &map, &l, frame, 256 * 4,
+         SCALER_FMT_ARGB8888, SCALER_TYPE_POINT, 1.0f, p.dims, out, 512,
+         NULL);
+   /* Both halves show the top screen at their top left */
+   CHECK((out[0] & 0xffffff) == (frame[0] & 0xffffff));
+   CHECK((out[256] & 0xffffff) == (frame[0] & 0xffffff));
+
+   /* Interlaced is composed at the screen's own size. */
+   p.stereo_mode = VIDEO_STEREO_MODE_INTERLACED;
+   video_views_layout(&p, &l);
+   CHECK(video_views_cpu_scale(&map, &l) == 1.0f);
+   video_views_cpu_free(&cpu);
+}
+
 /* The CPU drivers' blend of a canvas's halves. */
 static void test_blend(void)
 {
@@ -1187,6 +1290,8 @@ int main(void)
    test_eye_pair();
    test_select_screens();
    test_blend();
+   test_cpu_compose();
+   test_cut_source();
    test_touch();
    test_layout_screens();
    test_layout_stereo();

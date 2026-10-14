@@ -36,6 +36,8 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_views.h"
+#include "../video_views_cpu.h"
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -547,6 +549,18 @@ struct sunxi_video
    sthread_t *vsync_thread;
    retro_eventcount_t vsync_ec;
 
+   /* A core's views, composed straight into the pages the scaler
+    * enlarges to the whole screen: the size they are composed at, 0
+    * while the frame is drawn whole */
+   unsigned views_dims;
+   video_views_cpu_t views_cpu;
+   /* Both eyes side by side, for anaglyph and interlaced */
+   uint32_t *views_canvas;
+   size_t views_canvas_size;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
+   bool views_seen;
+
    /* menu data */
    bool menu_active;
 
@@ -659,6 +673,9 @@ static void *sunxi_init(const video_info_t *video)
    if (!retro_eventcount_init(&_dispvars->vsync_ec))
       goto error;
 
+   /* What views are laid out on */
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(
+            _dispvars->sunxi_disp->xres, _dispvars->sunxi_disp->yres));
 
    /* Launching vsync thread */
    _dispvars->vsync_thread     = sthread_create(sunxi_vsync_thread_func, _dispvars);
@@ -686,6 +703,8 @@ static void sunxi_free(void *data)
    retro_eventcount_free(&_dispvars->vsync_ec);
 
    free(_dispvars->pages);
+   video_views_cpu_free(&_dispvars->views_cpu);
+   free(_dispvars->views_canvas);
 
    /* Restore text console contents and reactivate cursor blinking. */
    sunxi_restore_console(_dispvars);
@@ -694,7 +713,8 @@ static void sunxi_free(void *data)
    free(_dispvars);
 }
 
-static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
+/* Until the vsync thread has taken the last flip */
+static void sunxi_wait_flip(struct sunxi_video *_dispvars)
 {
    int key;
 
@@ -710,6 +730,11 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
 
       retro_eventcount_commit_wait(&_dispvars->vsync_ec, key);
    }
+}
+
+static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
+{
+   sunxi_wait_flip(_dispvars);
 
    /* Frame blitting */
    pixman_blit(
@@ -730,10 +755,27 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
    retro_atomic_store_release_int(&_dispvars->pageflip_pending, 1);
 }
 
+/* The pages, @height rows each, after the screen's */
+static void sunxi_setup_pages(struct sunxi_video *_dispvars, unsigned height)
+{
+   int i;
+   /* Incremental offset that sums up on
+    * each previous page offset.
+    * Total offset of each page has to
+    * be adjusted when internal resolution changes. */
+   for (i = 0; i < NUMPAGES; i++)
+   {
+      _dispvars->pages[i].offset = (_dispvars->sunxi_disp->yres
+            + i * height) * _dispvars->sunxi_disp->xres * 4;
+      _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr
+            + (_dispvars->sunxi_disp->yres + i * height)
+            * _dispvars->dst_pitch/4);
+   }
+}
+
 static void sunxi_setup_scale (void *data,
       unsigned dims, unsigned pitch)
 {
-   int i;
    unsigned int xpos, visible_width;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -746,20 +788,9 @@ static void sunxi_setup_scale (void *data,
    /* Pixels per line */
    _dispvars->src_pixels_per_line = _dispvars->src_pitch/_dispvars->bytes_per_pixel;
 
-   /* Incremental offset that sums up on
-    * each previous page offset.
-    * Total offset of each page has to
-    * be adjusted when internal resolution changes. */
-   for (i = 0; i < NUMPAGES; i++)
-   {
-      _dispvars->pages[i].offset = (_dispvars->sunxi_disp->yres
-            + i * VIDEO_SCALE_H(_dispvars->src_dims))
-         * _dispvars->sunxi_disp->xres * 4;
-      _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr
-            + (_dispvars->sunxi_disp->yres
-               + i * VIDEO_SCALE_H(_dispvars->src_dims))
-            * _dispvars->dst_pitch/4);
-   }
+   sunxi_setup_pages(_dispvars, VIDEO_SCALE_H(_dispvars->src_dims));
+   /* The window is the frame's again */
+   _dispvars->views_dims = 0;
 
    visible_width = _dispvars->sunxi_disp->yres * _dispvars->aspect_ratio;
    xpos = (_dispvars->sunxi_disp->xres - visible_width) / 2;
@@ -769,6 +800,94 @@ static void sunxi_setup_scale (void *data,
 
    /* make the layer visible */
    sunxi_layer_show(_dispvars->sunxi_disp);
+}
+
+/* A core's views: laid out on the screen, composed at the scale that
+ * draws no view larger than it is straight into the next page, which
+ * the layer's scaler enlarges to the whole screen. Each view straight
+ * from the frame. False when the frame is to be drawn whole. */
+static bool sunxi_views_frame(struct sunxi_video *_dispvars,
+      const void *frame, unsigned dims, unsigned pitch,
+      const video_frame_info_t *info)
+{
+   float scale;
+   unsigned cdims;
+   const video_views_layout_t *layout;
+   sunxi_disp_t *disp = _dispvars->sunxi_disp;
+   bool views         = info && frame && info->views.num_views
+      && video_views_fit_frame(&info->views, dims);
+
+   if (views)
+   {
+      layout = &info->views_layout;
+      scale  = video_views_cpu_scale(&info->views, layout);
+      cdims  = video_views_cpu_dims(info->dims, scale);
+      /* Both pages within the framebuffer, after the screen */
+      if (     (int)VIDEO_SCALE_W(cdims) > disp->xres
+            || disp->yres + 2 * (int)VIDEO_SCALE_H(cdims)
+               > disp->framebuffer_height)
+         views = false;
+      else if (layout->offscreen)
+      {
+         size_t size = (size_t)2 * VIDEO_SCALE_AREA(cdims) * sizeof(uint32_t);
+         if (size > _dispvars->views_canvas_size)
+         {
+            uint32_t *grown = (uint32_t*)realloc(_dispvars->views_canvas,
+                  size);
+            if (grown)
+            {
+               _dispvars->views_canvas      = grown;
+               _dispvars->views_canvas_size = size;
+            }
+            else
+               views = false;
+         }
+      }
+   }
+   retro_atomic_store_release_int(&_dispvars->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   if (!views)
+   {
+      /* The pages and the window go back to the frame's */
+      if (_dispvars->views_dims && _dispvars->src_dims)
+      {
+         sunxi_wait_flip(_dispvars);
+         sunxi_setup_scale(_dispvars, _dispvars->src_dims,
+               _dispvars->src_pitch);
+      }
+      return false;
+   }
+
+   /* No page is rearranged under a flip in flight */
+   sunxi_wait_flip(_dispvars);
+   if (_dispvars->views_dims != cdims)
+   {
+      sunxi_setup_pages(_dispvars, VIDEO_SCALE_H(cdims));
+      sunxi_layer_set_output_window(disp, 0, 0, disp->xres, disp->yres);
+      sunxi_layer_show(disp);
+      _dispvars->views_dims = cdims;
+   }
+   if (!_dispvars->views_seen)
+   {
+      _dispvars->views_seen = true;
+      RARCH_LOG("[Sunxi] Views drawn straight from the frame.\n");
+   }
+
+   video_views_cpu_compose(&_dispvars->views_cpu, &info->views, layout,
+         frame, pitch,
+         _dispvars->bytes_per_pixel == 4
+         ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
+         info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
+         scale, cdims, _dispvars->nextPage->address,
+         _dispvars->dst_pixels_per_line,
+         layout->offscreen ? _dispvars->views_canvas : NULL);
+
+   /* Issue pageflip. Will flip on next vsync. */
+   sunxi_layer_set_rgb_input_buffer(disp, disp->bits_per_pixel,
+         _dispvars->nextPage->offset, VIDEO_SCALE_W(cdims),
+         VIDEO_SCALE_H(cdims), disp->xres);
+   retro_atomic_store_release_int(&_dispvars->pageflip_pending, 1);
+   return true;
 }
 
 static bool sunxi_frame(void *data, const void *frame,
@@ -801,6 +920,9 @@ static bool sunxi_frame(void *data, const void *frame,
       return true;
    }
 
+   if (sunxi_views_frame(_dispvars, frame, dims, pitch, video_info))
+      return true;
+
    sunxi_update_main(frame, _dispvars);
 
    return true;
@@ -821,7 +943,11 @@ static void sunxi_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims   = vp->full_dims   = _dispvars->src_dims;
+   /* The whole screen while views draw */
+   vp->dims   = vp->full_dims   = _dispvars->views_dims
+      ? VIDEO_SCALE_PACK(_dispvars->sunxi_disp->xres,
+            _dispvars->sunxi_disp->yres)
+      : _dispvars->src_dims;
 }
 
 static bool sunxi_set_shader(void *data,
@@ -941,8 +1067,21 @@ static float sunxi_get_refresh_rate (void *data)
    return _dispvars->sunxi_disp->refresh_rate;
 }
 
+static uint32_t sunxi_get_flags(void *data)
+{
+   uint32_t flags                = 0;
+   struct sunxi_video *_dispvars = (struct sunxi_video*)data;
+   if (_dispvars)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&_dispvars->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
+}
+
 static const video_poke_interface_t sunxi_poke_interface = {
-   NULL, /* get_flags */
+   sunxi_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */

@@ -520,32 +520,11 @@ static void xshm_views_render(xshm_t *xshm,
       const video_frame_info_t *video_info, const void *frame,
       unsigned pitch)
 {
-   unsigned i;
-   const video_views_layout_t *layout = &video_info->views_layout;
-   uint8_t *pixels = layout->offscreen
-      ? (uint8_t*)xshm->canvas : (uint8_t*)xshm->fbptr;
-   unsigned dims   = layout->offscreen ? xshm->canvas_dims
-      : VIDEO_SCALE_PACK(xshm->width, xshm->height);
-   unsigned stride = VIDEO_SCALE_W(dims) * sizeof(uint32_t);
-   enum scaler_type type = xshm->smooth
-      ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
-
-   if (layout->offscreen)
-      memset(pixels, 0, VIDEO_SCALE_AREA(dims) * sizeof(uint32_t));
-   for (i = 0; i < layout->num_placements; i++)
-   {
-      video_views_rect_t cut;
-      const video_views_placement_t *p = &layout->placements[i];
-      if (video_views_visible(layout, p, dims, &cut))
-         video_views_cpu_draw_view(&xshm->cpu, xshm->fmt, type,
-               &video_info->views.views[p->view], frame, pitch,
-               pixels, stride, &p->dst, &cut);
-   }
-   if (layout->offscreen)
-      video_views_blend_xrgb8888(xshm->canvas, VIDEO_SCALE_W(dims),
-            xshm->fbptr, (size_t)xshm->width,
-            VIDEO_SCALE_PACK(xshm->width, xshm->height),
-            layout->stereo_mode);
+   video_views_cpu_compose(&xshm->cpu, &video_info->views,
+         &video_info->views_layout, frame, pitch, xshm->fmt,
+         xshm->smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT, 1.0f,
+         VIDEO_SCALE_PACK(xshm->width, xshm->height), xshm->fbptr,
+         (unsigned)xshm->width, xshm->canvas);
 }
 
 /*

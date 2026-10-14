@@ -46,6 +46,7 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#include "../video_views.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -91,6 +92,9 @@ typedef struct oga_video
    oga_surface_t *menu_surface;
    oga_framebuf_t *pages[NUM_PAGES];
    oga_surface_t *msg_surface;
+   /* A core's views laid out on the screen, upright, for the blit that
+    * turns them onto the panel */
+   oga_surface_t *views_surface;
    const font_renderer_driver_t *font_driver;
    void *font;
    int msg_width;
@@ -104,7 +108,10 @@ typedef struct oga_video
    uint32_t crtc_id;
    uint32_t connector_id;
    float display_ar;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
    bool threaded;
+   bool views_seen;
    char last_msg[128];
 } oga_video_t;
 
@@ -341,6 +348,8 @@ static void oga_free(void *data)
    oga_destroy_surface(vid->frame_surface);
    oga_destroy_surface(vid->msg_surface);
    oga_destroy_surface(vid->menu_surface);
+   if (vid->views_surface)
+      oga_destroy_surface(vid->views_surface);
 
    close(vid->fd);
 
@@ -434,6 +443,10 @@ static void *oga_init(const video_info_t *video)
       if (!vid->pages[i])
          return NULL;
    }
+
+   /* What views are laid out on: the screen as it is seen */
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(vid->drm_width,
+            vid->drm_height));
 
    return vid;
 }
@@ -655,6 +668,68 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
+/* A core's views: each placement scaled by the RGA straight from the
+ * frame's surface into an upright surface the size of the screen, cut
+ * to its own eye's area and the screen, which one more blit turns onto
+ * the panel. Only while the panel's own turn is the one applied:
+ * anaglyph and interlaced, which blend the eyes, and a turned core draw
+ * the frame whole. False when the frame is to be drawn whole. */
+static bool oga_views_frame(oga_video_t *vid, const void *frame,
+      unsigned dims, unsigned width, unsigned height, int sx, int sy,
+      const video_frame_info_t *info, oga_surface_t *page_surface,
+      unsigned int blend)
+{
+   unsigned i;
+   unsigned screen;
+   const video_views_layout_t *layout;
+   bool views = info && frame && info->views.num_views
+      && !info->views_layout.offscreen
+      && vid->rotation == HAL_TRANSFORM_ROT_270
+      /* All of the frame in its surface */
+      && width == VIDEO_SCALE_W(dims) && height == VIDEO_SCALE_H(dims)
+      && video_views_fit_frame(&info->views, dims);
+
+   if (views && !vid->views_surface)
+   {
+      vid->views_surface = oga_create_surface(vid->fd, vid->drm_width,
+            vid->drm_height, RK_FORMAT_BGRA_8888);
+      views              = vid->views_surface != NULL;
+   }
+   retro_atomic_store_release_int(&vid->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   if (!views)
+      return false;
+   if (!vid->views_seen)
+   {
+      vid->views_seen = true;
+      RARCH_LOG("[OGA] Views drawn straight from the frame.\n");
+   }
+
+   layout = &info->views_layout;
+   screen = VIDEO_SCALE_PACK(vid->drm_width, vid->drm_height);
+   rga_clear_surface(vid->views_surface, 0);
+   for (i = 0; i < layout->num_placements; i++)
+   {
+      video_views_rect_t cut, from;
+      const video_views_placement_t *p = &layout->placements[i];
+
+      if (!video_views_visible(layout, p, screen, &cut))
+         continue;
+      video_views_cut_source(&info->views.views[p->view], &p->dst, &cut,
+            &from);
+      oga_blit(vid->frame_surface,
+            sx + VIDEO_POS_X(from.pos), sy + VIDEO_POS_Y(from.pos),
+            (int)VIDEO_SCALE_W(from.dims), (int)VIDEO_SCALE_H(from.dims),
+            vid->views_surface, VIDEO_POS_X(cut.pos), VIDEO_POS_Y(cut.pos),
+            (int)VIDEO_SCALE_W(cut.dims), (int)VIDEO_SCALE_H(cut.dims),
+            0, vid->scale_mode, 0);
+   }
+   oga_blit(vid->views_surface, 0, 0, vid->drm_width, vid->drm_height,
+         page_surface, 0, 0, vid->drm_height, vid->drm_width,
+         vid->rotation, vid->scale_mode, blend);
+   return true;
+}
+
 static bool oga_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -738,9 +813,13 @@ static bool oga_frame(void *data, const void *frame,
          }
       }
 
-      oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
-      oga_blit(vid->frame_surface, sx, sy, width, height,
-            page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
+      if (!oga_views_frame(vid, frame, dims, width, height, sx, sy,
+               video_info, page_surface, blend))
+      {
+         oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
+         oga_blit(vid->frame_surface, sx, sy, width, height,
+               page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
+      }
    }
 
    if (msg)
@@ -879,8 +958,21 @@ static bool oga_get_current_software_framebuffer(void *data, struct retro_frameb
    return true;
 }
 
+static uint32_t oga_get_flags(void *data)
+{
+   uint32_t flags   = 0;
+   oga_video_t *vid = (oga_video_t*)data;
+   if (vid)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&vid->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
+}
+
 video_poke_interface_t oga_poke_interface = {
-   NULL, /* get_flags */
+   oga_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */

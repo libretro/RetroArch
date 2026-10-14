@@ -206,6 +206,14 @@ bool video_views_visible(const video_views_layout_t *layout,
       const video_views_placement_t *p, unsigned dims,
       video_views_rect_t *out);
 
+/* The part of view @v that @cut shows, @cut being part of the rectangle
+ * @dst the whole view is scaled to: for a blitter that scales a source
+ * rectangle into a destination one, as video_views_visible cut it. At
+ * least one pixel each way. */
+void video_views_cut_source(const struct retro_video_view *v,
+      const video_views_rect_t *dst, const video_views_rect_t *cut,
+      video_views_rect_t *out);
+
 /* The rectangle of @view's first placement drawn into a target of
  * size @dims, which its shader passes are sized for; all_areas false
  * draws the first area only. False when no placement of the view

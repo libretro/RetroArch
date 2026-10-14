@@ -37,7 +37,11 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include <math.h>
+
+#include <retro_atomic.h>
 #include <retro_inline.h>
+#include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
@@ -45,6 +49,8 @@
 #include <encodings/utf.h>
 
 #include "../font_driver.h"
+#include "../video_views.h"
+#include "../video_views_cpu.h"
 #include "../../verbosity.h"
 
 #include "../../configuration.h"
@@ -793,8 +799,22 @@ typedef struct omap_video
    {
       bool active;
       void *frame;
+      size_t frame_size;
       struct scaler_ctx scaler;
    } menu;
+
+   /* A core's views, composed into the page the plane scales to the
+    * screen: straight in at 32 bits a pixel, through a buffer at 16 */
+   video_views_cpu_t views_cpu;
+   uint32_t *views_pixels;
+   size_t views_pixels_size;
+   /* Both eyes side by side, for anaglyph and interlaced */
+   uint32_t *views_canvas;
+   size_t views_canvas_size;
+   /* For get_flags: the last frame with a map was drawn whole */
+   retro_atomic_int_t views_fallback;
+   bool views_seen;
+   bool views_on;
 } omap_video_t;
 
 static void omap_free(void *data)
@@ -811,6 +831,9 @@ static void omap_free(void *data)
 
    scaler_ctx_gen_reset(&vid->menu.scaler);
    free(vid->menu.frame);
+   video_views_cpu_free(&vid->views_cpu);
+   free(vid->views_pixels);
+   free(vid->views_canvas);
 
    free(vid);
 }
@@ -979,9 +1002,13 @@ static void *omap_init(const video_info_t *video)
 
    omap_init_font(vid);
 
-   vid->menu.frame = calloc(VIDEO_SCALE_AREA(vid->dims), vid->bytes_per_pixel);
+   vid->menu.frame_size = (size_t)VIDEO_SCALE_AREA(vid->dims)
+      * vid->bytes_per_pixel;
+   vid->menu.frame = calloc(1, vid->menu.frame_size);
    if (!vid->menu.frame)
       goto fail_omapfb;
+   /* What views are laid out on */
+   video_driver_set_output_dims(vid->omap->nat_dims);
 
    vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
    vid->menu.scaler.out_fmt = (vid->bytes_per_pixel == 4)
@@ -998,19 +1025,109 @@ fail:
    return NULL;
 }
 
+/* Grows *@buf to at least @size bytes */
+static bool omap_views_grow(uint32_t **buf, size_t *have, size_t size)
+{
+   uint32_t *grown;
+   if (size <= *have)
+      return true;
+   if (!(grown = (uint32_t*)realloc(*buf, size)))
+      return false;
+   *buf  = grown;
+   *have = size;
+   return true;
+}
+
+/* Whether a core's views draw, and the scale and size they are composed
+ * at: the scale that draws no view larger than it is, lowered as far as
+ * the plane's memory needs, laid out on the screen so the plane fills
+ * it. */
+static bool omap_views_dims(omap_video_t *vid, const void *frame,
+      unsigned dims, const video_frame_info_t *info,
+      float *scale, unsigned *cdims)
+{
+   omapfb_data_t *omap = vid->omap;
+   bool views          = info && frame && info->views.num_views
+      && video_views_fit_frame(&info->views, dims);
+
+   if (views)
+   {
+      const video_views_layout_t *layout = &info->views_layout;
+      double room = (double)omap->current_state->mi.size
+         / ((double)omap->num_pages * omap->bpp
+               * VIDEO_SCALE_AREA(info->dims));
+      *scale      = video_views_cpu_scale(&info->views, layout);
+      if (     layout->stereo_mode != VIDEO_STEREO_MODE_INTERLACED
+            && (double)*scale * *scale > room)
+         *scale   = (float)sqrt(room) * 0.999f;
+      *cdims      = video_views_cpu_dims(info->dims, *scale);
+      if (     VIDEO_SCALE_W(*cdims) <= 4 || VIDEO_SCALE_H(*cdims) <= 4
+            || (double)VIDEO_SCALE_AREA(*cdims) * omap->bpp
+               * omap->num_pages > omap->current_state->mi.size)
+         views    = false;
+      else if (vid->bytes_per_pixel == 2
+            && !omap_views_grow(&vid->views_pixels, &vid->views_pixels_size,
+               (size_t)VIDEO_SCALE_AREA(*cdims) * sizeof(uint32_t)))
+         views    = false;
+      else if (layout->offscreen
+            && !omap_views_grow(&vid->views_canvas, &vid->views_canvas_size,
+               (size_t)2 * VIDEO_SCALE_AREA(*cdims) * sizeof(uint32_t)))
+         views    = false;
+   }
+   retro_atomic_store_release_int(&vid->views_fallback,
+         (info && info->views.num_views && !views) ? 1 : 0);
+   return views;
+}
+
+/* The views composed into the page, straight from the frame */
+static void omap_views_draw(omap_video_t *vid, const void *frame,
+      unsigned pitch, const video_frame_info_t *info, float scale)
+{
+   const video_views_layout_t *layout = &info->views_layout;
+   unsigned w     = VIDEO_SCALE_W(vid->dims);
+   bool direct    = vid->bytes_per_pixel == 4;
+   uint32_t *out  = direct ? (uint32_t*)vid->omap->cur_page->buf
+      : vid->views_pixels;
+
+   if (!vid->views_seen)
+   {
+      vid->views_seen = true;
+      RARCH_LOG("[Omap] Views drawn straight from the frame.\n");
+   }
+   video_views_cpu_compose(&vid->views_cpu, &info->views, layout,
+         frame, pitch, direct ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565,
+         info->video_smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT,
+         scale, vid->dims, out, w,
+         layout->offscreen ? vid->views_canvas : NULL);
+   if (!direct)
+      conv_argb8888_rgb565(vid->omap->cur_page->buf, out, w,
+            VIDEO_SCALE_H(vid->dims), w * sizeof(uint16_t),
+            w * sizeof(uint32_t));
+}
+
 static bool omap_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
-   unsigned width = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
+   unsigned width, height;
+   float views_scale   = 1.0f;
+   unsigned views_dims = 0;
    omap_video_t  *vid = (omap_video_t*)data;
+   bool views;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame)
       return true;
+
+   /* The plane's mode is the views' while they draw */
+   views  = omap_views_dims(vid, frame, dims, video_info,
+         &views_scale, &views_dims);
+   if (views)
+      dims = views_dims;
+   width  = VIDEO_SCALE_W(dims);
+   height = VIDEO_SCALE_H(dims);
 
    if (     (width  > 4)
          && (height > 4)
@@ -1027,8 +1144,12 @@ static bool omap_frame(void *data, const void *frame,
       vid->dims   = dims;
    }
 
+   vid->views_on = views;
    omapfb_prepare(vid->omap);
-   omapfb_blit_frame(vid->omap, frame, VIDEO_SCALE_H(vid->dims), pitch);
+   if (views)
+      omap_views_draw(vid, frame, pitch, video_info, views_scale);
+   else
+      omapfb_blit_frame(vid->omap, frame, VIDEO_SCALE_H(vid->dims), pitch);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
@@ -1069,7 +1190,9 @@ static void omap_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims          = vp->full_dims   = vid->dims;
+   /* The whole screen while views draw */
+   vp->dims          = vp->full_dims   = vid->views_on
+      ? vid->omap->nat_dims : vid->dims;
 }
 
 static bool omap_suppress_screensaver(void *data, bool enable) { return false; }
@@ -1084,6 +1207,19 @@ static void omap_set_texture_frame(void *data, const void *frame, bool rgb32,
    omap_video_t          *vid = (omap_video_t*)data;
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
    unsigned        vid_width  = VIDEO_SCALE_W(vid->dims);
+   size_t                size = (size_t)VIDEO_SCALE_AREA(vid->dims)
+      * vid->bytes_per_pixel;
+
+   /* The menu is scaled to the mode, which the core's frame or views
+    * may have made larger than it was */
+   if (size > vid->menu.frame_size)
+   {
+      void *grown = realloc(vid->menu.frame, size);
+      if (!grown)
+         return;
+      vid->menu.frame      = grown;
+      vid->menu.frame_size = size;
+   }
 
    video_frame_scale(
          &vid->menu.scaler,
@@ -1114,8 +1250,21 @@ static float omap_get_refresh_rate(void *data)
           (s->yres + s->upper_margin + s->lower_margin + s->vsync_len);
 }
 
+static uint32_t omap_get_flags(void *data)
+{
+   uint32_t flags    = 0;
+   omap_video_t *vid = (omap_video_t*)data;
+   if (vid)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      if (retro_atomic_load_acquire_int(&vid->views_fallback))
+         BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+   return flags;
+}
+
 static const video_poke_interface_t omap_poke_interface = {
-   NULL, /* get_flags  */
+   omap_get_flags,
    NULL, /* load_texture */
    NULL, /* unload_texture */
    NULL, /* set_video_mode */

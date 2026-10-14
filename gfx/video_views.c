@@ -579,6 +579,47 @@ bool video_views_visible(const video_views_layout_t *layout,
       && video_views_clip(&r, dims, out);
 }
 
+void video_views_cut_source(const struct retro_video_view *v,
+      const video_views_rect_t *dst, const video_views_rect_t *cut,
+      video_views_rect_t *out)
+{
+   unsigned long dw = VIDEO_SCALE_W(dst->dims);
+   unsigned long dh = VIDEO_SCALE_H(dst->dims);
+   long dx          = (long)VIDEO_POS_X(cut->pos) - VIDEO_POS_X(dst->pos);
+   long dy          = (long)VIDEO_POS_Y(cut->pos) - VIDEO_POS_Y(dst->pos);
+   unsigned long x0, y0, x1, y1;
+
+   if (!dw || !dh)
+   {
+      out->pos  = VIDEO_POS_PACK(v->x, v->y);
+      out->dims = VIDEO_SCALE_PACK(v->width, v->height);
+      return;
+   }
+   if (dx < 0)
+      dx = 0;
+   if (dy < 0)
+      dy = 0;
+   /* The cut's edges through the scale, kept within the view */
+   x0 = (unsigned long)dx * v->width  / dw;
+   y0 = (unsigned long)dy * v->height / dh;
+   x1 = ((unsigned long)dx + VIDEO_SCALE_W(cut->dims)) * v->width  / dw;
+   y1 = ((unsigned long)dy + VIDEO_SCALE_H(cut->dims)) * v->height / dh;
+   if (x1 > v->width)
+      x1 = v->width;
+   if (y1 > v->height)
+      y1 = v->height;
+   if (x0 >= x1)
+      x0 = x1 ? x1 - 1 : 0;
+   if (y0 >= y1)
+      y0 = y1 ? y1 - 1 : 0;
+   if (x1 <= x0)
+      x1 = x0 + 1;
+   if (y1 <= y0)
+      y1 = y0 + 1;
+   out->pos  = VIDEO_POS_PACK(v->x + x0, v->y + y0);
+   out->dims = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
+}
+
 bool video_views_first_drawn(const video_views_layout_t *layout,
       unsigned view, bool all_areas, unsigned dims,
       video_views_rect_t *out)
