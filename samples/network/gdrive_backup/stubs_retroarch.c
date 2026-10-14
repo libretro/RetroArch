@@ -125,10 +125,37 @@ retro_task_t *task_init(void)
    return NULL;
 }
 
+/* The OAuth lanes drive the polling task's handler on a task the test
+ * owns: flags on its own word, parks and wakes recorded. */
 void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
 {
-   (void)task; (void)flags; (void)set;
-   unreachable("task_set_flags");
+   if (set)
+      task->flags |=  flags;
+   else
+      task->flags &= ~flags;
+}
+
+uint8_t task_get_flags(retro_task_t *task)
+{
+   return (uint8_t)task->flags;
+}
+
+unsigned     stub_parks       = 0;
+retro_time_t stub_park_usec   = 0;
+unsigned     stub_wakes       = 0;
+uint32_t     stub_woken_ident = 0;
+
+void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{
+   (void)task;
+   stub_parks++;
+   stub_park_usec = horizon_usec;
+}
+
+void task_queue_wake(uint32_t ident)
+{
+   stub_wakes++;
+   stub_woken_ident = ident;
 }
 
 bool task_queue_push(retro_task_t *task)

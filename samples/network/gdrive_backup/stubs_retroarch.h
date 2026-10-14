@@ -22,4 +22,10 @@ typedef struct
 extern stub_request_t stub_pending;
 extern bool           stub_has_pending;
 
+/* The polling task's parks and wakes. */
+extern unsigned     stub_parks;
+extern retro_time_t stub_park_usec;
+extern unsigned     stub_wakes;
+extern uint32_t     stub_woken_ident;
+
 #endif

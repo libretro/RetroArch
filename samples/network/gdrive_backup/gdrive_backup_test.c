@@ -252,6 +252,102 @@ static void test_no_backup_wanted(const char *tmp)
          "the server manifest must be replaced without a copy");
 }
 
+/* ---- OAuth device flow ---- */
+
+static unsigned oauth_calls;
+static bool     oauth_success;
+
+static void oauth_done(void *user_data, const char *path, bool success,
+      RFILE *file)
+{
+   (void)user_data; (void)path; (void)file;
+   oauth_calls++;
+   oauth_success = success;
+}
+
+static void oauth_reply(const char *json)
+{
+   static char body[256];
+   http_transfer_data_t resp;
+   stub_request_t req = stub_pending;
+
+   stub_has_pending = false;
+   strlcpy(body, json, sizeof(body));
+   memset(&resp, 0, sizeof(resp));
+   resp.status = 200;
+   resp.data   = body;
+   resp.len    = strlen(body);
+   req.cb(NULL, &resp, req.user_data, NULL);
+}
+
+/* While a token poll is in flight the polling task parks, and does not
+ * end - cancelled or not - since the poll's callback writes into its
+ * context.  A pending reply leaves it to its interval; an outcome wakes
+ * it, and a cancel with nothing in flight ends it. */
+static void test_oauth_poll(void)
+{
+   retro_task_t        task;
+   gdrive_oauth_ctx_t *ctx = (gdrive_oauth_ctx_t*)calloc(1, sizeof(*ctx));
+   unsigned            had = failures;
+
+   printf("[oauth poll]\n");
+   memset(&task, 0, sizeof(task));
+   ctx->cb         = oauth_done;
+   ctx->interval   = 5;
+   ctx->max_polls  = 10;
+   ctx->task_ident = 42;
+   retro_atomic_int_init(&ctx->poll_pending, 0);
+   retro_atomic_int_init(&ctx->auth_done, 0);
+   task.user_data  = ctx;
+   task.ident      = 42;
+   oauth_calls     = 0;
+   stub_parks      = 0;
+   stub_wakes      = 0;
+   stub_has_pending = false;
+
+   gdrive_oauth_task_handler(&task);
+   CHECK(stub_has_pending && classify(&stub_pending) == REQ_TOKEN,
+         "the first pass posts a token poll");
+   CHECK(task.when > 0, "the next poll is an interval away");
+
+   gdrive_oauth_task_handler(&task);
+   CHECK(stub_parks == 1, "a pass with the poll in flight parks");
+   CHECK(!(task.flags & RETRO_TASK_FLG_FINISHED), "and does not finish");
+
+   task.flags |= RETRO_TASK_FLG_CANCELLED;
+   gdrive_oauth_task_handler(&task);
+   CHECK(!(task.flags & RETRO_TASK_FLG_FINISHED) && oauth_calls == 0,
+         "a cancel waits for the poll in flight");
+
+   oauth_reply("{\"error\":\"authorization_pending\"}");
+   CHECK(stub_wakes == 0, "a pending reply does not wake the task");
+
+   gdrive_oauth_task_handler(&task);
+   CHECK((task.flags & RETRO_TASK_FLG_FINISHED) && oauth_calls == 1
+         && !oauth_success, "the cancel ends it once the poll is in");
+   CHECK(!stub_has_pending, "and no further poll is posted");
+
+   /* An outcome wakes it. */
+   memset(&task, 0, sizeof(task));
+   retro_atomic_int_init(&ctx->poll_pending, 0);
+   retro_atomic_int_init(&ctx->auth_done, 0);
+   ctx->polls     = 0;
+   task.user_data = ctx;
+   task.ident     = 42;
+   oauth_calls    = 0;
+   gdrive_oauth_task_handler(&task);
+   oauth_reply("{\"error\":\"access_denied\"}");
+   CHECK(stub_wakes == 1 && stub_woken_ident == 42,
+         "a final reply wakes the polling task");
+   gdrive_oauth_task_handler(&task);
+   CHECK((task.flags & RETRO_TASK_FLG_FINISHED) && oauth_calls == 1
+         && !oauth_success, "which ends with the failure");
+
+   free(ctx);
+   if (failures == had)
+      printf("  ok   oauth poll\n");
+}
+
 int main(void)
 {
    char  tmp[64];
@@ -271,6 +367,7 @@ int main(void)
    test_copy_fails(tmp);
    test_token_refresh(tmp);
    test_no_backup_wanted(tmp);
+   test_oauth_poll();
 
    free(gdrive_st.folders);
    gdrive_st.folders = NULL;

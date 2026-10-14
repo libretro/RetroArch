@@ -70,6 +70,9 @@ static const char *gdrive_client_secret(void)
 #define GDRIVE_SCOPE         "https://www.googleapis.com/auth/drive.file"
 #define GDRIVE_FOLDER_NAME   "RetroArch"
 #define GDRIVE_TOKEN_URL     "https://oauth2.googleapis.com/token"
+/* Watchdog for the OAuth task while a poll is in flight; the poll's
+ * callback wakes it on an outcome. */
+#define GDRIVE_OAUTH_PENDING_PARK_USEC 1000000
 #define GDRIVE_DEVICE_URL    "https://oauth2.googleapis.com/device/code"
 #define GDRIVE_API_BASE      "https://www.googleapis.com/drive/v3"
 #define GDRIVE_UPLOAD_BASE   "https://www.googleapis.com/upload/drive/v3"
@@ -140,12 +143,16 @@ typedef struct
 typedef struct
 {
    char device_code[512];
-   retro_task_t *task;
    int interval;
    int polls;
    int max_polls;
-   bool poll_pending;
-   bool auth_done;
+   /* The polling task's ident, for the poll callback's wake. */
+   uint32_t task_ident;
+   /* Set by the task when it posts a poll, cleared by the poll's
+    * callback on the main thread - after interval, auth_success and
+    * auth_done, which the task reads once it sees the clear. */
+   retro_atomic_int_t poll_pending;
+   retro_atomic_int_t auth_done;
    bool auth_success;
    cloud_sync_complete_handler_t cb;
    void *user_data;
@@ -975,38 +982,29 @@ static void gdrive_poll_cb(retro_task_t *task, void *task_data,
    char error_str[256];
    char access_token[2048];
    char refresh_token[2048];
-
-   ctx->poll_pending = false;
+   bool done                  = true;
 
    if (!data)
-   {
       RARCH_WARN(GDPFX "OAuth poll failed (no data)\n");
-      ctx->auth_done = true;
-      return;
-   }
-
    /* Check for error responses (still polling) */
-   if (gdrive_json_string(data->data, data->len,
+   else if (gdrive_json_string(data->data, data->len,
             "error", error_str, sizeof(error_str)))
    {
+      /* authorization_pending: the task polls again after interval */
       if (string_is_equal(error_str, "authorization_pending"))
-         return; /* handler will poll again after interval */
-
-      if (string_is_equal(error_str, "slow_down"))
+         done = false;
+      else if (string_is_equal(error_str, "slow_down"))
       {
          ctx->interval += 5;
          RARCH_LOG(GDPFX "Slowing down poll interval to %d seconds\n",
                ctx->interval);
-         return;
+         done = false;
       }
-
-      RARCH_WARN(GDPFX "OAuth error: %s\n", error_str);
-      ctx->auth_done = true;
-      return;
+      else
+         RARCH_WARN(GDPFX "OAuth error: %s\n", error_str);
    }
-
    /* Success - extract tokens */
-   if (   gdrive_json_string(data->data, data->len,
+   else if (gdrive_json_string(data->data, data->len,
             "access_token", access_token, sizeof(access_token))
        && gdrive_json_string(data->data, data->len,
             "refresh_token", refresh_token, sizeof(refresh_token)))
@@ -1018,15 +1016,19 @@ static void gdrive_poll_cb(retro_task_t *task, void *task_data,
             refresh_token,
             sizeof(settings->arrays.google_drive_refresh_token));
       RARCH_LOG(GDPFX "OAuth authorization successful\n");
-      ctx->auth_done    = true;
       ctx->auth_success = true;
-      /* Wake the handler immediately */
-      ctx->task->when   = cpu_features_get_time_usec();
-      return;
    }
+   else
+      RARCH_WARN(GDPFX "OAuth response missing tokens\n");
 
-   RARCH_WARN(GDPFX "OAuth response missing tokens\n");
-   ctx->auth_done = true;
+   /* The task waits for this clear before it reads anything above or
+    * frees ctx, and an outcome wakes it at once; a pending reply
+    * leaves it to its poll interval. */
+   if (done)
+      retro_atomic_store_release_int(&ctx->auth_done, 1);
+   retro_atomic_store_release_int(&ctx->poll_pending, 0);
+   if (done)
+      task_queue_wake(ctx->task_ident);
 }
 
 /*
@@ -1039,7 +1041,15 @@ static void gdrive_oauth_task_handler(retro_task_t *task)
    gdrive_oauth_ctx_t *ctx = (gdrive_oauth_ctx_t *)task->user_data;
    char post_data[2048];
 
-   if (ctx->auth_done)
+   /* A poll in flight: its callback writes into ctx, which cleanup
+    * frees, so nothing ends the task before it lands. */
+   if (retro_atomic_load_acquire_int(&ctx->poll_pending))
+   {
+      task_queue_park(task, GDRIVE_OAUTH_PENDING_PARK_USEC);
+      return;
+   }
+
+   if (retro_atomic_load_acquire_int(&ctx->auth_done))
    {
       if (ctx->auth_success)
          gdrive_begin_with_token(ctx->cb, ctx->user_data);
@@ -1049,22 +1059,17 @@ static void gdrive_oauth_task_handler(retro_task_t *task)
       return;
    }
 
-   if (ctx->poll_pending)
+   if (     (task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+         || ++ctx->polls > ctx->max_polls)
    {
-      /* Still waiting for HTTP response, check again in 1s */
-      task->when = cpu_features_get_time_usec() + 1000000;
-      return;
-   }
-
-   if (++ctx->polls > ctx->max_polls)
-   {
-      RARCH_WARN(GDPFX "OAuth polling timed out\n");
+      if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+         RARCH_WARN(GDPFX "OAuth polling timed out\n");
       ctx->cb(ctx->user_data, NULL, false, NULL);
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
 
-   ctx->poll_pending = true;
+   retro_atomic_store_release_int(&ctx->poll_pending, 1);
 
    snprintf(post_data, sizeof(post_data),
          "client_id=%s&client_secret=%s"
@@ -1078,10 +1083,10 @@ static void gdrive_oauth_task_handler(retro_task_t *task)
          gdrive_poll_cb, ctx))
    {
       RARCH_WARN(GDPFX "Could not poll for authorization\n");
-      ctx->poll_pending = false;
+      retro_atomic_store_release_int(&ctx->poll_pending, 0);
    }
 
-   /* Schedule next handler invocation after interval */
+   /* The next poll after interval; an outcome wakes the task sooner. */
    task->when = cpu_features_get_time_usec()
               + (retro_time_t)ctx->interval * 1000000;
 }
@@ -1158,7 +1163,9 @@ static void gdrive_device_code_cb(retro_task_t *task, void *task_data,
    poll_task->progress = -1;
    poll_task->when     = cpu_features_get_time_usec()
                        + (retro_time_t)ctx->interval * 1000000;
-   ctx->task           = poll_task;
+   ctx->task_ident     = poll_task->ident;
+   retro_atomic_int_init(&ctx->poll_pending, 0);
+   retro_atomic_int_init(&ctx->auth_done, 0);
    task_queue_push(poll_task);
 }
 
