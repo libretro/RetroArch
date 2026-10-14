@@ -213,6 +213,7 @@ typedef struct gl3
    float *overlay_tex_coord;
    uint16_t *overlay_color_coord; /* UNORM16 r, g, b, a per vertex */
    GLsync fences[GL_CORE_NUM_FENCES];
+   GLsync pbo_readback_sync[GL_CORE_NUM_PBOS];
    void *readback_buffer_screenshot;
    struct scaler_ctx pbo_readback_scaler;
 
@@ -2048,10 +2049,26 @@ static void gl3_deinit_pbo_readback(gl3_t *gl)
 {
    int i;
    for (i = 0; i < GL_CORE_NUM_PBOS; i++)
+   {
+      if (gl->pbo_readback_sync[i])
+         glDeleteSync(gl->pbo_readback_sync[i]);
       if (gl->pbo_readback[i] != 0)
          glDeleteBuffers(1, &gl->pbo_readback[i]);
+   }
+   memset(gl->pbo_readback_sync, 0, sizeof(gl->pbo_readback_sync));
+   memset(gl->pbo_readback_valid, 0, sizeof(gl->pbo_readback_valid));
+   gl->pbo_readback_index = 0;
    memset(gl->pbo_readback, 0, sizeof(gl->pbo_readback));
    scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+}
+
+static bool gl3_pbo_readback_ready(gl3_t *gl, unsigned index)
+{
+   GLenum status;
+   if (!gl->pbo_readback_sync[index])
+      return false;
+   status = glClientWaitSync(gl->pbo_readback_sync[index], 0, 0);
+   return status == GL_ALREADY_SIGNALED || status == GL_CONDITION_SATISFIED;
 }
 
 static void gl3_pbo_async_readback(gl3_t *gl);
@@ -2079,8 +2096,18 @@ static void gl3_record_readback(gl3_t *gl, bool skip_in_menu)
 
 static void gl3_pbo_async_readback(gl3_t *gl)
 {
+   unsigned index = gl->pbo_readback_index;
+   if (gl->pbo_readback_sync[index])
+   {
+      /* Reusing a pending destination can wait inside glReadPixels. */
+      if (!gl3_pbo_readback_ready(gl, index))
+         return;
+      glDeleteSync(gl->pbo_readback_sync[index]);
+      gl->pbo_readback_sync[index] = NULL;
+   }
+   gl->pbo_readback_valid[index] = false;
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
-         gl->pbo_readback[gl->pbo_readback_index++]);
+         gl->pbo_readback[index]);
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    /* See the screenshot read-back: under scRGB, recording reads the
@@ -2091,10 +2118,6 @@ static void gl3_pbo_async_readback(gl3_t *gl)
    else
       glReadBuffer(GL_BACK);
 #endif
-   if (gl->pbo_readback_index >= GL_CORE_NUM_PBOS)
-      gl->pbo_readback_index = 0;
-   gl->pbo_readback_valid[gl->pbo_readback_index] = true;
-
    /* Desktop GL reads BGRA, which both the recording's BGRX path and
     * the BGR24 scaler want; GLES only guarantees RGBA. Keep in sync
     * with the scaler in gl3_init_pbo_readback(). */
@@ -2106,9 +2129,18 @@ static void gl3_pbo_async_readback(gl3_t *gl)
                 GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
 #endif
                 NULL);
+   gl->pbo_readback_sync[index] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   gl->pbo_readback_valid[index] = gl->pbo_readback_sync[index] != NULL;
    if (gl->scrgb.active && gl->scrgb.fbo)
       glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   if (!gl->pbo_readback_sync[index])
+   {
+      gl3_deinit_pbo_readback(gl);
+      gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
+      return;
+   }
+   gl->pbo_readback_index = (index + 1) % GL_CORE_NUM_PBOS;
 }
 
 static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
@@ -4861,6 +4893,10 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
       if (!gl->pbo_readback_valid[gl->pbo_readback_index])
          goto error;
 
+      if (!gl3_pbo_readback_ready(gl, gl->pbo_readback_index))
+         goto error;
+      glDeleteSync(gl->pbo_readback_sync[gl->pbo_readback_index]);
+      gl->pbo_readback_sync[gl->pbo_readback_index] = NULL;
       gl->pbo_readback_valid[gl->pbo_readback_index] = false;
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
 

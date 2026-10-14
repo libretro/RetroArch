@@ -37,6 +37,66 @@ static unsigned map_calls, unmap_calls, context_calls;
 static bool map_fails, core_bound;
 static GLboolean unmap_result;
 static uint32_t readback_pixels[8];
+static GLenum sync_status[128];
+static bool sync_live[128];
+static unsigned sync_created, sync_deleted;
+static bool sync_ready, fence_fails;
+
+static GLsync APIENTRY readback_fence(GLenum condition, GLbitfield flags)
+{
+   unsigned id;
+   (void)condition; (void)flags;
+   if (fence_fails)
+      return NULL;
+   id = ++sync_created;
+   if (id >= 128)
+      abort();
+   sync_live[id] = true;
+   sync_status[id] = sync_ready ? GL_ALREADY_SIGNALED : GL_TIMEOUT_EXPIRED;
+   return (GLsync)(uintptr_t)id;
+}
+
+static GLenum APIENTRY readback_wait(GLsync sync, GLbitfield flags, GLuint64 timeout)
+{
+   unsigned id = (unsigned)(uintptr_t)sync;
+   if (flags || timeout || !sync_live[id])
+      abort();
+   return sync_status[id];
+}
+
+static void APIENTRY readback_delete_sync(GLsync sync)
+{
+   unsigned id = (unsigned)(uintptr_t)sync;
+   if (!sync_live[id])
+      abort();
+   sync_live[id] = false;
+   sync_deleted++;
+}
+
+static void APIENTRY readback_delete_buffers(GLsizei count, const GLuint *buffers)
+{
+   (void)count; (void)buffers;
+}
+
+static void APIENTRY readback_gen_buffers(GLsizei count, GLuint *buffers)
+{
+   GLsizei i;
+   for (i = 0; i < count; i++)
+      buffers[i] = 7 + i;
+}
+
+static void APIENTRY readback_buffer_data(GLenum target, GLsizeiptr size,
+      const void *data, GLenum usage)
+{
+   (void)target; (void)size; (void)data; (void)usage;
+}
+
+static void queue_readback(gl3_t *gl)
+{
+   unsigned index = gl->pbo_readback_index;
+   gl3_pbo_async_readback(gl);
+   gl->pbo_readback_index = index;
+}
 
 static void APIENTRY readback_bind(GLenum target, GLuint buffer)
 {
@@ -77,6 +137,13 @@ static void run_readback_cases(void)
    __rglgen_glBindBuffer = readback_bind;
    __rglgen_glMapBufferRange = readback_map;
    __rglgen_glUnmapBuffer = readback_unmap;
+   __rglgen_glFenceSync = readback_fence;
+   __rglgen_glClientWaitSync = readback_wait;
+   __rglgen_glDeleteSync = readback_delete_sync;
+   __rglgen_glDeleteBuffers = readback_delete_buffers;
+   __rglgen_glGenBuffers = readback_gen_buffers;
+   __rglgen_glBufferData = readback_buffer_data;
+   sync_ready = true;
    memset(readback_pixels, 0x37, sizeof(readback_pixels));
    memset(canary, 0xa5, sizeof(canary));
    for (bgrx = 0; bgrx < 2; bgrx++)
@@ -91,6 +158,7 @@ static void run_readback_cases(void)
          gl.pbo_readback_scaler.in_width = 4;
          gl.pbo_readback_scaler.in_height = 2;
          gl.pbo_readback[0] = 7;
+         queue_readback(&gl);
          gl.pbo_readback_valid[0] = true;
          map_fails = true;
          map_calls = unmap_calls = context_calls = 0;
@@ -107,23 +175,94 @@ static void run_readback_cases(void)
          if (bgrx)
          {
             map_fails = false;
+            queue_readback(&gl);
             gl.pbo_readback_valid[0] = true;
             CHECK(gl3_read_viewport_internal(&gl, out, true, true),
                   "successful map delivers BGRX");
             CHECK(!memcmp(out, readback_pixels, sizeof(out)), "BGRX pixels preserved");
             CHECK(unmap_calls == 1 && pack_binding == 0, "successful map unmapped once");
             unmap_result = GL_FALSE;
+            queue_readback(&gl);
             gl.pbo_readback_valid[0] = true;
             CHECK(!gl3_read_viewport_internal(&gl, out, true, true),
                   "failed unmap rejects corrupted frame");
             CHECK(unmap_calls == 2 && pack_binding == 0, "failed unmap restores binding");
          }
+         gl3_deinit_pbo_readback(&gl);
       }
+}
+
+static void run_fence_cases(void)
+{
+   gl3_t gl;
+   uint8_t out[32], canary[32];
+   unsigned i, created, deleted;
+   memset(&gl, 0, sizeof(gl));
+   gl.flags = GL3_FLAG_PBO_READBACK_ENABLE;
+   gl.vp.dims = VIDEO_SCALE_PACK(4, 2);
+   gl.pbo_readback_scaler.in_width = 4;
+   gl.pbo_readback_scaler.in_height = 2;
+   for (i = 0; i < GL_CORE_NUM_PBOS; i++)
+      gl.pbo_readback[i] = 7 + i;
+   sync_ready = false;
+   map_fails = false;
+   unmap_result = GL_TRUE;
+   map_calls = 0;
+   created = sync_created;
+   for (i = 0; i < GL_CORE_NUM_PBOS; i++)
+      gl3_pbo_async_readback(&gl);
+   CHECK(sync_created == created + GL_CORE_NUM_PBOS, "each recording slot fenced");
+   memset(out, 0xa5, sizeof(out));
+   memcpy(canary, out, sizeof(out));
+   CHECK(!gl3_read_viewport_internal(&gl, out, true, true), "pending recording slot skipped");
+   CHECK(map_calls == 0 && !memcmp(out, canary, sizeof(out)), "pending slot never mapped");
+   CHECK(gl.pbo_readback_valid[0], "pending recording slot retained");
+   gl3_pbo_async_readback(&gl);
+   CHECK(sync_created == created + GL_CORE_NUM_PBOS && gl.pbo_readback_index == 0,
+         "pending slot not overwritten or advanced");
+   sync_status[created + 1] = GL_CONDITION_SATISFIED;
+   CHECK(gl3_read_viewport_internal(&gl, out, true, true), "completed slot delivers pixels");
+   CHECK(map_calls == 1 && !memcmp(out, readback_pixels, sizeof(out)), "completed pixels preserved");
+   CHECK(!gl3_read_viewport_internal(&gl, out, true, true), "completed slot consumed once");
+   gl3_pbo_async_readback(&gl);
+   CHECK(sync_created == created + GL_CORE_NUM_PBOS + 1, "consumed slot reused with fresh fence");
+   sync_status[created + 2] = GL_WAIT_FAILED;
+   CHECK(!gl3_read_viewport_internal(&gl, out, true, true), "failed completion query never maps");
+   CHECK(map_calls == 1, "failed completion query preserves map count");
+   gl3_pbo_async_readback(&gl);
+   CHECK(gl.pbo_readback_index == 1, "failed completion query never reuses destination");
+   deleted = sync_deleted;
+   gl3_deinit_pbo_readback(&gl);
+   CHECK(sync_deleted == deleted + GL_CORE_NUM_PBOS, "teardown retires all remaining fences");
+   CHECK(gl.pbo_readback_index == 0 && !gl.pbo_readback_valid[0], "teardown clears recording state");
+   gl3_deinit_pbo_readback(&gl);
+   CHECK(sync_deleted == deleted + GL_CORE_NUM_PBOS, "repeated teardown does not delete twice");
+   sync_ready = true;
+   CHECK(gl3_init_pbo_readback(&gl), "recording ring restarts after teardown");
+   queue_readback(&gl);
+   deleted = sync_deleted;
+   queue_readback(&gl);
+   CHECK(sync_deleted == deleted + 1, "replacement retires completed unread fence");
+   gl.flags |= GL3_FLAG_GPU_RECORDING;
+   gl.vp.dims = VIDEO_SCALE_PACK(2, 4);
+   CHECK(!gl3_read_viewport_internal(&gl, out, true, true), "resized ring has no stale frame");
+   CHECK(sync_deleted == deleted + 2, "resize retires old recording fence");
+   CHECK(gl.pbo_readback_scaler.in_width == 2 && gl.pbo_readback_scaler.in_height == 4,
+         "resize reinitializes recording dimensions");
+   gl3_deinit_pbo_readback(&gl);
+   fence_fails = true;
+   gl.flags |= GL3_FLAG_PBO_READBACK_ENABLE;
+   gl.pbo_readback[0] = 7;
+   gl3_pbo_async_readback(&gl);
+   CHECK(!(gl.flags & GL3_FLAG_PBO_READBACK_ENABLE), "fence allocation failure disables unsafe ring");
+   fence_fails = false;
+   CHECK(sync_created == sync_deleted, "all recording fences retired");
 }
 
 int main(void)
 {
    int result = run_cases(run_chain, 0);
    run_readback_cases();
+   run_fence_cases();
    return result || fails;
 }
