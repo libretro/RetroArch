@@ -23,3 +23,8 @@ S_UINT_EX(video_screen_layout, VIDEO_SCREEN_LAYOUT,
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_screen_layout, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Screen Layout",
       "How to arrange the screens of multi-screen systems.")
+S_BOOL(video_windows_enable, VIDEO_WINDOWS_ENABLE,
+      "video_windows_enable",
+      false, SD_FLAG_NONE, 0, 0,
+      "Separate Screen Windows",
+      "Allow secondary screens to use separate desktop windows.")

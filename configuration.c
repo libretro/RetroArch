@@ -39,6 +39,7 @@
 #include "file_path_special.h"
 #include "command.h"
 #include "configuration.h"
+#include "gfx/video_windows.h"
 #include "content.h"
 #include "config.def.h"
 #include "config.features.h"
@@ -6190,6 +6191,16 @@ void config_set_defaults(settings_t *target)
       settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
    }
 
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      settings->uints.video_screen_window_mode[i] = i
+         ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
+      settings->uints.video_screen_window_pos[i] = 0;
+      settings->uints.video_screen_window_dims[i] = 0;
+      settings->uints.video_screen_window_monitor[i] = 0;
+      settings->bools.video_screen_window_fullscreen[i] = false;
+   }
+
    custom_vp->dims   = 0;
    custom_vp->pos    = 0;
 
@@ -6862,6 +6873,59 @@ static void config_sanitize_turbo_binds(settings_t *settings)
       settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
 }
 
+/* Keep indexed-load scratch out of config_load_file's frame. */
+#if defined(__OPTIMIZE_SIZE__)
+#define CONFIG_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define CONFIG_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define CONFIG_NOINLINE __declspec(noinline)
+#else
+#define CONFIG_NOINLINE
+#endif
+
+CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, config_file_t *conf)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      char cfg[64];
+      int x = 0, y = 0;
+      unsigned width = 0, height = 0;
+      size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
+
+      settings->uints.video_screen_window_mode[i] = i
+         ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
+      settings->uints.video_screen_window_monitor[i] = 0;
+      settings->bools.video_screen_window_fullscreen[i] = false;
+      strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
+      config_get_uint(conf, cfg, &settings->uints.video_screen_window_mode[i]);
+      if (!i || settings->uints.video_screen_window_mode[i] > VIDEO_WINDOW_HIDDEN)
+         settings->uints.video_screen_window_mode[i] = i
+            ? VIDEO_WINDOW_SEPARATE : VIDEO_WINDOW_ATTACHED;
+      strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
+      config_get_int(conf, cfg, &x);
+      strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
+      config_get_int(conf, cfg, &y);
+      strlcpy_lit(cfg + len, "width", sizeof(cfg) - len);
+      config_get_uint(conf, cfg, &width);
+      strlcpy_lit(cfg + len, "height", sizeof(cfg) - len);
+      config_get_uint(conf, cfg, &height);
+      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
+      config_get_uint(conf, cfg, &settings->uints.video_screen_window_monitor[i]);
+      strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
+      config_get_bool(conf, cfg, &settings->bools.video_screen_window_fullscreen[i]);
+      settings->uints.video_screen_window_pos[i] =
+         x >= VIDEO_POS_MIN && x <= VIDEO_POS_MAX
+         && y >= VIDEO_POS_MIN && y <= VIDEO_POS_MAX ? VIDEO_POS_PACK(x, y) : 0;
+      settings->uints.video_screen_window_dims[i] =
+         width && height && VIDEO_SCALE_FITS(width, height)
+         ? VIDEO_SCALE_PACK(width, height) : 0;
+   }
+}
+
+#undef CONFIG_NOINLINE
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -7182,6 +7246,8 @@ static bool config_load_file(const char *path, settings_t *settings)
          if (*size_settings[i].ptr < 10000)
             *size_settings[i].ptr  = *size_settings[i].ptr * 1024 * 1024;
    }
+
+   config_load_video_windows(settings, conf);
 
    {
       char prefix[64];
@@ -9573,6 +9639,61 @@ bool config_save_file(const char *path)
       }
    }
 
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      char cfg[64];
+      size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
+
+      strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
+      if (   !minimal
+          || settings->uints.video_screen_window_mode[i] != defaults->uints.video_screen_window_mode[i])
+         config_set_int(conf, cfg, settings->uints.video_screen_window_mode[i]);
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
+      if (   !minimal
+          || VIDEO_POS_X(settings->uints.video_screen_window_pos[i]) != VIDEO_POS_X(defaults->uints.video_screen_window_pos[i]))
+         config_set_int(conf, cfg, VIDEO_POS_X(settings->uints.video_screen_window_pos[i]));
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
+      if (   !minimal
+          || VIDEO_POS_Y(settings->uints.video_screen_window_pos[i]) != VIDEO_POS_Y(defaults->uints.video_screen_window_pos[i]))
+         config_set_int(conf, cfg, VIDEO_POS_Y(settings->uints.video_screen_window_pos[i]));
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "width", sizeof(cfg) - len);
+      if (   !minimal
+          || VIDEO_SCALE_W(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_W(defaults->uints.video_screen_window_dims[i]))
+         config_set_int(conf, cfg, VIDEO_SCALE_W(settings->uints.video_screen_window_dims[i]));
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "height", sizeof(cfg) - len);
+      if (   !minimal
+          || VIDEO_SCALE_H(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_H(defaults->uints.video_screen_window_dims[i]))
+         config_set_int(conf, cfg, VIDEO_SCALE_H(settings->uints.video_screen_window_dims[i]));
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
+      if (   !minimal
+          || settings->uints.video_screen_window_monitor[i] != defaults->uints.video_screen_window_monitor[i])
+         config_set_int(conf, cfg, settings->uints.video_screen_window_monitor[i]);
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
+      if (   !minimal
+          || settings->bools.video_screen_window_fullscreen[i] != defaults->bools.video_screen_window_fullscreen[i])
+         config_set_string(conf, cfg, settings->bools.video_screen_window_fullscreen[i] ? "true" : "false");
+      else
+         config_unset(conf, cfg);
+   }
+
    for (i = 0; i < MAX_USERS; i++)
    {
       size_t _len;
@@ -10178,6 +10299,40 @@ int8_t config_save_overrides(enum override_type type,
             RARCH_DBG("[Override] %s = \"%s\"\n",
                   path_overrides[i].ident, cur);
          }
+      }
+
+      for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      {
+         char cfg[64];
+         size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
+
+         strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
+         if (settings->uints.video_screen_window_mode[i] != overrides->uints.video_screen_window_mode[i])
+            config_set_int(conf, cfg, overrides->uints.video_screen_window_mode[i]);
+
+         strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
+         if (VIDEO_POS_X(settings->uints.video_screen_window_pos[i]) != VIDEO_POS_X(overrides->uints.video_screen_window_pos[i]))
+            config_set_int(conf, cfg, VIDEO_POS_X(overrides->uints.video_screen_window_pos[i]));
+
+         strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
+         if (VIDEO_POS_Y(settings->uints.video_screen_window_pos[i]) != VIDEO_POS_Y(overrides->uints.video_screen_window_pos[i]))
+            config_set_int(conf, cfg, VIDEO_POS_Y(overrides->uints.video_screen_window_pos[i]));
+
+         strlcpy_lit(cfg + len, "width", sizeof(cfg) - len);
+         if (VIDEO_SCALE_W(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_W(overrides->uints.video_screen_window_dims[i]))
+            config_set_int(conf, cfg, VIDEO_SCALE_W(overrides->uints.video_screen_window_dims[i]));
+
+         strlcpy_lit(cfg + len, "height", sizeof(cfg) - len);
+         if (VIDEO_SCALE_H(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]))
+            config_set_int(conf, cfg, VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]));
+
+         strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
+         if (settings->uints.video_screen_window_monitor[i] != overrides->uints.video_screen_window_monitor[i])
+            config_set_int(conf, cfg, overrides->uints.video_screen_window_monitor[i]);
+
+         strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
+         if (settings->bools.video_screen_window_fullscreen[i] != overrides->bools.video_screen_window_fullscreen[i])
+            config_set_string(conf, cfg, overrides->bools.video_screen_window_fullscreen[i] ? "true" : "false");
       }
 
       for (i = 0; i < MAX_USERS; i++)

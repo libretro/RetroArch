@@ -3533,6 +3533,7 @@ static void video_driver_views_layout(settings_t *settings,
    params.dims          = dims;
    params.stereo_mode   = stereo_mode;
    params.screen_layout = settings->uints.video_screen_layout;
+   params.exclude_screens = 0;
    params.rotation      = retroarch_get_rotation() % 4;
    params.swap_eyes     = settings->bools.video_stereo_swap_eyes;
    params.scale_integer = settings->bools.video_scale_integer;

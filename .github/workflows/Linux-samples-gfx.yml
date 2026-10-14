@@ -669,6 +669,15 @@ jobs:
           timeout 60 ./video_views_test
           echo "[pass] video_views_test"
 
+      - name: Build and run video_windows_test (ASan+UBSan)
+        shell: bash
+        working-directory: samples/gfx/video_windows
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          timeout 60 ./video_windows_test
+          echo "[pass] video_windows_test"
+
       - name: Build and run video_xr_test (ASan+UBSan)
         shell: bash
         working-directory: samples/gfx/video_xr
