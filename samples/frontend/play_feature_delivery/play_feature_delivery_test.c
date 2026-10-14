@@ -1,13 +1,12 @@
 /* play_feature_delivery.c on the host, against the Android stubs in
- * tools/platform_stubs/android: a core download asks Java with the
- * status lock released.
+ * tools/platform_stubs/android.
  *
- * The status callbacks Java delivers (coreInstallInitiated,
- * coreInstallStatusChanged) take the same lock as the download that
- * set them off. Here the stub Java answers inside the call, on the
- * calling thread - the case where a lock still held across the call
- * deadlocks the thread against itself. A watchdog turns that into a
- * failure rather than a hang. */
+ * The stub Java answers a download inside the call, on the calling
+ * thread; a watchdog turns a download that never returns into a
+ * failure rather than a hang. Status updates for another core, or
+ * for a transaction that has ended, are dropped; and the status a
+ * poller reads is always one whole update, with Java's thread, the
+ * downloads and the poller all running at once. */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -61,12 +60,14 @@ static void stub_call_void(JNIEnv *env, jobject obj, jmethodID m, ...)
 JNIEnv *jni_thread_getenv(void) { return &test_env; }
 
 /* Each status update wakes the task watching the download. */
-static unsigned wakes;
-static uint32_t woken;
+static retro_atomic_int_t wakes_a;
+static retro_atomic_int_t woken_a;
+#define wakes ((unsigned)retro_atomic_load_acquire_int(&wakes_a))
+#define woken ((uint32_t)retro_atomic_load_acquire_int(&woken_a))
 void task_queue_wake(uint32_t ident)
 {
-   wakes++;
-   woken = ident;
+   retro_atomic_store_release_int(&woken_a, (int)ident);
+   retro_atomic_fetch_add_int(&wakes_a, 1);
 }
 
 static ANativeActivity    test_activity;
@@ -77,6 +78,43 @@ struct android_app       *g_android = &test_app;
 
 static retro_atomic_int_t returned;
 static bool               download_ok;
+
+#define STRESS_ROUNDS 2000
+
+static retro_atomic_int_t stop;
+static retro_atomic_int_t torn;
+
+static void status_changed(int status, long done, long total)
+{
+   Java_com_retroarch_browser_retroactivity_RetroActivityCommon_coreInstallStatusChanged(
+         &test_env, NULL, NULL, status, done, total);
+}
+
+/* Java's thread: progress for whatever transaction is active. */
+static void java_thread(void *unused)
+{
+   long n = 0;
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&stop))
+      status_changed(0, n++ % 101, 100);
+}
+
+/* Every read is one whole update: a finished transaction is never
+ * active, a running one always is, and the progress is in range. */
+static void poll_thread(void *unused)
+{
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&stop))
+   {
+      enum play_feature_delivery_install_status st;
+      unsigned pr = 0;
+      bool active = play_feature_delivery_download_status(&st, &pr);
+      bool done   = st == PLAY_FEATURE_DELIVERY_INSTALLED
+         || st == PLAY_FEATURE_DELIVERY_FAILED;
+      if (pr > 100 || active == done)
+         retro_atomic_store_release_int(&torn, 1);
+   }
+}
 
 static void do_download(void *unused)
 {
@@ -106,8 +144,6 @@ int main(void)
    test_activity.clazz            = (jobject)&test_activity;
    test_app.activity              = &test_activity;
    test_app.downloadCore          = (jmethodID)&test_app;
-
-   play_feature_delivery_init();
 
    t = sthread_create(do_download, NULL);
    for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&returned); i++)
@@ -145,7 +181,63 @@ int main(void)
          "a second download started alongside the first");
    CHECK(java_calls == 1, "Java was asked again for a refused download");
 
-   play_feature_delivery_deinit();
+   /* A status for another core is not this transaction's. */
+   {
+      jstring other = (jstring)"snes9x";
+      unsigned w    = wakes;
+      Java_com_retroarch_browser_retroactivity_RetroActivityCommon_coreInstallInitiated(
+            &test_env, NULL, other, 0);
+      CHECK(play_feature_delivery_download_status(&status, &progress)
+            && status == PLAY_FEATURE_DELIVERY_DOWNLOADING,
+            "another core's status ended the transaction (status %d)",
+            (int)status);
+      CHECK(wakes == w, "another core's status woke the task");
+   }
+
+   /* Installed: the transaction ends, and a late update does not
+    * bring it back. */
+   status_changed(2, 100, 100);
+   CHECK(!play_feature_delivery_download_status(&status, &progress)
+         && status == PLAY_FEATURE_DELIVERY_INSTALLED && progress == 100,
+         "the install did not end the transaction (status %d, %u%%)",
+         (int)status, progress);
+   status_changed(0, 10, 100);
+   CHECK(!play_feature_delivery_download_status(&status, &progress)
+         && status == PLAY_FEATURE_DELIVERY_INSTALLED && progress == 100,
+         "a late update revived a finished transaction (status %d, %u%%)",
+         (int)status, progress);
+
+   /* The next download starts fresh. */
+   CHECK(play_feature_delivery_download("mgba_libretro_android.so", 79),
+         "a download after the last one ended was refused");
+   CHECK(play_feature_delivery_download_status(&status, &progress)
+         && status == PLAY_FEATURE_DELIVERY_STARTING && progress == 0,
+         "the new download did not start fresh (status %d, %u%%)",
+         (int)status, progress);
+   status_changed(3, 0, 0);
+
+   /* Downloads, Java's thread and a poller at once. */
+   {
+      sthread_t *java = sthread_create(java_thread, NULL);
+      sthread_t *poll = sthread_create(poll_thread, NULL);
+      unsigned refused = 0;
+      for (i = 0; i < STRESS_ROUNDS; i++)
+      {
+         if (!play_feature_delivery_download("mgba_libretro_android.so",
+                  (uint32_t)i))
+            refused++;
+         status_changed(i & 1 ? 2 : 3, 100, 100);
+         if (play_feature_delivery_download_status(&status, &progress))
+            refused++;
+      }
+      retro_atomic_store_release_int(&stop, 1);
+      sthread_join(java);
+      sthread_join(poll);
+      CHECK(!refused, "%u downloads were refused or did not end",
+            refused);
+      CHECK(!retro_atomic_load_acquire_int(&torn),
+            "a poll read a status from two different updates");
+   }
 
    if (failures)
    {

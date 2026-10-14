@@ -42,16 +42,6 @@ enum play_feature_delivery_install_status
    PLAY_FEATURE_DELIVERY_FAILED
 };
 
-/******************/
-/* Initialisation */
-/******************/
-
-/* Must be called upon program initialisation */
-void play_feature_delivery_init(void);
-
-/* Must be called upon program termination */
-void play_feature_delivery_deinit(void);
-
 /**********/
 /* Status */
 /**********/

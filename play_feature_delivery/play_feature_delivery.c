@@ -20,11 +20,6 @@
 
 #include <retro_atomic.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#include <stdlib.h>
-#endif
-
 #include <string/stdstring.h>
 #include "../frontend/drivers/platform_unix.h"
 
@@ -36,19 +31,30 @@
 /* Globals (do not fix...) */
 /***************************/
 
-/* Due to the way the JNI interface works,
- * core download status updates happen
- * asynchronously in a manner that we cannot
- * capture using any standard means. We therefore
- * have to implement status monitoring via an
- * ugly hack, involving a mutex-locked global
- * status struct... */
+/* Java reports core download status asynchronously, from its own
+ * thread. The whole status of the transaction is one word, so the
+ * callbacks, the claim and the task polling it never lock. */
+
+/* word: progress (0-100), status, ACTIVE, CLAIMING, generation */
+#define PFD_PROGRESS_MASK 0x7F
+#define PFD_STATUS_SHIFT  7
+#define PFD_STATUS_MASK   (0xF << PFD_STATUS_SHIFT)
+#define PFD_ACTIVE        (1 << 11)
+#define PFD_CLAIMING      (1 << 12)
+#define PFD_GEN_ONE       (1 << 13)
+#define PFD_GEN_MASK      0x7FFFE000
+
+#define PFD_STATUS(w)     \
+   ((enum play_feature_delivery_install_status) \
+    (((w) & PFD_STATUS_MASK) >> PFD_STATUS_SHIFT))
 
 typedef struct
 {
-#ifdef HAVE_THREADS
-   slock_t *status_lock;
-#endif
+   retro_atomic_int_t word;
+   /* Of the active transaction; written while CLAIMING, read once
+    * ACTIVE is seen, and only trusted if the word is unchanged. */
+   retro_atomic_int_t name_hash;
+   retro_atomic_int_t waiter;
    /* Cached result of play_feature_delivery_enabled_internal():
     * -1 = not yet queried, 0 = disabled, 1 = enabled.  Queried
     * frequently, often in loops, so the fast path is a single
@@ -56,30 +62,31 @@ typedef struct
     * the (idempotent) Java query twice; both stores write the
     * same value. */
    retro_atomic_int_t enabled_cached;
-   unsigned download_progress;
-   /* The task watching the download, woken by each status update. */
-   uint32_t waiter;
-   enum play_feature_delivery_install_status last_status;
-   char last_core_name[256];
-   bool active;
 } play_feature_delivery_state_t;
 
 static play_feature_delivery_state_t play_feature_delivery_state = {
-
-#ifdef HAVE_THREADS
-   NULL,                       /* status_lock */
-#endif
+   RETRO_ATOMIC_INT_INITIALIZER(PLAY_FEATURE_DELIVERY_IDLE
+         << PFD_STATUS_SHIFT),       /* word */
+   RETRO_ATOMIC_INT_INITIALIZER(0),  /* name_hash */
+   RETRO_ATOMIC_INT_INITIALIZER(0),  /* waiter */
    RETRO_ATOMIC_INT_INITIALIZER(-1), /* enabled_cached */
-   0,                          /* download_progress */
-   0,                          /* waiter */
-   PLAY_FEATURE_DELIVERY_IDLE, /* last_status */
-   {'\0'},                     /* last_core_name */
-   false,                      /* active */
 };
 
 static play_feature_delivery_state_t* play_feature_delivery_get_state(void)
 {
    return &play_feature_delivery_state;
+}
+
+/* FNV-1a */
+static int play_feature_delivery_name_hash(const char *s)
+{
+   uint32_t h = 2166136261u;
+   while (*s)
+   {
+      h ^= (unsigned char)*s++;
+      h *= 16777619u;
+   }
+   return (int)(h & 0x7FFFFFFF);
 }
 
 /**********************/
@@ -95,49 +102,41 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject this_obj, jstring core_name, jboolean successful)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-   uint32_t waiter                      = 0;
-   bool updated                         = false;
-
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(state->status_lock);
-#endif
+   const char *core_name_c;
+   int hash;
 
    /* Only update status if an install is active */
-   if (state->active)
+   if (!(retro_atomic_load_acquire_int(&state->word) & PFD_ACTIVE))
+      return;
+
+   if (!(core_name_c = (*env)->GetStringUTFChars(env, core_name, NULL)))
+      return;
+   hash = play_feature_delivery_name_hash(core_name_c);
+   (*env)->ReleaseStringUTFChars(env, core_name, core_name_c);
+
+   for (;;)
    {
-      /* Convert Java-style string to a proper char array */
-      const char *core_name_c = (*env)->GetStringUTFChars(
-            env, core_name, NULL);
+      uint32_t waiter;
+      int nw;
+      int w = retro_atomic_load_acquire_int(&state->word);
 
-      /* Ensure that status update is for the
-       * correct core */
-      if (string_is_equal(state->last_core_name, core_name_c))
+      /* Ensure that status update is for the correct core */
+      if (     !(w & PFD_ACTIVE)
+            || retro_atomic_load_relaxed_int(&state->name_hash) != hash)
+         return;
+      waiter = (uint32_t)retro_atomic_load_relaxed_int(&state->waiter);
+      nw     = w & ~PFD_STATUS_MASK;
+      if (successful)
+         nw |= PLAY_FEATURE_DELIVERY_STARTING << PFD_STATUS_SHIFT;
+      else
+         nw  = (nw & ~PFD_ACTIVE)
+            | (PLAY_FEATURE_DELIVERY_FAILED << PFD_STATUS_SHIFT);
+      if (retro_atomic_cas_int(&state->word, w, nw))
       {
-         if (successful)
-            state->last_status = PLAY_FEATURE_DELIVERY_STARTING;
-         else
-         {
-            state->last_status = PLAY_FEATURE_DELIVERY_FAILED;
-            state->active      = false;
-         }
-         waiter  = state->waiter;
-         updated = true;
+         task_queue_wake(waiter);
+         return;
       }
-
-      /* Must always 'release' the converted string */
-      (*env)->ReleaseStringUTFChars(env, core_name, core_name_c);
    }
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(state->status_lock);
-#endif
-
-   /* The watching task reads the status under the lock; wake it once
-    * the lock is free. */
-   if (updated)
-      task_queue_wake(waiter);
 }
 
 /*
@@ -149,108 +148,73 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject thisObj, jobjectArray core_names, jint status, jlong bytes_downloaded, jlong total_bytes_to_download)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-   uint32_t waiter                      = 0;
-   bool updated                         = false;
+   unsigned progress                    = 100;
+   enum play_feature_delivery_install_status last_status;
+   bool active                          = true;
 
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(state->status_lock);
-#endif
+   /* Note: core_names is a list of cores that
+    * are currently installing. We should check
+    * that the active core is in this list
+    * before updating the status, but if multiple
+    * installs are queued then it seems dubious
+    * to filter like this - i.e. is it possible
+    * for an entry to drop off the queue before
+    * the entire transaction is complete? If so,
+    * then we may risk 'missing' the final status
+    * update...
+    * We therefore just monitor the transaction
+    * as a whole, and disregard core names... */
 
-   /* Only update status if an install is active */
-   if (state->active)
+   /* Determine download progress */
+   if (total_bytes_to_download > 0)
    {
-      /* Note: core_names is a list of cores that
-       * are currently installing. We should check
-       * that state->last_core_name is in this list
-       * before updating the status, but if multiple
-       * installs are queued then it seems dubious
-       * to filter like this - i.e. is it possible
-       * for an entry to drop off the queue before
-       * the entire transaction is complete? If so,
-       * then we may risk 'missing' the final status
-       * update...
-       * We therefore just monitor the transaction
-       * as a whole, and disregard core names... */
-
-      /* Determine download progress */
-      if (total_bytes_to_download > 0)
-      {
-         state->download_progress = (unsigned)
-               (((float)bytes_downloaded * 100.0f /
-                     (float)total_bytes_to_download) + 0.5f);
-         state->download_progress = (state->download_progress > 100) ?
-               100 : state->download_progress;
-      }
-      else
-         state->download_progress = 100;
-
-      /* Check status */
-      switch (status)
-      {
-         case 0: /* INSTALL_STATUS_DOWNLOADING */
-            state->last_status = PLAY_FEATURE_DELIVERY_DOWNLOADING;
-            break;
-         case 1: /* INSTALL_STATUS_INSTALLING */
-            state->last_status = PLAY_FEATURE_DELIVERY_INSTALLING;
-            break;
-         case 2: /* INSTALL_STATUS_INSTALLED */
-            state->last_status = PLAY_FEATURE_DELIVERY_INSTALLED;
-            state->active      = false;
-            break;
-         case 3: /* INSTALL_STATUS_FAILED */
-         default:
-            state->last_status = PLAY_FEATURE_DELIVERY_FAILED;
-            state->active      = false;
-            break;
-      }
-      waiter  = state->waiter;
-      updated = true;
+      progress = (unsigned)
+            (((float)bytes_downloaded * 100.0f /
+                  (float)total_bytes_to_download) + 0.5f);
+      if (progress > 100)
+         progress = 100;
    }
 
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(state->status_lock);
-#endif
-
-   if (updated)
-      task_queue_wake(waiter);
-}
-
-/******************/
-/* Initialisation */
-/******************/
-
-/* Must be called upon program initialisation */
-void play_feature_delivery_init(void)
-{
-   play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-
-   play_feature_delivery_deinit();
-
-#ifdef HAVE_THREADS
-   if (!state->status_lock)
-      state->status_lock  = slock_new();
-#endif
-
-   /* Note: Would like to cache whether this
-    * is a Play Store build here, but
-    * play_feature_delivery_init() is called
-    * too early in the startup sequence... */
-}
-
-/* Must be called upon program termination */
-void play_feature_delivery_deinit(void)
-{
-   play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-
-#ifdef HAVE_THREADS
-   if (state->status_lock)
+   /* Check status */
+   switch (status)
    {
-      slock_free(state->status_lock);
-      state->status_lock = NULL;
+      case 0: /* INSTALL_STATUS_DOWNLOADING */
+         last_status = PLAY_FEATURE_DELIVERY_DOWNLOADING;
+         break;
+      case 1: /* INSTALL_STATUS_INSTALLING */
+         last_status = PLAY_FEATURE_DELIVERY_INSTALLING;
+         break;
+      case 2: /* INSTALL_STATUS_INSTALLED */
+         last_status = PLAY_FEATURE_DELIVERY_INSTALLED;
+         active      = false;
+         break;
+      case 3: /* INSTALL_STATUS_FAILED */
+      default:
+         last_status = PLAY_FEATURE_DELIVERY_FAILED;
+         active      = false;
+         break;
    }
-#endif
+
+   for (;;)
+   {
+      uint32_t waiter;
+      int nw;
+      int w = retro_atomic_load_acquire_int(&state->word);
+
+      /* Only update status if an install is active */
+      if (!(w & PFD_ACTIVE))
+         return;
+      waiter = (uint32_t)retro_atomic_load_relaxed_int(&state->waiter);
+      nw     = (w & PFD_GEN_MASK)
+         | (int)progress
+         | ((int)last_status << PFD_STATUS_SHIFT)
+         | (active ? PFD_ACTIVE : 0);
+      if (retro_atomic_cas_int(&state->word, w, nw))
+      {
+         task_queue_wake(waiter);
+         return;
+      }
+   }
 }
 
 /**********/
@@ -460,29 +424,16 @@ bool play_feature_delivery_download_status(
       enum play_feature_delivery_install_status *status,
       unsigned *progress)
 {
-   play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-   bool active;
+   int w = retro_atomic_load_acquire_int(
+         &play_feature_delivery_get_state()->word);
 
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(state->status_lock);
-#endif
-
-   /* Copy status parameters */
    if (status)
-      *status   = state->last_status;
+      *status   = PFD_STATUS(w);
 
    if (progress)
-      *progress = state->download_progress;
+      *progress = (unsigned)(w & PFD_PROGRESS_MASK);
 
-   active       = state->active;
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(state->status_lock);
-#endif
-
-   return active;
+   return (w & PFD_ACTIVE) != 0;
 }
 
 /***********/
@@ -514,27 +465,28 @@ bool play_feature_delivery_download(const char *core_file, uint32_t waiter)
          core_file, core_name, sizeof(core_name)))
       return false;
 
-   /* We only support one download at a time: claim it under the
-    * lock, then ask Java with the lock released. The status callbacks
-    * take the same lock, and one that came back on this thread, or
-    * one Java's own thread delivers while this call waits on it,
-    * would otherwise wait on a lock this thread is holding. */
-#ifdef HAVE_THREADS
-   slock_lock(state->status_lock);
-#endif
-   if (!state->active)
+   /* We only support one download at a time. CLAIMING keeps the
+    * callbacks and other claims off until the transaction is set up;
+    * Java is asked once it is visible, as it may answer on this
+    * thread. */
+   for (;;)
    {
-      state->download_progress = 0;
-      state->last_status       = PLAY_FEATURE_DELIVERY_PENDING;
-      state->waiter            = waiter;
-      state->active            = true;
-      strlcpy(state->last_core_name, core_name,
-            sizeof(state->last_core_name));
-      ret                      = true;
+      int w = retro_atomic_load_acquire_int(&state->word);
+      if (w & (PFD_ACTIVE | PFD_CLAIMING))
+         break;
+      if (retro_atomic_cas_int(&state->word, w, w | PFD_CLAIMING))
+      {
+         retro_atomic_store_relaxed_int(&state->name_hash,
+               play_feature_delivery_name_hash(core_name));
+         retro_atomic_store_relaxed_int(&state->waiter, (int)waiter);
+         retro_atomic_store_release_int(&state->word,
+               (int)(((unsigned)w + PFD_GEN_ONE) & PFD_GEN_MASK)
+               | PFD_ACTIVE
+               | (PLAY_FEATURE_DELIVERY_PENDING << PFD_STATUS_SHIFT));
+         ret = true;
+         break;
+      }
    }
-#ifdef HAVE_THREADS
-   slock_unlock(state->status_lock);
-#endif
 
    if (ret)
    {
