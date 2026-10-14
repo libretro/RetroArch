@@ -192,6 +192,7 @@ jobs:
             filestream_rbuf_fault_test
             vfs_rename_replace_test
             cdrom_cuesheet_overflow_test
+            rdvd_h262_test
             rdvd_lpcm_test
             rdvd_ac3_test
             rdvd_packet_test
@@ -502,6 +503,23 @@ jobs:
               -c:a pcm_f32le -f f32le -y "$reference"
             ./rdvd_vfs_real_test "$fixture" "$reference"
           done
+
+      - name: Reconstruct progressive H262 I pictures against a reference
+        shell: bash
+        working-directory: libretro-common/samples/formats/dvd
+        run: |
+          set -euo pipefail
+          fixture=$(mktemp --suffix=.m2v)
+          reference=$(mktemp --suffix=.yuv)
+          trap 'rm -f "$fixture" "$reference"' EXIT
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=160x128:rate=25 \
+            -frames:v 3 -c:v mpeg2video -g 1 -bf 0 -q:v 3 -f mpeg2video -y "$fixture"
+          ffmpeg -hide_banner -loglevel error -i "$fixture" -pix_fmt yuv420p -f rawvideo -y "$reference"
+          ./rdvd_h262_test "$fixture" "$reference"
+          ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=160x128:rate=25 \
+            -frames:v 3 -c:v mpeg1video -g 1 -bf 0 -q:v 3 -f mpeg1video -y "$fixture"
+          ffmpeg -hide_banner -loglevel error -i "$fixture" -pix_fmt yuv420p -f rawvideo -y "$reference"
+          ./rdvd_h262_test "$fixture" "$reference"
 
       - name: Compile-test retro_atomic.h from a C++11 TU
         shell: bash
@@ -1211,6 +1229,7 @@ jobs:
           WINEDEBUG: -all
         run: |
           make CC=x86_64-w64-mingw32-gcc EXE=.exe all
+          timeout 120 wine ./rdvd_h262_test.exe
           timeout 120 wine ./rdvd_lpcm_test.exe
           timeout 120 wine ./rdvd_ac3_test.exe
           timeout 120 wine ./rdvd_packet_test.exe

@@ -1670,6 +1670,7 @@ static void parse_mpeg2_extension(rmpeg1_video_t *v)
    else if (id == 8)
    {
       unsigned precision, structure, frame_pred, conceal, qscale, vlc, scan, progressive;
+      unsigned repeat, chroma, composite;
       if (!v->mpeg2) { v->mpeg2 = true; v->sequence_supported = false; }
       v->picture_supported = false;
       if (bits_left(v) < 30) { v->errors++; return; }
@@ -1677,11 +1678,11 @@ static void parse_mpeg2_extension(rmpeg1_video_t *v)
       precision = get_bits(v, 2); structure = get_bits(v, 2);
       (void)get_bit(v); frame_pred = get_bit(v); conceal = get_bit(v);
       qscale = get_bit(v); vlc = get_bit(v); scan = get_bit(v);
-      (void)get_bit(v); (void)get_bit(v); progressive = get_bit(v);
-      (void)get_bit(v);
+      repeat = get_bit(v); chroma = get_bit(v); progressive = get_bit(v);
+      composite = get_bit(v);
       v->picture_supported = v->sequence_supported && v->coding_type == RMPEG1_PIC_I
          && !precision && structure == 3 && frame_pred && !conceal
-         && !qscale && !vlc && !scan && progressive;
+         && !qscale && !vlc && !scan && progressive && chroma && !repeat && !composite;
    }
    else if (v->mpeg2 && (id == 3 || id == 5 || id == 9 || id == 10))
       v->sequence_supported = v->picture_supported = false;

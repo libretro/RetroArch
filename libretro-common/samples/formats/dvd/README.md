@@ -217,3 +217,15 @@ explicit/header-inferred DVD formats at 16/20/24 bits and 1..8 channels.
 Run dts_lpcm_test --dvd-only for these deterministic tests without external
 fixture generation. DVD mixer buffer_tell reports the encoded read frontier;
 partially emitted PCM remains in owned carry until consumed or reset.
+
+rmpeg1_video now reconstructs a restricted H.262 subset: progressive 4:2:0
+frame I pictures, linear quantisation, eight-bit intra DC precision, zigzag
+scan and Table B.14 VLCs. It uses 12-bit MPEG-2 escape levels and parity
+mismatch control. Extension units and sequence headers buffer completely
+before parsing; unsupported sequence/picture modes skip reconstruction.
+The test embeds an external-FFmpeg red I picture for every input chunk size
+and unsupported-mode gates, and compares three generated detailed pictures
+against planar reference output (maximum allowed sample difference three).
+P/B prediction, interlace, alternate VLC/scan/quantisation and other extension
+modes remain unsupported. This does not make ordinary DVDs playable. Existing
+decoder-owned planar slots remain borrowed until the next decode call.

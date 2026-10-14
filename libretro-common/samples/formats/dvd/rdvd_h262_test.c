@@ -39,7 +39,7 @@ static void test_gates(void)
 {
    uint8_t data[sizeof(fixture)];
    size_t i, sequence = 0, picture = 0, chunk;
-   const unsigned picture_bits[] = {20,22,25,26,27,28,29,32};
+   const unsigned picture_bits[] = {20,22,25,26,27,28,29,30,31,32,33};
    for (i = 0; i + 5 < sizeof(fixture); i++)
       if (!fixture[i] && !fixture[i+1] && fixture[i+2] == 1 && fixture[i+3] == 0xb5)
       {
