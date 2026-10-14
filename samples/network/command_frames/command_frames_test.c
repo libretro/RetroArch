@@ -127,6 +127,42 @@ int main(int argc, char **argv)
       preempt_deinit(loop);
    }
 
+   /* READ_CORE_MEMORY and WRITE_CORE_MEMORY answer with the address and
+    * the bytes in hexadecimal, at a system address the core maps */
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1000 4")
+         && !strcmp(reply,"READ_CORE_MEMORY 1000 00 01 02 03\n"));
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1004 1")
+         && !strcmp(reply,"READ_CORE_MEMORY 1004 04\n"));
+   reply[0]=0;
+   CHECK(command_write_memory(&cmd,"1002 ff fe")
+         && !strcmp(reply,"WRITE_CORE_MEMORY 1002 2\n"));
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1000 4")
+         && !strcmp(reply,"READ_CORE_MEMORY 1000 00 01 FF FE\n"));
+   /* every byte value formats as two uppercase digits */
+   CHECK(command_write_memory(&cmd,"1000 00 0f 10 a5 ff"));
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1000 5")
+         && !strcmp(reply,"READ_CORE_MEMORY 1000 00 0F 10 A5 FF\n"));
+   /* a read past the region it is in stops at its end */
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"100e 8")
+         && !strcmp(reply,"READ_CORE_MEMORY 100e 0E 0F\n"));
+   /* and one outside every region says so, as it always has */
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"20000 1")
+         && strstr(reply,"-1"));
+   /* GET_MEMORY_MAP answers the region READ_CORE_MEMORY takes */
+   reply[0]=0;
+   reply[0]=0;
+   CHECK(command_get_memory_map(&cmd,"")
+         && !strcmp(reply,
+            /* the select mask is RetroArch's, worked out from the
+             * region where the core leaves it zero */
+            "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
+
    /* several controls at once */
    reply[0]=0;
    CHECK(command_set_input(&cmd,"1 b+a 1") && !strcmp(reply,"1\tb a\tnone\n"));

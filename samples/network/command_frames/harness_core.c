@@ -7,19 +7,36 @@ static retro_input_poll_t poll;
 static retro_input_state_t input;
 static uint32_t frame;
 static uint32_t pixels[64];
+/* Memory for READ_CORE_MEMORY and GET_MEMORY_MAP to answer about, at a
+ * system address, as a real core maps its RAM. */
+static uint8_t ram[16];
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_game=true;
    enum retro_pixel_format fmt=RETRO_PIXEL_FORMAT_XRGB8888;
+   static struct retro_memory_descriptor desc[1];
+   static struct retro_memory_map map;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,&no_game);
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,&fmt);
+   memset(desc,0,sizeof(desc));
+   desc[0].ptr=ram; desc[0].len=sizeof(ram); desc[0].start=0x1000;
+   desc[0].select=0; desc[0].addrspace="ram";
+   desc[0].flags=RETRO_MEMDESC_SYSTEM_RAM;
+   map.descriptors=desc; map.num_descriptors=1;
+   cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS,&map);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video=cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { (void)cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { poll=cb; }
 void retro_set_input_state(retro_input_state_t cb) { input=cb; }
-void retro_init(void) { frame=0; }
+void retro_init(void)
+{
+   unsigned i;
+   frame=0;
+   /* 00 01 02 ... so a read's bytes say which ones they are */
+   for (i=0;i<sizeof(ram);i++) ram[i]=(uint8_t)i;
+}
 void retro_deinit(void) { }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *i)
