@@ -205,5 +205,15 @@ ffmpeg -i fixture.vob -map 0:a:0 -c:a pcm_f32le -f f32le reference.f32
 CI generates 16-bit and 24-bit stereo DVD fixtures and compares every PCM
 sample against FFmpeg output, including exact EOF. The test reference is
 little-endian float32 and runs on Linux x86 and Windows x86/x64. Packet views
-supply the format here; legacy standalone LPCM header inference and mixer
-seeking are separate interfaces requiring further DVD integration review.
+supply the format here; standalone LPCM headers now include all six post-substream-ID bytes and
+respect the initial access-unit pointer. Explicit DVD format selection avoids
+ambiguous header inference. The mixer carries one decoded packing block for
+short reads and exact intra-block seeks, while complete blocks decode directly
+into output. This remains buffer decoding, without DVD clocks or player output.
+
+The root samples/formats/dts_lpcm harness also exercises every frame seek,
+short f32 reads, mixed f32/s16 carry, restart, trailing partial blocks and
+explicit/header-inferred DVD formats at 16/20/24 bits and 1..8 channels.
+Run dts_lpcm_test --dvd-only for these deterministic tests without external
+fixture generation. DVD mixer buffer_tell reports the encoded read frontier;
+partially emitted PCM remains in owned carry until consumed or reset.

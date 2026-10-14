@@ -413,13 +413,14 @@ static void lpcm_20bit_case(void)
 static void lpcm_header_case(void)
 {
    rlpcm_format_t fmt;
-   uint8_t dvd[5], bd[4];
+   uint8_t dvd[6], bd[4];
    printf("   the disc headers\n");
 
    /* DVD: 24-bit, 96 kHz, six channels. */
-   dvd[0] = 0x05; dvd[1] = 0x00; dvd[2] = 0x03;
-   dvd[3] = (uint8_t)((2u << 6) | (1u << 4) | 5u);
-   dvd[4] = 0x80;
+   dvd[0] = 0x05; dvd[1] = 0x00; dvd[2] = 0x04;
+   dvd[3] = 0x05;
+   dvd[4] = (uint8_t)((2u << 6) | (1u << 4) | 5u);
+   dvd[5] = 0x80;
    memset(&fmt, 0, sizeof(fmt));
    CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, sizeof(dvd), &fmt) == RLPCM_OK,
          "the DVD header was refused");
@@ -428,12 +429,27 @@ static void lpcm_header_case(void)
    CHECK(fmt.bits == 24 && fmt.sample_rate == 96000 && fmt.channels == 6,
          "the DVD header read %u-bit %u Hz %u ch", fmt.bits, fmt.sample_rate, fmt.channels);
    CHECK(fmt.big_endian, "the DVD header is not big-endian");
-   CHECK(fmt.header_bytes == 5, "the DVD header is %u bytes", fmt.header_bytes);
+   CHECK(fmt.header_bytes == 6, "the DVD header is %u bytes", fmt.header_bytes);
    CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, 3, &fmt) == RLPCM_NEED_MORE,
          "a short DVD header did not ask for more");
-   dvd[3] = (uint8_t)((3u << 6) | 5u);
+   dvd[4] = (uint8_t)((3u << 6) | 5u);
    CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, sizeof(dvd), &fmt) == RLPCM_BAD,
          "a reserved sample size was accepted");
+
+   {
+      unsigned n;
+      dvd[4] = (uint8_t)((2u << 6) | (1u << 4) | 5u);
+      for (n = 0; n < 6; n++)
+         CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, n, &fmt) == RLPCM_NEED_MORE,
+            "DVD header truncation %u was accepted", n);
+      CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, NULL, 6, &fmt) == RLPCM_BAD, "null DVD header accepted");
+      dvd[2] = 0;
+      CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, 6, &fmt) == RLPCM_NO_SYNC, "continuation acquired sync");
+      dvd[2] = 3;
+      CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, 6, &fmt) == RLPCM_BAD, "pointer into audio header accepted");
+      dvd[2] = 7;
+      CHECK(rlpcm_parse_format(RLPCM_KIND_DVD, dvd, 6, &fmt) == RLPCM_NEED_MORE, "missing continuation prefix accepted");
+   }
 
    /* Blu-ray: 5.1, 48 kHz, 24-bit, a 4096-byte payload. */
    bd[0] = 0x10; bd[1] = 0x00;
@@ -564,8 +580,106 @@ static void transfer_case(void)
    free(whole); free(part); free(raw);
 }
 
-int main(void)
+static void dvd_transfer_case(void)
 {
+   unsigned channels, bits, mode;
+   printf("   DVD LPCM short reads and exact seeks\n");
+   for (channels = 1; channels <= 8; channels++)
+      for (bits = 16; bits <= 24; bits += 4)
+         for (mode = 0; mode < 4; mode++)
+         {
+            rlpcm_format_t fmt;
+            size_t block, frames, length, offset, got, n, target;
+            unsigned count, i, rate = 0, reported_channels = 0;
+            uint64_t total = 0;
+            float input[96], expected[96], output[96];
+            int16_t expected16[96], output16[96];
+            uint8_t packet[262];
+            void *h = audio_transfer_new(AUDIO_TYPE_LPCM);
+            memset(&fmt, 0, sizeof(fmt));
+            fmt.kind = RLPCM_KIND_DVD; fmt.bits = bits;
+            fmt.channels = channels; fmt.sample_rate = 48000;
+            fmt.big_endian = true;
+            CHECK(rlpcm_dvd_block_shape(&fmt, &block, &count), "no DVD block shape");
+            frames = count * 3;
+            offset = mode == 0 ? 0 : (mode == 2 ? 9 : 6);
+            length = offset + block * 3;
+            memset(packet, 0xff, sizeof(packet));
+            packet[0] = 7; packet[1] = 0; packet[2] = mode == 2 ? 7 : 4;
+            packet[3] = 5; packet[4] = (uint8_t)(((bits - 16) / 4) << 6 | (channels - 1));
+            packet[5] = 0x80;
+            for (i = 0; i < frames * channels; i++) input[i] = ((int)i - 42) / 128.0f;
+            input[1] = -1.0f / 65536.0f; input[2] = 1.0f / 65536.0f;
+            input[0] = bits == 16 ? 32767.0f / 32768.0f
+               : bits == 20 ? 524287.0f / 524288.0f : 8388607.0f / 8388608.0f;
+            CHECK(rlpcm_encode_f32(&fmt, input, frames, packet + offset, block * 3) == frames,
+               "DVD encode failed");
+            CHECK(rlpcm_decode_f32(&fmt, packet + offset, block * 3, expected, frames) == frames,
+               "DVD baseline failed");
+            CHECK(rlpcm_decode_s16(&fmt, packet + offset, block * 3, expected16, frames) == frames,
+               "DVD s16 baseline failed");
+            CHECK(h != NULL, "DVD arm allocation failed"); if (!h) return;
+            audio_transfer_set_buffer_ptr(h, AUDIO_TYPE_LPCM, packet, length + 1);
+            if (!mode) *(rlpcm_format_t*)audio_transfer_lpcm_format(h) = fmt;
+            else if (mode == 3) ((rlpcm_format_t*)audio_transfer_lpcm_format(h))->kind = RLPCM_KIND_DVD;
+            CHECK(audio_transfer_start(h, AUDIO_TYPE_LPCM), "DVD start failed (%u/%u/%u)", bits, channels, mode);
+            CHECK(audio_transfer_info(h, AUDIO_TYPE_LPCM, &reported_channels, &rate, &total), "DVD info failed");
+            CHECK(total == frames && reported_channels == channels && rate == 48000,
+               "DVD info includes partial blocks");
+            got = 0;
+            while (got < frames)
+            {
+               size_t request = got % 3 + 1;
+               CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output + got * channels,
+                  request, &n) == AUDIO_PROCESS_NEXT && n, "short DVD read ended early");
+               if (!n) break;
+               got += n;
+            }
+            CHECK(got == frames && !memcmp(output, expected, frames * channels * sizeof(float)),
+               "short DVD reads changed PCM");
+            CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output, 1, &n) == AUDIO_PROCESS_END && !n,
+               "DVD EOF includes a fragment");
+            for (target = 0; target <= frames; target++)
+            {
+               CHECK(audio_transfer_seek(h, AUDIO_TYPE_LPCM, target), "DVD seek failed");
+               if (target < frames)
+               {
+                  CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output, 1, &n) == AUDIO_PROCESS_NEXT && n == 1,
+                     "seek read failed");
+                  CHECK(!memcmp(output, expected + target * channels, channels * sizeof(float)),
+                     "DVD seek missed frame %u", (unsigned)target);
+               }
+               else CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output, 1, &n) == AUDIO_PROCESS_END,
+                  "seek EOF failed");
+            }
+            CHECK(audio_transfer_seek(h, AUDIO_TYPE_LPCM, 0), "DVD s16 rewind failed");
+            for (target = 0; target < frames; target++)
+               CHECK(audio_transfer_read_s16(h, AUDIO_TYPE_LPCM, output16 + target * channels,
+                  1, &n) == AUDIO_PROCESS_NEXT && n == 1, "DVD one-frame s16 read failed");
+            CHECK(!memcmp(output16, expected16, frames * channels * sizeof(int16_t)),
+               "DVD carry rounding/saturation differs from block decoder");
+            CHECK(audio_transfer_seek(h, AUDIO_TYPE_LPCM, 0), "DVD mixed seek failed");
+            CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output, 1, &n) == AUDIO_PROCESS_NEXT && n == 1,
+               "DVD mixed float read failed");
+            CHECK(audio_transfer_read_s16(h, AUDIO_TYPE_LPCM, output16, frames - 1, &n) == AUDIO_PROCESS_NEXT,
+               "DVD mixed s16 read failed");
+            CHECK(n == frames - 1 && !memcmp(output16, expected16 + channels, n * channels * sizeof(int16_t)),
+               "DVD mixed output changed PCM");
+            CHECK(audio_transfer_start(h, AUDIO_TYPE_LPCM), "DVD restart failed");
+            CHECK(audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, output, 1, &n) == AUDIO_PROCESS_NEXT
+               && !memcmp(output, expected, channels * sizeof(float)), "DVD restart retained old carry");
+            audio_transfer_free(h, AUDIO_TYPE_LPCM);
+         }
+}
+
+int main(int argc, char **argv)
+{
+   if (argc == 2 && !strcmp(argv[1], "--dvd-only"))
+   {
+      lpcm_header_case(); dvd_transfer_case();
+      printf("DVD LPCM mixer: %u failure(s)\n", failures);
+      return failures ? 1 : 0;
+   }
    printf("dts and lpcm:\n");
 
    printf("   DTS streams from ffmpeg, walked frame by frame\n");
@@ -584,6 +698,7 @@ int main(void)
    lpcm_20bit_case();
    lpcm_header_case();
    transfer_case();
+   dvd_transfer_case();
 
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("dts and lpcm: the frames are found where ffmpeg put them, and the samples are the samples\n");
