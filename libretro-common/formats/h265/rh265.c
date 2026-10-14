@@ -1017,7 +1017,15 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
          memcpy(&sh->rps, &s->st_rps[idx], sizeof(sh->rps));
       }
       if (s->long_term_ref_pics_present)
-         return -2;                     /* long-term refs: not supported */
+      {
+         unsigned num_sps = s->num_long_term_ref_pics ? rh265_ue(b) : 0;
+         unsigned num_pics = rh265_ue(b);
+         if (rh265_bits_overrun(b) || num_sps > (unsigned)s->num_long_term_ref_pics
+               || num_pics > RH265_MAX_REFS || num_sps > RH265_MAX_REFS - num_pics)
+            return -1;
+         if (num_sps || num_pics)
+            return -2;
+      }
       if (s->temporal_mvp_enabled)
          sh->slice_tmvp = (int)rh265_u1(b);
    }

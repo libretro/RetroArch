@@ -136,3 +136,12 @@ Format references:
 
 - [Microsoft HEVC DXVA specification](https://www.microsoft.com/en-ie/download/details.aspx?id=39947)
 - [DXVA_PicParams_HEVC](https://learn.microsoft.com/en-us/windows/win32/medfound/dxva-picparams-hevc)
+
+The device oracle uses 256x256 HEVC I pictures and 12-picture Main/Main10
+streams with I/P, B-pyramid reordering, WPP and conformance-window cropping.
+Both D3D11 and D3D12 readers compare every decoded sample to rh265.
+The portable hevc_device_fixture_test also compares rh265 to per-frame
+FFmpeg hashes. Regenerate these fixtures with python3 gen_hevc_data.py
+(FFmpeg/libx265 are generation tools, not player dependencies). Tiny 64x64
+parser fixtures remain in the mock tests; real drivers may expose no
+HEVC decoder configuration at that size.

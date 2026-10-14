@@ -95,7 +95,7 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
          || h->pic_output_flag < 0 || h->pic_output_flag > 1)
       return -1;
    if (params->pcm_enabled || params->tiles_enabled || params->dependent_slice_segments_enabled
-         || params->long_term_ref_pics_present
+         || params->num_long_term_ref_pics
          || s->slots < (unsigned)params->max_dec_pic_buffering
          || (!s->started && type < 16) || (type >= 16 && !au->intra)
          || (s->started && (s->width != (unsigned)params->width

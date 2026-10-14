@@ -134,6 +134,21 @@ static void test_wrap_and_epochs(void)
    CHECK(!memcmp(&state, &saved, sizeof(state)));
 }
 
+static void test_empty_long_term(void)
+{
+   setup(4);
+   params.long_term_ref_pics_present = 1;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(rh265_hw_commit(&state, &picture));
+   frame(1, -1, 1);
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(rh265_hw_commit(&state, &picture));
+   params.num_long_term_ref_pics = 1;
+   saved = state;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -2);
+   CHECK(!memcmp(&state, &saved, sizeof(state)));
+}
+
 static void test_invalid(void)
 {
    setup(1);
@@ -157,7 +172,7 @@ static void test_invalid(void)
 
 int main(void)
 {
-   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_invalid();
+   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_invalid();
    printf("HEVC hardware owner state: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -35,7 +35,7 @@ TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
 TARGETS += rh265_hw_stream_test$(EXE)
-TARGETS += video_hw_format_test$(EXE)
+TARGETS += video_hw_format_test$(EXE) hevc_device_fixture_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -44,6 +44,13 @@ WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
 
 all: $(TARGETS)
+
+hevc_device_fixture_test$(EXE): hevc_device_fixture_test.c hevc_device_data.h \
+      $(RA)/libretro-common/formats/mp4/rmp4.c \
+      $(RA)/libretro-common/formats/h265/rh265.c
+	$(CC) $(CFLAGS) -o $@ hevc_device_fixture_test.c \
+	   $(RA)/libretro-common/formats/mp4/rmp4.c \
+	   $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm
 
 video_hw_format_test$(EXE): video_hw_format_test.c \
       $(RA)/gfx/gfx_surface_player.c $(RA)/libretro-common/include/formats/video_hw_frame.h
@@ -81,7 +88,7 @@ d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
 	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
-      $(DECODERS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
+      $(DECODERS) $(DEPS) $(BACKEND) hevc_device_data.h \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
 	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -ld3d11 -lm

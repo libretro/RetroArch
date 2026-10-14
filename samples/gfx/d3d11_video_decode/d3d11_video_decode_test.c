@@ -38,7 +38,7 @@ static int test_qm_raster;
 #include <d3d12.h>
 #include <formats/rmp4.h>
 #include "d3d11_video_decode_test_data.h"
-#include "dxva_hevc_access_unit_data.h"
+#include "hevc_device_data.h"
 
 #include "frontend_stubs.h"
 
@@ -621,6 +621,151 @@ static const stream_t streams[] = {
    STREAM(cropped,     0)
 };
 
+static int take_sw_hevc(frames_t *f, rh265_video *v, int depth)
+{
+   const uint8_t *p[3];
+   int stride[3], w[3], h[3], plane, index, x, y;
+   unsigned bps = depth == 10 ? 2 : 1;
+   if (f->n >= MAX_FRAMES) return 0;
+   for (plane = 0; plane < 3; plane++)
+   {
+      p[plane] = rh265_video_plane(v, plane, &stride[plane], &w[plane], &h[plane]);
+      if (!p[plane]) return 0;
+   }
+   if (w[1] != w[0] / 2 || w[2] != w[1]
+         || h[1] != h[0] / 2 || h[2] != h[1]) return 0;
+   f->w = (unsigned)w[0]; f->h = (unsigned)h[0];
+   index = f->n++;
+   f->y[index] = frame_alloc(f, (size_t)f->w * f->h * bps);
+   f->uv[index] = frame_alloc(f, (size_t)w[1] * 2 * h[1] * bps);
+   if (!f->y[index] || !f->uv[index]) return 0;
+   for (plane = 0; plane < 3; plane++)
+      for (y = 0; y < h[plane]; y++)
+         for (x = 0; x < w[plane]; x++)
+         {
+            size_t at = plane ? (size_t)y * f->w + 2 * x + plane - 1
+               : (size_t)y * f->w + x;
+            uint8_t *dst = plane ? f->uv[index] : f->y[index];
+            if (bps == 2)
+               ((uint16_t*)dst)[at] = (uint16_t)
+                  (((const uint16_t*)p[plane])[y * stride[plane] + x] << 6);
+            else dst[at] = p[plane][y * stride[plane] + x];
+         }
+   return 1;
+}
+
+static int decode_hevc(const uint8_t *data, size_t size, int hardware,
+      int depth, frames_t *f)
+{
+   opened_t opened;
+   video_hw_frame_t frame;
+   rmp4_packet packet;
+   rmp4_t *mp4;
+   rh265_video *v = NULL;
+   const rmp4_track *track;
+   int i, selected = -1, ret = -1, ok = 0;
+   unsigned tries;
+   memset(f, 0, sizeof(*f));
+   memset(&opened, 0, sizeof(opened));
+   if (!(mp4 = rmp4_open_memory(data, size))) return 0;
+   for (i = 0; i < rmp4_num_tracks(mp4); i++)
+      if (rmp4_get_track(mp4, i)->type == RMP4_TRACK_VIDEO)
+      { selected = i; break; }
+   if (selected < 0 || !(v = rh265_video_open())) goto done;
+   track = rmp4_get_track(mp4, selected);
+   if (rh265_video_set_extradata(v, track->codec_private, track->codec_private_size))
+      goto done;
+   if (hardware && !rh265_video_set_hw(v, 1))
+   { ok = -1; goto done; }
+   while ((ret = rmp4_read_packet(mp4, &packet)) == 1)
+   {
+      if (packet.track != selected) continue;
+      tries = 0;
+      do
+      {
+         ret = rh265_video_decode(v, packet.data, packet.size);
+         if ((ret == 1 || ret == 3) && !(hardware
+                  ? !rh265_video_hw_frame(v, &frame)
+                    && (use_d3d12 ? take_hw12(f, &frame) : take_hw(f, &opened, &frame))
+                  : take_sw_hevc(f, v, depth))) goto done;
+         if (ret == 2) Sleep(1);
+      } while ((ret == 2 || ret == 3) && ++tries < 1000);
+      if (ret < 0 || ret > 1) goto done;
+   }
+   if (ret != 0) goto done;
+   for (tries = 0; tries < 1000; tries++)
+   {
+      ret = rh265_video_drain(v);
+      if (ret == 2) { Sleep(1); continue; }
+      if (ret != 0) break;
+      if (!(hardware
+               ? !rh265_video_hw_frame(v, &frame)
+                 && (use_d3d12 ? take_hw12(f, &frame) : take_hw(f, &opened, &frame))
+               : take_sw_hevc(f, v, depth))) goto done;
+   }
+   ok = ret == -1 && f->n == 12;
+done:
+   rh265_video_close(v);
+   rmp4_close(mp4);
+   opened_clear(&opened);
+   opened12_clear(&o12);
+   return ok;
+}
+
+static void test_hevc_stream(const char *name, const uint8_t *data,
+      size_t size, int depth)
+{
+   frames_t sw, hw;
+   int ret, i, plane, matches = 1;
+   size_t at, samples;
+   printf("HEVC %s through D3D%s:\n", name, use_d3d12 ? "12" : "11");
+   memset(&hw, 0, sizeof(hw));
+   ret = decode_hevc(data, size, 0, depth, &sw);
+   check("HEVC stream: all software pictures", ret == 1);
+   if (ret != 1) goto done;
+   ret = decode_hevc(data, size, 1, depth, &hw);
+   if (ret == -1)
+   {
+      printf("HEVC %s: SKIP (device configuration unavailable)\n", name);
+      goto done;
+   }
+   check("HEVC stream: all hardware pictures", ret == 1);
+   if (ret != 1) goto done;
+   matches = sw.n == hw.n && sw.w == hw.w && sw.h == hw.h;
+   for (i = 0; matches && i < sw.n; i++)
+      for (plane = 0; plane < 2; plane++)
+      {
+         const uint8_t *a = plane ? sw.uv[i] : sw.y[i];
+         const uint8_t *b = plane ? hw.uv[i] : hw.y[i];
+         samples = (size_t)sw.w * sw.h / (plane ? 2 : 1);
+         for (at = 0; matches && at < samples; at++)
+            if (depth == 10)
+               matches = ((const uint16_t*)a)[at] >> 6
+                  == ((const uint16_t*)b)[at] >> 6;
+            else matches = a[at] == b[at];
+      }
+   check("HEVC stream: display order and every sample", matches);
+done:
+   frames_free(&sw);
+   frames_free(&hw);
+}
+
+static void test_hevc_streams(void)
+{
+#define HEVC_STREAM(kind, depth) \
+   test_hevc_stream(#kind #depth, hevc_##kind##depth, \
+         sizeof(hevc_##kind##depth), depth)
+   HEVC_STREAM(ip, 8);
+   HEVC_STREAM(bpyr, 8);
+   HEVC_STREAM(wpp, 8);
+   HEVC_STREAM(crop, 8);
+   HEVC_STREAM(ip, 10);
+   HEVC_STREAM(bpyr, 10);
+   HEVC_STREAM(wpp, 10);
+   HEVC_STREAM(crop, 10);
+#undef HEVC_STREAM
+}
+
 static void test_hevc_main(int depth)
 {
    static rh265_video_params_t params;
@@ -635,10 +780,10 @@ static void test_hevc_main(int depth)
    int ret, stride, w, h, plane, matches = 1;
    unsigned attempt, x, y, slots;
    const uint8_t *sw;
-   const uint8_t *config = depth == 10 ? hevc_config10 : hevc_config8;
-   const uint8_t *sample = depth == 10 ? hevc_sample10 : hevc_sample8;
-   size_t config_size = depth == 10 ? sizeof(hevc_config10) : sizeof(hevc_config8);
-   size_t sample_size = depth == 10 ? sizeof(hevc_sample10) : sizeof(hevc_sample8);
+   const uint8_t *config = depth == 10 ? hevc_device_config10 : hevc_device_config8;
+   const uint8_t *sample = depth == 10 ? hevc_device_sample10 : hevc_device_sample8;
+   size_t config_size = depth == 10 ? sizeof(hevc_device_config10) : sizeof(hevc_device_config8);
+   size_t sample_size = depth == 10 ? sizeof(hevc_device_sample10) : sizeof(hevc_device_sample8);
    printf("HEVC %d-bit through D3D%s:\n", depth, use_d3d12 ? "12" : "11");
    memset(&hw, 0, sizeof(hw));
    memset(&opened, 0, sizeof(opened));
@@ -694,6 +839,7 @@ static void test_hevc_main(int depth)
    check("HEVC Main: every imported pixel equals software", matches);
 done:
    opened_clear(&opened);
+   opened12_clear(&o12);
    frames_free(&hw);
    d3d11_video_decode_hevc_close(&ops);
    rh265_video_close(v);
@@ -718,7 +864,8 @@ int main(void)
       printf("d3d11_video_decode_test: SKIP (no D3D11.4 device)\n");
       return 0;
    }
-   if (!d3d11_video_decode_init(dev))
+   if (!d3d11_video_decode_init_formats(dev,
+            IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010))
    {
       printf("d3d11_video_decode_test: SKIP (the backend did not start)\n");
       return 0;
@@ -726,6 +873,7 @@ int main(void)
 
    test_hevc_main(8);
    test_hevc_main(10);
+   test_hevc_streams();
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
@@ -783,6 +931,7 @@ int main(void)
       use_d3d12 = 1;
       test_hevc_main(8);
       test_hevc_main(10);
+      test_hevc_streams();
       for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
       {
          const stream_t *s = &streams[i];

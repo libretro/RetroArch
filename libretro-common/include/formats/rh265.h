@@ -8,12 +8,12 @@
  * prediction, multiple slices, wavefront-coded pictures, the in-loop
  * deblocking filter and sample-adaptive offset. Pictures decode
  * concurrently on a thread pool (rh265_video_set_thread_pool). Every
- * conforming stream decodes to ffmpeg's frames to the sample; the
- * oracle in samples/formats/h265 holds it to that.
+ * supported fixture is checked against FFmpeg to the sample by the
+ * oracle in samples/formats/h265.
  *
  * Out-of-scope streams are refused at the parameter-set or slice level
  * rather than decoded wrongly: 4:2:2/4:4:4/monochrome, other bit
- * depths, tiles, dependent slice segments and PCM.
+ * depths, long-term references, tiles, dependent slice segments and PCM.
  *
  * The persistent video API mirrors rh264_video/rvp8_video so a demuxer
  * (e.g. the MP4 glue in rmp4_video.c) can dispatch H.265 the same way:
@@ -145,7 +145,7 @@ int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len);
  * Returns 1 when a picture is ready through rh265_video_plane, 0 when
  * the data was consumed without producing a picture (parameter sets or
  * SEI only), and negative on malformed input or an unsupported (e.g.
- * inter-coded) stream. */
+ * long-term-reference) stream. */
 /* Hardware: 2 busy (retry identical packet), 3 picture ready while the
  * packet remains unconsumed (take picture, then retry identical packet).
  * No CPU planes are available on hardware. */
@@ -154,8 +154,7 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
 /* Hand out the next pending picture in display order without feeding
  * more data, for end of stream. Returns 0 when a picture became
  * available through rh265_video_plane, -1 when nothing is pending.
- * (Intra pictures leave in decode order, so this only matters once
- * inter prediction lands.) */
+ */
 /* Hardware: 2 busy; retry without waiting. */
 int rh265_video_drain(rh265_video *v);
 

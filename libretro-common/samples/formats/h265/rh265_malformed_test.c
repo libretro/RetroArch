@@ -343,12 +343,13 @@ static void slice_header(bitw *w, int type, int first, int slice_type, int rps_m
          put1(w, 1); putue(w, 0); put1(w, 1); putue(w, 0);
          put1(w, 1); put1(w, 1);
       }
-      else if (!rps_mode)
+      else if (!rps_mode || rps_mode >= 3)
       {
          putue(w, 2); putue(w, 1);
          putue(w, 0); put1(w, 1); putue(w, 1); put1(w, 0);
          putue(w, 2); put1(w, 1);
       }
+      if (rps_mode >= 3) putue(w, (unsigned)(rps_mode - 3));
    }
    if (slice_type != 2)
    {
@@ -457,7 +458,10 @@ static void test_slice_info(void)
    sps(&w, F_LT, 8); lens[0] = nal(units_buf[0], 33, &w);
    n = hvcc(buf, units, lens, 2);
    expect("long-term SPS input", rh265_video_set_extradata(v, buf, n), 0);
-   slice_header(&w, 1, 1, 2, 0, 1); len = nal(unit, 1, &w);
+   slice_header(&w, 1, 1, 2, 3, 1); len = nal(unit, 1, &w);
+   expect("empty long-term set", rh265_video_get_slice(v, unit, len, &out), 0);
+   expect("empty long-term set preserves short-term RPS", out.num_negative, 2);
+   slice_header(&w, 1, 1, 2, 4, 1); len = nal(unit, 1, &w);
    expect("unsupported long-term slice", rh265_video_get_slice(v, unit, len, &out), -2);
    expect("null slice decoder", rh265_video_get_slice(NULL, unit, len, &out), -1);
    expect("null slice input", rh265_video_get_slice(v, NULL, len, &out), -1);
