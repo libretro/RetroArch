@@ -7,6 +7,7 @@ TARGET_TEST5 := rdvd_vfs_test$(EXE)
 TARGET_TEST6 := rdvd_vfs_real_test$(EXE)
 TARGET_TEST7 := rdvd_ac3_test$(EXE)
 TARGET_TEST8 := rdvd_lpcm_test$(EXE)
+TARGET_TEST9 := rdvd_h262_test$(EXE)
 CC ?= cc
 CFLAGS += -std=c89 -pedantic -Wall -Wextra -Werror -I../../../include
 ifneq ($(SANITIZER),)
@@ -16,7 +17,7 @@ endif
 SOURCES := rdvd_packet_test.c ../../../formats/dvd/rdvd_demux.c ../../../formats/dvd/rdvd_packet.c \
            ../../../formats/mpeg1/rmpeg1_ps.c
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7) $(TARGET_TEST8)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9)
 
 $(TARGET): $(SOURCES) ../../../include/formats/rdvd_demux.h ../../../include/formats/rdvd_packet.h ../../../include/formats/rmpeg1_ps.h
 	$(CC) $(CFLAGS) $(SOURCES) -o $@ $(LDFLAGS)
@@ -55,7 +56,10 @@ $(TARGET_TEST7): rdvd_ac3_test.c $(AC3_SOURCES) ../../../include/formats/rdvd_ac
 $(TARGET_TEST8): rdvd_lpcm_test.c ../../../formats/dvd/rdvd_lpcm.c ../../../formats/lpcm/rlpcm.c ../../../include/formats/rlpcm.h ../../../include/formats/rdvd_lpcm.h
 	$(CC) $(CFLAGS) rdvd_lpcm_test.c ../../../formats/dvd/rdvd_lpcm.c ../../../formats/lpcm/rlpcm.c -o $@ $(LDFLAGS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7) $(TARGET_TEST8)
+$(TARGET_TEST9): rdvd_h262_test.c ../../../formats/mpeg1/rmpeg1_video.c ../../../include/formats/rmpeg1_video.h
+	$(CC) $(CFLAGS) rdvd_h262_test.c ../../../formats/mpeg1/rmpeg1_video.c -o $@ $(LDFLAGS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7) $(TARGET_TEST8) $(TARGET_TEST9)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
@@ -65,6 +69,7 @@ check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) 
 	./$(TARGET_TEST6)
 	./$(TARGET_TEST7)
 	./$(TARGET_TEST8)
+	./$(TARGET_TEST9)
 
 clean:
 	rm -f rdvd_packet_test rdvd_packet_test.exe
@@ -81,5 +86,7 @@ clean:
 	rm -f rdvd_ac3_test rdvd_ac3_test.exe
 
 	rm -f rdvd_lpcm_test rdvd_lpcm_test.exe
+
+	rm -f rdvd_h262_test rdvd_h262_test.exe
 
 .PHONY: all check clean
