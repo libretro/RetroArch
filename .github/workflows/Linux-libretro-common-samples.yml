@@ -243,6 +243,9 @@ jobs:
             # A switch to the threaded queue takes over the tasks
             # already queued and counts them.
             task_queue_switch_test
+            # A parked handler runs again on a wake, a cancel or its
+            # horizon, and not before.
+            task_queue_park_test
             image_blit_bands_test
             image_loader_test
             tpool_wait_test

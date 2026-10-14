@@ -55,6 +55,7 @@ struct retro_task_impl
    retro_task_queue_msg_t msg_push;
    void (*push_running)(retro_task_t *);
    void (*cancel)(void *);
+   void (*wake)(uint32_t ident);
    void (*reset)(void);
    void (*wait)(retro_task_condition_fn_t, void *);
    void (*gather)(void);
@@ -402,6 +403,13 @@ static void retro_task_regular_cancel(void *task)
    task_flags_set((retro_task_t*)task, RETRO_TASK_FLG_CANCELLED);
 }
 
+/* This runner calls each handler once per check, which is already the
+ * wait a park asks for, so there is nothing to wake. */
+static void retro_task_regular_wake(uint32_t ident)
+{
+   (void)ident;
+}
+
 /* Slow-handler watchdog.  Both are read and written on the thread
  * that drives the untheaded queue - the same thread that registers
  * them - so they need no locking. */
@@ -477,6 +485,7 @@ static void retro_task_regular_gather(void)
          else
             task->handler(task);
          n_ran++;
+         task->park = 0;
       }
 
       /* This runner is already on the pumping thread. Retirement
@@ -595,6 +604,7 @@ static struct retro_task_impl impl_regular = {
    NULL,
    retro_task_regular_push_running,
    retro_task_regular_cancel,
+   retro_task_regular_wake,
    retro_task_regular_reset,
    retro_task_regular_wait,
    retro_task_regular_gather,
@@ -653,6 +663,81 @@ static void retro_task_threaded_push_running(retro_task_t *task)
    slock_unlock(running_lock);
 }
 
+#ifdef HAVE_GCD
+static void gcd_arm(retro_task_t *task, retro_time_t at);
+#endif
+
+/* Makes @task due now, whether it was parked or scheduled for later,
+ * and tells whoever runs it. Under running_lock. */
+static void retro_task_threaded_wake_locked(retro_task_t *task)
+{
+   task->woken = true;
+   if (task->when)
+   {
+      task_queue_remove(&tasks_running, task);
+      task->when   = 0;
+      task->parked = false;
+      task_queue_put(&tasks_running, task);
+   }
+#ifdef HAVE_GCD
+   if (task->sched)
+      gcd_arm(task, 0);
+#endif
+   scond_signal(worker_cond);
+}
+
+/* @task is about to run: a park it was on is over, so it counts as
+ * running again, and a wake from before this pass is spent. Under
+ * running_lock. */
+static void retro_task_threaded_unpark_locked(retro_task_t *task)
+{
+   if (task->parked)
+   {
+      task_queue_remove(&tasks_running, task);
+      task->when   = 0;
+      task->parked = false;
+      task_queue_put(&tasks_running, task);
+   }
+   task->woken = false;
+}
+
+/* After an unfinished pass: the park the handler asked for, unless a
+ * wake came in while it ran. Under running_lock; returns whether the
+ * task was parked. */
+static bool retro_task_threaded_park_locked(retro_task_t *task)
+{
+   bool parked = false;
+   if (task->park && !task->woken)
+   {
+      task_queue_remove(&tasks_running, task);
+      task->when   = cpu_features_get_time_usec() + task->park;
+      task->parked = true;
+      task_queue_put(&tasks_running, task);
+      parked       = true;
+   }
+   task->park  = 0;
+   task->woken = false;
+   return parked;
+}
+
+static void retro_task_threaded_wake(uint32_t ident)
+{
+   retro_task_t *t;
+
+   slock_lock(running_lock);
+   for (t = tasks_running.front; t; t = t->next)
+   {
+      if (t->ident == ident)
+      {
+         retro_task_threaded_wake_locked(t);
+         break;
+      }
+   }
+   slock_unlock(running_lock);
+}
+
+/* A cancelled task is woken, so a parked one sees the flag now rather
+ * than at its horizon. */
 static void retro_task_threaded_cancel(void *task)
 {
    retro_task_t *t;
@@ -664,6 +749,7 @@ static void retro_task_threaded_cancel(void *task)
       if (t == task)
       {
         task_flags_set(t, RETRO_TASK_FLG_CANCELLED);
+        retro_task_threaded_wake_locked(t);
         break;
       }
    }
@@ -836,6 +922,18 @@ static void retro_task_threaded_park(void)
    slock_unlock(finished_lock);
 }
 
+/* Whether @queue holds a task a wait should wait for: one due now or
+ * one parked on a wait. A task scheduled for later does not count.
+ * Under the queue's lock. */
+static bool task_queue_has_due(const task_queue_t *queue)
+{
+   const retro_task_t *t;
+   for (t = queue->front; t; t = t->next)
+      if (!t->when || t->parked)
+         return true;
+   return false;
+}
+
 static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
 {
    bool wait = false;
@@ -845,7 +943,7 @@ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
       retro_task_threaded_gather();
 
       slock_lock(running_lock);
-      wait = (tasks_running.front && !tasks_running.front->when);
+      wait = task_queue_has_due(&tasks_running);
       slock_unlock(running_lock);
 
       if (!wait)
@@ -862,11 +960,30 @@ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
 
 static void retro_task_threaded_reset(void)
 {
-   retro_task_t *task = NULL;
+   retro_task_t *task  = NULL;
+   retro_task_t *next  = NULL;
+   retro_task_t *queue = NULL;
 
+   /* Every task is cancelled and due now; put back in order, since
+    * all of them now share a 'when' of 0. */
    slock_lock(running_lock);
-   for (task = tasks_running.front; task; task = task->next)
+   queue              = tasks_running.front;
+   tasks_running.front = NULL;
+   tasks_running.back  = NULL;
+   for (task = queue; task; task = next)
+   {
+      next         = task->next;
       task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
+      task->woken  = true;
+      task->when   = 0;
+      task->parked = false;
+      task_queue_put(&tasks_running, task);
+#ifdef HAVE_GCD
+      if (task->sched)
+         gcd_arm(task, 0);
+#endif
+   }
+   scond_signal(worker_cond);
    slock_unlock(running_lock);
 }
 
@@ -978,13 +1095,12 @@ static void retro_task_threaded_settle(retro_task_t *task)
 
    if (!finished)
    {
-      /* Move the task to the back of the queue */
-      /* mimics retro_task_threaded_push_running,
-       * but also includes a task_queue_remove */
       slock_lock(running_lock);
 
-      /* do nothing if only item in queue */
-      if (task->next)
+      /* A parked task waits behind the due ones until its horizon or a
+       * wake; any other goes to the back of the tasks due now, unless
+       * it is the only item in the queue. */
+      if (!retro_task_threaded_park_locked(task) && task->next)
       {
          task_queue_remove(&tasks_running, task);
          task_queue_put(&tasks_running, task);
@@ -1076,6 +1192,8 @@ static void retro_task_threaded_run_main(unsigned due)
             continue;
          break;
       }
+      if (task)
+         retro_task_threaded_unpark_locked(task);
       slock_unlock(running_lock);
       if (!task)
          break;
@@ -1154,6 +1272,7 @@ static void threaded_worker(void *userdata)
       }
 
       self->task = task;
+      retro_task_threaded_unpark_locked(task);
       retro_atomic_store_release_int(&self->state, TASK_WORKER_IN_HANDLER);
       slock_unlock(running_lock);
       task->handler(task);
@@ -1392,6 +1511,7 @@ static struct retro_task_impl impl_threaded = {
    NULL,
    retro_task_threaded_push_running,
    retro_task_threaded_cancel,
+   retro_task_threaded_wake,
    retro_task_threaded_reset,
    retro_task_threaded_wait,
    retro_task_threaded_gather,
@@ -1404,34 +1524,83 @@ static struct retro_task_impl impl_threaded = {
 
 #ifdef HAVE_GCD
 
+/* Each task the GCD backend runs has one timer source, and its event
+ * handler is the only place the task's handler runs.  GCD never runs a
+ * source's handler concurrently with itself, so a wake, a cancel or a
+ * park can retarget the timer at any time without the task running
+ * twice; and the source is cancelled under running_lock in the same
+ * step that takes the task off the running list, so nothing arms it
+ * once the task can be freed. */
+static void gcd_arm(retro_task_t *task, retro_time_t at)
+{
+   dispatch_time_t start = DISPATCH_TIME_NOW;
+   if (at)
+   {
+      retro_time_t delay = at - cpu_features_get_time_usec();
+      if (delay > 0)
+         start = dispatch_time(DISPATCH_TIME_NOW,
+               (int64_t)delay * (int64_t)NSEC_PER_USEC);
+   }
+   dispatch_source_set_timer((dispatch_source_t)task->sched, start,
+         DISPATCH_TIME_FOREVER, 0);
+}
+
+static void gcd_worker(retro_task_t *task);
+
+/* Under running_lock. */
+static bool gcd_start(retro_task_t *task)
+{
+   dispatch_source_t src = dispatch_source_create(
+         DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+         dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0));
+   if (!src)
+      return false;
+   task->sched = src;
+   gcd_queue_count++;
+   dispatch_source_set_event_handler(src, ^{ gcd_worker(task); });
+   gcd_arm(task, task->when);
+   dispatch_resume(src);
+   return true;
+}
+
+/* Under running_lock. */
+static void gcd_stop(retro_task_t *task)
+{
+   dispatch_source_t src = (dispatch_source_t)task->sched;
+   task->sched           = NULL;
+   dispatch_source_cancel(src);
+   dispatch_release(src);
+   gcd_queue_count--;
+   if (!gcd_queue_count)
+      scond_signal(worker_cond);
+}
+
 static void gcd_worker(retro_task_t *task)
 {
-   bool       finished = false;
+   bool finished = false;
    slock_lock(running_lock);
 
-   if (!worker_continue)
+   if (!worker_continue || !task->sched)
    {
-      gcd_queue_count--;
-      if (!gcd_queue_count)
-         scond_signal(worker_cond);
+      if (task->sched)
+         gcd_stop(task);
       slock_unlock(running_lock);
       return;
    }
 
+   /* Fired ahead of its start time: wait out the rest. */
    if (task->when)
    {
-      retro_time_t now   = cpu_features_get_time_usec();
-      retro_time_t delay = task->when - now - 500;
+      retro_time_t delay = task->when - cpu_features_get_time_usec() - 500;
       if (delay > 0)
       {
-         dispatch_time_t after = dispatch_time(DISPATCH_TIME_NOW, delay);
-         dispatch_after(after, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-                        ^{ gcd_worker(task); });
+         gcd_arm(task, task->when);
          slock_unlock(running_lock);
          return;
       }
    }
 
+   retro_task_threaded_unpark_locked(task);
    slock_unlock(running_lock);
 
    task->handler(task);
@@ -1439,17 +1608,23 @@ static void gcd_worker(retro_task_t *task)
    finished = (retro_atomic_load_acquire_int(&task->flags)
          & RETRO_TASK_FLG_FINISHED) != 0;
 
+   slock_lock(running_lock);
    if (!finished)
-      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-                     ^{ gcd_worker(task); });
+   {
+      /* Parked: at its horizon. A start time the handler set itself:
+       * at that. Otherwise: again now. */
+      retro_task_threaded_park_locked(task);
+      if (worker_continue)
+         gcd_arm(task, task->when);
+      else
+         gcd_stop(task);
+      slock_unlock(running_lock);
+   }
    else
    {
       /* Remove task from running queue */
-      slock_lock(running_lock);
-      gcd_queue_count--;
-      if (!gcd_queue_count)
-         scond_signal(worker_cond);
       task_queue_remove(&tasks_running, task);
+      gcd_stop(task);
       slock_unlock(running_lock);
 
       /* Add task to finished queue */
@@ -1467,12 +1642,19 @@ static void retro_task_gcd_push_running(retro_task_t *task)
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
-   /* A main-thread task is the gather's; only the rest go to GCD. */
-   if (!task_is_main_thread_task(task))
+   /* A main-thread task is the gather's; only the rest go to GCD.  One
+    * that GCD cannot take is cancelled and finished, so its callback
+    * still runs. */
+   if (!task_is_main_thread_task(task) && !gcd_start(task))
    {
-      gcd_queue_count++;
-      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-                     ^{ gcd_worker(task); });
+      task_flags_set(task, RETRO_TASK_FLG_CANCELLED | RETRO_TASK_FLG_FINISHED);
+      task_queue_remove(&tasks_running, task);
+      slock_lock(finished_lock);
+      task_queue_put(&tasks_finished, task);
+      retro_atomic_fetch_add_int(&tasks_finished_count, 1);
+      retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+      scond_signal(finished_cond);
+      slock_unlock(finished_lock);
    }
    slock_unlock(running_lock);
 }
@@ -1490,7 +1672,7 @@ static void retro_task_gcd_wait(retro_task_condition_fn_t cond, void* data)
       wait = false;
       /* can't just look at the first task like threaded, they're not sorted by when */
       for (task = tasks_running.front; !wait && task; task = task->next)
-         wait |= !task->when;
+         wait |= !task->when || task->parked;
       slock_unlock(running_lock);
 
       if (!wait)
@@ -1520,10 +1702,9 @@ static bool retro_task_gcd_init(void)
    {
       if (task_is_main_thread_task(task))
          continue;
-      gcd_queue_count++;
-      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-                     ^{ gcd_worker(task); });
-   };
+      /* Left on the list: it runs again if a later init can start it. */
+      gcd_start(task);
+   }
    slock_unlock(running_lock);
 
    return true;
@@ -1531,9 +1712,16 @@ static bool retro_task_gcd_init(void)
 
 static void retro_task_gcd_deinit(void)
 {
+   retro_task_t *task = NULL;
+
    slock_lock(running_lock);
    worker_continue = false;
-   if (gcd_queue_count)
+   /* Fire every timer now, parked or not, so each source sees the
+    * stop and lets go of its task. */
+   for (task = tasks_running.front; task; task = task->next)
+      if (task->sched)
+         gcd_arm(task, 0);
+   while (gcd_queue_count)
       scond_wait(worker_cond, running_lock);
    slock_unlock(running_lock);
 
@@ -1554,6 +1742,7 @@ static struct retro_task_impl impl_gcd = {
    NULL,
    retro_task_gcd_push_running,
    retro_task_threaded_cancel,
+   retro_task_threaded_wake,
    retro_task_threaded_reset,
    retro_task_gcd_wait,
    retro_task_threaded_gather,
@@ -1756,6 +1945,18 @@ void task_queue_reset(void)
 void task_queue_cancel_task(void *task)
 {
    impl_current->cancel(task);
+}
+
+void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{
+   /* Applied when the pass ends, by whichever runner made it. */
+   task->park = (horizon_usec > 0) ? horizon_usec : 1;
+}
+
+void task_queue_wake(uint32_t ident)
+{
+   if (impl_current)
+      impl_current->wake(ident);
 }
 
 void *task_queue_retriever_info_next(task_retriever_info_t **link)
@@ -2004,7 +2205,11 @@ retro_task_t *task_init(void)
       retro_atomic_fetch_add_int(&task_count, 1);
    task->frontend_userdata = NULL;
    task->next              = NULL;
+   task->sched             = NULL;
    task->when              = 0;
+   task->park              = 0;
+   task->parked            = false;
+   task->woken             = false;
 
    return task;
 }
