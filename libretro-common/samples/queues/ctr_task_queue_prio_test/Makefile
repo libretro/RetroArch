@@ -1,4 +1,4 @@
-TARGET := task_queue_ctr_prio_test
+TARGET := ctr_task_queue_prio_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -17,7 +17,7 @@ CTRULIB   ?= $(DEVKITPRO)/libctru
 USE_CTRULIB_2 ?= $(if $(shell grep -sl gspPresentBuffer $(CTRULIB)/include/3ds/services/gspgpu.h),1,0)
 
 SOURCES := \
-	task_queue_ctr_prio_test.c \
+	ctr_task_queue_prio_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \

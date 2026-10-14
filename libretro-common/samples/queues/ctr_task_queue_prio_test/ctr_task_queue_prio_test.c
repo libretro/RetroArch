@@ -20,7 +20,7 @@
  *    done: the worker runs while the main thread waits on it.
  *
  * Results are printed on the top screen and written to
- * sdmc:/task_queue_ctr_prio_test.txt; the last line is
+ * sdmc:/ctr_task_queue_prio_test.txt; the last line is
  * "all lanes passed" or "N failure(s)".
  */
 #include <stdio.h>
@@ -188,10 +188,10 @@ int main(void)
 
    gfxInitDefault();
    consoleInit(GFX_TOP, NULL);
-   out = fopen("sdmc:/task_queue_ctr_prio_test.txt", "w");
+   out = fopen("sdmc:/ctr_task_queue_prio_test.txt", "w");
 
    APT_CheckNew3DS(&new3ds);
-   report("task_queue_ctr_prio_test on %s\n", new3ds ? "New 3DS" : "Old 3DS");
+   report("ctr_task_queue_prio_test on %s\n", new3ds ? "New 3DS" : "Old 3DS");
 
    task_queue_init(true, NULL);
    lane_frames_keep_coming();
