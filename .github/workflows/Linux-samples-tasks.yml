@@ -1911,6 +1911,22 @@ jobs:
           make -f Makefile.dedup clean
           echo "[pass] http_url_dedup_test"
 
+      - name: Build and run http_emscripten_park_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http_emscripten
+        run: |
+          set -eu
+          # tasks/task_http_emscripten.c built natively against stand-in
+          # Emscripten headers: the task parks while its fetch is in
+          # flight and the fetch's settle wakes it.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./http_emscripten_park_test
+          echo "[pass] http_emscripten_park_test (ASan + UBSan)"
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./http_emscripten_park_test
+          echo "[pass] http_emscripten_park_test (TSan)"
+
       - name: Build and run http_emscripten_headers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/tasks/http
