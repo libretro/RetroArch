@@ -1,0 +1,168 @@
+name: CI Windows menus under Wine
+
+# Ozone, XMB, MaterialUI and RGUI as each Direct3D driver and both GL
+# drivers draw them. Cross-builds retroarch.exe with mingw-w64, starts
+# it with no content under Wine on a virtual display for each menu on
+# each driver, reads the screen once it holds still and compares it
+# with D3D11's block by block. A solid quad sampling the wrong texture
+# (d3d9_hlsl's batched quads read the font atlas) or a gradient split
+# along the other diagonal (both D3D9 drivers' single quads) moves
+# whole blocks; the drivers' own text and edge differences do not.
+# See samples/gfx/menu_wine/run.py.
+
+on:
+  push:
+    paths:
+      - 'gfx/drivers/d3d*.c'
+      - 'gfx/drivers/gl2.c'
+      - 'gfx/drivers/gl3.c'
+      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/common/d3d*'
+      - 'gfx/common/gl*'
+      - 'gfx/gfx_display.*'
+      - 'gfx/font_driver.*'
+      - 'gfx/font_layout.h'
+      - 'gfx/drivers_font/**'
+      - 'gfx/drivers_font_renderer/**'
+      - 'menu/drivers/**'
+      - 'menu/menu_driver.*'
+      - 'samples/gfx/menu_wine/**'
+      - '.github/workflows/Windows-wine-menu.yml'
+  pull_request:
+    paths:
+      - 'gfx/drivers/d3d*.c'
+      - 'gfx/drivers/gl2.c'
+      - 'gfx/drivers/gl3.c'
+      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/common/d3d*'
+      - 'gfx/common/gl*'
+      - 'gfx/gfx_display.*'
+      - 'gfx/font_driver.*'
+      - 'gfx/font_layout.h'
+      - 'gfx/drivers_font/**'
+      - 'gfx/drivers_font_renderer/**'
+      - 'menu/drivers/**'
+      - 'menu/menu_driver.*'
+      - 'samples/gfx/menu_wine/**'
+      - '.github/workflows/Windows-wine-menu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  windows-wine-menu:
+    name: Menus on D3D8, D3D9, D3D10, D3D11, D3D12 and GL under Wine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools wine64 xvfb xauth imagemagick libgl1-mesa-dri mesa-vulkan-drivers libvulkan1 autoconf automake libtool flex bison pkg-config libvulkan-dev spirv-headers python3"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          for i in 1 2 3; do
+            sudo timeout 300 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Link with lld
+        run: sh .github/workflows/scripts/use-lld.sh
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Build vkd3d's shader compiler for Windows
+        shell: bash
+        run: |
+          set -eu
+          v="$RUNNER_TEMP/vkd3d"
+          git clone -q --depth 1 --branch vkd3d-2.1 \
+            https://gitlab.winehq.org/wine/vkd3d.git "$v"
+          cd "$v"
+          ./autogen.sh > /dev/null
+          mkdir -p inc lib build
+          ln -s /usr/include/vulkan inc/vulkan
+          ln -s /usr/include/vk_video inc/vk_video
+          ln -s /usr/include/spirv inc/spirv
+          printf 'LIBRARY vulkan-1.dll\nEXPORTS\nvkGetInstanceProcAddr\n' \
+            > lib/vulkan-1.def
+          x86_64-w64-mingw32-dlltool -d lib/vulkan-1.def \
+            -l lib/libvulkan-1.a
+          cd build
+          ../configure -q --host=x86_64-w64-mingw32 --disable-tests \
+            --disable-demos WIDL=x86_64-w64-mingw32-widl \
+            CPPFLAGS="-I$v/inc" LDFLAGS="-L$v/lib"
+          make -j$(nproc) > /dev/null
+          cp .libs/libvkd3d-utils-1.dll "$GITHUB_WORKSPACE/D3DCompiler_47.dll"
+          cp .libs/libvkd3d-shader-1.dll .libs/libvkd3d-1.dll \
+            "$GITHUB_WORKSPACE/"
+
+      - name: Build retroarch.exe with mingw-w64 (D3D8, D3D9, D3D10, D3D11, D3D12, GL)
+        shell: bash
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          ccache -M 250M
+          ./configure --host=x86_64-w64-mingw32 \
+                      --disable-qt --disable-vulkan --disable-ffmpeg \
+                      --disable-cheevos --disable-discord --enable-d3d8 \
+                      --disable-sdl --disable-sdl2
+          make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \
+                          CXX="ccache x86_64-w64-mingw32-g++"
+          ccache -s
+          for f in libstdc++-6.dll libgcc_s_seh-1.dll; do
+            cp "$(ls /usr/lib/gcc/x86_64-w64-mingw32/*-win32/$f | head -n 1)" .
+          done
+
+      - name: Menus on every driver, compared with D3D11 (Wine, Xvfb, llvmpipe)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export LIBGL_ALWAYS_SOFTWARE=1
+          WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
+          python3 samples/gfx/menu_wine/run.py ./retroarch.exe \
+            "$RUNNER_TEMP/menu-wine" d3d11 d3d10 d3d12 d3d9_hlsl d3d8 gl glcore
+
+      - name: Preserve screens on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-wine-menu-screens
+          path: |
+            ${{ runner.temp }}/menu-wine/**/*.png
+            ${{ runner.temp }}/menu-wine/**/*.log
+          if-no-files-found: ignore
+
+      - name: Save ccache
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
