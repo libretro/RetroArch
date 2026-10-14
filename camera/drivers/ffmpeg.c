@@ -36,6 +36,7 @@ extern "C" {
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/pixdesc.h>
 #include <libswscale/swscale.h>
 
 #ifdef __cplusplus
@@ -729,6 +730,44 @@ static void ffmpeg_camera_stop(void *data)
    RARCH_LOG("[FFMPEG] Closed video input device %s.\n", ffmpeg->url);
 }
 
+static int ffmpeg_camera_frame_colorspace(ffmpeg_camera_t *ffmpeg)
+{
+   const AVFrame *frame = ffmpeg->camera_frame;
+   const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(
+         (enum AVPixelFormat)frame->format);
+   enum AVColorSpace space = frame->colorspace;
+   enum AVColorRange range = frame->color_range;
+   const int *coefficients;
+   int full_range;
+
+   if (space == AVCOL_SPC_UNSPECIFIED)
+      space = ffmpeg->decoder_context->colorspace;
+   if (range == AVCOL_RANGE_UNSPECIFIED)
+      range = ffmpeg->decoder_context->color_range;
+   full_range = range == AVCOL_RANGE_JPEG;
+   if (range == AVCOL_RANGE_UNSPECIFIED)
+   {
+      /* Preserve the scaler's full-range defaults for RGB, gray and YUVJ. */
+      full_range = desc && ((desc->flags & AV_PIX_FMT_FLAG_RGB)
+            || desc->nb_components <= 2);
+      switch ((enum AVPixelFormat)frame->format)
+      {
+         case AV_PIX_FMT_YUVJ420P:
+         case AV_PIX_FMT_YUVJ422P:
+         case AV_PIX_FMT_YUVJ444P:
+         case AV_PIX_FMT_YUVJ440P:
+         case AV_PIX_FMT_YUVJ411P:
+            full_range = 1;
+            break;
+         default:
+            break;
+      }
+   }
+   coefficients = sws_getCoefficients(space);
+   return sws_setColorspaceDetails(ffmpeg->scale_context,
+         coefficients, full_range, coefficients, 1, 0, 1 << 16, 1 << 16);
+}
+
 static void ffmpeg_camera_poll_thread(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
@@ -829,6 +868,12 @@ receive_frame:
       if (!ffmpeg->scale_context)
       {
          RARCH_ERR("[FFMPEG] Failed to configure frame scaler.\n");
+         goto done_loop;
+      }
+
+      if (ffmpeg_camera_frame_colorspace(ffmpeg) < 0)
+      {
+         RARCH_ERR("[FFMPEG] Failed to configure frame colorspace.\n");
          goto done_loop;
       }
 

@@ -50,6 +50,7 @@ static retro_atomic_int_t fail_stream_info;
 static retro_atomic_int_t null_decoder_calls;
 static retro_atomic_int_t scripted_read_error;
 static retro_atomic_int_t scripted_error_reads;
+static retro_atomic_int_t colour_source;
 extern retro_atomic_int_t camera_read_errors;
 
 int __real_avformat_find_stream_info(AVFormatContext *ctx, AVDictionary **options);
@@ -138,6 +139,8 @@ int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
 {
    int ret;
    int error = retro_atomic_load_acquire_int(&scripted_read_error);
+   if (retro_atomic_load_acquire_int(&colour_source))
+      usleep(20000);
    if (error)
    {
       /* Bound the unfixed retry loop and its log output. */
@@ -206,6 +209,8 @@ static useconds_t cb_sleep_us;    /* a core slow to take its frame */
 static bool solid_red;
 static bool red_frame;
 static bool uniform_frame;
+static bool check_colour, colour_frame;
+static int expected_colour[3];
 
 static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       unsigned height, size_t pitch)
@@ -214,6 +219,7 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
    uint32_t before = 0, after = 0;
    bool all_red = true;
    bool all_same = true;
+   bool all_colour = true;
    frames_seen++;
    last_width  = width;
    last_height = height;
@@ -235,12 +241,21 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
          uint32_t pixel = buffer[y * (pitch / sizeof(uint32_t)) + x];
          all_same = all_same && pixel == buffer[0];
          after += pixel;
+         if (check_colour)
+         {
+            unsigned channel;
+            for (channel = 0; channel < 3; channel++)
+               if (abs((int)((pixel >> (channel * 8)) & 0xff)
+                        - expected_colour[channel]) > 2)
+                  all_colour = false;
+         }
          if (solid_red)
             all_red = all_red && ((pixel >> 16) & 0xff) >= 245
                && ((pixel >> 8) & 0xff) <= 5 && (pixel & 0xff) <= 5;
       }
    checksum += after;
    uniform_frame = all_same;
+   colour_frame = all_colour;
    if (solid_red && all_red)
       red_frame = true;
    if (cb_sleep_us)
@@ -700,6 +715,47 @@ int main(void)
          CHECK(checksum != 0, "capture did not recover after errno %d", errors[lane]);
          camera_ffmpeg.stop(h);
          camera_ffmpeg.free(h);
+      }
+   }
+   current = "capture colour metadata";
+   {
+      const char *sources[] = {
+         "nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=16:cb=128:cr=128,setparams=range=full,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=16:cb=128:cr=128,setparams=range=limited,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0",
+         "nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=bt709,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=smpte170m,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0",
+         "nullsrc=s=32x16:r=25,format=gray,geq=lum=16,trim=end_frame=3[a];nullsrc=s=32x16:r=25,format=gray,geq=lum=48,trim=end_frame=3[b];[a][b]concat=n=2:v=1:a=0"
+      };
+      /* Full-range BT.709 and BT.601 YCbCr equations, rounded to bytes. */
+      const int colours[3][2][3] = { { {16, 16, 16}, {0, 0, 0} },
+         { {29, 87, 166}, {33, 83, 159} }, { {16, 16, 16}, {48, 48, 48} } };
+      unsigned lane;
+      for (lane = 0; lane < sizeof(sources) / sizeof(sources[0]); lane++)
+      {
+         unsigned attempt, stage = 0;
+         int initial_eof = retro_atomic_load_acquire_int(&eof_reads);
+         h = camera_ffmpeg.init(sources[lane], CAPS, VIDEO_SCALE_PACK(17, 9));
+         CHECK(h != NULL, "colour source initialization failed");
+         if (!h)
+            continue;
+         retro_atomic_store_release_int(&colour_source, 1);
+         CHECK(camera_ffmpeg.start(h), "colour source start failed");
+         check_colour = true;
+         for (attempt = 0; attempt < 100 && stage < 2; attempt++)
+         {
+            memcpy(expected_colour, colours[lane][stage], sizeof(expected_colour));
+            colour_frame = false;
+            camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+            if (colour_frame)
+               stage++;
+            usleep(10000);
+         }
+         CHECK(stage == 2, "colour metadata transition %u reached stage %u", lane, stage);
+         check_colour = false;
+         for (attempt = 0; attempt < 100
+               && retro_atomic_load_acquire_int(&eof_reads) == initial_eof; attempt++)
+            usleep(1000);
+         camera_ffmpeg.stop(h);
+         camera_ffmpeg.free(h);
+         retro_atomic_store_release_int(&colour_source, 0);
       }
    }
    current = "direct output";
