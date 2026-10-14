@@ -210,6 +210,62 @@ int main(void)
          "frame mapped as before");
    gl2_free_pbo_readback(&gl);
 
+   /* The recording reader the threaded wrapper calls, through the poke:
+    * B,G,R,X rows as the PBO holds them, or BGR24, bottom row first
+    * either way, as glReadPixels leaves them. */
+   printf("recording reader:\n");
+   {
+      unsigned x, y, bad;
+      bool bottom_up = false;
+      for (y = 0; y < H; y++)
+         for (x = 0; x < W; x++)
+            pixels[y * W + x] = 0xff000000u | (0x5au << 16)
+               | ((uint32_t)y << 8) | (uint32_t)x;
+      gl.flags |= GL2_FLAG_HAVE_SYNC;
+      gl.flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+      CHECK(gl2_poke_interface.record_read != NULL,
+            "the poke carries the reader");
+      CHECK(!gl2_poke_interface.record_read(&gl, out, true, &bottom_up)
+            && (gl.flags & GL2_FLAG_PBO_READBACK_ENABLE),
+            "first call starts the readbacks, no frame");
+
+      /* A full ring, every fence signalled: the oldest slot is read */
+      for (i = 0; i < 4; i++)
+         gl2_pbo_async_readback(&gl);
+      for (i = 1; i <= syncs_created; i++)
+         sync_signalled[i] = 1;
+      memset(out, 0, W * H * 4);
+      CHECK(gl2_poke_interface.record_read(&gl, out, true, &bottom_up)
+            && bottom_up, "BGRX frame read, bottom row first");
+      for (bad = 0, y = 0; y < H; y++)
+         for (x = 0; x < W; x++)
+         {
+            const uint8_t *p = out + ((size_t)y * W + x) * 4;
+            if (p[0] != x || p[1] != y || p[2] != 0x5a)
+               bad++;
+         }
+      CHECK(!bad, "BGRX rows are the PBO's, as read");
+
+      /* A full ring, every fence signalled: the oldest slot is read */
+      for (i = 0; i < 4; i++)
+         gl2_pbo_async_readback(&gl);
+      for (i = 1; i <= syncs_created; i++)
+         sync_signalled[i] = 1;
+      memset(out, 0, W * H * 4);
+      bottom_up = false;
+      CHECK(gl2_poke_interface.record_read(&gl, out, false, &bottom_up)
+            && bottom_up, "BGR24 frame read, bottom row first");
+      for (bad = 0, y = 0; y < H; y++)
+         for (x = 0; x < W; x++)
+         {
+            const uint8_t *p = out + ((size_t)y * W + x) * 3;
+            if (p[0] != x || p[1] != y || p[2] != 0x5a)
+               bad++;
+         }
+      CHECK(!bad, "BGR24 rows are the PBO's, converted");
+      gl2_free_pbo_readback(&gl);
+   }
+
    free(out);
    if (fails)
    {
