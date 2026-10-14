@@ -22,6 +22,14 @@ CFLAGS  += -Wall -pedantic -std=gnu99 -g1 -O1 -fno-omit-frame-pointer \
 
 LIBS    += -lpthread
 
+# --wrap=slock_lock so the wait lane can widen the gap between two queue
+# locks a runner takes in turn; Apple's linker has no --wrap, and there
+# the lane runs without the widening.
+ifneq ($(shell uname -s),Darwin)
+   CFLAGS  += -DPARK_TEST_WRAP_SLOCK
+   LDFLAGS += -Wl,--wrap=slock_lock
+endif
+
 ifeq ($(GCD),1)
    CFLAGS  += -fblocks -DHAVE_GCD
    LIBS    += -ldispatch -lBlocksRuntime
@@ -32,6 +40,9 @@ ifeq ($(GCD),1)
    ifneq ($(shell uname -s),Darwin)
       CFLAGS += -DQOS_CLASS_USER_INITIATED=DISPATCH_QUEUE_PRIORITY_HIGH
    endif
+   # Under SANITIZER=thread against a libdispatch built without it, run
+   # with TSAN_OPTIONS=suppressions=tsan-libdispatch.supp: TSan cannot
+   # see libdispatch order its own allocations across its threads.
 endif
 
 ifneq ($(SANITIZER),)

@@ -319,7 +319,8 @@ struct retro_task
     */
    retro_task_t *next;
 
-   /** The GCD backend's timer for this task.  Owned by the task queue. */
+   /** The GCD backend's record of how this task runs.  Owned by the
+    * task queue. */
    void *sched;
 
    /**

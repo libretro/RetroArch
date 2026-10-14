@@ -10,8 +10,10 @@
  *  - a parent woken from its child's callback, which the queue runs on
  *    the checking thread at the child's retire;
  *  - a cancel wakes a parked task, and so does a reset;
- *  - task_queue_wait() counts a parked task as running;
- *  - with no wake, the horizon runs the handler again, and not before.
+ *  - task_queue_wait() counts a parked task as running, and sees it
+ *    through to finished;
+ *  - with no wake, the horizon runs the handler again, and not before;
+ *  - deinit does not wait out a parked task, and the next init runs it.
  * On the unthreaded runner a park changes nothing: the handler runs
  * once per check, as every handler does.
  */
@@ -91,7 +93,8 @@ static void waiter_callback(retro_task_t *task, void *task_data,
    retro_atomic_fetch_add_int(&w->retired, 1);
 }
 
-static retro_task_t *push_waiter(struct waiter *w, retro_time_t horizon)
+static retro_task_t *push_waiter_with(struct waiter *w, retro_time_t horizon,
+      retro_task_handler_t handler)
 {
    retro_task_t *task = task_init();
    if (!task)
@@ -103,12 +106,17 @@ static retro_task_t *push_waiter(struct waiter *w, retro_time_t horizon)
    w->wake_inside  = 0;
    w->child        = NULL;
    w->ident        = task->ident;
-   task->handler   = waiter_handler;
+   task->handler   = handler;
    task->callback  = waiter_callback;
    task->user_data = w;
    task->flags    |= RETRO_TASK_FLG_MUTE;
    task_queue_push(task);
    return task;
+}
+
+static retro_task_t *push_waiter(struct waiter *w, retro_time_t horizon)
+{
+   return push_waiter_with(w, horizon, waiter_handler);
 }
 
 /* Checks until @w retires or the deadline; returns how long it took. */
@@ -244,9 +252,8 @@ static void lane_wake_from_child_callback(void)
    retro_task_t *task;
    retro_time_t  took;
 
-   CHECK((task = push_waiter(&w, LONG_HORIZON)) != NULL, "push");
-   if (task)
-      task->handler = parent_handler;
+   CHECK((task = push_waiter_with(&w, LONG_HORIZON, parent_handler)) != NULL,
+         "push");
    took = pump(&w);
 
    CHECK(retro_atomic_load_acquire_int(&w.retired) == 1,
@@ -293,6 +300,23 @@ static bool wait_cond(void *data)
    return !retro_atomic_load_acquire_int(&w->retired);
 }
 
+/* While armed, every queue lock taken off this thread waits 20 ms
+ * first, so a runner that let go of one list before taking the next
+ * would leave a finishing task in neither for long enough for a wait to
+ * see it. */
+static retro_atomic_int_t widen;
+static uintptr_t          main_tid;
+#ifdef PARK_TEST_WRAP_SLOCK
+void __real_slock_lock(slock_t *lock);
+void __wrap_slock_lock(slock_t *lock)
+{
+   if (     retro_atomic_load_acquire_int(&widen)
+         && sthread_get_current_thread_id() != main_tid)
+      retro_sleep(20);
+   __real_slock_lock(lock);
+}
+#endif
+
 static void lane_wait_counts_parked(void)
 {
    struct waiter w;
@@ -303,8 +327,12 @@ static void lane_wait_counts_parked(void)
    settle_first_pass(&w);
    th = sthread_create(wake_later, &w);
    CHECK(th != NULL, "sthread_create");
-   /* A parked task is still running: the wait has to see it through. */
+   /* A parked task is still running: the wait has to see it through,
+    * and the task never leaves both lists on its way to finished. */
+   main_tid = sthread_get_current_thread_id();
+   retro_atomic_store_release_int(&widen, 1);
    task_queue_wait(wait_cond, &w);
+   retro_atomic_store_release_int(&widen, 0);
    if (th)
       sthread_join(th);
 
@@ -343,6 +371,37 @@ static void lane_horizon(void)
       fprintf(stderr, "[pass] horizon: %d passes in 300 ms\n", passes);
 }
 
+/* -- the queue going down with a task parked -- */
+
+/* Deinit does not wait out a parked task's horizon; the task stays on
+ * the list, and the next init runs it again. */
+static void lane_deinit_while_parked(void)
+{
+   struct waiter w;
+   unsigned      had = failures;
+   retro_time_t  start;
+   retro_time_t  took;
+
+   CHECK(push_waiter(&w, LONG_HORIZON) != NULL, "push");
+   settle_first_pass(&w);
+
+   start = cpu_features_get_time_usec();
+   task_queue_deinit();
+   took  = cpu_features_get_time_usec() - start;
+   CHECK(took < 500000,
+         "deinit waited %lld us on a parked task", (long long)took);
+
+   task_queue_init(true, NULL);
+   retro_atomic_store_release_int(&w.ready, 1);
+   task_queue_wake(w.ident);
+   pump(&w);
+   CHECK(retro_atomic_load_acquire_int(&w.retired) == 1,
+         "the parked task did not run again after a new init");
+   if (failures == had)
+      fprintf(stderr, "[pass] deinit lets a parked task go (%lld us)\n",
+            (long long)took);
+}
+
 /* -- unthreaded: a park changes nothing -- */
 
 static void lane_unthreaded(void)
@@ -378,6 +437,7 @@ int main(void)
    lane_cancel_wakes(true);
    lane_wait_counts_parked();
    lane_horizon();
+   lane_deinit_while_parked();
    task_queue_deinit();
 
    task_queue_init(false, NULL);

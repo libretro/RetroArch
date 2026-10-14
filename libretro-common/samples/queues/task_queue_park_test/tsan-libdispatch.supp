@@ -1,0 +1,3 @@
+# libdispatch built without ThreadSanitizer: its own allocations,
+# made and freed on its own threads, carry no ordering TSan can see.
+race:libdispatch.so
