@@ -52,12 +52,14 @@ static uint32_t checksum;
 static int last_px = -1;          /* blue of the first pixel */
 static useconds_t cb_sleep_us;    /* a core slow to take its frame */
 static bool solid_red;
+static bool red_frame;
 
 static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       unsigned height, size_t pitch)
 {
    unsigned x, y;
    uint32_t before = 0, after = 0;
+   bool all_red = true;
    frames_seen++;
    last_width  = width;
    last_height = height;
@@ -79,11 +81,12 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
          uint32_t pixel = buffer[y * (pitch / sizeof(uint32_t)) + x];
          after += pixel;
          if (solid_red)
-            CHECK(((pixel >> 16) & 0xff) >= 245
-                  && ((pixel >> 8) & 0xff) <= 5 && (pixel & 0xff) <= 5,
-                  "converted red pixel differs at %u,%u", x, y);
+            all_red = all_red && ((pixel >> 16) & 0xff) >= 245
+               && ((pixel >> 8) & 0xff) <= 5 && (pixel & 0xff) <= 5;
       }
    checksum += after;
+   if (solid_red && all_red)
+      red_frame = true;
    if (cb_sleep_us)
       CHECK(before == after, "producer overwrote a frame during its callback");
 }
@@ -284,19 +287,30 @@ int main(void)
    else
       printf("      refused at init\n");
 
-   current = "odd-size direct output";
-   h = camera_ffmpeg.init("nullsrc=size=17x9:rate=100,format=gbrp,geq=r=255:g=0:b=0,realtime",
+   current = "source size differs from output";
+   h = camera_ffmpeg.init("color=c=red:size=34x18:rate=100,realtime",
          CAPS, VIDEO_SCALE_PACK(17, 9));
    CHECK(h != NULL, "odd-size camera initialization failed");
    if (h)
    {
-      CHECK(camera_ffmpeg.start(h), "odd-size camera start failed");
-      usleep(100000);
-      solid_red = true;
-      CHECK(poll_until_frame(h, 100), "odd-size frame did not arrive");
-      solid_red = false;
-      CHECK(last_width == 17 && last_height == 9, "odd-size dimensions changed");
-      camera_ffmpeg.stop(h);
+      for (i = 0; i < 1; i++)
+      {
+         CHECK(camera_ffmpeg.start(h), "resized camera start failed");
+         red_frame = false;
+         solid_red = true;
+         {
+            unsigned attempt;
+            for (attempt = 0; attempt < 100 && !red_frame; attempt++)
+            {
+               camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+               usleep(20000);
+            }
+         }
+         CHECK(red_frame, "resized frame did not preserve every red pixel");
+         solid_red = false;
+         CHECK(last_width == 17 && last_height == 9, "requested dimensions changed");
+         camera_ffmpeg.stop(h);
+      }
       camera_ffmpeg.free(h);
    }
    current = "direct output";

@@ -443,7 +443,6 @@ static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
-   const AVDictionaryEntry *prev = NULL;
    ffmpeg_camera_t *ffmpeg    = (ffmpeg_camera_t*)data;
    int ret                    = 0;
    AVStream *stream           = NULL;
@@ -472,7 +471,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ret = avformat_find_stream_info(ffmpeg->format_context, &options);
+   ret = avformat_find_stream_info(ffmpeg->format_context, NULL);
    if (ret < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -481,7 +480,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", prev, AV_DICT_IGNORE_SUFFIX)))
+   while ((e = av_dict_get(options, "", e, AV_DICT_IGNORE_SUFFIX)))
    {
       RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
    }
@@ -530,7 +529,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ret = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &options);
+   ret = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, NULL);
    if (ret < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -539,7 +538,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", prev, AV_DICT_IGNORE_SUFFIX)))
+   while ((e = av_dict_get(options, "", e, AV_DICT_IGNORE_SUFFIX)))
    {
       RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
    }
