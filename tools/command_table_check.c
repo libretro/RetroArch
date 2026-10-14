@@ -12,7 +12,7 @@
  * properly; one that takes none must have NULL there.
  *
  * Rows are matched as C initializers:
- *   action_map: { "NAME", handler, "arg", "description", flags, params },
+ *   action_map: { "NAME", handler, "arg", "description", flags, params, rows },
  *   map:        { "NAME", ID, "description", flags },
  *
  * Usage, from the repository root: tools/check.sh command_table_check */
@@ -77,6 +77,22 @@ static const char *escaped_literal(const char *p, const char *e,
 /* What follows the description: (?:,\s*([\w|\s]+?)\s*)? and, for
  * action_map, (?:,\s*(\w+)\s*)?, then the closing brace - in the order
  * the expression tries them. */
+/* An optional field after the parameters that this check does not read:
+ * the shape of the command's reply, "&cmd_rows_x". Gives back what it
+ * was handed where there is none. */
+static const char *skip_rows(const char *u, const char *e)
+{
+   const char *v;
+   const char *w;
+   if (u >= e || *u != ',')
+      return u;
+   v = ws(u + 1, e);
+   if (v < e && *v == '&')
+      v++;
+   for (w = v; v < e && CK_IS_WORD(*v); v++);
+   return v > w ? ws(v, e) : u;
+}
+
 static const char *tail(const char *p, const char *e, int with_params,
       struct row *r)
 {
@@ -119,6 +135,7 @@ static const char *tail(const char *p, const char *e, int with_params,
                      r->params.e = u;
                      u = ws(u, e);
                   }
+                  u = skip_rows(u, e);
                   if (u < e && *u == '}')
                   {
                      r->flags.b = fb;
@@ -151,6 +168,7 @@ static const char *tail(const char *p, const char *e, int with_params,
                r->params.e = u;
                u = ws(u, e);
             }
+            u = skip_rows(u, e);
             if (u < e && *u == '}')
                return u + 1;
          }

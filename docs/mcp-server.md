@@ -102,11 +102,102 @@ reads the new one.
 The tool's result is what the command answers; commands that answer
 nothing report `Done.`.
 
+## Results that are rows
+
+The replies that are lines of tab-separated fields - `GET_OPTION`,
+`SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
+`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT` and
+`RELEASE_INPUT` - come
+with `structuredContent` beside the text, so a client is handed the
+rows rather than splitting them itself. Each of those tools declares an
+`outputSchema` naming its columns:
+
+```json
+{ "content": [ { "type": "text",
+    "text": "0\tSuper Mario World\t/games/smw.sfc\t/cores/snes9x.so\n" } ],
+  "structuredContent": { "rows": [ { "index": "0",
+    "label": "Super Mario World", "content": "/games/smw.sfc",
+    "core": "/cores/snes9x.so" } ] } }
+```
+
+The columns are `option` and `value` for the options, `name` and `path`
+for the cores, `playlist` for the playlists, `index`, `label`, `content`
+and `core` for a playlist's entries, `key`, `value`, `description` and
+`values` for a core's options, `start`, `length`, `select`,
+`disconnect`, `kind`, `access`, `order` and `space` for the memory map,
+and `player`, `buttons` and `axes` for what a player holds. Every field
+is a string: it is the text's own field, which the server does not read
+as anything else.
+
+**A tool answers with `structuredContent` exactly when it declared an
+`outputSchema`**, so a client reads the schema it was handed at
+`tools/list` and does not have to probe each reply. A tool with no
+`outputSchema` answers with text alone, because its reply is prose or a
+confirmation rather than rows.
+
+A reply may end short of its columns, and the schema requires only the
+ones every row carries: `GET_CORE_OPTION` gives an option's `values`
+only where it was asked for that option by key.
+
+A line the command opens with its own name, such as `LIST_CORES none`,
+is not a row, and a failure is its reason and no rows at all. Neither
+are the lines that carry a number about the reply rather than a row of
+it, which become fields of their own:
+
+| Line | Field | Where |
+| --- | --- | --- |
+| `MORE` | `more: true` | a list cut short with nowhere to resume |
+| `MORE 200` | `more: true`, `next: 200` | `GET_PLAYLIST`'s next page |
+| `NEXT 48` | `next: 48` | where `GET_LOG` reached |
+| `SKIPPED 12` | `skipped: 12` | log lines gone before the first kept |
+
+`GET_LOG` always says where to go on from, so it carries `next` without
+carrying `more`: a client asks again from `next` and gets whatever has
+been written since.
+
+`GET_LOG` carries no rows: the log is its lines, and a page of them runs
+to 60 kB, so answering with a row apiece would send the whole page
+twice. Its `structuredContent` is the trailers alone - `{"next": 482}`
+- and its `outputSchema` declares only those.
+
+The text is unchanged: a client that reads it and nothing else sees
+exactly what it always did. A game whose name holds a tab is the one
+thing it will read wrong, and the rows get right - the fields before and
+after the name are read from the ends of the line, so the stray tab
+stays inside the name.
+
+Both come from revision 2025-06-18, which added them; a client of
+2025-03-26 is sent neither. Over HTTP the revision is the one the
+client names in `MCP-Protocol-Version` on each request; over stdin and
+stdout it is the one agreed at `initialize`, and it holds for the
+session.
+
 Not every command is a tool. `HELP` and `VERSION` are not, because
 `tools/list` already lists the commands and every answer names the
 server's version, and neither are the toggle hotkeys or
 `GET_CONFIG_PARAM`, whose work `SET_OPTION` and `GET_OPTION` do below.
-All of them are still commands on the network and stdin interfaces.
+
+Nor is a hotkey that steps a selection. A person presses
+`STATE_SLOT_PLUS` while watching the slot on screen; for a program the
+command that takes the value outright is the tool, and stepping towards
+it is only a way to get the value wrong: `SAVE_STATE_SLOT` over
+`STATE_SLOT_PLUS` and `SAVE_STATE`, `SEEK_REPLAY` over
+`NEXT_REPLAY_CHECKPOINT`, `PLAY_REPLAY_SLOT` over `PLAY_REPLAY`. Where
+nothing reports the selection either - which cheat is picked, which
+shader preset is loaded - there is nothing worth offering yet, and a
+tool that writes where it cannot read is worse than none.
+
+`READ_CORE_RAM` and `WRITE_CORE_RAM` are not tools either: they take an
+achievement address, which looks like `READ_CORE_MEMORY`'s system
+address and is not one, and `GET_MEMORY_MAP` answers the addresses
+`READ_CORE_MEMORY` takes.
+
+The disc and the menu are the exceptions: `DISK_NEXT`, `MENU_DOWN` and
+the rest step blind, and until something answers where they landed,
+stepping is all there is - and a disc swap is part of playing a game.
+
+All of them are still commands on the network and stdin interfaces,
+where a person is typing and can see what happened.
 
 ## Options
 
@@ -147,21 +238,60 @@ lines were overwritten before they were read it says `SKIPPED` and how
 many first. The last 256 lines are kept, from when the MCP server
 starts or the first `GET_LOG`.
 
+`PRESS <player> <control>[+<control>...] <frames>` is how an assistant
+taps a button: it holds the buttons, runs that many frames and lets
+them go, answered once the last frame has run. A tap is 2 to 4 frames;
+`PRESS 1 right+a 6` runs and jumps.
+
+This is one request where four were needed - `SET_INPUT`, `RUN_FRAMES`,
+`SET_INPUT` to release, `RUN_FRAMES` again - and each of those is its
+own HTTP connection, so it is latency saved as much as tokens. The
+buttons are let go of however the press ends, including the error that
+ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
+than pressed, so `PRESS` refuses one.
+
+**A single request runs at most 600 frames** - about ten seconds at
+60fps - because that is as long as a reply is waited for. An MCP client
+is told the command did not answer after ten seconds and the frames run
+on regardless, so both commands refuse more than that outright rather
+than failing later with hundreds of frames already run. Ask again to
+run more.
+
+`PRESS` holds the limit on every interface, because it holds input
+through every frame it runs and a press nobody is waiting for would go
+on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
+network and stdin interfaces, which have no deadline, and leaves
+nothing held if its reply is dropped - so that pair is the way to hold
+a control for longer than ten seconds.
+
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
-run; it is left paused. With `SET_INPUT` before it, an assistant plays
-in steps: hold the input, run some frames, look with `SCREENSHOT` or
-`READ_CORE_MEMORY`. It is refused while the menu is open, without
-content, and in achievements hardcore mode; a second `RUN_FRAMES`
-replaces one still running, which is answered with an error, as it is
-when the content closes.
+run; it is left paused. Use it to let the game run on its own - a
+cutscene, a fall - where `PRESS` is for holding something while it
+does. Both are refused while the menu is open, without content, and in
+achievements hardcore mode, and both are the same one job: a second
+`RUN_FRAMES` or `PRESS` replaces one still running, which is answered
+with an error, as it is when the content closes.
+
+`SET_INPUT` with `RUN_FRAMES` is still the way to hold something across
+several steps - a direction held while reading memory between frames -
+and to put a stick anywhere but centre.
 
 `SET_INPUT <player> <control> <value>` holds a RetroPad button (`a`,
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
 it go) for the core, over the player's own controller, until it is set
-again or `RELEASE_INPUT [player]` lets go of it. Both answer with what
-the player then holds. Achievements hardcore mode refuses it.
+again or `RELEASE_INPUT [player]` lets go of it. Both answer with the
+player, the buttons held and the axes held, tab separated, and `none`
+for either where nothing is held. `RELEASE_INPUT` with no player lets
+go for every player and answers for the first of them. Achievements
+hardcore mode refuses it.
+
+Several controls join with `+` to be held together:
+`SET_INPUT 1 right+a 1` runs and jumps in one request, where two
+requests would take two frames. Every control is checked before any is
+held, so a combination with a name or a value wrong in it holds
+nothing. `PRESS` takes the same combinations.
 
 The running core's own options are `GET_CORE_OPTION` and
 `SET_CORE_OPTION`. With no key, `GET_CORE_OPTION` lists every option as
@@ -187,6 +317,20 @@ path and core path per entry, 200 at a time; `MORE <next>` gives the
 argument for the next page, as in `Nintendo - SNES.lpl 200`), and loads
 an entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES`
 gives the installed cores and their paths.
+
+An entry with no core of its own gives `DETECT` as its core path, and
+`LOAD_CONTENT` takes an entry as it reads: `DETECT`, or no `core` at
+all, loads the content with an installed core that supports it. Both
+paths are checked before anything is unloaded, so content that cannot
+be found and a core that is not installed are answered with what is
+wrong while the running game keeps playing.
+
+Where more than one installed core supports the content, `LOAD_CONTENT`
+says so and leaves the choice: `LIST_CORES` with that same content path
+answers the candidates as rows, so a client reads the list from the tool
+whose job it is rather than out of an error message. Where none does,
+`LIST_CORES` answers no rows, as it does when no cores are installed at
+all.
 
 Over MCP, `playlist` and `first` are separate parameters, so a name is
 never mistaken for an entry number. On the network and stdin interfaces

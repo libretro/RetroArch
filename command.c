@@ -63,6 +63,7 @@
 #include "cheat_manager.h"
 #include "content.h"
 #include "dynamic.h"
+#include "file_path_special.h"
 #include "list_special.h"
 #include "paths.h"
 #include "record/record_driver.h"
@@ -1456,6 +1457,21 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
  * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
 #define COMMAND_READ_NBYTES_MAX 16384u
 
+/* @n bytes of @data as " XX" apiece; gives back the end of what it
+ * wrote. */
+static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
+{
+   static const char hex[] = "0123456789ABCDEF";
+   size_t i;
+   for (i = 0; i < n; i++)
+   {
+      *at++ = ' ';
+      *at++ = hex[data[i] >> 4];
+      *at++ = hex[data[i] & 0x0f];
+   }
+   return at;
+}
+
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
@@ -1502,11 +1518,9 @@ bool command_read_ram(command_t *cmd, const char *arg)
 
       if (data && nbytes > 0)
       {
-         size_t i;
-         for (i = 0; i < nbytes; i++)
-            snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
-         reply_at[3 * nbytes] = '\n';
-         _len = reply_at + 3 * nbytes + 1 - reply;
+         char *end = command_hex_bytes(reply_at, data, nbytes);
+         *end++    = '\n';
+         _len      = (size_t)(end - reply);
       }
       else
       {
@@ -2154,18 +2168,35 @@ bool command_get_log(command_t *cmd, const char *arg)
 }
 #endif
 
-/* RUN_FRAMES in progress: frames still to run, and the reply owed */
+/* RUN_FRAMES or PRESS in progress: the frames still to run, the
+ * buttons PRESS holds until they have, and the reply owed. One at a
+ * time, so one of these: a second replaces the first. */
 static struct
 {
    command_deferred_t deferred;
-   unsigned           asked;
+   const char        *name;      /* whichever command owes the reply */
    unsigned           left;
+   unsigned           port;      /* PRESS: the player holding, from 0 */
+   uint16_t           held;      /* PRESS: which buttons, by bit */
+   char               reply[256];
 } command_run_frames_st;
+
+/* PRESS lets go of what it held, on the last of its frames or on
+ * whatever ended it early. */
+static void command_run_frames_release(void)
+{
+   unsigned i;
+   for (i = 0; i < 16; i++)
+      if (command_run_frames_st.held & (1u << i))
+         input_driver_command_hold(command_run_frames_st.port, i, 0);
+   command_run_frames_st.held = 0;
+}
 
 static void command_run_frames_answer(const char *msg, bool is_error)
 {
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
+   command_run_frames_release();
    command_deferred_send(&command_run_frames_st.deferred, msg, strlen(msg),
          is_error);
 }
@@ -2173,18 +2204,51 @@ static void command_run_frames_answer(const char *msg, bool is_error)
 void command_run_frames_cancel(const char *why)
 {
    char msg[128];
-   snprintf(msg, sizeof(msg), "RUN_FRAMES ERROR %s", why);
+   snprintf(msg, sizeof(msg), "%s ERROR %s",
+         command_run_frames_st.name ? command_run_frames_st.name
+                                    : "RUN_FRAMES", why);
    command_run_frames_answer(msg, true);
 }
 
 /* A frame has run: the reply goes once the last of them has */
 void command_run_frames_tick(void)
 {
-   char msg[64];
    if (--command_run_frames_st.left)
       return;
-   snprintf(msg, sizeof(msg), "RUN_FRAMES %u\n", command_run_frames_st.asked);
-   command_run_frames_answer(msg, false);
+   command_run_frames_answer(command_run_frames_st.reply, false);
+}
+
+/* What a command needs before it can run a frame of content: content
+ * to run, no menu over it, and achievements not in hardcore mode.
+ * False with the reason answered to @cmd. */
+static bool command_frames_ready(command_t *cmd, const char *name)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, name, "no content is running");
+      return false;
+   }
+#ifdef HAVE_MENU
+   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+   {
+      command_reply_error(cmd, name, "the menu is open");
+      return false;
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      command_reply_error(cmd, name,
+            "achievements hardcore mode forbids frame advance");
+      return false;
+   }
+#endif
+   return true;
 }
 
 /* RUN_FRAMES <count>
@@ -2196,9 +2260,6 @@ bool command_run_frames(command_t *cmd, const char *arg)
 {
    unsigned n                  = 0;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-#ifdef HAVE_MENU
-   struct menu_state *menu_st  = menu_state_get_ptr();
-#endif
 
    if (!command_arg_uint(arg, &n) || n < 1 || n > COMMAND_RUN_FRAMES_MAX)
    {
@@ -2206,31 +2267,24 @@ bool command_run_frames(command_t *cmd, const char *arg)
             COMMAND_RUN_FRAMES_MAX);
       return false;
    }
-   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+   /* more than the reply will be waited for: answered now rather than
+    * as a failure once the frames are already running */
+   if (cmd->structured && n > COMMAND_FRAMES_REPLY_MAX)
    {
-      command_reply_error(cmd, "RUN_FRAMES", "no content is running");
+      command_reply_error(cmd, "RUN_FRAMES", "at most %u frames in one "
+            "request; ask again to run more", COMMAND_FRAMES_REPLY_MAX);
       return false;
    }
-#ifdef HAVE_MENU
-   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
-   {
-      command_reply_error(cmd, "RUN_FRAMES", "the menu is open");
+   if (!command_frames_ready(cmd, "RUN_FRAMES"))
       return false;
-   }
-#endif
-#ifdef HAVE_CHEEVOS
-   if (rcheevos_hardcore_active())
-   {
-      command_reply_error(cmd, "RUN_FRAMES",
-            "achievements hardcore mode forbids frame advance");
-      return false;
-   }
-#endif
 
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("replaced by another RUN_FRAMES");
-   command_run_frames_st.asked = n;
-   command_run_frames_st.left  = n;
+   command_run_frames_st.left = n;
+   command_run_frames_st.name = "RUN_FRAMES";
+   command_run_frames_st.held = 0;
+   snprintf(command_run_frames_st.reply,
+         sizeof(command_run_frames_st.reply), "RUN_FRAMES %u\n", n);
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    return true;
@@ -2289,52 +2343,116 @@ static size_t command_input_line(unsigned port, char *s, size_t len)
  * Holds a RetroPad button (1, or 0 to let it go) or a stick axis
  * (-32768 to 32767, 0 to let it go) for the core, over the player's own
  * input, until it is set again or RELEASE_INPUT lets it go. */
-bool command_set_input(command_t *cmd, const char *arg)
+/* "<player> <control>[+<control>...] <number>", the request SET_INPUT
+ * and PRESS both take: the player in @player, the controls in @ids and
+ * how many of them in @count, and the number in @number. False with the
+ * reason answered to @cmd, naming @what - what that command's own
+ * number is - and @name.
+ *
+ * Several controls at once, joined by "+", so a combination a game
+ * wants together - right+a to run and jump - is one request and one
+ * frame rather than two of each. Every one is resolved before the
+ * caller acts on any, so a combination with something wrong in it does
+ * nothing at all. */
+static bool command_input_args(command_t *cmd, const char *name,
+      const char *what, const char *arg, unsigned *player,
+      unsigned *ids, unsigned *count, long *number)
 {
-   char   reply[192];
-   char   control[16];
-   unsigned player;
+   char   control[160];
    unsigned i;
-   long   value;
    char  *end                     = NULL;
+   char  *tok;
    const char *sp;
 
+   *count = 0;
    while (arg && *arg == ' ')
       arg++;
-   player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
-   if (!end || end == arg || *end != ' ' || player < 1 || player > MAX_USERS)
+   *player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
+   if (!end || end == arg || *end != ' ' || *player < 1 || *player > MAX_USERS)
    {
-      command_reply_error(cmd, "SET_INPUT",
-            "a player from 1 to %u, a control and a value",
-            (unsigned)MAX_USERS);
+      command_reply_error(cmd, name,
+            "a player from 1 to %u, a control and %s",
+            (unsigned)MAX_USERS, what);
       return false;
    }
    while (*end == ' ')
       end++;
    if (!(sp = strchr(end, ' ')) || (size_t)(sp - end) >= sizeof(control))
    {
-      command_reply_error(cmd, "SET_INPUT", "a control and a value");
+      command_reply_error(cmd, name, "a control and %s", what);
       return false;
    }
    memcpy(control, end, (size_t)(sp - end));
    control[sp - end] = '\0';
-   for (i = 0; i < ARRAY_SIZE(command_input_names); i++)
-      if (string_is_equal(control, command_input_names[i]))
-         break;
-   if (i == ARRAY_SIZE(command_input_names))
+   *number = strtol(sp + 1, &end, 10);
+   if (end == sp + 1 || *end)
    {
-      command_reply_error(cmd, "SET_INPUT", "no control named %s", control);
+      command_reply_error(cmd, name, "%s after the control", what);
       return false;
    }
-   value = strtol(sp + 1, &end, 10);
-   if (     end == sp + 1 || *end
-         || (i <  16 && value != 0 && value != 1)
-         || (i >= 16 && (value < -32768 || value > 32767)))
+   for (tok = control; *tok; )
    {
-      command_reply_error(cmd, "SET_INPUT", i < 16
-            ? "%s takes 1 to hold it or 0 to let it go"
-            : "%s takes -32768 to 32767", control);
+      char *plus = strchr(tok, '+');
+      if (plus)
+         *plus = '\0';
+      if (!*tok)
+      {
+         /* "a++b", and a "+" at either end: nothing between them */
+         tok = plus + 1;
+         continue;
+      }
+      for (i = 0; i < ARRAY_SIZE(command_input_names); i++)
+         if (string_is_equal(tok, command_input_names[i]))
+            break;
+      if (i == ARRAY_SIZE(command_input_names))
+      {
+         command_reply_error(cmd, name, "no control named %s", tok);
+         return false;
+      }
+      /* a control named over and over would run past the array */
+      if (*count >= ARRAY_SIZE(command_input_names))
+      {
+         command_reply_error(cmd, name, "at most %u controls at once",
+               (unsigned)ARRAY_SIZE(command_input_names));
+         return false;
+      }
+      ids[(*count)++] = i;
+      if (!plus)
+         break;
+      tok = plus + 1;
+   }
+   if (!*count)
+   {
+      command_reply_error(cmd, name, "a control, or several "
+            "joined by \"+\"");
       return false;
+   }
+   return true;
+}
+
+bool command_set_input(command_t *cmd, const char *arg)
+{
+   char   reply[192];
+   unsigned ids[ARRAY_SIZE(command_input_names)];
+   unsigned count                 = 0;
+   unsigned player;
+   unsigned i;
+   long   value;
+
+   if (!command_input_args(cmd, "SET_INPUT", "a value", arg, &player,
+            ids, &count, &value))
+      return false;
+   for (i = 0; i < count; i++)
+   {
+      unsigned id = ids[i];
+      if (     (id <  16 && value != 0 && value != 1)
+            || (id >= 16 && (value < -32768 || value > 32767)))
+      {
+         command_reply_error(cmd, "SET_INPUT", id < 16
+               ? "%s takes 1 to hold it or 0 to let it go"
+               : "%s takes -32768 to 32767", command_input_names[id]);
+         return false;
+      }
    }
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -2345,10 +2463,79 @@ bool command_set_input(command_t *cmd, const char *arg)
    }
 #endif
 
-   input_driver_command_hold(player - 1, i, (int16_t)value);
+   for (i = 0; i < count; i++)
+      input_driver_command_hold(player - 1, ids[i], (int16_t)value);
 
    cmd->replier(cmd, reply,
          command_input_line(player - 1, reply, sizeof(reply)));
+   return true;
+}
+
+/* PRESS <player> <control>[+<control>...] <frames>
+ *
+ * Holds the buttons, runs that many frames and lets them go, answered
+ * once the last of them has run. One request where a tap took four:
+ * SET_INPUT, RUN_FRAMES, SET_INPUT to release and RUN_FRAMES again.
+ * Axes are SET_INPUT's: they are held at a value, not pressed. */
+bool command_press(command_t *cmd, const char *arg)
+{
+   unsigned ids[ARRAY_SIZE(command_input_names)];
+   unsigned count              = 0;
+   unsigned player;
+   unsigned i;
+   size_t   _len;
+   long     frames;
+   int16_t  analog[4];
+   uint16_t mask               = 0;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!command_input_args(cmd, "PRESS", "a frame count", arg, &player,
+            ids, &count, &frames))
+      return false;
+   if (frames < 1 || frames > COMMAND_FRAMES_REPLY_MAX)
+   {
+      command_reply_error(cmd, "PRESS", "a frame count from 1 to %u; a "
+            "longer hold is SET_INPUT with RUN_FRAMES",
+            COMMAND_FRAMES_REPLY_MAX);
+      return false;
+   }
+   for (i = 0; i < count; i++)
+      if (ids[i] >= 16)
+      {
+         command_reply_error(cmd, "PRESS",
+               "%s is an axis, which SET_INPUT holds at a value",
+               command_input_names[ids[i]]);
+         return false;
+      }
+   if (!command_frames_ready(cmd, "PRESS"))
+      return false;
+
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_cancel("replaced by PRESS");
+   for (i = 0; i < count; i++)
+      mask |= (uint16_t)(1u << ids[i]);
+   /* what SET_INPUT already holds stays held after the press */
+   mask &= (uint16_t)~input_driver_command_held(player - 1, analog);
+   /* the controls as they were resolved, so "a++b" comes back "a+b" */
+   _len = (size_t)snprintf(command_run_frames_st.reply,
+         sizeof(command_run_frames_st.reply), "PRESS %u ", player);
+   for (i = 0; i < count
+         && _len < sizeof(command_run_frames_st.reply); i++)
+      _len += (size_t)snprintf(command_run_frames_st.reply + _len,
+            sizeof(command_run_frames_st.reply) - _len, "%s%s",
+            i ? "+" : "", command_input_names[ids[i]]);
+   if (_len < sizeof(command_run_frames_st.reply))
+      snprintf(command_run_frames_st.reply + _len,
+            sizeof(command_run_frames_st.reply) - _len, " %u\n",
+            (unsigned)frames);
+   command_run_frames_st.left = (unsigned)frames;
+   command_run_frames_st.name = "PRESS";
+   command_run_frames_st.port = player - 1;
+   command_run_frames_st.held = mask;
+   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   for (i = 0; i < count; i++)
+      input_driver_command_hold(player - 1, ids[i], 1);
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    return true;
 }
 
@@ -2560,23 +2747,39 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 }
 
 
-/* LIST_CORES
+/* LIST_CORES [content path]
  *
  * The installed cores, one per line: display name, a tab, the path
- * LOAD_CONTENT takes. The list is already in memory. */
+ * LOAD_CONTENT takes. With a content path, only the cores that support
+ * it - the candidates LOAD_CONTENT names when it is handed content and
+ * no core to load it with. Filtering sorts the shared list, as the
+ * menu does, so the unfiltered order can change afterwards. */
 bool command_list_cores(command_t *cmd, const char *arg)
 {
-   core_info_list_t *list = NULL;
+   core_info_list_t  *list  = NULL;
+   const core_info_t *infos = NULL;
+   size_t             count = 0;
    size_t i, len = 0;
    char  *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
 
    if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
       return false;
    reply[0] = '\0';
    if (core_info_get_list(&list) && list)
-      for (i = 0; i < list->count; i++)
+   {
+      if (arg && *arg)
+         core_info_list_get_supported_cores(list, arg, &infos, &count);
+      else
       {
-         const core_info_t *ci = &list->list[i];
+         infos = list->list;
+         count = list->count;
+      }
+      for (i = 0; i < count; i++)
+      {
+         const core_info_t *ci = &infos[i];
          int n;
          if (!ci->path)
             continue;
@@ -2589,6 +2792,7 @@ bool command_list_cores(command_t *cmd, const char *arg)
          }
          len += (size_t)n;
       }
+   }
    if (!len)
       len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
    cmd->replier(cmd, reply, len);
@@ -2942,41 +3146,118 @@ bool command_start_core(command_t *cmd, const char* arg)
  * filesystem paths and may legitimately contain spaces.  Routed through
  * the companion UI entry point so that the command interface takes the
  * same content load path as any other frontend-external requester,
- * rather than duplicating the menu-only variant. */
+ * rather than duplicating the menu-only variant.
+ *
+ * Both paths are resolved and checked before that load is pushed: the
+ * task unloads the running core first and only then finds out that a
+ * path is unusable, so a typo would otherwise cost the caller the game
+ * it was playing. */
 bool command_load_content(command_t *cmd, const char* arg)
 {
    char core_path[PATH_MAX_LENGTH];
+#if TARGET_OS_IPHONE
+   char expanded[PATH_MAX_LENGTH];
+#endif
    content_ctx_info_t content_info = {0};
+   const char *content_path        = NULL;
    const char *sep                 = NULL;
    size_t _len                     = 0;
 
-   if (!arg || !*arg)
+   if (!arg || !*arg || !(sep = strchr(arg, '|')))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT",
+            "a core path, '|' and a content path");
       return false;
-   if (!(sep = strchr(arg, '|')))
-      return false;
+   }
 
    _len = (size_t)(sep - arg);
-   if (_len == 0 || _len >= sizeof(core_path))
+   if (_len >= sizeof(core_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "core path is too long");
       return false;
+   }
    if (!*(sep + 1))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no content path after '|'");
       return false;
+   }
 
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
+   content_path    = sep + 1;
 #if TARGET_OS_IPHONE
-   {
-      char exp[PATH_MAX_LENGTH];
-      fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
-      if (!task_push_load_content_with_new_core_from_companion_ui(
-            core_path, exp, NULL, NULL, NULL, &content_info, NULL, NULL))
-         return false;
-   }
-#else
-   if (!task_push_load_content_with_new_core_from_companion_ui(
-         core_path, sep + 1, NULL, NULL, NULL, &content_info, NULL, NULL))
-      return false;
+   fill_pathname_expand_special(expanded, content_path, sizeof(expanded));
+   content_path    = expanded;
 #endif
+
+   /* Content inside an archive is named as one path, which
+    * path_is_valid() would reject */
+   if (!playlist_content_path_is_valid(content_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no content at %s",
+            content_path);
+      return false;
+   }
+
+   /* A playlist entry with no core of its own carries DETECT, so take
+    * that, and nothing at all, as a request for a core that supports
+    * the content.  The menu asks the user to pick one where the
+    * playlist's default core does not settle it; nobody is here to
+    * answer that, so an ambiguous one says so and leaves the choice;
+    * LIST_CORES, given the same content path, lists the candidates. */
+   if (!*core_path || string_is_equal(core_path, FILE_PATH_DETECT))
+   {
+      core_info_list_t *core_info_list = NULL;
+      const core_info_t *supported     = NULL;
+      size_t count                     = 0;
+
+      if (core_info_get_list(&core_info_list))
+         core_info_list_get_supported_cores(core_info_list, content_path,
+               &supported, &count);
+
+      if (count == 0)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "no installed core supports %s", content_path);
+         return false;
+      }
+      if (count > 1)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "%u cores support %s, name one of them; LIST_CORES with "
+               "that content path lists them", (unsigned)count,
+               content_path);
+         return false;
+      }
+
+      /* An entry whose core file is gone keeps its info and loses its
+       * path; it supports the content and cannot be loaded. */
+      if (!supported[0].path)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "the only core that supports %s is not installed",
+               content_path);
+         return false;
+      }
+      strlcpy(core_path, supported[0].path, sizeof(core_path));
+   }
+   /* A built-in core is not a file on disk */
+   else if (   !string_ends_with_size(core_path, "builtin",
+                  strlen(core_path), STRLEN_CONST("builtin"))
+            && !path_is_valid(core_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no core at %s", core_path);
+      return false;
+   }
+
+   if (!task_push_load_content_with_new_core_from_companion_ui(
+         core_path, content_path, NULL, NULL, NULL, &content_info, NULL, NULL))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "could not load %s with %s",
+            content_path, core_path);
+      return false;
+   }
    return command_content_reply(cmd, "LOAD_CONTENT", false, true);
 }
 
@@ -3307,7 +3588,6 @@ bool command_get_status(command_t *cmd, const char* arg)
 
 bool command_read_memory(command_t *cmd, const char *arg)
 {
-   unsigned i;
    char* reply                        = NULL;
    char* reply_at                     = NULL;
    const uint8_t* data                = NULL;
@@ -3353,14 +3633,13 @@ bool command_read_memory(command_t *cmd, const char *arg)
                sys_info, address, &max_bytes,
                0, reply_at, alloc_size - strlen(reply))))
    {
+      char *end;
       if (nbytes > max_bytes)
           nbytes = max_bytes;
 
-      for (i = 0; i < nbytes; i++)
-         snprintf(reply_at + 3 * i, 4, " %02X", data[i]);
-
-      reply_at[3 * nbytes] = '\n';
-      _len                 = reply_at + 3 * nbytes + 1 - reply;
+      end                  = command_hex_bytes(reply_at, data, nbytes);
+      *end++               = '\n';
+      _len                 = (size_t)(end - reply);
    }
    else
    {

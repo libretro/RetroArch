@@ -329,9 +329,9 @@ enum cmd_info_flags
     * quits, resets, loads or overwrites states and saves, writes core
     * memory, loads or unloads cores and content. */
    CMD_INFO_DESTRUCTIVE = (1 << 1),
-   /* A line command that is not offered as a tool: what it does is
-    * covered by another one, or the interface already describes
-    * itself. It stays a command on every line interface. */
+   /* A line command that is not offered as a tool: another command
+    * covers it or takes its value outright, or it steps a selection
+    * nothing reports. It stays a command on every line interface. */
    CMD_INFO_NO_TOOL     = (1 << 2)
 };
 
@@ -524,9 +524,67 @@ struct cmd_param
    const char *def;
 };
 
+/* One column of a reply that is rows: the name a field on the line is
+ * given by an interface that answers in fields rather than in text. */
+struct cmd_column
+{
+   const char *name;
+   const char *desc;
+};
+
+/* A line among a reply's rows that is not one of them: a word, and a
+ * number after it. "MORE 200" says a list was cut short and where to
+ * resume, "NEXT 48" where GET_LOG reached, "SKIPPED 12" how many log
+ * lines were gone before the first it could give.
+ *
+ * @flag is a field the word alone sets true, for a word that can come
+ * without a number - a bare "MORE", from a reply with no resume point.
+ * @name is the field its number is answered as. Either may be NULL.
+ * @first is a word that opens the reply instead of closing it. */
+struct cmd_trailer
+{
+   const char *word;
+   const char *flag;
+   const char *name;
+   const char *desc;
+   bool        first;
+};
+
+/* The shape of a reply that is rows of named columns - the lines of
+ * tab-separated fields the lists and GET_PLAYLIST answer with - so an
+ * interface can hand a client the same reply taken apart rather than
+ * leaving every client to split the text.
+ *
+ * @slack is the one column whose field may hold a tab itself, a game's
+ * name among them: the columns before it are read from the start of the
+ * line and those after it from the end, so that tab takes the slack
+ * instead of shifting the row.
+ *
+ * A line the command opens with its own name - "LIST_CORES none",
+ * "GET_PLAYLIST ERROR ..." - is not a row, and neither is one of
+ * @trailers.
+ *
+ * @required is how many of the columns every row has, where a reply
+ * ends short of them: GET_CORE_OPTION gives an option's key, value and
+ * description, and the values it takes only when asked for that option
+ * by key. Zero means every column, which is what the rest answer.
+ *
+ * @columns ends with a row whose @name is NULL, @trailers - when there
+ * are any - with one whose @word is. @columns itself is NULL for a
+ * reply whose lines are prose and whose trailers are all a client
+ * wants: GET_LOG's answer is the log, and the line it reached. */
+struct cmd_rows
+{
+   const struct cmd_column  *columns;
+   const struct cmd_trailer *trailers;
+   unsigned                  slack;
+   unsigned                  required;
+};
+
 /* A command with its own handler; @arg_desc names the argument, or
  * "No argument", and @params describes it for a structured client, or
- * is NULL on one that takes none. */
+ * is NULL on one that takes none. @rows is the shape of its reply where
+ * that reply is rows, and NULL where it is prose. */
 struct cmd_action_map
 {
    const char *str;
@@ -535,6 +593,7 @@ struct cmd_action_map
    const char *desc;
    unsigned flags;       /* enum cmd_info_flags */
    const struct cmd_param *params;
+   const struct cmd_rows *rows;
 };
 
 /* GET_OPTION [option] / SET_OPTION <option> on|off */
@@ -555,6 +614,14 @@ void command_run_frames_cancel(const char *why);
 /* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player] */
 bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
+
+/* The most frames a request can run within a structured interface's
+ * ten-second reply deadline (about ten seconds at 60fps). PRESS keeps
+ * to it everywhere, since it holds input for every frame it runs. */
+#define COMMAND_FRAMES_REPLY_MAX 600
+
+/* PRESS <player> <control> <frames>: hold, run and let go, in one. */
+bool command_press(command_t *cmd, const char *arg);
 
 /* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
 bool command_get_core_option(command_t *cmd, const char *arg);
@@ -644,18 +711,36 @@ static const struct cmd_param cmd_params_log[] = {
 };
 #endif
 static const struct cmd_param cmd_params_run_frames[] = {
-   { "count", "How many frames to run.", CMD_PARAM_INT, true, NULL, NULL,
-      NULL },
+   { "count", "How many frames to run, up to 600 - about ten seconds, "
+      "which is as long as this interface waits for a reply. Ask again "
+      "to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input[] = {
    { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "control", "The RetroPad button or stick axis.",
-      CMD_PARAM_STRING, true, NULL,
-      "b|y|select|start|up|down|left|right|a|x|l|r|l2|r2|l3|r3|"
-      "left_x|left_y|right_x|right_y", NULL },
+   /* No enum: a combination is not one of the names, and a client that
+    * held the schema to one would refuse to send it. */
+   { "control", "A RetroPad button or stick axis, or several joined by "
+      "\"+\" to hold together: b, y, select, start, up, down, left, "
+      "right, a, x, l, r, l2, r2, l3, r3, left_x, left_y, right_x, "
+      "right_y. \"right+a\" runs and jumps in one request.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "value", "1 holds a button and 0 lets it go; an axis takes -32768 "
       "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_press[] = {
+   { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "control", "A RetroPad button, or several joined by \"+\" to press "
+      "together: b, y, select, start, up, down, left, right, a, x, l, r, "
+      "l2, r2, l3, r3. \"right+a\" runs and jumps. An axis is "
+      "SET_INPUT's: it is held at a value rather than pressed.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "frames", "How many frames to hold them for, from 1 to 600 - about "
+      "ten seconds, which is as long as a reply is waited for. A tap is "
+      "2 to 4. For a longer hold use SET_INPUT and RUN_FRAMES, which "
+      "does not answer late with the buttons still down.",
+      CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input_release[] = {
@@ -714,6 +799,12 @@ static const struct cmd_param cmd_params_frame[] = {
    { "frame", "The frame to seek to.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_cores[] = {
+   { "content", "A content path. Left out, every installed core; given, "
+      "only the cores that support it.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_core[] = {
    { "core", "Path to a core library, as LIST_CORES gives it.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
@@ -721,11 +812,99 @@ static const struct cmd_param cmd_params_core[] = {
 };
 static const struct cmd_param cmd_params_content[] = {
    { "core", "Path to the core to load it with, as LIST_CORES and "
-      "GET_PLAYLIST give it.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+      "GET_PLAYLIST give it; DETECT, as a playlist entry with no core "
+      "of its own gives it, picks a core that supports the content.",
+      CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
    { NULL }
 };
+
+/* The replies that are rows of named columns, in the order the line
+ * gives the fields. */
+static const struct cmd_column cmd_cols_option[] = {
+   { "option", "The option's name, as SET_OPTION takes it." },
+   { "value", "Its state - on or off - or, for one that only reports, "
+      "what it reports." },
+   { NULL }
+};
+static const struct cmd_column cmd_cols_core[] = {
+   { "name", "The core's display name." },
+   { "path", "The core's path, as LOAD_CORE and LOAD_CONTENT take it." },
+   { NULL }
+};
+static const struct cmd_column cmd_cols_playlist[] = {
+   { "playlist", "The playlist's name, as GET_PLAYLIST takes it." },
+   { NULL }
+};
+static const struct cmd_column cmd_cols_entry[] = {
+   { "index", "The entry's number in the playlist." },
+   { "label", "The entry's name." },
+   { "content", "The content's path, as LOAD_CONTENT takes it." },
+   { "core", "The core's path, as LOAD_CONTENT takes it; empty where the "
+      "playlist names none." },
+   { NULL }
+};
+
+static const struct cmd_column cmd_cols_core_option[] = {
+   { "key", "The option's key, as SET_CORE_OPTION takes it." },
+   { "value", "The value it has now." },
+   { "description", "What the option is called in the menu." },
+   { "values", "The values it takes, separated by \"|\"; given only "
+      "where the option was asked for by key." },
+   { NULL }
+};
+static const struct cmd_column cmd_cols_memory[] = {
+   { "start", "The region's first address, in hexadecimal." },
+   { "length", "How many bytes it covers, in hexadecimal." },
+   { "select", "Which address bits name the region, in hexadecimal." },
+   { "disconnect", "Which address bits it ignores, in hexadecimal." },
+   { "kind", "system, save, video or other." },
+   { "access", "rw, ro, or none where the core exposes no memory." },
+   { "order", "big or little." },
+   { "space", "The address space the core names it in, or empty." },
+   { NULL }
+};
+
+static const struct cmd_column cmd_cols_input[] = {
+   { "player", "The player the controls are held for, from 1." },
+   { "buttons", "The buttons held, separated by spaces, or none." },
+   { "axes", "The axes held, as name=value separated by spaces, or none." },
+   { NULL }
+};
+/* A list long enough to be cut short, with nowhere to resume from. */
+static const struct cmd_trailer cmd_trailers_cut[] = {
+   { "MORE", "more", NULL, NULL },
+   { NULL }
+};
+/* A list cut short with the entry to resume from. */
+static const struct cmd_trailer cmd_trailers_page[] = {
+   { "MORE", "more", "next",
+      "The entry the next page starts at, as GET_PLAYLIST's first "
+      "takes it." },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_log[] = {
+   { "NEXT", NULL, "next",
+      "The line to ask for next, as GET_LOG's since takes it." },
+   { "SKIPPED", NULL, "skipped",
+      "Lines that were asked for but had already left the log.", true },
+   { NULL }
+};
+
+static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, NULL, 1, 0 };
+static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, cmd_trailers_cut, 0, 0 };
+static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, cmd_trailers_cut, 0, 0 };
+/* the values, where given, are last and take whatever is left */
+static const struct cmd_rows cmd_rows_core_option =
+   { cmd_cols_core_option, NULL, 3, 3 };
+static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 };
+static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
+static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
+/* No columns: the lines are the text, and splitting a 60k page into a
+ * row apiece would answer with it twice over. What a client cannot read
+ * off the text is how far the log got, which is what the trailers say. */
+static const struct cmd_rows cmd_rows_log       = { NULL, cmd_trailers_log, 0, 0 };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -735,33 +914,34 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY, NULL },
-   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option },
-   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
+   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
 #ifdef HAVE_MCP
-   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time.", CMD_INFO_READ_ONLY, cmd_params_log },
+   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
-   { "SET_INPUT",        command_set_input,        "<player> <control> <value>", "Hold a RetroPad button or stick axis for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input },
-   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release },
-   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option },
+   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
+   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or for every player when given none. Answers in SET_INPUT's shape, for the player asked after or the first of them.", 0, cmd_params_input_release, &cmd_rows_input },
+   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
-   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL },
-   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL },
-   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist },
+   { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
+   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
     * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
-   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY, cmd_params_read },
-   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE, cmd_params_write },
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_read },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY, cmd_params_read },
-   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
    { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
@@ -773,7 +953,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0, NULL },
@@ -787,43 +967,43 @@ static const struct cmd_map map[] = {
    { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE },
 
    { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", CMD_INFO_NO_TOOL },
-   { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", 0 },
+   { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
    { "SLOWMOTION", RARCH_SLOWMOTION_KEY, "Toggle slow motion.", CMD_INFO_NO_TOOL },
-   { "SLOWMOTION_HOLD", RARCH_SLOWMOTION_HOLD_KEY, "Slow motion while held (one frame when sent as a command).", 0 },
-   { "REWIND", RARCH_REWIND, "Rewind while held (one frame when sent as a command).", 0 },
+   { "SLOWMOTION_HOLD", RARCH_SLOWMOTION_HOLD_KEY, "Slow motion while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
+   { "REWIND", RARCH_REWIND, "Rewind while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
    { "PAUSE_TOGGLE", RARCH_PAUSE_TOGGLE, "Pause or resume the content.", CMD_INFO_NO_TOOL },
-   { "FRAMEADVANCE", RARCH_FRAMEADVANCE, "Advance one frame while paused.", 0 },
+   { "FRAMEADVANCE", RARCH_FRAMEADVANCE, "Advance one frame while paused.", CMD_INFO_NO_TOOL },
 
    { "MUTE", RARCH_MUTE, "Mute or unmute audio.", CMD_INFO_NO_TOOL },
-   { "VOLUME_UP", RARCH_VOLUME_UP, "Raise the volume.", 0 },
-   { "VOLUME_DOWN", RARCH_VOLUME_DOWN, "Lower the volume.", 0 },
+   { "VOLUME_UP", RARCH_VOLUME_UP, "Raise the volume.", CMD_INFO_NO_TOOL },
+   { "VOLUME_DOWN", RARCH_VOLUME_DOWN, "Lower the volume.", CMD_INFO_NO_TOOL },
 
-   { "LOAD_STATE", RARCH_LOAD_STATE_KEY, "Load the save state in the current slot.", CMD_INFO_DESTRUCTIVE },
-   { "SAVE_STATE", RARCH_SAVE_STATE_KEY, "Save a state to the current slot.", CMD_INFO_DESTRUCTIVE },
-   { "STATE_SLOT_PLUS", RARCH_STATE_SLOT_PLUS, "Select the next save state slot.", 0 },
-   { "STATE_SLOT_MINUS", RARCH_STATE_SLOT_MINUS, "Select the previous save state slot.", 0 },
+   { "LOAD_STATE", RARCH_LOAD_STATE_KEY, "Load the save state in the current slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "SAVE_STATE", RARCH_SAVE_STATE_KEY, "Save a state to the current slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "STATE_SLOT_PLUS", RARCH_STATE_SLOT_PLUS, "Select the next save state slot.", CMD_INFO_NO_TOOL },
+   { "STATE_SLOT_MINUS", RARCH_STATE_SLOT_MINUS, "Select the previous save state slot.", CMD_INFO_NO_TOOL },
 
-   { "PLAY_REPLAY", RARCH_PLAY_REPLAY_KEY, "Play back the replay in the current slot.", 0 },
+   { "PLAY_REPLAY", RARCH_PLAY_REPLAY_KEY, "Play back the replay in the current slot.", CMD_INFO_NO_TOOL },
    { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE },
    { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", 0 },
    { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", 0 },
-   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY, "Seek the replay back to the previous checkpoint.", CMD_INFO_DESTRUCTIVE },
-   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY, "Seek the replay forward to the next checkpoint.", CMD_INFO_DESTRUCTIVE },
-   { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", 0 },
-   { "REPLAY_SLOT_MINUS", RARCH_REPLAY_SLOT_MINUS, "Select the previous replay slot.", 0 },
+   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY, "Seek the replay back to the previous checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY, "Seek the replay forward to the next checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", CMD_INFO_NO_TOOL },
+   { "REPLAY_SLOT_MINUS", RARCH_REPLAY_SLOT_MINUS, "Select the previous replay slot.", CMD_INFO_NO_TOOL },
 
    { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", 0 },
    { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", 0 },
    { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", 0 },
 
    { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", CMD_INFO_NO_TOOL },
-   { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", 0 },
-   { "SHADER_NEXT", RARCH_SHADER_NEXT, "Load the next shader preset in its directory.", 0 },
-   { "SHADER_PREV", RARCH_SHADER_PREV, "Load the previous shader preset in its directory.", 0 },
+   { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
+   { "SHADER_NEXT", RARCH_SHADER_NEXT, "Load the next shader preset in its directory.", CMD_INFO_NO_TOOL },
+   { "SHADER_PREV", RARCH_SHADER_PREV, "Load the previous shader preset in its directory.", CMD_INFO_NO_TOOL },
 
-   { "CHEAT_TOGGLE", RARCH_CHEAT_TOGGLE, "Turn the selected cheat on or off.", 0 },
-   { "CHEAT_INDEX_PLUS", RARCH_CHEAT_INDEX_PLUS, "Select the next cheat.", 0 },
-   { "CHEAT_INDEX_MINUS", RARCH_CHEAT_INDEX_MINUS, "Select the previous cheat.", 0 },
+   { "CHEAT_TOGGLE", RARCH_CHEAT_TOGGLE, "Turn the selected cheat on or off.", CMD_INFO_NO_TOOL },
+   { "CHEAT_INDEX_PLUS", RARCH_CHEAT_INDEX_PLUS, "Select the next cheat.", CMD_INFO_NO_TOOL },
+   { "CHEAT_INDEX_MINUS", RARCH_CHEAT_INDEX_MINUS, "Select the previous cheat.", CMD_INFO_NO_TOOL },
 
    { "SCREENSHOT", RARCH_SCREENSHOT, "Take a screenshot.", 0 },
    { "RECORDING_TOGGLE", RARCH_RECORDING_TOGGLE, "Start or stop recording video.", CMD_INFO_NO_TOOL },
@@ -833,23 +1013,23 @@ static const struct cmd_map map[] = {
    { "GRAB_MOUSE_TOGGLE", RARCH_GRAB_MOUSE_TOGGLE, "Grab or release the mouse.", CMD_INFO_NO_TOOL },
    { "GAME_FOCUS_TOGGLE", RARCH_GAME_FOCUS_TOGGLE, "Give the game all keyboard input, or hand it back to hotkeys.", CMD_INFO_NO_TOOL },
    { "FULLSCREEN_TOGGLE", RARCH_FULLSCREEN_TOGGLE_KEY, "Switch between fullscreen and windowed.", CMD_INFO_NO_TOOL },
-   { "UI_COMPANION_TOGGLE", RARCH_UI_COMPANION_TOGGLE, "Show or hide the desktop companion window.", 0 },
+   { "UI_COMPANION_TOGGLE", RARCH_UI_COMPANION_TOGGLE, "Show or hide the desktop companion window.", CMD_INFO_NO_TOOL },
 
    { "VRR_RUNLOOP_TOGGLE", RARCH_VRR_RUNLOOP_TOGGLE, "Turn sync to exact content framerate on or off.", CMD_INFO_NO_TOOL },
    { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", CMD_INFO_NO_TOOL },
    { "PREEMPT_TOGGLE", RARCH_PREEMPT_TOGGLE, "Turn preemptive frames on or off.", CMD_INFO_NO_TOOL },
    { "VIDEO_FILTER_TOGGLE", RARCH_VIDEO_FILTER_TOGGLE, "Turn the video filter on or off.", CMD_INFO_NO_TOOL },
-   { "HEADSET_RECENTER", RARCH_HEADSET_RECENTER, "Recenter the headset's screens in front of where it looks.", 0 },
-   { "LASER_POINTER_TOGGLE", RARCH_LASER_POINTER_TOGGLE, "Show or hide the headset's laser pointer.", 0 },
+   { "HEADSET_RECENTER", RARCH_HEADSET_RECENTER, "Recenter the headset's screens in front of where it looks.", CMD_INFO_NO_TOOL },
+   { "LASER_POINTER_TOGGLE", RARCH_LASER_POINTER_TOGGLE, "Show or hide the headset's laser pointer.", CMD_INFO_NO_TOOL },
    { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", CMD_INFO_NO_TOOL },
    { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", CMD_INFO_NO_TOOL },
-   { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", 0 },
+   { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", CMD_INFO_NO_TOOL },
 
-   { "NETPLAY_PING_TOGGLE", RARCH_NETPLAY_PING_TOGGLE, "Show or hide the netplay ping.", 0 },
-   { "NETPLAY_HOST_TOGGLE", RARCH_NETPLAY_HOST_TOGGLE, "Start or stop hosting netplay.", 0 },
-   { "NETPLAY_GAME_WATCH", RARCH_NETPLAY_GAME_WATCH, "Switch netplay between playing and spectating.", 0 },
-   { "NETPLAY_PLAYER_CHAT", RARCH_NETPLAY_PLAYER_CHAT, "Send a netplay chat message.", 0 },
-   { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE, "Turn fading of netplay chat on or off.", 0 },
+   { "NETPLAY_PING_TOGGLE", RARCH_NETPLAY_PING_TOGGLE, "Show or hide the netplay ping.", CMD_INFO_NO_TOOL },
+   { "NETPLAY_HOST_TOGGLE", RARCH_NETPLAY_HOST_TOGGLE, "Start or stop hosting netplay.", CMD_INFO_NO_TOOL },
+   { "NETPLAY_GAME_WATCH", RARCH_NETPLAY_GAME_WATCH, "Switch netplay between playing and spectating.", CMD_INFO_NO_TOOL },
+   { "NETPLAY_PLAYER_CHAT", RARCH_NETPLAY_PLAYER_CHAT, "Send a netplay chat message.", CMD_INFO_NO_TOOL },
+   { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE, "Turn fading of netplay chat on or off.", CMD_INFO_NO_TOOL },
 
    { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", 0 },
    { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", 0 },
@@ -858,8 +1038,8 @@ static const struct cmd_map map[] = {
    { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", 0 },
    { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", 0 },
 
-   { "OVERLAY_NEXT", RARCH_OVERLAY_NEXT, "Switch to the next overlay.", 0 },
-   { "OSK", RARCH_OSK, "Show or hide the on-screen keyboard.", 0 },
+   { "OVERLAY_NEXT", RARCH_OVERLAY_NEXT, "Switch to the next overlay.", CMD_INFO_NO_TOOL },
+   { "OSK", RARCH_OSK, "Show or hide the on-screen keyboard.", CMD_INFO_NO_TOOL },
 
 #if 0
    /* Deprecated */

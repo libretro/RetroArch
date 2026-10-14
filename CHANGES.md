@@ -97,10 +97,16 @@
 - NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
 - NETWORK: HELP network command lists every command with what it does
 - NETWORK: LIST_CORES, LIST_PLAYLISTS and GET_PLAYLIST network commands, to find content and the core to load it with
+- NETWORK: New network command PRESS, holding RetroPad buttons, running a number of frames and letting them go in one request
+- NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
+- NETWORK: LIST_CORES takes a content path, listing only the cores that can load it
 - NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)
 - NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders, AI service) answer with its outcome once it is through, and the server stays up across content loads
+- NETWORK: MCP server: the replies that are rows of fields are given as structuredContent as well as text, with an outputSchema describing their columns
+- NETWORK: MCP server: the hotkeys that step a selection a program cannot read back are no longer offered as tools, where a command taking the value outright already is; all of them remain network commands
 - NETWORK: Fix SAVE_STATE_SLOT freezing RetroArch with cores such as bsnes
 - NETWORK: Fix the SAVE_FILES and LOAD_FILES failure reply, and LOAD_CORE reporting a core that failed to load as loaded
+- NETWORK: Fix LOAD_CONTENT closing the running content before finding that the core or content path it was given does not exist
 - NETWORK: Built-in TLS 1.2/1.3 client; mbedTLS and BearSSL are no longer bundled (--enable-mbedtls / --enable-bearssl use a system one)
 - NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
 - NETWORK: Built-in NFSv3 and NFSv4 (4.0, 4.1, 4.2) client for loading content from nfs:// exports
