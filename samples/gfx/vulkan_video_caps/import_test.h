@@ -134,6 +134,7 @@ static int oracle_pipeline(import_oracle_t *t)
    return ok;
 }
 
+#ifndef HEVC_RENDER_TEST
 static unsigned oracle_sample(unsigned plane, unsigned x, unsigned y, unsigned depth, unsigned full)
 {
    unsigned shift = depth == 10 ? 2 : 0;
@@ -263,6 +264,8 @@ done:
    return ok;
 }
 
+#endif
+
 static void oracle_cleanup(import_oracle_t *t)
 {
    VkDevice device = t->vk.context->device;
@@ -298,6 +301,7 @@ static void oracle_cleanup(import_oracle_t *t)
    if (t->vk.pipelines.set_layout) vkDestroyDescriptorSetLayout(device, t->vk.pipelines.set_layout, NULL);
 }
 
+#ifndef HEVC_RENDER_TEST
 static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
       uint32_t family, PFN_vkGetInstanceProcAddr get)
 {
@@ -388,3 +392,5 @@ free_host:
    free(ctx); free(t);
    return ok;
 }
+
+#endif

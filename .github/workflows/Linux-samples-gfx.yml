@@ -1308,6 +1308,8 @@ jobs:
           make -C samples/gfx/vulkan_video_caps decode-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps import-check
           make -C samples/gfx/vulkan_video_caps import-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/gfx/vulkan_video_caps render-check
+          make -C samples/gfx/vulkan_video_caps render-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
 
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)

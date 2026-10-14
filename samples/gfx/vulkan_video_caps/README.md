@@ -131,3 +131,20 @@ with Vulkan validation and ASan/UBSan; instrumented runs assert zero CPU
 frame copies during the GPU phase. Host image writes and viewport readbacks
 are test-only. This proves presentation with a synthetic GPU producer,
 not hardware HEVC decoding, custom presets, A/V sync or seek/reset.
+
+`make render-check` compiles the real HEVC backend together with the
+production Vulkan importer and its compiled compute shader. Each decoded
+picture's raw NV12/P010 samples match independent FFmpeg hashes, and
+its converted RGBA shader input matches standard CPU color equations within
+two 8-bit steps. Imports are queued before the oracle waits for raw readback;
+GPU submission uses the decoder's actual ready/done timelines. Successful
+imports are not abandoned or signalled a second time by the CPU. Test-only
+readbacks supply the oracle, never the renderer input.
+
+On the RTX 5090, all 120 Main/Main10 fixture frames and the optional 24-frame
+Main8 long-term-reference case pass. The six H.264 regressions also pass.
+The original `decode-check` retains its separate held-lease/backpressure and
+close-with-outstanding-output checks; render-check consumes output normally.
+Linux/Wine llvmpipe skips render-check without a selected HEVC family.
+This validates actual hardware decode through RGBA shader-input creation,
+not the movie UI, custom shader presets, A/V sync or seek/reset on Windows.

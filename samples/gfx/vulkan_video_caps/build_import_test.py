@@ -32,9 +32,18 @@ with tempfile.TemporaryDirectory() as directory:
     cc = shlex.split(os.environ.get('CC', 'cc'))
     flags = shlex.split(os.environ.get('CFLAGS', '-O1 -g -std=gnu89'))
     windows = 'mingw' in cc[0] or os.name == 'nt'
-    subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root),
-        '-DVULKAN_IMPORT_TEST', '-DHAVE_VULKAN', '-o', str(Path(sys.argv[1]).resolve()),
-        str(Path(__file__).with_name('probe.c')),
+    sample = Path(__file__).parent
+    sources = [str(sample / 'probe.c')]
+    defines = ['-DVULKAN_IMPORT_TEST', '-DHAVE_VULKAN']
+    if len(sys.argv) > 2 and sys.argv[2] == '--hevc-render':
+        defines = ['-DHEVC_DECODE_TEST', '-DHEVC_RENDER_TEST', '-DHAVE_VULKAN',
+                   '-DHAVE_RMP4', '-DHAVE_RH264']
+        sources += [str(sample / 'hevc_render.c'),
+                    str(root / 'libretro-common/formats/h265/rh265.c'),
+                    str(root / 'libretro-common/formats/mp4/rmp4.c'),
+                    str(root / 'libretro-common/formats/h264/rh264.c')]
+    subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root)] + defines
+        + ['-o', str(Path(sys.argv[1]).resolve())] + sources + [
         str(root / 'libretro-common/vulkan/vulkan_symbol_wrapper.c'),
         str(root / 'libretro-common/formats/image/image_yuv_blit.c')]
         + shlex.split(os.environ.get('LDFLAGS', '')) + ['-lm']

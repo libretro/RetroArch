@@ -40,6 +40,20 @@ import_test$(EXE): probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
+hevc_render_test$(EXE): probe.c hevc_decode.h hevc_render.c hevc_render.h import_test.h \
+      build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
+      h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
+      $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_video_import.h \
+      $(RA)/libretro-common/formats/h264/rh264.c \
+      $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c \
+      $(RA)/libretro-common/formats/image/image_yuv_blit.c \
+      $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
+      $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
+	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@ --hevc-render
+
+render-check: hevc_render_test$(EXE)
+	$(RUNNER) ./hevc_render_test$(EXE)
+
 import-check: import_test$(EXE)
 	$(RUNNER) ./import_test$(EXE)
 
@@ -60,7 +74,7 @@ decode-check: hevc_decode_test$(EXE)
 clean:
 	rm -f vulkan_video_caps_test vulkan_video_caps_test.exe probe probe.exe
 	rm -f hevc_params_test hevc_params_test.exe hevc_session_test hevc_session_test.exe
-	rm -f hevc_decode_test hevc_decode_test.exe
+	rm -f hevc_decode_test hevc_decode_test.exe hevc_render_test hevc_render_test.exe
 	rm -f import_test import_test.exe video_layout_test video_layout_test.exe
 
-.PHONY: all check session-check decode-check import-check clean
+.PHONY: all check session-check decode-check import-check render-check clean

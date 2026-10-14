@@ -5,6 +5,10 @@
 #include "../../../gfx/common/vulkan_video_decode.c"
 #include "../d3d11_video_decode/frontend_stubs.h"
 #include "h264_decode.h"
+#ifdef HEVC_RENDER_TEST
+#include "hevc_render.h"
+static vulkan_context_t *render_context;
+#endif
 
 typedef struct oracle_readback
 {
@@ -19,6 +23,9 @@ typedef struct oracle_readback
    int coherent;
    video_hw_frame_t held[4];
    unsigned held_count, pressured;
+#ifdef HEVC_RENDER_TEST
+   void *renderer;
+#endif
 } oracle_readback_t;
 
 static void oracle_release(oracle_readback_t *r)
@@ -32,6 +39,9 @@ static void oracle_release(oracle_readback_t *r)
 static void oracle_free(oracle_readback_t *r)
 {
    oracle_release(r);
+#ifdef HEVC_RENDER_TEST
+   hevc_render_close(r->renderer);
+#endif
    if (r->map) vkUnmapMemory(vvd.device, r->memory);
    if (r->pool) vkDestroyCommandPool(vvd.device, r->pool, NULL);
    if (r->fence) vkDestroyFence(vvd.device, r->fence, NULL);
@@ -76,7 +86,12 @@ static int oracle_init(oracle_readback_t *r, unsigned width, unsigned height, un
    cb.commandPool = r->pool; cb.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; cb.commandBufferCount = 1;
    if (vkAllocateCommandBuffers(vvd.device, &cb, &r->cb) != VK_SUCCESS) return 0;
    fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-   return vkCreateFence(vvd.device, &fence, NULL, &r->fence) == VK_SUCCESS;
+   if (vkCreateFence(vvd.device, &fence, NULL, &r->fence) != VK_SUCCESS) return 0;
+#ifdef HEVC_RENDER_TEST
+   r->renderer = hevc_render_open(render_context, width, height);
+   if (!r->renderer) return 0;
+#endif
+   return 1;
 }
 
 static int oracle_frame(oracle_readback_t *r, rh265_video *source,
@@ -89,6 +104,10 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    VkBufferMemoryBarrier barrier = {0};
    VkSubmitInfo submit = {0};
    VkQueue queue;
+#ifdef HEVC_RENDER_TEST
+   VkTimelineSemaphoreSubmitInfoKHR timeline = {0};
+   VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+#endif
    uint32_t hash = UINT32_C(2166136261);
    unsigned plane, x, y;
    int ok = 0;
@@ -96,7 +115,10 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    memcpy(&image, &frame.image, sizeof(image)); memcpy(&wait, &frame.wait, sizeof(wait));
    if (!frame.image || !frame.abandon || frame.pixfmt != (f->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
          || frame.width != r->width || frame.height != r->height || !frame.done) goto done;
-   if (!vvd_wait(wait, frame.wait_value, VVD_WAIT_NS) || !vvd_begin(r->cb)) goto done;
+#ifndef HEVC_RENDER_TEST
+   if (!vvd_wait(wait, frame.wait_value, VVD_WAIT_NS)) goto done;
+#endif
+   if (!vvd_begin(r->cb)) goto done;
    memset(regions, 0, sizeof(regions));
    regions[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
    regions[0].imageSubresource.layerCount = 1;
@@ -115,8 +137,17 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    if (vkEndCommandBuffer(r->cb) != VK_SUCCESS || vkResetFences(vvd.device, 1, &r->fence) != VK_SUCCESS) goto done;
    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; submit.commandBufferCount = 1; submit.pCommandBuffers = &r->cb;
    vkGetDeviceQueue(vvd.device, vvd.gfx_family, 0, &queue);
-   if (vkQueueSubmit(queue, 1, &submit, r->fence) != VK_SUCCESS
-         || vkWaitForFences(vvd.device, 1, &r->fence, VK_TRUE, VVD_WAIT_NS) != VK_SUCCESS) goto done;
+#ifdef HEVC_RENDER_TEST
+   timeline.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+   timeline.waitSemaphoreValueCount = 1; timeline.pWaitSemaphoreValues = &frame.wait_value;
+   submit.pNext = &timeline; submit.waitSemaphoreCount = 1;
+   submit.pWaitSemaphores = &wait; submit.pWaitDstStageMask = &wait_stage;
+#endif
+   if (vkQueueSubmit(queue, 1, &submit, r->fence) != VK_SUCCESS) goto done;
+#ifdef HEVC_RENDER_TEST
+   if (!hevc_render_submit(r->renderer, &frame)) goto done;
+#endif
+   if (vkWaitForFences(vvd.device, 1, &r->fence, VK_TRUE, VVD_WAIT_NS) != VK_SUCCESS) goto done;
    if (!r->coherent)
    {
       VkMappedMemoryRange range = {0};
@@ -137,12 +168,20 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    ok = *count < f->frames && hash == f->hash[*count];
    if (!ok) printf("%s frame %u: GPU %08x, expected %08x\n", f->name,
          *count, hash, *count < f->frames ? f->hash[*count] : 0);
+#ifdef HEVC_RENDER_TEST
+   if (ok && hevc_render_frame(r->renderer, &frame, r->map, (size_t)r->uv_offset, r->sample_bytes))
+   {
+      (*count)++;
+      return 1;
+   }
+#else
    if (ok && r->held_count < 4)
    {
       r->held[r->held_count++] = frame;
       (*count)++;
       return 1;
    }
+#endif
    ok = 0;
 done:
    if (frame.abandon) frame.abandon(frame.owner, frame.done, frame.done_value);
@@ -206,14 +245,22 @@ static int decode_fixture(const hevc_fixture_t *f)
       }
       if (++retries == 1024) goto done;
    }
-   ok = count == f->frames && readback.pressured;
+   ok = count == f->frames;
+#ifndef HEVC_RENDER_TEST
+   ok = ok && readback.pressured;
+#endif
 done:
    vkDeviceWaitIdle(vvd.device);
    rh265_video_close(source);
    if (readback.held_count && (!retro_atomic_load_acquire_ptr(&vvd.grave)
             || retro_atomic_load_acquire_int(&vvd.live))) ok = 0;
    oracle_free(&readback); rmp4_close(mp4); free(params);
-   printf("HEVC Vulkan exported frames %s: %s (%u frames)\n", f->name, ok ? "PASS" : "FAIL", count);
+#ifdef HEVC_RENDER_TEST
+   printf("HEVC Vulkan decoded/imported frames %s: %s (%u frames)\n",
+#else
+   printf("HEVC Vulkan exported frames %s: %s (%u frames)\n",
+#endif
+         f->name, ok ? "PASS" : "FAIL", count);
    return ok;
 }
 
@@ -316,6 +363,12 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    ctx->video_xfer_family = graphics; ctx->video_lanes = 1;
    ctx->video_codec_operations = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
    vkGetPhysicalDeviceMemoryProperties(gpu, &ctx->memory_properties);
+#ifdef HEVC_RENDER_TEST
+   ctx->flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   vkGetPhysicalDeviceProperties(gpu, &ctx->gpu_properties);
+   vkGetDeviceQueue(device, graphics, 0, &ctx->queue);
+   render_context = ctx;
+#endif
    if (!vulkan_video_decode_init(ctx)) goto done;
    ok = 1;
    for (i = 0; i < 10; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
