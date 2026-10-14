@@ -88,6 +88,7 @@ typedef struct ffmpeg_camera
    AVDictionary *options;
    AVPacket *packet;
    AVFrame *camera_frame;
+   int video_stream_index;
    unsigned requested_dims;          /* VIDEO_SCALE_PACK */
    uint8_t *target_planes[4];
    int target_linesizes[4];
@@ -495,6 +496,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
    stream = ffmpeg->format_context->streams[ret];
+   ffmpeg->video_stream_index = stream->index;
 
    RARCH_LOG("[FFMPEG] Using video stream #%d with decoder \"%s\" (%s).\n", ret, ffmpeg->decoder->name, ffmpeg->decoder->long_name);
 
@@ -716,6 +718,9 @@ static void ffmpeg_camera_poll_thread(void *data)
          RARCH_ERR("[FFMPEG] Failed to read frame: %s.\n", msg);
          continue;
       }
+
+      if (ffmpeg->packet->stream_index != ffmpeg->video_stream_index)
+         goto done_loop;
 
       ret = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
       if (ret < 0)

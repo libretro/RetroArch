@@ -24,11 +24,27 @@
 #include <retro_atomic.h>
 #include <libavutil/imgutils.h>
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
 #include "../../../camera/camera_driver.h"
 
 extern camera_driver_t camera_ffmpeg;
 static retro_atomic_int_t staging_copies;
 static retro_atomic_int_t eof_reads;
+static retro_atomic_int_t mixed_source;
+static retro_atomic_int_t audio_reads;
+static retro_atomic_int_t wrong_stream_packets;
+
+int __real_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet);
+int __wrap_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet)
+{
+   if (packet && retro_atomic_load_acquire_int(&mixed_source)
+         && packet->stream_index != 1)
+   {
+      retro_atomic_fetch_add_int(&wrong_stream_packets, 1);
+      return AVERROR_INVALIDDATA;
+   }
+   return __real_avcodec_send_packet(ctx, packet);
+}
 
 int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
 int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
@@ -36,6 +52,9 @@ int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
    int ret = __real_av_read_frame(ctx, packet);
    if (ret == AVERROR_EOF)
       retro_atomic_fetch_add_int(&eof_reads, 1);
+   if (ret >= 0 && retro_atomic_load_acquire_int(&mixed_source)
+         && packet->stream_index == 0)
+      retro_atomic_fetch_add_int(&audio_reads, 1);
    return ret;
 }
 
@@ -326,6 +345,32 @@ int main(void)
          CHECK(last_width == 17 && last_height == 9, "requested dimensions changed");
          camera_ffmpeg.stop(h);
       }
+      camera_ffmpeg.free(h);
+   }
+   current = "audio and video source";
+   h = camera_ffmpeg.init("sine=frequency=1000:sample_rate=48000:duration=0.1[out0];color=c=red:size=34x18:rate=100,trim=end_frame=10[out1]",
+         CAPS, VIDEO_SCALE_PACK(17, 9));
+   CHECK(h != NULL, "mixed source initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&mixed_source, 1);
+      CHECK(camera_ffmpeg.start(h), "mixed source start failed");
+      red_frame = false;
+      solid_red = true;
+      for (attempt = 0; attempt < 100 && !red_frame; attempt++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+         usleep(20000);
+      }
+      solid_red = false;
+      CHECK(red_frame, "mixed source did not produce correct video pixels");
+      camera_ffmpeg.stop(h);
+      retro_atomic_store_release_int(&mixed_source, 0);
+      CHECK(retro_atomic_load_acquire_int(&audio_reads) > 0,
+            "mixed source produced no audio packets");
+      CHECK(retro_atomic_load_acquire_int(&wrong_stream_packets) == 0,
+            "non-video packets reached the video decoder");
       camera_ffmpeg.free(h);
    }
    current = "direct output";

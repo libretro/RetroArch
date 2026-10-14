@@ -33,6 +33,7 @@ CFLAGS  += -DFFMPEG_CAMERA_DEFAULT_BACKEND='"lavfi"'
 LDFLAGS += $(FF_LIBS) -lm -lpthread
 LDFLAGS += -Wl,--wrap=av_image_copy_to_buffer
 LDFLAGS += -Wl,--wrap=av_read_frame
+LDFLAGS += -Wl,--wrap=avcodec_send_packet
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)
