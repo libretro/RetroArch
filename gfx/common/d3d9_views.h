@@ -554,6 +554,9 @@ static void D3D9V_FN(set_view_count)(void *data, unsigned count)
    if (!d3d)
       return;
    d3d->views.chains.count = MIN(count, RETRO_VIDEO_VIEWS_MAX);
+   /* Views read the frame where the core left it: no loan */
+   if (count)
+      d3d9_sw_fb_drop(&d3d->sw_fb);
    D3D9V_CHAINS_FREE(d3d, d3d->views.chains.count);
    for (i = d3d->views.chains.count; i < RETRO_VIDEO_VIEWS_MAX; i++)
       d3d->views.chains.stock[i] = NULL;

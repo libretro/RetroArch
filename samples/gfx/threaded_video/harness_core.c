@@ -644,8 +644,10 @@ void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { (void)cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { (void)cb; }
 void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
-void retro_init(void) { }
-void retro_deinit(void) { }
+static void harness_env_init(void);
+static void harness_env_report(void);
+void retro_init(void) { harness_env_init(); }
+void retro_deinit(void) { harness_env_report(); }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -746,6 +748,33 @@ RETRO_API void harness_core_stamp(unsigned on)      { harness_stamp = on; }
 RETRO_API unsigned harness_core_last_pushed(void)   { return harness_last_pushed; }
 RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 RETRO_API unsigned harness_core_fb_uncached(void)  { return harness_fb_uncached; }
+
+/* The same switches from the environment, for a core RetroArch loads
+ * itself (samples/gfx/menu_wine/swfb.py): HARNESS_CORE_SW_FB as
+ * harness_core_use_framebuffer, HARNESS_CORE_FREEZE and
+ * HARNESS_CORE_STAMP as theirs, and HARNESS_CORE_REPORT, which prints
+ * how many framebuffers were asked for and lent at deinit. */
+static void harness_env_init(void)
+{
+   const char *v;
+   if ((v = getenv("HARNESS_CORE_SW_FB")) && *v)
+      harness_use_fb = atoi(v);
+   if ((v = getenv("HARNESS_CORE_FREEZE")) && *v)
+      harness_frozen = (unsigned)atoi(v);
+   if ((v = getenv("HARNESS_CORE_STAMP")) && *v)
+      harness_stamp  = (unsigned)atoi(v);
+}
+
+static void harness_env_report(void)
+{
+   const char *v = getenv("HARNESS_CORE_REPORT");
+   if (v && *v)
+   {
+      fprintf(stderr, "harness: %u runs, %u framebuffers lent\n",
+            runs, harness_fb_granted);
+      fflush(stderr);
+   }
+}
 
 void retro_run(void)
 {

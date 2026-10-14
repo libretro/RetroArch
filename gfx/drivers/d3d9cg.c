@@ -192,6 +192,8 @@ typedef struct d3d9_cg_renderchain
    } prev;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *out_vp;
+   /* The software framebuffer loan, on the main chain alone */
+   d3d9_sw_fb_t *sw_fb;
    struct shader_pass_vector_list  *passes;
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
@@ -401,7 +403,7 @@ static bool d3d9_cg_renderchain_fit_frame(d3d9_cg_renderchain_t *chain,
       if (FAILED(IDirect3DDevice9_CreateTexture(chain->dev, tw, th, 1, 0,
                   desc.Format, D3DPOOL_MANAGED, &tex, NULL)))
          return false;
-      IDirect3DTexture9_Release(chain->prev.tex[i]);
+      d3d9_sw_fb_release(chain->sw_fb, chain->prev.tex[i]);
       chain->prev.tex[i]       = tex;
       chain->prev.last_dims[i] = 0;
    }
@@ -2563,7 +2565,7 @@ void d3d9_cg_renderchain_free(void *data)
    for (i = 0; i < TEXTURES; i++)
    {
       if (chain->chain.prev.tex[i])
-         IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
+         d3d9_sw_fb_release(chain->chain.sw_fb, chain->chain.prev.tex[i]);
       if (chain->chain.prev.vertex_buf[i])
          d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
    }
@@ -3138,13 +3140,18 @@ static void d3d9_cg_renderchain_render(
          break;
    }
 
-   /* Blit frame data into the first pass texture */
+   /* Blit frame data into the first pass texture, unless the core
+    * wrote it there */
    {
+      unsigned src_pitch = pitch;
+      const uint8_t *src = d3d9_sw_fb_src_begin(chain->sw_fb, frame_data,
+            first_pass->tex, &src_pitch);
       D3DLOCKED_RECT d3dlr;
       d3dlr.Pitch = 0;
       d3dlr.pBits = NULL;
 
-      if (SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL,
+      if (src && SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0,
+            &d3dlr, NULL,
             (first_pass->last_dims == VIDEO_SCALE_PACK(width, height))
             ? 0 : D3DLOCK_NOSYSLOCK)) && d3dlr.pBits)
       {
@@ -3156,12 +3163,14 @@ static void d3d9_cg_renderchain_render(
 
          for (y = 0; y < height; y++)
          {
-            const uint8_t *in = (const uint8_t*)frame_data + y * pitch;
+            const uint8_t *in = src + y * src_pitch;
             uint8_t      *out = (uint8_t*)d3dlr.pBits      + y * d3dlr.Pitch;
             memcpy(out, in, width * chain->pixel_size);
          }
          IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
       }
+      if (src)
+         d3d9_sw_fb_src_end(chain->sw_fb, frame_data, first_pass->tex);
    }
 
    /* Grab back buffer. */
@@ -3569,6 +3578,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
    renderchain->chain.luts       = lut_info_vector_list_new();
    renderchain->chain.bound_tex  = unsigned_vector_list_new();
    renderchain->chain.bound_vert = unsigned_vector_list_new();
+   renderchain->chain.sw_fb      = &d3d->sw_fb;
    d3d->renderchain_data         = renderchain;
 
    if (
@@ -4342,6 +4352,7 @@ static void d3d9_cg_free(void *data)
    d3d->menu          = NULL;
 
    d3d9_cg_deinitialize(d3d);
+   d3d9_sw_fb_collect(&d3d->sw_fb);
 
    if (d3d->shader_path && *d3d->shader_path)
       free(d3d->shader_path);
@@ -4547,6 +4558,15 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (!frame)
       return true;
 
+   /* A frame the core wrote into the lent texture stays where it is */
+   {
+      cg_renderchain_t *_chain = (cg_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         d3d9_sw_fb_settle(&d3d->sw_fb, frame, frame_width, frame_height,
+               pitch, _chain->chain.pixel_size,
+               _chain->chain.prev.last_dims[_chain->chain.prev.ptr]);
+   }
+
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
    {
@@ -4650,8 +4670,17 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       d.tex_dims   = first->info.tex_dims;
       d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
       d.rotation   = d3d->dev_rotation;
-      d3d9_cg_views_upload(d.tex, frame, frame_height,
-            (size_t)frame_width * _chain->chain.pixel_size, pitch);
+      {
+         unsigned src_pitch = pitch;
+         const uint8_t *src = d3d9_sw_fb_src_begin(&d3d->sw_fb, frame,
+               d.tex, &src_pitch);
+         if (src)
+         {
+            d3d9_cg_views_upload(d.tex, src, frame_height,
+                  (size_t)frame_width * _chain->chain.pixel_size, src_pitch);
+            d3d9_sw_fb_src_end(&d3d->sw_fb, frame, d.tex);
+         }
+      }
       d3d9_cg_views_render(d3d, &d, view_chains, views_blend, views_direct);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
@@ -4972,6 +5001,27 @@ static void d3d9_cg_set_video_mode(void *data,
    win32_show_cursor(data, !fullscreen);
 }
 
+/* The next frame's texture, lent to the core to write its frame into */
+static bool d3d9_cg_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   d3d9_video_t     *d3d   = (d3d9_video_t*)data;
+   cg_renderchain_t *chain = d3d
+      ? (cg_renderchain_t*)d3d->renderchain_data : NULL;
+
+   if (!chain || !fb || d3d->needs_restore)
+      return false;
+#ifdef D3D9_VIEWS
+   /* Views read the frame where the core left it */
+   if (d3d->views.active || d3d->views.chains.count)
+      return false;
+#endif
+   return d3d9_sw_fb_lend(&d3d->sw_fb,
+         chain->chain.prev.tex[chain->chain.prev.ptr],
+         chain->chain.passes->data[0].info.tex_dims,
+         chain->chain.pixel_size, fb);
+}
+
 static struct video_shader *d3d9_cg_get_current_shader(void *data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
@@ -5028,7 +5078,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d9_cg_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   d3d9_cg_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */

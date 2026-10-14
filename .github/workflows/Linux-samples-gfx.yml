@@ -241,6 +241,19 @@ jobs:
           timeout 300 make check
           make clean
 
+      - name: Build and run the d3d9 software framebuffer loan test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/d3d9_sw_fb
+        run: |
+          set -eu
+          # GET_CURRENT_SOFTWARE_FRAMEBUFFER on the D3D9 drivers: the frame
+          # texture lent locked, read out of without a copy, a cropped
+          # window moved to its corner, and the texture holding the cached
+          # frame kept alive until it is retired.
+          make clean && make all
+          timeout 300 make check
+          make clean
+
       - name: Build and run d3d9 menu vertex ring tests (mingw-w64, Wine)
         shell: bash
         working-directory: samples/gfx/d3d9_menu_ring

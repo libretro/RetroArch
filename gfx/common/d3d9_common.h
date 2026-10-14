@@ -50,6 +50,8 @@
 #define D3D9_ARGB4444_FORMAT D3DFMT_A4R4G4B4
 #endif
 
+#include "d3d9_sw_fb.h"
+
 RETRO_BEGIN_DECLS
 
 #ifdef D3D9_VIEWS
@@ -154,6 +156,7 @@ typedef struct d3d9_video
     * with a different `rgb32` value.  Defaults to false; the first
     * call will see a NULL tex and create one regardless. */
    bool menu_tex_rgb32;
+   d3d9_sw_fb_t sw_fb;
 #ifdef D3D9_VIEWS
    d3d9_views_t views;
 #endif

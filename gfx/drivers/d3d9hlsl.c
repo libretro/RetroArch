@@ -198,6 +198,8 @@ typedef struct d3d9_hlsl_renderchain
    } prev;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *out_vp;
+   /* The software framebuffer loan, on the main chain alone */
+   d3d9_sw_fb_t *sw_fb;
    struct shader_pass_vector_list  *passes;
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
@@ -391,7 +393,7 @@ static bool d3d9_hlsl_renderchain_fit_frame(d3d9_hlsl_renderchain_t *chain,
       if (FAILED(IDirect3DDevice9_CreateTexture(chain->dev, tw, th, 1, 0,
                   desc.Format, D3DPOOL_MANAGED, &tex, NULL)))
          return false;
-      IDirect3DTexture9_Release(chain->prev.tex[i]);
+      d3d9_sw_fb_release(chain->sw_fb, chain->prev.tex[i]);
       chain->prev.tex[i]       = tex;
       chain->prev.last_dims[i] = 0;
    }
@@ -2850,7 +2852,8 @@ static void hlsl_d3d9_renderchain_free(void *data)
       for (i = 0; i < TEXTURES; i++)
       {
          if (chain->chain.prev.tex[i])
-            IDirect3DTexture9_Release(chain->chain.prev.tex[i]);
+            d3d9_sw_fb_release(chain->chain.sw_fb,
+                  chain->chain.prev.tex[i]);
          if (chain->chain.prev.vertex_buf[i])
             d3d9_vertex_buffer_free(chain->chain.prev.vertex_buf[i], NULL);
       }
@@ -2977,26 +2980,35 @@ static void d3d9_hlsl_renderchain_run(d3d9_video_t *d3d,
    first_pass->last_dims   = chain->chain.prev.last_dims[
       chain->chain.prev.ptr];
 
-   /* Blit frame to first pass texture */
+   /* Blit frame to first pass texture, unless the core wrote it there */
    {
       unsigned y;
+      unsigned src_pitch = pitch;
+      const uint8_t *src = d3d9_sw_fb_src_begin(chain->chain.sw_fb, frame,
+            first_pass->tex, &src_pitch);
       D3DLOCKED_RECT d3dlr;
       d3dlr.Pitch  = 0;
       d3dlr.pBits  = NULL;
 
-      IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL, 0);
-
-      if (first_pass->last_dims != VIDEO_SCALE_PACK(width, height))
-         memset(d3dlr.pBits, 0,
-               VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
-
-      for (y = 0; y < height; y++)
+      if (     src
+            && SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0,
+                  &d3dlr, NULL, 0))
+            && d3dlr.pBits)
       {
-         const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
-         memcpy(out, in, width * chain->chain.pixel_size);
+         if (first_pass->last_dims != VIDEO_SCALE_PACK(width, height))
+            memset(d3dlr.pBits, 0,
+                  VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
+
+         for (y = 0; y < height; y++)
+         {
+            const uint8_t *in = src + y * src_pitch;
+            uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
+            memcpy(out, in, width * chain->chain.pixel_size);
+         }
+         IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
       }
-      IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
+      if (src)
+         d3d9_sw_fb_src_end(chain->chain.sw_fb, frame, first_pass->tex);
    }
 
    if (chain->chain.passes->count > 1 && chain->chain.dev)
@@ -7201,6 +7213,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       renderchain->chain.bound_tex  = unsigned_vector_list_new();
       renderchain->chain.bound_vert = unsigned_vector_list_new();
 
+      renderchain->chain.sw_fb      = &d3d->sw_fb;
       d3d->renderchain_data         = renderchain;
    }
 
@@ -8093,6 +8106,7 @@ static void d3d9_hlsl_free(void *data)
    d3d->menu          = NULL;
 
    d3d9_hlsl_deinitialize(d3d);
+   d3d9_sw_fb_collect(&d3d->sw_fb);
 
    if (d3d9_hlsl_white_texture)
    {
@@ -8156,6 +8170,15 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
    if (!frame)
       return true;
+
+   /* A frame the core wrote into the lent texture stays where it is */
+   {
+      hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
+      if (_chain)
+         d3d9_sw_fb_settle(&d3d->sw_fb, frame, frame_width, frame_height,
+               pitch, _chain->chain.pixel_size,
+               _chain->chain.prev.last_dims[_chain->chain.prev.ptr]);
+   }
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -8262,8 +8285,17 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       d.filter     = (DWORD)d3d_translate_filter(first->info.pass->filter);
       d.rotation   = d3d->dev_rotation;
       if (views_direct)
-         d3d9_hlsl_views_upload(d.tex, frame, frame_height,
-               (size_t)frame_width * _chain->chain.pixel_size, pitch);
+      {
+         unsigned src_pitch = pitch;
+         const uint8_t *src = d3d9_sw_fb_src_begin(&d3d->sw_fb, frame,
+               d.tex, &src_pitch);
+         if (src)
+         {
+            d3d9_hlsl_views_upload(d.tex, src, frame_height,
+                  (size_t)frame_width * _chain->chain.pixel_size, src_pitch);
+            d3d9_sw_fb_src_end(&d3d->sw_fb, frame, d.tex);
+         }
+      }
       d3d9_hlsl_views_render(d3d, &d, view_chains, views_blend,
             views_direct);
       if (!views_direct)
@@ -8779,6 +8811,27 @@ static void d3d9_hlsl_unload_texture(void *data,
    IDirect3DTexture9_Release(texid);
 }
 
+/* The next frame's texture, lent to the core to write its frame into */
+static bool d3d9_hlsl_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   d3d9_video_t       *d3d   = (d3d9_video_t*)data;
+   hlsl_renderchain_t *chain = d3d
+      ? (hlsl_renderchain_t*)d3d->renderchain_data : NULL;
+
+   if (!chain || !fb || d3d->needs_restore)
+      return false;
+#ifdef D3D9_VIEWS
+   /* Views read the frame where the core left it */
+   if (d3d->views.active || d3d->views.chains.count)
+      return false;
+#endif
+   return d3d9_sw_fb_lend(&d3d->sw_fb,
+         chain->chain.prev.tex[chain->chain.prev.ptr],
+         chain->chain.passes->data[0].info.tex_dims,
+         chain->chain.pixel_size, fb);
+}
+
 static struct video_shader *d3d9_hlsl_get_current_shader(void *data)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
@@ -8836,7 +8889,7 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    win32_show_cursor,
    NULL, /* grab_mouse_toggle */
    d3d9_hlsl_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   d3d9_hlsl_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */

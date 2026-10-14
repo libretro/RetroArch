@@ -8,7 +8,10 @@ name: CI Windows menus under Wine
 # (d3d9_hlsl's batched quads read the font atlas) or a gradient split
 # along the other diagonal (both D3D9 drivers' single quads) moves
 # whole blocks; the drivers' own text and edge differences do not.
-# See samples/gfx/menu_wine/run.py.
+# See samples/gfx/menu_wine/run.py. Then a core writes its frames into
+# the framebuffer d3d9_hlsl lends it - still, cropped, and through the
+# driver growing its textures - checked against D3D11's copy
+# (samples/gfx/menu_wine/swfb.py).
 
 on:
   push:
@@ -27,6 +30,7 @@ on:
       - 'menu/drivers/**'
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
+      - 'samples/gfx/threaded_video/harness_core.c'
       - '.github/workflows/Windows-wine-menu.yml'
   pull_request:
     paths:
@@ -44,6 +48,7 @@ on:
       - 'menu/drivers/**'
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
+      - 'samples/gfx/threaded_video/harness_core.c'
       - '.github/workflows/Windows-wine-menu.yml'
   workflow_dispatch:
 
@@ -149,6 +154,17 @@ jobs:
           WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           python3 samples/gfx/menu_wine/run.py ./retroarch.exe \
             "$RUNNER_TEMP/menu-wine" d3d11 d3d10 d3d12 d3d9_hlsl d3d8 gl glcore
+
+      - name: A core writing into the framebuffer d3d9_hlsl lends it (Wine)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          (cd samples/gfx/threaded_video && x86_64-w64-mingw32-gcc -O1 \
+            -shared -I../../../libretro-common/include -I../../../gfx/include \
+            -o ../../../harness_core.dll harness_core.c)
+          python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
+            ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb" d3d9_hlsl
 
       - name: Preserve screens on failure
         if: failure()
