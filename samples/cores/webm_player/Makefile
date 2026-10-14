@@ -90,7 +90,14 @@ $(HW_TARGET): webm_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(ROOT)/c
 	$(CC) $(CFLAGS) -o $@ webm_hw_test.c $(HW_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
 
-check: $(TARGET) $(HW_TARGET)
+RESIDENCY_TARGET := webm_residency_test$(EXE)
+RESIDENCY_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
+RESIDENCY_OBJS := $(call sample_objs,$(RESIDENCY_SOURCES:.c=.o))
+$(RESIDENCY_TARGET): webm_residency_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_residency_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+
+check: $(TARGET) $(HW_TARGET) $(RESIDENCY_TARGET)
+	$(RUNNER) ./$(RESIDENCY_TARGET)
 	$(RUNNER) ./$(TARGET) fixtures
 ifeq ($(MP4),1)
 	$(RUNNER) ./$(HW_TARGET)
@@ -98,6 +105,6 @@ endif
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe
+	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe
 
 .PHONY: all check clean

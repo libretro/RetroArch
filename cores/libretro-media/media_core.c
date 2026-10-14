@@ -46,10 +46,7 @@
 #include <formats/audio.h>
 #endif
 
-/* Bounded-memory playback: how far behind the consumed position the
- * physical pages are kept before release.  Covers the demuxers'
- * short-reach references behind their cursors (lacing frames inside
- * the current block, the reorder window) with a wide margin. */
+/* Keep a residency margin behind the earliest unread packet. */
 #define MEDIA_DISCARD_MARGIN (4 * 1024 * 1024)
 
 /* How far the progressive fill is allowed to run ahead of the
@@ -637,6 +634,18 @@ static int media_ts_cmp(const void *a, const void *b)
 {
    int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
    return x < y ? -1 : x > y ? 1 : 0;
+}
+
+static size_t media_native_consumed(media_player_t *p)
+{
+   size_t consumed = rwebm_consumed(p->webm);
+   if (p->wgather)
+   {
+      size_t gathered = rwebm_consumed(p->wgather);
+      if (gathered < consumed)
+         consumed = gathered;
+   }
+   return consumed;
 }
 
 static void media_free_player(media_player_t *p)
@@ -1306,15 +1315,11 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
                  "arrived.\n");
    }
 
-   /* Bounded-memory streaming, native arm: release behind the
-    * playback demuxer's walk position (the gather leads it and its
-    * audio bytes are copied at the pump; lacing references stay
-    * inside the margin).  The header floor - Tracks, codec private
-    * data - always stays. */
+   /* Both demuxers can retain unread laces behind their walk cursor. */
    if (p->dt && p->webm && p->pending_seek_ns < 0)
    {
       size_t mfloor   = rwebm_media_floor(p->webm);
-      size_t consumed = rwebm_tell(p->webm);
+      size_t consumed = media_native_consumed(p);
       if (   consumed > mfloor
           && consumed - mfloor > MEDIA_DISCARD_MARGIN)
       {
