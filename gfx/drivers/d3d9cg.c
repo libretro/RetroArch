@@ -1047,9 +1047,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
          > (unsigned)d3d->menu_display.size)
       d3d->menu_display.offset = 0;
 
+   /* Started over: what the draws before still read goes with the
+    * old contents, and only DISCARD hands out fresh ones */
    IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
             d3d->menu_display.buffer, 0, 0, (void**)&pv,
-            D3DLOCK_NOOVERWRITE);
+            d3d->menu_display.offset == 0
+            ? D3DLOCK_DISCARD : D3DLOCK_NOOVERWRITE);
    if (!pv)
       return;
 
@@ -3774,22 +3777,7 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
          return false;
    }
 
-   d3d->menu_display.offset = 0;
-   d3d->menu_display.size   = 1024;
-   {
-      void *_vbuf = NULL;
-      if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-                  d3d->dev, d3d->menu_display.size * sizeof(Vertex),
-                  D3DUSAGE_WRITEONLY,
-                  0, /* FVF=0: using vertex declarations, not FVF */
-                  D3DPOOL_DEFAULT,
-                  (LPDIRECT3DVERTEXBUFFER9*)&_vbuf, NULL)))
-         d3d->menu_display.buffer = _vbuf;
-      else
-         d3d->menu_display.buffer = NULL;
-   }
-
-   if (!d3d->menu_display.buffer)
+   if (!d3d9_menu_vbuf_create(d3d))
       return false;
 
    /* Create a 1x1 opaque-white fallback texture for untextured draws

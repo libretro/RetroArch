@@ -159,6 +159,25 @@ typedef struct d3d9_video
 #endif
 } d3d9_video_t;
 
+/* The menu's vertex ring: dynamic, so a lock that starts it over
+ * (DISCARD) gets fresh memory and one that appends (NOOVERWRITE) does
+ * not wait for the draws still reading what came before */
+#define D3D9_MENU_VBUF_SIZE 8192
+
+static INLINE bool d3d9_menu_vbuf_create(d3d9_video_t *d3d)
+{
+   d3d->menu_display.offset = 0;
+   d3d->menu_display.size   = D3D9_MENU_VBUF_SIZE;
+   d3d->menu_display.buffer = NULL;
+   if (FAILED(IDirect3DDevice9_CreateVertexBuffer(d3d->dev,
+               D3D9_MENU_VBUF_SIZE * sizeof(Vertex),
+               D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT,
+               (LPDIRECT3DVERTEXBUFFER9*)&d3d->menu_display.buffer,
+               NULL)))
+      d3d->menu_display.buffer = NULL;
+   return d3d->menu_display.buffer != NULL;
+}
+
 bool d3d9_create_device(void *dev,
       void *d3dpp,
       void *d3d,

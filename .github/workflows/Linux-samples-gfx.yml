@@ -241,6 +241,19 @@ jobs:
           timeout 300 make check
           make clean
 
+      - name: Build and run d3d9 menu vertex ring tests (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/d3d9_menu_ring
+        run: |
+          set -eu
+          # Each D3D9 driver's display draw against a stand-in device: the
+          # menu's vertex ring is dynamic, starts over with DISCARD and
+          # never rewrites a vertex a pending draw reads (d3d9_cg's did,
+          # and drew whole-screen triangles while a notification was up).
+          make clean && make -j$(nproc) all
+          timeout 300 make check
+          make clean
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest

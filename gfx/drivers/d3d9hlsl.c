@@ -7419,18 +7419,7 @@ static bool d3d9_hlsl_initialize(
          return false;
    }
 
-   d3d->menu_display.offset = 0;
-   d3d->menu_display.size   = 8192;
-   d3d->menu_display.buffer = NULL;
-   if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
-               d3d->dev,
-               d3d->menu_display.size * sizeof(Vertex),
-               D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0,
-               D3DPOOL_DEFAULT,
-               (LPDIRECT3DVERTEXBUFFER9*)&d3d->menu_display.buffer, NULL)))
-      d3d->menu_display.buffer = NULL;
-
-   if (!d3d->menu_display.buffer)
+   if (!d3d9_menu_vbuf_create(d3d))
       return false;
 
    /* Sampled by a quad drawn with no texture: solid colour */
