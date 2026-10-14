@@ -743,7 +743,6 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    bool has_vertex_data;
    unsigned start                = 0;
    unsigned count                = 0;
-   unsigned vertex_count         = 4;
    d3d9_video_t *d3d             = (d3d9_video_t*)data;
    Vertex * pv                   = NULL;
    const float *vertex           = NULL;
@@ -892,9 +891,6 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    has_vertex_data = draw->coords->vertex
       && draw->coords->tex_coord && draw->coords->color;
 
-   if (has_vertex_data)
-      vertex_count = draw->coords->vertices;
-
    if (!has_vertex_data)
    {
       /* Single-sprite path: build a quad from draw->pos and draw->dims
@@ -903,9 +899,13 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
        * Callers like ozone_draw_icon pre-flip Y before packing it.
        * We undo that flip here so that the top-down ortho matrix produces
        * the correct screen position with correct texture orientation
-       * (v=0 at screen top, v=1 at screen bottom). */
+       * (v=0 at screen top, v=1 at screen bottom). Written straight
+       * into the menu's vertex buffer, or a stack copy for
+       * DrawPrimitiveUP if it cannot be locked. */
       D3DCOLOR col[4];
-      Vertex quad[4];
+      Vertex quad_up[4];
+      Vertex *quad;
+      unsigned vb_start;
       float x1, y1, x2, y2;
       const float *c = draw->coords->color;
 
@@ -924,6 +924,10 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       {
          col[0] = col[1] = col[2] = col[3] = D3DCOLOR_ARGB(0xFF, 0xFF, 0xFF, 0xFF);
       }
+
+      vb_start = 0;
+      if (!(quad = d3d9_menu_vbuf_map(d3d, 4, &vb_start)))
+         quad = quad_up;
 
       /* Undo the Y pre-flip, then let topdown_ortho handle the mapping.
        * This matches the HLSL driver's single-sprite coordinate path. */
@@ -1032,6 +1036,17 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
       gfx_display_d3d9_cg_bind_texture(draw, d3d);
 
+      if (quad != quad_up)
+      {
+         d3d9_menu_vbuf_unmap(d3d);
+         IDirect3DDevice9_SetStreamSource(dev, 0,
+               (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+               0, sizeof(Vertex));
+         IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
+               vb_start, 2);
+         return;
+      }
+
       IDirect3DDevice9_DrawPrimitiveUP(dev, D3DPT_TRIANGLESTRIP,
             2, quad, sizeof(Vertex));
 
@@ -1042,21 +1057,13 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       return;
    }
 
-   /* Multi-vertex path: explicit vertex/tex_coord/color arrays */
-   if ((d3d->menu_display.offset + vertex_count)
-         > (unsigned)d3d->menu_display.size)
-      d3d->menu_display.offset = 0;
-
-   /* Started over: what the draws before still read goes with the
-    * old contents, and only DISCARD hands out fresh ones */
-   IDirect3DVertexBuffer9_Lock((LPDIRECT3DVERTEXBUFFER9)
-            d3d->menu_display.buffer, 0, 0, (void**)&pv,
-            d3d->menu_display.offset == 0
-            ? D3DLOCK_DISCARD : D3DLOCK_NOOVERWRITE);
-   if (!pv)
+   /* Multi-vertex path: explicit vertex/tex_coord/color arrays, a
+    * strip of at least three */
+   if (draw->coords->vertices < 3)
+      return;
+   if (!(pv = d3d9_menu_vbuf_map(d3d, draw->coords->vertices, &start)))
       return;
 
-   pv          += d3d->menu_display.offset;
    vertex       = draw->coords->vertex;
    tex_coord    = draw->coords->tex_coord;
    color        = draw->coords->color;
@@ -1089,8 +1096,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
                colors[2]  /* B */
                );
    }
-   IDirect3DVertexBuffer9_Unlock((LPDIRECT3DVERTEXBUFFER9)
-         d3d->menu_display.buffer);
+   d3d9_menu_vbuf_unmap(d3d);
 
    /* Bottom-up ortho: X [0,1]->[-1,1], Y [0,1]->[-1,1].
     * gfx_display provides explicit vertex coordinates in bottom-up
@@ -1117,22 +1123,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
    gfx_display_d3d9_cg_bind_texture(draw, d3d);
 
-   start = d3d->menu_display.offset;
-
-   /* Menu draws use a triangle-strip layout.  Harden against vertices < 3
-    * (the count formula vertices - 2 would otherwise underflow the
-    * unsigned subtraction and pass a huge primitive count to the GPU --
-    * see d3d8.c for the matching guard). */
-   if (draw->coords->vertices < 3)
-   {
-      d3d->menu_display.offset += draw->coords->vertices;
-      return;
-   }
    count = draw->coords->vertices - 2;
 
+   IDirect3DDevice9_SetStreamSource(dev, 0,
+         (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+         0, sizeof(Vertex));
    IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP, start, count);
-
-   d3d->menu_display.offset += draw->coords->vertices;
 }
 
 static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -1528,10 +1524,7 @@ static INLINE Vertex *d3d9_cg_font_get_scratch(
 }
 
 
-/* Draws @vert_count glyph vertices from @verts with the atlas bound,
- * and puts the menu's vertex stream back. */
-static void d3d9_cg_font_draw_verts(d3d9_video_t *d3d, d3d9_cg_font_t *font,
-      Vertex *verts, unsigned vert_count)
+static void d3d9_cg_font_bind_atlas(d3d9_video_t *d3d, d3d9_cg_font_t *font)
 {
    IDirect3DDevice9_SetTexture(d3d->dev, 0,
          (IDirect3DBaseTexture9*)font->texture);
@@ -1543,6 +1536,35 @@ static void d3d9_cg_font_draw_verts(d3d9_video_t *d3d, d3d9_cg_font_t *font,
          0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
    IDirect3DDevice9_SetSamplerState(d3d->dev,
          0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+}
+
+/* A line's glyphs, @vs shadow vertices at @start and @vf foreground
+ * ones @fg_off further, drawn where they were written in the menu's
+ * vertex buffer */
+static void d3d9_cg_font_draw_vbuf(d3d9_video_t *d3d, d3d9_cg_font_t *font,
+      unsigned start, unsigned fg_off, unsigned vs, unsigned vf)
+{
+   d3d9_menu_vbuf_unmap(d3d);
+   if (!vs && !vf)
+      return;
+   d3d9_cg_font_bind_atlas(d3d, font);
+   IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
+         (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+         0, sizeof(Vertex));
+   if (vs)
+      IDirect3DDevice9_DrawPrimitive(d3d->dev, D3DPT_TRIANGLELIST,
+            start, vs / 3);
+   if (vf)
+      IDirect3DDevice9_DrawPrimitive(d3d->dev, D3DPT_TRIANGLELIST,
+            start + fg_off, vf / 3);
+}
+
+/* Draws @vert_count glyph vertices from @verts with the atlas bound,
+ * and puts the menu's vertex stream back. */
+static void d3d9_cg_font_draw_verts(d3d9_video_t *d3d, d3d9_cg_font_t *font,
+      Vertex *verts, unsigned vert_count)
+{
+   d3d9_cg_font_bind_atlas(d3d, font);
 
    IDirect3DDevice9_DrawPrimitiveUP(d3d->dev,
          D3DPT_TRIANGLELIST,
@@ -1728,6 +1750,9 @@ static void d3d9_cg_font_render_msg(
    {
       bool has_drop                    = drop_x || drop_y;
       bool line_ok                     = false;
+      bool line_vbuf                   = false;
+      unsigned vb_start                = 0;
+      unsigned fg_off                  = 0;
       Vertex *verts_s                  = NULL;
       Vertex *verts_f                  = NULL;
       unsigned vs                      = 0;
@@ -1778,10 +1803,14 @@ static void d3d9_cg_font_render_msg(
          float fx     = x; \
          (void)(count); \
          vs = vf = 0; \
-         line_ok = !!(verts_s = d3d9_cg_font_get_scratch(font, (bytes) * 12)); \
-         if (!line_ok) \
+         fg_off    = (unsigned)(bytes) * 6; \
+         line_vbuf = !!(verts_s = d3d9_menu_vbuf_map(d3d, \
+                  (unsigned)(bytes) * 12, &vb_start)); \
+         if (!line_vbuf) \
+            verts_s = d3d9_cg_font_get_scratch(font, (bytes) * 12); \
+         if (!(line_ok = !!verts_s)) \
             break; \
-         verts_f   = verts_s + (bytes) * 6; \
+         verts_f   = verts_s + fg_off; \
          inv_vp_w  = 1.0f / (float)width; \
          inv_vp_h  = 1.0f / (float)height; \
          inv_tex_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
@@ -1826,6 +1855,12 @@ static void d3d9_cg_font_render_msg(
 #define FONT_LAYOUT_LINE_END() \
       do \
       { \
+         if (line_vbuf) \
+         { \
+            line_vbuf = false; \
+            d3d9_cg_font_draw_vbuf(d3d, font, vb_start, fg_off, vs, vf); \
+            break; \
+         } \
          if (vs) \
             d3d9_cg_font_draw_verts(d3d, font, verts_s, vs); \
          if (vf) \
@@ -4338,7 +4373,9 @@ static void d3d9_cg_overlay_render(
       overlay_t *overlay,
       bool force_linear)
 {
-   Vertex quad[4];
+   Vertex quad_up[4];
+   Vertex *quad;
+   unsigned vb_start = 0;
    LPDIRECT3DDEVICE9 dev;
    float x, y, w, h;
    D3DCOLOR color;
@@ -4375,6 +4412,9 @@ static void d3d9_cg_overlay_render(
       cgD3D9BindProgram((CGprogram)_chain->stock_shader.vprg);
       CG_DEBUG_CHECK(_chain->cgCtx, "overlay_render BindProgram");
    }
+
+   if (!(quad = d3d9_menu_vbuf_map(d3d, 4, &vb_start)))
+      quad = quad_up;
 
    /* Build a quad from the overlay's normalised coordinates.
     * vert_coords: [0]=x  [1]=y  [2]=w  [3]=h
@@ -4441,6 +4481,19 @@ static void d3d9_cg_overlay_render(
       vp_full.MinZ   = 0.0f;
       vp_full.MaxZ   = 1.0f;
       IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&vp_full);
+   }
+
+   if (quad != quad_up)
+   {
+      d3d9_menu_vbuf_unmap(d3d);
+      IDirect3DDevice9_SetStreamSource(dev, 0,
+            (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+            0, sizeof(Vertex));
+      IDirect3DDevice9_BeginScene(dev);
+      IDirect3DDevice9_DrawPrimitive(dev, D3DPT_TRIANGLESTRIP,
+            vb_start, 2);
+      IDirect3DDevice9_EndScene(dev);
+      return;
    }
 
    IDirect3DDevice9_BeginScene(dev);

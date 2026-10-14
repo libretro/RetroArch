@@ -178,6 +178,36 @@ static INLINE bool d3d9_menu_vbuf_create(d3d9_video_t *d3d)
    return d3d->menu_display.buffer != NULL;
 }
 
+/* Room for @count vertices in the ring, locked at vertex *@start for
+ * the caller to write in place; NULL when the ring is smaller.
+ * d3d9_menu_vbuf_unmap before drawing from it. */
+static INLINE Vertex *d3d9_menu_vbuf_map(d3d9_video_t *d3d,
+      unsigned count, unsigned *start)
+{
+   void    *p   = NULL;
+   unsigned off = (unsigned)d3d->menu_display.offset;
+
+   if (!d3d->menu_display.buffer
+         || count > (unsigned)d3d->menu_display.size)
+      return NULL;
+   if (off + count > (unsigned)d3d->menu_display.size)
+      off = 0;
+   if (FAILED(IDirect3DVertexBuffer9_Lock(
+               (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
+               off * sizeof(Vertex), count * sizeof(Vertex), &p,
+               off ? D3DLOCK_NOOVERWRITE : D3DLOCK_DISCARD)) || !p)
+      return NULL;
+   d3d->menu_display.offset = (int)(off + count);
+   *start                   = off;
+   return (Vertex*)p;
+}
+
+static INLINE void d3d9_menu_vbuf_unmap(d3d9_video_t *d3d)
+{
+   IDirect3DVertexBuffer9_Unlock(
+         (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer);
+}
+
 bool d3d9_create_device(void *dev,
       void *d3dpp,
       void *d3d,
@@ -201,6 +231,7 @@ bool d3d9_supports_texture_format(void *data,
 uintptr_t d3d9_load_texture_compressed(void *data,
       const struct texture_compressed *tc, bool threaded,
       enum texture_filter_type filter_type);
+
 
 RETRO_END_DECLS
 
