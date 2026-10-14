@@ -13,7 +13,10 @@
  * both are static. Nothing here reimplements them.
  *
  * Against the volatile bool the flag used to be, ThreadSanitizer reports
- * the read against the write. It is clean as an atomic. */
+ * the read against the write. It is clean as an atomic.
+ *
+ * A second lane drives the handler's steady state through the stubs: it
+ * parks between looks, and not after a lost window or a release. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +28,88 @@
 #include "../../../tasks/task_audio_mixer.c"
 
 #define ROUNDS 2000
+
+extern bool         stub_feed_ok;
+extern int64_t      stub_tell;
+extern unsigned     stub_removed;
+extern unsigned     stub_parks;
+extern retro_time_t stub_park_horizon;
+
+/* Once the stream is handed over, the feeder parks after each look: a
+ * feed leaves the decoder a full lookahead to eat, and a stopped stream
+ * eats nothing.  The park must come back before even a 20 MB/s stream
+ * could reach the frontier.  A lost window and a released sound are
+ * dealt with at once, without a park. */
+static int lane_steady_state_parks(void)
+{
+   struct audio_mixer_wfeed    w;
+   struct audio_mixer_userdata user;
+   retro_task_t                task;
+   int                         bad = 0;
+   unsigned                    parks;
+
+   memset(&w, 0, sizeof(w));
+   memset(&user, 0, sizeof(user));
+   memset(&task, 0, sizeof(task));
+   w.user     = &user;
+   w.added    = true;
+   w.keep_set = true;
+   w.dt       = (struct data_transfer*)&w;   /* stands in for a window */
+   retro_atomic_int_init(&w.dead, 0);
+   task.state = &w;
+
+   stub_tell    = 4096;
+   stub_feed_ok = true;
+   stub_parks   = 0;
+   task_audio_mixer_handle_wfeed(&task);
+   if (stub_parks != 1)
+   {
+      printf("  FAIL: a fed pass parked %u times, wanted 1\n", stub_parks);
+      bad = 1;
+   }
+   if (     stub_park_horizon <= 0
+         || stub_park_horizon > (retro_time_t)(AMIX_WINDOW_LOOKAHEAD / 20))
+   {
+      printf("  FAIL: a %lld us park outlasts a 20 MB/s stream's lookahead\n",
+            (long long)stub_park_horizon);
+      bad = 1;
+   }
+
+   stub_tell = -1;
+   task_audio_mixer_handle_wfeed(&task);
+   if (stub_parks != 2)
+   {
+      printf("  FAIL: a stopped stream's pass did not park\n");
+      bad = 1;
+   }
+
+   stub_tell    = 4096;
+   stub_feed_ok = false;
+   stub_removed = 0;
+   parks        = stub_parks;
+   task_audio_mixer_handle_wfeed(&task);
+   if (stub_removed != 1 || stub_parks != parks)
+   {
+      printf("  FAIL: a lost window removed %u streams and parked %u times\n",
+            stub_removed, stub_parks - parks);
+      bad = 1;
+   }
+
+   task_audio_mixer_wfeed_release(&w);
+   task_audio_mixer_handle_wfeed(&task);
+   if (     !(task_get_flags(&task) & RETRO_TASK_FLG_FINISHED)
+         || stub_parks != parks)
+   {
+      printf("  FAIL: a released sound did not finish the feeder at once\n");
+      bad = 1;
+   }
+
+   stub_tell    = -1;
+   stub_feed_ok = false;
+   if (!bad)
+      printf("  ok: the feeder parks between looks, not after a lost window or a release\n");
+   return bad;
+}
 
 static struct audio_mixer_wfeed  *shared_w;
 static retro_atomic_int_t         reader_go;
@@ -93,6 +178,8 @@ int main(void)
    if (!bad)
       printf("  ok: %u rounds of the release landing under a running handler\n",
             ROUNDS);
+   if (!bad)
+      bad = lane_steady_state_parks();
    printf(bad ? "mixer wfeed: FAILED\n" : "mixer wfeed: ok\n");
    return bad;
 }

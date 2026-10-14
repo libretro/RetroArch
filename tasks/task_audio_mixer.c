@@ -1091,6 +1091,11 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath,
 #define AMIX_WINDOW_KEEP      (2 * 1024 * 1024)
 #define AMIX_WINDOW_LOOKAHEAD (2 * 1024 * 1024)
 #define AMIX_WINDOW_MARGIN    (1 * 1024 * 1024)
+/* How long the feeder parks between looks.  A feed leaves the frontier
+ * a full lookahead ahead of the decoder, which this horizon would cover
+ * at 20 MB/s; nothing wakes the feeder, since the decoder's position and
+ * the release both move on the mixer thread. */
+#define AMIX_WINDOW_PARK_USEC 100000
 
 struct audio_mixer_wfeed
 {
@@ -1526,7 +1531,9 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
          return;
       }
    }
-   /* a stopped stream (tell < 0 while not dead) just idles */
+   /* Fed, or a stopped stream (tell < 0 while not dead): nothing to do
+    * until the decoder has eaten into the lookahead. */
+   task_queue_park(task, AMIX_WINDOW_PARK_USEC);
    return;
 
 bail:

@@ -18,14 +18,20 @@ void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 void  *data_transfer_open_window(const char *p, size_t keep) { (void)p; (void)keep; return NULL; }
 void   data_transfer_free(void *dt) { (void)dt; }
 const uint8_t *data_transfer_window_base(void *dt, size_t *len) { (void)dt; if (len) *len = 0; return NULL; }
-bool   data_transfer_window_feed(void *dt, int64_t want) { (void)dt; (void)want; return false; }
+/* What a feed reports, for the steady-state lanes; off by default. */
+bool   stub_feed_ok = false;
+bool   data_transfer_window_feed(void *dt, size_t tell, size_t lookahead,
+      size_t margin) { (void)dt; (void)tell; (void)lookahead; (void)margin; return stub_feed_ok; }
 bool   data_transfer_window_grow_keep(void *dt, size_t keep) { (void)dt; (void)keep; return false; }
 void   data_transfer_window_punch(void *dt, size_t lo, size_t hi) { (void)dt; (void)lo; (void)hi; }
 
 /* The mixer side of the borrow. */
 bool   audio_driver_mixer_add_stream(void *params) { (void)params; return false; }
-void   audio_driver_mixer_remove_stream(unsigned i) { (void)i; }
-int64_t audio_driver_mixer_stream_byte_tell(unsigned i) { (void)i; return -1; }
+unsigned stub_removed = 0;
+void   audio_driver_mixer_remove_stream(unsigned i) { (void)i; stub_removed++; }
+/* The decoder's position: -1 is a stopped stream. */
+int64_t stub_tell = -1;
+int64_t audio_driver_mixer_stream_byte_tell(unsigned i) { (void)i; return stub_tell; }
 void   audio_driver_mixer_stream_set_avail(unsigned i, size_t avail) { (void)i; (void)avail; }
 
 /* Codec probes the feeder uses to decide whether a file is windowable. */
@@ -46,6 +52,16 @@ bool   task_file_load_handler(retro_task_t *task) { (void)task; return true; }
 retro_task_t *task_init(void) { return NULL; }
 bool   task_queue_push(retro_task_t *task) { (void)task; return false; }
 void   task_set_data(retro_task_t *task, void *data) { (void)task; (void)data; }
+
+/* The feeder's parks, for the steady-state lanes. */
+unsigned     stub_parks        = 0;
+retro_time_t stub_park_horizon = 0;
+void task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{
+   (void)task;
+   stub_parks++;
+   stub_park_horizon = horizon_usec;
+}
 
 /* task_queue.c is not linked - it owns task_init() too - so the two
  * flag helpers the feeder uses come from here, on the task's own word. */
