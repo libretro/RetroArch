@@ -306,9 +306,12 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
          continue;
       if (cfg.ConfigBitstreamRaw != d->bitstream_raw)
          continue;
-      *min_targets = cfg.ConfigMinRenderTargetBuffCount;
-      return SUCCEEDED(d->vdev->lpVtbl->CreateVideoDecoder(d->vdev,
-               &desc, &cfg, &d->decoder));
+      if (SUCCEEDED(d->vdev->lpVtbl->CreateVideoDecoder(d->vdev,
+               &desc, &cfg, &d->decoder)))
+      {
+         *min_targets = cfg.ConfigMinRenderTargetBuffCount;
+         return true;
+      }
    }
    return false;
 }

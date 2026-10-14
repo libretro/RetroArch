@@ -633,7 +633,7 @@ static void test_hevc_main(int depth)
    frames_t hw;
    opened_t opened;
    int ret, stride, w, h, plane, matches = 1;
-   unsigned attempt, x, y;
+   unsigned attempt, x, y, slots;
    const uint8_t *sw;
    const uint8_t *config = depth == 10 ? hevc_config10 : hevc_config8;
    const uint8_t *sample = depth == 10 ? hevc_sample10 : hevc_sample8;
@@ -653,12 +653,14 @@ static void test_hevc_main(int depth)
       check("HEVC Main: fixture parses", 0);
       goto done;
    }
-   if (!d3d11_video_decode_hevc_open(&params, 32, &ops))
+   /* Match the player: the SPS DPB limit plus one decode target. */
+   slots = (unsigned)params.max_dec_pic_buffering + 1;
+   if (!d3d11_video_decode_hevc_open(&params, slots, &ops))
    {
       printf("HEVC %d-bit: SKIP (decoder/shared output setup unavailable)\n", depth);
       goto done;
    }
-   check("HEVC Main: owner initializes", rh265_hw_session_init(&session, &ops, 32));
+   check("HEVC Main: owner initializes", rh265_hw_session_init(&session, &ops, slots));
    ret = 1;
    for (attempt = 0; ret == 1 && attempt < 2048; attempt++)
       ret = rh265_hw_session_submit(&session, sample, sample_size, &params, &au, slices);

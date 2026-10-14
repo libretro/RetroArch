@@ -297,6 +297,8 @@ static HRESULT STDMETHODCALLTYPE m_check_format(mock_t *m, const GUID *g,
    return S_OK;
 }
 
+static int config_retry, decoder_attempts;
+
 static HRESULT STDMETHODCALLTYPE m_config_count(mock_t *m,
       const D3D11_VIDEO_DECODER_DESC *d, UINT *n)
 {
@@ -309,7 +311,10 @@ static HRESULT STDMETHODCALLTYPE m_config(mock_t *m,
       D3D11_VIDEO_DECODER_CONFIG *c)
 {
    memset(c, 0, sizeof(*c));
-   c->ConfigBitstreamRaw             = i ? 2 : 1;
+   c->ConfigBitstreamRaw             = config_retry ?
+      (USHORT)(d->OutputFormat == DXGI_FORMAT_P010
+         || memcmp(&d->Guid, &d3d11vd_h264_vld_nofgt, sizeof(GUID)) ? 1 : 2)
+      : (i ? 2 : 1);
    c->ConfigMinRenderTargetBuffCount = (USHORT)min_targets;
    return S_OK;
 }
@@ -318,6 +323,12 @@ static HRESULT STDMETHODCALLTYPE m_create_decoder(mock_t *m,
       const D3D11_VIDEO_DECODER_DESC *d,
       const D3D11_VIDEO_DECODER_CONFIG *c, void **out)
 {
+   decoder_attempts++;
+   if (config_retry && (decoder_attempts == 1 || config_retry == 2))
+   {
+      *out = NULL;
+      return E_FAIL;
+   }
    dec_desc = *d;
    dec_raw  = c->ConfigBitstreamRaw;
    *out     = mock_new(K_PLAIN);
@@ -730,6 +741,49 @@ static void make_pic(int slot)
    pic.reference     = 1;
 }
 
+static void test_config_retry(void)
+{
+   rh265_video *v = rh265_video_open();
+   rh265_video_params_t params;
+   rh265_hw_ops_t ops;
+   void *dec;
+   int before = live, parsed;
+   make_pic(0);
+   config_retry = 1;
+   decoder_attempts = 0;
+   dec = d3d11vd.ops.open(NULL, &sps, 4);
+   check("H.264: second compatible configuration succeeds",
+         dec != NULL && decoder_attempts == 2);
+   d3d11vd.ops.close(dec);
+   config_retry = 2;
+   decoder_attempts = 0;
+   dec = d3d11vd.ops.open(NULL, &sps, 4);
+   check("H.264: exhausted configurations release setup",
+         !dec && decoder_attempts == 2 && live == before);
+   d3d11vd.ops.close(dec);
+   parsed = v
+      && !rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8))
+      && !rh265_video_get_params(v, 0, &params);
+   check("HEVC retry: fixture parses", parsed);
+   if (parsed)
+   {
+      config_retry = 1;
+      decoder_attempts = 0;
+      check("HEVC: second compatible configuration succeeds",
+            d3d11_video_decode_hevc_open(&params, 4, &ops)
+            && decoder_attempts == 2);
+      d3d11_video_decode_hevc_close(&ops);
+      config_retry = 2;
+      decoder_attempts = 0;
+      check("HEVC: exhausted configurations release setup",
+            !d3d11_video_decode_hevc_open(&params, 4, &ops)
+            && decoder_attempts == 2 && live == before && !ops.decoder);
+      d3d11_video_decode_hevc_close(&ops);
+   }
+   rh265_video_close(v);
+   config_retry = 0;
+}
+
 static void test_direct(void)
 {
    video_hw_frame_t fr[6];
@@ -1093,6 +1147,7 @@ int main(void)
          176, 144, 0, 0, 99, 4, 16);
    test_stream("cropped", stream_cropped, sizeof(stream_cropped),
          170, 122, 0, 0, 88, 1, 12);
+   test_config_retry();
    test_direct();
    test_device_loss();
    test_hevc();
