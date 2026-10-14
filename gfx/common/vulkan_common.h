@@ -509,6 +509,8 @@ bool vulkan_context_init_headless_device(gfx_ctx_vulkan_data_t *vk);
 bool vulkan_context_create_android_surface(gfx_ctx_vulkan_data_t *vk,
    void *window);
 void vulkan_context_advance_frame(gfx_ctx_vulkan_data_t *vk);
+/* Waits on the frame fences, not the device: no queue lock needed. */
+void vulkan_context_finish_frames(gfx_ctx_vulkan_data_t *vk);
 #endif
 
 #ifdef __APPLE__

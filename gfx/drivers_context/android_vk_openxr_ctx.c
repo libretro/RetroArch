@@ -76,7 +76,9 @@ static void android_vk_openxr_window_free(android_vk_openxr_t *xr)
    vulkan_context_t *ctx = &xr->vk.context;
    if (!ctx->device)
       return;
-   vkDeviceWaitIdle(ctx->device);
+   /* The driver's frames are the only users of the window. The XR
+    * thread still runs and submits here, so not a device drain. */
+   vulkan_context_finish_frames(&xr->vk);
    for (i = 0; i < ANDROID_VK_OPENXR_IMAGES; i++)
    {
       if (xr->images[i])

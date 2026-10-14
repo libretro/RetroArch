@@ -34,6 +34,7 @@ static const char *const files[] = {
    "gfx/drivers_shader/shader_vulkan.c",
    "gfx/common/vulkan_common.c",
    "gfx/common/win_vulkan_dxgi.c",
+   "gfx/drivers_context/android_vk_openxr_ctx.c",
    "gfx/video_thread_hw.c"
 };
 

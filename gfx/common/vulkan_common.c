@@ -2556,6 +2556,14 @@ void vulkan_context_advance_frame(gfx_ctx_vulkan_data_t *vk)
 }
 #endif
 
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+void vulkan_context_finish_frames(gfx_ctx_vulkan_data_t *vk)
+{
+   if (vk)
+      vulkan_context_wait_frames(vk);
+}
+#endif
+
 unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
       unsigned frame_index, VkSemaphore *sems,
       VkPipelineStageFlags *stages, VkPipelineStageFlags stage)
