@@ -589,19 +589,21 @@ static void udev_open_sensor_node(struct udev_joypad *pad,
          pad->sensor_has_accel           = true;
          pad->sensor_has_gyro            = false;
 
-         if (ioctl(fd, EVIOCGABS(ABS_RX), &pad->sensor_absinfo[0]) < 0)
-            memset(&pad->sensor_absinfo[0], 0, sizeof(pad->sensor_absinfo[0]));
-         if (ioctl(fd, EVIOCGABS(ABS_RY), &pad->sensor_absinfo[1]) < 0)
-            memset(&pad->sensor_absinfo[1], 0, sizeof(pad->sensor_absinfo[1]));
-         if (ioctl(fd, EVIOCGABS(ABS_RZ), &pad->sensor_absinfo[2]) < 0)
-            memset(&pad->sensor_absinfo[2], 0, sizeof(pad->sensor_absinfo[2]));
-
-         if (pad->sensor_absinfo[0].resolution == 0)
-            pad->sensor_absinfo[0].resolution = 88;
-         if (pad->sensor_absinfo[1].resolution == 0)
-            pad->sensor_absinfo[1].resolution = 88;
-         if (pad->sensor_absinfo[2].resolution == 0)
-            pad->sensor_absinfo[2].resolution = 88;
+         for (a = 0; a < 3; a++)
+         {
+            struct input_absinfo *ai = &pad->sensor_absinfo[a];
+            if (ioctl(fd, EVIOCGABS(ABS_RX + a), ai) < 0)
+            {
+               ai->value      = 0;
+               ai->minimum    = 0;
+               ai->maximum    = 0;
+               ai->fuzz       = 0;
+               ai->flat       = 0;
+               ai->resolution = 0;
+            }
+            if (ai->resolution == 0)
+               ai->resolution = 88;
+         }
       }
       else
       {

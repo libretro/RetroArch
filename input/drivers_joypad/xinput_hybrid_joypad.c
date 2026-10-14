@@ -1015,7 +1015,14 @@ static void *xinput_joypad_init(void *data)
    /* Zero out the states. */
    for (i = 0; i < 4; ++i)
    {
-      memset(&g_xinput_states[i].xstate, 0, sizeof(XINPUT_STATE));
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
       g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
@@ -1300,11 +1307,20 @@ static void xinput_joypad_poll(void)
       if (success)
          state->xstate = tmp_xstate;
       else
+      {
          /* Any status other than ERROR_DEVICE_NOT_CONNECTED leaves
           * the pad marked connected, so the cached state would keep
           * reporting the buttons held at the last good read - see
           * the matching comment in xinput_joypad.c */
-         memset(&state->xstate, 0, sizeof(state->xstate));
+         state->xstate.dwPacketNumber        = 0;
+         state->xstate.Gamepad.wButtons      = 0;
+         state->xstate.Gamepad.bLeftTrigger  = 0;
+         state->xstate.Gamepad.bRightTrigger = 0;
+         state->xstate.Gamepad.sThumbLX      = 0;
+         state->xstate.Gamepad.sThumbLY      = 0;
+         state->xstate.Gamepad.sThumbRX      = 0;
+         state->xstate.Gamepad.sThumbRY      = 0;
+      }
 
       if (new_connected != state->connected)
       {
@@ -1389,7 +1405,14 @@ static void xinput_joypad_destroy(void)
 
    for (i = 0; i < 4; ++i)
    {
-      memset(&g_xinput_states[i].xstate, 0, sizeof(XINPUT_STATE));
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
       g_xinput_states[i].connected                    = false;
    }
 

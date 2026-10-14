@@ -501,8 +501,8 @@ static void input_openxr_suggest(input_openxr_t *st,
          return;
       }
    }
-   memset(&sb, 0, sizeof(sb));
    sb.type                   = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
+   sb.next                   = NULL;
    sb.interactionProfile     = profile;
    sb.countSuggestedBindings = p->count;
    sb.suggestedBindings      = binds;
@@ -559,8 +559,9 @@ static void input_openxr_session_created(void *user,
    for (i = 0; i < INPUT_OPENXR_SETS; i++)
    {
       XrActionSetCreateInfo ci;
-      memset(&ci, 0, sizeof(ci));
-      ci.type = XR_TYPE_ACTION_SET_CREATE_INFO;
+      ci.type     = XR_TYPE_ACTION_SET_CREATE_INFO;
+      ci.next     = NULL;
+      ci.priority = 0;
       strlcpy(ci.actionSetName, input_openxr_set_names[i],
             sizeof(ci.actionSetName));
       strlcpy(ci.localizedActionSetName, input_openxr_set_labels[i],
@@ -576,9 +577,11 @@ static void input_openxr_session_created(void *user,
    {
       XrActionCreateInfo ci;
       const input_openxr_action_def_t *d = &input_openxr_actions[i];
-      memset(&ci, 0, sizeof(ci));
-      ci.type       = XR_TYPE_ACTION_CREATE_INFO;
-      ci.actionType = d->type;
+      ci.type                = XR_TYPE_ACTION_CREATE_INFO;
+      ci.next                = NULL;
+      ci.countSubactionPaths = 0;
+      ci.subactionPaths      = NULL;
+      ci.actionType          = d->type;
       strlcpy(ci.actionName, d->name, sizeof(ci.actionName));
       strlcpy(ci.localizedActionName, d->label,
             sizeof(ci.localizedActionName));
@@ -601,8 +604,8 @@ static void input_openxr_session_created(void *user,
 
    /* All three are attached; each poll syncs the pad set in use and the
     * pointer set. */
-   memset(&ai, 0, sizeof(ai));
    ai.type            = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
+   ai.next            = NULL;
    ai.countActionSets = INPUT_OPENXR_SETS;
    ai.actionSets      = st->sets;
    if (XR_FAILED(res = st->AttachSessionActionSets(h->session, &ai)))
@@ -614,8 +617,14 @@ static void input_openxr_session_created(void *user,
    for (i = 0; i < INPUT_OPENXR_HANDS; i++)
    {
       XrActionSpaceCreateInfo si;
-      memset(&si, 0, sizeof(si));
       si.type                            = XR_TYPE_ACTION_SPACE_CREATE_INFO;
+      si.next                            = NULL;
+      si.poseInActionSpace.orientation.x = 0.0f;
+      si.poseInActionSpace.orientation.y = 0.0f;
+      si.poseInActionSpace.orientation.z = 0.0f;
+      si.poseInActionSpace.position.x    = 0.0f;
+      si.poseInActionSpace.position.y    = 0.0f;
+      si.poseInActionSpace.position.z    = 0.0f;
       si.action                          = st->actions[IXA_AIM];
       si.subactionPath                   = st->hands[i];
       si.poseInActionSpace.orientation.w = 1.0f;
@@ -656,8 +665,8 @@ static int16_t input_openxr_axis(float v)
 static void input_openxr_get_info(input_openxr_t *st, unsigned a,
       XrPath hand, XrActionStateGetInfo *gi)
 {
-   memset(gi, 0, sizeof(*gi));
    gi->type          = XR_TYPE_ACTION_STATE_GET_INFO;
+   gi->next          = NULL;
    gi->action        = st->actions[a];
    gi->subactionPath = hand;
 }
@@ -667,8 +676,10 @@ static bool input_openxr_bool(input_openxr_t *st, unsigned a, XrPath hand)
    XrActionStateGetInfo gi;
    XrActionStateBoolean s;
    input_openxr_get_info(st, a, hand, &gi);
-   memset(&s, 0, sizeof(s));
-   s.type = XR_TYPE_ACTION_STATE_BOOLEAN;
+   s.type         = XR_TYPE_ACTION_STATE_BOOLEAN;
+   s.next         = NULL;
+   s.currentState = XR_FALSE;
+   s.isActive     = XR_FALSE;
    return XR_SUCCEEDED(st->GetActionStateBoolean(st->session, &gi, &s))
       && s.isActive && s.currentState;
 }
@@ -678,8 +689,10 @@ static float input_openxr_float(input_openxr_t *st, unsigned a, XrPath hand)
    XrActionStateGetInfo gi;
    XrActionStateFloat s;
    input_openxr_get_info(st, a, hand, &gi);
-   memset(&s, 0, sizeof(s));
-   s.type = XR_TYPE_ACTION_STATE_FLOAT;
+   s.type         = XR_TYPE_ACTION_STATE_FLOAT;
+   s.next         = NULL;
+   s.currentState = 0.0f;
+   s.isActive     = XR_FALSE;
    if (     XR_FAILED(st->GetActionStateFloat(st->session, &gi, &s))
          || !s.isActive)
       return 0.0f;
@@ -693,8 +706,11 @@ static void input_openxr_stick(input_openxr_t *st, unsigned a, XrPath hand,
    XrActionStateGetInfo gi;
    XrActionStateVector2f s;
    input_openxr_get_info(st, a, hand, &gi);
-   memset(&s, 0, sizeof(s));
-   s.type = XR_TYPE_ACTION_STATE_VECTOR2F;
+   s.type           = XR_TYPE_ACTION_STATE_VECTOR2F;
+   s.next           = NULL;
+   s.currentState.x = 0.0f;
+   s.currentState.y = 0.0f;
+   s.isActive       = XR_FALSE;
    if (     XR_FAILED(st->GetActionStateVector2f(st->session, &gi, &s))
          || !s.isActive)
       return;
@@ -829,8 +845,9 @@ static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
    XrSpaceLocationFlags valid = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
       | XR_SPACE_LOCATION_POSITION_VALID_BIT;
 
-   memset(&loc, 0, sizeof(loc));
-   loc.type = XR_TYPE_SPACE_LOCATION;
+   loc.type          = XR_TYPE_SPACE_LOCATION;
+   loc.next          = NULL;
+   loc.locationFlags = 0;
    if (     !st->aim[h] || !time
          || XR_FAILED(st->LocateSpace(st->aim[h], space, time, &loc))
          || (loc.locationFlags & valid) != valid)
@@ -1118,8 +1135,11 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
                   &o, &d, &u, &v, &t)) < 0)
          continue;
       size = video_xr_cursor(&set.quads[q], u, v, t, &pose);
-      memset(l, 0, sizeof(*l));
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
+      l->next                             = NULL;
+      l->subImage.imageRect.offset.x      = 0;
+      l->subImage.imageRect.offset.y      = 0;
+      l->subImage.imageArrayIndex         = 0;
       l->layerFlags                       =
          XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
       l->space                            = space;
@@ -1180,15 +1200,15 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
             && (amp <= 0.0f
                || now - st->haptic_time[h] < INPUT_OPENXR_HAPTIC_REFRESH))
          continue;
-      memset(&info, 0, sizeof(info));
       info.type          = XR_TYPE_HAPTIC_ACTION_INFO;
+      info.next          = NULL;
       info.action        = st->actions[IXA_RUMBLE];
       info.subactionPath = st->hands[h];
       if (amp > 0.0f)
       {
          XrHapticVibration vib;
-         memset(&vib, 0, sizeof(vib));
          vib.type      = XR_TYPE_HAPTIC_VIBRATION;
+         vib.next      = NULL;
          vib.duration  = INPUT_OPENXR_HAPTIC_DURATION;
          vib.frequency = XR_FREQUENCY_UNSPECIFIED;
          vib.amplitude = amp;
@@ -1518,12 +1538,13 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    }
    st->focused = true;
 
-   memset(active, 0, sizeof(active));
    active[0].actionSet      = st->sets[separate
       ? INPUT_OPENXR_SET_SEPARATE : INPUT_OPENXR_SET_COMBINED];
+   active[0].subactionPath  = XR_NULL_PATH;
    active[1].actionSet      = st->sets[INPUT_OPENXR_SET_POINTER];
-   memset(&si, 0, sizeof(si));
+   active[1].subactionPath  = XR_NULL_PATH;
    si.type                  = XR_TYPE_ACTIONS_SYNC_INFO;
+   si.next                  = NULL;
    si.countActiveActionSets = 2;
    si.activeActionSets      = active;
    /* XR_SESSION_NOT_FOCUSED succeeds too, with nothing active. */

@@ -1750,11 +1750,18 @@ static bool winraw_joypad_create_msg_window(void)
 {
    WNDCLASSEXA wc;
 
-   memset(&wc, 0, sizeof(wc));
    wc.cbSize        = sizeof(wc);
+   wc.style         = 0;
    wc.lpfnWndProc   = winraw_joypad_joypad_wndproc;
-   wc.hInstance      = GetModuleHandle(NULL);
-   wc.lpszClassName  = "RetroArchRawInputJoypad";
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.hInstance     = GetModuleHandle(NULL);
+   wc.hIcon         = NULL;
+   wc.hCursor       = NULL;
+   wc.hbrBackground = NULL;
+   wc.lpszMenuName  = NULL;
+   wc.lpszClassName = "RetroArchRawInputJoypad";
+   wc.hIconSm       = NULL;
 
    if (!RegisterClassExA(&wc))
    {

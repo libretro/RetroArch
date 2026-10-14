@@ -110,9 +110,10 @@ static bool winmm_joypad_read(unsigned id, winmm_joypad_t *pad)
    DWORD v[WINMM_JOYPAD_AXES];
    unsigned i;
 
-   memset(&info, 0, sizeof(info));
-   info.dwSize  = sizeof(info);
-   info.dwFlags = JOY_RETURNALL;
+   info.dwSize      = sizeof(info);
+   info.dwFlags     = JOY_RETURNALL;
+   info.dwReserved1 = 0;
+   info.dwReserved2 = 0;
    if (joyGetPosEx(id, &info) != JOYERR_NOERROR)
       return false;
 
@@ -137,14 +138,14 @@ static bool winmm_joypad_open(unsigned id, winmm_joypad_t *pad)
    JOYCAPSA caps;
    JOYINFOEX info;
 
-   memset(&caps, 0, sizeof(caps));
    if (joyGetDevCapsA(id, &caps, sizeof(caps)) != JOYERR_NOERROR)
       return false;
    /* the driver answers for a controller that is not plugged in, too:
     * only its position says whether it is */
-   memset(&info, 0, sizeof(info));
-   info.dwSize  = sizeof(info);
-   info.dwFlags = JOY_RETURNBUTTONS;
+   info.dwSize      = sizeof(info);
+   info.dwFlags     = JOY_RETURNBUTTONS;
+   info.dwReserved1 = 0;
+   info.dwReserved2 = 0;
    if (joyGetPosEx(id, &info) != JOYERR_NOERROR)
       return false;
 

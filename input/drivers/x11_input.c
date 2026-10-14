@@ -281,10 +281,22 @@ static void x_pointer_event(x11_input_t *x11, XGenericEventCookie *cookie)
                && (de->evtype == XI_ButtonPress || de->detail >= 8))
          {
             XButtonEvent button;
-            memset(&button, 0, sizeof(button));
-            button.type   = (de->evtype == XI_ButtonPress)
+            button.type        = (de->evtype == XI_ButtonPress)
                ? ButtonPress : ButtonRelease;
-            button.button = (unsigned)de->detail;
+            button.serial      = 0;
+            button.send_event  = False;
+            button.display     = NULL;
+            button.window      = None;
+            button.root        = None;
+            button.subwindow   = None;
+            button.time        = CurrentTime;
+            button.x           = 0;
+            button.y           = 0;
+            button.x_root      = 0;
+            button.y_root      = 0;
+            button.state       = 0;
+            button.button      = (unsigned)de->detail;
+            button.same_screen = False;
             x_input_poll_wheel(&button, true);
          }
          break;

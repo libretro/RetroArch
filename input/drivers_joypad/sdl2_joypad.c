@@ -505,14 +505,13 @@ static bool sdl2_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect
    SDL_HapticEffect efx;
    sdl2_joypad_t *joypad = (sdl2_joypad_t*)&sdl2_pads[pad];
 
-   memset(&efx, 0, sizeof(efx));
-
    if (!joypad->joypad)
       return false;
 
-   efx.type             = SDL_HAPTIC_LEFTRIGHT;
-   efx.leftright.type   = SDL_HAPTIC_LEFTRIGHT;
-   efx.leftright.length = 5000;
+   efx.leftright.type            = SDL_HAPTIC_LEFTRIGHT;
+   efx.leftright.length          = 5000;
+   efx.leftright.large_magnitude = 0;
+   efx.leftright.small_magnitude = 0;
 
    switch (effect)
    {

@@ -651,7 +651,14 @@ static void xinput_joypad_poll(void)
           * xinput_joypad_button() consumes with no staleness
           * check. Treat an unreadable pad as having nothing
           * pressed. */
-         memset(&state->xstate, 0, sizeof(state->xstate));
+         state->xstate.dwPacketNumber        = 0;
+         state->xstate.Gamepad.wButtons      = 0;
+         state->xstate.Gamepad.bLeftTrigger  = 0;
+         state->xstate.Gamepad.bRightTrigger = 0;
+         state->xstate.Gamepad.sThumbLX      = 0;
+         state->xstate.Gamepad.sThumbLY      = 0;
+         state->xstate.Gamepad.sThumbRX      = 0;
+         state->xstate.Gamepad.sThumbRY      = 0;
       }
 
       if (new_connected != state->connected)
