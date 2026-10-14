@@ -1675,6 +1675,7 @@
 #define MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES_STR "video_bfi_dark_frames"
 #define MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION_STR "video_black_frame_insertion"
 #define MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN_STR "video_crop_overscan"
+#define MENU_ENUM_LABEL_VIDEO_D3D9EX_PRESENT_STR "video_d3d9ex_present"
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE_STR "video_dingux_ipu_filter_type"
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT_STR "video_dingux_ipu_keep_aspect"
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE_STR "video_dingux_refresh_rate"

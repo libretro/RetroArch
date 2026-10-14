@@ -175,8 +175,23 @@ jobs:
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           # What reached the GPU, read back: the managed pool before Ex,
           # default-pool textures with system-memory twins on it, and the
-          # frames it reads where they lie
+          # frames it reads where they lie; then a device in the flip
+          # model, its frame latency and d3d9_present's ways to wait
           make -C samples/gfx/d3d9_ex check
+
+      - name: d3d9_hlsl with Direct3D 9Ex Presentation, and without Ex (Wine)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          # The window in the flip model and the frame latency taken on
+          # Ex, the same screens; as before where there is no Ex
+          export SWFB_D3D9EX_PRESENT=2
+          python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
+            ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb-present" d3d9_hlsl
+          RETROARCH_D3D9EX=0 python3 samples/gfx/menu_wine/swfb.py \
+            ./retroarch.exe ./harness_core.dll \
+            "$RUNNER_TEMP/menu-wine/swfb-present-legacy" d3d9_hlsl
 
       - name: d3d9_hlsl without Direct3D9Ex, as a system without it has (Wine)
         shell: bash

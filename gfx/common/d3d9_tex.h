@@ -92,6 +92,32 @@ typedef struct d3d9_ex_vtbl
    void *GetAdapterLUID;
 } d3d9_ex_vtbl_t;
 
+/* IDirect3DDevice9Ex: IDirect3DDevice9's table, then its own, as far
+ * as the frame latency calls */
+typedef struct d3d9_dev_ex_vtbl
+{
+   IDirect3DDevice9Vtbl base;
+   void *SetConvolutionMonoKernel;
+   void *ComposeRects;
+   HRESULT (STDMETHODCALLTYPE *PresentEx)(IDirect3DDevice9 *self,
+         const RECT *src, const RECT *dst, HWND wnd, const RGNDATA *dirty,
+         DWORD flags);
+   void *GetGPUThreadPriority;
+   void *SetGPUThreadPriority;
+   HRESULT (STDMETHODCALLTYPE *WaitForVBlank)(IDirect3DDevice9 *self,
+         UINT swap_chain);
+   void *CheckResourceResidency;
+   HRESULT (STDMETHODCALLTYPE *SetMaximumFrameLatency)(
+         IDirect3DDevice9 *self, UINT max_latency);
+   HRESULT (STDMETHODCALLTYPE *GetMaximumFrameLatency)(
+         IDirect3DDevice9 *self, UINT *max_latency);
+} d3d9_dev_ex_vtbl_t;
+
+/* The flip model's swap effect, and the present that skips the
+ * interval, which only it takes */
+#define D3D9_SWAPEFFECT_FLIPEX      ((D3DSWAPEFFECT)5)
+#define D3D9_PRESENT_FORCEIMMEDIATE 0x00000100L
+
 /* Whether @dev came from Direct3D9Ex: no managed pool, and system
  * memory a texture can be made over */
 static INLINE bool d3d9_dev_is_ex(LPDIRECT3DDEVICE9 dev)

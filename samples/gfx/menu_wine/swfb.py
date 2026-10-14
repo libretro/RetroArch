@@ -22,6 +22,12 @@ deinit), except on the reference driver, and RetroArch must quit when
 asked. A screen the driver drew wrong moves whole blocks of the
 comparison, as in run.py.
 
+With SWFB_D3D9EX_PRESENT set to a Max Frame Latency (1 to 4), every
+run has Direct3D 9Ex Presentation, V-Sync and Waitable Swapchains on:
+a D3D9 driver on a Direct3D9Ex device must then present its window
+through the flip model and take that latency, and one without Ex must
+present as before.
+
 Usage: swfb.py <retroarch.exe> <harness_core.dll> <output dir> <driver>
        [reference driver, d3d11 by default]
 (Windows-wine-menu.yml)
@@ -61,6 +67,9 @@ LOGS = {}
 # A D3D9 driver on a Direct3D9Ex device offers the wrapper frame
 # memory, and says so once
 FRAME_MEM_LINE = 'the GPU reads the frames where they lie'
+# Direct3D 9Ex Presentation, and the latency it is to take
+PRESENT_LATENCY = os.environ.get('SWFB_D3D9EX_PRESENT', '')
+FLIP_LINE = 'Presenting through the flip model'
 
 
 
@@ -87,6 +96,11 @@ def launch(retroarch, core, root, driver, name, core_env, still,
         f.write('aspect_ratio_index = "22"\n')
         # The log says which device was made
         f.write('log_verbosity = "true"\n')
+        if PRESENT_LATENCY:
+            f.write('video_d3d9ex_present = "true"\n')
+            f.write('video_vsync = "true"\n')
+            f.write('video_waitable_swapchains = "true"\n')
+            f.write('video_max_frame_latency = "%s"\n' % PRESENT_LATENCY)
     with open(cfg) as f:
         text = f.read()
     with open(cfg, 'w') as f:
@@ -232,6 +246,16 @@ def main():
                 why.append('Direct3D9Ex made with RETROARCH_D3D9EX=0')
             elif threaded and ex and FRAME_MEM_LINE not in log:
                 why.append('frame memory not taken on a Direct3D9Ex device')
+            if PRESENT_LATENCY and ex:
+                want = ('Requesting %s maximum frame latency, using %s.'
+                        % (PRESENT_LATENCY, PRESENT_LATENCY))
+                if FLIP_LINE not in log:
+                    why.append('the window not presented in the flip model')
+                if want not in log:
+                    why.append('frame latency %s not taken'
+                               % PRESENT_LATENCY)
+            elif PRESENT_LATENCY and 'Presenting ' in log:
+                why.append('Direct3D 9Ex Presentation without Ex')
         if still and shot:
             rshot, _, _ = launch_once_more(retroarch, core, root, ref,
                                            name, core_env, still, threaded)

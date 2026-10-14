@@ -566,6 +566,11 @@
  * times. Off: the fixed-timer pacing threaded video always had. */
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
+/* The Direct3D 9 drivers on a Direct3D9Ex device: a window presented
+ * through the flip model, and the frame latency settings honoured.
+ * Off: the discard swap effect and the runtime's own queue, as before. */
+#define DEFAULT_VIDEO_D3D9EX_PRESENT false
+
 
 
 #if defined(HAVE_THREADS)

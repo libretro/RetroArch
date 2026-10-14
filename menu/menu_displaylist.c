@@ -12153,6 +12153,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC,       PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC,            PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,     PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_VIDEO_D3D9EX_PRESENT,       PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
@@ -12193,6 +12194,15 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
                      build_list[i].checked = video_vsync && hard_sync && video_hard_sync;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_D3D9EX_PRESENT:
+                     {
+                        /* Only the Direct3D 9 drivers read it */
+                        const char *ident = video_driver_get_ident();
+                        build_list[i].checked =
+                              string_is_equal(ident, "d3d9_hlsl")
+                           || string_is_equal(ident, "d3d9_cg");
+                     }
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS:
                      build_list[i].checked = video_vsync && frame_latency;

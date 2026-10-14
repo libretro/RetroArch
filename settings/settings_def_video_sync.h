@@ -57,6 +57,11 @@ S_BOOL(video_waitable_swapchains, VIDEO_WAITABLE_SWAPCHAINS,
       DEFAULT_WAITABLE_SWAPCHAINS, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
       "Waitable Swapchains",
       "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.")
+S_BOOL(video_d3d9ex_present, VIDEO_D3D9EX_PRESENT,
+      "video_d3d9ex_present",
+      DEFAULT_VIDEO_D3D9EX_PRESENT, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
+      "Direct3D 9Ex Presentation",
+      "With the Direct3D 9 drivers on Windows Vista and later, present as Direct3D 11 does: a window through the flip model, and with Waitable Swapchains and Max Frame Latency honoured when V-Sync is on. Changes frame pacing. Off: presented as before.")
 S_BOOL(video_threaded_present_repeat, VIDEO_THREADED_PRESENT_REPEAT,
       "video_threaded_present_repeat",
       DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

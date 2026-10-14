@@ -6958,9 +6958,11 @@ static void d3d9_hlsl_views_end(void **chains)
 static uint32_t d3d9_hlsl_get_flags(void *data)
 {
    uint32_t flags = 0;
-#ifdef D3D9_VIEWS
    d3d9_video_t *d3d = (d3d9_video_t*)data;
-#endif
+
+   /* Direct3D 9Ex Presentation took up the device */
+   if (d3d && d3d->dev_ex)
+      BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
 
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
@@ -7392,6 +7394,10 @@ static bool d3d9_hlsl_initialize(
 {
    bool ret             = true;
 
+   /* Whatever device comes, it is taken up below */
+   d3d->dev_ex          = NULL;
+   d3d->wait_for_vblank = 0;
+
    if (!d3d->d3d9)
       ret               = d3d9_hlsl_init_base(d3d, info);
    else if (d3d->needs_restore)
@@ -7417,6 +7423,8 @@ static bool d3d9_hlsl_initialize(
 
    if (!ret)
       return ret;
+
+   d3d9_present_init(d3d, info->vsync);
 
    if (!d3d9_hlsl_init_chain(d3d, info->input_scale, info->rgb32))
    {
@@ -8487,7 +8495,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
 #ifndef _XBOX
    {
-      HRESULT hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+      HRESULT hr = d3d9_present(d3d);
       if (hr == D3DERR_DEVICELOST)
       {
          RARCH_WARN("[D3D9 HLSL] Device lost detected on Present().\n");

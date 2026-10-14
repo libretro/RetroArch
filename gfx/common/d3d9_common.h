@@ -157,6 +157,12 @@ typedef struct d3d9_video
     * with a different `rgb32` value.  Defaults to false; the first
     * call will see a NULL tex and create one regardless. */
    bool menu_tex_rgb32;
+   /* With Direct3D 9Ex Presentation on, the device's Ex interface
+    * (held by the device, so not released here), and where frames
+    * wait for the display beside Present: 1 after it, -1 before it
+    * (presenting at once), 0 not. Set by d3d9_present_init. */
+   LPDIRECT3DDEVICE9 dev_ex;
+   int wait_for_vblank;
    d3d9_sw_fb_t sw_fb;
 #ifdef D3D9_VIEWS
    d3d9_views_t views;
@@ -228,6 +234,33 @@ void d3d9_deinitialize_symbols(void);
 
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
+
+/* Takes up Direct3D 9Ex Presentation on a device just made or reset:
+ * the frame latency, and whether frames wait for the display */
+void d3d9_present_init(d3d9_video_t *d3d, bool vsync);
+
+/* A frame's Present, as d3d9_present_init set it up */
+static INLINE HRESULT d3d9_present(d3d9_video_t *d3d)
+{
+#ifndef _XBOX
+   if (d3d->wait_for_vblank && d3d->dev_ex)
+   {
+      HRESULT hr;
+      const d3d9_dev_ex_vtbl_t *vt =
+            (const d3d9_dev_ex_vtbl_t*)d3d->dev_ex->lpVtbl;
+      if (d3d->wait_for_vblank < 0)
+      {
+         vt->WaitForVBlank(d3d->dev_ex, 0);
+         return vt->PresentEx(d3d->dev_ex, NULL, NULL, NULL, NULL,
+               D3D9_PRESENT_FORCEIMMEDIATE);
+      }
+      hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+      vt->WaitForVBlank(d3d->dev_ex, 0);
+      return hr;
+   }
+#endif
+   return IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
+}
 
 bool d3d9_supports_texture_format(void *data,
       enum texture_gpu_format fmt);

@@ -170,6 +170,20 @@ static bool d3d9_create_device_internal(
                   d3dpp->Windowed ? NULL : &mode,
                   (IDirect3DDevice9**)dev)))
          return true;
+      /* The flip model is not a reason to go without a device: the
+       * swap effect of before, then */
+      if (d3dpp->SwapEffect == D3D9_SWAPEFFECT_FLIPEX)
+      {
+         RARCH_WARN("[D3D9] No device presenting in the flip model, "
+               "presenting with the discard swap effect.\n");
+         d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
+         if (SUCCEEDED(((d3d9_ex_vtbl_t*)d3d->lpVtbl)->CreateDeviceEx(d3d,
+                     cur_mon_id, D3DDEVTYPE_HAL, focus_window,
+                     behavior_flags, d3dpp,
+                     d3dpp->Windowed ? NULL : &mode,
+                     (IDirect3DDevice9**)dev)))
+            return true;
+      }
       /* and the device of a system without Ex if that will not do */
    }
 #endif
@@ -362,6 +376,17 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 
    d3dpp->SwapEffect              = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount         = 2;
+#ifndef _XBOX
+   /* A window of a Direct3D9Ex device presents through the flip model
+    * when asked to: the compositor takes its buffers as they are,
+    * instead of a copy of each. Only a window, and only Ex, has it. */
+   if (windowed_enable && d3d9_object_ex)
+   {
+      settings_t *settings        = config_get_ptr();
+      if (settings && settings->bools.video_d3d9ex_present)
+         d3dpp->SwapEffect        = D3D9_SWAPEFFECT_FLIPEX;
+   }
+#endif
 
 #ifdef _XBOX
    d3dpp->BackBufferFormat        = d3d9_get_color_format_backbuffer(
@@ -408,6 +433,77 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
    if (!d3d->widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
    d3dpp->MultiSampleQuality      = 0;
+#endif
+}
+
+void d3d9_present_init(d3d9_video_t *d3d, bool vsync)
+{
+#ifndef _XBOX
+   D3DPRESENT_PARAMETERS pp;
+   const d3d9_dev_ex_vtbl_t *vt = NULL;
+   IDirect3DSwapChain9 *chain   = NULL;
+   settings_t *settings         = config_get_ptr();
+   void *ex                     = NULL;
+   bool flip                    = false;
+   int opt_latency              = 0;
+   UINT max_latency             = 1;
+   UINT cur_latency             = 0;
+
+   d3d->dev_ex                  = NULL;
+   d3d->wait_for_vblank         = 0;
+
+   if (     !settings
+         || !settings->bools.video_d3d9ex_present
+         || !d3d->dev
+         || FAILED(IDirect3DDevice9_QueryInterface(d3d->dev,
+               &d3d9_iid_device_ex, &ex))
+         || !ex)
+      return;
+   /* The device holds its own interface for as long as it lives */
+   ((IUnknown*)ex)->lpVtbl->Release((IUnknown*)ex);
+   d3d->dev_ex = (LPDIRECT3DDEVICE9)ex;
+   vt          = (const d3d9_dev_ex_vtbl_t*)d3d->dev_ex->lpVtbl;
+
+   if (SUCCEEDED(IDirect3DDevice9_GetSwapChain(d3d->dev, 0, &chain))
+         && chain)
+   {
+      if (SUCCEEDED(IDirect3DSwapChain9_GetPresentParameters(chain, &pp)))
+         flip = (pp.SwapEffect == D3D9_SWAPEFFECT_FLIPEX);
+      IDirect3DSwapChain9_Release(chain);
+   }
+   RARCH_LOG("[D3D9] Presenting %s.\n", flip
+         ? "through the flip model" : "with the discard swap effect");
+
+   /* The frame latency, as Direct3D 11 takes it */
+   if (!vsync || !settings->bools.video_waitable_swapchains)
+      return;
+   opt_latency = settings->ints.video_max_frame_latency;
+   if (opt_latency < 1)
+      d3d->wait_for_vblank = (!opt_latency) ? 1 : -1;
+   else
+      max_latency          = (UINT)opt_latency;
+   /* Waiting before Present wants a Present that does not wait
+    * itself, which only the flip model makes */
+   if (d3d->wait_for_vblank < 0 && !flip)
+      d3d->wait_for_vblank = 1;
+
+   vt->SetMaximumFrameLatency(d3d->dev_ex, max_latency);
+   vt->GetMaximumFrameLatency(d3d->dev_ex, &cur_latency);
+   if (d3d->wait_for_vblank && FAILED(vt->WaitForVBlank(d3d->dev_ex, 0)))
+   {
+      RARCH_WARN("[D3D9] The device cannot wait for the display; "
+            "frames do not wait beside Present.\n");
+      d3d->wait_for_vblank = 0;
+   }
+   RARCH_LOG("[D3D9] Requesting %u maximum frame latency, using %u%s.\n",
+         max_latency, cur_latency,
+         (d3d->wait_for_vblank < 0) ? " with WaitForVBlank before Present"
+         : (d3d->wait_for_vblank > 0) ? " with WaitForVBlank after Present"
+         : "");
+#else
+   (void)vsync;
+   d3d->dev_ex          = NULL;
+   d3d->wait_for_vblank = 0;
 #endif
 }
 

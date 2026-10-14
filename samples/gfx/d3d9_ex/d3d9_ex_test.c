@@ -2,8 +2,11 @@
  * kind: one Direct3D9Ex makes (no managed pool; textures with a
  * system-memory twin, frames read by the GPU where they lie) and one
  * plain Direct3D 9 makes (managed textures, as before Ex). What reached
- * the GPU is read back and checked byte for byte. Needs a display: run
- * it under Wine on Xvfb, or on Windows. */
+ * the GPU is read back and checked byte for byte. Then Direct3D 9Ex
+ * Presentation: a device in the flip model, its frame latency set
+ * through the Ex table d3d9_tex.h lays out, and d3d9_present in each
+ * of its ways. Needs a display: run it under Wine on Xvfb, or on
+ * Windows. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +31,7 @@ void video_driver_cached_frame_invalidate(void) { }
 typedef HRESULT (WINAPI *create_ex_t)(UINT, IDirect3D9**);
 typedef IDirect3D9 *(WINAPI *create_t)(UINT);
 
-static LPDIRECT3DDEVICE9 make_device(HWND w, bool ex)
+static LPDIRECT3DDEVICE9 make_device(HWND w, bool ex, D3DSWAPEFFECT swap)
 {
    HMODULE           dll = LoadLibraryA("d3d9.dll");
    IDirect3D9       *d3d = NULL;
@@ -39,9 +42,10 @@ static LPDIRECT3DDEVICE9 make_device(HWND w, bool ex)
       return NULL;
    memset(&pp, 0, sizeof(pp));
    pp.Windowed         = TRUE;
-   pp.SwapEffect       = D3DSWAPEFFECT_DISCARD;
+   pp.SwapEffect       = swap;
+   pp.BackBufferCount  = 2;
    pp.hDeviceWindow    = w;
-   pp.BackBufferFormat = D3DFMT_UNKNOWN;
+   pp.BackBufferFormat = D3DFMT_X8R8G8B8;
    if (ex)
    {
       create_ex_t cex = (create_ex_t)(void*)GetProcAddress(dll,
@@ -163,7 +167,7 @@ static bool holds(LPDIRECT3DDEVICE9 dev, LPDIRECT3DTEXTURE9 tex,
 static void run(HWND w, bool ex)
 {
    static uint8_t own[TEX_W * 4 * TEX_H];
-   LPDIRECT3DDEVICE9 dev = make_device(w, ex);
+   LPDIRECT3DDEVICE9 dev = make_device(w, ex, D3DSWAPEFFECT_DISCARD);
    LPDIRECT3DTEXTURE9 tex = NULL, mip = NULL;
    LPDIRECT3DVERTEXBUFFER9 vb = NULL;
    d3d9_sw_fb_t fb;
@@ -283,6 +287,71 @@ static void run(HWND w, bool ex)
    IDirect3DDevice9_Release(dev);
 }
 
+/* Direct3D 9Ex Presentation (d3d9_present_init, d3d9_present): a
+ * window in the flip model, the frame latency through the device's Ex
+ * table, and a frame presented in each way it can wait for the display */
+static void present_run(HWND w)
+{
+   static const int waits[3] = { 0, 1, -1 };
+   static const char *names[3] = {
+      "a frame is presented without waiting for the display",
+      "a frame is presented, then waits for the display",
+      "a frame waits for the display, then is presented at once" };
+   d3d9_video_t d3d;
+   D3DPRESENT_PARAMETERS pp;
+   LPDIRECT3DDEVICE9 dev      = make_device(w, true, D3D9_SWAPEFFECT_FLIPEX);
+   IDirect3DSwapChain9 *chain = NULL;
+   const d3d9_dev_ex_vtbl_t *vt;
+   void *ex                   = NULL;
+   UINT lat                   = 0;
+   unsigned i;
+
+   printf("Direct3D9Ex device in the flip model:\n");
+   if (!dev)
+   {
+      printf("  [FAIL] the device is made\n");
+      fails++;
+      return;
+   }
+   memset(&pp, 0, sizeof(pp));
+   CHECK(SUCCEEDED(IDirect3DDevice9_GetSwapChain(dev, 0, &chain)) && chain
+         && SUCCEEDED(IDirect3DSwapChain9_GetPresentParameters(chain, &pp))
+         && pp.SwapEffect == D3D9_SWAPEFFECT_FLIPEX,
+         "its swap chain says it presents through the flip model");
+   if (chain)
+      IDirect3DSwapChain9_Release(chain);
+   if (FAILED(IDirect3DDevice9_QueryInterface(dev, &d3d9_iid_device_ex,
+               &ex)) || !ex)
+   {
+      printf("  [FAIL] it has its Ex interface\n");
+      fails++;
+      IDirect3DDevice9_Release(dev);
+      return;
+   }
+   ((IUnknown*)ex)->lpVtbl->Release((IUnknown*)ex);
+   vt = (const d3d9_dev_ex_vtbl_t*)((LPDIRECT3DDEVICE9)ex)->lpVtbl;
+   CHECK(SUCCEEDED(vt->SetMaximumFrameLatency((LPDIRECT3DDEVICE9)ex, 3))
+         && SUCCEEDED(vt->GetMaximumFrameLatency((LPDIRECT3DDEVICE9)ex,
+               &lat)) && lat == 3,
+         "a frame latency of 3 is set and read back through its table");
+   CHECK(SUCCEEDED(vt->SetMaximumFrameLatency((LPDIRECT3DDEVICE9)ex, 1))
+         && SUCCEEDED(vt->GetMaximumFrameLatency((LPDIRECT3DDEVICE9)ex,
+               &lat)) && lat == 1,
+         "and one of 1");
+
+   memset(&d3d, 0, sizeof(d3d));
+   d3d.dev    = dev;
+   d3d.dev_ex = (LPDIRECT3DDEVICE9)ex;
+   for (i = 0; i < 3; i++)
+   {
+      d3d.wait_for_vblank = waits[i];
+      IDirect3DDevice9_Clear(dev, 0, NULL, D3DCLEAR_TARGET,
+            0xff000000 | (i * 0x40), 1.0f, 0);
+      CHECK(SUCCEEDED(d3d9_present(&d3d)), names[i]);
+   }
+   IDirect3DDevice9_Release(dev);
+}
+
 int main(void)
 {
    HWND w = CreateWindowA("STATIC", "d3d9_ex_test", WS_OVERLAPPEDWINDOW,
@@ -294,6 +363,7 @@ int main(void)
    }
    run(w, false);
    run(w, true);
+   present_run(w);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }
