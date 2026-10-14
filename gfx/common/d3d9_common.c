@@ -528,35 +528,31 @@ retro_time_t d3d9_last_present_time(d3d9_video_t *d3d)
    static LARGE_INTEGER freq;
    d3d9_present_stats_t stats;
    UINT last = 0;
-
-   if (!d3d)
-      return 0;
-   /* Only while the statistics describe that present: one made at
-    * once, on no vblank, leaves them at the last that was */
-   if (d3d->chain_ex)
+   if (d3d)
    {
-      const d3d9_chain_ex_vtbl_t *vt =
+      /* Only while the statistics describe that present: one made at
+       * once, on no vblank, leaves them at the last that was */
+      if (d3d->chain_ex)
+      {
+         const d3d9_chain_ex_vtbl_t *vt =
             (const d3d9_chain_ex_vtbl_t*)d3d->chain_ex->lpVtbl;
-      memset(&stats, 0, sizeof(stats));
-      if (     SUCCEEDED(vt->GetPresentStats(d3d->chain_ex, &stats))
-            && SUCCEEDED(vt->GetLastPresentCount(d3d->chain_ex, &last))
-            && stats.PresentCount == last
-            && stats.SyncQPCTime.QuadPart
-            && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
-         return (retro_time_t)(
-                 stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000
-               + stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000
-               / freq.QuadPart);
-   }
+         memset(&stats, 0, sizeof(stats));
+         if (     SUCCEEDED(vt->GetPresentStats(d3d->chain_ex, &stats))
+               && SUCCEEDED(vt->GetLastPresentCount(d3d->chain_ex, &last))
+               && stats.PresentCount == last
+               && stats.SyncQPCTime.QuadPart
+               && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
+            return (retro_time_t)(
+                  stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000
+                  + stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000
+                  / freq.QuadPart);
+      }
 #ifndef __WINRT__
-   return win32_dwm_last_vblank_time();
-#else
-   return 0;
+      return win32_dwm_last_vblank_time();
 #endif
-#else
-   (void)d3d;
-   return 0;
+   }
 #endif
+   return 0;
 }
 
 /* --- GPU-native BCn compressed-texture upload (shared by d3d9cg/d3d9hlsl) --- */

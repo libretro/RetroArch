@@ -640,19 +640,18 @@ static const char gl_planar_legacy_fs[] =
 static GLuint gl_planar_shader(GLenum stage, const char **src,
       GLsizei n)
 {
-   GLint ok  = 0;
    GLuint sh = glCreateShader(stage);
-   if (!sh)
-      return 0;
-   glShaderSource(sh, n, src, NULL);
-   glCompileShader(sh);
-   glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
-   if (!ok)
+   if (sh)
    {
+      GLint ok  = 0;
+      glShaderSource(sh, n, src, NULL);
+      glCompileShader(sh);
+      glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+      if (ok)
+         return sh;
       glDeleteShader(sh);
-      return 0;
    }
-   return sh;
+   return 0;
 }
 
 /* The program and the triangle, made on the first planar texture; a
