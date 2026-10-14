@@ -28,6 +28,10 @@
 
 #include "../video_driver.h"
 
+#if defined(_WIN32) && !defined(_XBOX)
+#include <malloc.h>
+#endif
+
 #define D3D9_SW_FB_PARKED 4
 
 /* The frame texture lent to a core through
@@ -37,6 +41,28 @@
  * to. A frame read out of a loan stays where the cached frame names
  * it, so a texture holding one is parked rather than released inside
  * a frame, and let go once the cached frame is retired. */
+#define D3D9_FRAME_MEM_MAX 4
+
+/* Frame memory for the threaded wrapper, on a Direct3D9Ex device: its
+ * frame slots live in these blocks, and a frame inside one goes up with
+ * UpdateSurface from a system-memory texture made over it - the GPU
+ * reads it where the core or the wrapper wrote it, and the CPU copies
+ * nothing. An event query says when the GPU is done with a block. */
+typedef struct d3d9_frame_mem_blk
+{
+   uint8_t           *ptr;
+   size_t             size;
+   IDirect3DQuery9   *query;
+   LPDIRECT3DTEXTURE9 user;        /* over the last frame sent from it */
+   const uint8_t     *user_at;
+   unsigned           user_pitch;
+   unsigned           user_height;
+   D3DFORMAT          user_fmt;
+   bool               user_failed; /* that texture could not be made */
+   bool               pending;     /* a GPU read may be in flight */
+   bool               freeing;     /* given back while one was */
+} d3d9_frame_mem_blk_t;
+
 typedef struct d3d9_sw_fb
 {
    LPDIRECT3DTEXTURE9 tex;         /* lent and locked */
@@ -47,6 +73,7 @@ typedef struct d3d9_sw_fb
    unsigned           pitch;
    unsigned           dims;        /* the loan's size, packed */
    unsigned           tex_dims;
+   d3d9_frame_mem_blk_t mem[D3D9_FRAME_MEM_MAX];
 } d3d9_sw_fb_t;
 
 static INLINE void d3d9_sw_fb_drop(d3d9_sw_fb_t *fb);
@@ -87,8 +114,8 @@ static INLINE bool d3d9_sw_fb_lend(d3d9_sw_fb_t *fb, LPDIRECT3DTEXTURE9 tex,
       r.right  = (LONG)out->width;
       r.bottom = (LONG)out->height;
       lr.pBits = NULL;
-      if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, &r,
-                  D3DLOCK_NOSYSLOCK)) || !lr.pBits)
+      if (FAILED(d3d9_tex_lock(tex, 0, &lr, &r, D3DLOCK_NOSYSLOCK))
+            || !lr.pBits)
          return false;
       fb->tex      = tex;
       fb->bits     = (uint8_t*)lr.pBits;
@@ -109,7 +136,8 @@ static INLINE void d3d9_sw_fb_drop(d3d9_sw_fb_t *fb)
 {
    if (!fb || !fb->tex)
       return;
-   IDirect3DTexture9_UnlockRect(fb->tex, 0);
+   /* What the core wrote goes up with the next upload into it, if any */
+   d3d9_tex_unlock(fb->tex, 0, false);
    fb->tex = NULL;
 }
 
@@ -159,13 +187,13 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
    if (!in_loan || clear)
    {
       D3DLOCKED_RECT lr;
-      IDirect3DTexture9_UnlockRect(fb->tex, 0);
+      d3d9_tex_unlock(fb->tex, 0, false);
       lr.pBits = NULL;
-      if (FAILED(IDirect3DTexture9_LockRect(fb->tex, 0, &lr, NULL,
-                  D3DLOCK_NOSYSLOCK)) || lr.pBits != (void*)bits)
+      if (FAILED(d3d9_tex_lock(fb->tex, 0, &lr, NULL, D3DLOCK_NOSYSLOCK))
+            || lr.pBits != (void*)bits)
       {
          if (lr.pBits)
-            IDirect3DTexture9_UnlockRect(fb->tex, 0);
+            d3d9_tex_unlock(fb->tex, 0, false);
          fb->tex = NULL;
          return;
       }
@@ -203,7 +231,7 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
          memset(bits + (size_t)y * fb->pitch, 0, tex_row);
    }
 
-   IDirect3DTexture9_UnlockRect(fb->tex, 0);
+   d3d9_tex_unlock(fb->tex, 0, true);
    fb->frame     = src;
    fb->frame_tex = fb->tex;
    fb->tex       = NULL;
@@ -231,7 +259,7 @@ static INLINE void d3d9_frame_upload(LPDIRECT3DTEXTURE9 tex,
    r.right  = (LONG)width;
    r.bottom = (LONG)height;
    lr.pBits = NULL;
-   if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, whole ? NULL : &r,
+   if (FAILED(d3d9_tex_lock(tex, 0, &lr, whole ? NULL : &r,
                D3DLOCK_NOSYSLOCK)) || !lr.pBits)
       return;
    if (whole)
@@ -239,7 +267,7 @@ static INLINE void d3d9_frame_upload(LPDIRECT3DTEXTURE9 tex,
    for (y = 0; y < height; y++)
       memcpy((uint8_t*)lr.pBits + (size_t)y * lr.Pitch,
             src + (size_t)y * pitch, row);
-   IDirect3DTexture9_UnlockRect(tex, 0);
+   d3d9_tex_unlock(tex, 0, true);
 }
 
 static INLINE const uint8_t *d3d9_sw_fb_src_begin(d3d9_sw_fb_t *fb, const void *frame,
@@ -252,7 +280,7 @@ static INLINE const uint8_t *d3d9_sw_fb_src_begin(d3d9_sw_fb_t *fb, const void *
    if (fb->frame_tex == dst)
       return NULL;
    lr.pBits = NULL;
-   if (FAILED(IDirect3DTexture9_LockRect(fb->frame_tex, 0, &lr, NULL,
+   if (FAILED(d3d9_tex_lock(fb->frame_tex, 0, &lr, NULL,
                D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK)) || !lr.pBits)
       return (const uint8_t*)frame;
    *pitch = (unsigned)lr.Pitch;
@@ -268,7 +296,7 @@ static INLINE void d3d9_sw_fb_src_end(d3d9_sw_fb_t *fb, const void *frame,
    {
       if (fb->frame_tex != dst)
       {
-         IDirect3DTexture9_UnlockRect(fb->frame_tex, 0);
+         d3d9_tex_unlock(fb->frame_tex, 0, false);
          /* The newest copy is the one replayed from next */
          fb->frame_tex = dst;
       }
@@ -327,6 +355,223 @@ static INLINE void d3d9_sw_fb_collect(d3d9_sw_fb_t *fb)
       IDirect3DTexture9_Release(fb->parked[i]);
       fb->parked[i] = NULL;
    }
+}
+
+#ifndef _XBOX
+/* The device objects of block @b, and with @all its memory too */
+static INLINE void d3d9_frame_mem_blk_release(d3d9_frame_mem_blk_t *b,
+      bool all)
+{
+   if (b->user)
+      IDirect3DTexture9_Release(b->user);
+   if (b->query)
+      IDirect3DQuery9_Release(b->query);
+   b->user        = NULL;
+   b->query       = NULL;
+   b->user_at     = NULL;
+   b->user_failed = false;
+   b->pending     = false;
+   if (all)
+   {
+#ifdef _WIN32
+      if (b->ptr)
+         _aligned_free(b->ptr);
+#endif
+      memset(b, 0, sizeof(*b));
+   }
+}
+
+/* frame_mem_alloc: NULL where the device makes no texture over memory */
+static INLINE void *d3d9_frame_mem_alloc(d3d9_sw_fb_t *fb,
+      LPDIRECT3DDEVICE9 dev, size_t size, uintptr_t *id, bool *cached,
+      unsigned *pitch_align)
+{
+#ifdef _WIN32
+   unsigned i;
+   if (!fb || !size || !d3d9_dev_is_ex(dev))
+      return NULL;
+   for (i = 0; i < D3D9_FRAME_MEM_MAX; i++)
+   {
+      if (fb->mem[i].ptr)
+         continue;
+      /* Page aligned, as the memory a texture is made over is */
+      if (!(fb->mem[i].ptr = (uint8_t*)_aligned_malloc(size, 4096)))
+         return NULL;
+      fb->mem[i].size = size;
+      *id             = (uintptr_t)i + 1;
+      *cached         = true;
+      *pitch_align    = 64;
+      return fb->mem[i].ptr;
+   }
+#endif
+   return NULL;
+}
+
+/* frame_mem_ready: never waits */
+static INLINE bool d3d9_frame_mem_ready(d3d9_sw_fb_t *fb, uintptr_t id)
+{
+   d3d9_frame_mem_blk_t *b;
+   HRESULT hr;
+   if (!fb || !id || id > D3D9_FRAME_MEM_MAX)
+      return true;
+   b = &fb->mem[id - 1];
+   if (!b->pending)
+      return true;
+   if (!b->query)
+   {
+      b->pending = false;
+      return true;
+   }
+   /* FLUSH sends what is queued on, without waiting for it */
+   hr = IDirect3DQuery9_GetData(b->query, NULL, 0, D3DGETDATA_FLUSH);
+   if (hr == S_FALSE)
+      return false;
+   b->pending = false;
+   return true;
+}
+
+/* Blocks given back while the GPU read them, let go once it is done */
+static INLINE void d3d9_frame_mem_collect(d3d9_sw_fb_t *fb)
+{
+   unsigned i;
+   for (i = 0; i < D3D9_FRAME_MEM_MAX; i++)
+      if (fb->mem[i].freeing && d3d9_frame_mem_ready(fb, (uintptr_t)i + 1))
+         d3d9_frame_mem_blk_release(&fb->mem[i], true);
+}
+
+/* frame_mem_free */
+static INLINE void d3d9_frame_mem_free(d3d9_sw_fb_t *fb, uintptr_t id)
+{
+   if (!fb || !id || id > D3D9_FRAME_MEM_MAX || !fb->mem[id - 1].ptr)
+      return;
+   if (d3d9_frame_mem_ready(fb, id))
+      d3d9_frame_mem_blk_release(&fb->mem[id - 1], true);
+   else
+      fb->mem[id - 1].freeing = true;
+}
+
+/* The device going: its objects let go. The memory stays: the
+ * wrapper's, or one given back, let go by the next collect, the GPU
+ * being done with it by then */
+static INLINE void d3d9_frame_mem_device_lost(d3d9_sw_fb_t *fb)
+{
+   unsigned i;
+   for (i = 0; i < D3D9_FRAME_MEM_MAX; i++)
+      d3d9_frame_mem_blk_release(&fb->mem[i], false);
+}
+
+/* A frame inside a block, into the top left of @tex as
+ * d3d9_frame_upload would put it, the GPU reading it where it lies;
+ * false when it is not in one or cannot go that way, and the caller
+ * copies it */
+static INLINE bool d3d9_frame_mem_upload(d3d9_sw_fb_t *fb,
+      LPDIRECT3DDEVICE9 dev, LPDIRECT3DTEXTURE9 tex, unsigned tex_dims,
+      unsigned last_dims, const uint8_t *src, unsigned pitch,
+      unsigned width, unsigned height, unsigned bpp)
+{
+   unsigned i;
+   d3d9_frame_mem_blk_t *b = NULL;
+   D3DSURFACE_DESC desc;
+   LPDIRECT3DSURFACE9 from = NULL;
+   LPDIRECT3DSURFACE9 to   = NULL;
+   RECT  rect;
+   POINT at;
+   HRESULT hr;
+
+   if (!fb || !src || !width || !height || !bpp || pitch % bpp)
+      return false;
+   for (i = 0; i < D3D9_FRAME_MEM_MAX; i++)
+   {
+      const uint8_t *p = fb->mem[i].ptr;
+      if (     p && src >= p
+            && (size_t)(src - p) + (size_t)(height - 1) * pitch
+               + (size_t)width * bpp <= fb->mem[i].size)
+      {
+         b = &fb->mem[i];
+         break;
+      }
+   }
+   if (!b || FAILED(IDirect3DTexture9_GetLevelDesc(tex, 0, &desc)))
+      return false;
+
+   /* The texture over the frame: kept while frames come from the same
+    * place in the same shape, which they do frame after frame, and not
+    * tried again for a shape it failed for */
+   if (     b->user_at != src || b->user_pitch != pitch
+         || b->user_height != height || b->user_fmt != desc.Format)
+   {
+      HANDLE over = (HANDLE)src;
+      if (b->user)
+         IDirect3DTexture9_Release(b->user);
+      b->user        = NULL;
+      b->user_at     = src;
+      b->user_pitch  = pitch;
+      b->user_height = height;
+      b->user_fmt    = desc.Format;
+      b->user_failed = FAILED(IDirect3DDevice9_CreateTexture(dev,
+               pitch / bpp, height, 1, 0, desc.Format,
+               D3DPOOL_SYSTEMMEM, &b->user, &over)) || !b->user;
+   }
+   if (b->user_failed || !b->user)
+      return false;
+
+   /* A new size clears what is past the frame first, as a copy does */
+   if (last_dims != VIDEO_SCALE_PACK(width, height))
+   {
+      D3DLOCKED_RECT lr;
+      lr.pBits = NULL;
+      if (FAILED(d3d9_tex_lock(tex, 0, &lr, NULL, D3DLOCK_NOSYSLOCK))
+            || !lr.pBits)
+         return false;
+      memset(lr.pBits, 0, (size_t)VIDEO_SCALE_H(tex_dims) * lr.Pitch);
+      d3d9_tex_unlock(tex, 0, true);
+   }
+
+   rect.left   = 0;
+   rect.top    = 0;
+   rect.right  = (LONG)width;
+   rect.bottom = (LONG)height;
+   at.x        = 0;
+   at.y        = 0;
+   if (     FAILED(IDirect3DTexture9_GetSurfaceLevel(b->user, 0, &from))
+         || FAILED(IDirect3DTexture9_GetSurfaceLevel(tex, 0, &to)))
+   {
+      if (from)
+         IDirect3DSurface9_Release(from);
+      return false;
+   }
+   hr = IDirect3DDevice9_UpdateSurface(dev, from, &rect, to, &at);
+   IDirect3DSurface9_Release(from);
+   IDirect3DSurface9_Release(to);
+   if (FAILED(hr))
+      return false;
+
+   /* The block is the GPU's until this is through */
+   if (!b->query && FAILED(IDirect3DDevice9_CreateQuery(dev,
+               D3DQUERYTYPE_EVENT, &b->query)))
+      b->query = NULL;
+   if (b->query)
+      IDirect3DQuery9_Issue(b->query, D3DISSUE_END);
+   b->pending = true;
+   return true;
+}
+
+#endif
+
+/* A frame into @tex: from frame memory where it lies there, else
+ * copied */
+static INLINE void d3d9_frame_put(d3d9_sw_fb_t *fb, LPDIRECT3DDEVICE9 dev,
+      LPDIRECT3DTEXTURE9 tex, unsigned tex_dims, unsigned last_dims,
+      const uint8_t *src, unsigned pitch, unsigned width, unsigned height,
+      unsigned bpp)
+{
+#ifndef _XBOX
+   if (d3d9_frame_mem_upload(fb, dev, tex, tex_dims, last_dims, src,
+            pitch, width, height, bpp))
+      return;
+#endif
+   d3d9_frame_upload(tex, tex_dims, last_dims, src, pitch, width,
+         height, bpp);
 }
 
 #endif

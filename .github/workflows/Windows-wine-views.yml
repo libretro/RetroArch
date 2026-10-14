@@ -157,6 +157,9 @@ jobs:
           WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
             ./retroarch.exe "$RUNNER_TEMP/views-e2e" gdi d3d8 d3d9_hlsl d3d10 d3d11 d3d12
+          # And d3d9_hlsl on the device of a system without Direct3D9Ex
+          RETROARCH_D3D9EX=0 RA_E2E_WINE=1 python3 samples/cores/video_views/e2e/run.py \
+            ./retroarch.exe "$RUNNER_TEMP/views-e2e-legacy" d3d9_hlsl
 
       - name: Preserve views logs on failure
         if: failure()

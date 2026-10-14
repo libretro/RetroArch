@@ -50,6 +50,7 @@
 #define D3D9_ARGB4444_FORMAT D3DFMT_A4R4G4B4
 #endif
 
+#include "d3d9_tex.h"
 #include "d3d9_sw_fb.h"
 
 RETRO_BEGIN_DECLS

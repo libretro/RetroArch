@@ -84,6 +84,14 @@ static HRESULT STDMETHODCALLTYPE tex_unlock(IDirect3DTexture9 *p, UINT level)
    return D3D_OK;
 }
 
+/* No system-memory twin: a managed texture, as a device without Ex has */
+static HRESULT STDMETHODCALLTYPE tex_get_private(IDirect3DTexture9 *p,
+      REFGUID guid, void *data, DWORD *size)
+{
+   (void)p; (void)guid; (void)data; (void)size;
+   return D3DERR_NOTFOUND;
+}
+
 static ULONG STDMETHODCALLTYPE tex_release(IDirect3DTexture9 *p)
 {
    return (ULONG)--((struct fake_tex*)p)->refs;
@@ -158,6 +166,7 @@ int main(void)
       tex_vtbl.LockRect   = tex_lock;
       tex_vtbl.UnlockRect = tex_unlock;
       tex_vtbl.Release    = tex_release;
+      tex_vtbl.GetPrivateData = tex_get_private;
    }
    memset(&sw, 0, sizeof(sw));
    tex_init(&a, 0xAB);

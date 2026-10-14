@@ -31,6 +31,7 @@ on:
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
       - 'samples/gfx/threaded_video/harness_core.c'
+      - 'samples/gfx/d3d9_ex/**'
       - '.github/workflows/Windows-wine-menu.yml'
   pull_request:
     paths:
@@ -49,6 +50,7 @@ on:
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
       - 'samples/gfx/threaded_video/harness_core.c'
+      - 'samples/gfx/d3d9_ex/**'
       - '.github/workflows/Windows-wine-menu.yml'
   workflow_dispatch:
 
@@ -165,6 +167,27 @@ jobs:
             -o ../../../harness_core.dll harness_core.c)
           python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
             ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb" d3d9_hlsl
+
+      - name: D3D9 textures and frame memory on a Direct3D9Ex device and a plain one (Wine)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          # What reached the GPU, read back: the managed pool before Ex,
+          # default-pool textures with system-memory twins on it, and the
+          # frames it reads where they lie
+          make -C samples/gfx/d3d9_ex check
+
+      - name: d3d9_hlsl without Direct3D9Ex, as a system without it has (Wine)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export RETROARCH_D3D9EX=0
+          python3 samples/gfx/menu_wine/run.py ./retroarch.exe \
+            "$RUNNER_TEMP/menu-wine/legacy" d3d11 d3d9_hlsl
+          python3 samples/gfx/menu_wine/swfb.py ./retroarch.exe \
+            ./harness_core.dll "$RUNNER_TEMP/menu-wine/swfb-legacy" d3d9_hlsl
 
       - name: Preserve screens on failure
         if: failure()

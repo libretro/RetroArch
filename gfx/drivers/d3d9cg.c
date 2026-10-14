@@ -218,10 +218,10 @@ static INLINE bool d3d9_cg_renderchain_add_lut(d3d9_cg_renderchain_t *chain,
 
    {
       void *_tbuf = NULL;
-      if (SUCCEEDED(IDirect3DDevice9_CreateTexture(chain->dev,
+      if (SUCCEEDED(d3d9_tex_create(chain->dev,
                   image.width, image.height, 1, 0,
-                  D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                  (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                  D3DFMT_A8R8G8B8,
+                  (LPDIRECT3DTEXTURE9*)&_tbuf)))
          lut = (LPDIRECT3DTEXTURE9)_tbuf;
    }
 
@@ -233,7 +233,7 @@ static INLINE bool d3d9_cg_renderchain_add_lut(d3d9_cg_renderchain_t *chain,
 
    {
       D3DLOCKED_RECT lr;
-      if (SUCCEEDED(IDirect3DTexture9_LockRect(lut, 0, &lr, NULL, 0)))
+      if (SUCCEEDED(d3d9_tex_lock(lut, 0, &lr, NULL, 0)))
       {
          unsigned y;
          uint32_t       *dst   = (uint32_t*)lr.pBits;
@@ -241,7 +241,7 @@ static INLINE bool d3d9_cg_renderchain_add_lut(d3d9_cg_renderchain_t *chain,
          unsigned        pitch = lr.Pitch >> 2;
          for (y = 0; y < image.height; y++, dst += pitch, src += image.width)
             memcpy(dst, src, image.width << 2);
-         IDirect3DTexture9_UnlockRect(lut, 0);
+         d3d9_tex_unlock(lut, 0, true);
       }
    }
 
@@ -400,8 +400,9 @@ static bool d3d9_cg_renderchain_fit_frame(d3d9_cg_renderchain_t *chain,
    for (i = 0; i < TEXTURES; i++)
    {
       LPDIRECT3DTEXTURE9 tex = NULL;
-      if (FAILED(IDirect3DDevice9_CreateTexture(chain->dev, tw, th, 1, 0,
-                  desc.Format, D3DPOOL_MANAGED, &tex, NULL)))
+      if (FAILED(d3d9_tex_create(chain->dev, tw, th, 1, 0,
+                  desc.Format,
+                  (LPDIRECT3DTEXTURE9*)&tex)))
          return false;
       d3d9_sw_fb_release(chain->sw_fb, chain->prev.tex[i]);
       chain->prev.tex[i]       = tex;
@@ -549,17 +550,17 @@ static void d3d9_video_texture_load_d3d(
       void *_tbuf = NULL;
       if (want_mipmap)
          usage |= D3DUSAGE_AUTOGENMIPMAP;
-      if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+      if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                   ti->width, ti->height, 1,
-                  usage, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                  (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                  usage, D3DFMT_A8R8G8B8,
+                  (LPDIRECT3DTEXTURE9*)&_tbuf)))
          tex = (LPDIRECT3DTEXTURE9)_tbuf;
    }
 
    if (!tex)
       return;
 
-   if (SUCCEEDED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(d3d9_tex_lock(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       unsigned i;
       uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
@@ -567,7 +568,7 @@ static void d3d9_video_texture_load_d3d(
       unsigned      pitch = d3dlr.Pitch >> 2;
       for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
          memcpy(dst, src, ti->width << 2);
-      IDirect3DTexture9_UnlockRect(tex, 0);
+      d3d9_tex_unlock(tex, 0, true);
    }
 
    *id = (uintptr_t)tex;
@@ -636,7 +637,7 @@ static bool d3d9_cg_update_texture_internal(uintptr_t id,
    if (     !tex || !ti || !ti->pixels || ti->pix10
          || FAILED(IDirect3DTexture9_GetLevelDesc(tex, 0, &desc))
          || desc.Width != ti->width || desc.Height != ti->height
-         || FAILED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
+         || FAILED(d3d9_tex_lock(tex, 0, &d3dlr, NULL,
                D3DLOCK_NOSYSLOCK)))
       return false;
    dst   = (uint32_t*)d3dlr.pBits;
@@ -644,7 +645,7 @@ static bool d3d9_cg_update_texture_internal(uintptr_t id,
    pitch = d3dlr.Pitch >> 2;
    for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
       memcpy(dst, src, ti->width << 2);
-   IDirect3DTexture9_UnlockRect(tex, 0);
+   d3d9_tex_unlock(tex, 0, true);
    return true;
 }
 
@@ -1394,10 +1395,10 @@ static void *d3d9_cg_font_init(void *data,
    font->texture    = NULL;
    {
       void *_tbuf = NULL;
-      if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+      if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                   VIDEO_SCALE_W(font->tex_dims), VIDEO_SCALE_H(font->tex_dims), 1, 0,
-                  D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                  (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                  D3DFMT_A8R8G8B8,
+                  (LPDIRECT3DTEXTURE9*)&_tbuf)))
          font->texture = (LPDIRECT3DTEXTURE9)_tbuf;
    }
 
@@ -1405,7 +1406,7 @@ static void *d3d9_cg_font_init(void *data,
    {
       D3DLOCKED_RECT lr;
 
-      if (SUCCEEDED(IDirect3DTexture9_LockRect(
+      if (SUCCEEDED(d3d9_tex_lock(
                   font->texture, 0, &lr, NULL, 0)))
       {
          for (j = 0; j < font->atlas->height; j++)
@@ -1415,7 +1416,7 @@ static void *d3d9_cg_font_init(void *data,
             for (i = 0; i < font->atlas->width; i++)
                dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
          }
-         IDirect3DTexture9_UnlockRect(font->texture, 0);
+         d3d9_tex_unlock(font->texture, 0, true);
       }
    }
 
@@ -1673,10 +1674,10 @@ static void d3d9_cg_font_render_msg(
          font->texture    = NULL;
          {
             void *_tbuf = NULL;
-            if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+            if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                         VIDEO_SCALE_W(font->tex_dims), VIDEO_SCALE_H(font->tex_dims), 1, 0,
-                        D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                        (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                        D3DFMT_A8R8G8B8,
+                        (LPDIRECT3DTEXTURE9*)&_tbuf)))
                font->texture = (LPDIRECT3DTEXTURE9)_tbuf;
          }
       }
@@ -1716,7 +1717,7 @@ static void d3d9_cg_font_render_msg(
             rect.right  = (LONG)x1;
             rect.bottom = (LONG)y1;
 
-            if (SUCCEEDED(IDirect3DTexture9_LockRect(
+            if (SUCCEEDED(d3d9_tex_lock(
                         font->texture, 0, &lr, &rect, 0)))
             {
                /* lr.pBits addresses the top-left of the locked rect */
@@ -1729,7 +1730,7 @@ static void d3d9_cg_font_render_msg(
                   for (i = 0; i < x1 - x0; i++)
                      dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
                }
-               IDirect3DTexture9_UnlockRect(font->texture, 0);
+               d3d9_tex_unlock(font->texture, 0, true);
             }
          }
       }
@@ -2666,11 +2667,11 @@ static bool d3d9_cg_renderchain_create_first_pass(
          chain->prev.tex[i] = NULL;
          {
             void *_tbuf = NULL;
-            if (SUCCEEDED(IDirect3DDevice9_CreateTexture(chain->dev,
+            if (SUCCEEDED(d3d9_tex_create(chain->dev,
                         VIDEO_SCALE_W(info->tex_dims),
                         VIDEO_SCALE_H(info->tex_dims), 1, 0,
-                        (D3DFORMAT)fmt, D3DPOOL_MANAGED,
-                        (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                        (D3DFORMAT)fmt,
+                        (LPDIRECT3DTEXTURE9*)&_tbuf)))
                chain->prev.tex[i] = (LPDIRECT3DTEXTURE9)_tbuf;
          }
 
@@ -3148,7 +3149,8 @@ static void d3d9_cg_renderchain_render(
             first_pass->tex, &src_pitch);
       if (src)
       {
-         d3d9_frame_upload(first_pass->tex, first_pass->info.tex_dims,
+         d3d9_frame_put(chain->sw_fb, chain->dev,
+                  first_pass->tex, first_pass->info.tex_dims,
                   first_pass->last_dims, src, src_pitch, width, height,
                   chain->pixel_size);
          d3d9_sw_fb_src_end(chain->sw_fb, frame_data, first_pass->tex);
@@ -3350,6 +3352,11 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
 {
    if (!d3d)
       return;
+
+#ifdef D3D9_VIEWS
+   /* The device objects over frame memory: made again on use */
+   d3d9_frame_mem_device_lost(&d3d->sw_fb);
+#endif
 #ifdef D3D9_VIEWS
    /* Its targets are in the default pool, which a reset drops, and its
     * programs in the chain's context. */
@@ -3814,20 +3821,20 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    if (!d3d9_cg_white_texture)
    {
       void *_tbuf = NULL;
-      if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+      if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                   1, 1, 1, 0,
-                  D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                  (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                  D3DFMT_A8R8G8B8,
+                  (LPDIRECT3DTEXTURE9*)&_tbuf)))
          d3d9_cg_white_texture = (LPDIRECT3DTEXTURE9)_tbuf;
 
       if (d3d9_cg_white_texture)
       {
          D3DLOCKED_RECT lr;
-         if (SUCCEEDED(IDirect3DTexture9_LockRect(
+         if (SUCCEEDED(d3d9_tex_lock(
                      d3d9_cg_white_texture, 0, &lr, NULL, 0)))
          {
             *((uint32_t*)lr.pBits) = 0xFFFFFFFF;
-            IDirect3DTexture9_UnlockRect(d3d9_cg_white_texture, 0);
+            d3d9_tex_unlock(d3d9_cg_white_texture, 0, true);
          }
       }
    }
@@ -4182,10 +4189,10 @@ static bool d3d9_cg_overlay_load(void *data,
       overlay->tex       = NULL;
       {
          void *_tbuf = NULL;
-         if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+         if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                      width, height, 1, 0,
-                     D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-                     (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                     D3DFMT_A8R8G8B8,
+                     (LPDIRECT3DTEXTURE9*)&_tbuf)))
             overlay->tex = (LPDIRECT3DTEXTURE9)_tbuf;
       }
 
@@ -4195,14 +4202,14 @@ static bool d3d9_cg_overlay_load(void *data,
          return false;
       }
 
-      if (SUCCEEDED(IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+      if (SUCCEEDED(d3d9_tex_lock((LPDIRECT3DTEXTURE9)overlay->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
          const uint32_t *src = images[i].pixels;
          unsigned      pitch = d3dlr.Pitch >> 2;
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
+         d3d9_tex_unlock((LPDIRECT3DTEXTURE9)overlay->tex, 0, true);
       }
 
       overlay->tex_dims      = VIDEO_SCALE_PACK(width, height);
@@ -4341,6 +4348,14 @@ static void d3d9_cg_free(void *data)
 
    IDirect3DDevice9_Release(d3d->dev);
    IDirect3D9_Release(d3d->d3d9);
+#ifdef D3D9_VIEWS
+   /* Frame memory left over, the device that read it gone */
+   {
+      unsigned i;
+      for (i = 0; i < D3D9_FRAME_MEM_MAX; i++)
+         d3d9_frame_mem_blk_release(&d3d->sw_fb.mem[i], true);
+   }
+#endif
    d3d->shader_path = NULL;
    d3d->dev         = NULL;
    d3d->d3d9          = NULL;
@@ -4548,6 +4563,10 @@ static bool d3d9_cg_frame(void *data, const void *frame,
                pitch, _chain->chain.pixel_size,
                _chain->chain.prev.last_dims[_chain->chain.prev.ptr]);
    }
+#ifdef D3D9_VIEWS
+   /* Frame memory given back while the GPU read it */
+   d3d9_frame_mem_collect(&d3d->sw_fb);
+#endif
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -4660,7 +4679,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
          {
             /* As ever, nothing past the frame cleared: its size given
              * as the texture's last */
-            d3d9_frame_upload(d.tex, d.tex_dims,
+            d3d9_frame_put(&d3d->sw_fb, d3d->dev, d.tex, d.tex_dims,
                   VIDEO_SCALE_PACK(frame_width, frame_height), src,
                   src_pitch, frame_width, frame_height,
                   _chain->chain.pixel_size);
@@ -4915,11 +4934,10 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
           * for callers that hand us 32bpp data; in current practice no
           * such caller exists, but the API contract supports it. */
          void *_tbuf = NULL;
-         if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
+         if (SUCCEEDED(d3d9_tex_create(d3d->dev,
                      width, height, 1, 0,
                      rgb32 ? D3DFMT_A8R8G8B8 : D3D9_ARGB4444_FORMAT,
-                     D3DPOOL_MANAGED,
-                     (struct IDirect3DTexture9**)&_tbuf, NULL)))
+                     (LPDIRECT3DTEXTURE9*)&_tbuf)))
             d3d->menu->tex = (LPDIRECT3DTEXTURE9)_tbuf;
       }
 
@@ -4935,7 +4953,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   if (!SUCCEEDED(IDirect3DTexture9_LockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex,
+   if (!SUCCEEDED(d3d9_tex_lock((LPDIRECT3DTEXTURE9)d3d->menu->tex,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
       return;
    {
@@ -4976,7 +4994,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
       }
    }
 
-   IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0);
+   d3d9_tex_unlock((LPDIRECT3DTEXTURE9)d3d->menu->tex, 0, true);
 }
 
 static void d3d9_cg_set_video_mode(void *data,
@@ -5039,6 +5057,39 @@ static retro_time_t d3d9_cg_get_last_present_time(void *data)
 #endif
 }
 
+#ifdef D3D9_VIEWS
+/* Frame memory for the threaded wrapper: on a Direct3D9Ex device the
+ * GPU reads the frame slots where they lie (d3d9_sw_fb.h) */
+static void *d3d9_cg_frame_mem_alloc(void *data, size_t size,
+      uintptr_t *id, bool *cached, unsigned *pitch_align)
+{
+   static bool said;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   void *mem         = d3d ? d3d9_frame_mem_alloc(&d3d->sw_fb, d3d->dev,
+         size, id, cached, pitch_align) : NULL;
+   if (mem && !said)
+   {
+      said = true;
+      RARCH_LOG("[D3D9] Frame memory: the GPU reads the frames where they "
+            "lie.\n");
+   }
+   return mem;
+}
+
+static bool d3d9_cg_frame_mem_ready(void *data, uintptr_t id)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   return !d3d || d3d9_frame_mem_ready(&d3d->sw_fb, id);
+}
+
+static void d3d9_cg_frame_mem_free(void *data, uintptr_t id)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (d3d)
+      d3d9_frame_mem_free(&d3d->sw_fb, id);
+}
+#endif
+
 static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_get_flags,
    d3d9_cg_load_texture,
@@ -5092,7 +5143,13 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   d3d9_cg_set_view_count
+   d3d9_cg_set_view_count,
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   d3d9_cg_frame_mem_alloc,
+   d3d9_cg_frame_mem_ready,
+   d3d9_cg_frame_mem_free
 #endif
 };
 

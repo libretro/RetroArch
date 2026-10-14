@@ -3,7 +3,9 @@
 
 Runs samples/gfx/threaded_video's harness core in retroarch.exe with
 threaded video off, so GET_CURRENT_SOFTWARE_FRAMEBUFFER reaches the
-video driver itself. The core pushes NULL every third frame, so a loan
+video driver itself, and each case again with it on, where the wrapper
+lends its own frame slots - in the driver's frame memory where it has
+some, read by the GPU where they lie. The core pushes NULL every third frame, so a loan
 is left open across a dupe.
 
   lent    eight still bars written into the loan, compared with the
@@ -39,12 +41,27 @@ import run  # noqa: E402
 FREEZE = '181'
 CASES = (
     ('lent',    {'HARNESS_CORE_SW_FB': '1', 'HARNESS_CORE_FREEZE': FREEZE,
-                 'HARNESS_CORE_STAMP': '1'}, True),
+                 'HARNESS_CORE_STAMP': '1'}, True, False),
     ('cropped', {'HARNESS_CORE_SW_FB': '2', 'HARNESS_CORE_FREEZE': FREEZE,
-                 'HARNESS_CORE_STAMP': '1'}, True),
-    ('regrow',  {'HARNESS_CORE_SW_FB': '1'}, False),
+                 'HARNESS_CORE_STAMP': '1'}, True, False),
+    ('regrow',  {'HARNESS_CORE_SW_FB': '1'}, False, False),
+    # The threaded wrapper lending its own slots, which a driver with
+    # frame memory has the GPU read where they lie
+    ('lent-threaded',    {'HARNESS_CORE_SW_FB': '1',
+                          'HARNESS_CORE_FREEZE': FREEZE,
+                          'HARNESS_CORE_STAMP': '1'}, True, True),
+    ('cropped-threaded', {'HARNESS_CORE_SW_FB': '2',
+                          'HARNESS_CORE_FREEZE': FREEZE,
+                          'HARNESS_CORE_STAMP': '1'}, True, True),
+    ('regrow-threaded',  {'HARNESS_CORE_SW_FB': '1'}, False, True),
 )
 REGROW_SECONDS = 20
+# What each run logged, by (case, driver)
+LOGS = {}
+# A D3D9 driver on a Direct3D9Ex device offers the wrapper frame
+# memory, and says so once
+FRAME_MEM_LINE = 'the GPU reads the frames where they lie'
+
 
 
 def free_port():
@@ -55,7 +72,8 @@ def free_port():
     return port
 
 
-def launch(retroarch, core, root, driver, name, core_env, still):
+def launch(retroarch, core, root, driver, name, core_env, still,
+           threaded):
     """(screen or None, lent framebuffers or None, quit cleanly)."""
     d = os.path.join(root, name, driver)
     os.makedirs(d, exist_ok=True)
@@ -67,6 +85,14 @@ def launch(retroarch, core, root, driver, name, core_env, still):
         f.write('network_cmd_port = "%d"\n' % port)
         f.write('video_smooth = "true"\n')
         f.write('aspect_ratio_index = "22"\n')
+        # The log says which device was made
+        f.write('log_verbosity = "true"\n')
+    with open(cfg) as f:
+        text = f.read()
+    with open(cfg, 'w') as f:
+        f.write(text.replace('video_threaded = "false"',
+                             'video_threaded = "%s"'
+                             % ('true' if threaded else 'false')))
     shot = os.path.join(d, 'screen.png')
     log_path = os.path.join(d, 'stdout.log')
     env = dict(os.environ)
@@ -136,12 +162,32 @@ def launch(retroarch, core, root, driver, name, core_env, still):
         for f in ('/tmp/.X%d-lock' % n, '/tmp/.X11-unix/X%d' % n):
             if os.path.exists(f):
                 os.remove(f)
-    with open(log_path, errors='replace') as f:
-        m = re.search(r'harness: (\d+) runs, (\d+) framebuffers lent',
-                      f.read())
+    # The core reports on stdout, RetroArch logs to a file beside it
+    text = ''
+    for fn in sorted(os.listdir(d)):
+        if fn.endswith('.log'):
+            with open(os.path.join(d, fn), errors='replace') as f:
+                text += f.read()
+    m = re.search(r'harness: (\d+) runs, (\d+) framebuffers lent', text)
     if m:
         got = int(m.group(2))
+    LOGS[(name, driver)] = text
     return (shot if os.path.exists(shot) else None), got, clean
+
+
+def launch_once_more(retroarch, core, root, driver, name, core_env,
+                     still, threaded):
+    """launch(), again once when RetroArch went before logging a line:
+    Wine now and then loses a process at its start. A real failure to
+    start fails twice."""
+    r = launch(retroarch, core, root, driver, name, core_env, still,
+               threaded)
+    if r[0] is None and not LOGS.get((name, driver)):
+        print('note %s/%s: gone before it logged, run again'
+              % (name, driver))
+        r = launch(retroarch, core, root, driver, name, core_env, still,
+                   threaded)
+    return r
 
 
 def run_send(cmd, port):
@@ -163,9 +209,10 @@ def main():
     if os.path.isdir(root):
         shutil.rmtree(root)
     os.makedirs(root)
-    for name, core_env, still in CASES:
-        shot, got, clean = launch(retroarch, core, root, driver, name,
-                                  core_env, still)
+    for name, core_env, still, threaded in CASES:
+        shot, got, clean = launch_once_more(retroarch, core, root, driver,
+                                            name, core_env, still,
+                                            threaded)
         why = []
         if not shot:
             why.append('no screen')
@@ -175,9 +222,19 @@ def main():
             why.append('did not quit when asked')
         if shot and not run.drawn(run.blocks(shot)):
             why.append('nothing drawn')
+        if driver.startswith('d3d9'):
+            log = LOGS.get((name, driver), '')
+            legacy = os.environ.get('RETROARCH_D3D9EX') == '0'
+            ex = 'Direct3D9Ex device' in log
+            if not ex and 'Direct3D 9 device' not in log:
+                why.append('no word of the device made')
+            elif legacy and ex:
+                why.append('Direct3D9Ex made with RETROARCH_D3D9EX=0')
+            elif threaded and ex and FRAME_MEM_LINE not in log:
+                why.append('frame memory not taken on a Direct3D9Ex device')
         if still and shot:
-            rshot, _, _ = launch(retroarch, core, root, ref, name,
-                                 core_env, still)
+            rshot, _, _ = launch_once_more(retroarch, core, root, ref,
+                                           name, core_env, still, threaded)
             if not rshot:
                 why.append('no screen from %s' % ref)
             else:

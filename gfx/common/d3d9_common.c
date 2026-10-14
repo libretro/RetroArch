@@ -29,6 +29,8 @@
 #ifdef HAVE_DYNAMIC_D3D
 #include <dynamic/dylib.h>
 #endif
+#include <stdlib.h>
+
 #include <string/stdstring.h>
 #include <retro_timers.h>
 
@@ -54,6 +56,14 @@ static bool d3d9_dylib_initialized = false;
 
 typedef IDirect3D9 *(__stdcall *D3D9Create_t)(UINT);
 static D3D9Create_t D3D9Create;
+#ifdef HAVE_DYNAMIC_D3D
+/* Direct3D9Ex, from Vista on: resolved where there is one, and the
+ * devices made without it otherwise */
+typedef HRESULT (__stdcall *D3D9CreateEx_t)(UINT, IDirect3D9**);
+static D3D9CreateEx_t D3D9CreateEx;
+#endif
+/* Whether the object d3d9_create last made is Direct3D9Ex's */
+static bool d3d9_object_ex;
 
 void *d3d9_create(void)
 {
@@ -62,6 +72,21 @@ void *d3d9_create(void)
 #else
    UINT ver = 31;
 #endif
+#ifdef HAVE_DYNAMIC_D3D
+   /* RETROARCH_D3D9EX=0 keeps the devices of a system without it, so
+    * that path stays tested where Ex is there */
+   const char *want = getenv("RETROARCH_D3D9EX");
+   if (D3D9CreateEx && !(want && want[0] == '0'))
+   {
+      IDirect3D9 *obj = NULL;
+      if (SUCCEEDED(D3D9CreateEx(32, &obj)) && obj)
+      {
+         d3d9_object_ex = true;
+         return obj;
+      }
+   }
+#endif
+   d3d9_object_ex = false;
    return D3D9Create(ver);
 }
 
@@ -87,6 +112,7 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
    if (!(D3D9Create = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9")))
       RARCH_ERR("[D3D9] d3d9.dll does not export Direct3DCreate9: %s\n",
             dylib_error() ? dylib_error() : "(no error reported)");
+   D3D9CreateEx = (D3D9CreateEx_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9Ex");
 #else
    D3D9Create                 = Direct3DCreate9;
 #endif
@@ -110,6 +136,7 @@ void d3d9_deinitialize_symbols(void)
    if (g_d3d9_dll)
       dylib_close(g_d3d9_dll);
    g_d3d9_dll         = NULL;
+   D3D9CreateEx       = NULL;
 
    d3d9_dylib_initialized = false;
 #endif
@@ -125,6 +152,27 @@ static bool d3d9_create_device_internal(
 {
    LPDIRECT3D9       d3d = (LPDIRECT3D9)_d3d;
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
+#ifdef HAVE_DYNAMIC_D3D
+   if (dev && d3d9_object_ex)
+   {
+      /* A full screen of its own is given its mode; a window none */
+      d3d9_display_mode_ex_t mode;
+      memset(&mode, 0, sizeof(mode));
+      mode.Size             = sizeof(mode);
+      mode.Width            = d3dpp->BackBufferWidth;
+      mode.Height           = d3dpp->BackBufferHeight;
+      mode.RefreshRate      = d3dpp->FullScreen_RefreshRateInHz;
+      mode.Format           = d3dpp->BackBufferFormat;
+      mode.ScanLineOrdering = 1; /* D3DSCANLINEORDERING_PROGRESSIVE */
+      if (SUCCEEDED(((d3d9_ex_vtbl_t*)d3d->lpVtbl)->CreateDeviceEx(d3d,
+                  cur_mon_id, D3DDEVTYPE_HAL, focus_window,
+                  behavior_flags, d3dpp,
+                  d3dpp->Windowed ? NULL : &mode,
+                  (IDirect3DDevice9**)dev)))
+         return true;
+      /* and the device of a system without Ex if that will not do */
+   }
+#endif
    return (dev &&
          SUCCEEDED(IDirect3D9_CreateDevice(d3d,
                cur_mon_id,
@@ -168,6 +216,9 @@ success:
    if (retries > 0)
       RARCH_LOG("[D3D9] Device created successfully after %d retries.\n",
             retries);
+   RARCH_LOG("[D3D9] %s device.\n",
+         d3d9_dev_is_ex(*(LPDIRECT3DDEVICE9*)dev)
+         ? "Direct3D9Ex" : "Direct3D 9");
    return true;
 }
 
@@ -410,17 +461,16 @@ uintptr_t d3d9_load_texture_compressed(void *data,
       return 0;
    block_bytes = (tc->format == TEXTURE_GPU_FORMAT_BC1) ? 8 : 16;
 
-   if (FAILED(IDirect3DDevice9_CreateTexture(d3d->dev,
+   if (FAILED(d3d9_tex_create(d3d->dev,
                tc->mips[0].width, tc->mips[0].height, tc->num_mips,
-               0, f, D3DPOOL_MANAGED,
-               (struct IDirect3DTexture9**)&_tbuf, NULL)))
+               0, f, (LPDIRECT3DTEXTURE9*)&_tbuf)))
       return 0;
    tex = (LPDIRECT3DTEXTURE9)_tbuf;
 
    for (i = 0; i < tc->num_mips; i++)
    {
       D3DLOCKED_RECT lr;
-      if (SUCCEEDED(IDirect3DTexture9_LockRect(tex, i, &lr, NULL, 0)))
+      if (SUCCEEDED(d3d9_tex_lock(tex, i, &lr, NULL, 0)))
       {
          unsigned       blocks_w  = (tc->mips[i].width  + 3) >> 2;
          unsigned       blocks_h  = (tc->mips[i].height + 3) >> 2;
@@ -432,7 +482,7 @@ uintptr_t d3d9_load_texture_compressed(void *data,
           * padded, so copy row by row rather than in one shot. */
          for (r = 0; r < blocks_h; r++)
             memcpy(dst + r * lr.Pitch, src + r * row_bytes, row_bytes);
-         IDirect3DTexture9_UnlockRect(tex, i);
+         d3d9_tex_unlock(tex, i, true);
       }
    }
 
