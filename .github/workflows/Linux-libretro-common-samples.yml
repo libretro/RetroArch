@@ -192,6 +192,7 @@ jobs:
             filestream_rbuf_fault_test
             vfs_rename_replace_test
             cdrom_cuesheet_overflow_test
+            rdvd_lpcm_test
             rdvd_ac3_test
             rdvd_packet_test
             rdvd_highlight_test
@@ -1199,6 +1200,7 @@ jobs:
           WINEDEBUG: -all
         run: |
           make CC=x86_64-w64-mingw32-gcc EXE=.exe all
+          timeout 120 wine ./rdvd_lpcm_test.exe
           timeout 120 wine ./rdvd_ac3_test.exe
           timeout 120 wine ./rdvd_packet_test.exe
           timeout 120 wine ./rdvd_highlight_test.exe
