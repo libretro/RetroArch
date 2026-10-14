@@ -4865,7 +4865,12 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
 
       ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
-      if (ptr && bgrx)
+      if (!ptr)
+      {
+         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+         goto error;
+      }
+      if (bgrx)
          video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
                VIDEO_SCALE_H(gl->vp.dims),
                (const uint8_t*)ptr, VIDEO_SCALE_W(gl->vp.dims) * 4,
@@ -4876,9 +4881,13 @@ static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
                false
 #endif
                );
-      else if (ptr)
+      else
          scaler_ctx_scale_direct(ctx, buffer, ptr);
-      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+      if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+      {
+         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+         goto error;
+      }
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
    else
