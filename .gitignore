@@ -269,6 +269,14 @@ gfx/common/wayland/tearing-control-v1.h
 gfx/common/wayland/tearing-control-v1.c
 gfx/common/wayland/drm-lease-v1.h
 gfx/common/wayland/drm-lease-v1.c
+gfx/common/wayland/color-management-v1.c
+gfx/common/wayland/color-management-v1.h
+gfx/common/wayland/kde-output-device-v2.c
+gfx/common/wayland/kde-output-device-v2.h
+gfx/common/wayland/kde-output-management-v2.c
+gfx/common/wayland/kde-output-management-v2.h
+gfx/common/wayland/wlr-output-management-unstable-v1.c
+gfx/common/wayland/wlr-output-management-unstable-v1.h
 
 # samples/: built harness executables and objects. Each directory's
 # test is <dir>_test; nothing built there is source.
