@@ -2,7 +2,7 @@
 #define main hevc_stream_checks_main
 #include "../../gfx/d3d11_video_decode/rh265_hw_stream_test.c"
 #undef main
-#include "../../../cores/libretro-webm/webm_core.c"
+#include "../../../cores/libretro-media/media_core.c"
 static unsigned sink_calls, sink_busy, sink_taken, ticks, stopped;
 static unsigned cpu_ticks, expect_software, sink_ready = 1;
 static video_hw_frame_t held;
@@ -59,11 +59,11 @@ static bool start_core(int hardware)
    memset(&game, 0, sizeof(game));
    game.path = "../../formats/video_hdr_fp16/fixtures/sdr_hevc.mp4";
    CHECK(retro_load_game(&game) && opened == before);
-   if (!webm_player.mp4vs) return false;
-   CHECK(!webm_player.hw_started && !webm_player.hw_video);
+   if (!media_player.mp4vs) return false;
+   CHECK(!media_player.hw_started && !media_player.hw_video);
    (void)hardware;
-   memset(webm_player.fb, 0xa5, 64 * 48 * sizeof(uint32_t));
-   CHECK(!webm_set_video_hw_refresh(NULL, NULL));
+   memset(media_player.fb, 0xa5, 64 * 48 * sizeof(uint32_t));
+   CHECK(!media_set_video_hw_refresh(NULL, NULL));
    return true;
 }
 
@@ -73,56 +73,56 @@ int main(void)
    uint8_t state[40];
    hevc_stream_checks_main();
    rh265_set_hw_backend(&backend);
-   CHECK(webm_set_video_hw_refresh(sink, &sink_taken));
+   CHECK(media_set_video_hw_refresh(sink, &sink_taken));
    retro_set_environment(env); retro_set_video_refresh(video_tick);
    retro_set_input_poll(input_tick); retro_set_input_state(input_none);
    retro_set_audio_sample_batch(audio_tick);
    if (!start_core(1)) return 1;
-   webm_video_hw_ready();
-   CHECK(webm_player.hw_video && webm_player.hw_started);
+   media_video_hw_ready();
+   CHECK(media_player.hw_video && media_player.hw_started);
    decode_busy = output_busy = 1; sink_busy = 2;
    retro_run();
-   CHECK(!webm_player.eof && !sink_calls
-         && rmp4_video_stream_wait_reason(webm_player.mp4vs) == RMP4_VIDEO_WAIT_DECODER);
+   CHECK(!media_player.eof && !sink_calls
+         && rmp4_video_stream_wait_reason(media_player.mp4vs) == RMP4_VIDEO_WAIT_DECODER);
    for (i = 0; i < 30 && !stopped; i++)
    {
       decoded = accepted;
-      before = webm_player.hw_frame.image != 0;
+      before = media_player.hw_frame.image != 0;
       retro_run();
       if (before) CHECK(accepted == decoded);
    }
-   CHECK(stopped && sink_taken && ticks && !webm_player.hw_frame.image);
-   for (i = 0; i < 64 * 48; i++) CHECK(webm_player.fb[i] == UINT32_C(0xa5a5a5a5));
+   CHECK(stopped && sink_taken && ticks && !media_player.hw_frame.image);
+   for (i = 0; i < 64 * 48; i++) CHECK(media_player.fb[i] == UINT32_C(0xa5a5a5a5));
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    CHECK(start_core(1)); sink_busy = 100;
-   for (i = 0; i < 20 && !webm_player.hw_frame.image; i++) retro_run();
-   CHECK(webm_player.hw_frame.image);
+   for (i = 0; i < 20 && !media_player.hw_frame.image; i++) retro_run();
+   CHECK(media_player.hw_frame.image);
    before = abandoned;
    refuse = 1;
    retro_reset();
-   CHECK(!webm_player.hw_frame.image && abandoned > before && !webm_player.hw_video);
+   CHECK(!media_player.hw_frame.image && abandoned > before && !media_player.hw_video);
    memset(&held, 0, sizeof(held));
    expect_software = 1;
    before = sink_calls;
    for (i = 0; i < 5; i++) retro_run();
-   CHECK(cpu_ticks && sink_calls == before && webm_player.fb[0] != UINT32_C(0xa5a5a5a5));
+   CHECK(cpu_ticks && sink_calls == before && media_player.fb[0] != UINT32_C(0xa5a5a5a5));
    expect_software = 0;
    refuse = 0;
    retro_reset();
-   CHECK(webm_player.hw_video);
-   for (i = 0; i < 20 && !webm_player.hw_frame.image; i++) retro_run();
-   CHECK(webm_player.hw_frame.image);
+   CHECK(media_player.hw_video);
+   for (i = 0; i < 20 && !media_player.hw_frame.image; i++) retro_run();
+   CHECK(media_player.hw_frame.image);
    before = abandoned;
-   webm_seek(&webm_player, 0);
-   CHECK(!webm_player.hw_frame.image && abandoned > before);
+   media_seek(&media_player, 0);
+   CHECK(!media_player.hw_frame.image && abandoned > before);
    memset(&held, 0, sizeof(held));
-   for (i = 0; i < 20 && !webm_player.hw_frame.image; i++) retro_run();
-   CHECK(webm_player.hw_frame.image);
+   for (i = 0; i < 20 && !media_player.hw_frame.image; i++) retro_run();
+   CHECK(media_player.hw_frame.image);
    CHECK(retro_serialize_size() == sizeof(state) && retro_serialize(state, sizeof(state)));
    before = abandoned;
    CHECK(retro_unserialize(state, sizeof(state)));
-   CHECK(abandoned > before && webm_player.hw_frame.image);
+   CHECK(abandoned > before && media_player.hw_frame.image);
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    refuse = 1;
@@ -130,7 +130,7 @@ int main(void)
    expect_software = 1;
    before = sink_calls;
    for (i = 0; i < 5; i++) retro_run();
-   CHECK(sink_calls == before && webm_player.fb[0] != UINT32_C(0xa5a5a5a5));
+   CHECK(sink_calls == before && media_player.fb[0] != UINT32_C(0xa5a5a5a5));
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    refuse = 0;
@@ -138,30 +138,30 @@ int main(void)
    CHECK(start_core(1));
    sink_busy = 100;
    sink_ready = 1;
-   for (i = 0; i < 20 && !webm_player.hw_frame.image; i++) retro_run();
-   CHECK(webm_player.hw_video && webm_player.hw_frame.image);
+   for (i = 0; i < 20 && !media_player.hw_frame.image; i++) retro_run();
+   CHECK(media_player.hw_video && media_player.hw_frame.image);
    before = closed;
-   webm_suspend_video_hw();
-   CHECK(!webm_player.hw_video && !webm_player.hw_frame.image && closed > before);
+   media_suspend_video_hw();
+   CHECK(!media_player.hw_video && !media_player.hw_frame.image && closed > before);
    CHECK(opened == closed && exported == abandoned);
    memset(&held, 0, sizeof(held));
    rh265_set_hw_backend(NULL);
    rh265_set_hw_backend(&backend);
    retro_run();
-   CHECK(webm_player.hw_video && !webm_player.hw_restart && opened == closed + 1);
-   webm_suspend_video_hw();
+   CHECK(media_player.hw_video && !media_player.hw_restart && opened == closed + 1);
+   media_suspend_video_hw();
    CHECK(opened == closed && exported == abandoned);
    memset(&held, 0, sizeof(held));
    sink_ready = 0;
    expect_software = 1;
    retro_run();
-   CHECK(!webm_player.hw_video && webm_player.hw_started);
-   webm_suspend_video_hw();
+   CHECK(!media_player.hw_video && media_player.hw_started);
+   media_suspend_video_hw();
    sink_ready = 1;
-   webm_video_hw_ready();
-   CHECK(webm_player.hw_video && webm_player.hw_started);
+   media_video_hw_ready();
+   CHECK(media_player.hw_video && media_player.hw_started);
    retro_unload_game();
-   CHECK(webm_set_video_hw_refresh(NULL, NULL));
+   CHECK(media_set_video_hw_refresh(NULL, NULL));
    rh265_set_hw_backend(NULL);
    printf("Movie GPU lease handoff: %u failures\n", failures);
    return failures ? 1 : 0;

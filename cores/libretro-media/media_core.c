@@ -1,4 +1,4 @@
-/* webm_core -- built-in WebM/MP4 video player core.
+/* media_core -- built-in media player core (WebM/MP4).
  *
  * A dependency-free movie player built entirely on libretro-common.
  * WebM files decode through rwebm (demuxer), rvp9 and, when
@@ -37,12 +37,12 @@
 #include <formats/rmp4_video.h>
 /* rh264 is built as part of the mp4 stack; with it present, Matroska
  * H.264 tracks (V_MPEG4/ISO/AVC) decode too. */
-#define WEBM_HAVE_H264 1
+#define MEDIA_HAVE_H264 1
 #include <formats/rh264.h>
 #endif
 
 #if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC)
-#define WEBM_HAVE_AUDIO 1
+#define MEDIA_HAVE_AUDIO 1
 #include <formats/audio.h>
 #endif
 
@@ -50,7 +50,7 @@
  * physical pages are kept before release.  Covers the demuxers'
  * short-reach references behind their cursors (lacing frames inside
  * the current block, the reorder window) with a wide margin. */
-#define WEBM_DISCARD_MARGIN (4 * 1024 * 1024)
+#define MEDIA_DISCARD_MARGIN (4 * 1024 * 1024)
 
 /* How far the progressive fill is allowed to run ahead of the
  * consumed position.  Together with the discard margin this is the
@@ -58,29 +58,29 @@
  * trims behind the margin, and a file of any size plays inside the
  * window.  Seeks lift the gate (the pending-seek machinery must
  * reach its target). */
-#define WEBM_FILL_LOOKAHEAD (16 * 1024 * 1024)
+#define MEDIA_FILL_LOOKAHEAD (16 * 1024 * 1024)
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
-#define WEBM_CORE_PREFIX(s) libretro_webm_##s
+#define MEDIA_CORE_PREFIX(s) libretro_media_##s
 #else
-#define WEBM_CORE_PREFIX(s) s
+#define MEDIA_CORE_PREFIX(s) s
 #endif
 
 #ifdef HAVE_RWEBP
 #include <formats/rvp8.h>
 #endif
 
-#include "webm_hw.h"
+#include "media_hw.h"
 
-#define WEBM_AUDIO_RATE 48000
-#define WEBM_AUDIO_CHUNK 256
+#define MEDIA_AUDIO_RATE 48000
+#define MEDIA_AUDIO_CHUNK 256
 
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3):
  * used to compute the exact decodable total so container end trimming
  * (DiscardPadding) can clamp emission. */
-static int64_t webm_opus_pkt_frames(const uint8_t *d, size_t n)
+static int64_t media_opus_pkt_frames(const uint8_t *d, size_t n)
 {
    static const int16_t fs[32] = {
       480, 960, 1920, 2880, 480, 960, 1920, 2880,   /* SILK NB/MB      */
@@ -102,13 +102,13 @@ static int64_t webm_opus_pkt_frames(const uint8_t *d, size_t n)
 }
 #endif
 
-static retro_log_printf_t WEBM_CORE_PREFIX(log_cb);
-static retro_video_refresh_t WEBM_CORE_PREFIX(video_cb);
-static retro_audio_sample_t WEBM_CORE_PREFIX(audio_cb);
-static retro_audio_sample_batch_t WEBM_CORE_PREFIX(audio_batch_cb);
-static retro_input_poll_t WEBM_CORE_PREFIX(input_poll_cb);
-static retro_input_state_t WEBM_CORE_PREFIX(input_state_cb);
-static retro_environment_t WEBM_CORE_PREFIX(environ_cb);
+static retro_log_printf_t MEDIA_CORE_PREFIX(log_cb);
+static retro_video_refresh_t MEDIA_CORE_PREFIX(video_cb);
+static retro_audio_sample_t MEDIA_CORE_PREFIX(audio_cb);
+static retro_audio_sample_batch_t MEDIA_CORE_PREFIX(audio_batch_cb);
+static retro_input_poll_t MEDIA_CORE_PREFIX(input_poll_cb);
+static retro_input_state_t MEDIA_CORE_PREFIX(input_state_cb);
+static retro_environment_t MEDIA_CORE_PREFIX(environ_cb);
 
 typedef struct
 {
@@ -136,7 +136,7 @@ typedef struct
 #ifdef HAVE_RWEBP
    rvp8_video  *vp8;
 #endif
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
    rh264_video *h264;
    int          wait_key;            /* prediction chain broken: hold  */
 #endif
@@ -146,7 +146,7 @@ typedef struct
    int          eof;
    int16_t     *silence;
    size_t       silence_frames;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    void        *actx;                /* audio_transfer context          */
    enum audio_type_enum atype;
    int          atrack;              /* audio track index, -1 = none    */
@@ -207,45 +207,45 @@ typedef struct
    unsigned     last_input;          /* previous frame's buttons        */
    int          seeking;             /* suppress presentation           */
    int          pix10;               /* frontend accepted XRGB2101010   */
-} webm_player_t;
+} media_player_t;
 
-#if defined(HAVE_RMP4) && defined(WEBM_HAVE_AUDIO)
-static void webm_mp4_audio_pump(webm_player_t *p);
+#if defined(HAVE_RMP4) && defined(MEDIA_HAVE_AUDIO)
+static void media_mp4_audio_pump(media_player_t *p);
 #endif
-static void webm_native_pump(webm_player_t *p);
-static int webm_ts_cmp(const void *a, const void *b);
+static void media_native_pump(media_player_t *p);
+static int media_ts_cmp(const void *a, const void *b);
 
-static webm_player_t webm_player;
-static webm_hw_refresh_t webm_hw_refresh;
-static void *webm_hw_user;
+static media_player_t media_player;
+static media_hw_refresh_t media_hw_refresh;
+static void *media_hw_user;
 
 #ifdef RARCH_INTERNAL
-bool libretro_webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user)
+bool libretro_media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
 #else
-bool webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user)
+bool media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
 #endif
 {
-   if (webm_player.dt || webm_player.webm
+   if (media_player.dt || media_player.webm
 #ifdef HAVE_RMP4
-         || webm_player.mp4vs
+         || media_player.mp4vs
 #endif
       )
       return false;
-   webm_hw_refresh = cb;
-   webm_hw_user = user;
+   media_hw_refresh = cb;
+   media_hw_user = user;
    return true;
 }
 
 #ifndef HAVE_RMP4
 #ifdef RARCH_INTERNAL
-void libretro_webm_suspend_video_hw(void) { }
+void libretro_media_suspend_video_hw(void) { }
 #else
-void webm_suspend_video_hw(void) { }
+void media_suspend_video_hw(void) { }
 #endif
 #endif
 
 #ifdef HAVE_RMP4
-static void webm_drop_hw(webm_player_t *p)
+static void media_drop_hw(media_player_t *p)
 {
    if (p->hw_frame.image)
       video_hw_frame_abandon(&p->hw_frame);
@@ -253,36 +253,36 @@ static void webm_drop_hw(webm_player_t *p)
 }
 
 #ifdef RARCH_INTERNAL
-void libretro_webm_suspend_video_hw(void)
+void libretro_media_suspend_video_hw(void)
 #else
-void webm_suspend_video_hw(void)
+void media_suspend_video_hw(void)
 #endif
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    if (!p->mp4vs)
       return;
    p->hw_restart_ns = p->vpts_ns;
    p->hw_restart = 1;
-   webm_drop_hw(p);
+   media_drop_hw(p);
    rmp4_video_stream_stop_hw(p->mp4vs);
    p->hw_video = p->hw_started = 0;
 }
 
-static void webm_present_mp4(webm_player_t *p, int have)
+static void media_present_mp4(media_player_t *p, int have)
 {
    if (!p->hw_video)
    {
       if (have)
          rmp4_video_stream_render(p->mp4vs);
-      WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+      MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
       return;
    }
    if (have && !p->hw_frame.image)
       rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame);
-   if (p->hw_frame.image && webm_hw_refresh(webm_hw_user, &p->hw_frame))
+   if (p->hw_frame.image && media_hw_refresh(media_hw_user, &p->hw_frame))
       memset(&p->hw_frame, 0, sizeof(p->hw_frame));
-   WEBM_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+   MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
 }
 #endif
 
@@ -291,22 +291,22 @@ static void webm_present_mp4(webm_player_t *p, int have)
 /* element's MatrixCoefficients; untagged content defaults to BT.601     */
 /* below 720 lines and BT.709 at or above (industry convention).         */
 /* -------------------------------------------------------------------- */
-static const int16_t webm_coef_601[4]  = { 409, 100, 208, 516 };
-static const int16_t webm_coef_709[4]  = { 459,  55, 136, 541 };
-static const int16_t webm_coef_2020[4] = { 431,  48, 167, 548 };
+static const int16_t media_coef_601[4]  = { 409, 100, 208, 516 };
+static const int16_t media_coef_709[4]  = { 459,  55, 136, 541 };
+static const int16_t media_coef_2020[4] = { 431,  48, 167, 548 };
 
-static const int16_t *webm_yuv_coefs(unsigned matrix, unsigned height)
+static const int16_t *media_yuv_coefs(unsigned matrix, unsigned height)
 {
    switch (matrix)
    {
-      case 1:          return webm_coef_709;
-      case 5: case 6:  return webm_coef_601;
-      case 9: case 10: return webm_coef_2020;
-      default:         return height >= 720 ? webm_coef_709 : webm_coef_601;
+      case 1:          return media_coef_709;
+      case 5: case 6:  return media_coef_601;
+      case 9: case 10: return media_coef_2020;
+      default:         return height >= 720 ? media_coef_709 : media_coef_601;
    }
 }
 
-static INLINE uint32_t webm_yuv_px(int y, int u, int v, const int16_t *k)
+static INLINE uint32_t media_yuv_px(int y, int u, int v, const int16_t *k)
 {
    int c = 298 * (y - 16) + 128;
    int r = (c + k[0] * (v - 128)) >> 8;
@@ -323,7 +323,7 @@ static INLINE uint32_t webm_yuv_px(int y, int u, int v, const int16_t *k)
  * channel 8 -> 10 bits via << 2). Used when the frontend was told the format
  * is XRGB2101010 but the decoded stream turned out to be 8-bit (VP8, or VP9
  * profile 0), so the presented buffer matches the announced format. */
-static void webm_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
+static void media_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
       unsigned w, unsigned h)
 {
    unsigned yy, xx;
@@ -344,11 +344,11 @@ static void webm_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
    }
 }
 
-static void webm_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix, int cvsh)
 {
-   const int16_t *k = webm_yuv_coefs(matrix, h);
+   const int16_t *k = media_yuv_coefs(matrix, h);
    unsigned i, j;
    for (j = 0; j < h; j++)
    {
@@ -357,16 +357,16 @@ static void webm_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *vr = v + (j >> cvsh) * uvs;
       uint32_t *dr      = dst + j * w;
       for (i = 0; i < w; i++)
-         dr[i] = webm_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
+         dr[i] = media_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
    }
 }
 
 /* 4:2:0: two luma rows share a chroma row. */
-static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_i420(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix)
 {
-   webm_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1);
+   media_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1);
 }
 
 /* -------------------------------------------------------------------- */
@@ -375,7 +375,7 @@ static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
 /* an index whose marker byte 0b110xxxxx appears at both ends.           */
 /* Returns the number of frames and their sizes; 1 frame = whole chunk.  */
 /* -------------------------------------------------------------------- */
-static int webm_vp9_superframe(const uint8_t *data, size_t size,
+static int media_vp9_superframe(const uint8_t *data, size_t size,
       size_t *sizes, int max_frames)
 {
    uint8_t marker;
@@ -418,7 +418,7 @@ whole:
 /* Decode one demuxed packet; present the shown picture if any.          */
 /* Returns 1 when a picture was presented, 0 otherwise, -1 on error.     */
 /* -------------------------------------------------------------------- */
-static int webm_present_vp9(webm_player_t *p, int show)
+static int media_present_vp9(media_player_t *p, int show)
 {
    const rvp9_fb *fb = &p->vp9->fbs[show];
    unsigned w = (unsigned)fb->w < p->width  ? (unsigned)fb->w : p->width;
@@ -448,22 +448,22 @@ static int webm_present_vp9(webm_player_t *p, int show)
    else
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
+         media_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
             p->vp9->uvs, ct ? ct->matrix_coefficients : 0);
          if (p->pix10)
-            webm_expand_8888_to_2101010(p->fb, p->width, w, h);
+            media_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
-   WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
+   MEDIA_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }
 
-static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
+static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
 {
    if (p->codec == RWEBM_CODEC_VP9)
    {
       size_t sizes[8];
       const uint8_t *frame = pkt->data;
-      int nf     = webm_vp9_superframe(pkt->data, pkt->size, sizes, 8);
+      int nf     = media_vp9_superframe(pkt->data, pkt->size, sizes, 8);
       int i, r, show, last_show = -1;
       for (i = 0; i < nf; i++)
       {
@@ -479,25 +479,25 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
                const char *desc = (profile >= 2)
                   ? "10/12-bit; used by HDR streams"
                   : "8-bit 4:4:4/4:2:2";
-               if (WEBM_CORE_PREFIX(log_cb))
-                  WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-                     "[webm] VP9 profile %u (%s) is not supported; "
+               if (MEDIA_CORE_PREFIX(log_cb))
+                  MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+                     "[media] VP9 profile %u (%s) is not supported; "
                      "only profile 0 (8-bit 4:2:0) can be decoded.\n",
                      profile, desc);
-               if (WEBM_CORE_PREFIX(environ_cb))
+               if (MEDIA_CORE_PREFIX(environ_cb))
                {
                   struct retro_message msg;
                   msg.msg    = (profile >= 2)
                      ? "10-bit/HDR VP9 (profile 2) is not supported"
                      : "This VP9 profile is not supported";
                   msg.frames = 240;
-                  WEBM_CORE_PREFIX(environ_cb)(
+                  MEDIA_CORE_PREFIX(environ_cb)(
                      RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
                }
             }
-            else if (WEBM_CORE_PREFIX(log_cb))
-               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-                  "[webm] VP9 decode error %d.\n", r);
+            else if (MEDIA_CORE_PREFIX(log_cb))
+               MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+                  "[media] VP9 decode error %d.\n", r);
             return -1;
          }
          if (show >= 0)
@@ -505,7 +505,7 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          frame += sizes[i];
       }
       if (last_show >= 0)
-         return webm_present_vp9(p, last_show);
+         return media_present_vp9(p, last_show);
       return 0;
    }
 #ifdef HAVE_RWEBP
@@ -517,9 +517,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
       int shown = pkt->size > 0 && (pkt->data[0] & 0x10);
       if (rvp8_video_decode(p->vp8, pkt->data, pkt->size) != 0)
       {
-         if (WEBM_CORE_PREFIX(log_cb))
-            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[webm] VP8 decode error.\n");
+         if (MEDIA_CORE_PREFIX(log_cb))
+            MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+               "[media] VP8 decode error.\n");
          return -1;
       }
       if (!shown)
@@ -535,18 +535,18 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         media_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0);
          if (p->pix10)
-            webm_expand_8888_to_2101010(p->fb, p->width,
+            media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
-      WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+      MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
       return 1;
    }
 #endif
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
    if (p->codec == RWEBM_CODEC_H264)
    {
       const uint8_t *y, *u, *v;
@@ -562,9 +562,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
       {
          if (pkt->keyframe)
          {
-            if (WEBM_CORE_PREFIX(log_cb))
-               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-                  "[webm] H.264 key frame decode error.\n");
+            if (MEDIA_CORE_PREFIX(log_cb))
+               MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+                  "[media] H.264 key frame decode error.\n");
             return -1;
          }
          p->wait_key = 1;
@@ -584,14 +584,14 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         webm_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0,
                (ch < h) ? 1 : 0);
          if (p->pix10)
-            webm_expand_8888_to_2101010(p->fb, p->width,
+            media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
-      WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+      MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
       return 1;
    }
@@ -599,11 +599,11 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
    return -1;
 }
 
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
 /* Display reordering can leave the last few pictures queued inside the
  * H.264 decoder at end of stream; present one per call.  Returns 1
  * when a picture was presented. */
-static int webm_drain_h264(webm_player_t *p)
+static int media_drain_h264(media_player_t *p)
 {
    const uint8_t *y, *u, *v;
    int ys, uvs, w, h, cw, ch;
@@ -620,26 +620,26 @@ static int webm_drain_h264(webm_player_t *p)
       return 1;
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-      webm_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+      media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
          ct ? ct->matrix_coefficients : 0,
          (ch < h) ? 1 : 0);
       if (p->pix10)
-         webm_expand_8888_to_2101010(p->fb, p->width,
+         media_expand_8888_to_2101010(p->fb, p->width,
             (unsigned)w, (unsigned)h);
    }
-   WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+   MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
       p->width * sizeof(uint32_t));
    return 1;
 }
 #endif
 
-static int webm_ts_cmp(const void *a, const void *b)
+static int media_ts_cmp(const void *a, const void *b)
 {
    int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
    return x < y ? -1 : x > y ? 1 : 0;
 }
 
-static void webm_free_player(webm_player_t *p)
+static void media_free_player(media_player_t *p)
 {
    if (p->vp9)
    {
@@ -650,18 +650,18 @@ static void webm_free_player(webm_player_t *p)
    if (p->vp8)
       rvp8_video_close(p->vp8);
 #endif
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
    if (p->h264)
       rh264_video_close(p->h264);
 #endif
    if (p->webm)
       rwebm_close(p->webm);
 #ifdef HAVE_RMP4
-   webm_drop_hw(p);
+   media_drop_hw(p);
    if (p->mp4vs)
       rmp4_video_stream_close(p->mp4vs);
 #endif
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
       audio_transfer_free(p->actx, p->atype);
    data_transfer_arena_release(&p->aark);
@@ -687,27 +687,27 @@ static void webm_free_player(webm_player_t *p)
 /* -------------------------------------------------------------------- */
 /* libretro entry points.                                                */
 /* -------------------------------------------------------------------- */
-void WEBM_CORE_PREFIX(retro_init)(void) { }
+void MEDIA_CORE_PREFIX(retro_init)(void) { }
 
-void WEBM_CORE_PREFIX(retro_deinit)(void) { }
+void MEDIA_CORE_PREFIX(retro_deinit)(void) { }
 
-unsigned WEBM_CORE_PREFIX(retro_api_version)(void)
+unsigned MEDIA_CORE_PREFIX(retro_api_version)(void)
 {
    return RETRO_API_VERSION;
 }
 
-void WEBM_CORE_PREFIX(retro_set_controller_port_device)(unsigned port,
+void MEDIA_CORE_PREFIX(retro_set_controller_port_device)(unsigned port,
       unsigned device)
 {
    (void)port;
    (void)device;
 }
 
-void WEBM_CORE_PREFIX(retro_get_system_info)(
+void MEDIA_CORE_PREFIX(retro_get_system_info)(
       struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "webm";
+   info->library_name     = "media";
    info->library_version  = "v1";
    info->need_fullpath    = true;
 #ifdef HAVE_RMP4
@@ -717,16 +717,16 @@ void WEBM_CORE_PREFIX(retro_get_system_info)(
 #endif
 }
 
-void WEBM_CORE_PREFIX(retro_get_system_av_info)(
+void MEDIA_CORE_PREFIX(retro_get_system_av_info)(
       struct retro_system_av_info *info)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    memset(info, 0, sizeof(*info));
    info->timing.fps            = p->fps;
-   info->timing.sample_rate    = WEBM_AUDIO_RATE;
-#ifdef WEBM_HAVE_AUDIO
-   if (webm_player.actx)
-      info->timing.sample_rate = (double)webm_player.arate;
+   info->timing.sample_rate    = MEDIA_AUDIO_RATE;
+#ifdef MEDIA_HAVE_AUDIO
+   if (media_player.actx)
+      info->timing.sample_rate = (double)media_player.arate;
 #endif
    info->geometry.base_width   = p->width;
    info->geometry.base_height  = p->height;
@@ -735,13 +735,13 @@ void WEBM_CORE_PREFIX(retro_get_system_av_info)(
    info->geometry.aspect_ratio = (float)p->width / (float)p->height;
 }
 
-void WEBM_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
+void MEDIA_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    struct retro_log_callback log;
    struct retro_vfs_interface_info vfs;
-   WEBM_CORE_PREFIX(environ_cb) = cb;
+   MEDIA_CORE_PREFIX(environ_cb) = cb;
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
-      WEBM_CORE_PREFIX(log_cb) = log.log;
+      MEDIA_CORE_PREFIX(log_cb) = log.log;
    /* Route file access through the frontend's VFS when it offers
     * one: the core's reads all go through filestream (via
     * data_transfer), so this is what makes archive members and
@@ -756,43 +756,43 @@ void WEBM_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       filestream_vfs_init(&vfs);
 }
 
-void WEBM_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
+void MEDIA_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 {
-   WEBM_CORE_PREFIX(video_cb) = cb;
+   MEDIA_CORE_PREFIX(video_cb) = cb;
 }
 
-void WEBM_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
+void MEDIA_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
 {
-   WEBM_CORE_PREFIX(audio_cb) = cb;
+   MEDIA_CORE_PREFIX(audio_cb) = cb;
 }
 
-void WEBM_CORE_PREFIX(retro_set_audio_sample_batch)(
+void MEDIA_CORE_PREFIX(retro_set_audio_sample_batch)(
       retro_audio_sample_batch_t cb)
 {
-   WEBM_CORE_PREFIX(audio_batch_cb) = cb;
+   MEDIA_CORE_PREFIX(audio_batch_cb) = cb;
 }
 
-void WEBM_CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
+void MEDIA_CORE_PREFIX(retro_set_input_poll)(retro_input_poll_t cb)
 {
-   WEBM_CORE_PREFIX(input_poll_cb) = cb;
+   MEDIA_CORE_PREFIX(input_poll_cb) = cb;
 }
 
-void WEBM_CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
+void MEDIA_CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 {
-   WEBM_CORE_PREFIX(input_state_cb) = cb;
+   MEDIA_CORE_PREFIX(input_state_cb) = cb;
 }
 
-void WEBM_CORE_PREFIX(retro_reset)(void)
+void MEDIA_CORE_PREFIX(retro_reset)(void)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    if (p->webm)
       rwebm_rewind(p->webm);
 #ifdef HAVE_RMP4
-   webm_drop_hw(p);
+   media_drop_hw(p);
    if (p->mp4vs)
    {
       rmp4_video_stream_rewind(p->mp4vs);
-      p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
+      p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
    }
 #endif
    if (p->vp9)
@@ -807,7 +807,7 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
       p->vp8 = rvp8_video_open();
    }
 #endif
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
    if (p->h264)
    {
       const rwebm_track *vt = rwebm_get_track(p->webm, p->vtrack);
@@ -819,7 +819,7 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
       p->wait_key = 0;
    }
 #endif
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
       audio_transfer_seek(p->actx, p->atype, 0);
    p->apos    = 0;
@@ -836,10 +836,10 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
  * rewinds and decodes forward discarding samples (every codec here
  * decodes far faster than real time, so even a long skip is a
  * fraction of a second).  Returns the position actually reached. */
-#ifdef WEBM_HAVE_AUDIO
-static bool webm_seek_audio(webm_player_t *p, int64_t want)
+#ifdef MEDIA_HAVE_AUDIO
+static bool media_seek_audio(media_player_t *p, int64_t want)
 {
-   int16_t scratch[WEBM_AUDIO_CHUNK * 2];
+   int16_t scratch[MEDIA_AUDIO_CHUNK * 2];
    if (!p->actx)
       return true;
    if (!audio_transfer_seek(p->actx, p->atype, 0))
@@ -853,8 +853,8 @@ static bool webm_seek_audio(webm_player_t *p, int64_t want)
       size_t chunk = (size_t)(want - p->apos);
       size_t got   = 0;
       int r;
-      if (chunk > WEBM_AUDIO_CHUNK)
-         chunk = WEBM_AUDIO_CHUNK;
+      if (chunk > MEDIA_AUDIO_CHUNK)
+         chunk = MEDIA_AUDIO_CHUNK;
       r = audio_transfer_read_s16(p->actx, p->atype, scratch, chunk, &got);
       p->apos += (int64_t)got;
       if (r != AUDIO_PROCESS_NEXT || !got)
@@ -872,7 +872,7 @@ static bool webm_seek_audio(webm_player_t *p, int64_t want)
  * slot itself and target_ns only clamps (save-state restore, where
  * the slot is exact but the pts clock may run ahead of it under
  * display reordering). */
-static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
+static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       int64_t to_slot)
 {
    if (target_ns < 0)
@@ -894,9 +894,9 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
    if (p->mp4vs)
    {
       int64_t ms;
-      webm_drop_hw(p);
+      media_drop_hw(p);
       ms = rmp4_video_stream_seek_ms(p->mp4vs, target_ns / 1000000);
-      p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
+      p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
       p->play_ns = p->vpts_ns;
       p->eof     = 0;
@@ -961,7 +961,7 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
          p->vp8 = rvp8_video_open();
       }
 #endif
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
       if (p->h264)
       {
          const rwebm_track *vt = rwebm_get_track(p->webm, p->vtrack);
@@ -982,7 +982,7 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
             int r;
             if (pkt.track != p->vtrack || pkt.timestamp < kts)
                continue;
-            r = webm_decode_packet(p, &pkt);
+            r = media_decode_packet(p, &pkt);
             if (r < 0)
                break;
             if (r > 0)
@@ -996,13 +996,13 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
                p->seeking = shown < tidx;
             }
          }
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
          /* out of packets with pictures still queued for display
           * reordering: drain up to and including the target slot */
          while (shown <= tidx && p->codec == RWEBM_CODEC_H264)
          {
             p->seeking = shown < tidx;
-            if (!webm_drain_h264(p))
+            if (!media_drain_h264(p))
                break;
             shown++;
          }
@@ -1019,12 +1019,12 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
       p->vshown  = (int64_t)tidx + 1;
    }
 
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
    {
       int64_t want = (int64_t)((double)p->vpts_ns * 1e-9
             * (double)p->arate);
-      webm_seek_audio(p, want);
+      media_seek_audio(p, want);
    }
 #endif
    return p->vpts_ns;
@@ -1032,25 +1032,25 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
 
 /* Edge-triggered transport controls: left/right seek 10 seconds,
  * L/R seek a minute. */
-static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
+static int64_t media_seek(media_player_t *p, int64_t target_ns)
 {
-   return webm_seek_internal(p, target_ns, -1);
+   return media_seek_internal(p, target_ns, -1);
 }
 
-static void webm_check_input(webm_player_t *p)
+static void media_check_input(media_player_t *p)
 {
    unsigned cur = 0;
    int64_t  delta = 0;
-   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+   if (MEDIA_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_LEFT))
       cur |= 1;
-   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+   if (MEDIA_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_RIGHT))
       cur |= 2;
-   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+   if (MEDIA_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_L))
       cur |= 4;
-   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+   if (MEDIA_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_R))
       cur |= 8;
    if ((cur & 1) && !(p->last_input & 1))
@@ -1065,7 +1065,7 @@ static void webm_check_input(webm_player_t *p)
    if (delta)
    {
       int64_t target = p->vpts_ns + delta;
-      int64_t pos    = webm_seek(p, target);
+      int64_t pos    = media_seek(p, target);
       /* The walk stops at the partial-read wall, landing as far as
        * the file has arrived; remember the real target and keep
        * retrying from the fill pump until it is reachable, so a seek
@@ -1095,31 +1095,31 @@ static void webm_check_input(webm_player_t *p)
       msg.target   = RETRO_MESSAGE_TARGET_OSD;
       msg.type     = RETRO_MESSAGE_TYPE_STATUS;
       msg.progress = -1;
-      WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT,
+      MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT,
             &msg);
    }
 }
 
 #ifdef RARCH_INTERNAL
-void libretro_webm_video_hw_ready(void)
+void libretro_media_video_hw_ready(void)
 #else
-void webm_video_hw_ready(void)
+void media_video_hw_ready(void)
 #endif
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
       if (!p->hw_started)
       {
          p->hw_started = 1;
-         p->hw_video = webm_hw_refresh && webm_hw_refresh(webm_hw_user, NULL)
+         p->hw_video = media_hw_refresh && media_hw_refresh(media_hw_user, NULL)
             && rmp4_video_stream_set_hw(p->mp4vs, 1);
          if (p->hw_restart)
          {
             int64_t target = p->hw_restart_ns;
             p->hw_restart = 0;
-            if (webm_seek(p, target) + 500000000 < target)
+            if (media_seek(p, target) + 500000000 < target)
                p->pending_seek_ns = target;
          }
       }
@@ -1131,19 +1131,19 @@ void webm_video_hw_ready(void)
 #endif
 }
 
-void WEBM_CORE_PREFIX(retro_run)(void)
+void MEDIA_CORE_PREFIX(retro_run)(void)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    rwebm_packet pkt;
 
 #ifdef RARCH_INTERNAL
-   libretro_webm_video_hw_ready();
+   libretro_media_video_hw_ready();
 #else
-   webm_video_hw_ready();
+   media_video_hw_ready();
 #endif
 
-   WEBM_CORE_PREFIX(input_poll_cb)();
-   webm_check_input(p);
+   MEDIA_CORE_PREFIX(input_poll_cb)();
+   media_check_input(p);
 
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -1158,23 +1158,23 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             && (   p->pending_seek_ns >= 0
                 || data_transfer_avail(p->dt)
                    < rmp4_video_stream_consumed(p->mp4vs)
-                     + WEBM_FILL_LOOKAHEAD))
+                     + MEDIA_FILL_LOOKAHEAD))
       {
          size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
          rmp4_video_stream_set_avail(p->mp4vs, avail);
          if (p->pending_seek_ns >= 0)
          {
-            int64_t pos = webm_seek(p, p->pending_seek_ns);
+            int64_t pos = media_seek(p, p->pending_seek_ns);
             if (   data_transfer_complete(p->dt)
                 || data_transfer_capped(p->dt)
                 || pos + 500000000 >= p->pending_seek_ns)
                p->pending_seek_ns = -1;
          }
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
          if (p->agather)
          {
             rmp4_set_avail(p->agather, avail);
-            webm_mp4_audio_pump(p);
+            media_mp4_audio_pump(p);
          }
 #endif
       }
@@ -1187,12 +1187,12 @@ void WEBM_CORE_PREFIX(retro_run)(void)
           && !p->fill_warned)
       {
          p->fill_warned = 1;
-         if (WEBM_CORE_PREFIX(log_cb))
-            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+         if (MEDIA_CORE_PREFIX(log_cb))
+            MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
                data_transfer_capped(p->dt)
-                  ? "[webm] file exceeds this platform's read "
+                  ? "[media] file exceeds this platform's read "
                     "window; playing the prefix.\n"
-                  : "[webm] file read ended short; playing what "
+                  : "[media] file read ended short; playing what "
                     "arrived.\n");
       }
 
@@ -1206,9 +1206,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          size_t mfloor  = rmp4_video_stream_media_floor(p->mp4vs);
          size_t consumed = rmp4_video_stream_consumed(p->mp4vs);
          if (   consumed > mfloor
-             && consumed - mfloor > WEBM_DISCARD_MARGIN)
+             && consumed - mfloor > MEDIA_DISCARD_MARGIN)
          {
-            data_transfer_discard(p->dt, consumed - WEBM_DISCARD_MARGIN);
+            data_transfer_discard(p->dt, consumed - MEDIA_DISCARD_MARGIN);
             p->discarded = 1;
          }
       }
@@ -1246,17 +1246,17 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             p->vpts_ns += (int64_t)dur_ms * 1000000;
             p->vshown++;
          }
-         webm_present_mp4(p, have);
+         media_present_mp4(p, have);
       }
       if (p->eof && !p->hw_frame.image)
       {
          int audio_done = 1;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
          if (p->actx && !p->aeof)
             audio_done = 0;
 #endif
          if (audio_done)
-            WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+            MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
       }
       goto audio;
    }
@@ -1269,18 +1269,18 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          && !data_transfer_capped(p->dt)
          && (   p->pending_seek_ns >= 0
              || data_transfer_avail(p->dt)
-                < rwebm_tell(p->webm) + WEBM_FILL_LOOKAHEAD))
+                < rwebm_tell(p->webm) + MEDIA_FILL_LOOKAHEAD))
    {
       size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
       rwebm_set_avail(p->webm, avail);
       if (p->wgather)
       {
          rwebm_set_avail(p->wgather, avail);
-         webm_native_pump(p);
+         media_native_pump(p);
       }
       if (p->pending_seek_ns >= 0)
       {
-         int64_t pos = webm_seek(p, p->pending_seek_ns);
+         int64_t pos = media_seek(p, p->pending_seek_ns);
          if (   data_transfer_complete(p->dt)
              || data_transfer_capped(p->dt)
              || pos + 500000000 >= p->pending_seek_ns)
@@ -1296,12 +1296,12 @@ void WEBM_CORE_PREFIX(retro_run)(void)
        && !p->fill_warned)
    {
       p->fill_warned = 1;
-      if (WEBM_CORE_PREFIX(log_cb))
-         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+      if (MEDIA_CORE_PREFIX(log_cb))
+         MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
             data_transfer_capped(p->dt)
-               ? "[webm] file exceeds this platform's read "
+               ? "[media] file exceeds this platform's read "
                  "window; playing the prefix.\n"
-               : "[webm] file read ended short; playing what "
+               : "[media] file read ended short; playing what "
                  "arrived.\n");
    }
 
@@ -1315,9 +1315,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       size_t mfloor   = rwebm_media_floor(p->webm);
       size_t consumed = rwebm_tell(p->webm);
       if (   consumed > mfloor
-          && consumed - mfloor > WEBM_DISCARD_MARGIN)
+          && consumed - mfloor > MEDIA_DISCARD_MARGIN)
       {
-         data_transfer_discard(p->dt, consumed - WEBM_DISCARD_MARGIN);
+         data_transfer_discard(p->dt, consumed - MEDIA_DISCARD_MARGIN);
          p->discarded = 1;
       }
    }
@@ -1346,13 +1346,13 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             break;
          if (r != 1)
          {
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
             /* out of packets: hand out the pictures display reordering
              * left queued before ending the stream */
             if (p->codec == RWEBM_CODEC_H264)
             {
                p->seeking = p->vshown < target_slot;
-               if (webm_drain_h264(p))
+               if (media_drain_h264(p))
                {
                   if (!p->seeking)
                      shown_now = 1;
@@ -1371,7 +1371,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          /* dropped intermediates skip colour conversion, like the
           * seek catch-up */
          p->seeking = p->vshown < target_slot;
-         presented = webm_decode_packet(p, &pkt);
+         presented = media_decode_packet(p, &pkt);
          if (presented < 0)
          {
             p->seeking = 0;
@@ -1392,7 +1392,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       }
       p->seeking = 0;
       if (!shown_now)   /* nothing due this run: hold the picture */
-         WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+         MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
       /* every display slot shown and a further interval elapsed: the
        * stream is over (the packet reader no longer runs each frame,
@@ -1405,28 +1405,28 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    else
    {
       int audio_done = 1;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
       if (p->actx && !p->aeof)
          audio_done = 0;
 #endif
-      WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+      MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
          p->width * sizeof(uint32_t));
       if (audio_done)
-         WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+         MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
    }
 
 #ifdef HAVE_RMP4
 audio:
 #endif
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (p->actx && !p->aeof)
    {
       /* Emit decoded audio up to the presented frame's timestamp plus
        * one nominal frame of lead; at video EOF, drain about a frame
        * interval per run so the frontend's audio pacing continues to
        * throttle us through the tail. */
-      int16_t buf[WEBM_AUDIO_CHUNK * 2];
-      int16_t st[WEBM_AUDIO_CHUNK * 2];
+      int16_t buf[MEDIA_AUDIO_CHUNK * 2];
+      int16_t st[MEDIA_AUDIO_CHUNK * 2];
       /* the wall clock, not the picture's timestamp: through a slow
        * stretch of a variable-rate file the picture holds while real
        * time - and the audience's audio - keeps moving */
@@ -1443,8 +1443,8 @@ audio:
          size_t want = (size_t)(target - p->apos);
          size_t got = 0;
          int r;
-         if (want > WEBM_AUDIO_CHUNK)
-            want = WEBM_AUDIO_CHUNK;
+         if (want > MEDIA_AUDIO_CHUNK)
+            want = MEDIA_AUDIO_CHUNK;
          r = audio_transfer_read_s16(p->actx, p->atype, buf, want, &got);
          if (got)
          {
@@ -1456,7 +1456,7 @@ audio:
                   st[2 * i2] = st[2 * i2 + 1] = buf[i2];
                out = st;
             }
-            WEBM_CORE_PREFIX(audio_batch_cb)(out, got);
+            MEDIA_CORE_PREFIX(audio_batch_cb)(out, got);
             p->apos += (int64_t)got;
          }
          if (r != AUDIO_PROCESS_NEXT || !got)
@@ -1468,7 +1468,7 @@ audio:
    }
    else
 #endif
-   WEBM_CORE_PREFIX(audio_batch_cb)(p->silence, p->silence_frames);
+   MEDIA_CORE_PREFIX(audio_batch_cb)(p->silence, p->silence_frames);
 }
 
 
@@ -1480,7 +1480,7 @@ audio:
  * out of order; the sorted multiset is the display timeline), and the
  * audio decoder is rebased under the demuxed growth contract, its
  * exact playable length growing with the packets. */
-static void webm_native_pump(webm_player_t *p)
+static void media_native_pump(media_player_t *p)
 {
    rwebm_packet pkt;
    int agrew = 0;
@@ -1488,7 +1488,7 @@ static void webm_native_pump(webm_player_t *p)
       return;
    while (rwebm_read_packet(p->wgather, &pkt) == 1)
    {
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
       if (p->atrack >= 0 && pkt.track == p->atrack)
       {
          if (!data_transfer_arena_ensure(&p->aark,
@@ -1509,7 +1509,7 @@ static void webm_native_pump(webm_player_t *p)
          p->asizes[p->anpkts++] = (uint32_t)pkt.size;
          p->apkts_used         += pkt.size;
          if (p->atype == AUDIO_TYPE_OPUS)
-            p->atoc += webm_opus_pkt_frames(pkt.data, pkt.size);
+            p->atoc += media_opus_pkt_frames(pkt.data, pkt.size);
          if (pkt.discard_padding > 0)
             p->adiscard_ns += pkt.discard_padding;
          agrew = 1;
@@ -1537,10 +1537,10 @@ static void webm_native_pump(webm_player_t *p)
    }
    if (p->vts_unsorted)
    {
-      qsort(p->vts, (size_t)p->nvts, sizeof(int64_t), webm_ts_cmp);
+      qsort(p->vts, (size_t)p->nvts, sizeof(int64_t), media_ts_cmp);
       p->vts_unsorted = 0;
    }
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (agrew)
    {
       /* running exact playable length (binds only at the tail, long
@@ -1579,13 +1579,13 @@ static void webm_native_pump(webm_player_t *p)
  * inside), audio through the audio_transfer demuxed arms (AAC, Opus,
  * Vorbis).  8-bit XRGB8888 output. */
 
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
 /* Append every audio packet the fill has reached to the growable
  * blob, then rebase the decoder onto the (possibly realloc-moved)
  * arrays under audio_transfer's demuxed growth contract.  The gather
  * demuxer stops at the partial-read wall (nothing consumed) and
  * resumes exactly there next call. */
-static void webm_mp4_audio_pump(webm_player_t *p)
+static void media_mp4_audio_pump(media_player_t *p)
 {
    rmp4_packet pkt;
    int grew = 0;
@@ -1613,7 +1613,7 @@ static void webm_mp4_audio_pump(webm_player_t *p)
       p->apkts_used         += pkt.size;
 #ifdef HAVE_ROPUS
       if (p->atype == AUDIO_TYPE_OPUS)
-         p->atoc += webm_opus_pkt_frames(pkt.data, pkt.size);
+         p->atoc += media_opus_pkt_frames(pkt.data, pkt.size);
 #endif
       grew = 1;
    }
@@ -1631,19 +1631,19 @@ static void webm_mp4_audio_pump(webm_player_t *p)
 }
 #endif
 
-static bool webm_load_mp4(webm_player_t *p)
+static bool media_load_mp4(media_player_t *p)
 {
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    unsigned w = 0, h = 0;
    int nframes = 0, loops = 0;
    int64_t dur_ns = 0;
 
-   if (!WEBM_CORE_PREFIX(environ_cb)(
+   if (!MEDIA_CORE_PREFIX(environ_cb)(
             RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      if (WEBM_CORE_PREFIX(log_cb))
-         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[webm] XRGB8888 is not supported.\n");
+      if (MEDIA_CORE_PREFIX(log_cb))
+         MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[media] XRGB8888 is not supported.\n");
       return false;
    }
 
@@ -1663,9 +1663,9 @@ static bool webm_load_mp4(webm_player_t *p)
       if (!need_more || data_transfer_failed(p->dt)
             || data_transfer_complete(p->dt))
       {
-         if (WEBM_CORE_PREFIX(log_cb))
-            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[webm] No supported (H.264/HEVC/VP9/VP8) MP4 video track.\n");
+         if (MEDIA_CORE_PREFIX(log_cb))
+            MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+               "[media] No supported (H.264/HEVC/VP9/VP8) MP4 video track.\n");
          return false;
       }
       data_transfer_iterate(p->dt, 512 * 1024);
@@ -1686,7 +1686,7 @@ static bool webm_load_mp4(webm_player_t *p)
    /* Audio and duration come from a second, persistent demuxer over
     * the same buffer: the audio-gather cursor.  It walks only as far
     * as the fill has reached, appending packets as they arrive
-    * (webm_mp4_audio_pump), so playback starts without the old
+    * (media_mp4_audio_pump), so playback starts without the old
     * whole-file packet walk. */
    {
       int need_more = 0;
@@ -1698,7 +1698,7 @@ static bool webm_load_mp4(webm_player_t *p)
       if (m)
       {
          dur_ns = rmp4_duration_ns(m);
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
          {
             const rmp4_track *at = NULL;
             int i, atrack = -1;
@@ -1761,7 +1761,7 @@ static bool webm_load_mp4(webm_player_t *p)
 #endif
                if (p->atotal < 0 && p->atype != AUDIO_TYPE_VORBIS)
                   p->atotal = 0;
-               webm_mp4_audio_pump(p);   /* what has arrived so far */
+               media_mp4_audio_pump(p);   /* what has arrived so far */
                p->actx = audio_transfer_new(p->atype);
                if (p->actx
                      && audio_transfer_set_demuxed_ptr(p->actx,
@@ -1776,9 +1776,9 @@ static bool webm_load_mp4(webm_player_t *p)
                         &p->ach, &p->arate, NULL)
                      && p->ach >= 1 && p->ach <= 2 && p->arate)
                {
-                  if (WEBM_CORE_PREFIX(log_cb))
-                     WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-                        "[webm] mp4 audio: %s, %u Hz, %u ch, "
+                  if (MEDIA_CORE_PREFIX(log_cb))
+                     MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+                        "[media] mp4 audio: %s, %u Hz, %u ch, "
                         "%u packets in the tables.\n",
                         p->atype == AUDIO_TYPE_AAC ? "AAC"
                         : p->atype == AUDIO_TYPE_OPUS ? "Opus"
@@ -1787,9 +1787,9 @@ static bool webm_load_mp4(webm_player_t *p)
                }
                else
                {
-                  if (WEBM_CORE_PREFIX(log_cb))
-                     WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-                        "[webm] mp4 audio track unusable; "
+                  if (MEDIA_CORE_PREFIX(log_cb))
+                     MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+                        "[media] mp4 audio track unusable; "
                         "playing silent.\n");
                   if (p->actx)
                      audio_transfer_free(p->actx, p->atype);
@@ -1801,7 +1801,7 @@ static bool webm_load_mp4(webm_player_t *p)
                }
             }
          }
-#endif /* WEBM_HAVE_AUDIO */
+#endif /* MEDIA_HAVE_AUDIO */
       }
       if (m)
          rmp4_close(m);
@@ -1826,24 +1826,24 @@ static bool webm_load_mp4(webm_player_t *p)
 
    p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
       sizeof(uint32_t));
-   p->silence_frames = (size_t)(WEBM_AUDIO_RATE / p->fps) + 1;
+   p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
    if (!p->fb || !p->silence)
       return false;
    rmp4_video_stream_set_output(p->mp4vs, p->fb);
 
-   if (WEBM_CORE_PREFIX(log_cb))
-      WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-         "[webm] mp4 %ux%u, %.3f fps, %d frames.\n",
+   if (MEDIA_CORE_PREFIX(log_cb))
+      MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+         "[media] mp4 %ux%u, %.3f fps, %d frames.\n",
          p->width, p->height, p->fps, nframes);
    return true;
 }
 #endif /* HAVE_RMP4 */
 
-bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
+bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    enum retro_pixel_format fmt10 = RETRO_PIXEL_FORMAT_XRGB2101010;
    int want10 = 0;
@@ -1882,7 +1882,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          goto error;
    }
    p->file_len = len;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    data_transfer_arena_init(&p->aark, (size_t)len);
 #endif
 
@@ -1896,7 +1896,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
              || !memcmp(p->file_buf + 4, "moov", 4)
              || !memcmp(p->file_buf + 4, "styp", 4)))
    {
-      if (webm_load_mp4(p))
+      if (media_load_mp4(p))
          return true;
       goto error;
    }
@@ -1914,18 +1914,18 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
     * that do not recognise the query leave want10 = 0 (safe: plain 8-bit). */
    {
       bool cap10 = false;
-      if (WEBM_CORE_PREFIX(environ_cb)(
+      if (MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE, &cap10)
             && cap10
-            && WEBM_CORE_PREFIX(environ_cb)(
+            && MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
          want10 = 1;
-      else if (!WEBM_CORE_PREFIX(environ_cb)(
+      else if (!MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
       {
-         if (WEBM_CORE_PREFIX(log_cb))
-            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[webm] XRGB8888 is not supported.\n");
+         if (MEDIA_CORE_PREFIX(log_cb))
+            MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+               "[media] XRGB8888 is not supported.\n");
          goto error;
       }
    }
@@ -1957,7 +1957,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          vt = t;
          break;
       }
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
       if (t->codec == RWEBM_CODEC_H264 && t->codec_private_size
             && p->vtrack < 0)
       {
@@ -1973,7 +1973,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       }
 #endif
    }
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    p->atrack = -1;
    for (i = 0; i < rwebm_num_tracks(p->webm); i++)
    {
@@ -2007,9 +2007,9 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
    if (p->vtrack < 0 || !vt || !vt->width || !vt->height)
    {
-      if (WEBM_CORE_PREFIX(log_cb))
-         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[webm] No supported (H.264/VP8/VP9) video track found.\n");
+      if (MEDIA_CORE_PREFIX(log_cb))
+         MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[media] No supported (H.264/VP8/VP9) video track found.\n");
       goto error;
    }
    p->codec  = vt->codec;
@@ -2029,7 +2029,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             data_transfer_avail(p->dt), &need_more);
       if (!p->wgather)
          goto error;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
       if (p->atrack >= 0)
       {
          const rwebm_track *at0 = rwebm_get_track(p->webm, p->atrack);
@@ -2048,7 +2048,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
       for (;;)
       {
-         webm_native_pump(p);
+         media_native_pump(p);
          if (p->nvts >= 512
                || data_transfer_complete(p->dt)
                || data_transfer_failed(p->dt))
@@ -2057,7 +2057,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          rwebm_set_avail(p->webm, data_transfer_avail(p->dt));
          rwebm_set_avail(p->wgather, data_transfer_avail(p->dt));
       }
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
       if (p->atrack >= 0 && p->anpkts)
       {
          const rwebm_track *at = rwebm_get_track(p->webm, p->atrack);
@@ -2074,18 +2074,18 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
                   &p->ach, &p->arate, NULL)
                && p->ach >= 1 && p->ach <= 2 && p->arate)
          {
-            if (WEBM_CORE_PREFIX(log_cb))
-               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-                  "[webm] audio: %s, %u Hz, %u ch.\n",
+            if (MEDIA_CORE_PREFIX(log_cb))
+               MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+                  "[media] audio: %s, %u Hz, %u ch.\n",
                   p->atype == AUDIO_TYPE_OPUS ? "Opus"
                   : p->atype == AUDIO_TYPE_AAC ? "AAC" : "Vorbis",
                   p->arate, p->ach);
          }
          else
          {
-            if (WEBM_CORE_PREFIX(log_cb))
-               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-                  "[webm] audio track unusable; playing silent.\n");
+            if (MEDIA_CORE_PREFIX(log_cb))
+               MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+                  "[media] audio track unusable; playing silent.\n");
             if (p->actx)
                audio_transfer_free(p->actx, p->atype);
             p->actx = NULL;
@@ -2129,7 +2129,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       if (!p->vp9)
          goto error;
    }
-#ifdef WEBM_HAVE_H264
+#ifdef MEDIA_HAVE_H264
    else if (p->codec == RWEBM_CODEC_H264)
    {
       p->h264 = rh264_video_open();
@@ -2150,7 +2150,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
       sizeof(uint32_t));
-   p->silence_frames = (size_t)(WEBM_AUDIO_RATE / p->fps) + 1;
+   p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    /* pace from the first frame's timestamp, wherever the container
     * starts its clock */
@@ -2159,20 +2159,20 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    if (!p->fb || !p->silence)
       goto error;
 
-   if (WEBM_CORE_PREFIX(log_cb))
-      WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-         "[webm] %ux%u %s, %.3f fps, %d video packets.\n",
+   if (MEDIA_CORE_PREFIX(log_cb))
+      MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+         "[media] %ux%u %s, %.3f fps, %d video packets.\n",
          p->width, p->height,
          p->codec == RWEBM_CODEC_VP9 ? "VP9"
          : p->codec == RWEBM_CODEC_H264 ? "H.264" : "VP8", p->fps, p->nvts);
    return true;
 
 error:
-   webm_free_player(p);
+   media_free_player(p);
    return false;
 }
 
-bool WEBM_CORE_PREFIX(retro_load_game_special)(unsigned type,
+bool MEDIA_CORE_PREFIX(retro_load_game_special)(unsigned type,
       const struct retro_game_info *info, size_t num)
 {
    (void)type;
@@ -2181,23 +2181,23 @@ bool WEBM_CORE_PREFIX(retro_load_game_special)(unsigned type,
    return false;
 }
 
-void WEBM_CORE_PREFIX(retro_unload_game)(void)
+void MEDIA_CORE_PREFIX(retro_unload_game)(void)
 {
-   webm_free_player(&webm_player);
+   media_free_player(&media_player);
 }
 
-unsigned WEBM_CORE_PREFIX(retro_get_region)(void)
+unsigned MEDIA_CORE_PREFIX(retro_get_region)(void)
 {
    return RETRO_REGION_NTSC;
 }
 
-void *WEBM_CORE_PREFIX(retro_get_memory_data)(unsigned id)
+void *MEDIA_CORE_PREFIX(retro_get_memory_data)(unsigned id)
 {
    (void)id;
    return NULL;
 }
 
-size_t WEBM_CORE_PREFIX(retro_get_memory_size)(unsigned id)
+size_t MEDIA_CORE_PREFIX(retro_get_memory_size)(unsigned id)
 {
    (void)id;
    return 0;
@@ -2207,25 +2207,25 @@ size_t WEBM_CORE_PREFIX(retro_get_memory_size)(unsigned id)
  * frontend's save-state machinery a resume feature - saving on exit
  * and loading on start picks playback up where it left off, restored
  * through the same seek path the transport controls use. */
-#define WEBM_STATE_SIZE 40
+#define MEDIA_STATE_SIZE 40
 
-size_t WEBM_CORE_PREFIX(retro_serialize_size)(void)
+size_t MEDIA_CORE_PREFIX(retro_serialize_size)(void)
 {
-   return WEBM_STATE_SIZE;
+   return MEDIA_STATE_SIZE;
 }
 
-bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
+bool MEDIA_CORE_PREFIX(retro_serialize)(void *data, size_t size)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    uint8_t *d = (uint8_t*)data;
    uint64_t v = (uint64_t)p->vpts_ns;
    uint64_t s = (uint64_t)p->vshown;
    uint64_t clock = (uint64_t)p->play_ns;
    uint64_t audio_pos = 0;
    int i;
-   if (size < WEBM_STATE_SIZE || !d || !p->file_buf)
+   if (size < MEDIA_STATE_SIZE || !d || !p->file_buf)
       return false;
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    audio_pos = (uint64_t)p->apos;
 #endif
    d[0] = 'W'; d[1] = 'P'; d[2] = 'O'; d[3] = 'S';
@@ -2236,7 +2236,7 @@ bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
     * the end instead of at it.  Older states leave this zero, which is
     * what they meant. */
    d[5] = (uint8_t)(p->eof ? 1 : 0);
-#ifdef WEBM_HAVE_AUDIO
+#ifdef MEDIA_HAVE_AUDIO
    if (p->aeof)
       d[5] |= 2;
 #endif
@@ -2250,9 +2250,9 @@ bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
    return true;
 }
 
-bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
+bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 {
-   webm_player_t *p = &webm_player;
+   media_player_t *p = &media_player;
    const uint8_t *d = (const uint8_t*)data;
    uint64_t v = 0, s = 0, clock = 0, audio_pos = 0;
    int i;
@@ -2266,7 +2266,7 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
       return false;
    if (d[4] == 3)
    {
-      if (size < WEBM_STATE_SIZE)
+      if (size < MEDIA_STATE_SIZE)
          return false;
       for (i = 0; i < 8; i++)
       {
@@ -2286,11 +2286,11 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
             data_transfer_refill(p->dt, 0);
             p->discarded = 0;
          }
-         webm_drop_hw(p);
+         media_drop_hw(p);
          if (rmp4_video_stream_seek_frame(p->mp4vs,
                s > 0 ? (int)s - 1 : 0) < 0)
             return false;
-         p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
+         p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
          if (s > 0)
          {
             if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1)
@@ -2304,15 +2304,15 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
       else
 #endif
       if (s > 0)
-         webm_seek_internal(p, (int64_t)v, (int64_t)s - 1);
+         media_seek_internal(p, (int64_t)v, (int64_t)s - 1);
       else
-         WEBM_CORE_PREFIX(retro_reset)();
+         MEDIA_CORE_PREFIX(retro_reset)();
       p->vpts_ns = (int64_t)v;
       p->vshown  = (int64_t)s;
       p->play_ns = (int64_t)clock;
       p->eof     = (d[5] & 1) != 0;
-#ifdef WEBM_HAVE_AUDIO
-      if (!webm_seek_audio(p, (int64_t)audio_pos))
+#ifdef MEDIA_HAVE_AUDIO
+      if (!media_seek_audio(p, (int64_t)audio_pos))
          return false;
       p->apos = (int64_t)audio_pos;
       p->aeof = (d[5] & 2) != 0;
@@ -2330,10 +2330,10 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
        * using the timestamp, whose own table is exact */
 #ifdef HAVE_RMP4
       if (p->mp4vs)
-         webm_seek(p, (int64_t)v);
+         media_seek(p, (int64_t)v);
       else
 #endif
-         webm_seek_internal(p, (int64_t)v,
+         media_seek_internal(p, (int64_t)v,
                s > 0 ? (int64_t)s - 1 : 0);
       /* a state taken after the last frame restores to the end, with
        * that frame held, rather than to just before it */
@@ -2343,13 +2343,13 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
    }
    if (d[4] != 1)
       return false;
-   webm_seek(p, (int64_t)v);
+   media_seek(p, (int64_t)v);
    return true;
 }
 
-void WEBM_CORE_PREFIX(retro_cheat_reset)(void) { }
+void MEDIA_CORE_PREFIX(retro_cheat_reset)(void) { }
 
-void WEBM_CORE_PREFIX(retro_cheat_set)(unsigned idx, bool enabled,
+void MEDIA_CORE_PREFIX(retro_cheat_set)(unsigned idx, bool enabled,
       const char *code)
 {
    (void)idx;

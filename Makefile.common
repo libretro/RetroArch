@@ -2472,7 +2472,7 @@ endif
 
 ifeq ($(HAVE_WEBMPLAYER), 1)
    DEFINES += -DHAVE_WEBMPLAYER
-   OBJ += cores/libretro-webm/webm_core.o
+   OBJ += cores/libretro-media/media_core.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \

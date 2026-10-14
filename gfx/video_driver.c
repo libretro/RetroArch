@@ -2825,7 +2825,7 @@ void video_driver_free_internal(void)
 
 #ifdef HAVE_WEBMPLAYER
    if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
-      libretro_webm_suspend_video_hw();
+      libretro_media_suspend_video_hw();
 #endif
    if (video_st->movie_frame)
       video_driver_cached_frame_invalidate();
@@ -7314,7 +7314,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
 #ifdef HAVE_WEBMPLAYER
    if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
-      libretro_webm_video_hw_ready();
+      libretro_media_video_hw_ready();
 #endif
    return true;
 }

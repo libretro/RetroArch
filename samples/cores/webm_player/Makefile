@@ -8,7 +8,7 @@ MP4 ?= 1
 THREADS ?= 1
 
 SOURCES := webm_player_test.c \
- $(ROOT)/cores/libretro-webm/webm_core.c \
+ $(ROOT)/cores/libretro-media/media_core.c \
  $(COMMON)/compat/compat_strl.c \
  $(COMMON)/compat/compat_strcasestr.c \
  $(COMMON)/compat/fopen_utf8.c \
@@ -82,9 +82,9 @@ $(TARGET): $(OBJS)
 
 ifeq ($(MP4),1)
 HW_TARGET := webm_hw_test$(EXE)
-HW_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-webm/webm_core.c $(COMMON)/formats/h265/rh265.c,$(SOURCES))
+HW_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c $(COMMON)/formats/h265/rh265.c,$(SOURCES))
 HW_OBJS := $(call sample_objs,$(HW_SOURCES:.c=.o))
-$(HW_TARGET): webm_hw_test.c $(ROOT)/cores/libretro-webm/webm_core.c $(ROOT)/cores/libretro-webm/webm_hw.h \
+$(HW_TARGET): webm_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(ROOT)/cores/libretro-media/media_hw.h \
       ../../gfx/d3d11_video_decode/rh265_hw_stream_test.c \
       $(COMMON)/formats/h265/rh265.c $(HW_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_hw_test.c $(HW_OBJS) $(LDFLAGS) $(LDLIBS)

@@ -1355,7 +1355,7 @@ CORES
 #endif
 
 #ifdef HAVE_WEBMPLAYER
-#include "../cores/libretro-webm/webm_core.c"
+#include "../cores/libretro-media/media_core.c"
 #endif
 
 #if defined(HAVE_MPV)

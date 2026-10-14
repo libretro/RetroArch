@@ -367,7 +367,7 @@ static void runloop_game_ai_think_cb(void *userdata,
 #endif
 
 #ifdef HAVE_WEBMPLAYER
-#define SYMBOL_WEBM(x) current_core->x = libretro_webm_##x
+#define SYMBOL_MEDIA(x) current_core->x = libretro_media_##x
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
@@ -5057,7 +5057,7 @@ bool runloop_init_libretro_symbols(
          break;
       case CORE_TYPE_WEBM:
 #ifdef HAVE_WEBMPLAYER
-         CORE_SYMBOLS(SYMBOL_WEBM);
+         CORE_SYMBOLS(SYMBOL_MEDIA);
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:
@@ -5328,7 +5328,7 @@ static bool core_unload_game(void)
 #ifdef HAVE_WEBMPLAYER
       if (runloop_st->current_core_type == CORE_TYPE_WEBM)
       {
-         libretro_webm_set_video_hw_refresh(NULL, NULL);
+         libretro_media_set_video_hw_refresh(NULL, NULL);
          video_driver_movie_clear();
       }
 #endif
@@ -10531,7 +10531,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_cached_frame_invalidate();
 #ifdef HAVE_WEBMPLAYER
    if (runloop_st->current_core_type == CORE_TYPE_WEBM)
-      libretro_webm_set_video_hw_refresh(video_driver_movie_refresh, NULL);
+      libretro_media_set_video_hw_refresh(video_driver_movie_refresh, NULL);
 #endif
 
 #ifdef HAVE_RUNAHEAD
