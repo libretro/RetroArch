@@ -3442,8 +3442,15 @@ static bool d3d9_cg_init_multipass(d3d9_video_t *d3d, const char *shader_path)
       d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
    }
 
-   if (d3d->shader.passes < GFX_MAX_SHADERS &&
-      (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags & FBO_SCALE_FLAG_VALID))
+   /* The last pass gets a target of its own, drawn to the backbuffer by
+    * a stock pass after it, only when the image would differ drawn
+    * straight there: a scale other than the viewport at 1.0, or a
+    * floating-point target. */
+   if (     d3d->shader.passes < GFX_MAX_SHADERS
+         && (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags
+            & FBO_SCALE_FLAG_VALID)
+         && !GFX_FBO_SCALE_IS_VIEWPORT(
+            &d3d->shader.pass[d3d->shader.passes - 1].fbo))
    {
       d3d->shader.passes++;
       pass              = (struct video_shader_pass*)

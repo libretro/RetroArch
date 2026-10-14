@@ -216,6 +216,19 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./gl3_last_pass_fbo_test.exe
           make clean
 
+      - name: Build and run d3d9 last_pass tests (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/d3d9_last_pass
+        run: |
+          set -eu
+          # The preset setup of gfx/drivers/d3d9hlsl.c and d3d9cg.c: a
+          # stock pass is appended after the last pass only for a scale
+          # other than viewport at 1.0 or a floating-point target.
+          # Direct3D 9 is Windows-only, so these run under Wine alone.
+          make clean && make -j$(nproc) all
+          timeout 300 make check
+          make clean
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
