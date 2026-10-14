@@ -75,6 +75,29 @@ typedef struct rh265_video_params
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
       rh265_video_params_t *out);
 
+typedef struct rh265_slice_info
+{
+   size_t header_bytes, header_bits;
+   int nal_type, temporal_id, reference, irap, idr;
+   int first_slice_in_pic, no_output_of_prior_pics, pps_id;
+   int slice_segment_address, slice_type, pic_output_flag, poc_lsb;
+   int short_term_rps_sps_idx, predictor_delta_pocs;
+   unsigned short_term_rps_bits;
+   int num_negative, num_positive;
+   int32_t delta_poc_before[16], delta_poc_after[16];
+   uint8_t used_before[16], used_after[16];
+} rh265_slice_info_t;
+
+/* Parse a borrowed complete VCL NAL (two-byte header, no start code or
+ * length prefix) on the decoder owner thread. No allocation, payload copy
+ * or picture/DPB advancement. Header bytes include the NAL header and escape
+ * bytes; header bits count unescaped syntax including byte alignment.
+ * Headers over 64 KiB are refused. Return 0, -1 malformed/missing input,
+ * or -2 unsupported syntax. Failure clears out; payload validity is not
+ * established. Long-term reference syntax is currently unsupported. */
+int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
+      rh265_slice_info_t *out);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh265_video *rh265_video_open(void);
 

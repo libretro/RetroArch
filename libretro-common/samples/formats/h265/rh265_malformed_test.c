@@ -112,7 +112,7 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 }
 
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
-   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP };
+   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -156,8 +156,13 @@ static void sps(bitw *w, enum field f, int depth)
    put1(w, 0);                       /* amp */
    put1(w, 0);                       /* sao */
    put1(w, 0);                       /* pcm */
-   putue(w, 0);                      /* num_short_term_ref_pic_sets */
-   put1(w, 0);                       /* long_term_ref_pics_present */
+   putue(w, f == F_RPS ? 1 : 0);
+   if (f == F_RPS)
+   {
+      putue(w, 1); putue(w, 0); putue(w, 1); put1(w, 1);
+   }
+   put1(w, f == F_LT);
+   if (f == F_LT) putue(w, 0);
    put1(w, 0);                       /* temporal_mvp */
    put1(w, 0);                       /* strong_intra_smoothing */
    put1(w, 0);                       /* vui_parameters_present */
@@ -306,8 +311,163 @@ static void test_params(void)
    rh265_video_close(v);
 }
 
+
+static void slice_pps(bitw *w, int dependent, int extension)
+{
+   memset(w, 0, sizeof(*w));
+   putue(w, 0); putue(w, 0);
+   put1(w, dependent); put1(w, 0); putn(w, 0, 3);
+   put1(w, 0); put1(w, 0); putue(w, 0); putue(w, 0); putse(w, 0);
+   put1(w, 0); put1(w, 0); put1(w, 0); putse(w, 0); putse(w, 0);
+   put1(w, 0); put1(w, 0); put1(w, 0); put1(w, 0);
+   put1(w, 0); put1(w, 0); put1(w, 0); put1(w, 0); put1(w, 0);
+   put1(w, 0); putue(w, 0); put1(w, extension);
+   trailing(w);
+}
+
+static void slice_header(bitw *w, int type, int first, int slice_type, int rps_mode,
+      int extension)
+{
+   memset(w, 0, sizeof(*w));
+   put1(w, first);
+   if (type >= 16) put1(w, 1);
+   putue(w, 0);
+   if (!first) putn(w, 2, 4);
+   putue(w, (unsigned)slice_type);
+   if (type != 19 && type != 20)
+   {
+      putn(w, 6, 8);
+      put1(w, rps_mode == 1);
+      if (rps_mode == 2)
+      {
+         put1(w, 1); putue(w, 0); put1(w, 1); putue(w, 0);
+         put1(w, 1); put1(w, 1);
+      }
+      else if (!rps_mode)
+      {
+         putue(w, 2); putue(w, 1);
+         putue(w, 0); put1(w, 1); putue(w, 1); put1(w, 0);
+         putue(w, 2); put1(w, 1);
+      }
+   }
+   if (slice_type != 2)
+   {
+      put1(w, 0);
+      if (!slice_type) put1(w, 0);
+      putue(w, 0);
+   }
+   putse(w, 0);
+   if (extension)
+   {
+      putue(w, 4);
+      putn(w, 0, 24); putn(w, 1, 8);
+   }
+   trailing(w);
+}
+
+static void test_slice_info(void)
+{
+   static rh265_slice_info_t out, saved;
+   static uint8_t units_buf[2][1024], buf[2200], unit[1024], original[1024];
+   const uint8_t *units[2];
+   bitw w;
+   size_t lens[2], n, len, i;
+   int mode, kind;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = units_buf[0]; units[1] = units_buf[1];
+   for (mode = 0; mode < 3; mode++)
+   {
+      sps(&w, mode ? F_RPS : F_NONE, 8); lens[0] = nal(units_buf[0], 33, &w);
+      slice_pps(&w, 0, 1); lens[1] = nal(units_buf[1], 34, &w);
+      n = hvcc(buf, units, lens, 2);
+      expect("slice parameter input", rh265_video_set_extradata(v, buf, n), 0);
+      for (kind = 0; kind < 3; kind++)
+      {
+         slice_header(&w, 1, 1, kind, mode, 1);
+         len = nal(unit, 1, &w); memcpy(original, unit, len);
+         expect("borrowed slice snapshot", rh265_video_get_slice(v, unit, len, &out), 0);
+         if (out.header_bytes != len || out.header_bits != w.bits || !out.first_slice_in_pic
+               || out.slice_type != kind || out.poc_lsb != 6 || !out.reference
+               || out.pps_id || out.nal_type != 1 || out.temporal_id || out.irap || out.idr
+               || memcmp(unit, original, len) || rh265_video_plane(v, 0, NULL, NULL, NULL))
+            failures++;
+         if (!mode && (out.num_negative != 2 || out.num_positive != 1
+                  || out.delta_poc_before[0] != -1 || out.delta_poc_before[1] != -3
+                  || out.delta_poc_after[0] != 3 || !out.used_before[0] || out.used_before[1]
+                  || !out.used_after[0] || out.short_term_rps_bits != 16
+                  || out.short_term_rps_sps_idx != -1 || out.predictor_delta_pocs)) failures++;
+         if (mode == 1 && (out.num_negative != 1 || out.num_positive
+                  || out.delta_poc_before[0] != -2 || out.short_term_rps_bits
+                  || out.short_term_rps_sps_idx || out.predictor_delta_pocs)) failures++;
+         if (mode == 2 && (out.num_negative != 2 || out.num_positive
+                  || out.delta_poc_before[0] != -1 || out.delta_poc_before[1] != -3
+                  || out.short_term_rps_bits != 6 || out.predictor_delta_pocs != 1)) failures++;
+         saved = out;
+         expect("repeat slice snapshot", rh265_video_get_slice(v, unit, len, &out), 0);
+         if (memcmp(&out, &saved, sizeof(out))) failures++;
+         if (len <= 2 + w.bits / 8) failures++;
+         for (i = 2; i + 1 < len; i++)
+            if (!unit[i-2] && !unit[i-1] && unit[i] == 3)
+            {
+               uint8_t byte = unit[i+1];
+               unit[i+1] = 4;
+               expect("invalid emulation prevention", rh265_video_get_slice(v, unit, len, &out), -1);
+               unit[i+1] = byte;
+               break;
+            }
+         if (!(unit[len-1] & 1))
+         {
+            unit[len-1] |= 1;
+            expect("nonzero alignment padding", rh265_video_get_slice(v, unit, len, &out), -1);
+            unit[len-1] &= (uint8_t)~1u;
+         }
+         for (i = 0; i < len; i++)
+         {
+            memset(&out, 0xaa, sizeof(out));
+            if (rh265_video_get_slice(v, unit, i, &out) != -1) failures++;
+            for (n = 0; n < sizeof(out); n++) if (((uint8_t*)&out)[n]) { failures++; break; }
+         }
+      }
+   }
+   slice_header(&w, 19, 1, 2, 0, 1); len = nal(unit, 19, &w);
+   expect("IDR slice snapshot", rh265_video_get_slice(v, unit, len, &out), 0);
+   if (!out.irap || !out.idr || !out.no_output_of_prior_pics || out.poc_lsb
+         || out.num_negative || out.short_term_rps_bits) failures++;
+   slice_header(&w, 1, 0, 2, 1, 1); len = nal(unit, 1, &w);
+   expect("later slice snapshot", rh265_video_get_slice(v, unit, len, &out), 0);
+   if (out.first_slice_in_pic || out.slice_segment_address != 2) failures++;
+   unit[0] |= 0x80;
+   expect("forbidden NAL bit", rh265_video_get_slice(v, unit, len, &out), -1);
+   unit[0] = 2; unit[1] = 9;
+   expect("multilayer NAL", rh265_video_get_slice(v, unit, len, &out), -1);
+   unit[1] = 0;
+   expect("zero temporal ID", rh265_video_get_slice(v, unit, len, &out), -1);
+   unit[0] = 20; unit[1] = 1;
+   expect("reserved VCL type", rh265_video_get_slice(v, unit, len, &out), -2);
+   unit[0] = 66;
+   expect("non-VCL NAL", rh265_video_get_slice(v, unit, len, &out), -2);
+   slice_pps(&w, 1, 0); lens[0] = nal(units_buf[0], 34, &w);
+   n = hvcc(buf, units, lens, 1);
+   expect("dependent PPS input", rh265_video_set_extradata(v, buf, n), 0);
+   memset(&w, 0, sizeof(w)); put1(&w, 0); putue(&w, 0); put1(&w, 1); trailing(&w);
+   len = nal(unit, 1, &w);
+   expect("unsupported dependent slice", rh265_video_get_slice(v, unit, len, &out), -2);
+   slice_pps(&w, 0, 1); lens[1] = nal(units_buf[1], 34, &w);
+   sps(&w, F_LT, 8); lens[0] = nal(units_buf[0], 33, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("long-term SPS input", rh265_video_set_extradata(v, buf, n), 0);
+   slice_header(&w, 1, 1, 2, 0, 1); len = nal(unit, 1, &w);
+   expect("unsupported long-term slice", rh265_video_get_slice(v, unit, len, &out), -2);
+   expect("null slice decoder", rh265_video_get_slice(NULL, unit, len, &out), -1);
+   expect("null slice input", rh265_video_get_slice(v, NULL, len, &out), -1);
+   expect("null slice output", rh265_video_get_slice(v, unit, len, NULL), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
+   test_slice_info();
    test_params();
    expect("a well-formed SPS is read",
          feed_sps(F_NONE, 9), -1);

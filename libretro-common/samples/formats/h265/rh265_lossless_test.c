@@ -139,6 +139,29 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          break;
       if (pkt.track != trk)
          continue;
+      {
+         rh265_slice_info_t info;
+         const rmp4_track *track = rmp4_get_track(m, trk);
+         unsigned length_size = (track->codec_private[21] & 3) + 1;
+         size_t pos = 0;
+         while (pos < pkt.size)
+         {
+            size_t bytes = 0;
+            unsigned j, type;
+            if (pkt.size - pos < length_size) { bad = -1; goto done; }
+            for (j = 0; j < length_size; j++) bytes = (bytes << 8) | pkt.data[pos++];
+            if (bytes < 2 || bytes > pkt.size - pos) { bad = -1; goto done; }
+            type = (pkt.data[pos] >> 1) & 63;
+            if ((type <= 9 || (type >= 16 && type <= 21)) &&
+                  (rh265_video_get_slice(h, pkt.data + pos, bytes, &info)
+                   || info.header_bytes > bytes || info.nal_type != (int)type))
+            {
+               bad = -1;
+               goto done;
+            }
+            pos += bytes;
+         }
+      }
       got = rh265_video_decode(h, pkt.data, pkt.size);
       if (getenv("RH265_TRACE"))
          fprintf(stderr, "TRACE threads=%d sample=%zu got=%d\n", g_threads, pkt.size, got);

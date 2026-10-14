@@ -159,15 +159,44 @@ typedef struct
    const uint8_t *buf;
    size_t size;
    size_t bitpos;
+   size_t bytepos;
    int malformed;
+   int escaped, zeros;
+   uint8_t current;
 } rh265_bits;
 
 static void rh265_bits_init(rh265_bits *b, const uint8_t *buf, size_t size)
-{ b->buf = buf; b->size = size; b->bitpos = 0; b->malformed = 0; }
+{
+   b->buf = buf; b->size = size; b->bitpos = 0; b->bytepos = 0;
+   b->malformed = 0; b->escaped = 0; b->zeros = 0; b->current = 0;
+}
 
 static uint32_t rh265_u1(rh265_bits *b)
 {
    uint32_t v;
+   if (b->escaped)
+   {
+      if (!(b->bitpos & 7))
+      {
+         if (b->bytepos >= b->size) goto missing;
+         b->current = b->buf[b->bytepos++];
+         if (b->zeros == 2 && b->current <= 3)
+         {
+            if (b->current != 3 || b->bytepos >= b->size
+                  || b->buf[b->bytepos] > 3) goto missing;
+            b->current = b->buf[b->bytepos++];
+            b->zeros = 0;
+         }
+         b->zeros = b->current ? 0 : b->zeros + 1;
+      }
+      v = (uint32_t)(b->current >> (7 - (b->bitpos & 7))) & 1u;
+      b->bitpos++;
+      return v;
+missing:
+      b->malformed = 1;
+      b->bitpos++;
+      return 0;
+   }
    if (b->bitpos >= b->size * 8) { b->bitpos++; return 0; }
    v = (uint32_t)(b->buf[b->bitpos >> 3] >> (7 - (b->bitpos & 7))) & 1u;
    b->bitpos++;
@@ -541,7 +570,7 @@ static void rh265_skip_ptl(rh265_bits *b, int max_sub_layers_minus1)
 /* st_ref_pic_set (7.3.7), resolving inter-RPS prediction against the
  * previously parsed sets so every set is stored in explicit form. */
 static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
-      rh265_st_rps *rps, int is_slice_header)
+      rh265_st_rps *rps, int is_slice_header, int *predictor)
 {
    int inter_pred = 0;
    if (idx > 0)
@@ -557,6 +586,7 @@ static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
       if (is_slice_header)
          delta_idx = (int)rh265_ue(b) + 1;
       if (delta_idx > idx) return -1;
+      if (predictor) *predictor = idx - delta_idx;
       ref = &s->st_rps[idx - delta_idx];
       delta_rps_sign       = (int)rh265_u1(b);
       abs_delta_rps_minus1 = (int)rh265_ue(b);
@@ -727,7 +757,7 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, rh265_sps *s,
    s->num_st_rps = (int)rh265_ue(&b);
    if (s->num_st_rps > 64) return -1;
    for (i = 0; i < s->num_st_rps; i++)
-      if (rh265_parse_st_rps(&b, s, i, &s->st_rps[i], 0) < 0)
+      if (rh265_parse_st_rps(&b, s, i, &s->st_rps[i], 0, NULL) < 0)
          return -1;
    s->long_term_ref_pics_present = (int)rh265_u1(&b);
    if (s->long_term_ref_pics_present)
@@ -837,6 +867,8 @@ typedef struct
    int poc_lsb;
    rh265_st_rps rps;          /* resolved RPS for this slice */
    int short_term_rps_sps_idx;   /* -1 when coded in the slice header */
+   unsigned short_term_rps_bits;
+   int predictor_delta_pocs, no_output_of_prior_pics;
    int sao_luma, sao_chroma;
    int slice_qp;              /* SliceQpY */
    int cb_qp_offset, cr_qp_offset;   /* slice-level */
@@ -932,7 +964,7 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
    sh->short_term_rps_sps_idx = -1;
    sh->first_slice_in_pic = (int)rh265_u1(b);
    if (RH265_IS_IRAP(nal_type))
-      rh265_u1(b);                      /* no_output_of_prior_pics_flag */
+      sh->no_output_of_prior_pics = (int)rh265_u1(b);
    sh->pps_id = (int)rh265_ue(b);
    if (sh->pps_id >= RH265_MAX_PPS || !pps_tab[sh->pps_id].valid)
       return -1;
@@ -961,11 +993,17 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       sh->poc_lsb = (int)rh265_un(b, s->log2_max_poc_lsb);
       if (!rh265_u1(b))                 /* short_term_ref_pic_set_sps_flag */
       {
+         size_t start = b->bitpos;
+         int predictor = -1;
          /* parse an explicit set at virtual index num_st_rps; inter-set
           * prediction only reads the sets already stored in the SPS, so
           * the SPS is passed directly (and never written) */
-         if (rh265_parse_st_rps(b, s, s->num_st_rps, &sh->rps, 1) < 0)
+         if (rh265_parse_st_rps(b, s, s->num_st_rps, &sh->rps, 1, &predictor) < 0)
             return -1;
+         sh->short_term_rps_bits = (unsigned)(b->bitpos - start);
+         if (predictor >= 0)
+            sh->predictor_delta_pocs = s->st_rps[predictor].num_negative
+               + s->st_rps[predictor].num_positive;
       }
       else if (s->num_st_rps > 0)
       {
@@ -1101,13 +1139,15 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
    if (p->slice_segment_header_extension_present)
    {
       int len = (int)rh265_ue(b);
+      if (rh265_bits_overrun(b) || (size_t)len > b->size - (b->bitpos >> 3))
+         return -1;
       for (i = 0; i < len; i++)
          rh265_un(b, 8);
    }
    /* byte_alignment() */
    if (!rh265_u1(b)) return -1;         /* alignment_bit_equal_to_one */
    while (b->bitpos & 7)
-      rh265_u1(b);
+      if (rh265_u1(b)) return -1;
    if (rh265_bits_overrun(b)) return -1;
    return 0;
 }
@@ -5119,6 +5159,56 @@ void rh265_video_close(rh265_video *v)
       }
    }
    free(v);
+}
+
+int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
+      rh265_slice_info_t *out)
+{
+   rh265_bits b;
+   rh265_shdr *sh;
+   int type, ret;
+   unsigned i;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!v || !nal || len < 3 || (nal[0] & 0x81) || (nal[1] >> 3)
+         || !(nal[1] & 7)) return -1;
+   type = (nal[0] >> 1) & 63;
+   if (!(type <= 9 || (type >= 16 && type <= 21))) return -2;
+   sh = &v->sh_tmp;
+   rh265_bits_init(&b, nal + 2, len - 2 > 65534 ? 65534 : len - 2);
+   b.escaped = 1;
+   ret = rh265_parse_slice_header(&b, type, NULL, NULL, v->pps, v->sps, sh);
+   if (ret) return ret;
+   out->header_bytes = b.bytepos + 2;
+   out->header_bits = b.bitpos;
+   out->nal_type = type;
+   out->temporal_id = (nal[1] & 7) - 1;
+   out->reference = type >= 16 || (type & 1);
+   out->irap = RH265_IS_IRAP(type);
+   out->idr = RH265_IS_IDR(type);
+   out->first_slice_in_pic = sh->first_slice_in_pic;
+   out->no_output_of_prior_pics = sh->no_output_of_prior_pics;
+   out->pps_id = sh->pps_id;
+   out->slice_segment_address = sh->slice_segment_address;
+   out->slice_type = sh->slice_type;
+   out->pic_output_flag = sh->pic_output_flag;
+   out->poc_lsb = sh->poc_lsb;
+   out->short_term_rps_sps_idx = sh->short_term_rps_sps_idx;
+   out->predictor_delta_pocs = sh->predictor_delta_pocs;
+   out->short_term_rps_bits = sh->short_term_rps_bits;
+   out->num_negative = sh->rps.num_negative;
+   out->num_positive = sh->rps.num_positive;
+   for (i = 0; i < (unsigned)sh->rps.num_negative; i++)
+   {
+      out->delta_poc_before[i] = sh->rps.delta_poc_s0[i];
+      out->used_before[i] = sh->rps.used_s0[i];
+   }
+   for (i = 0; i < (unsigned)sh->rps.num_positive; i++)
+   {
+      out->delta_poc_after[i] = sh->rps.delta_poc_s1[i];
+      out->used_after[i] = sh->rps.used_s1[i];
+   }
+   return 0;
 }
 
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
