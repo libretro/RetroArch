@@ -2852,7 +2852,7 @@ static void task_play_feature_delivery_core_install_handler(
 
             /* Start download */
             if (play_feature_delivery_download(
-                  pfd_install_handle->core_filename))
+                  pfd_install_handle->core_filename, task->ident))
                pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_WAIT;
             else
                pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_END;
@@ -2904,9 +2904,11 @@ static void task_play_feature_delivery_core_install_handler(
             }
 
             /* If install is inactive, end task (regardless
-             * of status) */
+             * of status); otherwise the next status update wakes it */
             if (!install_active)
                pfd_install_handle->status = PLAY_FEATURE_DELIVERY_INSTALL_END;
+            else
+               task_queue_park(task, CORE_UPDATER_WAIT_PARK_USEC);
          }
          break;
       case PLAY_FEATURE_DELIVERY_INSTALL_END:

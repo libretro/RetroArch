@@ -87,8 +87,9 @@ bool play_feature_delivery_download_status(
 /* Initialises download of the specified core.
  * Returns false in the event of an error.
  * Download status should be monitored via
- * play_feature_delivery_download_status() */
-bool play_feature_delivery_download(const char *core_file);
+ * play_feature_delivery_download_status(); each status update wakes
+ * the task whose ident is @waiter (see task_queue_wake()). */
+bool play_feature_delivery_download(const char *core_file, uint32_t waiter);
 
 /* Deletes specified core.
  * Returns false in the event of an error. */

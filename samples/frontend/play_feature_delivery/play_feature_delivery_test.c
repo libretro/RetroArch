@@ -60,6 +60,15 @@ static void stub_call_void(JNIEnv *env, jobject obj, jmethodID m, ...)
 
 JNIEnv *jni_thread_getenv(void) { return &test_env; }
 
+/* Each status update wakes the task watching the download. */
+static unsigned wakes;
+static uint32_t woken;
+void task_queue_wake(uint32_t ident)
+{
+   wakes++;
+   woken = ident;
+}
+
 static ANativeActivity    test_activity;
 static struct android_app test_app;
 struct android_app       *g_android = &test_app;
@@ -73,7 +82,7 @@ static void do_download(void *unused)
 {
    (void)unused;
    download_ok = play_feature_delivery_download(
-         "mgba_libretro_android.so");
+         "mgba_libretro_android.so", 77);
    retro_atomic_store_release_int(&returned, 1);
 }
 
@@ -120,9 +129,19 @@ int main(void)
          "the download is not active after it started");
    CHECK(status == PLAY_FEATURE_DELIVERY_STARTING,
          "the status Java reported was lost (status %d)", (int)status);
+   CHECK(wakes == 1 && woken == 77,
+         "the status update woke %u tasks, the last %u, want task 77",
+         wakes, (unsigned)woken);
+
+   /* A progress update wakes it too. */
+   Java_com_retroarch_browser_retroactivity_RetroActivityCommon_coreInstallStatusChanged(
+         &test_env, NULL, NULL, 0, 50, 100);
+   CHECK(wakes == 2 && woken == 77, "a progress update did not wake the task");
+   CHECK(play_feature_delivery_download_status(&status, &progress)
+         && progress == 50, "the progress was %u, want 50", progress);
 
    /* One download at a time: a second is refused without asking Java. */
-   CHECK(!play_feature_delivery_download("mgba_libretro_android.so"),
+   CHECK(!play_feature_delivery_download("mgba_libretro_android.so", 78),
          "a second download started alongside the first");
    CHECK(java_calls == 1, "Java was asked again for a refused download");
 

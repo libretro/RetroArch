@@ -106,6 +106,11 @@ static retro_atomic_int_t pfd_fail;
 static retro_atomic_int_t pfd_hold;
 /* Reported as already installed via play feature delivery */
 static retro_atomic_int_t pfd_installed;
+/* The install task watching the download, and how often it asked:
+ * like the JNI layer, the stand-in wakes the watcher when the status
+ * moves on, and the watcher parks in between. */
+static retro_atomic_int_t pfd_waiter;
+static retro_atomic_int_t pfd_status_asks;
 
 bool play_feature_delivery_enabled(void) { return true; }
 
@@ -132,9 +137,10 @@ bool play_feature_delivery_core_installed(const char *core_file)
    return retro_atomic_load_acquire_int(&pfd_installed) != 0;
 }
 
-bool play_feature_delivery_download(const char *core_file)
+bool play_feature_delivery_download(const char *core_file, uint32_t waiter)
 {
    (void)core_file;
+   retro_atomic_store_release_int(&pfd_waiter, (int)waiter);
    retro_atomic_fetch_add_int(&pfd_downloads, 1);
    return true;
 }
@@ -143,6 +149,7 @@ bool play_feature_delivery_download_status(
       enum play_feature_delivery_install_status *status,
       unsigned *progress)
 {
+   retro_atomic_fetch_add_int(&pfd_status_asks, 1);
    if (retro_atomic_load_acquire_int(&pfd_hold))
    {
       *status   = PLAY_FEATURE_DELIVERY_DOWNLOADING;
@@ -330,9 +337,22 @@ static void lane_cancel_during_install(bool threaded)
    CHECK(task_queue_find(&find_data),
          "install still pending after the switch retired");
 
+   /* Held for a while: the install parks between status updates */
+   retro_atomic_store_release_int(&pfd_status_asks, 0);
+   for (i = 0; i < 50; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   if (threaded)
+      CHECK(retro_atomic_load_acquire_int(&pfd_status_asks) <= 3,
+            "install waits parked between status updates");
+
    /* Now let the install finish; its callback runs after the switch
-    * task's handle is gone */
+    * task's handle is gone.  The status update wakes it, as Java's
+    * does. */
    retro_atomic_store_release_int(&pfd_hold, 0);
+   task_queue_wake((uint32_t)retro_atomic_load_acquire_int(&pfd_waiter));
    CHECK(pump_until_idle(5000), "install completed after the switch");
 
    lane_end();

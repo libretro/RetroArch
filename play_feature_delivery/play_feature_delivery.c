@@ -29,6 +29,7 @@
 #include "../frontend/drivers/platform_unix.h"
 
 #include "play_feature_delivery.h"
+#include <queues/task_queue.h>
 #include <compat/strl.h>
 
 /***************************/
@@ -56,6 +57,8 @@ typedef struct
     * same value. */
    retro_atomic_int_t enabled_cached;
    unsigned download_progress;
+   /* The task watching the download, woken by each status update. */
+   uint32_t waiter;
    enum play_feature_delivery_install_status last_status;
    char last_core_name[256];
    bool active;
@@ -68,6 +71,7 @@ static play_feature_delivery_state_t play_feature_delivery_state = {
 #endif
    RETRO_ATOMIC_INT_INITIALIZER(-1), /* enabled_cached */
    0,                          /* download_progress */
+   0,                          /* waiter */
    PLAY_FEATURE_DELIVERY_IDLE, /* last_status */
    {'\0'},                     /* last_core_name */
    false,                      /* active */
@@ -91,6 +95,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject this_obj, jstring core_name, jboolean successful)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
+   uint32_t waiter                      = 0;
+   bool updated                         = false;
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
@@ -115,6 +121,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
             state->last_status = PLAY_FEATURE_DELIVERY_FAILED;
             state->active      = false;
          }
+         waiter  = state->waiter;
+         updated = true;
       }
 
       /* Must always 'release' the converted string */
@@ -125,6 +133,11 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
 #ifdef HAVE_THREADS
    slock_unlock(state->status_lock);
 #endif
+
+   /* The watching task reads the status under the lock; wake it once
+    * the lock is free. */
+   if (updated)
+      task_queue_wake(waiter);
 }
 
 /*
@@ -136,6 +149,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject thisObj, jobjectArray core_names, jint status, jlong bytes_downloaded, jlong total_bytes_to_download)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
+   uint32_t waiter                      = 0;
+   bool updated                         = false;
 
    /* Lock mutex */
 #ifdef HAVE_THREADS
@@ -189,12 +204,17 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
             state->active      = false;
             break;
       }
+      waiter  = state->waiter;
+      updated = true;
    }
 
    /* Unlock mutex */
 #ifdef HAVE_THREADS
    slock_unlock(state->status_lock);
 #endif
+
+   if (updated)
+      task_queue_wake(waiter);
 }
 
 /******************/
@@ -473,7 +493,7 @@ bool play_feature_delivery_download_status(
  * Returns false in the event of an error.
  * Download status should be monitored via
  * play_feature_delivery_download_status() */
-bool play_feature_delivery_download(const char *core_file)
+bool play_feature_delivery_download(const char *core_file, uint32_t waiter)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
    JNIEnv *env                          = jni_thread_getenv();
@@ -506,6 +526,7 @@ bool play_feature_delivery_download(const char *core_file)
    {
       state->download_progress = 0;
       state->last_status       = PLAY_FEATURE_DELIVERY_PENDING;
+      state->waiter            = waiter;
       state->active            = true;
       strlcpy(state->last_core_name, core_name,
             sizeof(state->last_core_name));
