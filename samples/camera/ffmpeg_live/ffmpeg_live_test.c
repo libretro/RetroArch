@@ -45,6 +45,7 @@ static retro_atomic_int_t missing_interrupt;
 static retro_atomic_int_t fail_next_open;
 static retro_atomic_int_t removed_device;
 static retro_atomic_int_t removed_reads;
+static retro_atomic_int_t changing_size;
 
 int __real_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame);
 int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
@@ -118,6 +119,8 @@ int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
 int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
 {
    int ret;
+   if (retro_atomic_load_acquire_int(&changing_size))
+      usleep(50000);
    if (retro_atomic_load_acquire_int(&removed_device))
    {
       /* Bound a broken worker to avoid flooding the regression log. */
@@ -176,6 +179,7 @@ static int last_px = -1;          /* blue of the first pixel */
 static useconds_t cb_sleep_us;    /* a core slow to take its frame */
 static bool solid_red;
 static bool red_frame;
+static bool uniform_frame;
 
 static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       unsigned height, size_t pitch)
@@ -183,6 +187,7 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
    unsigned x, y;
    uint32_t before = 0, after = 0;
    bool all_red = true;
+   bool all_same = true;
    frames_seen++;
    last_width  = width;
    last_height = height;
@@ -202,12 +207,14 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       for (x = 0; x < width; x++)
       {
          uint32_t pixel = buffer[y * (pitch / sizeof(uint32_t)) + x];
+         all_same = all_same && pixel == buffer[0];
          after += pixel;
          if (solid_red)
             all_red = all_red && ((pixel >> 16) & 0xff) >= 245
                && ((pixel >> 8) & 0xff) <= 5 && (pixel & 0xff) <= 5;
       }
    checksum += after;
+   uniform_frame = all_same;
    if (solid_red && all_red)
       red_frame = true;
    if (cb_sleep_us)
@@ -564,6 +571,30 @@ int main(void)
       CHECK(last_px >= 0, "camera restart produced no frame");
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
+   }
+   current = "changing capture dimensions";
+   h = camera_ffmpeg.init("regression-file:decoder_resize.h264",
+         CAPS, VIDEO_SCALE_PACK(17, 9));
+   CHECK(h != NULL, "changing source initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      bool small_seen = false, large_seen = false;
+      retro_atomic_store_release_int(&changing_size, 1);
+      CHECK(camera_ffmpeg.start(h), "changing source start failed");
+      for (attempt = 0; attempt < 100 && !(small_seen && large_seen); attempt++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+         small_seen = small_seen || (uniform_frame && last_px >= 28 && last_px <= 36);
+         large_seen = large_seen || (uniform_frame && last_px >= 108 && last_px <= 116);
+         usleep(10000);
+      }
+      CHECK(small_seen && large_seen, "resolution change lost frames (%d/%d)",
+            small_seen, large_seen);
+      CHECK(last_width == 17 && last_height == 9, "output dimensions changed");
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
+      retro_atomic_store_release_int(&changing_size, 0);
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);

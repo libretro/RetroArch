@@ -44,7 +44,13 @@ else
    CFLAGS  += -g1 -O1
 endif
 
-all: $(TARGET) decoder_delay.mkv
+all: $(TARGET) decoder_delay.mkv decoder_resize.h264
+
+decoder_resize.h264:
+	ffmpeg -hide_banner -loglevel error -f lavfi -i "color=c=black:size=32x16:rate=25,format=gray,geq=lum=32" -frames:v 3 -c:v libx264 -crf 1 -pix_fmt yuv420p -f h264 -y resize-small.h264
+	ffmpeg -hide_banner -loglevel error -f lavfi -i "color=c=black:size=64x32:rate=25,format=gray,geq=lum=112" -frames:v 3 -c:v libx264 -crf 1 -pix_fmt yuv444p -f h264 -y resize-large.h264
+	cat resize-small.h264 resize-large.h264 > $@
+	rm -f resize-small.h264 resize-large.h264
 
 decoder_delay.mkv:
 	ffmpeg -hide_banner -loglevel error -f lavfi -i "color=c=black:size=32x16:rate=25,format=gray,geq=lum=N*16" -frames:v 8 -c:v libx264 -crf 1 -pix_fmt yuv420p -x264-params "bframes=2:b-adapt=0:keyint=30:min-keyint=30:scenecut=0" -y $@
@@ -66,5 +72,6 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 	rm -f decoder_delay.mkv
+	rm -f decoder_resize.h264 resize-small.h264 resize-large.h264
 
 .PHONY: all check clean

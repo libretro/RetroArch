@@ -792,6 +792,19 @@ receive_frame:
 
       retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
+      /* Decoded dimensions and format can change after opening the device. */
+      ffmpeg->scale_context = sws_getCachedContext(ffmpeg->scale_context,
+            ffmpeg->camera_frame->width, ffmpeg->camera_frame->height,
+            (enum AVPixelFormat)ffmpeg->camera_frame->format,
+            VIDEO_SCALE_W(ffmpeg->target_dims),
+            VIDEO_SCALE_H(ffmpeg->target_dims), AV_PIX_FMT_BGRA,
+            SWS_BILINEAR, NULL, NULL, NULL);
+      if (!ffmpeg->scale_context)
+      {
+         RARCH_ERR("[FFMPEG] Failed to configure frame scaler.\n");
+         goto done_loop;
+      }
+
       /* sws_scale_frame is tidier but isn't as widely available */
       ffmpeg->target_planes[0] = (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames);
       ret = sws_scale(
