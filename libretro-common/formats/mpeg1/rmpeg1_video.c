@@ -160,6 +160,10 @@ struct rmpeg1_video
    unsigned  bit;        /* 0..7 within buf[rd] */
 
    bool      have_seq;
+   bool      mpeg2;
+   bool      sequence_supported;
+   bool      picture_supported;
+   bool      picture_counted;
    unsigned  width, height;
    unsigned  mb_w, mb_h;
    unsigned  y_stride, c_stride;
@@ -864,6 +868,7 @@ static bool decode_intra_block(rmpeg1_video_t *v, int16_t *blk, int cc)
    const rmpeg1_vlc_t *e;
    int      dc_size;
    int      diff = 0;
+   int      parity = 0;
    unsigned idx  = 0;   /* zigzag position */
 
    memset(blk, 0, sizeof(int16_t) * 64);
@@ -901,6 +906,14 @@ static bool decode_intra_block(rmpeg1_video_t *v, int16_t *blk, int cc)
       {
          (void)get_bits(v, RMPEG1_DCT_ESCAPE_LEN);
          run   = (int)get_bits(v, 6);
+         if (v->mpeg2)
+         {
+            level = (int)get_bits(v, 12);
+            if (level & 2048) level -= 4096;
+            if (!level || level == -2048) return false;
+         }
+         else
+         {
          level = (int)get_bits(v, 8);
 
          /* 11172-2 escape levels: an 8-bit field, with 00h and 80h meaning
@@ -911,6 +924,7 @@ static bool decode_intra_block(rmpeg1_video_t *v, int16_t *blk, int cc)
             level = (int)get_bits(v, 8) - 256;
          else if (level > 128)
             level -= 256;
+         }
       }
       else
       {
@@ -935,15 +949,23 @@ static bool decode_intra_block(rmpeg1_video_t *v, int16_t *blk, int cc)
 
       rec = (2 * level * v->quant_scale * (int)v->intra_q[pos]) / 16;
 
-      if (rec > 0 && !(rec & 1))
-         rec--;
-      else if (rec < 0 && !(rec & 1))
-         rec++;
+      if (!v->mpeg2)
+      {
+         if (rec > 0 && !(rec & 1)) rec--;
+         else if (rec < 0 && !(rec & 1)) rec++;
+      }
 
       if (rec >  2047) rec =  2047;
       if (rec < -2048) rec = -2048;
 
       blk[pos] = (int16_t)rec;
+   }
+
+   if (v->mpeg2)
+   {
+      unsigned i;
+      for (i = 0; i < 64; i++) parity ^= blk[i];
+      if (!(parity & 1)) blk[63] ^= 1;
    }
 
    return true;
@@ -1532,11 +1554,13 @@ static bool parse_sequence_header(rmpeg1_video_t *v)
 
    if (get_bit(v))
    {
+      if (bits_left(v) < 513) return false;
       for (i = 0; i < 64; i++)
          v->intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
    }
    if (get_bit(v))
    {
+      if (bits_left(v) < 512) return false;
       for (i = 0; i < 64; i++)
          v->non_intra_q[rmpeg1_zigzag[i]] = (uint8_t)get_bits(v, 8);
    }
@@ -1552,6 +1576,9 @@ static bool parse_sequence_header(rmpeg1_video_t *v)
          return false;
    }
 
+   v->mpeg2 = false;
+   v->sequence_supported = true;
+   v->picture_supported = true;
    v->have_seq = true;
    return true;
 }
@@ -1602,6 +1629,8 @@ static bool parse_picture_header(rmpeg1_video_t *v)
    while (get_bit(v))
       (void)get_bits(v, 8);      /* extra_information_picture */
 
+   v->picture_supported = !v->mpeg2;
+   v->picture_counted = false;
    v->temporal_ref = temporal_ref;
    v->coding_type  = coding_type;
    v->f_code[0]    = f_code[0];
@@ -1616,9 +1645,51 @@ static bool parse_picture_header(rmpeg1_video_t *v)
 /* Frame ordering                                                        */
 /* --------------------------------------------------------------------- */
 
+/* Initial H.262 subset: progressive 4:2:0 frame I pictures, Table B.14,
+ * zigzag scan, linear quantisation and eight-bit intra DC precision. */
+static void parse_mpeg2_extension(rmpeg1_video_t *v)
+{
+   unsigned id;
+   if (bits_left(v) < 4) { v->errors++; v->sequence_supported = false; return; }
+   id = get_bits(v, 4);
+   if (id == 1)
+   {
+      unsigned progressive, chroma, width_ext, height_ext, marker, rate_n, rate_d;
+      v->mpeg2 = true;
+      v->sequence_supported = false;
+      if (bits_left(v) < 44) { v->errors++; return; }
+      (void)get_bits(v, 8);
+      progressive = get_bit(v); chroma = get_bits(v, 2);
+      width_ext = get_bits(v, 2); height_ext = get_bits(v, 2);
+      (void)get_bits(v, 12); marker = get_bit(v);
+      (void)get_bits(v, 8); (void)get_bit(v);
+      rate_n = get_bits(v, 2); rate_d = get_bits(v, 5);
+      v->sequence_supported = progressive && chroma == 1 && !width_ext
+         && !height_ext && marker && !rate_n && !rate_d;
+   }
+   else if (id == 8)
+   {
+      unsigned precision, structure, frame_pred, conceal, qscale, vlc, scan, progressive;
+      if (!v->mpeg2) { v->mpeg2 = true; v->sequence_supported = false; }
+      v->picture_supported = false;
+      if (bits_left(v) < 30) { v->errors++; return; }
+      (void)get_bits(v, 16);
+      precision = get_bits(v, 2); structure = get_bits(v, 2);
+      (void)get_bit(v); frame_pred = get_bit(v); conceal = get_bit(v);
+      qscale = get_bit(v); vlc = get_bit(v); scan = get_bit(v);
+      (void)get_bit(v); (void)get_bit(v); progressive = get_bit(v);
+      (void)get_bit(v);
+      v->picture_supported = v->sequence_supported && v->coding_type == RMPEG1_PIC_I
+         && !precision && structure == 3 && frame_pred && !conceal
+         && !qscale && !vlc && !scan && progressive;
+   }
+   else if (v->mpeg2 && (id == 3 || id == 5 || id == 9 || id == 10))
+      v->sequence_supported = v->picture_supported = false;
+}
+
 static bool picture_decodable(const rmpeg1_video_t *v)
 {
-   if (!v->have_seq)
+   if (!v->have_seq || (v->mpeg2 && (!v->sequence_supported || !v->picture_supported)))
       return false;
 
    switch (v->coding_type)
@@ -1756,6 +1827,8 @@ void rmpeg1_video_reset(rmpeg1_video_t *v)
    v->bit = 0;
    v->have_fwd = false;
    v->have_bwd = false;
+   v->picture_supported = false;
+   v->picture_counted = false;
 }
 
 static void compact(rmpeg1_video_t *v)
@@ -1817,13 +1890,24 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
       switch (code)
       {
          case RMPEG1_START_SEQUENCE:
+         {
+            size_t end = scan_start_code(v, v->rd);
+            size_t written = v->wr;
+            if (end == (size_t)-1)
+            {
+               if (!v->eof) { v->rd = save_rd; v->bit = 0; return 0; }
+               end = written;
+            }
+            v->wr = end;
             if (!parse_sequence_header(v))
             {
-               v->rd = save_rd + 4;
-               v->bit = 0;
+               v->have_seq = false;
                v->errors++;
             }
+            v->wr = written;
+            v->rd = end; v->bit = 0;
             break;
+         }
 
          case RMPEG1_START_GOP:
             if (bits_left(v) < 27)
@@ -1843,6 +1927,8 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
             /* A predicted picture without its reference cannot be
              * reconstructed. This happens on entry mid-stream, before the
              * first I picture has been seen. */
+            if (v->mpeg2)
+               break;
             if (v->coding_type == RMPEG1_PIC_P && !v->have_bwd)
                v->skipped++;
             else if (     v->coding_type == RMPEG1_PIC_B
@@ -1854,9 +1940,22 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
                v->skipped++;
             break;
 
-         case RMPEG1_START_USER_DATA:
          case RMPEG1_START_EXTENSION:
-            /* Consumed by the next start-code hunt. */
+         {
+            size_t end = scan_start_code(v, v->rd);
+            size_t written = v->wr;
+            if (end == (size_t)-1)
+            {
+               if (!v->eof) { v->rd = save_rd; v->bit = 0; return 0; }
+               end = written;
+            }
+            v->wr = end;
+            parse_mpeg2_extension(v);
+            v->wr = written;
+            v->rd = end; v->bit = 0;
+            break;
+         }
+         case RMPEG1_START_USER_DATA:
             break;
 
          case RMPEG1_START_SEQ_END:
@@ -1898,6 +1997,11 @@ int rmpeg1_video_decode(rmpeg1_video_t *v, rmpeg1_video_frame_t *out)
 
                if (!picture_decodable(v))
                {
+                  if (v->mpeg2 && !v->picture_counted)
+                  {
+                     v->skipped++;
+                     v->picture_counted = true;
+                  }
                   v->rd  = end;
                   v->bit = 0;
                   break;

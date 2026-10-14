@@ -2,6 +2,10 @@
 #define __LIBRETRO_SDK_FORMAT_RMPEG1_VIDEO_H
 
 /* MPEG-1 video (ISO/IEC 11172-2) decoder.
+ * Also reconstructs a restricted H.262 subset: progressive 4:2:0 frame I
+ * pictures, eight-bit intra DC precision, linear quantisation, zigzag scan
+ * and Table B.14 VLCs. Other MPEG-2 pictures are skipped. This is not a
+ * general DVD decoder; interlace, P/B prediction and extended modes remain.
  *
  * Written from ITU-T Rec. H.262 | ISO/IEC 13818-2, whose non-scalable syntax
  * is a superset of 11172-2 and whose Annex B carries the same variable length
