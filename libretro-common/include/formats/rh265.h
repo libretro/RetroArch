@@ -118,6 +118,20 @@ int rh265_video_get_sequence(const rh265_video *v, unsigned pps_id,
 int rh265_video_get_short_term_set(const rh265_video *v, unsigned pps_id,
       unsigned index, rh265_short_term_set_t *out);
 
+typedef struct rh265_vps_info
+{
+   rh265_sequence_info_t sequence;
+   uint32_t num_units_in_tick, time_scale, num_ticks_poc_diff_one_minus1;
+   unsigned timing_present, poc_proportional;
+} rh265_vps_info_t;
+
+/* Single-layer VPS metadata selected through a PPS. VPS with HRD or layer
+ * sets are unavailable through this query; software decoding is unaffected.
+ * Owner thread, no allocation/pixels. Return 0 on success, -1 unavailable
+ * or invalid arguments. Failure clears out. */
+int rh265_video_get_vps(const rh265_video *v, unsigned pps_id,
+      rh265_vps_info_t *out);
+
 typedef struct rh265_long_term_refs
 {
    uint32_t poc_lsb[16], msb_cycle[16];

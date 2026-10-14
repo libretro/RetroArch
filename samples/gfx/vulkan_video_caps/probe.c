@@ -8,6 +8,9 @@
 #include <dlfcn.h>
 #endif
 #include "../../../gfx/common/vulkan_video_caps.h"
+#ifdef HEVC_SESSION_TEST
+#include "hevc_session.h"
+#endif
 
 static void probe_hevc(VkPhysicalDevice gpu,
       PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR get_caps)
@@ -83,6 +86,11 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
          properties.deviceName, codecs, family, selected);
    if ((selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR) && get_caps) probe_hevc(gpu, get_caps);
    ok = 1;
+#ifdef HEVC_SESSION_TEST
+   if (selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
+      ok = hevc_session_probe(instance, gpu, (uint32_t)family, get_proc);
+   else puts("SKIP: no selected HEVC decode family; no sessions created");
+#endif
 done:
    free(video); free(queues); free(extensions); return ok;
 }

@@ -572,6 +572,53 @@ static void rh265_parse_ptl(rh265_bits *b, int max_sub_layers_minus1,
    }
 }
 
+static int rh265_parse_vps(const uint8_t *rbsp, size_t size,
+      rh265_vps_info_t *out)
+{
+   rh265_bits b;
+   rh265_sequence_info_t *s = &out->sequence;
+   unsigned i, first, layers;
+   memset(out, 0, sizeof(*out));
+   rh265_bits_init(&b, rbsp, size);
+   b.escaped = 1;
+   s->vps_id = rh265_un(&b, 4);
+   if (rh265_un(&b, 2) != 3 || rh265_un(&b, 6)) return -1;
+   layers = rh265_un(&b, 3);
+   if (layers > 6) return -1;
+   s->max_sub_layers_minus1 = layers;
+   s->temporal_id_nesting = rh265_u1(&b);
+   if (rh265_un(&b, 16) != 65535) return -1;
+   rh265_parse_ptl(&b, (int)layers, s);
+   first = rh265_u1(&b) ? 0 : layers;
+   for (i = first; i <= layers; i++)
+   {
+      unsigned buffering = rh265_ue(&b), reorder = rh265_ue(&b);
+      if (buffering > 15 || reorder > buffering) return -1;
+      s->max_dec_pic_buffering[i] = buffering + 1;
+      s->max_num_reorder_pics[i] = reorder;
+      s->max_latency_increase_plus1[i] = rh265_ue32(&b);
+   }
+   for (i = 0; i < first; i++)
+   {
+      s->max_dec_pic_buffering[i] = s->max_dec_pic_buffering[first];
+      s->max_num_reorder_pics[i] = s->max_num_reorder_pics[first];
+      s->max_latency_increase_plus1[i] = s->max_latency_increase_plus1[first];
+   }
+   if (rh265_un(&b, 6) || rh265_ue(&b)) return -1;
+   out->timing_present = rh265_u1(&b);
+   if (out->timing_present)
+   {
+      out->num_units_in_tick = rh265_un(&b, 32);
+      out->time_scale = rh265_un(&b, 32);
+      out->poc_proportional = rh265_u1(&b);
+      if (out->poc_proportional)
+         out->num_ticks_poc_diff_one_minus1 = rh265_ue32(&b);
+      if (!out->num_units_in_tick || !out->time_scale || rh265_ue(&b)) return -1;
+   }
+   if (rh265_u1(&b)) return -1; /* VPS extension */
+   return rh265_bits_overrun(&b) ? -1 : 0;
+}
+
 
 /* st_ref_pic_set (7.3.7), resolving inter-RPS prediction against the
  * previously parsed sets so every set is stored in explicit form. */
@@ -4024,6 +4071,8 @@ struct rh265_video
    /* finished slice jobs between uses, each with its unescape buffer */
    rh265_slot_t job_pool[RH265_NAL_POOL];
    rh265_sps sps[RH265_MAX_SPS];
+   rh265_vps_info_t vps[16];
+   uint8_t vps_valid[16];
    rh265_pps pps[RH265_MAX_PPS];
    /* One decode state per picture that can be in flight; a new picture
     * takes the next one round. With one context that is the same one
@@ -5048,7 +5097,20 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
    if ((nal[1] & 7) == 0)
       return -1;                        /* nuh_temporal_id_plus1 == 0 */
 
-   if (nal_type == RH265_NAL_VPS || nal_type == RH265_NAL_AUD ||
+   if (nal_type == RH265_NAL_VPS)
+   {
+      rh265_vps_info_t info;
+      unsigned id = nal[2] >> 4;
+      v->vps_valid[id] = 0;
+      if (!(nal[0] & 1) && nal[1] == 1
+            && !rh265_parse_vps(nal + 2, len - 2, &info))
+      {
+         v->vps[id] = info;
+         v->vps_valid[id] = 1;
+      }
+      return 0;
+   }
+   if (nal_type == RH265_NAL_AUD ||
        nal_type == RH265_NAL_SEI_PREFIX || nal_type == RH265_NAL_SEI_SUFFIX ||
        nal_type == RH265_NAL_EOS || nal_type == RH265_NAL_EOB ||
        nal_type == RH265_NAL_FD)
@@ -5803,6 +5865,18 @@ int rh265_video_get_sequence(const rh265_video *v, unsigned pps_id,
       out->lt_poc_lsb[i] = (uint32_t)s->lt_ref_poc_lsb[i];
       out->lt_used[i] = (uint8_t)s->lt_used_by_curr[i];
    }
+   return 0;
+}
+
+int rh265_video_get_vps(const rh265_video *v, unsigned pps_id,
+      rh265_vps_info_t *out)
+{
+   const rh265_sps *s;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   s = rh265_sps_for_pps(v, pps_id);
+   if (!s || !v->vps_valid[s->sequence.vps_id]) return -1;
+   *out = v->vps[s->sequence.vps_id];
    return 0;
 }
 

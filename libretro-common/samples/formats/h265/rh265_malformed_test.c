@@ -782,6 +782,63 @@ static void test_sequence_info(void)
    rh265_video_close(v);
 }
 
+static void test_vps_info(void)
+{
+   bitw w;
+   static uint8_t units_buf[3][1024], buf[3300];
+   const uint8_t *units[3];
+   size_t lens[3], n;
+   rh265_vps_info_t out;
+   unsigned mode, i;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   for (i = 0; i < 3; i++) units[i] = units_buf[i];
+   sps(&w, F_NONE, 8); lens[1] = nal(units_buf[1], 33, &w);
+   pps(&w, 0, 0); lens[2] = nal(units_buf[2], 34, &w);
+   expect("missing VPS", rh265_video_get_vps(v, 0, &out), -1);
+   for (mode = 0; mode < 9; mode++)
+   {
+      memset(&w, 0, sizeof(w));
+      putn(&w, 0, 4); putn(&w, 3, 2); putn(&w, mode == 2, 6);
+      putn(&w, mode == 6 ? 7 : 0, 3); put1(&w, 1); putn(&w, 65535, 16);
+      putn(&w, 1, 8); putn(&w, 0x60000000u, 32);
+      putn(&w, 0xb0000000u, 32); putn(&w, 0, 16); putn(&w, 93, 8);
+      put1(&w, 0); putue(&w, mode == 7 ? 16 : 4); putue(&w, mode == 8 ? 5 : 2);
+      putue(&w, 0xfffffffeu);
+      putn(&w, 0, 6); putue(&w, 0);
+      put1(&w, mode == 1 || mode == 3);
+      if (mode == 1 || mode == 3)
+      {
+         putn(&w, 1001, 32); putn(&w, 60000, 32);
+         put1(&w, 1); putue(&w, 0xfffffffeu); putue(&w, mode == 3);
+      }
+      put1(&w, mode == 4); trailing(&w);
+      lens[0] = nal(units_buf[0], 32, &w);
+      if (mode == 5) lens[0] = 3;
+      n = hvcc(buf, units, lens, 3);
+      expect("VPS metadata input preserves software", rh265_video_set_extradata(v, buf, n), 0);
+      memset(&out, 0xaa, sizeof(out));
+      expect("VPS metadata availability", rh265_video_get_vps(v, 0, &out), mode < 2 ? 0 : -1);
+      if (mode < 2)
+      {
+         if (out.sequence.profile_idc != 1 || out.sequence.level_idc != 93
+               || out.sequence.constraint_flags_hi != 0xb0000000u
+               || out.sequence.max_dec_pic_buffering[0] != 5
+               || out.sequence.max_num_reorder_pics[0] != 2
+               || out.sequence.max_latency_increase_plus1[0] != 0xfffffffeu
+               || out.timing_present != mode) failures++;
+         if (mode && (out.num_units_in_tick != 1001 || out.time_scale != 60000
+               || !out.poc_proportional || out.num_ticks_poc_diff_one_minus1 != 0xfffffffeu)) failures++;
+      }
+      else
+         for (i = 0; i < sizeof(out); i++) if (((uint8_t*)&out)[i]) { failures++; break; }
+   }
+   expect("VPS invalid PPS", rh265_video_get_vps(v, ~0u, &out), -1);
+   expect("VPS null decoder", rh265_video_get_vps(NULL, 0, &out), -1);
+   expect("VPS null output", rh265_video_get_vps(v, 0, NULL), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
    test_nal_iterator(); test_access_unit();
@@ -789,6 +846,7 @@ int main(void)
    test_color_info();
    test_params();
    test_sequence_info();
+   test_vps_info();
    expect("a well-formed SPS is read",
          feed_sps(F_NONE, 9), -1);
    expect("sps_id coded as 32 zero bits is malformed",

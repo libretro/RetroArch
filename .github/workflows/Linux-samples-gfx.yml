@@ -1288,12 +1288,15 @@ jobs:
           make -C samples/gfx/d3d11_video_decode clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/d3d11_video_decode clean
 
-      - name: Vulkan video codec negotiation (Linux and mingw + Wine)
+      - name: Vulkan video negotiation and HEVC parameters (Linux and mingw + Wine)
         shell: bash
         run: |
           set -eu
           make -C samples/gfx/vulkan_video_caps clean check SANITIZER=address,undefined
           make -C samples/gfx/vulkan_video_caps clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/gfx/vulkan_video_caps clean
+          make -C samples/gfx/vulkan_video_caps session-check
+          make -C samples/gfx/vulkan_video_caps session-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
 
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
