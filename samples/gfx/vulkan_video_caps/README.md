@@ -119,3 +119,15 @@ for focused sanitizer runs. Linux ASan/UBSan and TSan pass; the full plain
 wrapper suite passes. TSan on this WSL host needs `setarch x86_64 -R` to avoid
 its startup address-map conflict. These metadata/ownership tests do not
 claim end-to-end hardware movie presentation on Windows or other devices.
+
+`make -C samples/gfx/threaded_video check-movie-gpu` selects the real Vulkan
+surface-import and movie-presentation lanes (a matching built frontend and
+X display are required on Linux). The movie lane renders twenty direct and
+threaded NV12/P010 cases through the stock filter chain, covering BT.601/709,
+limited/full range, format switches and resize. Two viewport reads per case
+check nine positions against the CPU reference and exercise cached redraws.
+Returning to software pixels is checked in both modes. Linux llvmpipe passes
+with Vulkan validation and ASan/UBSan; instrumented runs assert zero CPU
+frame copies during the GPU phase. Host image writes and viewport readbacks
+are test-only. This proves presentation with a synthetic GPU producer,
+not hardware HEVC decoding, custom presets, A/V sync or seek/reset.

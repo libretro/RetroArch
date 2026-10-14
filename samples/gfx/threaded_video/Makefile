@@ -163,9 +163,13 @@ check-driver: all
 	 rm -f check.log; \
 	 exit $$rc
 
+# Focused presentation checks with the shipping Vulkan renderer and wrapper.
+check-movie-gpu:
+	HARNESS_MOVIE_GPU_ONLY=1 $(MAKE) check-vulkan
+
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
 	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
-.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver clean
+.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver check-movie-gpu clean

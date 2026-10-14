@@ -8864,10 +8864,10 @@ static VkSemaphore import_timeline(VkDevice dev)
    return sem;
 }
 
-/* A linear NV12 image the host writes; false where the device cannot
+/* A linear NV12/P010 image the host writes; false where the device cannot
  * have one, which is a skip rather than a failure */
 static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
-      unsigned h, import_producer_t *p)
+      unsigned h, unsigned pixfmt, import_producer_t *p)
 {
    VkFormatProperties fp;
    VkImageCreateInfo info;
@@ -8876,12 +8876,15 @@ static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
    VkImageSubresource sub;
    video_device_info_t dev;
    uint32_t i;
+   VkFormat format = pixfmt == IMAGE_PIXFMT_P010
+      ? VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+      : VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
 
    memset(p, 0, sizeof(*p));
    if (!video_driver_get_device(&dev))
       return false;
    vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)dev.physical_device,
-         VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, &fp);
+         format, &fp);
    if (!(fp.linearTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT))
       return false;
    p->signal = (PFN_vkSignalSemaphoreKHR)vkGetDeviceProcAddr(ctx->device,
@@ -8893,7 +8896,7 @@ static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
    memset(&info, 0, sizeof(info));
    info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    info.imageType     = VK_IMAGE_TYPE_2D;
-   info.format        = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   info.format        = format;
    info.extent.width  = w;
    info.extent.height = h;
    info.extent.depth  = 1;
@@ -9021,7 +9024,7 @@ static void lane_surface_import(void)
             && dev.api == VIDEO_DEVICE_VULKAN
             && dev.device == (void*)ctx->device,
             "surface import lane: get_device named another device");
-      if (!import_producer_new(ctx, IW, IH, &p))
+      if (!import_producer_new(ctx, IW, IH, IMAGE_PIXFMT_NV12, &p))
       {
          import_producer_free(ctx, &p);
          CHECK(pass == 0, "surface import lane: the producer could not "
@@ -9117,6 +9120,186 @@ static void lane_surface_import(void)
    if (failures == had)
       fprintf(stderr, "[pass] surface import lane (%s)\n",
             checked ? "texels match the CPU's" : "not read back");
+#endif
+}
+
+#ifdef HAVE_VULKAN
+static retro_atomic_int_t movie_gpu_abandons;
+static void movie_gpu_abandon(void *owner, uint64_t done, uint64_t value)
+{
+   (void)owner; (void)done; (void)value;
+   retro_atomic_fetch_add_int(&movie_gpu_abandons, 1);
+}
+
+static void movie_gpu_read(uint32_t expected, bool threaded, unsigned index)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct video_viewport vp;
+   uint8_t *pixels;
+   unsigned w, h, i, j;
+   bool ok;
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   w = VIDEO_SCALE_W(vp.dims); h = VIDEO_SCALE_H(vp.dims);
+   CHECK(w && h && video_st->current_video->read_viewport,
+         "movie GPU: no viewport reader");
+   if (!w || !h || !video_st->current_video->read_viewport) return;
+   pixels = (uint8_t*)malloc((size_t)w * h * 3);
+   CHECK(pixels != NULL, "movie GPU: readback allocation");
+   if (!pixels) return;
+   ok = video_st->current_video->read_viewport(video_st->data, pixels, false);
+   CHECK(ok, "movie GPU: %s frame %u readback", threaded ? "threaded" : "direct", index);
+   for (j = 1; ok && j <= 3; j++)
+      for (i = 1; i <= 3; i++)
+      {
+         size_t off = ((size_t)(j * h / 4) * w + i * w / 4) * 3;
+         uint32_t pixel = pixels[off + 2] | ((uint32_t)pixels[off + 1] << 8)
+            | ((uint32_t)pixels[off] << 16) | UINT32_C(0xff000000);
+         CHECK(planar_close(pixel, expected, 2),
+               "movie GPU: %s frame %u pixel %u,%u got %08x expected %08x",
+               threaded ? "threaded" : "direct", index, i, j,
+               (unsigned)pixel, (unsigned)expected);
+      }
+   free(pixels);
+}
+#endif
+
+static void lane_movie_gpu(void)
+{
+#ifdef HAVE_VULKAN
+   enum { MAX_W = 96, MAX_H = 64, FRAMES = 10 };
+   static uint8_t y[MAX_W * MAX_H], uv[MAX_W * MAX_H / 2];
+   static uint32_t expected[MAX_W * MAX_H];
+   const char *driver = getenv("HARNESS_VIDEO_DRIVER");
+   unsigned had = failures, pass, k, checked = 0;
+   bool menu_was_up = menu_is_up();
+   if (!real_driver() || !driver || strcmp(driver, "vulkan")) return;
+   if (menu_was_up) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   for (pass = 0; pass < 2; pass++)
+   {
+      bool threaded = pass != 0;
+      vulkan_context_t *ctx;
+      video_device_info_t dev;
+      set_threaded_via_setting(threaded);
+      run_frames(3);
+      if (threaded) video_thread_wait_idle();
+      ctx = hwcached_context();
+      if (!ctx || !video_driver_get_device(&dev)
+            || !(dev.import_formats & IMAGE_PIXFMT_NV12)
+            || !video_driver_movie_refresh(NULL, NULL))
+      {
+         CHECK(false, "movie GPU: missing movie import capability");
+         break;
+      }
+#ifdef HAVE_GFX_INSTRUMENT
+      gfx_instrument_reset();
+#endif
+      for (k = 0; k < FRAMES; k++)
+      {
+         import_producer_t producer;
+         video_hw_frame_t hw;
+         VkSemaphoreSignalInfoKHR signal;
+         unsigned pixfmt = k & 1 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+         unsigned w = k < 8 ? 64 : MAX_W, h = k < 8 ? 48 : MAX_H;
+         unsigned flags = (k & 2 ? IMAGE_YUV_FLAG_BT709 : 0)
+            | (k & 4 ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+         unsigned row, col, plane, bps = pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
+         unsigned tries;
+         uint64_t done = 0;
+         if (!(dev.import_formats & pixfmt))
+         {
+            fprintf(stderr, "[skip] movie GPU format %u unavailable\n", pixfmt);
+            continue;
+         }
+         if (!import_producer_new(ctx, w, h, pixfmt, &producer))
+         {
+            import_producer_free(ctx, &producer);
+            fprintf(stderr, "[skip] movie GPU format %u has no linear producer\n", pixfmt);
+            continue;
+         }
+         memset(y, 72 + k * 17, w * h);
+         for (col = 0; col < w * h / 2; col += 2)
+         { uv[col] = (uint8_t)(65 + k * 13); uv[col + 1] = (uint8_t)(190 - k * 11); }
+         for (plane = 0; plane < 2; plane++)
+            for (row = 0; row < (plane ? h / 2 : h); row++)
+               for (col = 0; col < w; col++)
+               {
+                  uint8_t *to = producer.map + producer.planes[plane].offset
+                     + row * producer.planes[plane].rowPitch + col * bps;
+                  unsigned sample = plane ? uv[row * w + col] : y[row * w + col];
+                  if (bps == 2)
+                  {
+                     uint16_t packed = (uint16_t)(sample << 8);
+                     memcpy(to, &packed, sizeof(packed));
+                  }
+                  else *to = (uint8_t)sample;
+               }
+         signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
+         signal.pNext = NULL; signal.semaphore = producer.wait; signal.value = 1;
+         CHECK(producer.signal(ctx->device, &signal) == VK_SUCCESS, "movie GPU: ready signal");
+         memset(&hw, 0, sizeof(hw));
+         memcpy(&hw.image, &producer.image, sizeof(producer.image));
+         memcpy(&hw.wait, &producer.wait, sizeof(producer.wait));
+         memcpy(&hw.done, &producer.done, sizeof(producer.done));
+         hw.wait_value = hw.done_value = 1;
+         hw.width = w; hw.height = h; hw.pixfmt = pixfmt;
+         hw.yuv = flags; hw.layout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+         hw.abandon = movie_gpu_abandon;
+         retro_atomic_store_relaxed_int(&movie_gpu_abandons, 0);
+         CHECK(video_driver_movie_refresh(NULL, &hw), "movie GPU: frame not accepted");
+         video_driver_frame(NULL, w, h, 0);
+         if (threaded) video_thread_wait_idle();
+         for (tries = 0; tries < 2000 && !retro_atomic_load_acquire_int(&movie_gpu_abandons); tries++)
+         {
+            producer.value(ctx->device, producer.done, &done);
+            if (done >= 1) break;
+            retro_sleep(1);
+         }
+         CHECK(done >= 1, "movie GPU: no GPU done signal (%s %u)", threaded ? "threaded" : "direct", k);
+         image_yuv_420_to_rgb32(expected, w, y, w, uv, w, uv + 1, w, 2,
+               w, h, flags | IMAGE_YUV_FLAG_RGBA);
+         movie_gpu_read(expected[0], threaded, k);
+         /* A second screenshot redraws the cached hardware sentinel. */
+         movie_gpu_read(expected[0], threaded, k);
+         checked++;
+         import_producer_free(ctx, &producer);
+      }
+#ifdef HAVE_GFX_INSTRUMENT
+      CHECK(gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST) == 0,
+            "movie GPU: CPU frame copies during GPU playback");
+#endif
+      /* A real software frame must clear the imported movie source. */
+      {
+         static uint32_t software32[MAX_W * MAX_H];
+         static uint16_t software16[MAX_W * MAX_H];
+         enum retro_pixel_format format = video_state_get_ptr()->pix_fmt;
+         unsigned i;
+         const void *pixels;
+         unsigned pitch;
+         for (i = 0; i < MAX_W * MAX_H; i++)
+         {
+            software32[i] = format == RETRO_PIXEL_FORMAT_XRGB2101010
+               ? UINT32_C(0x3ff00000) : UINT32_C(0x00ff0000);
+            software16[i] = format == RETRO_PIXEL_FORMAT_0RGB1555 ? 0x7c00 : 0xf800;
+         }
+         pixels = (format == RETRO_PIXEL_FORMAT_RGB565 || format == RETRO_PIXEL_FORMAT_0RGB1555)
+            ? (const void*)software16 : (const void*)software32;
+         pitch = pixels == software16 ? MAX_W * 2 : MAX_W * 4;
+         video_driver_frame(pixels, MAX_W, MAX_H, pitch);
+         if (threaded) video_thread_wait_idle();
+         movie_gpu_read(UINT32_C(0xff0000ff), threaded, FRAMES);
+         movie_gpu_read(UINT32_C(0xff0000ff), threaded, FRAMES);
+      }
+      video_driver_movie_clear();
+      video_driver_frame(NULL, 64, 48, 0);
+      if (threaded) video_thread_wait_idle();
+   }
+   set_threaded_via_setting(false);
+   run_frames(3);
+   if (menu_was_up && !menu_is_up()) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had && checked)
+      fprintf(stderr, "[pass] movie GPU presentation: %u direct/threaded cases, resize, cached redraw and software transition\n", checked);
+   else if (!checked) fprintf(stderr, "[skip] movie GPU presentation: no compatible producer\n");
 #endif
 }
 
@@ -9577,6 +9760,13 @@ int main(int argc, char *argv[])
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
 
+   if (getenv("HARNESS_MOVIE_GPU_ONLY"))
+   {
+      lane_surface_import();
+      lane_movie_gpu();
+      goto shutdown;
+   }
+
    if (getenv("HARNESS_MOVIE_ONLY"))
    {
       lane_movie_ring();
@@ -9661,6 +9851,7 @@ int main(int argc, char *argv[])
    lane_surface_lend();
    lane_surface_planar();
    lane_surface_import();
+   lane_movie_gpu();
 #if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
       lane_gl2_linear();
