@@ -5,7 +5,7 @@
 #include <windows.h>
 #include <dxva.h>
 #endif
-#include "../../../gfx/common/dxva_hevc.h"
+#include "../../../gfx/common/dxva_hevc_rh265.h"
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
@@ -259,6 +259,105 @@ static void test_raster_scaling(void)
    CHECK(!dxva_hevc_qmatrix_raster(NULL, &saved));
 }
 
+static void test_parser_adapter(void)
+{
+   static rh265_video_params_t s;
+   static dxva_hevc_picture_t saved;
+   unsigned i;
+   setup();
+   memset(&s, 0, sizeof(s));
+   s.chroma_format_idc = 1;
+   s.width = (int)p.width;
+   s.height = (int)p.height;
+   s.log2_min_cb = (int)p.min_cb_log2;
+   s.log2_ctb = (int)p.ctb_log2;
+   s.log2_min_tb = (int)p.min_tb_log2;
+   s.log2_max_tb = (int)p.max_tb_log2;
+   s.bit_depth = (int)p.bit_depth;
+   s.log2_max_poc_lsb = (int)p.max_poc_lsb_log2;
+   s.max_dec_pic_buffering = (int)p.max_dec_pic_buffering;
+   s.max_num_reorder_pics = (int)p.max_reorder_pics;
+   s.max_transform_hierarchy_depth_inter = (int)p.hierarchy_inter;
+   s.max_transform_hierarchy_depth_intra = (int)p.hierarchy_intra;
+   s.num_st_rps = (int)p.num_st_rps;
+   s.num_long_term_ref_pics = (int)p.num_lt_rps;
+   s.num_ref_idx_l0_default = (int)p.default_l0;
+   s.num_ref_idx_l1_default = (int)p.default_l1;
+   s.diff_cu_qp_delta_depth = (int)p.diff_qp_depth;
+   s.log2_parallel_merge_level = (int)p.parallel_merge_log2;
+   s.init_qp = (int)p.init_qp;
+   s.cb_qp_offset = (int)p.cb_qp;
+   s.cr_qp_offset = (int)p.cr_qp;
+   s.beta_offset_div2 = (int)p.beta_offset_div2;
+   s.tc_offset_div2 = (int)p.tc_offset_div2;
+   s.scaling_list_enabled = 1;
+   s.amp_enabled = 1;
+   s.sao_enabled = 1;
+   s.long_term_ref_pics_present = 1;
+   s.temporal_mvp_enabled = 1;
+   s.strong_intra_smoothing = 1;
+   s.output_flag_present = 1;
+   s.sign_data_hiding = 1;
+   s.cabac_init_present = 1;
+   s.constrained_intra_pred = 1;
+   s.transform_skip_enabled = 1;
+   s.cu_qp_delta_enabled = 1;
+   s.slice_chroma_qp_offsets_present = 1;
+   s.weighted_pred = 1;
+   s.weighted_bipred = 1;
+   s.transquant_bypass_enabled = 1;
+   s.entropy_coding_sync_enabled = 1;
+   s.loop_filter_across_slices = 1;
+   s.deblocking_filter_override_enabled = 1;
+   s.deblocking_filter_disabled = 1;
+   s.lists_modification_present = 1;
+   s.slice_segment_header_extension_present = 1;
+   s.num_extra_slice_header_bits = 5;
+   saved = p;
+   p.width = 8; p.bit_depth = 8; p.coding_tools = 0;
+   p.coding_settings = 1u << 16;
+   CHECK(dxva_hevc_params_from_rh265(&p, &s));
+   CHECK(p.width == saved.width && p.bit_depth == saved.bit_depth);
+   CHECK(p.coding_tools == UINT32_C(0x076e0007));
+   CHECK(p.coding_settings == UINT32_C(0x0001f97f));
+   CHECK(p.slot == saved.slot && p.poc == saved.poc && p.rps_bits == saved.rps_bits);
+   CHECK(p.num_refs == saved.num_refs && !memcmp(p.refs, saved.refs, sizeof(p.refs)));
+   CHECK(p.num_before == saved.num_before && !memcmp(p.before, saved.before, sizeof(p.before)));
+#ifdef _WIN32
+   check_sdk();
+#endif
+   saved = p;
+#define ADAPTER_BAD(field, value) do { s.field = value; \
+   CHECK(!dxva_hevc_params_from_rh265(&p, &s)); \
+   CHECK(!memcmp(&p, &saved, sizeof(p))); s.field = 0; } while (0)
+   ADAPTER_BAD(pcm_enabled, 1);
+   ADAPTER_BAD(tiles_enabled, 1);
+   ADAPTER_BAD(dependent_slice_segments_enabled, 1);
+   s.num_extra_slice_header_bits = 8;
+   CHECK(!dxva_hevc_params_from_rh265(&p, &s));
+   s.num_extra_slice_header_bits = 5;
+   s.width = -8;
+   CHECK(!dxva_hevc_params_from_rh265(&p, &s) && !memcmp(&p, &saved, sizeof(p)));
+   s.width = (int)saved.width; s.bit_depth = 12;
+   CHECK(!dxva_hevc_params_from_rh265(&p, &s));
+   CHECK(!dxva_hevc_params_from_rh265(NULL, &s));
+   CHECK(!dxva_hevc_params_from_rh265(&p, NULL));
+   memset(s.list4, 16, sizeof(s.list4)); memset(s.list8, 16, sizeof(s.list8));
+   memset(s.list16, 16, sizeof(s.list16)); memset(s.list32, 16, sizeof(s.list32));
+   memset(s.dc16, 17, sizeof(s.dc16)); memset(s.dc32, 18, sizeof(s.dc32));
+   CHECK(dxva_hevc_qmatrix_from_rh265(bytes, &s));
+   for (i = 0; i < 992; i++) CHECK(bytes[i] == 16);
+   for (i = 992; i < 998; i++) CHECK(bytes[i] == 17);
+   CHECK(bytes[998] == 18 && bytes[999] == 18);
+   s.dc32[1] = 0;
+   CHECK(!dxva_hevc_qmatrix_from_rh265(bytes, &s));
+   s.scaling_list_enabled = 0;
+   CHECK(!dxva_hevc_qmatrix_from_rh265(bytes, &s));
+   for (i = 0; i < 1000; i++) CHECK(!bytes[i]);
+   CHECK(!dxva_hevc_qmatrix_from_rh265(bytes, NULL));
+   CHECK(!dxva_hevc_qmatrix_from_rh265(NULL, &s));
+}
+
 static void test_slices(void)
 {
    uint8_t data[] = {0,0,1,0x26,1,0xab,0,0,0,1,2,1,0xcd};
@@ -288,7 +387,7 @@ static void test_slices(void)
 }
 int main(void)
 {
-   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_slices();
+   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_parser_adapter(); test_slices();
    printf("HEVC DXVA buffers: %u failures\n", failures);
    return failures ? 1 : 0;
 }

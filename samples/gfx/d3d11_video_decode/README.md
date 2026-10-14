@@ -18,7 +18,12 @@ when scaling lists are enabled; disabled scaling lists require no buffer.
 `dxva_hevc_qmatrix_raster` converts effective raster coefficients directly
 to the submission buffer. Pack 32x32 matrix IDs 0 and 3 into the two
 `list32` entries; retain their DC values separately. The parser adapter
-still needs to select the active SPS/PPS lists. The slice helper borrows complete VCL NALs with
+gets effective SPS/PPS lists from `rh265_video_get_params` on the decoder
+owner thread. `dxva_hevc_rh265.h` maps those snapshots to validated picture
+fields while preserving per-picture POC, slots, RPS and IRAP flags. Its
+matrix helper converts raster coefficients to the submission buffer.
+Snapshots are owned metadata; neither helper allocates or accesses pixels.
+The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
 without copying the coded payload or touching decoded frames.
@@ -30,7 +35,7 @@ fields, signed QP/POC, full reference capacity, short/long-term sets,
 scaling/DC matrices, malformed NALs, padding and output bounds. Windows
 compares complete buffers against native SDK structures.
 
-This is the HEVC submission-buffer layer. rh265 parser snapshots and
+This is the HEVC parameter/submission-buffer layer. Slice/RPS snapshots,
 hardware dispatch, D3D11 decode/profile setup, GPU slot scheduling,
 NV12/P010 export, main-player integration and real GPU reference checks
 remain. It does not register or advertise a working HEVC hardware decoder.

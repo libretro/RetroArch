@@ -37,7 +37,8 @@ endif
 
 all: $(TARGETS)
 
-dxva_hevc_test$(EXE): dxva_hevc_test.c $(RA)/gfx/common/dxva_hevc.h
+dxva_hevc_test$(EXE): dxva_hevc_test.c $(RA)/gfx/common/dxva_hevc.h \
+      $(RA)/gfx/common/dxva_hevc_rh265.h $(RA)/libretro-common/include/formats/rh265.h
 	$(CC) $(CFLAGS) -o $@ dxva_hevc_test.c $(LDFLAGS)
 
 
