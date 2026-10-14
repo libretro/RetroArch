@@ -15166,8 +15166,7 @@ void input_driver_poll(void)
                   unsigned remap_key =
                         settings->uints.input_keymapper_ids[i][j];
 
-                  if (   remap_key == RETROK_UNKNOWN
-                      || remap_key >= RETROK_LAST)
+                  if (remap_key == RETROK_UNKNOWN)
                      continue;
 
                   if (j >= RARCH_FIRST_CUSTOM_BIND && j < RARCH_ANALOG_BIND_LIST_END)
