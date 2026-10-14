@@ -31,6 +31,7 @@
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_RMP4
 #include <formats/rmp4.h>
@@ -119,12 +120,15 @@ typedef struct
    int discarded;             /* pages were released behind playback */
    int          fill_warned;         /* short-read logged once          */
    rwebm_t     *webm;
-#ifdef HAVE_RMP4
+   rwebm_video_stream_t *webmvs;
+   int64_t      webm_hw_shown;
+   int64_t      webm_seek_slot;
    video_hw_frame_t hw_frame;
    int          hw_video;
    int64_t      hw_restart_ns;
    int          hw_started;
    int          hw_restart;
+#ifdef HAVE_RMP4
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
 #endif
    int          vtrack;              /* video track index               */
@@ -233,20 +237,34 @@ bool media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
    return true;
 }
 
-#ifndef HAVE_RMP4
-#ifdef RARCH_INTERNAL
-void libretro_media_suspend_video_hw(void) { }
-#else
-void media_suspend_video_hw(void) { }
-#endif
-#endif
-
-#ifdef HAVE_RMP4
 static void media_drop_hw(media_player_t *p)
 {
    if (p->hw_frame.image)
       video_hw_frame_abandon(&p->hw_frame);
    memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+}
+
+static void media_close_webm_hw(media_player_t *p)
+{
+   media_drop_hw(p);
+   if (p->webmvs)
+      rwebm_video_stream_close(p->webmvs);
+   p->webmvs = NULL;
+   p->hw_video = 0;
+}
+
+static void media_rewind_webm_hw(media_player_t *p)
+{
+   media_drop_hw(p);
+   if (p->webmvs)
+   {
+      rwebm_video_stream_rewind(p->webmvs);
+      p->hw_video = rwebm_video_stream_set_hw(p->webmvs, 0);
+      if (!p->hw_video)
+         media_close_webm_hw(p);
+   }
+   p->webm_hw_shown = 0;
+   p->webm_seek_slot = -1;
 }
 
 #ifdef RARCH_INTERNAL
@@ -256,15 +274,31 @@ void media_suspend_video_hw(void)
 #endif
 {
    media_player_t *p = &media_player;
-   if (!p->mp4vs)
+   if ((!p->webm || p->codec != RWEBM_CODEC_VP9)
+#ifdef HAVE_RMP4
+         && !p->mp4vs
+#endif
+      )
       return;
    p->hw_restart_ns = p->vpts_ns;
    p->hw_restart = 1;
    media_drop_hw(p);
-   rmp4_video_stream_stop_hw(p->mp4vs);
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+      rmp4_video_stream_stop_hw(p->mp4vs);
+#endif
+   media_close_webm_hw(p);
    p->hw_video = p->hw_started = 0;
 }
 
+static void media_present_hw(media_player_t *p)
+{
+   if (p->hw_frame.image && media_hw_refresh(media_hw_user, &p->hw_frame))
+      memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+   MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+}
+
+#ifdef HAVE_RMP4
 static void media_present_mp4(media_player_t *p, int have)
 {
    if (!p->hw_video)
@@ -277,9 +311,7 @@ static void media_present_mp4(media_player_t *p, int have)
    }
    if (have && !p->hw_frame.image)
       rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame);
-   if (p->hw_frame.image && media_hw_refresh(media_hw_user, &p->hw_frame))
-      memset(&p->hw_frame, 0, sizeof(p->hw_frame));
-   MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+   media_present_hw(p);
 }
 #endif
 
@@ -408,6 +440,30 @@ static int media_vp9_superframe(const uint8_t *data, size_t size,
 
 whole:
    sizes[0] = size;
+   return 1;
+}
+
+static int media_packet_shown(media_player_t *p, const rwebm_packet *pkt)
+{
+   if (p->codec == RWEBM_CODEC_VP8)
+      return pkt->size && (pkt->data[0] & 0x10);
+   if (p->codec == RWEBM_CODEC_VP9)
+   {
+      size_t sizes[8], offset = 0;
+      int i, n = media_vp9_superframe(pkt->data, pkt->size, sizes, 8);
+      for (i = 0; i < n; i++)
+      {
+         unsigned profile;
+         if (!sizes[i] || sizes[i] > pkt->size - offset)
+            return 1;
+         profile = ((pkt->data[offset] >> 5) & 1)
+               | (((pkt->data[offset] >> 4) & 1) << 1);
+         if (profile == 3 || (pkt->data[offset] & 0x0a))
+            return 1;
+         offset += sizes[i];
+      }
+      return 0;
+   }
    return 1;
 }
 
@@ -638,7 +694,8 @@ static int media_ts_cmp(const void *a, const void *b)
 
 static size_t media_native_consumed(media_player_t *p)
 {
-   size_t consumed = rwebm_consumed(p->webm);
+   size_t consumed = p->webmvs
+         ? rwebm_video_stream_consumed(p->webmvs) : rwebm_consumed(p->webm);
    if (p->wgather)
    {
       size_t gathered = rwebm_consumed(p->wgather);
@@ -650,6 +707,7 @@ static size_t media_native_consumed(media_player_t *p)
 
 static void media_free_player(media_player_t *p)
 {
+   media_close_webm_hw(p);
    if (p->vp9)
    {
       rvp9_free(p->vp9);
@@ -794,10 +852,15 @@ void MEDIA_CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
 void MEDIA_CORE_PREFIX(retro_reset)(void)
 {
    media_player_t *p = &media_player;
+   if (p->dt && p->discarded)
+   {
+      data_transfer_refill(p->dt, 0);
+      p->discarded = 0;
+   }
    if (p->webm)
       rwebm_rewind(p->webm);
+   media_rewind_webm_hw(p);
 #ifdef HAVE_RMP4
-   media_drop_hw(p);
    if (p->mp4vs)
    {
       rmp4_video_stream_rewind(p->mp4vs);
@@ -899,6 +962,29 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       p->discarded = 0;
    }
 
+   if (p->webmvs)
+   {
+      int64_t slot = to_slot;
+      if (slot < 0)
+      {
+         slot = 0;
+         while (slot + 1 < p->nvts && p->vts[slot + 1] <= target_ns)
+            slot++;
+      }
+      if (slot >= p->nvts)
+         slot = p->nvts > 0 ? p->nvts - 1 : 0;
+      media_rewind_webm_hw(p);
+      if (p->webmvs)
+      {
+         p->webm_seek_slot = slot;
+         p->vpts_ns = p->nvts ? p->vts[slot] : target_ns;
+         p->play_ns = p->vpts_ns + p->frame_ns;
+         p->vshown = slot + 1;
+         p->eof = 0;
+         goto seek_audio;
+      }
+   }
+
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
@@ -929,9 +1015,8 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       {
          if (pkt.track != p->vtrack)
             continue;
-         if (p->codec == RWEBM_CODEC_VP8
-               && (!pkt.size || !(pkt.data[0] & 0x10)))
-            continue;          /* invisible alt-ref: no display slot   */
+         if (!media_packet_shown(p, &pkt))
+            continue;
          /* counting below-target packets is order-independent, so it
           * gives the target's display slot even though this walk is
           * in decode order */
@@ -1028,6 +1113,7 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       p->vshown  = (int64_t)tidx + 1;
    }
 
+seek_audio:
 #ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
    {
@@ -1117,6 +1203,36 @@ void media_video_hw_ready(void)
 #endif
 {
    media_player_t *p = &media_player;
+   if (p->webm && p->codec == RWEBM_CODEC_VP9 && !p->hw_started)
+   {
+      p->hw_started = 1;
+      if (p->dt && p->discarded)
+      {
+         data_transfer_refill(p->dt, 0);
+         p->discarded = 0;
+      }
+      if (media_hw_refresh && media_hw_refresh(media_hw_user, NULL))
+      {
+         size_t avail = p->dt ? data_transfer_avail(p->dt) : (size_t)p->file_len;
+         p->webmvs = rwebm_video_stream_open_avail(p->file_buf,
+               (size_t)p->file_len, avail, NULL);
+         if (p->webmvs && rwebm_video_stream_set_hw(p->webmvs, 1))
+         {
+            p->hw_video = 1;
+            p->webm_hw_shown = 0;
+            p->webm_seek_slot = -1;
+         }
+         else
+            media_close_webm_hw(p);
+      }
+      if (p->hw_restart)
+      {
+         int64_t target = p->hw_restart_ns;
+         p->hw_restart = 0;
+         if (media_seek(p, target) + 500000000 < target)
+            p->pending_seek_ns = target;
+      }
+   }
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
@@ -1139,6 +1255,65 @@ void media_video_hw_ready(void)
 #ifndef HAVE_RMP4
    (void)p;
 #endif
+}
+
+static void media_run_webm_hw(media_player_t *p)
+{
+   int64_t started = cpu_features_get_time_usec();
+   int64_t target = p->webm_seek_slot;
+   if (target < 0)
+   {
+      target = p->vshown - 1;
+      p->play_ns += p->frame_ns;
+      while (target + 1 < p->nvts
+            && p->vts[target + 1] + p->frame_ns / 2 <= p->play_ns)
+         target++;
+   }
+   while ((!p->eof || p->webm_seek_slot >= 0)
+         && !p->hw_frame.image && p->webm_hw_shown <= target)
+   {
+      if (!rwebm_video_stream_next(p->webmvs, NULL))
+      {
+         if (!rwebm_video_stream_waiting(p->webmvs))
+         {
+            p->eof = 1;
+            p->webm_seek_slot = -1;
+         }
+         break;
+      }
+      p->webm_hw_shown++;
+      if (!rwebm_video_stream_hw_frame(p->webmvs, &p->hw_frame))
+      {
+         p->eof = 1;
+         p->webm_seek_slot = -1;
+         break;
+      }
+      if (p->webm_hw_shown - 1 < target)
+         media_drop_hw(p);
+      else
+      {
+         p->vshown = p->webm_hw_shown;
+         p->vpts_ns = p->vts && p->vshown <= p->nvts
+               ? p->vts[p->vshown - 1] : p->vpts_ns;
+         p->webm_seek_slot = -1;
+      }
+      if (cpu_features_get_time_usec() - started >= 4000)
+         break;
+   }
+   media_present_hw(p);
+   if (!p->hw_frame.image && p->nvts > 0 && p->webm_hw_shown >= p->nvts
+         && (!p->dt || data_transfer_complete(p->dt) || data_transfer_failed(p->dt)))
+      p->eof = 1;
+   if (p->eof && !p->hw_frame.image && p->webm_seek_slot < 0)
+   {
+      int audio_done = 1;
+#ifdef MEDIA_HAVE_AUDIO
+      if (p->actx && !p->aeof)
+         audio_done = 0;
+#endif
+      if (audio_done)
+         MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+   }
 }
 
 void MEDIA_CORE_PREFIX(retro_run)(void)
@@ -1279,10 +1454,13 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          && !data_transfer_capped(p->dt)
          && (   p->pending_seek_ns >= 0
              || data_transfer_avail(p->dt)
-                < rwebm_tell(p->webm) + MEDIA_FILL_LOOKAHEAD))
+                < (p->webmvs ? rwebm_video_stream_consumed(p->webmvs)
+                   : rwebm_tell(p->webm)) + MEDIA_FILL_LOOKAHEAD))
    {
       size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
       rwebm_set_avail(p->webm, avail);
+      if (p->webmvs)
+         rwebm_video_stream_set_avail(p->webmvs, avail);
       if (p->wgather)
       {
          rwebm_set_avail(p->wgather, avail);
@@ -1326,6 +1504,12 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          data_transfer_discard(p->dt, consumed - MEDIA_DISCARD_MARGIN);
          p->discarded = 1;
       }
+   }
+
+   if (p->webmvs)
+   {
+      media_run_webm_hw(p);
+      goto audio;
    }
 
    if (!p->eof)
@@ -1421,9 +1605,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
    }
 
-#ifdef HAVE_RMP4
 audio:
-#endif
 #ifdef MEDIA_HAVE_AUDIO
    if (p->actx && !p->aeof)
    {
@@ -1524,8 +1706,7 @@ static void media_native_pump(media_player_t *p)
 #endif
       if (pkt.track != p->vtrack)
          continue;
-      if (p->codec == RWEBM_CODEC_VP8
-            && (!pkt.size || !(pkt.data[0] & 0x10)))
+      if (!media_packet_shown(p, &pkt))
          continue;
       if (p->nvts >= p->nvts_cap)
       {

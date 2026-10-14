@@ -96,7 +96,31 @@ RESIDENCY_OBJS := $(call sample_objs,$(RESIDENCY_SOURCES:.c=.o))
 $(RESIDENCY_TARGET): webm_residency_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_residency_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 
-check: $(TARGET) $(HW_TARGET) $(RESIDENCY_TARGET)
+VP9_HW_TARGET := webm_vp9_hw_test$(EXE)
+$(VP9_HW_TARGET): webm_vp9_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_vp9_hw_test.c $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
+
+DEVICE_TARGET := webm_vp9_device_test$(EXE)
+ifeq ($(EXE),.exe)
+$(DEVICE_TARGET): webm_vp9_device_test.c $(ROOT)/cores/libretro-media/media_core.c \
+      ../../gfx/d3d11_video_decode/d3d11_video_decode_test.c \
+      ../../gfx/d3d11_video_decode/d3d11_video_decode_test_data.h \
+      ../../gfx/d3d11_video_decode/hevc_device_data.h \
+      ../../gfx/d3d11_video_decode/frontend_stubs.h \
+      $(ROOT)/gfx/common/d3d11_video_decode.c $(ROOT)/gfx/common/d3d11_video_decode.h \
+      $(ROOT)/gfx/common/dxva_vp9.h $(ROOT)/gfx/common/dxva_hevc.h \
+      $(ROOT)/gfx/common/dxva_hevc_rh265.h $(RESIDENCY_OBJS)
+	$(CC) $(CFLAGS) -I$(ROOT) -isystem $(ROOT)/gfx/include/dxsdk \
+	   -ffunction-sections -fdata-sections -o $@ webm_vp9_device_test.c \
+	   $(RESIDENCY_OBJS) $(LDFLAGS) -Wl,--gc-sections -ld3d11 $(LDLIBS)
+else
+$(DEVICE_TARGET): webm_vp9_device_test.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+endif
+
+check: $(TARGET) $(HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET)
+	$(RUNNER) ./$(VP9_HW_TARGET)
+	$(RUNNER) ./$(DEVICE_TARGET)
 	$(RUNNER) ./$(RESIDENCY_TARGET)
 	$(RUNNER) ./$(TARGET) fixtures
 ifeq ($(MP4),1)
@@ -105,6 +129,6 @@ endif
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe
+	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe webm_vp9_hw_test webm_vp9_hw_test.exe webm_vp9_device_test webm_vp9_device_test.exe
 
 .PHONY: all check clean

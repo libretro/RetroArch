@@ -199,7 +199,9 @@ profile-2/P010 backend for `rvp9_hw_session_t`. The initialized renderer must
 advertise the matching import format. The device is queried for the actual
 profile, coded size and raw-bitstream configuration. The backend is registered when HAVE_RVP9 is enabled. The WebM animation
 stream can select it through image_transfer and the shared video_player
-used by thumbnail animation; primary media_core WebM integration is pending.
+used by thumbnail animation and the primary media_core WebM path.
+The movie-core host and optional native GPU oracle live in
+`samples/cores/webm_player`; Vulkan VP9 submission remains pending.
 
 The initial path accepts even, fixed-size 4:2:0 frames and BT.601/BT.709 output
 matrices (VP9 color spaces 0-3); unsupported color spaces, depth and geometry
@@ -244,3 +246,19 @@ reads an exported frame after closing its stream. Four 12-frame cases pass on
 the RTX 5090 (96 WebM frame comparisons plus eight rewind/close checks).
 These tests exercise real hardware decoding and shared GPU leases, not the
 complete File Browser UI, shader chain, audio synchronization or primary core.
+
+The primary movie-core device oracle uses these same external fixtures:
+
+```
+cd samples/cores/webm_player
+make webm_vp9_device_test.exe CC=x86_64-w64-mingw32-gcc OS=Windows_NT EXE=.exe
+```
+
+Run natively on Windows with `VP9_TEST_WEBM` and `VP9_TEST_RAW` set to a
+matching generated pair. It drives the real media_core and compares every
+NV12/P010 sample through the D3D11 and available D3D12 readers, while checking
+that the CPU canvas stays untouched. Readbacks and waits are test-only.
+`make check` also runs a portable mock-backend core test for BUSY retries,
+partial input, seeks, reset/restore, suspend/restart and software fallback.
+Seek catch-up is asynchronous and currently replays from the first keyframe;
+long-file seek performance and actual renderer/shader/A/V acceptance remain.

@@ -39,8 +39,10 @@ return unsupported without submitting: cancel/retire and reopen resources or
 use software fallback. Backend decode/output failures make the session unusable.
 D3D11 profile-0/profile-2 submission is registered when compiled in. The WebM
 animation stream opts into it through image_transfer and the shared video_player,
-including the thumbnail animation path. Vulkan submission and the primary
-media_core WebM path remain separate integration work.
+including the thumbnail animation path. The primary media_core WebM path
+also adopts this stream; its host tests cover GPU sink ownership, transport
+and software fallback in
+`samples/cores/webm_player`. Vulkan VP9 submission remains pending.
 
 Reference: [Vulkan VP9 reference management and show-existing behavior](https://docs.vulkan.org/features/latest/features/proposals/VK_KHR_video_decode_vp9.html).
 
