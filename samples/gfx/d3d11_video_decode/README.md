@@ -52,6 +52,10 @@ ABI and existing H.264 mock regressions. The HEVC test checks 8/10-bit
 fields, signed QP/POC, full reference capacity, short/long-term sets,
 scaling/DC matrices, malformed NALs, padding and output bounds. Windows
 compares complete buffers against native SDK structures.
+The access-unit pipeline test borrows Main/Main10 fixture NALs, constructs
+picture/slice submissions, and compares software output from the original
+length-prefixed sample with the packed Annex-B buffer. This proves payload
+preservation and parser integration; it does not execute a GPU decoder.
 
 This is the HEVC parameter/access-unit/submission-buffer layer. The decoder
 owner still needs packet retry/lifetime integration, hardware dispatch,

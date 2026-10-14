@@ -555,6 +555,10 @@ static void test_access_unit(void)
    memcpy(packet + 6 + bytes, unit[1], lens[1]); n = 6 + bytes + lens[1];
    expect("all-intra borrowed AU", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), 0);
    if (!out.intra) failures++;
+   slice_header(&w, 1, 0, 2, 0, 0); w.buf[2] |= 0x80;
+   lens[1] = nal(unit[1], 1, &w);
+   memcpy(packet + 6 + bytes, unit[1], lens[1]); n = 6 + bytes + lens[1];
+   expect("AU mismatched POC", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), -1);
    sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
    packet[0] = 0; packet[1] = 0; packet[2] = 1; memcpy(packet + 3, unit[0], lens[0]);
    expect("in-band SPS refusal", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), -2);
