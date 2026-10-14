@@ -54,14 +54,39 @@
 
 /* Adapted from bSNES and MPlayer source. */
 
+/* Images drawn in turn: the adaptor may still be reading the last one
+ * put while the next frame is drawn */
+#define XV_IMAGES 2
+
+struct xv_image
+{
+   XShmSegmentInfo shm;
+   XvImage *image;
+   /* The placements a core's views were last drawn at in this image, to
+    * clear it only when they move: (unsigned)-1 when it is to be
+    * cleared */
+   video_views_placement_t views_last[VIDEO_VIEWS_MAX_PLACEMENTS];
+   unsigned views_last_count;
+   /* Put, and the server not yet done reading it */
+   bool pending;
+};
+
 typedef struct xv
 {
+   struct xv_image images[XV_IMAGES];
+   /* The image drawn this frame */
+   struct xv_image *cur;
+   XvImage *image;
+   /* The images' own connection, whose completion events nothing else
+    * reads, and its GC for the window */
+   Display *dpy;
    GC gc;
-   XShmSegmentInfo shminfo;
+   int completion;
+   unsigned shown;
+   /* The server took no images: nothing is shown, nothing tried again */
+   bool images_failed;
 
    XvPortID port;
-
-   XvImage *image;
 
    struct video_viewport vp;
 
@@ -117,12 +142,6 @@ typedef struct xv
    uint32_t *menu_scaled;
    size_t menu_scaled_size;
 
-   /* A core's views laid out on the window, converted straight from
-    * the frame into the image at twice the scale they are composed at:
-    * the placements of the last frame, to clear the image only when
-    * they move */
-   video_views_placement_t views_last[VIDEO_VIEWS_MAX_PLACEMENTS];
-   unsigned views_last_count;
    /* The window's size, which the views are laid out on */
    unsigned out_dims;
    /* The part of the image last put to the window */
@@ -535,7 +554,7 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
       for (j = 0; j < ARRAY_SIZE(formats); j++)
       {
          if (format[i].type == XvYUV
-               && format[i].bits_per_pixel == formats[j].bits
+               && (unsigned)format[i].bits_per_pixel == formats[j].bits
                && format[i].format == formats[j].format)
          {
             if (format[i].component_order[0] == formats[j].components[0] &&
@@ -588,9 +607,6 @@ static void *xv_init(const video_info_t *video)
    Atom atom                              = 0;
    XVisualInfo *visualinfo                = NULL;
    XvAdaptorInfo *adaptor_info            = NULL;
-   const struct retro_game_geometry *geom = NULL;
-   video_driver_state_t *video_st         = video_state_get_ptr();
-   struct retro_system_av_info *av_info   = &video_st->av_info;
    settings_t *settings                   = config_get_ptr();
    bool video_disable_composition         = settings->bools.video_disable_composition;
    xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
@@ -608,14 +624,20 @@ static void *xv_init(const video_info_t *video)
       goto error;
    }
 
-   if (av_info)
-      geom        = &av_info->geometry;
 
    if (!XShmQueryExtension(g_x11_dpy))
    {
       RARCH_ERR("[XVideo] XShm extension not found.\n");
       goto error;
    }
+   /* The images go out on a connection of their own: their completion
+    * events say when one may be drawn into again, read as they come */
+   if (!(xv->dpy = XOpenDisplay(NULL)))
+   {
+      RARCH_ERR("[XVideo] Cannot open the images' connection.\n");
+      goto error;
+   }
+   xv->completion = XShmGetEventBase(xv->dpy) + ShmCompletion;
 
    xv->keep_aspect = video->force_aspect;
    xv->rgb32       = video->rgb32;
@@ -761,42 +783,14 @@ static void *xv_init(const video_info_t *video)
       x11_show_mouse(xv, false);
    }
 
-   xv->gc = XCreateGC(g_x11_dpy, g_x11_win, 0, 0);
+   xv->gc = XCreateGC(xv->dpy, g_x11_win, 0, 0);
 
    /* Set colorkey to auto paint, so that Xv video output is always visible. */
    atom = XInternAtom(g_x11_dpy, "XV_AUTOPAINT_COLORKEY", true);
    if (atom != None)
       XvSetPortAttribute(g_x11_dpy, xv->port, atom, 1);
 
-   if (geom)
-   {
-      xv->width  = geom->max_width;
-      xv->height = geom->max_height;
-   }
-
-   xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc,
-         NULL, xv->width, xv->height, &xv->shminfo);
-
-   if (!xv->image)
-   {
-      RARCH_ERR("[XVideo] XShmCreateImage failed.\n");
-      goto error;
-   }
-
-   xv->width            = xv->image->width;
-   xv->height           = xv->image->height;
-   xv->shminfo.shmid    = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
-   xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
-   xv->shminfo.readOnly = false;
-
-   if (!XShmAttach(g_x11_dpy, &xv->shminfo))
-   {
-      RARCH_ERR("[XVideo] XShmAttach failed.\n");
-      goto error;
-   }
-   XSync(g_x11_dpy, False);
-   memset(xv->image->data, 128, xv->image->data_size);
-
+   /* The images are made at the first frame's size */
    x11_install_quit_atom();
 
    frontend_driver_install_signal_handler();
@@ -820,80 +814,161 @@ static void *xv_init(const video_info_t *video)
 error:
    if (visualinfo)
       XFree(visualinfo);
+   if (xv->dpy)
+      XCloseDisplay(xv->dpy);
    free(xv);
    return NULL;
 }
 
-static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
+static void xv_views_clear(xv_t *xv);
+
+static void xv_images_free(xv_t *xv)
 {
-   /* We render @ 2x scale to combat chroma downsampling. */
-   if (xv->width != (width << 1) || xv->height != (height << 1))
+   unsigned i;
+   bool attached = false;
+   for (i = 0; i < XV_IMAGES; i++)
    {
-      xv->width  = width << 1;
-      xv->height = height << 1;
-
-      XShmDetach(g_x11_dpy, &xv->shminfo);
-      shmdt(xv->shminfo.shmaddr);
-      shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
-      XFree(xv->image);
-
-      memset(&xv->shminfo, 0, sizeof(xv->shminfo));
-      xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc,
-            NULL, xv->width, xv->height, &xv->shminfo);
-
-      if (xv->image == None)
+      if (xv->images[i].image && xv->images[i].shm.shmaddr)
       {
-         RARCH_ERR("[XVideo] Failed to create image.\n");
-         return false;
+         XShmDetach(xv->dpy, &xv->images[i].shm);
+         attached = true;
       }
-
-      xv->width  = xv->image->width;
-      xv->height = xv->image->height;
-
-      xv->shminfo.shmid =
-         shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
-
-      if (xv->shminfo.shmid < 0)
-      {
-         RARCH_ERR("[XVideo] Failed to init SHM.\n");
-         return false;
-      }
-
-      xv->shminfo.shmaddr  = xv->image->data =
-         (char*)shmat(xv->shminfo.shmid, NULL, 0);
-      xv->shminfo.readOnly = false;
-
-      if (!XShmAttach(g_x11_dpy, &xv->shminfo))
-      {
-         RARCH_ERR("[XVideo] Failed to reattch XvShm image.\n");
-         return false;
-      }
-      XSync(g_x11_dpy, False);
-      memset(xv->image->data, 128, xv->image->data_size);
    }
+   /* The server lets the segments go before they are unmapped */
+   if (attached)
+      XSync(xv->dpy, False);
+   for (i = 0; i < XV_IMAGES; i++)
+   {
+      struct xv_image *im = &xv->images[i];
+      if (im->shm.shmaddr)
+         shmdt(im->shm.shmaddr);
+      if (im->image)
+         XFree(im->image);
+      memset(im, 0, sizeof(*im));
+   }
+   xv->cur    = NULL;
+   xv->image  = NULL;
+   xv->width  = 0;
+   xv->height = 0;
+}
+
+/* The X server's answer to attaching a segment: a remote server cannot
+ * map it */
+static bool xv_attach_failed;
+
+static int xv_attach_error(Display *dpy, XErrorEvent *event)
+{
+   xv_attach_failed = true;
+   return 0;
+}
+
+/* The images at @width x @height, black, or as near as the adaptor
+ * makes them: xv->width and xv->height say */
+static bool xv_images_make(xv_t *xv, unsigned width, unsigned height)
+{
+   unsigned i;
+   int (*old)(Display*, XErrorEvent*);
+   xv_images_free(xv);
+   xv_attach_failed = false;
+   old              = XSetErrorHandler(xv_attach_error);
+   for (i = 0; i < XV_IMAGES; i++)
+   {
+      struct xv_image *im = &xv->images[i];
+      im->image = XvShmCreateImage(xv->dpy, xv->port, xv->fourcc, NULL,
+            (int)width, (int)height, &im->shm);
+      if (!im->image)
+         break;
+      im->shm.shmid = shmget(IPC_PRIVATE, im->image->data_size,
+            IPC_CREAT | 0600);
+      if (im->shm.shmid < 0)
+         break;
+      im->shm.shmaddr = im->image->data =
+         (char*)shmat(im->shm.shmid, NULL, 0);
+      /* Gone with the last detach, whatever happens to this process */
+      shmctl(im->shm.shmid, IPC_RMID, NULL);
+      if (im->shm.shmaddr == (char*)-1)
+      {
+         im->shm.shmaddr = NULL;
+         break;
+      }
+      im->shm.readOnly = False;
+      if (!XShmAttach(xv->dpy, &im->shm))
+         break;
+      im->views_last_count = (unsigned)-1;
+   }
+   /* Made once a size: the attaches answered before an image is used */
+   XSync(xv->dpy, False);
+   if (i < XV_IMAGES || xv_attach_failed)
+   {
+      RARCH_ERR("[XVideo] Failed to make the images.\n");
+      /* Detaching what never attached is answered here too */
+      xv_images_free(xv);
+      xv->images_failed = true;
+      XSetErrorHandler(old);
+      return false;
+   }
+   XSetErrorHandler(old);
+   xv->width  = (unsigned)xv->images[0].image->width;
+   xv->height = (unsigned)xv->images[0].image->height;
+   for (i = 0; i < XV_IMAGES; i++)
+   {
+      xv->cur   = &xv->images[i];
+      xv->image = xv->cur->image;
+      xv_views_clear(xv);
+   }
+   xv->shown = 0;
    return true;
 }
 
-/* TODO: Is there some way to render directly like GL?
- * Hacky C code is hacky. */
+/* The image to draw this frame into, at twice @width x @height: one the
+ * server is done reading, the other than the one shown when it can be.
+ * False while the server reads every one: the frame is not shown, never
+ * waited for. */
+static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
+{
+   unsigned i;
+   XEvent event;
+   if (xv->images_failed)
+      return false;
+   if (     (xv->width != (width << 1) || xv->height != (height << 1))
+         && !xv_images_make(xv, width << 1, height << 1))
+      return false;
+   /* What the server has finished, as it comes */
+   while (XCheckTypedEvent(xv->dpy, xv->completion, &event))
+   {
+      const XShmCompletionEvent *done = (const XShmCompletionEvent*)&event;
+      for (i = 0; i < XV_IMAGES; i++)
+         if (xv->images[i].shm.shmseg == done->shmseg)
+            xv->images[i].pending = false;
+   }
+   for (i = 1; i <= XV_IMAGES; i++)
+   {
+      struct xv_image *im = &xv->images[(xv->shown + i) % XV_IMAGES];
+      if (!im->pending)
+      {
+         xv->cur   = im;
+         xv->image = im->image;
+         return true;
+      }
+   }
+   return false;
+}
+
+/* @msg blended into the @width x @height rectangle of the image at @x0,
+ * @y0 (@x0 even), at @pos_x, @pos_y of it from its bottom left */
 static void xv_render_msg(xv_t *xv, const char *msg,
-      unsigned width, unsigned height,
-      const video_frame_info_t *video_info)
+      int x0, int y0, int width, int height, float pos_x, float pos_y)
 {
    int msg_base_x, msg_base_y;
    const struct font_atlas *atlas = NULL;
-   /* The frame's snapshot, not the live setting: this runs on the
-    * video thread, where the main thread may be changing it. */
-   float video_msg_pos_x          = video_info->font_msg_pos_x;
-   float video_msg_pos_y          = video_info->font_msg_pos_y;
 
-   if (!xv->font)
+   if (!xv->font || !msg || !*msg || width <= 0 || height <= 0)
       return;
 
    atlas          = xv->font_driver->get_atlas(xv->font);
 
-   msg_base_x     = video_msg_pos_x * width;
-   msg_base_y     = height * (1.0f - video_msg_pos_y);
+   msg_base_x     = x0 + (int)(pos_x * width);
+   msg_base_y     = y0 + (int)(height * (1.0f - pos_y));
 
    {
       const struct font_glyph* (*get_glyph)(void*, uint32_t)
@@ -934,21 +1009,22 @@ static void xv_render_msg(xv_t *xv, const char *msg,
          glyph_height    = VIDEO_SCALE_H(glyph->dims); \
          src             = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) + \
                            VIDEO_SCALE_H(glyph->atlas_pos) * atlas->width; \
-         if (base_x < 0) \
+         if (base_x < x0) \
          { \
-            src          -= base_x; \
-            glyph_width  += base_x; \
-            base_x = 0; \
+            src          += x0 - base_x; \
+            glyph_width  -= x0 - base_x; \
+            base_x        = x0; \
          } \
-         if (base_y < 0) \
+         if (base_y < y0) \
          { \
-            src          -= base_y * (int)atlas->width; \
-            glyph_height += base_y; \
-            base_y = 0; \
+            src          += (y0 - base_y) * (int)atlas->width; \
+            glyph_height -= y0 - base_y; \
+            base_y        = y0; \
          } \
-         max_width        = width - base_x; \
-         max_height       = height - base_y; \
-         if (max_width <= 0 || max_height <= 0) \
+         max_width        = x0 + width  - base_x; \
+         max_height       = y0 + height - base_y; \
+         if (     max_width <= 0 || max_height <= 0 \
+               || glyph_width <= 0 || glyph_height <= 0) \
             break; \
          if (glyph_width > max_width) \
             glyph_width   = max_width; \
@@ -1228,7 +1304,7 @@ static void xv_views_menu(xv_t *xv, const video_frame_info_t *info,
  * Returns the canvas's size, 0 when the frame is to be drawn whole. */
 static unsigned xv_views_frame(xv_t *xv, const void *frame,
       unsigned dims, unsigned pitch, bool rgb32,
-      const video_frame_info_t *info, bool menu)
+      const video_frame_info_t *info, bool menu, bool *skip)
 {
    unsigned i, cdims;
    float scale;
@@ -1244,12 +1320,11 @@ static unsigned xv_views_frame(xv_t *xv, const void *frame,
 
    scale = menu ? 1.0f : video_views_cpu_scale(&info->views, layout);
    cdims = video_views_cpu_dims(info->dims, scale);
-   if (     xv->width  != VIDEO_SCALE_W(cdims) << 1
-         || xv->height != VIDEO_SCALE_H(cdims) << 1)
+   if (!xv_check_resize(xv, VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims)))
    {
-      if (!xv_check_resize(xv, VIDEO_SCALE_W(cdims), VIDEO_SCALE_H(cdims)))
-         return 0;
-      xv->views_last_count = (unsigned)-1;
+      /* Every image still read: this frame is not shown */
+      *skip = xv->width != 0;
+      return 0;
    }
    /* An adaptor that gave a smaller image draws the frame whole */
    if (     xv->width  != VIDEO_SCALE_W(cdims) << 1
@@ -1269,14 +1344,14 @@ static unsigned xv_views_frame(xv_t *xv, const void *frame,
    if (layout->stereo_mode == VIDEO_STEREO_MODE_INTERLACED)
    {
       if (     menu
-            || xv->views_last_count != layout->num_placements + 1
-            || memcmp(xv->views_last, layout->placements,
+            || xv->cur->views_last_count != layout->num_placements + 1
+            || memcmp(xv->cur->views_last, layout->placements,
                layout->num_placements * sizeof(*layout->placements)))
       {
          xv_views_clear(xv);
-         xv->views_last_count = menu
+         xv->cur->views_last_count = menu
             ? (unsigned)-1 : layout->num_placements + 1;
-         memcpy(xv->views_last, layout->placements,
+         memcpy(xv->cur->views_last, layout->placements,
                layout->num_placements * sizeof(*layout->placements));
       }
       for (i = 0; i < layout->num_placements; i++)
@@ -1322,20 +1397,20 @@ static unsigned xv_views_frame(xv_t *xv, const void *frame,
                0, -1);
       }
       /* Laid out anew when the eyes are no longer blended */
-      xv->views_last_count = (unsigned)-1;
+      xv->cur->views_last_count = (unsigned)-1;
       return cdims;
    }
 
    /* Cleared where the placements move, and under the menu, which is
     * blended into it */
    if (     menu
-         || xv->views_last_count != layout->num_placements
-         || memcmp(xv->views_last, layout->placements,
+         || xv->cur->views_last_count != layout->num_placements
+         || memcmp(xv->cur->views_last, layout->placements,
             layout->num_placements * sizeof(*layout->placements)))
    {
       xv_views_clear(xv);
-      xv->views_last_count = menu ? (unsigned)-1 : layout->num_placements;
-      memcpy(xv->views_last, layout->placements,
+      xv->cur->views_last_count = menu ? (unsigned)-1 : layout->num_placements;
+      memcpy(xv->cur->views_last, layout->placements,
             layout->num_placements * sizeof(*layout->placements));
    }
    for (i = 0; i < layout->num_placements; i++)
@@ -1349,15 +1424,60 @@ static unsigned xv_views_frame(xv_t *xv, const void *frame,
    return cdims;
 }
 
+/* The messages, the statistics and, per eye where the UI is, in each
+ * eye's area. @views_dims is the canvas's size while views draw, the
+ * image twice it. */
+static void xv_frame_text(xv_t *xv, const char *msg,
+      const video_frame_info_t *info, unsigned views_dims,
+      unsigned width, unsigned height)
+{
+   unsigned a;
+   const video_views_layout_t *layout = &info->views_layout;
+   bool per_eye = views_dims && video_views_ui_per_eye(&info->views,
+         layout, true);
+
+   if (info->statistics_show && info->stat_text && *info->stat_text)
+   {
+      xv_render_msg(xv, info->stat_text, 0, 0, (int)width << 1,
+            (int)height << 1, info->osd_stat_params.x,
+            info->osd_stat_params.y);
+      xv->cur->views_last_count = (unsigned)-1;
+   }
+   if (!msg || !*msg)
+      return;
+   xv->cur->views_last_count = (unsigned)-1;
+   if (!per_eye)
+   {
+      xv_render_msg(xv, msg, 0, 0, (int)width << 1, (int)height << 1,
+            info->font_msg_pos_x, info->font_msg_pos_y);
+      return;
+   }
+   for (a = 0; a < layout->num_areas; a++)
+   {
+      /* The area in the window, then in the image */
+      video_views_rect_t r, cut;
+      double s = (double)VIDEO_SCALE_W(views_dims)
+         / VIDEO_SCALE_W(xv->out_dims);
+      video_views_cpu_rect(&layout->areas[a], (float)s, &r);
+      if (!video_views_clip(&r, views_dims, &cut))
+         continue;
+      xv_render_msg(xv, msg, VIDEO_POS_X(cut.pos) * 2,
+            VIDEO_POS_Y(cut.pos) * 2, (int)VIDEO_SCALE_W(cut.dims) * 2,
+            (int)VIDEO_SCALE_H(cut.dims) * 2, info->font_msg_pos_x,
+            info->font_msg_pos_y);
+   }
+}
+
 static bool xv_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   unsigned width = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
-   XWindowAttributes target;
+   unsigned width            = VIDEO_SCALE_W(dims);
+   unsigned height           = VIDEO_SCALE_H(dims);
+   unsigned window           = 0;
    unsigned views_dims       = 0;
    bool menu                 = false;
+   bool skip                 = false;
    xv_t *xv                  = (xv_t*)data;
    bool rgb32                = xv->rgb32;
 #ifdef HAVE_MENU
@@ -1370,63 +1490,76 @@ static bool xv_frame(void *data, const void *frame,
    if (!frame && !menu)
       return true;
 
-   XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+   /* The window's size as its events last said: no round trip */
+   x11_get_video_size(xv, &window);
+   if (!VIDEO_SCALE_W(window) || !VIDEO_SCALE_H(window))
+      return true;
    /* What views are laid out on */
-   if (xv->out_dims != VIDEO_SCALE_PACK(target.width, target.height))
+   if (xv->out_dims != window)
    {
-      xv->out_dims = VIDEO_SCALE_PACK(target.width, target.height);
-      video_driver_set_output_dims(xv->out_dims);
+      xv->out_dims = window;
+      video_driver_set_output_dims(window);
    }
 
    views_dims = xv_views_frame(xv, frame, dims, pitch, rgb32, video_info,
-         menu);
-   if (views_dims && menu)
-      xv_views_menu(xv, video_info, views_dims);
-   else if (menu)
-   {
-      /* The menu in place of the frame */
-      frame  = xv->tex_frame;
-      width  = xv->tex_width;
-      height = xv->tex_height;
-      pitch  = xv->tex_pitch;
-      rgb32  = xv->tex_rgb32;
-   }
+         menu, &skip);
+   if (skip)
+      return true;
 
    if (views_dims)
    {
+      if (menu)
+         xv_views_menu(xv, video_info, views_dims);
       /* The whole window */
       width              = VIDEO_SCALE_W(views_dims);
       height             = VIDEO_SCALE_H(views_dims);
       xv->vp.pos         = VIDEO_POS_PACK(0, 0);
-      xv->vp.dims        = xv->out_dims;
-      xv->vp.full_dims   = xv->out_dims;
+      xv->vp.dims        = window;
+      xv->vp.full_dims   = window;
    }
    else
    {
+      /* The menu blended over the game's frame, or over black */
+      bool alone = menu && !(frame && width && height);
+      if (alone)
+      {
+         width  = xv->tex_width;
+         height = xv->tex_height;
+      }
+      if (!width || !height)
+         return true;
       if (!xv_check_resize(xv, width, height))
-         return false;
+         return true;
       /* The views' image is laid out anew when they come back */
-      xv->views_last_count = (unsigned)-1;
+      xv->cur->views_last_count = (unsigned)-1;
 
-      if (rgb32)
+      if (alone)
+         xv_views_clear(xv);
+      else if (rgb32)
          xv->render_func32(xv, frame, width, height, pitch);
       else
          xv->render_func16(xv, frame, width, height, pitch);
+      if (menu)
+         xv_views_blend_menu(xv, 0, 0, (int)width, (int)height,
+               VIDEO_SCALE_PACK(width, height));
 
-      xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-      xv->vp.full_dims   = VIDEO_SCALE_PACK(target.width, target.height);
+      xv_calc_out_rect(xv->keep_aspect, &xv->vp,
+            VIDEO_SCALE_W(window), VIDEO_SCALE_H(window));
+      xv->vp.full_dims   = window;
    }
 
-   if (msg)
-      xv_render_msg(xv, msg, width << 1, height << 1, video_info);
+   xv_frame_text(xv, msg, video_info, views_dims, width, height);
 
    xv->put_width  = width << 1;
    xv->put_height = height << 1;
-   XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
+   /* Its completion says when it may be drawn into again */
+   XvShmPutImage(xv->dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
-         VIDEO_POS_X(xv->vp.pos), VIDEO_POS_Y(xv->vp.pos), VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
-         true);
-   XSync(g_x11_dpy, False);
+         VIDEO_POS_X(xv->vp.pos), VIDEO_POS_Y(xv->vp.pos),
+         VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims), True);
+   XFlush(xv->dpy);
+   xv->cur->pending = true;
+   xv->shown        = (unsigned)(xv->cur - xv->images);
 
    x11_update_title(NULL);
 
@@ -1444,10 +1577,13 @@ static void xv_free(void *data)
 
    x11_input_ctx_destroy();
 
-   XShmDetach(g_x11_dpy, &xv->shminfo);
-   shmdt(xv->shminfo.shmaddr);
-   shmctl(xv->shminfo.shmid, IPC_RMID, NULL);
-   XFree(xv->image);
+   if (xv->dpy)
+   {
+      xv_images_free(xv);
+      if (xv->gc)
+         XFreeGC(xv->dpy, xv->gc);
+      XCloseDisplay(xv->dpy);
+   }
 
    x11_window_destroy(true);
    x11_colormap_destroy();
@@ -1476,11 +1612,12 @@ static bool xv_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    const uint8_t *img;
    xv_t *xv = (xv_t*)data;
 
-   if (!xv || !xv->image || !xv->put_width || !xv->put_height)
+   if (     !xv || !xv->images[xv->shown].image
+         || !xv->put_width || !xv->put_height)
       return false;
    vw   = VIDEO_SCALE_W(xv->vp.dims);
    vh   = VIDEO_SCALE_H(xv->vp.dims);
-   img  = (const uint8_t*)xv->image->data;
+   img  = (const uint8_t*)xv->images[xv->shown].image->data;
    iw   = xv->width;
    luma = iw * xv->height;
    for (y = (int)vh - 1; y >= 0; y--)
@@ -1569,7 +1706,7 @@ static video_poke_interface_t xv_video_poke_interface = {
    xv_poke_set_texture_frame,
    NULL, /* set_texture_enable */
    NULL, /* set_osd_msg */
-   NULL, /* show_mouse */
+   x11_show_mouse,
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */

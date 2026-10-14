@@ -8,7 +8,7 @@ TARGET := libxv_standin.so
 all: $(TARGET)
 
 $(TARGET): xv_standin.c
-	$(CC) $(CFLAGS) -shared -o $@ xv_standin.c -lX11 $(LDFLAGS)
+	$(CC) $(CFLAGS) -shared -o $@ xv_standin.c -lXext -lX11 $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET)

@@ -1682,8 +1682,7 @@ static const rgui_pixel_format_entry rgui_pixel_format_map[] =
    { "d3d12",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  },
    { "metal",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  }, /* Metal */
    { "sdl_dingux", argb32_to_rgb565,   argb32_to_rgb565_dither,   false }, /* DINGUX SDL */
-   { "sdl_rs90",   argb32_to_rgb565,   argb32_to_rgb565_dither,   false },
-   { "xvideo",     argb32_to_rgb565,   argb32_to_rgb565_dither,   false }
+   { "sdl_rs90",   argb32_to_rgb565,   argb32_to_rgb565_dither,   false }
 };
 
 /* Returns true if current pixel format supports

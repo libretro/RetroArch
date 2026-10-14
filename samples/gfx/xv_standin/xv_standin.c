@@ -2,7 +2,9 @@
  * front of libXv: the calls gfx/drivers/xvideo.c makes, answered by one
  * adaptor with one port that takes the format XV_STANDIN_FORMAT names
  * (YUY2, the default, UYVY or I420) and puts an image to a drawable the
- * way a textured adaptor does, scaled, through XPutImage. A put whose
+ * way a textured adaptor does, scaled, through XPutImage, with the
+ * completion event a put asks for queued as the server would send it -
+ * at once, the image having been read. A put whose
  * source lies outside the image aborts: the driver handed the adaptor
  * something a real one would read past the end of.
  *
@@ -82,7 +84,8 @@ int XvQueryAdaptors(Display *dpy, Window window, unsigned *num,
    a->base_id     = STANDIN_PORT;
    a->num_ports   = 1;
    a->type        = XvInputMask | XvImageMask;
-   a->name        = strdup("Xv stand-in");
+   if ((a->name = (char*)malloc(sizeof("Xv stand-in"))))
+      memcpy(a->name, "Xv stand-in", sizeof("Xv stand-in"));
    a->num_formats = 1;
    a->formats     = f;
    *num           = 1;
@@ -154,7 +157,6 @@ XvImage *XvShmCreateImage(Display *dpy, XvPortID port, int id,
    XvImage *img;
    int planes = id == standin_fourcc(FMT_I420) ? 3 : 1;
    (void)dpy;
-   (void)shminfo;
    if (port != STANDIN_PORT || width <= 0 || height <= 0)
       return NULL;
    if (width > STANDIN_MAX)
@@ -173,6 +175,8 @@ XvImage *XvShmCreateImage(Display *dpy, XvPortID port, int id,
    img->height     = height;
    img->num_planes = planes;
    img->data       = data;
+   /* As libXv keeps it, for the put's completion event */
+   img->obdata     = (XPointer)shminfo;
    if (planes == 3)
    {
       img->pitches[0] = width;
@@ -229,7 +233,6 @@ int XvShmPutImage(Display *dpy, XvPortID port, Drawable d, GC gc,
    XImage *out;
    char *pixels;
    unsigned x, y;
-   (void)send_event;
    if (port != STANDIN_PORT || !img || !img->data)
       return XvBadPort;
    if (     src_x < 0 || src_y < 0 || !src_w || !src_h
@@ -269,5 +272,16 @@ int XvShmPutImage(Display *dpy, XvPortID port, Drawable d, GC gc,
    }
    XPutImage(dpy, d, gc, out, 0, 0, dst_x, dst_y, dst_w, dst_h);
    XDestroyImage(out);
+   if (send_event && img->obdata)
+   {
+      XShmCompletionEvent done;
+      memset(&done, 0, sizeof(done));
+      done.type       = XShmGetEventBase(dpy) + ShmCompletion;
+      done.display    = dpy;
+      done.drawable   = d;
+      done.major_code = 0;
+      done.shmseg     = ((XShmSegmentInfo*)img->obdata)->shmseg;
+      XPutBackEvent(dpy, (XEvent*)&done);
+   }
    return Success;
 }
