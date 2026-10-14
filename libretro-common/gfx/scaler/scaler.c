@@ -139,7 +139,13 @@ static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
    ctx->scaler_special = NULL;
    ctx->unscaled       = false;
 
-   if (!allocate_frames(ctx))
+   /* A conversion at one size runs straight between the caller's
+    * buffers, so only a scaled context gets the intermediate frames:
+    * a converter set up before its size is known (0 x 0) is unscaled
+    * and has nothing to allocate. */
+   if (     (   ctx->in_width  != ctx->out_width
+             || ctx->in_height != ctx->out_height)
+         && !allocate_frames(ctx))
       return false;
 
    if (     ctx->in_width  == ctx->out_width

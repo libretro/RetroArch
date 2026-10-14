@@ -62,6 +62,57 @@ static void test_abgr_scaler(void)
    scaler_ctx_gen_reset(&ctx);
 }
 
+/* A converter made before its size is known, as the frontend makes its
+ * 0RGB1555 one: generated at 0 x 0, then given each frame's size and
+ * run. It must come up, own no intermediate frames (an unscaled
+ * conversion runs between the caller's buffers), and convert. */
+static void test_sizeless_converter(void)
+{
+   struct scaler_ctx ctx;
+   struct scaler_ctx *scaler = &ctx;
+   uint16_t input[5 * 3], output[6 * 3], expect;
+   unsigned x, y;
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.scaler_type = SCALER_TYPE_POINT;
+   ctx.in_fmt      = SCALER_FMT_0RGB1555;
+   ctx.out_fmt     = SCALER_FMT_RGB565;
+   if (!scaler_ctx_gen_filter(&ctx))
+   {
+      printf("FAIL: 0RGB1555 to RGB565 converter refused at 0 x 0\n");
+      failures++;
+      return;
+   }
+   if (ctx.frame_arena || ctx.filter_arena)
+   {
+      printf("FAIL: an unscaled converter owns intermediate frames\n");
+      failures++;
+   }
+   for (y = 0; y < 3; y++)
+      for (x = 0; x < 5; x++)
+         input[y * 5 + x] = (uint16_t)(0x1234 + y * 977 + x * 131);
+   memset(output, 0x5a, sizeof(output));
+   ctx.in_width   = ctx.out_width  = 5;
+   ctx.in_height  = ctx.out_height = 3;
+   ctx.in_stride  = 5 * sizeof(uint16_t);
+   ctx.out_stride = 6 * sizeof(uint16_t);
+   scaler_ctx_scale_direct(scaler, output, input);
+   for (y = 0; y < 3; y++)
+      for (x = 0; x < 6; x++)
+      {
+         if (x < 5)
+            conv_0rgb1555_rgb565(&expect, &input[y * 5 + x], 1, 1, 2, 2);
+         else
+            expect = 0x5a5a;
+         if (output[y * 6 + x] != expect)
+         {
+            printf("FAIL: sizeless converter pixel %u,%u: %04x, not %04x\n",
+                  x, y, output[y * 6 + x], expect);
+            failures++;
+         }
+      }
+   scaler_ctx_gen_reset(&ctx);
+}
+
 static uint32_t x5(uint32_t v) { return (v << 3) | (v >> 2); }
 static uint32_t x6(uint32_t v) { return (v << 2) | (v >> 4); }
 static uint32_t x4(uint32_t v) { return (v << 4) | v; }
@@ -393,6 +444,7 @@ int main(void)
       in16[i] = (uint16_t)i;
 
    test_helpers();
+   test_sizeless_converter();
    test_abgr_scaler();
 
    test_16_to_32("conv_rgb565_argb8888", conv_rgb565_argb8888,
