@@ -12,8 +12,10 @@ the drivers' own differences in text and edge filtering stay small
 (under 5 here, against 52 and 23 for those two faults on d3d9_hlsl).
 
 Clocks, the XMB ribbon and the widgets are off, so the same menu is
-drawn every time. GDI is left out: its software quads only come near a
-gradient.
+drawn every time. A screen holds still only once something is on it:
+the first launch in a fresh Wine prefix can take longer than the
+settle time to draw its first frame, and two blank reads agree. GDI
+is left out: its software quads only come near a gradient.
 
 The screen is 640x480 so RGUI's framebuffer is scaled by a whole
 number: at a fraction, GL and D3D round its rows differently. d3d9_cg
@@ -112,6 +114,11 @@ def blocks(path):
             n = bw * bh
             out.append((s[0] / n, s[1] / n, s[2] / n))
     return out
+
+
+def drawn(b):
+    """Whether any block of @b is brighter than a blank screen."""
+    return max(max(c) for c in b) >= 8
 
 
 def winpath(v):
@@ -230,9 +237,12 @@ def shoot(retroarch, root, driver, menu):
                                stderr=subprocess.DEVNULL, timeout=30)
                 if os.path.exists(shot):
                     b = blocks(shot)
-                    if last is not None and compare(last, b)[0] <= 0.5:
+                    if not drawn(b):
+                        last = None
+                    elif last is not None and compare(last, b)[0] <= 0.5:
                         return shot
-                    last = b
+                    else:
+                        last = b
                 time.sleep(1.0)
             print('note %s/%s: the menu never held still' % (menu, driver))
     finally:
@@ -285,7 +295,7 @@ def main():
             if ref is None:
                 ref = (driver, b)
                 # A blank screen is no reference
-                if max(max(c) for c in b) < 8:
+                if not drawn(b):
                     print('fail %s/%s: nothing drawn' % (menu, driver))
                     failed += 1
                 else:

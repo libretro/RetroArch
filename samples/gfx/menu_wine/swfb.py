@@ -104,10 +104,13 @@ def launch(retroarch, core, root, driver, name, core_env, still):
                                    stderr=subprocess.DEVNULL, timeout=30)
                     if os.path.exists(shot):
                         b = run.blocks(shot)
-                        if last is not None and \
+                        if not run.drawn(b):
+                            last = None
+                        elif last is not None and \
                                 run.compare(last, b)[0] <= 0.5:
                             break
-                        last = b
+                        else:
+                            last = b
                     time.sleep(1.0)
             else:
                 time.sleep(REGROW_SECONDS)
@@ -170,7 +173,7 @@ def main():
             why.append('nothing lent (%s)' % got)
         if not clean:
             why.append('did not quit when asked')
-        if shot and max(max(c) for c in run.blocks(shot)) < 8:
+        if shot and not run.drawn(run.blocks(shot)):
             why.append('nothing drawn')
         if still and shot:
             rshot, _, _ = launch(retroarch, core, root, ref, name,
