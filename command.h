@@ -329,24 +329,9 @@ enum cmd_info_flags
     * quits, resets, loads or overwrites states and saves, writes core
     * memory, loads or unloads cores and content. */
    CMD_INFO_DESTRUCTIVE = (1 << 1),
-   /* A line command that is not offered as a tool: what it does is
-    * covered by another one, or the interface already describes itself.
-    * It stays a command on every line interface.
-    *
-    * A hotkey that steps a selection - the next state slot, the
-    * previous shader, the next cheat - is a hotkey because a person
-    * presses it while watching the screen. Where a command takes the
-    * value outright that one is the tool, and stepping towards it is
-    * only a way to get the value wrong: SAVE_STATE_SLOT over
-    * STATE_SLOT_PLUS and SAVE_STATE, SEEK_REPLAY over
-    * NEXT_REPLAY_CHECKPOINT, PLAY_REPLAY_SLOT over PLAY_REPLAY.
-    *
-    * Where nothing reports the selection either - which cheat is
-    * picked, which shader preset is loaded - there is nothing worth
-    * offering yet: a tool that writes where it cannot read is worse
-    * than none. The disc and the menu are the exceptions kept, because
-    * stepping them blind is all there is and a disc swap is part of
-    * playing a game. */
+   /* A line command that is not offered as a tool: another command
+    * covers it or takes its value outright, or it steps a selection
+    * nothing reports. It stays a command on every line interface. */
    CMD_INFO_NO_TOOL     = (1 << 2)
 };
 
@@ -591,9 +576,9 @@ struct cmd_trailer
 struct cmd_rows
 {
    const struct cmd_column  *columns;
-   unsigned    slack;
    const struct cmd_trailer *trailers;
-   unsigned    required;
+   unsigned                  slack;
+   unsigned                  required;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -630,22 +615,9 @@ void command_run_frames_cancel(const char *why);
 bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
 
-/* The most frames a single request can run and still be answered.
- *
- * A structured interface gives a command ten seconds before it tells
- * the client the command did not answer, and the frames run on
- * regardless: the work outlives the reply it was for. 600 is about ten
- * seconds at 60fps.
- *
- * So RUN_FRAMES asks for no more than this where the reply has a
- * deadline, and answers at once rather than failing ten seconds later
- * with hundreds of frames already run. A line interface has no
- * deadline and keeps the full COMMAND_RUN_FRAMES_MAX.
- *
- * PRESS holds this to every interface, because it holds input for
- * every frame it runs and a press nobody is waiting for would go on
- * holding buttons down. A longer hold is SET_INPUT with RUN_FRAMES,
- * which leaves nothing held if its reply is dropped. */
+/* The most frames a request can run within a structured interface's
+ * ten-second reply deadline (about ten seconds at 60fps). PRESS keeps
+ * to it everywhere, since it holds input for every frame it runs. */
 #define COMMAND_FRAMES_REPLY_MAX 600
 
 /* PRESS <player> <control> <frames>: hold, run and let go, in one. */
@@ -920,19 +892,19 @@ static const struct cmd_trailer cmd_trailers_log[] = {
    { NULL }
 };
 
-static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, 1, NULL, 0 };
-static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, 0, cmd_trailers_cut, 0 };
-static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, 0, cmd_trailers_cut, 0 };
+static const struct cmd_rows cmd_rows_option    = { cmd_cols_option, NULL, 1, 0 };
+static const struct cmd_rows cmd_rows_cores     = { cmd_cols_core, cmd_trailers_cut, 0, 0 };
+static const struct cmd_rows cmd_rows_playlists = { cmd_cols_playlist, cmd_trailers_cut, 0, 0 };
 /* the values, where given, are last and take whatever is left */
 static const struct cmd_rows cmd_rows_core_option =
-   { cmd_cols_core_option, 3, NULL, 3 };
-static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, 7, NULL, 0 };
-static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, 1, cmd_trailers_page, 0 };
-static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, 0, NULL, 0 };
+   { cmd_cols_core_option, NULL, 3, 3 };
+static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 };
+static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
+static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
-static const struct cmd_rows cmd_rows_log       = { NULL, 0, cmd_trailers_log, 0 };
+static const struct cmd_rows cmd_rows_log       = { NULL, cmd_trailers_log, 0, 0 };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the

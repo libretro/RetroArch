@@ -156,7 +156,6 @@ int main(int argc, char **argv)
          && strstr(reply,"-1"));
    /* GET_MEMORY_MAP answers the region READ_CORE_MEMORY takes */
    reply[0]=0;
-   reply[0]=0;
    CHECK(command_get_memory_map(&cmd,"")
          && !strcmp(reply,
             /* the select mask is RetroArch's, worked out from the

@@ -120,7 +120,7 @@ static const struct cmd_trailer test_trailers[] = {
 };
 /* the name in the middle is the column that takes a tab of its own */
 static const struct cmd_rows test_rows =
-   { test_cols_rows, 1, test_trailers, 0 };
+   { test_cols_rows, test_trailers, 1, 0 };
 
 /* a reply whose last column is only sometimes there, as
  * GET_CORE_OPTION's values are */
@@ -131,7 +131,7 @@ static const struct cmd_column test_cols_short[] = {
    { NULL }
 };
 static const struct cmd_rows test_rows_short =
-   { test_cols_short, 2, NULL, 2 };
+   { test_cols_short, NULL, 2, 2 };
 
 #define SHORT_TEXT "a\tone\nb\ttwo\tand more\nc\n"
 
@@ -142,7 +142,7 @@ static const struct cmd_column test_cols_one[] = {
    { NULL }
 };
 static const struct cmd_rows test_rows_one =
-   { test_cols_one, 0, test_trailers, 0 };
+   { test_cols_one, test_trailers, 0, 0 };
 
 #define ONE_TEXT "Atari.lpl\nMORE games.lpl\nMORE\n"
 
@@ -154,7 +154,7 @@ static const struct cmd_trailer test_trailers_log[] = {
    { NULL }
 };
 static const struct cmd_rows test_rows_log =
-   { test_cols_one, 0, test_trailers_log, 0 };
+   { test_cols_one, test_trailers_log, 0, 0 };
 
 /* the word with a line after it instead of a number is a row, and so
  * is a line that only ends with one */
@@ -163,7 +163,7 @@ static const struct cmd_rows test_rows_log =
 /* a reply whose lines are prose: the trailers are all a client is
  * given, as GET_LOG's are */
 static const struct cmd_rows test_rows_bare =
-   { NULL, 0, test_trailers_log, 0 };
+   { NULL, test_trailers_log, 0, 0 };
 
 static bool act_log(command_t *cmd, const char *arg)
 {

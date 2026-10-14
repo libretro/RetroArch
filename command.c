@@ -1457,14 +1457,8 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
  * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
 #define COMMAND_READ_NBYTES_MAX 16384u
 
-/* @n bytes of @data as " XX" apiece, the form READ_CORE_RAM and
- * READ_CORE_MEMORY have always answered in; gives back the end of what
- * it wrote.
- *
- * An snprintf for every byte costs 1.5ms at COMMAND_READ_NBYTES_MAX on
- * an aarch64 Pi - a tenth of a frame formatting two characters at a
- * time, on the main thread, in the command an assistant reads memory
- * with most often. This is 0.02ms for the same bytes. */
+/* @n bytes of @data as " XX" apiece; gives back the end of what it
+ * wrote. */
 static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
 {
    static const char hex[] = "0123456789ABCDEF";
@@ -2180,11 +2174,11 @@ bool command_get_log(command_t *cmd, const char *arg)
 static struct
 {
    command_deferred_t deferred;
-   unsigned           left;
    const char        *name;      /* whichever command owes the reply */
-   char               reply[256];
+   unsigned           left;
    unsigned           port;      /* PRESS: the player holding, from 0 */
    uint16_t           held;      /* PRESS: which buttons, by bit */
+   char               reply[256];
 } command_run_frames_st;
 
 /* PRESS lets go of what it held, on the last of its frames or on
@@ -2753,21 +2747,13 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 }
 
 
-/* LIST_CORES
- *
- * The installed cores, one per line: display name, a tab, the path
- * LOAD_CONTENT takes. The list is already in memory. */
 /* LIST_CORES [content path]
  *
  * The installed cores, one per line: display name, a tab, the path
  * LOAD_CONTENT takes. With a content path, only the cores that support
  * it - the candidates LOAD_CONTENT names when it is handed content and
- * no core to load it with. The list is already in memory.
- *
- * Asking which cores support something sorts the list those come first
- * in, so what this answers without a path is in a different order
- * afterwards. Nothing reads that order as meaning anything, and the
- * menu sorts the same list for the same reason. */
+ * no core to load it with. Filtering sorts the shared list, as the
+ * menu does, so the unfiltered order can change afterwards. */
 bool command_list_cores(command_t *cmd, const char *arg)
 {
    core_info_list_t  *list  = NULL;

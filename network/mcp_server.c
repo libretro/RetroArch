@@ -96,6 +96,8 @@ enum mcp_conn_state
 struct mcp_conn
 {
    char    *buf;         /* request in, then response out */
+   /* the tool call being answered, for the shape of its reply */
+   const struct cmd_action_map *act;
    size_t   len;         /* bytes held */
    size_t   sent;        /* bytes of the response written */
    retro_time_t since;   /* last progress, for the timeout */
@@ -108,8 +110,6 @@ struct mcp_conn
    bool     stdio;       /* the stdio transport's one connection */
    bool     structured;  /* its revision takes structuredContent */
    bool     agreed;      /* stdio: initialize agreed on such a revision */
-   /* the tool call being answered, for the shape of its reply */
-   const struct cmd_action_map *act;
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -791,9 +791,6 @@ static bool mcp_tool_known(const char *name)
    return false;
 }
 
-/* The same reply taken apart: the rows the text is lines of, as the
- * command's columns name them, and the cursor its trailing MORE line
- * carries. The text goes out beside this unchanged. */
 /* One line as one row. The columns before the slack one are read from
  * the line's start and those after it from the end, so the field
  * between them keeps whatever tabs the line has over its columns. */
