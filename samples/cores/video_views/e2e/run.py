@@ -605,9 +605,16 @@ def png_done(path):
         return False
 
 
+# What RetroArch logs when the driver asked for is not in the build: it
+# goes on with another, whose results would pass for the one asked for.
+MISSING_DRIVER_RE = re.compile(r"Couldn't find any video driver named")
+
+
 def status_errors(d, driver, settings):
     """Check the last views status the core logged."""
     found = last_status(d)
+    if direct_drawn(d, MISSING_DRIVER_RE):
+        return ['video driver "%s" is not in this build' % driver]
     if found is None:
         return ['no "[video_views] presents=" line in the logs']
     want = expected_status(driver, settings)
