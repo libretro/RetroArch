@@ -115,8 +115,15 @@ NV12-only. HDR playback remains gated; this is SDR presentation.
 `../d3d_p010_import/run.py` extracts the production shaders, D3D11 import and
 constant/dispatch functions. Windows checks shared NV12/P010 handles, cache
 format/dimension refusal and GPU colors in BT.601/709 limited/full range.
-The D3D12 shader is executed with its constant layout on the D3D11 compute
-oracle; full D3D12 P010 queue/device validation remains pending. Linux and
+The D3D12 shader is also executed with its constant layout on the D3D11
+compute oracle. `test12.c` runs the production D3D12 import functions on a
+real queue, using a D3D11 producer on the same adapter. It checks shared
+NV12/P010 views, BT.601/709 limited/full-range colors (including low 10-bit
+code bits), blocked producer fences, consumer release, cache reuse and
+refusal without submission under list/descriptor/fence pressure. The fixture
+preallocates the output; initial output allocation is not exercised. No
+production ownership callback is invoked by the importer. Actual HEVC
+decoder execution and movie-core GPU presentation remain separate gates. Linux and
 unsupported Windows devices skip GPU execution. Readback is test-only.
 
 Remaining: main movie-core GPU presentation, Vulkan HEVC and real

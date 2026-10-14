@@ -16,6 +16,19 @@ with tempfile.TemporaryDirectory() as directory:
     (tmp / 'convert.inc').write_text(source[start:source.index('\n}', start) + 2])
     start = source.index('static int d3d11_import_tex(')
     (tmp / 'import.inc').write_text(source[start:source.index('\n}', start) + 2])
+    source12 = (root / 'gfx/drivers/d3d12.c').read_text()
+    bodies = []
+    for signature in ('static void d3d12_import_forget(', 'static int d3d12_import_tex(',
+                      'static ID3D12Fence *d3d12_import_fence(', 'static bool d3d12_import_list(',
+                      'static enum video_texture_update d3d12_import_texture('):
+        start = source12.index(signature)
+        bodies.append(source12[start:source12.index('\n}', start) + 2])
+    (tmp / 'import12.inc').write_text('\n'.join(bodies))
+    start = source12.index('typedef struct d3d12_import\n')
+    (tmp / 'types12.inc').write_text(source12[start:source12.index('} d3d12_import_t;', start) + len('} d3d12_import_t;')])
+    video = (root / 'gfx/video_driver.h').read_text()
+    start = video.index('typedef struct video_frame_import\n')
+    (tmp / 'frame.inc').write_text(video[start:video.index('} video_frame_import_t;', start) + len('} video_frame_import_t;')])
     cc = shlex.split(os.environ.get('CC', 'cc'))
     windows = 'mingw' in cc[0] or os.name == 'nt'
     exe = tmp / ('test.exe' if windows else 'test')
@@ -24,3 +37,9 @@ with tempfile.TemporaryDirectory() as directory:
         str(Path(__file__).with_name('test.c')), str(root / 'libretro-common/formats/image/image_yuv_blit.c'),
         '-o', str(exe)] + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+
+    exe12 = tmp / ('test12.exe' if windows else 'test12')
+    subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root), '-I' + str(root / 'libretro-common/include'),
+        str(Path(__file__).with_name('test12.c')), str(root / 'libretro-common/formats/image/image_yuv_blit.c'),
+        '-o', str(exe12)] + (['-ld3d11', '-ld3d12', '-ld3dcompiler', '-ldxgi'] if windows else []) + ['-lm'], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe12)], check=True)

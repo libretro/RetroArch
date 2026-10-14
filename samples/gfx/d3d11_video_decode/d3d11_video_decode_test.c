@@ -384,7 +384,7 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
    ID3D12Fence *wait, *done;
    UINT64 total = 0;
    unsigned w = fr->width, h = fr->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
-   unsigned y, p;
+   unsigned y, p, bps = fr->pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
    uint8_t *m;
    int i;
 
@@ -405,6 +405,12 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
       return 0;
    }
    d12_desc(tex, &desc);
+   if (desc.Width != w || desc.Height != h
+         || desc.Format != (bps == 2 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12))
+   {
+      video_hw_frame_abandon(fr);
+      return 0;
+   }
    d12->lpVtbl->GetCopyableFootprints(d12, &desc, 0, 2, 0, fp, NULL, NULL,
          &total);
    if (!rb12 || rb12_size < total)
@@ -463,17 +469,17 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
       i        = f->n++;
       f->w     = w;
       f->h     = h;
-      f->y[i]  = frame_alloc(f, (size_t)w * h);
-      f->uv[i] = frame_alloc(f, (size_t)cw * 2 * ch);
+      f->y[i]  = frame_alloc(f, (size_t)w * h * bps);
+      f->uv[i] = frame_alloc(f, (size_t)cw * 2 * ch * bps);
       if (f->y[i] && f->uv[i])
       {
          for (y = 0; y < h; y++)
-            memcpy(f->y[i] + (size_t)y * w,
-                  m + fp[0].Offset + (size_t)y * fp[0].Footprint.RowPitch, w);
+            memcpy(f->y[i] + (size_t)y * w * bps,
+                  m + fp[0].Offset + (size_t)y * fp[0].Footprint.RowPitch, w * bps);
          for (y = 0; y < ch; y++)
-            memcpy(f->uv[i] + (size_t)y * cw * 2,
+            memcpy(f->uv[i] + (size_t)y * cw * 2 * bps,
                   m + fp[1].Offset + (size_t)y * fp[1].Footprint.RowPitch,
-                  cw * 2);
+                  cw * 2 * bps);
       }
    }
    rb12->lpVtbl->Unmap(rb12, 0, NULL);
@@ -633,7 +639,7 @@ static void test_hevc_main(int depth)
    const uint8_t *sample = depth == 10 ? hevc_sample10 : hevc_sample8;
    size_t config_size = depth == 10 ? sizeof(hevc_config10) : sizeof(hevc_config8);
    size_t sample_size = depth == 10 ? sizeof(hevc_sample10) : sizeof(hevc_sample8);
-   printf("HEVC %d-bit:\n", depth);
+   printf("HEVC %d-bit through D3D%s:\n", depth, use_d3d12 ? "12" : "11");
    memset(&hw, 0, sizeof(hw));
    memset(&opened, 0, sizeof(opened));
    memset(&ops, 0, sizeof(ops));
@@ -660,7 +666,8 @@ static void test_hevc_main(int depth)
    if (ret) goto done;
    check("HEVC Main: exports shared frame", !rh265_hw_session_output(&session, true, &frame));
    if (!frame.image) goto done;
-   check("HEVC Main: shared handles and fences import", take_hw(&hw, &opened, &frame));
+   check("HEVC Main: shared handles and fences import",
+         use_d3d12 ? take_hw12(&hw, &frame) : take_hw(&hw, &opened, &frame));
    ret = rh265_video_decode(v, sample, sample_size);
    if (ret == 0) ret = rh265_video_drain(v) == 0 ? 1 : -1;
    check("HEVC Main: software picture", ret == 1);
@@ -772,6 +779,8 @@ int main(void)
    {
       printf("read through D3D12:\n");
       use_d3d12 = 1;
+      test_hevc_main(8);
+      test_hevc_main(10);
       for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
       {
          const stream_t *s = &streams[i];
