@@ -1127,8 +1127,9 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
             0, bottomup_ortho, 4);
    }
 
-   if (draw && draw->texture)
-      gfx_display_d3d9_bind_texture(draw, d3d);
+   /* Untextured strips (batched quads) take the white texture, not
+    * whatever the font renderer left bound */
+   gfx_display_d3d9_bind_texture(draw, d3d);
 
    start = d3d->menu_display.offset;
 
