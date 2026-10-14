@@ -58,7 +58,9 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
 # kernel hands back the same region on the next request.
 # --wrap=calloc so a lane can fail the allocations a finishing task
 # would make, to show the notified caller is told regardless.
-LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -lpthread -lm
+# --wrap=task_queue_park so a lane can count the load handler's parks.
+LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=task_queue_park \
+           -lpthread -lm
 
 # Extra flags for the caller; CFLAGS= on the command line would replace
 # everything set above instead of adding to it.

@@ -200,6 +200,9 @@ static bool save_state_in_background       = false;
  * not a task_queue_find().  Save tasks are TASK_TYPE_BLOCKING, so at
  * most one is in flight. */
 static bool load_state_task_pending        = false;
+
+/* How long a state load waiting for the core's second frame parks. */
+#define LOAD_STATE_FRAME_WAIT_USEC 8000
 static bool save_state_task_pending        = false;
 static bool save_state_disable_undo        = false;
 
@@ -1127,25 +1130,15 @@ static void task_load_handler(retro_task_t *task)
    ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
 
-   /* Ensure the core is ready for loading states (Dolphin CLI).
-    *
-    * A spin here (while (...) retro_sleep(1)) cannot work.  When
-    * the task queue is not threaded the handler runs on the same
-    * thread that advances frame_count, so the condition it would
-    * wait on can never become true and the spin is an unconditional
-    * hang - masked interactively only because frame_count is already
-    * past 2 by the time a user loads a state, and CLI autoload is
-    * the one path that reaches here early.  When it IS threaded, a
-    * spin is a hot unsynchronised read of a counter the video thread
-    * writes - a data race, and TSan reports it.
-    *
-    * Yielding does both jobs: the task stays queued and is re-entered
-    * on the next tick, by which time the runloop has advanced the
-    * counter.  The read stays unsynchronised, but as a single benign
-    * poll of a monotonic counter per tick, with no progress depending
-    * on this thread observing it promptly. */
+   /* A core takes a state from its second frame on (Dolphin's CLI
+    * autoload reaches here sooner).  frame_count is advanced by the
+    * frame loop, which wakes no task, so the handler looks again after
+    * about a frame; the unthreaded queue looks once per check. */
    if (*state->frame_count < 2)
+   {
+      task_queue_park(task, LOAD_STATE_FRAME_WAIT_USEC);
       return;
+   }
 
    if (!state->file)
    {
