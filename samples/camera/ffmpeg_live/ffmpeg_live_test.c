@@ -23,10 +23,21 @@
 #include <libretro.h>
 #include <retro_atomic.h>
 #include <libavutil/imgutils.h>
+#include <libavformat/avformat.h>
 #include "../../../camera/camera_driver.h"
 
 extern camera_driver_t camera_ffmpeg;
 static retro_atomic_int_t staging_copies;
+static retro_atomic_int_t eof_reads;
+
+int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
+int __wrap_av_read_frame(AVFormatContext *ctx, AVPacket *packet)
+{
+   int ret = __real_av_read_frame(ctx, packet);
+   if (ret == AVERROR_EOF)
+      retro_atomic_fetch_add_int(&eof_reads, 1);
+   return ret;
+}
 
 int __real_av_image_copy_to_buffer(uint8_t *dst, int dst_size,
       const uint8_t * const src_data[4], const int src_linesize[4],
@@ -207,6 +218,7 @@ int main(void)
     * frame just finished, not the one before it. */
    printf("   a poll hands out the newest finished frame\n");
    current = "newest frame";
+   retro_atomic_store_release_int(&eof_reads, 0);
    h = camera_ffmpeg.init(
          "color=c=black:size=320x240:rate=25,format=gray,geq=lum='N*16',trim=end_frame=8",
          CAPS, VIDEO_SCALE_PACK(320, 240));
@@ -230,6 +242,9 @@ int main(void)
             "the last frame is grey %d, the poll shows %d", 7 * 16, seen);
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
+      CHECK(retro_atomic_load_acquire_int(&eof_reads) == 1,
+            "finished source read EOF %d times",
+            retro_atomic_load_acquire_int(&eof_reads));
    }
 
    /* A core that takes its time over a frame: the thread goes on

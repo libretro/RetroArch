@@ -32,6 +32,7 @@ CFLAGS  += -Wall $(INCDIRS) $(FF_CFLAGS) -std=gnu99 -D_GNU_SOURCE -DHAVE_THREADS
 CFLAGS  += -DFFMPEG_CAMERA_DEFAULT_BACKEND='"lavfi"'
 LDFLAGS += $(FF_LIBS) -lm -lpthread
 LDFLAGS += -Wl,--wrap=av_image_copy_to_buffer
+LDFLAGS += -Wl,--wrap=av_read_frame
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)

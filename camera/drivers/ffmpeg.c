@@ -706,6 +706,8 @@ static void ffmpeg_camera_poll_thread(void *data)
    while (!retro_atomic_load_acquire_int(&ffmpeg->done))
    {
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
+      if (ret == AVERROR_EOF)
+         break;
       /* Read the raw data from the camera. If that fails... */
       if (ret < 0)
       {
