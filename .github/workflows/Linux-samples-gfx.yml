@@ -216,6 +216,18 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./gl3_last_pass_fbo_test.exe
           make clean
 
+      - name: Build and run gl2_pbo_readback_test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/gl2_pbo_readback
+        run: |
+          set -eu
+          # The Linux runs are in the samples-gfx job; this is the
+          # Windows build, the GL 1.1 entry points through import
+          # pointers (gl11_fakes.h).
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          WINEDEBUG=-all timeout 300 wine ./gl2_pbo_readback_test.exe
+          make clean
+
       - name: Build and run d3d9 last_pass tests (mingw-w64, Wine)
         shell: bash
         working-directory: samples/gfx/d3d9_last_pass

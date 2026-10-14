@@ -44,7 +44,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-gl2_pbo_readback_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h
+gl2_pbo_readback_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h gl11_fakes.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -58,6 +58,6 @@ check: $(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 
 .PHONY: all check clean

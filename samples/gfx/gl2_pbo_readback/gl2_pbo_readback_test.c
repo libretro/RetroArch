@@ -99,37 +99,7 @@ static GLboolean fake_unmap_buffer(GLenum target)
    return GL_TRUE;
 }
 
-/* GL 1.1 entry points the driver links directly. */
-void glPixelStorei(GLenum pname, GLint param) { (void)pname; (void)param; }
-void glReadBuffer(GLenum mode) { (void)mode; }
-void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
-      GLenum format, GLenum type, GLvoid *data)
-{ (void)x; (void)y; (void)width; (void)height; (void)format; (void)type; (void)data; }
-void glBindTexture(GLenum t, GLuint i) { (void)t; (void)i; }
-void glBlendFunc(GLenum a, GLenum b) { (void)a; (void)b; }
-void glClear(GLbitfield m) { (void)m; }
-void glClearColor(GLclampf r, GLclampf g, GLclampf b, GLclampf a) { (void)r; (void)g; (void)b; (void)a; }
-void glCopyTexSubImage2D(GLenum a, GLint b, GLint c, GLint d, GLint e, GLint f, GLsizei g, GLsizei h)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
-void glDeleteTextures(GLsizei n, const GLuint *t) { (void)n; (void)t; }
-void glDisable(GLenum c) { (void)c; }
-void glDrawArrays(GLenum m, GLint f, GLsizei c) { (void)m; (void)f; (void)c; }
-void glEnable(GLenum c) { (void)c; }
-void glFinish(void) { printf("  [FAIL] glFinish\n"); exit(1); }
-void glFlush(void) { }
-void glGenTextures(GLsizei n, GLuint *t) { (void)n; (void)t; }
-GLenum glGetError(void) { return GL_NO_ERROR; }
-void glGetIntegerv(GLenum p, GLint *v) { (void)p; *v = 0; }
-const GLubyte *glGetString(GLenum n) { (void)n; return (const GLubyte*)""; }
-GLboolean glIsEnabled(GLenum c) { (void)c; return GL_FALSE; }
-void glScissor(GLint a, GLint b, GLsizei c, GLsizei d) { (void)a; (void)b; (void)c; (void)d; }
-void glTexImage2D(GLenum a, GLint b, GLint c, GLsizei d, GLsizei e, GLint f, GLenum g, GLenum h, const GLvoid *i)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-void glTexParameteri(GLenum a, GLenum b, GLint c) { (void)a; (void)b; (void)c; }
-void glTexSubImage2D(GLenum a, GLint b, GLint c, GLint d, GLsizei e, GLsizei f, GLenum g, GLenum h, const GLvoid *i)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
-void glViewport(GLint a, GLint b, GLsizei c, GLsizei d) { (void)a; (void)b; (void)c; (void)d; }
-void glGetTexLevelParameteriv(GLenum a, GLint b, GLenum c, GLint *d) { (void)a; (void)b; (void)c; *d = 0; }
+#include "gl11_fakes.h"
 
 static int fails;
 
@@ -265,6 +235,8 @@ int main(void)
       CHECK(!bad, "BGR24 rows are the PBO's, converted");
       gl2_free_pbo_readback(&gl);
    }
+
+   CHECK(!gl11_finishes, "no glFinish anywhere on the readback path");
 
    free(out);
    if (fails)

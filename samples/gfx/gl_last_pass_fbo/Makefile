@@ -50,8 +50,8 @@ gl2_last_pass_fbo_test: gl2_last_pass_fbo_test.o $(SHARED_OBJS)
 gl3_last_pass_fbo_test: gl3_last_pass_fbo_test.o $(SHARED_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-gl2_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h gl_last_pass_fakes.h
-gl3_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl3.c gl_last_pass_fakes.h
+gl2_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h gl_last_pass_fakes.h ../gl2_pbo_readback/gl11_fakes.h
+gl3_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl3.c gl_last_pass_fakes.h ../gl2_pbo_readback/gl11_fakes.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
