@@ -68,6 +68,89 @@ static INLINE bool dxva_hevc_params_from_rh265(dxva_hevc_picture_t *picture,
    return true;
 }
 
+/* The caller supplies the full POC and live reference slots. This maps
+ * current short-term RPS entries without changing DPB or frame ownership. */
+static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
+      const rh265_slice_info_t *s)
+{
+   dxva_hevc_picture_t p;
+   uint8_t validation[DXVA_HEVC_PP_SIZE];
+   unsigned list, i, j, type;
+   if (!picture || !s || s->nal_type < 0 || s->slice_type < 0 || s->slice_type > 2
+         || s->first_slice_in_pic < 0 || s->first_slice_in_pic > 1
+         || s->num_negative < 0 || s->num_negative > 16
+         || s->num_positive < 0 || s->num_positive > 16
+         || s->predictor_delta_pocs < 0 || s->predictor_delta_pocs > 32
+         || s->short_term_rps_sps_idx < -1) return false;
+   type = (unsigned)s->nal_type;
+   if (!(type <= 9 || (type >= 16 && type <= 21))) return false;
+   p = *picture;
+   if (p.max_poc_lsb_log2 < 4 || p.max_poc_lsb_log2 > 16 || p.num_refs > 15
+         || (s->short_term_rps_sps_idx >= 0 &&
+            ((unsigned)s->short_term_rps_sps_idx >= p.num_st_rps
+             || s->short_term_rps_bits || s->predictor_delta_pocs))) return false;
+   if (type == 19 || type == 20)
+   {
+      if (s->slice_type != 2 || p.poc || s->poc_lsb || s->num_negative
+            || s->num_positive || s->short_term_rps_bits || s->predictor_delta_pocs)
+         return false;
+   }
+   else if ((s->short_term_rps_sps_idx == -1 && !s->short_term_rps_bits)
+         || s->poc_lsb < 0 || (uint32_t)s->poc_lsb !=
+         ((uint32_t)p.poc & ((1u << p.max_poc_lsb_log2) - 1))) return false;
+   if (!s->first_slice_in_pic &&
+         ((!!(p.coding_settings & (1u << 16)) != (type >= 16))
+          || (!!(p.coding_settings & (1u << 17)) != (type == 19 || type == 20))))
+      return false;
+   i = (unsigned)(s->slice_type == 2 && (s->first_slice_in_pic
+            || (p.coding_settings & (1u << 18))));
+   p.coding_settings &= ~(UINT32_C(7) << 16);
+   p.coding_settings |= (uint32_t)(type >= 16) << 16;
+   p.coding_settings |= (uint32_t)(type == 19 || type == 20) << 17;
+   p.coding_settings |= (uint32_t)i << 18;
+   p.rps_bits = s->short_term_rps_bits;
+   p.delta_pocs = (unsigned)s->predictor_delta_pocs;
+   p.num_before = p.num_after = p.num_longterm = 0;
+   memset(p.before, 0xff, sizeof(p.before));
+   memset(p.after, 0xff, sizeof(p.after));
+   memset(p.longterm, 0xff, sizeof(p.longterm));
+   for (list = 0; list < 2; list++)
+   {
+      unsigned count = (unsigned)(list ? s->num_positive : s->num_negative);
+      const int32_t *deltas = list ? s->delta_poc_after : s->delta_poc_before;
+      const uint8_t *used = list ? s->used_after : s->used_before;
+      unsigned *num = list ? &p.num_after : &p.num_before;
+      uint8_t *set = list ? p.after : p.before;
+      for (i = 0; i < count; i++)
+      {
+         unsigned found = p.num_refs;
+         int64_t poc = (int64_t)p.poc + deltas[i];
+         if (used[i] > 1 || (list ? deltas[i] <= 0 : deltas[i] >= 0)
+               || (i && (list ? deltas[i] <= deltas[i-1] : deltas[i] >= deltas[i-1])))
+            return false;
+         if (!used[i]) continue;
+         if (*num >= 8 || poc < INT32_MIN || poc > INT32_MAX) return false;
+         for (j = 0; j < p.num_refs; j++)
+            if (!p.refs[j].long_term && p.refs[j].poc == poc)
+            {
+               if (found != p.num_refs) return false;
+               found = j;
+            }
+         if (found == p.num_refs) return false;
+         set[(*num)++] = (uint8_t)found;
+      }
+   }
+   if (!s->first_slice_in_pic &&
+         (picture->rps_bits != p.rps_bits || picture->delta_pocs != p.delta_pocs
+          || picture->num_before != p.num_before || picture->num_after != p.num_after
+          || picture->num_longterm
+          || memcmp(picture->before, p.before, p.num_before)
+          || memcmp(picture->after, p.after, p.num_after))) return false;
+   if (!dxva_hevc_pic_params(validation, &p, 1)) return false;
+   *picture = p;
+   return true;
+}
+
 /* Enabled effective lists only. Caller owns the fixed submission buffer. */
 static INLINE bool dxva_hevc_qmatrix_from_rh265(uint8_t *out,
       const rh265_video_params_t *s)

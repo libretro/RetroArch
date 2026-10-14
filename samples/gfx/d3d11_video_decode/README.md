@@ -23,6 +23,16 @@ owner thread. `dxva_hevc_rh265.h` maps those snapshots to validated picture
 fields while preserving per-picture POC, slots, RPS and IRAP flags. Its
 matrix helper converts raster coefficients to the submission buffer.
 Snapshots are owned metadata; neither helper allocates or accesses pixels.
+`rh265_video_get_slice` reads headers directly from borrowed escaped NALs,
+without unescaping/copying the payload or advancing the DPB. It supplies
+resolved short-term RPS deltas and the predictor count/syntax bit length
+needed by DXVA. Long-term reference syntax remains unsupported. Headers
+are bounded to 64 KiB; only header syntax is validated.
+`dxva_hevc_slice_from_rh265` maps used deltas to the caller's live POC/slot
+table. Apply it to every slice in order so mixed I/P/B slices cannot mark
+an inter picture as intra. Later slices must agree on picture flags and
+current RPS. Full POC derivation, DPB marking and slot leases belong to
+the decoder owner; missing/ambiguous references leave descriptors unchanged.
 The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
@@ -35,8 +45,8 @@ fields, signed QP/POC, full reference capacity, short/long-term sets,
 scaling/DC matrices, malformed NALs, padding and output bounds. Windows
 compares complete buffers against native SDK structures.
 
-This is the HEVC parameter/submission-buffer layer. Slice/RPS snapshots,
-hardware dispatch, D3D11 decode/profile setup, GPU slot scheduling,
+This is the HEVC parameter/slice/submission-buffer layer. Access-unit
+ownership, hardware dispatch, D3D11 decode/profile setup, GPU slot scheduling,
 NV12/P010 export, main-player integration and real GPU reference checks
 remain. It does not register or advertise a working HEVC hardware decoder.
 Frame ownership should follow the existing H.264 fences/release protocol;

@@ -358,6 +358,76 @@ static void test_parser_adapter(void)
    CHECK(!dxva_hevc_qmatrix_from_rh265(NULL, &s));
 }
 
+
+static void test_rps_adapter(void)
+{
+   static rh265_slice_info_t s;
+   static dxva_hevc_picture_t saved;
+   unsigned i;
+   setup(); memset(&s, 0, sizeof(s));
+   s.nal_type = 1; s.first_slice_in_pic = 1; s.slice_type = 1;
+   s.short_term_rps_sps_idx = -1; s.short_term_rps_bits = 16;
+   s.num_negative = 2; s.num_positive = 1;
+   s.delta_poc_before[0] = -2; s.delta_poc_before[1] = -4;
+   s.delta_poc_after[0] = 2; s.used_before[0] = s.used_after[0] = 1;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s));
+   CHECK(p.num_before == 1 && p.before[0] == 0 && p.num_after == 1 && p.after[0] == 1);
+   CHECK(p.num_longterm == 0 && p.rps_bits == 16 && !p.delta_pocs);
+   for (i = 1; i < 8; i++) CHECK(p.before[i] == 0xff && p.after[i] == 0xff);
+#ifdef _WIN32
+   check_sdk();
+#endif
+   saved = p;
+#define RPS_BAD(change) do { change; CHECK(!dxva_hevc_slice_from_rh265(&p, &s)); \
+   CHECK(!memcmp(&p, &saved, sizeof(p))); } while (0)
+   RPS_BAD(s.used_before[0] = 2); s.used_before[0] = 1;
+   RPS_BAD(s.delta_poc_before[0] = -3); s.delta_poc_before[0] = -2;
+   RPS_BAD(s.delta_poc_before[1] = -1); s.delta_poc_before[1] = -4;
+   RPS_BAD(s.poc_lsb = 1); s.poc_lsb = 0;
+   RPS_BAD(s.short_term_rps_sps_idx = 5); s.short_term_rps_sps_idx = -1;
+   RPS_BAD(s.predictor_delta_pocs = 33); s.predictor_delta_pocs = 0;
+   RPS_BAD(s.num_positive = 17); s.num_positive = 1;
+   RPS_BAD(s.nal_type = 10); s.nal_type = 1;
+   RPS_BAD(s.short_term_rps_bits = 65536); s.short_term_rps_bits = 16;
+   s.first_slice_in_pic = 0; s.slice_type = 2;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s) && !(p.coding_settings & (1u << 18)));
+   RPS_BAD(s.short_term_rps_bits = 15); s.short_term_rps_bits = 16;
+   s.first_slice_in_pic = 1; s.slice_type = 2;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s) && (p.coding_settings & (1u << 18)));
+   s.first_slice_in_pic = 0; s.slice_type = 1;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s) && !(p.coding_settings & (1u << 18)));
+   setup(); p.poc = INT32_MAX;
+   s.first_slice_in_pic = 1; s.poc_lsb = 255; saved = p;
+   CHECK(!dxva_hevc_slice_from_rh265(&p, &s) && !memcmp(&p, &saved, sizeof(p)));
+   setup(); p.refs[2].poc = -2; p.refs[2].long_term = 0; saved = p;
+   s.poc_lsb = 0;
+   CHECK(!dxva_hevc_slice_from_rh265(&p, &s) && !memcmp(&p, &saved, sizeof(p)));
+   setup(); p.poc = -256; p.refs[0].poc = -258; p.refs[1].poc = -254;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s));
+   setup(); p.slot = 0; p.max_dec_pic_buffering = 16; p.num_refs = 9;
+   memset(&s, 0, sizeof(s)); s.nal_type = 1; s.slice_type = 1;
+   s.first_slice_in_pic = 1; s.short_term_rps_sps_idx = -1;
+   s.short_term_rps_bits = 20; s.num_negative = 9;
+   for (i = 0; i < 9; i++)
+   {
+      p.refs[i].slot = i + 1; p.refs[i].poc = -(int32_t)i - 1;
+      p.refs[i].long_term = 0;
+      s.delta_poc_before[i] = -(int32_t)i - 1; s.used_before[i] = 1;
+   }
+   saved = p;
+   CHECK(!dxva_hevc_slice_from_rh265(&p, &s) && !memcmp(&p, &saved, sizeof(p)));
+   setup(); p.num_refs = 0;
+   memset(&s, 0, sizeof(s)); s.nal_type = 19; s.slice_type = 2;
+   s.first_slice_in_pic = 1; s.short_term_rps_sps_idx = -1;
+   CHECK(dxva_hevc_slice_from_rh265(&p, &s));
+   CHECK((p.coding_settings & (7u << 16)) == (7u << 16));
+#ifdef _WIN32
+   check_sdk();
+#endif
+   CHECK(!dxva_hevc_slice_from_rh265(NULL, &s));
+   CHECK(!dxva_hevc_slice_from_rh265(&p, NULL));
+}
+
 static void test_slices(void)
 {
    uint8_t data[] = {0,0,1,0x26,1,0xab,0,0,0,1,2,1,0xcd};
@@ -387,7 +457,7 @@ static void test_slices(void)
 }
 int main(void)
 {
-   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_parser_adapter(); test_slices();
+   test_picture(); test_rejection(); test_scaling(); test_raster_scaling(); test_parser_adapter(); test_rps_adapter(); test_slices();
    printf("HEVC DXVA buffers: %u failures\n", failures);
    return failures ? 1 : 0;
 }
