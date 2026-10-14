@@ -568,28 +568,29 @@ static bool ffmpeg_camera_start(void *data)
          ? VIDEO_SCALE_H(ffmpeg->requested_dims)
          : (unsigned)ffmpeg->decoder_context->height);
 
-   target_buffer_length = av_image_alloc(
-      ffmpeg->target_planes,
-      ffmpeg->target_linesizes,
+   target_buffer_length = av_image_get_buffer_size(
+      AV_PIX_FMT_BGRA,
       VIDEO_SCALE_W(ffmpeg->target_dims),
       VIDEO_SCALE_H(ffmpeg->target_dims),
-      AV_PIX_FMT_BGRA,
       1
    );
    if (target_buffer_length < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
       av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, target_buffer_length);
-      RARCH_ERR("[FFMPEG] Failed to allocate target plane: %s.\n", msg);
+      RARCH_ERR("[FFMPEG] Failed to calculate target size: %s.\n", msg);
       goto error;
    }
 
-   /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
+   /* Aligned and padded for swscale's direct output. */
    ffmpeg->target_buffer_length = target_buffer_length;
+   ffmpeg->target_linesizes[0] = VIDEO_SCALE_W(ffmpeg->target_dims) * 4;
    for (i = 0; i < 3; i++)
-      if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(4, target_buffer_length)))
+      if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(32,
+                  (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE)))
          /* black until the first frame is in */
-         memset(ffmpeg->target_buffers[i], 0, target_buffer_length);
+         memset(ffmpeg->target_buffers[i], 0,
+               (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE);
    if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1] || !ffmpeg->target_buffers[2])
    {
       RARCH_ERR("[FFMPEG] Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
@@ -682,7 +683,7 @@ static void ffmpeg_camera_stop(void *data)
    }
    /* a poll between stop and start is handed no frame */
    retro_triple_buffer_init(&ffmpeg->frames, NULL, NULL, NULL);
-   av_freep(&ffmpeg->target_planes[0]);
+   memset(ffmpeg->target_planes, 0, sizeof(ffmpeg->target_planes));
    ffmpeg->target_buffer_length = 0;
    ffmpeg->target_dims = 0;
 
@@ -751,6 +752,7 @@ static void ffmpeg_camera_poll_thread(void *data)
       retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
       /* sws_scale_frame is tidier but isn't as widely available */
+      ffmpeg->target_planes[0] = (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames);
       ret = sws_scale(
          ffmpeg->scale_context,
          (const uint8_t *const *)ffmpeg->camera_frame->data,
@@ -770,25 +772,7 @@ static void ffmpeg_camera_poll_thread(void *data)
          goto done_loop;
       }
 
-      ret = av_image_copy_to_buffer(
-         (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames),
-         (int)ffmpeg->target_buffer_length,
-         (const uint8_t *const *)ffmpeg->target_planes,
-         ffmpeg->target_linesizes,
-         AV_PIX_FMT_BGRA,
-         VIDEO_SCALE_W(ffmpeg->target_dims),
-         VIDEO_SCALE_H(ffmpeg->target_dims),
-         1
-      );
-      if (ret >= 0)
-         retro_triple_buffer_publish(&ffmpeg->frames);
-      if (ret < 0)
-      {
-         char msg[AV_ERROR_MAX_STRING_SIZE];
-         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
-         RARCH_ERR("[FFMPEG] Failed to copy frame to buffer: %s.\n", msg);
-         goto done_loop;
-      }
+      retro_triple_buffer_publish(&ffmpeg->frames);
    done_loop:
       /* av_read_frame() fills the packet afresh each turn and does not
        * release what it held */

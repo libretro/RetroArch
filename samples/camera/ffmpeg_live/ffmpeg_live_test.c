@@ -21,9 +21,25 @@
 #include <unistd.h>
 
 #include <libretro.h>
+#include <retro_atomic.h>
+#include <libavutil/imgutils.h>
 #include "../../../camera/camera_driver.h"
 
 extern camera_driver_t camera_ffmpeg;
+static retro_atomic_int_t staging_copies;
+
+int __real_av_image_copy_to_buffer(uint8_t *dst, int dst_size,
+      const uint8_t * const src_data[4], const int src_linesize[4],
+      enum AVPixelFormat pix_fmt, int width, int height, int align);
+
+int __wrap_av_image_copy_to_buffer(uint8_t *dst, int dst_size,
+      const uint8_t * const src_data[4], const int src_linesize[4],
+      enum AVPixelFormat pix_fmt, int width, int height, int align)
+{
+   retro_atomic_fetch_add_int(&staging_copies, 1);
+   return __real_av_image_copy_to_buffer(dst, dst_size, src_data,
+         src_linesize, pix_fmt, width, height, align);
+}
 
 static unsigned failures = 0;
 static const char *current = "";
@@ -35,11 +51,13 @@ static unsigned last_width, last_height;
 static uint32_t checksum;
 static int last_px = -1;          /* blue of the first pixel */
 static useconds_t cb_sleep_us;    /* a core slow to take its frame */
+static bool solid_red;
 
 static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       unsigned height, size_t pitch)
 {
    unsigned x, y;
+   uint32_t before = 0, after = 0;
    frames_seen++;
    last_width  = width;
    last_height = height;
@@ -47,12 +65,27 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       return;
    last_px = (int)(buffer[0] & 0xff);
    if (cb_sleep_us)
+   {
+      for (y = 0; y < height; y++)
+         for (x = 0; x < width; x++)
+            before += buffer[y * (pitch / sizeof(uint32_t)) + x];
       usleep(cb_sleep_us);
+   }
    /* Touch every pixel: a buffer that was freed or is the wrong size
     * shows here under ASan rather than as a wrong-looking picture. */
    for (y = 0; y < height; y++)
       for (x = 0; x < width; x++)
-         checksum += buffer[y * (pitch / sizeof(uint32_t)) + x];
+      {
+         uint32_t pixel = buffer[y * (pitch / sizeof(uint32_t)) + x];
+         after += pixel;
+         if (solid_red)
+            CHECK(((pixel >> 16) & 0xff) >= 245
+                  && ((pixel >> 8) & 0xff) <= 5 && (pixel & 0xff) <= 5,
+                  "converted red pixel differs at %u,%u", x, y);
+      }
+   checksum += after;
+   if (cb_sleep_us)
+      CHECK(before == after, "producer overwrote a frame during its callback");
 }
 
 static void frame_gl_cb(unsigned texture_id, unsigned texture_target,
@@ -251,7 +284,25 @@ int main(void)
    else
       printf("      refused at init\n");
 
+   current = "odd-size direct output";
+   h = camera_ffmpeg.init("nullsrc=size=17x9:rate=100,format=gbrp,geq=r=255:g=0:b=0,realtime",
+         CAPS, VIDEO_SCALE_PACK(17, 9));
+   CHECK(h != NULL, "odd-size camera initialization failed");
+   if (h)
+   {
+      CHECK(camera_ffmpeg.start(h), "odd-size camera start failed");
+      usleep(100000);
+      solid_red = true;
+      CHECK(poll_until_frame(h, 100), "odd-size frame did not arrive");
+      solid_red = false;
+      CHECK(last_width == 17 && last_height == 9, "odd-size dimensions changed");
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
+   }
+   current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);
+   CHECK(retro_atomic_load_acquire_int(&staging_copies) == 0,
+         "conversion used an intermediate full-frame copy");
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("camera ffmpeg: opens, restarts, stops mid-frame and frees without leaving a thread behind\n");
    return 0;

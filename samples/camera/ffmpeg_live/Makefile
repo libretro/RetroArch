@@ -31,6 +31,7 @@ CFLAGS  += -Wall $(INCDIRS) $(FF_CFLAGS) -std=gnu99 -D_GNU_SOURCE -DHAVE_THREADS
 # is a filter graph rather than a webcam.
 CFLAGS  += -DFFMPEG_CAMERA_DEFAULT_BACKEND='"lavfi"'
 LDFLAGS += $(FF_LIBS) -lm -lpthread
+LDFLAGS += -Wl,--wrap=av_image_copy_to_buffer
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g1 $(CFLAGS)
