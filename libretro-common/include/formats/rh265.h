@@ -6,14 +6,15 @@
  * DCTs, transform skip, sign-data hiding, cu_qp_delta quantisation
  * groups, explicit scaling lists, transquant bypass, constrained intra
  * prediction, multiple slices, wavefront-coded pictures, the in-loop
- * deblocking filter and sample-adaptive offset. Pictures decode
+ * deblocking filter and sample-adaptive offset. Short- and long-term
+ * reference pictures are supported. Pictures decode
  * concurrently on a thread pool (rh265_video_set_thread_pool). Every
  * supported fixture is checked against FFmpeg to the sample by the
  * oracle in samples/formats/h265.
  *
  * Out-of-scope streams are refused at the parameter-set or slice level
  * rather than decoded wrongly: 4:2:2/4:4:4/monochrome, other bit
- * depths, long-term references, tiles, dependent slice segments and PCM.
+ * depths, tiles, dependent slice segments and PCM.
  *
  * The persistent video API mirrors rh264_video/rvp8_video so a demuxer
  * (e.g. the MP4 glue in rmp4_video.c) can dispatch H.265 the same way:
@@ -115,8 +116,7 @@ typedef struct rh265_slice_info
  * bytes; header bits count unescaped syntax including byte alignment.
  * Headers over 64 KiB are refused. Return 0, -1 malformed/missing input,
  * or -2 unsupported syntax. Failure clears out; payload validity is not
- * established. Long-term syntax is exposed for hardware adapters;
- * software pixel reconstruction still refuses actual long-term sets. */
+ * established. Long-term metadata includes SPS and slice-signaled entries. */
 int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
       rh265_slice_info_t *out);
 
@@ -144,8 +144,8 @@ typedef struct rh265_access_unit
 /* Describe one picture on the decoder owner thread without advancing its
  * DPB. Caller supplies separate output storage and retains immutable input until submission
  * accepts it (also across busy retries). Only VCL NALs are returned; parameter
- * sets must already be supplied. Return 0, -1 malformed/capacity failure,
- * -2 unsupported or in-band SPS/PPS. Failure clears out; slice entries are
+ * sets must already be supplied; matching in-band SPS/PPS repeats are accepted.
+ * Return 0, -1 malformed/capacity failure, -2 unsupported or changed SPS/PPS. Failure clears out; slice entries are
  * usable only on success. No allocations, payload copies or frame leases. */
 int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
       size_t size, unsigned length_size, rh265_nal_t *slices,
@@ -165,8 +165,7 @@ int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len);
  * internal I420 planes. Accepts Annex-B or length-prefixed HVCC data.
  * Returns 1 when a picture is ready through rh265_video_plane, 0 when
  * the data was consumed without producing a picture (parameter sets or
- * SEI only), and negative on malformed input or an unsupported (e.g.
- * long-term-reference) stream. */
+ * SEI only), and negative on malformed input or unsupported syntax. */
 /* Hardware: 2 busy (retry identical packet), 3 picture ready while the
  * packet remains unconsumed (take picture, then retry identical packet).
  * No CPU planes are available on hardware. */

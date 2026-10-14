@@ -763,6 +763,8 @@ static void test_hevc_streams(void)
    HEVC_STREAM(bpyr, 10);
    HEVC_STREAM(wpp, 10);
    HEVC_STREAM(crop, 10);
+   HEVC_STREAM(repeat, 8);
+   HEVC_STREAM(repeat, 10);
 #undef HEVC_STREAM
 }
 
@@ -790,6 +792,7 @@ static void test_hevc_conformance(void)
 {
    const char *mp4_path = getenv("HEVC_CONFORMANCE_MP4");
    const char *raw_path = getenv("HEVC_CONFORMANCE_NV12");
+   const char *require_lt = getenv("HEVC_CONFORMANCE_REQUIRE_LT");
    uint8_t *data = NULL, *raw = NULL;
    size_t size, raw_size, frame_size = 0;
    rmp4_t *m = NULL;
@@ -823,8 +826,8 @@ static void test_hevc_conformance(void)
       for (i = 0; i < au.first.long_term.count; i++) lt_used += au.first.long_term.used[i];
       packets++;
    }
-   if (ret || !lt_used || !packets) goto invalid;
-   printf("HEVC external long-term stream through D3D%s: %u pictures, %u active LT entries\n",
+   if (ret || (!lt_used && (!require_lt || strcmp(require_lt, "0"))) || !packets) goto invalid;
+   printf("HEVC external reference stream through D3D%s: %u pictures, %u active LT entries\n",
          use_d3d12 ? "12" : "11", packets, lt_used);
    ret = decode_hevc(data, size, 1, 8, (int)(raw_size / frame_size), &hw);
    if (ret == -1)

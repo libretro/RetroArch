@@ -389,7 +389,7 @@ int main(void)
          rf = made;
       }
       ref = slurp(rf, &rlen);
-      int nf = 0;
+      int nf = 0, failed = 0;
       long bad;
       const char *te = getenv("RH265_FILE_THREADS");
       if (!ref)
@@ -398,22 +398,25 @@ int main(void)
       g_pool = tpool_create_with_stack_size(3, 512 * 1024);
       #endif
       bad = compare(getenv("RH265_FILE"), ref, rlen, ref, 0, &nf);
+      failed |= bad != 0;
       printf("one thread: %d frames, %ld differing samples, %d reads short of their rows\n",
             nf, bad, rh265_video_ref_wait_misses());
       g_contexts = 4;
       bad = compare(getenv("RH265_FILE"), ref, rlen, ref, 0, &nf);
       g_contexts = 1;
+      failed |= bad != 0;
       printf("4 contexts, one thread: %d frames, %ld differing samples\n", nf, bad);
       if (te && g_pool)
       {
          g_threads = atoi(te);
          bad = compare(getenv("RH265_FILE"), ref, rlen, ref, 0, &nf);
+         failed |= bad != 0;
          printf("%d threads: %d frames, %ld differing samples\n", g_threads, nf, bad);
       }
       free(ref);
       if (rf == made)
          remove(made);
-      return bad != 0;
+      return failed;
    }
    if (system("ffmpeg -version >/dev/null 2>&1") != 0)
    {

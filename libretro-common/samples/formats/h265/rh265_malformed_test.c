@@ -503,7 +503,7 @@ static void test_slice_info(void)
    expect("hardware long-term lsb", out.long_term.poc_lsb[0], 5);
    buf[0] = buf[1] = 0; buf[2] = (uint8_t)(len >> 8); buf[3] = (uint8_t)len;
    memcpy(buf + 4, unit, len);
-   expect("software long-term stays unsupported", rh265_video_decode(v, buf, len + 4), -2);
+   expect("software long-term missing anchor", rh265_video_decode(v, buf, len + 4), -1);
    slice_header(&w, 1, 1, 2, 6, 1); len = nal(unit, 1, &w);
    expect("long-term MSB sequence", rh265_video_get_slice(v, unit, len, &out), 0);
    expect("long-term first cycle", out.long_term.msb_cycle[0], 2);
@@ -575,6 +575,7 @@ static void test_access_unit(void)
 {
    static uint8_t unit[2][1024], buf[2200], packet[2200], original[2200];
    static rh265_access_unit_t out, saved;
+   static rh265_video_params_t before_params, after_params;
    const uint8_t *units[2];
    rh265_nal_t slices[2];
    bitw w;
@@ -586,6 +587,7 @@ static void test_access_unit(void)
    slice_pps(&w, 0, 0); lens[1] = nal(unit[1], 34, &w);
    n = hvcc(buf, units, lens, 2);
    expect("AU parameter input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("AU initial parameters", rh265_video_get_params(v, 0, &before_params), 0);
    slice_header(&w, 1, 1, 2, 0, 0); lens[0] = nal(unit[0], 1, &w);
    slice_header(&w, 1, 0, 1, 0, 0); lens[1] = nal(unit[1], 1, &w);
    packet[0] = 0; packet[1] = 0; packet[2] = 1;
@@ -619,7 +621,19 @@ static void test_access_unit(void)
    expect("AU mismatched POC", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), -1);
    sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
    packet[0] = 0; packet[1] = 0; packet[2] = 1; memcpy(packet + 3, unit[0], lens[0]);
-   expect("in-band SPS refusal", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), -2);
+   expect("matching in-band SPS", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), 0);
+   if (out.num_slices || out.coded_bytes) failures++;
+   sps(&w, F_NONE, 10); lens[0] = nal(unit[0], 33, &w);
+   memcpy(packet + 3, unit[0], lens[0]);
+   expect("changed in-band SPS refused", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), -2);
+   slice_pps(&w, 0, 0); lens[0] = nal(unit[0], 34, &w);
+   memcpy(packet + 3, unit[0], lens[0]);
+   expect("matching in-band PPS", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), 0);
+   slice_pps(&w, 0, 1); lens[0] = nal(unit[0], 34, &w);
+   memcpy(packet + 3, unit[0], lens[0]);
+   expect("changed in-band PPS refused", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), -2);
+   expect("AU unchanged parameters", rh265_video_get_params(v, 0, &after_params), 0);
+   if (memcmp(&before_params, &after_params, sizeof(before_params))) failures++;
    packet[3] = 70; packet[4] = 1; packet[5] = 0x80;
    expect("AUD-only AU", rh265_video_get_access_unit(v, packet, 6, 0, slices, 2, &out), 0);
    if (out.num_slices || out.intra || out.coded_bytes) failures++;

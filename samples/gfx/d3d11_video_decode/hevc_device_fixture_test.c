@@ -22,7 +22,8 @@ static const fixture_t fixtures[] = {
    FIXTURE(ip, 8, 256, 256), FIXTURE(bpyr, 8, 256, 256),
    FIXTURE(wpp, 8, 256, 256), FIXTURE(crop, 8, 250, 242),
    FIXTURE(ip, 10, 256, 256), FIXTURE(bpyr, 10, 256, 256),
-   FIXTURE(wpp, 10, 256, 256), FIXTURE(crop, 10, 250, 242)
+   FIXTURE(wpp, 10, 256, 256), FIXTURE(crop, 10, 250, 242),
+   FIXTURE(repeat, 8, 256, 256), FIXTURE(repeat, 10, 256, 256)
 };
 
 static int check_frame(rh265_video *v, const fixture_t *f, unsigned index)

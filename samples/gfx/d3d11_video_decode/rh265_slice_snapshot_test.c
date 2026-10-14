@@ -20,6 +20,7 @@ static void test_snapshots(void)
    d->ref_list[0][0] = &refs[0]; d->ref_poc[0][0] = 4;
    d->ref_list[1][0] = &refs[1]; d->ref_poc[1][0] = 6;
    d->nb_refs[0] = d->nb_refs[1] = 1;
+   d->ref_long_term[1][0] = 1;
    d->max_merge = 3; d->slice_tmvp = 1; d->col_ref = &refs[1];
    d->slice_seq = 0; d->sh.slice_type = RH265_SLICE_B;
    v->nal_scratch = (uint8_t*)calloc(1, 16); v->nal_scratch_cap = 16;
@@ -29,6 +30,7 @@ static void test_snapshots(void)
    d->ref_list[0][0] = &refs[2]; d->ref_poc[0][0] = 10;
    d->ref_list[1][0] = NULL; d->ref_poc[1][0] = 0;
    d->nb_refs[0] = 1; d->nb_refs[1] = 0;
+   d->ref_long_term[1][0] = 0;
    d->max_merge = 5; d->slice_tmvp = 0; d->col_ref = NULL;
    d->slice_seq = 1; d->sh.slice_type = RH265_SLICE_P;
    v->nal_scratch = (uint8_t*)calloc(1, 16); v->nal_scratch_cap = 16;
@@ -40,6 +42,7 @@ static void test_snapshots(void)
    CHECK(d->ref_list[0][0] == &refs[0] && d->ref_list[1][0] == &refs[1]);
    CHECK(d->ref_poc[0][0] == 4 && d->ref_poc[1][0] == 6);
    CHECK(d->nb_refs[0] == 1 && d->nb_refs[1] == 1);
+   CHECK(!d->ref_long_term[0][0] && d->ref_long_term[1][0]);
    CHECK(d->max_merge == 3 && d->slice_tmvp == 1 && d->col_ref == &refs[1]);
    CHECK(d->slice_seq == 0 && d->sh.slice_type == RH265_SLICE_B);
    memset(&field, 0, sizeof(field));
@@ -50,6 +53,7 @@ static void test_snapshots(void)
    CHECK(d->ref_list[0][0] == &refs[2] && !d->ref_list[1][0]);
    CHECK(d->ref_poc[0][0] == 10 && !d->ref_poc[1][0]);
    CHECK(d->nb_refs[0] == 1 && !d->nb_refs[1]);
+   CHECK(!d->ref_long_term[1][0]);
    CHECK(d->max_merge == 5 && !d->slice_tmvp && !d->col_ref);
    CHECK(d->slice_seq == 1 && d->sh.slice_type == RH265_SLICE_P);
    CHECK(rh265_tmvp_mvset(d, &mv, &field, 0, 0, 0, 8));
@@ -98,9 +102,68 @@ static void test_reference_union(void)
    rh265_video_close(v);
 }
 
+static void test_long_term_prediction(void)
+{
+   static rh265_dec d;
+   rh265_mv mv;
+   memset(&d, 0, sizeof(d)); memset(&field, 0, sizeof(field));
+   d.cur = &current; current.poc = 40;
+   d.ref_poc[0][0] = 2; d.ref_long_term[0][0] = 1;
+   field.poc[0] = 2; field.mv[0].x = 16; field.mv[0].y = -8;
+   CHECK(!rh265_tmvp_mvset(&d, &mv, &field, 0, 0, 0, 12));
+   field.long_term = 1;
+   CHECK(rh265_tmvp_mvset(&d, &mv, &field, 0, 0, 0, 12));
+   CHECK(mv.x == 16 && mv.y == -8);
+   d.ref_long_term[0][0] = 0;
+   CHECK(!rh265_tmvp_mvset(&d, &mv, &field, 0, 0, 0, 12));
+   d.ref_long_term[0][0] = 1;
+   d.mvf = &field; d.w4 = d.h4 = 1;
+   field.pred = RH265_PF_L0; field.poc[0] = 4;
+   CHECK(rh265_amvp_scaled(&d, 0, 0, 0, &mv, 0, 0));
+   CHECK(mv.x == 16 && mv.y == -8);
+   field.long_term = 0;
+   CHECK(!rh265_amvp_scaled(&d, 0, 0, 0, &mv, 0, 0));
+   field.poc[0] = 2;
+   CHECK(!rh265_amvp_direct(&d, 0, 0, 0, &mv, 0, 0));
+   field.long_term = 1;
+   CHECK(rh265_amvp_direct(&d, 0, 0, 0, &mv, 0, 0));
+}
+
+static void test_long_term_sets(void)
+{
+   rh265_video *v = rh265_video_open();
+   rh265_dec *d;
+   if (!v) { CHECK(v); return; }
+   d = v->cur = &v->ctx[0]; d->sps = &v->sps[0];
+   v->sps[0].log2_max_poc_lsb = 4; v->sps[0].max_dec_pic_buffering = 4;
+   v->cur_slot = 2; v->poc = 17; d->sh.poc_lsb = 1;
+   v->dpb[0].in_use = v->dpb[0].is_ref = 1;
+   v->dpb[1].in_use = v->dpb[1].is_ref = 1; v->dpb[1].poc = -16;
+   d->sh.long_term.count = 1; d->sh.long_term.used[0] = 1;
+   d->sh.long_term.msb_present[0] = 1; d->sh.long_term.msb_cycle[0] = 2;
+   CHECK(!rh265_apply_rps(v));
+   CHECK(v->nb_lt_curr == 1 && v->lt_curr[0] == 1 && v->dpb[1].long_term);
+   CHECK(!v->dpb[0].is_ref && v->dpb[1].is_ref);
+   d->sh.slice_type = RH265_SLICE_B; d->sh.nb_refs[0] = d->sh.nb_refs[1] = 1;
+   CHECK(!rh265_build_ref_lists(v));
+   CHECK(d->ref_list[0][0] == &v->dpb[1] && d->ref_list[1][0] == &v->dpb[1]);
+   CHECK(d->ref_long_term[0][0] && d->ref_long_term[1][0]);
+   rh265_ctx_unpin(d);
+   d->sh.long_term.used[0] = 0;
+   CHECK(!rh265_apply_rps(v));
+   CHECK(!v->nb_lt_curr && v->dpb[1].is_ref && v->dpb[1].long_term);
+   d->sh.long_term.used[0] = 1; d->sh.long_term.msb_cycle[0] = 3;
+   CHECK(rh265_apply_rps(v) == -1 && v->dpb[1].is_ref);
+   d->sh.long_term.msb_present[0] = 0;
+   CHECK(!rh265_apply_rps(v) && v->lt_curr[0] == 1);
+   v->dpb[0].in_use = v->dpb[0].is_ref = 1;
+   CHECK(rh265_apply_rps(v) == -1 && v->dpb[1].is_ref);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
-   test_snapshots(); test_reference_union();
+   test_snapshots(); test_reference_union(); test_long_term_prediction(); test_long_term_sets();
    printf("HEVC slice reference snapshots: %u failures\n", failures);
    return failures ? 1 : 0;
 }

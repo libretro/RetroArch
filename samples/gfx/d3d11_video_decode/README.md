@@ -156,7 +156,8 @@ Long-term hardware metadata now includes SPS table indices, slice-signaled
 LSBs, usage flags and cumulative MSB cycles. Owner tests cover retained
 references, wrap, missing/ambiguous references and rejected transactions;
 DXVA tests check long-term flags and current sets, including later slices.
-Software reconstruction still refuses actual long-term sets. The optional
+Software reconstruction supports long-term reference retention, current lists
+and reference-class-aware temporal/spatial prediction. The optional
 native conformance oracle compares actual long-term hardware output to external FFmpeg NV12 rather than rh265 software reconstruction.
 Syntax reference: https://github.com/FFmpeg/FFmpeg/blob/n7.1/libavcodec/hevc/hevcdec.c#L268
 
@@ -177,5 +178,16 @@ Validated input: the first 24 coded pictures of
 416x240 Main8 with an eight-entry SPS long-term table and seven active
 long-term entries across the selected access units. All 24 output pictures
 match FFmpeg through both native readers. This does not validate Main10
-long-term streams, all cycle/wrap cases or software long-term reconstruction.
+long-term streams or all hardware cycle/wrap cases. Software reconstruction
+also matches all 500 pictures of that stream against FFmpeg on one thread,
+rotating contexts and four concurrent picture threads.
 The manifest identifies the exact source and prepared output bytes.
+
+Matching SPS/PPS repeats in access units are validated against the active
+parsed parameter sets without allocation or pixel copies. Changed sets
+remain refused without replacing active metadata. Generated `repeat8` and
+`repeat10` fixtures cover repeated headers through portable and device
+oracles. For an external short-term regression, set
+`HEVC_CONFORMANCE_REQUIRE_LT=0`; long-term entries remain required by default.
+A four-picture 3840x2160 Main8 preview regression with repeated headers also
+matches FFmpeg through the native D3D11 and D3D12 readers.
