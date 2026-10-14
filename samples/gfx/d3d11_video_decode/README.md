@@ -52,6 +52,15 @@ changes require an owner reset. Long-term references remain unsupported.
 These owner masks do not indicate GPU completion: the backend must still
 refuse writes to slots with unfinished work or exported frame leases. No
 fence waits, frame leases, allocation or pixel copies occur in these helpers.
+`rh265_hw_session_submit` dispatches a prepared picture to codec-neutral
+backend callbacks. A busy return retains packet/parameter/AU/span identity;
+accepted decode commits once and retires those borrowed pointers. Each call
+attempts at most one decode. Unaccepted work can be cancelled without
+changing the DPB. Busy output keeps the slot held; successful output transfers
+the frame lease to the caller, who must import or abandon it. Logical DPB
+pressure permits one ordered output bump before submission is retried.
+Backend errors stop the session; invalid exported frames are abandoned.
+Device setup/teardown and GPU fence/lease retirement remain backend-owned.
 The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
@@ -67,9 +76,11 @@ The access-unit pipeline test borrows Main/Main10 fixture NALs, constructs
 picture/slice submissions, and compares software output from the original
 length-prefixed sample with the packed Annex-B buffer. This proves payload
 preservation and parser integration; it does not execute a GPU decoder.
+It now exercises busy decode/output callbacks, direct packing, one-time
+commit and caller abandonment through the session dispatcher.
 
-This is the HEVC parameter/access-unit/submission-buffer layer. The decoder
-owner still needs callback/retry integration, hardware dispatch,
+This is the HEVC parameter/access-unit/callback-dispatch layer. Device
+backends and the main decoder/player still need to use these callbacks.
 D3D11 decode/profile setup, GPU slot scheduling,
 NV12/P010 export, main-player integration and real GPU reference checks
 remain. It does not register or advertise a working HEVC hardware decoder.

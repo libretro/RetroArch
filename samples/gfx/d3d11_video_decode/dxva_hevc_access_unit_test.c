@@ -8,18 +8,60 @@ static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
+typedef struct pipeline_backend
+{
+   uint8_t packed[512], records[40];
+   size_t written;
+   unsigned decodes, outputs, abandoned;
+} pipeline_backend_t;
+
+static int pipeline_decode(void *decoder, const rh265_video_params_t *params,
+      const rh265_access_unit_t *au, const rh265_nal_t *slices,
+      const rh265_hw_picture_t *pending)
+{
+   pipeline_backend_t *b = (pipeline_backend_t*)decoder;
+   dxva_hevc_picture_t picture;
+   uint8_t bytes[DXVA_HEVC_PP_SIZE];
+   b->decodes++;
+   if (b->decodes == 1) return 1;
+   if (!dxva_hevc_picture_from_state(&picture, params, au, pending)
+         || !dxva_hevc_pic_params(bytes, &picture, 1)
+         || !dxva_hevc_pack_slices(b->packed, sizeof(b->packed), b->records,
+               sizeof(b->records), slices, au->num_slices, &b->written)) return -1;
+   return 0;
+}
+
+static void pipeline_abandon(void *owner, uint64_t done, uint64_t value)
+{
+   pipeline_backend_t *b = (pipeline_backend_t*)owner;
+   CHECK(done == 99 && value == 1);
+   b->abandoned++;
+}
+
+static int pipeline_output(void *decoder, unsigned slot, video_hw_frame_t *frame)
+{
+   pipeline_backend_t *b = (pipeline_backend_t*)decoder;
+   b->outputs++;
+   if (b->outputs == 1) return 1;
+   frame->image = slot + 1; frame->width = frame->height = 64;
+   frame->done = 99; frame->done_value = 1;
+   frame->owner = b; frame->abandon = pipeline_abandon;
+   return 0;
+}
+
 static void check_picture(const uint8_t *config, size_t config_size,
       const uint8_t *params, size_t params_size, const uint8_t *sample,
       size_t sample_size, int depth)
 {
    static rh265_video_params_t metadata;
-   static rh265_hw_state_t owner, unchanged;
-   rh265_hw_picture_t pending, retried;
+   static rh265_hw_session_t session;
+   static rh265_hw_state_t unchanged;
+   static pipeline_backend_t backend;
+   rh265_hw_ops_t ops;
+   video_hw_frame_t frame;
    rh265_access_unit_t au, saved;
    rh265_nal_t slices[4];
-   uint8_t packed[512], records[40], expected[DXVA_HEVC_PP_SIZE];
-   dxva_hevc_picture_t picture;
-   size_t written;
+
    int ret, plane;
    rh265_video *original = rh265_video_open(), *converted = rh265_video_open();
    CHECK(original && converted);
@@ -33,28 +75,29 @@ static void check_picture(const uint8_t *config, size_t config_size,
    CHECK(!memcmp(&saved, &au, sizeof(au)));
    CHECK(!rh265_video_get_params(original, (unsigned)au.first.pps_id, &metadata));
    CHECK(metadata.bit_depth == depth && metadata.width == 64 && metadata.height == 64);
-   CHECK(rh265_hw_state_init(&owner, 32)); unchanged = owner;
-   CHECK(!rh265_hw_prepare(&owner, &metadata, &au, &pending));
-   CHECK(!rh265_hw_prepare(&owner, &metadata, &au, &retried));
-   CHECK(!memcmp(&pending, &retried, sizeof(pending)) && !memcmp(&owner, &unchanged, sizeof(owner)));
-   CHECK(dxva_hevc_picture_from_state(&picture, &metadata, &au, &pending));
-   CHECK(dxva_hevc_pic_params(expected, &picture, 1));
-   CHECK(dxva_hevc_pack_slices(packed, sizeof(packed), records, sizeof(records),
-            slices, au.num_slices, &written));
-   CHECK(written <= sizeof(packed) && !(written & 127));
-   CHECK(!memcmp(packed + 3, sample + 4, sample_size - 4));
-   CHECK(!memcmp(&owner, &unchanged, sizeof(owner)));
-   CHECK(rh265_hw_commit(&owner, &pending));
-   CHECK(!rh265_hw_commit(&owner, &pending));
-   CHECK(rh265_hw_output_pick(&owner, 0, true) == (int)pending.slot);
-   CHECK(rh265_hw_output_release(&owner, pending.slot));
+   memset(&backend, 0, sizeof(backend));
+   ops.decoder = &backend; ops.decode = pipeline_decode; ops.output = pipeline_output;
+   CHECK(rh265_hw_session_init(&session, &ops, 32)); unchanged = session.state;
+   CHECK(rh265_hw_session_submit(&session, sample, sample_size, &metadata, &au, slices) == 1);
+   CHECK(!memcmp(&session.state, &unchanged, sizeof(unchanged)) && !backend.written);
+   CHECK(!rh265_hw_session_submit(&session, sample, sample_size, &metadata, &au, slices));
+   CHECK(backend.decodes == 2 && session.state.serial == 2 && !session.phase);
+   CHECK(backend.written <= sizeof(backend.packed) && !(backend.written & 127));
+   CHECK(!memcmp(backend.packed + 3, sample + 4, sample_size - 4));
+   unchanged = session.state;
+   CHECK(rh265_hw_session_output(&session, true, &frame) == 1);
+   CHECK(!memcmp(&session.state, &unchanged, sizeof(unchanged)) && !frame.image);
+   CHECK(!rh265_hw_session_output(&session, true, &frame));
+   CHECK(!session.state.outputs && frame.image && !backend.abandoned);
+   video_hw_frame_abandon(&frame);
+   CHECK(backend.abandoned == 1);
    CHECK(!rh265_video_plane(original, 0, NULL, NULL, NULL));
    CHECK(!rh265_video_plane(converted, 0, NULL, NULL, NULL));
    ret = rh265_video_decode(original, sample, sample_size);
    CHECK(ret >= 0);
    if (!ret) CHECK(!rh265_video_drain(original));
    CHECK(!rh265_video_decode(converted, params, params_size));
-   ret = rh265_video_decode(converted, packed, written);
+   ret = rh265_video_decode(converted, backend.packed, backend.written);
    CHECK(ret >= 0);
    if (!ret) CHECK(!rh265_video_drain(converted));
    CHECK(rh265_video_bit_depth(original) == depth && rh265_video_bit_depth(converted) == depth);
