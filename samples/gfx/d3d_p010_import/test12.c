@@ -52,6 +52,7 @@ typedef struct
    UINT64 import_value;
    unsigned import_next, import_formats;
    bool video_decode;
+   bool movie_importing;
 } d3d12_video_t;
 enum video_texture_update
 {
@@ -195,6 +196,7 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    unsigned i, row, col, k;
 
    memset(&imp, 0, sizeof(imp));
+   imp.output_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    memset(&output, 0, sizeof(output));
    memset(&f, 0, sizeof(f));
    memset(&td, 0, sizeof(td));
@@ -318,6 +320,8 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    CHECK(wait_for(v->import_done, v->import_value)
          && ID3D11Fence_GetCompletedValue(done) == 2 && !abandoned);
 
+   CHECK(imp.output_state == (v->movie_importing ? D3D12_RESOURCE_STATE_COPY_SOURCE
+         : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
    ID3D12Device_GetCopyableFootprints(v->device, &rd, 0, 1, 0, &fp, NULL, NULL, &size);
    hp.Type = D3D12_HEAP_TYPE_READBACK;
    memset(&rd, 0, sizeof(rd)); rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -330,7 +334,8 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
          &IID_ID3D12CommandAllocator, (void**)&alloc)));
    CHECK(SUCCEEDED(ID3D12Device_CreateCommandList(v->device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
          alloc, NULL, &IID_ID3D12GraphicsCommandList, (void**)&cmd)));
-   transition(cmd, output.handle, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+   if (imp.output_state != D3D12_RESOURCE_STATE_COPY_SOURCE)
+      transition(cmd, output.handle, imp.output_state, D3D12_RESOURCE_STATE_COPY_SOURCE);
    memset(&src, 0, sizeof(src)); memset(&dst, 0, sizeof(dst));
    src.pResource = output.handle; src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
    dst.pResource = readback; dst.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
@@ -387,7 +392,7 @@ int main(void)
    ID3D11DeviceContext4 *context = NULL;
    D3D12_COMMAND_QUEUE_DESC qd;
    D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
-   unsigned depth, flags, i;
+   unsigned depth, flags, i, movie;
    memset(&v, 0, sizeof(v));
    if (FAILED(CreateDXGIFactory1(&IID_IDXGIFactory4, (void**)&factory))
          || FAILED(IDXGIFactory4_EnumAdapters(factory, 0, &adapter))
@@ -412,10 +417,12 @@ int main(void)
       if (FAILED(ID3D12Device_CheckFeatureSupport(v.device, D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs)))
             || !(fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD))
       { printf("SKIP D3D12 %s format\n", depth ? "P010" : "NV12"); continue; }
+      for (movie = 0; movie < 2; movie++)
       for (flags = 0; flags < 4; flags++)
       {
          unsigned scale = depth ? 4 : 1, center = 128 * scale;
          unsigned full = flags & IMAGE_YUV_FLAG_FULL_RANGE;
+         v.movie_importing = movie != 0;
          color(&v, producer, context, depth, flags, full ? 0 : 16 * scale, center, center);
          color(&v, producer, context, depth, flags, full ? (depth ? 1023 : 255) : 235 * scale, center, center);
          color(&v, producer, context, depth, flags, 127 * scale, center, center);

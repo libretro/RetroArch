@@ -36,6 +36,8 @@
 
 #include "../config.def.h"
 
+#include <formats/video_hw_frame.h>
+#include "../cores/internal_cores.h"
 #include "video_driver.h"
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
@@ -2658,7 +2660,8 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    if (video_st->state_filter)
       video_driver_filter_free();
 
-   if (video_driver_is_hw_context())
+   if (video_driver_is_hw_context()
+         || video_driver_cached_frame_is_hw_render())
    {
       RARCH_WARN("[Video] Cannot use CPU filters when hardware rendering is used.\n");
       return;
@@ -2819,6 +2822,14 @@ void video_driver_free_internal(void)
     * those are this driver's, which is about to go. */
    input_overlay_video_teardown();
 #endif
+
+#ifdef HAVE_WEBMPLAYER
+   if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
+      libretro_webm_suspend_video_hw();
+#endif
+   if (video_st->movie_frame)
+      video_driver_cached_frame_invalidate();
+   video_st->movie_frame = false;
 
    if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
@@ -4946,6 +4957,67 @@ bool video_driver_get_device(video_device_info_t *info)
    memset(info, 0, sizeof(*info));
    return poke && poke->get_device && video_st->data
       && poke->get_device(video_st->data, info);
+}
+
+bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   video_frame_import_t f;
+   video_device_info_t info;
+   enum video_texture_update result;
+   (void)user;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return false;
+#endif
+   if (!video_st->data || !poke || !poke->import_movie_frame)
+      return false;
+   if (!hw)
+   {
+#ifdef HAVE_VIDEO_FILTER
+      if (video_st->state_filter)
+         return false;
+#endif
+      return video_driver_get_device(&info) && (info.import_formats & IMAGE_PIXFMT_NV12)
+         && ((!recording_state_get_ptr()->enable
+               && !recording_state_get_ptr()->streaming_enable)
+            || video_st->record_gpu_buffer);
+   }
+   memset(&f, 0, sizeof(f));
+   f.image = hw->image;
+   f.wait = hw->wait;
+   f.wait_value = hw->wait_value;
+   f.done = hw->done;
+   f.done_value = hw->done_value;
+   f.pixfmt = hw->pixfmt ? hw->pixfmt : IMAGE_PIXFMT_NV12;
+   f.dims = VIDEO_SCALE_PACK(hw->width, hw->height);
+   f.layout = hw->layout;
+   f.yuv = hw->yuv;
+   f.abandon = hw->abandon;
+   f.owner = hw->owner;
+   result = poke->import_movie_frame(video_st->data, &f);
+   if (result == VIDEO_TEXTURE_UPDATE_DROPPED)
+      return false;
+   if (result == VIDEO_TEXTURE_UPDATE_REFUSED)
+      video_hw_frame_abandon(hw);
+   else
+      video_st->movie_frame = true;
+   return true;
+}
+
+void video_driver_movie_clear(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->movie_frame)
+      video_driver_cached_frame_invalidate();
+   video_st->movie_frame = false;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return;
+#endif
+   if (video_st->data && video_st->poke && video_st->poke->import_movie_frame)
+      video_st->poke->import_movie_frame(video_st->data, NULL);
 }
 
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
@@ -7240,6 +7312,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_driver_vr_driver_changed();
 #endif
 
+#ifdef HAVE_WEBMPLAYER
+   if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
+      libretro_webm_video_hw_ready();
+#endif
    return true;
 }
 
@@ -7854,7 +7930,10 @@ void video_driver_frame(const void *data, unsigned width,
     * (drivers' read_viewport setup, paused render) read without
     * the lock -- they're on the runloop thread same as the
     * producer here, so there's no race for them to lose. */
-   video_driver_cached_frame_publish(data, dims, pitch);
+   if (data && data != RETRO_HW_FRAME_BUFFER_VALID && video_st->movie_frame)
+      video_driver_movie_clear();
+   video_driver_cached_frame_publish(video_st->movie_frame && !data
+         ? RETRO_HW_FRAME_BUFFER_VALID : data, dims, pitch);
 
    core_dims = dims;
 

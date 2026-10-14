@@ -1283,6 +1283,10 @@ typedef struct video_poke_interface
     * through it. Optional. */
    bool (*record_read)(void *data, uint8_t *buffer, bool bgrx,
          bool *bottom_up);
+   /* Imports a movie frame for the following NULL refresh. NULL clears
+    * the movie source. Same ownership results as import_texture. */
+   enum video_texture_update (*import_movie_frame)(void *data,
+         const video_frame_import_t *frame);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1794,6 +1798,7 @@ typedef struct
     * out of order cannot strand or steal it. */
    struct font_data *osd_font;
    void             *osd_font_owner;
+   bool              movie_frame;
    bool              window_refresh_known;
 
    /* The core's view map, and what the last frame presented with views
@@ -2371,6 +2376,10 @@ bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
  * REFUSED under the thread wrapper, which takes imports as nodes
  * (VIDEO_THREAD_ASYNC_IMPORT). Main thread. */
 bool video_driver_get_device(video_device_info_t *info);
+struct video_hw_frame;
+bool video_driver_movie_refresh(void *user, const struct video_hw_frame *frame);
+void video_driver_movie_clear(void);
+
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
       const video_frame_import_t *frame, enum texture_filter_type filter);
 

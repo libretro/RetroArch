@@ -125,6 +125,9 @@ typedef struct
 #ifdef HAVE_RMP4
    video_hw_frame_t hw_frame;
    int          hw_video;
+   int64_t      hw_restart_ns;
+   int          hw_started;
+   int          hw_restart;
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
 #endif
    int          vtrack;              /* video track index               */
@@ -233,12 +236,36 @@ bool webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user)
    return true;
 }
 
+#ifndef HAVE_RMP4
+#ifdef RARCH_INTERNAL
+void libretro_webm_suspend_video_hw(void) { }
+#else
+void webm_suspend_video_hw(void) { }
+#endif
+#endif
+
 #ifdef HAVE_RMP4
 static void webm_drop_hw(webm_player_t *p)
 {
    if (p->hw_frame.image)
       video_hw_frame_abandon(&p->hw_frame);
    memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+}
+
+#ifdef RARCH_INTERNAL
+void libretro_webm_suspend_video_hw(void)
+#else
+void webm_suspend_video_hw(void)
+#endif
+{
+   webm_player_t *p = &webm_player;
+   if (!p->mp4vs)
+      return;
+   p->hw_restart_ns = p->vpts_ns;
+   p->hw_restart = 1;
+   webm_drop_hw(p);
+   rmp4_video_stream_stop_hw(p->mp4vs);
+   p->hw_video = p->hw_started = 0;
 }
 
 static void webm_present_mp4(webm_player_t *p, int have)
@@ -1073,10 +1100,47 @@ static void webm_check_input(webm_player_t *p)
    }
 }
 
+#ifdef RARCH_INTERNAL
+void libretro_webm_video_hw_ready(void)
+#else
+void webm_video_hw_ready(void)
+#endif
+{
+   webm_player_t *p = &webm_player;
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+   {
+      if (!p->hw_started)
+      {
+         p->hw_started = 1;
+         p->hw_video = webm_hw_refresh && webm_hw_refresh(webm_hw_user, NULL)
+            && rmp4_video_stream_set_hw(p->mp4vs, 1);
+         if (p->hw_restart)
+         {
+            int64_t target = p->hw_restart_ns;
+            p->hw_restart = 0;
+            if (webm_seek(p, target) + 500000000 < target)
+               p->pending_seek_ns = target;
+         }
+      }
+   }
+#endif
+
+#ifndef HAVE_RMP4
+   (void)p;
+#endif
+}
+
 void WEBM_CORE_PREFIX(retro_run)(void)
 {
    webm_player_t *p = &webm_player;
    rwebm_packet pkt;
+
+#ifdef RARCH_INTERNAL
+   libretro_webm_video_hw_ready();
+#else
+   webm_video_hw_ready();
+#endif
 
    WEBM_CORE_PREFIX(input_poll_cb)();
    webm_check_input(p);
@@ -1611,7 +1675,8 @@ static bool webm_load_mp4(webm_player_t *p)
     * interleave stage at no per-frame cost), so the per-frame copy
     * below needs no per-pixel swizzle. */
    rmp4_video_stream_set_argb(p->mp4vs, 1);
-   p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 1);
+   p->hw_video = 0;
+   p->hw_started = 0;
    rmp4_video_stream_get_info(p->mp4vs, &w, &h, &nframes, &loops);
    if (!w || !h)
       return false;

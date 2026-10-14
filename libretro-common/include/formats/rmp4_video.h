@@ -175,6 +175,9 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
  * rmp4_video_stream_hw_frame after _next; _next returns a pointer
  * that only says a frame came, its pixels untouched. */
 int rmp4_video_stream_set_hw(rmp4_video_stream_t *stream, int enable);
+/* Close hardware sessions and rewind without decoding. Restore the
+ * playback position before resuming. */
+void rmp4_video_stream_stop_hw(rmp4_video_stream_t *stream);
 /* The hardware frame of the frame _next just showed, handed over: 1,
  * and the caller reads or abandons it (video_hw_frame_abandon); 0 when
  * that frame is not one. One not taken by the next step is abandoned

@@ -230,7 +230,8 @@ bool recording_init(void)
       return false;
    }
 
-   if (!video_gpu_record && video_driver_is_hw_context())
+   if (!video_gpu_record && (video_driver_is_hw_context()
+            || video_driver_cached_frame_is_hw_render()))
    {
       RARCH_WARN("[Recording] %s\n",
             msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));

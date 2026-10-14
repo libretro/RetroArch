@@ -5325,6 +5325,13 @@ static bool core_unload_game(void)
    {
       RARCH_LOG("[Core] Unloading game...\n");
       runloop_st->current_core.retro_unload_game();
+#ifdef HAVE_WEBMPLAYER
+      if (runloop_st->current_core_type == CORE_TYPE_WEBM)
+      {
+         libretro_webm_set_video_hw_refresh(NULL, NULL);
+         video_driver_movie_clear();
+      }
+#endif
       runloop_st->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       runloop_st->current_core.flags      &= ~RETRO_CORE_FLAG_GAME_LOADED;
    }
@@ -10522,6 +10529,10 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_cached_frame_invalidate();
+#ifdef HAVE_WEBMPLAYER
+   if (runloop_st->current_core_type == CORE_TYPE_WEBM)
+      libretro_webm_set_video_hw_refresh(video_driver_movie_refresh, NULL);
+#endif
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);

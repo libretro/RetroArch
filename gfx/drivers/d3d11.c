@@ -554,6 +554,8 @@ typedef struct
    /* Set when frames on another device can be imported */
    ID3D11Device5        *device5;
    ID3D11DeviceContext4 *context4;
+   uintptr_t movie_texture;
+   bool movie_pending;
    unsigned              import_formats;
    bool                  video_decode;
 #endif
@@ -722,6 +724,10 @@ typedef struct
 #ifdef D3D11_FRAME_IMPORT
 static void d3d11_frame_import_init(d3d11_video_t *d3d11);
 static void d3d11_frame_import_deinit(d3d11_video_t *d3d11);
+static const void *d3d11_movie_prepare(d3d11_video_t *d3d11, const void *frame);
+static enum video_texture_update d3d11_import_movie_frame(void *data,
+      const video_frame_import_t *f);
+static void d3d11_gfx_unload_texture_internal(d3d11_video_t *d3d11, uintptr_t handle);
 #endif
 
 static void d3d11_record_free(d3d11_video_t *d3d11);
@@ -6515,6 +6521,9 @@ static bool d3d11_gfx_frame(
    d3d11->hdr.display_peak = video_info->hdr_display_peak;
 #endif
    d3d11_hw_v2_enter(d3d11);
+#ifdef D3D11_FRAME_IMPORT
+   frame = d3d11_movie_prepare(d3d11, frame);
+#endif
    ret = d3d11_gfx_frame_body(data, frame, dims, frame_count,
          pitch, msg, video_info);
    d3d11_hw_v2_leave(d3d11);
@@ -8680,6 +8689,54 @@ static enum video_texture_update d3d11_import_texture(void *data,
 /* Frames from another device's decoders, where both ends can share
  * them: the driver's device and context at the 11.4 interfaces, NV12/P010
  * shared and read in a shader */
+static enum video_texture_update d3d11_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   d3d11_video_t *v = (d3d11_video_t*)data;
+   enum video_texture_update result;
+   if (!v) return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f)
+   {
+      if (v->movie_texture)
+      {
+         v->chain.history[0].desc.Format = v->format;
+         v->chain.history[0].desc.Width = 0;
+         v->flags |= D3D11_ST_FLAG_INIT_HISTORY | D3D11_ST_FLAG_RESIZE_RTS;
+         Release(v->hw_v2.texture);
+         v->hw_v2.texture = NULL;
+      }
+      d3d11_gfx_unload_texture_internal(v, v->movie_texture);
+      v->movie_texture = 0;
+      v->movie_pending = false;
+      v->hw_direct.view = NULL;
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   result = d3d11_import_texture(v, &v->movie_texture, f, TEXTURE_FILTER_LINEAR);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+      v->movie_pending = true;
+   return result;
+}
+
+static const void *d3d11_movie_prepare(d3d11_video_t *v, const void *frame)
+{
+   d3d11_texture_t *texture;
+   if (!v) return frame;
+   if (frame && frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      if (v->movie_texture) d3d11_import_movie_frame(v, NULL);
+      return frame;
+   }
+   if (!v->movie_texture || (!v->movie_pending && frame != RETRO_HW_FRAME_BUFFER_VALID))
+      return frame;
+   texture = (d3d11_texture_t*)v->movie_texture;
+   v->movie_pending = false;
+   Release(v->hw_v2.texture);
+   texture->handle->lpVtbl->AddRef(texture->handle);
+   v->hw_v2.texture = texture->handle;
+   v->hw_direct.eligible = true;
+   return RETRO_HW_FRAME_BUFFER_VALID;
+}
+
 static void d3d11_frame_import_init(d3d11_video_t *d3d11)
 {
    D3D11_FEATURE_DATA_D3D11_OPTIONS4 opt4;
@@ -8724,6 +8781,7 @@ static void d3d11_frame_import_init(d3d11_video_t *d3d11)
 
 static void d3d11_frame_import_deinit(d3d11_video_t *d3d11)
 {
+   d3d11_import_movie_frame(d3d11, NULL);
    if (d3d11->video_decode)
       d3d11_video_decode_deinit();
    d3d11->video_decode = false;
@@ -9466,9 +9524,16 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* frame_mem_free */
    d3d11_get_device,
 #ifdef D3D11_FRAME_IMPORT
-   d3d11_import_texture
+   d3d11_import_texture,
 #else
-   NULL  /* import_texture */
+   NULL, /* import_texture */
+#endif
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+#ifdef D3D11_FRAME_IMPORT
+   d3d11_import_movie_frame
+#else
+   NULL /* import_movie_frame */
 #endif
 };
 

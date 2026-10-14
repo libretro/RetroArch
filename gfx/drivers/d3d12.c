@@ -274,6 +274,7 @@ typedef struct d3d12_import
    uint64_t                    fence_handle[D3D12_IMPORT_FENCES];
    ID3D12Fence                *fence[D3D12_IMPORT_FENCES];
    unsigned                    num_fences;
+   D3D12_RESOURCE_STATES        output_state;
 } d3d12_import_t;
 
 /* NV12 in, RGBA out: the luma and the interleaved chroma planes as two
@@ -810,6 +811,9 @@ typedef struct
    D3D12Fence                      import_done;
    UINT64                          import_value;
    unsigned                        import_next;
+   uintptr_t movie_texture;
+   bool movie_pending;
+   bool movie_importing;
    unsigned                        import_formats;
    bool                            video_decode;
 #endif
@@ -919,6 +923,10 @@ typedef struct
 #ifdef D3D12_FRAME_IMPORT
 static void d3d12_frame_import_init(d3d12_video_t *d3d12);
 static void d3d12_frame_import_deinit(d3d12_video_t *d3d12);
+static const void *d3d12_movie_prepare(d3d12_video_t *d3d12, const void *frame);
+static enum video_texture_update d3d12_import_movie_frame(void *data,
+      const video_frame_import_t *f);
+static void d3d12_gfx_unload_texture_internal(d3d12_video_t *d3d12, uintptr_t handle);
 #endif
 
 static void d3d12_record_free(d3d12_video_t *d3d12);
@@ -8401,7 +8409,21 @@ static void d3d12_set_view_count(void *data, unsigned count)
    d3d12_views_free_chains(d3d12, d3d12->views.chains.count);
 }
 
-static bool d3d12_gfx_frame(
+static bool d3d12_gfx_frame_body(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info);
+
+static bool d3d12_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+#ifdef D3D12_FRAME_IMPORT
+   frame = d3d12_movie_prepare((d3d12_video_t*)data, frame);
+#endif
+   return d3d12_gfx_frame_body(data, frame, dims, count, pitch, msg, info);
+}
+
+static bool d3d12_gfx_frame_body(
       void*               data,
       const void*         frame,
       unsigned dims,
@@ -10666,6 +10688,7 @@ static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
    device->lpVtbl->CreateUnorderedAccessView(device, texture->handle,
          NULL, &uav, imp->cpu_uav);
    imp->gpu_uav.ptr = imp->cpu_uav.ptr - heap->cpu.ptr + heap->gpu.ptr;
+   imp->output_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    return texture;
 
 error:
@@ -10882,7 +10905,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
          D3D12_RESOURCE_STATE_COMMON,
          D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
    D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         imp->output_state,
          D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
    cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T,
@@ -10894,7 +10917,8 @@ static enum video_texture_update d3d12_import_texture(void *data,
    cmd->lpVtbl->Dispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
    D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
          D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+         d3d12->movie_importing ? D3D12_RESOURCE_STATE_COPY_SOURCE
+            : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
    D3D12_RESOURCE_TRANSITION(cmd, imp->tex[t],
          D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COMMON);
@@ -10911,6 +10935,8 @@ static enum video_texture_update d3d12_import_texture(void *data,
    d3d12->import_fence[k] = ++d3d12->import_value;
    d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
          d3d12->import_done, d3d12->import_fence[k]);
+   imp->output_state = d3d12->movie_importing ? D3D12_RESOURCE_STATE_COPY_SOURCE
+      : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    imp->tex_fence[t]      = d3d12->import_fence[k];
    d3d12->import_next++;
    if (!*id)
@@ -10920,6 +10946,54 @@ static enum video_texture_update d3d12_import_texture(void *data,
 
 /* Frames from D3D11 video, where they can be read: NV12/P010
  * sampled in a shader, and the conversion's pipeline made */
+static enum video_texture_update d3d12_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   d3d12_video_t *v = (d3d12_video_t*)data;
+   enum video_texture_update result;
+   if (!v) return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f)
+   {
+      if (v->movie_texture)
+      {
+         v->filter.history[0].desc.Format = v->format;
+         v->filter.history[0].desc.Width = 0;
+         v->flags |= D3D12_ST_FLAG_INIT_HISTORY | D3D12_ST_FLAG_RESIZE_RTS;
+      }
+      d3d12_gfx_unload_texture_internal(v, v->movie_texture);
+      v->movie_texture = 0;
+      v->movie_pending = false;
+      v->hw_direct.current = NULL;
+      v->hw_direct.current_gpu.ptr = 0;
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   v->movie_importing = true;
+   result = d3d12_import_texture(v, &v->movie_texture, f, TEXTURE_FILTER_LINEAR);
+   v->movie_importing = false;
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+      v->movie_pending = true;
+   return result;
+}
+
+static const void *d3d12_movie_prepare(d3d12_video_t *v, const void *frame)
+{
+   d3d12_texture_t *texture;
+   if (!v) return frame;
+   if (frame && frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      if (v->movie_texture) d3d12_import_movie_frame(v, NULL);
+      return frame;
+   }
+   if (!v->movie_texture || (!v->movie_pending && frame != RETRO_HW_FRAME_BUFFER_VALID))
+      return frame;
+   texture = (d3d12_texture_t*)v->movie_texture;
+   v->movie_pending = false;
+   v->hw_render_texture = texture->handle;
+   v->hw_render_texture_format = texture->desc.Format;
+   v->hw_direct.eligible = true;
+   return RETRO_HW_FRAME_BUFFER_VALID;
+}
+
 static void d3d12_frame_import_init(d3d12_video_t *d3d12)
 {
    D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
@@ -10956,6 +11030,7 @@ static void d3d12_frame_import_init(d3d12_video_t *d3d12)
 static void d3d12_frame_import_deinit(d3d12_video_t *d3d12)
 {
    unsigned i;
+   d3d12_import_movie_frame(d3d12, NULL);
    if (d3d12->video_decode)
       d3d11_video_decode_deinit();
    d3d12->video_decode = false;
@@ -12203,9 +12278,16 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_frame_mem_free,
    d3d12_get_device,
 #ifdef D3D12_FRAME_IMPORT
-   d3d12_import_texture
+   d3d12_import_texture,
 #else
-   NULL  /* import_texture */
+   NULL, /* import_texture */
+#endif
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+#ifdef D3D12_FRAME_IMPORT
+   d3d12_import_movie_frame
+#else
+   NULL /* import_movie_frame */
 #endif
 };
 

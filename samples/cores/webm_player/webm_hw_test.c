@@ -4,10 +4,11 @@
 #undef main
 #include "../../../cores/libretro-webm/webm_core.c"
 static unsigned sink_calls, sink_busy, sink_taken, ticks, stopped;
-static unsigned cpu_ticks, expect_software;
+static unsigned cpu_ticks, expect_software, sink_ready = 1;
 static video_hw_frame_t held;
 static bool sink(void *user, const video_hw_frame_t *frame)
 {
+   if (!frame) return sink_ready != 0;
    CHECK(user == &sink_taken && frame->image && frame->width == 64 && frame->height == 48
          && frame->pixfmt == IMAGE_PIXFMT_P010);
    sink_calls++;
@@ -53,11 +54,14 @@ static size_t audio_tick(const int16_t *samples, size_t count)
 static bool start_core(int hardware)
 {
    struct retro_game_info game;
+   unsigned before = opened;
+   memset(&held, 0, sizeof(held));
    memset(&game, 0, sizeof(game));
    game.path = "../../formats/video_hdr_fp16/fixtures/sdr_hevc.mp4";
-   CHECK(retro_load_game(&game));
+   CHECK(retro_load_game(&game) && opened == before);
    if (!webm_player.mp4vs) return false;
-   CHECK(webm_player.hw_video == hardware);
+   CHECK(!webm_player.hw_started && !webm_player.hw_video);
+   (void)hardware;
    memset(webm_player.fb, 0xa5, 64 * 48 * sizeof(uint32_t));
    CHECK(!webm_set_video_hw_refresh(NULL, NULL));
    return true;
@@ -74,6 +78,8 @@ int main(void)
    retro_set_input_poll(input_tick); retro_set_input_state(input_none);
    retro_set_audio_sample_batch(audio_tick);
    if (!start_core(1)) return 1;
+   webm_video_hw_ready();
+   CHECK(webm_player.hw_video && webm_player.hw_started);
    decode_busy = output_busy = 1; sink_busy = 2;
    retro_run();
    CHECK(!webm_player.eof && !sink_calls
@@ -128,6 +134,33 @@ int main(void)
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    refuse = 0;
+   expect_software = 0;
+   CHECK(start_core(1));
+   sink_busy = 100;
+   sink_ready = 1;
+   for (i = 0; i < 20 && !webm_player.hw_frame.image; i++) retro_run();
+   CHECK(webm_player.hw_video && webm_player.hw_frame.image);
+   before = closed;
+   webm_suspend_video_hw();
+   CHECK(!webm_player.hw_video && !webm_player.hw_frame.image && closed > before);
+   CHECK(opened == closed && exported == abandoned);
+   memset(&held, 0, sizeof(held));
+   rh265_set_hw_backend(NULL);
+   rh265_set_hw_backend(&backend);
+   retro_run();
+   CHECK(webm_player.hw_video && !webm_player.hw_restart && opened == closed + 1);
+   webm_suspend_video_hw();
+   CHECK(opened == closed && exported == abandoned);
+   memset(&held, 0, sizeof(held));
+   sink_ready = 0;
+   expect_software = 1;
+   retro_run();
+   CHECK(!webm_player.hw_video && webm_player.hw_started);
+   webm_suspend_video_hw();
+   sink_ready = 1;
+   webm_video_hw_ready();
+   CHECK(webm_player.hw_video && webm_player.hw_started);
+   retro_unload_game();
    CHECK(webm_set_video_hw_refresh(NULL, NULL));
    rh265_set_hw_backend(NULL);
    printf("Movie GPU lease handoff: %u failures\n", failures);

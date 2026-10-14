@@ -1084,7 +1084,8 @@ bool take_screenshot_notify(
    if (supports_vp_read)
    {
       /* Use VP read screenshots if it's a HW context core */
-      if (video_driver_is_hw_context())
+      if (video_driver_is_hw_context()
+            || video_driver_cached_frame_is_hw_render())
          prefer_vp_read           = true;
       /* Avoid GPU screenshots with savestates */
       if (video_gpu_screenshot && !savestate)

@@ -7,7 +7,8 @@
 #include <retro_common_api.h>
 #include <formats/video_hw_frame.h>
 RETRO_BEGIN_DECLS
-/* true transfers the lease; false leaves it with the core for retry.
+/* NULL queries consumer readiness before hardware startup.
+ * true transfers the lease; false leaves it with the core for retry.
  * On false, issue no GPU reads or completion signal.
  * The consumer never blocks and must read/signal or abandon accepted
  * leases. It queues presentation for the following NULL video refresh.
@@ -15,8 +16,12 @@ RETRO_BEGIN_DECLS
  * Its user data must outlive playback and accepted leases. */
 typedef bool (*webm_hw_refresh_t)(void *user, const video_hw_frame_t *frame);
 #ifdef RARCH_INTERNAL
+void libretro_webm_video_hw_ready(void);
+void libretro_webm_suspend_video_hw(void);
 bool libretro_webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user);
 #else
+void webm_video_hw_ready(void);
+void webm_suspend_video_hw(void);
 bool webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user);
 #endif
 RETRO_END_DECLS

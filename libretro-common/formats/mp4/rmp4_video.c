@@ -1186,6 +1186,13 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
          : s->h264 && rh264_video_is_hw(s->h264);
 }
 
+void rmp4_video_stream_stop_hw(rmp4_video_stream_t *s)
+{
+   if (!s) return;
+   s->want_hw = 0;
+   rmp4_video_stream_rewind(s);
+}
+
 int rmp4_video_stream_hw_frame(rmp4_video_stream_t *s,
       video_hw_frame_t *out)
 {
