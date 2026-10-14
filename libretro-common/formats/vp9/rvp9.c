@@ -25,13 +25,49 @@
 #include <string.h>
 
 #include <retro_inline.h>
-#include <formats/rvp9.h>
+#include <formats/rvp9_hw.h>
+#include <retro_atomic.h>
 #ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
-#include <retro_atomic.h>
 #endif
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+static retro_atomic_ptr_t rvp9_backend;
+#define RVP9_BACKEND_GET() ((const rvp9_hw_backend_t*)retro_atomic_load_acquire_ptr(&rvp9_backend))
+#else
+static const rvp9_hw_backend_t *rvp9_backend;
+#define RVP9_BACKEND_GET() (rvp9_backend)
+#endif
+
+void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend)
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_store_release_ptr(&rvp9_backend, (void*)backend);
+#else
+   rvp9_backend = backend;
+#endif
+}
+
+bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
+      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend)
+{
+   const rvp9_hw_backend_t *factory = RVP9_BACKEND_GET();
+   if (!ops || !backend) return false;
+   memset(ops, 0, sizeof(*ops)); memset(backend, 0, sizeof(*backend));
+   if (!header || slots < 10 || slots > 32 || !factory || !factory->open || !factory->close)
+      return false;
+   if (!factory->open(factory->user, header, slots, ops)
+         || !ops->decoder || !ops->decode || !ops->output)
+   {
+      if (ops->decoder) factory->close(ops);
+      memset(ops, 0, sizeof(*ops));
+      return false;
+   }
+   *backend = *factory;
+   return true;
+}
 
 /* Tile columns decoded side by side at most; VP9 allows 64. */
 #define RVP9_TILE_THREADS_MAX 8

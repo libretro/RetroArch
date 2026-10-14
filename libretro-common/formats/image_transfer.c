@@ -994,6 +994,11 @@ bool image_transfer_anim_stream_set_hw(void *stream,
       return false;
    switch (type)
    {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         return rwebm_video_stream_set_hw((rwebm_video_stream_t*)stream,
+               enable ? 1 : 0) != 0;
+#endif
 #ifdef HAVE_RMP4
       case IMAGE_TYPE_MP4:
          return rmp4_video_stream_set_hw((rmp4_video_stream_t*)stream,
@@ -1012,6 +1017,10 @@ bool image_transfer_anim_stream_hw_frame(void *stream,
       return false;
    switch (type)
    {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         return rwebm_video_stream_hw_frame((rwebm_video_stream_t*)stream, out) != 0;
+#endif
 #ifdef HAVE_RMP4
       case IMAGE_TYPE_MP4:
          return rmp4_video_stream_hw_frame((rmp4_video_stream_t*)stream,
@@ -1389,13 +1398,16 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
 bool image_transfer_anim_stream_waiting(const void *stream,
       enum image_type_enum type)
 {
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_waiting((const rwebm_video_stream_t*)stream) != 0;
+#endif
 #ifdef HAVE_RMP4
    if (type == IMAGE_TYPE_MP4)
       return rmp4_video_stream_waiting((const rmp4_video_stream_t*)stream) != 0;
-#else
+#endif
    (void)stream;
    (void)type;
-#endif
    return false;
 }
 

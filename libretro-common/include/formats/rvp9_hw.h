@@ -29,6 +29,22 @@ typedef struct rvp9_hw_ops
    int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
 } rvp9_hw_ops_t;
 
+typedef struct rvp9_hw_backend
+{
+   void *user;
+   bool (*open)(void *user, const rvp9_hdr *header, unsigned slots,
+         rvp9_hw_ops_t *ops);
+   void (*close)(rvp9_hw_ops_t *ops);
+} rvp9_hw_backend_t;
+
+RETRO_BEGIN_DECLS
+/* Publish immutable backend storage before opening streams; NULL withdraws it.
+ * The backend/user must outlive its open decoders. Existing sessions keep close. */
+void rvp9_set_hw_backend(const rvp9_hw_backend_t *backend);
+bool rvp9_hw_backend_open(const rvp9_hdr *header, unsigned slots,
+      rvp9_hw_ops_t *ops, rvp9_hw_backend_t *backend);
+RETRO_END_DECLS
+
 /* Owner-thread state, independent of backend GPU completion and frame leases.
  * Ten DPB slots cover eight references, previous picture and new destination.
  * Fixed profile/geometry; reconfigure by retiring the session and reopening.

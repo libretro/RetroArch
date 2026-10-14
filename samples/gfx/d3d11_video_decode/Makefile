@@ -24,6 +24,12 @@ endif
 DECODERS := $(RA)/libretro-common/formats/mp4/rmp4.c \
             $(RA)/libretro-common/formats/h264/rh264.c
 DEPS     := $(RA)/gfx/common/dxva_h264.h d3d11_video_decode_test_data.h
+WEBM_DECODERS := $(RA)/libretro-common/formats/webm/rwebm.c \
+   $(RA)/libretro-common/formats/webm/rwebm_video.c \
+   $(RA)/libretro-common/formats/vp8/rvp8.c \
+   $(RA)/libretro-common/formats/image/image_blit_bands.c \
+   $(RA)/libretro-common/formats/image/image_hdr_blit.c \
+   $(RA)/libretro-common/features/features_cpu.c $(RA)/libretro-common/time/rtime.c
 BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
             $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h \
             $(RA)/gfx/common/dxva_hevc.h $(RA)/gfx/common/dxva_hevc_rh265.h \
@@ -43,7 +49,7 @@ ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
 LDFLAGS += -lwinmm
-WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
+WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type -DHAVE_RVP9
 endif
 
 all: $(TARGETS)
@@ -94,17 +100,20 @@ dxva_h264_test$(EXE): dxva_h264_test.c $(DECODERS) $(DEPS)
 
 d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
       $(DECODERS) $(DEPS) $(BACKEND) dxva_hevc_access_unit_data.h \
+      $(RA)/libretro-common/formats/vp9/rvp9.c \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_mock_test.c \
-	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm
+	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c \
+	   $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -lm
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
+      $(WEBM_DECODERS) \
       $(DECODERS) $(DEPS) $(BACKEND) hevc_device_data.h \
       $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
 	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c \
-	   $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -ld3d11 -lm
+	   $(RA)/libretro-common/formats/vp9/rvp9.c $(WEBM_DECODERS) $(LDFLAGS) -ld3d11 -lm
 
 PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/formats/image_transfer.c \

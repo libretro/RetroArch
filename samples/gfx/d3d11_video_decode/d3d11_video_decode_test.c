@@ -37,6 +37,7 @@ static int test_qm_raster;
 
 #include <d3d12.h>
 #include <formats/rmp4.h>
+#include <formats/rwebm_video.h>
 #include "d3d11_video_decode_test_data.h"
 #include "hevc_device_data.h"
 
@@ -872,8 +873,8 @@ static void test_vp9_conformance(void)
    uint32_t feedback;
    memset(&ops, 0, sizeof(ops)); memset(&opened, 0, sizeof(opened));
    memset(&hw, 0, sizeof(hw));
-   if (!path && !raw_path) return;
-   if (!path || !raw_path) goto invalid;
+   if (!path) return;
+   if (!raw_path) goto invalid;
    data = read_fixture_file(path, &size); raw = read_fixture_file(raw_path, &raw_size);
    if (!data || !raw || size < 44 || memcmp(data, "DKIF", 4) || memcmp(data + 8, "VP90", 4)) goto invalid;
    len = vp9_read32(data + 32);
@@ -956,6 +957,69 @@ invalid:
 done:
    d3d11_video_decode_vp9_close(&ops);
    opened_clear(&opened); frames_free(&hw); free(s); free(data); free(raw);
+}
+
+
+static void test_vp9_webm(void)
+{
+   const char *path = getenv("VP9_TEST_WEBM"), *raw_path = getenv("VP9_TEST_RAW");
+   const char *required = getenv("VP9_REQUIRE_HW");
+   rwebm_video_stream_t *s = NULL;
+   video_hw_frame_t frame;
+   opened_t opened;
+   frames_t hw;
+   uint8_t *data = NULL, *raw = NULL;
+   size_t size = 0, raw_size = 0, y_size, frame_size;
+   unsigned tries, i;
+   int matches;
+   memset(&opened, 0, sizeof(opened)); memset(&hw, 0, sizeof(hw));
+   if (!path) return;
+   if (!raw_path) goto invalid;
+   data = read_fixture_file(path, &size); raw = read_fixture_file(raw_path, &raw_size);
+   if (!data || !raw || !(s = rwebm_video_stream_open(data, size))) goto invalid;
+   if (!rwebm_video_stream_set_hw(s, 1))
+   {
+      printf("SKIP VP9 WebM: decoder configuration/import format unavailable\n");
+      if (required && strcmp(required, "0")) check("VP9 WebM: required hardware configuration", 0);
+      goto done;
+   }
+   for (tries = 0; tries < 2000; tries++)
+   {
+      if (rwebm_video_stream_next(s, NULL))
+      {
+         if (!rwebm_video_stream_hw_frame(s, &frame)) goto invalid;
+         if (!(use_d3d12 ? take_hw12(&hw, &frame) : take_hw(&hw, &opened, &frame))) goto invalid;
+      }
+      else if (rwebm_video_stream_waiting(s)) Sleep(1);
+      else break;
+   }
+   if (tries == 2000 || !hw.n) goto invalid;
+   y_size = (size_t)hw.w * hw.h * (frame.pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1);
+   frame_size = y_size * 3 / 2;
+   matches = frame_size && raw_size == frame_size * hw.n;
+   for (i = 0; matches && i < (unsigned)hw.n; i++)
+      matches = !memcmp(hw.y[i], raw + frame_size * i, y_size)
+         && !memcmp(hw.uv[i], raw + frame_size * i + y_size, y_size / 2);
+   printf("VP9 WebM through D3D%s: %d frames, %s\n", use_d3d12 ? "12" : "11", hw.n, path);
+   check("VP9 WebM: automatic backend matches every oracle sample", matches);
+   rwebm_video_stream_rewind(s);
+   for (tries = 0; tries < 1000; tries++)
+   {
+      if (rwebm_video_stream_next(s, NULL)) break;
+      if (!rwebm_video_stream_waiting(s)) goto invalid;
+      Sleep(1);
+   }
+   if (tries == 1000 || !rwebm_video_stream_hw_frame(s, &frame)) goto invalid;
+   rwebm_video_stream_close(s); s = NULL;
+   if (!(use_d3d12 ? take_hw12(&hw, &frame) : take_hw(&hw, &opened, &frame))) goto invalid;
+   check("VP9 WebM: rewind and a lease read after stream close", hw.n > 1
+         && !memcmp(hw.y[hw.n - 1], raw, y_size)
+         && !memcmp(hw.uv[hw.n - 1], raw + y_size, y_size / 2));
+   goto done;
+invalid:
+   check("VP9 WebM: open, stream and shared-frame read", 0);
+done:
+   rwebm_video_stream_close(s); opened_clear(&opened); frames_free(&hw); free(data); free(raw);
 }
 
 static void test_hevc_main(int depth)
@@ -1068,6 +1132,7 @@ int main(void)
    test_hevc_streams();
    test_hevc_conformance();
    test_vp9_conformance();
+   test_vp9_webm();
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
@@ -1128,6 +1193,7 @@ int main(void)
       test_hevc_streams();
       test_hevc_conformance();
       test_vp9_conformance();
+      test_vp9_webm();
       for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
       {
          const stream_t *s = &streams[i];

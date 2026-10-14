@@ -162,6 +162,9 @@ static struct
    retro_atomic_ptr_t grave;
    rh264_hw_ops_t ops;
    rh265_hw_backend_t hevc;
+#ifdef HAVE_RVP9
+   rvp9_hw_backend_t vp9;
+#endif
    unsigned import_formats;
 } d3d11vd;
 
@@ -943,6 +946,15 @@ void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops)
    memset(ops, 0, sizeof(*ops));
 }
 
+#ifdef HAVE_RVP9
+static bool d3d11vd_vp9_open(void *user, const rvp9_hdr *header,
+      unsigned slots, rvp9_hw_ops_t *ops)
+{
+   (void)user;
+   return d3d11_video_decode_vp9_open(header, slots, ops);
+}
+#endif
+
 static bool d3d11vd_hevc_open(void *user, const rh265_video *source, const rh265_video_params_t *params,
       unsigned slots, rh265_hw_ops_t *ops)
 {
@@ -991,6 +1003,12 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    d3d11vd.hevc.open = d3d11vd_hevc_open;
    d3d11vd.hevc.close = d3d11_video_decode_hevc_close;
    rh265_set_hw_backend(&d3d11vd.hevc);
+#ifdef HAVE_RVP9
+   d3d11vd.vp9.user = NULL;
+   d3d11vd.vp9.open = d3d11vd_vp9_open;
+   d3d11vd.vp9.close = d3d11_video_decode_vp9_close;
+   rvp9_set_hw_backend(&d3d11vd.vp9);
+#endif
    return true;
 }
 
@@ -1028,6 +1046,9 @@ void d3d11_video_decode_deinit(void)
       return;
    rh264_set_hw_backend(NULL);
    rh265_set_hw_backend(NULL);
+#ifdef HAVE_RVP9
+   rvp9_set_hw_backend(NULL);
+#endif
    if (retro_atomic_load_acquire_int(&d3d11vd.live))
       RARCH_ERR("[D3D11] Video decode: %d decoder(s) still open at teardown.\n",
             retro_atomic_load_acquire_int(&d3d11vd.live));

@@ -197,8 +197,9 @@ matches FFmpeg through the native D3D11 and D3D12 readers.
 `d3d11_video_decode_vp9_open` offers an explicit profile-0/NV12 or
 profile-2/P010 backend for `rvp9_hw_session_t`. The initialized renderer must
 advertise the matching import format. The device is queried for the actual
-profile, coded size and raw-bitstream configuration. This does not register
-VP9 for automatic WebM/player/thumbnail selection yet.
+profile, coded size and raw-bitstream configuration. The backend is registered when HAVE_RVP9 is enabled. The WebM animation
+stream can select it through image_transfer and the shared video_player
+used by thumbnail animation; primary media_core WebM integration is pending.
 
 The initial path accepts even, fixed-size 4:2:0 frames and BT.601/BT.709 output
 matrices (VP9 color spaces 0-3); unsupported color spaces, depth and geometry
@@ -230,6 +231,16 @@ Native RTX 5090 validation: four 12-frame profile/depth/color/range cases,
 each through D3D11 and D3D12, match every independent reference sample
 (96 decoded-frame comparisons). Eight show-existing replays also match without
 another decoder submission. H.264 and HEVC regression device tests pass.
-This does not establish automatic playback selection, hidden/superframe
-container integration, HDR/tone mapping, changing resolution or wider devices.
+This direct-session test does not establish movie-core playback, HDR/tone mapping,
+changing resolution or wider devices. Mock WebM stream tests cover hidden and
+superframe retry/ownership sequencing separately.
 Vulkan VP9 submission remains separate work.
+
+
+Set VP9_TEST_WEBM to a generated .webm file and VP9_TEST_RAW to its matching
+oracle to test registered-backend selection through rwebm_video_stream. The
+native oracle compares all frames through D3D11/D3D12 readers, then rewinds and
+reads an exported frame after closing its stream. Four 12-frame cases pass on
+the RTX 5090 (96 WebM frame comparisons plus eight rewind/close checks).
+These tests exercise real hardware decoding and shared GPU leases, not the
+complete File Browser UI, shader chain, audio synchronization or primary core.

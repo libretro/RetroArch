@@ -32,6 +32,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <formats/video_hw_frame.h>
 
 RETRO_BEGIN_DECLS
 
@@ -162,6 +163,15 @@ void rwebm_video_stream_get_info(const rwebm_video_stream_t *stream,
 const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *stream,
       int *duration_ms);
 
+/* Enable registered VP9 hardware before playback (rewinds on success), or
+ * query the active mode with enable == 0. Failure retains software state.
+ * GPU next returns a non-pixel token; take the lease with hw_frame.
+ * A NULL next while waiting is a retry, not EOS. Owner-thread calls. */
+int rwebm_video_stream_set_hw(rwebm_video_stream_t *stream, int enable);
+int rwebm_video_stream_hw_frame(rwebm_video_stream_t *stream,
+      video_hw_frame_t *out);
+int rwebm_video_stream_waiting(const rwebm_video_stream_t *stream);
+
 /* Select the channel order of subsequent frames: non-zero emits ARGB
  * words (memory order B,G,R,A on little-endian), zero restores the
  * default R,G,B,A memory order.  Applies to the 8-bit output paths;
@@ -211,8 +221,8 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
 
 /* Bounded-memory streaming support: media_floor is the fixed byte
  * offset where the cluster data begins (nothing below it is ever
- * read); consumed is the monotonic high-water byte offset the demuxer
- * has read up to.  Together they bound the window a feeder must keep
+ * read); consumed is the earliest byte still needed by pending packets
+ * or laces.  Together they bound the window a feeder must keep
  * resident: [media_floor, consumed + lookahead). */
 size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *stream);
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *stream);

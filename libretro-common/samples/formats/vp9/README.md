@@ -8,7 +8,7 @@ and compares logical/physical references and effective filter/segmentation
 metadata with the software decoder. These are CPU tests, not GPU decode or
 pixel-conformance tests.
 
-Use `SANITIZER=address,undefined` for sanitizer builds. Both C tests also build
+Use `SANITIZER=address,undefined` for sanitizer builds. All C tests also build
 with MinGW. The session test accepts an IVF path as its optional argument;
 this test reader expects individual visible frames, without superframe indices.
 The synthetic tests separately cover hidden and show-existing frames.
@@ -37,7 +37,25 @@ The initial session supports fixed-size profile 0 8-bit and profile 2 10-bit
 4:2:0 sequences beginning with a keyframe. Profile, depth or geometry changes
 return unsupported without submitting: cancel/retire and reopen resources or
 use software fallback. Backend decode/output failures make the session unusable.
-Platform submissions, automatic player/thumbnail selection, superframe retries,
-device-loss handling and real-GPU acceptance are separate integration work.
+D3D11 profile-0/profile-2 submission is registered when compiled in. The WebM
+animation stream opts into it through image_transfer and the shared video_player,
+including the thumbnail animation path. Vulkan submission and the primary
+media_core WebM path remain separate integration work.
 
 Reference: [Vulkan VP9 reference management and show-existing behavior](https://docs.vulkan.org/features/latest/features/proposals/VK_KHR_video_decode_vp9.html).
+
+
+`rwebm_hw_stream_test` links the production WebM stream, image_transfer and
+video_player with a mock backend. Its synthetic container uses valid parsed
+uncompressed headers with opaque dummy entropy bytes, consumed only by the mock.
+It covers hidden frames and multiple visible components in a superframe,
+BUSY retries at decode and export, packet-floor pinning, fixed laces, partial
+input, rewind, backend withdrawal, HDR refusal, untaken/held leases and GPU sink
+selection without CPU presentation. Intermediate display components are dropped
+without surface export. This test does not establish actual GPU bitstream decoding.
+
+Real-device WebM fixtures and independent pixel oracles live in
+samples/gfx/d3d11_video_decode. Software fallback is retained when initial probing
+fails; a later backend failure requires playback restart, rather than switching
+reference chains mid-stream. GPU frames still incur the backend's existing
+DPB-to-shared-output copy. Initial still-image decoding remains software.

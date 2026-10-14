@@ -535,6 +535,16 @@ size_t rwebm_tell(const rwebm_t *m)
    return (size_t)(m->cur - m->data);
 }
 
+size_t rwebm_consumed(const rwebm_t *m)
+{
+   const uint8_t *next;
+   if (!m || !m->cur) return 0;
+   next = m->cur;
+   if (m->lace_index < m->lace_count && m->lace_frame_ptr[m->lace_index] < next)
+      next = m->lace_frame_ptr[m->lace_index];
+   return (size_t)(next - m->data);
+}
+
 const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index)
 {
    if (!webm || index < 0 || index >= webm->num_tracks)

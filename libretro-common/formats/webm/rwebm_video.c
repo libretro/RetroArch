@@ -39,8 +39,9 @@
 #include <formats/rwebm.h>
 #include <formats/rvp8.h>
 #ifdef HAVE_RVP9
-#include <formats/rvp9.h>
+#include <formats/rvp9_hw.h>
 #endif
+#include <formats/image_yuv_blit.h>
 #include <formats/rwebm_video.h>
 #include <formats/image_blit_bands.h>
 
@@ -59,7 +60,17 @@ struct rwebm_video_stream
    rvp8_video  *vp8;
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
+   rvp9_hw_session_t *hw;
+   rvp9_hw_backend_t hw_backend;
+   video_hw_frame_t hw_frame;
+   const uint8_t *buf;
+   size_t len, avail, pending_floor, super_sizes[RWEBM_VIDEO_MAX_SUPER], super_offset;
+   rwebm_packet pending_packet;
+   int pending, pending_idx, super_count, super_index, last_show, submitted;
+   int hw_want, hw_untaken;
+   unsigned hw_yuv_mask, hw_yuv;
 #endif
+   int waiting;
    uint32_t    *frame;      /* width * height ABGR words              */
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
@@ -454,6 +465,16 @@ static void rwebm_video_stream_close_decoder(rwebm_video_stream_t *s)
       s->vp8 = NULL;
    }
 #ifdef HAVE_RVP9
+   if (s->hw_untaken) video_hw_frame_abandon(&s->hw_frame);
+   s->hw_untaken = 0;
+   memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+   if (s->hw)
+   {
+      rvp9_hw_session_cancel(s->hw);
+      s->hw_backend.close(&s->hw->ops);
+      free(s->hw); s->hw = NULL;
+   }
+   s->pending = s->waiting = 0;
    if (s->vp9)
    {
       rvp9_free(s->vp9);
@@ -489,6 +510,9 @@ static rwebm_video_stream_t *rwebm_video_stream_open_begin(
 
    if (!(s = (rwebm_video_stream_t*)calloc(1, sizeof(*s))))
       return NULL;
+#ifdef HAVE_RVP9
+   s->buf = buf; s->len = len; s->avail = avail > len ? len : avail;
+#endif
 
    if (!(s->demux = rwebm_open_memory_avail(buf, len, avail, need_more)))
       goto fail;
@@ -782,7 +806,12 @@ static void rwebm_video_blit_frame(rwebm_video_stream_t *s,
 void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
 {
    if (s)
+   {
       rwebm_set_avail(s->demux, avail);
+#ifdef HAVE_RVP9
+      s->avail = avail > s->len ? s->len : avail;
+#endif
+   }
 }
 
 size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *s)
@@ -792,7 +821,11 @@ size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *s)
 
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
 {
-   return s ? rwebm_tell(s->demux) : 0;
+   if (!s) return 0;
+#ifdef HAVE_RVP9
+   if (s->pending) return s->pending_floor;
+#endif
+   return rwebm_consumed(s->demux);
 }
 
 int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *s)
@@ -860,10 +893,157 @@ static int rwebm_video_duration_ms(const rwebm_video_stream_t *s, int idx)
    return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
-/* Decode one demuxed packet into the output frame (the caller's when one
- * was set, else s->frame). Returns 1 when a picture was
- * produced, 0 when the packet decoded but is not displayed, -1 on a
- * decode error. */
+int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
+{
+#ifdef HAVE_RVP9
+   const rwebm_track *t;
+   rwebm_t *probe;
+   rwebm_packet packet;
+   rvp9_hw_session_t *candidate;
+   rvp9_hw_backend_t backend;
+   rvp9_hw_ops_t ops;
+   size_t sizes[RWEBM_VIDEO_MAX_SUPER];
+   unsigned walked;
+   int found = 0;
+   if (!s || s->codec != RWEBM_CODEC_VP9) return 0;
+   if (!enable || s->hw) return s->hw != NULL;
+   t = rwebm_get_track(s->demux, s->track);
+   if (!t || rwebm_video_stream_is_hdr(s) || t->colour_range > 2
+         || !(t->matrix_coefficients == 0 || t->matrix_coefficients == 2
+            || t->matrix_coefficients == 1 || t->matrix_coefficients == 5
+            || t->matrix_coefficients == 6)) return 0;
+   probe = rwebm_open_memory_avail(s->buf, s->len, s->avail, NULL);
+   if (!probe) return 0;
+   candidate = (rvp9_hw_session_t*)calloc(1, sizeof(*candidate));
+   if (!candidate) { rwebm_close(probe); return 0; }
+   for (walked = 0; walked < RWEBM_VIDEO_MAX_TS; walked++)
+   {
+      if (rwebm_read_packet(probe, &packet) != 1) break;
+      if (packet.track != s->track) continue;
+      rwebm_video_vp9_superframe(packet.data, packet.size, sizes, RWEBM_VIDEO_MAX_SUPER);
+      found = !rvp9_parse_frame_header(packet.data, sizes[0], NULL, NULL,
+            &candidate->pending.header);
+      break;
+   }
+   rwebm_close(probe);
+   if (!found || candidate->pending.header.frame_type
+         || candidate->pending.header.w != (int)s->width
+         || candidate->pending.header.h != (int)s->height
+         || !rvp9_hw_backend_open(&candidate->pending.header, 10, &ops, &backend))
+   { free(candidate); return 0; }
+   if (!rvp9_hw_session_init(candidate, &ops, 10))
+   { backend.close(&ops); free(candidate); return 0; }
+   if (s->vp9) { rvp9_free(s->vp9); free(s->vp9); s->vp9 = NULL; }
+   s->hw = candidate; s->hw_backend = backend; s->hw_want = 1;
+   s->hw_yuv_mask = s->hw_yuv = 0;
+   if (t->matrix_coefficients == 1 || t->matrix_coefficients == 5 || t->matrix_coefficients == 6)
+   {
+      s->hw_yuv_mask |= IMAGE_YUV_FLAG_BT709;
+      if (t->matrix_coefficients == 1) s->hw_yuv |= IMAGE_YUV_FLAG_BT709;
+   }
+   if (t->colour_range)
+   {
+      s->hw_yuv_mask |= IMAGE_YUV_FLAG_FULL_RANGE;
+      if (t->colour_range == 2) s->hw_yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+   }
+   rwebm_rewind(s->demux);
+   s->pkt_idx = s->pending = s->waiting = 0;
+   return 1;
+#else
+   (void)s; (void)enable;
+   return 0;
+#endif
+}
+
+int rwebm_video_stream_hw_frame(rwebm_video_stream_t *s, video_hw_frame_t *out)
+{
+#ifdef HAVE_RVP9
+   if (!s || !out || !s->hw_untaken) return 0;
+   *out = s->hw_frame;
+   s->hw_untaken = 0;
+   memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+   return 1;
+#else
+   (void)s; (void)out;
+   return 0;
+#endif
+}
+
+int rwebm_video_stream_waiting(const rwebm_video_stream_t *s)
+{
+   return s && s->waiting;
+}
+
+#ifdef HAVE_RVP9
+static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms)
+{
+   int ret;
+   s->waiting = 0;
+   if (!s->pending)
+   {
+      size_t offset;
+      int i;
+      if (s->hw_untaken) video_hw_frame_abandon(&s->hw_frame);
+      s->hw_untaken = 0;
+      memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+      for (;;)
+      {
+         size_t floor = rwebm_consumed(s->demux);
+         ret = rwebm_read_packet(s->demux, &s->pending_packet);
+         if (ret == RWEBM_READ_AGAIN) { s->waiting = 1; return 2; }
+         if (ret != 1) return -1;
+         if (s->pending_packet.track != s->track) continue;
+         s->pending_floor = (size_t)(s->pending_packet.data - s->buf);
+         if (floor < s->pending_floor) s->pending_floor = floor;
+         break;
+      }
+      s->super_count = rwebm_video_vp9_superframe(s->pending_packet.data,
+            s->pending_packet.size, s->super_sizes, RWEBM_VIDEO_MAX_SUPER);
+      s->last_show = -1;
+      for (i = 0, offset = 0; i < s->super_count; i++)
+      {
+         if (!s->super_sizes[i] || s->super_sizes[i] > s->pending_packet.size - offset)
+            return -1;
+         /* Profile 0/2: show-existing and show-frame are in the first byte. */
+         if (s->pending_packet.data[offset] & 0x0a) s->last_show = i;
+         offset += s->super_sizes[i];
+      }
+      s->pending_idx = s->pkt_idx++;
+      s->super_index = s->submitted = 0; s->super_offset = 0;
+      s->pending = 1;
+   }
+   while (s->super_index < s->super_count)
+   {
+      if (!s->submitted)
+      {
+         ret = rvp9_hw_session_submit(s->hw, s->pending_packet.data + s->super_offset,
+               s->super_sizes[s->super_index]);
+         if (ret == 1) { s->waiting = 1; return 2; }
+         if (ret < 0) return -1;
+         s->submitted = 1;
+      }
+      if (s->hw->output_slot >= 0)
+      {
+         if (s->super_index != s->last_show) rvp9_hw_session_discard_output(s->hw);
+         else
+         {
+            ret = rvp9_hw_session_output(s->hw, &s->hw_frame);
+            if (ret == 1) { s->waiting = 1; return 2; }
+            if (ret < 0) return -1;
+            s->hw_frame.yuv = (s->hw_frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+            s->hw_untaken = 1;
+         }
+      }
+      s->super_offset += s->super_sizes[s->super_index++];
+      s->submitted = 0;
+   }
+   s->pending = 0;
+   if (duration_ms) *duration_ms = rwebm_video_duration_ms(s, s->pending_idx);
+   return s->hw_untaken ? 1 : 0;
+}
+#endif
+
+/* 1 displayed picture, 0 hidden packet, negative decode failure. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt)
 {
@@ -994,23 +1174,37 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
    return -1;
 }
 
-/* Advance by exactly one of the chosen track's packets (skipping other
- * tracks' packets, which are header reads only).  Returns 1 when a
- * displayed picture is in s->frame (duration written), 0 when the
- * packet decoded but is not displayed, -1 at the end of a pass or on
- * a decode error. */
+/* 1 displayed picture (canvas or GPU lease), 0 hidden packet, 2 retry,
+ * -1 end/error. Other tracks are skipped with header reads only. */
 static int rwebm_video_stream_step(rwebm_video_stream_t *s,
       int *duration_ms)
 {
    rwebm_packet pkt;
+   s->waiting = 0;
+#ifdef HAVE_RVP9
+   if (s->hw)
+   {
+      int ret = rwebm_video_hw_step(s, duration_ms);
+      if (ret < 0 && s->hw_untaken)
+      {
+         video_hw_frame_abandon(&s->hw_frame);
+         s->hw_untaken = 0;
+         memset(&s->hw_frame, 0, sizeof(s->hw_frame));
+      }
+      return ret;
+   }
+#endif
 
    for (;;)
    {
       int idx, r;
       r = rwebm_read_packet(s->demux, &pkt);
       if (r == RWEBM_READ_AGAIN)
+      {
+         s->waiting = 1;
          return 2;   /* not yet resident; nothing consumed - retry
                         after rwebm_video_stream_set_avail */
+      }
       if (r != 1)
          break;
       if (pkt.track != s->track)
@@ -1051,6 +1245,10 @@ void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
     * reference chain, default probabilities) is the correct state. */
    rwebm_video_stream_close_decoder(s);
    rwebm_video_stream_open_decoder(s);
+   s->waiting = 0;
+#ifdef HAVE_RVP9
+   if (s->hw_want) rwebm_video_stream_set_hw(s, 1);
+#endif
 }
 
 /* ------------------------------------------------------------------ */

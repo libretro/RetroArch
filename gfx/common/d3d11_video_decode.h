@@ -30,7 +30,7 @@
 
 RETRO_BEGIN_DECLS
 
-/* Offers H.264/HEVC backends for decoders on @device's adapter (an
+/* Offers H.264/HEVC/VP9 backends for decoders on @device's adapter (an
  * ID3D11Device). Main thread, once the device is up; false when the
  * system cannot share the frames. */
 bool d3d11_video_decode_init(void *device);

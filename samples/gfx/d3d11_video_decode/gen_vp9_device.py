@@ -43,4 +43,6 @@ for depth in (8, 10):
                 for cb, cr in zip(u, v):
                     packed.extend((cb, cr))
         raw.write_bytes(packed)
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(ivf), '-c', 'copy',
+            '-y', str(out / (name + '.webm'))], check=True)
         print(ivf, raw)

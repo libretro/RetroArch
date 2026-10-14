@@ -247,7 +247,7 @@ jobs:
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
 
-      - name: VP9 reference slots and hardware sessions (ASan + UBSan)
+      - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
         run: make check stream-check SANITIZER=address,undefined
 
