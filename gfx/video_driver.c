@@ -9615,6 +9615,14 @@ bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out)
    return video_xr_host.head_pose(video_xr_host.user, out);
 }
 
+bool video_driver_get_vr_controller_poses(
+      struct retro_vr_controller_poses *out)
+{
+   if (!video_xr_host.controller_poses)
+      return false;
+   return video_xr_host.controller_poses(video_xr_host.user, out);
+}
+
 static uintptr_t video_driver_vr_eye_state(void *data)
 {
    struct retro_vr_frame_state *out = (struct retro_vr_frame_state*)data;

@@ -25,6 +25,7 @@
 #include <rthreads/retro_eventcount.h>
 
 #include <openxr/openxr.h>
+#include <libretro.h>
 
 #include "openxr_runtime.h"
 #include "openxr_session.h"
@@ -94,6 +95,9 @@ typedef struct openxr_frame
    unsigned (*extra_layers)(void *user, XrTime display_time,
          const XrCompositionLayerBaseHeader **layers, unsigned cap);
    void *extra_user;
+   /* The hands; may be NULL. */
+   bool (*locate_hands)(void *user, XrSpace base, XrTime time,
+         struct retro_vr_controller_poses *out);
    /* The laser's dot the host made for the input's layers, start to
     * stop; the frame loop reads it. */
    XrSwapchain cursor;
@@ -176,6 +180,9 @@ typedef struct openxr_input_handles
    XrSession session;
    PFN_xrGetInstanceProcAddr get_proc;
    bool frame_controller;      /* XR_VALVE_frame_controller_interaction */
+   bool palm_pose;             /* XR_EXT_palm_pose */
+   bool hand_tracking;         /* XR_EXT_hand_tracking, hands tracked */
+   bool hand_data_source;      /* XR_EXT_hand_tracking_data_source */
 } openxr_input_handles_t;
 
 typedef struct openxr_input_hooks
@@ -191,6 +198,10 @@ typedef struct openxr_input_hooks
     * the screens. Returns how many were written. */
    unsigned (*frame_layers)(void *user, XrTime display_time,
          const XrCompositionLayerBaseHeader **layers, unsigned cap);
+   /* The two hands' poses and joints in base at time.
+    * False when none could be located. */
+   bool (*locate_hands)(void *user, XrSpace base, XrTime time,
+         struct retro_vr_controller_poses *out);
    void *user;
 } openxr_input_hooks_t;
 
@@ -221,6 +232,8 @@ void openxr_frame_local_changed(openxr_frame_t *f);
 void openxr_frame_clear_quads(openxr_frame_t *f);
 
 XrTime openxr_frame_predicted_time(openxr_frame_t *f);
+bool openxr_frame_locate_hands(openxr_frame_t *f, XrSpace base, XrTime time,
+      struct retro_vr_controller_poses *out);
 float openxr_frame_pixels_per_radian(openxr_frame_t *f);
 float openxr_frame_refresh_rate(openxr_frame_t *f);
 void openxr_frame_set_pacing(openxr_frame_t *f, unsigned interval);

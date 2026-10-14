@@ -92,6 +92,8 @@ bool openxr_host_eye_state(openxr_host_t *h,
       struct retro_vr_eye_state out[2]);
 bool openxr_host_head_pose(const openxr_host_t *h,
       struct retro_vr_head_pose *out);
+bool openxr_host_controller_poses(const openxr_host_t *h,
+      struct retro_vr_controller_poses *out);
 bool openxr_host_eye_size(const openxr_host_t *h, unsigned *width,
       unsigned *height);
 bool openxr_host_set_space(openxr_host_t *h,

@@ -669,7 +669,11 @@ void openxr_frame_input_attach(openxr_frame_t *f)
    h.session          = f->session->session;
    h.get_proc         = f->rt->GetInstanceProcAddr;
    h.frame_controller = f->rt->frame_controller;
+   h.palm_pose        = f->rt->palm_pose;
+   h.hand_tracking    = f->rt->hand_tracking;
+   h.hand_data_source = f->rt->hand_data_source;
    f->extra_layers    = in->frame_layers;
+   f->locate_hands    = in->locate_hands;
    f->extra_user      = in->user;
    f->input_attached  = true;
    in->session_created(in->user, &h);
@@ -682,9 +686,19 @@ void openxr_frame_input_detach(openxr_frame_t *f)
       return;
    f->input_attached = false;
    f->extra_layers   = NULL;
+   f->locate_hands   = NULL;
    f->extra_user     = NULL;
    if (in->session_destroying)
       in->session_destroying(in->user);
+}
+
+bool openxr_frame_locate_hands(openxr_frame_t *f, XrSpace base, XrTime time,
+      struct retro_vr_controller_poses *out)
+{
+   memset(out, 0, sizeof(*out));
+   if (!f->locate_hands)
+      return false;
+   return f->locate_hands(f->extra_user, base, time, out);
 }
 
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)

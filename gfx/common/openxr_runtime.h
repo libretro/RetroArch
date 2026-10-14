@@ -57,6 +57,9 @@ typedef struct openxr_runtime
    uint32_t max_layers;       /* the most layers a frame may end with */
    bool frame_controller;     /* XR_VALVE_frame_controller_interaction */
    bool refresh_ext;          /* XR_FB_display_refresh_rate */
+   bool palm_pose;            /* XR_EXT_palm_pose */
+   bool hand_tracking;        /* XR_EXT_hand_tracking. */
+   bool hand_data_source;     /* XR_EXT_hand_tracking_data_source */
    openxr_runtime_platform_t platform;   /* set before create_instance */
    const char *binding_ext;
 } openxr_runtime_t;

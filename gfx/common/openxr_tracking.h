@@ -31,6 +31,9 @@ typedef struct openxr_tracking
 {
    XrView views[2];
    struct retro_vr_head_pose head;
+   /* The hands at the same time, in the same space; cleared when the
+    * input located none. */
+   struct retro_vr_controller_poses hands;
    bool valid;
 } openxr_tracking_t;
 

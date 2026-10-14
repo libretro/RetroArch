@@ -146,10 +146,16 @@ static unsigned t_action_index(XrAction a)
 static unsigned t_suggested;
 static char     t_touch[128][2][XR_MAX_PATH_LENGTH];
 static unsigned t_num_touch;
+/* A runtime whose profiles lack XR_EXT_palm_pose's path. */
+static bool t_refuse_palm;
 static XRAPI_ATTR XrResult XRAPI_CALL t_suggest(XrInstance i,
       const XrInteractionProfileSuggestedBinding *sb)
 {
    uint32_t k;
+   if (t_refuse_palm)
+      for (k = 0; k < sb->countSuggestedBindings; k++)
+         if (strstr(t_path(sb->suggestedBindings[k].binding), "palm_ext"))
+            return XR_ERROR_PATH_UNSUPPORTED;
    t_suggested++;
    if (strcmp(t_path(sb->interactionProfile),
             "/interaction_profiles/oculus/touch_controller"))
@@ -302,6 +308,32 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate(XrSpace space, XrSpace base,
    return XR_SUCCESS;
 }
 
+static XRAPI_ATTR XrResult XRAPI_CALL t_path_to_string(XrInstance i,
+      XrPath p, uint32_t cap, uint32_t *n, char *buf)
+{
+   *n = (uint32_t)strlen(t_path(p)) + 1;
+   if (cap < *n)
+      return XR_ERROR_SIZE_INSUFFICIENT;
+   strlcpy(buf, t_path(p), cap);
+   return XR_SUCCESS;
+}
+static XRAPI_ATTR XrResult XRAPI_CALL t_get_pose(XrSession s,
+      const XrActionStateGetInfo *gi, XrActionStatePose *st)
+{
+   bool active;
+   t_find(gi, &active);
+   st->isActive = active ? XR_TRUE : XR_FALSE;
+   return XR_SUCCESS;
+}
+/* Touch in both hands. */
+static XRAPI_ATTR XrResult XRAPI_CALL t_get_profile(XrSession s,
+      XrPath user, XrInteractionProfileState *st)
+{
+   return t_string_to_path(T_INSTANCE,
+         "/interaction_profiles/oculus/touch_controller",
+         &st->interactionProfile);
+}
+
 /* Each hand's haptics: the last amplitude, 0 once stopped. */
 static float t_amp[3];
 static XRAPI_ATTR XrResult XRAPI_CALL t_apply(XrSession s,
@@ -320,6 +352,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_stop(XrSession s,
 
 static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrStringToPath",                     (PFN_xrVoidFunction)t_string_to_path },
+   { "xrPathToString",                     (PFN_xrVoidFunction)t_path_to_string },
+   { "xrGetActionStatePose",               (PFN_xrVoidFunction)t_get_pose },
+   { "xrGetCurrentInteractionProfile",     (PFN_xrVoidFunction)t_get_profile },
    { "xrCreateActionSet",                  (PFN_xrVoidFunction)t_create_set },
    { "xrDestroyActionSet",                 (PFN_xrVoidFunction)t_destroy_set },
    { "xrCreateAction",                     (PFN_xrVoidFunction)t_create_action },
@@ -483,6 +518,7 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 }
 
 /* ---- helpers ---- */
+static bool t_palm_pose;
 static void t_session(bool frame_controller)
 {
    openxr_input_handles_t h;
@@ -498,6 +534,7 @@ static void t_session(bool frame_controller)
    h.session          = T_SESSION;
    h.get_proc         = t_get_proc;
    h.frame_controller = frame_controller;
+   h.palm_pose        = t_palm_pose;
    t_hooks.session_created(t_hooks.user, &h);
 }
 
@@ -669,7 +706,8 @@ static void test_before_session(void)
 {
    input_openxr_register();
    CHECK(t_hooks.session_created && t_hooks.session_destroying
-         && t_hooks.frame_layers, "the hooks were not registered");
+         && t_hooks.frame_layers && t_hooks.locate_hands,
+         "the hooks were not registered");
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
    CHECK(t_nothing_held(), "something is held before there is a session");
    CHECK(!input_openxr_can_rumble(), "rumble before there is a session");
@@ -679,14 +717,18 @@ static void test_session_made(void)
 {
    t_reset_log();
    t_session(false);
-   CHECK(t_num_sets == 3 && t_num_actions == 33,
-         "%u sets and %u actions made, want 3 and 33", t_num_sets,
+   CHECK(t_num_sets == 3 && t_num_actions == 35,
+         "%u sets and %u actions made, want 3 and 35", t_num_sets,
          t_num_actions);
    CHECK(t_suggested == 4,
          "%u profiles suggested without the Frame's extension, want 4",
          t_suggested);
-   CHECK(t_attached == 3 && t_spaces_made == 2,
-         "%u sets attached and %u aim spaces", t_attached, t_spaces_made);
+   CHECK(t_attached == 3 && t_spaces_made == 4,
+         "%u sets attached and %u aim and grip spaces", t_attached,
+         t_spaces_made);
+   CHECK(t_touch_binds("pointer/grip", "/user/hand/right/input/grip/pose")
+         && !t_touch_binds("pointer/palm", NULL),
+         "Touch's grip is not bound, or its palm is without the extension");
    CHECK(t_touch_binds("combined/start_menu",
             "/user/hand/left/input/menu/click")
          && !t_touch_binds("combined/start", NULL),
@@ -1029,6 +1071,60 @@ static void test_laser(void)
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
 }
 
+/* A core's hands: located with the head, in its space, then marked
+ * held and named from the actions on the main thread. */
+static void test_hands(void)
+{
+   struct retro_vr_controller_poses poses;
+   const struct retro_vr_hand_state *l = &poses.hands[RETRO_VR_HAND_LEFT];
+   const struct retro_vr_hand_state *r = &poses.hands[RETRO_VR_HAND_RIGHT];
+   XrSpace base       = (XrSpace)(uintptr_t)0x43;
+   const uint32_t loc = RETRO_VR_POSE_ORIENTATION_VALID
+      | RETRO_VR_POSE_POSITION_VALID;
+
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[2].orientation.w = 1.0f;
+   t_aim[2].position.x    = 0.25f;
+   t_aim_tracked[1]       = false;
+   t_aim_tracked[2]       = true;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+
+   memset(&poses, 0xff, sizeof(poses));
+   CHECK(t_hooks.locate_hands(t_hooks.user, base, t_time, &poses),
+         "the hands were not located");
+   CHECK(t_located_base == base, "the hands were not located in the host's space");
+   CHECK(     r->grip.flags == loc && r->grip.position[0] == 0.25f
+         && r->grip.orientation[3] == 1.0f && r->aim.flags == loc,
+         "the right hand's grip and aim: flags 0x%x 0x%x", r->grip.flags,
+         r->aim.flags);
+   CHECK(r->palm.flags == 0 && !(r->flags & RETRO_VR_HAND_JOINTS),
+         "a palm or joints without their extensions");
+   CHECK(l->grip.flags == 0 && l->grip.position[0] == 0.0f,
+         "the untracked left hand has a pose");
+
+   input_openxr_controller_poses(&poses);
+   CHECK(r->flags == RETRO_VR_HAND_ACTIVE && l->flags == RETRO_VR_HAND_ACTIVE,
+         "both controllers' poses are bound: flags 0x%x 0x%x", l->flags,
+         r->flags);
+   CHECK(     r->interaction_profile && !strcmp(r->interaction_profile,
+            "/interaction_profiles/oculus/touch_controller"),
+         "the right hand's profile: %s",
+         r->interaction_profile ? r->interaction_profile : "none");
+
+   /* Out of focus, no hand is the core's. */
+   t_focused = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hooks.locate_hands(t_hooks.user, base, t_time, &poses);
+   input_openxr_controller_poses(&poses);
+   CHECK(     r->flags == 0 && r->grip.flags == 0
+         && !r->interaction_profile && l->flags == 0,
+         "a hand out of focus: flags 0x%x", r->flags);
+   t_focused        = true;
+   t_aim_tracked[2] = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+}
+
 static void test_rumble(void)
 {
    t_let_go();
@@ -1069,7 +1165,7 @@ static void test_session_gone(void)
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    t_hooks.session_destroying(t_hooks.user);
-   CHECK(t_sets_destroyed == 3 && t_spaces_destroyed == 2,
+   CHECK(t_sets_destroyed == 3 && t_spaces_destroyed == 4,
          "%u sets and %u spaces destroyed", t_sets_destroyed,
          t_spaces_destroyed);
    CHECK(!input_openxr_can_rumble(), "rumble with the session gone");
@@ -1122,6 +1218,29 @@ static void t_fresh_session(void)
    t_num_touch   = 0;
    t_spaces_made = 0;
    t_session(false);
+}
+
+/* With XR_EXT_palm_pose, the palm too; a runtime that refuses it keeps
+ * the rest of each profile. */
+static void test_palm(void)
+{
+   t_palm_pose = true;
+   t_fresh_session();
+   CHECK(t_touch_binds("pointer/palm", "/user/hand/left/input/palm_ext/pose")
+         && t_spaces_made == 6,
+         "the palm is not bound with its extension (%u spaces)",
+         t_spaces_made);
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_palm = true;
+   t_suggested   = 0;
+   t_fresh_session();
+   CHECK(t_suggested == 4 && t_touch_binds("pointer/grip", NULL)
+         && !t_touch_binds("pointer/palm", NULL),
+         "%u profiles suggested, want 4 without the refused palm",
+         t_suggested);
+   t_hooks.session_destroying(t_hooks.user);
+   t_refuse_palm = false;
+   t_palm_pose   = false;
 }
 
 static bool t_op_is(unsigned i, bool connect, unsigned slot,
@@ -1414,9 +1533,11 @@ int main(void)
    test_nothing_held();
    test_start_menu();
    test_laser();
+   test_hands();
    test_rumble();
    test_session_gone();
    test_session_failed();
+   test_palm();
    test_devices();
    test_device_taken();
    test_joypad_wrapped();

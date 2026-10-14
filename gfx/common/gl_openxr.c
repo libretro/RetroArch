@@ -217,6 +217,12 @@ static bool gl_openxr_host_head_pose(void *user,
    return openxr_host_head_pose(&((gl_openxr_t*)user)->host, out);
 }
 
+static bool gl_openxr_host_controller_poses(void *user,
+      struct retro_vr_controller_poses *out)
+{
+   return openxr_host_controller_poses(&((gl_openxr_t*)user)->host, out);
+}
+
 static bool gl_openxr_host_eye_size(void *user, unsigned *w, unsigned *h)
 {
    return openxr_host_eye_size(&((gl_openxr_t*)user)->host, w, h);
@@ -760,6 +766,7 @@ static void gl_openxr_host_register(gl_openxr_t *xr)
    host.eye_state = gl_openxr_host_eye_state;
    host.set_space = gl_openxr_host_set_space;
    host.head_pose = gl_openxr_host_head_pose;
+   host.controller_poses = gl_openxr_host_controller_poses;
    host.eye_size  = gl_openxr_host_eye_size;
    host.resume    = gl_openxr_host_resume;
    host.user      = xr;
