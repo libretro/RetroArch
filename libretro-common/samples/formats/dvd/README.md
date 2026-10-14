@@ -165,3 +165,21 @@ adapter, source and buffer are caller-owned and exclusive. END is input or
 program end, not decoder completion or validated DVD conformance.
 Run rdvd_vfs_real_test fixture.vob for the generated MPEG-2/AC3/PCI/DSI oracle.
 Decoder/player ownership, clocking, VM/menus and presentation remain pending.
+
+rdvd_ac3 frames one selected AC-3 substream using the existing rac3 header
+parser. Initial acquisition skips continuation bytes using the one-based
+DVD first-access-unit pointer. Later input must be continuous; reset on
+seek, lost packets or stream changes. Drain next to MORE before advancing
+the originating PES. Whole frames borrow its bytes; spanning frames use
+caller-owned, separate 3840-byte assembly storage. Frame views expire at
+next/feed/reset. Framing errors require reset; a nonzero used count at EOF
+means a truncated frame. No CRC checks, decoding, allocation or I/O occur
+inside this reader. LPCM/DTS routing and player audio output remain pending.
+
+The AC-3 sample tests every split of two frames and a maximum-sized frame
+fed bytewise. The generated VOB worker test passes frames to rac3_decode_frame,
+checks CRCs and finite PCM, reports borrowed/assembled counts and rejects
+leftover fragments at EOF. The 0.4-second fixture above yields 13 audio
+frames, nine borrowed and four assembled; this is not playable DVD output.
+The pointer origin is also observable in the
+[FFmpeg MPEG muxer](https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mpegenc.c).

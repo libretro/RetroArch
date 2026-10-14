@@ -53,6 +53,36 @@ static void test_splits(void)
    }
 }
 
+static void test_maximum_frame(void)
+{
+   static uint8_t maximum[RDVD_AC3_BUFFER_BYTES];
+   rdvd_ac3_t audio;
+   rdvd_ac3_frame_t frame;
+   size_t i;
+   memcpy(maximum, bytes, 8);
+   maximum[4] = 0xa4; /* 32 kHz, 640 kbit/s. */
+   CHECK(rdvd_ac3_init(&audio, 7, storage, sizeof(storage)));
+   for (i = 0; i < sizeof(maximum); i++)
+   {
+      rdvd_packet_t p = packet(maximum + i, 1);
+      enum rdvd_ac3_result result;
+      p.index = 7;
+      if (i) p.frame_count = 0;
+      CHECK(rdvd_ac3_feed(&audio, &p));
+      result = rdvd_ac3_next(&audio, &frame);
+      if (i + 1 == sizeof(maximum))
+      {
+         CHECK(result == RDVD_AC3_FRAME && frame.data == storage);
+         CHECK(frame.size == sizeof(maximum) && frame.info.sample_rate == 32000);
+         CHECK(!memcmp(frame.data, maximum, sizeof(maximum)));
+         CHECK(rdvd_ac3_next(&audio, &frame) == RDVD_AC3_MORE);
+      }
+      else
+         CHECK(result == RDVD_AC3_MORE && audio.used == i + 1);
+   }
+   CHECK(!audio.used && !audio.borrowing);
+}
+
 static void test_contracts(void)
 {
    rdvd_ac3_t audio;
@@ -105,7 +135,7 @@ int main(void)
       bytes[i] = 0x0b; bytes[i+1] = 0x77; bytes[i+4] = 0;
       bytes[i+5] = 0x40; bytes[i+6] = 0x40; bytes[i+7] = 0xf8;
    }
-   test_splits(); test_contracts();
+   test_splits(); test_maximum_frame(); test_contracts();
    printf("DVD AC3 tests: %u failures\n", failures);
    return failures ? 1 : 0;
 }
