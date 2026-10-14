@@ -2640,6 +2640,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return false;
          }
 
+         /* A cached frame in the old format cannot be drawn again
+          * in the new one: its rows are the old format's size. */
+         if (video_st->pix_fmt != pix_fmt)
+            video_driver_cached_frame_invalidate();
          video_st->pix_fmt = pix_fmt;
          break;
       }

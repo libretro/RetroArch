@@ -716,6 +716,19 @@ RETRO_API void harness_core_set_run_us(unsigned us)
  * the base size, so two ways of drawing it can be compared on screen */
 static unsigned harness_frozen;
 RETRO_API void harness_core_freeze(unsigned n) { harness_frozen = n; }
+/* Says a new pixel format, as a core restarting its video would, and
+ * draws in it from the next run: 16-bit pixels for RGB565 and 0RGB1555,
+ * 32-bit for XRGB8888 and XRGB2101010. False when the frontend refuses. */
+RETRO_API bool harness_core_set_format(unsigned fmt)
+{
+   enum retro_pixel_format f = (enum retro_pixel_format)fmt;
+   if (!environ_cb || !environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &f))
+      return false;
+   pixel_format = f;
+   bpp          = (f == RETRO_PIXEL_FORMAT_XRGB8888
+         || f == RETRO_PIXEL_FORMAT_XRGB2101010) ? 4 : 2;
+   return true;
+}
 /* The access a framebuffer is asked with: read and write by default,
  * as a core that snapshots its frame for a wipe asks; write only for
  * one that only draws */

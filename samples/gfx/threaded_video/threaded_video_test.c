@@ -20,6 +20,7 @@
  * Nothing is stubbed.
  */
 
+#include <gfx/scaler/pixconv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -3520,6 +3521,10 @@ static double pacing_rate_measure(thread_video_t *thr, float display_hz,
    uint64_t f0;
    retro_time_t t0, took;
 
+   /* The fake driver reads the panel's timing on the video thread:
+    * changed only with that thread idle, as the frame handed over next
+    * orders it after these writes. */
+   video_thread_wait_idle();
    settings->floats.video_refresh_rate               = display_hz;
    settings->bools.video_present_timing_from_display = timestamps;
    video_st->av_info.timing.fps                      = content_fps;
@@ -7655,6 +7660,170 @@ static void lane_record_format(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a core's 0RGB1555 and XRGB2101010 frames, converted          */
+/*   A driver gets 0RGB1555 frames as RGB565 and XRGB2101010 ones     */
+/*   narrowed to XRGB8888, converted on the main thread without the   */
+/*   wrapper and on the video thread with it. Either way every pixel  */
+/*   of the frame's first row must be the converted core pixel, at   */
+/*   the converted format's pitch.                                    */
+/* ------------------------------------------------------------------ */
+
+#define PIXLANE_W     320
+#define PIXLANE_FROZE 0x1234u
+
+static video_driver_t      pixlane_driver;
+static const video_driver_t *pixlane_inner;
+static uint32_t            pixlane_row[PIXLANE_W];
+static unsigned            pixlane_pitch;
+static unsigned            pixlane_dims;
+/* Frames captured; stored with release after the row */
+static retro_atomic_int_t  pixlane_frames;
+static bool                pixlane_wide; /* the row is 32-bit */
+
+static bool pixlane_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   if (frame && VIDEO_SCALE_W(dims) == PIXLANE_W)
+   {
+      unsigned x;
+      for (x = 0; x < PIXLANE_W; x++)
+         pixlane_row[x] = pixlane_wide
+            ? ((const uint32_t*)frame)[x]
+            : ((const uint16_t*)frame)[x];
+      pixlane_pitch = pitch;
+      pixlane_dims  = dims;
+      retro_atomic_inc_int(&pixlane_frames);
+   }
+   return pixlane_inner->frame(data, frame, dims, frame_count, pitch, msg,
+         video_info);
+}
+
+static void pixlane_once(unsigned fmt, bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   bool (*set_format)(unsigned) = lib
+      ? (bool (*)(unsigned))dylib_proc(lib, "harness_core_set_format") : NULL;
+   void (*freeze)(unsigned) = lib
+      ? (void (*)(unsigned))dylib_proc(lib, "harness_core_freeze") : NULL;
+   const char *name = fmt == RETRO_PIXEL_FORMAT_0RGB1555
+      ? "0RGB1555" : "XRGB2101010";
+   const char *mode = threaded ? "threaded" : "unthreaded";
+   int flags        = DRIVER_VIDEO_MASK;
+   unsigned i, bad;
+
+   CHECK(set_format && freeze, "harness core lacks the format exports");
+   if (!set_format || !freeze)
+      return;
+   CHECK(set_format(fmt), "pixel format lane: %s refused", name);
+
+   /* The converters are made with the driver */
+   set_threaded_via_setting(threaded);
+   command_event(CMD_EVENT_REINIT, &flags);
+   run_frames(4);
+   expect_wrapper(threaded, "pixel format lane");
+   if (threaded)
+      video_thread_wait_idle();
+
+   pixlane_wide = fmt == RETRO_PIXEL_FORMAT_XRGB2101010;
+   retro_atomic_store_release_int(&pixlane_frames, 0);
+   if (threaded)
+   {
+      thread_video_t *thr = (thread_video_t*)video_st->data;
+      pixlane_inner        = thr->driver;
+      pixlane_driver       = *thr->driver;
+      pixlane_driver.frame = pixlane_frame;
+      set_driver(thr, &pixlane_driver);
+   }
+   else
+   {
+      pixlane_inner          = video_st->current_video;
+      pixlane_driver         = *video_st->current_video;
+      pixlane_driver.frame   = pixlane_frame;
+      video_st->current_video = &pixlane_driver;
+   }
+
+   freeze(PIXLANE_FROZE);
+   for (i = 0; i < 64
+         && retro_atomic_load_acquire_int(&pixlane_frames) < 2; i++)
+   {
+      run_frames(1);
+      if (threaded)
+         video_thread_wait_idle();
+   }
+   freeze(0);
+
+   if (threaded)
+      set_driver((thread_video_t*)video_st->data, pixlane_inner);
+   else
+      video_st->current_video = (video_driver_t*)pixlane_inner;
+
+   CHECK(retro_atomic_load_acquire_int(&pixlane_frames) >= 2,
+         "pixel format lane (%s, %s): no frame reached the driver", name,
+         mode);
+   if (retro_atomic_load_acquire_int(&pixlane_frames) >= 2)
+   {
+      for (bad = 0, i = 0; i < PIXLANE_W; i++)
+      {
+         uint32_t v = PIXLANE_FROZE + i;
+         uint32_t want;
+         if (pixlane_wide)
+            want = 0xff000000u
+                 | ((v >> 22) & 0xff) << 16
+                 | ((v >> 12) & 0xff) << 8
+                 | ((v >>  2) & 0xff);
+         else
+         {
+            uint16_t src = (uint16_t)v, out;
+            conv_0rgb1555_rgb565(&out, &src, 1, 1, 2, 2);
+            want = out;
+         }
+         if (pixlane_row[i] != want)
+            bad++;
+      }
+      CHECK(!bad, "pixel format lane (%s, %s): %u of %u pixels not "
+            "converted (first %08x, dims %ux%u)", name, mode, bad, PIXLANE_W,
+            (unsigned)pixlane_row[0], VIDEO_SCALE_W(pixlane_dims),
+            VIDEO_SCALE_H(pixlane_dims));
+      CHECK(pixlane_pitch == PIXLANE_W * (pixlane_wide ? 4u : 2u),
+            "pixel format lane (%s, %s): pitch %u", name, mode,
+            pixlane_pitch);
+   }
+}
+
+static void lane_pixel_format(void)
+{
+   unsigned had = failures;
+   dylib_t lib  = runloop_state_get_ptr()->lib_handle;
+   bool (*set_format)(unsigned) = lib
+      ? (bool (*)(unsigned))dylib_proc(lib, "harness_core_set_format") : NULL;
+   bool menu_was_up = menu_is_up();
+   int flags        = DRIVER_VIDEO_MASK;
+   enum retro_pixel_format was = video_state_get_ptr()->pix_fmt;
+
+   if (menu_was_up)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pixlane_once(RETRO_PIXEL_FORMAT_0RGB1555,    false);
+   pixlane_once(RETRO_PIXEL_FORMAT_0RGB1555,    true);
+   pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, false);
+   pixlane_once(RETRO_PIXEL_FORMAT_XRGB2101010, true);
+
+   /* Back to the core's own format, the driver made for it */
+   if (set_format)
+      set_format((unsigned)was);
+   set_threaded_via_setting(false);
+   command_event(CMD_EVENT_REINIT, &flags);
+   run_frames(2);
+   if (menu_was_up)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] pixel format lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the wrapper reads back in the recording's own format         */
 /*   A driver whose poke has record_read is read back on the video    */
 /*   thread, and a GPU recording opened for 32-bit frames gets them   */
@@ -9321,6 +9490,8 @@ int main(int argc, char *argv[])
    lane_viewport_publish();
    if (!real_driver())
       lane_record_reader();
+   if (!real_driver())
+      lane_pixel_format();
    lane_context_api_behind_wrapper();
    lane_headset_calls();
    lane_async_texture_load();
