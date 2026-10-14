@@ -582,6 +582,9 @@ bool movie_start_record_notify(input_driver_state_t *input_st, char *path,
       task->type                 = TASK_TYPE_NONE;
       task->state                = state;
       task->handler              = task_moviectl_record_handler;
+      /* It waits for a state load to retire, which happens on the main
+       * thread, so it looks from there, once per check. */
+      task->flags               |= RETRO_TASK_FLG_MAIN_THREAD;
       task->callback             = moviectl_start_record_cb;
       task->user_data            = user_data;
 

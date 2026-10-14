@@ -127,6 +127,8 @@
 #include <streams/interface_stream.h>
 #include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include <encodings/rzstd.h>
 
 #include "../../../configuration.h"
@@ -192,7 +194,21 @@ bool runloop_key_event_is_frontend(void)
 input_driver_state_t *input_state_get_ptr(void) { return &input_st; }
 /* the replay is over: the frontend's call for it, on the state above */
 void bsv_movie_set_end(void) { input_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_END; }
-bool content_load_state_in_progress(void *data) { (void)data; return false; }
+/* A state load in flight, and who asks about it: the record task waits
+ * for the load to retire, which happens on the main thread. */
+static int       load_pending        = 0;
+static uintptr_t main_tid            = 0;
+static unsigned  load_asks           = 0;
+static unsigned  load_asks_off_main  = 0;
+bool content_load_state_in_progress(void *data)
+{
+   (void)data;
+   if (main_tid && sthread_get_current_thread_id() != main_tid)
+      __atomic_fetch_add(&load_asks_off_main, 1, __ATOMIC_RELAXED);
+   else
+      load_asks++;
+   return __atomic_load_n(&load_pending, __ATOMIC_RELAXED) != 0;
+}
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device) { (void)down; (void)code; (void)character; (void)mod; (void)device; }
 
@@ -345,6 +361,54 @@ static void truncate_file(const char *path, int64_t len)
 }
 
 /* ---- lanes ----------------------------------------------------------- */
+
+/* On the threaded queue, a recording started while a state load is in
+ * flight waits for it from the main thread, once per check, and starts
+ * once the load is through. */
+static void lane_record_waits_for_load(const char *path)
+{
+   unsigned i;
+
+   reset_counters();
+   settings.bools.savestate_file_compression = false;
+   fill_state(1);
+   task_queue_deinit();
+   task_queue_init(true, NULL);
+   main_tid           = sthread_get_current_thread_id();
+   load_asks          = 0;
+   __atomic_store_n(&load_asks_off_main, 0, __ATOMIC_RELAXED);
+   __atomic_store_n(&load_pending, 1, __ATOMIC_RELAXED);
+
+   CHECK(movie_start_record(&input_st, (char*)path), "start_record");
+   for (i = 0; i < 20; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(__atomic_load_n(&load_asks_off_main, __ATOMIC_RELAXED) == 0,
+         "the record task asked about the load off the main thread %u times",
+         __atomic_load_n(&load_asks_off_main, __ATOMIC_RELAXED));
+   CHECK(load_asks <= 21, "asked about the load %u times in 20 checks",
+         load_asks);
+   CHECK(!(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING),
+         "recording before the load went through");
+
+   __atomic_store_n(&load_pending, 0, __ATOMIC_RELAXED);
+   for (i = 0; i < 20
+         && !(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING); i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING,
+         "recording did not start once the load went through");
+   CHECK(movie_stop(&input_st), "halt");
+
+   task_queue_deinit();
+   task_queue_init(false, NULL);
+   main_tid = 0;
+   lane_done("record_waits_for_load", NULL);
+}
 
 static void lane_roundtrip(const char *path, bool compress)
 {
@@ -1396,6 +1460,7 @@ int main(int argc, char **argv)
    lane_v1_short_state();
    lane_short_block();
    lane_write_oom();
+   lane_record_waits_for_load(path);
 
    filestream_delete(path);
    task_queue_deinit();
