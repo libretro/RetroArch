@@ -178,7 +178,7 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
    ID3D11Texture2D *tex;
    ID3D11Fence *wait, *done;
    unsigned w = fr->width, h = fr->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
-   unsigned y;
+   unsigned y, bps = fr->pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
    int i;
 
    if (o->gen != fr->layout)
@@ -201,7 +201,7 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
       d.Height           = h;
       d.MipLevels        = 1;
       d.ArraySize        = 1;
-      d.Format           = DXGI_FORMAT_NV12;
+      d.Format           = bps == 2 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
       d.SampleDesc.Count = 1;
       d.Usage            = D3D11_USAGE_STAGING;
       d.CPUAccessFlags   = D3D11_CPU_ACCESS_READ;
@@ -224,18 +224,18 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
       i        = f->n++;
       f->w     = w;
       f->h     = h;
-      f->y[i]  = frame_alloc(f, (size_t)w * h);
-      f->uv[i] = frame_alloc(f, (size_t)cw * 2 * ch);
+      f->y[i]  = frame_alloc(f, (size_t)w * h * bps);
+      f->uv[i] = frame_alloc(f, (size_t)cw * 2 * ch * bps);
       if (f->y[i] && f->uv[i])
       {
          const uint8_t *p = (const uint8_t*)m.pData;
          for (y = 0; y < h; y++)
-            memcpy(f->y[i] + (size_t)y * w, p + (size_t)y * m.RowPitch, w);
+            memcpy(f->y[i] + (size_t)y * w * bps, p + (size_t)y * m.RowPitch, w * bps);
          /* the chroma plane follows the luma rows */
          p += (size_t)m.RowPitch * h;
          for (y = 0; y < ch; y++)
-            memcpy(f->uv[i] + (size_t)y * cw * 2, p + (size_t)y * m.RowPitch,
-                  cw * 2);
+            memcpy(f->uv[i] + (size_t)y * cw * 2 * bps, p + (size_t)y * m.RowPitch,
+                  cw * 2 * bps);
       }
    }
    ctx->lpVtbl->Unmap(ctx, (ID3D11Resource*)o->staging, 0);
@@ -615,7 +615,7 @@ static const stream_t streams[] = {
    STREAM(cropped,     0)
 };
 
-static void test_hevc_main(void)
+static void test_hevc_main(int depth)
 {
    static rh265_video_params_t params;
    static rh265_hw_session_t session;
@@ -629,13 +629,18 @@ static void test_hevc_main(void)
    int ret, stride, w, h, plane, matches = 1;
    unsigned attempt, x, y;
    const uint8_t *sw;
+   const uint8_t *config = depth == 10 ? hevc_config10 : hevc_config8;
+   const uint8_t *sample = depth == 10 ? hevc_sample10 : hevc_sample8;
+   size_t config_size = depth == 10 ? sizeof(hevc_config10) : sizeof(hevc_config8);
+   size_t sample_size = depth == 10 ? sizeof(hevc_sample10) : sizeof(hevc_sample8);
+   printf("HEVC %d-bit:\n", depth);
    memset(&hw, 0, sizeof(hw));
    memset(&opened, 0, sizeof(opened));
    memset(&ops, 0, sizeof(ops));
    check("HEVC Main: parser opens", v != NULL);
    if (!v) return;
-   if (rh265_video_set_extradata(v, hevc_config8, sizeof(hevc_config8))
-         || rh265_video_get_access_unit(v, hevc_sample8, sizeof(hevc_sample8),
+   if (rh265_video_set_extradata(v, config, config_size)
+         || rh265_video_get_access_unit(v, sample, sample_size,
             4, slices, 4, &au)
          || rh265_video_get_params(v, au.first.pps_id, &params))
    {
@@ -644,20 +649,19 @@ static void test_hevc_main(void)
    }
    if (!d3d11_video_decode_hevc_open(&params, 32, &ops))
    {
-      printf("HEVC Main: SKIP (no shared NV12 HEVC decoder)\n");
+      printf("HEVC %d-bit: SKIP (decoder/shared output setup unavailable)\n", depth);
       goto done;
    }
    check("HEVC Main: owner initializes", rh265_hw_session_init(&session, &ops, 32));
    ret = 1;
    for (attempt = 0; ret == 1 && attempt < 2048; attempt++)
-      ret = rh265_hw_session_submit(&session, hevc_sample8,
-            sizeof(hevc_sample8), &params, &au, slices);
+      ret = rh265_hw_session_submit(&session, sample, sample_size, &params, &au, slices);
    check("HEVC Main: hardware submission accepts", ret == 0);
    if (ret) goto done;
    check("HEVC Main: exports shared frame", !rh265_hw_session_output(&session, true, &frame));
    if (!frame.image) goto done;
    check("HEVC Main: shared handles and fences import", take_hw(&hw, &opened, &frame));
-   ret = rh265_video_decode(v, hevc_sample8, sizeof(hevc_sample8));
+   ret = rh265_video_decode(v, sample, sample_size);
    if (ret == 0) ret = rh265_video_drain(v) == 0 ? 1 : -1;
    check("HEVC Main: software picture", ret == 1);
    if (ret != 1 || hw.n != 1) goto done;
@@ -670,9 +674,12 @@ static void test_hevc_main(void)
       for (y = 0; y < (unsigned)h; y++)
          for (x = 0; x < (unsigned)w; x++)
          {
-            uint8_t value = plane ? hw.uv[0][y * hw.w + 2 * x + plane - 1]
-               : hw.y[0][y * hw.w + x];
-            if (sw[y * stride + x] != value) matches = 0;
+            unsigned at = plane ? y * hw.w + 2 * x + plane - 1 : y * hw.w + x;
+            const uint8_t *data = plane ? hw.uv[0] : hw.y[0];
+            unsigned value = depth == 10 ? ((const uint16_t*)data)[at] >> 6 : data[at];
+            unsigned expected = depth == 10 ? ((const uint16_t*)sw)[y * stride + x]
+               : sw[y * stride + x];
+            if (expected != value) matches = 0;
          }
    }
    check("HEVC Main: every imported pixel equals software", matches);
@@ -708,7 +715,8 @@ int main(void)
       return 0;
    }
 
-   test_hevc_main();
+   test_hevc_main(8);
+   test_hevc_main(10);
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {

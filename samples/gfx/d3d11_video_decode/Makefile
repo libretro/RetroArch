@@ -28,12 +28,14 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
             $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h \
             $(RA)/gfx/common/dxva_hevc.h $(RA)/gfx/common/dxva_hevc_rh265.h \
             $(RA)/libretro-common/include/formats/rh265.h \
+            $(RA)/libretro-common/include/formats/video_hw_frame.h \
             $(RA)/libretro-common/include/formats/rh265_hw.h
 
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
 TARGETS += rh265_hw_stream_test$(EXE)
+TARGETS += video_hw_format_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -42,6 +44,11 @@ WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
 
 all: $(TARGETS)
+
+video_hw_format_test$(EXE): video_hw_format_test.c \
+      $(RA)/gfx/gfx_surface_player.c $(RA)/libretro-common/include/formats/video_hw_frame.h
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -o $@ \
+	   video_hw_format_test.c $(LDFLAGS) -Wl,--gc-sections
 
 rh265_hw_state_test$(EXE): rh265_hw_state_test.c $(RA)/libretro-common/include/formats/rh265_hw.h
 	$(CC) $(CFLAGS) -o $@ rh265_hw_state_test.c $(LDFLAGS)
@@ -114,6 +121,7 @@ check: all
 	$(RUNNER) ./rh265_hw_state_test$(EXE)
 	$(RUNNER) ./rh265_hw_session_test$(EXE)
 	$(RUNNER) ./rh265_hw_stream_test$(EXE)
+	$(RUNNER) ./video_hw_format_test$(EXE)
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
@@ -126,6 +134,7 @@ clean:
 	rm -f rh265_hw_state_test rh265_hw_state_test.exe
 	rm -f rh265_hw_session_test rh265_hw_session_test.exe
 	rm -f rh265_hw_stream_test rh265_hw_stream_test.exe
+	rm -f video_hw_format_test video_hw_format_test.exe
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe

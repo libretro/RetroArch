@@ -81,7 +81,8 @@ commit and caller abandonment through the session dispatcher.
 
 `d3d11_video_decode_hevc_open` supplies Main 8-bit callbacks on the initialized
 adapter, selecting the HEVC Main profile and raw-bitstream configuration 1.
-It reuses the H.264 NV12 array, shared output textures and fence retirement.
+It reuses the H.264 texture-array, shared-output and fence retirement paths.
+Explicit Main10 opens select the Main10 profile and P010 textures instead.
 Compressed NAL spans are packed directly into the acquired driver buffer;
 picture, optional scaling matrix and short-slice buffers are submitted once.
 Busy BeginFrame leaves ownership uncommitted. Driver failures end an opened
@@ -90,7 +91,7 @@ lease is consumed or abandoned. Close every session before adapter deinit.
 
 The mock tests cover profile/configuration, buffer sizes/padding, optional
 matrices, busy retry, driver failures and deferred close. The device oracle
-compares an imported Main picture with software through shared handles and
+compares imported Main and Main10 pictures with software through shared handles and
 fences; it skips if device setup is unavailable. Oracle readback is test-only.
 The D3D11 adapter registers its Main8 offer with rh265. MP4 hardware opt-in
 opens it before the first picture and keeps compressed packet storage across
@@ -102,7 +103,15 @@ leases and reopens the decoder. Decoder-open refusal retains software decode.
 `rh265_hw_stream_test` covers decoder and MP4 lease transfer, busy retries,
 drain, rewind and untouched CPU pixel buffers with portable mocks.
 
-Main10/P010, main movie-core GPU presentation, Vulkan HEVC and real
+GPU frames carry an explicit image pixel format; zero retains legacy NV12.
+D3D11 and Vulkan NV12 producers label their frames explicitly. The surface
+player forwards P010 metadata instead of labeling it NV12; unknown formats
+are refused. Existing D3D11/D3D12/Vulkan renderer imports still accept only
+NV12, so the registered D3D11 player factory deliberately refuses Main10.
+Direct Main10 callbacks/export are available for device tests and later
+renderer/encoder integration. Main10 needs no CPU pixel readback in that path.
+
+P010 renderer conversion/import, main movie-core GPU presentation, Vulkan HEVC and real
 inter-picture GPU reference coverage remain. Export performs one GPU
 crop/copy into the shared texture pool;
 it never reads pixels back to the CPU. Removing that copy requires array-layer

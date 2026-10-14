@@ -166,6 +166,11 @@ static HRESULT STDMETHODCALLTYPE m_get_adapter(mock_t *m, void **out)
 
 static int dpb_array, n_out_tex, out_flags_ok;
 
+static void STDMETHODCALLTYPE m_texture_desc(mock_t *m, D3D11_TEXTURE2D_DESC *desc)
+{
+   *desc = m->desc;
+}
+
 static HRESULT STDMETHODCALLTYPE m_create_texture(mock_t *m,
       const D3D11_TEXTURE2D_DESC *d, const void *init, void **out)
 {
@@ -287,6 +292,8 @@ static HRESULT STDMETHODCALLTYPE m_check_format(mock_t *m, const GUID *g,
    *ok = (!memcmp(g, &d3d11vd_h264_vld_nofgt, sizeof(*g))
       || !memcmp(g, &d3d11vd_hevc_main, sizeof(*g)))
       && f == DXGI_FORMAT_NV12;
+   if (!memcmp(g, &d3d11vd_hevc_main10, sizeof(*g)) && f == DXGI_FORMAT_P010)
+      *ok = TRUE;
    return S_OK;
 }
 
@@ -470,6 +477,7 @@ static void mocks_init(void)
    for (k = 0; k < K_COUNT; k++)
       vt_fill(k, VT_SLOTS);
    vt[K_DEVICE][SLOT(ID3D11DeviceVtbl, CreateTexture2D)]     = (void*)m_create_texture;
+   vt[K_TEXTURE][SLOT(ID3D11Texture2DVtbl, GetDesc)]         = (void*)m_texture_desc;
    vt[K_DEVICE][SLOT(ID3D11DeviceVtbl, CheckFeatureSupport)] = (void*)m_feature;
    vt[K_DEVICE5][SLOT(ID3D11Device5Vtbl, CreateFence)]       = (void*)m_create_fence;
    vt[K_DXGI][SLOT(IDXGIDeviceVtbl, GetAdapter)]             = (void*)m_get_adapter;
@@ -878,8 +886,8 @@ static void test_hevc(void)
    check("HEVC: borrowed AU", !rh265_video_get_access_unit(v, hevc_sample8,
          sizeof(hevc_sample8), 4, slices, 4, &au));
    check("HEVC: params", !rh265_video_get_params(v, au.first.pps_id, &params));
-   params.bit_depth = 10;
-   check("HEVC: Main10 refused before resource allocation",
+   params.bit_depth = 12;
+   check("HEVC: unsupported depth refused before allocation",
          !d3d11_video_decode_hevc_open(&params, 32, &ops) && live == before && !ops.decoder);
    params.bit_depth = 8;
    check("HEVC: undersized DPB refused", !d3d11_video_decode_hevc_open(&params, 1, &ops));
@@ -969,6 +977,52 @@ static void test_hevc(void)
    subs_free();
 }
 
+static void test_hevc_main10(void)
+{
+   static rh265_video_params_t params;
+   static rh265_hw_session_t session;
+   rh265_video *v = rh265_video_open();
+   rh265_hw_ops_t ops;
+   rh265_access_unit_t au;
+   rh265_nal_t slices[4];
+   video_hw_frame_t frame;
+   D3D11_TEXTURE2D_DESC texture;
+   d3d11vd_dec_t *d;
+   int before = live;
+   check("Main10: parser opens", v != NULL);
+   if (!v) return;
+   check("Main10: config", !rh265_video_set_extradata(v, hevc_config10, sizeof(hevc_config10)));
+   check("Main10: borrowed AU", !rh265_video_get_access_unit(v, hevc_sample10,
+         sizeof(hevc_sample10), 4, slices, 4, &au));
+   check("Main10: params", !rh265_video_get_params(v, au.first.pps_id, &params));
+   views = views_ok = 0;
+   if (!d3d11_video_decode_hevc_open(&params, 32, &ops))
+   { check("Main10: backend opens", 0); rh265_video_close(v); return; }
+   d = (d3d11vd_dec_t*)ops.decoder;
+   check("Main10: profile/P010/raw 1", dec_raw == 1 && dec_desc.OutputFormat == DXGI_FORMAT_P010
+         && !memcmp(&dec_desc.Guid, &d3d11vd_hevc_main10, sizeof(GUID)));
+   d->dpb->lpVtbl->GetDesc(d->dpb, &texture);
+   check("Main10: P010 DPB and matching views", texture.Format == DXGI_FORMAT_P010
+         && views == 32 && views_ok == 32);
+   check("Main10: 8-bit readback helper refuses P010", d3d11vd_readback(d, 0, NULL) < 0);
+   d->out[0]->lpVtbl->GetDesc(d->out[0], &texture);
+   check("Main10: shared P010 export texture", texture.Format == DXGI_FORMAT_P010
+         && (texture.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE));
+   check("Main10: session", rh265_hw_session_init(&session, &ops, 32));
+   subs_free(); pending_left = 1;
+   check("Main10: busy", rh265_hw_session_submit(&session, hevc_sample10,
+         sizeof(hevc_sample10), &params, &au, slices) == 1);
+   check("Main10: submission", !rh265_hw_session_submit(&session, hevc_sample10,
+         sizeof(hevc_sample10), &params, &au, slices) && n_subs == 1);
+   check("Main10: exports format and lease", !rh265_hw_session_output(&session, true, &frame)
+         && frame.pixfmt == IMAGE_PIXFMT_P010 && frame.image);
+   d3d11_video_decode_hevc_close(&ops);
+   check("Main10: close retains lease", live > before);
+   video_hw_frame_abandon(&frame); d3d11vd_grave_reap(false);
+   check("Main10: retires resources", live == before);
+   rh265_video_close(v); subs_free();
+}
+
 static void test_hevc_registry(void)
 {
    rh265_video *v = rh265_video_open();
@@ -1042,6 +1096,7 @@ int main(void)
    test_direct();
    test_device_loss();
    test_hevc();
+   test_hevc_main10();
    test_hevc_registry();
 
    d3d11_video_decode_deinit();
