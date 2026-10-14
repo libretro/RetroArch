@@ -664,7 +664,7 @@ static void ffmpeg_camera_stop(void *data)
    else
    {
       int ret = avcodec_send_packet(ffmpeg->decoder_context, NULL);
-      if (ret < 0)
+      if (ret < 0 && ret != AVERROR_EOF)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
@@ -708,10 +708,11 @@ static void ffmpeg_camera_poll_thread(void *data)
    while (!retro_atomic_load_acquire_int(&ffmpeg->done))
    {
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
-      if (ret == AVERROR_EOF)
-         break;
+      bool draining = ret == AVERROR_EOF;
+      bool retry_packet = false;
+      bool progress = false;
       /* Read the raw data from the camera. If that fails... */
-      if (ret < 0)
+      if (ret < 0 && !draining)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
@@ -719,11 +720,17 @@ static void ffmpeg_camera_poll_thread(void *data)
          continue;
       }
 
-      if (ffmpeg->packet->stream_index != ffmpeg->video_stream_index)
+      if (!draining && ffmpeg->packet->stream_index != ffmpeg->video_stream_index)
          goto done_loop;
 
-      ret = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
-      if (ret < 0)
+retry_send:
+      retry_packet = false;
+      progress = false;
+      ret = avcodec_send_packet(ffmpeg->decoder_context,
+            draining ? NULL : ffmpeg->packet);
+      if (ret == AVERROR(EAGAIN))
+         retry_packet = true;
+      else if (ret < 0)
       { /* Send the raw data to the decoder. If that fails... */
          if (ret == AVERROR_EOF)
          {
@@ -739,12 +746,16 @@ static void ffmpeg_camera_poll_thread(void *data)
          goto done_loop;
       }
 
-      /* video streams consist of exactly one frame per packet */
+receive_frame:
+      if (retro_atomic_load_acquire_int(&ffmpeg->done))
+         goto done_loop;
       ret = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
 
       /* Send the decoded data to the camera frame. If that fails... */
       if (ret < 0)
       {
+         if (ret == AVERROR(EAGAIN) && retry_packet && progress)
+            goto retry_send;
          /* These error codes mean no new frame, but not necessarily a problem */
          if (!(ret == AVERROR_EOF || ret == AVERROR(EAGAIN)))
          {
@@ -755,6 +766,7 @@ static void ffmpeg_camera_poll_thread(void *data)
 
          goto done_loop;
       }
+      progress = true;
 
       retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
@@ -780,11 +792,15 @@ static void ffmpeg_camera_poll_thread(void *data)
       }
 
       retro_triple_buffer_publish(&ffmpeg->frames);
+      av_frame_unref(ffmpeg->camera_frame);
+      goto receive_frame;
    done_loop:
       /* av_read_frame() fills the packet afresh each turn and does not
        * release what it held */
       av_packet_unref(ffmpeg->packet);
       av_frame_unref(ffmpeg->camera_frame);
+      if (draining)
+         break;
    }
 
    /* every operation in this function needs this packet */

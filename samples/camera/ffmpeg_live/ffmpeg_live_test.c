@@ -33,17 +33,60 @@ static retro_atomic_int_t eof_reads;
 static retro_atomic_int_t mixed_source;
 static retro_atomic_int_t audio_reads;
 static retro_atomic_int_t wrong_stream_packets;
+static retro_atomic_int_t duplicate_output;
+static retro_atomic_int_t accepted_packets;
+static retro_atomic_int_t decoded_outputs;
+static AVFrame *extra_frame;
+
+int __real_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame);
+int __wrap_avcodec_receive_frame(AVCodecContext *ctx, AVFrame *frame)
+{
+   int ret;
+   if (retro_atomic_load_acquire_int(&duplicate_output) && extra_frame)
+   {
+      av_frame_move_ref(frame, extra_frame);
+      av_frame_free(&extra_frame);
+      retro_atomic_fetch_add_int(&decoded_outputs, 1);
+      return 0;
+   }
+   ret = __real_avcodec_receive_frame(ctx, frame);
+   if (ret == 0 && retro_atomic_load_acquire_int(&duplicate_output))
+   {
+      extra_frame = av_frame_clone(frame);
+      if (!extra_frame)
+         return AVERROR(ENOMEM);
+      retro_atomic_fetch_add_int(&decoded_outputs, 1);
+   }
+   return ret;
+}
+
+int __real_avformat_open_input(AVFormatContext **ctx, const char *url,
+      const AVInputFormat *input, AVDictionary **options);
+int __wrap_avformat_open_input(AVFormatContext **ctx, const char *url,
+      const AVInputFormat *input, AVDictionary **options)
+{
+   const char prefix[] = "regression-file:";
+   if (strncmp(url, prefix, sizeof(prefix) - 1) == 0)
+      return __real_avformat_open_input(ctx, url + sizeof(prefix) - 1, NULL, options);
+   return __real_avformat_open_input(ctx, url, input, options);
+}
 
 int __real_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet);
 int __wrap_avcodec_send_packet(AVCodecContext *ctx, const AVPacket *packet)
 {
+   int ret;
+   if (retro_atomic_load_acquire_int(&duplicate_output) && extra_frame)
+      return AVERROR(EAGAIN);
    if (packet && retro_atomic_load_acquire_int(&mixed_source)
          && packet->stream_index != 1)
    {
       retro_atomic_fetch_add_int(&wrong_stream_packets, 1);
       return AVERROR_INVALIDDATA;
    }
-   return __real_avcodec_send_packet(ctx, packet);
+   ret = __real_avcodec_send_packet(ctx, packet);
+   if (ret == 0 && packet && retro_atomic_load_acquire_int(&duplicate_output))
+      retro_atomic_fetch_add_int(&accepted_packets, 1);
+   return ret;
 }
 
 int __real_av_read_frame(AVFormatContext *ctx, AVPacket *packet);
@@ -371,6 +414,47 @@ int main(void)
             "mixed source produced no audio packets");
       CHECK(retro_atomic_load_acquire_int(&wrong_stream_packets) == 0,
             "non-video packets reached the video decoder");
+      camera_ffmpeg.free(h);
+   }
+   current = "multiple outputs per packet";
+   h = camera_ffmpeg.init("color=c=black:size=32x16:rate=25,format=gray,geq=lum=N*16,trim=end_frame=3",
+         CAPS, VIDEO_SCALE_PACK(32, 16));
+   CHECK(h != NULL, "buffered source initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      retro_atomic_store_release_int(&duplicate_output, 1);
+      retro_atomic_store_release_int(&eof_reads, 0);
+      CHECK(camera_ffmpeg.start(h), "buffered source start failed");
+      for (attempt = 0; attempt < 100
+            && !retro_atomic_load_acquire_int(&eof_reads); attempt++)
+         usleep(20000);
+      camera_ffmpeg.stop(h);
+      retro_atomic_store_release_int(&duplicate_output, 0);
+      CHECK(retro_atomic_load_acquire_int(&accepted_packets) == 3,
+            "backpressure dropped an input packet");
+      CHECK(retro_atomic_load_acquire_int(&decoded_outputs) == 6,
+            "decoder outputs were not fully drained");
+      av_frame_free(&extra_frame);
+      camera_ffmpeg.free(h);
+   }
+   current = "delayed decoder output";
+   h = camera_ffmpeg.init("regression-file:decoder_delay.mkv", CAPS,
+         VIDEO_SCALE_PACK(32, 16));
+   CHECK(h != NULL, "delayed source initialization failed");
+   if (h)
+   {
+      unsigned attempt;
+      CHECK(camera_ffmpeg.start(h), "delayed source start failed");
+      last_px = -1;
+      for (attempt = 0; attempt < 100 && last_px < 108; attempt++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
+         usleep(20000);
+      }
+      CHECK(last_px >= 108 && last_px <= 116,
+            "delayed final frame is grey 112, got %d", last_px);
+      camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
    }
    current = "direct output";
