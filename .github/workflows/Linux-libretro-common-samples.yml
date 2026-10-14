@@ -246,6 +246,9 @@ jobs:
             # A parked handler runs again on a wake, a cancel or its
             # horizon, and not before.
             task_queue_park_test
+            # The worker below the main thread as Horizon schedules
+            # them; the lanes need SCHED_FIFO and skip without root.
+            task_queue_fifo_prio_test
             image_blit_bands_test
             image_loader_test
             tpool_wait_test

@@ -40,9 +40,22 @@
 #ifdef __EMSCRIPTEN__
 #include <retro_timers.h>
 #endif
-#if defined(_3DS) && defined(HAVE_THREADS)
+/* Horizon on 3DS and Switch never time-slices: of two ready threads on
+ * a core, the higher priority one keeps it until it waits, and an equal
+ * one waits its turn.  The worker shares a core with the main thread
+ * there (Old 3DS has no other, and on Switch both take the process's
+ * default core), so it runs one step below its creator.  The samples
+ * build the Switch form on a host with TASK_QUEUE_FORCE_SWITCH_PRIO,
+ * standing the two system calls in. */
+#if defined(HAVE_THREADS) && defined(_3DS)
 #include <3ds/types.h>
 #include <3ds/svc.h>
+#define TASK_WORKER_BELOW_CREATOR 1
+#elif defined(HAVE_THREADS) \
+      && (defined(__SWITCH__) || defined(TASK_QUEUE_FORCE_SWITCH_PRIO))
+#include <switch/types.h>
+#include <switch/kernel/svc.h>
+#define TASK_WORKER_BELOW_CREATOR 1
 #endif
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
@@ -129,13 +142,14 @@ struct task_worker
    slock_t           *finished_lock;
    scond_t           *worker_cond;
    scond_t           *finished_cond;
-#ifdef _3DS
+#ifdef TASK_WORKER_BELOW_CREATOR
    /* The priority the worker runs at: one step below its creator.
-    * The kernel never time-slices, and on Old 3DS the worker shares a
-    * core with the main thread, so above it a handler that keeps
-    * working would hold the core until its task finished.  Below it,
-    * tasks run whenever the main thread waits - for the next frame,
-    * for audio, or in task_queue_wait. */
+    * Level with it, a handler that returns without waiting - polling
+    * for a callback the main thread runs - would hold the core, and
+    * the callback would never come; above it, a handler that keeps
+    * working would hold it until its task finished.  Below it, tasks
+    * run whenever the main thread waits - for the next frame, for
+    * audio, or in task_queue_wait. */
    s32                prio;
 #endif
 };
@@ -1236,7 +1250,9 @@ static void threaded_worker(void *userdata)
    struct task_worker *self = (struct task_worker*)userdata;
 
    sthread_setname("ra-task");
-#ifdef _3DS
+#ifdef TASK_WORKER_BELOW_CREATOR
+   /* Refused outside the process's priority range, which leaves the
+    * worker level with its creator. */
    svcSetThreadPriority(CUR_THREAD_HANDLE, self->prio);
 #endif
    if (retro_atomic_load_acquire_int(&task_worker_prefer_fast_cores))
@@ -1407,10 +1423,10 @@ static bool retro_task_threaded_init(void)
    worker_self->finished_lock = finished_lock;
    worker_self->worker_cond   = worker_cond;
    worker_self->finished_cond = finished_cond;
-#ifdef _3DS
-   worker_self->prio          = 0x30;
+#ifdef TASK_WORKER_BELOW_CREATOR
+   worker_self->prio          = 0x2C;
    svcGetThreadPriority(&worker_self->prio, CUR_THREAD_HANDLE);
-   /* 0x3F is the lowest an application thread may take. */
+   /* 0x3F is the lowest priority either kernel has. */
    if (worker_self->prio < 0x3F)
       worker_self->prio++;
 #endif
