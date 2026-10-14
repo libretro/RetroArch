@@ -229,6 +229,29 @@ VLA (Variable Length Array)
 Do not use VLAs (Variable Length Array) in C source files. These are not
 C89-compliant.
 
+Struct initialization
+---------------------
+If a struct is set in stone - its ABI is fixed and not subject to change -
+prefer initializing its members by hand over a memset. This covers the
+structs of published APIs (Vulkan, OpenXR, Direct3D/DXGI, XInput, Win32,
+Xlib and the like), whose layout cannot change without breaking every
+program built against them.
+
+- Write every member the struct has, zero or not, so nothing is left
+  undefined.
+- A struct the API fills in (a query, a properties or a state struct)
+  needs only its chain (sType/type and pNext/next, or the size member)
+  and each member the code reads back.
+- Of a union, write the member that is in use in full; a view
+  description sets the member its dimension selects.
+- Keep the memset for the tree's own structs, which can still grow,
+  and for structs whose member names differ between the SDKs or C
+  libraries we build with (OVERLAPPED, struct input_event,
+  struct sigaction): a member store that compiles against one header
+  breaks the build against another.
+- Several statements replace one: give a single-statement if/else body
+  its braces when its memset becomes member stores.
+
 Main thread and task handlers
 -----------------------------
 The UI and the main thread must never block. When Threaded Tasks is
