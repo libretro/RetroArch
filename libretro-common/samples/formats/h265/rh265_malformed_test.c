@@ -465,8 +465,111 @@ static void test_slice_info(void)
    rh265_video_close(v);
 }
 
+
+static void test_nal_iterator(void)
+{
+   uint8_t annex[] = {0,0,0,0,1,2,1,0xab,0,0,0,0,1,4,1,0xcd,0,0};
+   uint8_t lengths[] = {0,0,1,0,2,1};
+   uint8_t framed[20], saved[20];
+   rh265_nal_t out;
+   size_t pos = 0, at;
+   unsigned lsz, i;
+   expect("Annex-B first NAL", rh265_nal_next(annex, sizeof(annex), 0, &pos, &out), 1);
+   if (out.data != annex + 5 || out.size != 3) failures++;
+   expect("Annex-B next NAL", rh265_nal_next(annex, sizeof(annex), 0, &pos, &out), 1);
+   if (out.data != annex + 13 || out.size != 3) failures++;
+   expect("Annex-B iterator end", rh265_nal_next(annex, sizeof(annex), 0, &pos, &out), 0);
+   if (out.data || out.size) failures++;
+   for (lsz = 1; lsz <= 4; lsz++)
+   {
+      memset(framed, 0, sizeof(framed)); framed[lsz-1] = 3;
+      framed[lsz] = 2; framed[lsz+1] = 1; framed[lsz+2] = 0xab;
+      memcpy(framed + lsz + 3, framed, lsz + 3);
+      memcpy(saved, framed, sizeof(saved));
+      pos = 0;
+      for (i = 0; i < 2; i++)
+      {
+         expect("length-prefixed borrowed NAL", rh265_nal_next(framed, 2 * (lsz + 3), lsz, &pos, &out), 1);
+         if (out.data != framed + i * (lsz + 3) + lsz || out.size != 3) failures++;
+      }
+      if (memcmp(saved, framed, sizeof(saved))) failures++;
+      expect("length-prefixed iterator end", rh265_nal_next(framed, pos, lsz, &pos, &out), 0);
+      pos = 0; framed[lsz-1] = 20;
+      expect("oversized NAL length", rh265_nal_next(framed, lsz + 3, lsz, &pos, &out), -1);
+      if (pos || out.data || out.size) failures++;
+      framed[lsz-1] = 0;
+      expect("zero NAL length", rh265_nal_next(framed, lsz + 3, lsz, &pos, &out), -1);
+   }
+   pos = 0;
+   expect("HVCC length resembling start code", rh265_nal_next(lengths, sizeof(lengths), 4, &pos, &out), -1);
+   expect("invalid framing size", rh265_nal_next(annex, sizeof(annex), 5, &pos, &out), -1);
+   at = 1;
+   expect("truncated length prefix", rh265_nal_next(lengths, 2, 4, &at, &out), -1);
+   if (at != 1) failures++;
+   annex[5] |= 0x80;
+   expect("invalid NAL header", rh265_nal_next(annex, sizeof(annex), 0, &pos, &out), -1);
+   expect("null iterator input", rh265_nal_next(NULL, 1, 0, &pos, &out), -1);
+   expect("null iterator position", rh265_nal_next(lengths, 0, 0, NULL, &out), -1);
+   expect("null iterator output", rh265_nal_next(lengths, 0, 0, &pos, NULL), -1);
+}
+
+static void test_access_unit(void)
+{
+   static uint8_t unit[2][1024], buf[2200], packet[2200], original[2200];
+   static rh265_access_unit_t out, saved;
+   const uint8_t *units[2];
+   rh265_nal_t slices[2];
+   bitw w;
+   size_t lens[2], n, bytes, i;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = unit[0]; units[1] = unit[1];
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   slice_pps(&w, 0, 0); lens[1] = nal(unit[1], 34, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("AU parameter input", rh265_video_set_extradata(v, buf, n), 0);
+   slice_header(&w, 1, 1, 2, 0, 0); lens[0] = nal(unit[0], 1, &w);
+   slice_header(&w, 1, 0, 1, 0, 0); lens[1] = nal(unit[1], 1, &w);
+   packet[0] = 0; packet[1] = 0; packet[2] = 1;
+   memcpy(packet + 3, unit[0], lens[0]);
+   n = 3 + lens[0]; packet[n++] = 0; packet[n++] = 0; packet[n++] = 1;
+   memcpy(packet + n, unit[1], lens[1]); n += lens[1];
+   memcpy(original, packet, n);
+   expect("mixed-slice borrowed AU", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), 0);
+   if (out.num_slices != 2 || out.intra || out.coded_bytes != lens[0] + lens[1]
+         || slices[0].data != packet + 3 || slices[1].data != packet + 6 + lens[0]
+         || memcmp(packet, original, n) || rh265_video_plane(v, 0, NULL, NULL, NULL)) failures++;
+   saved = out;
+   expect("AU busy retry metadata", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), 0);
+   if (memcmp(&saved, &out, sizeof(out))) failures++;
+   expect("AU slice capacity", rh265_video_get_access_unit(v, packet, n, 0, slices, 1, &out), -1);
+   for (i = 0; i < sizeof(out); i++) if (((uint8_t*)&out)[i]) { failures++; break; }
+   bytes = lens[0];
+   memcpy(packet + 3, unit[1], lens[1]);
+   expect("AU missing first slice", rh265_video_get_access_unit(v, packet, 3 + lens[1], 0, slices, 2, &out), -1);
+   memcpy(packet, original, n);
+   memcpy(packet + 6 + bytes, unit[0], lens[0]);
+   expect("AU containing two pictures", rh265_video_get_access_unit(v, packet, 6 + 2 * bytes, 0, slices, 2, &out), -1);
+   slice_header(&w, 1, 0, 2, 0, 0); lens[1] = nal(unit[1], 1, &w);
+   memcpy(packet, original, 3 + bytes + 3);
+   memcpy(packet + 6 + bytes, unit[1], lens[1]); n = 6 + bytes + lens[1];
+   expect("all-intra borrowed AU", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, &out), 0);
+   if (!out.intra) failures++;
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   packet[0] = 0; packet[1] = 0; packet[2] = 1; memcpy(packet + 3, unit[0], lens[0]);
+   expect("in-band SPS refusal", rh265_video_get_access_unit(v, packet, 3 + lens[0], 0, slices, 2, &out), -2);
+   packet[3] = 70; packet[4] = 1; packet[5] = 0x80;
+   expect("AUD-only AU", rh265_video_get_access_unit(v, packet, 6, 0, slices, 2, &out), 0);
+   if (out.num_slices || out.intra || out.coded_bytes) failures++;
+   expect("null AU input", rh265_video_get_access_unit(v, NULL, n, 0, slices, 2, &out), -1);
+   expect("null AU decoder", rh265_video_get_access_unit(NULL, packet, n, 0, slices, 2, &out), -1);
+   expect("null AU output", rh265_video_get_access_unit(v, packet, n, 0, slices, 2, NULL), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
+   test_nal_iterator(); test_access_unit();
    test_slice_info();
    test_params();
    expect("a well-formed SPS is read",

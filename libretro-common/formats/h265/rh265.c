@@ -5211,6 +5211,117 @@ int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
    return 0;
 }
 
+static unsigned rh265_start_code(const uint8_t *data, size_t size)
+{
+   if (size < 3 || data[0] || data[1]) return 0;
+   if (data[2] == 1) return 3;
+   return size >= 4 && !data[2] && data[3] == 1 ? 4 : 0;
+}
+
+int rh265_nal_next(const uint8_t *data, size_t size, unsigned length_size,
+      size_t *pos, rh265_nal_t *out)
+{
+   size_t begin, end, next, bytes;
+   unsigned i, prefix;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!pos || length_size > 4 || (!data && size) || *pos > size) return -1;
+   if (*pos == size) return 0;
+   begin = *pos;
+   if (length_size)
+   {
+      if (size - begin < length_size) return -1;
+      bytes = 0;
+      for (i = 0; i < length_size; i++) bytes = (bytes << 8) | data[begin++];
+      if (bytes < 2 || bytes > size - begin) return -1;
+      end = next = begin + bytes;
+   }
+   else
+   {
+      prefix = 0;
+      while (begin < size && !(prefix = rh265_start_code(data + begin, size - begin)))
+      {
+         if (data[begin]) return -1;
+         begin++;
+      }
+      if (!prefix) return -1;
+      begin += prefix;
+      next = begin;
+      while (next < size && !rh265_start_code(data + next, size - next)) next++;
+      end = next;
+      while (end > begin && !data[end-1]) end--;
+      if (end - begin < 2) return -1;
+   }
+   if ((data[begin] & 0x81) || (data[begin+1] >> 3) || !(data[begin+1] & 7))
+      return -1;
+   out->data = data + begin;
+   out->size = end - begin;
+   *pos = next;
+   return 1;
+}
+
+int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
+      size_t size, unsigned length_size, rh265_nal_t *slices,
+      unsigned capacity, rh265_access_unit_t *out)
+{
+   rh265_slice_info_t info;
+   rh265_nal_t nal;
+   size_t pos = 0, bytes = 0;
+   unsigned count = 0, address = 0, type;
+   int ret, intra = 1;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   if (!v || !data || !size || !slices || !capacity || length_size > 4) return -1;
+   while ((ret = rh265_nal_next(data, size, length_size, &pos, &nal)) > 0)
+   {
+      type = (nal.data[0] >> 1) & 63;
+      if (type == RH265_NAL_SPS || type == RH265_NAL_PPS) { ret = -2; goto fail; }
+      if (type > 9 && (type < 16 || type > 21))
+      {
+         if (type < 32) { ret = -2; goto fail; }
+         continue;
+      }
+      if (count == capacity) { ret = -1; goto fail; }
+      ret = rh265_video_get_slice(v, nal.data, nal.size, &info);
+      if (ret) goto fail;
+      if (!count)
+      {
+         if (!info.first_slice_in_pic) { ret = -1; goto fail; }
+         out->first = info;
+      }
+      else
+      {
+         const rh265_slice_info_t *first = &out->first;
+         if (info.first_slice_in_pic || info.slice_segment_address <= (int)address
+               || info.pps_id != first->pps_id || info.nal_type != first->nal_type
+               || info.temporal_id != first->temporal_id || info.poc_lsb != first->poc_lsb
+               || info.pic_output_flag != first->pic_output_flag
+               || info.no_output_of_prior_pics != first->no_output_of_prior_pics
+               || info.short_term_rps_sps_idx != first->short_term_rps_sps_idx
+               || info.short_term_rps_bits != first->short_term_rps_bits
+               || info.predictor_delta_pocs != first->predictor_delta_pocs
+               || info.num_negative != first->num_negative || info.num_positive != first->num_positive
+               || memcmp(info.delta_poc_before, first->delta_poc_before, sizeof(info.delta_poc_before))
+               || memcmp(info.delta_poc_after, first->delta_poc_after, sizeof(info.delta_poc_after))
+               || memcmp(info.used_before, first->used_before, sizeof(info.used_before))
+               || memcmp(info.used_after, first->used_after, sizeof(info.used_after)))
+         { ret = -1; goto fail; }
+      }
+      slices[count++] = nal;
+      bytes += nal.size;
+      address = (unsigned)info.slice_segment_address;
+      intra = intra && info.slice_type == RH265_SLICE_I;
+   }
+   if (ret < 0) goto fail;
+   out->num_slices = count;
+   out->coded_bytes = bytes;
+   out->intra = count && intra;
+   return 0;
+fail:
+   memset(out, 0, sizeof(*out));
+   return ret;
+}
+
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
       rh265_video_params_t *out)
 {

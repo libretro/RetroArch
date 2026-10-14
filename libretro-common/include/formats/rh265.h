@@ -98,6 +98,37 @@ typedef struct rh265_slice_info
 int rh265_video_get_slice(rh265_video *v, const uint8_t *nal, size_t len,
       rh265_slice_info_t *out);
 
+typedef struct rh265_nal
+{
+   const uint8_t *data;
+   size_t size;
+} rh265_nal_t;
+
+/* Borrow the next NAL. pos starts at zero. length_size is explicit: zero
+ * for Annex-B, 1..4 for length prefixes. Annex-B trailing zeros are omitted.
+ * Returns 1, 0 at end, -1 malformed. Errors leave pos unchanged and clear
+ * out. Input storage must remain valid; no allocation or payload copy. */
+int rh265_nal_next(const uint8_t *data, size_t size, unsigned length_size,
+      size_t *pos, rh265_nal_t *out);
+
+typedef struct rh265_access_unit
+{
+   rh265_slice_info_t first;
+   size_t coded_bytes;
+   unsigned num_slices;
+   int intra;
+} rh265_access_unit_t;
+
+/* Describe one picture on the decoder owner thread without advancing its
+ * DPB. Caller supplies separate output storage and retains immutable input until submission
+ * accepts it (also across busy retries). Only VCL NALs are returned; parameter
+ * sets must already be supplied. Return 0, -1 malformed/capacity failure,
+ * -2 unsupported or in-band SPS/PPS. Failure clears out; slice entries are
+ * usable only on success. No allocations, payload copies or frame leases. */
+int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
+      size_t size, unsigned length_size, rh265_nal_t *slices,
+      unsigned capacity, rh265_access_unit_t *out);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh265_video *rh265_video_open(void);
 
