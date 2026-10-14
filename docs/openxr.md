@@ -42,6 +42,10 @@ from `RETRO_ENVIRONMENT_GET_VR_FRAME_STATE`, and marks its map with
 `RETRO_VIDEO_VIEWS_FLAG_TRACKED`. Its two eyes then fill the headset's
 view. `libretro.h` documents the calls.
 
+A core that follows the hands asks
+`RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES` for each controller's grip,
+aim and palm poses as well as the hands joints.
+
 ## How it is built
 
 Everything that does not depend on a graphics API or a platform is

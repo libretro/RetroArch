@@ -21,6 +21,9 @@
 
 #include <memory/mem_stats.h>
 #include "input/input_driver.h"
+#ifdef HAVE_OPENXR
+#include "input/common/input_openxr.h"
+#endif
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -4554,6 +4557,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             return false;
          return video_driver_get_vr_frame_state(
                (struct retro_vr_frame_state*)data);
+
+      case RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES:
+         {
+            struct retro_vr_controller_poses *poses =
+               (struct retro_vr_controller_poses*)data;
+            if (     !poses
+                  || !runloop_vr_poses(runloop_st)
+                  || !video_driver_get_vr_controller_poses(poses))
+               return false;
+            input_openxr_controller_poses(poses);
+         }
+         break;
 #endif
       default:
          RARCH_LOG("[Environ] UNSUPPORTED (#%u).\n", cmd);

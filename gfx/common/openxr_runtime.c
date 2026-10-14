@@ -92,7 +92,7 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    XrResult res;
    uint32_t count = 0;
    uint32_t num_exts;
-   const char *exts[5];
+   const char *exts[8];
    XrInstanceCreateInfo ici;
    PFN_xrEnumerateInstanceExtensionProperties enum_exts;
    PFN_xrCreateInstance create_instance;
@@ -143,6 +143,26 @@ enum openxr_runtime_result openxr_runtime_create_instance(
       exts[num_exts++] = XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME;
       rt->refresh_ext  = true;
    }
+   /* The hands for a core's RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES:
+    * the palm pose, and the joints where the headset sees them. */
+   if (openxr_runtime_has_extension(enum_exts, count,
+            XR_EXT_PALM_POSE_EXTENSION_NAME))
+   {
+      exts[num_exts++] = XR_EXT_PALM_POSE_EXTENSION_NAME;
+      rt->palm_pose    = true;
+   }
+   if (openxr_runtime_has_extension(enum_exts, count,
+            XR_EXT_HAND_TRACKING_EXTENSION_NAME))
+   {
+      exts[num_exts++]  = XR_EXT_HAND_TRACKING_EXTENSION_NAME;
+      rt->hand_tracking = true;
+      if (openxr_runtime_has_extension(enum_exts, count,
+               XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME))
+      {
+         exts[num_exts++]     = XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME;
+         rt->hand_data_source = true;
+      }
+   }
    if (     rt->platform.instance_ext
          && openxr_runtime_has_extension(enum_exts, count,
             rt->platform.instance_ext))
@@ -187,6 +207,7 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
    uint32_t count = 0;
    XrSystemGetInfo sgi;
    XrSystemProperties props;
+   XrSystemHandTrackingPropertiesEXT hand_props;
    XrViewConfigurationView views[2];
    XrEnvironmentBlendMode modes[8];
    PFN_xrGetSystem get_system;
@@ -219,8 +240,12 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
 
    rt->max_dim    = 4096;
    rt->max_layers = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
-   props.type = XR_TYPE_SYSTEM_PROPERTIES;
-   props.next = NULL;
+   props.type      = XR_TYPE_SYSTEM_PROPERTIES;
+   props.next      = NULL;
+   hand_props.type = XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT;
+   hand_props.next = NULL;
+   if (rt->hand_tracking)
+      props.next   = &hand_props;
    if (XR_SUCCEEDED(get_system_properties(rt->instance, rt->system, &props)))
    {
       uint32_t mw = props.graphicsProperties.maxSwapchainImageWidth;
@@ -231,6 +256,8 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
          rt->max_dim = mh;
       if (props.graphicsProperties.maxLayerCount)
          rt->max_layers = props.graphicsProperties.maxLayerCount;
+      if (rt->hand_tracking && !hand_props.supportsHandTracking)
+         rt->hand_tracking = false;
       RARCH_LOG("[OpenXR] Headset: %s.\n", props.systemName);
    }
 

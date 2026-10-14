@@ -83,6 +83,11 @@ bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
  * whether its trigger is held. */
 bool input_openxr_menu_pointer(float *u, float *v, bool *pressed);
 
+/* onto the hands the host sampled with the head, which
+ * are held, through which interaction profile; a hand neither held nor
+ * tracked is cleared. */
+void input_openxr_controller_poses(struct retro_vr_controller_poses *out);
+
 /* Whether a core's rumble reaches the controllers now. Any thread. */
 bool input_openxr_can_rumble(void);
 

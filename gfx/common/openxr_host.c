@@ -154,8 +154,12 @@ bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
       h->origin_changed = false;
    }
    h->tracking_seq = retro_atomic_load_acquire_int(&h->session->track_seq);
-   return openxr_tracking_sample(&h->tracking, h->session,
-         h->session->track_space, time);
+   if (!openxr_tracking_sample(&h->tracking, h->session,
+            h->session->track_space, time))
+      return false;
+   openxr_frame_locate_hands(h->frame, h->session->track_space, time,
+         &h->tracking.hands);
+   return true;
 }
 
 bool openxr_host_eye_state(openxr_host_t *h,
@@ -181,6 +185,15 @@ bool openxr_host_head_pose(const openxr_host_t *h,
    if (!h->tracking.valid)
       return false;
    *out = h->tracking.head;
+   return true;
+}
+
+bool openxr_host_controller_poses(const openxr_host_t *h,
+      struct retro_vr_controller_poses *out)
+{
+   if (!h->tracking.valid)
+      return false;
+   *out = h->tracking.hands;
    return true;
 }
 

@@ -1480,6 +1480,10 @@ typedef struct video_xr_host
          unsigned *eye_width, unsigned *eye_height);
    /* Main thread, after sample: the head as sampled. */
    bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
+   /* Main thread, after sample: the hands as sampled. NULL if the host
+    * has none. */
+   bool (*controller_poses)(void *user,
+         struct retro_vr_controller_poses *out);
    /* Any thread: one eye's recommended image size. */
    bool (*eye_size)(void *user, unsigned *eye_width, unsigned *eye_height);
    /* The drawing thread, after a reinit set the same content's space
@@ -1505,6 +1509,8 @@ void video_driver_vr_driver_changed(void);
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);
+bool video_driver_get_vr_controller_poses(
+      struct retro_vr_controller_poses *out);
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 

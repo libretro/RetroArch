@@ -3266,6 +3266,158 @@ struct retro_vr_head_pose
    uint32_t flags;
 };
 
+/**
+ * Retrieves where the user's hands are: each motion controller's poses
+ * and each hand's joints.
+ *
+ * A core reads a pose, a joint or a field only when its flag says so.
+ *
+ * The three poses are:
+ *  - grip: /input/grip/pose. at the palm's
+ *    centre when the hand closes on the controller. -Z runs through the
+ *    tube the closed fingers make, from the little finger toward the
+ *    thumb; +X is normal to the flat palm, away from it on the left
+ *    hand and into it on the right.
+ *  - aim: /input/aim/pose. The pointing ray, -Z forward from the
+ *    controller's tip: where a laser or a shot starts.
+ *  - palm: The palm's centre at its surface, -Z the way
+ *    a straightened index finger points, +X as for grip: where a hand
+ *    model goes.
+ *
+ * @param[out] data <tt>struct retro_vr_controller_poses *</tt>.
+ * @return false if no VR session exists or no valid sample is available,
+ * and from a frontend that does not know the call. true with neither
+ * hand RETRO_VR_HAND_ACTIVE: a session that sees no hands.
+ * @see retro_vr_controller_poses
+ */
+#define RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES (100 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/** Which hand a \ref retro_vr_hand_state describes, and its index in
+ * \ref retro_vr_controller_poses::hands. */
+enum retro_vr_hand
+{
+   RETRO_VR_HAND_LEFT  = 0,
+   RETRO_VR_HAND_RIGHT = 1,
+   RETRO_VR_HAND_COUNT = 2,
+
+   /** @private Defined to ensure <tt>sizeof(retro_vr_hand) == sizeof(int)</tt>. Do not use. */
+   RETRO_VR_HAND_DUMMY = INT_MAX
+};
+
+/* Flags of retro_vr_pose: OpenXR's XrSpaceLocationFlags and
+ * XrSpaceVelocityFlags. VALID: the value may be used. TRACKED: it is
+ * measured now rather than estimated, as a controller out of the
+ * headset's cameras' view keeps an estimated position for a while. */
+#define RETRO_VR_POSE_ORIENTATION_VALID      (1u << 0)
+#define RETRO_VR_POSE_POSITION_VALID         (1u << 1)
+#define RETRO_VR_POSE_ORIENTATION_TRACKED    (1u << 2)
+#define RETRO_VR_POSE_POSITION_TRACKED       (1u << 3)
+#define RETRO_VR_POSE_LINEAR_VELOCITY_VALID  (1u << 4)
+#define RETRO_VR_POSE_ANGULAR_VELOCITY_VALID (1u << 5)
+
+/**
+ * A pose and its motion in the tracking space.
+ *
+ * position and orientation are the pose-to-tracking-space transform.
+ * linear_velocity is the origin's velocity in meters per second;
+ * angular_velocity the rotation axis scaled by radians per second.
+ * Both are in tracking-space coordinates.
+ */
+struct retro_vr_pose
+{
+   float position[3];
+   float orientation[4];
+   float linear_velocity[3];
+   float angular_velocity[3];
+   /** RETRO_VR_POSE_ flags; 0 when nothing is known. */
+   uint32_t flags;
+};
+
+/**
+ * A hand's joints, in XR_EXT_hand_tracking's XrHandJointEXT order.
+ * Each joint's -Z points along its bone toward the fingertip, +Y out of
+ * the back of the hand. The palm joint is at the centre of the middle
+ * finger's metacarpal; the wrist joint at the wrist.
+ */
+enum retro_vr_hand_joint
+{
+   RETRO_VR_HAND_JOINT_PALM = 0,
+   RETRO_VR_HAND_JOINT_WRIST,
+   RETRO_VR_HAND_JOINT_THUMB_METACARPAL,
+   RETRO_VR_HAND_JOINT_THUMB_PROXIMAL,
+   RETRO_VR_HAND_JOINT_THUMB_DISTAL,
+   RETRO_VR_HAND_JOINT_THUMB_TIP,
+   RETRO_VR_HAND_JOINT_INDEX_METACARPAL,
+   RETRO_VR_HAND_JOINT_INDEX_PROXIMAL,
+   RETRO_VR_HAND_JOINT_INDEX_INTERMEDIATE,
+   RETRO_VR_HAND_JOINT_INDEX_DISTAL,
+   RETRO_VR_HAND_JOINT_INDEX_TIP,
+   RETRO_VR_HAND_JOINT_MIDDLE_METACARPAL,
+   RETRO_VR_HAND_JOINT_MIDDLE_PROXIMAL,
+   RETRO_VR_HAND_JOINT_MIDDLE_INTERMEDIATE,
+   RETRO_VR_HAND_JOINT_MIDDLE_DISTAL,
+   RETRO_VR_HAND_JOINT_MIDDLE_TIP,
+   RETRO_VR_HAND_JOINT_RING_METACARPAL,
+   RETRO_VR_HAND_JOINT_RING_PROXIMAL,
+   RETRO_VR_HAND_JOINT_RING_INTERMEDIATE,
+   RETRO_VR_HAND_JOINT_RING_DISTAL,
+   RETRO_VR_HAND_JOINT_RING_TIP,
+   RETRO_VR_HAND_JOINT_LITTLE_METACARPAL,
+   RETRO_VR_HAND_JOINT_LITTLE_PROXIMAL,
+   RETRO_VR_HAND_JOINT_LITTLE_INTERMEDIATE,
+   RETRO_VR_HAND_JOINT_LITTLE_DISTAL,
+   RETRO_VR_HAND_JOINT_LITTLE_TIP,
+   RETRO_VR_HAND_JOINT_COUNT,
+
+   /** @private Defined to ensure <tt>sizeof(retro_vr_hand_joint) == sizeof(int)</tt>. Do not use. */
+   RETRO_VR_HAND_JOINT_DUMMY = INT_MAX
+};
+
+/** One joint: its pose, and the distance from it to the skin in meters
+ * (0 when unknown). */
+struct retro_vr_hand_joint_state
+{
+   struct retro_vr_pose pose;
+   float radius;
+};
+
+/* Flags of retro_vr_hand_state. */
+/** Something is in the hand: a controller or a tracked hand. Without
+ * it the rest of the hand's state is cleared. */
+#define RETRO_VR_HAND_ACTIVE            (1u << 0)
+/** joints are filled: the frontend tracks this hand's joints now. */
+#define RETRO_VR_HAND_JOINTS            (1u << 1)
+/** The joints are seen by the headset, the hand bare. */
+#define RETRO_VR_HAND_JOINTS_OPTICAL    (1u << 2)
+/** The joints are estimated from a held controller's grip and touch
+ * sensors. With neither JOINTS_ source bit, the source is unknown. */
+#define RETRO_VR_HAND_JOINTS_CONTROLLER (1u << 3)
+
+/** One hand. */
+struct retro_vr_hand_state
+{
+   /** RETRO_VR_HAND_ flags. */
+   uint32_t flags;
+
+   /** The  interaction profile the hand is used through */
+   const char *interaction_profile;
+
+   struct retro_vr_pose grip;
+   struct retro_vr_pose aim;
+   struct retro_vr_pose palm;
+
+   /** Valid while RETRO_VR_HAND_JOINTS is set, each joint by its own
+    * pose flags. */
+   struct retro_vr_hand_joint_state joints[RETRO_VR_HAND_JOINT_COUNT];
+};
+
+/** The argument of RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES. */
+struct retro_vr_controller_poses
+{
+   /** Indexed by enum retro_vr_hand. */
+   struct retro_vr_hand_state hands[RETRO_VR_HAND_COUNT];
+};
+
 /* Speaker positions, as bits of a layout mask; a frame's channels are
  * interleaved in ascending bit order. The bits are those of the
  * WAVEFORMATEXTENSIBLE channel mask. */

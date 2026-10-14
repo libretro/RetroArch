@@ -674,6 +674,19 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance i,
 #endif
 #include "../../../gfx/common/vulkan_openxr.c"
 
+/* The input's hands: where and when the host had them located. */
+static XrSpace t_hands_in;
+static XrTime  t_hands_at;
+static bool t_locate_hands(void *user, XrSpace base, XrTime time,
+      struct retro_vr_controller_poses *out)
+{
+   t_hands_in = base;
+   t_hands_at = time;
+   out->hands[RETRO_VR_HAND_RIGHT].flags          = RETRO_VR_HAND_ACTIVE;
+   out->hands[RETRO_VR_HAND_RIGHT].grip.position[0] = 0.3f;
+   return true;
+}
+
 static void t_runtime_defaults(void)
 {
    t_num_exts        = 3;
@@ -1906,6 +1919,24 @@ static void test_host(void)
          (long long)t_located_at);
    CHECK(openxr_host_head_pose(&h, &head) && t_near(head.position[1], 1.25f),
          "head not as sampled");
+
+   /* The hands go with the head: no input, none; the input's, located
+    * in the same space for the same time. */
+   {
+      struct retro_vr_controller_poses hands;
+      memset(&hands, 0xff, sizeof(hands));
+      CHECK(     openxr_host_controller_poses(&h, &hands)
+            && hands.hands[0].flags == 0 && hands.hands[1].flags == 0,
+            "hands without an input");
+      f.locate_hands = t_locate_hands;
+      openxr_host_sample(&h, &flags);
+      CHECK(     t_hands_in == s.track_space && t_hands_at == t_located_at
+            && openxr_host_controller_poses(&h, &hands)
+            && hands.hands[1].flags == RETRO_VR_HAND_ACTIVE
+            && t_near(hands.hands[1].grip.position[0], 0.3f),
+            "the hands were not sampled with the head");
+      f.locate_hands = NULL;
+   }
 
    /* The views the core was given are the projection's. */
    openxr_host_projection(&h, 400, 240, &p);
