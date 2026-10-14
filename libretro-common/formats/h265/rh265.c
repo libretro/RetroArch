@@ -211,12 +211,11 @@ static uint32_t rh265_un(rh265_bits *b, int n)
    return v;
 }
 
-/* No ue(v) field this decoder reads goes past 2^25 - 2 - the largest
+/* No ue(v) field used for reconstruction goes past 2^25 - 2 - the largest
  * are picture sizes and cropping, which stop at 16888 - so a longer
  * code marks the unit malformed (and reads as 0). That keeps every
  * value well inside int, and the sums the parsers make of them from
- * overflowing. A field the spec lets run to 2^32 - 2 that nothing
- * reads is skipped with rh265_ue_skip(). */
+ * overflowing. Metadata allowing 2^32 - 2 uses rh265_ue32(). */
 #define RH265_UE_MAX_LZ 24
 
 static uint32_t rh265_ue(rh265_bits *b)
@@ -232,15 +231,17 @@ static uint32_t rh265_ue(rh265_bits *b)
    return (uint32_t)((1u << lz) - 1u + rh265_un(b, lz));
 }
 
-/* A ue(v) of any length the spec allows, skipped */
-static void rh265_ue_skip(rh265_bits *b)
+static uint32_t rh265_ue32(rh265_bits *b)
 {
    int lz = 0;
    while (lz < 32 && !rh265_u1(b)) lz++;
    if (lz >= 32)
+   {
       b->malformed = 1;
-   else if (lz)
-      rh265_un(b, lz);
+      return 0;
+   }
+   if (!lz) return 0;
+   return (uint32_t)((1u << lz) - 1u + rh265_un(b, lz));
 }
 
 static int32_t rh265_se(rh265_bits *b)
@@ -345,6 +346,7 @@ typedef struct
    int num_st_rps;
    rh265_st_rps st_rps[RH265_MAX_ST_RPS];
    rh265_video_color_t color;
+   rh265_sequence_info_t sequence;
    int long_term_ref_pics_present;
    int num_long_term_ref_pics;
    int lt_ref_poc_lsb[32];
@@ -537,17 +539,19 @@ static int rh265_parse_scaling_list_data(rh265_bits *b, rh265_scaling *sl)
    return rh265_bits_overrun(b) ? -1 : 0;
 }
 
-/* profile_tier_level: fixed layout; nothing in it is needed to decode,
- * so parse it for its exact size only (7.3.3). */
-static void rh265_skip_ptl(rh265_bits *b, int max_sub_layers_minus1)
+static void rh265_parse_ptl(rh265_bits *b, int max_sub_layers_minus1,
+      rh265_sequence_info_t *out)
 {
    int i;
    int sub_layer_profile_present[7];
    int sub_layer_level_present[7];
-   rh265_un(b, 8);                       /* profile space/tier/idc */
-   rh265_un(b, 32);                      /* compatibility flags */
-   rh265_un(b, 32); rh265_un(b, 16);     /* progressive..reserved 44 bits */
-   rh265_un(b, 8);                       /* general_level_idc */
+   out->profile_space = rh265_un(b, 2);
+   out->tier_flag = rh265_u1(b);
+   out->profile_idc = rh265_un(b, 5);
+   out->profile_compatibility_flags = rh265_un(b, 32);
+   out->constraint_flags_hi = rh265_un(b, 32);
+   out->constraint_flags_lo = rh265_un(b, 16);
+   out->level_idc = rh265_un(b, 8);
    for (i = 0; i < max_sub_layers_minus1; i++)
    {
       sub_layer_profile_present[i] = (int)rh265_u1(b);
@@ -699,10 +703,12 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
    memset(s, 0, sizeof(*s));
    rh265_bits_init(&b, rbsp, size);
    b.escaped = escaped;
-   rh265_un(&b, 4);                      /* sps_video_parameter_set_id */
+   s->sequence.vps_id = rh265_un(&b, 4);
    max_sub_layers_minus1 = (int)rh265_un(&b, 3);
-   rh265_u1(&b);                         /* sps_temporal_id_nesting_flag */
-   rh265_skip_ptl(&b, max_sub_layers_minus1);
+   if (max_sub_layers_minus1 > 6) return -1;
+   s->sequence.max_sub_layers_minus1 = (unsigned)max_sub_layers_minus1;
+   s->sequence.temporal_id_nesting = rh265_u1(&b);
+   rh265_parse_ptl(&b, max_sub_layers_minus1, &s->sequence);
    sps_id = (int)rh265_ue(&b);
    if (sps_id >= RH265_MAX_SPS) return -1;
    s->max_sub_layers_minus1 = max_sub_layers_minus1;
@@ -731,10 +737,20 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
       int first = sub_layer_ordering ? 0 : max_sub_layers_minus1;
       for (i = first; i <= max_sub_layers_minus1; i++)
       {
-         s->max_dec_pic_buffering = (int)rh265_ue(&b) + 1;
-         s->max_num_reorder_pics  = (int)rh265_ue(&b);
-         rh265_ue_skip(&b);              /* sps_max_latency_increase_plus1 */
+         unsigned buffering = rh265_ue(&b), reorder = rh265_ue(&b);
+         if (buffering > 15 || reorder > buffering) return -1;
+         s->sequence.max_dec_pic_buffering[i] = buffering + 1;
+         s->sequence.max_num_reorder_pics[i] = reorder;
+         s->sequence.max_latency_increase_plus1[i] = rh265_ue32(&b);
       }
+      for (i = 0; i < first; i++)
+      {
+         s->sequence.max_dec_pic_buffering[i] = s->sequence.max_dec_pic_buffering[first];
+         s->sequence.max_num_reorder_pics[i] = s->sequence.max_num_reorder_pics[first];
+         s->sequence.max_latency_increase_plus1[i] = s->sequence.max_latency_increase_plus1[first];
+      }
+      s->max_dec_pic_buffering = (int)s->sequence.max_dec_pic_buffering[max_sub_layers_minus1];
+      s->max_num_reorder_pics = (int)s->sequence.max_num_reorder_pics[max_sub_layers_minus1];
    }
    s->log2_min_cb = (int)rh265_ue(&b) + 3;
    s->log2_ctb    = s->log2_min_cb + (int)rh265_ue(&b);
@@ -5756,6 +5772,56 @@ int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
       out->dc32[0] = sl->dc32[0];
       out->dc32[1] = sl->dc32[3];
    }
+   return 0;
+}
+
+static const rh265_sps *rh265_sps_for_pps(const rh265_video *v, unsigned pps_id)
+{
+   int sps_id;
+   if (!v || pps_id >= RH265_MAX_PPS || !v->pps[pps_id].valid)
+      return NULL;
+   sps_id = v->pps[pps_id].sps_id;
+   if (sps_id < 0 || sps_id >= RH265_MAX_SPS || !v->sps[sps_id].valid)
+      return NULL;
+   return &v->sps[sps_id];
+}
+
+int rh265_video_get_sequence(const rh265_video *v, unsigned pps_id,
+      rh265_sequence_info_t *out)
+{
+   const rh265_sps *s;
+   int i;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   s = rh265_sps_for_pps(v, pps_id);
+   if (!s) return -1;
+   *out = s->sequence;
+   out->num_short_term_sets = (unsigned)s->num_st_rps;
+   out->num_long_term_pics = (unsigned)s->num_long_term_ref_pics;
+   for (i = 0; i < s->num_long_term_ref_pics; i++)
+   {
+      out->lt_poc_lsb[i] = (uint32_t)s->lt_ref_poc_lsb[i];
+      out->lt_used[i] = (uint8_t)s->lt_used_by_curr[i];
+   }
+   return 0;
+}
+
+int rh265_video_get_short_term_set(const rh265_video *v, unsigned pps_id,
+      unsigned index, rh265_short_term_set_t *out)
+{
+   const rh265_sps *s;
+   const rh265_st_rps *r;
+   if (!out) return -1;
+   memset(out, 0, sizeof(*out));
+   s = rh265_sps_for_pps(v, pps_id);
+   if (!s || index >= (unsigned)s->num_st_rps) return -1;
+   r = &s->st_rps[index];
+   out->num_before = (unsigned)r->num_negative;
+   out->num_after = (unsigned)r->num_positive;
+   memcpy(out->delta_before, r->delta_poc_s0, sizeof(out->delta_before));
+   memcpy(out->delta_after, r->delta_poc_s1, sizeof(out->delta_after));
+   memcpy(out->used_before, r->used_s0, sizeof(out->used_before));
+   memcpy(out->used_after, r->used_s1, sizeof(out->used_after));
    return 0;
 }
 

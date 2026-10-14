@@ -112,19 +112,38 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 }
 
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
-   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE, F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
+   F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE,
+   F_SEQUENCE, F_INFERRED, F_BAD_LAYERS, F_DPB_HUGE, F_BAD_REORDER, F_RPS_PRED,
+   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_SHORT };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
 {
+   int i, layers = f == F_SEQUENCE ? 2 : f == F_INFERRED ? 6 : f == F_BAD_LAYERS ? 7 : 0;
    memset(w, 0, sizeof(*w));
-   putn(w, 0, 4);                    /* sps_video_parameter_set_id */
-   putn(w, 0, 3);                    /* sps_max_sub_layers_minus1 */
+   putn(w, f == F_SEQUENCE ? 3 : 0, 4);
+   putn(w, (unsigned)layers, 3);
    put1(w, 1);                       /* temporal_id_nesting */
-   putn(w, 0x01, 8);                 /* profile_tier_level: Main */
+   putn(w, f == F_SEQUENCE ? 0x62 : 0x01, 8);
    putn(w, 0x60000000u, 32);
-   putn(w, 0, 32); putn(w, 0, 16);
+   putn(w, f == F_SEQUENCE ? 0xb1234567u : 0, 32);
+   putn(w, f == F_SEQUENCE ? 0x89ab : 0, 16);
    putn(w, 93, 8);                   /* level 3.1 */
+   for (i = 0; i < layers; i++)
+   {
+      put1(w, i == 0); put1(w, i == 1);
+   }
+   if (layers)
+      for (i = layers; i < 8; i++) putn(w, 0, 2);
+   for (i = 0; i < layers; i++)
+   {
+      if (i == 0)
+      {
+         putn(w, 1, 8); putn(w, 0, 32);
+         putn(w, 0, 32); putn(w, 0, 16);
+      }
+      if (i == 1) putn(w, 60, 8);
+   }
    if (f == F_ID_OVERLONG)
       putue_overlong(w);
    else
@@ -141,10 +160,13 @@ static void sps(bitw *w, enum field f, int depth)
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_luma_minus8 */
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_chroma_minus8 */
    putue(w, 4);                      /* log2_max_poc_lsb_minus4 */
-   put1(w, 1);                       /* sub_layer_ordering_info */
-   putue(w, 0);                      /* max_dec_pic_buffering_minus1 */
-   putue(w, 0);                      /* max_num_reorder_pics */
-   putue(w, f == F_LATENCY_HUGE ? 0xfffffffeu : 0);
+   put1(w, f != F_INFERRED);
+   for (i = f == F_INFERRED ? layers : 0; i <= layers; i++)
+   {
+      putue(w, f == F_DPB_HUGE ? 0xfffffffeu : (unsigned)i);
+      putue(w, f == F_BAD_REORDER ? 1 : (unsigned)i);
+      putue(w, f == F_LATENCY_HUGE ? 0xfffffffeu : (unsigned)(i * 2));
+   }
    putue(w, 0);                      /* log2_min_cb_minus3 */
    putue(w, 1);                      /* log2_diff_max_min_cb */
    putue(w, 0);                      /* log2_min_tb_minus2 */
@@ -156,10 +178,16 @@ static void sps(bitw *w, enum field f, int depth)
    put1(w, 0);                       /* amp */
    put1(w, 0);                       /* sao */
    put1(w, 0);                       /* pcm */
-   putue(w, f == F_RPS ? 1 : 0);
-   if (f == F_RPS)
+   putue(w, f == F_RPS_PRED ? 64 : f == F_RPS ? 1 : 0);
+   if (f == F_RPS || f == F_RPS_PRED)
    {
       putue(w, 1); putue(w, 0); putue(w, 1); put1(w, 1);
+      if (f == F_RPS_PRED)
+         for (i = 1; i < 64; i++)
+         {
+            put1(w, 1); put1(w, 1); putue(w, 0);
+            put1(w, 1); put1(w, 0); put1(w, 0);
+         }
    }
    put1(w, f == F_LT || f == F_LT_TABLE);
    if (f == F_LT || f == F_LT_TABLE) putue(w, f == F_LT_TABLE ? 2 : 0);
@@ -677,12 +705,90 @@ static void test_color_info(void)
    rh265_video_close(v);
 }
 
+static void test_sequence_info(void)
+{
+   bitw w;
+   static uint8_t units_buf[2][1024], buf[2200];
+   const uint8_t *units[2];
+   size_t lens[2], n;
+   unsigned i, j;
+   rh265_sequence_info_t out;
+   rh265_short_term_set_t rps;
+   enum field fields[6] = { F_SEQUENCE, F_INFERRED, F_LATENCY_HUGE, F_RPS, F_LT_TABLE, F_RPS_PRED };
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = units_buf[0]; units[1] = units_buf[1];
+   expect("missing sequence PPS", rh265_video_get_sequence(v, 0, &out), -1);
+   for (j = 0; j < 6; j++)
+   {
+      sps(&w, fields[j], 8); lens[0] = nal(units_buf[0], 33, &w);
+      pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+      n = hvcc(buf, units, lens, 2);
+      expect("sequence parameter input", rh265_video_set_extradata(v, buf, n), 0);
+      expect("sequence query", rh265_video_get_sequence(v, 0, &out), 0);
+      if (out.level_idc != 93 || out.profile_compatibility_flags != 0x60000000u
+            || !out.temporal_id_nesting) failures++;
+      if (fields[j] == F_SEQUENCE)
+      {
+         if (out.vps_id != 3 || out.profile_space != 1 || out.profile_idc != 2
+               || out.tier_flag != 1 || out.constraint_flags_hi != 0xb1234567u
+               || out.constraint_flags_lo != 0x89ab || out.max_sub_layers_minus1 != 2)
+            failures++;
+         for (i = 0; i <= 2; i++)
+            if (out.max_dec_pic_buffering[i] != i + 1
+                  || out.max_num_reorder_pics[i] != i
+                  || out.max_latency_increase_plus1[i] != 2 * i) failures++;
+         for (i = 3; i < 7; i++)
+            if (out.max_dec_pic_buffering[i] || out.max_latency_increase_plus1[i]) failures++;
+      }
+      if (fields[j] == F_INFERRED)
+         for (i = 0; i < 7; i++)
+            if (out.max_dec_pic_buffering[i] != 7 || out.max_num_reorder_pics[i] != 6
+                  || out.max_latency_increase_plus1[i] != 12) failures++;
+      if (fields[j] == F_LATENCY_HUGE && out.max_latency_increase_plus1[0] != 0xfffffffeu)
+         failures++;
+      if (fields[j] == F_LT_TABLE && (out.num_long_term_pics != 2
+            || out.lt_poc_lsb[0] != 3 || out.lt_poc_lsb[1] != 4
+            || !out.lt_used[0] || !out.lt_used[1])) failures++;
+      if (fields[j] == F_RPS)
+      {
+         expect("short-term set query", rh265_video_get_short_term_set(v, 0, 0, &rps), 0);
+         if (out.num_short_term_sets != 1 || rps.num_before != 1 || rps.num_after
+               || rps.delta_before[0] != -2 || !rps.used_before[0]) failures++;
+         rps.delta_before[0] = 123;
+         expect("short-term set ownership", rh265_video_get_short_term_set(v, 0, 0, &rps), 0);
+         if (rps.delta_before[0] != -2) failures++;
+      }
+      if (fields[j] == F_RPS_PRED)
+      {
+         expect("last predicted short-term set", rh265_video_get_short_term_set(v, 0, 63, &rps), 0);
+         if (out.num_short_term_sets != 64 || rps.num_before != 1 || rps.num_after
+               || rps.delta_before[0] != -65 || !rps.used_before[0]) failures++;
+      }
+      expect("short-term set bounds", rh265_video_get_short_term_set(v, 0, 64, &rps), -1);
+      for (i = 0; i < sizeof(rps); i++) if (((uint8_t*)&rps)[i]) { failures++; break; }
+   }
+   memset(&out, 0xaa, sizeof(out));
+   expect("sequence invalid PPS", rh265_video_get_sequence(v, ~0u, &out), -1);
+   for (i = 0; i < sizeof(out); i++) if (((uint8_t*)&out)[i]) { failures++; break; }
+   expect("sequence null decoder", rh265_video_get_sequence(NULL, 0, &out), -1);
+   expect("sequence null output", rh265_video_get_sequence(v, 0, NULL), -1);
+   expect("short-term null decoder", rh265_video_get_short_term_set(NULL, 0, 0, &rps), -1);
+   expect("short-term null output", rh265_video_get_short_term_set(v, 0, 0, NULL), -1);
+   pps(&w, 0, 15); lens[1] = nal(units_buf[1], 34, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("sequence missing SPS input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("sequence missing SPS", rh265_video_get_sequence(v, 0, &out), -1);
+   rh265_video_close(v);
+}
+
 int main(void)
 {
    test_nal_iterator(); test_access_unit();
    test_slice_info();
    test_color_info();
    test_params();
+   test_sequence_info();
    expect("a well-formed SPS is read",
          feed_sps(F_NONE, 9), -1);
    expect("sps_id coded as 32 zero bits is malformed",
@@ -693,6 +799,9 @@ int main(void)
          feed_sps(F_WIDTH_HUGE, 9), 0);
    expect("sps_max_latency_increase_plus1 at 2^32 - 2 is read",
          feed_sps(F_LATENCY_HUGE, 9), -1);
+   expect("eight temporal layers are malformed", feed_sps(F_BAD_LAYERS, 9), 0);
+   expect("oversized DPB is malformed", feed_sps(F_DPB_HUGE, 9), 0);
+   expect("reorder limit exceeding DPB is malformed", feed_sps(F_BAD_REORDER, 9), 0);
 
    if (failures)
       return 1;

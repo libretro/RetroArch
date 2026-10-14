@@ -89,6 +89,35 @@ typedef struct rh265_video_params
 int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
       rh265_video_params_t *out);
 
+typedef struct rh265_sequence_info
+{
+   uint32_t profile_compatibility_flags, constraint_flags_hi;
+   uint32_t max_latency_increase_plus1[7], lt_poc_lsb[32];
+   unsigned vps_id, profile_space, profile_idc, tier_flag, level_idc;
+   unsigned constraint_flags_lo, temporal_id_nesting, max_sub_layers_minus1;
+   unsigned max_dec_pic_buffering[7], max_num_reorder_pics[7];
+   unsigned num_short_term_sets, num_long_term_pics;
+   uint8_t lt_used[32];
+} rh265_sequence_info_t;
+
+typedef struct rh265_short_term_set
+{
+   int32_t delta_before[16], delta_after[16];
+   unsigned num_before, num_after;
+   uint8_t used_before[16], used_after[16];
+} rh265_short_term_set_t;
+
+/* SPS metadata for hardware parameter creation, selected through a PPS.
+ * level_idc is the raw HEVC value; constraint flags are the 48 coded bits
+ * split into high 32 and low 16. Layer limits include inferred values.
+ * Short-term sets are resolved to explicit deltas, closest POC first.
+ * Owner thread only; no allocation or pixel access. Return 0 on success,
+ * -1 for invalid/missing sets or index. Failure clears out. */
+int rh265_video_get_sequence(const rh265_video *v, unsigned pps_id,
+      rh265_sequence_info_t *out);
+int rh265_video_get_short_term_set(const rh265_video *v, unsigned pps_id,
+      unsigned index, rh265_short_term_set_t *out);
+
 typedef struct rh265_long_term_refs
 {
    uint32_t poc_lsb[16], msb_cycle[16];
