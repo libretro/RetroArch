@@ -5941,11 +5941,13 @@ static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
    if (!cpu.ptr)
       return false;
 
-   memset(&desc, 0, sizeof(desc));
-   desc.Format                  = format;
-   desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-   desc.Texture2D.MipLevels     = 1;
+   desc.Format                        = format;
+   desc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+   desc.Texture2D.MipLevels           = 1;
+   desc.Texture2D.MostDetailedMip     = 0;
+   desc.Texture2D.PlaneSlice          = 0;
+   desc.Texture2D.ResourceMinLODClamp = 0.0f;
    d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
          resource, &desc, cpu);
 
@@ -6689,7 +6691,6 @@ static void d3d12_record_capture(d3d12_video_t *d3d12, D3D12GraphicsCommandList 
 
       d3d12_record_free(d3d12);
 
-      memset(&tex_desc, 0, sizeof(tex_desc));
       tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
       tex_desc.Width              = sc.Width;
       tex_desc.Height             = sc.Height;
@@ -6699,6 +6700,8 @@ static void d3d12_record_capture(d3d12_video_t *d3d12, D3D12GraphicsCommandList 
       tex_desc.SampleDesc.Count   = 1;
       tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
       tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+      tex_desc.Alignment          = 0;
+      tex_desc.SampleDesc.Quality = 0;
       d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
             &tex_desc, 0, 1, 0, &d3d12->record.footprint, &num_rows,
             &row_size_bytes, &d3d12->record.total_bytes);
@@ -6708,17 +6711,17 @@ static void d3d12_record_capture(d3d12_video_t *d3d12, D3D12GraphicsCommandList 
       heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
       heap_props.CreationNodeMask     = 1;
       heap_props.VisibleNodeMask      = 1;
-      memset(&buf_desc, 0, sizeof(buf_desc));
-      buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
-      buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-      buf_desc.Width                  = d3d12->record.total_bytes;
-      buf_desc.Height                 = 1;
-      buf_desc.DepthOrArraySize       = 1;
-      buf_desc.MipLevels              = 1;
-      buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
-      buf_desc.SampleDesc.Count       = 1;
-      buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-      buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
+      buf_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+      buf_desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+      buf_desc.Width              = d3d12->record.total_bytes;
+      buf_desc.Height             = 1;
+      buf_desc.DepthOrArraySize   = 1;
+      buf_desc.MipLevels          = 1;
+      buf_desc.Format             = DXGI_FORMAT_UNKNOWN;
+      buf_desc.SampleDesc.Count   = 1;
+      buf_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      buf_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+      buf_desc.SampleDesc.Quality = 0;
       for (i = 0; i < D3D12_RECORD_RING; i++)
       {
          if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
@@ -7054,22 +7057,22 @@ static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    if (i == D3D12_FRAME_MEM_MAX)
       return NULL;
 
-   memset(&heap_props, 0, sizeof(heap_props));
-   memset(&buf_desc, 0, sizeof(buf_desc));
    heap_props.Type                 = D3D12_HEAP_TYPE_CUSTOM;
    heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
    heap_props.CreationNodeMask     = 1;
    heap_props.VisibleNodeMask      = 1;
-   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
-   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-   buf_desc.Width                  = size;
-   buf_desc.Height                 = 1;
-   buf_desc.DepthOrArraySize       = 1;
-   buf_desc.MipLevels              = 1;
-   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
-   buf_desc.SampleDesc.Count       = 1;
-   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width              = size;
+   buf_desc.Height             = 1;
+   buf_desc.DepthOrArraySize   = 1;
+   buf_desc.MipLevels          = 1;
+   buf_desc.Format             = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count   = 1;
+   buf_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.SampleDesc.Quality = 0;
+   buf_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
    read_range.Begin                = 0;
    read_range.End                  = (SIZE_T)size;
    if (     FAILED(d3d12->device->lpVtbl->CreateCommittedResource(
@@ -9981,7 +9984,6 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    if (!back_buffer)
       return false;
 
-   memset(&tex_desc, 0, sizeof(tex_desc));
    tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
    tex_desc.Alignment          = 0;
    tex_desc.Width              = (UINT64)d3d12->chain.viewport.Width;
@@ -10564,18 +10566,22 @@ static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
       D3D12_HEAP_PROPERTIES heap_props;
       D3D12_RESOURCE_DESC   desc;
       UINT64 total = 0;
-      memset(&heap_props, 0, sizeof(heap_props));
-      memset(&desc, 0, sizeof(desc));
-      heap_props.Type             = D3D12_HEAP_TYPE_DEFAULT;
-      heap_props.CreationNodeMask = 1;
-      heap_props.VisibleNodeMask  = 1;
-      desc.Dimension              = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-      desc.Width                  = MAX(image->width, cw * 2);
-      desc.Height                 = image->height + ch;
-      desc.DepthOrArraySize       = 1;
-      desc.MipLevels              = 1;
-      desc.Format                 = DXGI_FORMAT_R8_UNORM;
-      desc.SampleDesc.Count       = 1;
+      heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CreationNodeMask     = 1;
+      heap_props.VisibleNodeMask      = 1;
+      heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+      desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      desc.Width              = MAX(image->width, cw * 2);
+      desc.Height             = image->height + ch;
+      desc.DepthOrArraySize   = 1;
+      desc.MipLevels          = 1;
+      desc.Format             = DXGI_FORMAT_R8_UNORM;
+      desc.SampleDesc.Count   = 1;
+      desc.Alignment          = 0;
+      desc.SampleDesc.Quality = 0;
+      desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
       if (FAILED(device->lpVtbl->CreateCommittedResource(device,
                &heap_props, D3D12_HEAP_FLAG_NONE, &desc,
                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, NULL,
@@ -10592,14 +10598,17 @@ static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
       Release(texture->upload_buffer);
       texture->upload_buffer = NULL;
       heap_props.Type        = D3D12_HEAP_TYPE_UPLOAD;
-      memset(&desc, 0, sizeof(desc));
-      desc.Dimension         = D3D12_RESOURCE_DIMENSION_BUFFER;
-      desc.Width             = total;
-      desc.Height            = 1;
-      desc.DepthOrArraySize  = 1;
-      desc.MipLevels         = 1;
-      desc.SampleDesc.Count  = 1;
-      desc.Layout            = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+      desc.Width              = total;
+      desc.Height             = 1;
+      desc.DepthOrArraySize   = 1;
+      desc.MipLevels          = 1;
+      desc.SampleDesc.Count   = 1;
+      desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      desc.Alignment          = 0;
+      desc.Format             = DXGI_FORMAT_UNKNOWN;
+      desc.SampleDesc.Quality = 0;
+      desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
       if (FAILED(device->lpVtbl->CreateCommittedResource(device,
                &heap_props, D3D12_HEAP_FLAG_NONE, &desc,
                D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
@@ -10612,13 +10621,14 @@ static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
 
    {
       D3D12_UNORDERED_ACCESS_VIEW_DESC uav;
-      memset(&uav, 0, sizeof(uav));
       p->cpu_uav = d3d12_descriptor_heap_slot_alloc(heap);
       p->cpu_src = d3d12_descriptor_heap_slot_alloc(heap);
       if (!p->cpu_uav.ptr || !p->cpu_src.ptr)
          goto error;
-      uav.Format        = DXGI_FORMAT_R8G8B8A8_UNORM;
-      uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+      uav.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+      uav.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+      uav.Texture2D.MipSlice   = 0;
+      uav.Texture2D.PlaneSlice = 0;
       device->lpVtbl->CreateUnorderedAccessView(device, texture->handle,
             NULL, &uav, p->cpu_uav);
       device->lpVtbl->CreateShaderResourceView(device, p->planes, NULL,
@@ -10684,9 +10694,10 @@ static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
       imp->gpu_planes[i].ptr = imp->cpu_planes[i].ptr - heap->cpu.ptr
          + heap->gpu.ptr;
    }
-   memset(&uav, 0, sizeof(uav));
-   uav.Format        = DXGI_FORMAT_R8G8B8A8_UNORM;
-   uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+   uav.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+   uav.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+   uav.Texture2D.MipSlice   = 0;
+   uav.Texture2D.PlaneSlice = 0;
    device->lpVtbl->CreateUnorderedAccessView(device, texture->handle,
          NULL, &uav, imp->cpu_uav);
    imp->gpu_uav.ptr = imp->cpu_uav.ptr - heap->cpu.ptr + heap->gpu.ptr;
@@ -10761,10 +10772,12 @@ static int d3d12_import_tex(d3d12_video_t *d3d12, d3d12_import_t *imp,
    if (imp->tex[free_i])
       d3d12_retire(d3d12, NULL, (IUnknown*)imp->tex[free_i],
             d3d12->queue.fenceValue + 1);
-   memset(&vd, 0, sizeof(vd));
-   vd.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-   vd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-   vd.Texture2D.MipLevels     = 1;
+   vd.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+   vd.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   vd.Texture2D.MipLevels           = 1;
+   vd.Texture2D.MostDetailedMip     = 0;
+   vd.Texture2D.PlaneSlice          = 0;
+   vd.Texture2D.ResourceMinLODClamp = 0.0f;
    vd.Format                  = pixfmt == IMAGE_PIXFMT_P010
       ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM;
    c                          = imp->cpu_planes[free_i];
@@ -10999,8 +11012,9 @@ static const void *d3d12_movie_prepare(d3d12_video_t *v, const void *frame)
 static void d3d12_frame_import_init(d3d12_video_t *d3d12)
 {
    D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
-   memset(&fs, 0, sizeof(fs));
-   fs.Format = DXGI_FORMAT_NV12;
+   fs.Format   = DXGI_FORMAT_NV12;
+   fs.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
+   fs.Support2 = D3D12_FORMAT_SUPPORT2_NONE;
    if (     !d3d12->nv12_pipe || !d3d12->adapter
          || FAILED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
                D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs)))
@@ -11016,8 +11030,9 @@ static void d3d12_frame_import_init(d3d12_video_t *d3d12)
       return;
    }
    d3d12->import_formats = IMAGE_PIXFMT_NV12;
-   memset(&fs, 0, sizeof(fs));
-   fs.Format = DXGI_FORMAT_P010;
+   fs.Format   = DXGI_FORMAT_P010;
+   fs.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
+   fs.Support2 = D3D12_FORMAT_SUPPORT2_NONE;
    if (SUCCEEDED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
             D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs)))
          && (fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD))
@@ -11210,22 +11225,22 @@ static bool d3d12_texture_upload_buffer2(d3d12_video_t *d3d12,
    D3D12_RESOURCE_DESC   buffer_desc;
    if (texture->upload_buffer2)
       return true;
-   memset(&heap_props, 0, sizeof(heap_props));
-   memset(&buffer_desc, 0, sizeof(buffer_desc));
    heap_props.Type                 = D3D12_HEAP_TYPE_UPLOAD;
    heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
    heap_props.CreationNodeMask     = 1;
    heap_props.VisibleNodeMask      = 1;
-   buffer_desc.Dimension           = D3D12_RESOURCE_DIMENSION_BUFFER;
-   buffer_desc.Alignment           = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-   buffer_desc.Width               = texture->total_bytes;
-   buffer_desc.Height              = 1;
-   buffer_desc.DepthOrArraySize    = 1;
-   buffer_desc.MipLevels           = 1;
-   buffer_desc.Format              = DXGI_FORMAT_UNKNOWN;
-   buffer_desc.SampleDesc.Count    = 1;
-   buffer_desc.Layout              = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buffer_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buffer_desc.Alignment          = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buffer_desc.Width              = texture->total_bytes;
+   buffer_desc.Height             = 1;
+   buffer_desc.DepthOrArraySize   = 1;
+   buffer_desc.MipLevels          = 1;
+   buffer_desc.Format             = DXGI_FORMAT_UNKNOWN;
+   buffer_desc.SampleDesc.Count   = 1;
+   buffer_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buffer_desc.SampleDesc.Quality = 0;
+   buffer_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
    if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(
                d3d12->device, &heap_props, D3D12_HEAP_FLAG_NONE,
                &buffer_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
@@ -11895,8 +11910,9 @@ static bool d3d12_gfx_supports_texture_format(void* data,
 #endif
    if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;
-   memset(&fs, 0, sizeof(fs));
-   fs.Format = dxgi;
+   fs.Format   = dxgi;
+   fs.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
+   fs.Support2 = D3D12_FORMAT_SUPPORT2_NONE;
    if (FAILED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
          D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs))))
       return false;
@@ -11948,22 +11964,24 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
 
    /* Default-heap texture with the file's pre-baked mip count.  No UAV
     * flags: the driver's compute mip generation cannot write BC blocks. */
-   memset(&tex_desc, 0, sizeof(tex_desc));
-   tex_desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-   tex_desc.Width            = tc->mips[0].width;
-   tex_desc.Height           = tc->mips[0].height;
-   tex_desc.DepthOrArraySize = 1;
-   tex_desc.MipLevels        = (UINT16)tc->num_mips;
-   tex_desc.Format           = dxgi;
-   tex_desc.SampleDesc.Count = 1;
-   tex_desc.Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-   tex_desc.Flags            = D3D12_RESOURCE_FLAG_NONE;
+   tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Width              = tc->mips[0].width;
+   tex_desc.Height             = tc->mips[0].height;
+   tex_desc.DepthOrArraySize   = 1;
+   tex_desc.MipLevels          = (UINT16)tc->num_mips;
+   tex_desc.Format             = dxgi;
+   tex_desc.SampleDesc.Count   = 1;
+   tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+   tex_desc.Alignment          = 0;
+   tex_desc.SampleDesc.Quality = 0;
    texture->desc             = tex_desc;
 
-   memset(&heap_props, 0, sizeof(heap_props));
-   heap_props.Type             = D3D12_HEAP_TYPE_DEFAULT;
-   heap_props.CreationNodeMask = 1;
-   heap_props.VisibleNodeMask  = 1;
+   heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
    hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
          D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST,
          NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
@@ -11976,15 +11994,17 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
    device->lpVtbl->GetCopyableFootprints(device, &tex_desc, 0, tc->num_mips,
          0, layouts, num_rows, row_sizes, &total_bytes);
 
-   memset(&buf_desc, 0, sizeof(buf_desc));
-   buf_desc.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER;
-   buf_desc.Width            = total_bytes;
-   buf_desc.Height           = 1;
-   buf_desc.DepthOrArraySize = 1;
-   buf_desc.MipLevels        = 1;
-   buf_desc.Format           = DXGI_FORMAT_UNKNOWN;
-   buf_desc.SampleDesc.Count = 1;
-   buf_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Width              = total_bytes;
+   buf_desc.Height             = 1;
+   buf_desc.DepthOrArraySize   = 1;
+   buf_desc.MipLevels          = 1;
+   buf_desc.Format             = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count   = 1;
+   buf_desc.Layout             = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Alignment          = 0;
+   buf_desc.SampleDesc.Quality = 0;
+   buf_desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
    heap_props.Type           = D3D12_HEAP_TYPE_UPLOAD;
    hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
          D3D12_HEAP_FLAG_NONE, &buf_desc, D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -12059,11 +12079,13 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
 
    {
       D3D12_SHADER_RESOURCE_VIEW_DESC srv;
-      memset(&srv, 0, sizeof(srv));
-      srv.Format                  = dxgi;
-      srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-      srv.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-      srv.Texture2D.MipLevels     = tc->num_mips;
+      srv.Format                        = dxgi;
+      srv.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      srv.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+      srv.Texture2D.MipLevels           = tc->num_mips;
+      srv.Texture2D.MostDetailedMip     = 0;
+      srv.Texture2D.PlaneSlice          = 0;
+      srv.Texture2D.ResourceMinLODClamp = 0.0f;
       texture->cpu_descriptor[0]  = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
       device->lpVtbl->CreateShaderResourceView(device, texture->handle,
             &srv, texture->cpu_descriptor[0]);
