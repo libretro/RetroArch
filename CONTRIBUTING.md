@@ -12,6 +12,18 @@ We do prefer to keep a professional and non-aggressive atmosphere around the pro
 with any disagreements to be settled professionally without insults, name calling, or otherwise.
 If there are any issues, we are willing to have discussions about it.
 
+## Core authors and upstream developers
+
+Libretro does not make statements about, endorse, or vet the personal
+views or conduct of core authors or upstream developers.
+
+Documentation in this repository describes the software only. Pull
+requests that add statements about the people behind a core, positive
+or negative, will not be accepted.
+
+Decisions about including or removing a core are based on licensing,
+technical, and maintenance criteria.
+
 ## Submitting Bug Reports
 
 Bug reports for _RetroArch_ may fall into a few categories:
