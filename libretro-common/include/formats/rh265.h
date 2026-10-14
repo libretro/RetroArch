@@ -34,6 +34,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <formats/video_hw_frame.h>
 
 #include <retro_common_api.h>
 
@@ -145,6 +146,9 @@ int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len);
  * the data was consumed without producing a picture (parameter sets or
  * SEI only), and negative on malformed input or an unsupported (e.g.
  * inter-coded) stream. */
+/* Hardware: 2 busy (retry identical packet), 3 picture ready while the
+ * packet remains unconsumed (take picture, then retry identical packet).
+ * No CPU planes are available on hardware. */
 int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
 
 /* Hand out the next pending picture in display order without feeding
@@ -152,6 +156,7 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
  * available through rh265_video_plane, -1 when nothing is pending.
  * (Intra pictures leave in decode order, so this only matters once
  * inter prediction lands.) */
+/* Hardware: 2 busy; retry without waiting. */
 int rh265_video_drain(rh265_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
@@ -206,6 +211,17 @@ void rh265_video_set_publish_delay(int max_yields);
 
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads);
+
+/* Registry storage outlives every decoder that opens through it. NULL
+ * withdraws the offer; existing sessions retain their callbacks. */
+struct rh265_hw_backend;
+void rh265_set_hw_backend(const struct rh265_hw_backend *backend);
+/* Opt in before the first picture, after parameter sets. Returns 1 on
+ * hardware, 0 on software; disabling an active session requires reopen. */
+int rh265_video_set_hw(rh265_video *v, int enable);
+int rh265_video_is_hw(const rh265_video *v);
+/* Transfer the displayed lease once; caller imports or abandons it. */
+int rh265_video_hw_frame(rh265_video *v, video_hw_frame_t *out);
 
 RETRO_END_DECLS
 

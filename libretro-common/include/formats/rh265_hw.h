@@ -245,6 +245,14 @@ typedef struct rh265_hw_ops
    int (*output)(void *decoder, unsigned slot, video_hw_frame_t *frame);
 } rh265_hw_ops_t;
 
+typedef struct rh265_hw_backend
+{
+   void *user;
+   bool (*open)(void *user, const rh265_video_params_t *params,
+         unsigned slots, rh265_hw_ops_t *ops);
+   void (*close)(rh265_hw_ops_t *ops);
+} rh265_hw_backend_t;
+
 typedef struct rh265_hw_session
 {
    rh265_hw_state_t state;

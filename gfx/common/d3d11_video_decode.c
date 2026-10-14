@@ -148,6 +148,7 @@ static struct
    retro_atomic_int_t serial;
    retro_atomic_ptr_t grave;
    rh264_hw_ops_t ops;
+   rh265_hw_backend_t hevc;
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -821,6 +822,13 @@ void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops)
    memset(ops, 0, sizeof(*ops));
 }
 
+static bool d3d11vd_hevc_open(void *user, const rh265_video_params_t *params,
+      unsigned slots, rh265_hw_ops_t *ops)
+{
+   (void)user;
+   return d3d11_video_decode_hevc_open(params, slots, ops);
+}
+
 /* ---- the backend ---- */
 
 bool d3d11_video_decode_init_adapter(void *adapter)
@@ -852,6 +860,10 @@ bool d3d11_video_decode_init_adapter(void *adapter)
    d3d11vd.ops.readback = d3d11vd_readback;
    d3d11vd.up         = true;
    rh264_set_hw_backend(&d3d11vd.ops);
+   d3d11vd.hevc.user = NULL;
+   d3d11vd.hevc.open = d3d11vd_hevc_open;
+   d3d11vd.hevc.close = d3d11_video_decode_hevc_close;
+   rh265_set_hw_backend(&d3d11vd.hevc);
    return true;
 }
 
@@ -878,6 +890,7 @@ void d3d11_video_decode_deinit(void)
    if (!d3d11vd.up)
       return;
    rh264_set_hw_backend(NULL);
+   rh265_set_hw_backend(NULL);
    if (retro_atomic_load_acquire_int(&d3d11vd.live))
       RARCH_ERR("[D3D11] Video decode: %d decoder(s) still open at teardown.\n",
             retro_atomic_load_acquire_int(&d3d11vd.live));

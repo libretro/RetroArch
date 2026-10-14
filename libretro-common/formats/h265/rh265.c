@@ -136,6 +136,7 @@ static int rh265_rows_ec_ok;
 /* CTB rows decoded side by side at most. */
 
 #include <formats/rh265.h>
+#include <formats/rh265_hw.h>
 
 #if defined(_MSC_VER)
 #define RH265_INLINE __forceinline
@@ -3892,8 +3893,22 @@ static void rh265_sao_param(rh265_dec *d, int rx, int ry)
 
 /* ==================== rh265_video.h ==================== */
 
+typedef struct rh265_hw
+{
+   rh265_hw_session_t session;
+   rh265_hw_backend_t backend;
+   rh265_video_params_t params;
+   rh265_access_unit_t au;
+   rh265_nal_t slices[64];
+   video_hw_frame_t shown;
+   const uint8_t *packet;
+   size_t size;
+   int pending;
+} rh265_hw_t;
+
 struct rh265_video
 {
+   rh265_hw_t *hw;
    /* NAL scratch, grown on demand and kept for the decoder's lifetime:
     * the unescaped RBSP followed by the escape-position list. */
    uint8_t  *nal_scratch;
@@ -4210,7 +4225,7 @@ static void rh265_ctx_join(rh265_video *v, rh265_dec *d);
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads)
 {
-   if (!v)
+   if (!v || v->hw)
       return;
 #ifdef HAVE_THREADS
    /* the pool and the mode are read by every picture in flight:
@@ -5101,6 +5116,153 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
 
 /* ==================== API glue ==================== */
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+static retro_atomic_ptr_t rh265_hw_backend;
+#define RH265_HW_BACKEND_GET() \
+   ((const rh265_hw_backend_t*)retro_atomic_load_acquire_ptr(&rh265_hw_backend))
+#else
+static const rh265_hw_backend_t *rh265_hw_backend;
+#define RH265_HW_BACKEND_GET() (rh265_hw_backend)
+#endif
+
+void rh265_set_hw_backend(const rh265_hw_backend_t *backend)
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_store_release_ptr(&rh265_hw_backend, (void*)backend);
+#else
+   rh265_hw_backend = backend;
+#endif
+}
+
+int rh265_video_is_hw(const rh265_video *v)
+{
+   return v && v->hw;
+}
+
+int rh265_video_set_hw(rh265_video *v, int enable)
+{
+   const rh265_hw_backend_t *backend;
+   rh265_hw_t *hw;
+   rh265_hw_ops_t ops;
+   unsigned pps, slots;
+   if (!v)
+      return 0;
+   if (v->hw)
+      return 1;
+   if (!enable || v->alloc_w || v->first_pic_decoded)
+      return 0;
+   backend = RH265_HW_BACKEND_GET();
+   if (!backend || !backend->open || !backend->close)
+      return 0;
+   hw = (rh265_hw_t*)calloc(1, sizeof(*hw));
+   if (!hw)
+      return 0;
+   hw->backend = *backend;
+   memset(&ops, 0, sizeof(ops));
+   for (pps = 0; pps < RH265_MAX_PPS; pps++)
+      if (!rh265_video_get_params(v, pps, &hw->params))
+         break;
+   if (pps == RH265_MAX_PPS || hw->params.max_dec_pic_buffering < 1
+         || hw->params.max_dec_pic_buffering > 16)
+   {
+      free(hw);
+      return 0;
+   }
+   slots = (unsigned)hw->params.max_dec_pic_buffering + 1;
+   if (!hw->backend.open(hw->backend.user, &hw->params, slots, &ops))
+   {
+      free(hw);
+      return 0;
+   }
+   if (!rh265_hw_session_init(&hw->session, &ops, slots))
+   {
+      hw->backend.close(&ops);
+      free(hw);
+      return 0;
+   }
+   v->hw = hw;
+   v->pool = NULL;
+   v->threads = 1;
+   v->threaded = 0;
+   return 1;
+}
+
+int rh265_video_hw_frame(rh265_video *v, video_hw_frame_t *out)
+{
+   if (!v || !v->hw || !out || !v->hw->shown.image)
+      return -1;
+   *out = v->hw->shown;
+   memset(&v->hw->shown, 0, sizeof(v->hw->shown));
+   return 0;
+}
+
+static int rh265_hw_show(rh265_hw_t *hw, bool drain)
+{
+   int ret;
+   if (hw->session.broken)
+      return -1;
+   if (rh265_hw_output_pick(&hw->session.state, hw->session.max_reorder,
+         drain || hw->session.pressure) < 0)
+      return 0;
+   ret = rh265_hw_session_output(&hw->session, drain, &hw->shown);
+   return ret < 0 ? -1 : ret ? 2 : 1;
+}
+
+static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size)
+{
+   rh265_hw_t *hw = v->hw;
+   int ret;
+   video_hw_frame_abandon(&hw->shown);
+   memset(&hw->shown, 0, sizeof(hw->shown));
+   if (hw->pending)
+   {
+      if (hw->packet != data || hw->size != size)
+         return -1;
+   }
+   else
+   {
+      ret = rh265_video_get_access_unit(v, data, size, (unsigned)v->length_size,
+            hw->slices, 64, &hw->au);
+      if (ret < 0)
+         return ret;
+      if (!hw->au.num_slices)
+         return 0;
+      if (rh265_video_get_params(v, (unsigned)hw->au.first.pps_id, &hw->params))
+         return -1;
+      hw->packet = data;
+      hw->size = size;
+      hw->pending = 1;
+   }
+   if (hw->pending == 1)
+   {
+      ret = rh265_hw_session_submit(&hw->session, data, size, &hw->params,
+            &hw->au, hw->slices);
+      if (ret < 0)
+      {
+         hw->pending = 0;
+         hw->packet = NULL;
+         hw->size = 0;
+         return ret;
+      }
+      if (ret == 1)
+      {
+         if (!hw->session.pressure)
+            return 2;
+         ret = rh265_hw_show(hw, false);
+         return ret == 1 ? 3 : ret < 0 ? -1 : 2;
+      }
+      hw->pending = 2;
+   }
+   ret = rh265_hw_show(hw, false);
+   if (ret != 2)
+   {
+      hw->pending = 0;
+      hw->packet = NULL;
+      hw->size = 0;
+   }
+   return ret;
+}
+
 rh265_video *rh265_video_open(void)
 {
    rh265_video *v = (rh265_video*)calloc(1, sizeof(*v));
@@ -5123,6 +5285,13 @@ void rh265_video_close(rh265_video *v)
 {
    if (!v)
       return;
+   if (v->hw)
+   {
+      video_hw_frame_abandon(&v->hw->shown);
+      v->hw->backend.close(&v->hw->session.ops);
+      free(v->hw);
+      v->hw = NULL;
+   }
    {
       int k;
 #ifdef HAVE_THREADS
@@ -5420,7 +5589,7 @@ int rh265_video_set_extradata(rh265_video *v, const uint8_t *hvcc, size_t len)
 {
    size_t pos;
    int num_arrays, i;
-   if (!v || !hvcc)
+   if (!v || !hvcc || v->hw)
       return -1;
    if (len >= 3 && (hvcc[0] || hvcc[1]) && hvcc[2] == 1)
    {
@@ -5505,6 +5674,9 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len)
    if (!v || !data || len < 4)
       return -1;
 
+   if (v->hw)
+      return rh265_hw_decode(v, data, len);
+
    /* hvcC extradata fixes the framing as length-prefixed; a 4-byte
     * length in 256..511 is byte-identical to a start code, so once the
     * length size is known the sniff below must not run.  Without
@@ -5573,6 +5745,16 @@ int rh265_video_drain(rh265_video *v)
 {
    if (!v)
       return -1;
+   if (v->hw)
+   {
+      int ret;
+      if (v->hw->pending)
+         return 2;
+      video_hw_frame_abandon(&v->hw->shown);
+      memset(&v->hw->shown, 0, sizeof(v->hw->shown));
+      ret = rh265_hw_show(v->hw, true);
+      return ret == 1 ? 0 : ret == 2 ? 2 : -1;
+   }
    if (v->threaded)
    {
       int k;
