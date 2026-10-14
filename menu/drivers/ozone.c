@@ -602,6 +602,7 @@ struct ozone_handle
    gfx_surface_t *icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_LAST];
    gfx_surface_t *tab_textures[OZONE_TAB_TEXTURE_LAST];
    uintptr_t header_icon;
+   unsigned header_retired; /* gfx_surface_retired() it was taken at */
 
    size_t categories_selection_ptr; /* active tab id  */
    size_t categories_active_idx_old;
@@ -1812,6 +1813,7 @@ static ozone_theme_t *ozone_themes[] = {
 
 /* Forward declarations */
 static void ozone_set_header(ozone_handle_t *ozone);
+static void ozone_set_header_icon(ozone_handle_t *ozone, uint8_t header_icon);
 static void ozone_animation_list_alpha(ozone_handle_t *ozone, bool fade_in);
 static void ozone_cursor_animation_cb(void *userdata);
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation);
@@ -10960,6 +10962,12 @@ static void ozone_render(void *data,
          ozone_load_theme_textures(ozone, pending_theme);
    }
 
+   /* The header icon's handle is a surface's, which a replacement or a
+    * free retires: taken again then, before the frame can draw it */
+   if (     ozone->header_icon
+         && ozone->header_retired != gfx_surface_retired())
+      ozone_set_header_icon(ozone, settings->uints.menu_ozone_header_icon);
+
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
    gfx_thumbnail_animate(&ozone->thumbnails.right,
@@ -11611,6 +11619,7 @@ OZONE_NOINLINE static void ozone_draw_header(
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned ticker_x_offset                 = 0;
    unsigned timedate_offset                 = 0;
+   uintptr_t header_icon                    = ozone->header_icon;
    bool use_smooth_ticker                   = ((video_info->menu.flags & VIDEO_MENU_FLAG_TICKER_SMOOTH) ? true : false);
    float *col                               = ozone->theme->entries_icon;
    float scale_factor                       = ozone->last_scale_factor;
@@ -11624,16 +11633,15 @@ OZONE_NOINLINE static void ozone_draw_header(
    enum gfx_animation_ticker_type menu_ticker_type;
    gfx_display_ctx_driver_t *dispctx;
 
-   /* If header_icon is zero but the setting says it should exist,
-    * the handle was likely cached before its async texture loaded.
-    * Try the RetroArch logo as a fallback — it covers FIXED mode
-    * and the DYNAMIC mode fallback at the end of ozone_selection_changed. */
-   if (  !ozone->header_icon
-       && video_info->menu.ozone_header_icon != OZONE_HEADER_ICON_NONE
-       && ozone_tex[OZONE_TEXTURE_RETROARCH])
-      ozone->header_icon = ozone_tex[OZONE_TEXTURE_RETROARCH];
+   /* No header icon yet while the setting wants one: the RetroArch
+    * logo of this frame's own textures. Not kept: under threaded video
+    * this runs on the video thread, and a kept handle outlives the
+    * textures a context reset frees after this frame. */
+   if (  !header_icon
+       && video_info->menu.ozone_header_icon != OZONE_HEADER_ICON_NONE)
+      header_icon = ozone_tex[OZONE_TEXTURE_RETROARCH];
 
-   logo_icon_size                           = (ozone->header_icon) ? 60 * scale_factor : 0;
+   logo_icon_size                           = (header_icon) ? 60 * scale_factor : 0;
    status_row_size                          = 160 * scale_factor;
    separator_margin                         = 30 * scale_factor;
    separator                                = video_info->menu.ozone_header_separator;
@@ -11691,7 +11699,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                video_dims,
                logo_icon_size,
                logo_icon_size,
-               ozone->header_icon,
+               header_icon,
                header_margin - (logo_icon_size / 12),
                (ozone->dimensions.header_height - logo_icon_size) / 2,
                0.0f,
@@ -13378,7 +13386,14 @@ static void ozone_set_header(ozone_handle_t *ozone)
       }
    }
 
-   /* Header icon */
+   ozone_set_header_icon(ozone, header_icon);
+}
+
+/* The header icon, by the setting @header_icon: a handle borrowed
+ * from a surface, taken again when one retires (see ozone_render) */
+static void ozone_set_header_icon(ozone_handle_t *ozone, uint8_t header_icon)
+{
+   ozone->header_retired = gfx_surface_retired();
    if (header_icon == OZONE_HEADER_ICON_NONE)
       ozone->header_icon = 0;
    else if (header_icon == OZONE_HEADER_ICON_FIXED)

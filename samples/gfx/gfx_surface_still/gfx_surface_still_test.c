@@ -427,6 +427,7 @@ int main(void)
    {
       gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
       int loads;
+      unsigned retired;
       CHECK(s != NULL, "no still");
       CHECK(gfx_surface_submit_image(s, st_image(8)), "first image refused");
       CHECK(s->handle == 0, "a queued image landed early");
@@ -438,16 +439,25 @@ int main(void)
       CHECK(gfx_surface_submit_image(s, st_image(16)),
             "an image during the flight refused");
       CHECK(s->handle == a && st_live == 1, "the texture up went early");
+      retired = gfx_surface_retired();
       st_flush();
       CHECK(s->handle == a && st_loads == loads,
             "a same-size image did not update in place");
+      CHECK(gfx_surface_retired() == retired,
+            "an update in place counted as a retired texture");
       st_flush();
       b = s->handle;
+      /* A handle kept from before is the caller's to take again */
+      CHECK(gfx_surface_retired() != retired,
+            "a replacement retired a texture without saying so");
+      retired = gfx_surface_retired();
       CHECK(b != 0 && b != a && VIDEO_SCALE_W(s->dims) == 16 && st_live == 1,
             "the image given in flight did not go up after (%d live)",
             st_live);
       gfx_surface_free(s);
       CHECK(st_live == 0, "%d textures live after the still went", st_live);
+      CHECK(gfx_surface_retired() != retired,
+            "a freed still retired its texture without saying so");
    }
 
    /* 2. a still freed with an upload in flight: the completion frees

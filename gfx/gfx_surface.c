@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <formats/image_yuv_blit.h>
 
@@ -28,6 +29,21 @@
 #define GFX_SURFACE_SLOT_ALIGN 64
 
 #define GFX_SURFACE_FMT_NONE 0xff
+
+/* Counts the textures surfaces have let go: see gfx_surface_retired() */
+static retro_atomic_int_t gfx_surface_retire_count;
+
+/* A surface's texture unloaded; *@handle is 0 after */
+static void gfx_surface_unload(uintptr_t *handle)
+{
+   video_driver_texture_unload(handle);
+   retro_atomic_fetch_add_int(&gfx_surface_retire_count, 1);
+}
+
+unsigned gfx_surface_retired(void)
+{
+   return (unsigned)retro_atomic_load_acquire_int(&gfx_surface_retire_count);
+}
 
 gfx_surface_t *gfx_surface_new(unsigned dims,
       unsigned num_slots, uint32_t pixfmt, enum texture_filter_type filter,
@@ -360,7 +376,7 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
    }
    gfx_surface_unlend(s);
    if (s->handle)
-      video_driver_texture_unload(&s->handle);
+      gfx_surface_unload(&s->handle);
    s->handle = new_handle;
    s->fmt    = fmt;
    return GFX_SURFACE_SUBMIT_DONE;
@@ -435,7 +451,7 @@ static void gfx_surface_done(void *user, uintptr_t handle)
          }
          gfx_surface_unlend(s);
          if (s->handle)
-            video_driver_texture_unload(&s->handle);
+            gfx_surface_unload(&s->handle);
          s->handle = handle;
       }
       else
@@ -485,9 +501,9 @@ static void gfx_surface_done(void *user, uintptr_t handle)
       if (s->decoding)
          return;
       if (s->handle)
-         video_driver_texture_unload(&s->handle);
+         gfx_surface_unload(&s->handle);
       if (s->retired_handle)
-         video_driver_texture_unload(&s->retired_handle);
+         gfx_surface_unload(&s->retired_handle);
       free(s->rgb);
       free(s);
       return;
@@ -883,10 +899,10 @@ void gfx_surface_free(gfx_surface_t *s)
    if (s->next_img)
       gfx_surface_image_free(s->next_img);
    if (s->handle)
-      video_driver_texture_unload(&s->handle);
+      gfx_surface_unload(&s->handle);
    /* Its producers are gone by now: a retired texture goes too */
    if (s->retired_handle)
-      video_driver_texture_unload(&s->retired_handle);
+      gfx_surface_unload(&s->retired_handle);
    free(s->rgb);
    free(s);
 }
@@ -1005,7 +1021,7 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
    if (!ok || !tex)
       return false;
    if (s->handle)
-      video_driver_texture_unload(&s->handle);
+      gfx_surface_unload(&s->handle);
    s->handle = tex;
    /* A plain load's texture is not one an in-place update knows */
    s->fmt    = GFX_SURFACE_FMT_NONE;
@@ -1203,9 +1219,9 @@ static void gfx_surface_decoded(retro_task_t *task, void *task_data,
          if (s->next_img)
             gfx_surface_image_free(s->next_img);
          if (s->handle)
-            video_driver_texture_unload(&s->handle);
+            gfx_surface_unload(&s->handle);
          if (s->retired_handle)
-            video_driver_texture_unload(&s->retired_handle);
+            gfx_surface_unload(&s->retired_handle);
          free(s->rgb);
       free(s);
       }
@@ -1256,7 +1272,7 @@ void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot)
       return;
    s->writing &= (uint8_t)~(1u << slot);
    if (!s->writing && s->retired_handle)
-      video_driver_texture_unload(&s->retired_handle);
+      gfx_surface_unload(&s->retired_handle);
 }
 
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)

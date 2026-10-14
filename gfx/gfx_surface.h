@@ -469,6 +469,11 @@ void gfx_surface_free(gfx_surface_t *s);
  * pixels stay the caller's: false. @pixels must be a malloc() block. */
 bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels);
 
+/* A count that moves whenever a surface lets a texture go - replaced by
+ * a new one, or the surface freed - so a handle taken with
+ * GFX_SURFACE_HANDLE() and kept is to be taken again once it moves. */
+unsigned gfx_surface_retired(void);
+
 RETRO_END_DECLS
 
 #endif
