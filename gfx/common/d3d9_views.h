@@ -349,21 +349,6 @@ static bool D3D9V_FN(views_setup)(d3d9_video_t *d3d,
    return views;
 }
 
-/* The frame's @height rows, @row_bytes each, @pitch apart at @frame,
- * into the top left of @tex */
-static void D3D9V_FN(views_upload)(LPDIRECT3DTEXTURE9 tex,
-      const void *frame, unsigned height, size_t row_bytes, unsigned pitch)
-{
-   D3DLOCKED_RECT lr;
-   unsigned y;
-   if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, NULL, 0)) || !lr.pBits)
-      return;
-   for (y = 0; y < height; y++)
-      memcpy((uint8_t*)lr.pBits + (size_t)y * lr.Pitch,
-            (const uint8_t*)frame + (size_t)y * pitch, row_bytes);
-   IDirect3DTexture9_UnlockRect(tex, 0);
-}
-
 /* A viewport over @dims */
 static void D3D9V_FN(views_viewport)(d3d9_video_t *d3d, unsigned dims)
 {

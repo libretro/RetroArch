@@ -33,6 +33,7 @@ struct fake_tex
    uint8_t mem[TEX_W * BPP * TEX_H];
    int     locked;
    int     readonly;
+   RECT    rect;        /* the last lock's, the whole texture for NULL */
    int     refs;
    int     lock_errors;
 };
@@ -57,7 +58,16 @@ static HRESULT STDMETHODCALLTYPE tex_lock(IDirect3DTexture9 *p, UINT level,
    }
    t->locked   = 1;
    t->readonly = (flags & D3DLOCK_READONLY) ? 1 : 0;
-   lr->pBits   = t->mem;
+   if (rect)
+      t->rect  = *rect;
+   else
+   {
+      t->rect.left  = 0;
+      t->rect.top   = 0;
+      t->rect.right = TEX_W;
+      t->rect.bottom= TEX_H;
+   }
+   lr->pBits   = t->mem + t->rect.top * TEX_W * BPP + t->rect.left * BPP;
    lr->Pitch   = TEX_W * BPP;
    return D3D_OK;
 }
@@ -90,6 +100,13 @@ static void tex_init(struct fake_tex *t, uint8_t fill)
 static LPDIRECT3DTEXTURE9 tx(struct fake_tex *t)
 {
    return (LPDIRECT3DTEXTURE9)&t->iface;
+}
+
+/* The last lock covered @w x @h from the corner */
+static int locked_as(struct fake_tex *t, unsigned w, unsigned h)
+{
+   return !t->rect.left && !t->rect.top
+      && t->rect.right == (LONG)w && t->rect.bottom == (LONG)h;
 }
 
 /* The pattern a core writes: pixel (x, y) of frame @n */
@@ -162,6 +179,8 @@ int main(void)
          && fb.format == RETRO_PIXEL_FORMAT_RGB565
          && (fb.memory_flags & RETRO_MEMORY_TYPE_CACHED),
          "the texture is lent locked, its rows at its own pitch");
+   CHECK(locked_as(&a, 320, 240),
+         "only the size asked for is locked, so only it goes up");
    CHECK(d3d9_sw_fb_lend(&sw, tx(&a), dims, BPP, &fb) && fb.data == a.mem
          && !a.lock_errors,
          "asked again before a frame, the same loan");
@@ -183,8 +202,9 @@ int main(void)
    write_frame(b.mem, TEX_W * BPP, 2, 320, 240);
    d3d9_sw_fb_settle(&sw, b.mem, 320, 240, TEX_W * BPP, BPP,
          VIDEO_SCALE_PACK(320, 240));
-   CHECK(((uint16_t*)b.mem)[320] == 0xABAB,
-         "nothing past it is touched when its size is the texture's last");
+   CHECK(((uint16_t*)b.mem)[320] == 0xABAB && locked_as(&b, 320, 240),
+         "nothing past it is touched, nor locked, when its size is the "
+         "texture's last");
 
    printf("a cropped window inside the loan:\n");
    tex_init(&c, 0xAB);
@@ -195,6 +215,8 @@ int main(void)
          TEX_W * BPP, BPP, VIDEO_SCALE_PACK(320, 240));
    CHECK(holds(&c, 3, 8, 4, 304, 232) && !c.locked,
          "is moved to the corner, what is past it cleared");
+   CHECK(locked_as(&c, TEX_W, TEX_H),
+         "under a lock of the whole texture");
 
    printf("a window at a narrower pitch inside the loan:\n");
    tex_init(&c, 0xAB);
@@ -242,6 +264,22 @@ int main(void)
    d3d9_sw_fb_collect(&sw);
    CHECK(retires == 1 && b.refs == 0 && !sw.parked[0],
          "outside a frame the cached frame is retired and it goes");
+
+   printf("the upload of a frame from elsewhere:\n");
+   {
+      static uint8_t own[320 * BPP * 240];
+      write_frame(own, 320 * BPP, 5, 320, 240);
+      tex_init(&a, 0xAB);
+      d3d9_frame_upload(tx(&a), dims, 0, own, 320 * BPP, 320, 240, BPP);
+      CHECK(holds(&a, 5, 0, 0, 320, 240) && locked_as(&a, TEX_W, TEX_H)
+            && !a.locked,
+            "at a new size, the whole texture: the frame, past it cleared");
+      write_frame(own, 320 * BPP, 6, 320, 240);
+      d3d9_frame_upload(tx(&a), dims, VIDEO_SCALE_PACK(320, 240), own,
+            320 * BPP, 320, 240, BPP);
+      CHECK(holds(&a, 6, 0, 0, 320, 240) && locked_as(&a, 320, 240),
+            "at the same size, only the frame's rectangle is locked");
+   }
 
    printf("lending the texture the cached frame is in:\n");
    tex_init(&a, 0xAB);

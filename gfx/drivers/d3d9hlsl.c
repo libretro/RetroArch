@@ -2982,33 +2982,16 @@ static void d3d9_hlsl_renderchain_run(d3d9_video_t *d3d,
 
    /* Blit frame to first pass texture, unless the core wrote it there */
    {
-      unsigned y;
       unsigned src_pitch = pitch;
       const uint8_t *src = d3d9_sw_fb_src_begin(chain->chain.sw_fb, frame,
             first_pass->tex, &src_pitch);
-      D3DLOCKED_RECT d3dlr;
-      d3dlr.Pitch  = 0;
-      d3dlr.pBits  = NULL;
-
-      if (     src
-            && SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0,
-                  &d3dlr, NULL, 0))
-            && d3dlr.pBits)
-      {
-         if (first_pass->last_dims != VIDEO_SCALE_PACK(width, height))
-            memset(d3dlr.pBits, 0,
-                  VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
-
-         for (y = 0; y < height; y++)
-         {
-            const uint8_t *in = src + y * src_pitch;
-            uint8_t      *out = (uint8_t*)d3dlr.pBits   + y * d3dlr.Pitch;
-            memcpy(out, in, width * chain->chain.pixel_size);
-         }
-         IDirect3DTexture9_UnlockRect(first_pass->tex, 0);
-      }
       if (src)
+      {
+         d3d9_frame_upload(first_pass->tex, first_pass->info.tex_dims,
+                  first_pass->last_dims, src, src_pitch, width, height,
+                  chain->chain.pixel_size);
          d3d9_sw_fb_src_end(chain->chain.sw_fb, frame, first_pass->tex);
+      }
    }
 
    if (chain->chain.passes->count > 1 && chain->chain.dev)
@@ -8291,8 +8274,12 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
                d.tex, &src_pitch);
          if (src)
          {
-            d3d9_hlsl_views_upload(d.tex, src, frame_height,
-                  (size_t)frame_width * _chain->chain.pixel_size, src_pitch);
+            /* As ever, nothing past the frame cleared: its size given
+             * as the texture's last */
+            d3d9_frame_upload(d.tex, d.tex_dims,
+                  VIDEO_SCALE_PACK(frame_width, frame_height), src,
+                  src_pitch, frame_width, frame_height,
+                  _chain->chain.pixel_size);
             d3d9_sw_fb_src_end(&d3d->sw_fb, frame, d.tex);
          }
       }

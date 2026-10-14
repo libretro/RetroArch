@@ -64,8 +64,16 @@ static INLINE bool d3d9_sw_fb_lend(d3d9_sw_fb_t *fb, LPDIRECT3DTEXTURE9 tex,
       return false;
    dims = VIDEO_SCALE_PACK(out->width, out->height);
 
+   /* Locked as large as asked: a managed texture's runtime uploads
+    * what was locked, so a frame smaller than its texture sends only
+    * itself */
+   if (     fb->tex == tex
+         && (     out->width  > VIDEO_SCALE_W(fb->dims)
+               || out->height > VIDEO_SCALE_H(fb->dims)))
+      d3d9_sw_fb_drop(fb);
    if (fb->tex != tex)
    {
+      RECT r;
       d3d9_sw_fb_drop(fb);
       d3d9_sw_fb_collect(fb);
       /* Rewritten from here: the cached frame no longer lies in it */
@@ -74,16 +82,20 @@ static INLINE bool d3d9_sw_fb_lend(d3d9_sw_fb_t *fb, LPDIRECT3DTEXTURE9 tex,
          fb->frame     = NULL;
          fb->frame_tex = NULL;
       }
+      r.left   = 0;
+      r.top    = 0;
+      r.right  = (LONG)out->width;
+      r.bottom = (LONG)out->height;
       lr.pBits = NULL;
-      if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, NULL,
+      if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, &r,
                   D3DLOCK_NOSYSLOCK)) || !lr.pBits)
          return false;
       fb->tex      = tex;
       fb->bits     = (uint8_t*)lr.pBits;
       fb->pitch    = (unsigned)lr.Pitch;
       fb->tex_dims = tex_dims;
+      fb->dims     = dims;
    }
-   fb->dims          = dims;
 
    out->data         = fb->bits;
    out->pitch        = fb->pitch;
@@ -106,19 +118,21 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
       unsigned last_dims)
 {
    unsigned y;
-   size_t row, tex_row, tex_h, span;
+   size_t row, tex_row, tex_h, span, lend_row, off;
+   bool in_loan, move, clear;
    const uint8_t *src = (const uint8_t*)frame;
    uint8_t       *bits;
 
    if (!fb->tex)
       return;
-   bits    = fb->bits;
-   row     = (size_t)width * bpp;
-   tex_row = (size_t)VIDEO_SCALE_W(fb->tex_dims) * bpp;
-   tex_h   = VIDEO_SCALE_H(fb->tex_dims);
-   span    = (size_t)fb->pitch * tex_h;
+   bits     = fb->bits;
+   row      = (size_t)width * bpp;
+   tex_row  = (size_t)VIDEO_SCALE_W(fb->tex_dims) * bpp;
+   tex_h    = VIDEO_SCALE_H(fb->tex_dims);
+   span     = (size_t)fb->pitch * tex_h;
+   lend_row = (size_t)VIDEO_SCALE_W(fb->dims) * bpp;
 
-   /* Not from the loan, or not inside it: the upload copies it */
+   /* Not from the texture's memory: the upload copies it */
    if (     !src || !height || src < bits
          || pitch < row || row > tex_row || height > tex_h
          || (size_t)(src - bits) + (size_t)(height - 1) * pitch + row
@@ -127,8 +141,37 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
       d3d9_sw_fb_drop(fb);
       return;
    }
+   off     = (size_t)(src - bits);
+   /* Inside what was locked: rows at the loan's pitch, in its size */
+   in_loan = pitch == fb->pitch
+      && off % fb->pitch + row <= lend_row
+      && off / fb->pitch + height <= VIDEO_SCALE_H(fb->dims);
+   move    = src != bits || pitch != fb->pitch;
+   /* Past the frame is cleared as the upload clears it, when the size
+    * changed or the core wrote there */
+   clear   = move
+      || last_dims != VIDEO_SCALE_PACK(width, height)
+      || fb->dims  != VIDEO_SCALE_PACK(width, height);
 
-   if (src != bits || pitch != fb->pitch)
+   /* Anything past the loan is written under a lock of the whole
+    * texture, which then goes up whole: a new size, a window, a frame
+    * at another pitch - not the frame after frame of a steady core */
+   if (!in_loan || clear)
+   {
+      D3DLOCKED_RECT lr;
+      IDirect3DTexture9_UnlockRect(fb->tex, 0);
+      lr.pBits = NULL;
+      if (FAILED(IDirect3DTexture9_LockRect(fb->tex, 0, &lr, NULL,
+                  D3DLOCK_NOSYSLOCK)) || lr.pBits != (void*)bits)
+      {
+         if (lr.pBits)
+            IDirect3DTexture9_UnlockRect(fb->tex, 0);
+         fb->tex = NULL;
+         return;
+      }
+   }
+
+   if (move)
    {
       if (pitch >= fb->pitch)
       {
@@ -140,24 +183,18 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
       else
       {
          uint8_t *tmp = (uint8_t*)malloc(row * height);
-         if (!tmp)
+         if (tmp)
          {
-            d3d9_sw_fb_drop(fb);
-            return;
+            for (y = 0; y < height; y++)
+               memcpy(tmp + y * row, src + (size_t)y * pitch, row);
+            for (y = 0; y < height; y++)
+               memcpy(bits + (size_t)y * fb->pitch, tmp + y * row, row);
+            free(tmp);
          }
-         for (y = 0; y < height; y++)
-            memcpy(tmp + y * row, src + (size_t)y * pitch, row);
-         for (y = 0; y < height; y++)
-            memcpy(bits + (size_t)y * fb->pitch, tmp + y * row, row);
-         free(tmp);
       }
    }
 
-   /* Past the frame is cleared as the upload clears it, when the size
-    * changed or the core wrote there */
-   if (     src != bits || pitch != fb->pitch
-         || last_dims != VIDEO_SCALE_PACK(width, height)
-         || fb->dims  != VIDEO_SCALE_PACK(width, height))
+   if (clear)
    {
       if (row < tex_row)
          for (y = 0; y < height; y++)
@@ -170,6 +207,39 @@ static INLINE void d3d9_sw_fb_settle(d3d9_sw_fb_t *fb, const void *frame,
    fb->frame     = src;
    fb->frame_tex = fb->tex;
    fb->tex       = NULL;
+}
+
+/* @height rows of @width pixels, @pitch apart at @src, into the top
+ * left of @tex, @tex_dims in size, which last held a frame of
+ * @last_dims. Only the frame's rectangle is locked, so a managed
+ * texture's runtime uploads only it; a new size locks the whole
+ * texture and clears what is past the frame. */
+static INLINE void d3d9_frame_upload(LPDIRECT3DTEXTURE9 tex,
+      unsigned tex_dims, unsigned last_dims, const uint8_t *src,
+      unsigned pitch, unsigned width, unsigned height, unsigned bpp)
+{
+   D3DLOCKED_RECT lr;
+   RECT r;
+   unsigned y;
+   size_t row = (size_t)width * bpp;
+   bool whole = last_dims != VIDEO_SCALE_PACK(width, height);
+
+   if (!tex || !src || !width || !height)
+      return;
+   r.left   = 0;
+   r.top    = 0;
+   r.right  = (LONG)width;
+   r.bottom = (LONG)height;
+   lr.pBits = NULL;
+   if (FAILED(IDirect3DTexture9_LockRect(tex, 0, &lr, whole ? NULL : &r,
+               D3DLOCK_NOSYSLOCK)) || !lr.pBits)
+      return;
+   if (whole)
+      memset(lr.pBits, 0, (size_t)VIDEO_SCALE_H(tex_dims) * lr.Pitch);
+   for (y = 0; y < height; y++)
+      memcpy((uint8_t*)lr.pBits + (size_t)y * lr.Pitch,
+            src + (size_t)y * pitch, row);
+   IDirect3DTexture9_UnlockRect(tex, 0);
 }
 
 static INLINE const uint8_t *d3d9_sw_fb_src_begin(d3d9_sw_fb_t *fb, const void *frame,
