@@ -34,8 +34,11 @@
  * queue free for the resumed push - is exercised rather than
  * assumed.
  *
- * No threads: the non-threaded task queue is driven explicitly, so
- * the sweep is ASan+UBSan+LSan. */
+ * The serialisation lanes drive the non-threaded task queue
+ * explicitly.  One lane runs the threaded queue with the fake's
+ * operations made asynchronous, as natt.c's are: the device is busy
+ * until a transfer's callback clears it on the main thread and wakes
+ * the task, and meanwhile the task parks rather than spinning. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,9 +47,13 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <queues/task_queue.h>
+#include <retro_atomic.h>
+#include <retro_timers.h>
+#include <features/features_cpu.h>
 
 #include "../../../network/natt.h"
 #include "../../../network/netplay/netplay.h"
+#include "../../../tasks/tasks_internal.h"
 #include <compat/strl.h>
 
 static unsigned failures = 0;
@@ -84,6 +91,63 @@ static void fake_record(char c)
    fake_order[fake_order_len] = '\0';
 }
 
+/* Asynchronous mode, for the threaded lane: an operation leaves the
+ * device busy and hands completion to a task standing in for the
+ * transfer, whose callback clears busy and wakes the waiter, as
+ * natt.c's callbacks do. */
+static int fake_async = 0;
+
+static void fake_transfer_handler(retro_task_t *task)
+{
+   retro_time_t *due = (retro_time_t*)task->state;
+   if (cpu_features_get_time_usec() >= *due)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   else
+      retro_sleep(1);
+}
+
+static void fake_transfer_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   struct natt_device *device = (struct natt_device*)user_data;
+   (void)task_data;
+   (void)err;
+   free(task->state);
+   task->state = NULL;
+   retro_atomic_store_release_int(&device->busy, 0);
+   task_queue_wake(device->waiter);
+}
+
+static void fake_complete(struct natt_device *device)
+{
+   retro_task_t *task;
+   retro_time_t *due;
+   if (     !fake_async
+         || !(task = task_init())
+         || !(due  = (retro_time_t*)malloc(sizeof(*due))))
+   {
+      retro_atomic_store_release_int(&device->busy, 0);
+      return;
+   }
+   *due            = cpu_features_get_time_usec() + 20000;
+   task->state     = due;
+   task->handler   = fake_transfer_handler;
+   task->callback  = fake_transfer_done;
+   task->user_data = device;
+   task->flags    |= RETRO_TASK_FLG_MUTE;
+   retro_atomic_store_release_int(&device->busy, 1);
+   task_queue_push(task);
+}
+
+/* The handler's parks, counted on the way into the real queue. */
+static retro_atomic_int_t parks;
+void __real_task_queue_park(retro_task_t *task, retro_time_t horizon_usec);
+void __wrap_task_queue_park(retro_task_t *task, retro_time_t horizon_usec)
+{
+   retro_atomic_fetch_add_int(&parks, 1);
+   __real_task_queue_park(task, horizon_usec);
+}
+
 bool natt_init(struct natt_discovery *discovery)
 {
    return true;
@@ -96,13 +160,17 @@ bool natt_device_next(struct natt_discovery *discovery,
     * task.  "Still searching" is a device with no description: the
     * handler skips it and comes back on its next invocation, which
     * is what makes the fake take a known number of ticks. */
+   /* natt.c resets what it parses, not the waiter or busy. */
+   uint32_t waiter = device->waiter;
    if (fake_steps_remaining > 0)
    {
       fake_steps_remaining--;
       memset(device, 0, sizeof(*device));
+      device->waiter = waiter;
       return true;
    }
    memset(device, 0, sizeof(*device));
+   device->waiter = waiter;
    /* Enough of a device for the handler to accept: a description, a
     * service type, and a loopback address that find_local_address()
     * can connect a UDP socket to in order to learn a local address. */
@@ -113,7 +181,7 @@ bool natt_device_next(struct natt_discovery *discovery,
    device->addr.sin_family      = AF_INET;
    device->addr.sin_port        = htons(1900);
    device->addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   device->busy                 = false;
+   retro_atomic_store_release_int(&device->busy, 0);
    return true;
 }
 
@@ -123,14 +191,14 @@ void natt_device_end(struct natt_discovery *discovery)
 
 bool natt_query_device(struct natt_device *device)
 {
-   device->busy = false;
+   fake_complete(device);
    return true;
 }
 
 bool natt_external_address(struct natt_device *device)
 {
-   device->busy                = false;
    device->ext_addr.sin_family = AF_INET;
+   fake_complete(device);
    return true;
 }
 
@@ -139,7 +207,7 @@ bool natt_open_port(struct natt_device *device,
 {
    fake_open_calls++;
    fake_record('O');
-   device->busy     = false;
+   fake_complete(device);
    /* The real natt_open_port publishes the device on the request;
     * the close path validates against it. */
    request->device  = device;
@@ -152,7 +220,7 @@ bool natt_close_port(struct natt_device *device,
 {
    fake_close_calls++;
    fake_record('C');
-   device->busy     = false;
+   fake_complete(device);
    request->success = true;
    return true;
 }
@@ -345,6 +413,52 @@ static void lane_overflow_refused(void)
       fprintf(stderr, "[pass] overflow lane\n");
 }
 
+/* Threaded queue, asynchronous device: each wait on a transfer parks
+ * until the transfer's callback wakes it - well inside the one-second
+ * watchdog - and discovery parks between looks. */
+static void lane_threaded_waits_park(void)
+{
+   unsigned     had = failures;
+   retro_time_t start;
+   retro_time_t took;
+   int          n;
+
+   reset_all();
+   task_queue_deinit();
+   task_queue_init(true, NULL);
+   fake_async           = 1;
+   fake_steps_remaining = 2;
+   retro_atomic_store_release_int(&parks, 0);
+
+   start = cpu_features_get_time_usec();
+   CHECK(task_push_netplay_nat_traversal(&req, 55435),
+         "open push refused");
+   while (queue_busy() && cpu_features_get_time_usec() - start < 5000000)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   took = cpu_features_get_time_usec() - start;
+   n    = retro_atomic_load_acquire_int(&parks);
+
+   CHECK(fake_open_calls == 1, "expected one open, got %u",
+         fake_open_calls);
+   CHECK(req.status == NAT_TRAVERSAL_STATUS_OPENED,
+         "expected OPENED, got %d", (int)req.status);
+   /* Two discovery looks and three transfers, each a park or more. */
+   CHECK(n >= 5, "the task parked %d times", n);
+   CHECK(took < 900000,
+         "the transfers' callbacks did not wake the task (%lld us)",
+         (long long)took);
+
+   fake_async = 0;
+   task_queue_deinit();
+   task_queue_init(false, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] threaded lane: %d parks, %lld us\n", n,
+            (long long)took);
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -353,6 +467,7 @@ int main(void)
    lane_push_while_busy_does_not_block();
    lane_close_then_open_order();
    lane_overflow_refused();
+   lane_threaded_waits_park();
 
    task_queue_deinit();
 

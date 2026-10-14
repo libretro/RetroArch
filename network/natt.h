@@ -18,6 +18,7 @@
 
 #include <libretro.h>
 #include <boolean.h>
+#include <retro_atomic.h>
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -56,7 +57,11 @@ struct natt_device
    char desc        [256];
    char control     [256];
    char service_type[256];
-   bool busy;
+   /* The task waiting on the device's transfers, woken when one ends. */
+   uint32_t waiter;
+   /* Set while a transfer is in flight; cleared by its callback on the
+    * main thread, read by the task on its worker. */
+   retro_atomic_int_t busy;
 };
 
 struct natt_request

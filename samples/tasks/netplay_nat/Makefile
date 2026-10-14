@@ -39,7 +39,8 @@ DEFINES := -DHAVE_NETWORKING -DHAVE_NETPLAY -DHAVE_THREADS
 
 CFLAGS  += -Wall -std=gnu99 -g1 $(DEFINES) \
            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
-LDFLAGS += -lpthread -lm
+# --wrap=task_queue_park so the threaded lane can count the task's parks.
+LDFLAGS += -Wl,--wrap=task_queue_park -lpthread -lm
 
 # The samples workflow passes SANITIZER=address,undefined; honour it.
 ifneq ($(SANITIZER),)

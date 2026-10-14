@@ -161,15 +161,25 @@ done:
    return ret;
 }
 
+/* Watchdog for a pass waiting on a transfer, which wakes it. */
+#define NAT_TRAVERSAL_BUSY_PARK_USEC      1000000
+/* Between looks for a discovery reply. */
+#define NAT_TRAVERSAL_DISCOVERY_PARK_USEC 10000
+
 static void task_netplay_nat_traversal_handler(retro_task_t *task)
 {
    static struct natt_discovery discovery = {-1, -1};
    static struct natt_device    device;
    struct nat_traversal_data   *data      = (struct nat_traversal_data*)task->task_data;
 
-   /* Try again on the next call. */
-   if (device.busy)
+   /* A transfer is in flight: its callback wakes this task. */
+   if (retro_atomic_load_acquire_int(&device.busy))
+   {
+      task_queue_park(task, NAT_TRAVERSAL_BUSY_PARK_USEC);
       return;
+   }
+   /* Only written with nothing in flight, so no callback reads it. */
+   device.waiter = task->ident;
 
    switch (data->status)
    {
@@ -190,8 +200,13 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
                goto finished;
             }
 
+            /* No reply yet: nothing wakes a task on a datagram, so
+             * look again shortly. */
             if (!*device.desc)
+            {
+               task_queue_park(task, NAT_TRAVERSAL_DISCOVERY_PARK_USEC);
                break;
+            }
             if (!find_local_address(&device, &data->request))
                break;
 
