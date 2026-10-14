@@ -25,6 +25,7 @@
 
 #include <retro_common_api.h>
 #include <boolean.h>
+#include <formats/rh265_hw.h>
 
 RETRO_BEGIN_DECLS
 
@@ -40,6 +41,13 @@ bool d3d11_video_decode_init_adapter(void *adapter);
 /* Withdraws it and frees what closed decoders left. Every decoder must
  * be closed by then. */
 void d3d11_video_decode_deinit(void);
+
+/* Main 8-bit/NV12 only. The adapter must be initialized. Owner-thread
+ * calls; close before deinit. A session borrows ops->decoder until close.
+ * Output leases keep shared handles alive through the existing fences. */
+bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
+      unsigned slots, rh265_hw_ops_t *ops);
+void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops);
 
 RETRO_END_DECLS
 

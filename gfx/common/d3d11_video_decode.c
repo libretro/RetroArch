@@ -57,6 +57,7 @@
 
 #include "d3d11_video_decode.h"
 #include "dxva_h264.h"
+#include "dxva_hevc_rh265.h"
 #include "../video_defines.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -80,6 +81,8 @@
 /* Kept here, so that nothing needs the IIDs linked in */
 static const GUID d3d11vd_h264_vld_nofgt =
    { 0x1b81be68, 0xa0c7, 0x11d3, { 0xb9, 0x84, 0x00, 0xc0, 0x4f, 0x2e, 0x73, 0xc5 } };
+static const GUID d3d11vd_hevc_main =
+   { 0x5b11d51b, 0x2f4c, 0x4452, { 0xbc, 0xc3, 0x09, 0xf2, 0xa1, 0x16, 0x0c, 0xc0 } };
 static const GUID d3d11vd_iid_dxgi_device =
    { 0x54ec77fa, 0x1377, 0x44e6, { 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c } };
 static const GUID d3d11vd_iid_dxgi_resource1 =
@@ -109,6 +112,8 @@ typedef struct d3d11vd_dec
    ID3D11Texture2D              *readback;
    ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS];
 
+   GUID profile;
+   unsigned bitstream_raw;
    unsigned coded_w, coded_h, mbs;
    unsigned visible_w, visible_h;
    unsigned crop_x, crop_y;
@@ -129,7 +134,7 @@ typedef struct d3d11vd_dec
    uint64_t     ready_value;
 
    uint8_t pp[DXVA_H264_PP_SIZE];
-   uint8_t qm[DXVA_H264_QM_SIZE];
+   uint8_t qm[DXVA_HEVC_QM_SIZE];
    uint8_t sc[D3D11VD_MAX_SLICES * DXVA_H264_SLICE_SIZE];
 } d3d11vd_dec_t;
 
@@ -276,11 +281,11 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
    UINT n  = 0, i;
 
    if (     FAILED(d->vdev->lpVtbl->CheckVideoDecoderFormat(d->vdev,
-               &d3d11vd_h264_vld_nofgt, DXGI_FORMAT_NV12, &ok))
+               &d->profile, DXGI_FORMAT_NV12, &ok))
          || !ok)
       return false;
    memset(&desc, 0, sizeof(desc));
-   desc.Guid         = d3d11vd_h264_vld_nofgt;
+   desc.Guid         = d->profile;
    desc.SampleWidth  = d->coded_w;
    desc.SampleHeight = d->coded_h;
    desc.OutputFormat = DXGI_FORMAT_NV12;
@@ -292,7 +297,7 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
       if (FAILED(d->vdev->lpVtbl->GetVideoDecoderConfig(d->vdev, &desc,
             i, &cfg)))
          continue;
-      if (cfg.ConfigBitstreamRaw != 2)
+      if (cfg.ConfigBitstreamRaw != d->bitstream_raw)
          continue;
       *min_targets = cfg.ConfigMinRenderTargetBuffCount;
       return SUCCEEDED(d->vdev->lpVtbl->CreateVideoDecoder(d->vdev,
@@ -323,7 +328,7 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    for (i = 0; i < d->slots; i++)
    {
       memset(&vd, 0, sizeof(vd));
-      vd.DecodeProfile         = d3d11vd_h264_vld_nofgt;
+      vd.DecodeProfile         = d->profile;
       vd.ViewDimension         = D3D11_VDOV_DIMENSION_TEXTURE2D;
       vd.Texture2D.ArraySlice  = i;
       if (FAILED(d->vdev->lpVtbl->CreateVideoDecoderOutputView(d->vdev,
@@ -406,6 +411,8 @@ static void *d3d11vd_open(void *user, const rh264_hw_sps_t *sps,
    d3d11vd_grave_reap(false);
    if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
       return NULL;
+   d->profile   = d3d11vd_h264_vld_nofgt;
+   d->bitstream_raw = 2;
    d->slots     = slots;
    d->coded_w   = (unsigned)sps->width_in_mbs  * 16;
    d->coded_h   = (unsigned)sps->height_in_mbs * 16;
@@ -467,8 +474,8 @@ static bool d3d11vd_fill(d3d11vd_dec_t *d,
       memcpy(ptr, src, size);
       memset((uint8_t*)ptr + size, 0, padded - size);
    }
-   d->vctx->lpVtbl->ReleaseDecoderBuffer(d->vctx, d->decoder, type);
-   return cap >= padded && ptr;
+   return SUCCEEDED(d->vctx->lpVtbl->ReleaseDecoderBuffer(d->vctx,
+         d->decoder, type)) && cap >= padded && ptr;
 }
 
 static void d3d11vd_desc(D3D11_VIDEO_DECODER_BUFFER_DESC *b,
@@ -654,6 +661,92 @@ static int d3d11vd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    return 0;
 }
 
+static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
+      const rh265_access_unit_t *au, const rh265_nal_t *slices,
+      const rh265_hw_picture_t *pending)
+{
+   d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
+   dxva_hevc_picture_t picture;
+   dxva_hevc_scaling_t matrix;
+   D3D11_VIDEO_DECODER_BUFFER_DESC bufs[4];
+   UINT cap = 0, n = 0;
+   void *ptr = NULL;
+   size_t written = 0;
+   unsigned i;
+   HRESULT hr;
+   bool ok, scaling;
+
+   if (!d || !params || !au || !slices || !pending
+         || params->bit_depth != 8 || params->width != (int)d->coded_w
+         || params->height != (int)d->coded_h
+         || params->crop_left != (int)d->crop_x
+         || params->crop_top != (int)d->crop_y
+         || params->crop_right != (int)(d->coded_w - d->crop_x - d->visible_w)
+         || params->crop_bottom != (int)(d->coded_h - d->crop_y - d->visible_h)
+         || !au->num_slices || au->num_slices > D3D11VD_MAX_SLICES
+         || pending->slot >= d->slots
+         || !dxva_hevc_picture_from_state(&picture, params, au, pending)
+         || !dxva_hevc_pic_params(d->pp, &picture, d->feedback + 1))
+      return -1;
+   for (i = 0; i < pending->num_refs; i++)
+      if (pending->refs[i].slot >= d->slots)
+         return -1;
+   scaling = !!params->scaling_list_enabled;
+   if (scaling)
+   {
+      memcpy(matrix.list4, params->list4, sizeof(matrix.list4));
+      memcpy(matrix.list8, params->list8, sizeof(matrix.list8));
+      memcpy(matrix.list16, params->list16, sizeof(matrix.list16));
+      memcpy(matrix.list32, params->list32, sizeof(matrix.list32));
+      memcpy(matrix.dc16, params->dc16, sizeof(matrix.dc16));
+      memcpy(matrix.dc32, params->dc32, sizeof(matrix.dc32));
+      if (!dxva_hevc_qmatrix_raster(d->qm, &matrix))
+         return -1;
+   }
+
+   hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
+         d->view[pending->slot], 0, NULL);
+   if (hr == E_PENDING)
+      return 1;
+   if (FAILED(hr))
+      return -1;
+   d->feedback++;
+   ok = false;
+   if (SUCCEEDED(d->vctx->lpVtbl->GetDecoderBuffer(d->vctx, d->decoder,
+         D3D11_VIDEO_DECODER_BUFFER_BITSTREAM, &cap, &ptr)))
+   {
+      ok = dxva_hevc_pack_slices((uint8_t*)ptr, cap, d->sc, sizeof(d->sc),
+            slices, au->num_slices, &written);
+      hr = d->vctx->lpVtbl->ReleaseDecoderBuffer(d->vctx, d->decoder,
+            D3D11_VIDEO_DECODER_BUFFER_BITSTREAM);
+      ok = ok && SUCCEEDED(hr);
+   }
+   ok = ok && d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS,
+         d->pp, DXVA_HEVC_PP_SIZE, DXVA_HEVC_PP_SIZE);
+   if (ok && scaling)
+      ok = d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX,
+            d->qm, DXVA_HEVC_QM_SIZE, DXVA_HEVC_QM_SIZE);
+   ok = ok && d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL,
+         d->sc, au->num_slices * DXVA_HEVC_SLICE_SIZE,
+         au->num_slices * DXVA_HEVC_SLICE_SIZE);
+   if (ok)
+   {
+      d3d11vd_desc(&bufs[n++], D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS,
+            DXVA_HEVC_PP_SIZE, 0);
+      if (scaling)
+         d3d11vd_desc(&bufs[n++], D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX,
+               DXVA_HEVC_QM_SIZE, 0);
+      d3d11vd_desc(&bufs[n++], D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL,
+            au->num_slices * DXVA_HEVC_SLICE_SIZE, 0);
+      d3d11vd_desc(&bufs[n++], D3D11_VIDEO_DECODER_BUFFER_BITSTREAM,
+            (UINT)written, 0);
+      ok = SUCCEEDED(d->vctx->lpVtbl->SubmitDecoderBuffers(d->vctx,
+            d->decoder, n, bufs));
+   }
+   hr = d->vctx->lpVtbl->DecoderEndFrame(d->vctx, d->decoder);
+   return ok && SUCCEEDED(hr) ? 0 : -1;
+}
+
 static void d3d11vd_close(void *dec)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
@@ -666,6 +759,66 @@ static void d3d11vd_close(void *dec)
       d3d11vd_grave_push(d);
    retro_atomic_fetch_add_int(&d3d11vd.live, -1);
    d3d11vd_grave_reap(false);
+}
+
+bool d3d11_video_decode_hevc_open(const rh265_video_params_t *params,
+      unsigned slots, rh265_hw_ops_t *ops)
+{
+   settings_t *settings = config_get_ptr();
+   dxva_hevc_picture_t picture;
+   d3d11vd_dec_t *d;
+   unsigned min_targets = 0;
+   if (!ops)
+      return false;
+   memset(ops, 0, sizeof(*ops));
+   memset(&picture, 0, sizeof(picture));
+   if (!d3d11vd.up || !params || params->bit_depth != 8
+         || !slots || slots > D3D11VD_MAX_SLOTS
+         || params->max_dec_pic_buffering > (int)slots
+         || params->crop_left < 0 || params->crop_right < 0
+         || params->crop_top < 0 || params->crop_bottom < 0
+         || params->width <= 0 || params->height <= 0
+         || params->crop_left >= params->width
+         || params->crop_right >= params->width - params->crop_left
+         || params->crop_top >= params->height
+         || params->crop_bottom >= params->height - params->crop_top
+         || ((params->width | params->height | params->crop_left
+               | params->crop_right | params->crop_top | params->crop_bottom) & 1)
+         || !dxva_hevc_params_from_rh265(&picture, params)
+         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF))
+      return false;
+   d3d11vd_grave_reap(false);
+   if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d))))
+      return false;
+   d->profile = d3d11vd_hevc_main;
+   d->bitstream_raw = 1;
+   d->slots = slots;
+   d->coded_w = (unsigned)params->width;
+   d->coded_h = (unsigned)params->height;
+   d->crop_x = (unsigned)params->crop_left;
+   d->crop_y = (unsigned)params->crop_top;
+   d->visible_w = d->coded_w - d->crop_x - (unsigned)params->crop_right;
+   d->visible_h = d->coded_h - d->crop_y - (unsigned)params->crop_bottom;
+   d->gen = (unsigned)retro_atomic_fetch_add_int(&d3d11vd.serial, 1) + 1;
+   if (!d3d11vd_make_device(d) || !d3d11vd_make_decoder(d, &min_targets)
+         || !d3d11vd_make_dpb(d, min_targets) || !d3d11vd_make_outputs(d))
+   {
+      d3d11vd_destroy(d);
+      return false;
+   }
+   retro_atomic_fetch_add_int(&d3d11vd.live, 1);
+   ops->decoder = d;
+   ops->decode = d3d11vd_hevc_decode;
+   ops->output = d3d11vd_output;
+   return true;
+}
+
+void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops)
+{
+   if (!ops)
+      return;
+   d3d11vd_close(ops->decoder);
+   memset(ops, 0, sizeof(*ops));
 }
 
 /* ---- the backend ---- */

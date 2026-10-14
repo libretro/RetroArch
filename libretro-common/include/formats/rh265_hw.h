@@ -107,7 +107,7 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
    if (idr && (h->num_negative || h->num_positive || h->short_term_rps_bits
          || h->predictor_delta_pocs)) return -1;
    anchor = type >= 16 && (type != 21 || !s->started);
-   max_lsb = INT64_C(1) << params->log2_max_poc_lsb;
+   max_lsb = (int64_t)1 << params->log2_max_poc_lsb;
    if (h->poc_lsb < 0 || h->poc_lsb >= max_lsb || (idr && h->poc_lsb)) return -1;
    if (anchor) poc = idr ? 0 : h->poc_lsb;
    else
