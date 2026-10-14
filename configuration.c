@@ -10384,6 +10384,10 @@ bool input_remapping_load_file(void *data, const char *path)
             if (!config_get_int(conf, ident, &_remap))
                _remap = RETROK_UNKNOWN;
 
+            if (   _remap < (int)RETROK_UNKNOWN
+                || _remap >= (int)RETROK_LAST)
+               _remap = RETROK_UNKNOWN;
+
             configuration_set_uint(settings,
                   settings->uints.input_keymapper_ids[i][j], _remap);
          }
@@ -10416,6 +10420,10 @@ bool input_remapping_load_file(void *data, const char *path)
             _remap = -1;
 
             if (!config_get_int(conf, ident, &_remap))
+               _remap = RETROK_UNKNOWN;
+
+            if (   _remap < (int)RETROK_UNKNOWN
+                || _remap >= (int)RETROK_LAST)
                _remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
