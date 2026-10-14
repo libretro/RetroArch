@@ -27,11 +27,13 @@ DEPS     := $(RA)/gfx/common/dxva_h264.h d3d11_video_decode_test_data.h
 BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
             $(RA)/gfx/common/d3d11_video_decode.h frontend_stubs.h \
             $(RA)/gfx/common/dxva_hevc.h $(RA)/gfx/common/dxva_hevc_rh265.h \
+            $(RA)/gfx/common/dxva_vp9.h $(RA)/libretro-common/include/formats/rvp9_hw.h \
             $(RA)/libretro-common/include/formats/rh265.h \
             $(RA)/libretro-common/include/formats/video_hw_frame.h \
             $(RA)/libretro-common/include/formats/rh265_hw.h
 
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
+TARGETS += dxva_vp9_test$(EXE)
 TARGETS += rh265_slice_snapshot_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
@@ -45,6 +47,10 @@ WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
 
 all: $(TARGETS)
+
+dxva_vp9_test$(EXE): dxva_vp9_test.c $(RA)/gfx/common/dxva_vp9.h \
+      $(RA)/libretro-common/include/formats/rvp9_hw.h
+	$(CC) $(CFLAGS) -o $@ dxva_vp9_test.c $(LDFLAGS)
 
 hevc_device_fixture_test$(EXE): hevc_device_fixture_test.c hevc_device_data.h \
       $(RA)/libretro-common/formats/mp4/rmp4.c \
@@ -94,9 +100,11 @@ d3d11_video_decode_mock_test$(EXE): d3d11_video_decode_mock_test.c \
 
 d3d11_video_decode_test$(EXE): d3d11_video_decode_test.c \
       $(DECODERS) $(DEPS) $(BACKEND) hevc_device_data.h \
+      $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) $(WINFLAGS) -o $@ d3d11_video_decode_test.c \
-	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -ld3d11 -lm
+	   $(DECODERS) $(RA)/libretro-common/formats/h265/rh265.c \
+	   $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -ld3d11 -lm
 
 PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/formats/image_transfer.c \
@@ -128,12 +136,15 @@ hevc_color_stream_test$(EXE): hevc_color_stream_test.c hevc_color_data.h \
 	   $(LDFLAGS) -Wl,--gc-sections -lm
 
 d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
-      d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES)
+      d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES) \
+      $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/vp9/rvp9_recon.inc
 	$(CC) $(CFLAGS) $(WINFLAGS) -ffunction-sections -fdata-sections -o $@ \
 	   d3d11_backpressure_test.c $(DECODERS) $(PLAYER_SOURCES) \
+	   $(RA)/libretro-common/formats/vp9/rvp9.c \
 	   $(LDFLAGS) -Wl,--gc-sections $(if $(filter .exe,$(EXE)),-ld3d11) -lm
 
 check: all
+	$(RUNNER) ./dxva_vp9_test$(EXE)
 	$(RUNNER) ./dxva_h264_test$(EXE)
 	$(RUNNER) ./dxva_hevc_test$(EXE)
 	$(RUNNER) ./dxva_hevc_access_unit_test$(EXE)
@@ -157,6 +168,7 @@ ifeq ($(EXE),.exe)
 endif
 
 clean:
+	rm -f dxva_vp9_test dxva_vp9_test.exe
 	rm -f dxva_hevc_test dxva_hevc_test.exe
 	rm -f dxva_hevc_access_unit_test dxva_hevc_access_unit_test.exe
 	rm -f rh265_hw_state_test rh265_hw_state_test.exe

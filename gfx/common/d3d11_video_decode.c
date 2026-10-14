@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* H.264/HEVC hardware backend on D3D11 video.
+/* H.264/HEVC/VP9 hardware backend on D3D11 video.
  *
  * A decoder is one stream, on a device of its own made on the driver's
  * adapter: its immediate context is used by the decoding thread alone,
@@ -50,6 +50,7 @@
 #include <retro_atomic.h>
 #include <formats/rh264.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #include <formats/video_hw_frame.h>
 
 #ifdef HAVE_CONFIG_H
@@ -59,6 +60,7 @@
 #include "d3d11_video_decode.h"
 #include "dxva_h264.h"
 #include "dxva_hevc_rh265.h"
+#include "dxva_vp9.h"
 #include "../video_defines.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -86,6 +88,10 @@ static const GUID d3d11vd_hevc_main =
    { 0x5b11d51b, 0x2f4c, 0x4452, { 0xbc, 0xc3, 0x09, 0xf2, 0xa1, 0x16, 0x0c, 0xc0 } };
 static const GUID d3d11vd_hevc_main10 =
    { 0x107af0e0, 0xef1a, 0x4d19, { 0xab, 0xa8, 0x67, 0xa1, 0x63, 0x07, 0x3d, 0x13 } };
+static const GUID d3d11vd_vp9_profile0 =
+   { 0x463707f8, 0xa1d0, 0x4585, { 0x87, 0x6d, 0x83, 0xaa, 0x6d, 0x60, 0xb8, 0x9e } };
+static const GUID d3d11vd_vp9_profile2 =
+   { 0xa4c749ef, 0x6ecf, 0x48aa, { 0x84, 0x48, 0x50, 0xa7, 0xa1, 0x16, 0x5f, 0xf7 } };
 static const GUID d3d11vd_iid_dxgi_device =
    { 0x54ec77fa, 0x1377, 0x44e6, { 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c } };
 static const GUID d3d11vd_iid_dxgi_resource1 =
@@ -120,11 +126,13 @@ typedef struct d3d11vd_dec
    unsigned bit_depth;
    unsigned bitstream_raw;
    unsigned coded_w, coded_h, mbs;
+   unsigned decoder_w, decoder_h;
    unsigned visible_w, visible_h;
    unsigned crop_x, crop_y;
    unsigned slots;
    unsigned gen;                  /* names this decoder's handles     */
    uint32_t feedback;
+   unsigned yuv[D3D11VD_MAX_SLOTS];
 
    ID3D11Texture2D *out[D3D11VD_OUTS];
    HANDLE           out_handle[D3D11VD_OUTS];
@@ -293,8 +301,8 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
       return false;
    memset(&desc, 0, sizeof(desc));
    desc.Guid         = d->profile;
-   desc.SampleWidth  = d->coded_w;
-   desc.SampleHeight = d->coded_h;
+   desc.SampleWidth  = d->decoder_w ? d->decoder_w : d->coded_w;
+   desc.SampleHeight = d->decoder_h ? d->decoder_h : d->coded_h;
    desc.OutputFormat = d->format;
    if (FAILED(d->vdev->lpVtbl->GetVideoDecoderConfigCount(d->vdev,
          &desc, &n)))
@@ -631,6 +639,7 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->pixfmt     = d->format == DXGI_FORMAT_P010
       ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    out->layout     = d->gen;
+   out->yuv        = d->yuv[slot];
    return 0;
 }
 
@@ -834,6 +843,102 @@ void d3d11_video_decode_hevc_close(rh265_hw_ops_t *ops)
 {
    if (!ops)
       return;
+   d3d11vd_close(ops->decoder);
+   memset(ops, 0, sizeof(*ops));
+}
+
+static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
+      const rvp9_hw_picture_t *picture)
+{
+   d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
+   const rvp9_hdr *h;
+   D3D11_VIDEO_DECODER_BUFFER_DESC bufs[3];
+   UINT padded;
+   unsigned i;
+   HRESULT hr;
+   bool ok;
+   if (!d || !packet || !picture || !size || size > UINT32_MAX - 127
+         || d->feedback == UINT32_MAX) return -1;
+   h = &picture->header;
+   if (h->w != (int)d->visible_w || h->h != (int)d->visible_h
+         || h->bit_depth != (int)d->bit_depth || h->color_space < 0 || h->color_space > 3
+         || h->uncomp_size >= size || h->first_partition_size < 1
+         || (size_t)h->first_partition_size >= size - h->uncomp_size
+         || picture->slot < 0 || (unsigned)picture->slot >= d->slots
+         || !dxva_vp9_pic_params(d->pp, picture, d->feedback + 1)) return -1;
+   for (i = 0; i < RVP9_REF_FRAMES; i++)
+      if (picture->reference_slots[i] >= (int)d->slots) return -1;
+   padded = ((UINT)size + 127) & ~127u;
+   memset(d->sc, 0, DXVA_VP9_SLICE_SIZE);
+   dxva_vp9_put32(d->sc + 4, padded);
+   hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
+         d->view[picture->slot], 0, NULL);
+   if (hr == E_PENDING) return 1;
+   if (FAILED(hr)) return -1;
+   d->feedback++;
+   ok = d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_BITSTREAM, packet, (UINT)size, padded)
+      && d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS,
+            d->pp, DXVA_VP9_PP_SIZE, DXVA_VP9_PP_SIZE)
+      && d3d11vd_fill(d, D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL,
+            d->sc, DXVA_VP9_SLICE_SIZE, DXVA_VP9_SLICE_SIZE);
+   if (ok)
+   {
+      d3d11vd_desc(&bufs[0], D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS, DXVA_VP9_PP_SIZE, 0);
+      d3d11vd_desc(&bufs[1], D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL, DXVA_VP9_SLICE_SIZE, 0);
+      d3d11vd_desc(&bufs[2], D3D11_VIDEO_DECODER_BUFFER_BITSTREAM, padded, 0);
+      ok = SUCCEEDED(d->vctx->lpVtbl->SubmitDecoderBuffers(d->vctx, d->decoder, 3, bufs));
+   }
+   hr = d->vctx->lpVtbl->DecoderEndFrame(d->vctx, d->decoder);
+   if (!ok || FAILED(hr)) return -1;
+   d->yuv[picture->slot] = (h->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
+         | (h->color_space == 2 ? IMAGE_YUV_FLAG_BT709 : 0);
+   return 0;
+}
+
+bool d3d11_video_decode_vp9_open(const rvp9_hdr *header,
+      unsigned slots, rvp9_hw_ops_t *ops)
+{
+   settings_t *settings = config_get_ptr();
+   rvp9_hw_picture_t picture;
+   d3d11vd_dec_t *d;
+   uint8_t pp[DXVA_VP9_PP_SIZE];
+   unsigned i, min_targets = 0;
+   if (!ops) return false;
+   memset(ops, 0, sizeof(*ops));
+   if (!d3d11vd.up || !header || header->frame_type || header->show_existing_frame
+         || slots < 10 || slots > D3D11VD_MAX_SLOTS
+         || header->w <= 0 || header->h <= 0 || ((header->w | header->h) & 1)
+         || header->color_space < 0 || header->color_space > 3
+         || !(d3d11vd.import_formats & (header->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12))
+         || (settings && settings->uints.video_hw_decode == VIDEO_HW_DECODE_OFF)) return false;
+   memset(&picture, 0, sizeof(picture));
+   picture.header = *header; picture.previous_slot = -1;
+   for (i = 0; i < RVP9_REF_FRAMES; i++) picture.reference_slots[i] = -1;
+   for (i = 0; i < RVP9_REFS_PER_FRAME; i++) picture.named_slots[i] = -1;
+   if (!dxva_vp9_pic_params(pp, &picture, 1)) return false;
+   d3d11vd_grave_reap(false);
+   if (!(d = (d3d11vd_dec_t*)calloc(1, sizeof(*d)))) return false;
+   d->bit_depth = (unsigned)header->bit_depth;
+   d->profile = header->profile == 2 ? d3d11vd_vp9_profile2 : d3d11vd_vp9_profile0;
+   d->format = d->bit_depth == 10 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
+   d->bitstream_raw = 1; d->slots = slots;
+   d->decoder_w = d->visible_w = (unsigned)header->w;
+   d->decoder_h = d->visible_h = (unsigned)header->h;
+   /* VP9 surfaces are padded independently of the frame's coded dimensions. */
+   d->coded_w = (d->visible_w + 127) & ~127u;
+   d->coded_h = (d->visible_h + 127) & ~127u;
+   d->gen = (unsigned)retro_atomic_fetch_add_int(&d3d11vd.serial, 1) + 1;
+   if (!d3d11vd_make_device(d) || !d3d11vd_make_decoder(d, &min_targets)
+         || !d3d11vd_make_dpb(d, min_targets) || !d3d11vd_make_outputs(d))
+   { d3d11vd_destroy(d); return false; }
+   retro_atomic_fetch_add_int(&d3d11vd.live, 1);
+   ops->decoder = d; ops->decode = d3d11vd_vp9_decode; ops->output = d3d11vd_output;
+   return true;
+}
+
+void d3d11_video_decode_vp9_close(rvp9_hw_ops_t *ops)
+{
+   if (!ops) return;
    d3d11vd_close(ops->decoder);
    memset(ops, 0, sizeof(*ops));
 }

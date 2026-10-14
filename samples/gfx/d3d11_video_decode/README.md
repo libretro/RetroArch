@@ -191,3 +191,45 @@ oracles. For an external short-term regression, set
 `HEVC_CONFORMANCE_REQUIRE_LT=0`; long-term entries remain required by default.
 A four-picture 3840x2160 Main8 preview regression with repeated headers also
 matches FFmpeg through the native D3D11 and D3D12 readers.
+
+## Explicit VP9 device decoding
+
+`d3d11_video_decode_vp9_open` offers an explicit profile-0/NV12 or
+profile-2/P010 backend for `rvp9_hw_session_t`. The initialized renderer must
+advertise the matching import format. The device is queried for the actual
+profile, coded size and raw-bitstream configuration. This does not register
+VP9 for automatic WebM/player/thumbnail selection yet.
+
+The initial path accepts even, fixed-size 4:2:0 frames and BT.601/BT.709 output
+matrices (VP9 color spaces 0-3); unsupported color spaces, depth and geometry
+require fallback/reopen. DPB storage is aligned to 128 pixels independently of
+the coded size. Display export reuses the asynchronous shared-texture/fence
+path: no CPU pixel transfer, with one DPB-to-output GPU copy for lease ownership.
+Dropped display frames can bypass export through the common session API.
+
+`dxva_vp9_test` checks the packed 208-byte parameters, including references,
+filter deltas and segmentation, against the Windows SDK on Windows. The D3D11
+mock tests both profiles, BUSY without submission, padded packet/slice buffers,
+output backpressure, delayed close and buffer/submission failures.
+
+Generate external real-device fixtures with:
+
+```
+python3 gen_vp9_device.py /tmp/vp9-device
+```
+
+Set `VP9_TEST_IVF` and `VP9_TEST_RAW` to a matching generated pair before running
+`d3d11_video_decode_test.exe` on Windows. `VP9_REQUIRE_HW=1` makes an unavailable
+VP9 decoder configuration a failure. Each pair is checked through D3D11 and,
+when available, D3D12 shared-handle readers. Readbacks/waits are test-only.
+The generator requires FFmpeg with libvpx-vp9; production decoding does not.
+It packs FFmpeg's decoded planar samples into NV12/P010 directly, avoiding
+swscale range conversion in the oracle.
+
+Native RTX 5090 validation: four 12-frame profile/depth/color/range cases,
+each through D3D11 and D3D12, match every independent reference sample
+(96 decoded-frame comparisons). Eight show-existing replays also match without
+another decoder submission. H.264 and HEVC regression device tests pass.
+This does not establish automatic playback selection, hidden/superframe
+container integration, HDR/tone mapping, changing resolution or wider devices.
+Vulkan VP9 submission remains separate work.

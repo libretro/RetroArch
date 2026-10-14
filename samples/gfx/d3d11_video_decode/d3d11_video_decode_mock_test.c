@@ -290,9 +290,12 @@ static HRESULT STDMETHODCALLTYPE m_check_format(mock_t *m, const GUID *g,
       DXGI_FORMAT f, BOOL *ok)
 {
    *ok = (!memcmp(g, &d3d11vd_h264_vld_nofgt, sizeof(*g))
-      || !memcmp(g, &d3d11vd_hevc_main, sizeof(*g)))
+      || !memcmp(g, &d3d11vd_hevc_main, sizeof(*g))
+      || !memcmp(g, &d3d11vd_vp9_profile0, sizeof(*g)))
       && f == DXGI_FORMAT_NV12;
    if (!memcmp(g, &d3d11vd_hevc_main10, sizeof(*g)) && f == DXGI_FORMAT_P010)
+      *ok = TRUE;
+   if (!memcmp(g, &d3d11vd_vp9_profile2, sizeof(*g)) && f == DXGI_FORMAT_P010)
       *ok = TRUE;
    return S_OK;
 }
@@ -1113,6 +1116,89 @@ static void test_hevc_registry(void)
    rh265_video_close(v);
 }
 
+static void test_vp9(int depth)
+{
+   static rvp9_hw_picture_t p;
+   static const uint8_t packet[7] = {0x82, 0x49, 0x83, 0x42, 1, 2, 3};
+   rvp9_hw_ops_t ops;
+   video_hw_frame_t frames[4], extra;
+   const D3D11_VIDEO_DECODER_BUFFER_DESC *desc;
+   d3d11vd_dec_t *d;
+   unsigned i, formats = d3d11vd.import_formats;
+   int before = live, old_gets, old_begins, old_copies;
+   memset(&p, 0, sizeof(p));
+   p.header.profile = depth == 10 ? 2 : 0; p.header.bit_depth = depth;
+   p.header.w = 320; p.header.h = 192; p.header.show_frame = 1;
+   p.header.subsampling_x = p.header.subsampling_y = 1;
+   p.header.color_space = 2; p.header.color_range = 1;
+   p.header.uncomp_size = 1; p.header.first_partition_size = 1;
+   p.previous_slot = -1;
+   for (i = 0; i < 8; i++) p.reference_slots[i] = -1;
+   for (i = 0; i < 3; i++) p.named_slots[i] = -1;
+   d3d11vd.import_formats = IMAGE_PIXFMT_NV12;
+   if (depth == 10)
+      check("VP9: P010 import required before allocation",
+            !d3d11_video_decode_vp9_open(&p.header, 10, &ops) && live == before);
+   d3d11vd.import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
+   check("VP9: insufficient DPB refused", !d3d11_video_decode_vp9_open(&p.header, 9, &ops));
+   p.header.color_space = 5;
+   check("VP9: unsupported output matrix refused", !d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+   p.header.color_space = 2; views = views_ok = 0;
+   if (!d3d11_video_decode_vp9_open(&p.header, 10, &ops))
+   { check("VP9: decoder opens", 0); d3d11vd.import_formats = formats; return; }
+   d = (d3d11vd_dec_t*)ops.decoder;
+   check("VP9: profile, raw configuration and coded size", dec_raw == 1
+         && dec_desc.SampleWidth == 320 && dec_desc.SampleHeight == 192
+         && !memcmp(&dec_desc.Guid, depth == 10 ? &d3d11vd_vp9_profile2 : &d3d11vd_vp9_profile0, sizeof(GUID))
+         && views == 10 && views_ok == 10);
+   check("VP9: padded DPB, visible shared output", ((mock_t*)d->dpb)->desc.Width == 384
+         && ((mock_t*)d->dpb)->desc.Height == 256 && d->visible_w == 320 && d->visible_h == 192);
+   subs_free(); old_gets = buffer_gets; old_begins = begins; pending_left = 1;
+   check("VP9: BUSY leaves buffers and feedback untouched", ops.decode(d, packet, sizeof(packet), &p) == 1
+         && buffer_gets == old_gets && begins == old_begins && !d->feedback);
+   check("VP9: retry submits exactly once", !ops.decode(d, packet, sizeof(packet), &p)
+         && n_subs == 1 && subs[0].nbufs == 3 && d->feedback == 1);
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS);
+   check("VP9: packed picture parameters", desc && desc->DataSize == DXVA_VP9_PP_SIZE);
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_BITSTREAM);
+   check("VP9: packet without repacking, padded to 128 bytes", desc && desc->DataSize == 128
+         && !memcmp(subs[0].bs, packet, sizeof(packet)));
+   for (i = sizeof(packet); i < 128; i++)
+      if (subs[0].bs[i]) { check("VP9: padding zero", 0); break; }
+   desc = find_desc(&subs[0], D3D11_VIDEO_DECODER_BUFFER_SLICE_CONTROL);
+   check("VP9: one complete padded frame", desc && desc->DataSize == 10
+         && !subs[0].sc[0] && subs[0].sc[4] == 128 && !subs[0].sc[8] && !subs[0].sc[9]);
+   for (i = 0; i < 4; i++)
+      check("VP9: independent output lease", !ops.output(d, 0, &frames[i])
+            && frames[i].width == 320 && frames[i].height == 192
+            && frames[i].pixfmt == (unsigned)(depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
+            && frames[i].yuv == (IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE));
+   old_copies = copies;
+   check("VP9: held leases apply backpressure without a copy", ops.output(d, 0, &extra) == 1 && copies == old_copies);
+   d3d11_video_decode_vp9_close(&ops);
+   check("VP9: close retains unread handles", !ops.decoder && live > before);
+   for (i = 0; i < 4; i++) video_hw_frame_abandon(&frames[i]);
+   d3d11vd_grave_reap(false);
+   check("VP9: final abandon retires decoder", live == before);
+   for (i = 0; i < 4; i++)
+   {
+      views = views_ok = 0; subs_free();
+      check("VP9: fault session opens", d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+      old_begins = begins;
+      if (i == 0) buf_cap[D3D11_VIDEO_DECODER_BUFFER_BITSTREAM] = 1;
+      if (i == 1) release_hr = E_FAIL;
+      if (i == 2) submit_hr = E_FAIL;
+      if (i == 3) end_hr = E_FAIL;
+      check("VP9: failed submission ends the decoder frame", ops.decode(ops.decoder, packet, sizeof(packet), &p) < 0
+            && begins == old_begins + 1 && begins == ends);
+      buf_cap[D3D11_VIDEO_DECODER_BUFFER_BITSTREAM] = sizeof(bufs[0]);
+      release_hr = submit_hr = end_hr = S_OK;
+      d3d11_video_decode_vp9_close(&ops);
+      check("VP9: fault resources retire", live == before);
+   }
+   d3d11vd.import_formats = formats;
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -1153,6 +1239,8 @@ int main(void)
    test_hevc();
    test_hevc_main10();
    test_hevc_registry();
+   test_vp9(8);
+   test_vp9(10);
 
    d3d11_video_decode_deinit();
    check("P010 renderer backend starts", d3d11_video_decode_init_formats(dev,

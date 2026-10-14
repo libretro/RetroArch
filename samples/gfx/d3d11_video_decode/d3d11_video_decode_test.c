@@ -846,6 +846,118 @@ done:
    frames_free(&hw); rh265_video_close(v); rmp4_close(m); free(raw); free(data);
 }
 
+
+/* Optional generated IVF and independent FFmpeg NV12/P010 oracle. */
+static unsigned vp9_read32(const uint8_t *p)
+{
+   return (unsigned)p[0] | (unsigned)p[1] << 8
+      | (unsigned)p[2] << 16 | (unsigned)p[3] << 24;
+}
+
+static void test_vp9_conformance(void)
+{
+   const char *path = getenv("VP9_TEST_IVF"), *raw_path = getenv("VP9_TEST_RAW");
+   const char *required = getenv("VP9_REQUIRE_HW");
+   rvp9_hw_session_t *s = NULL;
+   rvp9_hw_ops_t ops;
+   rvp9_hdr header;
+   video_hw_frame_t frame;
+   opened_t opened;
+   frames_t hw;
+   uint8_t *data = NULL, *raw = NULL;
+   size_t size = 0, raw_size = 0, offset, len, frame_size, y_size;
+   unsigned tries, i;
+   int ret, matches;
+   uint8_t existing;
+   uint32_t feedback;
+   memset(&ops, 0, sizeof(ops)); memset(&opened, 0, sizeof(opened));
+   memset(&hw, 0, sizeof(hw));
+   if (!path && !raw_path) return;
+   if (!path || !raw_path) goto invalid;
+   data = read_fixture_file(path, &size); raw = read_fixture_file(raw_path, &raw_size);
+   if (!data || !raw || size < 44 || memcmp(data, "DKIF", 4) || memcmp(data + 8, "VP90", 4)) goto invalid;
+   len = vp9_read32(data + 32);
+   if (!len || len > size - 44 || rvp9_parse_frame_header(data + 44, len, NULL, NULL, &header)) goto invalid;
+   if (!d3d11_video_decode_vp9_open(&header, 10, &ops))
+   {
+      printf("SKIP VP9 profile %d: device configuration/import format unavailable\n", header.profile);
+      if (required && strcmp(required, "0")) check("VP9: required hardware configuration", 0);
+      goto done;
+   }
+   s = (rvp9_hw_session_t*)calloc(1, sizeof(*s));
+   if (!s || !rvp9_hw_session_init(s, &ops, 10)) goto invalid;
+   for (offset = 32; offset < size; offset += len)
+   {
+      if (size - offset < 12) goto invalid;
+      len = vp9_read32(data + offset); offset += 12;
+      if (!len || len > size - offset) goto invalid;
+      for (tries = 0; tries < 1000; tries++)
+      {
+         ret = rvp9_hw_session_submit(s, data + offset, len);
+         if (ret != 1) break;
+         Sleep(1);
+      }
+      if (ret) goto invalid;
+      for (tries = 0; tries < 1000; tries++)
+      {
+         ret = rvp9_hw_session_output(s, &frame);
+         if (ret != 1) break;
+         Sleep(1);
+      }
+      if (ret) goto invalid;
+      if (frame.yuv != ((header.color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
+               | (header.color_space == 2 ? IMAGE_YUV_FLAG_BT709 : 0)))
+      { video_hw_frame_abandon(&frame); goto invalid; }
+      if (!(use_d3d12 ? take_hw12(&hw, &frame) : take_hw(&hw, &opened, &frame))) goto invalid;
+   }
+   y_size = (size_t)header.w * header.h * (header.bit_depth == 10 ? 2 : 1);
+   frame_size = y_size * 3 / 2;
+   matches = frame_size && !(raw_size % frame_size) && raw_size / frame_size == (size_t)hw.n;
+   for (i = 0; matches && i < (unsigned)hw.n; i++)
+      matches = !memcmp(hw.y[i], raw + frame_size * i, y_size)
+         && !memcmp(hw.uv[i], raw + frame_size * i + y_size, y_size / 2);
+   printf("VP9 profile %d through D3D%s: %d frames, %s\n", header.profile,
+         use_d3d12 ? "12" : "11", hw.n, path);
+   check("VP9: every NV12/P010 sample matches independent FFmpeg", matches);
+   for (i = 0; i < RVP9_REF_FRAMES; i++)
+      if (s->reference_slots[i] == s->previous_slot) break;
+   if (matches && hw.n < MAX_FRAMES && i < RVP9_REF_FRAMES)
+   {
+      existing = (uint8_t)((header.profile == 2 ? 0x98 : 0x88) | i);
+      feedback = ((d3d11vd_dec_t*)ops.decoder)->feedback;
+      ret = rvp9_hw_session_submit(s, &existing, 1);
+      if (!ret) ret = rvp9_hw_session_output(s, &frame);
+      if (!ret) ret = (use_d3d12 ? take_hw12(&hw, &frame) : take_hw(&hw, &opened, &frame)) ? 0 : -1;
+      check("VP9: show-existing replays the last picture without decode", !ret
+            && ((d3d11vd_dec_t*)ops.decoder)->feedback == feedback
+            && hw.n > 1 && !memcmp(hw.y[hw.n-1], hw.y[hw.n-2], y_size)
+            && !memcmp(hw.uv[hw.n-1], hw.uv[hw.n-2], y_size / 2));
+      if (!ret) hw.n--;
+   }
+   if (!matches && frame_size && raw_size / frame_size == (size_t)hw.n)
+      for (i = 0; i < (unsigned)hw.n; i++)
+      {
+         size_t k;
+         for (k = 0; k < frame_size; k++)
+         {
+            unsigned actual = k < y_size ? hw.y[i][k] : hw.uv[i][k - y_size];
+            unsigned expected = raw[frame_size * i + k];
+            if (actual != expected)
+            {
+               printf("VP9 mismatch frame %u byte %u: GPU %u oracle %u\n",
+                     i, (unsigned)k, actual, expected);
+               break;
+            }
+         }
+      }
+   goto done;
+invalid:
+   check("VP9: valid IVF/oracle, complete decode and shared-frame read", 0);
+done:
+   d3d11_video_decode_vp9_close(&ops);
+   opened_clear(&opened); frames_free(&hw); free(s); free(data); free(raw);
+}
+
 static void test_hevc_main(int depth)
 {
    static rh265_video_params_t params;
@@ -955,6 +1067,7 @@ int main(void)
    test_hevc_main(10);
    test_hevc_streams();
    test_hevc_conformance();
+   test_vp9_conformance();
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
@@ -1014,6 +1127,7 @@ int main(void)
       test_hevc_main(10);
       test_hevc_streams();
       test_hevc_conformance();
+      test_vp9_conformance();
       for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
       {
          const stream_t *s = &streams[i];
