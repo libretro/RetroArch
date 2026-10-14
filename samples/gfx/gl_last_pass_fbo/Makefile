@@ -1,17 +1,18 @@
-# gfx/drivers/gl2.c's render chain against a scripted GL and shader
-# backend: the driver source is included by the test, the GL entry points
-# it uses are the test's own, and the rest of the frontend is stubbed by
-# the gl2_pbo_readback harness's stubs, shared so the two stay in step.
+# The GLSL/Cg render chains of gfx/drivers/gl2.c and gfx/drivers/gl3.c
+# against a scripted GL and shader backend: each test includes its driver
+# source and gl_last_pass_fakes.h, which holds the GL entry points, the
+# backend and the cases the two chains must decide alike.  The rest of the
+# frontend is stubbed by the gl2_pbo_readback harness's stubs, shared so
+# the harnesses stay in step.
 
 include ../../sample_objdir.mk
 
-TARGET := gl2_last_pass_fbo_test
+TARGETS := gl2_last_pass_fbo_test gl3_last_pass_fbo_test
 
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
-SOURCES_C := \
-	gl2_last_pass_fbo_test.c \
+SHARED_C := \
 	../gl2_pbo_readback/stubs.c \
 	$(CORE_DIR)/gfx/common/gl_common.c \
 	$(CORE_DIR)/gfx/video_views.c \
@@ -26,11 +27,12 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c
 
-OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
+SHARED_OBJS := $(call sample_objs,$(SHARED_C:.c=.o))
 
 INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps -I$(CORE_DIR)/gfx/include
 CFLAGS  += -Wall $(INCDIRS) -std=gnu99 -D_GNU_SOURCE \
-	-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_OPENGL -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_MENU
+	-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_OPENGL \
+	-DHAVE_OPENGL_CORE -DHAVE_GL_SYNC -DHAVE_GLSL -DHAVE_MENU
 LDFLAGS += -lm -lpthread
 
 ifneq ($(SANITIZER),)
@@ -40,12 +42,16 @@ else
    CFLAGS  += -g1 -O1
 endif
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(OBJS)
+gl2_last_pass_fbo_test: gl2_last_pass_fbo_test.o $(SHARED_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-gl2_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h
+gl3_last_pass_fbo_test: gl3_last_pass_fbo_test.o $(SHARED_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+gl2_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl2.c $(CORE_DIR)/gfx/common/gl2_common.h gl_last_pass_fakes.h
+gl3_last_pass_fbo_test.o: $(CORE_DIR)/gfx/drivers/gl3.c gl_last_pass_fakes.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -54,11 +60,11 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-check: $(TARGET)
-	./$(TARGET)
+check: $(TARGETS)
+	@for t in $(TARGETS); do echo "$$t:"; ./$$t || exit 1; done
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(OBJS) $(TARGET)
+	rm -f *.o $(TARGETS) $(addsuffix .exe,$(TARGETS))
 
 .PHONY: all check clean

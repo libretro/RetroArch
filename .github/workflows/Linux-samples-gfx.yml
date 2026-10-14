@@ -191,28 +191,29 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
           make clean
 
-      - name: Build and run gl2_last_pass_fbo_test (ASan + UBSan)
+      - name: Build and run gl2/gl3 last_pass_fbo tests (ASan + UBSan)
         shell: bash
-        working-directory: samples/gfx/gl2_last_pass_fbo
+        working-directory: samples/gfx/gl_last_pass_fbo
         run: |
           set -eu
-          # gfx/drivers/gl2.c's render chain against a scripted GL and
-          # shader backend: the last pass gets an FBO only for a scale
-          # other than viewport at 1.0, an FBO format, or the feedback
-          # the preset asks of it; a one-pass preset that needs none
-          # sets up no chain.
+          # The GLSL/Cg render chains of gfx/drivers/gl2.c and gl3.c
+          # against a scripted GL and shader backend: the last pass gets
+          # an FBO only for a scale other than viewport at 1.0, an FBO
+          # format, or the feedback the preset asks of it; a one-pass
+          # preset that needs none is drawn with none.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 60 make check
           make clean
 
-      - name: Build and run gl2_last_pass_fbo_test (mingw-w64, Wine)
+      - name: Build and run gl2/gl3 last_pass_fbo tests (mingw-w64, Wine)
         shell: bash
-        working-directory: samples/gfx/gl2_last_pass_fbo
+        working-directory: samples/gfx/gl_last_pass_fbo
         run: |
           set -eu
           make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
           WINEDEBUG=-all timeout 300 wine ./gl2_last_pass_fbo_test.exe
+          WINEDEBUG=-all timeout 300 wine ./gl3_last_pass_fbo_test.exe
           make clean
 
   samples-gfx:

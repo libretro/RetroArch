@@ -1,15 +1,14 @@
-/* The gl2 driver's render chain against a scripted GL and shader
- * backend: the last pass of a preset gets an FBO of its own, copied to
- * the backbuffer by the stock pass after it, only when drawing it
- * straight there would give a different image - a scale other than the
- * viewport at 1.0, an FBO format, or the feedback the preset asks of
- * it.  A one-pass preset that needs no FBO sets up no chain at all. */
+/* A scripted GL and shader backend for the GL drivers' GLSL/Cg render
+ * chains, and the cases each chain must decide alike: the last pass of a
+ * preset gets an FBO of its own, copied to the backbuffer by the stock
+ * pass after it, only when drawing it straight there would give a
+ * different image - a scale other than the viewport at 1.0, an FBO
+ * format, or the feedback the preset asks of it.
+ *
+ * Included by each test after the driver source it includes. */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "../../../gfx/drivers/gl2.c"
+#ifndef GL_LAST_PASS_FAKES_H
+#define GL_LAST_PASS_FAKES_H
 
 /* The scripted shader backend. */
 static struct gfx_fbo_scale scales[GFX_MAX_SHADERS];
@@ -51,6 +50,12 @@ static bool fake_filter_type(void *data, unsigned idx, bool *smooth)
 {
    (void)data; (void)idx; (void)smooth;
    return false;
+}
+
+static unsigned fake_get_prev_textures(void *data)
+{
+   (void)data;
+   return 0;
 }
 
 static enum gfx_wrap_type fake_wrap_type(void *data, unsigned idx)
@@ -112,6 +117,8 @@ GL_FAKE(void, glReadPixels, (GLint x, GLint y, GLsizei width, GLsizei height,
 GL_FAKE(void, glBindTexture, (GLenum t, GLuint i)) { (void)t; (void)i; }
 GL_FAKE(void, glBlendFunc, (GLenum a, GLenum b)) { (void)a; (void)b; }
 GL_FAKE(void, glClear, (GLbitfield m)) { (void)m; }
+GL_FAKE(void, glColorMask, (GLboolean r, GLboolean g, GLboolean b, GLboolean a))
+{ (void)r; (void)g; (void)b; (void)a; }
 GL_FAKE(void, glClearColor, (GLclampf r, GLclampf g, GLclampf b, GLclampf a))
 { (void)r; (void)g; (void)b; (void)a; }
 GL_FAKE(void, glCopyTexSubImage2D, (GLenum a, GLint b, GLint c, GLint d,
@@ -180,45 +187,34 @@ static void scale_viewport(struct gfx_fbo_scale *s, float fx, float fy)
    s->scale_y = fy;
 }
 
-/* Builds the chain for the scripted preset; the FBO count, or -1 for
- * no chain. */
-static int run_chain(void)
-{
-   static shader_backend_t       backend;
-   static gl2_renderchain_data_t chain;
-   static gl2_t                  gl;
-
-   memset(&backend, 0, sizeof(backend));
-   backend.num_shaders       = fake_num_shaders;
-   backend.shader_scale      = fake_shader_scale;
-   backend.get_feedback_pass = fake_get_feedback_pass;
-   backend.mipmap_input      = fake_mipmap_input;
-   backend.filter_type       = fake_filter_type;
-   backend.wrap_type         = fake_wrap_type;
-
-   memset(&chain, 0, sizeof(chain));
-   memset(&gl, 0, sizeof(gl));
-   gl.shader           = &backend;
-   gl.renderchain_data = &chain;
-   gl.flags            = GL2_FLAG_HAVE_FBO;
-   gl.tex_dims         = VIDEO_SCALE_PACK(256, 256);
-   gl.video_dims       = VIDEO_SCALE_PACK(320, 240);
-   gl.vp.dims          = VIDEO_SCALE_PACK(1280, 960);
-
-   gl2_renderchain_init(&gl, &chain);
-
-   if (!(gl.flags & GL2_FLAG_FBO_INITED))
-      return -1;
-   return chain.fbo_pass;
-}
-
-int main(void)
+/* The scripted FBO calls, made through the GL loader's pointers. */
+static void gl_fakes_install(void)
 {
    __rglgen_glGenFramebuffers        = fake_gen_framebuffers;
    __rglgen_glDeleteFramebuffers     = fake_delete_framebuffers;
    __rglgen_glBindFramebuffer        = fake_bind_framebuffer;
    __rglgen_glFramebufferTexture2D   = fake_framebuffer_texture_2d;
    __rglgen_glCheckFramebufferStatus = fake_check_framebuffer_status;
+}
+
+static void backend_init(shader_backend_t *backend)
+{
+   memset(backend, 0, sizeof(*backend));
+   backend->num_shaders       = fake_num_shaders;
+   backend->shader_scale      = fake_shader_scale;
+   backend->get_feedback_pass = fake_get_feedback_pass;
+   backend->mipmap_input      = fake_mipmap_input;
+   backend->filter_type       = fake_filter_type;
+   backend->wrap_type         = fake_wrap_type;
+   backend->get_prev_textures = fake_get_prev_textures;
+}
+
+/* Each case through @run_chain, which builds the chain for the scripted
+ * preset and gives its FBO count; @no_chain is what it gives for a
+ * one-pass preset drawn straight to the backbuffer. */
+static int run_cases(int (*run_chain)(void), int no_chain)
+{
+   gl_fakes_install();
 
    printf("two passes:\n");
    num_passes    = 2;
@@ -265,10 +261,10 @@ int main(void)
    num_passes = 1;
 
    memset(&scales[0], 0, sizeof(scales[0]));
-   CHECK(run_chain() == -1, "no scale: no chain");
+   CHECK(run_chain() == no_chain, "no scale: no chain");
 
    scale_viewport(&scales[0], 1.0f, 1.0f);
-   CHECK(run_chain() == -1, "viewport at 1.0: no chain");
+   CHECK(run_chain() == no_chain, "viewport at 1.0: no chain");
 
    scale_source(&scales[0], 2.0f);
    CHECK(run_chain() == 1, "source at 2.0: an FBO");
@@ -285,3 +281,5 @@ int main(void)
    printf("all checks passed\n");
    return 0;
 }
+
+#endif
