@@ -12,6 +12,7 @@
 
 static GLuint   gl11_next_name = 1;
 static unsigned gl11_finishes;
+static void (*gl11_read_pixels)(GLsizei width, GLsizei height);
 
 #ifdef _WIN32
 #define GL_FAKE(ret, name, params) \
@@ -26,7 +27,8 @@ GL_FAKE(void, glPixelStorei, (GLenum pname, GLint param)) { (void)pname; (void)p
 GL_FAKE(void, glReadBuffer, (GLenum mode)) { (void)mode; }
 GL_FAKE(void, glReadPixels, (GLint x, GLint y, GLsizei width, GLsizei height,
       GLenum format, GLenum type, GLvoid *data))
-{ (void)x; (void)y; (void)width; (void)height; (void)format; (void)type; (void)data; }
+{ (void)x; (void)y; (void)format; (void)type; (void)data;
+  if (gl11_read_pixels) gl11_read_pixels(width, height); }
 GL_FAKE(void, glBindTexture, (GLenum t, GLuint i)) { (void)t; (void)i; }
 GL_FAKE(void, glBlendFunc, (GLenum a, GLenum b)) { (void)a; (void)b; }
 GL_FAKE(void, glClear, (GLbitfield m)) { (void)m; }

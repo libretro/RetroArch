@@ -37,6 +37,8 @@ static unsigned map_calls, unmap_calls, context_calls;
 static bool map_fails, core_bound;
 static GLboolean unmap_result;
 static uint32_t readback_pixels[8];
+static size_t pack_capacity[32];
+static unsigned oversized_reads;
 static GLenum sync_status[128];
 static bool sync_live[128];
 static unsigned sync_created, sync_deleted;
@@ -75,7 +77,10 @@ static void APIENTRY readback_delete_sync(GLsync sync)
 
 static void APIENTRY readback_delete_buffers(GLsizei count, const GLuint *buffers)
 {
-   (void)count; (void)buffers;
+   GLsizei i;
+   for (i = 0; i < count; i++)
+      if (buffers[i] < 32)
+         pack_capacity[buffers[i]] = 0;
 }
 
 static void APIENTRY readback_gen_buffers(GLsizei count, GLuint *buffers)
@@ -88,7 +93,16 @@ static void APIENTRY readback_gen_buffers(GLsizei count, GLuint *buffers)
 static void APIENTRY readback_buffer_data(GLenum target, GLsizeiptr size,
       const void *data, GLenum usage)
 {
-   (void)target; (void)size; (void)data; (void)usage;
+   (void)target; (void)data; (void)usage;
+   if (pack_binding < 32)
+      pack_capacity[pack_binding] = size;
+}
+
+static void readback_extent(GLsizei width, GLsizei height)
+{
+   if (pack_binding >= 32
+         || (size_t)width * height * 4 > pack_capacity[pack_binding])
+      oversized_reads++;
 }
 
 static void queue_readback(gl3_t *gl)
@@ -259,10 +273,42 @@ static void run_fence_cases(void)
    CHECK(sync_created == sync_deleted, "all recording fences retired");
 }
 
+static void run_resize_cases(void)
+{
+   gl3_t gl;
+   unsigned deleted;
+   memset(&gl, 0, sizeof(gl));
+   gl.flags = GL3_FLAG_PBO_READBACK_ENABLE;
+   gl.vp.dims = VIDEO_SCALE_PACK(4, 2);
+   sync_ready = false;
+   CHECK(gl3_init_pbo_readback(&gl), "resize source ring initialized");
+   gl11_read_pixels = readback_extent;
+   gl3_pbo_async_readback(&gl);
+   deleted = sync_deleted;
+   gl.vp.dims = VIDEO_SCALE_PACK(8, 4);
+   gl3_pbo_async_readback(&gl);
+   CHECK(!oversized_reads, "growth resizes PBO before issuing readback");
+   CHECK(sync_deleted == deleted + 1, "growth retires old pending fence");
+   CHECK(gl.pbo_readback_scaler.in_width == 8 && gl.pbo_readback_scaler.in_height == 4,
+         "growth configures new recording extent before read");
+   CHECK(pack_capacity[7] == 8 * 4 * 4, "growth allocates matching PBO capacity");
+   deleted = sync_deleted;
+   gl.vp.dims = VIDEO_SCALE_PACK(2, 2);
+   gl3_pbo_async_readback(&gl);
+   CHECK(sync_deleted == deleted + 1, "shrink retires pending recording fence");
+   CHECK(gl.pbo_readback_scaler.in_width == 2 && gl.pbo_readback_scaler.in_height == 2,
+         "shrink configures new extent before read");
+   CHECK(pack_capacity[7] == 2 * 2 * 4 && !oversized_reads, "shrink capacity matches extent");
+   gl3_deinit_pbo_readback(&gl);
+   gl11_read_pixels = NULL;
+   CHECK(sync_created == sync_deleted, "resize teardown retires every recording fence");
+}
+
 int main(void)
 {
    int result = run_cases(run_chain, 0);
    run_readback_cases();
    run_fence_cases();
+   run_resize_cases();
    return result || fails;
 }

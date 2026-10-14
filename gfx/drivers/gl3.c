@@ -2096,7 +2096,16 @@ static void gl3_record_readback(gl3_t *gl, bool skip_in_menu)
 
 static void gl3_pbo_async_readback(gl3_t *gl)
 {
-   unsigned index = gl->pbo_readback_index;
+   unsigned index;
+   /* Resize the destination before writing the new viewport extent. */
+   if ((unsigned)gl->pbo_readback_scaler.in_width != VIDEO_SCALE_W(gl->vp.dims)
+         || (unsigned)gl->pbo_readback_scaler.in_height != VIDEO_SCALE_H(gl->vp.dims))
+   {
+      gl3_deinit_pbo_readback(gl);
+      if (!gl3_init_pbo_readback(gl))
+         return;
+   }
+   index = gl->pbo_readback_index;
    if (gl->pbo_readback_sync[index])
    {
       /* Reusing a pending destination can wait inside glReadPixels. */
