@@ -7,6 +7,7 @@
 #include <unistd.h>
 #endif
 #include <formats/rdvd_vfs.h>
+#include <formats/rdvd_stream.h>
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
@@ -57,7 +58,103 @@ static void test_queued_cancel(rdvd_vfs_t *vfs, rdvd_source_backend_t *backend)
    CHECK(!source.pending && !source.completed && source.cancelled);
    tpool_destroy(pool);
 }
-int main(void)
+static void test_stream_files(const char *const *paths)
+{
+   uint8_t data[2048], buffer[32];
+   const uint8_t pes[30] = {0,0,1,0xbd,0,12,0x80,0,0,0x80,1,0,0,0x11,0x22,0x33,0x44,0x55,
+      0,0,1,0xe0,0,6,0x80,0,0,0xaa,0xbb,0xcc};
+   RFILE *file;
+   rdvd_vfs_t *vfs;
+   rdvd_source_backend_t *backend;
+   rdvd_source_t source;
+   rdvd_stream_t stream;
+   rdvd_demux_packet_t packet;
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   tpool_t *pool = tpool_create(1);
+   enum rdvd_stream_status status = RDVD_STREAM_WAIT;
+   unsigned i, audio = 0, video = 0;
+   retro_time_t start;
+   CHECK(ps && pool); if (!ps || !pool) return;
+   for (i = 0; i < 2; i++)
+   {
+      memset(data, 0, sizeof(data));
+      if (!i) memcpy(data + 2040, pes, 8);
+      else memcpy(data, pes + 8, 22);
+      file = filestream_open(paths[i], RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      CHECK(file != NULL); if (!file) return;
+      CHECK(filestream_write(file, data, sizeof(data)) == sizeof(data));
+      CHECK(filestream_close(file) == 0);
+   }
+   vfs = rdvd_vfs_open(paths, 2);
+   CHECK(vfs != NULL); if (!vfs) return;
+   backend = rdvd_vfs_backend(vfs);
+   CHECK(rdvd_source_init(&source, &backend->map, 2040, 30));
+   CHECK(rdvd_stream_init(&stream, &source, vfs, pool, ps, buffer, sizeof(buffer)));
+   start = cpu_features_get_time_usec();
+   while (cpu_features_get_time_usec() - start < 10000000)
+   {
+      status = rdvd_stream_next(&stream, &packet);
+      if (status == RDVD_STREAM_PACKET)
+      {
+         CHECK(!source.pending);
+         if (packet.dvd_valid && packet.dvd.kind == RDVD_PACKET_AC3)
+         {
+            audio++;
+            CHECK(packet.dvd.size == 5 && packet.dvd.data[0] == 0x11);
+         }
+         if (packet.pes.type == RMPEG1_PS_VIDEO)
+         {
+            video++;
+            CHECK(packet.pes.size == 3 && packet.pes.data == buffer + 19);
+         }
+      }
+      else if (status != RDVD_STREAM_WAIT) break;
+      else sthread_yield();
+   }
+   CHECK(status == RDVD_STREAM_END && audio == 1 && video == 1 && source.completed == 30);
+   tpool_wait(pool); tpool_destroy(pool);
+   CHECK(rdvd_vfs_close(&vfs)); rmpeg1_ps_free(ps);
+}
+static void test_vob_stream(const char *path)
+{
+   uint8_t buffer[2048];
+   rdvd_vfs_t *vfs = rdvd_vfs_open(&path, 1);
+   rdvd_source_backend_t *backend;
+   rdvd_source_t source;
+   rdvd_stream_t stream;
+   rdvd_demux_packet_t packet;
+   rmpeg1_ps_t *ps = rmpeg1_ps_init(0);
+   tpool_t *pool = tpool_create(1);
+   enum rdvd_stream_status status = RDVD_STREAM_WAIT;
+   unsigned video = 0, audio = 0, pci = 0, dsi = 0;
+   retro_time_t start;
+   CHECK(vfs && ps && pool); if (!vfs || !ps || !pool) return;
+   backend = rdvd_vfs_backend(vfs);
+   CHECK(rdvd_source_init(&source, &backend->map, 0, backend->map.total_bytes));
+   CHECK(rdvd_stream_init(&stream, &source, vfs, pool, ps, buffer, sizeof(buffer)));
+   start = cpu_features_get_time_usec();
+   while (cpu_features_get_time_usec() - start < 10000000)
+   {
+      status = rdvd_stream_next(&stream, &packet);
+      if (status == RDVD_STREAM_PACKET)
+      {
+         if (packet.pes.type == RMPEG1_PS_VIDEO) video++;
+         if (packet.dvd_valid)
+         {
+            if (packet.dvd.kind == RDVD_PACKET_AC3) audio++;
+            if (packet.dvd.kind == RDVD_PACKET_PCI) pci++;
+            if (packet.dvd.kind == RDVD_PACKET_DSI) dsi++;
+         }
+      }
+      else if (status != RDVD_STREAM_WAIT) break;
+      else sthread_yield();
+   }
+   CHECK(status == RDVD_STREAM_END && video && audio && pci && dsi);
+   printf("Worker VOB stream: video=%u AC3=%u PCI=%u DSI=%u\n", video, audio, pci, dsi);
+   tpool_wait(pool); tpool_destroy(pool);
+   CHECK(rdvd_vfs_close(&vfs)); rmpeg1_ps_free(ps);
+}
+int main(int argc, char **argv)
 {
    char names[2][64];
    const char *paths[2];
@@ -102,6 +199,8 @@ int main(void)
       test_queued_cancel(vfs, backend);
       CHECK(rdvd_vfs_close(&vfs) && !vfs);
    }
+   test_stream_files(paths);
+   if (argc > 1) test_vob_stream(argv[1]);
    for (i = 0; i < 2; i++) CHECK(filestream_delete(paths[i]) == 0);
    printf("DVD real VFS tests: %u failures\n", failures);
    return failures ? 1 : 0;

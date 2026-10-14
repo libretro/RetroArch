@@ -175,6 +175,7 @@ static void test_stream_lifecycle(void)
    CHECK(rdvd_source_init(&source, &backend->map, 0, 32));
    CHECK(rdvd_stream_init(&stream, &source, vfs, (tpool_t*)vfs, ps, buffer, sizeof(buffer)));
    CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_WAIT && !file.reads);
+   CHECK(rdvd_stream_next(&stream, NULL) == RDVD_STREAM_WAIT && source.pending);
    rdvd_stream_cancel(&stream);
    CHECK(rdvd_stream_next(&stream, &packet) == RDVD_STREAM_WAIT);
    CHECK(!rdvd_vfs_close(&vfs));

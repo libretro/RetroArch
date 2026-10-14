@@ -154,3 +154,14 @@ last adapter access has finished. Use a dedicated I/O pool; keep it alive
 until jobs drain and never call tpool_help on the main thread for that pool.
 Pool creation/destruction and player ownership still belong to the caller;
 this adapter does not add a wait or pool teardown to the frame loop.
+
+rdvd_demux borrows whole PES packets and exposes DVD private-stream views;
+fragments use the existing MPEG parser assembly buffer. rdvd_stream connects
+a source/VFS/pool/parser and one consumer buffer: packets drain before the
+next read can reuse that buffer. Polls return WAIT/PACKET/END/ERROR/CANCELLED,
+with no I/O or waits on the owner thread. Cancel invalidates packet views and
+requires polling to CANCELLED before releasing resources. Parser, pool,
+adapter, source and buffer are caller-owned and exclusive. END is input or
+program end, not decoder completion or validated DVD conformance.
+Run rdvd_vfs_real_test fixture.vob for the generated MPEG-2/AC3/PCI/DSI oracle.
+Decoder/player ownership, clocking, VM/menus and presentation remain pending.

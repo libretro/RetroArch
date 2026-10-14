@@ -5,9 +5,9 @@
 bool rdvd_stream_init(rdvd_stream_t *stream, rdvd_source_t *source,
       rdvd_vfs_t *vfs, tpool_t *pool, rmpeg1_ps_t *ps, uint8_t *buffer, size_t capacity)
 {
-   #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE)
    rdvd_source_backend_t *backend;
-   #endif
+#endif
    if (!stream) return false;
    memset(stream, 0, sizeof(*stream));
 #if !defined(HAVE_THREADS) || !defined(RETRO_ATOMIC_LOCK_FREE)
@@ -29,7 +29,9 @@ enum rdvd_stream_status rdvd_stream_next(rdvd_stream_t *stream, rdvd_demux_packe
 {
    rdvd_source_backend_t *backend;
    uint64_t received;
-   if (!out) return RDVD_STREAM_ERROR;
+   if (!out)
+      return stream && stream->source && stream->source->pending
+         ? RDVD_STREAM_WAIT : RDVD_STREAM_ERROR;
    memset(out, 0, sizeof(*out));
    if (!stream || !stream->source || !stream->demux.ps) return RDVD_STREAM_ERROR;
    backend = rdvd_vfs_backend(stream->vfs);

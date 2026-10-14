@@ -488,6 +488,7 @@ jobs:
             -f lavfi -i sine=sample_rate=48000 -t 0.4 \
             -c:v mpeg2video -b:v 2000k -c:a ac3 -ac 2 -ar 48000 -f dvd -y "$fixture"
           ./rdvd_packet_test "$fixture"
+          ./rdvd_vfs_real_test "$fixture"
 
       - name: Compile-test retro_atomic.h from a C++11 TU
         shell: bash
