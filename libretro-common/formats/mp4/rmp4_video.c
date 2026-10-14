@@ -1015,8 +1015,8 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
  * reorder-queue picture once the packets are exhausted.  Returns 1
  * when a displayed picture was consumed (render it on demand), 0 when
  * the packet decoded but is not displayed, 2 when the next packet's
- * bytes are not yet resident (partial read; nothing consumed - retry
- * after rmp4_video_stream_set_avail), -1 at the end of a pass or on a
+ * bytes or decoder capacity are unavailable (retry later),
+ * -1 at the end of a pass or on a
  * decode error. */
 static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       int *duration_ms)
@@ -1042,7 +1042,10 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
           * through to the drain below: packets remain, and flushing
           * the H.264 reorder queue now would present its held
           * pictures early and out of order. */
+      {
+         s->waiting = RMP4_VIDEO_WAIT_INPUT;
          return 2;
+      }
       if (r != 1)
          break;
       if (pkt.track != s->track)
@@ -1052,7 +1055,11 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       {
          s->pending_packet = pkt;
          s->pending = 1;
-         if (r == 2) return 2;
+         if (r == 2)
+         {
+            s->waiting = RMP4_VIDEO_WAIT_DECODER;
+            return 2;
+         }
          if (duration_ms) *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
          return 1;
@@ -1071,7 +1078,10 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
     * queued inside the H.264 decoder; hand them out before ending the
     * pass, one per call, on the same presentation clock. */
    if (s->h264 && (drained = rh264_video_drain(s->h264)) == 2)
+   {
+      s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
+   }
    if (s->h264 && drained == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
@@ -1094,7 +1104,10 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       }
    }
    if (s->h265 && (drained = rh265_video_drain(s->h265)) == 2)
+   {
+      s->waiting = RMP4_VIDEO_WAIT_DECODER;
       return 2;
+   }
    if (s->h265 && drained == 0)
    {
       s->rndr_kind = 0;   /* the drain replaced the current picture */
@@ -1125,18 +1138,23 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
       return -1;
    s->waiting = 0;
 
-   /* 2 (not yet resident) also ends the loop: nothing was consumed,
-    * and the caller retries after feeding more bytes.  Fully-resident
-    * streams never see it. */
+   /* Retry later for input or decoder capacity, without spinning. */
    while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
-   s->waiting = r == 2;
+   if (r != 2)
+      s->waiting = RMP4_VIDEO_WAIT_NONE;
    return r;
 }
 
 int rmp4_video_stream_waiting(const rmp4_video_stream_t *s)
 {
    return s && s->waiting;
+}
+
+enum rmp4_video_wait_reason rmp4_video_stream_wait_reason(
+      const rmp4_video_stream_t *s)
+{
+   return s ? (enum rmp4_video_wait_reason)s->waiting : RMP4_VIDEO_WAIT_NONE;
 }
 
 int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)

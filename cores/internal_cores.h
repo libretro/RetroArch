@@ -141,6 +141,7 @@ size_t libretro_ffmpeg_retro_get_memory_size(unsigned id);
 #endif
 
 #ifdef HAVE_WEBMPLAYER
+#include "libretro-webm/webm_hw.h"
 /* Internal WebM (rwebm+rvp8/rvp9) player core. */
 
 void libretro_webm_retro_init(void);

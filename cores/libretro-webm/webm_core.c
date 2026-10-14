@@ -71,6 +71,8 @@
 #include <formats/rvp8.h>
 #endif
 
+#include "webm_hw.h"
+
 #define WEBM_AUDIO_RATE 48000
 #define WEBM_AUDIO_CHUNK 256
 
@@ -121,6 +123,8 @@ typedef struct
    int          fill_warned;         /* short-read logged once          */
    rwebm_t     *webm;
 #ifdef HAVE_RMP4
+   video_hw_frame_t hw_frame;
+   int          hw_video;
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
 #endif
    int          vtrack;              /* video track index               */
@@ -209,6 +213,51 @@ static void webm_native_pump(webm_player_t *p);
 static int webm_ts_cmp(const void *a, const void *b);
 
 static webm_player_t webm_player;
+static webm_hw_refresh_t webm_hw_refresh;
+static void *webm_hw_user;
+
+#ifdef RARCH_INTERNAL
+bool libretro_webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user)
+#else
+bool webm_set_video_hw_refresh(webm_hw_refresh_t cb, void *user)
+#endif
+{
+   if (webm_player.dt || webm_player.webm
+#ifdef HAVE_RMP4
+         || webm_player.mp4vs
+#endif
+      )
+      return false;
+   webm_hw_refresh = cb;
+   webm_hw_user = user;
+   return true;
+}
+
+#ifdef HAVE_RMP4
+static void webm_drop_hw(webm_player_t *p)
+{
+   if (p->hw_frame.image)
+      video_hw_frame_abandon(&p->hw_frame);
+   memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+}
+
+static void webm_present_mp4(webm_player_t *p, int have)
+{
+   if (!p->hw_video)
+   {
+      if (have)
+         rmp4_video_stream_render(p->mp4vs);
+      WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+            p->width * sizeof(uint32_t));
+      return;
+   }
+   if (have && !p->hw_frame.image)
+      rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame);
+   if (p->hw_frame.image && webm_hw_refresh(webm_hw_user, &p->hw_frame))
+      memset(&p->hw_frame, 0, sizeof(p->hw_frame));
+   WEBM_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+}
+#endif
 
 /* -------------------------------------------------------------------- */
 /* Limited-range I420 -> XRGB8888.  Coefficients follow the Colour       */
@@ -581,6 +630,7 @@ static void webm_free_player(webm_player_t *p)
    if (p->webm)
       rwebm_close(p->webm);
 #ifdef HAVE_RMP4
+   webm_drop_hw(p);
    if (p->mp4vs)
       rmp4_video_stream_close(p->mp4vs);
 #endif
@@ -711,8 +761,12 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
    if (p->webm)
       rwebm_rewind(p->webm);
 #ifdef HAVE_RMP4
+   webm_drop_hw(p);
    if (p->mp4vs)
+   {
       rmp4_video_stream_rewind(p->mp4vs);
+      p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
+   }
 #endif
    if (p->vp9)
    {
@@ -812,8 +866,10 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
-      int64_t ms = rmp4_video_stream_seek_ms(p->mp4vs,
-            target_ns / 1000000);
+      int64_t ms;
+      webm_drop_hw(p);
+      ms = rmp4_video_stream_seek_ms(p->mp4vs, target_ns / 1000000);
+      p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
       p->play_ns = p->vpts_ns;
       p->eof     = 0;
@@ -1100,10 +1156,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
        * picture through slow stretches and pass through several
        * frames in fast ones, converting only the last. */
       p->play_ns += p->frame_ns;
-      if (!p->eof)
       {
          int have = 0;
-         while (!p->eof
+         while (!p->eof && !p->hw_frame.image
                && p->vpts_ns + p->frame_ns / 2 <= p->play_ns)
          {
             int dur_ms = 0;
@@ -1112,11 +1167,11 @@ void WEBM_CORE_PREFIX(retro_run)(void)
              * rendered, below.  In fast variable-rate stretches this
              * saves a full-resolution blit per dropped frame. */
             int r = rmp4_video_stream_skip(p->mp4vs, &dur_ms);
-            if (r == 2 && p->dt && !data_transfer_complete(p->dt)
-                  && !data_transfer_failed(p->dt))
-               /* the next sample has not arrived: hold the picture
-                * (the wall clock keeps moving, so the catch-up next
-                * run passes through what it missed) */
+            if (r == 2 && (rmp4_video_stream_wait_reason(p->mp4vs)
+                        == RMP4_VIDEO_WAIT_DECODER
+                     || (p->dt && !data_transfer_complete(p->dt)
+                        && !data_transfer_failed(p->dt))))
+               /* Hold the picture until input or decoder capacity returns. */
                break;
             if (r != 1)
             {
@@ -1127,14 +1182,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             p->vpts_ns += (int64_t)dur_ms * 1000000;
             p->vshown++;
          }
-         if (have)
-         {
-            rmp4_video_stream_render(p->mp4vs);
-         }
+         webm_present_mp4(p, have);
       }
-      WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
-            p->width * sizeof(uint32_t));
-      if (p->eof)
+      if (p->eof && !p->hw_frame.image)
       {
          int audio_done = 1;
 #ifdef WEBM_HAVE_AUDIO
@@ -1551,7 +1601,7 @@ static bool webm_load_mp4(webm_player_t *p)
       {
          if (WEBM_CORE_PREFIX(log_cb))
             WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[webm] No supported (H.264/VP9/VP8) MP4 video track.\n");
+               "[webm] No supported (H.264/HEVC/VP9/VP8) MP4 video track.\n");
          return false;
       }
       data_transfer_iterate(p->dt, 512 * 1024);
@@ -1561,6 +1611,7 @@ static bool webm_load_mp4(webm_player_t *p)
     * interleave stage at no per-frame cost), so the per-frame copy
     * below needs no per-pixel swizzle. */
    rmp4_video_stream_set_argb(p->mp4vs, 1);
+   p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 1);
    rmp4_video_stream_get_info(p->mp4vs, &w, &h, &nframes, &loops);
    if (!w || !h)
       return false;
@@ -2170,14 +2221,18 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
             data_transfer_refill(p->dt, 0);
             p->discarded = 0;
          }
+         webm_drop_hw(p);
          if (rmp4_video_stream_seek_frame(p->mp4vs,
                s > 0 ? (int)s - 1 : 0) < 0)
             return false;
+         p->hw_video = webm_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
          if (s > 0)
          {
             if (rmp4_video_stream_skip(p->mp4vs, NULL) != 1)
                return false;
-            if (!rmp4_video_stream_render(p->mp4vs))
+            if (p->hw_video)
+               rmp4_video_stream_hw_frame(p->mp4vs, &p->hw_frame);
+            else if (!rmp4_video_stream_render(p->mp4vs))
                return false;
          }
       }

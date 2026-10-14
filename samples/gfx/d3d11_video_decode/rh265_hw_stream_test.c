@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <formats/rh265_hw.h>
+#include <formats/image.h>
 #include <formats/rmp4_video.h>
 #include "dxva_hevc_access_unit_data.h"
 /* Expose owner state for DPB-pressure fault injection. */
@@ -15,7 +16,7 @@ static int decode_busy, output_busy, refuse;
 
 typedef struct mock_decoder
 {
-   unsigned width, height;
+   unsigned width, height, bit_depth;
 } mock_decoder_t;
 
 static void abandon(void *owner, uint64_t done, uint64_t value)
@@ -41,6 +42,7 @@ static int output(void *decoder, unsigned slot, video_hw_frame_t *frame)
    mock_decoder_t *d = (mock_decoder_t*)decoder;
    if (output_busy) { output_busy--; return 1; }
    frame->image = slot + 1;
+   frame->pixfmt = d->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    frame->width = d->width; frame->height = d->height;
    frame->done = 99; frame->done_value = ++exported;
    frame->owner = &abandoned; frame->abandon = abandon;
@@ -57,6 +59,7 @@ static bool open_backend(void *user, const rh265_video_params_t *params,
    if (!d) return false;
    d->width = params->width - params->crop_left - params->crop_right;
    d->height = params->height - params->crop_top - params->crop_bottom;
+   d->bit_depth = params->bit_depth;
    ops->decoder = d; ops->decode = decode; ops->output = output;
    opened++;
    return true;
@@ -201,7 +204,8 @@ static void check_mp4(void)
    for (attempt = 0; attempt < 20; attempt++)
    {
       ret = rmp4_video_stream_skip(stream, &duration);
-      if (ret == 2) { CHECK(rmp4_video_stream_waiting(stream)); waits++; continue; }
+      if (ret == 2) { CHECK(rmp4_video_stream_waiting(stream)
+            && rmp4_video_stream_wait_reason(stream) == RMP4_VIDEO_WAIT_DECODER); waits++; continue; }
       if (ret < 0) break;
       CHECK(ret == 1 && !rmp4_video_stream_waiting(stream));
       CHECK(rmp4_video_stream_hw_frame(stream, &frame));

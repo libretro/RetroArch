@@ -125,8 +125,16 @@ void rmp4_video_stream_get_info(const rmp4_video_stream_t *stream,
  * memory order R,G,B,A by default; see rmp4_video_stream_set_argb. */
 const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
       int *duration_ms);
-/* NULL from next with waiting set is backpressure, not end of pass. */
+/* A retry can need input bytes or decoder/output capacity. */
+enum rmp4_video_wait_reason
+{
+   RMP4_VIDEO_WAIT_NONE = 0,
+   RMP4_VIDEO_WAIT_INPUT,
+   RMP4_VIDEO_WAIT_DECODER
+};
 int rmp4_video_stream_waiting(const rmp4_video_stream_t *stream);
+enum rmp4_video_wait_reason rmp4_video_stream_wait_reason(
+      const rmp4_video_stream_t *stream);
 
 /* Select the channel order of subsequent frames: non-zero emits ARGB
  * words (memory order B,G,R,A on little-endian), zero restores the
@@ -198,8 +206,8 @@ void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *stream,
 /* Advance past the next displayed frame without colour-converting it:
  * the picture stays inside the decoder and no work is spent on its
  * pixels.  Returns 1 when a frame was consumed (its display duration
- * written as for _next), -1 at the end of a pass or on error.  For a
- * caller pacing through several frames per tick, skip the passed-over
+ * written as for _next), 2 on input/decoder backpressure, -1 at end
+ * or error. For a caller pacing through several frames per tick, skip the passed-over
  * frames and render only the one presented.  rmp4_video_stream_next
  * is exactly skip followed by render. */
 int rmp4_video_stream_skip(rmp4_video_stream_t *stream, int *duration_ms);
@@ -215,7 +223,7 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *stream);
 /* Partial-read support: raise the number of leading buffer bytes that
  * are valid (monotonic).  A blocked skip/next (return 2 / NULL after
  * a step that returned 2) resumes once the needed sample's bytes are
- * inside the window.  Fully-resident streams never block. */
+ * inside the window. Hardware streams may also need decoder capacity. */
 void rmp4_video_stream_set_avail(rmp4_video_stream_t *stream,
       size_t avail);
 
