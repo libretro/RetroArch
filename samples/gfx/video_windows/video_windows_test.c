@@ -137,10 +137,98 @@ static void test_selected_layout(void)
    CHECK(layout.placements[1].dst.pos == VIDEO_POS_PACK(213, 225));
 }
 
+/* Native layers' bookkeeping: two windows of one owner, one of another */
+static video_window_common_t test_windows[RETRO_VIDEO_VIEWS_MAX];
+static video_window_native_t test_natives[RETRO_VIDEO_VIEWS_MAX];
+static unsigned test_destroyed;
+
+static video_window_common_t *test_window_at(unsigned screen)
+{
+   return test_windows[screen].native ? &test_windows[screen] : NULL;
+}
+
+static void test_window_destroy(void *owner, video_window_native_t *window)
+{
+   test_destroyed |= 1u << (unsigned)(window - test_natives);
+   test_windows[window - test_natives].native = NULL;
+}
+
+static void test_window_events(void)
+{
+   video_window_event_t events[8];
+   unsigned i, n, seen;
+   int a = 0, b = 0;
+   memset(test_windows, 0, sizeof(test_windows));
+   memset(test_natives, 0, sizeof(test_natives));
+   for (i = 1; i <= 3; i++)
+   {
+      test_windows[i].owner              = i == 3 ? (void*)&b : (void*)&a;
+      test_windows[i].native             = &test_natives[i];
+      test_windows[i].request.screen     = i;
+      test_windows[i].request.generation = 10 + i;
+      test_windows[i].pos                = VIDEO_POS_PACK(i, -1);
+      test_natives[i].dims               = VIDEO_SCALE_PACK(100 * i, 50);
+      test_natives[i].focused            = true;
+      test_natives[i].presentable        = true;
+   }
+
+   /* A close takes a waiting gain and resume with it, and the focus */
+   test_windows[1].pending = VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)
+      | VIDEO_WINDOW_EVENT_BIT(RESUME) | VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   video_window_mark_closed(&test_windows[1]);
+   CHECK(test_windows[1].closed);
+   CHECK(test_windows[1].pending == (VIDEO_WINDOW_EVENT_BIT(CLOSE)
+            | VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS)
+            | VIDEO_WINDOW_EVENT_BIT(GEOMETRY)));
+   CHECK(!test_natives[1].focused && !test_natives[1].presentable);
+   test_windows[1].pending = 0;
+   video_window_mark_closed(&test_windows[1]);
+   CHECK(test_windows[1].pending == 0);
+   test_natives[2].focused = false;
+   video_window_mark_closed(&test_windows[2]);
+   CHECK(test_windows[2].pending == VIDEO_WINDOW_EVENT_BIT(CLOSE));
+
+   /* Drained in order, tagged, and what has no room waits */
+   test_windows[1].pending = VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)
+      | VIDEO_WINDOW_EVENT_BIT(RESUME) | VIDEO_WINDOW_EVENT_BIT(SUSPEND)
+      | VIDEO_WINDOW_EVENT_BIT(GEOMETRY) | VIDEO_WINDOW_EVENT_BIT(CLOSE)
+      | VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+   test_windows[3].pending = VIDEO_WINDOW_EVENT_BIT(CLOSE);
+   CHECK(video_windows_drain(&a, test_window_at, NULL, 4) == 0);
+   CHECK(video_windows_drain(&a, test_window_at, events, 0) == 0);
+   n = video_windows_drain(&a, test_window_at, events, 4);
+   CHECK(n == 4);
+   CHECK(events[0].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS);
+   CHECK(events[1].kind == VIDEO_WINDOW_EVENT_CLOSE);
+   CHECK(events[2].kind == VIDEO_WINDOW_EVENT_GEOMETRY);
+   CHECK(events[3].kind == VIDEO_WINDOW_EVENT_SUSPEND);
+   CHECK(events[0].screen == 1 && events[0].generation == 11);
+   CHECK(events[2].pos == VIDEO_POS_PACK(1, -1));
+   CHECK(events[2].dims == VIDEO_SCALE_PACK(100, 50));
+   for (i = 0, seen = 0; i < 4; i++)
+   {
+      if (!(n = video_windows_drain(&a, test_window_at, events, 1)))
+         break;
+      seen |= 1u << events[0].kind;
+      CHECK(events[0].screen != 3);
+   }
+   CHECK(seen == (VIDEO_WINDOW_EVENT_BIT(RESUME)
+            | VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN)
+            | VIDEO_WINDOW_EVENT_BIT(CLOSE)));
+   CHECK(test_windows[3].pending == VIDEO_WINDOW_EVENT_BIT(CLOSE));
+
+   /* Only the owner's windows go */
+   test_destroyed = 0;
+   video_windows_sweep(&a, test_window_at, test_window_destroy);
+   CHECK(test_destroyed == 6u);
+   CHECK(test_window_at(3) != NULL);
+}
+
 int main(void)
 {
    test_windows_policy();
    test_selected_layout();
+   test_window_events();
    if (failures)
       return 1;
    puts("video_windows: ok");

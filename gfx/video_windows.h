@@ -107,6 +107,41 @@ typedef struct gfx_ctx_window_driver
    void (*destroy)(void *owner, video_window_native_t *window);
 } gfx_ctx_window_driver_t;
 
+#define VIDEO_WINDOW_EVENT_BIT(kind) (1u << VIDEO_WINDOW_EVENT_##kind)
+
+/* What a context's native layer keeps of each window it makes, first
+ * in its own window->state, on the thread that runs the context */
+typedef struct video_window_common
+{
+   void *owner;
+   /* The caller's record, which stays put until destroy */
+   video_window_native_t *native;
+   video_window_request_t request;
+   /* The position GEOMETRY reports; 0 where the compositor places */
+   unsigned pos;
+   /* What waits for poll(), one VIDEO_WINDOW_EVENT_BIT per kind */
+   unsigned pending;
+   bool closed;
+} video_window_common_t;
+
+/* A native layer's windows by screen, NULL for none */
+typedef video_window_common_t *(*video_window_at_t)(unsigned screen);
+
+/* Closed by the window manager or by a failure: CLOSE, and FOCUS_LOSS
+ * where it had the focus; a gain or resume still waiting goes. */
+void video_window_mark_closed(video_window_common_t *window);
+
+/* poll() over 'owner''s windows: each one's transitions in the order
+ * focus loss, close, geometry, suspend, resume, focus gain, and what
+ * has no room waits for the next call, so close and focus loss always
+ * get through. */
+unsigned video_windows_drain(void *owner, video_window_at_t at,
+      video_window_event_t *events, unsigned capacity);
+
+/* Hands each window 'owner' still has to 'destroy'. */
+void video_windows_sweep(void *owner, video_window_at_t at,
+      void (*destroy)(void *owner, video_window_native_t *window));
+
 typedef struct video_windows_plan
 {
    unsigned main_mask;
