@@ -292,7 +292,8 @@ bool d3d9_supports_texture_format(void *data,
       enum texture_gpu_format fmt);
 
 uintptr_t d3d9_load_texture_compressed(void *data,
-      const struct texture_compressed *tc, bool threaded);
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type);
 
 
 RETRO_END_DECLS

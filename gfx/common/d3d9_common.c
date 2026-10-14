@@ -294,13 +294,9 @@ static void d3d9_get_video_size(d3d9_video_t *d3d,
          video_mode.dwDisplayHeight);
 
    if (video_mode.fIsHiDef)
-   {
       *dims = VIDEO_SCALE_PACK(1280, 720);
-   }
    else
-   {
       *dims = VIDEO_SCALE_PACK(640, 480);
-   }
 
    d3d->widescreen_mode         = video_mode.fIsWideScreen;
 }

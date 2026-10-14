@@ -43,7 +43,8 @@ typedef struct d3d12_upload_heap_options16
 static INLINE D3D12_HEAP_TYPE d3d12_cpu_write_heap_type(ID3D12Device *device)
 {
    d3d12_upload_heap_options16_t opts;
-   memset(&opts, 0, sizeof(opts));
+   opts.DynamicDepthBiasSupported = 0;
+   opts.GPUUploadHeapSupported    = 0;
    if (     SUCCEEDED(device->lpVtbl->CheckFeatureSupport(device,
                D3D12_UPLOAD_HEAP_FEATURE_OPTIONS16, &opts, sizeof(opts)))
          && opts.GPUUploadHeapSupported)
@@ -62,14 +63,12 @@ static INLINE HRESULT d3d12_create_cpu_write_buffer(ID3D12Device *device,
    D3D12_HEAP_PROPERTIES heap;
    HRESULT               hr;
 
-   memset(&heap, 0, sizeof(heap));
    heap.Type                 = type;
    heap.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
    heap.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
    heap.CreationNodeMask     = 1;
    heap.VisibleNodeMask      = 1;
 
-   memset(&desc, 0, sizeof(desc));
    desc.Dimension            = D3D12_RESOURCE_DIMENSION_BUFFER;
    desc.Alignment            = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
    desc.Width                = size;

@@ -139,17 +139,25 @@ static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
    D3D12_HEAP_PROPERTIES heap;
    D3D12_RESOURCE_DESC resource_desc;
    unsigned i;
-   memset(&heap, 0, sizeof(heap));
-   heap.Type = D3D12_HEAP_TYPE_DEFAULT;
-   heap.CreationNodeMask = heap.VisibleNodeMask = 1;
-   memset(&resource_desc, 0, sizeof(resource_desc));
-   resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-   resource_desc.Width = width;
-   resource_desc.Height = height;
-   resource_desc.DepthOrArraySize = resource_desc.MipLevels = 1;
-   resource_desc.Format = (DXGI_FORMAT)format;
-   resource_desc.SampleDesc.Count = 1;
-   resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+   heap.Type                          = D3D12_HEAP_TYPE_DEFAULT;
+   heap.CPUPageProperty               = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap.MemoryPoolPreference          = D3D12_MEMORY_POOL_UNKNOWN;
+   heap.CreationNodeMask              = 1;
+   heap.VisibleNodeMask               = 1;
+
+   resource_desc.Dimension            = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   resource_desc.Alignment            = 0;
+   resource_desc.Width                = width;
+   resource_desc.Height               = height;
+   resource_desc.DepthOrArraySize     = 1;
+   resource_desc.MipLevels            = 1;
+   resource_desc.Format               = (DXGI_FORMAT)format;
+   resource_desc.SampleDesc.Count     = 1;
+   resource_desc.SampleDesc.Quality   = 0;
+   resource_desc.Layout               = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   resource_desc.Flags                = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
    for (i = 0; i < 2; i++)
    {
       D3D12_RESOURCE_BARRIER barriers[2];
@@ -400,7 +408,11 @@ int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b)
    LARGE_INTEGER frequency, now;
    if (!b || b->failed || !b->present_count || b->present_submitted_qpc <= 0)
       return 0;
-   memset(&stats, 0, sizeof(stats));
+   stats.PresentCount         = 0;
+   stats.PresentRefreshCount  = 0;
+   stats.SyncRefreshCount     = 0;
+   stats.SyncQPCTime.QuadPart = 0;
+   stats.SyncGPUTime.QuadPart = 0;
    if (FAILED(b->chain->lpVtbl->GetFrameStatistics(b->chain, &stats))
          || stats.PresentCount != b->present_count
          || stats.PresentRefreshCount != stats.SyncRefreshCount
@@ -422,14 +434,18 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak)
       return;
    if (peak <= 0.0f) peak = 1000.0f;
    if (peak > 65535.0f) peak = 65535.0f;
-   memset(&metadata, 0, sizeof(metadata));
-   metadata.RedPrimary[0] = 35400; metadata.RedPrimary[1] = 14600;
-   metadata.GreenPrimary[0] = 8500; metadata.GreenPrimary[1] = 39850;
-   metadata.BluePrimary[0] = 6550; metadata.BluePrimary[1] = 2300;
-   metadata.WhitePoint[0] = 15635; metadata.WhitePoint[1] = 16450;
-   metadata.MaxMasteringLuminance = (UINT)peak;
-   metadata.MinMasteringLuminance = 10;
-   metadata.MaxContentLightLevel = metadata.MaxFrameAverageLightLevel = (UINT16)peak;
+   metadata.RedPrimary[0]             = 35400;
+   metadata.RedPrimary[1]             = 14600;
+   metadata.GreenPrimary[0]           = 8500;
+   metadata.GreenPrimary[1]           = 39850;
+   metadata.BluePrimary[0]            = 6550;
+   metadata.BluePrimary[1]            = 2300;
+   metadata.WhitePoint[0]             = 15635;
+   metadata.WhitePoint[1]             = 16450;
+   metadata.MaxMasteringLuminance     = (UINT)peak;
+   metadata.MinMasteringLuminance     = 10;
+   metadata.MaxContentLightLevel      = (UINT16)peak;
+   metadata.MaxFrameAverageLightLevel = (UINT16)peak;
    chain->lpVtbl->SetHDRMetaData(chain, DXGI_HDR_METADATA_TYPE_HDR10,
          sizeof(metadata), &metadata);
    DROP(chain);

@@ -45,7 +45,9 @@ static VkResult ra_vulkan_dxgi_submit(ra_vulkan_dxgi_t *p,
 }
 
 int ra_vulkan_dxgi_presentable(ra_vulkan_dxgi_t *p)
-{ return ra_dxgi_bridge_presentable(p->bridge); }
+{
+   return ra_dxgi_bridge_presentable(p->bridge);
+}
 
 static void ra_vulkan_dxgi_destroy_images(ra_vulkan_dxgi_t *p)
 {
@@ -184,7 +186,9 @@ static int ra_vulkan_dxgi_create_images(ra_vulkan_dxgi_t *p,
          CHECK_VK(vkEndCommandBuffer(*buffer));
       }
    }
-   p->width = width; p->height = height; p->format = format;
+   p->width  = width;
+   p->height = height;
+   p->format = format;
    return 1;
 error:
    return 0;
@@ -196,22 +200,28 @@ static VkResult ra_vulkan_dxgi_wait_resize(ra_vulkan_dxgi_t *p)
    if (!p->resize_fence)
    {
       VkFenceCreateInfo info;
-      memset(&info, 0, sizeof(info));
       info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-      result = vkCreateFence(p->device, &info, NULL, &p->resize_fence);
-      if (result != VK_SUCCESS) return result;
+      info.pNext = NULL;
+      info.flags = 0;
+      result     = vkCreateFence(p->device, &info, NULL, &p->resize_fence);
+      if (result != VK_SUCCESS)
+         return result;
    }
 #ifdef HAVE_THREADS
    if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
 #endif
    result = vkQueueSubmit(p->queue, 0, NULL, p->resize_fence);
-   if (result == VK_SUCCESS) p->submitted = 1;
+   if (result == VK_SUCCESS)
+      p->submitted = 1;
 #ifdef HAVE_THREADS
-   if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
+   if (p->queue_lock)
+      slock_unlock((slock_t *)p->queue_lock);
 #endif
-   if (result != VK_SUCCESS) return result;
+   if (result != VK_SUCCESS)
+      return result;
    result = vkWaitForFences(p->device, 1, &p->resize_fence, VK_TRUE, UINT64_MAX);
-   if (result != VK_SUCCESS) return result;
+   if (result != VK_SUCCESS)
+      return result;
    return vkResetFences(p->device, 1, &p->resize_fence);
 }
 
@@ -220,18 +230,26 @@ int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p,
 {
    unsigned dxgi_format;
    VkResult result;
-   if (!p || !width || !height || format != p->format) return 0;
+   if (!p || !width || !height || format != p->format)
+      return 0;
    if (p->width == width && p->height == height)
       return !ra_dxgi_bridge_failed(p->bridge);
    result = ra_vulkan_dxgi_wait_resize(p);
-   if (result != VK_SUCCESS) return 0;
-   if (vkResetCommandPool(p->device, p->pool, 0) != VK_SUCCESS) return 0;
+   if (result != VK_SUCCESS)
+      return 0;
+   if (vkResetCommandPool(p->device, p->pool, 0) != VK_SUCCESS)
+      return 0;
    ra_vulkan_dxgi_destroy_images(p);
-   if (format == VK_FORMAT_R8G8B8A8_UNORM) dxgi_format = DXGI_FORMAT_R8G8B8A8_UNORM;
-   else if (format == VK_FORMAT_B8G8R8A8_UNORM) dxgi_format = DXGI_FORMAT_B8G8R8A8_UNORM;
-   else if (format == VK_FORMAT_A2B10G10R10_UNORM_PACK32) dxgi_format = DXGI_FORMAT_R10G10B10A2_UNORM;
-   else dxgi_format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-   if (!ra_dxgi_bridge_resize(p->bridge, width, height, dxgi_format)) return 0;
+   if (format == VK_FORMAT_R8G8B8A8_UNORM)
+      dxgi_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   else if (format == VK_FORMAT_B8G8R8A8_UNORM)
+      dxgi_format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   else if (format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+      dxgi_format = DXGI_FORMAT_R10G10B10A2_UNORM;
+   else
+      dxgi_format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+   if (!ra_dxgi_bridge_resize(p->bridge, width, height, dxgi_format))
+      return 0;
    return ra_vulkan_dxgi_create_images(p, width, height, format);
 }
 
@@ -286,14 +304,14 @@ ra_vulkan_dxgi_t *ra_vulkan_dxgi_create(VkInstance instance,
    memset(&format_info, 0, sizeof(format_info));
    memset(&external_format_properties, 0, sizeof(external_format_properties));
    memset(&format_properties, 0, sizeof(format_properties));
-   external_format_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO;
+   external_format_info.sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO;
    external_format_info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
-   format_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
-   format_info.pNext = &external_format_info;
+   format_info.sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
+   format_info.pNext  = &external_format_info;
    format_info.format = format;
-   format_info.type = VK_IMAGE_TYPE_2D;
+   format_info.type   = VK_IMAGE_TYPE_2D;
    format_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-   format_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+   format_info.usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
    external_format_properties.sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES;
    format_properties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
    format_properties.pNext = &external_format_properties;
@@ -302,15 +320,20 @@ ra_vulkan_dxgi_t *ra_vulkan_dxgi_create(VkInstance instance,
             & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT)) return NULL;
    p = (ra_vulkan_dxgi_t *)calloc(1, sizeof(*p));
    if (!p) return NULL;
-   p->device = device; p->queue = queue; p->queue_lock = queue_lock;
-   p->gpu = gpu; p->family = family;
-   p->bridge = ra_dxgi_bridge_create(window, width, height, dxgi_format, id.deviceLUID);
-   if (!p->bridge) goto error;
+   p->device = device;
+   p->queue      = queue;
+   p->queue_lock = queue_lock;
+   p->gpu        = gpu;
+   p->family     = family;
+   p->bridge     = ra_dxgi_bridge_create(window, width, height, dxgi_format, id.deviceLUID);
+   if (!p->bridge)
+      goto error;
    memset(&pool_info, 0, sizeof(pool_info));
-   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
    pool_info.queueFamilyIndex = family;
    CHECK_VK(vkCreateCommandPool(device, &pool_info, NULL, &p->pool));
-   if (!ra_vulkan_dxgi_create_images(p, width, height, format)) goto error;
+   if (!ra_vulkan_dxgi_create_images(p, width, height, format))
+      goto error;
    return p;
 error:
    ra_vulkan_dxgi_destroy(p);
@@ -323,7 +346,9 @@ void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *p, float peak)
 }
 
 int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *p)
-{ return p ? ra_dxgi_bridge_present_time(p->bridge) : 0; }
+{
+   return p ? ra_dxgi_bridge_present_time(p->bridge) : 0;
+}
 
 VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
 { return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
@@ -336,47 +361,69 @@ VkResult ra_vulkan_dxgi_acquire(ra_vulkan_dxgi_t *p,
    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
    uint64_t wait_value, signal_value = 0;
    unsigned acquired = ra_dxgi_bridge_index(p->bridge, interval);
-   if (acquired >= 2) return ra_dxgi_bridge_failed(p->bridge) ? VK_ERROR_OUT_OF_DATE_KHR : VK_NOT_READY;
+   if (acquired >= 2)
+      return ra_dxgi_bridge_failed(p->bridge) ? VK_ERROR_OUT_OF_DATE_KHR : VK_NOT_READY;
    *index = acquired;
-   wait_value = ra_dxgi_bridge_last_use(p->bridge, *index);
-   memset(&values, 0, sizeof(values));
-   memset(&submit, 0, sizeof(submit));
+   wait_value   = ra_dxgi_bridge_last_use(p->bridge, *index);
+
    values.sType = VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
-   values.waitSemaphoreValuesCount = 1; values.pWaitSemaphoreValues = &wait_value;
+   values.pNext                      = NULL;
+   values.waitSemaphoreValuesCount   = 1;
+   values.pWaitSemaphoreValues       = &wait_value;
    values.signalSemaphoreValuesCount = semaphore ? 1 : 0;
-   values.pSignalSemaphoreValues = &signal_value;
-   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; submit.pNext = &values;
-   submit.waitSemaphoreCount = 1; submit.pWaitSemaphores = &p->done;
-   submit.pWaitDstStageMask = &stage;
-   submit.commandBufferCount = 1; submit.pCommandBuffers = &p->acquire[*index];
-   submit.signalSemaphoreCount = semaphore ? 1 : 0; submit.pSignalSemaphores = &semaphore;
+   values.pSignalSemaphoreValues     = &signal_value;
+
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pNext                = &values;
+   submit.waitSemaphoreCount   = 1;
+   submit.pWaitSemaphores      = &p->done;
+   submit.pWaitDstStageMask    = &stage;
+   submit.commandBufferCount   = 1;
+   submit.pCommandBuffers      = &p->acquire[*index];
+   submit.signalSemaphoreCount = semaphore ? 1 : 0;
+   submit.pSignalSemaphores    = &semaphore;
+
    return ra_vulkan_dxgi_submit(p, &submit, fence);
 }
 
 VkResult ra_vulkan_dxgi_present(ra_vulkan_dxgi_t *p, unsigned index,
       unsigned count, const VkSemaphore *wait, unsigned interval)
 {
+   unsigned i;
    VkD3D12FenceSubmitInfoKHR values;
    VkSubmitInfo submit;
    VkPipelineStageFlags stages[16];
    uint64_t wait_values[16];
    VkResult result;
-   unsigned i;
-   if (count > 16 || index >= 2) return VK_ERROR_INITIALIZATION_FAILED;
-   for (i = 0; i < count; i++) { stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; wait_values[i] = 0; }
-   memset(&values, 0, sizeof(values));
-   memset(&submit, 0, sizeof(submit));
+   if (count > 16 || index >= 2)
+      return VK_ERROR_INITIALIZATION_FAILED;
+   for (i = 0; i < count; i++)
+   {
+      stages[i]      = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+      wait_values[i] = 0;
+   }
    ++p->ready_value;
+
    values.sType = VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
-   values.waitSemaphoreValuesCount = count; values.pWaitSemaphoreValues = wait_values;
-   values.signalSemaphoreValuesCount = 1; values.pSignalSemaphoreValues = &p->ready_value;
-   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; submit.pNext = &values;
-   submit.waitSemaphoreCount = count; submit.pWaitSemaphores = wait;
-   submit.pWaitDstStageMask = stages;
-   submit.commandBufferCount = 1; submit.pCommandBuffers = &p->release[index];
-   submit.signalSemaphoreCount = 1; submit.pSignalSemaphores = &p->ready;
+   values.pNext                      = NULL;
+   values.waitSemaphoreValuesCount   = count;
+   values.pWaitSemaphoreValues       = wait_values;
+   values.signalSemaphoreValuesCount = 1;
+   values.pSignalSemaphoreValues     = &p->ready_value;
+
+   submit.sType                  = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pNext                  = &values;
+   submit.waitSemaphoreCount     = count;
+   submit.pWaitSemaphores        = wait;
+   submit.pWaitDstStageMask      = stages;
+   submit.commandBufferCount     = 1;
+   submit.pCommandBuffers        = &p->release[index];
+   submit.signalSemaphoreCount   = 1;
+   submit.pSignalSemaphores      = &p->ready;
+
    result = ra_vulkan_dxgi_submit(p, &submit, VK_NULL_HANDLE);
-   if (result != VK_SUCCESS) return result;
+   if (result != VK_SUCCESS)
+      return result;
    return ra_dxgi_bridge_present(p->bridge, p->ready_value, interval)
       ? VK_SUCCESS : VK_ERROR_OUT_OF_DATE_KHR;
 }

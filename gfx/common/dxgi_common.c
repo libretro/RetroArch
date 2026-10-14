@@ -3364,10 +3364,10 @@ void dxgi_hdr_meta_fill(
    meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG) */
    meta->video_full_range_flag = 1;
 
-   meta->max_cll  = max_cll;
-   meta->max_fall = max_fall;
+   meta->max_cll               = max_cll;
+   meta->max_fall              = max_fall;
 
-   meta->write_mdcv = 1;
+   meta->write_mdcv            = 1;
    if (is_scrgb)
    {
       /* Rec.709 primaries. */
