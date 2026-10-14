@@ -28,12 +28,13 @@ static bool vvd_hevc_profile(vvd_dec_t *d, VkVideoCapabilitiesKHR *caps)
    memset(&d->profile, 0, sizeof(d->profile));
    memset(&hevc, 0, sizeof(hevc)); memset(&decode, 0, sizeof(decode)); memset(caps, 0, sizeof(*caps));
    d->h265_profile.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_PROFILE_INFO_KHR;
-   d->h265_profile.stdProfileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
+   d->h265_profile.stdProfileIdc = d->hevc->sps_ptl.general_profile_idc;
    d->profile.sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
    d->profile.pNext = &d->h265_profile;
    d->profile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
    d->profile.chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
-   d->profile.lumaBitDepth = d->profile.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+   d->profile.lumaBitDepth = d->profile.chromaBitDepth = d->hevc->params.bit_depth == 10
+      ? VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR : VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
    hevc.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_CAPABILITIES_KHR;
    decode.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR; decode.pNext = &hevc;
    caps->sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR; caps->pNext = &decode;
@@ -53,7 +54,8 @@ static bool vvd_hevc_profile(vvd_dec_t *d, VkVideoCapabilitiesKHR *caps)
 
 static bool vvd_hevc_supported(const vulkan_hevc_params_t *p)
 {
-   return p->params.bit_depth == 8 && p->sps_ptl.general_profile_idc == STD_VIDEO_H265_PROFILE_IDC_MAIN
+   return ((p->params.bit_depth == 8 && p->sps_ptl.general_profile_idc == STD_VIDEO_H265_PROFILE_IDC_MAIN)
+         || (p->params.bit_depth == 10 && p->sps_ptl.general_profile_idc == STD_VIDEO_H265_PROFILE_IDC_MAIN_10))
       && !p->sequence.field_seq;
 }
 
@@ -79,6 +81,7 @@ static int vvd_hevc_decode(void *dec, const rh265_video_params_t *params,
       if (!candidate) return -1;
       if (!vulkan_hevc_params_build(candidate, d->hevc_source, (unsigned)params->pps_id)
             || !vvd_hevc_supported(candidate)
+            || candidate->params.bit_depth != d->hevc->params.bit_depth
             || memcmp(params, &candidate->params, sizeof(*params))
             || candidate->sps_ptl.general_level_idc > d->hevc_max_level
             || params->width != (int)d->coded.width || params->height != (int)d->coded.height
@@ -164,6 +167,9 @@ static bool vvd_hevc_open(void *user, const rh265_video *source,
    d->hevc = (vulkan_hevc_params_t*)calloc(1, sizeof(*d->hevc));
    if (!d->hevc || !vulkan_hevc_params_build(d->hevc, source, (unsigned)params->pps_id)
          || !vvd_hevc_supported(d->hevc)) goto fail;
+   d->format = params->bit_depth == 10 ? VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+      : VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   d->pixfmt = params->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    d->coded.width = (unsigned)params->width; d->coded.height = (unsigned)params->height;
    d->crop_x = (unsigned)params->crop_left; d->crop_y = (unsigned)params->crop_top;
    d->visible_w = (unsigned)(params->width - params->crop_left - params->crop_right);

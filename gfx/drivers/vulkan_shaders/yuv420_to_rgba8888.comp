@@ -11,8 +11,13 @@ layout(set = 0, binding = 4, std430) readonly buffer SSBO
 	uint words[];
 };
 
-float byte_at(uint off)
+float sample_at(uint off)
 {
+	if (words[14] == 2u)
+	{
+		uint value = (words[off >> 2u] >> ((off & 2u) * 8u)) & 0xffffu;
+		return float(value >> 6u) / (words[15] != 0u ? 1023.0 : 1020.0);
+	}
 	return float((words[off >> 2u] >> ((off & 3u) * 8u)) & 0xffu) * (1.0 / 255.0);
 }
 
@@ -29,8 +34,10 @@ void main()
 	uint co       = blk.y * words[6] + blk.x * words[7];
 	float ym      = uintBitsToFloat(words[8]);
 	float yb      = uintBitsToFloat(words[9]);
-	float cb      = byte_at(words[4] + co) - (128.0 / 255.0);
-	float cr      = byte_at(words[5] + co) - (128.0 / 255.0);
+	float center  = words[14] == 2u && words[15] != 0u ? 512.0 / 1023.0 : 128.0 / 255.0;
+	float cb      = sample_at(words[4] + co) - center;
+	float cr      = sample_at(words[5] + co) - center;
+	uint step     = words[14] == 2u ? 2u : 1u;
 	vec3 c        = vec3(uintBitsToFloat(words[10]) * cr,
 	                     uintBitsToFloat(words[11]) * cb + uintBitsToFloat(words[12]) * cr,
 	                     uintBitsToFloat(words[13]) * cb);
@@ -41,7 +48,7 @@ void main()
 			uvec2 p = p0 + uvec2(i, j);
 			if (p.x < res.x && p.y < res.y)
 			{
-				float y = byte_at(y_off + p.y * y_stride + p.x);
+				float y = sample_at(y_off + p.y * y_stride + p.x * step);
 				imageStore(uImage, ivec2(p), vec4(clamp(vec3(ym * y + yb) + c, 0.0, 1.0), 1.0));
 			}
 		}

@@ -8,7 +8,9 @@
 #include <dlfcn.h>
 #endif
 #include "../../../gfx/common/vulkan_video_caps.h"
-#ifdef HEVC_DECODE_TEST
+#ifdef VULKAN_IMPORT_TEST
+#include "import_test.h"
+#elif defined(HEVC_DECODE_TEST)
 #include "hevc_decode.h"
 #elif defined(HEVC_SESSION_TEST)
 #include "hevc_session.h"
@@ -88,6 +90,11 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
          properties.deviceName, codecs, family, selected);
    if ((selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR) && get_caps) probe_hevc(gpu, get_caps);
    ok = 1;
+#ifdef VULKAN_IMPORT_TEST
+   if (graphics != UINT32_MAX && (queues[graphics].queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT))
+      ok = import_test_gpu(instance, gpu, graphics, get_proc);
+   else puts("SKIP: no graphics/compute family for import");
+#endif
 #ifdef HEVC_SESSION_TEST
    if (selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
 #ifdef HEVC_DECODE_TEST

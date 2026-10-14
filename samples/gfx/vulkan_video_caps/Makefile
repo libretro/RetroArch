@@ -14,7 +14,7 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(PARAMS)
+all: $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm
@@ -36,9 +36,20 @@ $(TARGET): vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
 probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(if $(filter .exe,$(EXE)),,-ldl)
 
+import_test$(EXE): probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/vulkan.c \
+      $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
+	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
+
+import-check: import_test$(EXE)
+	$(RUNNER) ./import_test$(EXE)
+
+video_layout_test$(EXE): video_layout_test.c $(RA)/gfx/common/vulkan_video_import.h
+	$(CC) $(CFLAGS) -o $@ $< $(RA)/libretro-common/formats/image/image_yuv_blit.c $(LDFLAGS) -lm
+
 check: all
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(PARAMS)
+	$(RUNNER) ./video_layout_test$(EXE)
 
 session-check: $(SESSION)
 	$(RUNNER) ./$(SESSION)
@@ -50,5 +61,6 @@ clean:
 	rm -f vulkan_video_caps_test vulkan_video_caps_test.exe probe probe.exe
 	rm -f hevc_params_test hevc_params_test.exe hevc_session_test hevc_session_test.exe
 	rm -f hevc_decode_test hevc_decode_test.exe
+	rm -f import_test import_test.exe video_layout_test video_layout_test.exe
 
-.PHONY: all check session-check decode-check clean
+.PHONY: all check session-check decode-check import-check clean

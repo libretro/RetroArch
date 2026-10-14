@@ -27,6 +27,7 @@
 #include <gfx/video_frame.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
+#include "../common/vulkan_video_import.h"
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <queues/mpsc_stack.h>
@@ -13431,6 +13432,8 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
    hdr[5] = (uint32_t)cr_off;
    hdr[6] = cw;
    hdr[7] = 1;
+   hdr[14] = 1;
+   hdr[15] = !!(tp->yuv & IMAGE_YUV_FLAG_FULL_RANGE);
    for (i = 0; i < 6; i++)
       memcpy(&hdr[8 + i], &coef[i], sizeof(float));
    for (y = 0; y < h; y++)
@@ -13547,9 +13550,20 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    VkDescriptorSetAllocateInfo set_info;
    VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
    VkDevice device = vk->context->device;
-   size_t len      = vulkan_planar_size(texture->dims) + 4;
+   vulkan_video_layout_t capacity;
+   size_t len;
    unsigned i;
 
+   if (!vulkan_video_layout(&capacity, VIDEO_SCALE_W(texture->dims),
+            VIDEO_SCALE_H(texture->dims), IMAGE_PIXFMT_P010, 0)
+         || capacity.bytes > vk->context->gpu_properties.limits.maxStorageBufferRange)
+   {
+      if (!vulkan_video_layout(&capacity, VIDEO_SCALE_W(texture->dims),
+               VIDEO_SCALE_H(texture->dims), IMAGE_PIXFMT_NV12, 0)
+            || capacity.bytes > vk->context->gpu_properties.limits.maxStorageBufferRange)
+         return NULL;
+   }
+   len = capacity.bytes;
    while (st && st->texture != texture)
       st = st->next;
    if (st)
@@ -13619,6 +13633,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
       binfo.pNext                 = NULL;
       binfo.flags                 = 0;
       binfo.size                  = len;
+      st->staging[i].size          = len;
       binfo.usage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT
                                   | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
       binfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
@@ -13693,18 +13708,18 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    VkCommandBuffer cmd;
    VkDevice device;
    VkResult res;
-   uint32_t hdr[VK_PLANAR_HEADER];
-   float coef[6];
+   vulkan_video_layout_t layout;
    unsigned w  = VIDEO_SCALE_W(f->dims);
    unsigned h  = VIDEO_SCALE_H(f->dims);
    unsigned cw = (w + 1) / 2;
    unsigned ch = (h + 1) / 2;
-   unsigned slot, i;
+   unsigned slot;
    size_t y_off, c_off;
 
-   if (     f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image
+   if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv) || !f->image
          || texture->dims != f->dims
-         || !(st = vulkan_import_state_get(vk, texture)))
+         || !(st = vulkan_import_state_get(vk, texture))
+         || layout.bytes > st->staging[0].size)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    device = vk->context->device;
@@ -13717,22 +13732,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    }
    st->next_slot = slot ^ 1;
 
-   /* The interleaved chroma read two bytes a sample, Cr one after Cb;
-    * the copy wants it on a texel's boundary */
-   y_off  = VK_PLANAR_HEADER * 4;
-   c_off  = (y_off + (size_t)w * h + 3) & ~(size_t)3;
-   memset(hdr, 0, sizeof(hdr));
-   image_yuv_coefficients(f->yuv, coef);
-   hdr[0] = w;
-   hdr[1] = h;
-   hdr[2] = (uint32_t)y_off;
-   hdr[3] = w;
-   hdr[4] = (uint32_t)c_off;
-   hdr[5] = (uint32_t)c_off + 1;
-   hdr[6] = cw * 2;
-   hdr[7] = 2;
-   for (i = 0; i < 6; i++)
-      memcpy(&hdr[8 + i], &coef[i], sizeof(float));
+   y_off = layout.header[2];
+   c_off = layout.header[4];
 
    cmd = st->cmd[slot];
    begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -13743,7 +13744,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
          || vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(hdr), hdr);
+   vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(layout.header), layout.header);
 
    bar.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
    bar.pNext                           = NULL;
@@ -13921,7 +13922,7 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
    info->import_formats         =
          (     (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
             && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)
-      ? IMAGE_PIXFMT_NV12 : 0;
+      ? (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010) : 0;
    return true;
 }
 

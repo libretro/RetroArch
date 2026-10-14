@@ -13,8 +13,7 @@ device creation, including core-created devices and device caching. An HEVC
 extension on another family does not advertise HEVC on the selected family.
 The existing H.264 backend registers only when that codec is selected.
 The HEVC backend registers independently on a selected HEVC family. It offers
-progressive Main 8-bit/NV12 sessions. Main10 remains software until Vulkan
-P010 import is implemented. Unsupported profiles, field sequences, missing
+progressive Main 8-bit/NV12 and Main10/P010 sessions. Unsupported profiles, field sequences, missing
 VPS metadata and sessions exceeding device/slot limits fall back at open.
 The owner currently requests one spare DPB slot, so a 16-picture SPS needs
 17 slots and falls back on devices limited to 16.
@@ -57,13 +56,13 @@ tests: Mesa's loader path can retain process-lifetime allocations.
 `make decode-check` compiles the real backend and exercises registration,
 rh265 opt-in, MP4 packets, decode/drain and exported frame leases. GPU pixels
 are read back only by the test oracle, after the ready timeline, then the
-done lease is signaled after reading finishes. All 60 Main8 fixture frames
+done lease is signaled after reading finishes. All 120 Main8/Main10 fixture frames
 match the independent FFmpeg hashes, including B-frame order, WPP, crop and
-repeated headers, on the RTX 5090. All five Main10 cases stay on software.
+repeated headers, on the RTX 5090. Main10 output is checked as normalized 10-bit samples.
 All six native Vulkan H.264 regression streams also match software after
 sharing the command-recording helper. Hardware decode
 and output share existing nonblocking timeline/ring/graveyard ownership.
-Output uses one GPU crop/copy into an independent leased NV12 image; no CPU
+Output uses one GPU crop/copy into an independent leased NV12/P010 image; no CPU
 readback or RGB staging is added to production HEVC playback.
 
 Optional `HEVC_CONFORMANCE_MP4` and `HEVC_CONFORMANCE_NV12` point to matching
@@ -72,7 +71,7 @@ when either is set; each file is limited to 64 MiB, and the even-dimension
 Main8 reference is limited to 32 frames. The existing D3D11 sample's
 `prepare_hevc_conformance.py` creates these files without downloading media.
 The 24-picture LTRPSPS_A_Qualcomm_1 case also matches every exported Vulkan
-sample. Main10 decoding/import, actual File Browser presentation, Vulkan
+sample. Actual File Browser presentation, Vulkan
 movie-core GPU handoff, loss/reset coverage and other GPU vendors remain
 separate acceptance work. The device test skips without a selected HEVC
 family; it fails when an advertised device cannot run the backend fixtures.
@@ -81,3 +80,18 @@ References:
 - https://docs.vulkan.org/refpages/latest/refpages/source/VkQueueFamilyVideoPropertiesKHR.html
 - https://docs.vulkan.org/features/latest/features/proposals/VK_KHR_video_decode_h265.html
 - https://docs.vulkan.org/spec/latest/chapters/videocoding.html
+
+`make import-check` extracts the production importer and runs its compiled
+compute shader on a graphics/compute device without requiring video decode.
+Twelve NV12/P010/NV12 switching cases cover odd visible dimensions, BT.601
+and BT.709, and limited/full range against independent RGB equations.
+The test checks ready/done timelines and busy-slot drops. Linux llvmpipe
+and the RTX 5090 pass. MinGW/Wine builds the same test and skips if no
+compatible device is available. CPU upload/readback belongs only to the oracle.
+
+Production imports copy decoder planes to a device-local buffer and convert
+to SDR RGBA8 on the GPU; they do not read video pixels back to the CPU.
+Direct plane sampling remains a further zero-copy opportunity. The importer
+reserves P010 capacity for format switching where storage-buffer limits permit;
+larger NV12-only allocations remain usable and refuse oversized P010 frames.
+P010 import does not imply HDR tone mapping or a 10-bit display path.

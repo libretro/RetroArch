@@ -14,7 +14,7 @@ typedef struct oracle_readback
    VkCommandBuffer cb;
    VkFence fence;
    uint8_t *map;
-   unsigned width, height;
+   unsigned width, height, sample_bytes;
    VkDeviceSize uv_offset;
    int coherent;
    video_hw_frame_t held[4];
@@ -40,7 +40,7 @@ static void oracle_free(oracle_readback_t *r)
    memset(r, 0, sizeof(*r));
 }
 
-static int oracle_init(oracle_readback_t *r, unsigned width, unsigned height)
+static int oracle_init(oracle_readback_t *r, unsigned width, unsigned height, unsigned depth)
 {
    VkBufferCreateInfo buffer = {0};
    VkMemoryAllocateInfo memory = {0};
@@ -50,9 +50,10 @@ static int oracle_init(oracle_readback_t *r, unsigned width, unsigned height)
    VkMemoryRequirements requirements;
    uint32_t type;
    memset(r, 0, sizeof(*r)); r->width = width; r->height = height;
-   r->uv_offset = ((VkDeviceSize)width * height + 3) & ~(VkDeviceSize)3;
+   r->sample_bytes = depth == 10 ? 2 : 1;
+   r->uv_offset = ((VkDeviceSize)width * height * r->sample_bytes + 3) & ~(VkDeviceSize)3;
    buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-   buffer.size = r->uv_offset + (VkDeviceSize)((width + 1) / 2) * ((height + 1) / 2) * 2;
+   buffer.size = r->uv_offset + (VkDeviceSize)((width + 1) / 2) * ((height + 1) / 2) * 2 * r->sample_bytes;
    buffer.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
    if (vkCreateBuffer(vvd.device, &buffer, NULL, &r->buffer) != VK_SUCCESS) return 0;
    vkGetBufferMemoryRequirements(vvd.device, r->buffer, &requirements);
@@ -93,7 +94,7 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    int ok = 0;
    if (rh265_video_hw_frame(source, &frame)) return 0;
    memcpy(&image, &frame.image, sizeof(image)); memcpy(&wait, &frame.wait, sizeof(wait));
-   if (!frame.image || !frame.abandon || frame.pixfmt != IMAGE_PIXFMT_NV12
+   if (!frame.image || !frame.abandon || frame.pixfmt != (f->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
          || frame.width != r->width || frame.height != r->height || !frame.done) goto done;
    if (!vvd_wait(wait, frame.wait_value, VVD_WAIT_NS) || !vvd_begin(r->cb)) goto done;
    memset(regions, 0, sizeof(regions));
@@ -126,9 +127,12 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
       for (y = 0; y < r->height >> (plane ? 1 : 0); y++)
          for (x = 0; x < r->width >> (plane ? 1 : 0); x++)
          {
-            uint8_t sample = plane ? r->map[r->uv_offset + (y * ((r->width + 1) / 2) + x) * 2 + plane - 1]
-               : r->map[y * r->width + x];
-            hash = (hash ^ sample) * UINT32_C(16777619);
+            size_t offset = plane ? r->uv_offset + ((y * ((r->width + 1) / 2) + x) * 2 + plane - 1) * r->sample_bytes
+               : (y * r->width + x) * r->sample_bytes;
+            unsigned sample = r->map[offset];
+            if (r->sample_bytes == 2) sample = (sample | ((unsigned)r->map[offset + 1] << 8)) >> 6;
+            hash = (hash ^ (sample & 255)) * UINT32_C(16777619);
+            if (r->sample_bytes == 2) hash = (hash ^ (sample >> 8)) * UINT32_C(16777619);
          }
    ok = *count < f->frames && hash == f->hash[*count];
    if (!ok) printf("%s frame %u: GPU %08x, expected %08x\n", f->name,
@@ -172,7 +176,7 @@ static int decode_fixture(const hevc_fixture_t *f)
       goto done;
    }
    if (!oracle_init(&readback, (unsigned)(params->width - params->crop_left - params->crop_right),
-            (unsigned)(params->height - params->crop_top - params->crop_bottom))) goto done;
+            (unsigned)(params->height - params->crop_top - params->crop_bottom), f->depth)) goto done;
    while ((ret = rmp4_read_packet(mp4, &packet)) == 1)
    {
       if (packet.track != selected) continue;
@@ -210,26 +214,6 @@ done:
             || retro_atomic_load_acquire_int(&vvd.live))) ok = 0;
    oracle_free(&readback); rmp4_close(mp4); free(params);
    printf("HEVC Vulkan exported frames %s: %s (%u frames)\n", f->name, ok ? "PASS" : "FAIL", count);
-   return ok;
-}
-
-static int fallback_fixture(const hevc_fixture_t *f)
-{
-   rmp4_t *mp4 = rmp4_open_memory(f->data, f->size);
-   rh265_video *source = rh265_video_open();
-   int i, ok = 0;
-   if (!mp4 || !source) goto done;
-   for (i = 0; i < rmp4_num_tracks(mp4); i++)
-   {
-      const rmp4_track *track = rmp4_get_track(mp4, i);
-      if (track->codec != RMP4_CODEC_H265) continue;
-      if (!rh265_video_set_extradata(source, track->codec_private, track->codec_private_size))
-         ok = !rh265_video_set_hw(source, 1) && !rh265_video_is_hw(source);
-      break;
-   }
-done:
-   rh265_video_close(source); rmp4_close(mp4);
-   printf("HEVC Vulkan P010 fallback %s: %s\n", f->name, ok ? "PASS" : "FAIL");
    return ok;
 }
 
@@ -334,8 +318,7 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    vkGetPhysicalDeviceMemoryProperties(gpu, &ctx->memory_properties);
    if (!vulkan_video_decode_init(ctx)) goto done;
    ok = 1;
-   for (i = 0; i < 5; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
-   for (i = 5; i < 10; i++) if (!fallback_fixture(&fixtures[i])) ok = 0;
+   for (i = 0; i < 10; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
    if (!decode_external()) ok = 0;
    vkDeviceWaitIdle(device);
    vulkan_video_decode_deinit();

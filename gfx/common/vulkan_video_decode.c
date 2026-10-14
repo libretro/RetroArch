@@ -93,6 +93,8 @@ typedef struct vvd_dec
 
    VkExtent2D coded;              /* in samples, whole macroblocks    */
    VkExtent2D image;              /* coded, to the access granularity */
+   VkFormat format;
+   unsigned pixfmt;
    unsigned visible_w, visible_h;
    unsigned crop_x, crop_y;
    unsigned slots;
@@ -558,7 +560,7 @@ static bool vvd_pick_profile(vvd_dec_t *d, const rh264_hw_sps_t *sps,
    return false;
 }
 
-/* NV12, optimal tiling, for every use the slots are put to. */
+/* The decoder format, optimal tiling, for every slot use. */
 static bool vvd_format_ok(vvd_dec_t *d, VkImageUsageFlags usage)
 {
    VkPhysicalDeviceVideoFormatInfoKHR info;
@@ -579,7 +581,7 @@ static bool vvd_format_ok(vvd_dec_t *d, VkImageUsageFlags usage)
          return false;
    }
    for (i = 0; i < n && i < 16; i++)
-      if (     props[i].format     == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+      if (     props[i].format     == d->format
             && props[i].imageType  == VK_IMAGE_TYPE_2D
             && props[i].imageTiling == VK_IMAGE_TILING_OPTIMAL
             && (props[i].imageUsageFlags & usage) == usage)
@@ -588,7 +590,7 @@ static bool vvd_format_ok(vvd_dec_t *d, VkImageUsageFlags usage)
 }
 
 static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
-      VkExtent2D extent, uint32_t layers, VkImageUsageFlags usage,
+      VkFormat format, VkExtent2D extent, uint32_t layers, VkImageUsageFlags usage,
       const void *pnext, uint32_t family_a, uint32_t family_b)
 {
    VkImageCreateInfo info;
@@ -601,7 +603,7 @@ static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
    info.pNext                 = pnext;
    info.flags                 = 0;
    info.imageType             = VK_IMAGE_TYPE_2D;
-   info.format                = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   info.format                = format;
    info.extent.width          = extent.width;
    info.extent.height         = extent.height;
    info.extent.depth          = 1;
@@ -648,9 +650,9 @@ static bool vvd_make_session(vvd_dec_t *d,
    info.queueFamilyIndex           = vvd.dec_family;
    info.flags                      = 0;
    info.pVideoProfile              = &d->profile;
-   info.pictureFormat              = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   info.pictureFormat              = d->format;
    info.maxCodedExtent             = d->coded;
-   info.referencePictureFormat     = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   info.referencePictureFormat     = d->format;
    info.maxDpbSlots                = d->slots;
    info.maxActiveReferencePictures = d->hevc
       ? (unsigned)(d->hevc->params.max_dec_pic_buffering - 1)
@@ -709,7 +711,7 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
                "vkGetPhysicalDeviceImageFormatProperties2");
       fi.sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
       fi.pNext  = &d->profiles;
-      fi.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+      fi.format = d->format;
       fi.type   = VK_IMAGE_TYPE_2D;
       fi.tiling = VK_IMAGE_TILING_OPTIMAL;
       fi.usage  = usage;
@@ -721,7 +723,7 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
          return false;
    }
    for (i = 0; i < (d->dpb_array ? 1u : d->slots); i++)
-      if (!vvd_make_image(&d->dpb[i], &d->dpb_mem[i], d->image,
+      if (!vvd_make_image(&d->dpb[i], &d->dpb_mem[i], d->format, d->image,
                d->dpb_array ? d->slots : 1, usage, &d->profiles,
                vvd.dec_family, vvd.xfer_family))
          return false;
@@ -739,7 +741,7 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
       info.flags        = 0;
       info.image        = d->dpb[d->dpb_array ? 0 : i];
       info.viewType     = VK_IMAGE_VIEW_TYPE_2D;
-      info.format       = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+      info.format       = d->format;
       info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
       info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
       info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -766,7 +768,7 @@ static bool vvd_make_outputs(vvd_dec_t *d)
    unsigned i;
 
    vkGetPhysicalDeviceFormatProperties(vvd.gpu,
-         VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, &fp);
+         d->format, &fp);
    if ((fp.optimalTilingFeatures
             & (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
              | VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
@@ -779,7 +781,7 @@ static bool vvd_make_outputs(vvd_dec_t *d)
    extent.height = (d->visible_h + 1) & ~1u;
    for (i = 0; i < VVD_OUTS; i++)
    {
-      if (     !vvd_make_image(&d->out[i], &d->out_mem[i], extent, 1,
+      if (     !vvd_make_image(&d->out[i], &d->out_mem[i], d->format, extent, 1,
                   VK_IMAGE_USAGE_TRANSFER_DST_BIT
                 | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, NULL,
                   vvd.xfer_family, vvd.gfx_family)
@@ -850,6 +852,8 @@ static void *vvd_open(void *user, const rh264_hw_sps_t *sps, unsigned slots)
       return NULL;
    }
    d->lane          = lane;
+   d->format        = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   d->pixfmt        = IMAGE_PIXFMT_NV12;
    d->slots         = slots;
    d->coded.width   = (uint32_t)sps->width_in_mbs  * 16;
    d->coded.height  = (uint32_t)sps->height_in_mbs * 16;
@@ -1388,7 +1392,7 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->owner       = NULL;
    out->width       = d->visible_w;
    out->height      = d->visible_h;
-   out->pixfmt      = IMAGE_PIXFMT_NV12;
+   out->pixfmt      = d->pixfmt;
    out->layout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    return 0;
 }
