@@ -136,6 +136,8 @@ static void test_wrap_and_epochs(void)
 
 static void test_invalid(void)
 {
+   setup(1);
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -2);
    setup(4);
    frame(1, 0, 0);
    CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -2);

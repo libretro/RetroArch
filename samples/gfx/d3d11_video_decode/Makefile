@@ -42,12 +42,14 @@ rh265_hw_state_test$(EXE): rh265_hw_state_test.c $(RA)/libretro-common/include/f
 	$(CC) $(CFLAGS) -o $@ rh265_hw_state_test.c $(LDFLAGS)
 
 dxva_hevc_test$(EXE): dxva_hevc_test.c $(RA)/gfx/common/dxva_hevc.h \
-      $(RA)/gfx/common/dxva_hevc_rh265.h $(RA)/libretro-common/include/formats/rh265.h
+      $(RA)/gfx/common/dxva_hevc_rh265.h $(RA)/libretro-common/include/formats/rh265.h \
+      $(RA)/libretro-common/include/formats/rh265_hw.h
 	$(CC) $(CFLAGS) -o $@ dxva_hevc_test.c $(LDFLAGS)
 
 dxva_hevc_access_unit_test$(EXE): dxva_hevc_access_unit_test.c \
       dxva_hevc_access_unit_data.h $(RA)/gfx/common/dxva_hevc.h \
       $(RA)/gfx/common/dxva_hevc_rh265.h $(RA)/libretro-common/include/formats/rh265.h \
+      $(RA)/libretro-common/include/formats/rh265_hw.h \
       $(RA)/libretro-common/formats/h265/rh265.c
 	$(CC) $(CFLAGS) -o $@ dxva_hevc_access_unit_test.c \
 	   $(RA)/libretro-common/formats/h265/rh265.c $(LDFLAGS) -lm

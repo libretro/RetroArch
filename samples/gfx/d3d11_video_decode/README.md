@@ -41,6 +41,17 @@ across busy retries and use the summary's `intra` flag for mixed slices.
 compressed-input buffer, adding start codes, zero padding and SDK slice
 records. It preflights all slices and capacities before changing buffers.
 This requires a compressed upload but avoids a separate host staging copy.
+`rh265_hw_prepare` derives full POC and a retained-reference/target-slot plan
+without mutating owner state. Busy submission retries keep both packet and
+plan alive. `rh265_hw_commit` advances ownership only after backend acceptance
+and rejects double/stale commits. Display-pending slots remain held until
+export succeeds; output is ordered by sequence epoch and POC. IDR/BLA/initial
+CRA anchors reset reference history and gate RASL output. Shape/POC-bit-depth
+changes require an owner reset. Long-term references remain unsupported.
+`dxva_hevc_picture_from_state` maps the plan to the existing DXVA helpers.
+These owner masks do not indicate GPU completion: the backend must still
+refuse writes to slots with unfinished work or exported frame leases. No
+fence waits, frame leases, allocation or pixel copies occur in these helpers.
 The slice helper borrows complete VCL NALs with
 Annex-B prefixes, preserves emulation-prevention bytes, and accounts for
 128-byte zero padding provided by the backend. It writes descriptors,
@@ -58,7 +69,7 @@ length-prefixed sample with the packed Annex-B buffer. This proves payload
 preservation and parser integration; it does not execute a GPU decoder.
 
 This is the HEVC parameter/access-unit/submission-buffer layer. The decoder
-owner still needs packet retry/lifetime integration, hardware dispatch,
+owner still needs callback/retry integration, hardware dispatch,
 D3D11 decode/profile setup, GPU slot scheduling,
 NV12/P010 export, main-player integration and real GPU reference checks
 remain. It does not register or advertise a working HEVC hardware decoder.

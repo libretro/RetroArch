@@ -24,6 +24,7 @@
 
 #include <formats/rmp4.h>
 #include <formats/rh265.h>
+#include <formats/rh265_hw.h>
 #ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
 #endif
@@ -105,6 +106,9 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
    int trk = -1, i, frames = 0;
    long bad = 0;
    size_t off = 0;
+   static rh265_hw_state_t hw_state;
+   int hw_outputs = 0;
+   rh265_hw_state_init(&hw_state, 32);
    if (!b)
       return -1;
    if (!(m = rmp4_open_memory(b, n)))
@@ -142,6 +146,9 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       {
          static rh265_nal_t slices[128];
          rh265_access_unit_t au;
+         static rh265_video_params_t parameters;
+         rh265_hw_picture_t pending;
+         int prepared, shown;
          const rmp4_track *track = rmp4_get_track(m, trk);
          unsigned length_size = (track->codec_private[21] & 3) + 1;
          if (rh265_video_get_access_unit(h, pkt.data, pkt.size, length_size,
@@ -149,6 +156,23 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          {
             bad = -1;
             goto done;
+         }
+         if (rh265_video_get_params(h, (unsigned)au.first.pps_id, &parameters))
+         { bad = -1; goto done; }
+         prepared = rh265_hw_prepare(&hw_state, &parameters, &au, &pending);
+         if (prepared == 1)
+         {
+            shown = rh265_hw_output_pick(&hw_state, (unsigned)parameters.max_num_reorder_pics, true);
+            if (shown < 0 || hw_state.poc[shown] != hw_outputs++) { bad = -1; goto done; }
+            rh265_hw_output_release(&hw_state, (unsigned)shown);
+            prepared = rh265_hw_prepare(&hw_state, &parameters, &au, &pending);
+         }
+         if (prepared || !rh265_hw_commit(&hw_state, &pending)) { bad = -1; goto done; }
+         while ((shown = rh265_hw_output_pick(&hw_state,
+                     (unsigned)parameters.max_num_reorder_pics, false)) >= 0)
+         {
+            if (hw_state.poc[shown] != hw_outputs++) { bad = -1; goto done; }
+            rh265_hw_output_release(&hw_state, (unsigned)shown);
          }
       }
       got = rh265_video_decode(h, pkt.data, pkt.size);
@@ -262,6 +286,15 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          }
       }
       frames++;
+   }
+   {
+      int shown;
+      while ((shown = rh265_hw_output_pick(&hw_state, 0, true)) >= 0)
+      {
+         if (hw_state.poc[shown] != hw_outputs++) { bad = -1; goto done; }
+         rh265_hw_output_release(&hw_state, (unsigned)shown);
+      }
+      if (hw_outputs != frames) { bad = -1; goto done; }
    }
    if (off != alen)
       bad = bad < 0 ? bad : bad + 1;   /* short: not every reference frame came out */

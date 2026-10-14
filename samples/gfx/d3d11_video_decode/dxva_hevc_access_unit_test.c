@@ -13,6 +13,8 @@ static void check_picture(const uint8_t *config, size_t config_size,
       size_t sample_size, int depth)
 {
    static rh265_video_params_t metadata;
+   static rh265_hw_state_t owner, unchanged;
+   rh265_hw_picture_t pending, retried;
    rh265_access_unit_t au, saved;
    rh265_nal_t slices[4];
    uint8_t packed[512], records[40], expected[DXVA_HEVC_PP_SIZE];
@@ -31,14 +33,21 @@ static void check_picture(const uint8_t *config, size_t config_size,
    CHECK(!memcmp(&saved, &au, sizeof(au)));
    CHECK(!rh265_video_get_params(original, (unsigned)au.first.pps_id, &metadata));
    CHECK(metadata.bit_depth == depth && metadata.width == 64 && metadata.height == 64);
-   memset(&picture, 0, sizeof(picture));
-   CHECK(dxva_hevc_params_from_rh265(&picture, &metadata));
-   CHECK(dxva_hevc_slice_from_rh265(&picture, &au.first));
+   CHECK(rh265_hw_state_init(&owner, 32)); unchanged = owner;
+   CHECK(!rh265_hw_prepare(&owner, &metadata, &au, &pending));
+   CHECK(!rh265_hw_prepare(&owner, &metadata, &au, &retried));
+   CHECK(!memcmp(&pending, &retried, sizeof(pending)) && !memcmp(&owner, &unchanged, sizeof(owner)));
+   CHECK(dxva_hevc_picture_from_state(&picture, &metadata, &au, &pending));
    CHECK(dxva_hevc_pic_params(expected, &picture, 1));
    CHECK(dxva_hevc_pack_slices(packed, sizeof(packed), records, sizeof(records),
             slices, au.num_slices, &written));
    CHECK(written <= sizeof(packed) && !(written & 127));
    CHECK(!memcmp(packed + 3, sample + 4, sample_size - 4));
+   CHECK(!memcmp(&owner, &unchanged, sizeof(owner)));
+   CHECK(rh265_hw_commit(&owner, &pending));
+   CHECK(!rh265_hw_commit(&owner, &pending));
+   CHECK(rh265_hw_output_pick(&owner, 0, true) == (int)pending.slot);
+   CHECK(rh265_hw_output_release(&owner, pending.slot));
    CHECK(!rh265_video_plane(original, 0, NULL, NULL, NULL));
    CHECK(!rh265_video_plane(converted, 0, NULL, NULL, NULL));
    ret = rh265_video_decode(original, sample, sample_size);

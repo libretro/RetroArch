@@ -2,6 +2,7 @@
 #ifndef RARCH_DXVA_HEVC_RH265_H
 #define RARCH_DXVA_HEVC_RH265_H
 #include <formats/rh265.h>
+#include <formats/rh265_hw.h>
 #include "dxva_hevc.h"
 
 /* Fill parameter fields while preserving picture POC, slots, RPS and IRAP
@@ -148,6 +149,35 @@ static INLINE bool dxva_hevc_slice_from_rh265(dxva_hevc_picture_t *picture,
           || memcmp(picture->after, p.after, p.num_after))) return false;
    if (!dxva_hevc_pic_params(validation, &p, 1)) return false;
    *picture = p;
+   return true;
+}
+
+/* Serialize a prepared owner transaction; committing it is the caller's
+ * responsibility after the backend accepts decode. No ownership changes. */
+static INLINE bool dxva_hevc_picture_from_state(dxva_hevc_picture_t *out,
+      const rh265_video_params_t *params, const rh265_access_unit_t *au,
+      const rh265_hw_picture_t *state)
+{
+   dxva_hevc_picture_t p;
+   uint8_t validation[DXVA_HEVC_PP_SIZE];
+   unsigned i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!params || !au || !state || !state->serial || state->num_refs > 15
+         || state->width != (unsigned)params->width || state->height != (unsigned)params->height
+         || state->bit_depth != (unsigned)params->bit_depth
+         || state->poc_log2 != (unsigned)params->log2_max_poc_lsb) return false;
+   memset(&p, 0, sizeof(p));
+   p.poc = state->poc; p.slot = state->slot; p.num_refs = state->num_refs;
+   for (i = 0; i < p.num_refs; i++)
+   {
+      p.refs[i].poc = state->refs[i].poc; p.refs[i].slot = state->refs[i].slot;
+   }
+   if (!dxva_hevc_params_from_rh265(&p, params)
+         || !dxva_hevc_slice_from_rh265(&p, &au->first)) return false;
+   if (!au->intra) p.coding_settings &= ~(UINT32_C(1) << 18);
+   if (!dxva_hevc_pic_params(validation, &p, 1)) return false;
+   *out = p;
    return true;
 }
 
