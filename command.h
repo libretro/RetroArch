@@ -949,12 +949,12 @@ static const struct cmd_action_map action_map[] = {
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
 #ifdef HAVE_MCP
-   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
+   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
-   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with what the player holds: buttons and axes, tab separated.", 0, cmd_params_input, &cmd_rows_input },
+   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
-   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player or all.", 0, cmd_params_input_release, &cmd_rows_input },
+   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or for every player when given none. Answers in SET_INPUT's shape, for the player asked after or the first of them.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
@@ -967,9 +967,9 @@ static const struct cmd_action_map action_map[] = {
    { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_read },
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
    { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },

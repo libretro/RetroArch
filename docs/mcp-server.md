@@ -281,8 +281,11 @@ and to put a stick anywhere but centre.
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
 it go) for the core, over the player's own controller, until it is set
-again or `RELEASE_INPUT [player]` lets go of it. Both answer with what
-the player then holds. Achievements hardcore mode refuses it.
+again or `RELEASE_INPUT [player]` lets go of it. Both answer with the
+player, the buttons held and the axes held, tab separated, and `none`
+for either where nothing is held. `RELEASE_INPUT` with no player lets
+go for every player and answers for the first of them. Achievements
+hardcore mode refuses it.
 
 Several controls join with `+` to be held together:
 `SET_INPUT 1 right+a 1` runs and jumps in one request, where two
