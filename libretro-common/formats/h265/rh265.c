@@ -580,19 +580,26 @@ static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
    if (inter_pred)
    {
       const rh265_st_rps *ref;
-      int delta_idx = 1, delta_rps_sign, abs_delta_rps_minus1, delta_rps;
+      unsigned delta_idx = 1, abs_delta_rps_minus1;
+      int delta_rps_sign;
+      int64_t delta_rps;
       int num_delta_pocs;
-      int32_t s0[RH265_MAX_REFS], s1[RH265_MAX_REFS];
-      uint8_t u0[RH265_MAX_REFS], u1[RH265_MAX_REFS];
+      int32_t s0[RH265_MAX_REFS] = {0}, s1[RH265_MAX_REFS] = {0};
+      uint8_t u0[RH265_MAX_REFS] = {0}, u1[RH265_MAX_REFS] = {0};
       int n0 = 0, n1 = 0;
       if (is_slice_header)
-         delta_idx = (int)rh265_ue(b) + 1;
-      if (delta_idx > idx) return -1;
+      {
+         unsigned delta_idx_minus1 = rh265_ue(b);
+         if (delta_idx_minus1 >= (unsigned)idx) return -1;
+         delta_idx = delta_idx_minus1 + 1;
+      }
+      if (delta_idx > (unsigned)idx) return -1;
       if (predictor) *predictor = idx - delta_idx;
       ref = &s->st_rps[idx - delta_idx];
       delta_rps_sign       = (int)rh265_u1(b);
-      abs_delta_rps_minus1 = (int)rh265_ue(b);
-      delta_rps = (1 - 2 * delta_rps_sign) * (abs_delta_rps_minus1 + 1);
+      abs_delta_rps_minus1 = rh265_ue(b);
+      delta_rps = (1 - 2 * delta_rps_sign) * ((int64_t)abs_delta_rps_minus1 + 1);
+      if (rh265_bits_overrun(b) || delta_rps < INT32_MIN || delta_rps > INT32_MAX) return -1;
       num_delta_pocs = ref->num_negative + ref->num_positive;
       if (num_delta_pocs > RH265_MAX_REFS * 2) return -1;
       /* 7.4.8: build the new set from used_by_curr/use_delta flags */
@@ -609,40 +616,40 @@ static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
           * then ref negative (spec 7.4.8 derivation) */
          for (k = ref->num_positive - 1; k >= 0; k--)
          {
-            int32_t d = ref->delta_poc_s1[k] + delta_rps;
+            int64_t d = (int64_t)ref->delta_poc_s1[k] + delta_rps;
             int ri = ref->num_negative + k;
             if (d < 0 && use[ri])
-            { if (n0 >= RH265_MAX_REFS) return -1;
-              s0[n0] = d; u0[n0] = (uint8_t)used_by[ri]; n0++; }
+            { if (n0 >= RH265_MAX_REFS || d < INT32_MIN) return -1;
+              s0[n0] = (int32_t)d; u0[n0] = (uint8_t)used_by[ri]; n0++; }
          }
          if (delta_rps < 0 && use[num_delta_pocs])
          { if (n0 >= RH265_MAX_REFS) return -1;
-           s0[n0] = delta_rps; u0[n0] = (uint8_t)used_by[num_delta_pocs]; n0++; }
+           s0[n0] = (int32_t)delta_rps; u0[n0] = (uint8_t)used_by[num_delta_pocs]; n0++; }
          for (k = 0; k < ref->num_negative; k++)
          {
-            int32_t d = ref->delta_poc_s0[k] + delta_rps;
+            int64_t d = (int64_t)ref->delta_poc_s0[k] + delta_rps;
             if (d < 0 && use[k])
-            { if (n0 >= RH265_MAX_REFS) return -1;
-              s0[n0] = d; u0[n0] = (uint8_t)used_by[k]; n0++; }
+            { if (n0 >= RH265_MAX_REFS || d < INT32_MIN) return -1;
+              s0[n0] = (int32_t)d; u0[n0] = (uint8_t)used_by[k]; n0++; }
          }
          /* positive half */
          for (k = ref->num_negative - 1; k >= 0; k--)
          {
-            int32_t d = ref->delta_poc_s0[k] + delta_rps;
+            int64_t d = (int64_t)ref->delta_poc_s0[k] + delta_rps;
             if (d > 0 && use[k])
-            { if (n1 >= RH265_MAX_REFS) return -1;
-              s1[n1] = d; u1[n1] = (uint8_t)used_by[k]; n1++; }
+            { if (n1 >= RH265_MAX_REFS || d > INT32_MAX) return -1;
+              s1[n1] = (int32_t)d; u1[n1] = (uint8_t)used_by[k]; n1++; }
          }
          if (delta_rps > 0 && use[num_delta_pocs])
          { if (n1 >= RH265_MAX_REFS) return -1;
-           s1[n1] = delta_rps; u1[n1] = (uint8_t)used_by[num_delta_pocs]; n1++; }
+           s1[n1] = (int32_t)delta_rps; u1[n1] = (uint8_t)used_by[num_delta_pocs]; n1++; }
          for (k = 0; k < ref->num_positive; k++)
          {
-            int32_t d = ref->delta_poc_s1[k] + delta_rps;
+            int64_t d = (int64_t)ref->delta_poc_s1[k] + delta_rps;
             int ri = ref->num_negative + k;
             if (d > 0 && use[ri])
-            { if (n1 >= RH265_MAX_REFS) return -1;
-              s1[n1] = d; u1[n1] = (uint8_t)used_by[ri]; n1++; }
+            { if (n1 >= RH265_MAX_REFS || d > INT32_MAX) return -1;
+              s1[n1] = (int32_t)d; u1[n1] = (uint8_t)used_by[ri]; n1++; }
          }
       }
       memcpy(rps->delta_poc_s0, s0, sizeof(s0));
@@ -654,25 +661,27 @@ static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
    }
    else
    {
-      int num_neg = (int)rh265_ue(b);
-      int num_pos = (int)rh265_ue(b);
-      int i;
-      int32_t prev;
-      if (num_neg > RH265_MAX_REFS || num_pos > RH265_MAX_REFS) return -1;
+      unsigned num_neg = rh265_ue(b);
+      unsigned num_pos = rh265_ue(b);
+      unsigned i;
+      int64_t prev;
+      if (rh265_bits_overrun(b) || num_neg > RH265_MAX_REFS || num_pos > RH265_MAX_REFS) return -1;
       prev = 0;
       for (i = 0; i < num_neg; i++)
       {
-         int32_t d = (int32_t)rh265_ue(b) + 1;
+         int64_t d = (int64_t)rh265_ue(b) + 1;
          prev -= d;
-         rps->delta_poc_s0[i] = prev;
+         if (rh265_bits_overrun(b) || prev < INT32_MIN) return -1;
+         rps->delta_poc_s0[i] = (int32_t)prev;
          rps->used_s0[i] = (uint8_t)rh265_u1(b);
       }
       prev = 0;
       for (i = 0; i < num_pos; i++)
       {
-         int32_t d = (int32_t)rh265_ue(b) + 1;
+         int64_t d = (int64_t)rh265_ue(b) + 1;
          prev += d;
-         rps->delta_poc_s1[i] = prev;
+         if (rh265_bits_overrun(b) || prev > INT32_MAX) return -1;
+         rps->delta_poc_s1[i] = (int32_t)prev;
          rps->used_s1[i] = (uint8_t)rh265_u1(b);
       }
       rps->num_negative = num_neg;

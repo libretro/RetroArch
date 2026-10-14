@@ -144,6 +144,7 @@ static void test_empty_long_term(void)
    CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
    CHECK(rh265_hw_commit(&state, &picture));
    params.num_long_term_ref_pics = 1;
+   frame(2, -1, 1);
    saved = state;
    CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
    CHECK(!memcmp(&state, &saved, sizeof(state)));
@@ -173,6 +174,26 @@ static void test_long_term(void)
    CHECK(!picture.serial);
 }
 
+static void test_reference_capacity(void)
+{
+   setup(4); params.long_term_ref_pics_present = 1;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture) && rh265_hw_commit(&state, &picture));
+   frame(1, -1, 1);
+   au.first.num_negative = 2; au.first.delta_poc_before[1] = -2;
+   au.first.long_term.count = 1; au.first.long_term.poc_lsb[0] = 15;
+   saved = state;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(picture.num_refs == 1 && !memcmp(&state, &saved, sizeof(state)));
+   au.first.long_term.count = 2; au.first.long_term.poc_lsb[1] = 14;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -1);
+   CHECK(!picture.serial && !memcmp(&state, &saved, sizeof(state)));
+   au.first.long_term.count = 0;
+   au.first.num_positive = 2;
+   au.first.delta_poc_after[0] = 1; au.first.delta_poc_after[1] = 2;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -1);
+   CHECK(!picture.serial && !memcmp(&state, &saved, sizeof(state)));
+}
+
 static void test_invalid(void)
 {
    setup(1);
@@ -196,7 +217,7 @@ static void test_invalid(void)
 
 int main(void)
 {
-   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_invalid();
+   test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_reference_capacity(); test_invalid();
    printf("HEVC hardware owner state: %u failures\n", failures);
    return failures ? 1 : 0;
 }

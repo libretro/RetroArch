@@ -93,6 +93,8 @@ static INLINE int rh265_hw_prepare(const rh265_hw_state_t *s,
          || h->num_negative < 0 || h->num_negative > 16
          || h->num_positive < 0 || h->num_positive > 16
          || h->long_term.count > 16
+         || (unsigned)(h->num_negative + h->num_positive) + h->long_term.count
+               >= (unsigned)params->max_dec_pic_buffering
          || (h->long_term.count && !params->long_term_ref_pics_present)
          || h->pic_output_flag < 0 || h->pic_output_flag > 1)
       return -1;
