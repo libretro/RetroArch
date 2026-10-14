@@ -71,6 +71,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 #if defined(_MSC_VER)
 #include <malloc.h> /* MSVC provides alloca here */
 #elif !defined(alloca)
@@ -809,14 +810,14 @@ static int vorbis_validate(uint8_t *data)
 static int lookup1_values(int entries, int dim)
 {
    int r = (int) floor(exp((float) log((float) entries) / dim));
-   if ((int) floor(pow((float) r+1, dim)) <= entries)   /* (int) cast for MinGW warning; */
-      ++r;                                              /* floor() to avoid _ftol() when non-CRT */
+   if (floor(pow((float) r+1, dim)) <= entries)
+      ++r;
    /* On well-formed data these invariants hold; on malformed entries/dim
     * they can fail.  Return 0 so the caller (which already rejects a
     * zero lookup_values) errors out gracefully instead of asserting. */
    if (!(pow((float) r+1, dim) > entries))
       return 0;
-   if (!((int) floor(pow((float) r, dim)) <= entries))
+   if (!(floor(pow((float) r, dim)) <= entries))
       return 0;
    return r;
 }
@@ -4639,6 +4640,8 @@ static int start_decoder_setup(vorb *f)
       x = get_bits(f, 8);
       y = get_bits(f, 8);
       c->entries = (get_bits(f, 8)<<16) + (y<<8) + x;
+      if (!c->dimensions || !c->entries)
+         return error(f, RVORBIS_invalid_setup);
       ordered = get_bits(f,1);
       c->sparse = ordered ? 0 : get_bits(f,1);
 
@@ -4773,6 +4776,7 @@ static int start_decoder_setup(vorb *f)
       c->lookup_type = get_bits(f, 4);
       if (c->lookup_type > 2) return error(f, RVORBIS_invalid_setup);
       if (c->lookup_type > 0) {
+         uint64_t lookup_values;
          uint16_t *mults;
          c->minimum_value = float32_unpack(get_bits(f, 32));
          c->minimum_q = 0;
@@ -4781,11 +4785,15 @@ static int start_decoder_setup(vorb *f)
          c->value_bits = get_bits(f, 4)+1;
          c->sequence_p = get_bits(f,1);
          if (c->lookup_type == 1)
-            c->lookup_values = lookup1_values(c->entries, c->dimensions);
+            lookup_values = lookup1_values(c->entries, c->dimensions);
          else
-            c->lookup_values = c->entries * c->dimensions;
-         if (c->lookup_values == 0)   /* corrupt: guards div/mod below   */
+            lookup_values = (uint64_t)c->entries * c->dimensions;
+         /* Allocation accounting and several decode loops use int.
+          * Reject products that would be narrowed before allocation. */
+         if (!lookup_values || lookup_values > INT_MAX / sizeof(int32_t)
+               || lookup_values > INT_MAX / sizeof(mults[0]))
             return error(f, RVORBIS_invalid_setup);
+         c->lookup_values = (uint32_t)lookup_values;
          mults = (uint16_t *) setup_temp_malloc(f, sizeof(mults[0]) * c->lookup_values);
          if (!mults)
             return error(f, RVORBIS_outofmem);
@@ -4803,16 +4811,27 @@ static int start_decoder_setup(vorb *f)
          if (c->lookup_type == 1)
          {
             int len, sparse = c->sparse;
+            uint64_t multiplicand_count;
             /* pre-expand the lookup1-style multiplicands, to avoid a divide in the inner loop */
+            len = sparse ? c->sorted_entries : c->entries;
+            multiplicand_count = (uint64_t)len * c->dimensions;
+            if (multiplicand_count > INT_MAX / sizeof(c->multiplicands[0])
+                  || multiplicand_count > INT_MAX / sizeof(int32_t))
+            {
+               setup_temp_free(f, mults,
+                     sizeof(mults[0]) * c->lookup_values);
+               return error(f, RVORBIS_invalid_setup);
+            }
             if (sparse)
             {
                if (c->sorted_entries == 0)
                   goto skip;
-               c->multiplicands = (rvorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->sorted_entries * c->dimensions);
+               c->multiplicands = (rvorbis_codetype *) setup_malloc(f,
+                     sizeof(c->multiplicands[0]) * (size_t)multiplicand_count);
             } else
-               c->multiplicands = (rvorbis_codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->entries        * c->dimensions);
+               c->multiplicands = (rvorbis_codetype *) setup_malloc(f,
+                     sizeof(c->multiplicands[0]) * (size_t)multiplicand_count);
             if (!c->multiplicands) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, RVORBIS_outofmem); }
-            len = sparse ? c->sorted_entries : c->entries;
             for (j=0; j < len; ++j) {
                int z = sparse ? c->sorted_values[j] : j, div=1;
                for (k=0; k < c->dimensions; ++k) {
@@ -4840,7 +4859,7 @@ static int start_decoder_setup(vorb *f)
             setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values);
             c->lookup_type = 2;
             {
-               int cnt = len * c->dimensions;
+               int cnt = (int)multiplicand_count;
                c->multiplicands_q = (int32_t *) setup_malloc(f, sizeof(int32_t) * cnt);
                if (!c->multiplicands_q) return error(f, RVORBIS_outofmem);
                for (j=0; j < cnt; ++j)
