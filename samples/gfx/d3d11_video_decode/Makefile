@@ -33,6 +33,7 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
 TARGETS := dxva_h264_test$(EXE) dxva_hevc_test$(EXE) dxva_hevc_access_unit_test$(EXE)
 TARGETS += rh265_hw_state_test$(EXE)
 TARGETS += rh265_hw_session_test$(EXE)
+TARGETS += rh265_hw_stream_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
 TARGETS += d3d11_backpressure_test$(EXE)
@@ -90,6 +91,16 @@ PLAYER_SOURCES := $(RA)/libretro-common/formats/video_player.c \
    $(RA)/libretro-common/features/features_cpu.c \
    $(RA)/libretro-common/time/rtime.c
 
+rh265_hw_stream_test$(EXE): rh265_hw_stream_test.c dxva_hevc_access_unit_data.h \
+      $(DECODERS) $(PLAYER_SOURCES) $(RA)/libretro-common/include/formats/rh265_hw.h \
+      $(RA)/libretro-common/include/formats/rh265.h \
+      $(RA)/libretro-common/include/formats/rmp4_video.h \
+      $(RA)/samples/formats/video_hdr_fp16/fixtures/sdr_hevc.mp4
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -o $@ \
+	   rh265_hw_stream_test.c $(DECODERS) \
+	   $(filter-out $(RA)/libretro-common/formats/h265/rh265.c,$(PLAYER_SOURCES)) \
+	   $(LDFLAGS) -Wl,--gc-sections -lm
+
 d3d11_backpressure_test$(EXE): d3d11_backpressure_test.c \
       d3d11_video_decode_test.c $(DECODERS) $(DEPS) $(BACKEND) $(PLAYER_SOURCES)
 	$(CC) $(CFLAGS) $(WINFLAGS) -ffunction-sections -fdata-sections -o $@ \
@@ -102,6 +113,7 @@ check: all
 	$(RUNNER) ./dxva_hevc_access_unit_test$(EXE)
 	$(RUNNER) ./rh265_hw_state_test$(EXE)
 	$(RUNNER) ./rh265_hw_session_test$(EXE)
+	$(RUNNER) ./rh265_hw_stream_test$(EXE)
 ifeq ($(EXE),.exe)
 	$(RUNNER) ./d3d11_video_decode_mock_test$(EXE)
 	$(RUNNER) ./d3d11_video_decode_test$(EXE)
@@ -113,6 +125,7 @@ clean:
 	rm -f dxva_hevc_access_unit_test dxva_hevc_access_unit_test.exe
 	rm -f rh265_hw_state_test rh265_hw_state_test.exe
 	rm -f rh265_hw_session_test rh265_hw_session_test.exe
+	rm -f rh265_hw_stream_test rh265_hw_stream_test.exe
 	rm -f dxva_h264_test dxva_h264_test.exe \
 	   d3d11_video_decode_mock_test.exe d3d11_video_decode_test.exe
 	rm -f d3d11_backpressure_test d3d11_backpressure_test.exe

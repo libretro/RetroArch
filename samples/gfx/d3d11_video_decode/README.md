@@ -92,9 +92,19 @@ The mock tests cover profile/configuration, buffer sizes/padding, optional
 matrices, busy retry, driver failures and deferred close. The device oracle
 compares an imported Main picture with software through shared handles and
 fences; it skips if device setup is unavailable. Oracle readback is test-only.
-Main10/P010, player registration, Vulkan HEVC and real inter-picture GPU
-reference coverage remain. The main decoder/player does not select this
-backend yet. Export performs one GPU crop/copy into the shared texture pool;
+The D3D11 adapter registers its Main8 offer with rh265. MP4 hardware opt-in
+opens it before the first picture and keeps compressed packet storage across
+decode/output backpressure. DPB pressure may export an older picture while
+retaining the unconsumed packet; the presentation clock advances only for
+the exported picture. Sessions request the SPS DPB capacity plus one target,
+subject to the device's minimum texture-array capacity. Rewind drops untaken
+leases and reopens the decoder. Decoder-open refusal retains software decode.
+`rh265_hw_stream_test` covers decoder and MP4 lease transfer, busy retries,
+drain, rewind and untouched CPU pixel buffers with portable mocks.
+
+Main10/P010, main movie-core GPU presentation, Vulkan HEVC and real
+inter-picture GPU reference coverage remain. Export performs one GPU
+crop/copy into the shared texture pool;
 it never reads pixels back to the CPU. Removing that copy requires array-layer
 and crop transport plus compatible sharing and retained DPB ownership.
 

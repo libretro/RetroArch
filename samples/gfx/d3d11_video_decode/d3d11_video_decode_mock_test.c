@@ -969,6 +969,42 @@ static void test_hevc(void)
    subs_free();
 }
 
+static void test_hevc_registry(void)
+{
+   rh265_video *v = rh265_video_open();
+   video_hw_frame_t frame;
+   int before = live, ret;
+   check("HEVC registry: parser opens", v != NULL);
+   if (!v) return;
+   views = views_ok = 0;
+   check("HEVC registry: config", !rh265_video_set_extradata(v,
+         hevc_config8, sizeof(hevc_config8)));
+   check("HEVC registry: D3D11 selected", rh265_video_set_hw(v, 1)
+         && rh265_video_is_hw(v));
+   pending_left = 1;
+   check("HEVC registry: busy packet retained", rh265_video_decode(v,
+         hevc_sample8, sizeof(hevc_sample8)) == 2);
+   check("HEVC registry: accepted picture", rh265_video_decode(v,
+         hevc_sample8, sizeof(hevc_sample8)) == 1);
+   check("HEVC registry: transfers shared export", !rh265_video_hw_frame(v, &frame));
+   rh265_video_close(v);
+   check("HEVC registry: close retains external lease", live > before);
+   video_hw_frame_abandon(&frame);
+   d3d11vd_grave_reap(false);
+   check("HEVC registry: abandonment retires owner", live == before);
+
+   v = rh265_video_open();
+   check("HEVC registry: Main10 config", !rh265_video_set_extradata(v,
+         hevc_config10, sizeof(hevc_config10)));
+   check("HEVC registry: Main10 stays on software", !rh265_video_set_hw(v, 1)
+         && !rh265_video_is_hw(v));
+   ret = rh265_video_decode(v, hevc_sample10, sizeof(hevc_sample10));
+   if (!ret) ret = rh265_video_drain(v) == 0 ? 1 : -1;
+   check("HEVC registry: fallback reconstructs Main10", ret == 1
+         && rh265_video_bit_depth(v) == 10 && rh265_video_plane(v, 0, NULL, NULL, NULL));
+   rh265_video_close(v);
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -1006,6 +1042,7 @@ int main(void)
    test_direct();
    test_device_loss();
    test_hevc();
+   test_hevc_registry();
 
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);

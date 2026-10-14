@@ -159,7 +159,7 @@ void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
 
-/* H.264 on the hardware backend (rh264_video_set_hw): true when the
+/* H.264/HEVC on the hardware backend: true when the
  * frames will come from it, false when they stay in software - another
  * codec, a colour the GPU frame cannot carry, or a backend that will
  * not take the stream. A stream already under way starts over from
