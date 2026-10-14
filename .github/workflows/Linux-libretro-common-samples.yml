@@ -159,6 +159,8 @@ jobs:
             data_transfer_prefix_test
             data_transfer_window_test
             audio_transfer_window_test
+            # rvorbis' codebook size bound, and a real stream past it.
+            rvorbis_codebook_test
             rjpeg_test
             rh264_lossless_test
             rh264_lossless_test_nothreads
