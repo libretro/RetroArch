@@ -327,6 +327,12 @@ jobs:
             # Animation playback against a scripted stream: order,
             # pacing, loops, catch-up, the worker's two jobs.
             video_player_test
+            # VP9 reference-slot sizing, the hardware session's
+            # metadata, retries and frame leases, and WebM dispatch
+            # into it.
+            rvp9_reference_test
+            rvp9_hw_session_test
+            rwebm_hw_stream_test
           )
 
           # Targets that are built but deliberately not executed, each
