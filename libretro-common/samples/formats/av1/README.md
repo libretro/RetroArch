@@ -232,5 +232,17 @@ partial-open cleanup, with and without thread support.
 
 RetroArch's HAVE_RAV1 option links the registry and enables a Vulkan Main
 8/10-bit backend. See samples/gfx/vulkan_video_caps for native pixel evidence
-and device limits. Container temporal-unit dispatch and builtin player routing
-remain pending; this does not supply a software AV1 pixel decoder.
+and device limits. This does not supply a software AV1 pixel decoder.
+
+`formats/rav1_hw_stream.h` owns packet dispatch and backend retirement around
+that session. Initialize fresh persistent storage with a validated configuration
+sequence, or NULL for an in-band header. `begin` borrows a complete bounded
+packet; `step` processes one OBU and returns END, FRAME, PROGRESS or BUSY.
+Keep the packet resident and immutable until END, error or close. FRAME transfers
+a GPU lease; PROGRESS permits the caller to yield between hidden frames or
+metadata, and BUSY retains the cursor without waiting. Discard omits exports
+while retaining decoder references. Sequence changes require close/reinit.
+Separate FRAME_HEADER/TILE_GROUP coding and extra layers remain unsupported.
+Tests cover multi-OBU packets, hidden/replay ordering, decode/export BUSY,
+discard, cancellation, repeated/changed sequences and lease release after close.
+MP4/WebM player adapters remain pending.

@@ -1,6 +1,7 @@
 CC ?= cc
 COMMON := ../../..
 TARGET := rav1_test$(EXE)
+TARGET_TEST := rav1_hw_stream_test$(EXE)
 HW := rav1_hw_session_test$(EXE)
 BACKEND := rav1_hw_backend_test$(EXE)
 STATE := rav1_reference_state_test$(EXE)
@@ -19,10 +20,13 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND)
+all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+$(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
+	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
 
 $(BACKEND): rav1_hw_backend_test.c $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw.h
 	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
@@ -77,9 +81,11 @@ check: all
 	$(RUNNER) ./$(GRAIN)
 	$(RUNNER) ./$(STATE)
 	$(RUNNER) ./$(HW)
+	$(RUNNER) ./$(TARGET_TEST)
 	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_hw_stream_test rav1_hw_stream_test.exe
 	rm -f rav1_hw_backend_test rav1_hw_backend_test.exe
 	rm -f rav1_hw_session_test rav1_hw_session_test.exe rav1_reference_state_test rav1_reference_state_test.exe rav1_grain_test rav1_grain_test.exe rav1_motion_test rav1_motion_test.exe rav1_reference_test rav1_reference_test.exe rav1_picture_test rav1_picture_test.exe rav1_frame_test rav1_frame_test.exe rav1_tile_info_test rav1_tile_info_test.exe rav1_tiles_test rav1_tiles_test.exe rav1_sequence_test rav1_sequence_test.exe rav1_test rav1_test.exe rav1_container_test rav1_container_test.exe
 

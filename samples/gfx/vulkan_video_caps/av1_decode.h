@@ -1,16 +1,19 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 /* Optional OBU stream plus independent FFmpeg NV12/P010 oracle. */
+#include <formats/rav1_hw_stream.h>
 static int av1_decode_fixture(void)
 {
    const char *path = getenv("AV1_TEST_OBU"),
               *raw_path = getenv("AV1_TEST_RAW");
    uint8_t *data = NULL, *raw = NULL;
+   const uint8_t *packet_start = NULL;
    int unsized = getenv("AV1_TEST_UNSIZED") != NULL;
+   rav1_hw_stream_t *stream = NULL;
    rav1_hw_session_t *session = NULL;
+   video_hw_frame_t frame;
    rav1_sequence_t *sequence = NULL;
    rav1_hw_ops_t ops;
-   rav1_hw_backend_t backend;
    oracle_readback_t *reader = NULL;
    hevc_fixture_t fixture;
    rav1_obu_t obu;
@@ -19,7 +22,6 @@ static int av1_decode_fixture(void)
    unsigned count = 0, replays = 0, decodes = 0, tries, i, plane, x, y;
    int ret = -1, ok = 0, started = 0;
    memset(&ops, 0, sizeof(ops));
-   memset(&backend, 0, sizeof(backend));
    memset(&fixture, 0, sizeof(fixture));
    fixture.name = "av1";
    if (!path && !raw_path)
@@ -28,8 +30,11 @@ static int av1_decode_fixture(void)
       goto done;
    data = oracle_load(path, &size);
    raw = oracle_load(raw_path, &raw_size);
+   packet_start = data;
    sequence = (rav1_sequence_t *)calloc(1, sizeof(*sequence));
-   session = (rav1_hw_session_t *)calloc(1, sizeof(*session));
+   stream = (rav1_hw_stream_t *)calloc(1, sizeof(*stream));
+   if (stream)
+      session = &stream->session;
    reader = (oracle_readback_t *)calloc(1, sizeof(*reader));
    if (!data || !raw || !sequence || !session || !reader)
       goto done;
@@ -79,8 +84,7 @@ static int av1_decode_fixture(void)
                 factory.close)
                goto done;
          }
-         if (!hash || !rav1_hw_backend_open(sequence, 9, &ops, &backend) ||
-             !rav1_hw_session_init(session, sequence, &ops, 9) ||
+         if (!hash || !rav1_hw_stream_init(stream, sequence) ||
              !oracle_init(reader, sequence->max_width, sequence->max_height,
                           fixture.depth))
             goto done;
@@ -109,6 +113,7 @@ static int av1_decode_fixture(void)
                             (hash[i] ^ (sample >> 8)) * UINT32_C(16777619);
                   }
          }
+         ops = session->ops;
          started = 1;
       }
       if (obu.type != 3 && obu.type != 6)
@@ -117,6 +122,7 @@ static int av1_decode_fixture(void)
          goto done;
       {
          size_t start = offset - obu.size;
+         size_t packet_size;
          unsigned before = ((vvd_dec_t *)ops.decoder)->dring;
          if (unsized)
          {
@@ -125,41 +131,47 @@ static int av1_decode_fixture(void)
             ((uint8_t *)obu.data)[0] &= ~2;
             obu.size = header + obu.payload_size;
          }
-         for (tries = 0; tries < 1024; tries++)
-         {
-            ret = rav1_hw_session_submit(session, obu.data, obu.size);
-            if (ret != 1)
-               break;
-            vkDeviceWaitIdle(vvd.device);
-         }
-         if (ret)
-         {
-            printf("AV1 submit at byte %lu: %d\n",
-                   (unsigned long)start, ret);
+         packet_size = (size_t)(obu.data - packet_start) + obu.size;
+         if (rav1_hw_stream_begin(stream, packet_start, packet_size))
             goto done;
-         }
-         memset((void *)obu.data, 0, obu.size);
-         if (session->pending.header.show_existing)
-         {
-            if (((vvd_dec_t *)ops.decoder)->dring != before)
-               goto done;
-            replays++;
-         }
-      }
-      if (session->output_slot >= 0)
-      {
-         video_hw_frame_t frame;
          for (tries = 0; tries < 1024; tries++)
          {
-            ret = rav1_hw_session_output(session, &frame);
-            if (ret != 1)
+            ret = rav1_hw_stream_step(stream, &frame, false);
+            if (ret == RAV1_HW_STREAM_PROGRESS && stream->offset < stream->size)
+               continue;
+            if (ret != RAV1_HW_STREAM_BUSY)
                break;
             oracle_release(reader);
             reader->pressured++;
             vkDeviceWaitIdle(vvd.device);
          }
-         if (ret)
+         if (ret != RAV1_HW_STREAM_FRAME && ret != RAV1_HW_STREAM_PROGRESS)
+         {
+            printf("AV1 submit at byte %lu: %d\n", (unsigned long)start, ret);
             goto done;
+         }
+         if (session->pending.header.show_existing)
+         {
+            if (((vvd_dec_t *)ops.decoder)->dring != before)
+            {
+               video_hw_frame_abandon(&frame);
+               goto done;
+            }
+            replays++;
+         }
+         {
+            video_hw_frame_t empty;
+            if (rav1_hw_stream_step(stream, &empty, false) != RAV1_HW_STREAM_END)
+            {
+               video_hw_frame_abandon(&frame);
+               goto done;
+            }
+         }
+         memset((void *)packet_start, 0, packet_size);
+         packet_start = data + offset;
+      }
+      if (frame.image)
+      {
          if (frame.yuv !=
              ((sequence->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0) |
               (sequence->matrix_coefficients == 1 ? IMAGE_YUV_FLAG_BT709 : 0)))
@@ -180,8 +192,8 @@ done:
    vkDeviceWaitIdle(vvd.device);
    if (ops.decoder)
       decodes = ((vvd_dec_t *)ops.decoder)->dring;
-   if (backend.close)
-      backend.close(&ops);
+   if (stream)
+      rav1_hw_stream_close(stream);
    if (ok && reader && reader->held_count && count)
    {
       unsigned replay = count - 1;
@@ -193,7 +205,7 @@ done:
       oracle_free(reader);
    free(reader);
    free(sequence);
-   free(session);
+   free(stream);
    free(hash);
    free(data);
    free(raw);

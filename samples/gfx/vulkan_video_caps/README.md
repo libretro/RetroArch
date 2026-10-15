@@ -62,6 +62,9 @@ and an independent NV12/P010 oracle. Generate the sixteen cases with
 same inputs to test RGBA conversion and shader-chain submission. Set
 `AV1_TEST_UNSIZED=1` to remove each submitted OBU length field in the test
 harness, exercising bounded container spans and packet-relative tile offsets.
+The oracle uses rav1_hw_stream for packet prefixes, frame dispatch, output
+backpressure and retirement; it overwrites consumed input and holds output
+leases across close.
 
 Native RTX 5090 evidence: sixteen Main 8/10-bit streams pass, with 158 decode
 submissions, 146 displayed frames and 28 show-existing replays per raw/RGBA
@@ -77,8 +80,8 @@ and frame-size changes are declined. Unsupported/incomplete opens leave no
 registered decoder. GPU outputs use the existing independent leased-image
 copy, followed by staging-free sampled import and RGBA conversion when
 supported. No CPU pixel readback occurs in production; readback is the test
-oracle. Removing the DPB-to-output copy, applying grain, temporal-unit/container
-dispatch and builtin movie/thumbnail routing remain separate work.
+oracle. Removing the DPB-to-output copy, applying grain, MP4/WebM adapters
+and builtin movie/thumbnail routing remain separate work.
 
 Native Windows evidence: NVIDIA GeForce RTX 5090 exposes H.264 and HEVC on
 family 3; both HEVC Main8/Main10 capability queries succeed, with maximum
