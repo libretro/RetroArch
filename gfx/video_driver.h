@@ -660,6 +660,11 @@ typedef struct video_frame_info
    /* The scale the worker lays the widgets out at, worked out from the
     * settings as the frame is built */
    float widget_scale_factor;
+#ifdef HAVE_OPENXR
+   /* 1 + the host's token for the eyes the core drew this frame from,
+    * given on the drawing thread before it is drawn; 0 for none */
+   unsigned vr_give;
+#endif
    /* Read by the menu driver's frame(), on the video thread */
    video_frame_menu_settings_t menu;
    float menu_ticker_speed;
@@ -1478,22 +1483,27 @@ typedef struct video_xr_host
 {
    /* Any thread: VIDEO_XR_HEADSET_ bits. */
    unsigned (*state)(void *user);
-   /* The thread that draws the host's frames. sample runs once a core
-    * frame, before the core, and writes the frame's RETRO_VR_FRAME_ bits. */
-   bool (*sample)(void *user, uint32_t *frame_flags);
-   bool (*eye_state)(void *user, struct retro_vr_eye_state out[2]);
+   /* The thread that draws the host's frames. sample runs once a frame,
+    * for the core's next, @ahead frames past those already handed over,
+    * and writes the frame's RETRO_VR_FRAME_ bits. eye_state hands out
+    * the sampled eyes and a token for them; give, before the frame the
+    * core drew from them is drawn, has the projection show them. */
+   bool (*sample)(void *user, unsigned ahead, uint32_t *frame_flags);
+   bool (*eye_state)(void *user, struct retro_vr_eye_state out[2],
+         unsigned *token);
+   void (*give)(void *user, unsigned token);
    /* The space tracked content is in, and one eye's recommended image
     * size; what was granted is written back. */
    bool (*set_space)(void *user, enum retro_vr_reference_space *space,
          unsigned *eye_width, unsigned *eye_height);
-   /* Main thread, after sample: the head as sampled. */
+   /* The drawing thread, after sample: the head as sampled. */
    bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
    /* The drawing thread, after sample: locates the hands at the
     * sample's time. Asked once a core has asked for the hands. NULL if
     * the host has none. */
    bool (*locate_hands)(void *user);
-   /* Main thread, after locate_hands: the hands as located. NULL if the
-    * host has none. */
+   /* The drawing thread, after locate_hands: the hands as located.
+    * NULL if the host has none. */
    bool (*controller_poses)(void *user,
          struct retro_vr_controller_poses *out);
    /* Any thread: one eye's recommended image size. */
@@ -1520,6 +1530,15 @@ void video_driver_vr_driver_changed(void);
 
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);
+/* The drawing thread: after each frame under the threaded wrapper, a
+ * sample for the core @ahead frames past those handed over; and the
+ * eyes a frame was drawn from (video_frame_info_t::vr_give - 1) given
+ * before it is drawn. */
+void video_driver_vr_publish(unsigned ahead);
+void video_driver_vr_give(unsigned token);
+/* Main thread: 1 + the token of the eyes handed to the core since the
+ * last frame, or 0 */
+unsigned video_driver_vr_give_take(void);
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);
 bool video_driver_get_vr_controller_poses(
       struct retro_vr_controller_poses *out);
@@ -2562,11 +2581,10 @@ void video_context_driver_free(void);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
-/* Writes one runtime parameter of the driver's live shader on the
- * thread that owns it: a blocking round trip under the threaded
- * wrapper, a direct store otherwise. The only field of the live
- * shader that mutates outside set_shader's blocking window is
- * parameters[i].current, and this is its one sanctioned writer. */
+/* Sets one runtime parameter of the driver's live shader: one atomic
+ * store, which the video thread reads for its next frame. The only
+ * field of the live shader that changes outside set_shader's blocking
+ * window is a parameter's value (video_shader_param_get/_set()). */
 void video_shader_driver_set_parameter(struct video_shader *live_shader,
       unsigned index, float value);
 

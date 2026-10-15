@@ -19,7 +19,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include <boolean.h>
+#include <retro_atomic.h>
+#include <retro_inline.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <file/config_file.h>
@@ -140,7 +143,10 @@ struct gfx_fbo_scale
 struct video_shader_parameter
 {
    int pass;
-   float current;
+   /* The value it runs at: the float's bits, set by the frontend while
+    * the video thread reads it each frame. Through
+    * video_shader_param_get() and video_shader_param_set() only. */
+   retro_atomic_int_t current_bits;
    float minimum;
    float initial;
    float maximum;
@@ -148,6 +154,24 @@ struct video_shader_parameter
    char id[64];
    char desc[64];
 };
+
+static INLINE float video_shader_param_get(
+      const struct video_shader_parameter *p)
+{
+   int   bits = retro_atomic_load_relaxed_int(
+         (retro_atomic_int_t*)&p->current_bits);
+   float v;
+   memcpy(&v, &bits, sizeof(v));
+   return v;
+}
+
+static INLINE void video_shader_param_set(
+      struct video_shader_parameter *p, float v)
+{
+   int bits;
+   memcpy(&bits, &v, sizeof(bits));
+   retro_atomic_store_relaxed_int(&p->current_bits, bits);
+}
 
 struct rarch_dir_shader_list
 {

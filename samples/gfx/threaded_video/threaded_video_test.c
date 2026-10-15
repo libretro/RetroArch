@@ -1114,7 +1114,9 @@ static bool hslane_set_info(void *data, const video_vr_content_info_t *info)
    return !hslane_info_fail;
 }
 
-static bool hslane_eye_state(void *user, struct retro_vr_eye_state out[2])
+static unsigned hslane_tokens;
+static bool hslane_eye_state(void *user, struct retro_vr_eye_state out[2],
+      unsigned *token)
 {
    (void)user;
    hslane_pose_calls++;
@@ -1122,7 +1124,64 @@ static bool hslane_eye_state(void *user, struct retro_vr_eye_state out[2])
    memset(out, 0, 2 * sizeof(*out));
    out[0].position[0] = -0.032f;
    out[1].position[0] =  0.032f;
+   /* Which eyes these are, for the give check */
+   out[0].position[1] = (float)hslane_tokens;
+   *token             = hslane_tokens++;
    return !hslane_sample_fail;
+}
+
+/* The video thread parked in a command posted from another thread, as
+ * the shader params lane does */
+static retro_atomic_int_t hslane_parked;
+static retro_atomic_int_t hslane_sampled;
+static bool               hslane_sampled_while_parked;
+
+static uintptr_t hslane_park(void *data)
+{
+   unsigned waited;
+   (void)data;
+   retro_atomic_store_release_int(&hslane_parked, 1);
+   for (waited = 0; waited < 2000
+         && !retro_atomic_load_acquire_int(&hslane_sampled); waited++)
+      retro_sleep(1);
+   hslane_sampled_while_parked =
+      retro_atomic_load_acquire_int(&hslane_sampled) != 0;
+   return 0;
+}
+
+static void hslane_poster(void *data)
+{
+   (void)data;
+   video_thread_run_blocking(hslane_park, NULL);
+}
+
+/* Everything queued for the video thread has run: a blocking command
+ * runs behind it */
+static uintptr_t hslane_noop(void *data) { (void)data; return 0; }
+static void hslane_barrier(void)
+{
+   video_thread_run_blocking(hslane_noop, NULL);
+}
+
+/* A frame drawn: the video thread samples after it, past the release
+ * wait_idle returns on, so a command behind it waits for the sample */
+static void hslane_frame(void)
+{
+   run_frames(1);
+   video_thread_wait_idle();
+   hslane_barrier();
+}
+
+/* The eyes a frame was drawn from: which, and on which thread */
+static unsigned  hslane_give_calls;
+static unsigned  hslane_give_token;
+static uintptr_t hslane_give_thread;
+static void hslane_give(void *user, unsigned token)
+{
+   (void)user;
+   hslane_give_calls++;
+   hslane_give_token  = token;
+   hslane_give_thread = sthread_get_current_thread_id();
 }
 
 static bool hslane_set_space(void *user, enum retro_vr_reference_space *space,
@@ -1136,9 +1195,10 @@ static bool hslane_set_space(void *user, enum retro_vr_reference_space *space,
    return true;
 }
 
-static bool hslane_sample(void *user, uint32_t *frame_flags)
+static bool hslane_sample(void *user, unsigned ahead, uint32_t *frame_flags)
 {
    (void)user;
+   (void)ahead;
    hslane_sample_calls++;
    *frame_flags |= hslane_sample_flags;
    return !hslane_sample_fail;
@@ -1172,6 +1232,122 @@ static bool hslane_eye_size(void *user, unsigned *w, unsigned *h)
    return true;
 }
 #endif
+
+/* ------------------------------------------------------------------ */
+/* Lane: shader parameter writes                                      */
+/*   The frontend sets a parameter of the driver's own shader with one */
+/*   atomic store, without waiting on the video thread that reads it  */
+/*   each frame: parked in a command, the video thread sees the value */
+/*   at once. Each write was a blocking round trip before.            */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t                splane_driver;
+static const video_driver_t         *splane_inner;
+static video_poke_interface_t        splane_poke;
+static const video_poke_interface_t *splane_inner_poke;
+static struct video_shader          *splane_live;
+static retro_atomic_int_t            splane_held;
+static retro_atomic_int_t            splane_written;
+static bool                          splane_written_while_parked;
+static float                         splane_live_seen;
+
+static struct video_shader *splane_get_shader(void *data)
+{
+   (void)data;
+   return splane_live;
+}
+
+static void splane_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   splane_inner->poke_interface(data, &splane_inner_poke);
+   splane_poke                    = *splane_inner_poke;
+   splane_poke.get_current_shader = splane_get_shader;
+   *iface                         = &splane_poke;
+}
+
+/* The video thread parked in a command posted from another thread,
+ * until the main thread has written or 2 s have passed: a write that
+ * waited for the video thread fails the check rather than the run */
+static uintptr_t splane_park(void *data)
+{
+   unsigned waited;
+   (void)data;
+   retro_atomic_store_release_int(&splane_held, 1);
+   for (waited = 0; waited < 2000
+         && !retro_atomic_load_acquire_int(&splane_written); waited++)
+      retro_sleep(1);
+   splane_written_while_parked =
+      retro_atomic_load_acquire_int(&splane_written) != 0;
+   splane_live_seen = video_shader_param_get(&splane_live->parameters[1]);
+   return 0;
+}
+
+static void splane_poster(void *data)
+{
+   (void)data;
+   video_thread_run_blocking(splane_park, NULL);
+}
+
+static void lane_shader_params(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   video_shader_ctx_t    shader_info;
+   thread_video_t       *thr;
+   sthread_t            *poster;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "shader params lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   if (!(splane_live = (struct video_shader*)calloc(1, sizeof(*splane_live))))
+      return;
+   splane_live->num_parameters = 2;
+   video_shader_param_set(&splane_live->parameters[0], 0.25f);
+   video_shader_param_set(&splane_live->parameters[1], 0.5f);
+
+   video_thread_wait_idle();
+   splane_inner                 = thr->driver;
+   splane_driver                = *thr->driver;
+   splane_driver.poke_interface = splane_get_poke;
+   set_driver(thr, &splane_driver);
+   set_poke_from(thr, &splane_driver);
+
+   CHECK(     video_shader_driver_get_current_shader(&shader_info)
+         && shader_info.data == splane_live,
+         "shader params lane: the frontend was not given the driver's "
+         "shader");
+
+   retro_atomic_store_release_int(&splane_held, 0);
+   retro_atomic_store_release_int(&splane_written, 0);
+   if ((poster = sthread_create(splane_poster, NULL)))
+   {
+      while (!retro_atomic_load_acquire_int(&splane_held))
+         retro_sleep(1);
+      video_shader_driver_set_parameter(splane_live, 1, 0.75f);
+      retro_atomic_store_release_int(&splane_written, 1);
+      sthread_join(poster);
+   }
+   CHECK(poster && splane_written_while_parked,
+         "shader params lane: the write waited for the video thread");
+   CHECK(splane_live_seen == 0.75f,
+         "shader params lane: the video thread read %.2f, not the value "
+         "written", (double)splane_live_seen);
+   CHECK(video_shader_param_get(&splane_live->parameters[0]) == 0.25f,
+         "shader params lane: a parameter not written changed");
+
+   video_thread_wait_idle();
+   set_driver(thr, splane_inner);
+   set_poke_from(thr, splane_inner);
+   free(splane_live);
+   splane_live = NULL;
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] shader params lane: written without "
+            "waiting, read by the video thread\n");
+}
 
 static void lane_headset_calls(void)
 {
@@ -1243,6 +1419,7 @@ static void lane_headset_calls(void)
       memset(&host, 0, sizeof(host));
       host.state     = hslane_host_state;
       host.eye_state = hslane_eye_state;
+      host.give      = hslane_give;
       host.set_space = hslane_set_space;
       host.sample    = hslane_sample;
       host.eye_size  = hslane_eye_size;
@@ -1299,18 +1476,57 @@ static void lane_headset_calls(void)
             "headset lane: the stereo request ran off the video thread");
    }
 
+   /* The video thread samples after each frame it draws; the core reads
+    * the newest without waiting on it, and the eyes it drew from are
+    * given there before its frame is drawn */
    {
       struct retro_vr_frame_state fs;
+      unsigned calls;
       bool ok;
       memset(&fs, 0, sizeof(fs));
       hslane_pose_calls = 0;
-      ok = video_driver_get_vr_frame_state(&fs);
-      CHECK(ok && hslane_pose_calls == 1 && fs.eyes[1].position[0] == 0.032f,
-            "headset lane: the eye poses reached the host %u times "
-            "(answer %d)", hslane_pose_calls, ok);
-      CHECK(!hslane_pose_calls
+      video_driver_vr_sample_tracking();
+      run_frames(2);
+      video_thread_wait_idle();
+      video_driver_vr_sample_tracking();
+      calls = hslane_pose_calls;
+      ok    = video_driver_get_vr_frame_state(&fs);
+      CHECK(ok && calls >= 1 && fs.eyes[1].position[0] == 0.032f,
+            "headset lane: the eye poses were sampled %u times "
+            "(answer %d)", calls, ok);
+      CHECK(hslane_pose_calls == calls,
+            "headset lane: reading the frame state asked the host");
+      CHECK(!calls
             || hslane_pose_thread == sthread_get_thread_id(thr->thread),
             "headset lane: the eye poses were read off the video thread");
+      hslane_give_calls = 0;
+      run_frames(1);
+      video_thread_wait_idle();
+      CHECK(     hslane_give_calls == 1
+            && hslane_give_token == (unsigned)fs.eyes[0].position[1]
+            && hslane_give_thread == sthread_get_thread_id(thr->thread),
+            "headset lane: the eyes the core drew from were given %u "
+            "times (token %u)", hslane_give_calls, hslane_give_token);
+   }
+
+   /* Sampling does not wait for the video thread: parked in a command
+    * from another thread, it finds the sample taken */
+   {
+      sthread_t *poster;
+      retro_atomic_store_release_int(&hslane_parked, 0);
+      retro_atomic_store_release_int(&hslane_sampled, 0);
+      if ((poster = sthread_create(hslane_poster, NULL)))
+      {
+         struct retro_vr_frame_state fs;
+         while (!retro_atomic_load_acquire_int(&hslane_parked))
+            retro_sleep(1);
+         video_driver_vr_sample_tracking();
+         video_driver_get_vr_frame_state(&fs);
+         retro_atomic_store_release_int(&hslane_sampled, 1);
+         sthread_join(poster);
+      }
+      CHECK(poster && hslane_sampled_while_parked,
+            "headset lane: sampling waited for the video thread");
    }
 
    /* A core sends its map every frame: the same one is applied once. */
@@ -1371,14 +1587,34 @@ static void lane_headset_calls(void)
             "headset lane: a map after a refusal was answered from the cache (%u)",
             hslane_info_calls);
 
-      /* The core going drops its content on the video thread, once. */
-      hslane_info_calls = 0;
-      video_driver_vr_content_clear();
+      /* The core going drops its content on the video thread, once,
+       * queued there rather than waited for: parked, the video thread
+       * has not had it when the call returns. */
+      {
+         sthread_t *poster;
+         hslane_info_calls = 0;
+         retro_atomic_store_release_int(&hslane_parked, 0);
+         retro_atomic_store_release_int(&hslane_sampled, 0);
+         if ((poster = sthread_create(hslane_poster, NULL)))
+         {
+            while (!retro_atomic_load_acquire_int(&hslane_parked))
+               retro_sleep(1);
+            video_driver_vr_content_clear();
+            CHECK(hslane_info_calls == 0,
+                  "headset lane: the core's going ran off the video thread");
+            retro_atomic_store_release_int(&hslane_sampled, 1);
+            sthread_join(poster);
+         }
+         CHECK(poster && hslane_sampled_while_parked,
+               "headset lane: the core's going waited for the video thread");
+      }
+      hslane_barrier();
       CHECK(hslane_info_calls == 1 && !hslane_info_stereo
             && hslane_info_thread == sthread_get_thread_id(thr->thread),
             "headset lane: the core's going reached the driver %u times",
             hslane_info_calls);
       video_driver_vr_content_clear();
+      hslane_barrier();
       CHECK(hslane_info_calls == 1,
             "headset lane: a second clear reached the driver");
       views.num_views = 0;
@@ -1554,11 +1790,13 @@ static void lane_headset_calls(void)
             "track (flags %u)", (unsigned)fs.flags);
       hslane_sample_flags = RETRO_VR_FRAME_RECENTERED;
       hslane_sample_fail  = true;
+      hslane_frame();
       video_driver_vr_sample_tracking();
       CHECK(!video_driver_get_vr_frame_state(&fs),
             "headset lane: the poses of a failed sample answered");
       hslane_sample_flags = 0;
       hslane_sample_fail  = false;
+      hslane_frame();
       video_driver_vr_sample_tracking();
       memset(&fs, 0, sizeof(fs));
       CHECK(     video_driver_get_vr_frame_state(&fs)
@@ -1574,10 +1812,13 @@ static void lane_headset_calls(void)
       hslane_eye_h        = 1920;
       hslane_sample_flags = RETRO_VR_FRAME_RECENTERED;
       hslane_sample_fail  = true;
+      hslane_frame();
       video_driver_vr_sample_tracking();
       hslane_sample_flags = 0;
       hslane_sample_fail  = false;
       video_driver_vr_content_clear();
+      video_driver_vr_sample_tracking();
+      hslane_frame();
       video_driver_vr_sample_tracking();
       memset(&fs, 0, sizeof(fs));
       CHECK(video_driver_get_vr_frame_state(&fs) && !fs.flags,
@@ -1585,32 +1826,39 @@ static void lane_headset_calls(void)
             (unsigned)fs.flags);
    }
 
-   /* The hands: not located until a core asks, then on its ask and
-    * with each sample, on the video thread; not for the next core. */
+   /* The hands: not located until a core asks, then with each sample,
+    * on the video thread - under the wrapper the first ask answers from
+    * the next sample rather than locating them here; not for the next
+    * core. */
    {
       struct retro_vr_controller_poses hands;
+      unsigned calls;
       hslane_hands_calls = 0;
       video_driver_vr_sample_tracking();
+      hslane_frame();
       video_driver_vr_sample_tracking();
       CHECK(hslane_hands_calls == 0,
             "headset lane: the hands were located %u times unasked",
             hslane_hands_calls);
       memset(&hands, 0, sizeof(hands));
-      CHECK(     video_driver_get_vr_controller_poses(&hands)
-            && hslane_hands_calls == 1
-            && hands.hands[1].flags == RETRO_VR_HAND_ACTIVE,
-            "headset lane: the first ask located the hands %u times",
-            hslane_hands_calls);
-      video_driver_get_vr_controller_poses(&hands);
+      CHECK(     !video_driver_get_vr_controller_poses(&hands)
+            && hslane_hands_calls == 0,
+            "headset lane: the first ask located the hands off the video "
+            "thread (%u)", hslane_hands_calls);
+      hslane_frame();
       video_driver_vr_sample_tracking();
-      CHECK(hslane_hands_calls == 2,
-            "headset lane: asked hands located %u times, wanted once per "
-            "ask's sample", hslane_hands_calls);
+      CHECK(     video_driver_get_vr_controller_poses(&hands)
+            && hslane_hands_calls >= 1
+            && hands.hands[1].flags == RETRO_VR_HAND_ACTIVE,
+            "headset lane: asked hands were located %u times by the next "
+            "sample", hslane_hands_calls);
       CHECK(hslane_hands_thread == sthread_get_thread_id(thr->thread),
             "headset lane: the hands were located off the video thread");
       video_driver_vr_content_clear();
+      calls = hslane_hands_calls;
       video_driver_vr_sample_tracking();
-      CHECK(hslane_hands_calls == 2,
+      hslane_frame();
+      CHECK(hslane_hands_calls == calls,
             "headset lane: the hands outlived the core's content");
    }
 
@@ -9926,6 +10174,7 @@ int main(int argc, char *argv[])
       lane_pixel_format();
    lane_context_api_behind_wrapper();
    lane_headset_calls();
+   lane_shader_params();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

@@ -3353,7 +3353,13 @@ static void d3d10_chain_bind_pass(d3d10_video_t *d3d10, d3d10_chain_t *c,
          {
             while (uniform->size)
             {
-               if (uniform->data)
+               if (uniform->param)
+               {
+                  float v = video_shader_param_get(uniform->param);
+                  memcpy((uint8_t*)uniform_data + uniform->offset,
+                        &v, sizeof(v));
+               }
+               else if (uniform->data)
                   memcpy((uint8_t*)uniform_data + uniform->offset,
                         uniform->data, uniform->size);
                uniform++;

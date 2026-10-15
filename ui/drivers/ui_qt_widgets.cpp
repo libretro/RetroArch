@@ -3595,7 +3595,7 @@ static void shader_reresolve_keeping_values(struct video_shader *shader)
 
    for (i = 0; i < shader->num_parameters; i++)
       values.insert(QString(shader->parameters[i].id),
-            shader->parameters[i].current);
+            video_shader_param_get(&shader->parameters[i]));
 
    video_shader_resolve_parameters(shader);
 
@@ -3604,7 +3604,7 @@ static void shader_reresolve_keeping_values(struct video_shader *shader)
       QHash<QString, float>::const_iterator it =
             values.constFind(QString(shader->parameters[i].id));
       if (it != values.constEnd())
-         shader->parameters[i].current = it.value();
+         video_shader_param_set(&shader->parameters[i], it.value());
    }
 }
 
@@ -3809,7 +3809,7 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
          if (pass >= 0 && param->pass != pass)
             continue;
 
-         param->current = param->initial;
+         video_shader_param_set(param, param->initial);
       }
    }
 
@@ -3824,7 +3824,7 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
          if (pass >= 0 && param->pass != pass)
             continue;
 
-         param->current = param->initial;
+         video_shader_param_set(param, param->initial);
       }
 
       video_shader->flags |= SHDR_FLAG_MODIFIED;
@@ -3854,7 +3854,7 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
       }
 
       if (param)
-         param->current = param->initial;
+         video_shader_param_set(param, param->initial);
    }
 
    if (video_shader)
@@ -3871,7 +3871,7 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
       }
 
       if (param)
-         param->current = param->initial;
+         video_shader_param_set(param, param->initial);
 
       video_shader->flags |= SHDR_FLAG_MODIFIED;
    }
@@ -4601,7 +4601,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
    {
       /* option is basically a bool, so use a checkbox */
       QCheckBox *checkBox = new QCheckBox(this);
-      checkBox->setChecked(param->current == param->maximum ? true : false);
+      checkBox->setChecked(video_shader_param_get(param) == param->maximum ? true : false);
       checkBox->setProperty("param", parameter);
 
       connect(checkBox, SIGNAL(clicked()), this, SLOT(onShaderParamCheckBoxClicked()));
@@ -4615,7 +4615,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
       QHBoxLayout *box              = new QHBoxLayout();
       QSlider *slider               = new QSlider(Qt::Horizontal, this);
       double value                  = lerp(
-            param->minimum, param->maximum, 0, 100, param->current);
+            param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
       double intpart                = 0;
       bool stepIsFractional         = modf(param->step, &intpart);
 
@@ -4634,7 +4634,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
          doubleSpinBox = new QDoubleSpinBox(this);
          doubleSpinBox->setRange(param->minimum, param->maximum);
          doubleSpinBox->setSingleStep(param->step);
-         doubleSpinBox->setValue(param->current);
+         doubleSpinBox->setValue(video_shader_param_get(param));
          doubleSpinBox->setProperty("slider", QVariant::fromValue(slider));
          slider->setProperty("doubleSpinBox", QVariant::fromValue(doubleSpinBox));
 
@@ -4647,7 +4647,7 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
          spinBox = new QSpinBox(this);
          spinBox->setRange(param->minimum, param->maximum);
          spinBox->setSingleStep(param->step);
-         spinBox->setValue(param->current);
+         spinBox->setValue(video_shader_param_get(param));
          spinBox->setProperty("slider", QVariant::fromValue(slider));
          slider->setProperty("spinBox", QVariant::fromValue(spinBox));
 
@@ -4695,7 +4695,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
-            param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
+            video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
       }
 
       if (video_shader)
@@ -4712,7 +4712,7 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
-            param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
+            video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
 
          video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
@@ -4757,7 +4757,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
             newValue = round(newValue / param->step) * param->step;
-            param->current = newValue;
+            video_shader_param_set(param, newValue);
          }
       }
 
@@ -4778,7 +4778,7 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
             newValue = round(newValue / param->step) * param->step;
-            param->current = newValue;
+            video_shader_param_set(param, newValue);
          }
 
          video_shader->flags   |= SHDR_FLAG_MODIFIED;
@@ -4857,9 +4857,9 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
 
          if (param)
          {
-            param->current = value;
+            video_shader_param_set(param, value);
             newValue       = lerp(
-                  param->minimum, param->maximum, 0, 100, param->current);
+                  param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);
@@ -4881,9 +4881,9 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
 
          if (param)
          {
-            param->current = value;
+            video_shader_param_set(param, value);
             newValue       = lerp(
-                  param->minimum, param->maximum, 0, 100, param->current);
+                  param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);
@@ -4940,9 +4940,9 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 
          if (param)
          {
-            param->current = value;
+            video_shader_param_set(param, value);
             newValue       = lerp(
-                  param->minimum, param->maximum, 0, 100, param->current);
+                  param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);
@@ -4964,9 +4964,9 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 
          if (param)
          {
-            param->current = value;
+            video_shader_param_set(param, value);
             newValue       = lerp(
-                  param->minimum, param->maximum, 0, 100, param->current);
+                  param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
             slider->setValue(newValue);
             slider->blockSignals(false);

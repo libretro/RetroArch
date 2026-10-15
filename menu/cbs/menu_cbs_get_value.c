@@ -305,7 +305,7 @@ static size_t menu_action_setting_disp_set_label_shader_parameter_internal(
    video_shader_driver_get_current_shader(&shader_info);
    if (shader_info.data && (param = &shader_info.data->parameters[type - offset]))
       return snprintf(s, len, "%.2f [%.2f %.2f]",
-            param->current, param->minimum, param->maximum);
+            video_shader_param_get(param), param->minimum, param->maximum);
    *s = '\0';
    return 0;
 }

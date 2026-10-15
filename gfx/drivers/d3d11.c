@@ -5605,7 +5605,13 @@ static void d3d11_chain_bind_pass(d3d11_video_t *d3d11, d3d11_chain_t *c,
          {
             while (uniform->size)
             {
-               if (uniform->data)
+               if (uniform->param)
+               {
+                  float v = video_shader_param_get(uniform->param);
+                  memcpy((uint8_t*)res.pData + uniform->offset,
+                        &v, sizeof(v));
+               }
+               else if (uniform->data)
                   memcpy((uint8_t*)res.pData + uniform->offset,
                         uniform->data, uniform->size);
                uniform++;

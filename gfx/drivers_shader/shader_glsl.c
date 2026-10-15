@@ -1721,7 +1721,8 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       int location = glGetUniformLocation(
             glsl->prg[glsl->active_idx].id,
             glsl->shader->parameters[i].id);
-      glUniform1f(location, glsl->shader->parameters[i].current);
+      glUniform1f(location,
+            video_shader_param_get(&glsl->shader->parameters[i]));
    }
 
    /* Sensor uniforms — values are 0.0 if sensors disabled or not available */

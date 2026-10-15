@@ -415,6 +415,10 @@ jobs:
           # all when the frames do not change.
           samples/gfx/video_filter_menu/build.sh
           ./samples/gfx/video_filter_menu/video_filter_menu_test
+          # Under the threaded wrapper too: a filter swapped without
+          # waiting for the video thread, the old one freed behind the
+          # frames staged with it
+          HARNESS_THREADED=1 ./samples/gfx/video_filter_menu/video_filter_menu_test
           make -C samples/gfx/video_filter_menu clean
 
       - name: Build and run core_info_page_test

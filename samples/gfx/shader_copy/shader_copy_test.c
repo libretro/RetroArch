@@ -100,10 +100,10 @@ int main(int argc, char *argv[])
    CHECK(drv.num_parameters >= 1,
          "fixture: no parameters resolved from the pass source");
    if (drv.num_parameters >= 1)
-      CHECK(drv.parameters[0].current > 2.4f
-            && drv.parameters[0].current < 2.6f,
+      CHECK(video_shader_param_get(&drv.parameters[0]) > 2.4f
+            && video_shader_param_get(&drv.parameters[0]) < 2.6f,
             "fixture: referenced value not applied (%f)",
-            (double)drv.parameters[0].current);
+            (double)video_shader_param_get(&drv.parameters[0]));
 
    /* Driver-side compilation state: heap source strings. */
    drv.pass[0].source.string.vertex   = strdup("void main(){}");
@@ -128,8 +128,8 @@ int main(int argc, char *argv[])
    /* Independence. */
    if (menu.num_parameters >= 1)
    {
-      menu.parameters[0].current = 0.25f;
-      CHECK(drv.parameters[0].current > 2.4f,
+      video_shader_param_set(&menu.parameters[0], 0.25f);
+      CHECK(video_shader_param_get(&drv.parameters[0]) > 2.4f,
             "menu edit reached the driver struct");
    }
 

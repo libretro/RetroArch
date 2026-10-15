@@ -54,6 +54,8 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <retro_atomic.h>
+#include <retro_timers.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
@@ -354,6 +356,105 @@ static void lane_steps(void)
             : "set up again for a new format or a larger scale only");
 }
 
+#ifdef HAVE_THREADS
+/* Under the threaded wrapper a filter swap does not wait for the video
+ * thread: the frames staged with the old filter carry it, and the video
+ * thread frees it behind them. A frame is held in the driver on the
+ * video thread while the main thread swaps; the hold records whether
+ * the swap came back while it held, and gives up after 2 s so a swap
+ * that waits fails the check rather than the run. */
+static video_driver_t        hold_driver;
+static const video_driver_t *hold_inner;
+static retro_atomic_int_t    hold_armed;
+static retro_atomic_int_t    hold_holding;
+static retro_atomic_int_t    hold_swapped;
+static bool                  hold_swapped_while_held;
+
+static bool hold_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   if (retro_atomic_exchange_int(&hold_armed, 0))
+   {
+      unsigned waited;
+      retro_atomic_store_release_int(&hold_holding, 1);
+      for (waited = 0; waited < 2000
+            && !retro_atomic_load_acquire_int(&hold_swapped); waited++)
+         retro_sleep(1);
+      hold_swapped_while_held =
+         retro_atomic_load_acquire_int(&hold_swapped) != 0;
+      retro_atomic_store_release_int(&hold_holding, 0);
+   }
+   return hold_inner->frame(data, frame, dims, frame_count, pitch, msg,
+         video_info);
+}
+
+/* The video thread's driver table, swapped on that thread */
+static uintptr_t hold_install(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+   thr->driver         = (const video_driver_t*)data;
+   return 0;
+}
+
+static void lane_swap_unwaited(void)
+{
+   unsigned had        = failures;
+   thread_video_t *thr;
+   unsigned n;
+
+   if (!video_state_get_ptr()->thread_wrapper_active)
+      return;
+
+   /* Sets the driver up again: the wrapper is taken after */
+   choose_filter("Normal4x.filt");
+   menu_open(false);
+   pump(4);
+   if (!(thr = (thread_video_t*)video_state_get_ptr()->data))
+      return;
+
+   video_thread_wait_idle();
+   hold_inner        = thr->driver;
+   hold_driver       = *thr->driver;
+   hold_driver.frame = hold_frame;
+   video_thread_run_blocking(hold_install, &hold_driver);
+
+   retro_atomic_store_release_int(&hold_holding, 0);
+   retro_atomic_store_release_int(&hold_swapped, 0);
+   retro_atomic_store_release_int(&hold_armed, 1);
+   /* The core's frames go on until the video thread holds one */
+   for (n = 0; n < 200 && !retro_atomic_load_acquire_int(&hold_holding); n++)
+   {
+      pump(1);
+      retro_sleep(1);
+   }
+   CHECK(retro_atomic_load_acquire_int(&hold_holding),
+         "swap lane: no frame reached the video thread");
+   /* The same format at a smaller scale: nothing is set up again */
+   choose_filter("Normal2x.filt");
+   retro_atomic_store_release_int(&hold_swapped, 1);
+   while (retro_atomic_load_acquire_int(&hold_holding))
+      retro_sleep(1);
+   video_thread_wait_idle();
+   video_thread_run_blocking(hold_install, (void*)hold_inner);
+
+   CHECK(video_state_get_ptr()->state_filter && !filter_out_rgb32(),
+         "swap lane: Normal2x is not loaded");
+   CHECK(hold_swapped_while_held,
+         "swap lane: the filter swap waited for the frame being drawn");
+
+   /* The frames staged with Normal4x are drawn, then it goes */
+   pump(6);
+   remove_filter();
+   pump(4);
+   menu_open(true);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] filter swap lane: no wait on the video "
+            "thread\n");
+}
+#endif
+
 /* The stand-in for a driver that takes frame formats in place */
 static video_poke_interface_t fake_poke;
 static unsigned fake_calls;
@@ -565,6 +666,9 @@ int main(int argc, char *argv[])
    }
 
    lane_steps();
+#ifdef HAVE_THREADS
+   lane_swap_unwaited();
+#endif
    if (!real_driver)
       lane_told_in_place();
 

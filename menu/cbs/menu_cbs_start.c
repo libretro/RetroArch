@@ -285,7 +285,7 @@ static int action_start_shader_action_parameter_generic(
    if (!shader_info.data)
       return 0;
 
-   /* Reset to initial via the owning-thread setter; initial and the
+   /* Reset to initial via the driver-level setter; initial and the
     * range are stable outside set_shader's blocking window. */
    param          = &shader_info.data->parameters
       [parameter];

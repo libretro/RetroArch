@@ -6613,7 +6613,8 @@ static void vulkan_views_sync_params(vk_t *vk, vulkan_filter_chain_t *fc)
    struct video_shader *preset = vulkan_filter_chain_get_preset(fc);
    if (live && preset && preset->num_parameters == live->num_parameters)
       for (j = 0; j < live->num_parameters; j++)
-         preset->parameters[j].current = live->parameters[j].current;
+         video_shader_param_set(&preset->parameters[j],
+               video_shader_param_get(&live->parameters[j]));
 }
 
 /* What a frame's placement draws read */

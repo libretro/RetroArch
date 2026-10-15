@@ -56,8 +56,12 @@ void openxr_host_stage_changed(openxr_host_t *h)
 static void openxr_host_carry(void *user, int from, int to)
 {
    openxr_host_t *h = (openxr_host_t*)user;
+   unsigned i;
    if (h->given_seq == from)
       h->given_seq = to;
+   for (i = 0; i < 4; i++)
+      if (h->handed[i].seq == from)
+         h->handed[i].seq = to;
    openxr_frame_move_projection(h->frame, from, to);
 }
 
@@ -108,7 +112,8 @@ static bool openxr_host_track_space(openxr_host_t *h, bool carry)
    return true;
 }
 
-bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
+bool openxr_host_sample(openxr_host_t *h, unsigned ahead,
+      uint32_t *frame_flags)
 {
    XrTime time;
    XrDuration period;
@@ -121,7 +126,7 @@ bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
       return false;
    period = openxr_frame_period(h->frame);
    if (period > 0)
-      time += period;
+      time += period * (XrDuration)(1 + ahead);
    recenters = openxr_frame_recenters(h->frame);
    stage     = retro_atomic_load_acquire_int(&h->stage_moves);
 
@@ -169,20 +174,33 @@ bool openxr_host_locate_hands(openxr_host_t *h)
 }
 
 bool openxr_host_eye_state(openxr_host_t *h,
-      struct retro_vr_eye_state out[2])
+      struct retro_vr_eye_state out[2], unsigned *token)
 {
+   unsigned i;
    if (!h->tracking.valid)
       return false;
    openxr_tracking_eye(&h->tracking.views[0], &out[0]);
    openxr_tracking_eye(&h->tracking.views[1], &out[1]);
-   /* The core draws its frame from these: the projection shows them. */
-   h->given[0]     = h->tracking.views[0];
-   h->given[1]     = h->tracking.views[1];
-   h->given_seq    = h->tracking_seq;
+   i                      = h->handed_count & 3;
+   h->handed[i].views[0]  = h->tracking.views[0];
+   h->handed[i].views[1]  = h->tracking.views[1];
+   h->handed[i].seq       = h->tracking_seq;
+   *token                 = h->handed_count++;
+   return true;
+}
+
+void openxr_host_give(openxr_host_t *h, unsigned token)
+{
+   unsigned i = token & 3;
+   /* Overwritten since: four eyes handed out after it and none drawn */
+   if (h->handed_count - token > 4)
+      return;
+   h->given[0]     = h->handed[i].views[0];
+   h->given[1]     = h->handed[i].views[1];
+   h->given_seq    = h->handed[i].seq;
    h->given_valid  = true;
    h->given_kept   = false;
    h->kept_pending = false;
-   return true;
 }
 
 bool openxr_host_head_pose(const openxr_host_t *h,

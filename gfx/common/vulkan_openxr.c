@@ -137,15 +137,21 @@ static unsigned vulkan_openxr_host_state(void *user)
    return bits;
 }
 
-static bool vulkan_openxr_host_sample(void *user, uint32_t *frame_flags)
+static bool vulkan_openxr_host_sample(void *user, unsigned ahead,
+      uint32_t *frame_flags)
 {
-   return openxr_host_sample(&((vulkan_openxr_t*)user)->host, frame_flags);
+   return openxr_host_sample(&((vulkan_openxr_t*)user)->host, ahead, frame_flags);
 }
 
 static bool vulkan_openxr_host_eye_state(void *user,
-      struct retro_vr_eye_state out[2])
+      struct retro_vr_eye_state out[2], unsigned *token)
 {
-   return openxr_host_eye_state(&((vulkan_openxr_t*)user)->host, out);
+   return openxr_host_eye_state(&((vulkan_openxr_t*)user)->host, out, token);
+}
+
+static void vulkan_openxr_host_give(void *user, unsigned token)
+{
+   openxr_host_give(&((vulkan_openxr_t*)user)->host, token);
 }
 
 static bool vulkan_openxr_host_head_pose(void *user,
@@ -800,6 +806,7 @@ void vulkan_openxr_host_register(vulkan_openxr_t *xr)
    host.state     = vulkan_openxr_host_state;
    host.sample    = vulkan_openxr_host_sample;
    host.eye_state = vulkan_openxr_host_eye_state;
+   host.give      = vulkan_openxr_host_give;
    host.set_space = vulkan_openxr_host_set_space;
    host.head_pose = vulkan_openxr_host_head_pose;
    host.locate_hands = vulkan_openxr_host_locate_hands;

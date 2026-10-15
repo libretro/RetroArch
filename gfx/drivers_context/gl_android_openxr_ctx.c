@@ -299,15 +299,21 @@ static unsigned gl_android_openxr_host_state(void *user)
    return bits;
 }
 
-static bool gl_android_openxr_host_sample(void *user, uint32_t *frame_flags)
+static bool gl_android_openxr_host_sample(void *user, unsigned ahead,
+      uint32_t *frame_flags)
 {
-   return openxr_host_sample(&((gl_android_openxr_t*)user)->host, frame_flags);
+   return openxr_host_sample(&((gl_android_openxr_t*)user)->host, ahead, frame_flags);
 }
 
 static bool gl_android_openxr_host_eye_state(void *user,
-      struct retro_vr_eye_state out[2])
+      struct retro_vr_eye_state out[2], unsigned *token)
 {
-   return openxr_host_eye_state(&((gl_android_openxr_t*)user)->host, out);
+   return openxr_host_eye_state(&((gl_android_openxr_t*)user)->host, out, token);
+}
+
+static void gl_android_openxr_host_give(void *user, unsigned token)
+{
+   openxr_host_give(&((gl_android_openxr_t*)user)->host, token);
 }
 
 static bool gl_android_openxr_host_set_space(void *user,
@@ -352,6 +358,7 @@ static void gl_android_openxr_host_register(gl_android_openxr_t *xr)
    host.state     = gl_android_openxr_host_state;
    host.sample    = gl_android_openxr_host_sample;
    host.eye_state = gl_android_openxr_host_eye_state;
+   host.give      = gl_android_openxr_host_give;
    host.set_space = gl_android_openxr_host_set_space;
    host.head_pose = gl_android_openxr_host_head_pose;
    host.locate_hands = gl_android_openxr_host_locate_hands;

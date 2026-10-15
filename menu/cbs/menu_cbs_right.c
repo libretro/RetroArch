@@ -67,8 +67,8 @@ extern struct key_desc key_descriptors[RARCH_MAX_KEYS];
 static int generic_shader_action_parameter_right(struct video_shader_parameter *param,
       unsigned type, const char *label, bool wraparound)
 {
-   param->current += param->step;
-   param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
+   float v = video_shader_param_get(param) + param->step;
+   video_shader_param_set(param, MIN(MAX(param->minimum, v), param->maximum));
 
    return 0;
 }
@@ -89,19 +89,18 @@ static int generic_shader_action_parameter_right_internal(unsigned type, const c
    if (!shader_info.data || !param_menu)
       return -1;
 
-   /* Step the value on a local copy, then submit it through the
-    * driver-level setter: the live shader's parameters are read by
-    * the video thread's frame path, and the setter writes on the
-    * owning thread. The copy's stable fields (range, step) only
-    * mutate inside set_shader's blocking window. */
+   /* Step the value on a local copy, then set it through the
+    * driver-level setter: the video thread's frame path reads the live
+    * value, so it is an atomic store. The copy's stable fields (range,
+    * step) only change inside set_shader's blocking window. */
    {
       struct video_shader_parameter param_copy =
          shader_info.data->parameters[type - offset];
       ret = generic_shader_action_parameter_right(&param_copy, type,
             label, wraparound);
       video_shader_driver_set_parameter(shader_info.data,
-            type - offset, param_copy.current);
-      param_menu->current = param_copy.current;
+            type - offset, video_shader_param_get(&param_copy));
+      video_shader_param_set(param_menu, video_shader_param_get(&param_copy));
    }
    shader->flags      |= SHDR_FLAG_MODIFIED;
 

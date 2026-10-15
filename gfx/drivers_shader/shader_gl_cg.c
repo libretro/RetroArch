@@ -505,8 +505,9 @@ static void gl_cg_set_params(void *dat, void *shader_data)
             cg->prg[cg->active_idx].vprg, cg->shader->parameters[i].id);
       CGparameter param_f = cgGetNamedParameter(
             cg->prg[cg->active_idx].fprg, cg->shader->parameters[i].id);
-      cg_gl_set_param_1f(param_v, cg->shader->parameters[i].current);
-      cg_gl_set_param_1f(param_f, cg->shader->parameters[i].current);
+      float v = video_shader_param_get(&cg->shader->parameters[i]);
+      cg_gl_set_param_1f(param_v, v);
+      cg_gl_set_param_1f(param_f, v);
    }
 }
 

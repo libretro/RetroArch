@@ -1300,7 +1300,8 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    if (!video_shader_param_sources_changed(shader))
    {
       for (i = 0; i < shader->num_parameters; i++)
-         shader->parameters[i].current = shader->parameters[i].initial;
+         video_shader_param_set(&shader->parameters[i],
+               shader->parameters[i].initial);
       return;
    }
 
@@ -1472,7 +1473,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
                      param->desc,    param->id,      param->initial,
                      param->minimum, param->maximum, param->step, param->pass);
 #endif
-               param->current  = param->initial;
+               video_shader_param_set(param, param->initial);
 
                shader->num_parameters++;
                param++;
@@ -1515,10 +1516,14 @@ bool video_shader_load_current_parameter_values(
       if (entry)
       {
          struct video_shader_parameter *parameter = &shader->parameters[i];
+         float value                              = 0.0f;
 
          /* Log each parameter read */
-         if (config_get_float(conf, parameter->id, &parameter->current))
-            RARCH_DBG("[Shaders] Load parameter value: \"%s\" = %f.\n", parameter->id, parameter->current);
+         if (config_get_float(conf, parameter->id, &value))
+         {
+            video_shader_param_set(parameter, value);
+            RARCH_DBG("[Shaders] Load parameter value: \"%s\" = %f.\n", parameter->id, value);
+         }
          else
             RARCH_WARN("[Shaders] Load parameter value: \"%s\" is set in preset but couldn't load its value.\n",
                         parameter->id);
@@ -1696,8 +1701,10 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    /* Write shader parameters which are different than the default shader values */
    if (shader->num_parameters)
       for (i = 0; i < shader->num_parameters; i++)
-         if (shader->parameters[i].current != shader->parameters[i].initial)
-            config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
+         if (video_shader_param_get(&shader->parameters[i])
+               != shader->parameters[i].initial)
+            config_set_float(conf, shader->parameters[i].id,
+                  video_shader_param_get(&shader->parameters[i]));
 
    if (shader->luts)
    {
@@ -2272,10 +2279,10 @@ static bool video_shader_write_referenced_preset(
    {
       for (i = 0; i < shader->num_parameters; i++)
       {
-         if (     shader->parameters[i].current
-               != ref_shader->parameters[i].current)
+         if (     video_shader_param_get(&shader->parameters[i])
+               != video_shader_param_get(&ref_shader->parameters[i]))
             config_set_float(conf, shader->parameters[i].id,
-                  shader->parameters[i].current);
+                  video_shader_param_get(&shader->parameters[i]));
       }
    }
 
@@ -2470,15 +2477,16 @@ static bool video_shader_override_values(config_file_t *override_conf,
          if (config_get_entry(override_conf, shader->parameters[i].id))
          {
             struct video_shader_parameter *parameter = &shader->parameters[i];
+            float value                              = 0.0f;
 
             /* Set the shader's parameter value */
-            config_get_float(override_conf, parameter->id,
-                  &parameter->current);
+            if (config_get_float(override_conf, parameter->id, &value))
+               video_shader_param_set(parameter, value);
 
 #ifdef DEBUG
             RARCH_DBG("[Shaders] Parameter: \"%s\" = %f.\n",
                   parameter->id,
-                  parameter->current);
+                  video_shader_param_get(parameter));
 #endif
 
             return_val = true;
@@ -2605,7 +2613,8 @@ static bool video_shader_combine_shaders(
                first_shader->num_parameters,
                combined_shader->parameters[i].id);
       if (param)
-         combined_shader->parameters[i].current = param->current;
+         video_shader_param_set(&combined_shader->parameters[i],
+               video_shader_param_get(param));
 
       /* Check the shader to append */
       param = video_shader_parse_find_parameter(
@@ -2613,7 +2622,8 @@ static bool video_shader_combine_shaders(
                second_shader->num_parameters,
                combined_shader->parameters[i].id);
       if (param)
-         combined_shader->parameters[i].current = param->current;
+         video_shader_param_set(&combined_shader->parameters[i],
+               video_shader_param_get(param));
    }
 
    return true;

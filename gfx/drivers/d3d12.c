@@ -7270,7 +7270,12 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
                (void**)&mapped_data);
          while (uniform->size)
          {
-            if (uniform->data)
+            if (uniform->param)
+            {
+               float v = video_shader_param_get(uniform->param);
+               memcpy(mapped_data + uniform->offset, &v, sizeof(v));
+            }
+            else if (uniform->data)
                memcpy(mapped_data + uniform->offset,
                      uniform->data, uniform->size);
             uniform++;

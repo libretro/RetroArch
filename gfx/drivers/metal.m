@@ -7211,7 +7211,12 @@ struct metal_view_chain
 
          while (uniform->size)
          {
-            if (uniform->data)
+            if (uniform->param)
+            {
+               float v = video_shader_param_get(uniform->param);
+               memcpy((uint8_t *)data + uniform->offset, &v, sizeof(v));
+            }
+            else if (uniform->data)
                memcpy((uint8_t *)data + uniform->offset, uniform->data, uniform->size);
             uniform++;
          }

@@ -5672,7 +5672,8 @@ static void gl3_views_sync_params(gl3_t *gl, gl3_filter_chain_t *fc)
    struct video_shader *preset = gl3_filter_chain_get_preset(fc);
    if (live && preset && preset->num_parameters == live->num_parameters)
       for (j = 0; j < live->num_parameters; j++)
-         preset->parameters[j].current = live->parameters[j].current;
+         video_shader_param_set(&preset->parameters[j],
+               video_shader_param_get(&live->parameters[j]));
 }
 
 /* Each drawn view's chain, as pick_chains (video_views_draw.h), and in
@@ -6434,7 +6435,8 @@ static gl3_filter_chain_t *gl3_xr_chain(gl3_t *gl,
    preset = gl3_filter_chain_get_preset(*chain);
    if (live && preset && preset->num_parameters == live->num_parameters)
       for (j = 0; j < live->num_parameters; j++)
-         preset->parameters[j].current = live->parameters[j].current;
+         video_shader_param_set(&preset->parameters[j],
+               video_shader_param_get(&live->parameters[j]));
    return *chain;
 }
 

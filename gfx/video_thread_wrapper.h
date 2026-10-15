@@ -812,8 +812,13 @@ typedef struct thread_video
 #endif
 #ifdef HAVE_VIDEO_FILTER
          /* A raw core frame for this thread to run the software filter
-          * on: its bytes per pixel, 0 for a frame ready to draw */
+          * on: its bytes per pixel, 0 for a frame ready to draw; and
+          * the filter, output buffer and output bytes per pixel it was
+          * staged with, which stay until a later frame retires them */
          unsigned filter_bpp;
+         unsigned filter_out_bpp;
+         void    *filter;
+         void    *filter_buf;
 #endif
          /* A frame still in the core's source pixel format, for this
           * thread to convert before the filter and the driver */
@@ -1012,6 +1017,12 @@ bool video_thread_font_init(
 uintptr_t video_thread_run_blocking(custom_command_method_t func,
       void *data);
 
+/* Main thread: func(data) queued to run on the video thread before its
+ * next frame, its answer dropped; nothing waits. False when it could
+ * not be queued (no wrapper, the queue full, or called on the video
+ * thread), for the caller to run it another way. */
+bool video_thread_run_queued(custom_command_method_t func, void *data);
+
 uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func);
 
@@ -1153,6 +1164,10 @@ void video_thread_status_text(const char *s);
  * format of in_bpp bytes per pixel; the worker runs the software
  * filter on it before drawing. */
 void video_thread_defer_filter(unsigned in_bpp);
+/* Main thread: a filter and its output buffer replaced while frames
+ * staged with them may still be drawn, for the video thread to free
+ * once they have been. False with no wrapper running. */
+bool video_thread_retire_filter(void *filter, void *buffer);
 #endif
 
 /* Source pixel formats the video thread converts on the frame's way to

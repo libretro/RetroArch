@@ -4127,8 +4127,8 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
    for (i = 0; i < pass->num_filtered; i++)
       slang_pass_build_semantic_parameter(pass, buffer,
             pass->parameters[pass->filtered_parameters[i]].semantic_index,
-            pass->common->shader_preset->parameters[
-            pass->parameters[pass->filtered_parameters[i]].index].current);
+            video_shader_param_get(&pass->common->shader_preset->parameters[
+            pass->parameters[pass->filtered_parameters[i]].index]));
 
    /* Previous inputs. */
    for (i = 0; i < pass->common->num_original_history; i++)

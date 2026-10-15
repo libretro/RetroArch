@@ -2388,7 +2388,8 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
    {
       const struct gl3_pass_parameter *m = &pass->parameters[pass->filtered_parameters[i]];
       gl3_pass_build_semantic_parameter(pass, buffer, m->semantic_index,
-            pass->common->shader_preset->parameters[m->index].current);
+            video_shader_param_get(
+               &pass->common->shader_preset->parameters[m->index]));
    }
 
    /* Previous inputs. */

@@ -48,6 +48,14 @@ typedef struct openxr_host
    XrView given[2];
    int given_seq;
    bool given_valid;
+   /* The eyes handed out lately, by token, for give() to record the
+    * ones a frame was drawn from when it is drawn */
+   struct
+   {
+      XrView views[2];
+      int    seq;
+   } handed[4];
+   unsigned handed_count;
    /* Views kept across a reinit, their poses in STAGE, until a frame
     * time places them in the track space. */
    XrView kept[2];
@@ -83,14 +91,19 @@ void openxr_host_session_created(openxr_host_t *h);
 void openxr_host_stage_changed(openxr_host_t *h);
 
 /* video_xr_host_t's pose calls, on its threads. The sample is for one
- * period past the latest predicted display time: right when the frame
- * loop waits for the frame the core is drawing after the core runs (the
- * desktop's XR thread); a host that waits before the core runs would
- * sample one period too far ahead. A sample that fails still writes the
- * flags it took. */
-bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags);
+ * period past the latest predicted display time, and @ahead periods
+ * more for frames already handed over: right when the frame loop waits
+ * for the frame the core is drawing after the core runs (the desktop's
+ * XR thread); a host that waits before the core runs would sample one
+ * period too far ahead. A sample that fails still writes the flags it
+ * took. */
+bool openxr_host_sample(openxr_host_t *h, unsigned ahead,
+      uint32_t *frame_flags);
 bool openxr_host_eye_state(openxr_host_t *h,
-      struct retro_vr_eye_state out[2]);
+      struct retro_vr_eye_state out[2], unsigned *token);
+/* The drawing thread, before the frame drawn from the eyes @token
+ * names: the projection shows them. */
+void openxr_host_give(openxr_host_t *h, unsigned token);
 bool openxr_host_head_pose(const openxr_host_t *h,
       struct retro_vr_head_pose *out);
 bool openxr_host_locate_hands(openxr_host_t *h);

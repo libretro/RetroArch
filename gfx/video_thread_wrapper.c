@@ -660,6 +660,7 @@ static void video_thread_user_release(thread_video_t *thr)
 static bool video_thread_handle_packet(thread_video_t *thr,
       const thread_packet_t *incoming);
 typedef struct video_thread_tex_retire video_thread_tex_retire_t;
+
 static void video_thread_tex_retire_run(thread_video_t *thr,
       video_thread_tex_retire_t *list);
 static void video_thread_lend_forget(thread_video_t *thr, uintptr_t id);
@@ -1989,28 +1990,25 @@ void video_thread_defer_convert(enum video_thread_convert kind)
 
 #ifdef HAVE_VIDEO_FILTER
 /* The software filter, on the thread that draws: a frame staged by
- * video_thread_defer_filter() arrives raw, in the core's format. The
- * filter and its output buffer hold still while frames are in flight;
- * video_driver_init_filter() and video_driver_filter_free() wait this
- * thread idle first. */
-static void video_thread_filter(thread_video_t *thr,
-      const void **data, unsigned *dims, unsigned *pitch)
+ * video_thread_defer_filter() arrives raw, in the core's format, with
+ * the filter it was staged with. One replaced since is retired behind
+ * the frames that name it (video_thread_retire_filter()). */
+static void video_thread_filter(void *filter, void *buffer,
+      unsigned out_bpp, const void **data, unsigned *dims, unsigned *pitch)
 {
-   video_driver_state_t *video_st = thr->video_st;
-   unsigned out_dims              = 0;
+   unsigned out_dims = 0;
    unsigned out_pitch;
 
-   if (!*data || !video_st->state_filter || !video_st->state_buffer)
+   if (!*data || !filter || !buffer)
       return;
 
-   rarch_softfilter_get_output_size(video_st->state_filter,
+   rarch_softfilter_get_output_size((rarch_softfilter_t*)filter,
          &out_dims, *dims);
-   out_pitch = VIDEO_SCALE_W(out_dims) * video_st->state_out_bpp;
-   rarch_softfilter_process(video_st->state_filter,
-         video_st->state_buffer, out_pitch,
-         *data, *dims, *pitch);
+   out_pitch = VIDEO_SCALE_W(out_dims) * out_bpp;
+   rarch_softfilter_process((rarch_softfilter_t*)filter, buffer,
+         out_pitch, *data, *dims, *pitch);
 
-   *data     = video_st->state_buffer;
+   *data     = buffer;
    *dims     = out_dims;
    *pitch    = out_pitch;
 }
@@ -2299,6 +2297,11 @@ struct video_thread_tex_retire
 {
    mpsc_stack_node_t node;   /* first: the list link is the node */
    uintptr_t id;
+#ifdef HAVE_VIDEO_FILTER
+   /* Or a software filter and its output buffer, when set */
+   void *filter;
+   void *filter_buf;
+#endif
 };
 
 /* Video thread: frees the textures the frame just drawn carried. Called
@@ -2311,6 +2314,24 @@ static void video_thread_tex_retire_run(thread_video_t *thr,
    {
       video_thread_tex_retire_t *next =
          (video_thread_tex_retire_t*)list->node.next;
+#ifdef HAVE_VIDEO_FILTER
+      if (list->filter || list->filter_buf)
+      {
+         if (list->filter)
+            rarch_softfilter_free((rarch_softfilter_t*)list->filter);
+         if (list->filter_buf)
+         {
+#ifdef _3DS
+            linearFree(list->filter_buf);
+#else
+            memalign_free(list->filter_buf);
+#endif
+         }
+         free(list);
+         list = next;
+         continue;
+      }
+#endif
       if (thr->lend_used)
          video_thread_lend_forget(thr, list->id);
       if (thr->poke && thr->poke->unload_texture && thr->driver_data)
@@ -2319,6 +2340,26 @@ static void video_thread_tex_retire_run(thread_video_t *thr,
       list = next;
    }
 }
+
+#ifdef HAVE_VIDEO_FILTER
+bool video_thread_retire_filter(void *filter, void *buffer)
+{
+   video_driver_state_t      *video_st = video_state_get_ptr();
+   thread_video_t            *thr;
+   video_thread_tex_retire_t *node;
+
+   if (     !video_st->thread_wrapper_active
+         || !(thr = (thread_video_t*)video_st->data)
+         || !thr->thread
+         || !(node = (video_thread_tex_retire_t*)malloc(sizeof(*node))))
+      return false;
+   node->id         = 0;
+   node->filter     = filter;
+   node->filter_buf = buffer;
+   mpsc_stack_push(&thr->tex_retire, &node->node);
+   return true;
+}
+#endif
 
 #ifdef HAVE_GFX_WIDGETS
 /* Keeps a slot's copies of the widget paths in step with the main
@@ -2603,6 +2644,11 @@ static void video_thread_loop(void *data)
                 * language change before they draw */
                font_driver_frame_begin();
                font_driver_follow_language();
+#ifdef HAVE_OPENXR
+               /* The eyes the core drew this frame from */
+               if (video_info->vr_give)
+                  video_driver_vr_give(video_info->vr_give - 1);
+#endif
 #ifdef HAVE_GFX_WIDGETS
                /* This thread draws the widgets, so it advances and lays
                 * them out too, before the driver's frame asks whether
@@ -2651,7 +2697,10 @@ static void video_thread_loop(void *data)
                            &fdata, fdims, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
                   if (fdata && thr->frame.slot[slot].filter_bpp)
-                     video_thread_filter(thr, &fdata, &fdims, &fpitch);
+                     video_thread_filter(thr->frame.slot[slot].filter,
+                           thr->frame.slot[slot].filter_buf,
+                           thr->frame.slot[slot].filter_out_bpp,
+                           &fdata, &fdims, &fpitch);
 #endif
                   if (dupe_hw_slot >= 0)
                      video_thread_hw_before_frame(thr, dupe_hw_slot, true);
@@ -2897,6 +2946,11 @@ static void video_thread_loop(void *data)
             video_thread_tex_retire_run(thr, tex_retire);
             tex_retire = NULL;
          }
+#ifdef HAVE_OPENXR
+         /* The core's next frame is sampled here, past those queued */
+         video_driver_vr_publish(VIDEO_THREAD_RING_PENDING_OF(
+                  video_thread_ring_load(thr)));
+#endif
       }
       else if (repeat_due)
       {
@@ -3518,9 +3572,15 @@ static bool video_thread_frame(void *data, const void *frame_,
             video_thread_convert(thr, convert, &frame_, dims, &pitch);
 #ifdef HAVE_VIDEO_FILTER
          if (filter_bpp)
-            video_thread_filter(thr, &frame_, &dims, &pitch);
+            video_thread_filter(thr->video_st->state_filter,
+                  thr->video_st->state_buffer, thr->video_st->state_out_bpp,
+                  &frame_, &dims, &pitch);
 #endif
          font_driver_frame_begin();
+#ifdef HAVE_OPENXR
+         if (video_info && video_info->vr_give)
+            video_driver_vr_give(video_info->vr_give - 1);
+#endif
          return thr->driver->frame(thr->driver_data, frame_,
             dims, frame_count, pitch, msg, video_info);
       }
@@ -3865,6 +3925,12 @@ static bool video_thread_frame(void *data, const void *frame_,
 
 #ifdef HAVE_VIDEO_FILTER
       thr->frame.slot[slot].filter_bpp = filter_bpp;
+      if (filter_bpp)
+      {
+         thr->frame.slot[slot].filter         = thr->video_st->state_filter;
+         thr->frame.slot[slot].filter_buf     = thr->video_st->state_buffer;
+         thr->frame.slot[slot].filter_out_bpp = thr->video_st->state_out_bpp;
+      }
 #endif
       thr->frame.slot[slot].convert    = convert;
 #ifdef HAVE_GFX_WIDGETS
@@ -4935,6 +5001,10 @@ static void thread_unload_texture(void *data,
       }
 
       node->id = id;
+#ifdef HAVE_VIDEO_FILTER
+      node->filter     = NULL;
+      node->filter_buf = NULL;
+#endif
       mpsc_stack_push(&thr->tex_retire, &node->node);
    }
 }
@@ -4949,8 +5019,10 @@ static void thread_apply_state_changes(void *data)
    }
 }
 
-/* This is read-only state which should not
- * have any kind of race condition. */
+/* Fields other than the parameters' values change only inside
+ * set_shader's blocking window, and the values are atomic
+ * (video_shader_param_get()/_set()), so the frontend reads the
+ * driver's own. */
 static struct video_shader *thread_get_current_shader(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -5381,6 +5453,19 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
  * calling func directly when the wrapper is not active, when the
  * worker has already handled CMD_FREE, or when this is already the
  * video thread. */
+bool video_thread_run_queued(custom_command_method_t func, void *data)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = video_thread_thr_capture;
+
+   if (!thr)
+      return false;
+   pkt.type                       = CMD_CUSTOM_COMMAND;
+   pkt.data.custom_command.method = func;
+   pkt.data.custom_command.data   = data;
+   return video_thread_defer_packet(thr, &pkt);
+}
+
 uintptr_t video_thread_run_blocking(custom_command_method_t func, void *data)
 {
    thread_packet_t pkt;

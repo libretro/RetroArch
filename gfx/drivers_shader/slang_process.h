@@ -136,6 +136,9 @@ typedef struct
 typedef struct
 {
    void*    data;
+   /* Or a shader parameter, whose value is read through
+    * video_shader_param_get() at the upload */
+   const struct video_shader_parameter *param;
    unsigned size;
    unsigned offset;
    char     id[64];

@@ -717,7 +717,7 @@ float companion_core_shader_param_current(companion_core_t *core, size_t i)
    (void)core;
    if (!s || i >= s->num_parameters)
       return 0.0f;
-   return s->parameters[i].current;
+   return video_shader_param_get(&s->parameters[i]);
 }
 
 void companion_core_shader_param_set(companion_core_t *core, size_t i, float v)
@@ -728,7 +728,7 @@ void companion_core_shader_param_set(companion_core_t *core, size_t i, float v)
       return;
    if (v < s->parameters[i].minimum) v = s->parameters[i].minimum;
    if (v > s->parameters[i].maximum) v = s->parameters[i].maximum;
-   s->parameters[i].current = v;
+   video_shader_param_set(&s->parameters[i], v);
 }
 
 void companion_core_shader_param_reset(companion_core_t *core, size_t i)
@@ -737,7 +737,7 @@ void companion_core_shader_param_reset(companion_core_t *core, size_t i)
    (void)core;
    if (!s || i >= s->num_parameters)
       return;
-   s->parameters[i].current = s->parameters[i].initial;
+   video_shader_param_set(&s->parameters[i], s->parameters[i].initial);
 }
 
 const char *companion_core_shader_path(companion_core_t *core)

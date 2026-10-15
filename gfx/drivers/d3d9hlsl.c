@@ -2691,7 +2691,7 @@ static void d3d9_hlsl_renderchain_render_pass(
          int vs_reg   = d3d9_hlsl_ctab_find_register(
                pd->vs_bytecode, pd->vs_bytecode_dwords,
                d3d->shader.parameters[i].id, NULL, NULL);
-         val[0] = d3d->shader.parameters[i].current;
+         val[0] = video_shader_param_get(&d3d->shader.parameters[i]);
          val[1] = 0.0f;
          val[2] = 0.0f;
          val[3] = 0.0f;

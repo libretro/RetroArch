@@ -14555,7 +14555,7 @@ static unsigned menu_displaylist_build_shader_parameter(
    max                         = param->maximum;
    half_step                   = param->step * 0.5f;
    current_value               = min;
-   original_value              = param->current;
+   original_value              = video_shader_param_get(param);
 
    if (half_step <= 0.0) /* safety check */
    {

@@ -3080,9 +3080,8 @@ int menu_shader_manager_clear_parameter(struct video_shader *shader,
 
    if (param)
    {
-      param->current = param->initial;
-      param->current = MIN(MAX(param->minimum,
-               param->current), param->maximum);
+      video_shader_param_set(param, MIN(MAX(param->minimum,
+               param->initial), param->maximum));
 
       shader->flags |= SHDR_FLAG_MODIFIED;
    }

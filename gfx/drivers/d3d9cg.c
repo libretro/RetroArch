@@ -3015,11 +3015,12 @@ static void d3d9_cg_renderchain_render_pass(
          {
             CGparameter cgp_vp = cgGetNamedParameter(vprg, shader->parameters[i].id);
             CGparameter cgp_fp = cgGetNamedParameter(fprg, shader->parameters[i].id);
+            float       v      = video_shader_param_get(&shader->parameters[i]);
 
             if (cgp_vp)
-               cgD3D9SetUniform(cgp_vp, &shader->parameters[i].current);
+               cgD3D9SetUniform(cgp_vp, &v);
             if (cgp_fp)
-               cgD3D9SetUniform(cgp_fp, &shader->parameters[i].current);
+               cgD3D9SetUniform(cgp_fp, &v);
          }
          CG_DEBUG_CHECK(NULL, "set_shader_params user parameters");
       }

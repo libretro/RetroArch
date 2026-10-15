@@ -2167,7 +2167,8 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       {
          if (string_is_equal(id, wiiu->shader_preset->parameters[k].id))
          {
-            *dst        = wiiu->shader_preset->parameters[k].current;
+            *dst        = video_shader_param_get(
+                  &wiiu->shader_preset->parameters[k]);
             *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
             break;
          }

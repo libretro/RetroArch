@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <retro_atomic.h>
+#include <queues/retro_triple_buffer.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -391,6 +392,40 @@ static bool vr_flags_read;
 /* The core asked for the hands: each sample locates them too. */
 static bool vr_hands_on;
 static video_xr_host_t video_xr_host;
+
+/* What the drawing thread sampled for the core's next frame. It is
+ * published whole, and the core reads the newest without waiting on
+ * that thread: under the threaded wrapper the video thread samples
+ * after each frame it draws, otherwise the main thread does when the
+ * runloop asks. */
+typedef struct
+{
+   struct retro_vr_head_pose        head;
+   struct retro_vr_controller_poses hands;
+   struct retro_vr_eye_state        eyes[2];
+   unsigned token;   /* the host's name for the eyes, for give */
+   uint8_t  ok;
+   uint8_t  head_ok;
+   uint8_t  hands_ok;
+   uint8_t  eyes_ok;
+} video_vr_sample_t;
+
+/* vr_sampling: what the core reads, so the drawing thread samples */
+#define VIDEO_VR_SAMPLING        (1 << 0)
+#define VIDEO_VR_SAMPLING_HANDS  (1 << 1)
+
+static video_vr_sample_t     vr_samples[3];
+static retro_triple_buffer_t vr_sample_tb = {
+   { &vr_samples[0], &vr_samples[1], &vr_samples[2] },
+   RETRO_ATOMIC_INT_INITIALIZER(1), 0, 2 };
+static retro_atomic_int_t    vr_sampling;
+/* RETRO_VR_FRAME_ bits sampled and not yet taken by the runloop */
+static retro_atomic_int_t    vr_sample_flags;
+/* The main thread's: the sample the core is reading, and the eyes it
+ * was handed to travel with its next frame */
+static video_vr_sample_t     vr_cur;
+static unsigned              vr_give_token;
+static bool                  vr_give_pending;
 #endif
 
 static INLINE bool realloc_checked(void **ptr, size_t len)
@@ -2558,21 +2593,25 @@ void video_driver_filter_free(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
 #ifdef HAVE_THREADS
-   /* The threaded video worker may be filtering a frame with it */
-   video_thread_wait_idle();
+   /* Frames staged with them may still be drawn: the video thread
+    * frees them behind those */
+   if (     (!video_st->state_filter && !video_st->state_buffer)
+         || !video_thread_retire_filter(video_st->state_filter,
+               video_st->state_buffer))
 #endif
-   if (video_st->state_filter)
-      rarch_softfilter_free(video_st->state_filter);
-   video_st->state_filter    = NULL;
-
-   if (video_st->state_buffer)
    {
+      if (video_st->state_filter)
+         rarch_softfilter_free(video_st->state_filter);
+      if (video_st->state_buffer)
+      {
 #ifdef _3DS
-      linearFree(video_st->state_buffer);
+         linearFree(video_st->state_buffer);
 #else
-      memalign_free(video_st->state_buffer);
+         memalign_free(video_st->state_buffer);
 #endif
+      }
    }
+   video_st->state_filter    = NULL;
    video_st->state_buffer    = NULL;
 
    video_st->state_scale     = 0;
@@ -2650,12 +2689,6 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    enum retro_pixel_format colfmt       =
       (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555)
       ? RETRO_PIXEL_FORMAT_RGB565 : colfmt_int;
-
-#ifdef HAVE_THREADS
-   /* The threaded video worker may be filtering a frame with the old
-    * filter and buffer, which this replaces */
-   video_thread_wait_idle();
-#endif
 
    /* Re-init (a new filter path, a new thread count) replaces the live
     * filter: release it and its output buffer rather than orphan them */
@@ -6656,51 +6689,14 @@ bool video_driver_has_windowed(void)
 }
 #endif
 
-#if defined(HAVE_THREADS)
-struct video_shader_param_write
-{
-   struct video_shader *shader;
-   unsigned index;
-   float value;
-};
-
-static uintptr_t video_shader_param_write_fn(void *data)
-{
-   struct video_shader_param_write *w =
-      (struct video_shader_param_write*)data;
-   w->shader->parameters[w->index].current = w->value;
-   return 1;
-}
-#endif
-
 void video_shader_driver_set_parameter(struct video_shader *live_shader,
       unsigned index, float value)
 {
    if (!live_shader || index >= live_shader->num_parameters)
       return;
-
-#if defined(HAVE_THREADS)
-   /* The live shader belongs to the video thread under the threaded
-    * wrapper: its frame path reads parameters[i].current for uniform
-    * upload every frame. Menu code used to write through the pointer
-    * from the main thread - a single-writer aligned-float race that
-    * never tears in practice but crosses ownership. The write now
-    * runs on the owning thread as a blocking round trip; everything
-    * else in the parameter struct (name, range, count) mutates only
-    * inside set_shader's own blocking window and stays readable
-    * directly. */
-   if (video_driver_thread_wrapper_active())
-   {
-      struct video_shader_param_write w;
-      w.shader = live_shader;
-      w.index  = index;
-      w.value  = value;
-      video_thread_run_blocking(video_shader_param_write_fn, &w);
-      return;
-   }
-#endif
-
-   live_shader->parameters[index].current = value;
+   /* One atomic store: under the threaded wrapper the video thread
+    * reads it for its next frame, and nothing waits */
+   video_shader_param_set(&live_shader->parameters[index], value);
 }
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
@@ -8027,6 +8023,10 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    video_driver_build_info(&video_info);
+#ifdef HAVE_OPENXR
+   /* The eyes the core drew this frame from, for the drawing thread */
+   video_info.vr_give = video_driver_vr_give_take();
+#endif
 
 #ifdef HAVE_MENU
    menu_is_alive = (video_info.menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -9529,6 +9529,19 @@ static uintptr_t video_driver_vr_ctx_run(uintptr_t (*func)(void*),
    return func(data);
 }
 
+/* The same, for a call with no answer: queued ahead of the next frame
+ * rather than waited for, and run there and then only when it cannot
+ * be queued. */
+static void video_driver_vr_ctx_post(uintptr_t (*func)(void*))
+{
+#ifdef HAVE_THREADS
+   if (     video_driver_thread_wrapper_active()
+         && video_thread_run_queued(func, NULL))
+      return;
+#endif
+   video_driver_vr_ctx_run(func, NULL);
+}
+
 static uintptr_t video_driver_vr_content_clear_cb(void *data)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -9551,48 +9564,107 @@ static uintptr_t video_driver_vr_resume_cb(void *data)
 static void video_driver_vr_resume(void)
 {
    if (video_xr_host.resume)
-      video_driver_vr_ctx_run(video_driver_vr_resume_cb, NULL);
+      video_driver_vr_ctx_post(video_driver_vr_resume_cb);
 }
 
 /* The core is going: its VR content with it. */
 void video_driver_vr_content_clear(void)
 {
    if (vr_saved_valid)
-      video_driver_vr_ctx_run(video_driver_vr_content_clear_cb, NULL);
+      video_driver_vr_ctx_post(video_driver_vr_content_clear_cb);
    vr_saved_valid = false;
    vr_given_w     = 0;
    vr_given_h     = 0;
    vr_resized     = false;
    vr_hands_on    = false;
    video_vr_frame_flags = 0;
+   retro_atomic_store_release_int(&vr_sampling, 0);
+   retro_atomic_store_release_int(&vr_sample_flags, 0);
+   memset(&vr_cur, 0, sizeof(vr_cur));
+   vr_give_pending = false;
 }
 
-static uintptr_t video_driver_vr_sample(void *data)
+/* The drawing thread: samples for the core's next frame, @ahead frames
+ * past those handed over, and publishes it. */
+static void video_driver_vr_publish_now(unsigned ahead, int want)
 {
+   video_vr_sample_t *s;
+   uint32_t flags = 0;
+
    if (     !video_xr_host.sample
-         || !video_xr_host.sample(video_xr_host.user, (uint32_t*)data))
-      return 0;
-   if (vr_hands_on && video_xr_host.locate_hands)
-      video_xr_host.locate_hands(video_xr_host.user);
-   return 1;
+         || !(video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
+      return;
+   s = (video_vr_sample_t*)retro_triple_buffer_back(&vr_sample_tb);
+   memset(s, 0, sizeof(*s));
+   s->ok = video_xr_host.sample(video_xr_host.user, ahead, &flags);
+   if (s->ok)
+   {
+      if (     (want & VIDEO_VR_SAMPLING_HANDS)
+            && video_xr_host.locate_hands && video_xr_host.controller_poses)
+      {
+         video_xr_host.locate_hands(video_xr_host.user);
+         s->hands_ok = video_xr_host.controller_poses(video_xr_host.user,
+               &s->hands);
+      }
+      s->head_ok = video_xr_host.head_pose
+         && video_xr_host.head_pose(video_xr_host.user, &s->head);
+      s->eyes_ok = video_xr_host.eye_state
+         && video_xr_host.eye_state(video_xr_host.user, s->eyes,
+               &s->token);
+   }
+   retro_triple_buffer_publish(&vr_sample_tb);
+   if (flags)
+      retro_atomic_fetch_or_int(&vr_sample_flags, (int)flags);
 }
 
-static uintptr_t video_driver_vr_locate_hands(void *data)
+void video_driver_vr_publish(unsigned ahead)
 {
-   (void)data;
-   return video_xr_host.locate_hands(video_xr_host.user);
+   int want = retro_atomic_load_acquire_int(&vr_sampling);
+   if (want & VIDEO_VR_SAMPLING)
+      video_driver_vr_publish_now(ahead, want);
 }
 
-/* Called by the runloop once per iteration, BEFORE retro_run(), so the
- * pose a core reads is the one the frame will be rendered with. */
+/* The drawing thread, before the frame the core drew from the eyes
+ * @token names */
+void video_driver_vr_give(unsigned token)
+{
+   if (video_xr_host.give)
+      video_xr_host.give(video_xr_host.user, token);
+}
+
+unsigned video_driver_vr_give_take(void)
+{
+   if (!vr_give_pending)
+      return 0;
+   vr_give_pending = false;
+   return vr_give_token + 1;
+}
+
+/* Called by the runloop once per iteration, BEFORE retro_run(): the
+ * newest sample is the one the core reads this frame. */
 bool video_driver_vr_sample_tracking(void)
 {
-   bool ok        = false;
-   uint32_t flags = 0;
+   uint32_t flags;
+   bool ok = false;
 
    if (     video_xr_host.sample
          && (video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
-      ok = video_driver_vr_ctx_run(video_driver_vr_sample, &flags) != 0;
+   {
+      int want = VIDEO_VR_SAMPLING
+         | (vr_hands_on ? VIDEO_VR_SAMPLING_HANDS : 0);
+      retro_atomic_store_release_int(&vr_sampling, want);
+#ifdef HAVE_THREADS
+      if (!video_driver_thread_wrapper_active())
+#endif
+         video_driver_vr_publish_now(0, want);
+      vr_cur = *(const video_vr_sample_t*)
+         retro_triple_buffer_front(&vr_sample_tb);
+      ok     = vr_cur.ok != 0;
+   }
+   else
+      memset(&vr_cur, 0, sizeof(vr_cur));
+
+   flags = (uint32_t)retro_atomic_exchange_int(&vr_sample_flags, 0);
    if (vr_resized)
    {
       flags     |= RETRO_VR_FRAME_TARGET_RESIZED;
@@ -9658,6 +9730,10 @@ static uintptr_t video_driver_vr_content_info_apply(void *data)
    vr_saved_info  = *info;
    vr_saved_valid = true;
 
+   /* Poses read after this in the same run are in the space just set */
+   video_driver_vr_publish_now(0, VIDEO_VR_SAMPLING
+         | (vr_hands_on ? VIDEO_VR_SAMPLING_HANDS : 0));
+
    return true;
 }
 
@@ -9669,9 +9745,10 @@ static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
 
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out)
 {
-   if (!video_xr_host.head_pose)
+   if (!vr_cur.head_ok)
       return false;
-   return video_xr_host.head_pose(video_xr_host.user, out);
+   *out = vr_cur.head;
+   return true;
 }
 
 bool video_driver_get_vr_controller_poses(
@@ -9679,32 +9756,47 @@ bool video_driver_get_vr_controller_poses(
 {
    if (!video_xr_host.controller_poses || !video_xr_host.locate_hands)
       return false;
-   /* The first ask locates them at the head's sample; each sample does
-    * from then on. */
+   /* The first ask locates them at the head's sample where this is
+    * the drawing thread; each sample does from then on */
    if (!vr_hands_on)
    {
       vr_hands_on = true;
-      video_driver_vr_ctx_run(video_driver_vr_locate_hands, NULL);
+      retro_atomic_fetch_or_int(&vr_sampling, VIDEO_VR_SAMPLING_HANDS);
+#ifdef HAVE_THREADS
+      if (!video_driver_thread_wrapper_active())
+#endif
+      {
+         video_xr_host.locate_hands(video_xr_host.user);
+         return video_xr_host.controller_poses(video_xr_host.user, out);
+      }
    }
-   return video_xr_host.controller_poses(video_xr_host.user, out);
-}
-
-static uintptr_t video_driver_vr_eye_state(void *data)
-{
-   struct retro_vr_frame_state *out = (struct retro_vr_frame_state*)data;
-   if (!video_xr_host.eye_state)
-      return 0;
-   return video_xr_host.eye_state(video_xr_host.user, out->eyes);
+   if (!vr_cur.hands_ok)
+      return false;
+   *out = vr_cur.hands;
+   return true;
 }
 
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out)
 {
-   if (     !video_xr_host.eye_state
-         || !video_driver_vr_ctx_run(video_driver_vr_eye_state, out))
+   if (!vr_cur.eyes_ok)
       return false;
 
+   out->eyes[0]  = vr_cur.eyes[0];
+   out->eyes[1]  = vr_cur.eyes[1];
    out->flags    = video_vr_frame_flags;
    vr_flags_read = true;
+
+   /* The core draws its frame from these: given when that frame is
+    * drawn */
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+   {
+      vr_give_token   = vr_cur.token;
+      vr_give_pending = true;
+   }
+   else
+#endif
+      video_driver_vr_give(vr_cur.token);
 
    return true;
 }

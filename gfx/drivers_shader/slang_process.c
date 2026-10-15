@@ -574,7 +574,8 @@ static bool slang_process_reflection(
          uniform_sem_t uniform;
          enum slang_semantic _semantic   = (enum slang_semantic)semantic;
 
-         uniform.data = map->uniforms[semantic];
+         uniform.data  = map->uniforms[semantic];
+         uniform.param = NULL;
          /* A backend that has not wired a source for this semantic leaves
           * the slot NULL; the shader then reads its zero-initialised
           * default rather than the upload copying from NULL. */
@@ -613,7 +614,8 @@ static bool slang_process_reflection(
       {
          uniform_sem_t uniform;
 
-         uniform.data = &shader_info->parameters[i].current;
+         uniform.data  = NULL;
+         uniform.param = &shader_info->parameters[i];
          uniform.size = sizeof(float);
          strlcpy(uniform.id, slang_map_semantic_name(sl_reflection.semantic_map, SLANG_SEMANTIC_FLOAT_PARAMETER, i), sizeof(uniform.id));
 
@@ -729,8 +731,9 @@ static bool slang_process_reflection(
                "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
             };
 
-            uniform.data = (void*)((uintptr_t)map->textures[semantic].size
+            uniform.data  = (void*)((uintptr_t)map->textures[semantic].size
                   + index * map->textures[semantic].size_stride);
+            uniform.param = NULL;
             uniform.size = 4 * sizeof(float);
             if (semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
                strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
@@ -1380,7 +1383,7 @@ bool slang_preprocess_parse_parameters_meta(const glslang_meta *meta,
       p->minimum = meta->parameters[i].minimum;
       p->maximum = meta->parameters[i].maximum;
       p->step    = meta->parameters[i].step;
-      p->current = meta->parameters[i].initial;
+      video_shader_param_set(p, meta->parameters[i].initial);
    }
 
    return true;
