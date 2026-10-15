@@ -60,6 +60,7 @@
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
+#include "../../../gfx/video_driver.h"
 
 static int failures;
 static int pushes;
@@ -272,6 +273,50 @@ static void test_icon_draw_size(void)
    gfx_widgets_deinit(false);
 }
 
+/* Under the threaded video wrapper the widgets' fonts are the video
+ * thread's. Deinit takes the worker away and hands the fonts back to
+ * that thread rather than freeing them here or waiting on it. */
+extern unsigned stub_fonts_freed;
+extern unsigned stub_fonts_retired;
+
+static void test_worker_deinit(void)
+{
+   static int fonts[3];
+   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
+
+   video_state_get_ptr()->thread_wrapper_active = true;
+   if (!widgets_up())
+   {
+      CHECK(0, "gfx_widgets_init() refused under the worker");
+      video_state_get_ptr()->thread_wrapper_active = false;
+      return;
+   }
+   CHECK(retro_atomic_load_acquire_int(&p_dispwidget->worker),
+         "the widgets did not go to the worker");
+
+   /* What the worker's layout would have built */
+   p_dispwidget->gfx_widget_fonts.regular.font   = (font_data_t*)&fonts[0];
+   p_dispwidget->gfx_widget_fonts.bold.font      = (font_data_t*)&fonts[1];
+   p_dispwidget->gfx_widget_fonts.msg_queue.font = (font_data_t*)&fonts[2];
+   stub_fonts_freed   = 0;
+   stub_fonts_retired = 0;
+
+   gfx_widgets_deinit(false);
+
+   CHECK(!retro_atomic_load_acquire_int(&p_dispwidget->worker),
+         "the worker kept the widgets");
+   CHECK(stub_fonts_retired == 3,
+         "the worker's fonts were not handed back to it");
+   CHECK(stub_fonts_freed == 0,
+         "the worker's fonts were freed off its thread");
+   CHECK(!p_dispwidget->gfx_widget_fonts.regular.font
+         && !p_dispwidget->gfx_widget_fonts.bold.font
+         && !p_dispwidget->gfx_widget_fonts.msg_queue.font,
+         "a handed-back font is still referenced");
+
+   video_state_get_ptr()->thread_wrapper_active = false;
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -280,6 +325,7 @@ int main(void)
    test_queue_overflow();
    test_init_deinit_cycles();
    test_icon_draw_size();
+   test_worker_deinit();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

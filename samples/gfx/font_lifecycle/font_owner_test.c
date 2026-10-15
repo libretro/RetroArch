@@ -13,13 +13,15 @@
  * it, rebuilds it for a new language and frees it once retired. A font
  * made on the video thread is checked to stay out of the main thread's
  * reach, and to follow a language change and come due on its own
- * thread.
+ * thread. A font retired on another thread is handed back to its
+ * owner, from several threads at once, and freed there exactly once.
  *
  * font_driver.c is included rather than linked, for the file cache. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sched.h>
 
 #include "../../../gfx/font_driver.c"
 
@@ -149,6 +151,32 @@ static void *video_frames(void *unused)
    return NULL;
 }
 
+/* --- handing back from other threads --- */
+#define RETIRES (READERS * 4)
+static font_data_t       *retiring[RETIRES];
+static retro_atomic_int_t retire_done;
+static retro_atomic_int_t retire_ready;
+
+static void *retirer(void *arg)
+{
+   int r;
+   for (r = (int)(intptr_t)arg; r < RETIRES; r += READERS)
+      font_driver_free_deferred(retiring[r]);
+   return NULL;
+}
+
+/* Frames until the retirers are done, then the teardown flush */
+static void *video_drain(void *unused)
+{
+   (void)unused;
+   video_thread_begin();
+   retro_atomic_store_release_int(&retire_ready, 1);
+   while (!retro_atomic_load_acquire_int(&retire_done))
+      font_driver_free_pending(false);
+   font_driver_free_pending(true);
+   return NULL;
+}
+
 static void run(void *(*fn)(void*))
 {
    pthread_t t;
@@ -227,6 +255,44 @@ int main(void)
    run(video_frames);
    CHECK(live() == i - 1,
          "the video thread's frames free its retired font");
+
+   /* 5. A font retired off its thread goes back to that thread */
+   run(video_make);
+   i = live();
+   font_driver_free_deferred(video_font);
+   font_driver_free_pending(true);
+   CHECK(live() == i,
+         "the main thread freed a font the video thread made");
+   run(video_frames);
+   CHECK(live() == i - 1,
+         "the video thread's frames free what was handed back to it");
+
+   /* 6. Handed back from several threads while the video thread frees */
+   {
+      pthread_t retirers[READERS];
+      pthread_t drainer;
+      int       r;
+      for (r = 0; r < RETIRES; r++)
+      {
+         run(video_make);
+         retiring[r] = video_font;
+      }
+      i = live();
+      retro_atomic_store_release_int(&retire_done, 0);
+      pthread_create(&drainer, NULL, video_drain, NULL);
+      /* Which thread is the video thread is known before anyone asks */
+      while (!retro_atomic_load_acquire_int(&retire_ready))
+         sched_yield();
+      for (r = 0; r < READERS; r++)
+         pthread_create(&retirers[r], NULL, retirer, (void*)(intptr_t)r);
+      for (r = 0; r < READERS; r++)
+         pthread_join(retirers[r], NULL);
+      retro_atomic_store_release_int(&retire_done, 1);
+      pthread_join(drainer, NULL);
+      test_video_thread_set = 0;
+      CHECK(live() == i - RETIRES,
+            "fonts handed back from several threads are all freed once");
+   }
 
    font_driver_free(main_font);
    CHECK(live() == 0, "every renderer state is released");

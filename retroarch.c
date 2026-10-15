@@ -2242,6 +2242,12 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
+#ifdef HAVE_THREADS
+      /* Same barrier as driver_uninit(): no frame still drawing them */
+      if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+            && video_st->thread_wrapper_active)
+         video_thread_wait_idle();
+#endif
       gfx_widgets_deinit(p_dispwidget->persisting);
       p_dispwidget->active         = false;
    }

@@ -207,6 +207,8 @@ typedef struct font_data
    bool threading_hint;
    /* The thread that made it, whose list it is on: FONT_OWNER_* */
    uint8_t owner;
+   /* Retired by another thread: the link on its owner's stack */
+   void *retired_next;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -321,6 +323,9 @@ void font_driver_free(font_data_t *font);
  * still references, which drivers with deferred submission do not
  * survive. Build the replacement first, retire the old handle with
  * this, and keep drawing.
+ *
+ * Any thread may retire a font; one made on another thread is handed
+ * to that thread, which frees it on its own frames.
  *
  * The handle must not be used again after this call. */
 void font_driver_free_deferred(font_data_t *font);

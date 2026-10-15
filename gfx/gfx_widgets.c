@@ -2692,13 +2692,12 @@ static void gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 }
 
 #ifdef HAVE_THREADS
-static uintptr_t gfx_widgets_fonts_free(void *data)
+/* The video thread's fonts, handed back to it to free on its frames */
+static void gfx_widgets_font_retire(gfx_widget_font_data_t *font_data)
 {
-   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)data;
-   gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.regular);
-   gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.bold);
-   gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.msg_queue);
-   return 0;
+   font_driver_free_deferred(font_data->font);
+   font_data->font        = NULL;
+   font_data->usage_count = 0;
 }
 #endif
 
@@ -2779,17 +2778,18 @@ void gfx_widgets_deinit(bool widgets_persisting)
 
 #ifdef HAVE_THREADS
    /* Every frame after the store sees the worker gone
-    * (gfx_widgets_frame()) and draws no widgets; the frames the wrapper
-    * still holds, queued while the widgets were active, are waited out
-    * before the fonts go - on the worker's thread, whose they are.
-    * Then back to the main list: the tweens of widgets that persist
-    * carry on under whichever video comes up next, and freeing kills
-    * the rest where the widget code looks for them. */
+    * (gfx_widgets_frame()) and draws no widgets, and the caller has
+    * waited out the one in flight. The fonts are the worker's: handed
+    * back to it, it frees them on its own frames. Then back to the
+    * main list: the tweens of widgets that persist carry on under
+    * whichever video comes up next, and freeing kills the rest where
+    * the widget code looks for them. */
    if (retro_atomic_load_relaxed_int(&p_dispwidget->worker))
    {
       retro_atomic_store_release_int(&p_dispwidget->worker, 0);
-      video_thread_wait_idle();
-      video_thread_run_blocking(gfx_widgets_fonts_free, p_dispwidget);
+      gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.regular);
+      gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.bold);
+      gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.msg_queue);
    }
    gfx_animation_widgets_own(false);
 #endif

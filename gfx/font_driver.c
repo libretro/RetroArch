@@ -1160,8 +1160,8 @@ static retro_atomic_int_t font_driver_generation
  * widgets' fonts. Each thread keeps its own fonts - the list of the
  * live ones, the retired ones waiting out their frames, the language
  * they were last made for - so no list is shared and none is locked.
- * A font is freed on its own thread, or once that thread has stopped
- * drawing (the widgets' deinit waits the wrapper idle first). */
+ * A font is freed on its own thread: one retired elsewhere is handed
+ * to it (font_driver_free_deferred()). */
 enum
 {
    FONT_OWNER_MAIN = 0,
@@ -1217,6 +1217,11 @@ static struct
    font_data_t *font;
    unsigned     frames;
 } font_free_deferred[FONT_OWNER_COUNT][FONT_FREE_DEFERRED_MAX];
+
+/* Fonts retired by a thread other than their owner, linked through
+ * font_data_t::retired_next; the owner takes them at its next
+ * font_driver_free_pending(). */
+static font_list_head_t font_retired[FONT_OWNER_COUNT];
 
 static void font_driver_release_renderer_state(
       const font_renderer_t *renderer, void *renderer_data,
@@ -2351,14 +2356,9 @@ bool font_driver_matches(const font_data_t *font,
    return string_is_equal(font->path, path);
 }
 
-void font_driver_free_deferred(font_data_t *font)
+static void font_driver_defer(unsigned owner, font_data_t *font)
 {
    unsigned i;
-   unsigned owner;
-
-   if (!font)
-      return;
-   owner = font_driver_owner_here();
 
    for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
    {
@@ -2379,10 +2379,49 @@ void font_driver_free_deferred(font_data_t *font)
    font_driver_free(font);
 }
 
+void font_driver_free_deferred(font_data_t *font)
+{
+   unsigned owner;
+
+   if (!font)
+      return;
+   if ((owner = font_driver_owner_here()) != font->owner)
+   {
+      font_list_head_t *head = &font_retired[font->owner];
+      for (;;)
+      {
+         void *top          = FONT_HEAD_LOAD(head);
+         font->retired_next = top;
+         if (FONT_HEAD_CAS(head, top, font))
+            return;
+      }
+   }
+   font_driver_defer(owner, font);
+}
+
 void font_driver_free_pending(bool flush)
 {
    unsigned i;
-   unsigned owner = font_driver_owner_here();
+   unsigned owner         = font_driver_owner_here();
+   font_list_head_t *head = &font_retired[owner];
+   font_data_t *retired;
+
+   /* What other threads retired: into the queue, or gone on a flush */
+   for (;;)
+   {
+      retired = (font_data_t*)FONT_HEAD_LOAD(head);
+      if (!retired || FONT_HEAD_CAS(head, retired, NULL))
+         break;
+   }
+   while (retired)
+   {
+      font_data_t *next = (font_data_t*)retired->retired_next;
+      if (flush)
+         font_driver_free(retired);
+      else
+         font_driver_defer(owner, retired);
+      retired           = next;
+   }
 
    for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
    {
