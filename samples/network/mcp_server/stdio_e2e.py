@@ -98,14 +98,17 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       'GET_LOG' in schemas and 'SET_INPUT' in schemas
       and 'GET_PLAYLIST' in schemas)
 # Every tool's description and schema is context a client pays for
-# before it does anything, so raise this deliberately and say what for.
-# 21449 at 46 tools, then RUN_UNTIL and GET_INPUT took it to 22944
-# (less 770 from dropping readOnlyHint where it repeated its default),
-# then WATCH and the rows it gives RUN_FRAMES, PRESS and RUN_UNTIL to
-# 25299: a tool's own rows schema is about 450 bytes of it.
+# before it does anything. The total catches a tool added by accident,
+# and the ceiling on each one catches prose: an average would not, as
+# folding small tools into one raises it. 24019 at 41 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
-      % (size, len(names)), size < 26000)
+      % (size, len(names)), size < 25000)
+biggest = max(msg['result']['tools'],
+              key=lambda t: len(json.dumps(t, separators=(',', ':'))))
+check('and no one tool is over 1800 bytes: %s is %d' % (biggest['name'],
+      len(json.dumps(biggest, separators=(',', ':')))),
+      len(json.dumps(biggest, separators=(',', ':'))) <= 1800)
 
 # wait for the core to be running
 st = ''
