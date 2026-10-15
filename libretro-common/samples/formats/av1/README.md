@@ -202,3 +202,26 @@ inter replays, reset, stale/duplicate/cross-state tickets and epoch exhaustion.
 show-existing replays, against an independent slot model. Four mutated replay
 selectors are rejected. The native full header/tile chain stages and commits
 metadata assuming successful decode; actual hardware submission remains work.
+
+`formats/rav1_hw.h` supplies a caller-owned hardware session for single FRAME
+OBUs and show-existing FRAME_HEADER OBUs. It parses complete coded headers and
+preflights borrowed tiles before one backend call. BUSY retains immutable input
+for retry; cancellation/backend failure cannot commit references. Acceptance
+releases CPU input ownership and commits metadata. Slot selection uses nine or
+more DPB slots; previous order hints, geometry and types accompany references.
+Show-existing uses output only. Drain or discard display before the next frame.
+
+The backend must snapshot accepted input, preserve exported ready/done leases
+across DPB reuse, and implement requested grain or decline before acceptance.
+The session allocates nothing, waits for nothing and copies no pixel/packet
+buffers. It accepts profile 0, 8/10-bit 4:2:0, with a validated fixed sequence;
+separate tile-group OBUs and additional temporal/spatial layers are unsupported.
+Sequence changes require retiring/reopening the session and backend.
+
+Hardware-session tests cover BUSY/retry identity, cancel, decoder failure,
+output backpressure, lease abandonment, P010 validation, DPB slot rotation,
+key replay without decode, order-hint snapshots, grain propagation and malformed
+input. The eight state fixtures also run through a mock backend: 180 frames,
+145 accepted decodes and 35 replays, with submission/output BUSY injected.
+These are protocol tests, not evidence of hardware pixels or Vulkan decoding.
+A concrete device adapter, backend registration and player routing remain work.

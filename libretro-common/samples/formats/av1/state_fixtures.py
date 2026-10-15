@@ -43,6 +43,7 @@ def headers(data):
 
 
 exe = str(Path(os.environ.get('AV1_REFERENCE_TEST', './rav1_reference_test')).resolve())
+hw_exe = str(Path(os.environ.get('AV1_HW_TEST', './rav1_hw_session_test')).resolve())
 with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
     for depth in (8, 10):
         for mode, count, options in (
@@ -62,6 +63,7 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
             data = path.read_bytes()
             spans = iter(headers(data))
             slots, expected, epoch, replays, rejected = [None] * 8, [], 1, 0, 0
+            coded = shown = 0
             for index, block in enumerate(blocks(trace)):
                 values = {}
                 for text in block:
@@ -77,6 +79,7 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
                     assert showable
                     refresh = 255 if kind == 0 else 0
                     replays += 1
+                    shown += 1
                     if not rejected:
                         invalid = next((i for i, slot in enumerate(slots)
                             if slot is None or not slot[2]), None)
@@ -88,6 +91,8 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
                             result = subprocess.run([exe, '--state', str(bad)],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
                             assert result.returncode != 0
+                            result = subprocess.run([hw_exe, str(bad)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                            assert result.returncode != 0
                             rejected += 1
                     if kind == 0:
                         slots = [(identity, kind, False)] * 8
@@ -95,6 +100,8 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
                     identity = epoch + 1
                     kind = get('frame_type')
                     show = get('show_frame')
+                    coded += 1
+                    shown += show
                     showable = kind != 0 if show else get('showable_frame')
                     refresh = get('refresh_frame_flags', 255)
                     for i in range(8):
@@ -105,7 +112,9 @@ with tempfile.TemporaryDirectory(prefix='rav1-state-') as directory:
             actual = subprocess.check_output([exe, '--state', str(path)], text=True).splitlines()
             actual = [row for row in actual if row.startswith('RS ')]
             assert actual == expected, (depth, mode, actual, expected)
+            hardware = subprocess.check_output([hw_exe, str(path)], text=True).strip()
+            assert hardware == f'HW {len(expected)} {coded} {shown} {shown}', hardware
             if mode == 'reorder':
                 assert replays and rejected
             print(f'AV1 {depth}-bit {mode}: {len(expected)} transactions, {replays} replays, '
-                  f'{rejected} invalid replay rejected; identities/refresh masks/epochs match')
+                  f'{rejected} invalid replay rejected; identities/refresh masks/epochs and mocked HW submission/output match')
