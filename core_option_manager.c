@@ -724,6 +724,9 @@ static bool core_option_manager_parse_variable(
       const char *value_label = core_option_manager_parse_value_label(
             value, NULL);
 
+      if (!value_hash)
+         goto error;
+
       /* Set value hash */
       *value_hash                     = core_option_manager_hash_string(value);
       option->vals->elems[i].userdata = (void*)value_hash;
@@ -1000,6 +1003,9 @@ static bool core_option_manager_parse_option(
       const char *value       = values[i].value;
       uint32_t *value_hash    = (uint32_t *)malloc(sizeof(uint32_t));
       const char *value_label = values[i].label;
+
+      if (!value_hash)
+         return false;
 
       /* Append value string
        * > We know that 'value' is always valid */
