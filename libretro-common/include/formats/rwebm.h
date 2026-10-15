@@ -6,9 +6,9 @@
  * decoder needs) and streams out the coded packets in file order, each
  * tagged with its track, timestamp and key-frame flag.
  *
- * WebM restricts Matroska to VP8/VP9 video and Vorbis/Opus audio, so the
- * codec set is small and known; the demuxer recognises those four and
- * exposes any others by their raw Matroska CodecID string.
+ * Recognises VP8/VP9/AV1 video, Vorbis/Opus audio and selected Matroska
+ * codecs. Others are exposed by their raw Matroska CodecID string.
+ * Track recognition does not imply decoder support.
  *
  * The whole input buffer is supplied up front (memory-only, like the rest
  * of libretro-common's format layer) and is borrowed, not copied: it must
@@ -41,9 +41,10 @@ enum rwebm_codec
    RWEBM_CODEC_OPUS,
    RWEBM_CODEC_H264,  /* V_MPEG4/ISO/AVC: CodecPrivate is the avcC box  */
    RWEBM_CODEC_AAC,   /* A_AAC*: CodecPrivate is the ASC                */
-   RWEBM_CODEC_FLAC   /* A_FLAC: CodecPrivate is a whole fLaC header -
+   RWEBM_CODEC_FLAC,  /* A_FLAC: CodecPrivate is a whole fLaC header -
                        * magic and metadata blocks - and each block is
                        * one raw FLAC frame                            */
+   RWEBM_CODEC_AV1    /* V_AV1: CodecPrivate is the av1C record         */
 };
 
 typedef struct
@@ -57,7 +58,8 @@ typedef struct
    unsigned               sample_rate; /* rounded from the float element   */
    unsigned               channels;
    /* Decoder setup data (Vorbis: the xiph-laced 3 headers; Opus: the
-    * OpusHead; VP8/VP9: usually empty).  Aliases into the input buffer. */
+    * OpusHead; VP8/VP9: usually empty; AV1: av1C configuration record).
+    * Aliases into the input buffer. */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
    /* CodecDelay: nanoseconds of decoded output to drop from the stream

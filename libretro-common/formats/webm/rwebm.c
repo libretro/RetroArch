@@ -5,7 +5,7 @@
  * The decoding glue lives next door: rwebm_audio.c (audio track to PCM)
  * and rwebm_video.c (video track to images).
  *
- * Scope: WebM restricts Matroska to VP8/VP9 video and Vorbis/Opus audio,
+ * Scope: VP8/VP9/AV1 video, Vorbis/Opus audio and selected Matroska codecs,
  * SimpleBlock/BlockGroup lacing, and a Segment/Cluster/Block layout.  The
  * parser reads the elements it needs (EBML head just far enough to accept
  * the stream, Segment > Info for the timestamp scale and duration,
@@ -22,9 +22,8 @@
  *
  * What it does not implement: SeekHead (Cues are found by the header
  * walk reaching them, not by following a pointer to them), chapters,
- * tags, attachments, subtitle tracks, and encrypted streams.  Codecs other than
- * VP8/VP9/Vorbis/Opus are reported as unknown and their packets can be
- * skipped by the caller.
+ * tags, attachments, subtitle tracks, and encrypted streams. Unrecognised
+ * codecs retain their raw CodecID so callers can skip their packets.
  *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */
@@ -350,6 +349,7 @@ static enum rwebm_codec codec_from_id(const char *id)
 {
    if (!strcmp(id, "V_VP8"))    return RWEBM_CODEC_VP8;
    if (!strcmp(id, "V_VP9"))    return RWEBM_CODEC_VP9;
+   if (!strcmp(id, "V_AV1"))    return RWEBM_CODEC_AV1;
    if (!strcmp(id, "A_VORBIS")) return RWEBM_CODEC_VORBIS;
    if (!strcmp(id, "A_OPUS"))   return RWEBM_CODEC_OPUS;
    if (!strcmp(id, "V_MPEG4/ISO/AVC")) return RWEBM_CODEC_H264;

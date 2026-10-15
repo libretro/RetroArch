@@ -8,10 +8,11 @@
  * contract as the rwebm demuxer, so the rwebm_video/rwebm_audio-style
  * glue can drive either container identically.
  *
- * The codec set mirrors what libretro-common can decode: VP8 ('vp08'),
- * VP9 ('vp09'), H.264 ('avc1'/'avc3') and H.265/HEVC ('hvc1'/'hev1')
- * video; Opus ('Opus'), Vorbis and AAC ('mp4a' by object type) audio.
- * Other codecs (AV1, ...) are reported with their sample-entry fourcc
+ * Recognised video codecs: VP8 ('vp08'), VP9 ('vp09'),
+ * H.264 ('avc1'/'avc3'), H.265/HEVC ('hvc1'/'hev1')
+ * and AV1 ('av01') video; Opus ('Opus'), Vorbis and AAC ('mp4a' by
+ * object type) audio. Track recognition does not imply decoder support.
+ * Other codecs are reported with their sample-entry fourcc
  * in codec_id and the codec field left RMP4_CODEC_UNKNOWN so callers
  * can skip them.
  *
@@ -54,7 +55,8 @@ enum rmp4_codec
    RMP4_CODEC_VORBIS,
    RMP4_CODEC_OPUS,
    RMP4_CODEC_AAC,
-   RMP4_CODEC_H265
+   RMP4_CODEC_H265,
+   RMP4_CODEC_AV1
 };
 
 typedef struct
@@ -80,7 +82,7 @@ typedef struct
    /* Decoder setup data (Opus: an OpusHead repacked from the dOps box,
     * owned by the demuxer; Vorbis: the xiph-laced 3 headers from the
     * esds DecoderSpecificInfo, aliasing the input; VP8/VP9: usually
-    * empty). */
+    * empty; AV1: the av1C configuration record, aliasing the input). */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
    /* Sample-entry fourcc, NUL-terminated (e.g. "vp09", "avc1"). */
