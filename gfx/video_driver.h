@@ -657,6 +657,9 @@ typedef struct video_frame_info
     * frame over, as it does the statistics text. */
    const char *widget_dir_assets;
    const char *widget_path_font;
+   /* The scale the worker lays the widgets out at, worked out from the
+    * settings as the frame is built */
+   float widget_scale_factor;
    /* Read by the menu driver's frame(), on the video thread */
    video_frame_menu_settings_t menu;
    float menu_ticker_speed;

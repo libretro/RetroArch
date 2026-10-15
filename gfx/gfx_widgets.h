@@ -203,29 +203,17 @@ typedef struct disp_widget_msg
 typedef struct dispgfx_widget
 {
 #ifdef HAVE_THREADS
-   /* Everything the widgets draw. With the threaded video wrapper the
-    * worker animates, iterates and draws it while the main thread's
-    * setters, task updates and relayout change it, so both sides hold
-    * this: the worker across its step and its draw, a writer across its
-    * change. Outermost of the widget locks. Recursive for
-    * its owner through state_owner/state_depth, and released for as
-    * long as its owner waits on the worker (gfx_widgets_state_yield()),
-    * so a writer that loads or frees a texture cannot deadlock against
-    * a draw waiting for it. Untouched without the wrapper. */
-   slock_t* state_lock;
-   retro_atomic_size_t state_owner;
-   unsigned state_depth;
-   /* The threaded video worker animates and lays out the widgets
-    * (gfx_widgets_worker_step()). Set at init and cleared at deinit,
-    * when neither thread is in the widgets; a field of its own rather
-    * than a bit in 'flags', which the main thread read-modify-writes
-    * while the worker would read this. */
    /* The video singleton's stable address, captured at
     * gfx_widgets_init on the main thread before the draw worker
-    * exists: the worker's step and the state-lock dispatch reach
-    * ra-video state through this, never through the getter. */
+    * exists: the worker's step reaches ra-video state through this,
+    * never through the getter. */
    void *video_st;
-   bool worker;
+   /* Under the threaded video wrapper the worker owns the widgets:
+    * it applies their commands, lays them out from the fonts the main
+    * thread hands it, animates and draws them
+    * (gfx_widgets_worker_step()). Set by the main thread at init, and
+    * cleared at deinit before the frames that saw it are waited out. */
+   retro_atomic_int_t worker;
 #endif
    /* Messages pushed but not yet on screen: a ring of pointers with
     * one producer and one consumer, so it takes no lock.  The
@@ -528,15 +516,6 @@ void gfx_widget_set_load_content_progress(int8_t progress);
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
-#ifdef HAVE_THREADS
-void gfx_widgets_state_lock(void);
-void gfx_widgets_state_unlock(void);
-unsigned gfx_widgets_state_yield(void);
-void gfx_widgets_state_resume(unsigned depth);
-#else
-#define gfx_widgets_state_lock()     ((void)0)
-#define gfx_widgets_state_unlock()   ((void)0)
-#endif
 
 void gfx_widgets_frame(void *data);
 
@@ -553,14 +532,13 @@ void gfx_widgets_worker_step(void *data,
 void gfx_widgets_status_text_to_frame(void *data, char *status_text);
 
 /* The main thread's part of gfx_widgets_iterate() while the worker
- * runs the rest: relayout on a screen, scale or font change. */
-void gfx_widgets_iterate_layout(
-      void *data_disp,
-      void *settings_data,
-      unsigned dims, bool fullscreen,
-      const char *dir_assets, char *font_path,
-      bool is_threaded);
+ * runs the rest: what a relayout on the worker asks of it. */
+void gfx_widgets_iterate_main(void);
 #endif
+
+/* The scale the widgets lay out at, from the settings, for @dims */
+float gfx_widgets_scale_factor(void *data_disp, void *settings_data,
+      unsigned dims, bool fullscreen);
 
 bool gfx_widgets_visible(void *data);
 

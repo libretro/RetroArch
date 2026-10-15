@@ -6108,6 +6108,16 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->input_driver_grab_mouse_state = (input_flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
    video_info->input_poll_time               = input_driver_get_poll_time();
    video_info->disp_userdata                 = disp_get_ptr();
+#if defined(HAVE_GFX_WIDGETS) && defined(HAVE_THREADS)
+   /* The worker lays the widgets out at this, with the dims and the
+    * fullscreen state the main thread would have */
+   video_info->widget_scale_factor           =
+         (     video_info->widgets_active
+            && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
+      ? gfx_widgets_scale_factor(video_info->disp_userdata, settings,
+            video_driver_get_ui_dims(), video_info->fullscreen)
+      : 0.0f;
+#endif
 
 #ifdef HAVE_THREADS
    /* Keyed off the wrapper alone: this hands the menu and widget frame
@@ -8551,7 +8561,8 @@ void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_THREADS) && defined(HAVE_GFX_WIDGETS)
       /* The worker that draws the widgets takes the panels' text with
        * the frame */
-      else if (widgets_active && p_dispwidget->worker)
+      else if (widgets_active
+            && retro_atomic_load_relaxed_int(&p_dispwidget->worker))
          gfx_widgets_status_text_to_frame(&video_info, status_text);
 #endif
 /* The text this frame draws is drawn inside the driver's frame -
@@ -8613,7 +8624,7 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
 #ifdef HAVE_THREADS
          /* The worker draws only the frames handed to it, and each
           * carries this text (gfx_widgets_status_text_to_frame()) */
-         if (!p_dispwidget->worker)
+         if (!retro_atomic_load_relaxed_int(&p_dispwidget->worker))
 #endif
          {
             /* Cap to widget buffer.  _len is the source length; if it

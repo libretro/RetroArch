@@ -60,7 +60,6 @@ count_in() {
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_lock-/     { c++ }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_try_lock-/ { c++ }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+pa_threaded_mainloop_lock-/ { c++ }
-      in_fn && /R_X86_64_[A-Z0-9]*[ \t]+gfx_widgets_state_lock-/ { c++ }
       END { print c + 0 }'
 }
 
@@ -154,6 +153,14 @@ measure gfx/widgets/gfx_widget_screenshot.o        gfx_widget_screenshot_taken
 measure gfx/widgets/gfx_widget_achievement_popup.o gfx_widgets_update_cheevos_appearance
 measure gfx/widgets/gfx_widget_load_content_animation.o gfx_widget_set_load_content_progress
 measure gfx/widgets/gfx_widget_load_content_animation.o gfx_widget_start_load_content_animation
+
+# The widgets' frame, and their layout and draw on the video thread.
+measure gfx/gfx_widgets.o  gfx_widgets_frame
+measure gfx/gfx_widgets.o  gfx_widgets_worker_step
+
+# Each thread's fonts follow the language and free their own.
+measure gfx/font_driver.o  font_driver_follow_language
+measure gfx/font_driver.o  font_driver_free_pending
 
 if [ "$fail" = 1 ]; then
    echo

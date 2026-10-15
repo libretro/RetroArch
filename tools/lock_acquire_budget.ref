@@ -62,8 +62,7 @@ vulkan_present                   1
 # inlined here).
 vulkan_acquire_next_image        1
 # The widget setters push a command the widgets' owner applies; none
-# waits on a frame being drawn. Counted as gfx_widgets_state_lock calls
-# too, since the lock is taken out of line.
+# waits on a frame being drawn.
 gfx_widget_volume_update_and_show 0
 gfx_widget_set_libretro_message  0
 gfx_widget_set_generic_message   0
@@ -75,3 +74,9 @@ gfx_widget_screenshot_taken      0
 gfx_widgets_update_cheevos_appearance 0
 gfx_widget_set_load_content_progress 0
 gfx_widget_start_load_content_animation 0
+# The widgets lay out and draw on the thread that owns them.
+gfx_widgets_frame                0
+gfx_widgets_worker_step          0
+# Fonts belong to the thread that made them.
+font_driver_follow_language      0
+font_driver_free_pending         0

@@ -59,11 +59,9 @@ static void msg_push(retro_task_t *task, const char *msg,
  * straight back, as if shown and expired. */
 static void owner_frame(void)
 {
-   gfx_widgets_state_lock();
    gfx_widgets_task_cmds_apply(&dispwidget_st);
    spawned += dispwidget_st.task_pending_size;
    gfx_widgets_task_pending_discard(&dispwidget_st);
-   gfx_widgets_state_unlock();
 }
 
 static void owner_runs(void *unused)
@@ -78,7 +76,6 @@ int main(void)
    unsigned i;
    sthread_t *owner;
 
-   dispwidget_st.state_lock            = slock_new();
    fake_video_st.thread_wrapper_active = true;
    dispwidget_st.video_st              = &fake_video_st;
    task_queue_init(false, msg_push);
@@ -137,7 +134,6 @@ int main(void)
    }
 
    task_queue_deinit();
-   slock_free(dispwidget_st.state_lock);
    printf("ok    %u tasks pushed and retired while their widgets were "
          "made and freed on another thread (%u pushes, %u widgets)\n",
          ROUNDS, pushes, spawned);

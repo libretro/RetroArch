@@ -8071,23 +8071,16 @@ static enum runloop_state_enum runloop_check_state(
                                  || rarch_force_fullscreen;
 
 #ifdef HAVE_THREADS
-      /* Under the threaded video wrapper the worker animates and
-       * iterates the widgets (gfx_widgets_worker_step()); the layout,
-       * which owns fonts, stays here - and so do the badge loads
-       * the achievement widgets ask for from over there */
-      if (p_dispwidget->worker)
+      /* Under the threaded video wrapper the worker lays out,
+       * animates and iterates the widgets (gfx_widgets_worker_step());
+       * what that asks of this thread is done here - and so are the
+       * badge loads the achievement widgets ask for from over there */
+      if (retro_atomic_load_relaxed_int(&p_dispwidget->worker))
       {
 #ifdef HAVE_CHEEVOS
          rcheevos_badge_cache_service();
 #endif
-         gfx_widgets_iterate_layout(
-               p_disp,
-               settings,
-               output_dims,
-               video_is_fullscreen,
-               settings->paths.directory_assets,
-               settings->paths.path_font,
-               true);
+         gfx_widgets_iterate_main();
       }
       else
 #endif

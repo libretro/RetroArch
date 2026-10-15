@@ -436,6 +436,9 @@ jobs:
                 gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
                    "-DRETRO_ATOMIC_FORCE_$backend" -c "$f" -o /dev/null
              done
+             gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
+                -DHAVE_GFX_WIDGETS "-DRETRO_ATOMIC_FORCE_$backend" \
+                -c gfx/gfx_widgets.c -o /dev/null
              # The Vulkan driver, from the Khronos headers the tree carries
              gcc -std=gnu99 -O2 -Wall -Werror $INC -Igfx/include $EXTRA $DEF \
                 -DHAVE_VULKAN "-DRETRO_ATOMIC_FORCE_$backend" \

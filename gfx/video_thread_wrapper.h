@@ -582,9 +582,6 @@ typedef struct thread_video
     * and taken under this lock. */
    slock_t *lock;
 #endif
-   /* Widget state lock depth user_acquire() released on the owner's
-    * behalf, retaken when the slot is released */
-   unsigned user_widgets_depth;
 #ifdef HAVE_GFX_WIDGETS
    /* Main thread: the panels' text for the next frame pushed,
     * staged by video_thread_status_text() */

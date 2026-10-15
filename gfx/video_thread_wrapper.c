@@ -624,13 +624,6 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 static void video_thread_user_acquire(thread_video_t *thr)
 {
    uintptr_t self = sthread_get_current_thread_id();
-#ifdef HAVE_GFX_WIDGETS
-   /* A widget writer can land here - a texture freed from a tween
-    * callback - and the worker may be blocked on the widget state lock
-    * mid-draw, unable to reach this command. Drop the lock for the
-    * command's duration; user_release() takes it back. */
-   unsigned widgets_depth = gfx_widgets_state_yield();
-#endif
 
    /* Only this thread ever stores its own id here. */
    if ((uintptr_t)retro_atomic_load_acquire_size(&thr->user_owner) != self)
@@ -651,29 +644,16 @@ static void video_thread_user_acquire(thread_video_t *thr)
       retro_atomic_store_release_size(&thr->user_owner, (size_t)self);
    }
    thr->user_depth++;
-#ifdef HAVE_GFX_WIDGETS
-   thr->user_widgets_depth += widgets_depth;
-#endif
 }
 
 static void video_thread_user_release(thread_video_t *thr)
 {
-#ifdef HAVE_GFX_WIDGETS
-   unsigned widgets_depth = 0;
-#endif
    if (--thr->user_depth == 0)
    {
-#ifdef HAVE_GFX_WIDGETS
-      widgets_depth           = thr->user_widgets_depth;
-      thr->user_widgets_depth = 0;
-#endif
       retro_atomic_store_release_size(&thr->user_owner, 0);
       retro_atomic_store_release_int(&thr->user_busy, 0);
       retro_eventcount_notify(&thr->user_ec);
    }
-#ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_state_resume(widgets_depth);
-#endif
 }
 
 /* user -> thread */
@@ -5667,9 +5647,6 @@ void video_thread_wait_idle(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t       *thr;
-#ifdef HAVE_GFX_WIDGETS
-   unsigned widgets_depth;
-#endif
 
    /* Only safe to interpret video_st->data as a thread_video_t*
     * when the threaded video wrapper is actually active.  With
@@ -5687,13 +5664,5 @@ void video_thread_wait_idle(void)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return;
 
-#ifdef HAVE_GFX_WIDGETS
-   /* Reached from a widget writer unloading a texture: the frame being
-    * waited out may be blocked on the widget state lock mid-draw */
-   widgets_depth = gfx_widgets_state_yield();
-#endif
    video_thread_ring_drain(thr);
-#ifdef HAVE_GFX_WIDGETS
-   gfx_widgets_state_resume(widgets_depth);
-#endif
 }
