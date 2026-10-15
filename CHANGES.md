@@ -98,6 +98,7 @@
 - NETWORK: HELP network command lists every command with what it does
 - NETWORK: LIST_CORES, LIST_PLAYLISTS and GET_PLAYLIST network commands, to find content and the core to load it with
 - NETWORK: New network command PRESS, holding RetroPad buttons, running a number of frames and letting them go in one request
+- NETWORK: New network command RUN_UNTIL, running the content until a byte at a system address meets a condition, instead of running a few frames and reading it again
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
 - NETWORK: LIST_CORES takes a content path, listing only the cores that can load it
 - NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)

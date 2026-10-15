@@ -8,7 +8,9 @@ static retro_input_state_t input;
 static uint32_t frame;
 static uint32_t pixels[64];
 /* Memory for READ_CORE_MEMORY and GET_MEMORY_MAP to answer about, at a
- * system address, as a real core maps its RAM. */
+ * system address, as a real core maps its RAM. ram[7] follows the frame
+ * counter, so RUN_UNTIL has a byte that changes to wait on; the rest
+ * stays as retro_init left it, which the memory tests read. */
 static uint8_t ram[16];
 void retro_set_environment(retro_environment_t cb)
 {
@@ -56,6 +58,7 @@ void retro_run(void)
 {
    poll(); input(0,RETRO_DEVICE_JOYPAD,0,RETRO_DEVICE_ID_JOYPAD_B);
    frame++; pixels[0]=frame; video(pixels,8,8,8*sizeof(*pixels));
+   ram[7]=(uint8_t)frame;
 }
 size_t retro_serialize_size(void) { return sizeof(frame); }
 bool retro_serialize(void *p,size_t n) { if(n<sizeof(frame))return false; memcpy(p,&frame,sizeof(frame));return true; }

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <time/rtime.h>
@@ -29,6 +30,17 @@ bool __wrap_netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
    if (state == RARCH_NETPLAY_CTL_PRE_FRAME && blocked)
    { gates++; return false; }
    return __real_netplay_driver_ctl(state, data);
+}
+/* ram[7] as the core has it now. Read rather than worked out from the
+ * frame counter: a runahead or preempt restore moves the counter back
+ * without moving the byte. */
+static unsigned ram7(command_t *cmd)
+{
+   char *sp;
+   reply[0]=0;
+   if (!command_read_memory(cmd,"1007 1") || !(sp=strrchr(reply,' ')))
+      return 0x100;
+   return (unsigned)strtoul(sp+1,NULL,16);
 }
 static void receive(command_t *cmd, const char *data, size_t n)
 {
@@ -252,6 +264,71 @@ int main(int argc, char **argv)
          && input_driver_command_held(0,axes) == 0);
    runloop_iterate();
    CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
+
+   /* RUN_UNTIL waits on a byte the core maps, answered the frame it
+    * meets what was asked. ram[0] follows the frame counter. */
+   {
+      char req[64];
+      unsigned now;
+      /* what it already holds: no frame need run */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 == %u",now);
+      CHECK(command_run_until(&cmd,req));
+      CHECK(!strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      /* three frames away: answered on the third, not before */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 == %u",(now + 3) & 0xff);
+      CHECK(command_run_until(&cmd,req) && !reply[0]);
+      runloop_iterate();
+      CHECK(!reply[0]);
+      runloop_iterate();
+      CHECK(!reply[0]);
+      runloop_iterate();
+      {
+         char want[64];
+         snprintf(want,sizeof(want),"met\t3\t%u",(now + 3) & 0xff);
+         CHECK(!strncmp(reply,want,strlen(want)));
+      }
+      /* the frames run out first: how far it got, to be asked again */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 == %u 2",(now + 90) & 0xff);
+      CHECK(command_run_until(&cmd,req) && !reply[0]);
+      runloop_iterate();
+      runloop_iterate();
+      CHECK(!strncmp(reply,"waiting\t2\t",STRLEN_CONST("waiting\t2\t")));
+      /* every condition it takes */
+      now=ram7(&cmd); reply[0]=0;
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 != %u",(now + 1) & 0xff);
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 >= %u",now);
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 <= %u",now);
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      /* and what it refuses */
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1007 ~= 5")
+            && strstr(reply,"RUN_UNTIL ERROR"));
+      CHECK(!command_run_until(&cmd,"1007 == 300")
+            && strstr(reply,"0 to 255"));
+      CHECK(!command_run_until(&cmd,"99000 == 0")
+            && strstr(reply,"RUN_UNTIL ERROR"));
+      CHECK(!command_run_until(&cmd,"1007 == 0 601")
+            && strstr(reply,"at most 600"));
+      CHECK(!command_run_until(&cmd,"1007 == 0 5 junk")
+            && strstr(reply,"RUN_UNTIL ERROR"));
+      /* one frame job at a time, as RUN_FRAMES and PRESS are */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 == %u",(now + 90) & 0xff);
+      CHECK(command_run_until(&cmd,req));
+      CHECK(command_run_frames(&cmd,"1")
+            && strstr(reply,"RUN_UNTIL ERROR replaced by another RUN_FRAMES"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
+   }
 
    before=calls; reply[0]=0;
    CHECK(command_run_frames(&cmd,"3"));
