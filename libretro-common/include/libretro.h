@@ -4285,7 +4285,10 @@ enum retro_hw_render_interface_type
     */
    RETRO_HW_RENDER_INTERFACE_VULKAN     = 0,
 
-   /** Indicates a \c retro_hw_render_interface for Direct3D 9. */
+   /**
+    * Indicates a \c retro_hw_render_interface for Direct3D 9.
+    * @see retro_hw_render_interface_d3d9
+    */
    RETRO_HW_RENDER_INTERFACE_D3D9       = 1,
 
    /** Indicates a \c retro_hw_render_interface for Direct3D 10. */

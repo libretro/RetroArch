@@ -29,6 +29,10 @@
 
 #include "libretro.h"
 
+#ifdef HAVE_D3D9
+#include "libretro_d3d9.h"
+#endif
+
 #ifdef HAVE_D3D11
 #include "libretro_d3d11.h"
 #endif
