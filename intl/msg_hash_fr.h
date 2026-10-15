@@ -1583,7 +1583,6 @@ static const struct
    char s_9e5d0200[13];
    char s_9fd6f744[14];
    char s_3eb72316[15];
-   char s_46f82582[9];
    char s_a2bb0576[12];
    char s_fab0ac6c[11];
    char s_a51249d0[15];
@@ -6539,7 +6538,6 @@ static const struct
    "Noir basique",
    "Blanc basique",
    "M\303\273re de Logan",
-   "Lumineux",
    "Gris fonc\303\251",
    "Gris clair",
    "Gruvbox sombre",
@@ -10957,7 +10955,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (257939u
+      (sizeof(msg_hash_fr_blob) == (257930u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13078,7 +13076,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,

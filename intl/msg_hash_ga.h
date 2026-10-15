@@ -1595,7 +1595,6 @@ static const struct
    char s_d6198fde[25];
    char s_9e5d0200[15];
    char s_9fd6f744[15];
-   char s_46f82582[5];
    char s_a2bb0576[13];
    char s_fab0ac6c[12];
    char s_a51249d0[15];
@@ -6651,7 +6650,6 @@ static const struct
    "Laghdaigh an Barra Taobh",
    "Dubh Bun\303\272sach",
    "B\303\241n Bun\303\272sach",
-   "Geal",
    "Liath Dorcha",
    "Solas Liath",
    "Gruvbox Dorcha",
@@ -11417,7 +11415,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (243748u
+      (sizeof(msg_hash_ga_blob) == (243743u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13556,7 +13554,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,

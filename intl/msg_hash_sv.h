@@ -1542,7 +1542,6 @@ static const struct
    char s_d6198fde[18];
    char s_9e5d0200[13];
    char s_9fd6f744[11];
-   char s_46f82582[5];
    char s_a2bb0576[11];
    char s_fab0ac6c[10];
    char s_a51249d0[14];
@@ -6360,7 +6359,6 @@ static const struct
    "D\303\266lj sidof\303\244ltet",
    "Simpel svart",
    "Simpel vit",
-   "Ljus",
    "Gr\303\245 M\303\266rk",
    "Gr\303\245 Ljus",
    "Gruvbox M\303\266rk",
@@ -10558,7 +10556,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (212889u
+      (sizeof(msg_hash_sv_blob) == (212884u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12656,7 +12654,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,

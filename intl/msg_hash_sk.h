@@ -1558,7 +1558,6 @@ static const struct
    char s_d6198fde[22];
    char s_9e5d0200[19];
    char s_9fd6f744[17];
-   char s_46f82582[8];
    char s_bf5e903e[8];
    char s_a2bb0576[14];
    char s_fab0ac6c[15];
@@ -6460,7 +6459,6 @@ static const struct
    "Zbali\305\245 bo\304\215n\303\275 panel",
    "Z\303\241kladn\303\241 \304\215ierna",
    "Z\303\241kladn\303\241 biela",
-   "Svetl\303\275",
    "Drakula",
    "\305\240ed\303\241 tmav\303\241",
    "\305\240ed\303\241 svetl\303\241",
@@ -10969,7 +10967,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (215129u
+      (sizeof(msg_hash_sk_blob) == (215121u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13084,7 +13082,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,

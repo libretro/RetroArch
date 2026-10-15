@@ -1602,7 +1602,6 @@ static const struct
    char s_9e5d0200[15];
    char s_9fd6f744[18];
    char s_3eb72316[11];
-   char s_46f82582[6];
    char s_bf5e903e[14];
    char s_a2bb0576[11];
    char s_fab0ac6c[11];
@@ -7241,7 +7240,6 @@ static const struct
    "\304\220en c\306\241 b\341\272\243n",
    "Tr\341\272\257ng c\306\241 b\341\272\243n",
    "D\303\242u t\341\272\261m",
-   "S\303\241ng",
    "Ma c\303\240 r\341\273\223ng",
    "X\303\241m t\341\273\221i",
    "X\303\241m s\303\241ng",
@@ -14354,7 +14352,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (278959u
+      (sizeof(msg_hash_vn_blob) == (278953u
 #ifdef ANDROID
        + 373u
 #endif
@@ -16509,7 +16507,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,

@@ -1571,7 +1571,6 @@ static const struct
    char s_d6198fde[25];
    char s_9e5d0200[13];
    char s_9fd6f744[13];
-   char s_46f82582[11];
    char s_bf5e903e[9];
    char s_a2bb0576[10];
    char s_fab0ac6c[10];
@@ -6433,7 +6432,6 @@ static const struct
    "Replega la barra lateral",
    "Negre b\303\240sic",
    "Blanc b\303\240sic",
-   "Brillantor",
    "Dr\303\240cula",
    "Gris fosc",
    "Gris clar",
@@ -10555,7 +10553,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (233408u
+      (sizeof(msg_hash_ca_blob) == (233397u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12669,7 +12667,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,

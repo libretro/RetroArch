@@ -1541,7 +1541,6 @@ static const struct
    char s_9e5d0200[14];
    char s_9fd6f744[12];
    char s_3eb72316[12];
-   char s_46f82582[5];
    char s_21fefe05[11];
    char s_a2bb0576[11];
    char s_fab0ac6c[9];
@@ -6374,7 +6373,6 @@ static const struct
    "Basic Schwarz",
    "Basic Wei\303\237",
    "Boysenbeere",
-   "Hell",
    "Immergr\303\274n",
    "Dunkelgrau",
    "Hellgrau",
@@ -10479,7 +10477,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (232116u
+      (sizeof(msg_hash_de_blob) == (232111u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12582,7 +12580,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
