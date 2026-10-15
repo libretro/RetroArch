@@ -535,7 +535,7 @@ struct cmd_column
 };
 
 /* A line among a reply's rows that is not one of them: a word, and a
- * number after it. "MORE 200" says a list was cut short and where to
+ * number ending the line. "MORE 200" says a list was cut short and where to
  * resume, "NEXT 48" where GET_LOG reached, "SKIPPED 12" how many log
  * lines were gone before the first it could give.
  *
@@ -564,7 +564,7 @@ struct cmd_trailer
  *
  * A line the command opens with its own name - "LIST_CORES none",
  * "GET_PLAYLIST ERROR ..." - is not a row, and neither is one of
- * @trailers.
+ * @trailers, which may be that same line: "RUN_FRAMES 3".
  *
  * @required is how many of the columns every row has, where a reply
  * ends short of them: GET_CORE_OPTION gives an option's key, value and
@@ -953,7 +953,8 @@ static const struct cmd_column cmd_cols_memory[] = {
 static const struct cmd_column cmd_cols_watch[] = {
    { "label", "What the client called it." },
    { "address", "Where it is, in hexadecimal." },
-   { "value", "What the byte holds, or none where nothing maps it now." },
+   { "value", "What the byte holds, in decimal from 0 to 255, or none "
+      "where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
@@ -981,7 +982,17 @@ static const struct cmd_trailer cmd_trailers_until[] = {
    { "WAITING", NULL, "waiting",
       "The frames run without it meeting it; ask again to wait more.",
       true },
-   { "VALUE", NULL, "value", "What the byte waited on holds now." },
+   { "VALUE", NULL, "value",
+      "What the byte waited on holds now, from 0 to 255." },
+   { NULL }
+};
+/* the step's own line: the frames it ran end it */
+static const struct cmd_trailer cmd_trailers_frames[] = {
+   { "RUN_FRAMES", NULL, "frames", "The frames run.", true },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_press[] = {
+   { "PRESS", NULL, "frames", "The frames run.", true },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_log[] = {
@@ -1002,6 +1013,8 @@ static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
+static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0 };
+static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0 };
 static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0 };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
@@ -1025,11 +1038,11 @@ static const struct cmd_action_map action_map[] = {
 #ifdef HAVE_MCP
    { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames, &cmd_rows_watch },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames, &cmd_rows_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
-   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run, with what WATCH watches; the content finishes paused, as RUN_FRAMES leaves it.", 0, cmd_params_press, &cmd_rows_watch },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run, with what WATCH watches; the content finishes paused, as RUN_FRAMES leaves it.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers MET or WAITING with the frames run, what WATCH watches and the byte's VALUE; WAITING is asked again.", 0, cmd_params_until, &cmd_rows_until },
-   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS and RUN_UNTIL answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS and RUN_UNTIL answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },

@@ -140,7 +140,8 @@ ones every row carries: `GET_CORE_OPTION` gives an option's `values`
 only where it was asked for that option by key.
 
 A line the command opens with its own name, such as `LIST_CORES none`,
-is not a row, and a failure is its reason and no rows at all. Neither
+is not a row - though `RUN_FRAMES 3` and `PRESS 1 right+a 4` still give
+the frames run as `frames`, the number ending the line - and a failure is its reason and no rows at all. Neither
 are the lines that carry a number about the reply rather than a row of
 it, which become fields of their own:
 
@@ -150,6 +151,7 @@ it, which become fields of their own:
 | `MORE 200` | `more: true`, `next: 200` | `GET_PLAYLIST`'s next page |
 | `NEXT 48` | `next: 48` | where `GET_LOG` reached |
 | `SKIPPED 12` | `skipped: 12` | log lines gone before the first kept |
+| `RUN_FRAMES 3` | `frames: 3` | the frames `RUN_FRAMES` or `PRESS` ran |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -199,8 +201,10 @@ choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
 `REINIT`, `STATE` and `REPLAY` stand for their families likewise:
 `STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
 `SEEK_REPLAY 600`. Each answers under its own name - `STATE load 3`,
-`DISK next pressed`, `REPLAY ERROR no replay is playing or recording` -
-while the commands sent by name answer as they always have.
+`DISK next pressed`, `REPLAY ERROR no replay is playing or recording`,
+and `REINIT audio` for a restart that says nothing itself - while the
+commands sent by name answer as they always have. `DISK` is refused on
+a core with no disk control, where the hotkeys would do nothing.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
 files itself, and playing a game does not need them.
@@ -290,7 +294,8 @@ One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
 all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
-its place in the list when its address changes. Eight at once. Each is
+its place in the list when its address changes. Values are decimal,
+0 to 255, as `RUN_UNTIL` takes them; addresses are hexadecimal. Eight at once. Each is
 checked when it is set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
