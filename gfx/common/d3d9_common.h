@@ -39,6 +39,17 @@
 #include "../video_views.h"
 #endif
 
+/* Hardware-rendered cores on the PC */
+#ifndef _XBOX
+#define D3D9_HW_RENDER
+#include <libretro.h>
+#include <libretro_d3d9.h>
+#include <retro_atomic.h>
+#ifdef HAVE_THREADS
+#include <rthreads/retro_eventcount.h>
+#endif
+#endif
+
 #ifdef _XBOX
 #define D3D9_RGB565_FORMAT D3DFMT_LIN_R5G6B5
 #define D3D9_ARGB8888_FORMAT D3DFMT_LIN_A8R8G8B8
@@ -169,10 +180,45 @@ typedef struct d3d9_video
     * V-Sync on, and whether its frame was out as it returned */
    retro_time_t present_wait;
    int wait_for_vblank;
+   /* The presentation interval the device was made or reset with */
+   UINT present_interval;
    bool present_shown;
    d3d9_sw_fb_t sw_fb;
 #ifdef D3D9_VIEWS
    d3d9_views_t views;
+#endif
+#ifdef D3D9_HW_RENDER
+   /* A core rendering with this device: libretro_d3d9.h */
+   struct
+   {
+      struct retro_hw_render_interface_d3d9 iface;
+      /* The frame the driver draws, with a reference of the driver's */
+      LPDIRECT3DTEXTURE9 tex;
+      /* The ring's texture for the next frame, not referenced */
+      LPDIRECT3DTEXTURE9 ring_tex;
+      /* The states the driver draws with, set again over the core's */
+      LPDIRECT3DSTATEBLOCK9 state;
+#ifdef HAVE_THREADS
+      retro_eventcount_t turn_ec;
+#endif
+      /* D3D9_HW_TURN_* in d3d9hlsl.c */
+      retro_atomic_int_t turn;
+      /* The thread holding the core's turn, 0 for none */
+      retro_atomic_int_t core_tid;
+      unsigned core_depth;
+      unsigned fe_depth;
+      unsigned tex_dims;
+      bool enable;
+      /* The threaded wrapper is in front */
+      bool shared;
+      /* The frontend has had the device since the core last released it */
+      bool frontend_used;
+      /* context_destroy called, context_reset owed */
+      bool lost;
+      bool reinit_asked;
+      bool interval_kept;
+      bool warned;
+   } hw;
 #endif
 } d3d9_video_t;
 

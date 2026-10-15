@@ -1241,6 +1241,10 @@ static bool dynamic_verify_hw_context(
             if (!(len == 5 && memcmp(video_ident, "d3d12", 5) == 0))
                return false;
             break;
+         case RETRO_HW_CONTEXT_D3D9:
+            if (!(len == 9 && memcmp(video_ident, "d3d9_hlsl", 9) == 0))
+               return false;
+            break;
          default:
             break;
       }
@@ -1346,7 +1350,7 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          RARCH_LOG("[HW] Requesting D3D12 context.\n");
          break;
 #endif
-#if defined(HAVE_D3D9)
+#if defined(HAVE_D3D9) && defined(HAVE_HLSL)
       case RETRO_HW_CONTEXT_D3D9:
          RARCH_LOG("[HW] Requesting D3D9 context.\n");
          break;
@@ -2895,6 +2899,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             {
                *cb = RETRO_HW_CONTEXT_D3D12;
                RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_D3D12.\n");
+            }
+            else if (memcmp(video_driver_name, "d3d9_hlsl", sizeof("d3d9_hlsl")) == 0)
+            {
+               *cb = RETRO_HW_CONTEXT_D3D9;
+               RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_D3D9.\n");
             }
             else
             {
