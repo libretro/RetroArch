@@ -431,19 +431,35 @@ static void openxr_frame_ask_perf(openxr_frame_t *f)
             (int)cpu, (int)gpu);
 }
 
-/* The rate the drawing thread wants, asked once a session and value. */
+/* The rate the drawing thread wants, retained after runtime acceptance. */
 static void openxr_frame_ask_rate(openxr_frame_t *f)
 {
    XrResult res;
+   retro_time_t now;
    float hz;
+   bool changed;
    int bits = retro_atomic_load_acquire_int(&f->want_rate);
    memcpy(&hz, &bits, sizeof(hz));
-   if (!f->rt->refresh_ext || hz <= 0.0f || hz == f->asked_rate)
+   if (!f->rt->refresh_ext || !f->rt->RequestDisplayRefreshRateFB)
       return;
-   f->asked_rate = hz;
+   changed = hz != f->requested_rate;
+   if (changed)
+   {
+      f->requested_rate = hz;
+      f->rate_retry_usec = 0;
+   }
+   if (hz <= 0.0f || hz == f->asked_rate)
+      return;
+   now = cpu_features_get_time_usec();
+   if (now < f->rate_retry_usec)
+      return;
    res           = f->rt->RequestDisplayRefreshRateFB(f->session->session, hz);
-   RARCH_LOG("[OpenXR] Asked the headset for %.2f Hz (%d).\n", hz,
-         (int)res);
+   if (XR_SUCCEEDED(res))
+      f->asked_rate = hz;
+   f->rate_retry_usec = now + 1000000;
+   if (changed || XR_SUCCEEDED(res))
+      RARCH_LOG("[OpenXR] Asked the headset for %.2f Hz (%d).\n", hz,
+            (int)res);
 }
 
 /* xrWaitFrame and what every headset frame keeps, then xrBeginFrame
@@ -782,6 +798,8 @@ bool openxr_frame_start(openxr_frame_t *f)
    f->tick_count    = 0;
    f->tick_interval = 0;
    f->asked_rate    = 0.0f;
+   f->requested_rate = 0.0f;
+   f->rate_retry_usec = 0;
    f->asked_perf    = -1;
    f->perf_applied  = 0;
    f->perf_retry_usec = 0;
@@ -834,6 +852,8 @@ bool openxr_frame_start_inline(openxr_frame_t *f)
    video_xr_period_init(&f->period);
    retro_atomic_store_release_int(&f->period_ns, 0);
    f->asked_rate     = 0.0f;
+   f->requested_rate = 0.0f;
+   f->rate_retry_usec = 0;
    f->asked_perf     = -1;
    f->perf_applied   = 0;
    f->perf_retry_usec = 0;

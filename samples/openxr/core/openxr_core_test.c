@@ -155,8 +155,15 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_init_loader(
 static XRAPI_ATTR XrResult XRAPI_CALL t_refresh_rates(XrSession s,
       uint32_t cap, uint32_t *count, float *r) { *count = 0; return XR_SUCCESS; }
 static unsigned t_rate_requests;
+static XrResult t_rate_result = XR_SUCCESS;
+static float t_rate_applied;
 static XRAPI_ATTR XrResult XRAPI_CALL t_request_rate(XrSession s, float hz)
-{ t_rate_requests++; return XR_SUCCESS; }
+{
+   t_rate_requests++;
+   if (XR_SUCCEEDED(t_rate_result))
+      t_rate_applied = hz;
+   return t_rate_result;
+}
 /* The levels last asked per domain, and how many asks. */
 static unsigned t_perf_calls;
 static unsigned t_perf_fail;
@@ -3401,6 +3408,75 @@ static void test_frame_perf(void)
    t_frame_free(&rt, &s, &f);
 }
 
+static void test_frame_rate_retry(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   unsigned calls;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   rt.refresh_ext = true;
+   rt.RequestDisplayRefreshRateFB = t_request_rate;
+   CHECK(openxr_frame_start_inline(&f), "rate retry in-line start");
+   t_rate_requests = 0;
+   t_rate_applied = 72.0f;
+   t_rate_result = XR_ERROR_RUNTIME_FAILURE;
+   openxr_frame_request_rate(&f, 90.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 1 && f.asked_rate == 0.0f
+         && t_rate_applied == 72.0f, "failed rate cached as applied");
+   t_reset_log();
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 1 && !t_log[0], "rate retry ignored deadline");
+   f.rate_retry_usec = 0;
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 2 && !t_log[0], "rate retry missing or logged again");
+   t_rate_result = XR_SUCCESS;
+   f.rate_retry_usec = 0;
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 3 && f.asked_rate == 90.0f
+         && t_rate_applied == 90.0f, "rate retry did not recover");
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 3, "accepted rate requested again");
+
+   t_rate_result = XR_ERROR_RUNTIME_FAILURE;
+   openxr_frame_request_rate(&f, 120.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 4 && f.asked_rate == 90.0f,
+         "changed rate delayed or replaced accepted rate on failure");
+   openxr_frame_request_rate(&f, 90.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 4, "return to accepted rate requested it again");
+   openxr_frame_request_rate(&f, 120.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 5, "return to failed rate retained old deadline");
+   openxr_frame_request_rate(&f, 0.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 5 && f.requested_rate == 0.0f,
+         "disabled rate did not cancel retries");
+
+   openxr_frame_stop_inline(&f);
+   CHECK(openxr_frame_start_inline(&f) && !f.asked_rate
+         && !f.requested_rate && !f.rate_retry_usec,
+         "session restart retained rate state");
+   t_rate_result = XR_SUCCESS;
+   openxr_frame_request_rate(&f, 90.0f);
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == 6 && f.asked_rate == 90.0f,
+         "session restart did not reapply rate");
+   calls = t_rate_requests;
+   openxr_frame_request_rate(&f, 120.0f);
+   rt.refresh_ext = false;
+   openxr_frame_ask_rate(&f);
+   rt.refresh_ext = true;
+   rt.RequestDisplayRefreshRateFB = NULL;
+   openxr_frame_ask_rate(&f);
+   CHECK(t_rate_requests == calls, "rate requested without extension or function");
+   t_frame_free(&rt, &s, &f);
+}
+
 static void test_binding_gles(void)
 {
    openxr_runtime_t rt;
@@ -6186,6 +6262,7 @@ int main(void)
    test_runtime_gaps();
    test_frame_inline();
    test_frame_perf();
+   test_frame_rate_retry();
    test_binding_gles();
    test_binding_gl();
 #ifdef HAVE_OPENXR_GL

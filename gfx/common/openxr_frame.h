@@ -160,11 +160,13 @@ typedef struct openxr_frame
    unsigned pace_mode;             /* drawing thread: 0, 1 ticks, 2 clock */
    bool tick_late;                 /* drawing thread: warned, no tick since */
    /* XR_FB_display_refresh_rate: the rates the session lists, the one
-    * to ask for (float bits, 0 for none), and the last one asked. */
+    * to ask for (float bits, 0 for none), and requested/applied rates. */
    float rates[VIDEO_HEADSET_MAX_RATES];
    unsigned num_rates;
    retro_atomic_int_t want_rate;
    float asked_rate;               /* XR thread */
+   float requested_rate;           /* XR thread */
+   int64_t rate_retry_usec;        /* XR thread */
    int64_t perf_retry_usec;        /* XR thread */
    unsigned perf_applied;         /* CPU/GPU success bits, XR thread */
    /* XR_EXT_performance_settings: the clocks last asked for this
