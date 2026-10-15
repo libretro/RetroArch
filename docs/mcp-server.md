@@ -264,6 +264,27 @@ network and stdin interfaces, which have no deadline, and leaves
 nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
 
+`RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
+until the byte at a system address meets the condition - `==`, `!=`,
+`<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
+whether it was met, how many frames ran, and what the byte holds:
+
+```
+met	12	5
+```
+
+Where a client would otherwise run a few frames, read the byte and go
+round again, this is one request. The address is the kind
+`GET_MEMORY_MAP` gives and `READ_CORE_MEMORY` takes, and one nothing
+maps is refused before any frame runs rather than after a wait that
+could not have ended. Already meeting the condition answers `met` with
+no frames run at all.
+
+It waits at most 600 frames, as `PRESS` presses for at most 600; when
+they run out first it answers `waiting` with how far it got, so the
+next request carries on from there instead of the client being told it
+failed.
+
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
 run; it is left paused. Use it to let the game run on its own - a
