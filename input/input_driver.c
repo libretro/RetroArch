@@ -2244,7 +2244,15 @@ INPUT_NOINLINE static void input_combos_frame(
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 {
-   input_pointer_frames_set(frames, count, flags);
+   input_pointer_frames_set(frames, NULL, count, flags);
+}
+
+void input_driver_publish_window_pointers(
+      const input_pointer_frame_t *frames,
+      const input_video_window_t *windows,
+      unsigned count, unsigned flags)
+{
+   input_pointer_frames_set(frames, windows, count, flags);
 }
 
 unsigned input_driver_pointer_read_as(unsigned i)
@@ -2263,7 +2271,14 @@ bool input_driver_poll_viewport(struct video_viewport *vp)
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down)
 {
-   input_pointer_touches_set(pos, count, present, down);
+   input_pointer_touches_set(pos, NULL, count, present, down);
+}
+
+void input_driver_publish_window_touches(const uint32_t *pos,
+      const input_video_window_t *windows, unsigned count,
+      unsigned present, unsigned down)
+{
+   input_pointer_touches_set(pos, windows, count, present, down);
 }
 
 /* The keys a port's binds name, compiled when the binds change, and

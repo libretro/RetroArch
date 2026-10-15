@@ -1457,6 +1457,24 @@ enum input_pointers_flags
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags);
 
+/* The window a device or a touch is in: 0 the main window, else a
+ * screen's own, with the generation it was made with. */
+typedef struct input_video_window
+{
+   unsigned window;
+   unsigned generation;
+} input_video_window_t;
+
+/* input_driver_publish_pointers() with each device's window. Its place
+ * is in that window, through the layout the window last published; a
+ * screen's window has no place on the main window's screen, and one
+ * that is gone places it off-screen. Motion and buttons are as they
+ * were. NULL @windows: all in the main window. */
+void input_driver_publish_window_pointers(
+      const input_pointer_frame_t *frames,
+      const input_video_window_t *windows,
+      unsigned count, unsigned flags);
+
 /* The viewport as of this poll: asked of the video driver the first
  * time it is wanted after a poll, and that answer given until the
  * next. For a driver that places its own touches or mouse, in its poll
@@ -1483,6 +1501,11 @@ unsigned input_driver_pointer_read_as(unsigned i);
  * contact at 0,0 is a contact, and one that has lifted may keep its
  * place (@present without @down). */
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
+      unsigned present, unsigned down);
+
+/* The same with each place's window, as for the devices. */
+void input_driver_publish_window_touches(const uint32_t *pos,
+      const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down);
 
 typedef struct input_pointer_view
