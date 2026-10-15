@@ -1395,6 +1395,8 @@ static void runahead_input_state_set_last(
       mylist_create(&runloop_st->input_state_list, 16,
             input_list_element_constructor,
             input_list_element_destructor);
+   if (!runloop_st->input_state_list)
+      return;
 
    /* Find list item */
    for (i = 0; i < (unsigned)runloop_st->input_state_list->size; i++)
