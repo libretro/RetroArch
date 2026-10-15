@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 #include <stdio.h>
 #include <stdlib.h>
-#include <formats/rav1_reference.h>
+#include <formats/rav1_motion.h>
 #include <formats/rav1_tile_info.h>
 #include <formats/rav1_picture.h>
 
@@ -11,6 +11,8 @@ static rav1_reference_t refs[8], saved[8];
 static rav1_frame_setup_t setup, zero;
 static rav1_tile_info_t tiles;
 static rav1_picture_t picture;
+static rav1_motion_t motion;
+static rav1_global_motion_t globals[8];
 static rav1_picture_reference_t pictures[8];
 static uint8_t data[128];
 static unsigned position, failures;
@@ -336,6 +338,24 @@ static int inspect(const char *path)
             printf(" %d", picture.reference.segment_data[i][j]);
       }
       printf("\n");
+      if (!rav1_motion_parse(
+              &motion, &bits, &seq, &frame, &setup, refs,
+              frame.primary_ref_frame == 7
+                  ? NULL
+                  : &globals[setup.ref_frame_idx[frame.primary_ref_frame]]))
+         goto done;
+      printf("T %u %u %u %u %lu\n", motion.reference_select,
+             motion.skip_mode_present, motion.allow_warped_motion,
+             motion.reduced_tx_set,
+             (unsigned long)(bits.byte * 8 + bits.bit + base));
+      for (i = 0; i < 7; i++)
+      {
+         unsigned j;
+         printf("G %u", motion.global.type[i]);
+         for (j = 0; j < 6; j++)
+            printf(" %d", (int)motion.global.params[i][j]);
+         printf("\n");
+      }
       for (i = 0; i < 8; i++)
       {
          refs[i].valid = (setup.valid_mask >> i) & 1;
@@ -346,6 +366,7 @@ static int inspect(const char *path)
             refs[i].frame_id = frame.current_frame_id;
             refs[i].size = setup.size;
             pictures[i] = picture.reference;
+            globals[i] = motion.global;
          }
       }
       count++;

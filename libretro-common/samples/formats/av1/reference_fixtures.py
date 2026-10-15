@@ -102,6 +102,14 @@ with tempfile.TemporaryDirectory(prefix='rav1-reference-') as directory:
                 expected.append(line('P', [positions['base_q_idx'], end,
                     get('base_q_idx'), get('tx_mode'), deltas[0], deltas[4]]))
                 expected.append(line('M', deltas + [v for segment in segments for v in segment]))
+                # Generated streams have identity global models; nonidentity
+                # models and predictors are exercised by the synthetic tests.
+                assert not any(get(f'is_global[{i}]') for i in range(1, 8))
+                global_end = positions['reduced_tx_set'] + 1 if intra else max(
+                    positions[f'is_global[{i}]'] + 1 for i in range(1, 8))
+                expected.append(line('T', [get('reference_select'), get('skip_mode_present'),
+                    get('allow_warped_motion'), get('reduced_tx_set'), global_end]))
+                expected += [line('G', [0, 0, 0, 65536, 0, 0, 65536])] * 7
                 refresh = get('refresh_frame_flags', 255)
                 for i in range(8):
                     if refresh & (1 << i):

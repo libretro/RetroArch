@@ -121,8 +121,8 @@ restoration and reduced still pictures. The native sequence/prefix/size/tile
 parsers locate these tools without trace-supplied offsets; all decoded fields
 and start/end cursors are compared with FFmpeg. Inter-frame inheritance is
 covered by synthetic cases, rather than claimed from this all-intra corpus.
-Remaining motion/global-motion syntax, film grain and hardware submission
-are not implemented by these helpers.
+Film grain, complete reference-state validation/commit and hardware submission
+remain separate work.
 
 `formats/rav1_reference.h` continues a coded frame prefix through
 `disable_frame_end_update_cdf`: explicit or short-signaled reference selection,
@@ -144,3 +144,19 @@ segment/filter metadata and bit positions match FFmpeg traces. Short signaling
 and reference-derived resizing are covered synthetically in this corpus.
 The fixture harness simulates successful decode to advance metadata; it does
 not implement a decoder or change GPU ownership.
+
+`formats/rav1_motion.h` parses compound-reference selection, skip-mode pairs,
+warped-motion enablement, reduced TX and global model parameters through the
+start of film grain. Global predictors come from caller-owned primary metadata;
+NONE uses identity. Parameters remain in AV1's 16-bit fractional precision.
+The parser does not validate per-block warp applicability or implement pixels.
+Failures preserve the cursor and clear output; predictor/output aliases are
+rejected without changing metadata. No compressed or pixel buffers are copied.
+
+Motion tests exhaust subexponential symbols for eight alphabet sizes through
+65536 and three predictor positions. Synthetic headers cover all four models,
+coefficient extrema, inherited predictors, negative precision conversion,
+order-hint wrap/ties, skip eligibility, inferred flags and truncation.
+The reference fixture chain now also compares motion flags, all identity model
+coefficients and end cursors for the same 135 coded frames. Nonidentity models
+are covered synthetically; the generated real corpus uses identity models.
