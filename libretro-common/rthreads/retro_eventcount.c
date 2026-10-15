@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include <rthreads/retro_eventcount.h>
 #include <rthreads/rthreads.h>
@@ -161,7 +163,6 @@ typedef char retro_eventcount_epoch_is_a_word_
 #if defined(RETRO_EC_ADDR_LINUX)
 #include <unistd.h>
 #include <limits.h>
-#include <errno.h>
 #include <sys/syscall.h>
 #include <linux/futex.h>
 
@@ -337,14 +338,35 @@ typedef sys_semaphore_t ec_ps3_sem_t;
  * The knee is at 256 iterations there, which is 3us, and nothing above
  * it buys anything -- a spin that finds nothing then costs about what
  * the wake syscall it avoids would have.  RETRO_EVENTCOUNT_SPIN_US
- * moves the budget; RETRO_EVENTCOUNT_SPIN sets the count outright and
- * skips the calibration. */
+ * moves the budget; RETRO_EVENTCOUNT_SPIN sets the count outright. */
 #define EC_SPIN_US 3
 
-/* Bounds on the derived count, so a mismeasured relax cannot turn the
- * spin into either a no-op or an unbounded burn. */
+/* Calibration bounds; explicit overrides share the upper limit. */
 #define EC_SPIN_MIN 32
 #define EC_SPIN_MAX 8192
+
+#if defined(RETRO_EC_ADDR_LINUX) || defined(RETRO_EC_ADDR_WIN32)
+static unsigned ec_spin_override(const char *text, unsigned fallback)
+{
+   char *end;
+   unsigned long value;
+   while (isspace((unsigned char)*text))
+      text++;
+   if (*text == '-')
+      return fallback;
+   errno = 0;
+   value = strtoul(text, &end, 0);
+   if (end == text)
+      return fallback;
+   while (isspace((unsigned char)*end))
+      end++;
+   if (*end)
+      return fallback;
+   if (errno == ERANGE || value > EC_SPIN_MAX)
+      return EC_SPIN_MAX;
+   return (unsigned)value;
+}
+#endif
 
 #if defined(RETRO_EC_WAITLIST)
 /* Windows has no one primitive that reaches every version, so the
@@ -616,7 +638,7 @@ static void ec_win32_resolve(void)
        * so the calibration is reachable for measurement on a machine
        * that would otherwise skip the spin entirely. */
       if ((env = getenv("RETRO_EVENTCOUNT_SPIN_US")))
-         budget = (unsigned)strtoul(env, NULL, 0);
+         budget = ec_spin_override(env, budget);
       else if (si.dwNumberOfProcessors <= 1)
          budget = 0;
 
@@ -624,7 +646,7 @@ static void ec_win32_resolve(void)
 
       /* An explicit count wins over the budget, for sweeping. */
       if ((env = getenv("RETRO_EVENTCOUNT_SPIN")))
-         ec_g.spin = (unsigned)strtoul(env, NULL, 0);
+         ec_g.spin = ec_spin_override(env, ec_g.spin);
    }
 }
 
@@ -1612,14 +1634,14 @@ static void ec_linux_spin_init(void)
       /* An asked-for budget is honoured whatever the processor count;
        * otherwise one processor does not spin. */
       if ((env = getenv("RETRO_EVENTCOUNT_SPIN_US")))
-         budget = (unsigned)strtoul(env, NULL, 0);
+         budget = ec_spin_override(env, budget);
       else if (cpus <= 1)
          budget = 0;
 
       ec_linux_spin = ec_linux_spin_for_budget(budget);
 
       if ((env = getenv("RETRO_EVENTCOUNT_SPIN")))
-         ec_linux_spin = (unsigned)strtoul(env, NULL, 0);
+         ec_linux_spin = ec_spin_override(env, ec_linux_spin);
 
       retro_atomic_store_release_int(&ec_linux_spin_state, 2);
       return;
@@ -1628,19 +1650,66 @@ static void ec_linux_spin_init(void)
       retro_cpu_relax();
 }
 
-/* The spin stage of a wait: true when the epoch moved on from @key
- * before the budget ran out, so there is nothing to park for. */
-static bool ec_linux_spun(retro_eventcount_t *ec, int key)
+/* 1: time remains, 0: expired, -1: clock unavailable (a spurious wake). */
+static int ec_linux_remaining(const struct timespec *start, int64_t budget,
+      struct timespec *remaining)
+{
+   struct timespec now;
+   int64_t seconds, left;
+   long ns, budget_ns;
+   if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+      return -1;
+   seconds = (int64_t)now.tv_sec - (int64_t)start->tv_sec;
+   ns = now.tv_nsec - start->tv_nsec;
+   if (ns < 0)
+   {
+      seconds--;
+      ns += 1000000000L;
+   }
+   if (seconds < 0)
+   {
+      seconds = 0;
+      ns = 0;
+   }
+   budget_ns = (long)((budget % 1000000) * 1000);
+   if (seconds > budget / 1000000
+         || (seconds == budget / 1000000 && ns >= budget_ns))
+      return 0;
+   if (remaining)
+   {
+      left = budget / 1000000 - seconds;
+      ns = budget_ns - ns;
+      if (ns < 0)
+      {
+         left--;
+         ns += 1000000000L;
+      }
+      if (sizeof(time_t) < sizeof(int64_t) && left > INT32_MAX)
+      {
+         left = INT32_MAX;
+         ns = 999999999L;
+      }
+      remaining->tv_sec = (time_t)left;
+      remaining->tv_nsec = ns;
+   }
+   return 1;
+}
+
+/* True when the epoch moved on from @key before the spin ended. */
+static bool ec_linux_spun(retro_eventcount_t *ec, int key,
+      const struct timespec *start, int64_t budget)
 {
    unsigned i;
    ec_linux_spin_init();
-   for (i = 0; i <= ec_linux_spin; i++)
+   for (i = 0; i < ec_linux_spin; i++)
    {
       if (retro_atomic_load_acquire_int(&ec->epoch) != key)
          return true;
+      if (start && !(i & 31) && ec_linux_remaining(start, budget, NULL) <= 0)
+         return false;
       retro_cpu_relax();
    }
-   return false;
+   return retro_atomic_load_acquire_int(&ec->epoch) != key;
 }
 #endif
 
@@ -1648,7 +1717,7 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
 {
 #if defined(RETRO_EC_ADDR_LINUX)
    int expect = key;
-   if (!ec_linux_spun(ec, key))
+   if (!ec_linux_spun(ec, key, NULL, 0))
       syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAIT_PRIVATE,
             expect, NULL, NULL, 0);
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
@@ -1706,21 +1775,50 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
 {
    bool signalled = true;
 
-   if (timeout_us < 0)
-      timeout_us = 0;
+   if (timeout_us <= 0)
+   {
+#if defined(RETRO_EC_LOCKED_BOOKKEEPING)
+      slock_lock(ec->lock);
+#endif
+      signalled = retro_atomic_load_acquire_int(&ec->epoch) != key;
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+#if defined(RETRO_EC_LOCKED_BOOKKEEPING)
+      slock_unlock(ec->lock);
+#endif
+      return signalled;
+   }
 
 #if defined(RETRO_EC_ADDR_LINUX)
-   if (!ec_linux_spun(ec, key))
    {
-      struct timespec ts;
+      struct timespec start, ts;
+      bool clock_ok = clock_gettime(CLOCK_MONOTONIC, &start) == 0;
       int expect = key;
-
-      ts.tv_sec  = (time_t)(timeout_us / 1000000);
-      ts.tv_nsec = (long)((timeout_us % 1000000) * 1000);
-
-      if (syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAIT_PRIVATE,
-               expect, &ts, NULL, 0) != 0 && errno == ETIMEDOUT)
-         signalled = false;
+      if (!(clock_ok ? ec_linux_spun(ec, key, &start, timeout_us)
+               : retro_atomic_load_acquire_int(&ec->epoch) != key))
+      {
+         int remaining;
+         if (clock_ok)
+            remaining = ec_linux_remaining(&start, timeout_us, &ts);
+         else
+         {
+            ts.tv_sec = (time_t)(timeout_us / 1000000);
+            ts.tv_nsec = (long)((timeout_us % 1000000) * 1000);
+            if (sizeof(time_t) < sizeof(int64_t) && timeout_us / 1000000 > INT32_MAX)
+            {
+               ts.tv_sec = (time_t)INT32_MAX;
+               ts.tv_nsec = 999999999L;
+            }
+            remaining = 1;
+         }
+         if (remaining == 0)
+            signalled = retro_atomic_load_acquire_int(&ec->epoch) != key;
+         else if (remaining > 0)
+         {
+            if (syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAIT_PRIVATE,
+                     expect, &ts, NULL, 0) != 0 && errno == ETIMEDOUT)
+               signalled = false;
+         }
+      }
    }
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
 #else

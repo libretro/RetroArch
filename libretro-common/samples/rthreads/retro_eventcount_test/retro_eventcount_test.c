@@ -721,6 +721,27 @@ static int lane_wrap(void)
    return 0;
 }
 
+static int lane_poll(void)
+{
+   int key, value;
+   if (!retro_eventcount_init(&ec)) return 1;
+   for (value = -1; value <= 0; value++)
+   {
+      key = retro_eventcount_prepare_wait(&ec);
+      if (retro_eventcount_commit_wait_timeout(&ec, key, value)
+            || retro_atomic_load_acquire_int(&ec.waiters) != 0)
+         return 1;
+      key = retro_eventcount_prepare_wait(&ec);
+      retro_eventcount_notify(&ec);
+      if (!retro_eventcount_commit_wait_timeout(&ec, key, value)
+            || retro_atomic_load_acquire_int(&ec.waiters) != 0)
+         return 1;
+   }
+   retro_eventcount_free(&ec);
+   puts("  poll       nonpositive waits balance registration and observe notify");
+   return 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
@@ -733,6 +754,7 @@ int main(void)
    wd = sthread_create(watchdog_thread, NULL);
 
    rc |= lane_handoff();
+   rc |= lane_poll();
    rc |= lane_wakeup();
    rc |= lane_broadcast();
    rc |= lane_broadcast_stress();

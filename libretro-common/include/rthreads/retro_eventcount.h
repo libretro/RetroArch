@@ -268,7 +268,8 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key);
  *               polls.  A bound long enough to overflow the backend's
  *               own unit is clamped, never wrapped.
  *
- * As retro_eventcount_commit_wait(), bounded in time.
+ * As retro_eventcount_commit_wait(), bounded in time. Nonpositive bounds
+ * only check the epoch and close the registered wait.
  *
  * @return true if @ec was notified, false if the bound expired.  A
  * spurious early return reports true, so the caller's loop still owns
