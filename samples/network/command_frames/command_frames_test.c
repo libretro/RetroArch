@@ -358,6 +358,36 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_run_until(&cmd,"1002 == 34") && !strcmp(reply,
          "MET 0\none\t1003\t51\ntwo\t1002\t34\nVALUE 34\n"));
+   /* RUN_UNTIL and the watches look the byte up every frame, so a
+    * core that moves its memory is followed, and one that stops mapping
+    * it is told apart from a byte that holds a value */
+   {
+      uint8_t alt[16];
+      rarch_memory_descriptor_t *d = &loop->system.mmaps.descriptors[0];
+      void *was = d->core.ptr;
+      memcpy(alt,was,sizeof(alt));
+      alt[2]=99;
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1002 == 99") && !reply[0]);
+      d->core.ptr=alt;
+      runloop_iterate();
+      CHECK(!strcmp(reply,"MET 1\none\t1003\t51\ntwo\t1002\t99\nVALUE 99\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1002 == 1") && !reply[0]);
+      d->core.ptr=NULL;
+      runloop_iterate();
+      CHECK(!strcmp(reply,"RUN_UNTIL ERROR nothing maps the address waited on now")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      reply[0]=0;
+      CHECK(command_watch(&cmd,"")
+            && !strcmp(reply,"one\t1003\tnone\ntwo\t1002\tnone\n"));
+      d->core.ptr=was;
+      /* a later RUN_FRAMES carries no VALUE of its own */
+      reply[0]=0;
+      CHECK(command_run_frames(&cmd,"1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"RUN_FRAMES 1\none\t1003\t51\ntwo\t1002\t34\n"));
+   }
    reply[0]=0;
    CHECK(command_watch(&cmd,"one off") && !strcmp(reply,"two\t1002\t34\n"));
    /* and what it refuses */
@@ -599,6 +629,13 @@ int main(int argc, char **argv)
    loop->current_core.retro_run=counted_run;
    runloop_iterate();
    CHECK(calls-before==1 && !strcmp(reply,"RUN_FRAMES 1\n"));
+   /* closing the content drops the watches: the next content's
+    * addresses mean something else */
+   CHECK(command_watch(&cmd,"two 1002"));
+   command_event(CMD_EVENT_UNLOAD_CORE,NULL);
+   for (i=0;i<8;i++) { runloop_iterate(); task_queue_check(); }
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"") && !strcmp(reply,"WATCH none\n"));
    main_exit(NULL); remove(cfg_path);
    printf("command_frames: %s (%u failures)\n",failures?"FAIL":"PASS",failures);
    return failures ? 1 : 0;

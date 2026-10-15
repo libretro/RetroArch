@@ -825,8 +825,8 @@ typedef struct
 {
    command_t            *cmd;
    void                 *dest;
-   unsigned              gen;
    struct command_family family;
+   unsigned              gen;
 } command_deferred_t;
 
 static void command_deferred_take(command_deferred_t *d, command_t *cmd)
@@ -2461,14 +2461,16 @@ static struct
 {
    command_deferred_t deferred;
    const char        *name;      /* whichever command owes the reply */
-   const uint8_t     *watch;     /* RUN_UNTIL: the byte waited on */
+   unsigned           address;   /* RUN_UNTIL: the system address waited on */
    unsigned           left;
    unsigned           ran;       /* RUN_UNTIL: frames run so far */
    unsigned           port;      /* PRESS: the player holding, from 0 */
    uint16_t           held;      /* PRESS: which buttons, by bit */
    uint8_t            want;      /* RUN_UNTIL: compared against */
    uint8_t            op;        /* RUN_UNTIL: enum cmd_until_op */
+   uint8_t            value;     /* RUN_UNTIL: what the byte last held */
    char               reply[256];
+   bool               until;     /* RUN_UNTIL is waiting */
 } command_run_frames_st;
 
 /* How RUN_UNTIL compares the byte it waits on, in the order the words
@@ -2487,10 +2489,26 @@ static const char *const command_until_ops[] = {
    "==", "!=", "<", ">", "<=", ">="
 };
 
-/* Whether the byte RUN_UNTIL waits on now meets what was asked. */
+/* The byte RUN_UNTIL waits on, looked up afresh as WATCH's are, since
+ * a core may move its memory while the content runs; false where
+ * nothing maps the address now. */
+static bool command_until_read(void)
+{
+   char           reason[64];
+   unsigned       avail = 0;
+   const uint8_t *at    = command_memory_get_pointer(
+         &runloop_state_get_ptr()->system, command_run_frames_st.address,
+         &avail, 0, reason, sizeof(reason));
+   if (!at)
+      return false;
+   command_run_frames_st.value = *at;
+   return true;
+}
+
+/* Whether the byte RUN_UNTIL last read meets what was asked. */
 static bool command_until_met(void)
 {
-   unsigned now = *command_run_frames_st.watch;
+   unsigned now = command_run_frames_st.value;
    unsigned want = command_run_frames_st.want;
    switch (command_run_frames_st.op)
    {
@@ -2523,6 +2541,11 @@ static void command_run_frames_answer(const char *msg, bool is_error)
     * the longest reply and every watch */
    char   out[256 + COMMAND_WATCH_MAX * 40];
    size_t _len = strlcpy(out, msg, sizeof(out));
+   bool   until = command_run_frames_st.until;
+
+   if (_len >= sizeof(out))
+      _len = sizeof(out) - 1;
+   command_run_frames_st.until = false;
 
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
@@ -2532,9 +2555,14 @@ static void command_run_frames_answer(const char *msg, bool is_error)
    {
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
       /* RUN_UNTIL closes with the byte it waited on, after the rows */
-      if (command_run_frames_st.watch && _len < sizeof(out))
-         _len += (size_t)snprintf(out + _len, sizeof(out) - _len,
-               "VALUE %u\n", (unsigned)*command_run_frames_st.watch);
+      if (until && _len < sizeof(out))
+      {
+         int n = snprintf(out + _len, sizeof(out) - _len, "VALUE %u\n",
+               (unsigned)command_run_frames_st.value);
+         if (n > 0)
+            _len = _len + (size_t)n < sizeof(out)
+               ? _len + (size_t)n : sizeof(out) - 1;
+      }
    }
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
@@ -2561,9 +2589,15 @@ void command_run_frames_cancel(const char *why)
 /* A frame has run: the reply goes once the last of them has */
 void command_run_frames_tick(void)
 {
-   if (command_run_frames_st.watch)
+   if (command_run_frames_st.until)
    {
       command_run_frames_st.ran++;
+      if (!command_until_read())
+      {
+         command_run_frames_cancel("nothing maps the address waited on "
+               "now");
+         return;
+      }
       /* answered the frame the byte meets what was asked, and at the
        * cap with how far it got: a wait longer than a reply is waited
        * for is asked again rather than failed */
@@ -2643,7 +2677,7 @@ bool command_run_frames(command_t *cmd, const char *arg)
    command_run_frames_st.left  = n;
    command_run_frames_st.name  = "RUN_FRAMES";
    command_run_frames_st.held  = 0;
-   command_run_frames_st.watch = NULL;
+   command_run_frames_st.until = false;
    snprintf(command_run_frames_st.reply,
          sizeof(command_run_frames_st.reply), "RUN_FRAMES %u\n", n);
    command_deferred_take(&command_run_frames_st.deferred, cmd);
@@ -3059,7 +3093,9 @@ bool command_run_until(command_t *cmd, const char *arg)
    command_run_frames_st.ran   = 0;
    command_run_frames_st.name  = "RUN_UNTIL";
    command_run_frames_st.held  = 0;
-   command_run_frames_st.watch = at;
+   command_run_frames_st.address = address;
+   command_run_frames_st.value   = *at;
+   command_run_frames_st.until   = true;
    command_run_frames_st.want  = (uint8_t)value;
    command_run_frames_st.op    = (uint8_t)i;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
@@ -3134,7 +3170,7 @@ bool command_press(command_t *cmd, const char *arg)
    command_run_frames_st.name  = "PRESS";
    command_run_frames_st.port  = player - 1;
    command_run_frames_st.held  = mask;
-   command_run_frames_st.watch = NULL;
+   command_run_frames_st.until = false;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    for (i = 0; i < count; i++)
       input_driver_command_hold(player - 1, ids[i], 1);

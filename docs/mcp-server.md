@@ -283,10 +283,8 @@ x	7e0086	40
 mode	7e0770	8
 ```
 
-A step and the look that follows it become one request. Without this, a
-step is the press and then a read for each thing the assistant wants to
-know; the field runs that drove this spent most of their calls on those
-reads.
+A step and the look that follows it become one request, rather than
+the step and then a read for each thing the assistant wants to know.
 
 One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
 all of them or, where one is refused, none. `WATCH` with nothing
@@ -315,6 +313,9 @@ round again, this is one request. The address is the kind
 `GET_MEMORY_MAP` gives and `READ_CORE_MEMORY` takes, and one nothing
 maps is refused before any frame runs rather than after a wait that
 could not have ended. Already meeting the condition answers `MET 0`.
+The byte is looked up afresh every frame, as the watched ones are, so a
+core that moves its memory is followed; one that stops mapping the
+address while it is waited on ends the wait with an error.
 
 Left to itself it waits about nine seconds of the content's own frames
 - 540 at 60fps, 450 at 50fps - so the answer comes inside the
