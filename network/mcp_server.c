@@ -167,6 +167,7 @@ typedef struct
    size_t   reply_cap;
    int      listen_fd;
    int      current;     /* connection whose request is running, or -1 */
+   bool     answered;    /* reply_to answered it before command_run returned */
    unsigned serials;
    char     token[128];
    bool     stdio;       /* serving stdin and stdout, not a port */
@@ -1058,6 +1059,8 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
    /* the connection timed out or was reused meanwhile */
    if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
       return;
+   if (o->conn == mcp->current)
+      mcp->answered = true;
    mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
    cmd->error = false;
 }
@@ -1078,6 +1081,8 @@ static void mcp_reply_image_to(command_t *cmd, void *dest, const char *text,
    /* the connection timed out or was reused meanwhile */
    if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
       return;
+   if (o->conn == mcp->current)
+      mcp->answered = true;
    if (!(w = mcp_envelope(c->id)))
    {
       mcp_conn_close(c);
@@ -1560,6 +1565,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       }
       /* the command runs now; what it replies is the result */
       mcp->reply_len = 0;
+      mcp->answered  = false;
       mcp->current   = ci;
       strlcpy(c->id, r.id, sizeof(c->id));
       c->modern      = modern;
@@ -1568,8 +1574,9 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       ok = command_run(cmd, r.name, line);
       free(line);
       mcp->current   = -1;
-      if (c->state == MCP_CONN_WAITING)
-         goto end;                         /* answered by reply_to */
+      /* answered by reply_to, later or already */
+      if (c->state == MCP_CONN_WAITING || mcp->answered)
+         goto end;
       if (mcp->reply_len)
          mcp_tool_result(c, r.id, modern, act, mcp->reply, mcp->reply_len,
                cmd->error || !ok);

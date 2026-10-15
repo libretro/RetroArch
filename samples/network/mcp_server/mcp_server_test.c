@@ -186,6 +186,20 @@ static bool act_until(command_t *cmd, const char *arg)
    return true;
 }
 
+/* answers through its destination before it returns, as RUN_UNTIL does
+ * when the byte already holds what was asked */
+#define NOW_TEXT "MET 0\nx\t7e0086\t52\nVALUE 165\n"
+static bool act_now(command_t *cmd, const char *arg)
+{
+   void *dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   (void)arg;
+   if (!dest)
+      return false;
+   cmd->reply_to(cmd, dest, NOW_TEXT, sizeof(NOW_TEXT) - 1);
+   free(dest);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -252,6 +266,7 @@ static struct cmd_action_map test_actions[] = {
    { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
    { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
+   { "NOW",   act_now,   "No argument", "Answer before returning.", 0, NULL, &cmd_rows_until },
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
@@ -608,6 +623,13 @@ static void test_stdio(void)
          && !strstr(out, "all is well")
          && strstr(out, "notifications/message"));
 
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":44,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"NOW\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("answered before it returns, one answer arrives, structured",
+         count_lines(out) == 1 && strstr(out, "\"id\":44")
+         && strstr(out, "\"met\":0,\"value\":165"));
+
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\","
          "\"params\":{\"name\":\"LATER\",\"arguments\":{}}}\n");
    stdio_read(cmd, out, sizeof(out));
@@ -719,9 +741,9 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, WAIT and STEP, and
-       * none before them */
-      check("only the commands that answer rows declare one", n == 9);
+      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, NOW, WAIT and STEP,
+       * and none before them */
+      check("only the commands that answer rows declare one", n == 10);
    }
 
    printf("tools/call\n");
@@ -935,6 +957,12 @@ int main(void)
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"},"
                "{\"label\":\"mode\",\"address\":\"7e0770\",\"value\":\"8\"}],"
                "\"met\":12,\"value\":5}"));
+   st = post(cmd, PORT_OPEN, NULL, call("NOW", NULL), out, sizeof(out), NULL);
+   check("answered before the command returns, it is answered once, whole",
+         st == 200 && json_valid(body_of(out)) && !strstr(out, "Done.")
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}],"
+               "\"met\":0,\"value\":165}"));
    st = post(cmd, PORT_OPEN, NULL, call("WAIT", NULL), out, sizeof(out), NULL);
    check("WAITING with nothing watched answers how far it got and the byte",
          st == 200 && json_valid(body_of(out))
