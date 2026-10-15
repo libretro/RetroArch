@@ -7337,7 +7337,6 @@ static bool d3d11_gfx_frame_body(
           * menu to this pass's target here. */
          struct video_viewport vp;
          D3D11_VIEWPORT menu_vp;
-         memset(&vp, 0, sizeof(vp));
          vp.full_dims     = VIDEO_SCALE_PACK(
                (unsigned)d3d11->viewport.Width,
                (unsigned)d3d11->viewport.Height);

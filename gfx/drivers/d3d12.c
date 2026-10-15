@@ -8947,9 +8947,9 @@ static bool d3d12_gfx_frame_body(
           * pointer partway into the loan with the window's size
           * (beetle-psx does) - the copy takes that window. */
          D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
-         memset(&sw_src, 0, sizeof(sw_src));
-         sw_src.frame = frame;
-         sw_src.pitch = pitch;
+         sw_src.buffer = NULL;
+         sw_src.frame  = frame;
+         sw_src.pitch  = pitch;
          if (d3d12_frame_mem_window(d3d12, frame, width, height, pitch,
                   &slot, &layout, &window))
          {
@@ -9477,7 +9477,6 @@ static bool d3d12_gfx_frame_body(
          struct video_viewport vp;
          D3D12_VIEWPORT menu_vp;
          D3D12_RECT menu_sc;
-         memset(&vp, 0, sizeof(vp));
          vp.full_dims     = VIDEO_SCALE_PACK(
                (unsigned)d3d12->chain.viewport.Width,
                (unsigned)d3d12->chain.viewport.Height);

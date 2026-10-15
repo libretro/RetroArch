@@ -3047,9 +3047,10 @@ static void vulkan_frame_mem_upload(vk_t *vk, struct vk_per_frame *chain,
       vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
    }
 
-   memset(&src, 0, sizeof(src));
    src.type   = VULKAN_TEXTURE_STAGING;
+   src.image  = VK_NULL_HANDLE;
    src.buffer = fm->tex.buffer;
+   src.offset = 0;
    src.stride = pitch;
    src.format = vk->tex_fmt;
    src.dims   = dims;
@@ -11789,7 +11790,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
       if (views_direct)
       {
-         memset(&views_src, 0, sizeof(views_src));
+         views_src.image  = VK_NULL_HANDLE;
          views_src.view   = input.view;
          views_src.layout = input.layout;
          views_src.dims   = input.dims;

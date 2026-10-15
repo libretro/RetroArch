@@ -4148,7 +4148,6 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
       /* gl->vp is the whole window while views draw, so fit the menu
        * to this pass's target here. */
       struct video_viewport vp;
-      memset(&vp, 0, sizeof(vp));
       vp.full_dims = gl->video_dims;
       video_driver_update_viewport(&vp, false,
             (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);

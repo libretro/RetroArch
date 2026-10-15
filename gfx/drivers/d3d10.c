@@ -4488,7 +4488,6 @@ static bool d3d10_gfx_frame(
           * menu to this pass's target here. */
          struct video_viewport vp;
          D3D10_VIEWPORT menu_vp;
-         memset(&vp, 0, sizeof(vp));
          vp.full_dims     = VIDEO_SCALE_PACK(
                (unsigned)d3d10->viewport.Width,
                (unsigned)d3d10->viewport.Height);

@@ -6103,7 +6103,6 @@ static void metal_views_render(metal_views_t *vs,
                 * fit the menu to this pass's target here. */
                video_viewport_t vp;
                MTLViewport      menu_vp;
-               memset(&vp, 0, sizeof(vp));
                vp.full_dims     = _viewport->full_dims;
                video_driver_update_viewport(&vp, false, _keepAspect, false);
                menu_vp.originX  = (double)VIDEO_POS_X(vp.pos);

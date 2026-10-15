@@ -7486,9 +7486,13 @@ static bool gl3_frame(void *data, const void *frame,
                && gl3_stock_rect_ready(gl, video_info))
       {
          struct retro_video_view whole;
-         memset(&whole, 0, sizeof(whole));
-         whole.width  = VIDEO_SCALE_W(texture.dims);
-         whole.height = VIDEO_SCALE_H(texture.dims);
+         whole.x            = 0;
+         whole.y            = 0;
+         whole.width        = VIDEO_SCALE_W(texture.dims);
+         whole.height       = VIDEO_SCALE_H(texture.dims);
+         whole.screen       = 0;
+         whole.eye          = 0;
+         whole.aspect_ratio = 0.0f;
          if (!gl->pipelines.stock_rect_frame_seen)
          {
             gl->pipelines.stock_rect_frame_seen = true;
