@@ -247,7 +247,7 @@ jobs:
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
 
-      - name: AV1 configuration, sequences, tiles and container packets (ASan + UBSan)
+      - name: AV1 sequences, tile layouts/groups and container packets (ASan + UBSan)
         working-directory: libretro-common/samples/formats/av1
         run: |
           make check SANITIZER=address,undefined

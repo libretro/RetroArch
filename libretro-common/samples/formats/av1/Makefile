@@ -1,6 +1,7 @@
 CC ?= cc
 COMMON := ../../..
 TARGET := rav1_test$(EXE)
+TILE_INFO := rav1_tile_info_test$(EXE)
 TILES := rav1_tiles_test$(EXE)
 SEQUENCE := rav1_sequence_test$(EXE)
 CONTAINER := rav1_container_test$(EXE)
@@ -10,9 +11,12 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES)
+all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+$(TILE_INFO): rav1_tile_info_test.c $(COMMON)/include/formats/rav1_tile_info.h $(COMMON)/include/formats/rav1_tiles.h $(COMMON)/include/formats/rav1_sequence.h $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 $(TILES): rav1_tiles_test.c $(COMMON)/include/formats/rav1_tiles.h $(COMMON)/include/formats/rav1_sequence.h $(COMMON)/include/formats/rav1.h
@@ -33,8 +37,9 @@ check: all
 	$(RUNNER) ./$(CONTAINER)
 	$(RUNNER) ./$(SEQUENCE)
 	$(RUNNER) ./$(TILES)
+	$(RUNNER) ./$(TILE_INFO)
 
 clean:
-	rm -f rav1_tiles_test rav1_tiles_test.exe rav1_sequence_test rav1_sequence_test.exe rav1_test rav1_test.exe rav1_container_test rav1_container_test.exe
+	rm -f rav1_tile_info_test rav1_tile_info_test.exe rav1_tiles_test rav1_tiles_test.exe rav1_sequence_test rav1_sequence_test.exe rav1_test rav1_test.exe rav1_container_test rav1_container_test.exe
 
 .PHONY: all check clean

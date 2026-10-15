@@ -27,10 +27,16 @@ borrowed tile spans. It checks explicit tile ranges, zero alignment bits,
 Its iterator preserves the cursor on failure and reports row/column indices.
 The caller supplies the parsed frame layout and the tile-group start; the
 helper does not locate or parse the preceding uncompressed frame header.
+`formats/rav1_tile_info.h` derives that layout from the frame tile-info bits.
+It supports uniform and nonuniform partitions, 64/128-pixel superblocks,
+context-update tile validation and coded dimensions with partial superblocks.
+Caller-owned output stores the MI boundaries. Failures clear the output and
+preserve the bit cursor, allowing a caller to retry with more input. Dimensions
+are the coded frame size before super-resolution upscaling.
 The syntax bounds are 64 columns by 64 rows. Sequence-level and device limits
 belong to their respective capability checks.
 
-Frame-header/tile-info syntax, entropy decoding, frame reconstruction and
+Other frame-header syntax, entropy decoding, frame reconstruction and
 Annex B remain unimplemented. Hardware session/reference/film-grain handling and
 GPU imports remain the next AV1 layers. Compressed packet views avoid a
 demux/framing copy; a hardware backend may still need a bitstream upload.
@@ -59,10 +65,15 @@ with ffprobe. FFmpeg is a test tool, not a runtime dependency.
 Tile tests cover partial groups, implicit and explicit single tiles, all
 four size widths, truncation, invalid layout/range/padding/lengths, whole-group
 preflight, failure cursor retention and a 4096-tile syntax grid.
-`tile_fixtures.py` generates eight 8/10-bit multi-tile streams, locates the
-groups using FFmpeg frame-header traces, and compares 160 tile offsets, sizes
-and hashes. This test oracle supplies frame layouts that production code
-will eventually obtain from its own frame parser.
+`tile_fixtures.py` generates fourteen 8/10-bit streams with uniform and
+nonuniform partitions and partial superblocks. It locates tile-info and
+tile-group starts using FFmpeg frame-header traces, compares the derived
+layouts, MI boundaries, context-update IDs and ending bit cursors, and checks
+192 borrowed tile offsets, sizes and hashes. Only the positions and preceding
+frame dimensions/superblock flag still come from the test oracle.
+Tile-info unit cases cover ns() codes, unaligned input, irregular geometry,
+context IDs, mandatory width/area splits, 64x64 grids, truncation and cursor
+rollback. Full frame-header parsing and reference state remain separate work.
 
 Format references:
 
