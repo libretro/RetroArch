@@ -610,7 +610,6 @@ void win32_get_video_size(void *data,
 static void win32_resize_after_display_change(HWND hwnd, HMONITOR monitor)
 {
    MONITORINFO info;
-   memset(&info, 0, sizeof(info));
    info.cbSize = sizeof(info);
    if (GetMonitorInfo(monitor, &info))
       SetWindowPos(hwnd, 0, 0, 0,
@@ -2067,10 +2066,11 @@ static bool win32_window_create(void *data, unsigned style,
    g_win32->taskbar_message            =
       RegisterWindowMessage("TaskbarButtonCreated");
 
-   memset(&notification_filter, 0, sizeof(notification_filter));
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
    notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
+   notification_filter.dbcc_reserved   = 0;
+   notification_filter.dbcc_name[0]    = 0;
    /* a window taken back is still registered */
    if (!reused)
       notification_handler             = RegisterDeviceNotification(
@@ -2192,7 +2192,6 @@ retro_time_t win32_dwm_last_vblank_time(void)
    if (!get_timing)
       return 0;
 
-   memset(&info, 0, sizeof(info));
    info.cbSize = sizeof(info);
    if (FAILED(get_timing(NULL, &info)))
       return 0;
@@ -2948,12 +2947,18 @@ static int win32_try_scrgb_pixel_format(HDC target_hdc)
    int          result    = 0;
    static const char *probe_class = "RetroArch-WGL-Probe";
 
-   memset(&wc, 0, sizeof(wc));
    wc.cbSize        = sizeof(wc);
    wc.style         = CS_OWNDC;
    wc.lpfnWndProc   = DefWindowProcA;
    wc.hInstance     = GetModuleHandle(NULL);
    wc.lpszClassName = probe_class;
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.hIcon         = NULL;
+   wc.hCursor       = NULL;
+   wc.hbrBackground = NULL;
+   wc.lpszMenuName  = NULL;
+   wc.hIconSm       = NULL;
 
    if (!RegisterClassExA(&wc))
       return 0;
