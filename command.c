@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <errno.h>
 #include <locale.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
@@ -1332,16 +1333,20 @@ static bool command_arg_uint(const char *arg, unsigned *out)
    char         *end = NULL;
    unsigned long v;
 
+   while (arg && *arg == ' ')
+      arg++;
    if (!arg || *arg < '0' || *arg > '9')
       return false;
-   v = strtoul(arg, &end, 10);
+   errno = 0;
+   v     = strtoul(arg, &end, 10);
    while (*end == ' ')
       end++;
    if (*end)
       return false;
    *out = (unsigned)v;
-   /* range-checked before narrowing, so 4294967297 is not slot 1 */
-   return (unsigned long)*out == v;
+   /* range-checked before narrowing, so 4294967297 is not slot 1, and
+    * where long is 32 bits strtoul clamps it and says so */
+   return errno != ERANGE && (unsigned long)*out == v;
 }
 
 static bool command_load_state_start(struct command_reply *r)
@@ -1562,11 +1567,14 @@ static bool command_parse_address(const char *s, unsigned *address,
       char **end)
 {
    unsigned long num;
+   while (s && *s == ' ')
+      s++;
    if (!s || (unsigned char)*s <= ' ' || *s == '-' || *s == '+')
       return false;
+   errno    = 0;
    num      = strtoul(s, end, 16);
    *address = (unsigned)num;
-   return *end != s && (unsigned long)*address == num;
+   return *end != s && errno != ERANGE && (unsigned long)*address == num;
 }
 
 /* The next of a run of hexadecimal bytes separated by spaces: 1 with
@@ -1685,6 +1693,7 @@ bool command_write_ram(command_t *cmd, const char *arg)
    unsigned int avail   = 0;
    char *end            = NULL;
    uint8_t *data        = NULL;
+   uint8_t more;
    const uint8_t *start;
 
    if (!command_parse_address(arg, &addr, &end) || !command_bytes_valid(end))
@@ -1719,7 +1728,8 @@ bool command_write_ram(command_t *cmd, const char *arg)
       data++;
       avail--;
    }
-   if (command_next_byte(&arg, data) > 0)
+   /* read into a byte of its own: @data is past the region here */
+   if (command_next_byte(&arg, &more) > 0)
       RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
             "memory region; remainder of the payload ignored.\n", addr);
    {
@@ -2322,21 +2332,25 @@ bool command_get_log(command_t *cmd, const char *arg)
 }
 #endif
 
+/* Where a system address lands, defined with the memory commands. */
+static uint8_t *command_memory_get_pointer(
+      const rarch_system_info_t* sys_info,
+      unsigned address, unsigned int* max_bytes,
+      int for_write, char *s, size_t len);
+
 /* The bytes a client asked to be told about, by the labels it gave
  * them. A step is a request and a look - press, then read where the
  * player is, then read the enemies, then read the game mode - so the
  * look rides along with the step instead of being three more requests.
  *
- * The pointer is found once, when the watch is set, as RUN_UNTIL finds
- * the byte it waits on; it is dropped when content closes, which is
- * what invalidates it. */
+ * Each is looked up afresh on every reply rather than kept as a
+ * pointer: a core may move its memory without closing the content. */
 #define COMMAND_WATCH_MAX 8
 
 struct command_watch_entry
 {
-   const uint8_t *at;
-   unsigned       address;
-   char           label[16];
+   unsigned address;
+   char     label[16];
 };
 static struct command_watch_entry command_watches[COMMAND_WATCH_MAX];
 static unsigned command_watch_count;
@@ -2350,12 +2364,23 @@ void command_watch_clear(void)
  * line client reads and what the rows of a structured reply are. */
 static size_t command_watch_lines(char *s, size_t len)
 {
-   size_t   _len = 0;
-   unsigned i;
+   char      value[8];
+   char      reason[128];
+   size_t    _len = 0;
+   unsigned  i;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    for (i = 0; i < command_watch_count && _len + 40 < len; i++)
-      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%x\t%u\n",
-            command_watches[i].label, command_watches[i].address,
-            (unsigned)*command_watches[i].at);
+   {
+      unsigned       avail = 0;
+      const uint8_t *at    = command_memory_get_pointer(&runloop_st->system,
+            command_watches[i].address, &avail, 0, reason, sizeof(reason));
+      if (at)
+         snprintf(value, sizeof(value), "%u", (unsigned)*at);
+      else
+         strlcpy(value, "none", sizeof(value));
+      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%x\t%s\n",
+            command_watches[i].label, command_watches[i].address, value);
+   }
    return _len;
 }
 
@@ -2738,11 +2763,6 @@ bool command_set_input(command_t *cmd, const char *arg)
    return true;
 }
 
-/* Where a system address lands, defined with the memory commands. */
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
-      unsigned address, unsigned int* max_bytes,
-      int for_write, char *s, size_t len);
 
 /* WATCH [<label> <address|off>]...
  *
@@ -2839,7 +2859,6 @@ bool command_watch(command_t *cmd, const char *arg)
          }
          if (i == count)
             count++;
-         next[i].at      = at;
          next[i].address = address;
          strlcpy(next[i].label, label, sizeof(next[i].label));
       }

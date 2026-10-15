@@ -290,10 +290,12 @@ One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
 all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
-its place in the list when its address changes. Eight at once, each
-found when it is set - an address nothing maps is refused there rather
-than read later - and all of them dropped when content closes, which is
-what invalidates where they point.
+its place in the list when its address changes. Eight at once. Each is
+checked when it is set - an address nothing maps is refused there -
+and read afresh on every reply, so a core that moves its memory is
+followed; one that stops mapping a watched address answers `none` for
+it. All of them are dropped when content closes, since the next
+content's addresses mean something else.
 
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
@@ -405,8 +407,9 @@ the reason:
   that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
   the content is closed. Requests sent while content loads wait for it.
 - `STATE`: once the state is applied or written.
-- `REPLAY`: once the replay has started, or the seek or checkpoint has
-  run.
+- `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
+  has started or the seek or checkpoint has run; `halt` is a hotkey
+  press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
 - `AI_SERVICE`: one translation of the screen, answered with the
   service's text.
@@ -422,7 +425,8 @@ answered with an error saying so; the work goes on, and `GET_STATUS`
 tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
-Hotkey tools (`MENU`, `DISK`) press the hotkey for one frame.
+Hotkey tools (`MENU`, `DISK`, `QUIT`, `RESET`) press the hotkey for one
+frame.
 `SCREENSHOT` and `REPLAY` are the exceptions, answered as above; `SCREENSHOT`
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as

@@ -102,7 +102,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total catches a tool added by accident,
 # and the ceiling on each one catches prose: an average would not, as
-# folding small tools into one raises it. 22677 at 34 tools.
+# folding small tools into one raises it. 22817 at 34 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)

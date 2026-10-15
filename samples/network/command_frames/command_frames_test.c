@@ -170,6 +170,10 @@ int main(int argc, char **argv)
    cmd.error=false; reply[0]=0;
    CHECK(command_read_memory(&cmd,"1000 3")
          && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F 10\n"));
+   /* a second space after the command's name is still taken */
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd," 1001 1")
+         && !strcmp(reply,"READ_CORE_MEMORY 1001 0F\n"));
    /* an address or count past 32 bits is refused, not wrapped */
    reply[0]=0;
    CHECK(!command_read_memory(&cmd,"100001000 1")
@@ -210,6 +214,11 @@ int main(int argc, char **argv)
    CHECK(command_release_input(&cmd,""));
    reply[0]=0;
    CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\tnone\tnone\n"));
+   /* a second space before a count is still taken */
+   reply[0]=0;
+   CHECK(command_run_frames(&cmd," 1"));
+   runloop_iterate();
+   CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
    reply[0]=0;
    CHECK(!command_get_input(&cmd,"99") && strstr(reply,"GET_INPUT ERROR"));
 

@@ -5558,7 +5558,7 @@ void runloop_event_deinit_core(void)
 #ifdef HAVE_COMMAND
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("the content was closed");
-   /* the core's memory is going, and the watches point into it */
+   /* the next content's addresses mean something else */
    command_watch_clear();
 #endif
 

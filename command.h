@@ -631,8 +631,9 @@ bool command_press(command_t *cmd, const char *arg);
 bool command_run_until(command_t *cmd, const char *arg);
 
 /* WATCH [<label> <address|off>]...: the bytes RUN_FRAMES, PRESS and
- * RUN_UNTIL carry along with their own answer. Cleared when content closes, which is
- * what invalidates where they point. */
+ * RUN_UNTIL carry along with their own answer, looked up afresh each
+ * time. Cleared when content closes: the next content's addresses mean
+ * something else. */
 bool command_watch(command_t *cmd, const char *arg);
 void command_watch_clear(void);
 
@@ -950,7 +951,7 @@ static const struct cmd_column cmd_cols_memory[] = {
 static const struct cmd_column cmd_cols_watch[] = {
    { "label", "What the client called it." },
    { "address", "Where it is, in hexadecimal." },
-   { "value", "What the byte holds." },
+   { "value", "What the byte holds, or none where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
