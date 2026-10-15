@@ -90,6 +90,16 @@ $(HW_TARGET): webm_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(ROOT)/c
 	$(CC) $(CFLAGS) -o $@ webm_hw_test.c $(HW_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
 
+ifeq ($(MP4),1)
+AV1_HW_TARGET := $(SAMPLE_OBJDIR)/webm_av1_hw_test$(EXE)
+AV1_HW_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
+$(AV1_HW_TARGET): webm_av1_hw_test.c $(ROOT)/cores/libretro-media/media_core.c \
+      $(COMMON)/samples/formats/av1/rav1_mp4_fixture.h $(AV1_HW_SOURCES) \
+      $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw_stream.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -o $@ $< $(AV1_HW_SOURCES) $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS) $(LDLIBS)
+endif
+
 RESIDENCY_TARGET := webm_residency_test$(EXE)
 RESIDENCY_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
 RESIDENCY_OBJS := $(call sample_objs,$(RESIDENCY_SOURCES:.c=.o))
@@ -118,16 +128,18 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 endif
 
-check: $(TARGET) $(HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET)
+check: $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET)
 	$(RUNNER) ./$(VP9_HW_TARGET)
 	$(RUNNER) ./$(DEVICE_TARGET)
 	$(RUNNER) ./$(RESIDENCY_TARGET)
 	$(RUNNER) ./$(TARGET) fixtures
 ifeq ($(MP4),1)
 	$(RUNNER) ./$(HW_TARGET)
+	$(RUNNER) ./$(AV1_HW_TARGET)
 endif
 
 clean:
+	rm -f webm_av1_hw_test webm_av1_hw_test.exe av1-core-fixture.mp4
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe webm_vp9_hw_test webm_vp9_hw_test.exe webm_vp9_device_test webm_vp9_device_test.exe
 

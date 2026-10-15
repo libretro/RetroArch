@@ -32,7 +32,7 @@ MP4_SOURCES := $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/mp4/rmp4_video.c \
       $(COMMON)/formats/image/image_hdr_blit.c $(COMMON)/features/features_cpu.c \
       $(COMMON)/time/rtime.c $(COMMON)/formats/av1/rav1_hw.c
 
-$(TARGET_TEST2): rav1_mp4_stream_test.c $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
+$(TARGET_TEST2): rav1_mp4_stream_test.c rav1_mp4_fixture.h $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)

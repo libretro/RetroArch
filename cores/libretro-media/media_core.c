@@ -131,6 +131,7 @@ typedef struct
    int          hw_restart;
 #ifdef HAVE_RMP4
    rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
+   int          mp4_hw_required;
 #endif
    int          vtrack;              /* video track index               */
    enum rwebm_codec codec;
@@ -1241,9 +1242,10 @@ void media_video_hw_ready(void)
    {
       if (!p->hw_started)
       {
+         bool ready = media_hw_refresh
+            && media_hw_refresh(media_hw_user, NULL);
          p->hw_started = 1;
-         p->hw_video = media_hw_refresh && media_hw_refresh(media_hw_user, NULL)
-            && rmp4_video_stream_set_hw(p->mp4vs, 1);
+         p->hw_video = ready && rmp4_video_stream_set_hw(p->mp4vs, 1);
          if (p->hw_restart)
          {
             int64_t target = p->hw_restart_ns;
@@ -1348,6 +1350,16 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
+      if (p->mp4_hw_required && !p->hw_video)
+      {
+         MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+         if (p->hw_started)
+         {
+            p->eof = 1;
+            MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+         }
+         return;
+      }
       /* Progressive fill: a budget of file bytes per run - orders of
        * magnitude above any realtime bitrate, so starvation is a
        * startup transient at most - then the arrivals fan out to the
@@ -1860,6 +1872,15 @@ static bool media_load_mp4(media_player_t *p)
       p->mp4vs = rmp4_video_stream_open_avail(p->file_buf,
             (size_t)p->file_len, data_transfer_avail(p->dt), &need_more,
             NULL, NULL);
+#ifdef HAVE_RAV1
+      if (!p->mp4vs && !need_more && media_hw_refresh)
+      {
+         p->mp4vs = rmp4_video_stream_open_hw_avail(p->file_buf,
+               (size_t)p->file_len, data_transfer_avail(p->dt), &need_more,
+               NULL, NULL);
+         p->mp4_hw_required = p->mp4vs != NULL;
+      }
+#endif
       if (p->mp4vs)
          break;
       if (!need_more || data_transfer_failed(p->dt)
@@ -1867,7 +1888,7 @@ static bool media_load_mp4(media_player_t *p)
       {
          if (MEDIA_CORE_PREFIX(log_cb))
             MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[media] No supported (H.264/HEVC/VP9/VP8) MP4 video track.\n");
+               "[media] No supported MP4 video track.\n");
          return false;
       }
       data_transfer_iterate(p->dt, 512 * 1024);
@@ -2026,12 +2047,13 @@ static bool media_load_mp4(media_player_t *p)
    if (p->fps < 1.0 || p->fps > 240.0)
       p->fps = 30.0;
 
-   p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
-      sizeof(uint32_t));
+   if (!p->mp4_hw_required)
+      p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
+            sizeof(uint32_t));
    p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
-   if (!p->fb || !p->silence)
+   if ((!p->fb && !p->mp4_hw_required) || !p->silence)
       return false;
    rmp4_video_stream_set_output(p->mp4vs, p->fb);
 

@@ -39,13 +39,31 @@ av1-session-check: av1_session_test$(EXE)
 $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS) $(VP9_DEPS)
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
+AV1_CORE_SOURCES := $(RA)/libretro-common/compat/compat_strl.c \
+      $(RA)/libretro-common/compat/compat_strcasestr.c \
+      $(RA)/libretro-common/compat/fopen_utf8.c \
+      $(RA)/libretro-common/encodings/encoding_utf.c \
+      $(RA)/libretro-common/encodings/encoding_crc32.c \
+      $(RA)/libretro-common/file/file_path.c \
+      $(RA)/libretro-common/file/file_path_io.c \
+      $(RA)/libretro-common/formats/data_transfer.c \
+      $(RA)/libretro-common/formats/webm/rwebm.c \
+      $(RA)/libretro-common/formats/webm/rwebm_video.c \
+      $(RA)/libretro-common/lists/string_list.c \
+      $(RA)/libretro-common/memmap/memmap.c \
+      $(RA)/libretro-common/memmap/memalign.c \
+      $(RA)/libretro-common/streams/file_stream.c \
+      $(RA)/libretro-common/string/rstrtod.c \
+      $(RA)/libretro-common/string/stdstring.c \
+      $(RA)/libretro-common/vfs/vfs_implementation.c
+
 AV1_MP4_SOURCES := $(RA)/libretro-common/formats/mp4/rmp4_video.c \
       $(RA)/libretro-common/formats/vp8/rvp8.c \
       $(RA)/libretro-common/formats/image/image_blit_bands.c \
       $(RA)/libretro-common/formats/image/image_hdr_blit.c \
       $(RA)/libretro-common/features/features_cpu.c $(RA)/libretro-common/time/rtime.c
 
-hevc_decode_test$(EXE): av1_mp4_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_decode.h av1_decode.h $(DECODERS) $(HEVC_DEPS) \
+hevc_decode_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_decode.h av1_decode.h $(DECODERS) $(HEVC_DEPS) \
       $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
       $(RA)/gfx/common/vulkan_video_decode_vp9.h $(RA)/gfx/common/vulkan_vp9_picture.h \
       $(RA)/gfx/common/vulkan_hevc_picture.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
@@ -53,7 +71,7 @@ hevc_decode_test$(EXE): av1_mp4_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) $
       $(RA)/libretro-common/formats/vp9/rvp9.c
 	$(CC) $(CFLAGS) -I$(RA) -DHEVC_DECODE_TEST -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_VULKAN -DHAVE_RVP9 -DHAVE_RAV1 \
 	   -o $@ probe.c $(DECODERS) $(RA)/libretro-common/formats/h264/rh264.c \
-	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/av1/rav1_hw.c $(AV1_MP4_SOURCES) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
+	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(RA)/libretro-common/formats/vp9/rvp9.c $(RA)/libretro-common/formats/av1/rav1_hw.c $(AV1_MP4_SOURCES) $(AV1_CORE_SOURCES) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
 av1_params_test$(EXE): av1_params_test.c av1_session_data.h $(AV1_PARAMS_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -71,7 +89,7 @@ import_test$(EXE): $(SAMPLED_DEPS) probe.c import_test.h build_import_test.py $(
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
-hevc_render_test$(EXE): av1_mp4_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) av1_decode.h $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h hevc_render.c hevc_render.h import_test.h \
+hevc_render_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) av1_decode.h $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h hevc_render.c hevc_render.h import_test.h \
       build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
       h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
       $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_video_import.h \

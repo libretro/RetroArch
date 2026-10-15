@@ -312,3 +312,15 @@ Current limits: fixed geometry/profile, even dimensions, 4:2:0, and the
 supported BT.601/BT.709 color paths. Other configurations are refused before
 decoding. Wider hardware, actual File Browser/movie A/V, HDR, resolution
 changes and AV1 movie/grain acceptance remain separate work.
+
+Set `AV1_TEST_CORE=1` together with `AV1_TEST_MP4` and `AV1_TEST_RAW`
+to run the real builtin MP4 core through its hardware sink. Both decode and
+render oracles check that no CPU framebuffer or pixel callback is used.
+Comparisons follow each presented frame ordinal, allowing the core's normal
+late-frame drops, and require the final source frame. A retained GPU lease is
+read after core unload. These are headless device tests; interactive File
+Browser, shader controls and A/V acceptance remain separate.
+
+The portable `samples/cores/webm_player` MP4 check also runs the real core with
+a mock AV1 factory, covering cold startup before factory registration, BUSY,
+pacing, save/restore, reset, context restart and unsupported hardware cleanup.

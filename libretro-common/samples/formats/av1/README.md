@@ -252,5 +252,10 @@ fixed track-sized SDR output; unsupported backends/configurations decline.
 Partial input and decoder/export capacity preserve the pending packet floor.
 `skip` retains the normal renderable-frame contract; `discard` advances without
 AV1 export. Reader tests cover starvation, BUSY, timing, rewind, cancellation,
-absent backends and leases released after close. WebM and frontend admission
-remain pending.
+absent backends and leases released after close. The builtin MP4 core now
+admits hardware-only AV1 when its hardware sink is installed, without a CPU
+framebuffer. Backend allocation waits for hardware startup; unavailable sinks
+or backends terminate playback cleanly. WebM and thumbnail routing remain
+pending. Successful hidden-frame/metadata progress runs within a 4 ms budget;
+true BUSY returns immediately. Untaken displayed leases survive later progress
+and EOF so the core can present its final frame.

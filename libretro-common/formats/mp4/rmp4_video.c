@@ -57,6 +57,7 @@
 #include <formats/video_hw_frame.h>
 #ifdef HAVE_RAV1
 #include <formats/rav1_hw_stream.h>
+#include <features/features_cpu.h>
 #endif
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
@@ -991,7 +992,6 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
 {
    video_hw_frame_t frame;
    int ret;
-   rmp4_video_hwf_drop(s);
    if (!s->av1)
       return -1;
    if (!s->av1->packet && rav1_hw_stream_begin(s->av1, pkt->data, pkt->size))
@@ -1008,14 +1008,21 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
          frame.yuv |= IMAGE_YUV_FLAG_BT709;
       else
          frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      rmp4_video_hwf_drop(s);
       s->hwf = frame;
       s->hwf_untaken = 1;
       s->rndr_kind = 5;
       return 3;
    }
    if (ret == RAV1_HW_STREAM_DISCARDED)
+   {
+      rmp4_video_hwf_drop(s);
+      s->rndr_kind = 0;
       return 3;
-   if (ret == RAV1_HW_STREAM_BUSY || ret == RAV1_HW_STREAM_PROGRESS)
+   }
+   if (ret == RAV1_HW_STREAM_PROGRESS)
+      return 4;
+   if (ret == RAV1_HW_STREAM_BUSY)
       return 2;
    return ret;
 }
@@ -1031,12 +1038,12 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
     * picture's planes; re-record on display.  (The wait_key early
     * return clears too - harmless, callers only render after a
     * displayed step.) */
-   s->rndr_kind = 0;
    (void)discard;
 #ifdef HAVE_RAV1
    if (s->codec == RMP4_CODEC_AV1)
       return rmp4_video_av1_packet(s, pkt, discard);
 #endif
+   s->rndr_kind = 0;
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -1216,10 +1223,12 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (pkt.track != s->track)
          continue;
       r = rmp4_video_decode_packet(s, &pkt, discard);
-      if (r == 2 || r == 3)
+      if (r == 2 || r == 3 || r == 4)
       {
          s->pending_packet = pkt;
          s->pending = 1;
+         if (r == 4)
+            return 0;
          if (r == 2)
          {
             s->waiting = RMP4_VIDEO_WAIT_DECODER;
@@ -1299,14 +1308,30 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
       int *duration_ms, int discard)
 {
    int r;
+#ifdef HAVE_RAV1
+   int64_t started = 0;
+#endif
 
    if (!s)
       return -1;
    s->waiting = 0;
+#ifdef HAVE_RAV1
+   if (s->codec == RMP4_CODEC_AV1)
+      started = cpu_features_get_time_usec();
+#endif
 
    /* Retry later for input or decoder capacity, without spinning. */
    while ((r = rmp4_video_stream_step(s, duration_ms, discard)) == 0)
-      ;                   /* non-shown frame: keep going      */
+   {
+#ifdef HAVE_RAV1
+      if (s->codec == RMP4_CODEC_AV1 &&
+            cpu_features_get_time_usec() - started >= 4000)
+      {
+         s->waiting = RMP4_VIDEO_WAIT_DECODER;
+         return 2;
+      }
+#endif
+   }
    if (r != 2)
       s->waiting = RMP4_VIDEO_WAIT_NONE;
    return r;

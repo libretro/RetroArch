@@ -1,0 +1,311 @@
+/* SPDX-License-Identifier: MIT */
+#include <formats/rav1_hw.h>
+#include "../../../libretro-common/samples/formats/av1/rav1_mp4_fixture.h"
+#include "../../../cores/libretro-media/media_core.c"
+
+static unsigned failures, opened, closed, live, decoded, exported, abandoned;
+static unsigned taken, stopped, ticks, ready, sink_busy, decode_busy,
+    output_busy, refuse;
+static video_hw_frame_t held, retry;
+#define CHECK(c)                                                               \
+   do                                                                          \
+   {                                                                           \
+      if (!(c))                                                                \
+      {                                                                        \
+         fprintf(stderr, "line %u: %s\n", (unsigned)__LINE__, #c);             \
+         failures++;                                                           \
+      }                                                                        \
+   } while (0)
+
+typedef struct mock
+{
+   const uint8_t *packet;
+   size_t size;
+   unsigned refs;
+   uint8_t first;
+} mock_t;
+
+static void release(mock_t *m)
+{
+   if (!--m->refs)
+   {
+      live--;
+      free(m);
+   }
+}
+
+static void abandon(void *owner, uint64_t done, uint64_t value)
+{
+   CHECK(done == 2 && value);
+   abandoned++;
+   release((mock_t *)owner);
+}
+
+static int decode(void *owner, const uint8_t *data, size_t size,
+                  const rav1_sequence_t *seq, const rav1_hw_picture_t *picture)
+{
+   mock_t *m = (mock_t *)owner;
+   CHECK(size && seq->max_width == 64 && picture->slot >= 0);
+   if (m->packet)
+      CHECK(m->packet == data && m->size == size && m->first == data[0]);
+   if (decode_busy)
+   {
+      m->packet = data;
+      m->size = size;
+      m->first = data[0];
+      decode_busy--;
+      return 1;
+   }
+   m->packet = NULL;
+   decoded++;
+   return 0;
+}
+
+static int output(void *owner, unsigned slot, const rav1_grain_t *grain,
+                  video_hw_frame_t *frame)
+{
+   mock_t *m = (mock_t *)owner;
+   CHECK(slot < 9 && !grain->apply);
+   if (output_busy)
+   {
+      output_busy--;
+      return 1;
+   }
+   m->refs++;
+   frame->image = 100 + ++exported;
+   frame->width = frame->height = 64;
+   frame->pixfmt = IMAGE_PIXFMT_NV12;
+   frame->done = 2;
+   frame->done_value = exported;
+   frame->owner = m;
+   frame->abandon = abandon;
+   return 0;
+}
+
+static bool open_backend(void *user, const rav1_sequence_t *seq, unsigned slots,
+                         rav1_hw_ops_t *ops)
+{
+   mock_t *m;
+   (void)user;
+   CHECK(seq->max_width == 64 && slots == 9);
+   if (refuse)
+      return false;
+   m = (mock_t *)calloc(1, sizeof(*m));
+   if (!m)
+      return false;
+   m->refs = 1;
+   opened++;
+   live++;
+   ops->decoder = m;
+   ops->decode = decode;
+   ops->output = output;
+   return true;
+}
+
+static void close_backend(rav1_hw_ops_t *ops)
+{
+   closed++;
+   release((mock_t *)ops->decoder);
+}
+static const rav1_hw_backend_t backend = {NULL, open_backend, close_backend};
+
+static bool sink(void *user, const video_hw_frame_t *frame)
+{
+   (void)user;
+   if (!frame)
+      return ready != 0;
+   CHECK(frame->image && frame->width == 64 && frame->height == 64);
+   CHECK(frame->pixfmt == IMAGE_PIXFMT_NV12);
+   if (retry.image)
+      CHECK(!memcmp(&retry, frame, sizeof(retry)));
+   if (sink_busy)
+   {
+      retry = *frame;
+      sink_busy--;
+      return false;
+   }
+   memset(&retry, 0, sizeof(retry));
+   if (held.image)
+      video_hw_frame_abandon(&held);
+   held = *frame;
+   taken++;
+   return true;
+}
+
+static bool env(unsigned cmd, void *data)
+{
+   if (cmd == RETRO_ENVIRONMENT_SET_PIXEL_FORMAT)
+      return *(enum retro_pixel_format *)data == RETRO_PIXEL_FORMAT_XRGB8888;
+   if (cmd == RETRO_ENVIRONMENT_SHUTDOWN)
+   {
+      stopped++;
+      return true;
+   }
+   return false;
+}
+
+static void video(const void *data, unsigned w, unsigned h, size_t pitch)
+{
+   CHECK(!data && w == 64 && h == 64 && !pitch);
+   ticks++;
+}
+
+static void poll(void)
+{
+}
+static int16_t input(unsigned port, unsigned device, unsigned index,
+                     unsigned id)
+{
+   (void)port;
+   (void)device;
+   (void)index;
+   (void)id;
+   return 0;
+}
+static size_t audio(const int16_t *data, size_t frames)
+{
+   CHECK(data != NULL);
+   return frames;
+}
+
+static bool load(void)
+{
+   struct retro_game_info game;
+   bool ok;
+   unsigned before = opened;
+   stopped = 0;
+   memset(&game, 0, sizeof(game));
+   game.path = "av1-core-fixture.mp4";
+   ok = retro_load_game(&game);
+   CHECK(ok);
+   CHECK(opened == before);
+   if (ok)
+   {
+      CHECK(media_player.mp4_hw_required && !media_player.fb);
+      CHECK(!media_player.hw_started && !media_player.hw_video);
+      CHECK(!media_set_video_hw_refresh(NULL, NULL));
+   }
+   return ok;
+}
+
+static void unload(void)
+{
+   retro_unload_game();
+   if (held.image)
+   {
+      CHECK(live > 0);
+      video_hw_frame_abandon(&held);
+      memset(&held, 0, sizeof(held));
+   }
+   memset(&retry, 0, sizeof(retry));
+   CHECK(!live && opened == closed && exported == abandoned);
+}
+
+int main(void)
+{
+   FILE *file;
+   unsigned i, before, accepted;
+   uint8_t state[40];
+   make_mp4(1);
+   file = fopen("av1-core-fixture.mp4", "wb");
+   if (!file)
+      return 1;
+   CHECK(fwrite(bytes, 1, used, file) == used);
+   CHECK(!fclose(file));
+   retro_set_environment(env);
+   retro_set_video_refresh(video);
+   retro_set_input_poll(poll);
+   retro_set_input_state(input);
+   retro_set_audio_sample_batch(audio);
+   rav1_set_hw_backend(NULL);
+   CHECK(media_set_video_hw_refresh(sink, NULL));
+   if (!load())
+      goto done;
+   CHECK(!media_player.hw_started && !media_player.eof && !decoded);
+   rav1_set_hw_backend(&backend);
+   ready = 1;
+   decode_busy = output_busy = sink_busy = 2;
+   for (i = 0; i < 32 && !stopped; i++)
+   {
+      accepted = decoded;
+      before = media_player.hw_frame.image != 0;
+      retro_run();
+      if (before)
+         CHECK(accepted == decoded);
+   }
+   CHECK(stopped && taken && ticks && !media_player.hw_frame.image);
+   unload();
+   before = taken;
+   if (!load())
+      goto done;
+   retro_run();
+   CHECK(taken == before + 1 && media_player.vshown == 1);
+   CHECK(retro_serialize(state, sizeof(state)));
+   retro_run();
+   CHECK(taken == before + 2 && media_player.vshown == 2);
+   CHECK(retro_unserialize(state, sizeof(state)) &&
+         media_player.hw_frame.image);
+   retro_run();
+   CHECK(taken > before + 2);
+   retro_reset();
+   CHECK(!media_player.fb && media_player.hw_video && !media_player.eof);
+   before = taken;
+   retro_run();
+   CHECK(taken == before + 1);
+   unload();
+   if (!load())
+      goto done;
+   sink_busy = 100;
+   retro_run();
+   CHECK(media_player.hw_frame.image);
+   before = abandoned;
+   media_suspend_video_hw();
+   CHECK(!media_player.hw_frame.image && abandoned > before);
+   memset(&retry, 0, sizeof(retry));
+   CHECK(!media_player.hw_started && !stopped);
+   ready = 1;
+   sink_busy = 0;
+   retro_run();
+   CHECK(media_player.hw_video);
+   unload();
+   refuse = 1;
+   if (!load())
+      goto done;
+   retro_run();
+   CHECK(stopped && !media_player.hw_video && !media_player.fb);
+   unload();
+   refuse = 0;
+   ready = 0;
+   if (!load())
+      goto done;
+   retro_run();
+   CHECK(stopped && !media_player.hw_video && !media_player.fb);
+   unload();
+   ready = 1;
+   rav1_set_hw_backend(NULL);
+   stopped = 0;
+   {
+      struct retro_game_info game;
+      memset(&game, 0, sizeof(game));
+      game.path = "av1-core-fixture.mp4";
+      CHECK(retro_load_game(&game));
+      retro_run();
+      CHECK(stopped && !media_player.hw_video && !media_player.fb);
+      retro_unload_game();
+   }
+   rav1_set_hw_backend(&backend);
+   CHECK(media_set_video_hw_refresh(NULL, NULL));
+   {
+      struct retro_game_info game;
+      memset(&game, 0, sizeof(game));
+      game.path = "av1-core-fixture.mp4";
+      CHECK(!retro_load_game(&game));
+      retro_unload_game();
+   }
+done:
+   retro_unload_game();
+   rav1_set_hw_backend(NULL);
+   remove("av1-core-fixture.mp4");
+   printf("AV1 core hardware handoff: %u failures\n", failures);
+   return failures ? 1 : 0;
+}
