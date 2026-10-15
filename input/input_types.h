@@ -55,7 +55,7 @@ struct input_bind_map
 /* Turbo support. */
 struct turbo_buttons
 {
-   int32_t turbo_pressed[MAX_USERS];
+   uint32_t turbo_pressed[MAX_USERS];
    unsigned count;
    uint16_t enable[MAX_USERS];
    bool frame_enable[MAX_USERS];
