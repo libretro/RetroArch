@@ -877,6 +877,9 @@ typedef struct thread_video
           * video_info.stat_text points here. Only copied when there is
           * text, so a frame without the overlay carries none. */
          char stat_text[VIDEO_STAT_TEXT_SIZE];
+         /* The screens' windows this frame was handed, for the same
+          * reason: video_info.windows points here when it has them. */
+         video_windows_frame_t windows;
       } slot[2];
       /* Zero-copy: the slot handed to the core through
        * get_current_software_framebuffer, VIDEO_THREAD_LEND_SPARE for

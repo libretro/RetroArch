@@ -779,6 +779,10 @@ typedef struct video_frame_info
     * when the frame is drawn whole. */
    video_views_map_t views;
    video_views_layout_t views_layout;
+   /* The screens' own windows: NULL while they are off, the driver has
+    * none, or no views are presented. Owned by video_driver_state_t,
+    * or under the threaded wrapper by the frame's slot. */
+   const video_windows_frame_t *windows;
    /* Headset output: the screens' distance and width in metres, where
     * they are kept (enum video_openxr_placement), and a count of
     * recenter requests the driver compares with the last it saw. */
@@ -1990,7 +1994,17 @@ typedef struct
    unsigned views_status_seen;
    /* The last video_driver_window_generation(); never reset, so a
     * replacement window never reuses one. */
-   unsigned window_generation;
+   retro_atomic_int_t window_generation;
+   /* The screens' own windows: this frame's snapshot, and the screens
+    * a close attached until video_driver_restore_windows() and its
+    * count; main thread. */
+   video_windows_frame_t windows;
+#ifdef HAVE_THREADS
+   /* The video thread's redraw of the cached frame fills its own. */
+   video_windows_frame_t windows_redraw;
+#endif
+   unsigned windows_forced_attached;
+   unsigned windows_restore;
    bool views_presented;
    /* The driver drew frames with the map whole
     * (GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK), so touch, overlays and the

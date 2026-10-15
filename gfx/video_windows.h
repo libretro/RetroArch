@@ -167,13 +167,43 @@ typedef struct video_windows_plan
    unsigned hidden_mask;
 } video_windows_plan_t;
 
-/* Frontend owner only; zero means the lifetime counter is exhausted. */
+/* What a driver needs to make, place and lay out the screens' own
+ * windows for one frame, without reading settings */
+typedef struct video_windows_frame
+{
+   /* The core's own map and frame size, as input maps back into */
+   video_views_map_t core;
+   video_window_settings_t settings[RETRO_VIDEO_VIEWS_MAX];
+   video_windows_plan_t plan;
+   unsigned core_dims;
+   /* Counts video_driver_restore_windows() */
+   unsigned restore;
+   /* The main window's layout parameters, for a window's own */
+   float single_aspect;
+   unsigned stereo_mode;
+   unsigned screen_layout;
+   unsigned rotation;
+   bool stretch;
+   bool scale_integer;
+   bool swap_eyes;
+} video_windows_frame_t;
+
+/* Any thread; zero means the lifetime counter is exhausted. */
 unsigned video_driver_window_generation(void);
 
 void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
       bool supported, unsigned forced_attached,
       video_windows_plan_t *out);
+
+/* Screen @screen's own window at @dims, from a frame's snapshot: its
+ * map with every other screen left out. */
+void video_driver_window_layout(const video_windows_frame_t *frame,
+      unsigned screen, unsigned dims, video_views_layout_t *out);
+
+/* Main thread: screens a close attached go back to their windows, and
+ * the frame's restore count asks drivers to place them again. */
+void video_driver_restore_windows(void);
 
 RETRO_END_DECLS
 

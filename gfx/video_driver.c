@@ -926,12 +926,27 @@ video_driver_state_t *video_state_get_ptr(void)
    return &video_driver_st;
 }
 
+/* The last generation: held there, below INT_MAX by more than any
+ * number of threads asking at once, so the counter never wraps round
+ * to a value it gave before. */
+#define VIDEO_WINDOW_GENERATION_LAST (INT_MAX - 0xffff)
+
 unsigned video_driver_window_generation(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (video_st->window_generation == UINT_MAX)
-      return 0;
-   return ++video_st->window_generation;
+   int prev = retro_atomic_fetch_add_int(&video_st->window_generation, 1);
+   if (prev < VIDEO_WINDOW_GENERATION_LAST)
+      return (unsigned)prev + 1;
+   retro_atomic_store_release_int(&video_st->window_generation,
+         VIDEO_WINDOW_GENERATION_LAST);
+   return 0;
+}
+
+void video_driver_restore_windows(void)
+{
+   video_driver_state_t *video_st   = &video_driver_st;
+   video_st->windows_forced_attached = 0;
+   video_st->windows_restore++;
 }
 
 /**
@@ -3524,40 +3539,52 @@ void video_driver_headset_poll(void)
 }
 #endif
 
+/* What the settings give every window's layout: all but the map, the
+ * size, the stereo mode, the screens left out and the custom viewport,
+ * which is the main window's. */
+static void video_driver_views_params(settings_t *settings,
+      video_views_layout_params_t *params)
+{
+   unsigned aspect_idx     = settings->uints.video_aspect_ratio_idx;
+
+   params->custom_vp       = NULL;
+   params->single_aspect   = 0.0f;
+   params->stretch         = !settings->bools.video_force_aspect;
+   params->stereo_mode     = settings->uints.video_stereo_mode;
+   params->screen_layout   = settings->uints.video_screen_layout;
+   params->rotation        = retroarch_get_rotation() % 4;
+   params->swap_eyes       = settings->bools.video_stereo_swap_eyes;
+   params->scale_integer   = settings->bools.video_scale_integer;
+
+   /* The core's geometry covers the whole packed frame, so "core
+    * provided" and square pixels mean each view's own aspect. */
+   if (     aspect_idx != ASPECT_RATIO_CUSTOM
+         && aspect_idx != ASPECT_RATIO_CORE
+         && aspect_idx != ASPECT_RATIO_SQUARE)
+      params->single_aspect = video_driver_get_aspect_ratio();
+}
+
 /* @custom_vp: the custom viewport, in the window's pixels, applies to
  * a one-screen map laid out in the window. */
 static void video_driver_views_layout(settings_t *settings,
       const video_views_map_t *map, unsigned dims, unsigned stereo_mode,
-      bool custom_vp, video_views_layout_t *out)
+      bool custom_vp, unsigned exclude, video_views_layout_t *out)
 {
    video_views_layout_params_t params;
    video_views_rect_t custom;
-   unsigned aspect_idx  = settings->uints.video_aspect_ratio_idx;
 
-   params.map           = map;
-   params.custom_vp     = NULL;
-   params.single_aspect = 0.0f;
-   params.stretch       = !settings->bools.video_force_aspect;
-   params.dims          = dims;
-   params.stereo_mode   = stereo_mode;
-   params.screen_layout = settings->uints.video_screen_layout;
-   params.exclude_screens = 0;
-   params.rotation      = retroarch_get_rotation() % 4;
-   params.swap_eyes     = settings->bools.video_stereo_swap_eyes;
-   params.scale_integer = settings->bools.video_scale_integer;
-
-   /* The core's geometry covers the whole packed frame, so "core
-    * provided" and square pixels mean each view's own aspect. */
-   if (aspect_idx == ASPECT_RATIO_CUSTOM)
+   video_driver_views_params(settings, &params);
+   params.map             = map;
+   params.dims            = dims;
+   params.stereo_mode     = stereo_mode;
+   params.exclude_screens = exclude;
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       custom.pos  = settings->video_vp_custom.pos;
       custom.dims = settings->video_vp_custom.dims;
       if (custom_vp && VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
          params.custom_vp = &custom;
    }
-   else if (aspect_idx != ASPECT_RATIO_CORE
-         && aspect_idx != ASPECT_RATIO_SQUARE)
-      params.single_aspect = video_driver_get_aspect_ratio();
 
    video_views_layout(&params, out);
 }
@@ -3566,7 +3593,68 @@ void video_driver_views_layout_flat(const video_views_map_t *map,
       unsigned dims, bool window, video_views_layout_t *out)
 {
    video_driver_views_layout(config_get_ptr(), map, dims,
-         VIDEO_STEREO_MODE_2D, window, out);
+         VIDEO_STEREO_MODE_2D, window, 0, out);
+}
+
+void video_driver_window_layout(const video_windows_frame_t *frame,
+      unsigned screen, unsigned dims, video_views_layout_t *out)
+{
+   video_views_layout_params_t params;
+   params.map             = &frame->core;
+   params.custom_vp       = NULL;
+   params.single_aspect   = frame->single_aspect;
+   params.stretch         = frame->stretch;
+   params.dims            = dims;
+   params.stereo_mode     = frame->stereo_mode;
+   params.screen_layout   = frame->screen_layout;
+   params.exclude_screens = (screen < RETRO_VIDEO_VIEWS_MAX)
+      ? ~(1u << screen) : ~0u;
+   params.rotation        = frame->rotation;
+   params.swap_eyes       = frame->swap_eyes;
+   params.scale_integer   = frame->scale_integer;
+   video_views_layout(&params, out);
+}
+
+/* The screens' own windows for a frame presented with views, or NULL
+ * while they are off or the driver has none. Not inlined: the frame's
+ * stack has no room to spare. */
+static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
+      video_driver_state_t *video_st, settings_t *settings,
+      uint32_t flags, bool redraw)
+{
+   video_views_layout_params_t params;
+   unsigned i;
+   video_windows_frame_t *out = &video_st->windows;
+   if (     !settings->bools.video_windows_enable
+         || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
+      return NULL;
+#ifdef HAVE_THREADS
+   if (redraw)
+      out = &video_st->windows_redraw;
+#endif
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      video_window_settings_t *w = &out->settings[i];
+      w->pos        = settings->uints.video_screen_window_pos[i];
+      w->dims       = settings->uints.video_screen_window_dims[i];
+      w->monitor    = settings->uints.video_screen_window_monitor[i];
+      w->mode       = settings->uints.video_screen_window_mode[i];
+      w->fullscreen = settings->bools.video_screen_window_fullscreen[i];
+   }
+   out->core          = video_st->views_core;
+   out->core_dims     = video_st->views_frame_dims;
+   out->restore       = video_st->windows_restore;
+   video_driver_views_params(settings, &params);
+   out->single_aspect = params.single_aspect;
+   out->stereo_mode   = params.stereo_mode;
+   out->screen_layout = params.screen_layout;
+   out->rotation      = params.rotation;
+   out->stretch       = params.stretch;
+   out->scale_integer = params.scale_integer;
+   out->swap_eyes     = params.swap_eyes;
+   video_windows_plan(&out->core, out->settings, true, true,
+         video_st->windows_forced_attached, &out->plan);
+   return out;
 }
 
 /* Fills the frame's views and layout. A repeated frame (no data), or one
@@ -3594,6 +3682,7 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
       && BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    memset(&video_info->views,        0, sizeof(video_info->views));
    memset(&video_info->views_layout, 0, sizeof(video_info->views_layout));
+   video_info->windows = NULL;
    presented   = allowed && video_st->views_presented;
    if (allowed && data && render_frame && !redraw)
    {
@@ -3607,6 +3696,8 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
    }
    if (presented)
    {
+      video_info->windows = video_driver_windows_frame(video_st, settings,
+            flags.flags, redraw);
       /* Laid out from the core's own map: a CPU filter's scaling must
        * not change a view's shape. The indices match the scaled map. */
       video_info->views = video_st->views_frame;
@@ -3616,11 +3707,15 @@ static void video_driver_views_frame(video_driver_state_t *video_st,
             && (video_driver_xr_headset() & VIDEO_XR_HEADSET_TRACKING))
          video_views_eye_pair(&video_info->views, video_info->headset_eye);
 #endif
+      /* Without the screens that have windows of their own */
       video_driver_views_layout(settings, &video_st->views_core,
             video_info->dims,
             BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES)
             ? VIDEO_STEREO_MODE_2D : settings->uints.video_stereo_mode,
-            true, &video_info->views_layout);
+            true, video_info->windows
+            ? (video_info->windows->plan.separate_mask
+               | video_info->windows->plan.hidden_mask) : 0,
+            &video_info->views_layout);
       if (!redraw)
          video_st->views_layout = video_info->views_layout;
       /* The menu was laid out whole for this frame. */
