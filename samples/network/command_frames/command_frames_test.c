@@ -209,6 +209,12 @@ int main(int argc, char **argv)
    }
    CHECK(loop->flags & RUNLOOP_FLAG_CORE_RUNNING);
    CHECK(loop->current_core_type != CORE_TYPE_DUMMY);
+   /* asking after the core already loaded opens the same library,
+    * whose retro_set_environment must not be called mid-session */
+   command_load_core(&cmd,argv[1]);
+   cmd.error=false; reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1009 1")
+         && !strcmp(reply,"READ_CORE_MEMORY 1009 00\n"));
 
    /* several controls at once */
    reply[0]=0;

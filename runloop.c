@@ -1041,12 +1041,18 @@ static dylib_t load_dynamic_core(const char *path, char *s,
    return dylib_load(path);
 }
 
+/* @live is set when @path opened the library already loaded as the
+ * current core: its retro_set_environment has been called and is not
+ * called again mid-session, so what it declared is taken from the
+ * running state instead. */
 static dylib_t libretro_get_system_info_lib(const char *path,
-      struct retro_system_info *sysinfo, bool *load_no_content)
+      struct retro_system_info *sysinfo, bool *load_no_content,
+      bool *live)
 {
    dylib_t lib = dylib_load(path);
    void (*proc)(struct retro_system_info*);
 
+   *live = false;
    if (!lib)
       return NULL;
 
@@ -1061,7 +1067,13 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    proc(sysinfo);
 
-   if (load_no_content)
+   if (lib == runloop_state.lib_handle)
+   {
+      *live = true;
+      if (load_no_content)
+         *load_no_content = runloop_state.system.load_no_content;
+   }
+   else if (load_no_content)
    {
       void (*set_environ)(retro_environment_t);
       *load_no_content = false;
@@ -4866,6 +4878,8 @@ bool libretro_get_system_info(
    core_probe_t probe;
    const core_probe_t *cached = NULL;
    dylib_t lib;
+   bool no_game                 = false;
+   bool live                    = false;
 #endif
    runloop_state_t *runloop_st  = &runloop_state;
 
@@ -4895,10 +4909,10 @@ bool libretro_get_system_info(
    }
    else
    {
-      bool no_game = false;
       memset(&probe, 0, sizeof(probe));
       core_probe_capture = &probe;
-      lib = libretro_get_system_info_lib(path, &dummy_info, &no_game);
+      lib = libretro_get_system_info_lib(path, &dummy_info, &no_game,
+            &live);
       core_probe_capture = NULL;
       if (!lib)
       {
@@ -4910,7 +4924,9 @@ bool libretro_get_system_info(
       }
       if (load_no_content)
          *load_no_content = no_game;
-
+   }
+   if (lib && !live)
+   {
       /* Kept for the session, and on disk once its file is stamped */
       probe.path = (char*)path;
       if (dummy_info.library_name)
@@ -4936,7 +4952,12 @@ bool libretro_get_system_info(
          core_probe_write_file();
    }
 #else
-   if (load_no_content)
+   /* the linked core is the running one once initialised: what it
+    * declared is taken from the running state */
+   if (load_no_content
+         && (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED))
+      *load_no_content = runloop_st->system.load_no_content;
+   else if (load_no_content)
    {
       runloop_st->load_no_content_hook = load_no_content;
 

@@ -9,11 +9,16 @@ static uint32_t frame;
 static uint32_t pixels[64];
 /* Memory for READ_CORE_MEMORY and GET_MEMORY_MAP to answer about, at a
  * system address, as a real core maps its RAM. ram[7] follows the frame
- * counter, so RUN_UNTIL has a byte that changes to wait on; the rest
- * stays as retro_init left it, which the memory tests read. */
+ * counter, so RUN_UNTIL has a byte that changes to wait on; ram[9]
+ * counts retro_set_environment calls after retro_init, which the
+ * frontend must not make; the rest stays as retro_init left it, which
+ * the memory tests read. */
 static uint8_t ram[16];
+static int inited;
 void retro_set_environment(retro_environment_t cb)
 {
+   if (inited)
+      ram[9]++;
    bool no_game=true;
    enum retro_pixel_format fmt=RETRO_PIXEL_FORMAT_XRGB8888;
    static struct retro_memory_descriptor desc[1];
@@ -38,8 +43,9 @@ void retro_init(void)
    frame=0;
    /* 00 01 02 ... so a read's bytes say which ones they are */
    for (i=0;i<sizeof(ram);i++) ram[i]=(uint8_t)i;
+   ram[9]=0; inited=1;
 }
-void retro_deinit(void) { }
+void retro_deinit(void) { inited=0; }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *i)
 {
