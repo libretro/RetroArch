@@ -297,8 +297,12 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate(XrSpace space, XrSpace base,
 {
    unsigned n = (unsigned)((uintptr_t)space - 0x301);
    int hand   = (n < t_spaces_made) ? t_space_hands[n] : 0;
+   XrSpaceVelocity *vel = (XrSpaceVelocity*)loc->next;
    t_located_base     = base;
    loc->locationFlags = 0;
+   /* A runtime fills a chained velocity; none is known here. */
+   if (vel && vel->type == XR_TYPE_SPACE_VELOCITY)
+      vel->velocityFlags = 0;
    if (hand && t_aim_tracked[hand])
    {
       loc->pose          = t_aim[hand];

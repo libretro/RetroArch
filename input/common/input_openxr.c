@@ -605,16 +605,14 @@ static void input_openxr_hand_trackers(input_openxr_t *st,
       XrHandTrackingDataSourceEXT sources[2] = {
          XR_HAND_TRACKING_DATA_SOURCE_UNOBSTRUCTED_EXT,
          XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT };
-      memset(&ci, 0, sizeof(ci));
-      ci.type         = XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT;
-      ci.hand         = hands[i];
-      ci.handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT;
-      memset(&src, 0, sizeof(src));
       src.type                     = XR_TYPE_HAND_TRACKING_DATA_SOURCE_INFO_EXT;
+      src.next                     = NULL;
       src.requestedDataSourceCount = 2;
       src.requestedDataSources     = sources;
-      if (h->hand_data_source)
-         ci.next = &src;
+      ci.type                      = XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT;
+      ci.next                      = h->hand_data_source ? &src : NULL;
+      ci.hand                      = hands[i];
+      ci.handJointSet              = XR_HAND_JOINT_SET_DEFAULT_EXT;
       if (XR_FAILED(res = st->CreateHandTrackerEXT(h->session, &ci,
                   &st->trackers[i])))
       {
@@ -1895,9 +1893,8 @@ static void input_openxr_locate_pose(const input_openxr_t *st,
    memset(out, 0, sizeof(*out));
    if (!space)
       return;
-   memset(&vel, 0, sizeof(vel));
    vel.type = XR_TYPE_SPACE_VELOCITY;
-   memset(&loc, 0, sizeof(loc));
+   vel.next = NULL;
    loc.type = XR_TYPE_SPACE_LOCATION;
    loc.next = &vel;
    if (XR_FAILED(st->LocateSpace(space, base, time, &loc)))
@@ -1919,20 +1916,16 @@ static void input_openxr_locate_joints(const input_openxr_t *st,
 
    if (!st->trackers[h])
       return;
-   memset(&li, 0, sizeof(li));
-   li.type      = XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT;
-   li.baseSpace = base;
-   li.time      = time;
-   memset(jl, 0, sizeof(jl));
-   memset(jv, 0, sizeof(jv));
-   memset(&src, 0, sizeof(src));
+   li.type              = XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT;
+   li.next              = NULL;
+   li.baseSpace         = base;
+   li.time              = time;
    src.type             = XR_TYPE_HAND_TRACKING_DATA_SOURCE_STATE_EXT;
-   memset(&vels, 0, sizeof(vels));
+   src.next             = NULL;
    vels.type            = XR_TYPE_HAND_JOINT_VELOCITIES_EXT;
    vels.next            = st->hand_data_source ? &src : NULL;
    vels.jointCount      = XR_HAND_JOINT_COUNT_EXT;
    vels.jointVelocities = jv;
-   memset(&locs, 0, sizeof(locs));
    locs.type            = XR_TYPE_HAND_JOINT_LOCATIONS_EXT;
    locs.next            = &vels;
    locs.jointCount      = XR_HAND_JOINT_COUNT_EXT;
@@ -1985,8 +1978,8 @@ static bool input_openxr_pose_active(input_openxr_t *st, unsigned a,
    XrActionStateGetInfo gi;
    XrActionStatePose s;
    input_openxr_get_info(st, a, hand, &gi);
-   memset(&s, 0, sizeof(s));
    s.type = XR_TYPE_ACTION_STATE_POSE;
+   s.next = NULL;
    return XR_SUCCEEDED(st->GetActionStatePose(st->session, &gi, &s))
       && s.isActive;
 }
@@ -2010,8 +2003,8 @@ void input_openxr_controller_poses(struct retro_vr_controller_poses *out)
          XrInteractionProfileState ps;
          held = input_openxr_pose_active(st, IXA_GRIP, st->hands[h])
              || input_openxr_pose_active(st, IXA_AIM,  st->hands[h]);
-         memset(&ps, 0, sizeof(ps));
          ps.type = XR_TYPE_INTERACTION_PROFILE_STATE;
+         ps.next = NULL;
          if (     XR_SUCCEEDED(st->GetCurrentInteractionProfile(st->session,
                      st->hands[h], &ps))
                && ps.interactionProfile != XR_NULL_PATH)
