@@ -165,15 +165,15 @@ struct rarch_setting
    float               min;
    float               max;
    /* Disjoint by type: float entries store their printf rounding
-    * string, directory entries the string shown while unset. */
+    * string; option rows their '|'-separated choices, path and
+    * browser-action rows their extension filter. */
    union
    {
       const char        *rounding_fraction;   /* ST_FLOAT */
-      const char        *empty_path;          /* ST_DIR   */
+      const char        *values;
    } aux;
    const char           *name;
    const char           *short_description;
-   const char           *values;
 
    /* Every per-entry handler lives in shared interned tuples: the
     * full eight-handler combination counts 150 distinct blocks
@@ -206,14 +206,15 @@ struct rarch_setting
       bool                       boolean;
    } default_value;
 
-   uint32_t             index_offset;
-   uint32_t             size;
    float                step;
 
-   /* Narrow storage for enum-valued fields; every value in use fits,
-    * reads promote back to int, and nothing takes their address.
-    * enum event_command tops out below 1024, the setting and ui type
-    * enums below 64, and the hash enums below 65536. */
+   /* Narrow storage; every value in use fits, reads promote back to
+    * int, and nothing takes their address. enum event_command tops
+    * out below 1024, the setting and ui type enums below 64, the hash
+    * enums below 65536, the largest string target is 8 KiB, and
+    * index_offset holds a user, an entry or a hash enum base. */
+   uint16_t             index_offset;
+   uint16_t             size;
    uint16_t             bind_type;
    uint16_t             cmd_trigger_idx;   /* enum event_command      */
    uint16_t             enum_idx;          /* enum msg_hash_enums     */
@@ -224,7 +225,6 @@ struct rarch_setting
    uint8_t              browser_selection_type; /* enum setting_type  */
    uint8_t              type;              /* enum setting_type       */
    uint8_t              free_flags;
-   uint8_t              index;
 };
 
 /* An ST_UINT or ST_INT row's value. Most rows own the word their

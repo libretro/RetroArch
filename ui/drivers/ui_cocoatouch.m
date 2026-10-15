@@ -1191,9 +1191,9 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
       }
       options = (char*)calloc(_len, sizeof(char));
       string_list_join_concat(options, _len, icons, "|");
-      if (appicon_setting->values)
-         free((void*)appicon_setting->values);
-      appicon_setting->values = options;
+      if (appicon_setting->aux.values)
+         free((void*)appicon_setting->aux.values);
+      appicon_setting->aux.values = options;
    }
 
 #if TARGET_OS_TV

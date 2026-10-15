@@ -18150,7 +18150,7 @@ static bool menu_displaylist_ctl_internal(
                               char val_d[16];
                               char val_s[NAME_MAX_LENGTH];
                               char orig_val[NAME_MAX_LENGTH];
-                              const char *values        = setting->values;
+                              const char *values        = setting->aux.values;
                               const char *p             = values;
                               unsigned i                = 0;
                               bool checked_found        = false;
@@ -18579,7 +18579,7 @@ static bool menu_displaylist_ctl_internal(
                      case ST_STRING_OPTIONS:
                         {
                            char val_d[16];
-                           const char *p       = setting->values;
+                           const char *p       = setting->aux.values;
                            unsigned i          = 0;
                            int checked_found   = 0;
                            unsigned checked    = 0;

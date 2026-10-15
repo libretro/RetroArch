@@ -228,8 +228,8 @@ void win32_menubar_rebuild(void);
 #define CONFIG_FLOAT(a, b, c, d, e, f, g, h, i, j, k, l) \
    config_float(a, b, c, d, e, f, g, h, i, j, k, l)
 
-#define CONFIG_DIR(a, b, c, d, e, f, g, h, i, j, k, l, m) \
-   config_dir(a, b, c, d, e, f, g, h, i, j, k, l, m)
+#define CONFIG_DIR(a, b, c, d, e, f, g, h, i, j, k, l) \
+   config_dir(a, b, c, d, e, f, g, h, i, j, k, l)
 
 #define CONFIG_PATH(a, b, c, d, e, f, g, h, i, j, k, l) \
    config_path(a, b, c, d, e, f, g, h, i, j, k, l)
@@ -273,8 +273,8 @@ void win32_menubar_rebuild(void);
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_hex(a, b, c, d, e, f, g, h, i, j, k, l)
 
-#define CONFIG_BIND_ALT(a, b, d, e, f, g, h, i, j, k) \
-   config_bind_alt(a, b, d, e, f, g, h, i, j, k)
+#define CONFIG_BIND_ALT(a, b, d, e, f, g, h, i, j) \
+   config_bind_alt(a, b, d, e, f, g, h, i, j)
 
 #define CONFIG_BIND(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
@@ -343,7 +343,7 @@ static const setting_actions_t *settings_actions_intern(
 }
 
 
-#define MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, str) ((*(list))[MENU_SETTINGS_LIST_CURRENT_IDX((list_info))].values = (str))
+#define MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, str) ((*(list))[MENU_SETTINGS_LIST_CURRENT_IDX((list_info))].aux.values = (str))
 
 #define MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, str) (*(list))[MENU_SETTINGS_LIST_CURRENT_IDX(list_info)].cmd_trigger_idx = (str)
 
@@ -362,7 +362,7 @@ static const setting_actions_t *settings_actions_intern(
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], a_left) \
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], a_right) \
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], string_rep) \
-      (*list)[list_info->index - 1].index_offset = msg_enum_base; \
+      (*list)[list_info->index - 1].index_offset = (uint16_t)msg_enum_base; \
       menu_settings_list_current_add_range(list, list_info, min, max, step, true, true);
 
 enum settings_list_type
@@ -1763,9 +1763,7 @@ static rarch_setting_t setting_action_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -1827,9 +1825,7 @@ static rarch_setting_t setting_group_setting(
    if (     type == ST_GROUP
          && string_is_equal(parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR))
       result.free_flags |= SD_FREE_FLAG_MAIN_MENU_GROUP;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -1897,9 +1893,7 @@ static rarch_setting_t setting_float_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -1973,9 +1967,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
     * the strings are owned here as given; the rest are literals. */
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2048,9 +2040,7 @@ static rarch_setting_t setting_size_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2110,7 +2100,7 @@ static rarch_setting_t setting_size_setting(const char* name,
  * bind is stored. */
 static rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description,
-      uint32_t idx, uint32_t idx_offset,
+      uint32_t idx_offset,
       const struct retro_keybind_def* default_value,
       const char *group, const char *subgroup,
       const char *parent_group,
@@ -2125,10 +2115,8 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = idx;
-   result.index_offset              = idx_offset;
+   result.index_offset              = (uint16_t)idx_offset;
    result.offset_by                 = 0;
 
    result.min                       = 0.0;
@@ -2220,7 +2208,6 @@ static int setting_bool_action_ok_default(
  * @target             : Target of string setting.
  * @size               : Size of string setting.
  * @default_value      : Default value (in string format).
- * @empty              : TODO/FIXME: ???
  * @group              : Group that the setting belongs to.
  * @subgroup           : Subgroup that the setting belongs to.
  * @change_handler     : Function callback for change handler function pointer.
@@ -2232,7 +2219,7 @@ static int setting_bool_action_ok_default(
  **/
 static rarch_setting_t setting_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
-      unsigned size, const char* default_value, const char *empty,
+      unsigned size, const char* default_value,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler,
       change_handler_t read_handler,
@@ -2243,16 +2230,14 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.enum_idx                  = MSG_UNKNOWN;
    result.type                      = type;
 
-   result.size                      = size;
+   result.size                      = (uint16_t)size;
 
    /* Callers that build a runtime name hand over their own copies
     * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
     * the strings are owned here as given; the rest are literals. */
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2267,8 +2252,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.browser_selection_type    = ST_NONE;
    result.step                      = 0.0f;
    result.aux.rounding_fraction         = NULL;
-
-   result.aux.empty_path            = empty;
    result.value.target.string       = target;
    result.default_value.string      = default_value;
 
@@ -2317,7 +2300,6 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
  * @target             : Target of bind setting.
  * @size               : Size of string setting.
  * @default_value      : Default value.
- * @empty              : N/A.
  * @values             : Values, separated by a delimiter.
  * @group              : Group that the setting belongs to.
  * @subgroup           : Subgroup that the setting belongs to.
@@ -2331,18 +2313,18 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 static rarch_setting_t setting_string_setting_options(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value,
-      const char *empty, const char *values,
+      const char *values,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler,
       bool dont_use_enum_idx)
 {
   rarch_setting_t result = setting_string_setting(type, name,
-        short_description, target, size, default_value, empty, group,
+        short_description, target, size, default_value, group,
         subgroup, parent_group, change_handler, read_handler,
         dont_use_enum_idx);
 
 
-  result.values          = values;
+  result.aux.values      = values;
    SETTINGS_ACTION_SET(start, &result, setting_generic_action_start_default)
   return result;
 }
@@ -2370,9 +2352,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 
    result.name                      = name;
    result.short_description         = name;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2442,9 +2422,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2515,9 +2493,7 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.name                      = name;
    result.short_description         = short_description;
-   result.values                    = NULL;
 
-   result.index                     = 0;
    result.index_offset              = 0;
    result.offset_by                 = 0;
 
@@ -2796,7 +2772,7 @@ static void config_path(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          s, (unsigned)len,
-         default_value, "",
+         default_value,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2813,7 +2789,6 @@ static void config_dir(
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
-      enum msg_hash_enums empty_enum_idx,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
@@ -2829,7 +2804,6 @@ static void config_dir(
          msg_hash_to_str(SHORT_enum_idx),
          s, (unsigned)len,
          default_value,
-         msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2864,7 +2838,7 @@ static void config_string(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          s, (unsigned)len,
-         default_value, "",
+         default_value,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -2891,7 +2865,7 @@ static void config_string_alt(
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          strdup(label), strdup(shortname),
          s, (unsigned)len,
-         default_value, "",
+         default_value,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, true);
    /* Request name and short description to be freed later */
@@ -2920,7 +2894,7 @@ static void config_string_options(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          s, (unsigned)len,
-         default_value, "", values,
+         default_value, values,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_COMBOBOX;
@@ -2934,7 +2908,7 @@ static void config_string_options(
 static void config_bind_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      uint32_t player, uint32_t player_offset,
+      uint32_t player_offset,
       const char *name, const char *SHORT,
       const struct retro_keybind_def *default_value,
       rarch_setting_group_info_t *group_info,
@@ -2948,7 +2922,7 @@ static void config_bind_alt(
 
    (*list)[list_info->index++] = setting_bind_setting(
          strdup(name), strdup(SHORT),
-         player, player_offset,
+         player_offset,
          default_value,
          group_info->name, subgroup_info->name, parent_group,
          true);
@@ -11814,18 +11788,16 @@ typedef struct setting_desc
      SDESC_FLG_DEF_SETTINGS, (uint8_t)(_uitype), 0, \
      (vals), (uint32_t)offsetof(settings_t, paths.def_field) }
 
-/* Directory rows: like path rows, but with the ST_DIR empty-value
- * label carried in the otherwise unused offset_by slot (documented
- * dual use; msg_hash enums fit int16).  Defaults are address
- * constants such as g_defaults.dirs[x], legal in static
- * initializers, carried in the rounding slot. */
+/* Directory rows: like path rows.  Defaults are address constants
+ * such as g_defaults.dirs[x], legal in static initializers, carried
+ * in the rounding slot.  The def files' empty label is not stored. */
 #define SDESC_DIR_ROW(field, label, def, empty_label, sd_flags, cmd, _start) \
    { (uint32_t)offsetof(settings_t, paths.field), (sd_flags), \
      MENU_ENUM_LABEL_##label, MENU_ENUM_LABEL_VALUE_##label, \
      0.0f, 0.0f, 0.0f, (def), NULL, NULL, \
      (int32_t)sizeof(((settings_t*)0)->paths.field), 0.0f, \
      (_start), NULL, NULL, NULL, (uint16_t)(cmd), \
-     (int16_t)MENU_ENUM_LABEL_VALUE_##empty_label, SDESC_DIR, 0, 0, 0 }
+     0, SDESC_DIR, 0, 0, 0 }
 
 #define SDESC_RANGE_MINMAX \
    (SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN | SDESC_FLG_ENFORCE_MAX)
@@ -12002,7 +11974,6 @@ static void settings_list_add_desc(
                   d->name_enum,
                   d->short_enum,
                   d->rounding,
-                  (enum msg_hash_enums)(uint16_t)d->offset_by,
                   group_info,
                   subgroup_info,
                   parent_group,
@@ -12040,7 +12011,7 @@ static void settings_list_add_desc(
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], d->action_change)
       if (d->repr)
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], d->repr)
-      if (d->offset_by != 0 && d->type != SDESC_DIR)
+      if (d->offset_by != 0)
          (*list)[list_info->index - 1].offset_by = d->offset_by;
       if (d->desc_flags & SDESC_FLG_HAS_RANGE)
          menu_settings_list_current_add_range(list, list_info,
@@ -12147,7 +12118,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_device_index)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_device_index)
@@ -12176,7 +12146,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &get_string_representation_split_joycon)
       menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
@@ -12193,7 +12162,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_mouse_index)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_mouse_index)
@@ -12216,7 +12184,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_keyboard_index)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_keyboard_index)
@@ -12239,7 +12206,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_analog_dpad_mode)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_analog_dpad_mode)
@@ -12261,7 +12227,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_input_aim_stick)
@@ -12280,7 +12245,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_device_reservation_type)
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_device_reservation_type)
@@ -12304,7 +12268,6 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_select_reserved_device)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_input_device_reserved_device_name)
@@ -12321,7 +12284,6 @@ static bool setting_append_list_input_player_options(
             &group_info,
             &subgroup_info,
             parent_group);
-      (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_bind_all)
 
@@ -12332,7 +12294,6 @@ static bool setting_append_list_input_player_options(
             &group_info,
             &subgroup_info,
             parent_group);
-      (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_bind_defaults)
 
@@ -12344,7 +12305,6 @@ static bool setting_append_list_input_player_options(
             &group_info,
             &subgroup_info,
             parent_group);
-      (*list)[list_info->index - 1].index          = user + 1;
       (*list)[list_info->index - 1].index_offset   = user;
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_bind_all_save_autoconfig)
 #endif
@@ -12421,7 +12381,6 @@ static bool setting_append_list_input_player_options(
 
          CONFIG_BIND_ALT(
                list, list_info,
-               user + 1,
                user,
                name,
                label,
@@ -12485,7 +12444,6 @@ static bool setting_append_list_input_libretro_device_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_libretro_device_type)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_libretro_device_type)
@@ -12550,7 +12508,6 @@ static bool setting_append_list_input_remap_port_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
       SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_remap_port)
       SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_remap_port)
@@ -14278,9 +14235,9 @@ static void settings_build_main_menu(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            (*list)[list_info->index - 1].size                = (uint32_t)path_get_realsize(RARCH_PATH_CORE);
+            (*list)[list_info->index - 1].size                = (uint16_t)path_get_realsize(RARCH_PATH_CORE);
             (*list)[list_info->index - 1].value.target.string = path_get_ptr(RARCH_PATH_CORE);
-            (*list)[list_info->index - 1].values              = ext_name;
+            (*list)[list_info->index - 1].aux.values          = ext_name;
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_LOAD_CORE);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
 
@@ -16511,7 +16468,6 @@ static void settings_build_input(
                      &subgroup_info,
                      parent_group);
                (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
-               (*list)[list_info->index - 1].index          = user + 1;
                (*list)[list_info->index - 1].index_offset   = user;
 
                MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
@@ -16590,7 +16546,6 @@ static void settings_build_recording(
             MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
             MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
             g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -16640,7 +16595,7 @@ static void settings_build_input_hotkey(
 #endif
             CONFIG_BIND_ALT(
                   list, list_info,
-                  0, 0,
+                  0,
                   input_config_bind_map_get_base(i),
                   input_config_bind_map_get_desc(i),
                   input_config_bind_def(0, i),
@@ -17206,7 +17161,7 @@ static void settings_build_menu(
                   if ((*list)[k].enum_idx == MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME)
                   {
                      (*list)[k].type   = ST_STRING_OPTIONS;
-                     (*list)[k].values = ozone_color_theme_values();
+                     (*list)[k].aux.values = ozone_color_theme_values();
                      break;
                   }
                }
@@ -17516,7 +17471,6 @@ static void settings_build_user_interface(
             MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
             MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
             g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS],
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -18587,7 +18541,6 @@ static void settings_build_directory(
                MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -18602,7 +18555,6 @@ static void settings_build_directory(
                MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -18621,7 +18573,6 @@ static void settings_build_directory(
             MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
             MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
             g_defaults.dirs[DEFAULT_DIR_SRAM],
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -18637,7 +18588,6 @@ static void settings_build_directory(
             MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
             MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
             g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -19266,9 +19216,9 @@ void menu_setting_free(rarch_setting_t *setting)
             switch (1 << n)
             {
                case SD_FREE_FLAG_VALUES:
-                  if (setting->values)
-                     free((void*)setting->values);
-                  setting->values = NULL;
+                  if (setting->aux.values)
+                     free((void*)setting->aux.values);
+                  setting->aux.values = NULL;
                   break;
                case SD_FREE_FLAG_NAME:
                   if (setting->name)
@@ -19293,7 +19243,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].enum_idx                         = MSG_UNKNOWN; \
    (*&list)[pos].enum_value_idx                   = MSG_UNKNOWN; \
    (*&list)[pos].type                             = ST_NONE; \
-   (*&list)[pos].index                            = 0; \
    (*&list)[pos].index_offset                     = 0; \
    (*&list)[pos].offset_by                        = 0; \
    (*&list)[pos].bind_type                        = 0; \
@@ -19306,7 +19255,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].aux.rounding_fraction                = NULL; \
    (*&list)[pos].name                             = NULL; \
    (*&list)[pos].short_description                = NULL; \
-   (*&list)[pos].values                           = NULL; \
    (*&list)[pos].actions                          = &settings_actions_none; \
    (*&list)[pos].default_value.fraction           = 0.0f; \
    (*&list)[pos].value.target.fraction            = NULL; \
@@ -20143,7 +20091,8 @@ static void menu_setting_validation_dump(rarch_setting_t *list)
                   ? s->aux.rounding_fraction : "",
             ok_tag, left_tag, rght_tag, strt_tag, sel_tag,
             s->short_description ? s->short_description : "",
-            s->values ? s->values : "",
+            (s->type != ST_FLOAT && s->aux.values)
+                  ? s->aux.values : "",
             repr);
    }
 

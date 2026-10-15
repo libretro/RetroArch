@@ -521,7 +521,7 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.string)
 {
-   addItems(QString(setting->values).split('|'));
+   addItems(QString(setting->aux.values).split('|'));
 
    connect(this, SIGNAL(currentTextChanged(const QString&)), this,
 		 SLOT(onCurrentTextChanged(const QString&)));
@@ -964,7 +964,7 @@ void FileButton::onClicked(bool)
       this,
       "Choose File",
       currentPath(),
-      QString(m_setting->short_description) + " (*." + QString(m_setting->values) + ")");
+      QString(m_setting->short_description) + " (*." + QString(m_setting->aux.values) + ")");
 
    if (!file.isNull())
    {

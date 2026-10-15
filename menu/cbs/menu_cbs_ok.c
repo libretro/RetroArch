@@ -7732,7 +7732,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->actions->repr)
          {
-            const char *tok       = setting->values;
+            const char *tok       = setting->aux.values;
             unsigned tok_idx      = 0;
 
             while (tok)
