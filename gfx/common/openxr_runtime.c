@@ -114,7 +114,7 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    uint32_t num_exts;
    uint32_t cap;
    /* The graphics and binding extensions, then the optional ones. */
-   const char *exts[8];
+   const char *exts[10];
    XrInstanceCreateInfo ici;
    PFN_xrEnumerateInstanceExtensionProperties enum_exts;
    PFN_xrCreateInstance create_instance;
@@ -168,6 +168,10 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    if (rt->hand_tracking)
       rt->hand_data_source = OPENXR_RUNTIME_WANT(
             XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME);
+   /* To ask for the clocks a core's frame needs: see
+    * openxr_frame_ask_perf. */
+   rt->perf_settings    = OPENXR_RUNTIME_WANT(
+         XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME);
    cap = (uint32_t)ARRAY_SIZE(exts);
    if (rt->platform.instance_ext)
       OPENXR_RUNTIME_WANT(rt->platform.instance_ext);
@@ -202,6 +206,9 @@ enum openxr_runtime_result openxr_runtime_create_instance(
          && (  !OPENXR_FN(rt, rt, EnumerateDisplayRefreshRatesFB)
             || !OPENXR_FN(rt, rt, RequestDisplayRefreshRateFB)))
       rt->refresh_ext = false;
+   if (     rt->perf_settings
+         && !OPENXR_FN(rt, rt, PerfSettingsSetPerformanceLevelEXT))
+      rt->perf_settings = false;
    return OPENXR_RUNTIME_OK;
 }
 

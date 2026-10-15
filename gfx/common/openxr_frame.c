@@ -376,6 +376,38 @@ static void openxr_frame_tick(openxr_frame_t *f)
    openxr_frame_tick_notify(f);
 }
 
+/* Allow CPU/GPU performance boosting. */
+static void openxr_frame_ask_perf(openxr_frame_t *f)
+{
+   XrResult cpu, gpu;
+   int want = video_xr_perf_boost() ? 1 : 0;
+   if (     want == f->asked_perf
+         || !f->rt->perf_settings
+         || !f->rt->PerfSettingsSetPerformanceLevelEXT)
+      return;
+   if (!want && f->asked_perf < 0)
+   {
+      f->asked_perf = 0;
+      return;
+   }
+   f->asked_perf = want;
+   cpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
+         XR_PERF_SETTINGS_DOMAIN_CPU_EXT, want
+         ? XR_PERF_SETTINGS_LEVEL_BOOST_EXT
+         : XR_PERF_SETTINGS_LEVEL_SUSTAINED_LOW_EXT);
+   gpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
+         XR_PERF_SETTINGS_DOMAIN_GPU_EXT, want
+         ? XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT
+         : XR_PERF_SETTINGS_LEVEL_SUSTAINED_LOW_EXT);
+   if (XR_SUCCEEDED(cpu) && XR_SUCCEEDED(gpu))
+      RARCH_LOG("[OpenXR] Performance: %s.\n", want
+            ? "CPU boost, GPU sustained high"
+            : "CPU and GPU sustained low");
+   else
+      RARCH_WARN("[OpenXR] Performance levels refused (CPU %d, GPU %d).\n",
+            (int)cpu, (int)gpu);
+}
+
 /* The rate the drawing thread wants, asked once a session and value. */
 static void openxr_frame_ask_rate(openxr_frame_t *f)
 {
@@ -428,6 +460,7 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
             1000000000.0 / (double)f->period.published);
    }
    openxr_frame_ask_rate(f);
+   openxr_frame_ask_perf(f);
    f->tracked.predicted_time = state.predictedDisplayTime;
    /* The world moves at the next core frame, so the screens wait too. */
    if (!f->repeating && retro_atomic_load_acquire_int(&f->recenter))
@@ -726,6 +759,7 @@ bool openxr_frame_start(openxr_frame_t *f)
    f->tick_count    = 0;
    f->tick_interval = 0;
    f->asked_rate    = 0.0f;
+   f->asked_perf    = -1;
    f->frame_failed  = false;
    retro_atomic_store_release_int(&f->thread_started, 0);
    retro_atomic_store_release_int(&f->quit, 0);
@@ -775,6 +809,7 @@ bool openxr_frame_start_inline(openxr_frame_t *f)
    video_xr_period_init(&f->period);
    retro_atomic_store_release_int(&f->period_ns, 0);
    f->asked_rate     = 0.0f;
+   f->asked_perf     = -1;
    f->frame_failed   = false;
    f->pace_anchor_ns = 0;
    f->inline_host    = true;

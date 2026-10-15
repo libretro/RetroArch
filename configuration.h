@@ -658,6 +658,7 @@ typedef struct settings
       bool video_smooth;
       bool video_stereo_swap_eyes;
       bool video_openxr_enable;
+      bool video_openxr_perf_boost;
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;

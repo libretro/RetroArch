@@ -165,6 +165,9 @@ typedef struct openxr_frame
    unsigned num_rates;
    retro_atomic_int_t want_rate;
    float asked_rate;               /* XR thread */
+   /* XR_EXT_performance_settings: the clocks last asked for this
+    * session, -1 none yet, 0 the headset's, 1 boosted. XR thread. */
+   int asked_perf;
    PFN_xrWaitFrame WaitFrame;
    PFN_xrBeginFrame BeginFrame;
    PFN_xrEndFrame EndFrame;

@@ -290,6 +290,12 @@ float video_xr_pick_rate(const float *rates, unsigned count, float fps,
 float video_xr_request_rate(unsigned setting, const float *rates,
       unsigned count, float fps, unsigned ceiling);
 
+/* Headset Performance Boost: whether a session asks the headset for
+ * its higher clocks. Set from the setting each poll, read by the XR
+ * thread; any thread. */
+void video_xr_set_perf_boost(bool boost);
+bool video_xr_perf_boost(void);
+
 RETRO_END_DECLS
 
 #endif
