@@ -264,6 +264,29 @@ network and stdin interfaces, which have no deadline, and leaves
 nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
 
+`WATCH <label> <address>` watches the byte at a system address, and
+every reply that steps the content - `RUN_FRAMES` and `PRESS` - then
+carries it, as a line of label, address and value after the command's
+own answer:
+
+```
+PRESS 1 right+a 4
+x	7e0086	40
+mode	7e0770	8
+```
+
+A step and the look that follows it become one request. Without this, a
+step is the press and then a read for each thing the assistant wants to
+know; the field runs that drove this spent most of their calls on those
+reads.
+
+`WATCH` with no label answers what is watched, `WATCH <label> off` stops
+watching one, and a label already watched keeps its place in the list
+when its address changes. Eight at once, each found when it is set - an
+address nothing maps is refused there rather than read later - and all
+of them dropped when content closes, which is what invalidates where
+they point.
+
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
 `<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with

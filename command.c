@@ -2168,6 +2168,42 @@ bool command_get_log(command_t *cmd, const char *arg)
 }
 #endif
 
+/* The bytes a client asked to be told about, by the labels it gave
+ * them. A step is a request and a look - press, then read where the
+ * player is, then read the enemies, then read the game mode - so the
+ * look rides along with the step instead of being three more requests.
+ *
+ * The pointer is found once, when the watch is set, as RUN_UNTIL finds
+ * the byte it waits on; it is dropped when content closes, which is
+ * what invalidates it. */
+#define COMMAND_WATCH_MAX 8
+
+static struct
+{
+   const uint8_t *at;
+   unsigned       address;
+   char           label[16];
+} command_watches[COMMAND_WATCH_MAX];
+static unsigned command_watch_count;
+
+void command_watch_clear(void)
+{
+   command_watch_count = 0;
+}
+
+/* The watches as lines of label, address and value, which is what a
+ * line client reads and what the rows of a structured reply are. */
+static size_t command_watch_lines(char *s, size_t len)
+{
+   size_t   _len = 0;
+   unsigned i;
+   for (i = 0; i < command_watch_count && _len + 40 < len; i++)
+      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%x\t%u\n",
+            command_watches[i].label, command_watches[i].address,
+            (unsigned)*command_watches[i].at);
+   return _len;
+}
+
 /* RUN_FRAMES, PRESS or RUN_UNTIL in progress: the frames still to run,
  * the buttons PRESS holds until they have, the byte RUN_UNTIL waits on,
  * and the reply owed. One at a time, so one of these: a second replaces
@@ -2234,10 +2270,18 @@ static void command_run_frames_release(void)
 
 static void command_run_frames_answer(const char *msg, bool is_error)
 {
+   /* the step's own line, then a line for each byte watched: room for
+    * the longest reply and every watch */
+   char   out[256 + COMMAND_WATCH_MAX * 40];
+   size_t _len = strlcpy(out, msg, sizeof(out));
+
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
    command_run_frames_release();
-   command_deferred_send(&command_run_frames_st.deferred, msg, strlen(msg),
+   /* a failure is its reason, not a reading */
+   if (!is_error && _len < sizeof(out))
+      _len += command_watch_lines(out + _len, sizeof(out) - _len);
+   command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
 }
 
@@ -2539,6 +2583,103 @@ static uint8_t *command_memory_get_pointer(
       const rarch_system_info_t* sys_info,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len);
+
+/* WATCH [label] [address|off]
+ *
+ * With nothing, what is watched now. With a label and an address, the
+ * byte there is watched under that label and carried by every reply
+ * that steps the content. With a label and "off", it is not.
+ *
+ * Answers with the list either way, so a client sees what it has. */
+bool command_watch(command_t *cmd, const char *arg)
+{
+   char      reply[64 + COMMAND_WATCH_MAX * 40];
+   char      label[16];
+   char      reason[128];
+   size_t    _len = 0;
+   unsigned  i;
+   const char *sp;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg)
+   {
+      if (!(sp = strchr(arg, ' ')) || (size_t)(sp - arg) >= sizeof(label))
+      {
+         command_reply_error(cmd, "WATCH", "a label of up to %u "
+               "characters, then an address or \"off\"",
+               (unsigned)(sizeof(label) - 1));
+         return false;
+      }
+      memcpy(label, arg, (size_t)(sp - arg));
+      label[sp - arg] = '\0';
+      while (*++sp == ' ')
+         ;
+      /* a label already watched keeps its place in the list, so the
+       * rows a client reads stay where they were */
+      for (i = 0; i < command_watch_count; i++)
+         if (string_is_equal(command_watches[i].label, label))
+            break;
+      if (string_is_equal(sp, "off"))
+      {
+         if (i < command_watch_count)
+         {
+            memmove(&command_watches[i], &command_watches[i + 1],
+                  (command_watch_count - i - 1)
+                  * sizeof(*command_watches));
+            command_watch_count--;
+         }
+      }
+      else
+      {
+         runloop_state_t *runloop_st = runloop_state_get_ptr();
+         unsigned  avail             = 0;
+         char     *end               = NULL;
+         unsigned  address           = (unsigned)strtoul(sp, &end, 16);
+         uint8_t  *at;
+         if (!end || end == sp || *end)
+         {
+            command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
+                  "\"off\" to stop watching %s", label);
+            return false;
+         }
+         /* only a label that is not watched yet needs room */
+         if (     i == command_watch_count
+               && command_watch_count >= COMMAND_WATCH_MAX)
+         {
+            command_reply_error(cmd, "WATCH", "at most %u bytes watched "
+                  "at once", (unsigned)COMMAND_WATCH_MAX);
+            return false;
+         }
+         /* found now, as RUN_UNTIL finds the byte it waits on, so an
+          * address nothing maps is refused rather than read later */
+         if (!(at = command_memory_get_pointer(&runloop_st->system,
+                     address, &avail, 0, reason, sizeof(reason))))
+         {
+            char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
+               ? reason + STRLEN_CONST(" -1 ") : reason;
+            char *nl  = strchr(why, '\n');
+            if (nl)
+               *nl = '\0';
+            command_reply_error(cmd, "WATCH", "%s", *why ? why
+                  : "no memory at that address");
+            return false;
+         }
+         if (i == command_watch_count)
+            command_watch_count++;
+         command_watches[i].at      = at;
+         command_watches[i].address = address;
+         strlcpy(command_watches[i].label, label,
+               sizeof(command_watches[0].label));
+      }
+   }
+
+   _len = command_watch_lines(reply, sizeof(reply));
+   if (!_len)
+      _len = strlcpy_lit(reply, "WATCH none\n", sizeof(reply));
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
 
 /* RUN_UNTIL <address> <condition> <value> [max frames]
  *

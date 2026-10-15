@@ -216,6 +216,83 @@ int main(int argc, char **argv)
    CHECK(command_read_memory(&cmd,"1009 1")
          && !strcmp(reply,"READ_CORE_MEMORY 1009 00\n"));
 
+   /* PRESS lets go only of what it pressed itself: a button a client
+    * holds with SET_INPUT is still held once the press ends. GET_INPUT
+    * is what makes this checkable. */
+   CHECK(command_release_input(&cmd,""));
+   CHECK(command_set_input(&cmd,"1 a 1"));
+   CHECK(command_press(&cmd,"1 a 2"));
+   runloop_iterate(); runloop_iterate();
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\ta\tnone\n"));
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 a+b 2"));
+   runloop_iterate(); runloop_iterate();
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\ta\tnone\n"));
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 b 1"));
+   runloop_iterate();
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\tnone\tnone\n"));
+
+   /* WATCH carries a look along with every step. Known bytes first:
+    * the memory tests above wrote over what retro_init left. */
+   CHECK(command_write_memory(&cmd,"1001 11 22 33"));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"") && !strcmp(reply,"WATCH none\n"));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"one 1001") && !strcmp(reply,"one\t1001\t17\n"));
+   CHECK(command_watch(&cmd,"two 1002"));
+   reply[0]=0;
+   CHECK(command_run_frames(&cmd,"1"));
+   runloop_iterate();
+   CHECK(!strcmp(reply,"RUN_FRAMES 1\none\t1001\t17\ntwo\t1002\t34\n"));
+   reply[0]=0;
+   CHECK(command_press(&cmd,"1 b 1"));
+   runloop_iterate();
+   CHECK(!strcmp(reply,"PRESS 1 b 1\none\t1001\t17\ntwo\t1002\t34\n"));
+   /* a failure is its reason, not a reading */
+   reply[0]=0;
+   CHECK(command_run_frames(&cmd,"1"));
+   command_run_frames_cancel("tidying up");
+   CHECK(!strcmp(reply,"RUN_FRAMES ERROR tidying up"));
+   /* a label keeps its place when its address changes */
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"one 1003")
+         && !strcmp(reply,"one\t1003\t51\ntwo\t1002\t34\n"));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"one off") && !strcmp(reply,"two\t1002\t34\n"));
+   /* and what it refuses */
+   reply[0]=0;
+   CHECK(!command_watch(&cmd,"x 99000") && strstr(reply,"WATCH ERROR"));
+   CHECK(!command_watch(&cmd,"x zz") && strstr(reply,"hexadecimal"));
+   CHECK(!command_watch(&cmd,"nospace") && strstr(reply,"WATCH ERROR"));
+   {
+      unsigned w;
+      char req[32];
+      /* room for eight, counted from empty */
+      CHECK(command_watch(&cmd,"two off"));
+      for (w = 0; w < 8; w++)
+      {
+         snprintf(req,sizeof(req),"w%u 100%u",w,w);
+         CHECK(command_watch(&cmd,req));
+      }
+      reply[0]=0;
+      CHECK(!command_watch(&cmd,"w9 1009")
+            && strstr(reply,"at most 8 bytes watched"));
+      /* but replacing one of the eight still works */
+      CHECK(command_watch(&cmd,"w0 1005"));
+      for (w = 0; w < 8; w++)
+      {
+         snprintf(req,sizeof(req),"w%u off",w);
+         CHECK(command_watch(&cmd,req));
+      }
+      reply[0]=0;
+      CHECK(command_watch(&cmd,"") && !strcmp(reply,"WATCH none\n"));
+   }
+
    /* several controls at once */
    reply[0]=0;
    CHECK(command_set_input(&cmd,"1 b+a 1") && !strcmp(reply,"1\tb a\tnone\n"));
