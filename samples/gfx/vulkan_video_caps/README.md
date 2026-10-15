@@ -24,6 +24,19 @@ and run the executable natively on Windows for hardware evidence. It never
 submits video work. Missing loaders/devices skip. A selected HEVC family is
 queried separately for Main8 and Main10 profile capabilities.
 
+The probe also queries AV1 Main 8/10-bit capabilities with film grain both
+requested and disabled. The AV1 StdVideo and decode extension declarations
+come from Khronos Vulkan-Headers v1.4.328; only comment syntax and include
+paths are adapted. AV1 is not added to the playback codec mask yet.
+
+Native AV1 capability evidence (RTX 5090): all four queries succeed, with
+128x128 minimum and 8192x8192 maximum extent, 16 DPB slots and 16 active
+references. Decode flags are 0x1 (coincident DPB/output); distinct output
+is not advertised. This is capability evidence only: AV1 session creation,
+parameter mapping, submission, grain pixels and playback remain pending.
+A zero-copy output path must retain images until both references and display
+leases release them, including show-existing-frame replay.
+
 Native Windows evidence: NVIDIA GeForce RTX 5090 exposes H.264 and HEVC on
 family 3; both HEVC Main8/Main10 capability queries succeed, with maximum
 8192x8192 coded extent and 16 DPB slots. Linux llvmpipe exposes neither codec

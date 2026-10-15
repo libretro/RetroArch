@@ -4,7 +4,9 @@ SAMPLED_DEPS = $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
       $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc \
       $(RA)/libretro-common/include/formats/video_hw_frame.h
 TARGET := vulkan_video_caps_test$(EXE)
-VP9_DEPS := $(RA)/gfx/common/vulkan_vp9_picture.h $(RA)/gfx/include/vulkan/vulkan_core.h \
+AV1_DEPS := $(RA)/gfx/include/vk_video/vulkan_video_codec_av1std.h \
+      $(RA)/gfx/include/vk_video/vulkan_video_codec_av1std_decode.h
+VP9_DEPS := $(AV1_DEPS) $(RA)/gfx/common/vulkan_vp9_picture.h $(RA)/gfx/include/vulkan/vulkan_core.h \
       $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std.h \
       $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std_decode.h
 PARAMS := hevc_params_test$(EXE)

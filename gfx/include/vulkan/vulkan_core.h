@@ -676,6 +676,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR = 1000181000,
     VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD = 1000183000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD = 1000185000,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR = 1000512000,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PICTURE_INFO_KHR = 1000512001,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR = 1000512003,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR = 1000512004,
+    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR = 1000512005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR = 1000514000,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR = 1000514001,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR = 1000514002,
@@ -7965,6 +7970,7 @@ typedef enum VkVideoCodecOperationFlagBitsKHR {
     VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR = 0x00020000,
     VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR = 0x00000001,
     VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR = 0x00000002,
+    VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR = 0x00000004,
     VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR = 0x00000008,
     VK_VIDEO_CODEC_OPERATION_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkVideoCodecOperationFlagBitsKHR;
@@ -9924,6 +9930,51 @@ typedef struct VkPhysicalDeviceShaderClockFeaturesKHR {
     VkBool32           shaderSubgroupClock;
     VkBool32           shaderDeviceClock;
 } VkPhysicalDeviceShaderClockFeaturesKHR;
+
+
+
+/* VK_KHR_video_decode_av1 from Vulkan-Headers v1.4.328. */
+#define VK_KHR_video_decode_av1 1
+#include "../vk_video/vulkan_video_codec_av1std.h"
+#include "../vk_video/vulkan_video_codec_av1std_decode.h"
+#define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR 7U
+#define VK_KHR_VIDEO_DECODE_AV1_SPEC_VERSION 1
+#define VK_KHR_VIDEO_DECODE_AV1_EXTENSION_NAME "VK_KHR_video_decode_av1"
+typedef struct VkVideoDecodeAV1ProfileInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    StdVideoAV1Profile    stdProfile;
+    VkBool32              filmGrainSupport;
+} VkVideoDecodeAV1ProfileInfoKHR;
+
+typedef struct VkVideoDecodeAV1CapabilitiesKHR {
+    VkStructureType     sType;
+    void*               pNext;
+    StdVideoAV1Level    maxLevel;
+} VkVideoDecodeAV1CapabilitiesKHR;
+
+typedef struct VkVideoDecodeAV1SessionParametersCreateInfoKHR {
+    VkStructureType                     sType;
+    const void*                         pNext;
+    const StdVideoAV1SequenceHeader*    pStdSequenceHeader;
+} VkVideoDecodeAV1SessionParametersCreateInfoKHR;
+
+typedef struct VkVideoDecodeAV1PictureInfoKHR {
+    VkStructureType                        sType;
+    const void*                            pNext;
+    const StdVideoDecodeAV1PictureInfo*    pStdPictureInfo;
+    int32_t                                referenceNameSlotIndices[VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR];
+    uint32_t                               frameHeaderOffset;
+    uint32_t                               tileCount;
+    const uint32_t*                        pTileOffsets;
+    const uint32_t*                        pTileSizes;
+} VkVideoDecodeAV1PictureInfoKHR;
+
+typedef struct VkVideoDecodeAV1DpbSlotInfoKHR {
+    VkStructureType                          sType;
+    const void*                              pNext;
+    const StdVideoDecodeAV1ReferenceInfo*    pStdReferenceInfo;
+} VkVideoDecodeAV1DpbSlotInfoKHR;
 
 
 

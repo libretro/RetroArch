@@ -88,6 +88,50 @@ static bool probe_vp9(VkPhysicalDevice gpu,
    return feature.videoDecodeVP9 != VK_FALSE;
 }
 
+static void probe_av1(VkPhysicalDevice gpu,
+      PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR get_caps)
+{
+   unsigned depth, grain;
+   for (depth = 8; depth <= 10; depth += 2)
+   {
+      for (grain = 0; grain <= 1; grain++)
+      {
+         VkVideoDecodeAV1ProfileInfoKHR av1;
+         VkVideoProfileInfoKHR profile;
+         VkVideoCapabilitiesKHR caps;
+         VkVideoDecodeCapabilitiesKHR decode;
+         VkVideoDecodeAV1CapabilitiesKHR ac;
+         VkResult ret;
+         av1.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PROFILE_INFO_KHR;
+         av1.pNext = NULL;
+         av1.stdProfile = STD_VIDEO_AV1_PROFILE_MAIN;
+         av1.filmGrainSupport = grain ? VK_TRUE : VK_FALSE;
+         profile.sType = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+         profile.pNext = &av1;
+         profile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+         profile.chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+         profile.lumaBitDepth = profile.chromaBitDepth = depth == 8
+            ? VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR
+            : VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR;
+         caps.sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+         caps.pNext = &decode;
+         decode.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+         decode.pNext = &ac;
+         ac.sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_CAPABILITIES_KHR;
+         ac.pNext = NULL;
+         ret = get_caps(gpu, &profile, &caps);
+         printf("  AV1 Main %u-bit, grain %u: result %d", depth, grain, (int)ret);
+         if (ret == VK_SUCCESS)
+            printf(", extent %ux%u..%ux%u, DPB %u, references %u, flags 0x%x, level %u",
+                  caps.minCodedExtent.width, caps.minCodedExtent.height,
+                  caps.maxCodedExtent.width, caps.maxCodedExtent.height,
+                  caps.maxDpbSlots, caps.maxActiveReferencePictures,
+                  decode.flags, (unsigned)ac.maxLevel);
+         putchar('\n');
+      }
+   }
+}
+
 static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
       PFN_vkGetInstanceProcAddr get_proc)
 {
@@ -100,7 +144,7 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
    VkQueueFamilyVideoPropertiesKHR *video = NULL;
    VkPhysicalDeviceProperties properties;
    unsigned nprops_vp9;
-   int have_vp9 = 0;
+   int have_vp9 = 0, have_av1 = 0;
    uint32_t n = 0, count = 0, i, graphics = UINT32_MAX, codecs, selected = 0;
    int family, ok = 0;
    get_extensions = (PFN_vkEnumerateDeviceExtensionProperties)get_proc(instance, "vkEnumerateDeviceExtensionProperties");
@@ -115,6 +159,11 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
    for (nprops_vp9 = 0; nprops_vp9 < n; nprops_vp9++)
       if (!strcmp(extensions[nprops_vp9].extensionName, VK_KHR_VIDEO_DECODE_VP9_EXTENSION_NAME))
          have_vp9 = 1;
+   for (i = 0; i < n; i++)
+      if (!strcmp(extensions[i].extensionName, VK_KHR_VIDEO_DECODE_AV1_EXTENSION_NAME))
+         have_av1 = 1;
+   if (have_av1 && get_caps)
+      probe_av1(gpu, get_caps);
    if (have_vp9 && get_caps && !probe_vp9(gpu, get_caps, get_proc, instance))
       codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
    get_queues(gpu, &count, NULL);
