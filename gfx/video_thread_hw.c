@@ -41,8 +41,14 @@
 #include <libretro_d3d11.h>
 #include "common/d3d11_hw_interface.h"
 #endif
+/* The d3d9_hlsl driver's, which is the one with the interface */
+#if defined(HAVE_D3D9) && defined(HAVE_HLSL) && !defined(_XBOX)
+#define VIDEO_THREAD_HW_D3D9 1
+#include <libretro_d3d9.h>
+#endif
 
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11) \
+   || defined(VIDEO_THREAD_HW_D3D9) \
    || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #define VIDEO_THREAD_HW_ANY 1
 #endif
@@ -89,6 +95,11 @@ typedef struct
     * slot holds a reference from publish until it is handed over again. */
    ID3D11Texture2D *d3d11_direct;
 #endif
+#ifdef VIDEO_THREAD_HW_D3D9
+   /* Direct3D 9: the core's texture for the slot. Not referenced: that
+    * is device work, which only the device's holder may do. */
+   IDirect3DTexture9 *d3d9_texture;
+#endif
    /* Armed by the video thread after every frame it drives the driver
     * with from this slot, and by the core's thread behind a frame it
     * took back; the next user of the slot waits it first. Handed
@@ -102,6 +113,7 @@ enum hw_api
    HW_API_VULKAN,
    HW_API_D3D12,
    HW_API_D3D11,
+   HW_API_D3D9,
    HW_API_GL
 };
 
@@ -117,6 +129,9 @@ typedef struct
 #endif
 #ifdef HAVE_D3D11
       struct retro_hw_render_interface_d3d11  d3d11;
+#endif
+#ifdef VIDEO_THREAD_HW_D3D9
+      struct retro_hw_render_interface_d3d9   d3d9;
 #endif
       /* OpenGL interposes nothing; this keeps the union non-empty on
        * a build with only OpenGL. */
@@ -346,7 +361,8 @@ static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 }
 #endif /* HAVE_VULKAN */
 
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
+   || defined(VIDEO_THREAD_HW_D3D9)
 /* --- slots that are the core's own texture -----------------------------
  * Vulkan, libretro_d3d12.h version 2 and libretro_d3d11.h version 3:
  * nothing is copied into the slot, the driver reads the core's image or
@@ -374,7 +390,7 @@ static bool hw_slot_queued(const thread_video_t *thr, unsigned i, int st)
    return false;
 }
 
-#if defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#if defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(VIDEO_THREAD_HW_D3D9)
 /* The wait itself, for any slot that is the core's own texture: parks
  * on the ring until the word has moved and the slot is no longer
  * named. */
@@ -632,6 +648,58 @@ static void hw_d3d11_wait_sync_index(void *handle)
 }
 #endif /* HAVE_D3D11 */
 
+#ifdef VIDEO_THREAD_HW_D3D9
+/* --- Direct3D 9 --------------------------------------------------------
+ * The turns on the device are the driver's; the ring gives the core its
+ * sync index and remembers each slot's texture. */
+
+static bool hw_d3d9_lock_context(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   const struct retro_hw_render_interface_d3d9 *real = ring
+      ? (const struct retro_hw_render_interface_d3d9*)ring->real : NULL;
+   return real ? real->lock_context(real->handle) : false;
+}
+
+static void hw_d3d9_unlock_context(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   const struct retro_hw_render_interface_d3d9 *real = ring
+      ? (const struct retro_hw_render_interface_d3d9*)ring->real : NULL;
+   if (real)
+      real->unlock_context(real->handle);
+}
+
+/* Called holding the device, so it must not wait for the video thread */
+static void hw_d3d9_set_texture(void *handle, IDirect3DTexture9 *texture)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   if (ring)
+      ring->slot[ring->index].d3d9_texture = texture;
+}
+
+static unsigned hw_d3d9_get_sync_index(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   return ring ? ring->index : 0;
+}
+
+static unsigned hw_d3d9_get_sync_index_mask(void *handle)
+{
+   (void)handle;
+   return (1u << VIDEO_THREAD_HW_RING) - 1;
+}
+
+static void hw_d3d9_wait_sync_index(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   if (!ring)
+      return;
+   hw_wait_queued(ring, ring->index);
+   hw_wait_slot(ring, ring->index);
+}
+#endif /* VIDEO_THREAD_HW_D3D9 */
+
 /* --- the wrapper's side ---------------------------------------------- */
 
 static bool hw_ring_setup(thread_video_t *thr, hw_ring_t **out)
@@ -674,7 +742,8 @@ bool video_thread_get_hw_render_interface(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
    const struct retro_hw_render_interface *real = NULL;
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11) \
+   || defined(VIDEO_THREAD_HW_D3D9)
    hw_ring_t *ring;
 #endif
 
@@ -820,6 +889,31 @@ bool video_thread_get_hw_render_interface(void *data,
          *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d11;
          return true;
 #endif
+#ifdef VIDEO_THREAD_HW_D3D9
+      case RETRO_HW_RENDER_INTERFACE_D3D9:
+         if (!thr->poke->hw_ring_install)
+            return false;
+         if (!hw_ring_setup(thr, &ring))
+            return false;
+         ring->api                            = HW_API_D3D9;
+         ring->real                           = real;
+         ring->iface.d3d9                     = *(const struct retro_hw_render_interface_d3d9*)real;
+         ring->iface.d3d9.handle              = thr;
+         ring->iface.d3d9.lock_context        = hw_d3d9_lock_context;
+         ring->iface.d3d9.unlock_context      = hw_d3d9_unlock_context;
+         ring->iface.d3d9.set_texture         = hw_d3d9_set_texture;
+         ring->iface.d3d9.get_sync_index      = hw_d3d9_get_sync_index;
+         ring->iface.d3d9.get_sync_index_mask = hw_d3d9_get_sync_index_mask;
+         ring->iface.d3d9.wait_sync_index     = hw_d3d9_wait_sync_index;
+         if (!ring->logged_version)
+         {
+            ring->logged_version = ring->iface.d3d9.interface_version;
+            RARCH_LOG("[Video] Threaded video: D3D9 hardware render interface version %u, the core takes turns on the device, no frame copy.\n",
+                  ring->iface.d3d9.interface_version);
+         }
+         *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d9;
+         return true;
+#endif
       default:
          return false;
    }
@@ -955,6 +1049,13 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
          return -1;
    }
 #endif
+#ifdef VIDEO_THREAD_HW_D3D9
+   if (ring->api == HW_API_D3D9)
+   {
+      if (!ring->slot[published].d3d9_texture)
+         return -1;
+   }
+#endif
    if (ring->api == HW_API_GL)
    {
       /* Fence the core's rendering into the slot, on its context. */
@@ -1019,6 +1120,10 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
    if (ring->api == HW_API_D3D11 && ring->d3d11_v2)
       hw_wait_queued(ring, ring->index);
 #endif
+#ifdef VIDEO_THREAD_HW_D3D9
+   if (ring->api == HW_API_D3D9)
+      hw_wait_queued(ring, ring->index);
+#endif
    hw_wait_slot(ring, ring->index);
    return (int)published;
 }
@@ -1081,6 +1186,12 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot,
                   ring->slot[hw_slot].d3d11_direct, NULL, 0, 0, NULL, 0);
          else
             thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
+         break;
+#endif
+#ifdef VIDEO_THREAD_HW_D3D9
+      case HW_API_D3D9:
+         thr->poke->hw_ring_install(thr->driver_data,
+               ring->slot[hw_slot].d3d9_texture, NULL, 0, 0, NULL, 0);
          break;
 #endif
       case HW_API_GL:
@@ -1181,18 +1292,35 @@ void video_thread_hw_drop(thread_video_t *thr, int hw_slot)
 
 bool video_thread_hw_holds_frame(thread_video_t *thr)
 {
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9)
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned i;
-   if (!ring || ring->api != HW_API_VULKAN)
+   if (!ring)
       return false;
-   if (retro_atomic_load_acquire_int(&ring->last_presented) >= 0)
-      return true;
-   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+#ifdef HAVE_VULKAN
+   if (ring->api == HW_API_VULKAN)
    {
-      if (ring->slot[i].has_image)
+      if (retro_atomic_load_acquire_int(&ring->last_presented) >= 0)
          return true;
+      for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+      {
+         if (ring->slot[i].has_image)
+            return true;
+      }
    }
+#endif
+#ifdef VIDEO_THREAD_HW_D3D9
+   if (ring->api == HW_API_D3D9)
+   {
+      if (retro_atomic_load_acquire_int(&ring->last_presented) >= 0)
+         return true;
+      for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+      {
+         if (ring->slot[i].d3d9_texture)
+            return true;
+      }
+   }
+#endif
 #else
    (void)thr;
 #endif
@@ -1201,19 +1329,37 @@ bool video_thread_hw_holds_frame(thread_video_t *thr)
 
 void video_thread_hw_forget(thread_video_t *thr)
 {
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9)
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned i;
-   if (!ring || ring->api != HW_API_VULKAN)
+   if (!ring)
       return;
-   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+   switch (ring->api)
    {
-      hw_slot_t *s      = &ring->slot[i];
-      /* The empty submission behind the slot's last frame. */
-      hw_wait_slot(ring, i);
-      s->has_image      = false;
-      s->num_semaphores = 0;
-      s->num_cmd        = 0;
+#ifdef HAVE_VULKAN
+      case HW_API_VULKAN:
+         for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+         {
+            hw_slot_t *s      = &ring->slot[i];
+            /* The empty submission behind the slot's last frame. */
+            hw_wait_slot(ring, i);
+            s->has_image      = false;
+            s->num_semaphores = 0;
+            s->num_cmd        = 0;
+         }
+         break;
+#endif
+#ifdef VIDEO_THREAD_HW_D3D9
+      case HW_API_D3D9:
+         for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+         {
+            hw_wait_slot(ring, i);
+            ring->slot[i].d3d9_texture = NULL;
+         }
+         break;
+#endif
+      default:
+         return;
    }
    /* A dupe has no slot to re-read until the core presents again. */
    retro_atomic_store_release_int(&ring->last_presented, -1);
@@ -1323,6 +1469,10 @@ bool video_thread_hw_allowed(void)
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:
          return string_is_equal(settings->arrays.video_driver, "d3d11");
+#endif
+#ifdef VIDEO_THREAD_HW_D3D9
+      case RETRO_HW_CONTEXT_D3D9:
+         return string_is_equal(settings->arrays.video_driver, "d3d9_hlsl");
 #endif
       default:
          return false;

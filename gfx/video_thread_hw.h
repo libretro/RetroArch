@@ -102,8 +102,9 @@ bool video_thread_hw_bind_core_context(void *data);
 uintptr_t video_thread_hw_get_current_framebuffer(void *data);
 
 /* Main thread: whether the ring holds anything of the core's - an image
- * in a slot, or a presented slot a dupe would read again. Vulkan only; the other APIs' slots hold a reference or
- * are the driver's own. */
+ * in a slot, or a presented slot a dupe would read again. Vulkan and
+ * Direct3D 9, whose slots hold the core's own by pointer; the other
+ * APIs' slots hold a reference or are the driver's own. */
 bool video_thread_hw_holds_frame(struct thread_video *thr);
 
 /* Main thread, with no frame queued or being drawn and the driver's own
