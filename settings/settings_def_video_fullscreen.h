@@ -36,4 +36,4 @@ S_BOOL(video_dxgi_present, VIDEO_DXGI_PRESENT,
       "video_dxgi_present",
       false, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_REINIT,
       "DXGI Presentation",
-      "Present through a DXGI flip-model swap chain instead of the video driver's own presentation, with the glcore and vulkan drivers on Windows. Gives those drivers the compositor's flip-model path and display-driver features tied to it, such as NVIDIA Smooth Motion; falls back to native presentation where unsupported and may change frame latency. With Smooth Motion on, keep the menu and cores on one presentation path - this setting on for all, not turned on by a core override only - since the display driver does not survive a switch of presentation API within one session.")
+      "Use a DXGI flip-model swap chain with Windows glcore and Vulkan drivers. Enables display-driver features such as NVIDIA Smooth Motion. Falls back to native presentation if unsupported and may change frame latency. With Smooth Motion, enable this globally for menus and cores. A core-only override can switch presentation APIs within one session and crash the display driver.")
