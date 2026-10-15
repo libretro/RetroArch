@@ -1830,13 +1830,14 @@ static void ffmpeg_fill_audio_gap(ffmpeg_t *handle)
  * the ring's own split copy. On the mirrored ring the span is the
  * whole frame, so a frame is one publish. */
 static void ffmpeg_video_fifo_write(ffmpeg_t *handle,
-      const uint8_t *src, size_t src_pitch,
+      const uint8_t *src, ptrdiff_t src_pitch,
       unsigned rows, size_t row_bytes)
 {
    void    *dst;
    unsigned y;
    size_t   span;
    unsigned direct;
+   bool packed = src_pitch >= 0 && (size_t)src_pitch == row_bytes;
 
    if (!rows || !row_bytes)
       return;
@@ -1848,18 +1849,28 @@ static void ffmpeg_video_fifo_write(ffmpeg_t *handle,
    if (direct)
    {
       uint8_t *d = (uint8_t*)dst;
-      if (src_pitch == row_bytes)
+      if (packed)
+      {
          memcpy(d, src, (size_t)direct * row_bytes);
+         if (direct < rows)
+            src += (ptrdiff_t)direct * src_pitch;
+      }
       else
-         for (y = 0; y < direct; y++, src += src_pitch, d += row_bytes)
+         for (y = 0; y < direct; y++, d += row_bytes)
+         {
             memcpy(d, src, row_bytes);
-      if (src_pitch == row_bytes)
-         src += (size_t)direct * src_pitch;
+            if (y + 1 < rows)
+               src += src_pitch;
+         }
    }
    retro_spsc_write_end(&handle->video_fifo, (size_t)direct * row_bytes);
 
-   for (y = direct; y < rows; y++, src += src_pitch)
+   for (y = direct; y < rows; y++)
+   {
       retro_spsc_write(&handle->video_fifo, src, row_bytes);
+      if (y + 1 < rows)
+         src += src_pitch;
+   }
 }
 
 static bool ffmpeg_push_video_impl(void *data,
@@ -1959,7 +1970,7 @@ static bool ffmpeg_push_video_impl(void *data,
     * signal that a whole frame is behind it, and the ring's
     * release/acquire on each write orders the rows before it. */
    ffmpeg_video_fifo_write(handle, (const uint8_t*)vid->data,
-         (size_t)vid->pitch, rows, (size_t)attr.vid.pitch);
+         vid->pitch, rows, (size_t)attr.vid.pitch);
 
    retro_spsc_write(&handle->attr_fifo, &attr, sizeof(attr));
    retro_eventcount_notify(&handle->data);

@@ -11,7 +11,8 @@
  * when the queues are full, and the drain after the encoder thread
  * is joined.  A frame out of order, torn, or from the wrong slot
  * fails the pixel check.  Every other frame is pushed with a padded
- * pitch, and a PLAIN_RING build has the driver's video ring without
+ * pitch, every other pair has a negative bottom-up pitch, and a
+ * PLAIN_RING build has the driver's video ring without
  * its double mapping, so frames across the wrap take the scratch copy.
  *
  * A second pass runs in drop mode (allow_frame_drop, the smallest
@@ -71,19 +72,20 @@ extern unsigned stub_log_level;
 /* Frame n: a solid colour derived from n in the top half, the pattern
  * inverted in the bottom half, so a frame's number can be read back
  * from any pixel and a torn frame (rows from two frames) is caught. */
-static void paint(uint32_t *fb, unsigned stride, unsigned n)
+static void paint(uint32_t *fb, ptrdiff_t stride, unsigned n)
 {
    unsigned x, y;
    uint32_t c = 0xff000000u | ((n * 37u) & 0xffu) << 16
               | ((n * 91u) & 0xffu) << 8 | ((n * 13u) & 0xffu);
    for (y = 0; y < H; y++)
+   {
+      uint32_t *row = fb + (ptrdiff_t)y * stride;
       for (x = 0; x < W; x++)
-         fb[y * stride + x] = (y < H / 2) ? c : (c ^ 0x00ffffffu);
+         row[x] = (y < H / 2) ? c : (c ^ 0x00ffffffu);
+   }
 }
 
-/* Odd frames come with a padded pitch, as cores commonly hand them
- * over, so the driver's row-wise pack into its ring is exercised next
- * to the whole-frame copy. */
+/* Exercise both row packing and whole-frame copies in either orientation. */
 #define PAD 24
 
 static int check_frame(const AVFrame *f, unsigned n)
@@ -359,17 +361,18 @@ static int run(bool drop)
    memset(pcm, 0, sizeof(pcm));
    for (n = 0; n < FRAMES; n++)
    {
-      if (n & 1)
       {
-         paint(fbp, W + PAD, n);
-         vid.data  = fbp;
-         vid.pitch = (W + PAD) * sizeof(uint32_t);
-      }
-      else
-      {
-         paint(fb, W, n);
-         vid.data  = fb;
-         vid.pitch = W * sizeof(uint32_t);
+         unsigned stride = (n & 1) ? W + PAD : W;
+         uint32_t *pixels = (n & 1) ? fbp : fb;
+         ptrdiff_t step = (ptrdiff_t)stride;
+         if (n & 2)
+         {
+            pixels += (H - 1) * stride;
+            step = -step;
+         }
+         paint(pixels, step, n);
+         vid.data = pixels;
+         vid.pitch = (int)(step * (ptrdiff_t)sizeof(uint32_t));
       }
       vid.dims    = VIDEO_SCALE_PACK(W, H);
       vid.is_dupe = false;
@@ -695,11 +698,13 @@ static int planar_recording(unsigned channels)
 
 int record_finalize_test_run(void);
 int record_audio_growth_test_run(void);
+int record_video_stride_test_run(void);
 
 int main(void)
 {
    producer_thread_id = sthread_get_current_thread_id();
-   if (record_audio_growth_test_run() || record_finalize_test_run())
+   if (record_video_stride_test_run() || record_audio_growth_test_run()
+         || record_finalize_test_run())
       return 1;
    if (geometry() || open_only() || run(false) || run(true))
       return 1;

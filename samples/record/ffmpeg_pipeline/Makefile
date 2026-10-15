@@ -13,6 +13,7 @@ SOURCES_C := \
 	ffmpeg_pipeline_test.c \
 	record_finalize_test.c \
 	record_audio_growth_test.c \
+	record_video_stride_test.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/record/drivers/record_ffmpeg.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
@@ -80,6 +81,7 @@ record_finalize_fragment.c: $(CORE_DIR)/record/record_driver.c
 
 record_finalize_test.o: record_finalize_fragment.c
 record_audio_growth_test.o: $(CORE_DIR)/record/drivers/record_ffmpeg.c
+record_video_stride_test.o: $(CORE_DIR)/record/drivers/record_ffmpeg.c
 
 all: $(TARGET)
 
