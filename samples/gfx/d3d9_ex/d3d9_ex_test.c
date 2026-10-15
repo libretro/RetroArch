@@ -610,6 +610,132 @@ static void recursive_run(void)
    retro_eventcount_free(&d3d.hw.turn_ec);
 }
 
+typedef struct turn_test
+{
+   d3d9_video_t *video;
+   HANDLE acquired, release;
+   retro_atomic_int_t core_acquired;
+   HRESULT frontend_result, core_result;
+   DWORD core_state;
+   bool core_used;
+} turn_test_t;
+
+static void test_wait(HANDLE event)
+{
+   if (WaitForSingleObject(event, 5000) != WAIT_OBJECT_0)
+   {
+      fprintf(stderr, "[FAIL] device-turn watchdog\n");
+      ExitProcess(1);
+   }
+}
+
+static void test_wait_registered(d3d9_video_t *d3d)
+{
+   DWORD start = GetTickCount();
+   while (!retro_atomic_load_acquire_int(&d3d->hw.turn_ec.waiters))
+   {
+      if (GetTickCount() - start >= 5000)
+      {
+         fprintf(stderr, "[FAIL] device-turn waiter never registered\n");
+         ExitProcess(1);
+      }
+      Sleep(1);
+   }
+}
+
+static DWORD WINAPI frontend_turn(void *data)
+{
+   turn_test_t *t = (turn_test_t*)data;
+   d3d9_hlsl_hw_enter(t->video);
+   t->frontend_result = IDirect3DDevice9_SetRenderState(t->video->dev,
+         D3DRS_CULLMODE, D3DCULL_NONE);
+   SetEvent(t->acquired);
+   test_wait(t->release);
+   d3d9_hlsl_hw_leave(t->video);
+   return 0;
+}
+
+static DWORD WINAPI core_turn(void *data)
+{
+   turn_test_t *t = (turn_test_t*)data;
+   t->core_used = d3d9_hlsl_hw_lock_context(t->video);
+   retro_atomic_store_release_int(&t->core_acquired, 1);
+   t->core_result = IDirect3DDevice9_GetRenderState(t->video->dev,
+         D3DRS_CULLMODE, &t->core_state);
+   d3d9_hlsl_hw_unlock_context(t->video);
+   return 0;
+}
+
+static void contention_run(HWND w, bool ex)
+{
+   static d3d9_video_t d3d;
+   unsigned i, before = fails;
+   memset(&d3d, 0, sizeof(d3d));
+   d3d.dev = make_device(w, ex, D3DSWAPEFFECT_DISCARD);
+   CHECK(d3d.dev != NULL, "contended device created");
+   if (!d3d.dev)
+      return;
+   d3d.hw.enable = d3d.hw.shared = true;
+   if (!retro_eventcount_init(&d3d.hw.turn_ec))
+   {
+      CHECK(false, "contended device eventcount created");
+      IDirect3DDevice9_Release(d3d.dev);
+      return;
+   }
+   for (i = 0; i < 32; i++)
+   {
+      turn_test_t t;
+      HANDLE frontend, core;
+      memset(&t, 0, sizeof(t));
+      t.video = &d3d;
+      t.acquired = CreateEvent(NULL, FALSE, FALSE, NULL);
+      t.release = CreateEvent(NULL, FALSE, FALSE, NULL);
+      if (!t.acquired || !t.release)
+         ExitProcess(1);
+      d3d9_hlsl_hw_lock_context(&d3d);
+      d3d9_hlsl_hw_lock_context(&d3d);
+      CHECK(SUCCEEDED(IDirect3DDevice9_SetRenderState(d3d.dev,
+                  D3DRS_CULLMODE, D3DCULL_CW)), "core sets its device state");
+      frontend = CreateThread(NULL, 0, frontend_turn, &t, 0, NULL);
+      if (!frontend)
+         ExitProcess(1);
+      test_wait_registered(&d3d);
+      CHECK((retro_atomic_load_acquire_int(&d3d.hw.turn)
+               & D3D9_HW_TURN_WAITING) != 0,
+            "frontend registers priority behind core");
+      d3d9_hlsl_hw_unlock_context(&d3d);
+      CHECK((retro_atomic_load_acquire_int(&d3d.hw.turn)
+               & D3D9_HW_TURN_CORE) != 0,
+            "recursive unlock keeps waiting frontend excluded");
+      d3d9_hlsl_hw_unlock_context(&d3d);
+      core = CreateThread(NULL, 0, core_turn, &t, 0, NULL);
+      if (!core)
+         ExitProcess(1);
+      test_wait(t.acquired);
+      test_wait_registered(&d3d);
+      CHECK(!retro_atomic_load_acquire_int(&t.core_acquired),
+            "core waits while frontend owns the device");
+      SetEvent(t.release);
+      test_wait(frontend);
+      test_wait(core);
+      CHECK(SUCCEEDED(t.frontend_result) && SUCCEEDED(t.core_result)
+            && t.core_state == D3DCULL_NONE && t.core_used,
+            "waiting core sees frontend state and invalidation");
+      CHECK(!retro_atomic_load_acquire_int(&d3d.hw.turn)
+            && !retro_atomic_load_acquire_int(&d3d.hw.turn_ec.waiters)
+            && !d3d.hw.core_depth && !d3d.hw.fe_depth,
+            "contended round retires all owners and waiters");
+      CloseHandle(frontend);
+      CloseHandle(core);
+      CloseHandle(t.acquired);
+      CloseHandle(t.release);
+   }
+   retro_eventcount_free(&d3d.hw.turn_ec);
+   IDirect3DDevice9_Release(d3d.dev);
+   printf("%s contention: %u rounds, %u failures\n",
+         ex ? "D3D9Ex" : "D3D9", i, fails - before);
+}
+
 int main(void)
 {
    HWND w = CreateWindowA("STATIC", "d3d9_ex_test", WS_OVERLAPPEDWINDOW,
@@ -626,6 +752,8 @@ int main(void)
    recursive_run();
    lifetime_run(w, false);
    lifetime_run(w, true);
+   contention_run(w, false);
+   contention_run(w, true);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }
