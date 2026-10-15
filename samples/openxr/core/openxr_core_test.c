@@ -159,11 +159,14 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_request_rate(XrSession s, float hz)
 { t_rate_requests++; return XR_SUCCESS; }
 /* The levels last asked per domain, and how many asks. */
 static unsigned t_perf_calls;
+static unsigned t_perf_fail;
 static XrPerfSettingsLevelEXT t_perf_cpu, t_perf_gpu;
 static XRAPI_ATTR XrResult XRAPI_CALL t_perf_level(XrSession s,
       XrPerfSettingsDomainEXT domain, XrPerfSettingsLevelEXT level)
 {
    t_perf_calls++;
+   if (t_perf_fail & (domain == XR_PERF_SETTINGS_DOMAIN_CPU_EXT ? 1 : 2))
+      return XR_ERROR_RUNTIME_FAILURE;
    if (domain == XR_PERF_SETTINGS_DOMAIN_CPU_EXT)
       t_perf_cpu = level;
    else if (domain == XR_PERF_SETTINGS_DOMAIN_GPU_EXT)
@@ -326,6 +329,9 @@ static unsigned t_head_locates;
 static XRAPI_ATTR XrResult XRAPI_CALL t_locate_space(XrSpace a, XrSpace b,
       XrTime t, XrSpaceLocation *loc)
 {
+   XrSpaceVelocity *vel = (XrSpaceVelocity*)loc->next;
+   if (vel && vel->type == XR_TYPE_SPACE_VELOCITY)
+      vel->velocityFlags = 0;
    if (t_in_stage_set && b == t_stage_space)
    {
       loc->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
@@ -3341,6 +3347,56 @@ static void test_frame_perf(void)
    openxr_frame_begin(&f, &b);
    openxr_frame_end(&f, &b);
    CHECK(t_perf_calls == 4, "asked without the extension");
+   rt.perf_settings = true;
+   for (i = 1; i <= 3; i++)
+   {
+      unsigned calls, applied = 3 ^ i;
+      video_xr_set_perf_boost(false);
+      openxr_frame_ask_perf(&f);
+      video_xr_set_perf_boost(true);
+      t_perf_fail = i;
+      calls = t_perf_calls;
+      openxr_frame_ask_perf(&f);
+      CHECK(t_perf_calls == calls + 2 && f.perf_applied == applied,
+            "partial failure %u lost applied domain state", i);
+      calls = t_perf_calls;
+      t_reset_log();
+      openxr_frame_ask_perf(&f);
+      CHECK(t_perf_calls == calls && !t_log[0],
+            "failed performance request retried or logged before deadline");
+      f.perf_retry_usec = 0;
+      openxr_frame_ask_perf(&f);
+      CHECK(t_perf_calls == calls + (i == 3 ? 2 : 1)
+            && f.perf_applied == applied && !t_log[0],
+            "retry repeated successful domain or warning");
+      t_perf_fail = 0;
+      calls = t_perf_calls;
+      f.perf_retry_usec = 0;
+      openxr_frame_ask_perf(&f);
+      CHECK(t_perf_calls == calls + (i == 3 ? 2 : 1)
+            && f.perf_applied == 3
+            && t_perf_cpu == XR_PERF_SETTINGS_LEVEL_BOOST_EXT
+            && t_perf_gpu == XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT,
+            "failed performance request did not recover");
+      calls = t_perf_calls;
+      openxr_frame_ask_perf(&f);
+      CHECK(t_perf_calls == calls, "completed request repeated");
+   }
+   video_xr_set_perf_boost(false);
+   t_perf_fail = 1;
+   openxr_frame_ask_perf(&f);
+   CHECK(f.perf_applied == 2, "failed boost removal lost GPU success");
+   video_xr_set_perf_boost(true);
+   t_perf_fail = 0;
+   openxr_frame_ask_perf(&f);
+   CHECK(f.perf_applied == 3 && f.asked_perf == 1,
+         "new setting was delayed by old retry deadline");
+   openxr_frame_stop_inline(&f);
+   CHECK(openxr_frame_start_inline(&f) && f.asked_perf == -1
+         && !f.perf_applied && !f.perf_retry_usec,
+         "session restart retained performance retry state");
+   openxr_frame_ask_perf(&f);
+   CHECK(f.perf_applied == 3, "session restart did not reapply boost");
    video_xr_set_perf_boost(false);
    t_frame_free(&rt, &s, &f);
 }

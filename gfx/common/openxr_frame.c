@@ -380,30 +380,53 @@ static void openxr_frame_tick(openxr_frame_t *f)
  * sustained high, the level a runtime holds when never asked. */
 static void openxr_frame_ask_perf(openxr_frame_t *f)
 {
-   XrResult cpu, gpu;
+   XrResult cpu = XR_SUCCESS, gpu = XR_SUCCESS;
+   retro_time_t now;
    int want = video_xr_perf_boost() ? 1 : 0;
-   if (     want == f->asked_perf
-         || !f->rt->perf_settings
+   bool changed = want != f->asked_perf;
+   if (     !f->rt->perf_settings
          || !f->rt->PerfSettingsSetPerformanceLevelEXT)
       return;
    if (!want && f->asked_perf < 0)
    {
       f->asked_perf = 0;
+      f->perf_applied = 3;
       return;
    }
+   if (changed)
+   {
+      f->perf_applied = 0;
+      f->perf_retry_usec = 0;
+   }
+   if (f->perf_applied == 3)
+      return;
+   now = cpu_features_get_time_usec();
+   if (now < f->perf_retry_usec)
+      return;
    f->asked_perf = want;
-   cpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
+   if (!(f->perf_applied & 1))
+   {
+      cpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
          XR_PERF_SETTINGS_DOMAIN_CPU_EXT, want
          ? XR_PERF_SETTINGS_LEVEL_BOOST_EXT
          : XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT);
-   gpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
+      if (XR_SUCCEEDED(cpu))
+         f->perf_applied |= 1;
+   }
+   if (!(f->perf_applied & 2))
+   {
+      gpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
          XR_PERF_SETTINGS_DOMAIN_GPU_EXT,
          XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT);
-   if (XR_SUCCEEDED(cpu) && XR_SUCCEEDED(gpu))
+      if (XR_SUCCEEDED(gpu))
+         f->perf_applied |= 2;
+   }
+   f->perf_retry_usec = now + 1000000;
+   if (f->perf_applied == 3)
       RARCH_LOG("[OpenXR] Performance: %s.\n", want
             ? "CPU boost, GPU sustained high"
             : "CPU and GPU sustained high");
-   else
+   else if (changed)
       RARCH_WARN("[OpenXR] Performance levels refused (CPU %d, GPU %d).\n",
             (int)cpu, (int)gpu);
 }
@@ -760,6 +783,8 @@ bool openxr_frame_start(openxr_frame_t *f)
    f->tick_interval = 0;
    f->asked_rate    = 0.0f;
    f->asked_perf    = -1;
+   f->perf_applied  = 0;
+   f->perf_retry_usec = 0;
    f->frame_failed  = false;
    retro_atomic_store_release_int(&f->thread_started, 0);
    retro_atomic_store_release_int(&f->quit, 0);
@@ -810,6 +835,8 @@ bool openxr_frame_start_inline(openxr_frame_t *f)
    retro_atomic_store_release_int(&f->period_ns, 0);
    f->asked_rate     = 0.0f;
    f->asked_perf     = -1;
+   f->perf_applied   = 0;
+   f->perf_retry_usec = 0;
    f->frame_failed   = false;
    f->pace_anchor_ns = 0;
    f->inline_host    = true;
