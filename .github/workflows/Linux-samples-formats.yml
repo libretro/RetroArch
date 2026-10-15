@@ -257,6 +257,7 @@ jobs:
           python3 picture_fixtures.py
           python3 reference_fixtures.py
           python3 grain_fixtures.py
+          python3 state_fixtures.py
 
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9

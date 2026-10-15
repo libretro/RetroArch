@@ -60,6 +60,7 @@ python3 frame_fixtures.py
 python3 picture_fixtures.py
 python3 reference_fixtures.py
 python3 grain_fixtures.py
+python3 state_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -179,3 +180,25 @@ The native prefix/setup/tile/picture/motion/grain chain locates tile data
 without oracle offsets. The fixture harness still simulates successful decode;
 show-existing validation, decoder reference commit, hardware submission and
 actual grain output remain separate work.
+
+`formats/rav1_reference_state.h` keeps slot identity/geometry and display
+eligibility separate from GPU surfaces and picture/filter/grain metadata.
+Prepare a ticket after parsing the prefix, stage validated setup metadata,
+then commit only after the whole frame and decode/submission are accepted.
+Failed or abandoned work leaves committed state unchanged. Epoch/owner checks
+reject duplicate, stale and cross-state tickets. Reset on seek/new sequence;
+the helper assumes one validated sequence and an externally serialized decoder.
+GPU fences and output leases remain independent; no GPU wait is required.
+
+Show-existing validates the selected slot, showability and display frame ID.
+A key replay refreshes every slot and consumes all aliases of that picture.
+Coded frames validate previous/current ID progression and reference scaling
+bounds. External metadata must follow the same refresh mask and picture ID.
+This does not manage entropy/CDF state, temporal units or spatial-layer rules.
+
+State tests cover rollback, ID wrap, scaling boundaries, key aliases, repeated
+inter replays, reset, stale/duplicate/cross-state tickets and epoch exhaustion.
+`state_fixtures.py` compares 180 real 8/10-bit transactions, including 35
+show-existing replays, against an independent slot model. Four mutated replay
+selectors are rejected. The native full header/tile chain stages and commits
+metadata assuming successful decode; actual hardware submission remains work.

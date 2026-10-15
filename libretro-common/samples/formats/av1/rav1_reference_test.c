@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <formats/rav1_motion.h>
 #include <formats/rav1_grain.h>
+#include <formats/rav1_reference_state.h>
 #include <formats/rav1_tile_info.h>
 #include <formats/rav1_picture.h>
 
@@ -14,6 +15,8 @@ static rav1_tile_info_t tiles;
 static rav1_picture_t picture;
 static rav1_motion_t motion;
 static rav1_grain_header_t grain;
+static rav1_reference_state_t ref_state;
+static rav1_reference_transaction_t transaction;
 static rav1_grain_t grains[8];
 static const rav1_grain_t *grain_refs[8];
 static rav1_global_motion_t globals[8];
@@ -254,13 +257,13 @@ static void test_ids_and_gates(void)
 
 /* The fixture harness assumes successful decode of its encoder-made frames.
  * Production code must defer these metadata updates until decode completes. */
-static int inspect(const char *path, bool grain_mode)
+static int inspect(const char *path, bool grain_mode, bool state_mode)
 {
    FILE *file = fopen(path, "rb");
    uint8_t *bytes = NULL;
    size_t offset = 0, base, start;
    long size;
-   unsigned i, count = 0;
+   unsigned i, count = 0, events = 0;
    int ret = -1, result = 1;
    bool have_sequence = false;
    rav1_obu_t obu;
@@ -271,6 +274,9 @@ static int inspect(const char *path, bool grain_mode)
       goto done;
    bytes = (uint8_t *)malloc((size_t)size);
    if (!bytes || fread(bytes, 1, (size_t)size, file) != (size_t)size)
+      goto done;
+   memset(&ref_state, 0, sizeof(ref_state));
+   if (!rav1_reference_state_reset(&ref_state))
       goto done;
    memset(refs, 0, sizeof(refs));
    for (i = 0; i < 8; i++)
@@ -295,10 +301,37 @@ static int inspect(const char *path, bool grain_mode)
           !rav1_frame_prefix_parse(&frame, &bits, &seq, obu.temporal_id,
                                    obu.spatial_id, obu.type == 6))
          goto done;
+      if (!rav1_reference_prepare(&transaction, &ref_state, &seq, &frame))
+         goto done;
       if (frame.show_existing)
+      {
+         unsigned selected = frame.frame_to_show;
+         if (!rav1_bits_read(&bits, 1) || bits.failed)
+            goto done;
+         while (bits.byte < bits.size)
+            if (rav1_bits_read(&bits, 1) || bits.failed)
+               goto done;
+         if (!rav1_reference_commit(&ref_state, &transaction))
+            goto done;
+         for (i = 0; i < 8; i++)
+            if ((transaction.refresh_mask >> i) & 1)
+            {
+               pictures[i] = pictures[selected];
+               globals[i] = globals[selected];
+               grains[i] = grains[selected];
+            }
+         memcpy(refs, ref_state.refs, sizeof(refs));
+         if (state_mode)
+            printf("RS %u 1 %u %u %lu %lu\n", events, transaction.type,
+                   transaction.refresh_mask,
+                   (unsigned long)transaction.picture_id,
+                   (unsigned long)ref_state.epoch);
+         events++;
          continue;
+      }
       base = (size_t)(obu.payload - obu.data) * 8;
-      if (!rav1_frame_setup_parse(&setup, &bits, &seq, &frame, refs))
+      if (!rav1_frame_setup_parse(&setup, &bits, &seq, &frame, refs) ||
+          !rav1_reference_stage(&transaction, &ref_state, &setup))
          goto done;
       printf("H %u %u %u %u %u %u %lu\n", setup.short_signaling,
              setup.allow_intrabc, setup.allow_high_precision_mv,
@@ -420,20 +453,21 @@ static int inspect(const char *path, bool grain_mode)
              tile_count != tiles.layout.columns * tiles.layout.rows)
             goto done;
       }
+      if (!rav1_reference_commit(&ref_state, &transaction))
+         goto done;
       for (i = 0; i < 8; i++)
-      {
-         refs[i].valid = (setup.valid_mask >> i) & 1;
-         if ((frame.refresh_frame_flags >> i) & 1)
+         if ((transaction.refresh_mask >> i) & 1)
          {
-            refs[i].valid = 1;
-            refs[i].order_hint = frame.order_hint;
-            refs[i].frame_id = frame.current_frame_id;
-            refs[i].size = setup.size;
             pictures[i] = picture.reference;
             globals[i] = motion.global;
             grains[i] = grain.params;
          }
-      }
+      memcpy(refs, ref_state.refs, sizeof(refs));
+      if (state_mode)
+         printf("RS %u 0 %u %u %lu %lu\n", events, transaction.type,
+                transaction.refresh_mask, (unsigned long)transaction.picture_id,
+                (unsigned long)ref_state.epoch);
+      events++;
       count++;
    }
    result = ret == 0 && count ? 0 : 1;
@@ -446,9 +480,11 @@ done:
 int main(int argc, char **argv)
 {
    if (argc == 2)
-      return inspect(argv[1], false);
+      return inspect(argv[1], false, false);
    if (argc == 3 && !strcmp(argv[1], "--grain"))
-      return inspect(argv[2], true);
+      return inspect(argv[2], true, false);
+   if (argc == 3 && !strcmp(argv[1], "--state"))
+      return inspect(argv[2], false, true);
    test_explicit();
    test_short();
    test_ids_and_gates();
