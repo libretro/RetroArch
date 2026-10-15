@@ -48,7 +48,6 @@ static const GUID bridge_IDXGISwapChain3 = {0x94d99bdb, 0xf1f8, 0x4ab0, {0xb2, 0
 
 struct ra_dxgi_bridge
 {
-   HMODULE dxgi_dll, d3d_dll;
    IDXGIFactory2 *factory;
    ID3D12Device *device;
    ID3D12CommandQueue *queue;
@@ -71,6 +70,9 @@ struct ra_dxgi_bridge
 typedef HRESULT (WINAPI *create_factory_t)(REFIID, void **);
 typedef HRESULT (WINAPI *create_device_t)(IUnknown *, D3D_FEATURE_LEVEL,
       REFIID, void **);
+
+static HMODULE bridge_dxgi_dll;
+static HMODULE bridge_d3d_dll;
 
 #define DROP(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while (0)
 #define CHECK(expr) do { if (FAILED(expr)) goto error; } while (0)
@@ -128,8 +130,6 @@ void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
    if (b->done_handle) CloseHandle(b->done_handle);
    if (b->event) CloseHandle(b->event);
    if (b->latency) CloseHandle(b->latency);
-   if (b->d3d_dll) FreeLibrary(b->d3d_dll);
-   if (b->dxgi_dll) FreeLibrary(b->dxgi_dll);
    free(b);
 }
 
@@ -256,14 +256,22 @@ ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
    unsigned i;
    if (!window || !width || !height || !luid)
       return NULL;
+   /* The runtimes stay loaded for the life of the process: the
+    * display driver's layers under them (NVIDIA's frame generation,
+    * for one) keep process-wide state and do not survive an unload
+    * and reload between two swap chains. */
+   if (!bridge_dxgi_dll)
+      bridge_dxgi_dll = LoadLibraryA("dxgi.dll");
+   if (!bridge_d3d_dll)
+      bridge_d3d_dll  = LoadLibraryA("d3d12.dll");
+   if (!bridge_dxgi_dll || !bridge_d3d_dll)
+      return NULL;
+   create_factory = (create_factory_t)GetProcAddress(bridge_dxgi_dll, "CreateDXGIFactory1");
+   create_device  = (create_device_t)GetProcAddress(bridge_d3d_dll, "D3D12CreateDevice");
+   if (!create_factory || !create_device)
+      return NULL;
    b = (ra_dxgi_bridge_t *)calloc(1, sizeof(*b));
    if (!b) return NULL;
-   b->dxgi_dll = LoadLibraryA("dxgi.dll");
-   b->d3d_dll  = LoadLibraryA("d3d12.dll");
-   if (!b->dxgi_dll || !b->d3d_dll) goto error;
-   create_factory = (create_factory_t)GetProcAddress(b->dxgi_dll, "CreateDXGIFactory1");
-   create_device  = (create_device_t)GetProcAddress(b->d3d_dll, "D3D12CreateDevice");
-   if (!create_factory || !create_device) goto error;
    CHECK(create_factory(&bridge_IDXGIFactory2, (void **)&b->factory));
    if (SUCCEEDED(b->factory->lpVtbl->QueryInterface(b->factory,
                &bridge_IDXGIFactory5, (void **)&factory5)))
