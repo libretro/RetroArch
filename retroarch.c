@@ -6375,7 +6375,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HEADSET_RECENTER:
          video_driver_headset_recenter();
          break;
-#ifdef HAVE_OPENXR
       case CMD_EVENT_HEADSET_VIEW_TOGGLE:
          {
             char msg[256];
@@ -6383,6 +6382,8 @@ bool command_event(enum event_command cmd, void *data)
             enum msg_hash_enums value;
             switch (video_driver_headset_view_toggle())
             {
+               case VIDEO_HEADSET_VIEW_LAST:
+                  return false;
                case VIDEO_HEADSET_VIEW_STEREOSCOPIC:
                   value = MSG_OPENXR_HEADSET_VIEW_STEREOSCOPIC;
                   break;
@@ -6401,7 +6402,6 @@ bool command_event(enum event_command cmd, void *data)
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
-#endif
       case CMD_EVENT_LASER_POINTER_TOGGLE:
          {
             char msg[256];

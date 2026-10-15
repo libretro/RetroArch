@@ -11423,6 +11423,9 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
    if (input_openxr_hotkey(RARCH_LASER_POINTER_TOGGLE))
       maybe[RARCH_LASER_POINTER_TOGGLE >> 5] |=
          (1u << (RARCH_LASER_POINTER_TOGGLE & 31));
+   if (input_openxr_hotkey(RARCH_HEADSET_VIEW_TOGGLE))
+      maybe[RARCH_HEADSET_VIEW_TOGGLE >> 5]  |=
+         (1u << (RARCH_HEADSET_VIEW_TOGGLE & 31));
 #endif
 }
 

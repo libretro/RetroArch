@@ -9245,7 +9245,8 @@ unsigned menu_displaylist_build_list(
                   continue;
 #ifndef HAVE_OPENXR
                else if (     key == RARCH_HEADSET_RECENTER
-                          || key == RARCH_LASER_POINTER_TOGGLE)
+                          || key == RARCH_LASER_POINTER_TOGGLE
+                          || key == RARCH_HEADSET_VIEW_TOGGLE)
                   continue;
 #endif
                /* Show combo entries before normal binds */

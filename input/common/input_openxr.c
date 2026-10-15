@@ -88,6 +88,7 @@ enum input_openxr_action
    IXA_C_MENU,
    IXA_C_RECENTER,
    IXA_C_LASER,
+   IXA_C_VIEW,
    IXA_C_START_MENU,
    IXA_S_B,
    IXA_S_A,
@@ -98,6 +99,7 @@ enum input_openxr_action
    IXA_S_MENU,
    IXA_S_RECENTER,
    IXA_S_LASER,
+   IXA_S_VIEW,
    IXA_AIM,
    IXA_GRIP,
    IXA_PALM,
@@ -138,6 +140,7 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_COMBINED, "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "recenter",    "Recenter",       XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "laser",       "Laser Pointer",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_COMBINED, "view",        "Headset View",   XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "start_menu",  "Start (Held: RetroArch Menu)", XR_ACTION_TYPE_BOOLEAN_INPUT, false },
    { INPUT_OPENXR_SET_SEPARATE, "b",           "B",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_SEPARATE, "a",           "A",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
@@ -148,6 +151,7 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_SEPARATE, "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_SEPARATE, "recenter",    "Recenter",       XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_SEPARATE, "laser",       "Laser Pointer",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_SEPARATE, "view",        "Headset View",   XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_POINTER,  "aim",         "Aim",            XR_ACTION_TYPE_POSE_INPUT,       true  },
    { INPUT_OPENXR_SET_POINTER,  "grip",        "Grip",           XR_ACTION_TYPE_POSE_INPUT,       true  },
    { INPUT_OPENXR_SET_POINTER,  "palm",        "Palm",           XR_ACTION_TYPE_POSE_INPUT,       true  },
@@ -389,6 +393,7 @@ typedef struct input_openxr
    bool menu_toggle;
    bool recenter;
    bool laser_toggle;
+   bool view_toggle;
    /* Touch's menu button: held since start_menu_since. */
    bool start_menu_held;
    retro_time_t start_menu_since;
@@ -882,6 +887,7 @@ static void input_openxr_read_combined(input_openxr_t *st)
    st->menu_toggle   = input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH);
    st->recenter      = input_openxr_bool(st, IXA_C_RECENTER, XR_NULL_PATH);
    st->laser_toggle  = input_openxr_bool(st, IXA_C_LASER, XR_NULL_PATH);
+   st->view_toggle   = input_openxr_bool(st, IXA_C_VIEW, XR_NULL_PATH);
    input_openxr_start_menu(st,
          input_openxr_bool(st, IXA_C_START_MENU, XR_NULL_PATH), pad);
 }
@@ -911,6 +917,7 @@ static void input_openxr_read_separate(input_openxr_t *st)
    st->menu_toggle  = input_openxr_bool(st, IXA_S_MENU, XR_NULL_PATH);
    st->recenter     = input_openxr_bool(st, IXA_S_RECENTER, XR_NULL_PATH);
    st->laser_toggle = input_openxr_bool(st, IXA_S_LASER, XR_NULL_PATH);
+   st->view_toggle  = input_openxr_bool(st, IXA_S_VIEW, XR_NULL_PATH);
 }
 
 static bool input_openxr_pressing(enum input_openxr_role role)
@@ -1628,6 +1635,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    st->menu_toggle  = false;
    st->recenter     = false;
    st->laser_toggle = false;
+   st->view_toggle  = false;
    st->hit[0]       = -1;
    st->hit[1]       = -1;
    st->ptr_owned    = false;
@@ -1775,6 +1783,8 @@ bool input_openxr_hotkey(unsigned id)
       return st->recenter;
    if (id == RARCH_LASER_POINTER_TOGGLE)
       return st->laser_toggle;
+   if (id == RARCH_HEADSET_VIEW_TOGGLE)
+      return st->view_toggle;
    return false;
 }
 
