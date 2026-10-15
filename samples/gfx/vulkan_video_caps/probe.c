@@ -8,6 +8,9 @@
 #include <dlfcn.h>
 #endif
 #include "../../../gfx/common/vulkan_video_caps.h"
+#ifdef AV1_SESSION_TEST
+#include "av1_session.h"
+#endif
 #ifdef VULKAN_IMPORT_TEST
 #include "import_test.h"
 #elif defined(HEVC_DECODE_TEST)
@@ -187,6 +190,31 @@ static int probe_gpu(VkInstance instance, VkPhysicalDevice gpu,
          properties.deviceName, codecs, family, selected);
    if ((selected & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR) && get_caps) probe_hevc(gpu, get_caps);
    ok = 1;
+#ifdef AV1_SESSION_TEST
+   {
+      uint32_t j, common = 0;
+      int av1_family = -1;
+      for (i = 0; i < VULKAN_VIDEO_BASE_EXTENSIONS; i++)
+         for (j = 0; j < n; j++)
+            if (!strcmp(extensions[j].extensionName, vulkan_video_device_extensions[i]))
+            {
+               common++;
+               break;
+            }
+      for (i = 0; i < count; i++)
+         if (i != graphics && queues[i].queueFamilyProperties.queueCount
+               && (queues[i].queueFamilyProperties.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR)
+               && (video[i].videoCodecOperations & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR))
+         {
+            av1_family = (int)i;
+            break;
+         }
+      if (have_av1 && common == VULKAN_VIDEO_BASE_EXTENSIONS && av1_family >= 0)
+         ok = av1_session_probe(instance, gpu, (uint32_t)av1_family, get_proc);
+      else
+         puts("SKIP: no AV1 video extensions/dedicated family; no sessions created");
+   }
+#endif
 #ifdef VULKAN_IMPORT_TEST
    if (graphics != UINT32_MAX && (queues[graphics].queueFamilyProperties.queueFlags & VK_QUEUE_COMPUTE_BIT))
       ok = import_test_gpu(instance, gpu, graphics, get_proc);

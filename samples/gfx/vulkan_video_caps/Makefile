@@ -6,6 +6,9 @@ SAMPLED_DEPS = $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
 TARGET := vulkan_video_caps_test$(EXE)
 AV1_DEPS := $(RA)/gfx/include/vk_video/vulkan_video_codec_av1std.h \
       $(RA)/gfx/include/vk_video/vulkan_video_codec_av1std_decode.h
+AV1_PARAMS_DEPS := $(AV1_DEPS) $(RA)/gfx/include/vulkan/vulkan_core.h \
+      $(RA)/gfx/common/vulkan_av1_params.h \
+      $(wildcard $(RA)/libretro-common/include/formats/rav1*.h)
 VP9_DEPS := $(AV1_DEPS) $(RA)/gfx/common/vulkan_vp9_picture.h $(RA)/gfx/include/vulkan/vulkan_core.h \
       $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std.h \
       $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std_decode.h
@@ -22,10 +25,16 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
+all: av1_params_test$(EXE) vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm
+
+av1_session_test$(EXE): probe.c av1_session.h av1_session_data.h $(AV1_PARAMS_DEPS)
+	$(CC) $(CFLAGS) -DAV1_SESSION_TEST -o $@ probe.c $(LDFLAGS) $(if $(filter .exe,$(EXE)),,-ldl)
+
+av1-session-check: av1_session_test$(EXE)
+	$(RUNNER) ./av1_session_test$(EXE)
 
 $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS) $(VP9_DEPS)
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
@@ -39,6 +48,9 @@ hevc_decode_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_
 	$(CC) $(CFLAGS) -I$(RA) -DHEVC_DECODE_TEST -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_VULKAN -DHAVE_RVP9 \
 	   -o $@ probe.c $(DECODERS) $(RA)/libretro-common/formats/h264/rh264.c \
 	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
+
+av1_params_test$(EXE): av1_params_test.c av1_session_data.h $(AV1_PARAMS_DEPS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 vp9_picture_test$(EXE): vp9_picture_test.c $(VP9_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -76,6 +88,7 @@ video_layout_test$(EXE): video_layout_test.c $(RA)/gfx/common/vulkan_video_impor
 	$(CC) $(CFLAGS) -o $@ $< $(RA)/libretro-common/formats/image/image_yuv_blit.c $(LDFLAGS) -lm
 
 check: all
+	$(RUNNER) ./av1_params_test$(EXE)
 	$(RUNNER) ./vp9_picture_test$(EXE)
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(PARAMS)
@@ -88,10 +101,11 @@ decode-check: hevc_decode_test$(EXE)
 	$(RUNNER) ./hevc_decode_test$(EXE)
 
 clean:
+	rm -f av1_params_test av1_params_test.exe av1_session_test av1_session_test.exe
 	rm -f vp9_picture_test vp9_picture_test.exe
 	rm -f vulkan_video_caps_test vulkan_video_caps_test.exe probe probe.exe
 	rm -f hevc_params_test hevc_params_test.exe hevc_session_test hevc_session_test.exe
 	rm -f hevc_decode_test hevc_decode_test.exe hevc_render_test hevc_render_test.exe
 	rm -f import_test import_test.exe video_layout_test video_layout_test.exe
 
-.PHONY: all check session-check decode-check import-check render-check clean
+.PHONY: all check av1-session-check session-check decode-check import-check render-check clean

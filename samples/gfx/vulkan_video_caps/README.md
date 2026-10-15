@@ -32,10 +32,28 @@ paths are adapted. AV1 is not added to the playback codec mask yet.
 Native AV1 capability evidence (RTX 5090): all four queries succeed, with
 128x128 minimum and 8192x8192 maximum extent, 16 DPB slots and 16 active
 references. Decode flags are 0x1 (coincident DPB/output); distinct output
-is not advertised. This is capability evidence only: AV1 session creation,
-parameter mapping, submission, grain pixels and playback remain pending.
+is not advertised. These queries do not verify decoded pixels.
 A zero-copy output path must retain images until both references and display
 leases release them, including show-existing-frame replay.
+
+`make check` covers AV1 StdVideo sequence/picture mapping, including CDEF
+secondary strengths in bitstream units, logarithmic restoration sizes,
+global-motion reference-name indexing, grain coefficient encoding and aliased
+reference slots. The picture bundle is caller-owned persistent storage:
+allocate it on the heap and do not copy it after building. Its tile offsets
+address the original FRAME OBU, without copying compressed or pixel data.
+`python3 av1_fixtures.py` checks 128 coded pictures and 152 tile spans across
+12 real streams against FFmpeg traces, including reordered, grain, multi-tile,
+128x128-superblock, lossless and reduced-still streams at 8/10 bits.
+
+`make av1-session-check` creates and binds video-session memory and mapped
+sequence parameters for six generated sequence headers. All six normal,
+reduced-still and grain-enabled cases pass on the native RTX 5090 at 8/10 bits.
+Linux llvmpipe and Wine skip unsupported AV1 devices. This submits no video
+commands: decode submission, GPU pixel/grain validation, display ownership,
+registration and player routing remain pending. The device backend must use
+separate grain output and grain-free reference images when applying grain,
+as required by Vulkan even when distinct output is otherwise unsupported.
 
 Native Windows evidence: NVIDIA GeForce RTX 5090 exposes H.264 and HEVC on
 family 3; both HEVC Main8/Main10 capability queries succeed, with maximum

@@ -1318,6 +1318,8 @@ jobs:
           make -C samples/gfx/vulkan_video_caps clean check SANITIZER=address,undefined
           make -C samples/gfx/vulkan_video_caps clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
+          make -C samples/gfx/vulkan_video_caps av1-session-check
+          make -C samples/gfx/vulkan_video_caps av1-session-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps session-check
           make -C samples/gfx/vulkan_video_caps session-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps decode-check

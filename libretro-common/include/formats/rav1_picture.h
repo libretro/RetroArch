@@ -23,7 +23,7 @@ typedef struct rav1_picture
 {
    rav1_picture_reference_t reference;
    int delta_q_y_dc, delta_q_u_dc, delta_q_u_ac, delta_q_v_dc, delta_q_v_ac;
-   unsigned base_q_idx, using_qmatrix, qm_y, qm_u, qm_v;
+   unsigned base_q_idx, using_qmatrix, qm_y, qm_u, qm_v, diff_uv_delta;
    unsigned segmentation_enabled, segmentation_update_map;
    unsigned segmentation_temporal_update, segmentation_update_data;
    unsigned last_active_segment, segment_id_pre_skip;
@@ -32,6 +32,7 @@ typedef struct rav1_picture
    unsigned lossless_mask, coded_lossless, all_lossless;
    unsigned loop_filter_level[4], loop_filter_sharpness;
    unsigned loop_filter_delta_enabled, loop_filter_delta_update;
+   unsigned loop_filter_update_ref_delta, loop_filter_update_mode_delta;
    unsigned cdef_damping, cdef_bits;
    unsigned cdef_y_pri[8], cdef_y_sec[8], cdef_uv_pri[8], cdef_uv_sec[8];
    unsigned restoration_type[3], restoration_size[3], tx_mode;
@@ -112,6 +113,7 @@ static INLINE bool rav1_picture_parse(rav1_picture_t *out, rav1_bits_t *input,
          out->delta_q_v_ac = out->delta_q_u_ac;
       }
    }
+   out->diff_uv_delta = different_uv;
    out->using_qmatrix = rav1_bits_read(&bits, 1);
    if (out->using_qmatrix)
    {
@@ -225,12 +227,18 @@ static INLINE bool rav1_picture_parse(rav1_picture_t *out, rav1_bits_t *input,
          {
             for (i = 0; i < 8; i++)
                if (rav1_bits_read(&bits, 1))
+               {
+                  out->loop_filter_update_ref_delta |= 1u << i;
                   out->reference.loop_filter_ref_deltas[i] =
                       rav1_bits_delta(&bits, 7, false);
+               }
             for (i = 0; i < 2; i++)
                if (rav1_bits_read(&bits, 1))
+               {
+                  out->loop_filter_update_mode_delta |= 1u << i;
                   out->reference.loop_filter_mode_deltas[i] =
                       rav1_bits_delta(&bits, 7, false);
+               }
          }
       }
    }

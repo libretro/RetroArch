@@ -159,6 +159,8 @@ static void test_full(void)
    CHECK(picture.base_q_idx == 100 && picture.delta_q_y_dc == -64);
    CHECK(picture.delta_q_u_dc == 63 && picture.delta_q_u_ac == -1 &&
          picture.delta_q_v_dc == 1 && !picture.delta_q_v_ac);
+   CHECK(picture.diff_uv_delta && picture.loop_filter_update_ref_delta == 255 &&
+         picture.loop_filter_update_mode_delta == 3);
    CHECK(picture.using_qmatrix && picture.qm_y == 2 && picture.qm_u == 3 &&
          picture.qm_v == 4);
    CHECK(picture.reference.segment_enabled[0] == 227 &&
@@ -225,6 +227,8 @@ static void test_inherited(void)
    CHECK(!picture.segmentation_update_data &&
          picture.segmentation_temporal_update &&
          picture.last_active_segment == 7);
+   CHECK(!picture.diff_uv_delta && !picture.loop_filter_update_ref_delta &&
+         !picture.loop_filter_update_mode_delta);
    CHECK(!memcmp(&picture.reference, &primary, sizeof(primary)));
    CHECK(!memcmp(&primary, &saved_primary, sizeof(primary)));
    CHECK(picture.tx_mode == 1 && bits.byte * 8 + bits.bit == position);
@@ -309,6 +313,42 @@ static uint8_t *load_file(const char *path, size_t *length)
    }
    fclose(file);
    return bytes;
+}
+
+static void test_sparse_updates(void)
+{
+   rav1_bits_t bits;
+   unsigned i;
+   reset();
+   seq.monochrome = 1;
+   seq.enable_cdef = seq.enable_restoration = 0;
+   quant(50);
+   put(0, 2);
+   put(1, 6);
+   put(2, 6);
+   put(0, 3);
+   put(3, 2);
+   for (i = 0; i < 8; i++)
+   {
+      put(i == 0 || i == 7, 1);
+      if (i == 0 || i == 7)
+         signed_value(i == 0 ? 1 : -2, 7);
+   }
+   put(0, 1);
+   put(1, 1);
+   signed_value(-3, 7);
+   put(0, 1);
+   bits = reader((position + 7) / 8);
+   CHECK(rav1_picture_parse(&picture, &bits, &seq, &frame, &geometry, false,
+                            NULL));
+   CHECK(picture.loop_filter_update_ref_delta == 0x81 &&
+         picture.loop_filter_update_mode_delta == 2);
+   CHECK(picture.reference.loop_filter_ref_deltas[0] == 1 &&
+         picture.reference.loop_filter_ref_deltas[7] == -2 &&
+         picture.reference.loop_filter_ref_deltas[4] == -1);
+   CHECK(!picture.reference.loop_filter_mode_deltas[0] &&
+         picture.reference.loop_filter_mode_deltas[1] == -3);
+   CHECK(bits.byte * 8 + bits.bit == position);
 }
 
 static void dump_picture(void)
@@ -406,6 +446,7 @@ int main(int argc, char **argv)
    test_full();
    test_inherited();
    test_gates();
+   test_sparse_updates();
    printf("AV1 picture tools: %u failures\n", failures);
    return failures ? 1 : 0;
 }

@@ -259,6 +259,12 @@ jobs:
           python3 grain_fixtures.py
           python3 state_fixtures.py
 
+      - name: Vulkan AV1 parameters against real streams (ASan + UBSan)
+        working-directory: samples/gfx/vulkan_video_caps
+        run: |
+          make av1_params_test SANITIZER=address,undefined
+          python3 av1_fixtures.py
+
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
         run: make check stream-check SANITIZER=address,undefined
