@@ -540,9 +540,16 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    MCP_RAW(w, ",\"additionalProperties\":false}");
    if (rows && structured)
       mcp_schema_rows(w, rows);
-   rjsonwriter_rawf(w, ",\"annotations\":{\"readOnlyHint\":%s,"
-         "\"destructiveHint\":%s,\"openWorldHint\":false}}",
-         ro ? "true" : "false", de ? "true" : "false");
+   /* readOnlyHint is false by default, so only the tools that are say
+    * so: every tool's annotations are context a client pays for, and
+    * the ones that merely repeat a default are 800 bytes of it.
+    * destructiveHint defaults to true and openWorldHint to true, so
+    * both have to be stated where they are not. */
+   MCP_RAW(w, ",\"annotations\":{");
+   if (ro)
+      MCP_RAW(w, "\"readOnlyHint\":true,");
+   rjsonwriter_rawf(w, "\"destructiveHint\":%s,\"openWorldHint\":false}}",
+         de ? "true" : "false");
 }
 
 static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,

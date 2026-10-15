@@ -611,9 +611,11 @@ bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);
 void command_run_frames_cancel(const char *why);
 
-/* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player] */
+/* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player], and
+ * GET_INPUT [player] to look without changing anything. */
 bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
+bool command_get_input(command_t *cmd, const char *arg);
 
 /* The most frames a request can run within a structured interface's
  * ten-second reply deadline (about ten seconds at 60fps). PRESS keeps
@@ -624,21 +626,8 @@ bool command_release_input(command_t *cmd, const char *arg);
 bool command_press(command_t *cmd, const char *arg);
 
 /* RUN_UNTIL <address> <condition> <value> [max frames]: run the content
- * until a byte says to stop. The conditions, in the order the handler
- * compares them. */
-enum cmd_until_op
-{
-   CMD_UNTIL_EQ = 0,
-   CMD_UNTIL_NE,
-   CMD_UNTIL_LT,
-   CMD_UNTIL_GT,
-   CMD_UNTIL_LE,
-   CMD_UNTIL_GE
-};
-#define COMMAND_UNTIL_OPS "==, !=, <, >, <= or >="
-static const char *const command_until_ops[] = {
-   "==", "!=", "<", ">", "<=", ">="
-};
+ * until a byte says to stop. The conditions it takes are command.c's,
+ * which is all that compares them. */
 bool command_run_until(command_t *cmd, const char *arg);
 
 /* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
@@ -777,6 +766,11 @@ static const struct cmd_param cmd_params_input_release[] = {
       CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_input_get[] = {
+   { "player", "The player, from 1; the first when left out.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_core_option[] = {
    { "option", "A core option key, as GET_CORE_OPTION with no argument "
       "lists it.", CMD_PARAM_STRING, false, NULL, NULL, NULL },
@@ -859,7 +853,7 @@ static const struct cmd_column cmd_cols_option[] = {
 };
 static const struct cmd_column cmd_cols_core[] = {
    { "name", "The core's display name." },
-   { "path", "The core's path, as LOAD_CORE and LOAD_CONTENT take it." },
+   { "path", "The core's path, as LOAD_CONTENT takes it." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_playlist[] = {
@@ -884,14 +878,14 @@ static const struct cmd_column cmd_cols_core_option[] = {
    { NULL }
 };
 static const struct cmd_column cmd_cols_memory[] = {
-   { "start", "The region's first address, in hexadecimal." },
-   { "length", "How many bytes it covers, in hexadecimal." },
-   { "select", "Which address bits name the region, in hexadecimal." },
-   { "disconnect", "Which address bits it ignores, in hexadecimal." },
+   { "start", "The region's first address." },
+   { "length", "How many bytes it covers." },
+   { "select", "Which address bits name the region." },
+   { "disconnect", "Which address bits it ignores." },
    { "kind", "system, save, video or other." },
-   { "access", "rw, ro, or none where the core exposes no memory." },
+   { "access", "rw, ro, or none where the core exposes none." },
    { "order", "big or little." },
-   { "space", "The address space the core names it in, or empty." },
+   { "space", "What the core calls the address space, or empty." },
    { NULL }
 };
 
@@ -964,6 +958,7 @@ static const struct cmd_action_map action_map[] = {
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
    { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers whether it was met, how many frames ran and what the byte holds; waits 600 frames at most and answers waiting where they run out, to be asked again.", 0, cmd_params_until, &cmd_rows_until },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or for every player when given none. Answers in SET_INPUT's shape, for the player asked after or the first of them.", 0, cmd_params_input_release, &cmd_rows_input },
+   { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
@@ -977,7 +972,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
-   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: start address, length, select and disconnect masks, kind, access, byte order and address space of each region, tab separated.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map, tab separated: the first four fields of each region are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },

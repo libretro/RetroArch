@@ -2186,6 +2186,22 @@ static struct
    char               reply[256];
 } command_run_frames_st;
 
+/* How RUN_UNTIL compares the byte it waits on, in the order the words
+ * below name them. */
+enum cmd_until_op
+{
+   CMD_UNTIL_EQ = 0,
+   CMD_UNTIL_NE,
+   CMD_UNTIL_LT,
+   CMD_UNTIL_GT,
+   CMD_UNTIL_LE,
+   CMD_UNTIL_GE
+};
+#define COMMAND_UNTIL_OPS "==, !=, <, >, <= or >="
+static const char *const command_until_ops[] = {
+   "==", "!=", "<", ">", "<=", ">="
+};
+
 /* Whether the byte RUN_UNTIL waits on now meets what was asked. */
 static bool command_until_met(void)
 {
@@ -2606,9 +2622,13 @@ bool command_run_until(command_t *cmd, const char *arg)
    if (!(at = command_memory_get_pointer(sys_info, address, &avail, 0,
                reason, sizeof(reason))))
    {
-      char *why = reason;
-      while (*why == ' ' || *why == '-' || *why == '1')
-         why++;
+      /* the helper writes the reason as line clients read it, " -1 "
+       * and then why, ending in a newline */
+      char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
+         ? reason + STRLEN_CONST(" -1 ") : reason;
+      char *nl  = strchr(why, '\n');
+      if (nl)
+         *nl = '\0';
       command_reply_error(cmd, "RUN_UNTIL", "%s", *why ? why
             : "no memory at that address");
       return false;
@@ -2700,6 +2720,31 @@ bool command_press(command_t *cmd, const char *arg)
    for (i = 0; i < count; i++)
       input_driver_command_hold(player - 1, ids[i], 1);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   return true;
+}
+
+/* GET_INPUT [player]
+ *
+ * What the player holds, without changing it. SET_INPUT answers in the
+ * same shape but has to set something first, and RELEASE_INPUT lets go
+ * before it answers, so neither can be used to look. */
+bool command_get_input(command_t *cmd, const char *arg)
+{
+   char     reply[192];
+   unsigned player = 1;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg && (!command_arg_uint(arg, &player)
+            || player < 1 || player > MAX_USERS))
+   {
+      command_reply_error(cmd, "GET_INPUT",
+            "a player from 1 to %u, or nothing for the first",
+            (unsigned)MAX_USERS);
+      return false;
+   }
+   cmd->replier(cmd, reply,
+         command_input_line(player - 1, reply, sizeof(reply)));
    return true;
 }
 
@@ -3267,24 +3312,62 @@ bool command_version(command_t *cmd, const char* arg)
  * branch.  Same task_push_load_new_core() call with the same arguments;
  * the result is propagated rather than discarded so a bad core path is
  * reported as a failed command instead of a silent no-op. */
+/* Whether @path is a core that can be loaded, answered to @cmd with
+ * why when it is not.
+ *
+ * Asked before anything is torn down for it: a path that exists and is
+ * not a core - a stale library, something renamed - would otherwise
+ * unload the running core and then fail, costing the game that was
+ * running. libretro_get_system_info() is the probe core scanning
+ * already uses and it keeps what it finds, so asking twice is free. A
+ * built-in core is not a file on disk and has nothing to probe. */
+static bool command_core_at(command_t *cmd, const char *name,
+      const char *path)
+{
+   struct retro_system_info info;
+
+   if (string_ends_with_size(path, "builtin",
+            strlen(path), STRLEN_CONST("builtin")))
+      return true;
+   if (!path_is_valid(path))
+   {
+      command_reply_error(cmd, name, "no core at %s", path);
+      return false;
+   }
+   if (!libretro_get_system_info(path, &info, NULL))
+   {
+      command_reply_error(cmd, name, "%s is not a libretro core", path);
+      return false;
+   }
+   return true;
+}
+
 bool command_load_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};
+   char path[PATH_MAX_LENGTH];
 
+   while (arg && *arg == ' ')
+      arg++;
    if (!arg || !*arg)
-      return false;
-
-#if TARGET_OS_IPHONE
    {
-      char exp[PATH_MAX_LENGTH];
-      fill_pathname_expand_special(exp, arg, sizeof(exp));
-      return task_push_load_new_core(exp, NULL,
-            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+      command_reply_error(cmd, "LOAD_CORE", "a core path");
+      return false;
    }
+#if TARGET_OS_IPHONE
+   fill_pathname_expand_special(path, arg, sizeof(path));
 #else
-   return task_push_load_new_core(arg, NULL,
-         &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+   strlcpy(path, arg, sizeof(path));
 #endif
+   if (!command_core_at(cmd, "LOAD_CORE", path))
+      return false;
+   if (!task_push_load_new_core(path, NULL,
+            &content_info, CORE_TYPE_PLAIN, NULL, NULL))
+   {
+      command_reply_error(cmd, "LOAD_CORE", "could not load %s", path);
+      return false;
+   }
+   return true;
 }
 
 /* START_CORE
@@ -3406,14 +3489,8 @@ bool command_load_content(command_t *cmd, const char* arg)
       }
       strlcpy(core_path, supported[0].path, sizeof(core_path));
    }
-   /* A built-in core is not a file on disk */
-   else if (   !string_ends_with_size(core_path, "builtin",
-                  strlen(core_path), STRLEN_CONST("builtin"))
-            && !path_is_valid(core_path))
-   {
-      command_reply_error(cmd, "LOAD_CONTENT", "no core at %s", core_path);
+   else if (!command_core_at(cmd, "LOAD_CONTENT", core_path))
       return false;
-   }
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
          core_path, content_path, NULL, NULL, NULL, &content_info, NULL, NULL))
