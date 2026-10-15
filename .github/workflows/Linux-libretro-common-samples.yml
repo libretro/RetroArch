@@ -214,6 +214,7 @@ jobs:
             rm3u_test
             rmp4_fragment_test
             rav1_test
+            rav1_sequence_test
             rav1_container_test
             rtga_test
             rbmp_test

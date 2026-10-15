@@ -8,7 +8,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-/* Borrowed low-overhead OBU views; no sequence/frame syntax is decoded. */
+/* Borrowed low-overhead OBU views; payload parsing is separate. */
 typedef struct rav1_obu
 {
    const uint8_t *data, *payload;
@@ -92,7 +92,7 @@ static INLINE int rav1_obu_next(rav1_obu_t *out, const uint8_t *data,
 }
 
 /* Parse av1C/Matroska CodecPrivate header fields and config OBU framing.
- * Sequence payload semantics and agreement with av1C need a codec parser.
+ * rav1_sequence.h validates sequence payloads and agreement with av1C.
  * All returned views borrow data; the caller must retain its storage. */
 static INLINE bool rav1_config_parse(rav1_config_t *out, const uint8_t *data,
                                      size_t size)

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <formats/rav1.h>
+#include <formats/rav1_sequence.h>
 #include <formats/rmp4.h>
 #include <formats/rwebm.h>
 
@@ -353,6 +353,7 @@ static int inspect_file(const char *path)
    size_t private_size = 0;
    long size;
    rav1_config_t cfg;
+   static rav1_sequence_t seq;
    unsigned width = 0, height = 0, count = 0;
    int i, track = -1, ret = -1, ok = 0;
    if (!file)
@@ -399,6 +400,12 @@ static int inspect_file(const char *path)
    }
    if (track < 0 || !rav1_config_parse(&cfg, private_data, private_size))
       goto done;
+   if (!rav1_config_sequence(&seq, &cfg) || seq.max_width != width ||
+       seq.max_height != height)
+      goto done;
+   printf("S %u %u %u %u %u %u %u\n", seq.max_width, seq.max_height,
+          seq.bit_depth, seq.color_primaries, seq.transfer_characteristics,
+          seq.matrix_coefficients, seq.color_range);
    printf("C %u %u %u %u %lu %08lx\n", width, height, cfg.profile,
           cfg.bit_depth, (unsigned long)private_size,
           (unsigned long)hash_bytes(private_data, private_size));
@@ -436,9 +443,18 @@ static int inspect_file(const char *path)
       if (packet_track != track)
          continue;
       while ((i = rav1_obu_next(&obu, payload, length, &offset, true)) == 1)
+      {
+         if (obu.type == 1)
+         {
+            rav1_config_t packet_config = cfg;
+            packet_config.sequence = obu;
+            if (!rav1_config_sequence(&seq, &packet_config))
+               goto done;
+         }
          if (obu.data < data || obu.data > data + size ||
              obu.size > (size_t)(data + size - obu.data))
             goto done;
+      }
       if (i < 0 || !length || offset != length)
          goto done;
       printf("P %" PRId64 " %d %lu %08lx\n", timestamp, key,
