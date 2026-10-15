@@ -442,8 +442,16 @@ static bool gl_xr_start(gl_android_openxr_t *xr)
    if (!openxr_session_create(&xr->session, &binding))
       return false;
    openxr_swapchains_list_formats(&xr->sc);
-   if (!(xr->format = openxr_binding_gles_format(&xr->sc)))
-      return false;
+   {
+      /* let extensions decide the copy. */
+      const char *ext = (const char*)glGetString(GL_EXTENSIONS);
+      bool write_control = ext
+         && strstr(ext, "GL_EXT_sRGB_write_control") != NULL;
+      if (!(xr->format = openxr_binding_gles_format(&xr->sc, write_control)))
+         return false;
+      if (xr->format == OPENXR_GLES_SRGB8_ALPHA8)
+         RARCH_LOG("[OpenXR] sRGB swapchain.\n");
+   }
    openxr_frame_session_created(&xr->frame);
    openxr_host_session_created(&xr->host);
 
@@ -597,6 +605,9 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
          &xr->set, rects);
    /* The blits are scissored: whatever gl2 drew last must not clip them. */
    glDisable(GL_SCISSOR_TEST);
+   /* The copy keeps the stored values; the compositor decodes them. */
+   if (xr->format == OPENXR_GLES_SRGB8_ALPHA8)
+      glDisable(OPENXR_GLES_FRAMEBUFFER_SRGB);
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {

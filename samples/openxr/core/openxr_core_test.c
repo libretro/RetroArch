@@ -3283,21 +3283,30 @@ static void test_binding_gles(void)
    memset(&sc, 0, sizeof(sc));
    openxr_swapchains_load(&sc, &rt, &s);
 
-   /* RGBA8 first; sRGB only with a warning; neither: none. */
+   /* sRGB when the copy can keep the values; else RGBA8 first; sRGB
+    * only with a warning; neither: none. */
    t_formats[0] = OPENXR_GLES_SRGB8_ALPHA8;
    t_formats[1] = OPENXR_GLES_RGBA8;
    openxr_swapchains_list_formats(&sc);
-   CHECK(openxr_binding_gles_format(&sc) == OPENXR_GLES_RGBA8, "RGBA8 not chosen");
+   CHECK(openxr_binding_gles_format(&sc, true) == OPENXR_GLES_SRGB8_ALPHA8,
+         "sRGB not chosen with write control");
+   CHECK(openxr_binding_gles_format(&sc, false) == OPENXR_GLES_RGBA8, "RGBA8 not chosen");
+   t_formats[0] = OPENXR_GLES_RGBA8;
+   t_formats[1] = 44;
+   openxr_swapchains_list_formats(&sc);
+   CHECK(openxr_binding_gles_format(&sc, true) == OPENXR_GLES_RGBA8,
+         "RGBA8 not chosen without sRGB on offer");
+   t_formats[0] = OPENXR_GLES_SRGB8_ALPHA8;
    t_formats[1] = OPENXR_GLES_SRGB8_ALPHA8;
    openxr_swapchains_list_formats(&sc);
    t_reset_log();
-   CHECK(openxr_binding_gles_format(&sc) == OPENXR_GLES_SRGB8_ALPHA8
+   CHECK(openxr_binding_gles_format(&sc, false) == OPENXR_GLES_SRGB8_ALPHA8
          && LOGGED("[OpenXR] Only an sRGB swapchain format is offered; the output may look washed out.\n"),
          "sRGB: %s", t_log);
    t_formats[0] = 50;
    t_formats[1] = 44;
    openxr_swapchains_list_formats(&sc);
-   CHECK(!openxr_binding_gles_format(&sc), "a format from nothing");
+   CHECK(!openxr_binding_gles_format(&sc, true), "a format from nothing");
 
    /* Each layer's images land as its textures. */
    memset(tex, 0, sizeof(tex));

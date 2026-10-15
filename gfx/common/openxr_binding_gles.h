@@ -30,6 +30,7 @@ RETRO_BEGIN_DECLS
 
 #define OPENXR_GLES_RGBA8        0x8058  /* GL_RGBA8 */
 #define OPENXR_GLES_SRGB8_ALPHA8 0x8C43  /* GL_SRGB8_ALPHA8 */
+#define OPENXR_GLES_FRAMEBUFFER_SRGB 0x8DB9  /* GL_FRAMEBUFFER_SRGB_EXT */
 
 /* Where a slot's images go as textures: [image][layer]. */
 typedef struct openxr_gles_images
@@ -41,9 +42,11 @@ typedef struct openxr_gles_images
 /* Asked of the runtime before a GLES session, as it must be. */
 bool openxr_binding_gles_requirements(const openxr_runtime_t *rt);
 
-/* gl2 writes display-referred values: RGBA8, else sRGB with a warning,
- * else 0. */
-int64_t openxr_binding_gles_format(const openxr_swapchains_t *sc);
+/* gl2 writes display-referred values: sRGB when the copy can leave
+ * them as they are (srgb_write_control: EXT_sRGB_write_control), else
+ * RGBA8, else sRGB with a warning, else 0. */
+int64_t openxr_binding_gles_format(const openxr_swapchains_t *sc,
+      bool srgb_write_control);
 
 /* An openxr_images_cb; user is an openxr_gles_images_t. */
 XrResult openxr_binding_gles_images(void *user, XrSwapchain swapchain,
