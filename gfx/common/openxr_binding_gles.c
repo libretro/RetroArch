@@ -57,11 +57,16 @@ bool openxr_binding_gles_requirements(const openxr_runtime_t *rt)
    return true;
 }
 
-int64_t openxr_binding_gles_format(const openxr_swapchains_t *sc)
+int64_t openxr_binding_gles_format(const openxr_swapchains_t *sc,
+      bool srgb_write_control)
 {
+   /* gl2's values are already sRGB-encoded. */
+   if (     srgb_write_control
+         && openxr_swapchains_supports(sc, OPENXR_GLES_SRGB8_ALPHA8))
+      return OPENXR_GLES_SRGB8_ALPHA8;
    if (openxr_swapchains_supports(sc, OPENXR_GLES_RGBA8))
       return OPENXR_GLES_RGBA8;
-   /* GLES has no GL_FRAMEBUFFER_SRGB: the values are encoded twice. */
+   /* Without the extension the copy encodes the values a second time. */
    if (openxr_swapchains_supports(sc, OPENXR_GLES_SRGB8_ALPHA8))
    {
       RARCH_WARN("[OpenXR] Only an sRGB swapchain format is offered; the output may look washed out.\n");

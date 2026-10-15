@@ -48,6 +48,7 @@ typedef struct openxr_runtime
    PFN_xrDestroyInstance DestroyInstance;
    PFN_xrEnumerateDisplayRefreshRatesFB EnumerateDisplayRefreshRatesFB;
    PFN_xrRequestDisplayRefreshRateFB RequestDisplayRefreshRateFB;
+   PFN_xrPerfSettingsSetPerformanceLevelEXT PerfSettingsSetPerformanceLevelEXT;
    XrInstance instance;
    XrSystemId system;
    XrEnvironmentBlendMode blend_mode;
@@ -60,6 +61,7 @@ typedef struct openxr_runtime
    bool palm_pose;            /* XR_EXT_palm_pose */
    bool hand_tracking;        /* XR_EXT_hand_tracking. */
    bool hand_data_source;     /* XR_EXT_hand_tracking_data_source */
+   bool perf_settings;        /* XR_EXT_performance_settings */
    openxr_runtime_platform_t platform;   /* set before create_instance */
    const char *binding_ext;
 } openxr_runtime_t;

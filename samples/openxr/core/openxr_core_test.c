@@ -157,6 +157,19 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_refresh_rates(XrSession s,
 static unsigned t_rate_requests;
 static XRAPI_ATTR XrResult XRAPI_CALL t_request_rate(XrSession s, float hz)
 { t_rate_requests++; return XR_SUCCESS; }
+/* The levels last asked per domain, and how many asks. */
+static unsigned t_perf_calls;
+static XrPerfSettingsLevelEXT t_perf_cpu, t_perf_gpu;
+static XRAPI_ATTR XrResult XRAPI_CALL t_perf_level(XrSession s,
+      XrPerfSettingsDomainEXT domain, XrPerfSettingsLevelEXT level)
+{
+   t_perf_calls++;
+   if (domain == XR_PERF_SETTINGS_DOMAIN_CPU_EXT)
+      t_perf_cpu = level;
+   else if (domain == XR_PERF_SETTINGS_DOMAIN_GPU_EXT)
+      t_perf_gpu = level;
+   return XR_SUCCESS;
+}
 
 #define T_SESSION ((XrSession)(uintptr_t)0x30)
 #define T_OTHER   ((XrSession)(uintptr_t)0x31)
@@ -607,6 +620,7 @@ static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrEnumerateEnvironmentBlendModes",  (PFN_xrVoidFunction)t_enum_modes },
    { "xrEnumerateDisplayRefreshRatesFB",  (PFN_xrVoidFunction)t_refresh_rates },
    { "xrRequestDisplayRefreshRateFB",     (PFN_xrVoidFunction)t_request_rate },
+   { "xrPerfSettingsSetPerformanceLevelEXT", (PFN_xrVoidFunction)t_perf_level },
    { "xrPollEvent",            (PFN_xrVoidFunction)t_poll_event },
    { "xrCreateSession",        (PFN_xrVoidFunction)t_create_session },
    { "xrDestroySession",       (PFN_xrVoidFunction)t_destroy_session },
@@ -3251,6 +3265,86 @@ static void test_frame_inline(void)
    t_frame_free(&rt, &s, &f);
 }
 
+/* Performance Boost: nothing asked while off from the start, CPU boost
+ * once on, both domains back at sustained high (the runtime's default)
+ * once off again, one ask per change, and nothing without the
+ * extension or its function. */
+static void test_frame_perf(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_frame_begun_t b;
+   unsigned i;
+
+   /* The extension is asked for when offered, dropped without its
+    * function. */
+   t_runtime_defaults();
+   t_exts[t_num_exts++] = XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME;
+   memset(&rt, 0, sizeof(rt));
+   CHECK(openxr_runtime_create_instance(&rt, t_get_proc, "XR_KHR_vulkan_enable2")
+         == OPENXR_RUNTIME_OK, "instance with performance settings");
+   CHECK(rt.perf_settings && rt.PerfSettingsSetPerformanceLevelEXT,
+         "performance settings not loaded");
+   openxr_runtime_deinit(&rt);
+   t_runtime_defaults();
+   t_exts[t_num_exts++] = XR_EXT_PERFORMANCE_SETTINGS_EXTENSION_NAME;
+   t_missing = "xrPerfSettingsSetPerformanceLevelEXT";
+   memset(&rt, 0, sizeof(rt));
+   openxr_runtime_create_instance(&rt, t_get_proc, "XR_KHR_vulkan_enable2");
+   CHECK(!rt.perf_settings, "performance settings kept without the function");
+   openxr_runtime_deinit(&rt);
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   rt.perf_settings                      = true;
+   rt.PerfSettingsSetPerformanceLevelEXT = t_perf_level;
+   video_xr_set_perf_boost(false);
+   t_perf_calls = 0;
+   t_perf_cpu   = t_perf_gpu = (XrPerfSettingsLevelEXT)0;
+   CHECK(openxr_frame_start_inline(&f), "in-line start");
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   for (i = 0; i < 3; i++)
+   {
+      openxr_frame_begin(&f, &b);
+      openxr_frame_end(&f, &b);
+   }
+   CHECK(t_perf_calls == 0, "%u asks while off from the start", t_perf_calls);
+
+   video_xr_set_perf_boost(true);
+   for (i = 0; i < 3; i++)
+   {
+      openxr_frame_begin(&f, &b);
+      openxr_frame_end(&f, &b);
+   }
+   CHECK(t_perf_calls == 2
+         && t_perf_cpu == XR_PERF_SETTINGS_LEVEL_BOOST_EXT
+         && t_perf_gpu == XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT,
+         "on: %u asks, CPU %d, GPU %d", t_perf_calls, (int)t_perf_cpu,
+         (int)t_perf_gpu);
+
+   video_xr_set_perf_boost(false);
+   for (i = 0; i < 3; i++)
+   {
+      openxr_frame_begin(&f, &b);
+      openxr_frame_end(&f, &b);
+   }
+   CHECK(t_perf_calls == 4
+         && t_perf_cpu == XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT
+         && t_perf_gpu == XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT,
+         "off again: %u asks, CPU %d, GPU %d", t_perf_calls,
+         (int)t_perf_cpu, (int)t_perf_gpu);
+
+   /* Without the extension: never asked. */
+   rt.perf_settings = false;
+   video_xr_set_perf_boost(true);
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   CHECK(t_perf_calls == 4, "asked without the extension");
+   video_xr_set_perf_boost(false);
+   t_frame_free(&rt, &s, &f);
+}
+
 static void test_binding_gles(void)
 {
    openxr_runtime_t rt;
@@ -3283,21 +3377,30 @@ static void test_binding_gles(void)
    memset(&sc, 0, sizeof(sc));
    openxr_swapchains_load(&sc, &rt, &s);
 
-   /* RGBA8 first; sRGB only with a warning; neither: none. */
+   /* sRGB when the copy can keep the values; else RGBA8 first; sRGB
+    * only with a warning; neither: none. */
    t_formats[0] = OPENXR_GLES_SRGB8_ALPHA8;
    t_formats[1] = OPENXR_GLES_RGBA8;
    openxr_swapchains_list_formats(&sc);
-   CHECK(openxr_binding_gles_format(&sc) == OPENXR_GLES_RGBA8, "RGBA8 not chosen");
+   CHECK(openxr_binding_gles_format(&sc, true) == OPENXR_GLES_SRGB8_ALPHA8,
+         "sRGB not chosen with write control");
+   CHECK(openxr_binding_gles_format(&sc, false) == OPENXR_GLES_RGBA8, "RGBA8 not chosen");
+   t_formats[0] = OPENXR_GLES_RGBA8;
+   t_formats[1] = 44;
+   openxr_swapchains_list_formats(&sc);
+   CHECK(openxr_binding_gles_format(&sc, true) == OPENXR_GLES_RGBA8,
+         "RGBA8 not chosen without sRGB on offer");
+   t_formats[0] = OPENXR_GLES_SRGB8_ALPHA8;
    t_formats[1] = OPENXR_GLES_SRGB8_ALPHA8;
    openxr_swapchains_list_formats(&sc);
    t_reset_log();
-   CHECK(openxr_binding_gles_format(&sc) == OPENXR_GLES_SRGB8_ALPHA8
+   CHECK(openxr_binding_gles_format(&sc, false) == OPENXR_GLES_SRGB8_ALPHA8
          && LOGGED("[OpenXR] Only an sRGB swapchain format is offered; the output may look washed out.\n"),
          "sRGB: %s", t_log);
    t_formats[0] = 50;
    t_formats[1] = 44;
    openxr_swapchains_list_formats(&sc);
-   CHECK(!openxr_binding_gles_format(&sc), "a format from nothing");
+   CHECK(!openxr_binding_gles_format(&sc, true), "a format from nothing");
 
    /* Each layer's images land as its textures. */
    memset(tex, 0, sizeof(tex));
@@ -6026,6 +6129,7 @@ int main(void)
    test_runtime_platform();
    test_runtime_gaps();
    test_frame_inline();
+   test_frame_perf();
    test_binding_gles();
    test_binding_gl();
 #ifdef HAVE_OPENXR_GL

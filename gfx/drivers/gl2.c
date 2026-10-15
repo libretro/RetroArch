@@ -356,9 +356,12 @@ static GLuint gl2_linear_program(gl2_t *gl);
 #endif
 
 /* Sync objects for the threaded wrapper's hardware ring and the PBO
- * readback: the same condition the driver's own fence path compiles
- * under. GLES builds finish instead. */
-#if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
+ * readback. Desktop GL has them through ARB_sync, GLES from 3.0 in
+ * core (GL_CAPS_SYNC checks the version at runtime); GLES 2 builds
+ * finish instead. Without them every frame from a hardware core costs
+ * a glFinish on the core's thread - the whole of the GPU's frame,
+ * serialised behind the core's own work. */
+#if defined(HAVE_GL_SYNC) && (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #define GL2_HW_RING_SYNC 1
 #endif
 

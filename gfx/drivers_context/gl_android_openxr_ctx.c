@@ -29,6 +29,7 @@
 #include <EGL/eglext.h>
 
 #include <glsym/glsym.h>
+#include <gfx/gl_capabilities.h>
 
 #include <jni.h>
 #include <android/native_activity.h>
@@ -118,6 +119,9 @@ typedef struct gl_android_openxr
    unsigned rotation;
    unsigned screen_layout;
    bool swap_eyes;
+   /* An sRGB swapchain filled with GL_FRAMEBUFFER_SRGB_EXT off around
+    * the copy (EXT_sRGB_write_control). */
+   bool srgb_copy;
 
    EGLDisplay egl_display;
    EGLConfig egl_config;
@@ -442,8 +446,15 @@ static bool gl_xr_start(gl_android_openxr_t *xr)
    if (!openxr_session_create(&xr->session, &binding))
       return false;
    openxr_swapchains_list_formats(&xr->sc);
-   if (!(xr->format = openxr_binding_gles_format(&xr->sc)))
-      return false;
+   {
+      bool write_control = gl_query_extension("GL_EXT_sRGB_write_control");
+      if (!(xr->format = openxr_binding_gles_format(&xr->sc, write_control)))
+         return false;
+      xr->srgb_copy = write_control
+         && xr->format == OPENXR_GLES_SRGB8_ALPHA8;
+      if (xr->srgb_copy)
+         RARCH_LOG("[OpenXR] sRGB swapchain.\n");
+   }
    openxr_frame_session_created(&xr->frame);
    openxr_host_session_created(&xr->host);
 
@@ -597,6 +608,10 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
          &xr->set, rects);
    /* The blits are scissored: whatever gl2 drew last must not clip them. */
    glDisable(GL_SCISSOR_TEST);
+   /* The copy keeps the stored values; the compositor decodes them.
+    * Back on after it: gl2's sRGB passes share this context. */
+   if (xr->srgb_copy)
+      glDisable(OPENXR_GLES_FRAMEBUFFER_SRGB);
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {
@@ -629,6 +644,8 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
       glFlush();
       openxr_slot_release(&xr->sc, s);
    }
+   if (xr->srgb_copy)
+      glEnable(OPENXR_GLES_FRAMEBUFFER_SRGB);
    openxr_frame_publish(&xr->frame, &xr->set);
 }
 

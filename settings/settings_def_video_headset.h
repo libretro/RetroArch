@@ -29,6 +29,11 @@ S_UINT_EX(video_openxr_placement, VIDEO_OPENXR_PLACEMENT,
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_placement, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Screen Placement",
       "Where the headset keeps the screens. Fixed in Room: where Recenter puts them. Follow Head: always in front of you; on a large screen the edges sit where the lenses blur. Lazy Follow: they stay until you turn well away, then glide back in front of you.")
+S_BOOL(video_openxr_perf_boost, VIDEO_OPENXR_PERF_BOOST,
+      "video_openxr_perf_boost",
+      false, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Headset Performance Boost",
+      "Ask the headset for its highest CPU clock, above what it can sustain, so demanding content keeps up with the headset. Uses more battery and runs warmer; a hot headset may still slow down. Applies at once.")
 S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

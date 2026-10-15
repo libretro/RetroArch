@@ -16,6 +16,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <retro_atomic.h>
+
 #include "video_xr.h"
 #include "video_defines.h"
 #include "../runloop.h"
@@ -756,4 +758,17 @@ float video_xr_request_rate(unsigned setting, const float *rates,
       if (fabs(rates[i] - (float)setting) < 0.5)
          return rates[i];
    return 0.0f;
+}
+
+/* Zeroed is the setting's default: off. */
+static retro_atomic_int_t video_xr_perf_boost_on;
+
+void video_xr_set_perf_boost(bool boost)
+{
+   retro_atomic_store_release_int(&video_xr_perf_boost_on, boost ? 1 : 0);
+}
+
+bool video_xr_perf_boost(void)
+{
+   return retro_atomic_load_acquire_int(&video_xr_perf_boost_on) != 0;
 }

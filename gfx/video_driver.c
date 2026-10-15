@@ -3339,6 +3339,7 @@ void video_driver_headset_poll(void)
    video_st->headset_request_hz = video_xr_request_rate(
          settings->uints.video_openxr_refresh_rate, rates, count,
          (float)video_st->av_info.timing.fps, MAXIMUM_SWAP_INTERVAL);
+   video_xr_set_perf_boost(settings->bools.video_openxr_perf_boost);
    if (     hz == video_st->headset_hz
          && (!hz || settings->bools.video_vsync == video_st->headset_vsync))
       return;
