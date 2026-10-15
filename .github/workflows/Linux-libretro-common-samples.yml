@@ -220,6 +220,7 @@ jobs:
             rav1_grain_test
             rav1_reference_state_test
             rav1_hw_session_test
+            rav1_hw_backend_test
             rav1_frame_test
             rav1_tile_info_test
             rav1_tiles_test

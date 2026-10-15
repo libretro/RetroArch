@@ -38,12 +38,13 @@ with tempfile.TemporaryDirectory() as directory:
     defines = ['-DVULKAN_IMPORT_TEST', '-DHAVE_VULKAN']
     if len(sys.argv) > 2 and sys.argv[2] == '--hevc-render':
         defines = ['-DHEVC_DECODE_TEST', '-DHEVC_RENDER_TEST', '-DHAVE_VULKAN',
-                   '-DHAVE_RMP4', '-DHAVE_RH264', '-DHAVE_RVP9']
+                   '-DHAVE_RMP4', '-DHAVE_RH264', '-DHAVE_RVP9', '-DHAVE_RAV1']
         sources += [str(sample / 'hevc_render.c'),
                     str(root / 'libretro-common/formats/h265/rh265.c'),
                     str(root / 'libretro-common/formats/mp4/rmp4.c'),
                     str(root / 'libretro-common/formats/h264/rh264.c'),
-                    str(root / 'libretro-common/formats/vp9/rvp9.c')]
+                    str(root / 'libretro-common/formats/vp9/rvp9.c'),
+                    str(root / 'libretro-common/formats/av1/rav1_hw.c')]
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root)] + defines
         + ['-o', str(Path(sys.argv[1]).resolve())] + sources + [
         str(root / 'libretro-common/vulkan/vulkan_symbol_wrapper.c'),

@@ -27,7 +27,7 @@ queried separately for Main8 and Main10 profile capabilities.
 The probe also queries AV1 Main 8/10-bit capabilities with film grain both
 requested and disabled. The AV1 StdVideo and decode extension declarations
 come from Khronos Vulkan-Headers v1.4.328; only comment syntax and include
-paths are adapted. AV1 is not added to the playback codec mask yet.
+paths are adapted. HAVE_RAV1 enables AV1 extension/queue selection and backend registration.
 
 Native AV1 capability evidence (RTX 5090): all four queries succeed, with
 128x128 minimum and 8192x8192 maximum extent, 16 DPB slots and 16 active
@@ -50,10 +50,33 @@ address the original FRAME OBU, without copying compressed or pixel data.
 sequence parameters for six generated sequence headers. All six normal,
 reduced-still and grain-enabled cases pass on the native RTX 5090 at 8/10 bits.
 Linux llvmpipe and Wine skip unsupported AV1 devices. This submits no video
-commands: decode submission, GPU pixel/grain validation, display ownership,
-registration and player routing remain pending. The device backend must use
+commands; decoded-picture evidence is recorded separately below. The device backend must use
 separate grain output and grain-free reference images when applying grain,
 as required by Vulkan even when distinct output is otherwise unsupported.
+
+`make decode-check` now includes the HAVE_RAV1 production backend and its
+registry. Optional `AV1_TEST_OBU` and `AV1_TEST_RAW` paths feed an OBU stream
+and an independent NV12/P010 oracle. Generate the sixteen cases with
+`python3 gen_av1_decode.py /path/to/fixtures`, then set both paths and run
+`hevc_decode_test` (or `.exe` natively on Windows). `hevc_render_test` uses the
+same inputs to test RGBA conversion and shader-chain submission.
+
+Native RTX 5090 evidence: sixteen Main 8/10-bit streams pass, with 158 decode
+submissions, 146 displayed frames and 28 show-existing replays per raw/RGBA
+pass. Cases cover intra/inter, reordered frames, multiple tiles, 128x128
+superblocks, lossless, reduced-still and full-range BT.709. Accepted OBU bytes
+are overwritten before GPU completion. Raw tests hold output leases to force
+backpressure, rotate DPB slots, and read a retained output after decoder close.
+Sequence parameter bundles stay with the decoder through retirement.
+
+The backend currently accepts fixed, even dimensions with SDR BT.601/709
+matrices. Grain sequences, HDR, other profiles/chroma, layers, super-resolution
+and frame-size changes are declined. Unsupported/incomplete opens leave no
+registered decoder. GPU outputs use the existing independent leased-image
+copy, followed by staging-free sampled import and RGBA conversion when
+supported. No CPU pixel readback occurs in production; readback is the test
+oracle. Removing the DPB-to-output copy, applying grain, temporal-unit/container
+dispatch and builtin movie/thumbnail routing remain separate work.
 
 Native Windows evidence: NVIDIA GeForce RTX 5090 exposes H.264 and HEVC on
 family 3; both HEVC Main8/Main10 capability queries succeed, with maximum
@@ -205,7 +228,7 @@ pass through sampling and RGBA comparison on the RTX 5090. Set
 second-plane-view creation failures and verify the copied fallback and cleanup;
 both complete the same reference corpus. These variables are test-only.
 The six native H.264 decode regressions also pass. This is not full UI/A/V,
-HDR, or wider-device acceptance, and does not add Vulkan VP9 or AV1 decoding.
+HDR, or wider-device acceptance, and does not establish AV1 builtin movie playback.
 
 
 For the shipping threaded-video harness, `HARNESS_SAMPLED_IMPORT=1` supplies
@@ -275,4 +298,4 @@ Oracle readbacks and waits are test-only.
 Current limits: fixed geometry/profile, even dimensions, 4:2:0, and the
 supported BT.601/BT.709 color paths. Other configurations are refused before
 decoding. Wider hardware, actual File Browser/movie A/V, HDR, resolution
-changes and AV1 remain separate acceptance work.
+changes and AV1 movie/grain acceptance remain separate work.

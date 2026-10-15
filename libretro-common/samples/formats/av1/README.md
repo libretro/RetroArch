@@ -224,4 +224,13 @@ key replay without decode, order-hint snapshots, grain propagation and malformed
 input. The eight state fixtures also run through a mock backend: 180 frames,
 145 accepted decodes and 35 replays, with submission/output BUSY injected.
 These are protocol tests, not evidence of hardware pixels or Vulkan decoding.
-A concrete device adapter, backend registration and player routing remain work.
+`rav1_set_hw_backend` publishes an immutable platform factory. Open returns
+operations and a retained factory copy, so existing decoders keep their close
+callback after withdrawal. Failed/incomplete opens close allocated decoders and
+clear outputs. Registry tests cover withdrawal, unsupported slot counts and
+partial-open cleanup, with and without thread support.
+
+RetroArch's HAVE_RAV1 option links the registry and enables a Vulkan Main
+8/10-bit backend. See samples/gfx/vulkan_video_caps for native pixel evidence
+and device limits. Container temporal-unit dispatch and builtin player routing
+remain pending; this does not supply a software AV1 pixel decoder.

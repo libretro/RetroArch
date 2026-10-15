@@ -5,18 +5,20 @@
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
-static VkExtensionProperties props[6];
+static VkExtensionProperties props[7];
 static VkQueueFamilyProperties2 queues[4];
 static VkQueueFamilyVideoPropertiesKHR video[4];
 #define H264 VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR
 #define H265 VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
 #define VP9 VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR
+#define AV1 VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR
 
 static void test_extensions(void)
 {
    unsigned i;
-   for (i = 0; i < 6; i++)
+   for (i = 0; i < 7; i++)
       strcpy(props[i].extensionName, vulkan_video_device_extensions[i]);
+   CHECK(vulkan_video_supported_codecs(props, 7) == (H264 | H265 | VP9 | AV1));
    CHECK(vulkan_video_supported_codecs(props, 6) == (H264 | H265 | VP9));
    CHECK(vulkan_video_supported_codecs(props, 5) == (H264 | H265));
    CHECK(vulkan_video_supported_codecs(props, 4) == H264);
@@ -34,9 +36,13 @@ static void test_extensions(void)
    CHECK(!vulkan_video_extension_enabled(5, H264 | H265));
    CHECK(vulkan_video_extension_enabled(5, VP9));
    CHECK(!vulkan_video_extension_enabled(6, H264 | H265 | VP9));
+   CHECK(vulkan_video_extension_enabled(6, AV1));
+   CHECK(!vulkan_video_extension_enabled(7, AV1));
    strcpy(props[0].extensionName, vulkan_video_device_extensions[0]);
    strcpy(props[3].extensionName, vulkan_video_device_extensions[5]);
    CHECK(vulkan_video_supported_codecs(props, 4) == VP9);
+   strcpy(props[3].extensionName, vulkan_video_device_extensions[6]);
+   CHECK(vulkan_video_supported_codecs(props, 4) == AV1);
 }
 
 static void test_families(void)
@@ -82,6 +88,16 @@ static void test_families(void)
    CHECK(codecs == (H264 | VP9));
    CHECK(vulkan_video_select_decode_family(queues, video, 4, 0, VP9, &codecs) == 1);
    CHECK(codecs == VP9);
+   video[1].videoCodecOperations = AV1;
+   video[2].videoCodecOperations = H264;
+   video[3].videoCodecOperations = VP9 | AV1;
+   CHECK(vulkan_video_select_decode_family(queues, video, 4, 0, AV1, &codecs) == 1);
+   CHECK(codecs == AV1);
+   CHECK(vulkan_video_select_decode_family(queues, video, 4, 0, H264 | VP9 | AV1, &codecs) == 2);
+   CHECK(codecs == H264);
+   video[2].videoCodecOperations |= AV1;
+   CHECK(vulkan_video_select_decode_family(queues, video, 4, 0, H264 | VP9 | AV1, &codecs) == 2);
+   CHECK(codecs == (H264 | AV1));
 
 }
 

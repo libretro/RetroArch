@@ -970,6 +970,9 @@ static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
    memset(&vp9, 0, sizeof(vp9));
    vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
    out->codecs &= allowed;
+#ifndef HAVE_RAV1
+   out->codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
+#endif
 #ifndef HAVE_RVP9
    out->codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
 #endif

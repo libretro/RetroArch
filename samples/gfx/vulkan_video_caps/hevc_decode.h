@@ -356,11 +356,15 @@ done:
 #include "vp9_decode.h"
 #endif
 
+#ifdef HAVE_RAV1
+#include "av1_decode.h"
+#endif
+
 static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       uint32_t family, uint32_t graphics, uint32_t codecs, PFN_vkGetInstanceProcAddr get)
 {
    static const char *extensions[] = {"VK_KHR_synchronization2", "VK_KHR_video_queue",
-      "VK_KHR_video_decode_queue", "VK_KHR_video_decode_h265", "VK_KHR_timeline_semaphore", "VK_KHR_video_decode_h264", "VK_KHR_video_decode_vp9"};
+      "VK_KHR_video_decode_queue", "VK_KHR_video_decode_h265", "VK_KHR_timeline_semaphore", "VK_KHR_video_decode_h264", "VK_KHR_video_decode_vp9", "VK_KHR_video_decode_av1"};
    VkDeviceQueueCreateInfo queues[2];
    VkDeviceCreateInfo info = {0};
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline = {0};
@@ -396,6 +400,15 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       vp9.videoDecodeVP9 = VK_TRUE; vp9.pNext = (void*)info.pNext; info.pNext = &vp9;
       info.enabledExtensionCount = 7;
    }
+   if (codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
+   {
+      if (!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR))
+      {
+         free(ctx);
+         return 0;
+      }
+      info.enabledExtensionCount = 8;
+   }
    info.ppEnabledExtensionNames = extensions;
    if (!create || create(gpu, &info, NULL, &device) != VK_SUCCESS) { free(ctx); return 0; }
    if (!vulkan_symbol_wrapper_load_core_device_symbols(device)) goto done;
@@ -427,6 +440,9 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       if (!vulkan_video_decode_init(ctx) || !h264_regression()) ok = 0;
 #ifdef HAVE_RVP9
       if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_decode_fixture()) ok = 0;
+#endif
+#ifdef HAVE_RAV1
+      if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR) && !av1_decode_fixture()) ok = 0;
 #endif
       vkDeviceWaitIdle(device); vulkan_video_decode_deinit();
    }

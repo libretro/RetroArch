@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* rh264/rh265/rvp9 hardware backends on Vulkan Video.
+/* rh264/rh265/rvp9/rav1 hardware backends on Vulkan Video.
  *
  * A decoder is one stream: a video session, its parameters, the DPB -
  * one picture per rh264 slot, decoded output and reference picture in
@@ -58,6 +58,9 @@
 #include "vulkan_hevc_params.h"
 #include "vulkan_hevc_picture.h"
 #include "vulkan_vp9_picture.h"
+#ifdef HAVE_RAV1
+#include "vulkan_av1_params.h"
+#endif
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #include "vulkan_video_planes.h"
@@ -81,6 +84,14 @@ typedef struct vvd_dec
    VkVideoDecodeH264ProfileInfoKHR h264_profile;
    VkVideoDecodeH265ProfileInfoKHR h265_profile;
    VkVideoDecodeVP9ProfileInfoKHR vp9_profile;
+#ifdef HAVE_RAV1
+   VkVideoDecodeAV1ProfileInfoKHR av1_profile;
+   vulkan_av1_picture_t *av1;
+   rav1_sequence_t av1_sequence;
+   vulkan_av1_sequence_t av1_params;
+   StdVideoDecodeAV1ReferenceInfo av1_saved[VVD_MAX_SLOTS], av1_ref[8];
+   VkVideoDecodeAV1DpbSlotInfoKHR av1_slot[8];
+#endif
    const rh265_video *hevc_source;
    vulkan_hevc_params_t *hevc;
    StdVideoH265LevelIdc hevc_max_level;
@@ -161,6 +172,9 @@ static struct
    rh265_hw_backend_t hevc;
 #ifdef HAVE_RVP9
    rvp9_hw_backend_t vp9;
+#endif
+#ifdef HAVE_RAV1
+   rav1_hw_backend_t av1;
 #endif
    VkVideoCodecOperationFlagsKHR codecs;
 
@@ -437,6 +451,9 @@ static void vvd_destroy(vvd_dec_t *d)
       vkFreeMemory(dev, d->session_mem[i], NULL);
    if (d->tl)
       vkDestroySemaphore(dev, d->tl, NULL);
+#ifdef HAVE_RAV1
+   free(d->av1);
+#endif
    free(d->hevc);
    free(d);
 }
@@ -667,6 +684,12 @@ static bool vvd_make_session(vvd_dec_t *d,
       VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
       VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION
    };
+#ifdef HAVE_RAV1
+   static const VkExtensionProperties av1_std = {
+      VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,
+      VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION
+   };
+#endif
    VkVideoSessionCreateInfoKHR info;
    VkVideoSessionMemoryRequirementsKHR reqs[16];
    VkBindVideoSessionMemoryInfoKHR binds[16];
@@ -685,6 +708,13 @@ static bool vvd_make_session(vvd_dec_t *d,
       ? (unsigned)(d->hevc->params.max_dec_pic_buffering - 1)
       : (caps->maxActiveReferencePictures < 16 ? caps->maxActiveReferencePictures : 16);
    info.pStdHeaderVersion          = d->vp9_profile.sType ? &vp9_std : d->hevc ? &h265_std : &h264_std;
+#ifdef HAVE_RAV1
+   if (d->av1)
+   {
+      info.maxActiveReferencePictures = STD_VIDEO_AV1_REFS_PER_FRAME;
+      info.pStdHeaderVersion = &av1_std;
+   }
+#endif
    if (vvd.create_session(vvd.device, &info, NULL, &d->session) != VK_SUCCESS)
    {
       d->session = VK_NULL_HANDLE;
@@ -1614,6 +1644,7 @@ static void vvd_close(void *dec)
 
 #include "vulkan_video_decode_hevc.h"
 #include "vulkan_video_decode_vp9.h"
+#include "vulkan_video_decode_av1.h"
 
 #define VVD_DEV_PROC(var, type, name) \
    ((vvd.var = (type)vkGetDeviceProcAddr(vvd.device, name)) != NULL)
@@ -1627,6 +1658,9 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    if (!ctx || !ctx->video_lanes || !ctx->device
          || !(ctx->video_codec_operations & (VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR
                | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
+#ifdef HAVE_RAV1
+               | VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR
+#endif
 #ifdef HAVE_RVP9
                | VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR
 #endif
@@ -1706,6 +1740,13 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
       rvp9_set_hw_backend(&vvd.vp9);
 #endif
+#ifdef HAVE_RAV1
+   vvd.av1.user = NULL;
+   vvd.av1.open = vvd_av1_open;
+   vvd.av1.close = vvd_av1_close;
+   if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
+      rav1_set_hw_backend(&vvd.av1);
+#endif
    return true;
 }
 
@@ -1713,6 +1754,9 @@ void vulkan_video_decode_deinit(void)
 {
    if (!vvd.up)
       return;
+#ifdef HAVE_RAV1
+   rav1_set_hw_backend(NULL);
+#endif
    rh264_set_hw_backend(NULL);
    rh265_set_hw_backend(NULL);
 #ifdef HAVE_RVP9

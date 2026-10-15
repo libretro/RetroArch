@@ -2,6 +2,7 @@ CC ?= cc
 COMMON := ../../..
 TARGET := rav1_test$(EXE)
 HW := rav1_hw_session_test$(EXE)
+BACKEND := rav1_hw_backend_test$(EXE)
 STATE := rav1_reference_state_test$(EXE)
 GRAIN := rav1_grain_test$(EXE)
 MOTION := rav1_motion_test$(EXE)
@@ -18,10 +19,13 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW)
+all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+$(BACKEND): rav1_hw_backend_test.c $(COMMON)/formats/av1/rav1_hw.c $(COMMON)/include/formats/rav1_hw.h
+	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
 
 $(HW): rav1_hw_session_test.c $(COMMON)/include/formats/rav1_hw.h $(COMMON)/include/formats/rav1_reference_state.h $(COMMON)/include/formats/rav1_reference.h $(COMMON)/include/formats/rav1_picture.h $(COMMON)/include/formats/rav1_motion.h $(COMMON)/include/formats/rav1_grain.h $(COMMON)/include/formats/rav1_tile_info.h $(COMMON)/include/formats/rav1_tiles.h $(COMMON)/include/formats/rav1_frame.h $(COMMON)/include/formats/rav1_sequence.h $(COMMON)/include/formats/rav1.h $(COMMON)/include/formats/video_hw_frame.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -73,8 +77,10 @@ check: all
 	$(RUNNER) ./$(GRAIN)
 	$(RUNNER) ./$(STATE)
 	$(RUNNER) ./$(HW)
+	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_hw_backend_test rav1_hw_backend_test.exe
 	rm -f rav1_hw_session_test rav1_hw_session_test.exe rav1_reference_state_test rav1_reference_state_test.exe rav1_grain_test rav1_grain_test.exe rav1_motion_test rav1_motion_test.exe rav1_reference_test rav1_reference_test.exe rav1_picture_test rav1_picture_test.exe rav1_frame_test rav1_frame_test.exe rav1_tile_info_test rav1_tile_info_test.exe rav1_tiles_test rav1_tiles_test.exe rav1_sequence_test rav1_sequence_test.exe rav1_test rav1_test.exe rav1_container_test rav1_container_test.exe
 
 .PHONY: all check clean

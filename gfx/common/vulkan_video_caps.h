@@ -13,7 +13,8 @@ static const char *vulkan_video_device_extensions[] = {
    "VK_KHR_video_decode_queue",
    "VK_KHR_video_decode_h264",
    "VK_KHR_video_decode_h265",
-   "VK_KHR_video_decode_vp9"
+   "VK_KHR_video_decode_vp9",
+   "VK_KHR_video_decode_av1"
 };
 
 static INLINE uint32_t vulkan_video_supported_codecs(
@@ -28,7 +29,10 @@ static INLINE uint32_t vulkan_video_supported_codecs(
             if (i < VULKAN_VIDEO_BASE_EXTENSIONS) found++;
             else if (i == 3) codecs |= VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
             else if (i == 4) codecs |= VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR;
-            else codecs |= VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+            else if (i == 5)
+               codecs |= VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+            else
+               codecs |= VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
             break;
          }
    return found == VULKAN_VIDEO_BASE_EXTENSIONS ? codecs : 0;
@@ -40,6 +44,8 @@ static INLINE bool vulkan_video_extension_enabled(unsigned index, uint32_t codec
    if (index == 3) return !!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR);
    if (index == 4) return !!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR);
    if (index == 5) return !!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
+   if (index == 6)
+      return !!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR);
    return false;
 }
 
@@ -61,9 +67,10 @@ static INLINE int vulkan_video_select_decode_family(
          continue;
       supported = available & video[i].videoCodecOperations;
       /* Prefer shared coverage, retaining H.264 on split families. */
-      score = (supported & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR ? 4 : 0)
-         + (supported & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR ? 2 : 0)
-         + (supported & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR ? 1 : 0);
+      score = (supported & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR ? 8 : 0)
+         + (supported & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR ? 4 : 0)
+         + (supported & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR ? 2 : 0)
+         + (supported & VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR ? 1 : 0);
       if (score > best_score)
       {
          best = (int)i; best_score = score; *codecs = supported;

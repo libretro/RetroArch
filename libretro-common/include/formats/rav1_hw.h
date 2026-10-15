@@ -42,6 +42,22 @@ typedef struct rav1_hw_ops
                  video_hw_frame_t *frame);
 } rav1_hw_ops_t;
 
+typedef struct rav1_hw_backend
+{
+   void *user;
+   bool (*open)(void *user, const rav1_sequence_t *sequence, unsigned slots,
+         rav1_hw_ops_t *ops);
+   void (*close)(rav1_hw_ops_t *ops);
+} rav1_hw_backend_t;
+
+RETRO_BEGIN_DECLS
+/* Publish immutable storage before opening streams; NULL withdraws it.
+ * Backend/user storage must outlive open decoders, which retain close. */
+void rav1_set_hw_backend(const rav1_hw_backend_t *backend);
+bool rav1_hw_backend_open(const rav1_sequence_t *sequence, unsigned slots,
+      rav1_hw_ops_t *ops, rav1_hw_backend_t *backend);
+RETRO_END_DECLS
+
 typedef struct rav1_hw_reference
 {
    rav1_picture_reference_t picture;
