@@ -31,6 +31,7 @@
 #endif
 #include "vulkan_video_caps.h"
 #include "vulkan_memory_type.h"
+#include "vulkan_surface_format.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #ifdef HAVE_OPENXR
@@ -3744,17 +3745,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
          if (format.format == VK_FORMAT_UNDEFINED)
          {
-            for (i = 0; i < format_count; i++)
-            {
-               if (
-                        formats[i].format == VK_FORMAT_R8G8B8A8_UNORM
-                     || formats[i].format == VK_FORMAT_B8G8R8A8_UNORM
-                     || formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
-               {
-                  format = formats[i];
-                  break;
-               }
-            }
+            int sdr8 = vulkan_sdr8_surface_format(formats, format_count);
+            if (sdr8 >= 0)
+               format = formats[sdr8];
          }
       }
 
