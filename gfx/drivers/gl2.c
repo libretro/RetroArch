@@ -2631,7 +2631,8 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer, bool bgrx)
    if (gl->pbo_readback_sync[gl->pbo_readback_index])
    {
       GLsync sync = (GLsync)gl->pbo_readback_sync[gl->pbo_readback_index];
-      if (glClientWaitSync(sync, 0, 0) == GL_TIMEOUT_EXPIRED)
+      GLenum status = glClientWaitSync(sync, 0, 0);
+      if (status != GL_ALREADY_SIGNALED && status != GL_CONDITION_SATISFIED)
          return false;
       glDeleteSync(sync);
       gl->pbo_readback_sync[gl->pbo_readback_index] = NULL;

@@ -19,6 +19,7 @@ static int      sync_live[MAX_SYNCS];
 static unsigned syncs_created;
 static unsigned syncs_deleted;
 static unsigned maps;
+static GLenum forced_wait_result;
 static uint32_t pixels[W * H];
 
 static GLsync fake_fence_sync(GLenum condition, GLbitfield flags)
@@ -47,7 +48,8 @@ static GLenum fake_client_wait_sync(GLsync sync, GLbitfield flags,
       printf("  [FAIL] glClientWaitSync on a deleted sync\n");
       exit(1);
    }
-   return sync_signalled[id] ? GL_ALREADY_SIGNALED : GL_TIMEOUT_EXPIRED;
+   return forced_wait_result ? forced_wait_result
+      : sync_signalled[id] ? GL_ALREADY_SIGNALED : GL_TIMEOUT_EXPIRED;
 }
 
 static void fake_delete_sync(GLsync sync)
@@ -236,6 +238,39 @@ int main(void)
       gl2_free_pbo_readback(&gl);
    }
 
+   printf("failed completion queries:\n");
+   for (i = 0; i < 2; i++)
+   {
+      unsigned n, bad = 0, deleted, id;
+      void *sync;
+      gl.flags |= GL2_FLAG_HAVE_SYNC;
+      CHECK(gl2_init_pbo_readback(&gl), "failure-query ring initialised");
+      for (n = 0; n < 4; n++)
+         gl2_pbo_async_readback(&gl);
+      sync = gl.pbo_readback_sync[gl.pbo_readback_index];
+      id = (unsigned)(uintptr_t)sync;
+      deleted = syncs_deleted;
+      maps = 0;
+      forced_wait_result = GL_WAIT_FAILED;
+      memset(out, 0xa5, W * H * 4);
+      CHECK(!gl2_read_pbo(&gl, out, i != 0), "failed wait rejects recording frame");
+      for (n = 0; n < W * H * 4; n++)
+         if (out[n] != 0xa5)
+            bad++;
+      CHECK(!maps && !bad, "failed wait neither maps nor changes destination");
+      CHECK(gl.pbo_readback_valid[gl.pbo_readback_index]
+            && gl.pbo_readback_sync[gl.pbo_readback_index] == sync
+            && sync_live[id] && syncs_deleted == deleted,
+            "failed wait retains slot and fence ownership");
+      forced_wait_result = GL_CONDITION_SATISFIED;
+      CHECK(gl2_read_pbo(&gl, out, i != 0) && maps == 1,
+            "successful retry maps the retained frame");
+      CHECK(syncs_deleted == deleted + 1 && !sync_live[id],
+            "successful retry retires the fence once");
+      forced_wait_result = 0;
+      gl2_free_pbo_readback(&gl);
+   }
+   CHECK(syncs_deleted == syncs_created, "failure-query teardown retires every fence");
    CHECK(!gl11_finishes, "no glFinish anywhere on the readback path");
 
    free(out);
