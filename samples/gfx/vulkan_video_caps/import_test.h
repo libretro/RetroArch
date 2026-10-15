@@ -130,6 +130,7 @@ static int oracle_pipeline(import_oracle_t *t)
    VkDescriptorSetLayoutBinding bindings[4];
    VkDescriptorSetLayoutCreateInfo set = {0};
    VkPipelineLayoutCreateInfo layout = {0};
+   VkPushConstantRange push = {VK_SHADER_STAGE_COMPUTE_BIT, 0, VULKAN_VIDEO_HEADER_WORDS * 4};
    VkShaderModuleCreateInfo module = {0};
    VkComputePipelineCreateInfo pipeline = {0};
    VkShaderModule shader;
@@ -145,6 +146,7 @@ static int oracle_pipeline(import_oracle_t *t)
    set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO; set.bindingCount = 4; set.pBindings = bindings;
    if (vkCreateDescriptorSetLayout(device, &set, NULL, &t->vk.pipelines.set_layout) != VK_SUCCESS) return 0;
    layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO; layout.setLayoutCount = 1; layout.pSetLayouts = &t->vk.pipelines.set_layout;
+   layout.pushConstantRangeCount = 1; layout.pPushConstantRanges = &push;
    if (vkCreatePipelineLayout(device, &layout, NULL, &t->vk.pipelines.layout) != VK_SUCCESS) return 0;
    module.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO; module.codeSize = sizeof(spirv); module.pCode = spirv;
    if (vkCreateShaderModule(device, &module, NULL, &shader) != VK_SUCCESS) return 0;
@@ -186,6 +188,22 @@ static VkFence growth_busy_fence;
 static PFN_vkGetFenceStatus growth_fence_status;
 static VkResult VKAPI_CALL oracle_growth_busy(VkDevice d, VkFence f)
 { return f == growth_busy_fence ? VK_NOT_READY : growth_fence_status(d, f); }
+
+static unsigned header_updates, header_pushes;
+static PFN_vkCmdUpdateBuffer header_update;
+static PFN_vkCmdPushConstants header_push;
+static void VKAPI_CALL oracle_header_update(VkCommandBuffer c, VkBuffer b,
+      VkDeviceSize o, VkDeviceSize n, const void *p)
+{
+   header_updates++;
+   header_update(c, b, o, n, p);
+}
+static void VKAPI_CALL oracle_header_push(VkCommandBuffer c, VkPipelineLayout l,
+      VkShaderStageFlags f, uint32_t o, uint32_t n, const void *p)
+{
+   header_pushes++;
+   header_push(c, l, f, o, n, p);
+}
 
 static unsigned import_allocations;
 static VkDeviceSize import_largest_buffer;
@@ -342,10 +360,15 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR; signal.semaphore = t->ready; signal.value = serial;
    if (signal_sem(device, &signal) != VK_SUCCESS) goto done;
    if (serial == 13 && !oracle_growth_failures(t, &frame)) goto done;
-   if (mode == 1) t->vk.context->gpu_properties.limits.maxStorageBufferRange = sizeof(layout.header);
+   if (mode == 1) t->vk.context->gpu_properties.limits.maxStorageBufferRange = 0;
    plane_copies = 0;
    copy_image_original = vulkan_symbol_wrapper_vkCmdCopyImageToBuffer;
    vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = oracle_copy_image;
+   header_updates = header_pushes = 0;
+   header_update = vulkan_symbol_wrapper_vkCmdUpdateBuffer;
+   header_push = vulkan_symbol_wrapper_vkCmdPushConstants;
+   vulkan_symbol_wrapper_vkCmdUpdateBuffer = oracle_header_update;
+   vulkan_symbol_wrapper_vkCmdPushConstants = oracle_header_push;
    import_allocations = 0; import_largest_buffer = 0;
    import_create_buffer = vulkan_symbol_wrapper_vkCreateBuffer;
    vulkan_symbol_wrapper_vkCreateBuffer = oracle_import_allocation;
@@ -366,16 +389,19 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
          struct vk_stream_state *st = t->vk.stream_states;
          unsigned held = st->fence[0] == growth_busy_fence ? 0 : 1;
          vulkan_symbol_wrapper_vkGetFenceStatus = growth_fence_status;
-         if (st->staging[held].buffer != held_buffer || st->staging[held].size != sizeof(layout.header)) result = VIDEO_TEXTURE_UPDATE_REFUSED;
+         if (st->staging[held].buffer != held_buffer || st->staging[held].size != 0) result = VIDEO_TEXTURE_UPDATE_REFUSED;
       }
       vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = copy_image_original;
       vulkan_symbol_wrapper_vkCreateBuffer = import_create_buffer;
-      if ((serial == 1 && (import_allocations != 2 || import_largest_buffer != sizeof(layout.header)))
-            || (serial >= 2 && serial <= 12 && import_allocations)
+      vulkan_symbol_wrapper_vkCmdUpdateBuffer = header_update;
+      vulkan_symbol_wrapper_vkCmdPushConstants = header_push;
+      if (header_updates != (mode == 1 ? 0u : 1u)
+            || header_pushes != (mode == 1 ? 1u : 0u)) result = VIDEO_TEXTURE_UPDATE_REFUSED;
+      if ((serial <= 12 && import_allocations)
             || (serial >= 18 && import_allocations)) result = VIDEO_TEXTURE_UPDATE_REFUSED;
       t->vk.context->gpu_properties.limits.maxStorageBufferRange = saved_limit;
-      if (serial <= 12 && (t->vk.stream_states->staging[0].size != sizeof(layout.header)
-            || t->vk.stream_states->staging[1].size != sizeof(layout.header))) goto done;
+      if (serial <= 12 && (t->vk.stream_states->staging[0].size != 0
+            || t->vk.stream_states->staging[1].size != 0)) goto done;
       if (result != VIDEO_TEXTURE_UPDATE_DONE || plane_copies != (mode == 1 ? 0u : 1u)) goto done;
    }
    if (!oracle_begin(t)) goto done;
@@ -553,10 +579,10 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
    ok = 1;
-   for (i = 0; i < 36; i++)
+   for (i = 0; i < 48; i++)
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,
                (((i % 12) / 3) & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
-               | (((i % 12) / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1, i < 12 ? 1 : i < 24 ? 0 : 2)) ok = 0;
+               | (((i % 12) / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1, i < 12 || i >= 36 ? 1 : i < 24 ? 0 : 2)) ok = 0;
    vulkan_movie_input(&t->output, &input);
    if (input.image != t->output.image || input.view != t->output.view
          || input.layout != t->output.layout || input.dims != t->output.dims

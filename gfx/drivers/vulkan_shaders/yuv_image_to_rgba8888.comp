@@ -3,7 +3,7 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(set = 0, binding = 1) uniform sampler2D Y;
 layout(set = 0, binding = 2) uniform sampler2D C;
 layout(set = 0, binding = 3, rgba8) writeonly uniform image2D uImage;
-layout(set = 0, binding = 4, std430) readonly buffer SSBO { uint words[]; };
+layout(push_constant, std430) uniform Header { uint words[16]; };
 void main()
 {
    uvec2 p = gl_GlobalInvocationID.xy;

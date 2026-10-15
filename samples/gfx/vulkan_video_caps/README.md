@@ -154,14 +154,14 @@ not the movie UI, custom shader presets, A/V sync or seek/reset on Windows.
 
 The decoder prefers mutable NV12/P010 output images with sampleable Y/UV
 views. The importer reads those planes directly in its compute shader,
-removing the full-frame image-to-buffer copy. The small color header still
-uses a buffer. The decoder's DPB-to-output copy and RGBA conversion remain.
+removing the full-frame image-to-buffer copy. The 64-byte color header uses push constants; sampled imports need no
+staging buffer or header transfer command. The decoder's DPB-to-output copy and RGBA conversion remain.
 Allocation/view failure or an unavailable sampled pipeline retains buffer
 conversion. Ready/done timelines, abandonment and deferred close cover the
 image and its views together; thumbnail and movie descriptors forward both
 views through the existing threaded handoff.
 
-`import-check` compares 36 NV12/P010 color/format cases: ordinary buffer
+`import-check` compares 48 NV12/P010 color/format cases: ordinary buffer
 conversion, direct image sampling, and a forced missing-pipeline fallback.
 A command hook checks zero importer image-to-buffer copies when sampling
 and one in either fallback. Busy-slot checks leave the done timeline unchanged.
@@ -186,15 +186,17 @@ Host writes and viewport readbacks are test-only. The separate
 through 130 leases, including clear, backpressure and teardown.
 
 
-Sampled imports request two 64-byte color-header buffers instead of two
-full-frame P010 staging buffers. Device allocations still follow Vulkan memory
-requirements. Copied fallback allocates for its actual NV12/P010 layout;
-idle slots grow on demand and retain capacity across later format switches.
-No buffer or descriptor in a busy slot is replaced. Failed growth preserves
-the old buffer and done timeline, and releases temporary allocations.
+Sampled imports allocate no staging buffers. Copied fallback allocates only
+the selected idle slot, sizes storage for its actual NV12/P010 layout and
+retains capacity across later format switches. No buffer or descriptor in a
+busy slot is replaced. Failed allocation or growth preserves the old buffer
+and done timeline, and releases temporary allocations.
 
-The 36-case import oracle starts with sampled NV12/P010 under a simulated
-64-byte storage-buffer limit, then tests copied fallback and format switches.
-It checks requested buffer sizes, no steady-state reallocations, three injected
-growth failures (create/allocate/bind), retry, and a forced busy slot. Native
-HEVC sampling tests also require both staging buffers to remain header-sized.
+The 48-case import oracle starts with sampled NV12/P010 under a simulated
+zero storage-buffer limit, tests copied fallback and format switches, then
+returns to sampling with retained fallback buffers. Command hooks require
+one push-constant update and zero buffer updates/copies for sampled imports;
+copied imports require one buffer update/copy and no push-constant update.
+It checks zero sampled staging allocations, no steady-state reallocations,
+three injected failures (create/allocate/bind), retry, and a forced busy slot.
+Native HEVC sampling tests require both staging buffers to remain absent.

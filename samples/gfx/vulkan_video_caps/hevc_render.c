@@ -85,7 +85,7 @@ int hevc_render_submit(void *opaque, video_hw_frame_t *hw)
    {
       unsigned i;
       for (i = 0; i < VK_STREAM_SLOTS; i++)
-         if (t->vk.stream_states->staging[i].size != VULKAN_VIDEO_HEADER_WORDS * 4) return 0;
+         if (t->vk.stream_states->staging[i].size != 0) return 0;
    }
    return 1;
 }

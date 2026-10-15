@@ -1526,7 +1526,7 @@ struct vk_stream_state
     * into the texture. VK_NULL_HANDLE for any other. */
    VkDescriptorPool pool;
    VkDescriptorSet set[VK_STREAM_SLOTS];
-   /* GPU-owned import headers, enlarged for copied planes if needed. */
+   /* GPU-owned staging for copied imports, allocated on demand. */
    bool import;
 };
 
@@ -5116,6 +5116,7 @@ static void vulkan_init_pipeline_layout(
       vk_t *vk)
 {
    VkPipelineLayoutCreateInfo layout_info;
+   VkPushConstantRange push;
    VkDescriptorSetLayoutCreateInfo set_layout_info;
    VkDescriptorSetLayoutBinding bindings[5];
 
@@ -5166,8 +5167,11 @@ static void vulkan_init_pipeline_layout(
    layout_info.flags                  = 0;
    layout_info.setLayoutCount         = 1;
    layout_info.pSetLayouts            = &vk->pipelines.set_layout;
-   layout_info.pushConstantRangeCount = 0;
-   layout_info.pPushConstantRanges    = NULL;
+   push.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+   push.offset     = 0;
+   push.size       = VULKAN_VIDEO_HEADER_WORDS * sizeof(uint32_t);
+   layout_info.pushConstantRangeCount = 1;
+   layout_info.pPushConstantRanges    = &push;
 
    vkCreatePipelineLayout(vk->context->device,
          &layout_info, NULL, &vk->pipelines.layout);
@@ -13654,7 +13658,7 @@ static uintptr_t vulkan_load_texture_planar(vk_t *vk,
    return (uintptr_t)texture;
 }
 
-/* GPU-owned import slots: color headers, plus copied planes if needed. */
+/* GPU-owned staging for copied imports. */
 /* Only an idle slot may replace its buffer or descriptor. */
 static bool vulkan_import_buffer(vk_t *vk, struct vk_stream_state *st,
       unsigned slot, size_t len)
@@ -13721,7 +13725,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    VkDevice device = vk->context->device;
    unsigned i;
 
-   if (!len || len > vk->context->gpu_properties.limits.maxStorageBufferRange)
+   if (len > vk->context->gpu_properties.limits.maxStorageBufferRange)
       return NULL;
    while (st && st->texture != texture)
       st = st->next;
@@ -13785,8 +13789,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    {
       VkDescriptorImageInfo image_info;
       VkWriteDescriptorSet write;
-      if (vkCreateFence(device, &fence_info, NULL, &st->fence[i]) != VK_SUCCESS
-            || !vulkan_import_buffer(vk, st, i, len))
+      if (vkCreateFence(device, &fence_info, NULL, &st->fence[i]) != VK_SUCCESS)
       {
          st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
          return NULL;
@@ -13841,7 +13844,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
          || texture->dims != f->dims)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   bytes = sampled ? sizeof(layout.header) : layout.bytes;
+   bytes = sampled ? 0 : layout.bytes;
    if (!(st = vulkan_import_state_get(vk, texture, bytes)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    device = vk->context->device;
@@ -13852,7 +13855,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
          return VIDEO_TEXTURE_UPDATE_DROPPED;
    }
-   if (!vulkan_import_buffer(vk, st, slot, bytes))
+   if (!sampled && !vulkan_import_buffer(vk, st, slot, bytes))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    st->next_slot = slot ^ 1;
 
@@ -13889,7 +13892,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       layout.header[2] = f->crop_x; layout.header[3] = f->crop_y;
       wait_stage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
    }
-   vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(layout.header), layout.header);
+   if (sampled)
+      vkCmdPushConstants(cmd, vk->pipelines.layout, VK_SHADER_STAGE_COMPUTE_BIT,
+            0, sizeof(layout.header), layout.header);
+   else
+      vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(layout.header), layout.header);
 
    bar.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
    bar.pNext                           = NULL;
@@ -13949,8 +13956,9 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
          VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 1, &bbar, 0, NULL);
+   if (!sampled)
+      vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 1, &bbar, 0, NULL);
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
          sampled ? vk->pipelines.yuv_image_to_rgba8888 : vk->pipelines.yuv420_to_rgba8888);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
