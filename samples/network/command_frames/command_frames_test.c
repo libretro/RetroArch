@@ -154,6 +154,19 @@ int main(int argc, char **argv)
    CHECK(!strcmp(reply,"STATE save 1"));
    remove("command_frames_test.state1");
 
+   /* the other families answer under their own names too */
+   reply[0]=0;
+   CHECK(!command_replay(&cmd,"seek 600") && !strncmp(reply,"REPLAY ERROR ",13));
+   cmd.structured=true;
+   reply[0]=0;
+   CHECK(command_disk(&cmd,"next") && !strcmp(reply,"DISK next pressed\n"));
+   cmd.structured=false;
+   /* and the commands they run, by name, still answer as themselves */
+   reply[0]=0;
+   CHECK(!command_save_state_slot(&cmd,"x")
+         && !strncmp(reply,"SAVE_STATE_SLOT ERROR ",22));
+   cmd.error=false; /* command_run clears it; these call the handlers */
+
    /* READ_CORE_MEMORY and WRITE_CORE_MEMORY answer with the address and
     * the bytes in hexadecimal, at a system address the core maps */
    reply[0]=0;

@@ -198,7 +198,9 @@ and until something answers where they landed, stepping is all there is
 choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
 `REINIT`, `STATE` and `REPLAY` stand for their families likewise:
 `STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
-`SEEK_REPLAY 600`.
+`SEEK_REPLAY 600`. Each answers under its own name - `STATE load 3`,
+`DISK next pressed`, `REPLAY ERROR no replay is playing or recording` -
+while the commands sent by name answer as they always have.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
 files itself, and playing a game does not need them.

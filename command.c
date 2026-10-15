@@ -770,21 +770,71 @@ command_t* command_uds_new(void)
 
 /* Routines used to invoke retroarch command ... */
 
+/* The family tool a command runs for, so its answers carry the tool's
+ * name: STATE save 1 rather than SAVE_STATE_SLOT 1. */
+struct command_family
+{
+   const char        *family;
+   const char        *word;
+   const char        *name;
+   command_replier_t  replier;
+};
+static struct command_family command_family_now;
+
+/* @msg under @f's name in @s; 0 where it does not fit. */
+static size_t command_family_rename(const struct command_family *f,
+      const char *msg, size_t len, char *s, size_t size)
+{
+   size_t n = strlen(f->name);
+   int    _len;
+   if (     len > n && !strncmp(msg, f->name, n)
+         && (msg[n] == ' ' || msg[n] == '\n'))
+   {
+      msg += n;
+      len -= n;
+      if (!strncmp(msg, " ERROR", 6))
+         _len = snprintf(s, size, "%s%.*s", f->family, (int)len, msg);
+      else
+         _len = snprintf(s, size, "%s %s%.*s", f->family, f->word,
+               (int)len, msg);
+   }
+   else if (len == n && !strncmp(msg, f->name, n))
+      _len = snprintf(s, size, "%s %s", f->family, f->word);
+   else
+      _len = snprintf(s, size, "%s %s %.*s", f->family, f->word,
+            (int)len, msg);
+   return (_len > 0 && (size_t)_len < size) ? (size_t)_len : 0;
+}
+
+static void command_family_replier(command_t *cmd, const char *data,
+      size_t len)
+{
+   char   msg[512];
+   size_t _len = command_family_rename(&command_family_now, data, len,
+         msg, sizeof(msg));
+   if (_len)
+      command_family_now.replier(cmd, msg, _len);
+   else
+      command_family_now.replier(cmd, data, len);
+}
+
 /* A reply sent after its command has returned: where it goes is taken
  * while the command runs, as afterwards the interface may be answering
  * someone else. */
 typedef struct
 {
-   command_t *cmd;
-   void      *dest;
-   unsigned   gen;
+   command_t            *cmd;
+   void                 *dest;
+   unsigned              gen;
+   struct command_family family;
 } command_deferred_t;
 
 static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 {
    d->cmd  = cmd;
    d->dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
-   d->gen  = input_driver_command_generation();
+   d->gen    = input_driver_command_generation();
+   d->family = command_family_now;
 }
 
 /* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
@@ -794,8 +844,16 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 static void command_deferred_send(command_deferred_t *d,
       const char *msg, size_t len, bool is_error)
 {
+   char renamed[512];
    if (msg && input_driver_command_generation() == d->gen)
    {
+      size_t _len;
+      if (d->family.family && (_len = command_family_rename(&d->family,
+               msg, len, renamed, sizeof(renamed))))
+      {
+         msg = renamed;
+         len = _len;
+      }
       d->cmd->error = is_error;
       if (d->cmd->reply_to && d->dest)
          d->cmd->reply_to(d->cmd, d->dest, msg, len);
@@ -1074,7 +1132,7 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
-/* MENU, DISK, REINIT and REPLAY: a family of commands as one,
+/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
  * so a structured client is offered one tool with a choice rather than
  * a tool apiece. Each word runs as the command it stands for, which
  * line clients can still send by name; @rest says it takes what
@@ -1112,7 +1170,18 @@ static bool command_run_choice(command_t *cmd, const char *family,
                choices[i].word);
          return false;
       }
-      return command_run(cmd, choices[i].name, rest);
+      {
+         bool ret;
+         command_family_now.family  = family;
+         command_family_now.word    = choices[i].word;
+         command_family_now.name    = choices[i].name;
+         command_family_now.replier = cmd->replier;
+         cmd->replier               = command_family_replier;
+         ret                        = command_run(cmd, choices[i].name, rest);
+         cmd->replier               = command_family_now.replier;
+         memset(&command_family_now, 0, sizeof(command_family_now));
+         return ret;
+      }
    }
    command_reply_error(cmd, family, "one of %s", values);
    return false;
@@ -1149,6 +1218,16 @@ bool command_reinit(command_t *cmd, const char *arg)
    };
    return command_run_choice(cmd, "REINIT", choices, ARRAY_SIZE(choices),
          COMMAND_REINIT_DRIVERS, arg);
+}
+
+bool command_state(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "save", "SAVE_STATE_SLOT", true },
+      { "load", "LOAD_STATE_SLOT", true }
+   };
+   return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
+         COMMAND_STATE_ACTIONS, arg);
 }
 
 bool command_replay(command_t *cmd, const char *arg)
@@ -1359,13 +1438,11 @@ static bool command_save_state_start(struct command_reply *r)
    return true;
 }
 
-/* LOAD_STATE_SLOT, SAVE_STATE_SLOT and STATE, answered once their task
- * is through. */
-static bool command_state_slot(command_t *cmd, const char *arg, bool load,
-      const char *family)
+/* LOAD_STATE_SLOT and SAVE_STATE_SLOT, answered once their task is
+ * through. */
+static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 {
-   const char *name             = family ? family
-      : load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
+   const char *name             = load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
    unsigned int slot            = 0;
    bool savestates_enabled      = core_info_current_supports_savestate();
    struct command_reply *r;
@@ -1389,11 +1466,7 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load,
          savestates_enabled = path_is_valid(r->path);
       if (savestates_enabled)
       {
-         if (family)
-            snprintf(r->ok, sizeof(r->ok), "%s %s %u", family,
-                  load ? "load" : "save", slot);
-         else
-            snprintf(r->ok, sizeof(r->ok), "%s %u", name, slot);
+         snprintf(r->ok, sizeof(r->ok), "%s %u", name, slot);
          r->state_loaded = load;
          r->start        = load ? command_load_state_start
                                 : command_save_state_start;
@@ -1413,26 +1486,12 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load,
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
-   return command_state_slot(cmd, arg, true, NULL);
+   return command_state_slot(cmd, arg, true);
 }
 
 bool command_save_state_slot(command_t *cmd, const char *arg)
 {
-   return command_state_slot(cmd, arg, false, NULL);
-}
-
-bool command_state(command_t *cmd, const char *arg)
-{
-   bool load;
-   while (arg && *arg == ' ')
-      arg++;
-   if (     arg
-         && (   (load = string_starts_with_size(arg, "load", 4))
-             || string_starts_with_size(arg, "save", 4))
-         && (!arg[4] || arg[4] == ' '))
-      return command_state_slot(cmd, arg + 4, load, "STATE");
-   command_reply_error(cmd, "STATE", "one of %s", COMMAND_STATE_ACTIONS);
-   return false;
+   return command_state_slot(cmd, arg, false);
 }
 
 bool command_play_replay_slot(command_t *cmd, const char *arg)
