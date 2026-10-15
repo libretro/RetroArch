@@ -16,10 +16,19 @@
 #include "../../../gfx/common/d3d9_common.h"
 #include "../../../gfx/common/d3d9_common.c"
 #include "../../../gfx/drivers/d3d9hlsl.c"
+#include "../../../gfx/video_thread_hw.c"
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
+
+void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
+{
+   (void)fn;
+   (void)data;
+   fprintf(stderr, "[FAIL] unexpected core-context dispatch\n");
+   ExitProcess(1);
+}
 
 static int fails;
 static unsigned retires;
@@ -736,6 +745,120 @@ static void contention_run(HWND w, bool ex)
          ex ? "D3D9Ex" : "D3D9", i, fails - before);
 }
 
+typedef struct ring_test
+{
+   thread_video_t *video;
+   int published;
+   unsigned taken_back;
+} ring_test_t;
+
+static DWORD WINAPI publish_ring(void *data)
+{
+   ring_test_t *t = (ring_test_t*)data;
+   t->published = video_thread_hw_publish(t->video, &t->taken_back);
+   return 0;
+}
+
+static void ring_run(HWND w, bool ex)
+{
+   static thread_video_t thr;
+   static d3d9_video_t d3d;
+   video_poke_interface_t poke;
+   LPDIRECT3DTEXTURE9 textures[VIDEO_THREAD_HW_RING];
+   hw_ring_t *ring;
+   ring_test_t t;
+   HANDLE producer;
+   unsigned i;
+   DWORD start;
+
+   memset(&thr, 0, sizeof(thr));
+   memset(&d3d, 0, sizeof(d3d));
+   memset(&poke, 0, sizeof(poke));
+   d3d.dev = make_device(w, ex, D3DSWAPEFFECT_DISCARD);
+   CHECK(d3d.dev != NULL, "ring device created");
+   if (!d3d.dev)
+      return;
+   d3d.hw.enable = true;
+   poke.hw_ring_install = d3d9_hlsl_hw_ring_install;
+   poke.hw_ring_fence_new = d3d9_hlsl_hw_ring_fence_new;
+   poke.hw_ring_fence_free = d3d9_hlsl_hw_ring_fence_free;
+   poke.hw_ring_fence_signal = d3d9_hlsl_hw_ring_fence_signal;
+   poke.hw_ring_fence_wait = d3d9_hlsl_hw_ring_fence_wait;
+   thr.poke = &poke;
+   thr.driver_data = &d3d;
+   if (!retro_eventcount_init(&thr.frame.ring) || !hw_ring_setup(&thr, &ring))
+      ExitProcess(1);
+   ring->api = HW_API_D3D9;
+   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+   {
+      textures[i] = NULL;
+      if (FAILED(IDirect3DDevice9_CreateTexture(d3d.dev, 32 + i * 8, 16, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &textures[i], NULL)))
+         ExitProcess(1);
+      ring->index = i;
+      hw_d3d9_set_texture(&thr, textures[i]);
+   }
+   thr.frame.slot[0].hw_slot = 0;
+   thr.frame.slot[1].hw_slot = 1;
+   retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(0, 2, false));
+   memset(&t, 0, sizeof(t));
+   t.video = &thr;
+   producer = CreateThread(NULL, 0, publish_ring, &t, 0, NULL);
+   if (!producer)
+      ExitProcess(1);
+   start = GetTickCount();
+   while (!retro_atomic_load_acquire_int(&thr.frame.ring.waiters))
+   {
+      if (GetTickCount() - start >= 5000)
+         ExitProcess(1);
+      Sleep(1);
+   }
+   CHECK(WaitForSingleObject(producer, 0) == WAIT_TIMEOUT,
+         "full frame ring prevents hardware slot reuse");
+   video_thread_hw_note_claim(&thr, 0);
+   video_thread_hw_before_frame(&thr, 0, false);
+   CHECK(d3d.hw.ring_tex == textures[0], "claimed frame installs its own texture");
+   d3d9_hlsl_hw_take_texture(&d3d, d3d.hw.ring_tex);
+   video_thread_hw_after_frame(&thr, 0);
+   retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 1, true));
+   retro_eventcount_notify(&thr.frame.ring);
+   CHECK(WaitForSingleObject(producer, 20) == WAIT_TIMEOUT,
+         "claimed frame still prevents reuse despite a signalled fence");
+   retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 1, false));
+   retro_eventcount_notify(&thr.frame.ring);
+   test_wait(producer);
+   CloseHandle(producer);
+   CHECK(t.published == VIDEO_THREAD_HW_RING - 1 && !t.taken_back
+         && hw_d3d9_get_sync_index(&thr) == 0,
+         "producer resumes on the retired slot without dropping a frame");
+
+   /* The resumed producer fills the freed frame-queue entry. */
+   thr.frame.slot[0].hw_slot = t.published;
+   retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 2, false));
+   CHECK(video_thread_hw_holds_frame(&thr), "queued teardown retains frame identity");
+   for (i = 1; i < VIDEO_THREAD_HW_RING; i++)
+   {
+      video_thread_hw_note_claim(&thr, i);
+      video_thread_hw_before_frame(&thr, i, false);
+      CHECK(d3d.hw.ring_tex == textures[i], "drain installs each queued texture");
+      d3d9_hlsl_hw_take_texture(&d3d, d3d.hw.ring_tex);
+      video_thread_hw_after_frame(&thr, i);
+   }
+   retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 0, false));
+   d3d9_hlsl_invalidate_hw_render_cache(&d3d);
+   video_thread_hw_forget(&thr);
+   CHECK(!video_thread_hw_holds_frame(&thr) && !d3d.hw.tex && !d3d.hw.ring_tex,
+         "drained teardown clears cached and borrowed textures");
+   video_thread_hw_free(&thr);
+   CHECK(!thr.frame.hw_ring, "teardown releases the hardware ring and fences");
+   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+      CHECK(IDirect3DTexture9_Release(textures[i]) == 0,
+            "core texture has no outstanding frontend reference");
+   retro_eventcount_free(&thr.frame.ring);
+   IDirect3DDevice9_Release(d3d.dev);
+}
+
 int main(void)
 {
    HWND w = CreateWindowA("STATIC", "d3d9_ex_test", WS_OVERLAPPEDWINDOW,
@@ -754,6 +877,8 @@ int main(void)
    lifetime_run(w, true);
    contention_run(w, false);
    contention_run(w, true);
+   ring_run(w, false);
+   ring_run(w, true);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }

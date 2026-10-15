@@ -28,7 +28,9 @@ all: $(TARGET)
 
 $(TARGET): d3d9_ex_test.c $(CORE_DIR)/gfx/common/d3d9_tex.h \
 		$(CORE_DIR)/gfx/common/d3d9_sw_fb.h $(CORE_DIR)/gfx/common/d3d9_common.c \
-		$(CORE_DIR)/gfx/drivers/d3d9hlsl.c $(THREAD_SRCS)
+		$(CORE_DIR)/gfx/drivers/d3d9hlsl.c $(CORE_DIR)/gfx/video_thread_hw.c \
+		$(CORE_DIR)/gfx/video_thread_hw.h $(CORE_DIR)/gfx/video_thread_wrapper.h \
+		$(CORE_DIR)/gfx/video_thread_hw_fence.h $(THREAD_SRCS)
 	$(CC) $(CFLAGS) -o $@ $< $(THREAD_SRCS) $(LDFLAGS)
 
 ifeq ($(OS),Windows_NT)
