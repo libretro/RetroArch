@@ -207,6 +207,7 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
     * family says what creating the window sets up */
    wndclass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_VULKAN);
+   win32_window_tag_presentation(config_get_ptr()->bools.video_dxgi_present);
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 

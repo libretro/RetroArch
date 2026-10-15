@@ -208,6 +208,11 @@ void win32_window_release_kept(void);
  * undertakes by it. */
 void win32_window_tag(const char *tag);
 
+/* Called after win32_window_proc_setup() by an OpenGL or Vulkan
+ * context: whether it presents through DXGI. A kept window is taken
+ * only by a driver presenting the same way. */
+void win32_window_tag_presentation(bool dxgi);
+
 /* True if the window win32_set_video_mode() gave this driver is one
  * the last driver left up. */
 bool win32_window_was_taken(void);

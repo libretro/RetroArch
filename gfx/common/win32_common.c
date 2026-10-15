@@ -1755,6 +1755,10 @@ void win32_window_proc_setup(enum win32_window_family family)
  * it now (win32_window_pixel_format_fits()); otherwise it goes and a
  * new one is made.
  *
+ * An OpenGL or Vulkan window also carries the way it is presented on,
+ * native or through DXGI, as its tag (win32_window_tag_presentation()):
+ * a window is not taken by a driver presenting the other way.
+ *
  * And for a Direct3D driver that has given its window a tag
  * (win32_window_tag()), which says two things: that it frees
  * everything it had on the window before it leaves it, and that it
@@ -1775,6 +1779,19 @@ static bool win32_window_pixel_format_fits(HWND hwnd);
 void win32_window_tag(const char *tag)
 {
    win32_wnd_tag = tag;
+}
+
+/* An OpenGL or Vulkan window that has carried a DXGI flip-model swap
+ * chain does not go back to the driver's own presentation, and one
+ * presented natively does not take a swap chain reliably either: the
+ * presentation path is part of what the window is. A driver of either
+ * family says which one it will use, and a kept window is taken only
+ * by a driver using the same one; changing the setting, or an
+ * override that changes it for one core, gets a new window. */
+void win32_window_tag_presentation(bool dxgi)
+{
+   static const char tag_dxgi[] = "dxgi";
+   win32_wnd_tag = dxgi ? tag_dxgi : NULL;
 }
 
 bool win32_window_was_taken(void)

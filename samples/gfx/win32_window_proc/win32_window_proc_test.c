@@ -539,6 +539,77 @@ int main(int argc, char **argv)
             during ? "yes" : "no");
    }
 
+   /* A window carries the way it was presented on. A Vulkan or OpenGL
+    * window that had a DXGI swap chain is not taken by a driver of the
+    * same family presenting natively - DXGI presentation turned off,
+    * or a core's override that turned it on unloaded - and a new one
+    * is made; a driver presenting the same way as the last takes it. */
+   {
+      WNDCLASSEX wndclass;
+      HWND dxgi_hwnd = NULL, native_hwnd = NULL, again_hwnd = NULL;
+      bool dxgi_kept = false, native_kept = false;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+      win32_window_tag_presentation(true);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         dxgi_hwnd = win32_get_window();
+         pump();
+         dxgi_kept = win32_window_keep();
+         pump();
+
+         win32_window_reset();
+         win32_monitor_init();
+         memset(&wndclass, 0, sizeof(wndclass));
+         wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+         win32_window_tag_presentation(false);
+         if (     win32_window_init(&wndclass, true, NULL)
+               && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+         {
+            native_hwnd = win32_get_window();
+            pump();
+            win32_window_release_kept();
+            native_kept = win32_window_keep();
+            pump();
+
+            win32_window_reset();
+            win32_monitor_init();
+            memset(&wndclass, 0, sizeof(wndclass));
+            wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+            win32_window_tag_presentation(false);
+            if (     win32_window_init(&wndclass, true, NULL)
+                  && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+            {
+               again_hwnd = win32_get_window();
+               pump();
+               win32_window_release_kept();
+               win32_monitor_from_window();
+               win32_destroy_window();
+               pump();
+            }
+         }
+      }
+
+      trace_on = true;
+      trace("== a window kept across a change of presentation\n");
+      trace(" dxgi window kept %s, native driver made its own %s, dxgi window gone %s\n",
+            dxgi_kept ? "yes" : "no",
+            (native_hwnd && native_hwnd != dxgi_hwnd) ? "yes" : "no",
+            (dxgi_hwnd && !IsWindow(dxgi_hwnd)) ? "yes" : "no");
+      trace(" native window kept %s, next native driver took it %s\n",
+            native_kept ? "yes" : "no",
+            (again_hwnd && again_hwnd == native_hwnd) ? "yes" : "no");
+   }
+
    /* A window that has been replaced loses the focus before it is
     * taken down. Turning threaded video on or off moves the window to
     * another thread: the new window is another thread's, and the old

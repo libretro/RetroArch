@@ -727,6 +727,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
     * family says what creating the window sets up */
    wndclass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_WGL);
+   win32_window_tag_presentation(wgl->dxgi_requested);
 
    if (!win32_window_init(&wndclass, true, NULL))
    {
