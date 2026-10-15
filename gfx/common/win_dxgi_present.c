@@ -74,6 +74,29 @@ typedef HRESULT (WINAPI *create_device_t)(IUnknown *, D3D_FEATURE_LEVEL,
 static HMODULE bridge_dxgi_dll;
 static HMODULE bridge_d3d_dll;
 
+/* The device and the queue swap chains are made on, kept for the
+ * life of the process as a game keeps its device: the display
+ * driver's layers (NVIDIA's frame generation, for one) hang their
+ * own objects for a swap chain off the device it was made on, and
+ * clean them up as the next chain is made - after the device they
+ * belong to was released with the last chain, that is a crash in
+ * CreateSwapChainForHwnd. A bridge takes its own references; these
+ * stay until a chain is wanted on another adapter, or the device
+ * is lost. */
+static ID3D12Device       *bridge_kept_device;
+static ID3D12CommandQueue *bridge_kept_queue;
+static unsigned char       bridge_kept_luid[8];
+
+static void bridge_kept_drop(void)
+{
+   if (bridge_kept_queue)
+      bridge_kept_queue->lpVtbl->Release(bridge_kept_queue);
+   if (bridge_kept_device)
+      bridge_kept_device->lpVtbl->Release(bridge_kept_device);
+   bridge_kept_queue  = NULL;
+   bridge_kept_device = NULL;
+}
+
 #define DROP(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while (0)
 #define CHECK(expr) do { if (FAILED(expr)) goto error; } while (0)
 
@@ -282,23 +305,43 @@ ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
          b->tearing = FALSE;
       DROP(factory5);
    }
-   for (i = 0; ; i++)
+   if (     bridge_kept_device
+         && (   memcmp(bridge_kept_luid, luid, 8) != 0
+             || bridge_kept_device->lpVtbl->GetDeviceRemovedReason(
+                   bridge_kept_device) != S_OK))
+      bridge_kept_drop();
+   if (bridge_kept_device)
    {
-      DXGI_ADAPTER_DESC1 desc;
-      CHECK(b->factory->lpVtbl->EnumAdapters1(b->factory, i, &adapter));
-      CHECK(adapter->lpVtbl->GetDesc1(adapter, &desc));
-      if (memcmp(&desc.AdapterLuid, luid, 8) == 0) break;
-      DROP(adapter);
+      b->device = bridge_kept_device;
+      b->queue  = bridge_kept_queue;
+      b->device->lpVtbl->AddRef(b->device);
+      b->queue->lpVtbl->AddRef(b->queue);
    }
-   CHECK(create_device((IUnknown *)adapter, D3D_FEATURE_LEVEL_11_0,
-            &bridge_ID3D12Device, (void **)&b->device));
-   DROP(adapter);
-   queue_desc.Type               = D3D12_COMMAND_LIST_TYPE_DIRECT;
-   queue_desc.Priority           = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-   queue_desc.Flags              = D3D12_COMMAND_QUEUE_FLAG_NONE;
-   queue_desc.NodeMask           = 0;
-   CHECK(b->device->lpVtbl->CreateCommandQueue(b->device, &queue_desc,
-            &bridge_ID3D12CommandQueue, (void **)&b->queue));
+   else
+   {
+      for (i = 0; ; i++)
+      {
+         DXGI_ADAPTER_DESC1 desc;
+         CHECK(b->factory->lpVtbl->EnumAdapters1(b->factory, i, &adapter));
+         CHECK(adapter->lpVtbl->GetDesc1(adapter, &desc));
+         if (memcmp(&desc.AdapterLuid, luid, 8) == 0) break;
+         DROP(adapter);
+      }
+      CHECK(create_device((IUnknown *)adapter, D3D_FEATURE_LEVEL_11_0,
+               &bridge_ID3D12Device, (void **)&b->device));
+      DROP(adapter);
+      queue_desc.Type               = D3D12_COMMAND_LIST_TYPE_DIRECT;
+      queue_desc.Priority           = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+      queue_desc.Flags              = D3D12_COMMAND_QUEUE_FLAG_NONE;
+      queue_desc.NodeMask           = 0;
+      CHECK(b->device->lpVtbl->CreateCommandQueue(b->device, &queue_desc,
+               &bridge_ID3D12CommandQueue, (void **)&b->queue));
+      bridge_kept_device = b->device;
+      bridge_kept_queue  = b->queue;
+      memcpy(bridge_kept_luid, luid, 8);
+      b->device->lpVtbl->AddRef(b->device);
+      b->queue->lpVtbl->AddRef(b->queue);
+   }
 
    chain_desc.Width              = width;
    chain_desc.Height             = height;
