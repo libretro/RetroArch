@@ -2031,8 +2031,8 @@ static const struct cmd_option_map option_map[] = {
       "The game has all keyboard input, rather than the hotkeys." },
    { "recording", NULL, CMD_OPT_RECORDING, true, CMD_EVENT_NONE,
       "Video is being recorded to a file." },
-   { "streaming", NULL, CMD_OPT_STREAMING, true,
-      CMD_EVENT_STREAMING_TOGGLE, "The session is being streamed." },
+   { "streaming", NULL, CMD_OPT_STREAMING, true, CMD_EVENT_NONE,
+      "The session is being streamed." },
 #ifdef HAVE_CHEEVOS
    { "cheevos_hardcore", NULL, CMD_OPT_CHEEVOS_HARDCORE, true,
       CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE,
