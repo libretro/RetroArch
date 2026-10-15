@@ -58,6 +58,7 @@ python3 fixtures.py
 python3 tile_fixtures.py
 python3 frame_fixtures.py
 python3 picture_fixtures.py
+python3 reference_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -120,5 +121,26 @@ restoration and reduced still pictures. The native sequence/prefix/size/tile
 parsers locate these tools without trace-supplied offsets; all decoded fields
 and start/end cursors are compared with FFmpeg. Inter-frame inheritance is
 covered by synthetic cases, rather than claimed from this all-intra corpus.
-Remaining reference/motion header syntax, film grain and hardware submission
+Remaining motion/global-motion syntax, film grain and hardware submission
 are not implemented by these helpers.
+
+`formats/rav1_reference.h` continues a coded frame prefix through
+`disable_frame_end_update_cdf`: explicit or short-signaled reference selection,
+frame-ID deltas, tentative ID/order-hint invalidation, reference-derived sizes,
+superres, intrabc and pre-tile motion flags. Caller-owned slot metadata remains
+immutable. The returned valid mask is tentative; decoder state and GPU surface
+ownership must only be committed after successful decode. Show-existing
+validation, frame-ID progression, scaling constraints and sequence transitions
+remain caller responsibilities.
+
+Reference tests exercise order-hint wrap/ties/fallback, every found-ref position,
+all superres denominators and interpolation filters, frame-ID wrap/window
+boundaries, invalid slots, inferred flags and truncation rollback.
+`reference_fixtures.py` compares eight reordered, error-resilient, adaptive-
+quantization and still-picture streams at 8/10 bits. Native parsing locates
+135 coded setups and picture blocks without supplied offsets, including 85
+primary-reference inheritances. Reference indices, sizes, motion flags,
+segment/filter metadata and bit positions match FFmpeg traces. Short signaling
+and reference-derived resizing are covered synthetically in this corpus.
+The fixture harness simulates successful decode to advance metadata; it does
+not implement a decoder or change GPU ownership.

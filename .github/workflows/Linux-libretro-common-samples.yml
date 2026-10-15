@@ -215,6 +215,7 @@ jobs:
             rmp4_fragment_test
             rav1_test
             rav1_picture_test
+            rav1_reference_test
             rav1_frame_test
             rav1_tile_info_test
             rav1_tiles_test

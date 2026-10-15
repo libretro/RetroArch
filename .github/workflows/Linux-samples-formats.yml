@@ -255,6 +255,7 @@ jobs:
           python3 tile_fixtures.py
           python3 frame_fixtures.py
           python3 picture_fixtures.py
+          python3 reference_fixtures.py
 
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
