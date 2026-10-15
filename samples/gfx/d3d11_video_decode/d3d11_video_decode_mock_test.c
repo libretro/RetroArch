@@ -164,7 +164,7 @@ static HRESULT STDMETHODCALLTYPE m_get_adapter(mock_t *m, void **out)
 
 /* ---- device ---- */
 
-static int dpb_array, n_out_tex, out_flags_ok;
+static int dpb_array, n_out_tex, out_flags_ok, reject_shared_dpb;
 
 static void STDMETHODCALLTYPE m_texture_desc(mock_t *m, D3D11_TEXTURE2D_DESC *desc)
 {
@@ -174,7 +174,11 @@ static void STDMETHODCALLTYPE m_texture_desc(mock_t *m, D3D11_TEXTURE2D_DESC *de
 static HRESULT STDMETHODCALLTYPE m_create_texture(mock_t *m,
       const D3D11_TEXTURE2D_DESC *d, const void *init, void **out)
 {
-   mock_t *t = mock_new(K_TEXTURE);
+   mock_t *t;
+   if (reject_shared_dpb && (d->BindFlags & D3D11_BIND_DECODER)
+         && (d->MiscFlags & D3D11_RESOURCE_MISC_SHARED))
+   { *out = NULL; return E_FAIL; }
+   t = mock_new(K_TEXTURE);
    t->desc   = *d;
    if (d->BindFlags & D3D11_BIND_DECODER)
       dpb_array = (int)d->ArraySize;
@@ -1199,6 +1203,66 @@ static void test_vp9(int depth)
    d3d11vd.import_formats = formats;
 }
 
+
+static void test_shared_dpb(int depth)
+{
+   static rvp9_hw_picture_t p;
+   static const uint8_t packet[7] = {0x82, 0x49, 0x83, 0x42, 1, 2, 3};
+   rvp9_hw_ops_t ops;
+   video_hw_frame_t held;
+   d3d11vd_dec_t *d;
+   unsigned i, old_slot;
+   int before = live, old_copies = copies;
+   memset(&p, 0, sizeof(p));
+   p.header.profile = depth == 10 ? 2 : 0; p.header.bit_depth = depth;
+   p.header.w = 320; p.header.h = 192; p.header.show_frame = 1;
+   p.header.subsampling_x = p.header.subsampling_y = 1;
+   p.header.color_space = 2; p.header.color_range = 1;
+   p.header.uncomp_size = 1; p.header.first_partition_size = 1;
+   p.previous_slot = -1;
+   for (i = 0; i < 8; i++) p.reference_slots[i] = -1;
+   for (i = 0; i < 3; i++) p.named_slots[i] = -1;
+   views = views_ok = 0;
+   if (!d3d11_video_decode_vp9_open(&p.header, 10, &ops))
+   { check("shared DPB opens", 0); return; }
+   d = (d3d11vd_dec_t*)ops.decoder;
+   check("shared DPB has spare physical slices, no output textures",
+         d->direct_dpb && d->physical_slots == 14 && !d->out[0]
+         && ((mock_t*)d->dpb)->desc.ArraySize >= 14 && d->dpb_handle);
+   check("shared DPB first submission", !ops.decode(d, packet, sizeof(packet), &p));
+   check("shared DPB exports without a copy", !ops.output(d, 0, &held)
+         && held.image == (uint64_t)(uintptr_t)d->dpb_handle && copies == old_copies);
+   old_slot = d->slot_map[0]; pending_left = 1;
+   check("shared DPB BUSY does not commit a rename",
+         ops.decode(d, packet, sizeof(packet), &p) == 1 && d->slot_map[0] == old_slot);
+   check("shared DPB held slice is renamed on retry",
+         !ops.decode(d, packet, sizeof(packet), &p) && d->slot_map[0] != held.array_slice
+         && !p.slot && copies == old_copies);
+   p.slot = 1; p.header.frame_type = 1;
+   p.reference_slots[0] = 0;
+   for (i = 0; i < 3; i++) p.named_slots[i] = 0;
+   check("shared DPB reference maps follow renamed slot",
+         !ops.decode(d, packet, sizeof(packet), &p)
+         && d->pp[16] == d->slot_map[0] && d->pp[88] == d->slot_map[0]
+         && d->pp[0] == d->slot_map[1]);
+   p.named_slots[0] = 1000;
+   check("shared DPB rejects invalid named reference",
+         ops.decode(d, packet, sizeof(packet), &p) < 0);
+   d3d11_video_decode_vp9_close(&ops);
+   check("shared DPB close retains exported array", live > before);
+   video_hw_frame_abandon(&held); d3d11vd_grave_reap(false);
+   check("shared DPB abandon retires array", live == before);
+   p.header.frame_type = 0;
+   reject_shared_dpb = 1; views = views_ok = 0;
+   check("unsupported shared DPB falls back",
+         d3d11_video_decode_vp9_open(&p.header, 10, &ops));
+   d = (d3d11vd_dec_t*)ops.decoder;
+   check("fallback keeps copied output textures", d && !d->direct_dpb && d->out[0]);
+   reject_shared_dpb = 0;
+   d3d11_video_decode_vp9_close(&ops);
+   check("fallback retires resources", live == before);
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -1269,6 +1333,13 @@ int main(void)
       check("P010 renderer: abandonment retires owner", live == before);
    }
 
+   d3d11_video_decode_deinit();
+   check("shared DPB renderer starts", d3d11_video_decode_init_formats(dev,
+         IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010 | D3D11_VIDEO_DECODE_SHARED_DPB));
+   the_adapter = (mock_t*)d3d11vd.adapter;
+   d3d11vd.create = mock_create;
+   test_shared_dpb(8);
+   test_shared_dpb(10);
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);
    m_release(m);

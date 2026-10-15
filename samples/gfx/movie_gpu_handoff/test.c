@@ -68,13 +68,16 @@ static void frontend(void)
    formats = 0; CHECK(!video_driver_movie_refresh(NULL, NULL)); formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
    hw.image = 12; hw.wait = 34; hw.wait_value = 56; hw.done = 88; hw.done_value = 7;
    hw.width = 640; hw.height = 480; hw.layout = 3; hw.yuv = 1;
+   hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
    hw.owner = &abandoned; hw.abandon = abandon;
    outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
    CHECK(!video_driver_movie_refresh(NULL, &hw) && !abandoned && !video_driver_st.movie_frame);
    CHECK(captured.pixfmt == IMAGE_PIXFMT_NV12 && captured.dims == VIDEO_SCALE_PACK(640,480)
          && captured.image == hw.image && captured.wait == hw.wait && captured.wait_value == hw.wait_value
          && captured.done == hw.done && captured.done_value == hw.done_value
-         && captured.owner == hw.owner && captured.abandon == hw.abandon && captured.layout == hw.layout);
+         && captured.owner == hw.owner && captured.abandon == hw.abandon && captured.layout == hw.layout
+         && captured.array_slice == hw.array_slice && captured.crop_x == hw.crop_x
+         && captured.crop_y == hw.crop_y);
    hw.pixfmt = IMAGE_PIXFMT_P010; outcome = VIDEO_TEXTURE_UPDATE_DONE;
    CHECK(video_driver_movie_refresh(NULL, &hw) && !abandoned && video_driver_st.movie_frame);
    CHECK(captured.pixfmt == IMAGE_PIXFMT_P010);

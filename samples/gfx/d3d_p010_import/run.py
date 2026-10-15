@@ -20,6 +20,7 @@ with tempfile.TemporaryDirectory() as directory:
     bodies = []
     for signature in ('static void d3d12_import_forget(', 'static int d3d12_import_tex(',
                       'static ID3D12Fence *d3d12_import_fence(', 'static bool d3d12_import_list(',
+                      'static void d3d12_import_transition(',
                       'static enum video_texture_update d3d12_import_texture('):
         start = source12.index(signature)
         bodies.append(source12[start:source12.index('\n}', start) + 2])

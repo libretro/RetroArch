@@ -38,6 +38,7 @@ enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *surface,
    (void)surface;
    imported++;
    received = frame->pixfmt;
+   if (frame->array_slice != 7 || frame->crop_x != 2 || frame->crop_y != 4) failures++;
    return GFX_SURFACE_SUBMIT_DONE;
 }
 
@@ -62,6 +63,7 @@ int main(void)
    player.cb.shown = did_show;
    frame.hw = &hw;
    hw.image = 1; hw.width = hw.height = 64;
+   hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
    for (i = 0; i < 4; i++)
    {
       enum video_player_present result;

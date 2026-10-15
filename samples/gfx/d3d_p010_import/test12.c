@@ -89,8 +89,7 @@ static void transition(ID3D12GraphicsCommandList *cmd, ID3D12Resource *r,
    ID3D12GraphicsCommandList_ResourceBarrier(cmd, 1, &bar);
 }
 #define D3D12_RESOURCE_TRANSITION transition
-/* This fixture supplies its output and descriptors. Unexpected allocation
- * or retirement fails; only the existing-texture path is exercised. */
+/* The fixture supplies output/descriptors and retains replaced inputs. */
 static d3d12_texture_t *d3d12_import_new(d3d12_video_t *v, unsigned w,
       unsigned h, enum texture_filter_type filter)
 {
@@ -100,9 +99,13 @@ static void d3d12_release_texture(d3d12_texture_t *t)
 {
    (void)t; failures++;
 }
+static IUnknown *retired[16];
+static unsigned num_retired;
 static void d3d12_retire(d3d12_video_t *v, void *p, IUnknown *obj, UINT64 fence)
 {
-   (void)v; (void)p; (void)obj; (void)fence; failures++;
+   (void)v; (void)p; (void)fence;
+   if (num_retired < 16) retired[num_retired++] = obj;
+   else { failures++; IUnknown_Release(obj); }
 }
 #define Release(p) do { if (p) IUnknown_Release((IUnknown*)(p)); } while (0)
 #include "import12.inc"
@@ -162,6 +165,7 @@ end:
    return ok;
 }
 
+static unsigned array_case;
 static void color(d3d12_video_t *v, ID3D11Device5 *producer,
       ID3D11DeviceContext4 *context, unsigned p010, unsigned flags,
       unsigned yc, unsigned uc, unsigned vc)
@@ -189,8 +193,8 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT fp;
    D3D12_TEXTURE_COPY_LOCATION src, dst;
    D3D12_RANGE range;
-   uint16_t words[6];
-   uint8_t bytes[6], *pixels = NULL;
+   uint16_t words[54];
+   uint8_t bytes[54], zero[108], *pixels = NULL;
    float c[6], expected[3], y, u, cr, divisor, center;
    UINT64 size, submitted, value;
    unsigned i, row, col, k;
@@ -199,22 +203,41 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    imp.output_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    memset(&output, 0, sizeof(output));
    memset(&f, 0, sizeof(f));
+   f.array_slice = array_case ? 1 : 0;
+   f.crop_x = f.crop_y = array_case ? 2 : 0;
    memset(&td, 0, sizeof(td));
-   td.Width = td.Height = 2;
-   td.MipLevels = td.ArraySize = td.SampleDesc.Count = 1;
+   td.Width = td.Height = array_case ? 6 : 2;
+   td.MipLevels = td.SampleDesc.Count = 1;
+   td.ArraySize = array_case ? 2 : 1;
    td.Format = p010 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
    td.Usage = D3D11_USAGE_DEFAULT;
    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
    td.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
-   for (i = 0; i < 4; i++) { words[i] = (uint16_t)(yc << 6); bytes[i] = (uint8_t)yc; }
-   words[4] = (uint16_t)(uc << 6); words[5] = (uint16_t)(vc << 6);
-   bytes[4] = (uint8_t)uc; bytes[5] = (uint8_t)vc;
+   for (i = 0; i < td.Width * td.Height; i++)
+   { words[i] = (uint16_t)((p010 ? 64 : 16) << 6); bytes[i] = 16; }
+   for (; i < td.Width * td.Height * 3 / 2; i++)
+   { words[i] = (uint16_t)(512 << 6); bytes[i] = 128; }
+   for (row = 0; row < 2; row++)
+      for (col = 0; col < 2; col++)
+      {
+         i = (row + (array_case ? 2 : 0)) * td.Width + col + (array_case ? 2 : 0);
+         words[i] = (uint16_t)(yc << 6); bytes[i] = (uint8_t)yc;
+      }
+   i = td.Width * td.Height + (array_case ? td.Width + 2 : 0);
+   words[i] = (uint16_t)(uc << 6); words[i + 1] = (uint16_t)(vc << 6);
+   bytes[i] = (uint8_t)uc; bytes[i + 1] = (uint8_t)vc;
    memset(&data, 0, sizeof(data));
    data.pSysMem = p010 ? (void*)words : (void*)bytes;
-   data.SysMemPitch = p010 ? 4 : 2;
+   data.SysMemPitch = td.Width * (p010 ? 2 : 1);
    CHECK(SUCCEEDED(ID3D11Device5_CreateTexture2D(producer, &td, NULL, &input)));
+   if (array_case)
+   {
+      memset(zero, 0, sizeof(zero));
+      ID3D11DeviceContext4_UpdateSubresource(context, (ID3D11Resource*)input,
+            0, NULL, zero, data.SysMemPitch, 0);
+   }
    ID3D11DeviceContext4_UpdateSubresource(context, (ID3D11Resource*)input,
-         0, NULL, data.pSysMem, data.SysMemPitch, 0);
+         array_case ? 1 : 0, NULL, data.pSysMem, data.SysMemPitch, 0);
    CHECK(SUCCEEDED(ID3D11Texture2D_QueryInterface(input, &IID_IDXGIResource1, (void**)&shared)));
    CHECK(SUCCEEDED(IDXGIResource1_CreateSharedHandle(shared, NULL,
          DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL, &image_handle)));
@@ -288,6 +311,9 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
          && v->import_value == submitted);
    imp.num_fences = 0;
    CHECK(!abandoned && !ID3D11Fence_GetCompletedValue(done));
+   if (array_case)
+      CHECK(d3d12_import_tex(v, &imp, f.image, 2, 2, f.pixfmt, 0,
+            f.crop_x, f.crop_y, 0) >= 0);
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
    /* The importer returned even though the producer has not signalled. */
    CHECK(v->import_value == submitted + 1
@@ -297,10 +323,19 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    ID3D11DeviceContext4_Flush(context);
    CHECK(wait_for(v->import_done, v->import_value));
    CHECK(ID3D11Fence_GetCompletedValue(done) == 1);
-   CHECK(d3d12_import_tex(v, &imp, f.image, 2, 2, f.pixfmt, v->import_value) == 0);
-   CHECK(d3d12_import_tex(v, &imp, f.image, 4, 2, f.pixfmt, v->import_value) < 0);
+   CHECK(d3d12_import_tex(v, &imp, f.image, 2, 2, f.pixfmt, f.array_slice, f.crop_x, f.crop_y, v->import_value) == 0);
+   CHECK(d3d12_import_tex(v, &imp, f.image, td.Width + 2, 2, f.pixfmt, f.array_slice, f.crop_x, f.crop_y, v->import_value) < 0);
    CHECK(d3d12_import_tex(v, &imp, f.image, 2, 2,
-         p010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010, v->import_value) < 0);
+         p010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010, f.array_slice, f.crop_x, f.crop_y, v->import_value) < 0);
+   f.array_slice = td.ArraySize;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.array_slice = array_case ? 1 : 0;
+   f.crop_x = 1;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.crop_x = array_case ? 2 : 0;
+   f.crop_y = td.Height + 2;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.crop_y = array_case ? 2 : 0;
    f.pixfmt = IMAGE_PIXFMT_I420;
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
    f.pixfmt = p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
@@ -371,6 +406,8 @@ end:
    /* Release the producer gate on failures before destroying queue resources. */
    if (ready) { ID3D11DeviceContext4_Signal(context, ready, 1); ID3D11DeviceContext4_Flush(context); }
    if (v->import_value) wait_for(v->import_done, v->import_value);
+   for (i = 0; i < num_retired; i++) DROP(retired[i]);
+   num_retired = 0;
    for (i = 0; i < D3D12_IMPORT_TEXTURES; i++) DROP(imp.tex[i]);
    for (i = 0; i < imp.num_fences; i++) DROP(imp.fence[i]);
    DROP(cmd); DROP(alloc); DROP(readback); DROP(output.handle); DROP(heap);
@@ -411,6 +448,7 @@ int main(void)
    CHECK(pipeline(&v));
    v.video_decode = true;
    v.import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
+   for (array_case = 0; array_case < 2; array_case++)
    for (depth = 0; depth < 2; depth++)
    {
       memset(&fs, 0, sizeof(fs)); fs.Format = depth ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;

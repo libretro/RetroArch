@@ -171,17 +171,29 @@ static ID3D11Fence *open_fence(opened_t *o, uint64_t h)
    return f;
 }
 
+static int shared_dpb_expected(const video_hw_frame_t *fr)
+{
+   d3d11vd_dec_t *d = (d3d11vd_dec_t*)fr->owner;
+   if (!getenv("D3D11_TEST_SHARED_DPB")) return 1;
+   if (d && d->direct_dpb && !d->out[0]
+         && fr->image == (uint64_t)(uintptr_t)d->dpb_handle) return 1;
+   video_hw_frame_abandon(fr);
+   return 0;
+}
+
 /* The frame the backend handed out, read back as the driver reads it,
  * then given back */
 static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
 {
    D3D11_MAPPED_SUBRESOURCE m;
+   D3D11_BOX box;
    ID3D11Texture2D *tex;
    ID3D11Fence *wait, *done;
    unsigned w = fr->width, h = fr->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
    unsigned y, bps = fr->pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
    int i;
 
+   if (!shared_dpb_expected(fr)) return 0;
    if (o->gen != fr->layout)
    {
       opened_clear(o);
@@ -213,8 +225,10 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
       }
    }
    ctx4->lpVtbl->Wait(ctx4, wait, fr->wait_value);
-   ctx->lpVtbl->CopyResource(ctx, (ID3D11Resource*)o->staging,
-         (ID3D11Resource*)tex);
+   box.left = fr->crop_x; box.top = fr->crop_y; box.front = 0;
+   box.right = box.left + w; box.bottom = box.top + h; box.back = 1;
+   ctx->lpVtbl->CopySubresourceRegion(ctx, (ID3D11Resource*)o->staging,
+         0, 0, 0, 0, (ID3D11Resource*)tex, fr->array_slice, &box);
    ctx4->lpVtbl->Signal(ctx4, done, fr->done_value);
    ctx->lpVtbl->Flush(ctx);
    if (FAILED(ctx->lpVtbl->Map(ctx, (ID3D11Resource*)o->staging, 0,
@@ -320,19 +334,6 @@ static void d12_desc(ID3D12Resource *r, D3D12_RESOURCE_DESC *d)
    get(r, d);
 }
 
-static void d12_transition(ID3D12Resource *r, D3D12_RESOURCE_STATES a,
-      D3D12_RESOURCE_STATES b)
-{
-   D3D12_RESOURCE_BARRIER bar;
-   memset(&bar, 0, sizeof(bar));
-   bar.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-   bar.Transition.pResource   = r;
-   bar.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-   bar.Transition.StateBefore = a;
-   bar.Transition.StateAfter  = b;
-   l12->lpVtbl->ResourceBarrier(l12, 1, &bar);
-}
-
 static int d12_init(void)
 {
    static const D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_11_0;
@@ -380,7 +381,9 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
 {
    D3D12_PLACED_SUBRESOURCE_FOOTPRINT fp[2];
    D3D12_TEXTURE_COPY_LOCATION src, dst;
-   D3D12_RESOURCE_DESC desc;
+   D3D12_RESOURCE_DESC desc, footprint;
+   D3D12_RESOURCE_BARRIER barrier;
+   D3D12_BOX box;
    ID3D12Resource *tex;
    ID3D12Fence *wait, *done;
    UINT64 total = 0;
@@ -389,6 +392,7 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
    uint8_t *m;
    int i;
 
+   if (!shared_dpb_expected(fr)) return 0;
    if (o12.gen != fr->layout)
    {
       opened12_clear(&o12);
@@ -406,13 +410,16 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
       return 0;
    }
    d12_desc(tex, &desc);
-   if (desc.Width != w || desc.Height != h
+   if (fr->crop_x > desc.Width || w > desc.Width - fr->crop_x
+         || fr->crop_y > desc.Height || h > desc.Height - fr->crop_y
+         || fr->array_slice >= desc.DepthOrArraySize || desc.MipLevels != 1
          || desc.Format != (bps == 2 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12))
    {
       video_hw_frame_abandon(fr);
       return 0;
    }
-   d12->lpVtbl->GetCopyableFootprints(d12, &desc, 0, 2, 0, fp, NULL, NULL,
+   footprint = desc; footprint.Width = w; footprint.Height = h; footprint.DepthOrArraySize = 1;
+   d12->lpVtbl->GetCopyableFootprints(d12, &footprint, 0, 2, 0, fp, NULL, NULL,
          &total);
    if (!rb12 || rb12_size < total)
    {
@@ -441,20 +448,29 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
    }
    a12->lpVtbl->Reset(a12);
    l12->lpVtbl->Reset(l12, a12, NULL);
-   d12_transition(tex, D3D12_RESOURCE_STATE_COMMON,
-         D3D12_RESOURCE_STATE_COPY_SOURCE);
+   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+   barrier.Transition.pResource = tex;
    for (p = 0; p < 2; p++)
    {
+      barrier.Transition.Subresource = fr->array_slice + p * desc.DepthOrArraySize;
+      barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+      barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      l12->lpVtbl->ResourceBarrier(l12, 1, &barrier);
       src.pResource        = tex;
       src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-      src.SubresourceIndex = p;
+      src.SubresourceIndex = fr->array_slice + p * desc.DepthOrArraySize;
       dst.pResource        = rb12;
       dst.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
       dst.PlacedFootprint  = fp[p];
-      l12->lpVtbl->CopyTextureRegion(l12, &dst, 0, 0, 0, &src, NULL);
+      box.left = fr->crop_x >> p; box.top = fr->crop_y >> p; box.front = 0;
+      box.right = box.left + (p ? cw : w); box.bottom = box.top + (p ? ch : h); box.back = 1;
+      l12->lpVtbl->CopyTextureRegion(l12, &dst, 0, 0, 0, &src, &box);
+      barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+      l12->lpVtbl->ResourceBarrier(l12, 1, &barrier);
    }
-   d12_transition(tex, D3D12_RESOURCE_STATE_COPY_SOURCE,
-         D3D12_RESOURCE_STATE_COMMON);
+
    l12->lpVtbl->Close(l12);
    q12->lpVtbl->Wait(q12, wait, fr->wait_value);
    q12->lpVtbl->ExecuteCommandLists(q12, 1, (ID3D12CommandList**)&l12);
@@ -1121,7 +1137,8 @@ int main(void)
       return 0;
    }
    if (!d3d11_video_decode_init_formats(dev,
-            IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010))
+            IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
+            | (getenv("D3D11_TEST_SHARED_DPB") ? D3D11_VIDEO_DECODE_SHARED_DPB : 0)))
    {
       printf("d3d11_video_decode_test: SKIP (the backend did not start)\n");
       return 0;

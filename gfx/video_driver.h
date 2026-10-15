@@ -999,7 +999,8 @@ typedef struct video_device_info
  * D3D11, D3D12: NT handles - a shared DXGI_FORMAT_NV12 texture, and
  * two shared fences waited for and signalled as above; @layout names
  * the producer's set of handles, so that what a driver opened of them
- * is opened again when it changes. */
+ * is opened again when it changes. D3D12 may import a decoder array element
+ * with an even visible crop origin; standalone textures use zeros. */
 typedef struct video_frame_import
 {
    uint64_t image;
@@ -1011,6 +1012,8 @@ typedef struct video_frame_import
    unsigned dims;
    unsigned layout;
    unsigned yuv;           /* IMAGE_YUV_FLAG_* */
+   unsigned array_slice;
+   unsigned crop_x, crop_y;
    /* The producer's, for a consumer that will not have the frame read
     * after all: signals @done in the driver's place. The driver never
     * calls it. NULL: nothing to do. */

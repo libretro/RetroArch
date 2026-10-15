@@ -4997,6 +4997,9 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
    f.dims = VIDEO_SCALE_PACK(hw->width, hw->height);
    f.layout = hw->layout;
    f.yuv = hw->yuv;
+   f.array_slice = hw->array_slice;
+   f.crop_x = hw->crop_x;
+   f.crop_y = hw->crop_y;
    f.abandon = hw->abandon;
    f.owner = hw->owner;
    result = poke->import_movie_frame(video_st->data, &f);

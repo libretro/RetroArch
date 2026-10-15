@@ -207,7 +207,8 @@ The initial path accepts even, fixed-size 4:2:0 frames and BT.601/BT.709 output
 matrices (VP9 color spaces 0-3); unsupported color spaces, depth and geometry
 require fallback/reopen. DPB storage is aligned to 128 pixels independently of
 the coded size. Display export reuses the asynchronous shared-texture/fence
-path: no CPU pixel transfer, with one DPB-to-output GPU copy for lease ownership.
+path: no CPU pixel transfer. D3D11 readers use a DPB-to-output copy;
+D3D12 opts into shared decoder-array import where allocation permits it.
 Dropped display frames can bypass export through the common session API.
 
 `dxva_vp9_test` checks the packed 208-byte parameters, including references,
@@ -264,3 +265,27 @@ Seek catch-up is asynchronous and currently replays from the first keyframe;
 skipped frames decode without exporting shared textures. The native oracle
 checks a post-seek picture against its oracle samples through both readers.
 Long-file seek performance and actual renderer/shader/A/V acceptance remain.
+
+
+### Direct D3D12 decoder-array import
+
+D3D12 imports the NV12/P010 decoder array with a slice and even crop origin.
+Four spare physical slices allow logical decoder slots to be renamed while
+readers hold older pictures. Ready/done fences and abandonment retain each
+lease through decode, rewind and close. Shared-allocation failure falls back
+to private DPB storage and copied output. D3D11 rendering keeps that copied
+path: D3D11 does not permit shader views of decoder arrays. The D3D12 YUV-to-RGB
+conversion still writes an output texture.
+
+Set `D3D11_TEST_SHARED_DPB=1` for the native device oracle, or the primary
+movie-core oracle with its external fixtures, to require shared-array output
+without independent output textures. RTX 5090 tests cover H.264, HEVC Main/Main10
+and four VP9 color/depth cases. The core oracle holds a duplicate first-picture
+lease through subsequent decoding, seek and unload, then compares it again.
+The four cases through both readers pass 112 sequential, seek and held-picture
+comparisons. This does not establish wider-device or complete UI/A/V acceptance.
+
+The mock checks no-copy export, slot/reference remapping, BUSY retry, delayed
+close and allocation fallback. The production D3D12 import shader oracle also
+covers NV12/P010 arrays, cropped nonzero slices, slice-cache replacement and
+invalid crop/slice rejection; GPU readbacks and blocking waits are test-only.

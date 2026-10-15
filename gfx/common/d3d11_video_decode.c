@@ -21,12 +21,10 @@
  * NV12/P010 texture array, a slice per decoder slot, decoded through one
  * output view each.
  *
- * A picture to be shown is copied, from the visible window, into one
- * of a few shared output textures, and a shared fence raised behind the
- * copy. The driver opens both through their NT handles, waits for the
- * fence on its own queue, converts, and raises the texture's own
- * fence; a texture is copied into again once that has come, or once
- * the frame was abandoned unread.
+ * D3D12 readers import the shared DPB directly. Logical decoder slots
+ * are renamed while exported pictures remain held. Other readers use
+ * shared copies of the visible window. Each export has ready/done fences;
+ * its storage is reusable after the reader signals done or abandons it.
  *
  * A closed decoder whose textures are still to be read waits in a
  * graveyard until they are, so their handles stay good; deinit empties
@@ -119,7 +117,11 @@ typedef struct d3d11vd_dec
    ID3D11VideoDecoder           *decoder;
    ID3D11Texture2D              *dpb;
    ID3D11Texture2D              *readback;
-   ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS];
+   ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS + D3D11VD_OUTS];
+   HANDLE dpb_handle;
+   bool direct_dpb;
+   unsigned physical_slots, slot_map[D3D11VD_MAX_SLOTS];
+   unsigned out_slot[D3D11VD_OUTS];
 
    GUID profile;
    DXGI_FORMAT format;
@@ -166,6 +168,7 @@ static struct
    rvp9_hw_backend_t vp9;
 #endif
    unsigned import_formats;
+   bool shared_dpb;
 } d3d11vd;
 
 /* ---- teardown ---- */
@@ -185,7 +188,8 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    if (d->ready_handle)
       CloseHandle(d->ready_handle);
    D3D11VD_RELEASE(d->ready);
-   for (i = 0; i < D3D11VD_MAX_SLOTS; i++)
+   if (d->dpb_handle) CloseHandle(d->dpb_handle);
+   for (i = 0; i < D3D11VD_MAX_SLOTS + D3D11VD_OUTS; i++)
       D3D11VD_RELEASE(d->view[i]);
    D3D11VD_RELEASE(d->readback);
    D3D11VD_RELEASE(d->dpb);
@@ -327,7 +331,7 @@ static bool d3d11vd_make_decoder(d3d11vd_dec_t *d, unsigned *min_targets)
 }
 
 /* The slots: slices of one texture array, an output view each. */
-static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
+static bool d3d11vd_make_dpb_storage(d3d11vd_dec_t *d, unsigned min_targets)
 {
    D3D11_TEXTURE2D_DESC desc;
    D3D11_VIDEO_DECODER_OUTPUT_VIEW_DESC vd;
@@ -336,7 +340,8 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    desc.Width              = d->coded_w;
    desc.Height             = d->coded_h;
    desc.MipLevels          = 1;
-   desc.ArraySize          = d->slots > min_targets ? d->slots : min_targets;
+   d->physical_slots       = d->slots + (d->direct_dpb ? D3D11VD_OUTS : 0);
+   desc.ArraySize          = d->physical_slots > min_targets ? d->physical_slots : min_targets;
    desc.Format             = d->format;
    desc.SampleDesc.Count   = 1;
    desc.Usage              = D3D11_USAGE_DEFAULT;
@@ -344,10 +349,27 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    desc.SampleDesc.Quality = 0;
    desc.CPUAccessFlags     = 0;
    desc.MiscFlags          = 0;
+   if (d->direct_dpb)
+   {
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+      desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+   }
    if (FAILED(d->dev->lpVtbl->CreateTexture2D(d->dev, &desc, NULL,
          &d->dpb)))
       return false;
-   for (i = 0; i < d->slots; i++)
+   if (d->direct_dpb)
+   {
+      IDXGIResource1 *res = NULL;
+      HRESULT hr;
+      if (FAILED(d->dpb->lpVtbl->QueryInterface(d->dpb,
+               &d3d11vd_iid_dxgi_resource1, (void**)&res))) return false;
+      hr = res->lpVtbl->CreateSharedHandle(res, NULL,
+            DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL, &d->dpb_handle);
+      D3D11VD_RELEASE(res);
+      if (FAILED(hr)) return false;
+   }
+   for (i = 0; i < d->slots; i++) d->slot_map[i] = i;
+   for (i = 0; i < d->physical_slots; i++)
    {
       vd.DecodeProfile         = d->profile;
       vd.ViewDimension         = D3D11_VDOV_DIMENSION_TEXTURE2D;
@@ -357,6 +379,42 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
          return false;
    }
    return true;
+}
+
+static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
+{
+   unsigned i;
+   d->direct_dpb = d3d11vd.shared_dpb
+         && d->slots <= D3D11VD_MAX_SLOTS - D3D11VD_OUTS;
+   if (d3d11vd_make_dpb_storage(d, min_targets)) return true;
+   if (!d->direct_dpb) return false;
+   for (i = 0; i < D3D11VD_MAX_SLOTS + D3D11VD_OUTS; i++)
+      D3D11VD_RELEASE(d->view[i]);
+   if (d->dpb_handle) CloseHandle(d->dpb_handle);
+   d->dpb_handle = NULL;
+   D3D11VD_RELEASE(d->dpb);
+   d->direct_dpb = false;
+   return d3d11vd_make_dpb_storage(d, min_targets);
+}
+
+/* Rename a logical decode target while readers retain older pictures. */
+static int d3d11vd_target(d3d11vd_dec_t *d, unsigned slot)
+{
+   unsigned p, i;
+   bool held[D3D11VD_MAX_SLOTS + D3D11VD_OUTS];
+   if (!d->direct_dpb) return (int)slot;
+   memset(held, 0, sizeof(held));
+   for (i = 0; i < d->slots; i++)
+      if (i != slot) held[d->slot_map[i]] = true;
+   for (i = 0; i < D3D11VD_OUTS; i++)
+   {
+      int status = d3d11vd_out_status(d, i);
+      if (status < 0) return -1;
+      if (status) held[d->out_slot[i]] = true;
+   }
+   for (p = 0; p < d->physical_slots; p++)
+      if (!held[p]) return (int)p;
+   return -2;
 }
 
 static bool d3d11vd_shared_fence(ID3D11Device5 *dev5, ID3D11Fence **f,
@@ -394,22 +452,22 @@ static bool d3d11vd_make_outputs(d3d11vd_dec_t *d)
    desc.CPUAccessFlags     = 0;
    for (o = 0; o < D3D11VD_OUTS; o++)
    {
-      IDXGIResource1 *res = NULL;
-      HRESULT hr;
-      if (FAILED(d->dev->lpVtbl->CreateTexture2D(d->dev, &desc, NULL,
-            &d->out[o])))
-         goto end;
-      if (FAILED(d->out[o]->lpVtbl->QueryInterface(d->out[o],
-            &d3d11vd_iid_dxgi_resource1, (void**)&res)))
-         goto end;
-      hr = res->lpVtbl->CreateSharedHandle(res, NULL,
-            DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL,
-            &d->out_handle[o]);
-      D3D11VD_RELEASE(res);
-      if (     FAILED(hr)
-            || !d3d11vd_shared_fence(dev5, &d->out_done[o],
-                  &d->out_done_handle[o]))
-         goto end;
+      if (!d->direct_dpb)
+      {
+         IDXGIResource1 *res = NULL;
+         HRESULT hr;
+         if (FAILED(d->dev->lpVtbl->CreateTexture2D(d->dev, &desc, NULL,
+               &d->out[o]))) goto end;
+         if (FAILED(d->out[o]->lpVtbl->QueryInterface(d->out[o],
+               &d3d11vd_iid_dxgi_resource1, (void**)&res))) goto end;
+         hr = res->lpVtbl->CreateSharedHandle(res, NULL,
+               DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL,
+               &d->out_handle[o]);
+         D3D11VD_RELEASE(res);
+         if (FAILED(hr)) goto end;
+      }
+      if (!d3d11vd_shared_fence(dev5, &d->out_done[o],
+               &d->out_done_handle[o])) goto end;
       retro_atomic_store_release_int(&d->out_abandoned[o], 0);
    }
    ok = d3d11vd_shared_fence(dev5, &d->ready, &d->ready_handle);
@@ -527,6 +585,9 @@ static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
    D3D11_VIDEO_DECODER_BUFFER_DESC bufs[4];
+   rh264_hw_pic_t mapped;
+   rh264_hw_ref_t refs[16];
+   int target;
    UINT cap = 0, padded;
    void *ptr = NULL;
    HRESULT hr;
@@ -541,14 +602,22 @@ static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)
       if (pic->refs[i].slot < 0 || (unsigned)pic->refs[i].slot >= d->slots)
          return -1;
 
+   target = d3d11vd_target(d, (unsigned)pic->slot);
+   if (target < 0) return target == -2 ? 1 : -1;
+   mapped = *pic; mapped.slot = target; mapped.refs = refs;
+   for (i = 0; i < pic->num_refs; i++)
+   {
+      refs[i] = pic->refs[i];
+      refs[i].slot = d->slot_map[pic->refs[i].slot];
+   }
    hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
-         d->view[pic->slot], 0, NULL);
+         d->view[target], 0, NULL);
    if (hr == E_PENDING)
       return 1;
    if (FAILED(hr))
       return -1;
 
-   dxva_h264_pic_params(d->pp, pic, ++d->feedback);
+   dxva_h264_pic_params(d->pp, &mapped, ++d->feedback);
    dxva_h264_qmatrix(d->qm, pic, D3D11VD_QM_RASTER);
 
    /* the bitstream to a multiple of 128 bytes where it fits, the
@@ -601,6 +670,7 @@ static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)
                d->decoder, 4, bufs));
    }
    hr = d->vctx->lpVtbl->DecoderEndFrame(d->vctx, d->decoder);
+   if (ok && SUCCEEDED(hr)) d->slot_map[pic->slot] = (unsigned)target;
    return (ok && SUCCEEDED(hr)) ? 0 : -1;
 }
 
@@ -633,8 +703,10 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    box.right  = d->crop_x + d->visible_w;
    box.bottom = d->crop_y + d->visible_h;
    box.back   = 1;
-   d->ctx->lpVtbl->CopySubresourceRegion(d->ctx, (ID3D11Resource*)d->out[o],
-         0, 0, 0, 0, (ID3D11Resource*)d->dpb, slot, &box);
+   if (!d->direct_dpb)
+      d->ctx->lpVtbl->CopySubresourceRegion(d->ctx, (ID3D11Resource*)d->out[o],
+            0, 0, 0, 0, (ID3D11Resource*)d->dpb, d->slot_map[slot], &box);
+   d->out_slot[o] = d->slot_map[slot];
    if (FAILED(d->ctx4->lpVtbl->Signal(d->ctx4, d->ready,
          d->ready_value + 1)))
       return -1;
@@ -643,7 +715,7 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    d->out_next = (o + 1) % D3D11VD_OUTS;
 
    memset(out, 0, sizeof(*out));
-   out->image      = (uint64_t)(uintptr_t)d->out_handle[o];
+   out->image      = (uint64_t)(uintptr_t)(d->direct_dpb ? d->dpb_handle : d->out_handle[o]);
    out->wait       = (uint64_t)(uintptr_t)d->ready_handle;
    out->wait_value = d->ready_value;
    out->done       = (uint64_t)(uintptr_t)d->out_done_handle[o];
@@ -656,6 +728,11 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
       ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    out->layout     = d->gen;
    out->yuv        = d->yuv[slot];
+   if (d->direct_dpb)
+   {
+      out->array_slice = d->slot_map[slot];
+      out->crop_x = d->crop_x; out->crop_y = d->crop_y;
+   }
    return 0;
 }
 
@@ -713,6 +790,7 @@ static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
    size_t written = 0;
    unsigned i;
    HRESULT hr;
+   int target;
    bool ok, scaling;
 
    if (!d || !params || !au || !slices || !pending
@@ -724,12 +802,16 @@ static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
          || params->crop_bottom != (int)(d->coded_h - d->crop_y - d->visible_h)
          || !au->num_slices || au->num_slices > D3D11VD_MAX_SLICES
          || pending->slot >= d->slots
-         || !dxva_hevc_picture_from_state(&picture, params, au, pending)
-         || !dxva_hevc_pic_params(d->pp, &picture, d->feedback + 1))
+         || !dxva_hevc_picture_from_state(&picture, params, au, pending))
       return -1;
    for (i = 0; i < pending->num_refs; i++)
       if (pending->refs[i].slot >= d->slots)
          return -1;
+   target = d3d11vd_target(d, pending->slot);
+   if (target < 0) return target == -2 ? 1 : -1;
+   picture.slot = (unsigned)target;
+   for (i = 0; i < picture.num_refs; i++) picture.refs[i].slot = d->slot_map[picture.refs[i].slot];
+   if (!dxva_hevc_pic_params(d->pp, &picture, d->feedback + 1)) return -1;
    scaling = !!params->scaling_list_enabled;
    if (scaling)
    {
@@ -744,7 +826,7 @@ static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
    }
 
    hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
-         d->view[pending->slot], 0, NULL);
+         d->view[target], 0, NULL);
    if (hr == E_PENDING)
       return 1;
    if (FAILED(hr))
@@ -783,6 +865,7 @@ static int d3d11vd_hevc_decode(void *dec, const rh265_video_params_t *params,
             d->decoder, n, bufs));
    }
    hr = d->vctx->lpVtbl->DecoderEndFrame(d->vctx, d->decoder);
+   if (ok && SUCCEEDED(hr)) d->slot_map[pending->slot] = (unsigned)target;
    return ok && SUCCEEDED(hr) ? 0 : -1;
 }
 
@@ -868,6 +951,8 @@ static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
    const rvp9_hdr *h;
+   rvp9_hw_picture_t mapped;
+   int target;
    D3D11_VIDEO_DECODER_BUFFER_DESC bufs[3];
    UINT padded;
    unsigned i;
@@ -880,15 +965,26 @@ static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
          || h->bit_depth != (int)d->bit_depth || h->color_space < 0 || h->color_space > 3
          || h->uncomp_size >= size || h->first_partition_size < 1
          || (size_t)h->first_partition_size >= size - h->uncomp_size
-         || picture->slot < 0 || (unsigned)picture->slot >= d->slots
-         || !dxva_vp9_pic_params(d->pp, picture, d->feedback + 1)) return -1;
+         || picture->slot < 0 || (unsigned)picture->slot >= d->slots) return -1;
    for (i = 0; i < RVP9_REF_FRAMES; i++)
       if (picture->reference_slots[i] >= (int)d->slots) return -1;
+   for (i = 0; i < RVP9_REFS_PER_FRAME; i++)
+      if (picture->named_slots[i] >= (int)d->slots) return -1;
+   if (picture->previous_slot >= (int)d->slots) return -1;
+   target = d3d11vd_target(d, (unsigned)picture->slot);
+   if (target < 0) return target == -2 ? 1 : -1;
+   mapped = *picture; mapped.slot = target;
+   for (i = 0; i < RVP9_REF_FRAMES; i++)
+      if (mapped.reference_slots[i] >= 0) mapped.reference_slots[i] = d->slot_map[mapped.reference_slots[i]];
+   for (i = 0; i < RVP9_REFS_PER_FRAME; i++)
+      if (mapped.named_slots[i] >= 0) mapped.named_slots[i] = d->slot_map[mapped.named_slots[i]];
+   if (mapped.previous_slot >= 0) mapped.previous_slot = d->slot_map[mapped.previous_slot];
+   if (!dxva_vp9_pic_params(d->pp, &mapped, d->feedback + 1)) return -1;
    padded = ((UINT)size + 127) & ~127u;
    memset(d->sc, 0, DXVA_VP9_SLICE_SIZE);
    dxva_vp9_put32(d->sc + 4, padded);
    hr = d->vctx->lpVtbl->DecoderBeginFrame(d->vctx, d->decoder,
-         d->view[picture->slot], 0, NULL);
+         d->view[target], 0, NULL);
    if (hr == E_PENDING) return 1;
    if (FAILED(hr)) return -1;
    d->feedback++;
@@ -906,6 +1002,7 @@ static int d3d11vd_vp9_decode(void *dec, const uint8_t *packet, size_t size,
    }
    hr = d->vctx->lpVtbl->DecoderEndFrame(d->vctx, d->decoder);
    if (!ok || FAILED(hr)) return -1;
+   d->slot_map[picture->slot] = (unsigned)target;
    d->yuv[picture->slot] = (h->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
          | (h->color_space == 2 ? IMAGE_YUV_FLAG_BT709 : 0);
    return 0;
@@ -1011,7 +1108,8 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    d3d11vd.ops.readback = d3d11vd_readback;
    d3d11vd.up         = true;
    rh264_set_hw_backend(&d3d11vd.ops);
-   d3d11vd.import_formats = formats;
+   d3d11vd.shared_dpb = !!(formats & D3D11_VIDEO_DECODE_SHARED_DPB);
+   d3d11vd.import_formats = formats & ~D3D11_VIDEO_DECODE_SHARED_DPB;
    d3d11vd.hevc.user = &d3d11vd.import_formats;
    d3d11vd.hevc.open = d3d11vd_hevc_open;
    d3d11vd.hevc.close = d3d11_video_decode_hevc_close;

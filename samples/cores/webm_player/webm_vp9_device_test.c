@@ -15,12 +15,28 @@ int main(void)
 
 static frames_t core_frames;
 static opened_t core_reader;
-static unsigned core_done, core_format;
+static unsigned core_done, core_format, core_retained;
+static video_hw_frame_t core_held;
 static bool core_sink(void *user, const video_hw_frame_t *frame)
 {
    (void)user;
    if (!frame) return true;
    core_format = frame->pixfmt;
+   if (getenv("D3D11_TEST_SHARED_DPB"))
+   {
+      d3d11vd_dec_t *d = (d3d11vd_dec_t*)frame->owner;
+      check("movie core: direct DPB without output textures", d->direct_dpb && !d->out[0]
+            && frame->image == (uint64_t)(uintptr_t)d->dpb_handle);
+      if (!core_retained)
+      {
+         unsigned slot;
+         for (slot = 0; slot < d->slots; slot++)
+            if (d->slot_map[slot] == frame->array_slice) break;
+         check("movie core: retain a direct DPB lease", slot < d->slots
+               && !d3d11vd_output(d, slot, &core_held));
+         core_retained = 1;
+      }
+   }
    check("movie core: GPU frame read", use_d3d12
          ? take_hw12(&core_frames, frame) : take_hw(&core_frames, &core_reader, frame));
    return true;
@@ -54,7 +70,8 @@ static void core_run_fixture(void)
    game.path = getenv("VP9_TEST_WEBM");
    raw = read_fixture_file(getenv("VP9_TEST_RAW"), &raw_size);
    if (!raw) { check("movie core: oracle opens", 0); return; }
-   core_done = 0;
+   core_done = core_retained = 0;
+   memset(&core_held, 0, sizeof(core_held));
    check("movie core: opens WebM", retro_load_game(&game));
    media_video_hw_ready();
    if (!media_player.webmvs)
@@ -102,6 +119,15 @@ static void core_run_fixture(void)
    }
 done:
    retro_unload_game();
+   if (core_held.image)
+   {
+      int taken = use_d3d12 ? take_hw12(&core_frames, &core_held)
+            : take_hw(&core_frames, &core_reader, &core_held);
+      check("movie core: held DPB picture survives reuse, rewind and close", taken
+            && core_frames.n > 0 && !memcmp(core_frames.y[core_frames.n - 1], raw, y_size)
+            && !memcmp(core_frames.uv[core_frames.n - 1], raw + y_size, y_size / 2));
+      memset(&core_held, 0, sizeof(core_held));
+   }
    opened_clear(&core_reader); frames_free(&core_frames); free(raw);
 }
 
@@ -118,7 +144,8 @@ int main(void)
             levels, 2, D3D11_SDK_VERSION, &dev, NULL, &ctx))
          || FAILED(dev->lpVtbl->QueryInterface(dev, &d3d11vd_iid_device5, (void**)&dev5))
          || FAILED(ctx->lpVtbl->QueryInterface(ctx, &d3d11vd_iid_context4, (void**)&ctx4))
-         || !d3d11_video_decode_init_formats(dev, IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010))
+         || !d3d11_video_decode_init_formats(dev, IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
+            | (getenv("D3D11_TEST_SHARED_DPB") ? D3D11_VIDEO_DECODE_SHARED_DPB : 0)))
    {
       puts("Movie core VP9 GPU oracle: no hardware device");
       return 1;

@@ -41,6 +41,8 @@ bool d3d11_video_decode_init_adapter(void *adapter);
 
 /* Renderer import formats, frozen before publishing the backend. Main10
  * is offered only when @formats includes IMAGE_PIXFMT_P010. */
+/* D3D12 consumers can read shared decoder arrays directly. */
+#define D3D11_VIDEO_DECODE_SHARED_DPB (1u << 31)
 bool d3d11_video_decode_init_formats(void *device, unsigned formats);
 bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats);
 
