@@ -15,8 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <queues/mpsc_stack.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -67,6 +70,16 @@ struct gfx_widget_volume_state
 };
 
 typedef struct gfx_widget_volume_state gfx_widget_volume_state_t;
+
+/* A change from any thread, applied by the widgets' owner in iterate() */
+struct volume_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   float db;
+   bool  mute;
+};
+
+static mpsc_stack_t volume_pending;
 
 static gfx_widget_volume_state_t p_w_volume_st = {
    (uintptr_t) &p_w_volume_st,
@@ -321,9 +334,27 @@ static void gfx_widget_volume_update_and_show_state(float new_volume, bool mute)
 
 void gfx_widget_volume_update_and_show(float new_volume, bool mute)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_volume_update_and_show_state(new_volume, mute);
-   gfx_widgets_state_unlock();
+   struct volume_cmd *cmd = (struct volume_cmd*)malloc(sizeof(*cmd));
+   if (!cmd)
+      return;
+   cmd->db   = new_volume;
+   cmd->mute = mute;
+   mpsc_stack_push(&volume_pending, &cmd->link);
+}
+
+static void gfx_widget_volume_iterate(void *user_data,
+      unsigned dims, bool fullscreen,
+      const char *dir_assets, char *font_path, bool is_threaded)
+{
+   mpsc_stack_node_t *link =
+         mpsc_stack_reverse(mpsc_stack_drain(&volume_pending));
+   while (link)
+   {
+      struct volume_cmd *cmd = (struct volume_cmd*)link;
+      link                   = link->next;
+      gfx_widget_volume_update_and_show_state(cmd->db, cmd->mute);
+      free(cmd);
+   }
 }
 
 static void gfx_widget_volume_layout(
@@ -384,6 +415,14 @@ static void gfx_widget_volume_context_destroy(void)
 static void gfx_widget_volume_free(void)
 {
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
+   mpsc_stack_node_t *link              = mpsc_stack_drain(&volume_pending);
+
+   while (link)
+   {
+      mpsc_stack_node_t *next = link->next;
+      free(link);
+      link                    = next;
+   }
 
    /* Kill all running animations */
    gfx_animation_kill_widget_by_tag(&state->tag);
@@ -403,7 +442,7 @@ const gfx_widget_t gfx_widget_volume = {
    gfx_widget_volume_context_reset,
    gfx_widget_volume_context_destroy,
    gfx_widget_volume_layout,
-   NULL, /* iterate */
+   gfx_widget_volume_iterate,
    gfx_widget_volume_frame,
    gfx_widget_volume_visible
 };

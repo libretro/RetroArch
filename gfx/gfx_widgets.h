@@ -22,6 +22,7 @@
 
 #include <retro_common_api.h>
 #include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
@@ -244,11 +245,7 @@ typedef struct dispgfx_widget
    retro_atomic_int_t msg_queue_tail;
    /* Task updates on their way to the widgets' owner: the main thread
     * pushes, the owner takes the lot once a frame. */
-#ifdef RETRO_ATOMIC_HAS_PTR
-   retro_atomic_ptr_t task_cmds;
-#else
-   void *task_cmds;
-#endif
+   mpsc_stack_t task_cmds;
    retro_atomic_int_t task_cmds_count;
    /* The owner's: task widgets waiting for room on screen. */
    disp_widget_msg_t* task_pending[MSG_QUEUE_PENDING_MAX];

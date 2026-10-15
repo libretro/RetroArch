@@ -60,6 +60,7 @@ count_in() {
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_lock-/     { c++ }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_try_lock-/ { c++ }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+pa_threaded_mainloop_lock-/ { c++ }
+      in_fn && /R_X86_64_[A-Z0-9]*[ \t]+gfx_widgets_state_lock-/ { c++ }
       END { print c + 0 }'
 }
 
@@ -139,6 +140,20 @@ measure runloop.o             runloop_iterate
 measure gfx/common/vulkan_common.o  vulkan_emulated_mailbox_loop
 measure gfx/common/vulkan_common.o  vulkan_present
 measure gfx/common/vulkan_common.o  vulkan_acquire_next_image
+
+# The widget setters, from any thread: a command on the widget's own
+# stack, applied by the thread that draws the widgets.
+measure gfx/widgets/gfx_widget_volume.o            gfx_widget_volume_update_and_show
+measure gfx/widgets/gfx_widget_libretro_message.o  gfx_widget_set_libretro_message
+measure gfx/widgets/gfx_widget_generic_message.o   gfx_widget_set_generic_message
+measure gfx/widgets/gfx_widget_generic_message.o   gfx_widget_set_generic_message_fixed
+measure gfx/widgets/gfx_widget_generic_message.o   gfx_widget_set_generic_message_progress
+measure gfx/widgets/gfx_widget_progress_message.o  gfx_widget_set_progress_message
+measure gfx/widgets/gfx_widget_screenshot.o        gfx_widget_state_slot_show
+measure gfx/widgets/gfx_widget_screenshot.o        gfx_widget_screenshot_taken
+measure gfx/widgets/gfx_widget_achievement_popup.o gfx_widgets_update_cheevos_appearance
+measure gfx/widgets/gfx_widget_load_content_animation.o gfx_widget_set_load_content_progress
+measure gfx/widgets/gfx_widget_load_content_animation.o gfx_widget_start_load_content_animation
 
 if [ "$fail" = 1 ]; then
    echo

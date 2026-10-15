@@ -14,8 +14,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdlib.h>
+
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <queues/mpsc_stack.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -208,12 +211,28 @@ static void gfx_widget_set_libretro_message_state(
    state->message_updated = true;
 }
 
+/* A message from any thread, applied by the widgets' owner in
+ * iterate() */
+struct libretro_message_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   unsigned duration;
+   char     msg[512];
+};
+
+static mpsc_stack_t libretro_message_pending;
+
 void gfx_widget_set_libretro_message(
       const char *msg, unsigned duration)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_libretro_message_state(msg, duration);
-   gfx_widgets_state_unlock();
+   struct libretro_message_cmd *cmd;
+   if (!msg || !*msg)
+      return;
+   if (!(cmd = (struct libretro_message_cmd*)malloc(sizeof(*cmd))))
+      return;
+   cmd->duration = duration;
+   strlcpy(cmd->msg, msg, sizeof(cmd->msg));
+   mpsc_stack_push(&libretro_message_pending, &cmd->link);
 }
 
 /* Widget layout() */
@@ -261,6 +280,16 @@ static void gfx_widget_libretro_message_iterate(void *user_data,
       bool is_threaded)
 {
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
+   mpsc_stack_node_t *link                    =
+         mpsc_stack_reverse(mpsc_stack_drain(&libretro_message_pending));
+
+   while (link)
+   {
+      struct libretro_message_cmd *cmd = (struct libretro_message_cmd*)link;
+      link                             = link->next;
+      gfx_widget_set_libretro_message_state(cmd->msg, cmd->duration);
+      free(cmd);
+   }
 
    if (state->message_updated)
    {
@@ -493,6 +522,13 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
 
 static void gfx_widget_libretro_message_free(void)
 {
+   mpsc_stack_node_t *link = mpsc_stack_drain(&libretro_message_pending);
+   while (link)
+   {
+      mpsc_stack_node_t *next = link->next;
+      free(link);
+      link                    = next;
+   }
    gfx_widget_libretro_message_reset(true);
 }
 

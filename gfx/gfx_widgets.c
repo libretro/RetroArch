@@ -252,7 +252,7 @@ static disp_widget_msg_t *gfx_widgets_pending_peek(dispgfx_widget_t *p_dispwidge
  * gone. */
 typedef struct gfx_widgets_task_cmd
 {
-   struct gfx_widgets_task_cmd *next;
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
    char     *title;
    char     *error;
    uintptr_t key;
@@ -274,47 +274,19 @@ static void gfx_widgets_task_cmd_push(dispgfx_widget_t *p_dispwidget,
       gfx_widgets_task_cmd_t *cmd)
 {
    retro_atomic_fetch_add_int(&p_dispwidget->task_cmds_count, 1);
-#ifdef RETRO_ATOMIC_HAS_PTR
-   {
-      void *head;
-      do
-      {
-         head      = retro_atomic_load_acquire_ptr(&p_dispwidget->task_cmds);
-         cmd->next = (gfx_widgets_task_cmd_t*)head;
-      } while (!retro_atomic_cas_ptr(&p_dispwidget->task_cmds, head, cmd));
-   }
-#else
-   gfx_widgets_state_lock();
-   cmd->next               = (gfx_widgets_task_cmd_t*)p_dispwidget->task_cmds;
-   p_dispwidget->task_cmds = cmd;
-   gfx_widgets_state_unlock();
-#endif
+   mpsc_stack_push(&p_dispwidget->task_cmds, &cmd->link);
 }
+
+#define TASK_CMD_NEXT(cmd) ((gfx_widgets_task_cmd_t*)(cmd)->link.next)
 
 /* Everything sent since the last call, oldest first. */
 static gfx_widgets_task_cmd_t *gfx_widgets_task_cmds_take(
       dispgfx_widget_t *p_dispwidget)
 {
-   gfx_widgets_task_cmd_t *cmd, *list = NULL;
-#ifdef RETRO_ATOMIC_HAS_PTR
-   if (!retro_atomic_load_relaxed_ptr(&p_dispwidget->task_cmds))
+   if (mpsc_stack_empty(&p_dispwidget->task_cmds))
       return NULL;
-   cmd = (gfx_widgets_task_cmd_t*)
-      retro_atomic_exchange_ptr(&p_dispwidget->task_cmds, NULL);
-#else
-   gfx_widgets_state_lock();
-   cmd                     = (gfx_widgets_task_cmd_t*)p_dispwidget->task_cmds;
-   p_dispwidget->task_cmds = NULL;
-   gfx_widgets_state_unlock();
-#endif
-   while (cmd)
-   {
-      gfx_widgets_task_cmd_t *next = cmd->next;
-      cmd->next                    = list;
-      list                         = cmd;
-      cmd                          = next;
-   }
-   return list;
+   return (gfx_widgets_task_cmd_t*)mpsc_stack_reverse(
+         mpsc_stack_drain(&p_dispwidget->task_cmds));
 }
 
 static void gfx_widgets_task_cmd_free(dispgfx_widget_t *p_dispwidget,
@@ -331,7 +303,7 @@ static void gfx_widgets_task_cmds_discard(dispgfx_widget_t *p_dispwidget)
    gfx_widgets_task_cmd_t *cmd = gfx_widgets_task_cmds_take(p_dispwidget);
    while (cmd)
    {
-      gfx_widgets_task_cmd_t *next = cmd->next;
+      gfx_widgets_task_cmd_t *next = TASK_CMD_NEXT(cmd);
       gfx_widgets_task_cmd_free(p_dispwidget, cmd);
       cmd                          = next;
    }
@@ -684,7 +656,7 @@ static void gfx_widgets_task_cmds_apply(dispgfx_widget_t *p_dispwidget)
    gfx_widgets_task_cmd_t *cmd = gfx_widgets_task_cmds_take(p_dispwidget);
    while (cmd)
    {
-      gfx_widgets_task_cmd_t *next = cmd->next;
+      gfx_widgets_task_cmd_t *next = TASK_CMD_NEXT(cmd);
       gfx_widgets_task_cmd_apply(p_dispwidget, cmd);
       gfx_widgets_task_cmd_free(p_dispwidget, cmd);
       cmd                          = next;

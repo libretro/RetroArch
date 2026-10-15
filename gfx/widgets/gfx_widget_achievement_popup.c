@@ -26,6 +26,8 @@
 #define CHEEVO_QUEUE_SIZE 8
 
 static mpsc_stack_t gfx_widget_achievement_pending;
+/* Set from any thread: the owner rereads the appearance settings */
+static retro_atomic_int_t gfx_widget_achievement_appearance_dirty;
 
 typedef struct cheevo_popup
 {
@@ -545,9 +547,8 @@ static void gfx_widgets_update_cheevos_appearance_state(void)
 
 void gfx_widgets_update_cheevos_appearance(void)
 {
-   gfx_widgets_state_lock();
-   gfx_widgets_update_cheevos_appearance_state();
-   gfx_widgets_state_unlock();
+   retro_atomic_store_release_int(
+         &gfx_widget_achievement_appearance_dirty, 1);
 }
 
 static void gfx_widget_achievement_popup_start(
@@ -572,7 +573,9 @@ static void gfx_widget_achievement_popup_start(
    state->slide_v = 0.0f;
 
    /* Store settings to prevent lookup every _frame */
-   gfx_widgets_update_cheevos_appearance();
+   retro_atomic_store_relaxed_int(
+         &gfx_widget_achievement_appearance_dirty, 0);
+   gfx_widgets_update_cheevos_appearance_state();
 
    /* Slide vertical onto screen */
    anim_slide.cb = gfx_widget_achievement_popup_unfold;
@@ -623,6 +626,12 @@ static void gfx_widget_achievement_popup_iterate(void *user_data,
    gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
    mpsc_stack_node_t *link =
          mpsc_stack_reverse(mpsc_stack_drain(&gfx_widget_achievement_pending));
+
+   if (     retro_atomic_load_relaxed_int(
+               &gfx_widget_achievement_appearance_dirty)
+         && retro_atomic_cas_int(
+               &gfx_widget_achievement_appearance_dirty, 1, 0))
+      gfx_widgets_update_cheevos_appearance_state();
 
    while (link)
    {

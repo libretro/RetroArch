@@ -14,9 +14,12 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdlib.h>
+
 #include <compat/strl.h>
 #include <encodings/utf.h>
 #include <string/stdstring.h>
+#include <queues/mpsc_stack.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -323,30 +326,68 @@ static void gfx_widget_set_generic_message_state(
    state->message_updated = true;
 }
 
+/* A change from any thread, applied by the widgets' owner in
+ * iterate() */
+enum generic_message_cmd_kind
+{
+   GENERIC_MESSAGE_CMD_SET = 0,
+   GENERIC_MESSAGE_CMD_FIXED,
+   GENERIC_MESSAGE_CMD_PROGRESS
+};
+
+struct generic_message_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   unsigned duration;
+   uint8_t  kind;           /* enum generic_message_cmd_kind */
+   char     msg[512];       /* SET: the message; PROGRESS: the label */
+   char     prefix[64];
+   char     suffix[8];
+   char     slot[32];
+   char     name[PATH_MAX_LENGTH];
+};
+
+static mpsc_stack_t generic_message_pending;
+
+static struct generic_message_cmd *generic_message_cmd_new(uint8_t kind,
+      unsigned duration)
+{
+   struct generic_message_cmd *cmd = (struct generic_message_cmd*)
+      malloc(sizeof(*cmd));
+   if (!cmd)
+      return NULL;
+   cmd->kind      = kind;
+   cmd->duration  = duration;
+   cmd->msg[0]    = '\0';
+   cmd->prefix[0] = '\0';
+   cmd->suffix[0] = '\0';
+   cmd->slot[0]   = '\0';
+   cmd->name[0]   = '\0';
+   return cmd;
+}
+
 void gfx_widget_set_generic_message(
       const char *msg, unsigned duration)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_generic_message_state(msg, duration);
-   gfx_widgets_state_unlock();
+   struct generic_message_cmd *cmd;
+   if (!msg || !*msg)
+      return;
+   if (!(cmd = generic_message_cmd_new(GENERIC_MESSAGE_CMD_SET, duration)))
+      return;
+   strlcpy(cmd->msg, msg, sizeof(cmd->msg));
+   mpsc_stack_push(&generic_message_pending, &cmd->link);
 }
 
-void gfx_widget_set_generic_message_fixed(const char *prefix,
-      const char *name, const char *suffix, const char *slot,
-      unsigned duration)
+static void gfx_widget_set_generic_message_fixed_state(
+      const struct generic_message_cmd *cmd)
 {
    gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
 
-   if (!prefix || !*prefix)
-      return;
-
-   gfx_widgets_state_lock();
-
-   strlcpy(state->prefix, prefix, sizeof(state->prefix));
-   strlcpy(state->name,   name   ? name   : "", sizeof(state->name));
-   strlcpy(state->suffix, suffix ? suffix : "", sizeof(state->suffix));
-   strlcpy(state->slot,   slot   ? slot   : "", sizeof(state->slot));
-   state->message_duration = duration;
+   strlcpy(state->prefix, cmd->prefix, sizeof(state->prefix));
+   strlcpy(state->name,   cmd->name,   sizeof(state->name));
+   strlcpy(state->suffix, cmd->suffix, sizeof(state->suffix));
+   strlcpy(state->slot,   cmd->slot,   sizeof(state->slot));
+   state->message_duration = cmd->duration;
    state->progress[0]      = '\0';
    state->fixed            = true;
 
@@ -355,29 +396,79 @@ void gfx_widget_set_generic_message_fixed(const char *prefix,
    /* Same deferred animation handling as gfx_widget_set_generic_message() */
    if (state->status != GFX_WIDGET_GENERIC_MESSAGE_SLIDE_IN)
       state->message_updated = true;
-
-   gfx_widgets_state_unlock();
 }
 
-void gfx_widget_set_generic_message_progress(const char *label)
+void gfx_widget_set_generic_message_fixed(const char *prefix,
+      const char *name, const char *suffix, const char *slot,
+      unsigned duration)
+{
+   struct generic_message_cmd *cmd;
+
+   if (!prefix || !*prefix)
+      return;
+   if (!(cmd = generic_message_cmd_new(GENERIC_MESSAGE_CMD_FIXED,
+               duration)))
+      return;
+   strlcpy(cmd->prefix, prefix, sizeof(cmd->prefix));
+   if (name)
+      strlcpy(cmd->name,   name,   sizeof(cmd->name));
+   if (suffix)
+      strlcpy(cmd->suffix, suffix, sizeof(cmd->suffix));
+   if (slot)
+      strlcpy(cmd->slot,   slot,   sizeof(cmd->slot));
+   mpsc_stack_push(&generic_message_pending, &cmd->link);
+}
+
+static void gfx_widget_set_generic_message_progress_state(const char *label)
 {
    gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
-
-   gfx_widgets_state_lock();
 
    /* Only a message that reserved a slot takes a label */
    if (state->fixed && *state->slot)
    {
-      strlcpy(state->progress, label ? label : "",
-            sizeof(state->progress));
+      strlcpy(state->progress, label, sizeof(state->progress));
 
       /* Restart the wait timer so the box stays up while loading;
        * a pending slide-in picks up the change by itself */
       if (state->status != GFX_WIDGET_GENERIC_MESSAGE_SLIDE_IN)
          state->message_updated = true;
    }
+}
 
-   gfx_widgets_state_unlock();
+void gfx_widget_set_generic_message_progress(const char *label)
+{
+   struct generic_message_cmd *cmd = generic_message_cmd_new(
+         GENERIC_MESSAGE_CMD_PROGRESS, 0);
+   if (!cmd)
+      return;
+   if (label)
+      strlcpy(cmd->msg, label, sizeof(cmd->msg));
+   mpsc_stack_push(&generic_message_pending, &cmd->link);
+}
+
+static void gfx_widget_generic_message_apply_pending(void)
+{
+   mpsc_stack_node_t *link =
+         mpsc_stack_reverse(mpsc_stack_drain(&generic_message_pending));
+
+   while (link)
+   {
+      struct generic_message_cmd *cmd = (struct generic_message_cmd*)link;
+      link                            = link->next;
+      switch (cmd->kind)
+      {
+         case GENERIC_MESSAGE_CMD_SET:
+            gfx_widget_set_generic_message_state(cmd->msg, cmd->duration);
+            break;
+         case GENERIC_MESSAGE_CMD_FIXED:
+            gfx_widget_set_generic_message_fixed_state(cmd);
+            break;
+         case GENERIC_MESSAGE_CMD_PROGRESS:
+            gfx_widget_set_generic_message_progress_state(cmd->msg);
+            break;
+      }
+      free(cmd);
+   }
 }
 
 /* Widget layout() */
@@ -476,6 +567,8 @@ static void gfx_widget_generic_message_iterate(void *user_data,
       bool is_threaded)
 {
    gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
+
+   gfx_widget_generic_message_apply_pending();
 
    if (state->message_updated)
    {
@@ -707,6 +800,13 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
 
 static void gfx_widget_generic_message_free(void)
 {
+   mpsc_stack_node_t *link = mpsc_stack_drain(&generic_message_pending);
+   while (link)
+   {
+      mpsc_stack_node_t *next = link->next;
+      free(link);
+      link                    = next;
+   }
    gfx_widget_generic_message_reset(true);
 }
 

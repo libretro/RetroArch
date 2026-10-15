@@ -14,8 +14,11 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdlib.h>
+
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <queues/mpsc_stack.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -173,13 +176,49 @@ static void gfx_widget_set_progress_message_state(
    state->active = true;
 }
 
+/* A message from any thread, applied by the widgets' owner in
+ * iterate() */
+struct progress_message_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   unsigned duration;
+   unsigned priority;
+   int8_t   progress;
+   char     message[256];
+};
+
+static mpsc_stack_t progress_message_pending;
+
 void gfx_widget_set_progress_message(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_progress_message_state(message, duration, priority, progress);
-   gfx_widgets_state_unlock();
+   struct progress_message_cmd *cmd;
+   if (!message || !*message)
+      return;
+   if (!(cmd = (struct progress_message_cmd*)malloc(sizeof(*cmd))))
+      return;
+   cmd->duration = duration;
+   cmd->priority = priority;
+   cmd->progress = progress;
+   strlcpy(cmd->message, message, sizeof(cmd->message));
+   mpsc_stack_push(&progress_message_pending, &cmd->link);
+}
+
+static void gfx_widget_progress_message_iterate(void *user_data,
+      unsigned dims, bool fullscreen,
+      const char *dir_assets, char *font_path, bool is_threaded)
+{
+   mpsc_stack_node_t *link =
+         mpsc_stack_reverse(mpsc_stack_drain(&progress_message_pending));
+   while (link)
+   {
+      struct progress_message_cmd *cmd = (struct progress_message_cmd*)link;
+      link                             = link->next;
+      gfx_widget_set_progress_message_state(cmd->message, cmd->duration,
+            cmd->priority, cmd->progress);
+      free(cmd);
+   }
 }
 
 /* Widget layout() */
@@ -324,6 +363,15 @@ static void gfx_widget_progress_message_free(void)
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
+   mpsc_stack_node_t *link                    =
+         mpsc_stack_drain(&progress_message_pending);
+
+   while (link)
+   {
+      mpsc_stack_node_t *next = link->next;
+      free(link);
+      link                    = next;
+   }
 
    /* Kill any existing timer / animation */
    gfx_animation_kill_widget_by_tag(&timer_tag);
@@ -348,7 +396,7 @@ const gfx_widget_t gfx_widget_progress_message = {
    NULL, /* context_reset*/
    NULL, /* context_destroy */
    gfx_widget_progress_message_layout,
-   NULL, /* iterate */
+   gfx_widget_progress_message_iterate,
    gfx_widget_progress_message_frame,
    gfx_widget_progress_message_visible
 };

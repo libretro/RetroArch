@@ -15,8 +15,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <compat/strl.h>
 #include <retro_atomic.h>
+#include <queues/mpsc_stack.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -113,10 +116,9 @@ static void gfx_widget_screenshot_dispose(void *userdata)
    state->texture = NULL;
 }
 
-static void gfx_widgets_play_screenshot_flash(void *data)
+static void gfx_widgets_play_screenshot_flash(void *data, unsigned flash_mode)
 {
    gfx_animation_ctx_entry_t entry;
-   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
@@ -127,7 +129,7 @@ static void gfx_widgets_play_screenshot_flash(void *data)
    entry.target_value   = 0.5f;
    entry.userdata       = p_dispwidget;
 
-   switch (settings->uints.notification_show_screenshot_flash)
+   switch (flash_mode)
    {
       case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
          entry.duration = SCREENSHOT_DURATION_IN/2;
@@ -141,69 +143,87 @@ static void gfx_widgets_play_screenshot_flash(void *data)
    gfx_animation_push_widget(&entry);
 }
 
-static void gfx_widget_state_slot_show_state(
-      void *data,
+/* A screenshot or a state slot shown, from any thread, with the
+ * settings it was taken under; applied by the widgets' owner in
+ * iterate() */
+struct screenshot_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   void    *data;
+   unsigned flash_mode;
+   unsigned show_duration;
+   bool     state_slot;
+   bool     show;           /* the names are to be shown */
+   char     shotname[256];
+   char     filename[256];
+};
+
+static mpsc_stack_t screenshot_pending;
+
+static void gfx_widget_screenshot_push(void *data, bool state_slot,
       const char *shotname, const char *filename)
 {
-   settings_t *settings                 = config_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   struct screenshot_cmd *cmd = (struct screenshot_cmd*)
+      malloc(sizeof(*cmd));
+   if (!cmd)
+      return;
+   cmd->data          = data;
+   cmd->flash_mode    = settings->uints.notification_show_screenshot_flash;
+   cmd->show_duration = settings->uints.notification_show_screenshot_duration;
+   cmd->state_slot    = state_slot;
+   cmd->show          = shotname && filename && (state_slot
+         || settings->bools.notification_show_screenshot);
+   cmd->shotname[0]   = '\0';
+   cmd->filename[0]   = '\0';
+   if (cmd->show)
+   {
+      strlcpy(cmd->shotname, shotname, sizeof(cmd->shotname));
+      strlcpy(cmd->filename, filename, sizeof(cmd->filename));
+   }
+   mpsc_stack_push(&screenshot_pending, &cmd->link);
+}
+
+static void gfx_widget_screenshot_apply(const struct screenshot_cmd *cmd)
+{
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
    retro_atomic_store_relaxed_int(&state->flash_mode,
-         (int)settings->uints.notification_show_screenshot_flash);
+         (int)cmd->flash_mode);
    retro_atomic_store_relaxed_int(&state->show_duration,
-         (int)settings->uints.notification_show_screenshot_duration);
-   state->state_slot = true;
+         (int)cmd->show_duration);
+   state->state_slot = cmd->state_slot;
 
-   if (!shotname || !filename)
+   if (cmd->state_slot)
    {
-      gfx_widget_screenshot_dispose(NULL);
-      return;
+      if (!cmd->show)
+      {
+         gfx_widget_screenshot_dispose(NULL);
+         return;
+      }
    }
+   else if (cmd->flash_mode != NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF)
+      gfx_widgets_play_screenshot_flash(cmd->data, cmd->flash_mode);
 
-   strlcpy(state->filename, filename, sizeof(state->filename));
-   strlcpy(state->shotname, shotname, sizeof(state->shotname));
+   if (cmd->show)
+   {
+      strlcpy(state->filename, cmd->filename, sizeof(state->filename));
+      strlcpy(state->shotname, cmd->shotname, sizeof(state->shotname));
+   }
 }
 
 void gfx_widget_state_slot_show(
       void *data,
       const char *shotname, const char *filename)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_state_slot_show_state(data, shotname, filename);
-   gfx_widgets_state_unlock();
-}
-
-static void gfx_widget_screenshot_taken_state(
-      void *data,
-      const char *shotname, const char *filename)
-{
-   settings_t *settings                 = config_get_ptr();
-   dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
-   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-
-   retro_atomic_store_relaxed_int(&state->flash_mode,
-         (int)settings->uints.notification_show_screenshot_flash);
-   retro_atomic_store_relaxed_int(&state->show_duration,
-         (int)settings->uints.notification_show_screenshot_duration);
-   state->state_slot = false;
-
-   if (settings->uints.notification_show_screenshot_flash != NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF)
-      gfx_widgets_play_screenshot_flash(p_dispwidget);
-
-   if (settings->bools.notification_show_screenshot)
-   {
-      strlcpy(state->filename, filename, sizeof(state->filename));
-      strlcpy(state->shotname, shotname, sizeof(state->shotname));
-   }
+   gfx_widget_screenshot_push(data, true, shotname, filename);
 }
 
 void gfx_widget_screenshot_taken(
       void *data,
       const char *shotname, const char *filename)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_screenshot_taken_state(data, shotname, filename);
-   gfx_widgets_state_unlock();
+   gfx_widget_screenshot_push(data, false, shotname, filename);
 }
 
 /* Animation callback: the draw thread. Settings come from the latch,
@@ -250,6 +270,14 @@ static void gfx_widget_screenshot_end(void *userdata)
 static void gfx_widget_screenshot_free(void)
 {
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+   mpsc_stack_node_t *link              = mpsc_stack_drain(&screenshot_pending);
+
+   while (link)
+   {
+      mpsc_stack_node_t *next = link->next;
+      free(link);
+      link                    = next;
+   }
 
    state->alpha         = 0.0f;
    gfx_widget_screenshot_dispose(NULL);
@@ -402,6 +430,16 @@ static void gfx_widget_screenshot_iterate(
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    unsigned padding                     = p_dispwidget->simple_widget_padding;
    unsigned duration                    = settings->uints.notification_show_screenshot_duration;
+   mpsc_stack_node_t *link              =
+         mpsc_stack_reverse(mpsc_stack_drain(&screenshot_pending));
+
+   while (link)
+   {
+      struct screenshot_cmd *cmd = (struct screenshot_cmd*)link;
+      link                       = link->next;
+      gfx_widget_screenshot_apply(cmd);
+      free(cmd);
+   }
 
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')

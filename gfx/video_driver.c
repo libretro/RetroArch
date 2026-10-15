@@ -8610,29 +8610,33 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
       {
-         /* The threaded video worker draws this text */
-         gfx_widgets_state_lock();
-         /* Cap to widget buffer.  _len is the source length; if it
-          * would overflow, fall back to a clamping strlcpy and use
-          * its return as the new length. */
-         if (_len < sizeof(p_dispwidget->gfx_widgets_status_text))
+#ifdef HAVE_THREADS
+         /* The worker draws only the frames handed to it, and each
+          * carries this text (gfx_widgets_status_text_to_frame()) */
+         if (!p_dispwidget->worker)
+#endif
          {
-            memcpy(p_dispwidget->gfx_widgets_status_text,
-                  status_text, _len + 1);
-            p_dispwidget->gfx_widgets_status_text_len = _len;
+            /* Cap to widget buffer.  _len is the source length; if it
+             * would overflow, fall back to a clamping strlcpy and use
+             * its return as the new length. */
+            if (_len < sizeof(p_dispwidget->gfx_widgets_status_text))
+            {
+               memcpy(p_dispwidget->gfx_widgets_status_text,
+                     status_text, _len + 1);
+               p_dispwidget->gfx_widgets_status_text_len = _len;
+            }
+            else
+            {
+               p_dispwidget->gfx_widgets_status_text_len = strlcpy(
+                     p_dispwidget->gfx_widgets_status_text,
+                     status_text,
+                     sizeof(p_dispwidget->gfx_widgets_status_text));
+               if (p_dispwidget->gfx_widgets_status_text_len
+                     >= sizeof(p_dispwidget->gfx_widgets_status_text))
+                  p_dispwidget->gfx_widgets_status_text_len =
+                     sizeof(p_dispwidget->gfx_widgets_status_text) - 1;
+            }
          }
-         else
-         {
-            p_dispwidget->gfx_widgets_status_text_len = strlcpy(
-                  p_dispwidget->gfx_widgets_status_text,
-                  status_text,
-                  sizeof(p_dispwidget->gfx_widgets_status_text));
-            if (p_dispwidget->gfx_widgets_status_text_len
-                  >= sizeof(p_dispwidget->gfx_widgets_status_text))
-               p_dispwidget->gfx_widgets_status_text_len =
-                  sizeof(p_dispwidget->gfx_widgets_status_text) - 1;
-         }
-         gfx_widgets_state_unlock();
       }
       else
 #endif
