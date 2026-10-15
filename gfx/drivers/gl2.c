@@ -443,6 +443,12 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #ifndef GL_TIMEOUT_EXPIRED
 #define GL_TIMEOUT_EXPIRED                0x911B
 #endif
+#ifndef GL_ALREADY_SIGNALED
+#define GL_ALREADY_SIGNALED               0x911A
+#endif
+#ifndef GL_CONDITION_SATISFIED
+#define GL_CONDITION_SATISFIED            0x911C
+#endif
 
 enum gl2_renderchain_flags
 {
