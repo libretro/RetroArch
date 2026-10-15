@@ -25,6 +25,7 @@ import overlay_on_screen_test as base  # noqa: E402
 SQUARE  = (0.25, 0.25, 0.15, 0.15)
 COLOURS = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
 WATCH_S = 4.0
+FRAME_S = 0.3
 
 
 def apng(path, size=16):
@@ -99,20 +100,27 @@ def run(retroarch, threaded):
         if ra.poll() is not None:
             return ["%s: retroarch exited early (%s)" % (label, ra.returncode)]
 
-        seen = []
-        end  = time.time() + WATCH_S
+        # A change seen across a grab gap longer than a frame may have
+        # skipped one, so its order is not judged.
+        seen  = []
+        close = []
+        prev  = None
+        end   = time.time() + WATCH_S
         while time.time() < end:
             w, h, rows = base.grab(disp, os.path.join(d, "screen.xwd"))
+            now = time.time()
             k = which(rows[int(SQUARE[1] * h)][int(SQUARE[0] * w)])
             if k is not None and (not seen or seen[-1] != k):
                 seen.append(k)
+                close.append(prev is not None and now - prev < FRAME_S)
+            prev = now
             time.sleep(0.05)
 
         if len(set(seen)) < len(COLOURS):
             fails.append("%s: the square showed frames %s, not all of %d"
                          % (label, seen, len(COLOURS)))
-        for a, b in zip(seen, seen[1:]):
-            if b != (a + 1) % len(COLOURS):
+        for a, b, near in zip(seen, seen[1:], close[1:]):
+            if near and b != (a + 1) % len(COLOURS):
                 fails.append("%s: frame %d followed frame %d" % (label, b, a))
                 break
         if seen.count(0) < 2:
