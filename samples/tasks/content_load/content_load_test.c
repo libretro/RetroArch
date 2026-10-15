@@ -2079,6 +2079,24 @@ static void probe_main_handler(retro_task_t *task)
  * the queue again from within it, running the main-thread tasks a
  * second time in the same check. */
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+/* Until the copy task has an answer: it reads and writes the whole
+ * core file, which a loaded runner takes seconds over */
+static enum runahead_copy_status secondary_wait(runloop_state_t *runloop_st,
+      settings_t *settings)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 10000000;
+   for (;;)
+   {
+      enum runahead_copy_status st =
+         secondary_core_ensure_exists(runloop_st, settings);
+      if (     st != RUNAHEAD_COPY_PENDING
+            || cpu_features_get_time_usec() > deadline)
+         return st;
+      task_queue_check();
+      retro_sleep(1);
+   }
+}
+
 /* Run-ahead's second instance on the threaded queue: the task copies
  * the core and opens the copy on the worker, and the main thread
  * takes the open handle.  The instance is the copy's own - its
@@ -2095,7 +2113,7 @@ static void lane_secondary_threaded(void)
    const char *slash            = strrchr(core_path, '/');
    char nohw[600];
    unsigned primary_inits;
-   unsigned had = failures, n;
+   unsigned had = failures;
 
    snprintf(nohw, sizeof(nohw), "%.*s/harness_core_nohw.so",
          slash ? (int)(slash - core_path) : 1, slash ? core_path : ".");
@@ -2109,12 +2127,7 @@ static void lane_secondary_threaded(void)
    CHECK(core_is_up(), "the core did not come up");
    primary_inits = core_inits();
 
-   for (n = 0; n < LOAD_FRAMES * 4 && st == RUNAHEAD_COPY_PENDING; n++)
-   {
-      st = secondary_core_ensure_exists(runloop_st, settings);
-      task_queue_check();
-      retro_sleep(1);
-   }
+   st = secondary_wait(runloop_st, settings);
    CHECK(st == RUNAHEAD_COPY_READY, "the second instance was not created (%d)",
          (int)st);
    CHECK(runloop_st->secondary_lib_handle != NULL,
@@ -2151,7 +2164,7 @@ static void lane_secondary_threaded(void)
    pump(2);
 
    if (failures == had)
-      fprintf(stderr, "[pass] secondary-threaded lane (%u polls)\n", n);
+      fprintf(stderr, "[pass] secondary-threaded lane\n");
 }
 #endif
 
@@ -2171,7 +2184,7 @@ static void lane_secondary_keeps_callbacks(void)
    struct retro_hw_render_callback *hwr;
    hw_fn_t    primary_hw    = NULL;
    types_fn_t primary_types = NULL;
-   unsigned had = failures, n;
+   unsigned had = failures;
 
    configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
    task_queue_set_threaded();
@@ -2189,12 +2202,7 @@ static void lane_secondary_keeps_callbacks(void)
    }
    CHECK(primary_hw && primary_types, "the harness core exports are missing");
 
-   for (n = 0; n < LOAD_FRAMES * 4 && st == RUNAHEAD_COPY_PENDING; n++)
-   {
-      st = secondary_core_ensure_exists(runloop_st, settings);
-      task_queue_check();
-      retro_sleep(1);
-   }
+   st = secondary_wait(runloop_st, settings);
    CHECK(st == RUNAHEAD_COPY_READY, "the second instance was not created (%d)",
          (int)st);
 
