@@ -259,7 +259,6 @@ struct runloop
     * per access, and a constructor/destructor function-pointer pair
     * for what amounts to alloc/free of a data buffer. */
    retro_ctx_serialize_info_t runahead_savestate_info;
-   my_list *input_state_list;
    preempt_t *preempt_data;
 #endif
 

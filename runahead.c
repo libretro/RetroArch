@@ -88,39 +88,134 @@ static int16_t *runahead_dense_slot(runahead_dense_cache_t *c,
 }
 /* ===== END runahead dense input cache ===== */
 
+/* ===== BEGIN runahead input list =====
+ * Tuples the dense cache has no slot for, one flat array; each
+ * tuple's ids are sized by the highest id written to it. */
 static runahead_dense_cache_t *runahead_dense;
+
+/* Last value of every id of one (port, device, index)
+ * tuple; ids past state_size read 0 */
+typedef struct input_list_element
+{
+   int16_t *state;
+   unsigned port;
+   unsigned device;
+   unsigned index;
+   unsigned state_size;
+} input_list_element;
+
+typedef struct runahead_input_list
+{
+   input_list_element *elems;
+   unsigned size;
+   unsigned cap;
+} runahead_input_list_t;
+
+static runahead_input_list_t runahead_input_list;
+
+/* The list entry of a (port, device, index) tuple, or NULL */
+static input_list_element *runahead_input_list_find(
+      const runahead_input_list_t *list,
+      unsigned port, unsigned device, unsigned index)
+{
+   unsigned i;
+   for (i = 0; i < list->size; i++)
+   {
+      input_list_element *element = &list->elems[i];
+      if (     (element->port   == port)
+            && (element->device == device)
+            && (element->index  == index))
+         return element;
+   }
+   return NULL;
+}
+
+static void runahead_input_list_free(runahead_input_list_t *list)
+{
+   unsigned i;
+   for (i = 0; i < list->size; i++)
+      free(list->elems[i].state);
+   free(list->elems);
+   list->elems = NULL;
+   list->size  = 0;
+   list->cap   = 0;
+}
+
+/* Grows the state of @element so that @id indexes it;
+ * the new ids read 0 */
+static bool runahead_input_element_expand(
+      input_list_element *element, unsigned id)
+{
+   int16_t *state;
+   unsigned new_size = element->state_size ? element->state_size : 32;
+   while (id >= new_size)
+      new_size *= 2;
+   if (!(state = (int16_t*)realloc(element->state,
+               new_size * sizeof(int16_t))))
+      return false;
+   memset(&state[element->state_size], 0,
+         (new_size - element->state_size) * sizeof(int16_t));
+   element->state      = state;
+   element->state_size = new_size;
+   return true;
+}
+
+static void runahead_input_state_set_last(
+      unsigned port, unsigned device,
+      unsigned index, unsigned id, int16_t value)
+{
+   runahead_input_list_t *list = &runahead_input_list;
+   input_list_element *element;
+   int16_t *slot = runahead_dense_slot(runahead_dense, port, device, index, id);
+
+   if (slot)
+   {
+      *slot = value;
+      return;
+   }
+
+   if (!(element = runahead_input_list_find(list, port, device, index)))
+   {
+      if (list->size == list->cap)
+      {
+         unsigned new_cap = list->cap ? list->cap * 2 : 8;
+         input_list_element *elems = (input_list_element*)realloc(
+               list->elems, new_cap * sizeof(*elems));
+         if (!elems)
+            return;
+         list->elems = elems;
+         list->cap   = new_cap;
+      }
+      element             = &list->elems[list->size++];
+      element->state      = NULL;
+      element->port       = port;
+      element->device     = device;
+      element->index      = index;
+      element->state_size = 0;
+   }
+
+   if (     id >= element->state_size
+         && !runahead_input_element_expand(element, id))
+      return;
+   element->state[id] = value;
+}
 
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   runloop_state_t      *runloop_st = runloop_state_get_ptr();
+   const input_list_element *element;
    const int16_t *slot = runahead_dense_slot(runahead_dense, port, device, index, id);
 
    if (slot)
       return *slot;
 
-   if (runloop_st->input_state_list)
-   {
-      int i;
-      /* find list item */
-      for (i = 0; i < runloop_st->input_state_list->size; i++)
-      {
-         input_list_element *element =
-            (input_list_element*)runloop_st->input_state_list->data[i];
-
-         if (     (element->port   == port)
-               && (element->device == device)
-               && (element->index  == index))
-         {
-            if (id < element->state_size)
-               return element->state[id];
-            break;
-         }
-      }
-   }
-
+   element = runahead_input_list_find(
+         &runahead_input_list, port, device, index);
+   if (element && id < element->state_size)
+      return element->state[id];
    return 0;
 }
+/* ===== END runahead input list ===== */
 
 static void free_retro_ctx_load_content_info(struct
       retro_ctx_load_content_info *dest)
@@ -1170,271 +1265,6 @@ void runahead_remember_controller_port_device(void *data,
 }
 #endif
 
-static void mylist_resize(my_list *list,
-      int new_size, bool run_constructor)
-{
-   int i;
-   int new_capacity;
-   int old_size;
-   void *element    = NULL;
-   if (new_size < 0)
-      new_size      = 0;
-   new_capacity     = new_size;
-   old_size         = list->size;
-
-   if (new_size == old_size)
-      return;
-
-   if (new_size > list->capacity)
-   {
-      void **new_data;
-
-      if (new_capacity < list->capacity * 2)
-         new_capacity = list->capacity * 2;
-
-      /* Try to realloc. On OOM, leave the list at its current
-       * capacity and silently no-op the resize - the caller
-       * (mylist_add_element) tolerates list->data[old_size]
-       * being NULL: runahead_input_state_set_last guards on
-       * 'if (element)' before writing to it, and downstream
-       * code already accepts that runahead state may be
-       * incomplete. */
-      new_data = (void**)realloc(
-            (void*)list->data, new_capacity * sizeof(void*));
-      if (!new_data)
-         return;
-      list->data = new_data;
-
-      for (i = list->capacity; i < new_capacity; i++)
-         list->data[i] = NULL;
-
-      list->capacity = new_capacity;
-   }
-
-   if (new_size <= list->size)
-   {
-      for (i = new_size; i < list->size; i++)
-      {
-         element = list->data[i];
-
-         if (element)
-         {
-            list->destructor(element);
-            list->data[i] = NULL;
-         }
-      }
-   }
-   else
-   {
-      for (i = list->size; i < new_size; i++)
-      {
-         list->data[i] = NULL;
-         if (run_constructor)
-            list->data[i] = list->constructor();
-      }
-   }
-
-   list->size = new_size;
-}
-
-static void *mylist_add_element(my_list *list)
-{
-   int old_size;
-   if (!list)
-      return NULL;
-   old_size = list->size;
-   mylist_resize(list, old_size + 1, true);
-   /* mylist_resize may have failed to grow on OOM, in which case
-    * list->size is still old_size and list->data[old_size] is
-    * out of bounds. Re-check before returning. */
-   if (list->size <= old_size)
-      return NULL;
-   return list->data[old_size];
-}
-
-static void mylist_destroy(my_list **list_p)
-{
-   my_list *list = NULL;
-   if (!list_p)
-      return;
-
-   list = *list_p;
-
-   if (list)
-   {
-      mylist_resize(list, 0, false);
-      free(list->data);
-      free(list);
-      *list_p = NULL;
-   }
-}
-
-static void mylist_create(my_list **list_p, int initial_capacity,
-      constructor_t constructor, destructor_t destructor)
-{
-   my_list *list      = NULL;
-
-   if (!list_p)
-      return;
-
-   list               = *list_p;
-   if (list)
-      mylist_destroy(list_p);
-
-   list               = (my_list*)malloc(sizeof(my_list));
-   if (!list)
-   {
-      *list_p         = NULL;
-      return;
-   }
-   *list_p            = list;
-   list->size         = 0;
-   list->constructor  = constructor;
-   list->destructor   = destructor;
-   list->data         = (void**)calloc(initial_capacity, sizeof(void*));
-   /* On calloc OOM, leave list->data NULL and capacity 0;
-    * mylist_resize's realloc grows from there on first add and
-    * a subsequent realloc(NULL, n) is well-defined. */
-   list->capacity     = list->data ? initial_capacity : 0;
-}
-
-static void *input_list_element_constructor(void)
-{
-   void *ptr                   = malloc(sizeof(input_list_element));
-   input_list_element *element;
-
-   /* NULL-check the outer malloc: the field writes below
-    * (port/device/index/state_size) would NULL-deref on OOM.
-    * The caller (runahead_input_state_set_last) already tolerates
-    * a NULL return: 'if (element) { ... }'.  mylist_resize also
-    * tolerates a NULL constructor result - it just leaves
-    * list->data[i] = NULL. */
-   if (!ptr)
-      return NULL;
-
-   element                     = (input_list_element*)ptr;
-   element->port               = 0;
-   element->device             = 0;
-   element->index              = 0;
-   element->state              = (int16_t*)calloc(NAME_MAX_LENGTH,
-         sizeof(int16_t));
-   /* NULL-check the inner calloc too.  If it fails the caller's
-    * 'element->state[id] = value' NULL-derefs.  No way to signal
-    * partial-failure through the constructor callback's return
-    * type, so free the outer allocation and return NULL to match
-    * the outer-OOM behaviour. */
-   if (!element->state)
-   {
-      free(ptr);
-      return NULL;
-   }
-   element->state_size         = NAME_MAX_LENGTH;
-
-   return ptr;
-}
-
-static bool input_list_element_realloc(input_list_element *element,
-      unsigned int new_size)
-{
-   if (new_size > element->state_size)
-   {
-      /* realloc-to-tmp: the pre-patch 'element->state = realloc(
-       * element->state, ...)' self-assigns NULL on OOM, which
-       * then made the very next line '&element->state[element->
-       * state_size]' perform pointer arithmetic on NULL (UB) and
-       * the memset trap on a garbage address. */
-      int16_t *tmp = (int16_t*)realloc(element->state,
-            new_size * sizeof(int16_t));
-      if (!tmp)
-         return false;
-      element->state = tmp;
-      memset(&element->state[element->state_size], 0,
-            (new_size - element->state_size) * sizeof(int16_t));
-      element->state_size = new_size;
-   }
-   return true;
-}
-
-static bool input_list_element_expand(input_list_element *element,
-      unsigned int new_index)
-{
-   unsigned int new_size = element->state_size;
-   if (new_size == 0)
-      new_size = 32;
-   while (new_index >= new_size)
-      new_size *= 2;
-   return input_list_element_realloc(element, new_size);
-}
-
-static void input_list_element_destructor(void* element_ptr)
-{
-   input_list_element *element = (input_list_element*)element_ptr;
-   if (!element)
-      return;
-
-   free(element->state);
-   free(element_ptr);
-}
-
-static void runahead_input_state_set_last(
-      runloop_state_t *runloop_st,
-      unsigned port, unsigned device,
-      unsigned index, unsigned id, int16_t value)
-{
-   size_t i;
-   input_list_element *element = NULL;
-   int16_t *slot = runahead_dense_slot(runahead_dense, port, device, index, id);
-
-   if (slot)
-   {
-      *slot = value;
-      return;
-   }
-
-   if (!runloop_st->input_state_list)
-      mylist_create(&runloop_st->input_state_list, 16,
-            input_list_element_constructor,
-            input_list_element_destructor);
-   if (!runloop_st->input_state_list)
-      return;
-
-   /* Find list item */
-   for (i = 0; i < (unsigned)runloop_st->input_state_list->size; i++)
-   {
-      element = (input_list_element*)runloop_st->input_state_list->data[i];
-      if (     (element->port   == port)
-            && (element->device == device)
-            && (element->index  == index)
-         )
-      {
-         /* Gate the state[id] write on expand success: if expand
-          * OOM'd, state_size is still too small and writing to
-          * state[id] would corrupt memory past the buffer. */
-         if (id >= element->state_size
-               && !input_list_element_expand(element, id))
-            return;
-         element->state[id] = value;
-         return;
-      }
-   }
-
-   element               = NULL;
-   if (runloop_st->input_state_list)
-      element            = (input_list_element*)
-         mylist_add_element(runloop_st->input_state_list);
-   if (element)
-   {
-      element->port         = port;
-      element->device       = device;
-      element->index        = index;
-      /* Same expand-OOM guard as the lookup branch above. */
-      if (id >= element->state_size
-            && !input_list_element_expand(element, id))
-         return;
-      element->state[id]    = value;
-   }
-}
-
 static int16_t runahead_input_state_with_logging(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
@@ -1451,7 +1281,7 @@ static int16_t runahead_input_state_with_logging(unsigned port,
          runloop_st->flags     |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
       /*arbitrary limit of up to 65536 elements in state array*/
       if (id < 65536)
-         runahead_input_state_set_last(runloop_st, port, device, index, id, result);
+         runahead_input_state_set_last(port, device, index, id, result);
       return result;
    }
    return 0;
@@ -1513,12 +1343,9 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
          runloop_st->input_state_callback_original;
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
       runloop_st->input_state_callback_original = NULL;
-      mylist_destroy(&runloop_st->input_state_list);
-   if (runahead_dense)
-   {
+      runahead_input_list_free(&runahead_input_list);
       free(runahead_dense);
       runahead_dense = NULL;
-   }
    }
 
    if (runloop_st->retro_reset_callback_original)

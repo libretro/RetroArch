@@ -644,19 +644,51 @@ static const char *core_option_manager_parse_value_label(
    return label;
 }
 
+/* Returns the start of the value list of a legacy
+ * core options variable ("<desc>; <val>|<val>|..."),
+ * or NULL if it has none */
+static const char *core_option_manager_var_values(
+      const char *value, size_t *desc_len)
+{
+   const char *p;
+   if (!value)
+      return NULL;
+   for (p = value; *p; p++)
+   {
+      if (p[0] == ';' && p[1] == ' ')
+      {
+         *desc_len = (size_t)(p - value);
+         return p + 2;
+      }
+   }
+   return NULL;
+}
+
+/* Upper bound on the number of values string_split()
+ * extracts from a legacy value list */
+static size_t core_option_manager_var_num_values(const char *val_start)
+{
+   size_t n = 1;
+   for (; *val_start; val_start++)
+      if (*val_start == '|')
+         n++;
+   return n;
+}
+
 /* Parses a single legacy core options interface
  * variable, extracting all present core_option
- * information */
+ * information. @val_hashes has room for every value
+ * the variable defines. */
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var,
-      config_file_t *config_src)
+      config_file_t *config_src,
+      uint32_t *val_hashes)
 {
    size_t i;
    union string_list_elem_attr attr;
+   size_t desc_len            = 0;
    const char *val_start      = NULL;
-   char *value                = NULL;
-   char *desc_end             = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
    struct config_entry_list
          *entry               = NULL;
@@ -674,45 +706,31 @@ static bool core_option_manager_parse_variable(
       option->key_hash        = core_option_manager_hash_string(var->key);
    }
 
-   if (var->value && *var->value)
-      value                   = strdup(var->value);
+   if (!(val_start = core_option_manager_var_values(var->value, &desc_len)))
+      return false;
 
-   if (value && *value)
+   if (desc_len > 0)
    {
-      char *p = value;
-      while (*p)
-      {
-         if (p[0] == ';' && p[1] == ' ')
-         {
-            desc_end = p;
-            break;
-         }
-         p++;
-      }
+      if (!(option->desc = (char*)malloc(desc_len + 1)))
+         return false;
+      memcpy(option->desc, var->value, desc_len);
+      option->desc[desc_len] = '\0';
    }
 
-   if (!desc_end)
-      goto error;
-
-   *desc_end          = '\0';
-
-   if (value && *value)
-      option->desc    = strdup(value);
-
-   val_start          = desc_end + 2;
    option->vals       = string_split(val_start, "|");
 
    if (!option->vals)
-      goto error;
+      return false;
 
    /* Legacy core option interface has no concept
     * of value labels
     * > Use actual values for display purposes */
    attr.i             = 0;
    option->val_labels = string_list_new();
+   option->val_hashes = val_hashes;
 
    if (!option->val_labels)
-      goto error;
+      return false;
 
    /* > Loop over values and:
     *   - Set value hashes
@@ -720,23 +738,18 @@ static bool core_option_manager_parse_variable(
    for (i = 0; i < option->vals->size; i++)
    {
       const char *value       = option->vals->elems[i].data;
-      uint32_t *value_hash    = (uint32_t *)malloc(sizeof(uint32_t));
       const char *value_label = core_option_manager_parse_value_label(
             value, NULL);
 
-      if (!value_hash)
-         goto error;
-
-      /* Set value hash */
-      *value_hash                     = core_option_manager_hash_string(value);
-      option->vals->elems[i].userdata = (void*)value_hash;
+      val_hashes[i]           = core_option_manager_hash_string(value);
 
       /* Redundant safely check... */
       if (!value_label || !*value_label)
          value_label = value;
 
       /* Append value label string */
-      string_list_append(option->val_labels, value_label, attr);
+      if (!string_list_append(option->val_labels, value_label, attr))
+         return false;
    }
 
    /* Legacy core option interface always uses first
@@ -756,11 +769,8 @@ static bool core_option_manager_parse_variable(
 
       for (i = 0; i < option->vals->size; i++)
       {
-         const char *value   = option->vals->elems[i].data;
-         uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
-
-         if (     value_hash == entry_value_hash
-               && string_is_equal(value, entry->value))
+         if (     val_hashes[i] == entry_value_hash
+               && string_is_equal(option->vals->elems[i].data, entry->value))
          {
             option->index = i;
             break;
@@ -774,12 +784,7 @@ static bool core_option_manager_parse_variable(
    option->info_categorized = NULL;
    option->category_key     = NULL;
 
-   free(value);
    return true;
-
-error:
-   free(value);
-   return false;
 }
 
 /**
@@ -804,6 +809,7 @@ core_option_manager_t *core_option_manager_new_vars(
 {
    const struct retro_variable *var = NULL;
    size_t _len                      = 0;
+   size_t num_vals                  = 0;
    config_file_t *config_src        = NULL;
    core_option_manager_t *opt       = NULL;
 
@@ -822,6 +828,7 @@ core_option_manager_t *core_option_manager_new_vars(
    opt->cats_size                   = 0;
    opt->opts                        = NULL;
    opt->size                        = 0;
+   opt->val_hashes                  = NULL;
    opt->option_map                  = nested_list_init();
    opt->updated                     = false;
    opt->log                         = true;
@@ -841,24 +848,35 @@ core_option_manager_t *core_option_manager_new_vars(
    if (src_conf_path && *src_conf_path)
       config_src = config_file_new_from_path_to_string(src_conf_path);
 
-   /* Get number of variables */
+   /* Get number of variables and values */
    for (var = vars; var->key && var->value; var++)
+   {
+      size_t desc_len       = 0;
+      const char *val_start = core_option_manager_var_values(
+            var->value, &desc_len);
+      if (val_start)
+         num_vals          += core_option_manager_var_num_values(val_start);
       _len++;
+   }
 
-   if (_len == 0)
+   if (_len == 0 || num_vals == 0)
       goto error;
 
-   /* Create options array */
+   /* Create options array and value hash pool */
    if (!(opt->opts = (struct core_option*)calloc(_len, sizeof(*opt->opts))))
+      goto error;
+   if (!(opt->val_hashes = (uint32_t*)malloc(num_vals * sizeof(uint32_t))))
       goto error;
 
    opt->size = _len;
    _len      = 0;
+   num_vals  = 0;
 
    /* Parse each variable */
    for (var = vars; var->key && var->value; _len++, var++)
    {
-      if (core_option_manager_parse_variable(opt, _len, var, config_src))
+      if (core_option_manager_parse_variable(opt, _len, var, config_src,
+               opt->val_hashes + num_vals))
       {
          size_t __len = 0;
          /* If variable is read correctly, add it to
@@ -880,6 +898,7 @@ core_option_manager_t *core_option_manager_new_vars(
          if (!nested_list_add_item(opt->option_map,
                address, NULL, (const void*)&opt->opts[_len]))
             goto error;
+         num_vals += opt->opts[_len].vals->size;
       }
       else
          goto error;
@@ -897,13 +916,26 @@ error:
    return NULL;
 }
 
+/* Number of values a v2 option definition lists */
+static size_t core_option_manager_def_num_values(
+      const struct retro_core_option_value *values)
+{
+   size_t n = 0;
+   while (     n < RETRO_NUM_CORE_OPTION_VALUES_MAX
+         && values[n].value && *values[n].value)
+      n++;
+   return n;
+}
+
 /* Parses a single v2 core options interface
  * option, extracting all present core_option
- * information */
+ * information. @val_hashes has room for every value
+ * the option defines. */
 static bool core_option_manager_parse_option(
       core_option_manager_t *opt, size_t idx,
       const struct retro_core_option_v2_definition *option_def,
-      config_file_t *config_src)
+      config_file_t *config_src,
+      uint32_t *val_hashes)
 {
    size_t i;
    union string_list_elem_attr attr;
@@ -974,21 +1006,14 @@ static bool core_option_manager_parse_option(
       option->key_hash = core_option_manager_hash_string(key);
    }
 
-   /* Get number of values */
-   for (;;)
-   {
-      if (!values[num_vals].value || !*values[num_vals].value)
-         break;
-      num_vals++;
-   }
-
-   if (num_vals < 1)
+   if ((num_vals = core_option_manager_def_num_values(values)) < 1)
       return false;
 
    /* Initialise string lists */
    attr.i             = 0;
    option->vals       = string_list_new();
    option->val_labels = string_list_new();
+   option->val_hashes = val_hashes;
 
    if (!option->vals || !option->val_labels)
       return false;
@@ -1001,19 +1026,15 @@ static bool core_option_manager_parse_option(
    for (i = 0; i < num_vals; i++)
    {
       const char *value       = values[i].value;
-      uint32_t *value_hash    = (uint32_t *)malloc(sizeof(uint32_t));
       const char *value_label = values[i].label;
-
-      if (!value_hash)
-         return false;
 
       /* Append value string
        * > We know that 'value' is always valid */
-      string_list_append(option->vals, value, attr);
+      if (!string_list_append(option->vals, value, attr))
+         return false;
 
       /* > Set value hash */
-      *value_hash = core_option_manager_hash_string(value);
-      option->vals->elems[option->vals->size - 1].userdata = (void*)value_hash;
+      val_hashes[i] = core_option_manager_hash_string(value);
 
       /* Value label requires additional processing */
       value_label = core_option_manager_parse_value_label(
@@ -1024,7 +1045,8 @@ static bool core_option_manager_parse_option(
          value_label = value;
 
       /* Append value label string */
-      string_list_append(option->val_labels, value_label, attr);
+      if (!string_list_append(option->val_labels, value_label, attr))
+         return false;
 
       /* Check whether this value is the default setting */
       if (option_def->default_value && *option_def->default_value)
@@ -1049,11 +1071,8 @@ static bool core_option_manager_parse_option(
 
       for (i = 0; i < option->vals->size; i++)
       {
-         const char *value   = option->vals->elems[i].data;
-         uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
-
-         if (     value_hash == entry_value_hash
-               && string_is_equal(value, entry->value))
+         if (     val_hashes[i] == entry_value_hash
+               && string_is_equal(option->vals->elems[i].data, entry->value))
          {
             option->index = i;
             break;
@@ -1095,6 +1114,7 @@ core_option_manager_t *core_option_manager_new(
    struct retro_core_option_v2_definition *option_defs      = NULL;
    size_t cats_size                                         = 0;
    size_t _len                                              = 0;
+   size_t num_vals                                          = 0;
    config_file_t *config_src                                = NULL;
    core_option_manager_t *opt                               = NULL;
 
@@ -1114,6 +1134,7 @@ core_option_manager_t *core_option_manager_new(
    opt->cats_size                    = 0;
    opt->opts                         = NULL;
    opt->size                         = 0;
+   opt->val_hashes                   = NULL;
    opt->option_map                   = nested_list_init();
    opt->updated                      = false;
    opt->log                          = true;
@@ -1149,9 +1170,12 @@ core_option_manager_t *core_option_manager_new(
    for ( option_def = option_defs;
          option_def->key && option_def->desc && option_def->values[0].value;
          option_def++)
+   {
+      num_vals += core_option_manager_def_num_values(option_def->values);
       _len++;
+   }
 
-   if (_len == 0)
+   if (_len == 0 || num_vals == 0)
       goto error;
 
    /* Create categories array */
@@ -1180,12 +1204,15 @@ core_option_manager_t *core_option_manager_new(
       }
    }
 
-   /* Create options array */
+   /* Create options array and value hash pool */
    if (!(opt->opts = (struct core_option*)calloc(_len, sizeof(*opt->opts))))
+      goto error;
+   if (!(opt->val_hashes = (uint32_t*)malloc(num_vals * sizeof(uint32_t))))
       goto error;
 
    opt->size = _len;
    _len      = 0;
+   num_vals  = 0;
 
    /* Parse each option
     * > Note: 'option_def->info == NULL' is valid */
@@ -1193,7 +1220,8 @@ core_option_manager_t *core_option_manager_new(
          option_def->key && option_def->desc && option_def->values[0].value;
          _len++, option_def++)
    {
-      if (core_option_manager_parse_option(opt, _len, option_def, config_src))
+      if (core_option_manager_parse_option(opt, _len, option_def, config_src,
+               opt->val_hashes + num_vals))
       {
          /* If option is read correctly, add it to
           * the map */
@@ -1221,6 +1249,7 @@ core_option_manager_t *core_option_manager_new(
                address, ":",
                (const void*)&opt->opts[_len]))
             goto error;
+         num_vals += opt->opts[_len].vals->size;
       }
       else
          goto error;
@@ -1307,6 +1336,7 @@ void core_option_manager_free(core_option_manager_t *opt)
 
    free(opt->cats);
    free(opt->opts);
+   free(opt->val_hashes);
    free(opt);
 }
 
@@ -1519,9 +1549,8 @@ bool core_option_manager_get_val_idx(core_option_manager_t *opt,
    for (i = 0; i < option->vals->size; i++)
    {
       const char *option_val   = option->vals->elems[i].data;
-      uint32_t option_val_hash = *((uint32_t*)option->vals->elems[i].userdata);
 
-      if (     (val_hash == option_val_hash)
+      if (     (val_hash == option->val_hashes[i])
             && (option_val && *option_val)
             && string_is_equal(val, option_val))
       {

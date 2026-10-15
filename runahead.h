@@ -26,18 +26,6 @@
 
 #define MAX_RUNAHEAD_FRAMES 12
 
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct my_list_t
-{
-   void **data;
-   constructor_t constructor;
-   destructor_t destructor;
-   int capacity;
-   int size;
-} my_list;
-
 typedef struct preemptive_frames_data
 {
    /* Savestate buffer */

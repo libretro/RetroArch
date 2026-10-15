@@ -40,6 +40,9 @@ struct core_option
    char *category_key;
    struct string_list *vals;
    struct string_list *val_labels;
+   /* val_hashes[i]: hash of vals->elems[i].data; points
+    * into the manager's val_hashes pool */
+   uint32_t *val_hashes;
    /* opt_idx: option index, used for internal
     * bookkeeping */
    size_t opt_idx;
@@ -71,6 +74,8 @@ struct core_option_manager
    struct core_category *cats;
    struct core_option *opts;
    nested_list_t *option_map;
+   /* Value hashes of every option, one allocation */
+   uint32_t *val_hashes;
 
    size_t cats_size;
    size_t size;

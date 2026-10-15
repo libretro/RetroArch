@@ -172,6 +172,21 @@ static bool runahead_tmp_dir_private(const char *dir)
 #include "dense_cache_fragment.c"
 #include "preempt_slab_fragment.c"
 
+/* The input list, verbatim from runahead.c, with its reallocs routed
+ * through one that can be told to fail the Nth call. */
+static unsigned list_realloc_fail_at;
+static unsigned list_realloc_calls;
+static void *list_realloc(void *ptr, size_t len)
+{
+   list_realloc_calls++;
+   if (list_realloc_fail_at && list_realloc_calls == list_realloc_fail_at)
+      return NULL;
+   return realloc(ptr, len);
+}
+#define realloc list_realloc
+#include "input_list_fragment.c"
+#undef realloc
+
 /* The dense cache: every common tuple has a slot, distinct per tuple;
  * everything else is refused to the list; a set then get reads back. */
 static void t_dense_cache(void)
@@ -482,6 +497,84 @@ static void t_tmp_dir_not_private(void)
    task_queue_deinit();
 }
 
+/* Values the input logging recorded read back per tuple and id: past
+ * the list's first growths, across a state that grows under ids it
+ * already holds, and with unknown tuples and ids reading 0. */
+static void t_input_list(void)
+{
+   unsigned port;
+   runahead_input_list_t *list = &runahead_input_list;
+
+   printf("   input_list: tuples outside the dense cache read back\n");
+   list_realloc_fail_at = 0;
+   runahead_dense       = (runahead_dense_cache_t*)calloc(1, sizeof(*runahead_dense));
+
+   for (port = 0; port < 20; port++)
+      runahead_input_state_set_last(port,
+            RETRO_DEVICE_KEYBOARD, 0, 300, (int16_t)(1000 + port));
+   runahead_input_state_set_last(0, RETRO_DEVICE_POINTER, 0, 3, 7);
+   runahead_input_state_set_last(0, RETRO_DEVICE_POINTER, 0, 100, 9);
+   runahead_input_state_set_last(1, RETRO_DEVICE_JOYPAD, 0, 4, 5);
+
+   CHECK(list->size == 21, "list holds %u tuples, expected 21", list->size);
+   for (port = 0; port < 20; port++)
+      CHECK(input_state_get_last(port, RETRO_DEVICE_KEYBOARD, 0, 300) == (int16_t)(1000 + port),
+            "keyboard port %u read back wrong", port);
+   CHECK(input_state_get_last(0, RETRO_DEVICE_POINTER, 0, 3)   == 7,
+         "pointer id 3 lost when the state grew for id 100");
+   CHECK(input_state_get_last(0, RETRO_DEVICE_POINTER, 0, 100) == 9, "pointer id 100");
+   CHECK(input_state_get_last(0, RETRO_DEVICE_POINTER, 0, 50)  == 0, "unset id read nonzero");
+   CHECK(input_state_get_last(0, RETRO_DEVICE_POINTER, 0, 60000) == 0, "id past the state read nonzero");
+   CHECK(input_state_get_last(5, RETRO_DEVICE_POINTER, 0, 3)   == 0, "unknown tuple read nonzero");
+   CHECK(input_state_get_last(1, RETRO_DEVICE_JOYPAD, 0, 4)    == 5, "dense tuple");
+   CHECK(!runahead_input_list_find(list, 1, RETRO_DEVICE_JOYPAD, 0),
+         "a dense tuple went to the list");
+
+   runahead_input_list_free(list);
+   CHECK(!list->elems && !list->size && !list->cap, "free left the list set");
+   free(runahead_dense);
+   runahead_dense = NULL;
+}
+
+/* Every realloc the list makes, failing in turn: the write is dropped,
+ * nothing reads freed or unallocated memory, and later writes land. */
+static void t_input_list_oom(void)
+{
+   unsigned n, port, total;
+   runahead_input_list_t *list = &runahead_input_list;
+
+   printf("   input_list: every realloc failing in turn\n");
+
+   list_realloc_fail_at = 0;
+   list_realloc_calls   = 0;
+   for (port = 0; port < 12; port++)
+      runahead_input_state_set_last(port,
+            RETRO_DEVICE_POINTER, 0, port * 20, 1);
+   total = list_realloc_calls;
+   runahead_input_list_free(list);
+
+   for (n = 1; n <= total; n++)
+   {
+      list_realloc_fail_at = n;
+      list_realloc_calls   = 0;
+      for (port = 0; port < 12; port++)
+      {
+         runahead_input_state_set_last(port,
+               RETRO_DEVICE_POINTER, 0, port * 20, 1);
+         (void)input_state_get_last(port, RETRO_DEVICE_POINTER, 0, port * 20);
+      }
+      list_realloc_fail_at = 0;
+      for (port = 0; port < 12; port++)
+      {
+         runahead_input_state_set_last(port,
+               RETRO_DEVICE_POINTER, 0, port * 20, 2);
+         CHECK(input_state_get_last(port, RETRO_DEVICE_POINTER, 0, port * 20) == 2,
+               "realloc %u failed: port %u not recorded afterwards", n, port);
+      }
+      runahead_input_list_free(list);
+   }
+}
+
 int main(void)
 {
    /* A stray 'return false' from a status-returning function must
@@ -491,6 +584,8 @@ int main(void)
    printf("runahead copy:\n");
    t_analog_mask_bit();
    t_dense_cache();
+   t_input_list();
+   t_input_list_oom();
    t_preempt_slab();
    t_lcg_names();
    t_lcg_all_fail();
