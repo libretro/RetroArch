@@ -4221,6 +4221,176 @@ static void input_remote_poll(input_driver_state_t *input_st,
 }
 #endif
 
+/* ===== BEGIN input turbo and hold =====
+ * Hold and turbo applied to RetroPad button @id of @port, whose
+ * plain pressed state is @res; returns the state the core reads. */
+static int16_t input_turbo_hold_apply(
+      turbo_buttons_t *turbo, hold_buttons_t *hold,
+      const settings_t *settings,
+      unsigned port, unsigned id, int16_t res)
+{
+   uint8_t turbo_period     = settings->uints.input_turbo_period;
+   uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
+   uint8_t turbo_mode       = settings->uints.input_turbo_mode;
+
+   /* Apply hold button logic.
+    * When hold modifier is pressed, tapping buttons toggles their held state.
+    * Held buttons report as pressed even when not physically touched.
+    * Physical presses pass through normally (no modification). */
+
+   /* Handle hold modifier state and toggle logic */
+   if (!hold->frame_enable[port])
+   {
+      /* Hold modifier not pressed - clear edge detection state */
+      hold->hold_pressed[port] = 0;
+   }
+   else
+   {
+      /* Hold modifier is pressed - handle toggle on rising edge */
+      if (!res)
+         hold->hold_pressed[port] &= ~(1 << id);
+      else if (!(hold->hold_pressed[port] & (1 << id)))
+      {
+         /* Rising edge - toggle hold for this button */
+         hold->hold_pressed[port] |= (1 << id);
+         hold->enable[port] ^= (1 << id);
+      }
+   }
+
+   /* Apply hold effect: if button is held and not physically pressed */
+   if (!res && (hold->enable[port] & (1 << id)))
+      res = 1;
+
+   /* Apply turbo button if activated. */
+
+   /* Don't allow classic mode turbo for D-pad unless explicitly allowed. */
+   if (     turbo_mode <= INPUT_TURBO_MODE_CLASSIC_TOGGLE
+         && !settings->bools.input_turbo_allow_dpad
+         && id >= RETRO_DEVICE_ID_JOYPAD_UP
+         && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)
+      return res;
+
+   if (turbo_duty_cycle == 0)
+      turbo_duty_cycle = turbo_period / 2;
+
+   /* Clear underlying button to prevent duplicates. */
+   if (turbo->frame_enable[port])
+   {
+      /* The empty Turbo Bind uses the port's turbo hotkey,
+       * which has no RetroPad button to clear. */
+      int turbo_bind = settings->ints.input_turbo_bind;
+
+      if (     turbo_bind >= 0
+            && id == settings->uints.input_remap_ids[port][turbo_bind])
+         res = 0;
+   }
+
+   if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
+   {
+      unsigned turbo_button = settings->uints.input_turbo_button;
+      unsigned remap_button = settings->uints.input_remap_ids[port][turbo_button];
+
+      /* Single button modes only care about the defined button. */
+      if (id != remap_button)
+         return res;
+
+      /* Pressing turbo bind toggles turbo button on or off.
+       * Holding the button will pass through, else
+       * the pressed state will be modulated by a
+       * periodic pulse defined by the configured duty cycle.
+       */
+
+      /* Avoid detecting the turbo button being held as multiple toggles */
+      if (!turbo->frame_enable[port])
+         turbo->turbo_pressed[port] &= ~(1U << 31);
+      else if (!(turbo->turbo_pressed[port] & (1U << 31)))
+      {
+         turbo->turbo_pressed[port] |= (1U << 31);
+         /* Toggle turbo for selected button. */
+         if (turbo->enable[port] != (1 << id))
+            turbo->enable[port] = (1 << id);
+         turbo->mode1_enable[port] ^= 1;
+      }
+
+      if (turbo->turbo_pressed[port] & (1U << 31))
+      {
+         /* Avoid detecting buttons being held as multiple toggles */
+         if (!res)
+            turbo->turbo_pressed[port] &= ~(1U << id);
+         else if (!(turbo->turbo_pressed[port] & (1U << id))
+               && turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
+         {
+            uint16_t enable_new;
+            turbo->turbo_pressed[port] |= 1U << id;
+            enable_new = turbo->enable[port] ^ (1 << id);
+            if (enable_new)
+               turbo->enable[port] = enable_new;
+         }
+      }
+      /* Hold mode stops turbo on release */
+      else if ((turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD)
+            && (turbo->enable[port])
+            && (turbo->mode1_enable[port]))
+         turbo->mode1_enable[port] = 0;
+
+      if (     (!res)
+            && (turbo->mode1_enable[port])
+            && (turbo->enable[port] & (1 << id)))
+         res = ((turbo->count % turbo_period) < turbo_duty_cycle);
+   }
+   else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
+   {
+      /* If turbo button is held, all buttons pressed
+       * will go into a turbo mode. Until the button is
+       * released again, the input state will be modulated by a
+       * periodic pulse defined by the configured duty cycle.
+       */
+      if (res)
+      {
+         if (turbo->frame_enable[port])
+            turbo->enable[port] |= (1 << id);
+
+         if (turbo->enable[port] & (1 << id))
+            /* if turbo button is enabled for this key ID */
+            res = ((turbo->count % turbo_period) < turbo_duty_cycle);
+      }
+      else
+         turbo->enable[port] &= ~(1 << id);
+   }
+   else /* Classic toggle mode */
+   {
+      /* Works pretty much the same as
+       * classic mode above but with a
+       * toggle mechanic */
+
+      /* Check if it's to enable the turbo func,
+       * if we're still holding the button from
+       * previous toggle then ignore */
+      if (   (res)
+          && (turbo->frame_enable[port]))
+      {
+         if (!(turbo->turbo_pressed[port] & (1U << id)))
+         {
+            turbo->enable[port] ^= (1 << id);
+            /* Remember for the toggle check */
+            turbo->turbo_pressed[port] |= (1U << id);
+         }
+      }
+      else
+         turbo->turbo_pressed[port] &= ~(1U << id);
+
+      if (res)
+      {
+         /* If turbo button is enabled for this key ID */
+         if (turbo->enable[port] & (1 << id))
+            res = ((turbo->count % turbo_period) < turbo_duty_cycle);
+      }
+   }
+
+   return res;
+}
+/* ===== END input turbo and hold ===== */
+
 static int16_t input_state_device(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -4298,165 +4468,8 @@ static int16_t input_state_device(
             }
 
             if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
-            {
-               uint8_t turbo_period     = settings->uints.input_turbo_period;
-               uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
-               uint8_t turbo_mode       = settings->uints.input_turbo_mode;
-
-               /* Apply hold button logic.
-                * When hold modifier is pressed, tapping buttons toggles their held state.
-                * Held buttons report as pressed even when not physically touched.
-                * Physical presses pass through normally (no modification). */
-
-               /* Handle hold modifier state and toggle logic */
-               if (!input_st->hold_btns.frame_enable[port])
-               {
-                  /* Hold modifier not pressed - clear edge detection state */
-                  input_st->hold_btns.hold_pressed[port] = 0;
-               }
-               else
-               {
-                  /* Hold modifier is pressed - handle toggle on rising edge */
-                  if (!res)
-                     input_st->hold_btns.hold_pressed[port] &= ~(1 << id);
-                  else if (!(input_st->hold_btns.hold_pressed[port] & (1 << id)))
-                  {
-                     /* Rising edge - toggle hold for this button */
-                     input_st->hold_btns.hold_pressed[port] |= (1 << id);
-                     input_st->hold_btns.enable[port] ^= (1 << id);
-                  }
-               }
-
-               /* Apply hold effect: if button is held and not physically pressed */
-               if (!res && (input_st->hold_btns.enable[port] & (1 << id)))
-                  res = 1;
-
-               /* Apply turbo button if activated. */
-
-               /* Don't allow classic mode turbo for D-pad unless explicitly allowed. */
-               if (     turbo_mode <= INPUT_TURBO_MODE_CLASSIC_TOGGLE
-                     && !settings->bools.input_turbo_allow_dpad
-                     && id >= RETRO_DEVICE_ID_JOYPAD_UP
-                     && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)
-                  break;
-
-               if (turbo_duty_cycle == 0)
-                  turbo_duty_cycle = turbo_period / 2;
-
-               /* Clear underlying button to prevent duplicates. */
-               if (input_st->turbo_btns.frame_enable[port])
-               {
-                  /* The empty Turbo Bind uses the port's turbo hotkey,
-                   * which has no RetroPad button to clear. */
-                  int turbo_bind = settings->ints.input_turbo_bind;
-
-                  if (     turbo_bind >= 0
-                        && id == settings->uints.input_remap_ids[port][turbo_bind])
-                     res = 0;
-               }
-
-               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
-               {
-                  unsigned turbo_button = settings->uints.input_turbo_button;
-                  unsigned remap_button = settings->uints.input_remap_ids[port][turbo_button];
-
-                  /* Single button modes only care about the defined button. */
-                  if (id != remap_button)
-                     break;
-
-                  /* Pressing turbo bind toggles turbo button on or off.
-                   * Holding the button will pass through, else
-                   * the pressed state will be modulated by a
-                   * periodic pulse defined by the configured duty cycle.
-                   */
-
-                  /* Avoid detecting the turbo button being held as multiple toggles */
-                  if (!input_st->turbo_btns.frame_enable[port])
-                     input_st->turbo_btns.turbo_pressed[port] &= ~(1U << 31);
-                  else if (!(input_st->turbo_btns.turbo_pressed[port] & (1U << 31)))
-                  {
-                     input_st->turbo_btns.turbo_pressed[port] |= (1U << 31);
-                     /* Toggle turbo for selected button. */
-                     if (input_st->turbo_btns.enable[port] != (1 << id))
-                        input_st->turbo_btns.enable[port] = (1 << id);
-                     input_st->turbo_btns.mode1_enable[port] ^= 1;
-                  }
-
-                  if (input_st->turbo_btns.turbo_pressed[port] & (1U << 31))
-                  {
-                     /* Avoid detecting buttons being held as multiple toggles */
-                     if (!res)
-                        input_st->turbo_btns.turbo_pressed[port] &= ~(1U << id);
-                     else if (!(input_st->turbo_btns.turbo_pressed[port] & (1U << id))
-                           && turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON)
-                     {
-                        uint16_t enable_new;
-                        input_st->turbo_btns.turbo_pressed[port] |= 1U << id;
-                        enable_new = input_st->turbo_btns.enable[port] ^ (1 << id);
-                        if (enable_new)
-                           input_st->turbo_btns.enable[port] = enable_new;
-                     }
-                  }
-                  /* Hold mode stops turbo on release */
-                  else if ((turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD)
-                        && (input_st->turbo_btns.enable[port])
-                        && (input_st->turbo_btns.mode1_enable[port]))
-                     input_st->turbo_btns.mode1_enable[port] = 0;
-
-                  if (     (!res)
-                        && (input_st->turbo_btns.mode1_enable[port])
-                        && (input_st->turbo_btns.enable[port] & (1 << id)))
-                     res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
-               }
-               else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
-               {
-                  /* If turbo button is held, all buttons pressed
-                   * will go into a turbo mode. Until the button is
-                   * released again, the input state will be modulated by a
-                   * periodic pulse defined by the configured duty cycle.
-                   */
-                  if (res)
-                  {
-                     if (input_st->turbo_btns.frame_enable[port])
-                        input_st->turbo_btns.enable[port] |= (1 << id);
-
-                     if (input_st->turbo_btns.enable[port] & (1 << id))
-                        /* if turbo button is enabled for this key ID */
-                        res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
-                  }
-                  else
-                     input_st->turbo_btns.enable[port] &= ~(1 << id);
-               }
-               else /* Classic toggle mode */
-               {
-                  /* Works pretty much the same as
-                   * classic mode above but with a
-                   * toggle mechanic */
-
-                  /* Check if it's to enable the turbo func,
-                   * if we're still holding the button from
-                   * previous toggle then ignore */
-                  if (   (res)
-                      && (input_st->turbo_btns.frame_enable[port]))
-                  {
-                     if (!(input_st->turbo_btns.turbo_pressed[port] & (1U << id)))
-                     {
-                        input_st->turbo_btns.enable[port] ^= (1 << id);
-                        /* Remember for the toggle check */
-                        input_st->turbo_btns.turbo_pressed[port] |= (1U << id);
-                     }
-                  }
-                  else
-                     input_st->turbo_btns.turbo_pressed[port] &= ~(1U << id);
-
-                  if (res)
-                  {
-                     /* If turbo button is enabled for this key ID */
-                     if (input_st->turbo_btns.enable[port] & (1 << id))
-                        res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
-                  }
-               }
-            }
+               res = input_turbo_hold_apply(&input_st->turbo_btns,
+                     &input_st->hold_btns, settings, port, id, res);
          }
 
          break;
