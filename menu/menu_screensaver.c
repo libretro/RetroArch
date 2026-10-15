@@ -359,8 +359,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 
                particle->x    = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
                particle->y    = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
-               particle->a    = (float)(menu_ss_rand() % 64 - 16) * 0.1f;
-               particle->b    = (float)(menu_ss_rand() % 64 - 48) * 0.1f;
+               particle->a    = (float)((int)(menu_ss_rand() % 64) - 16) * 0.1f;
+               particle->b    = (float)((int)(menu_ss_rand() % 64) - 48) * 0.1f;
 
                /* Get particle size */
                size_factor    = (float)i / (float)MENU_SS_NUM_PARTICLES;
@@ -598,8 +598,8 @@ void menu_screensaver_iterate(
             float luminosity;
 
             /* Update particle 'speed' */
-            particle->a = particle->a + (float)(menu_ss_rand() % 16 - 9) * 0.01f;
-            particle->b = particle->b + (float)(menu_ss_rand() % 16 - 7) * 0.01f;
+            particle->a = particle->a + (float)((int)(menu_ss_rand() % 16) - 9) * 0.01f;
+            particle->b = particle->b + (float)((int)(menu_ss_rand() % 16) - 7) * 0.01f;
 
             if (particle->a < -0.4f)
                particle->a = -0.4f;
