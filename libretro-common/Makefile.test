@@ -90,6 +90,7 @@ TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
 TEST_RWEBM_AUDIO = test/formats/test_rwebm_audio
 TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c \
 		encodings/encoding_crc32.c features/features_cpu.c
+TEST_RWEBM_AUDIO_LIBS = -lm
 
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
@@ -511,7 +512,7 @@ unit-tests:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RJPEG_SRC) $(LIBCHECK_LIBS) -o $(TEST_RJPEG)
 	$(TEST_RJPEG)
 	# rwebm audio
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(TEST_RWEBM_AUDIO_LIBS) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
 	$(TEST_RWEBM_AUDIO)
 # --- aarch64 cross run ---------------------------------------------
 #
