@@ -50,7 +50,8 @@ void gl_android_openxr_set_stereo(bool on);
 
 /* gl2, in its frame, for a tracked map's eyes: this frame's two eye
  * images as textures, and their size. False when the headset cannot
- * take them now; the last ones stay shown. */
+ * take them now; the last ones stay shown. On true, sRGB encoding is
+ * off for the drawing until gl_android_openxr_eyes_drawn. */
 bool gl_android_openxr_eye_targets(uint32_t tex[2], unsigned *dims);
 /* gl2 drew each eye width x height from its image's origin. */
 void gl_android_openxr_eyes_drawn(unsigned width, unsigned height);

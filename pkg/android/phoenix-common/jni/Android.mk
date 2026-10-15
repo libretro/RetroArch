@@ -111,6 +111,10 @@ LOGGER_LDLIBS := -llog
 ifeq ($(GLES),3)
    GLES_LIB := -lGLESv3
    DEFINES += -DHAVE_OPENGLES3
+   # Every OpenXR headset's driver supports OpenGL ES 3.2
+   ifeq ($(HAVE_OPENXR),1)
+      DEFINES += -DHAVE_OPENGLES3_1 -DHAVE_OPENGLES3_2
+   endif
 else
    GLES_LIB := -lGLESv2
    DEFINES += -DHAVE_OPENGLES2
