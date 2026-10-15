@@ -131,6 +131,7 @@ typedef struct
    int64_t      webm_hw_shown;
    int64_t      webm_seek_slot;
    int          webm_step;
+   int          webm_restore_clock;
    video_hw_frame_t hw_frame;
    int          hw_video;
    int64_t      hw_restart_ns;
@@ -908,6 +909,7 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
       p->hw_restart = 0;
       p->webm_seek_slot = -1;
    }
+   p->webm_restore_clock = 0;
    media_rewind_webm_hw(p);
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -996,6 +998,7 @@ static bool media_seek_audio(media_player_t *p, int64_t want)
 static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       int64_t to_slot)
 {
+   p->webm_restore_clock = 0;
    if (target_ns < 0)
       target_ns = 0;
    if (p->dur_ns > 0 && target_ns > p->dur_ns)
@@ -1297,7 +1300,9 @@ void media_video_hw_ready(void)
       {
          int64_t target = p->hw_restart_ns;
          p->hw_restart = 0;
-         if (media_seek_internal(p, target,
+         if (p->webm_restore_clock && p->webmvs)
+            p->webm_seek_slot = restart_slot;
+         else if (media_seek_internal(p, target,
                   p->webm_hw_required ? restart_slot : -1)
                + 500000000 < target)
             p->pending_seek_ns = target;
@@ -1332,6 +1337,11 @@ static void media_run_webm_hw(media_player_t *p)
 {
    int64_t started = cpu_features_get_time_usec();
    int64_t target = p->webm_seek_slot;
+   if (p->webm_restore_clock)
+   {
+      p->play_ns += p->frame_ns;
+      p->webm_restore_clock = 0;
+   }
    if (target < 0)
    {
       target = p->vshown - 1;
@@ -2633,6 +2643,8 @@ bool MEDIA_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
       p->vpts_ns = (int64_t)v;
       p->vshown  = (int64_t)s;
       p->play_ns = (int64_t)clock;
+      p->webm_restore_clock = s > 0
+            && (p->webmvs || p->webm_hw_required);
       p->eof     = (d[5] & 1) != 0;
 #ifdef MEDIA_HAVE_AUDIO
       if (!media_seek_audio(p, (int64_t)audio_pos))

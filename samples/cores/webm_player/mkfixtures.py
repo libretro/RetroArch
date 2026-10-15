@@ -7,6 +7,8 @@ import sys
 out = Path(sys.argv[1] if len(sys.argv) > 1 else "fixtures")
 out.mkdir(parents=True, exist_ok=True)
 cases = [
+    ("av1-opus.webm", ["-s", "64x64", "-c:v", "libaom-av1", "-cpu-used", "8", "-threads", "2", "-g", "8", "-c:a", "libopus"]),
+    ("av1-vorbis.webm", ["-s", "64x64", "-c:v", "libaom-av1", "-cpu-used", "8", "-threads", "2", "-g", "8", "-c:a", "libvorbis"]),
     ("vp8-opus.webm", ["-c:v", "libvpx", "-deadline", "best", "-c:a", "libopus"]),
     ("vp9-vorbis.webm", ["-c:v", "libvpx-vp9", "-c:a", "libvorbis"]),
     ("h264-aac.mp4", ["-c:v", "libx264", "-bf", "2", "-g", "12", "-c:a", "aac", "-movflags", "+faststart"]),

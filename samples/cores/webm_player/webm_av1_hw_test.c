@@ -9,6 +9,8 @@ static unsigned taken, stopped, ticks, ready, sink_busy, decode_busy,
 static video_hw_frame_t held, retry;
 static const char *fixture_path;
 static unsigned container;
+static uint64_t pcm_frames, pcm_nonzero;
+static uint32_t pcm_hash;
 #define CHECK(c)                                                               \
    do                                                                          \
    {                                                                           \
@@ -166,7 +168,14 @@ static int16_t input(unsigned port, unsigned device, unsigned index,
 }
 static size_t audio(const int16_t *data, size_t frames)
 {
+   size_t i;
    CHECK(data != NULL);
+   pcm_frames += frames;
+   for (i = 0; i < frames * 2; i++)
+   {
+      pcm_nonzero += data[i] != 0;
+      pcm_hash = (pcm_hash ^ (uint16_t)data[i]) * UINT32_C(16777619);
+   }
    return frames;
 }
 
@@ -349,6 +358,69 @@ done:
    remove(fixture_path);
 }
 
+static void test_audio(const char *path)
+{
+   uint8_t state[40];
+   unsigned i, before;
+   uint32_t expected_hash;
+   uint64_t expected_frames;
+   fixture_path = path;
+   rav1_set_hw_backend(&backend);
+   CHECK(media_set_video_hw_refresh(sink, NULL));
+   ready = 1;
+   if (!load())
+      return;
+   CHECK(media_player.webm_hw_required && !media_player.fb);
+#ifdef MEDIA_HAVE_AUDIO
+   CHECK(media_player.actx != NULL);
+#endif
+   pcm_frames = pcm_nonzero = 0;
+   pcm_hash = UINT32_C(2166136261);
+   for (i = 0; i < 512 && !stopped; i++)
+      retro_run();
+   printf("%s: frames=%lu nonzero=%lu slot=%ld\n", path,
+         (unsigned long)pcm_frames, (unsigned long)pcm_nonzero,
+         (long)media_player.vshown);
+   CHECK(stopped && media_player.vshown == 24);
+#ifdef MEDIA_HAVE_AUDIO
+   CHECK(pcm_frames >= 90000 && pcm_frames <= 105000);
+   CHECK(pcm_nonzero >= 170000 && pcm_nonzero <= 200000);
+#else
+   CHECK(pcm_frames >= 90000 && !pcm_nonzero);
+#endif
+   retro_reset();
+   for (i = 0; i < 6; i++)
+      retro_run();
+   CHECK(retro_serialize(state, sizeof(state)));
+   pcm_frames = 0;
+   pcm_hash = UINT32_C(2166136261);
+   retro_run();
+   expected_frames = pcm_frames;
+   expected_hash = pcm_hash;
+   CHECK(expected_frames > 0);
+   for (i = 0; i < 2; i++)
+   {
+      if (i)
+      {
+         unload();
+         if (!load())
+            return;
+      }
+      CHECK(retro_unserialize(state, sizeof(state)));
+      pcm_frames = 0;
+      pcm_hash = UINT32_C(2166136261);
+      before = taken;
+      retro_run();
+      CHECK(taken == before + 1);
+      printf("restore %u: frames=%lu/%lu hash=%08x/%08x\n", i,
+            (unsigned long)pcm_frames, (unsigned long)expected_frames,
+            pcm_hash, expected_hash);
+      CHECK(pcm_frames == expected_frames && pcm_hash == expected_hash);
+      CHECK(!media_player.fb);
+   }
+   unload();
+}
+
 int main(void)
 {
    container = 1;
@@ -361,6 +433,8 @@ int main(void)
             : "av1-core-fixture.mp4";
       test_container();
    }
+   test_audio("fixtures/av1-opus.webm");
+   test_audio("fixtures/av1-vorbis.webm");
    printf("AV1 core hardware handoff: %u failures\n", failures);
    return failures ? 1 : 0;
 }
