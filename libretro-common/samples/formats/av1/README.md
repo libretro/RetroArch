@@ -59,6 +59,7 @@ python3 tile_fixtures.py
 python3 frame_fixtures.py
 python3 picture_fixtures.py
 python3 reference_fixtures.py
+python3 grain_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -121,8 +122,8 @@ restoration and reduced still pictures. The native sequence/prefix/size/tile
 parsers locate these tools without trace-supplied offsets; all decoded fields
 and start/end cursors are compared with FFmpeg. Inter-frame inheritance is
 covered by synthetic cases, rather than claimed from this all-intra corpus.
-Film grain, complete reference-state validation/commit and hardware submission
-remain separate work.
+Complete reference-state validation/commit and hardware submission remain
+separate work.
 
 `formats/rav1_reference.h` continues a coded frame prefix through
 `disable_frame_end_update_cdf`: explicit or short-signaled reference selection,
@@ -160,3 +161,21 @@ order-hint wrap/ties, skip eligibility, inferred flags and truncation.
 The reference fixture chain now also compares motion flags, all identity model
 coefficients and end cursors for the same 135 coded frames. Nonidentity models
 are covered synthetically; the generated real corpus uses identity models.
+
+`formats/rav1_grain.h` parses film-grain scaling points, signed autoregressive
+coefficients, chroma parameters, seed and flags. Inherited parameters must come
+from a selected valid reference and retain the new seed. Point counts/order and
+4:2:0 chroma pairing are validated. Metadata remains immutable; output aliases
+are rejected, and other errors clear output without consuming input. This
+extracts hardware submission metadata; it does not synthesize grain pixels.
+
+Grain tests cover all coefficient lags, maximum point counts, monochrome/luma
+chroma inference, signed extrema, inheritance, alias/selection errors, point
+ordering and byte truncation. `grain_fixtures.py` checks eight libaom grain
+vectors, monochrome and four-tile frames at 8/10 bits: 140 coded headers,
+10 grain inheritances and 182 borrowed tiles. Metadata and header endpoints
+match FFmpeg traces; tile sizes/hashes match independent packet slicing.
+The native prefix/setup/tile/picture/motion/grain chain locates tile data
+without oracle offsets. The fixture harness still simulates successful decode;
+show-existing validation, decoder reference commit, hardware submission and
+actual grain output remain separate work.

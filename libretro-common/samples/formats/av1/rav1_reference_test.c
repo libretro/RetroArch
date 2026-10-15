@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <formats/rav1_motion.h>
+#include <formats/rav1_grain.h>
 #include <formats/rav1_tile_info.h>
 #include <formats/rav1_picture.h>
 
@@ -12,6 +13,9 @@ static rav1_frame_setup_t setup, zero;
 static rav1_tile_info_t tiles;
 static rav1_picture_t picture;
 static rav1_motion_t motion;
+static rav1_grain_header_t grain;
+static rav1_grain_t grains[8];
+static const rav1_grain_t *grain_refs[8];
 static rav1_global_motion_t globals[8];
 static rav1_picture_reference_t pictures[8];
 static uint8_t data[128];
@@ -250,7 +254,7 @@ static void test_ids_and_gates(void)
 
 /* The fixture harness assumes successful decode of its encoder-made frames.
  * Production code must defer these metadata updates until decode completes. */
-static int inspect(const char *path)
+static int inspect(const char *path, bool grain_mode)
 {
    FILE *file = fopen(path, "rb");
    uint8_t *bytes = NULL;
@@ -269,6 +273,8 @@ static int inspect(const char *path)
    if (!bytes || fread(bytes, 1, (size_t)size, file) != (size_t)size)
       goto done;
    memset(refs, 0, sizeof(refs));
+   for (i = 0; i < 8; i++)
+      grain_refs[i] = &grains[i];
    while ((ret = rav1_obu_next(&obu, bytes, size, &offset, true)) == 1)
    {
       rav1_bits_t bits;
@@ -356,6 +362,64 @@ static int inspect(const char *path)
             printf(" %d", (int)motion.global.params[i][j]);
          printf("\n");
       }
+      if (!rav1_grain_parse(&grain, &bits, &seq, &frame, &setup, grain_refs))
+         goto done;
+      if (grain_mode)
+      {
+         unsigned plane, j;
+         printf("FG %u %u %u %u %u %u %u %u %u %u %u %lu\n", grain.params.apply,
+                grain.params.seed, grain.update, grain.reference_idx,
+                grain.params.chroma_scaling_from_luma,
+                grain.params.scaling_shift, grain.params.ar_coeff_lag,
+                grain.params.ar_coeff_shift, grain.params.scale_shift,
+                grain.params.overlap, grain.params.clip_to_restricted_range,
+                (unsigned long)(bits.byte * 8 + bits.bit + base));
+         for (plane = 0; plane < 3; plane++)
+         {
+            printf("FP %u %u", plane, grain.params.num_points[plane]);
+            for (j = 0; j < 14; j++)
+               printf(" %u %u", grain.params.point_value[plane][j],
+                      grain.params.point_scaling[plane][j]);
+            printf("\nFC %u", plane);
+            for (j = 0; j < 25; j++)
+               printf(" %d", (int)grain.params.ar_coeffs[plane][j]);
+            printf("\n");
+         }
+         printf("FM");
+         for (plane = 0; plane < 2; plane++)
+            printf(" %u %u %u", grain.params.chroma_mult[plane],
+                   grain.params.chroma_luma_mult[plane],
+                   grain.params.chroma_offset[plane]);
+         printf("\n");
+      }
+      if (obu.type == 6)
+      {
+         rav1_tile_group_t group;
+         rav1_tile_t tile;
+         unsigned tile_count = 0;
+         int tile_ret;
+         while (bits.bit)
+            if (rav1_bits_read(&bits, 1) || bits.failed)
+               goto done;
+         if (!rav1_tile_group_init(&group, obu.payload + bits.byte,
+                                   obu.payload_size - bits.byte, &tiles.layout,
+                                   true))
+            goto done;
+         while ((tile_ret = rav1_tile_group_next(&tile, &group)) == 1)
+         {
+            uint32_t hash = 2166136261u;
+            size_t j;
+            for (j = 0; j < tile.size; j++)
+               hash = (hash ^ tile.data[j]) * 16777619u;
+            if (grain_mode)
+               printf("FT %u %lu %lu\n", tile.index, (unsigned long)tile.size,
+                      (unsigned long)hash);
+            tile_count++;
+         }
+         if (tile_ret < 0 ||
+             tile_count != tiles.layout.columns * tiles.layout.rows)
+            goto done;
+      }
       for (i = 0; i < 8; i++)
       {
          refs[i].valid = (setup.valid_mask >> i) & 1;
@@ -367,6 +431,7 @@ static int inspect(const char *path)
             refs[i].size = setup.size;
             pictures[i] = picture.reference;
             globals[i] = motion.global;
+            grains[i] = grain.params;
          }
       }
       count++;
@@ -381,7 +446,9 @@ done:
 int main(int argc, char **argv)
 {
    if (argc == 2)
-      return inspect(argv[1]);
+      return inspect(argv[1], false);
+   if (argc == 3 && !strcmp(argv[1], "--grain"))
+      return inspect(argv[2], true);
    test_explicit();
    test_short();
    test_ids_and_gates();
