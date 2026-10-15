@@ -305,11 +305,11 @@ it go) for the core, over the player's own controller, until it is set
 again or `RELEASE_INPUT [player]` lets go of it. Both answer with the
 player, the buttons held and the axes held, tab separated, and `none`
 for either where nothing is held. `RELEASE_INPUT` with no player lets
-go for every player and answers for the first of them. `GET_INPUT
-[player]` answers in the same shape **without changing anything**,
-which neither of the others can do: one has to set something to answer
-and the other lets go before it does. Achievements
-hardcore mode refuses it.
+go for every player and answers for the first of them. Achievements
+hardcore mode refuses `SET_INPUT`. `GET_INPUT [player]` answers in the same
+shape **without changing anything**, which neither of the others can
+do: one has to set something to answer and the other lets go before it
+does.
 
 Several controls join with `+` to be held together:
 `SET_INPUT 1 right+a 1` runs and jumps in one request, where two
@@ -414,9 +414,9 @@ Most clients ask before running a destructive tool. Keep that on.
 
 A core path that is not a core is found out before anything is torn
 down for it. `LOAD_CORE` and `LOAD_CONTENT` both probe the library
-first - the same probe core scanning uses, so it costs nothing the
-second time - and answer `no core at <path>` or `<path> is not a
-libretro core`. A stale library or something renamed would otherwise
+first - the same probe core scanning uses - and answer `no core at
+<path>` or `<path> is not a libretro core`. The core already loaded is
+not probed. A stale library or something renamed would otherwise
 unload the running core and then fail, costing the game that was
 running.
 

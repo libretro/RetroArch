@@ -2562,6 +2562,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    uint8_t  *at                = NULL;
    char     *end               = NULL;
    const char *sp;
+   unsigned long num;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const rarch_system_info_t *sys_info = &runloop_st->system;
 
@@ -2590,22 +2591,29 @@ bool command_run_until(command_t *cmd, const char *arg)
             COMMAND_UNTIL_OPS, (int)(sp - end), end);
       return false;
    }
-   value = (unsigned)strtoul(sp + 1, &end, 10);
-   if (end == sp + 1 || value > 255)
+   num = strtoul(sp + 1, &end, 10);
+   if (end == sp + 1 || num > 255)
    {
       command_reply_error(cmd, "RUN_UNTIL", "a value from 0 to 255, "
             "which is what a byte holds");
       return false;
    }
+   value = (unsigned)num;
    if (*end == ' ')
    {
-      frames = (unsigned)strtoul(end + 1, &end, 10);
-      if (frames < 1 || frames > COMMAND_FRAMES_REPLY_MAX)
+      while (*end == ' ')
+         end++;
+      if (*end)
       {
-         command_reply_error(cmd, "RUN_UNTIL", "at most %u frames to "
-               "wait, which is as long as a reply is waited for",
-               COMMAND_FRAMES_REPLY_MAX);
-         return false;
+         num = strtoul(end, &end, 10);
+         if (num < 1 || num > COMMAND_FRAMES_REPLY_MAX)
+         {
+            command_reply_error(cmd, "RUN_UNTIL", "at most %u frames "
+                  "to wait, which is as long as a reply is waited for",
+                  COMMAND_FRAMES_REPLY_MAX);
+            return false;
+         }
+         frames = (unsigned)num;
       }
    }
    if (*end)
@@ -3305,13 +3313,6 @@ bool command_version(command_t *cmd, const char* arg)
    return true;
 }
 
-/* LOAD_CORE <core path>
- *
- * Mirrors selecting a core in the menu's core list / file browser,
- * action_ok_load_core() -> generic_action_ok()'s ACTION_OK_LOAD_CORE
- * branch.  Same task_push_load_new_core() call with the same arguments;
- * the result is propagated rather than discarded so a bad core path is
- * reported as a failed command instead of a silent no-op. */
 /* Whether @path is a core that can be loaded, answered to @cmd with
  * why when it is not.
  *
@@ -3319,8 +3320,8 @@ bool command_version(command_t *cmd, const char* arg)
  * not a core - a stale library, something renamed - would otherwise
  * unload the running core and then fail, costing the game that was
  * running. libretro_get_system_info() is the probe core scanning
- * already uses and it keeps what it finds, so asking twice is free. A
- * built-in core is not a file on disk and has nothing to probe. */
+ * already uses. A built-in core is not a file on disk and has nothing
+ * to probe. */
 static bool command_core_at(command_t *cmd, const char *name,
       const char *path)
 {
@@ -3342,6 +3343,11 @@ static bool command_core_at(command_t *cmd, const char *name,
    return true;
 }
 
+/* LOAD_CORE <core path>
+ *
+ * Mirrors selecting a core in the menu's core list / file browser,
+ * action_ok_load_core() -> generic_action_ok()'s ACTION_OK_LOAD_CORE
+ * branch, with the same task_push_load_new_core() call. */
 bool command_load_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};

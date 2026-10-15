@@ -302,7 +302,7 @@ int main(int argc, char **argv)
    CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
 
    /* RUN_UNTIL waits on a byte the core maps, answered the frame it
-    * meets what was asked. ram[0] follows the frame counter. */
+    * meets what was asked. ram[7] follows the frame counter. */
    {
       char req[64];
       unsigned now;
@@ -335,7 +335,6 @@ int main(int argc, char **argv)
       CHECK(!strncmp(reply,"waiting\t2\t",STRLEN_CONST("waiting\t2\t")));
       /* every condition it takes */
       now=ram7(&cmd); reply[0]=0;
-      now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 != %u",(now + 1) & 0xff);
       CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
       now=ram7(&cmd); reply[0]=0;
@@ -344,6 +343,19 @@ int main(int argc, char **argv)
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 <= %u",now);
       CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 < %u",(now + 1) & 0xff);
+      CHECK(now == 0xff || (command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"1007 > %u",(now + 0xff) & 0xff);
+      CHECK(now == 0 || (command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))));
+      /* a value past what a byte holds, however far past */
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1007 == 4294967296")
+            && strstr(reply,"0 to 255"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1007 == 0 4294967297")
+            && strstr(reply,"at most 600"));
       /* and what it refuses */
       reply[0]=0;
       CHECK(!command_run_until(&cmd,"1007 ~= 5")
