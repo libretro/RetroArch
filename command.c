@@ -1457,6 +1457,49 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
  * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
 #define COMMAND_READ_NBYTES_MAX 16384u
 
+/* A system or achievement address in hexadecimal, range-checked before
+ * it is narrowed, so 100001001 is refused rather than read as 1001. */
+static bool command_parse_address(const char *s, unsigned *address,
+      char **end)
+{
+   unsigned long num;
+   if (!s || (unsigned char)*s <= ' ' || *s == '-' || *s == '+')
+      return false;
+   num      = strtoul(s, end, 16);
+   *address = (unsigned)num;
+   return *end != s && (unsigned long)*address == num;
+}
+
+/* The next of a run of hexadecimal bytes separated by spaces: 1 with
+ * it in @out, 0 at the end, -1 at anything that is not a byte. A
+ * write checks every byte before it makes the first. */
+static int command_next_byte(const char **s, uint8_t *out)
+{
+   char         *end = NULL;
+   unsigned long num;
+   while (**s == ' ')
+      (*s)++;
+   if (!**s)
+      return 0;
+   if (**s == '-' || **s == '+')
+      return -1;
+   num = strtoul(*s, &end, 16);
+   if (end == *s || num > 0xff || (*end && *end != ' '))
+      return -1;
+   *s   = end;
+   *out = (uint8_t)num;
+   return 1;
+}
+
+static bool command_bytes_valid(const char *s)
+{
+   uint8_t b;
+   int     r;
+   while ((r = command_next_byte(&s, &b)) > 0)
+      ;
+   return r == 0;
+}
+
 /* @n bytes of @data as " XX" apiece; gives back the end of what it
  * wrote. */
 static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
@@ -1475,15 +1518,16 @@ static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
+   unsigned long num          = 0;
    unsigned int nbytes        = 0;
-   unsigned int addr          = -1;
+   unsigned int addr          = 0;
+   char *end                  = NULL;
 
-   char *end          = NULL;
-   addr               = (unsigned int)strtoul(arg, &end, 16);
-   if (end && *end == ' ')
-      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+   if (command_parse_address(arg, &addr, &end) && *end == ' ')
+      num             = strtoul(end + 1, NULL, 10);
+   nbytes             = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
 
-   if (!(end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX))
+   if (!nbytes)
    {
       command_reply_error(cmd, "READ_CORE_RAM",
             "an achievement address in hexadecimal, a space, and a byte "
@@ -1538,10 +1582,22 @@ bool command_read_ram(command_t *cmd, const char *arg)
 
 bool command_write_ram(command_t *cmd, const char *arg)
 {
-   unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
+   unsigned int addr    = 0;
    unsigned int avail   = 0;
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
-   const uint8_t *start = data;
+   char *end            = NULL;
+   uint8_t *data        = NULL;
+   const uint8_t *start;
+
+   if (!command_parse_address(arg, &addr, &end) || !command_bytes_valid(end))
+   {
+      command_reply_error(cmd, "WRITE_CORE_RAM", "an achievement address "
+            "in hexadecimal, then bytes from 00 to ff separated by "
+            "spaces");
+      return false;
+   }
+   arg   = end;
+   data  = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
+   start = data;
 
    if (!data)
    {
@@ -1559,13 +1615,12 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
    /* Stop at the end of the region: the payload length is whatever the
     * sender put in the datagram. */
-   while (*arg && avail)
+   while (avail && command_next_byte(&arg, data) > 0)
    {
-      *data = strtoul(arg, (char**)&arg, 16);
       data++;
       avail--;
    }
-   if (*arg)
+   if (command_next_byte(&arg, data) > 0)
       RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
             "memory region; remainder of the payload ignored.\n", addr);
    {
@@ -2652,14 +2707,11 @@ bool command_watch(command_t *cmd, const char *arg)
       else
       {
          unsigned  avail   = 0;
+         unsigned  address = 0;
          char     *end     = NULL;
-         /* range-checked before narrowing, so 100001001 is not 1001 */
-         unsigned long num = strtoul(sp, &end, 16);
-         unsigned  address = (unsigned)num;
          uint8_t  *at;
-         if (     *sp == '-' || *sp == '+' || !n || end != arg
-               || (*arg && *arg != ' ')
-               || (unsigned long)address != num)
+         if (     !command_parse_address(sp, &address, &end) || end != arg
+               || (*arg && *arg != ' '))
          {
             command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
                   "\"off\" to stop watching %s", label);
@@ -2729,10 +2781,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const rarch_system_info_t *sys_info = &runloop_st->system;
 
-   num     = strtoul(arg ? arg : "", &end, 16);
-   address = (unsigned)num;
-   if (     !end || end == arg || *end != ' ' || *arg == '-'
-         || (unsigned long)address != num)
+   if (!command_parse_address(arg, &address, &end) || *end != ' ')
    {
       command_reply_error(cmd, "RUN_UNTIL", "a hexadecimal address, a "
             "condition, a value and how many frames to wait at most");
@@ -4023,15 +4072,16 @@ bool command_read_memory(command_t *cmd, const char *arg)
 
    {
       char *end       = NULL;
-      address         = (unsigned int)strtoul(arg, &end, 16);
-      if (!(end && *end == ' '))
+      unsigned long num;
+      if (!command_parse_address(arg, &address, &end) || *end != ' ')
       {
          command_reply_error(cmd, "READ_CORE_MEMORY",
                "a hexadecimal address, a space and a byte count");
          return false;
       }
-      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
+      num             = strtoul(end + 1, NULL, 10);
+      nbytes          = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
+      if (nbytes == 0)
       {
          command_reply_error(cmd, "READ_CORE_MEMORY",
                "a byte count from 1 to %u", COMMAND_READ_NBYTES_MAX);
@@ -4078,23 +4128,34 @@ bool command_read_memory(command_t *cmd, const char *arg)
 
 bool command_write_memory(command_t *cmd, const char *arg)
 {
-   unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
+   unsigned int address         = 0;
    unsigned int max_bytes       = 0;
    char reply[128]              = "";
+   char *end                    = NULL;
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
    const rarch_system_info_t
       *sys_info                 = &runloop_st->system;
-   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   uint8_t *data                = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
+   char *reply_at;
+   uint8_t *data;
+
+   if (     !command_parse_address(arg, &address, &end)
+         || !command_bytes_valid(end))
+   {
+      command_reply_error(cmd, "WRITE_CORE_MEMORY", "a hexadecimal "
+            "address, then bytes from 00 to ff separated by spaces");
+      return false;
+   }
+   arg      = end;
+   reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
+   data     = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
          reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
    {
       uint8_t* start = data;
-      while (*arg && max_bytes > 0)
+      while (max_bytes > 0 && command_next_byte(&arg, data) > 0)
       {
          --max_bytes;
-         *data = strtoul(arg, (char**)&arg, 16);
          data++;
       }
 

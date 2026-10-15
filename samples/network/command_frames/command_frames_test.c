@@ -158,6 +158,30 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_read_memory(&cmd,"1000 5")
          && !strcmp(reply,"READ_CORE_MEMORY 1000 00 0F 10 A5 FF\n"));
+   /* a trailing space, or a byte that is not one, writes nothing past
+    * the bytes given rather than zeroes to the end of the region */
+   CHECK(command_write_memory(&cmd,"1000 aa "));
+   reply[0]=0;
+   CHECK(!command_write_memory(&cmd,"1000 bb zz")
+         && strstr(reply,"WRITE_CORE_MEMORY ERROR"));
+   reply[0]=0;
+   CHECK(!command_write_memory(&cmd,"1000 1ff")
+         && strstr(reply,"WRITE_CORE_MEMORY ERROR"));
+   cmd.error=false; reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1000 3")
+         && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F 10\n"));
+   /* an address or count past 32 bits is refused, not wrapped */
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"100001000 1")
+         && strstr(reply,"READ_CORE_MEMORY ERROR"));
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"1000 4294967297")
+         && strstr(reply,"READ_CORE_MEMORY ERROR"));
+   reply[0]=0;
+   CHECK(!command_write_memory(&cmd,"100001000 cc")
+         && strstr(reply,"WRITE_CORE_MEMORY ERROR"));
+   cmd.error=false;
+   CHECK(command_write_memory(&cmd,"1000 00"));
    /* a read past the region it is in stops at its end */
    reply[0]=0;
    CHECK(command_read_memory(&cmd,"100e 8")
