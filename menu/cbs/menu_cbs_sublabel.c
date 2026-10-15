@@ -362,6 +362,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_video_filter_toggle,   ME
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_headset_recenter,     MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_laser_pointer_toggle, MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE)
+#ifdef HAVE_OPENXR
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_headset_view_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_statistics_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
@@ -1828,6 +1831,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_LASER_POINTER_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_laser_pointer_toggle);
                return 0;
+#ifdef HAVE_OPENXR
+            case RARCH_HEADSET_VIEW_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_headset_view_toggle);
+               return 0;
+#endif
             case RARCH_FPS_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
                return 0;

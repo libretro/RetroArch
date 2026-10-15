@@ -1835,6 +1835,11 @@ typedef struct
    bool views_fallback;
    /* Recenter requests for a headset, counted. */
    unsigned headset_recenter;
+#ifdef HAVE_OPENXR
+   /* enum video_headset_view: the Headset View hotkey's choice, reset
+    * when content closes. */
+   unsigned headset_view;
+#endif
    /* The headset's runtime asked RetroArch to exit (OpenXR EXITING). */
    retro_atomic_int_t headset_exit;
    /* Headset pacing, main thread, never saved: the headset's measured
@@ -2228,6 +2233,11 @@ bool video_driver_get_views_core(const video_views_map_t **map,
 /* Main thread: ask a headset to place its screens in front of where it
  * looks now. */
 void video_driver_headset_recenter(void);
+#ifdef HAVE_OPENXR
+/* Main thread: step the Headset View to the next of enum
+ * video_headset_view and return it. */
+unsigned video_driver_headset_view_toggle(void);
+#endif
 /* Any thread: the headset's runtime asked RetroArch to exit. */
 void video_driver_headset_exit_request(void);
 

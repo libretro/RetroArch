@@ -6375,6 +6375,33 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HEADSET_RECENTER:
          video_driver_headset_recenter();
          break;
+#ifdef HAVE_OPENXR
+      case CMD_EVENT_HEADSET_VIEW_TOGGLE:
+         {
+            char msg[256];
+            size_t _len;
+            enum msg_hash_enums value;
+            switch (video_driver_headset_view_toggle())
+            {
+               case VIDEO_HEADSET_VIEW_STEREOSCOPIC:
+                  value = MSG_OPENXR_HEADSET_VIEW_STEREOSCOPIC;
+                  break;
+               case VIDEO_HEADSET_VIEW_FLAT:
+                  value = MSG_OPENXR_HEADSET_VIEW_FLAT;
+                  break;
+               default:
+                  value = MSG_OPENXR_HEADSET_VIEW_IMMERSIVE;
+                  break;
+            }
+            _len = snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_OPENXR_HEADSET_VIEW),
+                  msg_hash_to_str(value));
+            RARCH_LOG("[OpenXR] %s\n", msg);
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
+#endif
       case CMD_EVENT_LASER_POINTER_TOGGLE:
          {
             char msg[256];

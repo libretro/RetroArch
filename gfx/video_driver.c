@@ -3183,9 +3183,16 @@ void video_driver_clear_views(void)
    video_st->views_frame_dims = 0;
    video_st->views_presented  = false;
    video_st->views_fallback   = false;
+#ifdef HAVE_OPENXR
+   video_st->headset_view     = VIDEO_HEADSET_VIEW_IMMERSIVE;
+#endif
 }
 
+#ifdef HAVE_OPENXR
+static unsigned video_driver_views_status_headset(void)
+#else
 unsigned video_driver_views_status(void)
+#endif
 {
    gfx_ctx_flags_t flags;
    settings_t *settings = config_get_ptr();
@@ -3218,6 +3225,28 @@ unsigned video_driver_views_status(void)
       status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
    return status;
 }
+
+#ifdef HAVE_OPENXR
+unsigned video_driver_views_status(void)
+{
+   unsigned status = video_driver_views_status_headset();
+   /* The Headset View hotkey takes away what the headset could show:
+    * a core falls back to its untracked pair, then to one view. */
+   switch (video_driver_st.headset_view)
+   {
+      case VIDEO_HEADSET_VIEW_FLAT:
+         status &= ~(unsigned)(RETRO_VIDEO_VIEWS_STATUS_HMD
+                             | RETRO_VIDEO_VIEWS_STATUS_STEREO);
+         break;
+      case VIDEO_HEADSET_VIEW_STEREOSCOPIC:
+         status &= ~(unsigned)RETRO_VIDEO_VIEWS_STATUS_HMD;
+         break;
+      default:
+         break;
+   }
+   return status;
+}
+#endif
 
 bool video_driver_views_status_changed(void)
 {
@@ -3263,6 +3292,16 @@ void video_driver_headset_recenter(void)
    video_driver_st.headset_recenter++;
    RARCH_LOG("[Video] Headset recenter requested.\n");
 }
+
+#ifdef HAVE_OPENXR
+unsigned video_driver_headset_view_toggle(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_st->headset_view = (video_st->headset_view + 1)
+      % VIDEO_HEADSET_VIEW_LAST;
+   return video_st->headset_view;
+}
+#endif
 
 void video_driver_headset_exit_request(void)
 {
