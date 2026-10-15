@@ -15,6 +15,7 @@
 
 #include "../../../gfx/common/d3d9_common.h"
 #include "../../../gfx/common/d3d9_common.c"
+#include "../../../gfx/drivers/d3d9hlsl.c"
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
@@ -22,6 +23,15 @@ void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
 static int fails;
 static unsigned retires;
+static struct retro_hw_render_callback hw_callbacks;
+static d3d9_video_t *callback_video;
+static LPDIRECT3DTEXTURE9 core_texture;
+static unsigned destroys, resets;
+
+struct retro_hw_render_callback *video_driver_get_hw_context(void)
+{
+   return &hw_callbacks;
+}
 
 void video_driver_cached_frame_retire(void)     { retires++; }
 
@@ -459,6 +469,147 @@ static void present_run(HWND w)
    IDirect3DDevice9_Release(dev);
 }
 
+static void test_context_destroy(void)
+{
+   destroys++;
+   CHECK(!callback_video->hw.tex && callback_video->hw.lost,
+         "frontend releases its texture before context_destroy");
+   if (core_texture)
+      IDirect3DTexture9_Release(core_texture);
+   core_texture = NULL;
+}
+
+static void test_context_reset(void)
+{
+   resets++;
+   CHECK(!callback_video->hw.lost
+         && callback_video->hw.iface.device == callback_video->dev,
+         "context_reset sees the current device");
+}
+
+static void lifetime_run(HWND w, bool ex)
+{
+   static d3d9_video_t d3d;
+   D3DPRESENT_PARAMETERS pp;
+   LPDIRECT3DSWAPCHAIN9 chain = NULL;
+   LPDIRECT3DTEXTURE9 replacement = NULL;
+   D3DSURFACE_DESC desc;
+   unsigned i, before = fails;
+
+   memset(&d3d, 0, sizeof(d3d));
+   d3d.dev = make_device(w, ex, D3DSWAPEFFECT_DISCARD);
+   CHECK(d3d.dev != NULL, "lifetime device created");
+   if (!d3d.dev)
+      return;
+   if (FAILED(IDirect3DDevice9_GetSwapChain(d3d.dev, 0, &chain))
+         || FAILED(IDirect3DSwapChain9_GetPresentParameters(chain, &pp)))
+   {
+      CHECK(false, "reset parameters available");
+      if (chain)
+         IDirect3DSwapChain9_Release(chain);
+      IDirect3DDevice9_Release(d3d.dev);
+      return;
+   }
+   IDirect3DSwapChain9_Release(chain);
+   d3d.hw.enable = true;
+   callback_video = &d3d;
+   hw_callbacks.context_destroy = test_context_destroy;
+   hw_callbacks.context_reset = test_context_reset;
+   destroys = resets = 0;
+
+   for (i = 0; i < 24; i++)
+   {
+      CHECK(SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d.dev, 64, 32, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &core_texture, NULL)), "core default-pool texture created");
+      if (!core_texture)
+         break;
+      d3d9_hlsl_hw_set_texture(&d3d, core_texture);
+      d3d9_hlsl_hw_set_texture(&d3d, core_texture);
+      CHECK(d3d.hw.tex_dims == VIDEO_SCALE_PACK(64, 32),
+            "repeated texture handoff retains dimensions");
+      CHECK(SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d.dev, 32, 16, 1,
+                  D3DUSAGE_RENDERTARGET, D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,
+                  &replacement, NULL)), "replacement texture created");
+      if (!replacement)
+         break;
+      d3d9_hlsl_hw_set_texture(&d3d, replacement);
+      IDirect3DTexture9_Release(replacement);
+      replacement = NULL;
+      CHECK(d3d.hw.tex_dims == VIDEO_SCALE_PACK(32, 16)
+            && SUCCEEDED(IDirect3DTexture9_GetLevelDesc(d3d.hw.tex, 0, &desc))
+            && desc.Width == 32 && desc.Height == 16,
+            "frontend owns replacement after core releases it");
+      if (d3d9_hlsl_hw_reset_costs(&d3d))
+      {
+         d3d9_hlsl_hw_context_destroy(&d3d);
+         d3d9_hlsl_hw_context_destroy(&d3d);
+         CHECK(destroys == i + 1 && !d3d.hw.tex && !core_texture,
+               "plain D3D9 reset releases both owners once");
+      }
+      CHECK(d3d9_reset(d3d.dev, &pp), "device resets after resource retirement");
+      if (ex)
+      {
+         CHECK(!destroys && !resets && core_texture
+               && SUCCEEDED(IDirect3DTexture9_GetLevelDesc(d3d.hw.tex, 0, &desc)),
+               "Ex reset preserves core and frontend resources");
+         d3d9_hlsl_hw_set_texture(&d3d, NULL);
+         IDirect3DTexture9_Release(core_texture);
+         core_texture = NULL;
+      }
+      else
+      {
+         d3d9_hlsl_hw_context_reset(&d3d);
+         CHECK(resets == i + 1, "plain D3D9 reset restores context once");
+      }
+   }
+   d3d9_hlsl_hw_set_texture(&d3d, NULL);
+   if (core_texture)
+      IDirect3DTexture9_Release(core_texture);
+   core_texture = NULL;
+   CHECK(!d3d.hw.tex_dims, "teardown clears retained texture dimensions");
+   IDirect3DDevice9_Release(d3d.dev);
+   callback_video = NULL;
+   memset(&hw_callbacks, 0, sizeof(hw_callbacks));
+   printf("%s lifetime: %u reset cycles, %u failures\n",
+         ex ? "D3D9Ex" : "D3D9", i, fails - before);
+}
+
+static void recursive_run(void)
+{
+   static d3d9_video_t d3d;
+   memset(&d3d, 0, sizeof(d3d));
+   d3d.hw.enable = true;
+   d3d.hw.shared = true;
+   d3d.hw.frontend_used = true;
+   if (!retro_eventcount_init(&d3d.hw.turn_ec))
+   {
+      CHECK(false, "shared device eventcount created");
+      return;
+   }
+   CHECK(d3d9_hlsl_hw_lock_context(&d3d), "first core turn notices frontend");
+   CHECK(!d3d9_hlsl_hw_lock_context(&d3d) && d3d.hw.core_depth == 2,
+         "recursive core turn preserves ownership");
+   d3d9_hlsl_hw_unlock_context(&d3d);
+   CHECK(retro_atomic_load_acquire_int(&d3d.hw.turn) == D3D9_HW_TURN_CORE,
+         "inner unlock keeps core turn");
+   d3d9_hlsl_hw_unlock_context(&d3d);
+   CHECK(!retro_atomic_load_acquire_int(&d3d.hw.turn)
+         && !retro_atomic_load_relaxed_int(&d3d.hw.core_tid),
+         "outer unlock clears core turn and thread identity");
+   d3d9_hlsl_hw_enter(&d3d);
+   d3d9_hlsl_hw_enter(&d3d);
+   d3d9_hlsl_hw_leave(&d3d);
+   CHECK(retro_atomic_load_acquire_int(&d3d.hw.turn) == D3D9_HW_TURN_FRONTEND,
+         "inner frontend leave keeps its turn");
+   d3d9_hlsl_hw_leave(&d3d);
+   CHECK(d3d9_hlsl_hw_lock_context(&d3d), "frontend turn invalidates core state");
+   d3d9_hlsl_hw_unlock_context(&d3d);
+   CHECK(!d3d9_hlsl_hw_lock_context(&d3d), "uncontended core turn preserves state");
+   d3d9_hlsl_hw_unlock_context(&d3d);
+   retro_eventcount_free(&d3d.hw.turn_ec);
+}
+
 int main(void)
 {
    HWND w = CreateWindowA("STATIC", "d3d9_ex_test", WS_OVERLAPPEDWINDOW,
@@ -472,6 +623,9 @@ int main(void)
    run(w, true);
    present_run(w);
    layout_run();
+   recursive_run();
+   lifetime_run(w, false);
+   lifetime_run(w, true);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }
