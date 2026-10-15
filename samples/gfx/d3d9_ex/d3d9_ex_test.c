@@ -759,7 +759,7 @@ static DWORD WINAPI publish_ring(void *data)
    return 0;
 }
 
-static void ring_run(HWND w, bool ex)
+static void ring_run(HWND w, bool ex, bool dupe)
 {
    static thread_video_t thr;
    static d3d9_video_t d3d;
@@ -799,8 +799,14 @@ static void ring_run(HWND w, bool ex)
       ring->index = i;
       hw_d3d9_set_texture(&thr, textures[i]);
    }
-   thr.frame.slot[0].hw_slot = 0;
+   thr.frame.slot[0].hw_slot = dupe ? -1 : 0;
+   thr.frame.slot[0].dupe = dupe;
    thr.frame.slot[1].hw_slot = 1;
+   if (dupe)
+   {
+      video_thread_hw_note_claim(&thr, 0);
+      video_thread_hw_after_frame(&thr, 0);
+   }
    retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(0, 2, false));
    memset(&t, 0, sizeof(t));
    t.video = &thr;
@@ -823,7 +829,7 @@ static void ring_run(HWND w, bool ex)
    video_thread_hw_after_frame(&thr, 0);
    retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 1, true));
    retro_eventcount_notify(&thr.frame.ring);
-   CHECK(WaitForSingleObject(producer, 20) == WAIT_TIMEOUT,
+   CHECK(WaitForSingleObject(producer, dupe ? 60 : 20) == WAIT_TIMEOUT,
          "claimed frame still prevents reuse despite a signalled fence");
    retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 1, false));
    retro_eventcount_notify(&thr.frame.ring);
@@ -835,6 +841,7 @@ static void ring_run(HWND w, bool ex)
 
    /* The resumed producer fills the freed frame-queue entry. */
    thr.frame.slot[0].hw_slot = t.published;
+   thr.frame.slot[0].dupe = false;
    retro_atomic_store_release_int(&thr.frame.state, VIDEO_THREAD_RING_MAKE(1, 2, false));
    CHECK(video_thread_hw_holds_frame(&thr), "queued teardown retains frame identity");
    for (i = 1; i < VIDEO_THREAD_HW_RING; i++)
@@ -877,8 +884,10 @@ int main(void)
    lifetime_run(w, true);
    contention_run(w, false);
    contention_run(w, true);
-   ring_run(w, false);
-   ring_run(w, true);
+   ring_run(w, false, false);
+   ring_run(w, true, false);
+   ring_run(w, false, true);
+   ring_run(w, true, true);
    DestroyWindow(w);
    return fails ? 1 : 0;
 }

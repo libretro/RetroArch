@@ -374,13 +374,17 @@ static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
  * The slots' hw_slot fields are this thread's own writes. */
 static bool hw_slot_queued(const thread_video_t *thr, unsigned i, int st)
 {
+   const hw_ring_t *ring = (const hw_ring_t*)thr->frame.hw_ring;
    unsigned w;
    unsigned tail    = VIDEO_THREAD_RING_TAIL_OF(st);
    unsigned pending = VIDEO_THREAD_RING_PENDING_OF(st);
    bool busy        = VIDEO_THREAD_RING_BUSY_OF(st);
    for (w = 0; w < 2; w++)
    {
-      if (thr->frame.slot[w].hw_slot != (int)i)
+      /* Dupes select the last presented texture when they are drawn. */
+      if (thr->frame.slot[w].hw_slot != (int)i
+            && (!thr->frame.slot[w].dupe || !ring
+               || retro_atomic_load_acquire_int(&ring->last_presented) != (int)i))
          continue;
       if (     pending == 2
             || (pending == 1 && w == tail)
