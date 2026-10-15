@@ -3273,16 +3273,21 @@ struct retro_vr_head_pose
  * A core reads a pose, a joint or a field only when its flag says so.
  *
  * The three poses are:
- *  - grip: /input/grip/pose. at the palm's
+ *  - grip: /input/grip/pose, at the palm's
  *    centre when the hand closes on the controller. -Z runs through the
  *    tube the closed fingers make, from the little finger toward the
  *    thumb; +X is normal to the flat palm, away from it on the left
  *    hand and into it on the right.
- *  - aim: /input/aim/pose. The pointing ray, -Z forward from the
+ *  - aim: /input/aim/pose, the pointing ray, -Z forward from the
  *    controller's tip: where a laser or a shot starts.
- *  - palm: The palm's centre at its surface, -Z the way
+ *  - palm: the palm's centre at its surface, -Z the way
  *    a straightened index finger points, +X as for grip: where a hand
  *    model goes.
+ *
+ * A runtime that drives a controller profile from a bare tracked hand
+ * reports that hand as active, with grip and aim taken from the hand.
+ * The poses and joints are those the frontend sampled for this run,
+ * before retro_run(); call it from retro_run().
  *
  * @param[out] data <tt>struct retro_vr_controller_poses *</tt>.
  * @return false if no VR session exists or no valid sample is available,
@@ -3338,6 +3343,9 @@ struct retro_vr_pose
  * Each joint's -Z points along its bone toward the fingertip, +Y out of
  * the back of the hand. The palm joint is at the centre of the middle
  * finger's metacarpal; the wrist joint at the wrist.
+ *
+ * The set is XR_EXT_hand_tracking's default one and is fixed: a larger
+ * joint set comes through a call of its own.
  */
 enum retro_vr_hand_joint
 {
@@ -3385,7 +3393,7 @@ struct retro_vr_hand_joint_state
 /** Something is in the hand: a controller or a tracked hand. Without
  * it the rest of the hand's state is cleared. */
 #define RETRO_VR_HAND_ACTIVE            (1u << 0)
-/** joints are filled: the frontend tracks this hand's joints now. */
+/** The joints are filled: the frontend tracks this hand's joints now. */
 #define RETRO_VR_HAND_JOINTS            (1u << 1)
 /** The joints are seen by the headset, the hand bare. */
 #define RETRO_VR_HAND_JOINTS_OPTICAL    (1u << 2)
@@ -3396,11 +3404,15 @@ struct retro_vr_hand_joint_state
 /** One hand. */
 struct retro_vr_hand_state
 {
+   /** The OpenXR interaction profile path the hand is used through,
+    * such as "/interaction_profiles/oculus/touch_controller"; NULL when
+    * none is known. The string is the frontend's, valid until the next
+    * RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES call or until
+    * retro_run() returns, whichever comes first. */
+   const char *interaction_profile;
+
    /** RETRO_VR_HAND_ flags. */
    uint32_t flags;
-
-   /** The  interaction profile the hand is used through */
-   const char *interaction_profile;
 
    struct retro_vr_pose grip;
    struct retro_vr_pose aim;
