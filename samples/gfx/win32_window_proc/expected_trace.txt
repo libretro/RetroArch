@@ -2705,6 +2705,9 @@
 == a window kept across a change of presentation
  dxgi window kept yes, native driver made its own yes, dxgi window gone yes
  native window kept yes, next native driver took it yes
+== a kept window destroyed for a driver presenting the other way
+ kept yes, destroyed in the next driver's window creation yes, next made yes
+ messages to the window going down reached the frontend: no
 == a replaced window loses the focus late
  second window made yes
  its loss reached the input driver: no

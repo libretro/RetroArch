@@ -171,6 +171,31 @@ static LRESULT CALLBACK focus_loss_proc(HWND hwnd, UINT message,
    return CallWindowProc(focus_loss_chain, hwnd, message, wparam, lparam);
 }
 
+/* What a window gets as it is destroyed - the desktop's size, move,
+ * activation and focus messages - sent from a subclass on its
+ * WM_DESTROY, where a headless server sends none of them. */
+static WNDPROC  going_down_chain;
+static unsigned going_down_reached; /* the frontend, from those messages */
+
+static LRESULT CALLBACK going_down_proc(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_DESTROY)
+   {
+      unsigned before = stub_frontend_calls;
+      CallWindowProc(going_down_chain, hwnd, WM_SIZE, SIZE_RESTORED, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_MOVE, 0, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_DISPLAYCHANGE, 32, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_ACTIVATE, WA_INACTIVE, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_SETFOCUS, 0, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_KILLFOCUS, 0, 0);
+      CallWindowProc(going_down_chain, hwnd, WM_KEYDOWN, VK_RETURN,
+            KEY_LPARAM(0x1C, 0));
+      going_down_reached += stub_frontend_calls - before;
+   }
+   return CallWindowProc(going_down_chain, hwnd, message, wparam, lparam);
+}
+
 int main(int argc, char **argv)
 {
    int fam, in, takes;
@@ -608,6 +633,63 @@ int main(int argc, char **argv)
       trace(" native window kept %s, next native driver took it %s\n",
             native_kept ? "yes" : "no",
             (again_hwnd && again_hwnd == native_hwnd) ? "yes" : "no");
+   }
+
+   /* A kept window destroyed for a driver presenting the other way
+    * goes down inside the next driver's window creation, before it
+    * has a window, a surface or a context. What the desktop sends a
+    * window on its way down reaches nothing but DefWindowProc. */
+   {
+      WNDCLASSEX wndclass;
+      HWND kept = NULL, next = NULL;
+      bool was_kept = false;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+      win32_window_tag_presentation(false);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         kept = win32_get_window();
+         pump();
+         was_kept = win32_window_keep();
+         pump();
+         going_down_chain   = (WNDPROC)SetWindowLongPtr(kept, GWLP_WNDPROC,
+               (LONG_PTR)going_down_proc);
+         going_down_reached = 0;
+
+         win32_window_reset();
+         win32_monitor_init();
+         memset(&wndclass, 0, sizeof(wndclass));
+         wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+         win32_window_tag_presentation(true);
+         if (     win32_window_init(&wndclass, true, NULL)
+               && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+         {
+            next = win32_get_window();
+            pump();
+            win32_window_release_kept();
+            win32_monitor_from_window();
+            win32_destroy_window();
+            pump();
+         }
+      }
+
+      trace_on = true;
+      trace("== a kept window destroyed for a driver presenting the other way\n");
+      trace(" kept %s, destroyed in the next driver's window creation %s, next made %s\n",
+            was_kept ? "yes" : "no",
+            (kept && !IsWindow(kept)) ? "yes" : "no",
+            (next && next != kept) ? "yes" : "no");
+      trace(" messages to the window going down reached the frontend: %s\n",
+            going_down_reached ? "yes" : "no");
    }
 
    /* A window that has been replaced loses the focus before it is

@@ -1002,10 +1002,6 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         /* a window that was left up for a driver that did not take
-          * it, being taken down */
-         if (hwnd && hwnd == win32_retiring_hwnd)
-            break;
 #if !defined(_XBOX)
          win32_sizemove_abort();
 #endif
@@ -1429,24 +1425,17 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
    /* The focus lost by a window that is no longer the main window.
     *
     * The input driver keeps one focus for the process, and the mouse
-    * is clipped for the process: both go by the main window. A window
-    * that has been replaced still loses the focus, and can lose it
-    * after its replacement has gained it - the loss would then clear
-    * the driver's focus and the keyboard would be dead until the next
-    * Alt-Tab. Two ways that happens:
-    *
-    * - A window left up for a driver that did not take it loses the
-    *   focus as it is destroyed (win32_retiring_hwnd).
-    * - Threaded video turned on or off moves the window to another
-    *   thread: the new window is another thread's, and the old one is
-    *   told it lost the focus through its own thread's queue, which
-    *   that thread gets to after the new window is up.
-    *
-    * Neither is the process losing the focus, and neither is passed
-    * on. If the focus does leave, the main window is told so itself. */
+    * is clipped for the process: both go by the main window. Threaded
+    * video turned on or off moves the window to another thread: the
+    * new window is another thread's, and the old one is told it lost
+    * the focus through its own thread's queue, which that thread gets
+    * to after the new window is up - the loss would then clear the
+    * driver's focus and the keyboard would be dead until the next
+    * Alt-Tab. That is not the process losing the focus, and it is not
+    * passed on. If the focus does leave, the main window is told so
+    * itself. */
    if (     message == WM_KILLFOCUS
-         && (   hwnd == win32_retiring_hwnd
-             || (main_window.hwnd && hwnd != main_window.hwnd)))
+         && main_window.hwnd && hwnd != main_window.hwnd)
       route &= ~(WIN32_ROUTE_INPUT | WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF);
 
 #ifdef HAVE_CLIP_WINDOW
@@ -1455,9 +1444,7 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       win32_clip_window((route & WIN32_ROUTE_CLIP_ON) != 0);
 #endif
 
-   /* Nothing from a window on its way out reaches the input driver. */
    if (     (route & WIN32_ROUTE_INPUT)
-         && hwnd != win32_retiring_hwnd
          && win32_wnd_input_message(message, wparam, lparam))
       return 0;
 
@@ -1647,6 +1634,14 @@ void win32_text_entry(bool active)
 LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   /* A window left up for a driver that did not take it, being taken
+    * down: the main window's state, the input driver and the video
+    * driver are the next driver's, and what the desktop sends a
+    * window on its way out (its size, position, activation and focus)
+    * is none of theirs. */
+   if (hwnd == win32_retiring_hwnd)
+      return DefWindowProc(hwnd, message, wparam, lparam);
+
    if (message == WIN32_WM_TEXT_ENTRY)
    {
       win32_ime_sync(hwnd);
