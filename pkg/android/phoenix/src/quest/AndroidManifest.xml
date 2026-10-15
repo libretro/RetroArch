@@ -26,6 +26,11 @@
     <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
     <application>
         <meta-data android:name="com.oculus.app_id" android:value="1361809223675054" />
+        <!-- The headsets this runs on. Without it a Quest runs the app in
+             compatibility mode, where the runtime lists no display refresh
+             rates and keeps the headset at 72 Hz. -->
+        <meta-data android:name="com.oculus.supportedDevices"
+            android:value="quest2|questpro|quest3|quest3s" />
         <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture"
              android:screenOrientation="landscape">
             <meta-data
