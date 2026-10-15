@@ -760,15 +760,15 @@ float video_xr_request_rate(unsigned setting, const float *rates,
    return 0.0f;
 }
 
-/* Inverted, so a zeroed atomic is the setting's default: on. */
-static retro_atomic_int_t video_xr_perf_relaxed;
+/* Zeroed is the setting's default: off. */
+static retro_atomic_int_t video_xr_perf_boost_on;
 
 void video_xr_set_perf_boost(bool boost)
 {
-   retro_atomic_store_release_int(&video_xr_perf_relaxed, boost ? 0 : 1);
+   retro_atomic_store_release_int(&video_xr_perf_boost_on, boost ? 1 : 0);
 }
 
 bool video_xr_perf_boost(void)
 {
-   return !retro_atomic_load_acquire_int(&video_xr_perf_relaxed);
+   return retro_atomic_load_acquire_int(&video_xr_perf_boost_on) != 0;
 }

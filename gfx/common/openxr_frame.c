@@ -376,7 +376,8 @@ static void openxr_frame_tick(openxr_frame_t *f)
    openxr_frame_tick_notify(f);
 }
 
-/* Allow CPU/GPU performance boosting. */
+/* Performance Boost on: CPU boost, GPU sustained high. Off: both at
+ * sustained high, the level a runtime holds when never asked. */
 static void openxr_frame_ask_perf(openxr_frame_t *f)
 {
    XrResult cpu, gpu;
@@ -394,15 +395,14 @@ static void openxr_frame_ask_perf(openxr_frame_t *f)
    cpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
          XR_PERF_SETTINGS_DOMAIN_CPU_EXT, want
          ? XR_PERF_SETTINGS_LEVEL_BOOST_EXT
-         : XR_PERF_SETTINGS_LEVEL_SUSTAINED_LOW_EXT);
+         : XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT);
    gpu = f->rt->PerfSettingsSetPerformanceLevelEXT(f->session->session,
-         XR_PERF_SETTINGS_DOMAIN_GPU_EXT, want
-         ? XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT
-         : XR_PERF_SETTINGS_LEVEL_SUSTAINED_LOW_EXT);
+         XR_PERF_SETTINGS_DOMAIN_GPU_EXT,
+         XR_PERF_SETTINGS_LEVEL_SUSTAINED_HIGH_EXT);
    if (XR_SUCCEEDED(cpu) && XR_SUCCEEDED(gpu))
       RARCH_LOG("[OpenXR] Performance: %s.\n", want
             ? "CPU boost, GPU sustained high"
-            : "CPU and GPU sustained low");
+            : "CPU and GPU sustained high");
    else
       RARCH_WARN("[OpenXR] Performance levels refused (CPU %d, GPU %d).\n",
             (int)cpu, (int)gpu);
