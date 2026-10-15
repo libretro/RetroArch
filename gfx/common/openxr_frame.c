@@ -704,9 +704,11 @@ void openxr_frame_input_detach(openxr_frame_t *f)
 bool openxr_frame_locate_hands(openxr_frame_t *f, XrSpace base, XrTime time,
       struct retro_vr_controller_poses *out)
 {
-   memset(out, 0, sizeof(*out));
    if (!f->locate_hands)
+   {
+      memset(out, 0, sizeof(*out));
       return false;
+   }
    return f->locate_hands(f->extra_user, base, time, out);
 }
 

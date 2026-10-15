@@ -1480,8 +1480,12 @@ typedef struct video_xr_host
          unsigned *eye_width, unsigned *eye_height);
    /* Main thread, after sample: the head as sampled. */
    bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
-   /* Main thread, after sample: the hands as sampled. NULL if the host
-    * has none. */
+   /* The drawing thread, after sample: locates the hands at the
+    * sample's time. Asked once a core has asked for the hands. NULL if
+    * the host has none. */
+   bool (*locate_hands)(void *user);
+   /* Main thread, after locate_hands: the hands as located. NULL if the
+    * host has none. */
    bool (*controller_poses)(void *user,
          struct retro_vr_controller_poses *out);
    /* Any thread: one eye's recommended image size. */

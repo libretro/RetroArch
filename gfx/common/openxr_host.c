@@ -154,12 +154,18 @@ bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
       h->origin_changed = false;
    }
    h->tracking_seq = retro_atomic_load_acquire_int(&h->session->track_seq);
-   if (!openxr_tracking_sample(&h->tracking, h->session,
-            h->session->track_space, time))
+   h->tracking_time = time;
+   return openxr_tracking_sample(&h->tracking, h->session,
+         h->session->track_space, time);
+}
+
+/* The hands where the last sample put the head. */
+bool openxr_host_locate_hands(openxr_host_t *h)
+{
+   if (!h->tracking.valid)
       return false;
-   openxr_frame_locate_hands(h->frame, h->session->track_space, time,
-         &h->tracking.hands);
-   return true;
+   return openxr_frame_locate_hands(h->frame, h->session->track_space,
+         h->tracking_time, &h->tracking.hands);
 }
 
 bool openxr_host_eye_state(openxr_host_t *h,

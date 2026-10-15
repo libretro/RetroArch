@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
@@ -85,6 +86,25 @@ static bool openxr_runtime_start_loader(openxr_runtime_t *rt)
    return true;
 }
 
+/* An optional extension the runtime has, while there is room for it. */
+static bool openxr_runtime_want_extension(
+      PFN_xrEnumerateInstanceExtensionProperties enum_exts, uint32_t count,
+      const char **exts, uint32_t *num_exts, uint32_t cap, const char *name)
+{
+   if (!openxr_runtime_has_extension(enum_exts, count, name))
+      return false;
+   if (*num_exts >= cap)
+   {
+      RARCH_WARN("[OpenXR] No room to enable %s.\n", name);
+      return false;
+   }
+   exts[(*num_exts)++] = name;
+   return true;
+}
+
+#define OPENXR_RUNTIME_WANT(name) openxr_runtime_want_extension(enum_exts, \
+      count, exts, &num_exts, cap, (name))
+
 enum openxr_runtime_result openxr_runtime_create_instance(
       openxr_runtime_t *rt, PFN_xrGetInstanceProcAddr get_proc,
       const char *graphics_ext)
@@ -92,6 +112,8 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    XrResult res;
    uint32_t count = 0;
    uint32_t num_exts;
+   uint32_t cap;
+   /* The graphics and binding extensions, then the optional ones. */
    const char *exts[8];
    XrInstanceCreateInfo ici;
    PFN_xrEnumerateInstanceExtensionProperties enum_exts;
@@ -132,41 +154,23 @@ enum openxr_runtime_result openxr_runtime_create_instance(
       }
       exts[num_exts++] = rt->binding_ext;
    }
-   if (openxr_runtime_has_extension(enum_exts, count, OPENXR_FRAME_EXT))
-   {
-      exts[num_exts++]     = OPENXR_FRAME_EXT;
-      rt->frame_controller = true;
-   }
-   if (openxr_runtime_has_extension(enum_exts, count,
-            XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME))
-   {
-      exts[num_exts++] = XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME;
-      rt->refresh_ext  = true;
-   }
+   /* The platform's goes last, its room kept. */
+   cap = (uint32_t)ARRAY_SIZE(exts) - (rt->platform.instance_ext ? 1 : 0);
+   rt->frame_controller = OPENXR_RUNTIME_WANT(OPENXR_FRAME_EXT);
+   rt->refresh_ext      = OPENXR_RUNTIME_WANT(
+         XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME);
    /* The hands for a core's RETRO_ENVIRONMENT_GET_VR_CONTROLLER_POSES:
     * the palm pose, and the joints where the headset sees them. */
-   if (openxr_runtime_has_extension(enum_exts, count,
-            XR_EXT_PALM_POSE_EXTENSION_NAME))
-   {
-      exts[num_exts++] = XR_EXT_PALM_POSE_EXTENSION_NAME;
-      rt->palm_pose    = true;
-   }
-   if (openxr_runtime_has_extension(enum_exts, count,
-            XR_EXT_HAND_TRACKING_EXTENSION_NAME))
-   {
-      exts[num_exts++]  = XR_EXT_HAND_TRACKING_EXTENSION_NAME;
-      rt->hand_tracking = true;
-      if (openxr_runtime_has_extension(enum_exts, count,
-               XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME))
-      {
-         exts[num_exts++]     = XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME;
-         rt->hand_data_source = true;
-      }
-   }
-   if (     rt->platform.instance_ext
-         && openxr_runtime_has_extension(enum_exts, count,
-            rt->platform.instance_ext))
-      exts[num_exts++] = rt->platform.instance_ext;
+   rt->palm_pose        = OPENXR_RUNTIME_WANT(
+         XR_EXT_PALM_POSE_EXTENSION_NAME);
+   rt->hand_tracking    = OPENXR_RUNTIME_WANT(
+         XR_EXT_HAND_TRACKING_EXTENSION_NAME);
+   if (rt->hand_tracking)
+      rt->hand_data_source = OPENXR_RUNTIME_WANT(
+            XR_EXT_HAND_TRACKING_DATA_SOURCE_EXTENSION_NAME);
+   cap = (uint32_t)ARRAY_SIZE(exts);
+   if (rt->platform.instance_ext)
+      OPENXR_RUNTIME_WANT(rt->platform.instance_ext);
 
    ici.type                               = XR_TYPE_INSTANCE_CREATE_INFO;
    ici.createFlags                        = 0;

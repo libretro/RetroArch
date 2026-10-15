@@ -1138,6 +1138,26 @@ static bool hslane_sample(void *user, uint32_t *frame_flags)
    return !hslane_sample_fail;
 }
 
+/* The hands: located where, how often, and on which thread. */
+static unsigned  hslane_hands_calls;
+static uintptr_t hslane_hands_thread;
+static bool hslane_locate_hands(void *user)
+{
+   (void)user;
+   hslane_hands_calls++;
+   hslane_hands_thread = sthread_get_current_thread_id();
+   return true;
+}
+
+static bool hslane_controller_poses(void *user,
+      struct retro_vr_controller_poses *out)
+{
+   (void)user;
+   memset(out, 0, sizeof(*out));
+   out->hands[1].flags = RETRO_VR_HAND_ACTIVE;
+   return true;
+}
+
 static bool hslane_eye_size(void *user, unsigned *w, unsigned *h)
 {
    (void)user;
@@ -1216,6 +1236,8 @@ static void lane_headset_calls(void)
       host.set_space = hslane_set_space;
       host.sample    = hslane_sample;
       host.eye_size  = hslane_eye_size;
+      host.locate_hands     = hslane_locate_hands;
+      host.controller_poses = hslane_controller_poses;
       video_driver_set_xr_host(&host);
    }
    CHECK(video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD,
@@ -1530,6 +1552,35 @@ static void lane_headset_calls(void)
       CHECK(video_driver_get_vr_frame_state(&fs) && !fs.flags,
             "headset lane: flags outlived the core's content (%u)",
             (unsigned)fs.flags);
+   }
+
+   /* The hands: not located until a core asks, then on its ask and
+    * with each sample, on the video thread; not for the next core. */
+   {
+      struct retro_vr_controller_poses hands;
+      hslane_hands_calls = 0;
+      video_driver_vr_sample_tracking();
+      video_driver_vr_sample_tracking();
+      CHECK(hslane_hands_calls == 0,
+            "headset lane: the hands were located %u times unasked",
+            hslane_hands_calls);
+      memset(&hands, 0, sizeof(hands));
+      CHECK(     video_driver_get_vr_controller_poses(&hands)
+            && hslane_hands_calls == 1
+            && hands.hands[1].flags == RETRO_VR_HAND_ACTIVE,
+            "headset lane: the first ask located the hands %u times",
+            hslane_hands_calls);
+      video_driver_get_vr_controller_poses(&hands);
+      video_driver_vr_sample_tracking();
+      CHECK(hslane_hands_calls == 2,
+            "headset lane: asked hands located %u times, wanted once per "
+            "ask's sample", hslane_hands_calls);
+      CHECK(hslane_hands_thread == sthread_get_thread_id(thr->thread),
+            "headset lane: the hands were located off the video thread");
+      video_driver_vr_content_clear();
+      video_driver_vr_sample_tracking();
+      CHECK(hslane_hands_calls == 2,
+            "headset lane: the hands outlived the core's content");
    }
 
 #endif

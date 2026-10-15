@@ -388,6 +388,8 @@ static bool vr_resized;
 /* A frame state returned video_vr_frame_flags: the next sample starts
  * without them. */
 static bool vr_flags_read;
+/* The core asked for the hands: each sample locates them too. */
+static bool vr_hands_on;
 static video_xr_host_t video_xr_host;
 #endif
 
@@ -9514,14 +9516,24 @@ void video_driver_vr_content_clear(void)
    vr_given_w     = 0;
    vr_given_h     = 0;
    vr_resized     = false;
+   vr_hands_on    = false;
    video_vr_frame_flags = 0;
 }
 
 static uintptr_t video_driver_vr_sample(void *data)
 {
-   if (!video_xr_host.sample)
+   if (     !video_xr_host.sample
+         || !video_xr_host.sample(video_xr_host.user, (uint32_t*)data))
       return 0;
-   return video_xr_host.sample(video_xr_host.user, (uint32_t*)data);
+   if (vr_hands_on && video_xr_host.locate_hands)
+      video_xr_host.locate_hands(video_xr_host.user);
+   return 1;
+}
+
+static uintptr_t video_driver_vr_locate_hands(void *data)
+{
+   (void)data;
+   return video_xr_host.locate_hands(video_xr_host.user);
 }
 
 /* Called by the runloop once per iteration, BEFORE retro_run(), so the
@@ -9618,8 +9630,15 @@ bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out)
 bool video_driver_get_vr_controller_poses(
       struct retro_vr_controller_poses *out)
 {
-   if (!video_xr_host.controller_poses)
+   if (!video_xr_host.controller_poses || !video_xr_host.locate_hands)
       return false;
+   /* The first ask locates them at the head's sample; each sample does
+    * from then on. */
+   if (!vr_hands_on)
+   {
+      vr_hands_on = true;
+      video_driver_vr_ctx_run(video_driver_vr_locate_hands, NULL);
+   }
    return video_xr_host.controller_poses(video_xr_host.user, out);
 }
 

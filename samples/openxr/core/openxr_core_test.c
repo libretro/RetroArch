@@ -1920,8 +1920,8 @@ static void test_host(void)
    CHECK(openxr_host_head_pose(&h, &head) && t_near(head.position[1], 1.25f),
          "head not as sampled");
 
-   /* The hands go with the head: no input, none; the input's, located
-    * in the same space for the same time. */
+   /* The hands are located only when asked for, then with the head: no
+    * input, none; the input's, in the same space for the same time. */
    {
       struct retro_vr_controller_poses hands;
       memset(&hands, 0xff, sizeof(hands));
@@ -1929,7 +1929,10 @@ static void test_host(void)
             && hands.hands[0].flags == 0 && hands.hands[1].flags == 0,
             "hands without an input");
       f.locate_hands = t_locate_hands;
+      t_hands_at     = 0;
       openxr_host_sample(&h, &flags);
+      CHECK(t_hands_at == 0, "a sample located the hands unasked");
+      CHECK(openxr_host_locate_hands(&h), "the hands were not located");
       CHECK(     t_hands_in == s.track_space && t_hands_at == t_located_at
             && openxr_host_controller_poses(&h, &hands)
             && hands.hands[1].flags == RETRO_VR_HAND_ACTIVE

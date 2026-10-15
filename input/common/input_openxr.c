@@ -354,8 +354,6 @@ typedef struct input_openxr
    XrSpace grip[INPUT_OPENXR_HANDS];
    XrSpace palm[INPUT_OPENXR_HANDS];
    XrHandTrackerEXT trackers[INPUT_OPENXR_HANDS];
-   bool palm_pose;
-   bool hand_data_source;
    PFN_xrStringToPath StringToPath;
    PFN_xrPathToString PathToString;
    PFN_xrCreateActionSet CreateActionSet;
@@ -377,8 +375,11 @@ typedef struct input_openxr
    PFN_xrLocateHandJointsEXT LocateHandJointsEXT;
    PFN_xrApplyHapticFeedback ApplyHapticFeedback;
    PFN_xrStopHapticFeedback StopHapticFeedback;
+   bool palm_pose;
+   bool hand_data_source;
 
    /* Main thread. */
+   XrPath profile_path[INPUT_OPENXR_HANDS]; /* profile[]'s, or none */
    char profile[INPUT_OPENXR_HANDS][XR_MAX_PATH_LENGTH];
    input_openxr_pad_t pads[INPUT_OPENXR_PADS];
    input_openxr_trigger_t trig[INPUT_OPENXR_HANDS];
@@ -1903,6 +1904,13 @@ static void input_openxr_locate_pose(const input_openxr_t *st,
          &vel.angularVelocity, vel.velocityFlags, out);
 }
 
+/* The joints are copied by index: libretro's order is OpenXR's. */
+typedef char input_openxr_joint_order_check[
+   (     (int)RETRO_VR_HAND_JOINT_COUNT      == (int)XR_HAND_JOINT_COUNT_EXT
+      && (int)RETRO_VR_HAND_JOINT_WRIST      == (int)XR_HAND_JOINT_WRIST_EXT
+      && (int)RETRO_VR_HAND_JOINT_LITTLE_TIP == (int)XR_HAND_JOINT_LITTLE_TIP_EXT)
+   ? 1 : -1];
+
 static void input_openxr_locate_joints(const input_openxr_t *st,
       unsigned h, XrSpace base, XrTime time, struct retro_vr_hand_state *out)
 {
@@ -2009,10 +2017,17 @@ void input_openxr_controller_poses(struct retro_vr_controller_poses *out)
                      st->hands[h], &ps))
                && ps.interactionProfile != XR_NULL_PATH)
          {
-            uint32_t n = 0;
-            if (XR_SUCCEEDED(st->PathToString(st->instance,
-                        ps.interactionProfile, sizeof(st->profile[h]), &n,
-                        st->profile[h])))
+            /* The string is looked up when the profile changes. */
+            if (ps.interactionProfile != st->profile_path[h])
+            {
+               uint32_t n = 0;
+               st->profile_path[h] = XR_NULL_PATH;
+               if (XR_SUCCEEDED(st->PathToString(st->instance,
+                           ps.interactionProfile, sizeof(st->profile[h]),
+                           &n, st->profile[h])))
+                  st->profile_path[h] = ps.interactionProfile;
+            }
+            if (st->profile_path[h] != XR_NULL_PATH)
                hs->interaction_profile = st->profile[h];
          }
       }

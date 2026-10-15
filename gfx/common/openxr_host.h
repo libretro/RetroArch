@@ -43,6 +43,7 @@ typedef struct openxr_host
    /* The drawing thread's: the last sample and the track space's count
     * when it was taken; the views the core was given from it. */
    openxr_tracking_t tracking;
+   XrTime tracking_time;
    int tracking_seq;
    XrView given[2];
    int given_seq;
@@ -92,6 +93,7 @@ bool openxr_host_eye_state(openxr_host_t *h,
       struct retro_vr_eye_state out[2]);
 bool openxr_host_head_pose(const openxr_host_t *h,
       struct retro_vr_head_pose *out);
+bool openxr_host_locate_hands(openxr_host_t *h);
 bool openxr_host_controller_poses(const openxr_host_t *h,
       struct retro_vr_controller_poses *out);
 bool openxr_host_eye_size(const openxr_host_t *h, unsigned *width,
