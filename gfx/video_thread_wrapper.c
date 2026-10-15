@@ -2953,46 +2953,66 @@ static void video_thread_loop(void *data)
  * threaded, or there is none - whoever holds it lets it go
  * (video_thread_host_stop()), and the hook given with the hold runs on
  * the thread before it ends, to take down what was left on it. */
+#define VIDEO_THREAD_HOST_JOB  (1 << 0) /* 'job' is to be run */
+#define VIDEO_THREAD_HOST_BUSY (1 << 1) /* a wrapper's loop is running */
+#define VIDEO_THREAD_HOST_HOLD (1 << 2) /* do not end when it returns */
+#define VIDEO_THREAD_HOST_QUIT (1 << 3)
+
 static struct
 {
+   retro_eventcount_t ec;
    sthread_t *thread;
-   slock_t *lock;
-   scond_t *cond;
-   thread_video_t *job;     /* a wrapper whose loop is to be run */
-   void (*on_exit)(void);   /* run on the thread before it ends */
-   bool busy;               /* a wrapper's loop is running */
-   bool hold;               /* do not end when the loop returns */
-   bool quit;
+   thread_video_t *job;     /* published by the release of JOB */
+   void (*on_exit)(void);   /* the host thread's own; run before it ends */
+   retro_atomic_int_t flags;
+   bool ec_ready;
 } video_thread_host;
+
+/* Parks until one of @mask is set in the flags, or, with @clear, until
+ * none is. Returns the flags it woke on. */
+static int video_thread_host_wait(int mask, bool clear)
+{
+   for (;;)
+   {
+      int key;
+      int f = retro_atomic_load_acquire_int(&video_thread_host.flags);
+      if (clear ? !(f & mask) : (f & mask))
+         return f;
+      key = retro_eventcount_prepare_wait(&video_thread_host.ec);
+      f   = retro_atomic_load_acquire_int(&video_thread_host.flags);
+      if (clear ? !(f & mask) : (f & mask))
+      {
+         retro_eventcount_cancel_wait(&video_thread_host.ec);
+         return f;
+      }
+      retro_eventcount_commit_wait(&video_thread_host.ec, key);
+   }
+}
 
 static void video_thread_host_loop(void *data)
 {
    (void)data;
    for (;;)
    {
-      thread_video_t *thr;
+      int f = video_thread_host_wait(
+            VIDEO_THREAD_HOST_JOB | VIDEO_THREAD_HOST_QUIT, false);
 
-      slock_lock(video_thread_host.lock);
-      while (!video_thread_host.job && !video_thread_host.quit)
-         scond_wait(video_thread_host.cond, video_thread_host.lock);
-      if (!(thr = video_thread_host.job))
+      if (!(f & VIDEO_THREAD_HOST_JOB))
       {
          void (*on_exit)(void)     = video_thread_host.on_exit;
          video_thread_host.on_exit = NULL;
-         slock_unlock(video_thread_host.lock);
          if (on_exit)
             on_exit();
          return;
       }
-      video_thread_host.job  = NULL;
-      slock_unlock(video_thread_host.lock);
+      retro_atomic_fetch_and_int(&video_thread_host.flags,
+            ~VIDEO_THREAD_HOST_JOB);
 
-      video_thread_loop(thr);
+      video_thread_loop(video_thread_host.job);
 
-      slock_lock(video_thread_host.lock);
-      video_thread_host.busy = false;
-      scond_broadcast(video_thread_host.cond);
-      slock_unlock(video_thread_host.lock);
+      retro_atomic_fetch_and_int(&video_thread_host.flags,
+            ~VIDEO_THREAD_HOST_BUSY);
+      retro_eventcount_notify(&video_thread_host.ec);
    }
 }
 
@@ -3000,28 +3020,24 @@ static void video_thread_host_loop(void *data)
  * there is none. Returns the thread, or NULL. */
 static sthread_t *video_thread_host_run(thread_video_t *thr)
 {
-   if (!video_thread_host.lock)
+   if (!video_thread_host.ec_ready)
    {
-      video_thread_host.lock = slock_new();
-      video_thread_host.cond = scond_new();
-      if (!video_thread_host.lock || !video_thread_host.cond)
+      if (!retro_eventcount_init(&video_thread_host.ec))
          return NULL;
+      video_thread_host.ec_ready = true;
    }
 
-   slock_lock(video_thread_host.lock);
-   video_thread_host.job  = thr;
-   video_thread_host.busy = true;
-   video_thread_host.hold = false;
-   video_thread_host.quit = false;
-   scond_broadcast(video_thread_host.cond);
-   slock_unlock(video_thread_host.lock);
+   video_thread_host.job = thr;
+   retro_atomic_store_release_int(&video_thread_host.flags,
+         VIDEO_THREAD_HOST_JOB | VIDEO_THREAD_HOST_BUSY);
+   retro_eventcount_notify(&video_thread_host.ec);
 
    if (     !video_thread_host.thread
          && !(video_thread_host.thread =
                sthread_create(video_thread_host_loop, NULL)))
    {
-      video_thread_host.job  = NULL;
-      video_thread_host.busy = false;
+      retro_atomic_store_release_int(&video_thread_host.flags, 0);
+      video_thread_host.job = NULL;
       return NULL;
    }
    return video_thread_host.thread;
@@ -3033,11 +3049,11 @@ void video_thread_host_stop(void)
 
    if (!thread)
       return;
-   slock_lock(video_thread_host.lock);
-   video_thread_host.quit = true;
-   video_thread_host.hold = false;
-   scond_broadcast(video_thread_host.cond);
-   slock_unlock(video_thread_host.lock);
+   retro_atomic_fetch_or_int(&video_thread_host.flags,
+         VIDEO_THREAD_HOST_QUIT);
+   retro_atomic_fetch_and_int(&video_thread_host.flags,
+         ~VIDEO_THREAD_HOST_HOLD);
+   retro_eventcount_notify(&video_thread_host.ec);
    sthread_join(thread);
    video_thread_host.thread  = NULL;
    video_thread_host.on_exit = NULL;
@@ -3047,40 +3063,35 @@ void video_thread_host_stop(void)
  * back in its own loop, then ends it unless it is held. */
 static void video_thread_host_done(void)
 {
-   bool hold;
-
-   slock_lock(video_thread_host.lock);
-   while (video_thread_host.busy)
-      scond_wait(video_thread_host.cond, video_thread_host.lock);
-   hold = video_thread_host.hold;
-   slock_unlock(video_thread_host.lock);
-
-   if (!hold)
+   if (!(video_thread_host_wait(VIDEO_THREAD_HOST_BUSY, true)
+            & VIDEO_THREAD_HOST_HOLD))
       video_thread_host_stop();
 }
 
 bool video_thread_host_hold(void (*on_exit)(void))
 {
-   bool ret = false;
-
    if (     !video_thread_host.thread
          || sthread_get_thread_id(video_thread_host.thread)
             != sthread_get_current_thread_id())
       return false;
-   slock_lock(video_thread_host.lock);
-   if (!video_thread_host.quit)
+   for (;;)
    {
-      video_thread_host.hold    = true;
-      video_thread_host.on_exit = on_exit;
-      ret                       = true;
+      int f = retro_atomic_load_acquire_int(&video_thread_host.flags);
+      if (f & VIDEO_THREAD_HOST_QUIT)
+         return false;
+      if (retro_atomic_cas_int(&video_thread_host.flags, f,
+               f | VIDEO_THREAD_HOST_HOLD))
+         break;
    }
-   slock_unlock(video_thread_host.lock);
-   return ret;
+   video_thread_host.on_exit = on_exit;
+   return true;
 }
 
 bool video_thread_host_is_held(void)
 {
-   return video_thread_host.thread && video_thread_host.hold;
+   return video_thread_host.thread
+      && (retro_atomic_load_acquire_int(&video_thread_host.flags)
+         & VIDEO_THREAD_HOST_HOLD);
 }
 
 static bool video_thread_alive(void *data)
