@@ -3384,6 +3384,16 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
    }
 }
 
+/* A movie import or clear going into the ring with this frame; most
+ * frames carry neither, so it stays out of video_thread_frame. */
+static VIDEO_NOINLINE void video_thread_slot_movie(thread_video_t *thr,
+      unsigned slot)
+{
+   video_thread_movie_t *to = &thr->frame.slot[slot].movie;
+   video_thread_movie_move(to, &thr->movie_next);
+   thr->frame.slot[slot].movie_control = to->pending || to->reset;
+}
+
 /* Main thread: the slot the push fills. A slot is free when the worker
  * neither renders it (tail ^ 1 while busy) nor will claim it next
  * (tail). When both are taken, the newest unclaimed frame is taken
@@ -3787,9 +3797,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          copied = (size_t)height * copy_stride;
       }
 
-      video_thread_movie_move(&thr->frame.slot[slot].movie, &thr->movie_next);
-      thr->frame.slot[slot].movie_control = thr->frame.slot[slot].movie.pending
-         || thr->frame.slot[slot].movie.reset;
+      video_thread_slot_movie(thr, slot);
       thr->frame.slot[slot].dims   = VIDEO_SCALE_PACK(width, height);
       thr->frame.slot[slot].offset = zero_copy ? lent_off : 0;
       thr->frame.slot[slot].count  = frame_count;
