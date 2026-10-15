@@ -148,3 +148,39 @@ close-with-outstanding-output checks; render-check consumes output normally.
 Linux/Wine llvmpipe skips render-check without a selected HEVC family.
 This validates actual hardware decode through RGBA shader-input creation,
 not the movie UI, custom shader presets, A/V sync or seek/reset on Windows.
+
+
+### Sampled Vulkan video imports
+
+The decoder prefers mutable NV12/P010 output images with sampleable Y/UV
+views. The importer reads those planes directly in its compute shader,
+removing the full-frame image-to-buffer copy. The small color header still
+uses a buffer. The decoder's DPB-to-output copy and RGBA conversion remain.
+Allocation/view failure or an unavailable sampled pipeline retains buffer
+conversion. Ready/done timelines, abandonment and deferred close cover the
+image and its views together; thumbnail and movie descriptors forward both
+views through the existing threaded handoff.
+
+`import-check` compares 36 NV12/P010 color/format cases: ordinary buffer
+conversion, direct image sampling, and a forced missing-pipeline fallback.
+A command hook checks zero importer image-to-buffer copies when sampling
+and one in either fallback. Busy-slot checks leave the done timeline unchanged.
+RTX 5090 and llvmpipe pass; llvmpipe also passes synchronization validation.
+
+Set `VULKAN_TEST_REQUIRE_SAMPLED=1` for native `hevc_render_test` to require
+plane views on every decoded picture. All 120 Main/Main10 fixture pictures
+pass through sampling and RGBA comparison on the RTX 5090. Set
+`VULKAN_TEST_REJECT_SAMPLED=1` or `=2` instead to inject sampled-image or
+second-plane-view creation failures and verify the copied fallback and cleanup;
+both complete the same reference corpus. These variables are test-only.
+The six native H.264 decode regressions also pass. This is not full UI/A/V,
+HDR, or wider-device acceptance, and does not add Vulkan VP9 or AV1 decoding.
+
+
+For the shipping threaded-video harness, `HARNESS_SAMPLED_IMPORT=1` supplies
+sampled plane views from its synthetic producer. With `HARNESS_MOVIE_GPU_ONLY=1`,
+llvmpipe passes the surface lane and 20 direct/threaded movie cases under Vulkan
+validation, covering NV12/P010, resize, cached redraw and software transition.
+Host writes and viewport readbacks are test-only. The separate
+`HARNESS_MOVIE_ONLY=1` lane checks both view handles and slice/crop metadata
+through 130 leases, including clear, backpressure and teardown.

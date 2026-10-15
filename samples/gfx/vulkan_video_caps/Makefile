@@ -1,5 +1,8 @@
 CC ?= cc
 RA := ../../..
+SAMPLED_DEPS := $(RA)/gfx/common/vulkan_video_planes.h \
+      $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc \
+      $(RA)/libretro-common/include/formats/video_hw_frame.h
 TARGET := vulkan_video_caps_test$(EXE)
 PARAMS := hevc_params_test$(EXE)
 SESSION := hevc_session_test$(EXE)
@@ -22,7 +25,7 @@ $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS)
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
-hevc_decode_test$(EXE): probe.c hevc_decode.h h264_decode.h $(DECODERS) $(HEVC_DEPS) \
+hevc_decode_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h $(DECODERS) $(HEVC_DEPS) \
       $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
       $(RA)/gfx/common/vulkan_hevc_picture.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
       $(RA)/libretro-common/formats/h264/rh264.c $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c
@@ -36,11 +39,11 @@ $(TARGET): vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
 probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(if $(filter .exe,$(EXE)),,-ldl)
 
-import_test$(EXE): probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/vulkan.c \
+import_test$(EXE): $(SAMPLED_DEPS) probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/vulkan.c \
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
-hevc_render_test$(EXE): probe.c hevc_decode.h hevc_render.c hevc_render.h import_test.h \
+hevc_render_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h hevc_render.c hevc_render.h import_test.h \
       build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
       h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
       $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_video_import.h \

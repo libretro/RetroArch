@@ -4989,6 +4989,8 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
    }
    memset(&f, 0, sizeof(f));
    f.image = hw->image;
+   f.plane_views[0] = hw->plane_views[0];
+   f.plane_views[1] = hw->plane_views[1];
    f.wait = hw->wait;
    f.wait_value = hw->wait_value;
    f.done = hw->done;

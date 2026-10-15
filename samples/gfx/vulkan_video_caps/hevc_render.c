@@ -64,13 +64,22 @@ int hevc_render_submit(void *opaque, video_hw_frame_t *hw)
 {
    import_oracle_t *t = (import_oracle_t*)opaque;
    video_frame_import_t frame;
+   enum video_texture_update result;
    if (hw->width != t->width || hw->height != t->height) return 0;
    memset(&frame, 0, sizeof(frame));
+   frame.plane_views[0] = hw->plane_views[0]; frame.plane_views[1] = hw->plane_views[1];
    frame.image = hw->image; frame.wait = hw->wait; frame.wait_value = hw->wait_value;
    frame.done = hw->done; frame.done_value = hw->done_value;
    frame.layout = hw->layout; frame.pixfmt = hw->pixfmt; frame.yuv = hw->yuv;
    frame.dims = VIDEO_SCALE_PACK(hw->width, hw->height);
-   if (vulkan_import_convert(&t->vk, &t->output, &frame) != VIDEO_TEXTURE_UPDATE_DONE) return 0;
+   if (getenv("VULKAN_TEST_REQUIRE_SAMPLED") && (!frame.plane_views[0] || !frame.plane_views[1])) return 0;
+   if (getenv("VULKAN_TEST_REJECT_SAMPLED") && (frame.plane_views[0] || frame.plane_views[1])) return 0;
+   plane_copies = 0;
+   copy_image_original = vulkan_symbol_wrapper_vkCmdCopyImageToBuffer;
+   vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = oracle_copy_image;
+   result = vulkan_import_convert(&t->vk, &t->output, &frame);
+   vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = copy_image_original;
+   if (result != VIDEO_TEXTURE_UPDATE_DONE || plane_copies != (frame.plane_views[0] ? 0u : 1u)) return 0;
    hw->abandon = NULL;
    return 1;
 }

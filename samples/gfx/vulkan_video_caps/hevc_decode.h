@@ -10,6 +10,28 @@
 static vulkan_context_t *render_context;
 #endif
 
+static PFN_vkCreateImage sample_create_image;
+static PFN_vkCreateImageView sample_create_view;
+static unsigned sample_rejections;
+static VkResult VKAPI_CALL sample_image_fault(VkDevice device, const VkImageCreateInfo *info,
+      const VkAllocationCallbacks *alloc, VkImage *out)
+{
+   const char *mode = getenv("VULKAN_TEST_REJECT_SAMPLED");
+   if (mode && *mode == '1' && (info->usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+         && (info->format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+            || info->format == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16))
+   { sample_rejections++; *out = VK_NULL_HANDLE; return VK_ERROR_FORMAT_NOT_SUPPORTED; }
+   return sample_create_image(device, info, alloc, out);
+}
+static VkResult VKAPI_CALL sample_view_fault(VkDevice device, const VkImageViewCreateInfo *info,
+      const VkAllocationCallbacks *alloc, VkImageView *out)
+{
+   const char *mode = getenv("VULKAN_TEST_REJECT_SAMPLED");
+   if (mode && *mode == '2' && (info->subresourceRange.aspectMask & VK_IMAGE_ASPECT_PLANE_1_BIT))
+   { sample_rejections++; *out = VK_NULL_HANDLE; return VK_ERROR_FORMAT_NOT_SUPPORTED; }
+   return sample_create_view(device, info, alloc, out);
+}
+
 typedef struct oracle_readback
 {
    VkBuffer buffer;
@@ -369,6 +391,11 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    vkGetDeviceQueue(device, graphics, 0, &ctx->queue);
    render_context = ctx;
 #endif
+   sample_create_image = vulkan_symbol_wrapper_vkCreateImage;
+   sample_create_view = vulkan_symbol_wrapper_vkCreateImageView;
+   sample_rejections = 0;
+   vulkan_symbol_wrapper_vkCreateImage = sample_image_fault;
+   vulkan_symbol_wrapper_vkCreateImageView = sample_view_fault;
    if (!vulkan_video_decode_init(ctx)) goto done;
    ok = 1;
    for (i = 0; i < 10; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
@@ -382,6 +409,9 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       vkDeviceWaitIdle(device); vulkan_video_decode_deinit();
    }
 done:
+   if (getenv("VULKAN_TEST_REJECT_SAMPLED") && !sample_rejections) ok = 0;
+   if (sample_create_image) vulkan_symbol_wrapper_vkCreateImage = sample_create_image;
+   if (sample_create_view) vulkan_symbol_wrapper_vkCreateImageView = sample_create_view;
    vkDestroyDevice(device, NULL); free(ctx);
    return ok;
 }

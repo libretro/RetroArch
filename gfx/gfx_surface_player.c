@@ -79,6 +79,8 @@ static enum video_player_present gfx_surface_player_present_hw(
       return VIDEO_PLAYER_PRESENT_FAILED;
 
    imp.image      = hw->image;
+   imp.plane_views[0] = hw->plane_views[0];
+   imp.plane_views[1] = hw->plane_views[1];
    imp.wait       = hw->wait;
    imp.wait_value = hw->wait_value;
    imp.done       = hw->done;

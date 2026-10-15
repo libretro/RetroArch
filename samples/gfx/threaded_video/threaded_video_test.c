@@ -8880,9 +8880,11 @@ static void lane_surface_planar(void)
 /* ------------------------------------------------------------------ */
 
 #ifdef HAVE_VULKAN
+#include "../../../gfx/common/vulkan_video_planes.h"
 typedef struct
 {
    VkImage image;
+   VkImageView views[2];
    VkDeviceMemory mem;
    VkSemaphore wait, done;
    VkSubresourceLayout planes[2];
@@ -8921,6 +8923,8 @@ static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
       unsigned h, unsigned pixfmt, import_producer_t *p)
 {
    VkFormatProperties fp;
+   VkImageFormatProperties props;
+   bool sampled = getenv("HARNESS_SAMPLED_IMPORT") != NULL;
    VkImageCreateInfo info;
    VkMemoryRequirements req;
    VkMemoryAllocateInfo alloc;
@@ -8956,6 +8960,13 @@ static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
    info.samples       = VK_SAMPLE_COUNT_1_BIT;
    info.tiling        = VK_IMAGE_TILING_LINEAR;
    info.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+   if (sampled)
+   {
+      info.flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+      info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      if (vkGetPhysicalDeviceImageFormatProperties(ctx->gpu, format, info.imageType,
+               info.tiling, info.usage, info.flags, &props) != VK_SUCCESS) return false;
+   }
    info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
    info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
    if (vkCreateImage(ctx->device, &info, NULL, &p->image) != VK_SUCCESS)
@@ -8988,6 +8999,7 @@ static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
    vkGetImageSubresourceLayout(ctx->device, p->image, &sub, &p->planes[0]);
    sub.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
    vkGetImageSubresourceLayout(ctx->device, p->image, &sub, &p->planes[1]);
+   if (sampled && !vulkan_video_plane_views(ctx->device, p->image, pixfmt, p->views)) return false;
    p->wait = import_timeline(ctx->device);
    p->done = import_timeline(ctx->device);
    return p->wait != VK_NULL_HANDLE && p->done != VK_NULL_HANDLE;
@@ -9001,6 +9013,8 @@ static void import_producer_free(vulkan_context_t *ctx, import_producer_t *p)
       vkDestroySemaphore(ctx->device, p->wait, NULL);
    if (p->done)
       vkDestroySemaphore(ctx->device, p->done, NULL);
+   if (p->views[0]) vkDestroyImageView(ctx->device, p->views[0], NULL);
+   if (p->views[1]) vkDestroyImageView(ctx->device, p->views[1], NULL);
    if (p->image)
       vkDestroyImage(ctx->device, p->image, NULL);
    if (p->mem)
@@ -9103,6 +9117,8 @@ static void lane_surface_import(void)
          p.signal(ctx->device, &sig);
          memset(&f, 0, sizeof(f));
          memcpy(&f.image, &p.image, sizeof(p.image));
+         memcpy(&f.plane_views[0], &p.views[0], sizeof(VkImageView));
+         memcpy(&f.plane_views[1], &p.views[1], sizeof(VkImageView));
          memcpy(&f.wait, &p.wait, sizeof(p.wait));
          memcpy(&f.done, &p.done, sizeof(p.done));
          f.wait_value = value;
@@ -9290,6 +9306,8 @@ static void lane_movie_gpu(void)
          CHECK(producer.signal(ctx->device, &signal) == VK_SUCCESS, "movie GPU: ready signal");
          memset(&hw, 0, sizeof(hw));
          memcpy(&hw.image, &producer.image, sizeof(producer.image));
+         memcpy(&hw.plane_views[0], &producer.views[0], sizeof(VkImageView));
+         memcpy(&hw.plane_views[1], &producer.views[1], sizeof(VkImageView));
          memcpy(&hw.wait, &producer.wait, sizeof(producer.wait));
          memcpy(&hw.done, &producer.done, sizeof(producer.done));
          hw.wait_value = hw.done_value = 1;
@@ -9604,6 +9622,8 @@ static enum video_texture_update movie_ring_import(void *data,
             != sthread_get_current_thread_id()
          || frame->dims != VIDEO_SCALE_PACK(1920, 1080)
          || frame->wait_value != id || frame->done_value != id
+         || frame->plane_views[0] != id + 1000 || frame->plane_views[1] != id + 2000
+         || frame->array_slice != 7 || frame->crop_x != 2 || frame->crop_y != 4
          || frame->wait != 34 || frame->done != 88 || !id || id > MOVIE_RING_FRAMES)
    {
       retro_atomic_fetch_add_int(&movie_ring_errors, 1);
@@ -9650,9 +9670,11 @@ static void lane_movie_ring(void)
    memset(&hw, 0, sizeof(hw));
    hw.width = 1920; hw.height = 1080; hw.pixfmt = IMAGE_PIXFMT_P010;
    hw.wait = 34; hw.done = 88; hw.abandon = movie_ring_release;
+   hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
    for (i = 1; i <= MOVIE_RING_FRAMES - 2; i++)
    {
       hw.image = i; hw.wait_value = hw.done_value = i;
+      hw.plane_views[0] = i + 1000; hw.plane_views[1] = i + 2000;
       CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: staging refused %u", i);
       CHECK(!video_driver_movie_refresh(NULL, &hw), "movie ring: staging overwrite %u", i);
       video_driver_frame(NULL, 1920, 1080, 0);
@@ -9660,12 +9682,14 @@ static void lane_movie_ring(void)
    video_thread_wait_idle();
    /* Clear releases a staged lease before its frame is published. */
    hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES - 1;
+   hw.plane_views[0] = hw.image + 1000; hw.plane_views[1] = hw.image + 2000;
    CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before clear");
    video_driver_movie_clear();
    video_driver_frame(NULL, 1920, 1080, 0);
    video_thread_wait_idle();
    /* Teardown releases a lease that never reached the frame ring. */
    hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES;
+   hw.plane_views[0] = hw.image + 1000; hw.plane_views[1] = hw.image + 2000;
    CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before teardown");
    set_driver(thr, movie_ring_inner); set_poke(thr, inner_poke);
    set_threaded_via_setting(false);

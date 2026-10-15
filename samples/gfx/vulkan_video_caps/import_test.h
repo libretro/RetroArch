@@ -8,6 +8,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/drivers_shader/shader_vulkan.h"
 #include "../../../gfx/common/vulkan_video_import.h"
+#include "../../../gfx/common/vulkan_video_planes.h"
 #define VK_STREAM_SLOTS 2
 #define VK_PLANAR_HEADER VULKAN_VIDEO_HEADER_WORDS
 #include "import_types.inc"
@@ -16,7 +17,8 @@ typedef struct vk
    vulkan_context_t *context;
    VkCommandPool staging_pool;
    struct vk_stream_state *stream_states;
-   struct { VkPipeline yuv420_to_rgba8888; VkPipelineLayout layout; VkDescriptorSetLayout set_layout; } pipelines;
+   struct { VkSampler nearest; } samplers;
+   struct { VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888; VkPipelineLayout layout; VkDescriptorSetLayout set_layout; } pipelines;
 } vk_t;
 
 void RARCH_ERR(const char *format, ...)
@@ -29,6 +31,16 @@ static void vulkan_upload_batch_submit(vk_t *vk) { (void)vk; }
 static void vulkan_check_device_lost(vk_t *vk, VkResult result)
 { (void)vk; if (result != VK_SUCCESS) import_errors++; }
 #include "import_functions.inc"
+
+static unsigned plane_copies;
+static PFN_vkCmdCopyImageToBuffer copy_image_original;
+static void VKAPI_CALL oracle_copy_image(VkCommandBuffer cmd, VkImage image,
+      VkImageLayout layout, VkBuffer buffer, uint32_t count, const VkBufferImageCopy *regions)
+{
+   plane_copies++;
+   copy_image_original(cmd, image, layout, buffer, count, regions);
+}
+
 
 typedef struct import_oracle
 {
@@ -78,6 +90,9 @@ static int oracle_image(import_oracle_t *t, VkImage *image, VkDeviceMemory *memo
    info.format = format; info.extent.width = width; info.extent.height = height; info.extent.depth = 1;
    info.mipLevels = info.arrayLayers = 1; info.samples = VK_SAMPLE_COUNT_1_BIT;
    info.tiling = VK_IMAGE_TILING_OPTIMAL; info.usage = usage;
+   if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) && (format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+         || format == VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16))
+      info.flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
    if (vkCreateImage(device, &info, NULL, image) != VK_SUCCESS) return 0;
    vkGetImageMemoryRequirements(device, *image, &requirements);
    alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO; alloc.allocationSize = requirements.size;
@@ -108,7 +123,11 @@ static int oracle_pipeline(import_oracle_t *t)
    static const uint32_t spirv[] =
 #include "../../../gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc"
    ;
-   VkDescriptorSetLayoutBinding bindings[2];
+   static const uint32_t sampled_spirv[] =
+#include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
+   ;
+   VkSamplerCreateInfo sampler = {0};
+   VkDescriptorSetLayoutBinding bindings[4];
    VkDescriptorSetLayoutCreateInfo set = {0};
    VkPipelineLayoutCreateInfo layout = {0};
    VkShaderModuleCreateInfo module = {0};
@@ -120,7 +139,10 @@ static int oracle_pipeline(import_oracle_t *t)
    bindings[0].binding = 3; bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
    bindings[0].descriptorCount = 1; bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
    bindings[1] = bindings[0]; bindings[1].binding = 4; bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-   set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO; set.bindingCount = 2; set.pBindings = bindings;
+   bindings[2] = bindings[0]; bindings[2].binding = 1;
+   bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   bindings[3] = bindings[2]; bindings[3].binding = 2;
+   set.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO; set.bindingCount = 4; set.pBindings = bindings;
    if (vkCreateDescriptorSetLayout(device, &set, NULL, &t->vk.pipelines.set_layout) != VK_SUCCESS) return 0;
    layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO; layout.setLayoutCount = 1; layout.pSetLayouts = &t->vk.pipelines.set_layout;
    if (vkCreatePipelineLayout(device, &layout, NULL, &t->vk.pipelines.layout) != VK_SUCCESS) return 0;
@@ -131,7 +153,16 @@ static int oracle_pipeline(import_oracle_t *t)
    pipeline.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT; pipeline.stage.module = shader; pipeline.stage.pName = "main";
    ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL, &t->vk.pipelines.yuv420_to_rgba8888) == VK_SUCCESS;
    vkDestroyShaderModule(device, shader, NULL);
-   return ok;
+   module.codeSize = sizeof(sampled_spirv); module.pCode = sampled_spirv;
+   if (!ok || vkCreateShaderModule(device, &module, NULL, &shader) != VK_SUCCESS) return 0;
+   pipeline.stage.module = shader;
+   ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+         &t->vk.pipelines.yuv_image_to_rgba8888) == VK_SUCCESS;
+   vkDestroyShaderModule(device, shader, NULL);
+   sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+   sampler.magFilter = sampler.minFilter = VK_FILTER_NEAREST;
+   sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+   return ok && vkCreateSampler(device, &sampler, NULL, &t->vk.samplers.nearest) == VK_SUCCESS;
 }
 
 #ifndef HEVC_RENDER_TEST
@@ -151,11 +182,13 @@ static unsigned oracle_sample(unsigned plane, unsigned x, unsigned y, unsigned d
 static VkResult VKAPI_CALL oracle_busy(VkDevice device, VkFence fence)
 { (void)device; (void)fence; return VK_NOT_READY; }
 
-static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint64_t serial)
+static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint64_t serial, unsigned mode)
 {
    vulkan_video_layout_t layout;
    video_frame_import_t frame;
    VkImage input = VK_NULL_HANDLE;
+   VkImageView planes[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+   VkPipeline sampled_pipeline = t->vk.pipelines.yuv_image_to_rgba8888;
    VkDeviceMemory memory = VK_NULL_HANDLE;
    VkBufferImageCopy regions[2];
    VkSemaphoreSignalInfoKHR signal = {0};
@@ -182,7 +215,8 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
          }
    if (!oracle_image(t, &input, &memory, depth == 10 ? VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
             : VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, (t->width + 1) & ~1u, (t->height + 1) & ~1u,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT) || !oracle_begin(t)) goto done;
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+               | (mode ? VK_IMAGE_USAGE_SAMPLED_BIT : 0)) || !oracle_begin(t)) goto done;
    VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, input, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
    memset(regions, 0, sizeof(regions));
@@ -202,10 +236,24 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    frame.wait_value = frame.done_value = serial; frame.dims = VIDEO_SCALE_PACK(t->width, t->height);
    frame.pixfmt = depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    frame.yuv = flags; frame.layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   if (mode)
+   {
+      if (!vulkan_video_plane_views(device, input, frame.pixfmt, planes)) goto done;
+      memcpy(&frame.plane_views[0], &planes[0], sizeof(VkImageView));
+      memcpy(&frame.plane_views[1], &planes[1], sizeof(VkImageView));
+   }
+   if (mode == 2) t->vk.pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
    signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR; signal.semaphore = t->ready; signal.value = serial;
-   if (signal_sem(device, &signal) != VK_SUCCESS
-         || vulkan_import_convert(&t->vk, &t->output, &frame) != VIDEO_TEXTURE_UPDATE_DONE
-         || !oracle_begin(t)) goto done;
+   if (signal_sem(device, &signal) != VK_SUCCESS) goto done;
+   plane_copies = 0;
+   copy_image_original = vulkan_symbol_wrapper_vkCmdCopyImageToBuffer;
+   vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = oracle_copy_image;
+   {
+      enum video_texture_update result = vulkan_import_convert(&t->vk, &t->output, &frame);
+      vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = copy_image_original;
+      if (result != VIDEO_TEXTURE_UPDATE_DONE || plane_copies != (mode == 1 ? 0u : 1u)) goto done;
+   }
+   if (!oracle_begin(t)) goto done;
    VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, t->output.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -257,10 +305,13 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
       if (counter(device, t->done, &value) != VK_SUCCESS || value != serial) ok = 0;
    }
 done:
+   t->vk.pipelines.yuv_image_to_rgba8888 = sampled_pipeline;
    vkDeviceWaitIdle(device);
+   if (planes[0]) vkDestroyImageView(device, planes[0], NULL);
+   if (planes[1]) vkDestroyImageView(device, planes[1], NULL);
    if (input) vkDestroyImage(device, input, NULL);
    if (memory) vkFreeMemory(device, memory, NULL);
-   printf("Vulkan import %u-bit flags %u: %s\n", depth, flags, ok ? "PASS" : "FAIL");
+   printf("Vulkan import %u-bit flags %u mode %u: %s\n", depth, flags, mode, ok ? "PASS" : "FAIL");
    return ok;
 }
 
@@ -297,6 +348,8 @@ static void oracle_cleanup(import_oracle_t *t)
    if (t->upload_memory) vkFreeMemory(device, t->upload_memory, NULL);
    if (t->readback_memory) vkFreeMemory(device, t->readback_memory, NULL);
    if (t->vk.pipelines.yuv420_to_rgba8888) vkDestroyPipeline(device, t->vk.pipelines.yuv420_to_rgba8888, NULL);
+   if (t->vk.pipelines.yuv_image_to_rgba8888) vkDestroyPipeline(device, t->vk.pipelines.yuv_image_to_rgba8888, NULL);
+   if (t->vk.samplers.nearest) vkDestroySampler(device, t->vk.samplers.nearest, NULL);
    if (t->vk.pipelines.layout) vkDestroyPipelineLayout(device, t->vk.pipelines.layout, NULL);
    if (t->vk.pipelines.set_layout) vkDestroyDescriptorSetLayout(device, t->vk.pipelines.set_layout, NULL);
 }
@@ -374,10 +427,10 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
    ok = 1;
-   for (i = 0; i < 12; i++)
+   for (i = 0; i < 36; i++)
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,
-               ((i / 3) & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
-               | ((i / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1)) ok = 0;
+               (((i % 12) / 3) & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
+               | (((i % 12) / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1, i / 12)) ok = 0;
    vulkan_movie_input(&t->output, &input);
    if (input.image != t->output.image || input.view != t->output.view
          || input.layout != t->output.layout || input.dims != t->output.dims

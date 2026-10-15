@@ -58,6 +58,7 @@
 #include "vulkan_hevc_picture.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
+#include "vulkan_video_planes.h"
 #include "../video_defines.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -104,6 +105,7 @@ typedef struct vvd_dec
    VkImageView view[VVD_MAX_SLOTS];
 
    VkImage out[VVD_OUTS];
+   VkImageView out_planes[VVD_OUTS][2];
    VkDeviceMemory out_mem[VVD_OUTS];
    VkSemaphore out_done[VVD_OUTS];
    uint64_t out_value[VVD_OUTS];  /* the read last handed out       */
@@ -402,6 +404,8 @@ static void vvd_destroy(vvd_dec_t *d)
       vkDestroyCommandPool(dev, d->xpool, NULL);
    for (i = 0; i < VVD_OUTS; i++)
    {
+      if (d->out_planes[i][0]) vkDestroyImageView(dev, d->out_planes[i][0], NULL);
+      if (d->out_planes[i][1]) vkDestroyImageView(dev, d->out_planes[i][1], NULL);
       if (d->out[i])
          vkDestroyImage(dev, d->out[i], NULL);
       if (d->out_mem[i])
@@ -612,7 +616,8 @@ static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
    families[1]                = family_b;
    info.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    info.pNext                 = pnext;
-   info.flags                 = 0;
+   info.flags                 = (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+      ? VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT : 0;
    info.imageType             = VK_IMAGE_TYPE_2D;
    info.format                = format;
    info.extent.width          = extent.width;
@@ -777,6 +782,25 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
    return true;
 }
 
+static bool vvd_make_output(vvd_dec_t *d, unsigned i, VkExtent2D extent)
+{
+   VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+   VkImageFormatProperties props;
+   if (vkGetPhysicalDeviceImageFormatProperties(vvd.gpu, d->format,
+            VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT, &props) == VK_SUCCESS
+         && extent.width <= props.maxExtent.width && extent.height <= props.maxExtent.height
+         && vvd_make_image(&d->out[i], &d->out_mem[i], d->format, extent, 1,
+            usage | VK_IMAGE_USAGE_SAMPLED_BIT, NULL, vvd.xfer_family, vvd.gfx_family)
+         && vulkan_video_plane_views(vvd.device, d->out[i], d->pixfmt, d->out_planes[i]))
+      return true;
+   if (d->out[i]) vkDestroyImage(vvd.device, d->out[i], NULL);
+   if (d->out_mem[i]) vkFreeMemory(vvd.device, d->out_mem[i], NULL);
+   d->out[i] = VK_NULL_HANDLE; d->out_mem[i] = VK_NULL_HANDLE;
+   return vvd_make_image(&d->out[i], &d->out_mem[i], d->format, extent, 1,
+         usage, NULL, vvd.xfer_family, vvd.gfx_family);
+}
+
 static bool vvd_make_outputs(vvd_dec_t *d)
 {
    VkFormatProperties fp;
@@ -797,10 +821,7 @@ static bool vvd_make_outputs(vvd_dec_t *d)
    extent.height = (d->visible_h + 1) & ~1u;
    for (i = 0; i < VVD_OUTS; i++)
    {
-      if (     !vvd_make_image(&d->out[i], &d->out_mem[i], d->format, extent, 1,
-                  VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, NULL,
-                  vvd.xfer_family, vvd.gfx_family)
+      if (     !vvd_make_output(d, i, extent)
             || !(d->out_done[i] = vvd_timeline()))
          return false;
    }
@@ -1406,6 +1427,8 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
 
    memset(out, 0, sizeof(*out));
    memcpy(&out->image, &d->out[o], sizeof(d->out[o]));
+   memcpy(&out->plane_views[0], &d->out_planes[o][0], sizeof(VkImageView));
+   memcpy(&out->plane_views[1], &d->out_planes[o][1], sizeof(VkImageView));
    memcpy(&out->wait, &d->tl, sizeof(d->tl));
    memcpy(&out->done, &d->out_done[o], sizeof(d->out_done[o]));
    out->wait_value  = d->tl_value;

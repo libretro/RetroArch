@@ -995,7 +995,8 @@ typedef struct video_device_info
  * timeline semaphores - the driver's reads wait for @wait to reach
  * @wait_value, and it signals @done with @done_value once it reads the
  * frame no more. The frame is left in @layout, or in GENERAL from
- * UNDEFINED or PREINITIALIZED.
+ * UNDEFINED or PREINITIALIZED. Optional Y/UV plane views share the image's
+ * lease and use R8/R8G8 or R16/R16G16 UNORM; both handles must be present.
  * D3D11, D3D12: NT handles - a shared DXGI_FORMAT_NV12 texture, and
  * two shared fences waited for and signalled as above; @layout names
  * the producer's set of handles, so that what a driver opened of them
@@ -1004,6 +1005,7 @@ typedef struct video_device_info
 typedef struct video_frame_import
 {
    uint64_t image;
+   uint64_t plane_views[2]; /* optional Vulkan Y/UV views; same lease */
    uint64_t wait;
    uint64_t wait_value;
    uint64_t done;

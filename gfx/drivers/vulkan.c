@@ -520,6 +520,7 @@ typedef struct vk
       VkPipeline font;
       VkPipeline rgb565_to_rgba8888;
       VkPipeline yuv420_to_rgba8888;
+      VkPipeline yuv_image_to_rgba8888;
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
       VkPipeline stock_rect;
@@ -5129,13 +5130,13 @@ static void vulkan_init_pipeline_layout(
    bindings[1].binding            = 1;
    bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
    bindings[1].descriptorCount    = 1;
-   bindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
    bindings[1].pImmutableSamplers = NULL;
 
    bindings[2].binding            = 2;
    bindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
    bindings[2].descriptorCount    = 1;
-   bindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
    bindings[2].pImmutableSamplers = NULL;
 
    bindings[3].binding            = 3;
@@ -5426,6 +5427,9 @@ static void vulkan_init_pipelines(vk_t *vk)
 
    static const uint32_t rgb565_to_rgba8888_comp[] =
 #include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
+   ;
+   static const uint32_t yuv_image_to_rgba8888_comp[] =
+#include "vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
    ;
    static const uint32_t yuv420_to_rgba8888_comp[] =
 #include "vulkan_shaders/yuv420_to_rgba8888.comp.inc"
@@ -5927,6 +5931,19 @@ static void vulkan_init_pipelines(vk_t *vk)
          1, &cpipe, NULL, &vk->pipelines.yuv420_to_rgba8888) != VK_SUCCESS)
       vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
    vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   module_info.codeSize = sizeof(yuv_image_to_rgba8888_comp);
+   module_info.pCode = yuv_image_to_rgba8888_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv_image_to_rgba8888) != VK_SUCCESS)
+         vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
+
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -6152,6 +6169,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.yuv420_to_rgba8888, NULL);
    vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba8888, NULL);
+   vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
 #ifdef VULKAN_HDR_SWAPCHAIN
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
@@ -13646,7 +13665,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    struct vk_stream_state *st = vk->stream_states;
    VkFenceCreateInfo fence_info;
    VkCommandBufferAllocateInfo cmd_info;
-   VkDescriptorPoolSize sizes[2];
+   VkDescriptorPoolSize sizes[3];
    VkDescriptorPoolCreateInfo pool_info;
    VkDescriptorSetAllocateInfo set_info;
    VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
@@ -13700,7 +13719,9 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    pool_info.pNext            = NULL;
    pool_info.flags            = 0;
    pool_info.maxSets          = VK_STREAM_SLOTS;
-   pool_info.poolSizeCount    = 2;
+   sizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   sizes[2].descriptorCount = 2 * VK_STREAM_SLOTS;
+   pool_info.poolSizeCount    = 3;
    pool_info.pPoolSizes       = sizes;
    if (vkCreateDescriptorPool(device, &pool_info, NULL, &st->pool)
          != VK_SUCCESS)
@@ -13790,10 +13811,8 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    return st;
 }
 
-/* The frame's planes copied into a slot's buffer and converted from
- * there into @texture, on the GPU: the copy waits for the producer's
- * timeline, and the producer's other timeline is signalled once the
- * frame is read no more. */
+/* Sample exported planes directly, or copy into a buffer when no views
+ * are available. Both paths preserve the producer's layout and lease. */
 static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
 {
@@ -13816,8 +13835,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    unsigned ch = (h + 1) / 2;
    unsigned slot;
    size_t y_off, c_off;
+   bool sampled = f->plane_views[0] && f->plane_views[1]
+      && vk->pipelines.yuv_image_to_rgba8888 != VK_NULL_HANDLE;
 
    if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv) || !f->image
+         || ((f->crop_x | f->crop_y) & 1)
          || texture->dims != f->dims
          || !(st = vulkan_import_state_get(vk, texture))
          || layout.bytes > st->staging[0].size)
@@ -13845,14 +13867,35 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
          || vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
+   if (sampled)
+   {
+      VkDescriptorImageInfo images[2];
+      VkWriteDescriptorSet writes[2];
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         images[i].sampler = vk->samplers.nearest;
+         memcpy(&images[i].imageView, &f->plane_views[i], sizeof(VkImageView));
+         images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+         memset(&writes[i], 0, sizeof(writes[i]));
+         writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+         writes[i].dstSet = st->set[slot]; writes[i].dstBinding = i + 1;
+         writes[i].descriptorCount = 1;
+         writes[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+         writes[i].pImageInfo = &images[i];
+      }
+      vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
+      layout.header[2] = f->crop_x; layout.header[3] = f->crop_y;
+      wait_stage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+   }
    vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(layout.header), layout.header);
 
    bar.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
    bar.pNext                           = NULL;
    bar.srcAccessMask                   = 0;
-   bar.dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
+   bar.dstAccessMask                   = sampled ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
    bar.oldLayout                       = (VkImageLayout)f->layout;
-   bar.newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.newLayout                       = sampled ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    bar.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
    bar.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
    /* Non-dispatchable handles are 64 bits wide on every target */
@@ -13860,20 +13903,21 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bar.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    bar.subresourceRange.baseMipLevel   = 0;
    bar.subresourceRange.levelCount     = 1;
-   bar.subresourceRange.baseArrayLayer = 0;
+   bar.subresourceRange.baseArrayLayer = f->array_slice;
    bar.subresourceRange.layerCount     = 1;
    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+         sampled ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
+         0, 0, NULL, 0, NULL, 1, &bar);
 
    regions[0].bufferOffset                    = y_off;
    regions[0].bufferRowLength                 = w;
    regions[0].bufferImageHeight               = 0;
    regions[0].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_0_BIT;
    regions[0].imageSubresource.mipLevel       = 0;
-   regions[0].imageSubresource.baseArrayLayer = 0;
+   regions[0].imageSubresource.baseArrayLayer = f->array_slice;
    regions[0].imageSubresource.layerCount     = 1;
-   regions[0].imageOffset.x                   = 0;
-   regions[0].imageOffset.y                   = 0;
+   regions[0].imageOffset.x                   = f->crop_x;
+   regions[0].imageOffset.y                   = f->crop_y;
    regions[0].imageOffset.z                   = 0;
    regions[0].imageExtent.width               = w;
    regions[0].imageExtent.height              = h;
@@ -13884,20 +13928,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    regions[1].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_1_BIT;
    regions[1].imageExtent.width               = cw;
    regions[1].imageExtent.height              = ch;
-   vkCmdCopyImageToBuffer(cmd, bar.image,
+   regions[1].imageOffset.x = f->crop_x / 2;
+   regions[1].imageOffset.y = f->crop_y / 2;
+   if (!sampled) vkCmdCopyImageToBuffer(cmd, bar.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, st->staging[slot].buffer,
          2, regions);
-
-   /* The frame back as the producer left it */
-   bar.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-   bar.dstAccessMask = 0;
-   bar.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   bar.newLayout     = (VkImageLayout)f->layout;
-   if (     bar.newLayout == VK_IMAGE_LAYOUT_UNDEFINED
-         || bar.newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-      bar.newLayout  = VK_IMAGE_LAYOUT_GENERAL;
-   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
 
    bbar.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
    bbar.pNext               = NULL;
@@ -13916,10 +13951,22 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 1, &bbar, 0, NULL);
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-         vk->pipelines.yuv420_to_rgba8888);
+         sampled ? vk->pipelines.yuv_image_to_rgba8888 : vk->pipelines.yuv420_to_rgba8888);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
          vk->pipelines.layout, 0, 1, &st->set[slot], 0, NULL);
-   vkCmdDispatch(cmd, (cw + 7) / 8, (ch + 7) / 8, 1);
+   vkCmdDispatch(cmd, sampled ? (w + 7) / 8 : (cw + 7) / 8,
+         sampled ? (h + 7) / 8 : (ch + 7) / 8, 1);
+   /* The frame back as the producer left it */
+   bar.srcAccessMask = sampled ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
+   bar.dstAccessMask = 0;
+   bar.oldLayout     = sampled ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.newLayout     = (VkImageLayout)f->layout;
+   if (     bar.newLayout == VK_IMAGE_LAYOUT_UNDEFINED
+         || bar.newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+      bar.newLayout  = VK_IMAGE_LAYOUT_GENERAL;
+   vkCmdPipelineBarrier(cmd, sampled ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+
    VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
