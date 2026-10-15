@@ -86,6 +86,20 @@ static void core_run_fixture(void)
    for (i = 0; i < (size_t)media_player.width * media_player.height; i++)
       if (media_player.fb[i] != UINT32_C(0xa5a5a5a5)) matches = 0;
    check("movie core: CPU canvas untouched", matches);
+   {
+      int target = media_player.nvts / 2;
+      frames_free(&core_frames);
+      memset(&core_frames, 0, sizeof(core_frames));
+      media_seek(&media_player, media_player.vts[target]);
+      for (tries = 0; tries < 2000 && !core_frames.n; tries++)
+      {
+         retro_run();
+         Sleep(1);
+      }
+      check("movie core: GPU reference chain survives skipped exports", core_frames.n == 1
+            && !memcmp(core_frames.y[0], raw + frame_size * target, y_size)
+            && !memcmp(core_frames.uv[0], raw + frame_size * target + y_size, y_size / 2));
+   }
 done:
    retro_unload_game();
    opened_clear(&core_reader); frames_free(&core_frames); free(raw);

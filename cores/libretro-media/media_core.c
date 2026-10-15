@@ -123,6 +123,7 @@ typedef struct
    rwebm_video_stream_t *webmvs;
    int64_t      webm_hw_shown;
    int64_t      webm_seek_slot;
+   int          webm_step;
    video_hw_frame_t hw_frame;
    int          hw_video;
    int64_t      hw_restart_ns;
@@ -265,6 +266,7 @@ static void media_rewind_webm_hw(media_player_t *p)
    }
    p->webm_hw_shown = 0;
    p->webm_seek_slot = -1;
+   p->webm_step = 0;
 }
 
 #ifdef RARCH_INTERNAL
@@ -1221,6 +1223,7 @@ void media_video_hw_ready(void)
             p->hw_video = 1;
             p->webm_hw_shown = 0;
             p->webm_seek_slot = -1;
+            p->webm_step = 0;
          }
          else
             media_close_webm_hw(p);
@@ -1272,17 +1275,29 @@ static void media_run_webm_hw(media_player_t *p)
    while ((!p->eof || p->webm_seek_slot >= 0)
          && !p->hw_frame.image && p->webm_hw_shown <= target)
    {
-      if (!rwebm_video_stream_next(p->webmvs, NULL))
+      int ret, skipped;
+      if (!p->webm_step)
+         p->webm_step = p->webm_hw_shown < target ? 2 : 1;
+      skipped = p->webm_step == 2;
+      if (skipped)
+         ret = rwebm_video_stream_skip(p->webmvs, NULL);
+      else if (rwebm_video_stream_next(p->webmvs, NULL))
+         ret = 1;
+      else
+         ret = rwebm_video_stream_waiting(p->webmvs) ? 2 : 0;
+      if (ret != 1)
       {
-         if (!rwebm_video_stream_waiting(p->webmvs))
+         if (ret != 2)
          {
             p->eof = 1;
             p->webm_seek_slot = -1;
+            p->webm_step = 0;
          }
          break;
       }
+      p->webm_step = 0;
       p->webm_hw_shown++;
-      if (!rwebm_video_stream_hw_frame(p->webmvs, &p->hw_frame))
+      if (!skipped && !rwebm_video_stream_hw_frame(p->webmvs, &p->hw_frame))
       {
          p->eof = 1;
          p->webm_seek_slot = -1;
@@ -1290,7 +1305,7 @@ static void media_run_webm_hw(media_player_t *p)
       }
       if (p->webm_hw_shown - 1 < target)
          media_drop_hw(p);
-      else
+      else if (!skipped)
       {
          p->vshown = p->webm_hw_shown;
          p->vpts_ns = p->vts && p->vshown <= p->nvts

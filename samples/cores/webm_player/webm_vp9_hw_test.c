@@ -179,6 +179,48 @@ static void unload(void)
    CHECK(!lives && opens == closes && exported == retired);
 }
 
+static void check_software_skip(const char *path)
+{
+   void *data = NULL;
+   int64_t len = 0;
+   rwebm_video_stream_t *reference, *skipped;
+   unsigned w, h, i;
+   uint32_t *canvas;
+   const uint32_t *expected = NULL, *actual;
+   int reference_ms = 0, skipped_ms = 0;
+   CHECK(filestream_read_file(path, &data, &len) && len > 0);
+   if (!data) return;
+   reference = rwebm_video_stream_open((const uint8_t*)data, (size_t)len);
+   skipped = rwebm_video_stream_open((const uint8_t*)data, (size_t)len);
+   CHECK(reference && skipped);
+   if (!reference || !skipped) goto done;
+   rwebm_video_stream_get_info(skipped, &w, &h, NULL, NULL);
+   canvas = (uint32_t*)malloc((size_t)w * h * 4);
+   CHECK(canvas != NULL);
+   if (!canvas) goto done;
+   memset(canvas, 0xa5, (size_t)w * h * 4);
+   rwebm_video_stream_set_output(skipped, canvas);
+   for (i = 0; i < 6; i++)
+   {
+      expected = rwebm_video_stream_next(reference, &reference_ms);
+      CHECK(expected != NULL);
+      if (i < 5)
+      {
+         unsigned pixel;
+         CHECK(rwebm_video_stream_skip(skipped, &skipped_ms) == 1);
+         CHECK(reference_ms == skipped_ms);
+         for (pixel = 0; pixel < w * h; pixel++)
+            CHECK(canvas[pixel] == UINT32_C(0xa5a5a5a5));
+      }
+   }
+   actual = rwebm_video_stream_next(skipped, &skipped_ms);
+   CHECK(actual && expected && reference_ms == skipped_ms);
+   if (actual && expected) CHECK(!memcmp(actual, expected, (size_t)w * h * 4));
+   free(canvas);
+done:
+   rwebm_video_stream_close(reference); rwebm_video_stream_close(skipped); free(data);
+}
+
 static void check_hidden_timeline(void)
 {
    static const uint8_t data[] = {
@@ -211,6 +253,8 @@ int main(void)
 {
    unsigned i, before, decoded;
    uint8_t state[40];
+   check_software_skip("fixtures/vp9-vorbis.webm");
+   check_software_skip("fixtures/vp8-opus.webm");
    check_hidden_timeline();
    rvp9_set_hw_backend(&backend);
    CHECK(media_set_video_hw_refresh(sink, NULL));
@@ -253,9 +297,11 @@ int main(void)
 
    if (!load()) return 1;
    media_video_hw_ready();
+   before = exported;
    media_seek(&media_player, 750000000);
    CHECK(media_player.webmvs && media_player.webm_seek_slot >= 0);
    finish_seek();
+   CHECK(exported == before + 1);
    CHECK(media_player.vpts_ns >= 650000000 && media_player.vpts_ns <= 750000000);
    retro_reset();
    CHECK(media_player.webmvs && media_player.webm_hw_shown == 0);

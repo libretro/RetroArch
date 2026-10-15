@@ -61,3 +61,9 @@ samples/gfx/d3d11_video_decode. Software fallback is retained when initial probi
 fails; a later backend failure requires playback restart, rather than switching
 reference chains mid-stream. GPU frames still incur the backend's existing
 DPB-to-shared-output copy. Initial still-image decoding remains software.
+
+`rwebm_video_stream_skip` advances one displayed frame without a GPU surface
+export or software color conversion. Retry the same next/skip operation while
+it reports waiting. The movie core latches that choice across BUSY and input
+retries, so seek/catch-up frames avoid the DPB-to-output copy. Presented frames
+still require the backend's independent shared-output lease.

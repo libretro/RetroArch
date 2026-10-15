@@ -67,7 +67,7 @@ struct rwebm_video_stream
    size_t len, avail, pending_floor, super_sizes[RWEBM_VIDEO_MAX_SUPER], super_offset;
    rwebm_packet pending_packet;
    int pending, pending_idx, super_count, super_index, last_show, submitted;
-   int hw_want, hw_untaken;
+   int hw_want, hw_untaken, hw_skip;
    unsigned hw_yuv_mask, hw_yuv;
 #endif
    int waiting;
@@ -975,10 +975,11 @@ int rwebm_video_stream_waiting(const rwebm_video_stream_t *s)
 }
 
 #ifdef HAVE_RVP9
-static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms)
+static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int discard)
 {
    int ret;
    s->waiting = 0;
+   if (s->pending && s->hw_skip != discard) return -1;
    if (!s->pending)
    {
       size_t offset;
@@ -1009,6 +1010,7 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms)
          offset += s->super_sizes[i];
       }
       s->pending_idx = s->pkt_idx++;
+      s->hw_skip = discard;
       s->super_index = s->submitted = 0; s->super_offset = 0;
       s->pending = 1;
    }
@@ -1024,7 +1026,8 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms)
       }
       if (s->hw->output_slot >= 0)
       {
-         if (s->super_index != s->last_show) rvp9_hw_session_discard_output(s->hw);
+         if (discard || s->super_index != s->last_show)
+            rvp9_hw_session_discard_output(s->hw);
          else
          {
             ret = rvp9_hw_session_output(s->hw, &s->hw_frame);
@@ -1039,13 +1042,13 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms)
    }
    s->pending = 0;
    if (duration_ms) *duration_ms = rwebm_video_duration_ms(s, s->pending_idx);
-   return s->hw_untaken ? 1 : 0;
+   return s->last_show >= 0 ? 1 : 0;
 }
 #endif
 
 /* 1 displayed picture, 0 hidden packet, negative decode failure. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
-      const rwebm_packet *pkt)
+      const rwebm_packet *pkt, int discard)
 {
    uint32_t *dst = s->out ? s->out : s->frame;
    s->is_fp16    = 0;
@@ -1078,6 +1081,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          const rvp9_fb *fb = &s->vp9->fbs[last_show];
          unsigned w = (unsigned)fb->w < s->width  ? (unsigned)fb->w : s->width;
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
+         if (discard) return 1;
          {
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
             rwebm_blit_ctx_t c;
@@ -1141,6 +1145,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          return -1;
       if (!shown)
          return 0;
+      if (discard) return 1;
       y = rvp8_video_plane(s->vp8, 0, &ys, &w, &h);
       u = rvp8_video_plane(s->vp8, 1, &uvs, &cw, &ch);
       v = rvp8_video_plane(s->vp8, 2, &uvs, &cw, &ch);
@@ -1177,14 +1182,14 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
 /* 1 displayed picture (canvas or GPU lease), 0 hidden packet, 2 retry,
  * -1 end/error. Other tracks are skipped with header reads only. */
 static int rwebm_video_stream_step(rwebm_video_stream_t *s,
-      int *duration_ms)
+      int *duration_ms, int discard)
 {
    rwebm_packet pkt;
    s->waiting = 0;
 #ifdef HAVE_RVP9
    if (s->hw)
    {
-      int ret = rwebm_video_hw_step(s, duration_ms);
+      int ret = rwebm_video_hw_step(s, duration_ms, discard);
       if (ret < 0 && s->hw_untaken)
       {
          video_hw_frame_abandon(&s->hw_frame);
@@ -1210,7 +1215,7 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
       if (pkt.track != s->track)
          continue;
       idx = s->pkt_idx++;
-      r   = rwebm_video_decode_packet(s, &pkt);
+      r   = rwebm_video_decode_packet(s, &pkt, discard);
       if (r < 0)
          return -1;      /* decode error: end the animation */
       if (r == 0)
@@ -1230,9 +1235,18 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
    if (!s)
       return NULL;
 
-   while ((r = rwebm_video_stream_step(s, duration_ms)) == 0)
+   while ((r = rwebm_video_stream_step(s, duration_ms, 0)) == 0)
       ;                   /* non-shown frame: keep going      */
    return (r == 1) ? (s->out ? s->out : s->frame) : NULL;
+}
+
+int rwebm_video_stream_skip(rwebm_video_stream_t *s, int *duration_ms)
+{
+   int ret;
+   if (!s) return 0;
+   while ((ret = rwebm_video_stream_step(s, duration_ms, 1)) == 0)
+      ;
+   return ret > 0 ? ret : 0;
 }
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
@@ -1450,7 +1464,7 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    }
 
    s = webm->stream;
-   if ((r = rwebm_video_stream_step(s, &duration_ms)) == 0)
+   if ((r = rwebm_video_stream_step(s, &duration_ms, 0)) == 0)
       return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
    if (r == 2)
       /* The next block's bytes have not been read yet; nothing was

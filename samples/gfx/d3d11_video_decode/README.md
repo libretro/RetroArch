@@ -261,4 +261,6 @@ that the CPU canvas stays untouched. Readbacks and waits are test-only.
 `make check` also runs a portable mock-backend core test for BUSY retries,
 partial input, seeks, reset/restore, suspend/restart and software fallback.
 Seek catch-up is asynchronous and currently replays from the first keyframe;
-long-file seek performance and actual renderer/shader/A/V acceptance remain.
+skipped frames decode without exporting shared textures. The native oracle
+checks a post-seek picture against its oracle samples through both readers.
+Long-file seek performance and actual renderer/shader/A/V acceptance remain.

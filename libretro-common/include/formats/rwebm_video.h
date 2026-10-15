@@ -163,6 +163,12 @@ void rwebm_video_stream_get_info(const rwebm_video_stream_t *stream,
 const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *stream,
       int *duration_ms);
 
+/* Decode and discard the next displayed frame without color conversion or
+ * GPU surface export. References and timestamps advance normally. Returns 1
+ * for a displayed frame, 2 for retry, 0 at end/error. While waiting, retry the
+ * same operation (next or skip), or rewind/close to cancel it. */
+int rwebm_video_stream_skip(rwebm_video_stream_t *stream, int *duration_ms);
+
 /* Enable registered VP9 hardware before playback (rewinds on success), or
  * query the active mode with enable == 0. Failure retains software state.
  * GPU next returns a non-pixel token; take the lease with hw_frame.

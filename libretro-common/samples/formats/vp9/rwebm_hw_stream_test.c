@@ -10,7 +10,7 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static uint8_t file[4096], packet[64], key[64], hidden[64], shown[64];
 static size_t used, prefix;
-static unsigned bitpos;
+static unsigned bitpos, tail_hidden;
 static unsigned lives, opens, closes, calls, decodes, exports, abandoned;
 
 static void bits(unsigned v, unsigned n)
@@ -83,10 +83,19 @@ static void fixture(unsigned matrix, unsigned range, unsigned transfer)
    nh = coded(0, 0); memcpy(hidden, packet, nh);
    ns = coded(0, 1); memcpy(shown, packet, ns);
    n = 0; memcpy(super + n, key, nk); n += nk;
-   memcpy(super + n, hidden, nh); n += nh;
-   memcpy(super + n, shown, ns); n += ns;
-   super[n++] = 0xc2; super[n++] = (uint8_t)nk; super[n++] = (uint8_t)nh;
-   super[n++] = (uint8_t)ns; super[n++] = 0xc2;
+   if (tail_hidden)
+   {
+      memcpy(super + n, shown, ns); n += ns;
+      memcpy(super + n, hidden, nh); n += nh;
+   }
+   else
+   {
+      memcpy(super + n, hidden, nh); n += nh;
+      memcpy(super + n, shown, ns); n += ns;
+   }
+   super[n++] = 0xc2; super[n++] = (uint8_t)nk;
+   super[n++] = (uint8_t)(tail_hidden ? ns : nh);
+   super[n++] = (uint8_t)(tail_hidden ? nh : ns); super[n++] = 0xc2;
    block(0, 0x80, super, n);
    block(40, 0, lace + 1, 1); prefix = used;
    block(80, 4, lace, sizeof(lace));
@@ -239,6 +248,51 @@ int main(void)
    CHECK(state == VIDEO_PLAYER_ENDED && gpu_starts == 1 && !cpu_starts && presents == 4);
    video_player_free(player); rwebm_video_stream_close(s);
    CHECK(!lives && opens == 3 && closes == 3 && abandoned == exports);
+   tail_hidden = 1;
+   fixture(1, 2, 1);
+   s = rwebm_video_stream_open_avail(file, used, prefix, &need_more); CHECK(s);
+   CHECK(rwebm_video_stream_set_hw(s, 1));
+   {
+      unsigned before = exports, decoded = decodes;
+      int ret = 2;
+      for (tries = 0; tries < 30 && ret == 2; tries++)
+      {
+         ret = rwebm_video_stream_skip(s, &duration);
+         CHECK(exports == before);
+         if (ret == 2)
+         {
+            CHECK(rwebm_video_stream_waiting(s) && s->pending);
+            CHECK(rwebm_video_stream_consumed(s) <= (size_t)(s->pending_packet.data - file));
+         }
+      }
+      CHECK(ret == 1 && decodes == decoded + 3 && duration == 40);
+      CHECK(!rwebm_video_stream_hw_frame(s, &frame));
+      for (tries = 0; tries < 30; tries++)
+         if (rwebm_video_stream_next(s, NULL)) break;
+      CHECK(tries < 30 && rwebm_video_stream_hw_frame(s, &frame));
+      CHECK(exports == before + 1 && decodes == decoded + 3);
+      held = frame;
+      CHECK(rwebm_video_stream_skip(s, NULL) == 2 && !s->pending);
+      rwebm_video_stream_set_avail(s, used);
+      CHECK(rwebm_video_stream_skip(s, &duration) == 1 && exports == before + 1);
+      CHECK(!rwebm_video_stream_hw_frame(s, &frame));
+      for (tries = 0; tries < 30; tries++)
+         if (rwebm_video_stream_next(s, NULL)) break;
+      CHECK(tries < 30 && rwebm_video_stream_hw_frame(s, &frame));
+      video_hw_frame_abandon(&frame);
+      CHECK(exports == before + 2 && rwebm_video_stream_skip(s, NULL) == 0);
+      rwebm_video_stream_rewind(s);
+      CHECK(rwebm_video_stream_skip(s, NULL) == 2 && s->pending);
+      rwebm_video_stream_rewind(s);
+      for (tries = 0; tries < 30; tries++)
+         if (rwebm_video_stream_next(s, NULL)) break;
+      CHECK(tries < 30 && rwebm_video_stream_hw_frame(s, &frame));
+      video_hw_frame_abandon(&frame);
+   }
+   rwebm_video_stream_close(s);
+   CHECK(lives == 1 && held.image);
+   video_hw_frame_abandon(&held);
+   CHECK(!lives && opens == closes && abandoned == exports);
    rvp9_set_hw_backend(NULL);
    puts("WebM hardware dispatch, superframe retries, lacing, partial input and leases passed");
    return 0;
