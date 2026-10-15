@@ -533,10 +533,14 @@ static bool cw_pick_folder(HWND owner, const char *title, char *out,
    BROWSEINFOA bi;
    char        dir[MAX_PATH];
    char       *t = utf8_to_local_string_alloc(title ? title : "");
-   memset(&bi, 0, sizeof(bi));
-   bi.hwndOwner = owner;
-   bi.lpszTitle = t;
-   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
+   bi.hwndOwner      = owner;
+   bi.lpszTitle      = t;
+   bi.ulFlags        = BIF_RETURNONLYFSDIRS;
+   bi.pidlRoot       = NULL;
+   bi.pszDisplayName = NULL;
+   bi.lpfn           = NULL;
+   bi.lParam         = 0;
+   bi.iImage         = 0;
    pidl         = SHBrowseForFolderA(&bi);
    free(t);
    if (!pidl)
@@ -556,10 +560,14 @@ static bool cw_pick_folder(HWND owner, const char *title, char *out,
    BROWSEINFOW bi;
    wchar_t     dir[MAX_PATH];
    wchar_t    *t = utf8_to_utf16_string_alloc(title ? title : "");
-   memset(&bi, 0, sizeof(bi));
-   bi.hwndOwner = owner;
-   bi.lpszTitle = t;
-   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
+   bi.hwndOwner      = owner;
+   bi.lpszTitle      = t;
+   bi.ulFlags        = BIF_RETURNONLYFSDIRS;
+   bi.pidlRoot       = NULL;
+   bi.pszDisplayName = NULL;
+   bi.lpfn           = NULL;
+   bi.lParam         = 0;
+   bi.iImage         = 0;
    pidl         = SHBrowseForFolderW(&bi);
    free(t);
    if (!pidl)
@@ -899,13 +907,21 @@ static HBITMAP cw_dib_from_argb(const uint32_t *bits, unsigned dims)
    void *dst = NULL;
    HBITMAP bmp;
 
-   memset(&bmi, 0, sizeof(bmi));
-   bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = (LONG)VIDEO_SCALE_W(dims);
-   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
+   bmi.bmiHeader.biSize          = sizeof(BITMAPINFOHEADER);
+   bmi.bmiHeader.biWidth         = (LONG)VIDEO_SCALE_W(dims);
+   bmi.bmiHeader.biHeight        = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
    bmi.bmiHeader.biPlanes      = 1;
-   bmi.bmiHeader.biBitCount    = 32;
-   bmi.bmiHeader.biCompression = BI_RGB;
+   bmi.bmiHeader.biBitCount      = 32;
+   bmi.bmiHeader.biCompression   = BI_RGB;
+   bmi.bmiHeader.biSizeImage     = 0;
+   bmi.bmiHeader.biXPelsPerMeter = 0;
+   bmi.bmiHeader.biYPelsPerMeter = 0;
+   bmi.bmiHeader.biClrUsed       = 0;
+   bmi.bmiHeader.biClrImportant  = 0;
+   bmi.bmiColors[0].rgbBlue      = 0;
+   bmi.bmiColors[0].rgbGreen     = 0;
+   bmi.bmiColors[0].rgbRed       = 0;
+   bmi.bmiColors[0].rgbReserved  = 0;
 
    bmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, &dst, NULL, 0);
    if (bmp && dst)
@@ -1906,13 +1922,16 @@ static HWND cw_float_window(ui_companion_win32_wimp_t *w, enum companion_dock_id
    if (!w->float_class_registered)
    {
       WNDCLASSA wc;
-      memset(&wc, 0, sizeof(wc));
       wc.lpfnWndProc   = cw_float_wndproc;
       wc.hInstance     = inst;
       wc.hCursor       = LoadCursorA(NULL, MAKEINTRESOURCEA(32512));
       wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
       wc.lpszClassName = COMPANION_WIN32_FLOAT_CLASS;
       wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
+      wc.style         = 0;
+      wc.cbClsExtra    = 0;
+      wc.cbWndExtra    = 0;
+      wc.lpszMenuName  = NULL;
       if (!cw_register_class(&wc))
          return NULL;
       w->float_class_registered = true;
@@ -2716,13 +2735,21 @@ static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
       BITMAPINFO bmi;
       void *dst = NULL;
       HBITMAP bmp;
-      memset(&bmi, 0, sizeof(bmi));
-      bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-      bmi.bmiHeader.biWidth       = (LONG)VIDEO_SCALE_W(dims);
-      bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
+      bmi.bmiHeader.biSize          = sizeof(BITMAPINFOHEADER);
+      bmi.bmiHeader.biWidth         = (LONG)VIDEO_SCALE_W(dims);
+      bmi.bmiHeader.biHeight        = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
       bmi.bmiHeader.biPlanes      = 1;
-      bmi.bmiHeader.biBitCount    = 32;
-      bmi.bmiHeader.biCompression = BI_RGB;
+      bmi.bmiHeader.biBitCount      = 32;
+      bmi.bmiHeader.biCompression   = BI_RGB;
+      bmi.bmiHeader.biSizeImage     = 0;
+      bmi.bmiHeader.biXPelsPerMeter = 0;
+      bmi.bmiHeader.biYPelsPerMeter = 0;
+      bmi.bmiHeader.biClrUsed       = 0;
+      bmi.bmiHeader.biClrImportant  = 0;
+      bmi.bmiColors[0].rgbBlue      = 0;
+      bmi.bmiColors[0].rgbGreen     = 0;
+      bmi.bmiColors[0].rgbRed       = 0;
+      bmi.bmiColors[0].rgbReserved  = 0;
       bmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, &dst, NULL, 0);
       if (!bmp || !dst)
       {
@@ -3380,12 +3407,16 @@ static HWND cw_table_window(ui_companion_win32_wimp_t *w, const char *cls,
    HINSTANCE inst = GetModuleHandleA(NULL);
    WNDCLASSA wc;
    HWND hwnd;
-   memset(&wc, 0, sizeof(wc));
    wc.lpfnWndProc   = proc;
    wc.hInstance     = inst;
    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
    wc.lpszClassName = cls;
+   wc.style         = 0;
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.hIcon         = NULL;
+   wc.lpszMenuName  = NULL;
    cw_register_class(&wc);
    hwnd = cw_create(WS_EX_TOOLWINDOW, cls, title, WS_OVERLAPPEDWINDOW,
          CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, width), CW_S(w, 420),
@@ -4089,7 +4120,6 @@ static void cw_cores_place(ui_companion_win32_wimp_t *w, size_t rows)
       ver_w = CW_S(w, 90);
    if (rows)
    {
-      memset(&item, 0, sizeof(item));
       item.left = LVIR_BOUNDS;
       if (SendMessageA(w->cores_list, LVM_GETITEMRECT, 0, (LPARAM)&item))
          row_h = item.bottom - item.top;
@@ -4328,13 +4358,16 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
    if (w->cores_hwnd)
       return true;
 
-   memset(&wc, 0, sizeof(wc));
    wc.lpfnWndProc   = cw_cores_wndproc;
    wc.hInstance     = inst;
    wc.hCursor       = LoadCursorA(NULL, MAKEINTRESOURCEA(32512));
    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
    wc.lpszClassName = COMPANION_WIN32_CORES_CLASS;
    wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
+   wc.style         = 0;
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.lpszMenuName  = NULL;
    if (!cw_register_class(&wc))
       return false;
    w->cores_class_registered = true;
@@ -5291,7 +5324,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->drag_pane = -1;
 
 
-   memset(&wc, 0, sizeof(wc));
    wc.style         = CS_HREDRAW | CS_VREDRAW;
    wc.lpfnWndProc   = cw_wndproc;
    wc.hInstance     = inst;
@@ -5299,6 +5331,9 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
    wc.lpszClassName = COMPANION_WIN32_CLASS;
    wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
+   wc.cbClsExtra    = 0;
+   wc.cbWndExtra    = 0;
+   wc.lpszMenuName  = NULL;
 
    if (!cw_register_class(&wc))
       return false;
@@ -5399,7 +5434,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          }
          if (!bmp)
          {
-            memset(&sfi, 0, sizeof(sfi));
             if (SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY, &sfi,
                      sizeof(sfi),
                      SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES)
@@ -5604,7 +5638,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
        * draws, so drives / folders / file types look right and its
        * transparency is the shell's own. Never destroyed by us. */
       SHFILEINFOA sfi;
-      memset(&sfi, 0, sizeof(sfi));
       w->sys_small = (HIMAGELIST)SHGetFileInfoA("C:\\", 0, &sfi, sizeof(sfi),
             SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
    }

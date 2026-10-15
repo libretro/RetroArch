@@ -494,9 +494,9 @@ static int smb_wait_for_reply(struct smb2_context *ctx,
    {
       struct pollfd pfd;
 
-      memset(&pfd, 0, sizeof(pfd));
-      pfd.fd     = smb2_get_fd(ctx);
-      pfd.events = (short)smb2_which_events(ctx);
+      pfd.fd      = smb2_get_fd(ctx);
+      pfd.events  = (short)smb2_which_events(ctx);
+      pfd.revents = 0;
 
       if (socket_poll(&pfd, 1, 1000) < 0)
          return -1;

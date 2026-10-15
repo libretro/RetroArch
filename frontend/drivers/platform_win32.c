@@ -442,7 +442,6 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       if (rtl_version)
       {
          OSVERSIONINFOEXW vi_w;
-         memset(&vi_w, 0, sizeof(vi_w));
          vi_w.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
 
          if (rtl_version(&vi_w) == 0)
@@ -1517,9 +1516,24 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    GetModuleFileName(NULL, executable_path, PATH_MAX_LENGTH);
    path_set(RARCH_PATH_CORE, executable_path);
 
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&pi, 0, sizeof(pi));
+   si.cb              = sizeof(si);
+   si.lpReserved      = NULL;
+   si.lpDesktop       = NULL;
+   si.lpTitle         = NULL;
+   si.dwX             = 0;
+   si.dwY             = 0;
+   si.dwXSize         = 0;
+   si.dwYSize         = 0;
+   si.dwXCountChars   = 0;
+   si.dwYCountChars   = 0;
+   si.dwFillAttribute = 0;
+   si.dwFlags         = 0;
+   si.wShowWindow     = 0;
+   si.cbReserved2     = 0;
+   si.lpReserved2     = NULL;
+   si.hStdInput       = NULL;
+   si.hStdOutput      = NULL;
+   si.hStdError       = NULL;
 
    if (!CreateProcess(executable_path, GetCommandLine(),
          NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
@@ -1644,9 +1658,24 @@ static bool create_win32_process(char* cmd, const char * input)
    STARTUPINFO si;
    HANDLE rd = NULL;
    bool ret  = false;
-   memset(&si, 0, sizeof(si));
-   si.cb = sizeof(si);
-   memset(&g_pi, 0, sizeof(g_pi));
+   si.cb              = sizeof(si);
+   si.lpReserved      = NULL;
+   si.lpDesktop       = NULL;
+   si.lpTitle         = NULL;
+   si.dwX             = 0;
+   si.dwY             = 0;
+   si.dwXSize         = 0;
+   si.dwYSize         = 0;
+   si.dwXCountChars   = 0;
+   si.dwYCountChars   = 0;
+   si.dwFillAttribute = 0;
+   si.dwFlags         = 0;
+   si.wShowWindow     = 0;
+   si.cbReserved2     = 0;
+   si.lpReserved2     = NULL;
+   si.hStdInput       = NULL;
+   si.hStdOutput      = NULL;
+   si.hStdError       = NULL;
 
    if (input)
    {
