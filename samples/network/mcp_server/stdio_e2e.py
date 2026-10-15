@@ -75,11 +75,13 @@ msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
-          'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT'):
+          'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
+          'REPLAY'):
     check('tool %s listed' % n, n in names)
 # A family of hotkeys is one tool with a choice, not a tool apiece.
-for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT'):
-    check('%s is folded into its family' % n, n not in names)
+for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
+          'SEEK_REPLAY', 'HALT_REPLAY', 'SAVE_FILES'):
+    check('%s is not a tool of its own' % n, n not in names)
 # A hotkey that steps a selection nothing can read back is a command on
 # every line interface and not a tool.
 for n in ('SAVE_STATE', 'STATE_SLOT_PLUS', 'SHADER_NEXT', 'READ_CORE_RAM',
@@ -100,7 +102,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total catches a tool added by accident,
 # and the ceiling on each one catches prose: an average would not, as
-# folding small tools into one raises it. 24019 at 41 tools.
+# folding small tools into one raises it. 22677 at 34 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)

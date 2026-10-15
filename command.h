@@ -690,14 +690,19 @@ bool command_video_reinit(command_t *cmd, const char* arg);
 bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
-/* MENU <button>, DISK <action>, REINIT <driver>: the hotkeys and
- * commands of one family behind one name, as one tool. */
+/* MENU <button>, DISK <action>, REINIT <driver>, STATE <action> <slot>,
+ * REPLAY <action> [slot|frame]: the hotkeys and commands of one family
+ * behind one name, as one tool. */
 #define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
 #define COMMAND_DISK_ACTIONS   "eject|next|prev"
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
+#define COMMAND_STATE_ACTIONS  "save|load"
+#define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
+bool command_state(command_t *cmd, const char *arg);
+bool command_replay(command_t *cmd, const char *arg);
 
 /* The parameters of the commands that take any. Several commands take
  * the same ones; what tells READ_CORE_RAM from READ_CORE_MEMORY is the
@@ -853,6 +858,22 @@ static const struct cmd_param cmd_params_disk[] = {
 static const struct cmd_param cmd_params_reinit[] = {
    { "driver", "Which driver, or all of them.", CMD_PARAM_STRING, true,
       NULL, COMMAND_REINIT_DRIVERS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_state[] = {
+   { "action", "Save to the slot, overwriting it, or load from it, "
+      "replacing the game state.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_STATE_ACTIONS, NULL },
+   { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_replay[] = {
+   { "action", "Play the replay in a slot, seek the playing one to a "
+      "frame, record one to the current slot, halt playing or recording, "
+      "or add a checkpoint to the one recording.", CMD_PARAM_STRING, true,
+      NULL, COMMAND_REPLAY_ACTIONS, NULL },
+   { "number", "The slot to play, or the frame to seek to.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_frame[] = {
@@ -1024,13 +1045,15 @@ static const struct cmd_action_map action_map[] = {
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map, tab separated: the first four fields of each region are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
-   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE, cmd_params_frame },
+   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_frame },
+   { "REPLAY",        command_replay,        "<play|seek|record|halt|checkpoint> [slot|frame]", "Play, seek, record, halt or checkpoint a replay.", CMD_INFO_DESTRUCTIVE, cmd_params_replay },
 
-   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
@@ -1068,9 +1091,9 @@ static const struct cmd_map map[] = {
    { "STATE_SLOT_MINUS", RARCH_STATE_SLOT_MINUS, "Select the previous save state slot.", CMD_INFO_NO_TOOL },
 
    { "PLAY_REPLAY", RARCH_PLAY_REPLAY_KEY, "Play back the replay in the current slot.", CMD_INFO_NO_TOOL },
-   { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE },
-   { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", 0 },
-   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", 0 },
+   { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", CMD_INFO_NO_TOOL },
+   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", CMD_INFO_NO_TOOL },
    { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY, "Seek the replay back to the previous checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
    { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY, "Seek the replay forward to the next checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
    { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", CMD_INFO_NO_TOOL },

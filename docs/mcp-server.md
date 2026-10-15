@@ -78,7 +78,7 @@ Over stdin and stdout RetroArch also offers logging: after
 ## What the tools do
 
 Each command is one tool, named as the command (`GET_STATUS`,
-`SAVE_STATE_SLOT`, `SCREENSHOT`). Its parameters are named, typed and
+`STATE`, `SCREENSHOT`). Its parameters are named, typed and
 marked needed or not, so a client is told what to send rather than
 having to write the command's own line by hand:
 
@@ -87,7 +87,7 @@ having to write the command's own line by hand:
   "arguments": { "core": "/path/to/core.so", "content": "/games/a.rom" } }
 ```
 
-`SAVE_STATE_SLOT` takes `slot` as a number, `GET_PLAYLIST` takes
+`STATE` takes an `action` and a `slot` number, `GET_PLAYLIST` takes
 `playlist` and an optional `first`, `SET_OPTION` takes `option` and a
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
@@ -180,9 +180,9 @@ server's version, and neither are the toggle hotkeys or
 Nor is a hotkey that steps a selection. A person presses
 `STATE_SLOT_PLUS` while watching the slot on screen; for a program the
 command that takes the value outright is the tool, and stepping towards
-it is only a way to get the value wrong: `SAVE_STATE_SLOT` over
-`STATE_SLOT_PLUS` and `SAVE_STATE`, `SEEK_REPLAY` over
-`NEXT_REPLAY_CHECKPOINT`, `PLAY_REPLAY_SLOT` over `PLAY_REPLAY`. Where
+it is only a way to get the value wrong: `STATE save` over
+`STATE_SLOT_PLUS` and `SAVE_STATE`, `REPLAY seek` over
+`NEXT_REPLAY_CHECKPOINT`, `REPLAY play` over `PLAY_REPLAY`. Where
 nothing reports the selection either - which cheat is picked, which
 shader preset is loaded - there is nothing worth offering yet, and a
 tool that writes where it cannot read is worse than none.
@@ -195,8 +195,13 @@ address and is not one, and `GET_MEMORY_MAP` answers the addresses
 The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
 and until something answers where they landed, stepping is all there is
 - and a disc swap is part of playing a game. Each is one tool taking a
-choice - `MENU down`, `DISK next` - rather than a tool per hotkey, and
-`REINIT video|audio|all` likewise stands for the three driver restarts.
+choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
+`REINIT`, `STATE` and `REPLAY` stand for their families likewise:
+`STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
+`SEEK_REPLAY 600`.
+
+`SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
+files itself, and playing a game does not need them.
 
 All of them are still commands on the network and stdin interfaces,
 where a person is typing and can see what happened.
@@ -399,11 +404,9 @@ the reason:
 - `LOAD_CONTENT`, `START_CORE`: the content's path once it runs; a core
   that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
   the content is closed. Requests sent while content loads wait for it.
-- `LOAD_STATE_SLOT`, `SAVE_STATE_SLOT`: once the state is applied or
-  written.
-- `PLAY_REPLAY_SLOT`, `RECORD_REPLAY`, `SEEK_REPLAY` and the replay
-  checkpoint tools: once the replay has started, or the seek or
-  checkpoint has run.
+- `STATE`: once the state is applied or written.
+- `REPLAY`: once the replay has started, or the seek or checkpoint has
+  run.
 - `SET_SHADER`: the preset's path once it has compiled.
 - `AI_SERVICE`: one translation of the screen, answered with the
   service's text.
@@ -420,7 +423,7 @@ tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
 Hotkey tools (`MENU`, `DISK`) press the hotkey for one frame.
-`SCREENSHOT` and the replay recording and checkpoint tools are the exceptions, answered as above; `SCREENSHOT`
+`SCREENSHOT` and `REPLAY` are the exceptions, answered as above; `SCREENSHOT`
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
@@ -431,7 +434,7 @@ Every tool carries hints for the client:
 - **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`,
   `GET_MEMORY_MAP`, `GET_CORE_OPTION`);
 - **destructive**: can lose unsaved progress or data, or loads code
-  (`QUIT`, `RESET`, `LOAD_STATE_SLOT`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
+  (`QUIT`, `RESET`, `STATE`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
   `LOAD_CONTENT`).
 
 `SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`

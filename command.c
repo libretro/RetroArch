@@ -1073,28 +1073,56 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
-/* MENU, DISK and REINIT: a family of commands as one, so a structured
- * client is offered one tool with a choice rather than a tool apiece.
- * Each word runs as the command it stands for, which line clients can
- * still send by name. */
+/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
+ * so a structured client is offered one tool with a choice rather than
+ * a tool apiece. Each word runs as the command it stands for, which
+ * line clients can still send by name; @rest says it takes what
+ * follows the word, a slot or a frame. */
+struct cmd_choice
+{
+   const char *word;
+   const char *name;
+   bool        rest;
+};
+
 static bool command_run_choice(command_t *cmd, const char *family,
-      const char *const (*choices)[2], size_t count, const char *values,
+      const struct cmd_choice *choices, size_t count, const char *values,
       const char *arg)
 {
-   size_t i;
+   size_t      i;
+   size_t      n;
+   const char *rest;
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg)
+      arg = "";
+   for (rest = arg; *rest && *rest != ' '; rest++)
+      ;
+   n = (size_t)(rest - arg);
+   while (*rest == ' ')
+      rest++;
    for (i = 0; i < count; i++)
-      if (string_is_equal(arg, choices[i][0]))
-         return command_run(cmd, choices[i][1], NULL);
+   {
+      if (strncmp(arg, choices[i].word, n) || choices[i].word[n])
+         continue;
+      if (!choices[i].rest && *rest)
+      {
+         command_reply_error(cmd, family, "nothing after %s",
+               choices[i].word);
+         return false;
+      }
+      return command_run(cmd, choices[i].name, rest);
+   }
    command_reply_error(cmd, family, "one of %s", values);
    return false;
 }
 
 bool command_menu(command_t *cmd, const char *arg)
 {
-   static const char *const choices[][2] = {
-      { "up",    "MENU_UP"    }, { "down",  "MENU_DOWN"  },
-      { "left",  "MENU_LEFT"  }, { "right", "MENU_RIGHT" },
-      { "a",     "MENU_A"     }, { "b",     "MENU_B"     }
+   static const struct cmd_choice choices[] = {
+      { "up",    "MENU_UP",    false }, { "down",  "MENU_DOWN",  false },
+      { "left",  "MENU_LEFT",  false }, { "right", "MENU_RIGHT", false },
+      { "a",     "MENU_A",     false }, { "b",     "MENU_B",     false }
    };
    return command_run_choice(cmd, "MENU", choices, ARRAY_SIZE(choices),
          COMMAND_MENU_BUTTONS, arg);
@@ -1102,9 +1130,10 @@ bool command_menu(command_t *cmd, const char *arg)
 
 bool command_disk(command_t *cmd, const char *arg)
 {
-   static const char *const choices[][2] = {
-      { "eject", "DISK_EJECT_TOGGLE" }, { "next", "DISK_NEXT" },
-      { "prev",  "DISK_PREV"         }
+   static const struct cmd_choice choices[] = {
+      { "eject", "DISK_EJECT_TOGGLE", false },
+      { "next",  "DISK_NEXT",         false },
+      { "prev",  "DISK_PREV",         false }
    };
    return command_run_choice(cmd, "DISK", choices, ARRAY_SIZE(choices),
          COMMAND_DISK_ACTIONS, arg);
@@ -1112,12 +1141,36 @@ bool command_disk(command_t *cmd, const char *arg)
 
 bool command_reinit(command_t *cmd, const char *arg)
 {
-   static const char *const choices[][2] = {
-      { "video", "VIDEO_REINIT" }, { "audio", "AUDIO_REINIT" },
-      { "all",   "DRIVERS_REINIT" }
+   static const struct cmd_choice choices[] = {
+      { "video", "VIDEO_REINIT",   false },
+      { "audio", "AUDIO_REINIT",   false },
+      { "all",   "DRIVERS_REINIT", false }
    };
    return command_run_choice(cmd, "REINIT", choices, ARRAY_SIZE(choices),
          COMMAND_REINIT_DRIVERS, arg);
+}
+
+bool command_state(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "save", "SAVE_STATE_SLOT", true },
+      { "load", "LOAD_STATE_SLOT", true }
+   };
+   return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
+         COMMAND_STATE_ACTIONS, arg);
+}
+
+bool command_replay(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "play",       "PLAY_REPLAY_SLOT",       true  },
+      { "seek",       "SEEK_REPLAY",            true  },
+      { "record",     "RECORD_REPLAY",          false },
+      { "halt",       "HALT_REPLAY",            false },
+      { "checkpoint", "SAVE_REPLAY_CHECKPOINT", false }
+   };
+   return command_run_choice(cmd, "REPLAY", choices, ARRAY_SIZE(choices),
+         COMMAND_REPLAY_ACTIONS, arg);
 }
 
 bool command_interfaces_held(void)
@@ -1279,17 +1332,16 @@ static bool command_arg_uint(const char *arg, unsigned *out)
    char         *end = NULL;
    unsigned long v;
 
-   if (!arg || !*arg)
+   if (!arg || *arg < '0' || *arg > '9')
       return false;
    v = strtoul(arg, &end, 10);
-   if (end == arg)
-      return false;
    while (*end == ' ')
       end++;
    if (*end)
       return false;
    *out = (unsigned)v;
-   return true;
+   /* range-checked before narrowing, so 4294967297 is not slot 1 */
+   return (unsigned long)*out == v;
 }
 
 static bool command_load_state_start(struct command_reply *r)

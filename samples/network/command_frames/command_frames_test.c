@@ -261,6 +261,23 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\tnone\tnone\n"));
 
+   /* a family of commands as one: the word picks the command, and only
+    * the ones that take a number take what follows */
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of up|"));
+   reply[0]=0;
+   CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"nothing after up"));
+   reply[0]=0;
+   CHECK(!command_replay(&cmd,"record 3") && strstr(reply,"nothing after record"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"keep 1") && strstr(reply,"one of save|load"));
+   /* a slot past 32 bits is refused, not taken as slot 1 */
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"load 4294967297") && strstr(reply,"ERROR"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"save -1") && strstr(reply,"ERROR"));
+   cmd.error=false;
+
    /* WATCH carries a look along with every step. Known bytes first:
     * the memory tests above wrote over what retro_init left. */
    CHECK(command_write_memory(&cmd,"1001 11 22 33"));
