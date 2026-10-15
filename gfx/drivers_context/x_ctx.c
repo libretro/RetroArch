@@ -155,8 +155,137 @@ static int x_log_error_handler(Display *dpy, XErrorEvent *event)
 
 static int x_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
+#if defined(HAVE_VIDEO_WINDOWS) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+/* Interval 0 for a secondary's drawable, current, by
+ * gfx_ctx_x_swap_interval()'s choice of call without its logging. EXT
+ * and MESA set that drawable's own, so once is enough and the main
+ * window keeps its interval; SGI has no 0. */
+static void gfx_ctx_x_window_interval(gfx_ctx_x_data_t *x,
+      GLXDrawable drawable)
+{
+   if (!x->is_double)
+      return;
+   if (x->swap_mode && g_pglSwapInterval)
+      g_pglSwapInterval(0);
+   else if (g_pglSwapIntervalEXT)
+      g_pglSwapIntervalEXT(g_x11_dpy, drawable, 0);
+   else if (g_pglSwapInterval)
+      g_pglSwapInterval(0);
+}
+
+/* A secondary window is drawn with the main window's context, on a
+ * GLX window of the same config; NULL puts the context back on the main
+ * window. */
+static bool gfx_ctx_x_window_bind_gl(void *data,
+      video_window_native_t *window)
+{
+   GLXDrawable drawable;
+   gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+
+   if (!x || !x->ctx || !g_x11_dpy)
+      return false;
+   if (!window)
+      return    x->glx_win
+             && glXMakeContextCurrent(g_x11_dpy, x->glx_win, x->glx_win,
+                  x->ctx);
+   if (     !state || state->common.owner != data || state->common.closed
+         || !state->drawable)
+      return false;
+   drawable = (GLXDrawable)(uintptr_t)state->drawable;
+   if (!glXMakeContextCurrent(g_x11_dpy, drawable, drawable, x->ctx))
+   {
+      /* A drawable that cannot be made current fails the window, and
+       * the main window's is current again */
+      gfx_ctx_x_window_bind_gl(data, NULL);
+      video_window_mark_closed(&state->common);
+      return false;
+   }
+   if (!state->interval_set)
+   {
+      gfx_ctx_x_window_interval(x, drawable);
+      state->interval_set = true;
+   }
+   return true;
+}
+
+static bool gfx_ctx_x_window_present_gl(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+   if (     !x || !state || state->common.owner != data
+         || state->common.closed
+         || !state->drawable || !window->presentable)
+      return false;
+   if (x->is_double)
+      glXSwapBuffers(g_x11_dpy, (GLXDrawable)(uintptr_t)state->drawable);
+   return true;
+}
+
+static void gfx_ctx_x_window_destroy(void *data,
+      video_window_native_t *window)
+{
+   gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
+   x11_video_window_t *state = window
+      ? (x11_video_window_t*)window->state : NULL;
+   if (!x || !state || state->common.owner != data)
+      return;
+   if (state->drawable)
+   {
+      GLXDrawable drawable = (GLXDrawable)(uintptr_t)state->drawable;
+      if (glXGetCurrentDrawable() == drawable)
+         gfx_ctx_x_window_bind_gl(data, NULL);
+      glXDestroyWindow(g_x11_dpy, drawable);
+   }
+   x11_video_window_destroy(data, window);
+}
+
+static bool gfx_ctx_x_window_create(void *data,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   XVisualInfo *vi;
+   GLXWindow drawable;
+   bool ok;
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+
+   if (!x || !x->ctx || !x->glx_win)
+      return false;
+   if (!(vi = glXGetVisualFromFBConfig(g_x11_dpy, x->fbc)))
+      return false;
+   ok = x11_video_window_create(data, request, window, vi->visual,
+         vi->depth);
+   XFree(vi);
+   if (!ok)
+      return false;
+   if (!(drawable = glXCreateWindow(g_x11_dpy, x->fbc,
+               (Window)(uintptr_t)window->surface, NULL)))
+   {
+      x11_video_window_destroy(data, window);
+      return false;
+   }
+   x11_video_window_show(window, (void*)(uintptr_t)drawable, drawable);
+   return true;
+}
+
+static const gfx_ctx_window_driver_t gfx_ctx_x_windows = {
+   gfx_ctx_x_window_create,
+   x11_video_window_update,
+   x11_video_window_poll,
+   gfx_ctx_x_window_bind_gl,
+   gfx_ctx_x_window_present_gl,
+   gfx_ctx_x_window_destroy
+};
+#endif
+
 static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 {
+#if defined(HAVE_VIDEO_WINDOWS) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+   if (g_x11_dpy)
+      x11_video_windows_free(x, gfx_ctx_x_window_destroy);
+#endif
    x11_input_ctx_destroy();
 
    if (g_x11_dpy)
@@ -1340,10 +1469,16 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    gfx_ctx_x_shared_context_new,
    gfx_ctx_x_shared_context_bind,
-   gfx_ctx_x_shared_context_free
+   gfx_ctx_x_shared_context_free,
+#ifdef HAVE_VIDEO_WINDOWS
+   &gfx_ctx_x_windows
+#else
+   NULL  /* windows */
+#endif
 #else
    NULL, /* shared_context_new */
    NULL, /* shared_context_bind */
-   NULL  /* shared_context_free */
+   NULL, /* shared_context_free */
+   NULL  /* windows */
 #endif
 };

@@ -13,8 +13,10 @@
 #include <time/rtime.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
+#include <retro_timers.h>
 
 #include "../../../configuration.h"
+#include "../../../verbosity.h"
 #include "../../../gfx/video_windows.h"
 #include "../../../retroarch.h"
 #include "../../../runloop.h"
@@ -37,6 +39,64 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#endif
+
+#ifdef HAVE_X11
+#include <X11/Xatom.h>
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#include "../../../gfx/common/x11_common.h"
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#define NATIVE_GLX
+#include <GL/glx.h>
+#endif
+#endif
+
+#ifdef HAVE_WAYLAND
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include "../../../gfx/common/wayland_common.h"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#define NATIVE_WIN32
+#include "../../../gfx/common/win32_common.h"
+#include "../../../ui/ui_companion_driver.h"
+#include <queues/task_queue.h>
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+#define NATIVE_WGL
+#endif
+#endif
+
+#if defined(HAVE_SDL3) || defined(HAVE_SDL2)
+#define NATIVE_SDL
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#endif
+#ifndef HAVE_LIBDECOR_H
+#define NATIVE_NO_LIBDECOR
+#endif
+#ifdef HAVE_SDL3
+#include "../../../gfx/common/sdl3_common.h"
+#else
+#include "../../../gfx/common/sdl2_common.h"
+#include "SDL_syswm.h"
+#endif
+/* SDL 2's SDL_config.h has its own build's HAVE_LIBDECOR_H */
+#ifdef NATIVE_NO_LIBDECOR
+#undef HAVE_LIBDECOR_H
+#endif
+#endif
+
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND) || defined(NATIVE_WIN32) \
+   || defined(NATIVE_SDL)
+#define NATIVE_WINDOWS
+#if defined(HAVE_EGL) && !defined(HAVE_DYNAMIC_EGL)
+#define NATIVE_EGL
+#include <EGL/egl.h>
+#endif
 #endif
 
 static unsigned failures;
@@ -4507,6 +4567,209 @@ static void test_window_idle_logo(void)
    p_disp->dispctx = saved;
 }
 #endif
+#include "native_windows.c"
+#include "native_x11.c"
+#include "native_wayland.c"
+#include "native_win32.c"
+#include "native_sdl.c"
+
+/* 'core': a 3.2 core GL context, as glcore asks for; else the
+ * driver's default one, as gl does */
+static void test_window_native_lifecycle(const char *ident, bool core)
+{
+   video_window_request_t request;
+   video_window_native_t window;
+   unsigned restart;
+   unsigned previous    = 0;
+   enum gfx_ctx_api api = strstr(ident, "vk")
+      ? GFX_CTX_VULKAN_API : strcmp(ident, "d3d") == 0
+      ? GFX_CTX_NONE : GFX_CTX_OPENGL_API;
+#ifdef NATIVE_WIN32
+   /* This is the main thread, which may keep the main window up for
+    * the next lifetime (win32_window_keep()) */
+   if (native_w32_ident(ident))
+      task_queue_init(false, NULL);
+#endif
+   for (restart = 0; restart < 2; restart++)
+   {
+      const gfx_ctx_driver_t *ctx;
+      void *ctx_data = NULL;
+      memset(&request, 0, sizeof(request));
+      memset(&window, 0, sizeof(window));
+      request.screen        = 1;
+      request.generation    = video_driver_window_generation();
+      request.settings.mode = VIDEO_WINDOW_SEPARATE;
+      request.settings.dims = VIDEO_SCALE_PACK(320, 240);
+      CHECK(request.generation > previous);
+      strlcpy(config_get_ptr()->arrays.video_context_driver, ident,
+            sizeof(config_get_ptr()->arrays.video_context_driver));
+#if defined(HAVE_VULKAN) && defined(HAVE_X11) && defined(HAVE_XCB)
+      /* Vulkan contexts are not on the GL list */
+      if (strcmp(ident, "vk_x") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_vk_x, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_WAYLAND)
+      if (strcmp(ident, "vk_wayland") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_vk_wayland, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#if defined(HAVE_VULKAN) && defined(HAVE_SDL3)
+      if (strcmp(ident, "vk_sdl3") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_sdl3_vk, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+#ifdef NATIVE_WIN32
+#ifdef HAVE_VULKAN
+      if (strcmp(ident, "vk_w") == 0)
+         ctx = video_context_driver_init(false, config_get_ptr(), NULL,
+               &gfx_ctx_w_vk, ident, api, 1, 0, false, &ctx_data);
+      else
+#endif
+      /* No context: the native table a Direct3D driver uses */
+      if (strcmp(ident, "d3d") == 0)
+         ctx = native_w32_d3d_init(&ctx_data);
+      else
+#endif
+      ctx = video_context_driver_init_first(NULL, ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0), false,
+            &ctx_data);
+      CHECK(ctx != NULL);
+      if (!ctx)
+         return;
+      fprintf(stderr, "native context: requested %s, selected %s\n",
+            ident, ctx->ident);
+      CHECK(strcmp(ctx->ident, ident) == 0);
+      if (strcmp(ctx->ident, ident) != 0)
+      {
+         ctx->destroy(ctx_data);
+         return;
+      }
+      /* A failed set_video_mode has freed the context already */
+      if (!ctx->set_video_mode(ctx_data, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         CHECK(!"set_video_mode");
+         return;
+      }
+      if (api == GFX_CTX_OPENGL_API)
+         ctx->swap_interval(ctx_data, 1);
+      CHECK(ctx->windows != NULL);
+      if (     ctx->windows
+            && !(     ctx->windows->create && ctx->windows->update
+                   && ctx->windows->poll   && ctx->windows->destroy))
+      {
+         CHECK(!"window operations");
+         ctx->destroy(ctx_data);
+         return;
+      }
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+         native_window_input = native_w32_pump;
+#endif
+      if (ctx->windows)
+      {
+         CHECK(ctx->windows->create(ctx_data, &request, &window));
+         CHECK(window.generation == request.generation);
+         CHECK(window.surface != NULL && window.state != NULL);
+#ifdef HAVE_X11
+         if (native_x11_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_X11);
+            if (window.state)
+               native_x11_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef HAVE_WAYLAND
+         if (native_wl_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_WAYLAND);
+            native_wl_input((gfx_ctx_wayland_data_t*)ctx_data, true);
+            if (window.state)
+               native_wl_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef NATIVE_WIN32
+         if (native_w32_ident(ident))
+         {
+            CHECK(window.kind == VIDEO_WINDOW_NATIVE_WIN32);
+            if (window.state)
+               native_w32_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+#ifdef NATIVE_SDL
+         if (native_sdl_ident(ident))
+         {
+            CHECK(window.kind == NATIVE_SDL_KIND);
+            if (window.state)
+               native_sdl_lifecycle(ctx, ctx_data, &request, &window);
+         }
+#endif
+         previous = window.generation;
+#ifdef HAVE_X11
+         /* The context takes the window down, with a close and a resize
+          * queued for it that the next lifetime must not see */
+         if (!restart && window.state && native_x11_ident(ident))
+         {
+            Window w = (Window)(uintptr_t)window.surface;
+            XResizeWindow(g_x11_dpy, w, 500, 400);
+            native_x11_close(g_x11_dpy, w);
+            XSync(g_x11_dpy, False);
+         }
+#endif
+#ifdef HAVE_WAYLAND
+         /* Focus as well, by the seat */
+         if (!restart && window.state && native_wl_ident(ident))
+         {
+            native_wl_kwin(request.screen, "var g = w.frameGeometry;"
+                  " w.frameGeometry = {x: g.x, y: g.y, width: 500,"
+                  " height: 400}; w.closeWindow();");
+            native_wl_flood((gfx_ctx_wayland_data_t*)ctx_data,
+                  (struct wl_surface*)window.surface, 100, true, true, true);
+         }
+         if (native_wl_ident(ident))
+            native_wl_input((gfx_ctx_wayland_data_t*)ctx_data, false);
+#endif
+#ifdef NATIVE_WIN32
+         if (!restart && window.state && native_w32_ident(ident))
+         {
+            HWND w = (HWND)window.surface;
+            PostMessage(w, WM_SIZE, SIZE_RESTORED, MAKELPARAM(500, 400));
+            PostMessage(w, WM_CLOSE, 0, 0);
+         }
+#endif
+#ifdef NATIVE_SDL
+         if (!restart && window.state && native_sdl_ident(ident))
+         {
+            SDL_Window *w = (SDL_Window*)window.surface;
+            native_sdl_push(w, NATIVE_SDL_RESIZE, 500, 400);
+            native_sdl_push(w, NATIVE_SDL_CLOSE, 0, 0);
+         }
+#endif
+      }
+      ctx->destroy(ctx_data);
+      CHECK(window.state == NULL && window.surface == NULL);
+#ifdef HAVE_X11
+      if (native_x11_ident(ident))
+         CHECK(native_x11_titled(g_x11_dpy, request.screen) == 0);
+#endif
+#ifdef NATIVE_WIN32
+      if (native_w32_ident(ident))
+      {
+         native_w32_torn_down(request.screen);
+         native_window_input = NULL;
+      }
+#endif
+   }
+#ifdef NATIVE_WIN32
+   /* The main window left up by the last lifetime */
+   if (native_w32_ident(ident))
+      win32_window_release_kept();
+#endif
+}
 
 /* A controller's Plays As player saved into a game override: gone with
  * the override unloaded and back with it loaded, placed at once each
@@ -4769,6 +5032,23 @@ int main(int argc, char **argv)
    if (getenv("RA_SCREEN_TEST_SCRIPT"))
       return rarch_main(argc, argv, NULL);
 #endif
+   if (     (argc == 3 || argc == 4)
+         && strcmp(argv[1], "--native-windows") == 0)
+   {
+      rtime_init();
+      retroarch_config_init();
+      retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
+      frontend_driver_init_first(NULL);
+      config_set_defaults(config_get_ptr());
+      retro_main_log_file_init(NULL, false);
+      verbosity_enable();
+      test_window_native_lifecycle(argv[2],
+            argc == 3 || strcmp(argv[3], "gl") != 0);
+      if (failures)
+         return 1;
+      puts("PASS native window lifecycle");
+      return 0;
+   }
    if (argc != 2 && argc != 3)
       return 2;
    fill_pathname_join(fixture_path, argv[1], "fixture.cfg", sizeof(fixture_path));

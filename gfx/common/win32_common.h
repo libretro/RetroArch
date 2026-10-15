@@ -35,6 +35,7 @@
 #include <retro_common_api.h>
 #include <retro_environment.h>
 #include "../../retroarch.h"
+#include "../video_windows.h"
 
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32.h"
@@ -171,6 +172,54 @@ void win32_sizemove_abort(HWND hwnd);
 #define WIN32_HOTPLUG_SETTLE_MS 250
 void win32_hotplug_arm(void);
 bool win32_hotplug_due(void);
+#endif
+
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(_XBOX) && !defined(__WINRT__)
+/* A secondary screen's window, window->state from create to destroy.
+ * Its own class and window procedure: a close is a CLOSE event only,
+ * never a quit, and the window stays until its owner destroys it.
+ * Made, pumped and destroyed on the thread that owns the main window,
+ * as only that thread's pump sees its messages; create refuses any
+ * other. The record's display is the module's HINSTANCE and its
+ * surface the HWND, both by value; the Vulkan context's (w_vk_ctx.c)
+ * holds their addresses. */
+typedef struct win32_video_window
+{
+   video_window_common_t common;
+   HWND hwnd;
+   /* The context's device context on it, if it has one */
+   HDC hdc;
+   /* Where it stood before it last went fullscreen */
+   RECT windowed;
+   /* Move and menu loops it is in */
+   unsigned char sizemove;
+   bool fullscreen;
+   bool windowed_set;
+   /* An update that waits for the window to be restored */
+   bool apply;
+   bool destroyed;
+} win32_video_window_t;
+
+/* The window comes hidden, for the context to set up its drawing on;
+ * win32_video_window_show() then shows it. */
+bool win32_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window);
+void win32_video_window_show(video_window_native_t *window);
+void win32_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned win32_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void win32_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'. */
+void win32_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+
+/* The native operations alone, for drivers without a context. D3D11
+ * and D3D12 pass their own video data as the owner, and call
+ * win32_video_windows_free(owner, win32_video_window_driver.destroy)
+ * before win32_window_keep() or win32_destroy_window(). */
+extern const gfx_ctx_window_driver_t win32_video_window_driver;
 #endif
 
 void win32_check_window(void *data,

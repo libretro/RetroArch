@@ -25,6 +25,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <retro_atomic.h>
+#ifdef HAVE_THREADS
+#include <retro_spsc.h>
+#include <rthreads/rthreads.h>
+#endif
+
 #include "wayland_common.h"
 #include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
@@ -102,6 +108,19 @@ static bool gfx_ctx_wl_should_use_legacy_fullscreen_configure(
    return false;
 }
 
+/* The buffer a surface of 'dims' takes at a scale: fractional (num of
+ * 120) through a viewport, else whole */
+static unsigned wl_scaled_dims(unsigned dims, bool fractional,
+      unsigned num, unsigned scale)
+{
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   if (fractional)
+      return VIDEO_SCALE_PACK(FRACTIONAL_SCALE_MULT(w, num),
+            FRACTIONAL_SCALE_MULT(h, num));
+   return VIDEO_SCALE_PACK(w * scale, h * scale);
+}
+
 /* Apply a latched xdg_toplevel configuration.  Runs from the
  * xdg_surface.configure handler: per xdg-shell, toplevel configure
  * events describe pending state that only becomes current when the
@@ -142,13 +161,9 @@ static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
          && (height > 0))
    {
       wl->dims          = VIDEO_SCALE_PACK(width, height);
-      wl->buffer_dims   = VIDEO_SCALE_PACK(
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num)
-            : width  * wl->buffer_scale,
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num)
-            : height * wl->buffer_scale);
+      wl->buffer_dims   = wl_scaled_dims(wl->dims,
+            wl->fractional_scale != NULL, wl->fractional_scale_num,
+            wl->buffer_scale);
       wl->resize        = true;
       if (wl->viewport)
       {
@@ -232,13 +247,9 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
          && height > 0)
    {
       wl->dims          = VIDEO_SCALE_PACK(width, height);
-      wl->buffer_dims   = VIDEO_SCALE_PACK(
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num)
-            : width  * wl->buffer_scale,
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num)
-            : height * wl->buffer_scale);
+      wl->buffer_dims   = wl_scaled_dims(wl->dims,
+            wl->fractional_scale != NULL, wl->fractional_scale_num,
+            wl->buffer_scale);
       wl->resize        = true;
       if (wl->viewport)
       {
@@ -437,15 +448,8 @@ void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims)
       *dims = oi->dims;
    }
    else
-      *dims = VIDEO_SCALE_PACK(
-            wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(VIDEO_SCALE_W(wl->dims),
-               wl->pending_fractional_scale_num)
-            : VIDEO_SCALE_W(wl->dims) * wl->pending_buffer_scale,
-            wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(VIDEO_SCALE_H(wl->dims),
-               wl->pending_fractional_scale_num)
-            : VIDEO_SCALE_H(wl->dims) * wl->pending_buffer_scale);
+      *dims = wl_scaled_dims(wl->dims, wl->fractional_scale != NULL,
+            wl->pending_fractional_scale_num, wl->pending_buffer_scale);
 }
 
 static void shm_buffer_free(shm_buffer_t *buffer)
@@ -1434,19 +1438,13 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 
    if (!fullscreen)
    {
-      unsigned bw              = VIDEO_SCALE_W(wl->buffer_dims);
-      unsigned bh              = VIDEO_SCALE_H(wl->buffer_dims);
       /* What a configure leaving the size to us restores */
       wl->floating_dims        = wl->dims;
       wl->buffer_scale         = wl->pending_buffer_scale;
       wl->fractional_scale_num = wl->pending_fractional_scale_num;
-      wl->buffer_dims          = VIDEO_SCALE_PACK(
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(bw, wl->fractional_scale_num)
-            : bw * wl->buffer_scale,
-         wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(bh, wl->fractional_scale_num)
-            : bh * wl->buffer_scale);
+      wl->buffer_dims          = wl_scaled_dims(wl->buffer_dims,
+            wl->fractional_scale != NULL, wl->fractional_scale_num,
+            wl->buffer_scale);
 
       /* out of fullscreen first, then the windowed size below */
       gfx_ctx_wl_leave_fullscreen(wl, true);
@@ -1531,6 +1529,24 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
             fullscreen ? "fullscreen" : "windowed");
 }
 
+/* Output 'monitor', counted from 1 as the monitor index setting counts
+ * them; NULL for 0 or one there is not */
+static output_info_t *wl_output_at(gfx_ctx_wayland_data_t *wl,
+      unsigned monitor)
+{
+   display_output_t *od;
+   unsigned i = 0;
+   if (monitor)
+   {
+      wl_list_for_each(od, &wl->all_outputs, link)
+      {
+         if (++i == monitor)
+            return od->output;
+      }
+   }
+   return NULL;
+}
+
 static bool gfx_ctx_wl_set_fullscreen(gfx_ctx_wayland_data_t *wl,
       bool fullscreen, bool wait_for_configure)
 {
@@ -1543,10 +1559,8 @@ static bool gfx_ctx_wl_set_fullscreen(gfx_ctx_wayland_data_t *wl,
 
    if (fullscreen)
    {
-      display_output_t *od;
       output_info_t *oi;
       struct wl_output *output = NULL;
-      int output_i             = 0;
 
 #ifdef HAVE_LIBDECOR_H
       if (video_monitor_index <= 0)
@@ -1563,16 +1577,11 @@ static bool gfx_ctx_wl_set_fullscreen(gfx_ctx_wayland_data_t *wl,
 #endif
       else
       {
-         wl_list_for_each(od, &wl->all_outputs, link)
+         if ((oi = wl_output_at(wl, video_monitor_index)))
          {
-            if (++output_i == (int)video_monitor_index)
-            {
-               oi     = od->output;
-               output = oi->output;
-               RARCH_LOG("[Wayland] Fullscreen on display %i \"%s\" \"%s\".\n", output_i, oi->make, oi->model);
-               break;
-            }
-         };
+            output = oi->output;
+            RARCH_LOG("[Wayland] Fullscreen on display %i \"%s\" \"%s\".\n", (int)video_monitor_index, oi->make, oi->model);
+         }
 
          if (!output)
             RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide.\n");
@@ -1687,6 +1696,738 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 
    *quit = (bool)frontend_driver_get_signal_handler_state();
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* Focus records the seat's handlers can queue, at least, before the
+ * context's thread takes them */
+#define WL_VIDEO_WINDOW_FOCUS_QUEUE 32
+
+typedef struct
+{
+   unsigned screen;
+   unsigned generation;
+   unsigned focused;
+} wl_video_window_focus_t;
+
+/* By screen, what the seat's handlers know a secondary by: its surface
+ * and generation, written by the context's thread (the generation
+ * first, cleared last), and its keyboard focus, written by the
+ * handlers on whichever thread handles the seat. */
+typedef struct
+{
+   retro_atomic_size_t surface;
+   retro_atomic_int_t  generation;
+   /* The generation that has the keyboard, 0 for none */
+   retro_atomic_int_t  focused;
+   /* A generation whose focus loss found the queue full */
+   retro_atomic_int_t  lost;
+} wl_video_window_ids_t;
+
+static wl_video_window_t *wl_video_windows[RETRO_VIDEO_VIEWS_MAX];
+static wl_video_window_ids_t wl_video_window_ids[RETRO_VIDEO_VIEWS_MAX];
+#ifdef HAVE_THREADS
+/* Focus from the seat's handlers on a thread that is not the
+ * context's: the frontend's, which polls the input queue */
+static retro_spsc_t wl_video_window_queue;
+static bool wl_video_window_queue_made;
+static retro_atomic_size_t wl_video_window_thread;
+#endif
+
+/* On the context's thread */
+static void wl_video_window_focus(unsigned screen, unsigned generation,
+      bool focused)
+{
+   wl_video_window_t *state = screen < RETRO_VIDEO_VIEWS_MAX
+      ? wl_video_windows[screen] : NULL;
+   if (     !state || state->common.closed
+         || state->common.request.generation != generation
+         || state->common.native->focused   == focused)
+      return;
+   state->common.native->focused = focused;
+   if (focused)
+      state->common.pending     |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+   else
+   {
+      state->common.pending     &= ~VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+      state->common.pending     |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+   }
+}
+
+void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, bool focused)
+{
+   unsigned i;
+   if (!surface || surface == wl->surface)
+      return;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      wl_video_window_ids_t *ids = &wl_video_window_ids[i];
+      int generation = retro_atomic_load_acquire_int(&ids->generation);
+      if (     !generation
+            || retro_atomic_load_acquire_size(&ids->surface)
+               != (size_t)(uintptr_t)surface
+            || retro_atomic_load_acquire_int(&ids->generation) != generation)
+         continue;
+      retro_atomic_store_release_int(&ids->focused,
+            focused ? generation : 0);
+#ifdef HAVE_THREADS
+      if (     sthread_get_current_thread_id()
+            != (uintptr_t)retro_atomic_load_acquire_size(
+               &wl_video_window_thread))
+      {
+         wl_video_window_focus_t record;
+         record.screen     = i;
+         record.generation = (unsigned)generation;
+         record.focused    = focused;
+         if (retro_spsc_write_avail(&wl_video_window_queue)
+               >= sizeof(record))
+            retro_spsc_write(&wl_video_window_queue, &record,
+                  sizeof(record));
+         else if (!focused)
+            retro_atomic_store_release_int(&ids->lost, generation);
+         return;
+      }
+#endif
+      wl_video_window_focus(i, (unsigned)generation, focused);
+      return;
+   }
+}
+
+/* What was queued, a loss the queue had no room for, then where the
+ * focus is now: the last is what the window ends up with. */
+static void wl_video_windows_take_focus(void)
+{
+   unsigned i;
+#ifdef HAVE_THREADS
+   wl_video_window_focus_t record;
+   while (     wl_video_window_queue_made
+         && retro_spsc_read_avail(&wl_video_window_queue) >= sizeof(record))
+   {
+      retro_spsc_read(&wl_video_window_queue, &record, sizeof(record));
+      wl_video_window_focus(record.screen, record.generation,
+            record.focused != 0);
+   }
+#endif
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      int lost;
+      wl_video_window_ids_t *ids = &wl_video_window_ids[i];
+      wl_video_window_t *state   = wl_video_windows[i];
+      if (     retro_atomic_load_relaxed_int(&ids->lost)
+            && (lost = retro_atomic_fetch_and_int(&ids->lost, 0)))
+         wl_video_window_focus(i, (unsigned)lost, false);
+      if (state)
+         wl_video_window_focus(i, state->common.request.generation,
+                  retro_atomic_load_acquire_int(&ids->focused)
+               == (int)state->common.request.generation);
+   }
+}
+
+static video_window_common_t *wl_video_window_at(unsigned screen)
+{
+   return wl_video_windows[screen]
+      ? &wl_video_windows[screen]->common : NULL;
+}
+
+static output_info_t *wl_video_window_output(void *owner,
+      struct wl_output *output)
+{
+   display_output_t *od;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)owner;
+   if (output)
+   {
+      wl_list_for_each(od, &wl->all_outputs, link)
+      {
+         if (od->output->output == output)
+            return od->output;
+      }
+   }
+   return NULL;
+}
+
+/* The output the window counts as being on: of those it is on, the
+ * one with the largest scale, as for the main window */
+static output_info_t *wl_video_window_on(const wl_video_window_t *state)
+{
+   unsigned i;
+   output_info_t *on = NULL;
+   for (i = 0; i < WL_VIDEO_WINDOW_OUTPUTS; i++)
+   {
+      output_info_t *oi = wl_video_window_output(state->common.owner,
+            state->outputs[i]);
+      if (oi && (!on || oi->scale > on->scale))
+         on = oi;
+   }
+   return on;
+}
+
+/* The buffer the surface's size takes at the window's scale */
+static void wl_video_window_resized(wl_video_window_t *state)
+{
+   unsigned dims;
+   video_window_native_t *window = state->common.native;
+   /* A closed window reports nothing more */
+   if (state->common.closed)
+      return;
+   dims = wl_scaled_dims(state->dims, state->fractional_scale != NULL,
+         state->fractional_scale_num, state->scale);
+   if (dims != window->dims)
+   {
+      window->dims    = dims;
+      state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   }
+}
+
+/* The viewport gives the surface its size whatever the buffer's, so a
+ * secondary never sets a buffer scale: without one it stays at 1. */
+static void wl_video_window_rescale(wl_video_window_t *state)
+{
+   output_info_t *on;
+   if (!state->viewport)
+      return;
+   if (state->preferred_buffer_scale)
+      state->scale = state->preferred_buffer_scale;
+   else if ((on = wl_video_window_on(state)) && on->scale > 0)
+      state->scale = on->scale;
+   wl_video_window_resized(state);
+}
+
+void wl_video_windows_rescale(void)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (wl_video_windows[i])
+         wl_video_window_rescale(wl_video_windows[i]);
+}
+
+static void wl_video_window_surface_enter(void *data,
+      struct wl_surface *surface, struct wl_output *output)
+{
+   unsigned i;
+   wl_video_window_t *state = (wl_video_window_t*)data;
+   for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
+      if (state->outputs[i] == output)
+         return;
+   /* An output since removed leaves its place free */
+   for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
+   {
+      if (     !state->outputs[i]
+            || !wl_video_window_output(state->common.owner,
+               state->outputs[i]))
+      {
+         state->outputs[i] = output;
+         break;
+      }
+   }
+   wl_video_window_rescale(state);
+}
+
+static void wl_video_window_surface_leave(void *data,
+      struct wl_surface *surface, struct wl_output *output)
+{
+   unsigned i;
+   wl_video_window_t *state = (wl_video_window_t*)data;
+   for (i = 0; output && i < WL_VIDEO_WINDOW_OUTPUTS; i++)
+      if (state->outputs[i] == output)
+         state->outputs[i] = NULL;
+   wl_video_window_rescale(state);
+}
+
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
+static void wl_video_window_preferred_buffer_scale(void *data,
+      struct wl_surface *surface, int32_t factor)
+{
+   wl_video_window_t *state = (wl_video_window_t*)data;
+   if (factor < 1)
+      return;
+   state->preferred_buffer_scale = (unsigned)factor;
+   wl_video_window_rescale(state);
+}
+
+static void wl_video_window_preferred_buffer_transform(void *data,
+      struct wl_surface *surface, uint32_t transform) { }
+#endif
+
+static const struct wl_surface_listener wl_video_window_surface_listener = {
+   wl_video_window_surface_enter,
+   wl_video_window_surface_leave,
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
+   wl_video_window_preferred_buffer_scale,
+   wl_video_window_preferred_buffer_transform,
+#endif
+};
+
+static void wl_video_window_preferred_scale(void *data,
+      struct wp_fractional_scale_v1 *fractional_scale, uint32_t scale)
+{
+   wl_video_window_t *state     = (wl_video_window_t*)data;
+   state->fractional_scale_num = scale;
+   wl_video_window_resized(state);
+}
+
+static const struct wp_fractional_scale_v1_listener
+wl_video_window_fractional_listener = {
+   wl_video_window_preferred_scale,
+};
+
+/* The size a configuration gives: the compositor's, the window's own
+ * for an axis of 0, and once the window floats again the one asked for
+ * while it did not */
+static unsigned wl_video_window_size(wl_video_window_t *state,
+      unsigned dims, bool floating)
+{
+   if (floating && state->floating_asked)
+   {
+      state->floating_asked = false;
+      return state->floating_dims;
+   }
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return state->floating_dims;
+   if (floating)
+      state->floating_dims = dims;
+   return dims;
+}
+
+/* A configuration the compositor made current, at the size it gives */
+static void wl_video_window_configure(wl_video_window_t *state,
+      unsigned dims, bool fullscreen, bool suspended, bool floating)
+{
+   video_window_native_t *window = state->common.native;
+   if (state->common.closed)
+      return;
+   state->dims       = dims;
+   state->fullscreen = fullscreen;
+   state->floating   = floating;
+   if (state->viewport)
+   {
+      wp_viewport_set_destination(state->viewport,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+      wl_surface_commit(state->surface);
+   }
+   wl_video_window_resized(state);
+   /* Suspended (xdg_wm_base v6) is not shown: skipped, not closed */
+   if (!window->configured || suspended != state->suspended)
+   {
+      state->common.pending &= ~(VIDEO_WINDOW_EVENT_BIT(SUSPEND)
+                               | VIDEO_WINDOW_EVENT_BIT(RESUME));
+      state->common.pending |= suspended ? VIDEO_WINDOW_EVENT_BIT(SUSPEND)
+                                         : VIDEO_WINDOW_EVENT_BIT(RESUME);
+   }
+   state->suspended    = suspended;
+   window->configured  = true;
+   window->presentable = !suspended;
+}
+
+static void wl_video_window_toplevel_configure(void *data,
+      struct xdg_toplevel *toplevel, int32_t width, int32_t height,
+      struct wl_array *states)
+{
+   const uint32_t *s;
+   wl_video_window_t *state = (wl_video_window_t*)data;
+   /* Pending until xdg_surface.configure */
+   state->cfg_dims          = VIDEO_SCALE_PACK(width  > 0 ? width  : 0,
+                                               height > 0 ? height : 0);
+   state->cfg_fullscreen    = false;
+   state->cfg_suspended     = false;
+   state->cfg_floating      = true;
+   WL_ARRAY_FOR_EACH(s, states, const uint32_t*)
+   {
+      switch (*s)
+      {
+         case XDG_TOPLEVEL_STATE_FULLSCREEN:
+            state->cfg_fullscreen = true;
+            /* fall-through */
+         case XDG_TOPLEVEL_STATE_MAXIMIZED:
+         case XDG_TOPLEVEL_STATE_TILED_LEFT:
+         case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+         case XDG_TOPLEVEL_STATE_TILED_TOP:
+         case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
+            state->cfg_floating   = false;
+            break;
+         case XDG_TOPLEVEL_STATE_SUSPENDED:
+            state->cfg_suspended  = true;
+            break;
+      }
+   }
+}
+
+/* Unlike the main window's, this close does not quit */
+static void wl_video_window_toplevel_close(void *data,
+      struct xdg_toplevel *toplevel)
+{
+   video_window_mark_closed(&((wl_video_window_t*)data)->common);
+}
+
+static void wl_video_window_surface_configure(void *data,
+      struct xdg_surface *xdg_surface, uint32_t serial)
+{
+   wl_video_window_t *state = (wl_video_window_t*)data;
+   xdg_surface_ack_configure(xdg_surface, serial);
+   wl_video_window_configure(state,
+         wl_video_window_size(state, state->cfg_dims, state->cfg_floating),
+         state->cfg_fullscreen, state->cfg_suspended, state->cfg_floating);
+}
+
+static const struct xdg_surface_listener wl_video_window_xdg_surface_listener = {
+   wl_video_window_surface_configure,
+};
+
+static const struct xdg_toplevel_listener wl_video_window_toplevel_listener = {
+   wl_video_window_toplevel_configure,
+   wl_video_window_toplevel_close,
+   xdg_toplevel_handle_configure_bounds,
+   xdg_toplevel_handle_wm_capabilities,
+};
+
+#ifdef HAVE_LIBDECOR_H
+static void wl_video_window_libdecor_configure(struct libdecor_frame *frame,
+      struct libdecor_configuration *configuration, void *data)
+{
+   enum libdecor_window_state window_state;
+   struct libdecor_state *ls;
+   unsigned dims;
+   int width                  = 0;
+   int height                 = 0;
+   bool fullscreen            = false;
+   bool suspended             = false;
+   bool floating              = true;
+   wl_video_window_t *state   = (wl_video_window_t*)data;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+
+   if (wl->libdecor_configuration_get_window_state(configuration,
+            &window_state))
+   {
+      fullscreen = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
+      /* LIBDECOR_WINDOW_STATE_SUSPENDED, libdecor 0.2 */
+      suspended  = (window_state & (1 << 7)) != 0;
+      floating   = !(window_state & (LIBDECOR_WINDOW_STATE_FULLSCREEN
+               | LIBDECOR_WINDOW_STATE_MAXIMIZED
+               | LIBDECOR_WINDOW_STATE_TILED_LEFT
+               | LIBDECOR_WINDOW_STATE_TILED_RIGHT
+               | LIBDECOR_WINDOW_STATE_TILED_TOP
+               | LIBDECOR_WINDOW_STATE_TILED_BOTTOM));
+   }
+   if (!wl->libdecor_configuration_get_content_size(configuration, frame,
+            &width, &height))
+      width = height = 0;
+   dims = wl_video_window_size(state,
+         VIDEO_SCALE_PACK(width > 0 ? width : 0, height > 0 ? height : 0),
+         floating);
+   /* Committing the configuration is what acknowledges it */
+   ls = wl->libdecor_state_new(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   wl->libdecor_frame_commit(frame, ls, configuration);
+   wl->libdecor_state_free(ls);
+   wl_video_window_configure(state, dims, fullscreen, suspended, floating);
+}
+
+static void wl_video_window_libdecor_close(struct libdecor_frame *frame,
+      void *data)
+{
+   video_window_mark_closed(&((wl_video_window_t*)data)->common);
+}
+
+static const struct libdecor_frame_interface
+wl_video_window_libdecor_interface = {
+   wl_video_window_libdecor_configure,
+   wl_video_window_libdecor_close,
+   libdecor_frame_handle_commit,
+};
+#endif
+
+/* 'monitor' as the main window's fullscreen counts outputs; missing or
+ * automatic, the one the window is on, else the compositor's choice */
+static struct wl_output *wl_video_window_fullscreen_output(
+      const wl_video_window_t *state, unsigned monitor)
+{
+   output_info_t *oi = wl_output_at(
+         (gfx_ctx_wayland_data_t*)state->common.owner, monitor);
+   if (!oi)
+      oi = wl_video_window_on(state);
+   return oi ? oi->output : NULL;
+}
+
+static void wl_video_window_set_fullscreen(wl_video_window_t *state,
+      bool fullscreen, unsigned monitor)
+{
+#ifdef HAVE_LIBDECOR_H
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+   if (state->libdecor_frame)
+   {
+      if (fullscreen)
+         wl->libdecor_frame_set_fullscreen(state->libdecor_frame,
+               wl_video_window_fullscreen_output(state, monitor));
+      else
+         wl->libdecor_frame_unset_fullscreen(state->libdecor_frame);
+      return;
+   }
+#endif
+   if (fullscreen)
+      xdg_toplevel_set_fullscreen(state->xdg_toplevel,
+            wl_video_window_fullscreen_output(state, monitor));
+   else
+      xdg_toplevel_unset_fullscreen(state->xdg_toplevel);
+}
+
+/* Saved size, else the main window's */
+static unsigned wl_video_window_dims(const gfx_ctx_wayland_data_t *wl,
+      unsigned dims)
+{
+   if (dims)
+      return dims;
+   if (VIDEO_SCALE_W(wl->dims) && VIDEO_SCALE_H(wl->dims))
+      return wl->dims;
+   return VIDEO_SCALE_PACK(DEFAULT_WINDOWED_WIDTH, DEFAULT_WINDOWED_HEIGHT);
+}
+
+static void wl_video_window_release(wl_video_window_t *state)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)state->common.owner;
+   wl_video_window_ids_t *ids =
+      &wl_video_window_ids[state->common.request.screen];
+   retro_atomic_store_release_size(&ids->surface, 0);
+   retro_atomic_store_release_int(&ids->generation, 0);
+   if (state->deco)
+      zxdg_toplevel_decoration_v1_destroy(state->deco);
+   if (state->xdg_toplevel)
+      xdg_toplevel_destroy(state->xdg_toplevel);
+   if (state->xdg_surface)
+      xdg_surface_destroy(state->xdg_surface);
+#ifdef HAVE_LIBDECOR_H
+   if (state->libdecor_frame)
+      wl->libdecor_frame_unref(state->libdecor_frame);
+#endif
+   if (state->fractional_scale)
+      wp_fractional_scale_v1_destroy(state->fractional_scale);
+   if (state->viewport)
+      wp_viewport_destroy(state->viewport);
+   wl_surface_destroy(state->surface);
+   wl_display_flush(wl->input.dpy);
+   free(state);
+}
+
+bool wl_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window)
+{
+   char title[64];
+   unsigned dims;
+   struct wl_region *opaque;
+   wl_video_window_ids_t *ids;
+   wl_video_window_t *state;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)owner;
+
+   if (     !wl || !request || !window || window->state
+         || !wl->surface || !wl->compositor || !wl->xdg_shell
+         || !request->generation
+         || !request->screen
+         || request->screen >= RETRO_VIDEO_VIEWS_MAX
+         || request->settings.mode != VIDEO_WINDOW_SEPARATE
+         || wl_video_windows[request->screen]
+         || (request->settings.dims
+            && (  !VIDEO_SCALE_W(request->settings.dims)
+               || !VIDEO_SCALE_H(request->settings.dims))))
+      return false;
+#ifdef HAVE_THREADS
+   if (!wl_video_window_queue_made)
+   {
+      if (!retro_spsc_init(&wl_video_window_queue,
+               WL_VIDEO_WINDOW_FOCUS_QUEUE * sizeof(wl_video_window_focus_t)))
+         return false;
+      wl_video_window_queue_made = true;
+   }
+#endif
+   if (!(state = (wl_video_window_t*)calloc(1, sizeof(*state))))
+      return false;
+   if (!(state->surface = wl_compositor_create_surface(wl->compositor)))
+   {
+      free(state);
+      return false;
+   }
+   dims                        = wl_video_window_dims(wl,
+         request->settings.dims);
+   state->common.owner         = wl;
+   state->common.native        = window;
+   state->common.request       = *request;
+   state->dims                 = dims;
+   state->floating_dims        = dims;
+   state->floating             = true;
+   state->scale                = 1;
+   state->fractional_scale_num = FRACTIONAL_SCALE_V1_DEN;
+   wl_surface_add_listener(state->surface,
+         &wl_video_window_surface_listener, state);
+   if (wl->viewporter)
+   {
+      state->viewport = wp_viewporter_get_viewport(wl->viewporter,
+            state->surface);
+      wp_viewport_set_destination(state->viewport,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+      /* Its scale comes before the first configure */
+      if (wl->fractional_scale_manager)
+      {
+         state->fractional_scale =
+            wp_fractional_scale_manager_v1_get_fractional_scale(
+                  wl->fractional_scale_manager, state->surface);
+         wp_fractional_scale_v1_add_listener(state->fractional_scale,
+               &wl_video_window_fractional_listener, state);
+      }
+   }
+   if ((opaque = wl_compositor_create_region(wl->compositor)))
+   {
+      wl_region_add(opaque, 0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
+      wl_surface_set_opaque_region(state->surface, opaque);
+      wl_region_destroy(opaque);
+   }
+
+   /* The seat's handlers tell the window's focus by its surface */
+#ifdef HAVE_THREADS
+   retro_atomic_store_release_size(&wl_video_window_thread,
+         (size_t)sthread_get_current_thread_id());
+#endif
+   ids = &wl_video_window_ids[request->screen];
+   retro_atomic_store_release_int(&ids->generation, (int)request->generation);
+   retro_atomic_store_release_size(&ids->surface,
+         (size_t)(uintptr_t)state->surface);
+
+   snprintf(title, sizeof(title), "RetroArch - Screen %u",
+         request->screen + 1);
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
+   {
+      if (!(state->libdecor_frame = wl->libdecor_decorate(
+                  wl->libdecor_context, state->surface,
+                  &wl_video_window_libdecor_interface, state)))
+      {
+         wl_video_window_release(state);
+         return false;
+      }
+      wl->libdecor_frame_set_app_id(state->libdecor_frame, WAYLAND_APP_ID);
+      wl->libdecor_frame_set_title(state->libdecor_frame, title);
+      if (request->settings.fullscreen)
+         wl_video_window_set_fullscreen(state, true,
+               request->settings.monitor);
+      wl->libdecor_frame_map(state->libdecor_frame);
+   }
+   else
+#endif
+   {
+      state->xdg_surface  = xdg_wm_base_get_xdg_surface(wl->xdg_shell,
+            state->surface);
+      xdg_surface_add_listener(state->xdg_surface,
+            &wl_video_window_xdg_surface_listener, state);
+      state->xdg_toplevel = xdg_surface_get_toplevel(state->xdg_surface);
+      xdg_toplevel_add_listener(state->xdg_toplevel,
+            &wl_video_window_toplevel_listener, state);
+      xdg_toplevel_set_app_id(state->xdg_toplevel, WAYLAND_APP_ID);
+      xdg_toplevel_set_title(state->xdg_toplevel, title);
+      if (wl->deco_manager)
+      {
+         state->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
+               wl->deco_manager, state->xdg_toplevel);
+         zxdg_toplevel_decoration_v1_set_mode(state->deco,
+               ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+      }
+      if (request->settings.fullscreen)
+         wl_video_window_set_fullscreen(state, true,
+               request->settings.monitor);
+   }
+   /* No buffer: the compositor answers with the first configure */
+   wl_surface_commit(state->surface);
+   wl_display_flush(wl->input.dpy);
+
+   wl_video_windows[request->screen] = state;
+   memset(window, 0, sizeof(*window));
+   window->state      = state;
+   window->display    = wl->input.dpy;
+   window->surface    = state->surface;
+   window->kind       = VIDEO_WINDOW_NATIVE_WAYLAND;
+   window->generation = request->generation;
+   wl_video_window_resized(state);
+   state->common.pending     = 0;
+   return true;
+}
+
+void wl_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request)
+{
+   const video_window_settings_t *now;
+   const video_window_settings_t *was;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)owner;
+   wl_video_window_t *state   = window
+      ? (wl_video_window_t*)window->state : NULL;
+
+   if (     !state || state->common.owner != owner || !request
+         || state->common.closed
+         || request->screen     != state->common.request.screen
+         || request->generation != state->common.request.generation)
+      return;
+   now = &request->settings;
+   was = &state->common.request.settings;
+   if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
+         || (     now->dims       == was->dims
+               && now->monitor    == was->monitor
+               && now->fullscreen == was->fullscreen))
+      return;
+
+   if (now->dims != was->dims)
+   {
+      state->floating_dims  = wl_video_window_dims(wl, now->dims);
+      /* The compositor sizes a window that is not floating, so the
+       * size waits for the next floating configure */
+      state->floating_asked = !window->configured || state->fullscreen
+         || !state->floating;
+      if (!state->floating_asked)
+      {
+         state->dims = state->floating_dims;
+#ifdef HAVE_LIBDECOR_H
+         if (state->libdecor_frame)
+         {
+            struct libdecor_state *ls = wl->libdecor_state_new(
+                  VIDEO_SCALE_W(state->dims), VIDEO_SCALE_H(state->dims));
+            wl->libdecor_frame_commit(state->libdecor_frame, ls, NULL);
+            wl->libdecor_state_free(ls);
+         }
+#endif
+         if (state->viewport)
+            wp_viewport_set_destination(state->viewport,
+                  VIDEO_SCALE_W(state->dims), VIDEO_SCALE_H(state->dims));
+         wl_surface_commit(state->surface);
+         wl_video_window_resized(state);
+      }
+   }
+   /* Position is the compositor's on Wayland. Another output for a
+    * fullscreen window is a fullscreen request again, after leaving:
+    * compositors keep a fullscreen window where it is. */
+   if (was->fullscreen && (!now->fullscreen || now->monitor != was->monitor))
+      wl_video_window_set_fullscreen(state, false, 0);
+   if (now->fullscreen && (!was->fullscreen || now->monitor != was->monitor))
+      wl_video_window_set_fullscreen(state, true, now->monitor);
+   wl_display_flush(wl->input.dpy);
+   state->common.request = *request;
+}
+
+unsigned wl_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity)
+{
+   wl_video_windows_take_focus();
+   return video_windows_drain(owner, wl_video_window_at, events, capacity);
+}
+
+void wl_video_window_destroy(void *owner, video_window_native_t *window)
+{
+   wl_video_window_t *state = window ? (wl_video_window_t*)window->state : NULL;
+   if (!state || state->common.owner != owner)
+      return;
+   wl_video_windows[state->common.request.screen] = NULL;
+   wl_video_window_release(state);
+   memset(window, 0, sizeof(*window));
+}
+
+void wl_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window))
+{
+   video_windows_sweep(owner, wl_video_window_at, destroy);
+}
+#endif
 
 static void shm_buffer_handle_release(void *data,
    struct wl_buffer *wl_buffer)

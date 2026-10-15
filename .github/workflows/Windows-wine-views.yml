@@ -29,6 +29,10 @@ on:
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'configuration.*'
+      - 'gfx/video_windows.*'
+      - 'gfx/common/win32_common.*'
+      - 'gfx/drivers_context/wgl_ctx.c'
+      - 'gfx/drivers_context/w_vk_ctx.c'
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - '.github/workflows/Windows-wine-views.yml'
@@ -48,6 +52,10 @@ on:
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'configuration.*'
+      - 'gfx/video_windows.*'
+      - 'gfx/common/win32_common.*'
+      - 'gfx/drivers_context/wgl_ctx.c'
+      - 'gfx/drivers_context/w_vk_ctx.c'
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - '.github/workflows/Windows-wine-views.yml'
@@ -134,15 +142,16 @@ jobs:
           cp .libs/libvkd3d-shader-1.dll .libs/libvkd3d-1.dll \
             "$GITHUB_WORKSPACE/"
 
-      - name: Build retroarch.exe with mingw-w64 (D3D8, D3D9, D3D10, D3D11, D3D12, slang)
+      - name: Build retroarch.exe with mingw-w64 (D3D8, D3D9, D3D10, D3D11, D3D12, Vulkan, slang)
         shell: bash
         run: |
           set -eu
           export CCACHE_DIR="$HOME/.ccache"
           ccache -M 250M
           # The screens' windows too, which video_screens_test runs.
+          # Vulkan for the Win32 Vulkan context's native windows below
           ./configure --host=x86_64-w64-mingw32 \
-                      --disable-qt --disable-vulkan --disable-ffmpeg \
+                      --disable-qt --disable-ffmpeg \
                       --disable-cheevos --disable-discord --enable-d3d8 \
                       --disable-sdl --disable-sdl2 --enable-video_windows
           make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \
@@ -160,6 +169,28 @@ jobs:
           set -eu
           WINEDEBUG=-all xvfb-run -a python3 samples/settings/video_screens/build.py \
             --output-dir "$RUNNER_TEMP/video-screens" --runner wine
+
+      - name: Native windows under Wine (WGL, Vulkan, the D3D table)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          # Each context's secondary-screen windows through its table, on
+          # a real main window (for D3D, the main window D3D11 and D3D12
+          # make, with no device): events, placement, fullscreen, WGL
+          # binding and failures, titles, a restart. The fixture's own
+          # deadlines bound each step.
+          export WINEDEBUG=-all LIBGL_ALWAYS_SOFTWARE=1
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          export WINEPREFIX="$RUNNER_TEMP/video-screens/wine-prefix"
+          cp libstdc++-6.dll libgcc_s_seh-1.dll "$RUNNER_TEMP/video-screens/"
+          cd "$RUNNER_TEMP/video-screens"
+          xvfb-run -a -s "-screen 0 1280x720x24" sh -c '
+             set -eu
+             for c in d3d wgl "wgl gl" vk_w; do
+                echo "== $c"
+                timeout 300 wine ./video_screens_test.exe --native-windows $c
+             done'
 
       - name: Views on GDI, D3D8, D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash

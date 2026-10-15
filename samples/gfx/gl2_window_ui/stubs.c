@@ -109,6 +109,8 @@ void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create)
 { (void)held; (void)frame; *retire = 0; *create = 0; }
+bool video_windows_usable(const gfx_ctx_window_driver_t *windows)
+{ return windows && (!windows->usable || windows->usable()); }
 
 static void stub_glsl_use(void *data, void *shader_data, unsigned index,
       bool set_active)

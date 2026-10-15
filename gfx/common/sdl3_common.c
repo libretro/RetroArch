@@ -94,6 +94,114 @@ static void sdl3_window_save_position(SDL_Window *win)
    settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* Secondary screens' windows, by screen */
+static sdl3_video_window_t *sdl3_video_windows[RETRO_VIDEO_VIEWS_MAX];
+static unsigned sdl3_video_window_count;
+
+static video_window_common_t *sdl3_video_window_at(unsigned screen)
+{
+   return sdl3_video_windows[screen]
+      ? &sdl3_video_windows[screen]->common : NULL;
+}
+
+/* Where the compositor places windows, a position is not theirs */
+static bool sdl3_video_window_placed(void)
+{
+   return !string_is_equal(SDL_GetCurrentVideoDriver(), "wayland");
+}
+
+/* Where it is, its size and whether it is presentable, as SDL has them
+ * now: a minimised, hidden or suspended window is skipped, never closed */
+static void sdl3_video_window_check(sdl3_video_window_t *state)
+{
+   int x, y;
+   bool presentable;
+   int w                         = 0;
+   int h                         = 0;
+   video_window_native_t *window = state->common.native;
+   SDL_WindowFlags flags         = SDL_GetWindowFlags(state->win);
+   if (     !(flags & SDL_WINDOW_MINIMIZED)
+         && sdl3_video_window_placed()
+         && SDL_GetWindowPosition(state->win, &x, &y)
+         && VIDEO_POS_PACK(x, y) != state->common.pos)
+   {
+      state->common.pos      = VIDEO_POS_PACK(x, y);
+      state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   }
+   if (     !(flags & SDL_WINDOW_MINIMIZED)
+         && SDL_GetWindowSizeInPixels(state->win, &w, &h)
+         && w > 0 && h > 0
+         && VIDEO_SCALE_PACK(w, h) != window->dims)
+   {
+      window->dims           = VIDEO_SCALE_PACK(w, h);
+      state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
+   }
+   presentable = w > 0 && h > 0 && !(flags & (SDL_WINDOW_MINIMIZED
+         | SDL_WINDOW_HIDDEN | SDL_WINDOW_OCCLUDED));
+   if (presentable == window->presentable)
+      return;
+   window->presentable = presentable;
+   if (presentable)
+   {
+      state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+      state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(RESUME);
+   }
+   else
+   {
+      state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(RESUME);
+      state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(SUSPEND);
+   }
+}
+
+/* A secondary's window event goes to it alone. The main window's close
+ * request quits as SDL would for its last window: SDL counted windows
+ * when it pumped, and a secondary destroyed since may have kept it
+ * from quitting. */
+static bool sdl3_video_window_event(const SDL_Event *event, bool *quit)
+{
+   unsigned i;
+   video_window_native_t *window;
+   sdl3_video_window_t *state = NULL;
+
+   for (i = 1; sdl3_video_window_count && i < RETRO_VIDEO_VIEWS_MAX
+         && !state; i++)
+      if (     sdl3_video_windows[i]
+            && sdl3_video_windows[i]->id == event->window.windowID)
+         state = sdl3_video_windows[i];
+   if (!state)
+   {
+      if (     event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED
+            && SDL_GetHintBoolean(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, true))
+         *quit = true;
+      return false;
+   }
+   if (state->common.closed)
+      return true;
+   window = state->common.native;
+
+   switch (event->type)
+   {
+      case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+         video_window_mark_closed(&state->common);
+         return true;
+      case SDL_EVENT_WINDOW_FOCUS_GAINED:
+         window->focused        = true;
+         state->common.pending |= VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+         break;
+      case SDL_EVENT_WINDOW_FOCUS_LOST:
+         window->focused        = false;
+         state->common.pending &= ~VIDEO_WINDOW_EVENT_BIT(FOCUS_GAIN);
+         state->common.pending |=  VIDEO_WINDOW_EVENT_BIT(FOCUS_LOSS);
+         break;
+      default:
+         break;
+   }
+   sdl3_video_window_check(state);
+   return true;
+}
+#endif
+
 /* Events nothing reads, which would otherwise fill the queue */
 static void sdl3_flush_unread_events(void)
 {
@@ -143,6 +251,11 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
    /* Check if the display size was changed. */
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST) > 0)
    {
+#ifdef HAVE_VIDEO_WINDOWS
+      if (sdl3_video_window_event(&event, quit))
+         continue;
+#endif
+
       if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
          *resize = true;
 
@@ -655,3 +768,334 @@ bool sdl3_uses_screen_keyboard(void)
 {
    return SDL_HasScreenKeyboardSupport() && !SDL_HasKeyboard();
 }
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* Where 'settings' put a window, in SDL's window coordinates: on
+ * 'display' if given, else the preferred monitor (SDL's display N-1,
+ * as for the main window), else with an automatic monitor the one the
+ * saved bounds are mostly on, else the main window's, else the primary
+ * display.
+ * Saved bounds partly off it are moved onto it; bounds not on it at
+ * all, and automatic ones, are centred on it. Fullscreen covers it.
+ * 'density' turns the saved size, in pixels, into window coordinates. */
+static SDL_DisplayID sdl3_video_window_place(SDL_Window *primary,
+      const video_window_settings_t *settings, SDL_DisplayID display,
+      float density, SDL_Rect *out)
+{
+   SDL_Rect bounds;
+   video_window_rect_t rect, area;
+   int i, count            = 0;
+   SDL_DisplayID *displays = SDL_GetDisplays(&count);
+
+   if (density <= 0.0f)
+      density = 1.0f;
+   out->x = VIDEO_POS_X(settings->pos);
+   out->y = VIDEO_POS_Y(settings->pos);
+   out->w = (int)(VIDEO_SCALE_W(settings->dims) / density);
+   out->h = (int)(VIDEO_SCALE_H(settings->dims) / density);
+   if (     !settings->dims
+         && (  !SDL_GetWindowSize(primary, &out->w, &out->h)
+            || out->w <= 0 || out->h <= 0))
+   {
+      out->w = 640;
+      out->h = 480;
+   }
+
+   if (!displays)
+      count = 0;
+   if (!display && settings->monitor && (int)settings->monitor <= count)
+      display = displays[settings->monitor - 1];
+   if (!display && !settings->monitor && settings->dims)
+   {
+      int best = 0;
+      for (i = 0; i < count; i++)
+      {
+         SDL_Rect inter;
+         if (     SDL_GetDisplayBounds(displays[i], &bounds)
+               && SDL_GetRectIntersection(out, &bounds, &inter)
+               && inter.w * inter.h > best)
+         {
+            best    = inter.w * inter.h;
+            display = displays[i];
+         }
+      }
+   }
+   SDL_free(displays);
+   if (!display)
+      display = SDL_GetDisplayForWindow(primary);
+   if (!display)
+      display = SDL_GetPrimaryDisplay();
+   if (!SDL_GetDisplayBounds(display, &bounds))
+      return display;
+
+   if (settings->fullscreen)
+   {
+      *out = bounds;
+      return display;
+   }
+   rect.x = out->x;
+   rect.y = out->y;
+   rect.w = out->w;
+   rect.h = out->h;
+   area.x = bounds.x;
+   area.y = bounds.y;
+   area.w = bounds.w;
+   area.h = bounds.h;
+   video_window_place_rect(&rect, &area, !settings->dims);
+   out->x = rect.x;
+   out->y = rect.y;
+   out->w = rect.w;
+   out->h = rect.h;
+   return display;
+}
+
+/* Puts the window where its request has it */
+static void sdl3_video_window_apply(sdl3_video_window_t *state)
+{
+   SDL_Rect rect;
+   SDL_DisplayID display              = 0;
+   SDL_Window *win                    = state->win;
+   const video_window_settings_t *now = &state->common.request.settings;
+
+   state->apply = false;
+   /* fullscreen on no monitor in particular is on the one it is on */
+   if (now->fullscreen && !now->monitor)
+      display = SDL_GetDisplayForWindow(win);
+   display = sdl3_video_window_place(sdl3_ctx_window(state->common.owner),
+         now, display, SDL_GetWindowPixelDensity(win), &rect);
+   if (now->fullscreen)
+   {
+      if (state->fullscreen && SDL_GetDisplayForWindow(win) == display)
+         return;
+      /* window managers keep a fullscreen window where it is, so it
+       * moves by way of a window */
+      if (state->fullscreen)
+         SDL_SetWindowFullscreen(win, false);
+      else
+         state->windowed_set =
+               SDL_GetWindowPosition(win, &state->windowed.x,
+                  &state->windowed.y)
+            && SDL_GetWindowSize(win, &state->windowed.w,
+                  &state->windowed.h);
+      /* SDL fills the display the window is at */
+      if (SDL_GetDisplayForWindow(win) != display)
+         SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+               SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+      SDL_SetWindowFullscreen(win, true);
+   }
+   else if (state->fullscreen)
+   {
+      /* placed once SDL has it as a window again, frame and all */
+      SDL_SetWindowFullscreen(win, false);
+      state->fullscreen = false;
+      state->waiting    = SDL_WINDOW_FULLSCREEN;
+      state->apply      = true;
+      return;
+   }
+   else
+   {
+      /* a window again with automatic bounds: where it stood before */
+      if (!now->dims && state->windowed_set)
+         rect = state->windowed;
+      state->windowed_set = false;
+      SDL_SetWindowSize(win, rect.w, rect.h);
+      SDL_SetWindowPosition(win, rect.x, rect.y);
+   }
+   state->fullscreen = now->fullscreen;
+}
+
+/* Its request is made once SDL has the window restored, and placed as
+ * a window once SDL has it so: from its restored size, never its
+ * minimised or maximised one */
+static void sdl3_video_window_settle(sdl3_video_window_t *state)
+{
+   SDL_WindowFlags flags = SDL_GetWindowFlags(state->win);
+   if (     (flags & SDL_WINDOW_MAXIMIZED) && !(flags & SDL_WINDOW_MINIMIZED)
+         && !(state->waiting & SDL_WINDOW_MAXIMIZED))
+   {
+      SDL_RestoreWindow(state->win);
+      state->waiting |= SDL_WINDOW_MAXIMIZED;
+   }
+   if (flags & (SDL_WINDOW_MINIMIZED | state->waiting))
+      return;
+   state->waiting = 0;
+   sdl3_video_window_apply(state);
+}
+
+/* SDL documents SDL_GetCurrentVideoDriver() for the main thread only */
+static retro_atomic_int_t sdl3_video_windows_ok;
+
+void sdl3_video_windows_probe(void)
+{
+   const char *driver = SDL_GetCurrentVideoDriver();
+   retro_atomic_store_release_int(&sdl3_video_windows_ok,
+             string_is_equal(driver, "x11")
+          || string_is_equal(driver, "wayland")
+          || string_is_equal(driver, "windows"));
+}
+
+bool sdl3_video_windows_supported(void)
+{
+   return retro_atomic_load_acquire_int(&sdl3_video_windows_ok) != 0;
+}
+
+bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
+      const video_window_request_t *request, video_window_native_t *window)
+{
+   char title[64];
+   SDL_Rect rect;
+   int w, h;
+   SDL_DisplayID display;
+   SDL_PropertiesID props;
+   video_window_settings_t windowed;
+   sdl3_video_window_t *state;
+   SDL_Window *primary = sdl3_ctx_window(owner);
+
+   if (     !primary || !request || !window || window->state
+         || !sdl3_video_windows_supported()
+         || !request->generation
+         || !request->screen
+         || request->screen >= RETRO_VIDEO_VIEWS_MAX
+         || request->settings.mode != VIDEO_WINDOW_SEPARATE
+         || sdl3_video_windows[request->screen]
+         || (request->settings.dims
+            && (  !VIDEO_SCALE_W(request->settings.dims)
+               || !VIDEO_SCALE_H(request->settings.dims))))
+      return false;
+   if (!(state = (sdl3_video_window_t*)calloc(1, sizeof(*state))))
+      return false;
+
+   /* made at its window size, filling the display from there */
+   windowed            = request->settings;
+   windowed.fullscreen = false;
+   display = sdl3_video_window_place(primary, &windowed, 0,
+         SDL_GetWindowPixelDensity(primary), &rect);
+   flags  |= SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
+      | SDL_WINDOW_HIDDEN;
+   if (request->settings.fullscreen)
+   {
+      flags  |= SDL_WINDOW_FULLSCREEN;
+      rect.x  = rect.y = SDL_WINDOWPOS_CENTERED_DISPLAY(display);
+   }
+   snprintf(title, sizeof(title), "RetroArch - Screen %u",
+         request->screen + 1);
+   props = SDL_CreateProperties();
+   SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title);
+   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags);
+   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, rect.x);
+   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, rect.y);
+   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, rect.w);
+   SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
+         rect.h);
+   state->win = SDL_CreateWindowWithProperties(props);
+   SDL_DestroyProperties(props);
+   if (!state->win)
+   {
+      free(state);
+      return false;
+   }
+
+   state->id             = SDL_GetWindowID(state->win);
+   state->fullscreen     = request->settings.fullscreen;
+   state->common.owner   = owner;
+   state->common.native  = window;
+   state->common.request = *request;
+   memset(window, 0, sizeof(*window));
+   window->state         = state;
+   window->surface       = state->win;
+   window->kind          = VIDEO_WINDOW_NATIVE_SDL3;
+   window->generation    = request->generation;
+   window->configured    = true;
+   sdl3_video_windows[request->screen] = state;
+   sdl3_video_window_count++;
+
+   sdl3_window_set_icon(state->win);
+   /* the main window keeps the focus */
+   SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN, "0");
+   SDL_ShowWindow(state->win);
+   SDL_ResetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN);
+
+   /* as it came up; its events keep these from here on */
+   if (     sdl3_video_window_placed()
+         && SDL_GetWindowPosition(state->win, &rect.x, &rect.y))
+      state->common.pos = VIDEO_POS_PACK(rect.x, rect.y);
+   if (SDL_GetWindowSizeInPixels(state->win, &w, &h))
+      window->dims = VIDEO_SCALE_PACK(w, h);
+   sdl3_video_window_check(state);
+   return true;
+}
+
+void sdl3_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request)
+{
+   const video_window_settings_t *now;
+   const video_window_settings_t *was;
+   sdl3_video_window_t *state = window
+      ? (sdl3_video_window_t*)window->state : NULL;
+
+   if (     !state || state->common.owner != owner || !request
+         || state->common.closed
+         || request->screen     != state->common.request.screen
+         || request->generation != state->common.request.generation)
+      return;
+   now = &request->settings;
+   was = &state->common.request.settings;
+   if (     (now->dims && (!VIDEO_SCALE_W(now->dims) || !VIDEO_SCALE_H(now->dims)))
+         || (     now->pos        == was->pos
+               && now->dims       == was->dims
+               && now->monitor    == was->monitor
+               && now->fullscreen == was->fullscreen))
+      return;
+   state->common.request = *request;
+   state->apply          = true;
+   sdl3_video_window_settle(state);
+}
+
+unsigned sdl3_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity)
+{
+   unsigned i;
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      sdl3_video_window_t *state = sdl3_video_windows[i];
+      if (     state && state->apply && state->common.owner == owner
+            && !state->common.closed)
+         sdl3_video_window_settle(state);
+   }
+   return video_windows_drain(owner, sdl3_video_window_at, events,
+         capacity);
+}
+
+static bool SDLCALL sdl3_video_window_unqueue(void *data, SDL_Event *event)
+{
+   return    event->type < SDL_EVENT_WINDOW_FIRST
+          || event->type > SDL_EVENT_WINDOW_LAST
+          || event->window.windowID != *(const SDL_WindowID*)data;
+}
+
+void sdl3_video_window_destroy(void *owner, video_window_native_t *window)
+{
+   SDL_WindowID id;
+   sdl3_video_window_t *state = window
+      ? (sdl3_video_window_t*)window->state : NULL;
+
+   if (!state || state->common.owner != owner)
+      return;
+   /* out of the table first: nothing destroying it sends is reported */
+   sdl3_video_windows[state->common.request.screen] = NULL;
+   sdl3_video_window_count--;
+   id = state->id;
+   SDL_DestroyWindow(state->win);
+   /* nor is what is still queued for it, which the main window's
+    * handling would take */
+   SDL_FilterEvents(sdl3_video_window_unqueue, &id);
+   free(state);
+   memset(window, 0, sizeof(*window));
+}
+
+void sdl3_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window))
+{
+   video_windows_sweep(owner, sdl3_video_window_at, destroy);
+}
+#endif

@@ -113,6 +113,18 @@ error:
    return NULL;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+/* What draws to the window, and how, is the video driver's */
+static const gfx_ctx_window_driver_t gfx_ctx_wl_vk_windows = {
+   wl_video_window_create,
+   wl_video_window_update,
+   wl_video_window_poll,
+   NULL, /* bind_gl */
+   NULL, /* present_gl */
+   wl_video_window_destroy
+};
+#endif
+
 static void gfx_ctx_wl_destroy(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -120,6 +132,10 @@ static void gfx_ctx_wl_destroy(void *data)
    if (!wl)
       return;
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   /* Secondaries go before the context, kept or not */
+   wl_video_windows_free(wl, wl_video_window_destroy);
+#endif
    gfx_ctx_wl_destroy_resources(wl);
 
 #if defined(HAVE_THREADS)
@@ -368,5 +384,15 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    NULL,
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   gfx_ctx_wl_vk_presentable
+   gfx_ctx_wl_vk_presentable,
+   NULL, /* last_present_time */
+   NULL, /* release_current */
+   NULL, /* shared_context_new */
+   NULL, /* shared_context_bind */
+   NULL, /* shared_context_free */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(WEBOS)
+   &gfx_ctx_wl_vk_windows
+#else
+   NULL  /* windows */
+#endif
 };

@@ -193,7 +193,7 @@ jobs:
     name: Desktop headset output with the in-tree loader
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev cmake ninja-build xvfb xauth openbox weston mesa-vulkan-drivers
     timeout-minutes: 30
 
     steps:
@@ -225,6 +225,32 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
+      - name: Build SDL3 from a pinned release
+        shell: bash
+        run: |
+          set -eu
+          # For the SDL3 contexts' native windows below; the runner image
+          # ships no libsdl3-dev. samples-gfx's recipe, with GL and
+          # Vulkan.
+          SDL3_VER=3.2.20
+          if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
+             curl -fsSL --retry 3 -o /tmp/sdl3.tar.gz \
+                "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
+             echo "467600ae090dd28616fa37369faf4e3143198ff1da37729b552137e47f751a67  /tmp/sdl3.tar.gz" \
+                | sha256sum -c -
+             tar -C /tmp -xzf /tmp/sdl3.tar.gz
+             cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_X11=ON -DSDL_WAYLAND=ON \
+                -DSDL_OPENGL=ON -DSDL_OPENGLES=ON -DSDL_VULKAN=ON \
+                -DCMAKE_INSTALL_PREFIX=/opt/sdl3 -DCMAKE_INSTALL_LIBDIR=lib \
+                > /tmp/sdl3-cmake.log
+             ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
+             sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
+          fi
+          echo "PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=/opt/sdl3/lib" >> "$GITHUB_ENV"
+
       - name: Build RetroArch with OpenXR
         shell: bash
         run: |
@@ -237,6 +263,7 @@ jobs:
           ./configure --disable-qt --enable-openxr --enable-video_windows
           grep -q '^HAVE_OPENXR = 1' config.mk
           grep -q '^HAVE_VIDEO_WINDOWS = 1' config.mk
+          grep -q '^HAVE_SDL3 = 1' config.mk
           make -j$(nproc)
           # Vulkan's headset host and the desktop GL drivers', side by
           # side.
@@ -250,6 +277,49 @@ jobs:
           set -eu
           python3 samples/settings/video_screens/build.py \
             --output-dir "$RUNNER_TEMP/video-screens"
+
+      - name: Native windows on X11 (Xvfb, Openbox, llvmpipe, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          # Each context's secondary-screen windows through its table,
+          # on a real main window: events, placement, fullscreen, GL
+          # binding and failures, titles, a restart. Under a reparenting
+          # window manager; the fixture's own deadlines bound each step.
+          export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
+          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" bash -c '
+             set -eu
+             openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
+             sleep 1
+             for c in x egl_x vk_x gl_sdl3 vk_sdl3; do
+                echo "== $c"
+                timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                   --native-windows $c
+             done
+             kill %1'
+
+      - name: Native windows on Wayland (Weston headless, llvmpipe, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/xdg-runtime"
+          mkdir -p -m 0700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless --renderer=pixman --width=1280 \
+             --height=720 --socket=ra-native --no-config \
+             > "$RUNNER_TEMP/weston.log" 2>&1 &
+          weston_pid=$!
+          trap 'kill $weston_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+             [ -S "$XDG_RUNTIME_DIR/ra-native" ] && break
+             sleep 0.5
+          done
+          unset DISPLAY
+          export WAYLAND_DISPLAY=ra-native LIBGL_ALWAYS_SOFTWARE=1
+          for c in wayland "wayland gl" vk_wayland; do
+             echo "== $c"
+             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows $c
+          done
 
       - name: Build and run stereo_headset_test
         shell: bash
@@ -287,7 +357,7 @@ jobs:
     name: Desktop headset output on OpenGL alone, without Vulkan
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libdbus-1-dev zlib1g-dev
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libdbus-1-dev zlib1g-dev libsdl2-dev xvfb xauth openbox
     timeout-minutes: 30
 
     steps:
@@ -330,6 +400,7 @@ jobs:
           grep -q '^HAVE_OPENXR = 1' config.mk
           grep -q '^HAVE_VIDEO_WINDOWS = 1' config.mk
           grep -q '^HAVE_VULKAN = 0' config.mk
+          grep -q '^HAVE_SDL2 = 1' config.mk
           make -j$(nproc)
           test -f obj-unix/release/gfx/common/openxr_frame.o
           test -f obj-unix/release/gfx/common/gl_openxr.o
@@ -341,6 +412,20 @@ jobs:
           set -eu
           python3 samples/settings/video_screens/build.py \
             --output-dir "$RUNNER_TEMP/video-screens"
+
+      - name: Native windows of the SDL2 context (Xvfb, Openbox, llvmpipe)
+        shell: bash
+        run: |
+          set -eu
+          # The distribution's SDL 2; the Vulkan job's build has SDL 3
+          export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
+          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" bash -c '
+             set -eu
+             openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
+             sleep 1
+             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows gl_sdl
+             kill %1'
 
       - name: Build and run stereo_headset_test
         shell: bash

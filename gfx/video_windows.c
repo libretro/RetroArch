@@ -566,6 +566,11 @@ unsigned video_windows_drain(void *owner, video_window_at_t at,
    return count;
 }
 
+bool video_windows_usable(const gfx_ctx_window_driver_t *windows)
+{
+   return windows && (!windows->usable || windows->usable());
+}
+
 void video_windows_sweep(void *owner, video_window_at_t at,
       void (*destroy)(void *owner, video_window_native_t *window))
 {

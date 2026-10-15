@@ -25,6 +25,7 @@
 #include <retro_atomic.h>
 #include "../video_defines.h"
 #include "../video_views.h"
+#include "../video_windows.h"
 #include "../../retroarch.h"
 
 enum sdl3_flags
@@ -235,5 +236,50 @@ SDL_Window *sdl3_get_window(void);
  * screen keyboard, rather than just enabling text events in the
  * background. False whenever a physical keyboard is attached. */
 bool sdl3_uses_screen_keyboard(void);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's window, window->state from create to destroy,
+ * on the thread that runs the context; the owner is that context's
+ * data, which starts with its main SDL_Window. The record's surface is
+ * the SDL_Window, its display NULL; dims are pixels. Only on SDL's x11,
+ * wayland and windows backends. SDL quits only when its last shown
+ * window closes, so the main window's own close request quits as that
+ * would (SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE), and a secondary's close
+ * is a CLOSE event alone (the main window is never hidden). */
+typedef struct sdl3_video_window
+{
+   video_window_common_t common;
+   SDL_Window *win;
+   /* What SDL is still to finish of what it was asked, which an
+    * update waits for, as it does for a minimised window */
+   SDL_WindowFlags waiting;
+   /* Where it stood before it last went fullscreen */
+   SDL_Rect windowed;
+   SDL_WindowID id;
+   bool fullscreen;
+   bool windowed_set;
+   /* An update that waits for the window */
+   bool apply;
+} sdl3_video_window_t;
+
+/* Context thread, at init once SDL video is up: what
+ * sdl3_video_windows_supported() answers from then on */
+void sdl3_video_windows_probe(void);
+/* Any thread: whether SDL's video driver can make them, the contexts'
+ * window tables' usable() */
+bool sdl3_video_windows_supported(void);
+/* 'flags' is SDL_WINDOW_OPENGL or SDL_WINDOW_VULKAN, as the main
+ * window's */
+bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
+      const video_window_request_t *request, video_window_native_t *window);
+void sdl3_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned sdl3_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void sdl3_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'. */
+void sdl3_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+#endif
 
 #endif

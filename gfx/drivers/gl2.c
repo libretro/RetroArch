@@ -10176,7 +10176,7 @@ static uint32_t gl2_get_flags(void *data)
 #if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
       /* The context can make screens windows of their own. Not in the
        * Quest's build, whose back buffer is the headset's framebuffer. */
-      if (gl2->ctx_driver && gl2->ctx_driver->windows)
+      if (gl2->ctx_driver && video_windows_usable(gl2->ctx_driver->windows))
          BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif
    }

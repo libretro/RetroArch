@@ -449,6 +449,17 @@ void gfx_ctx_wl_cursor_load(gfx_ctx_wayland_data_t *wl);
 
 void flush_wayland_fd(void *data);
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* A keyboard enter or leave: one of a secondary screen's surfaces goes
+ * to its window (gfx/common/wayland_common.c), on the thread that runs
+ * the context. Called on whichever thread handles the seat's events. */
+void wl_video_window_keyboard(gfx_ctx_wayland_data_t *wl,
+      struct wl_surface *surface, bool focused);
+/* An output's properties changed: secondary screens' windows on it
+ * take its scale again. On the thread that runs the context. */
+void wl_video_windows_rescale(void);
+#endif
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;

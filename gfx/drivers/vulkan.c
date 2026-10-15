@@ -16453,7 +16453,8 @@ static uint32_t vulkan_get_flags(void *data)
 #if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
    /* Not the Quest's: its window is the headset's, and it has no
     * second display */
-   if (     vk && vk->ctx_driver && vk->ctx_driver->windows
+   if (     vk && vk->ctx_driver
+         && video_windows_usable(vk->ctx_driver->windows)
          && retro_atomic_load_acquire_int(&vk->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif

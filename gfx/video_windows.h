@@ -130,6 +130,9 @@ typedef struct gfx_ctx_window_driver
    void (*keep)(void *owner, video_window_native_t *window);
    bool (*take)(void *owner, unsigned screen,
          video_window_native_t *window, unsigned *display);
+   /* Optional, any thread: false where no window can be made (SDL
+    * under cocoa or offscreen). NULL is true. */
+   bool (*usable)(void);
 } gfx_ctx_window_driver_t;
 
 #define VIDEO_WINDOW_EVENT_BIT(kind) (1u << VIDEO_WINDOW_EVENT_##kind)
@@ -166,6 +169,10 @@ unsigned video_windows_drain(void *owner, video_window_at_t at,
 /* Hands each window 'owner' still has to 'destroy'. */
 void video_windows_sweep(void *owner, video_window_at_t at,
       void (*destroy)(void *owner, video_window_native_t *window));
+
+/* Whether a context with table @windows can make the screens' windows:
+ * only then do renderers advertise them. Any thread. */
+bool video_windows_usable(const gfx_ctx_window_driver_t *windows);
 
 typedef struct video_window_rect
 {

@@ -24,6 +24,7 @@
 #include <retro_inline.h>
 
 #include "../../retroarch.h"
+#include "../video_windows.h"
 
 extern Window   g_x11_win;
 extern Display *g_x11_dpy;
@@ -111,5 +112,44 @@ void x11_event_queue_check(XEvent *event);
 char *x11_get_wm_name(Display *dpy);
 
 bool x11_has_net_wm_fullscreen(Display *dpy);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's window on g_x11_dpy, window->state from create
+ * to destroy. Its events arrive through x11_alive(); everything here
+ * belongs to the thread that runs the context. */
+typedef struct x11_video_window
+{
+   video_window_common_t common;
+   /* The context's GL drawable for the window, if it has one */
+   void *drawable;
+   Window handle;
+   Colormap colormap;
+   /* The request asking for the root position, 0 for none */
+   unsigned translate;
+   bool translate_again;
+   /* The context has set its drawable's swap interval */
+   bool interval_set;
+   bool reparented;
+   bool destroyed;
+} x11_video_window_t;
+
+/* The window comes unmapped, for the context to make its drawable on
+ * with the same visual; x11_video_window_show() then maps it. A
+ * drawable that is a server resource of its own is named as 'resource'
+ * so its errors are the window's too. */
+bool x11_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window, Visual *visual, int depth);
+void x11_video_window_show(video_window_native_t *window,
+      void *drawable, XID resource);
+void x11_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned x11_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void x11_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'. */
+void x11_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+#endif
 
 #endif

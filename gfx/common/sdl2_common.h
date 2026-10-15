@@ -22,6 +22,7 @@
 #include "SDL.h"
 
 #include "../video_defines.h"
+#include "../video_windows.h"
 #include "../font_driver.h"
 #include "../../retroarch.h"
 
@@ -181,5 +182,53 @@ void sdl2_video_grab_window(bool state);
 
 void sdl2_set_handles(void *data, enum rarch_display_type 
       display_type);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's OpenGL window, window->state from create to
+ * destroy, on the thread that runs the context. The record's surface
+ * is the SDL_Window, its display NULL; dims are its size. Only on
+ * SDL's x11, wayland and windows backends. SDL quits only when its
+ * last window closes, so the main window's own close request quits as
+ * that would (SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE), and a secondary's
+ * close is a CLOSE event alone. */
+typedef struct sdl2_video_window
+{
+   video_window_common_t common;
+   SDL_Window *win;
+   /* The context's main window, for placement */
+   SDL_Window *primary;
+   /* Where it stood before it last went fullscreen */
+   SDL_Rect windowed;
+   Uint32 id;
+   /* What SDL is still to finish of what it was asked, which an
+    * update waits for, as it does for a minimised window */
+   Uint32 waiting;
+   bool fullscreen;
+   bool windowed_set;
+   /* An update that waits for the window */
+   bool apply;
+} sdl2_video_window_t;
+
+/* Context thread, at init once SDL video is up: what
+ * sdl2_video_windows_supported() answers from then on */
+void sdl2_video_windows_probe(void);
+/* Any thread: whether SDL's video driver can make them, the context's
+ * window table's usable() */
+bool sdl2_video_windows_supported(void);
+bool sdl2_video_window_create(void *owner, SDL_Window *primary,
+      const video_window_request_t *request, video_window_native_t *window);
+void sdl2_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned sdl2_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void sdl2_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'. */
+void sdl2_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+/* True for a secondary's window event, which then goes nowhere else.
+ * The main window's close request sets 'quit', as SDL would for its
+ * last window. */
+bool sdl2_video_window_event(const SDL_Event *event, bool *quit);
+#endif
 
 #endif

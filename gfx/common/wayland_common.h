@@ -16,8 +16,11 @@
 #pragma once
 
 #include "../../input/common/wayland_common.h"
+#include "../video_windows.h"
 
 #define WAYLAND_APP_ID "com.libretro.RetroArch"
+
+#define WL_VIDEO_WINDOW_OUTPUTS 4
 
 typedef struct shm_buffer
 {
@@ -73,3 +76,66 @@ bool gfx_ctx_wl_has_focus(void *data);
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*), bool *quit,
       bool *resize, unsigned *dims);
+
+#ifdef HAVE_VIDEO_WINDOWS
+/* A secondary screen's toplevel on the main window's connection,
+ * window->state from create to destroy. Its events are handled in the
+ * context's check_window, so all of it belongs to the thread that runs
+ * the context (the RETROARCH_WAYLAND_INPUT_QUEUE=0 opt-out runs them on
+ * the frontend's too, as it does the main window's). */
+typedef struct wl_video_window
+{
+   video_window_common_t common;
+   struct wl_surface *surface;
+   struct xdg_surface *xdg_surface;
+   struct xdg_toplevel *xdg_toplevel;
+   struct zxdg_toplevel_decoration_v1 *deco;
+#ifdef HAVE_LIBDECOR_H
+   struct libdecor_frame *libdecor_frame;
+#endif
+   struct wp_viewport *viewport;
+   struct wp_fractional_scale_v1 *fractional_scale;
+   /* The outputs the surface is on */
+   struct wl_output *outputs[WL_VIDEO_WINDOW_OUTPUTS];
+   /* The context's: what it draws with, and the native window (a
+    * wl_egl_window) it is made on, at win_dims */
+   void *drawable;
+   void *win;
+   /* The surface's size, and the size to go back to when the window
+    * floats again, each packed; window->dims is the buffer's */
+   unsigned dims;
+   unsigned floating_dims;
+   unsigned win_dims;
+   unsigned scale;
+   unsigned preferred_buffer_scale; /* wl_surface v6; 0 until sent */
+   unsigned fractional_scale_num;
+   /* xdg_toplevel.configure, until xdg_surface.configure makes it
+    * current */
+   unsigned cfg_dims;
+   bool cfg_fullscreen;
+   bool cfg_suspended;
+   bool cfg_floating;
+   bool fullscreen;
+   bool floating;
+   /* floating_dims was asked for while the window did not float */
+   bool floating_asked;
+   bool suspended;
+   /* The context has set its drawable's swap interval */
+   bool interval_set;
+} wl_video_window_t;
+
+/* The window comes unconfigured: the compositor's first configure is
+ * handled in a later check_window, which makes window->configured
+ * true. Nothing may be attached to the surface before that. */
+bool wl_video_window_create(void *owner,
+      const video_window_request_t *request,
+      video_window_native_t *window);
+void wl_video_window_update(void *owner, video_window_native_t *window,
+      const video_window_request_t *request);
+unsigned wl_video_window_poll(void *owner, video_window_event_t *events,
+      unsigned capacity);
+void wl_video_window_destroy(void *owner, video_window_native_t *window);
+/* Hands each window 'owner' still has to 'destroy'. */
+void wl_video_windows_free(void *owner,
+      void (*destroy)(void *owner, video_window_native_t *window));
+#endif

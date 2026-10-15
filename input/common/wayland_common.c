@@ -92,7 +92,12 @@ static void wl_keyboard_handle_enter(void* data,
       struct wl_array* keys)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   /* Any of RetroArch's surfaces: focus going from the main window to
+    * a secondary screen's keeps RetroArch focused */
    wl->input.keyboard_focus   = true;
+#ifdef HAVE_VIDEO_WINDOWS
+   wl_video_window_keyboard(wl, surface, true);
+#endif
 }
 
 static void wl_keyboard_handle_leave(void *data,
@@ -105,6 +110,9 @@ static void wl_keyboard_handle_leave(void *data,
 
    /* Release all keys */
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
+#ifdef HAVE_VIDEO_WINDOWS
+   wl_video_window_keyboard(wl, surface, false);
+#endif
 }
 
 #ifndef WEBOS
@@ -922,7 +930,13 @@ static void wl_output_handle_mode(void *data,
       video_driver_set_window_refresh_rate((float)refresh / 1000.0f);
 }
 
-static void wl_output_handle_done(void *data, struct wl_output *output) { }
+static void wl_output_handle_done(void *data, struct wl_output *output)
+{
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Its scale may have changed under a secondary screen's window */
+   wl_video_windows_rescale();
+#endif
+}
 
 #ifdef WL_OUTPUT_NAME_SINCE_VERSION
 static void wl_output_handle_name(void *data,
