@@ -2556,7 +2556,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    char      reason[128];
    unsigned  address           = 0;
    unsigned  value             = 0;
-   unsigned  frames            = COMMAND_FRAMES_REPLY_MAX;
+   unsigned  frames            = 0;
    unsigned  avail             = 0;
    unsigned  i;
    uint8_t  *at                = NULL;
@@ -2624,6 +2624,16 @@ bool command_run_until(command_t *cmd, const char *arg)
    }
    if (!command_frames_ready(cmd, "RUN_UNTIL"))
       return false;
+   /* by default about nine seconds of the content's own frames, inside a
+    * structured reply's ten-second deadline at any frame rate: 600 at
+    * 50fps would outlast it */
+   if (!frames)
+   {
+      double fps = video_state_get_ptr()->av_info.timing.fps;
+      frames     = COMMAND_FRAMES_REPLY_MAX;
+      if (fps > 0.0 && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
+         frames  = fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
+   }
    /* the byte is found before any frame runs, so an address nothing
     * maps is answered now rather than after a wait that could not have
     * ended */

@@ -339,6 +339,16 @@ int main(int argc, char **argv)
       runloop_iterate();
       runloop_iterate();
       CHECK(!strncmp(reply,"waiting\t2\t",STRLEN_CONST("waiting\t2\t")));
+      /* left to itself it waits nine seconds of the content's frames,
+       * 540 at this core's 60fps, not the 600 a request may ask for */
+      {
+         unsigned n=0;
+         reply[0]=0;
+         CHECK(command_run_until(&cmd,"1007 > 255") && !reply[0]);
+         while (!reply[0] && n < 700) { runloop_iterate(); n++; }
+         CHECK(n == 540 && !strncmp(reply,"waiting\t540\t",
+                  STRLEN_CONST("waiting\t540\t")));
+      }
       /* every condition it takes */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 != %u",(now + 1) & 0xff);

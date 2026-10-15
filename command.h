@@ -743,8 +743,8 @@ static const struct cmd_param cmd_params_until[] = {
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
    { "value", "What to compare it with, from 0 to 255.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "frames", "Frames to wait at most, up to 600.",
-      CMD_PARAM_INT, false, NULL, NULL, "600" },
+   { "frames", "Frames to wait at most, up to 600; about nine seconds' "
+      "worth when left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_press[] = {
@@ -956,7 +956,7 @@ static const struct cmd_action_map action_map[] = {
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
-   { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers whether it was met, how many frames ran and what the byte holds; waits 600 frames at most and answers waiting where they run out, to be asked again.", 0, cmd_params_until, &cmd_rows_until },
+   { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers whether it was met, how many frames ran and what the byte holds; waits about nine seconds of frames, or as many as asked up to 600, and answers waiting where they run out, to be asked again.", 0, cmd_params_until, &cmd_rows_until },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or for every player when given none. Answers in SET_INPUT's shape, for the player asked after or the first of them.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },

@@ -280,10 +280,12 @@ maps is refused before any frame runs rather than after a wait that
 could not have ended. Already meeting the condition answers `met` with
 no frames run at all.
 
-It waits at most 600 frames, as `PRESS` presses for at most 600; when
-they run out first it answers `waiting` with how far it got, so the
-next request carries on from there instead of the client being told it
-failed.
+Left to itself it waits about nine seconds of the content's own frames
+- 540 at 60fps, 450 at 50fps - so the answer comes inside the
+ten-second deadline at any frame rate; `[max frames]` asks for up to
+600. When they run out first it answers `waiting` with how far it got,
+so the next request carries on from there instead of the client being
+told it failed.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
