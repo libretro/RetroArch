@@ -78,7 +78,7 @@ Over stdin and stdout RetroArch also offers logging: after
 ## What the tools do
 
 Each command is one tool, named as the command (`GET_STATUS`,
-`SAVE_STATE_SLOT`, `SCREENSHOT`). Its parameters are named, typed and
+`STATE`, `SCREENSHOT`). Its parameters are named, typed and
 marked needed or not, so a client is told what to send rather than
 having to write the command's own line by hand:
 
@@ -87,7 +87,7 @@ having to write the command's own line by hand:
   "arguments": { "core": "/path/to/core.so", "content": "/games/a.rom" } }
 ```
 
-`SAVE_STATE_SLOT` takes `slot` as a number, `GET_PLAYLIST` takes
+`STATE` takes an `action` and a `slot` number, `GET_PLAYLIST` takes
 `playlist` and an optional `first`, `SET_OPTION` takes `option` and a
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
@@ -180,9 +180,9 @@ server's version, and neither are the toggle hotkeys or
 Nor is a hotkey that steps a selection. A person presses
 `STATE_SLOT_PLUS` while watching the slot on screen; for a program the
 command that takes the value outright is the tool, and stepping towards
-it is only a way to get the value wrong: `SAVE_STATE_SLOT` over
-`STATE_SLOT_PLUS` and `SAVE_STATE`, `SEEK_REPLAY` over
-`NEXT_REPLAY_CHECKPOINT`, `PLAY_REPLAY_SLOT` over `PLAY_REPLAY`. Where
+it is only a way to get the value wrong: `STATE save` over
+`STATE_SLOT_PLUS` and `SAVE_STATE`, `REPLAY seek` over
+`NEXT_REPLAY_CHECKPOINT`, `REPLAY play` over `PLAY_REPLAY`. Where
 nothing reports the selection either - which cheat is picked, which
 shader preset is loaded - there is nothing worth offering yet, and a
 tool that writes where it cannot read is worse than none.
@@ -192,9 +192,18 @@ achievement address, which looks like `READ_CORE_MEMORY`'s system
 address and is not one, and `GET_MEMORY_MAP` answers the addresses
 `READ_CORE_MEMORY` takes.
 
-The disc and the menu are the exceptions: `DISK_NEXT`, `MENU_DOWN` and
-the rest step blind, and until something answers where they landed,
-stepping is all there is - and a disc swap is part of playing a game.
+The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
+and until something answers where they landed, stepping is all there is
+- and a disc swap is part of playing a game. Each is one tool taking a
+choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
+`REINIT`, `STATE` and `REPLAY` stand for their families likewise:
+`STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
+`SEEK_REPLAY 600`. Each answers under its own name - `STATE load 3`,
+`DISK next pressed`, `REPLAY ERROR no replay is playing or recording` -
+while the commands sent by name answer as they always have.
+
+`SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
+files itself, and playing a game does not need them.
 
 All of them are still commands on the network and stdin interfaces,
 where a person is typing and can see what happened.
@@ -264,26 +273,54 @@ network and stdin interfaces, which have no deadline, and leaves
 nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
 
+`WATCH <label> <address>` watches the byte at a system address, and
+`RUN_FRAMES`, `PRESS` and `RUN_UNTIL` then carry it, as a line of
+label, address and value after the command's own answer:
+
+```
+PRESS 1 right+a 4
+x	7e0086	40
+mode	7e0770	8
+```
+
+A step and the look that follows it become one request, rather than
+the step and then a read for each thing the assistant wants to know.
+
+One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
+all of them or, where one is refused, none. `WATCH` with nothing
+answers what is watched and what each byte holds now, `off` in place of
+an address stops watching that label, and a label already watched keeps
+its place in the list when its address changes. Eight at once. Each is
+checked when it is set - an address nothing maps is refused there -
+and read afresh on every reply, so a core that moves its memory is
+followed; one that stops mapping a watched address answers `none` for
+it. All of them are dropped when content closes, since the next
+content's addresses mean something else.
+
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
 `<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
-whether it was met, how many frames ran, and what the byte holds:
+how many frames ran, what `WATCH` watches, and what the byte holds:
 
 ```
-met	12	5
+MET 12
+x	7e0086	52
+VALUE 5
 ```
 
 Where a client would otherwise run a few frames, read the byte and go
 round again, this is one request. The address is the kind
 `GET_MEMORY_MAP` gives and `READ_CORE_MEMORY` takes, and one nothing
 maps is refused before any frame runs rather than after a wait that
-could not have ended. Already meeting the condition answers `met` with
-no frames run at all.
+could not have ended. Already meeting the condition answers `MET 0`.
+The byte is looked up afresh every frame, as the watched ones are, so a
+core that moves its memory is followed; one that stops mapping the
+address while it is waited on ends the wait with an error.
 
 Left to itself it waits about nine seconds of the content's own frames
 - 540 at 60fps, 450 at 50fps - so the answer comes inside the
 ten-second deadline at any frame rate; `[max frames]` asks for up to
-600. When they run out first it answers `waiting` with how far it got,
+600. When they run out first it answers `WAITING` with how far it got,
 so the next request carries on from there instead of the client being
 told it failed.
 
@@ -372,11 +409,10 @@ the reason:
 - `LOAD_CONTENT`, `START_CORE`: the content's path once it runs; a core
   that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
   the content is closed. Requests sent while content loads wait for it.
-- `LOAD_STATE_SLOT`, `SAVE_STATE_SLOT`: once the state is applied or
-  written.
-- `PLAY_REPLAY_SLOT`, `RECORD_REPLAY`, `SEEK_REPLAY` and the replay
-  checkpoint tools: once the replay has started, or the seek or
-  checkpoint has run.
+- `STATE`: once the state is applied or written.
+- `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
+  has started or the seek or checkpoint has run; `halt` is a hotkey
+  press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
 - `AI_SERVICE`: one translation of the screen, answered with the
   service's text.
@@ -392,10 +428,9 @@ answered with an error saying so; the work goes on, and `GET_STATUS`
 tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
-Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
-for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
-that one frame too. `SCREENSHOT`, `AI_SERVICE` and the replay recording
-and checkpoint tools are the exceptions, answered as above; `SCREENSHOT`
+Hotkey tools (`MENU`, `DISK`, `QUIT`, `RESET`) press the hotkey for one
+frame.
+`SCREENSHOT` and `REPLAY` are the exceptions, answered as above; `SCREENSHOT`
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
@@ -406,7 +441,7 @@ Every tool carries hints for the client:
 - **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`,
   `GET_MEMORY_MAP`, `GET_CORE_OPTION`);
 - **destructive**: can lose unsaved progress or data, or loads code
-  (`QUIT`, `RESET`, `LOAD_STATE_SLOT`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
+  (`QUIT`, `RESET`, `STATE`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
   `LOAD_CONTENT`).
 
 `SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`

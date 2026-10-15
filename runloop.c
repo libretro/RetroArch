@@ -5569,6 +5569,8 @@ void runloop_event_deinit_core(void)
 #ifdef HAVE_COMMAND
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("the content was closed");
+   /* the next content's addresses mean something else */
+   command_watch_clear();
 #endif
 
    audio_driver_set_core_float(false);

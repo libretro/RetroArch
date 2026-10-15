@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <errno.h>
 #include <locale.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
@@ -769,21 +770,71 @@ command_t* command_uds_new(void)
 
 /* Routines used to invoke retroarch command ... */
 
+/* The family tool a command runs for, so its answers carry the tool's
+ * name: STATE save 1 rather than SAVE_STATE_SLOT 1. */
+struct command_family
+{
+   const char        *family;
+   const char        *word;
+   const char        *name;
+   command_replier_t  replier;
+};
+static struct command_family command_family_now;
+
+/* @msg under @f's name in @s; 0 where it does not fit. */
+static size_t command_family_rename(const struct command_family *f,
+      const char *msg, size_t len, char *s, size_t size)
+{
+   size_t n = strlen(f->name);
+   int    _len;
+   if (     len > n && !strncmp(msg, f->name, n)
+         && (msg[n] == ' ' || msg[n] == '\n'))
+   {
+      msg += n;
+      len -= n;
+      if (!strncmp(msg, " ERROR", 6))
+         _len = snprintf(s, size, "%s%.*s", f->family, (int)len, msg);
+      else
+         _len = snprintf(s, size, "%s %s%.*s", f->family, f->word,
+               (int)len, msg);
+   }
+   else if (len == n && !strncmp(msg, f->name, n))
+      _len = snprintf(s, size, "%s %s", f->family, f->word);
+   else
+      _len = snprintf(s, size, "%s %s %.*s", f->family, f->word,
+            (int)len, msg);
+   return (_len > 0 && (size_t)_len < size) ? (size_t)_len : 0;
+}
+
+static void command_family_replier(command_t *cmd, const char *data,
+      size_t len)
+{
+   char   msg[512];
+   size_t _len = command_family_rename(&command_family_now, data, len,
+         msg, sizeof(msg));
+   if (_len)
+      command_family_now.replier(cmd, msg, _len);
+   else
+      command_family_now.replier(cmd, data, len);
+}
+
 /* A reply sent after its command has returned: where it goes is taken
  * while the command runs, as afterwards the interface may be answering
  * someone else. */
 typedef struct
 {
-   command_t *cmd;
-   void      *dest;
-   unsigned   gen;
+   command_t            *cmd;
+   void                 *dest;
+   struct command_family family;
+   unsigned              gen;
 } command_deferred_t;
 
 static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 {
    d->cmd  = cmd;
    d->dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
-   d->gen  = input_driver_command_generation();
+   d->gen    = input_driver_command_generation();
+   d->family = command_family_now;
 }
 
 /* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
@@ -793,8 +844,16 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 static void command_deferred_send(command_deferred_t *d,
       const char *msg, size_t len, bool is_error)
 {
+   char renamed[512];
    if (msg && input_driver_command_generation() == d->gen)
    {
+      size_t _len;
+      if (d->family.family && (_len = command_family_rename(&d->family,
+               msg, len, renamed, sizeof(renamed))))
+      {
+         msg = renamed;
+         len = _len;
+      }
       d->cmd->error = is_error;
       if (d->cmd->reply_to && d->dest)
          d->cmd->reply_to(d->cmd, d->dest, msg, len);
@@ -1073,6 +1132,117 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
+/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
+ * so a structured client is offered one tool with a choice rather than
+ * a tool apiece. Each word runs as the command it stands for, which
+ * line clients can still send by name; @rest says it takes what
+ * follows the word, a slot or a frame. */
+struct cmd_choice
+{
+   const char *word;
+   const char *name;
+   bool        rest;
+};
+
+static bool command_run_choice(command_t *cmd, const char *family,
+      const struct cmd_choice *choices, size_t count, const char *values,
+      const char *arg)
+{
+   size_t      i;
+   size_t      n;
+   const char *rest;
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg)
+      arg = "";
+   for (rest = arg; *rest && *rest != ' '; rest++)
+      ;
+   n = (size_t)(rest - arg);
+   while (*rest == ' ')
+      rest++;
+   for (i = 0; i < count; i++)
+   {
+      if (strncmp(arg, choices[i].word, n) || choices[i].word[n])
+         continue;
+      if (!choices[i].rest && *rest)
+      {
+         command_reply_error(cmd, family, "nothing after %s",
+               choices[i].word);
+         return false;
+      }
+      {
+         bool ret;
+         command_family_now.family  = family;
+         command_family_now.word    = choices[i].word;
+         command_family_now.name    = choices[i].name;
+         command_family_now.replier = cmd->replier;
+         cmd->replier               = command_family_replier;
+         ret                        = command_run(cmd, choices[i].name, rest);
+         cmd->replier               = command_family_now.replier;
+         memset(&command_family_now, 0, sizeof(command_family_now));
+         return ret;
+      }
+   }
+   command_reply_error(cmd, family, "one of %s", values);
+   return false;
+}
+
+bool command_menu(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "up",    "MENU_UP",    false }, { "down",  "MENU_DOWN",  false },
+      { "left",  "MENU_LEFT",  false }, { "right", "MENU_RIGHT", false },
+      { "a",     "MENU_A",     false }, { "b",     "MENU_B",     false }
+   };
+   return command_run_choice(cmd, "MENU", choices, ARRAY_SIZE(choices),
+         COMMAND_MENU_BUTTONS, arg);
+}
+
+bool command_disk(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "eject", "DISK_EJECT_TOGGLE", false },
+      { "next",  "DISK_NEXT",         false },
+      { "prev",  "DISK_PREV",         false }
+   };
+   return command_run_choice(cmd, "DISK", choices, ARRAY_SIZE(choices),
+         COMMAND_DISK_ACTIONS, arg);
+}
+
+bool command_reinit(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "video", "VIDEO_REINIT",   false },
+      { "audio", "AUDIO_REINIT",   false },
+      { "all",   "DRIVERS_REINIT", false }
+   };
+   return command_run_choice(cmd, "REINIT", choices, ARRAY_SIZE(choices),
+         COMMAND_REINIT_DRIVERS, arg);
+}
+
+bool command_state(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "save", "SAVE_STATE_SLOT", true },
+      { "load", "LOAD_STATE_SLOT", true }
+   };
+   return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
+         COMMAND_STATE_ACTIONS, arg);
+}
+
+bool command_replay(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "play",       "PLAY_REPLAY_SLOT",       true  },
+      { "seek",       "SEEK_REPLAY",            true  },
+      { "record",     "RECORD_REPLAY",          false },
+      { "halt",       "HALT_REPLAY",            false },
+      { "checkpoint", "SAVE_REPLAY_CHECKPOINT", false }
+   };
+   return command_run_choice(cmd, "REPLAY", choices, ARRAY_SIZE(choices),
+         COMMAND_REPLAY_ACTIONS, arg);
+}
+
 bool command_interfaces_held(void)
 {
    return runloop_is_content_switching();
@@ -1232,17 +1402,20 @@ static bool command_arg_uint(const char *arg, unsigned *out)
    char         *end = NULL;
    unsigned long v;
 
-   if (!arg || !*arg)
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg || *arg < '0' || *arg > '9')
       return false;
-   v = strtoul(arg, &end, 10);
-   if (end == arg)
-      return false;
+   errno = 0;
+   v     = strtoul(arg, &end, 10);
    while (*end == ' ')
       end++;
    if (*end)
       return false;
    *out = (unsigned)v;
-   return true;
+   /* range-checked before narrowing, so 4294967297 is not slot 1, and
+    * where long is 32 bits strtoul clamps it and says so */
+   return errno != ERANGE && (unsigned long)*out == v;
 }
 
 static bool command_load_state_start(struct command_reply *r)
@@ -1457,6 +1630,52 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
  * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
 #define COMMAND_READ_NBYTES_MAX 16384u
 
+/* A system or achievement address in hexadecimal, range-checked before
+ * it is narrowed, so 100001001 is refused rather than read as 1001. */
+static bool command_parse_address(const char *s, unsigned *address,
+      char **end)
+{
+   unsigned long num;
+   while (s && *s == ' ')
+      s++;
+   if (!s || (unsigned char)*s <= ' ' || *s == '-' || *s == '+')
+      return false;
+   errno    = 0;
+   num      = strtoul(s, end, 16);
+   *address = (unsigned)num;
+   return *end != s && errno != ERANGE && (unsigned long)*address == num;
+}
+
+/* The next of a run of hexadecimal bytes separated by spaces: 1 with
+ * it in @out, 0 at the end, -1 at anything that is not a byte. A
+ * write checks every byte before it makes the first. */
+static int command_next_byte(const char **s, uint8_t *out)
+{
+   char         *end = NULL;
+   unsigned long num;
+   while (**s == ' ')
+      (*s)++;
+   if (!**s)
+      return 0;
+   if (**s == '-' || **s == '+')
+      return -1;
+   num = strtoul(*s, &end, 16);
+   if (end == *s || num > 0xff || (*end && *end != ' '))
+      return -1;
+   *s   = end;
+   *out = (uint8_t)num;
+   return 1;
+}
+
+static bool command_bytes_valid(const char *s)
+{
+   uint8_t b;
+   int     r;
+   while ((r = command_next_byte(&s, &b)) > 0)
+      ;
+   return r == 0;
+}
+
 /* @n bytes of @data as " XX" apiece; gives back the end of what it
  * wrote. */
 static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
@@ -1475,15 +1694,16 @@ static char *command_hex_bytes(char *at, const uint8_t *data, size_t n)
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
+   unsigned long num          = 0;
    unsigned int nbytes        = 0;
-   unsigned int addr          = -1;
+   unsigned int addr          = 0;
+   char *end                  = NULL;
 
-   char *end          = NULL;
-   addr               = (unsigned int)strtoul(arg, &end, 16);
-   if (end && *end == ' ')
-      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
+   if (command_parse_address(arg, &addr, &end) && *end == ' ')
+      num             = strtoul(end + 1, NULL, 10);
+   nbytes             = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
 
-   if (!(end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX))
+   if (!nbytes)
    {
       command_reply_error(cmd, "READ_CORE_RAM",
             "an achievement address in hexadecimal, a space, and a byte "
@@ -1538,10 +1758,23 @@ bool command_read_ram(command_t *cmd, const char *arg)
 
 bool command_write_ram(command_t *cmd, const char *arg)
 {
-   unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
+   unsigned int addr    = 0;
    unsigned int avail   = 0;
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
-   const uint8_t *start = data;
+   char *end            = NULL;
+   uint8_t *data        = NULL;
+   uint8_t more;
+   const uint8_t *start;
+
+   if (!command_parse_address(arg, &addr, &end) || !command_bytes_valid(end))
+   {
+      command_reply_error(cmd, "WRITE_CORE_RAM", "an achievement address "
+            "in hexadecimal, then bytes from 00 to ff separated by "
+            "spaces");
+      return false;
+   }
+   arg   = end;
+   data  = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
+   start = data;
 
    if (!data)
    {
@@ -1559,13 +1792,13 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
    /* Stop at the end of the region: the payload length is whatever the
     * sender put in the datagram. */
-   while (*arg && avail)
+   while (avail && command_next_byte(&arg, data) > 0)
    {
-      *data = strtoul(arg, (char**)&arg, 16);
       data++;
       avail--;
    }
-   if (*arg)
+   /* read into a byte of its own: @data is past the region here */
+   if (command_next_byte(&arg, &more) > 0)
       RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
             "memory region; remainder of the payload ignored.\n", addr);
    {
@@ -1929,8 +2162,8 @@ static const struct cmd_option_map option_map[] = {
       "The game has all keyboard input, rather than the hotkeys." },
    { "recording", NULL, CMD_OPT_RECORDING, true, CMD_EVENT_NONE,
       "Video is being recorded to a file." },
-   { "streaming", NULL, CMD_OPT_STREAMING, true,
-      CMD_EVENT_STREAMING_TOGGLE, "The session is being streamed." },
+   { "streaming", NULL, CMD_OPT_STREAMING, true, CMD_EVENT_NONE,
+      "The session is being streamed." },
 #ifdef HAVE_CHEEVOS
    { "cheevos_hardcore", NULL, CMD_OPT_CHEEVOS_HARDCORE, true,
       CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE,
@@ -2168,6 +2401,58 @@ bool command_get_log(command_t *cmd, const char *arg)
 }
 #endif
 
+/* Where a system address lands, defined with the memory commands. */
+static uint8_t *command_memory_get_pointer(
+      const rarch_system_info_t* sys_info,
+      unsigned address, unsigned int* max_bytes,
+      int for_write, char *s, size_t len);
+
+/* The bytes a client asked to be told about, by the labels it gave
+ * them. A step is a request and a look - press, then read where the
+ * player is, then read the enemies, then read the game mode - so the
+ * look rides along with the step instead of being three more requests.
+ *
+ * Each is looked up afresh on every reply rather than kept as a
+ * pointer: a core may move its memory without closing the content. */
+#define COMMAND_WATCH_MAX 8
+
+struct command_watch_entry
+{
+   unsigned address;
+   char     label[16];
+};
+static struct command_watch_entry command_watches[COMMAND_WATCH_MAX];
+static unsigned command_watch_count;
+
+void command_watch_clear(void)
+{
+   command_watch_count = 0;
+}
+
+/* The watches as lines of label, address and value, which is what a
+ * line client reads and what the rows of a structured reply are. */
+static size_t command_watch_lines(char *s, size_t len)
+{
+   char      value[8];
+   char      reason[128];
+   size_t    _len = 0;
+   unsigned  i;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   for (i = 0; i < command_watch_count && _len + 40 < len; i++)
+   {
+      unsigned       avail = 0;
+      const uint8_t *at    = command_memory_get_pointer(&runloop_st->system,
+            command_watches[i].address, &avail, 0, reason, sizeof(reason));
+      if (at)
+         snprintf(value, sizeof(value), "%u", (unsigned)*at);
+      else
+         strlcpy(value, "none", sizeof(value));
+      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%x\t%s\n",
+            command_watches[i].label, command_watches[i].address, value);
+   }
+   return _len;
+}
+
 /* RUN_FRAMES, PRESS or RUN_UNTIL in progress: the frames still to run,
  * the buttons PRESS holds until they have, the byte RUN_UNTIL waits on,
  * and the reply owed. One at a time, so one of these: a second replaces
@@ -2176,14 +2461,16 @@ static struct
 {
    command_deferred_t deferred;
    const char        *name;      /* whichever command owes the reply */
-   const uint8_t     *watch;     /* RUN_UNTIL: the byte waited on */
+   unsigned           address;   /* RUN_UNTIL: the system address waited on */
    unsigned           left;
    unsigned           ran;       /* RUN_UNTIL: frames run so far */
    unsigned           port;      /* PRESS: the player holding, from 0 */
    uint16_t           held;      /* PRESS: which buttons, by bit */
    uint8_t            want;      /* RUN_UNTIL: compared against */
    uint8_t            op;        /* RUN_UNTIL: enum cmd_until_op */
+   uint8_t            value;     /* RUN_UNTIL: what the byte last held */
    char               reply[256];
+   bool               until;     /* RUN_UNTIL is waiting */
 } command_run_frames_st;
 
 /* How RUN_UNTIL compares the byte it waits on, in the order the words
@@ -2202,10 +2489,26 @@ static const char *const command_until_ops[] = {
    "==", "!=", "<", ">", "<=", ">="
 };
 
-/* Whether the byte RUN_UNTIL waits on now meets what was asked. */
+/* The byte RUN_UNTIL waits on, looked up afresh as WATCH's are, since
+ * a core may move its memory while the content runs; false where
+ * nothing maps the address now. */
+static bool command_until_read(void)
+{
+   char           reason[64];
+   unsigned       avail = 0;
+   const uint8_t *at    = command_memory_get_pointer(
+         &runloop_state_get_ptr()->system, command_run_frames_st.address,
+         &avail, 0, reason, sizeof(reason));
+   if (!at)
+      return false;
+   command_run_frames_st.value = *at;
+   return true;
+}
+
+/* Whether the byte RUN_UNTIL last read meets what was asked. */
 static bool command_until_met(void)
 {
-   unsigned now = *command_run_frames_st.watch;
+   unsigned now = command_run_frames_st.value;
    unsigned want = command_run_frames_st.want;
    switch (command_run_frames_st.op)
    {
@@ -2234,20 +2537,43 @@ static void command_run_frames_release(void)
 
 static void command_run_frames_answer(const char *msg, bool is_error)
 {
+   /* the step's own line, then a line for each byte watched: room for
+    * the longest reply and every watch */
+   char   out[256 + COMMAND_WATCH_MAX * 40];
+   size_t _len = strlcpy(out, msg, sizeof(out));
+   bool   until = command_run_frames_st.until;
+
+   if (_len >= sizeof(out))
+      _len = sizeof(out) - 1;
+   command_run_frames_st.until = false;
+
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
    command_run_frames_release();
-   command_deferred_send(&command_run_frames_st.deferred, msg, strlen(msg),
+   /* a failure is its reason, not a reading */
+   if (!is_error && _len < sizeof(out))
+   {
+      _len += command_watch_lines(out + _len, sizeof(out) - _len);
+      /* RUN_UNTIL closes with the byte it waited on, after the rows */
+      if (until && _len < sizeof(out))
+      {
+         int n = snprintf(out + _len, sizeof(out) - _len, "VALUE %u\n",
+               (unsigned)command_run_frames_st.value);
+         if (n > 0)
+            _len = _len + (size_t)n < sizeof(out)
+               ? _len + (size_t)n : sizeof(out) - 1;
+      }
+   }
+   command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
 }
 
-/* "<met|waiting> <frames> <value>", the shape RUN_UNTIL answers in. */
+/* "MET <frames>" or "WAITING <frames>", the line RUN_UNTIL opens with. */
 static void command_until_answer(bool met)
 {
    snprintf(command_run_frames_st.reply,
-         sizeof(command_run_frames_st.reply), "%s\t%u\t%u\n",
-         met ? "met" : "waiting", command_run_frames_st.ran,
-         (unsigned)*command_run_frames_st.watch);
+         sizeof(command_run_frames_st.reply), "%s %u\n",
+         met ? "MET" : "WAITING", command_run_frames_st.ran);
    command_run_frames_answer(command_run_frames_st.reply, false);
 }
 
@@ -2263,9 +2589,15 @@ void command_run_frames_cancel(const char *why)
 /* A frame has run: the reply goes once the last of them has */
 void command_run_frames_tick(void)
 {
-   if (command_run_frames_st.watch)
+   if (command_run_frames_st.until)
    {
       command_run_frames_st.ran++;
+      if (!command_until_read())
+      {
+         command_run_frames_cancel("nothing maps the address waited on "
+               "now");
+         return;
+      }
       /* answered the frame the byte meets what was asked, and at the
        * cap with how far it got: a wait longer than a reply is waited
        * for is asked again rather than failed */
@@ -2345,7 +2677,7 @@ bool command_run_frames(command_t *cmd, const char *arg)
    command_run_frames_st.left  = n;
    command_run_frames_st.name  = "RUN_FRAMES";
    command_run_frames_st.held  = 0;
-   command_run_frames_st.watch = NULL;
+   command_run_frames_st.until = false;
    snprintf(command_run_frames_st.reply,
          sizeof(command_run_frames_st.reply), "RUN_FRAMES %u\n", n);
    command_deferred_take(&command_run_frames_st.deferred, cmd);
@@ -2534,11 +2866,115 @@ bool command_set_input(command_t *cmd, const char *arg)
    return true;
 }
 
-/* Where a system address lands, defined with the memory commands. */
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
-      unsigned address, unsigned int* max_bytes,
-      int for_write, char *s, size_t len);
+
+/* WATCH [<label> <address|off>]...
+ *
+ * With nothing, what is watched now. Each label and address watches the
+ * byte there under that label, carried by RUN_FRAMES, PRESS and
+ * RUN_UNTIL; a label and "off" stops watching it. Every pair is taken
+ * or none is, so a refusal leaves the list as it was.
+ *
+ * Answers with the list either way, so a client sees what it has. */
+bool command_watch(command_t *cmd, const char *arg)
+{
+   struct command_watch_entry next[COMMAND_WATCH_MAX];
+   char      reply[64 + COMMAND_WATCH_MAX * 40];
+   char      label[sizeof(next[0].label)];
+   char      reason[128];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   size_t    _len  = 0;
+   size_t    n;
+   unsigned  count = command_watch_count;
+   unsigned  i;
+   const char *sp;
+
+   memcpy(next, command_watches, sizeof(next));
+   while (arg && *arg)
+   {
+      while (*arg == ' ')
+         arg++;
+      if (!*arg)
+         break;
+      /* a tab or a newline would split the label's row */
+      for (sp = arg; (unsigned char)*sp > ' '; sp++)
+         ;
+      if (*sp != ' ' || (size_t)(sp - arg) >= sizeof(label))
+      {
+         command_reply_error(cmd, "WATCH", "a label of up to %u "
+               "characters, then an address or \"off\"",
+               (unsigned)(sizeof(label) - 1));
+         return false;
+      }
+      memcpy(label, arg, (size_t)(sp - arg));
+      label[sp - arg] = '\0';
+      while (*sp == ' ')
+         sp++;
+      for (arg = sp; (unsigned char)*arg > ' '; arg++)
+         ;
+      n = (size_t)(arg - sp);
+      /* a label already watched keeps its place in the list, so the
+       * rows a client reads stay where they were */
+      for (i = 0; i < count; i++)
+         if (string_is_equal(next[i].label, label))
+            break;
+      if (n == STRLEN_CONST("off") && !strncmp(sp, "off", n))
+      {
+         if (i < count)
+         {
+            memmove(&next[i], &next[i + 1],
+                  (count - i - 1) * sizeof(*next));
+            count--;
+         }
+      }
+      else
+      {
+         unsigned  avail   = 0;
+         unsigned  address = 0;
+         char     *end     = NULL;
+         uint8_t  *at;
+         if (     !command_parse_address(sp, &address, &end) || end != arg
+               || (*arg && *arg != ' '))
+         {
+            command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
+                  "\"off\" to stop watching %s", label);
+            return false;
+         }
+         /* only a label that is not watched yet needs room */
+         if (i == count && count >= COMMAND_WATCH_MAX)
+         {
+            command_reply_error(cmd, "WATCH", "at most %u bytes watched "
+                  "at once", (unsigned)COMMAND_WATCH_MAX);
+            return false;
+         }
+         /* found now, as RUN_UNTIL finds the byte it waits on, so an
+          * address nothing maps is refused rather than read later */
+         if (!(at = command_memory_get_pointer(&runloop_st->system,
+                     address, &avail, 0, reason, sizeof(reason))))
+         {
+            char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
+               ? reason + STRLEN_CONST(" -1 ") : reason;
+            char *nl  = strchr(why, '\n');
+            if (nl)
+               *nl = '\0';
+            command_reply_error(cmd, "WATCH", "%s: %s", label,
+                  *why ? why : "no memory at that address");
+            return false;
+         }
+         if (i == count)
+            count++;
+         next[i].address = address;
+         strlcpy(next[i].label, label, sizeof(next[i].label));
+      }
+   }
+   memcpy(command_watches, next, sizeof(next));
+   command_watch_count = count;
+
+   _len = command_watch_lines(reply, sizeof(reply));
+   if (!_len)
+      _len = strlcpy_lit(reply, "WATCH none\n", sizeof(reply));
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
 
 /* RUN_UNTIL <address> <condition> <value> [max frames]
  *
@@ -2549,7 +2985,7 @@ static uint8_t *command_memory_get_pointer(
  * its calls - this is one request.
  *
  * It waits no longer than a reply is waited for. At the cap it answers
- * "waiting" with the frames it ran, so the next request carries on from
+ * WAITING with the frames it ran, so the next request carries on from
  * there rather than the client being told it failed. */
 bool command_run_until(command_t *cmd, const char *arg)
 {
@@ -2566,8 +3002,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const rarch_system_info_t *sys_info = &runloop_st->system;
 
-   address = (unsigned)strtoul(arg ? arg : "", &end, 16);
-   if (!end || end == arg || *end != ' ')
+   if (!command_parse_address(arg, &address, &end) || *end != ' ')
    {
       command_reply_error(cmd, "RUN_UNTIL", "a hexadecimal address, a "
             "condition, a value and how many frames to wait at most");
@@ -2658,7 +3093,9 @@ bool command_run_until(command_t *cmd, const char *arg)
    command_run_frames_st.ran   = 0;
    command_run_frames_st.name  = "RUN_UNTIL";
    command_run_frames_st.held  = 0;
-   command_run_frames_st.watch = at;
+   command_run_frames_st.address = address;
+   command_run_frames_st.value   = *at;
+   command_run_frames_st.until   = true;
    command_run_frames_st.want  = (uint8_t)value;
    command_run_frames_st.op    = (uint8_t)i;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
@@ -2733,7 +3170,7 @@ bool command_press(command_t *cmd, const char *arg)
    command_run_frames_st.name  = "PRESS";
    command_run_frames_st.port  = player - 1;
    command_run_frames_st.held  = mask;
-   command_run_frames_st.watch = NULL;
+   command_run_frames_st.until = false;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    for (i = 0; i < count; i++)
       input_driver_command_hold(player - 1, ids[i], 1);
@@ -3858,15 +4295,16 @@ bool command_read_memory(command_t *cmd, const char *arg)
 
    {
       char *end       = NULL;
-      address         = (unsigned int)strtoul(arg, &end, 16);
-      if (!(end && *end == ' '))
+      unsigned long num;
+      if (!command_parse_address(arg, &address, &end) || *end != ' ')
       {
          command_reply_error(cmd, "READ_CORE_MEMORY",
                "a hexadecimal address, a space and a byte count");
          return false;
       }
-      nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
+      num             = strtoul(end + 1, NULL, 10);
+      nbytes          = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
+      if (nbytes == 0)
       {
          command_reply_error(cmd, "READ_CORE_MEMORY",
                "a byte count from 1 to %u", COMMAND_READ_NBYTES_MAX);
@@ -3913,23 +4351,34 @@ bool command_read_memory(command_t *cmd, const char *arg)
 
 bool command_write_memory(command_t *cmd, const char *arg)
 {
-   unsigned int address         = (unsigned int)strtoul(arg, (char**)&arg, 16);
+   unsigned int address         = 0;
    unsigned int max_bytes       = 0;
    char reply[128]              = "";
+   char *end                    = NULL;
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
    const rarch_system_info_t
       *sys_info                 = &runloop_st->system;
-   char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   uint8_t *data                = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
+   char *reply_at;
+   uint8_t *data;
+
+   if (     !command_parse_address(arg, &address, &end)
+         || !command_bytes_valid(end))
+   {
+      command_reply_error(cmd, "WRITE_CORE_MEMORY", "a hexadecimal "
+            "address, then bytes from 00 to ff separated by spaces");
+      return false;
+   }
+   arg      = end;
+   reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
+   data     = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
          reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
    {
       uint8_t* start = data;
-      while (*arg && max_bytes > 0)
+      while (max_bytes > 0 && command_next_byte(&arg, data) > 0)
       {
          --max_bytes;
-         *data = strtoul(arg, (char**)&arg, 16);
          data++;
       }
 

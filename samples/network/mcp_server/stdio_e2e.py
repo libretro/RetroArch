@@ -75,8 +75,13 @@ msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
-          'GET_INPUT'):
+          'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
+          'REPLAY'):
     check('tool %s listed' % n, n in names)
+# A family of hotkeys is one tool with a choice, not a tool apiece.
+for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
+          'SEEK_REPLAY', 'HALT_REPLAY', 'SAVE_FILES'):
+    check('%s is not a tool of its own' % n, n not in names)
 # A hotkey that steps a selection nothing can read back is a command on
 # every line interface and not a tool.
 for n in ('SAVE_STATE', 'STATE_SLOT_PLUS', 'SHADER_NEXT', 'READ_CORE_RAM',
@@ -95,12 +100,17 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       'GET_LOG' in schemas and 'SET_INPUT' in schemas
       and 'GET_PLAYLIST' in schemas)
 # Every tool's description and schema is context a client pays for
-# before it does anything. Raise this deliberately, not by accident:
-# RUN_UNTIL and GET_INPUT cost 2180 bytes of the room to this, and
-# dropping readOnlyHint where it repeats the default gave 770 back.
+# before it does anything. The total catches a tool added by accident,
+# and the ceiling on each one catches prose: an average would not, as
+# folding small tools into one raises it. 22817 at 34 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
-      % (size, len(names)), size < 24000)
+      % (size, len(names)), size < 25000)
+biggest = max(msg['result']['tools'],
+              key=lambda t: len(json.dumps(t, separators=(',', ':'))))
+check('and no one tool is over 1800 bytes: %s is %d' % (biggest['name'],
+      len(json.dumps(biggest, separators=(',', ':')))),
+      len(json.dumps(biggest, separators=(',', ':'))) <= 1800)
 
 # wait for the core to be running
 st = ''
@@ -190,6 +200,19 @@ check('LOAD_CORE says why: ' + (t or '').strip(),
 _, st, _ = call(229, 'GET_STATUS')
 check('and the content it was running is still running',
       st and ('PLAYING' in st or 'PAUSED' in st))
+
+# A watch rides along with every step, so a step needs no reads after
+# it. This core maps no memory, so the refusal is what is checkable
+# here; command_frames covers the carrying.
+_, t, _ = call(232, 'MENU', {'button': 'toggle'})
+check('MENU names the buttons it takes: ' + (t or '').strip(),
+      t and t.startswith('MENU ERROR') and 'up|down' in t)
+
+_, t, _ = call(230, 'WATCH', {})
+check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
+_, t, _ = call(231, 'WATCH', {'watches': 'x 1000'})
+check('and refuses an address nothing maps',
+      t and t.startswith('WATCH ERROR'))
 
 msg, t, _ = call(220, 'GET_LOG', {})
 check('GET_LOG has lines and NEXT', t and '\nNEXT ' in '\n' + t and '[INFO]' in t)

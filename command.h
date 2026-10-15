@@ -632,6 +632,13 @@ bool command_press(command_t *cmd, const char *arg);
  * which is all that compares them. */
 bool command_run_until(command_t *cmd, const char *arg);
 
+/* WATCH [<label> <address|off>]...: the bytes RUN_FRAMES, PRESS and
+ * RUN_UNTIL carry along with their own answer, looked up afresh each
+ * time. Cleared when content closes: the next content's addresses mean
+ * something else. */
+bool command_watch(command_t *cmd, const char *arg);
+void command_watch_clear(void);
+
 /* GET_CORE_OPTION [key] / SET_CORE_OPTION <key> <value> */
 bool command_get_core_option(command_t *cmd, const char *arg);
 bool command_set_core_option(command_t *cmd, const char *arg);
@@ -686,6 +693,20 @@ bool command_video_reinit(command_t *cmd, const char* arg);
 bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
+/* MENU <button>, DISK <action>, REINIT <driver>, STATE <action> <slot>,
+ * REPLAY <action> [slot|frame]: the hotkeys and commands of one family
+ * behind one name, as one tool. */
+#define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
+#define COMMAND_DISK_ACTIONS   "eject|next|prev"
+#define COMMAND_REINIT_DRIVERS "video|audio|all"
+#define COMMAND_STATE_ACTIONS  "save|load"
+#define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
+bool command_menu(command_t *cmd, const char *arg);
+bool command_disk(command_t *cmd, const char *arg);
+bool command_reinit(command_t *cmd, const char *arg);
+bool command_state(command_t *cmd, const char *arg);
+bool command_replay(command_t *cmd, const char *arg);
+
 /* The parameters of the commands that take any. Several commands take
  * the same ones; what tells READ_CORE_RAM from READ_CORE_MEMORY is the
  * command's own description, not its parameters'. */
@@ -736,6 +757,13 @@ static const struct cmd_param cmd_params_input[] = {
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "value", "1 holds a button and 0 lets it go; an axis takes -32768 "
       "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_watch[] = {
+   { "watches", "Labels and system addresses in hexadecimal, in pairs: "
+      "\"x 7e0086 mode 7e0770\". A label already watched is replaced, "
+      "and off for its address stops watching it.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
@@ -820,6 +848,37 @@ static const struct cmd_param cmd_params_slot[] = {
    { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_menu[] = {
+   { "button", "The menu button to press.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_MENU_BUTTONS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_disk[] = {
+   { "action", "Eject or insert the disc, or select the next or previous "
+      "image.", CMD_PARAM_STRING, true, NULL, COMMAND_DISK_ACTIONS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_reinit[] = {
+   { "driver", "Which driver, or all of them.", CMD_PARAM_STRING, true,
+      NULL, COMMAND_REINIT_DRIVERS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_state[] = {
+   { "action", "Save to the slot, overwriting it, or load from it, "
+      "replacing the game state.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_STATE_ACTIONS, NULL },
+   { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_replay[] = {
+   { "action", "Play the replay in a slot, seek the playing one to a "
+      "frame, record one to the current slot, halt playing or recording, "
+      "or add a checkpoint to the one recording.", CMD_PARAM_STRING, true,
+      NULL, COMMAND_REPLAY_ACTIONS, NULL },
+   { "number", "The slot to play, or the frame to seek to.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_frame[] = {
    { "frame", "The frame to seek to.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
@@ -891,10 +950,10 @@ static const struct cmd_column cmd_cols_memory[] = {
    { NULL }
 };
 
-static const struct cmd_column cmd_cols_until[] = {
-   { "outcome", "met, or waiting where the frames ran out first." },
-   { "frames", "How many frames ran." },
-   { "value", "What the byte holds now." },
+static const struct cmd_column cmd_cols_watch[] = {
+   { "label", "What the client called it." },
+   { "address", "Where it is, in hexadecimal." },
+   { "value", "What the byte holds, or none where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
@@ -915,6 +974,16 @@ static const struct cmd_trailer cmd_trailers_page[] = {
       "takes it." },
    { NULL }
 };
+/* RUN_UNTIL opens with one of the first two, whichever happened. */
+static const struct cmd_trailer cmd_trailers_until[] = {
+   { "MET", NULL, "met",
+      "The frames run until the byte met the condition.", true },
+   { "WAITING", NULL, "waiting",
+      "The frames run without it meeting it; ask again to wait more.",
+      true },
+   { "VALUE", NULL, "value", "What the byte waited on holds now." },
+   { NULL }
+};
 static const struct cmd_trailer cmd_trailers_log[] = {
    { "NEXT", NULL, "next",
       "The line to ask for next, as GET_LOG's since takes it." },
@@ -932,7 +1001,8 @@ static const struct cmd_rows cmd_rows_core_option =
 static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 };
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
-static const struct cmd_rows cmd_rows_until     = { cmd_cols_until, NULL, 0, 0 };
+static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
+static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0 };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
@@ -955,11 +1025,12 @@ static const struct cmd_action_map action_map[] = {
 #ifdef HAVE_MCP
    { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames, &cmd_rows_watch },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
-   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run; the content finishes paused, as RUN_FRAMES leaves it. A tap is 2 to 4 frames, and 600 - about ten seconds at 60fps - is the most it holds for.", 0, cmd_params_press },
-   { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers whether it was met, how many frames ran and what the byte holds; waits about nine seconds of frames, or as many as asked up to 600, and answers waiting where they run out, to be asked again.", 0, cmd_params_until, &cmd_rows_until },
-   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or for every player when given none. Answers in SET_INPUT's shape, for the player asked after or the first of them.", 0, cmd_params_input_release, &cmd_rows_input },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run, with what WATCH watches; the content finishes paused, as RUN_FRAMES leaves it.", 0, cmd_params_press, &cmd_rows_watch },
+   { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers MET or WAITING with the frames run, what WATCH watches and the byte's VALUE; WAITING is asked again.", 0, cmd_params_until, &cmd_rows_until },
+   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS and RUN_UNTIL answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
@@ -977,22 +1048,27 @@ static const struct cmd_action_map action_map[] = {
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map, tab separated: the first four fields of each region are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
-   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
-   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE, cmd_params_frame },
+   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_frame },
+   { "REPLAY",        command_replay,        "<play|seek|record|halt|checkpoint> [slot|frame]", "Play, seek, record, halt or checkpoint a replay.", CMD_INFO_DESTRUCTIVE, cmd_params_replay },
 
-   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0, NULL },
-   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", 0, NULL },
-   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", 0, NULL },
+   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
+   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
+   { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
+   { "MENU",         command_menu,         "<up|down|left|right|a|b>", "Press a menu button: move, confirm (a) or back (b).", 0, cmd_params_menu },
+   { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 
 static const struct cmd_map map[] = {
@@ -1018,17 +1094,17 @@ static const struct cmd_map map[] = {
    { "STATE_SLOT_MINUS", RARCH_STATE_SLOT_MINUS, "Select the previous save state slot.", CMD_INFO_NO_TOOL },
 
    { "PLAY_REPLAY", RARCH_PLAY_REPLAY_KEY, "Play back the replay in the current slot.", CMD_INFO_NO_TOOL },
-   { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE },
-   { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", 0 },
-   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", 0 },
+   { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
+   { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", CMD_INFO_NO_TOOL },
+   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", CMD_INFO_NO_TOOL },
    { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY, "Seek the replay back to the previous checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
    { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY, "Seek the replay forward to the next checkpoint.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
    { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", CMD_INFO_NO_TOOL },
    { "REPLAY_SLOT_MINUS", RARCH_REPLAY_SLOT_MINUS, "Select the previous replay slot.", CMD_INFO_NO_TOOL },
 
-   { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", 0 },
-   { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", 0 },
-   { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", 0 },
+   { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", CMD_INFO_NO_TOOL },
+   { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", CMD_INFO_NO_TOOL },
+   { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", CMD_INFO_NO_TOOL },
 
    { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", CMD_INFO_NO_TOOL },
    { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
@@ -1066,12 +1142,12 @@ static const struct cmd_map map[] = {
    { "NETPLAY_PLAYER_CHAT", RARCH_NETPLAY_PLAYER_CHAT, "Send a netplay chat message.", CMD_INFO_NO_TOOL },
    { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE, "Turn fading of netplay chat on or off.", CMD_INFO_NO_TOOL },
 
-   { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", 0 },
-   { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", 0 },
-   { "MENU_LEFT", RETRO_DEVICE_ID_JOYPAD_LEFT, "Menu: move left.", 0 },
-   { "MENU_RIGHT", RETRO_DEVICE_ID_JOYPAD_RIGHT, "Menu: move right.", 0 },
-   { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", 0 },
-   { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", 0 },
+   { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", CMD_INFO_NO_TOOL },
+   { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", CMD_INFO_NO_TOOL },
+   { "MENU_LEFT", RETRO_DEVICE_ID_JOYPAD_LEFT, "Menu: move left.", CMD_INFO_NO_TOOL },
+   { "MENU_RIGHT", RETRO_DEVICE_ID_JOYPAD_RIGHT, "Menu: move right.", CMD_INFO_NO_TOOL },
+   { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", CMD_INFO_NO_TOOL },
+   { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", CMD_INFO_NO_TOOL },
 
    { "OVERLAY_NEXT", RARCH_OVERLAY_NEXT, "Switch to the next overlay.", CMD_INFO_NO_TOOL },
    { "OSK", RARCH_OSK, "Show or hide the on-screen keyboard.", CMD_INFO_NO_TOOL },

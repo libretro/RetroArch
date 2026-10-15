@@ -172,6 +172,34 @@ static bool act_log(command_t *cmd, const char *arg)
    return true;
 }
 
+/* RUN_UNTIL's reply as it ships: how the wait ended opening it, the
+ * watched bytes as rows, the byte waited on closing it */
+#define UNTIL_TEXT "MET 12\nx\t7e0086\t52\nmode\t7e0770\t8\nVALUE 5\n"
+#define WAIT_TEXT  "WAITING 540\nVALUE 3\n"
+/* and a step's, which opens with the command's own line */
+#define STEP_TEXT  "STEP 4\nx\t7e0086\t52\n"
+
+static bool act_until(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, UNTIL_TEXT, sizeof(UNTIL_TEXT) - 1);
+   return true;
+}
+
+static bool act_wait(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, WAIT_TEXT, sizeof(WAIT_TEXT) - 1);
+   return true;
+}
+
+static bool act_step(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, STEP_TEXT, sizeof(STEP_TEXT) - 1);
+   return true;
+}
+
 static bool act_one(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -223,6 +251,9 @@ static struct cmd_action_map test_actions[] = {
    { "ONE",   act_one,   "No argument", "Answer one-column rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_one },
    { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
+   { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
+   { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
+   { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -688,8 +719,9 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR and BARE, and none before them */
-      check("only the commands that answer rows declare one", n == 6);
+      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, WAIT and STEP, and
+       * none before them */
+      check("only the commands that answer rows declare one", n == 9);
    }
 
    printf("tools/call\n");
@@ -895,15 +927,36 @@ int main(void)
          && strstr(out, "\"structuredContent\":{\"next\":9,\"lost\":3}"));
    check("and its text is the whole of the reply, as ever",
          st == 200 && strstr(out, "NEXT is a line"));
+   /* RUN_UNTIL and the steps, with the real tables command.h ships */
+   st = post(cmd, PORT_OPEN, NULL, call("UNTIL", NULL), out, sizeof(out), NULL);
+   check("RUN_UNTIL's watches are rows, MET and VALUE its trailers",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"},"
+               "{\"label\":\"mode\",\"address\":\"7e0770\",\"value\":\"8\"}],"
+               "\"met\":12,\"value\":5}"));
+   st = post(cmd, PORT_OPEN, NULL, call("WAIT", NULL), out, sizeof(out), NULL);
+   check("WAITING with nothing watched answers how far it got and the byte",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],"
+               "\"waiting\":540,\"value\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("STEP", NULL), out, sizeof(out), NULL);
+   check("a step's own line is no row, its watches are",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}]}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
    {
       const char *br = strstr(out, "\"name\":\"BARE\"");
       const char *lg = strstr(out, "\"name\":\"LOGR\"");
+      /* the tool after BARE answers rows, so BARE's own ends there */
+      const char *nx = br ? strstr(br, "\"name\":\"UNTIL\"") : NULL;
+      const char *rw = br ? strstr(br, "\"rows\"") : NULL;
       check("its schema declares the trailers and no rows",
             br && strstr(br, "\"next\":{\"type\":\"integer\"")
-            && !strstr(br, "\"rows\""));
+            && (!rw || (nx && rw > nx)));
       check("its schema declares both trailers and no more",
             lg && strstr(lg, "\"next\":{\"type\":\"integer\"")
             && strstr(lg, "\"lost\":{\"type\":\"integer\"")
