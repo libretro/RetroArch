@@ -21,13 +21,24 @@ av1C. It covers normal/reduced still headers, timing and decoder models,
 colour layouts and film-grain presence. Caller-owned output avoids allocation
 and large temporary stack frames; failures clear that output.
 
-Frame/tile payload syntax, frame reconstruction and Annex B remain unimplemented. Hardware session/reference/film-grain handling and
+`formats/rav1_tiles.h` validates a tile group before exposing allocation-free
+borrowed tile spans. It checks explicit tile ranges, zero alignment bits,
+1-4 byte little-endian sizes, nonempty spans and the FRAME_OBU restriction.
+Its iterator preserves the cursor on failure and reports row/column indices.
+The caller supplies the parsed frame layout and the tile-group start; the
+helper does not locate or parse the preceding uncompressed frame header.
+The syntax bounds are 64 columns by 64 rows. Sequence-level and device limits
+belong to their respective capability checks.
+
+Frame-header/tile-info syntax, entropy decoding, frame reconstruction and
+Annex B remain unimplemented. Hardware session/reference/film-grain handling and
 GPU imports remain the next AV1 layers. Compressed packet views avoid a
 demux/framing copy; a hardware backend may still need a bitstream upload.
 
 ```sh
 make check SANITIZER=address,undefined
 python3 fixtures.py
+python3 tile_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -44,6 +55,14 @@ points, single-bit mutations and all eight configuration agreement fields.
 4:2:0, 4:2:2, 4:4:4 and monochrome layouts. It compares sequence dimensions,
 colour metadata, configuration bytes, packet hashes, timestamps and sync flags
 with ffprobe. FFmpeg is a test tool, not a runtime dependency.
+
+Tile tests cover partial groups, implicit and explicit single tiles, all
+four size widths, truncation, invalid layout/range/padding/lengths, whole-group
+preflight, failure cursor retention and a 4096-tile syntax grid.
+`tile_fixtures.py` generates eight 8/10-bit multi-tile streams, locates the
+groups using FFmpeg frame-header traces, and compares 160 tile offsets, sizes
+and hashes. This test oracle supplies frame layouts that production code
+will eventually obtain from its own frame parser.
 
 Format references:
 
