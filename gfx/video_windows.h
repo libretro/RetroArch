@@ -142,6 +142,24 @@ unsigned video_windows_drain(void *owner, video_window_at_t at,
 void video_windows_sweep(void *owner, video_window_at_t at,
       void (*destroy)(void *owner, video_window_native_t *window));
 
+typedef struct video_window_rect
+{
+   int x;
+   int y;
+   int w;
+   int h;
+} video_window_rect_t;
+
+/* The area two rects share, 0 for none */
+unsigned video_window_rect_overlap(const video_window_rect_t *a,
+      const video_window_rect_t *b);
+
+/* Saved bounds on 'area', a monitor or its work area: bounds partly on
+ * it are moved onto it, automatic ones and those not on it at all are
+ * centred on it, and the size is clamped to it. */
+void video_window_place_rect(video_window_rect_t *rect,
+      const video_window_rect_t *area, bool automatic);
+
 typedef struct video_windows_plan
 {
    unsigned main_mask;

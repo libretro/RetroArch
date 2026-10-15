@@ -15,6 +15,8 @@
 
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+
 #include "video_windows.h"
 
 void video_windows_plan(const video_views_map_t *map,
@@ -104,4 +106,37 @@ void video_windows_sweep(void *owner, video_window_at_t at,
       if (window && window->owner == owner)
          destroy(owner, window->native);
    }
+}
+
+unsigned video_window_rect_overlap(const video_window_rect_t *a,
+      const video_window_rect_t *b)
+{
+   int w = MIN(a->x + a->w, b->x + b->w) - MAX(a->x, b->x);
+   int h = MIN(a->y + a->h, b->y + b->h) - MAX(a->y, b->y);
+   if (w <= 0 || h <= 0)
+      return 0;
+   return (unsigned)w * (unsigned)h;
+}
+
+void video_window_place_rect(video_window_rect_t *rect,
+      const video_window_rect_t *area, bool automatic)
+{
+   /* Partly on it as saved, before the size is clamped */
+   bool on = !automatic && video_window_rect_overlap(rect, area);
+   rect->w = MIN(rect->w, area->w);
+   rect->h = MIN(rect->h, area->h);
+   if (!on)
+   {
+      rect->x = area->x + (area->w - rect->w) / 2;
+      rect->y = area->y + (area->h - rect->h) / 2;
+      return;
+   }
+   if (rect->x < area->x)
+      rect->x = area->x;
+   if (rect->y < area->y)
+      rect->y = area->y;
+   if (rect->x + rect->w > area->x + area->w)
+      rect->x = area->x + area->w - rect->w;
+   if (rect->y + rect->h > area->y + area->h)
+      rect->y = area->y + area->h - rect->h;
 }

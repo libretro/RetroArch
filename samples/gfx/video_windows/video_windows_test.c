@@ -224,11 +224,83 @@ static void test_window_events(void)
    CHECK(test_window_at(3) != NULL);
 }
 
+static bool test_place(int x, int y, int w, int h, bool automatic,
+      int ax, int ay, int aw, int ah, int wx, int wy, int ww, int wh)
+{
+   video_window_rect_t rect, area;
+   rect.x = x;
+   rect.y = y;
+   rect.w = w;
+   rect.h = h;
+   area.x = ax;
+   area.y = ay;
+   area.w = aw;
+   area.h = ah;
+   video_window_place_rect(&rect, &area, automatic);
+   if (rect.x == wx && rect.y == wy && rect.w == ww && rect.h == wh)
+      return true;
+   printf("placed %d,%d %dx%d, wanted %d,%d %dx%d\n",
+         rect.x, rect.y, rect.w, rect.h, wx, wy, ww, wh);
+   return false;
+}
+
+/* Saved bounds on the monitors there are now */
+static void test_window_place(void)
+{
+   video_window_rect_t a, b;
+   /* On it: kept */
+   CHECK(test_place(100, 100, 320, 240, false, 0, 0, 1280, 720,
+            100, 100, 320, 240));
+   /* Automatic: centred, whatever the position */
+   CHECK(test_place(100, 100, 320, 240, true, 0, 0, 1280, 720,
+            480, 240, 320, 240));
+   CHECK(test_place(100, 100, 320, 240, true, 1280, 0, 1280, 720,
+            1760, 240, 320, 240));
+   /* Partly off: moved onto it, each edge */
+   CHECK(test_place(-200, -200, 320, 240, false, 0, 0, 1280, 720,
+            0, 0, 320, 240));
+   CHECK(test_place(1100, 600, 320, 240, false, 0, 0, 1280, 720,
+            960, 480, 320, 240));
+   /* Not on it at all, or only touching it: centred */
+   CHECK(test_place(-30000, -30000, 320, 240, false, 0, 0, 1280, 720,
+            480, 240, 320, 240));
+   CHECK(test_place(1280, 0, 320, 240, false, 0, 0, 1280, 720,
+            480, 240, 320, 240));
+   /* An area that does not start at 0, as a work area */
+   CHECK(test_place(0, 0, 320, 240, false, 1280, 30, 1280, 690,
+            1760, 255, 320, 240));
+   CHECK(test_place(2500, 700, 320, 240, false, 1280, 30, 1280, 690,
+            2240, 480, 320, 240));
+   /* Larger than it: clamped to it */
+   CHECK(test_place(100, 100, 2000, 1000, false, 0, 0, 1280, 720,
+            0, 0, 1280, 720));
+   /* Partly on it as saved, though not once clamped: moved, not
+    * centred */
+   CHECK(test_place(-1500, 100, 2000, 200, false, 0, 0, 1280, 720,
+            0, 100, 1280, 200));
+
+   a.x = 0;
+   a.y = 0;
+   a.w = 100;
+   a.h = 50;
+   b   = a;
+   CHECK(video_window_rect_overlap(&a, &b) == 5000);
+   b.x = 90;
+   b.y = -10;
+   CHECK(video_window_rect_overlap(&a, &b) == 400);
+   b.x = 100;
+   CHECK(video_window_rect_overlap(&a, &b) == 0);
+   b.x = -30000;
+   b.y = -30000;
+   CHECK(video_window_rect_overlap(&a, &b) == 0);
+}
+
 int main(void)
 {
    test_windows_policy();
    test_selected_layout();
    test_window_events();
+   test_window_place();
    if (failures)
       return 1;
    puts("video_windows: ok");
