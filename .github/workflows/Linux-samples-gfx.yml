@@ -897,6 +897,19 @@ jobs:
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_widgets_task_gate_test
           echo "[pass] gfx_widgets_task_gate_test (TSan)"
+      - name: Build and run load_content_icon_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widget_load_content_animation
+        run: |
+          set -eu
+          # The load content animation started off the widgets' thread
+          # still finds and loads its icon.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 timeout 120 ./load_content_icon_test
+          echo "[pass] load_content_icon_test (ASan)"
+          make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./load_content_icon_test
+          echo "[pass] load_content_icon_test (TSan)"
       - name: Build and run win32_msg_route_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/win32_msg_route

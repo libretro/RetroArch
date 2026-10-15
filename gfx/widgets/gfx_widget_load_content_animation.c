@@ -361,7 +361,9 @@ static bool gfx_widget_start_load_content_animation_resolve(
 
    state->content_name[0]   = '\0';
    state->system_name[0]    = '\0';
-   state->icon_directory[0] = '\0';
+   /* The directory the widgets set at init, before any start */
+   strlcpy(state->icon_directory, dispwidget_get_ptr()->monochrome_png_path,
+         sizeof(state->icon_directory));
    state->icon_file[0]      = '\0';
    state->icon_path[0]      = '\0';
    state->content_name_len  = 0;
