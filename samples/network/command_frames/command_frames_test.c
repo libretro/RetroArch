@@ -139,6 +139,21 @@ int main(int argc, char **argv)
       preempt_deinit(loop);
    }
 
+   /* STATE answers as STATE, not as the command it runs */
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"lo") && !strcmp(reply,"STATE ERROR one of save|load"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"loads 1") && !strcmp(reply,"STATE ERROR one of save|load"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"load") && !strcmp(reply,"STATE ERROR a slot number, not nothing"));
+   strlcpy(loop->name.savestate,"command_frames_test.state",
+         sizeof(loop->name.savestate));
+   reply[0]=0;
+   CHECK(command_state(&cmd," save  1"));
+   for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+   CHECK(!strcmp(reply,"STATE save 1"));
+   remove("command_frames_test.state1");
+
    /* READ_CORE_MEMORY and WRITE_CORE_MEMORY answer with the address and
     * the bytes in hexadecimal, at a system address the core maps */
    reply[0]=0;

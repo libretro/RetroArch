@@ -1074,7 +1074,7 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
-/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
+/* MENU, DISK, REINIT and REPLAY: a family of commands as one,
  * so a structured client is offered one tool with a choice rather than
  * a tool apiece. Each word runs as the command it stands for, which
  * line clients can still send by name; @rest says it takes what
@@ -1149,16 +1149,6 @@ bool command_reinit(command_t *cmd, const char *arg)
    };
    return command_run_choice(cmd, "REINIT", choices, ARRAY_SIZE(choices),
          COMMAND_REINIT_DRIVERS, arg);
-}
-
-bool command_state(command_t *cmd, const char *arg)
-{
-   static const struct cmd_choice choices[] = {
-      { "save", "SAVE_STATE_SLOT", true },
-      { "load", "LOAD_STATE_SLOT", true }
-   };
-   return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
-         COMMAND_STATE_ACTIONS, arg);
 }
 
 bool command_replay(command_t *cmd, const char *arg)
@@ -1369,11 +1359,13 @@ static bool command_save_state_start(struct command_reply *r)
    return true;
 }
 
-/* LOAD_STATE_SLOT and SAVE_STATE_SLOT, answered once their task is
- * through. */
-static bool command_state_slot(command_t *cmd, const char *arg, bool load)
+/* LOAD_STATE_SLOT, SAVE_STATE_SLOT and STATE, answered once their task
+ * is through. */
+static bool command_state_slot(command_t *cmd, const char *arg, bool load,
+      const char *family)
 {
-   const char *name             = load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
+   const char *name             = family ? family
+      : load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
    unsigned int slot            = 0;
    bool savestates_enabled      = core_info_current_supports_savestate();
    struct command_reply *r;
@@ -1397,7 +1389,11 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
          savestates_enabled = path_is_valid(r->path);
       if (savestates_enabled)
       {
-         snprintf(r->ok, sizeof(r->ok), "%s %u", name, slot);
+         if (family)
+            snprintf(r->ok, sizeof(r->ok), "%s %s %u", family,
+                  load ? "load" : "save", slot);
+         else
+            snprintf(r->ok, sizeof(r->ok), "%s %u", name, slot);
          r->state_loaded = load;
          r->start        = load ? command_load_state_start
                                 : command_save_state_start;
@@ -1417,12 +1413,26 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
-   return command_state_slot(cmd, arg, true);
+   return command_state_slot(cmd, arg, true, NULL);
 }
 
 bool command_save_state_slot(command_t *cmd, const char *arg)
 {
-   return command_state_slot(cmd, arg, false);
+   return command_state_slot(cmd, arg, false, NULL);
+}
+
+bool command_state(command_t *cmd, const char *arg)
+{
+   bool load;
+   while (arg && *arg == ' ')
+      arg++;
+   if (     arg
+         && (   (load = string_starts_with_size(arg, "load", 4))
+             || string_starts_with_size(arg, "save", 4))
+         && (!arg[4] || arg[4] == ' '))
+      return command_state_slot(cmd, arg + 4, load, "STATE");
+   command_reply_error(cmd, "STATE", "one of %s", COMMAND_STATE_ACTIONS);
+   return false;
 }
 
 bool command_play_replay_slot(command_t *cmd, const char *arg)
