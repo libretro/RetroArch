@@ -917,11 +917,12 @@ typedef struct vulkan_video_probe
 } vulkan_video_probe_t;
 
 static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
-      vulkan_video_probe_t *out)
+      vulkan_video_probe_t *out, uint32_t allowed)
 {
    PFN_vkGetPhysicalDeviceQueueFamilyProperties2 get_families;
    PFN_vkGetPhysicalDeviceFeatures2 get_features;
    VkPhysicalDeviceSynchronization2FeaturesKHR sync2;
+   VkPhysicalDeviceVideoDecodeVP9FeaturesKHR vp9;
    VkPhysicalDeviceFeatures2 f2;
    VkQueueFamilyProperties2 *qp         = NULL;
    VkQueueFamilyVideoPropertiesKHR *vp  = NULL;
@@ -966,13 +967,20 @@ static bool vulkan_video_probe(gfx_ctx_vulkan_data_t *vk,
 
    sync2.sType            =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
-   sync2.pNext            = NULL;
+   memset(&vp9, 0, sizeof(vp9));
+   vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+   out->codecs &= allowed;
+#ifndef HAVE_RVP9
+   out->codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+#endif
+   sync2.pNext            = (out->codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) ? &vp9 : NULL;
    sync2.synchronization2 = VK_FALSE;
    f2.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
    f2.pNext               = &sync2;
    get_features(vk->context.gpu, &f2);
    if (!sync2.synchronization2)
       goto end;
+   if (!vp9.videoDecodeVP9) out->codecs &= ~VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
 
    get_families(vk->context.gpu, &n, NULL);
    if (     !n
@@ -1131,10 +1139,12 @@ static VkDevice vulkan_context_create_device_wrapper(
    {
       VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline;
       VkPhysicalDeviceSynchronization2FeaturesKHR sync2;
+      VkPhysicalDeviceVideoDecodeVP9FeaturesKHR vp9;
       VkPhysicalDeviceFeatures2 f2;
       const VkBaseInStructure *chain;
       const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR *requested_timeline = NULL;
       const VkPhysicalDeviceSynchronization2FeaturesKHR *requested_sync2 = NULL;
+      const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR *requested_vp9 = NULL;
       PFN_vkGetPhysicalDeviceFeatures2 get_features;
       vulkan_video_probe_t video;
       VkDeviceCreateInfo vinfo = info;
@@ -1147,6 +1157,8 @@ static VkDevice vulkan_context_create_device_wrapper(
             timeline_ext = true;
       memset(&timeline, 0, sizeof(timeline));
       timeline.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+      memset(&vp9, 0, sizeof(vp9));
+      vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
       memset(&sync2, 0, sizeof(sync2));
       sync2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
       memset(&f2, 0, sizeof(f2));
@@ -1161,6 +1173,8 @@ static VkDevice vulkan_context_create_device_wrapper(
       {
          if (chain->sType == timeline.sType)
             requested_timeline = (const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR*)chain;
+         if (chain->sType == vp9.sType)
+            requested_vp9 = (const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR*)chain;
          if (chain->sType == sync2.sType)
             requested_sync2 = (const VkPhysicalDeviceSynchronization2FeaturesKHR*)chain;
       }
@@ -1170,7 +1184,8 @@ static VkDevice vulkan_context_create_device_wrapper(
       if (timeline.timelineSemaphore)
          vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
       if (     (!requested_sync2 || requested_sync2->synchronization2)
-            && vulkan_video_probe(vk, &video))
+            && vulkan_video_probe(vk, &video, requested_vp9 && !requested_vp9->videoDecodeVP9
+               ? ~(uint32_t)VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR : UINT32_MAX))
       {
          qi[0] = info.pQueueCreateInfos[0];
          if (video.xfer_family == qi[0].queueFamilyIndex)
@@ -1213,6 +1228,12 @@ static VkDevice vulkan_context_create_device_wrapper(
             sync2.synchronization2 = VK_TRUE;
             sync2.pNext = (void*)vinfo.pNext;
             vinfo.pNext = &sync2;
+         }
+         if ((video.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !requested_vp9)
+         {
+            vp9.videoDecodeVP9 = VK_TRUE;
+            vp9.pNext = (void*)vinfo.pNext;
+            vinfo.pNext = &vp9;
          }
          vinfo.pQueueCreateInfos = qi;
          vinfo.queueCreateInfoCount = nq;
@@ -1636,11 +1657,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          VkDevice dev = VK_NULL_HANDLE;
          /* With the video decode queues where the GPU has them; a
           * device that cannot be made so is made without */
-         if (vulkan_video_probe(vk, &video))
+         if (vulkan_video_probe(vk, &video, UINT32_MAX))
          {
             VkDeviceQueueCreateInfo qi[3];
             VkDeviceCreateInfo vinfo = device_info;
             VkPhysicalDeviceSynchronization2FeaturesKHR sync2;
+            VkPhysicalDeviceVideoDecodeVP9FeaturesKHR vp9;
             unsigned j, nq = 1, next = enabled_device_extension_count;
 
             for (j = 0; j < ARRAY_SIZE(vulkan_video_device_extensions); j++)
@@ -1668,6 +1690,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             sync2.pNext            = (void*)device_info.pNext;
             sync2.synchronization2 = VK_TRUE;
             vinfo.pNext                   = &sync2;
+            if (video.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+            {
+               memset(&vp9, 0, sizeof(vp9));
+               vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+               vp9.videoDecodeVP9 = VK_TRUE; vp9.pNext = (void*)vinfo.pNext;
+               vinfo.pNext = &vp9;
+            }
             vinfo.queueCreateInfoCount    = nq;
             vinfo.pQueueCreateInfos       = qi;
             vinfo.enabledExtensionCount   = next;

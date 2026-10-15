@@ -116,10 +116,9 @@ static int oracle_init(oracle_readback_t *r, unsigned width, unsigned height, un
    return 1;
 }
 
-static int oracle_frame(oracle_readback_t *r, rh265_video *source,
+static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
       const hevc_fixture_t *f, unsigned *count)
 {
-   video_hw_frame_t frame;
    VkImage image;
    VkSemaphore wait;
    VkBufferImageCopy regions[2];
@@ -133,7 +132,6 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
    uint32_t hash = UINT32_C(2166136261);
    unsigned plane, x, y;
    int ok = 0;
-   if (rh265_video_hw_frame(source, &frame)) return 0;
    memcpy(&image, &frame.image, sizeof(image)); memcpy(&wait, &frame.wait, sizeof(wait));
    if (!frame.image || !frame.abandon || frame.pixfmt != (f->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
          || frame.width != r->width || frame.height != r->height || !frame.done) goto done;
@@ -208,6 +206,14 @@ static int oracle_frame(oracle_readback_t *r, rh265_video *source,
 done:
    if (frame.abandon) frame.abandon(frame.owner, frame.done, frame.done_value);
    return ok;
+}
+
+static int oracle_frame(oracle_readback_t *r, rh265_video *source,
+      const hevc_fixture_t *f, unsigned *count)
+{
+   video_hw_frame_t frame;
+   if (rh265_video_hw_frame(source, &frame)) return 0;
+   return oracle_read_frame(r, frame, f, count);
 }
 
 static int decode_fixture(const hevc_fixture_t *f)
@@ -346,15 +352,20 @@ done:
    return ok;
 }
 
+#ifdef HAVE_RVP9
+#include "vp9_decode.h"
+#endif
+
 static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       uint32_t family, uint32_t graphics, uint32_t codecs, PFN_vkGetInstanceProcAddr get)
 {
    static const char *extensions[] = {"VK_KHR_synchronization2", "VK_KHR_video_queue",
-      "VK_KHR_video_decode_queue", "VK_KHR_video_decode_h265", "VK_KHR_timeline_semaphore", "VK_KHR_video_decode_h264"};
+      "VK_KHR_video_decode_queue", "VK_KHR_video_decode_h265", "VK_KHR_timeline_semaphore", "VK_KHR_video_decode_h264", "VK_KHR_video_decode_vp9"};
    VkDeviceQueueCreateInfo queues[2];
    VkDeviceCreateInfo info = {0};
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline = {0};
    VkPhysicalDeviceSynchronization2FeaturesKHR sync = {0};
+   VkPhysicalDeviceVideoDecodeVP9FeaturesKHR vp9 = {0};
    VkDevice device;
    vulkan_context_t *ctx = (vulkan_context_t*)calloc(1, sizeof(*ctx));
    float priority = 1.0f;
@@ -377,6 +388,14 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO; info.queueCreateInfoCount = 2;
    info.pNext = &sync; info.pQueueCreateInfos = queues;
    info.enabledExtensionCount = (codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR) ? 6 : 5;
+   if (codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+   {
+      /* This oracle uses a device with both H.264 and HEVC. */
+      if (!(codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)) { free(ctx); return 0; }
+      vp9.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+      vp9.videoDecodeVP9 = VK_TRUE; vp9.pNext = (void*)info.pNext; info.pNext = &vp9;
+      info.enabledExtensionCount = 7;
+   }
    info.ppEnabledExtensionNames = extensions;
    if (!create || create(gpu, &info, NULL, &device) != VK_SUCCESS) { free(ctx); return 0; }
    if (!vulkan_symbol_wrapper_load_core_device_symbols(device)) goto done;
@@ -406,6 +425,9 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    {
       ctx->video_codec_operations = codecs;
       if (!vulkan_video_decode_init(ctx) || !h264_regression()) ok = 0;
+#ifdef HAVE_RVP9
+      if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_decode_fixture()) ok = 0;
+#endif
       vkDeviceWaitIdle(device); vulkan_video_decode_deinit();
    }
 done:

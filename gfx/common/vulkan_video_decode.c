@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* rh264/rh265 hardware backends on Vulkan Video.
+/* rh264/rh265/rvp9 hardware backends on Vulkan Video.
  *
  * A decoder is one stream: a video session, its parameters, the DPB -
  * one picture per rh264 slot, decoded output and reference picture in
@@ -47,6 +47,7 @@
 #include <formats/rh264.h>
 #include <formats/rh265_hw.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #include <formats/video_hw_frame.h>
 
 #ifdef HAVE_CONFIG_H
@@ -56,6 +57,7 @@
 #include "vulkan_video_decode.h"
 #include "vulkan_hevc_params.h"
 #include "vulkan_hevc_picture.h"
+#include "vulkan_vp9_picture.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #include "vulkan_video_planes.h"
@@ -78,6 +80,7 @@ typedef struct vvd_dec
    /* the profile, chained as every create that names it wants */
    VkVideoDecodeH264ProfileInfoKHR h264_profile;
    VkVideoDecodeH265ProfileInfoKHR h265_profile;
+   VkVideoDecodeVP9ProfileInfoKHR vp9_profile;
    const rh265_video *hevc_source;
    vulkan_hevc_params_t *hevc;
    StdVideoH265LevelIdc hevc_max_level;
@@ -100,6 +103,7 @@ typedef struct vvd_dec
    unsigned crop_x, crop_y;
    unsigned slots;
    bool dpb_array;                /* the slots are layers of dpb[0]   */
+   unsigned yuv[VVD_MAX_SLOTS];
    VkImage dpb[VVD_MAX_SLOTS];
    VkDeviceMemory dpb_mem[VVD_MAX_SLOTS];
    VkImageView view[VVD_MAX_SLOTS];
@@ -155,6 +159,9 @@ static struct
    retro_atomic_ptr_t grave;
    rh264_hw_ops_t ops;
    rh265_hw_backend_t hevc;
+#ifdef HAVE_RVP9
+   rvp9_hw_backend_t vp9;
+#endif
    VkVideoCodecOperationFlagsKHR codecs;
 
    PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR       get_caps;
@@ -656,6 +663,10 @@ static bool vvd_make_session(vvd_dec_t *d,
       VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
       VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION
    };
+   static const VkExtensionProperties vp9_std = {
+      VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
+      VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION
+   };
    VkVideoSessionCreateInfoKHR info;
    VkVideoSessionMemoryRequirementsKHR reqs[16];
    VkBindVideoSessionMemoryInfoKHR binds[16];
@@ -670,10 +681,10 @@ static bool vvd_make_session(vvd_dec_t *d,
    info.maxCodedExtent             = d->coded;
    info.referencePictureFormat     = d->format;
    info.maxDpbSlots                = d->slots;
-   info.maxActiveReferencePictures = d->hevc
+   info.maxActiveReferencePictures = d->vp9_profile.sType ? RVP9_REFS_PER_FRAME : d->hevc
       ? (unsigned)(d->hevc->params.max_dec_pic_buffering - 1)
       : (caps->maxActiveReferencePictures < 16 ? caps->maxActiveReferencePictures : 16);
-   info.pStdHeaderVersion          = d->hevc ? &h265_std : &h264_std;
+   info.pStdHeaderVersion          = d->vp9_profile.sType ? &vp9_std : d->hevc ? &h265_std : &h264_std;
    if (vvd.create_session(vvd.device, &info, NULL, &d->session) != VK_SUCCESS)
    {
       d->session = VK_NULL_HANDLE;
@@ -1438,6 +1449,7 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    out->width       = d->visible_w;
    out->height      = d->visible_h;
    out->pixfmt      = d->pixfmt;
+   out->yuv         = d->yuv[slot];
    out->layout      = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    return 0;
 }
@@ -1601,6 +1613,7 @@ static void vvd_close(void *dec)
 /* ---- the backend ---- */
 
 #include "vulkan_video_decode_hevc.h"
+#include "vulkan_video_decode_vp9.h"
 
 #define VVD_DEV_PROC(var, type, name) \
    ((vvd.var = (type)vkGetDeviceProcAddr(vvd.device, name)) != NULL)
@@ -1613,7 +1626,11 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    unsigned i;
    if (!ctx || !ctx->video_lanes || !ctx->device
          || !(ctx->video_codec_operations & (VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR
-               | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)))
+               | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
+#ifdef HAVE_RVP9
+               | VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR
+#endif
+               )))
       return false;
    if (vvd.up)
       return vvd.device == ctx->device;
@@ -1684,6 +1701,11 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
       rh264_set_hw_backend(&vvd.ops);
    if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
       rh265_set_hw_backend(&vvd.hevc);
+#ifdef HAVE_RVP9
+   vvd.vp9.user = NULL; vvd.vp9.open = vvd_vp9_open; vvd.vp9.close = vvd_vp9_close;
+   if (vvd.codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
+      rvp9_set_hw_backend(&vvd.vp9);
+#endif
    return true;
 }
 
@@ -1693,6 +1715,9 @@ void vulkan_video_decode_deinit(void)
       return;
    rh264_set_hw_backend(NULL);
    rh265_set_hw_backend(NULL);
+#ifdef HAVE_RVP9
+   rvp9_set_hw_backend(NULL);
+#endif
    if (retro_atomic_load_acquire_int(&vvd.live))
       RARCH_ERR("[Vulkan] Video decode: %d decoder(s) still open at teardown.\n",
             retro_atomic_load_acquire_int(&vvd.live));

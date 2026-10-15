@@ -16,7 +16,7 @@
 #ifndef __VULKAN_VIDEO_DECODE_H
 #define __VULKAN_VIDEO_DECODE_H
 
-/* H.264 and HEVC Main 8-bit decoded with Vulkan video extensions.
+/* H.264, HEVC Main/Main10 and VP9 Profile 0/2 on Vulkan Video.
  * The codec owner keeps sequencing; the GPU reconstructs
  * into the pictures of a DPB, and each picture to be shown is copied
  * out into an image of its own that the driver imports
@@ -32,7 +32,7 @@
 
 RETRO_BEGIN_DECLS
 
-/* Offers supported codecs to rh264/rh265 for @ctx's device. Main thread, once the
+/* Offers supported codecs to rh264/rh265/rvp9 for @ctx's device. Main thread, once the
  * device is up; false when the device has no video queues. */
 bool vulkan_video_decode_init(const vulkan_context_t *ctx);
 

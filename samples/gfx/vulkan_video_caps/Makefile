@@ -1,9 +1,12 @@
 CC ?= cc
 RA := ../../..
-SAMPLED_DEPS := $(RA)/gfx/common/vulkan_video_planes.h \
+SAMPLED_DEPS = $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
       $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc \
       $(RA)/libretro-common/include/formats/video_hw_frame.h
 TARGET := vulkan_video_caps_test$(EXE)
+VP9_DEPS := $(RA)/gfx/common/vulkan_vp9_picture.h $(RA)/gfx/include/vulkan/vulkan_core.h \
+      $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std.h \
+      $(RA)/gfx/include/vk_video/vulkan_video_codec_vp9std_decode.h
 PARAMS := hevc_params_test$(EXE)
 SESSION := hevc_session_test$(EXE)
 DECODERS := $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/formats/mp4/rmp4.c
@@ -17,40 +20,47 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(PARAMS) video_layout_test$(EXE)
+all: vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm
 
-$(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS)
+$(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS) $(VP9_DEPS)
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
-hevc_decode_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h $(DECODERS) $(HEVC_DEPS) \
+hevc_decode_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h h264_decode.h vp9_decode.h $(DECODERS) $(HEVC_DEPS) \
       $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
+      $(RA)/gfx/common/vulkan_video_decode_vp9.h $(RA)/gfx/common/vulkan_vp9_picture.h \
       $(RA)/gfx/common/vulkan_hevc_picture.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
-      $(RA)/libretro-common/formats/h264/rh264.c $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c
-	$(CC) $(CFLAGS) -I$(RA) -DHEVC_DECODE_TEST -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_VULKAN \
+      $(RA)/libretro-common/formats/h264/rh264.c $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c \
+      $(RA)/libretro-common/formats/vp9/rvp9.c
+	$(CC) $(CFLAGS) -I$(RA) -DHEVC_DECODE_TEST -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_VULKAN -DHAVE_RVP9 \
 	   -o $@ probe.c $(DECODERS) $(RA)/libretro-common/formats/h264/rh264.c \
-	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
+	   $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c $(RA)/libretro-common/formats/vp9/rvp9.c $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
-$(TARGET): vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
+vp9_picture_test$(EXE): vp9_picture_test.c $(VP9_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
-probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h
+$(TARGET): $(VP9_DEPS) vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
+	$(CC) $(CFLAGS) -o $@ vulkan_video_caps_test.c $(LDFLAGS)
+
+probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h $(VP9_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(if $(filter .exe,$(EXE)),,-ldl)
 
 import_test$(EXE): $(SAMPLED_DEPS) probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/vulkan.c \
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
-hevc_render_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h hevc_render.c hevc_render.h import_test.h \
+hevc_render_test$(EXE): $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h hevc_render.c hevc_render.h import_test.h \
       build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
       h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
       $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_video_import.h \
       $(RA)/libretro-common/formats/h264/rh264.c \
+      $(RA)/libretro-common/formats/vp9/rvp9.c \
       $(RA)/libretro-common/vulkan/vulkan_symbol_wrapper.c \
       $(RA)/libretro-common/formats/image/image_yuv_blit.c \
       $(RA)/gfx/common/vulkan_video_decode.c $(RA)/gfx/common/vulkan_video_decode_hevc.h \
+      $(RA)/gfx/common/vulkan_video_decode_vp9.h $(RA)/gfx/common/vulkan_vp9_picture.h \
       $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@ --hevc-render
 
@@ -64,6 +74,7 @@ video_layout_test$(EXE): video_layout_test.c $(RA)/gfx/common/vulkan_video_impor
 	$(CC) $(CFLAGS) -o $@ $< $(RA)/libretro-common/formats/image/image_yuv_blit.c $(LDFLAGS) -lm
 
 check: all
+	$(RUNNER) ./vp9_picture_test$(EXE)
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(PARAMS)
 	$(RUNNER) ./video_layout_test$(EXE)
@@ -75,6 +86,7 @@ decode-check: hevc_decode_test$(EXE)
 	$(RUNNER) ./hevc_decode_test$(EXE)
 
 clean:
+	rm -f vp9_picture_test vp9_picture_test.exe
 	rm -f vulkan_video_caps_test vulkan_video_caps_test.exe probe probe.exe
 	rm -f hevc_params_test hevc_params_test.exe hevc_session_test hevc_session_test.exe
 	rm -f hevc_decode_test hevc_decode_test.exe hevc_render_test hevc_render_test.exe

@@ -200,3 +200,48 @@ copied imports require one buffer update/copy and no push-constant update.
 It checks zero sampled staging allocations, no steady-state reallocations,
 three injected failures (create/allocate/bind), retry, and a forced busy slot.
 Native HEVC sampling tests require both staging buffers to remain absent.
+
+### VP9 hardware decoding
+
+The Vulkan backend registers with the existing VP9 hardware session when
+the selected decode family supports `VK_KHR_video_decode_vp9` and its
+`videoDecodeVP9` feature. Both frontend device-creation paths enable the
+feature; an explicit core request to disable it is respected. Builds without
+`HAVE_RVP9` leave VP9 disabled. The bundled headers carry the VP9 definitions
+from Khronos Vulkan-Headers v1.4.328, without changing the rest of the SDK.
+
+Profile 0/8-bit and Profile 2/10-bit use the existing NV12/P010 output leases,
+sampled plane views and copied-import fallback. Named references that alias
+one slot are bound once. Effective loop-filter/segmentation state, compressed
+header/tile offsets, and per-slot range/matrix metadata are preserved.
+The existing WebM and media-core hardware selection uses this registration.
+Decode references stay GPU-resident; the DPB-to-output copy and GPU RGBA
+conversion remain. Production decode/export adds no CPU readback or wait.
+
+`make check` covers picture translation, malformed input and codec/family
+selection on Linux and MinGW/Wine. Set `VP9_TEST_IVF` and `VP9_TEST_RAW` for
+`hevc_decode_test` or `hevc_render_test` to require the optional VP9 hardware
+fixture after the existing HEVC/H.264 regressions. The IVF contains individual
+coded VP9 frames; the independent raw oracle is NV12 for 8-bit or P010LE for
+10-bit, with no more than 1024 displayed frames. For example:
+
+```sh
+ffmpeg -f lavfi -i testsrc2=size=192x128:rate=12 -frames:v 12 \
+  -c:v libvpx-vp9 -pix_fmt yuv420p10le -profile:v 2 \
+  -colorspace bt709 -color_range pc -f ivf vp9.ivf
+ffmpeg -i vp9.ivf -pix_fmt p010le -f rawvideo vp9.raw
+VP9_TEST_IVF=vp9.ivf VP9_TEST_RAW=vp9.raw \
+  VULKAN_TEST_REQUIRE_SAMPLED=1 ./hevc_render_test
+```
+
+The RTX 5090 passes four 12-frame 8/10-bit BT.601-limited/BT.709-full
+fixtures through both exported-plane and sampled-to-RGBA comparisons.
+The oracle checks show-existing replay without another decode, output-ring
+backpressure, retained leases read after close, and color metadata. Injected
+sampled-image and second-view rejection also pass the 10-bit/full-range corpus.
+Oracle readbacks and waits are test-only.
+
+Current limits: fixed geometry/profile, even dimensions, 4:2:0, and the
+supported BT.601/BT.709 color paths. Other configurations are refused before
+decoding. Wider hardware, actual File Browser/movie A/V, HDR, resolution
+changes and AV1 remain separate acceptance work.
