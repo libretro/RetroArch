@@ -1395,6 +1395,33 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
    return NULL;
 }
 
+void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi)
+{
+   int more = 0;
+   void *stream = image_transfer_anim_stream_new_avail(buf, len, avail,
+         type, &more, need_lo, need_hi);
+   if (need_more)
+      *need_more = more;
+   if (stream || more)
+      return stream;
+#if defined(HAVE_RMP4) && defined(HAVE_RAV1)
+   if (type == IMAGE_TYPE_MP4)
+   {
+      rmp4_video_stream_t *mp4 = rmp4_video_stream_open_hw_avail(
+            (const uint8_t*)buf, len, avail, need_more, need_lo, need_hi);
+      if (mp4 && !rmp4_video_stream_set_hw(mp4, 1))
+      {
+         rmp4_video_stream_close(mp4);
+         return NULL;
+      }
+      return mp4;
+   }
+#endif
+   return NULL;
+}
+
 bool image_transfer_anim_stream_waiting(const void *stream,
       enum image_type_enum type)
 {

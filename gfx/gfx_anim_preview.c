@@ -125,9 +125,9 @@ bool gfx_anim_preview_mem_ok(gfx_anim_preview_t *p, uint64_t px)
 int gfx_anim_preview_probe(const char *path)
 {
    enum image_type_enum type;
-   uint8_t head[4096];
+   uint8_t *head;
    int64_t got;
-   int more = 0;
+   int more = 0, result = 0;
    RFILE *fp;
 
    if (string_is_empty(path))
@@ -140,25 +140,49 @@ int gfx_anim_preview_probe(const char *path)
    if (!(fp = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return -1;
+   head = (uint8_t*)malloc(type == IMAGE_TYPE_PNG ? 4096 : 32);
+   if (!head)
+   {
+      filestream_close(fp);
+      return -1;
+   }
    got = filestream_read(fp, head, (type == IMAGE_TYPE_PNG) ? 4096 : 32);
    filestream_close(fp);
    if (got <= 0)
+   {
+      free(head);
       return -1;
+   }
 #ifdef HAVE_RPNG
    if (type == IMAGE_TYPE_PNG)
-      return rpng_is_apng_ex(head, (size_t)got, &more) ? 1 : 0;
+      result = rpng_is_apng_ex(head, (size_t)got, &more) ? 1 : 0;
 #endif
 #ifdef HAVE_RWEBP
    if (type == IMAGE_TYPE_WEBP)
-      return rwebp_is_animated_ex(head, (size_t)got, &more) ? 1 : 0;
+      result = rwebp_is_animated_ex(head, (size_t)got, &more) ? 1 : 0;
 #endif
    (void)more;
-   return 0;
+   free(head);
+   return result;
 }
 
 /* --- open ------------------------------------------------------------------ */
 
+static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
+      int png_probe, bool hardware);
+
 gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
+{
+   return gfx_anim_preview_open_internal(path, png_probe, false);
+}
+
+gfx_anim_preview_t *gfx_anim_preview_open_hw(const char *path, int png_probe)
+{
+   return gfx_anim_preview_open_internal(path, png_probe, true);
+}
+
+static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
+      int png_probe, bool hardware)
 {
    enum image_type_enum type;
    gfx_anim_preview_t *p;
@@ -265,9 +289,14 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
          avail = blen;
       for (;;)
       {
-         stream = image_transfer_anim_stream_new_avail(
-               (void*)base, blen, avail, type, &need_more,
-               &need_lo, &need_hi);
+         if (hardware)
+            stream = image_transfer_anim_stream_new_hw_avail(
+                  (void*)base, blen, avail, type, &need_more,
+                  &need_lo, &need_hi);
+         else
+            stream = image_transfer_anim_stream_new_avail(
+                  (void*)base, blen, avail, type, &need_more,
+                  &need_lo, &need_hi);
          if (stream || !need_more || avail >= blen)
             break;
          if (need_hi > need_lo && need_hi > avail && need_hi <= blen)

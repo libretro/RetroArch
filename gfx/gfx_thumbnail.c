@@ -594,7 +594,7 @@ static void gfx_thumbnail_anim_open_probed(gfx_thumbnail_t *thumbnail,
     * admission live in gfx_anim_preview (shared with the desktop
     * companions' preview panes). NULL: a still, or not admitted - keep
     * the static thumbnail. */
-   if (!(p = gfx_anim_preview_open(path, png_probe)))
+   if (!(p = gfx_anim_preview_open_hw(path, png_probe)))
       return;
 
    /* Hand the stream and the mapping to the thumbnail (install borrows

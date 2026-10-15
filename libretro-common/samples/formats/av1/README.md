@@ -255,7 +255,10 @@ AV1 export. Reader tests cover starvation, BUSY, timing, rewind, cancellation,
 absent backends and leases released after close. The builtin MP4 core now
 admits hardware-only AV1 when its hardware sink is installed, without a CPU
 framebuffer. Backend allocation waits for hardware startup; unavailable sinks
-or backends terminate playback cleanly. WebM and thumbnail routing remain
-pending. Successful hidden-frame/metadata progress runs within a 4 ms budget;
+or backends terminate playback cleanly. The File Browser GPU preview now uses
+`image_transfer_anim_stream_new_hw_avail` through `gfx_anim_preview_open_hw`.
+Hardware-only candidates require an available backend; ordinary image and
+companion CPU preview opens still decline AV1. WebM routing and interactive
+UI/A/V acceptance remain pending. Successful hidden-frame/metadata progress runs within a 4 ms budget;
 true BUSY returns immediately. Untaken displayed leases survive later progress
 and EOF so the core can present its final frame.

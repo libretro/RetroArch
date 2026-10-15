@@ -2018,6 +2018,8 @@ jobs:
           # single-threaded (no TSan target), and the lossless decode
           # of ~900 720p frames takes it past the job budget under
           # TSan (>5 min) for no coverage.
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./preview_av1_hw_test
           test -x preview_anim_window_test
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           # V1 in this run plays long_video.mp4 (60 s at 4 Mbit/s,
@@ -2087,6 +2089,7 @@ jobs:
           # step cannot silently run against an empty glob.
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread
           make fixtures
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./preview_av1_hw_test
           TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 FRAMES=60 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (TSan)"

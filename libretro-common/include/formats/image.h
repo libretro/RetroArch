@@ -553,6 +553,13 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
       size_t avail, enum image_type_enum type, int *need_more,
       size_t *need_lo, size_t *need_hi);
 
+/* Hardware-capable open: software preference is unchanged. Hardware-only
+ * candidates require an available backend and a GPU sink; no CPU canvas
+ * is supplied. The caller must retain the borrowed buffer as above. */
+void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi);
+
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type);
 

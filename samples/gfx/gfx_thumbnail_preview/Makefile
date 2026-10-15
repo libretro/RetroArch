@@ -225,7 +225,15 @@ THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
                    $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 THREADED_OBJS   := $(call sample_objs,$(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o))
 
-all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) $(THREADED_TARGET)
+AV1_HW_TARGET := preview_av1_hw_test
+
+all: $(AV1_HW_TARGET) $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) $(THREADED_TARGET)
+
+AV1_HW_SOURCES := preview_av1_hw_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES)) \
+      $(LIBRETRO_COMM_DIR)/formats/av1/rav1_hw.c \
+      $(LIBRETRO_COMM_DIR)/formats/video_player.c $(THREADED_EXTRA)
+$(AV1_HW_TARGET): $(AV1_HW_SOURCES) $(LIBRETRO_COMM_DIR)/samples/formats/av1/rav1_mp4_fixture.h
+	$(CC) -o $@ $(AV1_HW_SOURCES) $(ANIM_WINDOW_CFLAGS) -DHAVE_RAV1 -DHAVE_THREADS $(LDFLAGS) -lz
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 	$(CC) -o $@ $(ANIM_WINDOW_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
@@ -383,7 +391,8 @@ $(THREADED_TARGET): $(THREADED_OBJS) gfx_thumbnail_uut.t.o settings_layout_uut.t
 fixtures:
 	python3 mkfixtures.py fixtures
 
-check: $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) fixtures
+check: $(AV1_HW_TARGET) $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(AUDIO_FEED_TARGET) fixtures
+	./$(AV1_HW_TARGET)
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 ifneq ($(OS),Windows_NT)
 	./$(ANIM_WINDOW_TARGET) fixtures
@@ -407,6 +416,7 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -f $(AV1_HW_TARGET) $(AV1_HW_TARGET).exe av1-preview-fixture.mp4
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \
 	      gfx_thumbnail_uut.t.o settings_layout_uut.t.o gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
