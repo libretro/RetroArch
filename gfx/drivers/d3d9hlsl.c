@@ -7987,6 +7987,10 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
     * family says what creating the window sets up */
    d3d->windowClass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_D3D);
+   /* the window may be left up for the next d3d9_hlsl driver, and taken
+    * from the last: d3d9_hlsl_free() and the device's creation below do
+    * what that needs */
+   win32_window_tag("d3d9_hlsl");
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 
@@ -8036,7 +8040,21 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    d3d->video_info = *info;
 
    if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
-      return false;
+   {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* No device on a window the last driver left up: the window is
+       * not worth having. A new one, and once more. */
+      if (     d3d->dev
+            || !win32_window_was_taken())
+         return false;
+      if (d3d->d3d9)
+         IDirect3D9_Release(d3d->d3d9);
+      d3d->d3d9 = NULL;
+      if (     !win32_window_remake(d3d, d3d->vp.full_dims, info->fullscreen)
+            || !d3d9_hlsl_initialize(d3d, &d3d->video_info))
+#endif
+         return false;
+   }
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
@@ -8536,10 +8554,19 @@ static void d3d9_hlsl_free(void *data)
 
    d3d9_deinitialize_symbols();
 
-#ifndef _XBOX
-   win32_monitor_from_window();
-   win32_destroy_window();
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* left up for the next d3d9_hlsl driver, where it can be: the device
+    * and everything made on it are gone by now. The restart a hardware
+    * core's content brings then has no new window to come up behind
+    * another program's, without the focus. */
+   if (!win32_window_keep())
 #endif
+   {
+#ifndef _XBOX
+      win32_monitor_from_window();
+      win32_destroy_window();
+#endif
+   }
    free(d3d);
 }
 
@@ -9741,7 +9768,14 @@ video_driver_t video_d3d9_hlsl = {
    d3d9_hlsl_frame,
    d3d9_hlsl_set_nonblock_state,
    d3d9_hlsl_alive,
+#ifdef _XBOX
    NULL, /* focus */
+#else
+   /* As the other Windows drivers: without it the threaded wrapper
+    * reported the window as never focused - controllers read as idle,
+    * and the content paused with "Pause when not active". */
+   win32_has_focus,
+#endif
 #ifdef _XBOX
    d3d9_hlsl_suspend_screensaver,
 #else
