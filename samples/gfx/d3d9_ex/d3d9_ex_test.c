@@ -14,6 +14,11 @@
 #include <string.h>
 
 #include "../../../gfx/common/d3d9_common.h"
+#include "../../../gfx/common/d3d9_common.c"
+
+void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
+void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
+void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 
 static int fails;
 static unsigned retires;
@@ -48,6 +53,7 @@ static LPDIRECT3DDEVICE9 make_device(HWND w, bool ex, D3DSWAPEFFECT swap)
    IDirect3D9       *d3d = NULL;
    LPDIRECT3DDEVICE9 dev = NULL;
    D3DPRESENT_PARAMETERS pp;
+   D3DDEVICE_CREATION_PARAMETERS cp;
 
    if (!dll)
       return NULL;
@@ -63,20 +69,23 @@ static LPDIRECT3DDEVICE9 make_device(HWND w, bool ex, D3DSWAPEFFECT swap)
             "Direct3DCreate9Ex");
       if (!cex || FAILED(cex(D3D_SDK_VERSION, &d3d)) || !d3d)
          return NULL;
-      if (FAILED(((d3d9_ex_vtbl_t*)d3d->lpVtbl)->CreateDeviceEx(d3d, 0,
-                  D3DDEVTYPE_HAL, w, D3DCREATE_HARDWARE_VERTEXPROCESSING,
-                  &pp, NULL, &dev)))
-         return NULL;
    }
    else
    {
       create_t c = (create_t)(void*)GetProcAddress(dll, "Direct3DCreate9");
       if (!c || !(d3d = c(D3D_SDK_VERSION)))
          return NULL;
-      if (FAILED(IDirect3D9_CreateDevice(d3d, 0, D3DDEVTYPE_HAL, w,
-                  D3DCREATE_HARDWARE_VERTEXPROCESSING, &pp, &dev)))
-         return NULL;
    }
+   d3d9_object_ex = ex;
+   if (!d3d9_create_device_internal(&dev, &pp, d3d, w, 0,
+            D3DCREATE_HARDWARE_VERTEXPROCESSING))
+      dev = NULL;
+   IDirect3D9_Release(d3d);
+   if (dev)
+      CHECK(SUCCEEDED(IDirect3DDevice9_GetCreationParameters(dev, &cp))
+            && !!(cp.BehaviorFlags & D3D9_CREATE_ENABLE_PRESENTSTATS)
+               == (ex && pp.SwapEffect == D3D9_SWAPEFFECT_FLIPEX),
+            "only flip-model Ex devices enable presentation statistics");
    return dev;
 }
 
@@ -304,6 +313,8 @@ static void layout_run(void)
 {
    printf("Ex layouts against the SDK's:\n");
 #ifndef D3D_DISABLE_9EX
+   CHECK(D3D9_CREATE_ENABLE_PRESENTSTATS == D3DCREATE_ENABLE_PRESENTSTATS,
+         "the presentation statistics creation flag");
    CHECK(     offsetof(d3d9_dev_ex_vtbl_t, PresentEx)
            == offsetof(IDirect3DDevice9ExVtbl, PresentEx)
          &&   offsetof(d3d9_dev_ex_vtbl_t, WaitForVBlank)

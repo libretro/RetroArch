@@ -147,6 +147,7 @@ typedef struct d3d9_chain_ex_vtbl
 /* The flip model's swap effect, and the present that skips the
  * interval, which only it takes */
 #define D3D9_SWAPEFFECT_FLIPEX      ((D3DSWAPEFFECT)5)
+#define D3D9_CREATE_ENABLE_PRESENTSTATS 0x00004000L
 #define D3D9_PRESENT_FORCEIMMEDIATE 0x00000100L
 
 /* Whether @dev came from Direct3D9Ex: no managed pool, and system

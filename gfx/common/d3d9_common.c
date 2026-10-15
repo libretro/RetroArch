@@ -165,7 +165,8 @@ static bool d3d9_create_device_internal(
       mode.ScanLineOrdering = 1; /* D3DSCANLINEORDERING_PROGRESSIVE */
       if (SUCCEEDED(((d3d9_ex_vtbl_t*)d3d->lpVtbl)->CreateDeviceEx(d3d,
                   cur_mon_id, D3DDEVTYPE_HAL, focus_window,
-                  behavior_flags, d3dpp,
+                  behavior_flags | (d3dpp->SwapEffect == D3D9_SWAPEFFECT_FLIPEX
+                     ? D3D9_CREATE_ENABLE_PRESENTSTATS : 0), d3dpp,
                   d3dpp->Windowed ? NULL : &mode,
                   (IDirect3DDevice9**)dev)))
          return true;
