@@ -66,6 +66,14 @@ The oracle uses rav1_hw_stream for packet prefixes, frame dispatch, output
 backpressure and retirement; it overwrites consumed input and holds output
 leases across close.
 
+`gen_av1_decode.py` also writes remuxed MP4 fixtures. Set `AV1_TEST_MP4`
+and `AV1_TEST_RAW` to exercise the hardware-candidate reader instead of the
+raw OBU session, with both `hevc_decode_test` and `hevc_render_test`.
+The MP4 oracle compares every displayed frame, rewinds, discards two frames,
+compares the next frame, and reads a retained lease after reader close.
+The reader borrows samples and allocates no AV1 CPU canvas. Frontend admission
+and WebM/thumbnail routing remain separate work.
+
 Native RTX 5090 evidence: sixteen Main 8/10-bit streams pass, with 158 decode
 submissions, 146 displayed frames and 28 show-existing replays per raw/RGBA
 pass. Cases cover intra/inter, reordered frames, multiple tiles, 128x128

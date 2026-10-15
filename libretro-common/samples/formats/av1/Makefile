@@ -2,6 +2,7 @@ CC ?= cc
 COMMON := ../../..
 TARGET := rav1_test$(EXE)
 TARGET_TEST := rav1_hw_stream_test$(EXE)
+TARGET_TEST2 := rav1_mp4_stream_test$(EXE)
 HW := rav1_hw_session_test$(EXE)
 BACKEND := rav1_hw_backend_test$(EXE)
 STATE := rav1_reference_state_test$(EXE)
@@ -20,10 +21,19 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST)
+all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+MP4_SOURCES := $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/mp4/rmp4_video.c \
+      $(COMMON)/formats/h264/rh264.c $(COMMON)/formats/h265/rh265.c \
+      $(COMMON)/formats/vp8/rvp8.c $(COMMON)/formats/image/image_blit_bands.c \
+      $(COMMON)/formats/image/image_hdr_blit.c $(COMMON)/features/features_cpu.c \
+      $(COMMON)/time/rtime.c $(COMMON)/formats/av1/rav1_hw.c
+
+$(TARGET_TEST2): rav1_mp4_stream_test.c $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
 	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
@@ -82,9 +92,11 @@ check: all
 	$(RUNNER) ./$(STATE)
 	$(RUNNER) ./$(HW)
 	$(RUNNER) ./$(TARGET_TEST)
+	$(RUNNER) ./$(TARGET_TEST2)
 	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_mp4_stream_test rav1_mp4_stream_test.exe
 	rm -f rav1_hw_stream_test rav1_hw_stream_test.exe
 	rm -f rav1_hw_backend_test rav1_hw_backend_test.exe
 	rm -f rav1_hw_session_test rav1_hw_session_test.exe rav1_reference_state_test rav1_reference_state_test.exe rav1_grain_test rav1_grain_test.exe rav1_motion_test rav1_motion_test.exe rav1_reference_test rav1_reference_test.exe rav1_picture_test rav1_picture_test.exe rav1_frame_test rav1_frame_test.exe rav1_tile_info_test rav1_tile_info_test.exe rav1_tiles_test rav1_tiles_test.exe rav1_sequence_test rav1_sequence_test.exe rav1_test rav1_test.exe rav1_container_test rav1_container_test.exe

@@ -9,7 +9,8 @@ enum rav1_hw_stream_result
    RAV1_HW_STREAM_END = 0,
    RAV1_HW_STREAM_FRAME = 1,
    RAV1_HW_STREAM_PROGRESS = 2,
-   RAV1_HW_STREAM_BUSY = 3
+   RAV1_HW_STREAM_BUSY = 3,
+   RAV1_HW_STREAM_DISCARDED = 4
 };
 
 /* Persistent caller-owned storage, confined to the decoder thread. */
@@ -90,7 +91,7 @@ static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,
 
 /* Release the previous out before stepping again. One OBU per call; BUSY
  * retries submission/export without advancing input.
- * FRAME transfers a GPU lease. Discard skips exports, retaining references.
+ * FRAME transfers a GPU lease; DISCARDED consumes display without export.
  * Sequence changes and split FRAME_HEADER/TILE_GROUP coding are unsupported.
  * Decode errors are terminal until close/reinit; accepted input is owned
  * by the backend and unaccepted borrowed input is cancelled. */
@@ -170,7 +171,10 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
       if (s->session.output_slot >= 0)
       {
          if (discard)
+         {
             rav1_hw_session_discard_output(&s->session);
+            result = RAV1_HW_STREAM_DISCARDED;
+         }
          else
          {
             ret = rav1_hw_session_output(&s->session, out);

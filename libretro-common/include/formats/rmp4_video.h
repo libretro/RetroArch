@@ -108,6 +108,13 @@ rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
       size_t len, size_t avail, int *need_more,
       size_t *need_lo, size_t *need_hi);
 
+/* Also admit hardware-only AV1 candidates. Call set_hw before decoding;
+ * failure has no software AV1 fallback. No CPU canvas is allocated for AV1.
+ * Current AV1 hardware admission requires an av1C sequence header. */
+rmp4_video_stream_t *rmp4_video_stream_open_hw_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more,
+      size_t *need_lo, size_t *need_hi);
+
 void rmp4_video_stream_close(rmp4_video_stream_t *stream);
 
 /* num_frames is the number of coded video packets, saturating at the
@@ -167,7 +174,7 @@ void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
 
-/* H.264/HEVC on the hardware backend: true when the
+/* H.264/HEVC/AV1 on the hardware backend: true when the
  * frames will come from it, false when they stay in software - another
  * codec, a colour the GPU frame cannot carry, or a backend that will
  * not take the stream. A stream already under way starts over from
@@ -214,6 +221,9 @@ void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *stream,
  * frames and render only the one presented.  rmp4_video_stream_next
  * is exactly skip followed by render. */
 int rmp4_video_stream_skip(rmp4_video_stream_t *stream, int *duration_ms);
+/* Consume a displayed frame without AV1 GPU export. Retry/end match skip;
+ * a discarded frame is not renderable. */
+int rmp4_video_stream_discard(rmp4_video_stream_t *stream, int *duration_ms);
 
 /* Colour-convert the most recently consumed displayed frame (from
  * _next or _skip) into the stream canvas and return it - the planes

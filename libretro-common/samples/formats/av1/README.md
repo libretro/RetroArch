@@ -237,7 +237,7 @@ and device limits. This does not supply a software AV1 pixel decoder.
 `formats/rav1_hw_stream.h` owns packet dispatch and backend retirement around
 that session. Initialize fresh persistent storage with a validated configuration
 sequence, or NULL for an in-band header. `begin` borrows a complete bounded
-packet; `step` processes one OBU and returns END, FRAME, PROGRESS or BUSY.
+packet; `step` returns END, FRAME, PROGRESS, BUSY or DISCARDED.
 Keep the packet resident and immutable until END, error or close. FRAME transfers
 a GPU lease; PROGRESS permits the caller to yield between hidden frames or
 metadata, and BUSY retains the cursor without waiting. Discard omits exports
@@ -245,4 +245,12 @@ while retaining decoder references. Sequence changes require close/reinit.
 Separate FRAME_HEADER/TILE_GROUP coding and extra layers remain unsupported.
 Tests cover multi-OBU packets, hidden/replay ordering, decode/export BUSY,
 discard, cancellation, repeated/changed sequences and lease release after close.
-MP4/WebM player adapters remain pending.
+MP4 hardware candidates open through `rmp4_video_stream_open_hw_avail` and
+require `set_hw` before decoding. AV1 uses no CPU canvas. Ordinary software-only
+opens continue declining AV1. The adapter requires an av1C sequence header and
+fixed track-sized SDR output; unsupported backends/configurations decline.
+Partial input and decoder/export capacity preserve the pending packet floor.
+`skip` retains the normal renderable-frame contract; `discard` advances without
+AV1 export. Reader tests cover starvation, BUSY, timing, rewind, cancellation,
+absent backends and leases released after close. WebM and frontend admission
+remain pending.

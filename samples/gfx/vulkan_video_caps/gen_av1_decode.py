@@ -30,4 +30,7 @@ for depth in (8, 10):
         subprocess.run(['ffmpeg', '-v', 'error', '-i', str(path), *scale,
             '-pix_fmt', 'nv12' if depth == 8 else 'p010le', '-f', 'rawvideo',
             '-y', str(path.with_suffix('.raw'))], check=True)
+        subprocess.run(['ffmpeg', '-v', 'error', '-fflags', '+genpts', '-r', '12',
+            '-i', str(path), '-c:v', 'copy', '-movflags', '+faststart',
+            '-y', str(path.with_suffix('.mp4'))], check=True)
         print(f'{path}: {count} output frames')

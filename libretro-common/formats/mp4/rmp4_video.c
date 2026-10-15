@@ -55,6 +55,9 @@
 #include <formats/image_blit_bands.h>
 #include <formats/image_yuv_blit.h>
 #include <formats/video_hw_frame.h>
+#ifdef HAVE_RAV1
+#include <formats/rav1_hw_stream.h>
+#endif
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
  * duration is known without lookahead decoding; cap the table so a
@@ -77,6 +80,10 @@ struct rmp4_video_stream
 #endif
    rh264_video *h264;
    rh265_video *h265;
+#ifdef HAVE_RAV1
+   rav1_hw_stream_t *av1;
+#endif
+   uint32_t hw_marker;
    uint32_t    *frame;      /* width * height ABGR words              */
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
@@ -110,7 +117,7 @@ struct rmp4_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
-   int          want_hw;    /* H.264/HEVC on the hardware backend     */
+   int          want_hw;    /* H.264/HEVC/AV1 on the hardware backend */
    /* The hardware frame of the picture the last step produced
     * (rndr_kind 5), and whether the caller has yet to take it: one
     * passed over is given back to the decoder. */
@@ -547,10 +554,58 @@ static void rmp4_video_hevc_color(rmp4_video_stream_t *s, const rmp4_track *t)
       }
 }
 
+#ifdef HAVE_RAV1
+static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
+{
+   const rmp4_track *t = rmp4_get_track(s->demux, s->track);
+   rav1_config_t config;
+   rav1_sequence_t *seq;
+   if (!t ||
+       !rav1_config_parse(&config, t->codec_private, t->codec_private_size))
+      return false;
+   s->av1 = (rav1_hw_stream_t *)calloc(1, sizeof(*s->av1));
+   if (!s->av1)
+      return false;
+   rav1_hw_stream_init(s->av1, NULL);
+   seq = &s->av1->sequence;
+   if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width ||
+       seq->max_height != s->height)
+      goto fail;
+   if (t->color_description_present &&
+       ((seq->matrix_coefficients != 2 && t->matrix_coefficients != 2 &&
+         seq->matrix_coefficients != t->matrix_coefficients) ||
+        (seq->transfer_characteristics != 2 &&
+         t->transfer_characteristics != 2 &&
+         seq->transfer_characteristics != t->transfer_characteristics)))
+      goto fail;
+   if (t->range_present && t->full_range != seq->color_range)
+      goto fail;
+   s->matrix = seq->matrix_coefficients != 2
+                   ? seq->matrix_coefficients
+                   : (t->matrix_coefficients == 2 ? 0 : t->matrix_coefficients);
+   s->transfer = seq->transfer_characteristics != 2
+                     ? seq->transfer_characteristics
+                     : t->transfer_characteristics;
+   s->range = seq->color_range;
+   if (!rmp4_video_hw_color_allowed(s) || !rav1_hw_stream_open_sequence(s->av1))
+      goto fail;
+   return true;
+fail:
+   rav1_hw_stream_close(s->av1);
+   free(s->av1);
+   s->av1 = NULL;
+   return false;
+}
+#endif
+
 static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
 {
    switch (s->codec)
    {
+#ifdef HAVE_RAV1
+      case RMP4_CODEC_AV1:
+         return !s->want_hw || rmp4_video_av1_open(s);
+#endif
       case RMP4_CODEC_VP8:
          if (!(s->vp8 = rvp8_video_open()))
             return false;
@@ -639,6 +694,14 @@ static int rmp4_video_hwf_take(rmp4_video_stream_t *s)
 static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 {
    rmp4_video_hwf_drop(s);
+#ifdef HAVE_RAV1
+   if (s->av1)
+   {
+      rav1_hw_stream_close(s->av1);
+      free(s->av1);
+      s->av1 = NULL;
+   }
+#endif
    if (s->vp8)
    {
       rvp8_video_close(s->vp8);
@@ -679,12 +742,13 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 
 static rmp4_video_stream_t *rmp4_video_stream_open_begin(
       const uint8_t *buf, size_t len, size_t avail, int *need_more,
-      size_t *need_lo, size_t *need_hi)
+      size_t *need_lo, size_t *need_hi, int allow_hw)
 {
    rmp4_video_stream_t *s;
    const rmp4_track *trk = NULL;
    int i, num_tracks;
 
+   (void)allow_hw;
    if (need_more)
       *need_more = 0;
    if (!buf || !len)
@@ -713,6 +777,9 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
 #endif
           && t->codec != RMP4_CODEC_H264
           && t->codec != RMP4_CODEC_H265
+#ifdef HAVE_RAV1
+          && !(allow_hw && t->codec == RMP4_CODEC_AV1)
+#endif
          )
          continue;
       s->track  = i;
@@ -796,6 +863,10 @@ static int rmp4_video_stream_open_finish(rmp4_video_stream_t *s)
    if (!rmp4_video_stream_open_decoder(s))
       return -1;
 
+#ifdef HAVE_RAV1
+   if (s->codec == RMP4_CODEC_AV1)
+      return 0;
+#endif
    if (!(s->frame = (uint32_t*)malloc(
          (size_t)s->width * s->height * sizeof(uint32_t))))
       return -1;
@@ -809,7 +880,7 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    rmp4_video_stream_t *s;
 
    if (!(s = rmp4_video_stream_open_begin(buf, len, len, NULL,
-         NULL, NULL)))
+         NULL, NULL, 0)))
       return NULL;
    rmp4_video_stream_scan_step(s, 0);
    if (rmp4_video_stream_open_finish(s) != 0)
@@ -820,16 +891,16 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    return s;
 }
 
-rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
+static rmp4_video_stream_t *rmp4_video_stream_open_avail_internal(const uint8_t *buf,
       size_t len, size_t avail, int *need_more,
-      size_t *need_lo, size_t *need_hi)
+      size_t *need_lo, size_t *need_hi, int allow_hw)
 {
    rmp4_video_stream_t *s;
 
    if (need_more)
       *need_more = 0;
    if (!(s = rmp4_video_stream_open_begin(buf, len, avail, need_more,
-         need_lo, need_hi)))
+         need_lo, need_hi, allow_hw)))
       return NULL;
    /* The pre-scan reads the moov sample tables (no media bytes), so
     * once the open itself succeeded it always completes. */
@@ -840,6 +911,23 @@ rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
       return NULL;
    }
    return s;
+}
+
+rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more, size_t *need_lo, size_t *need_hi)
+{
+   return rmp4_video_stream_open_avail_internal(buf, len, avail, need_more,
+         need_lo, need_hi, 0);
+}
+
+rmp4_video_stream_t *rmp4_video_stream_open_hw_avail(const uint8_t *buf,
+                                                     size_t len, size_t avail,
+                                                     int *need_more,
+                                                     size_t *need_lo,
+                                                     size_t *need_hi)
+{
+   return rmp4_video_stream_open_avail_internal(buf, len, avail, need_more,
+                                                need_lo, need_hi, 1);
 }
 
 void rmp4_video_stream_close(rmp4_video_stream_t *s)
@@ -897,17 +985,58 @@ static int rmp4_video_duration_ms(const rmp4_video_stream_t *s, int idx)
    return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
+#ifdef HAVE_RAV1
+static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
+                                 int discard)
+{
+   video_hw_frame_t frame;
+   int ret;
+   rmp4_video_hwf_drop(s);
+   if (!s->av1)
+      return -1;
+   if (!s->av1->packet && rav1_hw_stream_begin(s->av1, pkt->data, pkt->size))
+      return -1;
+   ret = rav1_hw_stream_step(s->av1, &frame, discard != 0);
+   if (ret == RAV1_HW_STREAM_FRAME)
+   {
+      if (frame.width != s->width || frame.height != s->height)
+      {
+         video_hw_frame_abandon(&frame);
+         return -1;
+      }
+      if (s->matrix == 1)
+         frame.yuv |= IMAGE_YUV_FLAG_BT709;
+      else
+         frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      s->hwf = frame;
+      s->hwf_untaken = 1;
+      s->rndr_kind = 5;
+      return 3;
+   }
+   if (ret == RAV1_HW_STREAM_DISCARDED)
+      return 3;
+   if (ret == RAV1_HW_STREAM_BUSY || ret == RAV1_HW_STREAM_PROGRESS)
+      return 2;
+   return ret;
+}
+#endif
+
 /* Decode one demuxed packet into s->frame. Returns 1 when a picture was
  * produced, 0 when the packet decoded but is not displayed, -1 on a
  * decode error. */
 static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
-      const rmp4_packet *pkt)
+      const rmp4_packet *pkt, int discard)
 {
    /* Any decode below can invalidate the previously recorded
     * picture's planes; re-record on display.  (The wait_key early
     * return clears too - harmless, callers only render after a
     * displayed step.) */
    s->rndr_kind = 0;
+   (void)discard;
+#ifdef HAVE_RAV1
+   if (s->codec == RMP4_CODEC_AV1)
+      return rmp4_video_av1_packet(s, pkt, discard);
+#endif
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -1055,7 +1184,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
  * -1 at the end of a pass or on a
  * decode error. */
 static int rmp4_video_stream_step(rmp4_video_stream_t *s,
-      int *duration_ms)
+      int *duration_ms, int discard)
 {
    rmp4_packet pkt;
    int drained = -1;
@@ -1086,7 +1215,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          break;
       if (pkt.track != s->track)
          continue;
-      r = rmp4_video_decode_packet(s, &pkt);
+      r = rmp4_video_decode_packet(s, &pkt, discard);
       if (r == 2 || r == 3)
       {
          s->pending_packet = pkt;
@@ -1166,7 +1295,8 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
    return -1;             /* end of one pass */
 }
 
-int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
+static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
+      int *duration_ms, int discard)
 {
    int r;
 
@@ -1175,11 +1305,27 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
    s->waiting = 0;
 
    /* Retry later for input or decoder capacity, without spinning. */
-   while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
+   while ((r = rmp4_video_stream_step(s, duration_ms, discard)) == 0)
       ;                   /* non-shown frame: keep going      */
    if (r != 2)
       s->waiting = RMP4_VIDEO_WAIT_NONE;
    return r;
+}
+
+int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
+{
+   return rmp4_video_stream_advance(s, duration_ms, 0);
+}
+
+int rmp4_video_stream_discard(rmp4_video_stream_t *s, int *duration_ms)
+{
+   int ret = rmp4_video_stream_advance(s, duration_ms, 1);
+   if (s && ret == 1)
+   {
+      rmp4_video_hwf_drop(s);
+      s->rndr_kind = 0;
+   }
+   return ret;
 }
 
 int rmp4_video_stream_waiting(const rmp4_video_stream_t *s)
@@ -1195,6 +1341,21 @@ enum rmp4_video_wait_reason rmp4_video_stream_wait_reason(
 
 int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
 {
+#ifdef HAVE_RAV1
+   if (s && s->codec == RMP4_CODEC_AV1)
+   {
+      if (!enable || s->av1)
+         return s->av1 != NULL;
+      s->want_hw = 1;
+      if (s->disp_idx || s->rndr_kind || s->pending)
+         rmp4_video_stream_rewind(s);
+      else
+         rmp4_video_av1_open(s);
+      if (!s->av1)
+         s->want_hw = 0;
+      return s->av1 != NULL;
+   }
+#endif
    if (!s || (s->codec != RMP4_CODEC_H264 && s->codec != RMP4_CODEC_H265))
       return 0;
    if (!enable)
@@ -1452,7 +1613,7 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
    {
       case 5:  /* on the GPU: nothing to convert here, the frame is
                 * taken with rmp4_video_stream_hw_frame */
-         return dst;
+         return dst ? dst : &s->hw_marker;
       case 1:  /* VP8: planes valid until the next decode call */
       {
          const uint8_t *y, *u, *v;
@@ -1636,7 +1797,7 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
 {
    if (!s)
       return NULL;
-   if (rmp4_video_stream_skip(s, duration_ms) != 1)
+   if (rmp4_video_stream_advance(s, duration_ms, 0) != 1)
       return NULL;
    return rmp4_video_stream_render(s);
 }
@@ -1706,7 +1867,7 @@ int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *s, int frame)
    }
    s->disp_idx = kf;
    while (s->disp_idx < tidx)
-      if (rmp4_video_stream_skip(s, NULL) != 1)
+      if (rmp4_video_stream_discard(s, NULL) != 1)
          break;
    /* The target slot itself is left for the caller's next
     * rmp4_video_stream_next call, so the frame at the position is the
@@ -1864,7 +2025,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
             mp4->stream = NULL;
          }
          if (!(mp4->stream = rmp4_video_stream_open_begin(
-               mp4->buf, mp4->len, avail, &need_more, NULL, NULL)))
+               mp4->buf, mp4->len, avail, &need_more, NULL, NULL, 0)))
             /* The moov is still arriving (or, for a trailing moov or a
              * fragmented movie, most of the file is): wait for more
              * bytes rather than failing. */
@@ -1911,7 +2072,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    }
 
    s = mp4->stream;
-   if ((r = rmp4_video_stream_step(s, &duration_ms)) == 0)
+   if ((r = rmp4_video_stream_step(s, &duration_ms, 0)) == 0)
       return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
    if (r == 2)
       /* The next sample's bytes have not been read yet; nothing was

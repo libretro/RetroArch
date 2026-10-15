@@ -177,7 +177,7 @@ static void test_discard_and_cancel(void)
    output_busy = 1;
    CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_BUSY);
    CHECK(stream.submitted);
-   CHECK(rav1_hw_stream_step(&stream, &frame, true) == RAV1_HW_STREAM_PROGRESS);
+   CHECK(rav1_hw_stream_step(&stream, &frame, true) == RAV1_HW_STREAM_DISCARDED);
    CHECK(exports == before && !frame.image && stream.session.output_slot < 0);
    CHECK(rav1_hw_stream_step(&stream, &frame, true) == RAV1_HW_STREAM_END);
    CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));

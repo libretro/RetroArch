@@ -44,7 +44,13 @@ with tempfile.TemporaryDirectory() as directory:
                     str(root / 'libretro-common/formats/mp4/rmp4.c'),
                     str(root / 'libretro-common/formats/h264/rh264.c'),
                     str(root / 'libretro-common/formats/vp9/rvp9.c'),
-                    str(root / 'libretro-common/formats/av1/rav1_hw.c')]
+                    str(root / 'libretro-common/formats/av1/rav1_hw.c'),
+                    str(root / 'libretro-common/formats/mp4/rmp4_video.c'),
+                    str(root / 'libretro-common/formats/vp8/rvp8.c'),
+                    str(root / 'libretro-common/formats/image/image_blit_bands.c'),
+                    str(root / 'libretro-common/formats/image/image_hdr_blit.c'),
+                    str(root / 'libretro-common/features/features_cpu.c'),
+                    str(root / 'libretro-common/time/rtime.c')]
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root)] + defines
         + ['-o', str(Path(sys.argv[1]).resolve())] + sources + [
         str(root / 'libretro-common/vulkan/vulkan_symbol_wrapper.c'),
