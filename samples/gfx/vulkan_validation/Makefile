@@ -31,6 +31,7 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_VULKAN -DVULKAN_DEBUG -DHAVE_THREADS -DHAVE_DYLIB \
            -DHAVE_XLIB \
            -I$(REPO_ROOT) \
+           -I$(REPO_ROOT)/gfx/include \
            -I$(LIBRETRO_COMM_DIR)/include
 
 LDFLAGS += -lvulkan -lpthread -ldl -lX11

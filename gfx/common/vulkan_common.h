@@ -189,7 +189,12 @@ enum vulkan_context_flags
    VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6),
    /* The device was made with timeline semaphores, which imported
     * frames are synchronised with */
-   VK_CTX_FLAG_TIMELINE_SEMAPHORE           = (1 << 7)
+   VK_CTX_FLAG_TIMELINE_SEMAPHORE           = (1 << 7),
+   /* The swapchain was rebuilt because the one before it presented
+    * suboptimal, and has not presented optimally since: a suboptimal
+    * present from it is the surface's standing answer, not a request
+    * to rebuild again. */
+   VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8)
 };
 
 enum gfx_ctx_vulkan_data_flags
@@ -318,8 +323,8 @@ typedef struct vulkan_context
     * that would not change the swapchain does not recreate it. */
    VkPresentModeKHR swapchain_present_mode;
 
+   uint16_t flags;
    int8_t swap_interval;
-   uint8_t flags;
 
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
    /* A present was queued since present_fence was last waited on. */

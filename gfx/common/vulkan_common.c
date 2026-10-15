@@ -4744,14 +4744,28 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
     * before the next rebuild covers either. */
    vk->context.present_pending = true;
 
-   /* VK_SUBOPTIMAL_KHR can be returned on
-    * Android 10 when prerotate is not dealt with.
-    * It can also be returned by WSI when the surface
-    * is _temporarily_ suboptimal.
-    * This is not an error we need to care about,
-    * and we'll treat it as SUCCESS. */
+   /* The frame was shown, but the swapchain no longer matches the
+    * surface: a Wayland WSI says this when the compositor's dma-buf
+    * feedback changes under it - a window gone fullscreen is offered
+    * the scanout tranche, and the images it made before, for being
+    * composited, are not in it. Rebuilding is what lets the WSI
+    * allocate from the new tranche, and so what gets the window onto
+    * the display plane. One rebuild per answer: where the surface
+    * stays suboptimal (Android without prerotate) the rebuilt swapchain
+    * is kept until a present reports otherwise. */
+   if (     (result == VK_SUBOPTIMAL_KHR || err == VK_SUBOPTIMAL_KHR)
+         && !(vk->context.flags & VK_CTX_FLAG_SUBOPTIMAL_REBUILT))
+   {
+      RARCH_LOG("[Vulkan] Swapchain is suboptimal for the surface, rebuilding.\n");
+      vk->context.flags                   |= VK_CTX_FLAG_SUBOPTIMAL_REBUILT;
+      vk->context.swapchain_never_presented = 0;
+      vulkan_destroy_swapchain(vk);
+      return;
+   }
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;
+   else if (err == VK_SUCCESS && result == VK_SUCCESS)
+      vk->context.flags &= ~VK_CTX_FLAG_SUBOPTIMAL_REBUILT;
    if (err == VK_SUBOPTIMAL_KHR)
       err = VK_SUCCESS;
 
