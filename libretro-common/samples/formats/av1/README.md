@@ -46,8 +46,8 @@ the caller validates and loads that reference.
 
 This is syntax parsing, not reference management: slot validity/showability,
 frame-ID matching/windows and reference refresh must be checked and committed
-by the eventual decoder after a complete successful frame. The rest of the
-uncompressed header, frame_size_with_refs(), entropy decoding, reconstruction and
+by the eventual decoder after a complete successful frame. Reference/motion header fields, frame_size_with_refs(), film grain, entropy
+decoding, reconstruction and
 Annex B remain unimplemented. Hardware session/reference/film-grain handling and
 GPU imports remain the next AV1 layers. Compressed packet views avoid a
 demux/framing copy; a hardware backend may still need a bitstream upload.
@@ -57,6 +57,7 @@ make check SANITIZER=address,undefined
 python3 fixtures.py
 python3 tile_fixtures.py
 python3 frame_fixtures.py
+python3 picture_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -101,3 +102,23 @@ Format references:
 - [Matroska V_AV1 mapping](https://www.matroska.org/technical/codec_specs.html#v_av1)
 
 - [AOM AV1 specification, sequence header syntax and semantics](https://aomediacodec.github.io/av1-spec/)
+
+`formats/rav1_picture.h` parses base quantization through transform mode:
+quantizer deltas/matrices, segmentation, delta-Q/LF, lossless flags, loop
+filters, CDEF and restoration. Inherited segment/filter metadata is supplied
+by the caller; it is never modified. Output cannot alias that metadata.
+For distinct storage, failures clear output and preserve the input bit cursor.
+Only metadata is copied; compressed tile and pixel storage stays borrowed.
+Reference-slot validation and commit remain decoder responsibilities.
+
+Picture tests cover signed deltas, segmentation clipping/inheritance/reset,
+filter updates, all CDEF entries, restoration mappings/sizes, intrabc gates,
+coded versus all-lossless flags, alias rejection and byte truncation rollback.
+`picture_fixtures.py` checks 26 picture-tool blocks in fourteen 8/10-bit
+streams: lossy, adaptive quantization, lossless, monochrome, 4:4:4,
+restoration and reduced still pictures. The native sequence/prefix/size/tile
+parsers locate these tools without trace-supplied offsets; all decoded fields
+and start/end cursors are compared with FFmpeg. Inter-frame inheritance is
+covered by synthetic cases, rather than claimed from this all-intra corpus.
+Remaining reference/motion header syntax, film grain and hardware submission
+are not implemented by these helpers.

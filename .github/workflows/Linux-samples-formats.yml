@@ -247,13 +247,14 @@ jobs:
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
 
-      - name: AV1 frame prefixes, tile layouts/groups and container packets (ASan + UBSan)
+      - name: AV1 picture tools, frame prefixes, tiles and container packets (ASan + UBSan)
         working-directory: libretro-common/samples/formats/av1
         run: |
           make check SANITIZER=address,undefined
           python3 fixtures.py
           python3 tile_fixtures.py
           python3 frame_fixtures.py
+          python3 picture_fixtures.py
 
       - name: VP9 sessions and WebM GPU dispatch (ASan + UBSan)
         working-directory: libretro-common/samples/formats/vp9
