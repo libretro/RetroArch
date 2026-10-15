@@ -174,6 +174,42 @@ int main(int argc, char **argv)
              * region where the core leaves it zero */
             "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
 
+   /* GET_INPUT reads what a player holds without changing it, which
+    * SET_INPUT cannot do and RELEASE_INPUT undoes before answering */
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(command_set_input(&cmd,"1 a 1") && !strcmp(reply,"1\ta\tnone\n"));
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\ta\tnone\n"));
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"1") && !strcmp(reply,"1\ta\tnone\n"));
+   CHECK(command_release_input(&cmd,""));
+   reply[0]=0;
+   CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\tnone\tnone\n"));
+   reply[0]=0;
+   CHECK(!command_get_input(&cmd,"99") && strstr(reply,"GET_INPUT ERROR"));
+
+   /* A core path that is not a core is found out before anything is
+    * torn down for it: the cfg this test wrote is a real file and not a
+    * library, and the content running stays running. */
+   reply[0]=0;
+   CHECK(!command_load_core(&cmd,"/no/such/core.so")
+         && strstr(reply,"no core at"));
+   reply[0]=0;
+   CHECK(!command_load_core(&cmd,cfg_path)
+         && strstr(reply,"is not a libretro core"));
+   reply[0]=0;
+   CHECK(!command_load_core(&cmd,"") && strstr(reply,"a core path"));
+   {
+      char req[1024];
+      snprintf(req,sizeof(req),"%s|%s",cfg_path,cfg_path);
+      reply[0]=0;
+      CHECK(!command_load_content(&cmd,req)
+            && strstr(reply,"is not a libretro core"));
+   }
+   CHECK(loop->flags & RUNLOOP_FLAG_CORE_RUNNING);
+   CHECK(loop->current_core_type != CORE_TYPE_DUMMY);
+
    /* several controls at once */
    reply[0]=0;
    CHECK(command_set_input(&cmd,"1 b+a 1") && !strcmp(reply,"1\tb a\tnone\n"));

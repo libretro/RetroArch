@@ -74,7 +74,8 @@ send({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}})
 msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
-          'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL'):
+          'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
+          'GET_INPUT'):
     check('tool %s listed' % n, n in names)
 # A hotkey that steps a selection nothing can read back is a command on
 # every line interface and not a tool.
@@ -95,7 +96,8 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       and 'GET_PLAYLIST' in schemas)
 # Every tool's description and schema is context a client pays for
 # before it does anything. Raise this deliberately, not by accident:
-# RUN_UNTIL cost 1391 bytes of the room between 22000 and this.
+# RUN_UNTIL and GET_INPUT cost 2180 bytes of the room to this, and
+# dropping readOnlyHint where it repeats the default gave 770 back.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 24000)
@@ -172,6 +174,22 @@ _, t, _ = call(222, 'RUN_UNTIL', {'address': '1000', 'condition': '~=',
                                   'value': 0})
 check('and a condition it does not take',
       t and t.startswith('RUN_UNTIL ERROR') and '==' in t)
+
+# GET_INPUT looks without touching: SET_INPUT must set to answer and
+# RELEASE_INPUT lets go before it does.
+_, t, _ = call(223, 'SET_INPUT', {'player': 1, 'control': 'start', 'value': 1})
+_, t2, _ = call(224, 'GET_INPUT', {})
+_, t3, _ = call(225, 'GET_INPUT', {'player': 1})
+check('GET_INPUT reads what is held, twice the same: ' + (t2 or '').strip(),
+      t2 and t2 == t and t3 == t2)
+call(226, 'RELEASE_INPUT', {})
+# A path that is not a core is refused before the running core goes.
+_, t, _ = call(227, 'LOAD_CORE', {'core': '/no/such/core.so'})
+check('LOAD_CORE says why: ' + (t or '').strip(),
+      t and 'no core at' in t)
+_, st, _ = call(229, 'GET_STATUS')
+check('and the content it was running is still running',
+      st and ('PLAYING' in st or 'PAUSED' in st))
 
 msg, t, _ = call(220, 'GET_LOG', {})
 check('GET_LOG has lines and NEXT', t and '\nNEXT ' in '\n' + t and '[INFO]' in t)
