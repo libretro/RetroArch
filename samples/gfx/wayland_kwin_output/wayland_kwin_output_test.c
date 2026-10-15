@@ -112,10 +112,12 @@ static void cfg_mode(struct wl_client *c, struct wl_resource *r,
 static void cfg_apply(struct wl_client *c, struct wl_resource *r)
 {
    (void)c;
+   int fail;
    pthread_mutex_lock(&comp.lock);
    comp.applies++;
+   fail = comp.fail;
    pthread_mutex_unlock(&comp.lock);
-   if (comp.fail)
+   if (fail)
    {
       kde_output_configuration_v2_send_failure_reason(r, "test says no");
       kde_output_configuration_v2_send_failed(r);
@@ -246,6 +248,21 @@ static void mgmt_bind(struct wl_client *c, void *data, uint32_t v, uint32_t id)
    wl_resource_set_implementation(r, &mgmt_impl, NULL, NULL);
 }
 
+/* libwayland-server is not thread-safe: an event the test sends is
+ * sent by the compositor thread, between its dispatches, while the
+ * test waits */
+static void (*comp_job)(void);
+static pthread_cond_t comp_job_done = PTHREAD_COND_INITIALIZER;
+
+static void comp_run(void (*job)(void))
+{
+   pthread_mutex_lock(&comp.lock);
+   comp_job = job;
+   while (comp_job)
+      pthread_cond_wait(&comp_job_done, &comp.lock);
+   pthread_mutex_unlock(&comp.lock);
+}
+
 static void *comp_thread(void *arg)
 {
    struct wl_event_loop *loop = wl_display_get_event_loop(comp.dpy);
@@ -253,15 +270,31 @@ static void *comp_thread(void *arg)
    for (;;)
    {
       int stop;
+      void (*job)(void);
       pthread_mutex_lock(&comp.lock);
       stop = comp.stop;
+      job  = comp_job;
       pthread_mutex_unlock(&comp.lock);
       if (stop)
          break;
+      if (job)
+      {
+         job();
+         wl_display_flush_clients(comp.dpy);
+         pthread_mutex_lock(&comp.lock);
+         comp_job = NULL;
+         pthread_cond_broadcast(&comp_job_done);
+         pthread_mutex_unlock(&comp.lock);
+      }
       wl_event_loop_dispatch(loop, 10);
       wl_display_flush_clients(comp.dpy);
    }
    return NULL;
+}
+
+static void comp_remove_mode(void)
+{
+   kde_output_device_mode_v2_send_removed(out_b[3].res);
 }
 
 static pthread_t tid;
@@ -384,7 +417,9 @@ int main(void)
    check("KWin was asked for 2560x1600 at 240 Hz on DP-2", comp.applies == 1 && comp.asked_w == 2560 && comp.asked_h == 1600 && comp.asked_mhz == 240000);
    check("the configuration is released once applied", comp.config_destroyed == 1);
    pthread_mutex_unlock(&comp.lock);
+   pthread_mutex_lock(&comp.lock);
    comp.fail = 1;
+   pthread_mutex_unlock(&comp.lock);
    /* this compositor does not announce the new current mode, so the
     * current one is still 60 Hz: a rate-only switch to 240 Hz */
    check("a rate-only switch keeps the size", kwin_outputs_set_mode(&kw, "DP-2", 0, 0, 0, 240.0f));
@@ -395,8 +430,7 @@ int main(void)
    pthread_mutex_unlock(&comp.lock);
 
    printf("3. a mode KWin removes\n");
-   kde_output_device_mode_v2_send_removed(out_b[3].res);
-   wl_display_flush_clients(comp.dpy);
+   comp_run(comp_remove_mode);
    wl_display_roundtrip(cdpy);
    l = kwin_outputs_resolution_list(&kw, "DP-2", &n);
    check("is gone from the list", l && n == 3);

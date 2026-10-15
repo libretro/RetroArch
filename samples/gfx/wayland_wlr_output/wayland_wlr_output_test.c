@@ -127,7 +127,7 @@ static void cfg_disable_head(struct wl_client *c, struct wl_resource *r, struct 
 }
 static void cfg_apply(struct wl_client *c, struct wl_resource *r)
 {
-   int dp2_times, hdmi_times;
+   int dp2_times, hdmi_times, answer;
    (void)c;
    pthread_mutex_lock(&comp.lock);
    comp.applies++;
@@ -148,9 +148,12 @@ static void cfg_apply(struct wl_client *c, struct wl_resource *r)
             "head has been configured twice");
       return;
    }
-   if (comp.answer == ANSWER_FAILED)
+   pthread_mutex_lock(&comp.lock);
+   answer = comp.answer;
+   pthread_mutex_unlock(&comp.lock);
+   if (answer == ANSWER_FAILED)
       zwlr_output_configuration_v1_send_failed(r);
-   else if (comp.answer == ANSWER_CANCELLED)
+   else if (answer == ANSWER_CANCELLED)
       zwlr_output_configuration_v1_send_cancelled(r);
    else
       zwlr_output_configuration_v1_send_succeeded(r);
@@ -190,6 +193,21 @@ static void mgr_bind(struct wl_client *c, void *data, uint32_t v, uint32_t id)
    zwlr_output_manager_v1_send_done(r, comp.serial);
 }
 
+/* libwayland-server is not thread-safe: an event the test sends is
+ * sent by the compositor thread, between its dispatches, while the
+ * test waits */
+static void (*comp_job)(void);
+static pthread_cond_t comp_job_done = PTHREAD_COND_INITIALIZER;
+
+static void comp_run(void (*job)(void))
+{
+   pthread_mutex_lock(&comp.lock);
+   comp_job = job;
+   while (comp_job)
+      pthread_cond_wait(&comp_job_done, &comp.lock);
+   pthread_mutex_unlock(&comp.lock);
+}
+
 static void *comp_thread(void *arg)
 {
    struct wl_event_loop *loop = wl_display_get_event_loop(comp.dpy);
@@ -197,15 +215,31 @@ static void *comp_thread(void *arg)
    for (;;)
    {
       int stop;
+      void (*job)(void);
       pthread_mutex_lock(&comp.lock);
       stop = comp.stop;
+      job  = comp_job;
       pthread_mutex_unlock(&comp.lock);
       if (stop)
          break;
+      if (job)
+      {
+         job();
+         wl_display_flush_clients(comp.dpy);
+         pthread_mutex_lock(&comp.lock);
+         comp_job = NULL;
+         pthread_cond_broadcast(&comp_job_done);
+         pthread_mutex_unlock(&comp.lock);
+      }
       wl_event_loop_dispatch(loop, 10);
       wl_display_flush_clients(comp.dpy);
    }
    return NULL;
+}
+
+static void comp_finish_mode(void)
+{
+   zwlr_output_mode_v1_send_finished(dp2[3].res);
 }
 
 static pthread_t tid;
@@ -317,17 +351,20 @@ int main(void)
       check("the configuration released once it succeeded", comp.config_destroyed == 1);
       pthread_mutex_unlock(&comp.lock);
 
+      pthread_mutex_lock(&comp.lock);
       comp.answer = ANSWER_FAILED;
+      pthread_mutex_unlock(&comp.lock);
       switch_and_settle(1920, 1200, 120.0f, &requested);
+      pthread_mutex_lock(&comp.lock);
       comp.answer = ANSWER_CANCELLED;
+      pthread_mutex_unlock(&comp.lock);
       switch_and_settle(1920, 1200, 60.0f, &requested);
       pthread_mutex_lock(&comp.lock);
       check("failed and cancelled are heard, each configuration released",
             comp.applies == 3 && comp.config_destroyed == 3 && comp.protocol_errors == 0);
       pthread_mutex_unlock(&comp.lock);
 
-      zwlr_output_mode_v1_send_finished(dp2[3].res);
-      wl_display_flush_clients(comp.dpy);
+      comp_run(comp_finish_mode);
       wl_display_roundtrip(cdpy);
       l = wlr_outputs_resolution_list(&wo, "DP-2", &n);
       check("a finished mode is gone from the list", l && n == 3);
