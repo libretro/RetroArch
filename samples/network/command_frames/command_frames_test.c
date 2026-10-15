@@ -245,6 +245,20 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_watch(&cmd,"one 1001") && !strcmp(reply,"one\t1001\t17\n"));
    CHECK(command_watch(&cmd,"two 1002"));
+   /* several pairs in one request, taken or refused together */
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"two off  one 1002 two 1003")
+         && !strcmp(reply,"one\t1002\t34\ntwo\t1003\t51\n"));
+   reply[0]=0;
+   CHECK(!command_watch(&cmd,"one 1001 x 99000") && strstr(reply,"x: "));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"")
+         && !strcmp(reply,"one\t1002\t34\ntwo\t1003\t51\n"));
+   reply[0]=0;
+   CHECK(!command_watch(&cmd,"one 1001 two") && strstr(reply,"WATCH ERROR"));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"one 1001 two 1002")
+         && !strcmp(reply,"one\t1001\t17\ntwo\t1002\t34\n"));
    reply[0]=0;
    CHECK(command_run_frames(&cmd,"1"));
    runloop_iterate();
@@ -262,9 +276,10 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_watch(&cmd,"one 1003")
          && !strcmp(reply,"one\t1003\t51\ntwo\t1002\t34\n"));
-   /* RUN_UNTIL's rows are its own, so it carries none */
+   /* RUN_UNTIL opens with how it ended and closes with its own byte */
    reply[0]=0;
-   CHECK(command_run_until(&cmd,"1002 == 34") && !strcmp(reply,"met\t0\t34\n"));
+   CHECK(command_run_until(&cmd,"1002 == 34") && !strcmp(reply,
+         "MET 0\none\t1003\t51\ntwo\t1002\t34\nVALUE 34\n"));
    reply[0]=0;
    CHECK(command_watch(&cmd,"one off") && !strcmp(reply,"two\t1002\t34\n"));
    /* and what it refuses */
@@ -294,6 +309,8 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(!command_watch(&cmd,"w9 1009")
             && strstr(reply,"at most 8 bytes watched"));
+      /* room made earlier in the same request counts */
+      CHECK(command_watch(&cmd,"w7 off w9 1009 w9 off w7 1007"));
       /* but replacing one of the eight still works */
       CHECK(command_watch(&cmd,"w0 1005"));
       for (w = 0; w < 8; w++)
@@ -405,7 +422,7 @@ int main(int argc, char **argv)
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 == %u",now);
       CHECK(command_run_until(&cmd,req));
-      CHECK(!strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))
+      CHECK(!strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE "))
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       /* three frames away: answered on the third, not before */
       now=ram7(&cmd); reply[0]=0;
@@ -418,8 +435,8 @@ int main(int argc, char **argv)
       runloop_iterate();
       {
          char want[64];
-         snprintf(want,sizeof(want),"met\t3\t%u",(now + 3) & 0xff);
-         CHECK(!strncmp(reply,want,strlen(want)));
+         snprintf(want,sizeof(want),"MET 3\nVALUE %u\n",(now + 3) & 0xff);
+         CHECK(!strcmp(reply,want));
       }
       /* the frames run out first: how far it got, to be asked again */
       now=ram7(&cmd); reply[0]=0;
@@ -427,7 +444,7 @@ int main(int argc, char **argv)
       CHECK(command_run_until(&cmd,req) && !reply[0]);
       runloop_iterate();
       runloop_iterate();
-      CHECK(!strncmp(reply,"waiting\t2\t",STRLEN_CONST("waiting\t2\t")));
+      CHECK(!strncmp(reply,"WAITING 2\nVALUE ",STRLEN_CONST("WAITING 2\nVALUE ")));
       /* left to itself it waits nine seconds of the content's frames,
        * 540 at this core's 60fps, not the 600 a request may ask for */
       {
@@ -435,25 +452,25 @@ int main(int argc, char **argv)
          reply[0]=0;
          CHECK(command_run_until(&cmd,"1007 > 255") && !reply[0]);
          while (!reply[0] && n < 700) { runloop_iterate(); n++; }
-         CHECK(n == 540 && !strncmp(reply,"waiting\t540\t",
-                  STRLEN_CONST("waiting\t540\t")));
+         CHECK(n == 540 && !strncmp(reply,"WAITING 540\nVALUE ",
+                  STRLEN_CONST("WAITING 540\nVALUE ")));
       }
       /* every condition it takes */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 != %u",(now + 1) & 0xff);
-      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE ")));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 >= %u",now);
-      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE ")));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 <= %u",now);
-      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t")));
+      CHECK(command_run_until(&cmd,req) && !strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE ")));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 < %u",(now + 1) & 0xff);
-      CHECK(now == 0xff || (command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))));
+      CHECK(now == 0xff || (command_run_until(&cmd,req) && !strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE "))));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 > %u",(now + 0xff) & 0xff);
-      CHECK(now == 0 || (command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))));
+      CHECK(now == 0 || (command_run_until(&cmd,req) && !strncmp(reply,"MET 0\nVALUE ",STRLEN_CONST("MET 0\nVALUE "))));
       /* an address past 32 bits, not wrapped onto 1007 */
       reply[0]=0;
       CHECK(!command_run_until(&cmd,"100001007 == 0")

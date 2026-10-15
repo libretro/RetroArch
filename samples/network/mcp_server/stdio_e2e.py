@@ -98,8 +98,8 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # before it does anything, so raise this deliberately and say what for.
 # 21449 at 46 tools, then RUN_UNTIL and GET_INPUT took it to 22944
 # (less 770 from dropping readOnlyHint where it repeated its default),
-# then WATCH and the rows it gives RUN_FRAMES and PRESS to 24715: a
-# tool's own schema is about 450 bytes of it, three times over here.
+# then WATCH and the rows it gives RUN_FRAMES, PRESS and RUN_UNTIL to
+# 25299: a tool's own rows schema is about 450 bytes of it.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 26000)
@@ -198,7 +198,7 @@ check('and the content it was running is still running',
 # here; command_frames covers the carrying.
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
-_, t, _ = call(231, 'WATCH', {'label': 'x', 'address': '1000'})
+_, t, _ = call(231, 'WATCH', {'watches': 'x 1000'})
 check('and refuses an address nothing maps',
       t and t.startswith('WATCH ERROR'))
 

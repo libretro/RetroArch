@@ -2178,12 +2178,13 @@ bool command_get_log(command_t *cmd, const char *arg)
  * what invalidates it. */
 #define COMMAND_WATCH_MAX 8
 
-static struct
+struct command_watch_entry
 {
    const uint8_t *at;
    unsigned       address;
    char           label[16];
-} command_watches[COMMAND_WATCH_MAX];
+};
+static struct command_watch_entry command_watches[COMMAND_WATCH_MAX];
 static unsigned command_watch_count;
 
 void command_watch_clear(void)
@@ -2278,21 +2279,25 @@ static void command_run_frames_answer(const char *msg, bool is_error)
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
    command_run_frames_release();
-   /* a failure is its reason, not a reading, and RUN_UNTIL's rows are
-    * its own */
-   if (!is_error && !command_run_frames_st.watch && _len < sizeof(out))
+   /* a failure is its reason, not a reading */
+   if (!is_error && _len < sizeof(out))
+   {
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
+      /* RUN_UNTIL closes with the byte it waited on, after the rows */
+      if (command_run_frames_st.watch && _len < sizeof(out))
+         _len += (size_t)snprintf(out + _len, sizeof(out) - _len,
+               "VALUE %u\n", (unsigned)*command_run_frames_st.watch);
+   }
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
 }
 
-/* "<met|waiting> <frames> <value>", the shape RUN_UNTIL answers in. */
+/* "MET <frames>" or "WAITING <frames>", the line RUN_UNTIL opens with. */
 static void command_until_answer(bool met)
 {
    snprintf(command_run_frames_st.reply,
-         sizeof(command_run_frames_st.reply), "%s\t%u\t%u\n",
-         met ? "met" : "waiting", command_run_frames_st.ran,
-         (unsigned)*command_run_frames_st.watch);
+         sizeof(command_run_frames_st.reply), "%s %u\n",
+         met ? "MET" : "WAITING", command_run_frames_st.ran);
    command_run_frames_answer(command_run_frames_st.reply, false);
 }
 
@@ -2585,27 +2590,34 @@ static uint8_t *command_memory_get_pointer(
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len);
 
-/* WATCH [label] [address|off]
+/* WATCH [<label> <address|off>]...
  *
- * With nothing, what is watched now. With a label and an address, the
- * byte there is watched under that label and carried by RUN_FRAMES
- * and PRESS. With a label and "off", it is not.
+ * With nothing, what is watched now. Each label and address watches the
+ * byte there under that label, carried by RUN_FRAMES, PRESS and
+ * RUN_UNTIL; a label and "off" stops watching it. Every pair is taken
+ * or none is, so a refusal leaves the list as it was.
  *
  * Answers with the list either way, so a client sees what it has. */
 bool command_watch(command_t *cmd, const char *arg)
 {
+   struct command_watch_entry next[COMMAND_WATCH_MAX];
    char      reply[64 + COMMAND_WATCH_MAX * 40];
-   char      label[16];
+   char      label[sizeof(next[0].label)];
    char      reason[128];
-   size_t    _len = 0;
-   size_t    n    = 0;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   size_t    _len  = 0;
+   size_t    n;
+   unsigned  count = command_watch_count;
    unsigned  i;
    const char *sp;
 
-   while (arg && *arg == ' ')
-      arg++;
-   if (arg && *arg)
+   memcpy(next, command_watches, sizeof(next));
+   while (arg && *arg)
    {
+      while (*arg == ' ')
+         arg++;
+      if (!*arg)
+         break;
       /* a tab or a newline would split the label's row */
       for (sp = arg; (unsigned char)*sp > ' '; sp++)
          ;
@@ -2618,36 +2630,35 @@ bool command_watch(command_t *cmd, const char *arg)
       }
       memcpy(label, arg, (size_t)(sp - arg));
       label[sp - arg] = '\0';
-      while (*++sp == ' ')
+      while (*sp == ' ')
+         sp++;
+      for (arg = sp; (unsigned char)*arg > ' '; arg++)
          ;
-      /* trailing spaces are not part of the address */
-      for (n = strlen(sp); n && sp[n - 1] == ' '; n--)
-         ;
+      n = (size_t)(arg - sp);
       /* a label already watched keeps its place in the list, so the
        * rows a client reads stay where they were */
-      for (i = 0; i < command_watch_count; i++)
-         if (string_is_equal(command_watches[i].label, label))
+      for (i = 0; i < count; i++)
+         if (string_is_equal(next[i].label, label))
             break;
       if (n == STRLEN_CONST("off") && !strncmp(sp, "off", n))
       {
-         if (i < command_watch_count)
+         if (i < count)
          {
-            memmove(&command_watches[i], &command_watches[i + 1],
-                  (command_watch_count - i - 1)
-                  * sizeof(*command_watches));
-            command_watch_count--;
+            memmove(&next[i], &next[i + 1],
+                  (count - i - 1) * sizeof(*next));
+            count--;
          }
       }
       else
       {
-         runloop_state_t *runloop_st = runloop_state_get_ptr();
-         unsigned  avail             = 0;
-         char     *end               = NULL;
+         unsigned  avail   = 0;
+         char     *end     = NULL;
          /* range-checked before narrowing, so 100001001 is not 1001 */
-         unsigned long num           = strtoul(sp, &end, 16);
-         unsigned  address           = (unsigned)num;
+         unsigned long num = strtoul(sp, &end, 16);
+         unsigned  address = (unsigned)num;
          uint8_t  *at;
-         if (     *sp == '-' || *sp == '+' || end == sp || end != sp + n
+         if (     *sp == '-' || *sp == '+' || !n || end != arg
+               || (*arg && *arg != ' ')
                || (unsigned long)address != num)
          {
             command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
@@ -2655,8 +2666,7 @@ bool command_watch(command_t *cmd, const char *arg)
             return false;
          }
          /* only a label that is not watched yet needs room */
-         if (     i == command_watch_count
-               && command_watch_count >= COMMAND_WATCH_MAX)
+         if (i == count && count >= COMMAND_WATCH_MAX)
          {
             command_reply_error(cmd, "WATCH", "at most %u bytes watched "
                   "at once", (unsigned)COMMAND_WATCH_MAX);
@@ -2672,18 +2682,19 @@ bool command_watch(command_t *cmd, const char *arg)
             char *nl  = strchr(why, '\n');
             if (nl)
                *nl = '\0';
-            command_reply_error(cmd, "WATCH", "%s", *why ? why
-                  : "no memory at that address");
+            command_reply_error(cmd, "WATCH", "%s: %s", label,
+                  *why ? why : "no memory at that address");
             return false;
          }
-         if (i == command_watch_count)
-            command_watch_count++;
-         command_watches[i].at      = at;
-         command_watches[i].address = address;
-         strlcpy(command_watches[i].label, label,
-               sizeof(command_watches[0].label));
+         if (i == count)
+            count++;
+         next[i].at      = at;
+         next[i].address = address;
+         strlcpy(next[i].label, label, sizeof(next[i].label));
       }
    }
+   memcpy(command_watches, next, sizeof(next));
+   command_watch_count = count;
 
    _len = command_watch_lines(reply, sizeof(reply));
    if (!_len)
@@ -2701,7 +2712,7 @@ bool command_watch(command_t *cmd, const char *arg)
  * its calls - this is one request.
  *
  * It waits no longer than a reply is waited for. At the cap it answers
- * "waiting" with the frames it ran, so the next request carries on from
+ * WAITING with the frames it ran, so the next request carries on from
  * there rather than the client being told it failed. */
 bool command_run_until(command_t *cmd, const char *arg)
 {
