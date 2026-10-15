@@ -732,6 +732,9 @@ bool gl_android_openxr_eye_targets(uint32_t tex[2], unsigned *dims)
    tex[0] = xr->images[OPENXR_PROJECTION_SLOT][index[0]][0];
    tex[1] = xr->images[OPENXR_PROJECTION_SLOT][index[1]][1];
    *dims  = d;
+   /* otherwise washed out picture */
+   if (xr->srgb_copy)
+      glDisable(OPENXR_GLES_FRAMEBUFFER_SRGB);
    return true;
 }
 
@@ -740,6 +743,8 @@ void gl_android_openxr_eyes_drawn(unsigned width, unsigned height)
 {
    openxr_projection_t proj;
    gl_android_openxr_t *xr = &gl_xr;
+   if (xr->srgb_copy)
+      glEnable(OPENXR_GLES_FRAMEBUFFER_SRGB);
    /* The compositor reads the images on its own context. */
    glFlush();
    openxr_slot_release(&xr->sc, OPENXR_PROJECTION_SLOT);
