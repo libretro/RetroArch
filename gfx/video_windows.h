@@ -205,6 +205,22 @@ void video_driver_window_layout(const video_windows_frame_t *frame,
  * the frame's restore count asks drivers to place them again. */
 void video_driver_restore_windows(void);
 
+/* Window @window's layout as drawn, from the thread that runs the
+ * context, one at a time per window; latest wins. @window_dims are
+ * client pixels, which input points arrive in. NULL clears it. */
+void video_driver_publish_window_layout(unsigned window,
+      unsigned generation, const video_views_layout_t *layout,
+      const video_views_map_t *core_map, unsigned core_dims,
+      unsigned window_dims);
+
+/* Main thread: a point in window @window to libretro coordinates in
+ * the core's frame. Window 0 is the main window, through its viewport;
+ * another is a screen's own, through its last published layout, and
+ * false unless that is of @generation. */
+bool video_driver_translate_window_point(unsigned window,
+      unsigned generation, int x, int y, bool report_oob,
+      uint32_t *result);
+
 RETRO_END_DECLS
 
 #endif

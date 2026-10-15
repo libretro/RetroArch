@@ -1675,6 +1675,30 @@ bool video_driver_get_vr_controller_poses(
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 
+/* A screen's own window's layout, as its renderer last published it;
+ * generation 0 for none */
+typedef struct video_window_layout
+{
+   video_views_layout_t layout;
+   video_views_map_t core_map;
+   unsigned core_dims;
+   unsigned window_dims;
+   unsigned generation;
+} video_window_layout_t;
+
+/* One window's published layouts, handed over by index as the window
+ * title is (see window_title_slot): the publisher fills a slot no
+ * reader holds and exchanges its index into 'published', the main
+ * thread exchanges it out and reads that slot until it takes another. */
+typedef struct video_window_layouts
+{
+   video_window_layout_t slot[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the publisher's: slot to fill */
+   unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned held;                 /* the main thread's: slot + 1 */
+} video_window_layouts_t;
+
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk.
@@ -2035,6 +2059,8 @@ typedef struct
    bool headset_vsync;
    /* Set while video_driver_cached_frame() sends the last frame again. */
    bool frame_repeat;
+   /* Each secondary's published layouts */
+   video_window_layouts_t window_layouts[RETRO_VIDEO_VIEWS_MAX - 1];
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

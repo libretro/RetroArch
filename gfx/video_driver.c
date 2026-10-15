@@ -949,6 +949,106 @@ void video_driver_restore_windows(void)
    video_st->windows_restore++;
 }
 
+/* The three-slot protocol of video_title_publish(), latest wins */
+void video_driver_publish_window_layout(unsigned window,
+      unsigned generation, const video_views_layout_t *layout,
+      const video_views_map_t *core_map, unsigned core_dims,
+      unsigned window_dims)
+{
+   video_window_layouts_t *box;
+   video_window_layout_t *slot;
+   unsigned pub;
+   int prev;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   box  = &video_driver_st.window_layouts[window - 1];
+   pub  = box->next;
+   slot = &box->slot[pub];
+   if (layout && core_map)
+   {
+      slot->layout      = *layout;
+      slot->core_map    = *core_map;
+      slot->core_dims   = core_dims;
+      slot->window_dims = window_dims;
+      slot->generation  = generation;
+   }
+   else
+      slot->generation  = 0;
+   prev = retro_atomic_exchange_int(&box->published, (int)pub + 1);
+   if (prev)
+      /* never taken, so no reader holds it */
+      box->next = (unsigned)prev - 1;
+   else if (box->last)
+      /* the main thread took the last one and may be reading it */
+      box->next = 3u - pub - (box->last - 1);
+   else
+      box->next = (pub + 1) % 3;
+   box->last = pub + 1;
+}
+
+/* Once the driver has gone, with no publisher left: no window has a
+ * layout */
+static void video_driver_window_layouts_clear(video_driver_state_t *video_st)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX - 1; i++)
+   {
+      video_window_layouts_t *box = &video_st->window_layouts[i];
+      retro_atomic_store_release_int(&box->published, 0);
+      box->next = 0;
+      box->last = 0;
+      box->held = 0;
+   }
+}
+
+/* @p in @client pixels to @drawn ones */
+static int video_window_point_scale(int p, unsigned drawn, unsigned client)
+{
+   if (!client || drawn == client)
+      return p;
+   return (int)floor((double)p * drawn / client);
+}
+
+bool video_driver_translate_window_point(unsigned window,
+      unsigned generation, int x, int y, bool report_oob,
+      uint32_t *result)
+{
+   video_window_layouts_t *box;
+   const video_window_layout_t *slot;
+   unsigned drawn;
+   if (!window)
+   {
+      struct video_viewport vp;
+      uint32_t screen_pos;
+      return video_driver_get_viewport_info(&vp)
+         && video_driver_translate_coord_viewport(&vp, x, y,
+               result, &screen_pos, report_oob);
+   }
+   if (window >= RETRO_VIDEO_VIEWS_MAX)
+      return false;
+   box = &video_driver_st.window_layouts[window - 1];
+   if (retro_atomic_load_acquire_int(&box->published))
+   {
+      int taken = retro_atomic_exchange_int(&box->published, 0);
+      if (taken)
+         box->held = (unsigned)taken;
+   }
+   if (!box->held)
+      return false;
+   slot = &box->slot[box->held - 1];
+   if (!slot->generation || slot->generation != generation)
+      return false;
+   /* The window as drawn: the canvas, unless that is offscreen */
+   drawn = slot->layout.offscreen
+      ? slot->layout.ui_dims : slot->layout.canvas_dims;
+   x = video_window_point_scale(x, VIDEO_SCALE_W(drawn),
+         VIDEO_SCALE_W(slot->window_dims));
+   y = video_window_point_scale(y, VIDEO_SCALE_H(drawn),
+         VIDEO_SCALE_H(slot->window_dims));
+   return video_views_map_point(&slot->layout, &slot->core_map,
+         slot->core_dims, x, y, report_oob, result);
+}
+
 /**
  * video_driver_shader_deferred_tick:
  *
@@ -3046,6 +3146,7 @@ void video_driver_free_internal(void)
     * implementation dereferences that argument on entry. */
    video_st->data               = NULL;
    video_st->views_driver_count = 0;
+   video_driver_window_layouts_clear(video_st);
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
    video_st->headset_runloop_hz = 0.0f;
