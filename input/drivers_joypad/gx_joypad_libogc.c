@@ -174,6 +174,8 @@ void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button)
 
 static const char *gx_joypad_name(unsigned pad)
 {
+   if (pad >= DEFAULT_MAX_PADS)
+      return NULL;
    switch (pad_type[pad])
    {
 #ifdef HW_RVL

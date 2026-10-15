@@ -8,7 +8,10 @@
  *   the stick held, it reads centred;
  * - a Classic gives both sticks; a Nunchuk in its place leaves the
  *   right stick centred;
- * - a Wiimote that goes away with a stick held leaves it centred. */
+ * - a Wiimote that goes away with a stick held leaves it centred;
+ * - a joypad index past the driver's pads (any user's device index
+ *   reaches query_pad and name) is no pad and has no name, and reads
+ *   nothing outside the driver's tables. */
 
 #include <stdio.h>
 #include <string.h>
@@ -157,6 +160,16 @@ int main(void)
    t_wm = false;
    gx_joypad.poll();
    check(all_centred(), "wiimote gone: sticks centred");
+
+   /* Indices the frontend can pass that the driver does not track. */
+   {
+      unsigned pad;
+      for (pad = DEFAULT_MAX_PADS; pad < MAX_USERS; pad++)
+      {
+         check(!gx_joypad.query_pad(pad), "past the pads: no pad");
+         check(gx_joypad.name(pad) == NULL, "past the pads: no name");
+      }
+   }
 
    gx_joypad.destroy();
 

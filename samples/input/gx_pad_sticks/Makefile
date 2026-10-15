@@ -9,11 +9,11 @@ CFLAGS  += -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DGEKKO -DHW_RVL \
            -Ilibogc -I$(RARCH_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
-   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-sanitize-recover=all -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS) -lm
 endif
 ifneq ($(SAN),)
-   CFLAGS  := -fsanitize=$(SAN) -fno-omit-frame-pointer $(CFLAGS)
+   CFLAGS  := -fsanitize=$(SAN) -fno-sanitize-recover=all -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SAN) $(LDFLAGS) -lm
 endif
 
