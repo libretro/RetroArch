@@ -31,6 +31,9 @@
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
+#ifdef HAVE_RAV1
+#include <formats/rav1_frame.h>
+#endif
 #include <features/features_cpu.h>
 
 #ifdef HAVE_RMP4
@@ -121,6 +124,10 @@ typedef struct
    int          fill_warned;         /* short-read logged once          */
    rwebm_t     *webm;
    rwebm_video_stream_t *webmvs;
+#ifdef HAVE_RAV1
+   rav1_sequence_t av1_sequence;
+#endif
+   int          webm_hw_required;
    int64_t      webm_hw_shown;
    int64_t      webm_seek_slot;
    int          webm_step;
@@ -277,7 +284,8 @@ void media_suspend_video_hw(void)
 #endif
 {
    media_player_t *p = &media_player;
-   if ((!p->webm || p->codec != RWEBM_CODEC_VP9)
+   if ((!p->webm || (p->codec != RWEBM_CODEC_VP9
+            && !p->webm_hw_required))
 #ifdef HAVE_RMP4
          && !p->mp4vs
 #endif
@@ -285,6 +293,8 @@ void media_suspend_video_hw(void)
       return;
    p->hw_restart_ns = p->vpts_ns;
    p->hw_restart = 1;
+   if (p->webm_hw_required)
+      p->webm_seek_slot = p->vshown > 0 ? p->vshown - 1 : 0;
    media_drop_hw(p);
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -448,6 +458,37 @@ whole:
 
 static int media_packet_shown(media_player_t *p, const rwebm_packet *pkt)
 {
+#ifdef HAVE_RAV1
+   if (p->codec == RWEBM_CODEC_AV1)
+   {
+      rav1_obu_t obu;
+      size_t offset = 0;
+      int shown = 0;
+      while (rav1_obu_next(&obu, pkt->data, pkt->size, &offset, true) == 1)
+      {
+         if (obu.type == 1)
+         {
+            if (!rav1_sequence_parse(&p->av1_sequence, obu.payload,
+                     obu.payload_size))
+               return 0;
+         }
+         else if (obu.type == 3 || obu.type == 6)
+         {
+            rav1_frame_prefix_t prefix;
+            rav1_bits_t bits;
+            memset(&bits, 0, sizeof(bits));
+            bits.data = obu.payload;
+            bits.size = obu.payload_size;
+            if (!rav1_frame_prefix_parse(&prefix, &bits, &p->av1_sequence,
+                     obu.temporal_id, obu.spatial_id, obu.type == 6))
+               return 0;
+            if (prefix.show_existing || prefix.show_frame)
+               shown = 1;
+         }
+      }
+      return shown;
+   }
+#endif
    if (p->codec == RWEBM_CODEC_VP8)
       return pkt->size && (pkt->data[0] & 0x10);
    if (p->codec == RWEBM_CODEC_VP9)
@@ -862,6 +903,11 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
    }
    if (p->webm)
       rwebm_rewind(p->webm);
+   if (p->webm_hw_required)
+   {
+      p->hw_restart = 0;
+      p->webm_seek_slot = -1;
+   }
    media_rewind_webm_hw(p);
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -965,7 +1011,7 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       p->discarded = 0;
    }
 
-   if (p->webmvs)
+   if (p->webmvs || p->webm_hw_required)
    {
       int64_t slot = to_slot;
       if (slot < 0)
@@ -976,6 +1022,17 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       }
       if (slot >= p->nvts)
          slot = p->nvts > 0 ? p->nvts - 1 : 0;
+      if (p->webm_hw_required && !p->webmvs)
+      {
+         p->hw_restart = 1;
+         p->hw_restart_ns = target_ns;
+         p->webm_seek_slot = slot;
+         p->vpts_ns = p->nvts ? p->vts[slot] : target_ns;
+         p->play_ns = p->vpts_ns + p->frame_ns;
+         p->vshown = slot + 1;
+         p->eof = 0;
+         goto seek_audio;
+      }
       media_rewind_webm_hw(p);
       if (p->webmvs)
       {
@@ -986,6 +1043,8 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
          p->eof = 0;
          goto seek_audio;
       }
+      if (p->webm_hw_required)
+         goto seek_audio;
    }
 
 #ifdef HAVE_RMP4
@@ -1206,8 +1265,10 @@ void media_video_hw_ready(void)
 #endif
 {
    media_player_t *p = &media_player;
-   if (p->webm && p->codec == RWEBM_CODEC_VP9 && !p->hw_started)
+   if (p->webm && (p->codec == RWEBM_CODEC_VP9
+            || p->webm_hw_required) && !p->hw_started)
    {
+      int64_t restart_slot = p->hw_restart ? p->webm_seek_slot : -1;
       p->hw_started = 1;
       if (p->dt && p->discarded)
       {
@@ -1217,8 +1278,11 @@ void media_video_hw_ready(void)
       if (media_hw_refresh && media_hw_refresh(media_hw_user, NULL))
       {
          size_t avail = p->dt ? data_transfer_avail(p->dt) : (size_t)p->file_len;
-         p->webmvs = rwebm_video_stream_open_avail(p->file_buf,
-               (size_t)p->file_len, avail, NULL);
+         p->webmvs = p->webm_hw_required
+               ? rwebm_video_stream_open_hw_avail(p->file_buf,
+                     (size_t)p->file_len, avail, NULL)
+               : rwebm_video_stream_open_avail(p->file_buf,
+                     (size_t)p->file_len, avail, NULL);
          if (p->webmvs && rwebm_video_stream_set_hw(p->webmvs, 1))
          {
             p->hw_video = 1;
@@ -1229,11 +1293,13 @@ void media_video_hw_ready(void)
          else
             media_close_webm_hw(p);
       }
-      if (p->hw_restart)
+      if (p->hw_restart && (!p->webm_hw_required || p->webmvs))
       {
          int64_t target = p->hw_restart_ns;
          p->hw_restart = 0;
-         if (media_seek(p, target) + 500000000 < target)
+         if (media_seek_internal(p, target,
+                  p->webm_hw_required ? restart_slot : -1)
+               + 500000000 < target)
             p->pending_seek_ns = target;
       }
    }
@@ -1343,6 +1409,17 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
 #else
    media_video_hw_ready();
 #endif
+
+   if (p->webm_hw_required && !p->hw_video)
+   {
+      MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+      if (p->hw_started)
+      {
+         p->eof = 1;
+         MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+      }
+      return;
+   }
 
    MEDIA_CORE_PREFIX(input_poll_cb)();
    media_check_input(p);
@@ -2181,6 +2258,13 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          vt = t;
          break;
       }
+#ifdef HAVE_RAV1
+      if (t->codec == RWEBM_CODEC_AV1 && media_hw_refresh && p->vtrack < 0)
+      {
+         p->vtrack = i;
+         vt = t;
+      }
+#endif
 #ifdef MEDIA_HAVE_H264
       if (t->codec == RWEBM_CODEC_H264 && t->codec_private_size
             && p->vtrack < 0)
@@ -2233,9 +2317,22 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    {
       if (MEDIA_CORE_PREFIX(log_cb))
          MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[media] No supported (H.264/VP8/VP9) video track found.\n");
+            "[media] No supported video track found.\n");
       goto error;
    }
+#ifdef HAVE_RAV1
+   if (vt->codec == RWEBM_CODEC_AV1)
+   {
+      rav1_config_t config;
+      if (!rav1_config_parse(&config, vt->codec_private,
+               vt->codec_private_size))
+         goto error;
+      if (config.sequence.data
+            && !rav1_config_sequence(&p->av1_sequence, &config))
+         goto error;
+      p->webm_hw_required = 1;
+   }
+#endif
    p->codec  = vt->codec;
    p->width  = vt->width;
    p->height = vt->height;
@@ -2364,7 +2461,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
 #endif
 #ifdef HAVE_RWEBP
-   else
+   else if (p->codec == RWEBM_CODEC_VP8)
    {
       p->vp8 = rvp8_video_open();
       if (!p->vp8)
@@ -2372,22 +2469,24 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
 #endif
 
-   p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
-      sizeof(uint32_t));
+   if (!p->webm_hw_required)
+      p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
+            sizeof(uint32_t));
    p->silence_frames = (size_t)(MEDIA_AUDIO_RATE / p->fps) + 1;
    p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    /* pace from the first frame's timestamp, wherever the container
     * starts its clock */
    p->play_ns        = p->nvts ? p->vts[0] : 0;
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
-   if (!p->fb || !p->silence)
+   if ((!p->fb && !p->webm_hw_required) || !p->silence)
       goto error;
 
    if (MEDIA_CORE_PREFIX(log_cb))
       MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
          "[media] %ux%u %s, %.3f fps, %d video packets.\n",
          p->width, p->height,
-         p->codec == RWEBM_CODEC_VP9 ? "VP9"
+         p->webm_hw_required ? "AV1"
+         : p->codec == RWEBM_CODEC_VP9 ? "VP9"
          : p->codec == RWEBM_CODEC_H264 ? "H.264" : "VP8", p->fps, p->nvts);
    return true;
 

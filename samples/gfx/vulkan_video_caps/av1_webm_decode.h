@@ -1,7 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
 #include <formats/rwebm_video.h>
-#include <formats/rwebm_video.h>
 
 static int av1_webm_decode_fixture(void)
 {
@@ -80,6 +79,11 @@ static int av1_webm_decode_fixture(void)
                   hash[i] = (hash[i] ^ (sample >> 8)) * UINT32_C(16777619);
             }
    }
+   if (getenv("AV1_TEST_CORE"))
+   {
+      ok = av1_core_decode_fixture(path, reader, &fixture, &count);
+      goto done;
+   }
    stream = rwebm_video_stream_open_hw_avail(data, size, size, NULL);
    if (!stream || !rwebm_video_stream_set_hw(stream, 1))
       goto done;
@@ -134,7 +138,7 @@ static int av1_webm_decode_fixture(void)
 done:
    vkDeviceWaitIdle(vvd.device);
    rwebm_video_stream_close(stream);
-   if (ok && reader && reader->held_count && count)
+   if (ok && !getenv("AV1_TEST_CORE") && reader && reader->held_count && count)
    {
       unsigned replay = count > 2 ? 2 : count - 1;
       frame = reader->held[--reader->held_count];

@@ -75,7 +75,8 @@ static int av1_core_decode_fixture(const char *path, oracle_readback_t *reader,
    if (!media_set_video_hw_refresh(av1_core_sink, NULL) ||
        !retro_load_game(&game))
       goto done;
-   if (!media_player.mp4_hw_required || media_player.fb)
+   if ((!media_player.mp4_hw_required && !media_player.webm_hw_required)
+         || media_player.fb)
       goto done;
    for (i = 0; i < 8192 && !av1_core.stopped; i++)
    {
