@@ -36,7 +36,18 @@ are the coded frame size before super-resolution upscaling.
 The syntax bounds are 64 columns by 64 rows. Sequence-level and device limits
 belong to their respective capability checks.
 
-Other frame-header syntax, entropy decoding, frame reconstruction and
+`formats/rav1_frame.h` parses frame prefixes through reference-order hints
+and the explicit/no-reference frame-size/render-size branch. It handles
+frame types, hidden/showable flags, show-existing selectors, timing, frame IDs,
+refresh flags, layer-filtered operating-point removal times and superres
+dimensions. Failed parses clear output and leave the input bit cursor unchanged.
+It requires a validated sequence. Show-existing type stays unresolved until
+the caller validates and loads that reference.
+
+This is syntax parsing, not reference management: slot validity/showability,
+frame-ID matching/windows and reference refresh must be checked and committed
+by the eventual decoder after a complete successful frame. The rest of the
+uncompressed header, frame_size_with_refs(), entropy decoding, reconstruction and
 Annex B remain unimplemented. Hardware session/reference/film-grain handling and
 GPU imports remain the next AV1 layers. Compressed packet views avoid a
 demux/framing copy; a hardware backend may still need a bitstream upload.
@@ -45,6 +56,7 @@ demux/framing copy; a hardware backend may still need a bitstream upload.
 make check SANITIZER=address,undefined
 python3 fixtures.py
 python3 tile_fixtures.py
+python3 frame_fixtures.py
 make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
 ```
 
@@ -74,6 +86,14 @@ frame dimensions/superblock flag still come from the test oracle.
 Tile-info unit cases cover ns() codes, unaligned input, irregular geometry,
 context IDs, mandatory width/area splits, 64x64 grids, truncation and cursor
 rollback. Full frame-header parsing and reference state remain separate work.
+
+Frame-prefix tests cover all four coded frame types, hidden/shown output,
+reduced headers, show-existing selectors, timing across 32 operating points,
+frame IDs, truncation rollback and all superres denominators.
+`frame_fixtures.py` compares eight 8/10-bit real streams with FFmpeg traces:
+130 prefixes including 32 hidden frames and 20 show-existing replays, plus
+explicit geometry and ending bit positions. It includes error-resilient,
+reduced-still and all-intra cases. FFmpeg is only a test oracle.
 
 Format references:
 
