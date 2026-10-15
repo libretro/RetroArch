@@ -138,6 +138,33 @@ static void test_tiles(void)
                              &picture));
 }
 
+static void test_unsized(void)
+{
+   static const uint8_t tiled[] = {0x30, 0, 0, 1, 0xaa, 0xbb, 0xcc, 0xdd, 0xee};
+   static const uint8_t extended[] = {
+      0x34, 0, 0, 0, 1, 0xaa, 0xbb, 0xcc, 0xdd, 0xee
+   };
+   reset_params();
+   picture.tiles.layout.columns = 2;
+   picture.tiles.layout.columns_log2 = picture.tiles.layout.size_bytes = 1;
+   picture.tiles.mi_col_starts[1] = 32;
+   picture.tiles.mi_col_starts[2] = 48;
+   CHECK(rav1_tile_group_init(&picture.tile_group, tiled + 2, sizeof(tiled) - 2,
+         &picture.tiles.layout, true));
+   CHECK(vulkan_av1_picture(&params, tiled, sizeof(tiled), &av1_sequence,
+         &picture));
+   CHECK(params.info.tileCount == 2 && params.offsets[0] == 4 &&
+         params.offsets[1] == 6 && params.sizes[0] == 2 && params.sizes[1] == 3);
+   CHECK(rav1_tile_group_init(&picture.tile_group, extended + 3,
+         sizeof(extended) - 3, &picture.tiles.layout, true));
+   CHECK(vulkan_av1_picture(&params, extended, sizeof(extended), &av1_sequence,
+         &picture));
+   CHECK(params.offsets[0] == 5 && params.offsets[1] == 7);
+   CHECK(!vulkan_av1_picture(&params, extended, sizeof(extended) - 1,
+         &av1_sequence, &picture));
+   CHECK(!memcmp(&params, &empty, sizeof(params)));
+}
+
 static void test_picture(void)
 {
    unsigned i;
@@ -364,6 +391,7 @@ int main(int argc, char **argv)
       return inspect_params(argv[1]);
    test_sequence();
    test_tiles();
+   test_unsized();
    test_picture();
    test_grain();
    printf("AV1 Vulkan parameters: %u failures\n", failures);

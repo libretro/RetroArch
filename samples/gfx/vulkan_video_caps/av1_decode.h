@@ -6,6 +6,7 @@ static int av1_decode_fixture(void)
    const char *path = getenv("AV1_TEST_OBU"),
               *raw_path = getenv("AV1_TEST_RAW");
    uint8_t *data = NULL, *raw = NULL;
+   int unsized = getenv("AV1_TEST_UNSIZED") != NULL;
    rav1_hw_session_t *session = NULL;
    rav1_sequence_t *sequence = NULL;
    rav1_hw_ops_t ops;
@@ -115,7 +116,15 @@ static int av1_decode_fixture(void)
       if (!started)
          goto done;
       {
+         size_t start = offset - obu.size;
          unsigned before = ((vvd_dec_t *)ops.decoder)->dring;
+         if (unsized)
+         {
+            size_t header = (obu.data[0] & 4) ? 2 : 1;
+            memmove((void *)(obu.data + header), obu.payload, obu.payload_size);
+            ((uint8_t *)obu.data)[0] &= ~2;
+            obu.size = header + obu.payload_size;
+         }
          for (tries = 0; tries < 1024; tries++)
          {
             ret = rav1_hw_session_submit(session, obu.data, obu.size);
@@ -126,7 +135,7 @@ static int av1_decode_fixture(void)
          if (ret)
          {
             printf("AV1 submit at byte %lu: %d\n",
-                   (unsigned long)(offset - obu.size), ret);
+                   (unsigned long)start, ret);
             goto done;
          }
          memset((void *)obu.data, 0, obu.size);

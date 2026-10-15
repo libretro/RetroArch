@@ -259,6 +259,37 @@ static void test_replay_and_cancel(void)
    CHECK(exports == 1);
 }
 
+static void test_unsized(void)
+{
+   static const uint8_t replay[] = {0x18, 0x88};
+   size_t i;
+   reset();
+   make_packet(0, 0, 255);
+   packet_size--;
+   memmove(packet + 1, packet + 2, packet_size - 1);
+   packet[0] &= ~2;
+   saved = session.state;
+   for (i = 0; i < packet_size; i++)
+   {
+      CHECK(rav1_hw_session_submit(&session, packet, i) < 0);
+      CHECK(!decode_calls && !memcmp(&saved, &session.state, sizeof(saved)));
+   }
+   decode_result = 1;
+   CHECK(rav1_hw_session_submit(&session, packet, packet_size) == 1);
+   CHECK(session.packet == packet && session.packet_size == packet_size);
+   memcpy(different, packet, packet_size);
+   CHECK(rav1_hw_session_submit(&session, different, packet_size) == -1);
+   CHECK(rav1_hw_session_submit(&session, packet, packet_size - 1) == -1);
+   CHECK(decode_calls == 1);
+   decode_result = 0;
+   CHECK(rav1_hw_session_submit(&session, packet, packet_size) == 0);
+   CHECK(accepted == 1 && session.output_slot < 0);
+   CHECK(rav1_hw_session_submit(&session, replay, sizeof(replay)) == 0);
+   CHECK(accepted == 1 && decode_calls == 2);
+   CHECK(rav1_hw_session_output(&session, &output) == 0);
+   video_hw_frame_abandon(&output);
+}
+
 static void test_failures(void)
 {
    size_t i;
@@ -379,6 +410,7 @@ int main(int argc, char **argv)
    test_busy_and_output();
    test_replay_and_cancel();
    test_failures();
+   test_unsized();
    printf("AV1 hardware session: %u failures\n", failures);
    return failures ? 1 : 0;
 }

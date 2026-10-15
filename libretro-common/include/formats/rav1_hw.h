@@ -68,7 +68,8 @@ typedef struct rav1_hw_reference
 
 /* Caller-owned persistent storage, confined to the decoder thread. Individual
  * FRAME OBUs, or show-existing FRAME_HEADER OBUs, are submitted after splitting
- * temporal units. Profile 0, 8/10-bit 4:2:0; retire/reopen on sequence changes.
+ * temporal units. An unsized OBU must fill the supplied bounded span.
+ * Profile 0, 8/10-bit 4:2:0; retire/reopen on sequence changes.
  * Backend owns GPU completion/leases, including after the session is retired.
  */
 typedef struct rav1_hw_session
@@ -150,7 +151,7 @@ static INLINE int rav1_hw_session_submit(rav1_hw_session_t *s,
    {
       if (s->output_slot >= 0)
          return 1;
-      if (rav1_obu_next(&obu, packet, size, &offset, false) != 1 ||
+      if (rav1_obu_next(&obu, packet, size, &offset, true) != 1 ||
           offset != size)
          return -1;
       if ((obu.type != 6 && obu.type != 3) || obu.temporal_id || obu.spatial_id)

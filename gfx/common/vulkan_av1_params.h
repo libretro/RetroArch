@@ -153,7 +153,7 @@ static INLINE bool vulkan_av1_picture(vulkan_av1_picture_t *out,
        !p->tiles.layout.rows || p->tiles.layout.rows > 64 ||
        p->tiles.layout.size_bytes > 4 || p->setup.interpolation_filter > 4 ||
        p->picture.tx_mode > 2 ||
-       rav1_obu_next(&obu, packet, size, &offset, false) != 1 ||
+       rav1_obu_next(&obu, packet, size, &offset, true) != 1 ||
        offset != size || obu.type != 6 || obu.temporal_id || obu.spatial_id)
       return false;
    count = p->tiles.layout.columns * p->tiles.layout.rows;

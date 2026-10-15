@@ -59,7 +59,9 @@ registry. Optional `AV1_TEST_OBU` and `AV1_TEST_RAW` paths feed an OBU stream
 and an independent NV12/P010 oracle. Generate the sixteen cases with
 `python3 gen_av1_decode.py /path/to/fixtures`, then set both paths and run
 `hevc_decode_test` (or `.exe` natively on Windows). `hevc_render_test` uses the
-same inputs to test RGBA conversion and shader-chain submission.
+same inputs to test RGBA conversion and shader-chain submission. Set
+`AV1_TEST_UNSIZED=1` to remove each submitted OBU length field in the test
+harness, exercising bounded container spans and packet-relative tile offsets.
 
 Native RTX 5090 evidence: sixteen Main 8/10-bit streams pass, with 158 decode
 submissions, 146 displayed frames and 28 show-existing replays per raw/RGBA
