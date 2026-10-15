@@ -2278,8 +2278,9 @@ static void command_run_frames_answer(const char *msg, bool is_error)
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
    command_run_frames_st.left = 0;
    command_run_frames_release();
-   /* a failure is its reason, not a reading */
-   if (!is_error && _len < sizeof(out))
+   /* a failure is its reason, not a reading, and RUN_UNTIL's rows are
+    * its own */
+   if (!is_error && !command_run_frames_st.watch && _len < sizeof(out))
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
@@ -2587,8 +2588,8 @@ static uint8_t *command_memory_get_pointer(
 /* WATCH [label] [address|off]
  *
  * With nothing, what is watched now. With a label and an address, the
- * byte there is watched under that label and carried by every reply
- * that steps the content. With a label and "off", it is not.
+ * byte there is watched under that label and carried by RUN_FRAMES
+ * and PRESS. With a label and "off", it is not.
  *
  * Answers with the list either way, so a client sees what it has. */
 bool command_watch(command_t *cmd, const char *arg)
@@ -2597,6 +2598,7 @@ bool command_watch(command_t *cmd, const char *arg)
    char      label[16];
    char      reason[128];
    size_t    _len = 0;
+   size_t    n    = 0;
    unsigned  i;
    const char *sp;
 
@@ -2604,7 +2606,10 @@ bool command_watch(command_t *cmd, const char *arg)
       arg++;
    if (arg && *arg)
    {
-      if (!(sp = strchr(arg, ' ')) || (size_t)(sp - arg) >= sizeof(label))
+      /* a tab or a newline would split the label's row */
+      for (sp = arg; (unsigned char)*sp > ' '; sp++)
+         ;
+      if (*sp != ' ' || (size_t)(sp - arg) >= sizeof(label))
       {
          command_reply_error(cmd, "WATCH", "a label of up to %u "
                "characters, then an address or \"off\"",
@@ -2615,12 +2620,15 @@ bool command_watch(command_t *cmd, const char *arg)
       label[sp - arg] = '\0';
       while (*++sp == ' ')
          ;
+      /* trailing spaces are not part of the address */
+      for (n = strlen(sp); n && sp[n - 1] == ' '; n--)
+         ;
       /* a label already watched keeps its place in the list, so the
        * rows a client reads stay where they were */
       for (i = 0; i < command_watch_count; i++)
          if (string_is_equal(command_watches[i].label, label))
             break;
-      if (string_is_equal(sp, "off"))
+      if (n == STRLEN_CONST("off") && !strncmp(sp, "off", n))
       {
          if (i < command_watch_count)
          {
@@ -2635,9 +2643,12 @@ bool command_watch(command_t *cmd, const char *arg)
          runloop_state_t *runloop_st = runloop_state_get_ptr();
          unsigned  avail             = 0;
          char     *end               = NULL;
-         unsigned  address           = (unsigned)strtoul(sp, &end, 16);
+         /* range-checked before narrowing, so 100001001 is not 1001 */
+         unsigned long num           = strtoul(sp, &end, 16);
+         unsigned  address           = (unsigned)num;
          uint8_t  *at;
-         if (!end || end == sp || *end)
+         if (     *sp == '-' || *sp == '+' || end == sp || end != sp + n
+               || (unsigned long)address != num)
          {
             command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
                   "\"off\" to stop watching %s", label);
@@ -2707,8 +2718,10 @@ bool command_run_until(command_t *cmd, const char *arg)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const rarch_system_info_t *sys_info = &runloop_st->system;
 
-   address = (unsigned)strtoul(arg ? arg : "", &end, 16);
-   if (!end || end == arg || *end != ' ')
+   num     = strtoul(arg ? arg : "", &end, 16);
+   address = (unsigned)num;
+   if (     !end || end == arg || *end != ' ' || *arg == '-'
+         || (unsigned long)address != num)
    {
       command_reply_error(cmd, "RUN_UNTIL", "a hexadecimal address, a "
             "condition, a value and how many frames to wait at most");

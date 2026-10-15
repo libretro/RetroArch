@@ -630,9 +630,9 @@ bool command_press(command_t *cmd, const char *arg);
  * which is all that compares them. */
 bool command_run_until(command_t *cmd, const char *arg);
 
-/* WATCH [label] [address|off]: the bytes every reply that steps the
- * content carries along with its own answer. Cleared when content
- * closes, which is what invalidates where they point. */
+/* WATCH [label] [address|off]: the bytes RUN_FRAMES and PRESS carry
+ * along with their own answer. Cleared when content closes, which is
+ * what invalidates where they point. */
 bool command_watch(command_t *cmd, const char *arg);
 void command_watch_clear(void);
 
@@ -978,7 +978,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run, with what WATCH watches; the content finishes paused, as RUN_FRAMES leaves it.", 0, cmd_params_press, &cmd_rows_watch },
    { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers whether it was met, how many frames ran and what the byte holds, or waiting where the frames ran out first, to be asked again.", 0, cmd_params_until, &cmd_rows_until },
-   { "WATCH",            command_watch,            "[label] [address|off]", "Watch the byte at a system address under a label, so every reply that steps the content carries it and a step needs no reads after it. With no label, answers what is watched. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "WATCH",            command_watch,            "[label] [address|off]", "Watch the byte at a system address under a label, so RUN_FRAMES and PRESS answer with it and a step needs no reads after it. With no label, answers what is watched and what each holds now. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },

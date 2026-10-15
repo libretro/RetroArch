@@ -262,6 +262,9 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_watch(&cmd,"one 1003")
          && !strcmp(reply,"one\t1003\t51\ntwo\t1002\t34\n"));
+   /* RUN_UNTIL's rows are its own, so it carries none */
+   reply[0]=0;
+   CHECK(command_run_until(&cmd,"1002 == 34") && !strcmp(reply,"met\t0\t34\n"));
    reply[0]=0;
    CHECK(command_watch(&cmd,"one off") && !strcmp(reply,"two\t1002\t34\n"));
    /* and what it refuses */
@@ -269,6 +272,15 @@ int main(int argc, char **argv)
    CHECK(!command_watch(&cmd,"x 99000") && strstr(reply,"WATCH ERROR"));
    CHECK(!command_watch(&cmd,"x zz") && strstr(reply,"hexadecimal"));
    CHECK(!command_watch(&cmd,"nospace") && strstr(reply,"WATCH ERROR"));
+   /* past 32 bits is refused, not wrapped onto 1001 */
+   reply[0]=0;
+   CHECK(!command_watch(&cmd,"x 100001001") && strstr(reply,"WATCH ERROR"));
+   CHECK(!command_watch(&cmd,"x -1") && strstr(reply,"hexadecimal"));
+   /* a tab in a label would split its row */
+   reply[0]=0;
+   CHECK(!command_watch(&cmd,"x\ty 1001") && strstr(reply,"WATCH ERROR"));
+   reply[0]=0;
+   CHECK(command_watch(&cmd,"two 1002 ") && !strcmp(reply,"two\t1002\t34\n"));
    {
       unsigned w;
       char req[32];
@@ -442,6 +454,10 @@ int main(int argc, char **argv)
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"1007 > %u",(now + 0xff) & 0xff);
       CHECK(now == 0 || (command_run_until(&cmd,req) && !strncmp(reply,"met\t0\t",STRLEN_CONST("met\t0\t"))));
+      /* an address past 32 bits, not wrapped onto 1007 */
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"100001007 == 0")
+            && strstr(reply,"hexadecimal address"));
       /* a value past what a byte holds, however far past */
       reply[0]=0;
       CHECK(!command_run_until(&cmd,"1007 == 4294967296")

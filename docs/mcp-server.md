@@ -265,8 +265,7 @@ nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
 
 `WATCH <label> <address>` watches the byte at a system address, and
-every reply that steps the content - `RUN_FRAMES` and `PRESS` - then
-carries it, as a line of label, address and value after the command's
+`RUN_FRAMES` and `PRESS` then carry it, as a line of label, address and value after the command's
 own answer:
 
 ```
@@ -280,9 +279,11 @@ step is the press and then a read for each thing the assistant wants to
 know; the field runs that drove this spent most of their calls on those
 reads.
 
-`WATCH` with no label answers what is watched, `WATCH <label> off` stops
-watching one, and a label already watched keeps its place in the list
-when its address changes. Eight at once, each found when it is set - an
+`WATCH` with no label answers what is watched and what each byte holds
+now, which is the one read left after a `RUN_UNTIL`: its rows are its
+own, so it carries none. `WATCH <label> off` stops watching one, and a
+label already watched keeps its place in the list when its address
+changes. Eight at once, each found when it is set - an
 address nothing maps is refused there rather than read later - and all
 of them dropped when content closes, which is what invalidates where
 they point.
