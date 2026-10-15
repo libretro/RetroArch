@@ -36,6 +36,7 @@
  */
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -363,58 +364,116 @@ static void harness_sibling(char *s, size_t len, const char *name)
 
 /* What LOAD_CORE asks of a core before loading it is kept, keyed by
  * its file's size and modification time: a core already asked is not
- * opened again at push - the core running here would see its
- * retro_set_environment called if it were - a changed file is, and the
- * record outlives the session. */
+ * opened again, a changed file is, and the record outlives the
+ * session. The running core is never asked: what it declared comes
+ * from the running state, and nothing is kept for it. */
+static unsigned sibling_env_sets(dylib_t lib)
+{
+   unsigned (*fn)(void) = lib
+      ? (unsigned (*)(void))dylib_proc(lib, "harness_core_env_sets") : NULL;
+   return fn ? fn() : 0;
+}
+
+static bool cache_names(const char *cache_file, const char *needle)
+{
+   void   *buf = NULL;
+   int64_t len = 0;
+   bool    hit;
+   if (!filestream_read_file(cache_file, &buf, &len) || !buf)
+      return false;
+   hit = strstr((const char*)buf, needle) != NULL;
+   free(buf);
+   return hit;
+}
+
 static void lane_probe_cached(void)
 {
+   struct retro_system_info info;
    char cache_file[600];
+   char sibling[600];
+   char stamp[600];
    int64_t mtime = 0;
+   bool no_game  = false;
    unsigned before;
    unsigned had = failures;
+   dylib_t lib;
 
    snprintf(cache_file, sizeof(cache_file), "%s/core_probe.cache", harness_dir);
+   harness_sibling(sibling, sizeof(sibling), "harness_core_nohw.so");
    open_menu();
    CHECK(task_push_load_contentless_core_from_menu(core_path),
          "the load was not started");
    pump(LOAD_FRAMES);
    CHECK(core_is_up(), "the core did not come up");
 
+   /* The running core is not asked again, and not kept */
    before = core_export("harness_core_env_sets");
    CHECK(task_push_load_contentless_core_from_menu(core_path),
          "the reload was not started");
    CHECK(core_export("harness_core_env_sets") == before,
-         "the push opened a core it had asked before (%u calls on the "
-         "running core, not %u)", core_export("harness_core_env_sets"),
-         before);
+         "the push asked the running core (%u calls, not %u)",
+         core_export("harness_core_env_sets"), before);
    pump(LOAD_FRAMES);
    CHECK(core_is_up(), "the reload did not go through");
-   CHECK(path_is_valid(cache_file), "no %s was written", cache_file);
 
-   /* A changed file is asked again */
-   CHECK(path_get_mtime(core_path, &mtime), "no mtime for the core");
-   CHECK(path_set_mtime(core_path, mtime + 10), "could not touch the core");
-   before = core_export("harness_core_env_sets");
-   CHECK(task_push_load_contentless_core_from_menu(core_path),
-         "the load of the changed core was not started");
-   CHECK(core_export("harness_core_env_sets") == before + 2,
-         "the changed core was not asked again (%u calls, expected %u)",
-         core_export("harness_core_env_sets"), before + 2);
-   pump(LOAD_FRAMES);
-   CHECK(core_is_up(), "the load of the changed core did not go through");
-
-   /* The record of the changed file comes back from disk */
    runloop_core_probe_cache_free();
+   remove(cache_file);
    before = core_export("harness_core_env_sets");
-   CHECK(task_push_load_contentless_core_from_menu(core_path),
-         "the load after the records were dropped was not started");
+   CHECK(libretro_get_system_info(core_path, &info, &no_game),
+         "the running core was not probed");
    CHECK(core_export("harness_core_env_sets") == before,
-         "the record was not read back from %s", cache_file);
-   pump(LOAD_FRAMES);
-   CHECK(core_is_up(), "the load after the records were dropped did not "
-         "go through");
+         "the probe asked the running core (%u calls, not %u)",
+         core_export("harness_core_env_sets"), before);
+   CHECK(!cache_names(cache_file, core_path),
+         "a record was kept for the running core");
 
-   path_set_mtime(core_path, mtime);
+   /* A core that is not running, held open here so its count lasts
+    * across the probe's own open and close */
+   CHECK((lib = dylib_load(sibling)) != NULL, "could not open %s", sibling);
+   before = sibling_env_sets(lib);
+   CHECK(libretro_get_system_info(sibling, &info, &no_game),
+         "%s was not probed", sibling);
+   CHECK(sibling_env_sets(lib) > before,
+         "the probe did not ask %s", sibling);
+   CHECK(cache_names(cache_file, sibling), "no record of %s in %s",
+         sibling, cache_file);
+
+   before = sibling_env_sets(lib);
+   CHECK(libretro_get_system_info(sibling, &info, &no_game),
+         "%s was not probed again", sibling);
+   CHECK(sibling_env_sets(lib) == before,
+         "a core already asked was asked again (%u calls, not %u)",
+         sibling_env_sets(lib), before);
+
+   /* A changed file is asked again, and its record rewritten */
+   CHECK(path_get_mtime(sibling, &mtime), "no mtime for %s", sibling);
+   CHECK(path_set_mtime(sibling, mtime + 10), "could not touch %s", sibling);
+   snprintf(stamp, sizeof(stamp), "\t%" PRId64 "\t", mtime + 10);
+   before = sibling_env_sets(lib);
+   CHECK(libretro_get_system_info(sibling, &info, &no_game),
+         "the changed %s was not probed", sibling);
+   CHECK(sibling_env_sets(lib) > before,
+         "the changed core was not asked again");
+   CHECK(cache_names(cache_file, stamp),
+         "the record in %s does not hold the new mtime", cache_file);
+
+   /* The record comes back from disk */
+   runloop_core_probe_cache_free();
+   before = sibling_env_sets(lib);
+   CHECK(libretro_get_system_info(sibling, &info, &no_game),
+         "%s was not probed after the records were dropped", sibling);
+   CHECK(sibling_env_sets(lib) == before,
+         "the record was not read back from %s", cache_file);
+
+   path_set_mtime(sibling, mtime);
+   dylib_close(lib);
+
+   /* The probes named the sibling: the running core's names again */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load after the probes was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the load after the probes did not go through");
+
    if (failures == had)
       fprintf(stderr, "[pass] probe-cached lane\n");
 }
