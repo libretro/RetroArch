@@ -100,6 +100,7 @@
 - NETWORK: New network command PRESS, holding RetroPad buttons, running a number of frames and letting them go in one request
 - NETWORK: New network command RUN_UNTIL, running the content until a byte at a system address meets a condition, instead of running a few frames and reading it again
 - NETWORK: New network command GET_INPUT, reporting what a player holds without changing it
+- NETWORK: MCP server offers the menu buttons, the disc hotkeys and the driver restarts as three tools, MENU, DISK and REINIT, rather than twelve; each hotkey is still a command of its own
 - NETWORK: New network command WATCH, so RUN_FRAMES, PRESS and RUN_UNTIL carry the bytes an assistant watches along with their own answer instead of needing a read after every step
 - NETWORK: LOAD_CORE says why it failed, and neither it nor LOAD_CONTENT unloads the running core for a path that turns out not to be one
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two

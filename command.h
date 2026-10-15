@@ -690,6 +690,15 @@ bool command_video_reinit(command_t *cmd, const char* arg);
 bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
+/* MENU <button>, DISK <action>, REINIT <driver>: the hotkeys and
+ * commands of one family behind one name, as one tool. */
+#define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
+#define COMMAND_DISK_ACTIONS   "eject|next|prev"
+#define COMMAND_REINIT_DRIVERS "video|audio|all"
+bool command_menu(command_t *cmd, const char *arg);
+bool command_disk(command_t *cmd, const char *arg);
+bool command_reinit(command_t *cmd, const char *arg);
+
 /* The parameters of the commands that take any. Several commands take
  * the same ones; what tells READ_CORE_RAM from READ_CORE_MEMORY is the
  * command's own description, not its parameters'. */
@@ -829,6 +838,21 @@ static const struct cmd_param cmd_params_write[] = {
 };
 static const struct cmd_param cmd_params_slot[] = {
    { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_menu[] = {
+   { "button", "The menu button to press.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_MENU_BUTTONS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_disk[] = {
+   { "action", "Eject or insert the disc, or select the next or previous "
+      "image.", CMD_PARAM_STRING, true, NULL, COMMAND_DISK_ACTIONS, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_reinit[] = {
+   { "driver", "Which driver, or all of them.", CMD_PARAM_STRING, true,
+      NULL, COMMAND_REINIT_DRIVERS, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_frame[] = {
@@ -1013,9 +1037,12 @@ static const struct cmd_action_map action_map[] = {
    { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0, NULL },
-   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", 0, NULL },
-   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", 0, NULL },
+   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
+   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
+   { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
+   { "MENU",         command_menu,         "<up|down|left|right|a|b>", "Press a menu button: move, confirm (a) or back (b).", 0, cmd_params_menu },
+   { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 
 static const struct cmd_map map[] = {
@@ -1049,9 +1076,9 @@ static const struct cmd_map map[] = {
    { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", CMD_INFO_NO_TOOL },
    { "REPLAY_SLOT_MINUS", RARCH_REPLAY_SLOT_MINUS, "Select the previous replay slot.", CMD_INFO_NO_TOOL },
 
-   { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", 0 },
-   { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", 0 },
-   { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", 0 },
+   { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", CMD_INFO_NO_TOOL },
+   { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", CMD_INFO_NO_TOOL },
+   { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", CMD_INFO_NO_TOOL },
 
    { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", CMD_INFO_NO_TOOL },
    { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },
@@ -1088,12 +1115,12 @@ static const struct cmd_map map[] = {
    { "NETPLAY_PLAYER_CHAT", RARCH_NETPLAY_PLAYER_CHAT, "Send a netplay chat message.", CMD_INFO_NO_TOOL },
    { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE, "Turn fading of netplay chat on or off.", CMD_INFO_NO_TOOL },
 
-   { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", 0 },
-   { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", 0 },
-   { "MENU_LEFT", RETRO_DEVICE_ID_JOYPAD_LEFT, "Menu: move left.", 0 },
-   { "MENU_RIGHT", RETRO_DEVICE_ID_JOYPAD_RIGHT, "Menu: move right.", 0 },
-   { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", 0 },
-   { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", 0 },
+   { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", CMD_INFO_NO_TOOL },
+   { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", CMD_INFO_NO_TOOL },
+   { "MENU_LEFT", RETRO_DEVICE_ID_JOYPAD_LEFT, "Menu: move left.", CMD_INFO_NO_TOOL },
+   { "MENU_RIGHT", RETRO_DEVICE_ID_JOYPAD_RIGHT, "Menu: move right.", CMD_INFO_NO_TOOL },
+   { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", CMD_INFO_NO_TOOL },
+   { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", CMD_INFO_NO_TOOL },
 
    { "OVERLAY_NEXT", RARCH_OVERLAY_NEXT, "Switch to the next overlay.", CMD_INFO_NO_TOOL },
    { "OSK", RARCH_OSK, "Show or hide the on-screen keyboard.", CMD_INFO_NO_TOOL },

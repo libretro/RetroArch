@@ -75,8 +75,11 @@ msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
-          'GET_INPUT', 'WATCH'):
+          'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT'):
     check('tool %s listed' % n, n in names)
+# A family of hotkeys is one tool with a choice, not a tool apiece.
+for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT'):
+    check('%s is folded into its family' % n, n not in names)
 # A hotkey that steps a selection nothing can read back is a command on
 # every line interface and not a tool.
 for n in ('SAVE_STATE', 'STATE_SLOT_PLUS', 'SHADER_NEXT', 'READ_CORE_RAM',
@@ -196,6 +199,10 @@ check('and the content it was running is still running',
 # A watch rides along with every step, so a step needs no reads after
 # it. This core maps no memory, so the refusal is what is checkable
 # here; command_frames covers the carrying.
+_, t, _ = call(232, 'MENU', {'button': 'toggle'})
+check('MENU names the buttons it takes: ' + (t or '').strip(),
+      t and t.startswith('MENU ERROR') and 'up|down' in t)
+
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
 _, t, _ = call(231, 'WATCH', {'watches': 'x 1000'})

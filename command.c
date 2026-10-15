@@ -1073,6 +1073,53 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
+/* MENU, DISK and REINIT: a family of commands as one, so a structured
+ * client is offered one tool with a choice rather than a tool apiece.
+ * Each word runs as the command it stands for, which line clients can
+ * still send by name. */
+static bool command_run_choice(command_t *cmd, const char *family,
+      const char *const (*choices)[2], size_t count, const char *values,
+      const char *arg)
+{
+   size_t i;
+   for (i = 0; i < count; i++)
+      if (string_is_equal(arg, choices[i][0]))
+         return command_run(cmd, choices[i][1], NULL);
+   command_reply_error(cmd, family, "one of %s", values);
+   return false;
+}
+
+bool command_menu(command_t *cmd, const char *arg)
+{
+   static const char *const choices[][2] = {
+      { "up",    "MENU_UP"    }, { "down",  "MENU_DOWN"  },
+      { "left",  "MENU_LEFT"  }, { "right", "MENU_RIGHT" },
+      { "a",     "MENU_A"     }, { "b",     "MENU_B"     }
+   };
+   return command_run_choice(cmd, "MENU", choices, ARRAY_SIZE(choices),
+         COMMAND_MENU_BUTTONS, arg);
+}
+
+bool command_disk(command_t *cmd, const char *arg)
+{
+   static const char *const choices[][2] = {
+      { "eject", "DISK_EJECT_TOGGLE" }, { "next", "DISK_NEXT" },
+      { "prev",  "DISK_PREV"         }
+   };
+   return command_run_choice(cmd, "DISK", choices, ARRAY_SIZE(choices),
+         COMMAND_DISK_ACTIONS, arg);
+}
+
+bool command_reinit(command_t *cmd, const char *arg)
+{
+   static const char *const choices[][2] = {
+      { "video", "VIDEO_REINIT" }, { "audio", "AUDIO_REINIT" },
+      { "all",   "DRIVERS_REINIT" }
+   };
+   return command_run_choice(cmd, "REINIT", choices, ARRAY_SIZE(choices),
+         COMMAND_REINIT_DRIVERS, arg);
+}
+
 bool command_interfaces_held(void)
 {
    return runloop_is_content_switching();

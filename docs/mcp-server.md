@@ -192,9 +192,11 @@ achievement address, which looks like `READ_CORE_MEMORY`'s system
 address and is not one, and `GET_MEMORY_MAP` answers the addresses
 `READ_CORE_MEMORY` takes.
 
-The disc and the menu are the exceptions: `DISK_NEXT`, `MENU_DOWN` and
-the rest step blind, and until something answers where they landed,
-stepping is all there is - and a disc swap is part of playing a game.
+The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
+and until something answers where they landed, stepping is all there is
+- and a disc swap is part of playing a game. Each is one tool taking a
+choice - `MENU down`, `DISK next` - rather than a tool per hotkey, and
+`REINIT video|audio|all` likewise stands for the three driver restarts.
 
 All of them are still commands on the network and stdin interfaces,
 where a person is typing and can see what happened.
@@ -417,10 +419,8 @@ answered with an error saying so; the work goes on, and `GET_STATUS`
 tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
-Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
-for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
-that one frame too. `SCREENSHOT`, `AI_SERVICE` and the replay recording
-and checkpoint tools are the exceptions, answered as above; `SCREENSHOT`
+Hotkey tools (`MENU`, `DISK`) press the hotkey for one frame.
+`SCREENSHOT` and the replay recording and checkpoint tools are the exceptions, answered as above; `SCREENSHOT`
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
