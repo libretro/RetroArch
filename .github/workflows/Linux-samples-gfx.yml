@@ -2134,6 +2134,17 @@ jobs:
           echo "[pass] hw_ring_fence_test (TSan)"
           make clean
 
+      - name: Build and run hw_ring_queue_test (ASan + UBSan, TSan)
+        working-directory: samples/gfx/hw_ring_queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          make clean
+          make check SANITIZER=address,undefined
+          make clean
+          make check SANITIZER=thread
+          make clean
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

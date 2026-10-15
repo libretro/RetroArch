@@ -362,7 +362,7 @@ static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 #endif /* HAVE_VULKAN */
 
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
-   || defined(VIDEO_THREAD_HW_D3D9)
+   || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 /* --- slots that are the core's own texture -----------------------------
  * Vulkan, libretro_d3d12.h version 2 and libretro_d3d11.h version 3:
  * nothing is copied into the slot, the driver reads the core's image or
@@ -394,7 +394,8 @@ static bool hw_slot_queued(const thread_video_t *thr, unsigned i, int st)
    return false;
 }
 
-#if defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(VIDEO_THREAD_HW_D3D9)
+#if defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(VIDEO_THREAD_HW_D3D9) \
+   || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 /* The wait itself, for any slot that is the core's own texture: parks
  * on the ring until the word has moved and the slot is no longer
  * named. */
@@ -1126,6 +1127,10 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
 #endif
 #ifdef VIDEO_THREAD_HW_D3D9
    if (ring->api == HW_API_D3D9)
+      hw_wait_queued(ring, ring->index);
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   if (ring->api == HW_API_GL)
       hw_wait_queued(ring, ring->index);
 #endif
    hw_wait_slot(ring, ring->index);
