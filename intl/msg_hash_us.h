@@ -12346,6 +12346,14 @@ MSG_HASH(
    "Switches the headset's Laser Pointer between Off and its last mode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_VIEW_TOGGLE,
+   "Headset View (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
+   "Cycles what the core is told the headset currently displays: Immersive (head-tracked), Stereoscopic (a 3D screen) or Flat. Returns to core's default on core closure."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
    "Show FPS (Toggle)"
    )
@@ -33998,6 +34006,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_OPENXR_LASER_POINTER,
    "Laser Pointer: %s"
+   )
+MSG_HASH(
+   MSG_OPENXR_HEADSET_VIEW,
+   "Headset View: %s"
+   )
+MSG_HASH(
+   MSG_OPENXR_HEADSET_VIEW_IMMERSIVE,
+   "Immersive"
+   )
+MSG_HASH(
+   MSG_OPENXR_HEADSET_VIEW_STEREOSCOPIC,
+   "Stereoscopic"
+   )
+MSG_HASH(
+   MSG_OPENXR_HEADSET_VIEW_FLAT,
+   "Flat"
    )
 
 

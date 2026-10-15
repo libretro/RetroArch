@@ -786,7 +786,8 @@ static bool t_nothing_held(void)
          return false;
    }
    return !t_btn(0, RARCH_MENU_TOGGLE) && !t_btn(0, RARCH_HEADSET_RECENTER)
-      && !t_btn(0, RARCH_LASER_POINTER_TOGGLE);
+      && !t_btn(0, RARCH_LASER_POINTER_TOGGLE)
+      && !t_btn(0, RARCH_HEADSET_VIEW_TOGGLE);
 }
 
 /* ---- the tests ---- */
@@ -805,8 +806,8 @@ static void test_session_made(void)
 {
    t_reset_log();
    t_session(false);
-   CHECK(t_num_sets == 3 && t_num_actions == 35,
-         "%u sets and %u actions made, want 3 and 35", t_num_sets,
+   CHECK(t_num_sets == 3 && t_num_actions == 37,
+         "%u sets and %u actions made, want 3 and 37", t_num_sets,
          t_num_actions);
    CHECK(t_suggested == 4,
          "%u profiles suggested without the Frame's extension, want 4",
@@ -909,14 +910,23 @@ static void test_hotkeys(void)
    t_let_go();
    t_hold("combined/recenter", 0, 1.0f, 0.0f);
    t_hold("combined/laser", 0, 1.0f, 0.0f);
+   t_hold("combined/view", 0, 1.0f, 0.0f);
    t_hold("combined/menu", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_btn(3, RARCH_HEADSET_RECENTER)
          && t_btn(3, RARCH_LASER_POINTER_TOGGLE)
+         && t_btn(3, RARCH_HEADSET_VIEW_TOGGLE)
          && t_btn(3, RARCH_MENU_TOGGLE),
-         "the hotkeys do not answer on any port: %d %d %d",
+         "the hotkeys do not answer on any port: %d %d %d %d",
          t_btn(3, RARCH_HEADSET_RECENTER),
-         t_btn(3, RARCH_LASER_POINTER_TOGGLE), t_btn(3, RARCH_MENU_TOGGLE));
+         t_btn(3, RARCH_LASER_POINTER_TOGGLE),
+         t_btn(3, RARCH_HEADSET_VIEW_TOGGLE), t_btn(3, RARCH_MENU_TOGGLE));
+
+   t_let_go();
+   t_hold("separate/view", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(3, RARCH_HEADSET_VIEW_TOGGLE),
+         "the Separate set's Headset View does not answer");
 }
 
 static void test_nothing_held(void)

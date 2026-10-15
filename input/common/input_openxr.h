@@ -69,8 +69,8 @@ void input_openxr_reannounce(void);
  * headset's. */
 bool input_openxr_autoconfigure(unsigned slot);
 
-/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER or
- * RARCH_LASER_POINTER_TOGGLE, from the headset's own actions. */
+/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE
+ * or RARCH_HEADSET_VIEW_TOGGLE, from the headset's own actions. */
 bool input_openxr_hotkey(unsigned id);
 
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,

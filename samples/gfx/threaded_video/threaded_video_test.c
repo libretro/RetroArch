@@ -1091,6 +1091,12 @@ static void hslane_get_poke(void *data, const video_poke_interface_t **iface)
 }
 
 #ifdef HAVE_OPENXR
+static uint32_t hslane_views_flags(void *data)
+{
+   (void)data;
+   return 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
+}
+
 static unsigned hslane_host_state(void *user)
 {
    (void)user;
@@ -1228,6 +1234,10 @@ static void lane_headset_calls(void)
       run_frames(2);
    }
 
+   CHECK(video_driver_headset_view_toggle() == VIDEO_HEADSET_VIEW_LAST
+         && video_st->headset_view == VIDEO_HEADSET_VIEW_IMMERSIVE,
+         "headset lane: the Headset View changed without a headset");
+
    {
       video_xr_host_t host;
       memset(&host, 0, sizeof(host));
@@ -1242,6 +1252,27 @@ static void lane_headset_calls(void)
    }
    CHECK(video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD,
          "headset lane: the views status did not carry the host's HMD");
+
+   /* Headset View: Stereoscopic drops HMD, Flat also STEREO. */
+   {
+      unsigned view   = video_driver_headset_view_toggle();
+      unsigned status = video_driver_views_status();
+      CHECK(view == VIDEO_HEADSET_VIEW_STEREOSCOPIC
+            && !(status & RETRO_VIDEO_VIEWS_STATUS_HMD)
+            &&  (status & RETRO_VIDEO_VIEWS_STATUS_STEREO),
+            "headset lane: Stereoscopic view %u gave status 0x%x",
+            view, status);
+      view   = video_driver_headset_view_toggle();
+      status = video_driver_views_status();
+      CHECK(view == VIDEO_HEADSET_VIEW_FLAT
+            && !(status & (RETRO_VIDEO_VIEWS_STATUS_HMD
+                         | RETRO_VIDEO_VIEWS_STATUS_STEREO)),
+            "headset lane: Flat view %u gave status 0x%x", view, status);
+      view   = video_driver_headset_view_toggle();
+      CHECK(view == VIDEO_HEADSET_VIEW_IMMERSIVE
+            && (video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD),
+            "headset lane: Immersive view %u did not give HMD back", view);
+   }
 
    hslane_focused = false;
    CHECK(!video_driver_headset_focused(),
@@ -1603,6 +1634,25 @@ static void lane_headset_calls(void)
    CHECK(!video_driver_xr_headset(),
          "headset lane: the host outlived its driver");
    video_driver_set_xr_host(NULL);
+   /* A view left at Flat narrows nothing once the headset is gone:
+    * a desktop Stereo Mode keeps STEREO. */
+   {
+      settings_t *settings  = config_get_ptr();
+      unsigned stereo       = settings->uints.video_stereo_mode;
+      uint32_t (*get_flags)(void*) =
+         video_st->current_video_context.get_flags;
+      unsigned status;
+      video_st->current_video_context.get_flags = hslane_views_flags;
+      settings->uints.video_stereo_mode = VIDEO_STEREO_MODE_ANAGLYPH;
+      video_st->headset_view            = VIDEO_HEADSET_VIEW_FLAT;
+      status                            = video_driver_views_status();
+      CHECK(status & RETRO_VIDEO_VIEWS_STATUS_STEREO,
+            "headset lane: Flat took STEREO from a desktop Stereo Mode "
+            "(status 0x%x)", status);
+      video_st->headset_view            = VIDEO_HEADSET_VIEW_IMMERSIVE;
+      settings->uints.video_stereo_mode = stereo;
+      video_st->current_video_context.get_flags = get_flags;
+   }
 #endif
 
    if (failures == had)

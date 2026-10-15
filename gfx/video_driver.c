@@ -3183,6 +3183,7 @@ void video_driver_clear_views(void)
    video_st->views_frame_dims = 0;
    video_st->views_presented  = false;
    video_st->views_fallback   = false;
+   video_st->headset_view     = VIDEO_HEADSET_VIEW_IMMERSIVE;
 }
 
 unsigned video_driver_views_status(void)
@@ -3202,20 +3203,31 @@ unsigned video_driver_views_status(void)
 #endif
    flags.flags = 0;
    video_context_driver_get_flags(&flags);
-   if (!BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS))
-      return status;
-   status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
-   /* A display of the driver's own per eye shows both while the driver
-    * says so (the 3DS's 3D slider); a headset whatever the window's
-    * mode. */
-   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES))
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS))
    {
-      if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_STEREO))
+      status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
+      /* A display of the driver's own per eye shows both while the
+       * driver says so (the 3DS's 3D slider); a headset whatever the
+       * window's mode. */
+      if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_OWN_EYES))
+      {
+         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_STEREO))
+            status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
+      }
+      else if (settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
+            || headset)
          status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
    }
-   else if (settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
-         || headset)
-      status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
+   /* The Headset View hotkey narrows only what a headset shows. */
+   if (headset)
+   {
+      if (video_driver_st.headset_view == VIDEO_HEADSET_VIEW_FLAT)
+         status &= ~(unsigned)(RETRO_VIDEO_VIEWS_STATUS_HMD
+                             | RETRO_VIDEO_VIEWS_STATUS_STEREO);
+      else if (video_driver_st.headset_view
+            == VIDEO_HEADSET_VIEW_STEREOSCOPIC)
+         status &= ~(unsigned)RETRO_VIDEO_VIEWS_STATUS_HMD;
+   }
    return status;
 }
 
@@ -3262,6 +3274,20 @@ void video_driver_headset_recenter(void)
 {
    video_driver_st.headset_recenter++;
    RARCH_LOG("[Video] Headset recenter requested.\n");
+}
+
+unsigned video_driver_headset_view_toggle(void)
+{
+#ifdef HAVE_OPENXR
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING)
+   {
+      video_st->headset_view = (video_st->headset_view + 1)
+         % VIDEO_HEADSET_VIEW_LAST;
+      return video_st->headset_view;
+   }
+#endif
+   return VIDEO_HEADSET_VIEW_LAST;
 }
 
 void video_driver_headset_exit_request(void)

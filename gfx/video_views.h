@@ -61,6 +61,18 @@ enum video_openxr_laser
    VIDEO_OPENXR_LASER_LAST
 };
 
+/* What a core is told the headset shows, cycled by the Headset View
+ * hotkey and never saved: IMMERSIVE reports what the headset can do,
+ * STEREOSCOPIC withholds RETRO_VIDEO_VIEWS_STATUS_HMD, FLAT also
+ * RETRO_VIDEO_VIEWS_STATUS_STEREO. */
+enum video_headset_view
+{
+   VIDEO_HEADSET_VIEW_IMMERSIVE = 0,
+   VIDEO_HEADSET_VIEW_STEREOSCOPIC,
+   VIDEO_HEADSET_VIEW_FLAT,
+   VIDEO_HEADSET_VIEW_LAST
+};
+
 /* video_openxr_placement: where the headset keeps the screens. */
 enum video_openxr_placement
 {
