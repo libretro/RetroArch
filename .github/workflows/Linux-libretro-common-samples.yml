@@ -222,6 +222,7 @@ jobs:
             rav1_hw_session_test
             rav1_hw_stream_test
             rav1_mp4_stream_test
+            rav1_webm_stream_test
             rav1_hw_backend_test
             rav1_frame_test
             rav1_tile_info_test

@@ -1419,6 +1419,19 @@ void *image_transfer_anim_stream_new_hw_avail(void *buf, size_t len,
       return mp4;
    }
 #endif
+#if defined(HAVE_RWEBM) && defined(HAVE_RAV1)
+   if (type == IMAGE_TYPE_WEBM)
+   {
+      rwebm_video_stream_t *webm = rwebm_video_stream_open_hw_avail(
+            (const uint8_t*)buf, len, avail, need_more);
+      if (webm && !rwebm_video_stream_set_hw(webm, 1))
+      {
+         rwebm_video_stream_close(webm);
+         return NULL;
+      }
+      return webm;
+   }
+#endif
    return NULL;
 }
 

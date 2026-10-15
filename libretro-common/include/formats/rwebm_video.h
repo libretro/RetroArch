@@ -145,6 +145,11 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 rwebm_video_stream_t *rwebm_video_stream_open_avail(const uint8_t *buf,
       size_t len, size_t avail, int *need_more);
 
+/* Hardware-only AV1 candidate, without a CPU canvas. Call set_hw before
+ * decoding. The buffer, including pending packets, remains borrowed. */
+rwebm_video_stream_t *rwebm_video_stream_open_hw_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more);
+
 void rwebm_video_stream_close(rwebm_video_stream_t *stream);
 
 /* num_frames is the number of coded video packets, saturating at the
@@ -169,8 +174,9 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *stream,
  * same operation (next or skip), or rewind/close to cancel it. */
 int rwebm_video_stream_skip(rwebm_video_stream_t *stream, int *duration_ms);
 
-/* Enable registered VP9 hardware before playback (rewinds on success), or
- * query the active mode with enable == 0. Failure retains software state.
+/* Enable registered hardware before playback (VP9 rewinds on success), or
+ * query the active mode with enable == 0. AV1 candidates have no software
+ * decoder; other failures retain software state.
  * GPU next returns a non-pixel token; take the lease with hw_frame.
  * A NULL next while waiting is a retry, not EOS. Owner-thread calls. */
 int rwebm_video_stream_set_hw(rwebm_video_stream_t *stream, int enable);

@@ -258,7 +258,19 @@ framebuffer. Backend allocation waits for hardware startup; unavailable sinks
 or backends terminate playback cleanly. The File Browser GPU preview now uses
 `image_transfer_anim_stream_new_hw_avail` through `gfx_anim_preview_open_hw`.
 Hardware-only candidates require an available backend; ordinary image and
-companion CPU preview opens still decline AV1. WebM routing and interactive
-UI/A/V acceptance remain pending. Successful hidden-frame/metadata progress runs within a 4 ms budget;
+companion CPU preview opens still decline AV1. Interactive UI/A/V acceptance
+remains pending. Successful hidden-frame/metadata progress runs within a 4 ms budget;
 true BUSY returns immediately. Untaken displayed leases survive later progress
 and EOF so the core can present its final frame.
+
+WebM hardware candidates open with `rwebm_video_stream_open_hw_avail` and
+require `set_hw` before decoding. CodecPrivate must contain a valid av1C
+header; its sequence may be in CodecPrivate or the first video packet.
+Sequence/configuration, fixed track geometry and SDR color must agree.
+Packets remain borrowed and pinned across input, decode and export retries;
+hidden-frame progress has a 4 ms budget. `next` returns a non-pixel token
+and `hw_frame` transfers its GPU lease. WebM `skip` discards exports while
+retaining decoder references. Rewind/cancel retire decoder state without
+invalidating leases already transferred. Ordinary software opens decline AV1.
+The explicit GPU preview open also admits these WebM streams; builtin WebM
+movie-core routing remains separate work.

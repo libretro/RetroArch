@@ -3,6 +3,7 @@
 /* Optional OBU stream plus independent FFmpeg NV12/P010 oracle. */
 #include <formats/rav1_hw_stream.h>
 #include "av1_mp4_decode.h"
+#include "av1_webm_decode.h"
 static int av1_decode_fixture(void)
 {
    const char *path = getenv("AV1_TEST_OBU"),
@@ -25,6 +26,8 @@ static int av1_decode_fixture(void)
    memset(&ops, 0, sizeof(ops));
    memset(&fixture, 0, sizeof(fixture));
    fixture.name = "av1";
+   if (getenv("AV1_TEST_WEBM"))
+      return av1_webm_decode_fixture();
    if (getenv("AV1_TEST_MP4"))
       return av1_mp4_decode_fixture();
    if (!path && !raw_path)

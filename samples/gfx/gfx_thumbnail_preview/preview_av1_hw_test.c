@@ -7,8 +7,9 @@
 #include <formats/rav1_hw.h>
 #include <features/features_cpu.h>
 #include "../../../gfx/gfx_anim_preview.h"
-#include "../../../libretro-common/samples/formats/av1/rav1_mp4_fixture.h"
+#include "../../../libretro-common/samples/formats/av1/rav1_webm_fixture.h"
 
+static const char *fixture_path;
 static unsigned failures, opens, closes, exports, abandons, shown;
 static int busy, threaded;
 static gfx_anim_preview_t *preview;
@@ -127,7 +128,7 @@ static void playback(unsigned flags, int loops)
    shown = 0;
    busy = 1;
    offered = 0;
-   preview = gfx_anim_preview_open_hw("av1-preview-fixture.mp4", 0);
+   preview = gfx_anim_preview_open_hw(fixture_path, 0);
    CHECK(preview != NULL);
    if (!preview)
       return;
@@ -154,37 +155,54 @@ static void playback(unsigned flags, int loops)
    memset(&held, 0, sizeof(held));
 }
 
-int main(void)
+static void test_container(unsigned container)
 {
    FILE *file;
    void *stream;
    int more = 0;
-   make_mp4(1);
-   file = fopen("av1-preview-fixture.mp4", "wb");
+   unsigned before = opens;
+   enum image_type_enum type = container ? IMAGE_TYPE_WEBM : IMAGE_TYPE_MP4;
+   fixture_path =
+       container ? "av1-preview-fixture.webm" : "av1-preview-fixture.mp4";
+   if (container)
+      make_webm(container == 2, 0, 0, 0);
+   else
+      make_mp4(1);
+   file = fopen(fixture_path, "wb");
    if (!file)
-      return 1;
+   {
+      CHECK(0);
+      return;
+   }
    CHECK(fwrite(bytes, 1, used, file) == used);
    fclose(file);
-   CHECK(!image_transfer_anim_stream_new_avail(
-             bytes, used, used, IMAGE_TYPE_MP4, &more, NULL, NULL) &&
+   CHECK(!image_transfer_anim_stream_new_avail(bytes, used, used, type, &more,
+                                               NULL, NULL) &&
          !more);
-   CHECK(!gfx_anim_preview_open_hw("av1-preview-fixture.mp4", 0));
+   CHECK(!gfx_anim_preview_open_hw(fixture_path, 0));
    factory.user = &factory;
    factory.open = open_backend;
    factory.close = close_backend;
    rav1_set_hw_backend(&factory);
-   CHECK(!gfx_anim_preview_open("av1-preview-fixture.mp4", 0) && !opens);
-   stream = image_transfer_anim_stream_new_hw_avail(
-       bytes, used, 8, IMAGE_TYPE_MP4, &more, NULL, NULL);
-   CHECK(!stream && more && !opens);
-   image_transfer_anim_stream_free(stream, IMAGE_TYPE_MP4);
+   CHECK(!gfx_anim_preview_open(fixture_path, 0) && opens == before);
+   stream = image_transfer_anim_stream_new_hw_avail(bytes, used, 8, type, &more,
+                                                    NULL, NULL);
+   CHECK(!stream && more && opens == before);
+   image_transfer_anim_stream_free(stream, type);
    playback(VIDEO_PLAYER_INLINE, 1);
    playback(0, 1);
    playback(VIDEO_PLAYER_INLINE, 2);
    playback(0, 2);
    rav1_set_hw_backend(NULL);
    CHECK(exports == abandons && opens == closes);
-   remove("av1-preview-fixture.mp4");
+   remove(fixture_path);
+}
+
+int main(void)
+{
+   test_container(0);
+   test_container(1);
+   test_container(2);
    printf("AV1 preview hardware: %u failures\n", failures);
    return failures ? 1 : 0;
 }

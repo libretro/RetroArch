@@ -33,4 +33,7 @@ for depth in (8, 10):
         subprocess.run(['ffmpeg', '-v', 'error', '-fflags', '+genpts', '-r', '12',
             '-i', str(path), '-c:v', 'copy', '-movflags', '+faststart',
             '-y', str(path.with_suffix('.mp4'))], check=True)
+        subprocess.run(['ffmpeg', '-v', 'error', '-i',
+            str(path.with_suffix('.mp4')), '-c:v', 'copy',
+            '-y', str(path.with_suffix('.webm'))], check=True)
         print(f'{path}: {count} output frames')

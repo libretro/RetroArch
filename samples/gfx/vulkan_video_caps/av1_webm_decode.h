@@ -1,0 +1,154 @@
+/* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
+ * GPL-3.0-or-later */
+#include <formats/rwebm_video.h>
+#include <formats/rwebm_video.h>
+
+static int av1_webm_decode_fixture(void)
+{
+   const char *path = getenv("AV1_TEST_WEBM"),
+              *raw_path = getenv("AV1_TEST_RAW");
+   uint8_t *data = NULL, *raw = NULL;
+   size_t size = 0, raw_size = 0, frame_size;
+   rwebm_t *demux = NULL;
+   rwebm_video_stream_t *stream = NULL;
+   rav1_sequence_t *sequence = NULL;
+   oracle_readback_t *reader = NULL;
+   rav1_config_t config;
+   hevc_fixture_t fixture;
+   uint32_t *hash = NULL;
+   video_hw_frame_t frame;
+   const rwebm_track *track = NULL;
+   unsigned count = 0, i, plane, x, y, bps, tries, probe;
+   int ok = 0, ret;
+   memset(&fixture, 0, sizeof(fixture));
+   fixture.name = "av1_webm";
+   if (!path || !raw_path)
+      goto done;
+   data = oracle_load(path, &size);
+   raw = oracle_load(raw_path, &raw_size);
+   sequence = (rav1_sequence_t *)calloc(1, sizeof(*sequence));
+   reader = (oracle_readback_t *)calloc(1, sizeof(*reader));
+   if (!data || !raw || !sequence || !reader)
+      goto done;
+   demux = rwebm_open_memory(data, size);
+   if (!demux)
+      goto done;
+   for (i = 0; i < (unsigned)rwebm_num_tracks(demux); i++)
+   {
+      track = rwebm_get_track(demux, (int)i);
+      if (track && track->codec == RWEBM_CODEC_AV1)
+         break;
+   }
+   if (!track || track->codec != RWEBM_CODEC_AV1 ||
+       !rav1_config_parse(&config, track->codec_private,
+                          track->codec_private_size) ||
+       (config.bit_depth != 8 && config.bit_depth != 10))
+      goto done;
+   sequence->max_width = track->width;
+   sequence->max_height = track->height;
+   fixture.depth = config.bit_depth;
+   bps = fixture.depth == 10 ? 2 : 1;
+   frame_size =
+       (size_t)sequence->max_width * sequence->max_height * 3 / 2 * bps;
+   if (!frame_size || raw_size % frame_size || raw_size / frame_size > 1024)
+      goto done;
+   fixture.frames = (unsigned)(raw_size / frame_size);
+   hash = (uint32_t *)calloc(fixture.frames, sizeof(*hash));
+   if (!hash || !oracle_init(reader, sequence->max_width, sequence->max_height,
+                             fixture.depth))
+      goto done;
+   fixture.hash = hash;
+   for (i = 0; i < fixture.frames; i++)
+   {
+      const uint8_t *pixels = raw + frame_size * i;
+      hash[i] = UINT32_C(2166136261);
+      for (plane = 0; plane < 3; plane++)
+         for (y = 0; y < sequence->max_height >> (plane ? 1 : 0); y++)
+            for (x = 0; x < sequence->max_width >> (plane ? 1 : 0); x++)
+            {
+               size_t pos =
+                   plane
+                       ? ((size_t)sequence->max_width * sequence->max_height +
+                          (y * (sequence->max_width / 2) + x) * 2 + plane - 1) *
+                             bps
+                       : (y * sequence->max_width + x) * bps;
+               unsigned sample = pixels[pos];
+               if (bps == 2)
+                  sample = (sample | (unsigned)pixels[pos + 1] << 8) >> 6;
+               hash[i] = (hash[i] ^ (sample & 255)) * UINT32_C(16777619);
+               if (bps == 2)
+                  hash[i] = (hash[i] ^ (sample >> 8)) * UINT32_C(16777619);
+            }
+   }
+   stream = rwebm_video_stream_open_hw_avail(data, size, size, NULL);
+   if (!stream || !rwebm_video_stream_set_hw(stream, 1))
+      goto done;
+   for (tries = 0; tries < 4096; tries++)
+   {
+      if (!rwebm_video_stream_next(stream, NULL))
+      {
+         if (!rwebm_video_stream_waiting(stream))
+            break;
+         oracle_release(reader);
+         vkDeviceWaitIdle(vvd.device);
+         continue;
+      }
+      if (!rwebm_video_stream_hw_frame(stream, &frame) ||
+          !oracle_read_frame(reader, frame, &fixture, &count))
+         goto done;
+   }
+   if (count != fixture.frames)
+      goto done;
+   if (count > 2)
+   {
+      oracle_release(reader);
+      rwebm_video_stream_rewind(stream);
+      for (probe = 0; probe < 2; probe++)
+      {
+         for (tries = 0; tries < 4096; tries++)
+         {
+            ret = rwebm_video_stream_skip(stream, NULL);
+            if (ret != 2)
+               break;
+            oracle_release(reader);
+            vkDeviceWaitIdle(vvd.device);
+         }
+         if (ret != 1 || rwebm_video_stream_hw_frame(stream, &frame))
+            goto done;
+      }
+      for (tries = 0; tries < 4096; tries++)
+      {
+         if (rwebm_video_stream_next(stream, NULL))
+            break;
+         if (!rwebm_video_stream_waiting(stream))
+            goto done;
+         oracle_release(reader);
+         vkDeviceWaitIdle(vvd.device);
+      }
+      probe = 2;
+      if (!rwebm_video_stream_hw_frame(stream, &frame) ||
+          !oracle_read_frame(reader, frame, &fixture, &probe) || probe != 3)
+         goto done;
+   }
+   ok = 1;
+done:
+   vkDeviceWaitIdle(vvd.device);
+   rwebm_video_stream_close(stream);
+   if (ok && reader && reader->held_count && count)
+   {
+      unsigned replay = count > 2 ? 2 : count - 1;
+      frame = reader->held[--reader->held_count];
+      ok = oracle_read_frame(reader, frame, &fixture, &replay);
+   }
+   if (reader)
+      oracle_free(reader);
+   rwebm_close(demux);
+   free(reader);
+   free(sequence);
+   free(hash);
+   free(data);
+   free(raw);
+   printf("AV1 Vulkan WebM %s: %s (%u frames)\n", path ? path : "missing",
+          ok ? "PASS" : "FAIL", count);
+   return ok;
+}

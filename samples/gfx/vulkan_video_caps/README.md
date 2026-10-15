@@ -324,3 +324,12 @@ Browser, shader controls and A/V acceptance remain separate.
 The portable `samples/cores/webm_player` MP4 check also runs the real core with
 a mock AV1 factory, covering cold startup before factory registration, BUSY,
 pacing, save/restore, reset, context restart and unsupported hardware cleanup.
+
+Set `AV1_TEST_WEBM` and `AV1_TEST_RAW` for the WebM reader oracle.
+`gen_av1_decode.py` now remuxes each fixture to MP4 and WebM. Both native
+plane and sampled-to-RGBA tests compare all displayed frames, then test
+discard/resume and a retained lease after reader close. Sixteen RTX 5090
+8/10-bit SDR streams pass both paths, including in-band sequences, reordered
+frames, tiles, lossless and full-range color. This establishes reader/device
+evidence; WebM movie-core routing and interactive UI/A/V acceptance remain
+open. The backend still retains one GPU output copy.

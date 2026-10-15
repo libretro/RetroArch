@@ -3,6 +3,7 @@ COMMON := ../../..
 TARGET := rav1_test$(EXE)
 TARGET_TEST := rav1_hw_stream_test$(EXE)
 TARGET_TEST2 := rav1_mp4_stream_test$(EXE)
+TARGET_TEST3 := rav1_webm_stream_test$(EXE)
 HW := rav1_hw_session_test$(EXE)
 BACKEND := rav1_hw_backend_test$(EXE)
 STATE := rav1_reference_state_test$(EXE)
@@ -21,7 +22,7 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2)
+all: $(TARGET) $(CONTAINER) $(SEQUENCE) $(TILES) $(TILE_INFO) $(FRAME) $(PICTURE) $(REFERENCE) $(MOTION) $(GRAIN) $(STATE) $(HW) $(BACKEND) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 $(TARGET): rav1_test.c $(COMMON)/include/formats/rav1.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -34,6 +35,10 @@ MP4_SOURCES := $(COMMON)/formats/mp4/rmp4.c $(COMMON)/formats/mp4/rmp4_video.c \
 
 $(TARGET_TEST2): rav1_mp4_stream_test.c rav1_mp4_fixture.h $(MP4_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rmp4_video.h
 	$(CC) $(CFLAGS) -DHAVE_RAV1 -DHAVE_RMP4 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
+
+WEBM_SOURCES := $(COMMON)/formats/webm/rwebm.c $(COMMON)/formats/webm/rwebm_video.c
+$(TARGET_TEST3): rav1_webm_stream_test.c rav1_webm_fixture.h rav1_mp4_fixture.h $(MP4_SOURCES) $(WEBM_SOURCES) $(wildcard $(COMMON)/include/formats/rav1*.h) $(COMMON)/include/formats/rwebm_video.h
+	$(CC) $(CFLAGS) -DHAVE_RAV1 -ffunction-sections -fdata-sections -o $@ $< $(MP4_SOURCES) $(WEBM_SOURCES) $(LDFLAGS) -Wl,--gc-sections -lm
 
 $(TARGET_TEST): rav1_hw_stream_test.c $(COMMON)/formats/av1/rav1_hw.c $(wildcard $(COMMON)/include/formats/rav1*.h)
 	$(CC) $(CFLAGS) -o $@ $< $(COMMON)/formats/av1/rav1_hw.c $(LDFLAGS)
@@ -93,9 +98,11 @@ check: all
 	$(RUNNER) ./$(HW)
 	$(RUNNER) ./$(TARGET_TEST)
 	$(RUNNER) ./$(TARGET_TEST2)
+	$(RUNNER) ./$(TARGET_TEST3)
 	$(RUNNER) ./$(BACKEND)
 
 clean:
+	rm -f rav1_webm_stream_test rav1_webm_stream_test.exe
 	rm -f rav1_mp4_stream_test rav1_mp4_stream_test.exe
 	rm -f rav1_hw_stream_test rav1_hw_stream_test.exe
 	rm -f rav1_hw_backend_test rav1_hw_backend_test.exe
