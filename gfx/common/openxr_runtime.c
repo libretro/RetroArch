@@ -148,9 +148,13 @@ enum openxr_runtime_result openxr_runtime_create_instance(
             rt->platform.instance_ext))
       exts[num_exts++] = rt->platform.instance_ext;
 
-   memset(&ici, 0, sizeof(ici));
-   ici.type                       = XR_TYPE_INSTANCE_CREATE_INFO;
-   ici.next                       = rt->platform.instance_next;
+   ici.type                               = XR_TYPE_INSTANCE_CREATE_INFO;
+   ici.createFlags                        = 0;
+   ici.applicationInfo.applicationVersion = 0;
+   ici.applicationInfo.engineVersion      = 0;
+   ici.enabledApiLayerCount               = 0;
+   ici.enabledApiLayerNames               = NULL;
+   ici.next                               = rt->platform.instance_next;
    strlcpy(ici.applicationInfo.applicationName, "RetroArch",
          sizeof(ici.applicationInfo.applicationName));
    strlcpy(ici.applicationInfo.engineName, "RetroArch",
@@ -204,8 +208,8 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
       return OPENXR_RUNTIME_FAILED;
    }
 
-   memset(&sgi, 0, sizeof(sgi));
    sgi.type       = XR_TYPE_SYSTEM_GET_INFO;
+   sgi.next       = NULL;
    sgi.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
    if (XR_FAILED(res = get_system(rt->instance, &sgi, &rt->system)))
    {
@@ -215,8 +219,8 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
 
    rt->max_dim    = 4096;
    rt->max_layers = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
-   memset(&props, 0, sizeof(props));
-   props.type     = XR_TYPE_SYSTEM_PROPERTIES;
+   props.type = XR_TYPE_SYSTEM_PROPERTIES;
+   props.next = NULL;
    if (XR_SUCCEEDED(get_system_properties(rt->instance, rt->system, &props)))
    {
       uint32_t mw = props.graphicsProperties.maxSwapchainImageWidth;
@@ -230,9 +234,10 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
       RARCH_LOG("[OpenXR] Headset: %s.\n", props.systemName);
    }
 
-   memset(views, 0, sizeof(views));
    views[0].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
+   views[0].next = NULL;
    views[1].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
+   views[1].next = NULL;
    count         = 0;
    if (     XR_FAILED(enum_views(rt->instance, rt->system,
                XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &count, views))

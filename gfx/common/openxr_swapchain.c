@@ -86,7 +86,6 @@ XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
 
    *step = NULL;
    *code = 0;
-   memset(&ci, 0, sizeof(ci));
    for (i = 0; i < num_formats && !found; i++)
       if ((found = openxr_swapchains_supports(sc, formats[i])))
          ci.format = formats[i];
@@ -96,6 +95,8 @@ XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
       return XR_NULL_HANDLE;
    }
    ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
+   ci.next        = NULL;
+   ci.createFlags = 0;
    ci.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
       | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
    ci.sampleCount = 1;
@@ -104,11 +105,11 @@ XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
    ci.faceCount   = 1;
    ci.arraySize   = 1;
    ci.mipCount    = 1;
-   memset(&ai, 0, sizeof(ai));
-   ai.type        = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
-   memset(&wi, 0, sizeof(wi));
-   wi.type        = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
-   wi.timeout     = 100000000; /* 100 ms: a fresh swapchain is free */
+   ai.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
+   ai.next = NULL;
+   wi.type    = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+   wi.next    = NULL;
+   wi.timeout = 100000000; /* 100 ms: a fresh swapchain is free */
 
    openxr_session_lock(sc->session);
    res = sc->CreateSwapchain(sc->session->session, &ci, &chain);
@@ -134,8 +135,8 @@ XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
    }
    if (!fill(fill_user, index, step, code))
       goto fail;
-   memset(&ri, 0, sizeof(ri));
    ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
+   ri.next = NULL;
    openxr_session_lock(sc->session);
    res = sc->ReleaseSwapchainImage(chain, &ri);
    openxr_session_unlock(sc->session);
@@ -190,8 +191,9 @@ bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
    openxr_slot_t *s = &sc->slots[slot];
 
    openxr_slot_destroy(sc, slot);
-   memset(&ci, 0, sizeof(ci));
    ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
+   ci.next        = NULL;
+   ci.createFlags = 0;
    ci.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
       | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
    /* The chains' final passes write through a view in the window's
@@ -263,8 +265,8 @@ bool openxr_slot_acquire(openxr_swapchains_t *sc, unsigned slot,
       if (!s->acquired[l])
       {
          XrSwapchainImageAcquireInfo ai;
-         memset(&ai, 0, sizeof(ai));
          ai.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
+         ai.next = NULL;
          if (XR_FAILED(sc->AcquireSwapchainImage(s->swapchains[l], &ai,
                      &s->index[l])))
             return false;
@@ -274,8 +276,8 @@ bool openxr_slot_acquire(openxr_swapchains_t *sc, unsigned slot,
       if (!s->waited[l])
       {
          XrSwapchainImageWaitInfo wi;
-         memset(&wi, 0, sizeof(wi));
-         wi.type    = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+         wi.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+         wi.next = NULL;
          /* Never stall the core, nor the XR thread behind the queue lock:
           * an image the compositor still reads is tried again next frame. */
          wi.timeout = 0;
@@ -299,8 +301,8 @@ void openxr_slot_release(openxr_swapchains_t *sc, unsigned slot)
    for (l = 0; l < s->layers; l++)
       if (!s->acquired[l] || !s->waited[l])
          return;
-   memset(&ri, 0, sizeof(ri));
    ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
+   ri.next = NULL;
    for (l = 0; l < s->layers; l++)
    {
       if (XR_FAILED(sc->ReleaseSwapchainImage(s->swapchains[l], &ri)))

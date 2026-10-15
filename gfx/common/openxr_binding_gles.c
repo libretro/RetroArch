@@ -41,8 +41,8 @@ bool openxr_binding_gles_requirements(const openxr_runtime_t *rt)
       RARCH_ERR("[OpenXR] The runtime lacks functions headset output needs.\n");
       return false;
    }
-   memset(&reqs, 0, sizeof(reqs));
    reqs.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_ES_KHR;
+   reqs.next = NULL;
    if (XR_FAILED(res = get_reqs(rt->instance, rt->system, &reqs)))
    {
       RARCH_ERR("[OpenXR] xrGetOpenGLESGraphicsRequirementsKHR failed (%d).\n",
@@ -78,9 +78,11 @@ XrResult openxr_binding_gles_images(void *user, XrSwapchain swapchain,
    XrResult res;
    XrSwapchainImageOpenGLESKHR imgs[OPENXR_MAX_IMAGES];
    openxr_gles_images_t *li = (openxr_gles_images_t*)user;
-   memset(imgs, 0, sizeof(imgs));
    for (i = 0; i < OPENXR_MAX_IMAGES; i++)
+   {
       imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
+      imgs[i].next = NULL;
+   }
    res = li->sc->EnumerateSwapchainImages(swapchain, *count, count,
          (XrSwapchainImageBaseHeader*)imgs);
    for (i = 0; XR_SUCCEEDED(res) && i < *count; i++)

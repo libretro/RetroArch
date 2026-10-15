@@ -48,24 +48,24 @@ bool openxr_tracking_sample(openxr_tracking_t *t, const openxr_session_t *s,
    if (!s->session || !s->view_space || !base || time <= 0)
       return false;
 
-   memset(&li, 0, sizeof(li));
    li.type                  = XR_TYPE_VIEW_LOCATE_INFO;
+   li.next                  = NULL;
    li.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
    li.displayTime           = time;
    li.space                 = base;
-   memset(&vs, 0, sizeof(vs));
-   vs.type                  = XR_TYPE_VIEW_STATE;
-   memset(t->views, 0, sizeof(t->views));
+   vs.type = XR_TYPE_VIEW_STATE;
+   vs.next = NULL;
    t->views[0].type         = XR_TYPE_VIEW;
+   t->views[0].next         = NULL;
    t->views[1].type         = XR_TYPE_VIEW;
+   t->views[1].next         = NULL;
    if (     s->LocateViews(s->session, &li, &vs, 2, &n, t->views) != XR_SUCCESS
          || n != 2
          || !(vs.viewStateFlags & XR_VIEW_STATE_ORIENTATION_VALID_BIT))
       return false;
 
-   memset(&vel, 0, sizeof(vel));
    vel.type = XR_TYPE_SPACE_VELOCITY;
-   memset(&loc, 0, sizeof(loc));
+   vel.next = NULL;
    loc.type = XR_TYPE_SPACE_LOCATION;
    loc.next = &vel;
    if (     s->LocateSpace(s->view_space, base, time, &loc) != XR_SUCCESS

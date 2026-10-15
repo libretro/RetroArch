@@ -421,8 +421,8 @@ static bool gl_xr_start(gl_android_openxr_t *xr)
    }
    openxr_host_init(&xr->host, &xr->rt, &xr->session, &xr->frame);
 
-   memset(&binding, 0, sizeof(binding));
    binding.type    = XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR;
+   binding.next    = NULL;
    binding.display = xr->egl_display;
    binding.config  = xr->egl_config;
    binding.context = xr->egl_context;

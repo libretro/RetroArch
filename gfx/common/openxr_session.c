@@ -84,8 +84,8 @@ static void openxr_session_state(openxr_session_t *s, XrSessionState state)
       case XR_SESSION_STATE_READY:
          {
             XrSessionBeginInfo bi;
-            memset(&bi, 0, sizeof(bi));
             bi.type                         = XR_TYPE_SESSION_BEGIN_INFO;
+            bi.next                         = NULL;
             bi.primaryViewConfigurationType =
                XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
             openxr_session_lock(s);
@@ -122,8 +122,8 @@ void openxr_session_poll(openxr_session_t *s)
    XrEventDataBuffer ev;
    for (;;)
    {
-      memset(&ev, 0, sizeof(ev));
       ev.type = XR_TYPE_EVENT_DATA_BUFFER;
+      ev.next = NULL;
       res     = s->PollEvent(s->rt->instance, &ev);
       if (res == XR_ERROR_INSTANCE_LOST)
          openxr_session_end(s, true);
@@ -183,10 +183,10 @@ bool openxr_session_create(openxr_session_t *s, const void *graphics_binding)
    XrSessionCreateInfo sci;
    XrReferenceSpaceCreateInfo rci;
 
-   memset(&sci, 0, sizeof(sci));
-   sci.type     = XR_TYPE_SESSION_CREATE_INFO;
-   sci.next     = graphics_binding;
-   sci.systemId = s->rt->system;
+   sci.type        = XR_TYPE_SESSION_CREATE_INFO;
+   sci.next        = graphics_binding;
+   sci.createFlags = 0;
+   sci.systemId    = s->rt->system;
    if (XR_FAILED(res = s->CreateSession(s->rt->instance, &sci, &s->session)))
    {
       RARCH_ERR("[OpenXR] xrCreateSession failed (%d).\n", (int)res);
@@ -194,8 +194,14 @@ bool openxr_session_create(openxr_session_t *s, const void *graphics_binding)
       return false;
    }
 
-   memset(&rci, 0, sizeof(rci));
    rci.type                               = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+   rci.next                               = NULL;
+   rci.poseInReferenceSpace.orientation.x = 0.0f;
+   rci.poseInReferenceSpace.orientation.y = 0.0f;
+   rci.poseInReferenceSpace.orientation.z = 0.0f;
+   rci.poseInReferenceSpace.position.x    = 0.0f;
+   rci.poseInReferenceSpace.position.y    = 0.0f;
+   rci.poseInReferenceSpace.position.z    = 0.0f;
    rci.referenceSpaceType                 = XR_REFERENCE_SPACE_TYPE_LOCAL;
    rci.poseInReferenceSpace.orientation.w = 1.0f;
    if (XR_FAILED(res = s->CreateReferenceSpace(s->session, &rci,
@@ -254,8 +260,14 @@ bool openxr_session_swap_track_space(openxr_session_t *s,
 
    if (!s->session)
       return false;
-   memset(&rci, 0, sizeof(rci));
-   rci.type = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+   rci.type                               = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+   rci.next                               = NULL;
+   rci.poseInReferenceSpace.orientation.x = 0.0f;
+   rci.poseInReferenceSpace.orientation.y = 0.0f;
+   rci.poseInReferenceSpace.orientation.z = 0.0f;
+   rci.poseInReferenceSpace.position.x    = 0.0f;
+   rci.poseInReferenceSpace.position.y    = 0.0f;
+   rci.poseInReferenceSpace.position.z    = 0.0f;
    if (*space == RETRO_VR_REFERENCE_SPACE_STAGE)
    {
       rci.referenceSpaceType                 = XR_REFERENCE_SPACE_TYPE_STAGE;

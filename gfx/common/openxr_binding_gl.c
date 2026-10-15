@@ -40,8 +40,8 @@ bool openxr_binding_gl_requirements(const openxr_runtime_t *rt,
       RARCH_ERR("[OpenXR] The runtime lacks functions headset output needs.\n");
       return false;
    }
-   memset(&reqs, 0, sizeof(reqs));
    reqs.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
+   reqs.next = NULL;
    if (XR_FAILED(res = get_reqs(rt->instance, rt->system, &reqs)))
    {
       RARCH_ERR("[OpenXR] xrGetOpenGLGraphicsRequirementsKHR failed (%d).\n",
@@ -87,9 +87,11 @@ XrResult openxr_binding_gl_images(void *user, XrSwapchain swapchain,
    XrResult res;
    XrSwapchainImageOpenGLKHR imgs[OPENXR_MAX_IMAGES];
    openxr_gl_images_t *li = (openxr_gl_images_t*)user;
-   memset(imgs, 0, sizeof(imgs));
    for (i = 0; i < OPENXR_MAX_IMAGES; i++)
+   {
       imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
+      imgs[i].next = NULL;
+   }
    res = li->sc->EnumerateSwapchainImages(swapchain, *count, count,
          (XrSwapchainImageBaseHeader*)imgs);
    for (i = 0; XR_SUCCEEDED(res) && i < *count; i++)
@@ -101,12 +103,12 @@ XrResult openxr_binding_gl_images(void *user, XrSwapchain swapchain,
 const void *openxr_binding_gl_chain(openxr_gl_binding_t *binding,
       const struct gfx_ctx_shared_context *ctx)
 {
-   memset(binding, 0, sizeof(*binding));
    switch (ctx->kind)
    {
 #ifdef HAVE_EGL
       case GFX_CTX_SHARED_EGL:
          binding->egl.type           = XR_TYPE_GRAPHICS_BINDING_EGL_MNDX;
+         binding->egl.next           = NULL;
          binding->egl.getProcAddress =
             (PFN_xrEglGetProcAddressMNDX)ctx->get_proc_address;
          binding->egl.display        = (EGLDisplay)ctx->display;
@@ -117,6 +119,7 @@ const void *openxr_binding_gl_chain(openxr_gl_binding_t *binding,
 #ifdef HAVE_X11
       case GFX_CTX_SHARED_GLX:
          binding->glx.type        = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR;
+         binding->glx.next        = NULL;
          binding->glx.xDisplay    = (Display*)ctx->display;
          binding->glx.visualid    = (uint32_t)ctx->visual_id;
          binding->glx.glxFBConfig = (GLXFBConfig)ctx->config;

@@ -306,15 +306,21 @@ static int openxr_host_track_in_stage(const openxr_host_t *h,
       return -1;
    if (time <= 0 || !h->session->track_space)
       return 0;
-   memset(&rci, 0, sizeof(rci));
-   rci.type               = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
-   rci.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
+   rci.type                               = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+   rci.next                               = NULL;
+   rci.poseInReferenceSpace.orientation.x = 0.0f;
+   rci.poseInReferenceSpace.orientation.y = 0.0f;
+   rci.poseInReferenceSpace.orientation.z = 0.0f;
+   rci.poseInReferenceSpace.position.x    = 0.0f;
+   rci.poseInReferenceSpace.position.y    = 0.0f;
+   rci.poseInReferenceSpace.position.z    = 0.0f;
+   rci.referenceSpaceType                 = XR_REFERENCE_SPACE_TYPE_STAGE;
    rci.poseInReferenceSpace.orientation.w = 1.0f;
    if (XR_FAILED(h->session->CreateReferenceSpace(h->session->session,
                &rci, &stage)))
       return -1;
-   memset(&loc, 0, sizeof(loc));
    loc.type = XR_TYPE_SPACE_LOCATION;
+   loc.next = NULL;
    ok       = XR_SUCCEEDED(h->session->LocateSpace(h->session->track_space,
             stage, time, &loc))
       && (loc.locationFlags & valid) == valid;

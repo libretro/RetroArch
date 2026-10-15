@@ -129,28 +129,31 @@ static bool android_vk_openxr_window_create(android_vk_openxr_t *xr)
       VkImageCreateInfo ici;
       VkMemoryRequirements req;
       VkMemoryAllocateInfo mai;
-      memset(&ici, 0, sizeof(ici));
-      ici.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-      ici.imageType     = VK_IMAGE_TYPE_2D;
-      ici.format        = format;
-      ici.extent.width  = w;
-      ici.extent.height = h;
-      ici.extent.depth  = 1;
-      ici.mipLevels     = 1;
-      ici.arrayLayers   = 1;
-      ici.samples       = VK_SAMPLE_COUNT_1_BIT;
-      ici.tiling        = VK_IMAGE_TILING_OPTIMAL;
-      ici.usage         = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+      ici.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      ici.pNext                 = NULL;
+      ici.flags                 = 0;
+      ici.queueFamilyIndexCount = 0;
+      ici.pQueueFamilyIndices   = NULL;
+      ici.imageType             = VK_IMAGE_TYPE_2D;
+      ici.format                = format;
+      ici.extent.width          = w;
+      ici.extent.height         = h;
+      ici.extent.depth          = 1;
+      ici.mipLevels             = 1;
+      ici.arrayLayers           = 1;
+      ici.samples               = VK_SAMPLE_COUNT_1_BIT;
+      ici.tiling                = VK_IMAGE_TILING_OPTIMAL;
+      ici.usage                 = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
          | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
          | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-      ici.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-      ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      ici.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+      ici.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
       if (vkCreateImage(ctx->device, &ici, NULL, &xr->images[i])
             != VK_SUCCESS)
          return false;
       vkGetImageMemoryRequirements(ctx->device, xr->images[i], &req);
-      memset(&mai, 0, sizeof(mai));
       mai.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      mai.pNext           = NULL;
       mai.allocationSize  = req.size;
       mai.memoryTypeIndex = vulkan_find_memory_type_fallback(
             &ctx->memory_properties, req.memoryTypeBits,

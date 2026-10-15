@@ -106,16 +106,17 @@ static void openxr_frame_measure(openxr_frame_t *f, XrTime time)
    XrViewState vs;
    XrView views[2];
 
-   memset(&li, 0, sizeof(li));
    li.type                  = XR_TYPE_VIEW_LOCATE_INFO;
+   li.next                  = NULL;
    li.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
    li.displayTime           = time;
    li.space                 = f->session->local_space;
-   memset(&vs, 0, sizeof(vs));
-   vs.type                  = XR_TYPE_VIEW_STATE;
-   memset(views, 0, sizeof(views));
+   vs.type = XR_TYPE_VIEW_STATE;
+   vs.next = NULL;
    views[0].type            = XR_TYPE_VIEW;
+   views[0].next            = NULL;
    views[1].type            = XR_TYPE_VIEW;
+   views[1].next            = NULL;
    if (     XR_FAILED(f->session->LocateViews(f->session->session, &li,
                   &vs, 2, &n, views))
          || !n)
@@ -163,8 +164,11 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
             || !retro_atomic_load_acquire_int(&slot->content))
          continue;
       video_xr_compose(&f->screens.pose, &q->pose, &pose);
-      memset(l, 0, sizeof(*l));
-      l->type          = XR_TYPE_COMPOSITION_LAYER_QUAD;
+      l->type                        = XR_TYPE_COMPOSITION_LAYER_QUAD;
+      l->next                        = NULL;
+      l->subImage.imageRect.offset.x = 0;
+      l->subImage.imageRect.offset.y = 0;
+      l->subImage.imageArrayIndex    = 0;
       /* The UI is drawn over transparent black: premultiplied. */
       l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU)
          ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT : 0;
@@ -214,20 +218,24 @@ static bool openxr_frame_projection(openxr_frame_t *f,
       return false;
    for (eye = 0; eye < 2; eye++)
    {
-      memset(&views[eye], 0, sizeof(views[eye]));
       views[eye].type                             =
          XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+      views[eye].next                             = NULL;
+      views[eye].subImage.imageRect.offset.x      = 0;
+      views[eye].subImage.imageRect.offset.y      = 0;
+      views[eye].subImage.imageArrayIndex         = 0;
       views[eye].pose                             = p.pose[eye];
       views[eye].fov                              = p.fov[eye];
       views[eye].subImage.swapchain               = slot->swapchains[eye];
       views[eye].subImage.imageRect.extent.width  = (int32_t)w;
       views[eye].subImage.imageRect.extent.height = (int32_t)h;
    }
-   memset(layer, 0, sizeof(*layer));
-   layer->type      = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
-   layer->space     = f->session->track_space;
-   layer->viewCount = 2;
-   layer->views     = views;
+   layer->type       = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
+   layer->next       = NULL;
+   layer->layerFlags = 0;
+   layer->space      = f->session->track_space;
+   layer->viewCount  = 2;
+   layer->views      = views;
    return true;
 }
 
@@ -239,8 +247,8 @@ static bool openxr_frame_head(openxr_frame_t *f, XrTime time,
    XrSpaceLocationFlags valid = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
       | XR_SPACE_LOCATION_POSITION_VALID_BIT;
 
-   memset(&loc, 0, sizeof(loc));
    loc.type = XR_TYPE_SPACE_LOCATION;
+   loc.next = NULL;
    if (     XR_FAILED(f->session->LocateSpace(f->session->view_space,
                f->session->local_space, time, &loc))
          || (loc.locationFlags & valid) != valid)
@@ -395,10 +403,10 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
    XrFrameBeginInfo begin_info;
 
    memset(b, 0, sizeof(*b));
-   memset(&wait_info, 0, sizeof(wait_info));
    wait_info.type = XR_TYPE_FRAME_WAIT_INFO;
-   memset(&state, 0, sizeof(state));
-   state.type     = XR_TYPE_FRAME_STATE;
+   wait_info.next = NULL;
+   state.type = XR_TYPE_FRAME_STATE;
+   state.next = NULL;
    if (XR_FAILED(res = f->WaitFrame(f->session->session, &wait_info, &state)))
    {
       openxr_frame_error(f, "xrWaitFrame", res);
@@ -439,8 +447,8 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
    if (!f->inline_host)
       openxr_frame_tick(f);
 
-   memset(&begin_info, 0, sizeof(begin_info));
    begin_info.type = XR_TYPE_FRAME_BEGIN_INFO;
+   begin_info.next = NULL;
    openxr_session_lock(f->session);
    if (XR_FAILED(res = f->BeginFrame(f->session->session, &begin_info)))
    {
@@ -492,8 +500,9 @@ static void openxr_frame_submit(openxr_frame_t *f,
    const XrCompositionLayerBaseHeader *ptrs[1 + VIDEO_XR_MAX_QUADS
       + OPENXR_MAX_EXTRA_LAYERS];
 
-   memset(&end_info, 0, sizeof(end_info));
    end_info.type                 = XR_TYPE_FRAME_END_INFO;
+   end_info.next                 = NULL;
+   end_info.layerCount           = 0;
    end_info.displayTime          = b->display_time;
    end_info.environmentBlendMode = f->rt->blend_mode;
    if (!locked)

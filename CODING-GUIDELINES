@@ -240,15 +240,19 @@ program built against them.
 - Write every member the struct has, zero or not, so nothing is left
   undefined.
 - A struct the API fills in (a query, a properties or a state struct)
-  needs only its chain (sType/type and pNext/next, or the size member)
-  and each member the code reads back.
+  needs only its chain (sType/type and pNext/next, or the size member).
+  The API defines its outputs once the call succeeds; a member read
+  without that check, or after a call that returns nothing, is set
+  too.
 - Of a union, write the member that is in use in full; a view
   description sets the member its dimension selects.
-- Keep the memset for the tree's own structs, which can still grow,
-  and for structs whose member names differ between the SDKs or C
+- Keep the memset for the tree's own structs, which can still grow;
+  for structs whose member names differ between the SDKs or C
   libraries we build with (OVERLAPPED, struct input_event,
-  struct sigaction): a member store that compiles against one header
-  breaks the build against another.
+  struct sigaction), where a member store that compiles against one
+  header breaks the build against another; and for structs with
+  bit-fields or reserved members (the Vulkan Video Std* parameter
+  sets), which member stores cannot clear whole.
 - Several statements replace one: give a single-statement if/else body
   its braces when its memset becomes member stores.
 
