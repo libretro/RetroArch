@@ -848,6 +848,7 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
 
    for (i = 0; i < n; i++)
    {
+      size_t j;
       size_t k;
       size_t wl = strlen(tr[i].word);
       if (tr[i].first ? !opening : !closing)
@@ -863,13 +864,16 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
       }
       if (line[wl] != ' ')
          continue;
-      for (k = wl + 1; k < len; k++)
-         if (line[k] < '0' || line[k] > '9')
+      /* the number ends the line: "PRESS 1 right+a 4" ran 4 */
+      for (k = len; k > wl + 1 && line[k - 1] != ' '; k--)
+         ;
+      for (j = k; j < len; j++)
+         if (line[j] < '0' || line[j] > '9')
             break;
-      if (k < len || k == wl + 1)
+      if (j < len || k == len)
          continue;
-      *num     = line + wl + 1;
-      *num_len = k - wl - 1;
+      *num     = line + k;
+      *num_len = len - k;
       return (int)i;
    }
    return -1;
@@ -922,10 +926,6 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       p = eol ? eol + 1 : end;
       if (stop == line)
          continue;
-      /* the command opens a line that is not a row with its own name */
-      if (     (size_t)(stop - line) > name_len
-            && !strncmp(line, name, name_len) && line[name_len] == ' ')
-         continue;
       /* one of the command's trailers rather than a row */
       {
          size_t slot = line == text ? 0 : 1;
@@ -937,6 +937,10 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
             continue;
          }
       }
+      /* the command opens a line that is not a row with its own name */
+      if (     (size_t)(stop - line) > name_len
+            && !strncmp(line, name, name_len) && line[name_len] == ' ')
+         continue;
       for (f = line; f < stop; f++)
          if (*f == '\t')
             tabs++;

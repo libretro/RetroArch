@@ -159,8 +159,16 @@ int main(int argc, char **argv)
    CHECK(!command_replay(&cmd,"seek 600") && !strncmp(reply,"REPLAY ERROR ",13));
    cmd.structured=true;
    reply[0]=0;
-   CHECK(command_disk(&cmd,"next") && !strcmp(reply,"DISK next pressed\n"));
+   CHECK(command_menu(&cmd,"up") && !strcmp(reply,"MENU up pressed\n"));
+   /* a command that answers nothing of its own answers as the tool */
+   reply[0]=0;
+   CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
+   /* this core has no disks: the hotkeys would do nothing */
+   reply[0]=0;
+   CHECK(!command_disk(&cmd,"next")
+         && !strcmp(reply,"DISK ERROR this core has no disk control"));
    cmd.structured=false;
+   cmd.error=false;
    /* and the commands they run, by name, still answer as themselves */
    reply[0]=0;
    CHECK(!command_save_state_slot(&cmd,"x")
@@ -394,7 +402,9 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(!command_watch(&cmd,"x 99000") && strstr(reply,"WATCH ERROR"));
    CHECK(!command_watch(&cmd,"x zz") && strstr(reply,"hexadecimal"));
-   CHECK(!command_watch(&cmd,"nospace") && strstr(reply,"WATCH ERROR"));
+   CHECK(!command_watch(&cmd,"nospace")
+         && !strcmp(reply,"WATCH ERROR nospace needs an address or \"off\" after it"));
+   CHECK(!command_watch(&cmd,"one 1001 odd ") && strstr(reply,"odd needs an address"));
    /* past 32 bits is refused, not wrapped onto 1001 */
    reply[0]=0;
    CHECK(!command_watch(&cmd,"x 100001001") && strstr(reply,"WATCH ERROR"));

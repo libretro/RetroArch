@@ -186,6 +186,22 @@ static bool act_until(command_t *cmd, const char *arg)
    return true;
 }
 
+/* RUN_FRAMES's and PRESS's own lines, the frames run ending each */
+#define RUNF_TEXT  "RUN_FRAMES 3\nx\t7e0086\t52\n"
+#define PRESS_TEXT "PRESS 1 right+a 4\n"
+static bool act_runf(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, RUNF_TEXT, sizeof(RUNF_TEXT) - 1);
+   return true;
+}
+static bool act_press(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PRESS_TEXT, sizeof(PRESS_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -253,6 +269,8 @@ static struct cmd_action_map test_actions[] = {
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
    { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
+   { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
+   { "PRESS", act_press, "No argument", "Answer as PRESS does.", 0, NULL, &cmd_rows_press },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
 static struct cmd_map test_hotkeys[] = {
@@ -719,9 +737,9 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, WAIT and STEP, and
-       * none before them */
-      check("only the commands that answer rows declare one", n == 9);
+      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, WAIT, RUN_FRAMES, PRESS
+       * and STEP, and none before them */
+      check("only the commands that answer rows declare one", n == 11);
    }
 
    printf("tools/call\n");
@@ -945,6 +963,16 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}]}"));
+   st = post(cmd, PORT_OPEN, NULL, call("RUN_FRAMES", NULL), out, sizeof(out), NULL);
+   check("RUN_FRAMES's own line says the frames it ran",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}],"
+               "\"frames\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PRESS", NULL), out, sizeof(out), NULL);
+   check("and PRESS's, the number ending it, with nothing watched",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"frames\":4}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);

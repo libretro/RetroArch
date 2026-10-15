@@ -102,7 +102,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total catches a tool added by accident,
 # and the ceiling on each one catches prose: an average would not, as
-# folding small tools into one raises it. 22817 at 34 tools.
+# folding small tools into one raises it. 23068 at 34 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)
@@ -132,6 +132,14 @@ def frame_count(i):
 msg, t, _ = call(200, 'RUN_FRAMES', {'count': 30})
 check('RUN_FRAMES answers after the frames: ' + (t or '').strip(),
       t and t.startswith('RUN_FRAMES 30') and not msg['result']['isError'])
+check('and its structured result says how many',
+      msg and msg['result'].get('structuredContent') == {'rows': [], 'frames': 30})
+_, t, _ = call(240, 'REINIT', {'driver': 'audio'})
+check('REINIT answers under its own name: ' + (t or '').strip(),
+      t and t.strip() == 'REINIT audio')
+msg, t, _ = call(241, 'DISK', {'action': 'next'})
+check('DISK is refused where the core has no disks: ' + (t or '').strip(),
+      t and t.startswith('DISK ERROR') and msg['result']['isError'])
 _, st, _ = call(201, 'GET_STATUS')
 check('and leaves it paused', st and 'PAUSED' in st)
 a = frame_count(202)

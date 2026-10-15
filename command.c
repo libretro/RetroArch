@@ -778,6 +778,8 @@ struct command_family
    const char        *word;
    const char        *name;
    command_replier_t  replier;
+   /* the command answered, or will */
+   bool               answered;
 };
 static struct command_family command_family_now;
 
@@ -812,6 +814,7 @@ static void command_family_replier(command_t *cmd, const char *data,
    char   msg[512];
    size_t _len = command_family_rename(&command_family_now, data, len,
          msg, sizeof(msg));
+   command_family_now.answered = true;
    if (_len)
       command_family_now.replier(cmd, msg, _len);
    else
@@ -835,6 +838,8 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
    d->dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
    d->gen    = input_driver_command_generation();
    d->family = command_family_now;
+   if (command_family_now.family)
+      command_family_now.answered = true;
 }
 
 /* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
@@ -1179,6 +1184,15 @@ static bool command_run_choice(command_t *cmd, const char *family,
          cmd->replier               = command_family_replier;
          ret                        = command_run(cmd, choices[i].name, rest);
          cmd->replier               = command_family_now.replier;
+         /* what answers nothing of its own still answers as the tool */
+         if (ret && !command_family_now.answered && cmd->structured)
+         {
+            char   msg[64];
+            int    _len = snprintf(msg, sizeof(msg), "%s %s\n", family,
+                  choices[i].word);
+            if (_len > 0 && (size_t)_len < sizeof(msg))
+               cmd->replier(cmd, msg, (size_t)_len);
+         }
          memset(&command_family_now, 0, sizeof(command_family_now));
          return ret;
       }
@@ -1205,6 +1219,13 @@ bool command_disk(command_t *cmd, const char *arg)
       { "next",  "DISK_NEXT",         false },
       { "prev",  "DISK_PREV",         false }
    };
+   /* the hotkeys are pressed regardless; the tool says when they can
+    * do nothing */
+   if (!disk_control_enabled(&runloop_state_get_ptr()->system.disk_control))
+   {
+      command_reply_error(cmd, "DISK", "this core has no disk control");
+      return false;
+   }
    return command_run_choice(cmd, "DISK", choices, ARRAY_SIZE(choices),
          COMMAND_DISK_ACTIONS, arg);
 }
@@ -2898,7 +2919,7 @@ bool command_watch(command_t *cmd, const char *arg)
       /* a tab or a newline would split the label's row */
       for (sp = arg; (unsigned char)*sp > ' '; sp++)
          ;
-      if (*sp != ' ' || (size_t)(sp - arg) >= sizeof(label))
+      if ((*sp && *sp != ' ') || (size_t)(sp - arg) >= sizeof(label))
       {
          command_reply_error(cmd, "WATCH", "a label of up to %u "
                "characters, then an address or \"off\"",
@@ -2909,6 +2930,12 @@ bool command_watch(command_t *cmd, const char *arg)
       label[sp - arg] = '\0';
       while (*sp == ' ')
          sp++;
+      if (!*sp)
+      {
+         command_reply_error(cmd, "WATCH", "%s needs an address or "
+               "\"off\" after it", label);
+         return false;
+      }
       for (arg = sp; (unsigned char)*arg > ' '; arg++)
          ;
       n = (size_t)(arg - sp);
