@@ -847,7 +847,6 @@ static IAudioClient *wasapi_init_client_ac3(IMMDevice *device,
       return NULL;
    }
 
-   memset(&wf, 0, sizeof(wf));
    wf.FormatExt.Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
    wf.FormatExt.Format.nChannels            = 2;
    wf.FormatExt.Format.nSamplesPerSec       = *rate;

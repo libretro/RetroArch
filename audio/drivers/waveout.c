@@ -129,13 +129,13 @@ static void *waveout_init(const char *device, unsigned rate,
    if (!wo->hdr || !wo->data || !wo->event)
       goto error;
 
-   memset(&fmt, 0, sizeof(fmt));
    fmt.wFormatTag      = WAVE_FORMAT_PCM;
    fmt.nChannels       = 2;
    fmt.nSamplesPerSec  = rate;
    fmt.wBitsPerSample  = 16;
    fmt.nBlockAlign     = WAVEOUT_FRAME_BYTES;
    fmt.nAvgBytesPerSec = rate * WAVEOUT_FRAME_BYTES;
+   fmt.cbSize          = 0;
 
    if (waveOutOpen(&wo->hwo, dev, &fmt, (DWORD_PTR)wo->event, 0,
             CALLBACK_EVENT) != MMSYSERR_NOERROR)

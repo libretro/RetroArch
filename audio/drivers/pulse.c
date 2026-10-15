@@ -503,7 +503,6 @@ static void *pulse_init(const char *device, unsigned rate,
    retro_atomic_size_init(&pa->underruns, 0);
    retro_atomic_int_init(&pa->clk_ppm, AUDIO_CLOCK_PPM_NONE);
 
-   memset(&spec, 0, sizeof(spec));
 
    pa->devicelist = string_list_new();
 

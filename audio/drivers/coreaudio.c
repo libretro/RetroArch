@@ -1375,7 +1375,6 @@ static void *coreaudio_init(const char *device,
     * the callback checks for that. */
    {
       mach_timebase_info_data_t tb;
-      memset(&tb, 0, sizeof(tb));
       if (mach_timebase_info(&tb) == KERN_SUCCESS && tb.denom)
          dev->ct_ns_per_tick = (double)tb.numer / (double)tb.denom;
       else
@@ -2080,17 +2079,17 @@ static void coreaudio_mic_set_format(coreaudio_mic_t *mic, bool use_float)
 {
    AudioStreamBasicDescription *f = &mic->format;
    mic->use_float      = use_float;
-   memset(f, 0, sizeof(*f));
-   f->mSampleRate      = mic->sample_rate;
-   f->mFormatID        = kAudioFormatLinearPCM;
-   f->mFormatFlags     = use_float
+   f->mSampleRate       = mic->sample_rate;
+   f->mFormatID         = kAudioFormatLinearPCM;
+   f->mFormatFlags      = use_float
       ? (kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked)
       : (kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked);
-   f->mFramesPerPacket = 1;
+   f->mFramesPerPacket  = 1;
    f->mChannelsPerFrame = 1; /* mono */
-   f->mBitsPerChannel  = use_float ? 32 : 16;
-   f->mBytesPerFrame   = f->mChannelsPerFrame * f->mBitsPerChannel / 8;
-   f->mBytesPerPacket  = f->mBytesPerFrame * f->mFramesPerPacket;
+   f->mBitsPerChannel   = use_float ? 32 : 16;
+   f->mBytesPerFrame    = f->mChannelsPerFrame * f->mBitsPerChannel / 8;
+   f->mBytesPerPacket   = f->mBytesPerFrame * f->mFramesPerPacket;
+   f->mReserved         = 0;
 }
 
 /* The input callback, on the real-time thread. */

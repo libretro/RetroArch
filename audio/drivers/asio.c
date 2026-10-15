@@ -1474,7 +1474,6 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
       return false;
    }
 
-   memset(&ch_info, 0, sizeof(ch_info));
    ch_info.channel  = ad->out_left;
    ch_info.isInput  = ASIOFalse;
    if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &ch_info) != ASE_OK)
@@ -1502,7 +1501,6 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
       for (c = 0; c < ad->channels; c++)
       {
          ASIOChannelInfo other;
-         memset(&other, 0, sizeof(other));
          other.channel = ad->out_left + (long)c;
          other.isInput = ASIOFalse;
          if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &other) != ASE_OK)
@@ -2324,7 +2322,6 @@ bool audio_asio_output_channel_name(unsigned ch, char *buf, size_t len)
    ASIOChannelInfo info;
    if (!ad || !ad->iasio || (long)ch >= ad->out_channels)
       return false;
-   memset(&info, 0, sizeof(info));
    info.channel = (long)ch;
    info.isInput = ASIOFalse;
    if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &info) != ASE_OK)

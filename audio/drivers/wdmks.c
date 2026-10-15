@@ -713,8 +713,8 @@ static ULONG wdmks_pin_property(HANDLE filter, ULONG pin_id, ULONG id,
       void *out, ULONG out_size)
 {
    ra_ksp_pin_t p;
-   memset(&p, 0, sizeof(p));
-   p.PinId = pin_id;
+   p.PinId    = pin_id;
+   p.Reserved = 0;
    return wdmks_property(filter, &ra_ks_propsetid_pin, id,
          RA_KSPROPERTY_TYPE_GET, &p, sizeof(p), out, out_size);
 }
@@ -729,11 +729,11 @@ static ra_ksmultiple_item_t *wdmks_pin_property_multi(HANDLE filter,
    ULONG                 size = 0;
    DWORD                 written = 0;
 
-   memset(&p, 0, sizeof(p));
-   p.PinId      = pin_id;
+   p.PinId          = pin_id;
    p.Property.Set   = ra_ks_propsetid_pin;
    p.Property.Id    = id;
    p.Property.Flags = RA_KSPROPERTY_TYPE_GET;
+   p.Reserved       = 0;
 
    /* A NULL output buffer asks how large the answer is. The call fails
     * either way - what is wanted is the length it reports. */
@@ -909,7 +909,6 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev,
    ULONG           pin_count = 0;
    ULONG           i;
 
-   memset(&prop, 0, sizeof(prop));
    if (wdmks_property(filter, &ra_ks_propsetid_pin,
             RA_KSPROPERTY_PIN_CTYPES, RA_KSPROPERTY_TYPE_GET,
             &prop, sizeof(prop), &pin_count, sizeof(pin_count))
@@ -988,7 +987,6 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out,
       wdmks_device_t                        dev;
       WCHAR                                 friendly[256];
 
-      memset(&iface, 0, sizeof(iface));
       iface.cbSize = sizeof(iface);
       if (!g_setupapi.enum_interfaces(list, NULL, &ra_ks_category_audio,
                index++, &iface))
@@ -997,7 +995,6 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out,
       /* The render alias is what says this filter plays rather than
        * records. A filter without it is a capture device or a
        * topology node, and is not asked anything further. */
-      memset(&alias, 0, sizeof(alias));
       alias.cbSize = sizeof(alias);
       if (!g_setupapi.get_alias(list, &iface, alias_guid, &alias))
          continue;
@@ -1005,7 +1002,6 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out,
          continue;   /* not active, or removed */
 
       /* Twice: once for the length, once for the path. */
-      memset(&info, 0, sizeof(info));
       info.cbSize = sizeof(info);
       g_setupapi.get_detail(list, &iface, NULL, 0, &needed, NULL);
       if (needed < sizeof(DWORD) + sizeof(WCHAR))
@@ -1025,7 +1021,6 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out,
        * and only the second is streamed here. */
       {
          ra_sp_device_interface_data rt;
-         memset(&rt, 0, sizeof(rt));
          rt.cbSize  = sizeof(rt);
          dev.wavert = g_setupapi.get_alias(list, &iface,
                &ra_ks_category_realtime, &rt) ? true : false;
@@ -1261,7 +1256,6 @@ static bool wdmks_format_in_pin(const wdmks_pin_t *pin,
  * channel is for and nowhere to say that 24 bits sit inside 32. */
 static void wdmks_format_to_wfx(const wdmks_format_t *fmt, WAVEFORMATEX *wfx)
 {
-   memset(wfx, 0, sizeof(*wfx));
    wfx->wFormatTag      = (WORD)(fmt->is_float ? 3 : 1);
    wfx->nChannels       = (WORD)fmt->channels;
    wfx->nSamplesPerSec  = (DWORD)fmt->rate;
@@ -1314,7 +1308,6 @@ static DWORD wdmks_channel_mask(unsigned channels)
 static void wdmks_format_to_wfx_ext(const wdmks_format_t *fmt,
       WAVEFORMATEXTENSIBLE *ext)
 {
-   memset(ext, 0, sizeof(*ext));
    wdmks_format_to_wfx(fmt, &ext->Format);
    ext->Format.wFormatTag     = (WORD)0xFFFE;   /* EXTENSIBLE */
    ext->Format.cbSize         = (WORD)(sizeof(*ext) - sizeof(WAVEFORMATEX));
@@ -1435,7 +1428,6 @@ static HANDLE wdmks_pin_try_ac3(HANDLE filter, ULONG pin_id,
    DWORD                  res;
 
    memset(buf, 0, sizeof(buf));
-   memset(&wf, 0, sizeof(wf));
 
    connect->Interface.Set   = ra_ks_interfacesetid_standard;
    connect->Interface.Id    = RA_KSINTERFACE_STANDARD_STREAMING;
@@ -1609,7 +1601,6 @@ static bool wdmks_pin_set_state(wdmks_stream_t *s, ULONG state)
    if (!s || s->handle == INVALID_HANDLE_VALUE)
       return false;
 
-   memset(&prop, 0, sizeof(prop));
    prop.Set   = ra_ks_propsetid_connection;
    prop.Id    = RA_KSPROPERTY_CONNECTION_STATE;
    prop.Flags = RA_KSPROPERTY_TYPE_SET;
@@ -1818,8 +1809,6 @@ static bool wdmks_rt_buffer_request(HANDLE pin, size_t wanted,
    ra_ksrtaudio_buffer_property_t        plain;
    DWORD                                 written = 0;
 
-   memset(&inn, 0, sizeof(inn));
-   memset(out,  0, sizeof(*out));
    inn.Property.Set      = ra_ks_propsetid_rtaudio;
    inn.Property.Id       = RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION;
    inn.Property.Flags    = RA_KSPROPERTY_TYPE_GET;
@@ -1832,8 +1821,6 @@ static bool wdmks_rt_buffer_request(HANDLE pin, size_t wanted,
          && written >= sizeof(*out) && out->BufferAddress)
       return true;
 
-   memset(&plain, 0, sizeof(plain));
-   memset(out,    0, sizeof(*out));
    plain.Property.Set   = ra_ks_propsetid_rtaudio;
    plain.Property.Id    = RA_KSPROPERTY_RTAUDIO_BUFFER;
    plain.Property.Flags = RA_KSPROPERTY_TYPE_GET;
@@ -1861,8 +1848,6 @@ static bool wdmks_rt_register_request(HANDLE pin,
    ra_ksrtaudio_hwregister_property_t inn;
    DWORD                              written = 0;
 
-   memset(&inn, 0, sizeof(inn));
-   memset(out,  0, sizeof(*out));
    inn.Property.Set   = ra_ks_propsetid_rtaudio;
    inn.Property.Id    = RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER;
    inn.Property.Flags = RA_KSPROPERTY_TYPE_GET;
@@ -1885,7 +1870,6 @@ static HANDLE wdmks_rt_event_register(HANDLE pin)
    if (!(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
       return NULL;
 
-   memset(&p, 0, sizeof(p));
    p.Property.Set        = ra_ks_propsetid_rtaudio;
    p.Property.Id         = RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT;
    p.Property.Flags      = RA_KSPROPERTY_TYPE_SET;
@@ -1907,7 +1891,6 @@ static void wdmks_rt_event_unregister(HANDLE pin, HANDLE ev)
       return;
    if (pin != INVALID_HANDLE_VALUE)
    {
-      memset(&p, 0, sizeof(p));
       p.Property.Set      = ra_ks_propsetid_rtaudio;
       p.Property.Id       = RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT;
       p.Property.Flags    = RA_KSPROPERTY_TYPE_SET;
@@ -2004,8 +1987,6 @@ static bool wdmks_rt_presentation(wdmks_t *w, uint64_t *frames,
    if (!w->rt_presentation)
       return false;
 
-   memset(&inn, 0, sizeof(inn));
-   memset(&out, 0, sizeof(out));
    inn.Set   = ra_ks_propsetid_rtaudio;
    inn.Id    = RA_KSPROPERTY_RTAUDIO_PRESENTATION_POSITION;
    inn.Flags = RA_KSPROPERTY_TYPE_GET;
@@ -2099,8 +2080,6 @@ static void wdmks_rt_report_latency(wdmks_t *w)
    ra_ksrtaudio_hwlatency_t out;
    DWORD                    written = 0;
 
-   memset(&inn, 0, sizeof(inn));
-   memset(&out, 0, sizeof(out));
    inn.Set   = ra_ks_propsetid_rtaudio;
    inn.Id    = RA_KSPROPERTY_RTAUDIO_HWLATENCY;
    inn.Flags = RA_KSPROPERTY_TYPE_GET;
@@ -2939,11 +2918,19 @@ static bool wdmks_packet_submit(wdmks_t *w, wdmks_packet_t *p, size_t bytes)
 {
    DWORD written = 0;
 
-   memset(&p->header, 0, sizeof(p->header));
-   p->header.Size        = sizeof(p->header);
-   p->header.Data        = p->data;
-   p->header.FrameExtent = (ULONG)w->packet_bytes;
-   p->header.DataUsed    = (ULONG)bytes;
+   p->header.Size                         = sizeof(p->header);
+   p->header.Data                         = p->data;
+   p->header.FrameExtent                  = (ULONG)w->packet_bytes;
+   p->header.DataUsed                     = (ULONG)bytes;
+   p->header.TypeSpecificFlags            = 0;
+   p->header.PresentationTime.Time        = 0;
+   p->header.PresentationTime.Numerator   = 0;
+   p->header.PresentationTime.Denominator = 0;
+   p->header.Duration                     = 0;
+   p->header.OptionsFlags                 = 0;
+#ifdef _WIN64
+   p->header.Reserved                     = 0;
+#endif
 
    ResetEvent(p->overlapped.hEvent);
 
@@ -3155,8 +3142,6 @@ static bool wdmks_position(wdmks_t *w, uint64_t *frames)
    ra_ksaudio_position_t pos;
    DWORD                 written = 0;
 
-   memset(&prop, 0, sizeof(prop));
-   memset(&pos,  0, sizeof(pos));
    prop.Set   = ra_ks_propsetid_audio;
    prop.Id    = RA_KSPROPERTY_AUDIO_POSITION;
    prop.Flags = RA_KSPROPERTY_TYPE_GET;
@@ -4263,11 +4248,19 @@ static bool wdmks_mic_packet_submit(wdmks_mic_t *m, wdmks_packet_t *p)
 {
    DWORD written = 0;
 
-   memset(&p->header, 0, sizeof(p->header));
-   p->header.Size        = sizeof(p->header);
-   p->header.Data        = p->data;
-   p->header.FrameExtent = (ULONG)m->packet_bytes;
-   p->header.DataUsed    = 0;
+   p->header.Size                         = sizeof(p->header);
+   p->header.Data                         = p->data;
+   p->header.FrameExtent                  = (ULONG)m->packet_bytes;
+   p->header.DataUsed                     = 0;
+   p->header.TypeSpecificFlags            = 0;
+   p->header.PresentationTime.Time        = 0;
+   p->header.PresentationTime.Numerator   = 0;
+   p->header.PresentationTime.Denominator = 0;
+   p->header.Duration                     = 0;
+   p->header.OptionsFlags                 = 0;
+#ifdef _WIN64
+   p->header.Reserved                     = 0;
+#endif
 
    ResetEvent(p->overlapped.hEvent);
    if (DeviceIoControl(m->stream.handle, RA_IOCTL_KS_READ_STREAM,
@@ -4344,8 +4337,6 @@ static bool wdmks_mic_rt_sample(wdmks_mic_t *m)
       ra_ksaudio_position_t pos;
       DWORD                 written = 0;
 
-      memset(&prop, 0, sizeof(prop));
-      memset(&pos,  0, sizeof(pos));
       prop.Set   = ra_ks_propsetid_audio;
       prop.Id    = RA_KSPROPERTY_AUDIO_POSITION;
       prop.Flags = RA_KSPROPERTY_TYPE_GET;

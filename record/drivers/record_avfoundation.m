@@ -76,8 +76,15 @@ static double avfoundation_nearest_aac_sample_rate(double rate)
    UInt32 size = 0;
    OSStatus status;
 
-   memset(&desc, 0, sizeof(desc));
-   desc.mFormatID = kAudioFormatMPEG4AAC;
+   desc.mFormatID         = kAudioFormatMPEG4AAC;
+   desc.mSampleRate       = 0;
+   desc.mFormatFlags      = 0;
+   desc.mBytesPerPacket   = 0;
+   desc.mFramesPerPacket  = 0;
+   desc.mBytesPerFrame    = 0;
+   desc.mChannelsPerFrame = 0;
+   desc.mBitsPerChannel   = 0;
+   desc.mReserved         = 0;
 
    status = AudioFormatGetPropertyInfo(prop, sizeof(desc), &desc, &size);
    if (status == noErr && size > 0)
@@ -633,7 +640,6 @@ static bool avfoundation_record_push_audio(void *data,
       /* Create format description for raw PCM input at source rate.
        * AVAssetWriter handles conversion to the AAC output rate. */
       AudioStreamBasicDescription audioFormat;
-      memset(&audioFormat, 0, sizeof(audioFormat));
       audioFormat.mSampleRate       = handle->sourceSampleRate;
       audioFormat.mFormatID         = kAudioFormatLinearPCM;
       audioFormat.mFormatFlags      = kAudioFormatFlagIsSignedInteger
@@ -643,6 +649,7 @@ static bool avfoundation_record_push_audio(void *data,
       audioFormat.mBytesPerFrame    = sizeof(int16_t) * handle->channels;
       audioFormat.mChannelsPerFrame = handle->channels;
       audioFormat.mBitsPerChannel   = 16;
+      audioFormat.mReserved         = 0;
 
       status = CMAudioFormatDescriptionCreate(NULL, &audioFormat,
             0, NULL, 0, NULL, NULL, &formatDesc);
