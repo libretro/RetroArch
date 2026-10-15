@@ -11,13 +11,18 @@ SRC     := $(RA)/gfx/font_driver.c \
            $(RA)/libretro-common/encodings/encoding_utf.c \
            $(RA)/libretro-common/lists/string_list.c \
            $(RA)/libretro-common/time/rtime.c
-all: lifecycle lifecycle-threaded create fallback chain frame vg sdl2
+all: lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2
 lifecycle: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 # Same tests with the marshalling branch compiled in, so a rebuild
 # taking a different thread route than its creation is caught.
 lifecycle-threaded: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -DHAVE_THREADS -o $@ $^ -lm
+# The file cache from several threads, and the fonts each thread keeps;
+# the test includes font_driver.c for the cache.
+owner: font_owner_test.c stubs_retroarch.c $(SRC)
+	$(CC) $(CFLAGS) -DHAVE_THREADS -o $@ font_owner_test.c stubs_retroarch.c \
+	   $(filter-out $(RA)/gfx/font_driver.c,$(SRC)) -lm
 create: font_create_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -o $@ $^ -lm
@@ -69,6 +74,7 @@ endif
 check: all
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle-threaded
+	ASAN_OPTIONS=detect_leaks=1 ./owner
 	ASAN_OPTIONS=detect_leaks=1 ./create
 	ASAN_OPTIONS=detect_leaks=1 ./fallback
 	ASAN_OPTIONS=detect_leaks=1 ./chain
@@ -76,5 +82,5 @@ check: all
 	ASAN_OPTIONS=detect_leaks=1 ./vg
 	ASAN_OPTIONS=detect_leaks=1 ./sdl2
 clean:
-	rm -f lifecycle lifecycle-threaded create fallback chain frame vg sdl2
+	rm -f lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2
 .PHONY: all check clean

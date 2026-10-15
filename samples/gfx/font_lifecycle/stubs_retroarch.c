@@ -136,6 +136,16 @@ bool video_driver_is_threaded(void) { return true; }
  * answers the same as video_driver_is_threaded() above. */
 bool video_driver_thread_wrapper_active(void) { return true; }
 
+/* The thread a test treats as the threaded video thread; the others
+ * make and free their fonts as the main thread does */
+pthread_t test_video_thread;
+int       test_video_thread_set = 0;
+bool video_thread_is_video_thread(void)
+{
+   return test_video_thread_set
+      && pthread_equal(pthread_self(), test_video_thread);
+}
+
 uintptr_t video_thread_texture_handle(void *data,
       uintptr_t (*handle_get)(void *data))
 { return handle_get ? handle_get(data) : 0; }

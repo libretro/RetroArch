@@ -205,6 +205,8 @@ typedef struct font_data
    /* The threading_hint font_driver_init_first() was called with, so
     * a rebuild reaches the backend on the same thread as creation. */
    bool threading_hint;
+   /* The thread that made it, whose list it is on: FONT_OWNER_* */
+   uint8_t owner;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -298,8 +300,9 @@ int font_driver_get_message_width(void *font_data, const char *msg, size_t len, 
  * trigger one — padding, thumbnail scale, a nav bar toggle — mostly
  * do not move any font size.
  *
- * False for a NULL handle, and for one that is no longer live, so a
- * context reset that cleared or released its fonts always rebuilds.
+ * False for a NULL handle, and for one that is no longer live or is
+ * another thread's, so a context reset that cleared or released its
+ * fonts always rebuilds.
  * Conservative in both directions: it answers no whenever it cannot
  * be sure, and a wrong no only costs the work that would have been
  * done anyway. Callers must pass the same size they would pass to the
@@ -322,18 +325,24 @@ void font_driver_free(font_data_t *font);
  * The handle must not be used again after this call. */
 void font_driver_free_deferred(font_data_t *font);
 
-/* Age the deferred queue by one frame, releasing whatever has come
- * due. Called once per frame from video_driver_frame() after the
- * frame has been handed to the driver. With flush set, everything is
- * released immediately, for teardown paths where there is no later
- * frame to wait for. */
+/* Age the calling thread's deferred queue by one frame, releasing
+ * whatever has come due. Called once per frame after the frame has
+ * been handed to the driver: from video_driver_frame() on the main
+ * thread, and by the threaded wrapper on the video thread. With flush
+ * set, everything is released immediately, for teardown paths where
+ * there is no later frame to wait for. */
 void font_driver_free_pending(bool flush);
 
-/* Rebuild every live font from its current path, in place. Used when
- * the menu language changes and the fonts must follow, without tearing
- * down the video driver to do it. Fonts whose path is unchanged are
- * left alone. Returns the number rebuilt. */
+/* The menu language has changed: the fonts that follow it are rebuilt
+ * in place, the calling thread's now and the threaded video thread's
+ * at its next frame (font_driver_follow_language()), without tearing
+ * down the video driver. Fonts whose path is unchanged are left alone.
+ * Returns the number of the calling thread's fonts rebuilt. */
 unsigned font_driver_reload_fonts(void);
+
+/* The calling thread's fonts that follow the language, rebuilt if it
+ * has changed since they last were. Returns the number rebuilt. */
+unsigned font_driver_follow_language(void);
 
 /* Rebuild the shared OSD font in place against a path and a size. An
  * empty or NULL font_path means "let the renderer choose", as at

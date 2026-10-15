@@ -970,6 +970,8 @@ static bool video_thread_handle_packet(
          if (     thr->driver
                && thr->driver->font_backend)
             font_driver_free_osd_for(thr->driver_data);
+         /* No frame will age what this thread retired */
+         font_driver_free_pending(true);
          /* Textures unloaded since the last frame are still waiting
           * for a frame that will never come. The driver does not know
           * them - a loaded texture is the caller's handle, not a
@@ -2617,8 +2619,10 @@ static void video_thread_loop(void *data)
 
                render_start = cpu_features_get_time_usec();
                /* This thread draws the frame's text, so the glyph
-                * caches' frame begins here */
+                * caches' frame begins here, and its own fonts follow a
+                * language change before they draw */
                font_driver_frame_begin();
+               font_driver_follow_language();
 #ifdef HAVE_GFX_WIDGETS
                /* This thread draws the widgets, so it advances and lays
                 * them out too, before the driver's frame asks whether
@@ -2690,6 +2694,9 @@ static void video_thread_loop(void *data)
 
                ret_frame  = ret;
                render_took = cpu_features_get_time_usec() - render_start;
+               /* The fonts this thread retired come due behind the
+                * frames that drew with them */
+               font_driver_free_pending(false);
                /* A present that waited for the display: the wait is
                 * not drawing, and is not held back for before the next
                 * vblank; and where the frame is out as the call
