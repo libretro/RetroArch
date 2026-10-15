@@ -312,9 +312,11 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate(XrSpace space, XrSpace base,
    return XR_SUCCESS;
 }
 
+static unsigned t_path_lookups;
 static XRAPI_ATTR XrResult XRAPI_CALL t_path_to_string(XrInstance i,
       XrPath p, uint32_t cap, uint32_t *n, char *buf)
 {
+   t_path_lookups++;
    *n = (uint32_t)strlen(t_path(p)) + 1;
    if (cap < *n)
       return XR_ERROR_SIZE_INSUFFICIENT;
@@ -336,6 +338,81 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_get_profile(XrSession s,
    return t_string_to_path(T_INSTANCE,
          "/interaction_profiles/oculus/touch_controller",
          &st->interactionProfile);
+}
+
+/* The hand trackers, by hand (1 left, 2 right): made, gone, a hand
+ * whose tracker is refused, and what each was asked for. */
+static unsigned t_trackers_made, t_trackers_destroyed;
+static int      t_tracker_refused;
+static unsigned t_tracker_sources;     /* data sources the last asked */
+static XRAPI_ATTR XrResult XRAPI_CALL t_create_tracker(XrSession s,
+      const XrHandTrackerCreateInfoEXT *ci, XrHandTrackerEXT *out)
+{
+   int hand = ci->hand == XR_HAND_LEFT_EXT ? 1 : 2;
+   const XrHandTrackingDataSourceInfoEXT *src =
+      (const XrHandTrackingDataSourceInfoEXT*)ci->next;
+   t_tracker_sources = (src
+         && src->type == XR_TYPE_HAND_TRACKING_DATA_SOURCE_INFO_EXT)
+      ? src->requestedDataSourceCount : 0;
+   if (     hand == t_tracker_refused
+         || ci->handJointSet != XR_HAND_JOINT_SET_DEFAULT_EXT)
+      return XR_ERROR_FEATURE_UNSUPPORTED;
+   t_trackers_made++;
+   *out = (XrHandTrackerEXT)(uintptr_t)(0x500 + hand);
+   return XR_SUCCESS;
+}
+static XRAPI_ATTR XrResult XRAPI_CALL t_destroy_tracker(XrHandTrackerEXT t)
+{ t_trackers_destroyed++; return XR_SUCCESS; }
+
+/* Each hand's joints: tracked or not, and what drives them. Joint j is
+ * j cm along X with a 5 mm radius. */
+static bool     t_joints_active[3];
+static XrHandTrackingDataSourceEXT t_joints_source[3];
+static XrTime   t_joints_at;
+static XRAPI_ATTR XrResult XRAPI_CALL t_locate_joints(XrHandTrackerEXT t,
+      const XrHandJointsLocateInfoEXT *li, XrHandJointLocationsEXT *locs)
+{
+   unsigned j;
+   int hand = (int)((uintptr_t)t - 0x500);
+   const XrBaseOutStructure *next = (const XrBaseOutStructure*)locs->next;
+   XrHandJointVelocitiesEXT *vels  = NULL;
+   XrHandTrackingDataSourceStateEXT *src = NULL;
+   for (; next; next = next->next)
+      if (next->type == XR_TYPE_HAND_JOINT_VELOCITIES_EXT)
+         vels = (XrHandJointVelocitiesEXT*)next;
+      else if (next->type == XR_TYPE_HAND_TRACKING_DATA_SOURCE_STATE_EXT)
+         src  = (XrHandTrackingDataSourceStateEXT*)next;
+   t_located_base = li->baseSpace;
+   t_joints_at    = li->time;
+   locs->isActive = t_joints_active[hand] ? XR_TRUE : XR_FALSE;
+   if (src)
+   {
+      src->isActive   = locs->isActive;
+      src->dataSource = t_joints_source[hand];
+   }
+   if (!locs->isActive)
+      return XR_SUCCESS;
+   for (j = 0; j < locs->jointCount; j++)
+   {
+      memset(&locs->jointLocations[j].pose, 0,
+            sizeof(locs->jointLocations[j].pose));
+      locs->jointLocations[j].pose.orientation.w = 1.0f;
+      locs->jointLocations[j].pose.position.x    = (float)j * 0.01f;
+      locs->jointLocations[j].radius             = 0.005f;
+      locs->jointLocations[j].locationFlags      =
+           XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
+         | XR_SPACE_LOCATION_POSITION_VALID_BIT
+         | XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
+      if (vels && j < vels->jointCount)
+      {
+         memset(&vels->jointVelocities[j], 0,
+               sizeof(vels->jointVelocities[j]));
+         vels->jointVelocities[j].velocityFlags =
+            XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+         vels->jointVelocities[j].linearVelocity.y = 0.5f;
+      }
+   }
+   return XR_SUCCESS;
 }
 
 /* Each hand's haptics: the last amplitude, 0 once stopped. */
@@ -371,6 +448,9 @@ static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrGetActionStateFloat",              (PFN_xrVoidFunction)t_get_float },
    { "xrGetActionStateVector2f",           (PFN_xrVoidFunction)t_get_vec2 },
    { "xrLocateSpace",                      (PFN_xrVoidFunction)t_locate },
+   { "xrCreateHandTrackerEXT",             (PFN_xrVoidFunction)t_create_tracker },
+   { "xrDestroyHandTrackerEXT",            (PFN_xrVoidFunction)t_destroy_tracker },
+   { "xrLocateHandJointsEXT",              (PFN_xrVoidFunction)t_locate_joints },
    { "xrApplyHapticFeedback",              (PFN_xrVoidFunction)t_apply },
    { "xrStopHapticFeedback",               (PFN_xrVoidFunction)t_stop },
    { NULL, NULL }
@@ -523,6 +603,8 @@ void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 
 /* ---- helpers ---- */
 static bool t_palm_pose;
+static bool t_hand_tracking;
+static bool t_hand_data_source;
 static void t_session(bool frame_controller)
 {
    openxr_input_handles_t h;
@@ -539,6 +621,8 @@ static void t_session(bool frame_controller)
    h.get_proc         = t_get_proc;
    h.frame_controller = frame_controller;
    h.palm_pose        = t_palm_pose;
+   h.hand_tracking    = t_hand_tracking;
+   h.hand_data_source = t_hand_data_source;
    t_hooks.session_created(t_hooks.user, &h);
 }
 
@@ -1247,6 +1331,136 @@ static void test_palm(void)
    t_palm_pose   = false;
 }
 
+/* The joints: a tracker per hand with XR_EXT_hand_tracking, asking for
+ * seen and controller-driven hands with the data-source extension;
+ * located with the poses in the host's space and time, by OpenXR's
+ * joint order, each hand's source on its flags; a tracked hand stays
+ * the core's without its controller; the trackers go with the session,
+ * and one refused takes the other with it. The profile's string is
+ * looked up once per profile. */
+static void test_joints(void)
+{
+   struct retro_vr_controller_poses poses;
+   const struct retro_vr_hand_state *l = &poses.hands[RETRO_VR_HAND_LEFT];
+   const struct retro_vr_hand_state *r = &poses.hands[RETRO_VR_HAND_RIGHT];
+   const struct retro_vr_hand_joint_state *tip =
+      &r->joints[RETRO_VR_HAND_JOINT_INDEX_TIP];
+   XrSpace base = (XrSpace)(uintptr_t)0x43;
+   unsigned made, gone, lookups;
+
+   t_hand_tracking    = true;
+   t_hand_data_source = true;
+   t_trackers_made    = 0;
+   t_trackers_destroyed = 0;
+   t_reset_log();
+   t_fresh_session();
+   CHECK(t_trackers_made == 2 && t_tracker_sources == 2
+         && t_logged("Hand joints tracked"),
+         "%u trackers made asking %u sources, want 2 asking 2",
+         t_trackers_made, t_tracker_sources);
+
+   t_joints_active[1] = true;
+   t_joints_source[1] = XR_HAND_TRACKING_DATA_SOURCE_CONTROLLER_EXT;
+   t_joints_active[2] = true;
+   t_joints_source[2] = XR_HAND_TRACKING_DATA_SOURCE_UNOBSTRUCTED_EXT;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   memset(&poses, 0xff, sizeof(poses));
+   CHECK(t_hooks.locate_hands(t_hooks.user, base, t_time, &poses),
+         "the hands were not located");
+   CHECK(t_located_base == base && t_joints_at == t_time,
+         "the joints were not located in the host's space and time");
+   CHECK(     (r->flags & (RETRO_VR_HAND_JOINTS | RETRO_VR_HAND_JOINTS_OPTICAL))
+               == (RETRO_VR_HAND_JOINTS | RETRO_VR_HAND_JOINTS_OPTICAL)
+         && !(r->flags & RETRO_VR_HAND_JOINTS_CONTROLLER)
+         && (l->flags & RETRO_VR_HAND_JOINTS_CONTROLLER)
+         && !(l->flags & RETRO_VR_HAND_JOINTS_OPTICAL),
+         "the joints' sources: flags 0x%x 0x%x", l->flags, r->flags);
+   CHECK(     tip->pose.position[0] > 0.0999f && tip->pose.position[0] < 0.1001f
+         && tip->radius == 0.005f
+         && tip->pose.flags == (RETRO_VR_POSE_ORIENTATION_VALID
+            | RETRO_VR_POSE_POSITION_VALID | RETRO_VR_POSE_POSITION_TRACKED
+            | RETRO_VR_POSE_LINEAR_VELOCITY_VALID)
+         && tip->pose.linear_velocity[1] == 0.5f,
+         "the index tip: x %f radius %f flags 0x%x",
+         (double)tip->pose.position[0], (double)tip->radius,
+         tip->pose.flags);
+
+   /* Looked up once, then kept while the profile is the same. */
+   lookups = t_path_lookups;
+   input_openxr_controller_poses(&poses);
+   input_openxr_controller_poses(&poses);
+   CHECK(t_path_lookups - lookups == 2,
+         "the profile's string was looked up %u times for two hands",
+         t_path_lookups - lookups);
+
+   /* Out of focus no controller is the core's; the seen hand is. */
+   t_focused = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hooks.locate_hands(t_hooks.user, base, t_time, &poses);
+   input_openxr_controller_poses(&poses);
+   CHECK(     (r->flags & (RETRO_VR_HAND_ACTIVE | RETRO_VR_HAND_JOINTS))
+               == (RETRO_VR_HAND_ACTIVE | RETRO_VR_HAND_JOINTS)
+         && r->grip.flags == 0 && r->aim.flags == 0
+         && !r->interaction_profile && tip->radius == 0.005f,
+         "a tracked hand without its controller: flags 0x%x grip 0x%x",
+         r->flags, r->grip.flags);
+   t_focused = true;
+
+   /* Not tracked: no joints. */
+   t_joints_active[2] = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hooks.locate_hands(t_hooks.user, base, t_time, &poses);
+   CHECK(!(r->flags & RETRO_VR_HAND_JOINTS) && tip->pose.flags == 0,
+         "an untracked hand has joints: flags 0x%x", r->flags);
+
+   gone = t_trackers_destroyed;
+   t_hooks.session_destroying(t_hooks.user);
+   CHECK(t_trackers_destroyed - gone == 2,
+         "%u trackers went with the session, want 2",
+         t_trackers_destroyed - gone);
+
+   /* Without the data source: joints of no known source. */
+   t_hand_data_source = false;
+   t_joints_active[2] = true;
+   t_fresh_session();
+   CHECK(t_tracker_sources == 0, "data sources asked without the extension");
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hooks.locate_hands(t_hooks.user, base, t_time, &poses);
+   CHECK(     (r->flags & RETRO_VR_HAND_JOINTS)
+         && !(r->flags & (RETRO_VR_HAND_JOINTS_OPTICAL
+               | RETRO_VR_HAND_JOINTS_CONTROLLER)),
+         "joints without a data source: flags 0x%x", r->flags);
+   t_hooks.session_destroying(t_hooks.user);
+
+   /* The right hand's tracker refused: the left's goes, the
+    * controllers stay. */
+   t_tracker_refused = 2;
+   made = t_trackers_made;
+   gone = t_trackers_destroyed;
+   t_reset_log();
+   t_fresh_session();
+   CHECK(     t_trackers_made - made == 1 && t_trackers_destroyed - gone == 1
+         && t_logged("Headset controllers ready"),
+         "a refused tracker: %u made, %u destroyed",
+         t_trackers_made - made, t_trackers_destroyed - gone);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_hooks.locate_hands(t_hooks.user, base, t_time, &poses);
+   CHECK(     !(l->flags & RETRO_VR_HAND_JOINTS)
+         && !(r->flags & RETRO_VR_HAND_JOINTS),
+         "joints from a refused tracker: flags 0x%x 0x%x",
+         l->flags, r->flags);
+   gone = t_trackers_destroyed;
+   t_hooks.session_destroying(t_hooks.user);
+   CHECK(t_trackers_destroyed == gone,
+         "a refused tracker's pair destroyed again");
+
+   t_tracker_refused  = 0;
+   t_joints_active[1] = false;
+   t_joints_active[2] = false;
+   t_hand_tracking    = false;
+}
+
 static bool t_op_is(unsigned i, bool connect, unsigned slot,
       const char *name)
 {
@@ -1545,6 +1759,7 @@ int main(void)
    test_devices();
    test_device_taken();
    test_joypad_wrapped();
+   test_joints();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
