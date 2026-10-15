@@ -282,6 +282,16 @@ int rh264_video_set_hw(rh264_video *v, int enable);
 /* Request hardware decoding with CPU planes before feeding Annex-B input.
  * Parameter sets enable it before the first slice, or software is used. */
 void rh264_video_set_hw_readback(rh264_video *v, int enable);
+/* Defer CPU readback until rh264_video_readback. Set before decoding to
+ * reserve a pending-output slot when available. Without spare capacity,
+ * eager readback remains valid. Discarding output by the next decode/drain
+ * never changes reference reconstruction or presentation order. */
+void rh264_video_set_deferred_readback(rh264_video *v, int enable);
+/* Metadata for the last successful decode/drain output, without readback. */
+int rh264_video_frame_size(const rh264_video *v, int *width, int *height);
+/* Make that output's planes available once; 0 success, -1 unavailable/error.
+ * Repeated calls reuse the CPU copy. The next decode/drain expires it. */
+int rh264_video_readback(rh264_video *v);
 /* Whether the pictures come from the backend. */
 int rh264_video_is_hw(const rh264_video *v);
 /* The picture decode or drain made ready, as a hardware frame; 0 when

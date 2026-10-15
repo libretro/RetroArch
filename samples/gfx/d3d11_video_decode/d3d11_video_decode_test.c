@@ -503,6 +503,32 @@ static int take_hw12(frames_t *f, const video_hw_frame_t *fr)
    return 1;
 }
 
+static int cpu_readbacks;
+static int counted_readback(void *decoder, unsigned slot, uint8_t *planes[3])
+{
+   cpu_readbacks++;
+   return d3d11vd_readback(decoder, slot, planes);
+}
+
+static int take_cpu_output(frames_t *frames, rh264_video *video, int mode,
+      int ordinal)
+{
+   int before, w, h;
+   if (mode == 4 && ordinal % 3 != 0)
+      return 1;
+   if (mode >= 3)
+   {
+      if (rh264_video_frame_size(video, &w, &h) != 0
+            || w <= 0 || h <= 0 || rh264_video_readback(video) != 0)
+         return 0;
+      before = cpu_readbacks;
+      if (rh264_video_readback(video) != 0 || cpu_readbacks != before)
+         return 0;
+   }
+   take_sw(frames, video);
+   return 1;
+}
+
 /* @mp4 decoded on the backend when @hw, else in software; 1 when it
  * decoded as asked */
 static int decode(const unsigned char *mp4, size_t len, int hw,
@@ -513,7 +539,7 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    rmp4_packet pkt;
    rmp4_t *m;
    rh264_video *v;
-   int i, r, trk = -1, on_hw = 0, ok = 1;
+   int i, r, trk = -1, on_hw = 0, ok = 1, ordinal = 0;
 
    memset(f, 0, sizeof(*f));
    if (!(m = rmp4_open_memory(mp4, len)))
@@ -528,8 +554,12 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    }
    rh264_video_set_extradata(v, rmp4_get_track(m, trk)->codec_private,
          rmp4_get_track(m, trk)->codec_private_size);
-   if (hw == 2)
+   cpu_readbacks = 0;
+   if (hw >= 2)
+   {
       rh264_video_set_hw_readback(v, 1);
+      rh264_video_set_deferred_readback(v, hw >= 3);
+   }
    else if (hw)
       on_hw = rh264_video_set_hw(v, 1);
    if (hw == 1 && !on_hw)
@@ -553,8 +583,8 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
          ok = 0;
       else if (r == 1)
       {
-         if (!on_hw || hw == 2)
-            take_sw(f, v);
+         if (!on_hw || hw >= 2)
+            ok = take_cpu_output(f, v, hw, ordinal++);
          else if (rh264_video_hw_frame(v, &fr) != 0
                || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
             ok = 0;
@@ -570,13 +600,13 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
       }
       if (r != 0)
          break;
-      if (!on_hw || hw == 2)
-         take_sw(f, v);
+      if (!on_hw || hw >= 2)
+         ok = take_cpu_output(f, v, hw, ordinal++);
       else if (rh264_video_hw_frame(v, &fr) != 0
             || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
          ok = 0;
    }
-   if (hw == 2 && !rh264_video_is_hw(v))
+   if (hw >= 2 && !rh264_video_is_hw(v))
       ok = 0;
    rh264_video_close(v);
    rmp4_close(m);
@@ -1144,12 +1174,16 @@ int main(void)
       return 0;
    }
 
-   test_hevc_main(8);
-   test_hevc_main(10);
-   test_hevc_streams();
-   test_hevc_conformance();
-   test_vp9_conformance();
-   test_vp9_webm();
+   d3d11vd.ops.readback = counted_readback;
+   if (!getenv("D3D11_TEST_H264_ONLY"))
+   {
+      test_hevc_main(8);
+      test_hevc_main(10);
+      test_hevc_streams();
+      test_hevc_conformance();
+      test_vp9_conformance();
+      test_vp9_webm();
+   }
 
    for (i = 0; i < sizeof(streams) / sizeof(streams[0]); i++)
    {
@@ -1185,6 +1219,25 @@ int main(void)
       bad = compare(&sw, &hw, &first, &worst);
       snprintf(label, sizeof(label), "%s: CPU readback matches software", s->name);
       check(label, on && bad == 0 && sw.n > 0);
+      frames_free(&hw);
+      on = decode(s->data, s->len, 3, &hw);
+      bad = compare(&sw, &hw, &first, &worst);
+      snprintf(label, sizeof(label), "%s: deferred CPU planes match software", s->name);
+      check(label, on && bad == 0 && cpu_readbacks == sw.n);
+      frames_free(&hw);
+      on = decode(s->data, s->len, 4, &hw);
+      {
+         frames_t selected = sw;
+         int j;
+         selected.n = (sw.n + 2) / 3;
+         for (j = 0; j < selected.n; j++)
+         { selected.y[j] = sw.y[j * 3]; selected.uv[j] = sw.uv[j * 3]; }
+         bad = compare(&selected, &hw, &first, &worst);
+         snprintf(label, sizeof(label), "%s: discarded outputs need no CPU copy", s->name);
+         check(label, on && bad == 0 && cpu_readbacks >= hw.n && cpu_readbacks <= sw.n);
+         printf("      deferred discard: %d outputs, %d requested, %d GPU readbacks\n",
+               sw.n, hw.n, cpu_readbacks);
+      }
       if (s->lists)
       {
          lists_seen = 1;
@@ -1201,7 +1254,7 @@ int main(void)
       frames_free(&hw);
    }
    /* the D3D12 driver's reading of the same handles */
-   if (d12_init())
+   if (!getenv("D3D11_TEST_H264_ONLY") && d12_init())
    {
       printf("read through D3D12:\n");
       use_d3d12 = 1;

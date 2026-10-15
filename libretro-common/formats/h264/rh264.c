@@ -5357,6 +5357,8 @@ struct rh264_video
     * backend (rh264_video_set_hw); NULL otherwise. */
    struct rh264_hw *hw;
    int hw_readback;
+   int deferred_readback;
+   int output_ready;
    /* Slice-decode workspace for rh264_video_decode_inter.  As locals
     * these were a 7.5 KiB frame -- the slice header, the B-list
     * context with its implicit-weight table, and the reference-list
@@ -10494,6 +10496,7 @@ typedef struct rh264_hw
    uint8_t *cpu;
    int cpu_w, cpu_h;
    int have_cpu;
+   int can_defer, pending_cpu, pending_slot, pending_w, pending_h;
    int fresh;                  /* shown during the present call     */
 } rh264_hw;
 
@@ -10618,7 +10621,7 @@ static int rh264_hw_slot_take(const rh264_video *v)
    int j;
    for (s = 0; s < hw->nslots; s++)
    {
-      int held = 0;
+      int held = hw->pending_cpu && hw->pending_slot == (int)s;
       for (j = 0; j < v->dpb_len && !held; j++)
          if (hw->dpb_hw[v->dpb_slot[j]] == (int)s)
             held = 1;
@@ -10683,6 +10686,36 @@ static int rh264_hw_out_pick(const rh264_hw *hw)
    return bi;
 }
 
+/* Materialize the last output once. The slot stays held until the next
+ * decode/drain call, or until its CPU copy is complete. */
+static int rh264_hw_readback_pending(rh264_hw *hw)
+{
+   int w = hw->pending_w, h = hw->pending_h;
+   size_t y = (size_t)w * h, c = (size_t)((w + 1) / 2) * ((h + 1) / 2);
+   uint8_t *planes[3];
+   hw->have_cpu = 0;
+   if (hw->cpu_w != w || hw->cpu_h != h)
+   {
+      free(hw->cpu);
+      hw->cpu = (uint8_t*)malloc(y + 2 * c);
+      hw->cpu_w = w;
+      hw->cpu_h = h;
+   }
+   if (!hw->cpu)
+      return -1;
+   planes[0] = hw->cpu;
+   planes[1] = hw->cpu + y;
+   planes[2] = hw->cpu + y + c;
+   if (hw->ops->readback(hw->dec, (unsigned)hw->pending_slot, planes) != 0)
+   {
+      hw->broken = 1;
+      return -1;
+   }
+   hw->have_cpu = 1;
+   hw->pending_cpu = 0;
+   return 0;
+}
+
 /* Hands the picture at queue entry @i to the caller. */
 static int rh264_hw_show(rh264_video *v, int i)
 {
@@ -10691,28 +10724,14 @@ static int rh264_hw_show(rh264_video *v, int i)
    int r;
    if (v->hw_readback)
    {
-      int w = hw->sps.width, h = hw->sps.height;
-      size_t y = (size_t)w * h, c = (size_t)((w + 1) / 2) * ((h + 1) / 2);
-      uint8_t *planes[3];
-      hw->have_cpu = 0;
-      if (hw->cpu_w != w || hw->cpu_h != h)
-      {
-         free(hw->cpu);
-         hw->cpu = (uint8_t*)malloc(y + 2 * c);
-         hw->cpu_w = w;
-         hw->cpu_h = h;
-      }
-      if (!hw->cpu)
+      hw->have_cpu    = 0;
+      hw->pending_cpu = 1;
+      hw->pending_slot = hw->out_slot[i];
+      hw->pending_w = hw->sps.width;
+      hw->pending_h = hw->sps.height;
+      if ((!v->deferred_readback || !hw->can_defer)
+            && rh264_hw_readback_pending(hw) != 0)
          return -1;
-      planes[0] = hw->cpu;
-      planes[1] = hw->cpu + y;
-      planes[2] = hw->cpu + y + c;
-      if (hw->ops->readback(hw->dec, (unsigned)hw->out_slot[i], planes) != 0)
-      {
-         hw->broken = 1;
-         return -1;
-      }
-      hw->have_cpu = 1;
       hw->fresh = 1;
       hw->out_used[i] = 0;
       hw->out_len--;
@@ -11062,8 +11081,22 @@ int rh264_video_set_hw(rh264_video *v, int enable)
       free(hw);
       return 0;
    }
+   /* Deferred CPU output may still hold a non-reference picture while
+    * another picture starts in the same access unit. Reserve one slot;
+    * if the backend limit is already reached, keep eager readback. */
+   hw->can_defer = v->hw_readback && v->deferred_readback
+      && slots < RH264_HW_MAX_SLOTS;
+   if (hw->can_defer)
+      slots++;
    hw->nslots = (unsigned)slots;
-   if (!(hw->dec = ops->open(ops->user, &hw->sps, hw->nslots)))
+   hw->dec = ops->open(ops->user, &hw->sps, hw->nslots);
+   if (!hw->dec && hw->can_defer)
+   {
+      hw->can_defer = 0;
+      hw->nslots--;
+      hw->dec = ops->open(ops->user, &hw->sps, hw->nslots);
+   }
+   if (!hw->dec)
    {
       free(hw);
       return 0;
@@ -11156,7 +11189,7 @@ static int rh264_hw_retry(rh264_video *v, const uint8_t *data,
    return 2;
 }
 
-int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
+static int rh264_video_decode_internal(rh264_video *v, const uint8_t *data, size_t len)
 {
    size_t p = 0;
    int got_pic = 0;
@@ -11396,7 +11429,7 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
    return p;
 }
 
-int rh264_video_drain(rh264_video *v)
+static int rh264_video_drain_internal(rh264_video *v)
 {
    int i, bi = -1;
    if (!v) return -1;
@@ -11447,4 +11480,74 @@ int rh264_video_drain(rh264_video *v)
    v->out_used[bi] = 0; v->out_len--;
    v->out_show = bi;
    return 0;
+}
+
+void rh264_video_set_deferred_readback(rh264_video *v, int enable)
+{
+   if (v)
+      v->deferred_readback = enable != 0;
+}
+
+int rh264_video_frame_size(const rh264_video *v, int *width, int *height)
+{
+   int w = 0, h = 0;
+   if (!v || !v->output_ready)
+      return -1;
+   if (v->hw)
+   {
+      const rh264_hw *hw = v->hw;
+      if (!v->hw_readback || hw->broken)
+         return -1;
+      w = hw->pending_cpu ? hw->pending_w : hw->cpu_w;
+      h = hw->pending_cpu ? hw->pending_h : hw->cpu_h;
+   }
+   else if (!rh264_video_plane(v, 0, NULL, &w, &h))
+      return -1;
+   if (width) *width = w;
+   if (height) *height = h;
+   return w > 0 && h > 0 ? 0 : -1;
+}
+
+int rh264_video_readback(rh264_video *v)
+{
+   if (!v || !v->output_ready)
+      return -1;
+   if (!v->hw)
+      return 0;
+   if (!v->hw_readback || v->hw->broken)
+      return -1;
+   if (v->hw->pending_cpu && rh264_hw_readback_pending(v->hw) != 0)
+   {
+      v->output_ready = 0;
+      return -1;
+   }
+   return v->hw->have_cpu ? 0 : -1;
+}
+
+static void rh264_video_expire_output(rh264_video *v)
+{
+   v->output_ready = 0;
+   /* A busy retry continues the same call and must keep its pending slot. */
+   if (v->hw && !v->hw->retrying)
+      v->hw->pending_cpu = 0;
+}
+
+int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
+{
+   int result;
+   if (!v) return -1;
+   rh264_video_expire_output(v);
+   result = rh264_video_decode_internal(v, data, len);
+   v->output_ready = result == 1;
+   return result;
+}
+
+int rh264_video_drain(rh264_video *v)
+{
+   int result;
+   if (!v) return -1;
+   rh264_video_expire_output(v);
+   result = rh264_video_drain_internal(v);
+   v->output_ready = result == 0;
+   return result;
 }

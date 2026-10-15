@@ -1886,7 +1886,9 @@ static int runloop_video_decode(void *decoder, const uint8_t *data,
       size_t size, struct retro_video_decode_frame *frame)
 {
    rh264_video *v = (rh264_video*)decoder;
-   int result = rh264_video_decode(v, data, size);
+   int result;
+   rh264_video_set_deferred_readback(v, 0);
+   result = rh264_video_decode(v, data, size);
    return result == 1 ? runloop_video_decode_frame(v, frame) : result;
 }
 
@@ -1894,7 +1896,60 @@ static int runloop_video_decode_drain(void *decoder,
       struct retro_video_decode_frame *frame)
 {
    rh264_video *v = (rh264_video*)decoder;
+   rh264_video_set_deferred_readback(v, 0);
    return rh264_video_drain(v) == 0 ? runloop_video_decode_frame(v, frame) : 0;
+}
+
+static int runloop_video_decode_metadata(rh264_video *v,
+      struct retro_video_decode_frame *frame)
+{
+   int width, height;
+   if (!frame || rh264_video_bit_depth(v) != 8
+         || rh264_video_frame_size(v, &width, &height) != 0)
+      return -1;
+   memset(frame, 0, sizeof(*frame));
+   frame->width    = (unsigned)width;
+   frame->height   = (unsigned)height;
+   frame->hardware = rh264_video_is_hw(v) != 0;
+   return 1;
+}
+
+static int runloop_video_decode_ex(void *decoder, const uint8_t *data,
+      size_t size, struct retro_video_decode_frame *frame, unsigned flags)
+{
+   rh264_video *v = (rh264_video*)decoder;
+   int result;
+   if (!v || !frame || (flags & ~RETRO_VIDEO_DECODE_DEFER_PLANES))
+      return -1;
+   rh264_video_set_deferred_readback(v, flags & RETRO_VIDEO_DECODE_DEFER_PLANES);
+   result = rh264_video_decode(v, data, size);
+   if (result != 1)
+      return result;
+   return flags ? runloop_video_decode_metadata(v, frame)
+      : runloop_video_decode_frame(v, frame);
+}
+
+static int runloop_video_decode_drain_ex(void *decoder,
+      struct retro_video_decode_frame *frame, unsigned flags)
+{
+   rh264_video *v = (rh264_video*)decoder;
+   int result;
+   if (!v || !frame || (flags & ~RETRO_VIDEO_DECODE_DEFER_PLANES))
+      return -1;
+   rh264_video_set_deferred_readback(v, flags & RETRO_VIDEO_DECODE_DEFER_PLANES);
+   result = rh264_video_drain(v);
+   if (result != 0)
+      return result == 2 ? 2 : 0;
+   return flags ? runloop_video_decode_metadata(v, frame)
+      : runloop_video_decode_frame(v, frame);
+}
+
+static int runloop_video_decode_get_frame(void *decoder,
+      struct retro_video_decode_frame *frame)
+{
+   rh264_video *v = (rh264_video*)decoder;
+   return rh264_video_readback(v) == 0
+      ? runloop_video_decode_frame(v, frame) : -1;
 }
 
 static void runloop_video_decode_close(void *decoder)
@@ -3215,13 +3270,20 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             struct retro_video_decode_interface *iface =
                (struct retro_video_decode_interface*)data;
-            if (!iface || iface->interface_version != RETRO_VIDEO_DECODE_INTERFACE_VERSION)
+            if (!iface || (iface->interface_version != 1
+                  && iface->interface_version != RETRO_VIDEO_DECODE_INTERFACE_VERSION))
                return false;
             RARCH_LOG("[Environ] GET_VIDEO_DECODE_INTERFACE: H.264 with CPU planes.\n");
             iface->open = runloop_video_decode_open;
             iface->decode = runloop_video_decode;
             iface->drain = runloop_video_decode_drain;
             iface->close = runloop_video_decode_close;
+            if (iface->interface_version >= 2)
+            {
+               iface->decode_ex = runloop_video_decode_ex;
+               iface->drain_ex  = runloop_video_decode_drain_ex;
+               iface->get_frame = runloop_video_decode_get_frame;
+            }
             return true;
          }
 #else
