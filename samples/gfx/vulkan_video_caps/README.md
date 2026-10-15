@@ -184,3 +184,17 @@ validation, covering NV12/P010, resize, cached redraw and software transition.
 Host writes and viewport readbacks are test-only. The separate
 `HARNESS_MOVIE_ONLY=1` lane checks both view handles and slice/crop metadata
 through 130 leases, including clear, backpressure and teardown.
+
+
+Sampled imports request two 64-byte color-header buffers instead of two
+full-frame P010 staging buffers. Device allocations still follow Vulkan memory
+requirements. Copied fallback allocates for its actual NV12/P010 layout;
+idle slots grow on demand and retain capacity across later format switches.
+No buffer or descriptor in a busy slot is replaced. Failed growth preserves
+the old buffer and done timeline, and releases temporary allocations.
+
+The 36-case import oracle starts with sampled NV12/P010 under a simulated
+64-byte storage-buffer limit, then tests copied fallback and format switches.
+It checks requested buffer sizes, no steady-state reallocations, three injected
+growth failures (create/allocate/bind), retry, and a forced busy slot. Native
+HEVC sampling tests also require both staging buffers to remain header-sized.

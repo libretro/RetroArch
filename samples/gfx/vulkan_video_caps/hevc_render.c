@@ -81,6 +81,12 @@ int hevc_render_submit(void *opaque, video_hw_frame_t *hw)
    vulkan_symbol_wrapper_vkCmdCopyImageToBuffer = copy_image_original;
    if (result != VIDEO_TEXTURE_UPDATE_DONE || plane_copies != (frame.plane_views[0] ? 0u : 1u)) return 0;
    hw->abandon = NULL;
+   if (getenv("VULKAN_TEST_REQUIRE_SAMPLED"))
+   {
+      unsigned i;
+      for (i = 0; i < VK_STREAM_SLOTS; i++)
+         if (t->vk.stream_states->staging[i].size != VULKAN_VIDEO_HEADER_WORDS * 4) return 0;
+   }
    return 1;
 }
 

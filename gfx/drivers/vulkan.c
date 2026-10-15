@@ -1526,8 +1526,7 @@ struct vk_stream_state
     * into the texture. VK_NULL_HANDLE for any other. */
    VkDescriptorPool pool;
    VkDescriptorSet set[VK_STREAM_SLOTS];
-   /* An imported texture's: the staging buffers are the GPU's own,
-    * filled by a copy out of the frame (vulkan_import_texture) */
+   /* GPU-owned import headers, enlarged for copied planes if needed. */
    bool import;
 };
 
@@ -13655,12 +13654,62 @@ static uintptr_t vulkan_load_texture_planar(vk_t *vk,
    return (uintptr_t)texture;
 }
 
-/* An imported texture's state: as a planar texture's, but each slot's
- * buffer lives on the device and is filled by the GPU - the header by
- * an update, the planes by a copy out of the frame - so a frame goes
- * from the decoder to the texture without the CPU touching it. */
+/* GPU-owned import slots: color headers, plus copied planes if needed. */
+/* Only an idle slot may replace its buffer or descriptor. */
+static bool vulkan_import_buffer(vk_t *vk, struct vk_stream_state *st,
+      unsigned slot, size_t len)
+{
+   VkBufferCreateInfo info;
+   VkMemoryRequirements req;
+   VkMemoryAllocateInfo alloc;
+   VkDescriptorBufferInfo descriptor;
+   VkWriteDescriptorSet write;
+   VkBuffer buffer = VK_NULL_HANDLE;
+   VkDeviceMemory memory = VK_NULL_HANDLE;
+   VkDevice device = vk->context->device;
+   if (!len || len > vk->context->gpu_properties.limits.maxStorageBufferRange)
+      return false;
+   if (st->staging[slot].size >= len) return true;
+   memset(&info, 0, sizeof(info));
+   info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   info.size = len;
+   info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+   if (vkCreateBuffer(device, &info, NULL, &buffer) != VK_SUCCESS) return false;
+   vkGetBufferMemoryRequirements(device, buffer, &req);
+   alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext = NULL;
+   alloc.allocationSize = req.size;
+   alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+   if (vkAllocateMemory(device, &alloc, NULL, &memory) != VK_SUCCESS
+         || vkBindBufferMemory(device, buffer, memory, 0) != VK_SUCCESS)
+   {
+      vkDestroyBuffer(device, buffer, NULL);
+      if (memory) vkFreeMemory(device, memory, NULL);
+      return false;
+   }
+   descriptor.buffer = buffer;
+   descriptor.offset = 0;
+   descriptor.range = len;
+   memset(&write, 0, sizeof(write));
+   write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   write.dstSet = st->set[slot];
+   write.dstBinding = 4;
+   write.descriptorCount = 1;
+   write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   write.pBufferInfo = &descriptor;
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+   if (st->staging[slot].buffer) vkDestroyBuffer(device, st->staging[slot].buffer, NULL);
+   if (st->staging[slot].memory) vkFreeMemory(device, st->staging[slot].memory, NULL);
+   st->staging[slot].buffer = buffer;
+   st->staging[slot].memory = memory;
+   st->staging[slot].size = len;
+   return true;
+}
+
 static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
-      struct vk_texture *texture)
+      struct vk_texture *texture, size_t len)
 {
    struct vk_stream_state *st = vk->stream_states;
    VkFenceCreateInfo fence_info;
@@ -13670,20 +13719,10 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
    VkDescriptorSetAllocateInfo set_info;
    VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
    VkDevice device = vk->context->device;
-   vulkan_video_layout_t capacity;
-   size_t len;
    unsigned i;
 
-   if (!vulkan_video_layout(&capacity, VIDEO_SCALE_W(texture->dims),
-            VIDEO_SCALE_H(texture->dims), IMAGE_PIXFMT_P010, 0)
-         || capacity.bytes > vk->context->gpu_properties.limits.maxStorageBufferRange)
-   {
-      if (!vulkan_video_layout(&capacity, VIDEO_SCALE_W(texture->dims),
-               VIDEO_SCALE_H(texture->dims), IMAGE_PIXFMT_NV12, 0)
-            || capacity.bytes > vk->context->gpu_properties.limits.maxStorageBufferRange)
-         return NULL;
-   }
-   len = capacity.bytes;
+   if (!len || len > vk->context->gpu_properties.limits.maxStorageBufferRange)
+      return NULL;
    while (st && st->texture != texture)
       st = st->next;
    if (st)
@@ -13744,43 +13783,10 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
 
    for (i = 0; i < VK_STREAM_SLOTS; i++)
    {
-      VkBufferCreateInfo binfo;
-      VkMemoryRequirements req;
-      VkMemoryAllocateInfo alloc;
       VkDescriptorImageInfo image_info;
-      VkDescriptorBufferInfo buffer_info;
-      VkWriteDescriptorSet writes[2];
-
-      binfo.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-      binfo.pNext                 = NULL;
-      binfo.flags                 = 0;
-      binfo.size                  = len;
-      st->staging[i].size          = len;
-      binfo.usage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT
-                                  | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-      binfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-      binfo.queueFamilyIndexCount = 0;
-      binfo.pQueueFamilyIndices   = NULL;
-      if (vkCreateBuffer(device, &binfo, NULL, &st->staging[i].buffer)
-            != VK_SUCCESS)
-      {
-         st->staging[i].buffer = VK_NULL_HANDLE;
-         st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
-         return NULL;
-      }
-      vkGetBufferMemoryRequirements(device, st->staging[i].buffer, &req);
-      alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-      alloc.pNext           = NULL;
-      alloc.allocationSize  = req.size;
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
-            &vk->context->memory_properties, req.memoryTypeBits,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
-      if (     vkAllocateMemory(device, &alloc, NULL, &st->staging[i].memory)
-               != VK_SUCCESS
-            || vkBindBufferMemory(device, st->staging[i].buffer,
-               st->staging[i].memory, 0) != VK_SUCCESS
-            || vkCreateFence(device, &fence_info, NULL, &st->fence[i])
-               != VK_SUCCESS)
+      VkWriteDescriptorSet write;
+      if (vkCreateFence(device, &fence_info, NULL, &st->fence[i]) != VK_SUCCESS
+            || !vulkan_import_buffer(vk, st, i, len))
       {
          st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
          return NULL;
@@ -13788,25 +13794,17 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
       image_info.sampler          = VK_NULL_HANDLE;
       image_info.imageView        = texture->view;
       image_info.imageLayout      = VK_IMAGE_LAYOUT_GENERAL;
-      buffer_info.buffer          = st->staging[i].buffer;
-      buffer_info.offset          = 0;
-      buffer_info.range           = VK_WHOLE_SIZE;
-      writes[0].sType             = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      writes[0].pNext             = NULL;
-      writes[0].dstSet            = st->set[i];
-      writes[0].dstBinding        = 3;
-      writes[0].dstArrayElement   = 0;
-      writes[0].descriptorCount   = 1;
-      writes[0].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-      writes[0].pImageInfo        = &image_info;
-      writes[0].pBufferInfo       = NULL;
-      writes[0].pTexelBufferView  = NULL;
-      writes[1]                   = writes[0];
-      writes[1].dstBinding        = 4;
-      writes[1].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-      writes[1].pImageInfo        = NULL;
-      writes[1].pBufferInfo       = &buffer_info;
-      vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
+      write.sType             = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.pNext             = NULL;
+      write.dstSet            = st->set[i];
+      write.dstBinding        = 3;
+      write.dstArrayElement   = 0;
+      write.descriptorCount   = 1;
+      write.descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      write.pImageInfo        = &image_info;
+      write.pBufferInfo       = NULL;
+      write.pTexelBufferView  = NULL;
+      vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
    }
    return st;
 }
@@ -13834,17 +13832,18 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    unsigned cw = (w + 1) / 2;
    unsigned ch = (h + 1) / 2;
    unsigned slot;
-   size_t y_off, c_off;
+   size_t y_off, c_off, bytes;
    bool sampled = f->plane_views[0] && f->plane_views[1]
       && vk->pipelines.yuv_image_to_rgba8888 != VK_NULL_HANDLE;
 
    if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv) || !f->image
          || ((f->crop_x | f->crop_y) & 1)
-         || texture->dims != f->dims
-         || !(st = vulkan_import_state_get(vk, texture))
-         || layout.bytes > st->staging[0].size)
+         || texture->dims != f->dims)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
+   bytes = sampled ? sizeof(layout.header) : layout.bytes;
+   if (!(st = vulkan_import_state_get(vk, texture, bytes)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    device = vk->context->device;
    slot   = st->next_slot;
    if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
@@ -13853,6 +13852,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
          return VIDEO_TEXTURE_UPDATE_DROPPED;
    }
+   if (!vulkan_import_buffer(vk, st, slot, bytes))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    st->next_slot = slot ^ 1;
 
    y_off = layout.header[2];

@@ -23,7 +23,8 @@ with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     (tmp / 'import_types.inc').write_text('\n'.join(types))
     bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback(')]
-    for signature in ('static struct vk_stream_state *vulkan_import_state_get(',
+    for signature in ('static bool vulkan_import_buffer(',
+                      'static struct vk_stream_state *vulkan_import_state_get(',
                       'static enum video_texture_update vulkan_import_convert(',
                       'static bool vulkan_get_device(',
                       'static void vulkan_movie_input('):
