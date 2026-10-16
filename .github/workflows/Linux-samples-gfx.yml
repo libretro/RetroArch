@@ -1350,6 +1350,13 @@ jobs:
           make -C samples/gfx/vulkan_video_caps direct-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
 
+      - name: Native NVENC D3D12 encoder (portable fallback and hardware gate)
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/nvenc_d3d12 check
+          make -C samples/gfx/nvenc_d3d12 check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |

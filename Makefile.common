@@ -1891,7 +1891,8 @@ endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d12.o
+   OBJ += gfx/drivers/d3d12.o \
+          gfx/common/nvenc_d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
