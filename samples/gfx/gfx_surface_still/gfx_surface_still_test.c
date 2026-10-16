@@ -26,7 +26,8 @@ static uintptr_t st_next = 1;
 static int       st_live, st_loads, st_unloads, st_async;
 /* Updates the stub driver drops, and updates it was handed without
  * an image to read */
-static int       st_drop, st_updates, st_null_updates;
+static int       st_drop, st_updates, st_null_updates, st_refuse, st_load_fail, st_post_fail;
+static enum texture_filter_type st_last_filter;
 static enum video_texture_update st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
 static unsigned st_abandoned, st_released;
 static bool st_lend;
@@ -58,7 +59,13 @@ static void st_saw(void *data)
 bool video_driver_texture_load(void *data,
       enum texture_filter_type filter, uintptr_t *id)
 {
-   (void)filter;
+   st_last_filter = filter;
+   if (st_load_fail)
+   {
+      st_load_fail--;
+      *id = 0;
+      return false;
+   }
    st_saw(data);
    *id = st_next++;
    st_loads++;
@@ -86,6 +93,11 @@ enum video_texture_update video_driver_texture_update(uintptr_t id,
    st_saw(data);
    if (!data)
       st_null_updates++;
+   if (st_refuse)
+   {
+      st_refuse--;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
    if (st_drop > 0)
    {
       st_drop--;
@@ -154,6 +166,11 @@ bool video_thread_lend_ready(int idx) { (void)idx; return true; }
 
 bool video_thread_async_post(video_thread_async_load_t *n)
 {
+   if (st_post_fail)
+   {
+      st_post_fail--;
+      return false;
+   }
    if (!st_async)
       return false;
    n->link.next = NULL;
@@ -188,9 +205,12 @@ static void st_flush(void)
       }
       else if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
       {
-         id         = n->handle;
-         n->dropped = video_driver_texture_update(id, n->img)
-               == VIDEO_TEXTURE_UPDATE_DROPPED;
+         enum video_texture_update result;
+         id = n->handle;
+         result = video_driver_texture_update(id, n->img);
+         n->dropped = result == VIDEO_TEXTURE_UPDATE_DROPPED;
+         if (result == VIDEO_TEXTURE_UPDATE_REFUSED)
+            id = 0;
       }
       else
          video_driver_texture_load(n->img, n->filter, &id);
@@ -431,6 +451,108 @@ static void st_retired_lent_textures(void)
    }
    st_async = 0;
 }
+static void st_still_recovery(void)
+{
+   unsigned fail_load;
+   for (fail_load = 0; fail_load < 2; fail_load++)
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      uintptr_t old;
+      int loads;
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "recovery: initial image");
+      st_flush();
+      old = s->handle;
+      loads = st_loads;
+      st_refuse = 1;
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "recovery: new image");
+      st_flush();
+      CHECK(s->inflight && s->payload && s->handle == old,
+            "refused update lost its image before replacement");
+      st_load_fail = (int)fail_load;
+      st_flush();
+      CHECK(!s->inflight && !s->payload, "recovery did not settle its payload");
+      if (fail_load)
+         CHECK(s->dropped && s->handle == old, "failed replacement was not reported");
+      else
+         CHECK(!s->dropped && s->handle != old && st_loads == loads + 1,
+               "refused update did not load the retained image");
+      gfx_surface_free(s);
+      CHECK(st_live == 0, "recovery leaked textures");
+   }
+   st_load_fail = 0;
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "filter: initial image");
+      gfx_surface_still(&s, TEXTURE_FILTER_LINEAR);
+      st_flush();
+      CHECK(s->inflight && s->payload, "in-flight load lost a changed filter");
+      st_flush();
+      CHECK(!s->inflight && st_last_filter == TEXTURE_FILTER_LINEAR,
+            "requested filter did not replace the installed one");
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "filter: update image");
+      gfx_surface_still(&s, TEXTURE_FILTER_NEAREST);
+      st_flush();
+      CHECK(s->inflight && s->payload, "in-flight update lost a changed filter");
+      st_flush();
+      CHECK(!s->inflight && st_last_filter == TEXTURE_FILTER_NEAREST,
+            "update retained the old texture filter");
+      gfx_surface_free(s);
+   }
+   {
+      enum texture_filter_type filters[2] = {
+         TEXTURE_FILTER_MIPMAP_LINEAR, TEXTURE_FILTER_MIPMAP_NEAREST};
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         gfx_surface_t *s = gfx_surface_new_still(filters[i]);
+         int loads, updates;
+         CHECK(gfx_surface_submit_image(s, st_image(8)), "mips: initial image");
+         st_flush();
+         loads = st_loads;
+         updates = st_updates;
+         CHECK(gfx_surface_submit_image(s, st_image(8)), "mips: replacement image");
+         st_flush();
+         CHECK(st_loads == loads + 1 && st_updates == updates && st_last_filter == filters[i],
+               "mipmapped still reused a stale chain");
+         gfx_surface_free(s);
+      }
+   }
+   {
+      unsigned phase;
+      for (phase = 0; phase < 2; phase++)
+      {
+         gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+         CHECK(gfx_surface_submit_image(s, st_image(8)), "cancel: initial image");
+         st_flush();
+         st_refuse = 1;
+         CHECK(gfx_surface_submit_image(s, st_image(8)), "cancel: replacement image");
+         if (phase)
+            st_flush();
+         gfx_surface_free(s);
+         st_flush();
+         CHECK(st_live == 0 && !st_head, "cancelled recovery leaked work or textures");
+      }
+   }
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      uintptr_t old;
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "post failure: initial image");
+      st_flush();
+      old = s->handle;
+      st_refuse = 1;
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "post failure: replacement image");
+      st_post_fail = 1;
+      st_flush();
+      CHECK(!s->inflight && !s->payload && s->dropped && s->handle == old,
+            "failed recovery post did not settle ownership and failure");
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "post failure: subsequent image");
+      st_flush();
+      CHECK(s->handle != old && !s->dropped, "surface did not recover after post failure");
+      gfx_surface_free(s);
+   }
+   CHECK(st_live == 0, "still recovery/filter tests leaked textures");
+}
+
 int main(void)
 {
    uintptr_t a, b;
@@ -439,6 +561,7 @@ int main(void)
    st_retired_imports();
    st_retired_lent_textures();
    st_async = 1;
+   st_still_recovery();
 
    /* 1. threaded: a same-size image updates the texture up in place
     *    once landed, another size replaces it, and one given while

@@ -341,7 +341,10 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
 {
    uintptr_t new_handle = 0;
 
-   if (s->handle && s->fmt == fmt && s->can_update)
+   if (     s->handle && s->fmt == fmt && s->can_update
+         && s->texture_filter == s->filter
+         && s->filter != TEXTURE_FILTER_MIPMAP_LINEAR
+         && s->filter != TEXTURE_FILTER_MIPMAP_NEAREST)
    {
       enum video_texture_update u = video_driver_texture_update(
             s->handle, &s->img);
@@ -378,6 +381,7 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
    if (s->handle)
       gfx_surface_unload(&s->handle);
    s->handle = new_handle;
+   s->texture_filter = s->filter;
    s->fmt    = fmt;
    return GFX_SURFACE_SUBMIT_DONE;
 }
@@ -416,8 +420,7 @@ static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
  * previous one stays and the format is forgotten so the next submit
  * loads again); an update brought the handle back (0: the driver
  * refused, so from now on this surface loads replacements). The
- * payload goes first and unconditionally: it is the surface's
- * whether or not anyone is still there to be told. */
+ * payload remains until any still retry settles. */
 static void gfx_surface_done(void *user, uintptr_t handle)
 {
    gfx_surface_t *s = (gfx_surface_t*)user;
@@ -453,31 +456,50 @@ static void gfx_surface_done(void *user, uintptr_t handle)
          if (s->handle)
             gfx_surface_unload(&s->handle);
          s->handle = handle;
+         s->texture_filter = s->node.filter;
       }
       else
-         s->fmt    = GFX_SURFACE_FMT_NONE;
+      {
+         s->fmt = GFX_SURFACE_FMT_NONE;
+         s->dropped = 1;
+         GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
+      }
    }
    else if (!handle)
+   {
       s->can_update = 0;
+      s->dropped = 1;
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
+   }
    else if (s->node.lend && !s->node.dropped)
       gfx_surface_lend_adopt(s, slot);
    else if (s->node.dropped)
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
-      /* A still has no next frame to make up for it: sent again, its
-       * pixels and payload kept until it lands. */
-      if (!s->num_slots && !s->dying)
+      s->dropped = 1;
+   }
+
+   /* A still retains its pixels until the replacement settles. */
+   if (     !s->num_slots && !s->dying
+         && s->node.kind != VIDEO_THREAD_ASYNC_IMPORT
+         && (   (s->node.kind == VIDEO_THREAD_ASYNC_UPDATE
+                  && (!handle || s->node.dropped))
+             || (handle && s->texture_filter != s->filter)))
+   {
+      s->node.kind = (   !s->can_update || s->texture_filter != s->filter
+            || s->filter == TEXTURE_FILTER_MIPMAP_LINEAR
+            || s->filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+         ? VIDEO_THREAD_ASYNC_LOAD : VIDEO_THREAD_ASYNC_UPDATE;
+      s->node.img = &s->img;
+      s->node.handle = s->node.kind == VIDEO_THREAD_ASYNC_UPDATE ? s->handle : 0;
+      s->node.filter = s->filter;
+      s->node.dropped = 0;
+      if (video_thread_async_post(&s->node))
       {
-         /* The wrapper let go of the descriptor when it ran the node */
-         s->node.img     = &s->img;
-         s->node.dropped = 0;
-         if (video_thread_async_post(&s->node))
-         {
-            s->inflight = 1;
-            return;
-         }
+         s->inflight = 1;
+         return;
       }
-      s->dropped    = 1;
+      s->dropped = 1;
    }
 
    if (s->payload_free)
@@ -528,7 +550,10 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
 #ifdef HAVE_THREADS
    if (video_driver_thread_wrapper_active())
    {
-      bool need_load = !s->handle || s->fmt != fmt || !s->can_update;
+      bool need_load = !s->handle || s->fmt != fmt || !s->can_update
+         || s->texture_filter != s->filter
+         || s->filter == TEXTURE_FILTER_MIPMAP_LINEAR
+         || s->filter == TEXTURE_FILTER_MIPMAP_NEAREST;
 
       /* A second replacement while a producer still writes memory
        * lent from the first replaced texture is refused, as it is
@@ -1023,6 +1048,7 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
    if (s->handle)
       gfx_surface_unload(&s->handle);
    s->handle = tex;
+   s->texture_filter = s->filter;
    /* A plain load's texture is not one an in-place update knows */
    s->fmt    = GFX_SURFACE_FMT_NONE;
    return true;

@@ -129,6 +129,7 @@ struct gfx_surface
     * answer lands nowhere. Wide enough never to come round on one. */
    uint32_t decode_gen;
    enum texture_filter_type filter;
+   enum texture_filter_type texture_filter;
    uint8_t inflight;
    uint8_t dying;      /* freed while in flight; the completion frees */
    /* Decodes of this surface's image still on the task queue
