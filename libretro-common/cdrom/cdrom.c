@@ -2087,7 +2087,7 @@ struct string_list* cdrom_get_available_drives(void)
    for (i = 0; i < (int)(sizeof(DWORD) * 8); i++)
    {
       char path[]       = {"a:\\"};
-      char cdrom_path[] = {"cdrom://a:/drive-track01.bin"};
+      char cdrom_path[] = {"cdrom://a:/drive.device"};
 
       path[0]          += i;
       cdrom_path[8]    += i;
