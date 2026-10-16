@@ -339,7 +339,7 @@ static void lane_still_sets(void)
       FILE *f;
       char full[64];
       snprintf(names[i], sizeof(names[i]), "gfx_thumb_set_%u.png", i);
-      snprintf(full, sizeof(full), "/tmp/%s", names[i]);
+      snprintf(full, sizeof(full), "./%s", names[i]);
       if ((f = fopen(full, "wb")))
       {
          fputs("png", f);
@@ -353,7 +353,7 @@ static void lane_still_sets(void)
 
    for (i = 0; i < SET_STILLS; i++)
    {
-      gfx_thumbnail_set_content_image(pd, "/tmp", names[i]);
+      gfx_thumbnail_set_content_image(pd, ".", names[i]);
       gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[i],
             0, false);
    }
@@ -389,7 +389,7 @@ static void lane_still_sets(void)
    hp.still_loads = hp.still_sets = hp.set_items = 0;
    for (i = 0; i < 2; i++)
    {
-      gfx_thumbnail_set_content_image(pd, "/tmp", names[i]);
+      gfx_thumbnail_set_content_image(pd, ".", names[i]);
       gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[i],
             0, false);
    }
@@ -403,7 +403,7 @@ static void lane_still_sets(void)
 
    /* an unthreaded queue */
    hp.threaded_queue = 0;
-   gfx_thumbnail_set_content_image(pd, "/tmp", names[0]);
+   gfx_thumbnail_set_content_image(pd, ".", names[0]);
    gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[0], 0, false);
    check("sets", "an unthreaded queue takes each still at once",
          hp.still_loads == 1 && hp.still_sets == 0);
@@ -412,13 +412,129 @@ static void lane_still_sets(void)
    {
       char full[64];
       gfx_thumbnail_reset(&th[i]);
-      snprintf(full, sizeof(full), "/tmp/%s", names[i]);
+      snprintf(full, sizeof(full), "./%s", names[i]);
       remove(full);
    }
    free(pd);
    hp.thumb_cfg      = 0;
    hp.still_loads    = 0;
 }
+
+#ifdef PREVIEW_THREADED
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include "../../../gfx/gfx_surface_player.h"
+
+static retro_eventcount_t retire_wake;
+static retro_atomic_int_t retire_entered;
+static retro_atomic_int_t retire_released;
+
+static bool retire_feed(void *user)
+{
+   retro_atomic_store_release_int(&retire_entered, 1);
+   while (!retro_atomic_load_acquire_int(&retire_released))
+   {
+      int key = retro_eventcount_prepare_wait(&retire_wake);
+      if (!retro_atomic_load_acquire_int(&retire_released))
+         retro_eventcount_commit_wait(&retire_wake, key);
+      else
+         retro_eventcount_cancel_wait(&retire_wake);
+   }
+   return gfx_anim_preview_feed((gfx_anim_preview_t*)user);
+}
+
+static void retire_watchdog(void *unused)
+{
+   (void)unused;
+   retro_sleep(500);
+   retro_atomic_store_release_int(&retire_released, 1);
+   retro_eventcount_notify(&retire_wake);
+}
+
+static void lane_retire(const char *path)
+{
+   gfx_thumbnail_t *th = (gfx_thumbnail_t*)calloc(1, sizeof(*th));
+   gfx_surface_player_t *player;
+   sthread_t *watchdog;
+   int64_t start, deadline;
+   bool retained;
+   int unloads;
+   if (!th)
+   {
+      check("retire", "thumbnail allocated", 0);
+      return;
+   }
+   gfx_thumbnail_init_blank(th);
+   gfx_thumbnail_request_file(path, th, 0);
+   player = (gfx_surface_player_t*)th->anim_player;
+   check("retire", "playback opened for retirement test", player != NULL);
+   if (!player)
+   {
+      gfx_thumbnail_reset(th);
+      free(th);
+      return;
+   }
+   retro_eventcount_init(&retire_wake);
+   retro_atomic_store_relaxed_int(&retire_entered, 0);
+   retro_atomic_store_relaxed_int(&retire_released, 0);
+   player->cb.feed = retire_feed;
+   player->cb.feed_user = th->anim_sess;
+   gfx_thumbnail_animate(th, cpu_features_get_time_usec());
+   deadline = cpu_features_get_time_usec() + 5000000;
+   while (!retro_atomic_load_acquire_int(&retire_entered)
+         && cpu_features_get_time_usec() < deadline)
+      retro_sleep(1);
+   check("retire", "worker entered blocked feeder",
+         retro_atomic_load_acquire_int(&retire_entered));
+   {
+      gfx_surface_t *surface = (gfx_surface_t*)th->anim_surface;
+      check("retire", "producer surface remains available", surface != NULL);
+      if (surface && surface->num_slots > 1)
+      {
+         memset(surface->slots[1], 0, (size_t)VIDEO_SCALE_W(surface->dims)
+               * VIDEO_SCALE_H(surface->dims) * sizeof(uint32_t));
+         check("retire", "texture created beside the held producer",
+               gfx_surface_submit(surface, 1, player->rgba)
+                  == GFX_SURFACE_SUBMIT_DONE);
+      }
+   }
+   unloads = hp.texture_unloads;
+   watchdog = sthread_create(retire_watchdog, NULL);
+   check("retire", "watchdog created", watchdog != NULL);
+   if (!watchdog)
+      retro_atomic_store_release_int(&retire_released, 1);
+   start = cpu_features_get_time_usec();
+   gfx_thumbnail_reset(th);
+   check("retire", "reset returns before the feeder is released",
+         cpu_features_get_time_usec() - start < 100000
+         && !retro_atomic_load_acquire_int(&retire_released));
+   check("retire", "reset detaches playback and producer slots",
+         !th->anim_player && !th->anim_surface && !th->anim_lifetime);
+   check("retire", "reset retains the producer texture",
+         hp.texture_unloads == unloads);
+   retained = !retro_atomic_load_acquire_int(&retire_released);
+   free(th);
+   retro_atomic_store_release_int(&retire_released, 1);
+   retro_eventcount_notify(&retire_wake);
+   if (watchdog)
+      sthread_join(watchdog);
+   if (retained)
+   {
+      deadline = cpu_features_get_time_usec() + 5000000;
+      while (!video_player_stop(player->vp)
+            && cpu_features_get_time_usec() < deadline)
+         retro_sleep(1);
+      check("retire", "retired worker acknowledges completion",
+            video_player_stop(player->vp));
+   }
+   gfx_thumbnail_flush_requests();
+   check("retire", "polling reclaims the retired texture",
+         hp.texture_unloads == unloads + 1);
+   gfx_thumbnail_anim_worker_deinit();
+   retro_eventcount_free(&retire_wake);
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -428,6 +544,9 @@ int main(int argc, char **argv)
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
    }
+#ifdef PREVIEW_THREADED
+   lane_retire(argv[1]);
+#endif
    lane_savestate_thumbnail_path();
    lane_still_sets();
    for (i = 1; i < argc; i++)

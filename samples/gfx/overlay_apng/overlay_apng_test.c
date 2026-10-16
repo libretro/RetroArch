@@ -76,6 +76,7 @@ static void lane_player(rpng_apng_stream_t *st, unsigned w, unsigned h,
    cb.surface = lane_surface;
    cb.shown   = lane_shown;
    cb.feed    = NULL;
+   cb.feed_user = NULL;
    gsp = gfx_surface_player_new(st, IMAGE_TYPE_PNG, loops, &surface, &cb,
          VIDEO_PLAYER_INLINE);
    CHECK(gsp != NULL, "player: new failed");

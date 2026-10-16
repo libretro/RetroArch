@@ -182,3 +182,10 @@ clean:
 	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
 .PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver check-movie-gpu check-still check-hdr clean
+
+# A multi-second movie fixture on a driver that can decode it.
+check-preview:
+	@test -n "$(PREVIEW_FILE)" || { echo "Set PREVIEW_FILE to a movie fixture"; exit 1; }
+	@HARNESS_PREVIEW_FILE="$(PREVIEW_FILE)" $(MAKE) check-driver
+
+.PHONY: check-preview

@@ -253,6 +253,7 @@ typedef struct
    /* The playback (gfx_surface_player_t*): its clock and loops, and
     * the decode, a frame ahead on a worker where there is one. */
    void *anim_player;
+   void *anim_lifetime;
    /* The GPU surface (gfx_surface_t*) the still goes to, and the
     * animation's frames are decoded into and shown from: one
     * persistent texture updated per frame, kept after the animation
@@ -310,6 +311,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_dt         = NULL;
    t->anim_sess       = NULL;
    t->anim_player     = NULL;
+   t->anim_lifetime   = NULL;
    t->anim_surface    = NULL;
    t->anim_buf_len    = 0;
    t->list_id         = 0;

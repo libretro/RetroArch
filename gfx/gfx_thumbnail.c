@@ -385,49 +385,108 @@ static unsigned gfx_thumbnail_anim_threads_wanted(void)
    return config_get_ptr()->uints.menu_thumbnail_preview_threads;
 }
 
+typedef struct gfx_thumbnail_anim_lifetime
+{
+   struct gfx_thumbnail_anim_lifetime *next;
+   gfx_surface_player_t *player;
+   void *surface;
+   gfx_anim_preview_t *session;
+   void *stream;
+   void *buf;
+   struct data_transfer *dt;
+   enum image_type_enum type;
+} gfx_thumbnail_anim_lifetime_t;
+
+static gfx_thumbnail_anim_lifetime_t *gfx_thumb_retired;
+
+static void gfx_thumbnail_anim_dispose(gfx_thumbnail_anim_lifetime_t *life)
+{
+   gfx_surface_player_free(life->player);
+   gfx_surface_free((gfx_surface_t*)life->surface);
+   gfx_anim_preview_release(life->session);
+   image_transfer_anim_stream_free(life->stream, life->type);
+   if (life->dt)
+      data_transfer_free(life->dt);
+   else
+      free(life->buf);
+   free(life);
+}
+
+static void gfx_thumbnail_anim_reap(void)
+{
+   gfx_thumbnail_anim_lifetime_t **link = &gfx_thumb_retired;
+   while (*link)
+   {
+      gfx_thumbnail_anim_lifetime_t *life = *link;
+      if (video_player_stop(life->player->vp))
+      {
+         *link = life->next;
+         gfx_thumbnail_anim_dispose(life);
+      }
+      else
+         link = &life->next;
+   }
+}
+
 void gfx_thumbnail_anim_worker_deinit(void)
 {
    video_player_worker_deinit();
+   gfx_thumbnail_anim_reap();
+}
+
+static void gfx_thumbnail_anim_retired_release(void *user,
+      gfx_surface_t *surface, unsigned slot)
+{
+   (void)user;
+   (void)slot;
+   if (surface->imported && surface->dropped && surface->import.abandon)
+      surface->import.abandon(surface->import.owner, surface->import.done,
+            surface->import.done_value);
 }
 
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
-   /* First: a running decode is waited out and a queued one will not
-    * run, before the stream goes. The slots stay with the surface: one
-    * the video thread still reads outlives the player that filled it. */
-   gfx_surface_player_free((gfx_surface_player_t*)thumbnail->anim_player);
-   thumbnail->anim_player = NULL;
-   /* The shared preview session (gfx_anim_preview) drives the window
-    * feeder and the preview audio; it borrows the stream and mapping
-    * owned below, so stop its audio and release just the session. */
-   if (thumbnail->anim_sess)
+   gfx_thumbnail_anim_lifetime_t *life =
+      (gfx_thumbnail_anim_lifetime_t*)thumbnail->anim_lifetime;
+   if (life)
    {
-      gfx_anim_preview_audio_stop((gfx_anim_preview_t*)thumbnail->anim_sess);
-      gfx_anim_preview_release((gfx_anim_preview_t*)thumbnail->anim_sess);
-      thumbnail->anim_sess = NULL;
+      life->player  = (gfx_surface_player_t*)thumbnail->anim_player;
+      life->session = (gfx_anim_preview_t*)thumbnail->anim_sess;
+      life->stream  = thumbnail->anim;
+      life->buf     = thumbnail->anim_buf;
+      life->dt      = thumbnail->anim_dt;
+      life->type    = (enum image_type_enum)thumbnail->anim_type;
+      gfx_anim_preview_audio_stop(life->session);
+      if (!life->player || video_player_stop(life->player->vp))
+         gfx_thumbnail_anim_dispose(life);
+      else
+      {
+         gfx_surface_t *surface = (gfx_surface_t*)thumbnail->anim_surface;
+         /* The decoder still borrows slots and its window feeder. */
+         life->surface = surface;
+         life->player->surface = &life->surface;
+         if (surface)
+         {
+            surface->release = gfx_thumbnail_anim_retired_release;
+            surface->user = NULL;
+         }
+         thumbnail->anim_surface = NULL;
+         thumbnail->texture = 0;
+         life->next = gfx_thumb_retired;
+         gfx_thumb_retired = life;
+      }
    }
-   if (thumbnail->anim)
-      image_transfer_anim_stream_free(thumbnail->anim,
-            (enum image_type_enum)thumbnail->anim_type);
-   /* Stream first, buffer second: the stream borrows the buffer.
-    * An adopted animation's buffer lives inside the nbio handle
-    * (possibly as a file mapping) and is released with it; only the
-    * open-by-path fallback malloc's anim_buf. */
-   if (thumbnail->anim_dt)
-      /* Deselected before the adopted read finished: the transfer
-       * cancels the in-flight read before releasing the handle - the
-       * rest of the file is never read. */
-      data_transfer_free(thumbnail->anim_dt);
-   else if (thumbnail->anim_buf)
-      free(thumbnail->anim_buf);
-   thumbnail->anim            = NULL;
-   thumbnail->anim_buf        = NULL;
-   thumbnail->anim_dt         = NULL;
-   thumbnail->anim_buf_len    = 0;
-   thumbnail->anim_type       = 0;
+   thumbnail->anim_player       = NULL;
+   thumbnail->anim_lifetime     = NULL;
+   thumbnail->anim_sess         = NULL;
+   thumbnail->anim              = NULL;
+   thumbnail->anim_buf          = NULL;
+   thumbnail->anim_dt           = NULL;
+   thumbnail->anim_buf_len      = 0;
+   thumbnail->anim_type         = 0;
    thumbnail->anim_read_pending = 0;
-   thumbnail->anim_windowed   = 0;
-   thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
+   thumbnail->anim_windowed     = 0;
+   thumbnail->flags            &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
 }
 
 static gfx_surface_t *gfx_thumbnail_anim_surface(void *user,
@@ -437,8 +496,7 @@ static void gfx_thumbnail_anim_shown(void *user, gfx_surface_t *s);
 /* The playback's window feed, on the thread that decodes. */
 static bool gfx_thumbnail_anim_feed(void *user)
 {
-   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
-   return gfx_anim_preview_feed((gfx_anim_preview_t*)thumbnail->anim_sess);
+   return gfx_anim_preview_feed((gfx_anim_preview_t*)user);
 }
 
 /* Install an open animation stream on the thumbnail, applying the
@@ -489,6 +547,10 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
          goto fail;
    }
 
+   if (!(thumbnail->anim_lifetime = calloc(1,
+               sizeof(gfx_thumbnail_anim_lifetime_t))))
+      goto fail;
+
    /* The task hands the buffer over as the data_transfer that owns
     * it - possibly with its fill still in flight. */
    thumbnail->anim_dt = xfer;
@@ -498,6 +560,8 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
        * must never feed the decoders - keep the still, drop the
        * animation */
       thumbnail->anim_dt = NULL;
+      free(thumbnail->anim_lifetime);
+      thumbnail->anim_lifetime = NULL;
       goto fail;
    }
 
@@ -553,6 +617,7 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       cb.surface = gfx_thumbnail_anim_surface;
       cb.shown   = gfx_thumbnail_anim_shown;
       cb.feed    = thumbnail->anim_sess ? gfx_thumbnail_anim_feed : NULL;
+      cb.feed_user = thumbnail->anim_sess;
       /* frames decoded on the GPU where the stream and driver can */
       if (!(thumbnail->anim_player = gfx_surface_player_new(stream, type,
             loop_count, &thumbnail->anim_surface, &cb,
@@ -832,6 +897,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    int64_t now = (int64_t)current_time;
    enum image_type_enum type;
 
+   gfx_thumbnail_anim_reap();
    if (   !thumbnail
        || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
        || !thumbnail->anim)
@@ -1113,6 +1179,7 @@ static bool gfx_thumbnail_push_still(gfx_thumbnail_tag_t *tag,
 void gfx_thumbnail_flush_requests(void)
 {
    unsigned width, cap, i = 0, n = gfx_thumb_pending_n;
+   gfx_thumbnail_anim_reap();
    if (!n)
       return;
    gfx_thumb_pending_n = 0;

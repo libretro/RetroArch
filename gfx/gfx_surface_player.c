@@ -188,7 +188,7 @@ static enum video_player_present gfx_surface_player_present(void *user,
 static bool gfx_surface_player_feed(void *user)
 {
    gfx_surface_player_t *gsp = (gfx_surface_player_t*)user;
-   return gsp->cb.feed(gsp->cb.user);
+   return gsp->cb.feed(gsp->cb.feed_user);
 }
 
 static void gfx_surface_player_decoded(void *user, enum video_player_how how)

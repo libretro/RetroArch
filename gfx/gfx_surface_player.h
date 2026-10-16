@@ -40,6 +40,7 @@ RETRO_BEGIN_DECLS
 typedef struct gfx_surface_player_cbs
 {
    void *user;
+   void *feed_user;
    /* The surface for @num_slots slots of @dims in @pixfmt, made or
     * reused; NULL: asked again on a later frame. No slots in
     * IMAGE_PIXFMT_NV12: an imported surface (GFX_SURFACE_PLAYER_GPU). */

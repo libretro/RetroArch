@@ -5977,6 +5977,7 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
          cb.surface = input_overlay_anim_surface;
          cb.shown   = input_overlay_anim_shown;
          cb.feed    = NULL;
+         cb.feed_user = NULL;
          /* Overlays loop whatever the file says: an animated control
           * surface is for that. */
          if (!(gsp = gfx_surface_player_new(ol->anim_stream[i],

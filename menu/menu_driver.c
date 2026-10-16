@@ -7540,6 +7540,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                && menu_st->driver_ctx->context_destroy)
             menu_st->driver_ctx->context_destroy(menu_st->userdata);
 
+         /* Retired previews must finish before the video device goes,
+          * including when the menu itself is being reused. */
+         gfx_thumbnail_anim_worker_deinit();
+
          if (menu_st->flags & MENU_ST_FLAG_DATA_OWN)
             return true;
 
@@ -7645,12 +7649,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);
             menu_st->thumbnail_path_data    = NULL;
-
-            /* The menu driver's free() above has reset every
-             * gfx_thumbnail_t, so the animated-thumbnail decode
-             * worker is idle and can be torn down (it is recreated
-             * lazily if the menu comes back). */
-            gfx_thumbnail_anim_worker_deinit();
 
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);

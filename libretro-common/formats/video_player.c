@@ -55,6 +55,7 @@
 #define VP_THREADED    (1 << 9)
 #define VP_BEHIND      (1 << 10)
 #define VP_HW          (1 << 11)
+#define VP_STOPPED     (1 << 12)
 
 enum vp_job_status
 {
@@ -756,7 +757,7 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
 
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 {
-   if (!p)
+   if (!p || (p->flags & VP_STOPPED))
       return VIDEO_PLAYER_ENDED;
 
    if (!(p->flags & VP_STARTED))
@@ -820,6 +821,35 @@ void video_player_slot_released(video_player_t *p, unsigned slot)
    (void)p;
    (void)slot;
 #endif
+}
+
+bool video_player_stop(video_player_t *p)
+{
+   bool stopped = true;
+   if (!p)
+      return true;
+   p->flags |= VP_STOPPED;
+#ifdef VIDEO_PLAYER_WORKER
+   if (p->job[0])
+   {
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         vp_job_t *job = p->job[i];
+         int status = retro_atomic_load_acquire_int(&job->status);
+         if (status == VP_JOB_QUEUED)
+         {
+            if (retro_atomic_cas_int(&job->status,
+                     VP_JOB_QUEUED, VP_JOB_CANCELLED))
+               continue;
+            status = retro_atomic_load_acquire_int(&job->status);
+         }
+         if (status == VP_JOB_RUNNING)
+            stopped = false;
+      }
+   }
+#endif
+   return stopped;
 }
 
 void video_player_free(video_player_t *p)

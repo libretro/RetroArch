@@ -10256,6 +10256,7 @@ static void lane_movie_ring(void)
 
 #include "hdr_surface.h"
 #include "still_surface.h"
+#include "preview_surface.h"
 
 int main(int argc, char *argv[])
 {
@@ -10305,7 +10306,7 @@ int main(int argc, char *argv[])
       fprintf(cfg, "input_driver = \"null\"\n");
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
       fprintf(cfg, "menu_driver = \"%s\"\n",
-            getenv("HARNESS_STILL_ONLY") ? "ozone" : "rgui");
+            (getenv("HARNESS_STILL_ONLY") || getenv("HARNESS_PREVIEW_FILE")) ? "ozone" : "rgui");
       fprintf(cfg, "video_threaded = \"false\"\n");
       fprintf(cfg, "video_vsync = \"false\"\n");
       fprintf(cfg, "menu_pause_libretro = \"true\"\n");
@@ -10396,6 +10397,12 @@ int main(int argc, char *argv[])
    run_frames(5);
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
+
+   if (getenv("HARNESS_PREVIEW_FILE"))
+   {
+      lane_preview_surface(getenv("HARNESS_PREVIEW_FILE"));
+      goto shutdown;
+   }
 
    if (getenv("HARNESS_STILL_ONLY"))
    {
