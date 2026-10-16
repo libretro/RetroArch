@@ -25,6 +25,9 @@ static const led_driver_t *current_led_driver = NULL;
  * input/input_output_store.h). One slot per LED. */
 static output_store_t led_store;
 
+/* Every LED index led_driver_set_led() accepts has a slot. */
+typedef char led_store_fits[(MAX_LEDS <= OUTPUT_STORE_SLOTS) ? 1 : -1];
+
 static void null_led_init(void) { }
 static void null_led_free(void) { }
 static void null_led_set(int led, int state) { }
@@ -65,12 +68,10 @@ void led_driver_init(const char *led_driver)
       current_led_driver  = &keyboard_led_driver;
 #endif
 
+   (*current_led_driver->init)();
 
-   if (current_led_driver)
-      (*current_led_driver->init)();
-
-   if (!string_is_equal(drivername, "null"))
-      RARCH_LOG("[LED] Using driver: \"%s\".\n", led_driver);
+   if (current_led_driver != &null_led_driver)
+      RARCH_LOG("[LED] Using driver: \"%s\".\n", current_led_driver->ident);
 }
 
 void led_driver_free(void)
@@ -81,6 +82,7 @@ void led_driver_free(void)
 
    if (current_led_driver)
       (*current_led_driver->free)();
+   current_led_driver = NULL;
 }
 
 /* Used by RETRO_ENVIRONMENT_GET_LED_INTERFACE.

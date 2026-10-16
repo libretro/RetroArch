@@ -11,18 +11,23 @@
  *      the last flush once, lowest first, with its last state, even
  *      when that state is the one it already had.
  *   4. A state reaches the driver as 0 or 1.
- *   5. An index outside 0 to MAX_LEDS - 1 is ignored.
+ *   5. An index outside 0 to MAX_LEDS - 1 is ignored. The store's
+ *      slot range bounds it as well; led_driver.c asserts at compile
+ *      time that MAX_LEDS fits in it.
  *   6. No name, "null" and an unknown name choose the null driver.
+ *      Only a real driver is logged, under its own name.
  *   7. Choosing a driver forgets what was set and not yet flushed.
  *   8. With threads setting LEDs while the main thread flushes, every
  *      LED ends on its thread's last state, and the driver is only
  *      called on the flushing thread.
  *   9. Freeing writes what is pending, then frees the driver.
+ *      Nothing reaches it after that.
  *
  * The recorder below stands in for "overlay": led_driver.c is built
  * with HAVE_OVERLAY, so led_driver_init("overlay") chooses it. */
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -44,7 +49,19 @@ static unsigned failures = 0;
       } \
    } while (0)
 
-void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
+/* led_driver.c logs one line, naming the driver: its argument, and
+ * how many lines. */
+static const char *logged;
+static unsigned    n_logs;
+
+void RARCH_LOG(const char *fmt, ...)
+{
+   va_list ap;
+   va_start(ap, fmt);
+   logged = va_arg(ap, const char*);
+   va_end(ap);
+   n_logs++;
+}
 
 /* The driver: every call it got, in order. */
 enum { EV_INIT = 1, EV_FREE, EV_SET };
@@ -242,6 +259,26 @@ static void test_null_driver(void)
    }
 }
 
+/* 6 */
+static void test_log(void)
+{
+   static const char *names[] = { NULL, "null", "bogus" };
+   unsigned i;
+
+   for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+   {
+      n_logs = 0;
+      led_driver_init(names[i]);
+      CHECK(n_logs == 0, "choosing the null driver logged a driver");
+   }
+
+   n_logs    = 0;
+   logged    = NULL;
+   led_driver_init("overlay");
+   CHECK(n_logs == 1 && logged && !strcmp(logged, "recorder"),
+         "the driver chosen was not logged under its own name");
+}
+
 /* 7 */
 static void test_drop_on_init(void)
 {
@@ -335,12 +372,11 @@ static void test_free(void)
          && event_is(1, EV_FREE, 0, 0),
          "freeing did not write what was pending, then free once");
 
-   /* Freeing leaves the driver chosen: it still gets writes. */
    reset();
    led_driver_set_led(3, 1);
    led_driver_flush();
-   CHECK(n_sets == 1 && event_is(0, EV_SET, 3, 1),
-         "a freed driver no longer gets writes");
+   led_driver_free();
+   CHECK(n_events == 0, "a freed driver was called");
 }
 
 int main(void)
@@ -351,6 +387,7 @@ int main(void)
    test_init();
    test_flush();
    test_null_driver();
+   test_log();
    test_drop_on_init();
    test_threads();
    test_free();
