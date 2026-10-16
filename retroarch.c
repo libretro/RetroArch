@@ -2080,9 +2080,11 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * the in-flight frame still references, producing
     * use-after-free crashes on D3D12/Vulkan under threaded video.
     *
+    * The wrapper decides, not the setting: turning threaded video
+    * off clears the setting before this runs.
+    *
     * No-op when threaded video is not active. */
    if (     (flags & (DRIVER_VIDEO_AND_INPUT_MASK | DRIVER_MENU_MASK))
-         && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
          && video_st->thread_wrapper_active)
       video_thread_wait_idle();
 #endif

@@ -416,6 +416,90 @@ static void lane_toggle_cycle(unsigned cycles)
 /*   is what a resolution or fullscreen change does.                  */
 /* ------------------------------------------------------------------ */
 
+#ifdef HAVE_GFX_WIDGETS
+#include "../../../gfx/gfx_widgets.h"
+
+static void set_driver(thread_video_t *thr, const video_driver_t *driver);
+
+/* ------------------------------------------------------------------ */
+/* Lane: turning threaded video off waits out the frame in flight      */
+/*   The setting is cleared before the reinit, so driver_uninit() must */
+/*   wait on the wrapper being up, not on the setting: a frame still   */
+/*   drawing the widgets would see them taken away under it.           */
+/* ------------------------------------------------------------------ */
+
+static const video_driver_t *wolane_inner;
+static video_driver_t        wolane_driver;
+static retro_atomic_int_t    wolane_slow;
+static retro_atomic_int_t    wolane_frames;
+static retro_atomic_int_t    wolane_raced;
+
+static bool wolane_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if (retro_atomic_load_acquire_int(&wolane_slow))
+   {
+      dispgfx_widget_t *w = dispwidget_get_ptr();
+      int had             = retro_atomic_load_acquire_int(&w->worker);
+      retro_time_t until  = cpu_features_get_time_usec() + 500000;
+      retro_atomic_fetch_add_int(&wolane_frames, 1);
+      /* Drawing until the widgets go, or long enough that the
+       * teardown would have reached them */
+      while (     had
+            &&  retro_atomic_load_acquire_int(&w->worker)
+            &&  cpu_features_get_time_usec() < until) { }
+      if (had && !retro_atomic_load_acquire_int(&w->worker))
+         retro_atomic_store_release_int(&wolane_raced, 1);
+   }
+   return wolane_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static void lane_threaded_off_in_flight(void)
+{
+   unsigned had = failures;
+   dispgfx_widget_t *w;
+   thread_video_t *thr;
+
+   set_threaded_via_setting(true);
+   run_frames(6);
+   expect_wrapper(true, "threaded-off lane");
+   w = dispwidget_get_ptr();
+   if (!retro_atomic_load_acquire_int(&w->worker))
+   {
+      fprintf(stderr, "[skip] threaded-off lane (no widgets on this driver)\n");
+      set_threaded_via_setting(false);
+      return;
+   }
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+   video_thread_wait_idle();
+   thr                 = (thread_video_t*)video_state_get_ptr()->data;
+   wolane_inner        = thr->driver;
+   wolane_driver       = *thr->driver;
+   wolane_driver.frame = wolane_frame;
+   set_driver(thr, &wolane_driver);
+   retro_atomic_store_release_int(&wolane_raced, 0);
+   retro_atomic_store_release_int(&wolane_frames, 0);
+   retro_atomic_store_release_int(&wolane_slow, 1);
+   /* A frame still drawing, then straight off */
+   run_frames(1);
+   set_threaded_via_setting(false);
+   retro_atomic_store_release_int(&wolane_slow, 0);
+   expect_wrapper(false, "threaded-off lane");
+   CHECK(retro_atomic_load_acquire_int(&wolane_frames) > 0,
+         "threaded-off lane: no frame was in flight");
+   CHECK(!retro_atomic_load_acquire_int(&wolane_raced),
+         "threaded-off lane: the widgets went while a frame drew them");
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] threaded-off lane\n");
+}
+#endif
+
 static void lane_reinit_under_wrapper(unsigned reps)
 {
    unsigned had = failures;
@@ -10163,6 +10247,9 @@ int main(int argc, char *argv[])
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
    lane_reinit_under_wrapper(cycles / 2 + 1);
+#ifdef HAVE_GFX_WIDGETS
+   lane_threaded_off_in_flight();
+#endif
    lane_toggle_in_game(cycles);
    lane_swap_count();
    lane_stats_snapshot();
