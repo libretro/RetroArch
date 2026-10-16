@@ -182,18 +182,12 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
    {
       D3D12_RESOURCE_DESC desc;
       ID3D12Device *device = NULL;
-#ifdef __MINGW32__
       D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get_desc)(ID3D12Resource*, D3D12_RESOURCE_DESC*);
-#endif
       if (!c->textures[i]) return NULL;
       for (j = 0; j < i; j++) if (c->textures[j] == c->textures[i]) return NULL;
-#ifdef __MINGW32__
-      /* COM's aggregate return is explicit with MinGW. */
+      /* Use COM's explicit return buffer across SDK header versions. */
       memcpy(&get_desc, &((ID3D12Resource*)c->textures[i])->lpVtbl->GetDesc, sizeof(get_desc));
       get_desc((ID3D12Resource*)c->textures[i], &desc);
-#else
-      desc = ID3D12Resource_GetDesc((ID3D12Resource*)c->textures[i]);
-#endif
       if (desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || desc.Width != c->width
             || desc.Height != c->height || desc.DepthOrArraySize != 1 || desc.MipLevels != 1
             || desc.SampleDesc.Count != 1 || desc.Format != dxgi[c->format]) return NULL;
