@@ -766,6 +766,9 @@ struct ozone_handle
     * pass then keeps the view where it is, rather than re-deriving
     * it from the selection. */
    bool preserve_scroll_on_compute;
+   /* A cursor fade began this iteration; the compute pass may
+    * animate the scroll along with it. */
+   bool cursor_fade_started;
 
    struct
    {
@@ -4491,6 +4494,7 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
    {
       /* Cursor animation */
       ozone->animations.cursor_alpha = 0.0f;
+      ozone->cursor_fade_started     = true;
 
       entry.cb                       = NULL;
       entry.duration                 = ANIMATION_CURSOR_DURATION;
@@ -4503,7 +4507,10 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
       gfx_animation_push(&entry);
    }
    else
+   {
       ozone->animations.cursor_alpha = 1.0f;
+      ozone->cursor_fade_started     = false;
+   }
 
 end:
    ozone_entries_update_thumbnail_bar(ozone, config_get_ptr()->bools.savestate_thumbnail_enable,
@@ -5141,10 +5148,14 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
 
    /* Cursor animation */
    if (pointer_led)
+   {
       ozone->animations.cursor_alpha = 1.0f;
+      ozone->cursor_fade_started     = false;
+   }
    else
    {
       ozone->animations.cursor_alpha = 0.0f;
+      ozone->cursor_fade_started     = true;
 
       entry.cb             = NULL;
       entry.duration       = ANIMATION_CURSOR_DURATION;
@@ -5287,6 +5298,7 @@ static void ozone_refresh_sidebars(ozone_handle_t *ozone,
    if (ozone->depth == 1)
    {
       ozone->animations.cursor_alpha     = 1.0f;
+      ozone->cursor_fade_started         = false;
       ozone->animations.scroll_y_sidebar = ozone_sidebar_get_scroll_y(ozone, video_height);
    }
 
@@ -5906,6 +5918,7 @@ static void ozone_update_scroll(ozone_handle_t *ozone,
    {
       /* Cursor animation */
       ozone->animations.cursor_alpha = 0.0f;
+      ozone->cursor_fade_started     = true;
 
       entry.cb             = NULL;
       entry.duration       = ANIMATION_CURSOR_DURATION;
@@ -5979,7 +5992,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    bool selection_changed        = (ozone->selection != menu_st->selection_ptr);
    bool animate_scroll           = (menu_show_sublabels && menu_current_sel_only
          && !cursor_in_sidebar && !draw_old_list && sidebar_at_target
-         && (ozone->animations.cursor_alpha == 0.0f));
+         && ozone->cursor_fade_started);
    bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
@@ -6169,7 +6182,10 @@ compute_sublabel:
       ozone_update_scroll(ozone, animate_scroll, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
       if (   menu_show_sublabels && menu_current_sel_only && !cursor_in_sidebar
           && !cursor_in_sidebar_old && !animate_scroll)
+      {
          ozone->animations.cursor_alpha = 1.0f;
+         ozone->cursor_fade_started     = false;
+      }
    }
 }
 
@@ -10699,6 +10715,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Animations */
       ozone->animations.cursor_alpha      = 1.0f;
+      ozone->cursor_fade_started          = false;
       ozone->animations.scroll_y          = 0.0f;
       ozone->animations.list_alpha        = 1.0f;
       ozone->animations.alpha             = 1.0f;
@@ -11080,6 +11097,7 @@ static void ozone_render(void *data,
             ozone->theme->screensaver_tint,
             dims,
             settings->paths.directory_assets);
+      ozone->cursor_fade_started = false;
       GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
       return;
    }
@@ -11588,6 +11606,7 @@ static void ozone_render(void *data,
    if (i >= entries_end)
       menu_st->entries.begin = 0;
 
+   ozone->cursor_fade_started = false;
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 
    /* The frame's thumbnail requests go out together */

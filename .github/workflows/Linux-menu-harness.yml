@@ -26,6 +26,7 @@ on:
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
+      - 'samples/menu/ozone_sublabel_scroll/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
@@ -50,6 +51,7 @@ on:
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
+      - 'samples/menu/ozone_sublabel_scroll/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
@@ -276,6 +278,20 @@ jobs:
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test materialui
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test contentless
           make -C samples/menu/menu_icon_ownership clean
+
+      - name: Build and run ozone_sublabel_scroll_test
+        shell: bash
+        run: |
+          set -eu
+          # Ozone with sublabels on the selected entry only: a selection
+          # change asking for no animation moves the list at once, an
+          # animated one tweens and fades the cursor once, the list
+          # behind the sidebar follows a new selection, and a selection
+          # past the end is not taken for a new one on every compute.
+          # Shares the non-Qt build made above.
+          samples/menu/ozone_sublabel_scroll/build.sh
+          ./samples/menu/ozone_sublabel_scroll/ozone_sublabel_scroll_test
+          make -C samples/menu/ozone_sublabel_scroll clean
 
       - name: Build and run menu_mouse_click_test
         shell: bash
