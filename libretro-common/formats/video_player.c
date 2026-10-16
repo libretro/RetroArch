@@ -83,6 +83,7 @@ typedef struct vp_job
                               waiting on a cancelled job            */
    video_player_t *owner;  /* read by the worker only while RUNNING */
    uint32_t *frame;        /* the slot this job decodes into        */
+   unsigned stride;        /* row stride in pixels, for this job    */
    int duration_ms;        /* of the READY frame                    */
    int32_t loops_left;     /* -1 forever                            */
    /* enum vp_job_status. The worker's READY / FINISHED store is a
@@ -144,6 +145,40 @@ static void vp_swizzle(uint32_t *dst, const uint32_t *src, size_t n)
       uint32_t px = src[i];
       dst[i]      = (px & 0xFF00FF00u)
             | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+   }
+}
+
+static unsigned vp_slot_stride(video_player_t *p, unsigned slot)
+{
+   unsigned stride = p->sink.slot_stride
+      ? p->sink.slot_stride(p->sink.user, slot) : p->width;
+   if (stride < p->width || (p->height && (size_t)stride
+            > SIZE_MAX / ((p->flags & VIDEO_PLAYER_FP16) ? 8 : 4) / p->height))
+      return 0;
+   return stride;
+}
+
+static void vp_copy_frame(uint32_t *dst, const uint32_t *src,
+      unsigned width, unsigned height, unsigned stride, unsigned src_stride,
+      bool swizzle)
+{
+   unsigned y;
+   if (stride == width && src_stride == width)
+   {
+      if (swizzle)
+         vp_swizzle(dst, src, (size_t)width * height);
+      else
+         memcpy(dst, src, (size_t)width * height * sizeof(*dst));
+      return;
+   }
+   for (y = 0; y < height; y++)
+   {
+      if (swizzle)
+         vp_swizzle(dst, src, width);
+      else
+         memcpy(dst, src, (size_t)width * sizeof(*dst));
+      dst += stride;
+      src += src_stride;
    }
 }
 
@@ -274,8 +309,8 @@ static int vp_job_step(vp_job_t *job)
          job->rgba ? 0 : 1);
    /* The video streams decode into the slot; APNG and WEBP hand out
     * their canvas, copied below. */
-   direct = image_transfer_anim_stream_set_output(stream, type,
-         job->frame);
+   direct = image_transfer_anim_stream_set_output_stride(stream, type,
+         job->frame, job->stride);
 
    vp_pool_sync();
    image_transfer_anim_stream_set_blit_pool(stream, type, vp_pool,
@@ -299,17 +334,26 @@ static int vp_job_step(vp_job_t *job)
       how = VIDEO_PLAYER_DIRECT;
    }
    else if (direct && frame == job->frame)
+   {
       how = VIDEO_PLAYER_DIRECT;
+      if (!job->rgba && !native)
+      {
+         vp_copy_frame(job->frame, frame, p->width, p->height,
+               job->stride, job->stride, true);
+         how = VIDEO_PLAYER_SWIZZLE;
+      }
+   }
    else if (job->rgba || native)
    {
       /* decouples the slot from the canvas the next decode rewrites */
-      memcpy(job->frame, frame,
-            (size_t)p->width * p->height * sizeof(uint32_t));
+      vp_copy_frame(job->frame, frame, p->width, p->height,
+            job->stride, p->width, false);
       how = VIDEO_PLAYER_COPY;
    }
    else
    {
-      vp_swizzle(job->frame, frame, (size_t)p->width * p->height);
+      vp_copy_frame(job->frame, frame, p->width, p->height,
+            job->stride, p->width, true);
       how = VIDEO_PLAYER_SWIZZLE;
    }
    if (p->sink.decoded)
@@ -491,6 +535,13 @@ static bool vp_job_start(video_player_t *p, vp_job_t *job)
    if (     !(p->flags & VP_HW)
          && !(buf = p->sink.slot_begin(p->sink.user, slot)))
       return false;
+   if (!(p->flags & VP_HW) && !(job->stride = vp_slot_stride(p, slot)))
+   {
+      if (p->sink.slot_end)
+         p->sink.slot_end(p->sink.user, slot);
+      retro_atomic_store_relaxed_int(&job->status, VP_JOB_FINISHED);
+      return false;
+   }
    job->frame = buf;
    vp_job_enqueue(job);
    return true;
@@ -623,6 +674,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    enum video_player_present res;
    const uint32_t *frame;
    uint32_t *buf        = NULL;
+   unsigned stride     = p->width;
    bool direct          = false;
    bool native;
    bool rgba            = (p->flags & VIDEO_PLAYER_RGBA) ? true : false;
@@ -681,8 +733,14 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    {
       if (!(buf = p->sink.slot_begin(p->sink.user, 0)))
          return VIDEO_PLAYER_PLAYING;
-      direct = image_transfer_anim_stream_set_output(p->stream, p->type,
-            buf);
+      if (!(stride = vp_slot_stride(p, 0)))
+      {
+         if (p->sink.slot_end)
+            p->sink.slot_end(p->sink.user, 0);
+         return VIDEO_PLAYER_ENDED;
+      }
+      direct = image_transfer_anim_stream_set_output_stride(p->stream, p->type,
+            buf, stride);
    }
 
    /* the feed sits beside the decode, as on the worker */
@@ -706,10 +764,17 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       fr.how = VIDEO_PLAYER_DIRECT;
    }
    else if (direct && frame == buf)
+   {
       fr.how = VIDEO_PLAYER_DIRECT;
+      if (!rgba && !native)
+      {
+         vp_copy_frame(buf, frame, p->width, p->height, stride, stride, true);
+         fr.how = VIDEO_PLAYER_SWIZZLE;
+      }
+   }
    else if (buf && !rgba && !native)
    {
-      vp_swizzle(buf, frame, (size_t)p->width * p->height);
+      vp_copy_frame(buf, frame, p->width, p->height, stride, p->width, true);
       fr.how = VIDEO_PLAYER_SWIZZLE;
    }
    else

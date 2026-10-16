@@ -15,6 +15,7 @@ SOURCES := companion_thumbs_test.c \
            $(LRC)/rthreads/retro_eventcount.c \
            $(LRC)/rthreads/tpool.c \
            $(LRC)/features/features_cpu.c \
+           $(LRC)/time/rtime.c \
            $(LRC)/compat/compat_strl.c \
            $(LRC)/compat/compat_strldup.c \
            $(LRC)/string/stdstring.c \

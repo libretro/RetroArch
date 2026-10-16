@@ -215,8 +215,10 @@ void video_thread_async_poll(void)
 #endif
 
 /* No driver lends upload memory here: every slot stays the surface's. */
-void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch, size_t *out_pitch)
 {
+   if (out_pitch)
+      *out_pitch = pitch;
    (void)id; (void)slot; (void)pitch;
    return NULL;
 }

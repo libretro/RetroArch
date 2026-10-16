@@ -99,8 +99,8 @@ struct gfx_surface
     * cancelled upload cannot strand it. NULL otherwise. */
    gfx_surface_payload_free_t payload_free;
    void *payload;
-   /* Each slot is a frame of @pixfmt: VIDEO_SCALE_AREA(dims) times
-    * IMAGE_PIXFMT_BPP(pixfmt) bytes. */
+   /* Each slot is a frame of @pixfmt, with rows pitch[i] bytes apart.
+    * Owned slots are packed; opted-in producers may borrow wider rows. */
    uint32_t *slots[GFX_SURFACE_MAX_SLOTS];
    /* The surface's own slot memory. Under direct video a slot whose
     * texture the driver can stream may instead be lent upload memory
@@ -114,6 +114,12 @@ struct gfx_surface
     * turns to the spare while the GPU still reads the current one. */
    uint32_t *own_slots[GFX_SURFACE_MAX_SLOTS];
    uint32_t *lent_spare;
+   /* A replaced texture retains these until the producer ends. */
+   uint32_t *producer_mem[GFX_SURFACE_MAX_SLOTS];
+   size_t pitch[GFX_SURFACE_MAX_SLOTS];
+   size_t producer_pitch[GFX_SURFACE_MAX_SLOTS];
+   size_t lent_spare_pitch;
+   size_t img_pitch;
    /* The texture, 0 until a submit has completed. A replacement load
     * in flight leaves the previous texture here, drawable, until the
     * new one arrives. */
@@ -130,6 +136,8 @@ struct gfx_surface
    uint32_t decode_gen;
    enum texture_filter_type filter;
    enum texture_filter_type texture_filter;
+   /* Producer honours pitch[]; otherwise lending requires packed rows. */
+   uint8_t padded;
    uint8_t inflight;
    uint8_t dying;      /* freed while in flight; the completion frees */
    /* Decodes of this surface's image still on the task queue
@@ -237,10 +245,10 @@ typedef struct
     * streaming producer keeps one texture rather than loading a
     * replacement per frame. */
    bool can_update;
-   /* Row pitch in bytes the upload wants for @width pixels of
+   /* Packed upload row pitch in bytes for @width pixels of
     * @preferred, and the alignment the first row should start on.
     * Both are what the current upload paths use; a producer that can
-    * honour them saves the repack. */
+    * honour them saves the repack. Streaming lends report slot pitches separately. */
    size_t pitch;
    unsigned align;
 } gfx_surface_requirements_t;

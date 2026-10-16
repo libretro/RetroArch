@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <retro_timers.h>
+#endif
 
 #include <boolean.h>
 #include <retro_atomic.h>
@@ -228,9 +231,10 @@ bool image_transfer_anim_stream_set_argb(void *stream,
    (void)stream; (void)type;
    return argb != 0;
 }
-bool image_transfer_anim_stream_set_output(void *stream,
-      enum image_type_enum type, uint32_t *out)
+bool image_transfer_anim_stream_set_output_stride(void *stream,
+      enum image_type_enum type, uint32_t *out, unsigned stride)
 {
+   (void)stride;
    (void)stream; (void)type; (void)out;
    return false;
 }
@@ -374,15 +378,30 @@ static void watchdog(int sig)
    _exit(1);
 }
 
+#ifdef _WIN32
+static void watchdog_thread(void *unused)
+{
+   (void)unused;
+   retro_sleep(120000);
+   watchdog(0);
+}
+#endif
+
 int main(void)
 {
    companion_thumbs_t *t;
    sink_t k;
    char path[64];
    unsigned i, round;
-
+#ifdef _WIN32
+   sthread_t *timer = sthread_create(watchdog_thread, NULL);
+   if (!timer)
+      return 1;
+   sthread_detach(timer);
+#else
    signal(SIGALRM, watchdog);
    alarm(120);
+#endif
    thread_lock = slock_new();
    memset(&k, 0, sizeof(k));
    for (i = 0; i < 8; i++)

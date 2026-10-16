@@ -10256,6 +10256,7 @@ static void lane_movie_ring(void)
 
 #include "hdr_surface.h"
 #include "still_surface.h"
+#include "surface_pitch.h"
 #include "preview_surface.h"
 
 int main(int argc, char *argv[])
@@ -10404,6 +10405,12 @@ int main(int argc, char *argv[])
       goto shutdown;
    }
 
+   if (getenv("HARNESS_SURFACE_PITCH_ONLY"))
+   {
+      lane_surface_pitch();
+      goto shutdown;
+   }
+
    if (getenv("HARNESS_STILL_ONLY"))
    {
       lane_still_surface();
@@ -10509,6 +10516,7 @@ int main(int argc, char *argv[])
    lane_surface_update();
    lane_surface_external();
    lane_surface_lend();
+   lane_surface_pitch();
    lane_surface_planar();
    lane_surface_import();
    lane_movie_gpu();

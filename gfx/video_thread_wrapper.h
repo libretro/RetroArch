@@ -244,6 +244,8 @@ typedef struct video_thread_async_load
    uint8_t lend;
    int8_t  lent_idx[2];
    void   *lent_mem[2];
+   size_t  lent_pitch[2];
+   uint8_t lend_padded;
 } video_thread_async_load_t;
 
 /* Deep enough for the burst an overlay issues between two frames - one
@@ -420,6 +422,7 @@ typedef struct thread_video
    {
       void *mem;
       uintptr_t id;
+      size_t pitch;
       retro_atomic_int_t busy;
       unsigned slot;
       bool used;

@@ -346,8 +346,10 @@ static void gt_lend_unload(uintptr_t id)
       }
 }
 
-void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch, size_t *out_pitch)
 {
+   if (out_pitch)
+      *out_pitch = pitch;
    if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !pitch)
       return NULL;
    if ((int)slot == gt_lend_refuse)

@@ -189,3 +189,8 @@ check-preview:
 	@HARNESS_PREVIEW_FILE="$(PREVIEW_FILE)" $(MAKE) check-driver
 
 .PHONY: check-preview
+
+check-pitch:
+	HARNESS_SURFACE_PITCH_ONLY=1 $(MAKE) check-driver
+
+.PHONY: check-pitch

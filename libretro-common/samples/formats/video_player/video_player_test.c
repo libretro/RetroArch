@@ -65,6 +65,7 @@ typedef struct
 {
    uint32_t canvas[N];
    uint32_t *out;
+   unsigned out_stride;
    int frames;
    int pos;
    int wait_left;
@@ -131,8 +132,8 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    }
    dst = (f->direct && f->out) ? f->out : f->canvas;
    for (i = 0; i < N; i++)
-      dst[i] = frame_px(f->pos,
-            f->honours_order ? f->argb : 0);
+      dst[(f->direct && f->out) ? (i / W) * f->out_stride + i % W : i]
+         = frame_px(f->pos, f->honours_order ? f->argb : 0);
    f->pos++;
    *duration_ms = f->duration_ms;
    return dst;
@@ -197,12 +198,13 @@ bool image_transfer_anim_stream_set_argb(void *stream,
    return f->honours_order;
 }
 
-bool image_transfer_anim_stream_set_output(void *stream,
-      enum image_type_enum type, uint32_t *out)
+bool image_transfer_anim_stream_set_output_stride(void *stream,
+      enum image_type_enum type, uint32_t *out, unsigned stride)
 {
    fake_t *f = (fake_t*)stream;
    (void)type;
    f->out = out;
+   f->out_stride = stride ? stride : W;
    return f->direct;
 }
 
@@ -246,7 +248,8 @@ bool image_transfer_anim_stream_set_blit_pool(void *stream,
 
 typedef struct
 {
-   uint32_t slots[2][N];
+   uint32_t slots[2][(W + 3) * H];
+   unsigned stride[2];
    int seen[MAX_SEEN];
    int nseen;
    int bad_px;
@@ -304,7 +307,9 @@ static enum video_player_present sink_present(void *user,
    want_argb = frame_px(idx, true);
    for (i = 0; i < N; i++)
    {
-      uint32_t p = px[i];
+      unsigned stride = !fr->pixels && k->stride[fr->slot]
+         ? k->stride[fr->slot] : W;
+      uint32_t p = px[(i / W) * stride + i % W];
       if (!fr->native)
          p = (p & 0xFF00FF00u) | ((p & 0xFF) << 16) | ((p >> 16) & 0xFF);
       if (p != want_argb)
@@ -375,6 +380,7 @@ static void sink_init(sink_t *k, video_player_sink_t *s, bool slots)
    s->feed       = NULL;
    s->decoded    = NULL;
    s->start_hw   = NULL;
+   s->slot_stride = NULL;
 }
 
 /* A sink that takes GPU frames, and slots for any other. */
@@ -725,8 +731,58 @@ static void lane_churn(void)
 }
 #endif
 
+static unsigned sink_slot_stride(void *user, unsigned slot)
+{
+   return ((sink_t*)user)->stride[slot];
+}
+
+static void lane_padded(void)
+{
+   unsigned threaded, direct, order;
+   for (threaded = 0; threaded < 2; threaded++)
+   for (direct = 0; direct < 2; direct++)
+   for (order = 0; order < 2; order++)
+   {
+      fake_t f;
+      sink_t k;
+      video_player_sink_t s;
+      video_player_t *p;
+      unsigned tick, slot, y, x;
+      int state = VIDEO_PLAYER_PLAYING;
+      fake_init(&f, 6, 10);
+      f.direct = direct != 0;
+      f.honours_order = order != 0;
+      sink_init(&k, &s, true);
+      k.stride[0] = W + 1;
+      k.stride[1] = W + 3;
+      s.slot_stride = sink_slot_stride;
+      for (slot = 0; slot < 2; slot++)
+         for (x = 0; x < (W + 3) * H; x++)
+            k.slots[slot][x] = 0xdeadbeef;
+      p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+            threaded ? 0 : VIDEO_PLAYER_INLINE);
+      CHECK(p != NULL, "padded: allocation");
+      if (!p) continue;
+      for (tick = 0; tick < 1000 && state != VIDEO_PLAYER_ENDED; tick++)
+      {
+         state = video_player_poll(p, (int64_t)tick * 1000);
+         retro_sleep(1);
+      }
+      video_player_free(p);
+      CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 6 && !k.bad_px,
+            "padded: mode %u/%u/%u showed %d frames, %d wrong pixels",
+            threaded, direct, order, k.nseen, k.bad_px);
+      for (slot = 0; slot < 2; slot++)
+         for (y = 0; y < H; y++)
+            for (x = W; x < k.stride[slot]; x++)
+               CHECK(k.slots[slot][y * k.stride[slot] + x] == 0xdeadbeef,
+                     "padded: slot %u row %u guard", slot, y);
+   }
+}
+
 int main(void)
 {
+   lane_padded();
    lane_inline_pacing(false);
    lane_inline_pacing(true);
    lane_catchup();

@@ -30,8 +30,11 @@ static int       st_drop, st_updates, st_null_updates, st_refuse, st_load_fail, 
 static enum texture_filter_type st_last_filter;
 static enum video_texture_update st_import_result = VIDEO_TEXTURE_UPDATE_REFUSED;
 static unsigned st_abandoned, st_released;
-static bool st_lend;
-static uint32_t st_lent_pixels[2][16];
+static bool st_lend, st_fp16;
+static uint32_t st_lent_pixels[2][64];
+static size_t st_lend_pitch[2];
+static unsigned st_lend_busy;
+static int st_load_lent;
 static uintptr_t st_last_unloaded;
 static video_thread_async_load_t *st_head, *st_tail;
 /* The first and last word of the last frame the driver read */
@@ -52,7 +55,7 @@ static void st_saw(void *data)
    if (ti && ti->pixels && ti->width && ti->height)
    {
       st_px_first = ti->pixels[0];
-      st_px_last  = ti->pixels[(size_t)ti->width * ti->height - 1];
+      st_px_last  = ti->pixels[(size_t)ti->width * ti->height * (ti->fp16 ? 2 : 1) - 1];
    }
 }
 
@@ -65,6 +68,12 @@ bool video_driver_texture_load(void *data,
       st_load_fail--;
       *id = 0;
       return false;
+   }
+   if (st_lend_pitch[0] && data)
+   {
+      const struct texture_image *img = (const struct texture_image*)data;
+      if (img->pixels == st_lent_pixels[0] || img->pixels == st_lent_pixels[1])
+         st_load_lent++;
    }
    st_saw(data);
    *id = st_next++;
@@ -114,7 +123,8 @@ unsigned video_driver_get_disp_flags(void) { return 0; }
 static int st_yuv420;
 bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
 {
-   return fmt == TEXTURE_GPU_FORMAT_YUV420 && st_yuv420;
+   return (fmt == TEXTURE_GPU_FORMAT_YUV420 && st_yuv420)
+      || (st_fp16 && (fmt == TEXTURE_GPU_FORMAT_RGBA16F || fmt == TEXTURE_GPU_FORMAT_SCRGB));
 }
 
 /* As the frontend fits an image, from this stub's own answers */
@@ -127,10 +137,16 @@ bool video_driver_texture_fit(struct texture_image *ti)
    return !ti->fp16
       || video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F);
 }
-void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch, size_t *out_pitch)
 {
-   if (st_lend && id && slot < 2 && pitch == 4 * sizeof(uint32_t))
+   size_t actual = slot < 2 && st_lend_pitch[slot] ? st_lend_pitch[slot] : pitch;
+   if (st_lend && id && slot < 2 && pitch == 4 * (st_fp16 ? 8 : sizeof(uint32_t))
+         && actual >= pitch && (out_pitch || actual == pitch))
+   {
+      if (out_pitch)
+         *out_pitch = actual;
       return st_lent_pixels[slot];
+   }
    return NULL;
 }
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
@@ -157,12 +173,14 @@ enum video_texture_update video_driver_texture_import(uintptr_t *id,
 
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
 {
-   (void)id; (void)slot;
-   return true;
+   (void)id;
+   return !(st_lend_busy & (1u << slot));
 }
 
-/* Nothing is lent here: the wrapper's records never exist */
-bool video_thread_lend_ready(int idx) { (void)idx; return true; }
+bool video_thread_lend_ready(int idx)
+{
+   return !(st_lend_busy & (1u << idx));
+}
 
 bool video_thread_async_post(video_thread_async_load_t *n)
 {
@@ -211,6 +229,20 @@ static void st_flush(void)
          n->dropped = result == VIDEO_TEXTURE_UPDATE_DROPPED;
          if (result == VIDEO_TEXTURE_UPDATE_REFUSED)
             id = 0;
+         if (result == VIDEO_TEXTURE_UPDATE_DONE && n->lend)
+         {
+            const struct texture_image *img = (const struct texture_image*)n->img;
+            unsigned slot;
+            for (slot = 0; slot < 2; slot++)
+               if (n->lend & (1u << slot))
+               {
+                  size_t pitch = img->width * (img->fp16 ? 8 : 4);
+                  n->lent_mem[slot] = video_driver_texture_lend(id, slot, pitch,
+                        n->lend_padded ? &pitch : NULL);
+                  n->lent_pitch[slot] = pitch;
+                  n->lent_idx[slot] = n->lent_mem[slot] ? (int8_t)slot : -1;
+               }
+         }
       }
       else
          video_driver_texture_load(n->img, n->filter, &id);
@@ -451,6 +483,106 @@ static void st_retired_lent_textures(void)
    }
    st_async = 0;
 }
+static void st_pitched_write(gfx_surface_t *s, unsigned slot, uint32_t value)
+{
+   unsigned x, y;
+   unsigned words = 4 * IMAGE_PIXFMT_BPP(s->pixfmt) / sizeof(uint32_t);
+   for (y = 0; y < 4; y++)
+      for (x = 0; x < words; x++)
+         ((uint32_t*)((uint8_t*)s->slots[slot] + y * s->pitch[slot]))[x]
+            = value + y * words + x;
+}
+
+static void st_pitched_lending(void)
+{
+   unsigned threaded, active, format, i;
+   for (format = 0; format < 2; format++)
+   for (threaded = 0; threaded < 2; threaded++)
+   for (active = 0; active < 2; active++)
+   {
+      gfx_surface_t *s;
+      uintptr_t old;
+      int unloaded;
+      st_async = (int)threaded;
+      st_lend = true;
+      st_fp16 = format != 0;
+      st_lend_pitch[0] = format ? 48 : 24;
+      st_lend_pitch[1] = format ? 64 : 32;
+      st_load_lent = 0;
+      memset(st_lent_pixels, 0xa5, sizeof(st_lent_pixels));
+      s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 2,
+            format ? IMAGE_PIXFMT_FP16 : IMAGE_PIXFMT_8888,
+            TEXTURE_FILTER_LINEAR, NULL, NULL);
+      CHECK(s != NULL, "pitched surface allocation");
+      if (!s) continue;
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      CHECK(!s->lent, "packed producer received padded memory");
+      s->padded = 1;
+      for (i = 0; i < 2; i++)
+      {
+         gfx_surface_submit(s, i, false);
+         st_flush();
+      }
+      CHECK(s->lent == 3 && s->pitch[0] == st_lend_pitch[0] && s->pitch[1] == st_lend_pitch[1],
+            "padded pitches not carried through lending");
+      if (active)
+         gfx_surface_slot_begin(s, 1);
+      st_pitched_write(s, 0, 0x100);
+      st_pitched_write(s, 1, 0x200);
+      CHECK(st_lent_pixels[0][format ? 8 : 4] == 0xa5a5a5a5u
+            && st_lent_pixels[1][format ? 8 : 4] == 0xa5a5a5a5u, "row padding overwritten");
+      old = s->handle;
+      unloaded = st_unloads;
+      s->filter = TEXTURE_FILTER_NEAREST;
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      CHECK(!st_load_lent && st_px_first == 0x100 && st_px_last == 0x100 + (format ? 32 : 16) - 1,
+            "replacement load did not repack padded rows");
+      if (active)
+      {
+         CHECK(s->retired_handle == old && st_unloads == unloaded,
+               "writing producer lost its texture");
+         gfx_surface_slot_end(s, 1);
+         CHECK(!s->retired_handle, "settled producer retained texture");
+      }
+      for (i = 0; i < (format ? 32u : 16u); i++)
+         CHECK(s->own_slots[1][i] == 0x200 + i,
+               "replacement lost %s producer pixel %u", active ? "writing" : "ready", i);
+      gfx_surface_free(s);
+      st_flush();
+      st_lend_pitch[0] = st_lend_pitch[1] = 0;
+      st_lend = false;
+   }
+   st_async = 0;
+   st_fp16 = false;
+   {
+      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
+            IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+      uint32_t pixels[16];
+      if (!s) return;
+      s->padded = 1;
+      st_lend = true;
+      st_lend_pitch[0] = 24;
+      st_lend_pitch[1] = 32;
+      gfx_surface_submit(s, 0, false);
+      CHECK(s->pitch[0] == 24 && s->lent_spare_pitch == 32, "one-slot pitches");
+      st_lend_busy = 1;
+      CHECK(gfx_surface_slot_writable(s, 0) && s->pitch[0] == 32,
+            "one-slot pitch did not follow spare");
+      for (i = 0; i < 16; i++) pixels[i] = i + 0x300;
+      gfx_surface_submit_pixels(s, pixels, false);
+      CHECK(st_lent_pixels[1][8] == 0x304 && st_lent_pixels[1][24] == 0x30c,
+            "external canvas was not copied row by row");
+      st_lend_busy = 0;
+      gfx_surface_free(s);
+      st_lend = false;
+      st_lend_pitch[0] = st_lend_pitch[1] = 0;
+   }
+}
+
 static void st_still_recovery(void)
 {
    unsigned fail_load;
@@ -560,6 +692,7 @@ int main(void)
    st_decode_lock = slock_new();
    st_retired_imports();
    st_retired_lent_textures();
+   st_pitched_lending();
    st_async = 1;
    st_still_recovery();
 

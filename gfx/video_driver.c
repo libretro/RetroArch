@@ -4997,7 +4997,7 @@ bool video_driver_texture_can_update(void)
 }
 
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
-      size_t pitch)
+      size_t pitch, size_t *out_pitch)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
@@ -5007,7 +5007,7 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
 #endif
    if (!id || !poke || !poke->texture_lend || !video_st->data)
       return NULL;
-   return poke->texture_lend(video_st->data, id, slot, pitch);
+   return poke->texture_lend(video_st->data, id, slot, pitch, out_pitch);
 }
 
 bool video_driver_get_device(video_device_info_t *info)

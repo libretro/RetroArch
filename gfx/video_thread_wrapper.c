@@ -1656,8 +1656,8 @@ static void video_thread_lend_mark(thread_video_t *thr, uintptr_t id,
 }
 
 /* Video thread: lend the slots an update asked for, now that the
- * texture streams. The pitch is the image's rows, as the producer
- * writes them. */
+ * texture streams. Pitch-aware producers receive the backend's rows;
+ * other producers require packed rows. */
 static void video_thread_lend_slots(thread_video_t *thr,
       video_thread_async_load_t *n, const struct texture_image *img)
 {
@@ -1667,6 +1667,7 @@ static void video_thread_lend_slots(thread_video_t *thr,
    {
       int i;
       void *mem;
+      size_t actual = pitch;
       if (!(n->lend & (1u << slot)))
          continue;
       /* Asked again, as for a surface that took none of a partial
@@ -1677,21 +1678,26 @@ static void video_thread_lend_slots(thread_video_t *thr,
             break;
       if (i < VIDEO_THREAD_LEND_MAX)
       {
+         if (!n->lend_padded && thr->lend[i].pitch != pitch)
+            continue;
          n->lent_mem[slot] = thr->lend[i].mem;
+         n->lent_pitch[slot] = thr->lend[i].pitch;
          n->lent_idx[slot] = (int8_t)i;
          continue;
       }
       for (i = 0; i < VIDEO_THREAD_LEND_MAX && thr->lend[i].used; i++) ;
       if (     i == VIDEO_THREAD_LEND_MAX
             || !(mem = thr->poke->texture_lend(thr->driver_data,
-                  n->handle, slot, pitch)))
+                  n->handle, slot, pitch, n->lend_padded ? &actual : NULL)))
          continue;
       thr->lend[i].mem  = mem;
+      thr->lend[i].pitch = actual;
       thr->lend[i].id   = n->handle;
       thr->lend[i].slot = slot;
       thr->lend[i].used = true;
       retro_atomic_store_relaxed_int(&thr->lend[i].busy, 0);
       n->lent_mem[slot] = mem;
+      n->lent_pitch[slot] = actual;
       n->lent_idx[slot] = (int8_t)i;
    }
 }

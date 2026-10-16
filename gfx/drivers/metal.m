@@ -9042,7 +9042,7 @@ static enum video_texture_update metal_update_texture(void *video_data,
 /* On the driver's own thread (see texture_lend in video_driver.h):
  * the slot's staging memory, where the update's blit reads from */
 static void *metal_texture_lend(void *video_data, uintptr_t handle,
-      unsigned slot, size_t pitch)
+      unsigned slot, size_t pitch, size_t *out_pitch)
 {
    void *mem = NULL;
    if (!video_data || !handle || slot >= 2)
@@ -9062,6 +9062,8 @@ static void *metal_texture_lend(void *video_data, uintptr_t handle,
       t->_stagingLent |= 1u << slot;
       mem = (uint8_t *)t.staging.contents + (NSUInteger)slot * len;
    }
+   if (mem && out_pitch)
+      *out_pitch = pitch;
    return mem;
 }
 

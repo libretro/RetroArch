@@ -39,6 +39,7 @@ static int gfx_surface_player_start(void *user, unsigned width,
    if (!(s = gsp->cb.surface(gsp->cb.user,
          VIDEO_SCALE_PACK(width, height), num_slots, pixfmt)))
       return -1;
+   s->padded     = 1;
    gsp->rgba     = have_req && req.rgba;
    gsp->threaded = num_slots > 1;
    return (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
@@ -137,6 +138,21 @@ static uint32_t *gfx_surface_player_slot_begin(void *user, unsigned slot)
    return s->slots[slot];
 }
 
+static unsigned gfx_surface_player_slot_stride(void *user, unsigned slot)
+{
+   gfx_surface_player_t *gsp = (gfx_surface_player_t*)user;
+   gfx_surface_t *s = (gfx_surface_t*)*gsp->surface;
+   size_t stride;
+   unsigned bpp;
+   if (!s || slot >= s->num_slots)
+      return 0;
+   bpp = IMAGE_PIXFMT_BPP(s->pixfmt);
+   stride = s->pitch[slot] / bpp;
+   if (s->pitch[slot] % bpp || stride > UINT32_MAX)
+      return 0;
+   return (unsigned)stride;
+}
+
 static void gfx_surface_player_slot_end(void *user, unsigned slot)
 {
    gfx_surface_player_t *gsp = (gfx_surface_player_t*)user;
@@ -232,6 +248,7 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
    sink.user       = gsp;
    sink.start      = gfx_surface_player_start;
    sink.slot_begin = gfx_surface_player_slot_begin;
+   sink.slot_stride = gfx_surface_player_slot_stride;
    sink.slot_end   = gfx_surface_player_slot_end;
    sink.present    = gfx_surface_player_present;
    sink.feed       = cb->feed ? gfx_surface_player_feed : NULL;

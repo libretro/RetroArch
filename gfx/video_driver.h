@@ -1195,7 +1195,9 @@ typedef struct video_poke_interface
     * texture_lend hands out slot @slot of texture @id's upload memory,
     * mapped and writable, when its rows lie the @pitch bytes apart the
     * caller writes them at; NULL, with nothing lent, otherwise. The
-    * memory is the texture's until it is unloaded. update_texture given a texture_image whose pixels
+    * memory is the texture's until it is unloaded. Non-NULL @out_pitch
+    * permits wider rows and receives their actual pitch; NULL requires
+    * an exact match. update_texture given a texture_image whose pixels
     * are a lent slot uploads from there; with any slot lent, an update
     * from other memory only ever goes through the slots not lent.
     *
@@ -1203,7 +1205,7 @@ typedef struct video_poke_interface
     * false while the GPU may still read the last upload from it. Never
     * waits. */
    void *(*texture_lend)(void *video_data, uintptr_t id, unsigned slot,
-         size_t pitch);
+         size_t pitch, size_t *out_pitch);
    bool (*texture_lend_ready)(void *video_data, uintptr_t id,
          unsigned slot);
 
@@ -2418,7 +2420,7 @@ bool video_driver_texture_can_update(void);
  * true under the thread wrapper, whose lends come back with an update
  * node, or with a driver that lends nothing. Main thread. */
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
-      size_t pitch);
+      size_t pitch, size_t *out_pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
 
 /* get_device / import_texture of the active driver. The import is

@@ -9146,10 +9146,13 @@ static enum video_texture_update gl2_update_texture(void *video_data,
 #ifdef HAVE_GL_TEXTURE_LEND
 /* On the context's thread (see texture_lend in video_driver.h) */
 static void *gl2_texture_lend(void *data, uintptr_t id, unsigned slot,
-      size_t pitch)
+      size_t pitch, size_t *out_pitch)
 {
    gl2_t *gl = (gl2_t*)data;
-   return gl ? gl_texture_lend(&gl->lend, (unsigned)id, slot, pitch) : NULL;
+   void *mem = gl ? gl_texture_lend(&gl->lend, (unsigned)id, slot, pitch) : NULL;
+   if (mem && out_pitch)
+      *out_pitch = pitch;
+   return mem;
 }
 
 static bool gl2_texture_lend_ready(void *data, uintptr_t id,

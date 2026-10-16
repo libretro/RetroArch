@@ -14726,14 +14726,17 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
 /* On the driver's own thread (see texture_lend in video_driver.h): the
  * lent slot's fence is read on the thread that submits its copies. */
 static void *vulkan_texture_lend(void *data, uintptr_t id, unsigned slot,
-      size_t pitch)
+      size_t pitch, size_t *out_pitch)
 {
    vk_t                   *vk = (vk_t*)data;
    struct vk_stream_state *st;
    if (     !vk || slot >= VK_STREAM_SLOTS
          || !(st = vulkan_stream_state_get(vk, (struct vk_texture*)id))
-         || (size_t)st->staging[slot].stride != pitch)
+         || (size_t)st->staging[slot].stride < pitch
+         || (!out_pitch && (size_t)st->staging[slot].stride != pitch))
       return NULL;
+   if (out_pitch)
+      *out_pitch = (size_t)st->staging[slot].stride;
    st->lent |= 1u << slot;
    return st->staging[slot].mapped;
 }

@@ -83,6 +83,7 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
    {
       s->slots[i]     = (uint32_t*)(base + i * frame_len);
       s->own_slots[i] = s->slots[i];
+      s->pitch[i]     = (size_t)VIDEO_SCALE_W(dims) * IMAGE_PIXFMT_BPP(pixfmt);
    }
 
    s->release    = release;
@@ -134,9 +135,8 @@ bool gfx_surface_query_requirements(unsigned width,
    if ((size_t)width > ((size_t)-1) / IMAGE_PIXFMT_BPP(req->preferred))
       return false;
    req->can_update = video_driver_texture_can_update();
-   /* Every upload path in the tree takes tightly packed rows; the
-    * alignment is what the GL paths set (glPixelStorei) and what the
-    * others are happy with. */
+   /* Ordinary uploads use packed rows. Streaming lends negotiate
+    * each slot's pitch separately. */
    req->pitch      = (size_t)width * IMAGE_PIXFMT_BPP(req->preferred);
    req->align      = 4;
    return true;
@@ -219,6 +219,23 @@ static bool gfx_surface_must_narrow(uint32_t pixfmt)
       && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2);
 }
 
+/* Replacement loads consume packed rows, even after a padded lend. */
+static void gfx_surface_pack(gfx_surface_t *s)
+{
+   size_t row = (size_t)s->img.width * (s->img.fp16 ? 8 : 4);
+   unsigned y;
+   const uint8_t *src;
+   uint8_t *dst;
+   if (!s->num_slots || s->img.planar || s->img_pitch <= row)
+      return;
+   src = (const uint8_t*)s->img.pixels;
+   dst = (uint8_t*)s->own_slots[s->inflight_slot];
+   for (y = 0; y < s->img.height; y++)
+      memcpy(dst + (size_t)y * row, src + (size_t)y * s->img_pitch, row);
+   s->img.pixels = s->own_slots[s->inflight_slot];
+   s->img_pitch = row;
+}
+
 /* s->img for an upload of @pixels in @pixfmt, and the texture key it
  * makes: the layout bit above the channel order, which is all an
  * in-place update has to agree with. A 2101010 frame the driver cannot
@@ -229,6 +246,12 @@ static bool gfx_surface_must_narrow(uint32_t pixfmt)
 static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
       uint32_t pixfmt, bool rgba, bool is_slot, uint8_t *fmt)
 {
+   unsigned i;
+   s->img_pitch = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(pixfmt);
+   if (is_slot)
+      for (i = 0; i < s->num_slots; i++)
+         if (pixels == s->slots[i])
+            s->img_pitch = s->pitch[i];
    s->img.pixels        = (uint32_t*)pixels;
    s->img.width         = VIDEO_SCALE_W(s->dims);
    s->img.height        = VIDEO_SCALE_H(s->dims);
@@ -256,6 +279,7 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
          {
             if (!is_slot)
                return false;
+            gfx_surface_pack(s);
             image_texture_narrow_10bit(&s->img);
          }
          break;
@@ -273,13 +297,25 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
  * marshals each call itself. */
 /* Every slot back on the surface's own memory, before the texture
  * that owns the lent memory is replaced or unloaded. */
-static void gfx_surface_unlend(gfx_surface_t *s)
+static void gfx_surface_unlend(gfx_surface_t *s, bool preserve)
 {
    unsigned i;
    if (!s->lent)
       return;
    for (i = 0; i < s->num_slots; i++)
+   {
+      size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+      if (preserve && s->slots[i] != s->own_slots[i]
+            && !(s->writing & (1u << i)))
+      {
+         unsigned y;
+         for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
+            memcpy((uint8_t*)s->own_slots[i] + (size_t)y * row,
+                  (const uint8_t*)s->slots[i] + (size_t)y * s->pitch[i], row);
+      }
       s->slots[i] = s->own_slots[i];
+      s->pitch[i] = row;
+   }
    s->lent_spare  = NULL;
    s->lent        = 0;
    s->lent_cur    = 0;
@@ -300,8 +336,8 @@ static bool gfx_surface_lend_ready(const gfx_surface_t *s, unsigned dslot)
 
 /* After a direct submit of @slot: the texture streams, so the next
  * frame for the slot can be written where the driver uploads it from,
- * and the copy into that memory goes away. Rows as tightly packed as
- * the slot's own; the driver lends only memory laid out so. A surface
+ * and the copy into that memory goes away. A pitch-aware producer can
+ * take padded rows; other producers require packed rows. A surface
  * of two slots or more borrows the driver slot of the same number: its
  * producer alternates them, so one is written while the other's copy
  * runs. A surface of one slot borrows both driver slots at once, and
@@ -309,7 +345,7 @@ static bool gfx_surface_lend_ready(const gfx_surface_t *s, unsigned dslot)
  * have each frame wait on the last one's copy. */
 static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
 {
-   size_t pitch;
+   size_t pitch, actual, spare_pitch;
    void *mem, *spare;
    if (     slot >= s->num_slots || (s->lent & (1u << slot))
          || !s->handle || !s->can_update
@@ -317,19 +353,26 @@ static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
          || GFX_SURFACE_IS_PLANAR(s))
       return;
    pitch = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+   actual = spare_pitch = pitch;
    if (s->num_slots >= 2)
    {
-      if ((mem = video_driver_texture_lend(s->handle, slot, pitch)))
+      if ((mem = video_driver_texture_lend(s->handle, slot, pitch,
+                  s->padded ? &actual : NULL)))
       {
          s->slots[slot] = (uint32_t*)mem;
+         s->pitch[slot] = actual;
          s->lent       |= 1u << slot;
       }
       return;
    }
-   if (     (mem   = video_driver_texture_lend(s->handle, 0, pitch))
-         && (spare = video_driver_texture_lend(s->handle, 1, pitch)))
+   if (     (mem = video_driver_texture_lend(s->handle, 0, pitch,
+                  s->padded ? &actual : NULL))
+         && (spare = video_driver_texture_lend(s->handle, 1, pitch,
+                  s->padded ? &spare_pitch : NULL)))
    {
       s->slots[0]   = (uint32_t*)mem;
+      s->pitch[0]   = actual;
+      s->lent_spare_pitch = spare_pitch;
       s->lent_spare = (uint32_t*)spare;
       s->lent       = 3;
       s->lent_cur   = 0;
@@ -367,6 +410,7 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
     * tracked, and this frame goes. */
    if (s->lent && s->writing && s->retired_handle)
       return GFX_SURFACE_SUBMIT_FAILED;
+   gfx_surface_pack(s);
    if (!video_driver_texture_load(&s->img, s->filter, &new_handle)
          || !new_handle)
       return GFX_SURFACE_SUBMIT_FAILED;
@@ -377,7 +421,7 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
       s->retired_handle = s->handle;
       s->handle         = 0;
    }
-   gfx_surface_unlend(s);
+   gfx_surface_unlend(s, true);
    if (s->handle)
       gfx_surface_unload(&s->handle);
    s->handle = new_handle;
@@ -398,6 +442,7 @@ static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
       if (slot < 2 && n->lent_mem[slot] && n->lent_idx[slot] >= 0)
       {
          s->slots[slot]       = (uint32_t*)n->lent_mem[slot];
+         s->pitch[slot]       = n->lent_pitch[slot];
          s->lent             |= (uint8_t)(1u << slot);
          s->lend_rec[slot]    = (uint8_t)(n->lent_idx[slot] + 1);
       }
@@ -407,6 +452,8 @@ static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
          && n->lent_idx[0] >= 0 && n->lent_idx[1] >= 0)
    {
       s->slots[0]    = (uint32_t*)n->lent_mem[0];
+      s->pitch[0]    = n->lent_pitch[0];
+      s->lent_spare_pitch = n->lent_pitch[1];
       s->lent_spare  = (uint32_t*)n->lent_mem[1];
       s->lent        = 3;
       s->lent_cur    = 0;
@@ -452,7 +499,7 @@ static void gfx_surface_done(void *user, uintptr_t handle)
             s->retired_handle = s->handle;
             s->handle         = 0;
          }
-         gfx_surface_unlend(s);
+         gfx_surface_unlend(s, true);
          if (s->handle)
             gfx_surface_unload(&s->handle);
          s->handle = handle;
@@ -560,12 +607,15 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
        * under direct video */
       if (need_load && s->lent && s->writing && s->retired_handle)
          return GFX_SURFACE_SUBMIT_FAILED;
+      if (need_load)
+         gfx_surface_pack(s);
       s->node.kind    = need_load
             ? VIDEO_THREAD_ASYNC_LOAD : VIDEO_THREAD_ASYNC_UPDATE;
       /* An update of a streaming texture asks for its upload memory:
        * the same-numbered driver slot for a surface of two, both for a
        * surface of one, until they are lent */
       s->node.lend        = 0;
+      s->node.lend_padded = s->padded;
       s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
       s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
       if (!need_load && s->num_slots && !GFX_SURFACE_IS_PLANAR(s))
@@ -753,6 +803,7 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
       return r;
    }
 
+   s->inflight_slot = slot;
    r = gfx_surface_prepare(s, s->slots[slot], s->pixfmt, rgba, true, &fmt)
       ? gfx_surface_submit_img(s, slot, fmt)
       : GFX_SURFACE_SUBMIT_FAILED;
@@ -807,8 +858,16 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
          return GFX_SURFACE_SUBMIT_BUSY;
       }
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
-      memcpy(s->slots[0], pixels,
-            VIDEO_SCALE_AREA(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt));
+      {
+         unsigned y;
+         size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+         if (s->pitch[0] == row)
+            memcpy(s->slots[0], pixels, row * VIDEO_SCALE_H(s->dims));
+         else
+            for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
+               memcpy((uint8_t*)s->slots[0] + (size_t)y * s->pitch[0],
+                     (const uint8_t*)pixels + (size_t)y * row, row);
+      }
       return gfx_surface_submit(s, 0, rgba);
    }
 
@@ -920,7 +979,7 @@ void gfx_surface_free(gfx_surface_t *s)
       s->dying = 1;
       return;
    }
-   gfx_surface_unlend(s);
+   gfx_surface_unlend(s, false);
    if (s->next_img)
       gfx_surface_image_free(s->next_img);
    if (s->handle)
@@ -962,6 +1021,7 @@ enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *s,
       s->node.dropped     = 0;
       s->node.made        = 0;
       s->node.lend        = 0;
+      s->node.lend_padded = s->padded;
       s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
       s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
       if (video_thread_async_post(&s->node))
@@ -1241,7 +1301,7 @@ static void gfx_surface_decoded(retro_task_t *task, void *task_data,
          gfx_surface_image_free(img);
       if (!s->decoding && !s->inflight)
       {
-         gfx_surface_unlend(s);
+         gfx_surface_unlend(s, false);
          if (s->next_img)
             gfx_surface_image_free(s->next_img);
          if (s->handle)
@@ -1289,6 +1349,8 @@ uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot)
    if (!s || slot >= s->num_slots)
       return NULL;
    s->writing |= (uint8_t)(1u << slot);
+   s->producer_mem[slot] = s->slots[slot];
+   s->producer_pitch[slot] = s->pitch[slot];
    return s->slots[slot];
 }
 
@@ -1296,6 +1358,17 @@ void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot)
 {
    if (!s || slot >= s->num_slots)
       return;
+   if (s->producer_mem[slot] && s->producer_mem[slot] != s->slots[slot]
+         && !GFX_SURFACE_IS_PLANAR(s))
+   {
+      unsigned y;
+      size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+      for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
+         memcpy((uint8_t*)s->slots[slot] + (size_t)y * s->pitch[slot],
+               (const uint8_t*)s->producer_mem[slot]
+               + (size_t)y * s->producer_pitch[slot], row);
+   }
+   s->producer_mem[slot] = NULL;
    s->writing &= (uint8_t)~(1u << slot);
    if (!s->writing && s->retired_handle)
       gfx_surface_unload(&s->retired_handle);
@@ -1304,6 +1377,7 @@ void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot)
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
 {
    uint32_t *other;
+   size_t pitch;
    if (!s || slot >= s->num_slots || !(s->lent & (1u << slot)))
       return true;
    if (s->num_slots >= 2)
@@ -1316,6 +1390,9 @@ bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
    other         = s->lent_spare;
    s->lent_spare = s->slots[0];
    s->slots[0]   = other;
+   pitch = s->pitch[0];
+   s->pitch[0] = s->lent_spare_pitch;
+   s->lent_spare_pitch = pitch;
    s->lent_cur  ^= 1u;
    return true;
 }

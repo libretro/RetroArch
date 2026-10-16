@@ -12267,7 +12267,7 @@ static void d3d12_set_video_mode(void *data, unsigned dims, bool fullscreen)
 /* On the driver's own thread (see texture_lend in video_driver.h): the
  * queue fence and the draw-time copy are both the caller's thread's. */
 static void *d3d12_texture_lend(void *data, uintptr_t id, unsigned slot,
-      size_t pitch)
+      size_t pitch, size_t *out_pitch)
 {
    d3d12_video_t   *d3d12   = (d3d12_video_t*)data;
    d3d12_texture_t *texture = (d3d12_texture_t*)id;
@@ -12277,8 +12277,11 @@ static void *d3d12_texture_lend(void *data, uintptr_t id, unsigned slot,
 
    if (     !d3d12 || !texture || slot > 1 || !texture->upload_buffer
          || texture->desc.MipLevels > 1
-         || (size_t)texture->layout.Footprint.RowPitch != pitch)
+         || (size_t)texture->layout.Footprint.RowPitch < pitch
+         || (!out_pitch && (size_t)texture->layout.Footprint.RowPitch != pitch))
       return NULL;
+   if (out_pitch)
+      *out_pitch = (size_t)texture->layout.Footprint.RowPitch;
    if (texture->lent & (1u << slot))
       return texture->lend_mapped[slot];
    buf = slot ? &texture->upload_buffer2 : &texture->upload_buffer;

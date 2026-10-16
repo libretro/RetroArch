@@ -135,6 +135,9 @@ typedef struct video_player_sink
     * and 1 in line. As start returns. */
    int (*start_hw)(void *user, unsigned width, unsigned height,
          unsigned jobs);
+   /* Optional, after slot_begin: row stride in pixels for that buffer.
+    * Absent means width. Snapshotted before the decode is posted. */
+   unsigned (*slot_stride)(void *user, unsigned slot);
 } video_player_sink_t;
 
 /* Plays @stream (borrowed; freed by the caller after the player) from
