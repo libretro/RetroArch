@@ -6,6 +6,9 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <time/rtime.h>
+#include <net/net_compat.h>
+#include <net/net_socket.h>
+#include <retro_timers.h>
 #include "../../../runloop.h"
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
@@ -21,7 +24,7 @@ static unsigned failures;
 static bool blocked;
 static unsigned calls, gates;
 static void (*loaded_run)(void);
-static char reply[256];
+static char reply[1024];
 static void counted_run(void) { calls++; loaded_run(); }
 static bool fail_save(void *data, size_t size) { (void)data; (void)size; return false; }
 bool __real_netplay_driver_ctl(enum rarch_netplay_ctl_state, void*);
@@ -42,12 +45,46 @@ static unsigned ram7(command_t *cmd)
       return 0x100;
    return (unsigned)strtoul(sp+1,NULL,16);
 }
+static size_t zero_size(void) { return 0; }
 static void receive(command_t *cmd, const char *data, size_t n)
 {
    (void)cmd;
    if (n >= sizeof(reply)) n = sizeof(reply)-1;
    memcpy(reply,data,n); reply[n]=0;
 }
+/* @line sent to the network command interface as a client would, read
+ * through its own parser; the reply, if any, in @out. */
+#define UDP_PORT 55437
+static void udp_line(const char *line, char *out, size_t cap)
+{
+   static command_t *net;
+   static int        fd = -1;
+   static struct addrinfo *to;
+   int  i;
+   long n = -1;
+   out[0] = '\0';
+   if (!net)
+   {
+      network_init();
+      net = command_network_new(UDP_PORT, "127.0.0.1");
+      fd  = socket_init((void**)&to, UDP_PORT, "127.0.0.1",
+            SOCKET_TYPE_DATAGRAM, AF_INET);
+      if (fd >= 0)
+         socket_nonblock(fd);
+   }
+   if (!net || fd < 0)
+      return;
+   sendto(fd, line, strlen(line), 0, to->ai_addr, to->ai_addrlen);
+   for (i = 0; i < 200 && n <= 0; i++)
+   {
+      net->poll(net);
+      n = (long)recvfrom(fd, out, cap - 1, 0, NULL, NULL);
+      if (n <= 0)
+         retro_sleep(1);
+   }
+   out[n > 0 ? n : 0] = '\0';
+}
+
 int main(int argc, char **argv)
 {
    char cfg_path[512];
@@ -153,6 +190,24 @@ int main(int argc, char **argv)
    for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
    CHECK(!strcmp(reply,"STATE save 1"));
    remove("command_frames_test.state1");
+   /* a reply longer than any fixed buffer still answers as the tool */
+   {
+      char long_path[700];
+      memset(long_path,'d',600);
+      strlcpy(long_path+600,"/missing.state",sizeof(long_path)-600);
+      strlcpy(loop->name.savestate,long_path,sizeof(loop->name.savestate));
+      size_t (*size)(void)=loop->current_core.retro_serialize_size;
+      /* nothing to serialize: refused at once, naming the path */
+      loop->current_core.retro_serialize_size=zero_size;
+      reply[0]=0;
+      command_state(&cmd,"save 1");
+      for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(strlen(reply) > 600 && !strncmp(reply,"STATE ERROR ",12));
+      loop->current_core.retro_serialize_size=size;
+      strlcpy(loop->name.savestate,"command_frames_test.state",
+            sizeof(loop->name.savestate));
+      cmd.error=false;
+   }
 
    /* the other families answer under their own names too */
    reply[0]=0;
@@ -171,9 +226,11 @@ int main(int argc, char **argv)
    cmd.error=false;
    /* and the commands they run, by name, still answer as themselves */
    reply[0]=0;
-   CHECK(!command_save_state_slot(&cmd,"x")
-         && !strncmp(reply,"SAVE_STATE_SLOT ERROR ",22));
-   cmd.error=false; /* command_run clears it; these call the handlers */
+   {
+      char net_reply[256];
+      udp_line("SAVE_STATE_SLOT x\n", net_reply, sizeof(net_reply));
+      CHECK(!strncmp(net_reply,"SAVE_STATE_SLOT ERROR ",22));
+   }
 
    /* READ_CORE_MEMORY and WRITE_CORE_MEMORY answer with the address and
     * the bytes in hexadecimal, at a system address the core maps */
@@ -206,6 +263,16 @@ int main(int argc, char **argv)
    cmd.error=false; reply[0]=0;
    CHECK(command_read_memory(&cmd,"1000 3")
          && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F 10\n"));
+   /* a line client ending its lines in CRLF writes as one ending in LF */
+   {
+      char net_reply[256];
+      udp_line("WRITE_CORE_MEMORY 1000 ab\r\n", net_reply, sizeof(net_reply));
+      CHECK(!strcmp(net_reply,"WRITE_CORE_MEMORY 1000 1\n"));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"1000 1")
+            && !strcmp(reply,"READ_CORE_MEMORY 1000 AB\n"));
+      CHECK(command_write_memory(&cmd,"1000 aa"));
+   }
    /* a second space after the command's name is still taken */
    reply[0]=0;
    CHECK(command_read_memory(&cmd," 1001 1")
