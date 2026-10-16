@@ -235,7 +235,8 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
+   /* a client ending its lines in CRLF leaves no \r on the last word */
+   const char *tok = strtok_r(buf, "\r\n", &save);
    unsigned gen    = input_driver_command_generation();
 
    while (tok)
@@ -245,7 +246,7 @@ static void command_parse_msg(command_t *handle, char *buf)
        * owns and has now freed 'handle'. Nothing further may use it. */
       if (input_driver_command_generation() != gen)
          return;
-      tok = strtok_r(NULL, "\n", &save);
+      tok = strtok_r(NULL, "\r\n", &save);
    }
 }
 
@@ -783,12 +784,17 @@ struct command_family
 };
 static struct command_family command_family_now;
 
-/* @msg under @f's name in @s; 0 where it does not fit. */
-static size_t command_family_rename(const struct command_family *f,
-      const char *msg, size_t len, char *s, size_t size)
+/* @msg under @f's name, allocated, its length in @out_len; NULL where
+ * it could not be. */
+static char *command_family_rename(const struct command_family *f,
+      const char *msg, size_t len, size_t *out_len)
 {
-   size_t n = strlen(f->name);
+   size_t n    = strlen(f->name);
+   size_t size = len + strlen(f->family) + strlen(f->word) + 3;
+   char  *s    = (char*)malloc(size);
    int    _len;
+   if (!s)
+      return NULL;
    if (     len > n && !strncmp(msg, f->name, n)
          && (msg[n] == ' ' || msg[n] == '\n'))
    {
@@ -805,20 +811,27 @@ static size_t command_family_rename(const struct command_family *f,
    else
       _len = snprintf(s, size, "%s %s %.*s", f->family, f->word,
             (int)len, msg);
-   return (_len > 0 && (size_t)_len < size) ? (size_t)_len : 0;
+   if (_len <= 0 || (size_t)_len >= size)
+   {
+      free(s);
+      return NULL;
+   }
+   *out_len = (size_t)_len;
+   return s;
 }
 
 static void command_family_replier(command_t *cmd, const char *data,
       size_t len)
 {
-   char   msg[512];
-   size_t _len = command_family_rename(&command_family_now, data, len,
-         msg, sizeof(msg));
+   size_t _len = 0;
+   char  *msg  = command_family_rename(&command_family_now, data, len,
+         &_len);
    command_family_now.answered = true;
-   if (_len)
+   if (msg)
       command_family_now.replier(cmd, msg, _len);
    else
       command_family_now.replier(cmd, data, len);
+   free(msg);
 }
 
 /* A reply sent after its command has returned: where it goes is taken
@@ -849,12 +862,12 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 static void command_deferred_send(command_deferred_t *d,
       const char *msg, size_t len, bool is_error)
 {
-   char renamed[512];
+   char *renamed = NULL;
    if (msg && input_driver_command_generation() == d->gen)
    {
-      size_t _len;
-      if (d->family.family && (_len = command_family_rename(&d->family,
-               msg, len, renamed, sizeof(renamed))))
+      size_t _len = 0;
+      if (d->family.family && (renamed = command_family_rename(&d->family,
+               msg, len, &_len)))
       {
          msg = renamed;
          len = _len;
@@ -865,6 +878,7 @@ static void command_deferred_send(command_deferred_t *d,
       else if (!d->cmd->reply_dest)
          d->cmd->replier(d->cmd, msg, len);
    }
+   free(renamed);
    free(d->dest);
    d->dest = NULL;
 }
