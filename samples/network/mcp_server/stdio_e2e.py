@@ -174,7 +174,7 @@ check('and let the buttons go', t and 'none\tnone' in t)
 # than failing ten seconds later with the frames already running.
 _, t, _ = call(216, 'RUN_FRAMES', {'count': 36000})
 check('RUN_FRAMES past what a reply waits for is refused now',
-      t and t.startswith('RUN_FRAMES ERROR') and 'at most 600' in t)
+      t and t.startswith('RUN_FRAMES ERROR') and 'frames in one request' in t)
 _, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
 check('and a press is bounded the same way',
       t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)

@@ -619,9 +619,10 @@ bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
 bool command_get_input(command_t *cmd, const char *arg);
 
-/* The most frames a request can run within a structured interface's
- * ten-second reply deadline (about ten seconds at 60fps). PRESS keeps
- * to it everywhere, since it holds input for every frame it runs. */
+/* The most frames a request runs, which a structured interface lowers
+ * to nine seconds of the content's frames to answer inside its
+ * ten-second reply deadline. PRESS keeps to it everywhere, since it
+ * holds input for every frame it runs. */
 #define COMMAND_FRAMES_REPLY_MAX 600
 
 /* PRESS <player> <control> <frames>: hold, run and let go, in one. */
@@ -741,9 +742,9 @@ static const struct cmd_param cmd_params_log[] = {
 };
 #endif
 static const struct cmd_param cmd_params_run_frames[] = {
-   { "count", "How many frames to run, up to 600 - about ten seconds, "
-      "which is as long as this interface waits for a reply. Ask again "
-      "to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "count", "How many frames to run, up to nine seconds' worth (540 "
+      "at 60fps, 600 at most), which is inside how long this interface "
+      "waits for a reply. Ask again to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input[] = {
@@ -773,8 +774,8 @@ static const struct cmd_param cmd_params_until[] = {
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
    { "value", "What to compare it with, from 0 to 255.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "frames", "Frames to wait at most, up to 600; about nine seconds' "
-      "worth when left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { "frames", "Frames to wait at most, up to nine seconds' worth (540 "
+      "at 60fps), which is also the wait when left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_press[] = {
@@ -784,8 +785,9 @@ static const struct cmd_param cmd_params_press[] = {
       "l2, r2, l3, r3. \"right+a\" runs and jumps. An axis is "
       "SET_INPUT's: it is held at a value rather than pressed.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "frames", "How many frames to hold them for, from 1 to 600 - about "
-      "ten seconds, which is as long as a reply is waited for. A tap is "
+   { "frames", "How many frames to hold them for, from 1 to nine "
+      "seconds' worth (540 at 60fps), inside how long a reply is waited "
+      "for. A tap is "
       "2 to 4. For a longer hold use SET_INPUT and RUN_FRAMES, which "
       "does not answer late with the buttons still down.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },

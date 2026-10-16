@@ -17,6 +17,7 @@
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../runahead.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../network/netplay/netplay.h"
 #include "../../../menu/menu_driver.h"
 static unsigned failures;
@@ -563,6 +564,13 @@ int main(int argc, char **argv)
     * what a client waits for, not by RUN_FRAMES' ten minutes */
    reply[0]=0;
    CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"SET_INPUT"));
+   /* a player past 32 bits is refused, not taken as player 1 */
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));
+   CHECK(!command_set_input(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));
+   CHECK(!command_set_input(&cmd,"-18446744073709551615 a 1")
+         && strstr(reply,"a player from 1"));
+   cmd.error=false;
    CHECK(command_press(&cmd,"1 a 600"));
    /* A line interface waits as long as it likes, so RUN_FRAMES keeps
     * the ten minutes there; a structured one is told at once rather
@@ -574,11 +582,25 @@ int main(int argc, char **argv)
    CHECK(!strcmp(reply,"RUN_FRAMES ERROR tidying up"));
    cmd.structured=true;
    reply[0]=0;
+   /* nine seconds of frames, inside the ten a reply is waited for */
    CHECK(!command_run_frames(&cmd,"36000")
-         && strstr(reply,"at most 600 frames in one request"));
-   CHECK(command_run_frames(&cmd,"600"));
+         && strstr(reply,"at most 540 frames in one request"));
+   CHECK(!command_run_frames(&cmd,"541"));
+   CHECK(command_run_frames(&cmd,"540"));
    command_run_frames_cancel("tidying up");
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"1 a 541") && strstr(reply,"1 to 540"));
+   CHECK(!command_run_until(&cmd,"1000 == 0 541") && strstr(reply,"at most 540"));
+   /* and at 50fps, where 600 frames is twelve seconds */
+   video_state_get_ptr()->av_info.timing.fps=50.0;
+   reply[0]=0;
+   CHECK(!command_run_frames(&cmd,"451") && strstr(reply,"at most 450"));
+   CHECK(!command_press(&cmd,"1 a 451") && strstr(reply,"1 to 450"));
+   CHECK(command_run_frames(&cmd,"450"));
+   command_run_frames_cancel("tidying up");
+   video_state_get_ptr()->av_info.timing.fps=60.0;
    cmd.structured=false;
+   cmd.error=false;
    /* one at a time: the second replaces the first, which is answered */
    reply[0]=0;
    CHECK(command_press(&cmd,"1 a 30"));
