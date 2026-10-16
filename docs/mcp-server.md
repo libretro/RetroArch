@@ -111,8 +111,8 @@ nothing report `Done.`.
 The replies that are lines of tab-separated fields - `GET_OPTION`,
 `SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
 `GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT`,
-`RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS` and
-`RUN_UNTIL` - come
+`RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS`,
+`RUN_UNTIL` and `STEPS` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns:
@@ -161,7 +161,10 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `PRESS 1 a 4` | `frames: 4` | the frames `PRESS` ran |
 | `MET 12` | `met: 12` | the frames `RUN_UNTIL` ran until the byte met it |
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
-| `VALUE 5` | `value: 5` | what the byte `RUN_UNTIL` waited on holds |
+| `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
+| `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
+| `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
+| `STEP 3` | `step: 3` | the step it ended on, from 1 |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -267,7 +270,9 @@ starts or the first `GET_LOG`.
 `PRESS <player> <control>[+<control>...] <frames>` is how an assistant
 taps a button: it holds the buttons, runs that many frames and lets
 them go, answered once the last frame has run. A tap is 2 to 4 frames;
-`PRESS 1 right+a 6` runs and jumps.
+`PRESS 1 right+a 6` runs and jumps. What `SET_INPUT` holds stays held,
+under the press and after it: `SET_INPUT 1 right+b 1` then `PRESS 1 a
+20` is a running jump.
 
 This is one request where four were needed - `SET_INPUT`, `RUN_FRAMES`,
 `SET_INPUT` to release, `RUN_FRAMES` again - and each of those is its
@@ -276,11 +281,15 @@ buttons are let go of however the press ends, including the error that
 ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
 than pressed, so `PRESS` refuses one.
 
+`PRESS ... until <condition>` lets go and runs on until the condition
+holds, as `RUN_UNTIL` would, and answers as `RUN_UNTIL` does:
+`PRESS 1 a 20 until 1d == 0` is a jump and its landing in one request.
+
 **A single request runs at most nine seconds of frames** - 540 at
 60fps, 450 at 50fps, and never more than 600 - because a reply is
 waited for ten. An MCP client is told the command did not answer after
-ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`
-and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
+ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`,
+`STEPS` and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
 rather than failing later with hundreds of frames already run. Ask
 again to run more.
 
@@ -312,7 +321,7 @@ an address stops watching that label, and a label already watched keeps
 its place in the list when its address changes; with nothing watched
 it answers `WATCH none`. Values are decimal, 0 to 255, as `RUN_UNTIL`
 takes them; addresses are hexadecimal. A label is up to 15 characters,
-with no tab or newline in it. Eight at once. Each is checked when it is
+with no tab or newline in it. Sixteen at once. Each is checked when it is
 set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
@@ -322,7 +331,11 @@ content's addresses mean something else.
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
 `<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
-how many frames ran, what `WATCH` watches, and what the byte holds:
+how many frames ran, what `WATCH` watches, and what the byte holds.
+Two addresses as `high:low` read two bytes as one value, 0 to 65535:
+`6d:86 >= 1800` waits for Super Mario Bros.'s Mario to pass x 1800,
+which the game keeps as a page in one byte and a place on it in
+another.
 
 ```
 MET 12
@@ -346,14 +359,34 @@ to that many. When they run out first it answers `WAITING` with how far it got,
 so the next request carries on from there instead of the client being
 told it failed.
 
+`STEPS <step>[; <step>...]` runs a stretch of play as one request. Each
+step is `run <frames>`, `press <player> <controls> <frames>` or `until
+<condition>`, in order; one `stop <condition>` anywhere in the list ends
+it after any frame where that holds, so a death does not play out the
+rest:
+
+```
+STEPS until 6d:86 >= 1500; press 1 a 20; until 1d == 0; stop e == 11
+DONE 74
+x	86	212
+STEP 3
+```
+
+It answers `DONE` when every step has run, `STOPPED` when `stop` held,
+and `WAITING` when its nine seconds ran out first, each with the frames
+run, what `WATCH` watches, and the `STEP` it ended on - so after
+`WAITING` the client asks again with the steps from that one. Sixteen
+steps at most; the frames `run` and `press` ask for must fit in the
+nine seconds, and an address nothing maps is refused before any frame
+runs.
+
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
 run; it is left paused. Use it to let the game run on its own - a
 cutscene, a fall - where `PRESS` is for holding something while it
 does. Both are refused while the menu is open, without content, and in
-achievements hardcore mode, and they and `RUN_UNTIL` are the same one
-job: a second `RUN_FRAMES`, `PRESS` or `RUN_UNTIL` replaces one still
-running, which is answered with an error, as it is when the content
+achievements hardcore mode, and they, `RUN_UNTIL` and `STEPS` are the
+same one job: a second of any of them replaces one still running, which is answered with an error, as it is when the content
 closes.
 
 `SET_INPUT` with `RUN_FRAMES` is still the way to hold something across

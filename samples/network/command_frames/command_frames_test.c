@@ -506,21 +506,21 @@ int main(int argc, char **argv)
    {
       unsigned w;
       char req[32];
-      /* room for eight, counted from empty */
+      /* room for sixteen, counted from empty */
       CHECK(command_watch(&cmd,"two off"));
-      for (w = 0; w < 8; w++)
+      for (w = 0; w < 16; w++)
       {
-         snprintf(req,sizeof(req),"w%u 100%u",w,w);
+         snprintf(req,sizeof(req),"w%u %x",w,0x1000 + w);
          CHECK(command_watch(&cmd,req));
       }
       reply[0]=0;
-      CHECK(!command_watch(&cmd,"w9 1009")
-            && strstr(reply,"at most 8 bytes watched"));
+      CHECK(!command_watch(&cmd,"w16 1009")
+            && strstr(reply,"at most 16 bytes watched"));
       /* room made earlier in the same request counts */
-      CHECK(command_watch(&cmd,"w7 off w9 1009 w9 off w7 1007"));
-      /* but replacing one of the eight still works */
+      CHECK(command_watch(&cmd,"w15 off w16 1009 w16 off w15 100f"));
+      /* but replacing one of the sixteen still works */
       CHECK(command_watch(&cmd,"w0 1005"));
-      for (w = 0; w < 8; w++)
+      for (w = 0; w < 16; w++)
       {
          snprintf(req,sizeof(req),"w%u off",w);
          CHECK(command_watch(&cmd,req));
@@ -730,6 +730,107 @@ int main(int argc, char **argv)
             && strstr(reply,"RUN_UNTIL ERROR replaced by another RUN_FRAMES"));
       runloop_iterate();
       CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
+
+      /* two bytes as one value, high:low: ram[6] holds 6 */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"1006:1007 == %u",0x600 + ((now + 2) & 0xff));
+         CHECK(command_run_until(&cmd,req) && !reply[0]);
+         runloop_iterate(); runloop_iterate();
+         snprintf(want,sizeof(want),"MET 2\nVALUE %u\n",0x600 + ((now + 2) & 0xff));
+         CHECK(!strcmp(reply,want));
+      }
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006:1007 == 65536") && strstr(reply,"0 to 65535"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006: == 1") && strstr(reply,"second hexadecimal"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"99000:1007 == 1") && strstr(reply,"RUN_UNTIL ERROR"));
+      cmd.error=false;
+
+      /* PRESS with until: the press, then on until it holds - a jump
+       * and its landing in one request */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"1 a 2 until 1007 == %u",(now + 5) & 0xff);
+         CHECK(command_press(&cmd,req) && !reply[0]);
+         runloop_iterate();
+         CHECK((input_driver_command_held(0,axes) & (1u << RETRO_DEVICE_ID_JOYPAD_A)) != 0);
+         runloop_iterate();
+         /* let go once its frames have run, while the wait goes on */
+         CHECK(input_driver_command_held(0,axes) == 0 && !reply[0]);
+         runloop_iterate(); runloop_iterate(); runloop_iterate();
+         snprintf(want,sizeof(want),"MET 5\nVALUE %u\n",(now + 5) & 0xff);
+         CHECK(!strcmp(reply,want));
+      }
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 a 2 until 1006 == 6"));
+      runloop_iterate(); runloop_iterate();
+      CHECK(!strcmp(reply,"MET 2\nVALUE 6\n"));
+      /* without until it answers as it always has */
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 a 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"PRESS 1 a 1\n"));
+      reply[0]=0;
+      CHECK(!command_press(&cmd,"1 a 2 until 99000 == 0") && strstr(reply,"PRESS ERROR"));
+      reply[0]=0;
+      CHECK(!command_press(&cmd,"1 a 2 until 1007 ~ 1") && strstr(reply,"after until"));
+      cmd.error=false;
+
+      /* STEPS: a stretch of play as one request */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         CHECK(command_watch(&cmd,"one 1003"));
+         snprintf(req,sizeof(req),"run 2; press 1 b 1; until 1007 == %u",(now + 6) & 0xff);
+         reply[0]=0;
+         CHECK(command_steps(&cmd,req) && !reply[0]);
+         for (i=0;i<5;i++) runloop_iterate();
+         CHECK(!reply[0]);
+         runloop_iterate();
+         CHECK(!strcmp(reply,"DONE 6\none\t1003\t51\nSTEP 3\n"));
+         CHECK(command_watch(&cmd,"one off"));
+         /* stop ends it after the frame where it holds */
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"run 10; stop 1007 == %u",(now + 3) & 0xff);
+         CHECK(command_steps(&cmd,req));
+         for (i=0;i<3;i++) runloop_iterate();
+         CHECK(!strcmp(reply,"STOPPED 3\nSTEP 1\n")
+               && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+         /* what already holds runs no frame */
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"until 1006 == 6") && !strcmp(reply,"DONE 0\nSTEP 1\n"));
+         /* past nine seconds it says how far it got and where */
+         {
+            unsigned n=0;
+            reply[0]=0;
+            CHECK(command_steps(&cmd,"run 1; until 1007 > 255"));
+            while (!reply[0] && n < 700) { runloop_iterate(); n++; }
+            CHECK(n == 540 && !strcmp(reply,"WAITING 540\nSTEP 2\n"));
+         }
+         (void)want;
+      }
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"541 frames"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"jump 3") && strstr(reply,"run, press, until or stop"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"") && strstr(reply,"STEPS ERROR"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; run 1")
+            && strstr(reply,"one stop"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"press 1 left_x 3") && strstr(reply,"axis"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;"
+            "run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1")
+            && strstr(reply,"at most 16 steps"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"until 99000 == 0") && strstr(reply,"STEPS ERROR"));
+      cmd.error=false;
    }
 
    before=calls; reply[0]=0;

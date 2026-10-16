@@ -76,7 +76,7 @@ names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
           'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
-          'REPLAY'):
+          'REPLAY', 'STEPS'):
     check('tool %s listed' % n, n in names)
 # A family of hotkeys is one tool with a choice, not a tool apiece.
 for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
@@ -102,8 +102,8 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total, 25000 bytes, catches a tool added
 # by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 23132
-# at 34 tools.
+# average would not, as folding small tools into one raises it. 24730
+# at 35 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)
@@ -178,6 +178,13 @@ check('RUN_FRAMES past what a reply waits for is refused now',
 _, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
 check('and a press is bounded the same way',
       t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)
+# A stretch of play as one request: this core maps no memory to wait
+# on, so the steps that need none. The frame after the press lets the
+# core log A let go, which the log checks below read changes of.
+msg, t, _ = call(219, 'STEPS', {'steps': 'run 3; press 1 a 2; run 1'})
+check('STEPS runs its steps in one request: ' + (t or '').split('\n')[0],
+      t and t.startswith('DONE 6') and not msg['result']['isError']
+      and msg['result'].get('structuredContent') == {'rows': [], 'done': 6, 'step': 3})
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
 check('an axis is SET_INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)

@@ -221,6 +221,22 @@ static bool act_press(command_t *cmd, const char *arg)
    return true;
 }
 
+/* a PRESS that waited after it, and a STEPS list */
+#define PRESSU_TEXT "MET 5\nVALUE 0\n"
+#define STEPS_TEXT  "DONE 6\nx\t86\t40\nSTEP 3\n"
+static bool act_pressu(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PRESSU_TEXT, sizeof(PRESSU_TEXT) - 1);
+   return true;
+}
+static bool act_steps(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, STEPS_TEXT, sizeof(STEPS_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -292,6 +308,8 @@ static struct cmd_action_map test_actions[] = {
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
    { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
    { "PRESS", act_press, "No argument", "Answer as PRESS does.", 0, NULL, &cmd_rows_press },
+   { "PRESSU", act_pressu, "No argument", "Answer as PRESS with until does.", 0, NULL, &cmd_rows_press },
+   { "STEPS", act_steps, "No argument", "Answer as STEPS does.", 0, NULL, &cmd_rows_steps },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
 static struct cmd_map test_hotkeys[] = {
@@ -796,8 +814,8 @@ int main(void)
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
       /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, NOW, WAIT, RUN_FRAMES,
-       * PRESS and STEP, and none before them */
-      check("only the commands that answer rows declare one", n == 12);
+       * PRESS, PRESSU, STEPS and STEP, and none before them */
+      check("only the commands that answer rows declare one", n == 14);
    }
 
    printf("tools/call\n");
@@ -1037,6 +1055,16 @@ int main(void)
    check("and PRESS's, the number ending it, with nothing watched",
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":[],\"frames\":4}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PRESSU", NULL), out, sizeof(out), NULL);
+   check("a PRESS that waited says how it ended and what it read",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"met\":5,\"value\":0}"));
+   st = post(cmd, PORT_OPEN, NULL, call("STEPS", NULL), out, sizeof(out), NULL);
+   check("STEPS says how the list ended and on which step",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
+               "\"done\":6,\"step\":3}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
