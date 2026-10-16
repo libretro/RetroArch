@@ -2645,6 +2645,19 @@ static bool command_frames_ready(command_t *cmd, const char *name)
    return true;
 }
 
+/* The most frames one request runs for @cmd: for a structured one,
+ * nine seconds of the content's own frames where that is fewer than
+ * COMMAND_FRAMES_REPLY_MAX, so the reply comes inside its ten-second
+ * deadline at any frame rate - 600 at 50fps would outlast it. */
+static unsigned command_frames_reply_max(const command_t *cmd)
+{
+   double fps = video_state_get_ptr()->av_info.timing.fps;
+   if (cmd->structured && fps > 0.0
+         && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
+      return fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
+   return COMMAND_FRAMES_REPLY_MAX;
+}
+
 /* RUN_FRAMES <count>
  *
  * Pauses, if the content is running, and runs it @count frames,
@@ -2663,10 +2676,10 @@ bool command_run_frames(command_t *cmd, const char *arg)
    }
    /* more than the reply will be waited for: answered now rather than
     * as a failure once the frames are already running */
-   if (cmd->structured && n > COMMAND_FRAMES_REPLY_MAX)
+   if (cmd->structured && n > command_frames_reply_max(cmd))
    {
       command_reply_error(cmd, "RUN_FRAMES", "at most %u frames in one "
-            "request; ask again to run more", COMMAND_FRAMES_REPLY_MAX);
+            "request; ask again to run more", command_frames_reply_max(cmd));
       return false;
    }
    if (!command_frames_ready(cmd, "RUN_FRAMES"))
@@ -2758,12 +2771,16 @@ static bool command_input_args(command_t *cmd, const char *name,
    char  *end                     = NULL;
    char  *tok;
    const char *sp;
+   unsigned long v                = 0;
 
    *count = 0;
    while (arg && *arg == ' ')
       arg++;
-   *player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
-   if (!end || end == arg || *end != ' ' || *player < 1 || *player > MAX_USERS)
+   /* range-checked before narrowing: 4294967297 is not player 1 */
+   if (arg && *arg >= '0' && *arg <= '9')
+      v = strtoul(arg, &end, 10);
+   *player = v <= MAX_USERS ? (unsigned)v : 0;
+   if (!end || end == arg || *end != ' ' || *player < 1)
    {
       command_reply_error(cmd, name,
             "a player from 1 to %u, a control and %s",
@@ -3041,11 +3058,11 @@ bool command_run_until(command_t *cmd, const char *arg)
       if (*end)
       {
          num = strtoul(end, &end, 10);
-         if (num < 1 || num > COMMAND_FRAMES_REPLY_MAX)
+         if (num < 1 || num > command_frames_reply_max(cmd))
          {
             command_reply_error(cmd, "RUN_UNTIL", "at most %u frames "
                   "to wait, which is as long as a reply is waited for",
-                  COMMAND_FRAMES_REPLY_MAX);
+                  command_frames_reply_max(cmd));
             return false;
          }
          frames = (unsigned)num;
@@ -3130,11 +3147,11 @@ bool command_press(command_t *cmd, const char *arg)
    if (!command_input_args(cmd, "PRESS", "a frame count", arg, &player,
             ids, &count, &frames))
       return false;
-   if (frames < 1 || frames > COMMAND_FRAMES_REPLY_MAX)
+   if (frames < 1 || frames > (long)command_frames_reply_max(cmd))
    {
       command_reply_error(cmd, "PRESS", "a frame count from 1 to %u; a "
             "longer hold is SET_INPUT with RUN_FRAMES",
-            COMMAND_FRAMES_REPLY_MAX);
+            command_frames_reply_max(cmd));
       return false;
    }
    for (i = 0; i < count; i++)

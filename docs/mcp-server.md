@@ -259,8 +259,9 @@ buttons are let go of however the press ends, including the error that
 ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
 than pressed, so `PRESS` refuses one.
 
-**A single request runs at most 600 frames** - about ten seconds at
-60fps - because that is as long as a reply is waited for. An MCP client
+**A single request runs at most nine seconds of frames** - 540 at
+60fps, 450 at 50fps, and never more than 600 - because a reply is
+waited for ten. An MCP client
 is told the command did not answer after ten seconds and the frames run
 on regardless, so both commands refuse more than that outright rather
 than failing later with hundreds of frames already run. Ask again to
@@ -319,8 +320,8 @@ address while it is waited on ends the wait with an error.
 
 Left to itself it waits about nine seconds of the content's own frames
 - 540 at 60fps, 450 at 50fps - so the answer comes inside the
-ten-second deadline at any frame rate; `[max frames]` asks for up to
-600. When they run out first it answers `WAITING` with how far it got,
+ten-second deadline at any frame rate, and `[max frames]` asks for up
+to that many. When they run out first it answers `WAITING` with how far it got,
 so the next request carries on from there instead of the client being
 told it failed.
 

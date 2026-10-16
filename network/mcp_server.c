@@ -991,13 +991,85 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
  * same reply as structuredContent where the command answers rows and
  * the client's revision takes it. The text is what every interface
  * sends, byte for byte: a client that reads it alone sees no change. */
+/* How long the UTF-8 sequence at @p is, or 0 where it is not one. */
+static size_t mcp_utf8_len(const unsigned char *p, size_t left)
+{
+   size_t        n;
+   size_t        i;
+   unsigned char lo = 0x80;
+   unsigned char hi = 0xBF;
+   if (p[0] < 0x80)
+      return 1;
+   if      (p[0] >= 0xC2 && p[0] <= 0xDF) n = 2;
+   else if (p[0] >= 0xE0 && p[0] <= 0xEF) n = 3;
+   else if (p[0] >= 0xF0 && p[0] <= 0xF4) n = 4;
+   else
+      return 0;
+   if (left < n)
+      return 0;
+   /* no overlong forms, no surrogates, nothing past U+10FFFF */
+   if      (p[0] == 0xE0) lo = 0xA0;
+   else if (p[0] == 0xED) hi = 0x9F;
+   else if (p[0] == 0xF0) lo = 0x90;
+   else if (p[0] == 0xF4) hi = 0x8F;
+   if (p[1] < lo || p[1] > hi)
+      return 0;
+   for (i = 2; i < n; i++)
+      if (p[i] < 0x80 || p[i] > 0xBF)
+         return 0;
+   return n;
+}
+
+/* @s with whatever is not UTF-8 - a path in another encoding, a line
+ * cut short mid-character - as U+FFFD, allocated, its length in
+ * @out_len; NULL where @s needs no repair. JSON text must be UTF-8, and
+ * a client that cannot decode one answer may drop the whole stream. */
+static char *mcp_utf8_repair(const char *s, size_t len, size_t *out_len)
+{
+   const unsigned char *p = (const unsigned char*)s;
+   size_t i;
+   size_t n;
+   size_t o = 0;
+   char  *out;
+   for (i = 0; i < len; i += n)
+      if (!(n = mcp_utf8_len(p + i, len - i)))
+         break;
+   if (i >= len || !(out = (char*)malloc(len * 3 + 1)))
+      return NULL;
+   for (i = 0; i < len; i += n)
+   {
+      if ((n = mcp_utf8_len(p + i, len - i)))
+      {
+         memcpy(out + o, s + i, n);
+         o += n;
+      }
+      else
+      {
+         memcpy(out + o, "\xEF\xBF\xBD", 3);
+         o += 3;
+         n  = 1;
+      }
+   }
+   out[o]   = '\0';
+   *out_len = o;
+   return out;
+}
+
 static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
       const struct cmd_action_map *act, const char *text, size_t text_len,
       bool is_error)
 {
-   rjsonwriter_t *w = mcp_envelope(id);
+   size_t         fixed_len = 0;
+   char          *fixed     = mcp_utf8_repair(text, text_len, &fixed_len);
+   rjsonwriter_t *w         = mcp_envelope(id);
+   if (fixed)
+   {
+      text     = fixed;
+      text_len = fixed_len;
+   }
    if (!w)
    {
+      free(fixed);
       mcp_conn_close(c);
       return;
    }
@@ -1010,6 +1082,7 @@ static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
    rjsonwriter_rawf(w, ",\"isError\":%s", is_error ? "true" : "false");
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
+   free(fixed);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1088,7 +1161,15 @@ static void mcp_reply_image_to(command_t *cmd, void *dest, const char *text,
    MCP_RAW(w, ",\"mimeType\":");
    rjsonwriter_add_string(w, mime);
    MCP_RAW(w, "},{\"type\":\"text\",\"text\":");
-   rjsonwriter_add_string_len(w, text, (int)len);
+   {
+      size_t fixed_len = 0;
+      char  *fixed     = mcp_utf8_repair(text, len, &fixed_len);
+      if (fixed)
+         rjsonwriter_add_string_len(w, fixed, (int)fixed_len);
+      else
+         rjsonwriter_add_string_len(w, text, (int)len);
+      free(fixed);
+   }
    MCP_RAW(w, "}],\"isError\":false");
    mcp_result_end(w, c->modern);
    mcp_respond_writer(c, w);
@@ -1396,6 +1477,13 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp_respond(c, 202, "Accepted", NULL, NULL, 0);
       goto end;
    }
+   /* an id too long to answer with: nothing the client could match */
+   if (!*r.id)
+   {
+      mcp_error(c, NULL, MCP_ERR_INVALID_REQUEST, "The id is too long.",
+            false);
+      goto end;
+   }
 
    hv     = mcp_header(head, "MCP-Protocol-Version");
    hm     = mcp_header(head, "Mcp-Method");
@@ -1636,7 +1724,8 @@ static long mcp_want(struct mcp_conn *c)
    cl     = mcp_header(c->buf, "Content-Length");
    n      = cl ? strtol(cl, NULL, 10) : 0;
    end[2] = save;
-   if (n < 0 || n > MCP_MAX_REQUEST)
+   /* the headers and the body share the one buffer */
+   if (n < 0 || (size_t)(end + 4 - c->buf) + (size_t)n > MCP_MAX_REQUEST)
       return -2;
    if (c->len - (size_t)(end + 4 - c->buf) < (size_t)n)
       return -1;
@@ -1752,10 +1841,20 @@ static void mcp_stdio_log(void)
                "\"params\":{\"level\":");
          rjsonwriter_add_string(w, mcp_log_levels[level]);
          MCP_RAW(w, ",\"logger\":\"retroarch\",\"data\":");
-         rjsonwriter_add_string_len(w, s, (int)(eol - s));
+         {
+            size_t fixed_len = 0;
+            char  *fixed     = mcp_utf8_repair(s, (size_t)(eol - s),
+                  &fixed_len);
+            if (fixed)
+               rjsonwriter_add_string_len(w, fixed, (int)fixed_len);
+            else
+               rjsonwriter_add_string_len(w, s, (int)(eol - s));
+            free(fixed);
+         }
          MCP_RAW(w, "}}");
          if ((body = rjsonwriter_get_memory_buffer(w, &wl)) && wl > 0
-               && mcp_stdio.out_len + (size_t)wl + 1 <= MCP_STDIO_OUT_MAX)
+               /* half the queue at most, so an answer always has room */
+               && mcp_stdio.out_len + (size_t)wl + 1 <= MCP_STDIO_OUT_MAX / 2)
          {
             char *nb = (char*)realloc(mcp_stdio.out,
                   mcp_stdio.out_len + (size_t)wl + 1);

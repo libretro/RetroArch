@@ -62,6 +62,11 @@ static void      *later_dest;
 
 static bool act_ping(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, "PONG\n", 5); return true; }
+/* a path with an accent, then a character cut short, as a log line
+ * truncated mid-character ends */
+#define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
+static bool act_moji(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
 static bool act_wipe(command_t *cmd, const char *arg)
 { (void)cmd; (void)arg; return true; }
 static bool act_fail(command_t *cmd, const char *arg)
@@ -243,6 +248,7 @@ static struct cmd_action_map test_actions[] = {
    { "FAIL",  act_fail,  "No argument", "Fail.",              0, NULL },
    { "BAD",   act_bad,   "No argument", "Reply an error.",    0, NULL },
    { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
+   { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
@@ -1055,6 +1061,32 @@ int main(void)
       check("a body past the limit is dropped, and the server goes on",
             post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL) == 200);
    }
+   {
+      /* within the limit by itself, past it with the headers */
+      char big[1024];
+      int  fd;
+      memset(big, 0, sizeof(big));
+      snprintf(big, sizeof(big), "POST /mcp HTTP/1.1\r\nHost: x\r\n" AUTH
+            "X-Pad: %0400d\r\nContent-Length: 65400\r\n\r\n", 0);
+      fd = client_connect(PORT_OPEN);
+      socket_send_all_blocking(fd, big, strlen(big), true);
+      check("headers and body past the limit together are refused",
+            collect(cmd, fd, out, sizeof(out), NULL) == 413);
+   }
+   {
+      char body[512];
+      snprintf(body, sizeof(body), "{\"jsonrpc\":\"2.0\",\"id\":\"%070d\","
+            "\"method\":\"tools/call\",\"params\":{\"name\":\"PING\","
+            "\"arguments\":{}}}", 0);
+      st = post(cmd, PORT_OPEN, NULL, body, out, sizeof(out), NULL);
+      check("an id too long to answer with is refused, not run",
+            st == 200 && strstr(out, "The id is too long") && !strstr(out, "PONG"));
+   }
+   st = post(cmd, PORT_OPEN, NULL, call("MOJI", NULL), out, sizeof(out), NULL);
+   check("text that is not UTF-8 is answered as UTF-8, the rest kept",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "caf\xC3\xA9 \xEF\xBF\xBD\xEF\xBF\xBD\\n")
+         && !strstr(out, "\xE6\x97"));
    {
       char req[1024];
       const char *b = call("PING", NULL);
