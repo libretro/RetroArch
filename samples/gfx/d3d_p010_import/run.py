@@ -19,6 +19,8 @@ with tempfile.TemporaryDirectory() as directory:
     (tmp / 'convert.inc').write_text(source[start:source.index('\n}', start) + 2])
     start = source.index('static int d3d11_import_tex(')
     (tmp / 'import.inc').write_text(source[start:source.index('\n}', start) + 2])
+    start = source.index('static d3d11_planar_t *d3d11_import_new(')
+    (tmp / 'new11.inc').write_text(source[start:source.index('\n}', start) + 2])
     source12 = (root / 'gfx/drivers/d3d12.c').read_text()
     bodies = []
     for signature in ('static void d3d12_import_forget(', 'static int d3d12_import_tex(',

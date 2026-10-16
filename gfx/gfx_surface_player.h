@@ -59,6 +59,7 @@ typedef struct gfx_surface_player
    void **surface;            /* the consumer's gfx_surface_t pointer */
    gfx_surface_player_cbs_t cb;
    enum image_type_enum type;
+   uint32_t hw_output_pixfmt;
    unsigned hw_slot;          /* the player's job a queued GPU frame is */
    bool rgba;
    bool threaded;             /* two slots, decoded on the worker */

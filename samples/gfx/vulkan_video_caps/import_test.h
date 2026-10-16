@@ -371,6 +371,7 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    memcpy(&frame.image, &input, sizeof(input)); memcpy(&frame.wait, &t->ready, sizeof(t->ready));
    memcpy(&frame.done, &t->done, sizeof(t->done));
    frame.wait_value = frame.done_value = serial; frame.dims = VIDEO_SCALE_PACK(t->width, t->height);
+   frame.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    frame.pixfmt = depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    frame.yuv = flags; frame.layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    if (transfer)
@@ -416,6 +417,11 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
          growth_fence_status = vulkan_symbol_wrapper_vkGetFenceStatus;
          vulkan_symbol_wrapper_vkGetFenceStatus = oracle_growth_busy;
       }
+      frame.output_pixfmt = IMAGE_PIXFMT_P010;
+      if (vulkan_import_convert(&t->vk, &t->output, &frame) != VIDEO_TEXTURE_UPDATE_REFUSED) goto done;
+      frame.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_8888 : IMAGE_PIXFMT_FP16;
+      if (vulkan_import_convert(&t->vk, &t->output, &frame) != VIDEO_TEXTURE_UPDATE_REFUSED) goto done;
+      frame.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
       result = vulkan_import_convert(&t->vk, &t->output, &frame);
       if (serial == 13)
       {

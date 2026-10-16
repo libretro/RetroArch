@@ -29,3 +29,15 @@ with tempfile.TemporaryDirectory() as directory:
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root), '-I' + str(root / 'libretro-common/include'),
         str(Path(__file__).with_name('test.c')), '-o', str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+
+with tempfile.TemporaryDirectory() as directory:
+    tmp = Path(directory)
+    source = (root / 'gfx/gfx_surface_player.c').read_text()
+    (tmp / 'surface.inc').write_text('\n'.join(body(source, s) for s in
+        ('static int gfx_surface_player_start_hw(',
+         'static enum video_player_present gfx_surface_player_present_hw(')))
+    exe = tmp / ('surface.exe' if 'mingw' in cc[0] or os.name == 'nt' else 'surface')
+    subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root),
+        '-I' + str(root / 'libretro-common/include'),
+        str(Path(__file__).with_name('surface_output_test.c')), '-o', str(exe)], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)

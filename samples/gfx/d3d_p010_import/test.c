@@ -1,6 +1,7 @@
 /* The production D3D11/D3D12 import shaders, checked on synthetic P010.
  * Readback and blocking Map are test-only. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
@@ -10,6 +11,7 @@
 #include "fp16_reference.h"
 #include "../../../gfx/common/video_import_color.h"
 #include <formats/image.h>
+#include "../../../gfx/video_defines.h"
 #include "shaders.inc"
 #ifdef _WIN32
 #define COBJMACROS
@@ -24,8 +26,17 @@ typedef ID3D11DeviceContext *D3D11DeviceContext;
 typedef ID3D11ShaderResourceView *D3D11ShaderResourceView;
 typedef ID3D11UnorderedAccessView *D3D11UnorderedAccessView;
 typedef ID3D11Buffer *D3D11Buffer;
+typedef struct d3d11_planar d3d11_planar_t;
 typedef struct
 {
+   ID3D11Texture2D *handle;
+   D3D11_TEXTURE2D_DESC desc;
+   void *sampler;
+} d3d11_texture_t;
+typedef struct
+{
+   void *samplers[2][1];
+   d3d11_planar_t *planar;
    ID3D11Device *device;
    ID3D11Device5 *device5;
    ID3D11DeviceContext *context;
@@ -51,6 +62,35 @@ static const GUID resource1_iid =
    {0x30961379,0x4609,0x4a41,{0x99,0x8e,0x54,0xfe,0x56,0x7e,0xe0,0xc1}};
 #include "import.inc"
 #undef Release
+#define RARCH_FILTER_NEAREST 0
+#define RARCH_FILTER_LINEAR 1
+#define RARCH_WRAP_EDGE 0
+struct d3d11_planar
+{
+   d3d11_texture_t *texture;
+   d3d11_import_t *import;
+   bool interleaved;
+   ID3D11UnorderedAccessView *uav;
+   d3d11_planar_t *next;
+};
+static bool d3d11_init_texture_ex(D3D11Device device, d3d11_texture_t *texture, bool mip)
+{
+   (void)mip;
+   texture->desc.MipLevels = texture->desc.ArraySize = texture->desc.SampleDesc.Count = 1;
+   texture->desc.Usage = D3D11_USAGE_DEFAULT;
+   texture->desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+   return SUCCEEDED(ID3D11Device_CreateTexture2D(device, &texture->desc, NULL, &texture->handle));
+}
+static void d3d11_release_texture(d3d11_texture_t *texture)
+{
+   if (texture->handle) ID3D11Texture2D_Release(texture->handle);
+}
+static void d3d11_planar_destroy(d3d11_planar_t *p)
+{
+   if (p->uav) ID3D11UnorderedAccessView_Release(p->uav);
+   free(p->import); free(p);
+}
+#include "new11.inc"
 
 static int failures;
 static unsigned hdr_mode;
@@ -83,6 +123,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    float *values = (float*)constants + offset;
    HRESULT hr;
    d3d11_video_t video;
+   d3d11_planar_t *allocated = NULL;
 
    memset(&video, 0, sizeof(video));
    memset(&imported, 0, sizeof(imported));
@@ -128,9 +169,10 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    td.MiscFlags = 0;
    td.Format = output_fp16 ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
    td.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-   CHECK(SUCCEEDED(ID3D11Device_CreateTexture2D(device, &td, NULL, &output)));
-   CHECK(SUCCEEDED(ID3D11Device_CreateUnorderedAccessView(device,
-         (ID3D11Resource*)output, NULL, &uav)));
+   allocated = d3d11_import_new(&video, 2, 2, TEXTURE_FILTER_LINEAR, td.Format);
+   CHECK(allocated && allocated->texture->desc.Format == td.Format);
+   output = allocated->texture->handle; ID3D11Texture2D_AddRef(output);
+   uav = allocated->uav; ID3D11UnorderedAccessView_AddRef(uav);
    td.Usage = D3D11_USAGE_STAGING;
    td.BindFlags = 0;
    td.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
@@ -236,6 +278,12 @@ end:
    DROP(video.device5); DROP(shared);
    if (handle) CloseHandle(handle);
    DROP(input); DROP(output); DROP(readback);
+   if (allocated)
+   {
+      d3d11_release_texture(allocated->texture);
+      free(allocated->texture);
+      d3d11_planar_destroy(allocated);
+   }
 }
 
 int main(void)

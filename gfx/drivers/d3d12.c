@@ -10697,7 +10697,7 @@ error:
 /* An RGBA texture imported frames convert into, with its UAV and a
  * pair of plane views for each texture it reads */
 static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
-      unsigned h, enum texture_filter_type filter)
+      unsigned h, enum texture_filter_type filter, DXGI_FORMAT output_format)
 {
    D3D12Device device = d3d12->device;
    d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
@@ -10719,14 +10719,14 @@ static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
          ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
    texture->desc.Width     = w;
    texture->desc.Height    = h;
-   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.Format    = output_format;
    texture->desc.MipLevels = 1;
    texture->desc.Flags     = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
    texture->srv_heap       = heap;
    d3d12_init_texture(device, texture);
    texture->import         = imp;
    if (     !texture->handle
-         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM)
+         || texture->desc.Format != output_format)
       goto error;
    /* written on the GPU only: no upload buffer */
    Release(texture->upload_buffer);
@@ -10743,7 +10743,7 @@ static d3d12_texture_t *d3d12_import_new(d3d12_video_t *d3d12, unsigned w,
       imp->gpu_planes[i].ptr = imp->cpu_planes[i].ptr - heap->cpu.ptr
          + heap->gpu.ptr;
    }
-   uav.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+   uav.Format               = output_format;
    uav.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
    uav.Texture2D.MipSlice   = 0;
    uav.Texture2D.PlaneSlice = 0;
@@ -10930,6 +10930,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
    unsigned w, h, k;
    float kf[6], hdr[4];
    unsigned yuv;
+   DXGI_FORMAT output_format;
    int t;
 
    if (     !d3d12 || !id || !f || !d3d12->video_decode
@@ -10937,6 +10938,12 @@ static enum video_texture_update d3d12_import_texture(void *data,
             && f->pixfmt != IMAGE_PIXFMT_P010)
          || !(d3d12->import_formats & f->pixfmt) || !f->image)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
+         && f->output_pixfmt != IMAGE_PIXFMT_FP16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   output_format = f->output_pixfmt == IMAGE_PIXFMT_FP16
+      ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+
    yuv = f->yuv;
    if (!video_import_color(&yuv, &f->color, kf, hdr))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
@@ -10957,10 +10964,11 @@ static enum video_texture_update d3d12_import_texture(void *data,
    {
       texture = (d3d12_texture_t*)*id;
       if (     !texture->import
-            || texture->desc.Width != w || texture->desc.Height != h)
+            || texture->desc.Width != w || texture->desc.Height != h
+            || texture->desc.Format != output_format)
          return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
-   else if (!(texture = d3d12_import_new(d3d12, w, h, filter)))
+   else if (!(texture = d3d12_import_new(d3d12, w, h, filter, output_format)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    /* another producer's handles: what was opened names other things */

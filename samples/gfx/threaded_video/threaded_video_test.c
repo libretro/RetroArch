@@ -10156,6 +10156,7 @@ static enum video_texture_update movie_ring_import(void *data,
          || frame->wait_value != id || frame->done_value != id
          || frame->plane_views[0] != id + 1000 || frame->plane_views[1] != id + 2000
          || frame->array_slice != 7 || frame->crop_x != 2 || frame->crop_y != 4
+         || frame->output_pixfmt != 0
          || frame->color.primaries != 9 || frame->color.matrix != 9
          || frame->color.transfer != (id % 2 ? 16 : 18)
          || frame->color.range != 1 || frame->color.max_cll != id + 100

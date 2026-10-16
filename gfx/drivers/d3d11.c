@@ -8593,7 +8593,7 @@ static ID3D11Fence *d3d11_import_fence(d3d11_video_t *d3d11,
 
 /* An RGBA texture imported frames convert into */
 static d3d11_planar_t *d3d11_import_new(d3d11_video_t *d3d11, unsigned w,
-      unsigned h, enum texture_filter_type filter)
+      unsigned h, enum texture_filter_type filter, DXGI_FORMAT output_format)
 {
    D3D11Device device = d3d11->device;
    d3d11_texture_t *texture;
@@ -8616,10 +8616,10 @@ static d3d11_planar_t *d3d11_import_new(d3d11_video_t *d3d11, unsigned w,
          ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
    texture->desc.Width     = w;
    texture->desc.Height    = h;
-   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.Format    = output_format;
    texture->desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
    if (     !d3d11_init_texture_ex(device, texture, false)
-         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM
+         || texture->desc.Format != output_format
          || FAILED(device->lpVtbl->CreateUnorderedAccessView(device,
                (D3D11Resource)texture->handle, NULL, &p->uav)))
    {
@@ -8645,6 +8645,7 @@ static enum video_texture_update d3d11_import_texture(void *data,
    ID3D11Fence *done    = NULL;
    unsigned w, h;
    bool ok;
+   DXGI_FORMAT output_format;
    int t;
 
    if (     !d3d11 || !id || !f || !d3d11->context4
@@ -8653,6 +8654,12 @@ static enum video_texture_update d3d11_import_texture(void *data,
          || !(d3d11->import_formats & f->pixfmt) || !f->image
          || !d3d11_planar_init(d3d11))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
+         && f->output_pixfmt != IMAGE_PIXFMT_FP16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   output_format = f->output_pixfmt == IMAGE_PIXFMT_FP16
+      ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+
    w = VIDEO_SCALE_W(f->dims);
    h = VIDEO_SCALE_H(f->dims);
    if (!w || !h)
@@ -8664,10 +8671,11 @@ static enum video_texture_update d3d11_import_texture(void *data,
             break;
       if (     !p || !p->import
             || p->texture->desc.Width  != w
-            || p->texture->desc.Height != h)
+            || p->texture->desc.Height != h
+            || p->texture->desc.Format != output_format)
          return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
-   else if (!(p = d3d11_import_new(d3d11, w, h, filter)))
+   else if (!(p = d3d11_import_new(d3d11, w, h, filter, output_format)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    /* another producer's handles: what was opened names other things */

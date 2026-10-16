@@ -164,7 +164,10 @@ larger NV12-only allocations remain usable and refuse oversized P010 frames.
 PQ/HLG imports apply Hable tone mapping and BT.2020-to-709 conversion.
 FP16 destinations preserve linear scRGB (1.0 = 80 nits), highlights and
 negative wide-gamut channels, with independent double-precision references.
-Automatic HDR hardware reader admission remains gated pending allocation/presentation;
+Import descriptors select RGBA8 (zero/8888) or FP16 independently of NV12/P010
+input; release the destination before changing its format. Invalid formats
+and existing textures of the wrong format are refused before submission.
+Automatic HDR hardware reader admission remains gated pending presentation;
 this oracle exercises imports directly, not HDR movie/display acceptance.
 D3D11/D3D12 share the same shader math; `d3d_p010_import/run.py` checks
 independent HDR reference colors within one output level on a native GPU.

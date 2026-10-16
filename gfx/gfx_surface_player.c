@@ -55,6 +55,12 @@ static int gfx_surface_player_start_hw(void *user, unsigned width,
 {
    gfx_surface_player_t *gsp = (gfx_surface_player_t*)user;
    gfx_surface_t *s;
+   gfx_surface_requirements_t req;
+   gsp->hw_output_pixfmt = IMAGE_PIXFMT_8888;
+   if (     gfx_surface_query_requirements(0, &req)
+         && (req.formats & IMAGE_PIXFMT_FP16)
+         && image_transfer_anim_stream_is_hdr(gsp->stream, gsp->type))
+      gsp->hw_output_pixfmt = IMAGE_PIXFMT_FP16;
    if (     !VIDEO_SCALE_FITS(width, height)
          || !(s = gsp->cb.surface(gsp->cb.user,
                VIDEO_SCALE_PACK(width, height), 0, IMAGE_PIXFMT_NV12))
@@ -86,6 +92,7 @@ static enum video_player_present gfx_surface_player_present_hw(
    imp.done       = hw->done;
    imp.done_value = hw->done_value;
    imp.pixfmt     = pixfmt;
+   imp.output_pixfmt = gsp->hw_output_pixfmt;
    imp.dims       = VIDEO_SCALE_PACK(hw->width, hw->height);
    imp.layout     = hw->layout;
    imp.yuv        = hw->yuv;

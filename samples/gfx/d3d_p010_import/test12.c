@@ -96,9 +96,9 @@ static void transition(ID3D12GraphicsCommandList *cmd, ID3D12Resource *r,
 #define D3D12_RESOURCE_TRANSITION transition
 /* The fixture supplies output/descriptors and retains replaced inputs. */
 static d3d12_texture_t *d3d12_import_new(d3d12_video_t *v, unsigned w,
-      unsigned h, enum texture_filter_type filter)
+      unsigned h, enum texture_filter_type filter, DXGI_FORMAT output_format)
 {
-   (void)v; (void)w; (void)h; (void)filter; failures++; return NULL;
+   (void)v; (void)w; (void)h; (void)filter; (void)output_format; failures++; return NULL;
 }
 static void d3d12_release_texture(d3d12_texture_t *t)
 {
@@ -285,6 +285,7 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    f.image = (uint64_t)(uintptr_t)image_handle;
    f.wait = (uint64_t)(uintptr_t)ready_handle; f.wait_value = 1;
    f.done = (uint64_t)(uintptr_t)done_handle; f.done_value = 1;
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    f.pixfmt = p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    f.dims = VIDEO_SCALE_PACK(2, 2);
    f.yuv = flags;
@@ -299,6 +300,13 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    id = (uintptr_t)&output;
    submitted = v->import_value;
    k = v->import_next % D3D12_IMPORT_LISTS;
+   f.output_pixfmt = IMAGE_PIXFMT_P010;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED
+         && v->import_value == submitted && !ID3D11Fence_GetCompletedValue(done));
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_8888 : IMAGE_PIXFMT_FP16;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED
+         && v->import_value == submitted && !ID3D11Fence_GetCompletedValue(done));
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    /* An occupied list or descriptor pool must return without queuing work. */
    value = v->import_fence[k];
    v->import_fence[k] = ~(UINT64)0 - 1;
@@ -349,12 +357,15 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    f.crop_y = array_case ? 2 : 0;
    f.pixfmt = IMAGE_PIXFMT_I420;
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    f.pixfmt = p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    v->import_formats &= ~f.pixfmt;
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
    v->import_formats |= f.pixfmt;
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    f.pixfmt = p010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);
+   f.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    f.pixfmt = p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    f.dims = VIDEO_SCALE_PACK(4, 2);
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_REFUSED);

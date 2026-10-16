@@ -13887,6 +13887,9 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
          || !vulkan_video_color(&layout, f->yuv, &f->color) || !f->image
          || ((f->crop_x | f->crop_y) & 1)
          || texture->dims != f->dims
+         || (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
+            && f->output_pixfmt != IMAGE_PIXFMT_FP16)
+         || fp16 != (f->output_pixfmt == IMAGE_PIXFMT_FP16)
          || (!sampled && buffer_pipeline == VK_NULL_HANDLE))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
@@ -14083,20 +14086,40 @@ static enum video_texture_update vulkan_import_texture(void *data,
    vk_t *vk = (vk_t*)data;
    struct vk_texture *texture;
    enum video_texture_update r;
+   VkFormat output_format;
 
    if (     !vk || !vk->context || !id || !f
          || !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
          || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
          || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (f->output_pixfmt && f->output_pixfmt != IMAGE_PIXFMT_8888
+         && f->output_pixfmt != IMAGE_PIXFMT_FP16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   output_format = f->output_pixfmt == IMAGE_PIXFMT_FP16
+      ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM;
+   if (!*id && output_format == VK_FORMAT_R16G16B16A16_SFLOAT)
+   {
+      VkFormatProperties props;
+      vkGetPhysicalDeviceFormatProperties(vk->context->gpu, output_format, &props);
+      if (!(props.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
+            || !(props.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+            || vk->pipelines.yuv420_to_rgba16f == VK_NULL_HANDLE)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
    if (*id)
-      return vulkan_import_convert(vk, (struct vk_texture*)*id, f);
+   {
+      texture = (struct vk_texture*)*id;
+      if (texture->format != output_format)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      return vulkan_import_convert(vk, texture, f);
+   }
 
    if (!(texture = (struct vk_texture*)calloc(1, sizeof(*texture))))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    vk->flags |=  VK_FLAG_TEXTURE_FOR_STORAGE;
    *texture   = vulkan_create_texture(vk, NULL, VIDEO_SCALE_W(f->dims),
-         VIDEO_SCALE_H(f->dims), VK_FORMAT_R8G8B8A8_UNORM, NULL, NULL,
+         VIDEO_SCALE_H(f->dims), output_format, NULL, NULL,
          VULKAN_TEXTURE_DYNAMIC);
    vk->flags &= ~VK_FLAG_TEXTURE_FOR_STORAGE;
    if (texture->image == VK_NULL_HANDLE)

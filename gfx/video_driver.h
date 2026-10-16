@@ -1020,6 +1020,9 @@ typedef struct video_frame_import
    unsigned dims;
    unsigned layout;
    unsigned yuv;           /* IMAGE_YUV_FLAG_* */
+   /* Destination: 0/8888 for SDR RGBA8, FP16 for linear scRGB.
+    * Release the texture before changing this request. */
+   uint32_t output_pixfmt;
    video_color_metadata_t color;
    unsigned array_slice;
    unsigned crop_x, crop_y;

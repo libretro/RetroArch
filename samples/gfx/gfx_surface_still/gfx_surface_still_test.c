@@ -125,6 +125,8 @@ enum video_texture_update video_driver_texture_import(uintptr_t *id,
       const video_frame_import_t *frame, enum texture_filter_type filter)
 {
    (void)filter;
+   CHECK(frame->output_pixfmt == (frame->color.transfer == 16 ? IMAGE_PIXFMT_FP16 : 0),
+         "import lost destination format");
    CHECK(frame->color.primaries == 9 && frame->color.matrix == 9
          && (frame->color.transfer == 16 || frame->color.transfer == 18)
          && frame->color.range == 1 && frame->color.max_cll == 1000
@@ -350,6 +352,7 @@ static void st_retired_imports(void)
       frame.image = 1;
       frame.color.primaries = frame.color.matrix = 9;
       frame.color.transfer = i % 2 ? 16 : 18; frame.color.range = 1;
+      frame.output_pixfmt = i % 2 ? IMAGE_PIXFMT_FP16 : 0;
       frame.color.max_cll = 1000; frame.color.max_fall = 400;
       frame.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
       frame.color.mastering.chromaticity[0] = 25000;
