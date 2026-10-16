@@ -693,6 +693,13 @@ static void test_stdio(void)
          "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
    stdio_read(cmd, out, sizeof(out));
    check("and the next server goes on", strstr(out, "\"id\":6") != NULL);
+   /* the client goes on with the tool list it was given, whose rows
+    * tools declare an outputSchema: the revision agreed still holds */
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"UNTIL\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and answers with structuredContent as the first did",
+         strstr(out, "\"id\":8") && strstr(out, "\"structuredContent\""));
 
    close(stdio_in);
    stdio_read(cmd, out, sizeof(out));

@@ -109,7 +109,6 @@ struct mcp_conn
    bool     modern;
    bool     stdio;       /* the stdio transport's one connection */
    bool     structured;  /* its revision takes structuredContent */
-   bool     agreed;      /* stdio: initialize agreed on such a revision */
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -204,6 +203,10 @@ static struct
    bool     claimed;
    bool     eof;
    bool     discarding;  /* reading past a message too long to take */
+   /* initialize agreed on a revision that takes structuredContent: the
+    * stream's, not the server's, which a settings change can restart
+    * while the client goes on with the tool list it was given */
+   bool     agreed;
    bool     quit_sent;
 } mcp_stdio;
 
@@ -1504,7 +1507,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
     * request. Over stdio there are no headers and no second request to
     * carry one: the revision agreed at initialize holds for the session,
     * which is the connection. */
-   structured = modern || mcp_structured_header(hv) || c->agreed;
+   structured = modern || mcp_structured_header(hv)
+      || (c->stdio && mcp_stdio.agreed);
 
    if (modern)
    {
@@ -1566,7 +1570,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       }
       /* what this session answers with from here on */
       if (c->stdio)
-         c->agreed = mcp_structured_version(v);
+         mcp_stdio.agreed = mcp_structured_version(v);
       MCP_RAW(w, "\"result\":{\"protocolVersion\":");
       rjsonwriter_add_string(w, v);
       MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}");
