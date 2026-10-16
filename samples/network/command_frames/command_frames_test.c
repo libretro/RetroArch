@@ -273,7 +273,19 @@ int main(int argc, char **argv)
       CHECK(command_read_memory(&cmd,"1000 1")
             && !strcmp(reply,"READ_CORE_MEMORY 1000 AB\n"));
       CHECK(command_write_memory(&cmd,"1000 aa"));
+      /* only the \r before a line's end goes: one elsewhere is part of
+       * the command, not a second one */
+      udp_line("WRITE_CORE_MEMORY 1000 bb\rWRITE_CORE_MEMORY 1001 cc\n",
+            net_reply, sizeof(net_reply));
+      CHECK(!strncmp(net_reply,"WRITE_CORE_MEMORY ERROR",23));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"1000 2")
+            && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F\n"));
    }
+   /* a log cursor is not a slot: past INT_MAX it is still taken */
+   reply[0]=0;
+   CHECK(command_get_log(&cmd,"3000000000") && !strstr(reply,"ERROR"));
+   cmd.error=false;
    /* a second space after the command's name is still taken */
    reply[0]=0;
    CHECK(command_read_memory(&cmd," 1001 1")

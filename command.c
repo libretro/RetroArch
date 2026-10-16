@@ -235,18 +235,22 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
-   /* a client ending its lines in CRLF leaves no \r on the last word */
-   const char *tok = strtok_r(buf, "\r\n", &save);
+   char     *tok   = strtok_r(buf, "\n", &save);
    unsigned gen    = input_driver_command_generation();
 
    while (tok)
    {
+      /* a client ending its lines in CRLF leaves no \r on the last word;
+       * a \r anywhere else is the command's own */
+      size_t len = strlen(tok);
+      if (len && tok[len - 1] == '\r')
+         tok[len - 1] = '\0';
       command_parse_sub_msg(handle, tok);
       /* The command may have reinitialised the input driver, which
        * owns and has now freed 'handle'. Nothing further may use it. */
       if (input_driver_command_generation() != gen)
          return;
-      tok = strtok_r(NULL, "\r\n", &save);
+      tok = strtok_r(NULL, "\n", &save);
    }
 }
 
@@ -1449,9 +1453,15 @@ static bool command_arg_uint(const char *arg, unsigned *out)
       return false;
    *out = (unsigned)v;
    /* range-checked before narrowing, so 4294967297 is not slot 1, and
-    * where long is 32 bits strtoul clamps it and says so; past INT_MAX a
-    * slot turns negative, which is the auto slot */
-   return errno != ERANGE && v <= INT_MAX;
+    * where long is 32 bits strtoul clamps it and says so */
+   return errno != ERANGE && (unsigned long)*out == v;
+}
+
+/* A state or replay slot: past INT_MAX one turns negative, which is the
+ * auto slot's file. */
+static bool command_arg_slot(const char *arg, unsigned *out)
+{
+   return command_arg_uint(arg, out) && *out <= INT_MAX;
 }
 
 static bool command_load_state_start(struct command_reply *r)
@@ -1483,7 +1493,7 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
    bool savestates_enabled      = core_info_current_supports_savestate();
    struct command_reply *r;
 
-   if (!command_arg_uint(arg, &slot))
+   if (!command_arg_slot(arg, &slot))
    {
       command_reply_error(cmd, name, "a slot number, not %s",
             (arg && *arg) ? arg : "nothing");
@@ -1536,7 +1546,7 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    char replay_path[16384];
    unsigned int slot            = 0;
    struct command_reply *r      = NULL;
-   if (!command_arg_uint(arg, &slot))
+   if (!command_arg_slot(arg, &slot))
    {
       command_reply_error(cmd, "PLAY_REPLAY_SLOT", "a slot number, not %s",
             (arg && *arg) ? arg : "nothing");

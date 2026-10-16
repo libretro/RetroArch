@@ -647,6 +647,29 @@ static void test_stdio(void)
          && !strstr(out, "all is well")
          && strstr(out, "notifications/message"));
 
+   {
+      /* a message past the limit, and on the same line after it what
+       * would be a request of its own: only the refusal is answered */
+      static char chunk[32769];
+      memset(chunk, 'x', 32768);
+      chunk[32768] = '\0';
+      stdio_send(chunk);
+      stdio_read(cmd, out, sizeof(out));
+      stdio_send(chunk);
+      stdio_read(cmd, out, sizeof(out));
+      check("a message too long is refused once",
+            count_lines(out) == 1 && strstr(out, "too long"));
+      stdio_send("{\"jsonrpc\":\"2.0\",\"id\":45,\"method\":\"tools/call\","
+            "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
+      stdio_read(cmd, out, sizeof(out));
+      check("and the rest of its line is not run", !*out);
+      stdio_send("{\"jsonrpc\":\"2.0\",\"id\":46,\"method\":\"tools/call\","
+            "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
+      stdio_read(cmd, out, sizeof(out));
+      check("the next line is read as ever",
+            strstr(out, "\"id\":46") && strstr(out, "PONG"));
+   }
+
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":44,\"method\":\"tools/call\","
          "\"params\":{\"name\":\"NOW\",\"arguments\":{}}}\n");
    stdio_read(cmd, out, sizeof(out));

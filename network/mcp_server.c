@@ -203,6 +203,7 @@ static struct
    int      log_level;   /* index into mcp_log_levels; -1: no logging */
    bool     claimed;
    bool     eof;
+   bool     discarding;  /* reading past a message too long to take */
    bool     quit_sent;
 } mcp_stdio;
 
@@ -1909,8 +1910,10 @@ static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
          if (mcp_stdio.in_len >= MCP_MAX_REQUEST)
          {
             mcp_stdio.in_len = 0;
-            mcp_error(c, NULL, MCP_ERR_PARSE, "The message is too long.",
-                  false);
+            if (!mcp_stdio.discarding)
+               mcp_error(c, NULL, MCP_ERR_PARSE,
+                     "The message is too long.", false);
+            mcp_stdio.discarding = true;
          }
          break;
       }
@@ -1918,13 +1921,15 @@ static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
       *nl  = '\0';
       if (line && mcp_stdio.in[line - 1] == '\r')
          mcp_stdio.in[--line] = '\0';
-      if (line)
+      /* the rest of a message too long to read is not one of its own */
+      if (line && !mcp_stdio.discarding)
       {
          c->serial = ++mcp->serials;
          c->since  = now;
          mcp_handle(mcp, cmd, 0, (char*)"", mcp_stdio.in, line);
       }
-      mcp_stdio.in_len -= (size_t)(nl + 1 - mcp_stdio.in);
+      mcp_stdio.discarding = false;
+      mcp_stdio.in_len    -= (size_t)(nl + 1 - mcp_stdio.in);
       memmove(mcp_stdio.in, nl + 1, mcp_stdio.in_len);
       /* the other requests wait out the content load */
       if (command_interfaces_held())
