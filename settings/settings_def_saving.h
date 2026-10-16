@@ -23,6 +23,11 @@ S_UINT_EX_H(autosave_interval, AUTOSAVE_INTERVAL,
       "Save File: SaveRAM Autosave Interval",
       "Automatically save the non-volatile SaveRAM at a regular interval (in seconds).")
 #endif
+S_UINT_EX(sram_slot, SRAM_SLOT,
+      "sram_slot",
+      DEFAULT_SRAM_SLOT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 999, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      "Save File: SaveRAM Slot",
+      "Select which SaveRAM file the content uses. Slot 0 is the usual 'Content.srm', other slots add the number, e.g. 'Content.srm2'. Takes effect the next time content is loaded.")
 /* Descriptor and configuration rows are #ifdef HAVE_THREADS; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_THREADS) || defined(SETTINGS_DEF_STRINGS_PASS)
