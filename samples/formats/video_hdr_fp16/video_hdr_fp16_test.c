@@ -19,6 +19,7 @@
 #include <formats/rmp4_video.h>
 #include <formats/rwebm_video.h>
 #include <streams/file_stream.h>
+#include <rthreads/tpool.h>
 
 #define W 64
 #define H 48
@@ -330,6 +331,93 @@ done:
    free(buf);
 }
 
+static void stride_lane(const fixture_t *f, unsigned bands)
+{
+   const unsigned stride = W + 17;
+   const size_t bpp = f->hdr ? 8 : 4;
+   const size_t row = W * bpp;
+   const size_t pitch = stride * bpp;
+   size_t len, y, x;
+   void *buf = load(f->path, &len);
+   void *reference = stream_open(f, buf, len);
+   void *padded = stream_open(f, buf, len);
+   uint8_t *tight = (uint8_t*)malloc(row * H);
+   uint8_t *out = (uint8_t*)malloc(pitch * H + 32);
+   tpool_t *pool = bands > 1 ? tpool_create(2) : NULL;
+   unsigned k, had = failures;
+   CHECK(reference && padded && tight && out && (bands == 1 || pool),
+         "%s: stride setup failed", f->path);
+   if (!reference || !padded || !tight || !out || (bands > 1 && !pool))
+      goto done;
+   image_transfer_anim_stream_set_want_fp16(reference, f->type, f->hdr != 0);
+   image_transfer_anim_stream_set_want_fp16(padded, f->type, f->hdr != 0);
+   image_transfer_anim_stream_set_blit_pool(padded, f->type, pool, bands);
+   CHECK(image_transfer_anim_stream_set_output(reference, f->type,
+            (uint32_t*)tight), "%s: packed output refused", f->path);
+   CHECK(image_transfer_anim_stream_set_output_stride(padded, f->type,
+            (uint32_t*)out, stride), "%s: padded output refused", f->path);
+   CHECK(!image_transfer_anim_stream_set_output_stride(padded, f->type,
+            (uint32_t*)tight, W - 1), "%s: short stride accepted", f->path);
+   if (f->type == IMAGE_TYPE_MP4)
+   {
+      rmp4_video_stream_t *s = (rmp4_video_stream_t*)padded;
+      unsigned height = s->height;
+      s->height = UINT32_MAX;
+      CHECK(!image_transfer_anim_stream_set_output_stride(s, f->type,
+               (uint32_t*)tight, UINT32_MAX), "%s: overflow accepted", f->path);
+      s->height = height;
+   }
+   else
+   {
+      rwebm_video_stream_t *s = (rwebm_video_stream_t*)padded;
+      unsigned height = s->height;
+      s->height = UINT32_MAX;
+      CHECK(!image_transfer_anim_stream_set_output_stride(s, f->type,
+               (uint32_t*)tight, UINT32_MAX), "%s: overflow accepted", f->path);
+      s->height = height;
+   }
+   for (k = 0; k < 3; k++)
+   {
+      memset(out, 0xa5, pitch * H + 32);
+      CHECK(stream_next(f, reference) == (const uint32_t*)tight,
+            "%s: packed decode failed", f->path);
+      CHECK(stream_next(f, padded) == (const uint32_t*)out,
+            "%s: padded decode changed output", f->path);
+      for (y = 0; y < H; y++)
+      {
+         CHECK(!memcmp(tight + y * row, out + y * pitch, row),
+               "%s: padded pixels differ at row %u", f->path, (unsigned)y);
+         for (x = row; x < pitch; x++)
+            CHECK(out[y * pitch + x] == 0xa5,
+                  "%s: row padding overwritten", f->path);
+      }
+      for (x = pitch * H; x < pitch * H + 32; x++)
+         CHECK(out[x] == 0xa5, "%s: output guard overwritten", f->path);
+   }
+   image_transfer_anim_stream_set_output(padded, f->type, (uint32_t*)out);
+   if (f->type == IMAGE_TYPE_MP4)
+      rmp4_video_stream_rewind((rmp4_video_stream_t*)padded);
+   else
+      rwebm_video_stream_rewind((rwebm_video_stream_t*)padded);
+   memset(out, 0xa5, pitch * H + 32);
+   CHECK(stream_next(f, padded) == (const uint32_t*)out,
+         "%s: packed output reset failed", f->path);
+   CHECK(!memcmp(tight, out, row * H),
+         "%s: legacy setter retained padded stride", f->path);
+   for (x = row * H; x < pitch * H + 32; x++)
+      CHECK(out[x] == 0xa5, "%s: packed reset overran output", f->path);
+done:
+   stream_close(f, reference);
+   stream_close(f, padded);
+   if (pool)
+      tpool_destroy(pool);
+   free(tight);
+   free(out);
+   free(buf);
+   if (failures == had)
+      printf("[ok]   %s: padded output, %u band(s)\n", f->path, bands);
+}
+
 int main(void)
 {
    static const fixture_t fx[] = {
@@ -346,6 +434,8 @@ int main(void)
    for (i = 0; i < sizeof(fx) / sizeof(fx[0]); i++)
    {
       lane(&fx[i]);
+      stride_lane(&fx[i], 1);
+      stride_lane(&fx[i], 4);
       still_lane(&fx[i], 1);
       still_lane(&fx[i], 0);
    }

@@ -205,6 +205,12 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
       uint32_t *out);
 
+/* As set_output, with rows @stride pixels apart (0: width), including
+ * FP16 pixels. NULL restores the canvas. False leaves output unchanged
+ * if the stride is too short or its frame extent overflows size_t. */
+int rwebm_video_stream_set_output_stride(rwebm_video_stream_t *stream,
+      uint32_t *out, unsigned stride);
+
 /* Linear scRGB half floats for an HDR source: a 10-bit PQ or HLG frame
  * decoded into the caller's frame (rwebm_video_stream_set_output),
  * which then holds 8 bytes a pixel, through rwebm_video_blit_i420_fp16

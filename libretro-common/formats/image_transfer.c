@@ -1032,22 +1032,22 @@ bool image_transfer_anim_stream_hw_frame(void *stream,
    return false;
 }
 
-bool image_transfer_anim_stream_set_output(void *stream,
-      enum image_type_enum type, uint32_t *out)
+bool image_transfer_anim_stream_set_output_stride(void *stream,
+      enum image_type_enum type, uint32_t *out, unsigned stride)
 {
    switch (type)
    {
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
-         rwebm_video_stream_set_output((rwebm_video_stream_t*)stream, out);
-         return true;
+         return rwebm_video_stream_set_output_stride(
+               (rwebm_video_stream_t*)stream, out, stride) != 0;
 #else
          break;
 #endif
       case IMAGE_TYPE_MP4:
 #ifdef HAVE_RMP4
-         rmp4_video_stream_set_output((rmp4_video_stream_t*)stream, out);
-         return true;
+         return rmp4_video_stream_set_output_stride(
+               (rmp4_video_stream_t*)stream, out, stride) != 0;
 #else
          break;
 #endif
@@ -1058,6 +1058,12 @@ bool image_transfer_anim_stream_set_output(void *stream,
          break;
    }
    return false;
+}
+
+bool image_transfer_anim_stream_set_output(void *stream,
+      enum image_type_enum type, uint32_t *out)
+{
+   return image_transfer_anim_stream_set_output_stride(stream, type, out, 0);
 }
 
 /* The video streams give an HDR source as linear scRGB half floats

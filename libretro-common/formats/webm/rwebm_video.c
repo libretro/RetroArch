@@ -88,6 +88,7 @@ struct rwebm_video_stream
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
    void        *blit_pool;  /* tpool_t the blit's row bands run on   */
+   unsigned     out_stride; /* caller row stride in pixels, 0: width */
    unsigned     blit_bands; /* how many; <= 1 blits on this thread   */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
@@ -735,10 +736,24 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *s, int argb)
       s->emit_argb = argb ? 1 : 0;
 }
 
+int rwebm_video_stream_set_output_stride(rwebm_video_stream_t *s,
+      uint32_t *out, unsigned stride)
+{
+   if (!s)
+      return 0;
+   if (!stride)
+      stride = s->width;
+   if (out && (stride < s->width
+            || (s->height && (size_t)stride > SIZE_MAX / 8 / s->height)))
+      return 0;
+   s->out        = out;
+   s->out_stride = out ? stride : 0;
+   return 1;
+}
+
 void rwebm_video_stream_set_output(rwebm_video_stream_t *s, uint32_t *out)
 {
-   if (s)
-      s->out = out;
+   rwebm_video_stream_set_output_stride(s, out, 0);
 }
 
 void rwebm_video_stream_set_want_fp16(rwebm_video_stream_t *s, int want)
@@ -1326,7 +1341,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
             rwebm_blit_ctx_t c;
             c.dst        = dst;
-            c.dst_stride = s->width;
+            c.dst_stride = s->out && s->out_stride ? s->out_stride : s->width;
             c.w          = w;
             c.y          = fb->y;
             c.u          = fb->u;
@@ -1401,7 +1416,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
          rwebm_blit_ctx_t c;
          c.dst        = dst;
-         c.dst_stride = s->width;
+         c.dst_stride = s->out && s->out_stride ? s->out_stride : s->width;
          c.w          = (unsigned)w;
          c.y          = y;
          c.u          = u;

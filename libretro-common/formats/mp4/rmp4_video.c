@@ -89,6 +89,7 @@ struct rmp4_video_stream
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
    void        *blit_pool;  /* tpool_t the blit's row bands run on   */
+   unsigned     out_stride; /* caller row stride in pixels, 0: width */
    unsigned     blit_bands; /* how many; <= 1 blits on this thread   */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
@@ -1446,10 +1447,24 @@ int rmp4_video_stream_hw_frame(rmp4_video_stream_t *s,
    return 1;
 }
 
+int rmp4_video_stream_set_output_stride(rmp4_video_stream_t *s,
+      uint32_t *out, unsigned stride)
+{
+   if (!s)
+      return 0;
+   if (!stride)
+      stride = s->width;
+   if (out && (stride < s->width
+            || (s->height && (size_t)stride > SIZE_MAX / 8 / s->height)))
+      return 0;
+   s->out        = out;
+   s->out_stride = out ? stride : 0;
+   return 1;
+}
+
 void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
 {
-   if (s)
-      s->out = out;
+   rmp4_video_stream_set_output_stride(s, out, 0);
 }
 
 void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *s, int want)
@@ -1612,7 +1627,8 @@ static void rmp4_video_blit_frame(rmp4_video_stream_t *s,
 #define RMP4_BLIT_CTX(c, s_, dst_, w_, y_, u_, v_, ys_, uvs_, kind_, argb_) \
    do { \
       (c).dst        = (dst_); \
-      (c).dst_stride = (s_)->width; \
+      (c).dst_stride = (s_)->out && (s_)->out_stride \
+         ? (s_)->out_stride : (s_)->width; \
       (c).w          = (unsigned)(w_); \
       (c).y          = (y_); \
       (c).u          = (u_); \

@@ -619,6 +619,12 @@ bool image_transfer_anim_stream_is_fp16(const void *stream,
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out);
 
+/* Caller output with rows @stride pixels apart (0: width). The stride
+ * counts pixels for both 32-bit and FP16 output. False leaves the
+ * output unchanged for an unsupported stream or invalid stride. */
+bool image_transfer_anim_stream_set_output_stride(void *stream,
+      enum image_type_enum type, uint32_t *out, unsigned stride);
+
 /* Frames decoded on the GPU (formats/video_hw_frame.h) rather than
  * into pixels, where the stream's decoder has a hardware backend that
  * takes it (MP4 H.264, rmp4_video_stream_set_hw); true when they will

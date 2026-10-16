@@ -175,6 +175,12 @@ void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
 
+/* As set_output, with rows @stride pixels apart (0: width), including
+ * FP16 pixels. NULL restores the canvas. False leaves output unchanged
+ * if the stride is too short or its frame extent overflows size_t. */
+int rmp4_video_stream_set_output_stride(rmp4_video_stream_t *stream,
+      uint32_t *out, unsigned stride);
+
 /* H.264/HEVC/AV1 on the hardware backend: true when the
  * frames will come from it, false when they stay in software - another
  * codec, a colour the GPU frame cannot carry, or a backend that will
