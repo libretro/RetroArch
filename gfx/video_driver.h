@@ -35,6 +35,7 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
+#include <formats/video_color.h>
 #include <formats/rpng.h>
 #include "../tasks/task_notify.h"
 
@@ -1019,6 +1020,7 @@ typedef struct video_frame_import
    unsigned dims;
    unsigned layout;
    unsigned yuv;           /* IMAGE_YUV_FLAG_* */
+   video_color_metadata_t color;
    unsigned array_slice;
    unsigned crop_x, crop_y;
    /* The producer's, for a consumer that will not have the frame read

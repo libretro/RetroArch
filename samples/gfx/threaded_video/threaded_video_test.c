@@ -10156,6 +10156,10 @@ static enum video_texture_update movie_ring_import(void *data,
          || frame->wait_value != id || frame->done_value != id
          || frame->plane_views[0] != id + 1000 || frame->plane_views[1] != id + 2000
          || frame->array_slice != 7 || frame->crop_x != 2 || frame->crop_y != 4
+         || frame->color.primaries != 9 || frame->color.matrix != 9
+         || frame->color.transfer != (id % 2 ? 16 : 18)
+         || frame->color.range != 1 || frame->color.max_cll != id + 100
+         || frame->color.max_fall != id + 50
          || frame->wait != 34 || frame->done != 88 || !id || id > MOVIE_RING_FRAMES)
    {
       retro_atomic_fetch_add_int(&movie_ring_errors, 1);
@@ -10203,9 +10207,12 @@ static void lane_movie_ring(void)
    hw.width = 1920; hw.height = 1080; hw.pixfmt = IMAGE_PIXFMT_P010;
    hw.wait = 34; hw.done = 88; hw.abandon = movie_ring_release;
    hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
+   hw.color.primaries = hw.color.matrix = 9; hw.color.range = 1;
    for (i = 1; i <= MOVIE_RING_FRAMES - 2; i++)
    {
       hw.image = i; hw.wait_value = hw.done_value = i;
+      hw.color.transfer = i % 2 ? 16 : 18;
+      hw.color.max_cll = i + 100; hw.color.max_fall = i + 50;
       hw.plane_views[0] = i + 1000; hw.plane_views[1] = i + 2000;
       CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: staging refused %u", i);
       CHECK(!video_driver_movie_refresh(NULL, &hw), "movie ring: staging overwrite %u", i);
@@ -10214,6 +10221,9 @@ static void lane_movie_ring(void)
    video_thread_wait_idle();
    /* Clear releases a staged lease before its frame is published. */
    hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES - 1;
+   hw.color.transfer = hw.image % 2 ? 16 : 18;
+   hw.color.max_cll = (unsigned)hw.image + 100;
+   hw.color.max_fall = (unsigned)hw.image + 50;
    hw.plane_views[0] = hw.image + 1000; hw.plane_views[1] = hw.image + 2000;
    CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before clear");
    video_driver_movie_clear();
@@ -10221,6 +10231,9 @@ static void lane_movie_ring(void)
    video_thread_wait_idle();
    /* Teardown releases a lease that never reached the frame ring. */
    hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES;
+   hw.color.transfer = hw.image % 2 ? 16 : 18;
+   hw.color.max_cll = (unsigned)hw.image + 100;
+   hw.color.max_fall = (unsigned)hw.image + 50;
    hw.plane_views[0] = hw.image + 1000; hw.plane_views[1] = hw.image + 2000;
    CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: stage before teardown");
    set_driver(thr, movie_ring_inner); set_poke(thr, inner_poke);

@@ -105,6 +105,7 @@ struct rmp4_video_stream
    int          wait_key;   /* a reference failed; hold out for a key */
    int          catchup;    /* dropping droppable pictures to catch up */
    int          track;      /* index of the chosen video track        */
+   unsigned     primaries;
    unsigned     matrix;     /* matrix coefficients; 0 untagged        */
    unsigned     transfer;   /* transfer characteristics              */
    unsigned     range;      /* container or SPS full-range flag      */
@@ -536,6 +537,7 @@ static void rmp4_video_hevc_color(rmp4_video_stream_t *s, const rmp4_track *t)
    rh265_video_color_t color;
    unsigned pps;
    if (!t) return;
+   s->primaries = t->color_primaries;
    s->matrix = t->matrix_coefficients;
    s->transfer = t->transfer_characteristics;
    s->range = t->full_range;
@@ -544,6 +546,8 @@ static void rmp4_video_hevc_color(rmp4_video_stream_t *s, const rmp4_track *t)
       {
          if (color.description_present)
          {
+            if (!t->color_description_present || t->color_primaries == 2)
+               s->primaries = color.primaries;
             if (!t->color_description_present || t->matrix_coefficients == 2)
                s->matrix = color.matrix == 2 ? 0 : color.matrix;
             if (!t->color_description_present || t->transfer_characteristics == 2)
@@ -573,7 +577,9 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
        seq->max_height != s->height)
       goto fail;
    if (t->color_description_present &&
-       ((seq->matrix_coefficients != 2 && t->matrix_coefficients != 2 &&
+       ((seq->color_primaries != 2 && t->color_primaries != 2 &&
+         seq->color_primaries != t->color_primaries) ||
+        (seq->matrix_coefficients != 2 && t->matrix_coefficients != 2 &&
          seq->matrix_coefficients != t->matrix_coefficients) ||
         (seq->transfer_characteristics != 2 &&
          t->transfer_characteristics != 2 &&
@@ -581,6 +587,8 @@ static bool rmp4_video_av1_open(rmp4_video_stream_t *s)
       goto fail;
    if (t->range_present && t->full_range != seq->color_range)
       goto fail;
+   s->primaries = seq->color_primaries != 2
+      ? seq->color_primaries : t->color_primaries;
    s->matrix = seq->matrix_coefficients != 2
                    ? seq->matrix_coefficients
                    : (t->matrix_coefficients == 2 ? 0 : t->matrix_coefficients);
@@ -686,6 +694,10 @@ static int rmp4_video_hwf_take(rmp4_video_stream_t *s)
    if (s->range)
       yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
    f.yuv          = yuv;
+   f.color.primaries = s->primaries;
+   f.color.transfer = s->transfer;
+   f.color.matrix = s->matrix;
+   f.color.range = s->range ? 2 : 1;
    s->hwf         = f;
    s->hwf_untaken = 1;
    s->rndr_kind   = 5;
@@ -785,6 +797,7 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
          continue;
       s->track  = i;
       s->codec  = t->codec;
+      s->primaries = t->color_primaries;
       s->matrix   = t->matrix_coefficients;
       s->transfer = t->transfer_characteristics;
       s->range    = t->full_range;
@@ -1003,6 +1016,10 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
          frame.yuv |= IMAGE_YUV_FLAG_BT709;
       else
          frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      frame.color.primaries = s->primaries;
+      frame.color.transfer = s->transfer;
+      frame.color.matrix = s->matrix;
+      frame.color.range = s->range ? 2 : 1;
       rmp4_video_hwf_drop(s);
       s->hwf = frame;
       s->hwf_untaken = 1;

@@ -158,6 +158,9 @@ static void lane(const fixture_t *f)
    else
       CHECK(!((rwebm_video_stream_t*)s)->frame,
             "%s: private canvas allocated for caller output", f->path);
+   if (f->type == IMAGE_TYPE_MP4)
+      CHECK(((rmp4_video_stream_t*)s)->primaries == (f->hdr ? 9u : 1u),
+            "%s: source primaries lost", f->path);
    stream_close(f, s);
 
    /* Into the stream's own canvas: asked, but nowhere to put 8 bytes a

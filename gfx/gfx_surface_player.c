@@ -89,6 +89,7 @@ static enum video_player_present gfx_surface_player_present_hw(
    imp.dims       = VIDEO_SCALE_PACK(hw->width, hw->height);
    imp.layout     = hw->layout;
    imp.yuv        = hw->yuv;
+   imp.color      = hw->color;
    imp.array_slice = hw->array_slice;
    imp.crop_x = hw->crop_x;
    imp.crop_y = hw->crop_y;

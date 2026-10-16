@@ -81,6 +81,7 @@ struct rwebm_video_stream
    int pending, pending_idx;
    int hw_want, hw_untaken, hw_skip;
    unsigned hw_yuv_mask, hw_yuv;
+   video_color_metadata_t hw_color;
 #endif
    int waiting;
    uint32_t    *frame;      /* width * height ABGR words              */
@@ -993,7 +994,9 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    if (!rav1_config_sequence(seq, &config) || seq->max_width != s->width
          || seq->max_height != s->height || t->colour_range > 2)
       goto fail;
-   if ((t->matrix_coefficients && t->matrix_coefficients != 2
+   if ((t->primaries && t->primaries != 2 && seq->color_primaries != 2
+            && seq->color_primaries != t->primaries)
+         || (t->matrix_coefficients && t->matrix_coefficients != 2
             && seq->matrix_coefficients != 2
             && seq->matrix_coefficients != t->matrix_coefficients)
          || (t->transfer_characteristics && t->transfer_characteristics != 2
@@ -1009,6 +1012,13 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
          || transfer == 16 || transfer == 18
          || !rav1_hw_stream_open_sequence(s->av1))
       goto fail;
+   s->hw_color.primaries = seq->color_primaries != 2
+      ? seq->color_primaries : t->primaries;
+   s->hw_color.transfer = transfer;
+   s->hw_color.matrix = matrix;
+   s->hw_color.range = seq->color_range ? 2 : 1;
+   s->hw_color.max_cll = t->max_cll;
+   s->hw_color.max_fall = t->max_fall;
    s->hw_yuv_mask = IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE;
    s->hw_yuv = seq->color_range ? IMAGE_YUV_FLAG_FULL_RANGE : 0;
    if (matrix == 1 || (!matrix && s->height >= 720))
@@ -1083,6 +1093,7 @@ static int rwebm_video_av1_step(rwebm_video_stream_t *s,
    if (s->hw_untaken)
    {
       frame.yuv = (frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+      frame.color = s->hw_color;
       s->hw_frame = frame;
    }
    else
@@ -1139,6 +1150,12 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    { backend.close(&ops); free(candidate); return 0; }
    if (s->vp9) { rvp9_free(s->vp9); free(s->vp9); s->vp9 = NULL; }
    s->hw = candidate; s->hw_backend = backend; s->hw_want = 1;
+   s->hw_color.primaries = t->primaries;
+   s->hw_color.transfer = t->transfer_characteristics;
+   s->hw_color.matrix = t->matrix_coefficients;
+   s->hw_color.range = t->colour_range;
+   s->hw_color.max_cll = t->max_cll;
+   s->hw_color.max_fall = t->max_fall;
    s->hw_yuv_mask = s->hw_yuv = 0;
    if (t->matrix_coefficients == 1 || t->matrix_coefficients == 5 || t->matrix_coefficients == 6)
    {
@@ -1242,6 +1259,7 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int di
             if (ret == 1) { s->waiting = 1; return 2; }
             if (ret < 0) return -1;
             s->hw_frame.yuv = (s->hw_frame.yuv & ~s->hw_yuv_mask) | s->hw_yuv;
+            s->hw_frame.color = s->hw_color;
             s->hw_untaken = 1;
          }
       }

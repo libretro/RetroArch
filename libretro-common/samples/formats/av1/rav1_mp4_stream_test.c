@@ -168,6 +168,8 @@ static void test_color(void)
    if (marker)
    {
       CHECK(frame.yuv & IMAGE_YUV_FLAG_BT709);
+      CHECK(frame.color.primaries == 1 && frame.color.matrix == 1
+            && frame.color.transfer == 2 && frame.color.range == 1);
       video_hw_frame_abandon(&frame);
    }
    rmp4_video_stream_close(s);

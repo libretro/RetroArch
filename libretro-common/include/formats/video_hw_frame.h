@@ -50,6 +50,7 @@
 
 #include <retro_common_api.h>
 #include <retro_inline.h>
+#include <formats/video_color.h>
 
 RETRO_BEGIN_DECLS
 
@@ -77,6 +78,7 @@ typedef struct video_hw_frame
    unsigned pixfmt;          /* image_pixfmt; zero means legacy NV12 */
    unsigned array_slice;    /* D3D12: shared decoder array element */
    unsigned crop_x, crop_y; /* visible origin within that element */
+   video_color_metadata_t color;
    unsigned api;             /* video_hw_api; zero for older producers */
 } video_hw_frame_t;
 

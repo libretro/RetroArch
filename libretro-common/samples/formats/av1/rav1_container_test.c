@@ -277,7 +277,7 @@ static void test_mp4(void)
          track->codec_private_size == sizeof(config) &&
          rav1_config_parse(&cfg, track->codec_private,
                            track->codec_private_size));
-   CHECK(track && track->matrix_coefficients == 9 &&
+   CHECK(track && track->color_primaries == 1 && track->matrix_coefficients == 9 &&
          track->transfer_characteristics == 16 && track->full_range &&
          track->color_description_present && track->range_present);
    CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN);

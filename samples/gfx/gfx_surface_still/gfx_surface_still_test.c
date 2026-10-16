@@ -17,6 +17,10 @@
 #include "gfx/gfx_surface.h"
 #include <formats/image_yuv_blit.h>
 
+static int failures;
+#define CHECK(c, ...) do { if (!(c)) { failures++; \
+   printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
+
 /* --- stub driver ------------------------------------------------- */
 static uintptr_t st_next = 1;
 static int       st_live, st_loads, st_unloads, st_async;
@@ -120,7 +124,11 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
       const video_frame_import_t *frame, enum texture_filter_type filter)
 {
-   (void)frame; (void)filter;
+   (void)filter;
+   CHECK(frame->color.primaries == 9 && frame->color.matrix == 9
+         && (frame->color.transfer == 16 || frame->color.transfer == 18)
+         && frame->color.range == 1 && frame->color.max_cll == 1000
+         && frame->color.max_fall == 400, "import lost source HDR metadata");
    if (st_import_result == VIDEO_TEXTURE_UPDATE_DONE && !*id)
    {
       *id = st_next++;
@@ -296,9 +304,7 @@ static struct texture_image *st_image(unsigned w)
 }
 
 /* --- the test ---------------------------------------------------- */
-static int failures;
-#define CHECK(c, ...) do { if (!(c)) { failures++; \
-   printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
+
 
 /* The path of slot @i in the set lane: "<8 + i>.png", but slot 3's
  * file does not exist and slot 5 has no still */
@@ -338,6 +344,9 @@ static void st_retired_imports(void)
       frame.dims = VIDEO_SCALE_PACK(4, 4);
       frame.pixfmt = IMAGE_PIXFMT_NV12;
       frame.image = 1;
+      frame.color.primaries = frame.color.matrix = 9;
+      frame.color.transfer = i % 2 ? 16 : 18; frame.color.range = 1;
+      frame.color.max_cll = 1000; frame.color.max_fall = 400;
       frame.done = 42;
       frame.done_value = 7;
       frame.owner = &st_abandoned;

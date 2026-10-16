@@ -68,6 +68,7 @@ typedef struct
    unsigned               width, height;
    /* From the sample entry's colr box (nclx/nclc); 0 when untagged, in
     * which case converters pick defaults by resolution. */
+   unsigned               color_primaries;
    unsigned               matrix_coefficients;
    unsigned               transfer_characteristics;
    unsigned               full_range;
