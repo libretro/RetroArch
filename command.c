@@ -2723,6 +2723,9 @@ static struct
    uint16_t            held;    /* the buttons the job let go of, by bit */
    uint8_t             answer;  /* enum cmd_job_answer */
    bool                has_stop;
+   /* a frame with the buttons let go between two presses of the same
+    * one, so the game sees two taps rather than one long press */
+   bool                gap;
    char                reply[256]; /* CMD_ANSWER_LINE: the line */
 } command_run_frames_st;
 
@@ -2878,6 +2881,7 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.budget = budget;
    command_run_frames_st.answer = answer;
    command_run_frames_st.held   = 0;
+   command_run_frames_st.gap    = false;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    command_run_frames_enter();
@@ -2912,7 +2916,13 @@ void command_run_frames_tick(void)
       }
    }
    s = &command_run_frames_st.steps[command_run_frames_st.cur];
-   if (s->kind == CMD_STEP_UNTIL)
+   if (command_run_frames_st.gap)
+   {
+      command_run_frames_st.gap = false;
+      command_run_frames_st.cur++;
+      command_run_frames_enter();
+   }
+   else if (s->kind == CMD_STEP_UNTIL)
    {
       if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
                sizeof(why)))
@@ -2929,9 +2939,19 @@ void command_run_frames_tick(void)
    }
    else if (!--command_run_frames_st.left)
    {
+      const struct command_step *n =
+         command_run_frames_st.cur + 1 < command_run_frames_st.count
+         ? &command_run_frames_st.steps[command_run_frames_st.cur + 1]
+         : NULL;
       command_run_frames_release();
-      command_run_frames_st.cur++;
-      command_run_frames_enter();
+      if (     s->kind == CMD_STEP_PRESS && n && n->kind == CMD_STEP_PRESS
+            && n->port == s->port && (n->mask & s->mask))
+         command_run_frames_st.gap = true;
+      else
+      {
+         command_run_frames_st.cur++;
+         command_run_frames_enter();
+      }
    }
    /* the frames allowed have run with a step still going: how far it
     * got, so the next request carries on from there */
@@ -3417,7 +3437,12 @@ bool command_press(command_t *cmd, const char *arg)
    char    *until;
    struct command_step steps[2];
 
-   strlcpy(line, arg ? arg : "", sizeof(line));
+   if (strlcpy(line, arg ? arg : "", sizeof(line)) >= sizeof(line))
+   {
+      command_reply_error(cmd, "PRESS", "at most %u characters",
+            (unsigned)sizeof(line) - 1);
+      return false;
+   }
    memset(steps, 0, sizeof(steps));
    /* "<frames> until <condition>": run on after the press until the
     * condition holds - jump, then land - in the same request */
@@ -3520,6 +3545,7 @@ bool command_steps(command_t *cmd, const char *arg)
    }
    memset(steps, 0, sizeof(steps));
    memset(&stop, 0, sizeof(stop));
+   budget = command_frames_default();
    for (entry = list; entry; entry = next)
    {
       struct command_step *s;
@@ -3564,10 +3590,11 @@ bool command_steps(command_t *cmd, const char *arg)
          {
             s->kind = CMD_STEP_RUN;
             if (     !command_arg_uint(entry + 4, &s->frames)
-                  || s->frames < 1)
+                  || s->frames < 1 || s->frames > budget - fixed)
             {
                command_reply_error(cmd, "STEPS", "step %u: run a frame "
-                     "count from 1", count);
+                     "count from 1, within the %u frames one request runs",
+                     count, budget);
                return false;
             }
             fixed += s->frames;
@@ -3580,10 +3607,11 @@ bool command_steps(command_t *cmd, const char *arg)
             if (!command_input_args(cmd, "STEPS", "a frame count",
                      entry + 6, &player, ids, &nids, &frames))
                return false;
-            if (frames < 1 || frames > (long)COMMAND_FRAMES_REPLY_MAX)
+            if (frames < 1 || (unsigned long)frames > budget - fixed)
             {
                command_reply_error(cmd, "STEPS", "step %u: press for a "
-                     "frame count from 1", count);
+                     "frame count from 1, within the %u frames one request "
+                     "runs", count, budget);
                return false;
             }
             for (i = 0; i < nids; i++)
@@ -3630,13 +3658,6 @@ bool command_steps(command_t *cmd, const char *arg)
    {
       command_reply_error(cmd, "STEPS", "a step at least: run, press or "
             "until");
-      return false;
-   }
-   budget = command_frames_default();
-   if (fixed > budget)
-   {
-      command_reply_error(cmd, "STEPS", "the steps run %u frames, more "
-            "than the %u one request runs", fixed, budget);
       return false;
    }
    if (!command_frames_ready(cmd, "STEPS"))

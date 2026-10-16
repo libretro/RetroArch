@@ -994,6 +994,23 @@ int main(void)
          call("JOIN", "{\"a\":\"one\"}"), out, sizeof(out), NULL);
    check("a required one left out is invalid params (-32602)",
          strstr(out, "-32602") && strstr(out, "\\\"b\\\""));
+   /* the schemas do not forbid other names, so the server does */
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mdoe\":\"fast\"}"),
+         out, sizeof(out), NULL);
+   check("a name the tool does not take is invalid params, not dropped",
+         strstr(out, "-32602") && strstr(out, "Unknown parameter")
+         && strstr(out, "mdoe") && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mode\":\"quick\"}"),
+         out, sizeof(out), NULL);
+   check("and so is a value outside the set it offers",
+         strstr(out, "-32602") && strstr(out, "fast|slow")
+         && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL, call("PAUSE_TOGGLE", "{\"x\":1}"),
+         out, sizeof(out), NULL);
+   check("and a parameter given to a hotkey, which takes none",
+         strstr(out, "-32602") && strstr(out, "Unknown parameter"));
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"argument\":\"one|two 7\"}"), out, sizeof(out), NULL);
    check("the single argument older clients send still works",

@@ -823,7 +823,36 @@ int main(int argc, char **argv)
          (void)want;
       }
       reply[0]=0;
-      CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"541 frames"));
+      CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"within the 540 frames"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 4294967295; run 2") && strstr(reply,"within the 540 frames"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 300; press 1 a 300") && strstr(reply,"step 2"));
+      /* two presses of one button are two taps: a frame let go between */
+      {
+         unsigned want[5] = {1,1,0,1,1};
+         unsigned k;
+         bool     ok = true;
+         reply[0]=0;
+         cmd.error=false;
+         CHECK(command_steps(&cmd,"press 1 a 2; press 1 a 2"));
+         for (k=0;k<5;k++)
+         {
+            /* held during frame k is what the frame before left */
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 2\n"));
+      }
+      reply[0]=0;
+      {
+         char longarg[400];
+         memset(longarg,'0',sizeof(longarg));
+         memcpy(longarg,"1 a ",4);
+         longarg[sizeof(longarg)-2]='5'; longarg[sizeof(longarg)-1]='\0';
+         CHECK(!command_press(&cmd,longarg) && strstr(reply,"at most 255 characters"));
+      }
       reply[0]=0;
       CHECK(!command_steps(&cmd,"jump 3") && strstr(reply,"run, press, until or stop"));
       reply[0]=0;

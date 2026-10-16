@@ -745,6 +745,59 @@ static const char *mcp_integer_args(const struct cmd_action_map *act,
    return NULL;
 }
 
+/* A name the client sent that the tool does not take, or NULL. The
+ * schemas do not forbid other names, to keep the tool list short, so
+ * the server does: a misspelt one would otherwise be dropped from the
+ * line and the command run as if it had been left out. */
+static const char *mcp_unknown_arg(const struct cmd_action_map *act,
+      const struct mcp_request *r)
+{
+   const struct cmd_param *p;
+   unsigned i;
+   for (i = 0; i < r->num_args; i++)
+   {
+      if (string_is_equal(r->args[i].name, "argument"))
+         continue;
+      for (p = act ? act->params : NULL; p && p->name; p++)
+         if (string_is_equal(r->args[i].name, p->name))
+            break;
+      if (!p || !p->name)
+         return r->args[i].name;
+   }
+   return NULL;
+}
+
+/* A parameter whose value is not one of the set its schema offers, or
+ * NULL: "yes" for an on|off would otherwise reach the line as text the
+ * handler reads as something else. */
+static const struct cmd_param *mcp_enum_arg(const struct cmd_action_map *act,
+      const struct mcp_request *r)
+{
+   const struct cmd_param *p;
+   for (p = act ? act->params : NULL; p && p->name; p++)
+   {
+      const char *v = p->values ? mcp_arg(r, p->name) : NULL;
+      const char *w;
+      size_t      n;
+      /* empty stands in for left out, keeping the operands after it in
+       * their places */
+      if (!v || !*v)
+         continue;
+      n = strlen(v);
+      for (w = p->values; *w; )
+      {
+         const char *bar = strchr(w, '|');
+         size_t      len = bar ? (size_t)(bar - w) : strlen(w);
+         if (len == n && !strncmp(w, v, n))
+            break;
+         w += len + (bar ? 1 : 0);
+      }
+      if (!*w)
+         return p;
+   }
+   return NULL;
+}
+
 /* Puts what the client sent by name back into the one line the command
  * handlers read, in the order and with the separators the table gives.
  * Returns the line, which the caller frees, or NULL with @err set.
@@ -1659,6 +1712,25 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          goto end;
       }
       act = mcp_tool_action(r.name);
+      if ((invalid = mcp_unknown_arg(act, &r)))
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Unknown parameter \"%.96s\".",
+               invalid);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
+         goto end;
+      }
+      {
+         const struct cmd_param *bad = mcp_enum_arg(act, &r);
+         if (bad)
+         {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Parameter \"%.64s\" is one of "
+                  "%.160s.", bad->name, bad->values);
+            mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
+            goto end;
+         }
+      }
       if ((invalid = mcp_integer_args(act, &r)))
       {
          char msg[128];

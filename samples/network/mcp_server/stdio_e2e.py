@@ -103,7 +103,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total, 25000 bytes, catches a tool added
 # by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 20686
+# average would not, as folding small tools into one raises it. 20695
 # at 33 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
@@ -197,10 +197,13 @@ _, t, _ = call(221, 'RUN_UNTIL', {'address': '1000', 'condition': '==',
                                   'value': 0})
 check('RUN_UNTIL refuses an address nothing maps: ' + (t or '').strip(),
       t and t.startswith('RUN_UNTIL ERROR'))
-_, t, _ = call(222, 'RUN_UNTIL', {'address': '1000', 'condition': '~=',
-                                  'value': 0})
-check('and a condition it does not take',
-      t and t.startswith('RUN_UNTIL ERROR') and '==' in t)
+send({'jsonrpc': '2.0', 'id': 222, 'method': 'tools/call',
+      'params': {'name': 'RUN_UNTIL', 'arguments': {'address': '1000',
+                 'condition': '~=', 'value': 0}}})
+msg, _ = recv(222)
+err = (msg or {}).get('error', {})
+check('and a condition it does not take is invalid params',
+      err.get('code') == -32602 and '==' in err.get('message', ''))
 
 # GET_INPUT looks without touching: SET_INPUT must set to answer and
 # RELEASE_INPUT lets go before it does.
@@ -221,9 +224,12 @@ check('and the content it was running is still running',
 # A watch rides along with every step, so a step needs no reads after
 # it. This core maps no memory, so the refusal is what is checkable
 # here; command_frames covers the carrying.
-_, t, _ = call(232, 'MENU', {'button': 'toggle'})
-check('MENU names the buttons it takes: ' + (t or '').strip(),
-      t and t.startswith('MENU ERROR') and 'up|down' in t)
+send({'jsonrpc': '2.0', 'id': 232, 'method': 'tools/call',
+      'params': {'name': 'MENU', 'arguments': {'button': 'toggle'}}})
+msg, _ = recv(232)
+err = (msg or {}).get('error', {})
+check('MENU names the buttons it takes: ' + err.get('message', ''),
+      err.get('code') == -32602 and 'up|down' in err.get('message', ''))
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)

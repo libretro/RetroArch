@@ -95,9 +95,12 @@ having to write the command's own line by hand:
 it accepts. `tools/list` describes every one of them.
 
 A parameter that is needed and left out, one that should be an integer
-and is not, and a tool that does not exist are answered before anything
-runs, as JSON-RPC invalid params (`-32602`) rather than as a tool
-failure.
+and is not, one the tool does not take, a value outside the set a
+parameter offers, and a tool that does not exist are answered before
+anything runs, as JSON-RPC invalid params (`-32602`) rather than as a
+tool failure. The schemas leave other names unforbidden to keep the
+tool list short; the server refuses them instead, so a misspelt
+parameter is never dropped and the command run without it.
 
 The single `argument` string this server took before the parameters
 still works, so a client holding a cached tool list keeps going until it
@@ -221,9 +224,9 @@ answers under its own name - `STATE load 3`,
 and `REINIT audio` for a restart that says nothing itself - while the
 commands sent by name answer as they always have. `DISK` is refused on
 a core with no disk control, where the hotkeys would do nothing. A word
-the tool does not know is answered with the ones it does - `STATE
-ERROR one of save|load` - and so is anything after a word that takes
-nothing. `REPLAY`'s slot or frame is its `number` parameter.
+the tool does not take is invalid params naming the ones it does; on
+the line interfaces it is `STATE ERROR one of save|load`, and so is
+anything after a word that takes nothing. `REPLAY`'s slot or frame is its `number` parameter.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
 files itself, and playing a game does not need them.
@@ -374,6 +377,9 @@ DONE 74
 x	86	212
 STEP 3
 ```
+
+Two presses of the same button in a row get a frame with it let go
+between them, so the game reads two taps rather than one long press.
 
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
 and `WAITING` when its nine seconds ran out first, each with the frames
