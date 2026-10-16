@@ -2246,9 +2246,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    {
 #ifdef HAVE_THREADS
       /* Same barrier as driver_uninit(): no frame still drawing them */
-      if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-            && video_st->thread_wrapper_active)
-         video_thread_wait_idle();
+      video_thread_wait_idle();
 #endif
       gfx_widgets_deinit(p_dispwidget->persisting);
       p_dispwidget->active         = false;
@@ -4583,9 +4581,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_THREADS
                /* Same barrier as driver_uninit(): never free widget GPU
                 * resources while the video thread may still reference them. */
-               if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-                     && video_st->thread_wrapper_active)
-                  video_thread_wait_idle();
+               video_thread_wait_idle();
 #endif
                /* Full teardown (not persisting): a real user toggle-off
                 * must clear INITED so a later toggle-on re-inits cleanly. */
@@ -6837,12 +6833,7 @@ void main_exit(void *args)
     * those reads, which ThreadSanitizer catches on the exit path about
     * one run in three. No-op when the wrapper is not active. */
 #ifdef HAVE_THREADS
-   {
-      video_driver_state_t *video_st_exit = video_state_get_ptr();
-      if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st_exit)
-            && video_st_exit->thread_wrapper_active)
-         video_thread_wait_idle();
-   }
+   video_thread_wait_idle();
 #endif
    dispwidget_get_ptr()->persisting = false;
 #endif
@@ -9103,10 +9094,7 @@ static void retroarch_find_drivers(settings_t *settings,
           * and fonts an in-flight threaded frame is still drawing with.
           *
           * No-op when threaded video is not active. */
-         video_driver_state_t *video_st = video_state_get_ptr();
-         if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-               && video_st->thread_wrapper_active)
-            video_thread_wait_idle();
+         video_thread_wait_idle();
 #endif
          menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
          menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
