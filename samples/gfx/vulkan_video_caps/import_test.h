@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <math.h>
+#include <formats/rwebm_video.h>
 #include <stdarg.h>
 #include <rthreads/rthreads.h>
 #include <queues/mpsc_stack.h>
@@ -295,7 +296,7 @@ static int oracle_growth_failures(import_oracle_t *t, const video_frame_import_t
    return ok;
 }
 
-static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint64_t serial, unsigned mode)
+static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint64_t serial, unsigned mode, unsigned transfer)
 {
    vulkan_video_layout_t layout;
    video_frame_import_t frame;
@@ -350,6 +351,12 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    frame.wait_value = frame.done_value = serial; frame.dims = VIDEO_SCALE_PACK(t->width, t->height);
    frame.pixfmt = depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    frame.yuv = flags; frame.layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   if (transfer)
+   {
+      frame.color.transfer = transfer;
+      frame.color.matrix = frame.color.primaries = 9;
+      frame.color.max_cll = 1000;
+   }
    if (mode)
    {
       if (!vulkan_video_plane_views(device, input, frame.pixfmt, planes)) goto done;
@@ -439,11 +446,22 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
          rgb[1] = yy - ((flags & IMAGE_YUV_FLAG_BT709) ? 0.187324 : 0.344136) * cb
             - ((flags & IMAGE_YUV_FLAG_BT709) ? 0.468124 : 0.714136) * cr;
          rgb[2] = yy + ((flags & IMAGE_YUV_FLAG_BT709) ? 1.8556 : 1.772) * cb;
+         if (transfer)
+         {
+            uint16_t yy = (uint16_t)(oracle_sample(0, x, y, depth, full) << (depth == 10 ? 0 : 2));
+            uint16_t uu = (uint16_t)(oracle_sample(1, x / 2, y / 2, depth, full) << (depth == 10 ? 0 : 2));
+            uint16_t vv = (uint16_t)(oracle_sample(2, x / 2, y / 2, depth, full) << (depth == 10 ? 0 : 2));
+            uint32_t pixel;
+            rwebm_video_blit_i420_hbd(&pixel, 1, 1, 1, &yy, 1, &uu, &vv, 1,
+                  9, transfer, full ? 2 : 1, 1000, 1);
+            for (plane = 0; plane < 3; plane++)
+               rgb[plane] = ((pixel >> (plane * 8)) & 255) / 255.0;
+         }
          for (plane = 0; plane < 3; plane++)
          {
             int expected = (int)floor((rgb[plane] < 0 ? 0 : rgb[plane] > 1 ? 1 : rgb[plane]) * 255.0 + 0.5);
             int actual = t->mapped_readback[(y * t->width + x) * 4 + plane];
-            if (abs(actual - expected) > 1) { printf("pixel %u,%u/%u: %d != %d\n", x, y, plane, actual, expected); ok = 0; }
+            if (abs(actual - expected) > (transfer ? 4 : 1)) { printf("pixel %u,%u/%u: %d != %d\n", x, y, plane, actual, expected); ok = 0; }
          }
          if (t->mapped_readback[(y * t->width + x) * 4 + 3] != 255) ok = 0;
       }
@@ -463,7 +481,7 @@ done:
    if (planes[1]) vkDestroyImageView(device, planes[1], NULL);
    if (input) vkDestroyImage(device, input, NULL);
    if (memory) vkFreeMemory(device, memory, NULL);
-   printf("Vulkan import %u-bit flags %u mode %u: %s\n", depth, flags, mode, ok ? "PASS" : "FAIL");
+   printf("Vulkan import %u-bit flags %u mode %u transfer %u: %s\n", depth, flags, mode, transfer, ok ? "PASS" : "FAIL");
    return ok;
 }
 
@@ -579,10 +597,10 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
    ok = 1;
-   for (i = 0; i < 48; i++)
+   for (i = 0; i < 96; i++)
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,
                (((i % 12) / 3) & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
-               | (((i % 12) / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1, i < 12 || i >= 36 ? 1 : i < 24 ? 0 : 2)) ok = 0;
+               | (((i % 12) / 3) & 2 ? IMAGE_YUV_FLAG_BT709 : 0), i + 1, i % 48 < 12 || i % 48 >= 36 ? 1 : i % 48 < 24 ? 0 : 2, i < 48 ? 0 : i < 72 ? 16 : 18)) ok = 0;
    vulkan_movie_input(&t->output, &input);
    if (input.image != t->output.image || input.view != t->output.view
          || input.layout != t->output.layout || input.dims != t->output.dims

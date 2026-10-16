@@ -1,11 +1,15 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#define float3 vec3
+#define float4 vec4
+#include "../../drivers_shader/video_hdr.inc.glsl"
 
 // One invocation for each 2x2 block of pixels, which share a chroma
 // sample.
 layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(set = 0, binding = 3, rgba8) writeonly uniform image2D uImage;
-// A 16 word header, then the planes, all where the header says.
+// A 20 word header, then the planes, all where the header says.
 layout(set = 0, binding = 4, std430) readonly buffer SSBO
 {
 	uint words[];
@@ -49,7 +53,7 @@ void main()
 			if (p.x < res.x && p.y < res.y)
 			{
 				float y = sample_at(y_off + p.y * y_stride + p.x * step);
-				imageStore(uImage, ivec2(p), vec4(clamp(vec3(ym * y + yb) + c, 0.0, 1.0), 1.0));
+				imageStore(uImage, ivec2(p), vec4(video_hdr_to_sdr(vec3(ym * y + yb) + c, vec4(uintBitsToFloat(words[16]), uintBitsToFloat(words[17]), uintBitsToFloat(words[18]), uintBitsToFloat(words[19]))), 1.0));
 			}
 		}
 }

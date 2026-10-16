@@ -42,6 +42,7 @@
 #include <lists/string_list.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
+#include "../common/video_import_color.h"
 
 #include <dxgi.h>
 
@@ -8181,11 +8182,12 @@ typedef struct
 /* 8-bit 4:2:0 in, RGBA out: the chroma of each 2x2 block from the one
  * sample it shares, as the CPU conversion does, either order */
 static const char d3d11_planar_cs_src[] =
+#include "../drivers_shader/video_hdr.inc"
    "Texture2D<float>  Y  : register(t0);\n"
    "Texture2D<float2> C0 : register(t1);\n"
    "Texture2D<float>  C1 : register(t2);\n"
    "RWTexture2D<float4> Out : register(u0);\n"
-   "cbuffer P : register(b0) { float4 k0; float4 k1; uint4 size; };\n"
+   "cbuffer P : register(b0) { float4 k0; float4 k1; uint4 size; float4 hdr; };\n"
    "[numthreads(8, 8, 1)]\n"
    "void main(uint3 id : SV_DispatchThreadID)\n"
    "{\n"
@@ -8206,8 +8208,8 @@ static const char d3d11_planar_cs_src[] =
    "      ch *= scale;\n"
    "   }\n"
    "   ch -= size.z != 0 && size.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
-   "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x)), 1.0);\n"
+   "   Out[id.xy] = float4(video_hdr_to_sdr(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
+   "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x), hdr), 1.0);\n"
    "}\n";
 
 /* The shader and its constants, made on the first planar texture; a
@@ -8230,7 +8232,7 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    Release(blob);
    if (!d3d11->planar_cs)
       return false;
-   desc.ByteWidth           = 48;
+   desc.ByteWidth           = 64;
    desc.Usage               = D3D11_USAGE_DYNAMIC;
    desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
    desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -8345,22 +8347,24 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
 static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       D3D11UnorderedAccessView uav, D3D11ShaderResourceView *views,
       unsigned width, unsigned height, unsigned yuv, bool interleaved,
-      bool swap, bool p010)
+      bool swap, bool p010, const video_color_metadata_t *color)
 {
    D3D11DeviceContext ctx          = d3d11->context;
    D3D11ShaderResourceView none[3];
    D3D11UnorderedAccessView no_uav = NULL;
    D3D11Buffer no_cb               = NULL;
    D3D11_MAPPED_SUBRESOURCE mapped;
-   float k[6];
+   float k[6], hdr[4];
 
+   if (!video_import_color(&yuv, color, k, hdr))
+      return false;
    if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->planar_cb, 0,
          D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
       return false;
    {
       float    *f = (float*)mapped.pData;
       uint32_t *u = (uint32_t*)mapped.pData + 8;
-      image_yuv_coefficients(yuv, k);
+      memcpy((float*)mapped.pData + 12, hdr, sizeof(hdr));
       f[0] = k[0];
       f[1] = k[1];
       f[2] = k[2];
@@ -8436,7 +8440,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
    return d3d11_planar_convert(d3d11, p->uav, p->plane_view, image->width,
-         image->height, tp->yuv, p->interleaved, swap, false)
+         image->height, tp->yuv, p->interleaved, swap, false, NULL)
       ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
@@ -8697,7 +8701,7 @@ static enum video_texture_update d3d11_import_texture(void *data,
    views[1] = imp->chroma[t];
    views[2] = NULL;
    ok       = d3d11_planar_convert(d3d11, p->uav, views, w, h, f->yuv,
-         true, false, f->pixfmt == IMAGE_PIXFMT_P010);
+         true, false, f->pixfmt == IMAGE_PIXFMT_P010, &f->color);
    /* read or not, the producer may have it back */
    if (done)
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);

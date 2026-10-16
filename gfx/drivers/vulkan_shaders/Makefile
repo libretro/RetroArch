@@ -17,6 +17,8 @@ all: $(SPIRV)
 %.comp.inc: %.comp
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
+yuv420_to_rgba8888.comp.inc yuv_image_to_rgba8888.comp.inc: ../../drivers_shader/video_hdr.inc.glsl
+
 clean:
 	rm -f $(SPIRV)
 

@@ -149,18 +149,25 @@ References:
 
 `make import-check` extracts the production importer and runs its compiled
 compute shader on a graphics/compute device without requiring video decode.
-Twelve NV12/P010/NV12 switching cases cover odd visible dimensions, BT.601
-and BT.709, and limited/full range against independent RGB equations.
+Ninety-six NV12/P010 switching cases cover odd visible dimensions,
+BT.601/709 SDR, PQ/HLG BT.2020, limited/full range, and sampled/buffer
+imports. SDR uses independent RGB equations; HDR compares the CPU fallback.
 The test checks ready/done timelines and busy-slot drops. Linux llvmpipe
 and the RTX 5090 pass. MinGW/Wine builds the same test and skips if no
 compatible device is available. CPU upload/readback belongs only to the oracle.
 
-Production imports copy decoder planes to a device-local buffer and convert
-to SDR RGBA8 on the GPU; they do not read video pixels back to the CPU.
-Direct plane sampling remains a further zero-copy opportunity. The importer
+Production imports sample decoder planes directly when views are available,
+otherwise copy planes to a device-local buffer, then convert to SDR RGBA8
+on the GPU. Neither path reads video pixels back to the CPU. The importer
 reserves P010 capacity for format switching where storage-buffer limits permit;
 larger NV12-only allocations remain usable and refuse oversized P010 frames.
-P010 import does not imply HDR tone mapping or a 10-bit display path.
+PQ/HLG imports apply Hable tone mapping and BT.2020-to-709 conversion.
+Automatic HDR hardware reader admission remains gated pending FP16 output;
+this oracle exercises imports directly, not HDR movie/display acceptance.
+D3D11/D3D12 share the same shader math; `d3d_p010_import/run.py` checks
+independent HDR reference colors within one output level on a native GPU.
+Regenerate embedded HLSL with `python3 tools/generate_video_hdr.py`; rebuild
+the Vulkan `.comp.inc` files with the shader Makefile after math changes.
 
 Builtin movie playback reuses this importer through
 `import_movie_frame`. The converted texture is the filter-chain input,

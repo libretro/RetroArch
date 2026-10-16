@@ -13372,7 +13372,7 @@ static enum video_texture_update vulkan_stream_submit(vk_t *vk,
 /* The planar staging layout: a header of VK_PLANAR_HEADER words the
  * shader reads its parameters from, then luma rows of the width, then
  * the two chroma planes rows of half of it, all tightly packed */
-#define VK_PLANAR_HEADER 16
+#define VK_PLANAR_HEADER VULKAN_VIDEO_HEADER_WORDS
 
 /* Bytes of a planar staging buffer for a frame of @dims */
 static size_t vulkan_planar_size(unsigned dims)
@@ -13558,6 +13558,7 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
    hdr[7] = 1;
    hdr[14] = 1;
    hdr[15] = !!(tp->yuv & IMAGE_YUV_FLAG_FULL_RANGE);
+   memset(&hdr[16], 0, 4 * sizeof(uint32_t));
    for (i = 0; i < 6; i++)
       memcpy(&hdr[8 + i], &coef[i], sizeof(float));
    for (y = 0; y < h; y++)
@@ -13840,7 +13841,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bool sampled = f->plane_views[0] && f->plane_views[1]
       && vk->pipelines.yuv_image_to_rgba8888 != VK_NULL_HANDLE;
 
-   if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv) || !f->image
+   if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv)
+         || !vulkan_video_color(&layout, f->yuv, &f->color) || !f->image
          || ((f->crop_x | f->crop_y) & 1)
          || texture->dims != f->dims)
       return VIDEO_TEXTURE_UPDATE_REFUSED;

@@ -41,6 +41,7 @@
 #include <lists/string_list.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
+#include "../common/video_import_color.h"
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
@@ -282,10 +283,11 @@ typedef struct d3d12_import
 /* NV12 in, RGBA out: the luma and the interleaved chroma planes as two
  * views, each pixel taking the chroma its 2x2 block shares */
 static const char d3d12_nv12_cs_src[] =
+#include "../drivers_shader/video_hdr.inc"
    "Texture2DArray<float>  Y : register(t0);\n"
    "Texture2DArray<float2> C : register(t1);\n"
    "RWTexture2D<float4> Out : register(u0);\n"
-   "cbuffer K : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; };\n"
+   "cbuffer K : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; float4 hdr; };\n"
    "[numthreads(8, 8, 1)]\n"
    "void main(uint3 id : SV_DispatchThreadID)\n"
    "{\n"
@@ -302,8 +304,8 @@ static const char d3d12_nv12_cs_src[] =
    "      c *= scale;\n"
    "   }\n"
    "   c -= a.z != 0 && a.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * c.y,\n"
-   "         k0.w * c.x + k1.x * c.y, k1.y * c.x)), 1.0);\n"
+   "   Out[id.xy] = float4(video_hdr_to_sdr(k0.x * y + k0.y + float3(k0.z * c.y,\n"
+   "         k0.w * c.x + k1.x * c.y, k1.y * c.x), hdr), 1.0);\n"
    "}\n";
 #endif
 
@@ -5707,8 +5709,8 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_CONSTANTS].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-   /* The mipmap generator's three, the planar conversion's sixteen */
-   cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 16;
+   /* The mipmap generator and planar/import conversion share this root. */
+   cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 20;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.RegisterSpace  = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.ShaderRegister = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL;
@@ -10923,16 +10925,20 @@ static enum video_texture_update d3d12_import_texture(void *data,
    d3d12_texture_t *texture;
    d3d12_import_t  *imp;
    ID3D12Fence *wait = NULL, *done = NULL;
-   UINT32 constants[16];
+   UINT32 constants[20];
    UINT64 completed;
    unsigned w, h, k;
-   float kf[6];
+   float kf[6], hdr[4];
+   unsigned yuv;
    int t;
 
    if (     !d3d12 || !id || !f || !d3d12->video_decode
          || (f->pixfmt != IMAGE_PIXFMT_NV12
             && f->pixfmt != IMAGE_PIXFMT_P010)
          || !(d3d12->import_formats & f->pixfmt) || !f->image)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   yuv = f->yuv;
+   if (!video_import_color(&yuv, &f->color, kf, hdr))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    w = VIDEO_SCALE_W(f->dims);
    h = VIDEO_SCALE_H(f->dims);
@@ -10978,14 +10984,14 @@ static enum video_texture_update d3d12_import_texture(void *data,
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
 
-   image_yuv_coefficients(f->yuv, kf);
    memset(constants, 0, sizeof(constants));
    constants[0] = w;
    constants[1] = h;
    constants[2] = f->pixfmt == IMAGE_PIXFMT_P010 ? 1 : 0;
-   constants[3] = (f->yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0;
+   constants[3] = (yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0;
    constants[4] = f->crop_x; constants[5] = f->crop_y;
    memcpy(&constants[8], kf, sizeof(kf));
+   memcpy(&constants[16], hdr, sizeof(hdr));
 
    cmd = d3d12->import_cmd[k];
    d3d12->import_alloc[k]->lpVtbl->Reset(d3d12->import_alloc[k]);
@@ -11004,7 +11010,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T,
          imp->gpu_uav);
    cmd->lpVtbl->SetComputeRoot32BitConstants(cmd, CS_ROOT_ID_CONSTANTS,
-         16, constants, 0);
+         20, constants, 0);
    cmd->lpVtbl->Dispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
    D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
          D3D12_RESOURCE_STATE_UNORDERED_ACCESS,

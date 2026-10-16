@@ -3,13 +3,16 @@
 from pathlib import Path
 import os, shlex, subprocess, tempfile
 root = Path(__file__).resolve().parents[3]
+subprocess.run([__import__('sys').executable, str(root / 'tools/generate_video_hdr.py'), '--check'], check=True)
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     shaders = []
     for api, name in [('d3d11', 'd3d11_planar_cs_src'), ('d3d12', 'd3d12_nv12_cs_src')]:
         source = (root / 'gfx/drivers' / (api + '.c')).read_text()
         start = source.index('static const char ' + name + '[] =')
-        shaders.append(source[start:source.index(';\n', start) + 1])
+        shaders.append(source[start:source.index(';\n', start) + 1].replace(
+            '#include "../drivers_shader/video_hdr.inc"',
+            (root / 'gfx/drivers_shader/video_hdr.inc').read_text()))
     (tmp / 'shaders.inc').write_text('\n'.join(shaders))
     source = (root / 'gfx/drivers/d3d11.c').read_text()
     start = source.index('static bool d3d11_planar_convert(')

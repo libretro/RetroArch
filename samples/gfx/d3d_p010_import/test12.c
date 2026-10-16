@@ -8,6 +8,8 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
+#include "hdr_reference.h"
+#include "../../../gfx/common/video_import_color.h"
 #include "shaders.inc"
 #ifdef _WIN32
 #define COBJMACROS
@@ -61,6 +63,7 @@ enum video_texture_update
    VIDEO_TEXTURE_UPDATE_DROPPED
 };
 static int failures;
+static unsigned hdr_mode;
 static unsigned abandoned;
 static void unexpected_abandon(void *owner, uint64_t done, uint64_t value)
 {
@@ -141,7 +144,7 @@ static bool pipeline(d3d12_video_t *v)
    roots[0].DescriptorTable.pDescriptorRanges = &ranges[0];
    roots[1].DescriptorTable.pDescriptorRanges = &ranges[1];
    roots[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-   roots[2].Constants.Num32BitValues = 16;
+   roots[2].Constants.Num32BitValues = 20;
    memset(&desc, 0, sizeof(desc));
    desc.NumParameters = 3;
    desc.pParameters = roots;
@@ -283,6 +286,12 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    f.pixfmt = p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
    f.dims = VIDEO_SCALE_PACK(2, 2);
    f.yuv = flags;
+   if (hdr_mode)
+   {
+      f.color.transfer = hdr_mode == 1 ? 16 : 18;
+      f.color.primaries = f.color.matrix = 9;
+      f.color.max_cll = 1000;
+   }
    f.owner = &imp; imp.owner = f.owner;
    f.abandon = unexpected_abandon;
    id = (uintptr_t)&output;
@@ -389,6 +398,9 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    expected[0] = c[0] * y + c[1] + c[2] * cr;
    expected[1] = c[0] * y + c[1] + c[3] * u + c[4] * cr;
    expected[2] = c[0] * y + c[1] + c[5] * u;
+   if (hdr_mode)
+      CHECK(hdr_reference_pixel(p010, !!(flags & IMAGE_YUV_FLAG_FULL_RANGE),
+            f.color.transfer, yc, uc, vc, expected));
    for (row = 0; row < 2; row++) for (col = 0; col < 2; col++)
    {
       const uint8_t *pixel = pixels + fp.Offset + row * fp.Footprint.RowPitch + col * 4;
@@ -456,6 +468,7 @@ int main(void)
             || !(fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD))
       { printf("SKIP D3D12 %s format\n", depth ? "P010" : "NV12"); continue; }
       for (movie = 0; movie < 2; movie++)
+      for (hdr_mode = 0; hdr_mode < 3; hdr_mode++)
       for (flags = 0; flags < 4; flags++)
       {
          unsigned scale = depth ? 4 : 1, center = 128 * scale;

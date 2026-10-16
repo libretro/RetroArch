@@ -1,6 +1,6 @@
 CC ?= cc
 RA := ../../..
-SAMPLED_DEPS = $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
+SAMPLED_DEPS = $(RA)/gfx/common/video_import_color.h $(RA)/libretro-common/formats/image/image_hdr_blit.c $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
       $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc \
       $(RA)/libretro-common/include/formats/video_hw_frame.h
 TARGET := vulkan_video_caps_test$(EXE)
@@ -108,7 +108,7 @@ render-check: hevc_render_test$(EXE)
 import-check: import_test$(EXE)
 	$(RUNNER) ./import_test$(EXE)
 
-video_layout_test$(EXE): video_layout_test.c $(RA)/gfx/common/vulkan_video_import.h
+video_layout_test$(EXE): video_layout_test.c $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/common/video_import_color.h
 	$(CC) $(CFLAGS) -o $@ $< $(RA)/libretro-common/formats/image/image_yuv_blit.c $(LDFLAGS) -lm
 
 check: all

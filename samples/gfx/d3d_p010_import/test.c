@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <formats/image_yuv_blit.h>
+#include "hdr_reference.h"
+#include "../../../gfx/common/video_import_color.h"
 #include <formats/image.h>
 #include "shaders.inc"
 #ifdef _WIN32
@@ -50,6 +52,7 @@ static const GUID resource1_iid =
 #undef Release
 
 static int failures;
+static unsigned hdr_mode;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); failures++; goto end; } } while (0)
 #define DROP(p) do { if (p) { IUnknown_Release((IUnknown*)(p)); p = NULL; } } while (0)
 
@@ -70,7 +73,9 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    D3D11_MAPPED_SUBRESOURCE mapped;
    uint16_t words[6];
    uint8_t bytes[6];
-   uint32_t constants[16];
+   uint32_t constants[20];
+   video_color_metadata_t color_metadata;
+   float hdr[4];
    float coefficients[6], expected[3], y, u, v;
    unsigned i, row, col, offset = api == 11 ? 0 : 8;
    float *values = (float*)constants + offset;
@@ -129,7 +134,14 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    td.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
    CHECK(SUCCEEDED(ID3D11Device_CreateTexture2D(device, &td, NULL, &readback)));
    memset(constants, 0, sizeof(constants));
-   image_yuv_coefficients(flags, coefficients);
+   memset(&color_metadata, 0, sizeof(color_metadata));
+   if (hdr_mode)
+   {
+      color_metadata.transfer = hdr_mode == 1 ? 16 : 18;
+      color_metadata.primaries = color_metadata.matrix = 9;
+      color_metadata.max_cll = 1000;
+   }
+   CHECK(video_import_color(&flags, &color_metadata, coefficients, hdr));
    memcpy(values, coefficients, sizeof(coefficients));
    if (api == 11)
    {
@@ -145,7 +157,8 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
       constants[3] = !!(flags & IMAGE_YUV_FLAG_FULL_RANGE);
    }
    memset(&bd, 0, sizeof(bd));
-   bd.ByteWidth = api == 11 ? 48 : 64;
+   memcpy((float*)constants + (api == 11 ? 12 : 16), hdr, sizeof(hdr));
+   bd.ByteWidth = api == 11 ? 64 : 80;
    bd.Usage = api == 11 ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
    bd.CPUAccessFlags = api == 11 ? D3D11_CPU_ACCESS_WRITE : 0;
    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -158,7 +171,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
       video.planar_cs = shader;
       video.planar_cb = cb;
       CHECK(d3d11_planar_convert(&video, uav, views, 2, 2, flags,
-            true, false, p010 != 0));
+            true, false, p010 != 0, &color_metadata));
    }
    else
    {
@@ -183,6 +196,9 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    expected[0] = coefficients[0] * y + coefficients[1] + coefficients[2] * v;
    expected[1] = coefficients[0] * y + coefficients[1] + coefficients[3] * u + coefficients[4] * v;
    expected[2] = coefficients[0] * y + coefficients[1] + coefficients[5] * u;
+   if (hdr_mode)
+      CHECK(hdr_reference_pixel(p010, !!(flags & IMAGE_YUV_FLAG_FULL_RANGE),
+            color_metadata.transfer, yc, uc, vc, expected));
    for (row = 0; row < 2; row++)
       for (col = 0; col < 2; col++)
       {
@@ -253,7 +269,8 @@ int main(void)
                printf("SKIP GPU D3D%u %s format\n", api, depth ? "P010" : "NV12");
                continue;
             }
-            for (flags = 0; flags < 4; flags++)
+            for (hdr_mode = 0; hdr_mode < 3; hdr_mode++)
+      for (flags = 0; flags < 4; flags++)
             {
                unsigned full = flags & IMAGE_YUV_FLAG_FULL_RANGE;
                unsigned scale = depth ? 4 : 1;

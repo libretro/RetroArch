@@ -70,6 +70,8 @@ with tempfile.TemporaryDirectory() as directory:
             'string/stdstring.c',
             'vfs/vfs_implementation.c',
         )]
+    if len(sys.argv) <= 2:
+        sources.append(str(root / 'libretro-common/formats/image/image_hdr_blit.c'))
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root)] + defines
         + ['-o', str(Path(sys.argv[1]).resolve())] + sources + [
         str(root / 'libretro-common/vulkan/vulkan_symbol_wrapper.c'),

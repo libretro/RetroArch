@@ -8,8 +8,9 @@
 #include <retro_inline.h>
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
+#include "video_import_color.h"
 
-#define VULKAN_VIDEO_HEADER_WORDS 16
+#define VULKAN_VIDEO_HEADER_WORDS 20
 typedef struct vulkan_video_layout
 {
    size_t bytes;
@@ -42,6 +43,17 @@ static INLINE bool vulkan_video_layout(vulkan_video_layout_t *out,
    for (i = 0; i < 6; i++) memcpy(&out->header[8 + i], &coefficients[i], sizeof(float));
    out->header[14] = bps;
    out->header[15] = !!(yuv & IMAGE_YUV_FLAG_FULL_RANGE);
+   return true;
+}
+static INLINE bool vulkan_video_color(vulkan_video_layout_t *layout,
+      unsigned yuv, const video_color_metadata_t *color)
+{
+   float coefficients[6], hdr[4];
+   if (!video_import_color(&yuv, color, coefficients, hdr))
+      return false;
+   memcpy(&layout->header[8], coefficients, sizeof(coefficients));
+   layout->header[15] = !!(yuv & IMAGE_YUV_FLAG_FULL_RANGE);
+   memcpy(&layout->header[16], hdr, sizeof(hdr));
    return true;
 }
 #endif
