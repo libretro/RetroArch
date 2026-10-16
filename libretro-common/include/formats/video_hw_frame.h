@@ -53,6 +53,13 @@
 
 RETRO_BEGIN_DECLS
 
+enum video_hw_api
+{
+   VIDEO_HW_API_UNKNOWN = 0,
+   VIDEO_HW_API_VULKAN = 1,
+   VIDEO_HW_API_D3D11 = 2
+};
+
 typedef struct video_hw_frame
 {
    uint64_t image;
@@ -70,6 +77,7 @@ typedef struct video_hw_frame
    unsigned pixfmt;          /* image_pixfmt; zero means legacy NV12 */
    unsigned array_slice;    /* D3D12: shared decoder array element */
    unsigned crop_x, crop_y; /* visible origin within that element */
+   unsigned api;             /* video_hw_api; zero for older producers */
 } video_hw_frame_t;
 
 static INLINE void video_hw_frame_abandon(const video_hw_frame_t *f)

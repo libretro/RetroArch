@@ -514,6 +514,22 @@ static int take_cpu_output(frames_t *frames, rh264_video *video, int mode,
       int ordinal)
 {
    int before, w, h;
+   if (mode == 5)
+   {
+      video_hw_frame_t frame, duplicate;
+      opened_t opened;
+      int result, tries = 0;
+      memset(&opened, 0, sizeof(opened));
+      do { result = rh264_video_export_frame(video, &frame); }
+      while (result == 2 && ++tries < 1000);
+      if (result != 0 || frame.api != VIDEO_HW_API_D3D11)
+         return 0;
+      if (rh264_video_export_frame(video, &duplicate) != -1)
+      { video_hw_frame_abandon(&frame); return 0; }
+      result = take_hw(frames, &opened, &frame);
+      opened_clear(&opened);
+      return result;
+   }
    if (mode == 4 && ordinal % 3 != 0)
       return 1;
    if (mode >= 3)
@@ -1238,6 +1254,11 @@ int main(void)
          printf("      deferred discard: %d outputs, %d requested, %d GPU readbacks\n",
                sw.n, hw.n, cpu_readbacks);
       }
+      frames_free(&hw);
+      on = decode(s->data, s->len, 5, &hw);
+      bad = compare(&sw, &hw, &first, &worst);
+      snprintf(label, sizeof(label), "%s: exported GPU leases match without CPU readback", s->name);
+      check(label, on && bad == 0 && cpu_readbacks == 0);
       if (s->lists)
       {
          lists_seen = 1;

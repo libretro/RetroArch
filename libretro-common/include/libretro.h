@@ -3202,13 +3202,13 @@ struct retro_vr_frame_state {
 #define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (98 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /* Frontend H.264 decoding to CPU-readable 8-bit YUV 4:2:0 planes.
- * Versions 1 and 2 are supported. Initialize the version before querying.
+ * Versions 1, 2 and 3 are supported. Initialize the version before querying.
  * Version 1 writes only the original prefix through close. Calls for each decoder
  * are serialized by the core; close all decoders before context teardown.
  * Unsupported frontends return false. Input is one Annex-B access unit.
  * Planes remain valid until decode, drain or close. */
 #define RETRO_ENVIRONMENT_GET_VIDEO_DECODE_INTERFACE (99 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-#define RETRO_VIDEO_DECODE_INTERFACE_VERSION 2
+#define RETRO_VIDEO_DECODE_INTERFACE_VERSION 3
 #define RETRO_VIDEO_DECODE_DEFER_PLANES (1u << 0)
 
 struct retro_video_decode_frame
@@ -3217,6 +3217,29 @@ struct retro_video_decode_frame
    unsigned strides[3];
    unsigned width, height;
    bool hardware;
+};
+
+enum retro_video_decode_gpu_api
+{
+   RETRO_VIDEO_DECODE_GPU_VULKAN = 1,
+   RETRO_VIDEO_DECODE_GPU_D3D11 = 2
+};
+
+/* Version 3 GPU output. Vulkan uses same-device VkImage/views and timeline
+ * semaphores; D3D11 uses shared NT handles. Wait on wait_value before GPU
+ * reads, preserve layout, and signal done_value after the final GPU read.
+ * An unused lease is returned with abandon. Close/context destruction
+ * requires all leases to have completed; handles must never be cached
+ * beyond their lease. Chroma views are R8/R8G8 (8-bit 4:2:0).
+ * The copy is independent of subsequent decode/drain output. */
+struct retro_video_decode_gpu_frame
+{
+   uint64_t image, plane_views[2];
+   uint64_t wait, wait_value, done, done_value;
+   void (*abandon)(void *owner, uint64_t done, uint64_t done_value);
+   void *owner;
+   unsigned width, height, layout, yuv, pixfmt, array_slice, crop_x, crop_y;
+   unsigned api;
 };
 
 struct retro_video_decode_interface
@@ -3242,6 +3265,10 @@ struct retro_video_decode_interface
    /* 1: CPU planes ready; -1: no current output or readback failure.
     * Repeated calls reuse the same CPU copy. */
    int (*get_frame)(void *decoder, struct retro_video_decode_frame *frame);
+   /* Version 3: export the current deferred output once. 1 leased,
+    * 2 busy (retry later), -1 unavailable/error. CPU get_frame remains
+    * valid until decode/drain. Failed calls acquire no lease. */
+   int (*get_gpu_frame)(void *decoder, struct retro_video_decode_gpu_frame *frame);
 };
 
 

@@ -1952,6 +1952,38 @@ static int runloop_video_decode_get_frame(void *decoder,
       ? runloop_video_decode_frame(v, frame) : -1;
 }
 
+static int runloop_video_decode_get_gpu_frame(void *decoder,
+      struct retro_video_decode_gpu_frame *frame)
+{
+   video_hw_frame_t source;
+   int result;
+   if (!frame)
+      return -1;
+   result = rh264_video_export_frame((rh264_video*)decoder, &source);
+   if (result != 0)
+      return result == 2 ? 2 : -1;
+   memset(frame, 0, sizeof(*frame));
+   frame->image = source.image;
+   frame->plane_views[0] = source.plane_views[0];
+   frame->plane_views[1] = source.plane_views[1];
+   frame->wait = source.wait;
+   frame->wait_value = source.wait_value;
+   frame->done = source.done;
+   frame->done_value = source.done_value;
+   frame->abandon = source.abandon;
+   frame->owner = source.owner;
+   frame->width = source.width;
+   frame->height = source.height;
+   frame->layout = source.layout;
+   frame->yuv = source.yuv;
+   frame->pixfmt = source.pixfmt;
+   frame->array_slice = source.array_slice;
+   frame->crop_x = source.crop_x;
+   frame->crop_y = source.crop_y;
+   frame->api = source.api;
+   return 1;
+}
+
 static void runloop_video_decode_close(void *decoder)
 {
    rh264_video_close((rh264_video*)decoder);
@@ -3270,8 +3302,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
             struct retro_video_decode_interface *iface =
                (struct retro_video_decode_interface*)data;
-            if (!iface || (iface->interface_version != 1
-                  && iface->interface_version != RETRO_VIDEO_DECODE_INTERFACE_VERSION))
+            if (!iface || (iface->interface_version < 1
+                  || iface->interface_version > RETRO_VIDEO_DECODE_INTERFACE_VERSION))
                return false;
             RARCH_LOG("[Environ] GET_VIDEO_DECODE_INTERFACE: H.264 with CPU planes.\n");
             iface->open = runloop_video_decode_open;
@@ -3284,6 +3316,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                iface->drain_ex  = runloop_video_decode_drain_ex;
                iface->get_frame = runloop_video_decode_get_frame;
             }
+            if (iface->interface_version >= 3)
+               iface->get_gpu_frame = runloop_video_decode_get_gpu_frame;
             return true;
          }
 #else

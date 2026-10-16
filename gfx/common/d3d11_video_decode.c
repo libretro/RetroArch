@@ -1106,6 +1106,7 @@ bool d3d11_video_decode_init_adapter_formats(void *adapter, unsigned formats)
    d3d11vd.ops.output = d3d11vd_output;
    d3d11vd.ops.close  = d3d11vd_close;
    d3d11vd.ops.readback = d3d11vd_readback;
+   d3d11vd.ops.api = VIDEO_HW_API_D3D11;
    d3d11vd.up         = true;
    rh264_set_hw_backend(&d3d11vd.ops);
    d3d11vd.shared_dpb = !!(formats & D3D11_VIDEO_DECODE_SHARED_DPB);

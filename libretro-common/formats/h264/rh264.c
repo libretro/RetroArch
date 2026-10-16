@@ -5359,6 +5359,7 @@ struct rh264_video
    int hw_readback;
    int deferred_readback;
    int output_ready;
+   int output_exported;
    /* Slice-decode workspace for rh264_video_decode_inter.  As locals
     * these were a 7.5 KiB frame -- the slice header, the B-list
     * context with its implicit-weight table, and the reference-list
@@ -11524,9 +11525,27 @@ int rh264_video_readback(rh264_video *v)
    return v->hw->have_cpu ? 0 : -1;
 }
 
+int rh264_video_export_frame(rh264_video *v, video_hw_frame_t *out)
+{
+   rh264_hw *hw;
+   int result;
+   if (!v || !out || !v->output_ready || v->output_exported
+         || !(hw = v->hw) || hw->broken || !hw->pending_cpu || !hw->ops->output)
+      return -1;
+   memset(out, 0, sizeof(*out));
+   result = hw->ops->output(hw->dec, (unsigned)hw->pending_slot, out);
+   if (result != 0)
+      return result > 0 ? 2 : -1;
+   out->api = hw->ops->api;
+   v->output_exported = 1;
+   return 0;
+}
+
 static void rh264_video_expire_output(rh264_video *v)
 {
    v->output_ready = 0;
+   if (!v->hw || !v->hw->retrying)
+      v->output_exported = 0;
    /* A busy retry continues the same call and must keep its pending slot. */
    if (v->hw && !v->hw->retrying)
       v->hw->pending_cpu = 0;

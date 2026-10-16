@@ -267,6 +267,7 @@ typedef struct rh264_hw_ops
    /* Optional: copy the visible picture in slot to packed I420 planes.
     * Strides are width for Y, ceil(width/2) for U and V. */
    int (*readback)(void *dec, unsigned slot, uint8_t *planes[3]);
+   unsigned api;  /* video_hw_api for exported output */
 } rh264_hw_ops_t;
 
 /* The backend decoders try when asked to (rh264_video_set_hw);
@@ -292,6 +293,11 @@ int rh264_video_frame_size(const rh264_video *v, int *width, int *height);
 /* Make that output's planes available once; 0 success, -1 unavailable/error.
  * Repeated calls reuse the CPU copy. The next decode/drain expires it. */
 int rh264_video_readback(rh264_video *v);
+/* Export deferred output once without a CPU copy: 0 leased, 2 busy, -1
+ * unavailable/error. The reader must signal done or abandon the lease
+ * before closing the decoder. CPU materialization remains available
+ * until the next decode/drain, independent of the exported copy. */
+int rh264_video_export_frame(rh264_video *v, video_hw_frame_t *out);
 /* Whether the pictures come from the backend. */
 int rh264_video_is_hw(const rh264_video *v);
 /* The picture decode or drain made ready, as a hardware frame; 0 when

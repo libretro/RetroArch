@@ -1727,6 +1727,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.ops.output = vvd_output;
    vvd.ops.close  = vvd_close;
    vvd.ops.readback = vvd_readback;
+   vvd.ops.api = VIDEO_HW_API_VULKAN;
    vvd.up         = true;
    vvd.hevc.user = NULL;
    vvd.hevc.open = vvd_hevc_open;

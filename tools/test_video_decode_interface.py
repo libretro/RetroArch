@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # Copyright (C) 2026 The RetroArch team
-"""Exercise the actual runloop decode callbacks and v1/v2 negotiation.
+"""Exercise the actual runloop decode callbacks and v1/v2/v3 negotiation.
 
 Uses the checked hardware backend from rh264_hw_test and a generated H.264
 stream. Requires ffmpeg/libx264 and a C compiler. Builds on Linux and MinGW;
@@ -45,7 +45,12 @@ static void negotiation(void) {
  memset(&current,0,sizeof(current)); current.interface_version=2;
  assert(query(&current));
  assert(current.decode_ex && current.drain_ex && current.get_frame);
- current.interface_version=3; assert(!query(&current));
+ current.interface_version=3; assert(query(&current)); assert(current.get_gpu_frame);
+ {size_t prefix=offsetof(struct retro_video_decode_interface,get_gpu_frame);
+  unsigned char *v2=(unsigned char*)malloc(prefix+64); assert(v2);
+  memset(v2,0xa5,prefix+64);((struct retro_video_decode_interface*)v2)->interface_version=2;
+  assert(query(v2));for(i=0;i<64;i++) assert(v2[prefix+i]==0xa5);free(v2);}
+ current.interface_version=4; assert(!query(&current));
  assert(!query(NULL));
 }
 
@@ -57,6 +62,17 @@ static size_t parameter(uint8_t *out,const uint8_t *data,size_t *position,size_t
  assert(*position+n<=end && n+4<65536);
  out[0]=out[1]=out[2]=0;out[3]=1;memcpy(out+4,data+*position,n);*position+=n;
  return n+4;
+}
+static void take_gpu(struct retro_video_decode_interface *iface,void *decoder) {
+ struct retro_video_decode_gpu_frame gpu,duplicate;
+ int before=readbacks,result;
+ inject_busy=1;output_busy=0;
+ result=iface->get_gpu_frame(decoder,&gpu);assert(result==2 && readbacks==before);
+ result=iface->get_gpu_frame(decoder,&gpu);inject_busy=0;
+ assert(result==1 && gpu.image && gpu.width && gpu.height && gpu.abandon);
+ assert(gpu.api==RETRO_VIDEO_DECODE_GPU_VULKAN);
+ assert(iface->get_gpu_frame(decoder,&duplicate)==-1 && readbacks==before);
+ gpu.abandon(gpu.owner,gpu.done,gpu.done_value);
 }
 static int decode_stream(const char *path,int deferred) {
  struct retro_video_decode_interface iface;
@@ -81,8 +97,9 @@ static int decode_stream(const char *path,int deferred) {
  assert(pos<track->codec_private_size);
  {int count=track->codec_private[pos++];for(i=0;i<count;i++)
   headers+=parameter(au+headers,track->codec_private,&pos,track->codec_private_size);}
- memset(&iface,0,sizeof(iface));iface.interface_version=deferred?2:1;assert(query(&iface));
+ memset(&iface,0,sizeof(iface));iface.interface_version=deferred==2?3:deferred?2:1;assert(query(&iface));
  memset(&fake,0,sizeof(fake));readbacks=0;cur_sample=0;
+ fake_ops.api=VIDEO_HW_API_VULKAN;
  rh264_set_hw_backend(&fake_ops);decoder=iface.open();assert(decoder);
  assert(iface.get_frame==NULL || iface.get_frame(decoder,&frame)==-1);
  while(!draining) {
@@ -111,10 +128,13 @@ static int decode_stream(const char *path,int deferred) {
    if(result==1) {
     if(deferred) {
      assert(!frame.planes[0] && frame.width && frame.height && frame.hardware);
-     assert(iface.get_frame(decoder,&frame)==1);
-     assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
+     if(deferred==2) take_gpu(&iface,decoder);
+     else {
+      assert(iface.get_frame(decoder,&frame)==1);
+      assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
+     }
     }
-    assert(frame.planes[0] && frame.planes[0][0]==19);shown++;
+    assert(deferred==2 || (frame.planes[0] && frame.planes[0][0]==19));shown++;
    }
   }
   cur_sample++;
@@ -131,27 +151,31 @@ static int decode_stream(const char *path,int deferred) {
   if(result==0) break;
   assert(result==1);
   if(deferred) {
-   assert(iface.get_frame(decoder,&frame)==1);
-   assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
+   if(deferred==2) take_gpu(&iface,decoder);
+   else {
+    assert(iface.get_frame(decoder,&frame)==1);
+    assert(iface.get_frame(decoder,&frame)==1 && readbacks==before+1);
+   }
   }
-  assert(frame.planes[0] && frame.hardware);shown++;
+  assert((deferred==2 || frame.planes[0]) && frame.hardware);shown++;
  }
  if(deferred) {
   assert(iface.get_frame(decoder,&frame)==-1);
   assert(iface.decode_ex(decoder,au,1,&frame,2)==-1);
  }
- assert(!fake.errors && readbacks==shown);
+ assert(!fake.errors && readbacks==(deferred==2?0:shown));
+ if(deferred==2) assert(fake.abandoned==shown);
  if(deferred) assert(busy>0);
  iface.close(decoder);assert(fake.closed);
  rmp4_close(movie);free(bytes);free(au);rh264_set_hw_backend(NULL);
  return shown;
 }
 int main(int argc,char **argv) {
- int eager,deferred;
+ int eager,deferred,gpu;
  assert(argc==2);negotiation();
  eager=decode_stream(argv[1],0);deferred=decode_stream(argv[1],1);
- assert(eager==deferred && eager==24);
- printf("PASS: v1 allocation canary, v2 negotiation, %d eager/deferred Annex-B outputs, cached materialization, busy retries and EOF\n",eager);
+ gpu=decode_stream(argv[1],2);assert(eager==deferred && eager==gpu && eager==24);
+ printf("PASS: v1/v2 allocation canaries, v3 GPU leases with zero CPU readbacks, %d eager/deferred Annex-B outputs, cached materialization, busy retries and EOF\n",eager);
  return 0;
 }
 '''
