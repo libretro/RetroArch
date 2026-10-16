@@ -206,11 +206,16 @@ float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float
    return sdr_linear * (tonemapped_val / input_val);
 }
 
+float3 HDRDecodeGamma(float3 value)
+{
+   return sign(value) * pow(abs(value), 2.4f);
+}
+
 float3 Sample(float2 texcoord)
 {
    const float4 sdr = t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.4f);
+   const float3 sdr_linear = HDRDecodeGamma(sdr.rgb);
 
    return sdr_linear;
 }
@@ -219,7 +224,7 @@ float4 Sample(float4 colour, float2 texcoord)
 {
    const float4 sdr = colour * t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.4f);
+   const float3 sdr_linear = HDRDecodeGamma(sdr.rgb);
 
    return float4(sdr_linear, sdr.a);
 }
@@ -524,7 +529,7 @@ float4 PSMain(PSInput input) : SV_TARGET
           * For Super (gamut 3), To2020 passes through Rec.709 data —
           * k2020to709 then "interprets" it as Rec.2020, giving maximum boost. */
          float4 sdr = input.color * t0.Sample(s0, input.texcoord);
-         float3 linear_col = To2020(pow(abs(sdr.rgb), 2.4f));
+         float3 linear_col = To2020(HDRDecodeGamma(sdr.rgb));
 
          linear_col = mul(k2020to709, linear_col);
 

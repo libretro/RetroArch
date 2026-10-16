@@ -174,6 +174,19 @@ independent HDR reference colors within one output level on a native GPU.
 Regenerate embedded HLSL with `python3 tools/generate_video_hdr.py`; rebuild
 the Vulkan `.comp.inc` files with the shader Makefile after math changes.
 
+An additional 96 FP16 import cases run extracted production UI/composite math
+with half-float layer quantization. They check gamut modes 0-3, menu brightness
+and HDR10/scRGB conversion against the original linear pixel values. The two
+shader stages retain signed gamut channels. `generate_ui_roundtrip.py` builds
+the test source from both production stages and verifies it during builds;
+regenerate its SPIR-V with `glslc -mfmt=c ui_roundtrip.comp -o ui_roundtrip.comp.inc`.
+The native D3D oracle uses two GPU dispatches and an actual FP16 intermediate
+texture for 32 combinations of gamut, menu brightness and output mode.
+The native Windows shared-HLSL roundtrip covers 32 cases. Wine reports an
+explicit skip if its builtin compiler cannot compile these full production
+shaders; native Windows compilation failures remain failures.
+These offscreen checks do not establish physical HDR display acceptance.
+
 Builtin movie playback reuses this importer through
 `import_movie_frame`. The converted texture is the filter-chain input,
 including view dimensions and format, without an additional upload/copy.

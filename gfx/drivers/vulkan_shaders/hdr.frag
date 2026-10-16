@@ -1,6 +1,7 @@
 #version 310 es
 
 precision highp float;
+precision highp int;
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 2) uniform highp sampler2D Source;
@@ -90,17 +91,22 @@ const mat4 kCubicBezier = mat4(
      0.0,  0.0,  0.0,  1.0
 );
 
+vec3 HDRDecodeGamma(vec3 value)
+{
+   return sign(value) * pow(abs(value), vec3(2.4));
+}
+
 vec3 Sample(vec2 texcoord)
 {
    vec4 sdr = texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
+   vec3 sdr_linear = HDRDecodeGamma(sdr.rgb);
    return sdr_linear;
 }
 
 vec4 Sample(vec4 colour, vec2 texcoord)
 {
    vec4 sdr = colour * texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.4));
+   vec3 sdr_linear = HDRDecodeGamma(sdr.rgb);
    return vec4(sdr_linear, sdr.a);
 }
 

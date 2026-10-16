@@ -1,6 +1,6 @@
 CC ?= cc
 RA := ../../..
-SAMPLED_DEPS = ../d3d_p010_import/fp16_reference.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba16f.comp.inc $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc $(RA)/gfx/common/video_import_color.h $(RA)/libretro-common/formats/image/image_hdr_blit.c $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
+SAMPLED_DEPS = ui_roundtrip.comp.inc ui_roundtrip.comp generate_ui_roundtrip.py $(RA)/gfx/drivers/vulkan_shaders/alpha_blend_linear.frag $(RA)/gfx/drivers/vulkan_shaders/hdr.frag $(RA)/gfx/drivers/vulkan_shaders/hdr_common.glsl ../d3d_p010_import/fp16_reference.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba16f.comp.inc $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc $(RA)/gfx/common/video_import_color.h $(RA)/libretro-common/formats/image/image_hdr_blit.c $(VP9_DEPS) $(RA)/gfx/common/vulkan_video_planes.h \
       $(RA)/gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc \
       $(RA)/libretro-common/include/formats/video_hw_frame.h
 TARGET := vulkan_video_caps_test$(EXE)

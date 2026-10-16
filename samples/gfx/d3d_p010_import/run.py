@@ -49,3 +49,41 @@ with tempfile.TemporaryDirectory() as directory:
         str(Path(__file__).with_name('test12.c')), str(root / 'libretro-common/formats/image/image_yuv_blit.c'),
         '-o', str(exe12)] + (['-ld3d11', '-ld3d12', '-ld3dcompiler', '-ldxgi'] if windows else []) + ['-lm'], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe12)], check=True)
+
+    import json, re
+    sprite = (root / 'gfx/drivers/d3d_shaders/sprite_sm4.hlsl.h').read_text()
+    composite = (root / 'gfx/drivers/d3d_shaders/hdr_sm5.hlsl.h').read_text()
+    sprite = sprite[sprite.index('\nSRC(') + 5:sprite.rfind(')')]
+    composite = composite[composite.index('\nSRC(') + 5:composite.rfind(')')]
+    sprite = re.sub(r'/\*.*?\*/|//[^\n]*', '', sprite, flags=re.S)
+    composite = re.sub(r'/\*.*?\*/|//[^\n]*', '', composite, flags=re.S)
+    sprite = sprite.replace('t0.Sample(s0, input.texcoord)', 't0.SampleLevel(s0, input.texcoord, 0)')
+    composite = composite.replace('t0.Sample(s0, texcoord)', 't0.SampleLevel(s0, texcoord, 0)')
+    sprite += """
+RWTexture2D<float4> Output : register(u0);
+[numthreads(1,1,1)] void Roundtrip(uint3 id : SV_DispatchThreadID)
+{
+   PSInput p; p.position = 0; p.texcoord = float2((id.x + 0.5) / 8.0, 0.5); p.color = 1;
+   Output[id.xy] = PSMainLinearHDR(p);
+}
+"""
+    composite += """
+RWTexture2D<float4> Output : register(u0);
+[numthreads(1,1,1)] void Roundtrip(uint3 id : SV_DispatchThreadID)
+{
+   float4 layer = Sample(float4(1,1,1,1), float2((id.x + 0.5) / 8.0, 0.5));
+   float3 result = To2020(layer.rgb);
+   if (global.hdr_mode == 2u)
+      result = mul(k2020to709, result) * (global.brightness_nits / 80.0);
+   else
+      result = HDR10ToscRGB(HDR10(To2020(layer)).rgb);
+   Output[id.xy] = float4(result, layer.a);
+}
+"""
+    (tmp / 'roundtrip.inc').write_text('static const char encode_source[] = ' + json.dumps(sprite)
+        + ';\nstatic const char decode_source[] = ' + json.dumps(composite) + ';\n')
+    exe_roundtrip = tmp / ('roundtrip.exe' if windows else 'roundtrip')
+    subprocess.run(cc + flags + ['-I' + str(tmp),
+        str(Path(__file__).with_name('roundtrip_test.c')), '-o', str(exe_roundtrip)]
+        + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe_roundtrip)], check=True)

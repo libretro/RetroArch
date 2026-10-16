@@ -8,6 +8,7 @@ import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
+subprocess.run([sys.executable, str(Path(__file__).with_name('generate_ui_roundtrip.py')), '--check'], check=True)
 source = (root / 'gfx/drivers/vulkan.c').read_text()
 common = (root / 'gfx/common/vulkan_common.c').read_text()
 

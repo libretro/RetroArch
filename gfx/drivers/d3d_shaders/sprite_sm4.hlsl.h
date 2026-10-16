@@ -231,8 +231,7 @@ SRC(
        * (the menu nits), above 1.0 for anything brighter than menu white
        * - the layer is FP16 once such a texture is drawn. Modes 2 and 1,
        * straight into the swapchain, are scRGB as it is and absolute PQ.
-       * The composite's pow(abs()) keeps no sign, so in mode 0 a colour
-       * outside the chosen gamut is clamped to it. */
+       * Signed gamma retains gamut channels through the FP16 UI layer. */
       static const float3x3 kSprExpanded2020to709 =
       {
          { 1.635346f,  -0.5705700f, -0.0647755f },
@@ -271,7 +270,7 @@ SRC(
          {
             float3 x = SpriteFrom2020(mul(kSpr709to2020, lin
                   * (kSprscRGBWhiteNits / max(sprite_paper_white_nits, 1.0f))));
-            return float4(pow(max(x, 0.0f), 1.0f / 2.4f), a);
+            return float4(sign(x) * pow(abs(x), 1.0f / 2.4f), a);
          }
       };
 

@@ -54,6 +54,7 @@ typedef struct import_oracle
    VkCommandBuffer cb;
    VkFence fence;
    VkSemaphore ready, done;
+   VkPipeline ui_pipeline;
    unsigned width, height;
 } import_oracle_t;
 
@@ -121,6 +122,7 @@ static int oracle_submit(import_oracle_t *t)
 
 #include "../d3d_p010_import/fp16_reference.h"
 static int output_fp16;
+static int output_ui_roundtrip;
 
 static int oracle_pipeline(import_oracle_t *t)
 {
@@ -135,6 +137,9 @@ static int oracle_pipeline(import_oracle_t *t)
    ;
    static const uint32_t float_sampled_spirv[] =
 #include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc"
+   ;
+   static const uint32_t ui_spirv[] =
+#include "ui_roundtrip.comp.inc"
    ;
    VkSamplerCreateInfo sampler = {0};
    VkDescriptorSetLayoutBinding bindings[4];
@@ -183,6 +188,15 @@ static int oracle_pipeline(import_oracle_t *t)
    ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
          &t->vk.pipelines.yuv_image_to_rgba16f) == VK_SUCCESS;
    vkDestroyShaderModule(device, shader, NULL);
+   if (output_ui_roundtrip)
+   {
+      module.codeSize = sizeof(ui_spirv); module.pCode = ui_spirv;
+      if (!ok || vkCreateShaderModule(device, &module, NULL, &shader) != VK_SUCCESS) return 0;
+      pipeline.stage.module = shader;
+      ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+            &t->ui_pipeline) == VK_SUCCESS;
+      vkDestroyShaderModule(device, shader, NULL);
+   }
    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    sampler.magFilter = sampler.minFilter = VK_FILTER_NEAREST;
    sampler.addressModeU = sampler.addressModeV = sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -444,6 +458,29 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
       if (result != VIDEO_TEXTURE_UPDATE_DONE || plane_copies != (mode == 1 ? 0u : 1u)) goto done;
    }
    if (!oracle_begin(t)) goto done;
+   if (output_ui_roundtrip)
+   {
+      static const float white[4] = {80,203,400,1000};
+      float params[4];
+      struct vk_stream_state *state = t->vk.stream_states;
+      params[0] = white[(serial / 4) % 4];
+      params[1] = (float)(serial % 4);
+      params[2] = (float)((serial / 16) % 2 + 1); params[3] = 0;
+      VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, t->output.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+      vkCmdBindPipeline(t->cb, VK_PIPELINE_BIND_POINT_COMPUTE, t->ui_pipeline);
+      vkCmdBindDescriptorSets(t->cb, VK_PIPELINE_BIND_POINT_COMPUTE, t->vk.pipelines.layout,
+            0, 1, &state->set[0], 0, NULL);
+      vkCmdPushConstants(t->cb, t->vk.pipelines.layout, VK_SHADER_STAGE_COMPUTE_BIT,
+            0, sizeof(params), params);
+      vkCmdDispatch(t->cb, t->width, t->height, 1);
+      VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, t->output.image, VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   }
    VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, t->output.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -486,7 +523,23 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
                   oracle_sample(0, x, y, depth, full),
                   oracle_sample(1, x / 2, y / 2, depth, full),
                   oracle_sample(2, x / 2, y / 2, depth, full), expected);
-            if (!fp16_reference_check(pixel, expected)) ok = 0;
+            if (output_ui_roundtrip)
+            {
+               double peak = fabs(expected[0]);
+               if (fabs(expected[1]) > peak) peak = fabs(expected[1]);
+               if (fabs(expected[2]) > peak) peak = fabs(expected[2]);
+               for (plane = 0; plane < 4; plane++)
+               {
+                  double actual = fp16_reference_half(pixel[plane]);
+                  double ref = plane == 3 ? 1.0 : expected[plane];
+                  if (actual != actual || fabs(actual - ref) > .003 + .005 * peak)
+                  {
+                     printf("UI roundtrip %u,%u/%u: %.6f != %.6f\n", x, y, plane, actual, ref);
+                     ok = 0;
+                  }
+               }
+            }
+            else if (!fp16_reference_check(pixel, expected)) ok = 0;
             continue;
          }
          if (transfer)
@@ -561,6 +614,7 @@ static void oracle_cleanup(import_oracle_t *t)
    if (t->readback) vkDestroyBuffer(device, t->readback, NULL);
    if (t->upload_memory) vkFreeMemory(device, t->upload_memory, NULL);
    if (t->readback_memory) vkFreeMemory(device, t->readback_memory, NULL);
+   if (t->ui_pipeline) vkDestroyPipeline(device, t->ui_pipeline, NULL);
    if (t->vk.pipelines.yuv420_to_rgba16f) vkDestroyPipeline(device, t->vk.pipelines.yuv420_to_rgba16f, NULL);
    if (t->vk.pipelines.yuv_image_to_rgba16f) vkDestroyPipeline(device, t->vk.pipelines.yuv_image_to_rgba16f, NULL);
    if (t->vk.pipelines.yuv420_to_rgba8888) vkDestroyPipeline(device, t->vk.pipelines.yuv420_to_rgba8888, NULL);
@@ -662,8 +716,6 @@ free_host:
    return ok;
 }
 
-#endif
-
 static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
       unsigned family, PFN_vkGetInstanceProcAddr get)
 {
@@ -672,6 +724,10 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    ok = import_test_gpu_format(instance, gpu, family, get);
    output_fp16 = 1;
    ok = import_test_gpu_format(instance, gpu, family, get) && ok;
+   output_ui_roundtrip = 1;
+   ok = import_test_gpu_format(instance, gpu, family, get) && ok;
+   output_ui_roundtrip = 0;
    output_fp16 = 0;
    return ok;
 }
+#endif

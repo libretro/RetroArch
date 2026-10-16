@@ -8,9 +8,8 @@ precision highp float;
  * menu nits for the layer. This writes the exact inverse of that, so the
  * composite shows the texture at the luminance it was graded at; above
  * menu white v is above 1.0, which the FP16 layer keeps. The composite's
- * pow(abs()) keeps no sign, so a colour outside the chosen gamut is
- * clamped to it. Params.x is the menu nits, Params.y the composite's
- * ExpandGamut. */
+ * signed gamma retains channels outside the UI's chosen gamut. Params.x
+ * is the menu nits, Params.y the composite's ExpandGamut. */
 
 /* hdr_common.glsl's constants, which this must match; it is not
  * included because it declares the composite's own UBO block. */
@@ -56,12 +55,16 @@ vec3 From2020(const vec3 rgb, const float gamut)
    return rgb;
 }
 
+vec3 HDRUIEncode(vec3 lin, float nits, float gamut)
+{
+   vec3 x = From2020((lin * (kscRGBWhiteNits / max(nits, 1.0)))
+         * k709to2020, gamut);
+   return sign(x) * pow(abs(x), vec3(1.0 / 2.4));
+}
+
 void main()
 {
-   vec4  s   = texture(uTex, vTexCoord);
-   vec3  lin = vColor.rgb * s.rgb;
-   float a   = vColor.a * s.a;
-   vec3  x   = From2020((lin * (kscRGBWhiteNits
-         / max(global.Params.x, 1.0))) * k709to2020, global.Params.y);
-   FragColor = vec4(pow(max(x, vec3(0.0)), vec3(1.0 / 2.4)), a);
+   vec4 s = texture(uTex, vTexCoord);
+   FragColor = vec4(HDRUIEncode(vColor.rgb * s.rgb, global.Params.x,
+         global.Params.y), vColor.a * s.a);
 }
