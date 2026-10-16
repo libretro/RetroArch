@@ -5973,9 +5973,13 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    int sublabel_max_width        = 0;
    bool menu_current_sel_only    = menu_show_sublabels_current_selection_only;
    bool cursor_in_sidebar        = (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR);
+   bool cursor_in_sidebar_old    = (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD) ? true : false;
    bool draw_old_list            = (ozone->flags & OZONE_FLAG_DRAW_OLD_LIST);
    bool sidebar_at_target        = (ozone->sidebar_offset == (ozone->depth > 1 ? -ozone->dimensions_sidebar_width : 0.0f));
-   bool animate_scroll           = (menu_show_sublabels && menu_current_sel_only && !draw_old_list && sidebar_at_target);
+   bool selection_changed        = (ozone->selection != menu_st->selection_ptr);
+   bool animate_scroll           = (menu_show_sublabels && menu_current_sel_only
+         && !cursor_in_sidebar && !draw_old_list && sidebar_at_target
+         && (ozone->animations.cursor_alpha == 0.0f));
    bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
@@ -6159,8 +6163,14 @@ compute_sublabel:
       }
    }
 
-   if (!menu_show_sublabels || !menu_current_sel_only || !cursor_in_sidebar)
+   if (   !menu_show_sublabels || !menu_current_sel_only || !cursor_in_sidebar
+       || selection_changed || cursor_in_sidebar_old)
+   {
       ozone_update_scroll(ozone, animate_scroll, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
+      if (   menu_show_sublabels && menu_current_sel_only && !cursor_in_sidebar
+          && !cursor_in_sidebar_old && !animate_scroll)
+         ozone->animations.cursor_alpha = 1.0f;
+   }
 }
 
 static void ozone_draw_entries(
@@ -9094,8 +9104,6 @@ static enum menu_action ozone_parse_menu_entry_action(
    enum menu_action new_action    = action;
    file_list_t *selection_buf     = NULL;
    unsigned horizontal_list_size  = 0;
-   bool menu_show_sublabels       = settings->bools.menu_show_sublabels;
-   bool menu_current_sel_only     = settings->bools.menu_show_sublabels_current_selection_only;
 
    /* We have to override the thumbnail stream
     * delay when opening the thumbnail sidebar;
@@ -9234,8 +9242,6 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone_hide_fullscreen_thumbnails(ozone, true);
             new_action     = MENU_ACTION_NOOP;
          }
-         if ((new_action == MENU_ACTION_START) && menu_show_sublabels && menu_current_sel_only)
-            ozone->selection_old = ozone->selection;
          break;
       case MENU_ACTION_SCAN:
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
@@ -12848,8 +12854,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->flags          &= ~OZONE_FLAG_LIBRETRO_RUNNING;
 
       ozone->flags             |=  OZONE_FLAG_NEED_COMPUTE;
-      if (!libretro_running)
-         ozone->selection_old   = ozone->selection;
 
       if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
       {
@@ -13606,8 +13610,6 @@ static void ozone_populate_entries(
    struct menu_state *menu_st           = menu_state_get_ptr();
    menu_list_t *menu_list               = menu_st->entries.list;
    bool ozone_collapse_sidebar          = settings->bools.ozone_collapse_sidebar;
-   bool menu_show_sublabels             = settings->bools.menu_show_sublabels;
-   bool menu_current_sel_only           = settings->bools.menu_show_sublabels_current_selection_only;
    ozone_handle_t *ozone                = (ozone_handle_t*) data;
 
    if (!ozone)
@@ -13691,8 +13693,6 @@ static void ozone_populate_entries(
                                  && new_depth > ozone->depth;
 
    animate                     = new_depth != ozone->depth;
-   if (!animate && menu_show_sublabels && menu_current_sel_only)
-      ozone->selection_old     = ozone->selection;
 
    if (new_depth <= ozone->depth)
       ozone->flags            |=  OZONE_FLAG_FADE_DIRECTION;
