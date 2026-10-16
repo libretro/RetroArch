@@ -57,6 +57,14 @@ with tempfile.TemporaryDirectory() as directory:
     composite = composite[composite.index('\nSRC(') + 5:composite.rfind(')')]
     sprite = re.sub(r'/\*.*?\*/|//[^\n]*', '', sprite, flags=re.S)
     composite = re.sub(r'/\*.*?\*/|//[^\n]*', '', composite, flags=re.S)
+    (tmp / 'raster.inc').write_text('static const char sprite_source[] = ' + json.dumps(sprite)
+        + ';\nstatic const char composite_source[] = ' + json.dumps(composite) + ';\n')
+    exe_raster = tmp / ('raster.exe' if windows else 'raster')
+    subprocess.run(cc + flags + ['-I' + str(tmp),
+        str(Path(__file__).with_name('raster_test.c')), '-o', str(exe_raster)]
+        + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe_raster)], check=True)
+
     sprite = sprite.replace('t0.Sample(s0, input.texcoord)', 't0.SampleLevel(s0, input.texcoord, 0)')
     composite = composite.replace('t0.Sample(s0, texcoord)', 't0.SampleLevel(s0, texcoord, 0)')
     sprite += """
