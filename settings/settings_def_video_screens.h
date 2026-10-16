@@ -51,3 +51,7 @@ S_ACTION(VIDEO_SCREEN_XR_RESET_ALL,
       "video_screen_xr_reset_all",
       "Reset All Screens",
       "Restore every screen's position, rotation, scale and visibility, including screens outside the current map, and return the menu to following Screen 1.")
+S_ACTION(VIDEO_SCREEN_XR_EDIT,
+      "video_screen_xr_edit",
+      "Edit Screens",
+      "Close the menu and move the headset's screens and menu with the controllers: grip grabs, the trigger tilts, the stick changes distance and size, the main button resets.")

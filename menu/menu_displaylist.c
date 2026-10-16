@@ -9400,7 +9400,8 @@ unsigned menu_displaylist_build_list(
 #ifndef HAVE_OPENXR
                else if (     key == RARCH_HEADSET_RECENTER
                           || key == RARCH_LASER_POINTER_TOGGLE
-                          || key == RARCH_HEADSET_VIEW_TOGGLE)
+                          || key == RARCH_HEADSET_VIEW_TOGGLE
+                          || key == RARCH_HEADSET_EDIT_SCREENS)
                   continue;
 #endif
                /* Show combo entries before normal binds */
@@ -12616,6 +12617,22 @@ unsigned menu_displaylist_build_list(
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL,
                         PARSE_ACTION, false) == 0)
+                  count++;
+            }
+            /* Edit mode needs the headset's output and controllers. */
+#ifdef ANDROID
+            if (video_context_driver_headset_inline())
+#else
+            if (settings->bools.video_openxr_enable)
+#endif
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_OPENXR_EDIT_PAUSE,
+                        PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
          }

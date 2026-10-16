@@ -4165,6 +4165,12 @@ unsigned video_driver_headset_view_toggle(void)
    return VIDEO_HEADSET_VIEW_LAST;
 }
 
+void video_driver_headset_edit(bool editing, unsigned seq)
+{
+   video_driver_st.headset_editing  = editing;
+   video_driver_st.headset_edit_seq = seq;
+}
+
 void video_driver_headset_exit_request(void)
 {
    retro_atomic_store_release_int(&video_driver_st.headset_exit, 1);
@@ -6935,6 +6941,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->headset_width               = settings->floats.video_openxr_width;
    video_info->headset_placement           = settings->uints.video_openxr_placement;
    video_info->headset_recenter            = video_st->headset_recenter;
+   video_info->headset_edit_seq            = video_st->headset_edit_seq;
+   video_info->headset_editing             = video_st->headset_editing;
    video_info->headset_interval            = video_st->headset_interval;
    video_info->headset_request_hz          = video_st->headset_request_hz;
    video_info->screen_layout               = settings->uints.video_screen_layout;

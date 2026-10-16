@@ -8853,6 +8853,9 @@ static enum runloop_state_enum runloop_check_state(
    /* Check headset view hotkey */
    HOTKEY_CHECK(RARCH_HEADSET_VIEW_TOGGLE, CMD_EVENT_HEADSET_VIEW_TOGGLE, true, NULL);
 
+   /* Check headset edit hotkey: here, so it works in the menu too */
+   HOTKEY_CHECK(RARCH_HEADSET_EDIT_SCREENS, CMD_EVENT_HEADSET_EDIT_SCREENS, true, NULL);
+
    /* Check netplay host hotkey */
    HOTKEY_CHECK(RARCH_NETPLAY_HOST_TOGGLE, CMD_EVENT_NETPLAY_HOST_TOGGLE, true, NULL);
 

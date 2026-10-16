@@ -7080,6 +7080,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool views_direct                       = false;
    bool views_in_place                     = false;
    bool views_ui                           = false;
+   bool views_ui_menu                      = false;
    unsigned ui_layer_dims                  = 0;
    /* A software frame a preset may draw as views, written once they are
     * known: straight into each view's texture if they need copies */
@@ -7762,13 +7763,19 @@ static bool gl3_frame(void *data, const void *frame,
    /* A failed size stays latched until the layer changes size. */
    if (frame && !ui_layer_dims)
       gl3_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
+   views_ui_menu = (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE) ? true : false;
+#ifdef HAVE_GL3_XR
+   /* Edit mode moves the menu's quad: it stays up, empty. */
+   if (xr_draw && video_info->headset_editing)
+      views_ui_menu = true;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show,
+         views_ui_menu, msg, statistics_show,
          widgets_active && gfx_widgets_visible(video_info))
 #else
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE), msg, statistics_show, false)
+         views_ui_menu, msg, statistics_show, false)
 #endif
       && gl3_vv_target_ensure(gl, &gl->views.ui_target, &gl->views.ui,
             ui_layer_dims);

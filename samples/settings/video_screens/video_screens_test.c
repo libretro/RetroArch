@@ -27,6 +27,8 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../input/input_driver.h"
+#include "../../../input/input_defines.h"
+#include "../../../input/input_remapping.h"
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
@@ -797,6 +799,45 @@ static void test_xr_menu_tracked_screen(void)
    video_driver_vr_content_clear();
    video_driver_set_xr_host(NULL);
    video_st->current_video = saved_driver;
+}
+
+/* Edit Screens and While Editing Screens show with Headset Output on;
+ * the hotkey exists; without a session the row is refused and the
+ * menu stays. */
+static void test_xr_edit_rows(void)
+{
+   settings_t *settings = config_get_ptr();
+   const char *base     = NULL;
+   unsigned i;
+   load_fixture("video_driver = \"glcore\"\nvideo_openxr_enable = \"false\"\n");
+   set_menu_map(1);
+   CHECK(!menu_has_setting("video_screen_xr_edit"));
+   CHECK(!menu_has_setting("video_openxr_edit_pause"));
+   settings->bools.video_openxr_enable = true;
+   CHECK(menu_has_setting("video_screen_xr_edit"));
+   CHECK(menu_has_setting("video_openxr_edit_pause"));
+   menu_value("video_openxr_edit_pause", "Keep Running");
+   menu_action("video_openxr_edit_pause", MENU_ACTION_RIGHT);
+   CHECK(settings->bools.video_openxr_edit_pause);
+   menu_value("video_openxr_edit_pause", "Pause");
+   for (i = 0; input_config_bind_map_get_valid(i); i++)
+      if (input_config_bind_map_get_retro_key(i) == RARCH_HEADSET_EDIT_SCREENS)
+         base = input_config_bind_map_get_base(i);
+   CHECK(base && !strcmp(base, "headset_edit_screens"));
+   /* The row asks for edit mode, which the desktop is told it cannot
+    * have; it is no Reset Screen. */
+   runloop_msg_queue_init();
+   settings->floats.video_screen_xr_x[0] = 2.0f;
+   menu_action("video_screen_xr_edit", MENU_ACTION_OK);
+   CHECK(!video_state_get_ptr()->headset_editing);
+   {
+      const char *msg = msg_queue_pull(&runloop_state_get_ptr()->msg_queue);
+      CHECK(msg && !strcmp(msg,
+               msg_hash_to_str(MSG_OPENXR_EDIT_UNAVAILABLE)));
+   }
+   CHECK(settings->floats.video_screen_xr_x[0] == 2.0f);
+   runloop_msg_queue_deinit();
+   settings->bools.video_openxr_enable = false;
 }
 #endif
 
@@ -2060,6 +2101,7 @@ int main(int argc, char **argv)
    test_xr_menu_reset_all();
 #ifdef HAVE_OPENXR
    test_xr_menu_tracked_screen();
+   test_xr_edit_rows();
 #endif
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);

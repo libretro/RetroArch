@@ -3950,6 +3950,16 @@ static size_t setting_get_string_representation_video_openxr_laser(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_edit_pause(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   return strlcpy(s, msg_hash_to_str(*setting->value.target.boolean
+            ? MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON
+            : MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF), len);
+}
+
 static size_t setting_get_string_representation_video_openxr_placement(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -10447,6 +10457,13 @@ static int setting_video_screen_reset(rarch_setting_t *setting,
    settings->flags |= SETTINGS_FLG_MODIFIED;
    menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
       | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int setting_video_screen_edit(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   command_event(CMD_EVENT_HEADSET_EDIT_SCREENS, NULL);
    return 0;
 }
 
@@ -19856,7 +19873,12 @@ static bool setting_append_list_video_screen_settings(
       rarch_setting_t *setting = &(*list)[i];
       SETTINGS_ACTION_SET(read, setting, setting_video_screen_read)
       SETTINGS_ACTION_SET(change, setting, setting_video_screen_change)
-      if (setting->type == ST_ACTION)
+      if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_XR_EDIT)
+      {
+         SETTINGS_ACTION_SET(ok, setting, setting_video_screen_edit)
+         SETTINGS_ACTION_SET(sel, setting, setting_video_screen_edit)
+      }
+      else if (setting->type == ST_ACTION)
       {
          SETTINGS_ACTION_SET(ok, setting, setting_video_screen_reset)
          SETTINGS_ACTION_SET(sel, setting, setting_video_screen_reset)

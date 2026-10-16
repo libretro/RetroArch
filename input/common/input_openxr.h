@@ -69,9 +69,20 @@ void input_openxr_reannounce(void);
  * headset's. */
 bool input_openxr_autoconfigure(unsigned slot);
 
-/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE
- * or RARCH_HEADSET_VIEW_TOGGLE, from the headset's own actions. */
+/* RARCH_MENU_TOGGLE, RARCH_HEADSET_RECENTER, RARCH_LASER_POINTER_TOGGLE,
+ * RARCH_HEADSET_VIEW_TOGGLE or RARCH_HEADSET_EDIT_SCREENS, from the
+ * headset's own actions. */
 bool input_openxr_hotkey(unsigned id);
+
+/* Edit Screens, main thread, between frames: a pause draws a frame.
+ * Toggle: stops edit mode, false; otherwise whether it can start, the
+ * desktop told when not. Begin, once the menu was asked to close: on at
+ * once, pausing running content when @pause (While Editing Screens)
+ * asks; a menu that stayed open (no content) is told instead. End: off
+ * at once, as a video reinit wants. */
+bool input_openxr_edit_toggle(void);
+void input_openxr_edit_begin(bool pause);
+void input_openxr_edit_end(void);
 
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
  * while it can point (the headset focused, a screen live for the

@@ -36,6 +36,7 @@
 #include "../../gfx/video_views.h"
 #include "../../gfx/common/openxr_frame.h"
 #include "../../gfx/video_driver.h"
+#include "../../msg_hash.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -52,6 +53,10 @@
 #define INPUT_OPENXR_HAPTIC_DURATION 1000000000
 /* Half a stick's travel. */
 #define INPUT_OPENXR_YIELD_STICK   0x4000
+/* Polls in a row with neither of edit mode's grab nor its menu bound
+ * that end it: a runtime can read a binding inactive for a sync around
+ * a controller change. */
+#define INPUT_OPENXR_EDIT_UNBOUND  3
 /* Touch's one menu button opens the RetroArch menu once held this long
  * (us). */
 #define INPUT_OPENXR_MENU_HOLD     1000000
@@ -61,6 +66,7 @@ enum input_openxr_set
    INPUT_OPENXR_SET_COMBINED = 0,
    INPUT_OPENXR_SET_SEPARATE,
    INPUT_OPENXR_SET_POINTER,
+   INPUT_OPENXR_SET_EDIT,
    INPUT_OPENXR_SETS
 };
 
@@ -90,6 +96,7 @@ enum input_openxr_action
    IXA_C_LASER,
    IXA_C_VIEW,
    IXA_C_START_MENU,
+   IXA_C_EDIT,
    IXA_S_B,
    IXA_S_A,
    IXA_S_R,
@@ -100,10 +107,17 @@ enum input_openxr_action
    IXA_S_RECENTER,
    IXA_S_LASER,
    IXA_S_VIEW,
+   IXA_S_EDIT,
    IXA_AIM,
    IXA_GRIP,
    IXA_PALM,
    IXA_RUMBLE,
+   IXA_E_GRAB,
+   IXA_E_TILT,
+   IXA_E_STICK,
+   IXA_E_RESET,
+   IXA_E_MENU,
+   IXA_E_EDIT,
    IXA_COUNT
 };
 
@@ -142,6 +156,7 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_COMBINED, "laser",       "Laser Pointer",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "view",        "Headset View",   XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "start_menu",  "Start (Held: RetroArch Menu)", XR_ACTION_TYPE_BOOLEAN_INPUT, false },
+   { INPUT_OPENXR_SET_COMBINED, "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_SEPARATE, "b",           "B",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_SEPARATE, "a",           "A",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_SEPARATE, "r",           "R",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
@@ -152,16 +167,24 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_SEPARATE, "recenter",    "Recenter",       XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_SEPARATE, "laser",       "Laser Pointer",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_SEPARATE, "view",        "Headset View",   XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_SEPARATE, "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_POINTER,  "aim",         "Aim",            XR_ACTION_TYPE_POSE_INPUT,       true  },
    { INPUT_OPENXR_SET_POINTER,  "grip",        "Grip",           XR_ACTION_TYPE_POSE_INPUT,       true  },
    { INPUT_OPENXR_SET_POINTER,  "palm",        "Palm",           XR_ACTION_TYPE_POSE_INPUT,       true  },
-   { INPUT_OPENXR_SET_POINTER,  "rumble",      "Rumble",         XR_ACTION_TYPE_VIBRATION_OUTPUT, true  }
+   { INPUT_OPENXR_SET_POINTER,  "rumble",      "Rumble",         XR_ACTION_TYPE_VIBRATION_OUTPUT, true  },
+   { INPUT_OPENXR_SET_EDIT,     "grab",        "Grab",           XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
+   { INPUT_OPENXR_SET_EDIT,     "tilt",        "Tilt",           XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
+   { INPUT_OPENXR_SET_EDIT,     "stick",       "Distance and Size", XR_ACTION_TYPE_VECTOR2F_INPUT, true },
+   { INPUT_OPENXR_SET_EDIT,     "reset",       "Reset",          XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
+   { INPUT_OPENXR_SET_EDIT,     "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false }
 };
 
 static const char *const input_openxr_set_names[INPUT_OPENXR_SETS] = {
-   "combined", "separate", "pointer" };
+   "combined", "separate", "pointer", "edit" };
 static const char *const input_openxr_set_labels[INPUT_OPENXR_SETS] = {
-   "Combined Controllers", "Separate Controllers", "Laser and Rumble" };
+   "Combined Controllers", "Separate Controllers", "Laser and Rumble",
+   "Edit Screens" };
 
 typedef struct input_openxr_bind
 {
@@ -297,26 +320,82 @@ static const input_openxr_bind_t input_openxr_simple[] = {
    IXB_POINTER
 };
 
+/* Edit mode's: the grip grabs, the trigger tilts, the stick (Vive: the
+ * trackpad) pushes and resizes, the main face button resets, and the
+ * menu button opens the RetroArch menu, which ends it. Edit Screens is
+ * the user's to bind. */
+static const input_openxr_bind_t input_openxr_index_edit[] = {
+   IXB_BOTH(IXA_E_GRAB,  "squeeze/value"),
+   IXB_BOTH(IXA_E_TILT,  "trigger/value"),
+   IXB_BOTH(IXA_E_STICK, "thumbstick"),
+   IXB_BOTH(IXA_E_RESET, "a/click"),
+   IXB_L(IXA_E_MENU,     "trackpad/force")
+};
+
+static const input_openxr_bind_t input_openxr_touch_edit[] = {
+   IXB_BOTH(IXA_E_GRAB,  "squeeze/value"),
+   IXB_BOTH(IXA_E_TILT,  "trigger/value"),
+   IXB_BOTH(IXA_E_STICK, "thumbstick"),
+   IXB_L(IXA_E_RESET,    "x/click"),
+   IXB_R(IXA_E_RESET,    "a/click"),
+   IXB_L(IXA_E_MENU,     "menu/click")
+};
+
+/* The left hand has no face buttons: D-pad down, as Separate's B. */
+static const input_openxr_bind_t input_openxr_frame_edit[] = {
+   IXB_BOTH(IXA_E_GRAB,  "squeeze/value"),
+   IXB_BOTH(IXA_E_TILT,  "trigger/value"),
+   IXB_BOTH(IXA_E_STICK, "thumbstick"),
+   IXB_L(IXA_E_RESET,    "dpad_down/click"),
+   IXB_R(IXA_E_RESET,    "a/click"),
+   IXB_R(IXA_E_MENU,     "thumbstick/click")
+};
+
+static const input_openxr_bind_t input_openxr_vive_edit[] = {
+   IXB_BOTH(IXA_E_GRAB,  "squeeze/click"),
+   IXB_BOTH(IXA_E_TILT,  "trigger/value"),
+   IXB_BOTH(IXA_E_STICK, "trackpad"),
+   IXB_BOTH(IXA_E_RESET, "trackpad/click"),
+   IXB_L(IXA_E_MENU,     "menu/click")
+};
+
+static const input_openxr_bind_t input_openxr_simple_edit[] = {
+   IXB_BOTH(IXA_E_GRAB,  "select/click"),
+   IXB_L(IXA_E_MENU,     "menu/click")
+};
+
 typedef struct input_openxr_profile
 {
    const char *path;
    const input_openxr_bind_t *binds;
+   const input_openxr_bind_t *edit;
    unsigned count;
+   unsigned edit_count;
    /* Only with XR_VALVE_frame_controller_interaction. */
    bool frame;
 } input_openxr_profile_t;
 
 static const input_openxr_profile_t input_openxr_profiles[] = {
    { "/interaction_profiles/valve/index_controller",
-      input_openxr_index,  ARRAY_SIZE(input_openxr_index),  false },
+      input_openxr_index,  input_openxr_index_edit,
+      ARRAY_SIZE(input_openxr_index),  ARRAY_SIZE(input_openxr_index_edit),
+      false },
    { "/interaction_profiles/oculus/touch_controller",
-      input_openxr_touch,  ARRAY_SIZE(input_openxr_touch),  false },
+      input_openxr_touch,  input_openxr_touch_edit,
+      ARRAY_SIZE(input_openxr_touch),  ARRAY_SIZE(input_openxr_touch_edit),
+      false },
    { "/interaction_profiles/valve/frame_controller_valve",
-      input_openxr_frame,  ARRAY_SIZE(input_openxr_frame),  true  },
+      input_openxr_frame,  input_openxr_frame_edit,
+      ARRAY_SIZE(input_openxr_frame),  ARRAY_SIZE(input_openxr_frame_edit),
+      true  },
    { "/interaction_profiles/htc/vive_controller",
-      input_openxr_vive,   ARRAY_SIZE(input_openxr_vive),   false },
+      input_openxr_vive,   input_openxr_vive_edit,
+      ARRAY_SIZE(input_openxr_vive),   ARRAY_SIZE(input_openxr_vive_edit),
+      false },
    { "/interaction_profiles/khr/simple_controller",
-      input_openxr_simple, ARRAY_SIZE(input_openxr_simple), false }
+      input_openxr_simple, input_openxr_simple_edit,
+      ARRAY_SIZE(input_openxr_simple), ARRAY_SIZE(input_openxr_simple_edit),
+      false }
 };
 
 typedef struct input_openxr_pad
@@ -358,6 +437,9 @@ typedef struct input_openxr
    XrSpace grip[INPUT_OPENXR_HANDS];
    XrSpace palm[INPUT_OPENXR_HANDS];
    XrHandTrackerEXT trackers[INPUT_OPENXR_HANDS];
+   /* The profiles that refused edit mode's bindings. */
+   XrPath edit_refused[ARRAY_SIZE(input_openxr_profiles)];
+   unsigned num_edit_refused;
    PFN_xrStringToPath StringToPath;
    PFN_xrPathToString PathToString;
    PFN_xrCreateActionSet CreateActionSet;
@@ -394,6 +476,9 @@ typedef struct input_openxr
    bool recenter;
    bool laser_toggle;
    bool view_toggle;
+   bool edit_toggle;
+   bool edit_ok;         /* a profile took edit mode's bindings */
+   bool edit_warned;     /* its unavailability logged */
    /* Touch's menu button: held since start_menu_since. */
    bool start_menu_held;
    retro_time_t start_menu_since;
@@ -431,6 +516,19 @@ typedef struct input_openxr
 } input_openxr_t;
 
 static input_openxr_t input_openxr_st;
+
+/* Edit Screens, main thread. Kept over sessions: a session's end stops
+ * it at the next poll. */
+typedef struct input_openxr_edit
+{
+   unsigned seq;      /* grabs let go so far, for the frame snapshot */
+   unsigned unbound;  /* polls in a row with its grab and menu unbound */
+   bool on;
+   bool paused;       /* edit mode paused the content */
+   bool changed;      /* it wrote a setting */
+} input_openxr_edit_t;
+
+static input_openxr_edit_t input_openxr_edit;
 
 /* The main thread's laser mode and menu, for the XR thread's dots. */
 #define INPUT_OPENXR_LASER_MASK 3
@@ -507,13 +605,17 @@ static bool input_openxr_load(input_openxr_t *st,
       && INPUT_OPENXR_PROC(st, get, inst, StopHapticFeedback);
 }
 
-/* One profile's suggestions; a runtime without the profile, or that
- * refuses a path, only loses that profile. */
-static void input_openxr_suggest(input_openxr_t *st,
+/* One profile's suggestions, edit mode's and the palm's with them. A
+ * runtime that refuses either keeps the rest; one without the profile,
+ * or that refuses a path, only loses that profile. Returns whether edit
+ * mode's were taken. */
+static bool input_openxr_suggest(input_openxr_t *st,
       const input_openxr_profile_t *p)
 {
    unsigned i;
    unsigned count;
+   unsigned palms;
+   unsigned edit = p->edit_count;
    XrResult res;
    XrPath profile = XR_NULL_PATH;
    XrActionSuggestedBinding binds[INPUT_OPENXR_MAX_BINDS
@@ -524,24 +626,28 @@ static void input_openxr_suggest(input_openxr_t *st,
       "/user/hand/right/input/palm_ext/pose" };
 
    if (p->count > INPUT_OPENXR_MAX_BINDS)
-      return;
+      return false;
+   /* Past one suggestion's room, the rest go without edit mode's. */
+   if (p->count + edit > INPUT_OPENXR_MAX_BINDS)
+      edit = 0;
    if (XR_FAILED(res = st->StringToPath(st->instance, p->path, &profile)))
    {
       RARCH_WARN("[OpenXR] No path %s (%d).\n", p->path, (int)res);
-      return;
+      return false;
    }
-   for (i = 0; i < p->count; i++)
+   for (i = 0; i < p->count + edit; i++)
    {
-      binds[i].action = st->actions[p->binds[i].action];
-      if (XR_FAILED(res = st->StringToPath(st->instance, p->binds[i].path,
+      const input_openxr_bind_t *b = (i < p->count)
+         ? &p->binds[i] : &p->edit[i - p->count];
+      binds[i].action = st->actions[b->action];
+      if (XR_FAILED(res = st->StringToPath(st->instance, b->path,
                   &binds[i].binding)))
       {
-         RARCH_WARN("[OpenXR] No path %s (%d).\n", p->binds[i].path,
-               (int)res);
-         return;
+         RARCH_WARN("[OpenXR] No path %s (%d).\n", b->path, (int)res);
+         return false;
       }
    }
-   count = p->count;
+   count = p->count + edit;
    if (st->palm_pose)
       for (i = 0; i < INPUT_OPENXR_PALM_BINDS; i++)
       {
@@ -550,6 +656,7 @@ static void input_openxr_suggest(input_openxr_t *st,
                      &binds[count].binding)))
             count++;
       }
+   palms                     = count - p->count - edit;
    sb.type                   = XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING;
    sb.next                   = NULL;
    sb.interactionProfile     = profile;
@@ -557,17 +664,46 @@ static void input_openxr_suggest(input_openxr_t *st,
    sb.suggestedBindings      = binds;
    res = st->SuggestInteractionProfileBindings(st->instance, &sb);
 
-   if (XR_FAILED(res) && count > p->count)
+   /* Refused: without the palm, then without edit mode's, then the rest
+    * on their own. */
+   if (XR_FAILED(res) && palms && edit)
+   {
+      sb.countSuggestedBindings = p->count + edit;
+      if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
+                  st->instance, &sb)))
+         palms = 0;
+   }
+   if (XR_FAILED(res) && edit)
+   {
+      for (i = 0; i < palms; i++)
+         binds[p->count + i] = binds[p->count + edit + i];
+      sb.countSuggestedBindings = p->count + palms;
+      if (XR_SUCCEEDED(res = st->SuggestInteractionProfileBindings(
+                  st->instance, &sb)))
+         edit = 0;
+   }
+   if (XR_FAILED(res) && palms)
    {
       sb.countSuggestedBindings = p->count;
       res = st->SuggestInteractionProfileBindings(st->instance, &sb);
+      edit  = 0;
+      palms = 0;
    }
    if (XR_FAILED(res))
+   {
       RARCH_WARN("[OpenXR] Bindings refused for %s (%d).\n", p->path,
             (int)res);
-   else
-      RARCH_LOG("[OpenXR] Bindings suggested for %s%s.\n", p->path,
-            sb.countSuggestedBindings > p->count ? ", with the palm" : "");
+      return false;
+   }
+   if (edit < p->edit_count)
+   {
+      RARCH_WARN("[OpenXR] Edit Screens bindings refused for %s.\n",
+            p->path);
+      st->edit_refused[st->num_edit_refused++] = profile;
+   }
+   RARCH_LOG("[OpenXR] Bindings suggested for %s%s.\n", p->path,
+         palms ? ", with the palm" : "");
+   return edit > 0;
 }
 
 static void input_openxr_release(input_openxr_t *st)
@@ -714,11 +850,12 @@ static void input_openxr_session_created(void *user,
    }
 
    for (i = 0; i < ARRAY_SIZE(input_openxr_profiles); i++)
-      if (!input_openxr_profiles[i].frame || h->frame_controller)
-         input_openxr_suggest(st, &input_openxr_profiles[i]);
+      if (     (!input_openxr_profiles[i].frame || h->frame_controller)
+            && input_openxr_suggest(st, &input_openxr_profiles[i]))
+         st->edit_ok = true;
 
-   /* All three are attached; each poll syncs the pad set in use and the
-    * pointer set. */
+   /* All four are attached; each poll syncs the pointer set and the pad
+    * set in use, or edit mode's. */
    ai.type            = XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO;
    ai.next            = NULL;
    ai.countActionSets = INPUT_OPENXR_SETS;
@@ -817,6 +954,33 @@ static bool input_openxr_bool(input_openxr_t *st, unsigned a, XrPath hand)
       && s.isActive && s.currentState;
 }
 
+/* Whether a boolean action is bound to anything either hand holds. */
+static bool input_openxr_bound(input_openxr_t *st, unsigned a)
+{
+   XrActionStateGetInfo gi;
+   XrActionStateBoolean s;
+   input_openxr_get_info(st, a, XR_NULL_PATH, &gi);
+   s.type         = XR_TYPE_ACTION_STATE_BOOLEAN;
+   s.next         = NULL;
+   s.currentState = XR_FALSE;
+   s.isActive     = XR_FALSE;
+   return XR_SUCCEEDED(st->GetActionStateBoolean(st->session, &gi, &s))
+      && s.isActive;
+}
+
+/* Edit mode cannot be used: the desktop told every time, the log once a
+ * session. */
+static void input_openxr_edit_unavailable(input_openxr_t *st,
+      const char *why)
+{
+   const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_UNAVAILABLE);
+   if (!st->edit_warned)
+      RARCH_WARN("[OpenXR] Edit Screens unavailable: %s.\n", why);
+   st->edit_warned = true;
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
 static float input_openxr_float(input_openxr_t *st, unsigned a, XrPath hand)
 {
    XrActionStateGetInfo gi;
@@ -895,6 +1059,7 @@ static void input_openxr_read_combined(input_openxr_t *st)
    st->recenter      = input_openxr_bool(st, IXA_C_RECENTER, XR_NULL_PATH);
    st->laser_toggle  = input_openxr_bool(st, IXA_C_LASER, XR_NULL_PATH);
    st->view_toggle   = input_openxr_bool(st, IXA_C_VIEW, XR_NULL_PATH);
+   st->edit_toggle   = input_openxr_bool(st, IXA_C_EDIT, XR_NULL_PATH);
    input_openxr_start_menu(st,
          input_openxr_bool(st, IXA_C_START_MENU, XR_NULL_PATH), pad);
 }
@@ -925,6 +1090,7 @@ static void input_openxr_read_separate(input_openxr_t *st)
    st->recenter     = input_openxr_bool(st, IXA_S_RECENTER, XR_NULL_PATH);
    st->laser_toggle = input_openxr_bool(st, IXA_S_LASER, XR_NULL_PATH);
    st->view_toggle  = input_openxr_bool(st, IXA_S_VIEW, XR_NULL_PATH);
+   st->edit_toggle  = input_openxr_bool(st, IXA_S_EDIT, XR_NULL_PATH);
 }
 
 static bool input_openxr_pressing(enum input_openxr_role role)
@@ -1636,6 +1802,58 @@ static const char *input_openxr_joypad_name(unsigned pad)
    return input_openxr_inner->name ? input_openxr_inner->name(pad) : NULL;
 }
 
+/* Edit mode's start: the content paused if While Editing Screens asks
+ * and nothing paused it already, and the desktop told. Video hears of
+ * it first, so the frame the pause draws shows edit mode. */
+static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause)
+{
+   const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_ON);
+   uint32_t flags  = runloop_get_flags();
+   e->on      = true;
+   e->changed = false;
+   e->unbound = 0;
+   e->paused  = false;
+   RARCH_LOG("[OpenXR] Edit Screens on.\n");
+   video_driver_headset_edit(true, e->seq);
+   if (     pause
+         && (flags & RUNLOOP_FLAG_CORE_RUNNING)
+         && !(flags & RUNLOOP_FLAG_PAUSED))
+   {
+      input_driver_platform_request(INPUT_PLATFORM_PAUSE);
+      e->paused = (runloop_get_flags() & RUNLOOP_FLAG_PAUSED) != 0;
+   }
+   /* After the pause's own notice, which would clear it. */
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+/* Its end: the content resumed only if edit mode paused it and it still
+ * is, and the desktop told whether settings changed. */
+static void input_openxr_edit_stop(input_openxr_edit_t *e)
+{
+   const char *msg = msg_hash_to_str(e->changed
+         ? MSG_OPENXR_EDIT_UNSAVED : MSG_OPENXR_EDIT_OFF);
+   e->on = false;
+   if (e->paused && (runloop_get_flags() & RUNLOOP_FLAG_PAUSED))
+      input_driver_platform_request(INPUT_PLATFORM_UNPAUSE);
+   e->paused = false;
+   RARCH_LOG("[OpenXR] Edit Screens off.\n");
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   video_driver_headset_edit(false, e->seq);
+}
+
+/* Edit mode's poll: the RetroArch menu and Edit Screens from its own
+ * set; nothing reaches the pads, whose triggers go unread. */
+static void input_openxr_edit_poll(input_openxr_t *st,
+      input_openxr_edit_t *e)
+{
+   st->start_menu_held = false;
+   input_openxr_triggers_lost(st);
+   st->menu_toggle = input_openxr_bool(st, IXA_E_MENU, XR_NULL_PATH);
+   st->edit_toggle = input_openxr_bool(st, IXA_E_EDIT, XR_NULL_PATH);
+}
+
 void input_openxr_poll(unsigned max_users, unsigned controllers,
       unsigned laser, float threshold)
 {
@@ -1643,25 +1861,46 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    XrResult res;
    XrActionsSyncInfo si;
    XrActiveActionSet active[2];
-   input_openxr_t *st   = &input_openxr_st;
-   uint32_t run_flags   = runloop_get_flags();
-   bool separate        = controllers == VIDEO_OPENXR_CONTROLLERS_SEPARATE;
-   bool was_pressed     = st->gun_pressed || st->menu_pressed;
+   input_openxr_t *st      = &input_openxr_st;
+   input_openxr_edit_t *e  = &input_openxr_edit;
+   uint32_t run_flags      = runloop_get_flags();
+   bool separate           = controllers == VIDEO_OPENXR_CONTROLLERS_SEPARATE;
+   bool was_pressed        = st->gun_pressed || st->menu_pressed;
 #ifdef HAVE_MENU
-   bool menu_open       = menu_driver_alive();
+   bool menu_open          = menu_driver_alive();
 #else
-   bool menu_open       = false;
+   bool menu_open          = false;
 #endif
+
+   /* A config can hold any value: past the choices is Auto, and never
+    * edit mode's. */
+   if (laser >= VIDEO_OPENXR_LASER_LAST)
+      laser = VIDEO_OPENXR_LASER_AUTO;
 
    input_openxr_devices(max_users, separate);
 
+   /* A pause edit mode made that the user lifted is no longer its own. */
+   if (e->paused && !(run_flags & RUNLOOP_FLAG_PAUSED))
+      e->paused = false;
+
+   /* Edit mode ends with the session and when the menu opens. It
+    * starts only between frames (input_openxr_edit_begin()): with late
+    * polling this poll is inside the core's frame, where a pause would
+    * draw one. A resume draws none, and paused content runs no frame. */
+   if (     e->on
+         && (menu_open || !st->frame
+            || openxr_session_ended(st->frame->session)))
+      input_openxr_edit_stop(e);
+
    /* The XR thread places the dots by these: none while the laser
-    * yields, which a closed menu or the laser Off ends. */
+    * yields, which a closed menu or the laser Off ends; on every item
+    * while editing, whatever the setting. */
    if (!menu_open || laser == VIDEO_OPENXR_LASER_OFF)
       st->yield = false;
    retro_atomic_store_release_int(&input_openxr_pointer_config,
-         (st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser)
-         | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
+         e->on ? VIDEO_XR_LIVE_EDIT
+         : ((st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser)
+            | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)));
 
    /* Nothing stops the last rumble of a core closed behind a menu that
     * ran it; no later content may inherit it. */
@@ -1675,6 +1914,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    st->recenter     = false;
    st->laser_toggle = false;
    st->view_toggle  = false;
+   st->edit_toggle  = false;
    st->hit[0]       = -1;
    st->hit[1]       = -1;
    st->ptr_owned    = false;
@@ -1706,8 +1946,8 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    }
    st->focused = true;
 
-   active[0].actionSet      = st->sets[separate
-      ? INPUT_OPENXR_SET_SEPARATE : INPUT_OPENXR_SET_COMBINED];
+   active[0].actionSet      = st->sets[e->on ? INPUT_OPENXR_SET_EDIT
+      : (separate ? INPUT_OPENXR_SET_SEPARATE : INPUT_OPENXR_SET_COMBINED)];
    active[0].subactionPath  = XR_NULL_PATH;
    active[1].actionSet      = st->sets[INPUT_OPENXR_SET_POINTER];
    active[1].subactionPath  = XR_NULL_PATH;
@@ -1733,17 +1973,37 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
             separate ? "separate" : "combined");
       st->mode = (int)separate;
    }
-   if (separate)
-      input_openxr_read_separate(st);
+   /* The runtime may bind none of edit mode's actions (a binding the
+    * user saved before they existed): nothing would grab or leave. */
+   if (e->on)
+   {
+      if (     input_openxr_bound(st, IXA_E_GRAB)
+            || input_openxr_bound(st, IXA_E_MENU))
+         e->unbound = 0;
+      else if (++e->unbound >= INPUT_OPENXR_EDIT_UNBOUND)
+      {
+         input_openxr_edit_stop(e);
+         input_openxr_edit_unavailable(st, "the controllers' bindings "
+               "have none of its actions");
+      }
+   }
+   if (e->on)
+      input_openxr_edit_poll(st, e);
    else
-      input_openxr_read_combined(st);
-   input_openxr_yield(st, laser, menu_open, threshold);
-   if (st->yield)
-      laser = VIDEO_OPENXR_LASER_OFF;
-   retro_atomic_store_release_int(&input_openxr_pointer_config,
-         (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
-   input_openxr_laser_poll(st, laser, menu_open, threshold, was_pressed);
-   input_openxr_triggers(st, threshold);
+   {
+      if (separate)
+         input_openxr_read_separate(st);
+      else
+         input_openxr_read_combined(st);
+      input_openxr_yield(st, laser, menu_open, threshold);
+      if (st->yield)
+         laser = VIDEO_OPENXR_LASER_OFF;
+      retro_atomic_store_release_int(&input_openxr_pointer_config,
+            (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
+      input_openxr_laser_poll(st, laser, menu_open, threshold,
+            was_pressed);
+      input_openxr_triggers(st, threshold);
+   }
    input_openxr_haptics(st, separate,
          (run_flags & RUNLOOP_FLAG_PAUSED) ? true : false);
 }
@@ -1826,7 +2086,78 @@ bool input_openxr_hotkey(unsigned id)
       return st->laser_toggle;
    if (id == RARCH_HEADSET_VIEW_TOGGLE)
       return st->view_toggle;
+   if (id == RARCH_HEADSET_EDIT_SCREENS)
+      return st->edit_toggle;
    return false;
+}
+
+/* Whether a hand holds a controller whose profile refused edit mode's
+ * bindings: in edit mode it could not leave it. */
+static bool input_openxr_edit_refused(input_openxr_t *st)
+{
+   unsigned h, i;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      XrInteractionProfileState ps;
+      ps.type = XR_TYPE_INTERACTION_PROFILE_STATE;
+      ps.next = NULL;
+      if (XR_FAILED(st->GetCurrentInteractionProfile(st->session,
+                  st->hands[h], &ps)))
+         continue;
+      for (i = 0; i < st->num_edit_refused; i++)
+         if (ps.interactionProfile == st->edit_refused[i])
+            return true;
+   }
+   return false;
+}
+
+bool input_openxr_edit_toggle(void)
+{
+   const char *why        = NULL;
+   input_openxr_edit_t *e = &input_openxr_edit;
+   input_openxr_t *st     = &input_openxr_st;
+   if (e->on)
+   {
+      input_openxr_edit_stop(e);
+      return false;
+   }
+   if (!input_openxr_active() || !st->frame)
+      why = "no headset controllers";
+   else if (openxr_session_ended(st->frame->session))
+      why = "the session has ended";
+   else if (!st->edit_ok || input_openxr_edit_refused(st))
+      why = "the runtime refused its bindings";
+   if (why)
+   {
+      input_openxr_edit_unavailable(st, why);
+      return false;
+   }
+   return true;
+}
+
+void input_openxr_edit_begin(bool pause)
+{
+   input_openxr_edit_t *e = &input_openxr_edit;
+   if (e->on || !input_openxr_st.frame)
+      return;
+#ifdef HAVE_MENU
+   /* Without content the menu cannot close, and would end it at once. */
+   if (menu_driver_alive())
+   {
+      const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_NO_CONTENT);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      return;
+   }
+#endif
+   input_openxr_edit_start(e, pause);
+}
+
+void input_openxr_edit_end(void)
+{
+   input_openxr_edit_t *e = &input_openxr_edit;
+   if (e->on)
+      input_openxr_edit_stop(e);
 }
 
 bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,

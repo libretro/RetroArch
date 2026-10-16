@@ -7925,6 +7925,14 @@ MSG_HASH(
    "Off"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_OFF,
+   "Keep Running"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
+   "Pause"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED,
    "Fixed in Room"
    )
@@ -12544,6 +12552,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_VIEW_TOGGLE,
    "Cycles what the core is told the headset currently displays: Immersive (head-tracked), Stereoscopic (a 3D screen) or Flat. Returns to core's default on core closure."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_EDIT_SCREENS,
+   "Edit Headset Screens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_EDIT_SCREENS,
+   "Starts or stops moving the headset's screens and menu with its controllers."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -34435,6 +34451,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_OPENXR_HEADSET_VIEW_FLAT,
    "Flat"
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_ON,
+   "Editing headset screens: grip grabs, the trigger tilts, the stick moves and resizes, the main button resets."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_OFF,
+   "Stopped editing headset screens."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_UNSAVED,
+   "Stopped editing headset screens. Changes are not saved yet."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_UNAVAILABLE,
+   "Edit Screens is unavailable: the headset's controllers cannot be used for it."
+   )
+MSG_HASH(
+   MSG_OPENXR_EDIT_NO_CONTENT,
+   "Edit Screens needs content running: load content first."
    )
 
 

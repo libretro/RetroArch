@@ -57,6 +57,17 @@ bool video_driver_get_views_core(const video_views_map_t **map, unsigned *dims)
 { (void)map; (void)dims; return false; }
 bool video_driver_get_viewport_info(struct video_viewport *vp)
 { (void)vp; return false; }
+void input_driver_platform_request(enum input_platform_request req)
+{ (void)req; }
+void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio,
+      unsigned duration, bool flush, char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{ (void)msg; (void)len; (void)prio; (void)duration; (void)flush;
+  (void)title; (void)icon; (void)category; }
+const char *msg_hash_to_str(enum msg_hash_enums msg)
+{ (void)msg; return ""; }
+void video_driver_headset_edit(bool editing, unsigned seq)
+{ (void)editing; (void)seq; }
 bool input_autoconfigure_connect_ex(const char *name,
       const char *display_name, const char *phys, const char *driver,
       unsigned port, unsigned vid, unsigned pid, uint8_t flags)
@@ -231,6 +242,11 @@ static void pointer_tests(void)
             CHECK(picks == 2 && picked_laser == laser
                   && picked_menu == (menu != 0), "pointer pair changed");
       }
+   publish_pointer(VIDEO_OPENXR_LASER_LAST, false);
+   picks = 0;
+   input_openxr_frame_layers(NULL, 1, layers, 2);
+   CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
+         && !picked_menu, "a laser past the choices was not Auto");
    publish_pointer(VIDEO_OPENXR_LASER_AUTO, false);
    after_load = replace_pointer;
    picks = 0;

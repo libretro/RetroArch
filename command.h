@@ -286,6 +286,8 @@ enum event_command
    CMD_EVENT_LASER_POINTER_TOGGLE,
    /* Cycle what a core is told the headset displays: immersive, stereoscopic, flat. */
    CMD_EVENT_HEADSET_VIEW_TOGGLE,
+   /* Start or stop moving the headset's screens with its controllers. */
+   CMD_EVENT_HEADSET_EDIT_SCREENS,
    /* AI service. */
    CMD_EVENT_AI_SERVICE_TOGGLE,
    CMD_EVENT_AI_SERVICE_CALL,
@@ -1367,6 +1369,7 @@ static const struct cmd_map map[] = {
    { "HEADSET_RECENTER", RARCH_HEADSET_RECENTER, "Recenter the headset's screens in front of where it looks.", CMD_INFO_NO_TOOL },
    { "LASER_POINTER_TOGGLE", RARCH_LASER_POINTER_TOGGLE, "Show or hide the headset's laser pointer.", CMD_INFO_NO_TOOL },
    { "HEADSET_VIEW_TOGGLE", RARCH_HEADSET_VIEW_TOGGLE, "Cycle the headset view between immersive, stereoscopic and flat.", CMD_INFO_NO_TOOL },
+   { "HEADSET_EDIT_SCREENS", RARCH_HEADSET_EDIT_SCREENS, "Start or stop moving the headset's screens and menu with its controllers.", CMD_INFO_NO_TOOL },
    { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", CMD_INFO_NO_TOOL },
    { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", CMD_INFO_NO_TOOL },
    { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", CMD_INFO_NO_TOOL },

@@ -93,7 +93,9 @@
  * a later line of the same kind replaces them (head off, fail off). state
  * and space fire once per change of the file. Every read starts from no
  * actions, no aims and valid views: a script is the whole controller
- * state. Action states and hand poses never come from the runtime.
+ * state. Action states and hand poses never come from the runtime. A
+ * synced set's actions all read bound; those the script leaves out, at
+ * rest.
  */
 
 #include <math.h>
@@ -395,8 +397,16 @@ static bool set_synced(XrActionSet s)
    return false;
 }
 
+/* Every action of a synced set is bound, as a runtime binds what each
+ * profile was suggested. Caller holds L.lock. */
+static bool action_bound(XrAction action)
+{
+   const struct action_rec *a = find_action(action);
+   return a && set_synced(a->set);
+}
+
 /* The script's value for an action asked for a hand, while its set is
- * synced; NULL reads inactive. Caller holds L.lock. */
+ * synced; NULL reads at rest. Caller holds L.lock. */
 static const struct scripted *scripted_value(XrAction action, XrPath sub)
 {
    unsigned i;
@@ -1899,7 +1909,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateBoolean(XrSession sess
    state->currentState         = (s && s->v[0] != 0.0f) ? XR_TRUE : XR_FALSE;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }
@@ -1915,7 +1926,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateFloat(XrSession sessio
    state->currentState         = s ? s->v[0] : 0.0f;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }
@@ -1932,7 +1944,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetActionStateVector2f(XrSession ses
    state->currentState.y       = s ? s->v[1] : 0.0f;
    state->changedSinceLastSync = XR_FALSE;
    state->lastChangeTime       = 0;
-   state->isActive             = s ? XR_TRUE : XR_FALSE;
+   state->isActive             = action_bound(gi->action) ? XR_TRUE
+      : XR_FALSE;
    pthread_mutex_unlock(&L.lock);
    return XR_SUCCESS;
 }

@@ -1785,7 +1785,9 @@ void drivers_init(
       video_st->frame_time_count = 0;
 
 #ifdef HAVE_OPENXR
-      /* Before video makes a headset session. */
+      /* A video reinit ends edit mode; then video makes a headset
+       * session. */
+      input_openxr_edit_end();
       input_openxr_register();
 #endif
       video_driver_lock_new();
@@ -6595,6 +6597,21 @@ bool command_event(enum event_command cmd, void *data)
                             | MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
          }
+         break;
+      case CMD_EVENT_HEADSET_EDIT_SCREENS:
+#ifdef HAVE_OPENXR
+         /* Edit mode starts here, between frames, as its pause draws a
+          * frame; the menu closes first. */
+         if (input_openxr_edit_toggle())
+         {
+#ifdef HAVE_MENU
+            if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+               retroarch_menu_running_finished(false);
+#endif
+            input_openxr_edit_begin(
+                  settings->bools.video_openxr_edit_pause);
+         }
+#endif
          break;
       case CMD_EVENT_NONE:
          return false;

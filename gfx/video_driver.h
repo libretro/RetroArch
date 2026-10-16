@@ -797,6 +797,9 @@ typedef struct video_frame_info
    float headset_width;
    unsigned headset_placement;
    unsigned headset_recenter;
+   /* Edit mode's count of let-go grabs: a quad set planned with it
+    * shows them where the hands left them. */
+   unsigned headset_edit_seq;
    /* Each core frame shows for this many headset frames and waits for
     * them in place of the window's vsync; 0 while the window paces. */
    unsigned headset_interval;
@@ -807,6 +810,8 @@ typedef struct video_frame_info
    bool headset_menu_placed;
    /* The last frame sent again (paused, menu), not a new core frame. */
    bool frame_repeat;
+   /* Edit mode moves the headset's items: the menu's quad stays up. */
+   bool headset_editing;
    /* The tracked eyes' views, which the headset shows as its
     * projection; -1 while it shows none. */
    int headset_eye[2];
@@ -2075,6 +2080,8 @@ typedef struct
    /* enum video_headset_view: the Headset View hotkey's choice, reset
     * when content closes. */
    unsigned headset_view;
+   /* Edit mode's let-go grabs, counted, main thread. */
+   unsigned headset_edit_seq;
    /* The headset's runtime asked RetroArch to exit (OpenXR EXITING). */
    retro_atomic_int_t headset_exit;
    /* Headset pacing, main thread, never saved: the headset's measured
@@ -2093,6 +2100,7 @@ typedef struct
    double headset_notice_fps;
    unsigned headset_notice_hz;
    bool headset_vsync;
+   bool headset_editing;
    /* Set while video_driver_cached_frame() sends the last frame again. */
    bool frame_repeat;
 #ifdef HAVE_VIDEO_WINDOWS
@@ -2513,6 +2521,9 @@ void video_driver_headset_recenter(void);
  * video_headset_view and return it; VIDEO_HEADSET_VIEW_LAST, unchanged,
  * without a presenting headset. */
 unsigned video_driver_headset_view_toggle(void);
+/* Main thread: the headset's edit mode, on or off, and its count of
+ * let-go grabs, for the next frame snapshot. */
+void video_driver_headset_edit(bool editing, unsigned seq);
 /* Any thread: the headset's runtime asked RetroArch to exit. */
 void video_driver_headset_exit_request(void);
 

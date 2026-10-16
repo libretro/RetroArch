@@ -12064,6 +12064,7 @@ static bool vulkan_frame(void *data, const void *frame,
    bool views_blend                              = false;
    bool views_per_eye                            = false;
    bool views_ui                                 = false;
+   bool views_ui_menu                            = false;
    unsigned ui_layer_dims                        = 0;
 #ifdef HAVE_OPENXR
    vulkan_filter_chain_t *xr_chains[RETRO_VIDEO_VIEWS_MAX];
@@ -13012,13 +13013,19 @@ static bool vulkan_frame(void *data, const void *frame,
    /* The UI layer is drawn and composited only when there is UI, by
     * the same test the HDR composite makes. Overlays are hidden per
     * eye, and drawn around the layer when it is for a headset. */
+   views_ui_menu = (vk->flags & VK_FLAG_MENU_ENABLE) ? true : false;
+#ifdef HAVE_OPENXR
+   /* Edit mode moves the menu's quad: it stays up, empty. */
+   if (xr_draw && video_info->headset_editing)
+      views_ui_menu = true;
+#endif
 #ifdef HAVE_GFX_WIDGETS
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (vk->flags & VK_FLAG_MENU_ENABLE), msg, statistics_show,
+         views_ui_menu, msg, statistics_show,
          widgets_active && gfx_widgets_visible(video_info))
 #else
    views_ui = VIDEO_VIEWS_UI_WANTED(ui_layer_dims,
-         (vk->flags & VK_FLAG_MENU_ENABLE), msg, statistics_show, false)
+         views_ui_menu, msg, statistics_show, false)
 #endif
       && vk->pipelines.alpha_premult
       && vulkan_vv_target_ensure(vk, &vk->views.ui_target, &vk->views.ui,

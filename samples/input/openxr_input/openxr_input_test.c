@@ -122,14 +122,14 @@ static unsigned t_set_index(XrActionSet s)
 }
 
 /* Actions as "set/name", in the order they are made. */
-static char     t_actions[128][XR_MAX_ACTION_SET_NAME_SIZE + XR_MAX_ACTION_NAME_SIZE];
-static unsigned t_action_set[128];
+static char     t_actions[256][XR_MAX_ACTION_SET_NAME_SIZE + XR_MAX_ACTION_NAME_SIZE];
+static unsigned t_action_set[256];
 static unsigned t_num_actions;
 static XRAPI_ATTR XrResult XRAPI_CALL t_create_action(XrActionSet s,
       const XrActionCreateInfo *ci, XrAction *a)
 {
    unsigned set = t_set_index(s);
-   if (t_num_actions >= 128 || set >= t_num_sets)
+   if (t_num_actions >= 256 || set >= t_num_sets)
       return XR_ERROR_HANDLE_INVALID;
    snprintf(t_actions[t_num_actions], sizeof(t_actions[0]), "%s/%s",
          t_set_names[set], ci->actionName);
@@ -142,10 +142,14 @@ static unsigned t_action_index(XrAction a)
    return (unsigned)((uintptr_t)a - 0x201);
 }
 
-/* Profiles suggested; Touch's bindings as action and path. */
-static unsigned t_suggested;
-static char     t_touch[128][2][XR_MAX_PATH_LENGTH];
-static unsigned t_num_touch;
+/* Profiles suggested; each binding as profile, action and path. A
+ * runtime that refuses edit mode's bindings refuses any suggestion that
+ * holds one: for every profile, or for t_refuse_edit_for alone. */
+static unsigned    t_suggested;
+static bool        t_refuse_edit;
+static const char *t_refuse_edit_for;
+static char     t_bound[256][3][XR_MAX_PATH_LENGTH];
+static unsigned t_num_bound;
 /* A runtime whose profiles lack XR_EXT_palm_pose's path. */
 static bool t_refuse_palm;
 static XRAPI_ATTR XrResult XRAPI_CALL t_suggest(XrInstance i,
@@ -156,30 +160,43 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_suggest(XrInstance i,
       for (k = 0; k < sb->countSuggestedBindings; k++)
          if (strstr(t_path(sb->suggestedBindings[k].binding), "palm_ext"))
             return XR_ERROR_PATH_UNSUPPORTED;
+   if (     t_refuse_edit
+         || (t_refuse_edit_for
+            && !strcmp(t_path(sb->interactionProfile), t_refuse_edit_for)))
+      for (k = 0; k < sb->countSuggestedBindings; k++)
+         if (!strncmp(t_actions[t_action_index(
+                     sb->suggestedBindings[k].action)], "edit/", 5))
+            return XR_ERROR_PATH_UNSUPPORTED;
    t_suggested++;
-   if (strcmp(t_path(sb->interactionProfile),
-            "/interaction_profiles/oculus/touch_controller"))
-      return XR_SUCCESS;
-   for (k = 0; k < sb->countSuggestedBindings && t_num_touch < 128; k++)
+   for (k = 0; k < sb->countSuggestedBindings && t_num_bound < 256; k++)
    {
-      strlcpy(t_touch[t_num_touch][0],
+      strlcpy(t_bound[t_num_bound][0], t_path(sb->interactionProfile),
+            sizeof(t_bound[0][0]));
+      strlcpy(t_bound[t_num_bound][1],
             t_actions[t_action_index(sb->suggestedBindings[k].action)],
-            sizeof(t_touch[0][0]));
-      strlcpy(t_touch[t_num_touch][1],
+            sizeof(t_bound[0][1]));
+      strlcpy(t_bound[t_num_bound][2],
             t_path(sb->suggestedBindings[k].binding),
-            sizeof(t_touch[0][1]));
-      t_num_touch++;
+            sizeof(t_bound[0][2]));
+      t_num_bound++;
    }
    return XR_SUCCESS;
 }
-static bool t_touch_binds(const char *action, const char *path)
+static bool t_binds(const char *profile, const char *action,
+      const char *path)
 {
    unsigned k;
-   for (k = 0; k < t_num_touch; k++)
-      if (     !strcmp(t_touch[k][0], action)
-            && (!path || !strcmp(t_touch[k][1], path)))
+   for (k = 0; k < t_num_bound; k++)
+      if (     !strcmp(t_bound[k][0], profile)
+            && !strcmp(t_bound[k][1], action)
+            && (!path || !strcmp(t_bound[k][2], path)))
          return true;
    return false;
+}
+static bool t_touch_binds(const char *action, const char *path)
+{
+   return t_binds("/interaction_profiles/oculus/touch_controller",
+         action, path);
 }
 
 static unsigned t_attached;
@@ -243,14 +260,19 @@ static void t_hold(const char *action, int hand, float x, float y)
    h->y    = y;
 }
 static void t_let_go(void) { t_num_held = 0; }
+/* Actions a binding leaves out, by their names' start ("edit/": a
+ * user's binding saved before edit mode's actions existed). */
+static const char *t_unbound;
 /* An action's held value for the hand asked, only while its set is
- * synced. */
+ * synced and it is bound. */
 static const t_held_t *t_find(const XrActionStateGetInfo *gi, bool *active)
 {
    unsigned k;
    unsigned a = t_action_index(gi->action);
    int hand   = t_hand(gi->subactionPath);
-   *active    = a < t_num_actions && t_synced[t_action_set[a]];
+   *active    = a < t_num_actions && t_synced[t_action_set[a]]
+      && !(t_unbound && !strncmp(t_actions[a], t_unbound,
+               strlen(t_unbound)));
    if (!*active)
       return NULL;
    for (k = 0; k < t_num_held; k++)
@@ -331,12 +353,14 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_get_pose(XrSession s,
    st->isActive = active ? XR_TRUE : XR_FALSE;
    return XR_SUCCESS;
 }
-/* Touch in both hands. */
+/* Each hand's controller's profile, by hand: Touch unless a case says. */
+static const char *t_current[3];
 static XRAPI_ATTR XrResult XRAPI_CALL t_get_profile(XrSession s,
       XrPath user, XrInteractionProfileState *st)
 {
-   return t_string_to_path(T_INSTANCE,
-         "/interaction_profiles/oculus/touch_controller",
+   const char *profile = t_current[t_hand(user)];
+   return t_string_to_path(T_INSTANCE, profile ? profile
+         : "/interaction_profiles/oculus/touch_controller",
          &st->interactionProfile);
 }
 
@@ -565,6 +589,65 @@ bool video_driver_get_viewport_info(struct video_viewport *vp)
 static bool t_menu_open;
 bool menu_driver_alive(void) { return t_menu_open; }
 
+/* The video state, the frontend's pause and notices edit mode uses. A
+ * pause asked from inside a poll, which can be inside the core's frame,
+ * or before video was told, is counted. */
+static bool     t_editing;
+static unsigned t_edit_seq;
+void video_driver_headset_edit(bool editing, unsigned seq)
+{
+   t_editing  = editing;
+   t_edit_seq = seq;
+}
+static bool     t_in_poll;
+static unsigned t_pauses, t_unpauses, t_bad_pauses;
+/* A pause the frontend refuses (hardcore, netplay) when a case says. */
+static bool     t_pause_refused;
+void input_driver_platform_request(enum input_platform_request req)
+{
+   if (req == INPUT_PLATFORM_PAUSE)
+   {
+      t_pauses++;
+      if (t_in_poll || !t_editing)
+         t_bad_pauses++;
+      if (!t_pause_refused)
+         t_run_flags |= RUNLOOP_FLAG_PAUSED;
+   }
+   else if (req == INPUT_PLATFORM_UNPAUSE)
+   {
+      t_unpauses++;
+      t_run_flags &= ~RUNLOOP_FLAG_PAUSED;
+   }
+}
+static char     t_notice[256];
+static unsigned t_notices;
+void runloop_msg_queue_push(const char *msg, size_t len,
+      unsigned prio, unsigned duration, bool flush, char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{
+   strlcpy(t_notice, msg, sizeof(t_notice));
+   t_notices++;
+}
+const char *msg_hash_to_str(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+      case MSG_OPENXR_EDIT_ON:
+         return "edit on";
+      case MSG_OPENXR_EDIT_OFF:
+         return "edit off";
+      case MSG_OPENXR_EDIT_UNSAVED:
+         return "edit unsaved";
+      case MSG_OPENXR_EDIT_UNAVAILABLE:
+         return "edit unavailable";
+      case MSG_OPENXR_EDIT_NO_CONTENT:
+         return "edit no content";
+      default:
+         break;
+   }
+   return "";
+}
+
 static openxr_session_t     t_xr_session;
 static openxr_frame_t       t_xr_frame;
 static bool                 t_focused = true;
@@ -589,9 +672,11 @@ void openxr_frame_get_shown_quads(openxr_frame_t *f,
    *out   = t_quads;
    *space = t_space ? t_space : t_xr_session.local_space;
 }
+/* The dots' image: none unless a case gives one. */
+static bool t_cursor;
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
-   return XR_NULL_HANDLE;
+   return t_cursor ? (XrSwapchain)(uintptr_t)0x51 : XR_NULL_HANDLE;
 }
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 {
@@ -723,7 +808,9 @@ static bool t_hold_tasks;
 
 static void t_poll(unsigned controllers, unsigned laser)
 {
+   t_in_poll = true;
    input_openxr_poll(4, controllers, laser, 0.5f);
+   t_in_poll = false;
    if (!t_hold_tasks)
       t_land();
 }
@@ -787,7 +874,8 @@ static bool t_nothing_held(void)
    }
    return !t_btn(0, RARCH_MENU_TOGGLE) && !t_btn(0, RARCH_HEADSET_RECENTER)
       && !t_btn(0, RARCH_LASER_POINTER_TOGGLE)
-      && !t_btn(0, RARCH_HEADSET_VIEW_TOGGLE);
+      && !t_btn(0, RARCH_HEADSET_VIEW_TOGGLE)
+      && !t_btn(0, RARCH_HEADSET_EDIT_SCREENS);
 }
 
 /* ---- the tests ---- */
@@ -806,13 +894,13 @@ static void test_session_made(void)
 {
    t_reset_log();
    t_session(false);
-   CHECK(t_num_sets == 3 && t_num_actions == 37,
-         "%u sets and %u actions made, want 3 and 37", t_num_sets,
+   CHECK(t_num_sets == 4 && t_num_actions == 45,
+         "%u sets and %u actions made, want 4 and 45", t_num_sets,
          t_num_actions);
    CHECK(t_suggested == 4,
          "%u profiles suggested without the Frame's extension, want 4",
          t_suggested);
-   CHECK(t_attached == 3 && t_spaces_made == 4,
+   CHECK(t_attached == 4 && t_spaces_made == 4,
          "%u sets attached and %u aim and grip spaces", t_attached,
          t_spaces_made);
    CHECK(t_touch_binds("pointer/grip", "/user/hand/right/input/grip/pose")
@@ -822,6 +910,18 @@ static void test_session_made(void)
             "/user/hand/left/input/menu/click")
          && !t_touch_binds("combined/start", NULL),
          "Touch's menu button is not Start and the menu");
+   CHECK(t_touch_binds("edit/grab", "/user/hand/left/input/squeeze/value")
+         && t_touch_binds("edit/grab", "/user/hand/right/input/squeeze/value")
+         && t_touch_binds("edit/tilt", "/user/hand/right/input/trigger/value")
+         && t_touch_binds("edit/stick", "/user/hand/left/input/thumbstick")
+         && t_touch_binds("edit/reset", "/user/hand/left/input/x/click")
+         && t_touch_binds("edit/reset", "/user/hand/right/input/a/click")
+         && t_touch_binds("edit/menu", "/user/hand/left/input/menu/click"),
+         "Touch's edit bindings are not grip, trigger, stick, X/A, menu");
+   CHECK(!t_touch_binds("combined/edit_screens", NULL)
+         && !t_touch_binds("separate/edit_screens", NULL)
+         && !t_touch_binds("edit/edit_screens", NULL),
+         "Edit Screens suggested: the user binds it");
    CHECK(input_openxr_can_rumble(), "rumble does not reach ready controllers");
    CHECK(t_logged("[OpenXR] Headset controllers ready.\n") == 1,
          "log: %s", t_log);
@@ -912,15 +1012,18 @@ static void test_hotkeys(void)
    t_hold("combined/laser", 0, 1.0f, 0.0f);
    t_hold("combined/view", 0, 1.0f, 0.0f);
    t_hold("combined/menu", 0, 1.0f, 0.0f);
+   t_hold("combined/edit_screens", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_btn(3, RARCH_HEADSET_RECENTER)
          && t_btn(3, RARCH_LASER_POINTER_TOGGLE)
          && t_btn(3, RARCH_HEADSET_VIEW_TOGGLE)
-         && t_btn(3, RARCH_MENU_TOGGLE),
-         "the hotkeys do not answer on any port: %d %d %d %d",
+         && t_btn(3, RARCH_MENU_TOGGLE)
+         && t_btn(3, RARCH_HEADSET_EDIT_SCREENS),
+         "the hotkeys do not answer on any port: %d %d %d %d %d",
          t_btn(3, RARCH_HEADSET_RECENTER),
          t_btn(3, RARCH_LASER_POINTER_TOGGLE),
-         t_btn(3, RARCH_HEADSET_VIEW_TOGGLE), t_btn(3, RARCH_MENU_TOGGLE));
+         t_btn(3, RARCH_HEADSET_VIEW_TOGGLE), t_btn(3, RARCH_MENU_TOGGLE),
+         t_btn(3, RARCH_HEADSET_EDIT_SCREENS));
 
    t_let_go();
    t_hold("separate/view", 0, 1.0f, 0.0f);
@@ -1044,6 +1147,11 @@ static void test_laser(void)
    CHECK(!input_openxr_pointer(0, RETRO_DEVICE_LIGHTGUN, 0,
             RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, &x),
          "Auto took a whole frame's gun");
+   /* So does a config's value past the choices: Auto, not edit mode's. */
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_LAST);
+   CHECK(!input_openxr_pointer(0, RETRO_DEVICE_LIGHTGUN, 0,
+            RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X, &x),
+         "a Laser Pointer past the choices took a whole frame's gun");
 
    /* Always: the gun at the middle, aimed in LOCAL. Off the middle
     * first, so a read that writes nothing fails. */
@@ -1263,7 +1371,7 @@ static void test_session_gone(void)
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    t_hooks.session_destroying(t_hooks.user);
-   CHECK(t_sets_destroyed == 3 && t_spaces_destroyed == 4,
+   CHECK(t_sets_destroyed == 4 && t_spaces_destroyed == 4,
          "%u sets and %u spaces destroyed", t_sets_destroyed,
          t_spaces_destroyed);
    CHECK(!input_openxr_can_rumble(), "rumble with the session gone");
@@ -1291,8 +1399,8 @@ static void test_session_failed(void)
    t_session(false);
    t_attach_result = XR_SUCCESS;
    CHECK(!input_openxr_active(), "active after a failed setup");
-   CHECK(     t_num_sets - sets == 3
-         && t_sets_destroyed - sets_gone == 3
+   CHECK(     t_num_sets - sets == 4
+         && t_sets_destroyed - sets_gone == 4
          && t_spaces_destroyed - gone == t_spaces_made - spaces,
          "a failed setup left %u of %u sets and %u spaces",
          (t_num_sets - sets) - (t_sets_destroyed - sets_gone),
@@ -1313,7 +1421,7 @@ static void t_fresh_session(void)
 {
    t_num_sets    = 0;
    t_num_actions = 0;
-   t_num_touch   = 0;
+   t_num_bound   = 0;
    t_spaces_made = 0;
    t_session(false);
 }
@@ -1798,6 +1906,447 @@ static void test_joypad_wrapped(void)
    t_forget_devices();
 }
 
+/* As the frontend's command does it, between frames, with the menu
+ * closed. */
+static void t_edit_on(bool pause)
+{
+   if (input_openxr_edit_toggle())
+      input_openxr_edit_begin(pause);
+}
+
+/* Edit Screens: the frontend's command starts it at once, between
+ * frames, and the headset's action only raises that command; its own
+ * set replaces the pads' and their buttons reach nothing; the laser
+ * points at every item whatever its setting; the menu, the command
+ * again, a video reinit and the session's end stop it. Without content
+ * or with the session ended, nothing starts. */
+static void test_edit_mode(void)
+{
+   int config;
+   const XrCompositionLayerBaseHeader *layers[4];
+   t_forget_devices();
+   t_fresh_session();
+   t_menu_open = false;
+   t_reset_log();
+   t_notices = 0;
+   t_let_go();
+   t_hold("combined/edit_screens", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_btn(3, RARCH_HEADSET_EDIT_SCREENS) && !t_editing,
+         "the action is no hotkey, or started edit mode in the poll");
+   t_let_go();
+   CHECK(input_openxr_edit_toggle(), "a start was refused");
+   CHECK(!t_editing, "the toggle alone started it");
+   input_openxr_edit_begin(false);
+   CHECK(t_editing, "did not start at once");
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_hold("edit/edit_screens", 0, 1.0f, 0.0f);
+   t_hold("edit/menu", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing && t_synced[3] && t_synced[2] && !t_synced[0]
+         && !t_synced[1], "synced %d %d %d %d, want the edit and pointer sets",
+         t_synced[0], t_synced[1], t_synced[2], t_synced[3]);
+   CHECK(!t_btn(0, RETRO_DEVICE_ID_JOYPAD_A),
+         "a pad button reached the core while editing");
+   CHECK(t_btn(3, RARCH_HEADSET_EDIT_SCREENS),
+         "the edit set's Edit Screens is no hotkey");
+   CHECK(t_btn(3, RARCH_MENU_TOGGLE),
+         "the edit set's menu button opens no menu");
+   config = retro_atomic_load_acquire_int(&input_openxr_pointer_config);
+   CHECK((config & INPUT_OPENXR_LASER_MASK) == VIDEO_XR_LIVE_EDIT,
+         "the laser is %d while editing", config);
+   CHECK(!strcmp(t_notice, "edit on")
+         && t_logged("[OpenXR] Edit Screens on.\n") == 1,
+         "notice %s, log: %s", t_notice, t_log);
+   /* A whole frame, which Off leaves alone: a dot from each hand. */
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 1;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.8f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_FRAME;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[1].orientation.w = 1.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[1]       = true;
+   t_aim_tracked[2]       = true;
+   t_cursor               = true;
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 2,
+         "both hands do not point while editing");
+
+   /* The menu opens: off, and the laser is the setting's again. */
+   t_let_go();
+   t_menu_open = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   config = retro_atomic_load_acquire_int(&input_openxr_pointer_config);
+   CHECK(!t_editing && t_synced[0] && !t_synced[3],
+         "still editing with the menu open");
+   CHECK((config & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_OFF,
+         "the laser is %d after editing", config);
+   CHECK(!strcmp(t_notice, "edit off"), "notice %s", t_notice);
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 0,
+         "the laser points after editing with the setting Off");
+   t_cursor         = false;
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_aim_tracked[1] = false;
+   t_aim_tracked[2] = false;
+   t_menu_open = false;
+
+   /* The menu would not close, which only happens without content: the
+    * desktop is told, and nothing starts. */
+   t_menu_open = true;
+   t_notices   = 0;
+   CHECK(input_openxr_edit_toggle(), "a start was refused with the menu open");
+   input_openxr_edit_begin(false);
+   CHECK(!t_editing && t_notices == 1 && !strcmp(t_notice, "edit no content"),
+         "%u notices, the last %s, editing %d", t_notices, t_notice,
+         (int)t_editing);
+   t_menu_open = false;
+
+   /* An ended session cannot start it. */
+   t_ended   = true;
+   t_notices = 0;
+   CHECK(!input_openxr_edit_toggle() && !t_editing && t_notices == 1
+         && !strcmp(t_notice, "edit unavailable"),
+         "an ended session: %u notices, the last %s", t_notices, t_notice);
+   t_ended   = false;
+
+   /* The command while on: off. */
+   t_edit_on(false);
+   CHECK(t_editing && !input_openxr_edit_toggle() && !t_editing,
+         "the command did not stop it");
+
+   /* A video reinit ends it. */
+   t_edit_on(false);
+   input_openxr_edit_end();
+   CHECK(!t_editing, "a video reinit left it on");
+
+   /* So does the session's end. */
+   t_edit_on(false);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing, "fixture: not editing");
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(!t_editing, "the session's end left it on");
+   t_forget_devices();
+}
+
+/* The pads' triggers go unread while editing: one held as the menu opens
+ * and ends it is no pull on the menu. */
+static void test_edit_trigger_held(void)
+{
+   float u      = 0.0f;
+   float v      = 0.0f;
+   bool pressed = true;
+   t_forget_devices();
+   t_fresh_session();
+   t_menu_open = false;
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 1;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.7f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_MENU;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[2]       = true;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_edit_on(false);
+   t_hold("combined/r2", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(t_editing, "fixture: not editing");
+   t_menu_open = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(!t_editing && input_openxr_menu_pointer(&u, &v, &pressed)
+         && !pressed, "a trigger held through editing pressed the menu");
+   t_let_go();
+   t_menu_open = false;
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_aim_tracked[2] = false;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_forget_devices();
+}
+
+/* A runtime that refuses edit mode's bindings keeps the rest of each
+ * profile; edit mode is then unavailable: told every time, logged once. */
+static void test_edit_unavailable(void)
+{
+   t_forget_devices();
+   t_reset_log();
+   t_refuse_edit = true;
+   t_fresh_session();
+   t_refuse_edit = false;
+   CHECK(t_touch_binds("combined/a", NULL)
+         && !t_touch_binds("edit/grab", NULL),
+         "Touch lost its game bindings or kept edit mode's");
+   CHECK(t_logged("[OpenXR] Edit Screens bindings refused for ") == 4,
+         "log: %s", t_log);
+   t_reset_log();
+   t_notices = 0;
+   CHECK(!input_openxr_edit_toggle() && !input_openxr_edit_toggle(),
+         "edit mode started without its bindings");
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(!t_editing && !t_synced[3], "the edit set was synced");
+   CHECK(t_notices == 2 && !strcmp(t_notice, "edit unavailable"),
+         "%u notices, the last %s", t_notices, t_notice);
+   CHECK(t_logged("[OpenXR] Edit Screens unavailable") == 1,
+         "log: %s", t_log);
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* Refused for Touch alone: a hand on a Touch controller cannot start
+ * edit mode, which it could not leave; Index controllers can. */
+static void test_edit_profile_refused(void)
+{
+   t_forget_devices();
+   t_reset_log();
+   t_refuse_edit_for = "/interaction_profiles/oculus/touch_controller";
+   t_fresh_session();
+   t_refuse_edit_for = NULL;
+   CHECK(t_logged("[OpenXR] Edit Screens bindings refused for ") == 1
+         && t_binds("/interaction_profiles/valve/index_controller",
+            "edit/grab", NULL),
+         "log: %s", t_log);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_current[1] = "/interaction_profiles/valve/index_controller";
+   t_current[2] = "/interaction_profiles/oculus/touch_controller";
+   t_notices    = 0;
+   CHECK(!input_openxr_edit_toggle() && !t_editing && t_notices == 1
+         && !strcmp(t_notice, "edit unavailable"),
+         "a Touch controller: editing %d, %u notices, the last %s",
+         (int)t_editing, t_notices, t_notice);
+   t_current[2] = "/interaction_profiles/valve/index_controller";
+   t_edit_on(false);
+   CHECK(t_editing, "Index controllers could not start it");
+   input_openxr_edit_toggle();
+   t_current[1] = NULL;
+   t_current[2] = NULL;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* A pause the frontend refuses (hardcore allows one only so often):
+ * edit mode runs on and claims no pause, so leaving it resumes nothing
+ * the user pauses meanwhile. */
+static void test_edit_pause_refused(void)
+{
+   t_forget_devices();
+   t_fresh_session();
+   t_run_flags     = RUNLOOP_FLAG_CORE_RUNNING;
+   t_pauses        = 0;
+   t_unpauses      = 0;
+   t_pause_refused = true;
+   t_edit_on(true);
+   t_pause_refused = false;
+   CHECK(t_editing && t_pauses == 1 && !(t_run_flags & RUNLOOP_FLAG_PAUSED)
+         && !input_openxr_edit.paused,
+         "a refused pause: editing %d, %u pauses, claimed %d",
+         (int)t_editing, t_pauses, (int)input_openxr_edit.paused);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_run_flags |= RUNLOOP_FLAG_PAUSED;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   input_openxr_edit_toggle();
+   CHECK(!t_editing && t_unpauses == 0 && (t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "the user's pause undone: %u resumes", t_unpauses);
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* Edit mode pauses; the user resumes, then pauses again: that pause is
+ * the user's, and leaving edit mode keeps it. */
+static void test_edit_repause(void)
+{
+   t_forget_devices();
+   t_fresh_session();
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_pauses    = 0;
+   t_unpauses  = 0;
+   t_edit_on(true);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing && t_pauses == 1 && input_openxr_edit.paused,
+         "fixture: edit mode did not pause");
+   t_run_flags &= ~RUNLOOP_FLAG_PAUSED;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_run_flags |= RUNLOOP_FLAG_PAUSED;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   input_openxr_edit_toggle();
+   CHECK(!t_editing && t_unpauses == 0 && (t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "the user's pause undone: %u resumes", t_unpauses);
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* A runtime that takes edit mode's bindings and binds none of them, as
+ * for a binding the user saved before they existed: nothing could grab
+ * or leave. A few polls in a row with neither grab nor the menu bound
+ * end edit mode, resume what it paused and say it is unavailable,
+ * logged once; fewer do not, nor does the menu bound alone. */
+static void test_edit_unbound(void)
+{
+   unsigned i;
+   t_forget_devices();
+   t_fresh_session();
+   t_reset_log();
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_pauses    = 0;
+   t_unpauses  = 0;
+   t_edit_on(true);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing && (t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "fixture: not editing, paused");
+   t_unbound = "edit/grab";
+   for (i = 0; i <= INPUT_OPENXR_EDIT_UNBOUND; i++)
+      t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing, "ended with its menu bound");
+   t_unbound = "edit/";
+   for (i = 1; i < INPUT_OPENXR_EDIT_UNBOUND; i++)
+      t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_unbound = NULL;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_unbound = "edit/";
+   for (i = 1; i < INPUT_OPENXR_EDIT_UNBOUND; i++)
+      t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_editing, "ended before %u unbound polls in a row",
+         INPUT_OPENXR_EDIT_UNBOUND);
+   t_notices = 0;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(!t_editing && t_unpauses == 1
+         && !(t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "unbound: editing %d, %u resumes", (int)t_editing, t_unpauses);
+   CHECK(t_notices && !strcmp(t_notice, "edit unavailable"),
+         "%u notices, the last %s", t_notices, t_notice);
+   CHECK((retro_atomic_load_acquire_int(&input_openxr_pointer_config)
+            & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_OFF,
+         "the laser kept edit mode's");
+   /* Again: told, not logged again. */
+   t_edit_on(false);
+   for (i = 0; i < INPUT_OPENXR_EDIT_UNBOUND; i++)
+      t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(!t_editing && !strcmp(t_notice, "edit unavailable"),
+         "a second start: editing %d, notice %s", (int)t_editing, t_notice);
+   CHECK(t_logged("[OpenXR] Edit Screens unavailable") == 1,
+         "log: %s", t_log);
+   t_unbound   = NULL;
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* A profile with more bindings than one suggestion holds keeps its
+ * game's, edit mode's refused for it: a hand on it cannot start it. */
+static void test_edit_oversized(void)
+{
+   static input_openxr_bind_t game[INPUT_OPENXR_MAX_BINDS - 1];
+   static const input_openxr_bind_t edit[] = {
+      IXB_BOTH(IXA_E_GRAB, "squeeze/value") };
+   input_openxr_profile_t p;
+   unsigned i;
+   const char *path = "/interaction_profiles/test/oversized";
+   t_forget_devices();
+   t_fresh_session();
+   for (i = 0; i < ARRAY_SIZE(game); i++)
+   {
+      game[i].action = IXA_C_A;
+      game[i].path   = "/user/hand/right/input/a/click";
+   }
+   memset(&p, 0, sizeof(p));
+   p.path       = path;
+   p.binds      = game;
+   p.edit       = edit;
+   p.count      = ARRAY_SIZE(game);
+   p.edit_count = ARRAY_SIZE(edit);
+   t_reset_log();
+   CHECK(!input_openxr_suggest(&input_openxr_st, &p),
+         "edit mode's bindings taken past the limit");
+   CHECK(t_binds(path, "combined/a", NULL) && !t_binds(path, "edit/grab",
+            NULL), "the game's not suggested, or edit mode's were");
+   CHECK(t_logged("[OpenXR] Edit Screens bindings refused for "
+            "/interaction_profiles/test/oversized") == 1
+         && t_logged("[OpenXR] Bindings suggested for "
+            "/interaction_profiles/test/oversized") == 1, "log: %s", t_log);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_current[2] = path;
+   CHECK(!input_openxr_edit_toggle() && !t_editing,
+         "a hand on it started edit mode");
+   t_current[2] = NULL;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* While Editing Screens: Pause pauses the content, once video knows and
+ * never from inside a poll, which can be inside the core's frame; it
+ * resumes only what it paused. */
+static void test_edit_pause(void)
+{
+   t_forget_devices();
+   t_fresh_session();
+   t_run_flags  = RUNLOOP_FLAG_CORE_RUNNING;
+   t_pauses     = 0;
+   t_unpauses   = 0;
+   t_bad_pauses = 0;
+   t_edit_on(true);
+   CHECK(t_editing && t_pauses == 1 && (t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "entering did not pause: %u", t_pauses);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   input_openxr_edit_toggle();
+   CHECK(!t_editing && t_unpauses == 1
+         && !(t_run_flags & RUNLOOP_FLAG_PAUSED), "leaving did not resume");
+   /* Paused already: left paused. */
+   t_run_flags |= RUNLOOP_FLAG_PAUSED;
+   t_edit_on(true);
+   input_openxr_edit_toggle();
+   CHECK(t_pauses == 1 && t_unpauses == 1
+         && (t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "a pause edit mode did not make was undone");
+   /* Resumed by hand while editing: nothing to resume. */
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_edit_on(true);
+   t_run_flags &= ~RUNLOOP_FLAG_PAUSED;
+   input_openxr_edit_toggle();
+   CHECK(t_pauses == 2 && t_unpauses == 1, "%u pauses %u resumes",
+         t_pauses, t_unpauses);
+   /* Ended in a poll, by the menu opening: resumed. */
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_edit_on(true);
+   t_menu_open = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_menu_open = false;
+   CHECK(!t_editing && t_pauses == 3 && t_unpauses == 2
+         && !(t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "the menu ended it: %u pauses %u resumes", t_pauses, t_unpauses);
+   /* Keep Running: never paused. */
+   t_edit_on(false);
+   CHECK(t_pauses == 3 && !(t_run_flags & RUNLOOP_FLAG_PAUSED),
+         "Keep Running paused");
+   input_openxr_edit_toggle();
+   /* The headset's action held through polls only raises the command. */
+   t_let_go();
+   t_hold("combined/edit_screens", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_let_go();
+   CHECK(!t_editing && t_pauses == 3, "the action started it in a poll");
+   CHECK(t_bad_pauses == 0,
+         "%u pauses from inside a poll or before video knew", t_bad_pauses);
+   t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -1819,6 +2368,15 @@ int main(void)
    test_joypad_wrapped();
    test_joints();
    test_session_restart_trigger();
+   test_edit_mode();
+   test_edit_trigger_held();
+   test_edit_unavailable();
+   test_edit_profile_refused();
+   test_edit_pause_refused();
+   test_edit_repause();
+   test_edit_unbound();
+   test_edit_oversized();
+   test_edit_pause();
    if (failures)
    {
       printf("%d failure(s)\n", failures);

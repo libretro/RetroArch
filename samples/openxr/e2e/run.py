@@ -2085,7 +2085,7 @@ _FL = '/user/hand/left/input/'
 _FR = '/user/hand/right/input/'
 # The Frame's right controller has A, B, X and Y, the left a D-pad; the
 # right stick's click opens the RetroArch menu in place of R3, and the
-# grips stay unbound.
+# grips are left to edit mode, whose Reset is the left D-pad's down.
 FRAME_BINDS = set([
     ('combined/b', _FR + 'a/click'), ('combined/a', _FR + 'b/click'),
     ('combined/y', _FR + 'x/click'), ('combined/x', _FR + 'y/click'),
@@ -2112,6 +2112,11 @@ FRAME_BINDS = set([
     ('separate/stick', _FL + 'thumbstick'),
     ('separate/stick', _FR + 'thumbstick'),
     ('separate/menu', _FL + 'view/click'),
+    ('edit/grab', _FL + 'squeeze/value'), ('edit/grab', _FR + 'squeeze/value'),
+    ('edit/tilt', _FL + 'trigger/value'), ('edit/tilt', _FR + 'trigger/value'),
+    ('edit/stick', _FL + 'thumbstick'), ('edit/stick', _FR + 'thumbstick'),
+    ('edit/reset', _FL + 'dpad_down/click'), ('edit/reset', _FR + 'a/click'),
+    ('edit/menu', _FR + 'thumbstick/click'),
     ('pointer/aim', _FL + 'aim/pose'), ('pointer/aim', _FR + 'aim/pose'),
     ('pointer/rumble', '/user/hand/left/output/haptic'),
     ('pointer/rumble', '/user/hand/right/output/haptic')])
