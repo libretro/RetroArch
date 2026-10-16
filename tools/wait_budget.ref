@@ -4,4 +4,4 @@
 #
 # file                    allowed
 gfx/video_driver.c        5
-retroarch.c               5
+retroarch.c               3

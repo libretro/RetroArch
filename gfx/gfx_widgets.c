@@ -69,6 +69,13 @@ static retro_atomic_int_t widget_assets_reload = RETRO_ATOMIC_INT_INITIALIZER(0)
 /* Set by the worker when it has laid the widgets out again; taken by
  * the main thread, whose frame time counter a relayout resets */
 static retro_atomic_int_t widget_relayout_done = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* A teardown gfx_widgets_deinit_async() handed off: run on the main
+ * thread once the video thread has passed a fence queued behind the
+ * frame in flight. Main thread only, but the fence. */
+static bool               widget_teardown_due;
+static bool               widget_fence_posted;
+static bool               widget_init_retry;
+static retro_atomic_int_t widget_fence;
 #endif
 
 /* Recompute the layout variables that depend on whether widget icons
@@ -2346,9 +2353,9 @@ void gfx_widgets_frame(void *data)
 #ifdef HAVE_THREADS
    /* A frame the wrapper already had queued still says the widgets
     * are active. Once gfx_widgets_deinit() has taken the worker away
-    * from them - and waited out the frames that saw it before it frees
-    * the fonts - the fonts are not there to draw with; the frame's own
-    * flag is the main thread's word from before that. */
+    * from them - the frames that saw it waited out, or fenced, before
+    * the teardown - the fonts are not there to draw with; the frame's
+    * own flag is the main thread's word from before that. */
    if (     !retro_atomic_load_acquire_int(&p_dispwidget->worker)
          && p_dispwidget->video_st
          && ((video_driver_state_t*)p_dispwidget->video_st)->thread_wrapper_active)
@@ -2573,6 +2580,17 @@ bool gfx_widgets_init(
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
    settings_t *settings                        = (settings_t*)settings_data;
+
+#ifdef HAVE_THREADS
+   /* Not over the teardown still waiting for the frame in flight:
+    * again once it has run (gfx_widgets_poll_teardown()) */
+   gfx_widgets_poll_teardown();
+   if (widget_teardown_due)
+   {
+      widget_init_retry = true;
+      return false;
+   }
+#endif
    p_dispwidget->divider_width_1px             = 1;
    p_dispwidget->gfx_widgets_generic_tag       = (uintptr_t)widgets_active_ptr;
 
@@ -2772,26 +2790,24 @@ static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
    }
 }
 
-void gfx_widgets_deinit(bool widgets_persisting)
+/* Main thread, with no frame drawing the widgets. @worker: they were
+ * the video thread's, and its fonts go back to it to free on its own
+ * frames. Then back to the main list: the tweens of widgets that
+ * persist carry on under whichever video comes up next, and freeing
+ * kills the rest where the widget code looks for them. */
+static void gfx_widgets_teardown(dispgfx_widget_t *p_dispwidget,
+      bool widgets_persisting, bool worker)
 {
-   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
-
 #ifdef HAVE_THREADS
-   /* Every frame after the store sees the worker gone
-    * (gfx_widgets_frame()) and draws no widgets, and the caller has
-    * waited out the one in flight. The fonts are the worker's: handed
-    * back to it, it frees them on its own frames. Then back to the
-    * main list: the tweens of widgets that persist carry on under
-    * whichever video comes up next, and freeing kills the rest where
-    * the widget code looks for them. */
-   if (retro_atomic_load_relaxed_int(&p_dispwidget->worker))
+   if (worker)
    {
-      retro_atomic_store_release_int(&p_dispwidget->worker, 0);
       gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.regular);
       gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.bold);
       gfx_widgets_font_retire(&p_dispwidget->gfx_widget_fonts.msg_queue);
    }
    gfx_animation_widgets_own(false);
+#else
+   (void)worker;
 #endif
 
    gfx_widgets_detach_tasks(p_dispwidget);
@@ -2800,6 +2816,83 @@ void gfx_widgets_deinit(bool widgets_persisting)
 
    if (!widgets_persisting)
       gfx_widgets_free(p_dispwidget);
+}
+
+#ifdef HAVE_THREADS
+
+static uintptr_t gfx_widgets_fence(void *data)
+{
+   (void)data;
+   retro_atomic_store_release_int(&widget_fence, 1);
+   return 0;
+}
+
+bool gfx_widgets_poll_teardown(void)
+{
+   if (widget_teardown_due)
+   {
+      /* No wrapper: nothing draws them. A full queue: next frame. */
+      if (     !widget_fence_posted
+            &&  video_driver_thread_wrapper_active())
+         widget_fence_posted = video_thread_run_queued(
+               gfx_widgets_fence, NULL);
+      if (     widget_fence_posted
+            && !retro_atomic_load_acquire_int(&widget_fence))
+         return false;
+      if (!widget_fence_posted && video_driver_thread_wrapper_active())
+         return false;
+      widget_teardown_due = false;
+      widget_fence_posted = false;
+      gfx_widgets_teardown(&dispwidget_st, false, true);
+   }
+   if (!widget_init_retry)
+      return false;
+   widget_init_retry = false;
+   return true;
+}
+
+void gfx_widgets_deinit_async(void)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+
+   if (     widget_teardown_due
+         || !retro_atomic_load_relaxed_int(&p_dispwidget->worker))
+   {
+      gfx_widgets_deinit(false);
+      return;
+   }
+   /* Frames after the store draw no widgets; the one in flight may */
+   retro_atomic_store_release_int(&p_dispwidget->worker, 0);
+   retro_atomic_store_release_int(&widget_fence, 0);
+   widget_teardown_due = true;
+   widget_fence_posted = false;
+   gfx_widgets_poll_teardown();
+}
+#endif
+
+void gfx_widgets_deinit(bool widgets_persisting)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   bool worker                    = false;
+
+#ifdef HAVE_THREADS
+   /* The caller has waited out the frame in flight: a handed off
+    * teardown runs now, and was the full one */
+   if (widget_teardown_due)
+   {
+      widget_teardown_due = false;
+      widget_fence_posted = false;
+      gfx_widgets_teardown(p_dispwidget, false, true);
+      return;
+   }
+   /* Every frame after the store sees the worker gone
+    * (gfx_widgets_frame()) and draws no widgets */
+   worker = retro_atomic_load_relaxed_int(&p_dispwidget->worker) != 0;
+   if (worker)
+      retro_atomic_store_release_int(&p_dispwidget->worker, 0);
+#endif
+
+   gfx_widgets_teardown(p_dispwidget, widgets_persisting, worker);
 }
 
 #ifdef HAVE_TRANSLATE

@@ -8211,6 +8211,11 @@ static enum runloop_state_enum runloop_check_state(
                settings->paths.path_font,
                VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
    }
+#ifdef HAVE_THREADS
+   /* A teardown handed off when they went, and an init put off by it */
+   else if (gfx_widgets_poll_teardown())
+      command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
+#endif
 #endif
 
 #ifdef HAVE_MENU

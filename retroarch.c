@@ -4578,14 +4578,15 @@ bool command_event(enum event_command cmd, void *data)
             }
             else if (!want_widgets && widgets_active)
             {
-#ifdef HAVE_THREADS
-               /* Same barrier as driver_uninit(): never free widget GPU
-                * resources while the video thread may still reference them. */
-               video_thread_wait_idle();
-#endif
                /* Full teardown (not persisting): a real user toggle-off
-                * must clear INITED so a later toggle-on re-inits cleanly. */
+                * must clear INITED so a later toggle-on re-inits cleanly.
+                * Under the wrapper it runs once the video thread is past
+                * the frame in flight, not waiting for it. */
+#ifdef HAVE_THREADS
+               gfx_widgets_deinit_async();
+#else
                gfx_widgets_deinit(false);
+#endif
                p_dispwidget->active = false;
             }
          }
@@ -6825,16 +6826,8 @@ void main_exit(void *args)
    video_driver_restore_cached(settings);
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* Do not want display widgets to live any more.
-    *
-    * The widget flags are read by gfx_widgets_frame(), which runs on
-    * the video thread under threaded video, so the thread is brought
-    * to a stop first - clearing the bit under it is a write racing
-    * those reads, which ThreadSanitizer catches on the exit path about
-    * one run in three. No-op when the wrapper is not active. */
-#ifdef HAVE_THREADS
-   video_thread_wait_idle();
-#endif
+   /* Do not want display widgets to live any more. Only this thread
+    * reads the flag. */
    dispwidget_get_ptr()->persisting = false;
 #endif
 #ifdef HAVE_MENU

@@ -434,6 +434,18 @@ bool gfx_widgets_init(
 
 void gfx_widgets_deinit(bool widgets_persisting);
 
+#ifdef HAVE_THREADS
+/* A full deinit that does not wait for a frame drawing the widgets:
+ * the main thread tears them down once the video thread is past it,
+ * from gfx_widgets_poll_teardown() */
+void gfx_widgets_deinit_async(void);
+
+/* Main thread, once a frame while the widgets are off: runs a teardown
+ * handed off by gfx_widgets_deinit_async() once it may. True when an
+ * init it put off is due again. */
+bool gfx_widgets_poll_teardown(void);
+#endif
+
 /* Reloads the widgets' icons and fonts from the assets directory, for
  * when the files there have changed under a running video driver. */
 void gfx_widgets_reload_assets(void);

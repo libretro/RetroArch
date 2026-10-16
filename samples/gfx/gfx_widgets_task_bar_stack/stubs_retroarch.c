@@ -266,6 +266,9 @@ static settings_t s_settings;
 settings_t *config_get_ptr(void) { return &s_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
 void video_thread_status_text(const char *s) { (void)s; }
+bool video_driver_thread_wrapper_active(void) { return false; }
+bool video_thread_run_queued(custom_command_method_t func, void *data)
+{ (void)func; (void)data; return false; }
 
 /* --- video driver --- */
 uint32_t video_driver_get_disp_flags(void) { return 0; }

@@ -422,10 +422,12 @@ static void lane_toggle_cycle(unsigned cycles)
 static void set_driver(thread_video_t *thr, const video_driver_t *driver);
 
 /* ------------------------------------------------------------------ */
-/* Lane: turning threaded video off waits out the frame in flight      */
-/*   The setting is cleared before the reinit, so driver_uninit() must */
-/*   wait on the wrapper being up, not on the setting: a frame still   */
-/*   drawing the widgets would see them taken away under it.           */
+/* Lane: the widgets go only once no frame draws them                 */
+/*   Threaded video turned off clears its setting before the reinit,  */
+/*   so driver_uninit() waits on the wrapper being up, not on the     */
+/*   setting. The widgets turned off tear down once the video thread  */
+/*   is past the frame in flight, and the toggle does not wait for    */
+/*   it. Either way a frame drawing them must not see them go.        */
 /* ------------------------------------------------------------------ */
 
 static const video_driver_t *wolane_inner;
@@ -440,16 +442,17 @@ static bool wolane_frame(void *data, const void *frame,
 {
    if (retro_atomic_load_acquire_int(&wolane_slow))
    {
-      dispgfx_widget_t *w = dispwidget_get_ptr();
-      int had             = retro_atomic_load_acquire_int(&w->worker);
-      retro_time_t until  = cpu_features_get_time_usec() + 500000;
+      volatile gfx_widget_font_data_t *font = (volatile gfx_widget_font_data_t*)
+         &dispwidget_get_ptr()->gfx_widget_fonts.regular;
+      void *had          = font->font;
+      retro_time_t until = cpu_features_get_time_usec() + 500000;
       retro_atomic_fetch_add_int(&wolane_frames, 1);
-      /* Drawing until the widgets go, or long enough that the
-       * teardown would have reached them */
+      /* Drawing until the widgets' font goes, or long enough that the
+       * teardown would have reached it */
       while (     had
-            &&  retro_atomic_load_acquire_int(&w->worker)
+            &&  font->font == had
             &&  cpu_features_get_time_usec() < until) { }
-      if (had && !retro_atomic_load_acquire_int(&w->worker))
+      if (had && font->font != had)
          retro_atomic_store_release_int(&wolane_raced, 1);
    }
    return wolane_inner->frame(data, frame, dims, frame_count,
@@ -458,16 +461,19 @@ static bool wolane_frame(void *data, const void *frame,
 
 static void lane_threaded_off_in_flight(void)
 {
-   static const char *how[2] = { "threaded off", "widgets off" };
+   static const char *how[3] = { "threaded off", "widgets off",
+      "widgets off and on" };
    unsigned had = failures;
    settings_t *settings = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    int c;
 
-   for (c = 0; c < 2; c++)
+   for (c = 0; c < 3; c++)
    {
       dispgfx_widget_t *w;
       thread_video_t *thr;
+      retro_time_t took = 0;
+      unsigned i;
 
       set_threaded_via_setting(true);
       run_frames(6);
@@ -483,6 +489,8 @@ static void lane_threaded_off_in_flight(void)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
       run_frames(3);
       video_thread_wait_idle();
+      CHECK(w->gfx_widget_fonts.regular.font != NULL,
+            "threaded-off lane (%s): no widget font to watch", how[c]);
       thr                 = (thread_video_t*)video_st->data;
       wolane_inner        = thr->driver;
       wolane_driver       = *thr->driver;
@@ -497,11 +505,16 @@ static void lane_threaded_off_in_flight(void)
          set_threaded_via_setting(false);
       else
       {
-         /* The widgets turned off in the window the setting leaves
-          * before its reinit: the flag clear, the wrapper still up */
-         video_st->threaded                  = false;
          settings->bools.menu_enable_widgets = false;
+         took = cpu_features_get_time_usec();
          command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
+         took = cpu_features_get_time_usec() - took;
+         /* Back before the teardown could run: put off, not over it */
+         if (c == 2)
+         {
+            settings->bools.menu_enable_widgets = true;
+            command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
+         }
       }
       retro_atomic_store_release_int(&wolane_slow, 0);
       CHECK(retro_atomic_load_acquire_int(&wolane_frames) > 0,
@@ -509,13 +522,28 @@ static void lane_threaded_off_in_flight(void)
       CHECK(!retro_atomic_load_acquire_int(&wolane_raced),
             "threaded-off lane (%s): the widgets went while a frame "
             "drew them", how[c]);
-      if (c == 1)
+      if (c > 0)
       {
+         CHECK(took < 200000,
+               "threaded-off lane (%s): the toggle waited %lld us "
+               "for the frame", how[c], (long long)took);
+         if (c == 1)
+         {
+            /* Torn down once the video thread is past the frame */
+            for (i = 0; i < 60 && (w->flags & DISPGFX_WIDGET_FLAG_INITED); i++)
+               run_frames(1);
+            CHECK(!(w->flags & DISPGFX_WIDGET_FLAG_INITED),
+                  "threaded-off lane (widgets off): never torn down");
+            settings->bools.menu_enable_widgets = true;
+            command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
+         }
          video_thread_wait_idle();
          set_driver(thr, wolane_inner);
-         video_st->threaded                  = true;
-         settings->bools.menu_enable_widgets = true;
-         command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
+         /* And back, on the video thread again */
+         for (i = 0; i < 60 && !retro_atomic_load_acquire_int(&w->worker); i++)
+            run_frames(1);
+         CHECK(retro_atomic_load_acquire_int(&w->worker) && w->active,
+               "threaded-off lane (%s): not back after the toggle", how[c]);
          set_threaded_via_setting(false);
       }
       expect_wrapper(false, "threaded-off lane");
@@ -523,7 +551,7 @@ static void lane_threaded_off_in_flight(void)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    }
    if (failures == had)
-      fprintf(stderr, "[pass] threaded-off lane (threaded off, widgets off)\n");
+      fprintf(stderr, "[pass] threaded-off lane (threaded off, widgets off, off and on)\n");
 }
 #endif
 
