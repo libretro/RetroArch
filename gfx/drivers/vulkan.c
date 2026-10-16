@@ -11303,6 +11303,8 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
    /* A frame shown whole despite a map is not screen 1. */
    p.screens       = (views || !video_info->views.num_views)
       ? video_info->headset_screens : NULL;
+   p.menu          = video_info->headset_menu_placed
+      ? &video_info->headset_menu : NULL;
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = vulkan_openxr_pixels_per_radian(xr);

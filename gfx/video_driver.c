@@ -6858,6 +6858,20 @@ static void video_driver_headset_screens(const settings_t *settings,
    }
 }
 
+static void video_driver_headset_menu(const settings_t *settings,
+      video_screen_xr_t *menu)
+{
+   menu->x       = settings->floats.video_openxr_menu_xr_x;
+   menu->y       = settings->floats.video_openxr_menu_xr_y;
+   menu->z       = settings->floats.video_openxr_menu_xr_z;
+   menu->yaw     = settings->floats.video_openxr_menu_xr_yaw;
+   menu->pitch   = settings->floats.video_openxr_menu_xr_pitch;
+   menu->roll    = settings->floats.video_openxr_menu_xr_roll;
+   menu->scale   = settings->floats.video_openxr_menu_xr_scale;
+   menu->visible = true;
+   video_views_xr_normalize(menu);
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_settings_t *custom_vp             = NULL;
@@ -6915,6 +6929,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->shader_subframes            = video_st->headset_interval
       ? 1 : settings->uints.video_shader_subframes;
    video_driver_headset_screens(settings, video_info->headset_screens);
+   video_driver_headset_menu(settings, &video_info->headset_menu);
+   video_info->headset_menu_placed         = settings->bools.video_openxr_menu_placed;
    video_info->headset_distance            = settings->floats.video_openxr_distance;
    video_info->headset_width               = settings->floats.video_openxr_width;
    video_info->headset_placement           = settings->uints.video_openxr_placement;

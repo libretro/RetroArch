@@ -184,22 +184,6 @@ bool video_xr_shrinks(unsigned image_dims, unsigned source_dims,
    return VIDEO_SCALE_W(image_dims) < sw || VIDEO_SCALE_H(image_dims) < sh;
 }
 
-/* A point in the anchor's frame, as a pose in LOCAL space facing the
- * way the anchor does. */
-static void video_xr_put(const video_xr_params_t *p,
-      double x, double y, double z, video_xr_pose_t *out)
-{
-   video_xr_vec3_t local, world;
-   local.x = (float)x;
-   local.y = (float)y;
-   local.z = (float)z;
-   video_xr_rotate(&p->anchor.orientation, &local, &world);
-   out->orientation = p->anchor.orientation;
-   out->position.x  = p->anchor.position.x + world.x;
-   out->position.y  = p->anchor.position.y + world.y;
-   out->position.z  = p->anchor.position.z + world.z;
-}
-
 static void video_xr_screen_rotate(const video_screen_xr_t *screen,
       video_xr_pose_t *pose)
 {
@@ -500,6 +484,82 @@ static unsigned video_xr_menu_dims(const video_xr_params_t *p,
          VIDEO_SCALE_PACK(w, h), p->max_dim);
 }
 
+/* The menu VIDEO_XR_MENU_LIFT in front of screen 0, facing as it does,
+ * while screen 0 floats and shows, else at its own spot. Following, it
+ * comes no nearer than VIDEO_XR_MENU_NEAREST, and w and h scale with
+ * its distance so it looks as large as at its spot; facing away from
+ * the anchor, where no laser reaches it, it stays at its spot. */
+static void video_xr_menu_spot(const video_xr_params_t *p,
+      const video_xr_layout_t *lay, video_xr_pose_t *pose,
+      double *w, double *h)
+{
+   video_xr_pose_t local, lift;
+   video_screen_xr_t screen;
+   bool follow = lay->count && !(p->skip_screens & 1u);
+   if (follow && p->screens)
+   {
+      screen = p->screens[0];
+      video_views_xr_normalize(&screen);
+      follow = screen.visible;
+   }
+   if (!follow)
+   {
+      video_xr_item_pose(&lay->menu, NULL, &local);
+      video_xr_compose(&p->anchor, &local, pose);
+      return;
+   }
+   video_xr_item_pose(&lay->pos[0], p->screens ? &screen : NULL, &local);
+   video_xr_pose_identity(&lift);
+   lift.position.z = VIDEO_XR_MENU_LIFT;
+   video_xr_compose(&local, &lift, &local);
+   if (p->screens && (screen.x != 0.0f || screen.y != 0.0f
+            || screen.z != 0.0f || screen.yaw != 0.0f
+            || screen.pitch != 0.0f || screen.roll != 0.0f))
+   {
+      video_xr_vec3_t face;
+      double spot = p->distance - VIDEO_XR_MENU_LIFT;
+      double d    = sqrt((double)local.position.x * local.position.x
+            + (double)local.position.y * local.position.y
+            + (double)local.position.z * local.position.z);
+      if (d < VIDEO_XR_MENU_NEAREST)
+      {
+         /* Out along the line from the anchor; at it, straight ahead. */
+         if (d < 1e-6)
+         {
+            local.position.x = 0.0f;
+            local.position.y = 0.0f;
+            local.position.z = -1.0f;
+            d                = 1.0;
+         }
+         local.position.x = (float)(local.position.x
+               * VIDEO_XR_MENU_NEAREST / d);
+         local.position.y = (float)(local.position.y
+               * VIDEO_XR_MENU_NEAREST / d);
+         local.position.z = (float)(local.position.z
+               * VIDEO_XR_MENU_NEAREST / d);
+         d                = VIDEO_XR_MENU_NEAREST;
+      }
+      face.x = 0.0f;
+      face.y = 0.0f;
+      face.z = 1.0f;
+      video_xr_rotate(&local.orientation, &face, &face);
+      if (     (double)face.x * local.position.x
+             + (double)face.y * local.position.y
+             + (double)face.z * local.position.z >= 0.0)
+      {
+         video_xr_item_pose(&lay->menu, NULL, &local);
+         video_xr_compose(&p->anchor, &local, pose);
+         return;
+      }
+      if (spot > 0.0)
+      {
+         *w *= d / spot;
+         *h *= d / spot;
+      }
+   }
+   video_xr_compose(&p->anchor, &local, pose);
+}
+
 void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
 {
    unsigned s;
@@ -546,22 +606,39 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
 
    if (VIDEO_SCALE_W(p->ui_dims) && VIDEO_SCALE_H(p->ui_dims))
    {
+      unsigned dims;
+      double w, h;
       float aspect = (float)VIDEO_SCALE_W(p->ui_dims)
          / (float)VIDEO_SCALE_H(p->ui_dims);
-      float d      = p->distance - VIDEO_XR_MENU_LIFT;
-      float w      = p->width;
-      float h      = w / aspect;
-      if (h > p->width * VIDEO_XR_MENU_MAX_H)
+      float mw     = p->width;
+      float mh     = mw / aspect;
+      if (mh > p->width * VIDEO_XR_MENU_MAX_H)
       {
-         h = p->width * VIDEO_XR_MENU_MAX_H;
-         w = h * aspect;
+         mh = p->width * VIDEO_XR_MENU_MAX_H;
+         mw = mh * aspect;
       }
-      video_xr_put(p, lay.menu.x, lay.menu.y, lay.menu.z, &pose);
+      w = mw;
+      h = mh;
+      if (p->menu)
+      {
+         video_screen_xr_t menu = *p->menu;
+         float d                = p->distance - VIDEO_XR_MENU_LIFT;
+         video_views_xr_normalize(&menu);
+         video_xr_adjust(p, &lay.menu, &menu, &pose, &w, &h, &d);
+         dims = video_xr_menu_dims(p, (float)w, (float)h, d);
+      }
+      else
+      {
+         /* Its angular size, so its image, is the one at its spot. */
+         dims = video_xr_menu_dims(p, mw, mh,
+               p->distance - VIDEO_XR_MENU_LIFT);
+         video_xr_menu_spot(p, &lay, &pose, &w, &h);
+      }
       out->slots[VIDEO_XR_MENU_SLOT].base   = lay.menu;
-      out->slots[VIDEO_XR_MENU_SLOT].dims   = video_xr_menu_dims(p, w, h, d);
+      out->slots[VIDEO_XR_MENU_SLOT].dims   = dims;
       out->slots[VIDEO_XR_MENU_SLOT].layers = 1;
       video_xr_add(out, VIDEO_XR_QUAD_MENU, VIDEO_XR_EYE_BOTH, 0,
-            VIDEO_XR_MENU_SLOT, 0, &pose, w, h);
+            VIDEO_XR_MENU_SLOT, 0, &pose, (float)w, (float)h);
    }
 }
 

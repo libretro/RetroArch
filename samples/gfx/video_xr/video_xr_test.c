@@ -815,6 +815,139 @@ static void test_frame_as_screen(void)
    CHECK(set.num_quads == 0);
 }
 
+/* The menu 10 cm in front of screen 1 and facing as it does, after the
+ * screens, as large to the eye as at its spot and no nearer than 0.4 m;
+ * at its own place once placed; at its spot when screen 1 does not
+ * float or show, or would leave it facing away. */
+static void test_menu_spot(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_screen_xr_t menu;
+   const video_xr_quad_t *m;
+
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   p.screens = screens;
+   screens[0].z   = 0.6f;
+   screens[0].yaw = 30.0f;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 4);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(m->kind == VIDEO_XR_QUAD_MENU);
+   CHECK(pos_is(m, 0.05, 0.0, -1.11340));
+   CHECK(NEAR(m->pose.orientation.y, 0.25882) && NEAR(m->pose.orientation.w, 0.96593));
+   /* 1.1145 m away: 1.6 x 1.1145 / 1.7 wide. */
+   CHECK(NEAR(m->width, 1.04896) && NEAR(m->height, 0.62938));
+   CHECK(vec_is(&set.slots[VIDEO_XR_MENU_SLOT].base, 0.0, 0.0, -1.7));
+   /* Its image is the one at its spot. */
+   p.px_per_rad = 200.0f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[VIDEO_XR_MENU_SLOT].dims, 352, 211));
+
+   /* Far and enlarged: as wide to the eye, the same image. */
+   screens[0].z     = -8.0f;
+   screens[0].yaw   = 0.0f;
+   screens[0].scale = 5.0f;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(pos_is(m, 0.0, 0.0, -9.7));
+   CHECK(NEAR(m->width, 9.12941) && NEAR(m->height, 5.47765));
+   CHECK(dims_is(set.slots[VIDEO_XR_MENU_SLOT].dims, 352, 211));
+   p.px_per_rad = 1000.0f;
+
+   /* Pulled to the eyes: 0.4 m out along the line from the anchor, or
+    * straight ahead when at it; behind them, facing away, at its spot. */
+   screens[0].scale = 1.0f;
+   screens[0].z     = 1.6f;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(pos_is(m, 0.0, 0.0, -0.4));
+   CHECK(NEAR(m->width, 0.37647) && NEAR(m->height, 0.22588));
+   screens[0].z = 1.7f;
+   video_xr_place(&p, &set);
+   CHECK(pos_is(&set.quads[set.num_quads - 1], 0.0, 0.0, -0.4));
+   screens[0].z = 2.0f;
+   video_xr_place(&p, &set);
+   CHECK(pos_is(&set.quads[set.num_quads - 1], 0.0, 0.0, -1.7));
+   screens[0].z = 2.5f;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(pos_is(m, 0.0, 0.0, -1.7));
+   CHECK(NEAR(m->width, 1.6) && NEAR(m->height, 0.96));
+   CHECK(NEAR(m->pose.orientation.w, 1.0));
+   /* Beside the eyes: followed while it faces them (yaw -90 turns the
+    * face to -X), at its spot when turned away. */
+   screens[0].x   = 3.0f;
+   screens[0].z   = 1.8f;
+   screens[0].yaw = -90.0f;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(pos_is(m, 2.9, 0.0, 0.0));
+   CHECK(NEAR(m->width, 2.72941));
+   screens[0].yaw = 90.0f;
+   video_xr_place(&p, &set);
+   CHECK(pos_is(&set.quads[set.num_quads - 1], 0.0, 0.0, -1.7));
+   screens[0].x   = 0.0f;
+   screens[0].yaw = 0.0f;
+   screens[0].z = 1.25f;
+   video_xr_place(&p, &set);
+   CHECK(pos_is(&set.quads[set.num_quads - 1], 0.0, 0.0, -0.45));
+   screens[0].z = 0.6f;
+
+   /* Placed: from its own spot. */
+   video_views_xr_reset(&menu, 1);
+   menu.x     = 0.5f;
+   menu.z     = 0.2f;
+   menu.scale = 0.5f;
+   p.menu     = &menu;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(m->kind == VIDEO_XR_QUAD_MENU && pos_is(m, 0.5, 0.0, -1.5));
+   CHECK(NEAR(m->width, 0.8) && NEAR(m->height, 0.48));
+   /* Clamped to the setting's range. */
+   menu.scale = 20.0f;
+   video_xr_place(&p, &set);
+   CHECK(NEAR(set.quads[set.num_quads - 1].width, 16.0));
+   p.menu = NULL;
+
+   /* Screen 1 hidden or the projection's: the menu at its spot. */
+   screens[0].visible = false;
+   screens[0].x       = 3.0f;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(m->kind == VIDEO_XR_QUAD_MENU && pos_is(m, 0.0, 0.0, -1.7));
+   screens[0].visible = true;
+   p.skip_screens     = 1u;
+   video_xr_place(&p, &set);
+   m = &set.quads[set.num_quads - 1];
+   CHECK(m->kind == VIDEO_XR_QUAD_MENU && pos_is(m, 0.0, 0.0, -1.7));
+   p.skip_screens = 0;
+
+   /* A whole frame is screen 1: the menu goes with it. */
+   params_init(&p, NULL);
+   p.frame_dims = VIDEO_SCALE_PACK(800, 480);
+   p.ui_dims    = VIDEO_SCALE_PACK(1600, 960);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   screens[0].z = 0.6f;
+   p.screens    = screens;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 2 && set.quads[1].kind == VIDEO_XR_QUAD_MENU);
+   CHECK(pos_is(&set.quads[1], 0.0, 0.0, -1.1));
+   CHECK(NEAR(set.quads[1].width, 1.03529));
+   /* Its image to the pixel where sizing it from the moved size would
+    * round up one more. */
+   p.px_per_rad   = 355.240692f;
+   screens[0].z   = -8.0f;
+   screens[0].yaw = -23.0f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[VIDEO_XR_MENU_SLOT].dims, 625, 375));
+}
+
 static void test_image_dims(void)
 {
    /* 1.6 m at 1.8 m spans 0.8364 rad: 837 px at 1000 px/rad. */
@@ -1896,6 +2029,7 @@ int main(void)
    test_menu_handle();
    test_live_edit();
    test_frame_as_screen();
+   test_menu_spot();
    test_image_dims();
    test_shrinks();
    test_place_3ds();

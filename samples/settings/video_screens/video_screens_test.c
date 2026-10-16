@@ -398,6 +398,106 @@ static void test_xr_config_invalid(void)
    CHECK(settings->floats.video_screen_xr_x[7] == 0.0f);
 }
 
+static void test_xr_menu_place_config(void)
+{
+   static rarch_system_info_t system_info;
+   settings_t *settings = config_get_ptr();
+   config_file_t *conf;
+   float value = 0.0f;
+   bool placed = true;
+
+   load_fixture(
+         "video_openxr_menu_xr_x = \"0.5\"\n"
+         "video_openxr_menu_xr_z = \"-0.25\"\n"
+         "video_openxr_menu_xr_yaw = \"30\"\n"
+         "video_openxr_menu_xr_pitch = \"-15\"\n"
+         "video_openxr_menu_xr_roll = \"45\"\n"
+         "video_openxr_menu_xr_scale = \"0.75\"\n"
+         "video_openxr_menu_placed = \"true\"\n");
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.5f);
+   CHECK(settings->floats.video_openxr_menu_xr_z == -0.25f);
+   CHECK(settings->floats.video_openxr_menu_xr_yaw == 30.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 0.75f);
+   CHECK(settings->bools.video_openxr_menu_placed);
+   settings->bools.config_save_minimal = false;
+   CHECK(config_save_file(saved_path));
+   path_set(RARCH_PATH_CONFIG, saved_path);
+   config_load();
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.5f);
+   CHECK(settings->floats.video_openxr_menu_xr_z == -0.25f);
+   CHECK(settings->floats.video_openxr_menu_xr_yaw == 30.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_pitch == -15.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_roll == 45.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 0.75f);
+   CHECK(settings->bools.video_openxr_menu_placed);
+
+   /* Minimal: only what differs from the defaults. */
+   load_fixture("config_save_minimal = \"true\"\nvideo_openxr_menu_xr_y = \"1.5\"\n");
+   CHECK(!settings->bools.video_openxr_menu_placed);
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_float(conf, "video_openxr_menu_xr_y", &value));
+      CHECK(value == 1.5f);
+      CHECK(config_get_entry(conf, "video_openxr_menu_xr_x") == NULL);
+      CHECK(config_get_entry(conf, "video_openxr_menu_xr_scale") == NULL);
+      CHECK(config_get_entry(conf, "video_openxr_menu_placed") == NULL);
+      config_file_free(conf);
+   }
+
+   /* Out of range clamps, non-finite takes the default. */
+   load_fixture(
+         "video_openxr_menu_xr_x = \"100\"\n"
+         "video_openxr_menu_xr_roll = \"nan\"\n"
+         "video_openxr_menu_xr_scale = \"0\"\n");
+   CHECK(settings->floats.video_openxr_menu_xr_x == 10.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_roll == 0.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 0.1f);
+
+   /* A game override's place, and the base's back on unload. */
+   memset(&system_info, 0, sizeof(system_info));
+   system_info.info.library_name = "video_screens_test";
+   path_set(RARCH_PATH_BASENAME, "menu_game.rom");
+   load_fixture("config_save_minimal = \"true\"\n"
+         "video_openxr_menu_placed = \"true\"\n"
+         "video_openxr_menu_xr_x = \"1\"\n");
+   write_config(override_path,
+         "video_openxr_menu_placed = \"false\"\n"
+         "video_openxr_menu_xr_x = \"0\"\n"
+         "video_openxr_menu_xr_pitch = \"-20\"\n");
+   settings->floats.video_openxr_menu_xr_y = 2.0f;
+   CHECK(config_load_override_file(override_path));
+   CHECK(!settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_pitch == -20.0f);
+   /* In neither file: the default. */
+   CHECK(settings->floats.video_openxr_menu_xr_y == 0.0f);
+   CHECK(config_save_overrides(OVERRIDE_GAME, &system_info, false, NULL) == 1);
+   strlcpy(generated_path, path_get(RARCH_PATH_CONFIG_OVERRIDE), sizeof(generated_path));
+   conf = config_file_new_from_path_to_string(generated_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_bool(conf, "video_openxr_menu_placed", &placed));
+      CHECK(!placed);
+      CHECK(config_get_float(conf, "video_openxr_menu_xr_pitch", &value));
+      CHECK(value == -20.0f);
+      CHECK(config_get_entry(conf, "video_openxr_menu_xr_scale") == NULL);
+      config_file_free(conf);
+   }
+   CHECK(config_unload_override());
+   CHECK(settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_x == 1.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_pitch == 0.0f);
+   path_clear(RARCH_PATH_BASENAME);
+
+   config_reset_video_menu_xr(settings);
+   CHECK(!settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 1.0f);
+}
+
 /* A presented map fixture, as consumed by the shipping menu. */
 static void set_menu_map(unsigned screens)
 {
@@ -578,6 +678,20 @@ static void test_xr_menu_map_change(void)
    CHECK(menu_has_setting("video_openxr_distance"));
    CHECK(menu_has_setting("video_screen_xr_reset_all"));
 #endif
+}
+
+/* Reset All Screens puts the menu back in front of screen 1. */
+static void test_xr_menu_reset_all(void)
+{
+   settings_t *settings = config_get_ptr();
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_menu_placed = \"true\"\n"
+         "video_openxr_menu_xr_x = \"2\"\n");
+   set_menu_map(1);
+   CHECK(settings->bools.video_openxr_menu_placed);
+   menu_action("video_screen_xr_reset_all", MENU_ACTION_OK);
+   CHECK(!settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.0f);
 }
 
 #ifdef HAVE_OPENXR
@@ -1743,8 +1857,15 @@ static void test_screen_frame_snapshot(void)
    settings->floats.video_screen_xr_pitch[1] = -30.0f;
    settings->floats.video_screen_xr_roll[1] = 90.0f;
    settings->floats.video_screen_xr_x[7] = (float)HUGE_VAL;
+   settings->floats.video_openxr_menu_xr_y     = 0.5f;
+   settings->floats.video_openxr_menu_xr_scale = 20.0f;
+   settings->bools.video_openxr_menu_placed    = true;
    memset(&frame, 0, sizeof(frame));
    video_driver_build_info(&frame);
+   CHECK(frame.headset_menu.y == 0.5f);
+   CHECK(frame.headset_menu.scale == 10.0f);
+   CHECK(frame.headset_menu.visible);
+   CHECK(frame.headset_menu_placed);
    CHECK(frame.headset_screens[1].x == 0.25f);
    CHECK(frame.headset_screens[7].scale == 10.0f);
    CHECK(frame.headset_screens[7].x == 0.0f);
@@ -1922,6 +2043,7 @@ int main(int argc, char **argv)
       test_xr_minimal_save();
       test_xr_override_unload();
       test_xr_config_invalid();
+      test_xr_menu_place_config();
    }
    test_window_layout();
    test_window_frame();
@@ -1935,6 +2057,7 @@ int main(int argc, char **argv)
    test_screen_frame_snapshot();
    test_xr_screen_menu();
    test_xr_menu_map_change();
+   test_xr_menu_reset_all();
 #ifdef HAVE_OPENXR
    test_xr_menu_tracked_screen();
 #endif

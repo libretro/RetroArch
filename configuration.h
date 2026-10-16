@@ -589,6 +589,13 @@ typedef struct settings
       float video_screen_xr_pitch[RETRO_VIDEO_VIEWS_MAX];
       float video_screen_xr_roll[RETRO_VIDEO_VIEWS_MAX];
       float video_screen_xr_scale[RETRO_VIDEO_VIEWS_MAX];
+      float video_openxr_menu_xr_x;
+      float video_openxr_menu_xr_y;
+      float video_openxr_menu_xr_z;
+      float video_openxr_menu_xr_yaw;
+      float video_openxr_menu_xr_pitch;
+      float video_openxr_menu_xr_roll;
+      float video_openxr_menu_xr_scale;
 
       float video_aspect_ratio;
       float video_vp_bias_x;
@@ -686,6 +693,7 @@ typedef struct settings
    {
       bool placeholder;
       bool video_screen_xr_visible[RETRO_VIDEO_VIEWS_MAX];
+      bool video_openxr_menu_placed;
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
@@ -1738,6 +1746,9 @@ bool config_metal_arg_buffers_default(void);
 #endif
 
 void config_reset_video_screen_xr(settings_t *settings, unsigned first, unsigned count);
+
+/* The headset's menu back in front of screen 1. */
+void config_reset_video_menu_xr(settings_t *settings);
 
 void config_set_defaults(settings_t *target);
 

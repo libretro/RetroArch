@@ -5915,6 +5915,22 @@ void config_reset_video_screen_xr(settings_t *settings,
    }
 }
 
+void config_reset_video_menu_xr(settings_t *settings)
+{
+   video_screen_xr_t menu;
+   if (!settings)
+      return;
+   video_views_xr_reset(&menu, 1);
+   settings->floats.video_openxr_menu_xr_x     = menu.x;
+   settings->floats.video_openxr_menu_xr_y     = menu.y;
+   settings->floats.video_openxr_menu_xr_z     = menu.z;
+   settings->floats.video_openxr_menu_xr_yaw   = menu.yaw;
+   settings->floats.video_openxr_menu_xr_pitch = menu.pitch;
+   settings->floats.video_openxr_menu_xr_roll  = menu.roll;
+   settings->floats.video_openxr_menu_xr_scale = menu.scale;
+   settings->bools.video_openxr_menu_placed    = false;
+}
+
 /**
  * config_set_defaults:
  *
@@ -6270,6 +6286,7 @@ void config_set_defaults(settings_t *target)
    }
 
    config_reset_video_screen_xr(settings, 0, RETRO_VIDEO_VIEWS_MAX);
+   config_reset_video_menu_xr(settings);
 
 #ifdef HAVE_VIDEO_WINDOWS
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -7370,6 +7387,29 @@ static bool config_load_file(const char *path, settings_t *settings)
       settings->floats.video_screen_xr_roll[i] = screen.roll;
       settings->floats.video_screen_xr_scale[i] = screen.scale;
       settings->bools.video_screen_xr_visible[i] = screen.visible;
+   }
+
+   {
+      video_screen_xr_t menu;
+      bool placed = false;
+      video_views_xr_reset(&menu, 1);
+      config_get_float(conf, "video_openxr_menu_xr_x", &menu.x);
+      config_get_float(conf, "video_openxr_menu_xr_y", &menu.y);
+      config_get_float(conf, "video_openxr_menu_xr_z", &menu.z);
+      config_get_float(conf, "video_openxr_menu_xr_yaw", &menu.yaw);
+      config_get_float(conf, "video_openxr_menu_xr_pitch", &menu.pitch);
+      config_get_float(conf, "video_openxr_menu_xr_roll", &menu.roll);
+      config_get_float(conf, "video_openxr_menu_xr_scale", &menu.scale);
+      config_get_bool(conf, "video_openxr_menu_placed", &placed);
+      video_views_xr_normalize(&menu);
+      settings->floats.video_openxr_menu_xr_x     = menu.x;
+      settings->floats.video_openxr_menu_xr_y     = menu.y;
+      settings->floats.video_openxr_menu_xr_z     = menu.z;
+      settings->floats.video_openxr_menu_xr_yaw   = menu.yaw;
+      settings->floats.video_openxr_menu_xr_pitch = menu.pitch;
+      settings->floats.video_openxr_menu_xr_roll  = menu.roll;
+      settings->floats.video_openxr_menu_xr_scale = menu.scale;
+      settings->bools.video_openxr_menu_placed    = placed;
    }
 
    {
@@ -9941,6 +9981,48 @@ bool config_save_file(const char *path)
          config_unset(conf, cfg);
    }
 
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_x != defaults->floats.video_openxr_menu_xr_x)
+      config_set_float(conf, "video_openxr_menu_xr_x", settings->floats.video_openxr_menu_xr_x);
+   else
+      config_unset(conf, "video_openxr_menu_xr_x");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_y != defaults->floats.video_openxr_menu_xr_y)
+      config_set_float(conf, "video_openxr_menu_xr_y", settings->floats.video_openxr_menu_xr_y);
+   else
+      config_unset(conf, "video_openxr_menu_xr_y");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_z != defaults->floats.video_openxr_menu_xr_z)
+      config_set_float(conf, "video_openxr_menu_xr_z", settings->floats.video_openxr_menu_xr_z);
+   else
+      config_unset(conf, "video_openxr_menu_xr_z");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_yaw != defaults->floats.video_openxr_menu_xr_yaw)
+      config_set_float(conf, "video_openxr_menu_xr_yaw", settings->floats.video_openxr_menu_xr_yaw);
+   else
+      config_unset(conf, "video_openxr_menu_xr_yaw");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_pitch != defaults->floats.video_openxr_menu_xr_pitch)
+      config_set_float(conf, "video_openxr_menu_xr_pitch", settings->floats.video_openxr_menu_xr_pitch);
+   else
+      config_unset(conf, "video_openxr_menu_xr_pitch");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_roll != defaults->floats.video_openxr_menu_xr_roll)
+      config_set_float(conf, "video_openxr_menu_xr_roll", settings->floats.video_openxr_menu_xr_roll);
+   else
+      config_unset(conf, "video_openxr_menu_xr_roll");
+   if (   !minimal
+       || settings->floats.video_openxr_menu_xr_scale != defaults->floats.video_openxr_menu_xr_scale)
+      config_set_float(conf, "video_openxr_menu_xr_scale", settings->floats.video_openxr_menu_xr_scale);
+   else
+      config_unset(conf, "video_openxr_menu_xr_scale");
+   if (   !minimal
+       || settings->bools.video_openxr_menu_placed != defaults->bools.video_openxr_menu_placed)
+      config_set_string(conf, "video_openxr_menu_placed",
+            settings->bools.video_openxr_menu_placed ? "true" : "false");
+   else
+      config_unset(conf, "video_openxr_menu_placed");
+
    for (i = 0; i < MAX_USERS; i++)
    {
       size_t _len;
@@ -10659,6 +10741,24 @@ int8_t config_save_overrides(enum override_type type,
                   overrides->bools.video_screen_xr_visible[i] ? "true" : "false");
          }
       }
+
+      if (settings->floats.video_openxr_menu_xr_x != overrides->floats.video_openxr_menu_xr_x)
+         config_set_float(conf, "video_openxr_menu_xr_x", overrides->floats.video_openxr_menu_xr_x);
+      if (settings->floats.video_openxr_menu_xr_y != overrides->floats.video_openxr_menu_xr_y)
+         config_set_float(conf, "video_openxr_menu_xr_y", overrides->floats.video_openxr_menu_xr_y);
+      if (settings->floats.video_openxr_menu_xr_z != overrides->floats.video_openxr_menu_xr_z)
+         config_set_float(conf, "video_openxr_menu_xr_z", overrides->floats.video_openxr_menu_xr_z);
+      if (settings->floats.video_openxr_menu_xr_yaw != overrides->floats.video_openxr_menu_xr_yaw)
+         config_set_float(conf, "video_openxr_menu_xr_yaw", overrides->floats.video_openxr_menu_xr_yaw);
+      if (settings->floats.video_openxr_menu_xr_pitch != overrides->floats.video_openxr_menu_xr_pitch)
+         config_set_float(conf, "video_openxr_menu_xr_pitch", overrides->floats.video_openxr_menu_xr_pitch);
+      if (settings->floats.video_openxr_menu_xr_roll != overrides->floats.video_openxr_menu_xr_roll)
+         config_set_float(conf, "video_openxr_menu_xr_roll", overrides->floats.video_openxr_menu_xr_roll);
+      if (settings->floats.video_openxr_menu_xr_scale != overrides->floats.video_openxr_menu_xr_scale)
+         config_set_float(conf, "video_openxr_menu_xr_scale", overrides->floats.video_openxr_menu_xr_scale);
+      if (settings->bools.video_openxr_menu_placed != overrides->bools.video_openxr_menu_placed)
+         config_set_string(conf, "video_openxr_menu_placed",
+               overrides->bools.video_openxr_menu_placed ? "true" : "false");
 
       for (i = 0; i < MAX_USERS; i++)
       {

@@ -40,6 +40,8 @@ RETRO_BEGIN_DECLS
 #define VIDEO_XR_GAP       0.02f
 /* How far the UI floats in front of screen 0, in metres. */
 #define VIDEO_XR_MENU_LIFT 0.10f
+/* Following screen 0, the UI comes no nearer the anchor than this. */
+#define VIDEO_XR_MENU_NEAREST 0.40f
 /* The UI's quad fits in screen 0's width by this much of it. */
 #define VIDEO_XR_MENU_MAX_H 0.75f
 /* At most this many UI pixels per headset pixel across its quad. */
@@ -116,6 +118,8 @@ typedef struct video_xr_params
    const video_views_map_t *map;
    /* Floating-screen adjustments by screen ID; NULL uses defaults. */
    const video_screen_xr_t *screens;
+   /* The menu's own place from its spot; NULL: in front of screen 0. */
+   const video_screen_xr_t *menu;
    float frame_aspect;
    unsigned frame_dims;
    /* Screen 0 is centred straight ahead of this position and yaw. */

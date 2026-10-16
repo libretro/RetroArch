@@ -788,6 +788,8 @@ typedef struct video_frame_info
    const video_windows_frame_t *windows;
    /* Each screen's placement from its menu rows, normalized. */
    video_screen_xr_t headset_screens[RETRO_VIDEO_VIEWS_MAX];
+   /* The menu's own place, used once headset_menu_placed. */
+   video_screen_xr_t headset_menu;
    /* Headset output: the screens' distance and width in metres, where
     * they are kept (enum video_openxr_placement), and a count of
     * recenter requests the driver compares with the last it saw. */
@@ -802,6 +804,7 @@ typedef struct video_frame_info
    float headset_request_hz;
    unsigned screen_layout;
    bool stereo_swap_eyes;
+   bool headset_menu_placed;
    /* The last frame sent again (paused, menu), not a new core frame. */
    bool frame_repeat;
    /* The tracked eyes' views, which the headset shows as its

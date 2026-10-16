@@ -10434,7 +10434,10 @@ static int setting_video_screen_reset(rarch_setting_t *setting,
    settings_t *settings = config_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    if (setting->enum_idx == MENU_ENUM_LABEL_VIDEO_SCREEN_XR_RESET_ALL)
+   {
       config_reset_video_screen_xr(settings, 0, RETRO_VIDEO_VIEWS_MAX);
+      config_reset_video_menu_xr(settings);
+   }
    else
    {
       if (!setting_video_screen_bind(setting))
