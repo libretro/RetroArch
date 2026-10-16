@@ -215,6 +215,39 @@ static void test_sequences(void)
    rav1_hw_stream_close(&stream);
 }
 
+static void test_initial_sequence(void)
+{
+   video_hw_frame_t frame;
+   rav1_sequence_t config = sequence;
+   unsigned before = opens, closed = closes;
+   config.enable_filter_intra ^= 1;
+   CHECK(rav1_hw_stream_init(&stream, &config));
+   CHECK(!rav1_hw_stream_begin(&stream, sequence_obu, sizeof(sequence_obu)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) ==
+         RAV1_HW_STREAM_PROGRESS);
+   CHECK(opens == before + 2 && closes == closed + 1);
+   CHECK(!memcmp(&stream.session.sequence, &sequence, sizeof(sequence)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_END);
+   make_frame(1);
+   expected = packet;
+   CHECK(!rav1_hw_stream_begin(&stream, packet, packet_size));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == RAV1_HW_STREAM_FRAME);
+   video_hw_frame_abandon(&frame);
+   stream.sequence = config;
+   CHECK(!rav1_hw_stream_open_sequence(&stream));
+   CHECK(opens == before + 2 && closes == closed + 1);
+   rav1_hw_stream_close(&stream);
+
+   config = sequence;
+   config.color_range ^= 1;
+   CHECK(rav1_hw_stream_init(&stream, &config));
+   before = opens;
+   CHECK(!rav1_hw_stream_begin(&stream, sequence_obu, sizeof(sequence_obu)));
+   CHECK(rav1_hw_stream_step(&stream, &frame, false) == -2);
+   CHECK(opens == before);
+   rav1_hw_stream_close(&stream);
+}
+
 static void test_decode_failure(void)
 {
    video_hw_frame_t frame;
@@ -277,6 +310,7 @@ int main(void)
    test_packet();
    test_discard_and_cancel();
    test_sequences();
+   test_initial_sequence();
    test_decode_failure();
    test_errors();
    CHECK(opens == closes);

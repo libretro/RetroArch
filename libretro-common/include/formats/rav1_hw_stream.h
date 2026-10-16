@@ -22,14 +22,34 @@ typedef struct rav1_hw_stream
    const uint8_t *packet;
    size_t size, offset, next;
    rav1_sequence_t sequence;
-   int opened, submitted, error;
+   int opened, submitted, started, error;
 } rav1_hw_stream_t;
 
 static INLINE bool rav1_hw_stream_open_sequence(rav1_hw_stream_t *s)
 {
    rav1_hw_ops_t ops;
    if (s->opened)
-      return !memcmp(&s->sequence, &s->session.sequence, sizeof(s->sequence));
+   {
+      const rav1_sequence_t *old = &s->session.sequence;
+      const rav1_sequence_t *seq = &s->sequence;
+      if (!memcmp(seq, old, sizeof(*seq)))
+         return true;
+      /* av1C is provisional until the first frame, but its output
+       * geometry and color have already been admitted by the caller. */
+      if (s->started || seq->max_width != old->max_width ||
+          seq->max_height != old->max_height || seq->profile != old->profile ||
+          seq->bit_depth != old->bit_depth || seq->monochrome != old->monochrome ||
+          seq->subsampling_x != old->subsampling_x ||
+          seq->subsampling_y != old->subsampling_y ||
+          seq->chroma_sample_position != old->chroma_sample_position ||
+          seq->color_range != old->color_range ||
+          seq->color_primaries != old->color_primaries ||
+          seq->transfer_characteristics != old->transfer_characteristics ||
+          seq->matrix_coefficients != old->matrix_coefficients)
+         return false;
+      s->backend.close(&s->session.ops);
+      s->opened = 0;
+   }
    if (!rav1_hw_backend_open(&s->sequence, 9, &ops, &s->backend))
       return false;
    if (!rav1_hw_session_init(&s->session, &s->sequence, &ops, 9))
@@ -92,7 +112,8 @@ static INLINE int rav1_hw_stream_begin(rav1_hw_stream_t *s,
 /* Release the previous out before stepping again. One OBU per call; BUSY
  * retries submission/export without advancing input.
  * FRAME transfers a GPU lease; DISCARDED consumes display without export.
- * Sequence changes and split FRAME_HEADER/TILE_GROUP coding are unsupported.
+ * Sequence changes after frame acceptance and split FRAME_HEADER/TILE_GROUP
+ * coding are unsupported.
  * Decode errors are terminal until close/reinit; accepted input is owned
  * by the backend and unaccepted borrowed input is cancelled. */
 static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
@@ -166,7 +187,7 @@ static INLINE int rav1_hw_stream_step(rav1_hw_stream_t *s,
             return RAV1_HW_STREAM_BUSY;
          if (ret < 0)
             goto fail;
-         s->submitted = 1;
+         s->submitted = s->started = 1;
       }
       if (s->session.output_slot >= 0)
       {
