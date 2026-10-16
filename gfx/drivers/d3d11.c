@@ -8208,7 +8208,7 @@ static const char d3d11_planar_cs_src[] =
    "      ch *= scale;\n"
    "   }\n"
    "   ch -= size.z != 0 && size.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(video_hdr_to_sdr(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
+   "   Out[id.xy] = float4(video_hdr_convert(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
    "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x), hdr), 1.0);\n"
    "}\n";
 
@@ -8347,7 +8347,7 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
 static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       D3D11UnorderedAccessView uav, D3D11ShaderResourceView *views,
       unsigned width, unsigned height, unsigned yuv, bool interleaved,
-      bool swap, bool p010, const video_color_metadata_t *color)
+      bool swap, bool p010, const video_color_metadata_t *color, bool fp16)
 {
    D3D11DeviceContext ctx          = d3d11->context;
    D3D11ShaderResourceView none[3];
@@ -8358,6 +8358,8 @@ static bool d3d11_planar_convert(d3d11_video_t *d3d11,
 
    if (!video_import_color(&yuv, color, k, hdr))
       return false;
+   if (fp16)
+      hdr[3] = -1.0f;
    if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->planar_cb, 0,
          D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
       return false;
@@ -8440,7 +8442,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
    return d3d11_planar_convert(d3d11, p->uav, p->plane_view, image->width,
-         image->height, tp->yuv, p->interleaved, swap, false, NULL)
+         image->height, tp->yuv, p->interleaved, swap, false, NULL, false)
       ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
@@ -8701,7 +8703,8 @@ static enum video_texture_update d3d11_import_texture(void *data,
    views[1] = imp->chroma[t];
    views[2] = NULL;
    ok       = d3d11_planar_convert(d3d11, p->uav, views, w, h, f->yuv,
-         true, false, f->pixfmt == IMAGE_PIXFMT_P010, &f->color);
+         true, false, f->pixfmt == IMAGE_PIXFMT_P010, &f->color,
+         p->texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT);
    /* read or not, the producer may have it back */
    if (done)
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);

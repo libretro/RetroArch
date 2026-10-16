@@ -13,7 +13,8 @@ static INLINE double video_import_hable(double x)
          / (x * (0.15 * x + 0.50) + 0.06)) - 0.02 / 0.30;
 }
 
-/* HDR parameters: transfer, 2020-to-709, exposure, white normalization. */
+/* HDR: transfer, 2020-to-709, exposure, white normalization.
+ * Importers use a negative normalization for linear scRGB output. */
 static INLINE bool video_import_color(unsigned *yuv,
       const video_color_metadata_t *color, float coefficients[6], float hdr[4])
 {

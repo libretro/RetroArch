@@ -304,7 +304,7 @@ static const char d3d12_nv12_cs_src[] =
    "      c *= scale;\n"
    "   }\n"
    "   c -= a.z != 0 && a.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(video_hdr_to_sdr(k0.x * y + k0.y + float3(k0.z * c.y,\n"
+   "   Out[id.xy] = float4(video_hdr_convert(k0.x * y + k0.y + float3(k0.z * c.y,\n"
    "         k0.w * c.x + k1.x * c.y, k1.y * c.x), hdr), 1.0);\n"
    "}\n";
 #endif
@@ -10991,6 +10991,8 @@ static enum video_texture_update d3d12_import_texture(void *data,
    constants[3] = (yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0;
    constants[4] = f->crop_x; constants[5] = f->crop_y;
    memcpy(&constants[8], kf, sizeof(kf));
+   if (texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      hdr[3] = -1.0f;
    memcpy(&constants[16], hdr, sizeof(hdr));
 
    cmd = d3d12->import_cmd[k];

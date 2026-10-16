@@ -149,7 +149,7 @@ References:
 
 `make import-check` extracts the production importer and runs its compiled
 compute shader on a graphics/compute device without requiring video decode.
-Ninety-six NV12/P010 switching cases cover odd visible dimensions,
+For each RGBA8 and FP16 destination, 96 NV12/P010 switching cases cover odd visible dimensions,
 BT.601/709 SDR, PQ/HLG BT.2020, limited/full range, and sampled/buffer
 imports. SDR uses independent RGB equations; HDR compares the CPU fallback.
 The test checks ready/done timelines and busy-slot drops. Linux llvmpipe
@@ -162,7 +162,9 @@ on the GPU. Neither path reads video pixels back to the CPU. The importer
 reserves P010 capacity for format switching where storage-buffer limits permit;
 larger NV12-only allocations remain usable and refuse oversized P010 frames.
 PQ/HLG imports apply Hable tone mapping and BT.2020-to-709 conversion.
-Automatic HDR hardware reader admission remains gated pending FP16 output;
+FP16 destinations preserve linear scRGB (1.0 = 80 nits), highlights and
+negative wide-gamut channels, with independent double-precision references.
+Automatic HDR hardware reader admission remains gated pending allocation/presentation;
 this oracle exercises imports directly, not HDR movie/display acceptance.
 D3D11/D3D12 share the same shader math; `d3d_p010_import/run.py` checks
 independent HDR reference colors within one output level on a native GPU.

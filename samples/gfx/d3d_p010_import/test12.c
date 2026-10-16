@@ -9,6 +9,7 @@
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
 #include "hdr_reference.h"
+#include "fp16_reference.h"
 #include "../../../gfx/common/video_import_color.h"
 #include "shaders.inc"
 #ifdef _WIN32
@@ -64,6 +65,7 @@ enum video_texture_update
 };
 static int failures;
 static unsigned hdr_mode;
+static unsigned output_fp16;
 static unsigned abandoned;
 static void unexpected_abandon(void *owner, uint64_t done, uint64_t value)
 {
@@ -271,7 +273,7 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    rd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
    rd.Width = rd.Height = 2;
    rd.DepthOrArraySize = rd.MipLevels = rd.SampleDesc.Count = 1;
-   rd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   rd.Format = output_fp16 ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
    rd.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
    CHECK(SUCCEEDED(ID3D12Device_CreateCommittedResource(v->device, &hp,
          D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
@@ -403,7 +405,14 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
             f.color.transfer, yc, uc, vc, expected));
    for (row = 0; row < 2; row++) for (col = 0; col < 2; col++)
    {
-      const uint8_t *pixel = pixels + fp.Offset + row * fp.Footprint.RowPitch + col * 4;
+      const uint8_t *pixel = pixels + fp.Offset + row * fp.Footprint.RowPitch + col * (output_fp16 ? 8 : 4);
+      if (output_fp16)
+      {
+         fp16_reference(p010 ? 10 : 8, !!(flags & IMAGE_YUV_FLAG_FULL_RANGE),
+               f.color.transfer, flags, yc, uc, vc, expected);
+         CHECK(fp16_reference_check((const uint16_t*)pixel, expected));
+         continue;
+      }
       for (i = 0; i < 3; i++)
       {
          float ref = expected[i] < 0 ? 0 : expected[i] > 1 ? 1 : expected[i];
@@ -468,6 +477,7 @@ int main(void)
             || !(fs.Support1 & D3D12_FORMAT_SUPPORT1_SHADER_LOAD))
       { printf("SKIP D3D12 %s format\n", depth ? "P010" : "NV12"); continue; }
       for (movie = 0; movie < 2; movie++)
+      for (output_fp16 = 0; output_fp16 < 2; output_fp16++)
       for (hdr_mode = 0; hdr_mode < 3; hdr_mode++)
       for (flags = 0; flags < 4; flags++)
       {

@@ -7,6 +7,7 @@
 #include <boolean.h>
 #include <formats/image_yuv_blit.h>
 #include "hdr_reference.h"
+#include "fp16_reference.h"
 #include "../../../gfx/common/video_import_color.h"
 #include <formats/image.h>
 #include "shaders.inc"
@@ -53,6 +54,7 @@ static const GUID resource1_iid =
 
 static int failures;
 static unsigned hdr_mode;
+static unsigned output_fp16;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); failures++; goto end; } } while (0)
 #define DROP(p) do { if (p) { IUnknown_Release((IUnknown*)(p)); p = NULL; } } while (0)
 
@@ -124,7 +126,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    views[0] = imported.luma[0];
    views[1] = imported.chroma[0];
    td.MiscFlags = 0;
-   td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   td.Format = output_fp16 ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
    td.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
    CHECK(SUCCEEDED(ID3D11Device_CreateTexture2D(device, &td, NULL, &output)));
    CHECK(SUCCEEDED(ID3D11Device_CreateUnorderedAccessView(device,
@@ -157,6 +159,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
       constants[3] = !!(flags & IMAGE_YUV_FLAG_FULL_RANGE);
    }
    memset(&bd, 0, sizeof(bd));
+   if (output_fp16) hdr[3] = -1.0f;
    memcpy((float*)constants + (api == 11 ? 12 : 16), hdr, sizeof(hdr));
    bd.ByteWidth = api == 11 ? 64 : 80;
    bd.Usage = api == 11 ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
@@ -171,7 +174,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
       video.planar_cs = shader;
       video.planar_cb = cb;
       CHECK(d3d11_planar_convert(&video, uav, views, 2, 2, flags,
-            true, false, p010 != 0, &color_metadata));
+            true, false, p010 != 0, &color_metadata, output_fp16 != 0));
    }
    else
    {
@@ -202,7 +205,14 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    for (row = 0; row < 2; row++)
       for (col = 0; col < 2; col++)
       {
-         const uint8_t *pixel = (const uint8_t*)mapped.pData + row * mapped.RowPitch + col * 4;
+         const uint8_t *pixel = (const uint8_t*)mapped.pData + row * mapped.RowPitch + col * (output_fp16 ? 8 : 4);
+         if (output_fp16)
+         {
+            fp16_reference(p010 ? 10 : 8, !!(flags & IMAGE_YUV_FLAG_FULL_RANGE),
+                  color_metadata.transfer, flags, yc, uc, vc, expected);
+            CHECK(fp16_reference_check((const uint16_t*)pixel, expected));
+            continue;
+         }
          for (i = 0; i < 3; i++)
          {
             float ref = expected[i] < 0 ? 0 : expected[i] > 1 ? 1 : expected[i];
@@ -269,7 +279,8 @@ int main(void)
                printf("SKIP GPU D3D%u %s format\n", api, depth ? "P010" : "NV12");
                continue;
             }
-            for (hdr_mode = 0; hdr_mode < 3; hdr_mode++)
+            for (output_fp16 = 0; output_fp16 < 2; output_fp16++)
+      for (hdr_mode = 0; hdr_mode < 3; hdr_mode++)
       for (flags = 0; flags < 4; flags++)
             {
                unsigned full = flags & IMAGE_YUV_FLAG_FULL_RANGE;

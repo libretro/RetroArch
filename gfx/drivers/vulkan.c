@@ -521,6 +521,8 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
       VkPipeline yuv420_to_rgba8888;
       VkPipeline yuv_image_to_rgba8888;
+      VkPipeline yuv420_to_rgba16f;
+      VkPipeline yuv_image_to_rgba16f;
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
       VkPipeline stock_rect;
@@ -5434,6 +5436,12 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t yuv_image_to_rgba8888_comp[] =
 #include "vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
    ;
+   static const uint32_t yuv420_to_rgba16f_comp[] =
+#include "vulkan_shaders/yuv420_to_rgba16f.comp.inc"
+   ;
+   static const uint32_t yuv_image_to_rgba16f_comp[] =
+#include "vulkan_shaders/yuv_image_to_rgba16f.comp.inc"
+   ;
    static const uint32_t yuv420_to_rgba8888_comp[] =
 #include "vulkan_shaders/yuv420_to_rgba8888.comp.inc"
    ;
@@ -5946,7 +5954,31 @@ static void vulkan_init_pipelines(vk_t *vk)
          vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
       vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
    }
+   module_info.codeSize = sizeof(yuv420_to_rgba16f_comp);
+   module_info.pCode = yuv420_to_rgba16f_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv420_to_rgba16f = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv420_to_rgba16f) != VK_SUCCESS)
+         vk->pipelines.yuv420_to_rgba16f = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
 
+   module_info.codeSize = sizeof(yuv_image_to_rgba16f_comp);
+   module_info.pCode = yuv_image_to_rgba16f_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv_image_to_rgba16f) != VK_SUCCESS)
+         vk->pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -6174,6 +6206,11 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba8888, NULL);
    vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv420_to_rgba16f, NULL);
+   vk->pipelines.yuv420_to_rgba16f = VK_NULL_HANDLE;
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba16f, NULL);
+   vk->pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
+
 #ifdef VULKAN_HDR_SWAPCHAIN
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
@@ -13838,15 +13875,26 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    unsigned ch = (h + 1) / 2;
    unsigned slot;
    size_t y_off, c_off, bytes;
+   bool fp16 = texture->format == VK_FORMAT_R16G16B16A16_SFLOAT;
+   VkPipeline buffer_pipeline = fp16 ? vk->pipelines.yuv420_to_rgba16f
+      : vk->pipelines.yuv420_to_rgba8888;
+   VkPipeline sampled_pipeline = fp16 ? vk->pipelines.yuv_image_to_rgba16f
+      : vk->pipelines.yuv_image_to_rgba8888;
    bool sampled = f->plane_views[0] && f->plane_views[1]
-      && vk->pipelines.yuv_image_to_rgba8888 != VK_NULL_HANDLE;
+      && sampled_pipeline != VK_NULL_HANDLE;
 
    if (     !vulkan_video_layout(&layout, w, h, f->pixfmt, f->yuv)
          || !vulkan_video_color(&layout, f->yuv, &f->color) || !f->image
          || ((f->crop_x | f->crop_y) & 1)
-         || texture->dims != f->dims)
+         || texture->dims != f->dims
+         || (!sampled && buffer_pipeline == VK_NULL_HANDLE))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
+   if (fp16)
+   {
+      float output = -1.0f;
+      memcpy(&layout.header[19], &output, sizeof(output));
+   }
    bytes = sampled ? 0 : layout.bytes;
    if (!(st = vulkan_import_state_get(vk, texture, bytes)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
@@ -13963,7 +14011,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 1, &bbar, 0, NULL);
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-         sampled ? vk->pipelines.yuv_image_to_rgba8888 : vk->pipelines.yuv420_to_rgba8888);
+         sampled ? sampled_pipeline : buffer_pipeline);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
          vk->pipelines.layout, 0, 1, &st->set[slot], 0, NULL);
    vkCmdDispatch(cmd, sampled ? (w + 7) / 8 : (cw + 7) / 8,

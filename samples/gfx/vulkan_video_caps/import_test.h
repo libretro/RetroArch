@@ -19,7 +19,7 @@ typedef struct vk
    VkCommandPool staging_pool;
    struct vk_stream_state *stream_states;
    struct { VkSampler nearest; } samplers;
-   struct { VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888; VkPipelineLayout layout; VkDescriptorSetLayout set_layout; } pipelines;
+   struct { VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888, yuv420_to_rgba16f, yuv_image_to_rgba16f; VkPipelineLayout layout; VkDescriptorSetLayout set_layout; } pipelines;
 } vk_t;
 
 void RARCH_ERR(const char *format, ...)
@@ -119,6 +119,9 @@ static int oracle_submit(import_oracle_t *t)
       && vkWaitForFences(device, 1, &t->fence, VK_TRUE, UINT64_C(1000000000)) == VK_SUCCESS;
 }
 
+#include "../d3d_p010_import/fp16_reference.h"
+static int output_fp16;
+
 static int oracle_pipeline(import_oracle_t *t)
 {
    static const uint32_t spirv[] =
@@ -126,6 +129,12 @@ static int oracle_pipeline(import_oracle_t *t)
    ;
    static const uint32_t sampled_spirv[] =
 #include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
+   ;
+   static const uint32_t float_spirv[] =
+#include "../../../gfx/drivers/vulkan_shaders/yuv420_to_rgba16f.comp.inc"
+   ;
+   static const uint32_t float_sampled_spirv[] =
+#include "../../../gfx/drivers/vulkan_shaders/yuv_image_to_rgba16f.comp.inc"
    ;
    VkSamplerCreateInfo sampler = {0};
    VkDescriptorSetLayoutBinding bindings[4];
@@ -161,6 +170,18 @@ static int oracle_pipeline(import_oracle_t *t)
    pipeline.stage.module = shader;
    ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
          &t->vk.pipelines.yuv_image_to_rgba8888) == VK_SUCCESS;
+   vkDestroyShaderModule(device, shader, NULL);
+   module.codeSize = sizeof(float_spirv); module.pCode = float_spirv;
+   if (!ok || vkCreateShaderModule(device, &module, NULL, &shader) != VK_SUCCESS) return 0;
+   pipeline.stage.module = shader;
+   ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+         &t->vk.pipelines.yuv420_to_rgba16f) == VK_SUCCESS;
+   vkDestroyShaderModule(device, shader, NULL);
+   module.codeSize = sizeof(float_sampled_spirv); module.pCode = float_sampled_spirv;
+   if (!ok || vkCreateShaderModule(device, &module, NULL, &shader) != VK_SUCCESS) return 0;
+   pipeline.stage.module = shader;
+   ok = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipeline, NULL,
+         &t->vk.pipelines.yuv_image_to_rgba16f) == VK_SUCCESS;
    vkDestroyShaderModule(device, shader, NULL);
    sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    sampler.magFilter = sampler.minFilter = VK_FILTER_NEAREST;
@@ -303,6 +324,7 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    VkImage input = VK_NULL_HANDLE;
    VkImageView planes[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
    VkPipeline sampled_pipeline = t->vk.pipelines.yuv_image_to_rgba8888;
+   VkPipeline sampled_float = t->vk.pipelines.yuv_image_to_rgba16f;
    VkDeviceMemory memory = VK_NULL_HANDLE;
    VkBufferImageCopy regions[2];
    VkSemaphoreSignalInfoKHR signal = {0};
@@ -363,7 +385,11 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
       memcpy(&frame.plane_views[0], &planes[0], sizeof(VkImageView));
       memcpy(&frame.plane_views[1], &planes[1], sizeof(VkImageView));
    }
-   if (mode == 2) t->vk.pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+   if (mode == 2)
+   {
+      t->vk.pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+      t->vk.pipelines.yuv_image_to_rgba16f = VK_NULL_HANDLE;
+   }
    signal.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR; signal.semaphore = t->ready; signal.value = serial;
    if (signal_sem(device, &signal) != VK_SUCCESS) goto done;
    if (serial == 13 && !oracle_growth_failures(t, &frame)) goto done;
@@ -446,6 +472,17 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
          rgb[1] = yy - ((flags & IMAGE_YUV_FLAG_BT709) ? 0.187324 : 0.344136) * cb
             - ((flags & IMAGE_YUV_FLAG_BT709) ? 0.468124 : 0.714136) * cr;
          rgb[2] = yy + ((flags & IMAGE_YUV_FLAG_BT709) ? 1.8556 : 1.772) * cb;
+         if (output_fp16)
+         {
+            float expected[3];
+            const uint16_t *pixel = (const uint16_t*)t->mapped_readback + (y * t->width + x) * 4;
+            fp16_reference(depth, full, transfer, flags,
+                  oracle_sample(0, x, y, depth, full),
+                  oracle_sample(1, x / 2, y / 2, depth, full),
+                  oracle_sample(2, x / 2, y / 2, depth, full), expected);
+            if (!fp16_reference_check(pixel, expected)) ok = 0;
+            continue;
+         }
          if (transfer)
          {
             uint16_t yy = (uint16_t)(oracle_sample(0, x, y, depth, full) << (depth == 10 ? 0 : 2));
@@ -476,6 +513,7 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
 done:
    t->vk.context->gpu_properties.limits.maxStorageBufferRange = saved_limit;
    t->vk.pipelines.yuv_image_to_rgba8888 = sampled_pipeline;
+   t->vk.pipelines.yuv_image_to_rgba16f = sampled_float;
    vkDeviceWaitIdle(device);
    if (planes[0]) vkDestroyImageView(device, planes[0], NULL);
    if (planes[1]) vkDestroyImageView(device, planes[1], NULL);
@@ -517,6 +555,8 @@ static void oracle_cleanup(import_oracle_t *t)
    if (t->readback) vkDestroyBuffer(device, t->readback, NULL);
    if (t->upload_memory) vkFreeMemory(device, t->upload_memory, NULL);
    if (t->readback_memory) vkFreeMemory(device, t->readback_memory, NULL);
+   if (t->vk.pipelines.yuv420_to_rgba16f) vkDestroyPipeline(device, t->vk.pipelines.yuv420_to_rgba16f, NULL);
+   if (t->vk.pipelines.yuv_image_to_rgba16f) vkDestroyPipeline(device, t->vk.pipelines.yuv_image_to_rgba16f, NULL);
    if (t->vk.pipelines.yuv420_to_rgba8888) vkDestroyPipeline(device, t->vk.pipelines.yuv420_to_rgba8888, NULL);
    if (t->vk.pipelines.yuv_image_to_rgba8888) vkDestroyPipeline(device, t->vk.pipelines.yuv_image_to_rgba8888, NULL);
    if (t->vk.samplers.nearest) vkDestroySampler(device, t->vk.samplers.nearest, NULL);
@@ -525,7 +565,7 @@ static void oracle_cleanup(import_oracle_t *t)
 }
 
 #ifndef HEVC_RENDER_TEST
-static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
+static int import_test_gpu_format(VkInstance instance, VkPhysicalDevice gpu,
       uint32_t family, PFN_vkGetInstanceProcAddr get)
 {
    static const char *extensions[] = {"VK_KHR_timeline_semaphore"};
@@ -571,14 +611,14 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    vkGetDeviceQueue(device, family, 0, &ctx->queue);
    t->vk.context = ctx; t->width = 5; t->height = 3;
    t->output.dims = VIDEO_SCALE_PACK(t->width, t->height);
-   t->output.format = VK_FORMAT_R8G8B8A8_UNORM;
+   t->output.format = output_fp16 ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM;
    if (!vulkan_video_layout(&capacity, t->width, t->height, IMAGE_PIXFMT_P010, 0)
          || !oracle_buffer(t, &t->upload, &t->upload_memory, &t->mapped_upload, capacity.bytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-         || !oracle_buffer(t, &t->readback, &t->readback_memory, &t->mapped_readback, t->width * t->height * 4, VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-         || !oracle_image(t, &t->output.image, &t->output_memory, VK_FORMAT_R8G8B8A8_UNORM, t->width, t->height,
+         || !oracle_buffer(t, &t->readback, &t->readback_memory, &t->mapped_readback, t->width * t->height * (output_fp16 ? 8 : 4), VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+         || !oracle_image(t, &t->output.image, &t->output_memory, t->output.format, t->width, t->height,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) goto cleanup;
    view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO; view.image = t->output.image;
-   view.viewType = VK_IMAGE_VIEW_TYPE_2D; view.format = VK_FORMAT_R8G8B8A8_UNORM;
+   view.viewType = VK_IMAGE_VIEW_TYPE_2D; view.format = t->output.format;
    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    view.subresourceRange.levelCount = view.subresourceRange.layerCount = 1;
    if (vkCreateImageView(device, &view, NULL, &t->output.view) != VK_SUCCESS || !oracle_pipeline(t)) goto cleanup;
@@ -604,7 +644,7 @@ static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
    vulkan_movie_input(&t->output, &input);
    if (input.image != t->output.image || input.view != t->output.view
          || input.layout != t->output.layout || input.dims != t->output.dims
-         || input.format != VK_FORMAT_R8G8B8A8_UNORM
+         || input.format != t->output.format
          || input.padded_dims || input.origin) ok = 0;
    if (import_errors) ok = 0;
 cleanup:
@@ -617,3 +657,15 @@ free_host:
 }
 
 #endif
+
+static int import_test_gpu(VkInstance instance, VkPhysicalDevice gpu,
+      unsigned family, PFN_vkGetInstanceProcAddr get)
+{
+   int ok;
+   output_fp16 = 0;
+   ok = import_test_gpu_format(instance, gpu, family, get);
+   output_fp16 = 1;
+   ok = import_test_gpu_format(instance, gpu, family, get) && ok;
+   output_fp16 = 0;
+   return ok;
+}
