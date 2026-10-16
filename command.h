@@ -707,10 +707,12 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
 #define COMMAND_STATE_ACTIONS  "save|load"
 #define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
+#define COMMAND_CORE_ACTIONS   "load|start|unload"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
 bool command_state(command_t *cmd, const char *arg);
+bool command_core(command_t *cmd, const char *arg);
 bool command_replay(command_t *cmd, const char *arg);
 
 /* The parameters of the commands that take any. Several commands take
@@ -747,9 +749,7 @@ static const struct cmd_param cmd_params_log[] = {
 };
 #endif
 static const struct cmd_param cmd_params_run_frames[] = {
-   { "count", "How many frames to run, up to nine seconds' worth (540 "
-      "at 60fps, 600 at most), which is inside how long this interface "
-      "waits for a reply. Ask again to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "count", "How many frames to run; ask again to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input[] = {
@@ -781,8 +781,8 @@ static const struct cmd_param cmd_params_until[] = {
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
    { "value", "What to compare it with: 0 to 255, or 65535 for two bytes.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "frames", "Frames to wait at most; nine seconds' worth (540 at "
-      "60fps), the most, when left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { "frames", "Frames to wait at most; as many as a request runs when "
+      "left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_press[] = {
@@ -791,8 +791,8 @@ static const struct cmd_param cmd_params_press[] = {
       "select, start, up, down, left, right, a, x, l, r, l2, r2, l3, r3. "
       "\"right+a\" runs and jumps.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "frames", "Frames to hold them, up to nine seconds' worth (540 at "
-      "60fps). A tap is 2 to 4; hold longer with SET_INPUT.",
+   { "frames", "Frames to hold them. A tap is 2 to 4; hold longer with "
+      "SET_INPUT.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "until", "Then run until this holds, as RUN_UNTIL's: \"1d == 0\" "
       "lands a jump.",
@@ -886,6 +886,14 @@ static const struct cmd_param cmd_params_state[] = {
    { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_core_family[] = {
+   { "action", "Load a core library, start the loaded one without "
+      "content, or close the content and unload the core.",
+      CMD_PARAM_STRING, true, NULL, COMMAND_CORE_ACTIONS, NULL },
+   { "core", "load: the path, as LIST_CORES gives it.", CMD_PARAM_STRING,
+      false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_replay[] = {
    { "action", "Play the replay in a slot, seek the playing one to a "
       "frame, record one to the current slot, halt playing or recording, "
@@ -917,6 +925,9 @@ static const struct cmd_param cmd_params_content[] = {
       CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
+   { "paused", "on: pause once it has loaded, before it runs on, so "
+      "nothing happens before the first step.", CMD_PARAM_STRING, false,
+      "|", "on|off", NULL },
    { NULL }
 };
 
@@ -1065,7 +1076,7 @@ static const struct cmd_action_map action_map[] = {
 #ifdef HAVE_MCP
    { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames, &cmd_rows_frames },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused. One request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
@@ -1099,11 +1110,12 @@ static const struct cmd_action_map action_map[] = {
    { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
 
-   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
-   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_core },
+   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },

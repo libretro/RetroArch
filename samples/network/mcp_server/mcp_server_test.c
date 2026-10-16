@@ -817,6 +817,23 @@ int main(void)
        * PRESS, PRESSU, STEPS and STEP, and none before them */
       check("only the commands that answer rows declare one", n == 14);
    }
+   {
+      /* ROWS describes its columns; LROWS, answering the same ones,
+       * names them and leaves the describing to ROWS */
+      const char *rw = strstr(out, "\"name\":\"ROWS\"");
+      const char *lr = strstr(out, "\"name\":\"LROWS\"");
+      const char *nx = lr ? strstr(lr + 1, "\"name\":") : NULL;
+      check("columns are described by the first tool to answer with them",
+            rw && lr && strstr(rw, "\"index\":{\"type\":\"string\",\"description\"")
+            < lr);
+      check("and named alone by the next",
+            lr && strstr(lr, "\"index\":{\"type\":\"string\"}")
+            && (!nx || strstr(lr, "\"index\":{\"type\":\"string\"}") < nx));
+      check("no schema says what the server would refuse anyway",
+            !strstr(out, "additionalProperties"));
+      check("and no tool repeats a hint's default",
+            !strstr(out, "openWorldHint"));
+   }
 
    printf("tools/call\n");
    st = post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL);

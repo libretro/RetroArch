@@ -425,8 +425,11 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
  * columns, the word that says the reply was cut short, and the cursor
  * the next page is asked with where there is one. All the columns are
  * strings: each is the text's own field, which the server never reads
- * as anything else. */
-static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
+ * as anything else. @describe is false where an earlier tool in the
+ * list described the same columns: every byte of the list is context a
+ * client pays for, and five tools answer with what WATCH watches. */
+static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
+      bool describe)
 {
    const struct cmd_column  *col;
    const struct cmd_trailer *tr;
@@ -444,8 +447,12 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
             MCP_RAW(w, ",");
          first = false;
          rjsonwriter_add_string(w, col->name);
-         MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
-         rjsonwriter_add_string(w, col->desc ? col->desc : "");
+         MCP_RAW(w, ":{\"type\":\"string\"");
+         if (describe && col->desc)
+         {
+            MCP_RAW(w, ",\"description\":");
+            rjsonwriter_add_string(w, col->desc);
+         }
          MCP_RAW(w, "}");
       }
       MCP_RAW(w, "},\"required\":[");
@@ -459,7 +466,7 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
          first = false;
          rjsonwriter_add_string(w, col->name);
       }
-      MCP_RAW(w, "],\"additionalProperties\":false}}");
+      MCP_RAW(w, "]}}");
       wrote = true;
    }
    /* the lines that are not rows, as mcp_structured answers them */
@@ -489,18 +496,19 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows)
    /* only the rows are always there */
    if (rows->columns)
       MCP_RAW(w, ",\"required\":[\"rows\"]");
-   MCP_RAW(w, ",\"additionalProperties\":false}");
+   MCP_RAW(w, "}");
 }
 
 /* A tool: its parameters as a JSON Schema, from the table rather than
  * from the prose HELP prints, so a client is told each one's name, type
  * and whether it is needed. A hotkey, and a command that takes nothing,
  * has no properties. @rows, where the command answers rows, is the
- * shape of its result; @structured is false for a client of a revision
- * older than outputSchema. */
+ * shape of its result, its columns described where @describe says;
+ * @structured is false for a client of a revision older than
+ * outputSchema. */
 static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
       const struct cmd_param *params, const struct cmd_rows *rows,
-      unsigned flags, bool structured)
+      unsigned flags, bool structured, bool describe)
 {
    const struct cmd_param *p;
    bool first = true;
@@ -542,26 +550,28 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    }
    if (!first)
       MCP_RAW(w, "]");
-   MCP_RAW(w, ",\"additionalProperties\":false}");
+   MCP_RAW(w, "}");
    if (rows && structured)
-      mcp_schema_rows(w, rows);
-   /* readOnlyHint is false by default, so only the tools that are say
-    * so: every tool's annotations are context a client pays for, and
-    * the ones that merely repeat a default are 800 bytes of it.
-    * destructiveHint defaults to true and openWorldHint to true, so
-    * both have to be stated where they are not. */
+      mcp_schema_rows(w, rows, describe);
+   /* Only what a client acts on: readOnlyHint where it is true, and
+    * destructiveHint, which defaults to true, either way. openWorldHint
+    * is left at its default - every tool's annotations are context a
+    * client pays for, 770 bytes of it for that hint alone. */
    MCP_RAW(w, ",\"annotations\":{");
    if (ro)
       MCP_RAW(w, "\"readOnlyHint\":true,");
-   rjsonwriter_rawf(w, "\"destructiveHint\":%s,\"openWorldHint\":false}}",
-         de ? "true" : "false");
+   rjsonwriter_rawf(w, "\"destructiveHint\":%s}}", de ? "true" : "false");
 }
 
 static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       bool modern, bool structured)
 {
-   size_t n, i;
+   size_t n, i, j;
    bool   first = true;
+   /* the column tables already described, by the first tool to answer
+    * with each */
+   const struct cmd_column *seen[32];
+   size_t nseen = 0;
    const struct cmd_action_map *acts = command_action_list(&n);
    rjsonwriter_t *w = mcp_envelope(r->id);
    if (!w)
@@ -572,13 +582,22 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
    MCP_RAW(w, "\"result\":{\"tools\":[");
    for (i = 0; i < n; i++)
    {
+      bool describe = true;
       if (acts[i].flags & CMD_INFO_NO_TOOL)
          continue;
       if (!first)
          MCP_RAW(w, ",");
       first = false;
+      if (acts[i].rows && acts[i].rows->columns && structured)
+      {
+         for (j = 0; j < nseen; j++)
+            if (seen[j] == acts[i].rows->columns)
+               describe = false;
+         if (describe && nseen < ARRAY_SIZE(seen))
+            seen[nseen++] = acts[i].rows->columns;
+      }
       mcp_tool(w, acts[i].str, acts[i].desc, acts[i].params, acts[i].rows,
-            acts[i].flags, structured);
+            acts[i].flags, structured, describe);
    }
    {
       const struct cmd_map *keys = command_hotkey_list(&n);
@@ -590,7 +609,7 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
             MCP_RAW(w, ",");
          first = false;
          mcp_tool(w, keys[i].str, keys[i].desc, NULL, NULL, keys[i].flags,
-               structured);
+               structured, true);
       }
    }
    MCP_RAW(w, "]");

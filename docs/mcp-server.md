@@ -115,7 +115,9 @@ The replies that are lines of tab-separated fields - `GET_OPTION`,
 `RUN_UNTIL` and `STEPS` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
-`outputSchema` naming its columns:
+`outputSchema` naming its columns, described by the first tool in the
+list to answer with them - `RUN_FRAMES` for the watched bytes, which
+`PRESS`, `RUN_UNTIL`, `STEPS` and `WATCH` then name without repeating:
 
 ```json
 { "content": [ { "type": "text",
@@ -211,9 +213,10 @@ The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
 and until something answers where they landed, stepping is all there is
 - and a disc swap is part of playing a game. Each is one tool taking a
 choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
-`REINIT`, `STATE` and `REPLAY` stand for their families likewise:
-`STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
-`SEEK_REPLAY 600`. Each answers under its own name - `STATE load 3`,
+`REINIT`, `STATE`, `REPLAY` and `CORE` stand for their families
+likewise: `STATE load 3` is `LOAD_STATE_SLOT 3`, `REPLAY seek 600` is
+`SEEK_REPLAY 600`, and `CORE load <path>` is `LOAD_CORE <path>`. Each
+answers under its own name - `STATE load 3`,
 `DISK next pressed`, `REPLAY ERROR no replay is playing or recording`,
 and `REINIT audio` for a restart that says nothing itself - while the
 commands sent by name answer as they always have. `DISK` is refused on
@@ -462,9 +465,14 @@ A tool whose work runs over later frames answers once that work is
 through, with what came of it, or with the command's name, `ERROR` and
 the reason:
 
-- `LOAD_CONTENT`, `START_CORE`: the content's path once it runs; a core
-  that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
+- `LOAD_CONTENT`, `CORE start`: the content's path once it runs; a core
+  that fails to start is an error. `CLOSE_CONTENT`, `CORE unload`: once
   the content is closed. Requests sent while content loads wait for it.
+  `LOAD_CONTENT` with `paused` on pauses the content the frame it has
+  loaded, before the answer goes, so nothing runs between the load and
+  the first step - a title screen's demo starting, say. On the network
+  and stdin interfaces `<core>|<content>|on` does the same, and is
+  answered there too.
 - `STATE`: once the state is applied or written.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
   has started or the seek or checkpoint has run; `halt` is a hotkey
@@ -501,11 +509,12 @@ Every tool carries hints for the client:
   `GET_INPUT`, `GET_CORE_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`,
   `GET_PLAYLIST`, `READ_CORE_MEMORY`, `GET_MEMORY_MAP`);
 - **destructive**: can lose unsaved progress or data, or loads code
-  (`QUIT`, `RESET`, `STATE`, `REPLAY`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
-  `START_CORE`, `LOAD_CONTENT`, `CLOSE_CONTENT`, `UNLOAD_CORE`).
+  (`QUIT`, `RESET`, `STATE`, `REPLAY`, `WRITE_CORE_MEMORY`, `CORE`,
+  `LOAD_CONTENT`, `CLOSE_CONTENT`).
 
-Every tool also says it reaches nothing outside RetroArch
-(`openWorldHint: false`).
+Every tool states `destructiveHint`, true or false, since its default is
+true. `openWorldHint` is left at its default rather than spend 22 bytes
+of every tool's entry on it.
 
 `SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`
 lists, and none of them loses progress.
@@ -513,7 +522,7 @@ lists, and none of them loses progress.
 Most clients ask before running a destructive tool. Keep that on.
 
 A core path that is not a core is found out before anything is torn
-down for it. `LOAD_CORE` and `LOAD_CONTENT` both probe the library
+down for it. `CORE load` and `LOAD_CONTENT` both probe the library
 first - the same probe core scanning uses - and answer `no core at
 <path>` or `<path> is not a libretro core`. The core already loaded is
 not probed. A stale library or something renamed would otherwise
@@ -522,7 +531,7 @@ running.
 
 ## Security
 
-An MCP client with the token can do what the tools allow, and `LOAD_CORE`
+An MCP client with the token can do what the tools allow, and `CORE load`
 loads a library from any path: treat the token like a password.
 
 - The server listens on `127.0.0.1` and is reachable from this machine

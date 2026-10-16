@@ -219,6 +219,15 @@ int main(int argc, char **argv)
    /* a command that answers nothing of its own answers as the tool */
    reply[0]=0;
    CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
+   /* CORE stands for LOAD_CORE, START_CORE and UNLOAD_CORE */
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"fly") && !strcmp(reply,"CORE ERROR one of load|start|unload"));
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"start now") && !strcmp(reply,"CORE ERROR nothing after start"));
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"load /no/such/core.so")
+         && !strncmp(reply,"CORE ERROR no core at",21));
+   cmd.error=false;
    /* this core has no disks: the hotkeys would do nothing */
    reply[0]=0;
    CHECK(!command_disk(&cmd,"next")

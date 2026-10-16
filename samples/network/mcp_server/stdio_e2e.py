@@ -76,10 +76,11 @@ names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
           'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
-          'REPLAY', 'STEPS'):
+          'REPLAY', 'STEPS', 'CORE'):
     check('tool %s listed' % n, n in names)
 # A family of hotkeys is one tool with a choice, not a tool apiece.
 for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
+          'LOAD_CORE', 'START_CORE', 'UNLOAD_CORE',
           'SEEK_REPLAY', 'HALT_REPLAY', 'SAVE_FILES'):
     check('%s is not a tool of its own' % n, n not in names)
 # A hotkey that steps a selection nothing can read back is a command on
@@ -102,8 +103,8 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total, 25000 bytes, catches a tool added
 # by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 24730
-# at 35 tools.
+# average would not, as folding small tools into one raises it. 20686
+# at 33 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)
@@ -210,9 +211,9 @@ check('GET_INPUT reads what is held, twice the same: ' + (t2 or '').strip(),
       t2 and t2 == t and t3 == t2)
 call(226, 'RELEASE_INPUT', {})
 # A path that is not a core is refused before the running core goes.
-_, t, _ = call(227, 'LOAD_CORE', {'core': '/no/such/core.so'})
-check('LOAD_CORE says why: ' + (t or '').strip(),
-      t and 'no core at' in t)
+_, t, _ = call(227, 'CORE', {'action': 'load', 'core': '/no/such/core.so'})
+check('CORE load says why: ' + (t or '').strip(),
+      t and t.startswith('CORE ERROR') and 'no core at' in t)
 _, st, _ = call(229, 'GET_STATUS')
 check('and the content it was running is still running',
       st and ('PLAYING' in st or 'PAUSED' in st))
@@ -253,6 +254,22 @@ check('and reads it let go of afterwards',
       any('buttons=0x0000' in l for l in logs))
 check('log lines arrive as notifications after setLevel',
       any(n.get('method') == 'notifications/message' for n in notes))
+
+# LOAD_CONTENT with paused on stops the game the frame it has loaded, so
+# nothing runs before the first step: a title screen's demo, say.
+rom = os.path.join(cfgdir, 'blank.bin')
+with open(rom, 'wb') as f:
+    f.write(b'\0' * 16)
+msg, t, _ = call(250, 'LOAD_CONTENT', {'core': core, 'content': rom,
+                                       'paused': 'on'}, )
+check('LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
+      t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
+a = frame_count(251)
+time.sleep(1)
+b = frame_count(252)
+_, st, _ = call(253, 'GET_STATUS')
+check('and stays paused: %s -> %s, %s' % (a, b, (st or '').strip()),
+      a is not None and a == b and st and 'PAUSED' in st)
 
 p.stdin.close()
 try:

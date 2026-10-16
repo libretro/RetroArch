@@ -958,6 +958,8 @@ struct command_reply
    char                 path[PATH_MAX_LENGTH];
    /* a load that ends on the dummy core failed */
    bool                 want_core;
+   /* LOAD_CONTENT ... paused: pause once it has loaded */
+   bool                 pause;
    /* what succeeded loaded a state */
    bool                 state_loaded;
 };
@@ -992,6 +994,8 @@ static void command_reply_done(retro_task_t *task, void *task_data,
          strlcpy(msg, r->name, sizeof(msg));
       if (r->state_loaded)
          command_post_state_loaded();
+      if (r->pause)
+         command_event(CMD_EVENT_PAUSE, NULL);
    }
    command_deferred_send(&r->deferred, msg, strlen(msg), error != NULL);
    free(r);
@@ -1064,14 +1068,17 @@ static bool command_ai_service_start(struct command_reply *r)
 /* Answers @cmd once the content load in progress, or with @next the
  * one the command leads to, is through. */
 static bool command_content_reply(command_t *cmd, const char *name,
-      bool next, bool want_core)
+      bool next, bool want_core, bool pause)
 {
    struct command_reply *r;
-   if (     !cmd->structured
+   /* a line client is answered too where it asked for a pause, which
+    * happens here */
+   if (     (!cmd->structured && !pause)
          || (!next && !task_content_load_pending())
          || !(r = command_reply_new(name)))
       return true;
    r->want_core = want_core;
+   r->pause     = pause;
    task_notify_set(&content_state_get_ptr()->load_notify,
          command_reply_done, r);
    command_deferred_take(&r->deferred, cmd);
@@ -1155,7 +1162,7 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
-/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
+/* MENU, DISK, REINIT, STATE, REPLAY and CORE: a family of commands as one,
  * so a structured client is offered one tool with a choice rather than
  * a tool apiece. Each word runs as the command it stands for, which
  * line clients can still send by name; @rest says it takes what
@@ -1267,6 +1274,17 @@ bool command_state(command_t *cmd, const char *arg)
    };
    return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
          COMMAND_STATE_ACTIONS, arg);
+}
+
+bool command_core(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "load",   "LOAD_CORE",   true  },
+      { "start",  "START_CORE",  false },
+      { "unload", "UNLOAD_CORE", false }
+   };
+   return command_run_choice(cmd, "CORE", choices, ARRAY_SIZE(choices),
+         COMMAND_CORE_ACTIONS, arg);
 }
 
 bool command_replay(command_t *cmd, const char *arg)
@@ -4293,7 +4311,7 @@ bool command_start_core(command_t *cmd, const char* arg)
 
    if (!task_push_start_current_core(&content_info))
       return false;
-   return command_content_reply(cmd, "START_CORE", false, true);
+   return command_content_reply(cmd, "START_CORE", false, true, false);
 }
 
 /* LOAD_CONTENT <core path>|<content path>
@@ -4314,10 +4332,13 @@ bool command_load_content(command_t *cmd, const char* arg)
 #if TARGET_OS_IPHONE
    char expanded[PATH_MAX_LENGTH];
 #endif
+   char content_buf[PATH_MAX_LENGTH];
    content_ctx_info_t content_info = {0};
    const char *content_path        = NULL;
    const char *sep                 = NULL;
+   char       *last;
    size_t _len                     = 0;
+   bool pause                      = false;
 
    if (!arg || !*arg || !(sep = strchr(arg, '|')))
    {
@@ -4341,7 +4362,17 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
-   content_path    = sep + 1;
+   /* "|on" or "|off" after the content path: whether to pause once it
+    * has loaded. Anything else after a "|" is the path's own. */
+   strlcpy(content_buf, sep + 1, sizeof(content_buf));
+   if (     (last = strrchr(content_buf, '|'))
+         && (string_is_equal(last + 1, "on")
+            || string_is_equal(last + 1, "off")))
+   {
+      pause = string_is_equal(last + 1, "on");
+      *last = '\0';
+   }
+   content_path    = content_buf;
 #if TARGET_OS_IPHONE
    fill_pathname_expand_special(expanded, content_path, sizeof(expanded));
    content_path    = expanded;
@@ -4408,7 +4439,7 @@ bool command_load_content(command_t *cmd, const char* arg)
             content_path, core_path);
       return false;
    }
-   return command_content_reply(cmd, "LOAD_CONTENT", false, true);
+   return command_content_reply(cmd, "LOAD_CONTENT", false, true, pause);
 }
 
 /* CLOSE_CONTENT
@@ -4442,11 +4473,11 @@ bool command_close_content(command_t *cmd, const char* arg)
    /* the menu unloads the core on a later frame */
    if (!command_event(CMD_EVENT_CLOSE_CONTENT, NULL))
       return false;
-   return command_content_reply(cmd, "CLOSE_CONTENT", true, false);
+   return command_content_reply(cmd, "CLOSE_CONTENT", true, false, false);
 #else
    if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
       return false;
-   return command_content_reply(cmd, "CLOSE_CONTENT", false, false);
+   return command_content_reply(cmd, "CLOSE_CONTENT", false, false, false);
 #endif
 }
 
@@ -4462,7 +4493,7 @@ bool command_unload_core(command_t *cmd, const char* arg)
    if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
       return false;
 
-   command_content_reply(cmd, "UNLOAD_CORE", false, false);
+   command_content_reply(cmd, "UNLOAD_CORE", false, false, false);
    path_clear(RARCH_PATH_CORE_LAST);
 
 #ifdef HAVE_MENU
