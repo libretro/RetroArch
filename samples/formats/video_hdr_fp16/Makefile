@@ -23,7 +23,6 @@ SOURCES := video_hdr_fp16_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
 	$(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
 	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
-	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
 	$(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
 	$(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.c \
 	$(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
@@ -61,6 +60,8 @@ all: $(TARGET)
 $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+video_hdr_fp16_test.o: $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)

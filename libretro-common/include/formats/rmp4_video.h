@@ -158,7 +158,8 @@ void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
  * which then comes back from rmp4_video_stream_next and _render -
  * instead of the stream's own frame, so a caller uploading from its
  * own buffer needs no copy out of the stream. NULL restores the
- * stream's frame. Takes effect from the next rendered frame; @out must
+ * stream's frame, allocated on its first software render. Takes effect
+ * from the next rendered frame; @out must
  * stay valid until the next call that renders has returned. */
 /* While @behind is set, pictures nothing references are consumed
  * without being decoded and their presentation slots pass, so the

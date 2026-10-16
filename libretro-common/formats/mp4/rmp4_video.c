@@ -864,12 +864,7 @@ static int rmp4_video_stream_open_finish(rmp4_video_stream_t *s)
    if (!rmp4_video_stream_open_decoder(s))
       return -1;
 
-#ifdef HAVE_RAV1
-   if (s->codec == RMP4_CODEC_AV1)
-      return 0;
-#endif
-   if (!(s->frame = (uint32_t*)malloc(
-         (size_t)s->width * s->height * sizeof(uint32_t))))
+   if ((size_t)s->width > SIZE_MAX / sizeof(uint32_t) / s->height)
       return -1;
 
    return 0;
@@ -1634,6 +1629,13 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
       return NULL;
    dst        = s->out ? s->out : s->frame;
    s->is_fp16 = 0;
+   if (!dst && s->rndr_kind >= 1 && s->rndr_kind <= 4)
+   {
+      s->frame = (uint32_t*)malloc((size_t)s->width * s->height
+            * sizeof(uint32_t));
+      if (!(dst = s->frame))
+         return NULL;
+   }
    switch (s->rndr_kind)
    {
       case 5:  /* on the GPU: nothing to convert here, the frame is

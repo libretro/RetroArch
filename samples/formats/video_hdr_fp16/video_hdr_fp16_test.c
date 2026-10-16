@@ -24,6 +24,19 @@
 #define H 48
 #define GREY_Y 600
 
+static unsigned fail_canvas;
+static void *canvas_alloc(size_t size)
+{
+   if (fail_canvas && size == W * H * sizeof(uint32_t))
+      return NULL;
+   return malloc(size);
+}
+
+/* Inspect canvas ownership and inject failure only in the MP4 reader. */
+#define malloc canvas_alloc
+#include "../../../libretro-common/formats/mp4/rmp4_video.c"
+#undef malloc
+
 static unsigned failures;
 
 #define CHECK(cond, ...) do { if (!(cond)) { failures++; \
@@ -138,6 +151,9 @@ static void lane(const fixture_t *f)
    if (f->hdr)
       CHECK(worst < 0.04, "%s: grey off the PQ EOTF by %.4f relative "
             "(expected %.4f scRGB)", f->path, worst, ref);
+   if (f->type == IMAGE_TYPE_MP4)
+      CHECK(!((rmp4_video_stream_t*)s)->frame,
+            "%s: private canvas allocated for caller output", f->path);
    stream_close(f, s);
 
    /* Into the stream's own canvas: asked, but nowhere to put 8 bytes a
@@ -216,6 +232,52 @@ static void still_lane(const fixture_t *f, int want)
             expect ? "half floats on the PQ EOTF" : "32-bit words");
 }
 
+static void canvas_lane(void)
+{
+   size_t len;
+   void *buf = load("fixtures/sdr_hevc.mp4", &len);
+   uint32_t *out = (uint32_t*)malloc(W * H * sizeof(*out));
+   const uint32_t *frame, *owned;
+   rmp4_video_stream_t *s = buf ? rmp4_video_stream_open(buf, len) : NULL;
+   CHECK(s && out, "canvas fixture failed to open");
+   if (!s || !out)
+      goto done;
+   CHECK(!s->frame && !rmp4_video_stream_render(s) && !s->frame,
+         "opening/empty render allocated a canvas");
+   rmp4_video_stream_set_output(s, out);
+   CHECK(rmp4_video_stream_skip(s, NULL) == 1 && !s->frame,
+         "skip allocated a canvas");
+   CHECK(rmp4_video_stream_render(s) == out && !s->frame,
+         "caller output allocated a canvas");
+   rmp4_video_stream_set_output(s, NULL);
+   fail_canvas = 1;
+   CHECK(!rmp4_video_stream_render(s) && !s->frame,
+         "failed allocation did not return NULL");
+   fail_canvas = 0;
+   frame = rmp4_video_stream_render(s);
+   CHECK(frame && frame == s->frame, "canvas retry failed");
+   if (frame)
+      CHECK(!memcmp(frame, out, W * H * sizeof(*out)),
+            "canvas retry changed decoded pixels");
+   owned = s->frame;
+   rmp4_video_stream_set_output(s, out);
+   CHECK(rmp4_video_stream_render(s) == out && s->frame == owned,
+         "caller output changed canvas ownership");
+   rmp4_video_stream_set_output(s, NULL);
+   CHECK(rmp4_video_stream_render(s) == owned,
+         "detaching caller output did not reuse the canvas");
+   rmp4_video_stream_rewind(s);
+   CHECK(!rmp4_video_stream_render(s) && s->frame == owned,
+         "rewind exposed stale pixels or lost the canvas");
+   CHECK(rmp4_video_stream_next(s, NULL) == owned,
+         "rewind did not reuse the canvas");
+done:
+   fail_canvas = 0;
+   rmp4_video_stream_close(s);
+   free(out);
+   free(buf);
+}
+
 int main(void)
 {
    static const fixture_t fx[] = {
@@ -225,6 +287,7 @@ int main(void)
       { "fixtures/sdr_vp9.webm", IMAGE_TYPE_WEBM, 0 }
    };
    unsigned i;
+   canvas_lane();
    for (i = 0; i < sizeof(fx) / sizeof(fx[0]); i++)
    {
       lane(&fx[i]);
