@@ -10254,6 +10254,8 @@ static void lane_movie_ring(void)
    if (failures == had) fprintf(stderr, "[pass] threaded movie ring: metadata, backpressure, clear and teardown\n");
 }
 
+#include "hdr_surface.h"
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -10292,6 +10294,12 @@ int main(int argc, char *argv[])
       fprintf(cfg, "video_driver = \"%s\"\n",
             getenv("HARNESS_VIDEO_DRIVER")
             ? getenv("HARNESS_VIDEO_DRIVER") : "null");
+      if (getenv("HARNESS_HDR_MODE"))
+      {
+         fprintf(cfg, "video_hdr_enable = \"true\"\nvideo_hdr_mode = \"%s\"\n",
+               getenv("HARNESS_HDR_MODE"));
+         fprintf(cfg, "video_hdr_menu_nits = \"203\"\nvideo_hdr_expand_gamut = \"0\"\n");
+      }
       fprintf(cfg, "audio_driver = \"null\"\n");
       fprintf(cfg, "input_driver = \"null\"\n");
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
@@ -10386,6 +10394,12 @@ int main(int argc, char *argv[])
    run_frames(5);
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
+
+   if (getenv("HARNESS_HDR_MODE"))
+   {
+      lane_hdr_surface();
+      goto shutdown;
+   }
 
    if (getenv("HARNESS_MOVIE_GPU_ONLY"))
    {

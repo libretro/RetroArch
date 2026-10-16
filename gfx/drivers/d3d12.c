@@ -636,6 +636,7 @@ typedef struct
       unsigned                    retained_dark;
 #ifdef HAVE_DXGI_HDR
       d3d12_texture_t             back_buffer;
+      d3d12_texture_t             ui_buffer;
       DXGI_FORMAT                 current_rt_format;
 #endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
@@ -5169,6 +5170,8 @@ static void d3d12_gfx_free(void* data)
 #ifdef HAVE_DXGI_HDR
    d3d12_release_texture(&d3d12->chain.back_buffer);
    d3d12->chain.back_buffer.handle = NULL;
+   d3d12_release_texture(&d3d12->chain.ui_buffer);
+   d3d12->chain.ui_buffer.handle = NULL;
 #endif
    free(d3d12->desc.sampler_heap.map);
    free(d3d12->desc.srv_heap.map);
@@ -5459,10 +5462,6 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
          0, sizeof(d3d12->chain.back_buffer));
    d3d12->chain.back_buffer.desc.Width             = width;
    d3d12->chain.back_buffer.desc.Height            = height;
-   /* Under HDR the menu is drawn here and composited onto the swapchain:
-    * FP16, so its alpha has every step - an R10G10B10A2 layer had four,
-    * and the HDR10 menu's fades and translucency showed them - and a
-    * linear texture's values above menu white are kept. */
    d3d12->chain.back_buffer.desc.Format            =
       (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
       ? DXGI_FORMAT_R16G16B16A16_FLOAT
@@ -5736,7 +5735,7 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
     * d3d12_gfx_read_viewport().  The reserved slot is at fixed offset
     * (countof(renderTargets) + GFX_MAX_SHADERS * 2). */
    d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1
-      + 2; /* the views canvas and UI layer (d3d12_views_make) */
+      + 3; /* views canvas/UI and HDR UI */
    d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
@@ -8757,8 +8756,7 @@ static bool d3d12_gfx_frame_body(
     * Without this, d3d12_gfx_init's hardcoded R8G8B8A8 persists
     * and the menu draws to a mismatched RT, causing a visual freeze. */
    {
-      /* The UI layer is FP16 (see d3d12_gfx_init); the shader's last
-       * pass, when it renders here, keeps its own format. */
+      /* Content keeps its format; HDR UI has a separate FP16 target. */
       DXGI_FORMAT needed_bb_fmt = use_back_buffer
          ? back_buffer_format
          : DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -8783,6 +8781,26 @@ static bool d3d12_gfx_frame_body(
          d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
       }
    }
+   if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+         && (   !d3d12->chain.ui_buffer.handle
+             || d3d12->chain.ui_buffer.desc.Width != video_width
+             || d3d12->chain.ui_buffer.desc.Height != video_height))
+   {
+      d3d12_texture_t *ui = &d3d12->chain.ui_buffer;
+      d3d12_release_texture(ui);
+      ui->desc.Width = video_width;
+      ui->desc.Height = video_height;
+      ui->desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+      ui->desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+      ui->srv_heap = &d3d12->desc.srv_heap;
+      ui->rt_view.ptr = d3d12->desc.rtv_heap.cpu.ptr
+         + (countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 3)
+         * d3d12->desc.rtv_heap.stride;
+      d3d12_init_texture(d3d12->device, ui);
+      if (!ui->handle)
+         return false;
+   }
+
 #endif
 
    d3d12_cmd_begin(d3d12, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
@@ -9434,16 +9452,15 @@ static bool d3d12_gfx_frame_body(
       d3d12_views_ui_begin(d3d12, video_info);
 
 #ifdef HAVE_DXGI_HDR
-   /* When HDR is on the menu/overlay draws into the HDR-format
-    * back_buffer.  D3D12 requires PSO RTVFormats to match the bound
-    * render target, so we must use the HDR-RTVFormat variants of
-    * every pipeline used during the menu pass.  The shaders are
-    * identical (simple passthrough) — only the PSO format differs. */
+   /* Menu pipelines match the FP16 UI target. */
    if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+   {
+      d3d12->chain.current_rt_format = DXGI_FORMAT_R16G16B16A16_FLOAT;
       cmd->lpVtbl->SetPipelineState(cmd, d3d12_rt_pipe(d3d12,
             d3d12->pipes[VIDEO_SHADER_STOCK_BLEND],
             d3d12->pipes[VIDEO_SHADER_STOCK_BLEND_HDR],
             d3d12->sprites.pipe_stock_blend_f16));
+   }
    else
 #endif
       cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
@@ -9469,11 +9486,11 @@ static bool d3d12_gfx_frame_body(
 #endif
          ))
    {
-      d3d12->chain.current_rt_format = d3d12->chain.back_buffer.desc.Format;
+      d3d12->chain.current_rt_format = d3d12->chain.ui_buffer.desc.Format;
 
       cmd->lpVtbl->OMSetRenderTargets(
             cmd, 1,
-            &d3d12->chain.back_buffer.rt_view,
+            &d3d12->chain.ui_buffer.rt_view,
             FALSE, NULL);
       /* TODO/FIXME - fix this warning that shows up with Debug logging
        * EXECUTIONWARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE
@@ -9486,7 +9503,7 @@ static bool d3d12_gfx_frame_body(
          float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
          cmd->lpVtbl->ClearRenderTargetView(
                cmd,
-               d3d12->chain.back_buffer.rt_view,
+               d3d12->chain.ui_buffer.rt_view,
                clear_colour,
                0, NULL);
       }
@@ -9679,7 +9696,7 @@ static bool d3d12_gfx_frame_body(
    {
       D3D12_RESOURCE_TRANSITION(
             cmd,
-            d3d12->chain.back_buffer.handle,
+            d3d12->chain.ui_buffer.handle,
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
@@ -9696,7 +9713,7 @@ static bool d3d12_gfx_frame_body(
          d3d12->hdr.ubo_sprites_view.BufferLocation);
 #endif
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
-            d3d12->chain.back_buffer.gpu_descriptor[0]);
+            d3d12->chain.ui_buffer.gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
             d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
 
@@ -9765,7 +9782,7 @@ static bool d3d12_gfx_frame_body(
 
       D3D12_RESOURCE_TRANSITION(
             cmd,
-            d3d12->chain.back_buffer.handle,
+            d3d12->chain.ui_buffer.handle,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_RENDER_TARGET
             );

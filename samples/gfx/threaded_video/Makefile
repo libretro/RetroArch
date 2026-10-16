@@ -167,9 +167,15 @@ check-driver: all
 check-movie-gpu:
 	HARNESS_MOVIE_GPU_ONLY=1 $(MAKE) check-vulkan
 
+# Native D3D11/D3D12 with an active HDR display; HDR10 and scRGB.
+check-hdr:
+	@set -eu; for mode in 1 2; do \
+	   HARNESS_HDR_MODE=$$mode $(MAKE) check-driver; \
+	done
+
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
 	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
-.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver check-movie-gpu clean
+.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver check-movie-gpu check-hdr clean
