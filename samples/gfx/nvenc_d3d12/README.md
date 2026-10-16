@@ -39,3 +39,9 @@ frames remain queued. Eight codec/format cases cover BGRA/NV12 on all three
 codecs and P010 on HEVC/AV1. All 192 independently decoded frames pass with each header variant on
 the RTX 5090. Pixel comparisons check content/order, geometry and 10-bit
 output; they do not establish HDR display acceptance, muxing or A/V sync.
+
+Explicit input color descriptions cover BT.709 and P010 BT.2020 PQ/HLG,
+with limited or full range. The harness independently checks decoded stream
+tags for H.264, HEVC and AV1. These tags describe the supplied pixels; the
+adapter does not convert transfer functions or add mastering-display/content
+light metadata. Display HDR and frontend recording acceptance remain pending.

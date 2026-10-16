@@ -20,6 +20,16 @@ binary = str(Path(args.binary).resolve())
 runner = shlex.split(args.runner)
 width, height, frames = 320, 192, 24
 passed = 0
+
+def check_color(ffmpeg, stream, color, full):
+    probe = subprocess.run([ffmpeg, '-hide_banner', '-i', str(stream),
+                            '-frames:v', '1', '-f', 'null', '-'],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    source = probe.stderr.decode(errors='replace').split('Output #', 1)[0]
+    tag = {1: 'bt709', 2: 'bt2020nc/bt2020/smpte2084',
+           3: 'bt2020nc/bt2020/arib-std-b67'}[color]
+    assert ('pc' if full else 'tv') + ', ' + tag in source, source
+
 with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
     for codec in range(3):
         for fmt in (1, 2, 3):
@@ -37,6 +47,7 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             ffmpeg = shutil.which('ffmpeg')
             if not ffmpeg:
                 raise SystemExit('Native hardware validation needs ffmpeg')
+            check_color(ffmpeg, stream, 2 if fmt == 3 else 1, False)
             raw_format = ('', 'bgra', 'nv12', 'p010le')[fmt]
             decode = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
                                      '-vf', 'showinfo', '-f', 'rawvideo', '-pix_fmt', raw_format, '-'],
@@ -81,4 +92,18 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             assert mean < (4 if fmt != 3 else 8) and psnr > 32, (codec, fmt, mean, psnr, worst)
             print(f'[pass] {name} {raw_format}: {frames} independently decoded frames, MAE {mean:.3f}, PSNR {psnr:.2f} dB', flush=True)
             passed += 1
-print(f'{passed} native codec/format cases passed; unsupported runtimes explicitly skipped')
+    if passed:
+        for codec, fmt, color, full in ((0, 2, 1, 1), (1, 2, 1, 1), (2, 2, 1, 1),
+                                       (1, 3, 3, 0), (2, 3, 3, 0),
+                                       (1, 3, 2, 1), (2, 3, 2, 1)):
+            name = ('h264', 'hevc', 'obu')[codec]
+            stream = Path(temporary) / f'color-{codec}-{color}-{full}.{name}'
+            result = subprocess.run([*runner, binary, str(codec), str(fmt), str(stream),
+                                     str(color), str(full)], timeout=60)
+            if result.returncode == 77 and not os.environ.get('NVENC_TEST_REQUIRE_HW'):
+                continue
+            if result.returncode:
+                raise SystemExit(result.returncode)
+            check_color(ffmpeg, stream, color, bool(full))
+            print(f'[pass] {name}: color {color}, full range {full}', flush=True)
+print(f'{passed} native codec/format cases plus color signaling passed; unsupported runtimes explicitly skipped')

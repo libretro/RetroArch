@@ -51,7 +51,7 @@ int main(int argc, char **argv)
    unsigned format;
    HMODULE runtime;
    memset(&config, 0, sizeof(config));
-   if (argc != 4) { puts("usage: device_test codec format output"); return 1; }
+   if ((argc < 4 || argc > 6)) { puts("usage: device_test codec format output [color [full_range]]"); return 1; }
    format = (unsigned)atoi(argv[2]);
    if (format < NVENC_D3D12_BGRA8 || format > NVENC_D3D12_P010) return 1;
    runtime = LoadLibraryExA("nvEncodeAPI64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -144,7 +144,23 @@ int main(int argc, char **argv)
       config.fps_den = 0;
       CHECK(nvenc_d3d12_open(&config) == NULL);
       config.fps_den = saved_den;
+      config.color = (enum nvenc_d3d12_color)99;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.color = NVENC_D3D12_COLOR_DEFAULT;
+      config.full_range = true;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.full_range = false;
+      if (format != NVENC_D3D12_P010)
+      {
+         config.color = NVENC_D3D12_COLOR_BT2020_PQ;
+         CHECK(nvenc_d3d12_open(&config) == NULL);
+      }
+      config.color = NVENC_D3D12_COLOR_DEFAULT;
    }
+   config.color = format == NVENC_D3D12_P010
+      ? NVENC_D3D12_COLOR_BT2020_PQ : NVENC_D3D12_COLOR_BT709;
+   if (argc > 4) config.color = (enum nvenc_d3d12_color)atoi(argv[4]);
+   config.full_range = argc > 5 && atoi(argv[5]) != 0;
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);

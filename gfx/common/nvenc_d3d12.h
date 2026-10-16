@@ -21,6 +21,11 @@ enum nvenc_d3d12_result
 {
    NVENC_D3D12_ERROR = -1, NVENC_D3D12_OK, NVENC_D3D12_BUSY, NVENC_D3D12_END
 };
+enum nvenc_d3d12_color
+{
+   NVENC_D3D12_COLOR_DEFAULT, NVENC_D3D12_COLOR_BT709,
+   NVENC_D3D12_COLOR_BT2020_PQ, NVENC_D3D12_COLOR_BT2020_HLG
+};
 typedef struct nvenc_d3d12 nvenc_d3d12_t;
 typedef struct nvenc_d3d12_config
 {
@@ -29,6 +34,10 @@ typedef struct nvenc_d3d12_config
    unsigned slots, width, height, fps_num, fps_den, bitrate;
    enum nvenc_d3d12_codec codec;
    enum nvenc_d3d12_format format;
+   /* Describes input pixels; no transfer or gamut conversion is performed.
+    * DEFAULT preserves SDK defaults. HDR requires P010. */
+   enum nvenc_d3d12_color color;
+   bool full_range;
 } nvenc_d3d12_config_t;
 typedef struct nvenc_d3d12_packet
 {

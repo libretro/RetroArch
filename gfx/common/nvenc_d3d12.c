@@ -168,12 +168,16 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
    nvenc_d3d12_t *e;
    uint32_t maximum, count, i, j;
    int async = 0;
+   NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui;
    if (!c || !c->device || c->slots < 4 || c->slots > NVENC_D3D12_SLOTS
          || !c->width || !c->height || ((c->width | c->height) & 1)
          || c->width > 16384 || c->height > 16384
          || !c->fps_num || !c->fps_den || !c->bitrate
          || (unsigned)c->codec > NVENC_D3D12_AV1 || (unsigned)c->format > NVENC_D3D12_P010
-         || (c->format == NVENC_D3D12_P010 && c->codec == NVENC_D3D12_H264)) return NULL;
+         || (c->format == NVENC_D3D12_P010 && c->codec == NVENC_D3D12_H264)
+         || (unsigned)c->color > NVENC_D3D12_COLOR_BT2020_HLG
+         || (c->color >= NVENC_D3D12_COLOR_BT2020_PQ && c->format != NVENC_D3D12_P010)
+         || (c->color == NVENC_D3D12_COLOR_DEFAULT && c->full_range)) return NULL;
    for (i = 0; i < c->slots; i++)
    {
       D3D12_RESOURCE_DESC desc;
@@ -262,6 +266,36 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
       e->preset.presetCfg.encodeCodecConfig.av1Config.repeatSeqHdr = 1;
    }
    else e->preset.presetCfg.encodeCodecConfig.h264Config.repeatSPSPPS = 1;
+   if (c->color != NVENC_D3D12_COLOR_DEFAULT)
+   {
+      NV_ENC_VUI_COLOR_PRIMARIES primaries = c->color == NVENC_D3D12_COLOR_BT709
+         ? NV_ENC_VUI_COLOR_PRIMARIES_BT709 : NV_ENC_VUI_COLOR_PRIMARIES_BT2020;
+      NV_ENC_VUI_TRANSFER_CHARACTERISTIC transfer = c->color == NVENC_D3D12_COLOR_BT709
+         ? NV_ENC_VUI_TRANSFER_CHARACTERISTIC_BT709
+         : c->color == NVENC_D3D12_COLOR_BT2020_PQ
+         ? NV_ENC_VUI_TRANSFER_CHARACTERISTIC_SMPTE2084 : NV_ENC_VUI_TRANSFER_CHARACTERISTIC_ARIB_STD_B67;
+      NV_ENC_VUI_MATRIX_COEFFS matrix = c->color == NVENC_D3D12_COLOR_BT709
+         ? NV_ENC_VUI_MATRIX_COEFFS_BT709 : NV_ENC_VUI_MATRIX_COEFFS_BT2020_NCL;
+      if (c->codec == NVENC_D3D12_AV1)
+      {
+         e->preset.presetCfg.encodeCodecConfig.av1Config.colorPrimaries = primaries;
+         e->preset.presetCfg.encodeCodecConfig.av1Config.transferCharacteristics = transfer;
+         e->preset.presetCfg.encodeCodecConfig.av1Config.matrixCoefficients = matrix;
+         e->preset.presetCfg.encodeCodecConfig.av1Config.colorRange = c->full_range;
+      }
+      else
+      {
+         vui = c->codec == NVENC_D3D12_H264
+            ? &e->preset.presetCfg.encodeCodecConfig.h264Config.h264VUIParameters
+            : &e->preset.presetCfg.encodeCodecConfig.hevcConfig.hevcVUIParameters;
+         vui->videoSignalTypePresentFlag = vui->colourDescriptionPresentFlag = 1;
+         vui->videoFormat = NV_ENC_VUI_VIDEO_FORMAT_UNSPECIFIED;
+         vui->videoFullRangeFlag = c->full_range;
+         vui->colourPrimaries = primaries;
+         vui->transferCharacteristics = transfer;
+         vui->colourMatrix = matrix;
+      }
+   }
    e->init.version = NV_ENC_INITIALIZE_PARAMS_VER;
    e->init.encodeGUID = codec; e->init.presetGUID = NV_ENC_PRESET_P1_GUID;
    e->init.encodeWidth = e->init.darWidth = e->init.maxEncodeWidth = c->width;
