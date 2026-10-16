@@ -71,9 +71,9 @@ struct rwebm_video_stream
 #endif
 #ifdef HAVE_RAV1
    rav1_hw_stream_t *av1;
-   uint32_t hw_marker;
 #endif
 #if defined(HAVE_RVP9) || defined(HAVE_RAV1)
+   uint32_t hw_marker;
    video_hw_frame_t hw_frame;
    const uint8_t *buf;
    size_t len, avail, pending_floor;
@@ -632,12 +632,7 @@ static int rwebm_video_stream_open_finish(rwebm_video_stream_t *s)
    if (!rwebm_video_stream_open_decoder(s))
       return -1;
 
-#ifdef HAVE_RAV1
-   if (s->codec == RWEBM_CODEC_AV1)
-      return 0;
-#endif
-   if (!(s->frame = (uint32_t*)malloc(
-         (size_t)s->width * s->height * sizeof(uint32_t))))
+   if ((size_t)s->width > SIZE_MAX / sizeof(uint32_t) / s->height)
       return -1;
 
    return 0;
@@ -1259,11 +1254,21 @@ static int rwebm_video_hw_step(rwebm_video_stream_t *s, int *duration_ms, int di
 }
 #endif
 
+static uint32_t *rwebm_video_output(rwebm_video_stream_t *s)
+{
+   if (s->out)
+      return s->out;
+   if (!s->frame)
+      s->frame = (uint32_t*)malloc((size_t)s->width * s->height
+            * sizeof(uint32_t));
+   return s->frame;
+}
+
 /* 1 displayed picture, 0 hidden packet, negative decode failure. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt, int discard)
 {
-   uint32_t *dst = s->out ? s->out : s->frame;
+   uint32_t *dst;
    s->is_fp16    = 0;
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
@@ -1295,6 +1300,8 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          unsigned w = (unsigned)fb->w < s->width  ? (unsigned)fb->w : s->width;
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
          if (discard) return 1;
+         if (!(dst = rwebm_video_output(s)))
+            return -1;
          {
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
             rwebm_blit_ctx_t c;
@@ -1363,6 +1370,8 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       u = rvp8_video_plane(s->vp8, 1, &uvs, &cw, &ch);
       v = rvp8_video_plane(s->vp8, 2, &uvs, &cw, &ch);
       if (!y || !u || !v)
+         return -1;
+      if (!(dst = rwebm_video_output(s)))
          return -1;
       if ((unsigned)w > s->width)
          w = (int)s->width;
@@ -1478,6 +1487,10 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
       return NULL;
 #ifdef HAVE_RAV1
    if (s->codec == RWEBM_CODEC_AV1)
+      return &s->hw_marker;
+#endif
+#ifdef HAVE_RVP9
+   if (s->hw)
       return &s->hw_marker;
 #endif
    return s->out ? s->out : s->frame;

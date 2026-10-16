@@ -198,9 +198,10 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 /* Blit decoded frames into @out - width * height words, the caller's,
  * which then comes back from rwebm_video_stream_next - instead of the
  * stream's own frame, so a caller uploading from its own buffer needs
- * no copy out of the stream. NULL restores the stream's frame. Takes
- * effect from the next decoded frame; @out must stay valid until the
- * next call that decodes has returned. */
+ * no copy out of the stream. NULL restores the stream's frame, allocated
+ * on its first displayed software frame. Takes effect from the next
+ * decoded frame; @out must stay valid until the next call that decodes
+ * has returned. */
 void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
       uint32_t *out);
 

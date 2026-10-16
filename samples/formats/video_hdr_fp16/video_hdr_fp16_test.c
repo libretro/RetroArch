@@ -32,9 +32,10 @@ static void *canvas_alloc(size_t size)
    return malloc(size);
 }
 
-/* Inspect canvas ownership and inject failure only in the MP4 reader. */
+/* Inspect canvas ownership and inject failure in the container readers. */
 #define malloc canvas_alloc
 #include "../../../libretro-common/formats/mp4/rmp4_video.c"
+#include "../../../libretro-common/formats/webm/rwebm_video.c"
 #undef malloc
 
 static unsigned failures;
@@ -153,6 +154,9 @@ static void lane(const fixture_t *f)
             "(expected %.4f scRGB)", f->path, worst, ref);
    if (f->type == IMAGE_TYPE_MP4)
       CHECK(!((rmp4_video_stream_t*)s)->frame,
+            "%s: private canvas allocated for caller output", f->path);
+   else
+      CHECK(!((rwebm_video_stream_t*)s)->frame,
             "%s: private canvas allocated for caller output", f->path);
    stream_close(f, s);
 
@@ -278,16 +282,64 @@ done:
    free(buf);
 }
 
+static void webm_canvas_lane(const char *path)
+{
+   size_t len;
+   void *buf = load(path, &len);
+   uint32_t *out = (uint32_t*)malloc(W * H * sizeof(*out));
+   const uint32_t *owned;
+   rwebm_video_stream_t *s = buf ? rwebm_video_stream_open(buf, len) : NULL;
+   CHECK(s && out, "%s: canvas fixture failed to open", path);
+   if (!s || !out)
+      goto done;
+   CHECK(!s->frame, "%s: opening allocated a canvas", path);
+   CHECK(rwebm_video_stream_skip(s, NULL) == 1 && !s->frame,
+         "%s: skip allocated a canvas", path);
+   rwebm_video_stream_rewind(s);
+   fail_canvas = 1;
+   CHECK(!rwebm_video_stream_next(s, NULL) && !s->frame
+         && !rwebm_video_stream_waiting(s),
+         "%s: allocation failure did not end safely", path);
+   fail_canvas = 0;
+   rwebm_video_stream_rewind(s);
+   rwebm_video_stream_set_output(s, out);
+   CHECK(rwebm_video_stream_next(s, NULL) == out && !s->frame,
+         "%s: caller output allocated a canvas", path);
+   rwebm_video_stream_set_output(s, NULL);
+   rwebm_video_stream_rewind(s);
+   owned = rwebm_video_stream_next(s, NULL);
+   CHECK(owned && owned == s->frame, "%s: canvas allocation failed", path);
+   if (owned)
+      CHECK(!memcmp(owned, out, W * H * sizeof(*out)),
+            "%s: rewind after allocation failure changed pixels", path);
+   rwebm_video_stream_set_output(s, out);
+   rwebm_video_stream_rewind(s);
+   CHECK(rwebm_video_stream_next(s, NULL) == out && s->frame == owned,
+         "%s: caller output changed canvas ownership", path);
+   rwebm_video_stream_set_output(s, NULL);
+   rwebm_video_stream_rewind(s);
+   CHECK(rwebm_video_stream_next(s, NULL) == owned,
+         "%s: detaching caller output did not reuse the canvas", path);
+done:
+   fail_canvas = 0;
+   rwebm_video_stream_close(s);
+   free(out);
+   free(buf);
+}
+
 int main(void)
 {
    static const fixture_t fx[] = {
       { "fixtures/hdr_hevc.mp4", IMAGE_TYPE_MP4,  1 },
       { "fixtures/sdr_hevc.mp4", IMAGE_TYPE_MP4,  0 },
       { "fixtures/hdr_vp9.webm", IMAGE_TYPE_WEBM, 1 },
-      { "fixtures/sdr_vp9.webm", IMAGE_TYPE_WEBM, 0 }
+      { "fixtures/sdr_vp9.webm", IMAGE_TYPE_WEBM, 0 },
+      { "fixtures/sdr_vp8.webm", IMAGE_TYPE_WEBM, 0 }
    };
    unsigned i;
    canvas_lane();
+   webm_canvas_lane("fixtures/sdr_vp9.webm");
+   webm_canvas_lane("fixtures/sdr_vp8.webm");
    for (i = 0; i < sizeof(fx) / sizeof(fx[0]); i++)
    {
       lane(&fx[i]);

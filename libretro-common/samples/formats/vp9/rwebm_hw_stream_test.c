@@ -190,7 +190,7 @@ int main(void)
    CHECK(consumed == (size_t)(pkt.data - file) + pkt.size && consumed < rwebm_tell(demux));
    CHECK(rwebm_read_packet(demux, &pkt) == 1 && pkt.data == file + consumed);
    rwebm_close(demux);
-   s = rwebm_video_stream_open_avail(file, used, prefix, &need_more); CHECK(s);
+   s = rwebm_video_stream_open_avail(file, used, prefix, &need_more); CHECK(s && !s->frame);
    rvp9_set_hw_backend(NULL);
    CHECK(!image_transfer_anim_stream_set_hw(s, IMAGE_TYPE_WEBM, true) && s->vp9 && !s->pkt_idx);
    rvp9_set_hw_backend(&backend);
@@ -214,6 +214,7 @@ int main(void)
          else { CHECK(frames == 2); rwebm_video_stream_set_avail(s, used); }
          continue;
       }
+      CHECK(token == &s->hw_marker && !s->frame);
       CHECK(image_transfer_anim_stream_hw_frame(s, IMAGE_TYPE_WEBM, &frame));
       CHECK(frame.yuv == (IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE));
       CHECK(!image_transfer_anim_stream_hw_frame(s, IMAGE_TYPE_WEBM, &held) || !held.image);

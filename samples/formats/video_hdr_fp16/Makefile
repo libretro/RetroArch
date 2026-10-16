@@ -26,7 +26,6 @@ SOURCES := video_hdr_fp16_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
 	$(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.c \
 	$(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
-	$(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
@@ -61,7 +60,8 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-video_hdr_fp16_test.o: $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c
+video_hdr_fp16_test.o: $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
+	$(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.c
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
