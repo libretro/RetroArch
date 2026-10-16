@@ -34,6 +34,7 @@ on:
       - 'samples/menu/resolution_reset/**'
       - 'samples/menu/setting_command/**'
       - 'samples/menu/core_info_page/**'
+      - 'samples/menu/load_content_filter/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -57,6 +58,7 @@ on:
       - 'samples/menu/resolution_reset/**'
       - 'samples/menu/setting_command/**'
       - 'samples/menu/core_info_page/**'
+      - 'samples/menu/load_content_filter/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -438,6 +440,17 @@ jobs:
           samples/menu/core_info_page/build.sh
           ./samples/menu/core_info_page/core_info_page_test
           make -C samples/menu/core_info_page clean
+
+      - name: Build and run load_content_filter_test
+        shell: bash
+        run: |
+          set -eu
+          # Load Content with no core lists every file an installed core
+          # or a built-in player opens, however long the installed cores'
+          # extensions run together.
+          samples/menu/load_content_filter/build.sh
+          ./samples/menu/load_content_filter/load_content_filter_test
+          make -C samples/menu/load_content_filter clean
 
       - name: Build and run explore_build_test
         shell: bash

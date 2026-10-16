@@ -314,21 +314,19 @@ static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
    size_t _len                                = 0;
-   /* Maximum size for the deduplicated '|'-delimited extension list.
-    * With dedup the realistic ceiling is ~1500 bytes even with all
-    * cores + multimedia extensions combined.  2048 provides headroom. */
-   /* The extension filter plus the two path scratch buffers below sit
-    * in one heap block: together they were a 3 KiB frame at console
-    * path lengths, on the deferred-push path that runs from menu task
-    * threads.  Everything that leaves this function is copied out
-    * (info->exts is strdup()d), so the block dies with the frame. */
+   /* The path scratch buffers and the extension filter share one heap
+    * block; info->exts is strdup()d out of it. */
    struct general_push_bufs
    {
-      char ext_filter[2048];
       char tmp_str[PATH_MAX_LENGTH];
       char tmp_path[PATH_MAX_LENGTH];
    } *gb = NULL;
    char *ext_filter = NULL;
+   /* Fixed lists (archive, audio mixer, media player, image viewer)
+    * plus every variable-length source merged below. */
+   size_t ext_size                            = 2048;
+   struct retro_system_info *cur_sysinfo      = &runloop_state_get_ptr()->system.info;
+   core_info_list_t *core_list                = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -340,9 +338,18 @@ static int general_push(menu_displaylist_info_t *info,
    if (!menu)
       return -1;
 
-   if (!(gb = (struct general_push_bufs*)calloc(1, sizeof(*gb))))
+   core_info_get_list(&core_list);
+   if (cur_sysinfo->valid_extensions)
+      ext_size += strlen(cur_sysinfo->valid_extensions);
+   if (info->exts)
+      ext_size += strlen(info->exts);
+   if (core_list && core_list->all_ext)
+      ext_size += strlen(core_list->all_ext);
+   ext_size += strlen(manual_content_scan_get_file_exts());
+
+   if (!(gb = (struct general_push_bufs*)calloc(1, sizeof(*gb) + ext_size)))
       return -1;
-   ext_filter = gb->ext_filter;
+   ext_filter = (char*)(gb + 1);
 
    if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
        || (id == PUSH_ARCHIVE_OPEN))
@@ -393,7 +400,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN:
          /* Overlay picker still wants only .cfg inside the archive. */
          if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
-            string_ext_list_merge_dedup(ext_filter, &_len, 2048, "cfg");
+            string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "cfg");
          else
          {
             /* Browse Archive from Load Content uses this push (not
@@ -428,9 +435,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (valid_extensions && *valid_extensions)
             {
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, valid_extensions);
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, valid_extensions);
 #ifdef HAVE_RMODTRACKER
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "s3m|mod|xm");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "s3m|mod|xm");
 #endif
             }
          }
@@ -444,52 +451,52 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (sysinfo && sysinfo->valid_extensions && *sysinfo->valid_extensions
                 && filter_by_current_core)
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, sysinfo->valid_extensions);
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, sysinfo->valid_extensions);
             else
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && *list->all_ext)
-                  string_ext_list_merge_dedup(ext_filter, &_len, 2048, list->all_ext);
+                  string_ext_list_merge_dedup(ext_filter, &_len, ext_size, list->all_ext);
             }
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
 #if defined(HAVE_RMP3)
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "mp3");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "mp3");
 #endif
 #if defined(HAVE_RVORBIS)
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "ogg");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "ogg");
 #endif
 #if defined(HAVE_RFLAC)
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "flac");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "flac");
 #endif
 #if defined(HAVE_RWAV)
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "wav");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "wav");
 #endif
 #ifdef HAVE_RAAC
 #ifdef HAVE_RMP4
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "m4a");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "m4a");
 #endif
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "aac");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "aac");
 #endif
 #ifdef HAVE_RAC3
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "ac3");
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "eac3");
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "ec3");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "ac3");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "eac3");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "ec3");
 #endif
 #ifdef HAVE_RLPCM
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "lpcm");
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "pcm");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "lpcm");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "pcm");
 #endif
 #ifdef HAVE_ROPUS
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "opus");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "opus");
 #endif
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "weba");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "weba");
 #endif
 #ifdef HAVE_RMODTRACKER
-               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "s3m|mod|xm");
+               string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "s3m|mod|xm");
 #endif
             }
 #endif
@@ -510,7 +517,7 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
       if (*sysinfo.valid_extensions)
       {
-         string_ext_list_merge_dedup(ext_filter, &_len, 2048, sysinfo.valid_extensions);
+         string_ext_list_merge_dedup(ext_filter, &_len, ext_size, sysinfo.valid_extensions);
       }
    }
 #endif
@@ -522,7 +529,7 @@ static int general_push(menu_displaylist_info_t *info,
       libretro_imageviewer_retro_get_system_info(&sysinfo);
       if (*sysinfo.valid_extensions)
       {
-         string_ext_list_merge_dedup(ext_filter, &_len, 2048, sysinfo.valid_extensions);
+         string_ext_list_merge_dedup(ext_filter, &_len, ext_size, sysinfo.valid_extensions);
       }
    }
 #endif
@@ -530,7 +537,7 @@ static int general_push(menu_displaylist_info_t *info,
    if (     string_is_equal(info->label, MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR)
          && manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
    {
-      strlcpy(ext_filter, manual_content_scan_get_file_exts(), 2048);
+      strlcpy(ext_filter, manual_content_scan_get_file_exts(), ext_size);
       string_replace_all_chars(ext_filter, ' ', '|');
    }
 
