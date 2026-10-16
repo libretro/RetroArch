@@ -1033,7 +1033,7 @@ gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
 {
    if (!*slot)
       *slot = gfx_surface_new_still(filter);
-   else
+   else if ((*slot)->filter != filter)
       (*slot)->filter = filter;
    return *slot;
 }

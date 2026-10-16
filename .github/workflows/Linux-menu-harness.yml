@@ -370,6 +370,12 @@ jobs:
           # build has no Vulkan, so the Vulkan entries report SKIP.
           tools/lock_acquire_budget.sh
 
+      - name: Wait budget
+        run: |
+          # Main-thread waits on the video thread, per file, against
+          # tools/wait_budget.ref: a count that only comes down.
+          tools/wait_budget.sh
+
       - name: Build and run threaded_video_test
         shell: bash
         run: |

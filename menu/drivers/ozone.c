@@ -411,6 +411,8 @@ typedef struct ozone_theme
    gfx_surface_t *textures[OZONE_THEME_TEXTURE_LAST];
 
    const char *name;
+   /* Main thread: the textures were sent */
+   bool loaded;
 } ozone_theme_t;
 
 /* If you change this struct, also change ozone_alloc_node.
@@ -3078,7 +3080,21 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
          gfx_surface_free(theme->textures[i]);
          theme->textures[i] = NULL;
       }
+      theme->loaded = false;
    }
+}
+
+/* Every theme's surfaces, made before the frames that draw them: a
+ * theme switch only sends them images, and the slots the video thread
+ * reads never change under it */
+static void ozone_make_theme_surfaces(void)
+{
+   unsigned i, j;
+   enum texture_filter_type filter = gfx_display_texture_filter();
+
+   for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
+      for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+         gfx_surface_still(&ozone_themes[j]->textures[i], filter);
 }
 
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
@@ -3159,22 +3175,15 @@ static void ozone_load_theme_textures(ozone_handle_t *ozone,
    char theme_path[NAME_MAX_LENGTH];
    bool supports_rgba;
 #ifdef HAVE_THREADS
-   ozone_theme_t *pending_theme;
-#endif
-
-   if (!theme->name || theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
-      return;
-
-#ifdef HAVE_THREADS
-   /* Publish new slots only between threaded frames. */
-   video_thread_wait_idle();
-   pending_theme = (ozone_theme_t*)retro_atomic_exchange_ptr(
+   ozone_theme_t *pending_theme = (ozone_theme_t*)retro_atomic_exchange_ptr(
          &ozone->pending_theme, NULL);
    if (pending_theme)
       theme = pending_theme;
-   if (!theme->name || theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
-      return;
 #endif
+
+   if (!theme->name || theme->loaded)
+      return;
+   theme->loaded = true;
    supports_rgba = gfx_surface_wants_rgba();
 
    fill_pathname_join_special(theme_path, ozone->png_path,
@@ -10658,6 +10667,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Theme textures */
       ozone_unload_theme_textures(ozone);
+      ozone_make_theme_surfaces();
       (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
       ozone_load_theme_textures(ozone, ozone->theme);
 
