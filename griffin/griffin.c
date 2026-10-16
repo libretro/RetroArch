@@ -650,6 +650,7 @@ VIDEO DRIVER
 #if defined(HAVE_D3D12)
 #include "../gfx/common/nvenc_d3d12.c"
 #include "../record/record_gpu_queue.c"
+#include "../record/record_gpu_capture_d3d12.c"
 #include "../gfx/drivers/d3d12.c"
 #endif
 

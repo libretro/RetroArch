@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../../../gfx/common/nvenc_d3d12.h"
 #include "../../../record/record_gpu_queue.h"
+#include "../../../record/record_gpu_capture_d3d12.h"
 #include <retro_atomic.h>
 #if defined(_WIN32) && defined(HAVE_THREADS)
 #define COBJMACROS
@@ -13,6 +14,7 @@
 #include <windows.h>
 #include <d3d12.h>
 #include "../../../gfx/common/nvenc_d3d12.c"
+#include "../../../record/record_gpu_capture_d3d12.c"
 #define W 320
 #define H 192
 #define FRAMES 24
@@ -36,9 +38,96 @@ static NVENCSTATUS NVENCAPI busy_lock(void *session, NV_ENC_LOCK_BITSTREAM *para
    return real_lock(session, params);
 }
 
+struct cap_proxy
+{
+   ID3D12CommandQueue iface;
+   ID3D12CommandQueue *real;
+   ID3D12CommandQueueVtbl table;
+   unsigned faults, signals;
+};
+static ULONG STDMETHODCALLTYPE cap_release(ID3D12CommandQueue *queue)
+{
+   return ID3D12CommandQueue_Release(((struct cap_proxy*)queue)->real);
+}
+static HRESULT STDMETHODCALLTYPE cap_signal(ID3D12CommandQueue *queue, ID3D12Fence *fence, UINT64 value)
+{
+   struct cap_proxy *p = (struct cap_proxy*)queue;
+   p->signals++;
+   if (p->faults) { p->faults--; return E_OUTOFMEMORY; }
+   return ID3D12CommandQueue_Signal(p->real, fence, value);
+}
+static HRESULT STDMETHODCALLTYPE cap_wait(ID3D12CommandQueue *queue, ID3D12Fence *fence, UINT64 value)
+{
+   return ID3D12CommandQueue_Wait(((struct cap_proxy*)queue)->real, fence, value);
+}
+static void STDMETHODCALLTYPE cap_execute(ID3D12CommandQueue *queue, UINT count, ID3D12CommandList *const *lists)
+{
+   ID3D12CommandQueue_ExecuteCommandLists(((struct cap_proxy*)queue)->real, count, lists);
+}
+static bool cap_failure(const nvenc_d3d12_config_t *config, ID3D12CommandQueue *queue,
+      ID3D12Resource *source, unsigned crop)
+{
+   struct cap_proxy proxy;
+   record_gpu_capture_d3d12_t *capture = NULL;
+   ID3D12Fence *gate = NULL;
+   ID3D12CommandQueue *copy_queue = NULL;
+   D3D12_COMMAND_QUEUE_DESC queue_desc = {0};
+   nvenc_d3d12_config_t invalid = *config;
+   record_gpu_frame_t frame;
+   uint64_t submitted = 99;
+   unsigned idle;
+   int ok = 0;
+   memset(&proxy, 0, sizeof(proxy));
+   proxy.iface.lpVtbl = &proxy.table;
+   proxy.real = queue; proxy.table = *queue->lpVtbl;
+   proxy.table.Release = cap_release; proxy.table.Signal = cap_signal;
+   proxy.table.Wait = cap_wait; proxy.table.ExecuteCommandLists = cap_execute;
+   proxy.faults = 1;
+   invalid.slots = 3;
+   CHECK(record_gpu_capture_d3d12_new(&invalid, queue) == NULL);
+   invalid = *config; invalid.width = 0;
+   CHECK(record_gpu_capture_d3d12_new(&invalid, queue) == NULL);
+   invalid = *config; invalid.format = (enum nvenc_d3d12_format)99;
+   CHECK(record_gpu_capture_d3d12_new(&invalid, queue) == NULL);
+   queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+   CHECK(SUCCEEDED(ID3D12Device_CreateCommandQueue((ID3D12Device*)config->device,
+            &queue_desc, &IID_ID3D12CommandQueue, (void**)&copy_queue)));
+   CHECK(record_gpu_capture_d3d12_new(config, copy_queue) == NULL);
+   CHECK(SUCCEEDED(ID3D12Device_CreateFence((ID3D12Device*)config->device, 0,
+            D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void**)&gate)));
+   capture = record_gpu_capture_d3d12_new(config, queue);
+   CHECK(capture != NULL);
+   capture->commands = &proxy.iface;
+   CHECK(record_gpu_capture_d3d12_push(capture, source, 0, crop, crop, gate, 1,
+            0, 1, false, &submitted) == RECORD_GPU_QUEUE_ERROR);
+   CHECK(submitted == 1);
+   CHECK(proxy.signals == 1 && capture->failed && capture->unfenced);
+   CHECK(record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_END);
+   CHECK(!record_gpu_capture_d3d12_free(capture));
+   CHECK(proxy.signals == 2 && !capture->unfenced);
+   CHECK(SUCCEEDED(ID3D12Fence_Signal(gate, 1)));
+   for (idle = 0; idle < 10000; idle++)
+   {
+      if (record_gpu_capture_d3d12_free(capture)) { capture = NULL; break; }
+      Sleep(1);
+   }
+   CHECK(capture == NULL && proxy.signals == 2);
+   ok = 1;
+done:
+   if (gate) ID3D12Fence_Signal(gate, 1);
+   if (capture) record_gpu_capture_d3d12_free(capture);
+   if (gate) ID3D12Fence_Release(gate);
+   if (copy_queue) ID3D12CommandQueue_Release(copy_queue);
+   return ok != 0;
+}
+
 struct nve_producer
 {
    record_gpu_queue_t *queue;
+   record_gpu_capture_d3d12_t *capture;
+   ID3D12Resource *sources[4];
+   ID3D12Fence *gate;
+   unsigned crop;
    retro_atomic_int_t stop;
    unsigned made;
    unsigned frames;
@@ -51,7 +140,13 @@ static DWORD WINAPI nve_produce(void *data)
    while (p->made < p->frames && idle < 10000
          && !retro_atomic_load_acquire_int(&p->stop))
    {
-      int result = record_gpu_queue_acquire(p->queue, &frame.slot);
+      int result;
+      if (p->capture)
+         result = record_gpu_capture_d3d12_push(p->capture, p->sources[p->made % 4],
+               D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
+               p->made, 1, p->made == 0 || p->made == 12, NULL);
+      else
+         result = record_gpu_queue_acquire(p->queue, &frame.slot);
       if (result == RECORD_GPU_QUEUE_BUSY)
       {
          Sleep(1); idle++;
@@ -59,6 +154,11 @@ static DWORD WINAPI nve_produce(void *data)
       }
       if (result != RECORD_GPU_QUEUE_OK)
          break;
+      if (p->capture)
+      {
+         p->made++; idle = 0;
+         continue;
+      }
       frame.timestamp = p->made; frame.duration = frame.ready_value = 1;
       frame.keyframe = p->made == 12 || (p->made == 0 && p->frames == FRAMES);
       if (!record_gpu_queue_submit(p->queue, &frame))
@@ -68,7 +168,8 @@ static DWORD WINAPI nve_produce(void *data)
       }
       p->made++; idle = 0;
    }
-   record_gpu_queue_finish(p->queue);
+   if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
+   else record_gpu_queue_finish(p->queue);
    return 0;
 }
 
@@ -85,6 +186,7 @@ int main(int argc, char **argv)
    D3D12_RESOURCE_DESC desc = {0};
    nvenc_d3d12_config_t config;
    nvenc_d3d12_t *encoder = NULL;
+   record_gpu_capture_d3d12_t *capture = NULL;
    nvenc_d3d12_packet_t packet;
    record_gpu_frame_t frame;
    struct nve_producer producer = {0};
@@ -96,14 +198,18 @@ int main(int argc, char **argv)
    unsigned i, x, y, received = 0, idle = 0;
    int status, ok = 0;
    uint64_t value = 0;
-   unsigned format, metadata;
+   unsigned format, metadata, capturing, source_w, source_h;
    HMODULE runtime;
    memset(&config, 0, sizeof(config));
-   if ((argc < 4 || argc > 7)) { puts("usage: device_test codec format output [color [full_range [metadata]]]"); return 1; }
+   if ((argc < 4 || argc > 8)) { puts("usage: device_test codec format output [color [full_range [metadata [capture]]]]"); return 1; }
+   capturing = argc > 7 ? (unsigned)atoi(argv[7]) : 0;
+   if (capturing > 2) return 1;
    metadata = argc > 6 ? (unsigned)atoi(argv[6]) : 0;
    if (metadata > 4) return 1;
    format = (unsigned)atoi(argv[2]);
    if (format < NVENC_D3D12_BGRA8 || format > NVENC_D3D12_P010) return 1;
+   source_w = W + (capturing && format == NVENC_D3D12_BGRA8 ? 16 : 0);
+   source_h = H + (capturing && format == NVENC_D3D12_BGRA8 ? 16 : 0);
    runtime = LoadLibraryExA("nvEncodeAPI64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
    if (!runtime) { puts("SKIP: NVENC runtime unavailable"); return getenv("NVENC_TEST_REQUIRE_HW") ? 1 : 77; }
    FreeLibrary(runtime);
@@ -128,10 +234,12 @@ int main(int argc, char **argv)
       uint8_t *map;
       heap.Type = D3D12_HEAP_TYPE_DEFAULT;
       desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-      desc.Width = W; desc.Height = H;
+      desc.Width = source_w; desc.Height = source_h;
       desc.DepthOrArraySize = desc.MipLevels = desc.SampleDesc.Count = 1;
       desc.Format = format == NVENC_D3D12_P010 ? DXGI_FORMAT_P010
          : format == NVENC_D3D12_NV12 ? DXGI_FORMAT_NV12 : DXGI_FORMAT_B8G8R8A8_UNORM;
+      if (capturing == 1 && format == NVENC_D3D12_BGRA8)
+         desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
       desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
       CHECK(SUCCEEDED(ID3D12Device_CreateCommittedResource(device, &heap, D3D12_HEAP_FLAG_NONE,
                &desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL, &IID_ID3D12Resource, (void**)&textures[i])));
@@ -145,15 +253,19 @@ int main(int argc, char **argv)
       CHECK(SUCCEEDED(ID3D12Resource_Map(upload[i], 0, NULL, (void**)&map)));
       memset(map, 0, (size_t)bytes);
       for (plane = 0; plane < planes; plane++)
-         for (y = 0; y < (plane ? H / 2 : H); y++)
-            for (x = 0; x < W; x++)
+         for (y = 0; y < (plane ? source_h / 2 : source_h); y++)
+            for (x = 0; x < source_w; x++)
             {
                uint8_t *p = map + footprints[plane].Offset + y * footprints[plane].Footprint.RowPitch;
                if (format == NVENC_D3D12_BGRA8)
                {
                   p += x * 4;
-                  p[0] = (uint8_t)(24 + i * 48); p[1] = (uint8_t)(32 + (x / 40) * 24);
-                  p[2] = (uint8_t)(32 + (y / 24) * 24); p[3] = 255;
+                  p[0] = (uint8_t)(24 + i * 48); p[1] = (uint8_t)(32 + ((x >= 8 && capturing ? x - 8 : x) / 40) * 24);
+                  p[2] = (uint8_t)(32 + ((y >= 8 && capturing ? y - 8 : y) / 24) * 24); p[3] = 255;
+                  if (capturing == 1)
+                  {
+                     uint8_t red = p[2]; p[2] = p[0]; p[0] = red;
+                  }
                }
                else
                {
@@ -185,6 +297,23 @@ int main(int argc, char **argv)
    }
    CHECK(SUCCEEDED(ID3D12GraphicsCommandList_Close(commands)));
    { ID3D12CommandList *list = (ID3D12CommandList*)commands; ID3D12CommandQueue_ExecuteCommandLists(queue, 1, &list); }
+   if (capturing)
+   {
+      CHECK(cap_failure(&config, queue, textures[0], format == NVENC_D3D12_BGRA8 ? 8 : 0));
+      capture = record_gpu_capture_d3d12_new(&config, queue);
+      CHECK(capture != NULL);
+      CHECK(record_gpu_capture_d3d12_bind(capture, &config));
+      producer.capture = capture;
+      producer.gate = ready;
+      producer.crop = format == NVENC_D3D12_BGRA8 ? 8 : 0;
+      for (i = 0; i < 4; i++) producer.sources[i] = textures[i];
+      CHECK(record_gpu_capture_d3d12_push(capture, textures[0], 0,
+               (unsigned)-1, 0, NULL, 0, 0, 1, false, NULL) == RECORD_GPU_QUEUE_ERROR);
+      CHECK(record_gpu_capture_d3d12_push(capture, config.textures[0], 0,
+               0, 0, NULL, 0, 0, 1, false, NULL) == RECORD_GPU_QUEUE_ERROR);
+      CHECK(record_gpu_capture_d3d12_push(capture, textures[0], 0,
+               0, 0, NULL, 1, 0, 1, false, NULL) == RECORD_GPU_QUEUE_ERROR);
+   }
    {
       void *saved = config.textures[1];
       unsigned saved_den = config.fps_den;
@@ -268,7 +397,8 @@ int main(int argc, char **argv)
    encode_faults = 1;
    CHECK(nvenc_d3d12_submit(encoder, 0, 999, 1, ready, 1, false) == NVENC_D3D12_BUSY);
    CHECK(encoder->count == 0 && encoder->frame == 0 && !encoder->slots[0].busy && encoder->slots[0].value == 0);
-   for (i = 0; i < 4; i++) { ID3D12Resource_Release(textures[i]); textures[i] = NULL; }
+   if (!capturing)
+      for (i = 0; i < 4; i++) { ID3D12Resource_Release(textures[i]); textures[i] = NULL; }
    lock_faults = 1;
    out = fopen(argv[3], "wb"); CHECK(out != NULL);
    if (metadata)
@@ -285,7 +415,7 @@ int main(int argc, char **argv)
    CHECK(nvenc_d3d12_submit(encoder, 0, 0, 1, NULL, 1, false) == NVENC_D3D12_ERROR);
    CHECK(nvenc_d3d12_release(encoder) == NVENC_D3D12_ERROR);
    CHECK(nvenc_d3d12_submit(encoder, 4, 0, 1, ready, 1, false) == NVENC_D3D12_ERROR);
-   producer.queue = record_gpu_queue_new(4);
+   producer.queue = capturing ? record_gpu_capture_d3d12_queue(capture) : record_gpu_queue_new(4);
    producer.frames = metadata ? 84 : FRAMES;
    CHECK(producer.queue != NULL);
    retro_atomic_int_init(&producer.stop, 0);
@@ -309,7 +439,8 @@ int main(int argc, char **argv)
             encode_faults = 1; periodic_fault = true;
          }
          status = nvenc_d3d12_submit(encoder, frame.slot, frame.timestamp,
-               frame.duration, ready, frame.ready_value, frame.keyframe);
+               frame.duration, capturing ? record_gpu_capture_d3d12_fence(capture) : ready,
+               frame.ready_value, frame.keyframe);
          CHECK(status == NVENC_D3D12_OK || status == NVENC_D3D12_BUSY);
          if (status == NVENC_D3D12_OK)
          {
@@ -319,9 +450,11 @@ int main(int argc, char **argv)
       if (!signalled && encoder->count == 4)
       {
          CHECK(!nvenc_d3d12_free(encoder));
+         if (capturing) CHECK(!record_gpu_capture_d3d12_free(capture));
          Sleep(30);
          CHECK(nvenc_d3d12_poll(encoder, &packet) == NVENC_D3D12_BUSY);
-         CHECK(SUCCEEDED(ID3D12CommandQueue_Signal(queue, ready, ++value)));
+         CHECK(SUCCEEDED(capturing ? ID3D12Fence_Signal(ready, ++value)
+               : ID3D12CommandQueue_Signal(queue, ready, ++value)));
          signalled = true;
       }
       if (input_end && !encoder->finishing)
@@ -362,11 +495,13 @@ int main(int argc, char **argv)
    CloseHandle(producer_thread); producer_thread = NULL;
    CHECK(producer.made == producer.frames);
    CHECK(!metadata || periodic_fault);
-   CHECK(record_gpu_queue_free(producer.queue)); producer.queue = NULL;
+   if (!capturing) CHECK(record_gpu_queue_free(producer.queue));
+   producer.queue = NULL;
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_submit(encoder, 0, 0, 1, ready, value, false) == NVENC_D3D12_ERROR);
    CHECK(nvenc_d3d12_free(encoder)); encoder = NULL;
+   CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
    ok = 1;
 done:
    if (producer_thread)
@@ -376,9 +511,10 @@ done:
          return 1;
       CloseHandle(producer_thread);
    }
-   if (producer.queue) record_gpu_queue_free(producer.queue);
+   if (producer.queue && !capturing) record_gpu_queue_free(producer.queue);
    if (queue && ready)
    {
+      if (capturing) ID3D12Fence_Signal(ready, value + 1);
       ID3D12CommandQueue_Signal(queue, ready, ++value);
       for (idle = 0; idle < 10000 && ID3D12Fence_GetCompletedValue(ready) < value; idle++) Sleep(1);
    }
@@ -387,6 +523,7 @@ done:
    if (periodic) fclose(periodic);
    free(restart_path);
    if (encoder) nvenc_d3d12_free(encoder);
+   if (capture) record_gpu_capture_d3d12_free(capture);
    for (i = 0; i < 4; i++)
    {
       if (textures[i]) ID3D12Resource_Release(textures[i]);
@@ -402,10 +539,17 @@ done:
 }
 #else
 #include "../../../gfx/common/nvenc_d3d12.c"
+#include "../../../record/record_gpu_capture_d3d12.c"
 int main(void)
 {
    nvenc_d3d12_packet_t packet;
    memset(&packet, 0x5a, sizeof(packet));
+   if (record_gpu_capture_d3d12_new(NULL, NULL)
+         || record_gpu_capture_d3d12_bind(NULL, NULL)
+         || record_gpu_capture_d3d12_queue(NULL) || record_gpu_capture_d3d12_fence(NULL)
+         || !record_gpu_capture_d3d12_free(NULL) || record_gpu_capture_d3d12_finish(NULL)
+         || record_gpu_capture_d3d12_push(NULL, NULL, 0, 0, 0, NULL, 0, 0, 1, false, NULL) != RECORD_GPU_QUEUE_ERROR)
+      return 1;
    if (nvenc_d3d12_open(NULL) || !nvenc_d3d12_free(NULL)
          || nvenc_d3d12_submit(NULL, 0, 0, 1, NULL, 0, false) != NVENC_D3D12_ERROR
          || nvenc_d3d12_poll(NULL, &packet) != NVENC_D3D12_ERROR

@@ -57,6 +57,31 @@ the slot. Producer close reaches EOS before outstanding GPU output drains.
 The native harness uses separate producer and encoder threads; frontend
 capture, worker scheduling and recording/mux/audio hookup remain pending.
 
+`record/record_gpu_capture_d3d12.c` supplies the GPU capture pool for that
+handoff. It allocates textures and per-slot command resources at startup,
+copies a compatible source into an available slot and publishes its GPU
+completion fence/value. RGB sources can be cropped to a viewport; RGBA is
+converted to BGRA on the GPU for NVENC's D3D12 input format. The private draw
+pipeline and descriptor heaps are allocated at startup. Matching formats
+use texture copies. NV12/P010
+currently require a full texture. It restores source state and copies both
+planar subresources. A busy pool consumes nothing and never resets a command
+allocator still in use. Sources and optional source fences stay caller-owned
+through copy completion; the returned completion value permits asynchronous
+retirement. There are no pixel uploads/readbacks or CPU waits in capture.
+
+The native harness additionally compares eight captured codec/format cases
+and captures two HDR streams through requested and periodic keyframes. A
+queued GPU dependency holds all four capture/encoder slots in flight. A
+failed completion signal closes publication and retains the command/texture
+pool until a recovery signal completes; this is injected against a real
+GPU copy/draw. Captured frames must decode identically to direct input,
+including RGBA-to-BGRA viewport drawing and a separate BGRA viewport copy.
+Direct input tests remain separate. Shader source/blob digests are checked
+portably; regenerate with `python3 record/shaders/generate_rgb.py` on Windows.
+Frontend attachment, HDR render-format conversion, worker scheduling and
+mux/audio integration remain pending.
+
 HDR cases independently parse every mastering coordinate and luminance/light
 value through FFmpeg's bitstream tracer, including AV1's different fixed-point
 units. They cover PQ/HLG, mastering-only/light-only/both, zero values and upper
