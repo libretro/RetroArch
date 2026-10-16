@@ -434,6 +434,7 @@ typedef struct d3d12_pass
     * frame when the underlying resources have not changed. */
    struct
    {
+      /* Own the resource so its COM address cannot be recycled. */
       D3D12Resource srv_resource[SLANG_NUM_BINDINGS];
       DXGI_FORMAT   srv_format[SLANG_NUM_BINDINGS];
       UINT          srv_mip_levels[SLANG_NUM_BINDINGS];
@@ -3696,6 +3697,8 @@ static void d3d12_chain_free(d3d12_filter_chain_t *c, bool shared)
          c->shader_preset->pass[i].source.string.vertex   = NULL;
          c->shader_preset->pass[i].source.string.fragment = NULL;
       }
+      for (j = 0; j < SLANG_NUM_BINDINGS; j++)
+         Release(c->pass[i].desc_cache.srv_resource[j]);
       free(c->pass[i].semantics.textures);
       d3d12_release_texture(&c->pass[i].rt);
       d3d12_release_texture(&c->pass[i].feedback);
@@ -7373,6 +7376,9 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
                d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
                      resource, &desc, handle);
 
+               if (resource)
+                  AddRef(resource);
+               Release(pass->desc_cache.srv_resource[binding]);
                pass->desc_cache.srv_resource[binding]   = resource;
                pass->desc_cache.srv_format[binding]     = format;
                pass->desc_cache.srv_mip_levels[binding] = levels;
