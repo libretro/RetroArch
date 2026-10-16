@@ -1006,6 +1006,8 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
    config.enableMemoryIntrospection = YES;
    config.enableQueueNameSearch = YES;
    config.addConsoleLogToReport = YES;
+   /* The __cxa_throw rebinding breaks exceptions cores catch themselves. */
+   config.enableSwapCxaThrow = NO;
 
    /* Install KSCrash without any network sink */
    NSError *installError = nil;
