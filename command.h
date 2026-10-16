@@ -779,7 +779,8 @@ static const struct cmd_param cmd_params_until[] = {
       "value.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
-   { "value", "What to compare it with: 0 to 255, or 65535 for two bytes.",
+   { "value", "What to compare it with: 0 to 255, or 0 to 65535 for "
+      "high:low.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "frames", "Frames to wait at most; as many as a request runs when "
       "left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
@@ -849,7 +850,7 @@ static const struct cmd_param cmd_params_message[] = {
 static const struct cmd_param cmd_params_read[] = {
    { "address", "The address to read from, in hexadecimal.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "bytes", "How many bytes to read.",
+   { "bytes", "How many bytes to read, a count.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
@@ -1074,7 +1075,7 @@ static const struct cmd_action_map action_map[] = {
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
 #ifdef HAVE_MCP
-   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
+   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then where to ask from next time (next), and how many of the lines asked for were already gone (skipped).", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
    { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused. Over MCP one request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
