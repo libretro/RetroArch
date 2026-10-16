@@ -5453,14 +5453,26 @@ QWidget *AudioPage::widget()
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_DRIVER);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_DEVICE);
    outputGroup->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
+   outputGroup->add(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR);
+   outputGroup->add(MENU_ENUM_LABEL_AUDIO_OUTPUT_LAYOUT);
+   outputGroup->add(MENU_ENUM_LABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND);
 
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER);
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY);
    resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE);
+   resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING);
+   resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_FASTPATH_S16);
+   resamplerGroup->add(MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION);
 
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_SYNC);
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
    syncGroup->add(MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_TIME_STRETCH);
+   syncGroup->add(MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS);
 
    dspGroup->add(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
 
@@ -5682,6 +5694,7 @@ QWidget *LatencyPage::widget()
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO));
@@ -6157,6 +6170,7 @@ QWidget *SavingPage::widget()
 
    systemFilesDirGroup->add(MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE);
 
+   screenshotsDirGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    screenshotsDirGroup->add(MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE);
    screenshotsDirGroup->add(MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE);
 
@@ -6598,6 +6612,7 @@ QWidget *VideoPage::widget()
    QHBoxLayout *syncMiscLayout         = new QHBoxLayout;
 
    SettingsGroup *miscGroup            = new SettingsGroup("Miscellaneous");
+   SettingsGroup *stereo3dGroup        = new SettingsGroup("Stereo 3D and Screens");
    SettingsGroup *filterGroup          = new SettingsGroup("Video Filter");
 
    unsigned i, size                    = 0;
@@ -6624,6 +6639,9 @@ QWidget *VideoPage::widget()
 
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_DRIVER);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_DXGI_PRESENT);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
    outputGroup->add(MENU_ENUM_LABEL_SCREEN_ORIENTATION);
@@ -6633,6 +6651,7 @@ QWidget *VideoPage::widget()
 
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
+   fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FSE_NEGOTIATION);
 
    leftFullscreenSizeForm->addRow("Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X));
    rightFullscreenSizeForm->addRow("Height:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y));
@@ -6693,18 +6712,12 @@ QWidget *VideoPage::widget()
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
-   syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC);
    syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
-#ifdef HAVE_VIDEO_FILTER
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE);
-#endif
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
    if (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT)
@@ -6720,7 +6733,15 @@ QWidget *VideoPage::widget()
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
 
+   stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES);
+   stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_STEREO_MODE);
+   stereo3dGroup->add(MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT);
+
+#ifdef HAVE_VIDEO_FILTER
+   filterGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE);
+   filterGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER_THREADS);
    filterGroup->add(MENU_ENUM_LABEL_VIDEO_FILTER);
+#endif
 
    modeLayout->addWidget(fullscreenGroup);
    modeLayout->addWidget(windowedGroup);
@@ -6732,6 +6753,7 @@ QWidget *VideoPage::widget()
    layout->addLayout(modeLayout);
    layout->addLayout(hdrLayout);
    layout->addLayout(syncMiscLayout);
+   layout->addWidget(stereo3dGroup);
    layout->addWidget(filterGroup);
 
    layout->addStretch();
