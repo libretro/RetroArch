@@ -2304,8 +2304,6 @@ static void d3d9_hlsl_renderchain_render_pass(
       float _v          = (float)(height)
          / VIDEO_SCALE_H(pass->info.tex_dims);
 
-      pass->last_dims   = VIDEO_SCALE_PACK(width, height);
-
       vert[0].x        =  0.0f;
       vert[0].y        =  1.0f;
       vert[0].z        =  1.0f;
@@ -2336,9 +2334,12 @@ static void d3d9_hlsl_renderchain_render_pass(
       vert[2].color    = 0xFFFFFFFF;
       vert[3].color    = 0xFFFFFFFF;
 
-      IDirect3DVertexBuffer9_Lock(pass->vertex_buf, 0, 0, &verts, 0);
+      if (FAILED(IDirect3DVertexBuffer9_Lock(pass->vertex_buf,
+                  0, 0, &verts, 0)))
+         return;
       memcpy(verts, vert, sizeof(vert));
       IDirect3DVertexBuffer9_Unlock(pass->vertex_buf);
+      pass->last_dims = VIDEO_SCALE_PACK(width, height);
    }
 
    /* Determine the pass data to use for uniform upload */
@@ -9129,8 +9130,9 @@ static void d3d9_hlsl_set_menu_texture_frame(void *data,
 
    d3d->menu->alpha_mod = alpha;
 
-   d3d9_tex_lock((LPDIRECT3DTEXTURE9)d3d->menu->tex,
-         0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   if (FAILED(d3d9_tex_lock((LPDIRECT3DTEXTURE9)d3d->menu->tex,
+               0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+      return;
    {
       unsigned h;
 
@@ -9218,7 +9220,11 @@ static void d3d9_hlsl_video_texture_load_d3d(
                (LPDIRECT3DTEXTURE9*)&tex)))
       return;
 
-   d3d9_tex_lock(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   if (FAILED(d3d9_tex_lock(tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   {
+      IDirect3DTexture9_Release(tex);
+      return;
+   }
    {
       unsigned i;
       uint32_t       *dst = (uint32_t*)(d3dlr.pBits);
@@ -9705,7 +9711,11 @@ static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       goto end;
    }
 
-   IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY);
+   if (FAILED(IDirect3DSurface9_LockRect(dest, &rect, NULL, D3DLOCK_READONLY)))
+   {
+      ret = false;
+      goto end;
+   }
 
    {
       unsigned x, y;
