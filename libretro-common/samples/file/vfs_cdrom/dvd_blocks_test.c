@@ -16,7 +16,7 @@
 #include <scsi/sg.h>
 #endif
 
-static unsigned calls, opens, failures;
+static unsigned calls, opens, failures, toc_reads, inquiries;
 #if defined(_WIN32)
 static unsigned closes;
 #endif
@@ -47,6 +47,18 @@ static int drive_command(unsigned char *cmd, void *buf, size_t len)
       CHECK(((uintptr_t)buf & 4095) == 0);
    if (fail_at && (int)calls == fail_at)
       return 1;
+   if (cmd[0] == 0x43 || cmd[0] == 0x52)
+      toc_reads++;
+   if (cmd[0] == 0x12)
+   {
+      inquiries++;
+      memset(dst, 0, len);
+      dst[0] = 5; /* MMC device */
+      memcpy(dst + 8, "LIBRETRO", 8);
+      memcpy(dst + 16, "VIRTUAL DRIVE   ", 16);
+      memcpy(dst + 32, "1.00", 4);
+      return 0;
+   }
    if (cmd[0] == 0x46)
    {
       CHECK(len == 8);
@@ -201,6 +213,17 @@ static BOOL WINAPI drive_close(HANDLE h)
    closes++;
    return close_error ? FALSE : TRUE;
 }
+static DWORD WINAPI mock_logical_drives(void)
+{
+   return (1u << 2) | (1u << 3) | (1u << 4); /* C: fixed, D: and E: optical */
+}
+static UINT WINAPI mock_drive_type(LPCSTR root)
+{
+   return (root[0] == 'd' || root[0] == 'e') ? DRIVE_CDROM : DRIVE_FIXED;
+}
+#define GetLogicalDrives mock_logical_drives
+#undef GetDriveType
+#define GetDriveType mock_drive_type
 #define DeviceIoControl drive_ioctl
 #undef CreateFile
 #define CreateFile drive_open
@@ -490,6 +513,31 @@ static void test_handle_geometry(unsigned char *buf)
    }
 }
 
+#if defined(_WIN32)
+/* Drive enumeration identifies drives by INQUIRY alone: it must open
+ * metadata-only device handles and never read a TOC, which would spin
+ * up every drive (and drop empty ones) each time the menu is built. */
+static void test_enumeration(void)
+{
+   unsigned before_toc = toc_reads, before_inquiry = inquiries;
+   unsigned before_opens = opens;
+   struct string_list *list = cdrom_get_available_drives();
+   CHECK(list != NULL);
+   if (!list)
+      return;
+   CHECK(list->size == 2);
+   if (list->size == 2)
+   {
+      CHECK(list->elems[0].attr.i == 'd' && list->elems[1].attr.i == 'e');
+      CHECK(strstr(list->elems[0].data, "LIBRETRO") != NULL);
+   }
+   CHECK(opens == before_opens + 2);
+   CHECK(inquiries == before_inquiry + 2);
+   CHECK(toc_reads == before_toc);
+   string_list_free(list);
+}
+#endif
+
 int main(void)
 {
    libretro_vfs_implementation_file stream;
@@ -718,6 +766,9 @@ int main(void)
       }
    }
    test_media_change(buf);
+#if defined(_WIN32)
+   test_enumeration();
+#endif
    {
       libretro_vfs_implementation_file *file = retro_vfs_file_open_impl(
             BIN_A, RETRO_VFS_FILE_ACCESS_READ, 0);

@@ -2087,16 +2087,21 @@ struct string_list* cdrom_get_available_drives(void)
    for (i = 0; i < (int)(sizeof(DWORD) * 8); i++)
    {
       char path[]       = {"a:\\"};
-      char cdrom_path[] = {"cdrom://a:/drive.device"};
+      char cdrom_path[32];
 
       path[0]          += i;
-      cdrom_path[8]    += i;
 
       /* this drive letter doesn't exist */
       if (!(drive_mask & (1 << i)))
          continue;
 
       if (GetDriveType(path) != DRIVE_CDROM)
+         continue;
+
+      /* INQUIRY needs only the device handle; a track or cue path
+       * would read the TOC and spin up the drive. */
+      if (!cdrom_device_filldevicepath(cdrom_path, sizeof(cdrom_path),
+               (char)('A' + i)))
          continue;
 
       {
