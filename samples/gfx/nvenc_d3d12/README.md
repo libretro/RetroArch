@@ -45,3 +45,10 @@ with limited or full range. The harness independently checks decoded stream
 tags for H.264, HEVC and AV1. These tags describe the supplied pixels; the
 adapter does not convert transfer functions or add mastering-display/content
 light metadata. Display HDR and frontend recording acceptance remain pending.
+
+The renderer-side producer now reserves slots through record_gpu_queue and
+hands timestamp/duration/keyframe/fence-value descriptors to the encoder
+worker. A BUSY encode retains its descriptor; only packet release returns
+the slot. Producer close reaches EOS before outstanding GPU output drains.
+The native harness uses separate producer and encoder threads; frontend
+capture, worker scheduling and recording/mux/audio hookup remain pending.

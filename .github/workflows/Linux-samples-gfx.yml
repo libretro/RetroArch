@@ -1350,6 +1350,15 @@ jobs:
           make -C samples/gfx/vulkan_video_caps direct-check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/gfx/vulkan_video_caps clean
 
+      - name: GPU recording slot ownership (Linux, mingw and sanitizers)
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/record_gpu_queue clean check
+          make -C samples/gfx/record_gpu_queue clean check THREADS=1 SANITIZE=-fsanitize=address,undefined
+          make -C samples/gfx/record_gpu_queue clean check THREADS=1 SANITIZE=-fsanitize=thread
+          make -C samples/gfx/record_gpu_queue clean check THREADS=1 TEST_FRAMES=20000 CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+
       - name: Native NVENC D3D12 encoder (portable fallback and hardware gate)
         shell: bash
         run: |
