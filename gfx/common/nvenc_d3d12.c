@@ -38,12 +38,103 @@ struct nvenc_d3d12
    NV_ENC_EVENT_PARAMS event;
    NV_ENC_REGISTER_RESOURCE registration;
    NV_ENC_MAP_INPUT_RESOURCE mapping;
+   NV_ENC_SEI_PAYLOAD metadata_payload[2];
+   uint8_t metadata_bytes[28];
+   unsigned metadata_count, metadata_gop, metadata_left;
    nvenc_d3d12_slot_t slots[NVENC_D3D12_SLOTS];
    unsigned order[NVENC_D3D12_SLOTS], read, count, frame;
    unsigned width, height, slot_count;
    NV_ENC_BUFFER_FORMAT format;
    bool locked, finishing;
+   enum nvenc_d3d12_codec codec;
 };
+
+static bool nve_metadata_valid(const nvenc_d3d12_config_t *c)
+{
+   unsigned i;
+   if (!c->mastering.present && !c->max_cll && !c->max_fall)
+      return true;
+   if (c->color < NVENC_D3D12_COLOR_BT2020_PQ
+         || c->codec == NVENC_D3D12_H264
+         || c->max_cll > 65535 || c->max_fall > 65535
+         || (c->max_cll && c->max_fall > c->max_cll))
+      return false;
+   if (!c->mastering.present)
+      return true;
+   if (c->mastering.present != VIDEO_MASTERING_DISPLAY_COMPLETE
+         || !c->mastering.luminance_max
+         || c->mastering.luminance_max > 100000000
+         || c->mastering.luminance_min > c->mastering.luminance_max)
+      return false;
+   for (i = 0; i < 8; i++)
+      if (c->mastering.chromaticity[i] > 50000)
+         return false;
+   return true;
+}
+
+static uint16_t nve_chroma(uint16_t value, bool av1)
+{
+   uint32_t scaled;
+   if (!av1)
+      return value;
+   scaled = ((uint32_t)value * 65536 + 25000) / 50000;
+   return (uint16_t)(scaled > 65535 ? 65535 : scaled);
+}
+
+static void nve_be(uint8_t *p, uint32_t value, unsigned bytes)
+{
+   unsigned i;
+   for (i = 0; i < bytes; i++)
+      p[i] = (uint8_t)(value >> (8 * (bytes - i - 1)));
+}
+
+static void nve_metadata(nvenc_d3d12_t *e, const nvenc_d3d12_config_t *c)
+{
+   bool av1 = c->codec == NVENC_D3D12_AV1;
+   e->codec = c->codec;
+   if (c->mastering.present)
+   {
+      static const unsigned hevc_order[8] = {2, 3, 4, 5, 0, 1, 6, 7};
+      NV_ENC_SEI_PAYLOAD *p = &e->metadata_payload[e->metadata_count++];
+      uint8_t *b = e->metadata_bytes;
+      unsigned i;
+      uint32_t maximum = c->mastering.luminance_max;
+      uint32_t minimum = c->mastering.luminance_min;
+      p->payloadType = av1 ? 2 : 137;
+      p->payloadSize = 24;
+      p->payload = b;
+      for (i = 0; i < 8; i++)
+         nve_be(b + i * 2, nve_chroma(c->mastering.chromaticity[
+                  av1 ? i : hevc_order[i]], av1), 2);
+      if (av1)
+      {
+         maximum = (uint32_t)(((uint64_t)maximum * 256 + 5000) / 10000);
+         minimum = (uint32_t)(((uint64_t)minimum * 16384 + 5000) / 10000);
+      }
+      nve_be(b + 16, maximum, 4);
+      nve_be(b + 20, minimum, 4);
+   }
+   if (c->max_cll || c->max_fall)
+   {
+      NV_ENC_SEI_PAYLOAD *p = &e->metadata_payload[e->metadata_count++];
+      p->payloadType = av1 ? 1 : 144;
+      p->payloadSize = 4;
+      p->payload = e->metadata_bytes + 24;
+      nve_be(e->metadata_bytes + 24, c->max_cll, 2);
+      nve_be(e->metadata_bytes + 26, c->max_fall, 2);
+   }
+   /* Use explicit payloads rather than driver-generated defaults. */
+   if (av1)
+   {
+      e->preset.presetCfg.encodeCodecConfig.av1Config.outputMasteringDisplay = 0;
+      e->preset.presetCfg.encodeCodecConfig.av1Config.outputMaxCll = 0;
+   }
+   else if (c->codec == NVENC_D3D12_HEVC)
+   {
+      e->preset.presetCfg.encodeCodecConfig.hevcConfig.outputMasteringDisplay = 0;
+      e->preset.presetCfg.encodeCodecConfig.hevcConfig.outputMaxCll = 0;
+   }
+}
 
 static bool nve_event(nvenc_d3d12_t *e, HANDLE *event)
 {
@@ -177,7 +268,8 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
          || (c->format == NVENC_D3D12_P010 && c->codec == NVENC_D3D12_H264)
          || (unsigned)c->color > NVENC_D3D12_COLOR_BT2020_HLG
          || (c->color >= NVENC_D3D12_COLOR_BT2020_PQ && c->format != NVENC_D3D12_P010)
-         || (c->color == NVENC_D3D12_COLOR_DEFAULT && c->full_range)) return NULL;
+         || (c->color == NVENC_D3D12_COLOR_DEFAULT && c->full_range)
+         || !nve_metadata_valid(c)) return NULL;
    for (i = 0; i < c->slots; i++)
    {
       D3D12_RESOURCE_DESC desc;
@@ -290,6 +382,17 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
          vui->colourMatrix = matrix;
       }
    }
+   nve_metadata(e, c);
+   /* Own the cadence so each random-access frame carries metadata. */
+   if (e->metadata_count)
+   {
+      e->metadata_gop = e->preset.presetCfg.gopLength;
+      e->preset.presetCfg.gopLength = NVENC_INFINITE_GOPLENGTH;
+      if (c->codec == NVENC_D3D12_AV1)
+         e->preset.presetCfg.encodeCodecConfig.av1Config.idrPeriod = NVENC_INFINITE_GOPLENGTH;
+      else
+         e->preset.presetCfg.encodeCodecConfig.hevcConfig.idrPeriod = NVENC_INFINITE_GOPLENGTH;
+   }
    e->init.version = NV_ENC_INITIALIZE_PARAMS_VER;
    e->init.encodeGUID = codec; e->init.presetGUID = NV_ENC_PRESET_P1_GUID;
    e->init.encodeWidth = e->init.darWidth = e->init.maxEncodeWidth = c->width;
@@ -336,7 +439,22 @@ int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned index, uint64_t timestamp,
    e->picture.inputTimeStamp = timestamp; e->picture.inputDuration = duration;
    e->picture.frameIdx = e->frame;
    e->picture.completionEvent = s->event;
+   if (e->metadata_count && !e->metadata_left)
+      keyframe = true;
    if (keyframe) e->picture.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR | NV_ENC_PIC_FLAG_OUTPUT_SPSPPS;
+   if (e->metadata_count && keyframe)
+   {
+      if (e->codec == NVENC_D3D12_HEVC)
+      {
+         e->picture.codecPicParams.hevcPicParams.seiPayloadArray = e->metadata_payload;
+         e->picture.codecPicParams.hevcPicParams.seiPayloadArrayCnt = e->metadata_count;
+      }
+      else if (e->codec == NVENC_D3D12_AV1)
+      {
+         e->picture.codecPicParams.av1PicParams.obuPayloadArray = e->metadata_payload;
+         e->picture.codecPicParams.av1PicParams.obuPayloadArrayCnt = e->metadata_count;
+      }
+   }
    ResetEvent(s->event);
    status = e->api.nvEncEncodePicture(e->session, &e->picture);
    if (status == NV_ENC_ERR_ENCODER_BUSY) return NVENC_D3D12_BUSY;
@@ -346,6 +464,8 @@ int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned index, uint64_t timestamp,
    if (s->ready) ID3D12Fence_AddRef(s->ready);
    e->order[(e->read + e->count) % e->slot_count] = index;
    e->count++; e->frame++;
+   if (e->metadata_count)
+      e->metadata_left = keyframe ? e->metadata_gop - 1 : e->metadata_left - 1;
    return NVENC_D3D12_OK;
 }
 

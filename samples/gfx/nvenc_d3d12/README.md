@@ -43,8 +43,12 @@ output; they do not establish HDR display acceptance, muxing or A/V sync.
 Explicit input color descriptions cover BT.709 and P010 BT.2020 PQ/HLG,
 with limited or full range. The harness independently checks decoded stream
 tags for H.264, HEVC and AV1. These tags describe the supplied pixels; the
-adapter does not convert transfer functions or add mastering-display/content
-light metadata. Display HDR and frontend recording acceptance remain pending.
+adapter does not convert transfer functions. Optional HDR mastering and light
+metadata use the shared video_color.h units. Complete mastering data and
+MaxCLL/MaxFALL are serialized into explicit HEVC SEI or AV1 metadata payloads;
+the adapter copies them at open and retains them through encoder retries.
+Absent metadata stays absent. Display HDR and frontend recording acceptance
+remain pending.
 
 The renderer-side producer now reserves slots through record_gpu_queue and
 hands timestamp/duration/keyframe/fence-value descriptors to the encoder
@@ -52,3 +56,9 @@ worker. A BUSY encode retains its descriptor; only packet release returns
 the slot. Producer close reaches EOS before outstanding GPU output drains.
 The native harness uses separate producer and encoder threads; frontend
 capture, worker scheduling and recording/mux/audio hookup remain pending.
+
+HDR cases independently parse every mastering coordinate and luminance/light
+value through FFmpeg's bitstream tracer, including AV1's different fixed-point
+units. They cover PQ/HLG, mastering-only/light-only/both, zero values and upper
+bounds, and decode a second stream beginning at the later forced keyframe.
+Invalid/incomplete metadata is refused before opening an encoder session.

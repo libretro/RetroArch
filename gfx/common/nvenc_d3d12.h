@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <formats/video_color.h>
 
 RETRO_BEGIN_DECLS
 
@@ -38,6 +39,11 @@ typedef struct nvenc_d3d12_config
     * DEFAULT preserves SDK defaults. HDR requires P010. */
    enum nvenc_d3d12_color color;
    bool full_range;
+   /* Optional HDR static metadata, copied at open. The mastering display
+    * uses video_color.h units and must be complete when present. Requires
+    * PQ/HLG P010 input; emitted on requested and periodic keyframes. */
+   video_mastering_display_t mastering;
+   unsigned max_cll, max_fall;
 } nvenc_d3d12_config_t;
 typedef struct nvenc_d3d12_packet
 {

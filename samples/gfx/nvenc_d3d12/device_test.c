@@ -23,8 +23,12 @@ static PNVENCLOCKBITSTREAM real_lock;
 static unsigned encode_faults, lock_faults;
 static NVENCSTATUS NVENCAPI busy_encode(void *session, NV_ENC_PIC_PARAMS *params)
 {
+   NVENCSTATUS status;
    if (encode_faults) { encode_faults--; return NV_ENC_ERR_ENCODER_BUSY; }
-   return real_encode(session, params);
+   status = real_encode(session, params);
+   if (status != NV_ENC_SUCCESS && status != NV_ENC_ERR_NEED_MORE_INPUT)
+      printf("NVENC status %d, frame %u, flags %u\n", status, params->frameIdx, params->encodePicFlags);
+   return status;
 }
 static NVENCSTATUS NVENCAPI busy_lock(void *session, NV_ENC_LOCK_BITSTREAM *params)
 {
@@ -37,13 +41,14 @@ struct nve_producer
    record_gpu_queue_t *queue;
    retro_atomic_int_t stop;
    unsigned made;
+   unsigned frames;
 };
 static DWORD WINAPI nve_produce(void *data)
 {
    struct nve_producer *p = (struct nve_producer*)data;
    record_gpu_frame_t frame = {0};
    unsigned idle = 0;
-   while (p->made < FRAMES && idle < 10000
+   while (p->made < p->frames && idle < 10000
          && !retro_atomic_load_acquire_int(&p->stop))
    {
       int result = record_gpu_queue_acquire(p->queue, &frame.slot);
@@ -55,7 +60,7 @@ static DWORD WINAPI nve_produce(void *data)
       if (result != RECORD_GPU_QUEUE_OK)
          break;
       frame.timestamp = p->made; frame.duration = frame.ready_value = 1;
-      frame.keyframe = p->made == 0 || p->made == 12;
+      frame.keyframe = p->made == 12 || (p->made == 0 && p->frames == FRAMES);
       if (!record_gpu_queue_submit(p->queue, &frame))
       {
          record_gpu_queue_cancel(p->queue);
@@ -85,15 +90,18 @@ int main(int argc, char **argv)
    struct nve_producer producer = {0};
    HANDLE producer_thread = NULL;
    bool pending = false, input_end = false, signalled = false;
-   bool eos_fault = false;
-   FILE *out = NULL;
+   bool eos_fault = false, periodic_fault = false;
+   FILE *out = NULL, *restart = NULL, *periodic = NULL;
+   char *restart_path = NULL;
    unsigned i, x, y, received = 0, idle = 0;
    int status, ok = 0;
    uint64_t value = 0;
-   unsigned format;
+   unsigned format, metadata;
    HMODULE runtime;
    memset(&config, 0, sizeof(config));
-   if ((argc < 4 || argc > 6)) { puts("usage: device_test codec format output [color [full_range]]"); return 1; }
+   if ((argc < 4 || argc > 7)) { puts("usage: device_test codec format output [color [full_range [metadata]]]"); return 1; }
+   metadata = argc > 6 ? (unsigned)atoi(argv[6]) : 0;
+   if (metadata > 4) return 1;
    format = (unsigned)atoi(argv[2]);
    if (format < NVENC_D3D12_BGRA8 || format > NVENC_D3D12_P010) return 1;
    runtime = LoadLibraryExA("nvEncodeAPI64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -203,9 +211,56 @@ int main(int argc, char **argv)
       ? NVENC_D3D12_COLOR_BT2020_PQ : NVENC_D3D12_COLOR_BT709;
    if (argc > 4) config.color = (enum nvenc_d3d12_color)atoi(argv[4]);
    config.full_range = argc > 5 && atoi(argv[5]) != 0;
+   {
+      unsigned saved;
+      config.mastering.present = 1;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.mastering.luminance_max = 100000001;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.mastering.luminance_max = 10000000;
+      config.mastering.luminance_min = 10000001;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.mastering.luminance_min = 50;
+      config.mastering.chromaticity[0] = 50001;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      memset(&config.mastering, 0, sizeof(config.mastering));
+      config.max_cll = 65536;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.max_cll = 1000; config.max_fall = 1001;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.max_fall = 400;
+      saved = config.color; config.color = NVENC_D3D12_COLOR_BT709;
+      CHECK(nvenc_d3d12_open(&config) == NULL);
+      config.color = (enum nvenc_d3d12_color)saved;
+      config.max_cll = config.max_fall = 0;
+   }
+   if ((metadata & 1) || metadata == 4)
+   {
+      static const uint16_t xy[8] = {34000, 16000, 13250, 34500, 7500, 3000, 15635, 16450};
+      config.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+      config.mastering.luminance_max = 10000000;
+      config.mastering.luminance_min = 50;
+      memcpy(config.mastering.chromaticity, xy, sizeof(xy));
+      if (metadata == 4)
+      {
+         static const uint16_t edge[8] = {50000, 0, 0, 50000, 0, 0, 0, 0};
+         memcpy(config.mastering.chromaticity, edge, sizeof(edge));
+         config.mastering.luminance_max = 100000000;
+         config.mastering.luminance_min = 0;
+      }
+   }
+   if ((metadata & 2) || metadata == 4)
+   {
+      config.max_cll = metadata == 4 ? 65535 : 1000;
+      config.max_fall = metadata == 4 ? 0 : 400;
+   }
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);
+   memset(&config.mastering, 0, sizeof(config.mastering));
+   config.max_cll = config.max_fall = 0;
    real_encode = encoder->api.nvEncEncodePicture;
    real_lock = encoder->api.nvEncLockBitstream;
    encoder->api.nvEncEncodePicture = busy_encode;
@@ -216,10 +271,22 @@ int main(int argc, char **argv)
    for (i = 0; i < 4; i++) { ID3D12Resource_Release(textures[i]); textures[i] = NULL; }
    lock_faults = 1;
    out = fopen(argv[3], "wb"); CHECK(out != NULL);
+   if (metadata)
+   {
+      size_t length = strlen(argv[3]);
+      restart_path = (char*)malloc(length + 5);
+      CHECK(restart_path != NULL);
+      memcpy(restart_path, argv[3], length);
+      memcpy(restart_path + length, ".key", 5);
+      restart = fopen(restart_path, "wb"); CHECK(restart != NULL);
+      memcpy(restart_path + length, ".gop", 5);
+      periodic = fopen(restart_path, "wb"); CHECK(periodic != NULL);
+   }
    CHECK(nvenc_d3d12_submit(encoder, 0, 0, 1, NULL, 1, false) == NVENC_D3D12_ERROR);
    CHECK(nvenc_d3d12_release(encoder) == NVENC_D3D12_ERROR);
    CHECK(nvenc_d3d12_submit(encoder, 4, 0, 1, ready, 1, false) == NVENC_D3D12_ERROR);
    producer.queue = record_gpu_queue_new(4);
+   producer.frames = metadata ? 84 : FRAMES;
    CHECK(producer.queue != NULL);
    retro_atomic_int_init(&producer.stop, 0);
    encode_faults = 1;
@@ -237,6 +304,10 @@ int main(int argc, char **argv)
       }
       if (pending)
       {
+         if (frame.timestamp == 72 && !periodic_fault)
+         {
+            encode_faults = 1; periodic_fault = true;
+         }
          status = nvenc_d3d12_submit(encoder, frame.slot, frame.timestamp,
                frame.duration, ready, frame.ready_value, frame.keyframe);
          CHECK(status == NVENC_D3D12_OK || status == NVENC_D3D12_BUSY);
@@ -271,9 +342,14 @@ int main(int argc, char **argv)
          CHECK(packet.size && packet.timestamp == received && packet.duration == 1 && packet.slot == received % 4);
          CHECK(received != 0 || packet.keyframe);
          CHECK(received != 12 || packet.keyframe);
+         CHECK(received != 72 || packet.keyframe);
          CHECK(nvenc_d3d12_poll(encoder, &packet) == NVENC_D3D12_ERROR);
          CHECK(!nvenc_d3d12_free(encoder));
          CHECK(fwrite(packet.data, 1, packet.size, out) == packet.size);
+         if (restart && received >= 12)
+            CHECK(fwrite(packet.data, 1, packet.size, restart) == packet.size);
+         if (periodic && received >= 72)
+            CHECK(fwrite(packet.data, 1, packet.size, periodic) == packet.size);
          CHECK(nvenc_d3d12_release(encoder) == NVENC_D3D12_OK);
          CHECK(record_gpu_queue_release(producer.queue, packet.slot));
          received++; progress = true;
@@ -281,10 +357,11 @@ int main(int argc, char **argv)
       if (progress) idle = 0;
       else { Sleep(1); idle++; }
    }
-   CHECK(input_end && status == NVENC_D3D12_END && received == FRAMES);
+   CHECK(input_end && status == NVENC_D3D12_END && received == producer.frames);
    CHECK(WaitForSingleObject(producer_thread, 10000) == WAIT_OBJECT_0);
    CloseHandle(producer_thread); producer_thread = NULL;
-   CHECK(producer.made == FRAMES);
+   CHECK(producer.made == producer.frames);
+   CHECK(!metadata || periodic_fault);
    CHECK(record_gpu_queue_free(producer.queue)); producer.queue = NULL;
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
@@ -306,6 +383,9 @@ done:
       for (idle = 0; idle < 10000 && ID3D12Fence_GetCompletedValue(ready) < value; idle++) Sleep(1);
    }
    if (out) fclose(out);
+   if (restart) fclose(restart);
+   if (periodic) fclose(periodic);
+   free(restart_path);
    if (encoder) nvenc_d3d12_free(encoder);
    for (i = 0; i < 4; i++)
    {

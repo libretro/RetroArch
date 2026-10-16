@@ -30,6 +30,57 @@ def check_color(ffmpeg, stream, color, full):
            3: 'bt2020nc/bt2020/arib-std-b67'}[color]
     assert ('pc' if full else 'tv') + ', ' + tag in source, source
 
+
+def check_metadata(ffmpeg, stream, codec, mode):
+    name = ('h264', 'hevc', 'obu')[codec]
+    trace = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
+                            '-c:v', 'copy', '-bsf:v', 'trace_headers',
+                            '-frames:v', '1', '-f', 'null', '-'],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    text = trace.stderr.decode(errors='replace')
+    fields = {}
+    for key, value in re.findall(r'\]\s+\d+\s+(\S+)\s+[01]+\s+=\s+(\d+)', text):
+        fields.setdefault(key, []).append(int(value))
+    av1 = codec == 2
+    master = bool(mode & 1) or mode == 4
+    light = bool(mode & 2) or mode == 4
+    expected = {}
+    xy = ([50000, 0, 0, 50000, 0, 0, 0, 0] if mode == 4 else
+          [34000, 16000, 13250, 34500, 7500, 3000, 15635, 16450])
+    if master:
+        if av1:
+            xy = [min(65535, (v * 65536 + 25000) // 50000) for v in xy]
+            for i in range(3):
+                expected[f'primary_chromaticity_x[{i}]'] = xy[i * 2]
+                expected[f'primary_chromaticity_y[{i}]'] = xy[i * 2 + 1]
+            expected.update(white_point_chromaticity_x=xy[6], white_point_chromaticity_y=xy[7],
+                            luminance_max=2560000 if mode == 4 else 256000,
+                            luminance_min=0 if mode == 4 else 82)
+        else:
+            for i, start in enumerate((2, 4, 0)):
+                expected[f'display_primaries_x[{i}]'] = xy[start]
+                expected[f'display_primaries_y[{i}]'] = xy[start + 1]
+            expected.update(white_point_x=xy[6], white_point_y=xy[7],
+                            max_display_mastering_luminance=100000000 if mode == 4 else 10000000,
+                            min_display_mastering_luminance=0 if mode == 4 else 50)
+    else:
+        assert not any('chromaticity' in k or 'display_primaries' in k for k in fields), fields
+    if light:
+        expected['max_cll' if av1 else 'max_content_light_level'] = 65535 if mode == 4 else 1000
+        expected['max_fall' if av1 else 'max_pic_average_light_level'] = 0 if mode == 4 else 400
+    else:
+        assert ('max_cll' if av1 else 'max_content_light_level') not in fields, fields
+    for key, value in expected.items():
+        assert key in fields and all(v == value for v in fields[key]), (key, value, fields)
+    decoded = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
+                              '-vf', 'showinfo', '-f', 'null', '-'],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    frame_info = re.findall(r'\bn:\s*(\d+).*?\biskey:\s*(\d+)', decoded.stderr.decode(errors='replace'))
+    count = (12 if str(stream).endswith('.gop') else 72 if str(stream).endswith('.key')
+             else 84 if mode else frames)
+    assert len(frame_info) == count, frame_info
+    assert frame_info[0][1] == '1', frame_info
+
 with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
     for codec in range(3):
         for fmt in (1, 2, 3):
@@ -48,6 +99,8 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             if not ffmpeg:
                 raise SystemExit('Native hardware validation needs ffmpeg')
             check_color(ffmpeg, stream, 2 if fmt == 3 else 1, False)
+            if fmt == 3:
+                check_metadata(ffmpeg, stream, codec, 0)
             raw_format = ('', 'bgra', 'nv12', 'p010le')[fmt]
             decode = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
                                      '-vf', 'showinfo', '-f', 'rawvideo', '-pix_fmt', raw_format, '-'],
@@ -106,4 +159,19 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                 raise SystemExit(result.returncode)
             check_color(ffmpeg, stream, color, bool(full))
             print(f'[pass] {name}: color {color}, full range {full}', flush=True)
+        for codec in (1, 2):
+            for color, mode in [(c, m) for c in (2, 3) for m in (1, 2, 3)] + [(2, 4)]:
+                name = ('h264', 'hevc', 'obu')[codec]
+                stream = Path(temporary) / f'metadata-{codec}-{color}-{mode}.{name}'
+                result = subprocess.run([*runner, binary, str(codec), '3', str(stream),
+                                         str(color), '0', str(mode)], timeout=60)
+                if result.returncode == 77 and not os.environ.get('NVENC_TEST_REQUIRE_HW'):
+                    continue
+                if result.returncode:
+                    raise SystemExit(result.returncode)
+                check_color(ffmpeg, stream, color, False)
+                check_metadata(ffmpeg, stream, codec, mode)
+                check_metadata(ffmpeg, Path(str(stream) + '.key'), codec, mode)
+                check_metadata(ffmpeg, Path(str(stream) + '.gop'), codec, mode)
+                print(f'[pass] {name}: color {color}, HDR metadata {mode}, including requested and periodic keyframe restarts', flush=True)
 print(f'{passed} native codec/format cases plus color signaling passed; unsupported runtimes explicitly skipped')
