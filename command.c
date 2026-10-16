@@ -1414,8 +1414,9 @@ static bool command_arg_uint(const char *arg, unsigned *out)
       return false;
    *out = (unsigned)v;
    /* range-checked before narrowing, so 4294967297 is not slot 1, and
-    * where long is 32 bits strtoul clamps it and says so */
-   return errno != ERANGE && (unsigned long)*out == v;
+    * where long is 32 bits strtoul clamps it and says so; past INT_MAX a
+    * slot turns negative, which is the auto slot */
+   return errno != ERANGE && v <= INT_MAX;
 }
 
 static bool command_load_state_start(struct command_reply *r)

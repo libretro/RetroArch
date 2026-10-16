@@ -313,6 +313,15 @@ int main(int argc, char **argv)
    CHECK(!command_state(&cmd,"load 4294967297") && strstr(reply,"ERROR"));
    reply[0]=0;
    CHECK(!command_state(&cmd,"save -1") && strstr(reply,"ERROR"));
+   /* nor one past INT_MAX, which would be the auto slot's file */
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"save 2147483648")
+         && !strcmp(reply,"STATE ERROR a slot number, not 2147483648"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"save 4294967295") && strstr(reply,"STATE ERROR"));
+   reply[0]=0;
+   CHECK(!command_replay(&cmd,"play 2147483648")
+         && !strcmp(reply,"REPLAY ERROR a slot number, not 2147483648"));
    cmd.error=false;
 
    /* WATCH carries a look along with every step. Known bytes first:
