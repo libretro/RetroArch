@@ -665,7 +665,9 @@ static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_NULL;
 #endif
 
-#if defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL2)
+#if defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL3)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL3;
+#elif defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UWP;
@@ -733,7 +735,7 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DOS;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_NULL;
 #endif
 
-#if defined(HAVE_STEAM) && defined(__linux__) && defined(HAVE_SDL2)
+#if defined(HAVE_STEAM) && defined(__linux__) && (defined(HAVE_SDL2) || defined(HAVE_SDL3))
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(HAVE_XINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_XINPUT;
