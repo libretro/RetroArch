@@ -4,5 +4,4 @@
 #
 # file                    allowed
 gfx/video_driver.c        5
-record/record_driver.c    2
 retroarch.c               5

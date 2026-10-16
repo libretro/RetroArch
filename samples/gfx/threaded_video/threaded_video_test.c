@@ -8111,17 +8111,112 @@ static void record_format_once(bool threaded)
    free(buf);
 }
 
+/* A recording stopped while a frame that reads it back is drawing:
+ * the stop hands the buffers back to be freed once no frame names
+ * them, and does not wait for the frame */
+static const video_driver_t *rstop_inner;
+static video_driver_t        rstop_driver;
+static retro_atomic_int_t    rstop_hold;
+static retro_atomic_int_t    rstop_held;
+
+static bool rstop_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if (retro_atomic_load_acquire_int(&rstop_hold))
+   {
+      retro_time_t until = cpu_features_get_time_usec() + 1000000;
+      retro_atomic_store_release_int(&rstop_held, 1);
+      while (     retro_atomic_load_acquire_int(&rstop_hold)
+            &&  cpu_features_get_time_usec() < until) { }
+   }
+   return rstop_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static void record_stop_in_flight(void)
+{
+   struct video_viewport vp;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t    *rec_st   = recording_state_get_ptr();
+   recording_state_t saved;
+   uint8_t *saved_buf;
+   uint8_t *buf;
+   thread_video_t *thr;
+   retro_time_t took;
+   size_t   area;
+   unsigned i;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "record stop lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   video_thread_wait_idle();
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   area = VIDEO_SCALE_AREA(vp.dims);
+   if (!area || !(buf = (uint8_t*)malloc(area * 4)))
+      return;
+
+   saved                       = *rec_st;
+   saved_buf                   = video_st->record_gpu_buffer;
+   reclane_pushes              = 0;
+   reclane_rows                = VIDEO_SCALE_H(vp.dims);
+   rec_st->driver              = &reclane_driver;
+   rec_st->gpu_dims            = vp.dims;
+   rec_st->gpu_bgrx            = true;
+   rec_st->enable              = true;
+   video_st->record_gpu_buffer = buf;
+   rec_st->data                = (void*)&reclane_driver;
+   for (i = 0; i < 32 && !reclane_pushes; i++)
+      run_frames(1);
+
+   thr                 = (thread_video_t*)video_st->data;
+   rstop_inner        = thr->driver;
+   rstop_driver       = *thr->driver;
+   rstop_driver.frame = rstop_frame;
+   set_driver(thr, &rstop_driver);
+   retro_atomic_store_release_int(&rstop_held, 0);
+   retro_atomic_store_release_int(&rstop_hold, 1);
+   /* A recorded frame drawing, then the recording stopped */
+   run_frames(1);
+   for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&rstop_held); i++)
+      retro_sleep(1);
+   took = cpu_features_get_time_usec();
+   recording_deinit();
+   took = cpu_features_get_time_usec() - took;
+   retro_atomic_store_release_int(&rstop_hold, 0);
+   video_thread_wait_idle();
+   set_driver(thr, rstop_inner);
+   run_frames(4);
+
+   CHECK(retro_atomic_load_acquire_int(&rstop_held),
+         "record stop lane: no recorded frame was in flight");
+   CHECK(took < 200000,
+         "record stop lane: the stop waited %lld us for the frame",
+         (long long)took);
+   CHECK(!rec_st->data && !video_st->record_gpu_buffer,
+         "record stop lane: the recording is still open");
+
+   /* recording_deinit() freed buf as the recording's buffer */
+   *rec_st                     = saved;
+   video_st->record_gpu_buffer = saved_buf;
+}
+
 static void lane_record_format(void)
 {
    unsigned had = failures;
 
    record_format_once(false);
    record_format_once(true);
+   record_stop_in_flight();
    set_threaded_via_setting(false);
    run_frames(2);
 
    if (failures == had)
-      fprintf(stderr, "[pass] gpu record format lane\n");
+      fprintf(stderr, "[pass] gpu record format lane (and a stop in flight)\n");
 }
 
 /* ------------------------------------------------------------------ */
