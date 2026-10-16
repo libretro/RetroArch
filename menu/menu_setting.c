@@ -10274,8 +10274,9 @@ static unsigned setting_video_screen_mask(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    const video_views_map_t *map = &video_st->views_core;
    unsigned i, mask = 0;
+   /* A frame without a map is screen 1. */
    if (!video_st->views_presented)
-      return 0;
+      return 1u;
    for (i = 0; i < map->num_views && i < RETRO_VIDEO_VIEWS_MAX; i++)
       if (map->views[i].screen < RETRO_VIDEO_VIEWS_MAX)
          mask |= 1u << map->views[i].screen;

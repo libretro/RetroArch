@@ -3963,6 +3963,25 @@ def check_custom(kind, legacy=False):
     return check
 
 
+def check_frame_custom(window=False):
+    """Without a map the whole frame, or gl's window, is screen 1: moved
+    by its offsets and sized for where it is."""
+    def check(res):
+        fr = last_snap(res)
+        if not fr:
+            return no_quads(res)
+        q = [x for x in quads(fr) if not x['flags'] & BLEND]
+        if len(q) != 1 or q[0]['eye'] != 'both':
+            return ['want one quad for both eyes, got %s' % [x['eye'] for x in q]]
+        errors = []
+        position = (0.25, 0.1, -1.5)
+        if not at(q[0], position) or not sized(q[0], (1.6, 0.96)):
+            errors.append('frame at %s size %s' % (q[0]['pose'][:3], q[0]['size']))
+        return errors + image_size(res, q[0], (W, H) if window else None,
+                                   distance=math.sqrt(sum(v * v for v in position)))
+    return check
+
+
 CUSTOM_OFFSET = {'video_screen1_xr_x': '0.25',
                  'video_screen1_xr_y': '0.1', 'video_screen1_xr_z': '0.3',
                  'video_screen2_xr_x': '-0.2', 'video_screen2_xr_y': '0.1',
@@ -4011,6 +4030,12 @@ CUSTOM_CASES = [
                ('screen', (6, 0, 0.75, 1.0, 0)), ('mark', 'hidden'), ('wait', 2),
                ('mark', 'shown'), ('screen', (7, 0, 0.75, 4.0, 1)), ('wait', 3)],
      'check': check_custom('repeat')},
+    {'name': 'no-map-custom', 'map': 'none', 'settings': CUSTOM_OFFSET,
+     'steps': SETTLE, 'check': check_frame_custom()},
+    # A views core's frame shown whole is as laid out, not screen 1.
+    {'name': 'crop-threaded-custom', 'map': 'crop',
+     'settings': dict(CUSTOM_OFFSET, video_threaded='true'), 'steps': SETTLE,
+     'check': threaded(check_crop)},
 ]
 
 
@@ -5297,6 +5322,8 @@ GL_CHECKS = {
     'gl': {'custom-repeat': check_custom('repeat', legacy=True),
            'custom-menu': check_custom('menu', legacy=True),
            'custom-tracked': check_custom('tracked', legacy=True),
+           'no-map-custom': check_frame_custom(window=True),
+           'crop-threaded-custom': threaded(check_window_crop),
            'session-fails': check_session_fails_gl,
            'hw-teardown': check_hw_teardown_gl,
            'hw-teardown-threaded': threaded(check_hw_teardown_gl),

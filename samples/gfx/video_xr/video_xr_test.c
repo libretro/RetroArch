@@ -99,7 +99,7 @@ static void test_screen_defaults(void)
    video_xr_params_t p;
    video_xr_quad_set_t base, set;
    video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
-   unsigned layout, rotation;
+   unsigned layout, rotation, window;
    map_3ds(&map);
    params_init(&p, &map);
    p.ui_dims = VIDEO_SCALE_PACK(800, 480);
@@ -115,12 +115,29 @@ static void test_screen_defaults(void)
          video_xr_place(&p, &set);
          CHECK(memcmp(&base, &set, sizeof(set)) == 0);
       }
+   /* Without a map too, the frame and gl's window. */
+   p.map        = NULL;
+   p.frame_dims = VIDEO_SCALE_PACK(800, 480);
+   for (window = 0; window < 2; window++)
+   {
+      p.window  = window ? true : false;
+      p.screens = NULL;
+      video_xr_place(&p, &base);
+      p.screens = screens;
+      video_xr_place(&p, &set);
+      CHECK(memcmp(&base, &set, sizeof(set)) == 0);
+   }
+   p.window = false;
+   /* Without a map the whole frame is screen 1: hidden, only the menu. */
    screens[0].visible = false;
    screens[0].x = 2.0f;
    p.map = NULL;
    video_xr_place(&p, &set);
+   CHECK(set.num_quads == 1 && set.quads[0].kind == VIDEO_XR_QUAD_MENU);
+   screens[0].visible = true;
+   video_xr_place(&p, &set);
    CHECK(set.num_quads == 2);
-   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(pos_is(&set.quads[0], 2.0, 0.0, -1.8));
    CHECK(NEAR(set.quads[0].width, 1.6f));
 }
 
@@ -742,6 +759,60 @@ static void test_live_edit(void)
    p.window = true;
    video_xr_place(&p, &set);
    CHECK(video_xr_quad_live(&set.quads[0], VIDEO_XR_LIVE_EDIT, false));
+}
+
+/* A frame without a map takes screen 1's place, turn and size; gl's
+ * window too while the menu is closed, but not with it open over it. */
+static void test_frame_as_screen(void)
+{
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   video_viewport_t vp;
+   video_xr_vec3_t axis, result;
+
+   params_init(&p, NULL);
+   p.frame_dims   = VIDEO_SCALE_PACK(800, 480);
+   p.frame_aspect = 800.0f / 480.0f;
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   screens[0].x     = 0.25f;
+   screens[0].y     = 0.1f;
+   screens[0].z     = 0.3f;
+   screens[0].yaw   = 90.0f;
+   screens[0].scale = 1.5f;
+   screens[1].x     = 5.0f;
+   p.screens        = screens;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 1 && set.quads[0].kind == VIDEO_XR_QUAD_FRAME);
+   CHECK(pos_is(&set.quads[0], 0.25, 0.1, -1.5));
+   CHECK(NEAR(set.quads[0].width, 2.4) && NEAR(set.quads[0].height, 1.44));
+   CHECK(dims_is(set.slots[0].dims, 1335, 801));
+   axis.x = axis.y = 0.0f;
+   axis.z = 1.0f;
+   video_xr_rotate(&set.quads[0].pose.orientation, &axis, &result);
+   CHECK(NEAR(result.x, 1.0) && NEAR(result.z, 0.0));
+   /* Clamped to the setting's range. */
+   screens[0].scale = 20.0f;
+   video_xr_place(&p, &set);
+   CHECK(NEAR(set.quads[0].width, 16.0));
+   screens[0].scale = 1.5f;
+
+   p.window = true;
+   memset(&vp, 0, sizeof(vp));
+   vp.dims = vp.full_dims = VIDEO_SCALE_PACK(800, 480);
+   video_xr_place_window(&p, false, false, &vp, vp.dims, &set, rects);
+   CHECK(set.num_quads == 1 && set.quads[0].kind == VIDEO_XR_QUAD_WINDOW);
+   CHECK(pos_is(&set.quads[0], 0.25, 0.1, -1.5));
+   video_xr_place_window(&p, true, false, &vp, vp.dims, &set, rects);
+   CHECK(pos_is(&set.quads[0], 0.0, 0.0, -1.8));
+   CHECK(NEAR(set.quads[0].width, 1.6));
+   screens[0].visible = false;
+   video_xr_place_window(&p, true, false, &vp, vp.dims, &set, rects);
+   CHECK(set.num_quads == 1);
+   p.window = false;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 0);
 }
 
 static void test_image_dims(void)
@@ -1824,6 +1895,7 @@ int main(void)
    test_grab_stick();
    test_menu_handle();
    test_live_edit();
+   test_frame_as_screen();
    test_image_dims();
    test_shrinks();
    test_place_3ds();

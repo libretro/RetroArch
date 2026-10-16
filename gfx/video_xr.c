@@ -520,14 +520,28 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
       video_xr_place_screens(p, &lay, out);
    else
    {
-      video_xr_put(p, lay.pos[0].x, lay.pos[0].y, lay.pos[0].z, &pose);
-      out->slots[0].base   = lay.pos[0];
-      out->slots[0].dims   = video_xr_screen_dims(p, lay.width[0],
-            lay.height[0], p->distance, p->frame_dims);
-      out->slots[0].layers = 1;
-      video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
-            : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
-            &pose, lay.width[0], lay.height[0]);
+      video_screen_xr_t screen;
+      double w       = lay.width[0];
+      double h       = lay.height[0];
+      float distance = p->distance;
+      out->slots[0].base = lay.pos[0];
+      /* A whole frame is screen 0. */
+      if (p->screens)
+      {
+         screen = p->screens[0];
+         video_views_xr_normalize(&screen);
+      }
+      if (!p->screens || screen.visible)
+      {
+         video_xr_adjust(p, &lay.pos[0], p->screens ? &screen : NULL,
+               &pose, &w, &h, &distance);
+         out->slots[0].dims   = video_xr_screen_dims(p, (float)w, (float)h,
+               distance, p->frame_dims);
+         out->slots[0].layers = 1;
+         video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
+               : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
+               &pose, (float)w, (float)h);
+      }
    }
 
    if (VIDEO_SCALE_W(p->ui_dims) && VIDEO_SCALE_H(p->ui_dims))
@@ -710,7 +724,10 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
    /* The menu is drawn over the frame whole, and a tracked map's eyes
     * are the projection's: the window as it is. */
    if (menu || tracked)
-      q.map = NULL;
+   {
+      q.map     = NULL;
+      q.screens = NULL;
+   }
    video_xr_place(&q, out);
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {

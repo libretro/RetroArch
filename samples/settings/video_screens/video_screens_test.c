@@ -560,16 +560,21 @@ static void test_xr_menu_map_change(void)
    {
       rarch_setting_t *setting = menu_setting_find("video_screen_xr_x");
       CHECK(setting != NULL);
+      /* Without a map the whole frame is screen 1. */
       if (setting)
-         CHECK(menu_action_handle_setting(setting, 0, MENU_ACTION_RIGHT, false) == -1);
-      CHECK(settings->floats.video_screen_xr_x[0] == 0.1f);
+         CHECK(menu_action_handle_setting(setting, 0, MENU_ACTION_RIGHT, false) == 0);
+      CHECK(menu_state_get_ptr()->video_screen_selected == 0u);
+      CHECK(fabs(settings->floats.video_screen_xr_x[0] - 0.2f) < 1e-6);
       CHECK(settings->floats.video_screen_xr_x[1] == 4.1f);
    }
+   menu_value("video_screen_selected", "1");
+   menu_action("video_screen_selected", MENU_ACTION_RIGHT);
+   menu_value("video_screen_selected", "1");
 #ifdef HAVE_OPENXR
-   CHECK(!menu_has_setting("video_screen_selected"));
-   CHECK(!menu_has_setting("video_screen_xr_x"));
-   CHECK(!menu_has_setting("video_screen_xr_visible"));
-   CHECK(!menu_has_setting("video_screen_xr_reset"));
+   CHECK(menu_has_setting("video_screen_selected"));
+   CHECK(menu_has_setting("video_screen_xr_x"));
+   CHECK(menu_has_setting("video_screen_xr_visible"));
+   CHECK(menu_has_setting("video_screen_xr_reset"));
    CHECK(menu_has_setting("video_openxr_distance"));
    CHECK(menu_has_setting("video_screen_xr_reset_all"));
 #endif

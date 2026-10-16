@@ -5241,7 +5241,9 @@ static void gl2_desktop_xr_plan(gl2_t *gl,
       p.map           = map ? &video_info->views : NULL;
       p.frame_dims    = gl->video_dims;
       video_xr_pose_identity(&p.anchor);
-      p.screens       = video_info->headset_screens;
+      /* A window shown whole despite a map is not screen 1. */
+      p.screens       = (map || !video_info->views.num_views)
+         ? video_info->headset_screens : NULL;
       p.distance      = video_info->headset_distance;
       p.width         = video_info->headset_width;
       p.px_per_rad    = gl_openxr_pixels_per_radian(xr->host);
