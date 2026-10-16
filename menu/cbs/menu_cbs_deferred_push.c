@@ -522,6 +522,19 @@ static int general_push(menu_displaylist_info_t *info,
    }
 #endif
 
+   /* Movies the menu previews with the in-tree demuxers */
+#if defined(HAVE_RWEBM) || defined(HAVE_RMP4)
+   if (id != PUSH_ARCHIVE_OPEN)
+   {
+#ifdef HAVE_RWEBM
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "webm");
+#endif
+#ifdef HAVE_RMP4
+      string_ext_list_merge_dedup(ext_filter, &_len, ext_size, "mp4|m4v");
+#endif
+   }
+#endif
+
 #ifdef HAVE_IMAGEVIEWER
    if (multimedia_builtin_imageviewer_enable && id != PUSH_ARCHIVE_OPEN)
    {

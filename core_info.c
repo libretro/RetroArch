@@ -2030,6 +2030,13 @@ static size_t core_info_list_resolve_all_extensions(
             if (!tok_end)
                tok_end = end;
             tok_len = tok_end - p;
+            /* "/" is one core's directory support, not a file
+             * extension every core list consumer should match */
+            if (tok_len == 1 && *p == '/')
+            {
+               p = tok_end + 1;
+               continue;
+            }
             CORE_INFO_EXT_INSERT(p, tok_len, scr->slots,
                   scr->token_buf, token_pos, _TOKEN_BUF,
                   unique_count, total_chars, _HASH_MASK);

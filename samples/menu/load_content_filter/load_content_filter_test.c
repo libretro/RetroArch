@@ -7,8 +7,10 @@
  * core directory holds CORES cores whose info files claim EXTS_PER
  * extensions each, together far past 2 KiB. Load Content's start
  * directory is opened the way the menu opens it, and every file there
- * must be listed: one per core extension, and with the image viewer
- * built in, an image.
+ * must be listed: one per core extension, an image with the image
+ * viewer built in and the movies the menu previews with the in-tree
+ * demuxers. One core loads directories, which does not make the
+ * start directory loadable content while no core is running.
  *
  * Requires a completed non-Qt build:
  *
@@ -108,6 +110,16 @@ static bool listed(const char *name)
    return false;
 }
 
+static bool listed_label(const char *label)
+{
+   size_t i;
+   file_list_t *buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].label && string_is_equal(buf->list[i].label, label))
+         return true;
+   return false;
+}
+
 static void ext_name(char *s, size_t len, unsigned c, unsigned e)
 {
    snprintf(s, len, "h%02uq%02u", c, e);
@@ -150,7 +162,23 @@ static bool write_fixture(const char *core_ext)
             return false;
       }
    }
-   return touch(dir_content, "picture.png");
+   {
+      char path[700];
+      FILE *f;
+      snprintf(name, sizeof(name), "hdir_libretro.%s", core_ext);
+      if (!touch(dir_cores, name))
+         return false;
+      snprintf(path, sizeof(path), "%s/hdir_libretro.info", dir_info);
+      if (!(f = fopen(path, "wb")))
+         return false;
+      fprintf(f, "display_name = \"Harness Directory\"\n");
+      fprintf(f, "supported_extensions = \"/|hdirx\"\n");
+      fprintf(f, "corename = \"Harness Directory\"\n");
+      fclose(f);
+   }
+   return touch(dir_content, "picture.png")
+       && touch(dir_content, "movie.webm")
+       && touch(dir_content, "movie.mp4");
 }
 
 static void remove_fixture(const char *core_ext)
@@ -172,7 +200,12 @@ static void remove_fixture(const char *core_ext)
          unlink_in(dir_content, name);
       }
    }
+   snprintf(name, sizeof(name), "hdir_libretro.%s", core_ext);
+   unlink_in(dir_cores, name);
+   unlink_in(dir_info, "hdir_libretro.info");
    unlink_in(dir_content, "picture.png");
+   unlink_in(dir_content, "movie.webm");
+   unlink_in(dir_content, "movie.mp4");
    path_rmdir(dir_cores);
    path_rmdir(dir_info);
    path_rmdir(dir_content);
@@ -338,6 +371,15 @@ int main(int argc, char *argv[])
 #ifdef HAVE_IMAGEVIEWER
    CHECK(listed("picture.png"),
          "an image is not listed while the image viewer is built in");
+#endif
+   CHECK(!listed_label(MENU_ENUM_LABEL_USE_THIS_DIRECTORY_STR),
+         "the start directory offers Use This Directory with no core "
+         "running");
+#ifdef HAVE_RWEBM
+   CHECK(listed("movie.webm"), "a WebM movie is not listed");
+#endif
+#ifdef HAVE_RMP4
+   CHECK(listed("movie.mp4"), "an MP4 movie is not listed");
 #endif
 
    main_exit(NULL);
