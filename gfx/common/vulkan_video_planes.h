@@ -3,8 +3,8 @@
 #define GFX_VULKAN_VIDEO_PLANES_H
 
 /* The image needs MUTABLE_FORMAT and SAMPLED usage. */
-static bool vulkan_video_plane_views(VkDevice device, VkImage image,
-      unsigned pixfmt, VkImageView views[2])
+static bool vulkan_video_plane_views_layer(VkDevice device, VkImage image,
+      unsigned pixfmt, unsigned layer, VkImageView views[2])
 {
    VkImageViewCreateInfo info;
    VkImageViewUsageCreateInfo usage;
@@ -17,6 +17,7 @@ static bool vulkan_video_plane_views(VkDevice device, VkImage image,
    info.pNext = &usage;
    info.image = image;
    info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+   info.subresourceRange.baseArrayLayer = layer;
    info.subresourceRange.levelCount = info.subresourceRange.layerCount = 1;
    for (i = 0; i < 2; i++)
    {
@@ -33,5 +34,10 @@ static bool vulkan_video_plane_views(VkDevice device, VkImage image,
       }
    }
    return true;
+}
+static bool vulkan_video_plane_views(VkDevice device, VkImage image,
+      unsigned pixfmt, VkImageView views[2])
+{
+   return vulkan_video_plane_views_layer(device, image, pixfmt, 0, views);
 }
 #endif

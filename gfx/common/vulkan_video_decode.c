@@ -15,29 +15,13 @@
 
 /* rh264/rh265/rvp9/rav1 hardware backends on Vulkan Video.
  *
- * A decoder is one stream: a video session, its parameters, the DPB -
- * one picture per rh264 slot, decoded output and reference picture in
- * one (DPB and output coincide) - a ring of bitstream buffers, and a
- * few output images. Its work goes to a lane, one decode queue and one
- * transfer queue that no other decoder uses while it is open.
- *
- * Every submission of a decoder, on either queue, waits for the one
- * before it on a timeline semaphore and raises it by one, so its
- * commands run in the order they were made: a slot is never decoded
- * into while a copy out of it runs, and a reference never changes
- * layout under a decode reading it.
- *
- * A picture to be shown is copied out of its slot, from the visible
- * window, into an output image, which then stands on its own while the
- * slot is decoded into again. The driver imports that image: its reads
- * wait for the copy, and signal the output image's own timeline
- * semaphore when done; an output image is reused only once that has
- * come, or once the frame was abandoned unread.
- *
- * A closed decoder whose output images are still being read waits in
- * a graveyard until they are; deinit, at device teardown, empties it.
- * Nothing here takes a lock: lanes are claimed with an atomic swap and
- * the graveyard is an atomic list. */
+ * Each decoder owns a video session, a DPB, bitstream/command rings and
+ * a decode/transfer queue lane. Submissions share an ordered timeline.
+ * With unified video layouts, readers sample the DPB in GENERAL and
+ * physical slots are renamed while exported frames remain held.
+ * Otherwise the visible window is copied to an independent output image.
+ * Ready/done timelines cover either export. Closed decoders stay in an
+ * atomic graveyard until their work and every reader have finished. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +55,7 @@
 #define VVD_MAX_LANES  2
 #define VVD_MAX_SLOTS  32
 #define VVD_OUTS       4    /* output images per decoder          */
+#define VVD_PHYSICAL (VVD_MAX_SLOTS + VVD_OUTS)
 #define VVD_RING       4    /* command and bitstream buffers      */
 #define VVD_WAIT_NS    1000000000ull
 
@@ -115,9 +100,12 @@ typedef struct vvd_dec
    unsigned slots;
    bool dpb_array;                /* the slots are layers of dpb[0]   */
    unsigned yuv[VVD_MAX_SLOTS];
-   VkImage dpb[VVD_MAX_SLOTS];
-   VkDeviceMemory dpb_mem[VVD_MAX_SLOTS];
-   VkImageView view[VVD_MAX_SLOTS];
+   bool direct_dpb;
+   unsigned physical_slots, slot_map[VVD_MAX_SLOTS], out_slot[VVD_OUTS];
+   VkImageView dpb_planes[VVD_PHYSICAL][2];
+   VkImage dpb[VVD_PHYSICAL];
+   VkDeviceMemory dpb_mem[VVD_PHYSICAL];
+   VkImageView view[VVD_PHYSICAL];
 
    VkImage out[VVD_OUTS];
    VkImageView out_planes[VVD_OUTS][2];
@@ -165,6 +153,7 @@ static struct
    uint32_t gfx_family, dec_family, xfer_family, xfer_first;
    unsigned lanes;
    bool up;
+   bool general;
    retro_atomic_int_t lane_busy[VVD_MAX_LANES];
    retro_atomic_int_t live;
    retro_atomic_ptr_t grave;
@@ -434,8 +423,10 @@ static void vvd_destroy(vvd_dec_t *d)
       if (d->out_done[i])
          vkDestroySemaphore(dev, d->out_done[i], NULL);
    }
-   for (i = 0; i < VVD_MAX_SLOTS; i++)
+   for (i = 0; i < VVD_PHYSICAL; i++)
    {
+      if (d->dpb_planes[i][0]) vkDestroyImageView(dev, d->dpb_planes[i][0], NULL);
+      if (d->dpb_planes[i][1]) vkDestroyImageView(dev, d->dpb_planes[i][1], NULL);
       if (d->view[i])
          vkDestroyImageView(dev, d->view[i], NULL);
       if (d->dpb[i])
@@ -634,10 +625,14 @@ static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
 {
    VkImageCreateInfo info;
    VkMemoryRequirements req;
-   uint32_t families[2];
+   uint32_t families[3], count = 1;
 
    families[0]                = family_a;
-   families[1]                = family_b;
+   if (family_b != family_a) families[count++] = family_b;
+   if ((usage & (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_SAMPLED_BIT))
+         == (VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_SAMPLED_BIT)
+         && vvd.gfx_family != family_a && vvd.gfx_family != family_b)
+      families[count++] = vvd.gfx_family;
    info.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    info.pNext                 = pnext;
    info.flags                 = (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
@@ -652,9 +647,9 @@ static bool vvd_make_image(VkImage *image, VkDeviceMemory *mem,
    info.samples               = VK_SAMPLE_COUNT_1_BIT;
    info.tiling                = VK_IMAGE_TILING_OPTIMAL;
    info.usage                 = usage;
-   info.sharingMode           = family_a == family_b
+   info.sharingMode           = count == 1
       ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
-   info.queueFamilyIndexCount = family_a == family_b ? 0 : 2;
+   info.queueFamilyIndexCount = count == 1 ? 0 : count;
    info.pQueueFamilyIndices   = families;
    info.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
    if (vkCreateImage(vvd.device, &info, NULL, image) != VK_SUCCESS)
@@ -752,13 +747,17 @@ static bool vvd_make_session(vvd_dec_t *d,
       == VK_SUCCESS;
 }
 
-static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
+static bool vvd_make_dpb_storage(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
 {
    VkImageUsageFlags usage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR
                            | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR
                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
    unsigned i;
 
+   if (d->direct_dpb) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+   d->physical_slots = d->slots + (d->direct_dpb ? VVD_OUTS : 0);
+   for (i = 0; i < d->slots; i++) d->slot_map[i] = i;
+   if (!vvd_format_ok(d, usage)) return false;
    d->dpb_array = !(caps->flags
          & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR);
    if (d->dpb_array)
@@ -776,21 +775,21 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
       fi.type   = VK_IMAGE_TYPE_2D;
       fi.tiling = VK_IMAGE_TILING_OPTIMAL;
       fi.usage  = usage;
-      fi.flags  = 0;
+      fi.flags  = d->direct_dpb ? VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT : 0;
       fp.sType                                = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
       fp.pNext                                = NULL;
       fp.imageFormatProperties.maxArrayLayers = 0;
       if (     !get || get(vvd.gpu, &fi, &fp) != VK_SUCCESS
-            || fp.imageFormatProperties.maxArrayLayers < d->slots)
+            || fp.imageFormatProperties.maxArrayLayers < d->physical_slots)
          return false;
    }
-   for (i = 0; i < (d->dpb_array ? 1u : d->slots); i++)
+   for (i = 0; i < (d->dpb_array ? 1u : d->physical_slots); i++)
       if (!vvd_make_image(&d->dpb[i], &d->dpb_mem[i], d->format, d->image,
-               d->dpb_array ? d->slots : 1, usage, &d->profiles,
+               d->dpb_array ? d->physical_slots : 1, usage, &d->profiles,
                vvd.dec_family, vvd.xfer_family))
          return false;
 
-   for (i = 0; i < d->slots; i++)
+   for (i = 0; i < d->physical_slots; i++)
    {
       VkImageViewUsageCreateInfo view_usage;
       VkImageViewCreateInfo info;
@@ -820,7 +819,35 @@ static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
          return false;
       }
    }
+   if (d->direct_dpb)
+      for (i = 0; i < d->physical_slots; i++)
+         if (!vulkan_video_plane_views_layer(vvd.device,
+                  d->dpb[d->dpb_array ? 0 : i], d->pixfmt,
+                  d->dpb_array ? i : 0, d->dpb_planes[i]))
+            return false;
    return true;
+}
+
+static bool vvd_make_dpb(vvd_dec_t *d, const VkVideoCapabilitiesKHR *caps)
+{
+   unsigned i;
+   d->direct_dpb = vvd.general;
+   if (vvd_make_dpb_storage(d, caps)) return true;
+   if (!d->direct_dpb) return false;
+   for (i = 0; i < VVD_PHYSICAL; i++)
+   {
+      if (d->dpb_planes[i][0]) vkDestroyImageView(vvd.device, d->dpb_planes[i][0], NULL);
+      if (d->dpb_planes[i][1]) vkDestroyImageView(vvd.device, d->dpb_planes[i][1], NULL);
+      if (d->view[i]) vkDestroyImageView(vvd.device, d->view[i], NULL);
+      if (d->dpb[i]) vkDestroyImage(vvd.device, d->dpb[i], NULL);
+      if (d->dpb_mem[i]) vkFreeMemory(vvd.device, d->dpb_mem[i], NULL);
+   }
+   memset(d->dpb_planes, 0, sizeof(d->dpb_planes));
+   memset(d->view, 0, sizeof(d->view));
+   memset(d->dpb, 0, sizeof(d->dpb));
+   memset(d->dpb_mem, 0, sizeof(d->dpb_mem));
+   d->direct_dpb = false;
+   return vvd_make_dpb_storage(d, caps);
 }
 
 static bool vvd_make_output(vvd_dec_t *d, unsigned i, VkExtent2D extent)
@@ -862,7 +889,7 @@ static bool vvd_make_outputs(vvd_dec_t *d)
    extent.height = (d->visible_h + 1) & ~1u;
    for (i = 0; i < VVD_OUTS; i++)
    {
-      if (     !vvd_make_output(d, i, extent)
+      if (     (!d->direct_dpb && !vvd_make_output(d, i, extent))
             || !(d->out_done[i] = vvd_timeline()))
          return false;
    }
@@ -1196,8 +1223,29 @@ static VkVideoPictureResourceInfoKHR vvd_resource(const vvd_dec_t *d,
    r.codedOffset.y    = 0;
    r.codedExtent      = d->coded;
    r.baseArrayLayer   = 0;
-   r.imageViewBinding = d->view[slot];
+   r.imageViewBinding = d->view[d->slot_map[slot]];
    return r;
+}
+
+/* Keep every mapped reference and every outstanding reader's physical slot. */
+static int vvd_target(vvd_dec_t *d, unsigned setup)
+{
+   bool held[VVD_PHYSICAL];
+   unsigned i, p;
+   int ready;
+   if (!d->direct_dpb) return (int)setup;
+   memset(held, 0, sizeof(held));
+   for (i = 0; i < d->slots; i++)
+      if (i != setup) held[d->slot_map[i]] = true;
+   for (i = 0; i < VVD_OUTS; i++)
+   {
+      ready = vvd_try_wait(d->out_done[i], d->out_value[i]);
+      if (ready < 0) return -1;
+      if (ready) held[d->out_slot[i]] = true;
+   }
+   for (p = 0; p < d->physical_slots; p++)
+      if (!held[p]) return (int)p;
+   return (int)d->physical_slots;
 }
 
 static int vvd_record(vvd_dec_t *d, unsigned k, VkDeviceSize size,
@@ -1210,14 +1258,18 @@ static int vvd_record(vvd_dec_t *d, unsigned k, VkDeviceSize size,
    VkVideoReferenceSlotInfoKHR *slots = d->slots_info;
    VkVideoReferenceSlotInfoKHR *begin_slots = d->begin_slots;
    VkVideoPictureResourceInfoKHR *res = d->res;
+   int target = vvd_target(d, setup);
+   if (target < 0) return -1;
+   if ((unsigned)target == d->physical_slots) return 1;
+   res[n].imageViewBinding = d->view[target];
    cb = d->dcb[k];
    if (!vvd_begin(cb))
       return -1;
    /* the slot's last picture is gone: it is written whole - after the
     * submission wait, so not under a copy out of it still running */
-   vvd_barrier(cb, d->dpb[d->dpb_array ? 0 : setup],
-         d->dpb_array ? setup : 0,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+   vvd_barrier(cb, d->dpb[d->dpb_array ? 0 : target],
+         d->dpb_array ? (unsigned)target : 0,
+         VK_IMAGE_LAYOUT_UNDEFINED, d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
          VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0,
          VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
          VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR);
@@ -1258,6 +1310,7 @@ static int vvd_record(vvd_dec_t *d, unsigned k, VkDeviceSize size,
    if (     vkEndCommandBuffer(cb) != VK_SUCCESS
          || !vvd_submit(d, d->dq, cb))
       return -1;
+   d->slot_map[setup] = (unsigned)target;
    d->reset        = true;
    d->dcb_value[k] = d->tl_value;
    d->dring++;
@@ -1401,13 +1454,37 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    }
    if (n == VVD_OUTS)
       return 1;
+   if (d->direct_dpb)
+   {
+      unsigned p = d->slot_map[slot];
+      memset(out, 0, sizeof(*out));
+      memcpy(&out->image, &d->dpb[d->dpb_array ? 0 : p], sizeof(VkImage));
+      memcpy(&out->plane_views[0], &d->dpb_planes[p][0], sizeof(VkImageView));
+      memcpy(&out->plane_views[1], &d->dpb_planes[p][1], sizeof(VkImageView));
+      memcpy(&out->wait, &d->tl, sizeof(VkSemaphore));
+      memcpy(&out->done, &d->out_done[o], sizeof(VkSemaphore));
+      out->wait_value = d->tl_value;
+      out->done_value = ++d->out_value[o];
+      out->abandon = vvd_abandon;
+      out->width = d->visible_w;
+      out->height = d->visible_h;
+      out->pixfmt = d->pixfmt;
+      out->yuv = d->yuv[slot];
+      out->layout = VK_IMAGE_LAYOUT_GENERAL;
+      out->array_slice = d->dpb_array ? p : 0;
+      out->crop_x = d->crop_x;
+      out->crop_y = d->crop_y;
+      d->out_slot[o] = p;
+      d->out_next = (o + 1) % VVD_OUTS;
+      return 0;
+   }
    k = d->xring % VVD_RING;
    ready = vvd_try_wait(d->tl, d->xcb_value[k]);
    if (ready != 0)
       return ready;
 
-   src   = d->dpb[d->dpb_array ? 0 : slot];
-   layer = d->dpb_array ? slot : 0;
+   src   = d->dpb[d->dpb_array ? 0 : d->slot_map[slot]];
+   layer = d->dpb_array ? d->slot_map[slot] : 0;
    regions[0].srcSubresource.aspectMask     = VK_IMAGE_ASPECT_PLANE_0_BIT;
    regions[0].srcSubresource.mipLevel       = 0;
    regions[0].srcSubresource.baseArrayLayer = layer;
@@ -1537,8 +1614,8 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    k = d->xring++ % VVD_RING;
    if (!vvd_wait(d->tl, d->xcb_value[k], VVD_WAIT_NS))
       return -1;
-   src = d->dpb[d->dpb_array ? 0 : slot];
-   layer = d->dpb_array ? slot : 0;
+   src = d->dpb[d->dpb_array ? 0 : d->slot_map[slot]];
+   layer = d->dpb_array ? d->slot_map[slot] : 0;
    regions[0].bufferOffset                    = 0;
    regions[0].bufferRowLength                 = 0;
    regions[0].bufferImageHeight               = 0;
@@ -1562,10 +1639,10 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
    cb = d->xcb[k];
    if (!vvd_begin(cb))
       return -1;
-   vvd_barrier(cb, src, layer, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
-         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR,
+   vvd_barrier(cb, src, layer, (d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR),
+         (d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL), VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR,
          0, VK_PIPELINE_STAGE_2_COPY_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT_KHR);
-   vkCmdCopyImageToBuffer(cb, src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+   vkCmdCopyImageToBuffer(cb, src, (d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
          d->readback, 2, regions);
    {
       VkBufferMemoryBarrier2KHR barrier;
@@ -1592,8 +1669,8 @@ static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
       dep.pBufferMemoryBarriers    = &barrier;
       vvd.cmd_barrier2(cb, &dep);
    }
-   vvd_barrier(cb, src, layer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-         VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, VK_PIPELINE_STAGE_2_COPY_BIT_KHR,
+   vvd_barrier(cb, src, layer, (d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
+         (d->direct_dpb ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR), VK_PIPELINE_STAGE_2_COPY_BIT_KHR,
          0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0);
    if (vkEndCommandBuffer(cb) != VK_SUCCESS || !vvd_submit(d, d->xq, cb))
       return -1;
@@ -1672,6 +1749,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.gpu         = ctx->gpu;
    vvd.device      = ctx->device;
    vvd.codecs      = ctx->video_codec_operations;
+   vvd.general     = (ctx->flags & VK_CTX_FLAG_VIDEO_GENERAL) != 0;
    vvd.mem         = ctx->memory_properties;
    vvd.gfx_family  = ctx->graphics_queue_index;
    vvd.dec_family  = ctx->video_decode_family;

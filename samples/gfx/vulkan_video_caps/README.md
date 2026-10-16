@@ -247,7 +247,8 @@ not the movie UI, custom shader presets, A/V sync or seek/reset on Windows.
 The decoder prefers mutable NV12/P010 output images with sampleable Y/UV
 views. The importer reads those planes directly in its compute shader,
 removing the full-frame image-to-buffer copy. The 64-byte color header uses push constants; sampled imports need no
-staging buffer or header transfer command. The decoder's DPB-to-output copy and RGBA conversion remain.
+staging buffer or header transfer command. RGBA conversion remains; devices without unified video layouts also retain
+the decoder's DPB-to-output copy.
 Allocation/view failure or an unavailable sampled pipeline retains buffer
 conversion. Ready/done timelines, abandonment and deferred close cover the
 image and its views together; thumbnail and movie descriptors forward both
@@ -362,4 +363,16 @@ real WebM movie core without a CPU framebuffer. The display timeline ignores
 hidden-only and metadata packets. WebM-only, no-audio and threadless mock
 builds cover BUSY, seek, state restore before startup, reset after context
 loss and unsupported hardware. Interactive UI/A/V acceptance remains open.
-The backend still retains one GPU output copy.
+The backend retains its GPU output copy without unified video layouts.
+
+
+### Direct Vulkan DPB exports
+
+`direct-check` runs the decoder/readback and real importer oracles with
+`unifiedImageLayoutsVideo` enabled, skipping devices without the feature.
+Every exported picture must have GENERAL layout and sampled plane views.
+The renderer preserves GENERAL for both sampling and buffer conversion.
+Four held exports force physical-slot renaming and output pressure; the
+readback oracle rereads held pictures before release, including after close.
+The default checks retain the copied path. Sampled allocation/view faults
+also retain copied output when unified layouts are enabled.

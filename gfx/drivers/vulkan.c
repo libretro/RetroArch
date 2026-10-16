@@ -13880,6 +13880,10 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       : vk->pipelines.yuv420_to_rgba8888;
    VkPipeline sampled_pipeline = fp16 ? vk->pipelines.yuv_image_to_rgba16f
       : vk->pipelines.yuv_image_to_rgba8888;
+   VkImageLayout transfer_layout = f->layout == VK_IMAGE_LAYOUT_GENERAL
+      ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   VkImageLayout sampled_layout = f->layout == VK_IMAGE_LAYOUT_GENERAL
+      ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    bool sampled = f->plane_views[0] && f->plane_views[1]
       && sampled_pipeline != VK_NULL_HANDLE;
 
@@ -13934,7 +13938,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       {
          images[i].sampler = vk->samplers.nearest;
          memcpy(&images[i].imageView, &f->plane_views[i], sizeof(VkImageView));
-         images[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+         images[i].imageLayout = sampled_layout;
          memset(&writes[i], 0, sizeof(writes[i]));
          writes[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
          writes[i].dstSet = st->set[slot]; writes[i].dstBinding = i + 1;
@@ -13957,7 +13961,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bar.srcAccessMask                   = 0;
    bar.dstAccessMask                   = sampled ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
    bar.oldLayout                       = (VkImageLayout)f->layout;
-   bar.newLayout                       = sampled ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.newLayout                       = sampled ? sampled_layout : transfer_layout;
    bar.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
    bar.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
    /* Non-dispatchable handles are 64 bits wide on every target */
@@ -13993,7 +13997,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    regions[1].imageOffset.x = f->crop_x / 2;
    regions[1].imageOffset.y = f->crop_y / 2;
    if (!sampled) vkCmdCopyImageToBuffer(cmd, bar.image,
-         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, st->staging[slot].buffer,
+         transfer_layout, st->staging[slot].buffer,
          2, regions);
 
    bbar.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -14022,7 +14026,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    /* The frame back as the producer left it */
    bar.srcAccessMask = sampled ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT;
    bar.dstAccessMask = 0;
-   bar.oldLayout     = sampled ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.oldLayout     = sampled ? sampled_layout : transfer_layout;
    bar.newLayout     = (VkImageLayout)f->layout;
    if (     bar.newLayout == VK_IMAGE_LAYOUT_UNDEFINED
          || bar.newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)

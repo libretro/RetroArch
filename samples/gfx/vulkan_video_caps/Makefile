@@ -121,6 +121,11 @@ check: all
 session-check: $(SESSION)
 	$(RUNNER) ./$(SESSION)
 
+direct-check: hevc_decode_test$(EXE) hevc_render_test$(EXE) import_test$(EXE)
+	VULKAN_TEST_GENERAL_IMPORT=1 $(RUNNER) ./import_test$(EXE)
+	VULKAN_TEST_DIRECT_DPB=1 $(RUNNER) ./hevc_decode_test$(EXE)
+	VULKAN_TEST_DIRECT_DPB=1 $(RUNNER) ./hevc_render_test$(EXE)
+
 decode-check: hevc_decode_test$(EXE)
 	$(RUNNER) ./hevc_decode_test$(EXE)
 
@@ -132,4 +137,4 @@ clean:
 	rm -f hevc_decode_test hevc_decode_test.exe hevc_render_test hevc_render_test.exe
 	rm -f import_test import_test.exe video_layout_test video_layout_test.exe
 
-.PHONY: all check av1-session-check session-check decode-check import-check render-check clean
+.PHONY: all check av1-session-check session-check decode-check import-check render-check direct-check clean

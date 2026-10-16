@@ -335,6 +335,8 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
 {
    vulkan_video_layout_t layout;
    video_frame_import_t frame;
+   VkImageLayout input_layout = getenv("VULKAN_TEST_GENERAL_IMPORT")
+      ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
    VkImage input = VK_NULL_HANDLE;
    VkImageView planes[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
    VkPipeline sampled_pipeline = t->vk.pipelines.yuv_image_to_rgba8888;
@@ -378,7 +380,7 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    regions[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
    regions[1].imageExtent.width = (t->width + 1) / 2; regions[1].imageExtent.height = (t->height + 1) / 2;
    vkCmdCopyBufferToImage(t->cb, t->upload, input, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 2, regions);
-   VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, input, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(t->cb, input, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, input_layout,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
    if (!oracle_submit(t)) goto done;
    memset(&frame, 0, sizeof(frame));
@@ -387,7 +389,7 @@ static int oracle_case(import_oracle_t *t, unsigned depth, unsigned flags, uint6
    frame.wait_value = frame.done_value = serial; frame.dims = VIDEO_SCALE_PACK(t->width, t->height);
    frame.output_pixfmt = output_fp16 ? IMAGE_PIXFMT_FP16 : 0;
    frame.pixfmt = depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
-   frame.yuv = flags; frame.layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   frame.yuv = flags; frame.layout = input_layout;
    if (transfer)
    {
       frame.color.transfer = transfer;

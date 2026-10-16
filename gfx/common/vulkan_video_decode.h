@@ -18,9 +18,10 @@
 
 /* H.264, HEVC Main/Main10, VP9 Profile 0/2 and AV1 Main on Vulkan Video.
  * The codec owner keeps sequencing; the GPU reconstructs
- * into the pictures of a DPB, and each picture to be shown is copied
- * out into an image of its own that the driver imports
- * (video_poke_interface::import_texture). Everything stays on the GPU.
+ * into a DPB. Unified video layouts allow direct sampled exports with
+ * physical-slot renaming; other devices copy each visible picture into
+ * an independent output image. The driver imports either export through
+ * video_poke_interface::import_texture. Everything stays on the GPU.
  *
  * The device must have been made with the decode and transfer queues
  * (vulkan_context_t::video_lanes). */

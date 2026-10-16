@@ -44,17 +44,31 @@ typedef struct oracle_readback
    VkDeviceSize uv_offset;
    int coherent;
    video_hw_frame_t held[4];
+   const hevc_fixture_t *held_fixture[4];
+   unsigned held_index[4];
+   bool checking;
    unsigned held_count, pressured;
 #ifdef HEVC_RENDER_TEST
    void *renderer;
 #endif
 } oracle_readback_t;
 
+static unsigned lease_failures;
+static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
+      const hevc_fixture_t *f, unsigned *count);
+
 static void oracle_release(oracle_readback_t *r)
 {
    unsigned i;
+   r->checking = true;
    for (i = 0; i < r->held_count; i++)
+   {
+      unsigned index = r->held_index[i];
+      if (!oracle_read_frame(r, r->held[i], r->held_fixture[i], &index))
+         lease_failures++;
       r->held[i].abandon(r->held[i].owner, r->held[i].done, r->held[i].done_value);
+   }
+   r->checking = false;
    r->held_count = 0;
 }
 
@@ -133,6 +147,12 @@ static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
    unsigned plane, x, y;
    int ok = 0;
    memcpy(&image, &frame.image, sizeof(image)); memcpy(&wait, &frame.wait, sizeof(wait));
+   if (getenv("VULKAN_TEST_DIRECT_DPB") && !getenv("VULKAN_TEST_REJECT_SAMPLED")
+         && (frame.layout != VK_IMAGE_LAYOUT_GENERAL || !frame.plane_views[0] || !frame.plane_views[1]))
+   {
+      puts("FAIL: direct DPB export was not used");
+      goto done;
+   }
    if (!frame.image || !frame.abandon || frame.pixfmt != (f->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12)
          || frame.width != r->width || frame.height != r->height || !frame.done) goto done;
 #ifndef HEVC_RENDER_TEST
@@ -142,10 +162,15 @@ static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
    memset(regions, 0, sizeof(regions));
    regions[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
    regions[0].imageSubresource.layerCount = 1;
+   regions[0].imageSubresource.baseArrayLayer = frame.array_slice;
+   regions[0].imageOffset.x = frame.crop_x;
+   regions[0].imageOffset.y = frame.crop_y;
    regions[0].imageExtent.width = r->width; regions[0].imageExtent.height = r->height;
    regions[0].imageExtent.depth = 1;
    regions[1] = regions[0]; regions[1].bufferOffset = r->uv_offset;
    regions[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+   regions[1].imageOffset.x = frame.crop_x / 2;
+   regions[1].imageOffset.y = frame.crop_y / 2;
    regions[1].imageExtent.width = (r->width + 1) / 2; regions[1].imageExtent.height = (r->height + 1) / 2;
    vkCmdCopyImageToBuffer(r->cb, image, (VkImageLayout)frame.layout, r->buffer, 2, regions);
    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -188,6 +213,7 @@ static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
    ok = *count < f->frames && hash == f->hash[*count];
    if (!ok) printf("%s frame %u: GPU %08x, expected %08x\n", f->name,
          *count, hash, *count < f->frames ? f->hash[*count] : 0);
+   if (r->checking) return ok;
 #ifdef HEVC_RENDER_TEST
    if (ok && hevc_render_frame(r->renderer, &frame, r->map, (size_t)r->uv_offset, r->sample_bytes))
    {
@@ -197,6 +223,8 @@ static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
 #else
    if (ok && r->held_count < 4)
    {
+      r->held_fixture[r->held_count] = f;
+      r->held_index[r->held_count] = *count;
       r->held[r->held_count++] = frame;
       (*count)++;
       return 1;
@@ -204,6 +232,7 @@ static int oracle_read_frame(oracle_readback_t *r, video_hw_frame_t frame,
 #endif
    ok = 0;
 done:
+   if (r->checking) return 0;
    if (frame.abandon) frame.abandon(frame.owner, frame.done, frame.done_value);
    return ok;
 }
@@ -370,6 +399,10 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline = {0};
    VkPhysicalDeviceSynchronization2FeaturesKHR sync = {0};
    VkPhysicalDeviceVideoDecodeVP9FeaturesKHR vp9 = {0};
+   VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified = {0};
+   VkPhysicalDeviceFeatures2 features = {0};
+   const char *enabled[9];
+   PFN_vkGetPhysicalDeviceFeatures2 get_features;
    VkDevice device;
    vulkan_context_t *ctx = (vulkan_context_t*)calloc(1, sizeof(*ctx));
    float priority = 1.0f;
@@ -409,7 +442,26 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
       }
       info.enabledExtensionCount = 8;
    }
-   info.ppEnabledExtensionNames = extensions;
+   for (i = 0; i < info.enabledExtensionCount; i++) enabled[i] = extensions[i];
+   if (getenv("VULKAN_TEST_DIRECT_DPB"))
+   {
+      unified.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
+      features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+      features.pNext = &unified;
+      get_features = (PFN_vkGetPhysicalDeviceFeatures2)get(instance, "vkGetPhysicalDeviceFeatures2");
+      if (get_features) get_features(gpu, &features);
+      if (!unified.unifiedImageLayoutsVideo)
+      {
+         puts("SKIP: unified video layouts unavailable");
+         free(ctx);
+         return 1;
+      }
+      unified.pNext = (void*)info.pNext;
+      info.pNext = &unified;
+      enabled[info.enabledExtensionCount++] = VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME;
+      ctx->flags |= VK_CTX_FLAG_VIDEO_GENERAL;
+   }
+   info.ppEnabledExtensionNames = enabled;
    if (!create || create(gpu, &info, NULL, &device) != VK_SUCCESS) { free(ctx); return 0; }
    if (!vulkan_symbol_wrapper_load_core_device_symbols(device)) goto done;
    ctx->instance = instance; ctx->gpu = gpu; ctx->device = device;
@@ -448,6 +500,7 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    }
 done:
    if (getenv("VULKAN_TEST_REJECT_SAMPLED") && !sample_rejections) ok = 0;
+   if (lease_failures) { printf("FAIL: %u retained frames changed\n", lease_failures); ok = 0; }
    if (sample_create_image) vulkan_symbol_wrapper_vkCreateImage = sample_create_image;
    if (sample_create_view) vulkan_symbol_wrapper_vkCreateImageView = sample_create_view;
    vkDestroyDevice(device, NULL); free(ctx);

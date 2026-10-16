@@ -49,6 +49,19 @@
 #include "../drivers_shader/shader_vulkan.h"
 #include "../include/vulkan/vulkan.h"
 
+#ifndef VK_KHR_unified_image_layouts
+#define VK_KHR_unified_image_layouts 1
+#define VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME "VK_KHR_unified_image_layouts"
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR ((VkStructureType)1000527000)
+typedef struct VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR
+{
+   VkStructureType sType;
+   void *pNext;
+   VkBool32 unifiedImageLayouts;
+   VkBool32 unifiedImageLayoutsVideo;
+} VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR;
+#endif
+
 #define VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, img, levels, old_layout, new_layout, src_access, dst_access, src_stages, dst_stages, src_queue_family_idx, dst_queue_family_idx) \
 { \
    VkImageMemoryBarrier barrier; \
@@ -194,7 +207,8 @@ enum vulkan_context_flags
     * suboptimal, and has not presented optimally since: a suboptimal
     * present from it is the surface's standing answer, not a request
     * to rebuild again. */
-   VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8)
+   VK_CTX_FLAG_SUBOPTIMAL_REBUILT           = (1 << 8),
+   VK_CTX_FLAG_VIDEO_GENERAL                = (1 << 9)
 };
 
 enum gfx_ctx_vulkan_data_flags

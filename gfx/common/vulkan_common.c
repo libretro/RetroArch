@@ -97,7 +97,7 @@ static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 static bool                          cached_instance_hdr_vk;
 static bool                          cached_timeline_vk;
 /* The video decode queues a cached device was made with */
-static uint32_t                      cached_video_vk[5];
+static uint32_t                      cached_video_vk[6];
 #ifdef HAVE_OPENXR
 /* Kept with a cached device: the runtime made it. */
 static vulkan_openxr_t              *cached_xr;
@@ -877,7 +877,8 @@ static const char *vulkan_optional_device_extensions[] = {
     * most Windows drivers, present on Android and Mesa. */
    "VK_GOOGLE_display_timing",
    /* What imported frames (a hardware decoder's) synchronise with */
-   "VK_KHR_timeline_semaphore"
+   "VK_KHR_timeline_semaphore",
+   VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Lets the app signal SMPTE-2086 mastering-display metadata to the
     * compositor via vkSetHdrMetadataEXT. Optional: if absent (common on
@@ -1075,6 +1076,43 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       VkPhysicalDevice gpu, const VkDeviceCreateInfo *info,
       VkDevice *device)
 {
+   VkDeviceCreateInfo local = *info;
+   VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR unified;
+   VkPhysicalDeviceFeatures2 features;
+   const VkBaseInStructure *chain;
+   PFN_vkGetPhysicalDeviceFeatures2 get;
+   unsigned i;
+   bool enabled = false;
+   memset(&unified, 0, sizeof(unified));
+   unified.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
+   for (chain = (const VkBaseInStructure*)info->pNext; chain; chain = chain->pNext)
+      if (chain->sType == unified.sType)
+      {
+         enabled = ((const VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR*)chain)->unifiedImageLayoutsVideo != 0;
+         break;
+      }
+   if (!chain)
+      for (i = 0; i < info->enabledExtensionCount; i++)
+         if (!strcmp(info->ppEnabledExtensionNames[i], VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME))
+         {
+            get = (PFN_vkGetPhysicalDeviceFeatures2)
+               vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+                     "vkGetPhysicalDeviceFeatures2");
+            memset(&features, 0, sizeof(features));
+            features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            features.pNext = &unified;
+            if (get) get(gpu, &features);
+            if (unified.unifiedImageLayoutsVideo)
+            {
+               unified.pNext = (void*)local.pNext;
+               local.pNext = &unified;
+               enabled = true;
+            }
+            break;
+         }
+   info = &local;
+   vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
+   if (enabled) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
 #ifdef HAVE_OPENXR
    if (vk->context.xr && vulkan_openxr_uses_enable2(vk->context.xr))
    {
@@ -1645,6 +1683,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.video_xfer_first    = cached_video_vk[2];
          vk->context.video_lanes         = cached_video_vk[3];
          vk->context.video_codec_operations = cached_video_vk[4];
+         if (cached_video_vk[5]) vk->context.flags |= VK_CTX_FLAG_VIDEO_GENERAL;
+         else vk->context.flags &= ~VK_CTX_FLAG_VIDEO_GENERAL;
          cached_gpu_vk      = VK_NULL_HANDLE;
 
          if (cached_destroy_device_vk)
@@ -4596,6 +4636,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_video_vk[2]       = vk->context.video_xfer_first;
       cached_video_vk[3]       = vk->context.video_lanes;
       cached_video_vk[4]       = vk->context.video_codec_operations;
+      cached_video_vk[5]       = vk->context.flags & VK_CTX_FLAG_VIDEO_GENERAL;
 #ifdef HAVE_OPENXR
       cached_xr                = vk->context.xr;
       vk->context.xr           = NULL;
