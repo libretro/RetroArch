@@ -3699,11 +3699,12 @@ static bool gl2_hw_ring_capture(void *data, unsigned slot,
    {
       /* A sync the video thread never took belongs to a frame it
        * dropped; deleting it does not disturb a wait already placed. */
-      GLsync old = (GLsync)retro_atomic_exchange_ptr(&gl->hw_ring_sync[slot],
-            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+      void *old;
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot],
+            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), old);
       glFlush();
       if (old)
-         glDeleteSync(old);
+         glDeleteSync((GLsync)old);
       return true;
    }
 #endif
@@ -3720,11 +3721,12 @@ static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
       return false;
 #ifdef GL2_HW_RING_SYNC
    {
-      GLsync sync = (GLsync)retro_atomic_exchange_ptr(&gl->hw_ring_sync[slot], NULL);
+      void *sync;
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot], NULL, sync);
       if (sync)
       {
-         glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-         glDeleteSync(sync);
+         glWaitSync((GLsync)sync, 0, GL_TIMEOUT_IGNORED);
+         glDeleteSync((GLsync)sync);
       }
    }
 #endif

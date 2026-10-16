@@ -35,6 +35,21 @@
 #include "../video_driver.h"
 #include "gl_common.h"
 
+/* The hardware ring's per-slot sync, handed from the core's thread to
+ * the video thread by exchange so that one thread waits and deletes
+ * each. A backend without pointer atomics only serves single-core
+ * targets, where a plain swap is the same. */
+#ifndef GL_HW_RING_SYNC_T
+#if defined(RETRO_ATOMIC_HAS_PTR)
+#define GL_HW_RING_SYNC_T retro_atomic_ptr_t
+#define GL_HW_RING_SYNC_SWAP(p, v, out) \
+   ((out) = retro_atomic_exchange_ptr((p), (v)))
+#else
+#define GL_HW_RING_SYNC_T void *
+#define GL_HW_RING_SYNC_SWAP(p, v, out) ((out) = *(p), *(p) = (v))
+#endif
+#endif
+
 RETRO_BEGIN_DECLS
 
 typedef struct gl2 gl2_t;
@@ -173,10 +188,8 @@ struct gl2
    /* The threaded wrapper's hardware ring: the fence the core's thread
     * placed after rendering into each slot's texture, for the frame on
     * this thread to wait before reading it. Sync objects are shared
-    * between the two contexts, and each is handed from the core's
-    * thread to this one by exchange, so exactly one thread waits and
-    * deletes it. */
-   retro_atomic_ptr_t hw_ring_sync[3];
+    * between the two contexts (GL_HW_RING_SYNC_SWAP). */
+   GL_HW_RING_SYNC_T hw_ring_sync[3];
    void *hw_ring_done_sync; /* taken ahead of the swap */
    /* Placed after each PBO readback: a slot is read only once its
     * fence has signalled, so mapping it never waits on the GPU. */
