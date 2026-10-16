@@ -3,8 +3,10 @@
 RetroArch can act as a [Model Context Protocol](https://modelcontextprotocol.io)
 server, so an AI assistant that speaks MCP can drive it: pause and resume,
 load and save states, take screenshots, read core memory, load content.
-Every tool is one of RetroArch's network commands; the list, and what each
-one does, is the same one `HELP` prints on the network command interface.
+Every tool is one of RetroArch's network commands, described as `HELP`
+describes it on the network command interface. Not every command is a
+tool: `tools/list` leaves out the ones an assistant has no use for, or
+that another tool covers.
 
 The server is off by default.
 
@@ -77,8 +79,8 @@ Over stdin and stdout RetroArch also offers logging: after
 
 ## What the tools do
 
-Each command is one tool, named as the command (`GET_STATUS`,
-`STATE`, `SCREENSHOT`). Its parameters are named, typed and
+A tool is named as its command (`GET_STATUS`, `STATE`,
+`SCREENSHOT`). Its parameters are named, typed and
 marked needed or not, so a client is told what to send rather than
 having to write the command's own line by hand:
 
@@ -92,8 +94,10 @@ having to write the command's own line by hand:
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
 
-A parameter that is needed and left out is answered before the command
-runs at all, as JSON-RPC invalid params rather than as a tool failure.
+A parameter that is needed and left out, one that should be an integer
+and is not, and a tool that does not exist are answered before anything
+runs, as JSON-RPC invalid params (`-32602`) rather than as a tool
+failure.
 
 The single `argument` string this server took before the parameters
 still works, so a client holding a cached tool list keeps going until it
@@ -106,8 +110,9 @@ nothing report `Done.`.
 
 The replies that are lines of tab-separated fields - `GET_OPTION`,
 `SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
-`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT` and
-`RELEASE_INPUT` - come
+`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT`,
+`RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS` and
+`RUN_UNTIL` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns:
@@ -125,13 +130,15 @@ for the cores, `playlist` for the playlists, `index`, `label`, `content`
 and `core` for a playlist's entries, `key`, `value`, `description` and
 `values` for a core's options, `start`, `length`, `select`,
 `disconnect`, `kind`, `access`, `order` and `space` for the memory map,
-and `player`, `buttons` and `axes` for what a player holds. Every field
+`player`, `buttons` and `axes` for what a player holds, and `label`,
+`address` and `value` for the bytes `WATCH` watches. Every field
 is a string: it is the text's own field, which the server does not read
 as anything else.
 
 **A tool answers with `structuredContent` exactly when it declared an
-`outputSchema`**, so a client reads the schema it was handed at
-`tools/list` and does not have to probe each reply. A tool with no
+`outputSchema` and succeeded**, so a client reads the schema it was
+handed at `tools/list` and does not have to probe each reply. A reply
+marked `isError` is its reason as text, with no `structuredContent`. A tool with no
 `outputSchema` answers with text alone, because its reply is prose or a
 confirmation rather than rows.
 
@@ -140,10 +147,9 @@ ones every row carries: `GET_CORE_OPTION` gives an option's `values`
 only where it was asked for that option by key.
 
 A line the command opens with its own name, such as `LIST_CORES none`,
-is not a row - though `RUN_FRAMES 3` and `PRESS 1 right+a 4` still give
-the frames run as `frames`, the number ending the line - and a failure is its reason and no rows at all. Neither
-are the lines that carry a number about the reply rather than a row of
-it, which become fields of their own:
+is not a row. Neither are the lines that carry a number about the reply
+rather than a row of it, which become fields of their own - the number
+ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 
 | Line | Field | Where |
 | --- | --- | --- |
@@ -151,7 +157,11 @@ it, which become fields of their own:
 | `MORE 200` | `more: true`, `next: 200` | `GET_PLAYLIST`'s next page |
 | `NEXT 48` | `next: 48` | where `GET_LOG` reached |
 | `SKIPPED 12` | `skipped: 12` | log lines gone before the first kept |
-| `RUN_FRAMES 3` | `frames: 3` | the frames `RUN_FRAMES` or `PRESS` ran |
+| `RUN_FRAMES 3` | `frames: 3` | the frames `RUN_FRAMES` ran |
+| `PRESS 1 a 4` | `frames: 4` | the frames `PRESS` ran |
+| `MET 12` | `met: 12` | the frames `RUN_UNTIL` ran until the byte met it |
+| `WAITING 540` | `waiting: 540` | the frames it ran without that |
+| `VALUE 5` | `value: 5` | what the byte `RUN_UNTIL` waited on holds |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -204,7 +214,10 @@ choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
 `DISK next pressed`, `REPLAY ERROR no replay is playing or recording`,
 and `REINIT audio` for a restart that says nothing itself - while the
 commands sent by name answer as they always have. `DISK` is refused on
-a core with no disk control, where the hotkeys would do nothing.
+a core with no disk control, where the hotkeys would do nothing. A word
+the tool does not know is answered with the ones it does - `STATE
+ERROR one of save|load` - and so is anything after a word that takes
+nothing. `REPLAY`'s slot or frame is its `number` parameter.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
 files itself, and playing a game does not need them.
@@ -265,15 +278,16 @@ than pressed, so `PRESS` refuses one.
 
 **A single request runs at most nine seconds of frames** - 540 at
 60fps, 450 at 50fps, and never more than 600 - because a reply is
-waited for ten. An MCP client
-is told the command did not answer after ten seconds and the frames run
-on regardless, so both commands refuse more than that outright rather
-than failing later with hundreds of frames already run. Ask again to
-run more.
+waited for ten. An MCP client is told the command did not answer after
+ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`
+and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
+rather than failing later with hundreds of frames already run. Ask
+again to run more.
 
-`PRESS` holds the limit on every interface, because it holds input
-through every frame it runs and a press nobody is waiting for would go
-on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
+`PRESS` has a limit on every interface - nine seconds of frames over
+MCP, 600 frames on the network and stdin interfaces - because it holds
+input through every frame it runs and a press nobody is waiting for
+would go on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
 network and stdin interfaces, which have no deadline, and leaves
 nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
@@ -295,9 +309,11 @@ One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
 all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
-its place in the list when its address changes. Values are decimal,
-0 to 255, as `RUN_UNTIL` takes them; addresses are hexadecimal. Eight at once. Each is
-checked when it is set - an address nothing maps is refused there -
+its place in the list when its address changes; with nothing watched
+it answers `WATCH none`. Values are decimal, 0 to 255, as `RUN_UNTIL`
+takes them; addresses are hexadecimal. A label is up to 15 characters,
+with no tab or newline in it. Eight at once. Each is checked when it is
+set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
 it. All of them are dropped when content closes, since the next
@@ -335,9 +351,10 @@ that many frames, one per frame advance, answering once the last has
 run; it is left paused. Use it to let the game run on its own - a
 cutscene, a fall - where `PRESS` is for holding something while it
 does. Both are refused while the menu is open, without content, and in
-achievements hardcore mode, and both are the same one job: a second
-`RUN_FRAMES` or `PRESS` replaces one still running, which is answered
-with an error, as it is when the content closes.
+achievements hardcore mode, and they and `RUN_UNTIL` are the same one
+job: a second `RUN_FRAMES`, `PRESS` or `RUN_UNTIL` replaces one still
+running, which is answered with an error, as it is when the content
+closes.
 
 `SET_INPUT` with `RUN_FRAMES` is still the way to hold something across
 several steps - a direction held while reading memory between frames -
@@ -420,8 +437,6 @@ the reason:
   has started or the seek or checkpoint has run; `halt` is a hotkey
   press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
-- `AI_SERVICE`: one translation of the screen, answered with the
-  service's text.
 
 A tool that fails says why, as `<NAME> ERROR <reason>`, and the result
 is marked `isError`. Whether a reply is a failure is the command's own
@@ -434,9 +449,14 @@ answered with an error saying so; the work goes on, and `GET_STATUS`
 tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
-Hotkey tools (`MENU`, `DISK`, `QUIT`, `RESET`) press the hotkey for one
-frame.
-`SCREENSHOT` and `REPLAY` are the exceptions, answered as above; `SCREENSHOT`
+A request over HTTP is at most 64 KiB, headers and body together, and a
+larger one is answered `413`; only `POST /mcp` and `POST /` are served.
+Over stdio a line past 64 KiB is answered with a parse error and skipped
+to its newline, and a `\r` before the newline is taken as part of it.
+Batch requests are refused as invalid.
+
+Hotkey tools (`QUIT`, `RESET`), and the hotkeys behind `MENU`, `DISK`
+and `REPLAY halt`, press for one frame. `SCREENSHOT` is the exception: it
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
@@ -444,11 +464,15 @@ text, so a client can see the screen without reaching the file - or with
 
 Every tool carries hints for the client:
 
-- **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`,
-  `GET_MEMORY_MAP`, `GET_CORE_OPTION`);
+- **read-only**: only reports (`GET_STATUS`, `GET_OPTION`, `GET_LOG`,
+  `GET_INPUT`, `GET_CORE_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`,
+  `GET_PLAYLIST`, `READ_CORE_MEMORY`, `GET_MEMORY_MAP`);
 - **destructive**: can lose unsaved progress or data, or loads code
-  (`QUIT`, `RESET`, `STATE`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
-  `LOAD_CONTENT`).
+  (`QUIT`, `RESET`, `STATE`, `REPLAY`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
+  `START_CORE`, `LOAD_CONTENT`, `CLOSE_CONTENT`, `UNLOAD_CORE`).
+
+Every tool also says it reaches nothing outside RetroArch
+(`openWorldHint: false`).
 
 `SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`
 lists, and none of them loses progress.

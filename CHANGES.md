@@ -105,8 +105,8 @@
 - NETWORK: LOAD_CORE says why it failed, and neither it nor LOAD_CONTENT unloads the running core for a path that turns out not to be one
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
 - NETWORK: LIST_CORES takes a content path, listing only the cores that can load it
-- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)
-- NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders, AI service) answer with its outcome once it is through, and the server stays up across content loads
+- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, most network commands a tool (off by default, see docs/mcp-server.md)
+- NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders) answer with its outcome once it is through, and the server stays up across content loads
 - NETWORK: MCP server: the replies that are rows of fields are given as structuredContent as well as text, with an outputSchema describing their columns
 - NETWORK: MCP server: the hotkeys that step a selection a program cannot read back are no longer offered as tools, where a command taking the value outright already is; all of them remain network commands
 - NETWORK: MCP server: RUN_FRAMES and PRESS give the frames run in structuredContent, REINIT answers under its own name, and DISK is refused on cores with no disk control
