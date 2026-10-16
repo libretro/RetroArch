@@ -279,6 +279,10 @@ void openxr_frame_set_placement(openxr_frame_t *f, unsigned placement);
  * showed them, and the space they are in: what the laser points at. */
 void openxr_frame_get_shown_quads(openxr_frame_t *f,
       video_xr_quad_set_t *out, XrSpace *space);
+/* Any thread: where the last frame showed the screens (the anchor,
+ * VIEW's identity, or Lazy Follow's), and their space. */
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space);
 void openxr_frame_request_recenter(openxr_frame_t *f);
 /* Any thread: how often the anchor has moved, and the display period
  * the frames publish, 0 until measured. */

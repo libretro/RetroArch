@@ -1751,6 +1751,18 @@ void config_reset_video_screen_xr(settings_t *settings, unsigned first, unsigned
 /* The headset's menu back in front of screen 1. */
 void config_reset_video_menu_xr(settings_t *settings);
 
+struct video_screen_xr;
+/* Edit Screens' reads and writes of a screen's place, or the menu's,
+ * as the Stereo 3D & Screens rows keep them. A write normalises, marks
+ * the settings modified and leaves Visible alone; NULL resets a screen
+ * as Reset Screen does, or puts the menu back in front of screen 1. The
+ * menu's read is false while it follows screen 1. */
+void config_get_video_screen_xr(unsigned screen, struct video_screen_xr *out);
+bool config_get_video_menu_xr(struct video_screen_xr *out);
+void config_set_video_screen_xr(unsigned screen,
+      const struct video_screen_xr *values);
+void config_set_video_menu_xr(const struct video_screen_xr *values);
+
 void config_set_defaults(settings_t *target);
 
 void config_load(void);

@@ -6536,6 +6536,10 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_HEADSET_RECENTER:
+#ifdef HAVE_OPENXR
+         /* A grab ends first, where the hand left its item. */
+         input_openxr_edit_release();
+#endif
          video_driver_headset_recenter();
          break;
       case CMD_EVENT_HEADSET_VIEW_TOGGLE:

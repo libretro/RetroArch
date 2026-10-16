@@ -599,6 +599,50 @@ void video_driver_headset_edit(bool editing, unsigned seq)
    t_editing  = editing;
    t_edit_seq = seq;
 }
+/* The settings edit mode reads and writes, kept as configuration.c
+ * keeps them: a write normalised and marked modified, Visible left
+ * alone; NULL resets a screen as Reset Screen does, or puts the menu
+ * back in front of screen 1. */
+static video_screen_xr_t t_xr[RETRO_VIDEO_VIEWS_MAX];
+static video_screen_xr_t t_menu_xr;
+static bool              t_menu_placed;
+static bool              t_modified;
+void config_get_video_screen_xr(unsigned screen, video_screen_xr_t *out)
+{
+   *out = t_xr[screen];
+}
+bool config_get_video_menu_xr(video_screen_xr_t *out)
+{
+   *out = t_menu_xr;
+   return t_menu_placed;
+}
+void config_set_video_screen_xr(unsigned screen,
+      const video_screen_xr_t *values)
+{
+   video_screen_xr_t s;
+   if (screen >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   video_views_xr_reset(&s, 1);
+   if (values)
+   {
+      s         = *values;
+      s.visible = t_xr[screen].visible;
+      video_views_xr_normalize(&s);
+   }
+   t_xr[screen] = s;
+   t_modified   = true;
+}
+void config_set_video_menu_xr(const video_screen_xr_t *values)
+{
+   video_views_xr_reset(&t_menu_xr, 1);
+   t_menu_placed = values != NULL;
+   if (values)
+   {
+      t_menu_xr = *values;
+      video_views_xr_normalize(&t_menu_xr);
+   }
+   t_modified = true;
+}
 static bool     t_in_poll;
 static unsigned t_pauses, t_unpauses, t_bad_pauses;
 /* A pause the frontend refuses (hardcore, netplay) when a case says. */
@@ -670,6 +714,20 @@ void openxr_frame_get_shown_quads(openxr_frame_t *f,
       video_xr_quad_set_t *out, XrSpace *space)
 {
    *out   = t_quads;
+   *space = t_space ? t_space : t_xr_session.local_space;
+}
+/* The same quads from an identity anchor, and the screens' pose: the
+ * identity unless a case turns it, in the shown quads' space. */
+static video_xr_pose_t t_screens = { { 0.0f, 0.0f, 0.0f, 1.0f },
+   { 0.0f, 0.0f, 0.0f } };
+void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
+{
+   *out = t_quads;
+}
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space)
+{
+   *pose  = t_screens;
    *space = t_space ? t_space : t_xr_session.local_space;
 }
 /* The dots' image: none unless a case gives one. */
@@ -2347,6 +2405,595 @@ static void test_edit_pause(void)
    t_forget_devices();
 }
 
+static bool t_near(float a, float b)
+{
+   return fabs((double)a - (double)b) < 1e-3;
+}
+
+/* The menu's handle bar's middle, for a menu h metres tall centred at
+ * y 0. */
+static float t_handle_y(float h)
+{
+   return -(h + VIDEO_XR_HANDLE_HEIGHT) * 0.5f - VIDEO_XR_HANDLE_GAP;
+}
+
+/* Screen 1 1.8 m ahead and the menu placed 2 m to its right, from an
+ * identity anchor; both hands at the eyes, looking ahead. */
+static void t_edit_fixture(void)
+{
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 2;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.8f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   t_quads.slots[0].base.z          = -1.8f;
+   video_xr_pose_identity(&t_quads.quads[1].pose);
+   t_quads.quads[1].pose.position.x = 2.0f;
+   t_quads.quads[1].pose.position.z = -1.7f;
+   t_quads.quads[1].width           = 1.0f;
+   t_quads.quads[1].height          = 0.6f;
+   t_quads.quads[1].kind            = VIDEO_XR_QUAD_MENU;
+   t_quads.quads[1].slot            = VIDEO_XR_MENU_SLOT;
+   t_quads.slots[VIDEO_XR_MENU_SLOT].base.z = -1.7f;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[1].orientation.w = 1.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[1]       = true;
+   t_aim_tracked[2]       = true;
+   video_views_xr_reset(t_xr, RETRO_VIDEO_VIEWS_MAX);
+   video_views_xr_reset(&t_menu_xr, 1);
+   t_menu_xr.x            = 2.0f;
+   t_menu_placed          = true;
+   t_modified             = false;
+   video_xr_pose_identity(&t_screens);
+   t_space                = XR_NULL_HANDLE;
+   t_menu_open            = false;
+   t_let_go();
+}
+
+/* A fresh session in edit mode, started as the frontend's command
+ * starts it. */
+static void t_edit_start(void)
+{
+   t_forget_devices();
+   t_fresh_session();
+   t_edit_fixture();
+   t_edit_on(false);
+   CHECK(t_editing, "fixture: not editing");
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+}
+
+static void t_edit_end(void)
+{
+   t_let_go();
+   if (t_editing)
+      input_openxr_edit_toggle();
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_aim_tracked[1] = t_aim_tracked[2] = false;
+   video_xr_pose_identity(&t_screens);
+   t_space          = XR_NULL_HANDLE;
+   t_forget_devices();
+}
+
+static void t_edit_poll(void)
+{
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+}
+
+/* A grip on a screen grabs it; it follows the hand, level; the trigger
+ * lets its roll follow; the stick pushes and resizes, by how far past
+ * its deadzone; letting go leaves it there, counted for the frame
+ * snapshot. */
+static void test_edit_grab(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned seq;
+   t_edit_start();
+   seq = t_edit_seq;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == 0,
+         "the grip grabbed %u in state %u", g->slot, g->state);
+   CHECK(t_near(t_xr[0].x, 0.0f) && t_near(t_xr[0].z, 0.0f),
+         "a grab moved the screen");
+
+   t_aim[2].position.x = 0.2f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.2f) && t_near(t_xr[0].y, 0.0f)
+         && t_near(t_xr[0].z, 0.0f) && t_near(t_xr[0].yaw, 0.0f),
+         "moved 20 cm: %.3f %.3f %.3f", t_xr[0].x, t_xr[0].y, t_xr[0].z);
+
+   /* A 30 degree roll of the wrist: level. */
+   t_aim[2].orientation.z = (float)sin(M_PI / 12.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 12.0);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].roll, 0.0f), "rolled %.2f while level",
+         t_xr[0].roll);
+   /* The trigger: no jump, then the roll follows. */
+   t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].roll, 0.0f), "the trigger rolled it at once");
+   t_aim[2].orientation.z = 0.5f;
+   t_aim[2].orientation.w = 0.8660254f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].roll, 30.0f), "rolled %.2f tilting", t_xr[0].roll);
+   /* Let go of the trigger: the roll stays. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_aim[2].orientation.z = 0.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].roll, 30.0f), "the roll went back to %.2f",
+         t_xr[0].roll);
+
+   /* The stick for 0.1 s: up pushes 15 cm, right grows 2^0.1 times. */
+   t_hold("edit/stick", 2, 0.0f, 1.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].z, -0.15f), "pushed to %.3f", t_xr[0].z);
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 1.0f, 0.0f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].scale, 1.07177f), "scaled to %.4f", t_xr[0].scale);
+   CHECK(t_near(g->width, 1.6f * 1.07177f), "width %.3f", g->width);
+   /* Inside the deadzone, nothing; half past it, half the rate. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 0.15f, 0.15f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].z, -0.15f) && t_near(t_xr[0].scale, 1.07177f),
+         "the deadzone moved it to %.3f, %.4f", t_xr[0].z, t_xr[0].scale);
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 0.0f, 0.6f);
+   t_clock += 100000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].z, -0.225f), "half past the deadzone: %.3f",
+         t_xr[0].z);
+   /* A stalled poll steps no more than 0.1 s. */
+   t_let_go();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/stick", 2, 0.0f, 1.0f);
+   t_clock += 2000000;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].z, -0.375f), "a 2 s stall pushed to %.3f",
+         t_xr[0].z);
+
+   /* Let go: left there, the change counted. */
+   t_let_go();
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_RELEASED && g->release_seq == seq + 1
+         && t_edit_seq == seq + 1, "state %u seq %u/%u", g->state,
+         g->release_seq, t_edit_seq);
+   CHECK(t_near(t_xr[0].x, 0.2f), "letting go moved it");
+   CHECK(t_modified, "not marked modified");
+   input_openxr_edit_toggle();
+   CHECK(!strcmp(t_notice, "edit unsaved"), "notice %s", t_notice);
+   t_edit_end();
+}
+
+/* A grab with the trigger already held tilts from the start: the roll
+ * follows at the next poll. */
+static void test_edit_tilt_from_grab(void)
+{
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_hold("edit/tilt", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].orientation.z = (float)sin(M_PI / 12.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 12.0);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].roll, 30.0f), "grabbed tilting, rolled %.2f",
+         t_xr[0].roll);
+   t_edit_end();
+}
+
+/* Offsets stop at 10 m and resume from there; a hand out of tracking
+ * holds its item still; an item gone from the map ends the grab. */
+static void test_edit_limits(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned seq;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 10.3f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 10.0f), "past the limit: %.3f", t_xr[0].x);
+   t_aim[2].position.x = 10.2f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 9.9f), "back from the limit: %.3f", t_xr[0].x);
+   t_aim_tracked[2]    = false;
+   t_aim[2].position.x = 5.0f;
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && t_near(t_xr[0].x, 9.9f),
+         "an untracked hand moved it");
+   t_aim_tracked[2]    = true;
+   t_aim[2].position.x = 10.1f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 9.8f), "tracked again: %.3f", t_xr[0].x);
+   seq               = t_edit_seq;
+   t_quads.num_quads = 0;
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_NONE && t_edit_seq == seq,
+         "a screen gone: state %u, seq %u/%u", g->state, t_edit_seq, seq);
+   t_edit_end();
+}
+
+/* The core's layout moves the held screen's spot under the hand: the
+ * grab ends there, as for a screen gone from the map, and writes
+ * nothing from the old spot. */
+static void test_edit_spot_moved(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned seq;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 0.2f;
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && t_near(t_xr[0].x, 0.2f),
+         "fixture: not held at 0.2");
+   seq                              = t_edit_seq;
+   t_quads.slots[0].base.y          = -0.5f;
+   t_quads.quads[0].pose.position.y = -0.5f;
+   t_aim[2].position.x              = 0.4f;
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_NONE && t_edit_seq == seq,
+         "a moved spot: state %u, seq %u/%u", g->state, t_edit_seq, seq);
+   CHECK(t_near(t_xr[0].x, 0.2f) && t_near(t_xr[0].y, 0.0f),
+         "written from the old spot: %.3f %.3f", t_xr[0].x, t_xr[0].y);
+   t_edit_end();
+}
+
+/* One item per hand: the second hand on the same item does nothing;
+ * on another item it holds that one. The menu, by its handle, has a
+ * place of its own. */
+static void test_edit_two_hands(void)
+{
+   const video_xr_grab_t *l = &input_openxr_edit.hand[0].g;
+   const video_xr_grab_t *r = &input_openxr_edit.hand[1].g;
+   t_edit_start();
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == 0
+         && r->state != VIDEO_XR_GRAB_HELD,
+         "the second hand took screen 1 too");
+   t_let_go();
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = t_handle_y(0.6f);
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state == VIDEO_XR_GRAB_HELD && r->slot == VIDEO_XR_MENU_SLOT,
+         "the right hand did not take the menu");
+   /* A hand holds one item: the left on the menu's handle takes
+    * nothing more. */
+   t_aim[1].position.x = 2.0f;
+   t_aim[1].position.y = t_handle_y(0.6f);
+   t_aim[2].position.x = 2.3f;
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == 0
+         && t_menu_placed && t_near(t_menu_xr.x, 2.3f)
+         && t_near(t_xr[0].x, 2.0f),
+         "menu at %.3f placed %d, screen 1 at %.3f", t_menu_xr.x,
+         (int)t_menu_placed, t_xr[0].x);
+   t_edit_end();
+}
+
+/* The menu is taken by its handle alone: through the menu, the laser
+ * takes screen 1 behind it. A menu that follows screen 1 is placed
+ * where and as large as it shows. */
+static void test_edit_menu_handle(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   /* 10 cm in front of a screen 1 pulled 0.9 m nearer: 0.8 m away, and
+    * sized by that from its 1.7 m spot. */
+   float k = 0.8f / 1.7f;
+   t_edit_start();
+   t_quads.quads[0].pose.position.z = -0.9f;
+   t_xr[0].z                        = 0.9f;
+   t_quads.quads[1].pose.position.x = 0.0f;
+   t_quads.quads[1].pose.position.z = -0.8f;
+   t_quads.quads[1].width           = 1.0f * k;
+   t_quads.quads[1].height          = 0.6f * k;
+   video_views_xr_reset(&t_menu_xr, 1);
+   t_menu_placed                    = false;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == 0,
+         "through the menu: slot %u state %u", g->slot, g->state);
+   t_let_go();
+   t_edit_poll();
+   t_aim[2].position.y = t_handle_y(0.6f * k);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == VIDEO_XR_MENU_SLOT,
+         "its handle: slot %u state %u", g->slot, g->state);
+   t_edit_poll();
+   CHECK(t_menu_placed && t_near(t_menu_xr.x, 0.0f)
+         && t_near(t_menu_xr.y, 0.0f) && t_near(t_menu_xr.z, 0.9f)
+         && t_near(t_menu_xr.scale, k) && t_near(g->width, k),
+         "placed %d at %.3f %.3f %.3f, scale %.4f, width %.4f",
+         (int)t_menu_placed, t_menu_xr.x, t_menu_xr.y, t_menu_xr.z,
+         t_menu_xr.scale, g->width);
+   t_edit_end();
+}
+
+/* The main button on a free item resets it as Reset Screen does, and
+ * puts the menu back in front of screen 1; on a held item, nothing. */
+static void test_edit_reset(void)
+{
+   t_edit_start();
+   t_xr[0].x                        = 0.5f;
+   t_xr[0].scale                    = 2.0f;
+   t_xr[0].visible                  = false;
+   t_quads.quads[0].pose.position.x = 0.5f;
+   t_aim[2].position.x              = 0.5f;
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_xr[0].x == 0.0f && t_xr[0].scale == 1.0f && t_xr[0].visible
+         && t_modified, "Reset left screen 1 at %.2f", t_xr[0].x);
+   /* Held on to the menu's handle: no new press, no reset. */
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = t_handle_y(0.6f);
+   t_edit_poll();
+   CHECK(t_menu_placed, "a held button reset the menu too");
+   t_let_go();
+   t_edit_poll();
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = t_handle_y(0.6f);
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(!t_menu_placed && t_menu_xr.x == 0.0f, "Reset left the menu placed");
+   t_let_go();
+   t_edit_poll();
+   /* Held by the other hand: no reset. */
+   t_xr[0].x           = 0.5f;
+   t_aim[1].position.x = 0.5f;
+   t_aim[2].position.x = 0.5f;
+   t_aim[2].position.y = 0.0f;
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.5f), "a held screen was reset");
+   t_edit_end();
+}
+
+/* A button held as edit mode starts (the menu's OK on A, which is
+ * Reset) counts once released and pressed again; a grip too. */
+static void test_edit_held_at_start(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   t_forget_devices();
+   t_fresh_session();
+   t_edit_fixture();
+   t_xr[0].x                        = 0.5f;
+   t_quads.quads[0].pose.position.x = 0.5f;
+   t_aim[2].position.x              = 0.5f;
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_edit_on(false);
+   CHECK(t_editing, "fixture: not editing");
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.5f) && !t_modified,
+         "Reset held from the start reset screen 1 to %.2f", t_xr[0].x);
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_xr[0].x == 0.0f && t_modified,
+         "Reset pressed again left screen 1 at %.2f", t_xr[0].x);
+   t_edit_end();
+
+   t_forget_devices();
+   t_fresh_session();
+   t_edit_fixture();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_on(false);
+   CHECK(t_editing, "fixture: not editing");
+   t_edit_poll();
+   CHECK(g->state != VIDEO_XR_GRAB_HELD,
+         "a grip held from the start grabbed %u", g->slot);
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == 0,
+         "a grip pressed again grabbed %u in state %u", g->slot, g->state);
+   t_edit_end();
+}
+
+/* A recenter lets go first; edit mode stays on, and a grip still held
+ * grabs nothing until pressed again. */
+static void test_edit_recenter(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned seq;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   seq = t_edit_seq;
+   input_openxr_edit_release();
+   CHECK(g->state == VIDEO_XR_GRAB_RELEASED && t_edit_seq == seq + 1
+         && t_editing, "a recenter did not let go: %u", g->state);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_RELEASED, "a held grip grabbed again");
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD, "a new grip did not grab");
+   /* Leaving edit mode lets go too. */
+   seq = t_edit_seq;
+   input_openxr_edit_toggle();
+   CHECK(g->state == VIDEO_XR_GRAB_RELEASED && g->release_seq == seq + 1
+         && !t_editing, "leaving held on: state %u", g->state);
+   t_edit_end();
+}
+
+/* A hand points at items where they show: one another hand holds is
+ * where that hand put it, not where the last quads had it. Screen 1
+ * lifted 2 m, the laser through its old place takes screen 2 behind. */
+static void test_edit_held_moves(void)
+{
+   const video_xr_grab_t *l = &input_openxr_edit.hand[0].g;
+   const video_xr_grab_t *r = &input_openxr_edit.hand[1].g;
+   t_edit_start();
+   t_quads.num_quads                = 3;
+   t_quads.quads[2]                 = t_quads.quads[0];
+   t_quads.quads[2].pose.position.z = -3.0f;
+   t_quads.quads[2].screen          = 1;
+   t_quads.quads[2].slot            = 1;
+   t_quads.slots[1].base.z          = -3.0f;
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[1].position.y = 2.0f;
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == 0
+         && t_near(t_xr[0].y, 2.0f), "the left hand did not lift screen 1");
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state == VIDEO_XR_GRAB_HELD && r->slot == 1,
+         "the right hand took slot %u in state %u", r->slot, r->state);
+   t_edit_end();
+}
+
+/* A stereo screen is one item: a grab moves both eyes' quads, and a
+ * second hand on the pair is refused. */
+static void test_edit_stereo(void)
+{
+   const video_xr_grab_t *l = &input_openxr_edit.hand[0].g;
+   const video_xr_grab_t *r = &input_openxr_edit.hand[1].g;
+   const video_xr_quad_t *q = input_openxr_st.quads.quads;
+   t_edit_start();
+   t_quads.num_quads       = 3;
+   t_quads.quads[2]        = t_quads.quads[1];
+   t_quads.quads[1]        = t_quads.quads[0];
+   t_quads.quads[0].eye    = VIDEO_XR_EYE_LEFT;
+   t_quads.quads[1].eye    = VIDEO_XR_EYE_RIGHT;
+   t_quads.quads[1].layer  = 1;
+   t_quads.slots[0].layers = 2;
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[1].position.x = 0.3f;
+   t_edit_poll();
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == 0
+         && t_near(t_xr[0].x, 0.3f) && t_near(q[0].pose.position.x, 0.3f)
+         && t_near(q[1].pose.position.x, 0.3f),
+         "the pair: setting %.3f, eyes at %.3f and %.3f", t_xr[0].x,
+         q[0].pose.position.x, q[1].pose.position.x);
+   t_aim[2].position.x = 0.3f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state != VIDEO_XR_GRAB_HELD, "a second hand took the pair");
+   t_edit_end();
+}
+
+/* A views core's frame shown whole without the screens' settings is no
+ * item: a grip and the main button on it do nothing and write nothing,
+ * no dot shows on it, and a screen held as it turns into one is let go
+ * as gone from the map. */
+static void test_edit_fallback_frame(void)
+{
+   const XrCompositionLayerBaseHeader *layers[4];
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned seq;
+   t_edit_start();
+   t_quads.quads[0].kind  = VIDEO_XR_QUAD_FRAME;
+   t_quads.slots[0].fixed = true;
+   t_xr[0].x              = 0.5f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 0.2f;
+   t_edit_poll();
+   CHECK(g->state != VIDEO_XR_GRAB_HELD && !t_modified
+         && t_xr[0].x == 0.5f, "the fallback frame grabbed: state %u, "
+         "screen 1 at %.3f", g->state, t_xr[0].x);
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(!t_modified && t_xr[0].x == 0.5f,
+         "the main button on the fallback frame reset screen 1");
+   t_let_go();
+   t_cursor = true;
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 0,
+         "a dot on the fallback frame");
+   t_cursor = false;
+   t_quads.quads[0].kind  = VIDEO_XR_QUAD_SCREEN;
+   t_quads.slots[0].fixed = false;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD, "fixture: screen 1 not held");
+   seq                    = t_edit_seq;
+   t_quads.quads[0].kind  = VIDEO_XR_QUAD_FRAME;
+   t_quads.slots[0].fixed = true;
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_NONE && t_edit_seq == seq,
+         "held into the fallback: state %u, seq %u/%u", g->state,
+         t_edit_seq, seq);
+   t_edit_end();
+}
+
+/* The simple controller: grab and the menu, no tilt, stick or reset;
+ * Follow Head locates the hands in VIEW, as the screens are. */
+static void test_edit_simple_and_view(void)
+{
+   const char *simple = "/interaction_profiles/khr/simple_controller";
+   t_edit_start();
+   CHECK(t_binds(simple, "edit/grab", "/user/hand/right/input/select/click")
+         && t_binds(simple, "edit/menu", "/user/hand/left/input/menu/click")
+         && !t_binds(simple, "edit/tilt", NULL)
+         && !t_binds(simple, "edit/stick", NULL)
+         && !t_binds(simple, "edit/reset", NULL),
+         "the simple controller's edit bindings");
+   t_space = t_xr_session.view_space;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_located_base == t_xr_session.view_space,
+         "the aim was not located where the screens are");
+   t_aim[2].position.x = 0.1f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.1f), "grab only: %.3f", t_xr[0].x);
+   t_edit_end();
+}
+
+/* Fixed in Room: a hand in the room moves an item in the anchor's
+ * frame. The anchor turned a quarter left, a hand moved 20 cm along the
+ * room's +Z moves screen 1 20 cm to its left. */
+static void test_edit_room(void)
+{
+   t_edit_start();
+   t_screens.orientation.y = 0.70710678f;
+   t_screens.orientation.w = 0.70710678f;
+   t_aim[2].orientation.y  = 0.70710678f;
+   t_aim[2].orientation.w  = 0.70710678f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(input_openxr_edit.hand[1].g.state == VIDEO_XR_GRAB_HELD
+         && t_located_base == t_xr_session.local_space,
+         "the hand aiming where the anchor looks took nothing");
+   t_aim[2].position.z = 0.2f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, -0.2f) && t_near(t_xr[0].z, 0.0f),
+         "moved to %.3f %.3f", t_xr[0].x, t_xr[0].z);
+   t_edit_end();
+}
+
 int main(void)
 {
    t_forget_devices();
@@ -2377,6 +3024,20 @@ int main(void)
    test_edit_unbound();
    test_edit_oversized();
    test_edit_pause();
+   test_edit_grab();
+   test_edit_tilt_from_grab();
+   test_edit_limits();
+   test_edit_spot_moved();
+   test_edit_two_hands();
+   test_edit_menu_handle();
+   test_edit_reset();
+   test_edit_held_at_start();
+   test_edit_recenter();
+   test_edit_held_moves();
+   test_edit_stereo();
+   test_edit_fallback_frame();
+   test_edit_simple_and_view();
+   test_edit_room();
    if (failures)
    {
       printf("%d failure(s)\n", failures);

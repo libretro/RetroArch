@@ -123,6 +123,9 @@ static void test_screen_defaults(void)
       p.window  = window ? true : false;
       p.screens = NULL;
       video_xr_place(&p, &base);
+      /* Placed alike; without the settings it is no item. */
+      CHECK(base.slots[0].fixed);
+      base.slots[0].fixed = false;
       p.screens = screens;
       video_xr_place(&p, &set);
       CHECK(memcmp(&base, &set, sizeof(set)) == 0);
@@ -759,6 +762,55 @@ static void test_live_edit(void)
    p.window = true;
    video_xr_place(&p, &set);
    CHECK(video_xr_quad_live(&set.quads[0], VIDEO_XR_LIVE_EDIT, false));
+}
+
+/* A frame shown whole without the screens' settings, a views core's
+ * fallback, is no item for edit mode, which passes it; other lasers
+ * still meet it. A no-map frame with the settings, screens and the
+ * menu are items. */
+static void test_edit_fixed(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_xr_vec3_t o, d;
+   float u, v, t;
+   unsigned s;
+
+   o.x = o.y = o.z = 0.0f;
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   params_init(&p, NULL);
+   p.frame_dims = VIDEO_SCALE_PACK(800, 480);
+   p.ui_dims    = VIDEO_SCALE_PACK(1600, 960);
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 2 && set.slots[0].fixed
+         && !set.slots[VIDEO_XR_MENU_SLOT].fixed);
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == -1);
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+            &o, &d, &u, &v, &t) == 0);
+   /* gl's window, shown whole while the menu is open or the eyes are
+    * tracked, likewise. */
+   p.window = true;
+   video_xr_place(&p, &set);
+   CHECK(set.slots[0].fixed);
+   p.window  = false;
+   p.screens = screens;
+   video_xr_place(&p, &set);
+   CHECK(!set.slots[0].fixed);
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
+
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.screens = screens;
+   video_xr_place(&p, &set);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      CHECK(!set.slots[s].fixed);
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
 }
 
 /* A frame without a map takes screen 1's place, turn and size; gl's
@@ -2028,6 +2080,7 @@ int main(void)
    test_grab_stick();
    test_menu_handle();
    test_live_edit();
+   test_edit_fixed();
    test_frame_as_screen();
    test_menu_spot();
    test_image_dims();

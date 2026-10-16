@@ -696,6 +696,116 @@ static void test_xr_menu_reset_all(void)
    CHECK(settings->floats.video_openxr_menu_xr_x == 0.0f);
 }
 
+/* Screen 2 moved, turned, scaled and hidden, as before each reset. */
+static void xr_edit_screen2_moved(settings_t *settings)
+{
+   settings->floats.video_screen_xr_x[1]      = 1.5f;
+   settings->floats.video_screen_xr_y[1]      = -0.5f;
+   settings->floats.video_screen_xr_z[1]      = 2.0f;
+   settings->floats.video_screen_xr_yaw[1]    = 30.0f;
+   settings->floats.video_screen_xr_pitch[1]  = -10.0f;
+   settings->floats.video_screen_xr_roll[1]   = 5.0f;
+   settings->floats.video_screen_xr_scale[1]  = 2.5f;
+   settings->bools.video_screen_xr_visible[1] = false;
+   settings->flags                           &= ~SETTINGS_FLG_MODIFIED;
+}
+
+/* Edit mode's writes are the menu rows' writes: the same settings, the
+ * same saved keys, clamped as a loaded value is; visibility stays the
+ * menu's. Its reset is Reset Screen's, or the menu's own. */
+static void test_xr_edit_writes(void)
+{
+   settings_t *settings = config_get_ptr();
+   video_screen_xr_t values, got;
+   config_file_t *conf;
+   float row_x, row_yaw, row_scale;
+   float value = 0.0f;
+
+   load_fixture("video_driver = \"glcore\"\nconfig_save_minimal = \"true\"\n");
+   set_menu_map(2);
+   menu_state_get_ptr()->video_screen_selected = 1;
+   menu_action("video_screen_xr_x", MENU_ACTION_RIGHT);
+   menu_action("video_screen_xr_yaw", MENU_ACTION_LEFT);
+   menu_action("video_screen_xr_scale", MENU_ACTION_RIGHT);
+   row_x     = settings->floats.video_screen_xr_x[1];
+   row_yaw   = settings->floats.video_screen_xr_yaw[1];
+   row_scale = settings->floats.video_screen_xr_scale[1];
+
+   load_fixture("video_driver = \"glcore\"\nconfig_save_minimal = \"true\"\n");
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   video_views_xr_reset(&values, 1);
+   values.x       = row_x;
+   values.yaw     = row_yaw;
+   values.scale   = row_scale;
+   values.visible = false;
+   config_set_video_screen_xr(1, &values);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   CHECK(settings->floats.video_screen_xr_x[1] == row_x);
+   CHECK(settings->floats.video_screen_xr_yaw[1] == row_yaw);
+   CHECK(settings->floats.video_screen_xr_scale[1] == row_scale);
+   CHECK(settings->bools.video_screen_xr_visible[1]);
+   CHECK(settings->floats.video_screen_xr_x[0] == 0.0f);
+   config_get_video_screen_xr(1, &got);
+   CHECK(got.x == row_x && got.yaw == row_yaw && got.scale == row_scale
+         && got.visible);
+   CHECK(config_save_file(saved_path));
+   conf = config_file_new_from_path_to_string(saved_path);
+   CHECK(conf != NULL);
+   if (conf)
+   {
+      CHECK(config_get_float(conf, "video_screen2_xr_x", &value));
+      CHECK(value == row_x);
+      CHECK(config_get_float(conf, "video_screen2_xr_yaw", &value));
+      CHECK(value == row_yaw);
+      CHECK(config_get_float(conf, "video_screen2_xr_scale", &value));
+      CHECK(value == row_scale);
+      CHECK(config_get_entry(conf, "video_screen2_xr_visible") == NULL);
+      config_file_free(conf);
+   }
+
+   values.x     = 12.0f;
+   values.scale = 0.0f;
+   config_set_video_screen_xr(1, &values);
+   CHECK(settings->floats.video_screen_xr_x[1] == 10.0f);
+   CHECK(settings->floats.video_screen_xr_scale[1] == 0.1f);
+
+   /* Reset: what Reset Screen leaves, hidden screens shown again. */
+   set_menu_map(2);
+   menu_state_get_ptr()->video_screen_selected = 1;
+   xr_edit_screen2_moved(settings);
+   menu_action("video_screen_xr_reset", MENU_ACTION_OK);
+   config_get_video_screen_xr(1, &values);
+   xr_edit_screen2_moved(settings);
+   config_set_video_screen_xr(1, NULL);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   config_get_video_screen_xr(1, &got);
+   CHECK(got.x == values.x && got.y == values.y && got.z == values.z
+         && got.yaw == values.yaw && got.pitch == values.pitch
+         && got.roll == values.roll && got.scale == values.scale
+         && got.visible == values.visible);
+   CHECK(got.visible && got.scale == 1.0f && got.z == 0.0f);
+
+   video_views_xr_reset(&values, 1);
+   values.x     = 0.5f;
+   values.scale = 0.75f;
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   CHECK(!config_get_video_menu_xr(&got));
+   config_set_video_menu_xr(&values);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   CHECK(settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.5f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 0.75f);
+   CHECK(config_get_video_menu_xr(&got) && got.x == 0.5f
+         && got.scale == 0.75f);
+   settings->flags &= ~SETTINGS_FLG_MODIFIED;
+   config_set_video_menu_xr(NULL);
+   CHECK(settings->flags & SETTINGS_FLG_MODIFIED);
+   CHECK(!settings->bools.video_openxr_menu_placed);
+   CHECK(settings->floats.video_openxr_menu_xr_x == 0.0f);
+   CHECK(settings->floats.video_openxr_menu_xr_scale == 1.0f);
+   CHECK(!config_get_video_menu_xr(&got));
+}
+
 #ifdef HAVE_OPENXR
 static unsigned menu_test_headset_state(void *user)
 {
@@ -2099,6 +2209,7 @@ int main(int argc, char **argv)
    test_xr_screen_menu();
    test_xr_menu_map_change();
    test_xr_menu_reset_all();
+   test_xr_edit_writes();
 #ifdef HAVE_OPENXR
    test_xr_menu_tracked_screen();
    test_xr_edit_rows();

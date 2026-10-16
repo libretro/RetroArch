@@ -114,6 +114,38 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser, bool menu,
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
       float t, video_xr_pose_t *pose)
 { (void)q; (void)u; (void)v; (void)t; (void)pose; return 0.01f; }
+/* What edit mode reaches, never run here. */
+void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
+{ (void)f; memset(out, 0, sizeof(*out)); }
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space)
+{ (void)f; memset(pose, 0, sizeof(*pose)); *space = XR_NULL_HANDLE; }
+void config_get_video_screen_xr(unsigned screen, video_screen_xr_t *out)
+{ (void)screen; memset(out, 0, sizeof(*out)); }
+bool config_get_video_menu_xr(video_screen_xr_t *out)
+{ memset(out, 0, sizeof(*out)); return false; }
+void config_set_video_screen_xr(unsigned screen,
+      const video_screen_xr_t *values)
+{ (void)screen; (void)values; }
+void config_set_video_menu_xr(const video_screen_xr_t *values)
+{ (void)values; }
+void video_views_xr_reset(video_screen_xr_t *screens, unsigned count)
+{ memset(screens, 0, count * sizeof(*screens)); }
+void video_views_xr_normalize(video_screen_xr_t *screen) { (void)screen; }
+void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
+      video_xr_pose_t *out)
+{ (void)a; *out = *b; }
+void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out)
+{ *out = *a; }
+void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
+      float *roll)
+{ (void)q; *yaw = *pitch = *roll = 0.0f; }
+bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      video_xr_pose_t *pose, video_screen_xr_t *out)
+{ (void)g; (void)out; *pose = *aim; return false; }
+void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
+      float *scale)
+{ (void)g; (void)x; (void)y; (void)dt; (void)scale; }
 
 static XrResult XRAPI_CALL locate(XrSpace space, XrSpace base,
       XrTime time, XrSpaceLocation *out)

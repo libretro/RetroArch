@@ -102,6 +102,9 @@ typedef struct video_xr_slot
    unsigned layers;        /* 2 for a stereo screen */
    int view[2];            /* map view drawn per layer; -1 frame or UI */
    video_xr_vec3_t base;   /* its item's layout spot, the anchor's frame */
+   /* A frame shown whole without the screens' settings (a views core's
+    * fallback): their edits would not move it, so it is no item. */
+   bool fixed;
 } video_xr_slot_t;
 
 typedef struct video_xr_quad_set
@@ -350,9 +353,9 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
 
 /* The nearest live quad the ray meets, as an index into set->quads, or
  * -1; of a stereo screen's two quads, the first. t is in units of
- * dir's length. Edit mode's laser meets the menu only at its handle, at
- * (u, v) in the menu's own frame, v past 1; through the menu, what is
- * behind. */
+ * dir's length. Edit mode's laser passes fixed slots' quads and meets
+ * the menu only at its handle, at (u, v) in the menu's own frame, v past
+ * 1; through the menu, what is behind. */
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       bool menu_open, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);

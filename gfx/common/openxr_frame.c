@@ -1238,6 +1238,15 @@ void openxr_frame_get_shown_quads(openxr_frame_t *f,
    *space = at.view ? f->session->view_space : f->session->local_space;
 }
 
+void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
+      XrSpace *space)
+{
+   openxr_screens_t at;
+   openxr_seq_read(&f->screens_seq, f->screens_words, &at, sizeof(at));
+   *pose  = at.pose;
+   *space = at.view ? f->session->view_space : f->session->local_space;
+}
+
 void openxr_frame_request_recenter(openxr_frame_t *f)
 {
    retro_atomic_store_release_int(&f->recenter, 1);

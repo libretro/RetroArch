@@ -84,6 +84,10 @@ bool input_openxr_edit_toggle(void);
 void input_openxr_edit_begin(bool pause);
 void input_openxr_edit_end(void);
 
+/* Main thread: what each hand holds is let go where it is, as before a
+ * recenter. Edit mode stays on. */
+void input_openxr_edit_release(void);
+
 /* The laser as RETRO_DEVICE_POINTER or RETRO_DEVICE_LIGHTGUN on port 0,
  * while it can point (the headset focused, a screen live for the
  * laser): true, with *res set. A miss reads as offscreen. */

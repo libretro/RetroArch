@@ -585,12 +585,15 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
       double h       = lay.height[0];
       float distance = p->distance;
       out->slots[0].base = lay.pos[0];
-      /* A whole frame is screen 0. */
+      /* A whole frame is screen 0; without the screens' settings, slot 0
+       * is no item. */
       if (p->screens)
       {
          screen = p->screens[0];
          video_views_xr_normalize(&screen);
       }
+      else
+         out->slots[0].fixed = true;
       if (!p->screens || screen.visible)
       {
          video_xr_adjust(p, &lay.pos[0], p->screens ? &screen : NULL,
@@ -895,7 +898,8 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
    {
       float qu, qv, qt;
       const video_xr_quad_t *q = &set->quads[i];
-      if (!video_xr_quad_live(q, laser, menu_open))
+      if (     !video_xr_quad_live(q, laser, menu_open)
+            || (laser == VIDEO_XR_LIVE_EDIT && set->slots[q->slot].fixed))
          continue;
       if (laser == VIDEO_XR_LIVE_EDIT && q->kind == VIDEO_XR_QUAD_MENU)
       {

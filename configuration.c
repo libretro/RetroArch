@@ -5932,6 +5932,86 @@ void config_reset_video_menu_xr(settings_t *settings)
    settings->bools.video_openxr_menu_placed    = false;
 }
 
+void config_get_video_screen_xr(unsigned screen, video_screen_xr_t *out)
+{
+   settings_t *settings = config_get_ptr();
+   video_views_xr_reset(out, 1);
+   if (!settings || screen >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   out->x       = settings->floats.video_screen_xr_x[screen];
+   out->y       = settings->floats.video_screen_xr_y[screen];
+   out->z       = settings->floats.video_screen_xr_z[screen];
+   out->yaw     = settings->floats.video_screen_xr_yaw[screen];
+   out->pitch   = settings->floats.video_screen_xr_pitch[screen];
+   out->roll    = settings->floats.video_screen_xr_roll[screen];
+   out->scale   = settings->floats.video_screen_xr_scale[screen];
+   out->visible = settings->bools.video_screen_xr_visible[screen];
+}
+
+bool config_get_video_menu_xr(video_screen_xr_t *out)
+{
+   settings_t *settings = config_get_ptr();
+   video_views_xr_reset(out, 1);
+   if (!settings)
+      return false;
+   out->x     = settings->floats.video_openxr_menu_xr_x;
+   out->y     = settings->floats.video_openxr_menu_xr_y;
+   out->z     = settings->floats.video_openxr_menu_xr_z;
+   out->yaw   = settings->floats.video_openxr_menu_xr_yaw;
+   out->pitch = settings->floats.video_openxr_menu_xr_pitch;
+   out->roll  = settings->floats.video_openxr_menu_xr_roll;
+   out->scale = settings->floats.video_openxr_menu_xr_scale;
+   return settings->bools.video_openxr_menu_placed;
+}
+
+void config_set_video_screen_xr(unsigned screen,
+      const video_screen_xr_t *values)
+{
+   video_screen_xr_t s;
+   settings_t *settings = config_get_ptr();
+   if (!settings || screen >= RETRO_VIDEO_VIEWS_MAX)
+      return;
+   if (!values)
+      config_reset_video_screen_xr(settings, screen, 1);
+   else
+   {
+      s = *values;
+      video_views_xr_normalize(&s);
+      settings->floats.video_screen_xr_x[screen]     = s.x;
+      settings->floats.video_screen_xr_y[screen]     = s.y;
+      settings->floats.video_screen_xr_z[screen]     = s.z;
+      settings->floats.video_screen_xr_yaw[screen]   = s.yaw;
+      settings->floats.video_screen_xr_pitch[screen] = s.pitch;
+      settings->floats.video_screen_xr_roll[screen]  = s.roll;
+      settings->floats.video_screen_xr_scale[screen] = s.scale;
+   }
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+}
+
+void config_set_video_menu_xr(const video_screen_xr_t *values)
+{
+   video_screen_xr_t s;
+   settings_t *settings = config_get_ptr();
+   if (!settings)
+      return;
+   if (!values)
+      config_reset_video_menu_xr(settings);
+   else
+   {
+      s = *values;
+      video_views_xr_normalize(&s);
+      settings->floats.video_openxr_menu_xr_x     = s.x;
+      settings->floats.video_openxr_menu_xr_y     = s.y;
+      settings->floats.video_openxr_menu_xr_z     = s.z;
+      settings->floats.video_openxr_menu_xr_yaw   = s.yaw;
+      settings->floats.video_openxr_menu_xr_pitch = s.pitch;
+      settings->floats.video_openxr_menu_xr_roll  = s.roll;
+      settings->floats.video_openxr_menu_xr_scale = s.scale;
+      settings->bools.video_openxr_menu_placed    = true;
+   }
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+}
+
 /**
  * config_set_defaults:
  *
