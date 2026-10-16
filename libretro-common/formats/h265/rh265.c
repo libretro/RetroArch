@@ -1892,10 +1892,6 @@ static RH265_INLINE rh265_mvfield *rh265_mvf_at(const rh265_dec *d,
    return &d->mvf[(y >> 2) * d->w4 + (x >> 2)];
 }
 
-static RH265_INLINE int rh265_clip_int8(int v)
-{
-   return v < -128 ? -128 : (v > 127 ? 127 : v);
-}
 static RH265_INLINE int rh265_clip_int16(int v)
 {
    return v < -32768 ? -32768 : (v > 32767 ? 32767 : v);
