@@ -1017,6 +1017,7 @@ static int rwebm_video_av1_open(rwebm_video_stream_t *s)
    s->hw_color.transfer = transfer;
    s->hw_color.matrix = matrix;
    s->hw_color.range = seq->color_range ? 2 : 1;
+   s->hw_color.mastering = t->mastering;
    s->hw_color.max_cll = t->max_cll;
    s->hw_color.max_fall = t->max_fall;
    s->hw_yuv_mask = IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE;
@@ -1154,6 +1155,7 @@ int rwebm_video_stream_set_hw(rwebm_video_stream_t *s, int enable)
    s->hw_color.transfer = t->transfer_characteristics;
    s->hw_color.matrix = t->matrix_coefficients;
    s->hw_color.range = t->colour_range;
+   s->hw_color.mastering = t->mastering;
    s->hw_color.max_cll = t->max_cll;
    s->hw_color.max_fall = t->max_fall;
    s->hw_yuv_mask = s->hw_yuv = 0;

@@ -168,6 +168,10 @@ static void test_color(void)
    if (marker)
    {
       CHECK(frame.yuv & IMAGE_YUV_FLAG_BT709);
+      CHECK(frame.color.max_cll == 1024 && frame.color.max_fall == 256
+            && frame.color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE
+            && frame.color.mastering.chromaticity[0] == 25000
+            && frame.color.mastering.luminance_max == 10240000);
       CHECK(frame.color.primaries == 1 && frame.color.matrix == 1
             && frame.color.transfer == 2 && frame.color.range == 1);
       video_hw_frame_abandon(&frame);

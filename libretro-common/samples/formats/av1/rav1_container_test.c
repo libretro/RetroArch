@@ -17,7 +17,7 @@ static unsigned failures;
       }                                                                        \
    } while (0)
 static uint8_t bytes[4096];
-static size_t used, config_at, media_at;
+static size_t used, config_at, media_at, mastering_at, light_at, float_at[10];
 static const uint8_t config[] = {0x81, 0, 0x4c, 0, 0x0a, 1, 0xaa};
 static const uint8_t packet[] = {0x32, 1, 0x55};
 
@@ -125,6 +125,22 @@ static void make_mp4(int with_config)
    put(9);
    put(128);
    end_box(b);
+   b = box("mdcv");
+   mastering_at = used;
+   {
+      static const unsigned xy[8] = {6250, 37500, 12500, 25000, 25000, 12500, 15625, 18750};
+      unsigned j;
+      for (j = 0; j < 8; j++)
+      {
+         put(xy[j] >> 8);
+         put(xy[j]);
+      }
+   }
+   be32(10240000); be32(0);
+   end_box(b);
+   b = box("clli"); light_at = used;
+   put(4); put(0); put(1); put(0);
+   end_box(b);
    end_box(entry);
    end_box(stsd);
    b = box("stts");
@@ -223,6 +239,26 @@ static void make_webm(void)
    video = element(0xe0);
    number(0xb0, 192);
    number(0xba, 128);
+   b = element(0x55b0);
+   {
+      size_t master = element(0x55d0);
+      unsigned j;
+      for (j = 0; j < 10; j++)
+      {
+         size_t f = element(0x55d1 + j);
+         float_at[j] = used;
+         if (j == 9)
+         {
+            be32(0x3fc00000);
+            be32(0);
+         }
+         else
+            be32(j == 8 ? 0x44800000 : 0x3f000000);
+         end_element(f);
+      }
+      end_element(master);
+   }
+   end_element(b);
    end_element(video);
    end_element(track);
    end_element(tracks);
@@ -332,6 +368,68 @@ static void test_webm(void)
    }
    CHECK(rwebm_read_packet(m, &pkt) == 0);
    rwebm_close(m);
+}
+
+static void test_static_metadata(void)
+{
+   rmp4_t *mp4;
+   rwebm_t *webm;
+   const rmp4_track *m;
+   const rwebm_track *w;
+   unsigned i;
+   static const uint32_t bad[] = {0x7fc00000, 0x7f800000, 0xbf800000};
+   make_mp4(1);
+   mp4 = rmp4_open_memory(bytes, used);
+   m = mp4 ? rmp4_get_track(mp4, 0) : NULL;
+   CHECK(m && m->max_cll == 1024 && m->max_fall == 256
+         && m->mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE
+         && m->mastering.chromaticity[0] == 25000
+         && m->mastering.chromaticity[2] == 6250
+         && m->mastering.chromaticity[4] == 12500
+         && m->mastering.luminance_max == 10240000
+         && m->mastering.luminance_min == 0);
+   rmp4_close(mp4);
+   for (i = 0; i < 3; i++)
+   {
+      make_mp4(1);
+      if (!i) bytes[mastering_at] = 0xff;
+      else if (i == 1) patch32(mastering_at + 20, 10240001);
+      else patch32(mastering_at - 8, 31);
+      mp4 = rmp4_open_memory(bytes, used);
+      m = mp4 ? rmp4_get_track(mp4, 0) : NULL;
+      CHECK(m && !m->mastering.present);
+      rmp4_close(mp4);
+   }
+   make_mp4(1); patch32(light_at - 8, 11);
+   mp4 = rmp4_open_memory(bytes, used);
+   m = mp4 ? rmp4_get_track(mp4, 0) : NULL;
+   CHECK(m && !m->max_cll && !m->max_fall);
+   rmp4_close(mp4);
+   for (i = 0; i < 8; i++)
+   {
+      make_webm();
+      if (i < 3) patch32(float_at[0], bad[i]);
+      else if (i == 3) bytes[float_at[1] - 3] = 0xd1;
+      else if (i == 4) bytes[float_at[0] - 1] = 0xff;
+      else if (i == 5) bytes[float_at[0] - 3] = 0xe1;
+      else if (i == 6)
+      {
+         patch32(float_at[8], 0);
+         patch32(float_at[9], 0);
+      }
+      webm = rwebm_open_memory(bytes, used);
+      w = webm ? rwebm_get_track(webm, 0) : NULL;
+      CHECK(w != NULL);
+      if (w)
+      {
+         if (i < 5) CHECK(!w->mastering.present);
+         else CHECK(w->mastering.present == (i == 5 ? 0x3feu : 0x3ffu)
+               && w->mastering.chromaticity[2] == 25000
+               && w->mastering.luminance_max == (i == 6 ? 0 : 10240000)
+               && w->mastering.luminance_min == (i == 6 ? 0 : 1250));
+      }
+      rwebm_close(webm);
+   }
 }
 
 static uint32_t hash_bytes(const uint8_t *data, size_t size)
@@ -476,6 +574,7 @@ int main(int argc, char **argv)
       return inspect_file(argv[1]);
    test_mp4();
    test_webm();
+   test_static_metadata();
    printf("AV1 MP4/Matroska borrowed configuration and packets: %u failures\n",
           failures);
    return failures ? 1 : 0;

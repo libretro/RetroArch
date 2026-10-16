@@ -35,6 +35,7 @@
 #include <stddef.h>
 
 #include <retro_common_api.h>
+#include <formats/video_color.h>
 
 RETRO_BEGIN_DECLS
 
@@ -68,6 +69,8 @@ typedef struct
    unsigned               width, height;
    /* From the sample entry's colr box (nclx/nclc); 0 when untagged, in
     * which case converters pick defaults by resolution. */
+   video_mastering_display_t mastering;
+   unsigned               max_cll, max_fall;
    unsigned               color_primaries;
    unsigned               matrix_coefficients;
    unsigned               transfer_characteristics;

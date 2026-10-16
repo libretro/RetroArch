@@ -319,6 +319,30 @@ static void rmp4_store_fourcc(char *dst, size_t cap, uint32_t fourcc)
 /* First sample entry of the stsd box. Fills the codec fields of the
  * track.  Unknown codecs still record their fourcc so callers can see
  * what was skipped. */
+static void rmp4_parse_mastering(const rmp4_box *box,
+      video_mastering_display_t *out)
+{
+   static const unsigned order[8] = { 2, 3, 4, 5, 0, 1, 6, 7 };
+   video_mastering_display_t m;
+   unsigned i;
+   if (box->size != 24)
+      return;
+   memset(&m, 0, sizeof(m));
+   for (i = 0; i < 8; i++)
+   {
+      unsigned value = rmp4_be16(box->body + i * 2);
+      if (value > 50000)
+         return;
+      m.chromaticity[order[i]] = (uint16_t)value;
+   }
+   m.luminance_max = rmp4_be32(box->body + 16);
+   m.luminance_min = rmp4_be32(box->body + 20);
+   if (m.luminance_min > m.luminance_max)
+      return;
+   m.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+   *out = m;
+}
+
 static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
 {
    uint64_t next;
@@ -344,7 +368,16 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
        * followed by primaries, transfer and matrix as 16-bit values. */
       if (e.size > 78)
       {
-         rmp4_box colr;
+         rmp4_box colr, hdr;
+         if (rmp4_find_child(e.body + 78, e.size - 78,
+               RMP4_FOURCC('m','d','c','v'), &hdr))
+            rmp4_parse_mastering(&hdr, &t->pub.mastering);
+         if (rmp4_find_child(e.body + 78, e.size - 78,
+               RMP4_FOURCC('c','l','l','i'), &hdr) && hdr.size == 4)
+         {
+            t->pub.max_cll = rmp4_be16(hdr.body);
+            t->pub.max_fall = rmp4_be16(hdr.body + 2);
+         }
          if (rmp4_find_child(e.body + 78, e.size - 78,
                RMP4_FOURCC('c','o','l','r'), &colr) && colr.size >= 10)
          {

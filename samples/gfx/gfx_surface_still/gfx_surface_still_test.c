@@ -128,7 +128,11 @@ enum video_texture_update video_driver_texture_import(uintptr_t *id,
    CHECK(frame->color.primaries == 9 && frame->color.matrix == 9
          && (frame->color.transfer == 16 || frame->color.transfer == 18)
          && frame->color.range == 1 && frame->color.max_cll == 1000
-         && frame->color.max_fall == 400, "import lost source HDR metadata");
+         && frame->color.max_fall == 400
+         && frame->color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE
+         && frame->color.mastering.chromaticity[0] == 25000
+         && frame->color.mastering.luminance_max == 10240000,
+         "import lost source HDR metadata");
    if (st_import_result == VIDEO_TEXTURE_UPDATE_DONE && !*id)
    {
       *id = st_next++;
@@ -347,6 +351,9 @@ static void st_retired_imports(void)
       frame.color.primaries = frame.color.matrix = 9;
       frame.color.transfer = i % 2 ? 16 : 18; frame.color.range = 1;
       frame.color.max_cll = 1000; frame.color.max_fall = 400;
+      frame.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+      frame.color.mastering.chromaticity[0] = 25000;
+      frame.color.mastering.luminance_max = 10240000;
       frame.done = 42;
       frame.done_value = 7;
       frame.owner = &st_abandoned;

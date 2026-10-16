@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include <retro_common_api.h>
+#include <formats/video_color.h>
 
 RETRO_BEGIN_DECLS
 
@@ -78,6 +79,7 @@ typedef struct
    unsigned               primaries;
    unsigned               colour_range;
    /* HDR static metadata (0 = absent) */
+   video_mastering_display_t mastering;
    unsigned               max_cll;     /* MaxCLL, nits                     */
    unsigned               max_fall;    /* MaxFALL, nits                    */
    /* Raw Matroska CodecID string, NUL-terminated (e.g. "V_VP8"). */

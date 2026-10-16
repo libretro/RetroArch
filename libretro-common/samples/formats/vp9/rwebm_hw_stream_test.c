@@ -78,7 +78,23 @@ static void fixture(unsigned matrix, unsigned range, unsigned transfer)
    colour = start(0x55b0, 2); integer(0x55b1, 2, matrix);
    integer(0x55b9, 2, range); integer(0x55ba, 2, transfer);
    integer(0x55bb, 2, 1); integer(0x55bc, 2, 200);
-   integer(0x55bd, 2, 80); finish(colour);
+   integer(0x55bd, 2, 80);
+   {
+      unsigned j;
+      size_t master = start(0x55d0, 2);
+      for (j = 0; j < 10; j++)
+      {
+         uint32_t value = j < 8 ? 0x3f000000u : j == 8 ? 0x44800000u : 0;
+         size_t f = start(0x55d1 + j, 2);
+         file[used++] = (uint8_t)(value >> 24);
+         file[used++] = (uint8_t)(value >> 16);
+         file[used++] = (uint8_t)(value >> 8);
+         file[used++] = (uint8_t)value;
+         finish(f);
+      }
+      finish(master);
+   }
+   finish(colour);
    finish(video); finish(track); finish(tracks);
    cluster = start(0x1f43b675, 4); integer(0xe7, 1, 0);
    nk = coded(1, 1); memcpy(key, packet, nk);
@@ -221,7 +237,10 @@ int main(void)
       CHECK(frame.yuv == (IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_FULL_RANGE));
       CHECK(frame.color.primaries == 1 && frame.color.transfer == 1
             && frame.color.matrix == 1 && frame.color.range == 2
-            && frame.color.max_cll == 200 && frame.color.max_fall == 80);
+            && frame.color.max_cll == 200 && frame.color.max_fall == 80
+            && frame.color.mastering.present == VIDEO_MASTERING_DISPLAY_COMPLETE
+            && frame.color.mastering.chromaticity[0] == 25000
+            && frame.color.mastering.luminance_max == 10240000);
       CHECK(!image_transfer_anim_stream_hw_frame(s, IMAGE_TYPE_WEBM, &held) || !held.image);
       if (!frames) held = frame;
       else video_hw_frame_abandon(&frame);

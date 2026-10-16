@@ -116,6 +116,17 @@ static void make_mp4(int with_config)
    put(2);
    put(0);
    end_box(b);
+   b = box("clli"); put(4); put(0); put(1); put(0); end_box(b);
+   b = box("mdcv");
+   {
+      unsigned i;
+      for (i = 0; i < 8; i++)
+      {
+         put(0x61);
+         put(0xa8);
+      }
+   }
+   be32(10240000); be32(0); end_box(b);
    end_box(entry);
    end_box(stsd);
    b = box("stts");

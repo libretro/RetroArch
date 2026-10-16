@@ -10160,6 +10160,9 @@ static enum video_texture_update movie_ring_import(void *data,
          || frame->color.transfer != (id % 2 ? 16 : 18)
          || frame->color.range != 1 || frame->color.max_cll != id + 100
          || frame->color.max_fall != id + 50
+         || frame->color.mastering.present != VIDEO_MASTERING_DISPLAY_COMPLETE
+         || frame->color.mastering.chromaticity[0] != 25000
+         || frame->color.mastering.luminance_max != 10240000
          || frame->wait != 34 || frame->done != 88 || !id || id > MOVIE_RING_FRAMES)
    {
       retro_atomic_fetch_add_int(&movie_ring_errors, 1);
@@ -10208,6 +10211,9 @@ static void lane_movie_ring(void)
    hw.wait = 34; hw.done = 88; hw.abandon = movie_ring_release;
    hw.array_slice = 7; hw.crop_x = 2; hw.crop_y = 4;
    hw.color.primaries = hw.color.matrix = 9; hw.color.range = 1;
+   hw.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
+   hw.color.mastering.chromaticity[0] = 25000;
+   hw.color.mastering.luminance_max = 10240000;
    for (i = 1; i <= MOVIE_RING_FRAMES - 2; i++)
    {
       hw.image = i; hw.wait_value = hw.done_value = i;

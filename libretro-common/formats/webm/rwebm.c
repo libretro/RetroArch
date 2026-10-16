@@ -204,6 +204,53 @@ static double be_double_clamp(double v, double lo, double hi)
    return v;
 }
 
+static void rwebm_parse_mastering(const uint8_t *body, size_t size,
+      video_mastering_display_t *out)
+{
+   video_mastering_display_t m;
+   ebml_reader r;
+   memset(&m, 0, sizeof(m));
+   r.p = body;
+   r.end = body + size;
+   while (r.p < r.end)
+   {
+      int ok;
+      uint32_t id = ebml_read_id(&r);
+      uint64_t n = ebml_read_vint(&r, 1, &ok);
+      const uint8_t *p = r.p;
+      if (!id || !ok || n > (uint64_t)(r.end - p))
+         return;
+      if (id >= 0x55d1u && id <= 0x55dau)
+      {
+         unsigned index = id - 0x55d1u;
+         double value;
+         if ((n != 4 && n != 8) || (m.present & (1u << index)))
+            return;
+         value = be_float(p, (size_t)n);
+         if (!(value >= 0.0 && value <= (index < 8 ? 1.0 : 429496.7295)))
+            return;
+         if (index < 8)
+            m.chromaticity[index] = (uint16_t)(value * 50000.0 + 0.5);
+         else
+         {
+            double scaled = value * 10000.0;
+            uint32_t level = scaled >= 4294967295.0
+               ? UINT32_MAX : (uint32_t)(scaled + 0.5);
+            if (index == 8)
+               m.luminance_max = level;
+            else
+               m.luminance_min = level;
+         }
+         m.present |= 1u << index;
+      }
+      r.p = p + (size_t)n;
+   }
+   if ((m.present & 0x300u) == 0x300u && m.luminance_min > m.luminance_max)
+      return;
+   *out = m;
+}
+
+
 /* ===== Demuxer state ===== */
 
 struct rwebm_cue
@@ -404,7 +451,7 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
                uint32_t  cid   = ebml_read_id(&cr);
                uint64_t  csz   = ebml_read_vint(&cr, 1, &cok);
                const uint8_t *cb = cr.p;
-               if (!cid || !cok || cb + csz > cr.end)
+               if (!cid || !cok || csz > (uint64_t)(cr.end - cb))
                   break;
                switch (cid)
                {
@@ -419,6 +466,9 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
                      break;
                   case ID_PRIMARIES:
                      trk->primaries               = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case 0x55d0u:
+                     rwebm_parse_mastering(cb, (size_t)csz, &trk->mastering);
                      break;
                   case ID_MAXCLL:
                      trk->max_cll                 = (unsigned)be_uint(cb, (size_t)csz);

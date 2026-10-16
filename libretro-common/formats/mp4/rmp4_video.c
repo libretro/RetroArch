@@ -105,6 +105,8 @@ struct rmp4_video_stream
    int          wait_key;   /* a reference failed; hold out for a key */
    int          catchup;    /* dropping droppable pictures to catch up */
    int          track;      /* index of the chosen video track        */
+   video_mastering_display_t mastering;
+   unsigned     max_cll, max_fall;
    unsigned     primaries;
    unsigned     matrix;     /* matrix coefficients; 0 untagged        */
    unsigned     transfer;   /* transfer characteristics              */
@@ -694,6 +696,9 @@ static int rmp4_video_hwf_take(rmp4_video_stream_t *s)
    if (s->range)
       yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
    f.yuv          = yuv;
+   f.color.mastering = s->mastering;
+   f.color.max_cll = s->max_cll;
+   f.color.max_fall = s->max_fall;
    f.color.primaries = s->primaries;
    f.color.transfer = s->transfer;
    f.color.matrix = s->matrix;
@@ -797,6 +802,9 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
          continue;
       s->track  = i;
       s->codec  = t->codec;
+      s->mastering = t->mastering;
+      s->max_cll = t->max_cll;
+      s->max_fall = t->max_fall;
       s->primaries = t->color_primaries;
       s->matrix   = t->matrix_coefficients;
       s->transfer = t->transfer_characteristics;
@@ -1016,6 +1024,9 @@ static int rmp4_video_av1_packet(rmp4_video_stream_t *s, const rmp4_packet *pkt,
          frame.yuv |= IMAGE_YUV_FLAG_BT709;
       else
          frame.yuv &= ~IMAGE_YUV_FLAG_BT709;
+      frame.color.mastering = s->mastering;
+      frame.color.max_cll = s->max_cll;
+      frame.color.max_fall = s->max_fall;
       frame.color.primaries = s->primaries;
       frame.color.transfer = s->transfer;
       frame.color.matrix = s->matrix;
