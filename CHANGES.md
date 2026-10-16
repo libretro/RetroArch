@@ -105,17 +105,13 @@
 - NETWORK: LOAD_CORE says why it failed, and neither it nor LOAD_CONTENT unloads the running core for a path that turns out not to be one
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
 - NETWORK: LIST_CORES takes a content path, listing only the cores that can load it
-- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, most network commands a tool (off by default, see docs/mcp-server.md)
-- NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders) answer with its outcome once it is through, and the server stays up across content loads
+- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)
+- NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders, AI service) answer with its outcome once it is through, and the server stays up across content loads
 - NETWORK: MCP server: the replies that are rows of fields are given as structuredContent as well as text, with an outputSchema describing their columns
 - NETWORK: MCP server: the hotkeys that step a selection a program cannot read back are no longer offered as tools, where a command taking the value outright already is; all of them remain network commands
-- NETWORK: MCP server: RUN_FRAMES and PRESS give the frames run in structuredContent, REINIT answers under its own name, and DISK is refused on cores with no disk control
-- NETWORK: MCP server: RUN_FRAMES, PRESS and RUN_UNTIL keep to nine seconds of frames, so they answer inside the reply timeout at any frame rate
 - NETWORK: Fix SAVE_STATE_SLOT freezing RetroArch with cores such as bsnes
 - NETWORK: Fix the SAVE_FILES and LOAD_FILES failure reply, and LOAD_CORE reporting a core that failed to load as loaded
 - NETWORK: Fix LOAD_CONTENT closing the running content before finding that the core or content path it was given does not exist
-- NETWORK: Fix the MCP server answering RUN_UNTIL twice when its condition already held, sending text that was not UTF-8, and dropping structuredContent over stdio after a settings change restarted the command interfaces
-- NETWORK: Fix STATE and REPLAY slots past 2147483647 writing the .state.auto file, and line clients ending their lines in CRLF being refused by WRITE_CORE_MEMORY and WATCH
 - NETWORK: Built-in TLS 1.2/1.3 client; mbedTLS and BearSSL are no longer bundled (--enable-mbedtls / --enable-bearssl use a system one)
 - NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
 - NETWORK: Built-in NFSv3 and NFSv4 (4.0, 4.1, 4.2) client for loading content from nfs:// exports
