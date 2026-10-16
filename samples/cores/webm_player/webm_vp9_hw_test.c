@@ -157,7 +157,7 @@ static int load(void)
    if (!media_player.webm)
       return 0;
    CHECK(!media_player.webmvs && !media_player.hw_started);
-   memset(media_player.fb, 0xa5, 64 * 48 * 4);
+   CHECK(!media_player.fb);
    return 1;
 }
 static void finish_seek(void)
@@ -286,8 +286,7 @@ int main(void)
    CHECK(!pcm_nonzero);
 #endif
    CHECK(media_player.vp9 && !media_player.vp9->buf_y);
-   for (i = 0; i < 64 * 48; i++)
-      CHECK(media_player.fb[i] == UINT32_C(0xa5a5a5a5));
+   CHECK(!media_player.fb);
    CHECK(retro_serialize(state, sizeof(state)));
    CHECK(retro_unserialize(state, sizeof(state)));
    CHECK(media_player.eof && media_player.webm_seek_slot >= 0);
@@ -347,7 +346,7 @@ int main(void)
    before = cpu_frames;
    for (i = 0; i < 5; i++) retro_run();
    CHECK(!media_player.webmvs && cpu_frames > before);
-   CHECK(media_player.fb[0] != UINT32_C(0xa5a5a5a5));
+   CHECK(media_player.fb && media_player.fb[0] != 0);
    unload();
    rvp9_set_hw_backend(NULL);
    CHECK(media_set_video_hw_refresh(NULL, NULL));

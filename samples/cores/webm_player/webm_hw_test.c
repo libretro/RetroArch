@@ -62,7 +62,7 @@ static bool start_core(int hardware)
    if (!media_player.mp4vs) return false;
    CHECK(!media_player.hw_started && !media_player.hw_video);
    (void)hardware;
-   memset(media_player.fb, 0xa5, 64 * 48 * sizeof(uint32_t));
+   CHECK(!media_player.fb);
    CHECK(!media_set_video_hw_refresh(NULL, NULL));
    return true;
 }
@@ -92,9 +92,20 @@ int main(void)
       if (before) CHECK(accepted == decoded);
    }
    CHECK(stopped && sink_taken && ticks && !media_player.hw_frame.image);
-   for (i = 0; i < 64 * 48; i++) CHECK(media_player.fb[i] == UINT32_C(0xa5a5a5a5));
+   CHECK(!media_player.fb);
+   CHECK(retro_serialize(state, sizeof(state)));
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
+   refuse = 1;
+   expect_software = 1;
+   CHECK(start_core(0));
+   CHECK(retro_unserialize(state, sizeof(state)));
+   CHECK(media_player.fb && media_player.fb[0] != 0);
+   retro_run();
+   CHECK(!media_player.hw_video && cpu_ticks);
+   retro_unload_game();
+   refuse = 0;
+   expect_software = 0;
    CHECK(start_core(1)); sink_busy = 100;
    for (i = 0; i < 20 && !media_player.hw_frame.image; i++) retro_run();
    CHECK(media_player.hw_frame.image);
@@ -106,7 +117,7 @@ int main(void)
    expect_software = 1;
    before = sink_calls;
    for (i = 0; i < 5; i++) retro_run();
-   CHECK(cpu_ticks && sink_calls == before && media_player.fb[0] != UINT32_C(0xa5a5a5a5));
+   CHECK(cpu_ticks && sink_calls == before && media_player.fb && media_player.fb[0] != 0);
    expect_software = 0;
    refuse = 0;
    retro_reset();
@@ -130,7 +141,7 @@ int main(void)
    expect_software = 1;
    before = sink_calls;
    for (i = 0; i < 5; i++) retro_run();
-   CHECK(sink_calls == before && media_player.fb[0] != UINT32_C(0xa5a5a5a5));
+   CHECK(sink_calls == before && media_player.fb && media_player.fb[0] != 0);
    retro_unload_game();
    CHECK(opened == closed && exported == abandoned);
    refuse = 0;
