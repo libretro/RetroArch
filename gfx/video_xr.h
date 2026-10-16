@@ -99,6 +99,7 @@ typedef struct video_xr_slot
    unsigned dims;          /* image size, VIDEO_SCALE_PACK; 0 unused */
    unsigned layers;        /* 2 for a stereo screen */
    int view[2];            /* map view drawn per layer; -1 frame or UI */
+   video_xr_vec3_t base;   /* its item's layout spot, the anchor's frame */
 } video_xr_slot_t;
 
 typedef struct video_xr_quad_set
@@ -140,6 +141,81 @@ typedef struct video_xr_params
    bool stock;
 } video_xr_params_t;
 
+/* Where video_xr_place starts each floating item, in the anchor's
+ * frame, before its adjustments: screen s of the map (a whole frame is
+ * screen 0) centred at pos[s], width[s] by height[s] metres at scale 1,
+ * from a source native[s] in size (VIDEO_SCALE_PACK); the menu's own
+ * spot at menu. count screens. */
+typedef struct video_xr_layout
+{
+   video_xr_vec3_t pos[RETRO_VIDEO_VIEWS_MAX];
+   video_xr_vec3_t menu;
+   float width[RETRO_VIDEO_VIEWS_MAX];
+   float height[RETRO_VIDEO_VIEWS_MAX];
+   unsigned native[RETRO_VIDEO_VIEWS_MAX];
+   unsigned count;
+} video_xr_layout_t;
+
+void video_xr_layout(const video_xr_params_t *p, video_xr_layout_t *out);
+
+/* An item's pose in the anchor's frame: at base moved by screen's
+ * offsets, turned by its yaw, pitch and roll; NULL leaves it at base. */
+void video_xr_item_pose(const video_xr_vec3_t *base,
+      const video_screen_xr_t *screen, video_xr_pose_t *out);
+
+/* The offsets and turn that put an item from base at pose, both in the
+ * anchor's frame; out's scale and visible are left as they are. */
+void video_xr_item_settings(const video_xr_vec3_t *base,
+      const video_xr_pose_t *pose, video_screen_xr_t *out);
+
+/* Edit mode's stick: its deadzone as a fraction of its travel; at full
+ * travel past it, the push along the aim's ray in metres a second and
+ * the resize in doublings a second. A pulled item comes no nearer the
+ * hand than VIDEO_XR_EDIT_REACH metres. */
+#define VIDEO_XR_EDIT_DEADZONE   0.2f
+#define VIDEO_XR_EDIT_PUSH_RATE  1.5f
+#define VIDEO_XR_EDIT_SCALE_RATE 1.0f
+#define VIDEO_XR_EDIT_REACH      0.1f
+
+enum video_xr_grab_state
+{
+   VIDEO_XR_GRAB_NONE = 0,
+   VIDEO_XR_GRAB_HELD,
+   /* Let go: the item stays where the hand left it until a quad set
+    * planned at release_seq or later shows it. */
+   VIDEO_XR_GRAB_RELEASED
+};
+
+/* A hand's hold on a floating item, in the anchor's frame. */
+typedef struct video_xr_grab
+{
+   video_xr_pose_t rel;    /* the item in the aim pose's frame */
+   video_xr_pose_t last;   /* where the hand last put it */
+   video_xr_vec3_t base;   /* its layout spot */
+   float roll;             /* degrees, kept while it does not tilt */
+   float width;            /* metres, at its scale now */
+   float height;
+   unsigned slot;          /* its quads' slot */
+   unsigned release_seq;
+   unsigned state;         /* enum video_xr_grab_state */
+   bool tilt;              /* its roll follows the hand too */
+} video_xr_grab_t;
+
+/* Where g puts its item for an aim pose: the aim composed with g->rel,
+ * levelled to g->roll unless g->tilt, its offsets from g->base clamped
+ * to the settings' range. Writes the pose and, unless out is NULL, the
+ * offsets and turn. Returns whether a clamp held it back; the caller
+ * then holds g->rel again from pose, so the item resumes from the
+ * limit. */
+bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      video_xr_pose_t *pose, video_screen_xr_t *out);
+
+/* The stick for dt seconds: past the deadzone y (up, +1) pushes g's
+ * item along the aim's ray and x (right, +1) enlarges it, each by how
+ * far past it is; *scale stays within the setting's range. */
+void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
+      float *scale);
+
 void video_xr_pose_identity(video_xr_pose_t *pose);
 
 /* out = q applied to v; out may be v. */
@@ -154,6 +230,21 @@ bool video_xr_anchor_from_head(const video_xr_pose_t *head,
 /* out = b, a pose in a's frame, in a's space; out may be a or b. */
 void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
       video_xr_pose_t *out);
+
+/* out = a's inverse: video_xr_compose(a, out) is the identity; out may
+ * be a. */
+void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out);
+
+/* q's turn in degrees, in the order an item's adjustments turn it: yaw
+ * about +Y, pitch about +X, roll about +Z. Pitch is within [-90, 90];
+ * straight up or down, roll is 0 and yaw takes the whole turn about the
+ * vertical. */
+void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
+      float *roll);
+
+/* q with its roll set to roll degrees, its yaw and pitch kept; straight
+ * up or down, where it has no roll of its own, q as it is. */
+void video_xr_level(video_xr_quat_t *q, float roll);
 
 /* Lazy Follow: the screens stay until the head's heading is this far
  * from theirs, or the head this far from where they were placed from;
@@ -235,15 +326,29 @@ void video_xr_cursor_pixels(uint8_t *px);
 #define VIDEO_XR_CURSOR_MIN   0.005f
 #define VIDEO_XR_CURSOR_LIFT  0.002f
 
-/* Whether a laser (enum video_openxr_laser) can point at q. Auto: the
- * menu or a window while the menu is open, and screens 1 and up.
- * Always: every screen and a whole frame too. Off: nothing. */
+/* Whether a laser (enum video_openxr_laser, or VIDEO_XR_LIVE_EDIT) can
+ * point at q. Auto: the menu or a window while the menu is open, and
+ * screens 1 and up. Always: every screen and a whole frame too. Off:
+ * nothing. Edit mode's: every item. */
+#define VIDEO_XR_LIVE_EDIT VIDEO_OPENXR_LASER_LAST
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open);
 
+/* Edit mode takes the menu by a handle bar centred under its bottom
+ * edge, in its plane: this fraction of its width, this many metres
+ * tall and this many below it. */
+#define VIDEO_XR_HANDLE_WIDTH  0.4f
+#define VIDEO_XR_HANDLE_HEIGHT 0.03f
+#define VIDEO_XR_HANDLE_GAP    0.01f
+
+/* The menu quad's handle: the menu's quad, moved and sized to it. */
+void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
+
 /* The nearest live quad the ray meets, as an index into set->quads, or
  * -1; of a stereo screen's two quads, the first. t is in units of
- * dir's length. */
+ * dir's length. Edit mode's laser meets the menu only at its handle, at
+ * (u, v) in the menu's own frame, v past 1; through the menu, what is
+ * behind. */
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       bool menu_open, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);

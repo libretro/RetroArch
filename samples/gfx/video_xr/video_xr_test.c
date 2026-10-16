@@ -309,6 +309,441 @@ static void test_screen_density(void)
    CHECK(dims_is(set.slots[1].dims, 500, 375));
 }
 
+static int vec_is(const video_xr_vec3_t *v, double x, double y, double z)
+{
+   return NEAR(v->x, x) && NEAR(v->y, y) && NEAR(v->z, z);
+}
+
+/* Degrees, the same turn either side of +-180. */
+static int angle_near(float a, float b)
+{
+   double d = fmod(fabs((double)a - (double)b), 360.0);
+   return d < 0.01 || d > 359.99;
+}
+
+/* Eight screens of 160x100 stacked, one view each. */
+static void map_8(video_views_map_t *map)
+{
+   struct retro_video_view v[RETRO_VIDEO_VIEWS_MAX];
+   unsigned s;
+   for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+      v[s] = mkview(0, s * 100, 160, 100, s, RETRO_VIDEO_VIEW_EYE_NONE);
+   CHECK(video_views_validate(v, RETRO_VIDEO_VIEWS_MAX, map));
+}
+
+static void test_pose_invert(void)
+{
+   video_xr_pose_t a, inv, id;
+   a.orientation.x = 0.1f;
+   a.orientation.y = 0.3f;
+   a.orientation.z = -0.2f;
+   a.orientation.w = (float)sqrt(0.86);
+   a.position.x    = 1.0f;
+   a.position.y    = -2.0f;
+   a.position.z    = 0.5f;
+   video_xr_pose_invert(&a, &inv);
+   video_xr_compose(&a, &inv, &id);
+   CHECK(NEAR(id.position.x, 0.0) && NEAR(id.position.y, 0.0)
+         && NEAR(id.position.z, 0.0) && NEAR(fabs(id.orientation.w), 1.0));
+   video_xr_compose(&inv, &a, &id);
+   CHECK(NEAR(id.position.x, 0.0) && NEAR(id.position.z, 0.0)
+         && NEAR(fabs(id.orientation.w), 1.0));
+   /* In place. */
+   inv = a;
+   video_xr_pose_invert(&inv, &inv);
+   video_xr_compose(&a, &inv, &id);
+   CHECK(NEAR(id.position.y, 0.0) && NEAR(fabs(id.orientation.w), 1.0));
+}
+
+/* The same turn: q and -q are one. */
+static int quat_same(const video_xr_quat_t *a, const video_xr_quat_t *b)
+{
+   return fabs((double)a->x * b->x + (double)a->y * b->y
+         + (double)a->z * b->z + (double)a->w * b->w) > 0.9999;
+}
+
+static void test_euler(void)
+{
+   static const float yaws[]    = { -170.0f, -90.0f, -30.0f, 0.0f,
+      45.0f, 120.0f, 179.0f };
+   static const float pitches[] = { -80.0f, -45.0f, 0.0f, 30.0f, 85.0f };
+   static const float rolls[]   = { -150.0f, -60.0f, 0.0f, 10.0f,
+      90.0f, 175.0f };
+   unsigned i, j, k;
+   video_xr_vec3_t base;
+   video_screen_xr_t s, got;
+   video_xr_pose_t pose, again;
+
+   base.x = base.y = base.z = 0.0f;
+   for (i = 0; i < sizeof(yaws) / sizeof(yaws[0]); i++)
+      for (j = 0; j < sizeof(pitches) / sizeof(pitches[0]); j++)
+         for (k = 0; k < sizeof(rolls) / sizeof(rolls[0]); k++)
+         {
+            video_views_xr_reset(&s, 1);
+            s.yaw   = yaws[i];
+            s.pitch = pitches[j];
+            s.roll  = rolls[k];
+            video_xr_item_pose(&base, &s, &pose);
+            video_xr_euler(&pose.orientation, &got.yaw, &got.pitch,
+                  &got.roll);
+            CHECK(angle_near(got.yaw, s.yaw) && angle_near(got.pitch, s.pitch)
+                  && angle_near(got.roll, s.roll));
+         }
+
+   /* Straight up the roll folds into the yaw: the same turn. */
+   video_views_xr_reset(&s, 1);
+   s.yaw   = 30.0f;
+   s.pitch = 90.0f;
+   s.roll  = 20.0f;
+   video_xr_item_pose(&base, &s, &pose);
+   video_views_xr_reset(&got, 1);
+   video_xr_euler(&pose.orientation, &got.yaw, &got.pitch, &got.roll);
+   CHECK(fabs(got.pitch - 90.0f) < 0.05 && got.roll == 0.0f);
+   CHECK(angle_near(got.yaw, 10.0f));
+   video_xr_item_pose(&base, &got, &again);
+   CHECK(quat_same(&pose.orientation, &again.orientation));
+   /* Straight down it adds. */
+   s.pitch = -90.0f;
+   video_xr_item_pose(&base, &s, &pose);
+   video_views_xr_reset(&got, 1);
+   video_xr_euler(&pose.orientation, &got.yaw, &got.pitch, &got.roll);
+   CHECK(fabs(got.pitch + 90.0f) < 0.05 && got.roll == 0.0f);
+   CHECK(angle_near(got.yaw, 50.0f));
+   video_xr_item_pose(&base, &got, &again);
+   CHECK(quat_same(&pose.orientation, &again.orientation));
+}
+
+static void test_level(void)
+{
+   unsigned i;
+   video_xr_vec3_t base;
+   video_screen_xr_t s;
+   video_xr_pose_t pose;
+   float yaw, pitch, roll;
+   base.x = base.y = base.z = 0.0f;
+   video_views_xr_reset(&s, 1);
+   s.yaw   = 30.0f;
+   s.pitch = 20.0f;
+   s.roll  = 40.0f;
+   video_xr_item_pose(&base, &s, &pose);
+   video_xr_level(&pose.orientation, 0.0f);
+   video_xr_euler(&pose.orientation, &yaw, &pitch, &roll);
+   CHECK(angle_near(yaw, 30.0f) && angle_near(pitch, 20.0f)
+         && angle_near(roll, 0.0f));
+   video_xr_level(&pose.orientation, -15.0f);
+   video_xr_euler(&pose.orientation, &yaw, &pitch, &roll);
+   CHECK(angle_near(yaw, 30.0f) && angle_near(pitch, 20.0f)
+         && angle_near(roll, -15.0f));
+
+   /* Straight up or down the roll is the yaw's: levelling a rolled
+    * item to its own roll leaves it as it is. */
+   for (i = 0; i < 2; i++)
+   {
+      video_xr_quat_t q;
+      s.pitch = i ? -90.0f : 90.0f;
+      s.roll  = 30.0f;
+      video_xr_item_pose(&base, &s, &pose);
+      q = pose.orientation;
+      video_xr_level(&q, 30.0f);
+      CHECK(quat_same(&q, &pose.orientation));
+   }
+}
+
+static void test_layout(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_layout_t lay;
+   video_xr_quad_set_t set;
+
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(800, 480);
+   video_xr_layout(&p, &lay);
+   CHECK(lay.count == 2);
+   CHECK(vec_is(&lay.pos[0], 0.0, 0.0, -1.8));
+   CHECK(NEAR(lay.width[0], 1.6) && NEAR(lay.height[0], 0.96));
+   CHECK(vec_is(&lay.pos[1], 0.0, -0.992, -1.8));
+   CHECK(NEAR(lay.width[1], 1.28) && NEAR(lay.height[1], 0.96));
+   CHECK(lay.native[1] == VIDEO_SCALE_PACK(320, 240));
+   CHECK(vec_is(&lay.menu, 0.0, 0.0, -1.7));
+
+   /* video_xr_place starts from the same spots, and says so. */
+   video_xr_place(&p, &set);
+   CHECK(vec_is(&set.slots[0].base, 0.0, 0.0, -1.8));
+   CHECK(vec_is(&set.slots[1].base, 0.0, -0.992, -1.8));
+   CHECK(vec_is(&set.slots[VIDEO_XR_MENU_SLOT].base, 0.0, 0.0, -1.7));
+
+   p.screen_layout = VIDEO_SCREEN_LAYOUT_HORIZONTAL;
+   video_xr_layout(&p, &lay);
+   CHECK(vec_is(&lay.pos[1], 1.472, 0.0, -1.8));
+
+   /* A whole frame is screen 0's spot. */
+   params_init(&p, NULL);
+   p.frame_dims = VIDEO_SCALE_PACK(800, 480);
+   video_xr_layout(&p, &lay);
+   CHECK(lay.count == 1 && vec_is(&lay.pos[0], 0.0, 0.0, -1.8));
+   CHECK(NEAR(lay.width[0], 1.6) && NEAR(lay.height[0], 0.96));
+   video_xr_place(&p, &set);
+   CHECK(vec_is(&set.slots[0].base, 0.0, 0.0, -1.8));
+}
+
+/* Each screen's quad turned back into settings gives its settings:
+ * both layouts, three scales, all eight screens, a turned anchor. */
+static void test_settings_identity(void)
+{
+   static const float scales[] = { 0.5f, 1.0f, 2.5f };
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_xr_layout_t lay;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_xr_pose_t inv;
+   unsigned layout, k, s, i;
+
+   map_8(&map);
+   params_init(&p, &map);
+   p.anchor.orientation.y = (float)sin(M_PI / 8.0);
+   p.anchor.orientation.w = (float)cos(M_PI / 8.0);
+   p.anchor.position.x    = 0.4f;
+   p.anchor.position.z    = -0.3f;
+   video_xr_pose_invert(&p.anchor, &inv);
+   for (layout = 0; layout < VIDEO_SCREEN_LAYOUT_LAST; layout++)
+      for (k = 0; k < sizeof(scales) / sizeof(scales[0]); k++)
+      {
+         video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+         for (s = 0; s < RETRO_VIDEO_VIEWS_MAX; s++)
+         {
+            screens[s].x     = 0.1f * (float)s - 0.3f;
+            screens[s].y     = 0.05f * (float)s;
+            screens[s].z     = -0.2f + 0.07f * (float)s;
+            screens[s].yaw   = -40.0f + 11.0f * (float)s;
+            screens[s].pitch = 25.0f - 9.0f * (float)s;
+            screens[s].roll  = 5.0f * (float)s - 15.0f;
+            screens[s].scale = scales[k];
+         }
+         p.screen_layout = layout;
+         p.screens       = screens;
+         video_xr_place(&p, &set);
+         video_xr_layout(&p, &lay);
+         CHECK(set.num_quads == RETRO_VIDEO_VIEWS_MAX);
+         for (i = 0; i < set.num_quads; i++)
+         {
+            video_screen_xr_t got;
+            video_xr_pose_t local;
+            const video_xr_quad_t *q = &set.quads[i];
+            s = q->screen;
+            video_xr_compose(&inv, &q->pose, &local);
+            video_xr_item_settings(&set.slots[s].base, &local, &got);
+            CHECK(NEAR(got.x, screens[s].x) && NEAR(got.y, screens[s].y)
+                  && NEAR(got.z, screens[s].z));
+            CHECK(angle_near(got.yaw, screens[s].yaw)
+                  && angle_near(got.pitch, screens[s].pitch)
+                  && angle_near(got.roll, screens[s].roll));
+            CHECK(NEAR(q->width / lay.width[s], scales[k]));
+         }
+      }
+}
+
+static void test_grab(void)
+{
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, inv;
+   video_screen_xr_t s;
+
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&aim);
+   /* An item 1.8 m ahead at its own spot, held from the eyes. */
+   g.base.z = -1.8f;
+   video_xr_pose_identity(&g.rel);
+   g.rel.position.z = -1.8f;
+   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(NEAR(pose.position.z, -1.8) && NEAR(s.x, 0.0) && NEAR(s.z, 0.0));
+   /* The hand moves: the item with it. */
+   aim.position.x = 0.2f;
+   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(NEAR(s.x, 0.2) && NEAR(s.y, 0.0) && NEAR(s.z, 0.0));
+   /* The wrist rolls 30 degrees: level, the item does not... */
+   aim.orientation.z = (float)sin(M_PI / 12.0);
+   aim.orientation.w = (float)cos(M_PI / 12.0);
+   video_xr_grab_pose(&g, &aim, &pose, &s);
+   CHECK(angle_near(s.roll, 0.0f) && angle_near(s.yaw, 0.0f)
+         && angle_near(s.pitch, 0.0f));
+   /* ...tilting, it does. */
+   g.tilt = true;
+   video_xr_grab_pose(&g, &aim, &pose, &s);
+   CHECK(angle_near(s.roll, 30.0f));
+   /* Level again at the roll it was left at. */
+   g.tilt            = false;
+   g.roll            = 30.0f;
+   aim.orientation.z = 0.0f;
+   aim.orientation.w = 1.0f;
+   video_xr_grab_pose(&g, &aim, &pose, &s);
+   CHECK(angle_near(s.roll, 30.0f));
+   /* At a limit the item stops: 10 m right of its spot at most. */
+   aim.position.x = 10.5f;
+   CHECK(video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(NEAR(s.x, 10.0) && NEAR(pose.position.x, 10.0));
+   /* Held again from there, as the caller does, it resumes from the
+    * limit, not from where the hand went. */
+   video_xr_pose_invert(&aim, &inv);
+   video_xr_compose(&inv, &pose, &g.rel);
+   aim.position.x = 10.4f;
+   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(NEAR(s.x, 9.9));
+   /* out may be NULL: only the pose. */
+   CHECK(!video_xr_grab_pose(&g, &aim, &pose, NULL));
+}
+
+static void test_grab_stick(void)
+{
+   video_xr_grab_t g;
+   float scale = 1.0f;
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&g.rel);
+   g.rel.position.z = -1.0f;
+   /* Inside the deadzone: nothing. */
+   video_xr_grab_stick(&g, 0.1f, 0.15f, 1.0, &scale);
+   CHECK(NEAR(g.rel.position.z, -1.0) && scale == 1.0f);
+   /* Full push for half a second, then half past the deadzone for one. */
+   video_xr_grab_stick(&g, 0.0f, 1.0f, 0.5, &scale);
+   CHECK(NEAR(g.rel.position.z, -1.75));
+   video_xr_grab_stick(&g, 0.0f, 0.6f, 1.0, &scale);
+   CHECK(NEAR(g.rel.position.z, -2.5));
+   /* Pulled in, no nearer than the reach. */
+   video_xr_grab_stick(&g, 0.0f, -1.0f, 10.0, &scale);
+   CHECK(NEAR(g.rel.position.z, -VIDEO_XR_EDIT_REACH));
+   /* Right doubles it in a second, left halves it, within the range. */
+   video_xr_grab_stick(&g, 1.0f, 0.0f, 1.0, &scale);
+   CHECK(NEAR(scale, 2.0));
+   video_xr_grab_stick(&g, -1.0f, 0.0f, 2.0, &scale);
+   CHECK(NEAR(scale, 0.5));
+   video_xr_grab_stick(&g, 1.0f, 0.0f, 10.0, &scale);
+   CHECK(scale == 10.0f);
+   video_xr_grab_stick(&g, -1.0f, 0.0f, 20.0, &scale);
+   CHECK(NEAR(scale, 0.1));
+}
+
+static void test_menu_handle(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_xr_quad_t menu, h;
+   video_xr_vec3_t o, d;
+   video_xr_pose_t pose;
+   float u, v, t;
+
+   /* Under the menu's bottom edge, 1 cm down, 40% as wide, 3 cm tall. */
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
+   video_xr_place(&p, &set);
+   CHECK(set.quads[3].kind == VIDEO_XR_QUAD_MENU);
+   video_xr_menu_handle(&set.quads[3], &h);
+   CHECK(pos_is(&h, 0.0, -0.505, -1.7));
+   CHECK(NEAR(h.width, 0.64) && NEAR(h.height, 0.03));
+   CHECK(h.kind == VIDEO_XR_QUAD_MENU && h.slot == VIDEO_XR_MENU_SLOT);
+   CHECK(NEAR(h.pose.orientation.w, 1.0));
+
+   /* Its down is the menu's: rolled a quarter turn, towards +X. */
+   memset(&menu, 0, sizeof(menu));
+   menu.pose.orientation.z = (float)sin(M_PI / 4.0);
+   menu.pose.orientation.w = (float)cos(M_PI / 4.0);
+   menu.pose.position.x    = 1.0f;
+   menu.pose.position.y    = 2.0f;
+   menu.pose.position.z    = 3.0f;
+   menu.width              = 1.0f;
+   menu.height             = 0.5f;
+   menu.kind               = VIDEO_XR_QUAD_MENU;
+   video_xr_menu_handle(&menu, &h);
+   CHECK(pos_is(&h, 1.275, 2.0, 3.0));
+   CHECK(NEAR(h.width, 0.4) && NEAR(h.pose.orientation.z, sin(M_PI / 4.0)));
+
+   /* Picked there, 10 cm along it, the point is the menu's; through
+    * the menu, nothing. */
+   memset(&set, 0, sizeof(set));
+   set.quads[0]  = menu;
+   set.num_quads = 1;
+   o.x = 1.275f; o.y = 2.1f; o.z = 4.0f;
+   d.x = 0.0f;   d.y = 0.0f; d.z = -1.0f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
+   CHECK(NEAR(u, 0.6) && NEAR(v, 1.05) && NEAR(t, 1.0));
+   video_xr_cursor(&set.quads[0], u, v, t, &pose);
+   CHECK(NEAR(pose.position.x, 1.275) && NEAR(pose.position.y, 2.1));
+   o.x = 1.0f; o.y = 2.0f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == -1);
+
+   /* A menu placed a quarter turn left: its handle 1.7 m to the left,
+    * 16 cm along it towards -Z, nearer than screen 1 behind. */
+   params_init(&p, &map);
+   p.ui_dims              = VIDEO_SCALE_PACK(1600, 960);
+   p.anchor.orientation.y = (float)sin(M_PI / 4.0);
+   p.anchor.orientation.w = (float)cos(M_PI / 4.0);
+   video_xr_place(&p, &set);
+   o.x = o.y = o.z = 0.0f;
+   d.x = -1.7f; d.y = -0.505f; d.z = -0.16f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 3);
+   CHECK(NEAR(u, 0.6) && NEAR(v, 1.02604) && NEAR(t, 1.0));
+}
+
+static void test_live_edit(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_xr_vec3_t o, d;
+   video_xr_pose_t pose;
+   float u, v, t;
+   unsigned i;
+
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
+   video_xr_place(&p, &set);
+   /* Every item, screen 0 and the closed menu too. */
+   for (i = 0; i < set.num_quads; i++)
+      CHECK(video_xr_quad_live(&set.quads[i], VIDEO_XR_LIVE_EDIT, false));
+   o.x = o.y = o.z = 0.0f;
+   /* Straight ahead the menu covers screen 0: through it, screen 0. */
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
+   /* Its handle, nearer than screen 1 behind it, takes the menu; the
+    * point is in the menu's frame, so the dot lands on the handle. */
+   d.x = 0.0f; d.y = -0.505f; d.z = -1.7f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 3);
+   CHECK(NEAR(u, 0.5) && NEAR(v, 1.02604) && NEAR(t, 1.0));
+   video_xr_cursor(&set.quads[3], u, v, t, &pose);
+   CHECK(NEAR(pose.position.x, 0.0) && NEAR(pose.position.y, -0.505));
+   /* The handle is edit mode's alone. */
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            &o, &d, &u, &v, &t) == 2);
+   /* Between the menu and its handle, what is behind: screen 1. */
+   o.y = 1.47f;
+   d.x = 0.0f; d.y = -1.15f; d.z = -1.0f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 2);
+   /* Other lasers still see the whole menu. */
+   o.y = 0.0f;
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            &o, &d, &u, &v, &t) == 3);
+
+   /* A whole frame and a window are items too. */
+   params_init(&p, NULL);
+   p.frame_dims = VIDEO_SCALE_PACK(800, 480);
+   video_xr_place(&p, &set);
+   CHECK(video_xr_quad_live(&set.quads[0], VIDEO_XR_LIVE_EDIT, false));
+   p.window = true;
+   video_xr_place(&p, &set);
+   CHECK(video_xr_quad_live(&set.quads[0], VIDEO_XR_LIVE_EDIT, false));
+}
+
 static void test_image_dims(void)
 {
    /* 1.6 m at 1.8 m spans 0.8364 rad: 837 px at 1000 px/rad. */
@@ -1380,6 +1815,15 @@ int main(void)
    test_screen_visibility();
    test_screen_identity();
    test_screen_density();
+   test_pose_invert();
+   test_euler();
+   test_level();
+   test_layout();
+   test_settings_identity();
+   test_grab();
+   test_grab_stick();
+   test_menu_handle();
+   test_live_edit();
    test_image_dims();
    test_shrinks();
    test_place_3ds();

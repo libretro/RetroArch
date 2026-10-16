@@ -87,6 +87,21 @@ void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
    out->orientation = q;
 }
 
+void video_xr_pose_invert(const video_xr_pose_t *a, video_xr_pose_t *out)
+{
+   video_xr_quat_t q;
+   video_xr_vec3_t p;
+   q.x = -a->orientation.x;
+   q.y = -a->orientation.y;
+   q.z = -a->orientation.z;
+   q.w =  a->orientation.w;
+   p.x = -a->position.x;
+   p.y = -a->position.y;
+   p.z = -a->position.z;
+   video_xr_rotate(&q, &p, &out->position);
+   out->orientation = q;
+}
+
 bool video_xr_lazy_follow(video_xr_pose_t *anchor,
       const video_xr_pose_t *target, double dt, bool gliding)
 {
@@ -207,6 +222,103 @@ static void video_xr_screen_rotate(const video_screen_xr_t *screen,
    video_xr_compose(pose, &local, pose);
 }
 
+/* Within this of straight up or down a turn has no roll of its own. */
+#define VIDEO_XR_POLE 0.99999
+
+/* The sine of q's pitch. */
+static double video_xr_pitch_sin(const video_xr_quat_t *q)
+{
+   double sp = -2.0 * ((double)q->y * q->z - (double)q->w * q->x);
+   if (sp > 1.0)
+      return 1.0;
+   if (sp < -1.0)
+      return -1.0;
+   return sp;
+}
+
+void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
+      float *roll)
+{
+   double x   = q->x;
+   double y   = q->y;
+   double z   = q->z;
+   double w   = q->w;
+   double sp  = video_xr_pitch_sin(q);
+   *pitch = (float)(asin(sp) * 180.0 / VIDEO_XR_PI);
+   if (fabs(sp) > VIDEO_XR_POLE)
+   {
+      *yaw  = (float)(atan2(-2.0 * (x * z - w * y),
+               1.0 - 2.0 * (y * y + z * z)) * 180.0 / VIDEO_XR_PI);
+      *roll = 0.0f;
+      return;
+   }
+   *yaw  = (float)(atan2(2.0 * (x * z + w * y),
+            1.0 - 2.0 * (x * x + y * y)) * 180.0 / VIDEO_XR_PI);
+   *roll = (float)(atan2(2.0 * (x * y + w * z),
+            1.0 - 2.0 * (x * x + z * z)) * 180.0 / VIDEO_XR_PI);
+}
+
+void video_xr_level(video_xr_quat_t *q, float roll)
+{
+   video_screen_xr_t s;
+   video_xr_pose_t pose;
+   if (fabs(video_xr_pitch_sin(q)) > VIDEO_XR_POLE)
+      return;
+   video_views_xr_reset(&s, 1);
+   video_xr_euler(q, &s.yaw, &s.pitch, &s.roll);
+   s.roll = roll;
+   video_xr_pose_identity(&pose);
+   video_xr_screen_rotate(&s, &pose);
+   *q = pose.orientation;
+}
+
+void video_xr_item_pose(const video_xr_vec3_t *base,
+      const video_screen_xr_t *screen, video_xr_pose_t *out)
+{
+   video_xr_pose_identity(out);
+   out->position = *base;
+   if (!screen)
+      return;
+   out->position.x += screen->x;
+   out->position.y += screen->y;
+   out->position.z += screen->z;
+   if (screen->yaw != 0.0f || screen->pitch != 0.0f || screen->roll != 0.0f)
+      video_xr_screen_rotate(screen, out);
+}
+
+void video_xr_item_settings(const video_xr_vec3_t *base,
+      const video_xr_pose_t *pose, video_screen_xr_t *out)
+{
+   out->x = pose->position.x - base->x;
+   out->y = pose->position.y - base->y;
+   out->z = pose->position.z - base->z;
+   video_xr_euler(&pose->orientation, &out->yaw, &out->pitch, &out->roll);
+}
+
+/* An item from its layout spot, adjusted by screen (NULL: as laid out):
+ * its pose from p's anchor, its size scaled, and the distance its image
+ * is sized for, which only an offset changes. */
+static void video_xr_adjust(const video_xr_params_t *p,
+      const video_xr_vec3_t *base, const video_screen_xr_t *screen,
+      video_xr_pose_t *pose, double *w, double *h, float *distance)
+{
+   video_xr_pose_t local;
+   video_xr_item_pose(base, screen, &local);
+   if (screen)
+   {
+      *w *= screen->scale;
+      *h *= screen->scale;
+      if (screen->x != 0.0f || screen->y != 0.0f || screen->z != 0.0f)
+      {
+         double d  = sqrt((double)local.position.x * local.position.x
+               + (double)local.position.y * local.position.y
+               + (double)local.position.z * local.position.z);
+         *distance = (float)(d < 0.05 ? 0.05 : d);
+      }
+   }
+   video_xr_compose(&p->anchor, &local, pose);
+}
+
 static void video_xr_add(video_xr_quad_set_t *out, unsigned kind,
       unsigned eye, unsigned screen, unsigned slot, unsigned layer,
       const video_xr_pose_t *pose, float width, float height)
@@ -237,10 +349,7 @@ static unsigned video_xr_screen_dims(const video_xr_params_t *p,
          native_dims, p->max_dim);
 }
 
-/* Screens sized by display width against screen 0's; screen 0 straight
- * ahead, the rest below it or to its right. */
-static void video_xr_place_screens(const video_xr_params_t *p,
-      video_xr_quad_set_t *out)
+void video_xr_layout(const video_xr_params_t *p, video_xr_layout_t *out)
 {
    unsigned s;
    double k;
@@ -251,6 +360,24 @@ static void video_xr_place_screens(const video_xr_params_t *p,
       (p->screen_layout == VIDEO_SCREEN_LAYOUT_HORIZONTAL);
    double gap                   = VIDEO_XR_GAP * p->width;
    double edge                  = 0.0;
+
+   memset(out, 0, sizeof(*out));
+   out->menu.z = -(p->distance - VIDEO_XR_MENU_LIFT);
+   if (!map || !map->num_views)
+   {
+      float aspect = p->frame_aspect;
+      if (aspect <= 0.0f && VIDEO_SCALE_H(p->frame_dims))
+         aspect = (float)VIDEO_SCALE_W(p->frame_dims)
+            / (float)VIDEO_SCALE_H(p->frame_dims);
+      if (aspect <= 0.0f)
+         aspect = 4.0f / 3.0f;
+      out->pos[0].z  = -p->distance;
+      out->width[0]  = p->width;
+      out->height[0] = p->width / aspect;
+      out->native[0] = p->frame_dims;
+      out->count     = 1;
+      return;
+   }
 
    for (s = 0; s < map->num_screens; s++)
    {
@@ -270,20 +397,10 @@ static void video_xr_place_screens(const video_xr_params_t *p,
 
    for (s = 0; s < map->num_screens; s++)
    {
-      video_xr_pose_t pose;
-      video_screen_xr_t screen;
-      float distance        = p->distance;
-      int left              = video_views_find(map, s,
-            RETRO_VIDEO_VIEW_EYE_LEFT);
-      int right             = video_views_find(map, s,
-            RETRO_VIDEO_VIEW_EYE_RIGHT);
-      double w              = disp_w[s] * k;
-      double h              = disp_h[s] * k;
-      double x              = 0.0;
-      double y              = 0.0;
-      double z              = -p->distance;
-      video_xr_slot_t *slot = &out->slots[s];
-
+      double w = disp_w[s] * k;
+      double h = disp_h[s] * k;
+      double x = 0.0;
+      double y = 0.0;
       if (s == 0)
          edge = horizontal ? w / 2.0 : -h / 2.0;
       else if (horizontal)
@@ -296,6 +413,38 @@ static void video_xr_place_screens(const video_xr_params_t *p,
          y    = edge - gap - h / 2.0;
          edge = y - h / 2.0;
       }
+      out->pos[s].x  = (float)x;
+      out->pos[s].y  = (float)y;
+      out->pos[s].z  = -p->distance;
+      out->width[s]  = (float)w;
+      out->height[s] = (float)h;
+      out->native[s] = VIDEO_SCALE_PACK((unsigned)(disp_w[s] + 0.5),
+            (unsigned)(disp_h[s] + 0.5));
+   }
+   out->count = map->num_screens;
+}
+
+/* Screens from their layout spots, each moved by its adjustments. */
+static void video_xr_place_screens(const video_xr_params_t *p,
+      const video_xr_layout_t *lay, video_xr_quad_set_t *out)
+{
+   unsigned s;
+   const video_views_map_t *map = p->map;
+
+   for (s = 0; s < lay->count; s++)
+   {
+      video_xr_pose_t pose;
+      video_screen_xr_t screen;
+      float distance        = p->distance;
+      int left              = video_views_find(map, s,
+            RETRO_VIDEO_VIEW_EYE_LEFT);
+      int right             = video_views_find(map, s,
+            RETRO_VIDEO_VIEW_EYE_RIGHT);
+      double w              = lay->width[s];
+      double h              = lay->height[s];
+      video_xr_slot_t *slot = &out->slots[s];
+
+      slot->base = lay->pos[s];
       if (p->skip_screens & (1u << s))
          continue;
       if (p->screens)
@@ -304,25 +453,12 @@ static void video_xr_place_screens(const video_xr_params_t *p,
          video_views_xr_normalize(&screen);
          if (!screen.visible)
             continue;
-         x += screen.x;
-         y += screen.y;
-         z += screen.z;
-         w *= screen.scale;
-         h *= screen.scale;
-         if (screen.x != 0.0f || screen.y != 0.0f || screen.z != 0.0f)
-         {
-            double d = sqrt(x * x + y * y + z * z);
-            distance = (float)(d < 0.05 ? 0.05 : d);
-         }
       }
-      video_xr_put(p, x, y, z, &pose);
-      if (p->screens && (screen.yaw != 0.0f
-               || screen.pitch != 0.0f || screen.roll != 0.0f))
-         video_xr_screen_rotate(&screen, &pose);
+      video_xr_adjust(p, &lay->pos[s], p->screens ? &screen : NULL,
+            &pose, &w, &h, &distance);
 
       slot->dims    = video_xr_screen_dims(p, (float)w, (float)h, distance,
-            VIDEO_SCALE_PACK((unsigned)(disp_w[s] + 0.5),
-               (unsigned)(disp_h[s] + 0.5)));
+            lay->native[s]);
       slot->view[0] = left;
       if (left != right)
       {
@@ -368,6 +504,7 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
 {
    unsigned s;
    video_xr_pose_t pose;
+   video_xr_layout_t lay;
 
    memset(out, 0, sizeof(*out));
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
@@ -378,25 +515,19 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
    if (p->width <= 0.0f || p->distance <= 0.0f)
       return;
 
+   video_xr_layout(p, &lay);
    if (p->map && p->map->num_views)
-      video_xr_place_screens(p, out);
+      video_xr_place_screens(p, &lay, out);
    else
    {
-      float h;
-      float aspect = p->frame_aspect;
-      if (aspect <= 0.0f && VIDEO_SCALE_H(p->frame_dims))
-         aspect = (float)VIDEO_SCALE_W(p->frame_dims)
-            / (float)VIDEO_SCALE_H(p->frame_dims);
-      if (aspect <= 0.0f)
-         aspect = 4.0f / 3.0f;
-      h = p->width / aspect;
-      video_xr_put(p, 0.0, 0.0, -p->distance, &pose);
-      out->slots[0].dims   = video_xr_screen_dims(p, p->width, h,
-            p->distance, p->frame_dims);
+      video_xr_put(p, lay.pos[0].x, lay.pos[0].y, lay.pos[0].z, &pose);
+      out->slots[0].base   = lay.pos[0];
+      out->slots[0].dims   = video_xr_screen_dims(p, lay.width[0],
+            lay.height[0], p->distance, p->frame_dims);
       out->slots[0].layers = 1;
       video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
             : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
-            &pose, p->width, h);
+            &pose, lay.width[0], lay.height[0]);
    }
 
    if (VIDEO_SCALE_W(p->ui_dims) && VIDEO_SCALE_H(p->ui_dims))
@@ -411,7 +542,8 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
          h = p->width * VIDEO_XR_MENU_MAX_H;
          w = h * aspect;
       }
-      video_xr_put(p, 0.0, 0.0, -d, &pose);
+      video_xr_put(p, lay.menu.x, lay.menu.y, lay.menu.z, &pose);
+      out->slots[VIDEO_XR_MENU_SLOT].base   = lay.menu;
       out->slots[VIDEO_XR_MENU_SLOT].dims   = video_xr_menu_dims(p, w, h, d);
       out->slots[VIDEO_XR_MENU_SLOT].layers = 1;
       video_xr_add(out, VIDEO_XR_QUAD_MENU, VIDEO_XR_EYE_BOTH, 0,
@@ -600,6 +732,8 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open)
 {
+   if (laser == VIDEO_XR_LIVE_EDIT)
+      return true;
    if (laser == VIDEO_OPENXR_LASER_OFF)
       return false;
    switch (q->kind)
@@ -620,6 +754,40 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
    return laser == VIDEO_OPENXR_LASER_ALWAYS;
 }
 
+void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
+{
+   video_xr_vec3_t down, world;
+   *out        = *menu;
+   out->width  = menu->width * VIDEO_XR_HANDLE_WIDTH;
+   out->height = VIDEO_XR_HANDLE_HEIGHT;
+   down.x      = 0.0f;
+   down.y      = -(menu->height + VIDEO_XR_HANDLE_HEIGHT) * 0.5f
+      - VIDEO_XR_HANDLE_GAP;
+   down.z      = 0.0f;
+   video_xr_rotate(&menu->pose.orientation, &down, &world);
+   out->pose.position.x += world.x;
+   out->pose.position.y += world.y;
+   out->pose.position.z += world.z;
+}
+
+/* Where a ray meets the menu q's handle, as a point in q's own frame. */
+static bool video_xr_handle_hit(const video_xr_quad_t *q,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
+      float *u, float *v, float *t)
+{
+   float hu, hv;
+   video_xr_quad_t handle;
+   if (q->height <= 0.0f)
+      return false;
+   video_xr_menu_handle(q, &handle);
+   if (!video_xr_ray_hit(&handle, origin, dir, &hu, &hv, t))
+      return false;
+   *u = 0.5f + (hu - 0.5f) * VIDEO_XR_HANDLE_WIDTH;
+   *v = 1.0f + (VIDEO_XR_HANDLE_GAP + hv * VIDEO_XR_HANDLE_HEIGHT)
+      / q->height;
+   return true;
+}
+
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       bool menu_open, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t)
@@ -632,9 +800,15 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
    for (i = 0; i < set->num_quads; i++)
    {
       float qu, qv, qt;
-      if (     !video_xr_quad_live(&set->quads[i], laser, menu_open)
-            || !video_xr_ray_hit(&set->quads[i], origin, dir,
-               &qu, &qv, &qt))
+      const video_xr_quad_t *q = &set->quads[i];
+      if (!video_xr_quad_live(q, laser, menu_open))
+         continue;
+      if (laser == VIDEO_XR_LIVE_EDIT && q->kind == VIDEO_XR_QUAD_MENU)
+      {
+         if (!video_xr_handle_hit(q, origin, dir, &qu, &qv, &qt))
+            continue;
+      }
+      else if (!video_xr_ray_hit(q, origin, dir, &qu, &qv, &qt))
          continue;
       if (best < 0 || qt < bt)
       {
@@ -667,6 +841,73 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
    pose->position.y    = q->pose.position.y + world.y;
    pose->position.z    = q->pose.position.z + world.z;
    return (size < VIDEO_XR_CURSOR_MIN) ? VIDEO_XR_CURSOR_MIN : size;
+}
+
+bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
+      video_xr_pose_t *pose, video_screen_xr_t *out)
+{
+   video_screen_xr_t s, c;
+   bool clamped;
+   video_xr_compose(aim, &g->rel, pose);
+   if (!g->tilt)
+      video_xr_level(&pose->orientation, g->roll);
+   video_views_xr_reset(&s, 1);
+   video_xr_item_settings(&g->base, pose, &s);
+   c = s;
+   video_views_xr_normalize(&c);
+   clamped = c.x != s.x || c.y != s.y || c.z != s.z;
+   if (clamped)
+   {
+      pose->position.x = g->base.x + c.x;
+      pose->position.y = g->base.y + c.y;
+      pose->position.z = g->base.z + c.z;
+   }
+   if (out)
+   {
+      out->x     = c.x;
+      out->y     = c.y;
+      out->z     = c.z;
+      out->yaw   = c.yaw;
+      out->pitch = c.pitch;
+      out->roll  = c.roll;
+   }
+   return clamped;
+}
+
+/* A stick axis past the deadzone, as a fraction of the travel left. */
+static double video_xr_deflection(float v)
+{
+   double a = fabs(v);
+   if (a <= VIDEO_XR_EDIT_DEADZONE)
+      return 0.0;
+   if (a > 1.0)
+      a = 1.0;
+   a = (a - VIDEO_XR_EDIT_DEADZONE) / (1.0 - VIDEO_XR_EDIT_DEADZONE);
+   return (v < 0.0f) ? -a : a;
+}
+
+void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
+      float *scale)
+{
+   double push = video_xr_deflection(y) * VIDEO_XR_EDIT_PUSH_RATE * dt;
+   double grow = video_xr_deflection(x) * VIDEO_XR_EDIT_SCALE_RATE * dt;
+   if (push != 0.0)
+   {
+      /* The aim's ray is its -Z. */
+      double z = g->rel.position.z - push;
+      if (push < 0.0 && z > -VIDEO_XR_EDIT_REACH)
+         z = (g->rel.position.z > -VIDEO_XR_EDIT_REACH)
+            ? g->rel.position.z : -VIDEO_XR_EDIT_REACH;
+      g->rel.position.z = (float)z;
+   }
+   if (grow != 0.0)
+   {
+      video_screen_xr_t s;
+      video_views_xr_reset(&s, 1);
+      s.scale = (float)(*scale * pow(2.0, grow));
+      video_views_xr_normalize(&s);
+      *scale = s.scale;
+   }
 }
 
 void video_xr_cursor_pixels(uint8_t *px)
