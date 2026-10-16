@@ -592,8 +592,9 @@ static void d3d10_update_texture(
    D3D10_MAPPED_TEXTURE2D mapped_texture;
    D3D10_BOX                frame_box;
 
-   texture->staging->lpVtbl->Map(texture->staging, 0, D3D10_MAP_WRITE, 0,
-         &mapped_texture);
+   if (FAILED(texture->staging->lpVtbl->Map(texture->staging,
+               0, D3D10_MAP_WRITE, 0, &mapped_texture)))
+      return;
 
    dxgi_copy(
          width, height, format, pitch, data, texture->desc.Format,
@@ -1921,8 +1922,9 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
    MAT_ELEM_4X4(rot, 1, 1) = cosine;
    matrix_4x4_multiply(d3d10->mvp, rot, d3d10->ubo_values.mvp);
 
-   d3d10->frame.ubo->lpVtbl->Map(d3d10->frame.ubo,
-         D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_ubo);
+   if (FAILED(d3d10->frame.ubo->lpVtbl->Map(d3d10->frame.ubo,
+               D3D10_MAP_WRITE_DISCARD, 0, (void**)&mapped_ubo)))
+      return;
    *(math_matrix_4x4*)mapped_ubo = d3d10->mvp;
    d3d10->frame.ubo->lpVtbl->Unmap(d3d10->frame.ubo);
 }
@@ -4224,15 +4226,21 @@ static bool d3d10_gfx_frame(
 
    if (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
    {
-      D3D10Texture2D backBuffer;
+      D3D10Texture2D backBuffer = NULL;
 
       Release(d3d10->renderTargetView);
-      DXGIResizeBuffers(d3d10->swapChain, 0, 0, 0, (DXGI_FORMAT)0, 0);
-
-      d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain, 0,
-            uuidof(ID3D10Texture2D), (void**)&backBuffer);
-      d3d10->device->lpVtbl->CreateRenderTargetView(d3d10->device,
-            (D3D10Resource)backBuffer, NULL, &d3d10->renderTargetView);
+      if (     FAILED(DXGIResizeBuffers(d3d10->swapChain,
+                     0, 0, 0, (DXGI_FORMAT)0, 0))
+            || FAILED(d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain,
+                     0, uuidof(ID3D10Texture2D), (void**)&backBuffer))
+            || FAILED(d3d10->device->lpVtbl->CreateRenderTargetView(
+                     d3d10->device, (D3D10Resource)backBuffer,
+                     NULL, &d3d10->renderTargetView)))
+      {
+         Release(backBuffer);
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
       Release(backBuffer);
 
       d3d10->device->lpVtbl->OMSetRenderTargets(d3d10->device, 1,

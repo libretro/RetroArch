@@ -6642,13 +6642,6 @@ static bool d3d11_gfx_frame_body(
          swapchain_flags         |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 #ifdef HAVE_DXGI_HDR
-      if (video_hdr_enable)
-         d3d11->flags |=  D3D11_ST_FLAG_HDR_ENABLE;
-      else
-         d3d11->flags &= ~D3D11_ST_FLAG_HDR_ENABLE;
-
-      d3d11->chain_bit_depth     = desired_bit_depth;
-
       /* Unbind all render targets before ResizeBuffers —
        * the debug layer requires no outstanding references
        * to back buffer resources during the resize */
@@ -6658,9 +6651,12 @@ static bool d3d11_gfx_frame_body(
       }
       context->lpVtbl->Flush(context);
 
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0,
-            d3d11->chain_formats[d3d11->chain_bit_depth],
-            swapchain_flags);
+      if (FAILED(DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0,
+                  d3d11->chain_formats[desired_bit_depth], swapchain_flags)))
+      {
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
 #else
       /* Unbind all render targets before ResizeBuffers —
        * the debug layer requires no outstanding references
@@ -6671,9 +6667,20 @@ static bool d3d11_gfx_frame_body(
       }
       context->lpVtbl->Flush(context);
 
-      DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0,
-            DXGI_FORMAT_UNKNOWN,
-            swapchain_flags);
+      if (FAILED(DXGIResizeBuffers(d3d11->swapChain, 0, 0, 0,
+                  DXGI_FORMAT_UNKNOWN, swapchain_flags)))
+      {
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+         return false;
+      }
+#endif
+
+#ifdef HAVE_DXGI_HDR
+      if (video_hdr_enable)
+         d3d11->flags |=  D3D11_ST_FLAG_HDR_ENABLE;
+      else
+         d3d11->flags &= ~D3D11_ST_FLAG_HDR_ENABLE;
+      d3d11->chain_bit_depth = desired_bit_depth;
 #endif
 
       d3d11->viewport.Width                     = video_width;
@@ -6753,11 +6760,16 @@ static bool d3d11_gfx_frame_body(
 #endif
 
    {
-       D3D11Texture2D back_buffer;
-       d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain, 0,
-             uuidof(ID3D11Texture2D), (void**)&back_buffer);
-       d3d11->device->lpVtbl->CreateRenderTargetView(d3d11->device,
-             (D3D11Resource)back_buffer, NULL, &rtv);
+       D3D11Texture2D back_buffer = NULL;
+       if (     FAILED(d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain,
+                      0, uuidof(ID3D11Texture2D), (void**)&back_buffer))
+             || FAILED(d3d11->device->lpVtbl->CreateRenderTargetView(
+                      d3d11->device, (D3D11Resource)back_buffer, NULL, &rtv)))
+       {
+          Release(back_buffer);
+          video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+          return false;
+       }
        Release(back_buffer);
    }
 
@@ -7089,13 +7101,14 @@ static bool d3d11_gfx_frame_body(
             {
                D3D11_MAPPED_SUBRESOURCE mapped_ubo;
 
-               d3d11->context->lpVtbl->Map(
-                     d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+               if (SUCCEEDED(d3d11->context->lpVtbl->Map(
+                     d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
                {
                   dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
                   *ubo                    = d3d11->hdr.ubo_values;
+                  d3d11->context->lpVtbl->Unmap(d3d11->context,
+                        (D3D11Resource)d3d11->hdr.ubo, 0);
                }
-               d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
             }
          }
 
@@ -7220,13 +7233,14 @@ static bool d3d11_gfx_frame_body(
          {
             D3D11_MAPPED_SUBRESOURCE mapped_ubo;
 
-            d3d11->context->lpVtbl->Map(
-                  d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+            if (SUCCEEDED(d3d11->context->lpVtbl->Map(
+                  d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
             {
                dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
                *ubo                    = d3d11->hdr.ubo_values;
+               d3d11->context->lpVtbl->Unmap(d3d11->context,
+                     (D3D11Resource)d3d11->hdr.ubo, 0);
             }
-            d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
          }
 
          d3d11->hdr.ubo_values.scanlines        = prev_iscanlines;
@@ -7560,13 +7574,14 @@ static bool d3d11_gfx_frame_body(
          {
             D3D11_MAPPED_SUBRESOURCE mapped_ubo;
 
-            d3d11->context->lpVtbl->Map(
-                  d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+            if (SUCCEEDED(d3d11->context->lpVtbl->Map(
+                  d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
             {
                dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
                *ubo                    = d3d11->hdr.ubo_values;
+               d3d11->context->lpVtbl->Unmap(d3d11->context,
+                     (D3D11Resource)d3d11->hdr.ubo, 0);
             }
-            d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
          }
 
          d3d11->hdr.ubo_values.scanlines        = prev_iscanlines;
