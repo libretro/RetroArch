@@ -87,10 +87,11 @@ static struct
 
 static uint32_t id_to_scaler_format(uint32_t id)
 {
-   SPA_FOR_EACH_ELEMENT_VAR(scaler_video_formats, f)
+   size_t i;
+   for (i = 0; i < SPA_N_ELEMENTS(scaler_video_formats); i++)
    {
-      if (f->id == id)
-         return f->format;
+      if (scaler_video_formats[i].id == id)
+         return scaler_video_formats[i].format;
    }
    return SCALER_FMT_ARGB8888;
 }
@@ -101,6 +102,7 @@ static int build_format(struct spa_pod_builder *b, const struct spa_pod **params
    uint32_t width  = VIDEO_SCALE_W(dims);
    uint32_t height = VIDEO_SCALE_H(dims);
    struct spa_pod_frame frame[2];
+   size_t i;
 
    /* make an object of type SPA_TYPE_OBJECT_Format and id SPA_PARAM_EnumFormat.
     * The object type is important because it defines the properties that are
@@ -117,9 +119,9 @@ static int build_format(struct spa_pod_builder *b, const struct spa_pod **params
    spa_pod_builder_prop(b, SPA_FORMAT_VIDEO_format, 0);
    spa_pod_builder_push_choice(b, &frame[1], SPA_CHOICE_Enum, 0);
    spa_pod_builder_id(b, SPA_VIDEO_FORMAT_YUY2);  /* default */
-   SPA_FOR_EACH_ELEMENT_VAR(scaler_video_formats, f)
+   for (i = 0; i < SPA_N_ELEMENTS(scaler_video_formats); i++)
    {
-      uint32_t id = f->id;
+      uint32_t id = scaler_video_formats[i].id;
       if (id != SPA_VIDEO_FORMAT_UNKNOWN)
          spa_pod_builder_id(b, id);  /* alternative */
    }
@@ -255,6 +257,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
 {
    uint8_t params_buffer[1024];
    const struct spa_pod *params[5];
+   struct spa_pod_frame frame;
    unsigned input_stride;
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    struct spa_pod_builder b = SPA_POD_BUILDER_INIT(params_buffer, sizeof(params_buffer));
@@ -329,7 +332,6 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          break;
    }
 
-   struct spa_pod_frame frame;
    spa_pod_builder_push_object(&b, &frame, SPA_TYPE_OBJECT_ParamBuffers, SPA_PARAM_Buffers);
    spa_pod_builder_add(&b,
          SPA_PARAM_BUFFERS_stride,   SPA_POD_Int(input_stride),
@@ -378,10 +380,11 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
 
 static const struct pw_stream_events stream_events = {
       PW_VERSION_STREAM_EVENTS,
-      .state_changed = stream_state_changed_cb,
-      .io_changed = stream_io_changed_cb,
-      .param_changed = stream_param_changed_cb,
-      .process = NULL,
+      NULL,          /* destroy */
+      stream_state_changed_cb,
+      NULL,          /* control_info */
+      stream_io_changed_cb,
+      stream_param_changed_cb
 };
 
 static void pwire_camera_stop(void *data)

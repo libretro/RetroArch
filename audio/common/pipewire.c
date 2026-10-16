@@ -53,8 +53,10 @@ static void core_done_cb(void *data, uint32_t id, int seq)
 
 static const struct pw_core_events core_events = {
       PW_VERSION_CORE_EVENTS,
-      .done = core_done_cb,
-      .error = core_error_cb,
+      NULL,          /* info */
+      core_done_cb,
+      NULL,          /* ping */
+      core_error_cb
 };
 
 bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms)

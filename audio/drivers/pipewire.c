@@ -142,8 +142,8 @@ static void pwire_set_position_layout(uint32_t layout,
       { AUDIO_SPEAKER_SIDE_RIGHT,            SPA_AUDIO_CHANNEL_SR  },
    };
    size_t i, n = 0;
-   memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
-         sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+   for (i = 0; i < SPA_AUDIO_MAX_CHANNELS; i++)
+      position[i] = SPA_AUDIO_CHANNEL_UNKNOWN;
    for (i = 0; i < ARRAY_SIZE(map); i++)
       if (layout & map[i].bit)
          position[n++] = map[i].spa;
@@ -153,8 +153,9 @@ static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MA
 {
    if (channels == 1)
    {
-      memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
-            sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+      size_t i;
+      for (i = 1; i < SPA_AUDIO_MAX_CHANNELS; i++)
+         position[i] = SPA_AUDIO_CHANNEL_UNKNOWN;
       position[0] = SPA_AUDIO_CHANNEL_MONO;
       return;
    }
@@ -224,9 +225,14 @@ static void pwire_capture_process_cb(void *data)
 
 static const struct pw_stream_events capture_stream_events = {
       PW_VERSION_STREAM_EVENTS,
-     .destroy       = pwire_stream_destroy_cb,
-     .state_changed = pwire_mic_stream_state_changed_cb,
-     .process       = pwire_capture_process_cb
+      pwire_stream_destroy_cb,
+      pwire_mic_stream_state_changed_cb,
+      NULL,          /* control_info */
+      NULL,          /* io_changed */
+      NULL,          /* param_changed */
+      NULL,          /* add_buffer */
+      NULL,          /* remove_buffer */
+      pwire_capture_process_cb
 };
 
 static void pwire_mic_registry_event_global(void *data, uint32_t id,
@@ -260,7 +266,7 @@ static void pwire_mic_registry_event_global(void *data, uint32_t id,
 
 static const struct pw_registry_events pwire_mic_registry_events = {
       PW_VERSION_REGISTRY_EVENTS,
-      .global = pwire_mic_registry_event_global,
+      pwire_mic_registry_event_global
 };
 
 static void pwire_microphone_free(void *driver_context)
@@ -735,9 +741,14 @@ static void pwire_stream_state_changed_cb(void *data,
 
 static const struct pw_stream_events pwire_playback_stream_events = {
       PW_VERSION_STREAM_EVENTS,
-      .destroy       = pwire_stream_destroy_cb,
-      .process       = pwire_playback_process_cb,
-      .state_changed = pwire_stream_state_changed_cb,
+      pwire_stream_destroy_cb,
+      pwire_stream_state_changed_cb,
+      NULL,          /* control_info */
+      NULL,          /* io_changed */
+      NULL,          /* param_changed */
+      NULL,          /* add_buffer */
+      NULL,          /* remove_buffer */
+      pwire_playback_process_cb
 };
 
 static void pwire_registry_event_global(void *data, uint32_t id,
@@ -768,7 +779,7 @@ static void pwire_registry_event_global(void *data, uint32_t id,
 
 static const struct pw_registry_events pwire_registry_events = {
       PW_VERSION_REGISTRY_EVENTS,
-      .global = pwire_registry_event_global,
+      pwire_registry_event_global
 };
 
 /* Context-free enumeration: bring up a throwaway core with the same

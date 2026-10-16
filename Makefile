@@ -131,6 +131,14 @@ ifneq ($(CXX_BUILD), 1)
       # string literal, which no declaration of ours can help: this lane
       # is here for declarations, comments and C99 syntax.
       CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros -Wno-overlength-strings
+      ifeq ($(HAVE_PIPEWIRE), 1)
+         # The SPA headers are C99: read them as system headers, which
+         # takes them out of -pedantic, and give them __inline__.
+         PIPEWIRE_C89_OBJ := $(addprefix $(OBJDIR)/,audio/drivers/pipewire.o \
+               audio/common/pipewire.o camera/drivers/pipewire.o)
+         $(PIPEWIRE_C89_OBJ): DEFINES += -Dinline=__inline__ \
+               $(patsubst -I%,-isystem %,$(filter -I%,$(PIPEWIRE_CFLAGS)))
+      endif
    else ifeq ($(HAVE_C99), 1)
       CFLAGS += $(C99_CFLAGS)
    endif
