@@ -173,8 +173,10 @@ struct gl2
    /* The threaded wrapper's hardware ring: the fence the core's thread
     * placed after rendering into each slot's texture, for the frame on
     * this thread to wait before reading it. Sync objects are shared
-    * between the two contexts. */
-   void *hw_ring_sync[3];
+    * between the two contexts, and each is handed from the core's
+    * thread to this one by exchange, so exactly one thread waits and
+    * deletes it. */
+   retro_atomic_ptr_t hw_ring_sync[3];
    void *hw_ring_done_sync; /* taken ahead of the swap */
    /* Placed after each PBO readback: a slot is read only once its
     * fence has signalled, so mapping it never waits on the GPU. */

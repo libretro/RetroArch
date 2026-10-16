@@ -3697,10 +3697,13 @@ static bool gl2_hw_ring_capture(void *data, unsigned slot,
 #ifdef GL2_HW_RING_SYNC
    if (gl->flags & GL2_FLAG_HAVE_SYNC)
    {
-      if (gl->hw_ring_sync[slot])
-         glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
-      gl->hw_ring_sync[slot] = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      /* A sync the video thread never took belongs to a frame it
+       * dropped; deleting it does not disturb a wait already placed. */
+      GLsync old = (GLsync)retro_atomic_exchange_ptr(&gl->hw_ring_sync[slot],
+            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
       glFlush();
+      if (old)
+         glDeleteSync(old);
       return true;
    }
 #endif
@@ -3716,11 +3719,13 @@ static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
    if (!gl || slot >= gl->textures)
       return false;
 #ifdef GL2_HW_RING_SYNC
-   if (gl->hw_ring_sync[slot])
    {
-      glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
-      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
-      gl->hw_ring_sync[slot] = NULL;
+      GLsync sync = (GLsync)retro_atomic_exchange_ptr(&gl->hw_ring_sync[slot], NULL);
+      if (sync)
+      {
+         glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+         glDeleteSync(sync);
+      }
    }
 #endif
    /* The frame advances tex_index itself before reading; land on the
