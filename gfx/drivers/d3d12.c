@@ -131,6 +131,7 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
    D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
+   D3D12_ST_FLAG_MAP_REFUSED           = (1 << 16),
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
@@ -7241,6 +7242,25 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
    }
 }
 
+/* A buffer the CPU writes every frame refused to map: said once, with
+ * the device's own account of itself. A removed device - a TDR, a mode
+ * switch the driver did not survive - is handed to the runloop, which
+ * rebuilds the video driver on its own thread. */
+static VIDEO_NOINLINE void d3d12_map_refused(d3d12_video_t *d3d12,
+      HRESULT hr)
+{
+   HRESULT reason = d3d12->device->lpVtbl->GetDeviceRemovedReason(
+         d3d12->device);
+   if (!(d3d12->flags & D3D12_ST_FLAG_MAP_REFUSED))
+   {
+      d3d12->flags |= D3D12_ST_FLAG_MAP_REFUSED;
+      RARCH_ERR("[D3D12] Map refused (0x%08X); device removed reason "
+            "0x%08X.\n", (unsigned)hr, (unsigned)reason);
+   }
+   if (FAILED(reason))
+      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+}
+
 /* Pass @i's pipe, constants, textures and samplers, bound under the
  * preset root signature; with @frame_res, the frame read there in place
  * of history[0]. */
@@ -7259,6 +7279,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
 
       if (buffer_sem->stage_mask && buffer_sem->uniforms)
       {
+         HRESULT        hr;
          D3D12_RANGE    range;
          uint8_t*       mapped_data = NULL;
          uniform_sem_t* uniform     = buffer_sem->uniforms;
@@ -7266,8 +7287,14 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
          range.Begin                = 0;
          range.End                  = 0;
 
-         D3D12Map(pass->buffers[j], 0, &range,
+         hr = D3D12Map(pass->buffers[j], 0, &range,
                (void**)&mapped_data);
+         if (FAILED(hr) || !mapped_data)
+         {
+            /* The pass keeps last frame's constants */
+            d3d12_map_refused(d3d12, hr);
+            continue;
+         }
          while (uniform->size)
          {
             if (uniform->param)
