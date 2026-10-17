@@ -61,6 +61,11 @@ S_BOOL(menu_disable_right_analog, INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
       "Disable Right Analog in Menu",
       "Prevent menu right analog stick input. Right analog stick cycles thumbnails in playlists.")
 #endif
+S_BOOL(menu_scroll_quick, MENU_SCROLL_QUICK,
+      "menu_scroll_quick",
+      DEFAULT_MENU_SCROLL_QUICK, SD_FLAG_NONE, 0, 0,
+      "Quick Scroll With Left+Right",
+      "Allow left+right for quick scrolling on items that are not settings.")
 S_BOOL(confirm_quit, CONFIRM_QUIT,
       "confirm_quit",
       DEFAULT_CONFIRM_QUIT, SD_FLAG_NONE, 0, 0,
