@@ -2651,6 +2651,10 @@ void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *
 /* The display's peak luminance as its context learned it (a sink's
  * EDID, a compositor's description of the output), in whole nits;
  * 0 while unknown. For the user's information: nothing applies it. */
+/* Published after successful output configuration; no GPU query. */
+void video_driver_set_hdr_output_mode(unsigned mode);
+bool video_driver_get_display_metadata(unsigned cmd, void *data);
+
 void video_driver_set_display_peak_nits(float nits);
 unsigned video_driver_get_display_peak_nits(void);
 

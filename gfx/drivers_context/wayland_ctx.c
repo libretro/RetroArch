@@ -531,6 +531,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
       goto error;
 
+   video_driver_set_hdr_output_mode((wl->color.flags & WL_COLOR_FP16) ? 2 : 0);
    return true;
 
 error:

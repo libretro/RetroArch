@@ -3503,6 +3503,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       else
       {
          vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+#ifdef VULKAN_HDR_SWAPCHAIN
+         video_driver_set_hdr_output_mode(
+               vk->context.swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT
+               ? 1 : (vk->context.swapchain_colour_space == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+               ? 2 : 0));
+#else
+         video_driver_set_hdr_output_mode(0);
+#endif
          return true;
       }
    }
@@ -3982,6 +3990,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->context.current_swapchain_index = 0;
          vulkan_create_wait_fences(vk);
          vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+#ifdef VULKAN_HDR_SWAPCHAIN
+         video_driver_set_hdr_output_mode(
+               vk->context.swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT
+               ? 1 : (vk->context.swapchain_colour_space == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+               ? 2 : 0));
+#else
+         video_driver_set_hdr_output_mode(0);
+#endif
          return true;
       }
 dxgi_unavailable:
@@ -4254,6 +4270,14 @@ dxgi_unavailable:
    }
 #endif
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+   video_driver_set_hdr_output_mode(
+         vk->context.swapchain_colour_space == VK_COLOR_SPACE_HDR10_ST2084_EXT
+         ? 1 : (vk->context.swapchain_colour_space == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+         ? 2 : 0));
+#else
+   video_driver_set_hdr_output_mode(0);
+#endif
    return true;
 }
 

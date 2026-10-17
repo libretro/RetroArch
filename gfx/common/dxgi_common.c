@@ -2872,6 +2872,10 @@ void dxgi_swapchain_color_space(
          *chain_color_space = color_space;
       }
    }
+   video_driver_set_hdr_output_mode(
+         *chain_color_space == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020
+         ? 1 : (*chain_color_space == DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709
+         ? 2 : 0));
 }
 
 void dxgi_set_hdr_metadata(
@@ -2886,8 +2890,6 @@ void dxgi_set_hdr_metadata(
       float                         display_peak
 )
 {
-   /* TODO/FIXME - static globals - not thread-safe */
-   static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
    static const display_chromaticities_t
       display_chromaticity_list[]                   =
    {
@@ -2979,27 +2981,16 @@ void dxgi_set_hdr_metadata(
    hdr10_meta_data.MaxFrameAverageLightLevel    =
       (UINT16)(max_fall);
 
-   if (memcmp(g_hdr10_meta_data.RedPrimary,   hdr10_meta_data.RedPrimary,   sizeof(hdr10_meta_data.RedPrimary))   ||
-       memcmp(g_hdr10_meta_data.GreenPrimary, hdr10_meta_data.GreenPrimary, sizeof(hdr10_meta_data.GreenPrimary)) ||
-       memcmp(g_hdr10_meta_data.BluePrimary,  hdr10_meta_data.BluePrimary,  sizeof(hdr10_meta_data.BluePrimary))  ||
-       memcmp(g_hdr10_meta_data.WhitePoint,   hdr10_meta_data.WhitePoint,   sizeof(hdr10_meta_data.WhitePoint))   ||
-       g_hdr10_meta_data.MaxContentLightLevel       != hdr10_meta_data.MaxContentLightLevel  ||
-       g_hdr10_meta_data.MaxMasteringLuminance      != hdr10_meta_data.MaxMasteringLuminance ||
-       g_hdr10_meta_data.MinMasteringLuminance      != hdr10_meta_data.MinMasteringLuminance ||
-       g_hdr10_meta_data.MaxFrameAverageLightLevel  != hdr10_meta_data.MaxFrameAverageLightLevel)
-   {
 #ifdef __cplusplus
-      if (FAILED(handle->SetHDRMetaData(
-                  DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
+   if (FAILED(handle->SetHDRMetaData(
+               DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
 #else
-      if (FAILED(handle->lpVtbl->SetHDRMetaData(handle,
-                  DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
+   if (FAILED(handle->lpVtbl->SetHDRMetaData(handle,
+               DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
 #endif
-      {
-         RARCH_ERR("[DXGI] Failed to set HDR meta data for HDR10.\n");
-         return;
-      }
-      g_hdr10_meta_data = hdr10_meta_data;
+   {
+      RARCH_ERR("[DXGI] Failed to set HDR meta data for HDR10.\n");
+      return;
    }
 }
 

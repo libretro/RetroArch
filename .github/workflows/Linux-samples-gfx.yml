@@ -586,6 +586,16 @@ jobs:
              timeout 60 ./gl2_pbo_readback_test
           echo "[pass] gl2_pbo_readback_test (ASan)"
 
+      - name: HDR display metadata contract (ASan/UBSan)
+        shell: bash
+        working-directory: samples/gfx/hdr_metadata
+        run: |
+          set -eu
+          make clean
+          make check SANITIZER=address,undefined
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
+          CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 run.py
+
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash
         working-directory: samples/gfx/slang_texture_index_bounds

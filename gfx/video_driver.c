@@ -40,6 +40,7 @@
 #include <formats/video_hw_frame.h>
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
+#include "video_hdr_metadata.h"
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
 #include "video_xr.h"
@@ -1302,6 +1303,33 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 /* Written by the context (the video thread when threaded), read by
  * the menu */
 static retro_atomic_int_t video_display_peak_nits;
+static retro_atomic_int_t video_hdr_output_mode;
+static retro_atomic_int_t video_hdr_source_10bpc;
+
+void video_driver_set_hdr_output_mode(unsigned mode)
+{
+   retro_atomic_store_release_int(&video_hdr_output_mode,
+         mode <= 2 ? (int)mode : 0);
+}
+
+bool video_driver_get_display_metadata(unsigned cmd, void *data)
+{
+   settings_t *settings = config_get_ptr();
+   video_hdr_metadata_snapshot_t snapshot;
+   int source_10bpc = retro_atomic_load_acquire_int(&video_hdr_source_10bpc);
+   memset(&snapshot, 0, sizeof(snapshot));
+   if (!settings)
+      return false;
+   if (video_driver_get_ptr())
+      snapshot.output_mode = (unsigned)retro_atomic_load_acquire_int(
+            &video_hdr_output_mode);
+   snapshot.screen_10bpc = source_10bpc
+      ? source_10bpc == 2 : video_driver_supports_10bit_source();
+   snapshot.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
+   snapshot.max_nits         = video_driver_get_hdr_max_nits();
+   snapshot.expand_gamut     = settings->uints.video_hdr_expand_gamut;
+   return video_hdr_metadata_query(cmd, data, &snapshot);
+}
 
 void video_driver_set_display_peak_nits(float nits)
 {
@@ -2908,6 +2936,8 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+   video_driver_set_hdr_output_mode(0);
+   retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
    /* The handle dies with the instance that owns it, but
     * current_video keeps pointing at a live vtable, so anything that
@@ -7358,6 +7388,18 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_driver_vr_driver_changed();
 #endif
 
+   /* Initialization has completed, before any frames can change driver state. */
+   {
+      gfx_ctx_flags_t flags;
+      flags.flags = 0;
+      video_context_driver_get_flags(&flags);
+      retro_atomic_store_release_int(&video_hdr_source_10bpc,
+            BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? 2 : 1);
+      if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+         video_driver_set_hdr_output_mode(2);
+      else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HDR10_FRAMEBUFFER))
+         video_driver_set_hdr_output_mode(1);
+   }
 #ifdef HAVE_WEBMPLAYER
    if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
       libretro_media_video_hw_ready();

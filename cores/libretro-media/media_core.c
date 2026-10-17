@@ -2259,15 +2259,18 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
     * 10-bit capable - so asking it alone would make us emit 10-bit that gets
     * thrown away: for 8-bit sources that is a pointless <<2 then >>2 round
     * trip, and for 10-bit sources the frontend truncates where our own 8-bit
-    * path would round. GET_SCREEN_10BPC_CAPABLE reports the real capability,
+    * path would round. GET_HDR_METADATA reports the real capability,
     * so we only take the 10-bit path when it will survive; otherwise we go
     * straight to XRGB8888 and tone-map to 8 bits directly. Older frontends
     * that do not recognise the query leave want10 = 0 (safe: plain 8-bit). */
    {
-      bool cap10 = false;
+      struct retro_hdr_metadata meta;
+      memset(&meta, 0, sizeof(meta));
+      meta.version = 1;
+      meta.size    = sizeof(meta);
       if (MEDIA_CORE_PREFIX(environ_cb)(
-               RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE, &cap10)
-            && cap10
+               RETRO_ENVIRONMENT_GET_HDR_METADATA, &meta)
+            && meta.screen_10bpc
             && MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
          want10 = 1;

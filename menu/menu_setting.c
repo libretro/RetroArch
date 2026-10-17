@@ -10417,7 +10417,7 @@ static void general_write_handler(rarch_setting_t *setting)
             /* No driver poke: nothing in the frontend's own HDR composition
              * uses a peak value yet - its inverse tonemap is called with paper
              * white for both arguments, which makes it an identity. This is
-             * read by cores through GET_HDR_MAX_NITS. */
+             * read by cores through GET_HDR_METADATA. */
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:

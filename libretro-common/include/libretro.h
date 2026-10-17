@@ -2743,142 +2743,87 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS_2 87
 
 /**
- * Queries whether the active video driver can present a 10-bit-per-channel
- * (30-bit) source surface end to end, i.e. whether a frame submitted as
- * #RETRO_PIXEL_FORMAT_XRGB2101010 reaches the display without the frontend
- * narrowing it to 8 bits per channel.
- *
- * Unlike SET_PIXEL_FORMAT, which accepts XRGB2101010 unconditionally and
- * transparently down-converts when the driver cannot present 10-bit, this
- * lets a core discover the real capability so it can avoid pointless work:
- * a core that has both a 10-bit and an 8-bit output path should prefer the
- * 8-bit path when this returns \c false, since emitting 10-bit only to have
- * the frontend narrow it wastes effort and, for content that starts at 8
- * bits, is a no-op round trip; going straight to 8 bits also rounds rather
- * than truncates.
- *
- * The result may change across a driver reinit (e.g. the user switches
- * video driver or toggles HDR), so a core that cares should query it when
- * (re)choosing its pixel format rather than caching it indefinitely.
- *
- * @param[out] data <tt>bool *</tt>.
- * Set to \c true if a 10-bit source surface is presented natively, \c false
- * if XRGB2101010 frames are down-converted to 8-bit.
- * @return \c true if the environment call is recognised (the value at
- * \c data is then valid), \c false if it is unsupported (an older frontend);
- * a core must treat "unsupported" as "no guarantee of native 10-bit".
+ * Queries the frontend's HDR presentation contract.
+ * Call from the emulation thread, as with video format negotiation.
+ * data points to struct retro_hdr_metadata. The caller zeroes it and sets
+ * version = 1 and size = sizeof(struct retro_hdr_metadata) before calling.
+ * Unknown versions and undersized buffers return false without modification.
+ * Larger buffers are accepted; bytes beyond the version-1 layout are untouched.
+ * Re-query after presentation or settings changes. This replaces experimental
+ * commands 88-92; those numbers must not be reused.
  */
-#define RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE (88 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_HDR_METADATA (101 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Queries the luminance, in nits, that the frontend treats as SDR paper
- * white when presenting HDR content.
- *
- * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010: a core
- * encoding absolute luminance itself has to know where the user expects
- * ordinary, non-glowing image content to sit, otherwise the whole frame is
- * either dim or searing.  The value corresponds to the frontend's HDR paper
- * white setting; typical values are 100-400.
- *
- * The user can change it at any time, so a core should re-query it when it
- * rebuilds its colour tables rather than caching it forever.
- *
- * @param[out] data <tt>float *</tt>.
- * Set to the paper white luminance in nits.
- * @return \c true if the call is recognised and the value is valid, \c false
- * on a frontend that does not implement it; callers should then assume a
- * sensible default (200 nits).
+ * Queries presentation state and optional display capabilities together.
+ * data points to struct retro_display_metadata, with version = 1 and size set
+ * by the caller as above. The frontend fills the nested HDR header itself.
+ * Unknown geometry/capabilities are zero. No raw EDID or display identity is
+ * exposed. The HDR block describes presentation, not panel capability.
  */
-#define RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS (89 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_DISPLAY_METADATA (102 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
-/**
- * Queries the colour-gamut treatment the frontend applies to SDR content
- * when presenting HDR.
- *
- * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
- * emitting that format performs its own Rec.709 -> Rec.2020 rotation, and
- * has to make the same choice the frontend makes for SDR content, or a
- * scene will change saturation when the user switches the core between an
- * SDR format and HDR10.  The values match the frontend's "Colour Boost"
- * setting:
- *
- *   0 Accurate -- proper Rec.709 -> Rec.2020 conversion, no boost
- *   1 Expanded -- Rec.709 -> a slightly wider space
- *   2 Wide     -- Rec.709 -> DCI-P3
- *   3 Super    -- no rotation at all; values stay Rec.709 and the boost
- *                 comes from the display interpreting them as Rec.2020
- *
- * A core should re-query this when it rebuilds its colour tables, since the
- * user can change it at any time.
- *
- * @param[out] data <tt>unsigned *</tt>.
- * Set to one of the values above.
- * @return \c true if the call is recognised, \c false on a frontend that
- * does not implement it; callers should then assume 0 (Accurate).
- */
-#define RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT (90 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+struct retro_hdr_metadata
+{
+   unsigned version;
+   unsigned size;
+   /* 0 = SDR or no active output, 1 = PQ Rec.2020, 2 = linear Rec.709. */
+   unsigned output_mode;
+   /* Native 10-bit source support, also queryable before video init. */
+   bool screen_10bpc;
+   float paper_white_nits;
+   /* Effective frontend target, including a display-peak override. */
+   float max_nits;
+   float min_nits;
+   /* SDR expansion: 0 accurate, 1 expanded, 2 P3, 3 unrotated. */
+   unsigned expand_gamut;
+   /* Content light levels, zero when unknown; never inferred from peak. */
+   float max_cll;
+   float max_fall;
+   /* H.273 codes; zero when unspecified. Linear transfer is 8, PQ is 16. */
+   unsigned color_primaries;
+   unsigned transfer_function;
+   /* For accepted HDR10_2101010 input: no creative curve, paper-white scale
+    * or SDR gamut expansion. PQ-to-linear/gamut conversion remains required
+    * for scRGB. Does not override a shader preset's existing contract. */
+   bool passthrough;
+   /* 0 = full-spectrum rational; other operators are not implemented. */
+   unsigned tonemap_operator;
+   uint32_t reserved[8];
+};
 
-/**
- * Queries which HDR output mode the frontend is presenting with.
- *
- * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  Both
- * output modes accept the same PQ Rec.2020 frame, but they do not treat its
- * primaries identically: an HDR10 swapchain presents the samples as-is,
- * while an scRGB swapchain converts them and applies a Rec.2020 -> Rec.709
- * rotation on the way.  A core that encodes its own gamut -- which it must,
- * to honour #RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT -- therefore has to know
- * which of the two it is feeding, or its colour choice is undone by that
- * rotation on one of them.
- *
- * Values:
- *   0  HDR output is off
- *   1  HDR10 (PQ, Rec.2020 swapchain); samples are presented unchanged
- *   2  scRGB (linear FP16, Rec.709); the frontend applies Rec.2020 ->
- *      Rec.709 to the decoded samples
- *
- * The user can switch this at any time, so a core should re-query it when it
- * rebuilds its colour tables rather than caching it indefinitely.
- *
- * @param[out] data <tt>unsigned *</tt>.
- * Set to one of the values above.
- * @return \c true if the call is recognised, \c false on a frontend that
- * does not implement it; callers should then assume 1 (HDR10), which is the
- * mode that needs no compensation.
- */
-#define RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE (91 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+struct retro_display_geometry
+{
+   unsigned native_width;
+   unsigned native_height;
+   unsigned width_mm;
+   unsigned height_mm;
+   unsigned refresh_min_mHz;
+   unsigned refresh_max_mHz;
+};
 
-/**
- * Queries the peak luminance the frontend is presenting to, in cd/m2 (nits).
- *
- * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
- * emitting HDR10 encodes absolute luminance itself, so it decides where its
- * brightest content lands.  #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS says
- * where ordinary content sits; this says how much room there is above it.  The
- * gap between the two is the entire headroom a core has for highlights, and
- * without it a core has to guess - a guess that is too dark on a bright display
- * and clips on a dim one.
- *
- * This is what the *display* can do, not what the content wants, so it is a
- * ceiling to roll off toward rather than a level to target.  A core should not
- * assume anything it emits below this value is reproduced exactly; displays
- * tone map internally, and many report a peak they can only hold over a small
- * window.
- *
- * May be lower than paper white if the user has configured it so.  A core
- * should treat that as zero headroom and clamp to paper white rather than
- * producing a negative range.
- *
- * The user can change this at any time, so a core should re-query it rather
- * than caching it indefinitely.
- *
- * @param[out] data <tt>float *</tt>.
- * Set to the peak luminance in nits.
- * @return \c true if the call is recognised, \c false on a frontend that does
- * not implement it; callers should then fall back to a sensible default.
- * 1000 nits is a reasonable assumption, being both the HDR10 reference peak
- * and roughly what mid-range HDR displays achieve.
- */
-#define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+struct retro_display_color_caps
+{
+   float peak_nits;
+   float min_nits;
+   float max_frame_avg_nits;
+   /* CIE xy / 10000: Rx,Ry,Gx,Gy,Bx,By,Wx,Wy. All zero = unknown. */
+   uint16_t primaries_xy[8];
+   /* Bit 0 SDR, bit 1 PQ, bit 2 HLG. Zero = unknown. */
+   unsigned supported_eotf_mask;
+   unsigned edid_gamma_x100;
+   /* 0 unknown, 1 user, 2 EDID/CTA, 3 platform API. */
+   unsigned capability_source;
+};
+
+struct retro_display_metadata
+{
+   unsigned version;
+   unsigned size;
+   struct retro_display_geometry geo;
+   struct retro_hdr_metadata hdr;
+   struct retro_display_color_caps caps;
+};
 
 /**
  * Negotiates multi-channel audio output.
@@ -7027,13 +6972,14 @@ enum retro_pixel_format
     * A frontend that accepts this format MUST pass the samples through to an
     * HDR10 (PQ / Rec.2020) swapchain without re-encoding them: no inverse
     * tonemap, no Rec.709->Rec.2020 rotation, no paper-white scaling, since
-    * the core has already applied all of it.  A frontend that cannot present
-    * HDR10 natively must reject the format from SET_PIXEL_FORMAT rather than
+    * the core has already applied all of it.  For scRGB output the frontend must instead decode PQ, rotate Rec.2020
+    * to linear Rec.709 and scale to the platform reference white, without
+    * a second creative curve. A frontend without either path must reject the format from SET_PIXEL_FORMAT rather than
     * silently down-converting -- PQ samples interpreted as SDR look badly
     * wrong, so the usual transparent narrowing is not safe here.  Cores
     * should therefore keep an SDR path and fall back when this is refused.
     *
-    * Cores should query #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS to learn
+    * Cores should query #RETRO_ENVIRONMENT_GET_HDR_METADATA to learn
     * the luminance the user considers "SDR white" and map their normal
     * output to it; content authored above that value is what produces the
     * HDR effect.
