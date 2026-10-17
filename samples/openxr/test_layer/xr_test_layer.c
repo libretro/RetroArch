@@ -76,9 +76,11 @@
  *   action <set>/<name>[@left|@right] <x> [<y>]
  *                           an action's state while its set is synced:
  *                           boolean x != 0, float x, vector2f x y
- *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz>
+ *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz> [<roll>]
  *                           that hand's pose spaces at p, -Z towards t,
- *                           in LOCAL; in VIEW through the scripted head
+ *                           rolled roll degrees about the aim's own Z (+X
+ *                           towards +Y), in LOCAL; in VIEW through the
+ *                           scripted head
  *   aim <left|right> off    that hand untracked
  *
  * A session on an OpenGL binding (XR_MNDX_egl_enable's EGL or
@@ -573,7 +575,9 @@ static void script_aim(const char *args)
 {
    char side[16];
    float p[3], t[3], fx, fy, fz, len, yaw, pitch;
-   int hand;
+   float cy, sy, cp, sp, cr, sr;
+   float roll = 0.0f;
+   int hand, n;
    if (sscanf(args, "%15s", side) != 1 || !(hand = parse_hand(side)))
       return;
    if (strstr(args, "off"))
@@ -581,8 +585,9 @@ static void script_aim(const char *args)
       L.aim_set[hand] = false;
       return;
    }
-   if (sscanf(args, "%15s %f %f %f %f %f %f", side, &p[0], &p[1], &p[2],
-            &t[0], &t[1], &t[2]) != 7)
+   n = sscanf(args, "%15s %f %f %f %f %f %f %f", side, &p[0], &p[1], &p[2],
+         &t[0], &t[1], &t[2], &roll);
+   if (n != 7 && n != 8)
       return;
    fx  = t[0] - p[0];
    fy  = t[1] - p[1];
@@ -592,11 +597,19 @@ static void script_aim(const char *args)
       return;
    yaw   = atan2f(-fx / len, -fz / len);
    pitch = asinf(fy / len);
-   /* Pitch about +X, then yaw about +Y: -Z points along (f). */
-   L.aim[hand].orientation.x = cosf(yaw / 2.0f) * sinf(pitch / 2.0f);
-   L.aim[hand].orientation.y = sinf(yaw / 2.0f) * cosf(pitch / 2.0f);
-   L.aim[hand].orientation.z = -sinf(yaw / 2.0f) * sinf(pitch / 2.0f);
-   L.aim[hand].orientation.w = cosf(yaw / 2.0f) * cosf(pitch / 2.0f);
+   roll  = roll * 3.14159265f / 180.0f;
+   /* Yaw about +Y, pitch about +X, roll about the aim's own Z: -Z
+    * points along (f). */
+   cy = cosf(yaw / 2.0f);
+   sy = sinf(yaw / 2.0f);
+   cp = cosf(pitch / 2.0f);
+   sp = sinf(pitch / 2.0f);
+   cr = cosf(roll / 2.0f);
+   sr = sinf(roll / 2.0f);
+   L.aim[hand].orientation.x = cy * sp * cr + sy * cp * sr;
+   L.aim[hand].orientation.y = sy * cp * cr - cy * sp * sr;
+   L.aim[hand].orientation.z = cy * cp * sr - sy * sp * cr;
+   L.aim[hand].orientation.w = cy * cp * cr + sy * sp * sr;
    L.aim[hand].position.x    = p[0];
    L.aim[hand].position.y    = p[1];
    L.aim[hand].position.z    = p[2];

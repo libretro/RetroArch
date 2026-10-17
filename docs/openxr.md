@@ -21,8 +21,9 @@ At run time an OpenXR runtime has to be active (SteamVR or Monado on
 Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
-Lazy Follow), Headset Controllers and Laser Pointer. The Recenter
-Headset Screens and Laser Pointer (Toggle) hotkeys are unbound by
+Lazy Follow), Headset Controllers and Laser Pointer; Edit Screens and
+While Editing Screens are described below. The Recenter Headset Screens,
+Laser Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by
 default.
 
 Without a runtime or a headset, RetroArch says so once and shows its
@@ -33,9 +34,11 @@ window as usual.
 In **Settings > Video > Stereo 3D & Screens**, use **Screen** to choose
 which floating screen to adjust. The number is the core's logical screen
 ID plus one, from 1 to 8. Only screens in the current frame's map are
-listed; a tracked projection's eyes are excluded. Changing the order of
-views, or temporarily removing a screen, preserves that screen's saved
-adjustments.
+listed; a tracked projection's eyes are excluded. Without a map,
+including with no content loaded, Screen 1 is listed: a core without a
+view map shows its whole frame as Screen 1, which these rows then move
+like any other. Changing the order of views, or temporarily removing a
+screen, preserves that screen's saved adjustments.
 
 - **Horizontal Offset**, **Vertical Offset** and **Depth Offset** move
   the selected screen relative to its normal placement, from -10 to +10
@@ -60,6 +63,14 @@ settings still determine the base placement. **Recenter Headset Screens**
 updates the shared anchor for all screens while preserving their relative
 offsets, rotations, scales and visibility; it does not reset them.
 
+The menu floats 10 cm in front of Screen 1 and faces the way it does,
+so moving Screen 1 moves the menu with it. It looks as large as it does
+at its own spot, and comes no nearer to you than 40 cm. While Screen 1 is
+hidden, is a tracked core's projection or faces away from you, the menu
+stays at its own spot in front of the anchor. A menu placed in edit mode
+(below) stays where it was put until it is reset there, or by Reset All
+Screens.
+
 Screen adjustments are configuration settings. Save the configuration to
 keep them as defaults, or use **Quick Menu > Overrides** to save core,
 content-directory or game overrides. Loading an override applies its
@@ -75,6 +86,73 @@ resume when the menu closes. This keeps the menu and resets reachable
 without applying the primary content screen's hidden state or transform
 to the menu. The desktop **glcore** and **vulkan** paths use a separate
 menu screen.
+
+## Editing screens in the headset
+
+**Edit Screens** moves the floating screens and the menu with the
+controllers instead of the menu's rows. Start it from **Settings > Video >
+Stereo 3D & Screens > Edit Screens** (shown with Headset Output on; the
+menu closes into it), the **Edit Headset Screens** hotkey, the headset's
+own **Edit Screens** action, or the `HEADSET_EDIT_SCREENS` network
+command. It needs content running. The same hotkey, action or command
+stops it, as do opening the menu, loading or closing content, and the
+end of the headset session. The hotkey and the action are unbound by
+default; bind the action in the runtime's controller settings, in both
+RetroArch's game sets and its Edit Screens set. If the runtime refuses
+the Edit Screens set's bindings for a hand's controller, Edit Screens
+says it is unavailable. It also stops and says so when the runtime
+binds neither that set's Grab nor its RetroArch Menu, as a controller
+binding saved in the runtime before RetroArch had them can.
+
+While editing, every item has a faint outline and the one a laser points
+at a bright one, and both hands have a laser whatever **Laser Pointer**
+is set to. The menu also shows a handle bar under it, faint, and bright
+while a laser is on it. The headset's controllers only edit; keyboards
+and other gamepads still reach the content. The desktop window shows a
+notice when editing starts and when it stops.
+
+| Controller | Grab | Tilt | Distance and size | Reset | Menu |
+| --- | --- | --- | --- | --- | --- |
+| Steam Frame | grip | trigger | stick | A; left hand: D-pad down | right stick click |
+| Valve Index | grip | trigger | stick | A | left trackpad press |
+| Oculus Touch | grip | trigger | stick | X / A | menu button |
+| HTC Vive | grip | trigger | trackpad | trackpad click | left menu button |
+| Simple controller | select | - | - | - | left menu button |
+
+- A grip on an item grabs it: it keeps its place relative to the hand
+  and follows it. Each hand holds one item; the other hand on the same
+  item does nothing.
+- Items stay level: they turn left, right, up and down with the hand but
+  do not roll. Hold the trigger while grabbing to let the roll follow;
+  let go of the trigger to keep that roll.
+- Stick up pushes the item away along the laser and down pulls it
+  closer; right makes it larger and left smaller, faster the further the
+  stick is pushed.
+- Offsets stop at +-10 m and scale at 0.1 to 10, as in the menu: the
+  item waits at the limit and moves on from there once the hand comes
+  back.
+- Reset on a screen does what Reset Screen does; on the menu it makes
+  the menu follow Screen 1 again.
+- The menu is grabbed by its handle bar; elsewhere on the menu the grip
+  takes the screen behind. Grabbing the menu places it where it shows,
+  even without moving it, so it no longer follows Screen 1. The legacy
+  **gl** driver draws the menu in its window, so only screens can be
+  grabbed there.
+- A head-tracked core's projection cannot be grabbed, nor can the whole
+  frame a views core falls back to when its screens cannot be placed. In
+  Follow Head a grabbed screen keeps its place in view; Lazy Follow does
+  not glide while anything is held. Recenter lets go of what is held
+  first. A hand that loses tracking leaves its item still.
+
+**While Editing Screens** chooses whether the content keeps running (the
+default) or pauses; leaving edit mode resumes only content it paused.
+
+Edits change the same settings as the menu's rows and are saved the
+same way: on quit while **Save Configuration on Quit** is on (the
+default), or by saving the configuration or an override.
+The menu's own place is saved as `video_openxr_menu_xr_x`, `_xr_y`,
+`_xr_z`, `_xr_yaw`, `_xr_pitch`, `_xr_roll`, `_xr_scale` and
+`video_openxr_menu_placed`; while that is false the menu follows Screen 1.
 
 ## What a core sees
 
@@ -171,3 +249,6 @@ host. Model it on the three above:
   headset in headless gamescope, through a test API layer
   (`samples/openxr/test_layer`) that records every frame's layers and
   images. It needs a GPU, so it is not run in CI.
+- The `edit-*` cases drive edit mode through the test layer's scripted
+  aims (`aim ... [<roll>]`) and `edit/*` actions on Vulkan, glcore and
+  gl.
