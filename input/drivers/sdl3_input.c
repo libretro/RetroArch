@@ -51,12 +51,7 @@ typedef struct sdl3_input
    const bool *kb_state;
    int kb_num_keys;
    SDL_Scancode key_scancode_lut[RETROK_LAST];
-   /* The way back, for the key events. SDL3's keycodes for the keys
-    * that are not characters are 0x4000_00xx, past what the shared
-    * reverse lookup covers (input_keymaps_init_keyboard_lut), so
-    * translating a keycode there walks the whole table. The pair this
-    * is built from is the one above, which the layout already
-    * decided. */
+   /* RETROK of each scancode's unmodified key, for the key events */
    uint16_t scancode_rk_lut[SDL_SCANCODE_COUNT];
    /* Whole-pixel relative motion, x and y: VIDEO_POS_PACK. */
    uint32_t mouse_delta;
@@ -187,24 +182,15 @@ static void sdl3_build_scancode_lut(sdl3_input_t *sdl)
 {
    int i;
 
-   memset(sdl->scancode_rk_lut, 0, sizeof(sdl->scancode_rk_lut));
-
    for (i = 0; i < RETROK_LAST; i++)
-   {
-      SDL_Scancode sc = rarch_keysym_lut[i]
+      sdl->key_scancode_lut[i] = rarch_keysym_lut[i]
             ? SDL_GetScancodeFromKey((SDL_Keycode)rarch_keysym_lut[i], NULL)
             : SDL_SCANCODE_UNKNOWN;
 
-      sdl->key_scancode_lut[i] = sc;
-
-      /* First one wins: a shifted character and the key it is on land
-       * on the same scancode (RETROK_EXCLAIM and RETROK_1 on a US
-       * layout), and the key is the lower of the two. */
-      if (     sc > SDL_SCANCODE_UNKNOWN
-            && sc < SDL_SCANCODE_COUNT
-            && !sdl->scancode_rk_lut[sc])
-         sdl->scancode_rk_lut[sc] = (uint16_t)i;
-   }
+   sdl->scancode_rk_lut[SDL_SCANCODE_UNKNOWN] = 0;
+   for (i = SDL_SCANCODE_UNKNOWN + 1; i < SDL_SCANCODE_COUNT; i++)
+      sdl->scancode_rk_lut[i] = (uint16_t)input_keymaps_translate_keysym_to_rk(
+            SDL_GetKeyFromScancode((SDL_Scancode)i, SDL_KMOD_NONE, true));
 }
 
 /* The key an event is for, from its scancode. Falls back to the shared

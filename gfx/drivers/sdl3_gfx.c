@@ -791,7 +791,6 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
    bool menu_is_alive             = false;
    bool widgets_active            = false;
    bool overlay_visible           = false;
-   bool overlay_behind_menu       = video_info->overlay_behind_menu;
    bool menu_visible;
    bool show_stats;
 
@@ -825,7 +824,7 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
    sdl3_viewport_push_full(vid, &saved_vp);
 
 #ifdef HAVE_OVERLAY
-   if (overlay_visible && overlay_behind_menu)
+   if (overlay_visible && video_info->overlay_behind_menu)
       sdl3_overlays_render(vid);
 #endif
 
@@ -855,7 +854,7 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
             video_info->stat_text_len, osd_params, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (overlay_visible && !overlay_behind_menu)
+   if (overlay_visible && !video_info->overlay_behind_menu)
       sdl3_overlays_render(vid);
 #endif
 
@@ -1281,9 +1280,6 @@ static uint32_t sdl3_get_flags(void *data)
    if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
 #ifdef HAVE_OVERLAY
-   /* Advertising this is what makes the "Show Overlay Behind Menu"
-    * setting visible; sdl3_render_ui draws the overlay on either side
-    * of the menu pass. */
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
 #endif
 
@@ -1513,9 +1509,7 @@ static void gfx_display_sdl3_scissor_begin(void *data, unsigned video_dims,
 
    if (rect.x < 0) { rect.w += rect.x; rect.x = 0; }
    if (rect.y < 0) { rect.h += rect.y; rect.y = 0; }
-   /* An empty rect still has to be set: a scissor of no area means
-    * nothing draws, and leaving the last one in place would let the
-    * caller draw against a wider clip than it asked for. */
+   /* An empty clip draws nothing; the last one must not stay */
    if (rect.w < 0)
       rect.w = 0;
    if (rect.h < 0)
