@@ -53,7 +53,12 @@ shape in their MCP server configuration:
 ```
 
 The server speaks protocol revision 2026-07-28, and 2025-11-25, 2025-06-18
-and 2025-03-26 for clients that open with `initialize`.
+and 2025-03-26 for clients that open with `initialize`. Its list results
+carry `ttlMs: 0` and `cacheScope: "private"`, as 2026-07-28 requires
+them: the tools are compiled in and `listChanged` is false, so nothing
+would tell a client holding a list that an upgrade changed it. A client
+that keeps one anyway sees a rebuilt RetroArch's new parameters once it
+reconnects.
 
 ## Over stdin and stdout
 
@@ -81,9 +86,10 @@ Over stdin and stdout RetroArch also offers logging: after
 
 `initialize` answers with `instructions`: how the tools fit together to
 play a game - find it with `LIST_PLAYLISTS` and `GET_PLAYLIST`, load it
-paused, `WATCH` what each step needs, step with `STEPS`, `PRESS ...
-until` or `RUN_UNTIL`, and `STATE checkpoint` before a risky move. A
-client shows this to the model once rather than in every tool.
+paused, `WATCH` what each step needs, step with `STEPS` - queued, so
+the game plays on while the next stretch is planned - `PRESS ... until`
+or `RUN_UNTIL`, and `STATE checkpoint` before a risky move. A client
+shows this to the model once rather than in every tool.
 
 One prompt is offered, `play_game`, taking an optional `playlist`,
 `game` and `goal`; it starts a session with the same workflow, naming
@@ -430,16 +436,18 @@ runs.
 and its steps go behind those still running, so the game does not pause
 while the next stretch is planned; it pauses once they have all run. A
 list without stops keeps the stops before it, and one with its own
-brings them in when it starts. A stop that held, or a failure, is kept
-and answered to the next queued `STEPS` in its place, whose steps are
-dropped rather than played on from a death. A rollback, a state load,
-`RESET` and closing the content each end the queue and forget the stop.
-With no steps it only asks. A queue that ran dry says so: `IDLE` is how
-long, in milliseconds, the content sat paused waiting for more before
-the request that answers it, so a client that sees it knows to send the
-next stretch sooner. Nine seconds bound each step, not the queue, which
-holds 64 steps and stops at most. A request that waits - `RUN_FRAMES`,
-`PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
+brings them in when it starts. A stop that held, or a failure, ends the
+whole queue, lists behind it too, and is kept and answered to the next
+queued `STEPS` in its place, whose steps are dropped rather than played
+on from a death; its `STEP` counts within the list that step came in. A
+rollback, a state load, `RESET` and closing the content each end the
+queue and forget the stop. With no steps it only asks. A queue that ran
+dry says so: `IDLE` is how long, in milliseconds, the content sat paused
+waiting for more before the request that answers it, so a client that
+sees it knows it has fallen behind: two stretches sent at once get it
+ahead again. Nine seconds bound each step, not the queue, which holds 64
+steps and stops at most. A request that waits - `RUN_FRAMES`, `PRESS`,
+`RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
@@ -537,10 +545,11 @@ the reason:
   keeps one state in memory, not in a slot's file, and `STATE rollback`
   restores it: the retry after a mistake, in one request where
   replaying the level took a dozen. What `SET_INPUT` holds stays held
-  through it. The checkpoint lives as long as the content does; a
-  rollback is refused while a replay records, as a load from a slot is.
+  through it; a queued `STEPS` ends, as it does on any load. The
+  checkpoint lives as long as the content does; a rollback is refused
+  while a replay records, as a load from a slot is.
 - `RESET`: once the content is reset; with `paused` on, paused after
-  it, as `LOAD_CONTENT` is.
+  it, as `LOAD_CONTENT` is. A queued `STEPS` ends.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
   has started or the seek or checkpoint has run; `halt` is a hotkey
   press, answered at once.
