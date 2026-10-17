@@ -102,6 +102,8 @@
 - NETWORK: New network command GET_INPUT, reporting what a player holds without changing it
 - NETWORK: MCP server offers the menu buttons, the disc hotkeys, the driver restarts, the state slots and the replay controls as five tools, MENU, DISK, REINIT, STATE and REPLAY, rather than nineteen; each is still a command of its own, and SAVE_FILES and LOAD_FILES are commands only
 - NETWORK: New network command WATCH, so RUN_FRAMES, PRESS and RUN_UNTIL carry the bytes an assistant watches along with their own answer instead of needing a read after every step
+- NETWORK: New network command STEPS, a stretch of play (run, press, wait, checkpoint, and stops for a death) as one request, or queued so the content plays on between requests
+- NETWORK: STATE checkpoint and rollback keep one state in memory for the quick retry after a mistake, touching no save slot
 - NETWORK: LOAD_CORE says why it failed, and neither it nor LOAD_CONTENT unloads the running core for a path that turns out not to be one
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
 - NETWORK: LIST_CORES takes a content path, listing only the cores that can load it

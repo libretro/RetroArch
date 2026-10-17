@@ -427,18 +427,18 @@ runs.
 
 **Queued, the content plays on between requests.** `STEPS <steps>|on`
 (`queue: on`) answers at once with `QUEUED` and the steps left to run,
-and its steps go behind those still running, so the game does not
-pause while the next stretch is planned; it pauses once they have all
-run. A list without stops keeps the stops before it, and one with its
-own brings them in when it starts. A stop that held, or a failure, is
-kept and answered to the next queued `STEPS` in its place, whose steps
-are dropped rather than played on from a death. A rollback ends the
-queue and forgets the stop, as closing the content does. With no steps
-it only asks. A queue that ran dry says so: `IDLE` is how long, in
-milliseconds, the content sat paused waiting for more before the request
-that answers it, so a client that sees it knows to send the next
-stretch sooner. Nine seconds bound each step, not the queue, which holds
-64 steps and stops at most. A request that waits - `RUN_FRAMES`,
+and its steps go behind those still running, so the game does not pause
+while the next stretch is planned; it pauses once they have all run. A
+list without stops keeps the stops before it, and one with its own
+brings them in when it starts. A stop that held, or a failure, is kept
+and answered to the next queued `STEPS` in its place, whose steps are
+dropped rather than played on from a death. A rollback, a state load,
+`RESET` and closing the content each end the queue and forget the stop.
+With no steps it only asks. A queue that ran dry says so: `IDLE` is how
+long, in milliseconds, the content sat paused waiting for more before
+the request that answers it, so a client that sees it knows to send the
+next stretch sooner. Nine seconds bound each step, not the queue, which
+holds 64 steps and stops at most. A request that waits - `RUN_FRAMES`,
 `PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it

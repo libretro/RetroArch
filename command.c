@@ -128,6 +128,10 @@ void command_reply_error(command_t *cmd, const char *name,
 
 static void command_post_state_loaded(void)
 {
+#ifdef HAVE_COMMAND
+   /* steps queued from the state it left would play on from this one */
+   command_run_frames_forget();
+#endif
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
    {
@@ -1625,8 +1629,6 @@ static bool command_checkpoint_start(struct command_reply *r)
          if (!content_deserialize_state(command_checkpoint.data,
                   command_checkpoint.size))
             error = "the core could not restore the checkpoint";
-         else
-            command_run_frames_forget();
          audio_driver_jump_fade_end(ramped);
       }
    }
@@ -1678,6 +1680,7 @@ bool command_checkpoint_rollback(command_t *cmd, const char *arg)
  * paused is, so nothing runs before the first step. */
 static bool command_reset_start(struct command_reply *r)
 {
+   command_run_frames_forget();
    command_event(CMD_EVENT_RESET, NULL);
    command_reply_done(NULL, NULL, r, NULL);
    return true;
@@ -3167,7 +3170,8 @@ static void command_run_frames_enter(bool safe)
 
 /* Replaces any job running with @steps, which @cmd asked for as @name,
  * and starts it: a condition that already holds is answered at once,
- * without a frame. @line is the answer of a CMD_ANSWER_LINE job. */
+ * without a frame. @line is the answer of a CMD_ANSWER_LINE job. With
+ * no @cmd it is queued: nothing waits on it. */
 static void command_run_frames_start(command_t *cmd, const char *name,
       const struct command_step *steps, unsigned count, unsigned budget,
       uint8_t answer, const char *line)
@@ -3182,7 +3186,7 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    }
    memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
    command_run_frames_st.nstops     = 0;
-   command_run_frames_st.queued     = false;
+   command_run_frames_st.queued     = !cmd;
    command_run_frames_st.report_len = 0;
    command_run_frames_st.dry_since  = 0;
    strlcpy(command_run_frames_st.reply, line ? line : "",
@@ -3196,7 +3200,8 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.held   = 0;
    command_run_frames_st.gap    = false;
    command_run_frames_st.let_go = 0;
-   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   if (cmd)
+      command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    command_run_frames_enter(false);
 }
@@ -3221,21 +3226,8 @@ static void command_run_frames_queue(const struct command_step *steps,
       command_run_frames_st.count += count;
       return;
    }
-   memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
-   command_run_frames_st.name   = "STEPS";
-   command_run_frames_st.count  = count;
-   command_run_frames_st.cur    = 0;
-   command_run_frames_st.ran    = 0;
-   command_run_frames_st.budget = 0;
-   command_run_frames_st.answer = CMD_ANSWER_STEPS;
-   command_run_frames_st.held   = 0;
-   command_run_frames_st.gap    = false;
-   command_run_frames_st.let_go = 0;
-   command_run_frames_st.nstops    = 0;
-   command_run_frames_st.queued    = true;
-   command_run_frames_st.dry_since = 0;
-   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
-   command_run_frames_enter(false);
+   command_run_frames_start(NULL, "STEPS", steps, count, 0,
+         CMD_ANSWER_STEPS, NULL);
 }
 
 void command_run_frames_between(void)
@@ -3953,7 +3945,6 @@ bool command_steps(command_t *cmd, const char *arg)
    unsigned            frames   = 0;
    unsigned            fixed    = 0;
    unsigned            budget;
-   unsigned            room;
    unsigned            i;
    unsigned            nstops   = 0;
    long                idle;
@@ -4000,7 +3991,8 @@ bool command_steps(command_t *cmd, const char *arg)
       if (!*entry)
          continue;
       /* a queued list is not one request's wait: only each step is */
-      room = (queue || fixed > budget) ? budget : budget - fixed;
+      if (queue)
+         fixed = 0;
       if (!strncmp(entry, "stop ", 5))
       {
          if (nstops >= COMMAND_STOPS_MAX)
@@ -4043,7 +4035,7 @@ bool command_steps(command_t *cmd, const char *arg)
          {
             s->kind = CMD_STEP_RUN;
             if (     !command_arg_uint(entry + 4, &s->frames)
-                  || s->frames < 1 || s->frames > room)
+                  || s->frames < 1 || s->frames > budget - fixed)
             {
                command_reply_error(cmd, "STEPS", "step %u: run a frame "
                      "count from 1, within the %u frames one request runs",
@@ -4081,13 +4073,9 @@ bool command_steps(command_t *cmd, const char *arg)
             if (     prev > first && (prev - 1)->kind == CMD_STEP_PRESS
                   && (prev - 1)->port == player - 1
                   && ((prev - 1)->mask & s->mask))
-            {
                fixed++;
-               if (!queue && room)
-                  room--;
-            }
-            if (     (!queue && fixed > budget) || held < 1
-                  || (unsigned long)held > room)
+            if (     fixed > budget || held < 1
+                  || (unsigned long)held > budget - fixed)
             {
                command_reply_error(cmd, "STEPS", "step %u: press for a "
                      "frame count from 1, within the %u frames one request "
@@ -4127,7 +4115,7 @@ bool command_steps(command_t *cmd, const char *arg)
    /* the stops, numbered, just ahead of the steps */
    for (i = 0; i < nstops; i++)
    {
-      struct command_step *s = &first[(int)i - (int)nstops];
+      struct command_step *s = first - nstops + i;
       s->cond = stops[i];
       s->kind = CMD_STEP_STOP;
       s->idx  = (uint8_t)(i + 1);
@@ -4154,9 +4142,8 @@ bool command_steps(command_t *cmd, const char *arg)
          return false;
    if (!queue)
    {
-      command_run_frames_start(cmd, "STEPS",
-            first - nstops, nstops + count, budget,
-            CMD_ANSWER_STEPS, NULL);
+      command_run_frames_start(cmd, "STEPS", first - nstops,
+            nstops + count, budget, CMD_ANSWER_STEPS, NULL);
       return true;
    }
    if (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES)
@@ -4180,8 +4167,7 @@ bool command_steps(command_t *cmd, const char *arg)
     * played on from a death */
    idle = command_steps_idle();
    if (!command_run_frames_st.report_len)
-      command_run_frames_queue(first - nstops,
-            nstops + count);
+      command_run_frames_queue(first - nstops, nstops + count);
    command_steps_report(cmd, idle);
    return true;
 }

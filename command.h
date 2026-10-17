@@ -616,7 +616,7 @@ bool command_get_log(command_t *cmd, const char *arg);
  * between runs before the frame is decided, with the core off the
  * stack, for a STEPS checkpoint the request itself could not keep.
  * forget ends a queued STEPS and drops how it stopped, once the state
- * it was planned from is gone. */
+ * it was planned from is gone: a state loaded, a reset, a close. */
 #define COMMAND_RUN_FRAMES_MAX 36000
 bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);

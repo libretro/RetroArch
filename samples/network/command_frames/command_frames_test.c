@@ -1092,6 +1092,29 @@ int main(int argc, char **argv)
       CHECK(!(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
       CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* so do a state loaded from a slot and a reset */
+      reply[0]=0;
+      CHECK(command_state(&cmd,"save 1"));
+      for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE save 1"));
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"load 1"));
+      for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE load 1")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      remove("command_frames_test.state1");
+      remove("command_frames_test.state1.png");
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_reset(&cmd,""));
+      for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(!strncmp(reply,"RESET",5)
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
       /* a request that waits replaces the queue */
       reply[0]=0;
       CHECK(command_steps(&cmd,"run 10|on"));
