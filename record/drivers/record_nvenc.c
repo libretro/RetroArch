@@ -24,14 +24,15 @@
 
 typedef struct record_nvenc_context
 {
-   uint64_t next_timestamp, origin, captured;
+   uint64_t next_timestamp, origin, captured, audio_frames;
    struct record_nvenc_context *next;
    record_gpu_dispatch_d3d12_t *job;
    void *device;
    char *path;
-   unsigned dims, duration;
+   unsigned dims, duration, audio_rate;
    retro_atomic_int_t failed, stop;
    bool allow_drop, have_origin, video_closed;
+   bool audio_enabled, armed;
 } record_nvenc_context_t;
 
 static record_nvenc_context_t *record_nvenc_active;
@@ -67,7 +68,8 @@ static bool record_nvenc_rate(double fps, unsigned *num, unsigned *den)
    return false;
 }
 
-static bool record_nvenc_config(const char *path, nvenc_d3d12_config_t *encoder)
+static bool record_nvenc_config(const char *path, nvenc_d3d12_config_t *encoder,
+      bool *audio_enabled)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -76,7 +78,7 @@ static bool record_nvenc_config(const char *path, nvenc_d3d12_config_t *encoder)
    if (!path || !*path) return false;
    config = config_file_new_from_path_to_string(path);
    if (!config) return false;
-   if (!config_get_bool(config, "audio_enable", &audio) || audio) goto done;
+   if (!config_get_bool(config, "audio_enable", &audio)) goto done;
    if (config_get_entry(config, "vcodec"))
    {
       if (!config_get_array(config, "vcodec", codec, sizeof(codec))) goto done;
@@ -99,6 +101,7 @@ static bool record_nvenc_config(const char *path, nvenc_d3d12_config_t *encoder)
                && !string_is_equal(entry.key, "video_bit_rate")
                && !string_is_equal(entry.key, "format")) goto done;
       } while (config_get_entry_list_next(&entry));
+   *audio_enabled = audio;
    ok = true;
 done:
    config_file_free(config);
@@ -114,6 +117,7 @@ static void *record_nvenc_init(const struct record_params *params)
    record_nvenc_context_t *ctx;
    settings_t *settings = config_get_ptr();
    size_t length;
+   bool audio_enabled;
    if (record_nvenc_active || record_nvenc_retired || !params
          || !params->filename || !*params->filename) return NULL;
    if (!params->video_gpu_record || recording_state_get_ptr()->streaming_enable
@@ -133,16 +137,32 @@ static void *record_nvenc_init(const struct record_params *params)
    encoder.format = NVENC_D3D12_BGRA8; encoder.color = NVENC_D3D12_COLOR_BT709;
    encoder.bitrate = 16000000;
    if (!record_nvenc_rate(params->fps, &encoder.fps_num, &encoder.fps_den)
-         || !record_nvenc_config(params->config, &encoder))
+         || !record_nvenc_config(params->config, &encoder, &audio_enabled))
    {
-      RARCH_ERR("[NVENC] Requires a valid frame rate and a native MP4 config with audio_enable = false.\n");
+      RARCH_ERR("[NVENC] Requires a valid frame rate and a native MP4 config with an explicit audio_enable setting.\n");
       return NULL;
+   }
+   if (audio_enabled)
+   {
+      if ((params->samplerate != 32000.0 && params->samplerate != 44100.0
+               && params->samplerate != 48000.0) || params->channels != 2)
+      {
+         RARCH_ERR("[NVENC] Audio requires stereo PCM at 32, 44.1 or 48 kHz.\n");
+         return NULL;
+      }
+      output.audio_rate = (unsigned)params->samplerate;
+      output.audio_layout = 3;
+      output.audio_kbps = 192;
+      output.audio_fifo_frames = output.audio_rate;
    }
    length = strlen(params->filename);
    if (length >= PATH_MAX_LENGTH) return NULL;
    ctx = (record_nvenc_context_t*)calloc(1, sizeof(*ctx) + length + 1);
    if (!ctx) return NULL;
    ctx->path = (char*)(ctx + 1); memcpy(ctx->path, params->filename, length + 1);
+   ctx->audio_rate = output.audio_rate;
+   ctx->audio_enabled = audio_enabled;
+   ctx->armed = !audio_enabled;
    ctx->device = device.device; ctx->dims = params->out_dims;
    ctx->duration = encoder.fps_den; ctx->allow_drop = params->allow_frame_drop;
    retro_atomic_int_init(&ctx->failed, 0); retro_atomic_int_init(&ctx->stop, 0);
@@ -161,7 +181,8 @@ static void *record_nvenc_init(const struct record_params *params)
       free(ctx); return NULL;
    }
    record_nvenc_active = ctx;
-   RARCH_LOG("[NVENC] Starting native video-only %u/%u fps recording.\n", encoder.fps_num, encoder.fps_den);
+   RARCH_LOG("[NVENC] Starting native %s %u/%u fps recording.\n",
+         audio_enabled ? "AC-3/video" : "video-only", encoder.fps_num, encoder.fps_den);
    return ctx;
 }
 
@@ -170,6 +191,7 @@ static bool record_nvenc_finalize(void *data)
    record_nvenc_context_t *ctx = (record_nvenc_context_t*)data;
    enum record_gpu_session_error error;
    retro_atomic_cas_int(&ctx->stop, 0, 2);
+   record_gpu_dispatch_d3d12_audio_finish(ctx->job);
    record_gpu_dispatch_d3d12_status(ctx->job, &error, NULL, NULL);
    return !error && !retro_atomic_load_acquire_int(&ctx->failed);
 }
@@ -181,8 +203,31 @@ static void record_nvenc_release(void *data)
    ctx->next = record_nvenc_retired; record_nvenc_retired = ctx;
 }
 
+static bool record_nvenc_audio(void *data, const struct record_audio_data *audio)
+{
+   record_nvenc_context_t *ctx = (record_nvenc_context_t*)data;
+   int result;
+   if (!ctx->audio_enabled || !ctx->armed || (audio && !audio->frames)) return true;
+   if (retro_atomic_load_acquire_int(&ctx->stop)
+         || retro_atomic_load_acquire_int(&ctx->failed)) return false;
+   if (!audio || video_state_get_ptr()->av_info.timing.sample_rate != ctx->audio_rate
+         || ctx->audio_frames > UINT64_MAX - audio->frames)
+      result = RECORD_GPU_OUTPUT_ERROR;
+   else
+      result = record_gpu_dispatch_d3d12_audio(ctx->job,
+            (const int16_t*)audio->data, audio->frames);
+   if (result != RECORD_GPU_OUTPUT_PROGRESS)
+   {
+      retro_atomic_store_release_int(&ctx->failed, 1);
+      record_gpu_dispatch_d3d12_cancel(ctx->job);
+      return false;
+   }
+   ctx->audio_frames += audio->frames;
+   return true;
+}
+
 const record_driver_t record_nvenc = {
-   record_nvenc_init, record_nvenc_release, NULL, NULL, record_nvenc_finalize, "nvenc"
+   record_nvenc_init, record_nvenc_release, NULL, record_nvenc_audio, record_nvenc_finalize, "nvenc"
 };
 
 void record_nvenc_frame_info(struct video_frame_info *info, bool capture)
@@ -191,7 +236,7 @@ void record_nvenc_frame_info(struct video_frame_info *info, bool capture)
    info->recording_gpu = ctx;
    info->recording_gpu_pending = record_nvenc_retired != NULL;
    info->recording_gpu_capture = false; info->recording_gpu_timestamp = 0;
-   if (!ctx || !capture || recording_state_get_ptr()->data != ctx
+   if (!ctx || !capture || !ctx->armed || recording_state_get_ptr()->data != ctx
          || video_state_get_ptr()->frame_repeat) return;
    if (ctx->next_timestamp > UINT64_MAX - ctx->duration)
    {
@@ -214,16 +259,19 @@ void record_nvenc_gpu_capture(void *data, void *source, unsigned state,
       unsigned pos, unsigned dims, uint64_t timestamp)
 {
    record_nvenc_context_t *ctx = (record_nvenc_context_t*)data;
-   int result;
+   int result, stop;
    uint64_t pts;
-   if (!ctx || retro_atomic_load_acquire_int(&ctx->stop)
+   if (!ctx) return;
+   stop = retro_atomic_load_acquire_int(&ctx->stop);
+   if ((stop && stop != 2)
          || retro_atomic_load_acquire_int(&ctx->failed)) return;
    if (dims != ctx->dims || VIDEO_POS_X(pos) < 0 || VIDEO_POS_Y(pos) < 0)
    {
       retro_atomic_cas_int(&ctx->stop, 0, 1);
       return;
    }
-   pts = ctx->have_origin ? timestamp - ctx->origin : 0;
+   pts = ctx->audio_enabled ? timestamp
+      : ctx->have_origin ? timestamp - ctx->origin : 0;
    result = record_gpu_dispatch_d3d12_video(ctx->job, source, state,
          VIDEO_POS_X(pos), VIDEO_POS_Y(pos), NULL, 0, pts, ctx->duration,
          !ctx->have_origin, NULL);
@@ -289,6 +337,7 @@ void record_nvenc_poll(void)
       video_device_info_t device;
       record_nvenc_context_t *ctx = record_nvenc_active;
       enum record_gpu_dispatch_state state = record_gpu_dispatch_d3d12_status(ctx->job, NULL, NULL, NULL);
+      if (state == RECORD_GPU_DISPATCH_READY) ctx->armed = true;
       if (!video_driver_get_device(&device) || device.device != ctx->device)
          retro_atomic_cas_int(&ctx->stop, 0, 3);
       if (retro_atomic_load_acquire_int(&ctx->stop)
@@ -331,6 +380,9 @@ void record_nvenc_poll(void)
       if (state == RECORD_GPU_DISPATCH_DONE && ctx->captured)
       {
          RARCH_LOG("[NVENC] Recording finalized (%llu GPU frames).\n", (unsigned long long)ctx->captured);
+         if (ctx->audio_enabled)
+            RARCH_LOG("[NVENC] Audio finalized (%llu PCM frames).\n",
+                  (unsigned long long)ctx->audio_frames);
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
          if (config_get_ptr()->bools.history_list_enable)
          {

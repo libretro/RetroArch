@@ -1,12 +1,17 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <math.h>
 #include <libretro.h>
 #define WIDTH 320
 #define HEIGHT 192
 static retro_video_refresh_t video;
 static uint32_t pixels[WIDTH * HEIGHT];
 static unsigned frames;
+static unsigned sample_rate = 48000;
+static retro_audio_sample_batch_t audio;
+static int16_t samples[4004];
 void retro_set_environment(retro_environment_t cb)
 {
    bool yes = true;
@@ -16,10 +21,15 @@ void retro_set_environment(retro_environment_t cb)
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
-void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { (void)cb; }
+void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio = cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { (void)cb; }
 void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
-void retro_init(void) { frames = 0; }
+void retro_init(void)
+{
+   const char *rate = getenv("NATIVE_RECORD_RATE");
+   frames = 0;
+   sample_rate = rate ? (unsigned)strtoul(rate, NULL, 10) : 48000;
+}
 void retro_deinit(void) { }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
@@ -31,7 +41,7 @@ void retro_get_system_info(struct retro_system_info *info)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->timing.fps = 60000.0 / 1001.0; info->timing.sample_rate = 48000.0;
+   info->timing.fps = 60000.0 / 1001.0; info->timing.sample_rate = sample_rate;
    info->geometry.base_width = info->geometry.max_width = WIDTH;
    info->geometry.base_height = info->geometry.max_height = HEIGHT;
    info->geometry.aspect_ratio = (float)WIDTH / HEIGHT;
@@ -40,6 +50,18 @@ void retro_run(void)
 {
    static const uint32_t colors[] = {0xffff2020u, 0xff20ff20u, 0xff2020ffu, 0xffc0c0c0u};
    unsigned i;
+   uint64_t first = (uint64_t)frames * sample_rate * 1001 / 60000;
+   size_t count = (size_t)((uint64_t)(frames + 1) * sample_rate * 1001 / 60000 - first);
+   if (count <= 2002)
+   {
+      for (i = 0; i < count; i++)
+      {
+         double phase = 6.283185307179586 * (double)(first + i) / sample_rate;
+         samples[i * 2] = (int16_t)(8192 * sin(phase * 440));
+         samples[i * 2 + 1] = (int16_t)(4096 * sin(phase * 880));
+      }
+      if (audio) audio(samples, count);
+   }
    for (i = 0; i < WIDTH * HEIGHT; i++) pixels[i] = colors[(frames / 15) % 4];
    frames++;
    video(pixels, WIDTH, HEIGHT, WIDTH * sizeof(*pixels));

@@ -3,3 +3,7 @@
 /rate_test.exe
 /frontend_core.dll
 /frontend_core.so
+/audio_fragment.c
+/audio_test
+/audio_test.exe
+/video_fragment.c
