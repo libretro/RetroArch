@@ -245,11 +245,14 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             assert check_pixels(ffmpeg, stream, codec, 1) == references[codec, 1], 'BGRA capture differs from direct input'
             print(f'[pass] {name}: BGRA viewport copy', flush=True)
     if passed:
-        for mode, variable in (('GPU/PCM', 'NVENC_TEST_GPU_AV'), ('dispatcher', 'NVENC_TEST_DISPATCH')):
+        for mode, variable, owned in (('GPU/PCM', 'NVENC_TEST_GPU_AV', False),
+                                      ('dispatcher', 'NVENC_TEST_DISPATCH', False),
+                                      ('owned dispatcher', 'NVENC_TEST_DISPATCH', True)):
             for codec, fmt, rate, channels in ((0, 1, 48000, 2), (1, 3, 44100, 1), (2, 3, 32000, 6)):
                 name = ('h264', 'hevc', 'obu')[codec]
-                stream = Path(temporary) / f'{variable}-{codec}.{name}'
-                env = dict(os.environ, **{variable: '1'}, NVENC_TEST_AUDIO_RATE=str(rate))
+                stream = Path(temporary) / f'{variable}-{int(owned)}-{codec}.{name}'
+                env = dict(os.environ, **{variable: '1'}, NVENC_TEST_AUDIO_RATE=str(rate),
+                           NVENC_TEST_CAPTURE_OWNED=str(int(owned)))
                 subprocess.run([*runner, binary, str(codec), str(fmt), str(stream),
                                 '2' if fmt == 3 else '1', '0', '0', '1'], env=env, check=True, timeout=60)
                 check_mp4(ffmpeg, stream, codec, frames, '.av.mp4')

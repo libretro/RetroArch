@@ -331,9 +331,12 @@ static DWORD WINAPI nve_produce(void *data)
    {
       int result;
       if (p->dispatch)
+      {
+         record_gpu_dispatch_d3d12_video_reap(p->dispatch);
          result = record_gpu_dispatch_d3d12_video(p->dispatch, p->sources[p->made % 4],
                D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
                p->made, 1, p->made == 0 || p->made == 12, NULL);
+      }
       else if (p->capture)
          result = record_gpu_capture_d3d12_push(p->capture, p->sources[p->made % 4],
                D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
@@ -601,8 +604,10 @@ int main(int argc, char **argv)
       out = fopen(argv[3], "wb"); CHECK(out != NULL);
       mux_config.timescale = config.fps_num;
       mux_config.max_packet_size = 1024 * 1024;
-      CHECK(nve_pipeline_run(NULL, NULL, &mux_config, argv[3], out, &received,
-               queue, ready, &value, true, FRAMES, NULL, &config, &producer));
+      status = nve_pipeline_run(NULL, NULL, &mux_config, argv[3], out, &received,
+            queue, ready, &value, true, FRAMES, NULL, &config, &producer);
+      capture = producer.capture;
+      CHECK(status);
       CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
       ok = 1; goto done;
    }

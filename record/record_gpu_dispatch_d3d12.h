@@ -16,6 +16,13 @@ enum record_gpu_dispatch_state
 record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
       record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
       const record_gpu_output_config_t *output, const char *path);
+/* Cold controller. On success transfers a fresh capture to the worker;
+ * NULL leaves it with the caller. After both producers close, the worker
+ * retires GPU sources and destroys capture before publishing DONE/FAILED.
+ * Never access the transferred capture directly, including after closure. */
+record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new_owned(
+      record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
+      const record_gpu_output_config_t *output, const char *path);
 /* One render producer and one PCM producer. STARTING returns BUSY, taking
  * nothing. READY preserves the capture/output whole-input contracts. No
  * allocation, waits or logging. Source references retire through capture reap/free. */
@@ -25,6 +32,9 @@ int record_gpu_dispatch_d3d12_video(record_gpu_dispatch_d3d12_t *job,
       uint64_t duration, bool keyframe, uint64_t *ready_value);
 int record_gpu_dispatch_d3d12_audio(record_gpu_dispatch_d3d12_t *job,
       const int16_t *samples, size_t frames);
+/* Render producer, before video_finish. Releases completed source references
+ * before ResizeBuffers; false requires a later retry. Never waits. */
+bool record_gpu_dispatch_d3d12_video_reap(record_gpu_dispatch_d3d12_t *job);
 /* Each producer closes after its last push returns, even on startup failure
  * or cancellation. Disabled audio starts closed. No pushes after closure. */
 bool record_gpu_dispatch_d3d12_video_finish(record_gpu_dispatch_d3d12_t *job);

@@ -73,6 +73,8 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    int result = RECORD_GPU_OUTPUT_BUSY;
    bool signalled = false, ok = false;
    const char *setting = getenv("NVENC_TEST_AUDIO_RATE");
+   const char *ownership = getenv("NVENC_TEST_CAPTURE_OWNED");
+   bool owned_capture = ownership && atoi(ownership) != 0;
    rate = setting ? (unsigned)atoi(setting) : 48000;
    channels = rate == 44100 ? 1 : rate == 32000 ? 6 : 2;
    memset(&config, 0, sizeof(config)); memset(&producer, 0, sizeof(producer));
@@ -102,7 +104,9 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    nve_pipeline_raw = raw; nve_pipeline_received = received;
    if (dispatch_config)
    {
-      dispatch = record_gpu_dispatch_d3d12_new(video_producer->capture, dispatch_config, &config, movie);
+      dispatch = owned_capture
+         ? record_gpu_dispatch_d3d12_new_owned(video_producer->capture, dispatch_config, &config, movie)
+         : record_gpu_dispatch_d3d12_new(video_producer->capture, dispatch_config, &config, movie);
       if (!dispatch) goto done;
       video_producer->dispatch = dispatch;
       retro_atomic_int_init(&video_producer->stop, 0);
@@ -190,6 +194,7 @@ done:
       for (i = 0; i < 10000 && !record_gpu_dispatch_d3d12_free(dispatch); i++) Sleep(1);
       if (i == 10000) abort();
       video_producer->dispatch = NULL;
+      if (owned_capture) video_producer->capture = NULL;
    }
    ok = ok && *received == frames;
    if (output)

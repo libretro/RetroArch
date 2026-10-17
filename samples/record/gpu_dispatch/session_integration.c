@@ -7,9 +7,11 @@
 #include "../../../record/record_gpu_dispatch_d3d12.h"
 /* The simulated encoder completes through service, not a kernel handle. */
 void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e) { (void)e; return NULL; }
-static int integration(unsigned mode)
+static unsigned captures_freed;
+static int integration(unsigned mode, bool owned)
 {
    record_gpu_capture_d3d12_t capture;
+   record_gpu_capture_d3d12_t *input = &capture;
    record_gpu_output_config_t output;
    nvenc_d3d12_config_t encoder;
    record_gpu_dispatch_d3d12_t *job;
@@ -19,10 +21,13 @@ static int integration(unsigned mode)
    int16_t pcm[200] = {0};
    unsigned i, attempts;
    setup(&output, &encoder);
-   capture.queue = record_gpu_queue_new(2); CHECK(capture.queue);
+   captures_freed = 0;
+   if (owned) { input = (record_gpu_capture_d3d12_t*)calloc(1, sizeof(*input)); CHECK(input); }
+   input->queue = record_gpu_queue_new(2); CHECK(input->queue);
    headers_fault = mode == 2;
    file_step_fail = mode == 3;
-   job = record_gpu_dispatch_d3d12_new(&capture, &encoder, &output, "unused"); CHECK(job);
+   job = owned ? record_gpu_dispatch_d3d12_new_owned(input, &encoder, &output, "unused")
+      : record_gpu_dispatch_d3d12_new(input, &encoder, &output, "unused"); CHECK(job);
    for (attempts = 0; attempts < 10000; attempts++)
    {
       state = record_gpu_dispatch_d3d12_status(job, NULL, NULL, NULL);
@@ -65,7 +70,8 @@ static int integration(unsigned mode)
    if (mode == 3) CHECK(file_error);
    for (attempts = 0; attempts < 10000 && !record_gpu_dispatch_d3d12_free(job); attempts++) SESSION_YIELD();
    CHECK(attempts < 10000 && opened == freed);
-   CHECK(record_gpu_queue_free(capture.queue));
+   if (owned) CHECK(captures_freed == 1);
+   else { CHECK(!captures_freed); CHECK(record_gpu_queue_free(capture.queue)); }
    return 0;
 }
 int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c, void *source,
@@ -80,10 +86,16 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c, void *source,
    if (ready) *ready = 1;
    return record_gpu_queue_submit(c->queue, &frame) ? RECORD_GPU_QUEUE_OK : RECORD_GPU_QUEUE_ERROR;
 }
+bool record_gpu_capture_d3d12_reap(record_gpu_capture_d3d12_t *c) { return c != NULL; }
+bool record_gpu_capture_d3d12_free(record_gpu_capture_d3d12_t *c)
+{
+   if (!record_gpu_queue_free(c->queue)) return false;
+   free(c); captures_freed++; return true;
+}
 int main(void)
 {
    unsigned i;
-   for (i = 0; i < 4; i++) if (integration(i)) return 1;
+   for (i = 0; i < 4; i++) if (integration(i, false) || integration(i, true)) return 1;
    puts("PASS: dispatcher with production session, worker, queue, AC-3 and MP4 ownership");
    return 0;
 }

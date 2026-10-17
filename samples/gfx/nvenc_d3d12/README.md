@@ -144,3 +144,10 @@ explicit reap permits resize while all four destination slots remain leased.
 The same capture pool then crops the replacement backbuffer and permits another
 resize after producer closure. This test needs D3D12/DXGI, but no NVENC runtime.
 Both system and bundled D3D headers build it; other platforms explicitly skip.
+
+Owned-dispatcher sessions transfer their fresh capture to the dispatcher. The render
+producer reaps through the dispatcher while open; after closure, the I/O worker
+retires the capture and GPU source references before terminal status. The
+controller joins only the test producers and nonblockingly collects the job;
+it performs no capture destruction. Borrowed-dispatcher cases remain separate. These cases retain the independent video
+and PCM oracles for H.264, HEVC and AV1.

@@ -15,6 +15,8 @@ struct record_gpu_dispatch_d3d12
    HANDLE wake, thread;
    retro_atomic_int_t epoch, state, cancelled, video_closed, audio_closed;
    retro_atomic_int_t error, file_error, system_error;
+   int completion;
+   bool owns_capture;
 };
 
 static void record_gpu_dispatch_os_error(record_gpu_dispatch_d3d12_t *j)
@@ -39,7 +41,22 @@ static int record_gpu_dispatch_service(record_gpu_dispatch_d3d12_t *j)
    bool closed = retro_atomic_load_acquire_int(&j->video_closed)
       && retro_atomic_load_acquire_int(&j->audio_closed);
    if (!j->session)
-      return closed ? RECORD_GPU_OUTPUT_ERROR : RECORD_GPU_OUTPUT_BUSY;
+   {
+      if (!closed) return RECORD_GPU_OUTPUT_BUSY;
+      if (retro_atomic_load_acquire_int(&j->cancelled))
+      {
+         j->completion = RECORD_GPU_OUTPUT_ERROR;
+         if (!retro_atomic_load_acquire_int(&j->error))
+            retro_atomic_store_release_int(&j->error, RECORD_GPU_SESSION_ERROR_CANCELLED);
+      }
+      if (j->owns_capture && j->capture)
+      {
+         if (!record_gpu_capture_d3d12_free(j->capture))
+            return RECORD_GPU_OUTPUT_BUSY;
+         j->capture = NULL;
+      }
+      return j->completion;
+   }
    if (retro_atomic_load_acquire_int(&j->video_closed))
       record_gpu_session_d3d12_video_finish(j->session);
    if (retro_atomic_load_acquire_int(&j->audio_closed))
@@ -57,6 +74,9 @@ static int record_gpu_dispatch_service(record_gpu_dispatch_d3d12_t *j)
       if (!closed || !record_gpu_session_d3d12_free(j->session))
          return RECORD_GPU_OUTPUT_BUSY;
       j->session = NULL;
+      j->completion = result;
+      retro_atomic_store_release_int(&j->state, RECORD_GPU_DISPATCH_DRAINING);
+      return RECORD_GPU_OUTPUT_PROGRESS;
    }
    return result;
 }
@@ -102,6 +122,10 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
       handles[0] = j->wake;
       handles[1] = j->session ? record_gpu_session_d3d12_wait_handle(j->session) : NULL;
       timeout = j->session && record_gpu_session_d3d12_retry_needed(j->session) ? 1 : INFINITE;
+      if (!j->session && j->owns_capture && j->capture
+            && retro_atomic_load_acquire_int(&j->video_closed)
+            && retro_atomic_load_acquire_int(&j->audio_closed))
+         timeout = 1;
       if (retro_atomic_load_acquire_int(&j->system_error))
       {
          handles[1] = NULL;
@@ -129,9 +153,9 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
    return 0;
 }
 
-record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
+static record_gpu_dispatch_d3d12_t *record_gpu_dispatch_new(
       record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
-      const record_gpu_output_config_t *output, const char *path)
+      const record_gpu_output_config_t *output, const char *path, bool owns_capture)
 {
    record_gpu_dispatch_d3d12_t *j;
    size_t length;
@@ -146,6 +170,8 @@ record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
    j->encoder = *encoder;
    j->output = *output;
    j->capture = capture;
+   j->owns_capture = owns_capture;
+   j->completion = RECORD_GPU_OUTPUT_ERROR;
    retro_atomic_int_init(&j->epoch, 0);
    retro_atomic_int_init(&j->state, RECORD_GPU_DISPATCH_STARTING);
    retro_atomic_int_init(&j->cancelled, 0);
@@ -167,6 +193,26 @@ record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
    free(j->path);
    free(j);
    return NULL;
+}
+
+record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
+      record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
+      const record_gpu_output_config_t *output, const char *path)
+{
+   return record_gpu_dispatch_new(capture, encoder, output, path, false);
+}
+
+record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new_owned(
+      record_gpu_capture_d3d12_t *capture, const nvenc_d3d12_config_t *encoder,
+      const record_gpu_output_config_t *output, const char *path)
+{
+   return record_gpu_dispatch_new(capture, encoder, output, path, true);
+}
+
+bool record_gpu_dispatch_d3d12_video_reap(record_gpu_dispatch_d3d12_t *j)
+{
+   if (!j || retro_atomic_load_acquire_int(&j->video_closed)) return false;
+   return record_gpu_capture_d3d12_reap(j->capture);
 }
 
 int record_gpu_dispatch_d3d12_video(record_gpu_dispatch_d3d12_t *j,
@@ -251,7 +297,8 @@ bool record_gpu_dispatch_d3d12_free(record_gpu_dispatch_d3d12_t *j)
          || !retro_atomic_load_acquire_int(&j->audio_closed)) return false;
    if (j->thread)
    {
-      if (WaitForSingleObject(j->thread, 0) != WAIT_OBJECT_0 || j->session)
+      if (WaitForSingleObject(j->thread, 0) != WAIT_OBJECT_0 || j->session
+            || (j->owns_capture && j->capture))
          return false;
       if (!CloseHandle(j->thread)) return false;
       j->thread = NULL;
@@ -266,6 +313,12 @@ record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
       record_gpu_capture_d3d12_t *c, const nvenc_d3d12_config_t *e,
       const record_gpu_output_config_t *o, const char *p)
 { (void)c; (void)e; (void)o; (void)p; return NULL; }
+record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new_owned(
+      record_gpu_capture_d3d12_t *c, const nvenc_d3d12_config_t *e,
+      const record_gpu_output_config_t *o, const char *p)
+{ (void)c; (void)e; (void)o; (void)p; return NULL; }
+bool record_gpu_dispatch_d3d12_video_reap(record_gpu_dispatch_d3d12_t *j)
+{ (void)j; return false; }
 int record_gpu_dispatch_d3d12_video(record_gpu_dispatch_d3d12_t *j,
       void *s, unsigned t, unsigned x, unsigned y, void *f, uint64_t v,
       uint64_t p, uint64_t d, bool k, uint64_t *r)
