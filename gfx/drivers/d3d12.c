@@ -58,6 +58,7 @@
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../record/drivers/record_nvenc.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../gfx_instrument.h"
@@ -8628,6 +8629,9 @@ static bool d3d12_gfx_frame_body(
 #endif
          {
             UINT swapchain_flags        = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            if (video_info->recording_gpu_pending
+                  || !record_nvenc_gpu_reap(video_info->recording_gpu))
+               goto recording_resize_deferred;
 
             if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
                swapchain_flags         |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
@@ -8746,7 +8750,9 @@ static bool d3d12_gfx_frame_body(
          }
 #ifdef HAVE_DXGI_HDR
    } /* close desired_bit_depth scope */
-
+#endif
+recording_resize_deferred:;
+#ifdef HAVE_DXGI_HDR
    /* Recreate back_buffer if its format doesn't match the expected
     * target.  When use_back_buffer is true the shader's last pass
     * writes to back_buffer, so it must match back_buffer_format.
@@ -9817,6 +9823,12 @@ static bool d3d12_gfx_frame_body(
       d3d12_record_free(d3d12);
 
    d3d12_cmd_execute(d3d12);
+   if (video_info->recording_gpu_capture
+         && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+      record_nvenc_gpu_capture(video_info->recording_gpu,
+            d3d12->chain.renderTargets[d3d12->chain.frame_index],
+            D3D12_RESOURCE_STATE_PRESENT, d3d12->vp.pos, d3d12->vp.dims,
+            video_info->recording_gpu_timestamp);
    d3d12_record_signal(d3d12);
 
    /* Version 2: the core's texture is the core's again once this list,
@@ -11182,6 +11194,7 @@ static bool d3d12_get_device(void *data, video_device_info_t *info)
       return false;
    info->api            = VIDEO_DEVICE_D3D12;
    info->device         = (void*)d3d12->device;
+   info->queue          = (void*)d3d12->queue.handle;
 #ifdef D3D12_FRAME_IMPORT
    info->import_formats = d3d12->video_decode ? d3d12->import_formats : 0;
 #endif

@@ -2177,6 +2177,25 @@ static bool video_thread_rec_in_flight(const thread_video_t *thr,
    return false;
 }
 
+bool video_thread_record_gpu_in_flight(void *data, const void *recorder)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   unsigned s, tail, pending;
+   bool busy;
+   int state;
+   if (!thr || !recorder) return false;
+   state = video_thread_ring_load(thr);
+   tail = VIDEO_THREAD_RING_TAIL_OF(state);
+   pending = VIDEO_THREAD_RING_PENDING_OF(state);
+   busy = VIDEO_THREAD_RING_BUSY_OF(state);
+   for (s = 0; s < 2; s++)
+      if ((pending == 2 || (pending == 1 && s == tail)
+               || (busy && s == (tail ^ 1)))
+            && thr->frame.slot[s].video_info.recording_gpu == recorder)
+         return true;
+   return false;
+}
+
 static void video_thread_rec_free_list(video_thread_rec_t *rec)
 {
    while (rec)

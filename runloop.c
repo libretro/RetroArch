@@ -131,6 +131,7 @@ bool android_get_vfs_authorized_locations(
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
+#include "record/drivers/record_nvenc.h"
 #include "msg_hash_lbl_str.h"
 
 #ifdef HAVE_CONFIG_H
@@ -9609,6 +9610,7 @@ int runloop_iterate(void)
    bool frame_advanced;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
+   record_nvenc_poll();
    runloop_msg_queue_drain_deferred();
 
    /* A quit waiting for its state to be written: the core is not run

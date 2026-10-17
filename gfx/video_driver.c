@@ -153,6 +153,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "../audio/audio_driver.h"
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
+#include "../record/drivers/record_nvenc.h"
 #include "../ui/ui_companion_driver.h"
 #include "../input/input_overlay.h"
 #include "../driver.h"
@@ -5140,10 +5141,11 @@ void video_driver_cached_frame(void)
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    recording_state_t *recording_st= recording_state_get_ptr();
    void             *recording    = recording_st->data;
+   bool native                   = recording_st->driver == &record_nvenc;
    struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
 
    /* Cannot allow recording when pushing duped frames. */
-   recording_st->data             = NULL;
+   if (!native) recording_st->data = NULL;
 
    /* A staged content load has no core between its close and the
     * next core's init, and the drivers it left up present the last
@@ -5171,7 +5173,7 @@ void video_driver_cached_frame(void)
       video_driver_st.frame_repeat = false;
    }
 
-   recording_st->data             = recording;
+   if (!native) recording_st->data = recording;
 }
 
 /* ---------------------------------------------------------------
@@ -6151,7 +6153,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-   video_info->gpu_recording               = recording_state_get_ptr()->enable;
+   video_info->gpu_recording               = recording_state_get_ptr()->enable
+      && recording_state_get_ptr()->driver != &record_nvenc;
+   record_nvenc_frame_info(video_info, false);
    video_info->record_game_only            = video_info->gpu_recording
       && settings->bools.video_record_game_only;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
@@ -8025,6 +8029,7 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    video_driver_build_info(&video_info);
+   record_nvenc_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
    /* The eyes the core drew this frame from, for the drawing thread */
    video_info.vr_give = video_driver_vr_give_take();

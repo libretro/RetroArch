@@ -8306,6 +8306,7 @@ static bool rstop_frame(void *data, const void *frame,
       while (     retro_atomic_load_acquire_int(&rstop_hold)
             &&  cpu_features_get_time_usec() < until) { }
    }
+   if (video_info->recording_gpu) return true;
    return rstop_inner->frame(data, frame, dims, frame_count,
          pitch, msg, video_info);
 }
@@ -8379,6 +8380,63 @@ static void record_stop_in_flight(void)
    /* recording_deinit() freed buf as the recording's buffer */
    *rec_st                     = saved;
    video_st->record_gpu_buffer = saved_buf;
+}
+
+static void record_gpu_stop_in_flight(void)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   thread_video_t *thr;
+   video_frame_info_t info;
+   uint32_t pixels[64] = {0};
+   unsigned i, had = failures;
+   bool was_menu = menu_is_up();
+   bool was_threaded = video_driver_thread_wrapper_active();
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video->data;
+   rstop_inner = thr->driver;
+   rstop_driver = *thr->driver;
+   rstop_driver.frame = rstop_frame;
+   set_driver(thr, &rstop_driver);
+   video_driver_build_info(&info);
+   info.threaded_display_pacing = false;
+   info.input_driver_nonblock_state = true;
+   info.recording_gpu = &rstop_driver;
+   retro_atomic_store_release_int(&rstop_held, 0);
+   retro_atomic_store_release_int(&rstop_hold, 1);
+   video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
+         0, 32, NULL, &info);
+   for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&rstop_held); i++)
+      retro_sleep(1);
+   CHECK(retro_atomic_load_acquire_int(&rstop_held), "GPU lease: no drawing frame");
+   CHECK(video_thread_record_gpu_in_flight(thr, &rstop_driver),
+         "GPU lease: drawing frame was missed (state %d, slots %p/%p, want %p)",
+         retro_atomic_load_acquire_int(&thr->frame.state),
+         thr->frame.slot[0].video_info.recording_gpu,
+         thr->frame.slot[1].video_info.recording_gpu, (void*)&rstop_driver);
+   info.recording_gpu = &rstop_hold;
+   video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
+         1, 32, NULL, &info);
+   CHECK(video_thread_record_gpu_in_flight(thr, &rstop_hold),
+         "GPU lease: queued frame was missed");
+   CHECK(!video_thread_record_gpu_in_flight(thr, &rstop_held)
+         && !video_thread_record_gpu_in_flight(thr, NULL),
+         "GPU lease: unrelated recorder matched");
+   retro_atomic_store_release_int(&rstop_hold, 0);
+   video_thread_wait_idle();
+   CHECK(!video_thread_record_gpu_in_flight(thr, &rstop_driver)
+         && !video_thread_record_gpu_in_flight(thr, &rstop_hold),
+         "GPU lease: stale idle slot retained recorder");
+   set_driver(thr, rstop_inner);
+   set_threaded_via_setting(was_threaded);
+   if (was_menu != menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] GPU recording frame leases (drawing, queued, idle)\n");
 }
 
 static void lane_record_format(void)
@@ -10597,6 +10655,11 @@ int main(int argc, char *argv[])
       goto shutdown;
    }
 
+   if (getenv("HARNESS_RECORD_GPU_LEASE"))
+   {
+      record_gpu_stop_in_flight();
+      goto shutdown;
+   }
    lane_line_separation();
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
@@ -10611,6 +10674,7 @@ int main(int argc, char *argv[])
    lane_viewport_publish();
    if (!real_driver())
       lane_record_reader();
+   record_gpu_stop_in_flight();
    if (!real_driver())
       lane_pixel_format();
    lane_context_api_behind_wrapper();

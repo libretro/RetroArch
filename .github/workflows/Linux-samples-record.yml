@@ -190,6 +190,14 @@ jobs:
           make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: Native recording frontend clock (ASan + UBSan, mingw-w64)
+        working-directory: samples/record/nvenc_frontend
+        run: |
+          set -eu
+          make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

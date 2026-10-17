@@ -35,8 +35,9 @@ int record_gpu_dispatch_d3d12_audio(record_gpu_dispatch_d3d12_t *job,
 /* Render producer, before video_finish. Releases completed source references
  * before ResizeBuffers; false requires a later retry. Never waits. */
 bool record_gpu_dispatch_d3d12_video_reap(record_gpu_dispatch_d3d12_t *job);
-/* Each producer closes after its last push returns, even on startup failure
- * or cancellation. Disabled audio starts closed. No pushes after closure. */
+/* Each producer closes after its last push/reap returns, even on startup
+ * failure or cancellation. A cold controller may close video after proving
+ * its producer quiescent. Disabled audio starts closed. No pushes after close. */
 bool record_gpu_dispatch_d3d12_video_finish(record_gpu_dispatch_d3d12_t *job);
 bool record_gpu_dispatch_d3d12_audio_finish(record_gpu_dispatch_d3d12_t *job);
 /* Controller request; never closes either producer on another thread. */
