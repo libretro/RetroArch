@@ -10378,6 +10378,7 @@ enum msg_hash_enums
 #undef S_ACTION_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
+   MENU_LABEL(MENU_SCROLL_QUICK),
    MENU_LABEL(MENU_SCROLL_FAST),
    MENU_LABEL(MENU_SCROLL_DELAY),
    /* GENERATED REGION: kiosk mode password setting enum rows (see settings/settings_def_kiosk_password.h). */

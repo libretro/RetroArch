@@ -754,6 +754,7 @@
 #define MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_STR "audio_add_to_mixer_and_collection"
 #define MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY_STR "audio_add_to_mixer_and_collection_and_play"
 #define MENU_ENUM_LABEL_AUDIO_MIXER_MUTE_STR "audio_mixer_mute_enable"
+#define MENU_ENUM_LABEL_MENU_SCROLL_QUICK_STR "menu_scroll_quick"
 #define MENU_ENUM_LABEL_MENU_SCROLL_FAST_STR "menu_scroll_fast"
 #define MENU_ENUM_LABEL_CORE_LOCK_STR "core_lock"
 #define MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT_STR "core_set_standalone_exempt"
