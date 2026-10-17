@@ -35,8 +35,10 @@
 #include "../video_driver.h"
 #include "gl_common.h"
 
-/* Source fences pass to the video thread and back to the producer
- * by exchange. Without pointer atomics, only single-core targets run. */
+/* The hardware ring's per-slot sync, handed from the core's thread to
+ * the video thread by exchange so that one thread waits and deletes
+ * each. A backend without pointer atomics only serves single-core
+ * targets, where a plain swap is the same. */
 #ifndef GL_HW_RING_SYNC_T
 #if defined(RETRO_ATOMIC_HAS_PTR)
 #define GL_HW_RING_SYNC_T retro_atomic_ptr_t
@@ -187,7 +189,6 @@ struct gl2
     * placed after rendering into each slot's texture, for the frame on
     * this thread to wait before reading it. Sync objects are shared
     * between the two contexts (GL_HW_RING_SYNC_SWAP). */
-   GL_HW_RING_SYNC_T hw_ring_retired_sync[3];
    GL_HW_RING_SYNC_T hw_ring_sync[3];
    void *hw_ring_done_sync; /* taken ahead of the swap */
    /* Placed after each PBO readback: a slot is read only once its

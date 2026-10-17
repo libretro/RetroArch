@@ -56,7 +56,6 @@ RETRO_BEGIN_DECLS
 #ifdef HAVE_THREADS
 
 #define VIDEO_THREAD_HW_RING 3
-#define VIDEO_THREAD_HW_BUSY (-2)
 
 struct thread_video;
 
@@ -68,9 +67,7 @@ bool video_thread_get_hw_render_interface(void *data,
 
 /* Main thread, at a push with RETRO_HW_FRAME_BUFFER_VALID: returns the
  * HW slot to publish, advancing the core's index and waiting the slot
- * the core will fill next; -1 if there is no ring. GL returns
- * VIDEO_THREAD_HW_BUSY without publishing when no slot is ready.
- * *taken_back counts
+ * the core will fill next; -1 if there is no ring. *taken_back counts
  * the unclaimed frames taken off the frame ring for it. */
 int video_thread_hw_publish(struct thread_video *thr, unsigned *taken_back);
 

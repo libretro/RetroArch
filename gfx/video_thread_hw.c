@@ -1061,27 +1061,6 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
          return -1;
    }
 #endif
-   if (ring->api == HW_API_GL && !stay)
-   {
-      unsigned n;
-      for (n = 1; n < VIDEO_THREAD_HW_RING; n++)
-      {
-         unsigned next = (published + n) % VIDEO_THREAD_HW_RING;
-         int st = retro_atomic_load_acquire_int(&thr->frame.state);
-         if ((int)next == retro_atomic_load_acquire_int(&ring->last_presented)
-               || hw_slot_queued(thr, next, st))
-            continue;
-         if (!hw_fence_wait(&ring->slot[next].fence,
-                  thr->poke->hw_ring_fence_wait, thr->driver_data, 0))
-            continue;
-         if (!thr->poke->hw_ring_capture(thr->driver_data, published, NULL, 0))
-            return VIDEO_THREAD_HW_BUSY;
-         ring->index = next;
-         return (int)published;
-      }
-      /* Retain the producer's slot when every other slot has a reader. */
-      return VIDEO_THREAD_HW_BUSY;
-   }
    if (ring->api == HW_API_GL)
    {
       /* Fence the core's rendering into the slot, on its context. */
@@ -1242,8 +1221,8 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
    /* Signalled after the submission the frame call just made, on a
     * fence nobody else holds: a dupe arms a slot that is armed already. */
    hw_fence_arm(&s->fence, thr->poke->hw_ring_fence_signal,
-         ring->api == HW_API_GL ? NULL : thr->poke->hw_ring_fence_wait,
-         thr->driver_data, HW_RING_WAIT_FOREVER);
+         thr->poke->hw_ring_fence_wait, thr->driver_data,
+         HW_RING_WAIT_FOREVER);
 }
 
 #ifdef HAVE_VULKAN

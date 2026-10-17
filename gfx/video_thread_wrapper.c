@@ -3684,21 +3684,6 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (frame_ == RETRO_HW_FRAME_BUFFER_VALID)
    {
       hw_slot = video_thread_hw_publish(thr, &taken_back);
-      if (hw_slot == VIDEO_THREAD_HW_BUSY)
-      {
-         thr->miss_count++;
-         if (timed)
-            video_thread_handoff_account(thr,
-                  (uint64_t)cpu_features_get_perf_counter() - c_in - c_wait,
-                  0, c_wait, 0, true, false, waited, true);
-         thr->last_time = cpu_features_get_time_usec();
-         thr->run_start = thr->last_time;
-         if (timed)
-            video_thread_handoff_latch(thr,
-                  (uint64_t)cpu_features_get_perf_counter() - c_now,
-                  (uint64_t)(thr->last_time - t_now));
-         return true;
-      }
       frame_  = NULL;
       /* No ring: the driver cannot take a hardware frame from this
        * thread. frame_ is NULL now, which this function treats as a
