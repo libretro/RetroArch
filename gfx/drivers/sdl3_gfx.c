@@ -1106,7 +1106,8 @@ static bool sdl3_display_geometry_reserve(sdl3_video_t *vid,
 {
    if (verts > vid->display_verts_cap)
    {
-      void *p = realloc(vid->display_verts, sizeof(SDL_Vertex) * verts);
+      SDL_Vertex *p = (SDL_Vertex*)realloc(vid->display_verts,
+            sizeof(SDL_Vertex) * verts);
       if (!p)
          return false;
       vid->display_verts     = p;
@@ -1155,7 +1156,7 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
 
    if (!sdl3_display_geometry_reserve(vid, n, (n - 2) * 3))
       return;
-   verts   = (SDL_Vertex*)vid->display_verts;
+   verts   = vid->display_verts;
    indices = vid->display_indices;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes

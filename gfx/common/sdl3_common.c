@@ -311,12 +311,7 @@ static void sdl3_window_apply_fullscreen(SDL_Window *win,
    SDL_SetWindowFullscreenMode(win, exclusive ? &mode : NULL);
    SDL_SetWindowFullscreen(win, fullscreen);
 
-   /* The cursor is not touched here. Whether it shows is the
-    * frontend's, which keeps every reason it is hidden for and
-    * applies them through sdl3_show_mouse() - fullscreen among them.
-    * Setting it here would leave that state behind: an in-place
-    * toggle re-applies only what changed, so a cursor hidden for a
-    * reason the toggle did not alter would come back and stay. */
+   /* The cursor is the frontend's, applied through sdl3_show_mouse(). */
    if (!fullscreen)
    {
       /* Leaving fullscreen is asynchronous, and size requests

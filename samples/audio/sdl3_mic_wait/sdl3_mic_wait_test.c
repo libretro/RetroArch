@@ -174,6 +174,35 @@ int main(void)
       CHECK(log_lines == 0);
    }
 
+   /* Past its cap the backlog loses its oldest frames, down to half
+    * the cap: what is kept is the newest audio, and a stall does not
+    * leave the capture running a whole cap behind. Under the cap
+    * nothing goes. */
+   {
+      sdl3_audio_t trim;
+      static int16_t ramp[PERIOD_SHORT * 5];
+      int16_t      first, last;
+      int          i;
+      for (i = 0; i < PERIOD_SHORT * 5; i++)
+         ramp[i] = (int16_t)i;
+      mic_open(&trim, PERIOD_SHORT);
+      trim.buffer_size = BYTES_SHORT * 4;
+
+      CHECK(SDL_PutAudioStreamData(trim.stream, ramp, BYTES_SHORT * 3));
+      CHECK(SDL_GetAudioStreamAvailable(trim.stream) == BYTES_SHORT * 3);
+
+      SDL_ClearAudioStream(trim.stream);
+      CHECK(SDL_PutAudioStreamData(trim.stream, ramp, BYTES_SHORT * 5));
+      CHECK(SDL_GetAudioStreamAvailable(trim.stream) == BYTES_SHORT * 2);
+      CHECK(SDL_GetAudioStreamData(trim.stream, &first, 2) == 2);
+      CHECK(first == PERIOD_SHORT * 3);
+      CHECK(SDL_GetAudioStreamAvailable(trim.stream) == BYTES_SHORT * 2 - 2);
+      SDL_GetAudioStreamData(trim.stream, ramp, BYTES_SHORT * 2 - 4);
+      CHECK(SDL_GetAudioStreamData(trim.stream, &last, 2) == 2);
+      CHECK(last == PERIOD_SHORT * 5 - 1);
+      mic_close(&trim);
+   }
+
    mic_close(&slow);
    mic_close(&mic);
    SDL_Quit();

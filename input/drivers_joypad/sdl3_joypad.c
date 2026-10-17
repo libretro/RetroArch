@@ -211,15 +211,15 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       product = SDL_GetGamepadProduct(gamepad);
 
 #ifdef WEBOS
-      /* The joystick belongs to the gamepad that was opened, so the
-       * gamepad is what closes it, and the slot has to go back or it
-       * is held for a device that was turned away. */
+      /* The slot keeps its sensor state, as on a disconnect. */
       if (vendor == 0x9999 && product == 0x9999)
       {
          RARCH_WARN("[SDL3] Ignoring pad #%" SDL_PRIu32 " (vendor: %d; product: %d).\n",
                jid, vendor, product);
          SDL_CloseGamepad(gamepad);
-         memset(pad, 0, sizeof(*pad));
+         pad->jid     = 0;
+         pad->gamepad = NULL;
+         pad->joypad  = NULL;
          return;
       }
 #endif
