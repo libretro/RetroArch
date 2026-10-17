@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+          pkgs="mingw-w64 wine build-essential pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -150,6 +150,15 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./ffmpeg_pipeline_test
           echo "[pass] ffmpeg_pipeline_test (plain ring, ASan)"
+
+      - name: Native MP4 mux (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/record/mp4_mux
+        run: |
+          set -eu
+          make clean && make -j$(nproc) check SANITIZER=address,undefined
+          make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
 
       - name: ccache statistics
         if: ${{ !cancelled() }}

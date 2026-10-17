@@ -410,6 +410,24 @@ fail:
    return NULL;
 }
 
+bool nvenc_d3d12_headers(nvenc_d3d12_t *e, void *data, size_t capacity, size_t *size)
+{
+   NV_ENC_SEQUENCE_PARAM_PAYLOAD payload;
+   uint32_t written = 0;
+   if (size) *size = 0;
+   if (!e || !data || !size || !capacity || capacity > UINT32_MAX
+         || e->frame || e->finishing || !e->api.nvEncGetSequenceParams) return false;
+   memset(&payload, 0, sizeof(payload));
+   payload.version = NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER;
+   payload.inBufferSize = (uint32_t)capacity;
+   payload.spsppsBuffer = data;
+   payload.outSPSPPSPayloadSize = &written;
+   if (e->api.nvEncGetSequenceParams(e->session, &payload) != NV_ENC_SUCCESS
+         || !written || written > capacity) return false;
+   *size = written;
+   return true;
+}
+
 int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned index, uint64_t timestamp,
       uint64_t duration, void *ready, uint64_t value, bool keyframe)
 {
@@ -540,6 +558,10 @@ bool nvenc_d3d12_free(nvenc_d3d12_t *e)
 }
 #else
 nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *config) { (void)config; return NULL; }
+bool nvenc_d3d12_headers(nvenc_d3d12_t *e, void *data, size_t capacity, size_t *size)
+{
+   (void)e; (void)data; (void)capacity; if (size) *size = 0; return false;
+}
 int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned slot, uint64_t timestamp,
       uint64_t duration, void *fence, uint64_t value, bool keyframe)
 {

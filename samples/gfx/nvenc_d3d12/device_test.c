@@ -17,6 +17,7 @@
 #include "../../../gfx/common/nvenc_d3d12.c"
 #include "../../../record/record_gpu_capture_d3d12.c"
 #include "../../../record/record_gpu_worker_d3d12.c"
+#include "../../../record/record_mux_mp4.c"
 #define W 320
 #define H 192
 #define FRAMES 24
@@ -203,6 +204,12 @@ int main(int argc, char **argv)
    record_gpu_capture_d3d12_t *capture = NULL;
    nvenc_d3d12_packet_t packet;
    record_gpu_worker_d3d12_t *worker = NULL;
+   record_mux_mp4_t *mux = NULL;
+   record_mp4_config_t mux_config = {0};
+   void *headers = NULL;
+   size_t headers_size = 0;
+   FILE *mp4 = NULL;
+   char *mp4_path = NULL;
    struct nve_producer producer = {0};
    HANDLE producer_thread = NULL;
    bool signalled = false;
@@ -401,6 +408,28 @@ int main(int argc, char **argv)
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);
+   headers = malloc(65536); CHECK(headers != NULL);
+   CHECK(nvenc_d3d12_headers(encoder, headers, 65536, &headers_size));
+   mux_config.headers = headers; mux_config.headers_size = headers_size;
+   mux_config.max_packet_size = 1024 * 1024;
+   mux_config.codec = (enum record_mp4_codec)config.codec;
+   mux_config.width = W; mux_config.height = H;
+   mux_config.timescale = config.fps_num;
+   mux_config.bit_depth = format == NVENC_D3D12_P010 ? 10 : 8;
+   mux = record_mux_mp4_new(&mux_config); CHECK(mux != NULL);
+   memset(headers, 0, headers_size); free(headers); headers = NULL;
+   mp4_path = (char*)malloc(strlen(argv[3]) + 5); CHECK(mp4_path != NULL);
+   strcpy(mp4_path, argv[3]); strcat(mp4_path, ".mp4");
+   mp4 = fopen(mp4_path, "wb"); CHECK(mp4 != NULL);
+   {
+      const void *bytes;
+      size_t length;
+      CHECK(record_mux_mp4_get(mux, &bytes, &length));
+      CHECK(!record_mux_mp4_finish(mux));
+      CHECK(record_mux_mp4_push(mux, 1, headers, 0, 0, 1, true) == RECORD_MP4_BUSY);
+      CHECK(fwrite(bytes, 1, length, mp4) == length);
+      CHECK(record_mux_mp4_release(mux));
+   }
    memset(&config.mastering, 0, sizeof(config.mastering));
    config.max_cll = config.max_fall = 0;
    real_encode = encoder->api.nvEncEncodePicture;
@@ -475,6 +504,19 @@ int main(int argc, char **argv)
             CHECK(fwrite(packet.data, 1, packet.size, restart) == packet.size);
          if (periodic && received >= 72)
             CHECK(fwrite(packet.data, 1, packet.size, periodic) == packet.size);
+         {
+            const void *bytes, *held_bytes;
+            size_t length, held_length;
+            CHECK(record_mux_mp4_push(mux, 1, packet.data, packet.size,
+                     packet.timestamp, (uint32_t)packet.duration, packet.keyframe) == RECORD_MP4_OK);
+            CHECK(record_mux_mp4_get(mux, &bytes, &length));
+            CHECK(record_mux_mp4_push(mux, 1, packet.data, packet.size,
+                     packet.timestamp, (uint32_t)packet.duration, packet.keyframe) == RECORD_MP4_BUSY);
+            CHECK(record_mux_mp4_get(mux, &held_bytes, &held_length));
+            CHECK(bytes == held_bytes && length == held_length);
+            CHECK(fwrite(bytes, 1, length, mp4) == length);
+            CHECK(record_mux_mp4_release(mux));
+         }
          CHECK(record_gpu_worker_d3d12_release(worker));
          CHECK(!record_gpu_worker_d3d12_release(worker));
          received++; progress = true;
@@ -485,6 +527,10 @@ int main(int argc, char **argv)
    CHECK(status == RECORD_GPU_WORKER_END && received == producer.frames && eos_fault);
    CHECK(record_gpu_worker_d3d12_step(worker, &packet) == RECORD_GPU_WORKER_END);
    CHECK(record_gpu_worker_d3d12_free(worker)); worker = NULL;
+   CHECK(record_mux_mp4_finish(mux));
+   CHECK(record_mux_mp4_finish(mux));
+   CHECK(!nvenc_d3d12_headers(encoder, mp4_path, 1, &headers_size));
+   CHECK(headers_size == 0);
    CHECK(WaitForSingleObject(producer_thread, 10000) == WAIT_OBJECT_0);
    CloseHandle(producer_thread); producer_thread = NULL;
    CHECK(producer.made == producer.frames);
@@ -515,6 +561,8 @@ done:
    if (restart) fclose(restart);
    if (periodic) fclose(periodic);
    free(restart_path);
+   if (mp4 && fclose(mp4) != 0) ok = 0;
+   free(headers); free(mp4_path); record_mux_mp4_free(mux);
    if (encoder && nvenc_d3d12_free(encoder))
    {
       encoder = NULL;
@@ -539,6 +587,7 @@ done:
 #include "../../../gfx/common/nvenc_d3d12.c"
 #include "../../../record/record_gpu_capture_d3d12.c"
 #include "../../../record/record_gpu_worker_d3d12.c"
+#include "../../../record/record_mux_mp4.c"
 int main(void)
 {
    nvenc_d3d12_packet_t packet;

@@ -21,6 +21,25 @@ runner = shlex.split(args.runner)
 width, height, frames = 320, 192, 24
 passed = 0
 
+def check_mp4(ffmpeg, stream, codec, count):
+    mp4 = Path(str(stream) + '.mp4')
+    outputs = []
+    for path in (stream, mp4):
+        result = subprocess.run([ffmpeg, '-hide_banner', '-i', str(path),
+                                 '-vf', 'showinfo', '-pix_fmt', 'yuv420p10le',
+                                 '-f', 'rawvideo', '-'], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=True)
+        text = result.stderr.decode(errors='replace')
+        records = re.findall(r'\bn:\s*(\d+).*?pts_time:\s*([\d.]+).*?\biskey:\s*(\d+)', text)
+        assert len(records) == count, (path, len(records), count)
+        if path == mp4:
+            for i, (_, timestamp, _) in enumerate(records):
+                assert abs(float(timestamp) - i / 60) < 0.00001, (path, i, timestamp)
+        outputs.append((result.stdout, [record[2] for record in records]))
+    assert outputs[0] == outputs[1], 'MP4 differs from elementary stream pixels/keyframes'
+    print(f'[pass] MP4: {count} decoded frames, timestamps and keyframes match', flush=True)
+
+
 def check_color(ffmpeg, stream, color, full):
     probe = subprocess.run([ffmpeg, '-hide_banner', '-i', str(stream),
                             '-frames:v', '1', '-f', 'null', '-'],
@@ -33,7 +52,8 @@ def check_color(ffmpeg, stream, color, full):
 
 def check_metadata(ffmpeg, stream, codec, mode):
     name = ('h264', 'hevc', 'obu')[codec]
-    trace = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
+    input_format = [] if str(stream).endswith('.mp4') else ['-f', name]
+    trace = subprocess.run([ffmpeg, '-hide_banner', *input_format, '-i', str(stream),
                             '-c:v', 'copy', '-bsf:v', 'trace_headers',
                             '-frames:v', '1', '-f', 'null', '-'],
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
@@ -72,7 +92,7 @@ def check_metadata(ffmpeg, stream, codec, mode):
         assert ('max_cll' if av1 else 'max_content_light_level') not in fields, fields
     for key, value in expected.items():
         assert key in fields and all(v == value for v in fields[key]), (key, value, fields)
-    decoded = subprocess.run([ffmpeg, '-hide_banner', '-f', name, '-i', str(stream),
+    decoded = subprocess.run([ffmpeg, '-hide_banner', *input_format, '-i', str(stream),
                               '-vf', 'showinfo', '-f', 'null', '-'],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     frame_info = re.findall(r'\bn:\s*(\d+).*?\biskey:\s*(\d+)', decoded.stderr.decode(errors='replace'))
@@ -147,9 +167,11 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             ffmpeg = shutil.which('ffmpeg')
             if not ffmpeg:
                 raise SystemExit('Native hardware validation needs ffmpeg')
+            check_mp4(ffmpeg, stream, codec, frames)
             check_color(ffmpeg, stream, 2 if fmt == 3 else 1, False)
             if fmt == 3:
                 check_metadata(ffmpeg, stream, codec, 0)
+                check_metadata(ffmpeg, Path(str(stream) + '.mp4'), codec, 0)
             references[codec, fmt] = check_pixels(ffmpeg, stream, codec, fmt)
             passed += 1
     if passed:
@@ -164,6 +186,7 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                 continue
             if result.returncode:
                 raise SystemExit(result.returncode)
+            check_mp4(ffmpeg, stream, codec, frames)
             check_color(ffmpeg, stream, color, bool(full))
             print(f'[pass] {name}: color {color}, full range {full}', flush=True)
         for codec in (1, 2):
@@ -176,8 +199,10 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                     continue
                 if result.returncode:
                     raise SystemExit(result.returncode)
+                check_mp4(ffmpeg, stream, codec, 84 if mode else frames)
                 check_color(ffmpeg, stream, color, False)
                 check_metadata(ffmpeg, stream, codec, mode)
+                check_metadata(ffmpeg, Path(str(stream) + '.mp4'), codec, mode)
                 check_metadata(ffmpeg, Path(str(stream) + '.key'), codec, mode)
                 check_metadata(ffmpeg, Path(str(stream) + '.gop'), codec, mode)
                 print(f'[pass] {name}: color {color}, HDR metadata {mode}, including requested and periodic keyframe restarts', flush=True)
@@ -194,6 +219,7 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                 if result.returncode:
                     raise SystemExit(result.returncode)
                 check_color(ffmpeg, stream, color, False)
+                check_mp4(ffmpeg, stream, codec, frames)
                 assert check_pixels(ffmpeg, stream, codec, fmt) == references[codec, fmt], 'capture differs from direct input'
                 print(f'[pass] {name}: GPU capture format {fmt}', flush=True)
         for codec in (1, 2):
@@ -203,6 +229,8 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                                      '2', '0', '3', '1'], timeout=60)
             if result.returncode:
                 raise SystemExit(result.returncode)
+            check_mp4(ffmpeg, stream, codec, 84)
+            check_metadata(ffmpeg, Path(str(stream) + '.mp4'), codec, 3)
             for part in ('', '.key', '.gop'):
                 check_metadata(ffmpeg, Path(str(stream) + part), codec, 3)
             print(f'[pass] {name}: GPU capture HDR metadata and keyframe restarts', flush=True)
@@ -213,6 +241,7 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
                                      '1', '0', '0', '2'], timeout=60)
             if result.returncode:
                 raise SystemExit(result.returncode)
+            check_mp4(ffmpeg, stream, codec, frames)
             assert check_pixels(ffmpeg, stream, codec, 1) == references[codec, 1], 'BGRA capture differs from direct input'
             print(f'[pass] {name}: BGRA viewport copy', flush=True)
 print(f'{passed} native codec/format cases plus color signaling passed; unsupported runtimes explicitly skipped')

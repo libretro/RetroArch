@@ -99,3 +99,11 @@ with a deterministic portable encoder. Abandon is reserved for a stopped
 producer after successful encoder destruction; capture GPU retirement remains
 the capture owner's responsibility. Frontend scheduling and mux/audio hookup
 are still pending.
+
+The native harness now obtains startup sequence headers through the adapter
+and writes an MP4 counterpart through `record_mux_mp4` for every session.
+Each encoded packet stays worker-owned across mux backpressure; serialized
+output is separately acknowledged. Independent decoding checks MP4 pixel,
+timestamp and keyframe equality with the elementary stream. The pure muxer
+also supports native AC-3 A/V (see samples/record/mp4_mux). Frontend capture,
+scheduling, live audio and asynchronous file output remain unconnected.

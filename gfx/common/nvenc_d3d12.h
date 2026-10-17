@@ -61,6 +61,10 @@ typedef struct nvenc_d3d12_packet
  * Packet memory belongs to the encoder until release. No B frames/lookahead.
  * Startup/SDK teardown belong on the worker, never the display frame path. */
 nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *config);
+/* Worker startup, before the first accepted frame. Copies sequence headers
+ * (Annex B or AV1 OBUs) for a container's sample description. */
+bool nvenc_d3d12_headers(nvenc_d3d12_t *encoder, void *data,
+      size_t capacity, size_t *size);
 int nvenc_d3d12_submit(nvenc_d3d12_t *encoder, unsigned slot,
       uint64_t timestamp, uint64_t duration, void *ready_fence, uint64_t ready_value,
       bool keyframe);
