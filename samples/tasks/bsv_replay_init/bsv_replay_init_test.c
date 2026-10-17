@@ -1420,6 +1420,10 @@ static void lane_write_oom(void)
    lane_done("write_oom", NULL);
 }
 
+#ifdef BSV_TEST_NETPLAY
+#include "bsv_netplay_test.inc"
+#endif
+
 int main(int argc, char **argv)
 {
    const char *path = "bsv_replay_init_test.replay";
@@ -1461,6 +1465,9 @@ int main(int argc, char **argv)
    lane_short_block();
    lane_write_oom();
    lane_record_waits_for_load(path);
+#ifdef BSV_TEST_NETPLAY
+   lane_netplay();
+#endif
 
    filestream_delete(path);
    task_queue_deinit();

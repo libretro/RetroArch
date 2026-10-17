@@ -52,6 +52,22 @@ ifeq ($(STATESTREAM),1)
    CFLAGS  += -DHAVE_STATESTREAM -I$(REPO_ROOT)/deps
 endif
 
+# NETPLAY=1 exercises the recorder and the real rollback/confirmation loop
+# against the deterministic fixture, with the ordinary BSV reader on replay.
+ifeq ($(NETPLAY),1)
+   CFLAGS += -DHAVE_NETWORKING -DBSV_TEST_NETPLAY
+   BSV_NETPLAY_SRC := $(REPO_ROOT)/network/netplay/netplay_frontend.c
+   BSV_FRAGMENTS := netplay_bsv_recording.inc netplay_bsv_post.inc netplay_bsv_eligibility.inc
+   bsv_replay_init_test.o: $(BSV_FRAGMENTS) bsv_netplay_test.inc
+
+netplay_bsv_recording.inc: $(BSV_NETPLAY_SRC)
+	sed -n '/===== BEGIN netplay BSV recording =====/,/===== END netplay BSV recording =====/p' $< > $@
+netplay_bsv_post.inc: $(BSV_NETPLAY_SRC)
+	sed -n '/===== BEGIN netplay BSV post frame =====/,/===== END netplay BSV post frame =====/p' $< > $@
+netplay_bsv_eligibility.inc: $(BSV_NETPLAY_SRC)
+	sed -n '/===== BEGIN netplay BSV eligibility =====/,/===== END netplay BSV eligibility =====/p' $< > $@
+endif
+
 CFLAGS += $(EXTRA_CFLAGS)
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
@@ -60,6 +76,8 @@ ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
+
+.DEFAULT_GOAL := all
 
 all: $(TARGET)
 
@@ -94,6 +112,6 @@ sweep:
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) $(TARGET).replay
+	rm -f $(TARGET) $(OBJS) $(TARGET).replay netplay_bsv_*.inc bsv_netplay_*.replay
 
 .PHONY: all sweep clean
