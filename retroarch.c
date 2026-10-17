@@ -1581,23 +1581,27 @@ static void driver_adjust_system_rates(
    video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
 #ifdef HAVE_OPENXR
-   /* A headset whose rate fits the core paces it in the window's place:
-    * its rate and interval stand in for the display's. Not under
-    * threaded video, where the driver's frame, which waits for the
-    * headset, does not hold the core. */
-   video_st->headset_vsync    = settings->bools.video_vsync;
-   video_st->headset_interval = (video_st->headset_vsync
+   /* resynchronize the headset pacing with the core and display */
+   video_st->headset_vsync      = settings->bools.video_vsync;
+   video_st->headset_interval   = (video_st->headset_vsync
          && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
-   if (video_st->headset_interval)
+   video_st->headset_content_hz = (video_st->headset_vsync && headset_fit)
+         ? video_st->headset_hz / (float)headset_fit : 0.0f;
+   if (video_st->headset_content_hz > 0.0f)
    {
       video_refresh_rate    = video_st->headset_hz;
-      video_swap_interval   = video_st->headset_interval;
+      video_swap_interval   = headset_fit;
       black_frame_insertion = 0;
       shader_subframes      = 1;
       vrr_runloop_enable    = false;
       sync_plan             = RUNLOOP_SYNC_VSYNC_HOLDS;
-      RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
-            video_st->headset_hz, video_st->headset_interval);
+      if (video_st->headset_interval)
+         RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
+               video_st->headset_hz, headset_fit);
+      else
+         RARCH_LOG("[Video] The headset is the display: %.2f Hz / %u;"
+               " threaded video paces the core.\n",
+               video_st->headset_hz, headset_fit);
    }
    driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
 #endif

@@ -14,6 +14,11 @@ S_UINT_EX(video_openxr_refresh_rate, VIDEO_OPENXR_REFRESH_RATE,
       0, SD_FLAG_NONE, 0, 0, 0, 0, 0, 0, setting_action_ok_video_openxr_refresh_rate, setting_get_string_representation_video_openxr_refresh_rate, NULL, NULL, setting_uint_action_left_video_openxr_refresh_rate, setting_uint_action_right_video_openxr_refresh_rate, 0,
       "Headset Refresh Rate",
       "The refresh rate to ask the headset for. Auto picks the one that fits the content best; Headset's Choice never asks. The content runs in step with the headset whenever its rate fits.")
+S_BOOL(video_openxr_half_rate, VIDEO_OPENXR_HALF_RATE,
+      "video_openxr_half_rate",
+      false, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Half Rate Content",
+      "Report to cores that the headset runs at half its real rate when that is still 60 Hz or more. Below that, the full rate. Smooth's out performance on demanding cores. Restart core to take effect.")
 S_FLOAT(video_openxr_distance, VIDEO_OPENXR_DISTANCE,
       "video_openxr_distance",
       1.8f, "%.1f m", SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0.5, 10.0, 0.1, NULL, NULL,

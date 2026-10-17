@@ -4157,13 +4157,21 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             target_refresh_rate    = video_driver_get_refresh_rate();
 
 #ifdef HAVE_OPENXR
-         /* paces the runloop to headsets refresh,
-          * not to the configured one, so that is the rate targeted. */
+         /* The headset's rate, when it stands in for the display (VSync
+          * on, threaded or not). Without VSync it doesn't, and a core
+          * told 120 would be judged against the configured 60. */
          {
             video_driver_state_t *video_st = video_state_get_ptr();
             if (     (video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING)
-                  && video_st->headset_hz > 0.0f)
+                  && video_st->headset_hz > 0.0f
+                  && settings && settings->bools.video_vsync)
+            {
                target_refresh_rate = video_st->headset_hz;
+               /* Half Rate Content: half the headset's rate */
+               if (     settings->bools.video_openxr_half_rate
+                     && target_refresh_rate * 0.5f >= 59.5f)
+                  target_refresh_rate *= 0.5f;
+            }
          }
 #endif
 

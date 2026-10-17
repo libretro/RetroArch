@@ -3644,8 +3644,11 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    if (!thr->nonblock)
    {
+      /* One content frame: in the headset, its rate over the interval */
+      float frame_hz                 = video_info->headset_content_hz > 0.0f
+         ? video_info->headset_content_hz : video_info->refresh_rate;
       retro_time_t target_frame_time =
-         (retro_time_t)roundf(1000000 / video_info->refresh_rate);
+         (retro_time_t)roundf(1000000 / frame_hz);
       retro_time_t target            = thr->last_time + target_frame_time;
 
       /* Pace against the worker claiming the previous frame, not

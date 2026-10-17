@@ -2921,6 +2921,7 @@ void video_driver_free_internal(void)
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
    video_st->headset_interval   = 0;
+   video_st->headset_content_hz = 0.0f;
 #ifdef HAVE_OPENXR
    /* A context kept for the next driver registers again from its init. */
    video_driver_set_xr_host(NULL);
@@ -5875,6 +5876,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
          && !(menu_st->flags & MENU_ST_FLAG_ALIVE);
 #endif
    video_info->refresh_rate                = settings->floats.video_refresh_rate;
+#ifdef HAVE_OPENXR
+   /* The headset is the display */
+   if (video_st->headset_content_hz > 0.0f)
+      video_info->refresh_rate             = video_st->headset_hz;
+#endif
    video_info->crt_switch_resolution       = settings->uints.crt_switch_resolution;
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
@@ -5892,6 +5898,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->headset_recenter            = video_st->headset_recenter;
    video_info->headset_interval            = video_st->headset_interval;
    video_info->headset_request_hz          = video_st->headset_request_hz;
+   video_info->headset_content_hz          = video_st->headset_content_hz;
    video_info->screen_layout               = settings->uints.video_screen_layout;
    video_info->stereo_swap_eyes            = settings->bools.video_stereo_swap_eyes;
    video_info->frame_repeat                = video_st->frame_repeat;

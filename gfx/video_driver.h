@@ -733,6 +733,8 @@ typedef struct video_frame_info
    unsigned headset_interval;
    /* The rate to ask the headset for, 0 for none. */
    float headset_request_hz;
+   /* video_driver_state_t's headset_content_hz. */
+   float headset_content_hz;
    unsigned screen_layout;
    bool stereo_swap_eyes;
    /* The last frame sent again (paused, menu), not a new core frame. */
@@ -1877,6 +1879,10 @@ typedef struct
     * window paces). */
    float headset_hz;
    unsigned headset_interval;
+   /* The rate the headset shows new content frames at while it stands
+    * in for the display: its rate over the headset frames each content
+    * frame shows for. 0 when it doesn't. */
+   float headset_content_hz;
    /* The rate to ask the headset for, 0 for none. */
    float headset_request_hz;
    /* The headset rate and core fps the misfit notice was last shown
