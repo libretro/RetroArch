@@ -19,7 +19,7 @@ SDL2_LIBS   := $(shell sdl2-config --libs 2>/dev/null)
 SDL3_CFLAGS ?= $(shell pkg-config --cflags sdl3 2>/dev/null)
 SDL3_LIBS   ?= $(shell pkg-config --libs sdl3 2>/dev/null)
 ifneq ($(strip $(SDL3_LIBS)),)
-SDL3_TEST   := sdl3_checked_test
+SDL3_TEST   := sdl3_checked_test sdl3_webos_reject_test
 endif
 
 all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
@@ -28,6 +28,11 @@ all: udev_checked_test linuxraw_checked_test sdl2_checked_test $(SDL3_TEST) \
 sdl3_checked_test: sdl3_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/sdl3_joypad.c
 	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_SDL3 $(SDL3_CFLAGS) $(INCS) \
 	   -o $@ sdl3_checked_test.c stubs.c \
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c $(SDL3_LIBS)
+
+sdl3_webos_reject_test: sdl3_webos_reject_test.c stubs.c $(REPO_ROOT)/input/drivers_joypad/sdl3_joypad.c
+	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_SDL3 $(SDL3_CFLAGS) $(INCS) \
+	   -o $@ sdl3_webos_reject_test.c stubs.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c $(SDL3_LIBS)
 
 linuxraw_checked_test: linuxraw_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/linuxraw_joypad.c
@@ -64,13 +69,14 @@ check: all
 	./udev_checked_test
 	./linuxraw_checked_test
 	./sdl2_checked_test
-	@if [ -n "$(SDL3_TEST)" ]; then ./sdl3_checked_test; \
-	 else echo "[skip] sdl3_checked_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
+	@if [ -n "$(SDL3_TEST)" ]; then ./sdl3_checked_test && ./sdl3_webos_reject_test; \
+	 else echo "[skip] sdl3_checked_test, sdl3_webos_reject_test: no SDL3 here (pkg-config sdl3, or SDL3_CFLAGS and SDL3_LIBS)"; fi
 	WINEDEBUG=-all $(WINE) ./dinput_checked_test.exe
 	WINEDEBUG=-all $(WINE) ./xinput_checked_test.exe
 
 clean:
 	rm -f udev_checked_test linuxraw_checked_test sdl2_checked_test sdl3_checked_test \
+	   sdl3_webos_reject_test \
 	   dinput_checked_test.exe xinput_checked_test.exe
 
 .PHONY: all check clean

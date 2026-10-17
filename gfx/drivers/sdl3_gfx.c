@@ -1011,6 +1011,9 @@ static void sdl3_gfx_free(void *data)
    sdl3_overlay_free(vid);
 #endif
 
+   free(vid->display_verts);
+   free(vid->display_indices);
+
    if (vid->window)
       SDL_StopTextInput(vid->window);
 
@@ -1543,18 +1546,38 @@ static INLINE void sdl3_vertex_color(SDL_Vertex *v, const float *col, unsigned i
       v->color.r = v->color.g = v->color.b = v->color.a = 1.0f;
 }
 
+static bool sdl3_display_geometry_reserve(sdl3_video_t *vid,
+      size_t verts, size_t indices)
+{
+   if (verts > vid->display_verts_cap)
+   {
+      SDL_Vertex *p = (SDL_Vertex*)realloc(vid->display_verts,
+            sizeof(SDL_Vertex) * verts);
+      if (!p)
+         return false;
+      vid->display_verts     = p;
+      vid->display_verts_cap = verts;
+   }
+   if (indices > vid->display_indices_cap)
+   {
+      int *p = (int*)realloc(vid->display_indices, sizeof(int) * indices);
+      if (!p)
+         return false;
+      vid->display_indices     = p;
+      vid->display_indices_cap = indices;
+   }
+   return true;
+}
+
 static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
-#define SDL3_DISPLAY_STACK_VERTS 64
    static const int quad_idx[6] = { 0, 1, 2, 2, 1, 3 };
-   SDL_Vertex verts_stack[SDL3_DISPLAY_STACK_VERTS];
-   int idx_stack[(SDL3_DISPLAY_STACK_VERTS - 2) * 3];
    sdl3_video_t *vid = (sdl3_video_t*)data;
-   SDL_Vertex *verts = verts_stack;
-   int *indices = idx_stack;
+   SDL_Vertex *verts;
+   int *indices;
    SDL_Texture *tex = NULL;
    const float *vtx, *tc, *col;
    unsigned n, i, num_idx;
@@ -1575,6 +1598,11 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
     * with no texture hands SDL_RenderGeometry NULL: the per-vertex
     * colour alone, a solid fill. */
    tex = (SDL_Texture*)(uintptr_t)draw->texture;
+
+   if (!sdl3_display_geometry_reserve(vid, n, (n - 2) * 3))
+      return;
+   verts   = vid->display_verts;
+   indices = vid->display_indices;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes
     * from draw->pos and draw->dims with y bottom-up.  n is always 4.
@@ -1696,21 +1724,6 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
    if (!vtx)
       return;
 
-   /* Large vertex arrays (nothing in the current menu drivers, but
-    * nothing enforces that either) go through the heap instead of
-    * blowing the stack. */
-   if (n > SDL3_DISPLAY_STACK_VERTS)
-   {
-      verts   = (SDL_Vertex*)malloc(sizeof(SDL_Vertex) * n);
-      indices = (int*)malloc(sizeof(int) * (n - 2) * 3);
-      if (!verts || !indices)
-      {
-         free(verts);
-         free(indices);
-         return;
-      }
-   }
-
    for (i = 0; i < n; i++)
    {
       float vx = vtx[i * 2 + 0];
@@ -1761,13 +1774,6 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
    }
 
    SDL_RenderGeometry(vid->renderer, tex, verts, n, indices, num_idx);
-
-   if (verts != verts_stack)
-   {
-      free(verts);
-      free(indices);
-   }
-#undef SDL3_DISPLAY_STACK_VERTS
 }
 
 

@@ -326,16 +326,14 @@ static void sdl3_window_apply_fullscreen(SDL_Window *win,
    SDL_SetWindowFullscreenMode(win, exclusive ? &mode : NULL);
    SDL_SetWindowFullscreen(win, fullscreen);
 
-   if (fullscreen)
-      SDL_HideCursor();
-   else
+   /* The cursor is the frontend's, applied through sdl3_show_mouse(). */
+   if (!fullscreen)
    {
       /* Leaving fullscreen is asynchronous, and size requests
        * are dropped while still fullscreen, so we wait until
        * it has completed. */
       SDL_SyncWindow(win);
       SDL_SetWindowSize(win, width, height);
-      SDL_ShowCursor();
    }
 }
 

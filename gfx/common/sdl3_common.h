@@ -73,6 +73,12 @@ typedef struct _sdl3_video
 
    SDL_Renderer *renderer;
 
+   /* Display draw geometry, grown to the largest draw */
+   SDL_Vertex *display_verts;
+   int *display_indices;
+   size_t display_verts_cap;
+   size_t display_indices_cap;
+
 #ifdef HAVE_OVERLAY
    struct sdl3_overlay *overlays;
    unsigned overlays_size;

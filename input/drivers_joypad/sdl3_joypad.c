@@ -211,15 +211,17 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       product = SDL_GetGamepadProduct(gamepad);
 
 #ifdef WEBOS
-   if (vendor == 0x9999 && product == 0x9999)
-   {
-      RARCH_WARN("[SDL] Ignoring pad #%d (vendor: %d; product: %d).\n", jid, vendor, product);
-      if (pad->joypad)
-         SDL_CloseJoystick(pad->joypad);
-
-      pad->joypad = NULL;
-      return;
-   }
+      /* The slot keeps its sensor state, as on a disconnect. */
+      if (vendor == 0x9999 && product == 0x9999)
+      {
+         RARCH_WARN("[SDL3] Ignoring pad #%" SDL_PRIu32 " (vendor: %d; product: %d).\n",
+               jid, vendor, product);
+         SDL_CloseGamepad(gamepad);
+         pad->jid     = 0;
+         pad->gamepad = NULL;
+         pad->joypad  = NULL;
+         return;
+      }
 #endif
 
       /* Ensure the player index matches the slot. */
