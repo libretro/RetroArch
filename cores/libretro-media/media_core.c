@@ -2270,7 +2270,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       meta.size    = sizeof(meta);
       if (MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_GET_HDR_METADATA, &meta)
-            && meta.screen_10bpc
+            && (meta.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010)
             && MEDIA_CORE_PREFIX(environ_cb)(
                RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
          want10 = 1;

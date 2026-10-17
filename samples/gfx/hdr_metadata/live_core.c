@@ -22,7 +22,8 @@ RETRO_API void retro_run(void)
    CHECK_HDR(environment(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA, &display));
    CHECK_HDR(!memcmp(&hdr, &display.hdr, sizeof(hdr)));
    CHECK_HDR(hdr.output_mode == 0 || hdr.output_mode == allowed);
-   CHECK_HDR(hdr.passthrough == (hdr.output_mode != 0 && hdr.screen_10bpc));
+   CHECK_HDR(hdr.passthrough == (hdr.output_mode != 0
+            && (hdr.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010)));
    CHECK_HDR(hdr.color_primaries == (hdr.output_mode == 1 ? 9u
             : (hdr.output_mode == 2 ? 1u : 0u)));
    CHECK_HDR(hdr.transfer_function == (hdr.output_mode == 1 ? 16u
@@ -42,6 +43,7 @@ RETRO_API void retro_run(void)
    CHECK_HDR(hdr.version == 2);
    if (!frames)
       fprintf(stderr, "[hdr_metadata] PASS: live structured queries; mode=%u native10=%u\n",
-            display.hdr.output_mode, display.hdr.screen_10bpc ? 1 : 0);
+            display.hdr.output_mode, (display.hdr.source_formats
+               & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010) ? 1 : 0);
    fixture_run();
 }

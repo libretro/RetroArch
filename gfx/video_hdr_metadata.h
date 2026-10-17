@@ -15,7 +15,7 @@ typedef struct video_hdr_metadata_snapshot
    unsigned expand_gamut;
    unsigned display_dims;  /* VIDEO_SCALE_PACK pixels, 0 when unknown */
    unsigned display_mm;    /* VIDEO_SCALE_PACK millimetres */
-   bool screen_10bpc;
+   uint32_t source_formats;
 } video_hdr_metadata_snapshot_t;
 
 static INLINE bool video_hdr_metadata_query(unsigned cmd, void *data,
@@ -42,7 +42,7 @@ static INLINE bool video_hdr_metadata_query(unsigned cmd, void *data,
    hdr.size              = sizeof(hdr);
    hdr.output_mode       = snapshot->output_mode <= 2
       ? snapshot->output_mode : 0;
-   hdr.screen_10bpc       = snapshot->screen_10bpc;
+   hdr.source_formats    = snapshot->source_formats;
    hdr.paper_white_nits  = snapshot->paper_white_nits;
    hdr.max_nits          = snapshot->max_nits;
    hdr.expand_gamut      = snapshot->expand_gamut;
@@ -50,7 +50,8 @@ static INLINE bool video_hdr_metadata_query(unsigned cmd, void *data,
    {
       hdr.color_primaries   = hdr.output_mode == 1 ? 9 : 1;
       hdr.transfer_function = hdr.output_mode == 1 ? 16 : 8;
-      hdr.passthrough       = snapshot->screen_10bpc;
+      hdr.passthrough       = (snapshot->source_formats
+            & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010) != 0;
    }
    if (cmd == RETRO_ENVIRONMENT_GET_HDR_METADATA)
       memcpy(data, &hdr, sizeof(hdr));

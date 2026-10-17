@@ -140,18 +140,19 @@ int main(void)
    hdr.size = sizeof(hdr);
    video_driver_set_hdr_output_mode(1);
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
-   CHECK(hdr.output_mode == 0 && hdr.screen_10bpc);
+   CHECK(hdr.output_mode == 0 && (hdr.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010));
+   CHECK(hdr.source_formats == RETRO_HDR_SOURCE_FORMAT_HDR10_2101010);
    active = true;
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 1);
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
-   CHECK(hdr.output_mode == 1 && !hdr.screen_10bpc);
+   CHECK(hdr.output_mode == 1 && !(hdr.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010));
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 2);
    worker = sthread_create(publish, NULL);
    CHECK(worker);
    for (i = 0; i < 100000; i++)
    {
       CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
-      CHECK(hdr.output_mode <= 2 && hdr.screen_10bpc);
+      CHECK(hdr.output_mode <= 2 && (hdr.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010));
       CHECK(hdr.passthrough == (hdr.output_mode != 0));
       CHECK(hdr.transfer_function == (hdr.output_mode == 1 ? 16u
                : (hdr.output_mode == 2 ? 8u : 0u)));

@@ -32,7 +32,7 @@ static void test_query(unsigned cmd)
    snapshot.paper_white_nits = 203.0f;
    snapshot.max_nits         = 600.0f;
    snapshot.expand_gamut     = 3;
-   snapshot.screen_10bpc     = true;
+   snapshot.source_formats   = RETRO_HDR_SOURCE_FORMAT_HDR10_2101010;
    snapshot.display_dims     = (2560u << 16) | 1440u;
    snapshot.display_mm       = (597u << 16) | 336u;
    CHECK(!video_hdr_metadata_query(cmd, NULL, &snapshot));
@@ -61,7 +61,7 @@ static void test_query(unsigned cmd)
       CHECK(hdr->version == 1 && hdr->size == sizeof(*hdr));
       CHECK(hdr->output_mode == (mode <= 2 ? mode : 0));
       CHECK(hdr->passthrough == (mode == 1 || mode == 2));
-      CHECK(hdr->screen_10bpc);
+      CHECK(hdr->source_formats == RETRO_HDR_SOURCE_FORMAT_HDR10_2101010);
       CHECK(hdr->paper_white_nits == 203.0f && hdr->max_nits == 600.0f);
       CHECK(hdr->expand_gamut == 3);
       CHECK(hdr->color_primaries == (mode == 1 ? 9u : (mode == 2 ? 1u : 0u)));
@@ -94,6 +94,21 @@ static void test_query(unsigned cmd)
       memcpy(buffer.bytes, header, sizeof(header));
       CHECK(video_hdr_metadata_query(cmd, &buffer, &snapshot));
       CHECK(!memcmp(&geo, &buffer.display.geo, sizeof(geo)));
+   }
+   /* Input precision/encoding is independent of output and passthrough. */
+   for (i = 0; i < 4; i++)
+   {
+      snapshot.source_formats = i | (1u << 31);
+      snapshot.output_mode = 2;
+      header[0] = 1;
+      header[1] = size;
+      memcpy(buffer.bytes, header, sizeof(header));
+      CHECK(video_hdr_metadata_query(cmd, &buffer, &snapshot));
+      hdr = cmd == RETRO_ENVIRONMENT_GET_HDR_METADATA
+         ? &buffer.hdr : &buffer.display.hdr;
+      CHECK(hdr->source_formats == snapshot.source_formats);
+      CHECK(hdr->passthrough == ((i
+               & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010) != 0));
    }
    CHECK(!video_hdr_metadata_query(cmd, &buffer, NULL));
    for (i = 88; i <= 92; i++)

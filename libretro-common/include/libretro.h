@@ -2763,14 +2763,22 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_DISPLAY_METADATA (102 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/* Native core-input formats, independent of output mode or display bit depth. */
+#define RETRO_HDR_SOURCE_FORMAT_HDR10_2101010 (1u << 0)
+/* Reserved for negotiated FP16 linear Rec.709/scRGB core input.
+ * Do not advertise solely because an FP16 output framebuffer exists. */
+#define RETRO_HDR_SOURCE_FORMAT_SCRGB_RGBA16F (1u << 1)
+
 struct retro_hdr_metadata
 {
    unsigned version;
    unsigned size;
    /* 0 = SDR or no active output, 1 = PQ Rec.2020, 2 = linear Rec.709. */
    unsigned output_mode;
-   /* Native 10-bit source support, also queryable before video init. */
-   bool screen_10bpc;
+   /* RETRO_HDR_SOURCE_FORMAT_* mask; zero means none known.
+    * Before video init this reports configured capability; SET_PIXEL_FORMAT
+    * must still accept the requested format. Ignore unknown bits. */
+   uint32_t source_formats;
    float paper_white_nits;
    /* Effective frontend target, including a display-peak override. */
    float max_nits;

@@ -9,7 +9,12 @@ No video-thread command, GPU readback or CPU pixel conversion is performed.
 
 output_mode is the configured output encoding, not the requested setting or
 the monitor's HDR capability. Before output initialization it is zero, while
-screen_10bpc can report the configured source capability for format negotiation.
+`source_formats` reports a `RETRO_HDR_SOURCE_FORMAT_*` mask for native core input,
+including configured capability before initialization. HDR10 packed input and FP16
+linear scRGB have distinct bits; FP16 is reserved and remains unadvertised until
+its core-input negotiation and submission path exist. Output precision alone
+does not imply input support. Consumers must ignore unknown bits and still
+check format negotiation.
 passthrough is conditional on accepted native HDR10 input; it also permits
 PQ/Rec.2020 to linear Rec.709 conversion for scRGB. It does not change existing
 shader preset ownership heuristics. Geometry is the display server's desktop

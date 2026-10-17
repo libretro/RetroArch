@@ -1326,8 +1326,9 @@ bool video_driver_get_display_metadata(unsigned cmd, void *data)
    if (video_driver_get_ptr())
       snapshot.output_mode = (unsigned)retro_atomic_load_acquire_int(
             &video_hdr_output_mode);
-   snapshot.screen_10bpc = source_10bpc
-      ? source_10bpc == 2 : video_driver_supports_10bit_source();
+   snapshot.source_formats = (source_10bpc
+         ? source_10bpc == 2 : video_driver_supports_10bit_source())
+      ? RETRO_HDR_SOURCE_FORMAT_HDR10_2101010 : 0;
    snapshot.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
    snapshot.max_nits         = video_driver_get_hdr_max_nits();
    snapshot.expand_gamut     = settings->uints.video_hdr_expand_gamut;
