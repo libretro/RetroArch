@@ -87,3 +87,15 @@ value through FFmpeg's bitstream tracer, including AV1's different fixed-point
 units. They cover PQ/HLG, mastering-only/light-only/both, zero values and upper
 bounds, and decode a second stream beginning at the later forced keyframe.
 Invalid/incomplete metadata is refused before opening an encoder session.
+
+`record_gpu_worker_d3d12` now services the queue and encoder in bounded steps.
+It keeps a descriptor across submit BUSY/error, retains packet bytes until
+explicit downstream acknowledgement, and returns the texture slot only after
+NVENC unlock. Queue close reaches EOS only after every descriptor is accepted;
+END requires output and EOS completion. All native cases use this production
+pump, including encoder/lock/EOS BUSY and packet backpressure. `worker_test`
+checks retryable failures, empty close, timestamp gaps and ownership teardown
+with a deterministic portable encoder. Abandon is reserved for a stopped
+producer after successful encoder destruction; capture GPU retirement remains
+the capture owner's responsibility. Frontend scheduling and mux/audio hookup
+are still pending.

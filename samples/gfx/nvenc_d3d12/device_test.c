@@ -5,6 +5,7 @@
 #include "../../../gfx/common/nvenc_d3d12.h"
 #include "../../../record/record_gpu_queue.h"
 #include "../../../record/record_gpu_capture_d3d12.h"
+#include "../../../record/record_gpu_worker_d3d12.h"
 #include <retro_atomic.h>
 #if defined(_WIN32) && defined(HAVE_THREADS)
 #define COBJMACROS
@@ -15,6 +16,7 @@
 #include <d3d12.h>
 #include "../../../gfx/common/nvenc_d3d12.c"
 #include "../../../record/record_gpu_capture_d3d12.c"
+#include "../../../record/record_gpu_worker_d3d12.c"
 #define W 320
 #define H 192
 #define FRAMES 24
@@ -23,9 +25,21 @@
 static PNVENCENCODEPICTURE real_encode;
 static PNVENCLOCKBITSTREAM real_lock;
 static unsigned encode_faults, lock_faults;
+static bool periodic_fault, eos_fault;
 static NVENCSTATUS NVENCAPI busy_encode(void *session, NV_ENC_PIC_PARAMS *params)
 {
    NVENCSTATUS status;
+   if ((params->encodePicFlags & NV_ENC_PIC_FLAG_EOS) && !eos_fault)
+   {
+      eos_fault = true;
+      return NV_ENC_ERR_ENCODER_BUSY;
+   }
+   if (!(params->encodePicFlags & NV_ENC_PIC_FLAG_EOS)
+         && params->inputTimeStamp == 72 && !periodic_fault)
+   {
+      periodic_fault = true;
+      return NV_ENC_ERR_ENCODER_BUSY;
+   }
    if (encode_faults) { encode_faults--; return NV_ENC_ERR_ENCODER_BUSY; }
    status = real_encode(session, params);
    if (status != NV_ENC_SUCCESS && status != NV_ENC_ERR_NEED_MORE_INPUT)
@@ -188,11 +202,10 @@ int main(int argc, char **argv)
    nvenc_d3d12_t *encoder = NULL;
    record_gpu_capture_d3d12_t *capture = NULL;
    nvenc_d3d12_packet_t packet;
-   record_gpu_frame_t frame;
+   record_gpu_worker_d3d12_t *worker = NULL;
    struct nve_producer producer = {0};
    HANDLE producer_thread = NULL;
-   bool pending = false, input_end = false, signalled = false;
-   bool eos_fault = false, periodic_fault = false;
+   bool signalled = false;
    FILE *out = NULL, *restart = NULL, *periodic = NULL;
    char *restart_path = NULL;
    unsigned i, x, y, received = 0, idle = 0;
@@ -420,33 +433,18 @@ int main(int argc, char **argv)
    CHECK(producer.queue != NULL);
    retro_atomic_int_init(&producer.stop, 0);
    encode_faults = 1;
+   worker = record_gpu_worker_d3d12_new(producer.queue, encoder,
+         capturing ? record_gpu_capture_d3d12_fence(capture) : ready);
+   CHECK(worker != NULL);
+   CHECK(!record_gpu_worker_d3d12_release(worker));
    producer_thread = CreateThread(NULL, 0, nve_produce, &producer, 0, NULL);
    CHECK(producer_thread != NULL);
    while (idle < 10000)
    {
       bool progress = false;
-      if (!pending && !input_end)
-      {
-         status = record_gpu_queue_take(producer.queue, &frame);
-         CHECK(status != RECORD_GPU_QUEUE_ERROR);
-         pending = status == RECORD_GPU_QUEUE_OK;
-         input_end = status == RECORD_GPU_QUEUE_END;
-      }
-      if (pending)
-      {
-         if (frame.timestamp == 72 && !periodic_fault)
-         {
-            encode_faults = 1; periodic_fault = true;
-         }
-         status = nvenc_d3d12_submit(encoder, frame.slot, frame.timestamp,
-               frame.duration, capturing ? record_gpu_capture_d3d12_fence(capture) : ready,
-               frame.ready_value, frame.keyframe);
-         CHECK(status == NVENC_D3D12_OK || status == NVENC_D3D12_BUSY);
-         if (status == NVENC_D3D12_OK)
-         {
-            pending = false; progress = true;
-         }
-      }
+      status = record_gpu_worker_d3d12_step(worker, &packet);
+      CHECK(status != RECORD_GPU_WORKER_ERROR);
+      progress = status == RECORD_GPU_WORKER_PROGRESS;
       if (!signalled && encoder->count == 4)
       {
          CHECK(!nvenc_d3d12_free(encoder));
@@ -457,21 +455,15 @@ int main(int argc, char **argv)
                : ID3D12CommandQueue_Signal(queue, ready, ++value)));
          signalled = true;
       }
-      if (input_end && !encoder->finishing)
-      {
-         if (!eos_fault)
-         {
-            encode_faults = 1; eos_fault = true;
-         }
-         status = nvenc_d3d12_finish(encoder);
-         CHECK(status == NVENC_D3D12_OK || status == NVENC_D3D12_BUSY);
-      }
-      status = nvenc_d3d12_poll(encoder, &packet);
-      CHECK(status != NVENC_D3D12_ERROR);
-      if (status == NVENC_D3D12_END)
+      if (status == RECORD_GPU_WORKER_END)
          break;
-      if (status == NVENC_D3D12_OK)
+      if (status == RECORD_GPU_WORKER_PACKET)
       {
+         nvenc_d3d12_packet_t held;
+         CHECK(!record_gpu_worker_d3d12_free(worker));
+         CHECK(record_gpu_worker_d3d12_step(worker, &held) == RECORD_GPU_WORKER_PACKET);
+         CHECK(held.data == packet.data && held.size == packet.size
+               && held.slot == packet.slot && held.timestamp == packet.timestamp);
          CHECK(packet.size && packet.timestamp == received && packet.duration == 1 && packet.slot == received % 4);
          CHECK(received != 0 || packet.keyframe);
          CHECK(received != 12 || packet.keyframe);
@@ -483,14 +475,16 @@ int main(int argc, char **argv)
             CHECK(fwrite(packet.data, 1, packet.size, restart) == packet.size);
          if (periodic && received >= 72)
             CHECK(fwrite(packet.data, 1, packet.size, periodic) == packet.size);
-         CHECK(nvenc_d3d12_release(encoder) == NVENC_D3D12_OK);
-         CHECK(record_gpu_queue_release(producer.queue, packet.slot));
+         CHECK(record_gpu_worker_d3d12_release(worker));
+         CHECK(!record_gpu_worker_d3d12_release(worker));
          received++; progress = true;
       }
       if (progress) idle = 0;
       else { Sleep(1); idle++; }
    }
-   CHECK(input_end && status == NVENC_D3D12_END && received == producer.frames);
+   CHECK(status == RECORD_GPU_WORKER_END && received == producer.frames && eos_fault);
+   CHECK(record_gpu_worker_d3d12_step(worker, &packet) == RECORD_GPU_WORKER_END);
+   CHECK(record_gpu_worker_d3d12_free(worker)); worker = NULL;
    CHECK(WaitForSingleObject(producer_thread, 10000) == WAIT_OBJECT_0);
    CloseHandle(producer_thread); producer_thread = NULL;
    CHECK(producer.made == producer.frames);
@@ -511,7 +505,6 @@ done:
          return 1;
       CloseHandle(producer_thread);
    }
-   if (producer.queue && !capturing) record_gpu_queue_free(producer.queue);
    if (queue && ready)
    {
       if (capturing) ID3D12Fence_Signal(ready, value + 1);
@@ -522,7 +515,12 @@ done:
    if (restart) fclose(restart);
    if (periodic) fclose(periodic);
    free(restart_path);
-   if (encoder) nvenc_d3d12_free(encoder);
+   if (encoder && nvenc_d3d12_free(encoder))
+   {
+      encoder = NULL;
+      if (worker && record_gpu_worker_d3d12_abandon(worker)) worker = NULL;
+   }
+   if (producer.queue && !capturing && !worker) record_gpu_queue_free(producer.queue);
    if (capture) record_gpu_capture_d3d12_free(capture);
    for (i = 0; i < 4; i++)
    {
@@ -540,6 +538,7 @@ done:
 #else
 #include "../../../gfx/common/nvenc_d3d12.c"
 #include "../../../record/record_gpu_capture_d3d12.c"
+#include "../../../record/record_gpu_worker_d3d12.c"
 int main(void)
 {
    nvenc_d3d12_packet_t packet;

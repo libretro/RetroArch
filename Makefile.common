@@ -1894,7 +1894,8 @@ ifeq ($(HAVE_D3D12), 1)
    OBJ += gfx/drivers/d3d12.o \
           gfx/common/nvenc_d3d12.o \
           record/record_gpu_queue.o \
-          record/record_gpu_capture_d3d12.o
+          record/record_gpu_capture_d3d12.o \
+          record/record_gpu_worker_d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
