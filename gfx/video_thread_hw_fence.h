@@ -88,7 +88,8 @@ static INLINE void hw_fence_init(hw_fence_t *f)
 
 /* Video thread, after a frame drawn from the slot; or the core's
  * thread, for a frame taken back (see above). `forever` is the
- * driver's unbounded timeout. */
+ * driver's unbounded timeout. NULL wait permits disposable syncs to
+ * be superseded without waiting. */
 static INLINE void hw_fence_arm(hw_fence_t *f, hw_fence_signal_fn signal,
       hw_fence_wait_fn wait, void *data, unsigned forever)
 {
@@ -105,7 +106,8 @@ static INLINE void hw_fence_arm(hw_fence_t *f, hw_fence_signal_fn signal,
    prev = retro_atomic_exchange_int(&f->armed, c + 1);
    if (prev)
    {
-      wait(data, f->cell[prev - 1], forever);
+      if (wait)
+         wait(data, f->cell[prev - 1], forever);
       retro_atomic_store_release_int(&f->busy[prev - 1], 0);
    }
 }

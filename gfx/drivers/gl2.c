@@ -1987,6 +1987,21 @@ static void gl2_bind_core_context(gl2_t *gl, bool enable)
 static void gl2_renderchain_deinit_hw_render(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
    gl2_bind_core_context(gl, true);
+#ifdef GL2_HW_RING_SYNC
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         void *sync;
+         GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[i], NULL, sync);
+         if (sync)
+            glDeleteSync((GLsync)sync);
+         GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[i], NULL, sync);
+         if (sync)
+            glDeleteSync((GLsync)sync);
+      }
+   }
+#endif
    if (gl->flags    & GL2_FLAG_HW_RENDER_FBO_INIT)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (chain->flags & GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT)
@@ -3700,9 +3715,14 @@ static bool gl2_hw_ring_capture(void *data, unsigned slot,
       /* A sync the video thread never took belongs to a frame it
        * dropped; deleting it does not disturb a wait already placed. */
       void *old;
-      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot],
-            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), old);
+      void *sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (!sync)
+         return false;
       glFlush();
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[slot], NULL, old);
+      if (old)
+         glDeleteSync((GLsync)old);
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot], sync, old);
       if (old)
          glDeleteSync((GLsync)old);
       return true;
@@ -3725,8 +3745,11 @@ static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
       GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot], NULL, sync);
       if (sync)
       {
+         void *old;
          glWaitSync((GLsync)sync, 0, GL_TIMEOUT_IGNORED);
-         glDeleteSync((GLsync)sync);
+         /* The producer retires this after the slot's reads complete. */
+         GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[slot], sync, old);
+         (void)old;
       }
    }
 #endif
@@ -3813,12 +3836,15 @@ static bool gl2_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
    if (!f)
       return true;
 #ifdef GL2_HW_RING_SYNC
-   if (f->sync)
+   if (((gl2_t*)data)->flags & GL2_FLAG_HAVE_SYNC)
    {
-      GLenum r = glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+      GLenum r;
+      if (!f->sync)
+         return false;
+      r = glClientWaitSync((GLsync)f->sync, 0,
             timeout_us == HW_RING_WAIT_FOREVER
                ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000);
-      if (r == GL_TIMEOUT_EXPIRED)
+      if (r != GL_ALREADY_SIGNALED && r != GL_CONDITION_SATISFIED)
          return false;
       /* Not deleted here: the video thread made it and may still be
        * in the swap that follows it. It goes when the cell is

@@ -52,10 +52,8 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
-/* The hardware ring's per-slot sync, handed from the core's thread to
- * the video thread by exchange so that one thread waits and deletes
- * each. A backend without pointer atomics only serves single-core
- * targets, where a plain swap is the same. */
+/* Source fences pass to the video thread and back to the producer
+ * by exchange. Without pointer atomics, only single-core targets run. */
 #ifndef GL_HW_RING_SYNC_T
 #if defined(RETRO_ATOMIC_HAS_PTR)
 #define GL_HW_RING_SYNC_T retro_atomic_ptr_t
@@ -390,6 +388,7 @@ typedef struct gl3
     * the two contexts. */
    GLuint hw_ring_texture[3];
    GLuint hw_ring_fbo[3];
+   GL_HW_RING_SYNC_T hw_ring_retired_sync[3];
    GL_HW_RING_SYNC_T hw_ring_sync[3]; /* GL_HW_RING_SYNC_SWAP */
    void  *hw_ring_done_sync; /* taken ahead of the swap */
 
@@ -2357,6 +2356,16 @@ static void gl3_deinit_hw_render(gl3_t *gl)
 
    {
       unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         void *sync;
+         GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[i], NULL, sync);
+         if (sync)
+            glDeleteSync((GLsync)sync);
+         GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[i], NULL, sync);
+         if (sync)
+            glDeleteSync((GLsync)sync);
+      }
       for (i = 1; i < 3; i++)
       {
          if (gl->hw_ring_fbo[i])
@@ -8556,9 +8565,14 @@ static bool gl3_hw_ring_capture(void *data, unsigned slot,
       /* A sync the video thread never took belongs to a frame it
        * dropped; deleting it does not disturb a wait already placed. */
       void *old;
-      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot],
-            (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), old);
+      void *sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (!sync)
+         return false;
       glFlush();
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[slot], NULL, old);
+      if (old)
+         glDeleteSync((GLsync)old);
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot], sync, old);
       if (old)
          glDeleteSync((GLsync)old);
    }
@@ -8576,8 +8590,11 @@ static bool gl3_hw_ring_present_slot(void *data, unsigned slot)
    GL_HW_RING_SYNC_SWAP(&gl->hw_ring_sync[slot], NULL, sync);
    if (sync)
    {
+      void *old;
       glWaitSync((GLsync)sync, 0, GL_TIMEOUT_IGNORED);
-      glDeleteSync((GLsync)sync);
+      /* The producer retires this after the slot's reads complete. */
+      GL_HW_RING_SYNC_SWAP(&gl->hw_ring_retired_sync[slot], sync, old);
+      (void)old;
    }
    gl->hw_render_texture = gl->hw_ring_texture[slot];
    return true;
@@ -8628,12 +8645,17 @@ static bool gl3_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
    (void)data;
-   if (!f || !f->sync)
+   if (!f)
       return true;
-   if (glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
-            timeout_us == HW_RING_WAIT_FOREVER
-               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000) == GL_TIMEOUT_EXPIRED)
+   if (!f->sync)
       return false;
+   {
+      GLenum ready = glClientWaitSync((GLsync)f->sync, 0,
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000);
+      if (ready != GL_ALREADY_SIGNALED && ready != GL_CONDITION_SATISFIED)
+         return false;
+   }
    /* Not deleted here: the video thread made it and may still be in
     * the swap that follows it. It goes when the cell is signalled again */
    return true;
