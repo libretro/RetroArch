@@ -229,6 +229,8 @@ struct bsv_input_data
 };
 typedef struct bsv_input_data bsv_input_data_t;
 
+#define BSV_MOVIE_MAX_INPUT_EVENTS 512
+
 struct bsv_movie
 {
    intfstream_t *file;
@@ -246,13 +248,22 @@ struct bsv_movie
    uint8_t key_event_count;
    uint16_t input_event_count;
    bsv_key_data_t key_events[128];
-   bsv_input_data_t input_events[512];
+   bsv_input_data_t input_events[BSV_MOVIE_MAX_INPUT_EVENTS];
 
    /* Rewind state */
    bool playback;
    bool first_rewind;
    bool did_rewind;
    bool checkpoint_ready;
+
+   /* Netplay stages frames until their inputs have been confirmed. */
+   const char *netplay_error;
+   size_t netplay_next_ptr;
+   uint32_t netplay_start_frame;
+   uint32_t netplay_next_frame;
+   bool netplay;
+   bool netplay_armed;
+   bool netplay_committed;
 
 #ifdef HAVE_STATESTREAM
    /* Block index and superblock index for incremental checkpoints */
