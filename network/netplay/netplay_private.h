@@ -321,6 +321,11 @@ struct delta_frame
    /* The serialized state of the core at this frame, before input */
    void *state;
 
+#ifdef HAVE_BSV_MOVIE
+   /* Allocated only while recording; never part of the wire protocol. */
+   struct netplay_bsv_frame *bsv;
+#endif
+
    uint32_t frame;
 
    /* The CRC-32 of the serialized state if we've calculated it, else 0 */
@@ -679,6 +684,9 @@ struct netplay
    char nick[NETPLAY_NICK_LEN];
 
    uint16_t flags; /* enum netplay_flags */
+#ifdef HAVE_BSV_MOVIE
+   bool bsv_capturing;
+#endif
 };
 
 void video_frame_net(const void *data,

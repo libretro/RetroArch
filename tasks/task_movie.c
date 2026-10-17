@@ -44,6 +44,9 @@
 #include "tasks_internal.h"
 #include "../input/input_driver.h"
 #include "../input/bsv/bsvmovie.h"
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
 
 #ifdef HAVE_STATESTREAM
 #if DEBUG
@@ -120,15 +123,21 @@ static bool bsv_movie_init_record(
    time_t time_lil              = swap_if_big64(t);
    uint32_t state_size          = 0;
    uint32_t header[REPLAY_HEADER_LEN]  = {0};
-   intfstream_t *file           = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   intfstream_t *file           = NULL;
    settings_t *settings         = config_get_ptr();
 #ifdef HAVE_STATESTREAM
    bool is_small                = false;
    uint32_t superblock_size;
    uint32_t block_size;
 #endif
+
+#ifdef HAVE_NETWORKING
+   if (!netplay_bsv_movie_init(handle))
+      return false;
+#endif
+   file = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
@@ -474,6 +483,8 @@ bool movie_stop_record(input_driver_state_t *input_st)
       movie = input_st->bsv_movie_state_next_handle;
    if (!movie)
       return false;
+   if (movie->netplay_error)
+      RARCH_WARN("[Replay] Netplay recording stopped: %s.\n", movie->netplay_error);
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Replay] %s\n", _msg);

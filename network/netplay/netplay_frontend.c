@@ -63,6 +63,9 @@
 
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_driver.h"
+#ifdef HAVE_BSV_MOVIE
+#include "../../input/bsv/bsvmovie.h"
+#endif
 
 #ifdef HAVE_CRYPTO
 #include <crypto/crypto.h>
@@ -2315,6 +2318,252 @@ static void clear_input(netplay_input_state_t istate)
    }
 }
 
+/* ===== BEGIN netplay BSV recording ===== */
+#ifdef HAVE_BSV_MOVIE
+/* Inputs and normal savestates are speculative until other_frame_count
+ * passes them. Keep them beside the rollback frame, never in the file.
+ * Fast netplay savestates are deliberately not written to BSV: cores may
+ * use a different format in RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY. */
+struct netplay_bsv_frame
+{
+   uint8_t *initial_state;
+   size_t initial_size;
+   uint8_t *checkpoint;
+   size_t checkpoint_size;
+   bsv_input_data_t inputs[BSV_MOVIE_MAX_INPUT_EVENTS];
+   uint16_t input_count;
+   bool valid;
+   bool checkpoint_valid;
+   bool forced;
+};
+
+static void netplay_bsv_frame_free(struct netplay_bsv_frame *frame)
+{
+   if (!frame)
+      return;
+   free(frame->initial_state);
+   free(frame->checkpoint);
+   free(frame);
+}
+
+static bsv_movie_t *netplay_bsv_movie(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *movie = input_st->bsv_movie_state_handle;
+   if (   movie && movie->netplay
+       && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+       && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END))
+      return movie;
+   return NULL;
+}
+
+static void netplay_bsv_stop(netplay_t *netplay, const char *reason)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *movie = input_st->bsv_movie_state_handle;
+   netplay->bsv_capturing = false;
+   if (!movie)
+      movie = input_st->bsv_movie_state_next_handle;
+   if (movie && movie->netplay)
+   {
+      /* Finish outside the netplay synchronization callback. */
+      movie->netplay_error = reason;
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+   }
+}
+
+static bool netplay_bsv_save(uint8_t **data, size_t *size)
+{
+   retro_ctx_serialize_info_t info = {0};
+   info.size = core_serialize_size();
+   if (!info.size)
+      return false;
+   if (info.size != *size)
+   {
+      uint8_t *next = (uint8_t*)realloc(*data, info.size);
+      if (!next)
+         return false;
+      *data = next;
+      *size = info.size;
+   }
+   /* Some cores leave padding untouched. Keep checkpoint bytes defined. */
+   memset(*data, 0, *size);
+   info.data = *data;
+   return core_serialize(&info);
+}
+
+static void netplay_bsv_begin_frame(netplay_t *netplay,
+      size_t ptr, uint32_t count)
+{
+   bsv_movie_t *movie = netplay_bsv_movie();
+   struct netplay_bsv_frame *frame;
+   netplay->bsv_capturing = false;
+   if (!movie)
+      return;
+   if (!movie->netplay_armed)
+   {
+      size_t i;
+      /* A new recording must not inherit a previous movie's staging. */
+      for (i = 0; i < netplay->buffer_size; i++)
+      {
+         netplay_bsv_frame_free(netplay->buffer[i].bsv);
+         netplay->buffer[i].bsv = NULL;
+      }
+      movie->netplay_armed       = true;
+      movie->netplay_start_frame = count;
+      movie->netplay_next_frame  = count;
+      movie->netplay_next_ptr    = ptr;
+   }
+   /* Rollback may also execute frames preceding the requested start. */
+   if (count < movie->netplay_start_frame)
+      return;
+   frame = netplay->buffer[ptr].bsv;
+   if (!frame)
+   {
+      frame = (struct netplay_bsv_frame*)calloc(1, sizeof(*frame));
+      netplay->buffer[ptr].bsv = frame;
+   }
+   if (!frame)
+      goto error;
+   frame->valid            = false;
+   frame->checkpoint_valid = false;
+   if (count == movie->netplay_start_frame && !movie->netplay_committed)
+      if (!netplay_bsv_save(&frame->initial_state, &frame->initial_size))
+         goto error;
+   movie->input_event_count = 0;
+   movie->key_event_count   = 0;
+   netplay->bsv_capturing   = true;
+   return;
+error:
+   netplay_bsv_stop(netplay, "could not capture the initial state");
+}
+
+static void netplay_bsv_input(netplay_t *netplay,
+      unsigned port, unsigned device, unsigned idx, unsigned id, int16_t value)
+{
+   unsigned i;
+   bsv_movie_t *movie;
+   if (!netplay->bsv_capturing || !(movie = netplay_bsv_movie()))
+      return;
+   /* BSV looks up events by query. Repeated reads of the same resolved
+    * input need only one event, irrespective of how often the core polls. */
+   for (i = 0; i < movie->input_event_count; i++)
+   {
+      const bsv_input_data_t *event = &movie->input_events[i];
+      if (event->port == port && event->device == device
+            && event->idx == idx && swap_if_big16(event->id) == id)
+         return;
+   }
+   if (movie->input_event_count >= ARRAY_SIZE(movie->input_events))
+   {
+      netplay_bsv_stop(netplay, "too many input queries for a BSV frame");
+      return;
+   }
+   bsv_movie_push_input_event(movie, port, device, idx, id, value);
+}
+
+static void netplay_bsv_end_frame(netplay_t *netplay,
+      size_t ptr, uint32_t count)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *movie = netplay_bsv_movie();
+   struct netplay_bsv_frame *frame;
+   uint64_t interval;
+   bool checkpoint;
+   if (!netplay->bsv_capturing || !movie)
+      return;
+   netplay->bsv_capturing = false;
+   frame = netplay->buffer[ptr].bsv;
+   frame->input_count = movie->input_event_count;
+   memcpy(frame->inputs, movie->input_events,
+         frame->input_count * sizeof(*frame->inputs));
+   movie->input_event_count = 0;
+   interval = (uint64_t)config_get_ptr()->uints.replay_checkpoint_interval * 60;
+   checkpoint = interval && ((uint64_t)(count - movie->netplay_start_frame) + 1)
+         % interval == 0;
+   if (   !(netplay->flags & NETPLAY_FLAG_IS_REPLAY)
+       && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_FORCE_CHECKPOINT))
+   {
+      input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+      frame->forced = true;
+   }
+   /* Recapture both scheduled and forced checkpoints when rollback
+    * corrects this frame. The snapshot describes the state AFTER it. */
+   if (checkpoint || frame->forced)
+   {
+      if (!netplay_bsv_save(&frame->checkpoint, &frame->checkpoint_size))
+      {
+         if (frame->forced)
+            task_notify_fire(&input_st->bsv_movie_op, NULL,
+                  "Failed to capture the netplay checkpoint.");
+         netplay_bsv_stop(netplay, "could not capture a checkpoint");
+         return;
+      }
+      frame->checkpoint_valid = true;
+   }
+   frame->valid = true;
+}
+
+static void netplay_bsv_commit(netplay_t *netplay)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   bsv_movie_t *movie = netplay_bsv_movie();
+   uint32_t confirmed = netplay->other_frame_count;
+   if (!movie || !movie->netplay_armed)
+      return;
+   /* self_frame_count can be ahead of emulation due to input latency,
+    * including on the server's no-remote-players fast path. */
+   if (confirmed > netplay->run_frame_count)
+      confirmed = netplay->run_frame_count;
+   while (movie->netplay_next_frame < confirmed)
+   {
+      struct delta_frame *delta = &netplay->buffer[movie->netplay_next_ptr];
+      struct netplay_bsv_frame *frame = delta->bsv;
+      if (   !delta->used || delta->frame != movie->netplay_next_frame
+          || !frame || !frame->valid)
+      {
+         netplay_bsv_stop(netplay, "the confirmed timeline is discontinuous");
+         return;
+      }
+      if (!movie->netplay_committed)
+      {
+         if (!bsv_movie_reset_recording_from_state(movie,
+                  frame->initial_state, frame->initial_size))
+         {
+            netplay_bsv_stop(netplay, "could not write the initial state");
+            return;
+         }
+         movie->netplay_committed = true;
+      }
+      movie->input_event_count = frame->input_count;
+      movie->key_event_count   = 0;
+      memcpy(movie->input_events, frame->inputs,
+            frame->input_count * sizeof(*frame->inputs));
+      bsv_movie_next_frame_from_state(input_st,
+            frame->checkpoint_valid ? frame->checkpoint : NULL,
+            frame->checkpoint_valid ? frame->checkpoint_size : 0);
+      if (frame->forced)
+         task_notify_fire(&input_st->bsv_movie_op, NULL,
+               (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+               ? "Failed to write the netplay checkpoint." : NULL);
+      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+      {
+         netplay_bsv_stop(netplay, "could not write a confirmed frame");
+         return;
+      }
+      free(frame->initial_state);
+      frame->initial_state    = NULL;
+      frame->initial_size     = 0;
+      frame->valid            = false;
+      frame->forced           = false;
+      frame->checkpoint_valid = false;
+      movie->netplay_next_ptr = NEXT_PTR(movie->netplay_next_ptr);
+      movie->netplay_next_frame++;
+   }
+}
+#endif
+/* ===== END netplay BSV recording ===== */
+
 /**
  * netplay_delta_frame_ready
  *
@@ -2338,6 +2587,14 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
          return false;
    }
 
+#ifdef HAVE_BSV_MOVIE
+   if (delta->bsv)
+   {
+      delta->bsv->valid            = false;
+      delta->bsv->forced           = false;
+      delta->bsv->checkpoint_valid = false;
+   }
+#endif
    delta->used  = true;
    delta->frame = frame;
    delta->crc   = 0;
@@ -2463,6 +2720,10 @@ static void free_input_state(netplay_input_state_t *list)
 static void netplay_delta_frame_free(struct delta_frame *delta)
 {
    uint32_t i;
+#ifdef HAVE_BSV_MOVIE
+   netplay_bsv_frame_free(delta->bsv);
+   delta->bsv = NULL;
+#endif
 
    if (delta->state)
    {
@@ -4099,6 +4360,7 @@ process:
  * Post-frame for Netplay synchronization.
  * We check if we have new input and replay from recorded input.
  */
+/* ===== BEGIN netplay BSV post frame ===== */
 static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
 {
    uint32_t lo_frame_count, hi_frame_count;
@@ -4107,6 +4369,9 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
    /* Unless we're stalling, we've just finished running a frame */
    if (!stalled)
    {
+#ifdef HAVE_BSV_MOVIE
+      netplay_bsv_end_frame(netplay, netplay->run_ptr, netplay->run_frame_count);
+#endif
       netplay->run_ptr = NEXT_PTR(netplay->run_ptr);
       netplay->run_frame_count++;
    }
@@ -4128,6 +4393,12 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
    {
       netplay->other_frame_count = netplay->self_frame_count;
       netplay->other_ptr         = netplay->self_ptr;
+#ifdef HAVE_BSV_MOVIE
+      if (netplay->desync || netplay->self_mode < NETPLAY_CONNECTION_CONNECTED)
+         netplay_bsv_stop(netplay, "netplay is no longer synchronized");
+      else
+         netplay_bsv_commit(netplay);
+#endif
 
       /* FIXME: Duplication */
       if ((netplay->flags & NETPLAY_FLAG_CATCH_UP))
@@ -4245,6 +4516,10 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
 
          /* Re-simulate this frame's input */
          netplay_resolve_input(netplay, netplay->replay_ptr, true);
+#ifdef HAVE_BSV_MOVIE
+         netplay_bsv_begin_frame(netplay, netplay->replay_ptr,
+               netplay->replay_frame_count);
+#endif
 
 #ifdef HAVE_THREADS
          autosave_lock();
@@ -4252,6 +4527,10 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
          core_run();
 #ifdef HAVE_THREADS
          autosave_unlock();
+#endif
+#ifdef HAVE_BSV_MOVIE
+         netplay_bsv_end_frame(netplay, netplay->replay_ptr,
+               netplay->replay_frame_count);
 #endif
          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
          netplay->replay_frame_count++;
@@ -4300,6 +4579,9 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       netplay->flags &= ~NETPLAY_FLAG_IS_REPLAY;
       netplay->flags &= ~NETPLAY_FLAG_FORCE_REWIND;
    }
+#ifdef HAVE_BSV_MOVIE
+   netplay_bsv_commit(netplay);
+#endif
 
    if ((netplay->flags & NETPLAY_FLAG_IS_SERVER))
    {
@@ -4406,6 +4688,8 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
    else
       netplay->catch_up_time =  0;
 }
+
+/* ===== END netplay BSV post frame ===== */
 
 #if 0
 #define DEBUG_NETPLAY_STEPS 1
@@ -6478,6 +6762,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
 #endif
             }
 
+#ifdef HAVE_BSV_MOVIE
+            netplay_bsv_stop(netplay, "received a netplay state resynchronization");
+#endif
             /* Force a rewind to the relevant frame. */
             netplay->flags |= NETPLAY_FLAG_FORCE_REWIND;
 
@@ -6582,6 +6869,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
                /* Hopefully it will be ready after another round of input. */
                goto shrt;
 
+#ifdef HAVE_BSV_MOVIE
+            netplay_bsv_stop(netplay, "received a netplay reset");
+#endif
             netplay->flags |= NETPLAY_FLAG_FORCE_RESET;
 
             /* This is squirrely:
@@ -7972,6 +8262,9 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
  */
 static void netplay_force_future(netplay_t *netplay)
 {
+#ifdef HAVE_BSV_MOVIE
+   netplay_bsv_stop(netplay, "netplay state resynchronization");
+#endif
    /* Wherever we're inputting, that's where we consider our state to be loaded */
    netplay->run_ptr         = netplay->self_ptr;
    netplay->run_frame_count = netplay->self_frame_count;
@@ -8801,11 +9094,37 @@ catastrophe:
  *
  * Returns: true (1) if alive, otherwise false (0).
  **/
+/* ===== BEGIN netplay BSV eligibility ===== */
 static bool netplay_is_alive(netplay_t *netplay)
 {
    return (netplay->flags & NETPLAY_FLAG_IS_SERVER) ||
       netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED;
 }
+
+#ifdef HAVE_BSV_MOVIE
+bool netplay_bsv_movie_init(bsv_movie_t *movie)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+   netplay_t *netplay = net_st->data;
+   if (!(net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_ENABLED)
+         || net_st->core_netpacket_interface)
+      return true;
+   if (   !netplay || !netplay_is_alive(netplay) || netplay->desync
+       || (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+       || (netplay->flags & (NETPLAY_FLAG_FORCE_REWIND
+                           | NETPLAY_FLAG_FORCE_RESET
+                           | NETPLAY_FLAG_FORCE_SEND_SAVESTATE))
+       || !netplay->state_size)
+   {
+      RARCH_WARN("[Replay] Wait for netplay synchronization before recording.\n");
+      return false;
+   }
+   movie->netplay = true;
+   return true;
+}
+#endif
+
+/* ===== END netplay BSV eligibility ===== */
 
 /**
  * netplay_should_skip:
@@ -9600,7 +9919,13 @@ int16_t input_state_net(unsigned port, unsigned device,
    if (netplay)
    {
       if (netplay_is_alive(netplay))
-         return netplay_input_state(netplay, port, device, idx, id);
+      {
+         int16_t result = netplay_input_state(netplay, port, device, idx, id);
+#ifdef HAVE_BSV_MOVIE
+         netplay_bsv_input(netplay, port, device, idx, id, result);
+#endif
+         return result;
+      }
       return netplay->cbs.state_cb(port, device, idx, id);
    }
    return 0;
@@ -9714,6 +10039,10 @@ static bool netplay_pre_frame(netplay_t *netplay)
       netplay_sync_input_post_frame(netplay, true);
       return false;
    }
+#ifdef HAVE_BSV_MOVIE
+   if (netplay->modus == NETPLAY_MODUS_INPUT_FRAME_SYNC)
+      netplay_bsv_begin_frame(netplay, netplay->run_ptr, netplay->run_frame_count);
+#endif
 
    return true;
 }
@@ -9760,6 +10089,9 @@ void deinit_netplay(void)
 
    if (netplay)
    {
+#ifdef HAVE_BSV_MOVIE
+      netplay_bsv_stop(netplay, "netplay disconnected");
+#endif
       if ((netplay->flags & NETPLAY_FLAG_NAT_TRAVERSAL))
          netplay_deinit_nat_traversal();
 
@@ -9851,6 +10183,17 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
       goto failure;
    }
 
+#ifdef HAVE_BSV_MOVIE
+   if (modus == NETPLAY_MODUS_INPUT_FRAME_SYNC)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+      {
+         RARCH_WARN("[Replay] Stopping local recording before netplay synchronization.\n");
+         movie_stop_record(input_st);
+      }
+   }
+#endif
    core_set_default_callbacks(&cbs);
    if (!core_set_netplay_callbacks())
       goto failure;

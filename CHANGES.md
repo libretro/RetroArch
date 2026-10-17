@@ -1,4 +1,5 @@
 # Future
+- NETPLAY/REPLAY: Record all players' resolved inputs in BSV replays, committing each frame and its checkpoints only after rollback confirmation
 - 3DS: Remove bottom screen fade out animation
 - AI/TRANSLATION: Fix for drawing translation overlay within viewport
 - ANDROID: Fix Enter key not working on keyboards

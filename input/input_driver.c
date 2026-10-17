@@ -15889,7 +15889,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
    }
 
 #ifdef HAVE_BSV_MOVIE
-   if (BSV_MOVIE_IS_RECORDING())
+   if (BSV_MOVIE_IS_RECORDING()
+         && !input_st->bsv_movie_state_handle->netplay)
 #ifdef HAVE_REWIND
       if (!state_manager_frame_is_reversed())
 #endif
@@ -17152,7 +17153,8 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
          if (*key_event == runloop_st->frontend_key_event)
          {
 #ifdef HAVE_BSV_MOVIE
-            if (BSV_MOVIE_IS_RECORDING())
+            if (BSV_MOVIE_IS_RECORDING()
+                  && !input_st->bsv_movie_state_handle->netplay)
 #ifdef HAVE_REWIND
                if (!state_manager_frame_is_reversed())
 #endif
