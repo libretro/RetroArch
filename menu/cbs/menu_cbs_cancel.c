@@ -172,6 +172,25 @@ static int action_cancel_core_content(const char *path,
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
+/* The platform list is rebuilt from the last response, which by now
+ * holds the ROMs, so leaving a list of ROMs fetches the platforms again */
+static int action_cancel_romm(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   const char *menu_path = NULL;
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+
+   if (!menu_path || !*menu_path)
+      return action_cancel_pop_default(path, label, type, idx);
+
+   menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+   return action_ok_romm_list("", MENU_ENUM_LABEL_ROMM_LIBRARY_STR,
+         MENU_SETTING_ACTION, 0, 0);
+}
+#endif
+
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -247,6 +266,14 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
    if (cbs)
    {
       BIND_ACTION_CANCEL(cbs, action_cancel_pop_default);
+
+#ifdef HAVE_NETWORKING
+      if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_ROMM_LIST_STR))
+      {
+         BIND_ACTION_CANCEL(cbs, action_cancel_romm);
+         return 0;
+      }
+#endif
 
       if (menu_cbs_init_bind_cancel_compare_label(cbs, label) == 0)
          return 0;

@@ -1618,6 +1618,8 @@ NETPLAY
 #endif
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
+#include "../tasks/romm_list.c"
+#include "../tasks/task_romm.c"
 #endif
 
 /*============================================================

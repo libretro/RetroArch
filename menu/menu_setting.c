@@ -3950,7 +3950,7 @@ static size_t setting_get_string_representation_max_users(
    return 0;
 }
 
-#if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
+#if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC) || defined(HAVE_NETWORKING)
 static size_t setting_get_string_representation_password(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -13955,6 +13955,13 @@ static const setting_desc_t core_updater_desc_0[] = {
 #endif
 
 #ifdef HAVE_NETWORKING
+static const setting_desc_t romm_desc_0[] = {
+/* GENERATED: rows come from settings_def_updater_romm.h in order. */
+#include "../settings/settings_def_updater_romm.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
 #ifdef HAVE_UPDATE_CORES
 static const setting_desc_t core_updater_desc_1[] = {
 /* GENERATED: rows come from settings_def_updater_experimental.h in order. */
@@ -17831,6 +17838,8 @@ static void settings_build_core_updater(
 
             ADD_DESC(core_updater_desc_0);
 
+            ADD_DESC(romm_desc_0);
+
 #ifdef HAVE_UPDATE_CORES
             ADD_DESC(core_updater_desc_1);
 
@@ -19765,6 +19774,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_NETWORKING
    { core_updater_desc_0, (uint16_t)ARRAY_SIZE(core_updater_desc_0) },
+#endif
+#ifdef HAVE_NETWORKING
+   { romm_desc_0, (uint16_t)ARRAY_SIZE(romm_desc_0) },
 #endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_UPDATE_CORES

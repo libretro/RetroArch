@@ -62,6 +62,8 @@ struct http_handle
     * owned; sink_written is the file's length so far; attempt_base is
     * where the current attempt started writing. */
    char    *validator;
+   /* The caller's request headers, sent again on a resume */
+   char    *headers;
    uint64_t sink_written;
    uint64_t attempt_base;
    uint64_t expected_total;    /* 0: unknown */
@@ -245,7 +247,7 @@ static bool task_http_file_sink(void *userdata, const void *data, size_t len)
 static bool task_http_resume(http_handle_t *http, uint8_t flg)
 {
    struct http_connection_t *conn;
-   char headers[512];
+   char headers[1024];
    char offset[21];
 
    if (     !http->sink_file || http->sink_failed || http->error
@@ -257,11 +259,14 @@ static bool task_http_resume(http_handle_t *http, uint8_t flg)
          || (http->expected_total && http->sink_written >= http->expected_total))
       return false;
 
+   task_http_u64_str(offset, http->sink_written);
+   if (snprintf(headers, sizeof(headers),
+            "Range: bytes=%s-\r\nIf-Range: %s\r\n%s",
+            offset, http->validator, http->headers ? http->headers : "")
+         >= (int)sizeof(headers))
+      return false;
    if (!(conn = net_http_connection_new(http->connection_url, "GET", NULL)))
       return false;
-   task_http_u64_str(offset, http->sink_written);
-   snprintf(headers, sizeof(headers), "Range: bytes=%s-\r\nIf-Range: %s\r\n",
-         offset, http->validator);
    net_http_connection_set_headers(conn, headers);
    net_http_connection_set_sink(conn, task_http_file_sink, http);
 
@@ -575,6 +580,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
          net_http_connection_free(http->connection.handle);
       free(http->connection_url);
       free(http->validator);
+      free(http->headers);
       free(http);
    }
 }
@@ -592,7 +598,7 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
 static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
-      const char *title, const char *sink_path,
+      const char *title, const char *sink_path, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -643,6 +649,7 @@ static void *task_push_http_transfer_generic_titled(
    http->sink_path           = NULL;
    http->sink_failed         = false;
    http->validator           = NULL;
+   http->headers             = headers ? strdup(headers) : NULL;
    http->sink_written        = 0;
    http->attempt_base        = 0;
    http->expected_total      = 0;
@@ -705,6 +712,7 @@ error:
       task_http_sink_close(http, false);
       free(http->connection_url);
       free(http->validator);
+      free(http->headers);
       free(http);
    }
 
@@ -717,7 +725,7 @@ static void *task_push_http_transfer_generic(
       retro_task_callback_t cb, void *user_data)
 {
    return task_push_http_transfer_generic_titled(
-         conn, url, mute, headers_accept_err, NULL, NULL, cb, user_data);
+         conn, url, mute, headers_accept_err, NULL, NULL, NULL, cb, user_data);
 }
 
 void* task_push_http_transfer(const char *url, bool mute,
@@ -889,7 +897,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    /* should be using type but some callers now rely on type being ignored */
    return task_push_http_transfer_generic_titled(
          net_http_connection_new(url, "GET", NULL),
-         url, mute, false, tmp, NULL, cb, transfer_data);
+         url, mute, false, tmp, NULL, NULL, cb, transfer_data);
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
@@ -1017,13 +1025,26 @@ void *task_push_http_transfer_with_content(const char *url,
  *
  * The output directory must exist; this does not create it.
  **/
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, const char *headers, bool mute, const char *title,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (!url || !*url || !path || !*path)
+      return NULL;
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
+      return NULL;
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+   return task_push_http_transfer_generic_titled(
+         conn, url, mute, false, title, path, headers, cb, user_data);
+}
+
 void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
       retro_task_callback_t cb, void *user_data)
 {
-   if (!url || !*url || !path || !*path)
-      return NULL;
-   return task_push_http_transfer_generic_titled(
-         net_http_connection_new(url, "GET", NULL),
-         url, mute, false, title, path, cb, user_data);
+   return task_push_http_download_file_with_headers(url, path, NULL,
+         mute, title, cb, user_data);
 }
