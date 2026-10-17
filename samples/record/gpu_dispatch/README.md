@@ -3,7 +3,7 @@
 A dedicated I/O worker constructs, services and retires the recording session.
 The cold controller copies configuration and the UTF-8 output path at creation.
 The render and PCM producers return BUSY during startup, consuming nothing.
-Once ready they preserve capture and whole-PCM-batch backpressure. The desktop Windows NVENC frontend attaches GPU capture and optional stereo
+Once ready they preserve capture and whole-PCM-batch backpressure. The desktop Windows NVENC frontend attaches GPU capture and optional multichannel
 core audio; see `../nvenc_frontend/README.md`.
 
 Both producers close from their own threads after their last push returns,

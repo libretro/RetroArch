@@ -15,6 +15,7 @@
 #include "../record_gpu_dispatch_d3d12.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../audio/audio_driver.h"
+#include "../../audio/audio_upmix.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -108,6 +109,25 @@ done:
    return ok;
 }
 
+static bool record_nvenc_layout(uint32_t layout, unsigned channels)
+{
+   if (!channels || channels > 6 || audio_layout_channels(layout) != channels)
+      return false;
+   /* AC-3 represents paired surrounds at the sides. */
+   switch (layout & ~AUDIO_SPEAKER_LOW_FREQUENCY)
+   {
+      case 0x004u:
+      case 0x003u:
+      case 0x007u:
+      case 0x103u:
+      case 0x107u:
+      case 0x603u:
+      case 0x607u:
+         return true;
+   }
+   return false;
+}
+
 static void *record_nvenc_init(const struct record_params *params)
 {
    nvenc_d3d12_config_t encoder;
@@ -145,14 +165,15 @@ static void *record_nvenc_init(const struct record_params *params)
    if (audio_enabled)
    {
       if ((params->samplerate != 32000.0 && params->samplerate != 44100.0
-               && params->samplerate != 48000.0) || params->channels != 2)
+               && params->samplerate != 48000.0)
+            || !record_nvenc_layout(recording_state_get_ptr()->layout, params->channels))
       {
-         RARCH_ERR("[NVENC] Audio requires stereo PCM at 32, 44.1 or 48 kHz.\n");
+         RARCH_ERR("[NVENC] Audio requires an AC-3 speaker layout (up to six channels) at 32, 44.1 or 48 kHz.\n");
          return NULL;
       }
       output.audio_rate = (unsigned)params->samplerate;
-      output.audio_layout = 3;
-      output.audio_kbps = 192;
+      output.audio_layout = recording_state_get_ptr()->layout;
+      output.audio_kbps = params->channels > 2 ? 448 : 192;
       output.audio_fifo_frames = output.audio_rate;
    }
    length = strlen(params->filename);

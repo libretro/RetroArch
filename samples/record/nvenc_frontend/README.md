@@ -1,12 +1,16 @@
 # Native frontend GPU recording
 
-Desktop Windows builds with D3D12, threads, configuration files and the built-
-in recording components expose `record_driver = "nvenc"`. Use an SDR 8-bit
+Desktop Windows builds with D3D12, threads, configuration files and built-in
+recording components expose `record_driver = "nvenc"`. Use an SDR 8-bit
 D3D12 swapchain and viewport recording (Game Only disabled). HDR, streaming and
-asynchronous core audio callbacks are not supported. Stereo core audio can be
-recorded as native AC-3 at 32, 44.1 or 48 kHz. Other sample rates and wider
-recording layouts are refused; no resampler is installed by this driver. Other
-video drivers and unsupported builds reject this selection.
+asynchronous core audio callbacks are not supported. Core audio can be recorded
+as native AC-3 at 32, 44.1 or 48 kHz.
+The recording keeps the speaker mask declared when it starts, independently
+of the playback device layout. AC-3 layouts up to six channels are accepted:
+mono, stereo, front and back centre variants and side-surround pairs, each with an
+optional LFE. Rear-pair quad/5.1 and 7.1 are refused; rear speakers are not
+relabeled as side speakers. Other sample rates are refused; this driver does
+not install a resampler. Other video drivers and unsupported builds reject this selection.
 
 Pass `--record output.mp4 --recordconfig native.cfg` with this native config:
 
@@ -18,7 +22,8 @@ video_bit_rate = 16000000
 ```
 
 `vcodec` accepts `h264`, `hevc`, or `av1`, subject to GPU support. Set
-`audio_enable = true` to record stereo core audio as 192 kbit/s AC-3; `false`
+`audio_enable = true` to record core audio as AC-3 (192 kbit/s for one or two
+channels, 448 kbit/s for wider layouts); `false`
 keeps video-only recording. An explicit setting is required. Unknown options
 are rejected. Existing output files are preserved.
 `video_record_allow_frame_drop` controls whether backpressure drops a frame or

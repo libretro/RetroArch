@@ -19,6 +19,8 @@ parser.add_argument('--codecs', nargs='+', default=['h264', 'hevc', 'av1'])
 parser.add_argument('--threads', nargs='+', default=['false', 'true'])
 parser.add_argument('--audio', nargs='+', choices=['false', 'true'], default=['false', 'true'])
 parser.add_argument('--rates', nargs='+', type=int, default=[32000, 44100, 48000])
+parser.add_argument('--layouts', nargs='+', type=lambda x: int(x, 0), default=[3])
+parser.add_argument('--float', action='store_true', dest='floating')
 args = parser.parse_args()
 if not args.retroarch:
     print('SKIP: provide a native Windows RetroArch build with D3D12/NVENC')
@@ -30,8 +32,8 @@ assert ffmpeg, 'test-only ffmpeg decoder required'
 exe, core = str(Path(args.retroarch).resolve()), str(Path(args.core).resolve())
 
 
-def run_case(root, codec, threaded, kind='normal', audio=False, rate=48000):
-    path = root / f'{codec}-{threaded}-{kind}-av{rate if audio else 0}'
+def run_case(root, codec, threaded, kind='normal', audio=False, rate=48000, layout=3):
+    path = root / f'{codec}-{threaded}-{kind}-av{rate if audio else 0}-mask{layout:x}-{'float' if args.floating else 's16'}'
     path.mkdir()
     config, record, movie = path / 'retroarch.cfg', path / 'record.cfg', path / 'output.mp4'
     config.write_text(f'''
@@ -47,6 +49,8 @@ video_record_allow_frame_drop = "true"
 video_font_enable = "false"
 record_driver = "nvenc"
 audio_driver = "null"
+audio_format_negotiation = "1"
+audio_fastpath_s16 = "false"
 menu_driver = "rgui"
 menu_show_start_screen = "false"
 history_list_enable = "false"
@@ -62,6 +66,9 @@ savestate_auto_load = "false"
     frames = '1' if kind == 'early' else '120' if kind == 'normal' else '10'
     environment = os.environ.copy()
     environment['NATIVE_RECORD_RATE'] = str(22050 if kind == 'rate' else rate)
+    environment['NATIVE_RECORD_LAYOUT'] = str(layout)
+    if args.floating: environment['NATIVE_RECORD_FLOAT'] = '1'
+    else: environment.pop('NATIVE_RECORD_FLOAT', None)
     result = subprocess.run([exe, '-v', '--config', str(config), '-L', core,
                              '--record', str(movie), '--recordconfig', str(record),
                              '--max-frames', frames], cwd=path,
@@ -69,9 +76,10 @@ savestate_auto_load = "false"
     log = result.stdout.decode(errors='replace')
     (path / 'run.log').write_text(log, encoding='utf-8')
     assert result.returncode == 0, (path, result.returncode, log[-5000:])
-    if kind == 'rate':
-        assert not movie.exists() and 'Audio requires stereo PCM' in log, log
-        print('[pass] unsupported native audio sample rate refused', flush=True)
+    assert f'[fixture] {"float" if args.floating else "s16"} source, mask {layout:x}' in log, log
+    if kind in ('rate', 'layout'):
+        assert not movie.exists() and 'Audio requires an AC-3 speaker layout' in log, log
+        print(f'[pass] unsupported native audio {kind} refused (mask {layout:x})', flush=True)
         return
     if kind == 'exists':
         assert movie.read_bytes() == b'preserve existing output' and 'Recording failed' in log, log
@@ -111,17 +119,21 @@ savestate_auto_load = "false"
         pcm_count = re.search(r'Audio finalized \((\d+) PCM frames\)', log)
         assert pcm_count, log
         pcm_frames = int(pcm_count[1])
-        assert f'{rate} Hz, stereo' in source and 'ac3' in source, source
+        channels = layout.bit_count()
+        label = {3: 'stereo', 4: 'mono', 0x603: 'quad(side)', 0x60f: '5.1(side)'}[layout]
+        assert f'{rate} Hz, {label}' in source and 'ac3' in source, source
         decoded_audio = subprocess.run([ffmpeg, '-v', 'error', '-i', str(movie),
                                        '-map', '0:a:0', '-f', 'f32le', '-'],
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                       check=True, timeout=30).stdout
         samples = array.array('f', decoded_audio)
-        assert len(samples) == ((pcm_frames + 1535) // 1536) * 1536 * 2, (len(samples), pcm_frames)
+        assert len(samples) == ((pcm_frames + 1535) // 1536) * 1536 * channels, (len(samples), pcm_frames)
         expected_end = (pts[-1] + 1001) * rate / 60000
         assert abs(pcm_frames - expected_end) <= rate * 1001 / 60000 + 2, (pcm_frames, expected_end, pts)
-        for channel, frequency, amplitude in [(0, 440, .25), (1, 880, .125)]:
-            values = samples[4096: min(pcm_frames * 2, 20480)][channel::2]
+        frequencies = [440, 660, 880, 80, 1000, 1200]
+        for channel, frequency in enumerate(frequencies[:channels]):
+            amplitude = .2
+            values = samples[2048 * channels: min(pcm_frames, 10240) * channels][channel::channels]
             n = len(values)
             assert n > 2000
             omega = 2 * math.pi * frequency / rate
@@ -129,7 +141,7 @@ savestate_auto_load = "false"
             sine = sum(v * math.sin(omega * i) for i, v in enumerate(values))
             measured = 2 * math.hypot(cosine, sine) / n
             assert abs(measured - amplitude) < .04, (channel, frequency, measured)
-        print(f'[pass] frontend {codec}/{threaded}: {len(pts)} GPU frames, {pcm_frames} stereo PCM frames at {rate} Hz, clocks, tones, async quit', flush=True)
+        print(f'[pass] frontend {codec}/{threaded}: {len(pts)} GPU frames, {pcm_frames} PCM frames, mask {layout:x}, at {rate} Hz, clocks, tones, async quit', flush=True)
     else:
         print(f'[pass] frontend {codec}/{threaded}: {len(pts)} GPU frames, NTSC clock, colors, no audio, async quit', flush=True)
 
@@ -146,7 +158,10 @@ try:
         for threaded in args.threads:
             for audio in args.audio:
                 for rate in args.rates if audio == 'true' else [48000]:
-                    run_case(root, codec, threaded, audio=audio == 'true', rate=rate)
+                    for layout in args.layouts if audio == 'true' else [3]:
+                        run_case(root, codec, threaded, audio=audio == 'true', rate=rate, layout=layout)
+    for layout in (0x33, 0x3f, 0x63f):
+        run_case(root, 'h264', 'true', 'layout', audio=True, layout=layout)
     for kind in ('rate', 'exists', 'early'):
         run_case(root, 'h264', 'true', kind, audio=True)
 finally:

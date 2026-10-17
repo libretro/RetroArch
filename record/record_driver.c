@@ -338,12 +338,14 @@ bool recording_init(void)
     * multi-channel batch entry is recorded in it, where the container
     * has a default layout for the count - quad, 5.1 with the pair at
     * the back, 7.1 - which are the layouts in the order the recorder
-    * takes them. Anything else, stereo. */
+    * takes them. Anything else, stereo. Native GPU recording keeps the
+    * exact declared mask for its encoder to admit or refuse. */
    params.channels                  = 2;
    recording_st->layout              = AUDIO_LAYOUT_STEREO;
    {
       uint32_t core_layout = audio_state_get_ptr()->core_layout;
-      if (     core_layout == AUDIO_LAYOUT_QUAD
+      if (     (gpu_native && core_layout)
+            || core_layout == AUDIO_LAYOUT_QUAD
             || core_layout == AUDIO_LAYOUT_5POINT1
             || core_layout == AUDIO_LAYOUT_7POINT1)
       {

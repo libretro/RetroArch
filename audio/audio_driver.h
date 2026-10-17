@@ -483,6 +483,7 @@ typedef struct
 
    uint64_t free_samples_count;
 
+   struct audio_record_source *record_source;
    struct string_list *devices_list;
    /* The driver whose device_list_new built devices_list, so that its
     * device_list_free is the one that releases it - not whichever

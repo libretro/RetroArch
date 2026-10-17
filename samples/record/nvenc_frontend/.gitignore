@@ -7,3 +7,9 @@
 /audio_test
 /audio_test.exe
 /video_fragment.c
+/layout_fragment.c
+/layout_test
+/layout_test.exe
+/float_fragment.c
+/float_negotiation_test
+/float_negotiation_test.exe

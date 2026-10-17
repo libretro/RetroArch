@@ -7069,6 +7069,16 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 }
 #endif
 
+/* Original input borrowed by one nested stereo playback batch. */
+struct audio_record_source
+{
+   const void *data;
+   size_t frames;
+   uint32_t layout;
+   unsigned channels;
+   bool floating;
+};
+
 /* Recording keeps its native int16 bypass; conversion/remap uses one chunk. */
 static void audio_driver_record_push(audio_driver_state_t *audio_st,
       const void *data, size_t frames, unsigned channels, uint32_t layout, bool is_float)
@@ -7080,6 +7090,18 @@ static void audio_driver_record_push(audio_driver_state_t *audio_st,
    size_t capacity, need;
    if (!record_st->data || !record_st->driver || !record_st->driver->push_audio)
       return;
+   if (audio_st->record_source)
+   {
+      struct audio_record_source *source = audio_st->record_source;
+      if (frames > source->frames) return;
+      data = source->data;
+      channels = source->channels;
+      layout = source->layout;
+      is_float = source->floating;
+      source->data = (const uint8_t*)data + frames * channels
+         * (is_float ? sizeof(float) : sizeof(int16_t));
+      source->frames -= frames;
+   }
    if (!is_float && rlayout == layout)
    {
       ffemu_data.data   = data;
@@ -7522,6 +7544,26 @@ static size_t audio_driver_multi_rewind(audio_driver_state_t *audio_st,
 }
 #endif
 
+static size_t audio_driver_record_multi(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned channels, uint32_t layout,
+      bool floating)
+{
+   struct audio_record_source source;
+   struct audio_record_source *previous = audio_st->record_source;
+   size_t taken;
+   source.data = data;
+   source.frames = frames;
+   source.channels = channels;
+   source.layout = layout;
+   source.floating = floating;
+   audio_st->record_source = &source;
+   taken = floating
+      ? audio_driver_sample_batch_float((const float*)audio_st->multi_fold, frames)
+      : audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, frames);
+   audio_st->record_source = previous;
+   return taken;
+}
+
 size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
       unsigned channels, unsigned layout)
 {
@@ -7559,7 +7601,8 @@ size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
                      n, channels, layout))
                audio_downmix_s16((int16_t*)audio_st->multi_fold,
                      data + done * channels, n, layout, channels);
-            taken = audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, n);
+            taken = audio_driver_record_multi(audio_st, data + done * channels,
+               n, channels, layout, false);
             audio_st->extra.pending = false;
             done += taken;
             if (taken < n) break;
@@ -7580,7 +7623,8 @@ size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
             return done;
          audio_downmix_s16((int16_t*)audio_st->multi_fold,
                data + done * channels, n, layout, channels);
-         taken = audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, n);
+         taken = audio_driver_record_multi(audio_st, data + done * channels,
+               n, channels, layout, false);
          done += taken;
          if (taken < n) break;
       }
@@ -7625,7 +7669,8 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
                      n, channels, layout))
                audio_downmix_f32((float*)audio_st->multi_fold,
                      data + done * channels, n, layout, channels);
-            taken = audio_driver_sample_batch_float((const float*)audio_st->multi_fold, n);
+            taken = audio_driver_record_multi(audio_st, data + done * channels,
+               n, channels, layout, true);
             audio_st->extra.pending = false;
             done += taken;
             if (taken < n) break;
@@ -7646,7 +7691,8 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
             return done;
          audio_downmix_f32((float*)audio_st->multi_fold,
                data + done * channels, n, layout, channels);
-         taken = audio_driver_sample_batch_float((const float*)audio_st->multi_fold, n);
+         taken = audio_driver_record_multi(audio_st, data + done * channels,
+               n, channels, layout, true);
          done += taken;
          if (taken < n) break;
       }

@@ -4400,7 +4400,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * yet initialised (queried before drivers_init, e.g. a direct CLI
           * load) we cannot read its real format, so fall back to the
           * format-negotiation hint, which is what it will request. */
-         if (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
+         if (audio_state_get_ptr()->context_audio_data
+               && (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE))
          {
             if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_USE_FLOAT))
                return false;
