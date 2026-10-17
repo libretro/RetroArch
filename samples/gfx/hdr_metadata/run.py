@@ -16,23 +16,27 @@ dxgi = dxgi[:dxgi.index("/* ----------------------------------------------------
 vulkan = (root / "gfx/drivers/vulkan.c").read_text(encoding="utf-8")
 
 
-def vulkan_block(marker, semicolon=False):
-    start = vulkan.index(marker)
-    brace = vulkan.index("{", start)
+def source_block(source, marker, semicolon=False):
+    start = source.index(marker)
+    brace = source.index("{", start)
     depth = 1
     end = brace + 1
     while depth:
-        depth += (vulkan[end] == "{") - (vulkan[end] == "}")
+        depth += (source[end] == "{") - (source[end] == "}")
         end += 1
-    return vulkan[start:end + int(semicolon)] + "\n"
+    return source[start:end + int(semicolon)] + "\n"
 
 
 macro = vulkan.index("#define VULKAN_BUILT_HDR_FLAGS ")
 vulkan_code = vulkan[macro:vulkan.index("\n\n", macro)] + "\n"
-vulkan_code += vulkan_block("enum vulkan_texture_support", True)
-vulkan_code += vulkan_block("static void vulkan_note_built(")
-vulkan_code += vulkan_block("static bool vulkan_gpu_format_to_vk(")
-vulkan_code += vulkan_block("static bool vulkan_supports_texture_format(")
+vulkan_code += source_block(vulkan, "enum vulkan_texture_support", True)
+vulkan_code += source_block(vulkan, "static void vulkan_note_built(")
+vulkan_code += source_block(vulkan, "static bool vulkan_gpu_format_to_vk(")
+vulkan_code += source_block(vulkan, "static bool vulkan_supports_texture_format(")
+
+gl3 = (root / "gfx/drivers/gl3.c").read_text(encoding="utf-8")
+gl3_code = source_block(gl3, "static void gl3_publish_texture_formats(")
+gl3_code += source_block(gl3, "static bool gl3_supports_texture_format(")
 
 with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
     directory = Path(directory)
@@ -67,3 +71,14 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
                         str(root / "libretro-common/rthreads/rthreads.c"),
                         "-o", str(target)] + libs, check=True)
         subprocess.run([str(target)], check=True)
+    (directory / "gl3.inc").write_text(gl3_code, encoding="utf-8")
+    target = directory / ("gl3.exe" if os.name == "nt" else "gl3")
+    subprocess.run(cc + ["-std=gnu89", "-O1", "-g1", "-Wall", "-Wextra",
+                        "-Werror=declaration-after-statement",
+                        "-Werror=implicit-function-declaration", "-DHAVE_THREADS",
+                        "-I" + str(root / "libretro-common/include"),
+                        "-I" + str(directory)] + flags +
+                   [str(Path(__file__).with_name("gl3_caps_test.c")),
+                    str(root / "libretro-common/rthreads/rthreads.c"),
+                    "-o", str(target)] + libs, check=True)
+    subprocess.run([str(target)], check=True)

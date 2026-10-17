@@ -31,3 +31,8 @@ with a null driver and a deliberately stale HDR request. --driver d3d12 --hdr
 also probes native SDR/PQ/scRGB output; inspect the reported mode to distinguish
 an available HDR path from an SDR fallback. The live core is a thin wrapper over
 the recording fixture and produces no output recording.
+
+GLCore capability tests exercise the shipping publisher and getter while another
+thread changes FP16/PQ framebuffer state. A scRGB texture is accepted only when
+the selected UI target preserves FP16 highlights. No render-thread handles or
+mutable framebuffer flags are read by the capability consumer.
