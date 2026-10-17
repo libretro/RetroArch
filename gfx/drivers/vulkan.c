@@ -300,6 +300,12 @@ struct vk_effect_template
  * a new size while the old one is still being let go */
 #define VK_FRAME_MEM_MAX 12
 
+enum vulkan_texture_support
+{
+   VULKAN_TEXTURE_SUPPORT_YUV420 = 1,
+   VULKAN_TEXTURE_SUPPORT_SCRGB  = 2
+};
+
 typedef struct vk
 {
    retro_time_t presented_at;
@@ -442,6 +448,7 @@ typedef struct vk
    /* built_hdr_flags' HDR output, for get_flags() on the main thread
     * (atomic: the video thread rebuilds) */
    retro_atomic_int_t built_hdr_output;
+   retro_atomic_int_t texture_format_support;
    bool     built;
 
    video_info_t video;
@@ -7600,9 +7607,17 @@ static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
 /* Noted when everything has been built: what it was built for. */
 static void vulkan_note_built(vk_t *vk)
 {
+   unsigned formats = vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE
+      ? VULKAN_TEXTURE_SUPPORT_YUV420 : 0;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (     (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         && vk->display.pipeline_linear_sdr != VK_NULL_HANDLE)
+      formats |= VULKAN_TEXTURE_SUPPORT_SCRGB;
+#endif
    vk->built_format    = vk->context->swapchain_format;
    vk->built_hdr_flags = vk->context->flags & VULKAN_BUILT_HDR_FLAGS;
    vk->built           = true;
+   retro_atomic_store_release_int(&vk->texture_format_support, (int)formats);
    retro_atomic_store_release_int(&vk->built_hdr_output,
          (vk->built_hdr_flags & VK_CTX_FLAG_HDR_ENABLE) ? 1 : 0);
 }
@@ -14461,14 +14476,15 @@ static bool vulkan_supports_texture_format(void *data,
    /* yuv420_to_rgba8888 writes R8G8B8A8, which every device stores to */
    if (fmt == TEXTURE_GPU_FORMAT_YUV420)
       return vk && vk->context
-         && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE;
+         && (retro_atomic_load_acquire_int(&vk->texture_format_support)
+               & VULKAN_TEXTURE_SUPPORT_YUV420);
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* alpha_blend_linear.frag shows such a texture as linear scRGB in the
     * HDR UI layer; in SDR there is no linear light to show it in. */
    if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
       return vk && vk->context
-         && (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-         && vk->display.pipeline_linear_sdr != VK_NULL_HANDLE;
+         && (retro_atomic_load_acquire_int(&vk->texture_format_support)
+               & VULKAN_TEXTURE_SUPPORT_SCRGB);
 #endif
    if (!vk || !vk->context || !vulkan_gpu_format_to_vk(fmt, &vkfmt))
       return false;
