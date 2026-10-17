@@ -1509,6 +1509,8 @@ const char *pixel_format_name(enum retro_pixel_format pix_fmt)
          return "XRGB2101010";
       case RETRO_PIXEL_FORMAT_HDR10_2101010:
          return "HDR10_2101010";
+      case RETRO_PIXEL_FORMAT_SCRGB_RGBA16F:
+         return "SCRGB_RGBA16F";
       case RETRO_PIXEL_FORMAT_UNKNOWN:
       default:
          return "UNKNOWN";

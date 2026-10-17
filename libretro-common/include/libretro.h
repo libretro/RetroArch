@@ -2765,7 +2765,7 @@ enum retro_mod
 
 /* Native core-input formats, independent of output mode or display bit depth. */
 #define RETRO_HDR_SOURCE_FORMAT_HDR10_2101010 (1u << 0)
-/* Reserved for negotiated FP16 linear Rec.709/scRGB core input.
+/* RETRO_PIXEL_FORMAT_SCRGB_RGBA16F core input.
  * Do not advertise solely because an FP16 output framebuffer exists. */
 #define RETRO_HDR_SOURCE_FORMAT_SCRGB_RGBA16F (1u << 1)
 
@@ -6993,6 +6993,28 @@ enum retro_pixel_format
     * HDR effect.
     */
    RETRO_PIXEL_FORMAT_HDR10_2101010 = 4,
+
+   /**
+    * FP16 linear scRGB with Rec.709/sRGB primaries and D65 white.
+    *
+    * Each pixel is four IEEE 754 binary16 samples in memory order R, G, B, A,
+    * with each 16-bit sample in native byte order. Alpha is ignored; cores
+    * should set it to 1.0. Each pixel occupies 8 bytes; pitch is in bytes.
+    * RGB samples must be finite. Negative values and values above 1.0 are
+    * valid and must not be clamped during upload or intermediate storage.
+    *
+    * RGB 1.0 represents 80 cd/m^2, independent of frontend paper white and
+    * platform output units. There is no gamma/PQ transfer to decode. Cores
+    * can use GET_HDR_METADATA paper_white_nits / 80.0 for their SDR white.
+    *
+    * An accepting frontend must preserve linear HDR values, converting
+    * primaries, transfer and reference-white units on the GPU as required
+    * by its output. Do not apply SDR expansion or a second paper-white
+    * scale. Unsupported paths must reject SET_PIXEL_FORMAT; cores must
+    * check its result and retain an SDR fallback. The corresponding
+    * source_formats bit is RETRO_HDR_SOURCE_FORMAT_SCRGB_RGBA16F.
+    */
+   RETRO_PIXEL_FORMAT_SCRGB_RGBA16F = 5,
 
    /** 
     * @private Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>.
