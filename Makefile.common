@@ -1645,8 +1645,8 @@ ifeq ($(HAVE_METAL), 1)
    LIBS += -framework Metal -framework MetalKit -framework QuartzCore
    # metal.m builds under both ARC and MRC (see the M_OBJC_* ownership
    # macros at the top of the file). The top-level Makefile still builds
-   # it with a per-file -fobjc-arc override — ARC is the preferred mode
-   # for the standalone object — but the griffin_objc.m unity TU may
+   # it with a per-file -fobjc-arc override â€” ARC is the preferred mode
+   # for the standalone object â€” but the griffin_objc.m unity TU may
    # compile it either way depending on the Xcode configuration.
    OBJ += gfx/drivers/metal.o
 endif
@@ -1898,6 +1898,9 @@ ifeq ($(HAVE_D3D12), 1)
           record/record_gpu_worker_d3d12.o \
           record/record_mux_mp4.o \
           record/record_file_win32.o
+ifeq ($(HAVE_RAC3), 1)
+OBJ += record/record_gpu_output_d3d12.o
+endif
    DEFINES += -DHAVE_D3D12
 endif
 

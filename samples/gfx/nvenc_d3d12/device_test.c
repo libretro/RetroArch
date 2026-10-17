@@ -188,6 +188,8 @@ static DWORD WINAPI nve_produce(void *data)
    return 0;
 }
 
+#include "output_pipeline.h"
+
 int main(int argc, char **argv)
 {
    ID3D12Device *device = NULL;
@@ -468,6 +470,14 @@ int main(int argc, char **argv)
    CHECK(!record_gpu_worker_d3d12_release(worker));
    producer_thread = CreateThread(NULL, 0, nve_produce, &producer, 0, NULL);
    CHECK(producer_thread != NULL);
+   if (getenv("NVENC_TEST_GPU_AV"))
+   {
+      CHECK(!metadata);
+      CHECK(nve_pipeline_run(worker, encoder, &mux_config, argv[3], out, &received,
+               queue, ready, &value, capturing != 0, producer.frames));
+      status = RECORD_GPU_WORKER_END;
+   }
+   else
    while (idle < 10000)
    {
       bool progress = false;

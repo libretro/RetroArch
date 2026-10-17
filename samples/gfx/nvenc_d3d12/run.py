@@ -21,8 +21,8 @@ runner = shlex.split(args.runner)
 width, height, frames = 320, 192, 24
 passed = 0
 
-def check_mp4(ffmpeg, stream, codec, count):
-    mp4 = Path(str(stream) + '.mp4')
+def check_mp4(ffmpeg, stream, codec, count, suffix='.mp4'):
+    mp4 = Path(str(stream) + suffix)
     outputs = []
     for path in (stream, mp4):
         result = subprocess.run([ffmpeg, '-hide_banner', '-i', str(path),
@@ -244,4 +244,28 @@ with tempfile.TemporaryDirectory(prefix='nvenc-d3d12-') as temporary:
             check_mp4(ffmpeg, stream, codec, frames)
             assert check_pixels(ffmpeg, stream, codec, 1) == references[codec, 1], 'BGRA capture differs from direct input'
             print(f'[pass] {name}: BGRA viewport copy', flush=True)
+    if passed:
+        for codec, fmt, rate, channels in ((0, 1, 48000, 2), (1, 3, 44100, 1), (2, 3, 32000, 6)):
+            name = ('h264', 'hevc', 'obu')[codec]
+            stream = Path(temporary) / f'av-{codec}.{name}'
+            env = dict(os.environ, NVENC_TEST_GPU_AV='1', NVENC_TEST_AUDIO_RATE=str(rate))
+            subprocess.run([*runner, binary, str(codec), str(fmt), str(stream),
+                            '2' if fmt == 3 else '1', '0', '0', '1'], env=env, check=True, timeout=60)
+            check_mp4(ffmpeg, stream, codec, frames, '.av.mp4')
+            assert check_pixels(ffmpeg, stream, codec, fmt) == references[codec, fmt]
+            audio = []
+            for suffix in ('.av.mp4', '.av.ac3'):
+                result = subprocess.run([ffmpeg, '-hide_banner', '-i', str(stream) + suffix,
+                                         '-map', '0:a:0', '-af', 'ashowinfo', '-f', 'f32le', '-'],
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                records = re.findall(r'\bn:\s*(\d+).*?\bpts:\s*(\d+).*?nb_samples:\s*(\d+)',
+                                     result.stderr.decode(errors='replace'))
+                count = math.ceil(frames * rate / 60 / 1536)
+                assert len(records) == count and all(int(n) == 1536 for _, _, n in records), (suffix, records)
+                if suffix == '.av.mp4':
+                    assert [int(t) for _, t, _ in records] == [i * 1536 for i in range(count)], records
+                assert len(result.stdout) == count * 1536 * channels * 4
+                audio.append(result.stdout)
+            assert audio[0] == audio[1], 'live PCM output differs from independent AC-3 encode'
+            print(f'[pass] native GPU/PCM pipeline: {rate} Hz/{channels} ch, padded tail, pixels and sample clock', flush=True)
 print(f'{passed} native codec/format cases plus color signaling passed; unsupported runtimes explicitly skipped')

@@ -168,6 +168,16 @@ jobs:
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: GPU PCM output pipeline (ASan + UBSan, TSan, mingw-w64)
+        working-directory: samples/record/gpu_av_output
+        run: |
+          set -eu
+          make clean && make -j$(nproc) check SANITIZER=address,undefined
+          make clean && make thread_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
+          make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

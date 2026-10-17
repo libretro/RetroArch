@@ -107,3 +107,9 @@ output is separately acknowledged. Independent decoding checks MP4 pixel,
 timestamp and keyframe equality with the elementary stream. The pure muxer
 also supports native AC-3 A/V (see samples/record/mp4_mux). Frontend capture,
 scheduling, live audio and asynchronous file output remain unconnected.
+
+Three additional native sessions exercise GPU capture/encode plus concurrent
+PCM submission through the production A/V output pump and overlapped writer.
+The shared runner compares video pixels/keyframes and exact 1536-sample audio
+clocks against raw video and independently encoded AC-3 references at 48 kHz
+stereo, 44.1 kHz mono and 32 kHz 5.1. Frontend attachment/scheduling remains open.
