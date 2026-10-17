@@ -26,6 +26,8 @@ typedef struct
    int      open_fails;
    int      refine_fails;
    int      params_fail_until_refine;/* HW_PARAMS refuses what a refine did not settle */
+   unsigned chmap_n;                 /* a control device with a channel map of these */
+   long     chmap[8];                /* SNDRV_CHMAP_ positions */
 } ealsa_mock_caps_t;
 
 void ealsa_mock_reset(ealsa_mock_caps_t *caps);   /* NULL: a cooperative card */
@@ -48,6 +50,9 @@ int      ealsa_mock_prepares(void);
 unsigned long ealsa_mock_boundary(void);
 unsigned long ealsa_mock_stop_threshold(void);
 unsigned long ealsa_mock_start_threshold(void);
+/* the first bytes of the first write the device took */
+size_t   ealsa_mock_first_bytes(void *out, size_t len);
+unsigned ealsa_mock_chmap_reads(void);
 
 int  ealsa_mock_open(const char *path, int flags);
 int  ealsa_mock_ioctl(int fd, unsigned long req, void *arg);

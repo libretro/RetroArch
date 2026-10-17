@@ -38,9 +38,12 @@ typedef struct alsa_stream_info
     * wider count, the speaker layout the device's own channel map
     * reports, as AUDIO_SPEAKER_ positions: which pair a six-channel
     * device drives from the back or the sides is the device's to
-    * say, not the request's. 0 when the map could not be read. */
+    * say, not the request's. 0 when no layout could be worked out. */
    unsigned int channels;
    uint32_t     layout;
+   /* Device channel k takes the frontend's slot order[k], where
+    * permute says the two orders differ. */
+   uint8_t      order[8];
    /* The start threshold, which a lent span's commit has to honour
     * itself: snd_pcm_mmap_commit() never starts the stream. */
    snd_pcm_uframes_t start_frames;
@@ -50,6 +53,7 @@ typedef struct alsa_stream_info
    /* Opened for mmap access: written through snd_pcm_mmap_writei(),
     * which is the only write such a PCM accepts, and lendable. */
    bool mmap;
+   bool permute;
 } alsa_stream_info_t;
 
 int alsa_init_pcm(snd_pcm_t **pcm,

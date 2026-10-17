@@ -31,6 +31,45 @@ uint32_t audio_driver_requested_layout(void) { return want_layout; }
 
 static uint8_t frame[8192];
 
+/* One frame of the frontend's, slot k holding k + 1, written to a
+ * device opened for 'asked'; what reaches the device has to be the
+ * device's own order: its channel k carrying expect[k]. */
+static void check_order(const char *what, audio_driver_t *drv,
+      ealsa_mock_caps_t *c, uint32_t asked,
+      unsigned expect_ch, uint32_t expect_layout, const float *expect)
+{
+   float    in[8], out[8];
+   unsigned new_rate = 0, k;
+   void    *h;
+   printf("   %s\n", what);
+   ealsa_mock_reset(c);
+   want_layout = asked;
+   h = drv->init("0,0", 48000, 64, &new_rate);
+   want_layout = AUDIO_LAYOUT_STEREO;
+   CHECK(h != NULL, "init failed");
+   if (!h)
+      return;
+   CHECK(ealsa_mock_channels() == expect_ch, "%u channels opened, %u expected",
+         ealsa_mock_channels(), expect_ch);
+   CHECK(drv->layout(h) == expect_layout, "the driver reports 0x%x, 0x%x expected",
+         drv->layout(h), expect_layout);
+   CHECK(drv->buffer_size(h) == (size_t)ealsa_mock_buffer() * expect_ch * sizeof(float),
+         "buffer_size %u is not %u channels of %u frames",
+         (unsigned)drv->buffer_size(h), expect_ch, ealsa_mock_buffer());
+   for (k = 0; k < expect_ch; k++)
+      in[k] = (float)(k + 1);
+   CHECK(drv->write(h, in, expect_ch * sizeof(float)) == (ssize_t)(expect_ch * sizeof(float)),
+         "the frame was not taken whole");
+   CHECK(ealsa_mock_first_bytes(out, expect_ch * sizeof(float)) == expect_ch * sizeof(float),
+         "the device has no frame");
+   for (k = 0; k < expect_ch; k++)
+      CHECK(out[k] == expect[k], "device channel %u carries slot %g, %g expected",
+            k, out[k] - 1.0f, expect[k] - 1.0f);
+   CHECK(ealsa_mock_open_fds() == 1, "%d descriptor(s) open; the control was not closed",
+         ealsa_mock_open_fds());
+   drv->free(h);
+}
+
 static void caps_default(ealsa_mock_caps_t *c)
 {
    memset(c, 0, sizeof(*c));
@@ -180,6 +219,51 @@ int main(void)
       drv->free(h);
    }
    want_layout = AUDIO_LAYOUT_STEREO;
+
+   {
+      /* FL FR FC LFE BL BR SL SR, the frontend's slots 1..8 */
+      static const float alsa51[6] = { 1, 2, 5, 6, 3, 4 };
+      static const float alsa71[8] = { 1, 2, 5, 6, 3, 4, 7, 8 };
+      static const float quad[4]   = { 1, 2, 3, 4 };
+      static const float same6[6]  = { 1, 2, 3, 4, 5, 6 };
+
+      caps_default(&c);
+      c.channels_max = 6;
+      check_order("a 5.1 card with 7.1 asked for: 5.1, in ALSA's order", drv, &c,
+            AUDIO_LAYOUT_7POINT1, 6, AUDIO_LAYOUT_5POINT1, alsa51);
+
+      caps_default(&c);
+      c.channels_max = 4;
+      check_order("a quad card with 7.1 asked for: quad", drv, &c,
+            AUDIO_LAYOUT_7POINT1, 4, AUDIO_LAYOUT_QUAD, quad);
+
+      caps_default(&c);
+      check_order("a 7.1 card with no channel map: ALSA's order", drv, &c,
+            AUDIO_LAYOUT_7POINT1, 8, AUDIO_LAYOUT_7POINT1, alsa71);
+
+      /* a USB card's map is its descriptor's, the frontend's own order */
+      caps_default(&c);
+      c.chmap_n = 6;
+      c.chmap[0] = 3; c.chmap[1] = 4; c.chmap[2] = 7;
+      c.chmap[3] = 8; c.chmap[4] = 5; c.chmap[5] = 6;
+      check_order("a card whose map is FL FR FC LFE RL RR: no permutation", drv, &c,
+            AUDIO_LAYOUT_5POINT1, 6, AUDIO_LAYOUT_5POINT1, same6);
+      CHECK(ealsa_mock_chmap_reads() == 1, "the map was read %u times", ealsa_mock_chmap_reads());
+
+      caps_default(&c);
+      c.chmap_n = 6;
+      c.chmap[0] = 3; c.chmap[1] = 4; c.chmap[2] = 7;
+      c.chmap[3] = 8; c.chmap[4] = 9; c.chmap[5] = 10;
+      check_order("a card whose map puts the pair at the sides: 5.1 (side)", drv, &c,
+            AUDIO_LAYOUT_5POINT1, 6, AUDIO_LAYOUT_5POINT1_SURROUND, same6);
+
+      caps_default(&c);
+      c.chmap_n = 6;
+      c.chmap[0] = 3; c.chmap[1] = 4; c.chmap[2] = 5;
+      c.chmap[3] = 6; c.chmap[4] = 7; c.chmap[5] = 8;
+      check_order("a card whose map is HDA's FL FR RL RR FC LFE", drv, &c,
+            AUDIO_LAYOUT_5POINT1, 6, AUDIO_LAYOUT_5POINT1, alsa51);
+   }
 
    printf("   a card that is not there\n");
    caps_default(&c);

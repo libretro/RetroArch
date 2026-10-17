@@ -267,6 +267,52 @@ int main(void)
             "sides into a back recording: back %d %d, left %d", out[4], out[5], out[0]);
    }
 
+   printf("   a device's own channel order: the permutation into it\n");
+   {
+      static const uint32_t hda[6] = {
+         AUDIO_SPEAKER_FRONT_LEFT, AUDIO_SPEAKER_FRONT_RIGHT,
+         AUDIO_SPEAKER_BACK_LEFT,  AUDIO_SPEAKER_BACK_RIGHT,
+         AUDIO_SPEAKER_FRONT_CENTER, AUDIO_SPEAKER_LOW_FREQUENCY };
+      static const uint32_t dup[3] = {
+         AUDIO_SPEAKER_FRONT_LEFT, AUDIO_SPEAKER_FRONT_RIGHT, AUDIO_SPEAKER_FRONT_LEFT };
+      static const uint32_t two[2] = { 0x3u, AUDIO_SPEAKER_FRONT_RIGHT };
+      static const uint32_t far_[2] = { AUDIO_SPEAKER_FRONT_LEFT, 0x800u };
+      uint32_t layout = 0;
+      uint8_t  order[8];
+      bool     identity = true;
+      int16_t  s[12];
+      float    f[6];
+      unsigned k;
+      CHECK(audio_layout_order(hda, 6, &layout, order, &identity),
+            "FL FR RL RR FC LFE was refused");
+      CHECK(layout == AUDIO_LAYOUT_5POINT1 && !identity, "layout 0x%x, identity %d",
+            layout, identity);
+      CHECK(order[0] == 0 && order[1] == 1 && order[2] == 4 && order[3] == 5
+            && order[4] == 2 && order[5] == 3, "order %u %u %u %u %u %u",
+            order[0], order[1], order[2], order[3], order[4], order[5]);
+      CHECK(audio_layout_order(hda, 4, &layout, order, &identity)
+            && identity && layout == AUDIO_LAYOUT_QUAD, "quad is not the identity");
+      CHECK(!audio_layout_order(dup, 3, &layout, order, &identity), "a repeated position");
+      CHECK(!audio_layout_order(two, 2, &layout, order, &identity), "two positions in one");
+      CHECK(!audio_layout_order(far_, 2, &layout, order, &identity), "an unknown position");
+      CHECK(!audio_layout_order(hda, 0, &layout, order, &identity), "no channels");
+      audio_layout_order(hda, 6, &layout, order, &identity);
+      for (k = 0; k < 12; k++)
+         s[k] = (int16_t)(k + 1);
+      audio_layout_permute(s, s, 2, 6, order, sizeof(int16_t));
+      CHECK(s[0] == 1 && s[1] == 2 && s[2] == 5 && s[3] == 6 && s[4] == 3 && s[5] == 4
+            && s[6] == 7 && s[8] == 11 && s[10] == 9, "int16 in place: %d %d %d %d %d %d | %d %d %d",
+            s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[8], s[10]);
+      for (k = 0; k < 6; k++)
+         f[k] = (float)(k + 1);
+      {
+         float o[6];
+         audio_layout_permute(o, f, 1, 6, order, sizeof(float));
+         CHECK(o[2] == 5.0f && o[4] == 3.0f && o[5] == 4.0f && f[2] == 3.0f,
+               "float out of place: %g %g %g, source %g", o[2], o[4], o[5], f[2]);
+      }
+   }
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

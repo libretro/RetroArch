@@ -43,6 +43,15 @@ int main(void)
    SAME(offsetof(struct ealsa_xferi, buf),    offsetof(struct snd_xferi, buf));
    SAME(offsetof(struct ealsa_xferi, frames), offsetof(struct snd_xferi, frames));
 
+   SAME(sizeof(struct ealsa_ctl_elem_id),    sizeof(struct snd_ctl_elem_id));
+   SAME(sizeof(struct ealsa_ctl_elem_value), sizeof(struct snd_ctl_elem_value));
+   SAME(offsetof(struct ealsa_ctl_elem_id, iface),     offsetof(struct snd_ctl_elem_id, iface));
+   SAME(offsetof(struct ealsa_ctl_elem_id, device),    offsetof(struct snd_ctl_elem_id, device));
+   SAME(offsetof(struct ealsa_ctl_elem_id, name),      offsetof(struct snd_ctl_elem_id, name));
+   SAME(offsetof(struct ealsa_ctl_elem_id, index),     offsetof(struct snd_ctl_elem_id, index));
+   SAME(offsetof(struct ealsa_ctl_elem_value, value),  offsetof(struct snd_ctl_elem_value, value));
+   SAME(offsetof(struct ealsa_ctl_elem_value, reserved), offsetof(struct snd_ctl_elem_value, reserved));
+
    SAME(EALSA_MASK_MAX,             SNDRV_MASK_MAX);
    SAME(EALSA_P_ACCESS,             SNDRV_PCM_HW_PARAM_ACCESS);
    SAME(EALSA_P_FORMAT,             SNDRV_PCM_HW_PARAM_FORMAT);
@@ -71,6 +80,11 @@ int main(void)
    SAME(EALSA_IOCTL_DROP,           SNDRV_PCM_IOCTL_DROP);
    SAME(EALSA_IOCTL_PAUSE,          SNDRV_PCM_IOCTL_PAUSE);
    SAME(EALSA_IOCTL_WRITEI_FRAMES,  SNDRV_PCM_IOCTL_WRITEI_FRAMES);
+   SAME(EALSA_IOCTL_CTL_ELEM_READ,  SNDRV_CTL_IOCTL_ELEM_READ);
+   SAME(EALSA_CTL_ELEM_IFACE_PCM,   SNDRV_CTL_ELEM_IFACE_PCM);
+   SAME(EALSA_CTL_ELEM_ID_NAME_MAX, SNDRV_CTL_ELEM_ID_NAME_MAXLEN);
+   SAME(3,                          SNDRV_CHMAP_FL);
+   SAME(13,                         SNDRV_CHMAP_FRC);
 
    if (bad) { printf("%u ABI mismatch(es)\n", bad); return 1; }
    printf("      every struct, constant and ioctl matches the kernel's\n");
