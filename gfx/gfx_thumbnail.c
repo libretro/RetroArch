@@ -139,8 +139,9 @@ typedef struct
 {
    uint64_t list_id;
    gfx_thumbnail_t *thumbnail;
-   unsigned upscale_threshold;   /* while waiting for a set */
+   unsigned upscale_threshold;
    char path[PATH_MAX_LENGTH];
+   bool park;                    /* land parked, not uploaded */
 } gfx_thumbnail_tag_t;
 
 /* Stills asked for during a frame wait here for the frame's end, when
@@ -154,6 +155,70 @@ static unsigned             gfx_thumb_pending_n;
 static unsigned gfx_thumbnail_downscale_cap(void);
 
 static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
+
+/* Stills requested while parking is on land here decoded instead of
+ * uploaded, the image moved in whole. A later request for the same
+ * path takes it back and uploads it, with no read or decode. */
+#define GFX_THUMB_PARKED_MAX 4
+
+typedef struct
+{
+   struct texture_image img;
+   unsigned upscale_threshold;
+   unsigned downscale_cap;
+   char path[PATH_MAX_LENGTH];
+} gfx_thumbnail_parked_t;
+
+static gfx_thumbnail_parked_t gfx_thumb_parked[GFX_THUMB_PARKED_MAX];
+static unsigned gfx_thumb_parked_n;     /* slots holding an image */
+static unsigned gfx_thumb_parked_next;
+static bool     gfx_thumb_parking;
+
+static void gfx_thumbnail_parked_drop(gfx_thumbnail_parked_t *p)
+{
+   if (!p->img.pixels)
+      return;
+   image_texture_free(&p->img);
+   p->img.pixels = NULL;
+   gfx_thumb_parked_n--;
+}
+
+/* Takes @img, the struct included. A path already parked is replaced,
+ * else a free slot is used, else the oldest. */
+static void gfx_thumbnail_park_image(const gfx_thumbnail_tag_t *tag,
+      struct texture_image *img)
+{
+   unsigned i;
+   gfx_thumbnail_parked_t *p = NULL;
+   for (i = 0; i < GFX_THUMB_PARKED_MAX; i++)
+      if (     gfx_thumb_parked[i].img.pixels
+            && string_is_equal(gfx_thumb_parked[i].path, tag->path))
+         p = &gfx_thumb_parked[i];
+   for (i = 0; !p && i < GFX_THUMB_PARKED_MAX; i++)
+      if (!gfx_thumb_parked[i].img.pixels)
+         p = &gfx_thumb_parked[i];
+   if (!p)
+      p = &gfx_thumb_parked[gfx_thumb_parked_next++ % GFX_THUMB_PARKED_MAX];
+   gfx_thumbnail_parked_drop(p);
+   p->img               = *img;
+   p->upscale_threshold = tag->upscale_threshold;
+   p->downscale_cap     = gfx_thumbnail_downscale_cap();
+   strlcpy(p->path, tag->path, sizeof(p->path));
+   gfx_thumb_parked_n++;
+   free(img);
+}
+
+void gfx_thumbnail_park_requests(bool park)
+{
+   gfx_thumb_parking = park;
+}
+
+void gfx_thumbnail_parked_free(void)
+{
+   unsigned i;
+   for (i = 0; gfx_thumb_parked_n && i < GFX_THUMB_PARKED_MAX; i++)
+      gfx_thumbnail_parked_drop(&gfx_thumb_parked[i]);
+}
 
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
@@ -241,7 +306,7 @@ static void gfx_thumbnail_init_fade(
        || (p_gfx_thumb->fade_missing
        && (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_MISSING)))
    {
-      if (p_gfx_thumb->fade_duration > 0.0f)
+      if (p_gfx_thumb->fade_duration > 0.0f && !runloop_is_content_switching())
       {
          gfx_animation_ctx_entry_t animation_entry;
 
@@ -1012,6 +1077,17 @@ static void gfx_thumbnail_still_landed(retro_task_t *task,
       goto end;
    }
 
+   /* Parked: kept decoded for the request that shows it, which
+    * uploads it then. The thumbnail asks again from UNKNOWN. */
+   if (thumbnail_tag->park && img->pixels && !img->compressed)
+   {
+      gfx_thumbnail_park_image(thumbnail_tag, img);
+      img = NULL;
+      GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+            GFX_THUMBNAIL_STATUS_UNKNOWN);
+      goto end;
+   }
+
    /* The still goes to a surface the thumbnail owns, which takes the
     * image: under threaded video the status stays PENDING until the
     * release installs the texture and starts the fade; without it the
@@ -1154,6 +1230,41 @@ static unsigned gfx_thumbnail_set_width(void)
    return cores;
 }
 
+/* A request for a parked still lands it from the slot, uploaded now
+ * as a decode coming back would be. One parked under other decode
+ * settings, or for a driver wanting the other channel order, is
+ * dropped and the still decoded again. False when nothing matched. */
+static bool gfx_thumbnail_unpark(gfx_thumbnail_tag_t *tag)
+{
+   unsigned i;
+   if (!gfx_thumb_parked_n || tag->park)
+      return false;
+   for (i = 0; i < GFX_THUMB_PARKED_MAX; i++)
+   {
+      struct texture_image *img;
+      gfx_thumbnail_parked_t *p = &gfx_thumb_parked[i];
+      if (!p->img.pixels || !string_is_equal(p->path, tag->path))
+         continue;
+      if (     p->img.supports_rgba    != gfx_thumbnail_use_rgba()
+            || p->upscale_threshold    != tag->upscale_threshold
+            || p->downscale_cap        != gfx_thumbnail_downscale_cap()
+            || !(img = (struct texture_image*)malloc(sizeof(*img))))
+      {
+         gfx_thumbnail_parked_drop(p);
+         return false;
+      }
+      *img          = p->img;
+      p->img.pixels = NULL;
+      gfx_thumb_parked_n--;
+      tag->thumbnail->list_id = tag->list_id;
+      GFX_THUMB_STATUS_STORE(&tag->thumbnail->status,
+            GFX_THUMBNAIL_STATUS_PENDING);
+      gfx_thumbnail_still_landed(NULL, img, tag, -1);
+      return true;
+   }
+   return false;
+}
+
 /* The still at @tag's path, decoded on the task queue: held for the
  * frame's set where one can be made, else a task of its own. A video
  * always goes alone - only its task can hand the thumbnail the decoder
@@ -1162,12 +1273,14 @@ static bool gfx_thumbnail_push_still(gfx_thumbnail_tag_t *tag,
       unsigned upscale_threshold)
 {
    enum image_type_enum type = image_texture_get_type(tag->path);
+   tag->upscale_threshold    = upscale_threshold;
+   if (gfx_thumbnail_unpark(tag))
+      return false;
    if (     type != IMAGE_TYPE_WEBM && type != IMAGE_TYPE_MP4
          && gfx_thumbnail_set_width() > 1)
    {
       if (gfx_thumb_pending_n == GFX_THUMB_PENDING_MAX)
          gfx_thumbnail_flush_requests();
-      tag->upscale_threshold                      = upscale_threshold;
       gfx_thumb_pending[gfx_thumb_pending_n++] = tag;
       return true;
    }
@@ -1180,6 +1293,12 @@ void gfx_thumbnail_flush_requests(void)
 {
    unsigned width, cap, i = 0, n = gfx_thumb_pending_n;
    gfx_thumbnail_anim_reap();
+   /* Parked stills are for the content's close; once it is closed
+    * whatever was not taken back goes. */
+   if (     gfx_thumb_parked_n
+         && !runloop_is_content_switching()
+         && !runloop_content_loaded())
+      gfx_thumbnail_parked_free();
    if (!n)
       return;
    gfx_thumb_pending_n = 0;
@@ -1453,6 +1572,7 @@ void gfx_thumbnail_request(
                /* Configure user data */
                thumbnail_tag->thumbnail = thumbnail;
                thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+               thumbnail_tag->park      = gfx_thumb_parking;
                strlcpy(thumbnail_tag->path, thumbnail_path,
                      sizeof(thumbnail_tag->path));
 
@@ -1588,8 +1708,13 @@ void gfx_thumbnail_request_file(
     * stopped. */
    thumbnail_tag->thumbnail = thumbnail;
    thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+   thumbnail_tag->upscale_threshold = gfx_thumbnail_upscale_threshold;
+   thumbnail_tag->park      = gfx_thumb_parking;
    strlcpy(thumbnail_tag->path, file_path,
          sizeof(thumbnail_tag->path));
+
+   if (gfx_thumbnail_unpark(thumbnail_tag))
+      return;
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */

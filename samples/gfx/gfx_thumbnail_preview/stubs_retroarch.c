@@ -188,6 +188,9 @@ static char g_menu_blob[65536];
 static char g_runloop_blob[1 << 18];
 void *menu_state_get_ptr(void) { return g_menu_blob; }
 void *runloop_state_get_ptr(void) { return g_runloop_blob; }
+/* No content switch, no content: what a menu without a core sees */
+bool runloop_is_content_switching(void) { return false; }
+bool runloop_content_loaded(void)       { return false; }
 
 /* A one-entry playlist, cached while a test holds it: the entry is laid
  * out by settings_layout_uut.c, which sees the UUT's struct layouts. */
