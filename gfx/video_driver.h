@@ -1876,6 +1876,9 @@ typedef struct
     * and how many headset frames each core frame shows for (0: the
     * window paces). */
    float headset_hz;
+   /* The headset's rate while the runloop iterates at it: a headset's
+    * own context with no fit, under no wrapper. 0 otherwise. */
+   float headset_runloop_hz;
    unsigned headset_interval;
    /* The rate to ask the headset for, 0 for none. */
    float headset_request_hz;

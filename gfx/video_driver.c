@@ -2920,6 +2920,7 @@ void video_driver_free_internal(void)
    video_st->views_driver_count = 0;
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
+   video_st->headset_runloop_hz = 0.0f;
    video_st->headset_interval   = 0;
 #ifdef HAVE_OPENXR
    /* A context kept for the next driver registers again from its init. */

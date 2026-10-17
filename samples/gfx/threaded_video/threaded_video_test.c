@@ -1207,6 +1207,7 @@ static unsigned                      hslane_eye_h    = 1920;
 
 /* Out of order, and fewer than any fallback list. Twice the harness
  * core's 60 fps, so the headset would pace it. */
+static float hslane_hz = 120.0f;
 static float hslane_refresh(void *data, float *rates, unsigned cap,
       unsigned *count)
 {
@@ -1218,7 +1219,7 @@ static float hslane_refresh(void *data, float *rates, unsigned cap,
       rates[1] = 80.0f;
       *count   = 2;
    }
-   return 120.0f;
+   return hslane_hz;
 }
 
 static void hslane_get_poke(void *data, const video_poke_interface_t **iface)
@@ -1234,6 +1235,12 @@ static uint32_t hslane_views_flags(void *data)
 {
    (void)data;
    return 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
+}
+
+static uint32_t hslane_inline_flags(void *data)
+{
+   (void)data;
+   return 1u << GFX_CTX_FLAGS_HEADSET_INLINE;
 }
 
 static unsigned hslane_host_state(void *user)
@@ -2053,6 +2060,147 @@ static void lane_headset_calls(void)
 /*   core must not stall the display: the worker keeps presenting at  */
 /*   the refresh period, each repeat advancing swap_count by one and  */
 /*   never counting as a rendered frame for the idle barrier.         */
+/* ------------------------------------------------------------------ */
+/* Lane: GET_TARGET_REFRESH_RATE with a headset                       */
+/*   The headset's rate is the target only while the runloop runs at  */
+/*   it: a headset's own context (the Quest's) with no fit. A fitting */
+/*   headset paces the core at its own rate, a window paces at the    */
+/*   configured one, and the wrapper holds the core at its own, so    */
+/*   each of those targets the configured rate. A core following the  */
+/*   answer at 120 on a 60 Hz config rendered twice the frames.       */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_OPENXR
+static float hslane_target(void)
+{
+   float hz = 0.0f;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE,
+         &hz), "target rate lane: the environment refused the rate");
+   return hz;
+}
+#endif
+
+static void lane_headset_target_rate(void)
+{
+#ifdef HAVE_OPENXR
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   float saved_hz                 = settings->floats.video_refresh_rate;
+   bool saved_vsync               = settings->bools.video_vsync;
+   uint32_t (*get_flags)(void*)   = video_st->current_video_context.get_flags;
+   const video_poke_interface_t *saved_poke;
+   thread_video_t *thr;
+   video_xr_host_t host;
+
+   settings->floats.video_refresh_rate = 60.0f;
+   settings->bools.video_vsync         = true;
+   memset(&host, 0, sizeof(host));
+   host.state     = hslane_host_state;
+   host.eye_state = hslane_eye_state;
+   host.give      = hslane_give;
+   host.set_space = hslane_set_space;
+   host.sample    = hslane_sample;
+   host.eye_size  = hslane_eye_size;
+
+   /* Threaded: the wrapper holds the core at its own rate, whatever
+    * the headset's. A driver's free forgets the host, so it is set
+    * after each reinit. */
+   set_threaded_via_setting(true);
+   run_frames(2);
+   expect_wrapper(true, "target rate lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   video_driver_set_xr_host(&host);
+   CHECK(video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING,
+         "target rate lane: the host is not presenting");
+   video_thread_wait_idle();
+   hslane_inner                 = thr->driver;
+   hslane_driver                = *thr->driver;
+   hslane_driver.poke_interface = hslane_get_poke;
+   set_driver(thr, &hslane_driver);
+   set_poke_from(thr, &hslane_driver);
+   hslane_hz = 120.0f;
+   video_st->current_video_context.get_flags = hslane_inline_flags;
+   run_frames(2);
+   CHECK(video_st->headset_hz == 120.0f && !video_st->headset_interval,
+         "target rate lane: threaded took %.1f Hz, interval %u",
+         (double)video_st->headset_hz, video_st->headset_interval);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: threaded video targeted %.1f Hz on a 120 Hz "
+         "headset", (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: threaded video targeted %.1f Hz on a 90 Hz "
+         "headset", (double)hslane_target());
+   video_thread_wait_idle();
+   set_driver(thr, hslane_inner);
+   set_poke(thr, hslane_inner_poke);
+   video_st->current_video_context.get_flags = get_flags;
+   hslane_hz = 120.0f;
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "target rate lane");
+   video_driver_set_xr_host(&host);
+   CHECK(video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING,
+         "target rate lane: the host is not presenting (direct)");
+
+   /* Direct: the poke is the driver's own. */
+   saved_poke                      = video_st->poke;
+   hslane_poke                     = *saved_poke;
+   hslane_poke.get_headset_refresh = hslane_refresh;
+   video_st->poke                  = &hslane_poke;
+   get_flags = video_st->current_video_context.get_flags;
+
+   /* A headset's own context: the fit paces at 60, so 60 is targeted;
+    * with no fit the core runs at the headset's rate. */
+   video_st->current_video_context.get_flags = hslane_inline_flags;
+   run_frames(2);
+   CHECK(video_st->headset_hz == 120.0f && video_st->headset_interval == 2,
+         "target rate lane: the headset took %.1f Hz, interval %u",
+         (double)video_st->headset_hz, video_st->headset_interval);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: a fitting headset targeted %.1f Hz",
+         (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 0 && hslane_target() == 90.0f,
+         "target rate lane: a headset with no fit targeted %.1f Hz "
+         "(interval %u)", (double)hslane_target(), video_st->headset_interval);
+
+   /* A window: its vsync paces at the configured rate either way. The
+    * rates are adjusted as the headset's rate changes. */
+   video_st->current_video_context.get_flags = hslane_views_flags;
+   hslane_hz = 120.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 2 && hslane_target() == 60.0f,
+         "target rate lane: a window with a 120 Hz headset targeted %.1f Hz",
+         (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 0 && hslane_target() == 60.0f,
+         "target rate lane: a window with a 90 Hz headset targeted %.1f Hz",
+         (double)hslane_target());
+
+   video_st->current_video_context.get_flags = get_flags;
+   video_st->poke                            = saved_poke;
+   video_driver_set_xr_host(NULL);
+   run_frames(2);
+   CHECK(video_st->headset_hz == 0.0f && hslane_target() == 60.0f,
+         "target rate lane: without a headset %.1f Hz, targeted %.1f Hz",
+         (double)video_st->headset_hz, (double)hslane_target());
+   settings->floats.video_refresh_rate = saved_hz;
+   settings->bools.video_vsync         = saved_vsync;
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] target rate lane: a headset is the target "
+            "only while the runloop runs at its rate\n");
+#endif
+}
+
 /* ------------------------------------------------------------------ */
 
 static void lane_present_repeat(void)
@@ -10467,6 +10615,7 @@ int main(int argc, char *argv[])
       lane_pixel_format();
    lane_context_api_behind_wrapper();
    lane_headset_calls();
+   lane_headset_target_rate();
    lane_shader_params();
    lane_async_texture_load();
    if (!real_driver())

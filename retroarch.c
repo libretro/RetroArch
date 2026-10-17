@@ -1588,6 +1588,14 @@ static void driver_adjust_system_rates(
    video_st->headset_vsync    = settings->bools.video_vsync;
    video_st->headset_interval = (video_st->headset_vsync
          && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
+   /* A headset's own context begins and ends its frame in every core
+    * frame, so with no fit the core runs at the headset's rate; with a
+    * window, the window's vsync paces, and the wrapper holds the core
+    * at its own rate. */
+   video_st->headset_runloop_hz = (     !video_st->headset_interval
+         && !video_driver_thread_wrapper_active()
+         && video_context_driver_headset_inline())
+      ? video_st->headset_hz : 0.0f;
    if (video_st->headset_interval)
    {
       video_refresh_rate    = video_st->headset_hz;

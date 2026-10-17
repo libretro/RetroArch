@@ -4157,13 +4157,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             target_refresh_rate    = video_driver_get_refresh_rate();
 
 #ifdef HAVE_OPENXR
-         /* paces the runloop to headsets refresh,
-          * not to the configured one, so that is the rate targeted. */
+         /* The headset's rate only while the runloop iterates at it:
+          * a headset that paces the core at its own rate, or a window
+          * that does, targets the configured one. */
          {
             video_driver_state_t *video_st = video_state_get_ptr();
             if (     (video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING)
-                  && video_st->headset_hz > 0.0f)
-               target_refresh_rate = video_st->headset_hz;
+                  && video_st->headset_runloop_hz > 0.0f)
+               target_refresh_rate = video_st->headset_runloop_hz;
          }
 #endif
 
