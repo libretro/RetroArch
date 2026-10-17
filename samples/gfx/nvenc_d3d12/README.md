@@ -18,8 +18,8 @@ enumeration advertises it. This host accepts BGRA, NV12 and P010.
 Startup and teardown belong on the encoder worker. There are no added
 frame-path sleeps, locks, CPU fence waits or pixel readbacks. Encoded bytes
 are returned to CPU memory for muxing; that is distinct from reading pixels.
-The frontend recording/export queue, GPU format conversion, muxer and A/V
-handoff are not connected yet. Building the adapter does not enable a new
+Frontend capture attachment, core audio callbacks and HDR render-format
+conversion remain unconnected. Building the adapter does not enable a new
 user-facing recording mode. Automatic HDR signaling is not implemented.
 
 ## Validation
@@ -55,7 +55,7 @@ hands timestamp/duration/keyframe/fence-value descriptors to the encoder
 worker. A BUSY encode retains its descriptor; only packet release returns
 the slot. Producer close reaches EOS before outstanding GPU output drains.
 The native harness uses separate producer and encoder threads; frontend
-capture, worker scheduling and recording/mux/audio hookup remain pending.
+capture and core audio callback routing remain pending.
 
 `record/record_gpu_capture_d3d12.c` supplies the GPU capture pool for that
 handoff. It allocates textures and per-slot command resources at startup,
@@ -79,8 +79,8 @@ GPU copy/draw. Captured frames must decode identically to direct input,
 including RGBA-to-BGRA viewport drawing and a separate BGRA viewport copy.
 Direct input tests remain separate. Shader source/blob digests are checked
 portably; regenerate with `python3 record/shaders/generate_rgb.py` on Windows.
-Frontend attachment, HDR render-format conversion, worker scheduling and
-mux/audio integration remain pending.
+Frontend attachment, HDR render-format conversion and core audio routing
+remain pending.
 
 HDR cases independently parse every mastering coordinate and luminance/light
 value through FFmpeg's bitstream tracer, including AV1's different fixed-point
@@ -97,19 +97,30 @@ pump, including encoder/lock/EOS BUSY and packet backpressure. `worker_test`
 checks retryable failures, empty close, timestamp gaps and ownership teardown
 with a deterministic portable encoder. Abandon is reserved for a stopped
 producer after successful encoder destruction; capture GPU retirement remains
-the capture owner's responsibility. Frontend scheduling and mux/audio hookup
-are still pending.
+the capture owner's responsibility. Frontend attachment and core audio routing
+remain pending.
 
 The native harness now obtains startup sequence headers through the adapter
 and writes an MP4 counterpart through `record_mux_mp4` for every session.
 Each encoded packet stays worker-owned across mux backpressure; serialized
 output is separately acknowledged. Independent decoding checks MP4 pixel,
 timestamp and keyframe equality with the elementary stream. The pure muxer
-also supports native AC-3 A/V (see samples/record/mp4_mux). Frontend capture,
-scheduling, live audio and asynchronous file output remain unconnected.
+also supports native AC-3 A/V (see samples/record/mp4_mux). Frontend capture
+and core audio callbacks remain unconnected.
 
 Three additional native sessions exercise GPU capture/encode plus concurrent
 PCM submission through the production A/V output pump and overlapped writer.
 The shared runner compares video pixels/keyframes and exact 1536-sample audio
 clocks against raw video and independently encoded AC-3 references at 48 kHz
-stereo, 44.1 kHz mono and 32 kHz 5.1. Frontend attachment/scheduling remains open.
+stereo, 44.1 kHz mono and 32 kHz 5.1. Frontend attachment remains open.
+
+Three dispatcher sessions run the same video/audio oracles through
+`record_gpu_dispatch_d3d12` and its owned session. Separate video and PCM
+producers submit while the dedicated worker opens, drains and retires the
+encoder, output pump and file. The source fence remains unsignalled until
+four capture slots are published. The controller only observes status and
+collects after both producers stop; it never services the session itself.
+These cases cover H.264/BGRA with 48 kHz stereo, HEVC/P010 with 44.1 kHz mono
+and AV1/P010 with 32 kHz 5.1. They establish native combined pipeline
+acceptance; frontend capture attachment, core audio routing and HDR render
+conversion remain pending.

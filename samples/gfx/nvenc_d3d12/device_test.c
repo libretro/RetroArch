@@ -7,6 +7,7 @@
 #include "../../../record/record_gpu_capture_d3d12.h"
 #include "../../../record/record_gpu_worker_d3d12.h"
 #include <retro_atomic.h>
+#include "../../../record/record_gpu_dispatch_d3d12.h"
 #if defined(_WIN32) && defined(HAVE_THREADS)
 #define COBJMACROS
 #ifdef __MINGW32__
@@ -138,6 +139,7 @@ done:
 
 struct nve_producer
 {
+   record_gpu_dispatch_d3d12_t *dispatch;
    record_gpu_queue_t *queue;
    record_gpu_capture_d3d12_t *capture;
    ID3D12Resource *sources[4];
@@ -157,7 +159,11 @@ static DWORD WINAPI nve_produce(void *data)
          && !retro_atomic_load_acquire_int(&p->stop))
    {
       int result;
-      if (p->capture)
+      if (p->dispatch)
+         result = record_gpu_dispatch_d3d12_video(p->dispatch, p->sources[p->made % 4],
+               D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
+               p->made, 1, p->made == 0 || p->made == 12, NULL);
+      else if (p->capture)
          result = record_gpu_capture_d3d12_push(p->capture, p->sources[p->made % 4],
                D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
                p->made, 1, p->made == 0 || p->made == 12, NULL);
@@ -173,6 +179,8 @@ static DWORD WINAPI nve_produce(void *data)
       if (p->capture)
       {
          p->made++; idle = 0;
+         if (p->dispatch && p->made == 4)
+            if (FAILED(ID3D12Fence_Signal(p->gate, 1))) break;
          if (p->notify) SetEvent(p->notify);
          continue;
       }
@@ -186,7 +194,8 @@ static DWORD WINAPI nve_produce(void *data)
       p->made++; idle = 0;
       if (p->notify) SetEvent(p->notify);
    }
-   if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
+   if (p->dispatch) record_gpu_dispatch_d3d12_video_finish(p->dispatch);
+   else if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
    else record_gpu_queue_finish(p->queue);
    if (p->notify) SetEvent(p->notify);
    return 0;
@@ -411,6 +420,18 @@ int main(int argc, char **argv)
       config.max_cll = metadata == 4 ? 65535 : 1000;
       config.max_fall = metadata == 4 ? 0 : 400;
    }
+   if (getenv("NVENC_TEST_DISPATCH"))
+   {
+      CHECK(capture && !metadata);
+      producer.frames = FRAMES;
+      out = fopen(argv[3], "wb"); CHECK(out != NULL);
+      mux_config.timescale = config.fps_num;
+      mux_config.max_packet_size = 1024 * 1024;
+      CHECK(nve_pipeline_run(NULL, NULL, &mux_config, argv[3], out, &received,
+               queue, ready, &value, true, FRAMES, NULL, &config, &producer));
+      CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
+      ok = 1; goto done;
+   }
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);
@@ -484,7 +505,7 @@ int main(int argc, char **argv)
    {
       CHECK(!metadata);
       CHECK(nve_pipeline_run(worker, encoder, &mux_config, argv[3], out, &received,
-               queue, ready, &value, capturing != 0, producer.frames, producer.notify));
+               queue, ready, &value, capturing != 0, producer.frames, producer.notify, NULL, NULL));
       status = RECORD_GPU_WORKER_END;
    }
    else

@@ -19,8 +19,11 @@ static int nve_pipeline_worker_step(record_gpu_worker_d3d12_t *worker, nvenc_d3d
 #include "../../../record/record_gpu_output_d3d12.c"
 #undef record_gpu_worker_d3d12_step
 #include "../../../record/record_file_win32.c"
+#include "../../../record/record_gpu_session_d3d12.c"
+#include "../../../record/record_gpu_dispatch_d3d12.c"
 struct nve_pcm_producer
 {
+   record_gpu_dispatch_d3d12_t *dispatch;
    record_gpu_output_d3d12_t *output;
    const int16_t *samples;
    unsigned frames, channels, made;
@@ -36,24 +39,29 @@ static DWORD WINAPI nve_pcm_produce(void *opaque)
       unsigned n = 1 + p->made * 17u % 1023;
       int result;
       if (n > p->frames - p->made) n = p->frames - p->made;
-      result = record_gpu_output_d3d12_audio(p->output, p->samples + p->made * p->channels, n);
+      result = p->dispatch
+         ? record_gpu_dispatch_d3d12_audio(p->dispatch, p->samples + p->made * p->channels, n)
+         : record_gpu_output_d3d12_audio(p->output, p->samples + p->made * p->channels, n);
       if (result == RECORD_GPU_OUTPUT_ERROR) break;
       if (result == RECORD_GPU_OUTPUT_BUSY) { Sleep(1); idle++; }
-      else { p->made += n; idle = 0; SetEvent(p->notify); }
+      else { p->made += n; idle = 0; if (p->notify) SetEvent(p->notify); }
    }
-   record_gpu_output_d3d12_audio_finish(p->output);
-   SetEvent(p->notify);
+   if (p->dispatch) record_gpu_dispatch_d3d12_audio_finish(p->dispatch);
+   else record_gpu_output_d3d12_audio_finish(p->output);
+   if (p->notify) SetEvent(p->notify);
    return 0;
 }
 static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *encoder,
       const record_mp4_config_t *video, const char *path, FILE *raw, unsigned *received,
       ID3D12CommandQueue *queue, ID3D12Fence *ready, uint64_t *value, bool capturing,
-      unsigned frames, HANDLE notify)
+      unsigned frames, HANDLE notify, const nvenc_d3d12_config_t *dispatch_config,
+      struct nve_producer *video_producer)
 {
    record_gpu_output_config_t config;
    record_gpu_output_d3d12_t *output = NULL;
    struct nve_pcm_producer producer;
-   HANDLE thread = NULL;
+   record_gpu_dispatch_d3d12_t *dispatch = NULL;
+   HANDLE thread = NULL, video_thread = NULL;
    int16_t *samples = NULL;
    float *pcm = NULL;
    uint8_t *packet = NULL, *headers = NULL;
@@ -91,18 +99,48 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
       if (!size || fwrite(packet, 1, size, audio) != size) goto done;
    }
    if (fclose(audio)) { audio = NULL; goto done; } audio = NULL;
-   headers = (uint8_t*)malloc(65536); if (!headers) goto done;
-   if (!nvenc_d3d12_headers(encoder, headers, 65536, &headers_size)) goto done;
-   config.video.headers = headers; config.video.headers_size = headers_size;
-   output = record_gpu_output_d3d12_new(worker, &config, movie); if (!output) goto done;
-   free(headers); headers = NULL;
    nve_pipeline_raw = raw; nve_pipeline_received = received;
+   if (dispatch_config)
+   {
+      dispatch = record_gpu_dispatch_d3d12_new(video_producer->capture, dispatch_config, &config, movie);
+      if (!dispatch) goto done;
+      video_producer->dispatch = dispatch;
+      retro_atomic_int_init(&video_producer->stop, 0);
+      video_thread = CreateThread(NULL, 0, nve_produce, video_producer, 0, NULL);
+      if (!video_thread) goto done;
+   }
+   else
+   {
+      headers = (uint8_t*)malloc(65536); if (!headers) goto done;
+      if (!nvenc_d3d12_headers(encoder, headers, 65536, &headers_size)) goto done;
+      config.video.headers = headers; config.video.headers_size = headers_size;
+      output = record_gpu_output_d3d12_new(worker, &config, movie); if (!output) goto done;
+      free(headers); headers = NULL;
+   }
+   producer.dispatch = dispatch;
    producer.notify = notify;
    producer.output = output; producer.samples = samples; producer.frames = total; producer.channels = channels;
    retro_atomic_int_init(&producer.stop, 0);
    thread = CreateThread(NULL, 0, nve_pcm_produce, &producer, 0, NULL); if (!thread) goto done;
    while (idle < 10000)
    {
+      if (dispatch)
+      {
+         enum record_gpu_session_error error;
+         uint32_t file_error, system_error;
+         enum record_gpu_dispatch_state state = record_gpu_dispatch_d3d12_status(
+               dispatch, &error, &file_error, &system_error);
+         if (state == RECORD_GPU_DISPATCH_DONE || state == RECORD_GPU_DISPATCH_FAILED)
+         {
+            result = state == RECORD_GPU_DISPATCH_DONE ? RECORD_GPU_OUTPUT_END : RECORD_GPU_OUTPUT_ERROR;
+            if (result == RECORD_GPU_OUTPUT_ERROR)
+               fprintf(stderr, "dispatcher failed: session %u, file %u, system %u\n",
+                     (unsigned)error, (unsigned)file_error, (unsigned)system_error);
+            break;
+         }
+         Sleep(1); idle++;
+         continue;
+      }
       result = record_gpu_output_d3d12_step(output);
       if (result == RECORD_GPU_OUTPUT_ERROR || result == RECORD_GPU_OUTPUT_END) break;
       if (!signalled && encoder->count == 4)
@@ -124,8 +162,21 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
       }
       else idle = 0;
    }
-   ok = result == RECORD_GPU_OUTPUT_END && *received == frames;
+   ok = result == RECORD_GPU_OUTPUT_END;
 done:
+   if (dispatch && !ok)
+   {
+      record_gpu_dispatch_d3d12_cancel(dispatch);
+      ID3D12Fence_Signal(ready, 1);
+   }
+   if (video_thread)
+   {
+      retro_atomic_store_release_int(&video_producer->stop, 1);
+      if (WaitForSingleObject(video_thread, 10000) != WAIT_OBJECT_0) abort();
+      CloseHandle(video_thread);
+      ok = ok && video_producer->made == frames;
+   }
+   else if (dispatch) record_gpu_dispatch_d3d12_video_finish(dispatch);
    if (thread)
    {
       retro_atomic_store_release_int(&producer.stop, 1);
@@ -133,6 +184,14 @@ done:
       CloseHandle(thread);
       ok = ok && producer.made == total;
    }
+   if (dispatch)
+   {
+      if (!thread) record_gpu_dispatch_d3d12_audio_finish(dispatch);
+      for (i = 0; i < 10000 && !record_gpu_dispatch_d3d12_free(dispatch); i++) Sleep(1);
+      if (i == 10000) abort();
+      video_producer->dispatch = NULL;
+   }
+   ok = ok && *received == frames;
    if (output)
    {
       record_gpu_output_d3d12_audio_finish(output);
@@ -143,8 +202,10 @@ done:
       }
       if (!record_gpu_output_d3d12_free(output)) abort();
    }
+   nve_pipeline_raw = NULL; nve_pipeline_received = NULL;
    if (audio) fclose(audio);
    rac3_encoder_free(reference); free(movie); free(sound); free(samples); free(pcm); free(packet); free(headers);
-   if (ok) printf("PASS: GPU worker + concurrent PCM + native MP4/file output, %u Hz/%u ch\n", rate, channels);
+   if (ok) printf("PASS: %s + concurrent PCM + native MP4/file output, %u Hz/%u ch\n",
+         dispatch_config ? "GPU dispatcher/session" : "GPU worker", rate, channels);
    return ok;
 }
