@@ -179,9 +179,9 @@ int main(int argc, char **argv)
 
    /* STATE answers as STATE, not as the command it runs */
    reply[0]=0;
-   CHECK(!command_state(&cmd,"lo") && !strcmp(reply,"STATE ERROR one of save|load"));
+   CHECK(!command_state(&cmd,"lo") && !strcmp(reply,"STATE ERROR one of save|load|checkpoint|rollback"));
    reply[0]=0;
-   CHECK(!command_state(&cmd,"loads 1") && !strcmp(reply,"STATE ERROR one of save|load"));
+   CHECK(!command_state(&cmd,"loads 1") && !strcmp(reply,"STATE ERROR one of save|load|checkpoint|rollback"));
    reply[0]=0;
    CHECK(!command_state(&cmd,"load") && !strcmp(reply,"STATE ERROR a slot number, not nothing"));
    strlcpy(loop->name.savestate,"command_frames_test.state",
@@ -191,6 +191,57 @@ int main(int argc, char **argv)
    for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
    CHECK(!strcmp(reply,"STATE save 1"));
    remove("command_frames_test.state1");
+   /* a checkpoint in memory, and the rollback to it */
+   reply[0]=0;
+   CHECK(command_state(&cmd,"rollback"));
+   for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+   CHECK(!strncmp(reply,"STATE ERROR no checkpoint",25));
+   cmd.error=false;
+   {
+      unsigned at;
+      char want[32];
+      reply[0]=0;
+      CHECK(command_state(&cmd,"checkpoint"));
+      for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE checkpoint"));
+      at=ram7(&cmd);
+      CHECK(command_run_frames(&cmd,"5"));
+      for (i=0;i<5;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE rollback"));
+      /* the frame counter is the harness core's whole state */
+      reply[0]=0;
+      CHECK(command_run_frames(&cmd,"1"));
+      runloop_iterate();
+      snprintf(want,sizeof(want),"%u",(at + 1) & 0xff);
+      CHECK(ram7(&cmd) == ((at + 1) & 0xff));
+      (void)want;
+   }
+#ifdef HAVE_BSV_MOVIE
+   /* a recording would go on from a state it never saw: refused, as a
+    * load from a slot is */
+   reply[0]=0;
+   CHECK(command_replay(&cmd,"record"));
+   for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+   if (input_state_get_ptr()->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+   {
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!strncmp(reply,"STATE ERROR a replay is recording",33));
+      reply[0]=0;
+      command_replay(&cmd,"halt");
+      for (i=0;i<4;i++) { runloop_iterate(); task_queue_check(); }
+   }
+   else
+      printf("replay recording did not start here: rollback-while-recording not checked\n");
+   cmd.error=false;
+#endif
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"checkpoint 3") && strstr(reply,"nothing after"));
+   cmd.error=false;
    /* a reply longer than any fixed buffer still answers as the tool */
    {
       char long_path[700];
@@ -219,6 +270,16 @@ int main(int argc, char **argv)
    /* a command that answers nothing of its own answers as the tool */
    reply[0]=0;
    CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
+   /* RESET is a hotkey and an action: HELP describes it once */
+   {
+      char *nl;
+      unsigned lines = 0;
+      reply[0]=0;
+      CHECK(command_help(&cmd,"RESET"));
+      for (nl = reply; (nl = strchr(nl, '\n')); nl++)
+         lines++;
+      CHECK(lines == 1 && strstr(reply,"RESET"));
+   }
    /* CORE stands for LOAD_CORE, START_CORE and UNLOAD_CORE */
    reply[0]=0;
    CHECK(!command_core(&cmd,"fly") && !strcmp(reply,"CORE ERROR one of load|start|unload"));
@@ -653,7 +714,7 @@ int main(int argc, char **argv)
    /* RUN_UNTIL waits on a byte the core maps, answered the frame it
     * meets what was asked. ram[7] follows the frame counter. */
    {
-      char req[64];
+      char req[256];
       unsigned now;
       /* what it already holds: no frame need run */
       now=ram7(&cmd); reply[0]=0;
@@ -807,7 +868,7 @@ int main(int argc, char **argv)
          snprintf(req,sizeof(req),"run 10; stop 1007 == %u",(now + 3) & 0xff);
          CHECK(command_steps(&cmd,req));
          for (i=0;i<3;i++) runloop_iterate();
-         CHECK(!strcmp(reply,"STOPPED 3\nSTEP 1\n")
+         CHECK(!strcmp(reply,"STOPPED 3\nSTOP 1\nSTEP 1\n")
                && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
          /* what already holds runs no frame */
          reply[0]=0;
@@ -822,6 +883,36 @@ int main(int argc, char **argv)
          }
          (void)want;
       }
+      /* a watch of two bytes as one value, high:low */
+      {
+         char want[64];
+         CHECK(command_watch(&cmd,"pos 1006:1007"));
+         now=ram7(&cmd); reply[0]=0;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         snprintf(want,sizeof(want),"RUN_FRAMES 1\npos\t1006:1007\t%u\n",0x600 + ((now + 1) & 0xff));
+         CHECK(!strcmp(reply,want));
+         CHECK(command_watch(&cmd,"pos off"));
+      }
+      /* only the bits a mask names: ram[6] holds 6, 110 in binary */
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 & 0x4 == 4") && !strcmp(reply,"MET 0\nVALUE 4\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 & 1 == 0") && !strcmp(reply,"MET 0\nVALUE 0\n"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & zz == 0") && strstr(reply,"a mask"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & 0x 4 == 4") && strstr(reply,"a mask"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & 0x+4 == 4") && strstr(reply,"a mask"));
+      cmd.error=false;
+      /* any of several stops ends the list */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 20; stop 1006 == 7; stop 1007 == %u",(now + 2) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      runloop_iterate(); runloop_iterate();
+      /* and says which */
+      CHECK(!strcmp(reply,"STOPPED 2\nSTOP 2\nSTEP 1\n"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"within the 540 frames"));
       reply[0]=0;
@@ -845,6 +936,22 @@ int main(int argc, char **argv)
          }
          CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 2\n"));
       }
+      /* an until that already holds between them is no frame: still
+       * two taps */
+      {
+         unsigned want[5] = {1,1,0,1,1};
+         unsigned k;
+         bool     ok = true;
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 2; until 1006 == 6; press 1 a 2"));
+         for (k=0;k<5;k++)
+         {
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 3\n"));
+      }
       /* that frame let go counts against the frames a request runs */
       reply[0]=0;
       CHECK(!command_steps(&cmd,"press 1 a 270; press 1 a 270") && strstr(reply,"step 2"));
@@ -866,20 +973,145 @@ int main(int argc, char **argv)
          CHECK(!command_press(&cmd,longarg) && strstr(reply,"at most 255 characters"));
       }
       reply[0]=0;
-      CHECK(!command_steps(&cmd,"jump 3") && strstr(reply,"run, press, until or stop"));
+      CHECK(!command_steps(&cmd,"jump 3") && strstr(reply,"run, press, until, checkpoint or stop"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"") && strstr(reply,"STEPS ERROR"));
       reply[0]=0;
-      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; run 1")
-            && strstr(reply,"one stop"));
+      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; stop 1007 == 3;"
+            " stop 1007 == 4; stop 1007 == 5; run 1") && strstr(reply,"at most 4 stops"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"press 1 left_x 3") && strstr(reply,"axis"));
       reply[0]=0;
-      CHECK(!command_steps(&cmd,"run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;"
-            "run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1")
-            && strstr(reply,"at most 16 steps"));
+      for (i=0, req[0]=0; i<33; i++)
+         strlcat(req,"run 1;",sizeof(req));
+      CHECK(!command_steps(&cmd,req) && strstr(reply,"at most 32 steps"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"until 99000 == 0") && strstr(reply,"STEPS ERROR"));
+      cmd.error=false;
+
+      /* a checkpoint as a step: where the list got to, not where it
+       * started */
+      now=ram7(&cmd); reply[0]=0;
+      CHECK(command_steps(&cmd,"run 2; checkpoint; run 3"));
+      for (i=0;i<5;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 5\nSTEP 3\n"));
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(command_run_frames(&cmd,"1"));
+      runloop_iterate();
+      CHECK(ram7(&cmd) == ((now + 3) & 0xff));
+      /* first in the list, it is kept before the first frame runs */
+      now=ram7(&cmd); reply[0]=0;
+      CHECK(command_steps(&cmd,"checkpoint; run 2") && !reply[0]);
+      runloop_iterate(); runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 2\nSTEP 2\n"));
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(command_run_frames(&cmd,"1"));
+      runloop_iterate();
+      CHECK(ram7(&cmd) == ((now + 1) & 0xff));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"checkpoint") && strstr(reply,"a step at least"));
+      cmd.error=false;
+
+      /* queued: answered at once, played on through what is added, and
+       * paused once it has all run, answering no one */
+      now=ram7(&cmd); reply[0]=0;
+      CHECK(command_steps(&cmd,"run 3|on") && !strcmp(reply,"QUEUED 1\n")
+            && (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 2 |on") && !strcmp(reply,"QUEUED 2\n"));
+      reply[0]=0;
+      for (i=0;i<4;i++) runloop_iterate();
+      CHECK(!reply[0] && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+            && ram7(&cmd) == ((now + 5) & 0xff));
+      runloop_iterate();
+      CHECK(ram7(&cmd) == ((now + 5) & 0xff));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* a stop is kept for the next queued STEPS, whose steps are not
+       * played on from it */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 10; stop 1007 == %u|on",(now + 2) & 0xff);
+      CHECK(command_steps(&cmd,req) && !strcmp(reply,"QUEUED 1\n"));
+      reply[0]=0;
+      runloop_iterate(); runloop_iterate();
+      CHECK(!reply[0] && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      CHECK(command_steps(&cmd,"run 1|on")
+            && !strcmp(reply,"STOPPED 2\nSTOP 1\nSTEP 1\n")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* a list without stops keeps those before it; with its own, they
+       * take over once it starts */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 2; stop 1007 == %u|on",(now + 4) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      CHECK(command_steps(&cmd,"run 5|on"));
+      for (i=0;i<6;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"STOPPED 4\nSTOP 1\nSTEP 1\n"));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 2; stop 1007 == %u|on",(now + 4) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      CHECK(command_steps(&cmd,"run 5; stop 1006 == 7|on"));
+      for (i=0;i<7;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n")
+            && ram7(&cmd) == ((now + 7) & 0xff));
+      /* a rollback drops a stop no one has heard about */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 5; stop 1007 == %u|on",(now + 1) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* and ends a queue planned from the state it left */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 10|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* a request that waits replaces the queue */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 10|on"));
+      reply[0]=0;
+      CHECK(command_run_frames(&cmd,"1") && !reply[0]);
+      runloop_iterate();
+      CHECK(!strcmp(reply,"RUN_FRAMES 1\n")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      /* and is not queued behind */
+      reply[0]=0;
+      CHECK(command_run_frames(&cmd,"5"));
+      CHECK(!command_steps(&cmd,"run 1|on") && strstr(reply,"a request waits"));
+      command_run_frames_cancel("tidying up");
+      cmd.error=false;
+      /* 64 queued and running at most */
+      for (i=0, req[0]=0; i<32; i++)
+         strlcat(req,"run 1;",sizeof(req));
+      strlcat(req,"|on",sizeof(req));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,req) && !strcmp(reply,"QUEUED 32\n"));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,req) && !strcmp(reply,"QUEUED 64\n"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1|on") && strstr(reply,"the queue is full"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1|on") && !strcmp(reply,"QUEUED 64\n"));
+      command_run_frames_cancel("tidying up");
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1|maybe") && strstr(reply,"on or off"));
       cmd.error=false;
    }
 
@@ -903,10 +1135,23 @@ int main(int argc, char **argv)
    /* closing the content drops the watches: the next content's
     * addresses mean something else */
    CHECK(command_watch(&cmd,"two 1002"));
+   CHECK(command_set_input(&cmd,"1 start 1"));
+   {
+      char req[64];
+      unsigned now=ram7(&cmd);
+      snprintf(req,sizeof(req),"run 5; stop 1007 == %u|on",(now + 1) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      runloop_iterate();
+   }
    command_event(CMD_EVENT_UNLOAD_CORE,NULL);
    for (i=0;i<8;i++) { runloop_iterate(); task_queue_check(); }
    reply[0]=0;
    CHECK(command_watch(&cmd,"") && !strcmp(reply,"WATCH none\n"));
+   /* and what SET_INPUT held: the next content starts with nothing held */
+   CHECK(input_driver_command_held(0,axes) == 0);
+   /* and a stop no one heard about */
+   reply[0]=0;
+   CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
    main_exit(NULL); remove(cfg_path);
    printf("command_frames: %s (%u failures)\n",failures?"FAIL":"PASS",failures);
    return failures ? 1 : 0;

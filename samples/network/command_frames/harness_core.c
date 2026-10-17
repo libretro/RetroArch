@@ -66,9 +66,12 @@ void retro_run(void)
    frame++; pixels[0]=frame; video(pixels,8,8,8*sizeof(*pixels));
    ram[7]=(uint8_t)frame;
 }
-size_t retro_serialize_size(void) { return sizeof(frame); }
-bool retro_serialize(void *p,size_t n) { if(n<sizeof(frame))return false; memcpy(p,&frame,sizeof(frame));return true; }
-bool retro_unserialize(const void *p,size_t n) { if(n<sizeof(frame))return false; memcpy(&frame,p,sizeof(frame));return true; }
+/* the frame counter, padded to 8 bytes: a state is never shorter than
+ * the header the frontend looks for in one */
+#define STATE_SIZE 8
+size_t retro_serialize_size(void) { return STATE_SIZE; }
+bool retro_serialize(void *p,size_t n) { if(n<STATE_SIZE)return false; memset(p,0,STATE_SIZE); memcpy(p,&frame,sizeof(frame));return true; }
+bool retro_unserialize(const void *p,size_t n) { if(n<STATE_SIZE)return false; memcpy(&frame,p,sizeof(frame));return true; }
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned i,bool b,const char *c) { (void)i;(void)b;(void)c; }
 bool retro_load_game(const struct retro_game_info *g) { (void)g;return true; }

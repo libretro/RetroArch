@@ -76,12 +76,16 @@ static const char *const mcp_versions[] = {
 #define MCP_MODERN_VERSION "2026-07-28"
 /* The revision that added outputSchema and structuredContent. */
 #define MCP_STRUCTURED_VERSION "2025-06-18"
+/* Required on stateless list results. Not cacheable: the lists are
+ * compiled in and change on upgrade, with listChanged false. */
+#define MCP_NO_CACHE ",\"ttlMs\":0,\"cacheScope\":\"private\""
 
 /* JSON-RPC and MCP error codes */
 #define MCP_ERR_PARSE            -32700
 #define MCP_ERR_INVALID_REQUEST  -32600
 #define MCP_ERR_METHOD           -32601
 #define MCP_ERR_PARAMS           -32602
+#define MCP_ERR_INTERNAL         -32603
 #define MCP_ERR_HEADER_MISMATCH  -32020
 #define MCP_ERR_VERSION          -32022
 
@@ -109,6 +113,12 @@ struct mcp_conn
    bool     modern;
    bool     stdio;       /* the stdio transport's one connection */
    bool     structured;  /* its revision takes structuredContent */
+   /* the reply owed completes a prompt argument rather than answering
+    * a tool: the column of the command's rows that holds the values,
+    * and what they are to match */
+   bool     completing;
+   unsigned complete_col;
+   char     complete_prefix[128];
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -117,6 +127,7 @@ struct mcp_arg
    char  name[32];
    char *value;          /* heap; a number arrives as its digits */
    bool  is_number;
+   bool  is_other;       /* true, false, null, an object or an array */
 };
 
 /* More than any command's parameters, plus room for a client that
@@ -132,6 +143,12 @@ struct mcp_request
    char version[16];     /* params._meta protocolVersion */
    char init_version[16];/* params.protocolVersion (initialize) */
    char level[16];       /* params.level (logging/setLevel) */
+   /* completion/complete: what is being completed, and from what */
+   char ref_type[24];    /* params.ref.type */
+   char ref_name[48];    /* params.ref.name */
+   char arg_name[32];    /* params.argument.name */
+   char arg_value[128];  /* params.argument.value */
+   char ctx_playlist[256]; /* params.context.arguments.playlist */
    struct mcp_arg args[MCP_MAX_ARGS];
    unsigned num_args;
    bool has_id;
@@ -436,6 +453,38 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    bool wrote = false;
 
    MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{");
+   /* a record: the columns are the fields themselves */
+   if (rows->seps)
+   {
+      bool first = true;
+      for (col = rows->columns; col && col->name; col++)
+      {
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+         MCP_RAW(w, ":{\"type\":\"string\"");
+         if (describe && col->desc)
+         {
+            MCP_RAW(w, ",\"description\":");
+            rjsonwriter_add_string(w, col->desc);
+         }
+         MCP_RAW(w, "}");
+      }
+      MCP_RAW(w, "},\"required\":[");
+      first = true;
+      for (col = rows->columns; col && col->name; col++)
+      {
+         if (rows->required && (size_t)(col - rows->columns) >= rows->required)
+            break;
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+      }
+      MCP_RAW(w, "]}");
+      return;
+   }
    if (rows->columns)
    {
       bool first = true;
@@ -499,6 +548,38 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    MCP_RAW(w, "}");
 }
 
+/* What a client is told once, at the handshake: how the tools fit
+ * together to play a game, which no one tool's description says. A
+ * field run spent its first calls finding this out. */
+#define MCP_INSTRUCTIONS \
+   "Controls a running RetroArch. To play a game: find it with " \
+   "LIST_PLAYLISTS and GET_PLAYLIST, and LOAD_CONTENT it with paused on. " \
+   "GET_MEMORY_MAP gives the addresses READ_CORE_MEMORY, WATCH and " \
+   "conditions take. WATCH the bytes each step needs - position, state, " \
+   "enemies - and every step answers with them. Step with STEPS " \
+   "(approach, jump and land in one request, with a stop for a death; " \
+   "queue: on plays the next stretch on without pausing), " \
+   "PRESS ... until, or RUN_UNTIL; RUN_FRAMES lets the game run. STATE " \
+   "checkpoint before a risky move, and rollback after a mistake. Tools " \
+   "marked destructive can lose unsaved progress or load code."
+
+/* The one prompt: a session's start, with the workflow above. */
+#define MCP_PROMPT_NAME "play_game"
+
+/* A tool's title, from its name: RUN_FRAMES is "Run frames". */
+static void mcp_title(char *s, size_t len, const char *name)
+{
+   size_t i;
+   for (i = 0; name[i] && i + 1 < len; i++)
+   {
+      char ch = name[i] == '_' ? ' ' : name[i];
+      if (i && ch >= 'A' && ch <= 'Z')
+         ch = (char)(ch - 'A' + 'a');
+      s[i] = ch;
+   }
+   s[i] = '\0';
+}
+
 /* A tool: its parameters as a JSON Schema, from the table rather than
  * from the prose HELP prints, so a client is told each one's name, type
  * and whether it is needed. A hotkey, and a command that takes nothing,
@@ -515,8 +596,13 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    bool ro    = (flags & CMD_INFO_READ_ONLY)   != 0;
    bool de    = (flags & CMD_INFO_DESTRUCTIVE) != 0;
 
+   char title[64];
+
    MCP_RAW(w, "{\"name\":");
    rjsonwriter_add_string(w, name);
+   mcp_title(title, sizeof(title), name);
+   MCP_RAW(w, ",\"title\":");
+   rjsonwriter_add_string(w, title);
    MCP_RAW(w, ",\"description\":");
    rjsonwriter_add_string(w, desc ? desc : "");
    MCP_RAW(w, ",\"inputSchema\":{\"type\":\"object\",\"properties\":{");
@@ -613,10 +699,8 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       }
    }
    MCP_RAW(w, "]");
-   /* No ttlMs or cacheScope: what the tools are and what they take is
-    * compiled in, so it changes when RetroArch is upgraded, and
-    * listChanged is false - a client holding a cached list would have
-    * no way of learning that it had. */
+   if (modern)
+      MCP_RAW(w, MCP_NO_CACHE);
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
 }
@@ -767,6 +851,17 @@ static const char *mcp_unknown_arg(const struct cmd_action_map *act,
    return NULL;
 }
 
+/* A parameter sent as true, false, null, an object or an array, which
+ * no tool takes, or NULL. */
+static const char *mcp_other_arg(const struct mcp_request *r)
+{
+   unsigned i;
+   for (i = 0; i < r->num_args; i++)
+      if (r->args[i].is_other)
+         return r->args[i].name;
+   return NULL;
+}
+
 /* A parameter whose value is not one of the set its schema offers, or
  * NULL: "yes" for an on|off would otherwise reach the line as text the
  * handler reads as something else. */
@@ -779,10 +874,16 @@ static const struct cmd_param *mcp_enum_arg(const struct cmd_action_map *act,
       const char *v = p->values ? mcp_arg(r, p->name) : NULL;
       const char *w;
       size_t      n;
-      /* empty stands in for left out, keeping the operands after it in
-       * their places */
-      if (!v || !*v)
+      if (!v)
          continue;
+      /* empty stands in for left out where it may be left out; a value
+       * that must be one of the set is not one of them empty */
+      if (!*v)
+      {
+         if (!p->required)
+            continue;
+         return p;
+      }
       n = strlen(v);
       for (w = p->values; *w; )
       {
@@ -809,6 +910,7 @@ static char *mcp_compose(const struct cmd_action_map *act,
       const struct mcp_request *r, const char **err)
 {
    const struct cmd_param *p;
+   const struct cmd_param *last = NULL;
    const char *only;
    size_t      len = 1;
    char       *out;
@@ -837,13 +939,17 @@ static char *mcp_compose(const struct cmd_action_map *act,
          }
          continue;
       }
+      /* an empty optional one keeps the places of those after it, and
+       * with none after it is left out: "core|content|" is a path */
+      if (*v || p->required)
+         last = p;
       len += strlen(v) + (p->lead ? strlen(p->lead) : 1);
    }
 
    if (!(out = (char*)malloc(len)))
       return NULL;
    *out = '\0';
-   for (p = act->params; p->name; p++)
+   for (p = act->params; last && p <= last; p++)
    {
       const char *v = mcp_param_value(p, r);
       if (!v)
@@ -956,16 +1062,60 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
    return -1;
 }
 
+/* A record's fields from the line the command opens with its own
+ * name: split by rows->seps in turn, the last field taking the rest. */
+static void mcp_structured_record(rjsonwriter_t *w,
+      const struct cmd_rows *rows, const char *name, const char *text,
+      size_t len)
+{
+   const struct cmd_column *col;
+   const char *end      = text + len;
+   const char *p        = text;
+   const char *eol      = (const char*)memchr(text, '\n', len);
+   size_t      name_len = strlen(name);
+   size_t      i        = 0;
+   bool        first    = true;
+
+   if (eol)
+      end = eol;
+   if ((size_t)(end - p) > name_len && !strncmp(p, name, name_len)
+         && p[name_len] == ' ')
+      p += name_len + 1;
+   MCP_RAW(w, ",\"structuredContent\":{");
+   for (col = rows->columns; col && col->name && p < end; col++, i++)
+   {
+      const char *stop = end;
+      if (col[1].name)
+      {
+         char sep = rows->seps[i] ? rows->seps[i]
+            : rows->seps[strlen(rows->seps) - 1];
+         const char *q = (const char*)memchr(p, sep, (size_t)(end - p));
+         if (q)
+            stop = q;
+      }
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, col->name);
+      MCP_RAW(w, ":");
+      rjsonwriter_add_string_len(w, p, (int)(stop - p));
+      p = stop < end ? stop + 1 : end;
+   }
+   MCP_RAW(w, "}");
+}
+
 static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       const char *name, const char *text, size_t len)
 {
    const char *p        = text;
    const char *end      = text + len;
-   /* A trailer is the reply's first line or its last, so a reply has at
-    * most two: which they are, and the number each carried. */
-   int         found[2];
-   const char *num[2];
-   size_t      num_len[2];
+   /* A trailer is the reply's first line, its last, or the one before
+    * the last - STEPS ends on which stop held and then on which step -
+    * so a reply has at most three: which they are, and the number each
+    * carried. */
+   int         found[3];
+   const char *num[3];
+   size_t      num_len[3];
    size_t      name_len = strlen(name);
    size_t      ncol     = 0;
    size_t      ntr      = 0;
@@ -980,7 +1130,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       ncol++;
    while (rows->trailers && rows->trailers[ntr].word)
       ntr++;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 3; i++)
    {
       found[i]   = -1;
       num[i]     = NULL;
@@ -1005,9 +1155,14 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          continue;
       /* one of the command's trailers rather than a row */
       {
-         size_t slot = line == text ? 0 : 1;
-         int    t    = mcp_trailer(rows->trailers, ntr, line, stop,
-               line == text, p >= end, &num[slot], &num_len[slot]);
+         const char *after = p < end
+            ? (const char*)memchr(p, '\n', (size_t)(end - p)) : NULL;
+         bool        last  = p >= end;
+         bool        next_last = !last && (!after || after + 1 >= end);
+         size_t      slot  = line == text ? 0 : last ? 1 : 2;
+         int         t     = mcp_trailer(rows->trailers, ntr, line, stop,
+               line == text, line == text ? last : last || next_last,
+               &num[slot], &num_len[slot]);
          if (t >= 0)
          {
             found[slot] = t;
@@ -1046,6 +1201,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       size_t slot;
       if      (found[0] >= 0 && (size_t)found[0] == i) slot = 0;
       else if (found[1] >= 0 && (size_t)found[1] == i) slot = 1;
+      else if (found[2] >= 0 && (size_t)found[2] == i) slot = 2;
       else                                             continue;
       if (rows->trailers[i].flag)
       {
@@ -1159,11 +1315,130 @@ static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
    MCP_RAW(w, "}]");
    /* a failure's text is the reason, not rows */
    if (act && act->rows && c->structured && !is_error)
-      mcp_structured(w, act->rows, act->str, text, text_len);
+   {
+      if (act->rows->seps)
+         mcp_structured_record(w, act->rows, act->str, text, text_len);
+      else
+         mcp_structured(w, act->rows, act->str, text, text_len);
+   }
    rjsonwriter_rawf(w, ",\"isError\":%s", is_error ? "true" : "false");
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
    free(fixed);
+}
+
+/* {"completion":{"values":[...]}}: the @c->complete_col field of each
+ * row of @text that holds @c->complete_prefix, case aside - a playlist
+ * name, a game's label. A line that is not a row (MORE, "none") holds
+ * no tab and is skipped where the field is not the first. */
+static void mcp_completion_result(struct mcp_conn *c, const char *id,
+      const char *text, size_t len, bool is_error)
+{
+   const char    *p     = text;
+   const char    *end   = text + len;
+   unsigned       total = 0;
+   unsigned       sent  = 0;
+   bool           more  = false; /* a page of the list, with more after it */
+   rjsonwriter_t *w     = mcp_envelope(id);
+   size_t         plen  = strlen(c->complete_prefix);
+   c->completing        = false;
+   /* a list that could not be read is not one with nothing in it: the
+    * command's own reason, as an error */
+   if (is_error)
+   {
+      char msg[256];
+      size_t n = len < sizeof(msg) - 1 ? len : sizeof(msg) - 1;
+      if (w)
+         rjsonwriter_free(w);
+      memcpy(msg, text, n);
+      msg[n] = '\0';
+      if (n && msg[n - 1] == '\n')
+         msg[n - 1] = '\0';
+      mcp_error(c, id, MCP_ERR_INTERNAL, *msg ? msg
+            : "The list could not be read.", false);
+      return;
+   }
+   if (!w)
+   {
+      mcp_conn_close(c);
+      return;
+   }
+   MCP_RAW(w, "\"result\":{\"completion\":{\"values\":[");
+   while (p < end)
+   {
+      const char *eol   = (const char*)memchr(p, '\n', (size_t)(end - p));
+      const char *stop  = eol ? eol : end;
+      const char *line  = p;
+      const char *f     = p;
+      const char *fend;
+      unsigned    k;
+      size_t      flen, i;
+      bool        match = false;
+      for (k = 0; k < c->complete_col && f < stop; k++)
+      {
+         const char *tab = (const char*)memchr(f, '\t', (size_t)(stop - f));
+         f = tab ? tab + 1 : stop;
+      }
+      p = eol ? eol + 1 : end;
+      /* the list went on past this page */
+      if (     stop - line >= 4 && !strncmp(line, "MORE", 4)
+            && (stop - line == 4 || line[4] == ' '))
+         more = true;
+      /* MORE, and the command's own "none" or "empty", are no values */
+      if (     f >= stop
+            || (!c->complete_col
+               && (  (stop - f >= 4 && !strncmp(f, "MORE", 4)
+                     && (stop - f == 4 || f[4] == ' '))
+                  || !strncmp(f, "LIST_PLAYLISTS ", 15))))
+         continue;
+      fend = (const char*)memchr(f, '\t', (size_t)(stop - f));
+      if (!fend)
+         fend = stop;
+      flen = (size_t)(fend - f);
+      /* anywhere in it: "mario" finds "Super Mario Bros." */
+      for (i = 0; !match && i + plen <= flen; i++)
+      {
+         size_t k;
+         for (k = 0; k < plen; k++)
+         {
+            char a = f[i + k], b = c->complete_prefix[k];
+            if (a >= 'A' && a <= 'Z')
+               a = (char)(a - 'A' + 'a');
+            if (b >= 'A' && b <= 'Z')
+               b = (char)(b - 'A' + 'a');
+            if (a != b)
+               break;
+         }
+         match = k == plen;
+      }
+      if (!match)
+         continue;
+      total++;
+      if (sent >= 100)
+         continue;
+      if (sent++)
+         MCP_RAW(w, ",");
+      rjsonwriter_add_string_len(w, f, (int)flen);
+   }
+   rjsonwriter_rawf(w, "],\"total\":%u,\"hasMore\":%s}", total,
+         total > sent || more ? "true" : "false");
+   mcp_result_end(w, c->modern);
+   mcp_respond_writer(c, w);
+}
+
+/* A request still waiting when no answer will come - it took too long,
+ * or the server is going: a tool call as a failed result, a completion
+ * as an error. */
+static void mcp_owed_failure(struct mcp_conn *c, const char *msg,
+      size_t len)
+{
+   if (c->completing)
+   {
+      c->completing = false;
+      mcp_error(c, c->id, MCP_ERR_INTERNAL, msg, false);
+   }
+   else
+      mcp_tool_result(c, c->id, c->modern, NULL, msg, len, true);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1214,7 +1489,10 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
       return;
    if (o->conn == mcp->current)
       mcp->answered = true;
-   mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
+   if (c->completing)
+      mcp_completion_result(c, c->id, data, len, cmd->error);
+   else
+      mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
    cmd->error = false;
 }
 
@@ -1372,23 +1650,47 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
          else if (string_is_equal(key[1], "level") && t == RJSON_STRING)
             mcp_take(j, r->level, sizeof(r->level));
       }
+      else if (depth == 3 && string_is_equal(key[0], "params")
+            && t == RJSON_STRING
+            && (string_is_equal(key[1], "ref")
+               || string_is_equal(key[1], "argument")))
+      {
+         if (string_is_equal(key[1], "ref"))
+         {
+            if (string_is_equal(key[2], "type"))
+               mcp_take(j, r->ref_type, sizeof(r->ref_type));
+            else if (string_is_equal(key[2], "name"))
+               mcp_take(j, r->ref_name, sizeof(r->ref_name));
+         }
+         else if (string_is_equal(key[2], "name"))
+            mcp_take(j, r->arg_name, sizeof(r->arg_name));
+         else if (string_is_equal(key[2], "value"))
+            mcp_take(j, r->arg_value, sizeof(r->arg_value));
+      }
+      else if (depth == 4 && string_is_equal(key[0], "params")
+            && string_is_equal(key[1], "context")
+            && string_is_equal(key[2], "arguments")
+            && string_is_equal(key[3], "playlist") && t == RJSON_STRING)
+         mcp_take(j, r->ctx_playlist, sizeof(r->ctx_playlist));
       else if (depth == 3 && string_is_equal(key[0], "params"))
       {
          if (     string_is_equal(key[1], "arguments")
                && *key[2]
-               && (t == RJSON_STRING || t == RJSON_NUMBER)
                && r->num_args < MCP_MAX_ARGS)
          {
             /* A number arrives as the digits it was written with, which
-             * is what the line form wants anyway. */
+             * is what the line form wants anyway. Any other type is kept
+             * as present, so it is refused rather than dropped. */
             size_t      l    = 0;
-            const char *v    = rjson_get_string(j, &l);
+            bool        text = t == RJSON_STRING || t == RJSON_NUMBER;
+            const char *v    = text ? rjson_get_string(j, &l) : "";
             struct mcp_arg *a = &r->args[r->num_args];
             if ((a->value = (char*)malloc(l + 1)))
             {
                memcpy(a->value, v, l);
                a->value[l] = '\0';
                a->is_number = t == RJSON_NUMBER;
+               a->is_other  = !text;
                strlcpy(a->name, key[2], sizeof(a->name));
                r->num_args++;
             }
@@ -1618,10 +1920,9 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
             MCP_RAW(w, ",");
          rjsonwriter_add_string(w, mcp_versions[i]);
       }
-      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}%s},"
-            "\"instructions\":\"Controls a running RetroArch: each tool is a "
-            "RetroArch command. Tools marked destructive can lose unsaved "
-            "progress or load code.\"",
+      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false},"
+            "\"prompts\":{\"listChanged\":false},\"completions\":{}%s},"
+            "\"instructions\":\"" MCP_INSTRUCTIONS "\"" MCP_NO_CACHE,
             c->stdio ? ",\"logging\":{}" : "");
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
@@ -1645,11 +1946,12 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          mcp_stdio.agreed = mcp_structured_version(v);
       MCP_RAW(w, "\"result\":{\"protocolVersion\":");
       rjsonwriter_add_string(w, v);
-      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}");
+      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false},"
+            "\"prompts\":{\"listChanged\":false},\"completions\":{}");
       if (c->stdio)
          MCP_RAW(w, ",\"logging\":{}");
       MCP_RAW(w, "},\"serverInfo\":{\"name\":\"RetroArch\",\"version\":\""
-            PACKAGE_VERSION "\"}");
+            PACKAGE_VERSION "\"},\"instructions\":\"" MCP_INSTRUCTIONS "\"");
       mcp_result_end(w, false);
       mcp_respond_writer(c, w);
    }
@@ -1697,6 +1999,124 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp_result_end(w, modern);
       mcp_respond_writer(c, w);
    }
+   else if (string_is_equal(r.method, "prompts/list"))
+   {
+      rjsonwriter_t *w = mcp_envelope(r.id);
+      if (!w)
+      {
+         mcp_conn_close(c);
+         goto end;
+      }
+      MCP_RAW(w, "\"result\":{\"prompts\":[{\"name\":\"" MCP_PROMPT_NAME "\","
+            "\"title\":\"Play a game\",\"description\":\"Start a session "
+            "playing a game through these tools.\",\"arguments\":["
+            "{\"name\":\"playlist\",\"description\":\"The playlist it is "
+            "in, as LIST_PLAYLISTS gives it.\",\"required\":false},"
+            "{\"name\":\"game\",\"description\":\"The game, as the "
+            "playlist names it.\",\"required\":false},"
+            "{\"name\":\"goal\",\"description\":\"What to do; clear "
+            "the first level when left out.\",\"required\":false}]}]");
+      if (modern)
+         MCP_RAW(w, MCP_NO_CACHE);
+      mcp_result_end(w, modern);
+      mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "prompts/get"))
+   {
+      static const char head[] = "Play %s%s%s with RetroArch's tools. "
+            "Goal: %s. " MCP_INSTRUCTIONS;
+      const char    *game     = mcp_arg(&r, "game");
+      const char    *playlist = mcp_arg(&r, "playlist");
+      const char    *goal     = mcp_arg(&r, "goal");
+      char          *text;
+      size_t         size;
+      rjsonwriter_t *w;
+      if (!string_is_equal(r.name, MCP_PROMPT_NAME))
+      {
+         mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown prompt.", false);
+         goto end;
+      }
+      if (!game || !*game)
+         game = "a game";
+      if (!goal || !*goal)
+         goal = "clear the first level";
+      if (!playlist)
+         playlist = "";
+      /* sized to what was sent, so a long goal cuts nothing short */
+      size = sizeof(head) + strlen(game) + strlen(playlist) + strlen(goal)
+         + 32;
+      if (!(text = (char*)malloc(size)))
+      {
+         mcp_error(c, r.id, MCP_ERR_INTERNAL, "Out of memory.", false);
+         goto end;
+      }
+      snprintf(text, size, head, game,
+            *playlist ? ", from the playlist " : "", playlist, goal);
+      if (!(w = mcp_envelope(r.id)))
+      {
+         free(text);
+         mcp_conn_close(c);
+         goto end;
+      }
+      MCP_RAW(w, "\"result\":{\"messages\":[{\"role\":\"user\","
+            "\"content\":{\"type\":\"text\",\"text\":");
+      rjsonwriter_add_string(w, text);
+      free(text);
+      MCP_RAW(w, "}}]");
+      mcp_result_end(w, modern);
+      mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "completion/complete"))
+   {
+      /* the playlists, or a playlist's games: both read on a task, so
+       * answered when it is through, as a tool is */
+      const char *name = NULL;
+      char        line[300];
+      bool        ok;
+      *line = '\0';
+      /* the one prompt: any other, and any resource, there is none of */
+      if (     !string_is_equal(r.ref_type, "ref/prompt")
+            || !string_is_equal(r.ref_name, MCP_PROMPT_NAME))
+      {
+         mcp_error(c, r.id, MCP_ERR_PARAMS, string_is_equal(r.ref_type,
+                  "ref/prompt") ? "Unknown prompt." : "No such reference.",
+               false);
+         goto end;
+      }
+      {
+         if (string_is_equal(r.arg_name, "playlist"))
+         {
+            name            = "LIST_PLAYLISTS";
+            c->complete_col = 0;
+         }
+         else if (string_is_equal(r.arg_name, "game") && *r.ctx_playlist)
+         {
+            name            = "GET_PLAYLIST";
+            c->complete_col = 1;
+            strlcpy(line, r.ctx_playlist, sizeof(line));
+         }
+      }
+      strlcpy(c->complete_prefix, r.arg_value, sizeof(c->complete_prefix));
+      strlcpy(c->id, r.id, sizeof(c->id));
+      c->modern     = modern;
+      c->completing = true;
+      if (!name)
+      {
+         mcp_completion_result(c, r.id, "", 0, false);
+         goto end;
+      }
+      mcp->reply_len = 0;
+      mcp->answered  = false;
+      mcp->current   = ci;
+      c->modern      = modern;
+      c->act         = NULL;
+      ok = command_run(cmd, name, line);
+      mcp->current   = -1;
+      if (c->state == MCP_CONN_WAITING || mcp->answered)
+         goto end;
+      mcp_completion_result(c, r.id, mcp->reply, mcp->reply_len,
+            cmd->error || !ok);
+   }
    else if (string_is_equal(r.method, "tools/list"))
       mcp_tools_list(c, &r, modern, structured);
    else if (string_is_equal(r.method, "tools/call"))
@@ -1717,6 +2137,14 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          char msg[128];
          snprintf(msg, sizeof(msg), "Unknown parameter \"%.96s\".",
                invalid);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
+         goto end;
+      }
+      if ((invalid = mcp_other_arg(&r)))
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Parameter \"%.64s\" takes a string "
+               "or a number.", invalid);
          mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
       }
@@ -1759,6 +2187,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       c->modern      = modern;
       c->structured  = structured;
       c->act         = act;
+      c->completing  = false;
       ok = command_run(cmd, r.name, line);
       free(line);
       mcp->current   = -1;
@@ -1990,8 +2419,7 @@ static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
    if (c->state == MCP_CONN_WAITING)
    {
       if (now - c->since > MCP_TIMEOUT_US)
-         mcp_tool_result(c, c->id, c->modern, NULL,
-               "The command did not answer in time.", 35, true);
+         mcp_owed_failure(c, "The command did not answer in time.", 35);
       return;
    }
 
@@ -2173,8 +2601,7 @@ static void mcp_poll(command_t *cmd)
       if (c->state != MCP_CONN_FREE && now - c->since > MCP_TIMEOUT_US)
       {
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern, NULL,
-                  "The command did not answer in time.", 35, true);
+            mcp_owed_failure(c, "The command did not answer in time.", 35);
          else
             mcp_conn_close(c);
       }
@@ -2194,8 +2621,7 @@ static void mcp_destroy(command_t *cmd)
                "command answered.";
          struct mcp_conn *c = &mcp->conns[i];
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern, NULL, gone,
-                  sizeof(gone) - 1, true);
+            mcp_owed_failure(c, gone, sizeof(gone) - 1);
          if (c->stdio)
          {
             mcp_conn_close(c);
