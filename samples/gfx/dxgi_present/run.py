@@ -8,7 +8,8 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 source = (root / "gfx/common/win_dxgi_present.c").read_text()
-start = source.index("unsigned ra_dxgi_bridge_index(")
+source = source[source.index("#define CINTERFACE"):]
+start = source.rindex("unsigned ra_dxgi_bridge_index(")
 end = source.index("void ra_dxgi_bridge_hdr_metadata(", start)
 destroy_start = source.index("static int ra_dxgi_bridge_wait_idle(")
 destroy_end = source.index("static int ra_dxgi_bridge_create_buffers(", destroy_start)
@@ -23,10 +24,13 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     acquire_start = vulkan.index("VkResult ra_vulkan_dxgi_acquire(")
     acquire_end = vulkan.index("VkResult ra_vulkan_dxgi_present(", acquire_start)
     (directory / "acquire.inc").write_text(vulkan[acquire_start:acquire_end])
-    commands_start = vulkan.index("         memset(&command, 0, sizeof(command));")
-    commands_end = vulkan.index("         memset(&begin, 0, sizeof(begin));", commands_start)
-    (directory / "commands.inc").write_text(vulkan[commands_start:commands_end])
-    wait_start = vulkan.index("static VkResult ra_vulkan_dxgi_wait_resize(")
+    commands_start = vulkan.index("      command.sType")
+    commands_end = vulkan.index("      for (j = 0; j < 2; j++)", commands_start)
+    allocate_start = vulkan.index("         if (*buffer == VK_NULL_HANDLE)", commands_end)
+    allocate_end = vulkan.index("         begin.sType", allocate_start)
+    (directory / "commands.inc").write_text(
+        vulkan[commands_start:commands_end] + vulkan[allocate_start:allocate_end])
+    wait_start = vulkan.rindex("static VkResult ra_vulkan_dxgi_drain(")
     wait_end = vulkan.index("int ra_vulkan_dxgi_resize(", wait_start)
     (directory / "wait.inc").write_text(vulkan[wait_start:wait_end])
     frontend = (root / "gfx/common/vulkan_common.c").read_text()

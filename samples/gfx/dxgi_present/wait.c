@@ -8,7 +8,7 @@
 #define VK_STRUCTURE_TYPE_FENCE_CREATE_INFO 8
 typedef int VkResult;
 typedef unsigned VkFence;
-typedef struct { unsigned sType, flags; } VkFenceCreateInfo;
+typedef struct { unsigned sType, flags; const void *pNext; } VkFenceCreateInfo;
 typedef unsigned slock_t;
 typedef struct { unsigned device, queue; VkFence resize_fence; int submitted; void *queue_lock; } ra_vulkan_dxgi_t;
 static unsigned locked;
@@ -41,6 +41,7 @@ static VkResult vkResetFences(unsigned device, unsigned count, const VkFence *fe
    assert(device == 1 && count == 1 && *fence == 9 && step == 2);
    ++resets; step = 0; return reset_result;
 }
+#define ra_vulkan_dxgi_drain ra_vulkan_dxgi_wait_resize
 #include "wait.inc"
 int main(void)
 {

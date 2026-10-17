@@ -16,6 +16,7 @@ typedef unsigned VkPipelineStageFlags;
 #define VK_NULL_HANDLE 0
 struct fence_values {
    unsigned sType, waitSemaphoreValuesCount, signalSemaphoreValuesCount;
+   const void *pNext;
    const uint64_t *pWaitSemaphoreValues, *pSignalSemaphoreValues;
 };
 typedef struct fence_values VkD3D12FenceSubmitInfoKHR;
@@ -58,6 +59,7 @@ static VkResult ra_vulkan_dxgi_submit(ra_vulkan_dxgi_t *p,
 #define VK_COMMAND_BUFFER_LEVEL_PRIMARY 0
 typedef struct command_info {
    unsigned sType, commandPool, level, commandBufferCount;
+   const void *pNext;
 } VkCommandBufferAllocateInfo;
 static unsigned allocations;
 static VkResult allocation_result;
