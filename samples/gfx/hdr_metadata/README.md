@@ -12,8 +12,10 @@ the monitor's HDR capability. Before output initialization it is zero, while
 screen_10bpc can report the configured source capability for format negotiation.
 passthrough is conditional on accepted native HDR10 input; it also permits
 PQ/Rec.2020 to linear Rec.709 conversion for scRGB. It does not change existing
-shader preset ownership heuristics. Unknown content light levels, geometry and
-display capabilities remain zero. The effective peak target is separate from
+shader preset ownership heuristics. Geometry is the display server's desktop
+size, cached whenever a display server comes up, so it is known in
+retro_load_game before the video driver starts. Unknown content light levels,
+geometry, refresh range and display capabilities remain zero. The effective peak target is separate from
 display capabilities, including when Use Display Peak supplies it.
 
 make check exercises the bounded ABI. python3 run.py compiles extracted shipping

@@ -1305,6 +1305,9 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 static retro_atomic_int_t video_display_peak_nits;
 static retro_atomic_int_t video_hdr_output_mode;
 static retro_atomic_int_t video_hdr_source_10bpc;
+/* Kept across video driver teardown: cores ask from retro_load_game */
+static retro_atomic_int_t video_display_dims;
+static retro_atomic_int_t video_display_mm;
 
 void video_driver_set_hdr_output_mode(unsigned mode)
 {
@@ -1328,7 +1331,28 @@ bool video_driver_get_display_metadata(unsigned cmd, void *data)
    snapshot.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
    snapshot.max_nits         = video_driver_get_hdr_max_nits();
    snapshot.expand_gamut     = settings->uints.video_hdr_expand_gamut;
+   snapshot.display_dims     = (unsigned)retro_atomic_load_acquire_int(
+         &video_display_dims);
+   snapshot.display_mm       = (unsigned)retro_atomic_load_acquire_int(
+         &video_display_mm);
    return video_hdr_metadata_query(cmd, data, &snapshot);
+}
+
+/* Both axes or neither; the halves stay below the sign bit */
+static unsigned video_driver_display_pair(unsigned dims)
+{
+   if (     !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
+         || VIDEO_SCALE_W(dims) > 0x7fffu)
+      return 0;
+   return dims;
+}
+
+static void video_driver_set_display_geometry(unsigned dims, unsigned mm)
+{
+   retro_atomic_store_release_int(&video_display_dims,
+         (int)video_driver_display_pair(dims));
+   retro_atomic_store_release_int(&video_display_mm,
+         (int)video_driver_display_pair(mm));
 }
 
 void video_driver_set_display_peak_nits(float nits)
@@ -2012,7 +2036,18 @@ const char *video_display_server_get_ident(void)
    return FILE_PATH_UNKNOWN;
 }
 
-void* video_display_server_init(enum rarch_display_type type)
+static unsigned video_display_server_metric_pair(
+      enum display_metric_types w_type, enum display_metric_types h_type)
+{
+   float w = 0.0f, h = 0.0f;
+   if (     !video_display_server_get_metrics(w_type, &w)
+         || !video_display_server_get_metrics(h_type, &h)
+         || w < 1.0f || h < 1.0f)
+      return 0;
+   return VIDEO_SCALE_PACK(w + 0.5f, h + 0.5f);
+}
+
+static void *video_display_server_init_internal(enum rarch_display_type type)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
@@ -2119,6 +2154,20 @@ void* video_display_server_init(enum rarch_display_type type)
       video_st->initial_screen_orientation;
 
    return video_st->current_display_server_data;
+}
+
+void *video_display_server_init(enum rarch_display_type type)
+{
+   void *data    = video_display_server_init_internal(type);
+   unsigned dims = video_display_server_metric_pair(
+         DISPLAY_METRIC_PIXEL_WIDTH, DISPLAY_METRIC_PIXEL_HEIGHT);
+   unsigned mm   = video_display_server_metric_pair(
+         DISPLAY_METRIC_MM_WIDTH, DISPLAY_METRIC_MM_HEIGHT);
+   /* A server that cannot say (the null one a null or headless video
+    * driver brings up) leaves what the last one reported */
+   if (dims)
+      video_driver_set_display_geometry(dims, mm);
+   return data;
 }
 
 void video_display_server_destroy(void)

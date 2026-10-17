@@ -161,6 +161,28 @@ int main(void)
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
    CHECK(!hdr.output_mode && !hdr.passthrough);
 
+   {
+      struct retro_display_metadata display;
+      memset(&display, 0, sizeof(display));
+      display.version = 1;
+      display.size    = sizeof(display);
+      CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA, &display));
+      CHECK(!display.geo.native_width && !display.geo.native_height);
+      video_driver_set_display_geometry((1920u << 16) | 1080u, (527u << 16) | 296u);
+      CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA, &display));
+      CHECK(display.geo.native_width == 1920 && display.geo.native_height == 1080);
+      CHECK(display.geo.width_mm == 527 && display.geo.height_mm == 296);
+      /* One axis alone, or a half past the sign bit, is unknown */
+      video_driver_set_display_geometry(1080u, (527u << 16));
+      CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA, &display));
+      CHECK(!display.geo.native_width && !display.geo.native_height);
+      CHECK(!display.geo.width_mm && !display.geo.height_mm);
+      video_driver_set_display_geometry((0x8000u << 16) | 1080u, 0);
+      CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA, &display));
+      CHECK(!display.geo.native_width && !display.geo.native_height);
+      video_driver_set_display_geometry(0, 0);
+   }
+
    dxgi_swapchain_color_space(&a, &cached_space,
          DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
    CHECK(a.color_space == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);

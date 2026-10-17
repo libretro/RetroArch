@@ -33,6 +33,8 @@ static void test_query(unsigned cmd)
    snapshot.max_nits         = 600.0f;
    snapshot.expand_gamut     = 3;
    snapshot.screen_10bpc     = true;
+   snapshot.display_dims     = (2560u << 16) | 1440u;
+   snapshot.display_mm       = (597u << 16) | 336u;
    CHECK(!video_hdr_metadata_query(cmd, NULL, &snapshot));
    for (i = 0; i < 4; i++)
    {
@@ -70,14 +72,28 @@ static void test_query(unsigned cmd)
          CHECK(hdr->reserved[i] == 0);
       if (cmd == RETRO_ENVIRONMENT_GET_DISPLAY_METADATA)
       {
-         struct retro_display_geometry geo;
          struct retro_display_color_caps caps;
-         memset(&geo, 0, sizeof(geo));
          memset(&caps, 0, sizeof(caps));
          CHECK(buffer.display.version == 1 && buffer.display.size == size);
-         CHECK(!memcmp(&geo, &buffer.display.geo, sizeof(geo)));
+         CHECK(buffer.display.geo.native_width == 2560
+               && buffer.display.geo.native_height == 1440);
+         CHECK(buffer.display.geo.width_mm == 597
+               && buffer.display.geo.height_mm == 336);
+         CHECK(!buffer.display.geo.refresh_min_mHz
+               && !buffer.display.geo.refresh_max_mHz);
          CHECK(!memcmp(&caps, &buffer.display.caps, sizeof(caps)));
       }
+   }
+   if (cmd == RETRO_ENVIRONMENT_GET_DISPLAY_METADATA)
+   {
+      struct retro_display_geometry geo;
+      memset(&geo, 0, sizeof(geo));
+      snapshot.display_dims = snapshot.display_mm = 0;
+      header[0] = 1;
+      header[1] = size;
+      memcpy(buffer.bytes, header, sizeof(header));
+      CHECK(video_hdr_metadata_query(cmd, &buffer, &snapshot));
+      CHECK(!memcmp(&geo, &buffer.display.geo, sizeof(geo)));
    }
    CHECK(!video_hdr_metadata_query(cmd, &buffer, NULL));
    for (i = 88; i <= 92; i++)
@@ -94,6 +110,6 @@ int main(void)
    CHECK(RETRO_ENVIRONMENT_GET_HDR_METADATA != RETRO_ENVIRONMENT_GET_DISPLAY_METADATA);
    test_query(RETRO_ENVIRONMENT_GET_HDR_METADATA);
    test_query(RETRO_ENVIRONMENT_GET_DISPLAY_METADATA);
-   puts("PASS: bounded HDR/display queries, retired IDs, PQ/scRGB contracts");
+   puts("PASS: bounded HDR/display queries, retired IDs, PQ/scRGB contracts, display geometry");
    return 0;
 }

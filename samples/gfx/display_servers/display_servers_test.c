@@ -772,6 +772,58 @@ static int test_refresh_rate_query_failures(void)
    return 0;
 }
 
+/* get_metrics: the screen's size when the display opens, and false
+ * for every metric when XOpenDisplay fails (DISPLAY set with no
+ * server behind it), which the frontend asks at startup. */
+static int test_metrics_open_display_failure(void)
+{
+   static const enum display_metric_types types[5] = {
+      DISPLAY_METRIC_PIXEL_WIDTH, DISPLAY_METRIC_PIXEL_HEIGHT,
+      DISPLAY_METRIC_MM_WIDTH,    DISPLAY_METRIC_MM_HEIGHT,
+      DISPLAY_METRIC_DPI };
+   static const float expect[4] = { 1280.0f, 720.0f, 340.0f, 190.0f };
+   stub_cfg_t cfg;
+   float v;
+   int i;
+
+   if (!dispserv_x11.get_metrics)
+   {
+      fprintf(stderr, "FAIL: dispserv_x11 has no get_metrics\n");
+      return 1;
+   }
+
+   cfg_default(&cfg);
+   stub_reset(&cfg);
+   for (i = 0; i < 4; i++)
+   {
+      v = 0.0f;
+      if (!dispserv_x11.get_metrics(NULL, types[i], &v) || v != expect[i])
+      {
+         fprintf(stderr, "FAIL: metric %d gave %f, expected %f\n",
+               (int)types[i], v, expect[i]);
+         return 1;
+      }
+   }
+
+   cfg.fail_open_display = 1;
+   stub_reset(&cfg);
+   for (i = 0; i < 5; i++)
+   {
+      v = 123.0f;
+      if (dispserv_x11.get_metrics(NULL, types[i], &v) || v != 0.0f)
+      {
+         fprintf(stderr, "FAIL: metric %d without a display gave %f\n",
+               (int)types[i], v);
+         return 1;
+      }
+   }
+   if (stub_leaks("get_metrics"))
+      return 1;
+
+   printf("[pass] get_metrics survives a failed XOpenDisplay\n");
+   return 0;
+}
+
 /* Screen Resolution (get_resolution_list / set_resolution): every
  * failing query and a disconnected head must give an empty list and a
  * refused switch - no crtc configured, every query freed. */
@@ -1240,6 +1292,8 @@ int main(void)
    if (test_refresh_rate_query_failures())
       return 1;
    if (test_resolution_query_failures())
+      return 1;
+   if (test_metrics_open_display_failure())
       return 1;
    if (test_orientation_output_disconnected())
       return 1;

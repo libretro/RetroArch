@@ -2303,30 +2303,10 @@ static bool x11_get_metrics(void *data,
    switch (type)
    {
       case DISPLAY_METRIC_PIXEL_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidth(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
       case DISPLAY_METRIC_PIXEL_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeight(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
       case DISPLAY_METRIC_MM_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidthMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
       case DISPLAY_METRIC_MM_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeightMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
       case DISPLAY_METRIC_DPI:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
-               /  (  (float)DisplayWidthMM(dpy, screen_no)));
-         XCloseDisplay(dpy);
          break;
       case DISPLAY_METRIC_NONE:
       default:
@@ -2334,6 +2314,34 @@ static bool x11_get_metrics(void *data,
          return false;
    }
 
+   /* DISPLAY can be set with no server behind it */
+   if (!(dpy = (Display*)XOpenDisplay(NULL)))
+   {
+      *value = 0;
+      return false;
+   }
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_PIXEL_WIDTH:
+         *value = (float)DisplayWidth(dpy, screen_no);
+         break;
+      case DISPLAY_METRIC_PIXEL_HEIGHT:
+         *value = (float)DisplayHeight(dpy, screen_no);
+         break;
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = (float)DisplayWidthMM(dpy, screen_no);
+         break;
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = (float)DisplayHeightMM(dpy, screen_no);
+         break;
+      default:
+         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
+               /  (  (float)DisplayWidthMM(dpy, screen_no)));
+         break;
+   }
+
+   XCloseDisplay(dpy);
    return true;
 }
 

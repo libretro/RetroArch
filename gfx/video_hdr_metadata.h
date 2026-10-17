@@ -5,12 +5,16 @@
 #include <retro_inline.h>
 #include <libretro.h>
 
+#include "video_defines.h"
+
 typedef struct video_hdr_metadata_snapshot
 {
    float paper_white_nits;
    float max_nits;
    unsigned output_mode;
    unsigned expand_gamut;
+   unsigned display_dims;  /* VIDEO_SCALE_PACK pixels, 0 when unknown */
+   unsigned display_mm;    /* VIDEO_SCALE_PACK millimetres */
    bool screen_10bpc;
 } video_hdr_metadata_snapshot_t;
 
@@ -56,6 +60,10 @@ static INLINE bool video_hdr_metadata_query(unsigned cmd, void *data,
       memset(&display, 0, sizeof(display));
       display.version = 1;
       display.size    = sizeof(display);
+      display.geo.native_width  = VIDEO_SCALE_W(snapshot->display_dims);
+      display.geo.native_height = VIDEO_SCALE_H(snapshot->display_dims);
+      display.geo.width_mm      = VIDEO_SCALE_W(snapshot->display_mm);
+      display.geo.height_mm     = VIDEO_SCALE_H(snapshot->display_mm);
       memcpy(&display.hdr, &hdr, sizeof(hdr));
       memcpy(data, &display, sizeof(display));
    }
