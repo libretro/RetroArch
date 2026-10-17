@@ -28,6 +28,9 @@ int record_file_win32_push(record_file_win32_t *file,
 int record_file_win32_step(record_file_win32_t *file);
 /* Requests cancellation without waiting. Keep the object and bytes alive until
  * step returns ERROR, even if cancellation races successful completion. */
+/* Worker-only borrowed Win32 completion handle, or NULL without pending I/O.
+ * Never close/reset it. Re-query after servicing; no state is consumed here. */
+void *record_file_win32_wait_handle(const record_file_win32_t *f);
 bool record_file_win32_cancel(record_file_win32_t *file);
 uint64_t record_file_win32_bytes(const record_file_win32_t *file);
 uint32_t record_file_win32_error(const record_file_win32_t *file);

@@ -24,6 +24,15 @@ their existing contracts; output destruction does not release GPU resources.
 No main/render/audio thread may service the output pump, including in a
 threadless task runner.
 
+After BUSY, the worker can borrow `record_gpu_output_d3d12_wait_handle()`:
+a pending file write takes precedence over the oldest encoder completion.
+The file handle also covers cancellation drain. Re-query after every step;
+never close or reset a borrowed handle. The scheduler must also wake on
+producer input/close and cancellation, and arrange retries for SDK BUSY when
+there is no pending completion. This API does not install that scheduler.
+The native GPU A/V harness waits on completion and producer notifications;
+its finite watchdog and no-handle retry timeout are test-only.
+
 `make check` runs fault/ownership tests, a concurrent PCM producer with ring
 wrap and close/drain, and 20 independent decoded MP4 A/V cases using the shared
 mux oracle. Linux uses a test-only stdio file backend and simulated encoded

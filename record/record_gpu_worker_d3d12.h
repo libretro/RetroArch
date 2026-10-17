@@ -26,6 +26,11 @@ record_gpu_worker_d3d12_t *record_gpu_worker_d3d12_new(
  * descriptor, END requires all packets released and EOS completed. */
 int record_gpu_worker_d3d12_step(record_gpu_worker_d3d12_t *worker,
       nvenc_d3d12_packet_t *packet);
+/* Worker-only borrowed Win32 completion handle for the oldest accepted frame
+ * or EOS, or NULL. Never close/reset it; re-query after each service step.
+ * This is a scheduling hint, not a promise of progress: also wake on producer
+ * input/close and schedule retries for SDK BUSY without pending completion. */
+void *record_gpu_worker_d3d12_wait_handle(const record_gpu_worker_d3d12_t *w);
 bool record_gpu_worker_d3d12_release(record_gpu_worker_d3d12_t *worker);
 /* Normal teardown after END, or before the first input was taken. */
 bool record_gpu_worker_d3d12_free(record_gpu_worker_d3d12_t *worker);

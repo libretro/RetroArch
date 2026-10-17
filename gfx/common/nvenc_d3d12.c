@@ -515,6 +515,13 @@ int nvenc_d3d12_poll(nvenc_d3d12_t *e, nvenc_d3d12_packet_t *packet)
    return NVENC_D3D12_OK;
 }
 
+void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e)
+{
+   if (!e || e->locked) return NULL;
+   if (e->count) return e->slots[e->order[e->read]].event;
+   return e->finishing ? e->eos : NULL;
+}
+
 int nvenc_d3d12_release(nvenc_d3d12_t *e)
 {
    nvenc_d3d12_slot_t *s;
@@ -569,6 +576,11 @@ int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned slot, uint64_t timestamp,
    return NVENC_D3D12_ERROR;
 }
 int nvenc_d3d12_poll(nvenc_d3d12_t *e, nvenc_d3d12_packet_t *p) { (void)e; (void)p; return NVENC_D3D12_ERROR; }
+void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e)
+{
+   (void)e; return NULL;
+}
+
 int nvenc_d3d12_release(nvenc_d3d12_t *e) { (void)e; return NVENC_D3D12_ERROR; }
 int nvenc_d3d12_finish(nvenc_d3d12_t *e) { (void)e; return NVENC_D3D12_ERROR; }
 bool nvenc_d3d12_free(nvenc_d3d12_t *e) { return e == NULL; }

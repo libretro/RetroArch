@@ -39,6 +39,7 @@ static DWORD WINAPI test_last_error(void) { return test_error; }
 #define FlushFileBuffers test_flush
 #define CloseHandle test_close
 #define GetLastError test_last_error
+#define record_file_win32_wait_handle mock_file_wait_handle
 #define record_file_win32_cancel mock_file_cancel
 #define record_file_win32_new mock_file_new
 #define record_file_win32_push mock_file_push
@@ -48,6 +49,7 @@ static DWORD WINAPI test_last_error(void) { return test_error; }
 #define record_file_win32_finish mock_file_finish
 #define record_file_win32_free mock_file_free
 #include "../../../record/record_file_win32.c"
+#undef record_file_win32_wait_handle
 #undef record_file_win32_cancel
 #undef record_file_win32_new
 #undef record_file_win32_push
@@ -76,8 +78,10 @@ static int faults(void)
    unsigned char data[8] = {0};
    unsigned before;
    f = mock_new();
+   CHECK(!mock_file_wait_handle(f) && !mock_file_wait_handle(NULL));
    CHECK(mock_file_push(f, data, 8) == RECORD_FILE_OK);
    CHECK(writes == 1 && borrowed == data);
+   CHECK(mock_file_wait_handle(f) == f->handle);
    CHECK(mock_file_push(f, data, 8) == RECORD_FILE_BUSY);
    CHECK(!mock_file_free(f) && !mock_file_finish(f) && !closes && !flushes);
    completion = ERROR_IO_INCOMPLETE; before = checks;
@@ -86,6 +90,7 @@ static int faults(void)
    CHECK(mock_file_step(f) == RECORD_FILE_BUSY && writes == 2);
    CHECK(borrowed == data + 3 && position == 3 && mock_file_bytes(f) == 3);
    CHECK(mock_file_step(f) == RECORD_FILE_OK && mock_file_bytes(f) == 8);
+   CHECK(!mock_file_wait_handle(f));
    CHECK(mock_file_finish(f) && mock_file_finish(f) && flushes == 1 && closes == 1);
    CHECK(mock_file_push(f, data, 8) == RECORD_FILE_ERROR && mock_file_free(f));
    f = mock_new(); write_error = ERROR_IO_PENDING;
@@ -155,7 +160,7 @@ int main(void)
       {
          result = record_file_win32_step(f);
          if (result != RECORD_FILE_BUSY) break;
-         Sleep(1); /* Test deadline only. */
+         CHECK(WaitForSingleObject(record_file_win32_wait_handle(f), 10000) == WAIT_OBJECT_0);
       }
       CHECK(result == RECORD_FILE_OK);
    }
@@ -172,7 +177,7 @@ int main(void)
    {
       result = record_file_win32_step(f);
       if (result != RECORD_FILE_BUSY) break;
-      Sleep(1);
+      CHECK(WaitForSingleObject(record_file_win32_wait_handle(f), 10000) == WAIT_OBJECT_0);
    }
    CHECK(result == RECORD_FILE_ERROR && record_file_win32_error(f) == ERROR_OPERATION_ABORTED);
    CHECK(!record_file_win32_finish(f) && record_file_win32_free(f) && !_wremove(wide));
@@ -183,7 +188,7 @@ int main(void)
 #else
 int main(void)
 {
-   if (record_file_win32_new("unused") || record_file_win32_finish(NULL)
+   if (record_file_win32_wait_handle(NULL) || record_file_win32_new("unused") || record_file_win32_finish(NULL)
          || !record_file_win32_free(NULL)
          || record_file_win32_push(NULL, "x", 1) != RECORD_FILE_ERROR
          || record_file_win32_step(NULL) != RECORD_FILE_ERROR) return 1;

@@ -119,6 +119,11 @@ int record_file_win32_step(record_file_win32_t *f)
    return record_file_win32_issue(f) ? RECORD_FILE_BUSY : RECORD_FILE_ERROR;
 }
 
+void *record_file_win32_wait_handle(const record_file_win32_t *f)
+{
+   return f && f->pending ? f->handle : NULL;
+}
+
 bool record_file_win32_cancel(record_file_win32_t *f)
 {
    DWORD error;
@@ -189,6 +194,11 @@ int record_file_win32_push(record_file_win32_t *f, const void *data, size_t size
 { (void)f; (void)data; (void)size; return RECORD_FILE_ERROR; }
 int record_file_win32_step(record_file_win32_t *f)
 { (void)f; return RECORD_FILE_ERROR; }
+void *record_file_win32_wait_handle(const record_file_win32_t *f)
+{
+   (void)f; return NULL;
+}
+
 bool record_file_win32_cancel(record_file_win32_t *f)
 { (void)f; return false; }
 uint64_t record_file_win32_bytes(const record_file_win32_t *f)

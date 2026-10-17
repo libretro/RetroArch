@@ -25,6 +25,7 @@ struct nve_pcm_producer
    const int16_t *samples;
    unsigned frames, channels, made;
    retro_atomic_int_t stop;
+   HANDLE notify;
 };
 static DWORD WINAPI nve_pcm_produce(void *opaque)
 {
@@ -38,15 +39,16 @@ static DWORD WINAPI nve_pcm_produce(void *opaque)
       result = record_gpu_output_d3d12_audio(p->output, p->samples + p->made * p->channels, n);
       if (result == RECORD_GPU_OUTPUT_ERROR) break;
       if (result == RECORD_GPU_OUTPUT_BUSY) { Sleep(1); idle++; }
-      else { p->made += n; idle = 0; }
+      else { p->made += n; idle = 0; SetEvent(p->notify); }
    }
    record_gpu_output_d3d12_audio_finish(p->output);
+   SetEvent(p->notify);
    return 0;
 }
 static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *encoder,
       const record_mp4_config_t *video, const char *path, FILE *raw, unsigned *received,
       ID3D12CommandQueue *queue, ID3D12Fence *ready, uint64_t *value, bool capturing,
-      unsigned frames)
+      unsigned frames, HANDLE notify)
 {
    record_gpu_output_config_t config;
    record_gpu_output_d3d12_t *output = NULL;
@@ -95,6 +97,7 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
    output = record_gpu_output_d3d12_new(worker, &config, movie); if (!output) goto done;
    free(headers); headers = NULL;
    nve_pipeline_raw = raw; nve_pipeline_received = received;
+   producer.notify = notify;
    producer.output = output; producer.samples = samples; producer.frames = total; producer.channels = channels;
    retro_atomic_int_init(&producer.stop, 0);
    thread = CreateThread(NULL, 0, nve_pcm_produce, &producer, 0, NULL); if (!thread) goto done;
@@ -108,7 +111,18 @@ static bool nve_pipeline_run(record_gpu_worker_d3d12_t *worker, nvenc_d3d12_t *e
                   : ID3D12CommandQueue_Signal(queue, ready, ++*value))) goto done;
          signalled = true;
       }
-      if (result == RECORD_GPU_OUTPUT_BUSY) { Sleep(1); idle++; } else idle = 0;
+      if (result == RECORD_GPU_OUTPUT_BUSY)
+      {
+         HANDLE handles[2];
+         DWORD waited;
+         handles[0] = notify;
+         handles[1] = record_gpu_output_d3d12_wait_handle(output);
+         waited = WaitForMultipleObjects(handles[1] ? 2 : 1, handles, FALSE,
+               handles[1] ? 10000 : 1);
+         if (waited == WAIT_FAILED || (handles[1] && waited == WAIT_TIMEOUT)) goto done;
+         idle++;
+      }
+      else idle = 0;
    }
    ok = result == RECORD_GPU_OUTPUT_END && *received == frames;
 done:

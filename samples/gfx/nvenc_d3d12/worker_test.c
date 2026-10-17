@@ -65,6 +65,8 @@ int nvenc_d3d12_release(nvenc_d3d12_t *e)
    e->count--; e->read = (e->read + 1) % 16; e->locked = false;
    return NVENC_D3D12_OK;
 }
+void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e)
+{ return e && !e->locked && (e->count || e->eos) ? (void*)e : NULL; }
 int nvenc_d3d12_finish(nvenc_d3d12_t *e)
 {
    e->finishes++;
@@ -105,6 +107,7 @@ static int normal(void)
    CHECK(record_gpu_worker_d3d12_abandon(NULL));
    w = record_gpu_worker_d3d12_new(q, &e, &e);
    CHECK(w != NULL);
+   CHECK(!record_gpu_worker_d3d12_wait_handle(w));
    CHECK(record_gpu_worker_d3d12_step(w, NULL) == RECORD_GPU_WORKER_ERROR);
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_BUSY);
    CHECK(e.polls == 1 && e.submits == 0 && e.finishes == 0);
@@ -134,6 +137,7 @@ static int normal(void)
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_ERROR);
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_BUSY);
    CHECK(e.finishes == 3 && !record_gpu_queue_free(q));
+   CHECK(record_gpu_worker_d3d12_wait_handle(w) == &e);
    e.done = true;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PACKET);
    CHECK(packet.timestamp == 10 && packet.duration == 3 && packet.keyframe && packet.slot == 0);
@@ -144,6 +148,7 @@ static int normal(void)
    e.release_fault = 1;
    CHECK(!record_gpu_worker_d3d12_release(w));
    CHECK(e.count == 2 && e.locked);
+   CHECK(!record_gpu_worker_d3d12_wait_handle(w));
    CHECK(record_gpu_worker_d3d12_step(w, &held) == RECORD_GPU_WORKER_PACKET);
    CHECK(record_gpu_worker_d3d12_release(w));
    CHECK(!record_gpu_worker_d3d12_release(w));
@@ -153,6 +158,7 @@ static int normal(void)
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_END);
    calls = e.polls;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_END);
+   CHECK(!record_gpu_worker_d3d12_wait_handle(w));
    CHECK(e.polls == calls && e.submits == 4 && e.releases == 3 && e.finishes == 3);
    CHECK(record_gpu_worker_d3d12_free(w));
    CHECK(record_gpu_queue_free(q));

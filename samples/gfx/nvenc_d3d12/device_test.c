@@ -142,6 +142,7 @@ struct nve_producer
    record_gpu_capture_d3d12_t *capture;
    ID3D12Resource *sources[4];
    ID3D12Fence *gate;
+   HANDLE notify;
    unsigned crop;
    retro_atomic_int_t stop;
    unsigned made;
@@ -172,6 +173,7 @@ static DWORD WINAPI nve_produce(void *data)
       if (p->capture)
       {
          p->made++; idle = 0;
+         if (p->notify) SetEvent(p->notify);
          continue;
       }
       frame.timestamp = p->made; frame.duration = frame.ready_value = 1;
@@ -182,9 +184,11 @@ static DWORD WINAPI nve_produce(void *data)
          break;
       }
       p->made++; idle = 0;
+      if (p->notify) SetEvent(p->notify);
    }
    if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
    else record_gpu_queue_finish(p->queue);
+   if (p->notify) SetEvent(p->notify);
    return 0;
 }
 
@@ -410,6 +414,7 @@ int main(int argc, char **argv)
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);
+   CHECK(nvenc_d3d12_wait_handle(encoder) == NULL && nvenc_d3d12_wait_handle(NULL) == NULL);
    headers = malloc(65536); CHECK(headers != NULL);
    CHECK(nvenc_d3d12_headers(encoder, headers, 65536, &headers_size));
    mux_config.headers = headers; mux_config.headers_size = headers_size;
@@ -468,13 +473,18 @@ int main(int argc, char **argv)
          capturing ? record_gpu_capture_d3d12_fence(capture) : ready);
    CHECK(worker != NULL);
    CHECK(!record_gpu_worker_d3d12_release(worker));
+   if (getenv("NVENC_TEST_GPU_AV"))
+   {
+      producer.notify = CreateEvent(NULL, FALSE, FALSE, NULL);
+      CHECK(producer.notify != NULL);
+   }
    producer_thread = CreateThread(NULL, 0, nve_produce, &producer, 0, NULL);
    CHECK(producer_thread != NULL);
    if (getenv("NVENC_TEST_GPU_AV"))
    {
       CHECK(!metadata);
       CHECK(nve_pipeline_run(worker, encoder, &mux_config, argv[3], out, &received,
-               queue, ready, &value, capturing != 0, producer.frames));
+               queue, ready, &value, capturing != 0, producer.frames, producer.notify));
       status = RECORD_GPU_WORKER_END;
    }
    else
@@ -489,6 +499,8 @@ int main(int argc, char **argv)
          CHECK(!nvenc_d3d12_free(encoder));
          if (capturing) CHECK(!record_gpu_capture_d3d12_free(capture));
          Sleep(30);
+         CHECK(nvenc_d3d12_wait_handle(encoder) != NULL);
+         CHECK(WaitForSingleObject(nvenc_d3d12_wait_handle(encoder), 0) == WAIT_TIMEOUT);
          CHECK(nvenc_d3d12_poll(encoder, &packet) == NVENC_D3D12_BUSY);
          CHECK(SUCCEEDED(capturing ? ID3D12Fence_Signal(ready, ++value)
                : ID3D12CommandQueue_Signal(queue, ready, ++value)));
@@ -550,6 +562,8 @@ int main(int argc, char **argv)
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_submit(encoder, 0, 0, 1, ready, value, false) == NVENC_D3D12_ERROR);
+   CHECK(nvenc_d3d12_wait_handle(encoder) != NULL);
+   CHECK(WaitForSingleObject(nvenc_d3d12_wait_handle(encoder), 0) == WAIT_OBJECT_0);
    CHECK(nvenc_d3d12_free(encoder)); encoder = NULL;
    CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
    ok = 1;
@@ -561,6 +575,7 @@ done:
          return 1;
       CloseHandle(producer_thread);
    }
+   if (producer.notify) CloseHandle(producer.notify);
    if (queue && ready)
    {
       if (capturing) ID3D12Fence_Signal(ready, value + 1);
@@ -608,7 +623,7 @@ int main(void)
          || !record_gpu_capture_d3d12_free(NULL) || record_gpu_capture_d3d12_finish(NULL)
          || record_gpu_capture_d3d12_push(NULL, NULL, 0, 0, 0, NULL, 0, 0, 1, false, NULL) != RECORD_GPU_QUEUE_ERROR)
       return 1;
-   if (nvenc_d3d12_open(NULL) || !nvenc_d3d12_free(NULL)
+   if (nvenc_d3d12_wait_handle(NULL) || nvenc_d3d12_open(NULL) || !nvenc_d3d12_free(NULL)
          || nvenc_d3d12_submit(NULL, 0, 0, 1, NULL, 0, false) != NVENC_D3D12_ERROR
          || nvenc_d3d12_poll(NULL, &packet) != NVENC_D3D12_ERROR
          || nvenc_d3d12_release(NULL) != NVENC_D3D12_ERROR
