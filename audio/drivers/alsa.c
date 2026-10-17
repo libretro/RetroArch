@@ -389,6 +389,10 @@ microphone_driver_t microphone_alsa = {
 typedef struct alsa
 {
    snd_pcm_t *pcm;
+   /* The frontend's frames in the device's channel order, where the
+    * two differ and the write is not lent (stream_info.permute). */
+   uint8_t *stage;
+   snd_pcm_uframes_t stage_frames;
    alsa_stream_info_t stream_info;
    uint32_t requested_layout;
    /* Frames snd_pcm_writei() accepted since open; less what the device
@@ -400,6 +404,7 @@ typedef struct alsa
    retro_atomic_size_t underruns;
    /* Where the outstanding lend sits in the device's buffer. */
    snd_pcm_uframes_t lend_off;
+   void *lend_region;
    bool nonblock;
    /* Stopped, as the frontend sees it: alive() is its inverse. Held
     * says how: the stream paused with its buffer kept, or dropped,
@@ -458,9 +463,9 @@ static int alsa_recover(alsa_t *alsa, int err)
    return snd_pcm_recover(alsa->pcm, err, 1);
 }
 
-/* The layout the device actually has, from its channel map; the
- * requested one where the map could not be read; stereo where the
- * device would not open wider. */
+/* The layout the device actually has, from its channel map or ALSA's
+ * order for its count; the requested one where neither gave one;
+ * stereo where the device would not open wider. */
 static uint32_t alsa_layout(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
@@ -499,6 +504,16 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
             latency, audio_layout_channels(alsa->requested_layout),
             &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
       goto error;
+
+   if (alsa->stream_info.permute)
+   {
+      alsa->stage_frames = alsa->stream_info.buffer_frames;
+      if (!alsa->stage_frames)
+         alsa->stage_frames = 1024;
+      if (!(alsa->stage = (uint8_t*)malloc(alsa->stage_frames
+                  * (alsa->stream_info.frame_bits / 8))))
+         goto error;
+   }
 
    return alsa;
 
@@ -543,10 +558,21 @@ static bool alsa_start(void *data, bool is_shutdown)
    return true;
 }
 
-/* An mmap-opened PCM takes no snd_pcm_writei(). */
+/* An mmap-opened PCM takes no snd_pcm_writei(). A device in another
+ * channel order takes at most a stage at a time; the caller loops on
+ * a short write as it does for any. */
 static INLINE snd_pcm_sframes_t alsa_writei(alsa_t *alsa, const void *buf,
       snd_pcm_uframes_t size)
 {
+   if (alsa->stream_info.permute)
+   {
+      if (size > alsa->stage_frames)
+         size = alsa->stage_frames;
+      audio_layout_permute(alsa->stage, buf, size,
+            alsa->stream_info.channels, alsa->stream_info.order,
+            alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t));
+      buf = alsa->stage;
+   }
    if (alsa->stream_info.mmap)
       return snd_pcm_mmap_writei(alsa->pcm, buf, size);
    return snd_pcm_writei(alsa->pcm, buf, size);
@@ -558,7 +584,6 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
    alsa_t *alsa           = (alsa_t*)data;
    const uint8_t *buf     = (const uint8_t*)buf_;
    snd_pcm_sframes_t size = BYTES_TO_FRAMES(len, alsa->stream_info.frame_bits);
-   size_t frames_size     = alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
@@ -588,7 +613,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          _len  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          alsa->frames_written += (uint64_t)frames;
          alsa_clock_sample(alsa);
-         buf   += (frames << 1) * frames_size;
+         buf   += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          size  -= frames;
       }
    }
@@ -639,7 +664,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          alsa->frames_written += (uint64_t)frames;
          alsa_clock_sample(alsa);
-         buf  += (frames << 1) * frames_size;
+         buf  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          size -= frames;
       }
    }
@@ -713,6 +738,7 @@ static void alsa_free(void *data)
       alsa_free_pcm(alsa->pcm);
 
       snd_config_update_free_global();
+      free(alsa->stage);
       free(alsa);
    }
 }
@@ -1041,8 +1067,9 @@ static size_t alsa_write_begin(void *data, size_t len, void **region)
       snd_pcm_mmap_commit(alsa->pcm, off, 0);
       return 0;
    }
-   alsa->lend_off = off;
-   *region        = (uint8_t*)areas[0].addr + off * fb;
+   alsa->lend_off    = off;
+   alsa->lend_region = (uint8_t*)areas[0].addr + off * fb;
+   *region           = alsa->lend_region;
    return frames * fb;
 }
 
@@ -1050,8 +1077,13 @@ static ssize_t alsa_write_end(void *data, size_t len)
 {
    alsa_t           *alsa = (alsa_t*)data;
    size_t            fb   = alsa->stream_info.frame_bits / 8;
-   snd_pcm_sframes_t c    = snd_pcm_mmap_commit(alsa->pcm, alsa->lend_off,
-         len / fb);
+   snd_pcm_sframes_t c;
+   /* the lent span holds the frontend's order; the device's, in place */
+   if (alsa->stream_info.permute && len)
+      audio_layout_permute(alsa->lend_region, alsa->lend_region, len / fb,
+            alsa->stream_info.channels, alsa->stream_info.order,
+            alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t));
+   c = snd_pcm_mmap_commit(alsa->pcm, alsa->lend_off, len / fb);
    if (c < 0)
    {
       if (c == -EPIPE)
@@ -1230,6 +1262,34 @@ struct ealsa_xferi
    ealsa_uframes_t frames;
 };
 
+/* The control device, for one element: the PCM's channel map. */
+#define EALSA_CTL_ELEM_IFACE_PCM    3
+#define EALSA_CTL_ELEM_ID_NAME_MAX  44
+
+struct ealsa_ctl_elem_id
+{
+   unsigned int  numid;
+   int           iface;
+   unsigned int  device;
+   unsigned int  subdevice;
+   unsigned char name[EALSA_CTL_ELEM_ID_NAME_MAX];
+   unsigned int  index;
+};
+
+struct ealsa_ctl_elem_value
+{
+   struct ealsa_ctl_elem_id id;
+   unsigned int indirect:1;
+   union
+   {
+      long          integer[128];
+      long long     integer64[64];
+      unsigned int  enumerated[128];
+      unsigned char bytes[512];
+   } value;
+   unsigned char reserved[128];
+};
+
 #define EALSA_IOCTL_HW_REFINE     _IOWR('A', 0x10, struct ealsa_hw_params)
 #define EALSA_IOCTL_HW_PARAMS     _IOWR('A', 0x11, struct ealsa_hw_params)
 #define EALSA_IOCTL_SW_PARAMS     _IOWR('A', 0x13, struct ealsa_sw_params)
@@ -1238,6 +1298,7 @@ struct ealsa_xferi
 #define EALSA_IOCTL_START         _IO('A', 0x42)
 #define EALSA_IOCTL_DROP          _IO('A', 0x43)
 #define EALSA_IOCTL_PAUSE         _IOW('A', 0x45, int)
+#define EALSA_IOCTL_CTL_ELEM_READ _IOWR('U', 0x12, struct ealsa_ctl_elem_value)
 #define EALSA_IOCTL_WRITEI_FRAMES _IOW('A', 0x50, struct ealsa_xferi)
 
 /* The seam the harness replaces: everything this driver does to a
@@ -1270,6 +1331,12 @@ typedef struct ealsa
    bool     nonblock;
    bool     has_float;
    bool     can_pause;
+   /* Device channel k takes the frontend's slot order[k]; a write
+    * goes through stage in that order when permute says it differs. */
+   uint8_t *stage;
+   size_t   stage_frames;
+   uint8_t  order[8];
+   bool     permute;
    bool     is_paused;
    bool     running;
 } ealsa_t;
@@ -1512,6 +1579,60 @@ static bool ealsa_recover(ealsa_t *ea)
 
 /* ---- the driver ------------------------------------------------ */
 
+/* ---- the channel order ----------------------------------------- */
+
+/* The positions the card's channel map control gives the stream, read
+ * once its parameters are set. False where the card has no such
+ * control, the stream is on another subdevice than the first, or the
+ * map names a position the frontend has no bit for. */
+static bool ealsa_chmap_positions(unsigned card, unsigned device,
+      unsigned channels, uint32_t *pos)
+{
+   /* SNDRV_CHMAP_FL (3) through SNDRV_CHMAP_FRC (13) */
+   static const uint32_t bits[11] = {
+      AUDIO_SPEAKER_FRONT_LEFT,   AUDIO_SPEAKER_FRONT_RIGHT,
+      AUDIO_SPEAKER_BACK_LEFT,    AUDIO_SPEAKER_BACK_RIGHT,
+      AUDIO_SPEAKER_FRONT_CENTER, AUDIO_SPEAKER_LOW_FREQUENCY,
+      AUDIO_SPEAKER_SIDE_LEFT,    AUDIO_SPEAKER_SIDE_RIGHT,
+      AUDIO_SPEAKER_BACK_CENTER,
+      AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER, AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER };
+   static const char name[] = "Playback Channel Map";
+   struct ealsa_ctl_elem_value *v;
+   char path[64];
+   bool ok = false;
+   int  fd;
+   unsigned i;
+
+   if (channels > AUDIO_LAYOUT_ORDER_MAX)
+      return false;
+   snprintf(path, sizeof(path), "/dev/snd/controlC%u", card);
+   if ((fd = ealsa_open_dev(path, O_RDONLY)) < 0)
+      return false;
+   if ((v = (struct ealsa_ctl_elem_value*)calloc(1, sizeof(*v))))
+   {
+      v->id.iface  = EALSA_CTL_ELEM_IFACE_PCM;
+      v->id.device = device;
+      memcpy(v->id.name, name, sizeof(name));
+      if (ealsa_ioctl(fd, EALSA_IOCTL_CTL_ELEM_READ, v) == 0)
+      {
+         ok = true;
+         for (i = 0; i < channels; i++)
+         {
+            long p = v->value.integer[i];
+            if (p < 3 || p > 13)
+            {
+               ok = false;
+               break;
+            }
+            pos[i] = bits[p - 3];
+         }
+      }
+      free(v);
+   }
+   ealsa_close(fd);
+   return ok;
+}
+
 typedef struct ealsa tinyalsa_t;
 
 static void tinyalsa_free(void *data)
@@ -1524,6 +1645,7 @@ static void tinyalsa_free(void *data)
       ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
       ealsa_close(ea->fd);
    }
+   free(ea->stage);
    free(ea);
 }
 
@@ -1596,7 +1718,8 @@ static void *tinyalsa_init(const char *devicestr, unsigned rate,
       format = EALSA_FORMAT_FLOAT;
 
    /* The layout the frontend asked for, if the device has that many
-    * channels; stereo otherwise. */
+    * channels; the widest of 6 and 4 below it the device takes;
+    * stereo otherwise. */
    want_channels = audio_layout_channels(want_layout);
    if (want_channels < 2 || !audio_layout_supported(want_layout))
    {
@@ -1614,11 +1737,7 @@ static void *tinyalsa_init(const char *devicestr, unsigned rate,
       }
    }
    if (ch != want_channels)
-   {
       RARCH_WARN("[TINYALSA] %u channels refused; opening %u.\n", want_channels, ch);
-      want_layout = AUDIO_LAYOUT_STEREO;
-   }
-   ea->layout = (ch == want_channels) ? want_layout : AUDIO_LAYOUT_STEREO;
 
    if (!latency)
       latency = 64;
@@ -1626,6 +1745,52 @@ static void *tinyalsa_init(const char *devicestr, unsigned rate,
    {
       RARCH_ERR("[TINYALSA] The device refused the parameters.\n");
       goto error;
+   }
+
+   /* Wider than stereo: the positions the card's channel map gives,
+    * or ALSA's order for the count - the surround40, surround51 and
+    * surround71 order the kernel's drivers default to. The frontend's
+    * frames are permuted into it where the two differ. */
+   ea->layout = AUDIO_LAYOUT_STEREO;
+   if (ch > 2)
+   {
+      static const uint32_t alsa_order[8] = {
+         AUDIO_SPEAKER_FRONT_LEFT,   AUDIO_SPEAKER_FRONT_RIGHT,
+         AUDIO_SPEAKER_BACK_LEFT,    AUDIO_SPEAKER_BACK_RIGHT,
+         AUDIO_SPEAKER_FRONT_CENTER, AUDIO_SPEAKER_LOW_FREQUENCY,
+         AUDIO_SPEAKER_SIDE_LEFT,    AUDIO_SPEAKER_SIDE_RIGHT };
+      uint32_t map[AUDIO_LAYOUT_ORDER_MAX];
+      uint32_t layout   = 0;
+      bool     identity = true;
+      bool     from_map = ealsa_chmap_positions(card, device, ch, map);
+      if (     !audio_layout_order(from_map ? map : alsa_order, ch,
+                  &layout, ea->order, &identity)
+            || !audio_layout_supported(layout))
+      {
+         RARCH_WARN("[TINYALSA] No usable speaker order for %u channels; opening stereo.\n", ch);
+         ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
+         ch = 2;
+         if (!ealsa_set_params(ea, format, ch, rate, latency))
+         {
+            RARCH_ERR("[TINYALSA] The device refused the parameters.\n");
+            goto error;
+         }
+      }
+      else
+      {
+         ea->layout  = layout;
+         ea->permute = !identity;
+         RARCH_LOG("[TINYALSA] Speaker order from %s%s.\n",
+               from_map ? "the card's channel map" : "ALSA's default",
+               identity ? "" : ", permuted from the frontend's order");
+         if (ea->permute)
+         {
+            ea->stage_frames = ea->buffer_frames;
+            if (!(ea->stage = (uint8_t*)malloc(ea->stage_frames
+                        * (ea->frame_bits / 8))))
+               goto error;
+         }
+      }
    }
 
    if (new_rate)
@@ -1658,6 +1823,14 @@ static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
       x.buf    = (void*)p;
       x.frames = frames;
       x.result = 0;
+      if (ea->permute)
+      {
+         if (x.frames > ea->stage_frames)
+            x.frames = ea->stage_frames;
+         audio_layout_permute(ea->stage, p, x.frames, ea->channels,
+               ea->order, ea->has_float ? sizeof(float) : sizeof(int16_t));
+         x.buf = ea->stage;
+      }
 
       if (ealsa_ioctl(ea->fd, EALSA_IOCTL_WRITEI_FRAMES, &x) < 0)
       {

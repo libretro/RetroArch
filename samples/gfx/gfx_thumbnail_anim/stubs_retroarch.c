@@ -201,6 +201,11 @@ void *disp_get_ptr(void)          { return &gt_blob; }
 void *menu_state_get_ptr(void)    { return &gt_blob; }
 void *runloop_state_get_ptr(void) { return &gt_blob; }
 void *video_state_get_ptr(void)   { return &gt_blob; }
+/* Lane 15 sets these: a content switch and a loaded content */
+int  gt_content_switching;
+int  gt_content_loaded;
+bool runloop_is_content_switching(void) { return gt_content_switching != 0; }
+bool runloop_content_loaded(void)       { return gt_content_loaded    != 0; }
 void dir_set(int t, const char *p) { (void)t; (void)p; }
 void runloop_path_set_redirect(void *a, const char *b, const char *c)
 { (void)a; (void)b; (void)c; }

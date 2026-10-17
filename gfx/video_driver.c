@@ -40,6 +40,7 @@
 #include <formats/video_hw_frame.h>
 #include "../cores/internal_cores.h"
 #include "video_driver.h"
+#include "video_hdr_metadata.h"
 #include "gfx_instrument.h"
 #ifdef HAVE_OPENXR
 #include "video_xr.h"
@@ -153,6 +154,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "../audio/audio_driver.h"
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
+#include "../record/drivers/record_nvenc.h"
 #include "../ui/ui_companion_driver.h"
 #include "../input/input_overlay.h"
 #include "../driver.h"
@@ -1301,6 +1303,58 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 /* Written by the context (the video thread when threaded), read by
  * the menu */
 static retro_atomic_int_t video_display_peak_nits;
+static retro_atomic_int_t video_hdr_output_mode;
+static retro_atomic_int_t video_hdr_source_10bpc;
+/* Kept across video driver teardown: cores ask from retro_load_game */
+static retro_atomic_int_t video_display_dims;
+static retro_atomic_int_t video_display_mm;
+
+void video_driver_set_hdr_output_mode(unsigned mode)
+{
+   retro_atomic_store_release_int(&video_hdr_output_mode,
+         mode <= 2 ? (int)mode : 0);
+}
+
+bool video_driver_get_display_metadata(unsigned cmd, void *data)
+{
+   settings_t *settings = config_get_ptr();
+   video_hdr_metadata_snapshot_t snapshot;
+   int source_10bpc = retro_atomic_load_acquire_int(&video_hdr_source_10bpc);
+   memset(&snapshot, 0, sizeof(snapshot));
+   if (!settings)
+      return false;
+   if (video_driver_get_ptr())
+      snapshot.output_mode = (unsigned)retro_atomic_load_acquire_int(
+            &video_hdr_output_mode);
+   snapshot.source_formats = (source_10bpc
+         ? source_10bpc == 2 : video_driver_supports_10bit_source())
+      ? RETRO_HDR_SOURCE_FORMAT_HDR10_2101010 : 0;
+   snapshot.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
+   snapshot.max_nits         = video_driver_get_hdr_max_nits();
+   snapshot.expand_gamut     = settings->uints.video_hdr_expand_gamut;
+   snapshot.display_dims     = (unsigned)retro_atomic_load_acquire_int(
+         &video_display_dims);
+   snapshot.display_mm       = (unsigned)retro_atomic_load_acquire_int(
+         &video_display_mm);
+   return video_hdr_metadata_query(cmd, data, &snapshot);
+}
+
+/* Both axes or neither; the halves stay below the sign bit */
+static unsigned video_driver_display_pair(unsigned dims)
+{
+   if (     !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
+         || VIDEO_SCALE_W(dims) > 0x7fffu)
+      return 0;
+   return dims;
+}
+
+static void video_driver_set_display_geometry(unsigned dims, unsigned mm)
+{
+   retro_atomic_store_release_int(&video_display_dims,
+         (int)video_driver_display_pair(dims));
+   retro_atomic_store_release_int(&video_display_mm,
+         (int)video_driver_display_pair(mm));
+}
 
 void video_driver_set_display_peak_nits(float nits)
 {
@@ -1455,6 +1509,8 @@ const char *pixel_format_name(enum retro_pixel_format pix_fmt)
          return "XRGB2101010";
       case RETRO_PIXEL_FORMAT_HDR10_2101010:
          return "HDR10_2101010";
+      case RETRO_PIXEL_FORMAT_SCRGB_RGBA16F:
+         return "SCRGB_RGBA16F";
       case RETRO_PIXEL_FORMAT_UNKNOWN:
       default:
          return "UNKNOWN";
@@ -1983,7 +2039,18 @@ const char *video_display_server_get_ident(void)
    return FILE_PATH_UNKNOWN;
 }
 
-void* video_display_server_init(enum rarch_display_type type)
+static unsigned video_display_server_metric_pair(
+      enum display_metric_types w_type, enum display_metric_types h_type)
+{
+   float w = 0.0f, h = 0.0f;
+   if (     !video_display_server_get_metrics(w_type, &w)
+         || !video_display_server_get_metrics(h_type, &h)
+         || w < 1.0f || h < 1.0f)
+      return 0;
+   return VIDEO_SCALE_PACK(w + 0.5f, h + 0.5f);
+}
+
+static void *video_display_server_init_internal(enum rarch_display_type type)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
@@ -2090,6 +2157,20 @@ void* video_display_server_init(enum rarch_display_type type)
       video_st->initial_screen_orientation;
 
    return video_st->current_display_server_data;
+}
+
+void *video_display_server_init(enum rarch_display_type type)
+{
+   void *data    = video_display_server_init_internal(type);
+   unsigned dims = video_display_server_metric_pair(
+         DISPLAY_METRIC_PIXEL_WIDTH, DISPLAY_METRIC_PIXEL_HEIGHT);
+   unsigned mm   = video_display_server_metric_pair(
+         DISPLAY_METRIC_MM_WIDTH, DISPLAY_METRIC_MM_HEIGHT);
+   /* A server that cannot say (the null one a null or headless video
+    * driver brings up) leaves what the last one reported */
+   if (dims)
+      video_driver_set_display_geometry(dims, mm);
+   return data;
 }
 
 void video_display_server_destroy(void)
@@ -2907,6 +2988,8 @@ void video_driver_free_internal(void)
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+   video_driver_set_hdr_output_mode(0);
+   retro_atomic_store_release_int(&video_hdr_source_10bpc, 0);
 
    /* The handle dies with the instance that owns it, but
     * current_video keeps pointing at a live vtable, so anything that
@@ -2920,6 +3003,7 @@ void video_driver_free_internal(void)
    video_st->views_driver_count = 0;
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
+   video_st->headset_runloop_hz = 0.0f;
    video_st->headset_interval   = 0;
 #ifdef HAVE_OPENXR
    /* A context kept for the next driver registers again from its init. */
@@ -5139,10 +5223,11 @@ void video_driver_cached_frame(void)
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    recording_state_t *recording_st= recording_state_get_ptr();
    void             *recording    = recording_st->data;
+   bool native                   = recording_st->driver == &record_nvenc;
    struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
 
    /* Cannot allow recording when pushing duped frames. */
-   recording_st->data             = NULL;
+   if (!native) recording_st->data = NULL;
 
    /* A staged content load has no core between its close and the
     * next core's init, and the drivers it left up present the last
@@ -5170,7 +5255,7 @@ void video_driver_cached_frame(void)
       video_driver_st.frame_repeat = false;
    }
 
-   recording_st->data             = recording;
+   if (!native) recording_st->data = recording;
 }
 
 /* ---------------------------------------------------------------
@@ -6150,7 +6235,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-   video_info->gpu_recording               = recording_state_get_ptr()->enable;
+   video_info->gpu_recording               = recording_state_get_ptr()->enable
+      && recording_state_get_ptr()->driver != &record_nvenc;
+   record_nvenc_frame_info(video_info, false);
    video_info->record_game_only            = video_info->gpu_recording
       && settings->bools.video_record_game_only;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
@@ -7353,6 +7440,18 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_driver_vr_driver_changed();
 #endif
 
+   /* Initialization has completed, before any frames can change driver state. */
+   {
+      gfx_ctx_flags_t flags;
+      flags.flags = 0;
+      video_context_driver_get_flags(&flags);
+      retro_atomic_store_release_int(&video_hdr_source_10bpc,
+            BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? 2 : 1);
+      if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+         video_driver_set_hdr_output_mode(2);
+      else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_HDR10_FRAMEBUFFER))
+         video_driver_set_hdr_output_mode(1);
+   }
 #ifdef HAVE_WEBMPLAYER
    if (runloop_state_get_ptr()->current_core_type == CORE_TYPE_WEBM)
       libretro_media_video_hw_ready();
@@ -8024,6 +8123,7 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    video_driver_build_info(&video_info);
+   record_nvenc_frame_info(&video_info, true);
 #ifdef HAVE_OPENXR
    /* The eyes the core drew this frame from, for the drawing thread */
    video_info.vr_give = video_driver_vr_give_take();

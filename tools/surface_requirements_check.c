@@ -42,12 +42,10 @@ static const char *const exempt_files[] = {
 
 /* Producers that read the flags directly, each still to be migrated to
  * gfx_surface_query_requirements(). Shrinks; never grows.
- * retroarch.c clears the flag as part of tearing a driver down and
- * runloop.c answers a core's environment query with it; neither is a
- * producer deciding what to decode, so neither is migrated. */
+ * retroarch.c clears the flag as part of tearing a driver down rather
+ * than deciding what to decode. */
 static const char *const allowlist[] = {
    "retroarch.c",
-   "runloop.c",
    NULL
 };
 

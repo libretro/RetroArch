@@ -54,6 +54,14 @@ struct m_sw_params
    unsigned int proto, tstamp_type; unsigned char reserved[56];
 };
 struct m_xferi { m_sframes_t result; void *buf; m_uframes_t frames; };
+struct m_ctl_elem_id { unsigned int numid; int iface; unsigned int device, subdevice; unsigned char name[44]; unsigned int index; };
+struct m_ctl_elem_value
+{
+   struct m_ctl_elem_id id;
+   unsigned int indirect:1;
+   union { long integer[128]; long long integer64[64]; unsigned int enumerated[128]; unsigned char bytes[512]; } value;
+   unsigned char reserved[128];
+};
 
 #define M_IOCTL_HW_REFINE     _IOWR('A', 0x10, struct m_hw_params)
 #define M_IOCTL_HW_PARAMS     _IOWR('A', 0x11, struct m_hw_params)
@@ -64,6 +72,8 @@ struct m_xferi { m_sframes_t result; void *buf; m_uframes_t frames; };
 #define M_IOCTL_DROP          _IO('A', 0x43)
 #define M_IOCTL_PAUSE         _IOW('A', 0x45, int)
 #define M_IOCTL_WRITEI_FRAMES _IOW('A', 0x50, struct m_xferi)
+#define M_IOCTL_CTL_ELEM_READ _IOWR('U', 0x12, struct m_ctl_elem_value)
+#define M_CTL_FD 99
 
 static char refine_why_buf[128];
 static ealsa_mock_caps_t caps;
@@ -74,6 +84,9 @@ static unsigned took_rate, took_channels, took_period, took_buffer;
 static int      took_format = -1, committed;
 static size_t   queued, written;
 static struct m_sw_params sw_taken;
+static unsigned char first_bytes[256];
+static size_t   first_len;
+static unsigned chmap_reads;
 
 static void caps_default(void)
 {
@@ -93,6 +106,7 @@ void ealsa_mock_reset(ealsa_mock_caps_t *c)
    frozen = 0; eintr_pending = 0; polls = 0;
    took_rate = took_channels = took_period = took_buffer = 0;
    took_format = -1; committed = 0; queued = written = 0;
+   first_len = 0; chmap_reads = 0;
    memset(&sw_taken, 0, sizeof(sw_taken));
 }
 void ealsa_mock_drain(size_t frames) { queued = frames >= queued ? 0 : queued - frames; }
@@ -115,8 +129,22 @@ unsigned long ealsa_mock_boundary(void)        { return sw_taken.boundary; }
 unsigned long ealsa_mock_stop_threshold(void)  { return sw_taken.stop_threshold; }
 unsigned long ealsa_mock_start_threshold(void) { return sw_taken.start_threshold; }
 
+size_t ealsa_mock_first_bytes(void *out, size_t len)
+{
+   if (len > first_len)
+      len = first_len;
+   memcpy(out, first_bytes, len);
+   return len;
+}
+unsigned ealsa_mock_chmap_reads(void) { return chmap_reads; }
+
 int ealsa_mock_open(const char *path, int flags)
 {
+   if (strstr(path, "controlC0") && caps.chmap_n && !caps.open_fails)
+   {
+      fds++;
+      return M_CTL_FD;
+   }
    /* only card 0, device 0 exists */
    if (caps.open_fails || !strstr(path, "pcmC0D0p"))
    {
@@ -224,7 +252,24 @@ static int refine(struct m_hw_params *p)
 
 int ealsa_mock_ioctl(int fd, unsigned long req, void *arg)
 {
-   (void)fd;
+   if (fd == M_CTL_FD)
+   {
+      struct m_ctl_elem_value *v = (struct m_ctl_elem_value*)arg;
+      unsigned i;
+      if (     req != M_IOCTL_CTL_ELEM_READ || v->id.iface != 3
+            || v->id.device != 0 || strcmp((const char*)v->id.name, "Playback Channel Map"))
+      {
+         errno = ENOENT;
+         return -1;
+      }
+      chmap_reads++;
+      memset(&v->value, 0, sizeof(v->value));
+      /* the kernel's map is the one for the committed count */
+      if (committed && took_channels == caps.chmap_n)
+         for (i = 0; i < caps.chmap_n; i++)
+            v->value.integer[i] = caps.chmap[i];
+      return 0;
+   }
    switch (req)
    {
       case M_IOCTL_HW_REFINE:
@@ -277,6 +322,12 @@ int ealsa_mock_ioctl(int fd, unsigned long req, void *arg)
          if (!room)        { errno = EAGAIN; return -1; }
          if (x->frames < room)
             room = x->frames;
+         if (!first_len)
+         {
+            size_t fb = (took_format == M_FMT_FLOAT_LE ? 4 : 2) * took_channels;
+            first_len = room * fb < sizeof(first_bytes) ? room * fb : sizeof(first_bytes);
+            memcpy(first_bytes, x->buf, first_len);
+         }
          queued    += room;
          written   += room;
          x->result  = (m_sframes_t)room;

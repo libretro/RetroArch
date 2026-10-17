@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="mingw-w64 wine build-essential pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+          pkgs="mingw-w64 wine build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -173,9 +173,29 @@ jobs:
         run: |
           set -eu
           make clean && make -j$(nproc) check SANITIZER=address,undefined
-          make clean && make thread_test SANITIZER=thread
+          make clean && make thread_test session_test SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./thread_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./session_test
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
+      - name: GPU recording dispatcher (ASan + UBSan, TSan, mingw-w64)
+        working-directory: samples/record/gpu_dispatch
+        run: |
+          set -eu
+          make clean && make check SANITIZER=address,undefined
+          make clean && make dispatch_test session_integration SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./dispatch_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./session_integration
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
+      - name: Native recording frontend clock and PCM (ASan + UBSan, mingw-w64)
+        working-directory: samples/record/nvenc_frontend
+        run: |
+          set -eu
+          make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
       - name: ccache statistics

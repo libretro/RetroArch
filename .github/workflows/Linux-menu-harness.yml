@@ -486,6 +486,13 @@ jobs:
           make -C samples/network/command_frames check
           make -C samples/network/command_frames clean
 
+      - name: Structured HDR queries through the real frontend
+        shell: bash
+        run: |
+          set -eu
+          make -j$(nproc)
+          python3 samples/gfx/hdr_metadata/live.py --retroarch ./retroarch --log-dir /tmp/hdr-metadata-live
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

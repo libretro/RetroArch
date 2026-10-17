@@ -1932,6 +1932,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
 
    bool wantEnable = (mode != METAL_HDR_OUTPUT_OFF);
+   unsigned output_mode;
 
    /* Pick drawable format + colourspace for the layer. */
    MTLPixelFormat newFmt    = _layer.pixelFormat;
@@ -1999,12 +2000,14 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          metal_layer_set_edr_metadata(_layer, nil);
    }
 #endif
+   output_mode = (!wantEnable || newCS) ? mode : 0;
    if (newCS)
       CGColorSpaceRelease(newCS);
 
    _hdrDrawableFormat = newFmt;
    _hdrOutputMode     = mode;
    _hdrEnabled        = wantEnable;
+   video_driver_set_hdr_output_mode(output_mode);
 
    if (wantEnable)
    {

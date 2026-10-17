@@ -262,6 +262,24 @@ int record_gpu_output_d3d12_step(record_gpu_output_d3d12_t *p)
    return record_gpu_output_audio_step(p);
 }
 
+void *record_gpu_output_d3d12_wait_handle(const record_gpu_output_d3d12_t *p)
+{
+   if (!p) return NULL;
+   if (p->writing) return record_file_win32_wait_handle(p->file);
+   if (p->ended || p->video_end || retro_atomic_load_acquire_int(&p->failed))
+      return NULL;
+   return record_gpu_worker_d3d12_wait_handle(p->worker);
+}
+
+bool record_gpu_output_d3d12_retry_needed(const record_gpu_output_d3d12_t *p)
+{
+   if (!p) return false;
+   if (p->writing) return true;
+   return !p->ended && !p->video_end
+      && !retro_atomic_load_acquire_int(&p->failed)
+      && record_gpu_worker_d3d12_retry_needed(p->worker);
+}
+
 bool record_gpu_output_d3d12_abort(record_gpu_output_d3d12_t *p)
 {
    if (!p || p->ended)

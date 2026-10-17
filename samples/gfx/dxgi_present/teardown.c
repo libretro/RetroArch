@@ -60,7 +60,6 @@ static unsigned WaitForSingleObject(void *event, unsigned timeout)
    drained = 1; ++waits; return 0;
 }
 static int CloseHandle(void *handle) { assert(handle); return 1; }
-static int FreeLibrary(void *module) { assert(module); return 1; }
 #define DROP(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while (0)
 #include "destroy.inc"
 static HRESULT resize_buffers(object *p, unsigned count, unsigned width,

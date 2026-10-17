@@ -514,6 +514,8 @@ typedef struct video_frame_info
     * Owned by whichever thread presents: video_driver_frame() on the
     * direct path, the video thread under the threaded wrapper. */
    uint64_t swap_count;
+   uint64_t recording_gpu_timestamp;
+   void *recording_gpu;
    void *userdata;
    void *widgets_userdata;
    void *disp_userdata;
@@ -709,6 +711,8 @@ typedef struct video_frame_info
     * draws them: it travels with the frame, so the thread that draws
     * never reads the recording state the main thread writes. */
    bool gpu_recording;
+   bool recording_gpu_pending;
+   bool recording_gpu_capture;
    /* Record Game Only: the driver reads the recording's frame back
     * before drawing any UI over it. */
    bool record_game_only;
@@ -986,6 +990,8 @@ typedef struct video_device_info
    void *instance;
    void *physical_device;
    void *device;
+   /* D3D12's immutable render queue, borrowed with the device. */
+   void *queue;
    retro_proc_address_t get_instance_proc_addr;
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */
@@ -1876,6 +1882,9 @@ typedef struct
     * and how many headset frames each core frame shows for (0: the
     * window paces). */
    float headset_hz;
+   /* The headset's rate while the runloop iterates at it: a headset's
+    * own context with no fit, under no wrapper. 0 otherwise. */
+   float headset_runloop_hz;
    unsigned headset_interval;
    /* The rate to ask the headset for, 0 for none. */
    float headset_request_hz;
@@ -2642,6 +2651,10 @@ void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *
 /* The display's peak luminance as its context learned it (a sink's
  * EDID, a compositor's description of the output), in whole nits;
  * 0 while unknown. For the user's information: nothing applies it. */
+/* Published after successful output configuration; no GPU query. */
+void video_driver_set_hdr_output_mode(unsigned mode);
+bool video_driver_get_display_metadata(unsigned cmd, void *data);
+
 void video_driver_set_display_peak_nits(float nits);
 unsigned video_driver_get_display_peak_nits(void);
 

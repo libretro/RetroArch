@@ -95,6 +95,20 @@ void audio_layout_remap_s16(int16_t *out, uint32_t out_layout,
 /* Every set bit names a position above. */
 bool audio_layout_known(uint32_t layout);
 
+/* A device whose channels are not in ascending bit order: its
+ * positions, in its own order, give the layout they make and, for
+ * each device channel k, the slot order[k] of the frontend's frame it
+ * takes. False for a position repeated or unknown, or more than
+ * AUDIO_LAYOUT_ORDER_MAX of them. *identity: no permutation needed. */
+#define AUDIO_LAYOUT_ORDER_MAX 8
+bool audio_layout_order(const uint32_t *pos, unsigned n,
+      uint32_t *layout, uint8_t *order, bool *identity);
+
+/* Frames from the frontend's order to a device's, as above; out may
+ * be in. sample_bytes is 2 or 4. */
+void audio_layout_permute(void *out, const void *in, size_t frames,
+      unsigned channels, const uint8_t *order, unsigned sample_bytes);
+
 /* Stereo to a wider layout, at the last step before the device. The
  * pipeline stays stereo - the core, the filters, the resampler, the
  * mixer - and a device opened with a wider layout gets this stage

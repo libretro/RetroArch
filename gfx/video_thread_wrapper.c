@@ -2177,6 +2177,25 @@ static bool video_thread_rec_in_flight(const thread_video_t *thr,
    return false;
 }
 
+bool video_thread_record_gpu_in_flight(void *data, const void *recorder)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   unsigned s, tail, pending;
+   bool busy;
+   int state;
+   if (!thr || !recorder) return false;
+   state = video_thread_ring_load(thr);
+   tail = VIDEO_THREAD_RING_TAIL_OF(state);
+   pending = VIDEO_THREAD_RING_PENDING_OF(state);
+   busy = VIDEO_THREAD_RING_BUSY_OF(state);
+   for (s = 0; s < 2; s++)
+      if ((pending == 2 || (pending == 1 && s == tail)
+               || (busy && s == (tail ^ 1)))
+            && thr->frame.slot[s].video_info.recording_gpu == recorder)
+         return true;
+   return false;
+}
+
 static void video_thread_rec_free_list(video_thread_rec_t *rec)
 {
    while (rec)
@@ -2554,7 +2573,9 @@ static void video_thread_loop(void *data)
 
       video_thread_run_deferred(thr);
 
-      if (have_cmd && video_thread_handle_packet(thr, &pkt))
+      /* A readback follows the frame claimed on this pass. */
+      if (have_cmd && (!claimed || pkt.type != CMD_READ_VIEWPORT)
+            && video_thread_handle_packet(thr, &pkt))
       {
          thread_elevation_lower_current(&elevation);
          thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO,
@@ -2981,6 +3002,8 @@ static void video_thread_loop(void *data)
             thr->present_repeat = false;
          video_thread_publish_stats(thr);
       }
+      if (have_cmd && claimed && pkt.type == CMD_READ_VIEWPORT)
+         video_thread_handle_packet(thr, &pkt);
    }
 }
 
@@ -3565,6 +3588,8 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (video_thread_is_self(thr))
    {
       thread_update_driver_state(thr);
+      if (video_info)
+         video_info->swap_count = thr->video_st->swap_count;
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
@@ -3572,6 +3597,13 @@ static bool video_thread_frame(void *data, const void *frame_,
           * here, as a screenshot's is, draws as it was shown. */
          unsigned rows = video_thread_slot_rows(thr, width, filter_bpp,
                NULL);
+         int hw_slot = video_thread_hw_dupe_slot(thr,
+               !frame_ || frame_ == RETRO_HW_FRAME_BUFFER_VALID);
+         /* cached_frame() represents a hardware replay as NULL. The
+          * ring installs that slot before frame(), whose HW marker
+          * advances GL onto the installed texture. */
+         if (hw_slot >= 0 && !frame_)
+            frame_ = RETRO_HW_FRAME_BUFFER_VALID;
          if (frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
             dims = VIDEO_SCALE_PACK(width, rows);
          if (convert)
@@ -3587,6 +3619,11 @@ static bool video_thread_frame(void *data, const void *frame_,
          if (video_info && video_info->vr_give)
             video_driver_vr_give(video_info->vr_give - 1);
 #endif
+         /* A cached HW frame samples the retained slot again. The
+          * readback completes it before returning; a nested replay is
+          * covered by its enclosing frame's slot fence. */
+         if (hw_slot >= 0)
+            video_thread_hw_before_frame(thr, hw_slot, true);
          return thr->driver->frame(thr->driver_data, frame_,
             dims, frame_count, pitch, msg, video_info);
       }

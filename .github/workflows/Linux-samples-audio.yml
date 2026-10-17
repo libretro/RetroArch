@@ -281,6 +281,24 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_lifecycle_test
           echo "[pass] alsa_lifecycle_test (TSan)"
 
+      - name: Build and run alsa_chmap_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/alsa_chmap
+        run: |
+          set -eu
+          # The shipping ALSA driver against the null PCM, with the
+          # channel map, the channel counts the card takes and writei
+          # scripted via -Wl,--wrap: a card is handed the frontend's
+          # channels in its own order - its map's, or ALSA's FL FR RL
+          # RR FC LFE SL SR without one - by write() and through a lent
+          # mmap span, reports the layout it has, and steps 7.1 down to
+          # 5.1 or quad before stereo. A short writei must not lose the
+          # frame stride.
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./alsa_chmap_test
+          echo "[pass] alsa_chmap_test (ASan)"
+
       - name: Build and run pipeline_stall_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/pipeline_stall
@@ -560,6 +578,23 @@ jobs:
           make clean && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./audioworklet_test
           echo "[pass] audioworklet_test (ASan)"
+
+      - name: Build and run rwebaudio_test (the web driver's channels, C and JavaScript halves)
+        shell: bash
+        working-directory: samples/audio/rwebaudio
+        run: |
+          set -eu
+          # audio/drivers/rwebaudio.c against a stand-in for its
+          # JavaScript half: frames of the layout the page took go out
+          # one plane per channel, and every byte count is in frames of
+          # that layout. Then emscripten/library_rwebaudio.js itself
+          # under Node with a mock AudioContext: the destination is
+          # widened only past stereo and only as far as its
+          # maxChannelCount allows, and a stereo one is left as it was.
+          make clean && make -j$(nproc) check
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./rwebaudio_test
+          echo "[pass] rwebaudio_test (ASan)"
 
       - name: Build and run pipewire_write_test (the PipeWire driver's write against its own ring)
         shell: bash

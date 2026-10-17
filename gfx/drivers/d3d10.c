@@ -2227,10 +2227,11 @@ static bool d3d10_shader_load_step(void *data,
                &d3d10->chain.pass[i].core_aspect_rot,
                &d3d10->chain.pass[i].total_subframes,
                &d3d10->chain.pass[i].current_subframe,
-               &d3d10->chain.pass[i].swap_count,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+               &d3d10->chain.pass[i].swap_count;
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL,
                   40, &semantics_map,
@@ -2444,11 +2445,12 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->chain.pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d10->chain.pass[i].total_subframes, /* TotalSubFrames */
             &d3d10->chain.pass[i].current_subframe,/* CurrentSubFrame */
-            &d3d10->chain.pass[i].swap_count, /* SwapCount */
          }
       };
       /* clang-format on */
 
+      semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d10->chain.pass[i].swap_count;
       if (!slang_process(
                d3d10->chain.shader_preset, i, RARCH_SHADER_HLSL,
                40, &semantics_map,

@@ -659,6 +659,8 @@ VIDEO DRIVER
 #include "../record/record_file_win32.c"
 #ifdef HAVE_RAC3
 #include "../record/record_gpu_output_d3d12.c"
+#include "../record/record_gpu_session_d3d12.c"
+#include "../record/record_gpu_dispatch_d3d12.c"
 #endif
 #include "../gfx/drivers/d3d12.c"
 #endif
@@ -1564,6 +1566,7 @@ RECORDING
 ============================================================ */
 #include "../record/record_driver.c"
 #include "../record/drivers/record_wav.c"
+#include "../record/drivers/record_nvenc.c"
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif

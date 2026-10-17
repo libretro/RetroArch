@@ -7547,6 +7547,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_st->flags & MENU_ST_FLAG_DATA_OWN)
             return true;
 
+         gfx_thumbnail_parked_free();
+
          /* Abandon a pending deferred playlist parse before the
           * cache it would install goes away. */
          playlist_init_cached_defer_abort();

@@ -345,6 +345,7 @@ typedef struct gl3
       bool     pq_out;
       /* active, for get_flags on the main thread. */
       retro_atomic_int_t active_published;
+      retro_atomic_int_t texture_scrgb_published;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
       float    menu_nits;
@@ -533,10 +534,19 @@ static bool gl3_views_allowed(const gl3_t *gl)
 }
 #endif
 
+/* Only the render thread inspects the actual framebuffer layout. */
+static void gl3_publish_texture_formats(gl3_t *gl)
+{
+   retro_atomic_store_release_int(&gl->scrgb.texture_scrgb_published,
+         gl->scrgb.active && (gl->video_info.source_hdr10
+            ? gl->scrgb.ui_fbo != 0 : gl->scrgb.tex_fp16));
+}
+
 /* What get_flags answers on the main thread, published by the video
  * thread wherever it can change. */
 static void gl3_publish_flags(gl3_t *gl)
 {
+   gl3_publish_texture_formats(gl);
 #ifdef HAVE_SLANG
    retro_atomic_store_release_int(&gl->scrgb.active_published,
          gl->scrgb.active ? 1 : 0);
@@ -5360,6 +5370,7 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
          }
       }
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      gl3_publish_texture_formats(gl);
    }
    return gl->scrgb.fbo;
 }
@@ -8707,13 +8718,8 @@ static bool gl3_supports_texture_format(void *data,
       case TEXTURE_GPU_FORMAT_SCRGB:
          /* Only where the menu's layer is FP16: an 8-bit one would clip
           * the highlights the tone-mapped path rolls off */
-         if (data)
-         {
-            const gl3_t *gl = (const gl3_t*)data;
-            return gl->scrgb.active && (gl->video_info.source_hdr10
-                  ? gl->scrgb.ui_fbo != 0 : gl->scrgb.tex_fp16);
-         }
-         return false;
+         return data && retro_atomic_load_acquire_int(
+               &((const gl3_t*)data)->scrgb.texture_scrgb_published) != 0;
       case TEXTURE_GPU_FORMAT_BC1:
       case TEXTURE_GPU_FORMAT_BC2:
       case TEXTURE_GPU_FORMAT_BC3:

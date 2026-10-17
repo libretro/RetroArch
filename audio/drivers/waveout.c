@@ -29,6 +29,7 @@
 
 #include <windows.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
@@ -43,8 +44,12 @@
 /* A block no shorter than this, in frames: a device is not asked to
  * take a block every millisecond. */
 #define WAVEOUT_BLOCK_FRAMES 256
-/* 16-bit stereo */
-#define WAVEOUT_FRAME_BYTES  4
+
+/* KSDATAFORMAT_SUBTYPE_PCM, by value: ksmedia.h is out of reach of
+ * the oldest SDKs, as in dsound.c. */
+static const GUID ra_waveout_subtype_pcm =
+   { 0x00000001, 0x0000, 0x0010,
+     { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 
 typedef struct waveout
 {
@@ -53,6 +58,8 @@ typedef struct waveout
    WAVEHDR *hdr;          /* the blocks' headers */
    char    *data;         /* ... and their memory, in one piece */
    size_t   block_bytes;
+   uint32_t layout;       /* 16-bit frames of this layout's channels */
+   unsigned frame_bytes;
    size_t   fill;         /* bytes in the block being filled */
    size_t   frames_done;  /* frames in the blocks handed back so far */
    unsigned cur;          /* the block being filled */
@@ -70,7 +77,7 @@ static void waveout_reclaim(waveout_t *wo)
             && (wo->hdr[wo->oldest].dwFlags & WHDR_DONE))
    {
       wo->frames_done += wo->hdr[wo->oldest].dwBufferLength
-         / WAVEOUT_FRAME_BYTES;
+         / wo->frame_bytes;
       wo->oldest       = (wo->oldest + 1) % WAVEOUT_BLOCKS;
       wo->queued--;
    }
@@ -100,13 +107,45 @@ static void waveout_free(void *data)
    free(wo);
 }
 
+/* 16-bit PCM of a layout: the plain format for stereo, and for a
+ * wider one WAVEFORMATEXTENSIBLE with the frontend's mask, whose bits
+ * are the channel mask's. */
+static void waveout_set_format(WAVEFORMATEXTENSIBLE *wfx, uint32_t layout,
+      unsigned rate)
+{
+   WAVEFORMATEX *wf      = &wfx->Format;
+   unsigned channels     = audio_layout_channels(layout);
+   wf->nChannels         = (WORD)channels;
+   wf->nSamplesPerSec    = rate;
+   wf->wBitsPerSample    = 16;
+   wf->nBlockAlign       = (WORD)(channels * 2);
+   wf->nAvgBytesPerSec   = rate * channels * 2;
+   if (channels > 2)
+   {
+      wf->wFormatTag                   = WAVE_FORMAT_EXTENSIBLE;
+      wf->cbSize                       = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+      wfx->Samples.wValidBitsPerSample = 16;
+      wfx->dwChannelMask               = (DWORD)layout;
+      wfx->SubFormat                   = ra_waveout_subtype_pcm;
+   }
+   else
+   {
+      wf->wFormatTag                   = WAVE_FORMAT_PCM;
+      wf->cbSize                       = 0;
+      wfx->Samples.wValidBitsPerSample = 0;
+      wfx->dwChannelMask               = 0;
+      wfx->SubFormat                   = ra_waveout_subtype_pcm;
+   }
+}
+
 static void *waveout_init(const char *device, unsigned rate,
       unsigned latency, unsigned *new_rate)
 {
-   WAVEFORMATEX fmt;
+   WAVEFORMATEXTENSIBLE fmt;
    unsigned i;
    UINT dev       = WAVE_MAPPER;
    size_t frames;
+   uint32_t layout = audio_driver_requested_layout();
    waveout_t *wo  = (waveout_t*)calloc(1, sizeof(*wo));
 
    if (!wo)
@@ -116,34 +155,47 @@ static void *waveout_init(const char *device, unsigned rate,
    if (device && device[0] >= '0' && device[0] <= '9')
       dev = (UINT)strtoul(device, NULL, 10);
 
-   /* the latency asked for, across the ring */
-   frames = ((size_t)rate * latency / 1000 + WAVEOUT_BLOCKS - 1)
-      / WAVEOUT_BLOCKS;
-   if (frames < WAVEOUT_BLOCK_FRAMES)
-      frames = WAVEOUT_BLOCK_FRAMES;
-   wo->block_bytes = frames * WAVEOUT_FRAME_BYTES;
-
-   wo->hdr   = (WAVEHDR*)calloc(WAVEOUT_BLOCKS, sizeof(WAVEHDR));
-   wo->data  = (char*)calloc(WAVEOUT_BLOCKS, wo->block_bytes);
    wo->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if (!wo->hdr || !wo->data || !wo->event)
+   if (!wo->event)
       goto error;
 
-   fmt.wFormatTag      = WAVE_FORMAT_PCM;
-   fmt.nChannels       = 2;
-   fmt.nSamplesPerSec  = rate;
-   fmt.wBitsPerSample  = 16;
-   fmt.nBlockAlign     = WAVEOUT_FRAME_BYTES;
-   fmt.nAvgBytesPerSec = rate * WAVEOUT_FRAME_BYTES;
-   fmt.cbSize          = 0;
-
-   if (waveOutOpen(&wo->hwo, dev, &fmt, (DWORD_PTR)wo->event, 0,
-            CALLBACK_EVENT) != MMSYSERR_NOERROR)
+   /* The layout asked for; a device that will not take it, which is
+    * every one before Windows 2000, is opened stereo. */
+   if (!audio_layout_supported(layout))
+      layout = AUDIO_LAYOUT_STEREO;
+   waveout_set_format(&fmt, layout, rate);
+   if (     layout != AUDIO_LAYOUT_STEREO
+         && waveOutOpen(&wo->hwo, dev, &fmt.Format, (DWORD_PTR)wo->event, 0,
+               CALLBACK_EVENT) != MMSYSERR_NOERROR)
+   {
+      wo->hwo = NULL;
+      RARCH_WARN("[waveout] The device does not open with layout 0x%03x; opening stereo.\n",
+            (unsigned)layout);
+      layout  = AUDIO_LAYOUT_STEREO;
+      waveout_set_format(&fmt, layout, rate);
+   }
+   if (     !wo->hwo
+         && waveOutOpen(&wo->hwo, dev, &fmt.Format, (DWORD_PTR)wo->event, 0,
+               CALLBACK_EVENT) != MMSYSERR_NOERROR)
    {
       wo->hwo = NULL;
       RARCH_ERR("[waveout] The device does not open at %u Hz, 16-bit stereo.\n", rate);
       goto error;
    }
+   wo->layout      = layout;
+   wo->frame_bytes = fmt.Format.nBlockAlign;
+
+   /* the latency asked for, across the ring */
+   frames = ((size_t)rate * latency / 1000 + WAVEOUT_BLOCKS - 1)
+      / WAVEOUT_BLOCKS;
+   if (frames < WAVEOUT_BLOCK_FRAMES)
+      frames = WAVEOUT_BLOCK_FRAMES;
+   wo->block_bytes = frames * wo->frame_bytes;
+
+   wo->hdr   = (WAVEHDR*)calloc(WAVEOUT_BLOCKS, sizeof(WAVEHDR));
+   wo->data  = (char*)calloc(WAVEOUT_BLOCKS, wo->block_bytes);
+   if (!wo->hdr || !wo->data)
+      goto error;
 
    for (i = 0; i < WAVEOUT_BLOCKS; i++)
    {
@@ -155,8 +207,8 @@ static void *waveout_init(const char *device, unsigned rate,
    }
 
    *new_rate = rate;
-   RARCH_LOG("[waveout] %u Hz, %u blocks of %u frames.\n",
-         rate, (unsigned)WAVEOUT_BLOCKS, (unsigned)frames);
+   RARCH_LOG("[waveout] %u Hz, layout 0x%03x, %u blocks of %u frames.\n",
+         rate, (unsigned)wo->layout, (unsigned)WAVEOUT_BLOCKS, (unsigned)frames);
    return wo;
 
 error:
@@ -300,6 +352,12 @@ static bool waveout_use_float(void *data)
    return false;
 }
 
+static uint32_t waveout_layout(void *data)
+{
+   waveout_t *wo = (waveout_t*)data;
+   return wo ? wo->layout : AUDIO_LAYOUT_STEREO;
+}
+
 audio_driver_t audio_waveout = {
    waveout_init,
    waveout_write,
@@ -316,5 +374,7 @@ audio_driver_t audio_waveout = {
    waveout_buffer_size,
    NULL, /* write_raw */
    waveout_wait_writable,
-   waveout_frames_consumed
+   waveout_frames_consumed,
+   NULL, /* underruns */
+   waveout_layout
 };

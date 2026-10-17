@@ -550,7 +550,7 @@ typedef struct
    struct d3d11_planar  *planar;
    D3D11ComputeShader    planar_cs;
    D3D11Buffer           planar_cb;
-   bool                  planar_failed;
+   retro_atomic_int_t    planar_failed;
 #ifdef D3D11_FRAME_IMPORT
    /* Set when frames on another device can be imported */
    ID3D11Device5        *device5;
@@ -600,6 +600,7 @@ typedef struct
    unsigned              swap_interval;
    int8_t                wait_for_vblank;
    uint32_t              flags;
+   retro_atomic_int_t     texture_hdr_enabled;
    /* settings->uints.video_swapchain_bit_depth, seeded at init and
     * refreshed in apply_state_changes (a blocking command, so the
     * settings read inside it cannot race main): the frame's resize
@@ -3123,7 +3124,6 @@ static bool d3d11_shader_load_step(void *data,
                &d3d11->chain.pass[i].core_aspect_rot,
                &d3d11->chain.pass[i].total_subframes,
                &d3d11->chain.pass[i].current_subframe,
-               &d3d11->chain.pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d11->chain.pass[i].hdr_mode,
                &d3d11->chain.pass[i].paper_white_nits,
@@ -3136,6 +3136,8 @@ static bool d3d11_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d11->chain.pass[i].swap_count;
          d3d11_frame_rect_semantics(d3d11, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL,
@@ -3403,7 +3405,6 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
          &d3d11->chain.pass[i].core_aspect_rot, /* OriginalAspectRotated */
          &d3d11->chain.pass[i].total_subframes, /* TotalSubFrames */
          &d3d11->chain.pass[i].current_subframe,/* CurrentSubFrame */
-         &d3d11->chain.pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
          &d3d11->chain.pass[i].hdr_mode,        /* HDRMode */
          &d3d11->chain.pass[i].paper_white_nits,/* BrightnessNits */
@@ -3417,6 +3418,8 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
    };
    /* clang-format on */
 
+   semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+         &d3d11->chain.pass[i].swap_count;
    d3d11_frame_rect_semantics(d3d11, &semantics_map);
    if (!slang_process(
             d3d11->chain.shader_preset, i, RARCH_SHADER_HLSL, shader_model,
@@ -5770,6 +5773,10 @@ static bool d3d11_views_allowed(const d3d11_video_t *d3d11)
 
 static void d3d11_views_publish(d3d11_video_t *d3d11)
 {
+#ifdef HAVE_DXGI_HDR
+   retro_atomic_store_release_int(&d3d11->texture_hdr_enabled,
+         (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) != 0);
+#endif
    retro_atomic_store_release_int(&d3d11->views.allowed,
          d3d11_views_allowed(d3d11) ? 1 : 0);
 }
@@ -8220,9 +8227,9 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    D3D11_BUFFER_DESC desc;
    if (d3d11->planar_cs)
       return true;
-   if (d3d11->planar_failed)
+   if (retro_atomic_load_acquire_int(&d3d11->planar_failed))
       return false;
-   d3d11->planar_failed = true;
+   retro_atomic_store_release_int(&d3d11->planar_failed, 1);
    if (!d3d_compile(d3d11_planar_cs_src, sizeof(d3d11_planar_cs_src) - 1,
             "planar", "main", "cs_5_0", &blob))
       return false;
@@ -8245,7 +8252,7 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
       d3d11->planar_cs = NULL;
       return false;
    }
-   d3d11->planar_failed = false;
+   retro_atomic_store_release_int(&d3d11->planar_failed, 0);
    return true;
 }
 
@@ -9352,13 +9359,15 @@ static bool d3d11_gfx_supports_texture_format(void* data,
       return v && v->device;
    /* A compute shader's typed store to R8G8B8A8 is feature level 11 */
    if (fmt == TEXTURE_GPU_FORMAT_YUV420)
-      return v && v->device && !v->planar_failed
+      return v && v->device
+         && !retro_atomic_load_acquire_int(&v->planar_failed)
          && v->supportedFeatureLevel >= D3D_FEATURE_LEVEL_11_0;
 #ifdef HAVE_DXGI_HDR
    /* PSMainLinearHDR shows such a texture as linear scRGB while the
     * output is HDR; in SDR there is no linear light to show it in. */
    if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
-      return v && v->device && (v->flags & D3D11_ST_FLAG_HDR_ENABLE);
+      return v && v->device
+         && retro_atomic_load_acquire_int(&v->texture_hdr_enabled);
 #endif
    if (!v || !v->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;

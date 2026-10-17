@@ -69,6 +69,11 @@ int nvenc_d3d12_submit(nvenc_d3d12_t *encoder, unsigned slot,
       uint64_t timestamp, uint64_t duration, void *ready_fence, uint64_t ready_value,
       bool keyframe);
 int nvenc_d3d12_poll(nvenc_d3d12_t *encoder, nvenc_d3d12_packet_t *packet);
+/* Worker-only borrowed Win32 completion handle for the oldest accepted frame
+ * or EOS, or NULL. Never close/reset it; re-query after each service step.
+ * This is a scheduling hint, not a promise of progress: also wake on producer
+ * input/close and schedule retries for SDK BUSY without pending completion. */
+void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e);
 int nvenc_d3d12_release(nvenc_d3d12_t *encoder);
 int nvenc_d3d12_finish(nvenc_d3d12_t *encoder);
 /* Refuses accepted frames/unfinished EOS unless the device was removed. */

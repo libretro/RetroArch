@@ -131,6 +131,7 @@ bool android_get_vfs_authorized_locations(
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
+#include "record/drivers/record_nvenc.h"
 #include "msg_hash_lbl_str.h"
 
 #ifdef HAVE_CONFIG_H
@@ -4157,13 +4158,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             target_refresh_rate    = video_driver_get_refresh_rate();
 
 #ifdef HAVE_OPENXR
-         /* paces the runloop to headsets refresh,
-          * not to the configured one, so that is the rate targeted. */
+         /* The headset's rate only while the runloop iterates at it:
+          * a headset that paces the core at its own rate, or a window
+          * that does, targets the configured one. */
          {
             video_driver_state_t *video_st = video_state_get_ptr();
             if (     (video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING)
-                  && video_st->headset_hz > 0.0f)
-               target_refresh_rate = video_st->headset_hz;
+                  && video_st->headset_runloop_hz > 0.0f)
+               target_refresh_rate = video_st->headset_runloop_hz;
          }
 #endif
 
@@ -4398,7 +4400,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * yet initialised (queried before drivers_init, e.g. a direct CLI
           * load) we cannot read its real format, so fall back to the
           * format-negotiation hint, which is what it will request. */
-         if (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
+         if (audio_state_get_ptr()->context_audio_data
+               && (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE))
          {
             if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_USE_FLOAT))
                return false;
@@ -4515,103 +4518,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #endif
          }
 
-      case RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE:
-         /* Which HDR swapchain is presenting.  A core encoding its own gamut
-          * needs this because the scRGB path rotates Rec.2020 -> Rec.709 on
-          * the way to the display and the HDR10 path does not, so the same
-          * frame lands differently on the two.
-          *
-          * The user setting is the request, not always what is presenting:
-          * the GL drivers can only build scRGB backbuffers regardless of
-          * the requested mode (WGL has no HDR10/metadata path), and the
-          * setting survives switches to drivers with no HDR path at all --
-          * only the D3D/Vulkan display checks force it back to 0.  Derive
-          * the answer from the swapchain that actually exists.  Before the
-          * video driver is up (a core querying from retro_load_game, the
-          * same window documented at SET_PIXEL_FORMAT's HDR10 gate) the
-          * capability flags are legitimately clear, so fall back to the
-          * setting rather than reporting HDR off on machines that will
-          * have it. */
-         {
-            settings_t *settings = config_get_ptr();
-            unsigned mode        = settings->uints.video_hdr_mode;
-            if (mode > 0 && video_driver_get_ptr())
-            {
-               if (video_driver_test_all_flags(
-                        GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
-                  mode = 2;
-               else if (!(video_driver_get_disp_flags()
-                        & VIDEO_FLAG_HDR_SUPPORT))
-                  mode = 0;
-            }
-            *(unsigned*)data     = mode;
-         }
-         break;
-
-      case RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT:
-         /* Which gamut treatment SDR content receives.  A core encoding
-          * Rec.2020 itself has to match it, otherwise switching that core
-          * between an SDR format and HDR10 visibly changes saturation --
-          * "Super" in particular applies no rotation at all, so a core that
-          * dutifully rotates 709 -> 2020 comes out looking desaturated
-          * beside the SDR path. */
-         {
-            settings_t *settings = config_get_ptr();
-            *(unsigned*)data = settings->uints.video_hdr_expand_gamut;
-         }
-         break;
-
-      case RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS:
-         /* Where the user puts SDR white.  A core emitting
-          * RETRO_PIXEL_FORMAT_HDR10_2101010 encodes absolute luminance
-          * itself, so it has to map ordinary content here; anything it
-          * places above this value is what produces the HDR effect. */
-         {
-            settings_t *settings = config_get_ptr();
-            *(float*)data = settings->floats.video_hdr_paper_white_nits;
-         }
-         break;
-
-      case RETRO_ENVIRONMENT_GET_HDR_MAX_NITS:
-         /* How bright the display can go.  Together with paper white this
-          * gives a core the headroom it has for highlights; without it a core
-          * has to guess, and the guess is too dark on a bright panel and clips
-          * on a dim one.  The user's setting, or with Use Display Peak the
-          * display's own where its context learned one. */
-         *(float*)data = video_driver_get_hdr_max_nits();
-         break;
-
-      case RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE:
-         /* True only when the active video driver presents a 10-bit source
-          * surface natively; when false, XRGB2101010 frames are narrowed to
-          * 8-bit by video_driver_frame, so a core with an 8-bit path should
-          * prefer it and skip the wasted 10-bit work.
-          *
-          * A live instance answers from its flags.  When none exists the
-          * question still has to be answered: cores issue this query from
-          * retro_load_game while choosing their pixel format, i.e. during
-          * CMD_EVENT_CORE_INIT, which on a cold start into content runs
-          * before any video driver exists for the session being started
-          * (and on an in-process core switch the outgoing instance has been
-          * torn down, which clears ctx->get_flags and video_st->poke).  The
-          * flag test alone then reports "no" on every machine, purely
-          * because of when the core happens to ask, and a core that trusts
-          * the answer commits to an 8-bit format before anything better is
-          * known -- refusal is final, since SET_PIXEL_FORMAT follows
-          * immediately.  Fall back to the configured driver ident, exactly
-          * as SET_PIXEL_FORMAT's HDR10_2101010 gate already does (see
-          * video_driver_supports_10bit_source for why the ident is the only
-          * stable answer in that window). */
-         {
-            gfx_ctx_flags_t flags;
-            flags.flags = 0;
-            if (video_context_driver_get_flags(&flags))
-               *(bool*)data = BIT32_GET(flags.flags,
-                     GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? true : false;
-            else
-               *(bool*)data = video_driver_supports_10bit_source();
-         }
-         break;
+      case RETRO_ENVIRONMENT_GET_HDR_METADATA:
+      case RETRO_ENVIRONMENT_GET_DISPLAY_METADATA:
+         return video_driver_get_display_metadata(cmd, data);
 
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
 #ifdef HAVE_NETWORKING
@@ -9613,6 +9522,7 @@ int runloop_iterate(void)
    bool frame_advanced;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
+   record_nvenc_poll();
    runloop_msg_queue_drain_deferred();
 
    /* A quit waiting for its state to be written: the core is not run

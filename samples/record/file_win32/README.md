@@ -21,3 +21,9 @@ closes; no power-loss guarantee is claimed. Cancellation requests use CancelIoEx
 and borrowed buffer until step reports terminal completion. A raced successful
 completion is still treated as cancellation, without issuing a short-write
 continuation.
+
+The worker can borrow `record_file_win32_wait_handle()` while a write or
+cancellation is pending. This is the file handle itself: the writer permits
+only one outstanding I/O, so completion is unambiguous. Do not close/reset it;
+service completion and re-query before waiting again. No wait is added to
+the writer. The real disk test waits on this handle before checking bytes.

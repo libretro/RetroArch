@@ -427,11 +427,25 @@ unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *b)
 {
    HRESULT result;
-   if (!b->occluded || b->failed) return 1;
-   result = b->chain->lpVtbl->Present(b->chain, 0, DXGI_PRESENT_TEST);
-   b->occluded = result == DXGI_STATUS_OCCLUDED;
-   if (FAILED(result)) b->failed = 1;
-   return !b->occluded;
+   UINT64 completed;
+   unsigned index;
+   if (b->failed) return 1;
+   if (b->occluded)
+   {
+      result = b->chain->lpVtbl->Present(b->chain, 0, DXGI_PRESENT_TEST);
+      b->occluded = result == DXGI_STATUS_OCCLUDED;
+      if (FAILED(result)) b->failed = 1;
+      if (b->failed) return 1;
+      if (b->occluded) return 0;
+   }
+   index = b->chain->lpVtbl->GetCurrentBackBufferIndex(b->chain);
+   completed = b->done->lpVtbl->GetCompletedValue(b->done);
+   if (completed == ~(UINT64)0)
+   {
+      b->failed = 1;
+      return 1;
+   }
+   return completed >= b->last_use[index];
 }
 int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *b) { return b->failed; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)

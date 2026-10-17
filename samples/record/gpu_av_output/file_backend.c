@@ -26,6 +26,8 @@ int record_file_win32_step(record_file_win32_t *f)
    if (fwrite(f->data, 1, f->size, f->out) != f->size) f->error = 112;
    f->data = NULL; return f->error ? RECORD_FILE_ERROR : RECORD_FILE_OK;
 }
+void *record_file_win32_wait_handle(const record_file_win32_t *f)
+{ (void)f; return NULL; }
 bool record_file_win32_cancel(record_file_win32_t *f) { f->error = 995; return true; }
 uint64_t record_file_win32_bytes(const record_file_win32_t *f) { (void)f; return 0; }
 uint32_t record_file_win32_error(const record_file_win32_t *f) { return f ? f->error : 87; }

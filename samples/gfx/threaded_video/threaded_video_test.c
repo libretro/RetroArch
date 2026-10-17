@@ -500,7 +500,13 @@ static void lane_threaded_off_in_flight(void)
       retro_atomic_store_release_int(&wolane_frames, 0);
       retro_atomic_store_release_int(&wolane_slow, 1);
       /* A frame still drawing, then straight off */
-      run_frames(1);
+      for (i = 0; i < 1000
+            && !retro_atomic_load_acquire_int(&wolane_frames); i++)
+      {
+         run_frames(1);
+         if (!retro_atomic_load_acquire_int(&wolane_frames))
+            retro_sleep(1);
+      }
       if (c == 0)
          set_threaded_via_setting(false);
       else
@@ -1207,6 +1213,7 @@ static unsigned                      hslane_eye_h    = 1920;
 
 /* Out of order, and fewer than any fallback list. Twice the harness
  * core's 60 fps, so the headset would pace it. */
+static float hslane_hz = 120.0f;
 static float hslane_refresh(void *data, float *rates, unsigned cap,
       unsigned *count)
 {
@@ -1218,7 +1225,7 @@ static float hslane_refresh(void *data, float *rates, unsigned cap,
       rates[1] = 80.0f;
       *count   = 2;
    }
-   return 120.0f;
+   return hslane_hz;
 }
 
 static void hslane_get_poke(void *data, const video_poke_interface_t **iface)
@@ -1234,6 +1241,12 @@ static uint32_t hslane_views_flags(void *data)
 {
    (void)data;
    return 1u << GFX_CTX_FLAGS_VIDEO_VIEWS;
+}
+
+static uint32_t hslane_inline_flags(void *data)
+{
+   (void)data;
+   return 1u << GFX_CTX_FLAGS_HEADSET_INLINE;
 }
 
 static unsigned hslane_host_state(void *user)
@@ -2054,6 +2067,147 @@ static void lane_headset_calls(void)
 /*   the refresh period, each repeat advancing swap_count by one and  */
 /*   never counting as a rendered frame for the idle barrier.         */
 /* ------------------------------------------------------------------ */
+/* Lane: GET_TARGET_REFRESH_RATE with a headset                       */
+/*   The headset's rate is the target only while the runloop runs at  */
+/*   it: a headset's own context (the Quest's) with no fit. A fitting */
+/*   headset paces the core at its own rate, a window paces at the    */
+/*   configured one, and the wrapper holds the core at its own, so    */
+/*   each of those targets the configured rate. A core following the  */
+/*   answer at 120 on a 60 Hz config rendered twice the frames.       */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_OPENXR
+static float hslane_target(void)
+{
+   float hz = 0.0f;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE,
+         &hz), "target rate lane: the environment refused the rate");
+   return hz;
+}
+#endif
+
+static void lane_headset_target_rate(void)
+{
+#ifdef HAVE_OPENXR
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   float saved_hz                 = settings->floats.video_refresh_rate;
+   bool saved_vsync               = settings->bools.video_vsync;
+   uint32_t (*get_flags)(void*)   = video_st->current_video_context.get_flags;
+   const video_poke_interface_t *saved_poke;
+   thread_video_t *thr;
+   video_xr_host_t host;
+
+   settings->floats.video_refresh_rate = 60.0f;
+   settings->bools.video_vsync         = true;
+   memset(&host, 0, sizeof(host));
+   host.state     = hslane_host_state;
+   host.eye_state = hslane_eye_state;
+   host.give      = hslane_give;
+   host.set_space = hslane_set_space;
+   host.sample    = hslane_sample;
+   host.eye_size  = hslane_eye_size;
+
+   /* Threaded: the wrapper holds the core at its own rate, whatever
+    * the headset's. A driver's free forgets the host, so it is set
+    * after each reinit. */
+   set_threaded_via_setting(true);
+   run_frames(2);
+   expect_wrapper(true, "target rate lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   video_driver_set_xr_host(&host);
+   CHECK(video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING,
+         "target rate lane: the host is not presenting");
+   video_thread_wait_idle();
+   hslane_inner                 = thr->driver;
+   hslane_driver                = *thr->driver;
+   hslane_driver.poke_interface = hslane_get_poke;
+   set_driver(thr, &hslane_driver);
+   set_poke_from(thr, &hslane_driver);
+   hslane_hz = 120.0f;
+   video_st->current_video_context.get_flags = hslane_inline_flags;
+   run_frames(2);
+   CHECK(video_st->headset_hz == 120.0f && !video_st->headset_interval,
+         "target rate lane: threaded took %.1f Hz, interval %u",
+         (double)video_st->headset_hz, video_st->headset_interval);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: threaded video targeted %.1f Hz on a 120 Hz "
+         "headset", (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: threaded video targeted %.1f Hz on a 90 Hz "
+         "headset", (double)hslane_target());
+   video_thread_wait_idle();
+   set_driver(thr, hslane_inner);
+   set_poke(thr, hslane_inner_poke);
+   video_st->current_video_context.get_flags = get_flags;
+   hslane_hz = 120.0f;
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "target rate lane");
+   video_driver_set_xr_host(&host);
+   CHECK(video_driver_xr_headset() & VIDEO_XR_HEADSET_PRESENTING,
+         "target rate lane: the host is not presenting (direct)");
+
+   /* Direct: the poke is the driver's own. */
+   saved_poke                      = video_st->poke;
+   hslane_poke                     = *saved_poke;
+   hslane_poke.get_headset_refresh = hslane_refresh;
+   video_st->poke                  = &hslane_poke;
+   get_flags = video_st->current_video_context.get_flags;
+
+   /* A headset's own context: the fit paces at 60, so 60 is targeted;
+    * with no fit the core runs at the headset's rate. */
+   video_st->current_video_context.get_flags = hslane_inline_flags;
+   run_frames(2);
+   CHECK(video_st->headset_hz == 120.0f && video_st->headset_interval == 2,
+         "target rate lane: the headset took %.1f Hz, interval %u",
+         (double)video_st->headset_hz, video_st->headset_interval);
+   CHECK(hslane_target() == 60.0f,
+         "target rate lane: a fitting headset targeted %.1f Hz",
+         (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 0 && hslane_target() == 90.0f,
+         "target rate lane: a headset with no fit targeted %.1f Hz "
+         "(interval %u)", (double)hslane_target(), video_st->headset_interval);
+
+   /* A window: its vsync paces at the configured rate either way. The
+    * rates are adjusted as the headset's rate changes. */
+   video_st->current_video_context.get_flags = hslane_views_flags;
+   hslane_hz = 120.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 2 && hslane_target() == 60.0f,
+         "target rate lane: a window with a 120 Hz headset targeted %.1f Hz",
+         (double)hslane_target());
+   hslane_hz = 90.0f;
+   run_frames(2);
+   CHECK(video_st->headset_interval == 0 && hslane_target() == 60.0f,
+         "target rate lane: a window with a 90 Hz headset targeted %.1f Hz",
+         (double)hslane_target());
+
+   video_st->current_video_context.get_flags = get_flags;
+   video_st->poke                            = saved_poke;
+   video_driver_set_xr_host(NULL);
+   run_frames(2);
+   CHECK(video_st->headset_hz == 0.0f && hslane_target() == 60.0f,
+         "target rate lane: without a headset %.1f Hz, targeted %.1f Hz",
+         (double)video_st->headset_hz, (double)hslane_target());
+   settings->floats.video_refresh_rate = saved_hz;
+   settings->bools.video_vsync         = saved_vsync;
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] target rate lane: a headset is the target "
+            "only while the runloop runs at its rate\n");
+#endif
+}
+
+/* ------------------------------------------------------------------ */
 
 static void lane_present_repeat(void)
 {
@@ -2286,6 +2440,123 @@ static void lane_second_ring_waiter(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] second-ring-waiter lane (%u idle waits)\n", idle_waits);
+}
+
+typedef struct
+{
+   thread_video_t *thr;
+   video_frame_info_t *info;
+   uint64_t expected, seen[2], after[2];
+   unsigned current;
+   bool returned[2];
+#ifdef HAVE_GFX_WIDGETS
+   bool inactive_widgets_visible, retired_widgets_visible;
+   bool retired_widgets_checked;
+#endif
+} replay_swap_t;
+
+static replay_swap_t *replay_swap;
+
+static bool replay_swap_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   (void)data;
+   (void)frame;
+   (void)dims;
+   (void)count;
+   (void)pitch;
+   (void)msg;
+   replay_swap->seen[replay_swap->current] = info->swap_count;
+   return true;
+}
+
+static uintptr_t replay_swap_run(void *data)
+{
+   replay_swap_t *t = (replay_swap_t*)data;
+   thread_video_t *thr = t->thr;
+   const video_driver_t *inner = thr->driver;
+   video_driver_t driver = *inner;
+   uint64_t saved = thr->video_st->swap_count;
+   unsigned i;
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t *widgets;
+   int saved_worker;
+#endif
+
+   replay_swap = t;
+   driver.frame = replay_swap_frame;
+   thr->driver = &driver;
+   thr->video_st->swap_count = t->expected;
+   for (i = 0; i < 2; i++)
+   {
+      t->current = i;
+      t->seen[i] = 0;
+      t->info->swap_count = i ? UINT64_MAX : 0;
+      t->returned[i] = thr->video_st->current_video->frame(thr, NULL,
+            VIDEO_SCALE_PACK(1, 1), 0, 0, NULL, t->info);
+      t->after[i] = thr->video_st->swap_count;
+   }
+#ifdef HAVE_GFX_WIDGETS
+   widgets = dispwidget_get_ptr();
+   t->info->widgets_userdata = widgets;
+   t->info->widgets_active = false;
+   t->info->fps_show = true;
+   t->inactive_widgets_visible = gfx_widgets_visible(t->info);
+   t->retired_widgets_checked = widgets->video_st != NULL;
+   t->retired_widgets_visible = false;
+   if (t->retired_widgets_checked)
+   {
+      saved_worker = retro_atomic_load_acquire_int(&widgets->worker);
+      retro_atomic_store_release_int(&widgets->worker, 0);
+      t->info->widgets_active = true;
+      t->retired_widgets_visible = gfx_widgets_visible(t->info);
+      retro_atomic_store_release_int(&widgets->worker, saved_worker);
+   }
+#endif
+   thr->video_st->swap_count = saved;
+   thr->driver = inner;
+   replay_swap = NULL;
+   return 0;
+}
+
+static void lane_replay_swap_count(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   replay_swap_t t;
+   unsigned i;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "replay swap counter lane");
+   t.thr = (thread_video_t*)video_st->data;
+   t.info = (video_frame_info_t*)calloc(1, sizeof(*t.info));
+   CHECK(t.info != NULL, "replay frame info allocation failed");
+   if (!t.info)
+      return;
+   t.expected = (uint64_t)UINT32_MAX + 19;
+   video_thread_run_blocking(replay_swap_run, &t);
+   for (i = 0; i < 2; i++)
+   {
+      CHECK(t.returned[i], "inline replay was refused");
+      CHECK(t.seen[i] == t.expected,
+            "inline replay carried a stale swap counter");
+      CHECK(t.after[i] == t.expected,
+            "inline replay counted an extra present");
+   }
+#ifdef HAVE_GFX_WIDGETS
+   CHECK(!t.inactive_widgets_visible,
+         "inline replay treated inactive widgets as visible");
+   CHECK(!t.retired_widgets_visible,
+         "inline replay treated retired widgets as visible");
+   if (!t.retired_widgets_checked)
+      fprintf(stderr, "[skip] retired widget visibility (no widget context)\n");
+#endif
+   free(t.info);
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] replay swap counter lane\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -8158,6 +8429,7 @@ static bool rstop_frame(void *data, const void *frame,
       while (     retro_atomic_load_acquire_int(&rstop_hold)
             &&  cpu_features_get_time_usec() < until) { }
    }
+   if (video_info->recording_gpu) return true;
    return rstop_inner->frame(data, frame, dims, frame_count,
          pitch, msg, video_info);
 }
@@ -8231,6 +8503,64 @@ static void record_stop_in_flight(void)
    /* recording_deinit() freed buf as the recording's buffer */
    *rec_st                     = saved;
    video_st->record_gpu_buffer = saved_buf;
+}
+
+static void record_gpu_stop_in_flight(void)
+{
+   video_driver_state_t *video = video_state_get_ptr();
+   thread_video_t *thr;
+   video_frame_info_t info;
+   uint32_t pixels[64] = {0};
+   unsigned i, had = failures;
+   bool was_menu = menu_is_up();
+   bool was_threaded = video_driver_thread_wrapper_active();
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video->data;
+   rstop_inner = thr->driver;
+   rstop_driver = *thr->driver;
+   rstop_driver.frame = rstop_frame;
+   set_driver(thr, &rstop_driver);
+   memset(&info, 0, sizeof(info));
+   video_driver_build_info(&info);
+   info.threaded_display_pacing = false;
+   info.input_driver_nonblock_state = true;
+   info.recording_gpu = &rstop_driver;
+   retro_atomic_store_release_int(&rstop_held, 0);
+   retro_atomic_store_release_int(&rstop_hold, 1);
+   video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
+         0, 32, NULL, &info);
+   for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&rstop_held); i++)
+      retro_sleep(1);
+   CHECK(retro_atomic_load_acquire_int(&rstop_held), "GPU lease: no drawing frame");
+   CHECK(video_thread_record_gpu_in_flight(thr, &rstop_driver),
+         "GPU lease: drawing frame was missed (state %d, slots %p/%p, want %p)",
+         retro_atomic_load_acquire_int(&thr->frame.state),
+         thr->frame.slot[0].video_info.recording_gpu,
+         thr->frame.slot[1].video_info.recording_gpu, (void*)&rstop_driver);
+   info.recording_gpu = &rstop_hold;
+   video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
+         1, 32, NULL, &info);
+   CHECK(video_thread_record_gpu_in_flight(thr, &rstop_hold),
+         "GPU lease: queued frame was missed");
+   CHECK(!video_thread_record_gpu_in_flight(thr, &rstop_held)
+         && !video_thread_record_gpu_in_flight(thr, NULL),
+         "GPU lease: unrelated recorder matched");
+   retro_atomic_store_release_int(&rstop_hold, 0);
+   video_thread_wait_idle();
+   CHECK(!video_thread_record_gpu_in_flight(thr, &rstop_driver)
+         && !video_thread_record_gpu_in_flight(thr, &rstop_hold),
+         "GPU lease: stale idle slot retained recorder");
+   set_driver(thr, rstop_inner);
+   set_threaded_via_setting(was_threaded);
+   if (was_menu != menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] GPU recording frame leases (drawing, queued, idle)\n");
 }
 
 static void lane_record_format(void)
@@ -10449,6 +10779,11 @@ int main(int argc, char *argv[])
       goto shutdown;
    }
 
+   if (getenv("HARNESS_RECORD_GPU_LEASE"))
+   {
+      record_gpu_stop_in_flight();
+      goto shutdown;
+   }
    lane_line_separation();
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
@@ -10458,15 +10793,18 @@ int main(int argc, char *argv[])
 #endif
    lane_toggle_in_game(cycles);
    lane_swap_count();
+   lane_replay_swap_count();
    lane_stats_snapshot();
    lane_stat_text_bounds();
    lane_viewport_publish();
    if (!real_driver())
       lane_record_reader();
+   record_gpu_stop_in_flight();
    if (!real_driver())
       lane_pixel_format();
    lane_context_api_behind_wrapper();
    lane_headset_calls();
+   lane_headset_target_rate();
    lane_shader_params();
    lane_async_texture_load();
    if (!real_driver())

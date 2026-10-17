@@ -1013,6 +1013,53 @@ static void full_wide_ring_case(bool floating)
 
 }
 
+static bool record_gate_drop(void) { return true; }
+static void record_folded_playback_case(bool floating, uint32_t source_layout,
+      uint32_t device_layout)
+{
+   const size_t frames = 4099;
+   unsigned channels = audio_layout_channels(source_layout);
+   size_t i;
+   audio_driver_state_t *st = &audio_driver_st;
+   recording_state_t *rs = recording_state_get_ptr();
+   int16_t *input = (int16_t*)malloc(frames * channels * sizeof(int16_t));
+   float *input_f = (float*)malloc(frames * channels * sizeof(float));
+   CHECK(input && input_f, "record fold allocation");
+   if (!input || !input_f) goto end;
+   CHECK(up(floating, device_layout, false), "record fold stand-up");
+   free(rec_cap); rec_cap = NULL; rec_cap_frames = rec_frames = 0;
+   rs->driver = &rec_driver; rs->data = rs; rs->layout = source_layout;
+   rs->channels = rec_channels = channels;
+   for (i = 0; i < frames * channels; i++)
+   {
+      input[i] = (int16_t)((int)(i * 37 % 20000) - 10000);
+      input_f[i] = input[i] / 32768.0f;
+   }
+   if (floating)
+   {
+      audio_driver_sample_batch_multi_float(input_f, frames, channels, source_layout);
+      convert_float_to_s16(input, input_f, frames * channels);
+   }
+   else
+      audio_driver_sample_batch_multi_int16(input, frames, channels, source_layout);
+   CHECK(rec_frames == frames, "record fold lost or duplicated frames");
+   if (rec_frames == frames)
+      CHECK(!memcmp(rec_cap, input, frames * channels * sizeof(int16_t)),
+            "record fold replaced original channels with playback's mix");
+   CHECK(st->record_source == NULL, "record fold retained a stack borrow");
+   if (floating)
+   {
+      st->float_gate = record_gate_drop;
+      audio_driver_sample_batch_multi_float(input_f, frames, channels, source_layout);
+      CHECK(rec_frames == frames && st->record_source == NULL,
+            "record fold bypassed the float gate or retained its borrow");
+      st->float_gate = NULL;
+   }
+   rs->driver = NULL; rs->data = NULL;
+end:
+   free(input_f); free(input);
+}
+
 static void record_stereo_entry_case(unsigned kind, uint32_t layout)
 {
    size_t frames = kind ? 2053 : 1024, offset = kind ? 14 : 0, i;
@@ -2652,6 +2699,18 @@ int main(void)
    RUN("threaded", threaded_case(false, false));
    RUN("threaded", stereo_on_wide_ring_case());
    RUN("record",   record_case());
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_5POINT1));
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_5POINT1));
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_SPEAKER_FRONT_CENTER, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(false, AUDIO_SPEAKER_FRONT_CENTER, AUDIO_LAYOUT_5POINT1));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_5POINT1));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_5POINT1));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_SPEAKER_FRONT_CENTER, AUDIO_LAYOUT_STEREO));
+   RUN("rawcapture", record_folded_playback_case(true, AUDIO_SPEAKER_FRONT_CENTER, AUDIO_LAYOUT_5POINT1));
    RUN("recordentry", record_stereo_entry_case(0, AUDIO_LAYOUT_STEREO));
    RUN("recordentry", record_stereo_entry_case(0, AUDIO_LAYOUT_5POINT1));
    RUN("recordentry", record_stereo_entry_case(0, AUDIO_LAYOUT_7POINT1));

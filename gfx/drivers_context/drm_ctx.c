@@ -1378,6 +1378,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode)) < 0)
       goto error;
 
+   video_driver_set_hdr_output_mode(drm->hdr10 ? 1 : 0);
    return true;
 
 error:

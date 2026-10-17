@@ -33,7 +33,7 @@ typedef struct ps4_audio
 {
    /* The ring, followed by one period of silence for the worker
     * to output when the ring runs short. */
-   uint32_t* buffer_u32;
+   uint8_t *buffer;
 
    sthread_t *worker_thread;
    /* The writer's park; the worker notifies after every period it
@@ -49,6 +49,9 @@ typedef struct ps4_audio
 
    int port;
    int rate;
+   /* int16 frames of the layout's channels: stereo, or 7.1 */
+   uint32_t layout;
+   unsigned frame_bytes;
 
    /* Frames the ring holds. Set before the worker starts, and
     * fixed for the life of the driver. */
@@ -99,6 +102,10 @@ typedef struct ps4_audio
 /* The only rate sceAudioOut opens at. */
 #define PS4_AUDIO_RATE 48000
 
+/* sceAudioOut's int16 eight-channel format, FL FR FC LFE BL BR SL SR:
+ * the frontend's 7.1 order. */
+#define PS4_AUDIO_PARAM_FORMAT_S16_8CH 2
+
 /* The ring the latency setting asks for: that many milliseconds at
  * the rate the device opened at, in whole periods so no window the
  * worker hands over crosses the ring's end. The window the device is
@@ -116,14 +123,29 @@ static unsigned ps4_ring_frames(unsigned rate, unsigned latency)
    return frames;
 }
 
-/* Return port used */
-static int ps4_configure_audio(unsigned rate, unsigned *new_rate)
+/* Return port used. A wider layout asked for opens the eight-channel
+ * port, which the system mixes down to the speakers it has; a port it
+ * refuses is stereo. */
+static int ps4_configure_audio(unsigned rate, unsigned *new_rate,
+      uint32_t *layout)
 {
+   int port;
    /* Every other rate is refused, which leaves the session with no
     * audio at all; open at the one it takes and tell the frontend to
     * resample to it. */
    if (rate != PS4_AUDIO_RATE)
       *new_rate = PS4_AUDIO_RATE;
+   if (audio_driver_requested_layout() != AUDIO_LAYOUT_STEREO)
+   {
+      if ((port = sceAudioOutOpen(0xff,
+               SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
+               PS4_AUDIO_RATE, PS4_AUDIO_PARAM_FORMAT_S16_8CH)) >= 0)
+      {
+         *layout = AUDIO_LAYOUT_7POINT1;
+         return port;
+      }
+   }
+   *layout = AUDIO_LAYOUT_STEREO;
    return sceAudioOutOpen(0xff,
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
          PS4_AUDIO_RATE, SCE_AUDIO_OUT_MODE_STEREO);
@@ -165,9 +187,8 @@ static void ps4_audio_mainloop(void *data)
       else
          retro_atomic_fetch_add_size(&ps4->underruns, 1);
 
-      sceAudioOutOutput(ps4->port,
-            ps4->buffer_u32
-            + (cond ? ps4->ring : play_pos));
+      sceAudioOutOutput(ps4->port, ps4->buffer
+            + (size_t)(cond ? ps4->ring : play_pos) * ps4->frame_bytes);
 
       retro_atomic_fetch_add_size(&ps4->consumed, AUDIO_OUT_COUNT);
 
@@ -189,6 +210,7 @@ static void *ps4_audio_init(const char *device,
       unsigned *new_rate)
 {
    int port;
+   uint32_t layout;
    ps4_audio_t *ps4 = (ps4_audio_t*)calloc(1, sizeof(ps4_audio_t));
 
    if (!ps4)
@@ -197,7 +219,7 @@ static void *ps4_audio_init(const char *device,
    /* The library is what opens the port, so it comes up first. */
    sceAudioOutInit();
 
-   if ((port = ps4_configure_audio(rate, new_rate)) < 0)
+   if ((port = ps4_configure_audio(rate, new_rate, &layout)) < 0)
    {
       free(ps4);
       return NULL;
@@ -205,11 +227,13 @@ static void *ps4_audio_init(const char *device,
 
    ps4->rate          = *new_rate ? *new_rate : rate;
    ps4->ring          = ps4_ring_frames(ps4->rate, latency);
+   ps4->layout        = layout;
+   ps4->frame_bytes   = audio_layout_channels(layout) * sizeof(int16_t);
 
    /* Cache aligned, not necessary but helpful. */
    /* The ring, and one period of silence past its end. */
-   ps4->buffer_u32    = (uint32_t*)calloc(ps4->ring + AUDIO_OUT_COUNT,
-         sizeof(uint32_t));
+   ps4->buffer        = (uint8_t*)calloc(ps4->ring + AUDIO_OUT_COUNT,
+         ps4->frame_bytes);
 
    retro_atomic_size_init(&ps4->consumed, 0);
    retro_atomic_size_init(&ps4->underruns, 0);
@@ -217,11 +241,11 @@ static void *ps4_audio_init(const char *device,
    retro_atomic_int_init(&ps4->write_pos, 0);
    ps4->port          = port;
 
-   if (   !ps4->buffer_u32
+   if (   !ps4->buffer
        || !retro_eventcount_init(&ps4->park))
    {
       sceAudioOutClose(port);
-      free(ps4->buffer_u32);
+      free(ps4->buffer);
       free(ps4);
       return NULL;
    }
@@ -236,7 +260,7 @@ static void *ps4_audio_init(const char *device,
    {
       retro_eventcount_free(&ps4->park);
       sceAudioOutClose(port);
-      free(ps4->buffer_u32);
+      free(ps4->buffer);
       free(ps4);
       return NULL;
    }
@@ -259,7 +283,7 @@ static void ps4_audio_free(void *data)
       }
    }
    retro_eventcount_free(&ps4->park);
-   free(ps4->buffer_u32);
+   free(ps4->buffer);
    ps4->worker_thread = NULL;
 
    sceAudioOutClose(ps4->port);
@@ -280,7 +304,7 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
     * for more than that at once - take what fits and report the short
     * write rather than spending the laps on room that will not come. A
     * len that is not whole frames carries the frames it has. */
-   size_t   sample_count = len / sizeof(uint32_t);
+   size_t   sample_count = len / ps4->frame_bytes;
 
    if (!retro_atomic_load_acquire_int(&ps4->running))
       return -1;
@@ -288,9 +312,9 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
       return 0;
    if (sample_count > (size_t)(ps4->ring - 1u))
       sample_count = ps4->ring - 1u;
-   len = sample_count * sizeof(uint32_t);
+   len = sample_count * ps4->frame_bytes;
 
-   /* The ring is counted in uint32_t frames (write_pos, read_pos,
+   /* The ring is counted in frames (write_pos, read_pos,
     * ring); len is bytes.  Both room checks below used to
     * compare the frame count against len, i.e. demanded four times the
     * room actually needed: non-blocking writes were refused - the audio
@@ -339,14 +363,12 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
 
    if ((write_pos + sample_count) > ps4->ring)
    {
-      memcpy(ps4->buffer_u32 + write_pos, s,
-            (ps4->ring - write_pos) * sizeof(uint32_t));
-      memcpy(ps4->buffer_u32, (uint32_t*)s +
-            (ps4->ring - write_pos),
-            (write_pos + sample_count - ps4->ring) * sizeof(uint32_t));
+      size_t head = (size_t)(ps4->ring - write_pos) * ps4->frame_bytes;
+      memcpy(ps4->buffer + (size_t)write_pos * ps4->frame_bytes, s, head);
+      memcpy(ps4->buffer, (const uint8_t*)s + head, len - head);
    }
    else
-      memcpy(ps4->buffer_u32 + write_pos, s, len);
+      memcpy(ps4->buffer + (size_t)write_pos * ps4->frame_bytes, s, len);
 
    write_pos       = (uint16_t)(write_pos + sample_count);
    if (write_pos  >= ps4->ring)
@@ -422,7 +444,7 @@ static size_t ps4_write_avail(void *data)
    _len = RING_FREE((uint16_t)
          retro_atomic_load_relaxed_int(&ps4->write_pos), (uint16_t)
          retro_atomic_load_acquire_int(&ps4->read_pos), ps4->ring);
-   return _len * sizeof(uint32_t);
+   return _len * ps4->frame_bytes;
 }
 
 /* Sleep on the condition the output thread signals after every block
@@ -435,8 +457,8 @@ static size_t ps4_wait_writable(void *data, size_t len)
    ps4_audio_t* ps4 = (ps4_audio_t*)data;
    size_t avail;
    int laps         = PS4_AUDIO_WAIT_LAPS;
-   /* len arrives in bytes; the ring is counted in uint32_t frames. */
-   size_t want      = len / sizeof(uint32_t);
+   /* len arrives in bytes; the ring is counted in frames. */
+   size_t want      = len / ps4->frame_bytes;
 
    if (want > ps4->ring / 2)
       want = ps4->ring / 2;
@@ -470,20 +492,20 @@ static size_t ps4_wait_writable(void *data, size_t len)
                PS4_AUDIO_WAIT_US))
          continue;
    }
-   return avail * sizeof(uint32_t);
+   return avail * ps4->frame_bytes;
 }
 
-/* sceAudioOut is opened in SCE_AUDIO_OUT_MODE_STEREO, which is 16-bit
- * PCM; float output would need a different port mode. */
+/* sceAudioOut is opened for 16-bit PCM; float output would need a
+ * different port mode. */
 static bool ps4_audio_use_float(void *data) { return false; }
 static size_t ps4_buffer_size(void *data)
 {
    ps4_audio_t* ps4 = (ps4_audio_t*)data;
    if (!ps4)
       return 0;
-   /* In bytes: the ring, in uint32_t frames of int16 stereo. The
-    * window the device is playing is held inside it. */
-   return ps4->ring * sizeof(uint32_t);
+   /* In bytes: the ring, in int16 frames of the layout. The window
+    * the device is playing is held inside it. */
+   return ps4->ring * ps4->frame_bytes;
 }
 
 /* Frames the device has taken since init: the output call returns
@@ -506,6 +528,12 @@ static size_t ps4_underruns(void *data)
    return retro_atomic_load_acquire_size(&ps4->underruns);
 }
 
+static uint32_t ps4_layout(void *data)
+{
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
+   return ps4 ? ps4->layout : AUDIO_LAYOUT_STEREO;
+}
+
 audio_driver_t audio_ps4 = {
    ps4_audio_init,
    ps4_audio_write,
@@ -523,5 +551,6 @@ audio_driver_t audio_ps4 = {
    NULL, /* write_raw */
    ps4_wait_writable,
    ps4_frames_consumed,
-   ps4_underruns
+   ps4_underruns,
+   ps4_layout
 };

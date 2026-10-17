@@ -7,6 +7,7 @@
 #include "../../../record/record_gpu_capture_d3d12.h"
 #include "../../../record/record_gpu_worker_d3d12.h"
 #include <retro_atomic.h>
+#include "../../../record/record_gpu_dispatch_d3d12.h"
 #if defined(_WIN32) && defined(HAVE_THREADS)
 #define COBJMACROS
 #ifdef __MINGW32__
@@ -15,7 +16,58 @@
 #include <windows.h>
 #include <d3d12.h>
 #include "../../../gfx/common/nvenc_d3d12.c"
+static struct
+{
+   ID3D12Resource *source;
+   ID3D12Fence *fence;
+   unsigned source_add, source_release, fence_add, fence_release;
+   bool replacing, source_gap, fence_gap;
+} cap_refs;
+static ULONG cap_resource_add(ID3D12Resource *p)
+{
+   if (p == cap_refs.source) cap_refs.source_add++;
+   return p->lpVtbl->AddRef(p);
+}
+static ULONG cap_resource_release(ID3D12Resource *p)
+{
+   if (p == cap_refs.source)
+   {
+      cap_refs.source_release++;
+      if (cap_refs.replacing && cap_refs.source_release == cap_refs.source_add) cap_refs.source_gap = true;
+   }
+   return p->lpVtbl->Release(p);
+}
+static ULONG cap_fence_add(ID3D12Fence *p)
+{
+   if (p == cap_refs.fence) cap_refs.fence_add++;
+   return p->lpVtbl->AddRef(p);
+}
+static ULONG cap_fence_release(ID3D12Fence *p)
+{
+   if (p == cap_refs.fence)
+   {
+      cap_refs.fence_release++;
+      if (cap_refs.replacing && cap_refs.fence_release == cap_refs.fence_add) cap_refs.fence_gap = true;
+   }
+   return p->lpVtbl->Release(p);
+}
+#pragma push_macro("ID3D12Resource_AddRef")
+#pragma push_macro("ID3D12Resource_Release")
+#pragma push_macro("ID3D12Fence_AddRef")
+#pragma push_macro("ID3D12Fence_Release")
+#undef ID3D12Resource_AddRef
+#undef ID3D12Resource_Release
+#undef ID3D12Fence_AddRef
+#undef ID3D12Fence_Release
+#define ID3D12Resource_AddRef cap_resource_add
+#define ID3D12Resource_Release cap_resource_release
+#define ID3D12Fence_AddRef cap_fence_add
+#define ID3D12Fence_Release cap_fence_release
 #include "../../../record/record_gpu_capture_d3d12.c"
+#pragma pop_macro("ID3D12Fence_Release")
+#pragma pop_macro("ID3D12Fence_AddRef")
+#pragma pop_macro("ID3D12Resource_Release")
+#pragma pop_macro("ID3D12Resource_AddRef")
 #include "../../../record/record_gpu_worker_d3d12.c"
 #include "../../../record/record_mux_mp4.c"
 #define W 320
@@ -59,6 +111,7 @@ struct cap_proxy
    ID3D12CommandQueue *real;
    ID3D12CommandQueueVtbl table;
    unsigned faults, signals;
+   bool reject_wait;
 };
 static ULONG STDMETHODCALLTYPE cap_release(ID3D12CommandQueue *queue)
 {
@@ -73,6 +126,7 @@ static HRESULT STDMETHODCALLTYPE cap_signal(ID3D12CommandQueue *queue, ID3D12Fen
 }
 static HRESULT STDMETHODCALLTYPE cap_wait(ID3D12CommandQueue *queue, ID3D12Fence *fence, UINT64 value)
 {
+   if (((struct cap_proxy*)queue)->reject_wait) return E_FAIL;
    return ID3D12CommandQueue_Wait(((struct cap_proxy*)queue)->real, fence, value);
 }
 static void STDMETHODCALLTYPE cap_execute(ID3D12CommandQueue *queue, UINT count, ID3D12CommandList *const *lists)
@@ -113,13 +167,20 @@ static bool cap_failure(const nvenc_d3d12_config_t *config, ID3D12CommandQueue *
    capture = record_gpu_capture_d3d12_new(config, queue);
    CHECK(capture != NULL);
    capture->commands = &proxy.iface;
+   memset(&cap_refs, 0, sizeof(cap_refs));
+   cap_refs.source = source; cap_refs.fence = gate;
    CHECK(record_gpu_capture_d3d12_push(capture, source, 0, crop, crop, gate, 1,
             0, 1, false, &submitted) == RECORD_GPU_QUEUE_ERROR);
    CHECK(submitted == 1);
    CHECK(proxy.signals == 1 && capture->failed && capture->unfenced);
+   CHECK(cap_refs.source_add == 1 && cap_refs.fence_add == 1);
+   CHECK(!record_gpu_capture_d3d12_reap(capture));
+   CHECK(!cap_refs.source_release && !cap_refs.fence_release);
    CHECK(record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_END);
    CHECK(!record_gpu_capture_d3d12_free(capture));
    CHECK(proxy.signals == 2 && !capture->unfenced);
+   CHECK(!record_gpu_capture_d3d12_reap(capture));
+   CHECK(!cap_refs.source_release && !cap_refs.fence_release);
    CHECK(SUCCEEDED(ID3D12Fence_Signal(gate, 1)));
    for (idle = 0; idle < 10000; idle++)
    {
@@ -127,21 +188,134 @@ static bool cap_failure(const nvenc_d3d12_config_t *config, ID3D12CommandQueue *
       Sleep(1);
    }
    CHECK(capture == NULL && proxy.signals == 2);
+   CHECK(cap_refs.source_release == 1 && cap_refs.fence_release == 1);
    ok = 1;
 done:
    if (gate) ID3D12Fence_Signal(gate, 1);
    if (capture) record_gpu_capture_d3d12_free(capture);
    if (gate) ID3D12Fence_Release(gate);
    if (copy_queue) ID3D12CommandQueue_Release(copy_queue);
+   memset(&cap_refs, 0, sizeof(cap_refs));
    return ok != 0;
+}
+
+static bool cap_sources(const nvenc_d3d12_config_t *config, ID3D12CommandQueue *queue,
+      unsigned mode)
+{
+   struct cap_proxy proxy;
+   record_gpu_capture_d3d12_t *capture = NULL;
+   ID3D12Resource *source = NULL;
+   ID3D12Fence *gate = NULL;
+   D3D12_HEAP_PROPERTIES heap = {0};
+   D3D12_RESOURCE_DESC desc = {0};
+   record_gpu_frame_t frame;
+   uint64_t submitted = 99;
+   unsigned i, idle, expected;
+   int result;
+   bool held = false, ok = false;
+   memset(&proxy, 0, sizeof(proxy));
+   memset(&cap_refs, 0, sizeof(cap_refs));
+   proxy.iface.lpVtbl = &proxy.table;
+   proxy.real = queue; proxy.table = *queue->lpVtbl;
+   proxy.table.Release = cap_release; proxy.table.Signal = cap_signal;
+   proxy.table.Wait = cap_wait; proxy.table.ExecuteCommandLists = cap_execute;
+   proxy.reject_wait = mode == 1;
+   heap.Type = D3D12_HEAP_TYPE_DEFAULT;
+   desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   desc.Width = config->width; desc.Height = config->height;
+   desc.DepthOrArraySize = desc.MipLevels = desc.SampleDesc.Count = 1;
+   desc.Format = config->format == NVENC_D3D12_P010 ? DXGI_FORMAT_P010
+      : config->format == NVENC_D3D12_NV12 ? DXGI_FORMAT_NV12 : DXGI_FORMAT_B8G8R8A8_UNORM;
+   CHECK(SUCCEEDED(ID3D12Device_CreateCommittedResource((ID3D12Device*)config->device,
+            &heap, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON,
+            NULL, &IID_ID3D12Resource, (void**)&source)));
+   CHECK(SUCCEEDED(ID3D12Device_CreateFence((ID3D12Device*)config->device,
+            0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void**)&gate)));
+   capture = record_gpu_capture_d3d12_new(config, queue); CHECK(capture);
+   capture->commands = &proxy.iface;
+   cap_refs.source = source; cap_refs.fence = gate;
+   CHECK(record_gpu_capture_d3d12_reap(capture));
+   if (mode == 1)
+   {
+      CHECK(record_gpu_capture_d3d12_push(capture, source, 0, 0, 0, gate, 1,
+               0, 1, false, &submitted) == RECORD_GPU_QUEUE_ERROR);
+      CHECK(!submitted && !cap_refs.source_add && !cap_refs.fence_add);
+      CHECK(record_gpu_capture_d3d12_reap(capture));
+   }
+   else
+   {
+      for (i = 0; i < config->slots; i++)
+         CHECK(record_gpu_capture_d3d12_push(capture, source, 0, 0, 0, gate, 1,
+                  i, 1, false, &submitted) == RECORD_GPU_QUEUE_OK);
+      CHECK(record_gpu_capture_d3d12_push(capture, source, 0, 0, 0, gate, 1,
+               i, 1, false, &submitted) == RECORD_GPU_QUEUE_BUSY);
+      CHECK(!submitted && cap_refs.source_add == config->slots && cap_refs.fence_add == config->slots);
+      CHECK(!record_gpu_capture_d3d12_reap(capture));
+      CHECK(!cap_refs.source_release && !cap_refs.fence_release);
+      CHECK(record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_OK);
+      held = true;
+      expected = config->slots;
+      if (mode == 2)
+      {
+         CHECK(SUCCEEDED(ID3D12Fence_Signal(gate, 1)));
+         for (idle = 0; idle < 10000 && ID3D12Fence_GetCompletedValue(capture->ready) < config->slots; idle++) Sleep(1);
+         CHECK(idle < 10000);
+         CHECK(record_gpu_queue_release(capture->queue, frame.slot)); held = false;
+         /* Test-owned guards turn a broken replacement into a safe failure. */
+         cap_refs.replacing = true;
+         result = record_gpu_capture_d3d12_push(capture, source, 0, 0, 0, gate, 1,
+               config->slots, 1, false, &submitted);
+         cap_refs.replacing = false;
+         CHECK(result == RECORD_GPU_QUEUE_OK);
+         CHECK(!cap_refs.source_gap && !cap_refs.fence_gap);
+         CHECK(cap_refs.source_add == config->slots + 1 && cap_refs.fence_add == config->slots + 1);
+         CHECK(cap_refs.source_release == config->slots && cap_refs.fence_release == config->slots);
+         CHECK(record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_OK); held = true;
+         expected++;
+      }
+      ID3D12Resource_Release(source); source = NULL;
+      ID3D12Fence_Release(gate);
+      i = SUCCEEDED(ID3D12Fence_Signal(gate, 1)); gate = NULL;
+      CHECK(i);
+      for (idle = 0; idle < 10000 && !record_gpu_capture_d3d12_reap(capture); idle++) Sleep(1);
+      CHECK(idle < 10000);
+      CHECK(cap_refs.source_release == expected && cap_refs.fence_release == expected);
+      CHECK(!record_gpu_capture_d3d12_free(capture));
+      CHECK(record_gpu_queue_release(capture->queue, frame.slot)); held = false;
+      for (i = 1; i < config->slots; i++)
+      {
+         CHECK(record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_OK);
+         CHECK(record_gpu_queue_release(capture->queue, frame.slot));
+      }
+   }
+   CHECK(record_gpu_capture_d3d12_finish(capture));
+   CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
+   ok = true;
+done:
+   if (gate) ID3D12Fence_Signal(gate, 1);
+   if (capture)
+   {
+      if (held) record_gpu_queue_release(capture->queue, frame.slot);
+      while (record_gpu_queue_take(capture->queue, &frame) == RECORD_GPU_QUEUE_OK)
+         record_gpu_queue_release(capture->queue, frame.slot);
+      record_gpu_capture_d3d12_finish(capture);
+      for (idle = 0; idle < 10000 && !record_gpu_capture_d3d12_free(capture); idle++) Sleep(1);
+      if (idle == 10000) abort();
+   }
+   if (source) ID3D12Resource_Release(source);
+   if (gate) ID3D12Fence_Release(gate);
+   memset(&cap_refs, 0, sizeof(cap_refs));
+   return ok;
 }
 
 struct nve_producer
 {
+   record_gpu_dispatch_d3d12_t *dispatch;
    record_gpu_queue_t *queue;
    record_gpu_capture_d3d12_t *capture;
    ID3D12Resource *sources[4];
    ID3D12Fence *gate;
+   HANDLE notify;
    unsigned crop;
    retro_atomic_int_t stop;
    unsigned made;
@@ -156,7 +330,14 @@ static DWORD WINAPI nve_produce(void *data)
          && !retro_atomic_load_acquire_int(&p->stop))
    {
       int result;
-      if (p->capture)
+      if (p->dispatch)
+      {
+         record_gpu_dispatch_d3d12_video_reap(p->dispatch);
+         result = record_gpu_dispatch_d3d12_video(p->dispatch, p->sources[p->made % 4],
+               D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
+               p->made, 1, p->made == 0 || p->made == 12, NULL);
+      }
+      else if (p->capture)
          result = record_gpu_capture_d3d12_push(p->capture, p->sources[p->made % 4],
                D3D12_RESOURCE_STATE_COMMON, p->crop, p->crop, p->gate, 1,
                p->made, 1, p->made == 0 || p->made == 12, NULL);
@@ -172,6 +353,9 @@ static DWORD WINAPI nve_produce(void *data)
       if (p->capture)
       {
          p->made++; idle = 0;
+         if (p->dispatch && p->made == 4)
+            if (FAILED(ID3D12Fence_Signal(p->gate, 1))) break;
+         if (p->notify) SetEvent(p->notify);
          continue;
       }
       frame.timestamp = p->made; frame.duration = frame.ready_value = 1;
@@ -182,9 +366,12 @@ static DWORD WINAPI nve_produce(void *data)
          break;
       }
       p->made++; idle = 0;
+      if (p->notify) SetEvent(p->notify);
    }
-   if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
+   if (p->dispatch) record_gpu_dispatch_d3d12_video_finish(p->dispatch);
+   else if (p->capture) record_gpu_capture_d3d12_finish(p->capture);
    else record_gpu_queue_finish(p->queue);
+   if (p->notify) SetEvent(p->notify);
    return 0;
 }
 
@@ -322,6 +509,9 @@ int main(int argc, char **argv)
    if (capturing)
    {
       CHECK(cap_failure(&config, queue, textures[0], format == NVENC_D3D12_BGRA8 ? 8 : 0));
+      CHECK(cap_sources(&config, queue, 0));
+      CHECK(cap_sources(&config, queue, 1));
+      CHECK(cap_sources(&config, queue, 2));
       capture = record_gpu_capture_d3d12_new(&config, queue);
       CHECK(capture != NULL);
       CHECK(record_gpu_capture_d3d12_bind(capture, &config));
@@ -407,9 +597,24 @@ int main(int argc, char **argv)
       config.max_cll = metadata == 4 ? 65535 : 1000;
       config.max_fall = metadata == 4 ? 0 : 400;
    }
+   if (getenv("NVENC_TEST_DISPATCH"))
+   {
+      CHECK(capture && !metadata);
+      producer.frames = FRAMES;
+      out = fopen(argv[3], "wb"); CHECK(out != NULL);
+      mux_config.timescale = config.fps_num;
+      mux_config.max_packet_size = 1024 * 1024;
+      status = nve_pipeline_run(NULL, NULL, &mux_config, argv[3], out, &received,
+            queue, ready, &value, true, FRAMES, NULL, &config, &producer);
+      capture = producer.capture;
+      CHECK(status);
+      CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
+      ok = 1; goto done;
+   }
    encoder = nvenc_d3d12_open(&config);
    if (!encoder && !getenv("NVENC_TEST_REQUIRE_HW")) { puts("SKIP: codec/format/session unavailable"); ok = 77; goto done; }
    CHECK(encoder != NULL);
+   CHECK(nvenc_d3d12_wait_handle(encoder) == NULL && nvenc_d3d12_wait_handle(NULL) == NULL);
    headers = malloc(65536); CHECK(headers != NULL);
    CHECK(nvenc_d3d12_headers(encoder, headers, 65536, &headers_size));
    mux_config.headers = headers; mux_config.headers_size = headers_size;
@@ -468,13 +673,18 @@ int main(int argc, char **argv)
          capturing ? record_gpu_capture_d3d12_fence(capture) : ready);
    CHECK(worker != NULL);
    CHECK(!record_gpu_worker_d3d12_release(worker));
+   if (getenv("NVENC_TEST_GPU_AV"))
+   {
+      producer.notify = CreateEvent(NULL, FALSE, FALSE, NULL);
+      CHECK(producer.notify != NULL);
+   }
    producer_thread = CreateThread(NULL, 0, nve_produce, &producer, 0, NULL);
    CHECK(producer_thread != NULL);
    if (getenv("NVENC_TEST_GPU_AV"))
    {
       CHECK(!metadata);
       CHECK(nve_pipeline_run(worker, encoder, &mux_config, argv[3], out, &received,
-               queue, ready, &value, capturing != 0, producer.frames));
+               queue, ready, &value, capturing != 0, producer.frames, producer.notify, NULL, NULL));
       status = RECORD_GPU_WORKER_END;
    }
    else
@@ -489,6 +699,8 @@ int main(int argc, char **argv)
          CHECK(!nvenc_d3d12_free(encoder));
          if (capturing) CHECK(!record_gpu_capture_d3d12_free(capture));
          Sleep(30);
+         CHECK(nvenc_d3d12_wait_handle(encoder) != NULL);
+         CHECK(WaitForSingleObject(nvenc_d3d12_wait_handle(encoder), 0) == WAIT_TIMEOUT);
          CHECK(nvenc_d3d12_poll(encoder, &packet) == NVENC_D3D12_BUSY);
          CHECK(SUCCEEDED(capturing ? ID3D12Fence_Signal(ready, ++value)
                : ID3D12CommandQueue_Signal(queue, ready, ++value)));
@@ -550,6 +762,8 @@ int main(int argc, char **argv)
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_finish(encoder) == NVENC_D3D12_OK);
    CHECK(nvenc_d3d12_submit(encoder, 0, 0, 1, ready, value, false) == NVENC_D3D12_ERROR);
+   CHECK(nvenc_d3d12_wait_handle(encoder) != NULL);
+   CHECK(WaitForSingleObject(nvenc_d3d12_wait_handle(encoder), 0) == WAIT_OBJECT_0);
    CHECK(nvenc_d3d12_free(encoder)); encoder = NULL;
    CHECK(record_gpu_capture_d3d12_free(capture)); capture = NULL;
    ok = 1;
@@ -561,6 +775,7 @@ done:
          return 1;
       CloseHandle(producer_thread);
    }
+   if (producer.notify) CloseHandle(producer.notify);
    if (queue && ready)
    {
       if (capturing) ID3D12Fence_Signal(ready, value + 1);
@@ -605,10 +820,11 @@ int main(void)
    if (record_gpu_capture_d3d12_new(NULL, NULL)
          || record_gpu_capture_d3d12_bind(NULL, NULL)
          || record_gpu_capture_d3d12_queue(NULL) || record_gpu_capture_d3d12_fence(NULL)
-         || !record_gpu_capture_d3d12_free(NULL) || record_gpu_capture_d3d12_finish(NULL)
+         || !record_gpu_capture_d3d12_free(NULL) || !record_gpu_capture_d3d12_reap(NULL)
+         || record_gpu_capture_d3d12_finish(NULL)
          || record_gpu_capture_d3d12_push(NULL, NULL, 0, 0, 0, NULL, 0, 0, 1, false, NULL) != RECORD_GPU_QUEUE_ERROR)
       return 1;
-   if (nvenc_d3d12_open(NULL) || !nvenc_d3d12_free(NULL)
+   if (nvenc_d3d12_wait_handle(NULL) || nvenc_d3d12_open(NULL) || !nvenc_d3d12_free(NULL)
          || nvenc_d3d12_submit(NULL, 0, 0, 1, NULL, 0, false) != NVENC_D3D12_ERROR
          || nvenc_d3d12_poll(NULL, &packet) != NVENC_D3D12_ERROR
          || nvenc_d3d12_release(NULL) != NVENC_D3D12_ERROR

@@ -36,3 +36,7 @@ bool record_gpu_worker_d3d12_release(record_gpu_worker_d3d12_t *w)
    w->held = false; w->made++; w->releases++;
    return true;
 }
+bool record_gpu_worker_d3d12_retry_needed(const record_gpu_worker_d3d12_t *w)
+{ return w && w->retry; }
+void *record_gpu_worker_d3d12_wait_handle(const record_gpu_worker_d3d12_t *w)
+{ return w && w->busy ? (void*)w : NULL; }

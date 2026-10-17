@@ -1955,6 +1955,15 @@ bool gfx_widgets_visible(void *data)
    bool widgets_is_rewinding      = (video_flags & VIDEO_FLAG_WIDGETS_REWINDING) != 0;
    bool notifications_hidden      = video_info->notifications_hidden || video_info->msg_queue_delay;
 
+   if (!video_info->widgets_active)
+      return false;
+#ifdef HAVE_THREADS
+   if (     !retro_atomic_load_acquire_int(&p_dispwidget->worker)
+         && p_dispwidget->video_st
+         && ((video_driver_state_t*)p_dispwidget->video_st)->thread_wrapper_active)
+      return false;
+#endif
+
 #ifdef HAVE_MENU
    if ((video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
       return false;

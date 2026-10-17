@@ -8,6 +8,6 @@ struct record_gpu_worker_d3d12
    size_t size;
    uint64_t duration;
    unsigned made, frames, calls, releases;
-   bool held, fail, release_fail, busy;
+   bool held, fail, release_fail, busy, retry;
    nvenc_d3d12_packet_t packet;
 };

@@ -93,6 +93,7 @@ float video_driver_get_refresh_rate(void) { return 60.0f; }
 void video_driver_modify_disp_flags(uint32_t s, uint32_t c) { (void)s; (void)c; }
 /* No display peak known: HDR metadata keeps the driver's own value */
 float video_driver_hdr_metadata_peak(float driver_value) { return driver_value; }
+void video_driver_set_hdr_output_mode(unsigned mode) { (void)mode; }
 /* No devices published here: the index stands and nothing is listed */
 int video_driver_gpu_index_resolve(int api, int index, void *list)
 { (void)api; (void)list; return index; }

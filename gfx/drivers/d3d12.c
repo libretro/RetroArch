@@ -58,6 +58,7 @@
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../record/drivers/record_nvenc.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../gfx_instrument.h"
@@ -879,6 +880,7 @@ typedef struct
    D3D12Debug debugController;
 #endif
    uint32_t flags;
+   retro_atomic_int_t texture_hdr_enabled;
    /* settings->uints.video_swapchain_bit_depth, seeded at init and
     * refreshed in apply_state_changes (a blocking command, so the
     * settings read inside it cannot race main): the frame's resize
@@ -4038,7 +4040,6 @@ static bool d3d12_shader_load_step(void *data,
                &d3d12->filter.pass[i].core_aspect_rot,
                &d3d12->filter.pass[i].total_subframes,
                &d3d12->filter.pass[i].current_subframe,
-               &d3d12->filter.pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d12->filter.pass[i].hdr_mode,
                &d3d12->filter.pass[i].paper_white_nits,
@@ -4051,6 +4052,8 @@ static bool d3d12_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d12->filter.pass[i].swap_count;
          d3d12_frame_rect_semantics(d3d12, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL, 50,
@@ -4400,7 +4403,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->filter.pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d12->filter.pass[i].total_subframes, /* TotalSubFrames */
             &d3d12->filter.pass[i].current_subframe,/* CurrentSubFrame */
-            &d3d12->filter.pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
             &d3d12->filter.pass[i].hdr_mode,       /* HDRMode */
             &d3d12->filter.pass[i].paper_white_nits,/* BrightnessNits */
@@ -4414,6 +4416,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       };
       /* clang-format on */
 
+      semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d12->filter.pass[i].swap_count;
       d3d12_frame_rect_semantics(d3d12, &semantics_map);
       if (!slang_process(
                d3d12->filter.shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
@@ -7610,6 +7614,10 @@ static bool d3d12_views_allowed(const d3d12_video_t *d3d12)
 
 static void d3d12_views_publish(d3d12_video_t *d3d12)
 {
+#ifdef HAVE_DXGI_HDR
+   retro_atomic_store_release_int(&d3d12->texture_hdr_enabled,
+         (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) != 0);
+#endif
    retro_atomic_store_release_int(&d3d12->views.allowed,
          d3d12_views_allowed(d3d12) ? 1 : 0);
 }
@@ -8628,6 +8636,9 @@ static bool d3d12_gfx_frame_body(
 #endif
          {
             UINT swapchain_flags        = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+            if (video_info->recording_gpu_pending
+                  || !record_nvenc_gpu_reap(video_info->recording_gpu))
+               goto recording_resize_deferred;
 
             if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
                swapchain_flags         |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
@@ -8746,7 +8757,9 @@ static bool d3d12_gfx_frame_body(
          }
 #ifdef HAVE_DXGI_HDR
    } /* close desired_bit_depth scope */
-
+#endif
+recording_resize_deferred:;
+#ifdef HAVE_DXGI_HDR
    /* Recreate back_buffer if its format doesn't match the expected
     * target.  When use_back_buffer is true the shader's last pass
     * writes to back_buffer, so it must match back_buffer_format.
@@ -9817,6 +9830,12 @@ static bool d3d12_gfx_frame_body(
       d3d12_record_free(d3d12);
 
    d3d12_cmd_execute(d3d12);
+   if (video_info->recording_gpu_capture
+         && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+      record_nvenc_gpu_capture(video_info->recording_gpu,
+            d3d12->chain.renderTargets[d3d12->chain.frame_index],
+            D3D12_RESOURCE_STATE_PRESENT, d3d12->vp.pos, d3d12->vp.dims,
+            video_info->recording_gpu_timestamp);
    d3d12_record_signal(d3d12);
 
    /* Version 2: the core's texture is the core's again once this list,
@@ -11182,6 +11201,7 @@ static bool d3d12_get_device(void *data, video_device_info_t *info)
       return false;
    info->api            = VIDEO_DEVICE_D3D12;
    info->device         = (void*)d3d12->device;
+   info->queue          = (void*)d3d12->queue.handle;
 #ifdef D3D12_FRAME_IMPORT
    info->import_formats = d3d12->video_decode ? d3d12->import_formats : 0;
 #endif
@@ -12015,7 +12035,7 @@ static bool d3d12_gfx_supports_texture_format(void* data,
     * output is HDR; in SDR there is no linear light to show it in. */
    if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
       return d3d12 && d3d12->device
-         && (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE);
+         && retro_atomic_load_acquire_int(&d3d12->texture_hdr_enabled);
 #endif
    if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;

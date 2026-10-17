@@ -49,6 +49,65 @@ bool audio_layout_known(uint32_t layout)
    return layout != 0 && (layout & ~AUDIO_KNOWN_POSITIONS) == 0;
 }
 
+bool audio_layout_order(const uint32_t *pos, unsigned n,
+      uint32_t *layout, uint8_t *order, bool *identity)
+{
+   uint32_t mask = 0;
+   unsigned k;
+   if (!n || n > AUDIO_LAYOUT_ORDER_MAX)
+      return false;
+   for (k = 0; k < n; k++)
+   {
+      if (     (pos[k] & (pos[k] - 1u))
+            || !audio_layout_known(pos[k])
+            || (mask & pos[k]))
+         return false;
+      mask |= pos[k];
+   }
+   *identity = true;
+   for (k = 0; k < n; k++)
+   {
+      order[k] = (uint8_t)audio_layout_channels(mask & (pos[k] - 1u));
+      if (order[k] != k)
+         *identity = false;
+   }
+   *layout = mask;
+   return true;
+}
+
+void audio_layout_permute(void *out, const void *in, size_t frames,
+      unsigned channels, const uint8_t *order, unsigned sample_bytes)
+{
+   size_t f;
+   unsigned c;
+   if (sample_bytes == 4)
+   {
+      uint32_t       *o = (uint32_t*)out;
+      const uint32_t *i = (const uint32_t*)in;
+      uint32_t t[AUDIO_LAYOUT_ORDER_MAX];
+      for (f = 0; f < frames; f++, o += channels, i += channels)
+      {
+         for (c = 0; c < channels; c++)
+            t[c] = i[order[c]];
+         for (c = 0; c < channels; c++)
+            o[c] = t[c];
+      }
+   }
+   else
+   {
+      uint16_t       *o = (uint16_t*)out;
+      const uint16_t *i = (const uint16_t*)in;
+      uint16_t t[AUDIO_LAYOUT_ORDER_MAX];
+      for (f = 0; f < frames; f++, o += channels, i += channels)
+      {
+         for (c = 0; c < channels; c++)
+            t[c] = i[order[c]];
+         for (c = 0; c < channels; c++)
+            o[c] = t[c];
+      }
+   }
+}
+
 /* The fold's gains per position into left and right, in the
  * position's bit order. */
 static void downmix_gains(uint32_t layout, float *gl, float *gr, unsigned *nslots)

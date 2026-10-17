@@ -1155,6 +1155,9 @@ int video_thread_record_take(void *data, unsigned dims, bool bgrx,
 bool video_thread_record_has_reader(void *data);
 /* Stops the readbacks; the buffers go once no frame names them. */
 void video_thread_record_stop(void *data);
+/* Main controller, after detaching from future frames. One ring snapshot;
+ * true while a queued or drawing frame still names this GPU recorder. */
+bool video_thread_record_gpu_in_flight(void *data, const void *recorder);
 
 #ifdef HAVE_GFX_WIDGETS
 /* Main thread: stages the on-screen panels' text to travel with the

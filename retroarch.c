@@ -135,6 +135,7 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
+#include "record/drivers/record_nvenc.h"
 
 #ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
@@ -1588,6 +1589,14 @@ static void driver_adjust_system_rates(
    video_st->headset_vsync    = settings->bools.video_vsync;
    video_st->headset_interval = (video_st->headset_vsync
          && !video_driver_thread_wrapper_active()) ? headset_fit : 0;
+   /* A headset's own context begins and ends its frame in every core
+    * frame, so with no fit the core runs at the headset's rate; with a
+    * window, the window's vsync paces, and the wrapper holds the core
+    * at its own rate. */
+   video_st->headset_runloop_hz = (     !video_st->headset_interval
+         && !video_driver_thread_wrapper_active()
+         && video_context_driver_headset_inline())
+      ? video_st->headset_hz : 0.0f;
    if (video_st->headset_interval)
    {
       video_refresh_rate    = video_st->headset_hz;
@@ -10367,6 +10376,7 @@ static bool retroarch_main_quit_begin(void)
 
    if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       return false;
+   record_nvenc_stop();
    if (   settings->bools.savestate_auto_save
        && runloop_st->current_core_type != CORE_TYPE_DUMMY)
       command_event_save_auto_state();
@@ -10509,14 +10519,15 @@ bool retroarch_main_quit_staged(void)
 #if defined(HAVE_LIBNX) || defined(_3DS)
    return retroarch_main_quit();
 #else
-   if (     !video_st->current_video
+   if (    (!video_st->current_video
          || !video_st->data
          || !video_st->current_video->alive
          || !video_st->current_video->alive(video_st->data))
+         && !record_nvenc_pending())
       return retroarch_main_quit();
 
    first = retroarch_main_quit_begin();
-   if (!first || !retroarch_quit_state_task_pending(NULL))
+   if (!first || (!retroarch_quit_state_task_pending(NULL) && !record_nvenc_pending()))
    {
       retroarch_main_quit_finish(first);
       return true;
@@ -10526,6 +10537,7 @@ bool retroarch_main_quit_staged(void)
     * be serializing it, and the session ends with this quit. */
    runloop_st->quit_pending    = true;
    runloop_st->content_closing = true;
+   if (retroarch_quit_state_task_pending(NULL))
    {
       const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
@@ -10544,7 +10556,8 @@ bool retroarch_main_quit_poll(void)
 
    if (!runloop_st->quit_pending)
       return false;
-   if (retroarch_quit_state_task_pending(NULL))
+   record_nvenc_poll();
+   if (retroarch_quit_state_task_pending(NULL) || record_nvenc_pending())
       return false;
    runloop_st->quit_pending = false;
    retroarch_main_quit_finish(true);

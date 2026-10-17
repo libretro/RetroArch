@@ -12871,7 +12871,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL, false },
 #endif
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
-               {MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR,                   PARSE_ONLY_UINT, false },
+               {MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR,                   PARSE_ONLY_UINT, true },
 #ifdef HAVE_MICROPHONE
                {MENU_ENUM_LABEL_MICROPHONE_LATENCY,                    PARSE_ONLY_UINT, true },
 #endif

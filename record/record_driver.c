@@ -38,6 +38,7 @@
 #include "../audio/audio_upmix.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
+#include "drivers/record_nvenc.h"
 #include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
@@ -59,6 +60,9 @@ const record_driver_t *record_drivers[] = {
    &record_ffmpeg,
 #endif
    &record_wav,
+#ifdef HAVE_RECORD_NVENC
+   &record_nvenc,
+#endif
    &record_null,
    NULL,
 };
@@ -138,8 +142,21 @@ bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
    bool success                   = true;
+#ifdef HAVE_RECORD_NVENC
+   bool native                    = recording_st->driver == &record_nvenc;
+#endif
 #ifdef HAVE_FFMPEG
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
+#endif
+
+#ifdef HAVE_RECORD_NVENC
+   if (record_nvenc_cancel_start())
+   {
+      recording_st->driver = NULL;
+      recording_st->data = NULL;
+      recording_st->path[0] = '\0';
+      return true;
+   }
 #endif
 
    if (     !recording_st->data
@@ -165,6 +182,9 @@ bool recording_deinit(void)
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
    if (     success && history_list_enable
+#ifdef HAVE_RECORD_NVENC
+         && !native
+#endif
          && *recording_st->path)
    {
       struct playlist_entry entry = {0};
@@ -207,10 +227,19 @@ bool recording_init(void)
       video_driver_pix_fmt              = video_st->pix_fmt;
    recording_state_t *recording_st      = &recording_state;
    bool recording_enable                = recording_st->enable;
+   bool gpu_native = string_is_equal(settings->arrays.record_driver, "nvenc");
 
    if (!recording_enable)
       return false;
 
+#ifndef HAVE_RECORD_NVENC
+   if (gpu_native)
+   {
+      RARCH_ERR("[Recording] Native NVENC recording is unavailable in this build.\n");
+      return false;
+   }
+#endif
+   if (gpu_native) video_gpu_record = true;
    output[0] = '\0';
 
    if (current_core_type == CORE_TYPE_DUMMY)
@@ -263,6 +292,8 @@ bool recording_init(void)
 
          {
             const char *ext = "mkv";
+            if (gpu_native) ext = "mp4";
+            else
 #ifdef HAVE_AVF
             if (string_is_equal(settings->arrays.record_driver,
                      "avfoundation"))
@@ -307,12 +338,14 @@ bool recording_init(void)
     * multi-channel batch entry is recorded in it, where the container
     * has a default layout for the count - quad, 5.1 with the pair at
     * the back, 7.1 - which are the layouts in the order the recorder
-    * takes them. Anything else, stereo. */
+    * takes them. Anything else, stereo. Native GPU recording keeps the
+    * exact declared mask for its encoder to admit or refuse. */
    params.channels                  = 2;
    recording_st->layout              = AUDIO_LAYOUT_STEREO;
    {
       uint32_t core_layout = audio_state_get_ptr()->core_layout;
-      if (     core_layout == AUDIO_LAYOUT_QUAD
+      if (     (gpu_native && core_layout)
+            || core_layout == AUDIO_LAYOUT_QUAD
             || core_layout == AUDIO_LAYOUT_5POINT1
             || core_layout == AUDIO_LAYOUT_7POINT1)
       {
@@ -352,8 +385,23 @@ bool recording_init(void)
       }
    }
 
-   if (  video_gpu_record
-      && video_st->current_video->read_viewport)
+   if (gpu_native)
+   {
+      struct video_viewport vp;
+      memset(&vp, 0, sizeof(vp));
+      if (!video_driver_get_viewport_info(&vp)) return false;
+      if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+      {
+         recording_st->driver = &record_nvenc;
+         return record_nvenc_defer_start();
+      }
+      params.out_dims = params.fb_dims = vp.dims;
+      params.pix_fmt = FFEMU_PIX_ARGB8888;
+      params.aspect_ratio = (float)VIDEO_SCALE_W(vp.dims) / VIDEO_SCALE_H(vp.dims);
+      recording_st->gpu_dims = vp.dims;
+      recording_st->gpu_bgrx = false;
+   }
+   else if (video_gpu_record && video_st->current_video->read_viewport)
    {
       size_t gpu_size;
       struct video_viewport vp;

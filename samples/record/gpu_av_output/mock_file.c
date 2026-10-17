@@ -28,3 +28,5 @@ bool record_file_win32_finish(record_file_win32_t *f)
 { if (file_finish_fail) f->error = 5; return !f->active && !f->error; }
 bool record_file_win32_free(record_file_win32_t *f)
 { if (f && f->active) return false; free(f); return true; }
+void *record_file_win32_wait_handle(const record_file_win32_t *f)
+{ return f && f->active ? (void*)f : NULL; }
