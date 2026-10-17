@@ -15,6 +15,8 @@ typedef struct rgc_slot
 {
    uint64_t value;
    ID3D12Resource *texture;
+   ID3D12Resource *source;
+   ID3D12Fence *source_fence;
    ID3D12CommandAllocator *allocator;
    ID3D12GraphicsCommandList *commands;
 } rgc_slot_t;
@@ -37,11 +39,50 @@ struct record_gpu_capture_d3d12
    bool failed, unfenced;
 };
 
+static void rgc_source_release(rgc_slot_t *s)
+{
+   if (s->source) ID3D12Resource_Release(s->source);
+   if (s->source_fence) ID3D12Fence_Release(s->source_fence);
+   s->source = NULL;
+   s->source_fence = NULL;
+}
+
+static bool rgc_reap(record_gpu_capture_d3d12_t *c, uint64_t completed)
+{
+   unsigned i;
+   bool retired = true;
+   for (i = 0; i < c->slots; i++)
+   {
+      rgc_slot_t *s = &c->pool[i];
+      if (!s->source)
+         continue;
+      if (completed >= s->value
+            && (!c->unfenced || s->value < c->value || completed == UINT64_MAX))
+         rgc_source_release(s);
+      else
+         retired = false;
+   }
+   return retired;
+}
+
+bool record_gpu_capture_d3d12_reap(record_gpu_capture_d3d12_t *c)
+{
+   uint64_t completed;
+   if (!c)
+      return true;
+   completed = ID3D12Fence_GetCompletedValue(c->ready);
+   if (completed == UINT64_MAX
+         && SUCCEEDED(ID3D12Device_GetDeviceRemovedReason(c->device)))
+      return false;
+   return rgc_reap(c, completed);
+}
+
 static void rgc_destroy(record_gpu_capture_d3d12_t *c)
 {
    unsigned i;
    for (i = 0; i < c->slots; i++)
    {
+      rgc_source_release(&c->pool[i]);
       if (c->pool[i].commands) ID3D12GraphicsCommandList_Release(c->pool[i].commands);
       if (c->pool[i].allocator) ID3D12CommandAllocator_Release(c->pool[i].allocator);
       if (c->pool[i].texture) ID3D12Resource_Release(c->pool[i].texture);
@@ -385,6 +426,11 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
    if (source_fence && FAILED(ID3D12CommandQueue_Wait(c->commands,
             (ID3D12Fence*)source_fence, source_value)))
       return rgc_fail(c);
+   ID3D12Resource_AddRef(input);
+   if (source_fence) ID3D12Fence_AddRef((ID3D12Fence*)source_fence);
+   rgc_reap(c, completed);
+   s->source = input;
+   s->source_fence = (ID3D12Fence*)source_fence;
    {
       ID3D12CommandList *list = (ID3D12CommandList*)s->commands;
       ID3D12CommandQueue_ExecuteCommandLists(c->commands, 1, &list);
@@ -450,6 +496,8 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
 }
 bool record_gpu_capture_d3d12_finish(record_gpu_capture_d3d12_t *c)
 { (void)c; return false; }
+bool record_gpu_capture_d3d12_reap(record_gpu_capture_d3d12_t *c)
+{ return c == NULL; }
 bool record_gpu_capture_d3d12_free(record_gpu_capture_d3d12_t *c)
 { return c == NULL; }
 #endif

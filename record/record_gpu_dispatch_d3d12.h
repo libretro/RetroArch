@@ -18,7 +18,7 @@ record_gpu_dispatch_d3d12_t *record_gpu_dispatch_d3d12_new(
       const record_gpu_output_config_t *output, const char *path);
 /* One render producer and one PCM producer. STARTING returns BUSY, taking
  * nothing. READY preserves the capture/output whole-input contracts. No
- * allocation, waits or logging. Retain source GPU leases as for capture. */
+ * allocation, waits or logging. Source references retire through capture reap/free. */
 int record_gpu_dispatch_d3d12_video(record_gpu_dispatch_d3d12_t *job,
       void *source, unsigned source_state, unsigned x, unsigned y,
       void *source_fence, uint64_t source_value, uint64_t timestamp,

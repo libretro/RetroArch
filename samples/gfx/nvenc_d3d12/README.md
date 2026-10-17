@@ -66,9 +66,12 @@ pipeline and descriptor heaps are allocated at startup. Matching formats
 use texture copies. NV12/P010
 currently require a full texture. It restores source state and copies both
 planar subresources. A busy pool consumes nothing and never resets a command
-allocator still in use. Sources and optional source fences stay caller-owned
-through copy completion; the returned completion value permits asynchronous
-retirement. There are no pixel uploads/readbacks or CPU waits in capture.
+allocator still in use. Capture retains submitted source textures and optional
+source fences through copy completion; later pushes, nonblocking reap or free
+release completed references. The caller keeps source contents
+unchanged through the returned completion value. Reap releases completed source
+references even while the encoder holds its destination slot; use it before
+swapchain resizing. There are no pixel uploads/readbacks or CPU waits in capture.
 
 The native harness additionally compares eight captured codec/format cases
 and captures two HDR streams through requested and periodic keyframes. A
@@ -124,3 +127,13 @@ These cases cover H.264/BGRA with 48 kHz stereo, HEVC/P010 with 44.1 kHz mono
 and AV1/P010 with 32 kHz 5.1. They establish native combined pipeline
 acceptance; frontend capture attachment, core audio routing and HDR render
 conversion remain pending.
+
+Source-lifetime fixtures queue four GPU copies behind an unsignalled fence,
+release the caller's source/fence references, refuse a fifth push without
+retaining anything, and reap after completion while destination leases remain
+held. Counted COM calls verify exactly one retained/released pair per submitted
+slot. Replacement checks retain the new source/fence before releasing old
+references to the same objects. Separate fixtures refuse a queue wait before
+submission and retain the
+source through a failed completion signal and recovery. Both header variants
+run these cases on native Windows as part of every capture session.

@@ -10,8 +10,9 @@ Both producers close from their own threads after their last push returns,
 including startup failure and cancellation. Disabled audio starts closed.
 Cancellation requests drain and stops admission; it does not close producers
 on their behalf. Collection checks thread completion without joining or
-waiting. It refuses active resources; retain capture and source GPU leases
-until dispatch collection and the capture owner's GPU retirement succeed.
+waiting. It refuses active resources; retain capture until dispatch collection
+and its GPU retirement succeed. Capture owns submitted source/fence references;
+its render owner reaps completed sources before a swapchain resize.
 A persistent SDK or owned-handle failure may retain resources for safety.
 
 The worker registers before rechecking for work, then waits for producer
