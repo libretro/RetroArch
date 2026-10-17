@@ -32,6 +32,7 @@
 #include "vulkan_video_caps.h"
 #include "vulkan_memory_type.h"
 #include "vulkan_surface_format.h"
+#include "vulkan_swapchain_extent.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #ifdef HAVE_OPENXR
@@ -3294,6 +3295,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    bool vsync                              = ss->vsync;
    bool adaptive_vsync                     = ss->adaptive_vsync;
    bool reuse_swapchain;
+#ifdef ANDROID
+   bool use_requested_extent              = vk->wsi_type == VULKAN_WSI_ANDROID;
+#else
+   bool use_requested_extent              = false;
+#endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = ss->windowed_fullscreen;
    /* Relaxed: ALLOWED is a hint and the driver may decline - and on
@@ -3803,14 +3809,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          format = formats[0];
    }
 
-   if (surface_properties.currentExtent.width == UINT32_MAX)
-   {
-      swapchain_size.width     = VIDEO_SCALE_W(dims);
-      swapchain_size.height    = VIDEO_SCALE_H(dims);
-   }
-   else
-      swapchain_size           = surface_properties.currentExtent;
-
 #ifdef WSI_HARDENING_TEST
    if (trigger_spurious_error())
    {
@@ -3821,15 +3819,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    }
 #endif
 
-   /* Clamp swapchain size to boundaries. */
-   if (swapchain_size.width > surface_properties.maxImageExtent.width)
-      swapchain_size.width = surface_properties.maxImageExtent.width;
-   if (swapchain_size.width < surface_properties.minImageExtent.width)
-      swapchain_size.width = surface_properties.minImageExtent.width;
-   if (swapchain_size.height > surface_properties.maxImageExtent.height)
-      swapchain_size.height = surface_properties.maxImageExtent.height;
-   if (swapchain_size.height < surface_properties.minImageExtent.height)
-      swapchain_size.height = surface_properties.minImageExtent.height;
+   swapchain_size = vulkan_swapchain_extent(&surface_properties,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         use_requested_extent);
 
    if (     (swapchain_size.width  == 0)
          && (swapchain_size.height == 0))

@@ -93,6 +93,16 @@ jobs:
           tools/check.sh tools/texture_image_init_check.c --selftest
           tools/check.sh tools/texture_image_init_check.c
 
+  vulkan-swapchain-extent:
+    name: Android Vulkan orientation extents
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Regression test
+        run: make -C samples/gfx/vulkan_swapchain_extent check
+
   slang-rect:
     name: Presets read frames where they lie
     runs-on: ubuntu-latest
