@@ -4039,7 +4039,6 @@ static bool d3d12_shader_load_step(void *data,
                &d3d12->filter.pass[i].core_aspect_rot,
                &d3d12->filter.pass[i].total_subframes,
                &d3d12->filter.pass[i].current_subframe,
-               &d3d12->filter.pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d12->filter.pass[i].hdr_mode,
                &d3d12->filter.pass[i].paper_white_nits,
@@ -4052,6 +4051,8 @@ static bool d3d12_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d12->filter.pass[i].swap_count;
          d3d12_frame_rect_semantics(d3d12, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL, 50,
@@ -4401,7 +4402,6 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->filter.pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d12->filter.pass[i].total_subframes, /* TotalSubFrames */
             &d3d12->filter.pass[i].current_subframe,/* CurrentSubFrame */
-            &d3d12->filter.pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
             &d3d12->filter.pass[i].hdr_mode,       /* HDRMode */
             &d3d12->filter.pass[i].paper_white_nits,/* BrightnessNits */
@@ -4415,6 +4415,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       };
       /* clang-format on */
 
+      semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d12->filter.pass[i].swap_count;
       d3d12_frame_rect_semantics(d3d12, &semantics_map);
       if (!slang_process(
                d3d12->filter.shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,

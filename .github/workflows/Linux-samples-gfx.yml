@@ -596,6 +596,15 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 run.py
 
+      - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
+        shell: bash
+        working-directory: samples/gfx/slang_hdr_bindings
+        run: |
+          set -eu
+          # Compile both loaders' actual uniform maps from
+          # gfx/drivers/d3d10.c, gfx/drivers/d3d11.c and gfx/drivers/d3d12.c.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
+
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash
         working-directory: samples/gfx/slang_texture_index_bounds

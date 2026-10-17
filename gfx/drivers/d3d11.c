@@ -3123,7 +3123,6 @@ static bool d3d11_shader_load_step(void *data,
                &d3d11->chain.pass[i].core_aspect_rot,
                &d3d11->chain.pass[i].total_subframes,
                &d3d11->chain.pass[i].current_subframe,
-               &d3d11->chain.pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d11->chain.pass[i].hdr_mode,
                &d3d11->chain.pass[i].paper_white_nits,
@@ -3136,6 +3135,8 @@ static bool d3d11_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+            &d3d11->chain.pass[i].swap_count;
          d3d11_frame_rect_semantics(d3d11, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL,
@@ -3403,7 +3404,6 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
          &d3d11->chain.pass[i].core_aspect_rot, /* OriginalAspectRotated */
          &d3d11->chain.pass[i].total_subframes, /* TotalSubFrames */
          &d3d11->chain.pass[i].current_subframe,/* CurrentSubFrame */
-         &d3d11->chain.pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
          &d3d11->chain.pass[i].hdr_mode,        /* HDRMode */
          &d3d11->chain.pass[i].paper_white_nits,/* BrightnessNits */
@@ -3417,6 +3417,8 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
    };
    /* clang-format on */
 
+   semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
+         &d3d11->chain.pass[i].swap_count;
    d3d11_frame_rect_semantics(d3d11, &semantics_map);
    if (!slang_process(
             d3d11->chain.shader_preset, i, RARCH_SHADER_HLSL, shader_model,
