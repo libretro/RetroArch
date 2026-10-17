@@ -58,6 +58,7 @@
 #endif
 #include "autosave.h"
 #include "command.h"
+#include "core.h"
 #include "core_info.h"
 #include "playlist.h"
 #include <queues/task_queue.h>
@@ -1276,8 +1277,10 @@ bool command_reinit(command_t *cmd, const char *arg)
 bool command_state(command_t *cmd, const char *arg)
 {
    static const struct cmd_choice choices[] = {
-      { "save", "SAVE_STATE_SLOT", true },
-      { "load", "LOAD_STATE_SLOT", true }
+      { "save",       "SAVE_STATE_SLOT",  true  },
+      { "load",       "LOAD_STATE_SLOT",  true  },
+      { "checkpoint", "CHECKPOINT_STATE", false },
+      { "rollback",   "ROLLBACK_STATE",   false }
    };
    return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
          COMMAND_STATE_ACTIONS, arg);
@@ -1558,6 +1561,146 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 
    command_reply_error(cmd, name, "out of memory");
    return false;
+}
+
+/* The state STATE checkpoint keeps, in memory rather than a slot's
+ * file: what an agent rolls back to when a jump goes wrong, in one
+ * request where replaying the level took a dozen. Raw core state - it
+ * lives only as long as the content - and dropped when that closes. */
+static struct
+{
+   void  *data;
+   size_t size;
+} command_checkpoint;
+
+void command_checkpoint_clear(void)
+{
+   free(command_checkpoint.data);
+   command_checkpoint.data = NULL;
+   command_checkpoint.size = 0;
+}
+
+/* Serializing re-enters the core, so this runs from the reply's main
+ * thread task, as a save to a slot does. */
+static bool command_checkpoint_start(struct command_reply *r)
+{
+   retro_ctx_serialize_info_t info;
+   const char *error = NULL;
+   if (r->state_loaded)
+   {
+      bool ramped;
+      if (!command_checkpoint.data)
+         error = "no checkpoint to roll back to; STATE checkpoint keeps one";
+      else
+      {
+         info.data_const = command_checkpoint.data;
+         info.data       = NULL;
+         info.size       = command_checkpoint.size;
+         ramped          = audio_driver_jump_fade_begin();
+         if (!core_unserialize(&info))
+            error = "the core could not restore the checkpoint";
+         audio_driver_jump_fade_end(ramped);
+      }
+   }
+   else
+   {
+      size_t len = core_serialize_size();
+      void  *buf = len ? malloc(len) : NULL;
+      info.data_const = NULL;
+      info.data       = buf;
+      info.size       = len;
+      if (!buf || !core_serialize(&info))
+      {
+         free(buf);
+         error = "this core cannot save a state right now";
+      }
+      else
+      {
+         free(command_checkpoint.data);
+         command_checkpoint.data = buf;
+         command_checkpoint.size = len;
+      }
+   }
+   command_reply_done(NULL, NULL, r, error);
+   return true;
+}
+
+static bool command_checkpoint_state(command_t *cmd, const char *arg,
+      bool rollback)
+{
+   const char *name = rollback ? "ROLLBACK_STATE" : "CHECKPOINT_STATE";
+   struct command_reply *r;
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg)
+   {
+      command_reply_error(cmd, name, "nothing after it");
+      return false;
+   }
+   if (!core_info_current_supports_savestate())
+   {
+      command_reply_error(cmd, name, "this core cannot save a state");
+      return false;
+   }
+   if (!(r = command_reply_new(name)))
+   {
+      command_reply_error(cmd, name, "out of memory");
+      return false;
+   }
+   r->state_loaded = rollback;
+   r->start        = command_checkpoint_start;
+   return command_reply_push(cmd, r);
+}
+
+bool command_checkpoint_save(command_t *cmd, const char *arg)
+{
+   return command_checkpoint_state(cmd, arg, false);
+}
+
+bool command_checkpoint_rollback(command_t *cmd, const char *arg)
+{
+   return command_checkpoint_state(cmd, arg, true);
+}
+
+/* RESET [on|off]: from the reply's main thread task, since a reset
+ * re-enters the core; with on, paused after it, as LOAD_CONTENT ...
+ * paused is, so nothing runs before the first step. */
+static bool command_reset_start(struct command_reply *r)
+{
+   command_event(CMD_EVENT_RESET, NULL);
+   command_reply_done(NULL, NULL, r, NULL);
+   return true;
+}
+
+bool command_reset(command_t *cmd, const char *arg)
+{
+   struct command_reply *r;
+   bool                  pause = false;
+   while (arg && *arg == ' ')
+      arg++;
+   if (arg && *arg)
+   {
+      if (string_is_equal(arg, "on"))
+         pause = true;
+      else if (!string_is_equal(arg, "off"))
+      {
+         command_reply_error(cmd, "RESET", "on or off, not %s", arg);
+         return false;
+      }
+   }
+   if (!(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, "RESET", "no content is running");
+      return false;
+   }
+   if (!(r = command_reply_new("RESET")))
+   {
+      command_reply_error(cmd, "RESET", "out of memory");
+      return false;
+   }
+   r->pause = pause;
+   r->start = command_reset_start;
+   return command_reply_push(cmd, r);
 }
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
@@ -2494,7 +2637,9 @@ static uint8_t *command_memory_get_pointer(
 struct command_watch_entry
 {
    unsigned address;
+   unsigned hi;      /* with wide, the high byte's address */
    char     label[16];
+   bool     wide;    /* two bytes read as hi * 256 + address's */
 };
 static struct command_watch_entry command_watches[COMMAND_WATCH_MAX];
 static unsigned command_watch_count;
@@ -2509,21 +2654,31 @@ void command_watch_clear(void)
 static size_t command_watch_lines(char *s, size_t len)
 {
    char      value[8];
+   char      where[24];
    char      reason[128];
    size_t    _len = 0;
    unsigned  i;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   for (i = 0; i < command_watch_count && _len + 40 < len; i++)
+   for (i = 0; i < command_watch_count && _len + 48 < len; i++)
    {
+      const struct command_watch_entry *e = &command_watches[i];
       unsigned       avail = 0;
       const uint8_t *at    = command_memory_get_pointer(&runloop_st->system,
-            command_watches[i].address, &avail, 0, reason, sizeof(reason));
-      if (at)
-         snprintf(value, sizeof(value), "%u", (unsigned)*at);
+            e->address, &avail, 0, reason, sizeof(reason));
+      const uint8_t *hi    = e->wide ? command_memory_get_pointer(
+            &runloop_st->system, e->hi, &avail, 0, reason, sizeof(reason))
+            : NULL;
+      if (at && (!e->wide || hi))
+         snprintf(value, sizeof(value), "%u",
+               hi ? ((unsigned)*hi << 8) | *at : (unsigned)*at);
       else
          strlcpy(value, "none", sizeof(value));
-      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%x\t%s\n",
-            command_watches[i].label, command_watches[i].address, value);
+      if (e->wide)
+         snprintf(where, sizeof(where), "%x:%x", e->hi, e->address);
+      else
+         snprintf(where, sizeof(where), "%x", e->address);
+      _len += (size_t)snprintf(s + _len, len - _len, "%s\t%s\t%s\n",
+            e->label, where, value);
    }
    return _len;
 }
@@ -2535,6 +2690,7 @@ struct command_cond
 {
    unsigned hi;
    unsigned lo;
+   unsigned mask;   /* "& <mask>": the bits compared; 0 for all */
    unsigned want;
    uint8_t  op;     /* enum cmd_until_op */
    bool     wide;
@@ -2586,13 +2742,36 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
       c->lo   = address;
       c->wide = true;
    }
-   if (**end != ' ')
+   while (**end == ' ')
+      (*end)++;
+   /* "& 0x40" or "& 64": only those bits, as a game keeps its flags */
+   if (**end == '&')
+   {
+      const char *m = *end + 1;
+      while (*m == ' ')
+         m++;
+      errno   = 0;
+      if (m[0] == '0' && (m[1] == 'x' || m[1] == 'X'))
+         num  = strtoul(m + 2, end, 16);
+      else if (*m >= '0' && *m <= '9')
+         num  = strtoul(m, end, 10);
+      else
+         *end = (char*)m;
+      if (     *end == m || errno == ERANGE || !num
+            || num > (c->wide ? 65535UL : 255UL))
+      {
+         strlcpy(why, "a mask after \"&\", such as 0x40 or 64", why_len);
+         return false;
+      }
+      c->mask = (unsigned)num;
+      while (**end == ' ')
+         (*end)++;
+   }
+   if (!**end)
    {
       strlcpy(why, "a condition and a value after the address", why_len);
       return false;
    }
-   while (**end == ' ')
-      (*end)++;
    if (!(sp = strchr(*end, ' ')))
    {
       strlcpy(why, "a condition and a value after the address", why_len);
@@ -2640,6 +2819,8 @@ static bool command_cond_read(const struct command_cond *c,
                   &avail, 0, why, why_len))))
       return false;
    *out = hi ? ((unsigned)*hi << 8) | *lo : *lo;
+   if (c->mask)
+      *out &= c->mask;
    return true;
 }
 
@@ -2704,6 +2885,7 @@ struct command_step
 };
 
 #define COMMAND_STEPS_MAX 16
+#define COMMAND_STOPS_MAX 4
 
 /* How the job answers: the command's own line (RUN_FRAMES, PRESS), how
  * the wait ended and the value (RUN_UNTIL, a PRESS that waits), or how
@@ -2721,7 +2903,9 @@ static struct
 {
    command_deferred_t  deferred;
    struct command_step steps[COMMAND_STEPS_MAX];
-   struct command_cond stop;    /* STEPS: ends the list where it holds */
+   /* STEPS: end the list where any of them holds - a death, the level's
+    * end */
+   struct command_cond stops[COMMAND_STOPS_MAX];
    const char         *name;    /* whichever command owes the reply */
    unsigned            count;   /* steps; 0 when no job runs */
    unsigned            cur;     /* the step running */
@@ -2732,7 +2916,7 @@ static struct
    unsigned            port;    /* the player whose buttons are held */
    uint16_t            held;    /* the buttons the job let go of, by bit */
    uint8_t             answer;  /* enum cmd_job_answer */
-   bool                has_stop;
+   unsigned            nstops;
    /* a frame with the buttons let go between two presses of the same
     * one, so the game sees two taps rather than one long press */
    bool                gap;
@@ -2761,7 +2945,7 @@ static void command_run_frames_answer(const char *first, const char *last,
 {
    /* the step's own line, then a line for each byte watched: room for
     * the longest reply and every watch */
-   char   out[256 + COMMAND_WATCH_MAX * 40 + 32];
+   char   out[256 + COMMAND_WATCH_MAX * 48 + 32];
    size_t _len = strlcpy(out, first, sizeof(out));
 
    if (_len >= sizeof(out))
@@ -2881,12 +3065,12 @@ static void command_run_frames_enter(void)
 
 /* Replaces any job running with @steps, which @cmd asked for as @name,
  * and starts it: a condition that already holds is answered at once,
- * without a frame. @line is the answer of a CMD_ANSWER_LINE job; @stop,
- * where given, ends the list early. */
+ * without a frame. @line is the answer of a CMD_ANSWER_LINE job; any of
+ * the @nstops @stops that holds ends the list early. */
 static void command_run_frames_start(command_t *cmd, const char *name,
       const struct command_step *steps, unsigned count,
-      const struct command_cond *stop, unsigned budget, uint8_t answer,
-      const char *line)
+      const struct command_cond *stops, unsigned nstops, unsigned budget,
+      uint8_t answer, const char *line)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
@@ -2897,9 +3081,9 @@ static void command_run_frames_start(command_t *cmd, const char *name,
       command_run_frames_cancel(why);
    }
    memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
-   command_run_frames_st.has_stop = stop != NULL;
-   if (stop)
-      command_run_frames_st.stop  = *stop;
+   if (nstops)
+      memcpy(command_run_frames_st.stops, stops, nstops * sizeof(*stops));
+   command_run_frames_st.nstops = nstops;
    strlcpy(command_run_frames_st.reply, line ? line : "",
          sizeof(command_run_frames_st.reply));
    command_run_frames_st.name   = name;
@@ -2923,6 +3107,7 @@ void command_run_frames_tick(void)
 {
    char                 why[128];
    unsigned             now = 0;
+   unsigned             i;
    struct command_step *s;
 
    if (command_run_frames_st.cur >= command_run_frames_st.count)
@@ -2930,15 +3115,15 @@ void command_run_frames_tick(void)
    command_run_frames_st.ran++;
    if (command_run_frames_st.budget)
       command_run_frames_st.budget--;
-   if (command_run_frames_st.has_stop)
+   for (i = 0; i < command_run_frames_st.nstops; i++)
    {
-      if (!command_cond_read(&command_run_frames_st.stop, &now, why,
+      if (!command_cond_read(&command_run_frames_st.stops[i], &now, why,
                sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the stop address now");
          return;
       }
-      if (command_cond_met(&command_run_frames_st.stop, now))
+      if (command_cond_met(&command_run_frames_st.stops[i], now))
       {
          command_run_frames_end("STOPPED");
          return;
@@ -3068,7 +3253,7 @@ bool command_run_frames(command_t *cmd, const char *arg)
    step.kind   = CMD_STEP_RUN;
    step.frames = n;
    snprintf(line, sizeof(line), "RUN_FRAMES %u\n", n);
-   command_run_frames_start(cmd, "RUN_FRAMES", &step, 1, NULL, n,
+   command_run_frames_start(cmd, "RUN_FRAMES", &step, 1, NULL, 0, n,
          CMD_ANSWER_LINE, line);
    return true;
 }
@@ -3270,7 +3455,7 @@ bool command_set_input(command_t *cmd, const char *arg)
 bool command_watch(command_t *cmd, const char *arg)
 {
    struct command_watch_entry next[COMMAND_WATCH_MAX];
-   char      reply[64 + COMMAND_WATCH_MAX * 40];
+   char      reply[64 + COMMAND_WATCH_MAX * 48];
    char      label[sizeof(next[0].label)];
    char      reason[128];
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -3328,10 +3513,19 @@ bool command_watch(command_t *cmd, const char *arg)
       {
          unsigned  avail   = 0;
          unsigned  address = 0;
+         unsigned  hi      = 0;
+         bool      wide    = false;
          char     *end     = NULL;
          uint8_t  *at;
-         if (     !command_parse_address(sp, &address, &end) || end != arg
-               || (*arg && *arg != ' '))
+         bool      parsed  = command_parse_address(sp, &address, &end);
+         /* high:low, two bytes as one value, as conditions take them */
+         if (parsed && *end == ':')
+         {
+            hi     = address;
+            wide   = true;
+            parsed = command_parse_address(end + 1, &address, &end);
+         }
+         if (!parsed || end != arg || (*arg && *arg != ' '))
          {
             command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
                   "\"off\" to stop watching %s", label);
@@ -3346,8 +3540,10 @@ bool command_watch(command_t *cmd, const char *arg)
          }
          /* found now, as RUN_UNTIL finds the byte it waits on, so an
           * address nothing maps is refused rather than read later */
-         if (!(at = command_memory_get_pointer(&runloop_st->system,
-                     address, &avail, 0, reason, sizeof(reason))))
+         if (     !(at = command_memory_get_pointer(&runloop_st->system,
+                     address, &avail, 0, reason, sizeof(reason)))
+               || (wide && !command_memory_get_pointer(&runloop_st->system,
+                     hi, &avail, 0, reason, sizeof(reason))))
          {
             char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
                ? reason + STRLEN_CONST(" -1 ") : reason;
@@ -3361,6 +3557,8 @@ bool command_watch(command_t *cmd, const char *arg)
          if (i == count)
             count++;
          next[i].address = address;
+         next[i].hi      = hi;
+         next[i].wide    = wide;
          strlcpy(next[i].label, label, sizeof(next[i].label));
       }
    }
@@ -3430,7 +3628,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    if (!command_cond_mapped(cmd, "RUN_UNTIL", &step.cond))
       return false;
    step.kind = CMD_STEP_UNTIL;
-   command_run_frames_start(cmd, "RUN_UNTIL", &step, 1, NULL,
+   command_run_frames_start(cmd, "RUN_UNTIL", &step, 1, NULL, 0,
          frames ? frames : command_frames_default(), CMD_ANSWER_UNTIL,
          NULL);
    return true;
@@ -3526,7 +3724,7 @@ bool command_press(command_t *cmd, const char *arg)
    budget = command_frames_default();
    if (budget < (unsigned)frames)
       budget = (unsigned)frames;
-   command_run_frames_start(cmd, "PRESS", steps, until ? 2 : 1, NULL,
+   command_run_frames_start(cmd, "PRESS", steps, until ? 2 : 1, NULL, 0,
          until ? budget : (unsigned)frames,
          until ? CMD_ANSWER_UNTIL : CMD_ANSWER_LINE, reply);
    return true;
@@ -3546,13 +3744,13 @@ bool command_steps(command_t *cmd, const char *arg)
    char                list[1024];
    char                why[160];
    struct command_step steps[COMMAND_STEPS_MAX];
-   struct command_cond stop;
+   struct command_cond stops[COMMAND_STOPS_MAX];
    unsigned            ids[ARRAY_SIZE(command_input_names)];
    unsigned            count    = 0;
    unsigned            fixed    = 0;
    unsigned            budget;
    unsigned            i;
-   bool                has_stop = false;
+   unsigned            nstops   = 0;
    char               *entry;
    char               *next;
 
@@ -3563,7 +3761,7 @@ bool command_steps(command_t *cmd, const char *arg)
       return false;
    }
    memset(steps, 0, sizeof(steps));
-   memset(&stop, 0, sizeof(stop));
+   memset(stops, 0, sizeof(stops));
    budget = command_frames_default();
    for (entry = list; entry; entry = next)
    {
@@ -3581,14 +3779,14 @@ bool command_steps(command_t *cmd, const char *arg)
          continue;
       if (!strncmp(entry, "stop ", 5))
       {
-         if (has_stop)
+         if (nstops >= COMMAND_STOPS_MAX)
          {
-            command_reply_error(cmd, "STEPS", "one stop at most");
+            command_reply_error(cmd, "STEPS", "at most %u stops",
+                  (unsigned)COMMAND_STOPS_MAX);
             return false;
          }
-         c        = &stop;
-         has_stop = true;
-         entry   += 5;
+         c      = &stops[nstops++];
+         entry += 5;
       }
       else if (count >= COMMAND_STEPS_MAX)
       {
@@ -3692,10 +3890,11 @@ bool command_steps(command_t *cmd, const char *arg)
       if (     steps[i].kind == CMD_STEP_UNTIL
             && !command_cond_mapped(cmd, "STEPS", &steps[i].cond))
          return false;
-   if (has_stop && !command_cond_mapped(cmd, "STEPS", &stop))
-      return false;
-   command_run_frames_start(cmd, "STEPS", steps, count,
-         has_stop ? &stop : NULL, budget, CMD_ANSWER_STEPS, NULL);
+   for (i = 0; i < nstops; i++)
+      if (!command_cond_mapped(cmd, "STEPS", &stops[i]))
+         return false;
+   command_run_frames_start(cmd, "STEPS", steps, count, stops, nstops,
+         budget, CMD_ANSWER_STEPS, NULL);
    return true;
 }
 

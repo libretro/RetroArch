@@ -5669,6 +5669,7 @@ void runloop_event_deinit_core(void)
    /* the next content's addresses mean something else, and its first
     * frame is not to find buttons held for this one */
    command_watch_clear();
+   command_checkpoint_clear();
    input_driver_command_release(MAX_USERS);
 #endif
 

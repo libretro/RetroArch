@@ -581,6 +581,11 @@ struct cmd_rows
    const struct cmd_trailer *trailers;
    unsigned                  slack;
    unsigned                  required;
+   /* Set, the reply is one record rather than rows: the line the
+    * command opens with its own name, split into @columns by these
+    * characters in turn - the last column takes what is left - and
+    * answered as fields of their own. */
+   const char               *seps;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -705,13 +710,20 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 #define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
 #define COMMAND_DISK_ACTIONS   "eject|next|prev"
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
-#define COMMAND_STATE_ACTIONS  "save|load"
+#define COMMAND_STATE_ACTIONS  "save|load|checkpoint|rollback"
 #define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
 #define COMMAND_CORE_ACTIONS   "load|start|unload"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
 bool command_state(command_t *cmd, const char *arg);
+/* CHECKPOINT_STATE and ROLLBACK_STATE: one state kept in memory for
+ * the content's life, which command_checkpoint_clear() drops. */
+bool command_checkpoint_save(command_t *cmd, const char *arg);
+/* RESET [on|off]: the hotkey's reset, paused after it with on. */
+bool command_reset(command_t *cmd, const char *arg);
+bool command_checkpoint_rollback(command_t *cmd, const char *arg);
+void command_checkpoint_clear(void);
 bool command_core(command_t *cmd, const char *arg);
 bool command_replay(command_t *cmd, const char *arg);
 
@@ -881,10 +893,17 @@ static const struct cmd_param cmd_params_reinit[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_state[] = {
-   { "action", "Save to the slot, overwriting it, or load from it, "
-      "replacing the game state.", CMD_PARAM_STRING, true, NULL,
+   { "action", "Save to the slot or load from it; or checkpoint, kept "
+      "in memory until the content closes, and rollback to it, the "
+      "quick retry after a mistake.", CMD_PARAM_STRING, true, NULL,
       COMMAND_STATE_ACTIONS, NULL },
-   { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "slot", "save and load: the slot number.", CMD_PARAM_INT, false,
+      NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_reset[] = {
+   { "paused", "on: pause once it has reset, so nothing runs before the "
+      "first step.", CMD_PARAM_STRING, false, NULL, "on|off", NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_core_family[] = {
@@ -1059,6 +1078,21 @@ static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
 static const struct cmd_rows cmd_rows_log       = { NULL, cmd_trailers_log, 0, 0 };
+/* "GET_STATUS PLAYING nes,Super Mario Bros.": a comma in the game's
+ * name stays in it, as the last field takes the rest */
+static const struct cmd_column cmd_cols_status[] = {
+   { "state", "PLAYING, PAUSED or CONTENTLESS." },
+   { "system", "The content's system, or the core's name." },
+   { "content", "The content's file name." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_status    = { cmd_cols_status, NULL, 0, 1, " ," };
+static const struct cmd_column cmd_cols_read[] = {
+   { "address", "Where the bytes were read, in hexadecimal." },
+   { "bytes", "The bytes, in hexadecimal, separated by spaces." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, NULL, 0, 0, " " };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1068,7 +1102,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
    { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
@@ -1097,13 +1131,15 @@ static const struct cmd_action_map action_map[] = {
    { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_read },
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read, &cmd_rows_read },
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: a region's start, length, select and disconnect are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
-   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
+   { "CHECKPOINT_STATE", command_checkpoint_save, "No argument", "Keep a state in memory, for ROLLBACK_STATE, until the content closes.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "ROLLBACK_STATE", command_checkpoint_rollback, "No argument", "Restore the state CHECKPOINT_STATE kept.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it; or checkpoint one in memory and roll back to it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_frame },
    { "REPLAY",        command_replay,        "<play|seek|record|halt|checkpoint> [slot|frame]", "Play, seek, record, halt or checkpoint a replay.", CMD_INFO_DESTRUCTIVE, cmd_params_replay },
@@ -1115,6 +1151,7 @@ static const struct cmd_action_map action_map[] = {
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
    { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "RESET", command_reset, "[on|off]", "Reset the running content; with paused on, pause once it has.", CMD_INFO_DESTRUCTIVE, cmd_params_reset },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
@@ -1128,7 +1165,8 @@ static const struct cmd_action_map action_map[] = {
 static const struct cmd_map map[] = {
    { "MENU_TOGGLE", RARCH_MENU_TOGGLE, "Open or close the menu.", CMD_INFO_NO_TOOL },
    { "QUIT", RARCH_QUIT_KEY, "Quit RetroArch.", CMD_INFO_DESTRUCTIVE },
-   { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE },
+   /* the tool is the action RESET, which takes paused */
+   { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
 
    { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", CMD_INFO_NO_TOOL },
    { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },

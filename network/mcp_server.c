@@ -109,6 +109,12 @@ struct mcp_conn
    bool     modern;
    bool     stdio;       /* the stdio transport's one connection */
    bool     structured;  /* its revision takes structuredContent */
+   /* the reply owed completes a prompt argument rather than answering
+    * a tool: the column of the command's rows that holds the values,
+    * and what they are to match */
+   bool     completing;
+   unsigned complete_col;
+   char     complete_prefix[128];
 };
 
 /* One of params.arguments, by the name the schema gave it. */
@@ -133,6 +139,12 @@ struct mcp_request
    char version[16];     /* params._meta protocolVersion */
    char init_version[16];/* params.protocolVersion (initialize) */
    char level[16];       /* params.level (logging/setLevel) */
+   /* completion/complete: what is being completed, and from what */
+   char ref_type[24];    /* params.ref.type */
+   char ref_name[48];    /* params.ref.name */
+   char arg_name[32];    /* params.argument.name */
+   char arg_value[128];  /* params.argument.value */
+   char ctx_playlist[256]; /* params.context.arguments.playlist */
    struct mcp_arg args[MCP_MAX_ARGS];
    unsigned num_args;
    bool has_id;
@@ -437,6 +449,38 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    bool wrote = false;
 
    MCP_RAW(w, ",\"outputSchema\":{\"type\":\"object\",\"properties\":{");
+   /* a record: the columns are the fields themselves */
+   if (rows->seps)
+   {
+      bool first = true;
+      for (col = rows->columns; col && col->name; col++)
+      {
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+         MCP_RAW(w, ":{\"type\":\"string\"");
+         if (describe && col->desc)
+         {
+            MCP_RAW(w, ",\"description\":");
+            rjsonwriter_add_string(w, col->desc);
+         }
+         MCP_RAW(w, "}");
+      }
+      MCP_RAW(w, "},\"required\":[");
+      first = true;
+      for (col = rows->columns; col && col->name; col++)
+      {
+         if (rows->required && (size_t)(col - rows->columns) >= rows->required)
+            break;
+         if (!first)
+            MCP_RAW(w, ",");
+         first = false;
+         rjsonwriter_add_string(w, col->name);
+      }
+      MCP_RAW(w, "]}");
+      return;
+   }
    if (rows->columns)
    {
       bool first = true;
@@ -500,6 +544,37 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    MCP_RAW(w, "}");
 }
 
+/* What a client is told once, at the handshake: how the tools fit
+ * together to play a game, which no one tool's description says. A
+ * field run spent its first calls finding this out. */
+#define MCP_INSTRUCTIONS \
+   "Controls a running RetroArch. To play a game: find it with " \
+   "LIST_PLAYLISTS and GET_PLAYLIST, and LOAD_CONTENT it with paused on. " \
+   "GET_MEMORY_MAP gives the addresses READ_CORE_MEMORY, WATCH and " \
+   "conditions take. WATCH the bytes each step needs - position, state, " \
+   "enemies - and every step answers with them. Step with STEPS " \
+   "(approach, jump and land in one request, with a stop for a death), " \
+   "PRESS ... until, or RUN_UNTIL; RUN_FRAMES lets the game run. STATE " \
+   "checkpoint before a risky move, and rollback after a mistake. Tools " \
+   "marked destructive can lose unsaved progress or load code."
+
+/* The one prompt: a session's start, with the workflow above. */
+#define MCP_PROMPT_NAME "play_game"
+
+/* A tool's title, from its name: RUN_FRAMES is "Run frames". */
+static void mcp_title(char *s, size_t len, const char *name)
+{
+   size_t i;
+   for (i = 0; name[i] && i + 1 < len; i++)
+   {
+      char ch = name[i] == '_' ? ' ' : name[i];
+      if (i && ch >= 'A' && ch <= 'Z')
+         ch = (char)(ch - 'A' + 'a');
+      s[i] = ch;
+   }
+   s[i] = '\0';
+}
+
 /* A tool: its parameters as a JSON Schema, from the table rather than
  * from the prose HELP prints, so a client is told each one's name, type
  * and whether it is needed. A hotkey, and a command that takes nothing,
@@ -516,8 +591,13 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    bool ro    = (flags & CMD_INFO_READ_ONLY)   != 0;
    bool de    = (flags & CMD_INFO_DESTRUCTIVE) != 0;
 
+   char title[64];
+
    MCP_RAW(w, "{\"name\":");
    rjsonwriter_add_string(w, name);
+   mcp_title(title, sizeof(title), name);
+   MCP_RAW(w, ",\"title\":");
+   rjsonwriter_add_string(w, title);
    MCP_RAW(w, ",\"description\":");
    rjsonwriter_add_string(w, desc ? desc : "");
    MCP_RAW(w, ",\"inputSchema\":{\"type\":\"object\",\"properties\":{");
@@ -979,6 +1059,48 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
    return -1;
 }
 
+/* A record's fields from the line the command opens with its own
+ * name: split by rows->seps in turn, the last field taking the rest. */
+static void mcp_structured_record(rjsonwriter_t *w,
+      const struct cmd_rows *rows, const char *name, const char *text,
+      size_t len)
+{
+   const struct cmd_column *col;
+   const char *end      = text + len;
+   const char *p        = text;
+   const char *eol      = (const char*)memchr(text, '\n', len);
+   size_t      name_len = strlen(name);
+   size_t      i        = 0;
+   bool        first    = true;
+
+   if (eol)
+      end = eol;
+   if ((size_t)(end - p) > name_len && !strncmp(p, name, name_len)
+         && p[name_len] == ' ')
+      p += name_len + 1;
+   MCP_RAW(w, ",\"structuredContent\":{");
+   for (col = rows->columns; col && col->name && p < end; col++, i++)
+   {
+      const char *stop = end;
+      if (col[1].name)
+      {
+         char sep = rows->seps[i] ? rows->seps[i]
+            : rows->seps[strlen(rows->seps) - 1];
+         const char *q = (const char*)memchr(p, sep, (size_t)(end - p));
+         if (q)
+            stop = q;
+      }
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, col->name);
+      MCP_RAW(w, ":");
+      rjsonwriter_add_string_len(w, p, (int)(stop - p));
+      p = stop < end ? stop + 1 : end;
+   }
+   MCP_RAW(w, "}");
+}
+
 static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       const char *name, const char *text, size_t len)
 {
@@ -1182,11 +1304,92 @@ static void mcp_tool_result(struct mcp_conn *c, const char *id, bool modern,
    MCP_RAW(w, "}]");
    /* a failure's text is the reason, not rows */
    if (act && act->rows && c->structured && !is_error)
-      mcp_structured(w, act->rows, act->str, text, text_len);
+   {
+      if (act->rows->seps)
+         mcp_structured_record(w, act->rows, act->str, text, text_len);
+      else
+         mcp_structured(w, act->rows, act->str, text, text_len);
+   }
    rjsonwriter_rawf(w, ",\"isError\":%s", is_error ? "true" : "false");
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
    free(fixed);
+}
+
+/* {"completion":{"values":[...]}}: the @c->complete_col field of each
+ * row of @text that holds @c->complete_prefix, case aside - a playlist
+ * name, a game's label. A line that is not a row (MORE, "none") holds
+ * no tab and is skipped where the field is not the first. */
+static void mcp_completion_result(struct mcp_conn *c, const char *id,
+      const char *text, size_t len, bool is_error)
+{
+   const char    *p     = text;
+   const char    *end   = text + len;
+   unsigned       total = 0;
+   unsigned       sent  = 0;
+   rjsonwriter_t *w     = mcp_envelope(id);
+   size_t         plen  = strlen(c->complete_prefix);
+   c->completing        = false;
+   if (!w)
+   {
+      mcp_conn_close(c);
+      return;
+   }
+   MCP_RAW(w, "\"result\":{\"completion\":{\"values\":[");
+   while (!is_error && p < end)
+   {
+      const char *eol   = (const char*)memchr(p, '\n', (size_t)(end - p));
+      const char *stop  = eol ? eol : end;
+      const char *f     = p;
+      const char *fend;
+      unsigned    k;
+      size_t      flen, i;
+      bool        match = false;
+      for (k = 0; k < c->complete_col && f < stop; k++)
+      {
+         const char *tab = (const char*)memchr(f, '\t', (size_t)(stop - f));
+         f = tab ? tab + 1 : stop;
+      }
+      p = eol ? eol + 1 : end;
+      /* MORE, and the command's own "none" or "empty", are no values */
+      if (     f >= stop
+            || (!c->complete_col
+               && (  (stop - f >= 4 && !strncmp(f, "MORE", 4)
+                     && (stop - f == 4 || f[4] == ' '))
+                  || !strncmp(f, "LIST_PLAYLISTS ", 15))))
+         continue;
+      fend = (const char*)memchr(f, '\t', (size_t)(stop - f));
+      if (!fend)
+         fend = stop;
+      flen = (size_t)(fend - f);
+      /* anywhere in it: "mario" finds "Super Mario Bros." */
+      for (i = 0; !match && i + plen <= flen; i++)
+      {
+         size_t k;
+         for (k = 0; k < plen; k++)
+         {
+            char a = f[i + k], b = c->complete_prefix[k];
+            if (a >= 'A' && a <= 'Z')
+               a = (char)(a - 'A' + 'a');
+            if (b >= 'A' && b <= 'Z')
+               b = (char)(b - 'A' + 'a');
+            if (a != b)
+               break;
+         }
+         match = k == plen;
+      }
+      if (!match)
+         continue;
+      total++;
+      if (sent >= 100)
+         continue;
+      if (sent++)
+         MCP_RAW(w, ",");
+      rjsonwriter_add_string_len(w, f, (int)flen);
+   }
+   rjsonwriter_rawf(w, "],\"total\":%u,\"hasMore\":%s}}}", total,
+         total > sent ? "true" : "false");
+   mcp_respond_writer(c, w);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1237,7 +1440,10 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
       return;
    if (o->conn == mcp->current)
       mcp->answered = true;
-   mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
+   if (c->completing)
+      mcp_completion_result(c, c->id, data, len, cmd->error);
+   else
+      mcp_tool_result(c, c->id, c->modern, c->act, data, len, cmd->error);
    cmd->error = false;
 }
 
@@ -1395,6 +1601,28 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
          else if (string_is_equal(key[1], "level") && t == RJSON_STRING)
             mcp_take(j, r->level, sizeof(r->level));
       }
+      else if (depth == 3 && string_is_equal(key[0], "params")
+            && t == RJSON_STRING
+            && (string_is_equal(key[1], "ref")
+               || string_is_equal(key[1], "argument")))
+      {
+         if (string_is_equal(key[1], "ref"))
+         {
+            if (string_is_equal(key[2], "type"))
+               mcp_take(j, r->ref_type, sizeof(r->ref_type));
+            else if (string_is_equal(key[2], "name"))
+               mcp_take(j, r->ref_name, sizeof(r->ref_name));
+         }
+         else if (string_is_equal(key[2], "name"))
+            mcp_take(j, r->arg_name, sizeof(r->arg_name));
+         else if (string_is_equal(key[2], "value"))
+            mcp_take(j, r->arg_value, sizeof(r->arg_value));
+      }
+      else if (depth == 4 && string_is_equal(key[0], "params")
+            && string_is_equal(key[1], "context")
+            && string_is_equal(key[2], "arguments")
+            && string_is_equal(key[3], "playlist") && t == RJSON_STRING)
+         mcp_take(j, r->ctx_playlist, sizeof(r->ctx_playlist));
       else if (depth == 3 && string_is_equal(key[0], "params"))
       {
          if (     string_is_equal(key[1], "arguments")
@@ -1643,10 +1871,9 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
             MCP_RAW(w, ",");
          rjsonwriter_add_string(w, mcp_versions[i]);
       }
-      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}%s},"
-            "\"instructions\":\"Controls a running RetroArch: each tool is a "
-            "RetroArch command. Tools marked destructive can lose unsaved "
-            "progress or load code.\"",
+      rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false},"
+            "\"prompts\":{\"listChanged\":false},\"completions\":{}%s},"
+            "\"instructions\":\"" MCP_INSTRUCTIONS "\"",
             c->stdio ? ",\"logging\":{}" : "");
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
@@ -1670,11 +1897,12 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          mcp_stdio.agreed = mcp_structured_version(v);
       MCP_RAW(w, "\"result\":{\"protocolVersion\":");
       rjsonwriter_add_string(w, v);
-      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false}");
+      MCP_RAW(w, ",\"capabilities\":{\"tools\":{\"listChanged\":false},"
+            "\"prompts\":{\"listChanged\":false},\"completions\":{}");
       if (c->stdio)
          MCP_RAW(w, ",\"logging\":{}");
       MCP_RAW(w, "},\"serverInfo\":{\"name\":\"RetroArch\",\"version\":\""
-            PACKAGE_VERSION "\"}");
+            PACKAGE_VERSION "\"},\"instructions\":\"" MCP_INSTRUCTIONS "\"");
       mcp_result_end(w, false);
       mcp_respond_writer(c, w);
    }
@@ -1721,6 +1949,99 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       rjsonwriter_add_string(w, mcp_log_levels[i]);
       mcp_result_end(w, modern);
       mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "prompts/list"))
+   {
+      rjsonwriter_t *w = mcp_envelope(r.id);
+      if (!w)
+      {
+         mcp_conn_close(c);
+         goto end;
+      }
+      MCP_RAW(w, "\"result\":{\"prompts\":[{\"name\":\"" MCP_PROMPT_NAME "\","
+            "\"title\":\"Play a game\",\"description\":\"Start a session "
+            "playing a game through these tools.\",\"arguments\":["
+            "{\"name\":\"playlist\",\"description\":\"The playlist it is "
+            "in, as LIST_PLAYLISTS gives it.\",\"required\":false},"
+            "{\"name\":\"game\",\"description\":\"The game, as the "
+            "playlist names it.\",\"required\":false},"
+            "{\"name\":\"goal\",\"description\":\"What to do; clear "
+            "the first level when left out.\",\"required\":false}]}]");
+      mcp_result_end(w, modern);
+      mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "prompts/get"))
+   {
+      const char    *game     = mcp_arg(&r, "game");
+      const char    *playlist = mcp_arg(&r, "playlist");
+      const char    *goal     = mcp_arg(&r, "goal");
+      char           text[1024];
+      rjsonwriter_t *w;
+      if (!string_is_equal(r.name, MCP_PROMPT_NAME))
+      {
+         mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown prompt.", false);
+         goto end;
+      }
+      snprintf(text, sizeof(text), "Play %s%s%s with RetroArch's tools. "
+            "Goal: %s. " MCP_INSTRUCTIONS,
+            game && *game ? game : "a game",
+            playlist && *playlist ? ", from the playlist " : "",
+            playlist && *playlist ? playlist : "",
+            goal && *goal ? goal : "clear the first level");
+      if (!(w = mcp_envelope(r.id)))
+      {
+         mcp_conn_close(c);
+         goto end;
+      }
+      MCP_RAW(w, "\"result\":{\"messages\":[{\"role\":\"user\","
+            "\"content\":{\"type\":\"text\",\"text\":");
+      rjsonwriter_add_string(w, text);
+      MCP_RAW(w, "}}]");
+      mcp_result_end(w, modern);
+      mcp_respond_writer(c, w);
+   }
+   else if (string_is_equal(r.method, "completion/complete"))
+   {
+      /* the playlists, or a playlist's games: both read on a task, so
+       * answered when it is through, as a tool is */
+      const char *name = NULL;
+      char        line[300];
+      bool        ok;
+      *line = '\0';
+      if (     string_is_equal(r.ref_type, "ref/prompt")
+            && string_is_equal(r.ref_name, MCP_PROMPT_NAME))
+      {
+         if (string_is_equal(r.arg_name, "playlist"))
+         {
+            name            = "LIST_PLAYLISTS";
+            c->complete_col = 0;
+         }
+         else if (string_is_equal(r.arg_name, "game") && *r.ctx_playlist)
+         {
+            name            = "GET_PLAYLIST";
+            c->complete_col = 1;
+            strlcpy(line, r.ctx_playlist, sizeof(line));
+         }
+      }
+      strlcpy(c->complete_prefix, r.arg_value, sizeof(c->complete_prefix));
+      strlcpy(c->id, r.id, sizeof(c->id));
+      c->completing = true;
+      if (!name)
+      {
+         mcp_completion_result(c, r.id, "", 0, false);
+         goto end;
+      }
+      mcp->reply_len = 0;
+      mcp->answered  = false;
+      mcp->current   = ci;
+      c->modern      = modern;
+      c->act         = NULL;
+      ok = command_run(cmd, name, line);
+      mcp->current   = -1;
+      if (c->state == MCP_CONN_WAITING || mcp->answered)
+         goto end;
+      mcp_completion_result(c, r.id, mcp->reply, mcp->reply_len,
+            cmd->error || !ok);
    }
    else if (string_is_equal(r.method, "tools/list"))
       mcp_tools_list(c, &r, modern, structured);
@@ -1792,6 +2113,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       c->modern      = modern;
       c->structured  = structured;
       c->act         = act;
+      c->completing  = false;
       ok = command_run(cmd, r.name, line);
       free(line);
       mcp->current   = -1;

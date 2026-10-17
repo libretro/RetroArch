@@ -70,10 +70,15 @@ send({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
 msg, _ = recv(1, 60)
 check('initialize over stdio', msg and msg['result']['serverInfo']['name'] == 'RetroArch')
 check('logging is offered', msg and 'logging' in msg['result']['capabilities'])
+check('the handshake says how the tools play a game',
+      msg and 'STEPS' in msg['result'].get('instructions', ''))
 send({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
 send({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}})
 msg, _ = recv(2)
 names = [t['name'] for t in msg['result']['tools']] if msg else []
+titles = dict((t['name'], t.get('title')) for t in msg['result']['tools']) if msg else {}
+check('a tool has a title for people: %s' % titles.get('RUN_FRAMES'),
+      titles.get('RUN_FRAMES') == 'Run frames')
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
           'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
@@ -104,7 +109,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total, 25000 bytes, catches a tool added
 # by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 20676
+# average would not, as folding small tools into one raises it. 22210
 # at 33 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
@@ -143,7 +148,10 @@ check('REINIT answers under its own name: ' + (t or '').strip(),
 msg, t, _ = call(241, 'DISK', {'action': 'next'})
 check('DISK is refused where the core has no disks: ' + (t or '').strip(),
       t and t.startswith('DISK ERROR') and msg['result']['isError'])
-_, st, _ = call(201, 'GET_STATUS')
+msg, st, _ = call(201, 'GET_STATUS')
+sc = msg and msg['result'].get('structuredContent')
+check('GET_STATUS is a record: %s' % sc,
+      sc and sc.get('state') in ('PLAYING', 'PAUSED') and sc.get('system'))
 check('and leaves it paused', st and 'PAUSED' in st)
 a = frame_count(202)
 call(203, 'RUN_FRAMES', {'count': 10})
@@ -279,6 +287,21 @@ check('and reads it let go of afterwards',
       any('buttons=0x0000' in l for l in logs))
 check('log lines arrive as notifications after setLevel',
       any(n.get('method') == 'notifications/message' for n in notes))
+
+# RESET with paused on is a fresh start that waits for the first step.
+call(244, 'SET_OPTION', {'option': 'pause', 'state': 'off'})
+_, st0, _ = call(248, 'GET_STATUS')
+msg, t, _ = call(245, 'RESET', {'paused': 'on'})
+_, st, _ = call(246, 'GET_STATUS')
+check('RESET paused resets and stays paused: ' + (st or '').strip(),
+      st0 and 'PLAYING' in st0
+      and t and t.strip().startswith('RESET') and not msg['result']['isError']
+      and st and 'PAUSED' in st)
+send({'jsonrpc': '2.0', 'id': 247, 'method': 'prompts/get',
+      'params': {'name': 'play_game', 'arguments': {'game': 'Tetris'}}})
+msg, _ = recv(247)
+check('the play_game prompt names the game',
+      msg and 'Play Tetris' in msg['result']['messages'][0]['content']['text'])
 
 # LOAD_CONTENT with paused on stops the game the frame it has loaded, so
 # nothing runs before the first step: a title screen's demo, say.

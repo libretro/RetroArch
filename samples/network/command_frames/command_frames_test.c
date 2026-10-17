@@ -179,9 +179,9 @@ int main(int argc, char **argv)
 
    /* STATE answers as STATE, not as the command it runs */
    reply[0]=0;
-   CHECK(!command_state(&cmd,"lo") && !strcmp(reply,"STATE ERROR one of save|load"));
+   CHECK(!command_state(&cmd,"lo") && !strcmp(reply,"STATE ERROR one of save|load|checkpoint|rollback"));
    reply[0]=0;
-   CHECK(!command_state(&cmd,"loads 1") && !strcmp(reply,"STATE ERROR one of save|load"));
+   CHECK(!command_state(&cmd,"loads 1") && !strcmp(reply,"STATE ERROR one of save|load|checkpoint|rollback"));
    reply[0]=0;
    CHECK(!command_state(&cmd,"load") && !strcmp(reply,"STATE ERROR a slot number, not nothing"));
    strlcpy(loop->name.savestate,"command_frames_test.state",
@@ -191,6 +191,37 @@ int main(int argc, char **argv)
    for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
    CHECK(!strcmp(reply,"STATE save 1"));
    remove("command_frames_test.state1");
+   /* a checkpoint in memory, and the rollback to it */
+   reply[0]=0;
+   CHECK(command_state(&cmd,"rollback"));
+   for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+   CHECK(!strncmp(reply,"STATE ERROR no checkpoint",25));
+   cmd.error=false;
+   {
+      unsigned at;
+      char want[32];
+      reply[0]=0;
+      CHECK(command_state(&cmd,"checkpoint"));
+      for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE checkpoint"));
+      at=ram7(&cmd);
+      CHECK(command_run_frames(&cmd,"5"));
+      for (i=0;i<5;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+      CHECK(!strcmp(reply,"STATE rollback"));
+      /* the frame counter is the harness core's whole state */
+      reply[0]=0;
+      CHECK(command_run_frames(&cmd,"1"));
+      runloop_iterate();
+      snprintf(want,sizeof(want),"%u",(at + 1) & 0xff);
+      CHECK(ram7(&cmd) == ((at + 1) & 0xff));
+      (void)want;
+   }
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"checkpoint 3") && strstr(reply,"nothing after"));
+   cmd.error=false;
    /* a reply longer than any fixed buffer still answers as the tool */
    {
       char long_path[700];
@@ -822,6 +853,31 @@ int main(int argc, char **argv)
          }
          (void)want;
       }
+      /* a watch of two bytes as one value, high:low */
+      {
+         char want[64];
+         CHECK(command_watch(&cmd,"pos 1006:1007"));
+         now=ram7(&cmd); reply[0]=0;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         snprintf(want,sizeof(want),"RUN_FRAMES 1\npos\t1006:1007\t%u\n",0x600 + ((now + 1) & 0xff));
+         CHECK(!strcmp(reply,want));
+         CHECK(command_watch(&cmd,"pos off"));
+      }
+      /* only the bits a mask names: ram[6] holds 6, 110 in binary */
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 & 0x4 == 4") && !strcmp(reply,"MET 0\nVALUE 4\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 & 1 == 0") && !strcmp(reply,"MET 0\nVALUE 0\n"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & zz == 0") && strstr(reply,"a mask"));
+      cmd.error=false;
+      /* any of several stops ends the list */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 20; stop 1006 == 7; stop 1007 == %u",(now + 2) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      runloop_iterate(); runloop_iterate();
+      CHECK(!strcmp(reply,"STOPPED 2\nSTEP 1\n"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"within the 540 frames"));
       reply[0]=0;
@@ -886,8 +942,8 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(!command_steps(&cmd,"") && strstr(reply,"STEPS ERROR"));
       reply[0]=0;
-      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; run 1")
-            && strstr(reply,"one stop"));
+      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; stop 1007 == 3;"
+            " stop 1007 == 4; stop 1007 == 5; run 1") && strstr(reply,"at most 4 stops"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"press 1 left_x 3") && strstr(reply,"axis"));
       reply[0]=0;

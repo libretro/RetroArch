@@ -67,6 +67,20 @@ static bool act_ping(command_t *cmd, const char *arg)
 #define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
 static bool act_moji(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
+/* the lists completion reads, a status with a comma in the name, and
+ * a read, as the real commands answer */
+#define PLS_TEXT  "Nintendo - Nintendo Entertainment System.lpl\nSega - Mega Drive.lpl\nMORE\n"
+#define PL_TEXT   "0\tSuper Mario Bros.\t/g/smb.nes\t/c/fceumm.so\n1\tThe Legend of Zelda\t/g/z.nes\t/c/fceumm.so\nMORE 2\n"
+#define STAT_TEXT "GET_STATUS PLAYING nes,Mario, Luigi & Co.nes\n"
+#define READ_TEXT "READ_CORE_MEMORY 1000 AA 0F 10\n"
+static bool act_pls(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, PLS_TEXT, sizeof(PLS_TEXT) - 1); return true; }
+static bool act_pl(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, PL_TEXT, sizeof(PL_TEXT) - 1); return true; }
+static bool act_stat(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, STAT_TEXT, sizeof(STAT_TEXT) - 1); return true; }
+static bool act_read(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, READ_TEXT, sizeof(READ_TEXT) - 1); return true; }
 static bool act_wipe(command_t *cmd, const char *arg)
 { (void)cmd; (void)arg; return true; }
 static bool act_fail(command_t *cmd, const char *arg)
@@ -294,6 +308,10 @@ static struct cmd_action_map test_actions[] = {
    { "FAIL",  act_fail,  "No argument", "Fail.",              0, NULL },
    { "BAD",   act_bad,   "No argument", "Reply an error.",    0, NULL },
    { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
+   { "LIST_PLAYLISTS", act_pls, "No argument", "List playlists.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_PLAYLIST", act_pl, "No argument", "List a playlist.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_STATUS", act_stat, "No argument", "Report the status.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
+   { "READ_CORE_MEMORY", act_read, "No argument", "Read bytes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
@@ -630,6 +648,47 @@ static void test_stdio(void)
          !strstr(out, "stray"));
    check("with logging among its capabilities",
          strstr(out, "\"logging\":{}") != NULL);
+   check("and instructions that say how the tools play a game",
+         strstr(out, "\"instructions\":\"Controls a running RetroArch")
+         && strstr(out, "STEPS") && strstr(out, "checkpoint"));
+   check("and prompts and completions among its capabilities",
+         strstr(out, "\"prompts\":{") && strstr(out, "\"completions\":{}"));
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":60,\"method\":\"prompts/list\"}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("the one prompt is play_game, its arguments named",
+         strstr(out, "\"name\":\"play_game\"") && strstr(out, "\"name\":\"playlist\"")
+         && strstr(out, "\"name\":\"game\""));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":61,\"method\":\"prompts/get\","
+         "\"params\":{\"name\":\"play_game\",\"arguments\":{\"game\":\"Super Mario Bros.\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and gives a user message naming the game and the workflow",
+         strstr(out, "\"role\":\"user\"") && strstr(out, "Play Super Mario Bros.")
+         && strstr(out, "WATCH"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":62,\"method\":\"prompts/get\","
+         "\"params\":{\"name\":\"nope\"}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("an unknown prompt is invalid params", strstr(out, "-32602") != NULL);
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":63,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
+         "\"argument\":{\"name\":\"playlist\",\"value\":\"nintendo\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("a playlist completes from the playlists, case aside",
+         strstr(out, "\"values\":[\"Nintendo - Nintendo Entertainment System.lpl\"]")
+         && strstr(out, "\"total\":1"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":64,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
+         "\"argument\":{\"name\":\"game\",\"value\":\"mario\"},"
+         "\"context\":{\"arguments\":{\"playlist\":\"Nintendo - Nintendo Entertainment System.lpl\"}}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and a game from the playlist already chosen, anywhere in its name",
+         strstr(out, "\"values\":[\"Super Mario Bros.\"]"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":65,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
+         "\"argument\":{\"name\":\"goal\",\"value\":\"x\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and an argument with nothing to offer completes to none",
+         strstr(out, "\"values\":[]"));
 
    stdio_send("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
    check("a notification is not answered",
@@ -808,14 +867,14 @@ int main(void)
          n++;
          q = strstr(q + 1, "\"outputSchema\"");
       }
+      const char *rs = rw ? strstr(rw, "\"outputSchema\"") : NULL;
       check("a command answering rows declares an outputSchema",
-            rw && s && s > rw
-            && strstr(s, "\"index\":{\"type\":\"string\"")
-            && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
-            && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, NOW, WAIT, RUN_FRAMES,
-       * PRESS, PRESSU, STEPS and STEP, and none before them */
-      check("only the commands that answer rows declare one", n == 14);
+            rw && rs && strstr(rs, "\"index\":{\"type\":\"string\"")
+            && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
+            && strstr(rs, "\"next\":{\"type\":\"integer\""));
+      /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
+       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STEPS and STEP */
+      check("only the commands that answer rows declare one", n == 16);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1105,6 +1164,15 @@ int main(void)
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
                "\"done\":6,\"step\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("GET_STATUS", NULL), out, sizeof(out), NULL);
+   check("a one-line reply is a record, its last field taking the rest",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"state\":\"PLAYING\","
+               "\"system\":\"nes\",\"content\":\"Mario, Luigi & Co.nes\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READ_CORE_MEMORY", NULL), out, sizeof(out), NULL);
+   check("and a read is its address and its bytes",
+         st == 200 && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA 0F 10\"}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
