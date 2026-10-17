@@ -780,15 +780,16 @@ static const struct cmd_param cmd_params_input[] = {
 static const struct cmd_param cmd_params_watch[] = {
    { "watches", "Labels and system addresses in hexadecimal, as "
       "GET_MEMORY_MAP gives them, in pairs: \"x 86 mode 770\" on a NES, "
-      "\"x 7e0086\" on a SNES. A label already watched is replaced, and "
-      "off for its address stops watching it. 16 at most.",
+      "\"x 7e0086\" on a SNES; \"x 6d:86\" reads two bytes as one value. A "
+      "label already watched is replaced, and off for its address stops "
+      "watching it. 16 at most.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
    { "address", "A system address in hexadecimal, as GET_MEMORY_MAP "
       "gives them; high:low, such as 6d:86, reads two bytes as one "
-      "value.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+      "value, and & 0x40 after it compares only those bits.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
    { "value", "What to compare it with: 0 to 255, or 0 to 65535 for "
@@ -814,8 +815,8 @@ static const struct cmd_param cmd_params_press[] = {
 };
 static const struct cmd_param cmd_params_steps[] = {
    { "steps", "In order, separated by \";\": run <frames>, press <player> "
-      "<controls> <frames>, until <condition> as RUN_UNTIL's, and one stop "
-      "<condition> that ends the list where it holds: \"until 86 >= 200; "
+      "<controls> <frames>, until <condition> as RUN_UNTIL's, and up to four "
+      "stop <condition> that end the list where one holds: \"until 86 >= 200; "
       "press 1 a 20; until 1d == 0; stop e == 11\".",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
@@ -1049,6 +1050,7 @@ static const struct cmd_trailer cmd_trailers_steps[] = {
    { "DONE", NULL, "done", "Frames run, every step done.", true },
    { "WAITING", NULL, "waiting", "Frames run before time ran out.", true },
    { "STOPPED", NULL, "stopped", "Frames run when stop held.", true },
+   { "STOP", NULL, "stop", "Which stop held, from 1." },
    { "STEP", NULL, "step", "The step it ended on, from 1." },
    { NULL }
 };
@@ -1139,7 +1141,7 @@ static const struct cmd_action_map action_map[] = {
    { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "CHECKPOINT_STATE", command_checkpoint_save, "No argument", "Keep a state in memory, for ROLLBACK_STATE, until the content closes.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "ROLLBACK_STATE", command_checkpoint_rollback, "No argument", "Restore the state CHECKPOINT_STATE kept.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
-   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it; or checkpoint one in memory and roll back to it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
+   { "STATE",         command_state,         "<save|load|checkpoint|rollback> [slot]", "Save a state to a slot, or load the one in it; or checkpoint one in memory and roll back to it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_frame },
    { "REPLAY",        command_replay,        "<play|seek|record|halt|checkpoint> [slot|frame]", "Play, seek, record, halt or checkpoint a replay.", CMD_INFO_DESTRUCTIVE, cmd_params_replay },

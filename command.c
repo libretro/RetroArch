@@ -1589,15 +1589,25 @@ static bool command_checkpoint_start(struct command_reply *r)
    if (r->state_loaded)
    {
       bool ramped;
+#ifdef HAVE_BSV_MOVIE
+      input_driver_state_t *input_st = input_state_get_ptr();
+#endif
       if (!command_checkpoint.data)
          error = "no checkpoint to roll back to; STATE checkpoint keeps one";
+#ifdef HAVE_BSV_MOVIE
+      /* as a load from a slot is refused: the recording would go on
+       * from a state it never saw */
+      else if (BSV_MOVIE_IS_RECORDING())
+         error = "a replay is recording, which a rollback would break";
+#endif
       else
       {
-         info.data_const = command_checkpoint.data;
-         info.data       = NULL;
-         info.size       = command_checkpoint.size;
-         ramped          = audio_driver_jump_fade_begin();
-         if (!core_unserialize(&info))
+         /* through the loader of states without RetroArch's wrapper,
+          * which resets the achievements and stops a replay playing,
+          * as a load does */
+         ramped = audio_driver_jump_fade_begin();
+         if (!content_deserialize_state(command_checkpoint.data,
+                  command_checkpoint.size))
             error = "the core could not restore the checkpoint";
          audio_driver_jump_fade_end(ramped);
       }
@@ -2751,8 +2761,12 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
       while (*m == ' ')
          m++;
       errno   = 0;
-      if (m[0] == '0' && (m[1] == 'x' || m[1] == 'X'))
+      if (     m[0] == '0' && (m[1] == 'x' || m[1] == 'X')
+            && ((m[2] >= '0' && m[2] <= '9') || (m[2] >= 'a' && m[2] <= 'f')
+               || (m[2] >= 'A' && m[2] <= 'F')))
          num  = strtoul(m + 2, end, 16);
+      else if (m[0] == '0' && (m[1] == 'x' || m[1] == 'X'))
+         *end = (char*)m;
       else if (*m >= '0' && *m <= '9')
          num  = strtoul(m, end, 10);
       else
@@ -2917,6 +2931,7 @@ static struct
    uint16_t            held;    /* the buttons the job let go of, by bit */
    uint8_t             answer;  /* enum cmd_job_answer */
    unsigned            nstops;
+   unsigned            stopped; /* which stop held, from 1 */
    /* a frame with the buttons let go between two presses of the same
     * one, so the game sees two taps rather than one long press */
    bool                gap;
@@ -2970,8 +2985,9 @@ static void command_run_frames_answer(const char *first, const char *last,
  * job's kind of answer gives it. */
 static void command_run_frames_end(const char *how)
 {
-   char first[48];
-   char last[48];
+   char   first[48];
+   char   last[48];
+   size_t _len;
    switch (command_run_frames_st.answer)
    {
       case CMD_ANSWER_UNTIL:
@@ -2984,8 +3000,13 @@ static void command_run_frames_end(const char *how)
       case CMD_ANSWER_STEPS:
          snprintf(first, sizeof(first), "%s %u\n", how,
                command_run_frames_st.ran);
-         /* the step it ended on, from 1: the last when all ran */
-         snprintf(last, sizeof(last), "STEP %u\n",
+         /* which stop held, where one did, then the step it ended on,
+          * from 1: the last when all ran */
+         _len = 0;
+         if (string_is_equal(how, "STOPPED"))
+            _len = (size_t)snprintf(last, sizeof(last), "STOP %u\n",
+                  command_run_frames_st.stopped);
+         snprintf(last + _len, sizeof(last) - _len, "STEP %u\n",
                command_run_frames_st.cur < command_run_frames_st.count
                ? command_run_frames_st.cur + 1 : command_run_frames_st.count);
          command_run_frames_answer(first, last, false);
@@ -3125,6 +3146,7 @@ void command_run_frames_tick(void)
       }
       if (command_cond_met(&command_run_frames_st.stops[i], now))
       {
+         command_run_frames_st.stopped = i + 1;
          command_run_frames_end("STOPPED");
          return;
       }
@@ -4468,6 +4490,13 @@ bool command_help(command_t *cmd, const char* arg)
    }
    for (i = 0; i < ARRAY_SIZE(map); i++)
    {
+      size_t j;
+      /* RESET is an action too, whose line says it */
+      for (j = 0; j < ARRAY_SIZE(action_map); j++)
+         if (string_is_equal(map[i].str, action_map[j].str))
+            break;
+      if (j < ARRAY_SIZE(action_map))
+         continue;
       if (arg && *arg && !string_is_equal(arg, map[i].str))
          continue;
       found = true;

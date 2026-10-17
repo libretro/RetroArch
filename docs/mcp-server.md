@@ -92,7 +92,9 @@ from the playlist already chosen - matching anywhere in the name, case
 aside, so `mario` finds `Super Mario Bros.`. Both lists are read on a
 task, as `LIST_PLAYLISTS` reads them, and answered when it is through;
 a playlist that cannot be read is answered with an error rather than
-with no matches.
+with no matches. A game is looked for in the playlist's first 200
+entries, and `hasMore` says when there were more; a prompt or resource
+there is none of is invalid params.
 
 Every tool also has a `title` for people, made from its name: `Run
 frames` for `RUN_FRAMES`.
@@ -195,6 +197,7 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
+| `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
 | `STEP 3` | `step: 3` | the step it ended on, from 1 |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
@@ -514,7 +517,8 @@ the reason:
   keeps one state in memory, not in a slot's file, and `STATE rollback`
   restores it: the retry after a mistake, in one request where
   replaying the level took a dozen. The checkpoint lives as long as the
-  content does.
+  content does; a rollback is refused while a replay records, as a load
+  from a slot is.
 - `RESET`: once the content is reset; with `paused` on, paused after
   it, as `LOAD_CONTENT` is.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay

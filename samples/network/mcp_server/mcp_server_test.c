@@ -248,10 +248,17 @@ static bool act_press(command_t *cmd, const char *arg)
 /* a PRESS that waited after it, and a STEPS list */
 #define PRESSU_TEXT "MET 5\nVALUE 0\n"
 #define STEPS_TEXT  "DONE 6\nx\t86\t40\nSTEP 3\n"
+#define STOPS_TEXT  "STOPPED 4\nx\t86\t40\nSTOP 2\nSTEP 3\n"
 static bool act_pressu(command_t *cmd, const char *arg)
 {
    (void)arg;
    cmd->replier(cmd, PRESSU_TEXT, sizeof(PRESSU_TEXT) - 1);
+   return true;
+}
+static bool act_stops(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, STOPS_TEXT, sizeof(STOPS_TEXT) - 1);
    return true;
 }
 static bool act_steps(command_t *cmd, const char *arg)
@@ -337,6 +344,7 @@ static struct cmd_action_map test_actions[] = {
    { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
    { "PRESS", act_press, "No argument", "Answer as PRESS does.", 0, NULL, &cmd_rows_press },
    { "PRESSU", act_pressu, "No argument", "Answer as PRESS with until does.", 0, NULL, &cmd_rows_press },
+   { "STOPS", act_stops, "No argument", "Answer as STEPS does when stopped.", 0, NULL, &cmd_rows_steps },
    { "STEPS", act_steps, "No argument", "Answer as STEPS does.", 0, NULL, &cmd_rows_steps },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
@@ -692,13 +700,35 @@ static void test_stdio(void)
          "\"context\":{\"arguments\":{\"playlist\":\"Nintendo - Nintendo Entertainment System.lpl\"}}}}\n");
    stdio_read(cmd, out, sizeof(out));
    check("and a game from the playlist already chosen, anywhere in its name",
-         strstr(out, "\"values\":[\"Super Mario Bros.\"]"));
+         strstr(out, "\"values\":[\"Super Mario Bros.\"]")
+         && strstr(out, "\"hasMore\":true"));
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":65,\"method\":\"completion/complete\","
          "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
          "\"argument\":{\"name\":\"goal\",\"value\":\"x\"}}}\n");
    stdio_read(cmd, out, sizeof(out));
    check("and an argument with nothing to offer completes to none",
          strstr(out, "\"values\":[]"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":68,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"nope\"},"
+         "\"argument\":{\"name\":\"game\",\"value\":\"x\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("a prompt there is none of is invalid params",
+         strstr(out, "-32602") && strstr(out, "Unknown prompt"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":69,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/resource\",\"uri\":\"x\"},"
+         "\"argument\":{\"name\":\"a\",\"value\":\"x\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and so is a resource, as there are none",
+         strstr(out, "-32602") != NULL);
+   /* the newest revision's result shape, as every other result has it */
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":70,\"method\":\"completion/complete\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"},"
+         "\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
+         "\"argument\":{\"name\":\"playlist\",\"value\":\"sega\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("a completion in the newest revision ends as its results do",
+         strstr(out, "\"values\":[\"Sega - Mega Drive.lpl\"]")
+         && strstr(out, "\"resultType\":\"complete\""));
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":66,\"method\":\"completion/complete\","
          "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
          "\"argument\":{\"name\":\"game\",\"value\":\"x\"},"
@@ -908,8 +938,9 @@ int main(void)
             && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
-       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STEPS and STEP */
-      check("only the commands that answer rows declare one", n == 16);
+       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS
+       * and STEP */
+      check("only the commands that answer rows declare one", n == 17);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1199,6 +1230,10 @@ int main(void)
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
                "\"done\":6,\"step\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("STOPS", NULL), out, sizeof(out), NULL);
+   check("a STEPS that stopped says which stop, the line before the last",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"stopped\":4,\"stop\":2,\"step\":3}"));
    st = post(cmd, PORT_OPEN, NULL, call("GET_STATUS", NULL), out, sizeof(out), NULL);
    check("a one-line reply is a record, its last field taking the rest",
          st == 200 && json_valid(body_of(out))

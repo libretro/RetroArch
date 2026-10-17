@@ -219,6 +219,26 @@ int main(int argc, char **argv)
       CHECK(ram7(&cmd) == ((at + 1) & 0xff));
       (void)want;
    }
+#ifdef HAVE_BSV_MOVIE
+   /* a recording would go on from a state it never saw: refused, as a
+    * load from a slot is */
+   reply[0]=0;
+   CHECK(command_replay(&cmd,"record"));
+   for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+   if (input_state_get_ptr()->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+   {
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!strncmp(reply,"STATE ERROR a replay is recording",33));
+      reply[0]=0;
+      command_replay(&cmd,"halt");
+      for (i=0;i<4;i++) { runloop_iterate(); task_queue_check(); }
+   }
+   else
+      printf("replay recording did not start here: rollback-while-recording not checked\n");
+   cmd.error=false;
+#endif
    reply[0]=0;
    CHECK(!command_state(&cmd,"checkpoint 3") && strstr(reply,"nothing after"));
    cmd.error=false;
@@ -250,6 +270,16 @@ int main(int argc, char **argv)
    /* a command that answers nothing of its own answers as the tool */
    reply[0]=0;
    CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
+   /* RESET is a hotkey and an action: HELP describes it once */
+   {
+      char *nl;
+      unsigned lines = 0;
+      reply[0]=0;
+      CHECK(command_help(&cmd,"RESET"));
+      for (nl = reply; (nl = strchr(nl, '\n')); nl++)
+         lines++;
+      CHECK(lines == 1 && strstr(reply,"RESET"));
+   }
    /* CORE stands for LOAD_CORE, START_CORE and UNLOAD_CORE */
    reply[0]=0;
    CHECK(!command_core(&cmd,"fly") && !strcmp(reply,"CORE ERROR one of load|start|unload"));
@@ -838,7 +868,7 @@ int main(int argc, char **argv)
          snprintf(req,sizeof(req),"run 10; stop 1007 == %u",(now + 3) & 0xff);
          CHECK(command_steps(&cmd,req));
          for (i=0;i<3;i++) runloop_iterate();
-         CHECK(!strcmp(reply,"STOPPED 3\nSTEP 1\n")
+         CHECK(!strcmp(reply,"STOPPED 3\nSTOP 1\nSTEP 1\n")
                && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
          /* what already holds runs no frame */
          reply[0]=0;
@@ -871,13 +901,18 @@ int main(int argc, char **argv)
       CHECK(command_run_until(&cmd,"1006 & 1 == 0") && !strcmp(reply,"MET 0\nVALUE 0\n"));
       reply[0]=0;
       CHECK(!command_run_until(&cmd,"1006 & zz == 0") && strstr(reply,"a mask"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & 0x 4 == 4") && strstr(reply,"a mask"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 & 0x+4 == 4") && strstr(reply,"a mask"));
       cmd.error=false;
       /* any of several stops ends the list */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 20; stop 1006 == 7; stop 1007 == %u",(now + 2) & 0xff);
       CHECK(command_steps(&cmd,req));
       runloop_iterate(); runloop_iterate();
-      CHECK(!strcmp(reply,"STOPPED 2\nSTEP 1\n"));
+      /* and says which */
+      CHECK(!strcmp(reply,"STOPPED 2\nSTOP 2\nSTEP 1\n"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"within the 540 frames"));
       reply[0]=0;

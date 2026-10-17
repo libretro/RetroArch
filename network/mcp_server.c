@@ -1107,11 +1107,13 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
 {
    const char *p        = text;
    const char *end      = text + len;
-   /* A trailer is the reply's first line or its last, so a reply has at
-    * most two: which they are, and the number each carried. */
-   int         found[2];
-   const char *num[2];
-   size_t      num_len[2];
+   /* A trailer is the reply's first line, its last, or the one before
+    * the last - STEPS ends on which stop held and then on which step -
+    * so a reply has at most three: which they are, and the number each
+    * carried. */
+   int         found[3];
+   const char *num[3];
+   size_t      num_len[3];
    size_t      name_len = strlen(name);
    size_t      ncol     = 0;
    size_t      ntr      = 0;
@@ -1126,7 +1128,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       ncol++;
    while (rows->trailers && rows->trailers[ntr].word)
       ntr++;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 3; i++)
    {
       found[i]   = -1;
       num[i]     = NULL;
@@ -1151,9 +1153,14 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          continue;
       /* one of the command's trailers rather than a row */
       {
-         size_t slot = line == text ? 0 : 1;
-         int    t    = mcp_trailer(rows->trailers, ntr, line, stop,
-               line == text, p >= end, &num[slot], &num_len[slot]);
+         const char *after = p < end
+            ? (const char*)memchr(p, '\n', (size_t)(end - p)) : NULL;
+         bool        last  = p >= end;
+         bool        next_last = !last && (!after || after + 1 >= end);
+         size_t      slot  = line == text ? 0 : last ? 1 : 2;
+         int         t     = mcp_trailer(rows->trailers, ntr, line, stop,
+               line == text, line == text ? last : last || next_last,
+               &num[slot], &num_len[slot]);
          if (t >= 0)
          {
             found[slot] = t;
@@ -1192,6 +1199,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       size_t slot;
       if      (found[0] >= 0 && (size_t)found[0] == i) slot = 0;
       else if (found[1] >= 0 && (size_t)found[1] == i) slot = 1;
+      else if (found[2] >= 0 && (size_t)found[2] == i) slot = 2;
       else                                             continue;
       if (rows->trailers[i].flag)
       {
@@ -1328,6 +1336,7 @@ static void mcp_completion_result(struct mcp_conn *c, const char *id,
    const char    *end   = text + len;
    unsigned       total = 0;
    unsigned       sent  = 0;
+   bool           more  = false; /* a page of the list, with more after it */
    rjsonwriter_t *w     = mcp_envelope(id);
    size_t         plen  = strlen(c->complete_prefix);
    c->completing        = false;
@@ -1357,6 +1366,7 @@ static void mcp_completion_result(struct mcp_conn *c, const char *id,
    {
       const char *eol   = (const char*)memchr(p, '\n', (size_t)(end - p));
       const char *stop  = eol ? eol : end;
+      const char *line  = p;
       const char *f     = p;
       const char *fend;
       unsigned    k;
@@ -1368,6 +1378,10 @@ static void mcp_completion_result(struct mcp_conn *c, const char *id,
          f = tab ? tab + 1 : stop;
       }
       p = eol ? eol + 1 : end;
+      /* the list went on past this page */
+      if (     stop - line >= 4 && !strncmp(line, "MORE", 4)
+            && (stop - line == 4 || line[4] == ' '))
+         more = true;
       /* MORE, and the command's own "none" or "empty", are no values */
       if (     f >= stop
             || (!c->complete_col
@@ -1404,9 +1418,25 @@ static void mcp_completion_result(struct mcp_conn *c, const char *id,
          MCP_RAW(w, ",");
       rjsonwriter_add_string_len(w, f, (int)flen);
    }
-   rjsonwriter_rawf(w, "],\"total\":%u,\"hasMore\":%s}}}", total,
-         total > sent ? "true" : "false");
+   rjsonwriter_rawf(w, "],\"total\":%u,\"hasMore\":%s}", total,
+         total > sent || more ? "true" : "false");
+   mcp_result_end(w, c->modern);
    mcp_respond_writer(c, w);
+}
+
+/* A request still waiting when no answer will come - it took too long,
+ * or the server is going: a tool call as a failed result, a completion
+ * as an error. */
+static void mcp_owed_failure(struct mcp_conn *c, const char *msg,
+      size_t len)
+{
+   if (c->completing)
+   {
+      c->completing = false;
+      mcp_error(c, c->id, MCP_ERR_INTERNAL, msg, false);
+   }
+   else
+      mcp_tool_result(c, c->id, c->modern, NULL, msg, len, true);
 }
 
 /* ------------------------------------------------------------------ */
@@ -2040,8 +2070,15 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       char        line[300];
       bool        ok;
       *line = '\0';
-      if (     string_is_equal(r.ref_type, "ref/prompt")
-            && string_is_equal(r.ref_name, MCP_PROMPT_NAME))
+      /* the one prompt: any other, and any resource, there is none of */
+      if (     !string_is_equal(r.ref_type, "ref/prompt")
+            || !string_is_equal(r.ref_name, MCP_PROMPT_NAME))
+      {
+         mcp_error(c, r.id, MCP_ERR_PARAMS, string_is_equal(r.ref_type,
+                  "ref/prompt") ? "Unknown prompt." : "No such reference.",
+               false);
+         goto end;
+      }
       {
          if (string_is_equal(r.arg_name, "playlist"))
          {
@@ -2057,6 +2094,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       }
       strlcpy(c->complete_prefix, r.arg_value, sizeof(c->complete_prefix));
       strlcpy(c->id, r.id, sizeof(c->id));
+      c->modern     = modern;
       c->completing = true;
       if (!name)
       {
@@ -2377,8 +2415,7 @@ static void mcp_stdio_poll(mcp_server_t *mcp, command_t *cmd,
    if (c->state == MCP_CONN_WAITING)
    {
       if (now - c->since > MCP_TIMEOUT_US)
-         mcp_tool_result(c, c->id, c->modern, NULL,
-               "The command did not answer in time.", 35, true);
+         mcp_owed_failure(c, "The command did not answer in time.", 35);
       return;
    }
 
@@ -2560,8 +2597,7 @@ static void mcp_poll(command_t *cmd)
       if (c->state != MCP_CONN_FREE && now - c->since > MCP_TIMEOUT_US)
       {
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern, NULL,
-                  "The command did not answer in time.", 35, true);
+            mcp_owed_failure(c, "The command did not answer in time.", 35);
          else
             mcp_conn_close(c);
       }
@@ -2581,8 +2617,7 @@ static void mcp_destroy(command_t *cmd)
                "command answered.";
          struct mcp_conn *c = &mcp->conns[i];
          if (c->state == MCP_CONN_WAITING)
-            mcp_tool_result(c, c->id, c->modern, NULL, gone,
-                  sizeof(gone) - 1, true);
+            mcp_owed_failure(c, gone, sizeof(gone) - 1);
          if (c->stdio)
          {
             mcp_conn_close(c);
