@@ -36,3 +36,7 @@ GLCore capability tests exercise the shipping publisher and getter while another
 thread changes FP16/PQ framebuffer state. A scRGB texture is accepted only when
 the selected UI target preserves FP16 highlights. No render-thread handles or
 mutable framebuffer flags are read by the capability consumer.
+
+D3D11/D3D12 fixtures cover published HDR texture support with HDR compiled in
+and out, planar failure/feature-level admission, and concurrent renderer flag
+changes. D3D11 publishes its lazy planar initialization failure atomically.

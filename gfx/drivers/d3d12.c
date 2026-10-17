@@ -880,6 +880,7 @@ typedef struct
    D3D12Debug debugController;
 #endif
    uint32_t flags;
+   retro_atomic_int_t texture_hdr_enabled;
    /* settings->uints.video_swapchain_bit_depth, seeded at init and
     * refreshed in apply_state_changes (a blocking command, so the
     * settings read inside it cannot race main): the frame's resize
@@ -7613,6 +7614,10 @@ static bool d3d12_views_allowed(const d3d12_video_t *d3d12)
 
 static void d3d12_views_publish(d3d12_video_t *d3d12)
 {
+#ifdef HAVE_DXGI_HDR
+   retro_atomic_store_release_int(&d3d12->texture_hdr_enabled,
+         (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) != 0);
+#endif
    retro_atomic_store_release_int(&d3d12->views.allowed,
          d3d12_views_allowed(d3d12) ? 1 : 0);
 }
@@ -12030,7 +12035,7 @@ static bool d3d12_gfx_supports_texture_format(void* data,
     * output is HDR; in SDR there is no linear light to show it in. */
    if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
       return d3d12 && d3d12->device
-         && (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE);
+         && retro_atomic_load_acquire_int(&d3d12->texture_hdr_enabled);
 #endif
    if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;

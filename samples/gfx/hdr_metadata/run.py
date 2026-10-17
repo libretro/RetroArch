@@ -82,3 +82,28 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
                     str(root / "libretro-common/rthreads/rthreads.c"),
                     "-o", str(target)] + libs, check=True)
     subprocess.run([str(target)], check=True)
+    for driver in (11, 12):
+        code = (root / ("gfx/drivers/d3d%d.c" % driver)).read_text(encoding="utf-8")
+        extracted = source_block(code, "static bool d3d%d_views_allowed(" % driver)
+        publisher = "static void d3d%d_views_publish(" % driver
+        definition = code.index(publisher, code.index(publisher) + len(publisher))
+        extracted += source_block(code[definition:], publisher)
+        extracted += source_block(code, "static DXGI_FORMAT d3d%d_dxgi_from_gpu_format(" % driver)
+        extracted += source_block(code, "static bool d3d%d_gfx_supports_texture_format(" % driver)
+        (directory / "d3d.inc").write_text(extracted, encoding="utf-8")
+        for hdr in (False, True):
+            target = directory / ("d3d%d-%s" % (driver, "hdr" if hdr else "sdr"))
+            if os.name == "nt":
+                target = target.with_suffix(".exe")
+            defines = ["-DTEST_D3D=%d" % driver]
+            if hdr:
+                defines += ["-DHAVE_DXGI_HDR"]
+            subprocess.run(cc + ["-std=gnu89", "-O1", "-g1", "-Wall", "-Wextra",
+                                "-Werror=declaration-after-statement",
+                                "-Werror=implicit-function-declaration", "-DHAVE_THREADS",
+                                "-I" + str(root / "libretro-common/include"),
+                                "-I" + str(directory)] + defines + flags +
+                           [str(Path(__file__).with_name("d3d_caps_test.c")),
+                            str(root / "libretro-common/rthreads/rthreads.c"),
+                            "-o", str(target)] + libs, check=True)
+            subprocess.run([str(target)], check=True)
