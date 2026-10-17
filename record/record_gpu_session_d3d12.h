@@ -27,7 +27,9 @@ int record_gpu_session_d3d12_audio(record_gpu_session_d3d12_t *session,
       const int16_t *samples, size_t frames);
 /* Each producer closes from its own thread, after its last push returns.
  * Video pushes use the borrowed capture. No more pushes after close, even
- * when cancelled. Disabled audio starts closed. No waits or allocation. */
+ * when cancelled. A worker may reconfirm video closure after that producer
+ * has stopped and closed capture. Disabled audio starts closed.
+ * No waits or allocation. */
 bool record_gpu_session_d3d12_video_finish(record_gpu_session_d3d12_t *session);
 bool record_gpu_session_d3d12_audio_finish(record_gpu_session_d3d12_t *session);
 /* Controller request only; does not close either producer on its behalf. */

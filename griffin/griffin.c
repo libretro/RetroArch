@@ -660,6 +660,7 @@ VIDEO DRIVER
 #ifdef HAVE_RAC3
 #include "../record/record_gpu_output_d3d12.c"
 #include "../record/record_gpu_session_d3d12.c"
+#include "../record/record_gpu_dispatch_d3d12.c"
 #endif
 #include "../gfx/drivers/d3d12.c"
 #endif

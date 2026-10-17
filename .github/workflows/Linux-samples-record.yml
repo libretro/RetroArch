@@ -179,6 +179,17 @@ jobs:
           make clean && make -j$(nproc) check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make clean
 
+      - name: GPU recording dispatcher (ASan + UBSan, TSan, mingw-w64)
+        working-directory: samples/record/gpu_dispatch
+        run: |
+          set -eu
+          make clean && make check SANITIZER=address,undefined
+          make clean && make dispatch_test session_integration SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./dispatch_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./session_integration
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true
