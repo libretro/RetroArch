@@ -137,7 +137,8 @@ enum d3d12_video_flags
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
-   D3D12_ST_FLAG_SOURCE_HDR10          = (1 << 17)
+   D3D12_ST_FLAG_SOURCE_HDR10          = (1 << 17),
+   D3D12_ST_FLAG_SOURCE_FP16           = (1 << 18)
 };
 
 typedef enum
@@ -2063,7 +2064,10 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       D3D12_RANGE range;
       range.Begin           = 0;
       range.End             = 0;
-      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&sprite);
+      sprite = NULL;
+      if (FAILED(D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&sprite))
+            || !sprite)
+         return;
       sprite += d3d12->sprites.offset;
 
       if (vertex_count == 1)
@@ -4241,6 +4245,10 @@ static bool d3d12_shader_load_step(void *data,
             && d3d12->filter.pass[d3d12->filter.shader_preset->passes - 1].semantics.explicit_format)
          ? last_fmt : SLANG_FORMAT_UNKNOWN;
 
+      if ((d3d12->flags & D3D12_ST_FLAG_SOURCE_FP16)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+
       /* A core supplying PQ has the same effect as a final shader pass that
        * emits PQ: the samples must not be encoded again. */
       if (     (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
@@ -4521,6 +4529,10 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          (     d3d12->filter.shader_preset && d3d12->filter.shader_preset->passes
             && d3d12->filter.pass[d3d12->filter.shader_preset->passes - 1].semantics.explicit_format)
          ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
+      if ((d3d12->flags & D3D12_ST_FLAG_SOURCE_FP16)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
       /* A core supplying PQ has the same effect as a final shader pass that
        * emits PQ: the samples must not be encoded again. */
@@ -6331,7 +6343,13 @@ static void *d3d12_gfx_init(const video_info_t* video)
    else
       d3d12->flags             &= ~D3D12_ST_FLAG_KEEP_ASPECT;
 
-   d3d12->format                = video->source_10bit
+   if (video->source_fp16
+         && (!(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            || d3d12->chain.bit_depth != DXGI_SWAPCHAIN_BIT_DEPTH_16))
+      goto error;
+
+   d3d12->format                = video->source_fp16
+      ? DXGI_FORMAT_R16G16B16A16_FLOAT : video->source_10bit
       ? DXGI_FORMAT_R10G10B10A2_UNORM
       : ((video->rgb32)
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
@@ -6345,6 +6363,10 @@ static void *d3d12_gfx_init(const video_info_t* video)
       d3d12->flags             |=  D3D12_ST_FLAG_SOURCE_HDR10;
    else
       d3d12->flags             &= ~D3D12_ST_FLAG_SOURCE_HDR10;
+   if (video->source_fp16)
+      d3d12->flags |= D3D12_ST_FLAG_SOURCE_FP16;
+   else
+      d3d12->flags &= ~D3D12_ST_FLAG_SOURCE_FP16;
 
    d3d12->filter.history[0].desc.Format = d3d12->format;
    d3d12->filter.history[0].desc.Width  = 4;
@@ -7024,6 +7046,13 @@ static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
    }
 }
 
+static unsigned d3d12_frame_bpp(DXGI_FORMAT format)
+{
+   if (format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      return 8;
+   return format == DXGI_FORMAT_B5G6R5_UNORM ? 2 : 4;
+}
+
 /* Where a pushed frame lies in the lent framebuffers.
  *
  * True, with the buffer in *slot and the box to copy, when @frame at
@@ -7054,7 +7083,7 @@ static bool d3d12_sw_fb_window(d3d12_video_t *d3d12,
    if (i == D3D12_SW_FB_SLOTS || pitch != row_pitch)
       return false;
    *slot     = i;
-   bpp       = (d3d12->sw_fb.format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+   bpp       = d3d12_frame_bpp(d3d12->sw_fb.format);
    off       = (size_t)(p - base);
    row       = off % row_pitch;
    if (row % bpp)
@@ -7172,7 +7201,7 @@ static bool d3d12_frame_mem_window(d3d12_video_t *d3d12,
 {
    unsigned i;
    uintptr_t p   = (uintptr_t)frame;
-   unsigned bpp  = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+   unsigned bpp  = d3d12_frame_bpp(d3d12->format);
    UINT64 rows;
    size_t off;
 
@@ -9156,9 +9185,10 @@ recording_resize_deferred:;
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
-               bool emits_hdr16 = d3d12->filter.shader_preset
+               bool emits_hdr16 = (d3d12->flags & D3D12_ST_FLAG_SOURCE_FP16)
+                  || (d3d12->filter.shader_preset
                   && d3d12->filter.shader_preset->passes
-                  && (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT);
+                  && (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT));
                d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
                d3d12->hdr.ubo_values.hdr10            = 0.0f;
                /* Shader already outputs scRGB: passthrough; SDR: convert */
@@ -9396,8 +9426,10 @@ recording_resize_deferred:;
              * A2B10G10R10 (PQ) → hdr_mode 3 (PQ→scRGB)
              * R8G8B8A8 (SDR)   → hdr_mode 2 (sRGB→scRGB) */
             d3d12->hdr.ubo_values.hdr_mode         =
-               (back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM)
-               ? 3 : 2;
+               ((d3d12->flags & D3D12_ST_FLAG_SOURCE_FP16)
+                  && back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+               ? 0 : ((back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+                  ? 3 : 2);
          }
          else /* HDR10 — first pass already PQ-encoded, just passthrough */
          {
@@ -9406,19 +9438,21 @@ recording_resize_deferred:;
             d3d12->hdr.ubo_values.hdr_mode         = 0;
          }
 
+         /* The game draw did not use the HDR UBO on this path. The UI
+          * composite uses ubo_post; sharing it rewrites this queued draw. */
          {
             dxgi_hdr_uniform_t* mapped_ubo;
             D3D12_RANGE read_range;
             read_range.Begin            = 0;
             read_range.End              = 0;
-            D3D12Map(d3d12->hdr.ubo_post, 0, &read_range, (void**)&mapped_ubo);
+            D3D12Map(d3d12->hdr.ubo, 0, &read_range, (void**)&mapped_ubo);
             *mapped_ubo = d3d12->hdr.ubo_values;
-            D3D12Unmap(d3d12->hdr.ubo_post, 0, NULL);
+            D3D12Unmap(d3d12->hdr.ubo, 0, NULL);
          }
 
          cmd->lpVtbl->SetGraphicsRootConstantBufferView(
                cmd, ROOT_ID_UBO,
-               d3d12->hdr.ubo_post_view.BufferLocation);
+               d3d12->hdr.ubo_view.BufferLocation);
 
          d3d12->hdr.ubo_values.scanlines           = prev_iscanlines;
          d3d12->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
@@ -11941,7 +11975,7 @@ static bool d3d12_get_current_software_framebuffer(
    UINT64         done;
    unsigned       slot, k;
 
-   if (!d3d12 || !fb)
+   if (!d3d12 || !fb || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
       return false;
 
    /* Ensure the lent buffers exist and are sized for the requested
@@ -11959,7 +11993,7 @@ static bool d3d12_get_current_software_framebuffer(
     * back to its own buffer and d3d12_update_texture handles the
     * pitch conversion efficiently via dxgi_copy. */
    {
-      int bpp         = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+      int bpp         = d3d12_frame_bpp(d3d12->format);
       int tight_pitch = (int)fb->width * bpp;
       if (tight_pitch != (int)d3d12->sw_fb.layout.Footprint.RowPitch)
          return false;
@@ -11983,9 +12017,10 @@ static bool d3d12_get_current_software_framebuffer(
    fb->data         = (uint8_t *)d3d12->sw_fb.mapped[slot]
                     + d3d12->sw_fb.layout.Offset;
    fb->pitch        = d3d12->sw_fb.layout.Footprint.RowPitch;
-   fb->format       = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM)
-      ? RETRO_PIXEL_FORMAT_XRGB8888
-      : RETRO_PIXEL_FORMAT_RGB565;
+   fb->format       = (d3d12->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F
+      : ((d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM)
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
    /* The buffers are host-cached (WRITE_BACK).  Report this to the
     * core so it can use them for read-modify-write patterns without
     * falling back to its own staging buffer. */
@@ -12343,7 +12378,8 @@ static bool d3d12_set_frame_format(void *data, bool rgb32,
    (void)input_scale;
    if (     !d3d12
          || (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE)
-         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM
+         || d3d12->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
       return false;
    d3d12->format = rgb32
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;

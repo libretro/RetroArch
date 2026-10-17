@@ -131,7 +131,8 @@ enum d3d11_state_flags
    D3D11_ST_FLAG_UI_WIDE             = (1 << 19),
    /* A GPU screenshot waits for this frame's back buffer: the frame
     * copies it into the recording ring before Present. */
-   D3D11_ST_FLAG_READBACK_PENDING    = (1 << 20)
+   D3D11_ST_FLAG_READBACK_PENDING    = (1 << 20),
+   D3D11_ST_FLAG_SOURCE_FP16           = (1 << 21)
 };
 
 enum d3d11_feature_level_hint
@@ -3287,6 +3288,10 @@ static bool d3d11_shader_load_step(void *data,
             && d3d11->chain.pass[d3d11->chain.shader_preset->passes - 1].semantics.explicit_format)
          ? last_fmt : SLANG_FORMAT_UNKNOWN;
 
+      if ((d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+
       /* A core supplying PQ has the same effect as a final shader pass
        * that emits PQ: the samples must not be encoded again. */
       if (     (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
@@ -3598,6 +3603,10 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          (     d3d11->chain.shader_preset && d3d11->chain.shader_preset->passes
             && d3d11->chain.pass[d3d11->chain.shader_preset->passes - 1].semantics.explicit_format)
          ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
+      if ((d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
       if (menu_hdr_mode == 2) /* scRGB */
       {
@@ -4333,8 +4342,18 @@ static void *d3d11_gfx_init(const video_info_t* video)
       d3d11->flags       |=  D3D11_ST_FLAG_SOURCE_HDR10;
    else
       d3d11->flags       &= ~D3D11_ST_FLAG_SOURCE_HDR10;
+   if (video->source_fp16)
+      d3d11->flags |= D3D11_ST_FLAG_SOURCE_FP16;
+   else
+      d3d11->flags &= ~D3D11_ST_FLAG_SOURCE_FP16;
 
-   d3d11->format          = video->source_10bit
+   if (video->source_fp16
+         && (!(d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+            || d3d11->chain_bit_depth != DXGI_SWAPCHAIN_BIT_DEPTH_16))
+      goto error;
+
+   d3d11->format          = video->source_fp16
+      ? DXGI_FORMAT_R16G16B16A16_FLOAT : video->source_10bit
          ? DXGI_FORMAT_R10G10B10A2_UNORM
          : ((video->rgb32)
          ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
@@ -7097,9 +7116,10 @@ static bool d3d11_gfx_frame_body(
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
-               bool emits_hdr16 = d3d11->chain.shader_preset
+               bool emits_hdr16 = (d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16)
+                  || (d3d11->chain.shader_preset
                   && d3d11->chain.shader_preset->passes
-                  && (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT);
+                  && (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT));
                d3d11->hdr.ubo_values.inverse_tonemap  = 0.0f;
                d3d11->hdr.ubo_values.hdr10            = 0.0f;
                /* Shader already outputs scRGB: passthrough; SDR: convert */
@@ -9478,7 +9498,8 @@ static bool d3d11_set_frame_format(void *data, bool rgb32,
    (void)input_scale;
    if (     !d3d11
          || (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE)
-         || d3d11->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || d3d11->format == DXGI_FORMAT_R10G10B10A2_UNORM
+         || d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
       return false;
    d3d11->format = rgb32
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;

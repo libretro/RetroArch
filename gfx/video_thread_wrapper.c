@@ -1039,8 +1039,11 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_READ_VIEWPORT:
-         if (thr->driver_data && thr->driver &&
-               thr->driver->viewport_info && thr->driver->read_viewport)
+      case CMD_READ_VIEWPORT_HDR:
+         if (thr->driver_data && thr->driver && thr->driver->viewport_info
+               && (pkt.type == CMD_READ_VIEWPORT_HDR
+                  ? thr->driver->read_viewport_hdr != NULL
+                  : thr->driver->read_viewport != NULL))
          {
             struct video_viewport vp;
 
@@ -1068,8 +1071,13 @@ static bool video_thread_handle_packet(
                 *
                 * video_thread_frame() sees that it is on this thread
                 * and renders straight through. */
-               pkt.data.b = thr->driver->read_viewport(thr->driver_data,
-                     (uint8_t*)pkt.data.v, thr->is_idle);
+               if (pkt.type == CMD_READ_VIEWPORT_HDR)
+                  pkt.data.b = thr->driver->read_viewport_hdr(thr->driver_data,
+                        pkt.data.hdr_viewport.buffer, thr->is_idle,
+                        pkt.data.hdr_viewport.metadata);
+               else
+                  pkt.data.b = thr->driver->read_viewport(thr->driver_data,
+                        (uint8_t*)pkt.data.v, thr->is_idle);
             }
             else
             {
@@ -2574,7 +2582,8 @@ static void video_thread_loop(void *data)
       video_thread_run_deferred(thr);
 
       /* A readback follows the frame claimed on this pass. */
-      if (have_cmd && (!claimed || pkt.type != CMD_READ_VIEWPORT)
+      if (have_cmd && (!claimed || (pkt.type != CMD_READ_VIEWPORT
+                  && pkt.type != CMD_READ_VIEWPORT_HDR))
             && video_thread_handle_packet(thr, &pkt))
       {
          thread_elevation_lower_current(&elevation);
@@ -3002,7 +3011,8 @@ static void video_thread_loop(void *data)
             thr->present_repeat = false;
          video_thread_publish_stats(thr);
       }
-      if (have_cmd && claimed && pkt.type == CMD_READ_VIEWPORT)
+      if (have_cmd && claimed && (pkt.type == CMD_READ_VIEWPORT
+               || pkt.type == CMD_READ_VIEWPORT_HDR))
          video_thread_handle_packet(thr, &pkt);
    }
 }
@@ -3527,7 +3537,8 @@ static unsigned video_thread_slot_rows(const thread_video_t *thr,
       unsigned width, unsigned filter_bpp, unsigned *stride)
 {
    unsigned s = width *
-      (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      (thr->info.source_fp16 ? 8 :
+         (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
    if (filter_bpp)
       s = width * filter_bpp;
    if (stride)
@@ -4073,8 +4084,8 @@ static bool video_thread_init(thread_video_t *thr,
       unsigned i;
       size_t max_size        = info.input_scale * RARCH_SCALE_BASE;
       max_size              *= max_size;
-      max_size              *= info.rgb32 ?
-         sizeof(uint32_t) : sizeof(uint16_t);
+      max_size              *= info.source_fp16 ? 8 :
+         (info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
       /* The main thread copies core frames in here and the video
        * thread reads them back for upload; a cache-line start keeps
@@ -4234,6 +4245,21 @@ static bool video_thread_read_viewport(void *data,
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 
+   return pkt.data.b;
+}
+
+static bool video_thread_read_viewport_hdr(void *data,
+      uint16_t *buffer, bool is_idle, struct rpng_hdr_metadata *metadata)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+   if (!thr || !buffer)
+      return false;
+   pkt.type = CMD_READ_VIEWPORT_HDR;
+   pkt.data.hdr_viewport.buffer = buffer;
+   pkt.data.hdr_viewport.metadata = metadata;
+   thr->is_idle = is_idle;
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
    return pkt.data.b;
 }
 
@@ -4711,7 +4737,8 @@ static bool video_thread_frame_slots_fit(thread_video_t *thr,
    uint8_t *buf[2];
    size_t size = (size_t)input_scale * RARCH_SCALE_BASE;
    size       *= size;
-   size       *= rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   size       *= thr->info.source_fp16 ? 8 :
+      (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (size <= thr->frame.buffer_size)
       return true;
@@ -4862,7 +4889,8 @@ static bool thread_get_current_software_framebuffer(void *data,
       return false;
 
    thr->handoff.asked++;
-   bpp  = thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   bpp  = thr->info.source_fp16 ? 8 :
+      (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
    need = (size_t)fb->width * bpp * fb->height;
    if (!fb->width || !fb->height || need > thr->frame.buffer_size)
    {
@@ -4922,8 +4950,9 @@ static bool thread_get_current_software_framebuffer(void *data,
    }
    fb->data         = thr->frame.mem[mem].ptr;
    fb->pitch        = (size_t)fb->width * bpp;
-   fb->format       = thr->info.rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->format       = thr->info.source_fp16
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (thr->info.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
    /* Driver frame memory may be write-combined: a core that reads its
     * frame back is told so */
    fb->memory_flags = thr->frame.mem[mem].cached
@@ -5367,7 +5396,7 @@ static const video_driver_t video_thread = {
     * driver kept the core's image across a reset, and the ring kept
     * handing it back across a close. */
    video_thread_invalidate_hw_render_cache,
-   NULL, /* read_viewport_hdr */
+   video_thread_read_viewport_hdr,
    NULL, /* font_backend: CMD_INIT/CMD_FREE read the driver's */
 #ifdef HAVE_OPENXR
    video_thread_set_vr_content_info,
@@ -5385,6 +5414,8 @@ static void video_thread_set_callbacks(thread_video_t *thr,
       /* Disable optional features if not present. */
       if (!drv->read_viewport)
          thr->video_thread.read_viewport     = NULL;
+      if (!drv->read_viewport_hdr)
+         thr->video_thread.read_viewport_hdr = NULL;
       if (!drv->set_viewport)
          thr->video_thread.set_viewport      = NULL;
       if (!drv->set_rotation)

@@ -13,8 +13,8 @@ the monitor's HDR capability. Before output initialization it is zero, while
 including configured capability before initialization. HDR10 packed input and FP16
 linear scRGB have distinct bits; FP16 has the explicit
 `RETRO_PIXEL_FORMAT_SCRGB_RGBA16F` value (binary16 RGBA, native-endian samples,
-8 bytes/pixel, linear Rec.709, 1.0 = 80 nits, alpha ignored). It remains
-unadvertised until its core-input negotiation and submission path exist. Output precision alone
+8 bytes/pixel, linear Rec.709, 1.0 = 80 nits, alpha ignored). Native submission
+is available with scRGB output on D3D11, D3D12, Vulkan and GLCore. Other output modes/backends reject negotiation. Output precision alone
 does not imply input support. Consumers must ignore unknown bits and still
 check format negotiation.
 passthrough is conditional on accepted native HDR10 input; it also permits
@@ -42,3 +42,22 @@ mutable framebuffer flags are read by the capability consumer.
 D3D11/D3D12 fixtures cover published HDR texture support with HDR compiled in
 and out, planar failure/feature-level admission, and concurrent renderer flag
 changes. D3D11 publishes its lazy planar initialization failure atomically.
+
+Native FP16 acceptance (requires an scRGB-capable output):
+
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-results
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-stock --stock
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-overlay --overlay --frames 120
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-deferred --deferred --threaded false --frames 180
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-resize --resize --frames 30
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/fp16-hw --hardware
+
+The fixture submits padded 64-bit rows, requests native framebuffer lending,
+and checks negative and above-white half-float samples in a Slang shader,
+direct and threaded. D3D12 lending retains the native mapped upload buffers.
+The wrapper forwards native HDR screenshot readback after the claimed frame.
+CPU softfilters and recording do not support this source format; recording
+rejects it rather than interpreting its rows as RGB565.
+
+The hardware fixture checks a floating-point GLCore framebuffer. Both threaded
+settings are exercised; hardware contexts use the existing unthreaded fallback.

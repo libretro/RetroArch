@@ -2626,7 +2626,8 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
     * exactly the same bandwidth as RGBA8 and is the format the pixel
     * format names, so there is no reason to make it optional. */
    glTexStorage2D(GL_TEXTURE_2D, 1,
-         gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8,
+         gl->video_info.source_fp16 ? GL_RGBA16F
+            : (gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8),
          width, height);
    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->hw_render_texture, 0);
 
@@ -2684,7 +2685,8 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
          glGenTextures(1, &gl->hw_ring_texture[i]);
          glBindTexture(GL_TEXTURE_2D, gl->hw_ring_texture[i]);
          glTexStorage2D(GL_TEXTURE_2D, 1,
-               gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8,
+               gl->video_info.source_fp16 ? GL_RGBA16F
+            : (gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8),
                width, height);
          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                GL_TEXTURE_2D, gl->hw_ring_texture[i], 0);
@@ -4061,9 +4063,10 @@ static void *gl3_init(const video_info_t *video)
     * the image is merely graded oddly, with no error anywhere. State it
     * once at init, as the Vulkan driver does. */
    RARCH_LOG("[GLCore] Source is %s (%s), output %s.\n",
-         video->source_hdr10 ? "HDR10 PQ Rec.2020"
-                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
-         video->rgb32 ? "32-bit" : "16-bit",
+         video->source_fp16 ? "FP16 linear scRGB"
+            : (video->source_hdr10 ? "HDR10 PQ Rec.2020"
+               : (video->source_10bit ? "10-bit SDR" : "SDR")),
+         video->source_fp16 ? "64-bit" : (video->rgb32 ? "32-bit" : "16-bit"),
          gl->scrgb.active ? "scRGB" : "SDR");
 
    RARCH_LOG("[GLCore] Vendor: %s, Renderer: %s.\n", vendor, renderer);
@@ -4179,6 +4182,8 @@ static void *gl3_init(const video_info_t *video)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glBindTexture(GL_TEXTURE_2D, 0);
    }
+   if (video->source_fp16 && !gl->scrgb.active)
+      goto error;
    gl3_publish_flags(gl);
 #ifdef HAVE_GL3_XR
    gl3_xr_start(gl);
@@ -5053,8 +5058,8 @@ static void gl3_write_cpu_texture(gl3_t *gl, const void *frame,
    /* A frame in one of the threaded wrapper's buffers is read out of it
     * by the GL, the upload queued rather than copied here */
    {
-      size_t bpp    = (gl->video_info.rgb32 || gl->video_info.source_10bit)
-         ? 4 : 2;
+      size_t bpp    = gl->video_info.source_fp16 ? 8
+         : ((gl->video_info.rgb32 || gl->video_info.source_10bit) ? 4 : 2);
       size_t extent = height ? (size_t)(height - 1) * pitch
          + (size_t)width * bpp : 0;
       size_t off    = 0;
@@ -5065,7 +5070,14 @@ static void gl3_write_cpu_texture(gl3_t *gl, const void *frame,
 #else
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #endif
-   if (gl->video_info.source_10bit)
+   if (gl->video_info.source_fp16)
+   {
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 3);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+            width, height, GL_RGBA, GL_HALF_FLOAT, frame);
+   }
+   else if (gl->video_info.source_10bit)
    {
       /* Packed 2-10-10-10, one word per pixel like the 8-bit path. */
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 2);
@@ -5123,7 +5135,8 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glGenTextures(1, &streamed->tex);
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
       glTexStorage2D(GL_TEXTURE_2D, 1,
-            gl->video_info.source_10bit
+            gl->video_info.source_fp16 ? GL_RGBA16F
+            : gl->video_info.source_10bit
             ? GL_RGB10_A2
             : (gl->video_info.rgb32
                ? GL_RGBA8
@@ -5136,7 +5149,8 @@ static void gl3_update_cpu_texture(gl3_t *gl,
        * type (XRGB8888 vs GL_RGBA/UNSIGNED_BYTE, and XRGB2101010 =
        * A2R10G10B10 vs GL_RGBA/UNSIGNED_INT_2_10_10_10_REV, which places
        * A in 31:30 but R in 9:0), so both want the same view swizzle. */
-      if (gl->video_info.rgb32 || gl->video_info.source_10bit)
+      if (!gl->video_info.source_fp16
+            && (gl->video_info.rgb32 || gl->video_info.source_10bit))
       {
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
@@ -5262,8 +5276,9 @@ static bool gl3_needs_pq_downconvert(gl3_t *gl)
  * and its UI has its own FP16 layer. */
 static bool gl3_scrgb_wants_fp16(const gl3_t *gl)
 {
-   return    !gl->video_info.source_hdr10
-          && !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE);
+   return gl->video_info.source_fp16
+      || (!gl->video_info.source_hdr10
+          && !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE));
 }
 
 static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
@@ -5342,7 +5357,7 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
          glDeleteTextures(1, &gl->scrgb.ui_tex);
          gl->scrgb.ui_tex = 0;
       }
-      if (gl->video_info.source_hdr10)
+      if (gl->video_info.source_hdr10 || gl->video_info.source_fp16)
       {
          glGenTextures(1, &gl->scrgb.ui_tex);
          glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
@@ -5383,7 +5398,8 @@ static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned dims)
 {
    GLuint fbo = gl3_frame_target_fbo(gl, dims);
 
-   if (gl->video_info.source_hdr10 && gl->scrgb.ui_fbo
+   if ((gl->video_info.source_hdr10 || gl->video_info.source_fp16)
+         && gl->scrgb.ui_fbo
          && !gl3_needs_pq_downconvert(gl))
    {
       glBindFramebuffer(GL_FRAMEBUFFER, gl->scrgb.ui_fbo);
@@ -7169,8 +7185,8 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
    {
       texture.image         = gl->hw_render_texture;
-      texture.format        = gl->video_info.source_hdr10
-         ? GL_RGB10_A2 : GL_RGBA8;
+      texture.format        = gl->video_info.source_fp16 ? GL_RGBA16F
+         : (gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8);
       texture.padded_dims   = gl->hw_render_max_dims;
 
       if (!VIDEO_SCALE_W(texture.dims))
@@ -7189,7 +7205,8 @@ static bool gl3_frame(void *data, const void *frame,
    else
    {
       texture.image         = streamed->tex;
-      texture.format        = gl->video_info.source_10bit
+      texture.format        = gl->video_info.source_fp16 ? GL_RGBA16F
+         : gl->video_info.source_10bit
          ? GL_RGB10_A2
          : (gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565);
       texture.padded_dims   = streamed->dims;
@@ -7729,7 +7746,8 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
 
       {
-         bool  pq         = gl->video_info.source_hdr10
+         bool  pq         = (gl->video_info.source_hdr10
+                           || gl->video_info.source_fp16)
                          && gl->scrgb.ui_fbo != 0;
          float paper_white = gl->scrgb.paper_white_nits;
          float menu_nits   = gl->scrgb.menu_nits;
@@ -7746,7 +7764,8 @@ static bool gl3_frame(void *data, const void *frame,
          ubo_data[17] = (float)gl->scrgb.expand_gamut;
          /* 0 = SDR -> scRGB, 1 = PQ -> scRGB (2 is the SDR-output
           * fallback, issued from gl3_encode_pq_to_sdr instead). */
-         ubo_data[18] = pq ? 1.0f : 0.0f;
+         ubo_data[18] = gl->video_info.source_fp16 ? 3.0f
+               : (pq ? 1.0f : 0.0f);
          ubo_data[19] = pq ? menu_nits : 0.0f;
          /* hdr_out: finish in Rec.2020 PQ for an HDR10 backbuffer */
          ubo_data[20] = gl->scrgb.pq_out ? 1.0f : 0.0f;
@@ -7783,7 +7802,8 @@ static bool gl3_frame(void *data, const void *frame,
        * glyphs the comment above documents. */
       glActiveTexture(GL_TEXTURE2);
       glBindTexture(GL_TEXTURE_2D,
-            (gl->video_info.source_hdr10 && gl->scrgb.ui_tex)
+            ((gl->video_info.source_hdr10 || gl->video_info.source_fp16)
+               && gl->scrgb.ui_tex)
             ? gl->scrgb.ui_tex : gl->scrgb.tex);
 
       glEnableVertexAttribArray(0);
@@ -8297,7 +8317,7 @@ static bool gl3_get_current_software_framebuffer(void *data,
          || gl->video_info.source_10bit
          || (fb->access_flags & RETRO_MEMORY_ACCESS_READ))
       return false;
-   bpp = gl->video_info.rgb32 ? 4 : 2;
+   bpp = gl->video_info.source_fp16 ? 8 : (gl->video_info.rgb32 ? 4 : 2);
    /* Remade at a new size: the cached frame may name the old ones */
    if (!gl_sw_fb_fits(&gl->sw_fb, fb->width, fb->height, bpp))
       video_driver_cached_frame_retire();
@@ -8306,8 +8326,9 @@ static bool gl3_get_current_software_framebuffer(void *data,
       return false;
    fb->data         = p;
    fb->pitch        = (size_t)fb->width * bpp;
-   fb->format       = gl->video_info.rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->format       = gl->video_info.source_fp16
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (gl->video_info.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
    fb->memory_flags = 0;
    return true;
 }
@@ -8878,7 +8899,7 @@ static bool gl3_set_frame_format(void *data, bool rgb32,
    (void)input_scale;
    if (     !gl
          || (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
-         || gl->video_info.source_10bit)
+         || gl->video_info.source_10bit || gl->video_info.source_fp16)
       return false;
    if (gl->video_info.rgb32 != rgb32)
    {

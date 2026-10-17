@@ -11,7 +11,8 @@
 typedef struct
 {
    struct { float video_hdr_paper_white_nits; } floats;
-   struct { unsigned video_hdr_expand_gamut; } uints;
+   struct { unsigned video_hdr_expand_gamut, video_hdr_mode; } uints;
+   struct { char video_driver[32]; } arrays;
 } settings_t;
 static settings_t settings;
 static bool active;
@@ -19,6 +20,16 @@ static bool configured_10bit;
 static settings_t *config_get_ptr(void) { return &settings; }
 static void *video_driver_get_ptr(void) { return active ? &settings : NULL; }
 static bool video_driver_supports_10bit_source(void) { return configured_10bit; }
+#define HAVE_D3D11
+#define HAVE_D3D12
+#define HAVE_VULKAN
+#define HAVE_OPENGL_CORE
+static retro_atomic_int_t video_hdr_output_mode;
+static bool string_is_equal(const char *a, const char *b)
+{
+   return a && b && strcmp(a, b) == 0;
+}
+#include "fp16.inc"
 static float video_driver_get_hdr_max_nits(void) { return 600.0f; }
 
 #include "provider.inc"
@@ -142,6 +153,13 @@ int main(void)
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
    CHECK(hdr.output_mode == 0 && (hdr.source_formats & RETRO_HDR_SOURCE_FORMAT_HDR10_2101010));
    CHECK(hdr.source_formats == RETRO_HDR_SOURCE_FORMAT_HDR10_2101010);
+   settings.uints.video_hdr_mode = 2;
+   strcpy(settings.arrays.video_driver, "d3d12");
+   CHECK(video_driver_supports_fp16_source());
+   CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
+   CHECK(hdr.source_formats == (RETRO_HDR_SOURCE_FORMAT_HDR10_2101010
+            | RETRO_HDR_SOURCE_FORMAT_SCRGB_RGBA16F));
+   settings.uints.video_hdr_mode = 0;
    active = true;
    retro_atomic_store_release_int(&video_hdr_source_10bpc, 1);
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
@@ -158,6 +176,21 @@ int main(void)
                : (hdr.output_mode == 2 ? 8u : 0u)));
    }
    sthread_join(worker);
+   settings.uints.video_hdr_mode = 2;
+   video_driver_set_hdr_output_mode(1);
+   CHECK(!video_driver_supports_fp16_source());
+   video_driver_set_hdr_output_mode(2);
+   CHECK(video_driver_supports_fp16_source());
+   strcpy(settings.arrays.video_driver, "d3d11");
+   CHECK(video_driver_supports_fp16_source());
+   strcpy(settings.arrays.video_driver, "vulkan");
+   CHECK(video_driver_supports_fp16_source());
+   strcpy(settings.arrays.video_driver, "glcore");
+   CHECK(video_driver_supports_fp16_source());
+   strcpy(settings.arrays.video_driver, "sdl2");
+   CHECK(!video_driver_supports_fp16_source());
+   settings.uints.video_hdr_mode = 0;
+
    video_driver_set_hdr_output_mode(0);
    CHECK(video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr));
    CHECK(!hdr.output_mode && !hdr.passthrough);

@@ -6520,7 +6520,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
       vk->filter_chain_default);
       bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
          || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default));
-      bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default);
+      bool emits_hdr16 = vk->video.source_fp16
+         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default));
       unsigned hdr_mode = vk->hdr_mode_latched;
 
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain_default, vk->hdr.ubo_values.paper_white_nits);
@@ -6802,7 +6803,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain);
       bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
          || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
-      bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+      bool emits_hdr16 = vk->video.source_fp16
+         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain));
       unsigned hdr_mode = vk->hdr_mode_latched;
 
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain, vk->hdr.ubo_values.paper_white_nits);
@@ -7834,13 +7836,24 @@ static void *vulkan_init(const video_info_t *video)
     * anywhere.  Logging it once turns "the picture looks washed out" into a
     * one-line check. */
    RARCH_LOG("[Vulkan] Source is %s (%s), swapchain %s.\n",
-         video->source_hdr10 ? "HDR10 PQ Rec.2020"
-                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
-         video->rgb32 ? "32-bit" : "16-bit",
+         video->source_fp16 ? "FP16 linear scRGB"
+            : (video->source_hdr10 ? "HDR10 PQ Rec.2020"
+               : (video->source_10bit ? "10-bit SDR" : "SDR")),
+         video->source_fp16 ? "64-bit" : (video->rgb32 ? "32-bit" : "16-bit"),
          (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? "scRGB"
             : ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) ? "HDR10" : "SDR"));
 
-   if (video->source_10bit)
+   if (video->source_fp16)
+   {
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (!(vk->context->flags & VK_CTX_FLAG_HDR_SCRGB))
+         goto error;
+      vk->tex_fmt = VK_FORMAT_R16G16B16A16_SFLOAT;
+#else
+      goto error;
+#endif
+   }
+   else if (video->source_10bit)
       /* Native XRGB2101010 passthrough. The frontend only sets source_10bit
        * when this driver advertised GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE, so the
        * frame arrives as packed 2-10-10-10. Prefer A2R10G10B10 (1:1 with the
@@ -8062,7 +8075,8 @@ built:
    {
       bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
          || vulkan_filter_chain_emits_hdr10(vk->filter_chain);
-      bool emits_hdr16 = vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+      bool emits_hdr16 = vk->video.source_fp16
+         || vulkan_filter_chain_emits_hdr16(vk->filter_chain);
 
       if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
       {
@@ -8342,8 +8356,9 @@ static bool vulkan_shader_load_step(void *data,
          bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
             || (shader_preset && shader_preset->passes
                && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
-         bool emits_hdr16 = shader_preset && shader_preset->passes
-            && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+         bool emits_hdr16 = vk->video.source_fp16
+            || (shader_preset && shader_preset->passes
+               && vulkan_filter_chain_emits_hdr16(vk->filter_chain));
          unsigned hdr_mode = settings->uints.video_hdr_mode;
 
          vulkan_filter_chain_set_paper_white_nits(
@@ -9420,7 +9435,8 @@ static unsigned vulkan_hdr_source_mode(vk_t *vk,
    bool src_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
       || (filter_chain && vulkan_filter_chain_emits_hdr10(
                (vulkan_filter_chain_t*)filter_chain));
-   bool src_hdr16 = (filter_chain && vulkan_filter_chain_emits_hdr16(
+   bool src_hdr16 = vk->video.source_fp16
+      || (filter_chain && vulkan_filter_chain_emits_hdr16(
                (vulkan_filter_chain_t*)filter_chain));
 
    if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
@@ -11320,7 +11336,7 @@ static bool vulkan_frame(void *data, const void *frame,
       unsigned win_y        = 0;
       uint8_t *dst          = NULL;
       const uint8_t *src    = (const uint8_t*)frame;
-      unsigned bpp          = vk->video.rgb32 ? 4 : 2;
+      unsigned bpp          = vulkan_format_to_bpp(vk->tex_fmt);
       bool retire_cached    = false;
       /* A window into this texture's own loan: the pixels are already
        * where the GPU reads them, and the texture keeps the loan's
@@ -11790,6 +11806,11 @@ static bool vulkan_frame(void *data, const void *frame,
          unsigned mode = 0;
          if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
             mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
+         /* The internal stock shader samples native linear input directly.
+          * User presets still receive the actual output mode. */
+         if (vk->video.source_fp16 && fc == vk->filter_chain_default
+               && mode == 2)
+            mode = 0;
          vulkan_filter_chain_set_hdr_mode(
                fc, mode);
       }
@@ -12995,8 +13016,9 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
 
    framebuffer->data         = chain->texture.mapped;
    framebuffer->pitch        = chain->texture.stride;
-   framebuffer->format       = vk->video.rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   framebuffer->format       = vk->video.source_fp16
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (vk->video.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
    framebuffer->memory_flags = 0;
 
    if (vk->context->memory_properties.memoryTypes[
@@ -14811,7 +14833,7 @@ static bool vulkan_set_frame_format(void *data, bool rgb32,
    (void)input_scale;
    if (     !vk
          || (vk->flags & VK_FLAG_HW_ENABLE)
-         || vk->video.source_10bit)
+         || vk->video.source_10bit || vk->video.source_fp16)
       return false;
    vk->video.rgb32 = rgb32;
    vk->tex_fmt     = rgb32

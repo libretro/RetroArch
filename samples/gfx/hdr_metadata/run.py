@@ -41,6 +41,8 @@ gl3_code += source_block(gl3, "static bool gl3_supports_texture_format(")
 with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
     directory = Path(directory)
     (directory / "provider.inc").write_text(source[start:end], encoding="utf-8")
+    (directory / "fp16.inc").write_text(source_block(source,
+            "bool video_driver_supports_fp16_source("), encoding="utf-8")
     (directory / "dxgi.inc").write_text(dxgi, encoding="utf-8")
     cc = shlex.split(os.environ.get("CC", "cc"))
     flags = shlex.split(os.environ.get("CFLAGS", ""))
@@ -90,6 +92,8 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
         extracted += source_block(code[definition:], publisher)
         extracted += source_block(code, "static DXGI_FORMAT d3d%d_dxgi_from_gpu_format(" % driver)
         extracted += source_block(code, "static bool d3d%d_gfx_supports_texture_format(" % driver)
+        if driver == 12:
+            extracted += source_block(code, "static unsigned d3d12_frame_bpp(")
         (directory / "d3d.inc").write_text(extracted, encoding="utf-8")
         for hdr in (False, True):
             target = directory / ("d3d%d-%s" % (driver, "hdr" if hdr else "sdr"))
