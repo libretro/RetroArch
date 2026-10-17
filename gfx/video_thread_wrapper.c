@@ -3584,6 +3584,8 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (video_thread_is_self(thr))
    {
       thread_update_driver_state(thr);
+      if (video_info)
+         video_info->swap_count = thr->video_st->swap_count;
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {

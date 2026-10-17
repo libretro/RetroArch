@@ -2436,6 +2436,90 @@ static void lane_second_ring_waiter(void)
       fprintf(stderr, "[pass] second-ring-waiter lane (%u idle waits)\n", idle_waits);
 }
 
+typedef struct
+{
+   thread_video_t *thr;
+   video_frame_info_t *info;
+   uint64_t expected, seen[2], after[2];
+   unsigned current;
+   bool returned[2];
+} replay_swap_t;
+
+static replay_swap_t *replay_swap;
+
+static bool replay_swap_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   (void)data;
+   (void)frame;
+   (void)dims;
+   (void)count;
+   (void)pitch;
+   (void)msg;
+   replay_swap->seen[replay_swap->current] = info->swap_count;
+   return true;
+}
+
+static uintptr_t replay_swap_run(void *data)
+{
+   replay_swap_t *t = (replay_swap_t*)data;
+   thread_video_t *thr = t->thr;
+   const video_driver_t *inner = thr->driver;
+   video_driver_t driver = *inner;
+   uint64_t saved = thr->video_st->swap_count;
+   unsigned i;
+
+   replay_swap = t;
+   driver.frame = replay_swap_frame;
+   thr->driver = &driver;
+   thr->video_st->swap_count = t->expected;
+   for (i = 0; i < 2; i++)
+   {
+      t->current = i;
+      t->seen[i] = 0;
+      t->info->swap_count = i ? UINT64_MAX : 0;
+      t->returned[i] = thr->video_st->current_video->frame(thr, NULL,
+            VIDEO_SCALE_PACK(1, 1), 0, 0, NULL, t->info);
+      t->after[i] = thr->video_st->swap_count;
+   }
+   thr->video_st->swap_count = saved;
+   thr->driver = inner;
+   replay_swap = NULL;
+   return 0;
+}
+
+static void lane_replay_swap_count(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   replay_swap_t t;
+   unsigned i;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "replay swap counter lane");
+   t.thr = (thread_video_t*)video_st->data;
+   t.info = (video_frame_info_t*)calloc(1, sizeof(*t.info));
+   CHECK(t.info != NULL, "replay frame info allocation failed");
+   if (!t.info)
+      return;
+   t.expected = (uint64_t)UINT32_MAX + 19;
+   video_thread_run_blocking(replay_swap_run, &t);
+   for (i = 0; i < 2; i++)
+   {
+      CHECK(t.returned[i], "inline replay was refused");
+      CHECK(t.seen[i] == t.expected,
+            "inline replay carried a stale swap counter");
+      CHECK(t.after[i] == t.expected,
+            "inline replay counted an extra present");
+   }
+   free(t.info);
+   set_threaded_via_setting(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] replay swap counter lane\n");
+}
+
 /* ------------------------------------------------------------------ */
 /* Lane: wrapper entry points called from inside frame()              */
 /*   The menu drivers call current_video->set_viewport() while they   */
@@ -10669,6 +10753,7 @@ int main(int argc, char *argv[])
 #endif
    lane_toggle_in_game(cycles);
    lane_swap_count();
+   lane_replay_swap_count();
    lane_stats_snapshot();
    lane_stat_text_bounds();
    lane_viewport_publish();
