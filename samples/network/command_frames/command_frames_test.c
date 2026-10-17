@@ -845,6 +845,22 @@ int main(int argc, char **argv)
          }
          CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 2\n"));
       }
+      /* an until that already holds between them is no frame: still
+       * two taps */
+      {
+         unsigned want[5] = {1,1,0,1,1};
+         unsigned k;
+         bool     ok = true;
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 2; until 1006 == 6; press 1 a 2"));
+         for (k=0;k<5;k++)
+         {
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 3\n"));
+      }
       /* that frame let go counts against the frames a request runs */
       reply[0]=0;
       CHECK(!command_steps(&cmd,"press 1 a 270; press 1 a 270") && strstr(reply,"step 2"));
@@ -903,10 +919,13 @@ int main(int argc, char **argv)
    /* closing the content drops the watches: the next content's
     * addresses mean something else */
    CHECK(command_watch(&cmd,"two 1002"));
+   CHECK(command_set_input(&cmd,"1 start 1"));
    command_event(CMD_EVENT_UNLOAD_CORE,NULL);
    for (i=0;i<8;i++) { runloop_iterate(); task_queue_check(); }
    reply[0]=0;
    CHECK(command_watch(&cmd,"") && !strcmp(reply,"WATCH none\n"));
+   /* and what SET_INPUT held: the next content starts with nothing held */
+   CHECK(input_driver_command_held(0,axes) == 0);
    main_exit(NULL); remove(cfg_path);
    printf("command_frames: %s (%u failures)\n",failures?"FAIL":"PASS",failures);
    return failures ? 1 : 0;

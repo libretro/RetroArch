@@ -117,6 +117,7 @@ struct mcp_arg
    char  name[32];
    char *value;          /* heap; a number arrives as its digits */
    bool  is_number;
+   bool  is_other;       /* true, false, null, an object or an array */
 };
 
 /* More than any command's parameters, plus room for a client that
@@ -767,6 +768,17 @@ static const char *mcp_unknown_arg(const struct cmd_action_map *act,
    return NULL;
 }
 
+/* A parameter sent as true, false, null, an object or an array, which
+ * no tool takes, or NULL. */
+static const char *mcp_other_arg(const struct mcp_request *r)
+{
+   unsigned i;
+   for (i = 0; i < r->num_args; i++)
+      if (r->args[i].is_other)
+         return r->args[i].name;
+   return NULL;
+}
+
 /* A parameter whose value is not one of the set its schema offers, or
  * NULL: "yes" for an on|off would otherwise reach the line as text the
  * handler reads as something else. */
@@ -779,10 +791,16 @@ static const struct cmd_param *mcp_enum_arg(const struct cmd_action_map *act,
       const char *v = p->values ? mcp_arg(r, p->name) : NULL;
       const char *w;
       size_t      n;
-      /* empty stands in for left out, keeping the operands after it in
-       * their places */
-      if (!v || !*v)
+      if (!v)
          continue;
+      /* empty stands in for left out where it may be left out; a value
+       * that must be one of the set is not one of them empty */
+      if (!*v)
+      {
+         if (!p->required)
+            continue;
+         return p;
+      }
       n = strlen(v);
       for (w = p->values; *w; )
       {
@@ -809,6 +827,7 @@ static char *mcp_compose(const struct cmd_action_map *act,
       const struct mcp_request *r, const char **err)
 {
    const struct cmd_param *p;
+   const struct cmd_param *last = NULL;
    const char *only;
    size_t      len = 1;
    char       *out;
@@ -837,13 +856,17 @@ static char *mcp_compose(const struct cmd_action_map *act,
          }
          continue;
       }
+      /* an empty optional one keeps the places of those after it, and
+       * with none after it is left out: "core|content|" is a path */
+      if (*v || p->required)
+         last = p;
       len += strlen(v) + (p->lead ? strlen(p->lead) : 1);
    }
 
    if (!(out = (char*)malloc(len)))
       return NULL;
    *out = '\0';
-   for (p = act->params; p->name; p++)
+   for (p = act->params; last && p <= last; p++)
    {
       const char *v = mcp_param_value(p, r);
       if (!v)
@@ -1376,19 +1399,21 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
       {
          if (     string_is_equal(key[1], "arguments")
                && *key[2]
-               && (t == RJSON_STRING || t == RJSON_NUMBER)
                && r->num_args < MCP_MAX_ARGS)
          {
             /* A number arrives as the digits it was written with, which
-             * is what the line form wants anyway. */
+             * is what the line form wants anyway. Any other type is kept
+             * as present, so it is refused rather than dropped. */
             size_t      l    = 0;
-            const char *v    = rjson_get_string(j, &l);
+            bool        text = t == RJSON_STRING || t == RJSON_NUMBER;
+            const char *v    = text ? rjson_get_string(j, &l) : "";
             struct mcp_arg *a = &r->args[r->num_args];
             if ((a->value = (char*)malloc(l + 1)))
             {
                memcpy(a->value, v, l);
                a->value[l] = '\0';
                a->is_number = t == RJSON_NUMBER;
+               a->is_other  = !text;
                strlcpy(a->name, key[2], sizeof(a->name));
                r->num_args++;
             }
@@ -1717,6 +1742,14 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          char msg[128];
          snprintf(msg, sizeof(msg), "Unknown parameter \"%.96s\".",
                invalid);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
+         goto end;
+      }
+      if ((invalid = mcp_other_arg(&r)))
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Parameter \"%.64s\" takes a string "
+               "or a number.", invalid);
          mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
       }

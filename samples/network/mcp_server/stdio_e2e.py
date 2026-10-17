@@ -14,7 +14,8 @@ cfg = os.path.join(cfgdir, 'retroarch.cfg')
 with open(cfg, 'w') as f:
     f.write('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\n'
             'menu_driver = "rgui"\nlog_verbosity = "true"\nfrontend_log_level = "1"\n'
-            'pause_nonactive = "false"\nconfig_save_on_exit = "false"\n')
+            'pause_nonactive = "false"\nconfig_save_on_exit = "false"\n'
+            'video_shader_enable = "false"\n')
 p = subprocess.Popen([ra, '--mcp-stdio', '-v', '-c', cfg, '-L', core],
                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                      stderr=open(os.path.join(cfgdir, 'stderr.log'), 'wb'))
@@ -230,6 +231,24 @@ msg, _ = recv(232)
 err = (msg or {}).get('error', {})
 check('MENU names the buttons it takes: ' + err.get('message', ''),
       err.get('code') == -32602 and 'up|down' in err.get('message', ''))
+send({'jsonrpc': '2.0', 'id': 233, 'method': 'tools/call',
+      'params': {'name': 'MENU', 'arguments': {'button': ''}}})
+msg, _ = recv(233)
+check('and an empty one is not one of them',
+      (msg or {}).get('error', {}).get('code') == -32602)
+# A refused preset leaves the shader setting as it was.
+_, before, _ = call(234, 'GET_OPTION', {'option': 'shader'})
+msg, t, _ = call(235, 'SET_SHADER', {'preset': '/no/such/preset.slangp'})
+_, after, _ = call(236, 'GET_OPTION', {'option': 'shader'})
+check('a refused SET_SHADER changes nothing: ' + (after or '').strip(),
+      msg and msg['result']['isError'] and before and 'off' in before
+      and before == after)
+# The null video driver runs no shader, so there is none to toggle: the
+# toggle used to dereference the menu's shader, which no such driver has.
+call(237, 'SET_OPTION', {'option': 'shader', 'state': 'on'})
+_, st, _ = call(238, 'GET_STATUS')
+check('and turning shaders on where none run does not crash',
+      st and st.startswith('GET_STATUS'))
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
@@ -266,6 +285,10 @@ check('log lines arrive as notifications after setLevel',
 rom = os.path.join(cfgdir, 'blank.bin')
 with open(rom, 'wb') as f:
     f.write(b'\0' * 16)
+msg, t, _ = call(249, 'LOAD_CONTENT', {'core': core, 'content': rom,
+                                       'paused': ''})
+check('an empty paused is left out, not put on the path: ' + (t or '').strip(),
+      t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
 msg, t, _ = call(250, 'LOAD_CONTENT', {'core': core, 'content': rom,
                                        'paused': 'on'}, )
 check('LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
@@ -287,5 +310,46 @@ except subprocess.TimeoutExpired:
 with open(os.path.join(cfgdir, 'stderr.log'), 'rb') as f:
     err = f.read()
 check('the log went to stderr', b'[INFO]' in err)
+
+# From a cold start, with no content running yet, paused still pauses:
+# after the first frame, which is what marks a core running, so the
+# steps that need one still work.
+p = subprocess.Popen([ra, '--mcp-stdio', '-c', cfg],
+                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                     stderr=subprocess.DEVNULL)
+buf = b''
+send({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
+      'params': {'protocolVersion': '2025-06-18', 'capabilities': {},
+                 'clientInfo': {'name': 'e2e', 'version': '1'}}})
+recv(1, 60)
+send({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
+msg, t, _ = call(2, 'LOAD_CONTENT', {'core': core, 'content': rom,
+                                     'paused': 'on'})
+check('cold LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
+      t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
+# The frames shown go on counting while a pause shows the last one
+# again, so whether the game runs is read off the game: this core logs
+# the pad when it changes, which only a frame it runs can do.
+send({'jsonrpc': '2.0', 'id': 3, 'method': 'logging/setLevel',
+      'params': {'level': 'info'}})
+_, notes = recv(3)
+_, _, n2 = call(4, 'SET_INPUT', {'player': 1, 'control': 'a', 'value': 1})
+notes += n2
+time.sleep(1)
+_, st, n2 = call(5, 'GET_STATUS')
+notes += n2
+logs = [n['params']['data'] for n in notes if n.get('method') == 'notifications/message']
+check('and stays paused, the game reading nothing: ' + (st or '').strip(),
+      st and 'PAUSED' in st and not any('buttons=0x0100' in l for l in logs))
+msg, t, n2 = call(6, 'RUN_FRAMES', {'count': 3})
+logs = [n['params']['data'] for n in n2 if n.get('method') == 'notifications/message']
+check('and steps from there, the game reading A: ' + (t or '').strip(),
+      t and t.startswith('RUN_FRAMES 3') and not msg['result']['isError']
+      and any('buttons=0x0100' in l for l in logs))
+p.stdin.close()
+try:
+    p.wait(30)
+except subprocess.TimeoutExpired:
+    p.kill()
 print('FAIL' if fails else 'PASS')
 sys.exit(1 if fails else 0)

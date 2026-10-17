@@ -922,8 +922,8 @@ int main(void)
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"a\":\"one\",\"b\":\"\",\"mode\":\"\"}"),
          out, sizeof(out), NULL);
-   check("empty later operands retain their positions",
-         st == 200 && strstr(out, "JOIN[one| 0 ]"));
+   check("empty later operands retain their positions, an empty last one goes",
+         st == 200 && strstr(out, "JOIN[one| 0]"));
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"a\":\"one\",\"b\":\"two\"}"),
          out, sizeof(out), NULL);
@@ -1006,6 +1006,12 @@ int main(void)
          out, sizeof(out), NULL);
    check("and so is a value outside the set it offers",
          strstr(out, "-32602") && strstr(out, "fast|slow")
+         && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mode\":true}"),
+         out, sizeof(out), NULL);
+   check("a value that is neither a string nor a number is refused",
+         strstr(out, "-32602") && strstr(out, "string or a number")
          && !strstr(out, "JOIN["));
    st = post(cmd, PORT_OPEN, NULL, call("PAUSE_TOGGLE", "{\"x\":1}"),
          out, sizeof(out), NULL);

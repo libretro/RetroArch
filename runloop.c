@@ -5665,8 +5665,11 @@ void runloop_event_deinit_core(void)
 #ifdef HAVE_COMMAND
    if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
       command_run_frames_cancel("the content was closed");
-   /* the next content's addresses mean something else */
+   runloop_frame_work_set(RUNLOOP_WORK_PAUSE_LOADED, false);
+   /* the next content's addresses mean something else, and its first
+    * frame is not to find buttons held for this one */
    command_watch_clear();
+   input_driver_command_release(MAX_USERS);
 #endif
 
    audio_driver_set_core_float(false);
@@ -9987,6 +9990,13 @@ int runloop_iterate(void)
 #ifdef HAVE_COMMAND
    if (frame_advanced && (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES))
       command_run_frames_tick();
+   /* LOAD_CONTENT ... paused, from no running core: pausing waits for
+    * the first frame, which is what marks a core running */
+   if (frame_advanced && (runloop_st->frame_work & RUNLOOP_WORK_PAUSE_LOADED))
+   {
+      runloop_frame_work_set(RUNLOOP_WORK_PAUSE_LOADED, false);
+      command_event(CMD_EVENT_PAUSE, NULL);
+   }
 #else
    (void)frame_advanced;
 #endif

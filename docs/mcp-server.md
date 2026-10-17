@@ -406,7 +406,8 @@ and to put a stick anywhere but centre.
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
 it go) for the core, over the player's own controller, until it is set
-again or `RELEASE_INPUT [player]` lets go of it. Both answer with the
+again, `RELEASE_INPUT [player]` lets go of it, or the content closes -
+the next content does not start with a button held for this one. Both answer with the
 player, the buttons held and the axes held, tab separated, and `none`
 for either where nothing is held. `RELEASE_INPUT` with no player lets
 go for every player and answers for the first of them. Achievements
@@ -474,9 +475,10 @@ the reason:
 - `LOAD_CONTENT`, `CORE start`: the content's path once it runs; a core
   that fails to start is an error. `CLOSE_CONTENT`, `CORE unload`: once
   the content is closed. Requests sent while content loads wait for it.
-  `LOAD_CONTENT` with `paused` on pauses the content the frame it has
-  loaded, before the answer goes, so nothing runs between the load and
-  the first step - a title screen's demo starting, say. On the network
+  `LOAD_CONTENT` with `paused` on pauses the content once it has
+  loaded - after its first frame where no content was running before -
+  so nothing runs on between the load and the first step: a title
+  screen's demo starting, say. On the network
   and stdin interfaces `<core>|<content>|on` does the same, and is
   answered there too.
 - `STATE`: once the state is applied or written.
@@ -491,9 +493,11 @@ word, not something read out of its text: a screenshot path that holds
 `ERROR` - a game named so - is no error, and a failure whose text says
 nothing about one still is.
 
-Work that takes longer than ten seconds, such as a slow load, is
-answered with an error saying so; the work goes on, and `GET_STATUS`
-tells when it is through. A request still waiting for its answer when
+A content load is answered when it finishes, however long it takes:
+the server is not polled while one runs, and requests sent meanwhile
+wait for it. Other work that takes longer than ten seconds - a shader
+that is slow to compile, say - is answered with an error saying so;
+the work goes on, and `GET_STATUS` tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
 A request over HTTP is at most 64 KiB, headers and body together, and a

@@ -994,8 +994,15 @@ static void command_reply_done(retro_task_t *task, void *task_data,
          strlcpy(msg, r->name, sizeof(msg));
       if (r->state_loaded)
          command_post_state_loaded();
+      /* a pause is dropped with no core running yet, as after a cold
+       * start: then it is the first frame's to do */
       if (r->pause)
-         command_event(CMD_EVENT_PAUSE, NULL);
+      {
+         if (runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
+            command_event(CMD_EVENT_PAUSE, NULL);
+         else
+            runloop_frame_work_set(RUNLOOP_WORK_PAUSE_LOADED, true);
+      }
    }
    command_deferred_send(&r->deferred, msg, strlen(msg), error != NULL);
    free(r);
@@ -1494,10 +1501,15 @@ static bool command_save_state_start(struct command_reply *r)
 {
    if (!content_save_state_notify(r->path, true, command_reply_done, r))
    {
-      char msg[PATH_MAX_LENGTH + 64];
-      snprintf(msg, sizeof(msg), "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), r->path);
-      command_reply_done(NULL, NULL, r, msg);
+      /* on the heap: this runs from a task, whose thread may have a
+       * small stack */
+      const char *what = msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO);
+      size_t      len  = strlen(what) + strlen(r->path) + 8;
+      char       *msg  = (char*)malloc(len);
+      if (msg)
+         snprintf(msg, len, "%s \"%s\".", what, r->path);
+      command_reply_done(NULL, NULL, r, msg ? msg : what);
+      free(msg);
    }
    return true;
 }
@@ -1561,7 +1573,6 @@ bool command_save_state_slot(command_t *cmd, const char *arg)
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
-   char replay_path[16384];
    unsigned int slot            = 0;
    struct command_reply *r      = NULL;
    if (!command_arg_slot(arg, &slot))
@@ -1573,10 +1584,10 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    if (     core_info_current_supports_savestate()
          && (r = command_reply_new("PLAY_REPLAY_SLOT")))
    {
-      runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
+      runloop_get_replay_path(r->path, sizeof(r->path), slot);
       r->state_loaded = true;
       /* answered from the movie task's callback, on a later frame */
-      if (movie_start_playback_notify(input_state_get_ptr(), replay_path,
+      if (movie_start_playback_notify(input_state_get_ptr(), r->path,
                command_reply_done, r))
       {
          command_deferred_take(&r->deferred, cmd);
@@ -2725,6 +2736,10 @@ static struct
    /* a frame with the buttons let go between two presses of the same
     * one, so the game sees two taps rather than one long press */
    bool                gap;
+   /* what a press let go of on the frame boundary being crossed, and
+    * whose: a press starting on the same boundary waits a frame */
+   uint16_t            let_go;
+   unsigned            let_go_port;
    char                reply[256]; /* CMD_ANSWER_LINE: the line */
 } command_run_frames_st;
 
@@ -2807,14 +2822,26 @@ void command_run_frames_cancel(const char *why)
    command_run_frames_answer(msg, NULL, true);
 }
 
+/* A PRESS step holds its buttons; what SET_INPUT already holds stays
+ * held after it. */
+static void command_run_frames_hold(const struct command_step *s)
+{
+   unsigned i;
+   int16_t  analog[4];
+   command_run_frames_st.port = s->port;
+   command_run_frames_st.held = s->mask
+      & (uint16_t)~input_driver_command_held(s->port, analog);
+   for (i = 0; i < 16; i++)
+      if (s->mask & (1u << i))
+         input_driver_command_hold(s->port, i, 1);
+}
+
 /* Starts the step at cur and any after it that need no frame: a PRESS
  * holds its buttons, a condition that already holds is passed. Answers
  * where that ends the job. */
 static void command_run_frames_enter(void)
 {
    char     why[128];
-   unsigned i;
-   int16_t  analog[4];
    while (command_run_frames_st.cur < command_run_frames_st.count)
    {
       struct command_step *s =
@@ -2836,13 +2863,15 @@ static void command_run_frames_enter(void)
       command_run_frames_st.left = s->frames;
       if (s->kind == CMD_STEP_PRESS)
       {
-         command_run_frames_st.port = s->port;
-         /* what SET_INPUT already holds stays held after the press */
-         command_run_frames_st.held = s->mask
-            & (uint16_t)~input_driver_command_held(s->port, analog);
-         for (i = 0; i < 16; i++)
-            if (s->mask & (1u << i))
-               input_driver_command_hold(s->port, i, 1);
+         /* the same buttons let go on this boundary: a frame let go
+          * first, whatever passed in between without one */
+         if (     (s->mask & command_run_frames_st.let_go)
+               && s->port == command_run_frames_st.let_go_port)
+         {
+            command_run_frames_st.gap = true;
+            return;
+         }
+         command_run_frames_hold(s);
       }
       return;
    }
@@ -2881,6 +2910,7 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.answer = answer;
    command_run_frames_st.held   = 0;
    command_run_frames_st.gap    = false;
+   command_run_frames_st.let_go = 0;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    command_run_frames_enter();
@@ -2917,9 +2947,9 @@ void command_run_frames_tick(void)
    s = &command_run_frames_st.steps[command_run_frames_st.cur];
    if (command_run_frames_st.gap)
    {
+      /* that was the frame let go: the press starts now */
       command_run_frames_st.gap = false;
-      command_run_frames_st.cur++;
-      command_run_frames_enter();
+      command_run_frames_hold(s);
    }
    else if (s->kind == CMD_STEP_UNTIL)
    {
@@ -2938,19 +2968,15 @@ void command_run_frames_tick(void)
    }
    else if (!--command_run_frames_st.left)
    {
-      const struct command_step *n =
-         command_run_frames_st.cur + 1 < command_run_frames_st.count
-         ? &command_run_frames_st.steps[command_run_frames_st.cur + 1]
-         : NULL;
       command_run_frames_release();
-      if (     s->kind == CMD_STEP_PRESS && n && n->kind == CMD_STEP_PRESS
-            && n->port == s->port && (n->mask & s->mask))
-         command_run_frames_st.gap = true;
-      else
+      if (s->kind == CMD_STEP_PRESS)
       {
-         command_run_frames_st.cur++;
-         command_run_frames_enter();
+         command_run_frames_st.let_go      = s->mask;
+         command_run_frames_st.let_go_port = s->port;
       }
+      command_run_frames_st.cur++;
+      command_run_frames_enter();
+      command_run_frames_st.let_go = 0;
    }
    /* the frames allowed have run with a step still going: how far it
     * got, so the next request carries on from there */
@@ -4023,22 +4049,29 @@ static void command_query_handler(retro_task_t *task)
    }
    else
    {
-      char path[PATH_MAX_LENGTH];
-      playlist_config_t config;
-      playlist_t *pl;
+      /* the config holds two paths: on the heap, as this runs on a task
+       * thread when the queue is threaded */
+      playlist_config_t *config = (playlist_config_t*)calloc(1,
+            sizeof(*config));
+      playlist_t *pl            = NULL;
 
-      fill_pathname_join_special(path, q->dir, q->name, sizeof(path));
-      if (!string_ends_with_size(path, ".lpl", strlen(path), 4))
-         strlcat(path, ".lpl", sizeof(path));
-      config.capacity            = COLLECTION_SIZE;
-      config.old_format          = q->old_format;
-      config.compress            = q->compress;
-      config.fuzzy_archive_match = q->fuzzy_archive_match;
-      playlist_config_set_path(&config, path);
-      playlist_config_set_base_content_directory(&config,
-            q->portable_paths ? q->content_dir : NULL);
+      if (config)
+      {
+         fill_pathname_join_special(config->path, q->dir, q->name,
+               sizeof(config->path));
+         if (!string_ends_with_size(config->path, ".lpl",
+                  strlen(config->path), 4))
+            strlcat(config->path, ".lpl", sizeof(config->path));
+         config->capacity            = COLLECTION_SIZE;
+         config->old_format          = q->old_format;
+         config->compress            = q->compress;
+         config->fuzzy_archive_match = q->fuzzy_archive_match;
+         playlist_config_set_base_content_directory(config,
+               q->portable_paths ? q->content_dir : NULL);
+      }
 
-      if (!path_is_valid(path) || !(pl = playlist_init(&config)))
+      if (     !config || !path_is_valid(config->path)
+            || !(pl = playlist_init(config)))
       {
          q->error = true;
          command_query_append(q, &cap, "GET_PLAYLIST ERROR no such playlist\n");
@@ -4046,35 +4079,42 @@ static void command_query_handler(retro_task_t *task)
       else
       {
          size_t i, n = playlist_size(pl);
-         for (i = q->first; i < n; i++)
+         for (i = q->first; q->reply && i < n; i++)
          {
             const struct playlist_entry *e = NULL;
-            char line[3 * PATH_MAX_LENGTH];
+            char   more[32];
+            size_t room = cap - q->reply_len;
+            int    len;
             if (i - q->first >= COMMAND_PLAYLIST_PAGE)
             {
-               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
-               command_query_append(q, &cap, line);
+               snprintf(more, sizeof(more), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, more);
                break;
             }
             playlist_get_index(pl, i, &e);
             if (!e)
                continue;
-            snprintf(line, sizeof(line), "%u\t%s\t%s\t%s\n", (unsigned)i,
+            /* the row goes straight into the reply, room kept for the
+             * MORE that says where to go on from */
+            len = room > 16 ? snprintf(q->reply + q->reply_len, room - 16,
+                  "%u\t%s\t%s\t%s\n", (unsigned)i,
                   e->label     ? e->label     : "",
                   e->path      ? e->path      : "",
-                  e->core_path ? e->core_path : "");
-            if (q->reply_len + strlen(line) + 16 > cap)
+                  e->core_path ? e->core_path : "") : -1;
+            if (len < 0 || (size_t)len >= room - 16)
             {
-               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
-               command_query_append(q, &cap, line);
+               q->reply[q->reply_len] = '\0';
+               snprintf(more, sizeof(more), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, more);
                break;
             }
-            command_query_append(q, &cap, line);
+            q->reply_len += (size_t)len;
          }
          if (!q->reply_len)
             command_query_append(q, &cap, "GET_PLAYLIST empty\n");
          playlist_free(pl);
       }
+      free(config);
    }
    task_set_progress(task, 100);
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -4728,7 +4768,8 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
 bool command_get_status(command_t *cmd, const char* arg)
 {
    size_t _len;
-   char reply[4096];
+   /* a status, a system name and a file name */
+   char reply[1024];
    uint8_t flags;
 
    if (!cmd)
@@ -5745,7 +5786,6 @@ bool command_set_shader(command_t *cmd, const char *arg)
    struct command_reply *r;
 #endif
 
-   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (apply_new_shader)
    {
       gfx_ctx_flags_t flags;
@@ -5776,6 +5816,9 @@ bool command_set_shader(command_t *cmd, const char *arg)
       }
    }
 
+   /* only once it is known what to apply: a refused preset leaves the
+    * setting as it was */
+   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (!video_shader_apply_shader(settings, type, arg, true))
    {
       command_reply_error(cmd, "SET_SHADER",
