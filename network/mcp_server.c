@@ -557,7 +557,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "GET_MEMORY_MAP gives the addresses READ_CORE_MEMORY, WATCH and " \
    "conditions take. WATCH the bytes each step needs - position, state, " \
    "enemies - and every step answers with them. Step with STEPS " \
-   "(approach, jump and land in one request, with a stop for a death), " \
+   "(approach, jump and land in one request, with a stop for a death; " \
+   "queue: on plays the next stretch on without pausing), " \
    "PRESS ... until, or RUN_UNTIL; RUN_FRAMES lets the game run. STATE " \
    "checkpoint before a risky move, and rollback after a mistake. Tools " \
    "marked destructive can lose unsaved progress or load code."

@@ -5670,6 +5670,7 @@ void runloop_event_deinit_core(void)
     * frame is not to find buttons held for this one */
    command_watch_clear();
    command_checkpoint_clear();
+   command_run_frames_forget();
    input_driver_command_release(MAX_USERS);
 #endif
 
@@ -9764,6 +9765,13 @@ int runloop_iterate(void)
 #ifdef HAVE_THREADS
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_check();
+#endif
+
+#ifdef HAVE_COMMAND
+   /* before the frame is decided: a STEPS checkpoint with the core off
+    * the stack, and a list it ends runs no frame past it */
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_between();
 #endif
 
    switch ((enum runloop_state_enum)runloop_check_state(

@@ -1580,11 +1580,31 @@ void command_checkpoint_clear(void)
    command_checkpoint.size = 0;
 }
 
+/* Keeps the core's state as the checkpoint. Serializing re-enters the
+ * core, so only with the core off the stack. */
+static bool command_checkpoint_take(void)
+{
+   retro_ctx_serialize_info_t info;
+   size_t len = core_serialize_size();
+   void  *buf = len ? malloc(len) : NULL;
+   info.data_const = NULL;
+   info.data       = buf;
+   info.size       = len;
+   if (!buf || !core_serialize(&info))
+   {
+      free(buf);
+      return false;
+   }
+   free(command_checkpoint.data);
+   command_checkpoint.data = buf;
+   command_checkpoint.size = len;
+   return true;
+}
+
 /* Serializing re-enters the core, so this runs from the reply's main
  * thread task, as a save to a slot does. */
 static bool command_checkpoint_start(struct command_reply *r)
 {
-   retro_ctx_serialize_info_t info;
    const char *error = NULL;
    if (r->state_loaded)
    {
@@ -1604,28 +1624,13 @@ static bool command_checkpoint_start(struct command_reply *r)
          if (!content_deserialize_state(command_checkpoint.data,
                   command_checkpoint.size))
             error = "the core could not restore the checkpoint";
+         else
+            command_run_frames_forget();
          audio_driver_jump_fade_end(ramped);
       }
    }
-   else
-   {
-      size_t len = core_serialize_size();
-      void  *buf = len ? malloc(len) : NULL;
-      info.data_const = NULL;
-      info.data       = buf;
-      info.size       = len;
-      if (!buf || !core_serialize(&info))
-      {
-         free(buf);
-         error = "this core cannot save a state right now";
-      }
-      else
-      {
-         free(command_checkpoint.data);
-         command_checkpoint.data = buf;
-         command_checkpoint.size = len;
-      }
-   }
+   else if (!command_checkpoint_take())
+      error = "this core cannot save a state right now";
    command_reply_done(NULL, NULL, r, error);
    return true;
 }
@@ -2876,25 +2881,32 @@ static bool command_cond_mapped(command_t *cmd, const char *name,
  * holds. RUN_FRAMES and PRESS are one step, RUN_UNTIL is one, a PRESS
  * that waits after it is two, and STEPS is whatever the client lists -
  * approach, jump, land - so a stretch of play that took three requests
- * takes one. */
+ * takes one. STOP and CHECKPOINT take no frame: a list's stops go
+ * ahead of its steps, so a list queued behind another brings its own. */
 enum cmd_step_kind
 {
    CMD_STEP_RUN = 0,
    CMD_STEP_PRESS,
-   CMD_STEP_UNTIL
+   CMD_STEP_UNTIL,
+   CMD_STEP_STOP,
+   CMD_STEP_CHECKPOINT
 };
 
 struct command_step
 {
-   struct command_cond cond;   /* UNTIL */
+   struct command_cond cond;   /* UNTIL and STOP */
    unsigned            frames; /* RUN and PRESS */
    unsigned            port;   /* PRESS: the player, from 0 */
    uint16_t            mask;   /* PRESS: the buttons, by bit */
    uint8_t             kind;   /* enum cmd_step_kind */
+   uint8_t             idx;    /* its number in its list, from 1; a
+                                  STOP's among the stops */
 };
 
-#define COMMAND_STEPS_MAX 16
+#define COMMAND_STEPS_MAX 32
 #define COMMAND_STOPS_MAX 4
+/* steps queued and running, their stops among them */
+#define COMMAND_QUEUE_MAX 64
 
 /* How the job answers: the command's own line (RUN_FRAMES, PRESS), how
  * the wait ended and the value (RUN_UNTIL, a PRESS that waits), or how
@@ -2907,11 +2919,12 @@ enum cmd_job_answer
 };
 
 /* The job in progress. One at a time: a second replaces the first,
- * which is answered with an error. */
+ * which is answered with an error. A queued one has no request waiting
+ * on it: how it stopped or failed is kept for the next queued STEPS. */
 static struct
 {
    command_deferred_t  deferred;
-   struct command_step steps[COMMAND_STEPS_MAX];
+   struct command_step steps[COMMAND_QUEUE_MAX];
    /* STEPS: end the list where any of them holds - a death, the level's
     * end */
    struct command_cond stops[COMMAND_STOPS_MAX];
@@ -2935,6 +2948,12 @@ static struct
    uint16_t            let_go;
    unsigned            let_go_port;
    char                reply[256]; /* CMD_ANSWER_LINE: the line */
+   bool                queued;
+   /* queued: the answer it ended with, until a queued STEPS reads it;
+    * also where that STEPS writes its own */
+   char                report[256 + COMMAND_WATCH_MAX * 48 + 32];
+   size_t              report_len;
+   bool                report_error;
 } command_run_frames_st;
 
 /* A PRESS step lets go of what it held, on its last frame or on
@@ -2948,8 +2967,18 @@ static void command_run_frames_release(void)
    command_run_frames_st.held = 0;
 }
 
+/* Ends the job, answering no one. */
+static void command_run_frames_finish(void)
+{
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
+   command_run_frames_st.count = 0;
+   command_run_frames_st.left  = 0;
+   command_run_frames_release();
+}
+
 /* Ends the job: @first, the watches, and @last after them, unless it
- * failed, when @first is the reason and nothing follows it. */
+ * failed, when @first is the reason and nothing follows it. A queued
+ * job keeps it for the next queued STEPS instead. */
 static void command_run_frames_answer(const char *first, const char *last,
       bool is_error)
 {
@@ -2960,10 +2989,7 @@ static void command_run_frames_answer(const char *first, const char *last,
 
    if (_len >= sizeof(out))
       _len = sizeof(out) - 1;
-   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
-   command_run_frames_st.count = 0;
-   command_run_frames_st.left  = 0;
-   command_run_frames_release();
+   command_run_frames_finish();
    if (!is_error)
    {
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
@@ -2971,6 +2997,13 @@ static void command_run_frames_answer(const char *first, const char *last,
          _len += strlcpy(out + _len, last, sizeof(out) - _len);
       if (_len >= sizeof(out))
          _len = sizeof(out) - 1;
+   }
+   if (command_run_frames_st.queued)
+   {
+      memcpy(command_run_frames_st.report, out, _len);
+      command_run_frames_st.report_len   = _len;
+      command_run_frames_st.report_error = is_error;
+      return;
    }
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
@@ -2983,6 +3016,12 @@ static void command_run_frames_end(const char *how)
    char   first[48];
    char   last[48];
    size_t _len;
+   /* a queue run dry pauses, with nothing to tell */
+   if (command_run_frames_st.queued && string_is_equal(how, "DONE"))
+   {
+      command_run_frames_finish();
+      return;
+   }
    switch (command_run_frames_st.answer)
    {
       case CMD_ANSWER_UNTIL:
@@ -3002,8 +3041,10 @@ static void command_run_frames_end(const char *how)
             _len = (size_t)snprintf(last, sizeof(last), "STOP %u\n",
                   command_run_frames_st.stopped);
          snprintf(last + _len, sizeof(last) - _len, "STEP %u\n",
-               command_run_frames_st.cur < command_run_frames_st.count
-               ? command_run_frames_st.cur + 1 : command_run_frames_st.count);
+               command_run_frames_st.steps[
+                  command_run_frames_st.cur < command_run_frames_st.count
+                  ? command_run_frames_st.cur
+                  : command_run_frames_st.count - 1].idx);
          command_run_frames_answer(first, last, false);
          break;
       default:
@@ -3013,13 +3054,31 @@ static void command_run_frames_end(const char *how)
    }
 }
 
-void command_run_frames_cancel(const char *why)
+/* Ends the job on a failure, answered as the job answers. */
+static void command_run_frames_fail(const char *why)
 {
    char msg[128];
    snprintf(msg, sizeof(msg), "%s ERROR %s",
          command_run_frames_st.name ? command_run_frames_st.name
                                     : "RUN_FRAMES", why);
    command_run_frames_answer(msg, NULL, true);
+}
+
+void command_run_frames_cancel(const char *why)
+{
+   /* replaced, or the content closed: no one to tell */
+   if (command_run_frames_st.queued)
+      command_run_frames_finish();
+   else
+      command_run_frames_fail(why);
+}
+
+void command_run_frames_forget(void)
+{
+   if (     command_run_frames_st.queued
+         && (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES))
+      command_run_frames_finish();
+   command_run_frames_st.report_len = 0;
 }
 
 /* A PRESS step holds its buttons; what SET_INPUT already holds stays
@@ -3037,21 +3096,43 @@ static void command_run_frames_hold(const struct command_step *s)
 }
 
 /* Starts the step at cur and any after it that need no frame: a PRESS
- * holds its buttons, a condition that already holds is passed. Answers
- * where that ends the job. */
-static void command_run_frames_enter(void)
+ * holds its buttons, a condition that already holds is passed, stops
+ * take over, and a checkpoint is kept where @safe says the core is off
+ * the stack; otherwise it waits for command_run_frames_between().
+ * Answers where that ends the job. */
+static void command_run_frames_enter(bool safe)
 {
    char     why[128];
    while (command_run_frames_st.cur < command_run_frames_st.count)
    {
       struct command_step *s =
          &command_run_frames_st.steps[command_run_frames_st.cur];
+      if (s->kind == CMD_STEP_STOP)
+      {
+         command_run_frames_st.stops[s->idx - 1] = s->cond;
+         command_run_frames_st.nstops            = s->idx;
+         command_run_frames_st.cur++;
+         continue;
+      }
+      if (s->kind == CMD_STEP_CHECKPOINT)
+      {
+         if (!safe)
+            return;
+         if (!command_checkpoint_take())
+         {
+            command_run_frames_fail("the core could not keep a "
+                  "checkpoint");
+            return;
+         }
+         command_run_frames_st.cur++;
+         continue;
+      }
       if (s->kind == CMD_STEP_UNTIL)
       {
          if (!command_cond_read(&s->cond, &command_run_frames_st.value,
                   why, sizeof(why)))
          {
-            command_run_frames_cancel("nothing maps the address waited "
+            command_run_frames_fail("nothing maps the address waited "
                   "on now");
             return;
          }
@@ -3081,11 +3162,9 @@ static void command_run_frames_enter(void)
 
 /* Replaces any job running with @steps, which @cmd asked for as @name,
  * and starts it: a condition that already holds is answered at once,
- * without a frame. @line is the answer of a CMD_ANSWER_LINE job; any of
- * the @nstops @stops that holds ends the list early. */
+ * without a frame. @line is the answer of a CMD_ANSWER_LINE job. */
 static void command_run_frames_start(command_t *cmd, const char *name,
-      const struct command_step *steps, unsigned count,
-      const struct command_cond *stops, unsigned nstops, unsigned budget,
+      const struct command_step *steps, unsigned count, unsigned budget,
       uint8_t answer, const char *line)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -3097,9 +3176,9 @@ static void command_run_frames_start(command_t *cmd, const char *name,
       command_run_frames_cancel(why);
    }
    memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
-   if (nstops)
-      memcpy(command_run_frames_st.stops, stops, nstops * sizeof(*stops));
-   command_run_frames_st.nstops = nstops;
+   command_run_frames_st.nstops     = 0;
+   command_run_frames_st.queued     = false;
+   command_run_frames_st.report_len = 0;
    strlcpy(command_run_frames_st.reply, line ? line : "",
          sizeof(command_run_frames_st.reply));
    command_run_frames_st.name   = name;
@@ -3113,7 +3192,51 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.let_go = 0;
    command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
-   command_run_frames_enter();
+   command_run_frames_enter(false);
+}
+
+/* Puts @steps behind those the queued job has left, or starts one with
+ * them, which nothing waits on: the content plays on through them and
+ * pauses once they have run. Room is the caller's to check. */
+static void command_run_frames_queue(const struct command_step *steps,
+      unsigned count)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+   {
+      /* the steps already run make room */
+      unsigned cur = command_run_frames_st.cur;
+      memmove(command_run_frames_st.steps, command_run_frames_st.steps + cur,
+            (command_run_frames_st.count - cur) * sizeof(*steps));
+      command_run_frames_st.count -= cur;
+      command_run_frames_st.cur    = 0;
+      memcpy(command_run_frames_st.steps + command_run_frames_st.count,
+            steps, count * sizeof(*steps));
+      command_run_frames_st.count += count;
+      return;
+   }
+   memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
+   command_run_frames_st.name   = "STEPS";
+   command_run_frames_st.count  = count;
+   command_run_frames_st.cur    = 0;
+   command_run_frames_st.ran    = 0;
+   command_run_frames_st.budget = 0;
+   command_run_frames_st.answer = CMD_ANSWER_STEPS;
+   command_run_frames_st.held   = 0;
+   command_run_frames_st.gap    = false;
+   command_run_frames_st.let_go = 0;
+   command_run_frames_st.nstops = 0;
+   command_run_frames_st.queued = true;
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   command_run_frames_enter(false);
+}
+
+void command_run_frames_between(void)
+{
+   if (     command_run_frames_st.cur < command_run_frames_st.count
+         && command_run_frames_st.steps[command_run_frames_st.cur].kind
+            == CMD_STEP_CHECKPOINT)
+      command_run_frames_enter(true);
 }
 
 /* A frame has run: the step it belonged to goes on or ends, and the
@@ -3136,7 +3259,7 @@ void command_run_frames_tick(void)
       if (!command_cond_read(&command_run_frames_st.stops[i], &now, why,
                sizeof(why)))
       {
-         command_run_frames_cancel("nothing maps the stop address now");
+         command_run_frames_fail("nothing maps the stop address now");
          return;
       }
       if (command_cond_met(&command_run_frames_st.stops[i], now))
@@ -3153,19 +3276,22 @@ void command_run_frames_tick(void)
       command_run_frames_st.gap = false;
       command_run_frames_hold(s);
    }
+   else if (s->kind == CMD_STEP_CHECKPOINT)
+      /* a job started while that frame ran */
+      command_run_frames_enter(true);
    else if (s->kind == CMD_STEP_UNTIL)
    {
       if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
                sizeof(why)))
       {
-         command_run_frames_cancel("nothing maps the address waited on "
+         command_run_frames_fail("nothing maps the address waited on "
                "now");
          return;
       }
       if (command_cond_met(&s->cond, command_run_frames_st.value))
       {
          command_run_frames_st.cur++;
-         command_run_frames_enter();
+         command_run_frames_enter(true);
       }
    }
    else if (!--command_run_frames_st.left)
@@ -3177,12 +3303,13 @@ void command_run_frames_tick(void)
          command_run_frames_st.let_go_port = s->port;
       }
       command_run_frames_st.cur++;
-      command_run_frames_enter();
+      command_run_frames_enter(true);
       command_run_frames_st.let_go = 0;
    }
    /* the frames allowed have run with a step still going: how far it
     * got, so the next request carries on from there */
-   if (command_run_frames_st.count && !command_run_frames_st.budget)
+   if (     command_run_frames_st.count && !command_run_frames_st.budget
+         && !command_run_frames_st.queued)
       command_run_frames_end("WAITING");
 }
 
@@ -3270,7 +3397,7 @@ bool command_run_frames(command_t *cmd, const char *arg)
    step.kind   = CMD_STEP_RUN;
    step.frames = n;
    snprintf(line, sizeof(line), "RUN_FRAMES %u\n", n);
-   command_run_frames_start(cmd, "RUN_FRAMES", &step, 1, NULL, 0, n,
+   command_run_frames_start(cmd, "RUN_FRAMES", &step, 1, n,
          CMD_ANSWER_LINE, line);
    return true;
 }
@@ -3645,7 +3772,7 @@ bool command_run_until(command_t *cmd, const char *arg)
    if (!command_cond_mapped(cmd, "RUN_UNTIL", &step.cond))
       return false;
    step.kind = CMD_STEP_UNTIL;
-   command_run_frames_start(cmd, "RUN_UNTIL", &step, 1, NULL, 0,
+   command_run_frames_start(cmd, "RUN_UNTIL", &step, 1,
          frames ? frames : command_frames_default(), CMD_ANSWER_UNTIL,
          NULL);
    return true;
@@ -3741,41 +3868,94 @@ bool command_press(command_t *cmd, const char *arg)
    budget = command_frames_default();
    if (budget < (unsigned)frames)
       budget = (unsigned)frames;
-   command_run_frames_start(cmd, "PRESS", steps, until ? 2 : 1, NULL, 0,
+   command_run_frames_start(cmd, "PRESS", steps, until ? 2 : 1,
          until ? budget : (unsigned)frames,
          until ? CMD_ANSWER_UNTIL : CMD_ANSWER_LINE, reply);
    return true;
 }
 
-/* STEPS <step>[; <step>...]
+/* The answer of a queued STEPS: how the queued job stopped or failed,
+ * where it has since it was last asked, or how many steps it has left
+ * to run and what WATCH watches. */
+static void command_steps_report(command_t *cmd)
+{
+   size_t   _len;
+   unsigned i;
+   unsigned left = 0;
+   if (command_run_frames_st.report_len)
+   {
+      cmd->error = command_run_frames_st.report_error;
+      _len       = command_run_frames_st.report_len;
+      command_run_frames_st.report_len = 0;
+      cmd->replier(cmd, command_run_frames_st.report, _len);
+      return;
+   }
+   for (i = command_run_frames_st.cur; i < command_run_frames_st.count; i++)
+      if (command_run_frames_st.steps[i].kind != CMD_STEP_STOP)
+         left++;
+   _len  = (size_t)snprintf(command_run_frames_st.report,
+         sizeof(command_run_frames_st.report), "QUEUED %u\n", left);
+   _len += command_watch_lines(command_run_frames_st.report + _len,
+         sizeof(command_run_frames_st.report) - _len);
+   cmd->replier(cmd, command_run_frames_st.report, _len);
+}
+
+/* STEPS <step>[; <step>...][|on]
  *
  * Runs a stretch of play as one request: "run <frames>", "press
  * <player> <controls> <frames>" and "until <condition>", in order, then
  * answers with how it ended and what WATCH watches. A "stop
  * <condition>" entry ends the list after any frame where it holds, so a
- * death does not play out the rest. The whole list runs no longer
- * than a wait does; past that it answers WAITING and the step it was on,
- * and the next request carries on from there. */
+ * death does not play out the rest, and "checkpoint" keeps the state
+ * STATE rollback returns to. The whole list runs no longer than a wait
+ * does; past that it answers WAITING and the step it was on, and the
+ * next request carries on from there.
+ *
+ * With on, it answers at once and the steps go behind those still
+ * queued, so the content plays on while the next stretch is planned,
+ * and pauses once they have all run. A stop or a failure since the last
+ * queued STEPS is answered instead, and its steps are dropped; with no
+ * steps it only asks. */
 bool command_steps(command_t *cmd, const char *arg)
 {
    char                list[1024];
    char                why[160];
-   struct command_step steps[COMMAND_STEPS_MAX];
+   /* the stops go ahead of the steps, in the slots left before them */
+   struct command_step steps[COMMAND_STOPS_MAX + COMMAND_STEPS_MAX];
+   struct command_step *first = steps + COMMAND_STOPS_MAX;
    struct command_cond stops[COMMAND_STOPS_MAX];
    unsigned            ids[ARRAY_SIZE(command_input_names)];
    unsigned            count    = 0;
+   unsigned            frames   = 0;
    unsigned            fixed    = 0;
    unsigned            budget;
+   unsigned            room;
    unsigned            i;
    unsigned            nstops   = 0;
+   bool                queue    = false;
    char               *entry;
    char               *next;
+   char               *bar;
 
-   if (!arg || !*arg || strlcpy(list, arg, sizeof(list)) >= sizeof(list))
+   if (!arg || strlcpy(list, arg, sizeof(list)) >= sizeof(list))
    {
       command_reply_error(cmd, "STEPS", "steps separated by \";\", in at "
             "most %u characters", (unsigned)sizeof(list) - 1);
       return false;
+   }
+   if ((bar = strrchr(list, '|')))
+   {
+      char *v = bar + 1;
+      *bar    = '\0';
+      while (*v == ' ')
+         v++;
+      if (string_is_equal(v, "on"))
+         queue = true;
+      else if (!string_is_equal(v, "off"))
+      {
+         command_reply_error(cmd, "STEPS", "on or off after the \"|\"");
+         return false;
+      }
    }
    memset(steps, 0, sizeof(steps));
    memset(stops, 0, sizeof(stops));
@@ -3794,6 +3974,8 @@ bool command_steps(command_t *cmd, const char *arg)
          entry[n - 1] = '\0';
       if (!*entry)
          continue;
+      /* a queued list is not one request's wait: only each step is */
+      room = (queue || fixed > budget) ? budget : budget - fixed;
       if (!strncmp(entry, "stop ", 5))
       {
          if (nstops >= COMMAND_STOPS_MAX)
@@ -3813,18 +3995,30 @@ bool command_steps(command_t *cmd, const char *arg)
       }
       else
       {
-         s = &steps[count++];
-         if (!strncmp(entry, "until ", 6))
+         s      = &first[count++];
+         s->idx = (uint8_t)count;
+         if (string_is_equal(entry, "checkpoint"))
+         {
+            if (!core_info_current_supports_savestate())
+            {
+               command_reply_error(cmd, "STEPS", "step %u: this core "
+                     "cannot save a state", count);
+               return false;
+            }
+            s->kind = CMD_STEP_CHECKPOINT;
+         }
+         else if (!strncmp(entry, "until ", 6))
          {
             s->kind = CMD_STEP_UNTIL;
             c       = &s->cond;
             entry  += 6;
+            frames++;
          }
          else if (!strncmp(entry, "run ", 4))
          {
             s->kind = CMD_STEP_RUN;
             if (     !command_arg_uint(entry + 4, &s->frames)
-                  || s->frames < 1 || s->frames > budget - fixed)
+                  || s->frames < 1 || s->frames > room)
             {
                command_reply_error(cmd, "STEPS", "step %u: run a frame "
                      "count from 1, within the %u frames one request runs",
@@ -3832,14 +4026,16 @@ bool command_steps(command_t *cmd, const char *arg)
                return false;
             }
             fixed += s->frames;
+            frames++;
          }
          else if (!strncmp(entry, "press ", 6))
          {
+            const struct command_step *prev = s;
             unsigned player;
             unsigned nids;
-            long     frames;
+            long     held;
             if (!command_input_args(cmd, "STEPS", "a frame count",
-                     entry + 6, &player, ids, &nids, &frames))
+                     entry + 6, &player, ids, &nids, &held))
                return false;
             for (i = 0; i < nids; i++)
             {
@@ -3853,13 +4049,20 @@ bool command_steps(command_t *cmd, const char *arg)
                s->mask |= (uint16_t)(1u << ids[i]);
             }
             /* a tap of what the press before it held runs a frame let go
-             * first, as command_run_frames_tick does */
-            if (     count > 1 && steps[count - 2].kind == CMD_STEP_PRESS
-                  && steps[count - 2].port == player - 1
-                  && (steps[count - 2].mask & s->mask))
+             * first, as command_run_frames_tick does, a checkpoint
+             * between them or not */
+            while (prev > first && (prev - 1)->kind == CMD_STEP_CHECKPOINT)
+               prev--;
+            if (     prev > first && (prev - 1)->kind == CMD_STEP_PRESS
+                  && (prev - 1)->port == player - 1
+                  && ((prev - 1)->mask & s->mask))
+            {
                fixed++;
-            if (     fixed > budget || frames < 1
-                  || (unsigned long)frames > budget - fixed)
+               if (!queue && room)
+                  room--;
+            }
+            if (     (!queue && fixed > budget) || held < 1
+                  || (unsigned long)held > room)
             {
                command_reply_error(cmd, "STEPS", "step %u: press for a "
                      "frame count from 1, within the %u frames one request "
@@ -3868,13 +4071,14 @@ bool command_steps(command_t *cmd, const char *arg)
             }
             s->kind   = CMD_STEP_PRESS;
             s->port   = player - 1;
-            s->frames = (unsigned)frames;
+            s->frames = (unsigned)held;
             fixed    += s->frames;
+            frames++;
          }
          else
          {
-            command_reply_error(cmd, "STEPS", "step %u: run, press, until "
-                  "or stop, not %s", count, entry);
+            command_reply_error(cmd, "STEPS", "step %u: run, press, until, "
+                  "checkpoint or stop, not %s", count, entry);
             return false;
          }
       }
@@ -3895,7 +4099,20 @@ bool command_steps(command_t *cmd, const char *arg)
          }
       }
    }
-   if (!count)
+   /* the stops, numbered, just ahead of the steps */
+   for (i = 0; i < nstops; i++)
+   {
+      struct command_step *s = &first[(int)i - (int)nstops];
+      s->cond = stops[i];
+      s->kind = CMD_STEP_STOP;
+      s->idx  = (uint8_t)(i + 1);
+   }
+   if (queue && !count && !nstops)
+   {
+      command_steps_report(cmd);
+      return true;
+   }
+   if (!frames)
    {
       command_reply_error(cmd, "STEPS", "a step at least: run, press or "
             "until");
@@ -3904,14 +4121,42 @@ bool command_steps(command_t *cmd, const char *arg)
    if (!command_frames_ready(cmd, "STEPS"))
       return false;
    for (i = 0; i < count; i++)
-      if (     steps[i].kind == CMD_STEP_UNTIL
-            && !command_cond_mapped(cmd, "STEPS", &steps[i].cond))
+      if (     first[i].kind == CMD_STEP_UNTIL
+            && !command_cond_mapped(cmd, "STEPS", &first[i].cond))
          return false;
    for (i = 0; i < nstops; i++)
       if (!command_cond_mapped(cmd, "STEPS", &stops[i]))
          return false;
-   command_run_frames_start(cmd, "STEPS", steps, count, stops, nstops,
-         budget, CMD_ANSWER_STEPS, NULL);
+   if (!queue)
+   {
+      command_run_frames_start(cmd, "STEPS",
+            first - nstops, nstops + count, budget,
+            CMD_ANSWER_STEPS, NULL);
+      return true;
+   }
+   if (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+   {
+      if (!command_run_frames_st.queued)
+      {
+         command_reply_error(cmd, "STEPS", "a request waits on the steps "
+               "running; queue once it is answered");
+         return false;
+      }
+      if (     command_run_frames_st.count - command_run_frames_st.cur
+             + nstops + count > COMMAND_QUEUE_MAX)
+      {
+         command_reply_error(cmd, "STEPS", "the queue is full: %u steps "
+               "and stops at most, queued and running",
+               (unsigned)COMMAND_QUEUE_MAX);
+         return false;
+      }
+   }
+   /* a stop the client has not heard about: told now, and these not
+    * played on from a death */
+   if (!command_run_frames_st.report_len)
+      command_run_frames_queue(first - nstops,
+            nstops + count);
+   command_steps_report(cmd);
    return true;
 }
 

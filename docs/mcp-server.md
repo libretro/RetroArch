@@ -195,6 +195,7 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `MET 12` | `met: 12` | the frames `RUN_UNTIL` ran until the byte met it |
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
+| `QUEUED 4` | `queued: 4` | the steps a queued `STEPS` has left to run |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
@@ -398,10 +399,12 @@ so the next request carries on from there instead of the client being
 told it failed.
 
 `STEPS <step>[; <step>...]` runs a stretch of play as one request. Each
-step is `run <frames>`, `press <player> <controls> <frames>` or `until
-<condition>`, in order; up to four `stop <condition>` entries anywhere in
-the list end it after any frame where one holds - a death, the level's
-end - so neither plays out the rest:
+step is `run <frames>`, `press <player> <controls> <frames>`, `until
+<condition>` or `checkpoint`, in order; up to four `stop <condition>`
+entries anywhere in the list end it after any frame where one holds - a
+death, the level's end - so neither plays out the rest. `checkpoint`
+keeps the state `STATE rollback` returns to, where the list has got to,
+so a stretch can mark its own retry point:
 
 ```
 STEPS until 6d:86 >= 1500; press 1 a 20; until 1d == 0; stop e == 11
@@ -416,10 +419,23 @@ between them, so the game reads two taps rather than one long press.
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
 and `WAITING` when its nine seconds ran out first, each with the frames
 run, what `WATCH` watches, and the `STEP` it ended on - so after
-`WAITING` the client asks again with the steps from that one. Sixteen
+`WAITING` the client asks again with the steps from that one. 32
 steps at most; the frames `run` and `press` ask for must fit in the
 nine seconds, and an address nothing maps is refused before any frame
 runs.
+
+**Queued, the content plays on between requests.** `STEPS <steps>|on`
+(`queue: on`) answers at once with `QUEUED` and the steps left to run,
+and its steps go behind those still running, so the game does not
+pause while the next stretch is planned; it pauses once they have all
+run. A list without stops keeps the stops before it, and one with its
+own brings them in when it starts. A stop that held, or a failure, is
+kept and answered to the next queued `STEPS` in its place, whose steps
+are dropped rather than played on from a death. A rollback ends the
+queue and forgets the stop, as closing the content does. With no steps
+it only asks. Nine seconds bound each step, not the queue, which holds
+64 steps and stops at most. A request that waits - `RUN_FRAMES`,
+`PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has

@@ -195,6 +195,19 @@ msg, t, _ = call(219, 'STEPS', {'steps': 'run 3; press 1 a 2; run 1'})
 check('STEPS runs its steps in one request: ' + (t or '').split('\n')[0],
       t and t.startswith('DONE 6') and not msg['result']['isError']
       and msg['result'].get('structuredContent') == {'rows': [], 'done': 6, 'step': 3})
+# Queued, it answers at once and the content plays on through it, then
+# pauses with nothing left.
+msg, t, _ = call(260, 'STEPS', {'steps': 'run 20; run 20', 'queue': 'on'})
+check('a queued STEPS answers at once: ' + (t or '').split('\n')[0],
+      msg and msg['result'].get('structuredContent') == {'rows': [], 'queued': 2})
+for i in range(100):
+    msg, t, _ = call(261 + i, 'STEPS', {'steps': '', 'queue': 'on'})
+    if t and t.startswith('QUEUED 0'):
+        break
+    time.sleep(0.02)
+_, st, _ = call(362, 'GET_STATUS')
+check('and pauses once it has run: ' + (st or '').strip(),
+      t and t.startswith('QUEUED 0') and st and 'PAUSED' in st)
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
 check('an axis is SET_INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)
