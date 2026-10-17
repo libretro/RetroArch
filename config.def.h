@@ -210,6 +210,10 @@
 
 #define DEFAULT_GAMEMODE_ENABLE true
 
+#ifdef HAVE_LAKKA
+#define DEFAULT_RTC_UPDATE_ENABLE true
+#endif
+
 #ifdef HAVE_LAKKA_SWITCH
 #define DEFAULT_SWITCH_OC false
 #define DEFAULT_SWITCH_CEC true
