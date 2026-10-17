@@ -102,6 +102,7 @@ typedef struct video_xr_slot
    unsigned layers;        /* 2 for a stereo screen */
    int view[2];            /* map view drawn per layer; -1 frame or UI */
    video_xr_vec3_t base;   /* its item's layout spot, the anchor's frame */
+   unsigned edit_seq;      /* edit mode's count when it was planned */
    /* A frame shown whole without the screens' settings (a views core's
     * fallback): their edits would not move it, so it is no item. */
    bool fixed;
@@ -136,6 +137,8 @@ typedef struct video_xr_params
    unsigned rotation;
    /* The UI layer's size, or 0 for no menu quad. */
    unsigned ui_dims;
+   /* Edit mode's count of let-go grabs, carried by every slot. */
+   unsigned edit_seq;
 
    /* Screens the headset's projection shows, a bit each: no quad, and
     * the others keep their places. */
@@ -280,6 +283,13 @@ unsigned video_xr_image_dims(float width_m, float height_m, float distance,
 bool video_xr_shrinks(unsigned image_dims, unsigned source_dims,
       unsigned rotation);
 
+/* A slot's image size: while editing, current (the image it has, 0 for
+ * none) if planned is within 0.8 to 1.25 times it on both axes, so a
+ * screen being moved is not given a new swapchain at each distance;
+ * planned otherwise. */
+unsigned video_xr_keep_dims(unsigned planned, unsigned current,
+      bool editing);
+
 void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out);
 
 /* Where a ray (origin + t * dir, t >= 0) meets a quad's front face:
@@ -319,12 +329,30 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
       video_xr_quad_set_t *out,
       video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2]);
 
-/* The laser's dot image is this many pixels square. */
-#define VIDEO_XR_CURSOR_DIM 32
+/* The laser's image, its parts side by side with a clear column
+ * between each, so filtering at one's edge takes in none of the next:
+ * its dot, VIDEO_XR_CURSOR_DIM square at the left, VIDEO_XR_CURSOR_Y
+ * rows down, mid-height so GL's bottom-up rows find it too; edit mode's
+ * faint and bright outlines (lit 0 and 1), each VIDEO_XR_OUTLINE_DIM
+ * square with a VIDEO_XR_OUTLINE_EDGE pixel rim; the menu's faint and
+ * bright handle bars, at the dot's size and rows. An outline is
+ * VIDEO_XR_OUTLINE_MARGIN metres larger than its item on every side. */
+#define VIDEO_XR_CURSOR_DIM     32
+#define VIDEO_XR_OUTLINE_DIM    128
+#define VIDEO_XR_OUTLINE_EDGE   3
+#define VIDEO_XR_OUTLINE_MARGIN 0.01f
+#define VIDEO_XR_OUTLINE_X(lit) \
+   (VIDEO_XR_CURSOR_DIM + 1 + (lit) * (VIDEO_XR_OUTLINE_DIM + 1))
+#define VIDEO_XR_HANDLE_X(lit) \
+   (VIDEO_XR_OUTLINE_X(2) + (lit) * (VIDEO_XR_CURSOR_DIM + 1))
+#define VIDEO_XR_CURSOR_W       (VIDEO_XR_HANDLE_X(1) + VIDEO_XR_CURSOR_DIM)
+#define VIDEO_XR_CURSOR_H       VIDEO_XR_OUTLINE_DIM
+#define VIDEO_XR_CURSOR_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_CURSOR_DIM) / 2)
 
-/* Its pixels, RGBA8 premultiplied: a white dot with a dark rim and a
- * one-pixel soft edge, grey so RGBA and BGRA hold the same bytes. px
- * holds VIDEO_XR_CURSOR_DIM squared times four bytes. */
+/* Its pixels, RGBA8 premultiplied, grey so RGBA and BGRA hold the same
+ * bytes: a white dot with a dark rim and a one-pixel soft edge; white
+ * outline rims and handle bars, the faint ones at a quarter. px holds
+ * VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times four bytes. */
 void video_xr_cursor_pixels(uint8_t *px);
 
 /* The laser's dot: this wide per metre along the ray, never narrower

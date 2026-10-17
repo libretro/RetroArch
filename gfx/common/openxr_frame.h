@@ -36,7 +36,30 @@
 
 RETRO_BEGIN_DECLS
 
-#define OPENXR_MAX_EXTRA_LAYERS 4
+/* Layers the input may put over the screens: the laser's dots, kept
+ * where the screens must make room, then edit mode's outlines and the
+ * menu's handle, only in room they leave. */
+#define OPENXR_KEPT_EXTRA_LAYERS 2
+#define OPENXR_MAX_EXTRA_LAYERS  \
+   (OPENXR_KEPT_EXTRA_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
+
+/* Edit mode's hands, the main thread's for the frame loop: what each
+ * holds, and each slot's last let-go hold, kept after its hand takes
+ * another item until quads planned at its release show it. */
+typedef struct openxr_grabs
+{
+   video_xr_grab_t hand[2];
+   video_xr_grab_t let_go[VIDEO_XR_MAX_SLOTS];
+} openxr_grabs_t;
+
+/* Where a hand's held item was last shown, for the hold (slot and
+ * state) it was shown for. */
+typedef struct openxr_held
+{
+   video_xr_pose_t pose;
+   unsigned slot;
+   unsigned state;
+} openxr_held_t;
 
 /* What the XR thread publishes for the drawing thread. */
 typedef struct openxr_tracked
@@ -92,9 +115,15 @@ typedef struct openxr_frame
    const openxr_runtime_t *rt;
    openxr_session_t *session;
    openxr_swapchains_t *sc;
-   /* Layers after the screens (the laser, its cursor); may be NULL. */
+   /* Layers after the screens (the laser, its cursor), shown holding
+    * this frame's quads where it shows them, in space; may be NULL. */
    unsigned (*extra_layers)(void *user, XrTime display_time,
+         const video_xr_quad_set_t *shown, XrSpace space,
          const XrCompositionLayerBaseHeader **layers, unsigned cap);
+   /* The input's: a hand's aim pose at a frame's time in space, for what
+    * it holds; may be NULL. */
+   bool (*aim)(void *user, unsigned hand, XrSpace space, XrTime time,
+         video_xr_pose_t *pose);
    void *extra_user;
    /* The hands; may be NULL. */
    bool (*locate_hands)(void *user, XrSpace base, XrTime time,
@@ -122,6 +151,14 @@ typedef struct openxr_frame
    openxr_screens_t screens;       /* the frame loop's thread */
    retro_atomic_int_t screens_seq;
    retro_atomic_int_t screens_words[2 * OPENXR_WORDS(openxr_screens_t)];
+   /* Edit mode's hands as the main thread publishes them, the same way,
+    * and the frame loop's copy for this frame. */
+   retro_atomic_int_t grabs_seq;
+   retro_atomic_int_t grabs_words[2 * OPENXR_WORDS(openxr_grabs_t)];
+   openxr_grabs_t grabs;           /* the frame loop's */
+   openxr_held_t held[2];          /* the frame loop's */
+   /* This frame's quads where it shows them, for the input's layers. */
+   video_xr_quad_set_t shown;      /* the frame loop's */
    /* The drawing thread's quads for the XR thread and the pointer, the
     * same way. */
    retro_atomic_int_t quads_seq;
@@ -209,20 +246,29 @@ typedef struct openxr_input_hooks
    /* The frame loop has stopped; the session is destroyed next. */
    void (*session_destroying)(void *user);
    /* The frame loop's thread, each headset frame: up to cap layers over
-    * the screens. Returns how many were written. */
+    * the screens, which shown holds where this frame shows them, in
+    * space; the first OPENXR_KEPT_EXTRA_LAYERS for the dots, the rest
+    * for what only fits in room the screens leave. Returns how many were
+    * written. */
    unsigned (*frame_layers)(void *user, XrTime display_time,
+         const video_xr_quad_set_t *shown, XrSpace space,
          const XrCompositionLayerBaseHeader **layers, unsigned cap);
    /* The two hands' poses and joints in base at time.
     * False when none could be located. */
    bool (*locate_hands)(void *user, XrSpace base, XrTime time,
          struct retro_vr_controller_poses *out);
+   /* The frame loop's thread: a hand's aim pose at a frame's time in
+    * space; false while it is not tracked. */
+   bool (*aim)(void *user, unsigned hand, XrSpace space, XrTime time,
+         video_xr_pose_t *pose);
    void *user;
 } openxr_input_hooks_t;
 
 bool openxr_frame_load(openxr_frame_t *f, const openxr_runtime_t *rt,
       openxr_session_t *session, openxr_swapchains_t *sc);
 void openxr_frame_deinit(openxr_frame_t *f);
-/* A new session: the anchor straight ahead, the rates it offers. */
+/* A new session: the anchor straight ahead, nothing held, the rates it
+ * offers. */
 void openxr_frame_session_created(openxr_frame_t *f);
 /* The desktop host: the XR thread. */
 bool openxr_frame_start(openxr_frame_t *f);
@@ -262,6 +308,9 @@ void openxr_frame_request_rate(openxr_frame_t *f, float hz);
 /* The drawing thread's quads, placed from an identity anchor: each
  * headset frame puts them where the screens are. */
 void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set);
+/* Main thread: edit mode's hands, for each frame to place what they
+ * hold at its own aim. */
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g);
 /* The projection the XR thread submits from now on, behind the
  * screens; left out until its slot releases an image, and once the
  * track space it was drawn in is replaced without a carry. Published

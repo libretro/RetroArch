@@ -590,15 +590,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_end_frame(XrSession s,
       t_frame_unlocked++;
    return t_end_frame_res;
 }
-static unsigned t_extra_layers(void *user, XrTime time,
-      const XrCompositionLayerBaseHeader **layers, unsigned cap)
-{
-   static XrCompositionLayerQuad dot;
-   t_extra_cap = cap;
-   layers[0]   = (const XrCompositionLayerBaseHeader*)&dot;
-   return 1;
-}
-
 static XrResult t_gl_reqs_res = XR_SUCCESS;
 static unsigned t_gl_reqs_asked;
 static XRAPI_ATTR XrResult XRAPI_CALL t_gl_reqs(XrInstance i, XrSystemId s,
@@ -726,6 +717,37 @@ static bool t_locate_hands(void *user, XrSpace base, XrTime time,
    t_hands_at = time;
    out->hands[RETRO_VR_HAND_RIGHT].flags          = RETRO_VR_HAND_ACTIVE;
    out->hands[RETRO_VR_HAND_RIGHT].grip.position[0] = 0.3f;
+   return true;
+}
+
+/* The input's hooks, stood in for. */
+static video_xr_quad_set_t t_extra_shown;
+static XrSpace             t_extra_space;
+static unsigned t_extra_layers(void *user, XrTime time,
+      const video_xr_quad_set_t *shown, XrSpace space,
+      const XrCompositionLayerBaseHeader **layers, unsigned cap)
+{
+   static XrCompositionLayerQuad dot;
+   t_extra_cap   = cap;
+   t_extra_shown = *shown;
+   t_extra_space = space;
+   layers[0]     = (const XrCompositionLayerBaseHeader*)&dot;
+   return 1;
+}
+
+/* The aim hook: a pose, or untracked; the hand and space asked last. */
+static bool            t_aim_ok;
+static video_xr_pose_t t_aim_pose;
+static int             t_aim_hand = -1;
+static XrSpace         t_aim_space;
+static bool t_aim_hook(void *user, unsigned hand, XrSpace space,
+      XrTime time, video_xr_pose_t *pose)
+{
+   t_aim_hand  = (int)hand;
+   t_aim_space = space;
+   if (!t_aim_ok)
+      return false;
+   *pose = t_aim_pose;
    return true;
 }
 
@@ -1349,7 +1371,7 @@ static void test_frame(void)
    {
       XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
       const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
-      CHECK(openxr_frame_layers(&f, layers, ptrs) == 1,
+      CHECK(openxr_frame_layers(&f, 0, layers, ptrs) == 1,
             "a quad without content shown");
    }
 
@@ -1408,7 +1430,7 @@ static void test_frame(void)
    {
       XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
       const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
-      CHECK(openxr_frame_layers(&f, layers, ptrs) == 3, "menu and stereo");
+      CHECK(openxr_frame_layers(&f, 0, layers, ptrs) == 3, "menu and stereo");
       CHECK(layers[0].layerFlags
                == XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT
             && layers[0].eyeVisibility == XR_EYE_VISIBILITY_BOTH,
@@ -3385,6 +3407,8 @@ static void test_frame_inline(void)
    openxr_frame_end(&f, &b);
    CHECK(t_last_layer_count == 3, "%u layers where the runtime takes 3",
          t_last_layer_count);
+   CHECK(t_extra_cap == OPENXR_KEPT_EXTRA_LAYERS,
+         "no room left, and the host's layers capped at %u", t_extra_cap);
    {
       XrCompositionLayerQuad q[4];
       const XrCompositionLayerBaseHeader *kept[4];
@@ -3622,13 +3646,13 @@ static void test_slot_resize(void)
    {
       XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
       const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
-      unsigned got = openxr_frame_layers(&f, layers, ptrs);
+      unsigned got = openxr_frame_layers(&f, 0, layers, ptrs);
       CHECK(     got == 1 && layers[0].subImage.swapchain == old0
             && layers[0].eyeVisibility == XR_EYE_VISIBILITY_LEFT,
             "stereo: %u layers from the old mono set", got);
       CHECK(openxr_slot_acquire(&sc, 2, idx), "stereo: acquire");
       openxr_slot_release(&sc, 2);
-      got = openxr_frame_layers(&f, layers, ptrs);
+      got = openxr_frame_layers(&f, 0, layers, ptrs);
       CHECK(     got == 2
             && layers[0].subImage.swapchain == sc.slots[2].swapchains[0]
             && layers[1].subImage.swapchain == sc.slots[2].swapchains[1],
@@ -4509,6 +4533,7 @@ static void test_input_hooks(void)
    hooks.session_created    = t_in_created_fn;
    hooks.session_destroying = t_in_destroying_fn;
    hooks.frame_layers       = t_extra_layers;
+   hooks.aim                = t_aim_hook;
    hooks.user               = &user;
    openxr_frame_set_input_hooks(&hooks);
    t_in_created = t_in_destroying = 0;
@@ -4525,8 +4550,9 @@ static void test_input_hooks(void)
          t_in_handles.session == s.session,
          t_in_handles.get_proc == rt.GetInstanceProcAddr,
          (int)t_in_handles.frame_controller);
-   CHECK(f.extra_layers == t_extra_layers && f.extra_user == &user,
-         "the input's layers are not the frame's");
+   CHECK(     f.extra_layers == t_extra_layers && f.aim == t_aim_hook
+         && f.extra_user == &user,
+         "the input's layers and aim are not the frame's");
    /* Once a session: a second would leak the first's action sets. */
    openxr_frame_input_attach(&f);
    CHECK(t_in_created == 1, "attached %u times", t_in_created);
@@ -4540,7 +4566,8 @@ static void test_input_hooks(void)
    /* Detached once, however often asked; its layers go with it. */
    openxr_frame_input_detach(&f);
    openxr_frame_input_detach(&f);
-   CHECK(t_in_destroying == 1 && !f.extra_layers && !f.extra_user,
+   CHECK(     t_in_destroying == 1 && !f.extra_layers && !f.aim
+         && !f.extra_user,
          "detached %u times, layers %d", t_in_destroying,
          f.extra_layers != NULL);
    openxr_frame_run(&f);
@@ -4869,7 +4896,7 @@ static void test_screen_placement(void)
             -1.3f, 0.2f, 0.3f),
          "Fixed: at %.2f,%.2f,%.2f", shown.quads[0].pose.position.x,
          shown.quads[0].pose.position.y, shown.quads[0].pose.position.z);
-   CHECK(openxr_frame_layers(&f, layers, ptrs) == 1
+   CHECK(openxr_frame_layers(&f, 0, layers, ptrs) == 1
          && layers[0].space == s.local_space
          && t_near(layers[0].pose.position.x, -1.3f)
          && t_near(layers[0].pose.position.z, 0.3f)
@@ -4879,6 +4906,17 @@ static void test_screen_placement(void)
    openxr_frame_get_quads(&f, &shown);
    CHECK(!memcmp(&shown, &set, sizeof(set)),
          "the driver's quads were changed");
+   /* The input's layers get them where the frame shows them. */
+   f.extra_layers = t_extra_layers;
+   openxr_frame_run(&f);
+   f.extra_layers = NULL;
+   CHECK(     t_extra_space == s.local_space
+         && t_pose_is(&t_extra_shown.quads[0].pose, 0.70710678f,
+            0.70710678f, -1.3f, 0.2f, 0.3f),
+         "the input's layers see screen 1 at %.2f,%.2f,%.2f",
+         t_extra_shown.quads[0].pose.position.x,
+         t_extra_shown.quads[0].pose.position.y,
+         t_extra_shown.quads[0].pose.position.z);
 
    /* Follow Head: in VIEW, where the driver put them; published once in
     * the frame. */
@@ -4894,7 +4932,7 @@ static void test_screen_placement(void)
          "Follow: at %.2f,%.2f,%.2f in %s", shown.quads[0].pose.position.x,
          shown.quads[0].pose.position.y, shown.quads[0].pose.position.z,
          space == s.view_space ? "VIEW" : "another space");
-   CHECK(openxr_frame_layers(&f, layers, ptrs) == 1
+   CHECK(openxr_frame_layers(&f, 0, layers, ptrs) == 1
          && layers[0].space == s.view_space
          && t_near(layers[0].pose.position.z, -1.8f),
          "Follow: the layer is not in VIEW in front of the eyes");
@@ -5017,7 +5055,7 @@ static void test_screen_placement_seated(void)
          "Fixed: before the seated world, at %.2f,%.2f,%.2f",
          shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
          shown.quads[0].pose.position.z);
-   CHECK(     openxr_frame_layers(&f, layers, ptrs) == 1
+   CHECK(     openxr_frame_layers(&f, 0, layers, ptrs) == 1
          && t_near(layers[0].pose.position.x, 0.0f)
          && t_near(layers[0].pose.position.z, -1.8f),
          "Fixed: the layer before the seated world, at %.2f,%.2f",
@@ -7169,6 +7207,518 @@ static void test_gl_host_projection(void)
 }
 #endif
 
+/* A frame with screen 0 a stereo pair 1.8 m ahead and screen 1 below
+ * it, planned at edit count 2, their slots holding images, the session
+ * shown. */
+static void t_grab_frame(openxr_runtime_t *rt, openxr_session_t *s,
+      openxr_swapchains_t *sc, openxr_frame_t *f, video_xr_quad_set_t *set)
+{
+   unsigned n  = 0;
+   int cb_user = 0;
+   t_frame_fresh(rt, s, sc, f);
+   openxr_slot_create(sc, 0, 44, false, VIDEO_SCALE_PACK(64, 64), 2,
+         t_images_cb, &cb_user, &n);
+   openxr_slot_create(sc, 1, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc->slots[0].content, 1);
+   retro_atomic_store_release_int(&sc->slots[1].content, 1);
+   memset(set, 0, sizeof(*set));
+   set->num_quads = 3;
+   video_xr_pose_identity(&set->quads[0].pose);
+   set->quads[0].pose.position.z = -1.8f;
+   set->quads[0].width           = 1.6f;
+   set->quads[0].height          = 0.96f;
+   set->quads[0].eye             = VIDEO_XR_EYE_LEFT;
+   set->quads[1]                 = set->quads[0];
+   set->quads[1].eye             = VIDEO_XR_EYE_RIGHT;
+   set->quads[1].layer           = 1;
+   set->quads[2]                 = set->quads[0];
+   set->quads[2].eye             = VIDEO_XR_EYE_BOTH;
+   set->quads[2].pose.position.y = -1.0f;
+   set->quads[2].screen          = 1;
+   set->quads[2].slot            = 1;
+   set->slots[0].layers          = 2;
+   set->slots[1].layers          = 1;
+   set->slots[0].edit_seq        = 2;
+   set->slots[1].edit_seq        = 2;
+   openxr_frame_publish(f, set);
+   f->aim        = t_aim_hook;
+   f->extra_user = NULL;
+   openxr_session_set_alive(s, true);
+   retro_atomic_store_release_int(&s->state, XR_SESSION_STATE_FOCUSED);
+}
+
+static void t_grab_free(openxr_runtime_t *rt, openxr_session_t *s,
+      openxr_swapchains_t *sc, openxr_frame_t *f)
+{
+   openxr_slot_destroy(sc, 0);
+   openxr_slot_destroy(sc, 1);
+   t_frame_free(rt, s, f);
+   t_aim_ok = false;
+}
+
+/* A right hand holding screen 0 1 m out from the eyes. */
+static void t_grab_held(openxr_grabs_t *g)
+{
+   memset(g, 0, sizeof(*g));
+   video_xr_pose_identity(&g->hand[1].rel);
+   g->hand[1].rel.position.z = -1.0f;
+   video_xr_pose_identity(&g->hand[1].last);
+   g->hand[1].last.position.z = -1.8f;
+   g->hand[1].base.z          = -1.8f;
+   g->hand[1].width           = 2.0f;
+   g->hand[1].height          = 1.2f;
+   g->hand[1].state           = VIDEO_XR_GRAB_HELD;
+}
+
+/* Hand 1 lets go of what it holds at count seq, where it last put it,
+ * as the main thread hands it over. */
+static void t_grab_let_go(openxr_grabs_t *g, unsigned seq, float x)
+{
+   g->hand[1].state           = VIDEO_XR_GRAB_RELEASED;
+   g->hand[1].release_seq     = seq;
+   g->hand[1].last.position.x = x;
+   g->let_go[g->hand[1].slot] = g->hand[1];
+}
+
+/* Edit mode on the frame loop: a held item goes where the hand's aim at
+ * the frame's own time puts it, both eyes of a stereo screen, and the
+ * input's layers see it there; an untracked hand leaves it where the
+ * main thread last put it; let go, it stays until quads planned at its
+ * release show it; a fixed slot is no item to hold. */
+static void test_frame_grabs(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   openxr_frame_publish_grabs(&f, &grabs);
+   /* Not shown yet and untracked: where the main thread put it. */
+   t_aim_ok = false;
+   openxr_frame_place_screens(&f, 500);
+   openxr_frame_layers(&f, 500, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.0f)
+         && t_near(layers[0].pose.position.z, -1.8f)
+         && t_near(layers[0].size.width, 2.0f),
+         "untracked before any frame showed it, at %.2f,%.2f",
+         layers[0].pose.position.x, layers[0].pose.position.z);
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.x = 0.3f;
+   t_aim_ok              = true;
+   t_aim_hand            = -1;
+   openxr_frame_place_screens(&f, 1000);
+   CHECK(openxr_frame_layers(&f, 1000, layers, ptrs) == 3, "not three quads");
+   CHECK(     t_near(layers[0].pose.position.x, 0.3f)
+         && t_near(layers[0].pose.position.z, -1.0f)
+         && t_near(layers[1].pose.position.x, 0.3f)
+         && t_near(layers[1].pose.position.z, -1.0f)
+         && t_near(layers[0].size.width, 2.0f)
+         && t_near(layers[1].size.height, 1.2f),
+         "held at %.2f,%.2f and %.2f,%.2f, %.2f wide",
+         layers[0].pose.position.x, layers[0].pose.position.z,
+         layers[1].pose.position.x, layers[1].pose.position.z,
+         layers[0].size.width);
+   CHECK(t_near(layers[2].pose.position.x, 0.0f)
+         && t_near(layers[2].size.width, 1.6f), "screen 1 moved with it");
+   CHECK(t_aim_hand == 1, "asked hand %d's aim", t_aim_hand);
+   CHECK(t_near(f.shown.quads[1].pose.position.x, 0.3f),
+         "the input's layers would see it elsewhere");
+
+   /* A whole headset frame: the screens and the input's layers. */
+   f.extra_layers = t_extra_layers;
+   openxr_frame_run(&f);
+   CHECK(     t_near(t_quad.pose.position.x, 0.3f)
+         && t_near(t_extra_shown.quads[0].pose.position.x, 0.3f)
+         && t_near(t_extra_shown.quads[1].pose.position.x, 0.3f)
+         && t_extra_space == s.local_space,
+         "the frame submitted it at %.2f, the input saw %.2f",
+         t_quad.pose.position.x, t_extra_shown.quads[0].pose.position.x);
+   f.extra_layers = NULL;
+
+   /* Tracking lost: still where the last frame showed it, not back
+    * where the main thread's last poll put it. */
+   t_aim_ok = false;
+   openxr_frame_place_screens(&f, 2000);
+   openxr_frame_layers(&f, 2000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.3f)
+         && t_near(layers[0].pose.position.z, -1.0f)
+         && t_near(layers[1].pose.position.x, 0.3f)
+         && t_near(layers[0].size.width, 2.0f),
+         "untracked at %.2f,%.2f", layers[0].pose.position.x,
+         layers[0].pose.position.z);
+   /* The hand on another item: a new hold, untracked, is where the main
+    * thread put it, and the first item back where its quads are. */
+   {
+      openxr_grabs_t other           = grabs;
+      other.hand[1].slot             = 1;
+      other.hand[1].last.position.y  = -1.0f;
+      other.hand[1].last.position.z  = -1.8f;
+      openxr_frame_publish_grabs(&f, &other);
+      openxr_frame_place_screens(&f, 2500);
+      openxr_frame_layers(&f, 2500, layers, ptrs);
+      CHECK(     t_near(layers[2].pose.position.x, 0.0f)
+            && t_near(layers[2].pose.position.y, -1.0f)
+            && t_near(layers[2].pose.position.z, -1.8f)
+            && t_near(layers[0].pose.position.x, 0.0f)
+            && t_near(layers[0].pose.position.z, -1.8f),
+            "a new hold untracked at %.2f,%.2f,%.2f, the first item at "
+            "%.2f", layers[2].pose.position.x, layers[2].pose.position.y,
+            layers[2].pose.position.z, layers[0].pose.position.x);
+      openxr_frame_publish_grabs(&f, &grabs);
+   }
+
+   t_grab_let_go(&grabs, 3, 0.5f);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 3000);
+   openxr_frame_layers(&f, 3000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.5f)
+         && t_near(layers[1].pose.position.x, 0.5f)
+         && t_near(layers[0].size.width, 2.0f),
+         "let go, at %.2f before its quads came", layers[0].pose.position.x);
+   set.slots[0].edit_seq        = 3;
+   set.quads[0].pose.position.x = 0.5f;
+   set.quads[1].pose.position.x = 0.5f;
+   openxr_frame_publish(&f, &set);
+   openxr_frame_place_screens(&f, 4000);
+   openxr_frame_layers(&f, 4000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.5f)
+         && t_near(layers[0].size.width, 1.6f),
+         "not handed back to the published quads");
+
+   /* A count that wrapped still hands over. */
+   set.slots[0].edit_seq = 1;
+   openxr_frame_publish(&f, &set);
+   grabs.let_go[0].release_seq = 0xfffffffeu;
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 5000);
+   openxr_frame_layers(&f, 5000, layers, ptrs);
+   CHECK(t_near(layers[0].size.width, 1.6f), "a wrapped count held it");
+
+   /* A frame shown whole without the screens' settings is no item. */
+   set.slots[0].fixed = true;
+   openxr_frame_publish(&f, &set);
+   t_grab_held(&grabs);
+   openxr_frame_publish_grabs(&f, &grabs);
+   t_aim_ok = true;
+   openxr_frame_place_screens(&f, 6000);
+   openxr_frame_layers(&f, 6000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.5f)
+         && t_near(layers[0].size.width, 1.6f),
+         "a fixed slot held at %.2f", layers[0].pose.position.x);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* The hand in the room, the screens elsewhere: Fixed in Room at an
+ * anchor turned a quarter left, the held item goes where the hand puts
+ * it in LOCAL; Follow Head asks the hand in VIEW. */
+static void test_frame_grabs_spaces(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   t_head.position.x    = 0.5f;
+   t_head.position.y    = 0.2f;
+   t_head.position.z    = 0.3f;
+   t_head_tracked       = true;
+   openxr_frame_request_recenter(&f);
+   openxr_frame_run(&f);
+   t_head_tracked = false;
+   t_grab_held(&grabs);
+   openxr_frame_publish_grabs(&f, &grabs);
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.x = 0.3f;
+   t_aim_ok              = true;
+   t_aim_space           = XR_NULL_HANDLE;
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(     t_aim_space == s.local_space
+         && t_near(layers[0].pose.position.x, 0.3f)
+         && t_near(layers[0].pose.position.y, 0.0f)
+         && t_near(layers[0].pose.position.z, -1.0f)
+         && t_near(layers[0].pose.orientation.w, 1.0f),
+         "in the room: at %.2f,%.2f,%.2f", layers[0].pose.position.x,
+         layers[0].pose.position.y, layers[0].pose.position.z);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FOLLOW);
+   openxr_frame_place_screens(&f, 2000);
+   openxr_frame_layers(&f, 2000, layers, ptrs);
+   CHECK(     t_aim_space == s.view_space
+         && layers[0].space == s.view_space
+         && t_near(layers[0].pose.position.x, 0.3f)
+         && t_near(layers[0].pose.position.z, -1.0f),
+         "Follow Head: the hand not asked in VIEW, or held at %.2f,%.2f",
+         layers[0].pose.position.x, layers[0].pose.position.z);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* A session that ended mid-grab leaves its last record behind; the
+ * next session holds nothing, whatever its input does (here its setup
+ * publishes nothing): no item held, and Lazy Follow glides. */
+static void test_frame_grabs_new_session(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   openxr_input_hooks_t hooks;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   unsigned i;
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_LAZY);
+   t_grab_held(&grabs);
+   openxr_frame_publish_grabs(&f, &grabs);
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.x = 0.3f;
+   t_aim_ok              = true;
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.x, 0.3f), "fixture: not held");
+
+   memset(&hooks, 0, sizeof(hooks));
+   hooks.session_created = t_in_created_fn;
+   hooks.aim             = t_aim_hook;
+   openxr_frame_set_input_hooks(&hooks);
+   openxr_frame_session_created(&f);
+   openxr_frame_input_attach(&f);
+   openxr_frame_place_screens(&f, 2000);
+   openxr_frame_layers(&f, 2000, layers, ptrs);
+   CHECK(     t_near(layers[0].pose.position.x, 0.0f)
+         && t_near(layers[0].size.width, 1.6f),
+         "the new session held the last one's item at %.2f",
+         layers[0].pose.position.x);
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   t_head_tracked       = true;
+   for (i = 1; i <= 10; i++)
+      openxr_frame_place_screens(&f, 1000000000LL + (XrTime)i * 100000000LL);
+   CHECK(f.screens.pose.orientation.y > 0.01f,
+         "Lazy Follow held in the new session: %.3f",
+         f.screens.pose.orientation.y);
+   t_head_tracked = false;
+   openxr_frame_input_detach(&f);
+   openxr_frame_set_input_hooks(NULL);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* A hand lets go of screen 0 and takes screen 1 at its next poll, which
+ * reuses its hold: screen 0 stays where it let go until quads planned
+ * at that release show it, and screen 1 goes with the hand. */
+static void test_frame_grabs_reused(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   t_grab_let_go(&grabs, 3, 0.5f);
+   grabs.hand[1].state         = VIDEO_XR_GRAB_HELD;
+   grabs.hand[1].slot          = 1;
+   grabs.hand[1].base.y        = -1.0f;
+   grabs.hand[1].last.position = set.quads[2].pose.position;
+   openxr_frame_publish_grabs(&f, &grabs);
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.x = -0.4f;
+   t_aim_ok              = true;
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(     t_near(layers[0].pose.position.x, 0.5f)
+         && t_near(layers[1].pose.position.x, 0.5f)
+         && t_near(layers[0].size.width, 2.0f),
+         "screen 0 stepped back to %.2f while its quads lagged",
+         layers[0].pose.position.x);
+   CHECK(     t_near(layers[2].pose.position.x, -0.4f)
+         && t_near(layers[2].pose.position.z, -1.0f),
+         "screen 1 not with the hand: %.2f,%.2f", layers[2].pose.position.x,
+         layers[2].pose.position.z);
+   set.slots[0].edit_seq        = 3;
+   set.slots[1].edit_seq        = 3;
+   set.quads[0].pose.position.x = 0.5f;
+   set.quads[1].pose.position.x = 0.5f;
+   openxr_frame_publish(&f, &set);
+   openxr_frame_place_screens(&f, 2000);
+   openxr_frame_layers(&f, 2000, layers, ptrs);
+   CHECK(     t_near(layers[0].size.width, 1.6f)
+         && t_near(layers[2].pose.position.x, -0.4f),
+         "screen 0 not handed back, or screen 1 dropped");
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* Lazy Follow holds its glide while anything is held. */
+static void test_frame_grabs_lazy(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   unsigned i;
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_LAZY);
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.w = 1.0f;
+   t_head_tracked       = true;
+   openxr_frame_place_screens(&f, 1000000000LL);
+   t_grab_held(&grabs);
+   openxr_frame_publish_grabs(&f, &grabs);
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   for (i = 1; i <= 5; i++)
+      openxr_frame_place_screens(&f, 1000000000LL + (XrTime)i * 100000000LL);
+   CHECK(fabs(f.screens.pose.orientation.y) < 1e-4,
+         "glided to %.3f while held", f.screens.pose.orientation.y);
+   t_grab_let_go(&grabs, 1, 0.0f);
+   openxr_frame_publish_grabs(&f, &grabs);
+   for (i = 6; i <= 10; i++)
+      openxr_frame_place_screens(&f, 1000000000LL + (XrTime)i * 100000000LL);
+   CHECK(f.screens.pose.orientation.y > 0.01f,
+         "no glide after the release: %.3f", f.screens.pose.orientation.y);
+   t_head_tracked = false;
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* The main thread publishes while the frame loop reads: every frame
+ * shows one whole record, never half of two. The reads start at the
+ * writer's first record, however late a loaded machine runs it. */
+typedef struct t_grab_writer
+{
+   openxr_frame_t *f;
+   retro_atomic_int_t done;
+   retro_atomic_int_t started;
+} t_grab_writer_t;
+
+static void t_grab_writer_run(void *data)
+{
+   unsigned i;
+   openxr_grabs_t g;
+   t_grab_writer_t *w = (t_grab_writer_t*)data;
+   t_grab_held(&g);
+   for (i = 0; !retro_atomic_load_acquire_int(&w->done); i++)
+   {
+      float k                  = (float)(1 + (i & 1));
+      g.hand[1].rel.position.z = -k;
+      g.hand[1].width          = k;
+      g.hand[1].height         = k;
+      openxr_frame_publish_grabs(w->f, &g);
+      if (!i)
+         retro_atomic_store_release_int(&w->started, 1);
+   }
+}
+
+static void test_frame_grabs_threaded(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   t_grab_writer_t w;
+   sthread_t *thread;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   retro_time_t deadline;
+   unsigned i, held = 0, torn = 0;
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_ok = true;
+   w.f      = &f;
+   retro_atomic_store_release_int(&w.done, 0);
+   retro_atomic_store_release_int(&w.started, 0);
+   thread   = sthread_create(t_grab_writer_run, &w);
+   CHECK(thread != NULL, "no writer thread");
+   deadline = cpu_features_get_time_usec() + 10000000;
+   while (     thread && !retro_atomic_load_acquire_int(&w.started)
+          && cpu_features_get_time_usec() < deadline)
+      sthread_yield();
+   for (i = 0; i < 4000; i++)
+   {
+      float z, width;
+      openxr_frame_place_screens(&f, 1000 + i);
+      if (!openxr_frame_layers(&f, 1000 + i, layers, ptrs))
+         continue;
+      z     = -layers[0].pose.position.z;
+      width = layers[0].size.width;
+      /* Before the first record: the published quads. */
+      if (t_near(z, 1.8f))
+         continue;
+      held++;
+      if (!t_near(z, width))
+         torn++;
+   }
+   retro_atomic_store_release_int(&w.done, 1);
+   if (thread)
+      sthread_join(thread);
+   CHECK(held > 0 && !torn, "%u of %u held frames mixed two records",
+         torn, held);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* The input's layers: the room the screens leave, at least the dots'
+ * and at most what it can use. */
+static void test_frame_layer_budget(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+
+   t_max_layers = 8;
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_max_layers = 0;
+   f.extra_layers = t_extra_layers;
+   openxr_frame_run(&f);
+   CHECK(t_extra_cap == 8 - 3, "with 3 quads of 8 layers, cap %u",
+         t_extra_cap);
+   set.num_quads = 7;
+   set.quads[3]  = set.quads[2];
+   set.quads[4]  = set.quads[2];
+   set.quads[5]  = set.quads[2];
+   set.quads[6]  = set.quads[2];
+   openxr_frame_publish(&f, &set);
+   openxr_frame_run(&f);
+   CHECK(t_extra_cap == OPENXR_KEPT_EXTRA_LAYERS,
+         "with 7 quads of 8 layers, cap %u", t_extra_cap);
+   t_grab_free(&rt, &s, &sc, &f);
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   f.extra_layers = t_extra_layers;
+   openxr_frame_run(&f);
+   CHECK(t_extra_cap == OPENXR_MAX_EXTRA_LAYERS
+         && OPENXR_MAX_EXTRA_LAYERS
+            == OPENXR_KEPT_EXTRA_LAYERS + VIDEO_XR_MAX_SLOTS + 1,
+         "with room to spare, cap %u", t_extra_cap);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 int main(void)
 {
    test_runtime();
@@ -7219,6 +7769,13 @@ int main(void)
    test_screen_placement_inline();
    test_frame_repeat();
    test_screen_placement_repeat();
+   test_frame_grabs();
+   test_frame_grabs_reused();
+   test_frame_grabs_spaces();
+   test_frame_grabs_new_session();
+   test_frame_grabs_lazy();
+   test_frame_grabs_threaded();
+   test_frame_layer_budget();
 #ifdef HAVE_OPENXR_GL
    /* Last: they leave the stand-in's formats and extensions as GL's. */
    test_gl_host_start_failure();

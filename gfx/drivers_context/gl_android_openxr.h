@@ -28,9 +28,10 @@ static INLINE void gl_android_openxr_set_pacing(unsigned interval,
 static INLINE void gl_android_openxr_set_views(const video_views_map_t *map,
       unsigned frame_dims, const video_viewport_t *vp, unsigned rotation,
       unsigned screen_layout, bool swap_eyes,
-      const video_screen_xr_t *screens)
+      const video_screen_xr_t *screens, unsigned edit_seq, bool editing)
       { (void)map; (void)frame_dims; (void)vp; (void)rotation;
-        (void)screen_layout; (void)swap_eyes; (void)screens; }
+        (void)screen_layout; (void)swap_eyes; (void)screens;
+        (void)edit_seq; (void)editing; }
 static INLINE float gl_android_openxr_refresh(float *rates, unsigned cap,
       unsigned *count) { (void)rates; (void)cap; *count = 0; return 0.0f; }
 static INLINE void gl_android_openxr_new_frame(void) { }
@@ -77,13 +78,13 @@ void gl_android_openxr_set_placement(unsigned placement, float distance,
 void gl_android_openxr_set_pacing(unsigned interval, float hz);
 /* gl2, once a frame: the frame's views and the size they are in, where
  * the window draws the frame (from its top left) and its quarter turns,
- * and how screens are laid out and eyes swapped. Screen adjustments
- * are copied for this frame. While the menu is closed, an untracked
- * map's screens are cut from the window. */
+ * and how screens are laid out and eyes swapped. Screen adjustments,
+ * edit mode and its count are copied for this frame. While the menu is
+ * closed, an untracked map's screens are cut from the window. */
 void gl_android_openxr_set_views(const video_views_map_t *map,
       unsigned frame_dims, const video_viewport_t *vp, unsigned rotation,
       unsigned screen_layout, bool swap_eyes,
-      const video_screen_xr_t *screens);
+      const video_screen_xr_t *screens, unsigned edit_seq, bool editing);
 /* The headset's measured rate, 0 until known, and up to cap of the
  * rates it can be asked for. */
 float gl_android_openxr_refresh(float *rates, unsigned cap,

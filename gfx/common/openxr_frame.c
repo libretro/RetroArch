@@ -33,7 +33,8 @@
 typedef char openxr_seq_fits[
       (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
        && OPENXR_WORDS(openxr_screens_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
-       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t))
+       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t)
+       && OPENXR_WORDS(openxr_grabs_t)      <= OPENXR_WORDS(video_xr_quad_set_t))
       ? 1 : -1];
 
 /* A latched seqlock: two copies of the words, one writer, any number
@@ -169,30 +170,90 @@ static const XrSwapchain *openxr_frame_chains(openxr_slot_t *slot,
    return (*layers && slot->old[0]) ? slot->old : NULL;
 }
 
-/* The published quads whose slot shows an image. No slot changes
+/* Every quad of slot's item at pose and g's size, both eyes of a stereo
+ * screen; a fixed slot is no item. */
+static void openxr_frame_hold_slot(video_xr_quad_set_t *set, unsigned slot,
+      const video_xr_pose_t *pose, const video_xr_grab_t *g)
+{
+   unsigned i;
+   if (set->slots[slot].fixed)
+      return;
+   for (i = 0; i < set->num_quads; i++)
+      if (set->quads[i].slot == slot)
+      {
+         set->quads[i].pose   = *pose;
+         set->quads[i].width  = g->width;
+         set->quads[i].height = g->height;
+      }
+}
+
+/* Edit mode, in the screens' frame: an item a hand holds goes where the
+ * hand's aim at time puts it, and stays where it was last shown while
+ * the hand is not tracked (where the main thread put it, before any
+ * frame showed it); one let go stays where it was left until quads
+ * planned at its release or later show it. */
+static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
+      video_xr_quad_set_t *set)
+{
+   unsigned h, s;
+   video_xr_pose_t inv;
+   XrSpace space = f->screens.view
+      ? f->session->view_space : f->session->local_space;
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   {
+      const video_xr_grab_t *g = &f->grabs.let_go[s];
+      if (     g->state == VIDEO_XR_GRAB_RELEASED
+            && (int)(set->slots[s].edit_seq - g->release_seq) < 0)
+         openxr_frame_hold_slot(set, s, &g->last, g);
+   }
+   video_xr_pose_invert(&f->screens.pose, &inv);
+   for (h = 0; h < 2; h++)
+   {
+      video_xr_pose_t aim;
+      const video_xr_grab_t *g = &f->grabs.hand[h];
+      openxr_held_t *held      = &f->held[h];
+      if (held->state != g->state || held->slot != g->slot)
+      {
+         held->pose  = g->last;
+         held->slot  = g->slot;
+         held->state = g->state;
+      }
+      if (g->state != VIDEO_XR_GRAB_HELD || g->slot >= VIDEO_XR_MAX_SLOTS)
+         continue;
+      if (f->aim && time && f->aim(f->extra_user, h, space, time, &aim))
+      {
+         video_xr_compose(&inv, &aim, &aim);
+         video_xr_grab_pose(g, &aim, &held->pose, NULL);
+      }
+      openxr_frame_hold_slot(set, g->slot, &held->pose, g);
+   }
+}
+
+/* This frame's quads, holds applied, where the screens are, into
+ * f->shown; layers of those whose slot shows an image. No slot changes
  * under it: slots change under the graphics lock, or on this thread
  * where the host has none. */
-static unsigned openxr_frame_layers(openxr_frame_t *f,
+static unsigned openxr_frame_layers(openxr_frame_t *f, XrTime time,
       XrCompositionLayerQuad *layers,
       const XrCompositionLayerBaseHeader **ptrs)
 {
    unsigned i;
-   unsigned n = 0;
-   video_xr_quad_set_t quads;
+   unsigned n                 = 0;
+   video_xr_quad_set_t *quads = &f->shown;
    openxr_seq_read(&f->quads_seq, f->quads_words,
-         &quads, sizeof(quads));
-   for (i = 0; i < quads.num_quads; i++)
+         quads, sizeof(*quads));
+   openxr_frame_hold(f, time, quads);
+   for (i = 0; i < quads->num_quads; i++)
    {
-      video_xr_pose_t pose;
       unsigned dims, count;
       const XrSwapchain *chains;
-      const video_xr_quad_t *q        = &quads.quads[i];
-      openxr_slot_t *slot             = &f->sc->slots[q->slot];
-      XrCompositionLayerQuad *l       = &layers[n];
+      video_xr_quad_t *q        = &quads->quads[i];
+      openxr_slot_t *slot       = &f->sc->slots[q->slot];
+      XrCompositionLayerQuad *l = &layers[n];
+      video_xr_compose(&f->screens.pose, &q->pose, &q->pose);
       if (     !(chains = openxr_frame_chains(slot, &dims, &count))
             || q->layer >= count)
          continue;
-      video_xr_compose(&f->screens.pose, &q->pose, &pose);
       l->type                        = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                        = NULL;
       l->subImage.imageRect.offset.x = 0;
@@ -210,13 +271,13 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
       l->subImage.swapchain               = chains[q->layer];
       l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(dims);
       l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(dims);
-      l->pose.orientation.x = pose.orientation.x;
-      l->pose.orientation.y = pose.orientation.y;
-      l->pose.orientation.z = pose.orientation.z;
-      l->pose.orientation.w = pose.orientation.w;
-      l->pose.position.x    = pose.position.x;
-      l->pose.position.y    = pose.position.y;
-      l->pose.position.z    = pose.position.z;
+      l->pose.orientation.x = q->pose.orientation.x;
+      l->pose.orientation.y = q->pose.orientation.y;
+      l->pose.orientation.z = q->pose.orientation.z;
+      l->pose.orientation.w = q->pose.orientation.w;
+      l->pose.position.x    = q->pose.position.x;
+      l->pose.position.y    = q->pose.position.y;
+      l->pose.position.z    = q->pose.position.z;
       l->size.width         = q->width;
       l->size.height        = q->height;
       ptrs[n++]             = (const XrCompositionLayerBaseHeader*)l;
@@ -353,8 +414,13 @@ static void openxr_frame_screens_anchor(openxr_frame_t *f,
 static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
 {
    video_xr_pose_t at;
+   bool held;
    int recenters = retro_atomic_load_acquire_int(&f->recenters);
    int placement = retro_atomic_load_acquire_int(&f->placement);
+   openxr_seq_read(&f->grabs_seq, f->grabs_words, &f->grabs,
+         sizeof(f->grabs));
+   held = f->grabs.hand[0].state == VIDEO_XR_GRAB_HELD
+      || f->grabs.hand[1].state == VIDEO_XR_GRAB_HELD;
    openxr_frame_screens_anchor(f, &at);
    f->screens.view = (placement == VIDEO_OPENXR_PLACEMENT_FOLLOW);
    if (placement != VIDEO_OPENXR_PLACEMENT_LAZY)
@@ -386,7 +452,9 @@ static void openxr_frame_place_screens(openxr_frame_t *f, XrTime time)
             f->lazy_recenters = recenters;
          }
       }
-      else if (   openxr_frame_head(f, time, &head)
+      /* Edit mode holds the glide while anything is held. */
+      else if (   !held
+               && openxr_frame_head(f, time, &head)
                && video_xr_anchor_from_head(&head, &target))
          f->lazy_gliding = video_xr_lazy_follow(&f->lazy, &target,
                (f->lazy_time > 0 && time > f->lazy_time)
@@ -630,13 +698,22 @@ static void openxr_frame_submit(openxr_frame_t *f,
          ptrs[end_info.layerCount++] =
             (const XrCompositionLayerBaseHeader*)&proj;
       first               = end_info.layerCount;
-      end                 = first + openxr_frame_layers(f, layers,
-            ptrs + first);
+      end                 = first + openxr_frame_layers(f, b->display_time,
+            layers, ptrs + first);
       end_info.layerCount = end;
       if (f->extra_layers)
+      {
+         unsigned cap = (f->rt->max_layers > end)
+            ? (unsigned)(f->rt->max_layers - end) : 0;
+         if (cap < OPENXR_KEPT_EXTRA_LAYERS)
+            cap = OPENXR_KEPT_EXTRA_LAYERS;
+         if (cap > OPENXR_MAX_EXTRA_LAYERS)
+            cap = OPENXR_MAX_EXTRA_LAYERS;
          end_info.layerCount += f->extra_layers(f->extra_user,
-               b->display_time, ptrs + end_info.layerCount,
-               OPENXR_MAX_EXTRA_LAYERS);
+               b->display_time, &f->shown, f->screens.view
+               ? f->session->view_space : f->session->local_space,
+               ptrs + end_info.layerCount, cap);
+      }
       end_info.layerCount = openxr_frame_fit(f, ptrs,
             end_info.layerCount, first, end);
    }
@@ -839,6 +916,9 @@ void openxr_frame_deinit(openxr_frame_t *f)
    f->idle_ready = false;
 }
 
+/* A new session's frame loop holds nothing, whatever the input does. */
+static const openxr_grabs_t openxr_frame_no_grabs;
+
 void openxr_frame_session_created(openxr_frame_t *f)
 {
    video_xr_pose_identity(&f->tracked.anchor);
@@ -849,6 +929,8 @@ void openxr_frame_session_created(openxr_frame_t *f)
    openxr_frame_publish_tracked(f);
    openxr_seq_publish(&f->screens_seq, f->screens_words,
          &f->screens, sizeof(f->screens));
+   openxr_seq_publish(&f->grabs_seq, f->grabs_words,
+         &openxr_frame_no_grabs, sizeof(openxr_frame_no_grabs));
    retro_atomic_store_release_int(&f->recenter, 0);
    openxr_frame_list_rates(f);
 }
@@ -881,6 +963,7 @@ void openxr_frame_input_attach(openxr_frame_t *f)
    h.hand_data_source = f->rt->hand_data_source;
    f->extra_layers    = in->frame_layers;
    f->locate_hands    = in->locate_hands;
+   f->aim             = in->aim;
    f->extra_user      = in->user;
    f->input_attached  = true;
    in->session_created(in->user, &h);
@@ -894,6 +977,7 @@ void openxr_frame_input_detach(openxr_frame_t *f)
    f->input_attached = false;
    f->extra_layers   = NULL;
    f->locate_hands   = NULL;
+   f->aim            = NULL;
    f->extra_user     = NULL;
    if (in->session_destroying)
       in->session_destroying(in->user);
@@ -1193,6 +1277,11 @@ void openxr_frame_request_rate(openxr_frame_t *f, float hz)
 void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set)
 {
    openxr_seq_publish(&f->quads_seq, f->quads_words, set, sizeof(*set));
+}
+
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
+{
+   openxr_seq_publish(&f->grabs_seq, f->grabs_words, g, sizeof(*g));
 }
 
 void openxr_frame_publish_projection(openxr_frame_t *f,

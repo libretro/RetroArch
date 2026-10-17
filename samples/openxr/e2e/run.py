@@ -2053,14 +2053,17 @@ def sync_errors(res, want):
 
 
 def cursors(frame):
-    """The laser's dots: small blended quads."""
+    """The laser's dots: small blended quads from the image's dot."""
     return [q for q in quads(frame)
-            if q['flags'] & BLEND and q['size'][0] < 0.1]
+            if q['flags'] & BLEND and q['size'][0] < 0.1
+            and q['rect'][0] == 0]
 
 
 def menus(frame):
+    """The menu: large blended quads, not edit mode's outlines."""
     return [q for q in quads(frame)
-            if q['flags'] & BLEND and q['size'][0] >= 0.1]
+            if q['flags'] & BLEND and q['size'][0] >= 0.1
+            and q['rect'][0] == 0]
 
 
 ALL_BUTTONS = script(*['action combined/%s 1' % n for n in (
@@ -2510,6 +2513,16 @@ def trigger_errors(res):
     return []
 
 
+def rect_colour(res, fr, q, fx, fy):
+    """colour() at a fraction of the part of its image a quad shows."""
+    w, h, bpp, rows = read_png(image(res, fr, q))
+    x0, y0, rw, rh = q['rect']
+    x = min(w - 1, x0 + int(fx * rw))
+    y = min(h - 1, y0 + int(fy * rh))
+    px = rows[y][x * bpp:x * bpp + bpp]
+    return tuple(px[:3]), (px[3] if bpp == 4 else 255)
+
+
 def cursor_errors(res, want):
     shown = [f for f in res.frames if cursors(f)]
     if not shown:
@@ -2524,10 +2537,10 @@ def cursor_errors(res, want):
     else:
         fr = snaps[-1]
         dot = cursors(fr)[0]
-        rgb, alpha = colour(image(res, fr, dot), 0.5, 0.5)
+        rgb, alpha = rect_colour(res, fr, dot, 0.5, 0.5)
         if not near(rgb, WHITE) or alpha < 250:
             errors.append('the dot\'s centre is %s alpha %d' % (rgb, alpha))
-        _, alpha = colour(image(res, fr, dot), 0.02, 0.02)
+        _, alpha = rect_colour(res, fr, dot, 0.02, 0.02)
         if alpha:
             errors.append('the dot\'s corner is not transparent')
     if cursors(res.frames[-1]):
@@ -3496,10 +3509,11 @@ def check_kept_retry(res):
     if seq != ['live', 'released', 'live']:
         errors.append('controllers went %s, want live, released when the '
                       'session ended, live in the new one' % seq)
-    # The laser's dot is VIDEO_XR_CURSOR_DIM square; each start makes
-    # one, and each start here made a session.
+    # The laser's image is VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H (its
+    # dot, edit mode's outlines and the menu's handle bars); each start
+    # makes one, and each start here made a session.
     dots = [e for e in events(res, 'swapchain')
-            if (e['w'], e['h']) == (32, 32)]
+            if (e['w'], e['h']) == (356, 128)]
     if len(dots) != 2:
         errors.append('%d laser dot swapchains, want 2 (one per start)'
                       % len(dots))

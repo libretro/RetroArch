@@ -5153,8 +5153,8 @@ typedef struct gl2_desktop_xr
    video_xr_quad_set_t set;
    /* Where each slot's layers lie in the window, from its top left. */
    video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
-   /* The slots the headset has an image for. */
-   bool published[VIDEO_XR_MAX_SLOTS];
+   /* The size of each slot's image the headset has, 0 for none. */
+   unsigned published[VIDEO_XR_MAX_SLOTS];
    GLuint fbo;
    /* The core's last frame size: a repeat brings none. */
    unsigned frame_dims;
@@ -5228,6 +5228,7 @@ static void gl2_desktop_xr_plan(gl2_t *gl,
       const video_frame_info_t *video_info, const video_viewport_t *vp,
       bool map, bool eyes)
 {
+   unsigned s;
    video_xr_params_t p;
    gl2_desktop_xr_t *xr = gl->desktop_xr;
    bool menu            = false;
@@ -5244,6 +5245,7 @@ static void gl2_desktop_xr_plan(gl2_t *gl,
       /* A window shown whole despite a map is not screen 1. */
       p.screens       = (map || !video_info->views.num_views)
          ? video_info->headset_screens : NULL;
+      p.edit_seq      = video_info->headset_edit_seq;
       p.distance      = video_info->headset_distance;
       p.width         = video_info->headset_width;
       p.px_per_rad    = gl_openxr_pixels_per_radian(xr->host);
@@ -5257,6 +5259,9 @@ static void gl2_desktop_xr_plan(gl2_t *gl,
    video_xr_place_window(&p, menu,
          map && gl2_desktop_xr_tracked(video_info), vp, xr->frame_dims,
          &xr->set, xr->rects);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      xr->set.slots[s].dims = video_xr_keep_dims(xr->set.slots[s].dims,
+            xr->published[s], video_info->headset_editing);
 }
 
 /* The plan's rectangles out of the window's back buffer, which is
@@ -5283,7 +5288,7 @@ static void gl2_desktop_xr_draw(gl2_t *gl, bool eyes)
             else
                gl_openxr_slot_forget(xr->host, s);
          }
-         xr->published[s] = false;
+         xr->published[s] = 0;
          continue;
       }
       if (     gl_openxr_slot_refused(xr->host, s) == plan->dims
@@ -5307,7 +5312,7 @@ static void gl2_desktop_xr_draw(gl2_t *gl, bool eyes)
                GL_COLOR_BUFFER_BIT, GL_LINEAR);
       }
       gl_openxr_slot_publish(xr->host, s, &xr->set, NULL);
-      xr->published[s] = true;
+      xr->published[s] = plan->dims;
    }
 }
 
@@ -5333,7 +5338,7 @@ static bool gl2_desktop_xr_ready(gl2_t *gl)
    {
       if (xr->published[s])
          gl_openxr_slot_forget(xr->host, s);
-      xr->published[s] = false;
+      xr->published[s] = 0;
    }
    if (xr->proj_shown)
       gl_openxr_slot_forget(xr->host, OPENXR_PROJECTION_SLOT);
@@ -7373,7 +7378,8 @@ static bool gl2_frame(void *data, const void *frame,
          ? 0 : video_info->headset_interval, video_info->headset_request_hz);
    gl_android_openxr_set_views(&video_info->views, dims, &xr_vp,
          gl->rotation / 90, video_info->screen_layout,
-         video_info->stereo_swap_eyes, video_info->headset_screens);
+         video_info->stereo_swap_eyes, video_info->headset_screens,
+         video_info->headset_edit_seq, video_info->headset_editing);
    if (gl_android_openxr_active())
    {
       bool new_frame = frame && !video_info->frame_repeat;

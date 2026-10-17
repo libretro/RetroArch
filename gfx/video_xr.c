@@ -184,6 +184,20 @@ bool video_xr_shrinks(unsigned image_dims, unsigned source_dims,
    return VIDEO_SCALE_W(image_dims) < sw || VIDEO_SCALE_H(image_dims) < sh;
 }
 
+unsigned video_xr_keep_dims(unsigned planned, unsigned current,
+      bool editing)
+{
+   unsigned pw = VIDEO_SCALE_W(planned);
+   unsigned ph = VIDEO_SCALE_H(planned);
+   unsigned cw = VIDEO_SCALE_W(current);
+   unsigned ch = VIDEO_SCALE_H(current);
+   if (     editing
+         && 5 * pw >= 4 * cw && 4 * pw <= 5 * cw
+         && 5 * ph >= 4 * ch && 4 * ph <= 5 * ch)
+      return current;
+   return planned;
+}
+
 static void video_xr_screen_rotate(const video_screen_xr_t *screen,
       video_xr_pose_t *pose)
 {
@@ -569,8 +583,9 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
    memset(out, 0, sizeof(*out));
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {
-      out->slots[s].view[0] = -1;
-      out->slots[s].view[1] = -1;
+      out->slots[s].view[0]  = -1;
+      out->slots[s].view[1]  = -1;
+      out->slots[s].edit_seq = p->edit_seq;
    }
    if (p->width <= 0.0f || p->distance <= 0.0f)
       return;
@@ -1008,27 +1023,52 @@ void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
    }
 }
 
+/* A grey premultiplied texel of the laser's image. */
+static void video_xr_cursor_texel(uint8_t *px, unsigned x, unsigned y,
+      uint8_t level, uint8_t alpha)
+{
+   uint8_t *p = px + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4;
+   p[0]       = level;
+   p[1]       = level;
+   p[2]       = level;
+   p[3]       = alpha;
+}
+
 void video_xr_cursor_pixels(uint8_t *px)
 {
-   unsigned x, y;
+   unsigned x, y, k;
    const float c = (VIDEO_XR_CURSOR_DIM - 1) * 0.5f;
    const float r = VIDEO_XR_CURSOR_DIM * 0.5f;
+   memset(px, 0, (size_t)VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4);
    for (y = 0; y < VIDEO_XR_CURSOR_DIM; y++)
    {
       for (x = 0; x < VIDEO_XR_CURSOR_DIM; x++)
       {
-         float dx   = (float)x - c;
-         float dy   = (float)y - c;
-         float d    = (float)sqrt(dx * dx + dy * dy) / r;
-         float a    = (d < 1.0f - 1.0f / r) ? 1.0f
+         float dx = (float)x - c;
+         float dy = (float)y - c;
+         float d  = (float)sqrt(dx * dx + dy * dy) / r;
+         float a  = (d < 1.0f - 1.0f / r) ? 1.0f
             : ((d < 1.0f) ? (1.0f - d) * r : 0.0f);
-         float l    = (d < 0.6f) ? 1.0f : 0.15f;
-         uint8_t *p = px + ((size_t)y * VIDEO_XR_CURSOR_DIM + x) * 4;
-         p[0]       = (uint8_t)(l * a * 255.0f + 0.5f);
-         p[1]       = p[0];
-         p[2]       = p[0];
-         p[3]       = (uint8_t)(a * 255.0f + 0.5f);
+         float l  = (d < 0.6f) ? 1.0f : 0.15f;
+         video_xr_cursor_texel(px, x, y + VIDEO_XR_CURSOR_Y,
+               (uint8_t)(l * a * 255.0f + 0.5f),
+               (uint8_t)(a * 255.0f + 0.5f));
       }
+   }
+   for (k = 0; k < 2; k++)
+   {
+      uint8_t level = k ? 255 : 64;
+      for (y = 0; y < VIDEO_XR_OUTLINE_DIM; y++)
+         for (x = 0; x < VIDEO_XR_OUTLINE_DIM; x++)
+            if (     x < VIDEO_XR_OUTLINE_EDGE || y < VIDEO_XR_OUTLINE_EDGE
+                  || x >= VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_EDGE
+                  || y >= VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_EDGE)
+               video_xr_cursor_texel(px, VIDEO_XR_OUTLINE_X(k) + x, y,
+                     level, level);
+      for (y = 0; y < VIDEO_XR_CURSOR_DIM; y++)
+         for (x = 0; x < VIDEO_XR_CURSOR_DIM; x++)
+            video_xr_cursor_texel(px, VIDEO_XR_HANDLE_X(k) + x,
+                  VIDEO_XR_CURSOR_Y + y, level, level);
    }
 }
 

@@ -1000,6 +1000,91 @@ static void test_menu_spot(void)
    CHECK(dims_is(set.slots[VIDEO_XR_MENU_SLOT].dims, 625, 375));
 }
 
+/* Every slot of a plan carries the edit count it was planned at, and a
+ * plan is the same bytes whatever was under it: a driver that compares
+ * plans byte for byte sees no change that is not one. */
+static void test_edit_seq(void)
+{
+   static video_xr_quad_set_t a, b;
+   video_views_map_t map;
+   video_xr_params_t p;
+   unsigned s;
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims  = VIDEO_SCALE_PACK(1600, 960);
+   p.edit_seq = 7;
+   memset(&a, 0x00, sizeof(a));
+   memset(&b, 0xa5, sizeof(b));
+   video_xr_place(&p, &a);
+   video_xr_place(&p, &b);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      CHECK(a.slots[s].edit_seq == 7);
+   CHECK(!memcmp(&a, &b, sizeof(a)));
+}
+
+/* While editing, a slot keeps its image for a plan within 0.8 to 1.25
+ * times it on both axes; out of edit mode every plan is as planned. */
+static void test_keep_dims(void)
+{
+   static video_xr_quad_set_t plan, set;
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
+   unsigned s, w, h, cur0;
+   unsigned cur = VIDEO_SCALE_PACK(800, 480);
+
+   for (w = 1; w <= 1300; w += 7)
+      for (h = 1; h <= 800; h += 5)
+      {
+         unsigned d = VIDEO_SCALE_PACK(w, h);
+         CHECK(video_xr_keep_dims(d, cur, false) == d);
+         CHECK(video_xr_keep_dims(d, 0, false) == d);
+      }
+   CHECK(video_xr_keep_dims(0, cur, false) == 0);
+
+   /* The band's edges, each axis on its own. */
+   CHECK(video_xr_keep_dims(VIDEO_SCALE_PACK(640, 384), cur, true) == cur);
+   CHECK(video_xr_keep_dims(VIDEO_SCALE_PACK(1000, 600), cur, true) == cur);
+   CHECK(video_xr_keep_dims(VIDEO_SCALE_PACK(801, 479), cur, true) == cur);
+   CHECK(dims_is(video_xr_keep_dims(VIDEO_SCALE_PACK(639, 480), cur, true),
+            639, 480));
+   CHECK(dims_is(video_xr_keep_dims(VIDEO_SCALE_PACK(1001, 480), cur, true),
+            1001, 480));
+   CHECK(dims_is(video_xr_keep_dims(VIDEO_SCALE_PACK(800, 383), cur, true),
+            800, 383));
+   CHECK(dims_is(video_xr_keep_dims(VIDEO_SCALE_PACK(800, 601), cur, true),
+            800, 601));
+   /* No image yet; a slot planned empty stays empty. */
+   CHECK(dims_is(video_xr_keep_dims(VIDEO_SCALE_PACK(700, 420), 0, true),
+            700, 420));
+   CHECK(video_xr_keep_dims(0, cur, true) == 0);
+
+   /* Screen 1 20 cm nearer keeps its image while editing; twice as near
+    * is past the band. Out of edit mode the plan's bytes are its own. */
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
+   video_views_xr_reset(screens, RETRO_VIDEO_VIEWS_MAX);
+   p.screens = screens;
+   video_xr_place(&p, &plan);
+   cur0 = plan.slots[0].dims;
+   CHECK(dims_is(cur0, 837, 502));
+   screens[0].z = 0.2f;
+   video_xr_place(&p, &set);
+   CHECK(dims_is(set.slots[0].dims, 928, 557));
+   CHECK(video_xr_keep_dims(set.slots[0].dims, cur0, true) == cur0);
+   screens[0].z = 1.0f;
+   video_xr_place(&p, &set);
+   CHECK(video_xr_keep_dims(set.slots[0].dims, cur0, true)
+         == set.slots[0].dims && set.slots[0].dims != cur0);
+   memcpy(&set, &plan, sizeof(set));
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      set.slots[s].dims = video_xr_keep_dims(set.slots[s].dims,
+            VIDEO_SCALE_PACK(VIDEO_SCALE_W(set.slots[s].dims) + 1,
+               VIDEO_SCALE_H(set.slots[s].dims) + 1), false);
+   CHECK(!memcmp(&plan, &set, sizeof(set)));
+}
+
 static void test_image_dims(void)
 {
    /* 1.6 m at 1.8 m spans 0.8364 rad: 837 px at 1000 px/rad. */
@@ -1778,21 +1863,76 @@ static void test_cursor(void)
    CHECK(NEAR(pose.orientation.y, 0.70711));
 }
 
+static uint8_t t_atlas[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
+
+static const uint8_t *texel(unsigned x, unsigned y)
+{
+   return t_atlas + ((size_t)y * VIDEO_XR_CURSOR_W + x) * 4;
+}
+
+/* Whether every texel of column x is clear. */
+static int column_clear(unsigned x)
+{
+   unsigned y;
+   for (y = 0; y < VIDEO_XR_CURSOR_H; y++)
+      if (texel(x, y)[3])
+         return 0;
+   return 1;
+}
+
+/* The laser's image: the dot, edit mode's faint and bright outlines,
+ * the menu's faint and bright handle bars, a clear column between
+ * each. */
 static void test_cursor_pixels(void)
 {
-   static uint8_t px[VIDEO_XR_CURSOR_DIM * VIDEO_XR_CURSOR_DIM * 4];
-   const uint8_t *centre = px + ((size_t)(VIDEO_XR_CURSOR_DIM / 2)
-         * VIDEO_XR_CURSOR_DIM + VIDEO_XR_CURSOR_DIM / 2) * 4;
-   const uint8_t *rim    = px + ((size_t)2 * VIDEO_XR_CURSOR_DIM
-         + VIDEO_XR_CURSOR_DIM / 2) * 4;
+   const uint8_t *centre = texel(VIDEO_XR_CURSOR_DIM / 2,
+         VIDEO_XR_CURSOR_Y + VIDEO_XR_CURSOR_DIM / 2);
+   const uint8_t *rim    = texel(VIDEO_XR_CURSOR_DIM / 2,
+         VIDEO_XR_CURSOR_Y + 2);
+   const uint8_t *corner = texel(0, VIDEO_XR_CURSOR_Y);
+   const uint8_t *faint  = texel(VIDEO_XR_OUTLINE_X(0), 64);
+   const uint8_t *edge   = texel(VIDEO_XR_OUTLINE_X(0)
+         + VIDEO_XR_OUTLINE_DIM - 1, 64);
+   const uint8_t *inside = texel(VIDEO_XR_OUTLINE_X(0)
+         + VIDEO_XR_OUTLINE_EDGE, 64);
+   const uint8_t *bright = texel(VIDEO_XR_OUTLINE_X(1) + 64,
+         VIDEO_XR_OUTLINE_DIM - 1);
+   const uint8_t *bar    = texel(VIDEO_XR_HANDLE_X(0)
+         + VIDEO_XR_CURSOR_DIM / 2, VIDEO_XR_CURSOR_Y);
+   const uint8_t *lit    = texel(VIDEO_XR_HANDLE_X(1)
+         + VIDEO_XR_CURSOR_DIM - 1, VIDEO_XR_CURSOR_Y
+         + VIDEO_XR_CURSOR_DIM - 1);
 
-   video_xr_cursor_pixels(px);
-   /* White in the middle, a dark rim, nothing in the corners; grey, so
-    * RGBA and BGRA are the same bytes. */
+   memset(t_atlas, 0x7f, sizeof(t_atlas));
+   video_xr_cursor_pixels(t_atlas);
+   /* The dot: white in the middle, a dark rim, nothing in the corners;
+    * grey, so RGBA and BGRA are the same bytes. */
    CHECK(centre[0] == 255 && centre[1] == 255 && centre[2] == 255
          && centre[3] == 255);
    CHECK(rim[0] == 38 && rim[1] == 38 && rim[2] == 38 && rim[3] == 255);
-   CHECK(!px[0] && !px[1] && !px[2] && !px[3]);
+   CHECK(!corner[0] && !corner[1] && !corner[2] && !corner[3]);
+   CHECK(!texel(4, 4)[3]);
+   /* Mid-height: the same rows counted from either end. */
+   CHECK(VIDEO_XR_CURSOR_Y + VIDEO_XR_CURSOR_DIM + VIDEO_XR_CURSOR_Y
+         == VIDEO_XR_CURSOR_H);
+   /* The outlines: a rim, faint then bright, clear inside. */
+   CHECK(faint[0] == 64 && faint[1] == 64 && faint[3] == 64);
+   CHECK(edge[0] == 64 && edge[3] == 64);
+   CHECK(!inside[0] && !inside[3]);
+   CHECK(bright[0] == 255 && bright[2] == 255 && bright[3] == 255);
+   /* The handle bars: filled at the dot's rows, faint then bright, and
+    * nothing above or below them. */
+   CHECK(bar[0] == 64 && bar[3] == 64);
+   CHECK(lit[0] == 255 && lit[1] == 255 && lit[3] == 255);
+   CHECK(!texel(VIDEO_XR_HANDLE_X(0), VIDEO_XR_CURSOR_Y - 1)[3]);
+   CHECK(!texel(VIDEO_XR_HANDLE_X(1), VIDEO_XR_CURSOR_Y
+            + VIDEO_XR_CURSOR_DIM)[3]);
+   /* Filtering at a part's edge meets a clear texel, not the next. */
+   CHECK(column_clear(VIDEO_XR_CURSOR_DIM));
+   CHECK(column_clear(VIDEO_XR_OUTLINE_X(1) - 1));
+   CHECK(column_clear(VIDEO_XR_HANDLE_X(0) - 1));
+   CHECK(column_clear(VIDEO_XR_HANDLE_X(1) - 1));
+   CHECK(VIDEO_XR_HANDLE_X(1) + VIDEO_XR_CURSOR_DIM == VIDEO_XR_CURSOR_W);
 }
 
 static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
@@ -2083,6 +2223,8 @@ int main(void)
    test_edit_fixed();
    test_frame_as_screen();
    test_menu_spot();
+   test_edit_seq();
+   test_keep_dims();
    test_image_dims();
    test_shrinks();
    test_place_3ds();

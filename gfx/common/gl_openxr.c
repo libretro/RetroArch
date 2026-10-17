@@ -402,17 +402,25 @@ struct gl_openxr_dot
 static bool gl_openxr_cursor_fill(void *user, uint32_t index,
       const char **step, int *code)
 {
-   uint8_t px[VIDEO_XR_CURSOR_DIM * VIDEO_XR_CURSOR_DIM * 4];
    GLenum err;
    struct gl_openxr_dot *dot = (struct gl_openxr_dot*)user;
    gl_openxr_t *xr           = dot->xr;
+   uint8_t *px               = (uint8_t*)malloc(
+         (size_t)VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4);
+   if (!px)
+   {
+      *step = "malloc";
+      *code = 0;
+      return false;
+   }
    video_xr_cursor_pixels(px);
    while (xr->gl.GetError() != GL_NO_ERROR) { }
    xr->gl.BindTexture(GL_TEXTURE_2D, dot->images[index][0]);
    xr->gl.PixelStorei(GL_UNPACK_ALIGNMENT, 4);
-   xr->gl.TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_DIM,
-         VIDEO_XR_CURSOR_DIM, GL_RGBA, GL_UNSIGNED_BYTE, px);
+   xr->gl.TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_W,
+         VIDEO_XR_CURSOR_H, GL_RGBA, GL_UNSIGNED_BYTE, px);
    xr->gl.BindTexture(GL_TEXTURE_2D, 0);
+   free(px);
    if ((err = xr->gl.GetError()) == GL_NO_ERROR)
       return true;
    *step = "glTexSubImage2D";
@@ -432,7 +440,7 @@ static void gl_openxr_cursor_create(gl_openxr_t *xr)
    li.sc            = &xr->sc;
    li.tex           = dot.images;
    xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 2,
-         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_DIM, VIDEO_XR_CURSOR_DIM),
+         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_W, VIDEO_XR_CURSOR_H),
          openxr_binding_gl_images, &li, gl_openxr_cursor_fill, &dot,
          &step, &code);
    if (xr->frame.cursor)

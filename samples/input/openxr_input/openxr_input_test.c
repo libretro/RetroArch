@@ -716,13 +716,20 @@ void openxr_frame_get_shown_quads(openxr_frame_t *f,
    *out   = t_quads;
    *space = t_space ? t_space : t_xr_session.local_space;
 }
-/* The same quads from an identity anchor, and the screens' pose: the
- * identity unless a case turns it, in the shown quads' space. */
+/* The same quads from an identity anchor, planned at video's edit count
+ * or, while a case holds them back (the drawing thread behind), at the
+ * count it holds them at; and the screens' pose: the identity unless a
+ * case turns it, in the shown quads' space. */
 static video_xr_pose_t t_screens = { { 0.0f, 0.0f, 0.0f, 1.0f },
    { 0.0f, 0.0f, 0.0f } };
+static bool     t_quads_behind;
+static unsigned t_quads_seq;
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
 {
+   unsigned s;
    *out = t_quads;
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      out->slots[s].edit_seq = t_quads_behind ? t_quads_seq : t_edit_seq;
 }
 void openxr_frame_get_screens(openxr_frame_t *f, video_xr_pose_t *pose,
       XrSpace *space)
@@ -735,6 +742,14 @@ static bool t_cursor;
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
    return t_cursor ? (XrSwapchain)(uintptr_t)0x51 : XR_NULL_HANDLE;
+}
+/* What the hands hold, as last given to the frame loop. */
+static openxr_grabs_t t_grabs;
+static unsigned       t_grabs_published;
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
+{
+   t_grabs = *g;
+   t_grabs_published++;
 }
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 {
@@ -941,7 +956,7 @@ static void test_before_session(void)
 {
    input_openxr_register();
    CHECK(t_hooks.session_created && t_hooks.session_destroying
-         && t_hooks.frame_layers && t_hooks.locate_hands,
+         && t_hooks.frame_layers && t_hooks.locate_hands && t_hooks.aim,
          "the hooks were not registered");
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
    CHECK(t_nothing_held(), "something is held before there is a session");
@@ -2030,8 +2045,9 @@ static void test_edit_mode(void)
    t_aim_tracked[1]       = true;
    t_aim_tracked[2]       = true;
    t_cursor               = true;
-   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 2,
-         "both hands do not point while editing");
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &t_quads,
+            t_xr_session.local_space, layers, 4) == 3,
+         "both hands do not point while editing, after its outline");
 
    /* The menu opens: off, and the laser is the setting's again. */
    t_let_go();
@@ -2043,7 +2059,8 @@ static void test_edit_mode(void)
    CHECK((config & INPUT_OPENXR_LASER_MASK) == VIDEO_OPENXR_LASER_OFF,
          "the laser is %d after editing", config);
    CHECK(!strcmp(t_notice, "edit off"), "notice %s", t_notice);
-   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 0,
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &t_quads,
+            t_xr_session.local_space, layers, 4) == 0,
          "the laser points after editing with the setting Off");
    t_cursor         = false;
    memset(&t_quads, 0, sizeof(t_quads));
@@ -2911,6 +2928,7 @@ static void test_edit_fallback_frame(void)
 {
    const XrCompositionLayerBaseHeader *layers[4];
    const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   video_xr_quad_set_t frame;
    unsigned seq;
    t_edit_start();
    t_quads.quads[0].kind  = VIDEO_XR_QUAD_FRAME;
@@ -2930,9 +2948,12 @@ static void test_edit_fallback_frame(void)
    CHECK(!t_modified && t_xr[0].x == 0.5f,
          "the main button on the fallback frame reset screen 1");
    t_let_go();
-   t_cursor = true;
-   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, layers, 4) == 0,
-         "a dot on the fallback frame");
+   t_cursor        = true;
+   frame           = t_quads;
+   frame.num_quads = 1;
+   CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &frame,
+            t_xr_session.local_space, layers, 4) == 0,
+         "a dot or an outline on the fallback frame");
    t_cursor = false;
    t_quads.quads[0].kind  = VIDEO_XR_QUAD_SCREEN;
    t_quads.slots[0].fixed = false;
@@ -2946,6 +2967,303 @@ static void test_edit_fallback_frame(void)
    CHECK(g->state == VIDEO_XR_GRAB_NONE && t_edit_seq == seq,
          "held into the fallback: state %u, seq %u/%u", g->state,
          t_edit_seq, seq);
+   t_edit_end();
+}
+
+/* What the hands hold reaches the frame loop each poll, let go with its
+ * count; a hand that lets go and takes another item at its next poll
+ * still hands the first over, where it let go of it; leaving edit mode
+ * lets go for the frame loop too; a new session starts with nothing
+ * held. */
+static void test_edit_hold_record(void)
+{
+   unsigned seq, n;
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_grabs.hand[1].state == VIDEO_XR_GRAB_HELD
+         && t_grabs.hand[1].slot == 0
+         && t_near(t_grabs.hand[1].width, 1.6f)
+         && t_near(t_grabs.hand[1].base.z, -1.8f),
+         "held: state %u slot %u", t_grabs.hand[1].state,
+         t_grabs.hand[1].slot);
+   t_aim[2].position.x = 0.3f;
+   t_edit_poll();
+   CHECK(t_near(t_grabs.hand[1].last.position.x, 0.3f),
+         "the hold's place not given: %.3f",
+         t_grabs.hand[1].last.position.x);
+   t_let_go();
+   t_edit_poll();
+   seq = t_edit_seq;
+   CHECK(t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.hand[1].release_seq == seq
+         && t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.let_go[0].release_seq == seq
+         && t_near(t_grabs.let_go[0].last.position.x, 0.3f),
+         "let go: state %u seq %u/%u, slot 0's %u at %.3f",
+         t_grabs.hand[1].state, t_grabs.hand[1].release_seq, seq,
+         t_grabs.let_go[0].state, t_grabs.let_go[0].last.position.x);
+   /* The same hand on the menu's handle at its next poll. */
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = t_handle_y(0.6f);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_grabs.hand[1].state == VIDEO_XR_GRAB_HELD
+         && t_grabs.hand[1].slot == VIDEO_XR_MENU_SLOT
+         && t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.let_go[0].release_seq == seq
+         && t_near(t_grabs.let_go[0].last.position.x, 0.3f)
+         && t_near(t_grabs.let_go[0].width, 1.6f),
+         "screen 1's hand-over lost with its hold: slot 0's %u seq %u",
+         t_grabs.let_go[0].state, t_grabs.let_go[0].release_seq);
+   input_openxr_edit_toggle();
+   CHECK(!t_editing && t_grabs.hand[1].state == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.let_go[VIDEO_XR_MENU_SLOT].state
+            == VIDEO_XR_GRAB_RELEASED
+         && t_grabs.let_go[VIDEO_XR_MENU_SLOT].release_seq == t_edit_seq
+         && t_grabs.let_go[0].release_seq == seq,
+         "leaving edit mode: the frame loop still sees state %u",
+         t_grabs.hand[1].state);
+   t_edit_end();
+   /* A session's start is the frame's to clear; a recenter with nothing
+    * held outside edit mode publishes nothing either. */
+   n = t_grabs_published;
+   t_fresh_session();
+   CHECK(t_grabs_published == n, "the session's start published a record");
+   input_openxr_edit_release();
+   CHECK(t_grabs_published == n,
+         "a recenter outside edit mode published a record");
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* The XR thread's aim: each hand's own, in the space asked; nothing
+ * for a hand that is not tracked or does not exist. */
+static void test_edit_frame_aim(void)
+{
+   video_xr_pose_t pose;
+   t_edit_start();
+   t_aim[1].position.x = -0.25f;
+   CHECK(     t_hooks.aim(t_hooks.user, 0, t_xr_session.view_space, t_time,
+               &pose)
+         && t_near(pose.position.x, -0.25f)
+         && t_located_base == t_xr_session.view_space,
+         "the left hand's aim: %.3f", pose.position.x);
+   t_aim_tracked[1] = false;
+   CHECK(!t_hooks.aim(t_hooks.user, 0, t_xr_session.local_space, t_time,
+            &pose), "an untracked hand aimed");
+   CHECK(!t_hooks.aim(t_hooks.user, 2, t_xr_session.local_space, t_time,
+            &pose), "a third hand aimed");
+   t_edit_end();
+}
+
+/* Edit mode's layers: a bright outline round what a hand points at, a
+ * faint one round every other item, the menu's handle bar after its
+ * outline, then the dot; each where the frame shows its item; outlines
+ * only in the layers the dots leave; none round a fixed slot. */
+static void test_edit_outlines(void)
+{
+   unsigned n;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local = XR_NULL_HANDLE;
+   t_edit_start();
+   local            = t_xr_session.local_space;
+   t_aim_tracked[1] = false;
+   t_cursor         = true;
+   shown            = t_quads;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 4, "%u layers, want two outlines, a handle and a dot", n);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
+         && q->subImage.imageRect.offset.y == 0
+         && q->subImage.imageRect.extent.width == VIDEO_XR_OUTLINE_DIM
+         && q->subImage.imageRect.extent.height == VIDEO_XR_OUTLINE_DIM
+         && q->subImage.swapchain == (XrSwapchain)(uintptr_t)0x51
+         && q->space == local
+         && (q->layerFlags
+            & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)
+         && t_near(q->size.width, 1.62f) && t_near(q->size.height, 0.98f)
+         && t_near(q->pose.position.z, -1.8f + VIDEO_XR_CURSOR_LIFT),
+         "screen 1's outline: offset %d, %.3f x %.3f at z %.4f",
+         (int)q->subImage.imageRect.offset.x, q->size.width,
+         q->size.height, q->pose.position.z);
+   q = (const XrCompositionLayerQuad*)layers[1];
+   CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && t_near(q->pose.position.x, 2.0f) && t_near(q->size.width, 1.02f),
+         "the menu's outline is not the faint one round it");
+   q = (const XrCompositionLayerQuad*)layers[2];
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_HANDLE_X(0)
+         && q->subImage.imageRect.offset.y == VIDEO_XR_CURSOR_Y
+         && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+         && t_near(q->size.width, 1.0f * VIDEO_XR_HANDLE_WIDTH)
+         && t_near(q->size.height, VIDEO_XR_HANDLE_HEIGHT)
+         && t_near(q->pose.position.x, 2.0f)
+         && t_near(q->pose.position.y, t_handle_y(0.6f)),
+         "the menu's handle: offset %d, %.3f x %.3f at %.3f,%.3f",
+         (int)q->subImage.imageRect.offset.x, q->size.width, q->size.height,
+         q->pose.position.x, q->pose.position.y);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+         && q->subImage.imageRect.offset.x == 0
+         && q->subImage.imageRect.offset.y == VIDEO_XR_CURSOR_Y,
+         "the dot is not last, or not its part of the image");
+
+   /* The frame shows screen 1 elsewhere: its outline goes there. */
+   shown.quads[0].pose.position.x = 0.5f;
+   t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(t_near(q->pose.position.x, 0.5f),
+         "the outline at %.3f, not where the frame shows screen 1",
+         q->pose.position.x);
+   shown = t_quads;
+
+   /* A laser on the handle lights the menu's outline and handle. */
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = t_handle_y(0.6f);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 4
+         && ((const XrCompositionLayerQuad*)layers[0])
+            ->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && ((const XrCompositionLayerQuad*)layers[1])
+            ->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
+         && ((const XrCompositionLayerQuad*)layers[2])
+            ->subImage.imageRect.offset.x == VIDEO_XR_HANDLE_X(1),
+         "the handle under the laser: %u layers", n);
+   t_aim[2].position.x = 0.0f;
+   t_aim[2].position.y = 0.0f;
+
+   /* With the dots' two layers alone: the dot, no outline. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 1 && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+         && q->subImage.imageRect.offset.x == 0,
+         "with two layers: %u, the dot dropped or an outline kept", n);
+   /* One more: screen 1's outline first. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 1);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1),
+         "with three layers: %u", n);
+
+   /* A frame shown whole without the screens' settings: no outline. */
+   shown.slots[0].fixed = true;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+         && t_near(q->pose.position.x, 2.0f),
+         "%u layers round a fixed slot and the menu", n);
+
+   /* A stereo screen is one item: one outline round its pair. */
+   shown                  = t_quads;
+   shown.num_quads        = 3;
+   shown.quads[2]         = shown.quads[1];
+   shown.quads[1]         = shown.quads[0];
+   shown.quads[0].eye     = VIDEO_XR_EYE_LEFT;
+   shown.quads[1].eye     = VIDEO_XR_EYE_RIGHT;
+   shown.quads[1].layer   = 1;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 4, "%u layers round a stereo screen and the menu", n);
+
+   /* Out of edit mode, Always: the dot alone. */
+   input_openxr_edit_toggle();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 1 && q->subImage.imageRect.offset.x == 0,
+         "%u layers out of edit mode", n);
+   t_cursor = false;
+   t_edit_end();
+}
+
+/* Let go with the hand still moving: the release poll's own aim puts
+ * the item, so the frame loop, which showed it from each frame's aim,
+ * shows no step back to the poll before; the stick moves nothing then.
+ * Untracked at the release, it stays where the last poll put it. */
+static void test_edit_release_moving(void)
+{
+   t_edit_start();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 0.3f;
+   t_edit_poll();
+   t_let_go();
+   t_hold("edit/stick", 2, 1.0f, 1.0f);
+   t_aim[2].position.x = 0.5f;
+   t_edit_poll();
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && t_near(t_grabs.let_go[0].last.position.x, 0.5f)
+         && t_near(t_grabs.let_go[0].last.position.z, -1.8f)
+         && t_near(t_grabs.let_go[0].width, 1.6f)
+         && t_near(t_xr[0].x, 0.5f) && t_near(t_xr[0].z, 0.0f)
+         && t_near(t_xr[0].scale, 1.0f),
+         "let go moving: at %.3f, saved x %.3f z %.3f scale %.3f",
+         t_grabs.let_go[0].last.position.x, t_xr[0].x, t_xr[0].z,
+         t_xr[0].scale);
+   t_let_go();
+   t_aim[2].position.x = 0.0f;
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 0.4f;
+   t_edit_poll();
+   t_let_go();
+   t_aim_tracked[2]    = false;
+   t_aim[2].position.x = 0.6f;
+   t_edit_poll();
+   CHECK(     t_grabs.let_go[0].state == VIDEO_XR_GRAB_RELEASED
+         && t_near(t_grabs.let_go[0].last.position.x, 0.4f)
+         && t_near(t_xr[0].x, 0.4f),
+         "let go untracked: at %.3f, saved %.3f",
+         t_grabs.let_go[0].last.position.x, t_xr[0].x);
+   t_edit_end();
+}
+
+/* A hand lets go and grips the same item again before quads planned at
+ * the release come: it takes the item where the headset shows it, where
+ * the hand left it, not where the last quads had it. Once they come,
+ * the let-go hold is theirs: a reset since shows. */
+static void test_edit_regrab(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   t_edit_start();
+   t_quads_seq    = t_edit_seq;
+   t_quads_behind = true;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   t_aim[2].position.x = 0.3f;
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(     g->state == VIDEO_XR_GRAB_HELD && g->slot == 0
+         && t_near(g->last.position.x, 0.3f)
+         && t_near(t_grabs.hand[1].last.position.x, 0.3f),
+         "regrabbed at %.3f, not where it was let go", g->last.position.x);
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.3f), "the regrab moved it to %.3f", t_xr[0].x);
+   t_let_go();
+   t_edit_poll();
+   /* The quads catch up, screen 1 since reset: they show it. */
+   t_quads_behind = false;
+   config_set_video_screen_xr(0, NULL);
+   t_aim[2].position.x = 0.0f;
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && t_near(g->last.position.x, 0.0f),
+         "caught up, the let-go hold still applied: at %.3f",
+         g->last.position.x);
    t_edit_end();
 }
 
@@ -3037,6 +3355,11 @@ int main(void)
    test_edit_stereo();
    test_edit_fallback_frame();
    test_edit_simple_and_view();
+   test_edit_hold_record();
+   test_edit_release_moving();
+   test_edit_regrab();
+   test_edit_frame_aim();
+   test_edit_outlines();
    test_edit_room();
    if (failures)
    {

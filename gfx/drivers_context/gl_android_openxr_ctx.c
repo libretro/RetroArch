@@ -116,6 +116,7 @@ typedef struct gl_android_openxr
    video_views_map_t views;
    video_screen_xr_t screens[RETRO_VIDEO_VIEWS_MAX];
    video_viewport_t views_vp;
+   unsigned edit_seq;
    unsigned views_dims;
    unsigned rotation;
    unsigned screen_layout;
@@ -123,6 +124,7 @@ typedef struct gl_android_openxr
    /* An sRGB swapchain filled with GL_FRAMEBUFFER_SRGB_EXT off around
     * the copy (EXT_sRGB_write_control). */
    bool srgb_copy;
+   bool editing;
 
    EGLDisplay egl_display;
    EGLConfig egl_config;
@@ -377,12 +379,12 @@ static void gl_android_openxr_host_register(gl_android_openxr_t *xr)
 static bool gl_xr_cursor_fill(void *user, uint32_t index,
       const char **step, int *code)
 {
-   static uint8_t px[VIDEO_XR_CURSOR_DIM * VIDEO_XR_CURSOR_DIM * 4];
+   static uint8_t px[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
    uint32_t (*tex)[2] = (uint32_t (*)[2])user;
    video_xr_cursor_pixels(px);
    glBindTexture(GL_TEXTURE_2D, (GLuint)tex[index][0]);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_DIM,
-         VIDEO_XR_CURSOR_DIM, GL_RGBA, GL_UNSIGNED_BYTE, px);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_W,
+         VIDEO_XR_CURSOR_H, GL_RGBA, GL_UNSIGNED_BYTE, px);
    glBindTexture(GL_TEXTURE_2D, 0);
    /* The compositor reads the image on its own context. */
    glFlush();
@@ -402,7 +404,7 @@ static void gl_xr_cursor_create(gl_android_openxr_t *xr)
    li.sc            = &xr->sc;
    li.tex           = tex;
    xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 2,
-         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_DIM, VIDEO_XR_CURSOR_DIM),
+         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_W, VIDEO_XR_CURSOR_H),
          openxr_binding_gles_images, &li, gl_xr_cursor_fill, tex,
          &step, &code);
    if (xr->frame.cursor)
@@ -604,6 +606,7 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
       p.frame_dims    = xr->dims;
       video_xr_pose_identity(&p.anchor);
       p.screens       = xr->screens;
+      p.edit_seq      = xr->edit_seq;
       p.distance      = xr->distance;
       p.width         = xr->width;
       p.px_per_rad    = openxr_frame_pixels_per_radian(&xr->frame);
@@ -616,6 +619,9 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
    /* With no width, an empty set: the eyes are all there is. */
    video_xr_place_window(&p, menu, stereo, &xr->views_vp, xr->views_dims,
          &xr->set, rects);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      xr->set.slots[s].dims = video_xr_keep_dims(xr->set.slots[s].dims,
+            xr->num_images[s] ? xr->slot_dims[s] : 0, xr->editing);
    /* The blits are scissored: whatever gl2 drew last must not clip them. */
    glDisable(GL_SCISSOR_TEST);
    /* The copy keeps the stored values; the compositor decodes them.
@@ -695,7 +701,7 @@ void gl_android_openxr_set_placement(unsigned placement, float distance,
 void gl_android_openxr_set_views(const video_views_map_t *map,
       unsigned frame_dims, const video_viewport_t *vp, unsigned rotation,
       unsigned screen_layout, bool swap_eyes,
-      const video_screen_xr_t *screens)
+      const video_screen_xr_t *screens, unsigned edit_seq, bool editing)
 {
    gl_android_openxr_t *xr = &gl_xr;
    xr->views               = *map;
@@ -703,6 +709,8 @@ void gl_android_openxr_set_views(const video_views_map_t *map,
       memcpy(xr->screens, screens, sizeof(xr->screens));
    else
       video_views_xr_reset(xr->screens, RETRO_VIDEO_VIEWS_MAX);
+   xr->edit_seq            = edit_seq;
+   xr->editing             = editing;
    xr->views_dims          = frame_dims;
    xr->views_vp            = *vp;
    xr->rotation            = rotation;

@@ -6539,6 +6539,7 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
       bool views, bool eyes, unsigned frame_dims, unsigned src_dims,
       unsigned ui_dims)
 {
+   unsigned s;
    video_xr_params_t p;
    gl_openxr_t *xr = gl->xr.host;
 
@@ -6552,6 +6553,7 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
    /* A frame shown whole despite a map is not screen 1. */
    p.screens       = (views || !video_info->views.num_views)
       ? video_info->headset_screens : NULL;
+   p.edit_seq      = video_info->headset_edit_seq;
    p.menu          = video_info->headset_menu_placed
       ? &video_info->headset_menu : NULL;
    p.distance      = video_info->headset_distance;
@@ -6566,6 +6568,11 @@ static void gl3_xr_plan(gl3_t *gl, const video_frame_info_t *video_info,
    if (views && eyes)
       p.skip_screens = gl3_xr_eye_screens(video_info);
    video_xr_place(&p, &gl->xr.set);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      gl->xr.set.slots[s].dims = video_xr_keep_dims(
+            gl->xr.set.slots[s].dims,
+            gl->xr.shown[s].published ? gl->xr.shown[s].info.dims : 0,
+            video_info->headset_editing);
 }
 
 /* Whether slot s's plan this frame is what it last published. */

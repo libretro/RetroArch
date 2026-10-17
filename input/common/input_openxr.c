@@ -515,8 +515,9 @@ typedef struct input_openxr
    uint16_t last_buttons[INPUT_OPENXR_PADS];
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
-   /* XR thread. */
+   /* XR thread: the dots, edit mode's outlines and the menu's handle. */
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
+   XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
 } input_openxr_t;
 
 static input_openxr_t input_openxr_st;
@@ -541,6 +542,7 @@ typedef struct input_openxr_edit
 {
    retro_time_t last; /* the last poll's, for the stick's step */
    input_openxr_hold_t hand[INPUT_OPENXR_HANDS];
+   openxr_grabs_t grabs; /* as the frame loop is given them */
    unsigned seq;      /* grabs let go so far, for the frame snapshot */
    unsigned unbound;  /* polls in a row with its grab and menu unbound */
    bool on;
@@ -1438,16 +1440,91 @@ static void input_openxr_yield(input_openxr_t *st, unsigned laser,
       st->yield = true;
 }
 
+/* One of edit mode's layers: the laser's image's part from x, y,
+ * size square, over q just in front of it, margin larger each side. */
+static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
+      XrCompositionLayerQuad *l, const video_xr_quad_t *q, XrSpace space,
+      XrSwapchain cursor, int32_t x, int32_t y, int32_t size, float margin)
+{
+   video_xr_vec3_t lift, world;
+   lift.x = 0.0f;
+   lift.y = 0.0f;
+   lift.z = VIDEO_XR_CURSOR_LIFT;
+   video_xr_rotate(&q->pose.orientation, &lift, &world);
+   l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
+   l->next                             = NULL;
+   l->subImage.imageArrayIndex         = 0;
+   l->layerFlags                       =
+      XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+   l->space                            = space;
+   l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
+   l->subImage.swapchain               = cursor;
+   l->subImage.imageRect.offset.x      = x;
+   l->subImage.imageRect.offset.y      = y;
+   l->subImage.imageRect.extent.width  = size;
+   l->subImage.imageRect.extent.height = size;
+   l->pose.orientation.x               = q->pose.orientation.x;
+   l->pose.orientation.y               = q->pose.orientation.y;
+   l->pose.orientation.z               = q->pose.orientation.z;
+   l->pose.orientation.w               = q->pose.orientation.w;
+   l->pose.position.x                  = q->pose.position.x + world.x;
+   l->pose.position.y                  = q->pose.position.y + world.y;
+   l->pose.position.z                  = q->pose.position.z + world.z;
+   l->size.width                       = q->width + 2.0f * margin;
+   l->size.height                      = q->height + 2.0f * margin;
+   return (const XrCompositionLayerBaseHeader*)l;
+}
+
+/* Edit mode's outlines, one an item (a stereo screen's two quads are
+ * one, a fixed slot none), the menu's handle after its outline: bright
+ * for the slots in lit, faint for the rest; at most cap. */
+static unsigned input_openxr_outlines(input_openxr_t *st,
+      const video_xr_quad_set_t *set, XrSpace space, XrSwapchain cursor,
+      unsigned lit, const XrCompositionLayerBaseHeader **layers,
+      unsigned cap)
+{
+   unsigned i;
+   unsigned n    = 0;
+   unsigned done = 0;
+   for (i = 0; i < set->num_quads && n < cap; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      unsigned bright;
+      if (     q->slot >= VIDEO_XR_MAX_SLOTS || (done & (1u << q->slot))
+            || set->slots[q->slot].fixed)
+         continue;
+      done     |= 1u << q->slot;
+      bright    = (lit >> q->slot) & 1u;
+      layers[n] = input_openxr_edit_layer(&st->outlines[n], q, space,
+            cursor, VIDEO_XR_OUTLINE_X(bright), 0, VIDEO_XR_OUTLINE_DIM,
+            VIDEO_XR_OUTLINE_MARGIN);
+      n++;
+      if (q->kind == VIDEO_XR_QUAD_MENU && n < cap)
+      {
+         video_xr_quad_t handle;
+         video_xr_menu_handle(q, &handle);
+         layers[n] = input_openxr_edit_layer(&st->outlines[n], &handle,
+               space, cursor, VIDEO_XR_HANDLE_X(bright), VIDEO_XR_CURSOR_Y,
+               VIDEO_XR_CURSOR_DIM, 0.0f);
+         n++;
+      }
+   }
+   return n;
+}
+
 /* The XR thread, each headset frame: a dot where each hand points at a
- * live quad, from its own locate at the frame's display time. */
+ * live quad of set, from its own locate at the frame's display time;
+ * in edit mode an outline round every item first, in the layers the
+ * dots do not keep. */
 static unsigned input_openxr_frame_layers(void *user, XrTime time,
+      const video_xr_quad_set_t *set, XrSpace space,
       const XrCompositionLayerBaseHeader **layers, unsigned cap)
 {
    unsigned h;
    XrSwapchain cursor;
-   video_xr_quad_set_t set;
    unsigned n         = 0;
-   XrSpace space      = XR_NULL_HANDLE;
+   unsigned dots      = 0;
+   unsigned lit       = 0;
    input_openxr_t *st = &input_openxr_st;
    int config         = retro_atomic_load_acquire_int(
          &input_openxr_pointer_config);
@@ -1459,23 +1536,23 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
          || !openxr_session_focused(st->frame->session)
          || !(cursor = openxr_frame_cursor(st->frame)))
       return 0;
-   openxr_frame_get_shown_quads(st->frame, &set, &space);
-   for (h = 0; h < INPUT_OPENXR_HANDS && n < cap; h++)
+   for (h = 0; h < INPUT_OPENXR_HANDS && dots < cap; h++)
    {
       int q;
       float u, v, t, size;
       video_xr_pose_t pose;
       video_xr_vec3_t o, d;
-      XrCompositionLayerQuad *l = &st->cursors[h];
+      XrCompositionLayerQuad *l = &st->cursors[dots];
       if (     !input_openxr_ray(st, h, space, time, &o, &d)
-            || (q = video_xr_pick(&set, (unsigned)laser, menu_open,
+            || (q = video_xr_pick(set, (unsigned)laser, menu_open,
                   &o, &d, &u, &v, &t)) < 0)
          continue;
-      size = video_xr_cursor(&set.quads[q], u, v, t, &pose);
+      lit  |= 1u << set->quads[q].slot;
+      size  = video_xr_cursor(&set->quads[q], u, v, t, &pose);
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                             = NULL;
       l->subImage.imageRect.offset.x      = 0;
-      l->subImage.imageRect.offset.y      = 0;
+      l->subImage.imageRect.offset.y      = VIDEO_XR_CURSOR_Y;
       l->subImage.imageArrayIndex         = 0;
       l->layerFlags                       =
          XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
@@ -1493,10 +1570,24 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       l->pose.position.z                  = pose.position.z;
       l->size.width                       = size;
       l->size.height                      = size;
-      layers[n++]                         =
-         (const XrCompositionLayerBaseHeader*)l;
+      dots++;
    }
+   if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
+      n = input_openxr_outlines(st, set, space, cursor, lit, layers,
+            cap - OPENXR_KEPT_EXTRA_LAYERS);
+   for (h = 0; h < dots; h++)
+      layers[n++] = (const XrCompositionLayerBaseHeader*)&st->cursors[h];
    return n;
+}
+
+/* The XR thread: a hand's aim pose at a frame's time, for what it
+ * holds. */
+static bool input_openxr_frame_aim(void *user, unsigned hand,
+      XrSpace space, XrTime time, video_xr_pose_t *pose)
+{
+   (void)user;
+   return hand < INPUT_OPENXR_HANDS
+      && input_openxr_aim(&input_openxr_st, hand, space, time, pose);
 }
 
 /* Rumble into each hand's haptics: in Combined player 1's strong motor
@@ -1954,7 +2045,9 @@ static void input_openxr_edit_move(input_openxr_edit_t *e,
 
 /* A hold ends. Let go, the item stays where the hand left it, which its
  * settings hold already, and the count rides the next frame snapshot;
- * gone from the quads, nothing is left to show. */
+ * the frame loop shows it there until quads planned at that count do,
+ * even once the hand holds another. Gone from the quads, nothing is
+ * left to show. */
 static void input_openxr_edit_let_go(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, bool shown)
 {
@@ -1964,18 +2057,36 @@ static void input_openxr_edit_let_go(input_openxr_edit_t *e,
       return;
    }
    e->seq++;
-   hold->g.release_seq = e->seq;
-   hold->g.state       = VIDEO_XR_GRAB_RELEASED;
+   hold->g.release_seq           = e->seq;
+   hold->g.state                 = VIDEO_XR_GRAB_RELEASED;
+   e->grabs.let_go[hold->g.slot] = hold->g;
    video_driver_headset_edit(e->on, e->seq);
+}
+
+/* What the hands hold, for the frame loop. */
+static void input_openxr_edit_publish(input_openxr_t *st,
+      input_openxr_edit_t *e)
+{
+   if (!st->frame)
+      return;
+   e->grabs.hand[0] = e->hand[0].g;
+   e->grabs.hand[1] = e->hand[1].g;
+   openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
 
 /* Every hold let go where it is. */
 static void input_openxr_edit_let_go_all(input_openxr_edit_t *e)
 {
    unsigned h;
+   bool let_go = false;
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
       if (e->hand[h].g.state == VIDEO_XR_GRAB_HELD)
+      {
          input_openxr_edit_let_go(e, &e->hand[h], true);
+         let_go = true;
+      }
+   if (let_go || e->on)
+      input_openxr_edit_publish(&input_openxr_st, e);
 }
 
 /* The main button on an item no hand holds: a screen as Reset Screen
@@ -2073,6 +2184,17 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    openxr_frame_get_quads(st->frame, &st->quads);
    openxr_frame_get_screens(st->frame, &screens, &space);
    video_xr_pose_invert(&screens, &inv);
+   /* Items where the headset shows them: let go and not yet in the
+    * quads, as the frame loop holds them; held, where the hand put
+    * them. */
+   for (h = 0; h < VIDEO_XR_MAX_SLOTS; h++)
+   {
+      const video_xr_grab_t *g = &e->grabs.let_go[h];
+      if (     g->state == VIDEO_XR_GRAB_RELEASED
+            && !st->quads.slots[h].fixed
+            && (int)(st->quads.slots[h].edit_seq - g->release_seq) < 0)
+         input_openxr_edit_place(&st->quads, g);
+   }
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
       if (e->hand[h].g.state == VIDEO_XR_GRAB_HELD)
          input_openxr_edit_place(&st->quads, &e->hand[h].g);
@@ -2110,7 +2232,17 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             && base->x == hold->g.base.x && base->y == hold->g.base.y
             && base->z == hold->g.base.z;
          if (!grip || !shown)
+         {
+            /* From this poll's aim, near where the frame loop last
+             * showed it: no step back. */
+            if (shown && tracked)
+            {
+               stick[0] = 0;
+               stick[1] = 0;
+               input_openxr_edit_move(e, hold, &aim, tilt, stick, 0.0);
+            }
             input_openxr_edit_let_go(e, hold, shown);
+         }
          /* Untracked, the item holds still. */
          else if (tracked)
          {
@@ -2125,6 +2257,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
       else if (reset_pressed && st->hit[h] >= 0)
          input_openxr_edit_reset(e, st->quads.quads[st->hit[h]].slot);
    }
+   input_openxr_edit_publish(st, e);
 }
 
 void input_openxr_poll(unsigned max_users, unsigned controllers,
@@ -2722,6 +2855,7 @@ void input_openxr_register(void)
    hooks.session_destroying = input_openxr_session_destroying;
    hooks.frame_layers       = input_openxr_frame_layers;
    hooks.locate_hands       = input_openxr_locate_hands;
+   hooks.aim                = input_openxr_frame_aim;
    hooks.user               = NULL;
    openxr_frame_set_input_hooks(&hooks);
 }

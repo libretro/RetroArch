@@ -146,6 +146,11 @@ bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }
+void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
+{ *out = *menu; }
+void openxr_frame_publish_grabs(openxr_frame_t *f, const openxr_grabs_t *g)
+{ (void)f; (void)g; }
+static video_xr_quad_set_t test_shown;
 
 static XrResult XRAPI_CALL locate(XrSpace space, XrSpace base,
       XrTime time, XrSpaceLocation *out)
@@ -267,7 +272,8 @@ static void pointer_tests(void)
       {
          publish_pointer(laser, menu != 0);
          picks = 0;
-         input_openxr_frame_layers(NULL, 1, layers, 2);
+         input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+               layers, 2);
          if (laser == VIDEO_OPENXR_LASER_OFF)
             CHECK(picks == 0, "disabled pointer picked a quad");
          else
@@ -276,25 +282,30 @@ static void pointer_tests(void)
       }
    publish_pointer(VIDEO_OPENXR_LASER_LAST, false);
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
          && !picked_menu, "a laser past the choices was not Auto");
    publish_pointer(VIDEO_OPENXR_LASER_AUTO, false);
    after_load = replace_pointer;
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_AUTO
          && !picked_menu, "frame mixed two published pointer configurations");
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picked_laser == VIDEO_OPENXR_LASER_ALWAYS && picked_menu,
          "next frame did not observe replacement pointer pair");
    input_openxr_st.yield = true;
    publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, true);
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 0, "yielding pointer remained visible");
    publish_pointer(VIDEO_OPENXR_LASER_ALWAYS, false);
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 2 && !picked_menu, "closed menu did not end pointer yield");
    input_openxr_st.SyncActions = sync_actions;
    input_openxr_st.GetActionStateBoolean = read_bool;
@@ -304,12 +315,14 @@ static void pointer_tests(void)
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
    picks = 0;
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
-   input_openxr_frame_layers(NULL, 1, layers, 2);
+   input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
+         layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
          && !picked_menu, "completed poll published the wrong pointer pair");
 }

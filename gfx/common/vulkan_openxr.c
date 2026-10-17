@@ -584,8 +584,8 @@ static bool vulkan_openxr_cursor_fill(void *user, uint32_t index,
    VkCommandBuffer cmd        = VK_NULL_HANDLE;
    VkFence fence              = VK_NULL_HANDLE;
    void *map                  = NULL;
-   VkDeviceSize size          = VIDEO_XR_CURSOR_DIM
-      * VIDEO_XR_CURSOR_DIM * 4;
+   VkDeviceSize size          = (VkDeviceSize)VIDEO_XR_CURSOR_W
+      * VIDEO_XR_CURSOR_H * 4;
    VkMemoryPropertyFlags host = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
    VkBufferCreateInfo bi;
@@ -690,8 +690,8 @@ static bool vulkan_openxr_cursor_fill(void *user, uint32_t index,
    region.imageOffset.z                   = 0;
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.layerCount     = 1;
-   region.imageExtent.width               = VIDEO_XR_CURSOR_DIM;
-   region.imageExtent.height              = VIDEO_XR_CURSOR_DIM;
+   region.imageExtent.width               = VIDEO_XR_CURSOR_W;
+   region.imageExtent.height              = VIDEO_XR_CURSOR_H;
    region.imageExtent.depth               = 1;
    vkCmdCopyBufferToImage(cmd, buffer, dot->images[index][0],
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
@@ -760,7 +760,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    li.xr            = xr;
    li.images        = dot.images;
    xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 4,
-         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_DIM, VIDEO_XR_CURSOR_DIM),
+         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_W, VIDEO_XR_CURSOR_H),
          vulkan_openxr_list_images, &li, vulkan_openxr_cursor_fill, &dot,
          &step, &code);
    if (xr->frame.cursor)

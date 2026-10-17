@@ -11290,6 +11290,7 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
       bool views, bool eyes, unsigned frame_dims, unsigned src_dims,
       unsigned ui_dims)
 {
+   unsigned s;
    video_xr_params_t p;
    vulkan_openxr_t *xr = vk->context->xr;
 
@@ -11303,6 +11304,7 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
    /* A frame shown whole despite a map is not screen 1. */
    p.screens       = (views || !video_info->views.num_views)
       ? video_info->headset_screens : NULL;
+   p.edit_seq      = video_info->headset_edit_seq;
    p.menu          = video_info->headset_menu_placed
       ? &video_info->headset_menu : NULL;
    p.distance      = video_info->headset_distance;
@@ -11317,6 +11319,11 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
    if (views && eyes)
       p.skip_screens = vulkan_xr_eye_screens(video_info);
    video_xr_place(&p, &vk->xr.set);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+      vk->xr.set.slots[s].dims = video_xr_keep_dims(
+            vk->xr.set.slots[s].dims,
+            vk->xr.slots[s].num_images ? vk->xr.slots[s].dims : 0,
+            video_info->headset_editing);
 }
 
 /* The headset's chain for a view, or for the whole frame when view is
