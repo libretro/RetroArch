@@ -12,8 +12,8 @@ CFLAGS += -std=gnu99 -O1 -Wall -Wno-unused-function \
 
 all: $(TARGET)
 
-$(TARGET): waveout_test.c $(ROOT)/audio/drivers/waveout.c
-	$(CC) $(CFLAGS) -o $@ waveout_test.c -lwinmm
+$(TARGET): waveout_test.c $(ROOT)/audio/drivers/waveout.c $(ROOT)/audio/audio_upmix.c
+	$(CC) $(CFLAGS) -o $@ waveout_test.c $(ROOT)/audio/audio_upmix.c -lwinmm
 
 check: all
 	@test -n "$(WINE)" || { echo "no wine" >&2; exit 1; }

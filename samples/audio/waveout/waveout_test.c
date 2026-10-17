@@ -32,6 +32,11 @@ void RARCH_LOG(const char *fmt, ...)
 { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
 void RARCH_ERR(const char *fmt, ...)
 { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
+void RARCH_WARN(const char *fmt, ...)
+{ va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
+
+static uint32_t requested_layout = AUDIO_LAYOUT_STEREO;
+uint32_t audio_driver_requested_layout(void) { return requested_layout; }
 
 static int failures;
 #define CHECK(cond, ...) do { if (!(cond)) { \
@@ -141,6 +146,40 @@ int main(void)
          "started again, the device consumed nothing in 300 ms");
 
    audio_waveout.free(wo);
+
+   /* 5.1 asked for: opened with it, or stereo where the device will
+    * not take it, and every byte count in frames of what it opened. */
+   requested_layout = AUDIO_LAYOUT_5POINT1;
+   wo = audio_waveout.init(NULL, RATE, LATENCY, &new_rate);
+   CHECK(wo != NULL, "5.1 asked for, the device did not open at all");
+   if (wo)
+   {
+      static int16_t wide[480 * 6];
+      uint32_t layout = audio_waveout.layout(wo);
+      unsigned fb     = audio_layout_channels(layout) * 2;
+      fprintf(stderr, "   waveout: 5.1 asked for, opened with layout 0x%03x\n",
+            (unsigned)layout);
+      CHECK(layout == AUDIO_LAYOUT_5POINT1 || layout == AUDIO_LAYOUT_STEREO,
+            "the layout is 0x%03x", (unsigned)layout);
+      buffer = audio_waveout.buffer_size(wo);
+      CHECK(buffer % fb == 0 && buffer >= (size_t)RATE * LATENCY / 1000 * fb,
+            "the buffer is %u bytes, frames of %u", (unsigned)buffer, fb);
+      for (i = 0; i < 480 * 6; i++)
+         wide[i] = (int16_t)(i & 0xFF);
+      consumed = audio_waveout.frames_consumed(wo);
+      for (n = 0; n < 50; n++)
+         CHECK(audio_waveout.write(wo, wide, 480 * fb) == (ssize_t)(480 * fb),
+               "write %u of 480 frames of %u bytes came back short", n, fb);
+      Sleep(300);
+      CHECK(audio_waveout.frames_consumed(wo) > consumed,
+            "the device consumed nothing in 300 ms");
+      CHECK(audio_waveout.frames_consumed(wo) <= 50 * 480,
+            "consumed %u frames of %u written",
+            (unsigned)audio_waveout.frames_consumed(wo), 50u * 480u);
+      audio_waveout.free(wo);
+   }
+   requested_layout = AUDIO_LAYOUT_STEREO;
+
    if (failures)
    {
       printf("%d failure(s)\n", failures);

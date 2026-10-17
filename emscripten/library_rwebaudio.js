@@ -10,6 +10,7 @@ var LibraryRWebAudio = {
       PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM: 1,
       context: null,
       contextRunning: false,
+      channels: 2,
       nonblock: false,
       endTime: 0,
       latency: 0,
@@ -33,11 +34,28 @@ var LibraryRWebAudio = {
    },
 
    RWebAudioInit__deps: ["$RWebAudioStateChangeCB", "platform_emscripten_get_browser"],
-   RWebAudioInit: function(latency) {
+   RWebAudioInit: function(latency, channels) {
       var ac = window.AudioContext || window.webkitAudioContext;
       if (!ac) return 0;
 
       RWA.context = new ac();
+      /* Wider than stereo where the output takes it: 8, 6 or 4 channels
+       * passed through as they are, the device's own order by count. */
+      if (channels > 2) {
+         var dest = RWA.context.destination;
+         while (channels > 2 && !(dest.maxChannelCount >= channels))
+            channels = channels > 6 ? 6 : channels > 4 ? 4 : 2;
+         if (channels > 2) {
+            try {
+               dest.channelCount = channels;
+               dest.channelCountMode = "explicit";
+               dest.channelInterpretation = "discrete";
+            } catch (e) {
+               channels = 2;
+            }
+         }
+      }
+      RWA.channels = channels > 2 ? channels : 2;
       RWA.currentTimeDiff = performance.now() / 1000 - RWA.context.currentTime;
       RWA.nonblock = false;
       RWA.endTime = 0;
@@ -47,7 +65,7 @@ var LibraryRWebAudio = {
       RWebAudioStateChangeCB();
       RWA.extraLatencySec = (_platform_emscripten_get_browser() == RWA.PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM) ? RWA.EXTRA_LATENCY_SEC_CHROME : RWA.EXTRA_LATENCY_SEC_NONCHROME;
 
-      return 1;
+      return RWA.channels;
    },
 
    RWebAudioSampleRate: function() {
@@ -55,13 +73,15 @@ var LibraryRWebAudio = {
    },
 
    RWebAudioQueueBuffer__deps: ["$RWebAudioGetCurrentTime", "RWebAudioResumeCtx", "RWebAudioWriteAvailFrames"],
-   RWebAudioQueueBuffer: function(num_frames, left, right) {
+   RWebAudioQueueBuffer: function(num_frames, planes, plane_frames) {
       if (RWA.nonblock && _RWebAudioWriteAvailFrames() < num_frames) return 0;
       if (!_RWebAudioResumeCtx()) return 0;
 
-      var buffer = RWA.context.createBuffer(2, num_frames, RWA.context.sampleRate);
-      buffer.getChannelData(0).set(HEAPF32.subarray(left  >> 2, (left  >> 2) + num_frames));
-      buffer.getChannelData(1).set(HEAPF32.subarray(right >> 2, (right >> 2) + num_frames));
+      var buffer = RWA.context.createBuffer(RWA.channels, num_frames, RWA.context.sampleRate);
+      for (var c = 0; c < RWA.channels; c++) {
+         var p = (planes >> 2) + c * plane_frames;
+         buffer.getChannelData(c).set(HEAPF32.subarray(p, p + num_frames));
+      }
       var bufferSource = RWA.context.createBufferSource();
       bufferSource.buffer = buffer;
       bufferSource.connect(RWA.context.destination);
