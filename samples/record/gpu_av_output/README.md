@@ -33,6 +33,19 @@ there is no pending completion. This API does not install that scheduler.
 The native GPU A/V harness waits on completion and producer notifications;
 its finite watchdog and no-handle retry timeout are test-only.
 
+`record_gpu_session_d3d12` owns encoder startup, the GPU pump and output on
+one I/O worker. Both producers close independently; cancellation only requests
+drain. Its step returns terminal END/ERROR after owned resources retire,
+including partial startup and device-removal cleanup. Capture and source GPU
+lifetime remain with the caller. A refused encoder destruction retains leases
+for a later service attempt. Error/detail reads are atomic. This lifecycle
+component does not install the worker dispatcher or frontend capture.
+
+`make check` also exercises session startup failure, pending-write cancellation,
+producer closure, encoder destruction refusal and concurrent PCM retirement,
+with both threaded and threadless builds. `make session_test SANITIZER=thread`
+runs the session ownership tests under TSan.
+
 `make check` runs fault/ownership tests, a concurrent PCM producer with ring
 wrap and close/drain, and 20 independent decoded MP4 A/V cases using the shared
 mux oracle. Linux uses a test-only stdio file backend and simulated encoded
