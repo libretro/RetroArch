@@ -10,11 +10,13 @@
 #include <string.h>
 #include <limits.h>
 #include "shaders/capture_rgb.h"
+#include "shaders/capture_hdr.h"
 
 typedef struct rgc_slot
 {
    uint64_t value;
    ID3D12Resource *texture;
+   ID3D12Resource *planes[2];
    ID3D12Resource *source;
    ID3D12Fence *source_fence;
    ID3D12CommandAllocator *allocator;
@@ -27,6 +29,9 @@ struct record_gpu_capture_d3d12
    ID3D12Device *device;
    ID3D12CommandQueue *commands;
    ID3D12Fence *ready;
+   ID3D12RootSignature *hdr_root;
+   ID3D12PipelineState *hdr_pipeline;
+   ID3D12DescriptorHeap *hdr_heap;
    ID3D12RootSignature *rgb_root;
    ID3D12PipelineState *rgb_pipeline;
    ID3D12DescriptorHeap *rgb_srv, *rgb_rtv;
@@ -36,7 +41,7 @@ struct record_gpu_capture_d3d12
    unsigned srv_stride, rtv_stride;
    enum nvenc_d3d12_format format;
    DXGI_FORMAT dxgi;
-   bool failed, unfenced;
+   bool failed, unfenced, hdr, full_range;
 };
 
 static void rgc_source_release(rgc_slot_t *s)
@@ -83,11 +88,16 @@ static void rgc_destroy(record_gpu_capture_d3d12_t *c)
    for (i = 0; i < c->slots; i++)
    {
       rgc_source_release(&c->pool[i]);
+      if (c->pool[i].planes[0]) ID3D12Resource_Release(c->pool[i].planes[0]);
+      if (c->pool[i].planes[1]) ID3D12Resource_Release(c->pool[i].planes[1]);
       if (c->pool[i].commands) ID3D12GraphicsCommandList_Release(c->pool[i].commands);
       if (c->pool[i].allocator) ID3D12CommandAllocator_Release(c->pool[i].allocator);
       if (c->pool[i].texture) ID3D12Resource_Release(c->pool[i].texture);
    }
    if (c->ready) ID3D12Fence_Release(c->ready);
+   if (c->hdr_pipeline) ID3D12PipelineState_Release(c->hdr_pipeline);
+   if (c->hdr_root) ID3D12RootSignature_Release(c->hdr_root);
+   if (c->hdr_heap) ID3D12DescriptorHeap_Release(c->hdr_heap);
    if (c->rgb_pipeline) ID3D12PipelineState_Release(c->rgb_pipeline);
    if (c->rgb_root) ID3D12RootSignature_Release(c->rgb_root);
    if (c->rgb_srv) ID3D12DescriptorHeap_Release(c->rgb_srv);
@@ -174,6 +184,61 @@ static bool rgc_rgb_new(record_gpu_capture_d3d12_t *c)
             &IID_ID3D12PipelineState, (void**)&c->rgb_pipeline));
 }
 
+static bool rgc_hdr_new(record_gpu_capture_d3d12_t *c)
+{
+   D3D12_ROOT_SIGNATURE_DESC root;
+   D3D12_ROOT_PARAMETER params[2];
+   D3D12_DESCRIPTOR_RANGE ranges[2];
+   D3D12_DESCRIPTOR_HEAP_DESC heap;
+   D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline;
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+   ID3DBlob *blob = NULL;
+   HRESULT result;
+   unsigned i;
+   for (i = 0; i < 2; i++)
+   {
+      memset(&support, 0, sizeof(support));
+      support.Format = i ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM;
+      if (FAILED(ID3D12Device_CheckFeatureSupport(c->device, D3D12_FEATURE_FORMAT_SUPPORT,
+                  &support, sizeof(support)))
+            || !(support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE))
+         return false;
+   }
+   memset(&root, 0, sizeof(root)); memset(params, 0, sizeof(params));
+   memset(ranges, 0, sizeof(ranges));
+   ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+   ranges[0].NumDescriptors = 1;
+   ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+   ranges[1].NumDescriptors = 2;
+   ranges[1].OffsetInDescriptorsFromTableStart = 1;
+   params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+   params[0].Constants.Num32BitValues = 6;
+   params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+   params[1].DescriptorTable.NumDescriptorRanges = 2;
+   params[1].DescriptorTable.pDescriptorRanges = ranges;
+   root.NumParameters = 2; root.pParameters = params;
+   result = D3D12SerializeRootSignature(&root, D3D_ROOT_SIGNATURE_VERSION_1, &blob, NULL);
+   if (FAILED(result)) return false;
+   result = ID3D12Device_CreateRootSignature(c->device, 0,
+         blob->lpVtbl->GetBufferPointer(blob), blob->lpVtbl->GetBufferSize(blob),
+         &IID_ID3D12RootSignature, (void**)&c->hdr_root);
+   blob->lpVtbl->Release(blob);
+   if (FAILED(result)) return false;
+   memset(&heap, 0, sizeof(heap));
+   heap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+   heap.NumDescriptors = c->slots * 3;
+   heap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+   if (FAILED(ID3D12Device_CreateDescriptorHeap(c->device, &heap,
+               &IID_ID3D12DescriptorHeap, (void**)&c->hdr_heap)))
+      return false;
+   c->srv_stride = ID3D12Device_GetDescriptorHandleIncrementSize(c->device, heap.Type);
+   memset(&pipeline, 0, sizeof(pipeline));
+   pipeline.pRootSignature = c->hdr_root;
+   pipeline.CS.pShaderBytecode = rgh_cs; pipeline.CS.BytecodeLength = sizeof(rgh_cs);
+   return SUCCEEDED(ID3D12Device_CreateComputePipelineState(c->device, &pipeline,
+            &IID_ID3D12PipelineState, (void**)&c->hdr_pipeline));
+}
+
 record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
       const nvenc_d3d12_config_t *config, void *command_queue)
 {
@@ -209,6 +274,10 @@ record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
    ID3D12CommandQueue_AddRef(c->commands);
    c->slots = config->slots; c->width = config->width; c->height = config->height;
    c->format = config->format; c->dxgi = formats[config->format];
+   c->hdr = config->format == NVENC_D3D12_P010 && config->color == NVENC_D3D12_COLOR_BT2020_PQ;
+   c->full_range = config->full_range;
+   if (c->hdr && !rgc_hdr_new(c))
+      goto fail;
    c->queue = record_gpu_queue_new(c->slots);
    if (!c->queue || FAILED(ID3D12Device_CreateFence(device, 0,
             D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void**)&c->ready)))
@@ -227,6 +296,18 @@ record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
    for (i = 0; i < c->slots; i++)
    {
       rgc_slot_t *s = &c->pool[i];
+      unsigned plane;
+      for (plane = 0; c->hdr && plane < 2; plane++)
+      {
+         D3D12_RESOURCE_DESC planar = desc;
+         planar.Format = plane ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM;
+         planar.Width >>= plane; planar.Height >>= plane;
+         planar.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+         if (FAILED(ID3D12Device_CreateCommittedResource(device, &heap,
+                     D3D12_HEAP_FLAG_NONE, &planar, D3D12_RESOURCE_STATE_COMMON,
+                     NULL, &IID_ID3D12Resource, (void**)&s->planes[plane])))
+            goto fail;
+      }
       if (FAILED(ID3D12Device_CreateCommittedResource(device, &heap,
                D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON,
                NULL, &IID_ID3D12Resource, (void**)&s->texture))
@@ -247,7 +328,8 @@ fail:
 bool record_gpu_capture_d3d12_bind(record_gpu_capture_d3d12_t *c, nvenc_d3d12_config_t *config)
 {
    unsigned i;
-   if (!c || !config)
+   if (!c || !config || (c->hdr && (config->color != NVENC_D3D12_COLOR_BT2020_PQ
+               || config->full_range != c->full_range)))
       return false;
    config->device = c->device; config->slots = c->slots;
    config->width = c->width; config->height = c->height; config->format = c->format;
@@ -319,6 +401,69 @@ static void rgc_rgb_draw(record_gpu_capture_d3d12_t *c, rgc_slot_t *s,
    ID3D12GraphicsCommandList_DrawInstanced(s->commands, 3, 1, 0, 0);
 }
 
+static void rgc_hdr_dispatch(record_gpu_capture_d3d12_t *c, rgc_slot_t *s,
+      unsigned index, ID3D12Resource *source, DXGI_FORMAT format, unsigned x, unsigned y)
+{
+   D3D12_SHADER_RESOURCE_VIEW_DESC srv;
+   D3D12_UNORDERED_ACCESS_VIEW_DESC uav;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu;
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu;
+   D3D12_RESOURCE_BARRIER barriers[2];
+   unsigned constants[6], i;
+   D3D12_CPU_DESCRIPTOR_HANDLE *(STDMETHODCALLTYPE *get_cpu)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*);
+   D3D12_GPU_DESCRIPTOR_HANDLE *(STDMETHODCALLTYPE *get_gpu)(ID3D12DescriptorHeap*, D3D12_GPU_DESCRIPTOR_HANDLE*);
+   memcpy(&get_cpu, &c->hdr_heap->lpVtbl->GetCPUDescriptorHandleForHeapStart, sizeof(get_cpu));
+   get_cpu(c->hdr_heap, &cpu);
+   memcpy(&get_gpu, &c->hdr_heap->lpVtbl->GetGPUDescriptorHandleForHeapStart, sizeof(get_gpu));
+   get_gpu(c->hdr_heap, &gpu);
+   cpu.ptr += index * 3 * c->srv_stride; gpu.ptr += index * 3 * c->srv_stride;
+   memset(&srv, 0, sizeof(srv));
+   srv.Format = format; srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+   srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   srv.Texture2D.MipLevels = 1;
+   ID3D12Device_CreateShaderResourceView(c->device, source, &srv, cpu);
+   memset(barriers, 0, sizeof(barriers));
+   for (i = 0; i < 2; i++)
+   {
+      cpu.ptr += c->srv_stride;
+      memset(&uav, 0, sizeof(uav));
+      uav.Format = i ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM;
+      uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+      ID3D12Device_CreateUnorderedAccessView(c->device, s->planes[i], NULL, &uav, cpu);
+      barriers[i].Transition.pResource = s->planes[i];
+      barriers[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+      barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+      barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+   }
+   ID3D12GraphicsCommandList_ResourceBarrier(s->commands, 2, barriers);
+   constants[0] = x; constants[1] = y; constants[2] = c->width; constants[3] = c->height;
+   constants[4] = format == DXGI_FORMAT_R16G16B16A16_FLOAT; constants[5] = c->full_range;
+   ID3D12GraphicsCommandList_SetPipelineState(s->commands, c->hdr_pipeline);
+   ID3D12GraphicsCommandList_SetComputeRootSignature(s->commands, c->hdr_root);
+   ID3D12GraphicsCommandList_SetDescriptorHeaps(s->commands, 1, &c->hdr_heap);
+   ID3D12GraphicsCommandList_SetComputeRoot32BitConstants(s->commands, 0, 6, constants, 0);
+   ID3D12GraphicsCommandList_SetComputeRootDescriptorTable(s->commands, 1, gpu);
+   ID3D12GraphicsCommandList_Dispatch(s->commands, (c->width + 15) / 16, (c->height + 15) / 16, 1);
+   for (i = 0; i < 2; i++)
+   {
+      barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+      barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+   }
+   ID3D12GraphicsCommandList_ResourceBarrier(s->commands, 2, barriers);
+   for (i = 0; i < 2; i++)
+   {
+      D3D12_TEXTURE_COPY_LOCATION from, to;
+      memset(&from, 0, sizeof(from)); memset(&to, 0, sizeof(to));
+      from.pResource = s->planes[i]; to.pResource = s->texture;
+      from.Type = to.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      to.SubresourceIndex = i;
+      ID3D12GraphicsCommandList_CopyTextureRegion(s->commands, &to, 0, 0, 0, &from, NULL);
+      barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+      barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+   }
+   ID3D12GraphicsCommandList_ResourceBarrier(s->commands, 2, barriers);
+}
+
 int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
       void *source, unsigned source_state, unsigned x, unsigned y,
       void *source_fence, uint64_t source_value,
@@ -332,7 +477,7 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
    record_gpu_frame_t frame;
    rgc_slot_t *s;
    unsigned i, count = 0;
-   bool convert;
+   bool convert, hdr;
    D3D12_RESOURCE_STATES input_state, output_state;
    uint64_t completed;
    int result;
@@ -346,13 +491,15 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
          return RECORD_GPU_QUEUE_ERROR;
    memcpy(&get_desc, &input->lpVtbl->GetDesc, sizeof(get_desc));
    get_desc(input, &desc);
+   hdr = c->hdr && (desc.Format == DXGI_FORMAT_R10G10B10A2_UNORM
+         || desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT);
    convert = c->format == NVENC_D3D12_BGRA8 && desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM;
-   if (desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || (!convert && desc.Format != c->dxgi)
-         || (convert && (desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
+   if (desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || (!convert && !hdr && desc.Format != c->dxgi)
+         || ((convert || hdr) && (desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE))
          || desc.DepthOrArraySize != 1 || desc.MipLevels != 1 || desc.SampleDesc.Count != 1
          || desc.Width < c->width || x > desc.Width - c->width
          || desc.Height < c->height || y > desc.Height - c->height
-         || (c->format >= NVENC_D3D12_NV12
+         || (!hdr && c->format >= NVENC_D3D12_NV12
             && (x || y || desc.Width != c->width || desc.Height != c->height)))
       return RECORD_GPU_QUEUE_ERROR;
    if (FAILED(ID3D12Resource_GetDevice(input, &IID_ID3D12Device, (void**)&device)))
@@ -385,7 +532,8 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
          || FAILED(ID3D12GraphicsCommandList_Reset(s->commands, s->allocator, NULL)))
       return rgc_fail(c);
    memset(barriers, 0, sizeof(barriers));
-   input_state = convert ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COPY_SOURCE;
+   input_state = hdr ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+      : (convert ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COPY_SOURCE);
    output_state = convert ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_COPY_DEST;
    if (source_state != (unsigned)input_state)
    {
@@ -399,7 +547,9 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
    barriers[count].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
    barriers[count++].Transition.StateAfter = output_state;
    ID3D12GraphicsCommandList_ResourceBarrier(s->commands, count, barriers);
-   if (convert)
+   if (hdr)
+      rgc_hdr_dispatch(c, s, frame.slot, input, desc.Format, x, y);
+   else if (convert)
       rgc_rgb_draw(c, s, frame.slot, input, &desc, x, y);
    else if (!x && !y && desc.Width == c->width && desc.Height == c->height)
       ID3D12GraphicsCommandList_CopyResource(s->commands, s->texture, input);

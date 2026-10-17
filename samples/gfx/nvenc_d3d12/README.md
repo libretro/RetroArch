@@ -100,22 +100,20 @@ pump, including encoder/lock/EOS BUSY and packet backpressure. `worker_test`
 checks retryable failures, empty close, timestamp gaps and ownership teardown
 with a deterministic portable encoder. Abandon is reserved for a stopped
 producer after successful encoder destruction; capture GPU retirement remains
-the capture owner's responsibility. Frontend attachment and core audio routing
-remain pending.
+the capture owner's responsibility. SDR frontend acceptance lives in samples/record/nvenc_frontend.
 
 The native harness now obtains startup sequence headers through the adapter
 and writes an MP4 counterpart through `record_mux_mp4` for every session.
 Each encoded packet stays worker-owned across mux backpressure; serialized
 output is separately acknowledged. Independent decoding checks MP4 pixel,
 timestamp and keyframe equality with the elementary stream. The pure muxer
-also supports native AC-3 A/V (see samples/record/mp4_mux). Frontend capture
-and core audio callbacks remain unconnected.
+also supports native AC-3 A/V (see samples/record/mp4_mux). The SDR frontend uses this pipeline; see samples/record/nvenc_frontend.
 
 Three additional native sessions exercise GPU capture/encode plus concurrent
 PCM submission through the production A/V output pump and overlapped writer.
 The shared runner compares video pixels/keyframes and exact 1536-sample audio
 clocks against raw video and independently encoded AC-3 references at 48 kHz
-stereo, 44.1 kHz mono and 32 kHz 5.1. Frontend attachment remains open.
+stereo, 44.1 kHz mono and 32 kHz 5.1. SDR frontend acceptance lives in samples/record/nvenc_frontend.
 
 Three dispatcher sessions run the same video/audio oracles through
 `record_gpu_dispatch_d3d12` and its owned session. Separate video and PCM
@@ -125,8 +123,8 @@ four capture slots are published. The controller only observes status and
 collects after both producers stop; it never services the session itself.
 These cases cover H.264/BGRA with 48 kHz stereo, HEVC/P010 with 44.1 kHz mono
 and AV1/P010 with 32 kHz 5.1. They establish native combined pipeline
-acceptance; frontend capture attachment, core audio routing and HDR render
-conversion remain pending.
+acceptance; HDR frontend metadata and full application acceptance
+remain pending.
 
 Source-lifetime fixtures queue four GPU copies behind an unsignalled fence,
 release the caller's source/fence references, refuse a fifth push without
@@ -151,3 +149,18 @@ retires the capture and GPU source references before terminal status. The
 controller joins only the test producers and nonblockingly collects the job;
 it performs no capture destruction. Borrowed-dispatcher cases remain separate. These cases retain the independent video
 and PCM oracles for H.264, HEVC and AV1.
+
+`hdr_capture_test` converts PQ/Rec.2020 RGB10A2 and linear scRGB FP16 to
+PQ/Rec.2020 P010 on the GPU. It tests limited/full range, an odd-origin crop,
+non-workgroup-aligned dimensions, 80/1000/10000-nit source levels, negative
+scRGB components, chroma edges and pool reuse. Every read-back plane value is
+checked against a double-precision CPU reference (one 10-bit code tolerance,
+zero low six bits). This readback belongs only to the test. The output uses
+left/vertical-centre chroma with a three-tap horizontal filter.
+Twelve frames per case are then encoded as HEVC/AV1 and independently decoded;
+the runner checks pixels and PQ/Rec.2020/range signaling. Native D3D12 debug
+layer errors fail the test when the validation layer is available. Both header
+variants build on Linux and MinGW; hardware absence is an explicit skip unless
+`NVENC_TEST_REQUIRE_HW=1`. The swapchain test also checks RGB10A2/FP16 conversion
+and source retirement across ResizeBuffers. HDR frontend admission remains
+disabled pending backend metadata and full frontend acceptance.

@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../../../record/record_gpu_capture_d3d12.h"
 #if defined(_WIN32) && !defined(__WINRT__)
@@ -40,6 +41,11 @@ static bool exercise(ID3D12Device *device, ID3D12CommandQueue *commands,
             (IUnknown*)commands, window, &desc, NULL, NULL, &chain)));
    config.device = device; config.width = 320; config.height = 192;
    config.slots = 4; config.format = NVENC_D3D12_BGRA8;
+   if (format == DXGI_FORMAT_R10G10B10A2_UNORM || format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+   {
+      config.format = NVENC_D3D12_P010;
+      config.color = NVENC_D3D12_COLOR_BT2020_PQ;
+   }
    capture = record_gpu_capture_d3d12_new(&config, commands); CHECK(capture);
    queue = record_gpu_capture_d3d12_queue(capture);
    CHECK(SUCCEEDED(ID3D12Device_CreateFence(device, 0, D3D12_FENCE_FLAG_NONE,
@@ -103,6 +109,8 @@ int main(void)
    IDXGIFactory2 *factory = NULL;
    D3D12_COMMAND_QUEUE_DESC desc;
    HWND window = NULL;
+   nvenc_d3d12_config_t config;
+   record_gpu_capture_d3d12_t *probe = NULL;
    int result = 1;
    if (FAILED(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0,
                &IID_ID3D12Device, (void**)&device)))
@@ -121,9 +129,25 @@ int main(void)
    CHECK(window);
    CHECK(exercise(device, commands, factory, window, DXGI_FORMAT_B8G8R8A8_UNORM));
    CHECK(exercise(device, commands, factory, window, DXGI_FORMAT_R8G8B8A8_UNORM));
-   puts("PASS: BGRA/RGBA swapchain resize with encoder destination leases held");
+   memset(&config, 0, sizeof(config));
+   config.device = device; config.slots = 4; config.width = 320; config.height = 192;
+   config.format = NVENC_D3D12_P010; config.color = NVENC_D3D12_COLOR_BT2020_PQ;
+   probe = record_gpu_capture_d3d12_new(&config, commands);
+   if (probe)
+   {
+      CHECK(record_gpu_capture_d3d12_free(probe)); probe = NULL;
+      CHECK(exercise(device, commands, factory, window, DXGI_FORMAT_R10G10B10A2_UNORM));
+      CHECK(exercise(device, commands, factory, window, DXGI_FORMAT_R16G16B16A16_FLOAT));
+   }
+   else
+   {
+      CHECK(!getenv("NVENC_TEST_REQUIRE_HW"));
+      puts("SKIP: HDR conversion unavailable; SDR resize checked");
+   }
+   puts("PASS: SDR/HDR swapchain resize with encoder destination leases held");
    result = 0;
 done:
+   if (probe) record_gpu_capture_d3d12_free(probe);
    if (factory) IDXGIFactory2_Release(factory);
    if (commands) ID3D12CommandQueue_Release(commands);
    if (device) ID3D12Device_Release(device);

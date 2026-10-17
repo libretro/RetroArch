@@ -8,7 +8,8 @@ typedef struct record_gpu_capture_d3d12 record_gpu_capture_d3d12_t;
 
 /* Create off the frame path. Retains the device/queue and owns a fixed GPU
  * texture/command pool. Bind fills only the encoder's device, pool, size and
- * format; other encoder settings remain the caller's. */
+ * format; other encoder settings remain the caller's. PQ conversion requires
+ * the encoder to keep the creation color/range settings. */
 record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
       const nvenc_d3d12_config_t *config, void *command_queue);
 bool record_gpu_capture_d3d12_bind(record_gpu_capture_d3d12_t *capture,
@@ -17,7 +18,9 @@ record_gpu_queue_t *record_gpu_capture_d3d12_queue(record_gpu_capture_d3d12_t *c
 void *record_gpu_capture_d3d12_fence(record_gpu_capture_d3d12_t *capture);
 /* Producer, on the render queue's owner thread, after submitting the draw.
  * Source state is restored. BGRA capture accepts RGBA via a GPU channel pass.
- * RGB supports a viewport crop; NV12/P010 require the full texture.
+ * PQ P010 capture also converts PQ/Rec.2020 RGB10A2 or linear scRGB FP16
+ * (1.0 = 80 nits) on the GPU, with left/vertical-centre 4:2:0 chroma. RGB conversion supports a viewport crop;
+ * direct NV12/P010 copies require the full texture.
  * Submitted GPU work retains source/source_fence through copy completion.
  * Later pushes, reap or free release completed references. Keep source contents
  * unchanged through completion, including on submitted ERROR.
