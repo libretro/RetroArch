@@ -17,6 +17,7 @@
 #include <psp2/audioout.h>
 #include <libSceAudioOut.h>
 
+#include "../../../audio/audio_driver.h"
 #include "device_mock.h"
 
 #define MOCK_GRAIN   512u
@@ -164,4 +165,9 @@ sthread_t *mock_sthread_create(void (*thread_func)(void*), void *userdata)
    if (mock_thread_fail)
       return NULL;
    return sthread_create(thread_func, userdata);
+}
+
+uint32_t audio_driver_requested_layout(void)
+{
+   return AUDIO_LAYOUT_STEREO;
 }
