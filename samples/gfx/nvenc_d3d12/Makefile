@@ -23,7 +23,7 @@ swapchain_test$(EXE): $(SWAPCHAIN) $(CAPTURE)
 	$(CC) $(CFLAGS) -o $@ $(SWAPCHAIN) $(LDFLAGS) $(if $(filter .exe,$(EXE)),-ld3d12 -ldxgi -ldxguid -luser32,)
 swapchain_test_sdk$(EXE): $(SWAPCHAIN) $(CAPTURE)
 	$(CC) $(CFLAGS) -I$(RA)/gfx/include/dxsdk -o $@ $(SWAPCHAIN) $(LDFLAGS) $(if $(filter .exe,$(EXE)),-ld3d12 -ldxgi -ldxguid -luser32,)
-HDR := hdr_capture_test.c $(RA)/record/record_gpu_capture_d3d12.c $(RA)/record/record_gpu_worker_d3d12.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(RA)/gfx/common/nvenc_d3d12.c
+HDR := hdr_capture_test.c $(RA)/record/record_gpu_worker_d3d12.c $(RA)/record/record_gpu_queue.c $(RA)/libretro-common/queues/retro_spsc.c $(RA)/gfx/common/nvenc_d3d12.c
 HDR_DEPS := $(CAPTURE) $(WORKER) $(METADATA) $(RA)/record/record_gpu_queue.h $(RA)/gfx/common/nvenc_d3d12.h $(RA)/deps/nvenc/nvEncodeAPI.h
 hdr_capture_test$(EXE): $(HDR) $(HDR_DEPS)
 	$(CC) $(CFLAGS) -o $@ $(HDR) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),-ld3d12 -ldxguid,)

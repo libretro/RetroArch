@@ -21,6 +21,7 @@ typedef struct rgc_slot
    ID3D12Fence *source_fence;
    ID3D12CommandAllocator *allocator;
    ID3D12GraphicsCommandList *commands;
+   bool hdr_direct;
 } rgc_slot_t;
 
 struct record_gpu_capture_d3d12
@@ -41,7 +42,7 @@ struct record_gpu_capture_d3d12
    unsigned srv_stride, rtv_stride;
    enum nvenc_d3d12_format format;
    DXGI_FORMAT dxgi;
-   bool failed, unfenced, hdr, full_range;
+   bool failed, unfenced, hdr, full_range, hdr_direct_capable;
 };
 
 static void rgc_source_release(rgc_slot_t *s)
@@ -204,6 +205,11 @@ static bool rgc_hdr_new(record_gpu_capture_d3d12_t *c)
             || !(support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE))
          return false;
    }
+   support.Format = DXGI_FORMAT_P010;
+   c->hdr_direct_capable = SUCCEEDED(ID3D12Device_CheckFeatureSupport(c->device,
+            D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support)))
+      && (support.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
+      && (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
    memset(&root, 0, sizeof(root)); memset(params, 0, sizeof(params));
    memset(ranges, 0, sizeof(ranges));
    ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -296,8 +302,18 @@ record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
    for (i = 0; i < c->slots; i++)
    {
       rgc_slot_t *s = &c->pool[i];
+      D3D12_RESOURCE_DESC output = desc;
       unsigned plane;
-      for (plane = 0; c->hdr && plane < 2; plane++)
+      output.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+      s->hdr_direct = c->hdr_direct_capable
+         && SUCCEEDED(ID3D12Device_CreateCommittedResource(device, &heap,
+               D3D12_HEAP_FLAG_NONE, &output, D3D12_RESOURCE_STATE_COMMON,
+               NULL, &IID_ID3D12Resource, (void**)&s->texture));
+      if (!s->hdr_direct && FAILED(ID3D12Device_CreateCommittedResource(device, &heap,
+               D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON,
+               NULL, &IID_ID3D12Resource, (void**)&s->texture)))
+         goto fail;
+      for (plane = 0; c->hdr && !s->hdr_direct && plane < 2; plane++)
       {
          D3D12_RESOURCE_DESC planar = desc;
          planar.Format = plane ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM;
@@ -308,10 +324,7 @@ record_gpu_capture_d3d12_t *record_gpu_capture_d3d12_new(
                      NULL, &IID_ID3D12Resource, (void**)&s->planes[plane])))
             goto fail;
       }
-      if (FAILED(ID3D12Device_CreateCommittedResource(device, &heap,
-               D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON,
-               NULL, &IID_ID3D12Resource, (void**)&s->texture))
-            || FAILED(ID3D12Device_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT,
+      if (FAILED(ID3D12Device_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT,
                &IID_ID3D12CommandAllocator, (void**)&s->allocator))
             || FAILED(ID3D12Device_CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
                s->allocator, NULL, &IID_ID3D12GraphicsCommandList, (void**)&s->commands))
@@ -429,13 +442,19 @@ static void rgc_hdr_dispatch(record_gpu_capture_d3d12_t *c, rgc_slot_t *s,
       memset(&uav, 0, sizeof(uav));
       uav.Format = i ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM;
       uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-      ID3D12Device_CreateUnorderedAccessView(c->device, s->planes[i], NULL, &uav, cpu);
-      barriers[i].Transition.pResource = s->planes[i];
-      barriers[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-      barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
-      barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+      uav.Texture2D.PlaneSlice = s->hdr_direct ? i : 0;
+      ID3D12Device_CreateUnorderedAccessView(c->device,
+            s->hdr_direct ? s->texture : s->planes[i], NULL, &uav, cpu);
+      if (!s->hdr_direct)
+      {
+         barriers[i].Transition.pResource = s->planes[i];
+         barriers[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+         barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+         barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+      }
    }
-   ID3D12GraphicsCommandList_ResourceBarrier(s->commands, 2, barriers);
+   if (!s->hdr_direct)
+      ID3D12GraphicsCommandList_ResourceBarrier(s->commands, 2, barriers);
    constants[0] = x; constants[1] = y; constants[2] = c->width; constants[3] = c->height;
    constants[4] = format == DXGI_FORMAT_R16G16B16A16_FLOAT; constants[5] = c->full_range;
    ID3D12GraphicsCommandList_SetPipelineState(s->commands, c->hdr_pipeline);
@@ -444,6 +463,8 @@ static void rgc_hdr_dispatch(record_gpu_capture_d3d12_t *c, rgc_slot_t *s,
    ID3D12GraphicsCommandList_SetComputeRoot32BitConstants(s->commands, 0, 6, constants, 0);
    ID3D12GraphicsCommandList_SetComputeRootDescriptorTable(s->commands, 1, gpu);
    ID3D12GraphicsCommandList_Dispatch(s->commands, (c->width + 15) / 16, (c->height + 15) / 16, 1);
+   if (s->hdr_direct)
+      return;
    for (i = 0; i < 2; i++)
    {
       barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -534,7 +555,8 @@ int record_gpu_capture_d3d12_push(record_gpu_capture_d3d12_t *c,
    memset(barriers, 0, sizeof(barriers));
    input_state = hdr ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
       : (convert ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COPY_SOURCE);
-   output_state = convert ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_COPY_DEST;
+   output_state = hdr && s->hdr_direct ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+      : (convert ? D3D12_RESOURCE_STATE_RENDER_TARGET : D3D12_RESOURCE_STATE_COPY_DEST);
    if (source_state != (unsigned)input_state)
    {
       barriers[count].Transition.pResource = input;

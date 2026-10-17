@@ -13,6 +13,79 @@
 #include <windows.h>
 #include <d3d12.h>
 #include <d3d12sdklayers.h>
+
+static unsigned path_mode, direct_attempts, direct_textures, plane_textures, capture_copies;
+static bool p010_uav_capable;
+
+static HRESULT capture_support(ID3D12Device *device, D3D12_FEATURE feature,
+      void *data, UINT size)
+{
+   HRESULT result = device->lpVtbl->CheckFeatureSupport(device, feature, data, size);
+   if (feature == D3D12_FEATURE_FORMAT_SUPPORT
+         && ((D3D12_FEATURE_DATA_FORMAT_SUPPORT*)data)->Format == DXGI_FORMAT_P010)
+   {
+      D3D12_FEATURE_DATA_FORMAT_SUPPORT *support = (D3D12_FEATURE_DATA_FORMAT_SUPPORT*)data;
+      p010_uav_capable = SUCCEEDED(result)
+         && (support->Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW)
+         && (support->Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE);
+      if (path_mode == 1)
+         return E_FAIL;
+      if (path_mode == 2 && SUCCEEDED(result))
+         support->Support2 &= ~D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE;
+   }
+   return result;
+}
+
+static HRESULT capture_texture(ID3D12Device *device, const D3D12_HEAP_PROPERTIES *heap,
+      D3D12_HEAP_FLAGS flags, const D3D12_RESOURCE_DESC *desc,
+      D3D12_RESOURCE_STATES state, const D3D12_CLEAR_VALUE *clear,
+      REFIID iid, void **texture)
+{
+   HRESULT result;
+   bool direct = desc->Format == DXGI_FORMAT_P010
+      && (desc->Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+   if (direct)
+   {
+      direct_attempts++;
+      if (path_mode == 3 || (path_mode == 4 && direct_attempts == 2))
+      {
+         *texture = NULL;
+         return E_OUTOFMEMORY;
+      }
+   }
+   result = device->lpVtbl->CreateCommittedResource(device, heap, flags,
+         desc, state, clear, iid, texture);
+   if (SUCCEEDED(result))
+   {
+      if (direct)
+         direct_textures++;
+      if (desc->Format == DXGI_FORMAT_R16_UNORM || desc->Format == DXGI_FORMAT_R16G16_UNORM)
+         plane_textures++;
+   }
+   return result;
+}
+
+static void capture_copy(ID3D12GraphicsCommandList *list,
+      const D3D12_TEXTURE_COPY_LOCATION *to, UINT x, UINT y, UINT z,
+      const D3D12_TEXTURE_COPY_LOCATION *from, const D3D12_BOX *box)
+{
+   capture_copies++;
+   list->lpVtbl->CopyTextureRegion(list, to, x, y, z, from, box);
+}
+
+#pragma push_macro("ID3D12Device_CheckFeatureSupport")
+#pragma push_macro("ID3D12Device_CreateCommittedResource")
+#pragma push_macro("ID3D12GraphicsCommandList_CopyTextureRegion")
+#undef ID3D12Device_CheckFeatureSupport
+#undef ID3D12Device_CreateCommittedResource
+#undef ID3D12GraphicsCommandList_CopyTextureRegion
+#define ID3D12Device_CheckFeatureSupport capture_support
+#define ID3D12Device_CreateCommittedResource capture_texture
+#define ID3D12GraphicsCommandList_CopyTextureRegion capture_copy
+#include "../../../record/record_gpu_capture_d3d12.c"
+#pragma pop_macro("ID3D12GraphicsCommandList_CopyTextureRegion")
+#pragma pop_macro("ID3D12Device_CreateCommittedResource")
+#pragma pop_macro("ID3D12Device_CheckFeatureSupport")
 #define W 162
 #define H 130
 #define SW 168
@@ -106,7 +179,9 @@ int main(int argc, char **argv)
    char *raw_path = NULL;
    HMODULE runtime;
    int result = 1, status;
-   if (argc != 5) { puts("usage: hdr_capture_test scrgb full codec output"); return 1; }
+   if (argc != 5 && argc != 6) { puts("usage: hdr_capture_test scrgb full codec output [path-mode]"); return 1; }
+   if (argc == 6) path_mode = (unsigned)atoi(argv[5]);
+   if (path_mode > 4) return 1;
    runtime = LoadLibraryExA("nvEncodeAPI64.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
    if (!runtime) { puts("SKIP: NVENC runtime unavailable"); return 77; }
    FreeLibrary(runtime);
@@ -130,6 +205,10 @@ int main(int argc, char **argv)
    config.full_range = full; config.codec = (enum nvenc_d3d12_codec)atoi(argv[3]);
    config.fps_num = 60; config.fps_den = 1; config.bitrate = 16000000;
    capture = record_gpu_capture_d3d12_new(&config, commands); CHECK(capture);
+   if (path_mode == 0 && getenv("NVENC_TEST_REQUIRE_DIRECT_HDR")) CHECK(direct_textures == 4);
+   if (path_mode >= 1 && path_mode <= 3) CHECK(!direct_textures);
+   if (path_mode == 4 && p010_uav_capable) CHECK(direct_textures == 3);
+   CHECK(plane_textures == 2*(4-direct_textures));
    config.full_range = !full;
    CHECK(!record_gpu_capture_d3d12_bind(capture, &config));
    config.full_range = full; config.color = NVENC_D3D12_COLOR_BT2020_HLG;
@@ -183,6 +262,9 @@ int main(int argc, char **argv)
    CHECK(record_gpu_capture_d3d12_push(capture, source, 0, SW, 1, NULL, 0, 0, 1, false, &ready) == RECORD_GPU_QUEUE_ERROR && !ready);
    for (frame = 0; frame < 4; frame++)
       CHECK(record_gpu_capture_d3d12_push(capture, source, 0, 3, 1, NULL, 0, frame, 1, frame == 0, &ready) == RECORD_GPU_QUEUE_OK);
+   CHECK(capture_copies == 2*(4-direct_textures));
+   printf("HDR path %u: %u direct textures, %u intermediate planes, %u GPU copies for four frames\n",
+         path_mode, direct_textures, plane_textures, capture_copies);
    CHECK(!record_gpu_capture_d3d12_free(capture));
    CHECK(wait_fence((ID3D12Fence*)record_gpu_capture_d3d12_fence(capture), ready));
    CHECK(record_gpu_capture_d3d12_reap(capture));

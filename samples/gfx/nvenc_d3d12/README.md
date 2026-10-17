@@ -157,6 +157,14 @@ scRGB components, chroma edges and pool reuse. Every read-back plane value is
 checked against a double-precision CPU reference (one 10-bit code tolerance,
 zero low six bits). This readback belongs only to the test. The output uses
 left/vertical-centre chroma with a three-tap horizontal filter.
+When P010 typed UAV stores are supported, conversion writes directly into
+the encoder texture's two plane views. Those slots allocate no intermediate
+planes and issue no conversion copies. Failed capability queries, missing
+store support or rejected UAV textures retain the intermediate-plane path,
+independently for each slot. The test intercepts only the capture's API calls
+to exercise these failures and a mixed pool, and checks allocation/copy counts
+alongside the real GPU results. `NVENC_TEST_REQUIRE_DIRECT_HDR=1` requires the
+unmodified hardware case to use four direct textures.
 Twelve frames per case are then encoded as HEVC/AV1 and independently decoded;
 the runner checks pixels and PQ/Rec.2020/range signaling. Native D3D12 debug
 layer errors fail the test when the validation layer is available. Both header
