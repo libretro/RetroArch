@@ -1316,6 +1316,8 @@ typedef struct settings
       char mcp_server_token[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING
+      char romm_url[NAME_MAX_LENGTH];
+      char romm_token[NAME_MAX_LENGTH];
 #ifdef HAVE_CLOUDSYNC
       char webdav_url[NAME_MAX_LENGTH];
       char webdav_username[NAME_MAX_LENGTH];

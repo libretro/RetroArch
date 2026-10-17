@@ -126,6 +126,11 @@ void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
       retro_task_callback_t cb, void *user_data);
 
+/* As above, with extra request headers ("Name: value\r\n" lines). */
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, const char *headers, bool mute, const char *title,
+      retro_task_callback_t cb, void *user_data);
+
 void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data);
 

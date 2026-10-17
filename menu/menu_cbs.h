@@ -188,6 +188,7 @@ enum
    ACTION_OK_DL_BROWSE_URL_LIST,
    ACTION_OK_DL_CORE_CONTENT_LIST,
    ACTION_OK_DL_CORE_CONTENT_DIRS_LIST,
+   ACTION_OK_DL_ROMM_LIST,
    ACTION_OK_DL_CORE_SYSTEM_FILES_LIST,
    ACTION_OK_DL_DEFERRED_LOAD_DISC_LIST,
    ACTION_OK_DL_DEFERRED_DUMP_DISC_LIST,
@@ -298,6 +299,9 @@ int action_ok_path_use_directory(const char *path,
  * @return 0 on success
  */
 int action_ok_core_content_dirs_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
+int action_ok_romm_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);

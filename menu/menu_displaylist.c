@@ -140,6 +140,7 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#include "../tasks/task_romm.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -13680,6 +13681,8 @@ unsigned menu_displaylist_build_list(
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,             PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,                   PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_ROMM_URL,                              PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_ROMM_TOKEN,                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,  PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP,              PARSE_ONLY_BOOL},
@@ -14654,6 +14657,28 @@ static size_t print_buf_lines(file_list_t *list, const char *label,
       file_list_sort_on_alt(list);
 
    return count;
+}
+
+typedef struct
+{
+   file_list_t *list;
+   bool roms;
+} romm_menu_t;
+
+static bool menu_displaylist_romm_entry(void *data, const char *path,
+      const char *label, bool next_page)
+{
+   romm_menu_t *romm = (romm_menu_t*)data;
+   size_t idx        = romm->list->size;
+   unsigned type     = (!romm->roms || next_page)
+      ? FILE_TYPE_ROMM_PLATFORM : FILE_TYPE_ROMM_ROM;
+
+   /* The path carries what the entry opens; the alt text is what shows */
+   if (menu_entries_append(romm->list, path, path,
+            MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
+      file_list_set_alt_at_offset(romm->list, idx, next_page
+            ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ROMM_NEXT_PAGE) : label);
+   return true;
 }
 
 static unsigned menu_displaylist_netplay_kick(file_list_t *list)
@@ -15775,6 +15800,29 @@ static bool menu_displaylist_ctl_internal(
                                   | MD_FLAG_NEED_CLEAR;
 #endif
             }
+            break;
+         case DISPLAYLIST_ROMM:
+            menu_entries_clear(info->list);
+#ifdef HAVE_NETWORKING
+            {
+               romm_menu_t romm;
+
+               romm.list = info->list;
+               romm.roms = info->path && *info->path;
+               if (menu->core_buf && menu->core_len)
+                  romm_list_parse(menu->core_buf, menu->core_len,
+                        info->path, menu_displaylist_romm_entry, &romm);
+               if (!romm.roms)
+                  file_list_sort_on_alt(info->list);
+               count = (unsigned)info->list->size;
+            }
+
+            menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
+
+            info->flags       |= MD_FLAG_NEED_REFRESH
+                               | MD_FLAG_NEED_PUSH
+                               | MD_FLAG_NEED_CLEAR;
+#endif
             break;
          case DISPLAYLIST_CORE_SYSTEM_FILES:
             menu_entries_clear(info->list);
@@ -17149,6 +17197,14 @@ static bool menu_displaylist_ctl_internal(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+               if (*settings->arrays.romm_url
+                     && menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ROMM_LIBRARY),
+                        MENU_ENUM_LABEL_ROMM_LIBRARY_STR,
+                        MENU_ENUM_LABEL_ROMM_LIBRARY,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
                         MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
@@ -17213,6 +17269,14 @@ static bool menu_displaylist_ctl_internal(
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
                         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
                         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+               if (*settings->arrays.romm_url
+                     && menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ROMM_LIBRARY),
+                        MENU_ENUM_LABEL_ROMM_LIBRARY_STR,
+                        MENU_ENUM_LABEL_ROMM_LIBRARY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 

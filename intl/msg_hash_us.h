@@ -1171,6 +1171,18 @@ MSG_HASH(
    "Download free content for the selected core."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ROMM_LIBRARY,
+   "RomM Library"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ROMM_LIBRARY,
+   "Browse your RomM server and download games to the playlist of their system."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ROMM_NEXT_PAGE,
+   "Next Page"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
    "Core System Files Downloader"
    )
@@ -32355,6 +32367,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
    "Decompression failed."
+   )
+MSG_HASH(
+   MSG_ROMM_FOLDER_EXISTS,
+   "Already downloaded. Delete its folder to download it again."
+   )
+MSG_HASH(
+   MSG_ROMM_LEFTOVER_EXISTS,
+   "A file or folder of an earlier or running download is in the way. Delete it to try again."
+   )
+MSG_HASH(
+   MSG_ROMM_MOVE_FAILED,
+   "Could not move the unpacked files into place."
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
