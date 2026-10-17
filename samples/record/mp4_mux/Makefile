@@ -8,11 +8,12 @@ endif
 MUX := $(RA)/record/record_mux_mp4.c $(RA)/record/record_mux_mp4.h
 FRAME := $(RA)/libretro-common/formats/ac3/rac3_frame.c
 ENCODE := $(RA)/libretro-common/formats/ac3/rac3_encode.c
+OUTPUT := $(RA)/record/record_file_win32.c $(RA)/libretro-common/encodings/encoding_utf.c $(RA)/libretro-common/compat/compat_strl.c
 all: mux_test$(EXE) mux_file$(EXE)
 mux_test$(EXE): mux_test.c $(MUX) $(FRAME)
 	$(CC) $(CFLAGS) -o $@ mux_test.c $(FRAME) $(LDFLAGS)
-mux_file$(EXE): mux_file.c $(MUX) $(FRAME) $(ENCODE)
-	$(CC) $(CFLAGS) -o $@ mux_file.c $(RA)/record/record_mux_mp4.c $(FRAME) $(ENCODE) $(LDFLAGS) -lm
+mux_file$(EXE): mux_file.c $(MUX) $(FRAME) $(ENCODE) $(OUTPUT)
+	$(CC) $(CFLAGS) -o $@ mux_file.c $(RA)/record/record_mux_mp4.c $(FRAME) $(ENCODE) $(OUTPUT) $(LDFLAGS) -lm
 check: all
 	$(RUNNER) ./mux_test$(EXE)
 	python3 run.py --runner "$(RUNNER)" ./mux_file$(EXE)

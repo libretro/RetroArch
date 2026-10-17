@@ -151,6 +151,14 @@ jobs:
              ./ffmpeg_pipeline_test
           echo "[pass] ffmpeg_pipeline_test (plain ring, ASan)"
 
+      - name: Native overlapped file output
+        working-directory: samples/record/file_win32
+        run: |
+          set -eu
+          make clean && make check SANITIZER=address,undefined
+          make clean && make check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make clean
+
       - name: Native MP4 mux (ASan + UBSan, mingw-w64)
         shell: bash
         working-directory: samples/record/mp4_mux

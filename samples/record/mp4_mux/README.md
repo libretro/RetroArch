@@ -28,3 +28,6 @@ timestamps, duration, keyframes and recovery of complete-fragment prefixes.
 Format references: [fragmented ISO BMFF](https://www.w3.org/TR/mse-byte-stream-format-isobmff/),
 [AV1 binding](https://aomediacodec.github.io/av1-isobmff/), and
 [AC-3 dac3](https://www.etsi.org/deliver/etsi_ts/102300_102399/102366/01.04.01_60/ts_102366v010401p.pdf), Annex F.
+
+On Windows the fixture drains each MP4 borrow through the production overlapped
+file writer, then flushes/closes before invoking the independent decoder.

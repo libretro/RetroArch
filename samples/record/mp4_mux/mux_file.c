@@ -5,6 +5,13 @@
 #include <math.h>
 #include <formats/rac3.h>
 #include "../../../record/record_mux_mp4.h"
+#ifdef _WIN32
+#include <windows.h>
+#include "../../../record/record_file_win32.h"
+typedef record_file_win32_t output_file_t;
+#else
+typedef FILE output_file_t;
+#endif
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %u: %s\n", (unsigned)__LINE__, #x); goto done; } } while (0)
 static int read32(FILE *f, unsigned *out)
 {
@@ -13,11 +20,28 @@ static int read32(FILE *f, unsigned *out)
    *out = p[0] | (unsigned)p[1] << 8 | (unsigned)p[2] << 16 | (unsigned)p[3] << 24;
    return 1;
 }
-static bool output(record_mux_mp4_t *m, FILE *out)
+static bool output(record_mux_mp4_t *m, output_file_t *out)
 {
    const void *data; size_t size;
+#ifdef _WIN32
+   unsigned i;
+   int result;
+   if (!record_mux_mp4_get(m, &data, &size)
+         || record_file_win32_push(out, data, size) != RECORD_FILE_OK)
+      return false;
+   for (i = 0; i < 10000; i++)
+   {
+      result = record_file_win32_step(out);
+      if (result != RECORD_FILE_BUSY)
+         return result == RECORD_FILE_OK && record_mux_mp4_release(m);
+      Sleep(1); /* Test deadline only. */
+   }
+   fprintf(stderr, "Timed out with borrowed mux output still in flight\n");
+   abort();
+#else
    return record_mux_mp4_get(m, &data, &size) && fwrite(data, 1, size, out) == size
       && record_mux_mp4_release(m);
+#endif
 }
 int main(int argc, char **argv)
 {
@@ -26,7 +50,8 @@ int main(int argc, char **argv)
    rac3_encoder_t *encoder = NULL;
    uint8_t *headers = NULL, *packet = NULL, *audio = NULL;
    float *pcm = NULL;
-   FILE *in = NULL, *out = NULL, *raw_audio = NULL;
+   FILE *in = NULL, *raw_audio = NULL;
+   output_file_t *out = NULL;
    unsigned h[10], i, n, key, sample, channel, channels = 0;
    size_t audio_size = 0;
    uint64_t audio_pts = 0;
@@ -55,7 +80,12 @@ int main(int argc, char **argv)
    }
    m = record_mux_mp4_new(&c); CHECK(m != NULL);
    memset(headers, 0, n); free(headers); headers = NULL;
-   out = fopen(argv[2], "wb"); CHECK(out != NULL); CHECK(output(m, out));
+#ifdef _WIN32
+   out = record_file_win32_new(argv[2]);
+#else
+   out = fopen(argv[2], "wb");
+#endif
+   CHECK(out != NULL); CHECK(output(m, out));
    for (i = 0; i < h[6]; i++)
    {
       CHECK(read32(in, &key) && read32(in, &n) && n && n <= c.max_packet_size);
@@ -79,7 +109,12 @@ int main(int argc, char **argv)
    CHECK(record_mux_mp4_finish(m)); ok = 1;
 done:
    if (in) fclose(in);
+#ifdef _WIN32
+   if (out && ok && !record_file_win32_finish(out)) ok = 0;
+   if (!record_file_win32_free(out)) abort();
+#else
    if (out && fclose(out)) ok = 0;
+#endif
    if (raw_audio && fclose(raw_audio)) ok = 0;
    record_mux_mp4_free(m); rac3_encoder_free(encoder);
    free(headers); free(packet); free(audio); free(pcm);
