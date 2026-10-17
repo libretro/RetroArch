@@ -10660,6 +10660,20 @@ static void ozone_set_layout(
    ozone->flags |= OZONE_FLAG_NEED_COMPUTE;
 }
 
+/* Request again the thumbnails that were unloaded when content was started or closed */
+static void ozone_thumbnails_reload(ozone_handle_t *ozone)
+{
+   settings_t *settings                 = config_get_ptr();
+   unsigned upscale_threshold           = settings->uints.gfx_thumbnail_upscale_threshold;
+   gfx_thumbnail_path_data_t *path_data = menu_state_get_ptr()->thumbnail_path_data;
+
+   if (ozone->thumbnails.pending & OZONE_PENDING_THUMBNAIL_RIGHT)
+      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_RIGHT, NULL, 0, &ozone->thumbnails.right, upscale_threshold, false);
+   if (ozone->thumbnails.pending & OZONE_PENDING_THUMBNAIL_LEFT)
+      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_LEFT, NULL, 0, &ozone->thumbnails.left, upscale_threshold, false);
+   gfx_thumbnail_flush_requests();
+}
+
 static void ozone_context_reset(void *data, bool is_threaded)
 {
    ozone_handle_t *ozone      = (ozone_handle_t*) data;
@@ -10725,7 +10739,10 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->pending_message              = NULL;
 
       /* Thumbnails */
-      ozone_update_thumbnail_image(ozone);
+      if (!runloop_is_content_switching())
+         ozone_update_thumbnail_image(ozone);
+      else if (!runloop_content_loaded() || task_queue_is_threaded())
+         ozone_thumbnails_reload(ozone);
       ozone_update_savestate_thumbnail_image(ozone);
 
       /* Header icon */
@@ -10768,6 +10785,25 @@ static INLINE void ozone_font_free(font_data_impl_t *font_data)
    font_data->font = NULL;
 }
 
+/* Unload the thumbnails when content is started or closed; a cover still loading is left to finish */
+static void ozone_thumbnails_unload(ozone_handle_t *ozone)
+{
+   gfx_thumbnail_t *right = &ozone->thumbnails.right;
+   gfx_thumbnail_t *left  = &ozone->thumbnails.left;
+
+   if (right->anim_surface || right->anim || right->anim_player)
+   {
+      gfx_thumbnail_reset(right);
+      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)(ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_RIGHT);
+   }
+   if (left->anim_surface || left->anim || left->anim_player)
+   {
+      gfx_thumbnail_reset(left);
+      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)(ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_LEFT);
+   }
+   gfx_thumbnail_reset(&ozone->thumbnails.savestate);
+}
+
 static void ozone_context_destroy(void *data)
 {
    uintptr_t tag;
@@ -10786,7 +10822,10 @@ static void ozone_context_destroy(void *data)
    ozone_free_context_textures(ozone);
 
    /* Thumbnails */
-   ozone_unload_thumbnail_textures(ozone);
+   if (runloop_is_content_switching())
+      ozone_thumbnails_unload(ozone);
+   else
+      ozone_unload_thumbnail_textures(ozone);
 
    /* Fonts */
    ozone_font_free(&ozone->fonts.footer);
@@ -11032,6 +11071,21 @@ static void ozone_render(void *data,
             ozone_collapse_sidebar,
             video_driver_is_threaded());
       video_driver_monitor_reset();
+   }
+
+   /* Reset thumbnail bar when starting/closing content */
+   if (((ozone->flags & OZONE_FLAG_LIBRETRO_RUNNING) > 0) != runloop_content_loaded())
+   {
+      ozone->flags ^= OZONE_FLAG_LIBRETRO_RUNNING;
+      ozone->flags |= OZONE_FLAG_NEED_COMPUTE;
+
+      if ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && !runloop_is_content_switching())
+      {
+         if (ozone->flags & OZONE_FLAG_LIBRETRO_RUNNING)
+            ozone->flags &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
+         else
+            ozone->flags |=  (OZONE_FLAG_WANT_THUMBNAIL_BAR | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
+      }
    }
 
    if (menu_show_sublabels && menu_current_sel_only && (ozone->selection != menu_st->selection_ptr))
@@ -12863,27 +12917,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             OZONE_ENTRIES_ICONS_TEXTURE_LAST);
       ozone_icons_snapshot(ozone->textures, ozone_tex, OZONE_TEXTURE_LAST);
       ozone_icons_snapshot(ozone->tab_textures, tab_tex, OZONE_TAB_TEXTURE_LAST);
-
-   /* Reset thumbnail bar when starting/closing content */
-   if (((ozone->flags & OZONE_FLAG_LIBRETRO_RUNNING) > 0) != libretro_running)
-   {
-      if (libretro_running)
-         ozone->flags          |=  OZONE_FLAG_LIBRETRO_RUNNING;
-      else
-         ozone->flags          &= ~OZONE_FLAG_LIBRETRO_RUNNING;
-
-      ozone->flags             |=  OZONE_FLAG_NEED_COMPUTE;
-
-      if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
-      {
-         if (libretro_running)
-            ozone->flags       &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
-                               |    OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
-         else
-            ozone->flags       |=  (OZONE_FLAG_WANT_THUMBNAIL_BAR
-                               |    OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
-      }
-   }
 
    if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
    {

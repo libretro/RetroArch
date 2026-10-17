@@ -140,6 +140,7 @@ typedef struct
    uint64_t list_id;
    gfx_thumbnail_t *thumbnail;
    unsigned upscale_threshold;   /* while waiting for a set */
+   bool content_switching;
    char path[PATH_MAX_LENGTH];
 } gfx_thumbnail_tag_t;
 
@@ -154,6 +155,53 @@ static unsigned             gfx_thumb_pending_n;
 static unsigned gfx_thumbnail_downscale_cap(void);
 
 static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
+
+/* How many copies of the thumbnails loaded when content is started or closed
+ * can be kept at once, to show them again without decoding */
+#define GFX_THUMBNAIL_KEPT_MAX 4
+
+static struct gfx_thumbnail_kept
+{
+   struct texture_image img;
+   char path[PATH_MAX_LENGTH];
+} gfx_thumb_kept[GFX_THUMBNAIL_KEPT_MAX];
+
+static unsigned gfx_thumb_kept_next;
+
+/* Copy a thumbnail image, with pixels of its own */
+static bool gfx_thumbnail_image_copy(struct texture_image *dst, const struct texture_image *src)
+{
+   size_t size = (size_t)src->width * src->height * sizeof(uint32_t);
+
+   *dst        = *src;
+   dst->pixels = (uint32_t*)malloc(size);
+   if (!dst->pixels)
+      return false;
+   memcpy(dst->pixels, src->pixels, size);
+   return true;
+}
+
+/* Store a copy of a thumbnail, replacing the oldest one */
+static void gfx_thumbnail_keep(const char *path, const struct texture_image *img)
+{
+   unsigned slot                   = gfx_thumb_kept_next++ % GFX_THUMBNAIL_KEPT_MAX;
+   struct gfx_thumbnail_kept *kept = &gfx_thumb_kept[slot];
+
+   free(kept->img.pixels);
+   gfx_thumbnail_image_copy(&kept->img, img);
+   strlcpy(kept->path, path, sizeof(kept->path));
+}
+
+/* Free kept copies, once no content is loaded anymore */
+static void gfx_thumbnail_kept_free(void)
+{
+   unsigned i;
+   for (i = 0; i < GFX_THUMBNAIL_KEPT_MAX; i++)
+   {
+      free(gfx_thumb_kept[i].img.pixels);
+      gfx_thumb_kept[i].img.pixels = NULL;
+   }
+}
 
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
@@ -220,6 +268,21 @@ static bool gfx_thumbnail_use_rgba(void)
    return req.rgba;
 }
 
+/* Find the kept copy of the thumbnail */
+static struct gfx_thumbnail_kept *gfx_thumbnail_kept_find(const char *path)
+{
+   unsigned i;
+   for (i = 0; i < GFX_THUMBNAIL_KEPT_MAX; i++)
+   {
+      struct gfx_thumbnail_kept *kept = &gfx_thumb_kept[i];
+      if (     kept->img.pixels
+            && kept->img.supports_rgba == gfx_thumbnail_use_rgba()
+            && string_is_equal(kept->path, path))
+         return kept;
+   }
+   return NULL;
+}
+
 /* A thumbnail's still is uploaded through its surface, which takes
  * half floats where the driver offers them: an HDR video's still may
  * come as linear scRGB (TASK_IMAGE_LOAD_HDR). */
@@ -241,7 +304,7 @@ static void gfx_thumbnail_init_fade(
        || (p_gfx_thumb->fade_missing
        && (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_MISSING)))
    {
-      if (p_gfx_thumb->fade_duration > 0.0f)
+      if (p_gfx_thumb->fade_duration > 0.0f && !runloop_is_content_switching())
       {
          gfx_animation_ctx_entry_t animation_entry;
 
@@ -1027,6 +1090,10 @@ static void gfx_thumbnail_still_landed(retro_task_t *task,
       /* Dimensions now, so layout does not wait for the handle. */
       unsigned dims    = VIDEO_SCALE_PACK(img->width, img->height);
 
+      if (     thumbnail_tag->content_switching && img->pixels && !img->fp16
+            && !gfx_thumbnail_kept_find(thumbnail_tag->path))
+         gfx_thumbnail_keep(thumbnail_tag->path, img);
+
       if (s && gfx_surface_submit_image(s, img))
       {
          thumbnail_tag->thumbnail->dims = dims;
@@ -1154,6 +1221,26 @@ static unsigned gfx_thumbnail_set_width(void)
    return cores;
 }
 
+/* Show the kept copy of a thumbnail instead of decoding it again */
+static bool gfx_thumbnail_restore_kept(gfx_thumbnail_tag_t *tag)
+{
+   struct gfx_thumbnail_kept *kept = gfx_thumbnail_kept_find(tag->path);
+   struct texture_image *img;
+
+   if (!kept || !(img = (struct texture_image*)malloc(sizeof(*img))))
+      return false;
+   if (!gfx_thumbnail_image_copy(img, &kept->img))
+   {
+      free(img);
+      return false;
+   }
+
+   tag->thumbnail->list_id = tag->list_id;
+   GFX_THUMB_STATUS_STORE(&tag->thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+   gfx_thumbnail_still_landed(NULL, img, tag, -1);
+   return true;
+}
+
 /* The still at @tag's path, decoded on the task queue: held for the
  * frame's set where one can be made, else a task of its own. A video
  * always goes alone - only its task can hand the thumbnail the decoder
@@ -1162,6 +1249,8 @@ static bool gfx_thumbnail_push_still(gfx_thumbnail_tag_t *tag,
       unsigned upscale_threshold)
 {
    enum image_type_enum type = image_texture_get_type(tag->path);
+   if (gfx_thumbnail_restore_kept(tag))
+      return false;
    if (     type != IMAGE_TYPE_WEBM && type != IMAGE_TYPE_MP4
          && gfx_thumbnail_set_width() > 1)
    {
@@ -1180,6 +1269,8 @@ void gfx_thumbnail_flush_requests(void)
 {
    unsigned width, cap, i = 0, n = gfx_thumb_pending_n;
    gfx_thumbnail_anim_reap();
+   if (!runloop_is_content_switching() && !runloop_content_loaded())
+      gfx_thumbnail_kept_free();
    if (!n)
       return;
    gfx_thumb_pending_n = 0;
@@ -1453,6 +1544,7 @@ void gfx_thumbnail_request(
                /* Configure user data */
                thumbnail_tag->thumbnail = thumbnail;
                thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+               thumbnail_tag->content_switching = runloop_is_content_switching();
                strlcpy(thumbnail_tag->path, thumbnail_path,
                      sizeof(thumbnail_tag->path));
 
@@ -1588,6 +1680,7 @@ void gfx_thumbnail_request_file(
     * stopped. */
    thumbnail_tag->thumbnail = thumbnail;
    thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+   thumbnail_tag->content_switching = false;
    strlcpy(thumbnail_tag->path, file_path,
          sizeof(thumbnail_tag->path));
 
