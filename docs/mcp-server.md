@@ -90,7 +90,9 @@ One prompt is offered, `play_game`, taking an optional `playlist`,
 the game. Its `playlist` completes from the playlists, and its `game`
 from the playlist already chosen - matching anywhere in the name, case
 aside, so `mario` finds `Super Mario Bros.`. Both lists are read on a
-task, as `LIST_PLAYLISTS` reads them, and answered when it is through.
+task, as `LIST_PLAYLISTS` reads them, and answered when it is through;
+a playlist that cannot be read is answered with an error rather than
+with no matches.
 
 Every tool also has a `title` for people, made from its name: `Run
 frames` for `RUN_FRAMES`.

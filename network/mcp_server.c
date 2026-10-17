@@ -82,6 +82,7 @@ static const char *const mcp_versions[] = {
 #define MCP_ERR_INVALID_REQUEST  -32600
 #define MCP_ERR_METHOD           -32601
 #define MCP_ERR_PARAMS           -32602
+#define MCP_ERR_INTERNAL         -32603
 #define MCP_ERR_HEADER_MISMATCH  -32020
 #define MCP_ERR_VERSION          -32022
 
@@ -1330,13 +1331,29 @@ static void mcp_completion_result(struct mcp_conn *c, const char *id,
    rjsonwriter_t *w     = mcp_envelope(id);
    size_t         plen  = strlen(c->complete_prefix);
    c->completing        = false;
+   /* a list that could not be read is not one with nothing in it: the
+    * command's own reason, as an error */
+   if (is_error)
+   {
+      char msg[256];
+      size_t n = len < sizeof(msg) - 1 ? len : sizeof(msg) - 1;
+      if (w)
+         rjsonwriter_free(w);
+      memcpy(msg, text, n);
+      msg[n] = '\0';
+      if (n && msg[n - 1] == '\n')
+         msg[n - 1] = '\0';
+      mcp_error(c, id, MCP_ERR_INTERNAL, *msg ? msg
+            : "The list could not be read.", false);
+      return;
+   }
    if (!w)
    {
       mcp_conn_close(c);
       return;
    }
    MCP_RAW(w, "\"result\":{\"completion\":{\"values\":[");
-   while (!is_error && p < end)
+   while (p < end)
    {
       const char *eol   = (const char*)memchr(p, '\n', (size_t)(end - p));
       const char *stop  = eol ? eol : end;
@@ -1972,30 +1989,45 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
    }
    else if (string_is_equal(r.method, "prompts/get"))
    {
+      static const char head[] = "Play %s%s%s with RetroArch's tools. "
+            "Goal: %s. " MCP_INSTRUCTIONS;
       const char    *game     = mcp_arg(&r, "game");
       const char    *playlist = mcp_arg(&r, "playlist");
       const char    *goal     = mcp_arg(&r, "goal");
-      char           text[1024];
+      char          *text;
+      size_t         size;
       rjsonwriter_t *w;
       if (!string_is_equal(r.name, MCP_PROMPT_NAME))
       {
          mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown prompt.", false);
          goto end;
       }
-      snprintf(text, sizeof(text), "Play %s%s%s with RetroArch's tools. "
-            "Goal: %s. " MCP_INSTRUCTIONS,
-            game && *game ? game : "a game",
-            playlist && *playlist ? ", from the playlist " : "",
-            playlist && *playlist ? playlist : "",
-            goal && *goal ? goal : "clear the first level");
+      if (!game || !*game)
+         game = "a game";
+      if (!goal || !*goal)
+         goal = "clear the first level";
+      if (!playlist)
+         playlist = "";
+      /* sized to what was sent, so a long goal cuts nothing short */
+      size = sizeof(head) + strlen(game) + strlen(playlist) + strlen(goal)
+         + 32;
+      if (!(text = (char*)malloc(size)))
+      {
+         mcp_error(c, r.id, MCP_ERR_INTERNAL, "Out of memory.", false);
+         goto end;
+      }
+      snprintf(text, size, head, game,
+            *playlist ? ", from the playlist " : "", playlist, goal);
       if (!(w = mcp_envelope(r.id)))
       {
+         free(text);
          mcp_conn_close(c);
          goto end;
       }
       MCP_RAW(w, "\"result\":{\"messages\":[{\"role\":\"user\","
             "\"content\":{\"type\":\"text\",\"text\":");
       rjsonwriter_add_string(w, text);
+      free(text);
       MCP_RAW(w, "}}]");
       mcp_result_end(w, modern);
       mcp_respond_writer(c, w);

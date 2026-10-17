@@ -76,7 +76,17 @@ static bool act_moji(command_t *cmd, const char *arg)
 static bool act_pls(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, PLS_TEXT, sizeof(PLS_TEXT) - 1); return true; }
 static bool act_pl(command_t *cmd, const char *arg)
-{ (void)arg; cmd->replier(cmd, PL_TEXT, sizeof(PL_TEXT) - 1); return true; }
+{
+   static const char err[] = "GET_PLAYLIST ERROR no such playlist";
+   if (arg && !strcmp(arg, "nope.lpl"))
+   {
+      cmd->error = true;
+      cmd->replier(cmd, err, sizeof(err) - 1);
+      return false;
+   }
+   cmd->replier(cmd, PL_TEXT, sizeof(PL_TEXT) - 1);
+   return true;
+}
 static bool act_stat(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, STAT_TEXT, sizeof(STAT_TEXT) - 1); return true; }
 static bool act_read(command_t *cmd, const char *arg)
@@ -689,6 +699,31 @@ static void test_stdio(void)
    stdio_read(cmd, out, sizeof(out));
    check("and an argument with nothing to offer completes to none",
          strstr(out, "\"values\":[]"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":66,\"method\":\"completion/complete\","
+         "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
+         "\"argument\":{\"name\":\"game\",\"value\":\"x\"},"
+         "\"context\":{\"arguments\":{\"playlist\":\"nope.lpl\"}}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("a list that cannot be read is an error, not no matches",
+         strstr(out, "-32603") && strstr(out, "no such playlist")
+         && !strstr(out, "\"values\""));
+   {
+      /* a goal far past any fixed buffer: the instructions after it
+       * still arrive whole */
+      static char req[2400];
+      char goal[1600];
+      memset(goal, 'g', sizeof(goal) - 2);
+      goal[sizeof(goal) - 2] = 'Z';
+      goal[sizeof(goal) - 1] = '\0';
+      snprintf(req, sizeof(req), "{\"jsonrpc\":\"2.0\",\"id\":67,"
+            "\"method\":\"prompts/get\",\"params\":{\"name\":\"play_game\","
+            "\"arguments\":{\"goal\":\"%s\"}}}\n", goal);
+      stdio_send(req);
+      stdio_read(cmd, out, sizeof(out));
+      check("a long goal cuts nothing short",
+            strstr(out, "gZ. Controls a running RetroArch")
+            && strstr(out, "load code."));
+   }
 
    stdio_send("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
    check("a notification is not answered",

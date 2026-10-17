@@ -244,19 +244,22 @@ send({'jsonrpc': '2.0', 'id': 233, 'method': 'tools/call',
 msg, _ = recv(233)
 check('and an empty one is not one of them',
       (msg or {}).get('error', {}).get('code') == -32602)
-# A refused preset leaves the shader setting as it was.
-_, before, _ = call(234, 'GET_OPTION', {'option': 'shader'})
-msg, t, _ = call(235, 'SET_SHADER', {'preset': '/no/such/preset.slangp'})
-_, after, _ = call(236, 'GET_OPTION', {'option': 'shader'})
-check('a refused SET_SHADER changes nothing: ' + (after or '').strip(),
-      msg and msg['result']['isError'] and before and 'off' in before
-      and before == after)
-# The null video driver runs no shader, so there is none to toggle: the
-# toggle used to dereference the menu's shader, which no such driver has.
-call(237, 'SET_OPTION', {'option': 'shader', 'state': 'on'})
-_, st, _ = call(238, 'GET_STATUS')
-check('and turning shaders on where none run does not crash',
-      st and st.startswith('GET_STATUS'))
+# A refused preset leaves the shader setting as it was. A build without
+# shaders offers neither SET_SHADER nor the option.
+if 'SET_SHADER' in names:
+    _, before, _ = call(234, 'GET_OPTION', {'option': 'shader'})
+    msg, t, _ = call(235, 'SET_SHADER', {'preset': '/no/such/preset.slangp'})
+    _, after, _ = call(236, 'GET_OPTION', {'option': 'shader'})
+    check('a refused SET_SHADER changes nothing: ' + (after or '').strip(),
+          msg and msg['result']['isError'] and before and 'off' in before
+          and before == after)
+    # The null video driver runs no shader, so there is none to toggle:
+    # the toggle used to dereference the menu's shader, which no such
+    # driver has.
+    call(237, 'SET_OPTION', {'option': 'shader', 'state': 'on'})
+    _, st, _ = call(238, 'GET_STATUS')
+    check('and turning shaders on where none run does not crash',
+          st and st.startswith('GET_STATUS'))
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
