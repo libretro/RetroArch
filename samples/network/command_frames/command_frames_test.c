@@ -845,6 +845,18 @@ int main(int argc, char **argv)
          }
          CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 2\n"));
       }
+      /* that frame let go counts against the frames a request runs */
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"press 1 a 270; press 1 a 270") && strstr(reply,"step 2"));
+      if (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+         command_run_frames_cancel("tidying up");
+      {
+         unsigned n=0;
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 270; press 1 a 269"));
+         while (!reply[0] && n < 700) { runloop_iterate(); n++; }
+         CHECK(n == 540 && !strcmp(reply,"DONE 540\nSTEP 2\n"));
+      }
       reply[0]=0;
       {
          char longarg[400];

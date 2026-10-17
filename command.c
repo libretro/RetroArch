@@ -2518,9 +2518,8 @@ static size_t command_watch_lines(char *s, size_t len)
 }
 
 /* What RUN_UNTIL, a PRESS that waits after it and a STEPS list wait on:
- * the byte at @lo, or with @wide the value @hi * 256 + @lo - two bytes
- * a game may keep apart, as SMB keeps the page Mario is on and where
- * on it he is. */
+ * the byte at @lo, or with @wide the value @hi * 256 + @lo, from two
+ * bytes that need not be adjacent. */
 struct command_cond
 {
    unsigned hi;
@@ -2992,28 +2991,23 @@ static bool command_frames_ready(command_t *cmd, const char *name)
    return true;
 }
 
-/* The most frames one request runs for @cmd: for a structured one,
- * nine seconds of the content's own frames where that is fewer than
- * COMMAND_FRAMES_REPLY_MAX, so the reply comes inside its ten-second
- * deadline at any frame rate - 600 at 50fps would outlast it. */
-static unsigned command_frames_reply_max(const command_t *cmd)
-{
-   double fps = video_state_get_ptr()->av_info.timing.fps;
-   if (cmd->structured && fps > 0.0
-         && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
-      return fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
-   return COMMAND_FRAMES_REPLY_MAX;
-}
-
-/* About nine seconds of the content's own frames, inside a structured
- * reply's ten-second deadline at any frame rate - 600 at 50fps would
- * outlast it: how long a wait runs when not told. */
+/* About nine seconds of the content's own frames, at most
+ * COMMAND_FRAMES_REPLY_MAX: a structured reply comes inside its
+ * ten-second deadline at any frame rate, and a wait runs this long when
+ * not told. */
 static unsigned command_frames_default(void)
 {
    double fps = video_state_get_ptr()->av_info.timing.fps;
    if (fps > 0.0 && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
       return fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
    return COMMAND_FRAMES_REPLY_MAX;
+}
+
+/* The most frames one request runs for @cmd */
+static unsigned command_frames_reply_max(const command_t *cmd)
+{
+   return cmd->structured ? command_frames_default()
+                          : COMMAND_FRAMES_REPLY_MAX;
 }
 
 /* RUN_FRAMES <count>
@@ -3516,10 +3510,9 @@ bool command_press(command_t *cmd, const char *arg)
  *
  * Runs a stretch of play as one request: "run <frames>", "press
  * <player> <controls> <frames>" and "until <condition>", in order, then
- * answers with how it ended and what WATCH watches. A field run spent
- * most of its calls on approach, jump and land, one request each. A
- * "stop <condition>" entry ends the list after any frame where it holds,
- * so a death does not play out the rest. The whole list runs no longer
+ * answers with how it ended and what WATCH watches. A "stop
+ * <condition>" entry ends the list after any frame where it holds, so a
+ * death does not play out the rest. The whole list runs no longer
  * than a wait does; past that it answers WAITING and the step it was on,
  * and the next request carries on from there. */
 bool command_steps(command_t *cmd, const char *arg)
@@ -3607,13 +3600,6 @@ bool command_steps(command_t *cmd, const char *arg)
             if (!command_input_args(cmd, "STEPS", "a frame count",
                      entry + 6, &player, ids, &nids, &frames))
                return false;
-            if (frames < 1 || (unsigned long)frames > budget - fixed)
-            {
-               command_reply_error(cmd, "STEPS", "step %u: press for a "
-                     "frame count from 1, within the %u frames one request "
-                     "runs", count, budget);
-               return false;
-            }
             for (i = 0; i < nids; i++)
             {
                if (ids[i] >= 16)
@@ -3624,6 +3610,20 @@ bool command_steps(command_t *cmd, const char *arg)
                   return false;
                }
                s->mask |= (uint16_t)(1u << ids[i]);
+            }
+            /* a tap of what the press before it held runs a frame let go
+             * first, as command_run_frames_tick does */
+            if (     count > 1 && steps[count - 2].kind == CMD_STEP_PRESS
+                  && steps[count - 2].port == player - 1
+                  && (steps[count - 2].mask & s->mask))
+               fixed++;
+            if (     fixed > budget || frames < 1
+                  || (unsigned long)frames > budget - fixed)
+            {
+               command_reply_error(cmd, "STEPS", "step %u: press for a "
+                     "frame count from 1, within the %u frames one request "
+                     "runs", count, budget);
+               return false;
             }
             s->kind   = CMD_STEP_PRESS;
             s->port   = player - 1;
@@ -4353,13 +4353,14 @@ bool command_load_content(command_t *cmd, const char* arg)
 #if TARGET_OS_IPHONE
    char expanded[PATH_MAX_LENGTH];
 #endif
-   char content_buf[PATH_MAX_LENGTH];
    content_ctx_info_t content_info = {0};
    const char *content_path        = NULL;
    const char *sep                 = NULL;
-   char       *last;
+   const char *last;
+   char       *trimmed             = NULL;
    size_t _len                     = 0;
    bool pause                      = false;
+   bool ret                        = false;
 
    if (!arg || !*arg || !(sep = strchr(arg, '|')))
    {
@@ -4385,15 +4386,19 @@ bool command_load_content(command_t *cmd, const char* arg)
 
    /* "|on" or "|off" after the content path: whether to pause once it
     * has loaded. Anything else after a "|" is the path's own. */
-   strlcpy(content_buf, sep + 1, sizeof(content_buf));
-   if (     (last = strrchr(content_buf, '|'))
+   content_path    = sep + 1;
+   if (     (last = strrchr(content_path, '|'))
          && (string_is_equal(last + 1, "on")
             || string_is_equal(last + 1, "off")))
    {
+      _len  = (size_t)(last - content_path);
       pause = string_is_equal(last + 1, "on");
-      *last = '\0';
+      if (!(trimmed = (char*)malloc(_len + 1)))
+         return false;
+      memcpy(trimmed, content_path, _len);
+      trimmed[_len] = '\0';
+      content_path  = trimmed;
    }
-   content_path    = content_buf;
 #if TARGET_OS_IPHONE
    fill_pathname_expand_special(expanded, content_path, sizeof(expanded));
    content_path    = expanded;
@@ -4405,7 +4410,7 @@ bool command_load_content(command_t *cmd, const char* arg)
    {
       command_reply_error(cmd, "LOAD_CONTENT", "no content at %s",
             content_path);
-      return false;
+      goto end;
    }
 
    /* A playlist entry with no core of its own carries DETECT, so take
@@ -4428,7 +4433,7 @@ bool command_load_content(command_t *cmd, const char* arg)
       {
          command_reply_error(cmd, "LOAD_CONTENT",
                "no installed core supports %s", content_path);
-         return false;
+         goto end;
       }
       if (count > 1)
       {
@@ -4436,7 +4441,7 @@ bool command_load_content(command_t *cmd, const char* arg)
                "%u cores support %s, name one of them; LIST_CORES with "
                "that content path lists them", (unsigned)count,
                content_path);
-         return false;
+         goto end;
       }
 
       /* An entry whose core file is gone keeps its info and loses its
@@ -4446,21 +4451,24 @@ bool command_load_content(command_t *cmd, const char* arg)
          command_reply_error(cmd, "LOAD_CONTENT",
                "the only core that supports %s is not installed",
                content_path);
-         return false;
+         goto end;
       }
       strlcpy(core_path, supported[0].path, sizeof(core_path));
    }
    else if (!command_core_at(cmd, "LOAD_CONTENT", core_path))
-      return false;
+      goto end;
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
          core_path, content_path, NULL, NULL, NULL, &content_info, NULL, NULL))
    {
       command_reply_error(cmd, "LOAD_CONTENT", "could not load %s with %s",
             content_path, core_path);
-      return false;
+      goto end;
    }
-   return command_content_reply(cmd, "LOAD_CONTENT", false, true, pause);
+   ret = command_content_reply(cmd, "LOAD_CONTENT", false, true, pause);
+end:
+   free(trimmed);
+   return ret;
 }
 
 /* CLOSE_CONTENT
