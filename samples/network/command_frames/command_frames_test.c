@@ -1030,13 +1030,23 @@ int main(int argc, char **argv)
             && ram7(&cmd) == ((now + 5) & 0xff));
       runloop_iterate();
       CHECK(ram7(&cmd) == ((now + 5) & 0xff));
+      /* run dry, it says how long it has sat paused waiting for more,
+       * and the steps that start it again say so too */
+      retro_sleep(30);
       reply[0]=0;
-      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      CHECK(command_steps(&cmd,"|on") && !strncmp(reply,"QUEUED 0\nIDLE ",14)
+            && atol(reply + 14) >= 20);
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1|on") && !strncmp(reply,"QUEUED 1\nIDLE ",14)
+            && atol(reply + 14) >= 20);
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 1\n"));
+      runloop_iterate();
       /* a stop is kept for the next queued STEPS, whose steps are not
        * played on from it */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 10; stop 1007 == %u|on",(now + 2) & 0xff);
-      CHECK(command_steps(&cmd,req) && !strcmp(reply,"QUEUED 1\n"));
+      CHECK(command_steps(&cmd,req) && !strncmp(reply,"QUEUED 1\nIDLE ",14));
       reply[0]=0;
       runloop_iterate(); runloop_iterate();
       CHECK(!reply[0] && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
@@ -1060,7 +1070,7 @@ int main(int argc, char **argv)
       CHECK(command_steps(&cmd,"run 5; stop 1006 == 7|on"));
       for (i=0;i<7;i++) runloop_iterate();
       reply[0]=0;
-      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n")
+      CHECK(command_steps(&cmd,"|on") && !strncmp(reply,"QUEUED 0\nIDLE ",14)
             && ram7(&cmd) == ((now + 7) & 0xff));
       /* a rollback drops a stop no one has heard about */
       now=ram7(&cmd); reply[0]=0;

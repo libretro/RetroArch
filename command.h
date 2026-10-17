@@ -827,9 +827,9 @@ static const struct cmd_param cmd_params_steps[] = {
       "holds: \"until 86 >= 200; press 1 a 20; until 1d == 0; stop e == "
       "11\". 32 steps at most.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "queue", "on: answer at once and run them after those queued, "
-      "pausing once all have run. A stop since the last answer is "
-      "answered instead, and these dropped; with no steps, only asks.",
+   { "queue", "on: answer at once, run after those queued, and pause "
+      "once all have run. A stop since the last answer comes instead and "
+      "these are dropped; no steps only asks.",
       CMD_PARAM_STRING, false, "|", "on|off", NULL },
    { NULL }
 };
@@ -1064,6 +1064,7 @@ static const struct cmd_trailer cmd_trailers_steps[] = {
    { "DONE", NULL, "done", "Frames run, every step done.", true },
    { "WAITING", NULL, "waiting", "Frames run before time ran out.", true },
    { "STOPPED", NULL, "stopped", "Frames run when stop held.", true },
+   { "IDLE", NULL, "idle", "queue: ms paused, run dry, before it." },
    { "STOP", NULL, "stop", "Which stop held, from 1." },
    { "STEP", NULL, "step", "The step it ended on, from 1." },
    { NULL }
@@ -1131,7 +1132,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
-   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Run a stretch of play - approach, jump, land - in one request, or queue it to play on without pausing. Answers queued with the steps left, or done, waiting (time ran out: ask again from step) or stopped with the frames run; which stop held and the step it ended on, both from 1; and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Run a stretch of play - approach, jump, land - in one request, or queue it to play on without pausing. Answers queued (steps left), or done, waiting (time ran out: ask again from step) or stopped with the frames run; which stop held and the step it ended on, from 1; and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },

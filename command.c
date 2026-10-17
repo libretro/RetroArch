@@ -31,6 +31,7 @@
 #include <streams/stdin_stream.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -2954,6 +2955,8 @@ static struct
    char                report[256 + COMMAND_WATCH_MAX * 48 + 32];
    size_t              report_len;
    bool                report_error;
+   /* queued: when it ran dry, and the content paused waiting for more */
+   retro_time_t        dry_since;
 } command_run_frames_st;
 
 /* A PRESS step lets go of what it held, on its last frame or on
@@ -3020,6 +3023,7 @@ static void command_run_frames_end(const char *how)
    if (command_run_frames_st.queued && string_is_equal(how, "DONE"))
    {
       command_run_frames_finish();
+      command_run_frames_st.dry_since = cpu_features_get_time_usec();
       return;
    }
    switch (command_run_frames_st.answer)
@@ -3079,6 +3083,7 @@ void command_run_frames_forget(void)
          && (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES))
       command_run_frames_finish();
    command_run_frames_st.report_len = 0;
+   command_run_frames_st.dry_since  = 0;
 }
 
 /* A PRESS step holds its buttons; what SET_INPUT already holds stays
@@ -3179,6 +3184,7 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.nstops     = 0;
    command_run_frames_st.queued     = false;
    command_run_frames_st.report_len = 0;
+   command_run_frames_st.dry_since  = 0;
    strlcpy(command_run_frames_st.reply, line ? line : "",
          sizeof(command_run_frames_st.reply));
    command_run_frames_st.name   = name;
@@ -3225,8 +3231,9 @@ static void command_run_frames_queue(const struct command_step *steps,
    command_run_frames_st.held   = 0;
    command_run_frames_st.gap    = false;
    command_run_frames_st.let_go = 0;
-   command_run_frames_st.nstops = 0;
-   command_run_frames_st.queued = true;
+   command_run_frames_st.nstops    = 0;
+   command_run_frames_st.queued    = true;
+   command_run_frames_st.dry_since = 0;
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
    command_run_frames_enter(false);
 }
@@ -3874,10 +3881,22 @@ bool command_press(command_t *cmd, const char *arg)
    return true;
 }
 
+/* How long, in milliseconds, the content has sat paused since a queue
+ * ran dry; -1 while it runs, or when it stopped for another reason. */
+static long command_steps_idle(void)
+{
+   if (     !command_run_frames_st.dry_since
+         || (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES))
+      return -1;
+   return (long)((cpu_features_get_time_usec()
+            - command_run_frames_st.dry_since) / 1000);
+}
+
 /* The answer of a queued STEPS: how the queued job stopped or failed,
  * where it has since it was last asked, or how many steps it has left
- * to run and what WATCH watches. */
-static void command_steps_report(command_t *cmd)
+ * to run, what WATCH watches, and how long it sat idle, run dry, before
+ * @idle says these came. */
+static void command_steps_report(command_t *cmd, long idle)
 {
    size_t   _len;
    unsigned i;
@@ -3897,6 +3916,11 @@ static void command_steps_report(command_t *cmd)
          sizeof(command_run_frames_st.report), "QUEUED %u\n", left);
    _len += command_watch_lines(command_run_frames_st.report + _len,
          sizeof(command_run_frames_st.report) - _len);
+   if (idle >= 0 && _len < sizeof(command_run_frames_st.report))
+      _len += (size_t)snprintf(command_run_frames_st.report + _len,
+            sizeof(command_run_frames_st.report) - _len, "IDLE %ld\n", idle);
+   if (_len >= sizeof(command_run_frames_st.report))
+      _len = sizeof(command_run_frames_st.report) - 1;
    cmd->replier(cmd, command_run_frames_st.report, _len);
 }
 
@@ -3932,6 +3956,7 @@ bool command_steps(command_t *cmd, const char *arg)
    unsigned            room;
    unsigned            i;
    unsigned            nstops   = 0;
+   long                idle;
    bool                queue    = false;
    char               *entry;
    char               *next;
@@ -4109,7 +4134,7 @@ bool command_steps(command_t *cmd, const char *arg)
    }
    if (queue && !count && !nstops)
    {
-      command_steps_report(cmd);
+      command_steps_report(cmd, command_steps_idle());
       return true;
    }
    if (!frames)
@@ -4153,10 +4178,11 @@ bool command_steps(command_t *cmd, const char *arg)
    }
    /* a stop the client has not heard about: told now, and these not
     * played on from a death */
+   idle = command_steps_idle();
    if (!command_run_frames_st.report_len)
       command_run_frames_queue(first - nstops,
             nstops + count);
-   command_steps_report(cmd);
+   command_steps_report(cmd, idle);
    return true;
 }
 

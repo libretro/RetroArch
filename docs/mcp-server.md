@@ -196,6 +196,7 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
 | `QUEUED 4` | `queued: 4` | the steps a queued `STEPS` has left to run |
+| `IDLE 1830` | `idle: 1830` | milliseconds the content sat paused, the queue run dry, before that request |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
@@ -433,7 +434,10 @@ own brings them in when it starts. A stop that held, or a failure, is
 kept and answered to the next queued `STEPS` in its place, whose steps
 are dropped rather than played on from a death. A rollback ends the
 queue and forgets the stop, as closing the content does. With no steps
-it only asks. Nine seconds bound each step, not the queue, which holds
+it only asks. A queue that ran dry says so: `IDLE` is how long, in
+milliseconds, the content sat paused waiting for more before the request
+that answers it, so a client that sees it knows to send the next
+stretch sooner. Nine seconds bound each step, not the queue, which holds
 64 steps and stops at most. A request that waits - `RUN_FRAMES`,
 `PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
 

@@ -208,6 +208,11 @@ for i in range(100):
 _, st, _ = call(362, 'GET_STATUS')
 check('and pauses once it has run: ' + (st or '').strip(),
       t and t.startswith('QUEUED 0') and st and 'PAUSED' in st)
+time.sleep(0.1)
+msg, t, _ = call(363, 'STEPS', {'steps': '', 'queue': 'on'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('run dry, it says how long it has sat idle: %s' % sc,
+      sc.get('queued') == 0 and sc.get('idle', 0) >= 80)
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
 check('an axis is SET_INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)
