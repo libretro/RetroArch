@@ -908,6 +908,124 @@ int main(void)
          bad = 1;
    }
 
+   /* 15. parking: a still requested while parking is on lands with
+    *     nothing uploaded and the thumbnail back at UNKNOWN; the next
+    *     request for the path uploads it with no load pushed, once;
+    *     one parked under another upscale threshold is decoded again;
+    *     parked stills survive frames while content is loaded and go
+    *     at the first frame after it is closed. */
+   {
+      extern int gt_content_switching, gt_content_loaded;
+      char still[256];
+      int ok15 = 1;
+      snprintf(still, sizeof(still), "/tmp/gfx_thumb_park_%d.bin",
+            (int)getpid());
+      {
+         FILE *f = fopen(still, "wb");
+         if (f)
+         {
+            fwrite("still", 1, 5, f);
+            fclose(f);
+         }
+      }
+      task_queue_init(false, NULL);
+      gt_still_capture     = 1;
+      gt_async_mode        = 0;
+      gt_uploads           = 0;
+      gt_last_crc          = 0;
+      gt_content_switching = 1;
+      gt_content_loaded    = 1;
+      memset(&th, 0, sizeof(th));
+
+      /* parked: decoded, not uploaded */
+      gfx_thumbnail_park_requests(true);
+      if (!gt_still_request(still, &th, 0x6000u, 0))
+         ok15 = 0;
+      gfx_thumbnail_park_requests(false);
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_UNKNOWN
+            || th.texture || th.anim_surface || gt_uploads)
+      {
+         printf("[FAIL] park: landing left status=%d texture=%lu "
+                "uploads=%d\n", (int)th.status,
+                (unsigned long)th.texture, gt_uploads);
+         ok15 = 0;
+      }
+      /* a frame while the content runs keeps it */
+      gt_content_switching = 0;
+      gfx_thumbnail_flush_requests();
+      /* taken back: uploaded, no load */
+      gt_still_cb = NULL;
+      gfx_thumbnail_request_file(still, &th, 0);
+      if (     gt_still_cb
+            || (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || !th.texture || gt_uploads != 1)
+      {
+         printf("[FAIL] park: take-back pushed=%d status=%d uploads=%d\n",
+                gt_still_cb != NULL, (int)th.status, gt_uploads);
+         ok15 = 0;
+      }
+      /* once only: the next request loads */
+      gt_still_cb = NULL;
+      gfx_thumbnail_request_file(still, &th, 0);
+      if (!gt_still_cb)
+      {
+         printf("[FAIL] park: a taken still was handed out twice\n");
+         ok15 = 0;
+      }
+      else
+         gt_still_cb(NULL, NULL, gt_still_ud, NULL);
+      /* parked under another threshold: dropped, decoded again */
+      gfx_thumbnail_reset(&th);
+      gfx_thumbnail_park_requests(true);
+      if (!gt_still_request(still, &th, 0x7000u, 0))
+         ok15 = 0;
+      gfx_thumbnail_park_requests(false);
+      gt_still_cb = NULL;
+      gfx_thumbnail_request_file(still, &th, 1);
+      if (!gt_still_cb)
+      {
+         printf("[FAIL] park: a still parked at threshold 0 was taken "
+                "at 1\n");
+         ok15 = 0;
+      }
+      else
+         gt_still_cb(NULL, NULL, gt_still_ud, NULL);
+      /* closed: the first frame frees what is parked */
+      gfx_thumbnail_reset(&th);
+      gfx_thumbnail_park_requests(true);
+      if (!gt_still_request(still, &th, 0x8000u, 0))
+         ok15 = 0;
+      gfx_thumbnail_park_requests(false);
+      gt_content_loaded = 0;
+      gfx_thumbnail_flush_requests();
+      gt_still_cb = NULL;
+      gfx_thumbnail_request_file(still, &th, 0);
+      if (!gt_still_cb)
+      {
+         printf("[FAIL] park: a still outlived the content's close\n");
+         ok15 = 0;
+      }
+      else
+         gt_still_cb(NULL, NULL, gt_still_ud, NULL);
+      /* parked and never taken: the menu's teardown frees it */
+      gfx_thumbnail_reset(&th);
+      gfx_thumbnail_park_requests(true);
+      if (!gt_still_request(still, &th, 0x9000u, 0))
+         ok15 = 0;
+      gfx_thumbnail_park_requests(false);
+      gfx_thumbnail_parked_free();
+
+      gfx_thumbnail_reset(&th);
+      gt_still_capture = 0;
+      task_queue_deinit();
+      remove(still);
+      if (ok15)
+         printf("[ok]   park: landed without upload, taken back once with "
+                "no load, dropped on another threshold, freed at close\n");
+      else
+         bad = 1;
+   }
+
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

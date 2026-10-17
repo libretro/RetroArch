@@ -10660,18 +10660,27 @@ static void ozone_set_layout(
    ozone->flags |= OZONE_FLAG_NEED_COMPUTE;
 }
 
-/* Request again the thumbnails that were unloaded when content was started or closed */
+/* Request again the thumbnails unloaded by the content switch. As
+ * content starts they are decoded and parked: the bar is not shown
+ * while it runs, so they upload when shown, or when it closes, from
+ * the parked image. The pending bits stay set for that. */
 static void ozone_thumbnails_reload(ozone_handle_t *ozone)
 {
    settings_t *settings                 = config_get_ptr();
-   unsigned upscale_threshold           = settings->uints.gfx_thumbnail_upscale_threshold;
-   gfx_thumbnail_path_data_t *path_data = menu_state_get_ptr()->thumbnail_path_data;
+   unsigned upscale_threshold           =
+         settings->uints.gfx_thumbnail_upscale_threshold;
+   gfx_thumbnail_path_data_t *path_data =
+         menu_state_get_ptr()->thumbnail_path_data;
 
+   gfx_thumbnail_park_requests(runloop_content_loaded());
    if (ozone->thumbnails.pending & OZONE_PENDING_THUMBNAIL_RIGHT)
-      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_RIGHT, NULL, 0, &ozone->thumbnails.right, upscale_threshold, false);
+      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_RIGHT, NULL, 0,
+            &ozone->thumbnails.right, upscale_threshold, false);
    if (ozone->thumbnails.pending & OZONE_PENDING_THUMBNAIL_LEFT)
-      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_LEFT, NULL, 0, &ozone->thumbnails.left, upscale_threshold, false);
+      gfx_thumbnail_request(path_data, GFX_THUMBNAIL_LEFT, NULL, 0,
+            &ozone->thumbnails.left, upscale_threshold, false);
    gfx_thumbnail_flush_requests();
+   gfx_thumbnail_park_requests(false);
 }
 
 static void ozone_context_reset(void *data, bool is_threaded)
@@ -10741,7 +10750,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       /* Thumbnails */
       if (!runloop_is_content_switching())
          ozone_update_thumbnail_image(ozone);
-      else if (!runloop_content_loaded() || task_queue_is_threaded())
+      else
          ozone_thumbnails_reload(ozone);
       ozone_update_savestate_thumbnail_image(ozone);
 
@@ -10785,7 +10794,11 @@ static INLINE void ozone_font_free(font_data_impl_t *font_data)
    font_data->font = NULL;
 }
 
-/* Unload the thumbnails when content is started or closed; a cover still loading is left to finish */
+/* The content switch unloads what is on the GPU and marks it pending
+ * for ozone_thumbnails_reload. A still not yet landed is not
+ * cancelled: the destroy and the reset run back to back in one
+ * driver reinit on the main thread, where task callbacks also run,
+ * so it lands after the reset, into the new context. */
 static void ozone_thumbnails_unload(ozone_handle_t *ozone)
 {
    gfx_thumbnail_t *right = &ozone->thumbnails.right;
@@ -10794,12 +10807,14 @@ static void ozone_thumbnails_unload(ozone_handle_t *ozone)
    if (right->anim_surface || right->anim || right->anim_player)
    {
       gfx_thumbnail_reset(right);
-      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)(ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_RIGHT);
+      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)
+            (ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_RIGHT);
    }
    if (left->anim_surface || left->anim || left->anim_player)
    {
       gfx_thumbnail_reset(left);
-      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)(ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_LEFT);
+      ozone->thumbnails.pending = (enum ozone_pending_thumbnail_type)
+            (ozone->thumbnails.pending | OZONE_PENDING_THUMBNAIL_LEFT);
    }
    gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 }

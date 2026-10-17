@@ -410,6 +410,16 @@ void gfx_thumbnail_anim_worker_deinit(void);
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void);
 
+/* While on, still requests land decoded and are held instead of
+ * uploaded (at most four, by path); the next request for the same
+ * path uploads the held image without reading or decoding the file.
+ * For a menu whose thumbnails are not shown while content runs:
+ * requested as content starts, they upload when shown or on close. */
+void gfx_thumbnail_park_requests(bool park);
+
+/* Frees the held images */
+void gfx_thumbnail_parked_free(void);
+
 /* True if 'thumbnail' is waiting on a request that has since been
  * superseded, i.e. it is PENDING with nothing behind it.  Resets the
  * thumbnail (returning it to UNKNOWN) and returns true in that case, so
