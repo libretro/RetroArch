@@ -500,7 +500,13 @@ static void lane_threaded_off_in_flight(void)
       retro_atomic_store_release_int(&wolane_frames, 0);
       retro_atomic_store_release_int(&wolane_slow, 1);
       /* A frame still drawing, then straight off */
-      run_frames(1);
+      for (i = 0; i < 1000
+            && !retro_atomic_load_acquire_int(&wolane_frames); i++)
+      {
+         run_frames(1);
+         if (!retro_atomic_load_acquire_int(&wolane_frames))
+            retro_sleep(1);
+      }
       if (c == 0)
          set_threaded_via_setting(false);
       else
@@ -2443,6 +2449,10 @@ typedef struct
    uint64_t expected, seen[2], after[2];
    unsigned current;
    bool returned[2];
+#ifdef HAVE_GFX_WIDGETS
+   bool inactive_widgets_visible, retired_widgets_visible;
+   bool retired_widgets_checked;
+#endif
 } replay_swap_t;
 
 static replay_swap_t *replay_swap;
@@ -2469,6 +2479,10 @@ static uintptr_t replay_swap_run(void *data)
    video_driver_t driver = *inner;
    uint64_t saved = thr->video_st->swap_count;
    unsigned i;
+#ifdef HAVE_GFX_WIDGETS
+   dispgfx_widget_t *widgets;
+   int saved_worker;
+#endif
 
    replay_swap = t;
    driver.frame = replay_swap_frame;
@@ -2483,6 +2497,23 @@ static uintptr_t replay_swap_run(void *data)
             VIDEO_SCALE_PACK(1, 1), 0, 0, NULL, t->info);
       t->after[i] = thr->video_st->swap_count;
    }
+#ifdef HAVE_GFX_WIDGETS
+   widgets = dispwidget_get_ptr();
+   t->info->widgets_userdata = widgets;
+   t->info->widgets_active = false;
+   t->info->fps_show = true;
+   t->inactive_widgets_visible = gfx_widgets_visible(t->info);
+   t->retired_widgets_checked = widgets->video_st != NULL;
+   t->retired_widgets_visible = false;
+   if (t->retired_widgets_checked)
+   {
+      saved_worker = retro_atomic_load_acquire_int(&widgets->worker);
+      retro_atomic_store_release_int(&widgets->worker, 0);
+      t->info->widgets_active = true;
+      t->retired_widgets_visible = gfx_widgets_visible(t->info);
+      retro_atomic_store_release_int(&widgets->worker, saved_worker);
+   }
+#endif
    thr->video_st->swap_count = saved;
    thr->driver = inner;
    replay_swap = NULL;
@@ -2514,6 +2545,14 @@ static void lane_replay_swap_count(void)
       CHECK(t.after[i] == t.expected,
             "inline replay counted an extra present");
    }
+#ifdef HAVE_GFX_WIDGETS
+   CHECK(!t.inactive_widgets_visible,
+         "inline replay treated inactive widgets as visible");
+   CHECK(!t.retired_widgets_visible,
+         "inline replay treated retired widgets as visible");
+   if (!t.retired_widgets_checked)
+      fprintf(stderr, "[skip] retired widget visibility (no widget context)\n");
+#endif
    free(t.info);
    set_threaded_via_setting(false);
    if (failures == had)
@@ -8485,6 +8524,7 @@ static void record_gpu_stop_in_flight(void)
    rstop_driver = *thr->driver;
    rstop_driver.frame = rstop_frame;
    set_driver(thr, &rstop_driver);
+   memset(&info, 0, sizeof(info));
    video_driver_build_info(&info);
    info.threaded_display_pacing = false;
    info.input_driver_nonblock_state = true;
