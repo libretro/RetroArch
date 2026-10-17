@@ -13,8 +13,14 @@ static bool set_format(SDL_AudioStream *s, const SDL_AudioSpec *in, const SDL_Au
 { return !fail_format && SDL_SetAudioStreamFormat(s, in, out); }
 static bool put_data(SDL_AudioStream *s, const void *data, int len)
 { return ++put_calls != fail_put && SDL_PutAudioStreamData(s, data, len); }
+/* Queue depths handed out in turn, for a wait to see a device move */
+static const int *queued_script;
+static unsigned queued_left;
 static int test_queued(SDL_AudioStream *s)
-{ return fail_queued ? -1 : fragmented ? 4096-64 : SDL_GetAudioStreamQueued(s); }
+{
+   if (queued_left) { queued_left--; return *queued_script++; }
+   return fail_queued ? -1 : fragmented ? 4096-64 : SDL_GetAudioStreamQueued(s);
+}
 #define SDL_SetAudioStreamFrequencyRatio set_ratio
 #define SDL_SetAudioStreamGain set_gain
 #define SDL_SetAudioStreamFormat set_format
@@ -96,6 +102,18 @@ int main(void)
    CHECK(SDL_GetAudioStreamData(s.stream,output,sizeof(output))==sizeof(output));
    CHECK(!memcmp(saved,output,sizeof(output)));
    SDL_DestroyAudioStream(s.stream);
+   /* Full at every look, room at every wake, and the last wake the
+    * write wait allows frees room for good: that room is what it
+    * returns, not 0. */
+   {
+      static const int script[17] = {
+         4096,0, 4096,0, 4096,0, 4096,0, 4096,0, 4096,0, 4096,0, 4096,0, 0 };
+      s.raw_rate=0; s.buffer_size=4096;
+      queued_script=script; queued_left=17;
+      CHECK(sdl3_audio_wait_writable(&s,1024)==4096);
+      CHECK(queued_left==0);
+      queued_left=0;
+   }
    SDL_Quit();
    printf("SDL3 raw contract: %u failures\n",failures);
    return failures ? 1 : 0;

@@ -823,6 +823,11 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
 
    sdl3_viewport_push_full(vid, &saved_vp);
 
+#ifdef HAVE_OVERLAY
+   if (overlay_visible && video_info->overlay_behind_menu)
+      sdl3_overlays_render(vid);
+#endif
+
 #ifdef HAVE_MENU
    if (menu_is_alive)
       menu_driver_frame(true, video_info);
@@ -849,7 +854,7 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
             video_info->stat_text_len, osd_params, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (overlay_visible)
+   if (overlay_visible && !video_info->overlay_behind_menu)
       sdl3_overlays_render(vid);
 #endif
 
@@ -1274,6 +1279,9 @@ static uint32_t sdl3_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vid && retro_atomic_load_acquire_int(&vid->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+#ifdef HAVE_OVERLAY
+   BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+#endif
 
    return flags;
 }
@@ -1501,8 +1509,11 @@ static void gfx_display_sdl3_scissor_begin(void *data, unsigned video_dims,
 
    if (rect.x < 0) { rect.w += rect.x; rect.x = 0; }
    if (rect.y < 0) { rect.h += rect.y; rect.y = 0; }
-   if (rect.w <= 0 || rect.h <= 0)
-      return;
+   /* An empty clip draws nothing; the last one must not stay */
+   if (rect.w < 0)
+      rect.w = 0;
+   if (rect.h < 0)
+      rect.h = 0;
 
    SDL_SetRenderClipRect(vid->renderer, &rect);
 }

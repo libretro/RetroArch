@@ -653,11 +653,11 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
    {
       if (SDL_GetAtomicInt(&sdl->device_removed))
          break;
-      if (laps-- < 0)
-         break;
       avail = sdl3_audio_write_avail(sdl);
       if (avail >= len)
          return avail;
+      if (--laps < 0)
+         break;
       if (!sdl3_audio_wait_for_device(sdl, SDL3_PARK_WRITABLE, len, 0,
                SDL3_AUDIO_STALL_TIMEOUT_MS))
          break;
