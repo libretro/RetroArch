@@ -21,11 +21,11 @@ concurrency:
 jobs:
 
   msvc:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 90
     strategy:
       matrix:
-        version: [UWP, 2019, 2022]
+        version: [UWP, 2026]
         configuration: [Debug, Release]
         platform: [x64]
         exclude:
@@ -37,10 +37,10 @@ jobs:
             platform: x64
         # Qt and Cg builds are excluded for now
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1
+        uses: microsoft/setup-msbuild@v3
 
       - name: Compile RA
         working-directory: "${{github.workspace}}/pkg/msvc${{ matrix.version == 'UWP' && '-uwp' || ''}}"
