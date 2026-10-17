@@ -11,7 +11,8 @@
  * each screen yields its rows. With Cloud Sync on the SMB or NFS
  * driver, the entry that opens the share settings it uses is in the
  * Cloud Sync screen too, under that driver only, and does what the
- * Network one does. */
+ * Network one does. Minimum Audio Latency is reachable from Settings >
+ * Latency, and picking from its list sets the value picked. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -345,6 +346,22 @@ int main(int argc, char *argv[])
          "SMB Read-Ahead: picking 1024 sets 1024");
    CHECK(DEFAULT_SMB_CLIENT_READAHEAD == 0, "SMB Read-Ahead is off by default");
 #endif
+
+   /* Minimum Audio Latency is under Settings > Latency as well as Audio
+    * > Output, and its list starts at its minimum of 1 */
+   n = open_list(DISPLAYLIST_LATENCY_SETTINGS_LIST,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST),
+         MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST);
+   CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR_STR),
+         "Minimum Audio Latency is under Settings > Latency");
+   CHECK(pick_uint(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, "1") == 1,
+         "Minimum Audio Latency: picking 1 sets 1");
+   CHECK(pick_uint(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, "2") == 2,
+         "Minimum Audio Latency: picking 2 sets 2");
+   CHECK(pick_uint(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, "16") == 16,
+         "Minimum Audio Latency: picking 16 sets 16");
+   CHECK(pick_uint(MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, "0") == -1,
+         "Minimum Audio Latency: 0 is not offered");
 
    /* and neither sits in the Quick Menu */
    n = open_list(DISPLAYLIST_CONTENT_SETTINGS,
