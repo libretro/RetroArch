@@ -12603,8 +12603,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_REBOOT,                                      PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_ENABLE,                                       PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_TIMEDATE_STYLE,                                        PARSE_ONLY_UINT, true  },
-               {MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,                               PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },
@@ -14163,11 +14161,17 @@ unsigned menu_displaylist_build_list(
             unsigned menu_rgui_particle_effect         = settings->uints.menu_rgui_particle_effect;
             unsigned menu_screensaver_timeout          = settings->uints.menu_screensaver_timeout;
             unsigned ozone_font_scale                  = settings->uints.menu_ozone_font_scale;
+            bool timedate_manual                       = settings->uints.menu_timedate_mode
+                                                       == MENU_TIMEDATE_MODE_MANUAL;
 
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_OZONE_PADDING_FACTOR,                         PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,                     PARSE_ONLY_FLOAT,  true},
+               {MENU_ENUM_LABEL_TIMEDATE_MODE,                                PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_TIMEDATE_12HOUR,                              PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_TIMEDATE_STYLE,                               PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,                      PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,                     PARSE_ONLY_FLOAT,  false},
                {MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_THEME,                                    PARSE_ONLY_UINT,   true},
@@ -14313,6 +14317,12 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
                      build_list[i].checked = (settings->uints.video_hdr_mode > 0);
+                     break;
+                  case MENU_ENUM_LABEL_TIMEDATE_12HOUR:
+                     build_list[i].checked = !timedate_manual;
+                     break;
+                  case MENU_ENUM_LABEL_TIMEDATE_STYLE:
+                     build_list[i].checked = timedate_manual;
                      break;
                   default:
                      break;
