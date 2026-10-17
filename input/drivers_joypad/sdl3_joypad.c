@@ -318,7 +318,9 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
 static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 {
-   for (int i = 0; i < MAX_USERS; i++)
+   int i;
+
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (sdl3_joypads[i].jid != jid)
          continue;
@@ -346,8 +348,9 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 
 static void sdl3_joypad_destroy(void)
 {
+   int i;
 
-   for (int i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < MAX_USERS; i++)
    {
       if (sdl3_joypads[i].gamepad)
          SDL_CloseGamepad(sdl3_joypads[i].gamepad);
@@ -399,12 +402,14 @@ static int sdl3_joypad_load_gamecontrollerdb(void)
  */
 static void *sdl3_joypad_init(void *data)
 {
+   SDL_InitFlags sdl_subsystem_flags;
+
 #if SDL_VERSION_ATLEAST(3, 2, 0)
    /* Gamepad driver hints. */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
 #endif
 
-   SDL_InitFlags sdl_subsystem_flags = SDL_WasInit(0);
+   sdl_subsystem_flags = SDL_WasInit(0);
 
    if (sdl_subsystem_flags == 0)
    {

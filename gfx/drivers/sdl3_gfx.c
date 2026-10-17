@@ -1778,6 +1778,9 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
  * text shares the same vertex pipeline as the gfx_display backend.
  */
 
+/* A line is built a chunk of glyphs at a time */
+#define SDL3_FONT_MAX_GLYPHS 64
+
 typedef struct
 {
    sdl3_video_t                  *vid;
@@ -1787,6 +1790,14 @@ typedef struct
    struct font_atlas             *atlas;
    uint32_t                      *staging; /* A8 -> RGBA expansion buffer */
    unsigned                       tex_dims;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: a glyph
+    * is four vertices and six indices, and SDL3_FONT_MAX_GLYPHS of
+    * them is past what this tree allows a frame. One font renders at
+    * a time on the thread that draws. */
+   SDL_Vertex                     verts[SDL3_FONT_MAX_GLYPHS * 4];
+   int                            idx[SDL3_FONT_MAX_GLYPHS * 6];
 } sdl3_raster_t;
 
 static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
@@ -1974,14 +1985,8 @@ static void sdl3_raster_font_render_message(
 {
    struct font_line_metrics *line_metrics = NULL;
    float line_height_norm                 = 0.0f;
-   /* Kept small deliberately: SDL_Vertex is 32 bytes, so the vertex
-    * array alone is MAX_GLYPHS * 128 bytes of stack. A full batch is
-    * drawn and the buffer reused, so a bigger batch buys very little -
-    * 64 glyphs holds most real strings in one draw call while keeping
-    * this frame under 10 KB. */
-#define SDL3_FONT_MAX_GLYPHS 64
-   SDL_Vertex  verts[SDL3_FONT_MAX_GLYPHS * 4];
-   int         idx[SDL3_FONT_MAX_GLYPHS * 6];
+   SDL_Vertex *verts                      = font->verts;
+   int        *idx                        = font->idx;
    int         n_glyphs                   = 0;
    bool        line_ok                    = false;
    float       x                          = 0.0f;
