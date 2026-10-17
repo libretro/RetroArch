@@ -31,6 +31,11 @@ int record_gpu_worker_d3d12_step(record_gpu_worker_d3d12_t *worker,
  * This is a scheduling hint, not a promise of progress: also wake on producer
  * input/close and schedule retries for SDK BUSY without pending completion. */
 void *record_gpu_worker_d3d12_wait_handle(const record_gpu_worker_d3d12_t *w);
+/* Worker-only: outstanding work needs completion or another service attempt.
+ * After BUSY, use the completion handle if available; otherwise schedule an
+ * SDK retry when true, or await producer input/close when false. A signaled
+ * handle followed by BUSY still needs a delayed retry, not a tight loop. */
+bool record_gpu_worker_d3d12_retry_needed(const record_gpu_worker_d3d12_t *w);
 bool record_gpu_worker_d3d12_release(record_gpu_worker_d3d12_t *worker);
 /* Normal teardown after END, or before the first input was taken. */
 bool record_gpu_worker_d3d12_free(record_gpu_worker_d3d12_t *worker);

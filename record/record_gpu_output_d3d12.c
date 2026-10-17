@@ -271,6 +271,15 @@ void *record_gpu_output_d3d12_wait_handle(const record_gpu_output_d3d12_t *p)
    return record_gpu_worker_d3d12_wait_handle(p->worker);
 }
 
+bool record_gpu_output_d3d12_retry_needed(const record_gpu_output_d3d12_t *p)
+{
+   if (!p) return false;
+   if (p->writing) return true;
+   return !p->ended && !p->video_end
+      && !retro_atomic_load_acquire_int(&p->failed)
+      && record_gpu_worker_d3d12_retry_needed(p->worker);
+}
+
 bool record_gpu_output_d3d12_abort(record_gpu_output_d3d12_t *p)
 {
    if (!p || p->ended)

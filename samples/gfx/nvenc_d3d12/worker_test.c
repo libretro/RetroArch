@@ -103,6 +103,7 @@ static int normal(void)
    CHECK(record_gpu_worker_d3d12_new(q, NULL, NULL) == NULL);
    CHECK(record_gpu_worker_d3d12_step(NULL, &packet) == RECORD_GPU_WORKER_ERROR);
    CHECK(!record_gpu_worker_d3d12_release(NULL));
+   CHECK(!record_gpu_worker_d3d12_retry_needed(NULL));
    CHECK(record_gpu_worker_d3d12_free(NULL));
    CHECK(record_gpu_worker_d3d12_abandon(NULL));
    w = record_gpu_worker_d3d12_new(q, &e, &e);
@@ -111,11 +112,15 @@ static int normal(void)
    CHECK(record_gpu_worker_d3d12_step(w, NULL) == RECORD_GPU_WORKER_ERROR);
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_BUSY);
    CHECK(e.polls == 1 && e.submits == 0 && e.finishes == 0);
+   CHECK(!record_gpu_worker_d3d12_retry_needed(w));
    CHECK(publish(q, 10, true) && publish(q, 40, false));
    CHECK(record_gpu_queue_finish(q));
    e.submit_fault = NVENC_D3D12_BUSY;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
    CHECK(e.submits == 1 && e.count == 0 && !e.eos);
+   CHECK(record_gpu_worker_d3d12_retry_needed(w));
+   CHECK(!record_gpu_worker_d3d12_wait_handle(w));
+   CHECK(e.polls == 2 && e.submits == 1);
    CHECK(!record_gpu_worker_d3d12_free(w));
    CHECK(record_gpu_queue_acquire(q, &slot) == RECORD_GPU_QUEUE_END);
    e.submit_fault = NVENC_D3D12_ERROR;
@@ -123,11 +128,14 @@ static int normal(void)
    CHECK(e.submits == 2 && e.count == 0 && !e.eos);
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
    CHECK(e.submits == 3 && e.count == 1 && e.fence == &e && e.value == 17);
+   CHECK(record_gpu_worker_d3d12_retry_needed(w));
+   CHECK(record_gpu_worker_d3d12_wait_handle(w) == &e);
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
    CHECK(e.count == 2 && e.value == 47 && e.finishes == 0);
    e.finish_fault = NVENC_D3D12_BUSY;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
    CHECK(e.finishes == 1 && !e.eos);
+   CHECK(record_gpu_worker_d3d12_retry_needed(w));
    e.finish_fault = NVENC_D3D12_ERROR;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_ERROR);
    CHECK(e.finishes == 2 && !e.eos);
@@ -159,6 +167,7 @@ static int normal(void)
    calls = e.polls;
    CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_END);
    CHECK(!record_gpu_worker_d3d12_wait_handle(w));
+   CHECK(!record_gpu_worker_d3d12_retry_needed(w));
    CHECK(e.polls == calls && e.submits == 4 && e.releases == 3 && e.finishes == 3);
    CHECK(record_gpu_worker_d3d12_free(w));
    CHECK(record_gpu_queue_free(q));
@@ -218,11 +227,19 @@ static int teardown(void)
       if (mode == 1)
       {
          CHECK(record_gpu_queue_finish(q));
+         e.finish_fault = NVENC_D3D12_BUSY;
+         CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
+         CHECK(!record_gpu_worker_d3d12_wait_handle(w));
+         CHECK(record_gpu_worker_d3d12_retry_needed(w));
+         e.finish_fault = NVENC_D3D12_BUSY;
+         CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_BUSY);
+         CHECK(record_gpu_worker_d3d12_retry_needed(w));
+         CHECK(!record_gpu_worker_d3d12_wait_handle(w));
          CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_PROGRESS);
          CHECK(!record_gpu_worker_d3d12_free(w));
          e.done = true;
          CHECK(record_gpu_worker_d3d12_step(w, &packet) == RECORD_GPU_WORKER_END);
-         CHECK(e.submits == 0 && e.finishes == 1);
+         CHECK(e.submits == 0 && e.finishes == 3);
          CHECK(record_gpu_worker_d3d12_free(w));
          CHECK(record_gpu_queue_free(q));
          continue;

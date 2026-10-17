@@ -50,12 +50,16 @@ bool record_gpu_output_d3d12_audio_finish(record_gpu_output_d3d12_t *output);
  * After ERROR/abort, keep calling step until any file borrow is retired (BUSY
  * means in flight), close/quiesce the PCM producer, then free. */
 int record_gpu_output_d3d12_step(record_gpu_output_d3d12_t *output);
-/* Worker-only cancellation request, no wait; may need a later retry. */
 /* Worker-only borrowed completion handle: pending file write takes precedence
  * over encoder completion, including abort drain. NULL may need producer input
  * or an SDK retry. Re-query after every step; never close/reset the handle.
  * A scheduler must also wake on producer input/close and cancellation. */
 void *record_gpu_output_d3d12_wait_handle(const record_gpu_output_d3d12_t *p);
+/* Worker-only, after BUSY: true requires completion or a scheduled retry;
+ * false awaits producer input/close. Query the completion handle first.
+ * Includes pending file cancellation; no service or ownership changes. */
+bool record_gpu_output_d3d12_retry_needed(const record_gpu_output_d3d12_t *p);
+/* Worker-only cancellation request, no wait; may need a later retry. */
 bool record_gpu_output_d3d12_abort(record_gpu_output_d3d12_t *output);
 enum record_gpu_output_error record_gpu_output_d3d12_error(
       const record_gpu_output_d3d12_t *output);
