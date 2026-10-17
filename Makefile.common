@@ -1900,6 +1900,8 @@ ifeq ($(HAVE_D3D12), 1)
           record/record_file_win32.o
 ifeq ($(HAVE_RAC3), 1)
 OBJ += record/record_gpu_output_d3d12.o
+else
+OBJ += $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.o
 endif
    DEFINES += -DHAVE_D3D12
 endif

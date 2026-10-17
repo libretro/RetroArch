@@ -652,6 +652,9 @@ VIDEO DRIVER
 #include "../record/record_gpu_queue.c"
 #include "../record/record_gpu_capture_d3d12.c"
 #include "../record/record_gpu_worker_d3d12.c"
+#ifndef HAVE_RAC3
+#include "../libretro-common/formats/ac3/rac3_frame.c"
+#endif
 #include "../record/record_mux_mp4.c"
 #include "../record/record_file_win32.c"
 #ifdef HAVE_RAC3

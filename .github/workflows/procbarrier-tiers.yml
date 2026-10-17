@@ -129,6 +129,10 @@ jobs:
              rthreads\retro_procbarrier.c rthreads\rthreads.c ^
              /Fe:retro_asym_eventcount_test.exe
           if errorlevel 1 exit /b 1
+          cl /nologo /W3 /we4013 /O1 /TC /Iinclude ^
+             /DWINAPI_FAMILY=WINAPI_FAMILY_APP /D_WIN32_WINNT=0x0A00 ^
+             /c rthreads\retro_procbarrier.c /Fo:retro_procbarrier_uwp.obj
+          if errorlevel 1 exit /b 1
 
       - name: Run every tier
         shell: bash

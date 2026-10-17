@@ -63,6 +63,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <retro_environment.h>
 #include <retro_atomic.h>
 #include <rthreads/retro_procbarrier.h>
 
@@ -184,7 +185,7 @@ static pb_fpwb_t s_fpwb;
 /* Page-flip storage: only where the tier exists, so a console build is
  * not left with variables nothing references. The gate is defined below
  * with the tier; forward the condition here. */
-#if defined(PB_X86) && (defined(PB_WINDOWS) || defined(PB_LINUX) \
+#if defined(PB_X86) && ((defined(PB_WINDOWS) && !defined(__WINRT__)) || defined(PB_LINUX) \
    || defined(PB_FREEBSD) || defined(PB_DARWIN))
 /* A flip needs a page no other caller is flipping: one caller's
  * no-access protection landing between another's read-write protection
@@ -355,6 +356,10 @@ static void pb_membarrier(void)
 #if defined(PB_WINDOWS)
 static int pb_fpwb_try(void)
 {
+#if defined(__WINRT__)
+   s_fpwb = FlushProcessWriteBuffers;
+   return 1;
+#else
    HMODULE k32 = GetModuleHandleA("kernel32.dll");
    if (!k32)
       return 0;
@@ -362,6 +367,7 @@ static int pb_fpwb_try(void)
     * routing the cast through void* is what ISO C objects to. */
    s_fpwb = (pb_fpwb_t)GetProcAddress(k32, "FlushProcessWriteBuffers");
    return s_fpwb != NULL;
+#endif
 }
 #endif
 
@@ -372,7 +378,7 @@ static int pb_fpwb_try(void)
 /* The page flip needs mmap/mprotect (or the Win32 equivalents), so it
  * exists only on the platforms this file handles, not merely on x86: an
  * x86 console has neither. */
-#if defined(PB_X86) && (defined(PB_WINDOWS) || defined(PB_LINUX) \
+#if defined(PB_X86) && ((defined(PB_WINDOWS) && !defined(__WINRT__)) || defined(PB_LINUX) \
    || defined(PB_FREEBSD) || defined(PB_DARWIN))
 #define PB_HAVE_PAGEFLIP 1
 #endif
