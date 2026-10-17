@@ -1397,14 +1397,139 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
    return 0;
 }
 
+/* Atari Jaguar CD discs label every track AUDIO as a rule, the boot
+ * program included, so the data-track search below has nothing to hash.  The
+ * boot track - the first track of the second session - opens with a
+ * run of "ATRI" and then "ATARI APPROVED DATA HEADER ATRI", stored
+ * byte-swapped like the audio around it.  Across the Redump set the
+ * header sits 66 to 3046 bytes into its track; the span below leaves
+ * room past that.  Redump's "Atari - Jaguar CD" dat keys each disc on
+ * its Track 1 CRC, so a disc carrying this header hashes track 1. */
+static const char jagcd_boot_header[] = "TARA IPARPVODED TA AEHDAREA RT I";
+#define JAGCD_PROBE_SPAN (4 * 2352)
+
+/* Whether @fd holds the Jaguar CD boot header within JAGCD_PROBE_SPAN
+ * bytes of @offset.  @buf is the caller's JAGCD_PROBE_SPAN scratch. */
+static bool jagcd_probe_stream(intfstream_t *fd, int64_t offset,
+      uint8_t *buf)
+{
+   int64_t i;
+   int64_t got;
+   const size_t hdr_len = sizeof(jagcd_boot_header) - 1;
+
+   if (intfstream_seek(fd, offset, SEEK_SET) < 0)
+      return false;
+   if ((got = intfstream_read(fd, buf, JAGCD_PROBE_SPAN)) <= 0)
+      return false;
+
+   for (i = 0; i + (int64_t)hdr_len <= got; i++)
+      if (     buf[i] == (uint8_t)jagcd_boot_header[0]
+            && memcmp(buf + i, jagcd_boot_header, hdr_len) == 0)
+         return true;
+
+   return false;
+}
+
+/* Walks the sheet and probes each track at every INDEX it lists, so
+ * the header is found whether the boot track has its own file (the
+ * Redump layout) or shares one image with the tracks before it.  Only
+ * called once the sheet has turned out to hold no data track at all,
+ * so an ordinary data disc never pays for it; an audio CD does, at
+ * one small read per index. */
+static bool cue_is_jaguar_cd(const char *cue_path)
+{
+   intfstream_info_t info;
+   cue_tok_stream_t tok;
+   char tmp_token[MAX_TOKEN_LEN];
+   char track_path[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
+   intfstream_t *fd       = NULL;
+   intfstream_t *track_fd = NULL;
+   uint8_t *buf           = NULL;
+   bool found             = false;
+
+   info.type              = INTFSTREAM_FILE;
+
+   if (!(buf = (uint8_t*)malloc(JAGCD_PROBE_SPAN)))
+      return false;
+
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
+      goto done;
+
+   if (!intfstream_open(fd, cue_path,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
+      goto done;
+
+   fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
+   cue_tok_init(&tok, fd);
+   tmp_token[0] = '\0';
+
+   while (!found
+         && task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
+   {
+      if (string_is_equal_noncase(tmp_token, "FILE"))
+      {
+         int64_t sz = -1;
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         fill_pathname_join_special(track_path, cue_dir,
+               tmp_token, sizeof(track_path));
+         cue_track_stream_close(track_fd);
+         track_fd = cue_track_stream_open(track_path, &sz);
+         /* File type */
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+      }
+      else if (string_is_equal_noncase(tmp_token, "INDEX"))
+      {
+         long _m, _s, _f;
+         char *end = NULL;
+
+         /* Index number, then its time stamp */
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+
+         _m = strtol(tmp_token, &end, 10);
+         if (!end || *end != ':')
+            continue;
+         _s = strtol(end + 1, &end, 10);
+         if (!end || *end != ':')
+            continue;
+         _f = strtol(end + 1, &end, 10);
+
+         if (track_fd)
+            found = jagcd_probe_stream(track_fd,
+                  (int64_t)((_m * 60 + _s) * 75 + _f) * 2352, buf);
+      }
+   }
+
+done:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   cue_track_stream_close(track_fd);
+   free(buf);
+#ifdef DEBUG
+   if (found)
+      RARCH_LOG("[Scanner] Detected Jaguar CD boot header in \"%s\".\n",
+            cue_path);
+#endif
+   return found;
+}
+
 /* When @track_fd is non-NULL, a successful return additionally hands
  * back an open stream on the winning data track (or NULL if that file
  * could not be opened during the parse) together with its size, so
  * the caller's serial/CRC probe does not pay a second open of a file
- * this parse already opened to learn its size. */
+ * this parse already opened to learn its size.
+ *
+ * @audio_track1_is_data takes track 1 as the data track even though
+ * the sheet labels it AUDIO - for a disc cue_is_jaguar_cd() has
+ * recognised, whose database entry is keyed on track 1. */
 static int cue_find_track_internal(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len,
-      intfstream_t **track_fd, int64_t *track_fsize)
+      intfstream_t **track_fd, int64_t *track_fsize,
+      bool audio_track1_is_data)
 {
    int rv;
    intfstream_info_t info;
@@ -1495,6 +1620,10 @@ static int cue_find_track_internal(const char *cue_path, bool first,
          task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
+
+         /* Special case: Jaguar CD, recognised by the caller */
+         if (!is_data && track == 1 && audio_track1_is_data)
+            is_data = true;
 
          /* Special case: CD-i stores data in AUDIO-labeled tracks */
          /* Check if track 1 is AUDIO but contains CD-i magic bytes.
@@ -1627,7 +1756,7 @@ int cue_find_track(const char *cue_path, bool first,
       uint64_t *offset, size_t *size, char *s, size_t len)
 {
    return cue_find_track_internal(cue_path, first, offset, size,
-         s, len, NULL, NULL);
+         s, len, NULL, NULL, false);
 }
 
 bool cue_next_file(intfstream_t *fd,
@@ -2001,7 +2130,8 @@ int task_database_cue_get_serial(const char *name, char *s, size_t len,
    track_path[0]       = '\0';
 
    if (cue_find_track_internal(name, true, &offset, &_len,
-         track_path, sizeof(track_path), &track, &track_fsize) < 0)
+         track_path, sizeof(track_path), &track, &track_fsize,
+         false) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -2111,6 +2241,38 @@ bool is_chd_file_cdi(const char *path)
    intfstream_close(fd);
    free(fd);
    return is_cdi;
+}
+
+/* Whether a CHD is an Atari Jaguar CD: as cue_is_jaguar_cd(), the
+ * boot header near the start of one of its tracks.  Only asked once
+ * the image has turned out to hold no data track. */
+static bool is_chd_file_jaguar_cd(const char *path)
+{
+   int32_t track;
+   bool found   = false;
+   uint8_t *buf = (uint8_t*)malloc(JAGCD_PROBE_SPAN);
+
+   if (!buf)
+      return false;
+
+   /* CD track numbers run 1 to 99; stop at the first one missing. */
+   for (track = 1; track <= 99 && !found; track++)
+   {
+      intfstream_t *fd = intfstream_open_chd_track(path,
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE,
+            track);
+      if (!fd)
+         break;
+      /* The stream undoes CHD's byte-swapped audio, so the header reads
+       * as it does in a .bin. */
+      found = jagcd_probe_stream(fd, 0, buf);
+      intfstream_close(fd);
+      free(fd);
+   }
+
+   free(buf);
+   return found;
 }
 
 int task_database_chd_get_serial(const char *name, char *serial,
@@ -2230,11 +2392,19 @@ int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
    size_t _len         = 0;
    intfstream_t *track = NULL;
    int64_t track_fsize = -1;
+   int found;
 
    track_path[0]       = '\0';
 
-   if (cue_find_track_internal(name, false, &offset, &_len,
-         track_path, sizeof(track_path), &track, &track_fsize) < 0)
+   found = cue_find_track_internal(name, false, &offset, &_len,
+         track_path, sizeof(track_path), &track, &track_fsize, false);
+
+   /* No data track.  A Jaguar CD is all AUDIO and keyed on track 1. */
+   if (found < 0 && cue_is_jaguar_cd(name))
+      found = cue_find_track_internal(name, false, &offset, &_len,
+            track_path, sizeof(track_path), &track, &track_fsize, true);
+
+   if (found < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -2297,6 +2467,16 @@ bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
          track);
+
+   /* No data track.  A Jaguar CD is all AUDIO and keyed on track 1. */
+   if (     !fd
+         && track == CHDSTREAM_TRACK_PRIMARY
+         && is_chd_file_jaguar_cd(name))
+      fd = intfstream_open_chd_track(
+            name,
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE,
+            1);
    if (!fd)
       return 0;
 

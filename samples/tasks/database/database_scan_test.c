@@ -512,6 +512,16 @@ int main(int argc, char **argv)
     * database when a match moves it to the front of the list. */
    const uint32_t crc_g = 0x6A3A6A3Au;
    const uint32_t sz_g  = 3072;
+   /* An Atari Jaguar CD labels every track AUDIO, so its sheet names
+    * no data track to checksum.  The scanner recognises the disc by
+    * the boot header in a later track and checksums track 1, which is
+    * what the Redump dat keys these discs on. */
+   const uint32_t crc_j = 0x7A6C0D15u;
+   const uint32_t sz_j  = 2352 * 4;
+   /* A plain audio CD: all AUDIO as well, but with no boot header.  Its
+    * track 1 checksums to a record too, and must still not match. */
+   const uint32_t crc_x = 0x0A0D10CDu;
+   const uint32_t sz_x  = 2352 * 4;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    crc_init();
@@ -541,6 +551,12 @@ int main(int argc, char **argv)
    { check(0, "fixture", "could not write database"); return 1; }
    sprintf(p, "%s/Test Gamma.rdb", db_dir);
    if (!write_db(p, "Gamma The Game", crc_g, sz_g))
+   { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Jaguar.rdb", db_dir);
+   if (!write_db(p, "Jaguar The Game", crc_j, sz_j))
+   { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Audio.rdb", db_dir);
+   if (!write_db(p, "Audio The Game", crc_x, sz_x))
    { check(0, "fixture", "could not write database"); return 1; }
 
    /* A ".gam" file carrying the Gamma record, and one carrying the
@@ -577,6 +593,64 @@ int main(int argc, char **argv)
       fclose(f);
    }
 
+   /* The Jaguar CD: track 1 carries the record's crc, and track 2 -
+    * the first track of the second session - the boot header, laid out
+    * as on a Redump rip: byte-swapped, a little way into the track. */
+   sprintf(p, "%s/07_jag (Track 1).bin", in_dir);
+   if (!write_content(p, crc_j, sz_j))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/07_jag (Track 2).bin", in_dir);
+   {
+      static const char hdr[] = "TARA IPARPVODED TA AEHDAREA RT I";
+      uint8_t d[2352 * 2];
+      FILE   *f;
+      memset(d, 0, sizeof(d));
+      memcpy(d + 66, hdr, sizeof(hdr) - 1);
+      if (!(f = fopen(p, "wb")))
+      { check(0, "fixture", "could not write track"); return 1; }
+      fwrite(d, 1, sizeof(d), f);
+      fclose(f);
+   }
+   sprintf(p, "%s/07_jag.cue", in_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write cue"); return 1; }
+      fprintf(f,
+            "REM SESSION 01\n"
+            "FILE \"07_jag (Track 1).bin\" BINARY\n"
+            "  TRACK 01 AUDIO\n"
+            "    INDEX 01 00:00:00\n"
+            "REM SESSION 02\n"
+            "FILE \"07_jag (Track 2).bin\" BINARY\n"
+            "  TRACK 02 AUDIO\n"
+            "    INDEX 01 00:00:00\n");
+      fclose(f);
+   }
+
+   /* The audio CD: the same shape, no boot header. */
+   sprintf(p, "%s/08_audio (Track 1).bin", in_dir);
+   if (!write_content(p, crc_x, sz_x))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/08_audio (Track 2).bin", in_dir);
+   if (!write_content(p, crc_x ^ 0xFFFFFFFFu, sz_x))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/08_audio.cue", in_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write cue"); return 1; }
+      fprintf(f,
+            "FILE \"08_audio (Track 1).bin\" BINARY\n"
+            "  TRACK 01 AUDIO\n"
+            "    INDEX 01 00:00:00\n"
+            "FILE \"08_audio (Track 2).bin\" BINARY\n"
+            "  TRACK 02 AUDIO\n"
+            "    INDEX 00 00:00:00\n"
+            "    INDEX 01 00:00:02\n");
+      fclose(f);
+   }
+
    /* The archive itself checksums to something else entirely, so a
     * match can only come from expanding it. */
    {
@@ -608,7 +682,8 @@ int main(int argc, char **argv)
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
             "supported_extensions = \"bin|cue|gdi|zip\"\n"
-            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
+            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip"
+            "|Test Jaguar|Test Audio\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
@@ -695,6 +770,16 @@ int main(int argc, char **argv)
          "cue resolved through its track", "Disc The Game");
    check(file_contains(p, ".cue"),
          "playlist records the sheet, not the track", "path ends .cue");
+
+   sprintf(p, "%s/Test Jaguar.lpl", pl_dir);
+   check(file_contains(p, "Jaguar The Game"),
+         "all-AUDIO Jaguar CD matched on track 1", "Jaguar The Game");
+   check(file_contains(p, "07_jag.cue"),
+         "Jaguar CD entry records the sheet", "07_jag.cue");
+   sprintf(p, "%s/Test Audio.lpl", pl_dir);
+   check(!file_contains(p, "Audio The Game"),
+         "audio CD without the boot header left unmatched",
+         "no Audio The Game");
 
    /* Test Gamma is visited after four databases have been moved to
     * the front of the list; its claim has to have travelled with it. */
