@@ -689,7 +689,7 @@ void gl3_framebuffer_copy_partial(
 
 /**
  * gl3_parse_version:
- * @version : GL_VERSION string (e.g. "4.6", "OpenGL ES 3.0", "OpenGL 4.5 â€¦")
+ * @version : GL_VERSION string (e.g. "4.6", "OpenGL ES 3.0", "OpenGL 4.5 …")
  * @major   : pointer receiving the major version number
  * @minor   : pointer receiving the minor version number
  *
@@ -4568,7 +4568,7 @@ static bool gl3_shader_load_begin(void *data,
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   /* Keep old chain alive â€” it continues rendering
+   /* Keep old chain alive — it continues rendering
     * while the new one is being compiled. */
    ds->old_chain = gl->filter_chain;
    ds->filter    = gl->video_info.smooth
@@ -4641,7 +4641,7 @@ static bool gl3_shader_load_step(void *data,
    }
 
    /* Check if this is a cancellation (state was changed externally).
-    * Don't try to finalize a partially compiled chain â€” just clean up. */
+    * Don't try to finalize a partially compiled chain — just clean up. */
    if (deferred->state != SHADER_LOAD_COMPILING)
    {
       RARCH_LOG("[GLCore] Deferred: cancelled, cleaning up.\n");
@@ -4651,7 +4651,7 @@ static bool gl3_shader_load_step(void *data,
       goto cleanup;
    }
 
-   /* All passes compiled â€” finalize the chain */
+   /* All passes compiled — finalize the chain */
    RARCH_LOG("[GLCore] Deferred: finalizing chain...\n");
 
    if (gl3_filter_chain_finalize(ds->new_chain))
@@ -8397,7 +8397,7 @@ static void gl3_set_texture_frame(void *data,
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   /* glTexStorage2D is immutable â€” the texture object must be
+   /* glTexStorage2D is immutable — the texture object must be
     * recreated whenever dimensions or pixel format change.  For
     * same-size same-format updates we keep the existing texture
     * and just stream new pixel data via glTexSubImage2D. */
