@@ -137,3 +137,10 @@ references to the same objects. Separate fixtures refuse a queue wait before
 submission and retain the
 source through a failed completion signal and recovery. Both header variants
 run these cases on native Windows as part of every capture session.
+
+`swapchain_test` verifies BGRA copies and RGBA draws from real DXGI backbuffers.
+After GPU completion, ResizeBuffers still refuses the retained source references;
+explicit reap permits resize while all four destination slots remain leased.
+The same capture pool then crops the replacement backbuffer and permits another
+resize after producer closure. This test needs D3D12/DXGI, but no NVENC runtime.
+Both system and bundled D3D headers build it; other platforms explicitly skip.
