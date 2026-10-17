@@ -62,6 +62,11 @@ static void      *later_dest;
 
 static bool act_ping(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, "PONG\n", 5); return true; }
+/* a path with an accent, then a character cut short, as a log line
+ * truncated mid-character ends */
+#define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
+static bool act_moji(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
 static bool act_wipe(command_t *cmd, const char *arg)
 { (void)cmd; (void)arg; return true; }
 static bool act_fail(command_t *cmd, const char *arg)
@@ -186,6 +191,52 @@ static bool act_until(command_t *cmd, const char *arg)
    return true;
 }
 
+/* answers through its destination before it returns, as RUN_UNTIL does
+ * when the byte already holds what was asked */
+#define NOW_TEXT "MET 0\nx\t7e0086\t52\nVALUE 165\n"
+static bool act_now(command_t *cmd, const char *arg)
+{
+   void *dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   (void)arg;
+   if (!dest)
+      return false;
+   cmd->reply_to(cmd, dest, NOW_TEXT, sizeof(NOW_TEXT) - 1);
+   free(dest);
+   return true;
+}
+
+/* RUN_FRAMES's and PRESS's own lines, the frames run ending each */
+#define RUNF_TEXT  "RUN_FRAMES 3\nx\t7e0086\t52\n"
+#define PRESS_TEXT "PRESS 1 right+a 4\n"
+static bool act_runf(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, RUNF_TEXT, sizeof(RUNF_TEXT) - 1);
+   return true;
+}
+static bool act_press(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PRESS_TEXT, sizeof(PRESS_TEXT) - 1);
+   return true;
+}
+
+/* a PRESS that waited after it, and a STEPS list */
+#define PRESSU_TEXT "MET 5\nVALUE 0\n"
+#define STEPS_TEXT  "DONE 6\nx\t86\t40\nSTEP 3\n"
+static bool act_pressu(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PRESSU_TEXT, sizeof(PRESSU_TEXT) - 1);
+   return true;
+}
+static bool act_steps(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, STEPS_TEXT, sizeof(STEPS_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -243,6 +294,7 @@ static struct cmd_action_map test_actions[] = {
    { "FAIL",  act_fail,  "No argument", "Fail.",              0, NULL },
    { "BAD",   act_bad,   "No argument", "Reply an error.",    0, NULL },
    { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
+   { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
@@ -252,7 +304,12 @@ static struct cmd_action_map test_actions[] = {
    { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
    { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
+   { "NOW",   act_now,   "No argument", "Answer before returning.", 0, NULL, &cmd_rows_until },
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
+   { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
+   { "PRESS", act_press, "No argument", "Answer as PRESS does.", 0, NULL, &cmd_rows_press },
+   { "PRESSU", act_pressu, "No argument", "Answer as PRESS with until does.", 0, NULL, &cmd_rows_press },
+   { "STEPS", act_steps, "No argument", "Answer as STEPS does.", 0, NULL, &cmd_rows_steps },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
 };
 static struct cmd_map test_hotkeys[] = {
@@ -608,6 +665,36 @@ static void test_stdio(void)
          && !strstr(out, "all is well")
          && strstr(out, "notifications/message"));
 
+   {
+      /* a message past the limit, and on the same line after it what
+       * would be a request of its own: only the refusal is answered */
+      static char chunk[32769];
+      memset(chunk, 'x', 32768);
+      chunk[32768] = '\0';
+      stdio_send(chunk);
+      stdio_read(cmd, out, sizeof(out));
+      stdio_send(chunk);
+      stdio_read(cmd, out, sizeof(out));
+      check("a message too long is refused once",
+            count_lines(out) == 1 && strstr(out, "too long"));
+      stdio_send("{\"jsonrpc\":\"2.0\",\"id\":45,\"method\":\"tools/call\","
+            "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
+      stdio_read(cmd, out, sizeof(out));
+      check("and the rest of its line is not run", !*out);
+      stdio_send("{\"jsonrpc\":\"2.0\",\"id\":46,\"method\":\"tools/call\","
+            "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
+      stdio_read(cmd, out, sizeof(out));
+      check("the next line is read as ever",
+            strstr(out, "\"id\":46") && strstr(out, "PONG"));
+   }
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":44,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"NOW\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("answered before it returns, one answer arrives, structured",
+         count_lines(out) == 1 && strstr(out, "\"id\":44")
+         && strstr(out, "\"met\":0,\"value\":165"));
+
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\","
          "\"params\":{\"name\":\"LATER\",\"arguments\":{}}}\n");
    stdio_read(cmd, out, sizeof(out));
@@ -624,6 +711,13 @@ static void test_stdio(void)
          "\"params\":{\"name\":\"PING\",\"arguments\":{}}}\n");
    stdio_read(cmd, out, sizeof(out));
    check("and the next server goes on", strstr(out, "\"id\":6") != NULL);
+   /* the client goes on with the tool list it was given, whose rows
+    * tools declare an outputSchema: the revision agreed still holds */
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+         "\"params\":{\"name\":\"UNTIL\",\"arguments\":{}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and answers with structuredContent as the first did",
+         strstr(out, "\"id\":8") && strstr(out, "\"structuredContent\""));
 
    close(stdio_in);
    stdio_read(cmd, out, sizeof(out));
@@ -719,9 +813,26 @@ int main(void)
             && strstr(s, "\"index\":{\"type\":\"string\"")
             && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, WAIT and STEP, and
-       * none before them */
-      check("only the commands that answer rows declare one", n == 9);
+      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, NOW, WAIT, RUN_FRAMES,
+       * PRESS, PRESSU, STEPS and STEP, and none before them */
+      check("only the commands that answer rows declare one", n == 14);
+   }
+   {
+      /* ROWS describes its columns; LROWS, answering the same ones,
+       * names them and leaves the describing to ROWS */
+      const char *rw = strstr(out, "\"name\":\"ROWS\"");
+      const char *lr = strstr(out, "\"name\":\"LROWS\"");
+      const char *nx = lr ? strstr(lr + 1, "\"name\":") : NULL;
+      check("columns are described by the first tool to answer with them",
+            rw && lr && strstr(rw, "\"index\":{\"type\":\"string\",\"description\"")
+            < lr);
+      check("and named alone by the next",
+            lr && strstr(lr, "\"index\":{\"type\":\"string\"}")
+            && (!nx || strstr(lr, "\"index\":{\"type\":\"string\"}") < nx));
+      check("no schema says what the server would refuse anyway",
+            !strstr(out, "additionalProperties"));
+      check("and no tool repeats a hint's default",
+            !strstr(out, "openWorldHint"));
    }
 
    printf("tools/call\n");
@@ -883,6 +994,23 @@ int main(void)
          call("JOIN", "{\"a\":\"one\"}"), out, sizeof(out), NULL);
    check("a required one left out is invalid params (-32602)",
          strstr(out, "-32602") && strstr(out, "\\\"b\\\""));
+   /* the schemas do not forbid other names, so the server does */
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mdoe\":\"fast\"}"),
+         out, sizeof(out), NULL);
+   check("a name the tool does not take is invalid params, not dropped",
+         strstr(out, "-32602") && strstr(out, "Unknown parameter")
+         && strstr(out, "mdoe") && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mode\":\"quick\"}"),
+         out, sizeof(out), NULL);
+   check("and so is a value outside the set it offers",
+         strstr(out, "-32602") && strstr(out, "fast|slow")
+         && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL, call("PAUSE_TOGGLE", "{\"x\":1}"),
+         out, sizeof(out), NULL);
+   check("and a parameter given to a hotkey, which takes none",
+         strstr(out, "-32602") && strstr(out, "Unknown parameter"));
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"argument\":\"one|two 7\"}"), out, sizeof(out), NULL);
    check("the single argument older clients send still works",
@@ -935,6 +1063,12 @@ int main(void)
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"},"
                "{\"label\":\"mode\",\"address\":\"7e0770\",\"value\":\"8\"}],"
                "\"met\":12,\"value\":5}"));
+   st = post(cmd, PORT_OPEN, NULL, call("NOW", NULL), out, sizeof(out), NULL);
+   check("answered before the command returns, it is answered once, whole",
+         st == 200 && json_valid(body_of(out)) && !strstr(out, "Done.")
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}],"
+               "\"met\":0,\"value\":165}"));
    st = post(cmd, PORT_OPEN, NULL, call("WAIT", NULL), out, sizeof(out), NULL);
    check("WAITING with nothing watched answers how far it got and the byte",
          st == 200 && json_valid(body_of(out))
@@ -945,6 +1079,26 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}]}"));
+   st = post(cmd, PORT_OPEN, NULL, call("RUN_FRAMES", NULL), out, sizeof(out), NULL);
+   check("RUN_FRAMES's own line says the frames it ran",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"}],"
+               "\"frames\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PRESS", NULL), out, sizeof(out), NULL);
+   check("and PRESS's, the number ending it, with nothing watched",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"frames\":4}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PRESSU", NULL), out, sizeof(out), NULL);
+   check("a PRESS that waited says how it ended and what it read",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"met\":5,\"value\":0}"));
+   st = post(cmd, PORT_OPEN, NULL, call("STEPS", NULL), out, sizeof(out), NULL);
+   check("STEPS says how the list ended and on which step",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
+               "\"done\":6,\"step\":3}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
@@ -1055,6 +1209,32 @@ int main(void)
       check("a body past the limit is dropped, and the server goes on",
             post(cmd, PORT_OPEN, NULL, call("PING", NULL), out, sizeof(out), NULL) == 200);
    }
+   {
+      /* within the limit by itself, past it with the headers */
+      char big[1024];
+      int  fd;
+      memset(big, 0, sizeof(big));
+      snprintf(big, sizeof(big), "POST /mcp HTTP/1.1\r\nHost: x\r\n" AUTH
+            "X-Pad: %0400d\r\nContent-Length: 65400\r\n\r\n", 0);
+      fd = client_connect(PORT_OPEN);
+      socket_send_all_blocking(fd, big, strlen(big), true);
+      check("headers and body past the limit together are refused",
+            collect(cmd, fd, out, sizeof(out), NULL) == 413);
+   }
+   {
+      char body[512];
+      snprintf(body, sizeof(body), "{\"jsonrpc\":\"2.0\",\"id\":\"%070d\","
+            "\"method\":\"tools/call\",\"params\":{\"name\":\"PING\","
+            "\"arguments\":{}}}", 0);
+      st = post(cmd, PORT_OPEN, NULL, body, out, sizeof(out), NULL);
+      check("an id too long to answer with is refused, not run",
+            st == 200 && strstr(out, "The id is too long") && !strstr(out, "PONG"));
+   }
+   st = post(cmd, PORT_OPEN, NULL, call("MOJI", NULL), out, sizeof(out), NULL);
+   check("text that is not UTF-8 is answered as UTF-8, the rest kept",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "caf\xC3\xA9 \xEF\xBF\xBD\xEF\xBF\xBD\\n")
+         && !strstr(out, "\xE6\x97"));
    {
       char req[1024];
       const char *b = call("PING", NULL);

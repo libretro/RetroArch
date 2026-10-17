@@ -3,8 +3,10 @@
 RetroArch can act as a [Model Context Protocol](https://modelcontextprotocol.io)
 server, so an AI assistant that speaks MCP can drive it: pause and resume,
 load and save states, take screenshots, read core memory, load content.
-Every tool is one of RetroArch's network commands; the list, and what each
-one does, is the same one `HELP` prints on the network command interface.
+Every tool is one of RetroArch's network commands, described as `HELP`
+describes it on the network command interface. Not every command is a
+tool: `tools/list` leaves out the ones an assistant has no use for, or
+that another tool covers.
 
 The server is off by default.
 
@@ -77,8 +79,8 @@ Over stdin and stdout RetroArch also offers logging: after
 
 ## What the tools do
 
-Each command is one tool, named as the command (`GET_STATUS`,
-`STATE`, `SCREENSHOT`). Its parameters are named, typed and
+A tool is named as its command (`GET_STATUS`, `STATE`,
+`SCREENSHOT`). Its parameters are named, typed and
 marked needed or not, so a client is told what to send rather than
 having to write the command's own line by hand:
 
@@ -92,8 +94,13 @@ having to write the command's own line by hand:
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
 
-A parameter that is needed and left out is answered before the command
-runs at all, as JSON-RPC invalid params rather than as a tool failure.
+A parameter that is needed and left out, one that should be an integer
+and is not, one the tool does not take, a value outside the set a
+parameter offers, and a tool that does not exist are answered before
+anything runs, as JSON-RPC invalid params (`-32602`) rather than as a
+tool failure. The schemas leave other names unforbidden to keep the
+tool list short; the server refuses them instead, so a misspelt
+parameter is never dropped and the command run without it.
 
 The single `argument` string this server took before the parameters
 still works, so a client holding a cached tool list keeps going until it
@@ -106,11 +113,14 @@ nothing report `Done.`.
 
 The replies that are lines of tab-separated fields - `GET_OPTION`,
 `SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
-`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT` and
-`RELEASE_INPUT` - come
+`GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT`,
+`RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS`,
+`RUN_UNTIL` and `STEPS` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
-`outputSchema` naming its columns:
+`outputSchema` naming its columns, described by the first tool in the
+list to answer with them - `RUN_FRAMES` for the watched bytes, which
+`PRESS`, `RUN_UNTIL`, `STEPS` and `WATCH` then name without repeating:
 
 ```json
 { "content": [ { "type": "text",
@@ -125,13 +135,15 @@ for the cores, `playlist` for the playlists, `index`, `label`, `content`
 and `core` for a playlist's entries, `key`, `value`, `description` and
 `values` for a core's options, `start`, `length`, `select`,
 `disconnect`, `kind`, `access`, `order` and `space` for the memory map,
-and `player`, `buttons` and `axes` for what a player holds. Every field
+`player`, `buttons` and `axes` for what a player holds, and `label`,
+`address` and `value` for the bytes `WATCH` watches. Every field
 is a string: it is the text's own field, which the server does not read
 as anything else.
 
 **A tool answers with `structuredContent` exactly when it declared an
-`outputSchema`**, so a client reads the schema it was handed at
-`tools/list` and does not have to probe each reply. A tool with no
+`outputSchema` and succeeded**, so a client reads the schema it was
+handed at `tools/list` and does not have to probe each reply. A reply
+marked `isError` is its reason as text, with no `structuredContent`. A tool with no
 `outputSchema` answers with text alone, because its reply is prose or a
 confirmation rather than rows.
 
@@ -140,9 +152,9 @@ ones every row carries: `GET_CORE_OPTION` gives an option's `values`
 only where it was asked for that option by key.
 
 A line the command opens with its own name, such as `LIST_CORES none`,
-is not a row, and a failure is its reason and no rows at all. Neither
-are the lines that carry a number about the reply rather than a row of
-it, which become fields of their own:
+is not a row. Neither are the lines that carry a number about the reply
+rather than a row of it, which become fields of their own - the number
+ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 
 | Line | Field | Where |
 | --- | --- | --- |
@@ -150,6 +162,14 @@ it, which become fields of their own:
 | `MORE 200` | `more: true`, `next: 200` | `GET_PLAYLIST`'s next page |
 | `NEXT 48` | `next: 48` | where `GET_LOG` reached |
 | `SKIPPED 12` | `skipped: 12` | log lines gone before the first kept |
+| `RUN_FRAMES 3` | `frames: 3` | the frames `RUN_FRAMES` ran |
+| `PRESS 1 a 4` | `frames: 4` | the frames `PRESS` ran |
+| `MET 12` | `met: 12` | the frames `RUN_UNTIL` ran until the byte met it |
+| `WAITING 540` | `waiting: 540` | the frames it ran without that |
+| `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
+| `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
+| `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
+| `STEP 3` | `step: 3` | the step it ended on, from 1 |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -196,11 +216,17 @@ The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
 and until something answers where they landed, stepping is all there is
 - and a disc swap is part of playing a game. Each is one tool taking a
 choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
-`REINIT`, `STATE` and `REPLAY` stand for their families likewise:
-`STATE load 3` is `LOAD_STATE_SLOT 3`, and `REPLAY seek 600` is
-`SEEK_REPLAY 600`. Each answers under its own name - `STATE load 3`,
-`DISK next pressed`, `REPLAY ERROR no replay is playing or recording` -
-while the commands sent by name answer as they always have.
+`REINIT`, `STATE`, `REPLAY` and `CORE` stand for their families
+likewise: `STATE load 3` is `LOAD_STATE_SLOT 3`, `REPLAY seek 600` is
+`SEEK_REPLAY 600`, and `CORE load <path>` is `LOAD_CORE <path>`. Each
+answers under its own name - `STATE load 3`,
+`DISK next pressed`, `REPLAY ERROR no replay is playing or recording`,
+and `REINIT audio` for a restart that says nothing itself - while the
+commands sent by name answer as they always have. `DISK` is refused on
+a core with no disk control, where the hotkeys would do nothing. A word
+the tool does not take is invalid params naming the ones it does; on
+the line interfaces it is `STATE ERROR one of save|load`, and so is
+anything after a word that takes nothing. `REPLAY`'s slot or frame is its `number` parameter.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
 files itself, and playing a game does not need them.
@@ -250,7 +276,9 @@ starts or the first `GET_LOG`.
 `PRESS <player> <control>[+<control>...] <frames>` is how an assistant
 taps a button: it holds the buttons, runs that many frames and lets
 them go, answered once the last frame has run. A tap is 2 to 4 frames;
-`PRESS 1 right+a 6` runs and jumps.
+`PRESS 1 right+a 6` runs and jumps. What `SET_INPUT` holds stays held,
+under the press and after it: `SET_INPUT 1 right+b 1` then `PRESS 1 a
+20` is a running jump.
 
 This is one request where four were needed - `SET_INPUT`, `RUN_FRAMES`,
 `SET_INPUT` to release, `RUN_FRAMES` again - and each of those is its
@@ -259,16 +287,22 @@ buttons are let go of however the press ends, including the error that
 ends it early. Axes are `SET_INPUT`'s: they are held at a value rather
 than pressed, so `PRESS` refuses one.
 
-**A single request runs at most 600 frames** - about ten seconds at
-60fps - because that is as long as a reply is waited for. An MCP client
-is told the command did not answer after ten seconds and the frames run
-on regardless, so both commands refuse more than that outright rather
-than failing later with hundreds of frames already run. Ask again to
-run more.
+`PRESS ... until <condition>` lets go and runs on until the condition
+holds, as `RUN_UNTIL` would, and answers as `RUN_UNTIL` does:
+`PRESS 1 a 20 until 1d == 0` is a jump and its landing in one request.
 
-`PRESS` holds the limit on every interface, because it holds input
-through every frame it runs and a press nobody is waiting for would go
-on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
+**A single request runs at most nine seconds of frames** - 540 at
+60fps, 450 at 50fps, and never more than 600 - because a reply is
+waited for ten. An MCP client is told the command did not answer after
+ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`,
+`STEPS` and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
+rather than failing later with hundreds of frames already run. Ask
+again to run more.
+
+`PRESS` has a limit on every interface - nine seconds of frames over
+MCP, 600 frames on the network and stdin interfaces - because it holds
+input through every frame it runs and a press nobody is waiting for
+would go on holding buttons down. `RUN_FRAMES` keeps the full ten minutes on the
 network and stdin interfaces, which have no deadline, and leaves
 nothing held if its reply is dropped - so that pair is the way to hold
 a control for longer than ten seconds.
@@ -290,8 +324,11 @@ One request sets several - `WATCH x 7e0086 mode 7e0770` - and takes
 all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
-its place in the list when its address changes. Eight at once. Each is
-checked when it is set - an address nothing maps is refused there -
+its place in the list when its address changes; with nothing watched
+it answers `WATCH none`. Values are decimal, 0 to 255, as `RUN_UNTIL`
+takes them; addresses are hexadecimal. A label is up to 15 characters,
+with no tab or newline in it. Sixteen at once. Each is checked when it is
+set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
 it. All of them are dropped when content closes, since the next
@@ -300,7 +337,11 @@ content's addresses mean something else.
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
 `<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
-how many frames ran, what `WATCH` watches, and what the byte holds:
+how many frames ran, what `WATCH` watches, and what the byte holds.
+Two addresses as `high:low` read two bytes as one value, 0 to 65535:
+`6d:86 >= 1800` waits for Super Mario Bros.'s Mario to pass x 1800,
+which the game keeps as a page in one byte and a place on it in
+another.
 
 ```
 MET 12
@@ -319,19 +360,43 @@ address while it is waited on ends the wait with an error.
 
 Left to itself it waits about nine seconds of the content's own frames
 - 540 at 60fps, 450 at 50fps - so the answer comes inside the
-ten-second deadline at any frame rate; `[max frames]` asks for up to
-600. When they run out first it answers `WAITING` with how far it got,
+ten-second deadline at any frame rate, and `[max frames]` asks for up
+to that many. When they run out first it answers `WAITING` with how far it got,
 so the next request carries on from there instead of the client being
 told it failed.
+
+`STEPS <step>[; <step>...]` runs a stretch of play as one request. Each
+step is `run <frames>`, `press <player> <controls> <frames>` or `until
+<condition>`, in order; one `stop <condition>` anywhere in the list ends
+it after any frame where that holds, so a death does not play out the
+rest:
+
+```
+STEPS until 6d:86 >= 1500; press 1 a 20; until 1d == 0; stop e == 11
+DONE 74
+x	86	212
+STEP 3
+```
+
+Two presses of the same button in a row get a frame with it let go
+between them, so the game reads two taps rather than one long press.
+
+It answers `DONE` when every step has run, `STOPPED` when `stop` held,
+and `WAITING` when its nine seconds ran out first, each with the frames
+run, what `WATCH` watches, and the `STEP` it ended on - so after
+`WAITING` the client asks again with the steps from that one. Sixteen
+steps at most; the frames `run` and `press` ask for must fit in the
+nine seconds, and an address nothing maps is refused before any frame
+runs.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
 run; it is left paused. Use it to let the game run on its own - a
 cutscene, a fall - where `PRESS` is for holding something while it
 does. Both are refused while the menu is open, without content, and in
-achievements hardcore mode, and both are the same one job: a second
-`RUN_FRAMES` or `PRESS` replaces one still running, which is answered
-with an error, as it is when the content closes.
+achievements hardcore mode, and they, `RUN_UNTIL` and `STEPS` are the
+same one job: a second of any of them replaces one still running, which is answered with an error, as it is when the content
+closes.
 
 `SET_INPUT` with `RUN_FRAMES` is still the way to hold something across
 several steps - a direction held while reading memory between frames -
@@ -406,16 +471,19 @@ A tool whose work runs over later frames answers once that work is
 through, with what came of it, or with the command's name, `ERROR` and
 the reason:
 
-- `LOAD_CONTENT`, `START_CORE`: the content's path once it runs; a core
-  that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
+- `LOAD_CONTENT`, `CORE start`: the content's path once it runs; a core
+  that fails to start is an error. `CLOSE_CONTENT`, `CORE unload`: once
   the content is closed. Requests sent while content loads wait for it.
+  `LOAD_CONTENT` with `paused` on pauses the content the frame it has
+  loaded, before the answer goes, so nothing runs between the load and
+  the first step - a title screen's demo starting, say. On the network
+  and stdin interfaces `<core>|<content>|on` does the same, and is
+  answered there too.
 - `STATE`: once the state is applied or written.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
   has started or the seek or checkpoint has run; `halt` is a hotkey
   press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
-- `AI_SERVICE`: one translation of the screen, answered with the
-  service's text.
 
 A tool that fails says why, as `<NAME> ERROR <reason>`, and the result
 is marked `isError`. Whether a reply is a failure is the command's own
@@ -428,9 +496,14 @@ answered with an error saying so; the work goes on, and `GET_STATUS`
 tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
-Hotkey tools (`MENU`, `DISK`, `QUIT`, `RESET`) press the hotkey for one
-frame.
-`SCREENSHOT` and `REPLAY` are the exceptions, answered as above; `SCREENSHOT`
+A request over HTTP is at most 64 KiB, headers and body together, and a
+larger one is answered `413`; only `POST /mcp` and `POST /` are served.
+Over stdio a line past 64 KiB is answered with a parse error and skipped
+to its newline, and a `\r` before the newline is taken as part of it.
+Batch requests are refused as invalid.
+
+Hotkey tools (`QUIT`, `RESET`), and the hotkeys behind `MENU`, `DISK`
+and `REPLAY halt`, press for one frame. `SCREENSHOT` is the exception: it
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
@@ -438,11 +511,16 @@ text, so a client can see the screen without reaching the file - or with
 
 Every tool carries hints for the client:
 
-- **read-only**: only reports (`VERSION`, `GET_STATUS`, `READ_CORE_MEMORY`,
-  `GET_MEMORY_MAP`, `GET_CORE_OPTION`);
+- **read-only**: only reports (`GET_STATUS`, `GET_OPTION`, `GET_LOG`,
+  `GET_INPUT`, `GET_CORE_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`,
+  `GET_PLAYLIST`, `READ_CORE_MEMORY`, `GET_MEMORY_MAP`);
 - **destructive**: can lose unsaved progress or data, or loads code
-  (`QUIT`, `RESET`, `STATE`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
-  `LOAD_CONTENT`).
+  (`QUIT`, `RESET`, `STATE`, `REPLAY`, `WRITE_CORE_MEMORY`, `CORE`,
+  `LOAD_CONTENT`, `CLOSE_CONTENT`).
+
+Every tool states `destructiveHint`, true or false, since its default is
+true. `openWorldHint` is left at its default rather than spend 22 bytes
+of every tool's entry on it.
 
 `SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`
 lists, and none of them loses progress.
@@ -450,7 +528,7 @@ lists, and none of them loses progress.
 Most clients ask before running a destructive tool. Keep that on.
 
 A core path that is not a core is found out before anything is torn
-down for it. `LOAD_CORE` and `LOAD_CONTENT` both probe the library
+down for it. `CORE load` and `LOAD_CONTENT` both probe the library
 first - the same probe core scanning uses - and answer `no core at
 <path>` or `<path> is not a libretro core`. The core already loaded is
 not probed. A stale library or something renamed would otherwise
@@ -459,7 +537,7 @@ running.
 
 ## Security
 
-An MCP client with the token can do what the tools allow, and `LOAD_CORE`
+An MCP client with the token can do what the tools allow, and `CORE load`
 loads a library from any path: treat the token like a password.
 
 - The server listens on `127.0.0.1` and is reachable from this machine

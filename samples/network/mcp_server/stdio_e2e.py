@@ -76,10 +76,11 @@ names = [t['name'] for t in msg['result']['tools']] if msg else []
 for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
           'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
           'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
-          'REPLAY'):
+          'REPLAY', 'STEPS', 'CORE'):
     check('tool %s listed' % n, n in names)
 # A family of hotkeys is one tool with a choice, not a tool apiece.
 for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
+          'LOAD_CORE', 'START_CORE', 'UNLOAD_CORE',
           'SEEK_REPLAY', 'HALT_REPLAY', 'SAVE_FILES'):
     check('%s is not a tool of its own' % n, n not in names)
 # A hotkey that steps a selection nothing can read back is a command on
@@ -100,9 +101,10 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       'GET_LOG' in schemas and 'SET_INPUT' in schemas
       and 'GET_PLAYLIST' in schemas)
 # Every tool's description and schema is context a client pays for
-# before it does anything. The total catches a tool added by accident,
-# and the ceiling on each one catches prose: an average would not, as
-# folding small tools into one raises it. 22817 at 34 tools.
+# before it does anything. The total, 25000 bytes, catches a tool added
+# by accident; the ceiling of 1800 on each one catches prose, which an
+# average would not, as folding small tools into one raises it. 20676
+# at 33 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
       % (size, len(names)), size < 25000)
@@ -132,6 +134,14 @@ def frame_count(i):
 msg, t, _ = call(200, 'RUN_FRAMES', {'count': 30})
 check('RUN_FRAMES answers after the frames: ' + (t or '').strip(),
       t and t.startswith('RUN_FRAMES 30') and not msg['result']['isError'])
+check('and its structured result says how many',
+      msg and msg['result'].get('structuredContent') == {'rows': [], 'frames': 30})
+_, t, _ = call(240, 'REINIT', {'driver': 'audio'})
+check('REINIT answers under its own name: ' + (t or '').strip(),
+      t and t.strip() == 'REINIT audio')
+msg, t, _ = call(241, 'DISK', {'action': 'next'})
+check('DISK is refused where the core has no disks: ' + (t or '').strip(),
+      t and t.startswith('DISK ERROR') and msg['result']['isError'])
 _, st, _ = call(201, 'GET_STATUS')
 check('and leaves it paused', st and 'PAUSED' in st)
 a = frame_count(202)
@@ -165,10 +175,17 @@ check('and let the buttons go', t and 'none\tnone' in t)
 # than failing ten seconds later with the frames already running.
 _, t, _ = call(216, 'RUN_FRAMES', {'count': 36000})
 check('RUN_FRAMES past what a reply waits for is refused now',
-      t and t.startswith('RUN_FRAMES ERROR') and 'at most 600' in t)
+      t and t.startswith('RUN_FRAMES ERROR') and 'frames in one request' in t)
 _, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
 check('and a press is bounded the same way',
       t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)
+# A stretch of play as one request: this core maps no memory to wait
+# on, so the steps that need none. The frame after the press lets the
+# core log A let go, which the log checks below read changes of.
+msg, t, _ = call(219, 'STEPS', {'steps': 'run 3; press 1 a 2; run 1'})
+check('STEPS runs its steps in one request: ' + (t or '').split('\n')[0],
+      t and t.startswith('DONE 6') and not msg['result']['isError']
+      and msg['result'].get('structuredContent') == {'rows': [], 'done': 6, 'step': 3})
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
 check('an axis is SET_INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)
@@ -180,10 +197,13 @@ _, t, _ = call(221, 'RUN_UNTIL', {'address': '1000', 'condition': '==',
                                   'value': 0})
 check('RUN_UNTIL refuses an address nothing maps: ' + (t or '').strip(),
       t and t.startswith('RUN_UNTIL ERROR'))
-_, t, _ = call(222, 'RUN_UNTIL', {'address': '1000', 'condition': '~=',
-                                  'value': 0})
-check('and a condition it does not take',
-      t and t.startswith('RUN_UNTIL ERROR') and '==' in t)
+send({'jsonrpc': '2.0', 'id': 222, 'method': 'tools/call',
+      'params': {'name': 'RUN_UNTIL', 'arguments': {'address': '1000',
+                 'condition': '~=', 'value': 0}}})
+msg, _ = recv(222)
+err = (msg or {}).get('error', {})
+check('and a condition it does not take is invalid params',
+      err.get('code') == -32602 and '==' in err.get('message', ''))
 
 # GET_INPUT looks without touching: SET_INPUT must set to answer and
 # RELEASE_INPUT lets go before it does.
@@ -194,9 +214,9 @@ check('GET_INPUT reads what is held, twice the same: ' + (t2 or '').strip(),
       t2 and t2 == t and t3 == t2)
 call(226, 'RELEASE_INPUT', {})
 # A path that is not a core is refused before the running core goes.
-_, t, _ = call(227, 'LOAD_CORE', {'core': '/no/such/core.so'})
-check('LOAD_CORE says why: ' + (t or '').strip(),
-      t and 'no core at' in t)
+_, t, _ = call(227, 'CORE', {'action': 'load', 'core': '/no/such/core.so'})
+check('CORE load says why: ' + (t or '').strip(),
+      t and t.startswith('CORE ERROR') and 'no core at' in t)
 _, st, _ = call(229, 'GET_STATUS')
 check('and the content it was running is still running',
       st and ('PLAYING' in st or 'PAUSED' in st))
@@ -204,9 +224,12 @@ check('and the content it was running is still running',
 # A watch rides along with every step, so a step needs no reads after
 # it. This core maps no memory, so the refusal is what is checkable
 # here; command_frames covers the carrying.
-_, t, _ = call(232, 'MENU', {'button': 'toggle'})
-check('MENU names the buttons it takes: ' + (t or '').strip(),
-      t and t.startswith('MENU ERROR') and 'up|down' in t)
+send({'jsonrpc': '2.0', 'id': 232, 'method': 'tools/call',
+      'params': {'name': 'MENU', 'arguments': {'button': 'toggle'}}})
+msg, _ = recv(232)
+err = (msg or {}).get('error', {})
+check('MENU names the buttons it takes: ' + err.get('message', ''),
+      err.get('code') == -32602 and 'up|down' in err.get('message', ''))
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
@@ -237,6 +260,22 @@ check('and reads it let go of afterwards',
       any('buttons=0x0000' in l for l in logs))
 check('log lines arrive as notifications after setLevel',
       any(n.get('method') == 'notifications/message' for n in notes))
+
+# LOAD_CONTENT with paused on stops the game the frame it has loaded, so
+# nothing runs before the first step: a title screen's demo, say.
+rom = os.path.join(cfgdir, 'blank.bin')
+with open(rom, 'wb') as f:
+    f.write(b'\0' * 16)
+msg, t, _ = call(250, 'LOAD_CONTENT', {'core': core, 'content': rom,
+                                       'paused': 'on'}, )
+check('LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
+      t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
+a = frame_count(251)
+time.sleep(1)
+b = frame_count(252)
+_, st, _ = call(253, 'GET_STATUS')
+check('and stays paused: %s -> %s, %s' % (a, b, (st or '').strip()),
+      a is not None and a == b and st and 'PAUSED' in st)
 
 p.stdin.close()
 try:

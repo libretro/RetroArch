@@ -235,11 +235,16 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
+   char     *tok   = strtok_r(buf, "\n", &save);
    unsigned gen    = input_driver_command_generation();
 
    while (tok)
    {
+      /* a client ending its lines in CRLF leaves no \r on the last word;
+       * a \r anywhere else is the command's own */
+      size_t len = strlen(tok);
+      if (len && tok[len - 1] == '\r')
+         tok[len - 1] = '\0';
       command_parse_sub_msg(handle, tok);
       /* The command may have reinitialised the input driver, which
        * owns and has now freed 'handle'. Nothing further may use it. */
@@ -778,15 +783,22 @@ struct command_family
    const char        *word;
    const char        *name;
    command_replier_t  replier;
+   /* the command answered, or will */
+   bool               answered;
 };
 static struct command_family command_family_now;
 
-/* @msg under @f's name in @s; 0 where it does not fit. */
-static size_t command_family_rename(const struct command_family *f,
-      const char *msg, size_t len, char *s, size_t size)
+/* @msg under @f's name, allocated, its length in @out_len; NULL where
+ * it could not be. */
+static char *command_family_rename(const struct command_family *f,
+      const char *msg, size_t len, size_t *out_len)
 {
-   size_t n = strlen(f->name);
+   size_t n    = strlen(f->name);
+   size_t size = len + strlen(f->family) + strlen(f->word) + 3;
+   char  *s    = (char*)malloc(size);
    int    _len;
+   if (!s)
+      return NULL;
    if (     len > n && !strncmp(msg, f->name, n)
          && (msg[n] == ' ' || msg[n] == '\n'))
    {
@@ -803,19 +815,27 @@ static size_t command_family_rename(const struct command_family *f,
    else
       _len = snprintf(s, size, "%s %s %.*s", f->family, f->word,
             (int)len, msg);
-   return (_len > 0 && (size_t)_len < size) ? (size_t)_len : 0;
+   if (_len <= 0 || (size_t)_len >= size)
+   {
+      free(s);
+      return NULL;
+   }
+   *out_len = (size_t)_len;
+   return s;
 }
 
 static void command_family_replier(command_t *cmd, const char *data,
       size_t len)
 {
-   char   msg[512];
-   size_t _len = command_family_rename(&command_family_now, data, len,
-         msg, sizeof(msg));
-   if (_len)
+   size_t _len = 0;
+   char  *msg  = command_family_rename(&command_family_now, data, len,
+         &_len);
+   command_family_now.answered = true;
+   if (msg)
       command_family_now.replier(cmd, msg, _len);
    else
       command_family_now.replier(cmd, data, len);
+   free(msg);
 }
 
 /* A reply sent after its command has returned: where it goes is taken
@@ -835,6 +855,8 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
    d->dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
    d->gen    = input_driver_command_generation();
    d->family = command_family_now;
+   if (command_family_now.family)
+      command_family_now.answered = true;
 }
 
 /* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
@@ -844,12 +866,12 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 static void command_deferred_send(command_deferred_t *d,
       const char *msg, size_t len, bool is_error)
 {
-   char renamed[512];
+   char *renamed = NULL;
    if (msg && input_driver_command_generation() == d->gen)
    {
-      size_t _len;
-      if (d->family.family && (_len = command_family_rename(&d->family,
-               msg, len, renamed, sizeof(renamed))))
+      size_t _len = 0;
+      if (d->family.family && (renamed = command_family_rename(&d->family,
+               msg, len, &_len)))
       {
          msg = renamed;
          len = _len;
@@ -860,6 +882,7 @@ static void command_deferred_send(command_deferred_t *d,
       else if (!d->cmd->reply_dest)
          d->cmd->replier(d->cmd, msg, len);
    }
+   free(renamed);
    free(d->dest);
    d->dest = NULL;
 }
@@ -935,6 +958,8 @@ struct command_reply
    char                 path[PATH_MAX_LENGTH];
    /* a load that ends on the dummy core failed */
    bool                 want_core;
+   /* LOAD_CONTENT ... paused: pause once it has loaded */
+   bool                 pause;
    /* what succeeded loaded a state */
    bool                 state_loaded;
 };
@@ -969,6 +994,8 @@ static void command_reply_done(retro_task_t *task, void *task_data,
          strlcpy(msg, r->name, sizeof(msg));
       if (r->state_loaded)
          command_post_state_loaded();
+      if (r->pause)
+         command_event(CMD_EVENT_PAUSE, NULL);
    }
    command_deferred_send(&r->deferred, msg, strlen(msg), error != NULL);
    free(r);
@@ -1041,14 +1068,17 @@ static bool command_ai_service_start(struct command_reply *r)
 /* Answers @cmd once the content load in progress, or with @next the
  * one the command leads to, is through. */
 static bool command_content_reply(command_t *cmd, const char *name,
-      bool next, bool want_core)
+      bool next, bool want_core, bool pause)
 {
    struct command_reply *r;
-   if (     !cmd->structured
+   /* a line client is answered too where it asked for a pause, which
+    * happens here */
+   if (     (!cmd->structured && !pause)
          || (!next && !task_content_load_pending())
          || !(r = command_reply_new(name)))
       return true;
    r->want_core = want_core;
+   r->pause     = pause;
    task_notify_set(&content_state_get_ptr()->load_notify,
          command_reply_done, r);
    command_deferred_take(&r->deferred, cmd);
@@ -1132,7 +1162,7 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    return false;
 }
 
-/* MENU, DISK, REINIT, STATE and REPLAY: a family of commands as one,
+/* MENU, DISK, REINIT, STATE, REPLAY and CORE: a family of commands as one,
  * so a structured client is offered one tool with a choice rather than
  * a tool apiece. Each word runs as the command it stands for, which
  * line clients can still send by name; @rest says it takes what
@@ -1179,6 +1209,15 @@ static bool command_run_choice(command_t *cmd, const char *family,
          cmd->replier               = command_family_replier;
          ret                        = command_run(cmd, choices[i].name, rest);
          cmd->replier               = command_family_now.replier;
+         /* what answers nothing of its own still answers as the tool */
+         if (ret && !command_family_now.answered && cmd->structured)
+         {
+            char   msg[64];
+            int    _len = snprintf(msg, sizeof(msg), "%s %s\n", family,
+                  choices[i].word);
+            if (_len > 0 && (size_t)_len < sizeof(msg))
+               cmd->replier(cmd, msg, (size_t)_len);
+         }
          memset(&command_family_now, 0, sizeof(command_family_now));
          return ret;
       }
@@ -1205,6 +1244,13 @@ bool command_disk(command_t *cmd, const char *arg)
       { "next",  "DISK_NEXT",         false },
       { "prev",  "DISK_PREV",         false }
    };
+   /* the hotkeys are pressed regardless; the tool says when they can
+    * do nothing */
+   if (!disk_control_enabled(&runloop_state_get_ptr()->system.disk_control))
+   {
+      command_reply_error(cmd, "DISK", "this core has no disk control");
+      return false;
+   }
    return command_run_choice(cmd, "DISK", choices, ARRAY_SIZE(choices),
          COMMAND_DISK_ACTIONS, arg);
 }
@@ -1228,6 +1274,17 @@ bool command_state(command_t *cmd, const char *arg)
    };
    return command_run_choice(cmd, "STATE", choices, ARRAY_SIZE(choices),
          COMMAND_STATE_ACTIONS, arg);
+}
+
+bool command_core(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "load",   "LOAD_CORE",   true  },
+      { "start",  "START_CORE",  false },
+      { "unload", "UNLOAD_CORE", false }
+   };
+   return command_run_choice(cmd, "CORE", choices, ARRAY_SIZE(choices),
+         COMMAND_CORE_ACTIONS, arg);
 }
 
 bool command_replay(command_t *cmd, const char *arg)
@@ -1418,6 +1475,13 @@ static bool command_arg_uint(const char *arg, unsigned *out)
    return errno != ERANGE && (unsigned long)*out == v;
 }
 
+/* A state or replay slot: past INT_MAX one turns negative, which is the
+ * auto slot's file. */
+static bool command_arg_slot(const char *arg, unsigned *out)
+{
+   return command_arg_uint(arg, out) && *out <= INT_MAX;
+}
+
 static bool command_load_state_start(struct command_reply *r)
 {
    return content_load_state_notify(r->path, false, false,
@@ -1447,7 +1511,7 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
    bool savestates_enabled      = core_info_current_supports_savestate();
    struct command_reply *r;
 
-   if (!command_arg_uint(arg, &slot))
+   if (!command_arg_slot(arg, &slot))
    {
       command_reply_error(cmd, name, "a slot number, not %s",
             (arg && *arg) ? arg : "nothing");
@@ -1500,7 +1564,7 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    char replay_path[16384];
    unsigned int slot            = 0;
    struct command_reply *r      = NULL;
-   if (!command_arg_uint(arg, &slot))
+   if (!command_arg_slot(arg, &slot))
    {
       command_reply_error(cmd, "PLAY_REPLAY_SLOT", "a slot number, not %s",
             (arg && *arg) ? arg : "nothing");
@@ -2414,7 +2478,7 @@ static uint8_t *command_memory_get_pointer(
  *
  * Each is looked up afresh on every reply rather than kept as a
  * pointer: a core may move its memory without closing the content. */
-#define COMMAND_WATCH_MAX 8
+#define COMMAND_WATCH_MAX 16
 
 struct command_watch_entry
 {
@@ -2453,28 +2517,19 @@ static size_t command_watch_lines(char *s, size_t len)
    return _len;
 }
 
-/* RUN_FRAMES, PRESS or RUN_UNTIL in progress: the frames still to run,
- * the buttons PRESS holds until they have, the byte RUN_UNTIL waits on,
- * and the reply owed. One at a time, so one of these: a second replaces
- * the first. */
-static struct
+/* What RUN_UNTIL, a PRESS that waits after it and a STEPS list wait on:
+ * the byte at @lo, or with @wide the value @hi * 256 + @lo, from two
+ * bytes that need not be adjacent. */
+struct command_cond
 {
-   command_deferred_t deferred;
-   const char        *name;      /* whichever command owes the reply */
-   unsigned           address;   /* RUN_UNTIL: the system address waited on */
-   unsigned           left;
-   unsigned           ran;       /* RUN_UNTIL: frames run so far */
-   unsigned           port;      /* PRESS: the player holding, from 0 */
-   uint16_t           held;      /* PRESS: which buttons, by bit */
-   uint8_t            want;      /* RUN_UNTIL: compared against */
-   uint8_t            op;        /* RUN_UNTIL: enum cmd_until_op */
-   uint8_t            value;     /* RUN_UNTIL: what the byte last held */
-   char               reply[256];
-   bool               until;     /* RUN_UNTIL is waiting */
-} command_run_frames_st;
+   unsigned hi;
+   unsigned lo;
+   unsigned want;
+   uint8_t  op;     /* enum cmd_until_op */
+   bool     wide;
+};
 
-/* How RUN_UNTIL compares the byte it waits on, in the order the words
- * below name them. */
+/* How a condition compares, in the order the words below name them. */
 enum cmd_until_op
 {
    CMD_UNTIL_EQ = 0,
@@ -2489,43 +2544,192 @@ static const char *const command_until_ops[] = {
    "==", "!=", "<", ">", "<=", ">="
 };
 
-/* The byte RUN_UNTIL waits on, looked up afresh as WATCH's are, since
- * a core may move its memory while the content runs; false where
- * nothing maps the address now. */
-static bool command_until_read(void)
+/* "<address>[:<address>] <condition> <value>", @end after the value;
+ * false with what was wrong in @why. */
+static bool command_cond_parse(const char *s, struct command_cond *c,
+      char **end, char *why, size_t why_len)
 {
-   char           reason[64];
-   unsigned       avail = 0;
-   const uint8_t *at    = command_memory_get_pointer(
-         &runloop_state_get_ptr()->system, command_run_frames_st.address,
-         &avail, 0, reason, sizeof(reason));
-   if (!at)
+   unsigned      address = 0;
+   unsigned      i;
+   unsigned long num;
+   const char   *sp;
+
+   memset(c, 0, sizeof(*c));
+   if (!command_parse_address(s, &address, end))
+   {
+      strlcpy(why, "a hexadecimal address, or two as high:low, then a "
+            "condition and a value", why_len);
       return false;
-   command_run_frames_st.value = *at;
+   }
+   c->lo = address;
+   if (**end == ':')
+   {
+      if (     !command_parse_address(*end + 1, &address, end)
+            || (**end && **end != ' '))
+      {
+         strlcpy(why, "a second hexadecimal address after the \":\"",
+               why_len);
+         return false;
+      }
+      c->hi   = c->lo;
+      c->lo   = address;
+      c->wide = true;
+   }
+   if (**end != ' ')
+   {
+      strlcpy(why, "a condition and a value after the address", why_len);
+      return false;
+   }
+   while (**end == ' ')
+      (*end)++;
+   if (!(sp = strchr(*end, ' ')))
+   {
+      strlcpy(why, "a condition and a value after the address", why_len);
+      return false;
+   }
+   for (i = 0; i < ARRAY_SIZE(command_until_ops); i++)
+      if (     !strncmp(*end, command_until_ops[i], (size_t)(sp - *end))
+            && !command_until_ops[i][sp - *end])
+         break;
+   if (i == ARRAY_SIZE(command_until_ops))
+   {
+      snprintf(why, why_len, "a condition of %s, not %.*s",
+            COMMAND_UNTIL_OPS, (int)(sp - *end), *end);
+      return false;
+   }
+   while (*sp == ' ')
+      sp++;
+   errno = 0;
+   num   = (*sp >= '0' && *sp <= '9') ? strtoul(sp, end, 10) : 0;
+   if (     *sp < '0' || *sp > '9' || errno == ERANGE
+         || num > (c->wide ? 65535UL : 255UL))
+   {
+      strlcpy(why, c->wide
+            ? "a value from 0 to 65535, which is what two bytes hold"
+            : "a value from 0 to 255, which is what a byte holds", why_len);
+      return false;
+   }
+   c->want = (unsigned)num;
+   c->op   = (uint8_t)i;
    return true;
 }
 
-/* Whether the byte RUN_UNTIL last read meets what was asked. */
-static bool command_until_met(void)
+/* What @c's memory holds now, looked up afresh as WATCH's bytes are,
+ * since a core may move its memory while the content runs; false where
+ * nothing maps it, with the reason as line clients read it in @why. */
+static bool command_cond_read(const struct command_cond *c,
+      unsigned *out, char *why, size_t why_len)
 {
-   unsigned now = command_run_frames_st.value;
-   unsigned want = command_run_frames_st.want;
-   switch (command_run_frames_st.op)
+   unsigned       avail = 0;
+   const rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
+   const uint8_t *lo    = command_memory_get_pointer(sys, c->lo, &avail, 0,
+         why, why_len);
+   const uint8_t *hi    = NULL;
+   if (!lo || (c->wide && !(hi = command_memory_get_pointer(sys, c->hi,
+                  &avail, 0, why, why_len))))
+      return false;
+   *out = hi ? ((unsigned)*hi << 8) | *lo : *lo;
+   return true;
+}
+
+static bool command_cond_met(const struct command_cond *c, unsigned now)
+{
+   switch (c->op)
    {
-      case CMD_UNTIL_EQ: return now == want;
-      case CMD_UNTIL_NE: return now != want;
-      case CMD_UNTIL_LT: return now <  want;
-      case CMD_UNTIL_GT: return now >  want;
-      case CMD_UNTIL_LE: return now <= want;
-      case CMD_UNTIL_GE: return now >= want;
+      case CMD_UNTIL_EQ: return now == c->want;
+      case CMD_UNTIL_NE: return now != c->want;
+      case CMD_UNTIL_LT: return now <  c->want;
+      case CMD_UNTIL_GT: return now >  c->want;
+      case CMD_UNTIL_LE: return now <= c->want;
+      case CMD_UNTIL_GE: return now >= c->want;
       default:           break;
    }
    return true;
 }
 
+/* Whether @c's memory is mapped now: answered to @cmd as @name's error
+ * where it is not, so a wait that could not end is refused before any
+ * frame runs. */
+static bool command_cond_mapped(command_t *cmd, const char *name,
+      const struct command_cond *c)
+{
+   char     reason[128];
+   unsigned now = 0;
+   char    *why;
+   char    *nl;
+   if (command_cond_read(c, &now, reason, sizeof(reason)))
+      return true;
+   /* the helper writes the reason as line clients read it, " -1 " and
+    * then why, ending in a newline */
+   why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
+      ? reason + STRLEN_CONST(" -1 ") : reason;
+   if ((nl = strchr(why, '\n')))
+      *nl = '\0';
+   command_reply_error(cmd, name, "%s", *why ? why
+         : "no memory at that address");
+   return false;
+}
 
-/* PRESS lets go of what it held, on the last of its frames or on
- * whatever ended it early. */
+/* A frame job is a list of steps run in order, one frame at a time:
+ * run some frames, press buttons for some, or run until a condition
+ * holds. RUN_FRAMES and PRESS are one step, RUN_UNTIL is one, a PRESS
+ * that waits after it is two, and STEPS is whatever the client lists -
+ * approach, jump, land - so a stretch of play that took three requests
+ * takes one. */
+enum cmd_step_kind
+{
+   CMD_STEP_RUN = 0,
+   CMD_STEP_PRESS,
+   CMD_STEP_UNTIL
+};
+
+struct command_step
+{
+   struct command_cond cond;   /* UNTIL */
+   unsigned            frames; /* RUN and PRESS */
+   unsigned            port;   /* PRESS: the player, from 0 */
+   uint16_t            mask;   /* PRESS: the buttons, by bit */
+   uint8_t             kind;   /* enum cmd_step_kind */
+};
+
+#define COMMAND_STEPS_MAX 16
+
+/* How the job answers: the command's own line (RUN_FRAMES, PRESS), how
+ * the wait ended and the value (RUN_UNTIL, a PRESS that waits), or how
+ * the list ended and on which step (STEPS). */
+enum cmd_job_answer
+{
+   CMD_ANSWER_LINE = 0,
+   CMD_ANSWER_UNTIL,
+   CMD_ANSWER_STEPS
+};
+
+/* The job in progress. One at a time: a second replaces the first,
+ * which is answered with an error. */
+static struct
+{
+   command_deferred_t  deferred;
+   struct command_step steps[COMMAND_STEPS_MAX];
+   struct command_cond stop;    /* STEPS: ends the list where it holds */
+   const char         *name;    /* whichever command owes the reply */
+   unsigned            count;   /* steps; 0 when no job runs */
+   unsigned            cur;     /* the step running */
+   unsigned            left;    /* frames left in a RUN or PRESS step */
+   unsigned            budget;  /* frames left for the whole job */
+   unsigned            ran;     /* frames run so far */
+   unsigned            value;   /* what the last condition read held */
+   unsigned            port;    /* the player whose buttons are held */
+   uint16_t            held;    /* the buttons the job let go of, by bit */
+   uint8_t             answer;  /* enum cmd_job_answer */
+   bool                has_stop;
+   /* a frame with the buttons let go between two presses of the same
+    * one, so the game sees two taps rather than one long press */
+   bool                gap;
+   char                reply[256]; /* CMD_ANSWER_LINE: the line */
+} command_run_frames_st;
+
+/* A PRESS step lets go of what it held, on its last frame or on
+ * whatever ended it early; what SET_INPUT held stays held. */
 static void command_run_frames_release(void)
 {
    unsigned i;
@@ -2535,46 +2739,63 @@ static void command_run_frames_release(void)
    command_run_frames_st.held = 0;
 }
 
-static void command_run_frames_answer(const char *msg, bool is_error)
+/* Ends the job: @first, the watches, and @last after them, unless it
+ * failed, when @first is the reason and nothing follows it. */
+static void command_run_frames_answer(const char *first, const char *last,
+      bool is_error)
 {
    /* the step's own line, then a line for each byte watched: room for
     * the longest reply and every watch */
-   char   out[256 + COMMAND_WATCH_MAX * 40];
-   size_t _len = strlcpy(out, msg, sizeof(out));
-   bool   until = command_run_frames_st.until;
+   char   out[256 + COMMAND_WATCH_MAX * 40 + 32];
+   size_t _len = strlcpy(out, first, sizeof(out));
 
    if (_len >= sizeof(out))
       _len = sizeof(out) - 1;
-   command_run_frames_st.until = false;
-
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
-   command_run_frames_st.left = 0;
+   command_run_frames_st.count = 0;
+   command_run_frames_st.left  = 0;
    command_run_frames_release();
-   /* a failure is its reason, not a reading */
-   if (!is_error && _len < sizeof(out))
+   if (!is_error)
    {
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
-      /* RUN_UNTIL closes with the byte it waited on, after the rows */
-      if (until && _len < sizeof(out))
-      {
-         int n = snprintf(out + _len, sizeof(out) - _len, "VALUE %u\n",
-               (unsigned)command_run_frames_st.value);
-         if (n > 0)
-            _len = _len + (size_t)n < sizeof(out)
-               ? _len + (size_t)n : sizeof(out) - 1;
-      }
+      if (last && _len < sizeof(out))
+         _len += strlcpy(out + _len, last, sizeof(out) - _len);
+      if (_len >= sizeof(out))
+         _len = sizeof(out) - 1;
    }
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
 }
 
-/* "MET <frames>" or "WAITING <frames>", the line RUN_UNTIL opens with. */
-static void command_until_answer(bool met)
+/* @how ("MET", "WAITING", "DONE", "STOPPED") and the frames run, as the
+ * job's kind of answer gives it. */
+static void command_run_frames_end(const char *how)
 {
-   snprintf(command_run_frames_st.reply,
-         sizeof(command_run_frames_st.reply), "%s %u\n",
-         met ? "MET" : "WAITING", command_run_frames_st.ran);
-   command_run_frames_answer(command_run_frames_st.reply, false);
+   char first[48];
+   char last[48];
+   switch (command_run_frames_st.answer)
+   {
+      case CMD_ANSWER_UNTIL:
+         snprintf(first, sizeof(first), "%s %u\n", how,
+               command_run_frames_st.ran);
+         snprintf(last, sizeof(last), "VALUE %u\n",
+               command_run_frames_st.value);
+         command_run_frames_answer(first, last, false);
+         break;
+      case CMD_ANSWER_STEPS:
+         snprintf(first, sizeof(first), "%s %u\n", how,
+               command_run_frames_st.ran);
+         /* the step it ended on, from 1: the last when all ran */
+         snprintf(last, sizeof(last), "STEP %u\n",
+               command_run_frames_st.cur < command_run_frames_st.count
+               ? command_run_frames_st.cur + 1 : command_run_frames_st.count);
+         command_run_frames_answer(first, last, false);
+         break;
+      default:
+         command_run_frames_answer(command_run_frames_st.reply, NULL,
+               false);
+         break;
+   }
 }
 
 void command_run_frames_cancel(const char *why)
@@ -2583,33 +2804,158 @@ void command_run_frames_cancel(const char *why)
    snprintf(msg, sizeof(msg), "%s ERROR %s",
          command_run_frames_st.name ? command_run_frames_st.name
                                     : "RUN_FRAMES", why);
-   command_run_frames_answer(msg, true);
+   command_run_frames_answer(msg, NULL, true);
 }
 
-/* A frame has run: the reply goes once the last of them has */
+/* Starts the step at cur and any after it that need no frame: a PRESS
+ * holds its buttons, a condition that already holds is passed. Answers
+ * where that ends the job. */
+static void command_run_frames_enter(void)
+{
+   char     why[128];
+   unsigned i;
+   int16_t  analog[4];
+   while (command_run_frames_st.cur < command_run_frames_st.count)
+   {
+      struct command_step *s =
+         &command_run_frames_st.steps[command_run_frames_st.cur];
+      if (s->kind == CMD_STEP_UNTIL)
+      {
+         if (!command_cond_read(&s->cond, &command_run_frames_st.value,
+                  why, sizeof(why)))
+         {
+            command_run_frames_cancel("nothing maps the address waited "
+                  "on now");
+            return;
+         }
+         if (!command_cond_met(&s->cond, command_run_frames_st.value))
+            return;
+         command_run_frames_st.cur++;
+         continue;
+      }
+      command_run_frames_st.left = s->frames;
+      if (s->kind == CMD_STEP_PRESS)
+      {
+         command_run_frames_st.port = s->port;
+         /* what SET_INPUT already holds stays held after the press */
+         command_run_frames_st.held = s->mask
+            & (uint16_t)~input_driver_command_held(s->port, analog);
+         for (i = 0; i < 16; i++)
+            if (s->mask & (1u << i))
+               input_driver_command_hold(s->port, i, 1);
+      }
+      return;
+   }
+   command_run_frames_end(command_run_frames_st.answer == CMD_ANSWER_STEPS
+         ? "DONE" : "MET");
+}
+
+/* Replaces any job running with @steps, which @cmd asked for as @name,
+ * and starts it: a condition that already holds is answered at once,
+ * without a frame. @line is the answer of a CMD_ANSWER_LINE job; @stop,
+ * where given, ends the list early. */
+static void command_run_frames_start(command_t *cmd, const char *name,
+      const struct command_step *steps, unsigned count,
+      const struct command_cond *stop, unsigned budget, uint8_t answer,
+      const char *line)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+   {
+      char why[48];
+      snprintf(why, sizeof(why), "replaced by %s%s",
+            string_is_equal(name, "RUN_FRAMES") ? "another " : "", name);
+      command_run_frames_cancel(why);
+   }
+   memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
+   command_run_frames_st.has_stop = stop != NULL;
+   if (stop)
+      command_run_frames_st.stop  = *stop;
+   strlcpy(command_run_frames_st.reply, line ? line : "",
+         sizeof(command_run_frames_st.reply));
+   command_run_frames_st.name   = name;
+   command_run_frames_st.count  = count;
+   command_run_frames_st.cur    = 0;
+   command_run_frames_st.ran    = 0;
+   command_run_frames_st.budget = budget;
+   command_run_frames_st.answer = answer;
+   command_run_frames_st.held   = 0;
+   command_run_frames_st.gap    = false;
+   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   command_run_frames_enter();
+}
+
+/* A frame has run: the step it belonged to goes on or ends, and the
+ * reply goes once the last has, the list is stopped, or the frames
+ * allowed have all run. */
 void command_run_frames_tick(void)
 {
-   if (command_run_frames_st.until)
+   char                 why[128];
+   unsigned             now = 0;
+   struct command_step *s;
+
+   if (command_run_frames_st.cur >= command_run_frames_st.count)
+      return;
+   command_run_frames_st.ran++;
+   if (command_run_frames_st.budget)
+      command_run_frames_st.budget--;
+   if (command_run_frames_st.has_stop)
    {
-      command_run_frames_st.ran++;
-      if (!command_until_read())
+      if (!command_cond_read(&command_run_frames_st.stop, &now, why,
+               sizeof(why)))
+      {
+         command_run_frames_cancel("nothing maps the stop address now");
+         return;
+      }
+      if (command_cond_met(&command_run_frames_st.stop, now))
+      {
+         command_run_frames_end("STOPPED");
+         return;
+      }
+   }
+   s = &command_run_frames_st.steps[command_run_frames_st.cur];
+   if (command_run_frames_st.gap)
+   {
+      command_run_frames_st.gap = false;
+      command_run_frames_st.cur++;
+      command_run_frames_enter();
+   }
+   else if (s->kind == CMD_STEP_UNTIL)
+   {
+      if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
+               sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the address waited on "
                "now");
          return;
       }
-      /* answered the frame the byte meets what was asked, and at the
-       * cap with how far it got: a wait longer than a reply is waited
-       * for is asked again rather than failed */
-      if (command_until_met())
-         command_until_answer(true);
-      else if (!--command_run_frames_st.left)
-         command_until_answer(false);
-      return;
+      if (command_cond_met(&s->cond, command_run_frames_st.value))
+      {
+         command_run_frames_st.cur++;
+         command_run_frames_enter();
+      }
    }
-   if (--command_run_frames_st.left)
-      return;
-   command_run_frames_answer(command_run_frames_st.reply, false);
+   else if (!--command_run_frames_st.left)
+   {
+      const struct command_step *n =
+         command_run_frames_st.cur + 1 < command_run_frames_st.count
+         ? &command_run_frames_st.steps[command_run_frames_st.cur + 1]
+         : NULL;
+      command_run_frames_release();
+      if (     s->kind == CMD_STEP_PRESS && n && n->kind == CMD_STEP_PRESS
+            && n->port == s->port && (n->mask & s->mask))
+         command_run_frames_st.gap = true;
+      else
+      {
+         command_run_frames_st.cur++;
+         command_run_frames_enter();
+      }
+   }
+   /* the frames allowed have run with a step still going: how far it
+    * got, so the next request carries on from there */
+   if (command_run_frames_st.count && !command_run_frames_st.budget)
+      command_run_frames_end("WAITING");
 }
 
 /* What a command needs before it can run a frame of content: content
@@ -2645,6 +2991,25 @@ static bool command_frames_ready(command_t *cmd, const char *name)
    return true;
 }
 
+/* About nine seconds of the content's own frames, at most
+ * COMMAND_FRAMES_REPLY_MAX: a structured reply comes inside its
+ * ten-second deadline at any frame rate, and a wait runs this long when
+ * not told. */
+static unsigned command_frames_default(void)
+{
+   double fps = video_state_get_ptr()->av_info.timing.fps;
+   if (fps > 0.0 && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
+      return fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
+   return COMMAND_FRAMES_REPLY_MAX;
+}
+
+/* The most frames one request runs for @cmd */
+static unsigned command_frames_reply_max(const command_t *cmd)
+{
+   return cmd->structured ? command_frames_default()
+                          : COMMAND_FRAMES_REPLY_MAX;
+}
+
 /* RUN_FRAMES <count>
  *
  * Pauses, if the content is running, and runs it @count frames,
@@ -2652,8 +3017,9 @@ static bool command_frames_ready(command_t *cmd, const char *name)
  * replaces one still running, which is answered with an error. */
 bool command_run_frames(command_t *cmd, const char *arg)
 {
-   unsigned n                  = 0;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   char                line[48];
+   struct command_step step;
+   unsigned            n = 0;
 
    if (!command_arg_uint(arg, &n) || n < 1 || n > COMMAND_RUN_FRAMES_MAX)
    {
@@ -2663,25 +3029,21 @@ bool command_run_frames(command_t *cmd, const char *arg)
    }
    /* more than the reply will be waited for: answered now rather than
     * as a failure once the frames are already running */
-   if (cmd->structured && n > COMMAND_FRAMES_REPLY_MAX)
+   if (cmd->structured && n > command_frames_reply_max(cmd))
    {
       command_reply_error(cmd, "RUN_FRAMES", "at most %u frames in one "
-            "request; ask again to run more", COMMAND_FRAMES_REPLY_MAX);
+            "request; ask again to run more", command_frames_reply_max(cmd));
       return false;
    }
    if (!command_frames_ready(cmd, "RUN_FRAMES"))
       return false;
 
-   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
-      command_run_frames_cancel("replaced by another RUN_FRAMES");
-   command_run_frames_st.left  = n;
-   command_run_frames_st.name  = "RUN_FRAMES";
-   command_run_frames_st.held  = 0;
-   command_run_frames_st.until = false;
-   snprintf(command_run_frames_st.reply,
-         sizeof(command_run_frames_st.reply), "RUN_FRAMES %u\n", n);
-   command_deferred_take(&command_run_frames_st.deferred, cmd);
-   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   memset(&step, 0, sizeof(step));
+   step.kind   = CMD_STEP_RUN;
+   step.frames = n;
+   snprintf(line, sizeof(line), "RUN_FRAMES %u\n", n);
+   command_run_frames_start(cmd, "RUN_FRAMES", &step, 1, NULL, n,
+         CMD_ANSWER_LINE, line);
    return true;
 }
 
@@ -2758,12 +3120,16 @@ static bool command_input_args(command_t *cmd, const char *name,
    char  *end                     = NULL;
    char  *tok;
    const char *sp;
+   unsigned long v                = 0;
 
    *count = 0;
    while (arg && *arg == ' ')
       arg++;
-   *player = arg ? (unsigned)strtoul(arg, &end, 10) : 0;
-   if (!end || end == arg || *end != ' ' || *player < 1 || *player > MAX_USERS)
+   /* range-checked before narrowing: 4294967297 is not player 1 */
+   if (arg && *arg >= '0' && *arg <= '9')
+      v = strtoul(arg, &end, 10);
+   *player = v <= MAX_USERS ? (unsigned)v : 0;
+   if (!end || end == arg || *end != ' ' || *player < 1)
    {
       command_reply_error(cmd, name,
             "a player from 1 to %u, a control and %s",
@@ -2898,7 +3264,7 @@ bool command_watch(command_t *cmd, const char *arg)
       /* a tab or a newline would split the label's row */
       for (sp = arg; (unsigned char)*sp > ' '; sp++)
          ;
-      if (*sp != ' ' || (size_t)(sp - arg) >= sizeof(label))
+      if ((*sp && *sp != ' ') || (size_t)(sp - arg) >= sizeof(label))
       {
          command_reply_error(cmd, "WATCH", "a label of up to %u "
                "characters, then an address or \"off\"",
@@ -2909,6 +3275,12 @@ bool command_watch(command_t *cmd, const char *arg)
       label[sp - arg] = '\0';
       while (*sp == ' ')
          sp++;
+      if (!*sp)
+      {
+         command_reply_error(cmd, "WATCH", "%s needs an address or "
+               "\"off\" after it", label);
+         return false;
+      }
       for (arg = sp; (unsigned char)*arg > ' '; arg++)
          ;
       n = (size_t)(arg - sp);
@@ -2989,51 +3361,18 @@ bool command_watch(command_t *cmd, const char *arg)
  * there rather than the client being told it failed. */
 bool command_run_until(command_t *cmd, const char *arg)
 {
-   char      reason[128];
-   unsigned  address           = 0;
-   unsigned  value             = 0;
-   unsigned  frames            = 0;
-   unsigned  avail             = 0;
-   unsigned  i;
-   uint8_t  *at                = NULL;
-   char     *end               = NULL;
-   const char *sp;
-   unsigned long num;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   const rarch_system_info_t *sys_info = &runloop_st->system;
+   char                why[160];
+   struct command_step step;
+   unsigned            frames = 0;
+   char               *end    = NULL;
+   unsigned long       num;
 
-   if (!command_parse_address(arg, &address, &end) || *end != ' ')
+   memset(&step, 0, sizeof(step));
+   if (!command_cond_parse(arg, &step.cond, &end, why, sizeof(why)))
    {
-      command_reply_error(cmd, "RUN_UNTIL", "a hexadecimal address, a "
-            "condition, a value and how many frames to wait at most");
+      command_reply_error(cmd, "RUN_UNTIL", "%s", why);
       return false;
    }
-   while (*end == ' ')
-      end++;
-   if (!(sp = strchr(end, ' ')))
-   {
-      command_reply_error(cmd, "RUN_UNTIL", "a condition and a value "
-            "after the address");
-      return false;
-   }
-   for (i = 0; i < ARRAY_SIZE(command_until_ops); i++)
-      if (     !strncmp(end, command_until_ops[i], (size_t)(sp - end))
-            && !command_until_ops[i][sp - end])
-         break;
-   if (i == ARRAY_SIZE(command_until_ops))
-   {
-      command_reply_error(cmd, "RUN_UNTIL", "a condition of %s, not %.*s",
-            COMMAND_UNTIL_OPS, (int)(sp - end), end);
-      return false;
-   }
-   num = strtoul(sp + 1, &end, 10);
-   if (end == sp + 1 || num > 255)
-   {
-      command_reply_error(cmd, "RUN_UNTIL", "a value from 0 to 255, "
-            "which is what a byte holds");
-      return false;
-   }
-   value = (unsigned)num;
    if (*end == ' ')
    {
       while (*end == ' ')
@@ -3041,11 +3380,11 @@ bool command_run_until(command_t *cmd, const char *arg)
       if (*end)
       {
          num = strtoul(end, &end, 10);
-         if (num < 1 || num > COMMAND_FRAMES_REPLY_MAX)
+         if (num < 1 || num > command_frames_reply_max(cmd))
          {
             command_reply_error(cmd, "RUN_UNTIL", "at most %u frames "
                   "to wait, which is as long as a reply is waited for",
-                  COMMAND_FRAMES_REPLY_MAX);
+                  command_frames_reply_max(cmd));
             return false;
          }
          frames = (unsigned)num;
@@ -3059,53 +3398,15 @@ bool command_run_until(command_t *cmd, const char *arg)
    }
    if (!command_frames_ready(cmd, "RUN_UNTIL"))
       return false;
-   /* by default about nine seconds of the content's own frames, inside a
-    * structured reply's ten-second deadline at any frame rate: 600 at
-    * 50fps would outlast it */
-   if (!frames)
-   {
-      double fps = video_state_get_ptr()->av_info.timing.fps;
-      frames     = COMMAND_FRAMES_REPLY_MAX;
-      if (fps > 0.0 && fps * 9.0 < (double)COMMAND_FRAMES_REPLY_MAX)
-         frames  = fps * 9.0 >= 1.0 ? (unsigned)(fps * 9.0) : 1;
-   }
-   /* the byte is found before any frame runs, so an address nothing
+   /* the memory is found before any frame runs, so an address nothing
     * maps is answered now rather than after a wait that could not have
     * ended */
-   if (!(at = command_memory_get_pointer(sys_info, address, &avail, 0,
-               reason, sizeof(reason))))
-   {
-      /* the helper writes the reason as line clients read it, " -1 "
-       * and then why, ending in a newline */
-      char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
-         ? reason + STRLEN_CONST(" -1 ") : reason;
-      char *nl  = strchr(why, '\n');
-      if (nl)
-         *nl = '\0';
-      command_reply_error(cmd, "RUN_UNTIL", "%s", *why ? why
-            : "no memory at that address");
+   if (!command_cond_mapped(cmd, "RUN_UNTIL", &step.cond))
       return false;
-   }
-
-   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
-      command_run_frames_cancel("replaced by RUN_UNTIL");
-   command_run_frames_st.left  = frames;
-   command_run_frames_st.ran   = 0;
-   command_run_frames_st.name  = "RUN_UNTIL";
-   command_run_frames_st.held  = 0;
-   command_run_frames_st.address = address;
-   command_run_frames_st.value   = *at;
-   command_run_frames_st.until   = true;
-   command_run_frames_st.want  = (uint8_t)value;
-   command_run_frames_st.op    = (uint8_t)i;
-   command_deferred_take(&command_run_frames_st.deferred, cmd);
-   /* already what was asked: no frame need run at all */
-   if (command_until_met())
-   {
-      command_until_answer(true);
-      return true;
-   }
-   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   step.kind = CMD_STEP_UNTIL;
+   command_run_frames_start(cmd, "RUN_UNTIL", &step, 1, NULL,
+         frames ? frames : command_frames_default(), CMD_ANSWER_UNTIL,
+         NULL);
    return true;
 }
 
@@ -3117,24 +3418,55 @@ bool command_run_until(command_t *cmd, const char *arg)
  * Axes are SET_INPUT's: they are held at a value, not pressed. */
 bool command_press(command_t *cmd, const char *arg)
 {
+   char     line[256];
+   char     reply[256];
+   char     why[160];
    unsigned ids[ARRAY_SIZE(command_input_names)];
    unsigned count              = 0;
    unsigned player;
    unsigned i;
+   unsigned budget;
    size_t   _len;
    long     frames;
-   int16_t  analog[4];
-   uint16_t mask               = 0;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   char    *until;
+   struct command_step steps[2];
 
-   if (!command_input_args(cmd, "PRESS", "a frame count", arg, &player,
+   if (strlcpy(line, arg ? arg : "", sizeof(line)) >= sizeof(line))
+   {
+      command_reply_error(cmd, "PRESS", "at most %u characters",
+            (unsigned)sizeof(line) - 1);
+      return false;
+   }
+   memset(steps, 0, sizeof(steps));
+   /* "<frames> until <condition>": run on after the press until the
+    * condition holds - jump, then land - in the same request */
+   if ((until = strstr(line, " until ")))
+   {
+      char *end = NULL;
+      *until    = '\0';
+      until    += STRLEN_CONST(" until ");
+      if (!command_cond_parse(until, &steps[1].cond, &end, why,
+               sizeof(why)))
+      {
+         command_reply_error(cmd, "PRESS", "%s after until", why);
+         return false;
+      }
+      while (*end == ' ')
+         end++;
+      if (*end)
+      {
+         command_reply_error(cmd, "PRESS", "nothing after the condition");
+         return false;
+      }
+   }
+   if (!command_input_args(cmd, "PRESS", "a frame count", line, &player,
             ids, &count, &frames))
       return false;
-   if (frames < 1 || frames > COMMAND_FRAMES_REPLY_MAX)
+   if (frames < 1 || frames > (long)command_frames_reply_max(cmd))
    {
       command_reply_error(cmd, "PRESS", "a frame count from 1 to %u; a "
             "longer hold is SET_INPUT with RUN_FRAMES",
-            COMMAND_FRAMES_REPLY_MAX);
+            command_frames_reply_max(cmd));
       return false;
    }
    for (i = 0; i < count; i++)
@@ -3147,34 +3479,197 @@ bool command_press(command_t *cmd, const char *arg)
       }
    if (!command_frames_ready(cmd, "PRESS"))
       return false;
+   if (until && !command_cond_mapped(cmd, "PRESS", &steps[1].cond))
+      return false;
 
-   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
-      command_run_frames_cancel("replaced by PRESS");
+   steps[0].kind   = CMD_STEP_PRESS;
+   steps[0].frames = (unsigned)frames;
+   steps[0].port   = player - 1;
    for (i = 0; i < count; i++)
-      mask |= (uint16_t)(1u << ids[i]);
-   /* what SET_INPUT already holds stays held after the press */
-   mask &= (uint16_t)~input_driver_command_held(player - 1, analog);
+      steps[0].mask |= (uint16_t)(1u << ids[i]);
+   steps[1].kind   = CMD_STEP_UNTIL;
    /* the controls as they were resolved, so "a++b" comes back "a+b" */
-   _len = (size_t)snprintf(command_run_frames_st.reply,
-         sizeof(command_run_frames_st.reply), "PRESS %u ", player);
-   for (i = 0; i < count
-         && _len < sizeof(command_run_frames_st.reply); i++)
-      _len += (size_t)snprintf(command_run_frames_st.reply + _len,
-            sizeof(command_run_frames_st.reply) - _len, "%s%s",
+   _len = (size_t)snprintf(reply, sizeof(reply), "PRESS %u ", player);
+   for (i = 0; i < count && _len < sizeof(reply); i++)
+      _len += (size_t)snprintf(reply + _len, sizeof(reply) - _len, "%s%s",
             i ? "+" : "", command_input_names[ids[i]]);
-   if (_len < sizeof(command_run_frames_st.reply))
-      snprintf(command_run_frames_st.reply + _len,
-            sizeof(command_run_frames_st.reply) - _len, " %u\n",
+   if (_len < sizeof(reply))
+      snprintf(reply + _len, sizeof(reply) - _len, " %u\n",
             (unsigned)frames);
-   command_run_frames_st.left  = (unsigned)frames;
-   command_run_frames_st.name  = "PRESS";
-   command_run_frames_st.port  = player - 1;
-   command_run_frames_st.held  = mask;
-   command_run_frames_st.until = false;
-   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   /* the wait gets what a wait gets, and the press at least its own */
+   budget = command_frames_default();
+   if (budget < (unsigned)frames)
+      budget = (unsigned)frames;
+   command_run_frames_start(cmd, "PRESS", steps, until ? 2 : 1, NULL,
+         until ? budget : (unsigned)frames,
+         until ? CMD_ANSWER_UNTIL : CMD_ANSWER_LINE, reply);
+   return true;
+}
+
+/* STEPS <step>[; <step>...]
+ *
+ * Runs a stretch of play as one request: "run <frames>", "press
+ * <player> <controls> <frames>" and "until <condition>", in order, then
+ * answers with how it ended and what WATCH watches. A "stop
+ * <condition>" entry ends the list after any frame where it holds, so a
+ * death does not play out the rest. The whole list runs no longer
+ * than a wait does; past that it answers WAITING and the step it was on,
+ * and the next request carries on from there. */
+bool command_steps(command_t *cmd, const char *arg)
+{
+   char                list[1024];
+   char                why[160];
+   struct command_step steps[COMMAND_STEPS_MAX];
+   struct command_cond stop;
+   unsigned            ids[ARRAY_SIZE(command_input_names)];
+   unsigned            count    = 0;
+   unsigned            fixed    = 0;
+   unsigned            budget;
+   unsigned            i;
+   bool                has_stop = false;
+   char               *entry;
+   char               *next;
+
+   if (!arg || !*arg || strlcpy(list, arg, sizeof(list)) >= sizeof(list))
+   {
+      command_reply_error(cmd, "STEPS", "steps separated by \";\", in at "
+            "most %u characters", (unsigned)sizeof(list) - 1);
+      return false;
+   }
+   memset(steps, 0, sizeof(steps));
+   memset(&stop, 0, sizeof(stop));
+   budget = command_frames_default();
+   for (entry = list; entry; entry = next)
+   {
+      struct command_step *s;
+      struct command_cond *c   = NULL;
+      char                *end = NULL;
+      size_t               n;
+      if ((next = strchr(entry, ';')))
+         *next++ = '\0';
+      while (*entry == ' ')
+         entry++;
+      for (n = strlen(entry); n && entry[n - 1] == ' '; n--)
+         entry[n - 1] = '\0';
+      if (!*entry)
+         continue;
+      if (!strncmp(entry, "stop ", 5))
+      {
+         if (has_stop)
+         {
+            command_reply_error(cmd, "STEPS", "one stop at most");
+            return false;
+         }
+         c        = &stop;
+         has_stop = true;
+         entry   += 5;
+      }
+      else if (count >= COMMAND_STEPS_MAX)
+      {
+         command_reply_error(cmd, "STEPS", "at most %u steps",
+               (unsigned)COMMAND_STEPS_MAX);
+         return false;
+      }
+      else
+      {
+         s = &steps[count++];
+         if (!strncmp(entry, "until ", 6))
+         {
+            s->kind = CMD_STEP_UNTIL;
+            c       = &s->cond;
+            entry  += 6;
+         }
+         else if (!strncmp(entry, "run ", 4))
+         {
+            s->kind = CMD_STEP_RUN;
+            if (     !command_arg_uint(entry + 4, &s->frames)
+                  || s->frames < 1 || s->frames > budget - fixed)
+            {
+               command_reply_error(cmd, "STEPS", "step %u: run a frame "
+                     "count from 1, within the %u frames one request runs",
+                     count, budget);
+               return false;
+            }
+            fixed += s->frames;
+         }
+         else if (!strncmp(entry, "press ", 6))
+         {
+            unsigned player;
+            unsigned nids;
+            long     frames;
+            if (!command_input_args(cmd, "STEPS", "a frame count",
+                     entry + 6, &player, ids, &nids, &frames))
+               return false;
+            for (i = 0; i < nids; i++)
+            {
+               if (ids[i] >= 16)
+               {
+                  command_reply_error(cmd, "STEPS", "step %u: %s is an "
+                        "axis, which SET_INPUT holds at a value", count,
+                        command_input_names[ids[i]]);
+                  return false;
+               }
+               s->mask |= (uint16_t)(1u << ids[i]);
+            }
+            /* a tap of what the press before it held runs a frame let go
+             * first, as command_run_frames_tick does */
+            if (     count > 1 && steps[count - 2].kind == CMD_STEP_PRESS
+                  && steps[count - 2].port == player - 1
+                  && (steps[count - 2].mask & s->mask))
+               fixed++;
+            if (     fixed > budget || frames < 1
+                  || (unsigned long)frames > budget - fixed)
+            {
+               command_reply_error(cmd, "STEPS", "step %u: press for a "
+                     "frame count from 1, within the %u frames one request "
+                     "runs", count, budget);
+               return false;
+            }
+            s->kind   = CMD_STEP_PRESS;
+            s->port   = player - 1;
+            s->frames = (unsigned)frames;
+            fixed    += s->frames;
+         }
+         else
+         {
+            command_reply_error(cmd, "STEPS", "step %u: run, press, until "
+                  "or stop, not %s", count, entry);
+            return false;
+         }
+      }
+      if (c)
+      {
+         if (!command_cond_parse(entry, c, &end, why, sizeof(why)))
+         {
+            command_reply_error(cmd, "STEPS", "%s", why);
+            return false;
+         }
+         while (*end == ' ')
+            end++;
+         if (*end)
+         {
+            command_reply_error(cmd, "STEPS", "nothing after a condition "
+                  "but \";\"");
+            return false;
+         }
+      }
+   }
+   if (!count)
+   {
+      command_reply_error(cmd, "STEPS", "a step at least: run, press or "
+            "until");
+      return false;
+   }
+   if (!command_frames_ready(cmd, "STEPS"))
+      return false;
    for (i = 0; i < count; i++)
-      input_driver_command_hold(player - 1, ids[i], 1);
-   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+      if (     steps[i].kind == CMD_STEP_UNTIL
+            && !command_cond_mapped(cmd, "STEPS", &steps[i].cond))
+         return false;
+   if (has_stop && !command_cond_mapped(cmd, "STEPS", &stop))
+      return false;
+   command_run_frames_start(cmd, "STEPS", steps, count,
+         has_stop ? &stop : NULL, budget, CMD_ANSWER_STEPS, NULL);
    return true;
 }
 
@@ -3837,7 +4332,7 @@ bool command_start_core(command_t *cmd, const char* arg)
 
    if (!task_push_start_current_core(&content_info))
       return false;
-   return command_content_reply(cmd, "START_CORE", false, true);
+   return command_content_reply(cmd, "START_CORE", false, true, false);
 }
 
 /* LOAD_CONTENT <core path>|<content path>
@@ -3861,7 +4356,11 @@ bool command_load_content(command_t *cmd, const char* arg)
    content_ctx_info_t content_info = {0};
    const char *content_path        = NULL;
    const char *sep                 = NULL;
+   const char *last;
+   char       *trimmed             = NULL;
    size_t _len                     = 0;
+   bool pause                      = false;
+   bool ret                        = false;
 
    if (!arg || !*arg || !(sep = strchr(arg, '|')))
    {
@@ -3885,7 +4384,21 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
+   /* "|on" or "|off" after the content path: whether to pause once it
+    * has loaded. Anything else after a "|" is the path's own. */
    content_path    = sep + 1;
+   if (     (last = strrchr(content_path, '|'))
+         && (string_is_equal(last + 1, "on")
+            || string_is_equal(last + 1, "off")))
+   {
+      _len  = (size_t)(last - content_path);
+      pause = string_is_equal(last + 1, "on");
+      if (!(trimmed = (char*)malloc(_len + 1)))
+         return false;
+      memcpy(trimmed, content_path, _len);
+      trimmed[_len] = '\0';
+      content_path  = trimmed;
+   }
 #if TARGET_OS_IPHONE
    fill_pathname_expand_special(expanded, content_path, sizeof(expanded));
    content_path    = expanded;
@@ -3897,7 +4410,7 @@ bool command_load_content(command_t *cmd, const char* arg)
    {
       command_reply_error(cmd, "LOAD_CONTENT", "no content at %s",
             content_path);
-      return false;
+      goto end;
    }
 
    /* A playlist entry with no core of its own carries DETECT, so take
@@ -3920,7 +4433,7 @@ bool command_load_content(command_t *cmd, const char* arg)
       {
          command_reply_error(cmd, "LOAD_CONTENT",
                "no installed core supports %s", content_path);
-         return false;
+         goto end;
       }
       if (count > 1)
       {
@@ -3928,7 +4441,7 @@ bool command_load_content(command_t *cmd, const char* arg)
                "%u cores support %s, name one of them; LIST_CORES with "
                "that content path lists them", (unsigned)count,
                content_path);
-         return false;
+         goto end;
       }
 
       /* An entry whose core file is gone keeps its info and loses its
@@ -3938,21 +4451,24 @@ bool command_load_content(command_t *cmd, const char* arg)
          command_reply_error(cmd, "LOAD_CONTENT",
                "the only core that supports %s is not installed",
                content_path);
-         return false;
+         goto end;
       }
       strlcpy(core_path, supported[0].path, sizeof(core_path));
    }
    else if (!command_core_at(cmd, "LOAD_CONTENT", core_path))
-      return false;
+      goto end;
 
    if (!task_push_load_content_with_new_core_from_companion_ui(
          core_path, content_path, NULL, NULL, NULL, &content_info, NULL, NULL))
    {
       command_reply_error(cmd, "LOAD_CONTENT", "could not load %s with %s",
             content_path, core_path);
-      return false;
+      goto end;
    }
-   return command_content_reply(cmd, "LOAD_CONTENT", false, true);
+   ret = command_content_reply(cmd, "LOAD_CONTENT", false, true, pause);
+end:
+   free(trimmed);
+   return ret;
 }
 
 /* CLOSE_CONTENT
@@ -3986,11 +4502,11 @@ bool command_close_content(command_t *cmd, const char* arg)
    /* the menu unloads the core on a later frame */
    if (!command_event(CMD_EVENT_CLOSE_CONTENT, NULL))
       return false;
-   return command_content_reply(cmd, "CLOSE_CONTENT", true, false);
+   return command_content_reply(cmd, "CLOSE_CONTENT", true, false, false);
 #else
    if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
       return false;
-   return command_content_reply(cmd, "CLOSE_CONTENT", false, false);
+   return command_content_reply(cmd, "CLOSE_CONTENT", false, false, false);
 #endif
 }
 
@@ -4006,7 +4522,7 @@ bool command_unload_core(command_t *cmd, const char* arg)
    if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
       return false;
 
-   command_content_reply(cmd, "UNLOAD_CORE", false, false);
+   command_content_reply(cmd, "UNLOAD_CORE", false, false, false);
    path_clear(RARCH_PATH_CORE_LAST);
 
 #ifdef HAVE_MENU

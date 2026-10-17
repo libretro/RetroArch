@@ -6,6 +6,9 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <time/rtime.h>
+#include <net/net_compat.h>
+#include <net/net_socket.h>
+#include <retro_timers.h>
 #include "../../../runloop.h"
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
@@ -14,6 +17,7 @@
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../runahead.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../network/netplay/netplay.h"
 #include "../../../menu/menu_driver.h"
 static unsigned failures;
@@ -21,7 +25,7 @@ static unsigned failures;
 static bool blocked;
 static unsigned calls, gates;
 static void (*loaded_run)(void);
-static char reply[256];
+static char reply[1024];
 static void counted_run(void) { calls++; loaded_run(); }
 static bool fail_save(void *data, size_t size) { (void)data; (void)size; return false; }
 bool __real_netplay_driver_ctl(enum rarch_netplay_ctl_state, void*);
@@ -42,12 +46,46 @@ static unsigned ram7(command_t *cmd)
       return 0x100;
    return (unsigned)strtoul(sp+1,NULL,16);
 }
+static size_t zero_size(void) { return 0; }
 static void receive(command_t *cmd, const char *data, size_t n)
 {
    (void)cmd;
    if (n >= sizeof(reply)) n = sizeof(reply)-1;
    memcpy(reply,data,n); reply[n]=0;
 }
+/* @line sent to the network command interface as a client would, read
+ * through its own parser; the reply, if any, in @out. */
+#define UDP_PORT 55437
+static void udp_line(const char *line, char *out, size_t cap)
+{
+   static command_t *net;
+   static int        fd = -1;
+   static struct addrinfo *to;
+   int  i;
+   long n = -1;
+   out[0] = '\0';
+   if (!net)
+   {
+      network_init();
+      net = command_network_new(UDP_PORT, "127.0.0.1");
+      fd  = socket_init((void**)&to, UDP_PORT, "127.0.0.1",
+            SOCKET_TYPE_DATAGRAM, AF_INET);
+      if (fd >= 0)
+         socket_nonblock(fd);
+   }
+   if (!net || fd < 0)
+      return;
+   sendto(fd, line, strlen(line), 0, to->ai_addr, to->ai_addrlen);
+   for (i = 0; i < 200 && n <= 0; i++)
+   {
+      net->poll(net);
+      n = (long)recvfrom(fd, out, cap - 1, 0, NULL, NULL);
+      if (n <= 0)
+         retro_sleep(1);
+   }
+   out[n > 0 ? n : 0] = '\0';
+}
+
 int main(int argc, char **argv)
 {
    char cfg_path[512];
@@ -153,19 +191,56 @@ int main(int argc, char **argv)
    for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
    CHECK(!strcmp(reply,"STATE save 1"));
    remove("command_frames_test.state1");
+   /* a reply longer than any fixed buffer still answers as the tool */
+   {
+      char long_path[700];
+      memset(long_path,'d',600);
+      strlcpy(long_path+600,"/missing.state",sizeof(long_path)-600);
+      strlcpy(loop->name.savestate,long_path,sizeof(loop->name.savestate));
+      size_t (*size)(void)=loop->current_core.retro_serialize_size;
+      /* nothing to serialize: refused at once, naming the path */
+      loop->current_core.retro_serialize_size=zero_size;
+      reply[0]=0;
+      command_state(&cmd,"save 1");
+      for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(strlen(reply) > 600 && !strncmp(reply,"STATE ERROR ",12));
+      loop->current_core.retro_serialize_size=size;
+      strlcpy(loop->name.savestate,"command_frames_test.state",
+            sizeof(loop->name.savestate));
+      cmd.error=false;
+   }
 
    /* the other families answer under their own names too */
    reply[0]=0;
    CHECK(!command_replay(&cmd,"seek 600") && !strncmp(reply,"REPLAY ERROR ",13));
    cmd.structured=true;
    reply[0]=0;
-   CHECK(command_disk(&cmd,"next") && !strcmp(reply,"DISK next pressed\n"));
+   CHECK(command_menu(&cmd,"up") && !strcmp(reply,"MENU up pressed\n"));
+   /* a command that answers nothing of its own answers as the tool */
+   reply[0]=0;
+   CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
+   /* CORE stands for LOAD_CORE, START_CORE and UNLOAD_CORE */
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"fly") && !strcmp(reply,"CORE ERROR one of load|start|unload"));
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"start now") && !strcmp(reply,"CORE ERROR nothing after start"));
+   reply[0]=0;
+   CHECK(!command_core(&cmd,"load /no/such/core.so")
+         && !strncmp(reply,"CORE ERROR no core at",21));
+   cmd.error=false;
+   /* this core has no disks: the hotkeys would do nothing */
+   reply[0]=0;
+   CHECK(!command_disk(&cmd,"next")
+         && !strcmp(reply,"DISK ERROR this core has no disk control"));
    cmd.structured=false;
+   cmd.error=false;
    /* and the commands they run, by name, still answer as themselves */
    reply[0]=0;
-   CHECK(!command_save_state_slot(&cmd,"x")
-         && !strncmp(reply,"SAVE_STATE_SLOT ERROR ",22));
-   cmd.error=false; /* command_run clears it; these call the handlers */
+   {
+      char net_reply[256];
+      udp_line("SAVE_STATE_SLOT x\n", net_reply, sizeof(net_reply));
+      CHECK(!strncmp(net_reply,"SAVE_STATE_SLOT ERROR ",22));
+   }
 
    /* READ_CORE_MEMORY and WRITE_CORE_MEMORY answer with the address and
     * the bytes in hexadecimal, at a system address the core maps */
@@ -198,6 +273,28 @@ int main(int argc, char **argv)
    cmd.error=false; reply[0]=0;
    CHECK(command_read_memory(&cmd,"1000 3")
          && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F 10\n"));
+   /* a line client ending its lines in CRLF writes as one ending in LF */
+   {
+      char net_reply[256];
+      udp_line("WRITE_CORE_MEMORY 1000 ab\r\n", net_reply, sizeof(net_reply));
+      CHECK(!strcmp(net_reply,"WRITE_CORE_MEMORY 1000 1\n"));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"1000 1")
+            && !strcmp(reply,"READ_CORE_MEMORY 1000 AB\n"));
+      CHECK(command_write_memory(&cmd,"1000 aa"));
+      /* only the \r before a line's end goes: one elsewhere is part of
+       * the command, not a second one */
+      udp_line("WRITE_CORE_MEMORY 1000 bb\rWRITE_CORE_MEMORY 1001 cc\n",
+            net_reply, sizeof(net_reply));
+      CHECK(!strncmp(net_reply,"WRITE_CORE_MEMORY ERROR",23));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"1000 2")
+            && !strcmp(reply,"READ_CORE_MEMORY 1000 AA 0F\n"));
+   }
+   /* a log cursor is not a slot: past INT_MAX it is still taken */
+   reply[0]=0;
+   CHECK(command_get_log(&cmd,"3000000000") && !strstr(reply,"ERROR"));
+   cmd.error=false;
    /* a second space after the command's name is still taken */
    reply[0]=0;
    CHECK(command_read_memory(&cmd," 1001 1")
@@ -313,6 +410,15 @@ int main(int argc, char **argv)
    CHECK(!command_state(&cmd,"load 4294967297") && strstr(reply,"ERROR"));
    reply[0]=0;
    CHECK(!command_state(&cmd,"save -1") && strstr(reply,"ERROR"));
+   /* nor one past INT_MAX, which would be the auto slot's file */
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"save 2147483648")
+         && !strcmp(reply,"STATE ERROR a slot number, not 2147483648"));
+   reply[0]=0;
+   CHECK(!command_state(&cmd,"save 4294967295") && strstr(reply,"STATE ERROR"));
+   reply[0]=0;
+   CHECK(!command_replay(&cmd,"play 2147483648")
+         && !strcmp(reply,"REPLAY ERROR a slot number, not 2147483648"));
    cmd.error=false;
 
    /* WATCH carries a look along with every step. Known bytes first:
@@ -394,7 +500,9 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(!command_watch(&cmd,"x 99000") && strstr(reply,"WATCH ERROR"));
    CHECK(!command_watch(&cmd,"x zz") && strstr(reply,"hexadecimal"));
-   CHECK(!command_watch(&cmd,"nospace") && strstr(reply,"WATCH ERROR"));
+   CHECK(!command_watch(&cmd,"nospace")
+         && !strcmp(reply,"WATCH ERROR nospace needs an address or \"off\" after it"));
+   CHECK(!command_watch(&cmd,"one 1001 odd ") && strstr(reply,"odd needs an address"));
    /* past 32 bits is refused, not wrapped onto 1001 */
    reply[0]=0;
    CHECK(!command_watch(&cmd,"x 100001001") && strstr(reply,"WATCH ERROR"));
@@ -407,21 +515,21 @@ int main(int argc, char **argv)
    {
       unsigned w;
       char req[32];
-      /* room for eight, counted from empty */
+      /* room for sixteen, counted from empty */
       CHECK(command_watch(&cmd,"two off"));
-      for (w = 0; w < 8; w++)
+      for (w = 0; w < 16; w++)
       {
-         snprintf(req,sizeof(req),"w%u 100%u",w,w);
+         snprintf(req,sizeof(req),"w%u %x",w,0x1000 + w);
          CHECK(command_watch(&cmd,req));
       }
       reply[0]=0;
-      CHECK(!command_watch(&cmd,"w9 1009")
-            && strstr(reply,"at most 8 bytes watched"));
+      CHECK(!command_watch(&cmd,"w16 1009")
+            && strstr(reply,"at most 16 bytes watched"));
       /* room made earlier in the same request counts */
-      CHECK(command_watch(&cmd,"w7 off w9 1009 w9 off w7 1007"));
-      /* but replacing one of the eight still works */
+      CHECK(command_watch(&cmd,"w15 off w16 1009 w16 off w15 100f"));
+      /* but replacing one of the sixteen still works */
       CHECK(command_watch(&cmd,"w0 1005"));
-      for (w = 0; w < 8; w++)
+      for (w = 0; w < 16; w++)
       {
          snprintf(req,sizeof(req),"w%u off",w);
          CHECK(command_watch(&cmd,req));
@@ -477,6 +585,13 @@ int main(int argc, char **argv)
     * what a client waits for, not by RUN_FRAMES' ten minutes */
    reply[0]=0;
    CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"SET_INPUT"));
+   /* a player past 32 bits is refused, not taken as player 1 */
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));
+   CHECK(!command_set_input(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));
+   CHECK(!command_set_input(&cmd,"-18446744073709551615 a 1")
+         && strstr(reply,"a player from 1"));
+   cmd.error=false;
    CHECK(command_press(&cmd,"1 a 600"));
    /* A line interface waits as long as it likes, so RUN_FRAMES keeps
     * the ten minutes there; a structured one is told at once rather
@@ -488,11 +603,25 @@ int main(int argc, char **argv)
    CHECK(!strcmp(reply,"RUN_FRAMES ERROR tidying up"));
    cmd.structured=true;
    reply[0]=0;
+   /* nine seconds of frames, inside the ten a reply is waited for */
    CHECK(!command_run_frames(&cmd,"36000")
-         && strstr(reply,"at most 600 frames in one request"));
-   CHECK(command_run_frames(&cmd,"600"));
+         && strstr(reply,"at most 540 frames in one request"));
+   CHECK(!command_run_frames(&cmd,"541"));
+   CHECK(command_run_frames(&cmd,"540"));
    command_run_frames_cancel("tidying up");
+   reply[0]=0;
+   CHECK(!command_press(&cmd,"1 a 541") && strstr(reply,"1 to 540"));
+   CHECK(!command_run_until(&cmd,"1000 == 0 541") && strstr(reply,"at most 540"));
+   /* and at 50fps, where 600 frames is twelve seconds */
+   video_state_get_ptr()->av_info.timing.fps=50.0;
+   reply[0]=0;
+   CHECK(!command_run_frames(&cmd,"451") && strstr(reply,"at most 450"));
+   CHECK(!command_press(&cmd,"1 a 451") && strstr(reply,"1 to 450"));
+   CHECK(command_run_frames(&cmd,"450"));
+   command_run_frames_cancel("tidying up");
+   video_state_get_ptr()->av_info.timing.fps=60.0;
    cmd.structured=false;
+   cmd.error=false;
    /* one at a time: the second replaces the first, which is answered */
    reply[0]=0;
    CHECK(command_press(&cmd,"1 a 30"));
@@ -610,6 +739,148 @@ int main(int argc, char **argv)
             && strstr(reply,"RUN_UNTIL ERROR replaced by another RUN_FRAMES"));
       runloop_iterate();
       CHECK(!strcmp(reply,"RUN_FRAMES 1\n"));
+
+      /* two bytes as one value, high:low: ram[6] holds 6 */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"1006:1007 == %u",0x600 + ((now + 2) & 0xff));
+         CHECK(command_run_until(&cmd,req) && !reply[0]);
+         runloop_iterate(); runloop_iterate();
+         snprintf(want,sizeof(want),"MET 2\nVALUE %u\n",0x600 + ((now + 2) & 0xff));
+         CHECK(!strcmp(reply,want));
+      }
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006:1007 == 65536") && strstr(reply,"0 to 65535"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006: == 1") && strstr(reply,"second hexadecimal"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"99000:1007 == 1") && strstr(reply,"RUN_UNTIL ERROR"));
+      cmd.error=false;
+
+      /* PRESS with until: the press, then on until it holds - a jump
+       * and its landing in one request */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"1 a 2 until 1007 == %u",(now + 5) & 0xff);
+         CHECK(command_press(&cmd,req) && !reply[0]);
+         runloop_iterate();
+         CHECK((input_driver_command_held(0,axes) & (1u << RETRO_DEVICE_ID_JOYPAD_A)) != 0);
+         runloop_iterate();
+         /* let go once its frames have run, while the wait goes on */
+         CHECK(input_driver_command_held(0,axes) == 0 && !reply[0]);
+         runloop_iterate(); runloop_iterate(); runloop_iterate();
+         snprintf(want,sizeof(want),"MET 5\nVALUE %u\n",(now + 5) & 0xff);
+         CHECK(!strcmp(reply,want));
+      }
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 a 2 until 1006 == 6"));
+      runloop_iterate(); runloop_iterate();
+      CHECK(!strcmp(reply,"MET 2\nVALUE 6\n"));
+      /* without until it answers as it always has */
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 a 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"PRESS 1 a 1\n"));
+      reply[0]=0;
+      CHECK(!command_press(&cmd,"1 a 2 until 99000 == 0") && strstr(reply,"PRESS ERROR"));
+      reply[0]=0;
+      CHECK(!command_press(&cmd,"1 a 2 until 1007 ~ 1") && strstr(reply,"after until"));
+      cmd.error=false;
+
+      /* STEPS: a stretch of play as one request */
+      {
+         char want[64];
+         now=ram7(&cmd); reply[0]=0;
+         CHECK(command_watch(&cmd,"one 1003"));
+         snprintf(req,sizeof(req),"run 2; press 1 b 1; until 1007 == %u",(now + 6) & 0xff);
+         reply[0]=0;
+         CHECK(command_steps(&cmd,req) && !reply[0]);
+         for (i=0;i<5;i++) runloop_iterate();
+         CHECK(!reply[0]);
+         runloop_iterate();
+         CHECK(!strcmp(reply,"DONE 6\none\t1003\t51\nSTEP 3\n"));
+         CHECK(command_watch(&cmd,"one off"));
+         /* stop ends it after the frame where it holds */
+         now=ram7(&cmd); reply[0]=0;
+         snprintf(req,sizeof(req),"run 10; stop 1007 == %u",(now + 3) & 0xff);
+         CHECK(command_steps(&cmd,req));
+         for (i=0;i<3;i++) runloop_iterate();
+         CHECK(!strcmp(reply,"STOPPED 3\nSTEP 1\n")
+               && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+         /* what already holds runs no frame */
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"until 1006 == 6") && !strcmp(reply,"DONE 0\nSTEP 1\n"));
+         /* past nine seconds it says how far it got and where */
+         {
+            unsigned n=0;
+            reply[0]=0;
+            CHECK(command_steps(&cmd,"run 1; until 1007 > 255"));
+            while (!reply[0] && n < 700) { runloop_iterate(); n++; }
+            CHECK(n == 540 && !strcmp(reply,"WAITING 540\nSTEP 2\n"));
+         }
+         (void)want;
+      }
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 541") && strstr(reply,"within the 540 frames"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 4294967295; run 2") && strstr(reply,"within the 540 frames"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 300; press 1 a 300") && strstr(reply,"step 2"));
+      /* two presses of one button are two taps: a frame let go between */
+      {
+         unsigned want[5] = {1,1,0,1,1};
+         unsigned k;
+         bool     ok = true;
+         reply[0]=0;
+         cmd.error=false;
+         CHECK(command_steps(&cmd,"press 1 a 2; press 1 a 2"));
+         for (k=0;k<5;k++)
+         {
+            /* held during frame k is what the frame before left */
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 2\n"));
+      }
+      /* that frame let go counts against the frames a request runs */
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"press 1 a 270; press 1 a 270") && strstr(reply,"step 2"));
+      if (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+         command_run_frames_cancel("tidying up");
+      {
+         unsigned n=0;
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 270; press 1 a 269"));
+         while (!reply[0] && n < 700) { runloop_iterate(); n++; }
+         CHECK(n == 540 && !strcmp(reply,"DONE 540\nSTEP 2\n"));
+      }
+      reply[0]=0;
+      {
+         char longarg[400];
+         memset(longarg,'0',sizeof(longarg));
+         memcpy(longarg,"1 a ",4);
+         longarg[sizeof(longarg)-2]='5'; longarg[sizeof(longarg)-1]='\0';
+         CHECK(!command_press(&cmd,longarg) && strstr(reply,"at most 255 characters"));
+      }
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"jump 3") && strstr(reply,"run, press, until or stop"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"") && strstr(reply,"STEPS ERROR"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"stop 1007 == 1; stop 1007 == 2; run 1")
+            && strstr(reply,"one stop"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"press 1 left_x 3") && strstr(reply,"axis"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;"
+            "run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1;run 1")
+            && strstr(reply,"at most 16 steps"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"until 99000 == 0") && strstr(reply,"STEPS ERROR"));
+      cmd.error=false;
    }
 
    before=calls; reply[0]=0;

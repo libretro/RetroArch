@@ -535,7 +535,7 @@ struct cmd_column
 };
 
 /* A line among a reply's rows that is not one of them: a word, and a
- * number after it. "MORE 200" says a list was cut short and where to
+ * number ending the line. "MORE 200" says a list was cut short and where to
  * resume, "NEXT 48" where GET_LOG reached, "SKIPPED 12" how many log
  * lines were gone before the first it could give.
  *
@@ -564,7 +564,7 @@ struct cmd_trailer
  *
  * A line the command opens with its own name - "LIST_CORES none",
  * "GET_PLAYLIST ERROR ..." - is not a row, and neither is one of
- * @trailers.
+ * @trailers, which may be that same line: "RUN_FRAMES 3".
  *
  * @required is how many of the columns every row has, where a reply
  * ends short of them: GET_CORE_OPTION gives an option's key, value and
@@ -619,18 +619,24 @@ bool command_set_input(command_t *cmd, const char *arg);
 bool command_release_input(command_t *cmd, const char *arg);
 bool command_get_input(command_t *cmd, const char *arg);
 
-/* The most frames a request can run within a structured interface's
- * ten-second reply deadline (about ten seconds at 60fps). PRESS keeps
- * to it everywhere, since it holds input for every frame it runs. */
+/* The most frames a request runs, which a structured interface lowers
+ * to nine seconds of the content's frames to answer inside its
+ * ten-second reply deadline. PRESS keeps to it everywhere, since it
+ * holds input for every frame it runs. */
 #define COMMAND_FRAMES_REPLY_MAX 600
 
-/* PRESS <player> <control> <frames>: hold, run and let go, in one. */
+/* PRESS <player> <control> <frames> [until <condition>]: hold, run and
+ * let go, then run on until the condition holds, in one. */
 bool command_press(command_t *cmd, const char *arg);
 
-/* RUN_UNTIL <address> <condition> <value> [max frames]: run the content
- * until a byte says to stop. The conditions it takes are command.c's,
- * which is all that compares them. */
+/* RUN_UNTIL <address>[:<address>] <condition> <value> [max frames]: run
+ * the content until a byte, or two read as one value, says to stop. The
+ * conditions it takes are command.c's, which is all that compares them. */
 bool command_run_until(command_t *cmd, const char *arg);
+
+/* STEPS <step>[; <step>...]: run, press and until steps, and a stop, as
+ * one request. */
+bool command_steps(command_t *cmd, const char *arg);
 
 /* WATCH [<label> <address|off>]...: the bytes RUN_FRAMES, PRESS and
  * RUN_UNTIL carry along with their own answer, looked up afresh each
@@ -701,10 +707,12 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
 #define COMMAND_STATE_ACTIONS  "save|load"
 #define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
+#define COMMAND_CORE_ACTIONS   "load|start|unload"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
 bool command_state(command_t *cmd, const char *arg);
+bool command_core(command_t *cmd, const char *arg);
 bool command_replay(command_t *cmd, const char *arg);
 
 /* The parameters of the commands that take any. Several commands take
@@ -741,9 +749,7 @@ static const struct cmd_param cmd_params_log[] = {
 };
 #endif
 static const struct cmd_param cmd_params_run_frames[] = {
-   { "count", "How many frames to run, up to 600 - about ten seconds, "
-      "which is as long as this interface waits for a reply. Ask again "
-      "to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "count", "How many frames to run; ask again to run more.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input[] = {
@@ -760,35 +766,46 @@ static const struct cmd_param cmd_params_input[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_watch[] = {
-   { "watches", "Labels and system addresses in hexadecimal, in pairs: "
-      "\"x 7e0086 mode 7e0770\". A label already watched is replaced, "
-      "and off for its address stops watching it.",
+   { "watches", "Labels and system addresses in hexadecimal, as "
+      "GET_MEMORY_MAP gives them, in pairs: \"x 86 mode 770\" on a NES, "
+      "\"x 7e0086\" on a SNES. A label already watched is replaced, and "
+      "off for its address stops watching it. 16 at most.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
    { "address", "A system address in hexadecimal, as GET_MEMORY_MAP "
-      "gives them.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "condition", "How the byte there is compared with the value.",
+      "gives them; high:low, such as 6d:86, reads two bytes as one "
+      "value.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
-   { "value", "What to compare it with, from 0 to 255.",
+   { "value", "What to compare it with: 0 to 255, or 0 to 65535 for "
+      "high:low.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "frames", "Frames to wait at most, up to 600; about nine seconds' "
-      "worth when left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { "frames", "Frames to wait at most; as many as a request runs when "
+      "left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_press[] = {
    { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "control", "A RetroPad button, or several joined by \"+\" to press "
-      "together: b, y, select, start, up, down, left, right, a, x, l, r, "
-      "l2, r2, l3, r3. \"right+a\" runs and jumps. An axis is "
-      "SET_INPUT's: it is held at a value rather than pressed.",
+   { "control", "A RetroPad button, or several joined by \"+\": b, y, "
+      "select, start, up, down, left, right, a, x, l, r, l2, r2, l3, r3. "
+      "\"right+a\" runs and jumps.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "frames", "How many frames to hold them for, from 1 to 600 - about "
-      "ten seconds, which is as long as a reply is waited for. A tap is "
-      "2 to 4. For a longer hold use SET_INPUT and RUN_FRAMES, which "
-      "does not answer late with the buttons still down.",
+   { "frames", "Frames to hold them. A tap is 2 to 4; hold longer with "
+      "SET_INPUT.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "until", "Then run until this holds, as RUN_UNTIL's: \"1d == 0\" "
+      "lands a jump.",
+      CMD_PARAM_STRING, false, " until ", NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_steps[] = {
+   { "steps", "In order, separated by \";\": run <frames>, press <player> "
+      "<controls> <frames>, until <condition> as RUN_UNTIL's, and one stop "
+      "<condition> that ends the list where it holds: \"until 86 >= 200; "
+      "press 1 a 20; until 1d == 0; stop e == 11\".",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input_release[] = {
@@ -833,7 +850,7 @@ static const struct cmd_param cmd_params_message[] = {
 static const struct cmd_param cmd_params_read[] = {
    { "address", "The address to read from, in hexadecimal.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "bytes", "How many bytes to read.",
+   { "bytes", "How many bytes to read, a count.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
@@ -870,6 +887,14 @@ static const struct cmd_param cmd_params_state[] = {
    { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_core_family[] = {
+   { "action", "Load a core library, start the loaded one without "
+      "content, or close the content and unload the core.",
+      CMD_PARAM_STRING, true, NULL, COMMAND_CORE_ACTIONS, NULL },
+   { "core", "load: the path, as LIST_CORES gives it.", CMD_PARAM_STRING,
+      false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_replay[] = {
    { "action", "Play the replay in a slot, seek the playing one to a "
       "frame, record one to the current slot, halt playing or recording, "
@@ -901,6 +926,9 @@ static const struct cmd_param cmd_params_content[] = {
       CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
+   { "paused", "on: pause once it has loaded, before it runs on, so "
+      "nothing happens before the first step.", CMD_PARAM_STRING, false,
+      "|", "on|off", NULL },
    { NULL }
 };
 
@@ -953,7 +981,8 @@ static const struct cmd_column cmd_cols_memory[] = {
 static const struct cmd_column cmd_cols_watch[] = {
    { "label", "What the client called it." },
    { "address", "Where it is, in hexadecimal." },
-   { "value", "What the byte holds, or none where nothing maps it now." },
+   { "value", "What the byte holds, in decimal from 0 to 255, or none "
+      "where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
@@ -977,11 +1006,31 @@ static const struct cmd_trailer cmd_trailers_page[] = {
 /* RUN_UNTIL opens with one of the first two, whichever happened. */
 static const struct cmd_trailer cmd_trailers_until[] = {
    { "MET", NULL, "met",
-      "The frames run until the byte met the condition.", true },
+      "The frames run until the condition held.", true },
    { "WAITING", NULL, "waiting",
       "The frames run without it meeting it; ask again to wait more.",
       true },
-   { "VALUE", NULL, "value", "What the byte waited on holds now." },
+   { "VALUE", NULL, "value",
+      "What the memory waited on holds now." },
+   { NULL }
+};
+/* the step's own line: the frames it ran end it */
+static const struct cmd_trailer cmd_trailers_frames[] = {
+   { "RUN_FRAMES", NULL, "frames", "The frames run.", true },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_press[] = {
+   { "PRESS", NULL, "frames", "The frames run.", true },
+   { "MET", NULL, "met", "With until: frames run until it held.", true },
+   { "WAITING", NULL, "waiting", "With until: frames run without.", true },
+   { "VALUE", NULL, "value", "With until: what it read." },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_steps[] = {
+   { "DONE", NULL, "done", "Frames run, every step done.", true },
+   { "WAITING", NULL, "waiting", "Frames run before time ran out.", true },
+   { "STOPPED", NULL, "stopped", "Frames run when stop held.", true },
+   { "STEP", NULL, "step", "The step it ended on, from 1." },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_log[] = {
@@ -1002,7 +1051,10 @@ static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
+static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0 };
+static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0 };
 static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0 };
+static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0 };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
@@ -1023,20 +1075,21 @@ static const struct cmd_action_map action_map[] = {
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
 #ifdef HAVE_MCP
-   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then NEXT and the line to ask from next time. A first line of SKIPPED and a count where the lines asked for had already been overwritten.", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
+   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then where to ask from next time (next), and how many of the lines asked for were already gone (skipped).", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused.", 0, cmd_params_run_frames, &cmd_rows_watch },
-   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, tab separated, and none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
-   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames>", "Press RetroPad buttons, run that many frames and let them go, in one request. Answers once the last frame has run, with what WATCH watches; the content finishes paused, as RUN_FRAMES leaves it.", 0, cmd_params_press, &cmd_rows_watch },
-   { "RUN_UNTIL",        command_run_until,        "<address> <condition> <value> [max frames]", "Run the content until the byte at a system address meets the condition, in one request rather than running a few frames and reading it again. Answers MET or WAITING with the frames run, what WATCH watches and the byte's VALUE; WAITING is asked again.", 0, cmd_params_until, &cmd_rows_until },
-   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS and RUN_UNTIL answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused. Over MCP one request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
+   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
+   { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
+   { "STEPS",            command_steps,            "<step>[; <step>...]", "Run a stretch of play - approach, jump, land - in one request. Answers done, waiting (time ran out: ask again from step) or stopped, with the frames run, what WATCH watches and the step it ended on.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
-   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description, tab separated; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
+   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
-   { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
+   { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
-   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, 200 at a time, and where to go on from when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
@@ -1045,7 +1098,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
-   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map, tab separated: the first four fields of each region are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: a region's start, length, select and disconnect are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
@@ -1058,11 +1111,12 @@ static const struct cmd_action_map action_map[] = {
    { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
 
-   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
-   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_core },
+   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
