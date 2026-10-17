@@ -516,9 +516,9 @@ the reason:
 - `STATE`: once the state is applied or written. `STATE checkpoint`
   keeps one state in memory, not in a slot's file, and `STATE rollback`
   restores it: the retry after a mistake, in one request where
-  replaying the level took a dozen. The checkpoint lives as long as the
-  content does; a rollback is refused while a replay records, as a load
-  from a slot is.
+  replaying the level took a dozen. What `SET_INPUT` holds stays held
+  through it. The checkpoint lives as long as the content does; a
+  rollback is refused while a replay records, as a load from a slot is.
 - `RESET`: once the content is reset; with `paused` on, paused after
   it, as `LOAD_CONTENT` is.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay

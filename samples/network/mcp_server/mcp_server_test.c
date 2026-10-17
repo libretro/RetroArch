@@ -677,6 +677,8 @@ static void test_stdio(void)
    check("the one prompt is play_game, its arguments named",
          strstr(out, "\"name\":\"play_game\"") && strstr(out, "\"name\":\"playlist\"")
          && strstr(out, "\"name\":\"game\""));
+   check("with no caching fields before the newest revision",
+         !strstr(out, "ttlMs") && !strstr(out, "cacheScope"));
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":61,\"method\":\"prompts/get\","
          "\"params\":{\"name\":\"play_game\",\"arguments\":{\"game\":\"Super Mario Bros.\"}}}\n");
    stdio_read(cmd, out, sizeof(out));
@@ -729,6 +731,24 @@ static void test_stdio(void)
    check("a completion in the newest revision ends as its results do",
          strstr(out, "\"values\":[\"Sega - Mega Drive.lpl\"]")
          && strstr(out, "\"resultType\":\"complete\""));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":71,\"method\":\"tools/list\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("its tool list says how long to cache it, and for whom",
+         strstr(out, "\"tools\":[") && strstr(out, "\"ttlMs\":0")
+         && strstr(out, "\"cacheScope\":\"private\""));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":72,\"method\":\"prompts/list\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and so does its prompt list",
+         strstr(out, "\"prompts\":[") && strstr(out, "\"ttlMs\":0")
+         && strstr(out, "\"cacheScope\":\"private\""));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":73,\"method\":\"server/discover\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and so does server/discover",
+         strstr(out, "\"supportedVersions\":[") && strstr(out, "\"ttlMs\":0")
+         && strstr(out, "\"cacheScope\":\"private\""));
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":66,\"method\":\"completion/complete\","
          "\"params\":{\"ref\":{\"type\":\"ref/prompt\",\"name\":\"play_game\"},"
          "\"argument\":{\"name\":\"game\",\"value\":\"x\"},"

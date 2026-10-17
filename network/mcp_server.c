@@ -76,6 +76,9 @@ static const char *const mcp_versions[] = {
 #define MCP_MODERN_VERSION "2026-07-28"
 /* The revision that added outputSchema and structuredContent. */
 #define MCP_STRUCTURED_VERSION "2025-06-18"
+/* Required on stateless list results. Not cacheable: the lists are
+ * compiled in and change on upgrade, with listChanged false. */
+#define MCP_NO_CACHE ",\"ttlMs\":0,\"cacheScope\":\"private\""
 
 /* JSON-RPC and MCP error codes */
 #define MCP_ERR_PARSE            -32700
@@ -695,10 +698,8 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       }
    }
    MCP_RAW(w, "]");
-   /* No ttlMs or cacheScope: what the tools are and what they take is
-    * compiled in, so it changes when RetroArch is upgraded, and
-    * listChanged is false - a client holding a cached list would have
-    * no way of learning that it had. */
+   if (modern)
+      MCP_RAW(w, MCP_NO_CACHE);
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
 }
@@ -1920,7 +1921,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       }
       rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false},"
             "\"prompts\":{\"listChanged\":false},\"completions\":{}%s},"
-            "\"instructions\":\"" MCP_INSTRUCTIONS "\"",
+            "\"instructions\":\"" MCP_INSTRUCTIONS "\"" MCP_NO_CACHE,
             c->stdio ? ",\"logging\":{}" : "");
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
@@ -2014,6 +2015,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
             "playlist names it.\",\"required\":false},"
             "{\"name\":\"goal\",\"description\":\"What to do; clear "
             "the first level when left out.\",\"required\":false}]}]");
+      if (modern)
+         MCP_RAW(w, MCP_NO_CACHE);
       mcp_result_end(w, modern);
       mcp_respond_writer(c, w);
    }
