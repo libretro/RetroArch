@@ -672,20 +672,42 @@ bool content_savefile_is_live(const char *path)
    return false;
 }
 
-void path_init_savefile_rtc(const char *savefile_path)
+/* Slot 0 keeps the path, slot N appends N (like .stateN).
+ * Fails rather than truncate, which would name another slot's file. */
+bool path_savefile_slot(char *s, size_t len, unsigned slot)
+{
+   int n;
+   size_t _len;
+   if (slot == 0)
+      return true;
+   _len = strlen(s);
+   n    = snprintf(s + _len, len - _len, "%u", slot);
+   return n > 0 && (size_t)n < len - _len;
+}
+
+void path_init_savefile_rtc(const char *savefile_path, unsigned slot)
 {
    union string_list_elem_attr attr;
-   char savefile_name_rtc[PATH_MAX_LENGTH];
+   char savefile_name[PATH_MAX_LENGTH];
 
    attr.i = RETRO_MEMORY_SAVE_RAM;
-   string_list_append(task_save_files, savefile_path, attr);
+   strlcpy(savefile_name, savefile_path, sizeof(savefile_name));
+   if (path_savefile_slot(savefile_name, sizeof(savefile_name), slot))
+      string_list_append(task_save_files, savefile_name, attr);
+   else
+      RARCH_ERR("[SRAM] Path too long for slot %u: \"%s\".\n",
+            slot, savefile_path);
 
    /* Infer .rtc save path from save RAM path. */
    attr.i = RETRO_MEMORY_RTC;
-   fill_pathname(savefile_name_rtc,
+   fill_pathname(savefile_name,
          savefile_path, ".rtc",
-         sizeof(savefile_name_rtc));
-   string_list_append(task_save_files, savefile_name_rtc, attr);
+         sizeof(savefile_name));
+   if (path_savefile_slot(savefile_name, sizeof(savefile_name), slot))
+      string_list_append(task_save_files, savefile_name, attr);
+   else
+      RARCH_ERR("[SRAM] RTC path too long for slot %u: \"%s\".\n",
+            slot, savefile_name);
 }
 
 void path_deinit_savefile(void)

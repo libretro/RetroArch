@@ -1588,6 +1588,10 @@
 /* Pause gameplay when controller disconnects. */
 #define DEFAULT_PAUSE_ON_DISCONNECT false
 
+/* SRAM file slot. 0 uses the plain .srm file,
+ * N uses .srmN. Read when content is loaded. */
+#define DEFAULT_SRAM_SLOT 0
+
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
 #if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE || defined(DINGUX)
