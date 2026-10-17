@@ -1589,17 +1589,12 @@ static bool command_checkpoint_start(struct command_reply *r)
    if (r->state_loaded)
    {
       bool ramped;
-#ifdef HAVE_BSV_MOVIE
-      input_driver_state_t *input_st = input_state_get_ptr();
-#endif
       if (!command_checkpoint.data)
          error = "no checkpoint to roll back to; STATE checkpoint keeps one";
-#ifdef HAVE_BSV_MOVIE
       /* as a load from a slot is refused: the recording would go on
        * from a state it never saw */
-      else if (BSV_MOVIE_IS_RECORDING())
+      else if (input_driver_replay_recording())
          error = "a replay is recording, which a rollback would break";
-#endif
       else
       {
          /* through the loader of states without RetroArch's wrapper,

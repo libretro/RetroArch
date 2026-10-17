@@ -15670,6 +15670,16 @@ void input_driver_command_release(unsigned port)
    input_cmd_update(input_st);
 }
 
+bool input_driver_replay_recording(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   input_driver_state_t *input_st = &input_driver_st;
+   return BSV_MOVIE_IS_RECORDING();
+#else
+   return false;
+#endif
+}
+
 uint16_t input_driver_command_held(unsigned port, int16_t *analog)
 {
    input_driver_state_t *input_st = &input_driver_st;
