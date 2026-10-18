@@ -5875,14 +5875,13 @@ static bool input_overlay_update_apng_frame(input_overlay_t *ol,
    const uint32_t *pix = ol->anim_2frame_pix[i];
    size_t frame_len;
 
-   if (     !pix || !s || !s->num_slots || s->inflight
-         || !gfx_surface_slot_writable(s, 0))
+   if (!pix || !s || !s->num_slots || s->inflight)
       return false;
 
    frame_len = VIDEO_SCALE_AREA(s->dims);
-   memcpy(s->slots[0], pix + (target_frame ? frame_len : 0),
-         frame_len * sizeof(uint32_t));
-   switch (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba))
+   switch (gfx_surface_submit_pixels(s,
+            pix + (target_frame ? frame_len : 0),
+            ol->images[i]->supports_rgba))
    {
       case GFX_SURFACE_SUBMIT_DONE:
       case GFX_SURFACE_SUBMIT_QUEUED:

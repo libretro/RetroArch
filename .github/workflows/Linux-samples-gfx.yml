@@ -1926,6 +1926,8 @@ jobs:
           make CC=x86_64-w64-mingw32-gcc TARGET=gfx_surface_still_test.exe
           test -f gfx_surface_still_test.exe
           make clean TARGET=gfx_surface_still_test.exe
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 two_frame.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 two_frame.py
 
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash
