@@ -6481,6 +6481,35 @@ static void vulkan_filter_chain_info_init(vk_t *vk,
    info->frame_rect            = false;
 }
 
+static bool vulkan_chain_emits_hdr10(vk_t *vk, vulkan_filter_chain_t *chain)
+{
+   int mode = video_shader_get_hdr_mode(
+         chain ? vulkan_filter_chain_get_preset(chain) : NULL);
+   return mode >= 0 ? mode == 1 :
+      ((vk->flags & VK_FLAG_SOURCE_HDR10)
+         || (chain && vulkan_filter_chain_emits_hdr10(chain)));
+}
+
+static bool vulkan_chain_emits_hdr16(vk_t *vk, vulkan_filter_chain_t *chain)
+{
+   int mode = video_shader_get_hdr_mode(
+         chain ? vulkan_filter_chain_get_preset(chain) : NULL);
+   return mode >= 0 ? mode == 2 :
+      (vk->video.source_fp16
+         || (chain && vulkan_filter_chain_emits_hdr16(chain)));
+}
+
+static bool vulkan_shader_hdr_compatible(vk_t *vk, vulkan_filter_chain_t *chain)
+{
+   unsigned mode = 0;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
+#endif
+   return video_shader_check_hdr_output(
+         vulkan_filter_chain_get_preset(chain), mode);
+}
+
 static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
    struct vulkan_filter_chain_create_info info;
@@ -6516,12 +6545,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
-      struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
-      vk->filter_chain_default);
-      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
-         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default));
-      bool emits_hdr16 = vk->video.source_fp16
-         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default));
+      bool emits_hdr10 = vulkan_chain_emits_hdr10(vk, vk->filter_chain_default);
+      bool emits_hdr16 = vulkan_chain_emits_hdr16(vk, vk->filter_chain_default);
       unsigned hdr_mode = vk->hdr_mode_latched;
 
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain_default, vk->hdr.ubo_values.paper_white_nits);
@@ -6795,16 +6820,21 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       return false;
    }
 
+   if (!vulkan_shader_hdr_compatible(vk, vk->filter_chain))
+   {
+      RARCH_ERR("[Vulkan] Shader HDR encoding requires a matching output.\n");
+      vulkan_filter_chain_free(vk->filter_chain);
+      vk->filter_chain = NULL;
+      return false;
+   }
+
    vulkan_views_set_preset(vk, shader_path);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
-      struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain);
-      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
-         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
-      bool emits_hdr16 = vk->video.source_fp16
-         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain));
+      bool emits_hdr10 = vulkan_chain_emits_hdr10(vk, vk->filter_chain);
+      bool emits_hdr16 = vulkan_chain_emits_hdr16(vk, vk->filter_chain);
       unsigned hdr_mode = vk->hdr_mode_latched;
 
       vulkan_filter_chain_set_paper_white_nits(vk->filter_chain, vk->hdr.ubo_values.paper_white_nits);
@@ -8073,10 +8103,8 @@ built:
     *   HDR10 mode: shader emits A2B10G10R10 (HDR10 PQ) or RGBA16F */
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && vk->filter_chain)
    {
-      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
-         || vulkan_filter_chain_emits_hdr10(vk->filter_chain);
-      bool emits_hdr16 = vk->video.source_fp16
-         || vulkan_filter_chain_emits_hdr16(vk->filter_chain);
+      bool emits_hdr10 = vulkan_chain_emits_hdr10(vk, vk->filter_chain);
+      bool emits_hdr16 = vulkan_chain_emits_hdr16(vk, vk->filter_chain);
 
       if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
       {
@@ -8284,6 +8312,14 @@ static bool vulkan_shader_load_begin(void *data,
       return false;
    }
 
+   if (!vulkan_shader_hdr_compatible(vk, ds->new_chain))
+   {
+      RARCH_ERR("[Vulkan] Shader HDR encoding requires a matching output.\n");
+      vulkan_filter_chain_free(ds->new_chain);
+      free(ds);
+      return false;
+   }
+
    RARCH_LOG("[Vulkan] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
@@ -8351,14 +8387,8 @@ static bool vulkan_shader_load_step(void *data,
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {
          settings_t *settings = config_get_ptr();
-         struct video_shader *shader_preset =
-            vulkan_filter_chain_get_preset(vk->filter_chain);
-         bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
-            || (shader_preset && shader_preset->passes
-               && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
-         bool emits_hdr16 = vk->video.source_fp16
-            || (shader_preset && shader_preset->passes
-               && vulkan_filter_chain_emits_hdr16(vk->filter_chain));
+         bool emits_hdr10 = vulkan_chain_emits_hdr10(vk, vk->filter_chain);
+         bool emits_hdr16 = vulkan_chain_emits_hdr16(vk, vk->filter_chain);
          unsigned hdr_mode = settings->uints.video_hdr_mode;
 
          vulkan_filter_chain_set_paper_white_nits(
@@ -9432,12 +9462,8 @@ static void vulkan_init_render_target(struct vk_image* image, unsigned dims,
 static unsigned vulkan_hdr_source_mode(vk_t *vk,
       const struct video_shader *filter_chain_preset, void *filter_chain)
 {
-   bool src_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
-      || (filter_chain && vulkan_filter_chain_emits_hdr10(
-               (vulkan_filter_chain_t*)filter_chain));
-   bool src_hdr16 = vk->video.source_fp16
-      || (filter_chain && vulkan_filter_chain_emits_hdr16(
-               (vulkan_filter_chain_t*)filter_chain));
+   bool src_hdr10 = vulkan_chain_emits_hdr10(vk, (vulkan_filter_chain_t*)filter_chain);
+   bool src_hdr16 = vulkan_chain_emits_hdr16(vk, (vulkan_filter_chain_t*)filter_chain);
 
    if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
    {

@@ -605,6 +605,7 @@ jobs:
           make check SANITIZER=address,undefined
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 run.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 ownership.py
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash

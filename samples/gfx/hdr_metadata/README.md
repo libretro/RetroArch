@@ -74,3 +74,33 @@ supplies zero for all three, including when the context refused HDR. On a
 machine without HDR output, --requested-hdr 2 checks that fallback. The SDR
 runner covers both storage types, direct/threaded and immediate/deferred.
 These bindings add no texture copies, readbacks or synchronization.
+
+Optional Slang final-pass ownership:
+
+    hdr_mode = "0"   # gamma SDR
+    hdr_mode = "1"   # PQ / Rec.2020
+    hdr_mode = "2"   # linear scRGB, 1.0 = 80 nits
+    hdr_mode = "auto" # restore legacy inference, including in a reference
+
+The declaration applies only to the final pass. Missing, invalid and auto
+values retain legacy format, scale and source heuristics. A shader parameter
+named hdr_mode takes precedence over this optional metadata. GLSL presets
+retain their existing behavior. Full saves and reference overrides preserve
+ownership. Truncating an appended chain restores legacy inference.
+
+Explicit PQ/scRGB declarations require a matching active output encoding;
+a mismatch refuses the new preset. SDR output is converted by the frontend,
+even when its storage is floating point or its core input is HDR. Explicit
+HDR selects a suitable final target precision; intermediate passes retain
+their own formats. This adds no CPU pixel conversion or GPU readback.
+GLCore may retain a separate FP16 UI target for correct HDR composition.
+
+    python3 ownership.py
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/owner-sdr --preset-hdr-mode 0 --shader-sdr --scaled
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/owner-hdr --preset-hdr-mode 2 --source-sdr --no-format --reference --deferred --frames 180
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/owner-refuse --preset-hdr-mode 1 --source-sdr --expect-rejection
+
+ownership.py checks the shipping parser, precision/admission helpers and
+Metal ownership policy. The shader_copy shipping-object harness also checks
+full preset saves and reference overrides, including clearing an inherited
+HDR declaration with auto. Native Metal rendering requires an Apple runner.

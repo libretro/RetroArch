@@ -3423,6 +3423,8 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
       && pass->mipmap
       ? GLSLANG_FILTER_CHAIN_LINEAR
       : GLSLANG_FILTER_CHAIN_NEAREST;
+   output.meta.rt_format = glslang_hdr_output_format(
+         shader, pass_idx, output.meta.rt_format);
 
    explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -3468,6 +3470,8 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
          output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
       else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
          output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, pass_idx, output.meta.rt_format);
 
       p_info.rt_format =
          convert_glslang_format(output.meta.rt_format);
@@ -4070,6 +4074,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          && pass->mipmap
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, i, output.meta.rt_format);
 
       explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -4121,6 +4127,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
          else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
             output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+         output.meta.rt_format = glslang_hdr_output_format(
+               shader, i, output.meta.rt_format);
 
          pass_info.rt_format = convert_glslang_format(output.meta.rt_format);
          RARCH_LOG("[GLCore] Using render target format %s for pass output #%u.\n",

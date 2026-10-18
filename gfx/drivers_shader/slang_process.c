@@ -1520,6 +1520,11 @@ bool slang_process(
          out->format = SLANG_FORMAT_R8G8B8A8_UNORM;
    }
 
+   out->format = glslang_hdr_output_format(shader_info, pass_number, out->format);
+   if (pass_number + 1 == shader_info->passes
+         && video_shader_get_hdr_mode(shader_info) > 0)
+      out->explicit_format = true;
+
    pass->source.string.vertex   = NULL;
    pass->source.string.fragment = NULL;
 

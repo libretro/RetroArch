@@ -7795,7 +7795,8 @@ error:
    {
       unsigned i;
       texture_t *source = NULL;
-      if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
+      if (!video_shader_load_preset_into_shader(path.UTF8String, shader)
+            || !video_shader_check_hdr_output(shader, _context.hdrOutputMode))
          return NO;
 
       source = &_engine.frame.texture[0];
@@ -7925,6 +7926,12 @@ error:
                      passEmitsHDR10 = YES;
                   else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
                      passEmitsHDR16 = YES;
+               }
+
+               if (video_shader_get_hdr_mode(shader) >= 0)
+               {
+                  passEmitsHDR10 = video_shader_get_hdr_mode(shader) == 1;
+                  passEmitsHDR16 = video_shader_get_hdr_mode(shader) == 2;
                }
 
                /* Method-scope flags — will be pushed to Context after the loop. */

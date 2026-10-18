@@ -2055,7 +2055,8 @@ static bool d3d10_shader_load_begin(void *data,
    }
 
    if (!video_shader_load_preset_into_shader(
-            deferred->preset_path, ds->shader_preset))
+            deferred->preset_path, ds->shader_preset)
+         || !video_shader_check_hdr_output(ds->shader_preset, 0))
    {
       free(ds->shader_preset);
       free(ds);
@@ -2398,7 +2399,8 @@ static bool d3d10_gfx_set_shader(void* data,
 
    d3d10->chain.shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d10->chain.shader_preset));
 
-   if (!video_shader_load_preset_into_shader(path, d3d10->chain.shader_preset))
+   if (!video_shader_load_preset_into_shader(path, d3d10->chain.shader_preset)
+         || !video_shader_check_hdr_output(d3d10->chain.shader_preset, 0))
       goto error;
 
    source = &d3d10->chain.history[0];

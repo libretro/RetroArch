@@ -2904,6 +2904,18 @@ static unsigned d3d11_shader_model(d3d11_video_t *d3d11,
 }
 #endif
 
+static unsigned d3d11_hdr_output_mode(const d3d11_video_t *video)
+{
+#ifdef HAVE_DXGI_HDR
+   if (video->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      return video->chain_bit_depth == DXGI_SWAPCHAIN_BIT_DEPTH_16 ? 2 :
+         (video->chain_bit_depth == DXGI_SWAPCHAIN_BIT_DEPTH_10 ? 1 : 0);
+#else
+   (void)video;
+#endif
+   return 0;
+}
+
 static bool d3d11_shader_load_begin(void *data,
       shader_load_deferred_t *deferred)
 {
@@ -2930,7 +2942,8 @@ static bool d3d11_shader_load_begin(void *data,
    }
 
    if (!video_shader_load_preset_into_shader(
-            deferred->preset_path, ds->shader_preset))
+            deferred->preset_path, ds->shader_preset)
+         || !video_shader_check_hdr_output(ds->shader_preset, d3d11_hdr_output_mode(d3d11)))
    {
       free(ds->shader_preset);
       free(ds);
@@ -3298,6 +3311,9 @@ static bool d3d11_shader_load_step(void *data,
             && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
          last_hdr_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
+      last_hdr_fmt = glslang_hdr_output_encoding(
+            d3d11->chain.shader_preset, last_hdr_fmt);
+
       if (menu_hdr_mode == 2)
       {
          d3d11_set_hdr_inverse_tonemap(d3d11, false);
@@ -3578,7 +3594,8 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    d3d11->chain.shader_preset = (struct video_shader*)calloc(1, sizeof(*d3d11->chain.shader_preset));
 
-   if (!video_shader_load_preset_into_shader(path, d3d11->chain.shader_preset))
+   if (!video_shader_load_preset_into_shader(path, d3d11->chain.shader_preset)
+         || !video_shader_check_hdr_output(d3d11->chain.shader_preset, d3d11_hdr_output_mode(d3d11)))
       goto error;
 
    for (i = 0; i < d3d11->chain.shader_preset->passes; i++)
@@ -3607,6 +3624,9 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       if ((d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16)
             && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
          last_hdr_fmt = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+
+      last_hdr_fmt = glslang_hdr_output_encoding(
+            d3d11->chain.shader_preset, last_hdr_fmt);
 
       if (menu_hdr_mode == 2) /* scRGB */
       {
@@ -6609,6 +6629,8 @@ static bool d3d11_gfx_frame_body(
    bool widgets_active            = video_info->widgets_active;
 #endif
 #ifdef HAVE_DXGI_HDR
+   int shader_hdr_mode = video_info->shader_active
+      ? video_shader_get_hdr_mode(d3d11->chain.shader_preset) : -1;
    bool d3d11_hdr_enable          = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
    bool video_hdr_enable          = video_info->hdr_mode > 0;
    DXGI_FORMAT back_buffer_format = d3d11->chain.shader_preset && d3d11->chain.shader_preset->passes ? glslang_format_to_dxgi(d3d11->chain.pass[d3d11->chain.shader_preset->passes - 1].semantics.format) : d3d11->chain_formats[d3d11->chain_bit_depth];
@@ -6617,7 +6639,8 @@ static bool d3d11_gfx_frame_body(
     * writing to a 10-bit HDR10 swapchain) is just a precision downsize
     * that the hardware handles — no hidden HDR pass needed. */
    DXGI_FORMAT swapchain_format   = d3d11->chain_formats[d3d11->chain_bit_depth];
-   bool use_back_buffer           = back_buffer_format != swapchain_format
+   bool use_back_buffer           = shader_hdr_mode == 0
+      || back_buffer_format != swapchain_format
       && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
            && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 #endif
@@ -7116,7 +7139,9 @@ static bool d3d11_gfx_frame_body(
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
-               bool emits_hdr16 = (d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16)
+               bool emits_hdr16 = shader_hdr_mode == 2
+                  || (shader_hdr_mode < 0
+                  && (d3d11->flags & D3D11_ST_FLAG_SOURCE_FP16))
                   || (d3d11->chain.shader_preset
                   && d3d11->chain.shader_preset->passes
                   && (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT));
@@ -7248,8 +7273,9 @@ static bool d3d11_gfx_frame_body(
              * A2B10G10R10 (PQ) -> hdr_mode 3 (PQ->scRGB)
              * R8G8B8A8 (SDR)   -> hdr_mode 2 (sRGB->scRGB) */
             d3d11->hdr.ubo_values.hdr_mode         =
-               (back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM)
-               ? 3 : 2;
+               shader_hdr_mode == 2 ? 0 :
+               (shader_hdr_mode == 0 ? 2 :
+               ((back_buffer_format == DXGI_FORMAT_R10G10B10A2_UNORM) ? 3 : 2));
          }
          else /* HDR10 */
          {

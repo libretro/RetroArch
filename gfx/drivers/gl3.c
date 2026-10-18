@@ -351,6 +351,8 @@ typedef struct gl3
       float    menu_nits;
       float    paper_white_nits;
       unsigned expand_gamut;
+      unsigned content_hdr_mode;
+      unsigned content_hdr_mode_built;
    } scrgb;
 
    /* In VIDEO_SCALE_PACK's layout. */
@@ -3265,6 +3267,16 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
       return false;
    }
 
+   if (!video_shader_check_hdr_output(
+            gl3_filter_chain_get_preset(gl->filter_chain),
+            gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0))
+   {
+      RARCH_ERR("[GLCore] Shader HDR encoding requires a matching output.\n");
+      gl3_filter_chain_free(gl->filter_chain);
+      gl->filter_chain = NULL;
+      return false;
+   }
+
    gl3_views_set_preset(gl, shader_path);
 
    return true;
@@ -3958,6 +3970,8 @@ static void *gl3_init(const video_info_t *video)
 
    gl->ctx_driver = ctx_driver;
    gl->video_info = *video;
+   gl->scrgb.content_hdr_mode = video->source_fp16 ? 2 :
+      (video->source_hdr10 ? 1 : 0);
 
    RARCH_LOG("[GLCore] Found GL context: \"%s\".\n", ctx_driver->ident);
 
@@ -4594,6 +4608,16 @@ static bool gl3_shader_load_begin(void *data,
    {
       RARCH_ERR("[GLCore] Deferred: failed to create chain for \"%s\".\n",
             deferred->preset_path);
+      free(ds);
+      return false;
+   }
+
+   if (!video_shader_check_hdr_output(
+            gl3_filter_chain_get_preset(ds->new_chain),
+            gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0))
+   {
+      RARCH_ERR("[GLCore] Shader HDR encoding requires a matching output.\n");
+      gl3_filter_chain_free(ds->new_chain);
       free(ds);
       return false;
    }
@@ -5263,7 +5287,7 @@ static void gl3_draw_menu_texture(gl3_t *gl,
 static bool gl3_needs_pq_downconvert(gl3_t *gl)
 {
 #ifdef HAVE_SLANG
-   return gl->video_info.source_hdr10 && !gl->scrgb.active;
+   return gl->scrgb.content_hdr_mode == 1 && !gl->scrgb.active;
 #else
    /* Nothing to downconvert with */
    (void)gl;
@@ -5276,8 +5300,8 @@ static bool gl3_needs_pq_downconvert(gl3_t *gl)
  * and its UI has its own FP16 layer. */
 static bool gl3_scrgb_wants_fp16(const gl3_t *gl)
 {
-   return gl->video_info.source_fp16
-      || (!gl->video_info.source_hdr10
+   return gl->scrgb.content_hdr_mode == 2
+      || (gl->scrgb.content_hdr_mode != 1
           && !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE));
 }
 
@@ -5287,6 +5311,7 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
       return 0;
 
    if (     !gl->scrgb.fbo || gl->scrgb.dims != dims
+         || gl->scrgb.content_hdr_mode_built != gl->scrgb.content_hdr_mode
          || gl->scrgb.tex_fp16 != gl3_scrgb_wants_fp16(gl))
    {
       unsigned width  = VIDEO_SCALE_W(dims);
@@ -5295,12 +5320,13 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
          glDeleteFramebuffers(1, &gl->scrgb.fbo);
       if (gl->scrgb.tex)
          glDeleteTextures(1, &gl->scrgb.tex);
+      gl->scrgb.content_hdr_mode_built = gl->scrgb.content_hdr_mode;
       glGenTextures(1, &gl->scrgb.tex);
       glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
       /* PQ content needs 10 bits here for the same reason the hw render
        * target does: this offscreen holds the frame between the shader
        * chain's viewport pass and the encode, and 8-bit PQ bands. */
-      if (gl->video_info.source_hdr10)
+      if (gl->scrgb.content_hdr_mode == 1)
       {
          gl->scrgb.tex_fp16 = false;
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0,
@@ -5357,7 +5383,7 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
          glDeleteTextures(1, &gl->scrgb.ui_tex);
          gl->scrgb.ui_tex = 0;
       }
-      if (gl->video_info.source_hdr10 || gl->video_info.source_fp16)
+      if (gl->scrgb.content_hdr_mode != 0)
       {
          glGenTextures(1, &gl->scrgb.ui_tex);
          glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
@@ -5398,7 +5424,7 @@ static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned dims)
 {
    GLuint fbo = gl3_frame_target_fbo(gl, dims);
 
-   if ((gl->video_info.source_hdr10 || gl->video_info.source_fp16)
+   if ((gl->scrgb.content_hdr_mode != 0)
          && gl->scrgb.ui_fbo
          && !gl3_needs_pq_downconvert(gl))
    {
@@ -7048,6 +7074,18 @@ static bool gl3_frame(void *data, const void *frame,
    gl->scrgb.menu_nits        = video_info->hdr_menu_nits;
    gl->scrgb.paper_white_nits = video_info->hdr_paper_white_nits;
    gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
+   gl->scrgb.content_hdr_mode = gl->video_info.source_fp16 ? 2 :
+      (gl->video_info.source_hdr10 ? 1 : 0);
+#ifdef HAVE_SLANG
+   if (video_info->shader_active && gl->filter_chain)
+   {
+      int mode = video_shader_get_hdr_mode(
+            gl3_filter_chain_get_preset(gl->filter_chain));
+      if (mode >= 0)
+         gl->scrgb.content_hdr_mode = (unsigned)mode;
+   }
+#endif
+
 
    /* Whether to read frames back travels with the frame, so this thread
     * does not read the recording state the main thread writes. */
@@ -7750,8 +7788,7 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
 
       {
-         bool  pq         = (gl->video_info.source_hdr10
-                           || gl->video_info.source_fp16)
+         bool  pq         = (gl->scrgb.content_hdr_mode != 0)
                          && gl->scrgb.ui_fbo != 0;
          float paper_white = gl->scrgb.paper_white_nits;
          float menu_nits   = gl->scrgb.menu_nits;
@@ -7768,7 +7805,7 @@ static bool gl3_frame(void *data, const void *frame,
          ubo_data[17] = (float)gl->scrgb.expand_gamut;
          /* 0 = SDR -> scRGB, 1 = PQ -> scRGB (2 is the SDR-output
           * fallback, issued from gl3_encode_pq_to_sdr instead). */
-         ubo_data[18] = gl->video_info.source_fp16 ? 3.0f
+         ubo_data[18] = gl->scrgb.content_hdr_mode == 2 ? 3.0f
                : (pq ? 1.0f : 0.0f);
          ubo_data[19] = pq ? menu_nits : 0.0f;
          /* hdr_out: finish in Rec.2020 PQ for an HDR10 backbuffer */
@@ -7806,7 +7843,7 @@ static bool gl3_frame(void *data, const void *frame,
        * glyphs the comment above documents. */
       glActiveTexture(GL_TEXTURE2);
       glBindTexture(GL_TEXTURE_2D,
-            ((gl->video_info.source_hdr10 || gl->video_info.source_fp16)
+            ((gl->scrgb.content_hdr_mode != 0)
                && gl->scrgb.ui_tex)
             ? gl->scrgb.ui_tex : gl->scrgb.tex);
 

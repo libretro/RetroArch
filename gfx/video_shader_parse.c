@@ -638,6 +638,36 @@ static enum gfx_wrap_type video_shader_wrap_str_to_mode(const char *wrap_mode)
    return RARCH_WRAP_DEFAULT;
 }
 
+bool video_shader_check_hdr_output(
+      const struct video_shader *shader, unsigned output_mode)
+{
+   if (video_shader_hdr_output_compatible(shader, output_mode))
+      return true;
+   RARCH_ERR("[Shaders] Explicit HDR encoding requires a matching output.\n");
+   return false;
+}
+
+static bool video_shader_parse_hdr_mode(config_file_t *conf,
+      struct video_shader *shader)
+{
+   struct config_entry_list *entry = config_get_entry(conf, "hdr_mode");
+   const char *value = entry ? entry->value : NULL;
+   unsigned i;
+   for (i = 0; i < shader->num_parameters; i++)
+      if (!strcmp(shader->parameters[i].id, "hdr_mode"))
+         return false;
+   if (!value || !shader->passes || !video_shader_source_ident_is_slang(
+            shader->pass[shader->passes - 1].source.path))
+      return false;
+   if (!strcmp(value, "auto"))
+      shader->hdr_mode = 0;
+   else if (value[0] >= '0' && value[0] <= '2' && !value[1])
+      shader->hdr_mode = (unsigned)(value[0] - '0') + 1;
+   else
+      return false;
+   return true;
+}
+
 /**
  * video_shader_parse_pass:
  * @param conf
@@ -1637,6 +1667,8 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    RARCH_DBG("[Shaders] Saving full preset to: \"%s\".\n", path);
 
    config_set_int(conf, "shaders", shader->passes);
+   if (shader->hdr_mode)
+      config_set_int(conf, "hdr_mode", shader->hdr_mode - 1);
    if (shader->feedback_pass >= 0)
       config_set_int(conf, "feedback_pass", shader->feedback_pass);
 
@@ -2109,6 +2141,14 @@ static bool video_shader_write_referenced_preset(
    conf->path = strdup(path_to_save_conformed);
 
    config_file_add_reference(conf, path_to_ref);
+   if (shader->hdr_mode != ref_shader->hdr_mode)
+   {
+      if (shader->hdr_mode)
+         config_set_int(conf, "hdr_mode", shader->hdr_mode - 1);
+      else
+         config_set_string(conf, "hdr_mode", "auto");
+   }
+
 
    conf->flags |= CONF_FILE_FLG_MODIFIED;
 
@@ -2432,6 +2472,9 @@ static bool video_shader_load_root_config_into_shader(
 
    /* Load the parameter values */
    video_shader_load_current_parameter_values(conf, shader);
+   if (num_passes == shader->passes)
+      video_shader_parse_hdr_mode(conf, shader);
+
 
 #ifdef DEBUG
    RARCH_DBG("[Shaders] Number of passes: %u.\n", shader->passes);
@@ -2465,6 +2508,9 @@ static bool video_shader_override_values(config_file_t *override_conf,
 
    if (!shader || !override_conf)
       return false;
+
+   if (video_shader_parse_hdr_mode(override_conf, shader))
+      return_val = true;
 
    /* If the shader has parameters */
    if (shader->num_parameters)
@@ -2563,6 +2609,11 @@ static bool video_shader_combine_shaders(
       combined_shader->pass[first_shader->passes + i] = second_shader->pass[i];
       combined_shader->passes += 1;
    }
+
+   combined_shader->hdr_mode = combined_shader->passes == first_shader->passes
+      ? first_shader->hdr_mode :
+      (combined_shader->passes == first_shader->passes + second_shader->passes
+         ? second_shader->hdr_mode : 0);
 
    for (i = 0; i < first_shader->luts && i < GFX_MAX_TEXTURES; i++)
    {
