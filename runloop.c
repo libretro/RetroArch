@@ -2699,6 +2699,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             case RETRO_PIXEL_FORMAT_XRGB8888:
                RARCH_LOG("[Environ] SET_PIXEL_FORMAT: XRGB8888.\n");
                break;
+            case RETRO_PIXEL_FORMAT_SCRGB_RGBA16F:
+               if (!video_driver_supports_fp16_source())
+                  return false;
+               RARCH_LOG("[Environ] SET_PIXEL_FORMAT: SCRGB_RGBA16F.\n");
+               break;
             case RETRO_PIXEL_FORMAT_XRGB2101010:
                /* Always accepted: if the active video driver cannot present a
                 * 10-bit source surface, the frame path transparently

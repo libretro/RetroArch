@@ -308,8 +308,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * them.  The composite pass does SDR->HDR10 inverse-tonemap / scRGB scale,
  * or passes through shader-emitted HDR content.
  *
- * hdrOutputMode is one of METAL_HDR_OUTPUT_{OFF,HDR10,SCRGB} — the public
- * settings value.  The composite shader itself also recognises mode 3
+ * hdrOutputMode is the negotiated output encoding, or OFF when colorspace
+ * setup failed. The composite shader itself also recognises mode 3
  * (PQ->scRGB) which is selected internally when the shader chain emits PQ
  * but the swapchain is scRGB.
  *
@@ -475,6 +475,8 @@ typedef struct metal_view_chain metal_view_chain_t;
 @property(nonatomic, readwrite) uint64_t swapCount;
 @property(nonatomic, readwrite) uint32_t totalSubframes;
 @property(nonatomic, readwrite) uint32_t currentSubframe;
+@property(nonatomic, readwrite) float hdrPaperWhiteNits;
+@property(nonatomic, readwrite) unsigned hdrExpandGamut;
 
 /* Final pass of the shader chain normally renders into the backbuffer
  * drawable.  When HDR is on, it must render into the HDR offscreen
@@ -532,7 +534,7 @@ typedef struct metal_view_chain metal_view_chain_t;
 /* The last pass's render target, or nil when the last pass draws into
  * each placement, bound by bindViewChainLast */
 - (id<MTLTexture>)viewChainFinal:(metal_view_chain_t *)c;
-- (void)bindViewChainLast:(metal_view_chain_t *)c
+- (BOOL)bindViewChainLast:(metal_view_chain_t *)c
                   encoder:(id<MTLRenderCommandEncoder>)rce;
 
 @end
@@ -1040,6 +1042,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * together — simpler to reason about. */
    bool _hdrEnabled;
    unsigned _hdrOutputMode;            /* METAL_HDR_OUTPUT_* */
+   unsigned _hdrActiveOutputMode;
    MTLPixelFormat _hdrOffscreenFormat; /* RGBA16Float / RGB10A2Unorm etc. */
    MTLPixelFormat _hdrDrawableFormat;  /* swapchain format when HDR on */
    id<MTLTexture> _hdrReadbackTex;     /* BGRA8 landing pad for screenshots */
@@ -1151,6 +1154,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
        * HDR is never turned on.  Just set defaults. */
       _hdrEnabled         = false;
       _hdrOutputMode      = METAL_HDR_OUTPUT_OFF;
+      _hdrActiveOutputMode = METAL_HDR_OUTPUT_OFF;
       _hdrOffscreenFormat = MTLPixelFormatInvalid;
       _hdrDrawableFormat  = _layer.pixelFormat;
       _hdrUniforms.mvp             = _mvp_no_rot;
@@ -1253,7 +1257,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 - (unsigned)hdrOutputMode
 {
 #if METAL_HDR_AVAILABLE
-   return _hdrOutputMode;
+   return _hdrActiveOutputMode;
 #else
    return METAL_HDR_OUTPUT_OFF;
 #endif
@@ -2001,6 +2005,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
 #endif
    output_mode = (!wantEnable || newCS) ? mode : 0;
+   _hdrActiveOutputMode = output_mode <= METAL_HDR_OUTPUT_SCRGB
+      ? output_mode : METAL_HDR_OUTPUT_OFF;
    if (newCS)
       CGColorSpaceRelease(newCS);
 
@@ -5189,8 +5195,8 @@ static void metal_views_draw_pass(metal_views_t *vs,
             simd_make_float4(0.5f / tw, 0.5f / th,
                1.0f - 0.5f / tw, 1.0f - 0.5f / th));
    }
-   else
-      [vs->frameView bindViewChainLast:c encoder:d->rce];
+   else if (![vs->frameView bindViewChainLast:c encoder:d->rce])
+      return;
    [d->rce setViewport:metal_views_vp(dst)];
    [d->rce setScissorRect:metal_views_sc(cut)];
    [d->rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0
@@ -5955,6 +5961,8 @@ static void metal_views_render(metal_views_t *vs,
       _frameView.totalSubframes  = video_info->shader_subframes > 1
                                  ? video_info->shader_subframes : 1;
       _frameView.currentSubframe = video_info->current_subframe + 1;
+      _frameView.hdrPaperWhiteNits = video_info->hdr_paper_white_nits;
+      _frameView.hdrExpandGamut = video_info->hdr_expand_gamut;
       if (frame && width && height)
       {
          struct video_shader *shader = _frameView.shader;
@@ -6334,6 +6342,7 @@ typedef struct MTLALIGN(16)
       texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       MTLViewport viewport;
       float4_t output_size;
+      bool valid;
    } frame;
 
    struct
@@ -6351,6 +6360,11 @@ typedef struct MTLALIGN(16)
       uint32_t total_subframes;
       uint32_t current_subframe;
       uint32_t swap_count;
+      uint32_t hdr_mode;
+      float scanlines;
+      unsigned subpixel_layout;
+      float paper_white_nits;
+      unsigned expand_gamut;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -6359,6 +6373,42 @@ typedef struct MTLALIGN(16)
    texture_t luts[GFX_MAX_TEXTURES];
 
 } engine_t;
+
+/* Capture constants before CPU staging is reused by another draw. */
+static bool metal_bind_slang_constants(
+      id<MTLRenderCommandEncoder> rce, id<MTLDevice> device,
+      const cbuffer_sem_t *buffer_sem, id<MTLBuffer> buffer)
+{
+   const void *data;
+   id<MTLBuffer> snapshot;
+   NSUInteger size = buffer_sem->size;
+
+   if (!buffer_sem->stage_mask || !size)
+      return true;
+   if (!rce || !buffer || buffer.length < size || !(data = buffer.contents))
+      return false;
+   if (size < 4096)
+   {
+      if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
+         [rce setVertexBytes:data length:size atIndex:buffer_sem->binding];
+      if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+         [rce setFragmentBytes:data length:size atIndex:buffer_sem->binding];
+      return true;
+   }
+
+   snapshot = RARCH_AUTORELEASE_R([device newBufferWithBytes:data
+         length:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]);
+   if (!snapshot)
+      return false;
+#if !defined(HAVE_COCOATOUCH)
+   [snapshot didModifyRange:NSMakeRange(0, size)];
+#endif
+   if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
+      [rce setVertexBuffer:snapshot offset:0 atIndex:buffer_sem->binding];
+   if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      [rce setFragmentBuffer:snapshot offset:0 atIndex:buffer_sem->binding];
+   return true;
+}
 
 struct metal_view_chain
 {
@@ -7163,13 +7213,16 @@ struct metal_view_chain
 }
 
 /* Pass @i of @e on @rce: its pipeline, constants, textures and quad */
-- (void)_chainBind:(engine_t *)e pass:(size_t)i
+- (BOOL)_chainBind:(engine_t *)e pass:(size_t)i
            encoder:(id<MTLRenderCommandEncoder>)rce
 {
    int j;
+   const HDRUniforms *hdr = [_context currentHDRUniforms];
    __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
    id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS] = {NULL};
 
+   if (!rce)
+      return NO;
    [rce setRenderPipelineState:e->pass[i]._state];
 
    NSURL *shaderPath = [NSURL fileURLWithPath:e->pass[i]._state.label];
@@ -7182,6 +7235,15 @@ struct metal_view_chain
    e->pass[i].swap_count       = (uint32_t)_swapCount;
    e->pass[i].total_subframes  = _totalSubframes;
    e->pass[i].current_subframe = _currentSubframe;
+   e->pass[i].hdr_mode = _context.hdrOutputMode;
+   e->pass[i].paper_white_nits = e->pass[i].hdr_mode
+      ? _hdrPaperWhiteNits : 0.0f;
+   e->pass[i].scanlines = e->pass[i].hdr_mode && hdr
+      ? hdr->Scanlines : 0.0f;
+   e->pass[i].subpixel_layout = e->pass[i].hdr_mode && hdr
+      ? hdr->SubpixelLayout : 0;
+   e->pass[i].expand_gamut = e->pass[i].hdr_mode
+      ? _hdrExpandGamut : 0;
 
 #ifdef HAVE_REWIND
    if (state_manager_frame_is_reversed())
@@ -7207,11 +7269,13 @@ struct metal_view_chain
       id<MTLBuffer> buffer      = e->pass[i].buffers[j];
       cbuffer_sem_t *buffer_sem = &e->pass[i].semantics.cbuffers[j];
 
-      if (buffer_sem->stage_mask && buffer_sem->uniforms)
+      if (buffer_sem->size && buffer_sem->stage_mask && buffer_sem->uniforms)
       {
          void             *data = buffer.contents;
          uniform_sem_t *uniform = buffer_sem->uniforms;
 
+         if (!data || buffer.length < buffer_sem->size)
+            return NO;
          while (uniform->size)
          {
             if (uniform->param)
@@ -7224,14 +7288,9 @@ struct metal_view_chain
             uniform++;
          }
 
-         if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-            [rce setVertexBuffer:buffer offset:0 atIndex:buffer_sem->binding];
-
-         if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-            [rce setFragmentBuffer:buffer offset:0 atIndex:buffer_sem->binding];
-#if !defined(HAVE_COCOATOUCH)
-         [buffer didModifyRange:NSMakeRange(0, buffer.length)];
-#endif
+         if (!metal_bind_slang_constants(rce, _context.device,
+                  buffer_sem, buffer))
+            return NO;
       }
    }
 
@@ -7249,6 +7308,7 @@ struct metal_view_chain
    [rce setFragmentTextures:textures withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
    [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
    [rce setVertexBytes:_vertex length:sizeof(_vertex) atIndex:4];
+   return YES;
 }
 
 /* @e's passes drawn, each into its render target; a last pass that has
@@ -7260,6 +7320,7 @@ struct metal_view_chain
    size_t i;
    id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
 
+   e->frame.valid = false;
    MTLRenderPassDescriptor *rpd        = RARCH_AUTORELEASE_R([MTLRenderPassDescriptor new]);
    rpd.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
@@ -7281,7 +7342,12 @@ struct metal_view_chain
          rce = [cb renderCommandEncoderWithDescriptor:rpd];
       }
 
-      [self _chainBind:e pass:i encoder:rce];
+      if (![self _chainBind:e pass:i encoder:rce])
+      {
+         if (!backBuffer)
+            [rce endEncoding];
+         return nil;
+      }
 
       if (backBuffer)
          [rce setViewport:e->frame.viewport];
@@ -7304,6 +7370,7 @@ struct metal_view_chain
       }
    }
 
+   e->frame.valid = true;
    return e->pass[_shader->passes - 1].rt.view;
 }
 
@@ -7592,6 +7659,7 @@ error:
    unsigned dims      = VIDEO_SCALE_PACK(v->width, v->height);
    id<MTLTexture> src = _engine.frame.texture[0].view;
 
+   c->engine.frame.valid = false;
    if (src && (fresh || !c->history_made))
    {
       unsigned k;
@@ -7711,13 +7779,16 @@ error:
 
 - (id<MTLTexture>)viewChainFinal:(metal_view_chain_t *)c
 {
+   if (!c->engine.frame.valid)
+      return nil;
    return c->engine.pass[_shader->passes - 1].rt.view;
 }
 
-- (void)bindViewChainLast:(metal_view_chain_t *)c
+- (BOOL)bindViewChainLast:(metal_view_chain_t *)c
                   encoder:(id<MTLRenderCommandEncoder>)rce
 {
-   [self _chainBind:&c->engine pass:_shader->passes - 1 encoder:rce];
+   return c->engine.frame.valid
+      && [self _chainBind:&c->engine pass:_shader->passes - 1 encoder:rce];
 }
 
 - (void)_freeVideoShader:(struct video_shader *)shader
@@ -7795,7 +7866,8 @@ error:
    {
       unsigned i;
       texture_t *source = NULL;
-      if (!video_shader_load_preset_into_shader(path.UTF8String, shader))
+      if (!video_shader_load_preset_into_shader(path.UTF8String, shader)
+            || !video_shader_check_hdr_output(shader, _context.hdrOutputMode))
          return NO;
 
       source = &_engine.frame.texture[0];
@@ -7845,15 +7917,11 @@ error:
                &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */
                &_engine.pass[i].total_subframes, /* TotalSubFrames */
                &_engine.pass[i].current_subframe,/* CurrentSubFrame */
-               /* The HDR and sensor semantics have no Metal source yet;
-                * slang_process leaves an unwired slot at its zero
-                * default. The table is positional, so they are named
-                * here to keep SwapCount at its index. */
-               NULL,                             /* HDRMode */
-               NULL,                             /* BrightnessNits */
-               NULL,                             /* Scanlines */
-               NULL,                             /* SubpixelLayout */
-               NULL,                             /* ExpandGamut */
+               &_engine.pass[i].hdr_mode,         /* HDRMode */
+               &_engine.pass[i].paper_white_nits, /* BrightnessNits */
+               &_engine.pass[i].scanlines,        /* Scanlines */
+               &_engine.pass[i].subpixel_layout,  /* SubpixelLayout */
+               &_engine.pass[i].expand_gamut,     /* ExpandGamut */
                NULL,                             /* InverseTonemap */
                NULL,                             /* HDR10 */
                NULL,                             /* Gyroscope */
@@ -7925,6 +7993,12 @@ error:
                      passEmitsHDR10 = YES;
                   else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
                      passEmitsHDR16 = YES;
+               }
+
+               if (video_shader_get_hdr_mode(shader) >= 0)
+               {
+                  passEmitsHDR10 = video_shader_get_hdr_mode(shader) == 1;
+                  passEmitsHDR16 = video_shader_get_hdr_mode(shader) == 2;
                }
 
                /* Method-scope flags — will be pushed to Context after the loop. */

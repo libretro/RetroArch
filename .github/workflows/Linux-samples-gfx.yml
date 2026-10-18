@@ -93,6 +93,16 @@ jobs:
           tools/check.sh tools/texture_image_init_check.c --selftest
           tools/check.sh tools/texture_image_init_check.c
 
+  vulkan-swapchain-extent:
+    name: Android Vulkan orientation extents
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Regression test
+        run: make -C samples/gfx/vulkan_swapchain_extent check
+
   slang-rect:
     name: Presets read frames where they lie
     runs-on: ubuntu-latest
@@ -595,6 +605,7 @@ jobs:
           make check SANITIZER=address,undefined
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 run.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 ownership.py
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash
@@ -604,6 +615,9 @@ jobs:
           # Compile both loaders' actual uniform maps from
           # gfx/drivers/d3d10.c, gfx/drivers/d3d11.c and gfx/drivers/d3d12.c.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 output_state.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal_constants.py
 
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash

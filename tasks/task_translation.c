@@ -374,7 +374,8 @@ static void handle_translation_response(
       unsigned dims   = 0;
       bool     is_hw_fb;
       video_driver_cached_frame_info(&dims, NULL, NULL);
-      is_hw_fb = video_driver_cached_frame_is_hw_render();
+      is_hw_fb = video_driver_cached_frame_is_hw_render()
+         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F;
 
       /* try two different modes for text display *
        * In the first mode, we use display widget overlays, but they require
@@ -1054,7 +1055,8 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
                &has_cpu_pixels))
          goto finish;
 
-      if (!has_cpu_pixels)
+      if (!has_cpu_pixels
+            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F)
       {
          /* HW render core, or no cached frame yet.  Fall back to
           * read_viewport for OCR -- not ideal (the viewport may

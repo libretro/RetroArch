@@ -13,7 +13,7 @@ layout(set = 0, binding = 0, std140) uniform UBO
 {
    mat4 MVP;
    /* x = content nits (paper white), y = expand gamut mode,
-    * z = content is PQ Rec.2020 (0 = SDR gamma 2.4),
+    * z = source: 0 SDR gamma, 1 PQ, 2 PQ-to-SDR, 3 linear scRGB,
     * w = UI layer nits; <= 0 disables the separate UI composite. */
    vec4 hdr_params;
    /* x > 0.5: the output is HDR10 (Rec.2020 PQ, a 10-bit scanout)
@@ -96,7 +96,10 @@ void main()
    vec4 src = texture(uTex, vTexCoord);
    vec3 lin;
 
-   if (global.hdr_params.z > 1.5)
+   if (global.hdr_params.z > 2.5)
+      /* Native scRGB already has canonical 80-nit linear units. */
+      lin = src.rgb;
+   else if (global.hdr_params.z > 1.5)
    {
       /* Mode 2: PQ content, but the output is *not* HDR after all (the
        * frontend accepted HDR10 before it could know whether this

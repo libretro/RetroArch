@@ -414,6 +414,8 @@ typedef struct video_info
     * rotation and no paper-white scaling, because the core applied all of
     * that when it encoded them. */
    bool source_hdr10;
+   /* Native linear scRGB binary16 RGBA, eight bytes per pixel. */
+   bool source_fp16;
 
    /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;
@@ -2638,6 +2640,8 @@ bool video_driver_test_all_flags(enum display_flags testflag);
  * before the video driver exists, unlike the raw flag test.
  **/
 bool video_driver_supports_10bit_source(void);
+
+bool video_driver_supports_fp16_source(void);
 
 size_t video_driver_set_gpu_api_version_string(const char *str);
 

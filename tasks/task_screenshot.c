@@ -1081,6 +1081,12 @@ bool take_screenshot_notify(
    bool supports_vp_read          = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);
    bool prefer_vp_read            = false;
+   if (video_st->pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F)
+   {
+      if (!supports_vp_read)
+         return false;
+      prefer_vp_read = true;
+   }
    if (supports_vp_read)
    {
       /* Use VP read screenshots if it's a HW context core */

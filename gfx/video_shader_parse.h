@@ -249,7 +249,25 @@ struct video_shader
    int64_t  param_src_size[GFX_MAX_SHADERS];
    uint32_t param_src_hash[GFX_MAX_SHADERS];
    unsigned param_src_count;
+   /* 0: legacy; 1/2/3: explicit SDR/PQ/scRGB final-pass encoding. */
+   unsigned hdr_mode;
 };
+
+static INLINE int video_shader_get_hdr_mode(const struct video_shader *shader)
+{
+   return shader && shader->passes && shader->hdr_mode
+      ? (int)shader->hdr_mode - 1 : -1;
+}
+
+static INLINE bool video_shader_hdr_output_compatible(
+      const struct video_shader *shader, unsigned output_mode)
+{
+   int mode = video_shader_get_hdr_mode(shader);
+   return mode <= 0 || (unsigned)mode == output_mode;
+}
+
+bool video_shader_check_hdr_output(
+      const struct video_shader *shader, unsigned output_mode);
 
 /**
  * video_shader_resolve_parameters:

@@ -1329,6 +1329,8 @@ bool video_driver_get_display_metadata(unsigned cmd, void *data)
    snapshot.source_formats = (source_10bpc
          ? source_10bpc == 2 : video_driver_supports_10bit_source())
       ? RETRO_HDR_SOURCE_FORMAT_HDR10_2101010 : 0;
+   if (video_driver_supports_fp16_source())
+      snapshot.source_formats |= RETRO_HDR_SOURCE_FORMAT_SCRGB_RGBA16F;
    snapshot.paper_white_nits = settings->floats.video_hdr_paper_white_nits;
    snapshot.max_nits         = video_driver_get_hdr_max_nits();
    snapshot.expand_gamut     = settings->uints.video_hdr_expand_gamut;
@@ -2718,7 +2720,8 @@ static void video_driver_frame_format(video_driver_state_t *video_st,
    else
       *rgb32 = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
             || video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
-            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010;
+            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010
+            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F;
    if (video_st->state_filter)
       s = video_st->state_scale;
    *scale = MAX(s, 1);
@@ -2745,6 +2748,7 @@ void video_driver_filter_apply(void)
    /* A 10-bit source is set up with the driver's own say in it */
    if (     video_st->pix_fmt != RETRO_PIXEL_FORMAT_XRGB2101010
          && video_st->pix_fmt != RETRO_PIXEL_FORMAT_HDR10_2101010
+         && video_st->pix_fmt != RETRO_PIXEL_FORMAT_SCRGB_RGBA16F
          && poke && poke->set_frame_format
          && poke->set_frame_format(video_st->data, rgb32, scale))
    {
@@ -2775,6 +2779,9 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
     * filter: release it and its output buffer rather than orphan them */
    if (video_st->state_filter)
       video_driver_filter_free();
+
+   if (colfmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F)
+      return;
 
    if (video_driver_is_hw_context()
          || video_driver_cached_frame_is_hw_render())
@@ -6679,6 +6686,36 @@ bool video_driver_supports_10bit_source(void)
          settings->arrays.video_driver);
 }
 
+bool video_driver_supports_fp16_source(void)
+{
+#if defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_VULKAN) || defined(HAVE_OPENGL_CORE)
+   settings_t *settings = config_get_ptr();
+   const char *ident = settings ? settings->arrays.video_driver : NULL;
+   if (!settings || settings->uints.video_hdr_mode != 2)
+      return false;
+   if (
+#ifdef HAVE_D3D11
+         !string_is_equal(ident, "d3d11") &&
+#endif
+#ifdef HAVE_D3D12
+         !string_is_equal(ident, "d3d12") &&
+#endif
+#ifdef HAVE_VULKAN
+         !string_is_equal(ident, "vulkan") &&
+#endif
+#ifdef HAVE_OPENGL_CORE
+         !string_is_equal(ident, "glcore") &&
+#endif
+         true)
+      return false;
+   /* Before init this is an optimistic format negotiation, as for HDR10. */
+   return !video_driver_get_ptr()
+      || retro_atomic_load_acquire_int(&video_hdr_output_mode) == 2;
+#else
+   return false;
+#endif
+}
+
 bool video_driver_test_all_flags(enum display_flags testflag)
 {
    gfx_ctx_flags_t flags;
@@ -7221,7 +7258,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.rgb32                       =
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
-         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);
+         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010
+         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F);
 #endif
    /* A native 10-bit source is only presented to drivers that advertise
     * support; otherwise it has already been down-converted to XRGB8888 in
@@ -7236,6 +7274,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          || (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);
    video.source_hdr10                =
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);
+   video.source_fp16                 =
+         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F);
    video.parent                      = 0;
 
    if (video.fullscreen)
@@ -7251,6 +7291,19 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    input_driver_video_init_begin();
    /* Need to grab the "real" video driver interface on a reinit. */
    video_driver_find_driver(settings, "video driver", verbosity_enabled);
+
+   /* A hardware-context request or reinit can change the selected driver
+    * after pixel-format negotiation. Do not reinterpret FP16 as packed RGB. */
+   if (video.source_fp16 &&
+         (settings->uints.video_hdr_mode != 2 ||
+          (strcmp(video_st->current_video->ident, "d3d11") &&
+           strcmp(video_st->current_video->ident, "d3d12") &&
+           strcmp(video_st->current_video->ident, "vulkan") &&
+           strcmp(video_st->current_video->ident, "glcore"))))
+   {
+      RARCH_ERR("[Video] Selected driver/output cannot submit FP16 scRGB.\n");
+      return false;
+   }
 
 #ifdef HAVE_THREADS
    video.is_threaded                 = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);

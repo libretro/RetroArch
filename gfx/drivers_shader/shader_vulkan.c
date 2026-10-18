@@ -2214,7 +2214,8 @@ static VkFormat slang_chain_get_pass_rt_format(struct vulkan_filter_chain *chain
 
 static bool slang_chain_emits_hdr10(const struct vulkan_filter_chain *chain)
 {
-   return chain->emits_hdr_colorspace;
+   int mode = video_shader_get_hdr_mode(chain->common.shader_preset);
+   return mode >= 0 ? mode == 1 : chain->emits_hdr_colorspace;
 }
 
 static void slang_chain_set_emits_hdr10(struct vulkan_filter_chain *chain)
@@ -2224,7 +2225,8 @@ static void slang_chain_set_emits_hdr10(struct vulkan_filter_chain *chain)
 
 static bool slang_chain_emits_hdr16(const struct vulkan_filter_chain *chain)
 {
-   return chain->emits_hdr16_output;
+   int mode = video_shader_get_hdr_mode(chain->common.shader_preset);
+   return mode >= 0 ? mode == 2 : chain->emits_hdr16_output;
 }
 
 static void slang_chain_set_emits_hdr16(struct vulkan_filter_chain *chain)
@@ -2543,6 +2545,8 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       (p_info.source_filter == GLSLANG_FILTER_CHAIN_LINEAR && pass->mipmap)
       ? GLSLANG_FILTER_CHAIN_LINEAR
       : GLSLANG_FILTER_CHAIN_NEAREST;
+   output.meta.rt_format = glslang_hdr_output_format(
+         shader, pass_idx, output.meta.rt_format);
 
    explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -2595,6 +2599,8 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
          output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
       else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
          output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, pass_idx, output.meta.rt_format);
 
       p_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
 
@@ -4957,6 +4963,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          (pass_info.source_filter == GLSLANG_FILTER_CHAIN_LINEAR && pass->mipmap)
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, i, output.meta.rt_format);
 
       explicit_format              = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -5024,6 +5032,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
          else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
             output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+         output.meta.rt_format = glslang_hdr_output_format(
+               shader, i, output.meta.rt_format);
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
 

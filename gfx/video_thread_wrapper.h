@@ -59,6 +59,7 @@ enum thread_cmd
    CMD_SET_VIEWPORT,
    CMD_SET_ROTATION,
    CMD_READ_VIEWPORT,
+   CMD_READ_VIEWPORT_HDR,
 
    CMD_OVERLAY_ENABLE,
    CMD_OVERLAY_LOAD,
@@ -105,6 +106,11 @@ typedef struct thread_packet
 {
    union
    {
+      struct
+      {
+         uint16_t *buffer;
+         struct rpng_hdr_metadata *metadata;
+      } hdr_viewport;
       const char *str;
       void *v;
       int i;

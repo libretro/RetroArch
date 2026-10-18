@@ -240,6 +240,11 @@ bool recording_init(void)
    }
 #endif
    if (gpu_native) video_gpu_record = true;
+   if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_SCRGB_RGBA16F)
+   {
+      RARCH_ERR("[Recording] Native FP16 core recording is not supported.\n");
+      return false;
+   }
    output[0] = '\0';
 
    if (current_core_type == CORE_TYPE_DUMMY)

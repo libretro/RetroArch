@@ -22,7 +22,9 @@
 typedef unsigned UINT;
 typedef enum { DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_BC1_UNORM,
    DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM,
-   DXGI_FORMAT_BC7_UNORM } DXGI_FORMAT;
+   DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_R16G16B16A16_FLOAT,
+   DXGI_FORMAT_B5G6R5_UNORM, DXGI_FORMAT_R10G10B10A2_UNORM,
+   DXGI_FORMAT_B8G8R8X8_UNORM } DXGI_FORMAT;
 typedef struct { DXGI_FORMAT Format; unsigned Support1, Support2; }
    D3D12_FEATURE_DATA_FORMAT_SUPPORT;
 struct device;
@@ -90,6 +92,12 @@ int main(void)
    sthread_t *worker;
    unsigned i;
    volatile unsigned observed = 0;
+#if TEST_D3D == 12
+   CHECK(d3d12_frame_bpp(DXGI_FORMAT_R16G16B16A16_FLOAT) == 8);
+   CHECK(d3d12_frame_bpp(DXGI_FORMAT_R10G10B10A2_UNORM) == 4);
+   CHECK(d3d12_frame_bpp(DXGI_FORMAT_B8G8R8X8_UNORM) == 4);
+   CHECK(d3d12_frame_bpp(DXGI_FORMAT_B5G6R5_UNORM) == 2);
+#endif
    memset(&v, 0, sizeof(v));
    device.lpVtbl = &table;
    CHECK(!query(NULL, TEXTURE_GPU_FORMAT_SCRGB));

@@ -136,6 +136,42 @@ int main(int argc, char *argv[])
    free(drv.pass[0].source.string.vertex);
    free(drv.pass[0].source.string.fragment);
 
+   /* Final-pass ownership survives full saves and reference overrides. */
+   if ((f = fopen(parent, "ab")))
+   {
+      fputs("hdr_mode = \"2\"\n", f);
+      fclose(f);
+   }
+   memset(&drv, 0, sizeof(drv));
+   CHECK(video_shader_load_preset_into_shader(child, &drv),
+         "HDR reference parse failed");
+   CHECK(video_shader_get_hdr_mode(&drv) == 2, "HDR reference lost ownership");
+   snprintf(child, sizeof(child), "%s/full.slangp", dir);
+   CHECK(video_shader_write_preset(child, &drv, false), "HDR full save failed");
+   memset(&menu, 0, sizeof(menu));
+   CHECK(video_shader_load_preset_into_shader(child, &menu), "HDR full reload failed");
+   CHECK(video_shader_get_hdr_mode(&menu) == 2, "HDR full save lost ownership");
+   drv.hdr_mode = 1;
+   snprintf(child, sizeof(child), "%s/sdr.slangp", dir);
+   CHECK(video_shader_write_preset(child, &drv, true), "SDR reference save failed");
+   memset(&menu, 0, sizeof(menu));
+   CHECK(video_shader_load_preset_into_shader(child, &menu), "SDR reference reload failed");
+   CHECK(video_shader_get_hdr_mode(&menu) == 0, "SDR override lost ownership");
+   drv.hdr_mode = 0;
+   snprintf(child, sizeof(child), "%s/auto.slangp", dir);
+   CHECK(video_shader_write_preset(child, &drv, true), "Auto reference save failed");
+   {
+      config_file_t *saved = config_file_new_from_path_to_string(child);
+      struct config_entry_list *entry = saved ? config_get_entry(saved, "hdr_mode") : NULL;
+      CHECK(saved && saved->references, "Auto save flattened the reference");
+      CHECK(entry && !strcmp(entry->value, "auto"), "Auto reset was not serialized");
+      if (saved)
+         config_file_free(saved);
+   }
+   memset(&menu, 0, sizeof(menu));
+   CHECK(video_shader_load_preset_into_shader(child, &menu), "Auto reference reload failed");
+   CHECK(video_shader_get_hdr_mode(&menu) == -1, "Auto failed to clear inherited ownership");
+
    snprintf(cmd, sizeof(cmd), "rm -rf %s", dir);
    if (system(cmd) != 0) { /* fixture dir left behind; harmless */ }
 

@@ -833,6 +833,9 @@ struct gl3_common_resources
    GLuint quad_program;
    GLuint quad_vbo;
    gl3_buffer_locations quad_loc;
+   unsigned hdr_mode;
+   float paper_white_nits;
+   unsigned expand_gamut;
 
    /* Frames may come inside a larger texture: passes are built to read
     * them there, sampling as the first pass samples. */
@@ -1687,6 +1690,9 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
    gl3_pass_reflect_parameter(pass, "OriginalAspectRotated", &pass->reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    gl3_pass_reflect_parameter(pass, "TotalSubFrames", &pass->reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    gl3_pass_reflect_parameter(pass, "CurrentSubFrame", &pass->reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
+   gl3_pass_reflect_parameter(pass, "HDRMode", &pass->reflection.semantics[SLANG_SEMANTIC_HDR]);
+   gl3_pass_reflect_parameter(pass, "BrightnessNits", &pass->reflection.semantics[SLANG_SEMANTIC_PAPER_WHITE_NITS]);
+   gl3_pass_reflect_parameter(pass, "ExpandGamut", &pass->reflection.semantics[SLANG_SEMANTIC_EXPAND_GAMUT]);
    gl3_pass_reflect_parameter(pass, "Gyroscope", &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
    gl3_pass_reflect_parameter(pass, "Accelerometer", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
    gl3_pass_reflect_parameter(pass, "AccelerometerRest", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
@@ -2355,6 +2361,12 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                       pass->total_subframes);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       pass->current_subframe);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
+                      pass->common->hdr_mode);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
+                      pass->common->paper_white_nits);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
+                      pass->common->expand_gamut);
    /* Each sub-frame is its own present; CurrentSubFrame is 1-based. */
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SWAP_COUNT,
                       (uint32_t)(pass->swap_count
@@ -3411,6 +3423,8 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
       && pass->mipmap
       ? GLSLANG_FILTER_CHAIN_LINEAR
       : GLSLANG_FILTER_CHAIN_NEAREST;
+   output.meta.rt_format = glslang_hdr_output_format(
+         shader, pass_idx, output.meta.rt_format);
 
    explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -3456,6 +3470,8 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
          output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
       else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
          output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, pass_idx, output.meta.rt_format);
 
       p_info.rt_format =
          convert_glslang_format(output.meta.rt_format);
@@ -4058,6 +4074,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          && pass->mipmap
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
+      output.meta.rt_format = glslang_hdr_output_format(
+            shader, i, output.meta.rt_format);
 
       explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -4109,6 +4127,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
          else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
             output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+         output.meta.rt_format = glslang_hdr_output_format(
+               shader, i, output.meta.rt_format);
 
          pass_info.rt_format = convert_glslang_format(output.meta.rt_format);
          RARCH_LOG("[GLCore] Using render target format %s for pass output #%u.\n",
@@ -4387,6 +4407,15 @@ void gl3_filter_chain_set_frame_time_delta(
       uint32_t time_delta)
 {
    gl3_chain_set_frame_time_delta(chain, time_delta);
+}
+
+void gl3_filter_chain_set_hdr_parameters(
+      gl3_filter_chain_t *chain, unsigned mode,
+      float paper_white_nits, unsigned expand_gamut)
+{
+   chain->common.hdr_mode         = mode;
+   chain->common.paper_white_nits = paper_white_nits;
+   chain->common.expand_gamut     = expand_gamut;
 }
 
 void gl3_filter_chain_set_original_fps(
