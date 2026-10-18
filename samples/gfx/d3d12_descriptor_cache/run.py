@@ -8,7 +8,7 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 source = (root / 'gfx/drivers/d3d12.c').read_text()
-start = source.index('            if (   pass->desc_cache.srv_resource[binding]')
+start = source.index('            d3d12_texture_t* tex =', source.index('static void d3d12_chain_bind_pass('))
 end = source.index('\n         }\n', start)
 cache = source[start:end]
 teardown = source.index('static void d3d12_chain_free(')

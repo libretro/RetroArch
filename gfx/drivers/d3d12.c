@@ -446,6 +446,7 @@ typedef struct d3d12_pass
       D3D12Resource srv_resource[SLANG_NUM_BINDINGS];
       DXGI_FORMAT   srv_format[SLANG_NUM_BINDINGS];
       UINT          srv_mip_levels[SLANG_NUM_BINDINGS];
+      UINT          srv_mapping[SLANG_NUM_BINDINGS];
       bool          samplers_valid;
    } desc_cache;
 } d3d12_pass_t;
@@ -7522,8 +7523,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
       texture_sem_t* texture_sem = pass->semantics.textures;
       while (texture_sem->stage_mask)
       {
-         /* SRV: only recreate when the underlying resource,
-          * format, or mip count has changed. */
+         /* Reuse views with the same resource and interpretation. */
          {
             d3d12_texture_t* tex =
                (d3d12_texture_t*)texture_sem->texture_data;
@@ -7531,6 +7531,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
             D3D12Resource resource = tex->handle;
             DXGI_FORMAT   format   = tex->desc.Format;
             UINT          levels   = tex->desc.MipLevels;
+            UINT          mapping  = tex->srv_mapping;
 
             /* The frame where it lies, in the format the main chain's
              * history[0] keeps for it */
@@ -7539,11 +7540,15 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
                resource = frame_res;
                format   = d3d12->filter.history[0].desc.Format;
                levels   = 1;
+               mapping  = d3d12->filter.history[0].srv_mapping;
             }
+            if (!mapping)
+               mapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
             if (   pass->desc_cache.srv_resource[binding]   != resource
                   || pass->desc_cache.srv_format[binding]     != format
-                  || pass->desc_cache.srv_mip_levels[binding] != levels)
+                  || pass->desc_cache.srv_mip_levels[binding] != levels
+                  || pass->desc_cache.srv_mapping[binding]    != mapping)
             {
                D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
                   pass->textures.ptr
@@ -7553,8 +7558,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
                };
                D3D12_SHADER_RESOURCE_VIEW_DESC desc = { format };
 
-               desc.Shader4ComponentMapping         =
-                  D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+               desc.Shader4ComponentMapping         = mapping;
                desc.ViewDimension                   =
                   D3D12_SRV_DIMENSION_TEXTURE2D;
                desc.Texture2D.MipLevels             = levels;
@@ -7568,6 +7572,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
                pass->desc_cache.srv_resource[binding]   = resource;
                pass->desc_cache.srv_format[binding]     = format;
                pass->desc_cache.srv_mip_levels[binding] = levels;
+               pass->desc_cache.srv_mapping[binding]    = mapping;
             }
          }
 
