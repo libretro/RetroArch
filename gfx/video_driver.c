@@ -5101,6 +5101,23 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
    return poke->texture_lend(video_st->data, id, slot, pitch, out_pitch);
 }
 
+void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
+      size_t *pitch)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   if (!pitch || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return NULL;
+   *pitch = (size_t)VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return video_thread_get_menu_framebuffer(dims, rgb32);
+#endif
+   if (!video_st->data || !poke || !poke->get_menu_framebuffer)
+      return NULL;
+   return poke->get_menu_framebuffer(video_st->data, rgb32, dims, pitch);
+}
+
 bool video_driver_get_device(video_device_info_t *info)
 {
    video_driver_state_t *video_st     = &video_driver_st;

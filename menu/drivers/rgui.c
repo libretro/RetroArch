@@ -54,9 +54,6 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../gfx/bitmapfont.h"
-#ifdef HAVE_THREADS
-#include "../../gfx/video_thread_wrapper.h"
-#endif
 #ifdef HAVE_LANGEXTRA
 #include "rgui_bitmapfont.h"
 #endif
@@ -7567,6 +7564,7 @@ static void rgui_set_texture(void *data)
          uint32_t x_ratio, y_ratio;
          unsigned x_src, y_src;
          unsigned x_dst, y_dst;
+         size_t out_pitch;
          uint16_t *out_frame      = NULL;
          frame_buf_t *frame_buf   = &rgui->frame_buf;
          frame_buf_t *upscale_buf = &rgui->upscale_buf;
@@ -7583,12 +7581,11 @@ static void rgui_set_texture(void *data)
             out_height = internal_upscale_level * fb_height;
          }
 
-         /* Render into the wrapper's unpublished slot when available. */
-#ifdef HAVE_THREADS
+         out_pitch = (size_t)out_width * sizeof(uint16_t);
+         /* Render into the unpublished upload slot when available. */
          if (VIDEO_SCALE_FITS(out_width, out_height))
-            out_frame = (uint16_t*)video_thread_get_menu_framebuffer(
-                  VIDEO_SCALE_PACK(out_width, out_height), false);
-#endif
+            out_frame = (uint16_t*)video_driver_get_menu_framebuffer(
+                  VIDEO_SCALE_PACK(out_width, out_height), false, &out_pitch);
          /* Allocate upscaling buffer, if required */
          if (!out_frame && ((upscale_buf->width  != out_width)
                || (upscale_buf->height != out_height)
@@ -7619,7 +7616,10 @@ static void rgui_set_texture(void *data)
          }
 
          if (!out_frame)
+         {
             out_frame = upscale_buf->data;
+            out_pitch = (size_t)out_width * sizeof(uint16_t);
+         }
 
          /* Perform nearest neighbour upscaling
           * NB: We're duplicating code here, but trying to handle
@@ -7629,11 +7629,12 @@ static void rgui_set_texture(void *data)
 
          for (y_dst = 0; y_dst < out_height; y_dst++)
          {
+            uint16_t *row = (uint16_t*)((uint8_t*)out_frame + y_dst * out_pitch);
             y_src = (y_dst * y_ratio) >> 16;
             for (x_dst = 0; x_dst < out_width; x_dst++)
             {
                x_src = (x_dst * x_ratio) >> 16;
-               out_frame[(y_dst * out_width) + x_dst] = frame_buf->data[(y_src * fb_width) + x_src];
+               row[x_dst] = frame_buf->data[(y_src * fb_width) + x_src];
             }
          }
 

@@ -634,8 +634,12 @@ typedef struct vk
    {
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
       struct vk_texture textures_optimal[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      void *loan;
+      unsigned loan_dims;
+      unsigned loan_index;
       unsigned last_index;
       float alpha;
+      bool loan_rgb32;
       bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
    } menu;
 
@@ -12025,16 +12029,6 @@ static bool vulkan_frame(void *data, const void *frame,
                {
                   struct vk_texture *dynamic = optimal;
                   struct vk_texture *staging = texture;
-                  if ((staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && staging->memory != VK_NULL_HANDLE)
-                  {
-                     VkMappedMemoryRange range;
-                     range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-                     range.pNext  = NULL;
-                     range.memory = staging->memory;
-                     range.offset = 0;
-                     range.size   = VK_WHOLE_SIZE;
-                     vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
-                  }
                   vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                         dynamic, staging, 0, 0);
                   vk->menu.dirty[vk->menu.last_index] = false;
@@ -13076,9 +13070,9 @@ static bool vulkan_get_hw_render_interface(void *data,
    return ((vk->flags & VK_FLAG_HW_ENABLE) > 0);
 }
 
-static void vulkan_set_texture_frame(void *data,
+static void *vulkan_menu_frame(void *data,
       const void *frame, bool rgb32, unsigned dims,
-      float alpha)
+      float alpha, bool lend, size_t *pitch)
 {
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
@@ -13093,16 +13087,41 @@ static void vulkan_set_texture_frame(void *data,
    struct vk_texture *texture_optimal    = NULL;
    VkFormat fmt                          = VK_FORMAT_B8G8R8A8_UNORM;
    bool do_memcpy                        = true;
+   bool loaned                           = false;
    const VkComponentMapping *ptr_swizzle = NULL;
 
-   if (!vk)
-      return;
+   if (!vk || !width || !height || (!lend && !frame))
+      return NULL;
+
+   idx = vk->context->current_frame_index;
+   if (vk->menu.loan)
+   {
+      loaned = !lend && frame == vk->menu.loan
+         && dims == vk->menu.loan_dims && rgb32 == vk->menu.loan_rgb32
+         && idx == vk->menu.loan_index;
+      if (!loaned)
+      {
+         struct vk_texture *old = &vk->menu.textures[vk->menu.loan_index];
+         bool stale = frame == vk->menu.loan;
+         vkUnmapMemory(vk->context->device, old->memory);
+         old->mapped = NULL;
+         vk->menu.loan = NULL;
+         if (stale)
+            return NULL;
+      }
+   }
 
    if (!rgb32)
    {
-       VkFormatProperties formatProperties;
-       vkGetPhysicalDeviceFormatProperties(vk->context->gpu, VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
-       if (formatProperties.optimalTilingFeatures != 0)
+       bool supported = loaned;
+       if (!supported)
+       {
+          VkFormatProperties formatProperties;
+          vkGetPhysicalDeviceFormatProperties(vk->context->gpu,
+                VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
+          supported = formatProperties.optimalTilingFeatures != 0;
+       }
+       if (supported)
        {
           static const VkComponentMapping br_swizzle =
           {VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_A};
@@ -13115,11 +13134,16 @@ static void vulkan_set_texture_frame(void *data,
            do_memcpy   = false;
    }
 
+   if (lend && !do_memcpy)
+      return NULL;
+
    idx                 = vk->context->current_frame_index;
    texture             = &vk->menu.textures[idx];
    texture_optimal     = &vk->menu.textures_optimal[idx];
 
-   *texture            = vulkan_create_texture(vk,
+   if (!loaned)
+   {
+      *texture         = vulkan_create_texture(vk,
            texture->memory
          ? texture
          : NULL,
@@ -13132,14 +13156,33 @@ static void vulkan_set_texture_frame(void *data,
          ? VULKAN_TEXTURE_STAGING
          : VULKAN_TEXTURE_STREAMED);
 
-   vkMapMemory(vk->context->device, texture->memory,
-         texture->offset, texture->size, 0, (void**)&ptr);
+      if (!texture->memory || vkMapMemory(vk->context->device,
+               texture->memory, 0, VK_WHOLE_SIZE, 0,
+               (void**)&ptr) != VK_SUCCESS)
+         return NULL;
+      ptr += texture->offset;
+   }
+   else
+      ptr = (uint8_t*)vk->menu.loan;
+
+   if (lend)
+   {
+      texture->mapped     = ptr;
+      vk->menu.loan       = ptr;
+      vk->menu.loan_dims  = dims;
+      vk->menu.loan_index = idx;
+      vk->menu.loan_rgb32 = rgb32;
+      *pitch              = texture->stride;
+      return ptr;
+   }
 
    dst       = ptr;
    src       = (const uint8_t*)frame;
    stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
 
-   if (do_memcpy)
+   if (loaned)
+      vk->menu.loan = NULL;
+   else if (do_memcpy)
    {
       for (y = 0; y < height; y++, dst += texture->stride, src += stride)
          memcpy(dst, src, stride);
@@ -13177,22 +13220,35 @@ static void vulkan_set_texture_frame(void *data,
             NULL,
             ptr_swizzle,
             VULKAN_TEXTURE_DYNAMIC);
-   else
+   if ((texture->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && texture->memory != VK_NULL_HANDLE)
    {
-      if ((texture->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT) && texture->memory != VK_NULL_HANDLE)
-      {
-         VkMappedMemoryRange range;
-         range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-         range.pNext  = NULL;
-         range.memory = texture->memory;
-         range.offset = 0;
-         range.size   = VK_WHOLE_SIZE;
-         vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
-      }
+      VkMappedMemoryRange range;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.memory = texture->memory;
+      range.offset = 0;
+      range.size   = VK_WHOLE_SIZE;
+      vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
    }
 
    vkUnmapMemory(vk->context->device, texture->memory);
+   texture->mapped = NULL;
    vk->menu.dirty[idx] = true;
+   return NULL;
+}
+
+static void vulkan_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned dims, float alpha)
+{
+   vulkan_menu_frame(data, frame, rgb32, dims, alpha, false, NULL);
+}
+
+static void *vulkan_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   if (!pitch)
+      return NULL;
+   return vulkan_menu_frame(data, NULL, rgb32, dims, 0.0f, true, pitch);
 }
 
 static void vulkan_set_texture_enable(void *data, bool state, bool fullscreen)
@@ -14953,7 +15009,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_import_texture,
    vulkan_get_last_present_sync,
    vulkan_record_read,
-   vulkan_import_movie_frame
+   vulkan_import_movie_frame,
+   vulkan_get_menu_framebuffer
 };
 
 static void vulkan_get_poke_interface(void *data,

@@ -10646,6 +10646,9 @@ int main(int argc, char *argv[])
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
       fprintf(cfg, "menu_driver = \"%s\"\n",
             (getenv("HARNESS_STILL_ONLY") || getenv("HARNESS_PREVIEW_FILE")) ? "ozone" : "rgui");
+      if (getenv("HARNESS_MENU_UPSCALE"))
+         fprintf(cfg, "menu_rgui_internal_upscale_level = \"%s\"\n",
+               getenv("HARNESS_MENU_UPSCALE"));
       fprintf(cfg, "video_threaded = \"false\"\n");
       fprintf(cfg, "video_vsync = \"false\"\n");
       fprintf(cfg, "menu_pause_libretro = \"true\"\n");

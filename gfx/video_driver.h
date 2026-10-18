@@ -1316,6 +1316,11 @@ typedef struct video_poke_interface
     * the movie source. Same ownership results as import_texture. */
    enum video_texture_update (*import_movie_frame)(void *data,
          const video_frame_import_t *frame);
+   /* Driver-thread menu loan. Publish with set_texture_frame, identical
+    * dimensions/format, before any other driver call. NULL declines.
+    * The row pitch may include padding. Optional. */
+   void *(*get_menu_framebuffer)(void *data, bool rgb32,
+         unsigned dims, size_t *pitch);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2434,6 +2439,11 @@ bool video_driver_texture_can_update(void);
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch, size_t *out_pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
+
+/* Main-thread menu loan; the wrapper lends CPU storage instead of
+ * entering the driver. See video_poke_interface::get_menu_framebuffer. */
+void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
+      size_t *pitch);
 
 /* get_device / import_texture of the active driver. The import is
  * REFUSED under the thread wrapper, which takes imports as nodes

@@ -611,6 +611,7 @@ jobs:
         shell: bash
         run: |
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/vulkan_menu.py
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash

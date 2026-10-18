@@ -18,6 +18,9 @@ rgui = (root / "menu/drivers/rgui.c").read_text(encoding="utf-8")
 start = rgui.index("static void rgui_set_texture_frame(")
 end = rgui.index("\n}\n", rgui.index("static void rgui_set_texture(", start)) + 3
 render = rgui[start:end]
+frontend = (root / "gfx/video_driver.c").read_text(encoding="utf-8")
+start = frontend.index("void *video_driver_get_menu_framebuffer(")
+frontend = frontend[start:frontend.index("\n}\n", start) + 3]
 fixture = r'''
 #include <assert.h>
 #include <stdint.h>
@@ -63,21 +66,48 @@ typedef struct { unsigned flags, framebuf_dims; } gfx_display_t;
 typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } settings_t;
 struct poke {
    void (*set_texture_frame)(void*, const void*, bool, unsigned, float);
+   void *(*get_menu_framebuffer)(void*, bool, unsigned, size_t*);
 };
+typedef struct poke video_poke_interface_t;
 typedef struct { void *data; struct poke *poke; } video_driver_state_t;
 static gfx_display_t display;
 static settings_t settings;
-static video_driver_state_t video;
+static video_driver_state_t video_driver_st;
 static unsigned viewport_dims;
 static gfx_display_t *disp_get_ptr(void) { return &display; }
 static settings_t *config_get_ptr(void) { return &settings; }
-static video_driver_state_t *video_state_get_ptr(void) { return &video; }
+static video_driver_state_t *video_state_get_ptr(void) { return &video_driver_st; }
 static void video_driver_get_viewport_info(struct video_viewport *vp)
 {
    vp->dims = viewport_dims;
 }
 #define configuration_set_uint(s, field, value) ((field) = (value))
+FRONTEND
 RENDER
+
+static uint16_t direct_pixels[256];
+static unsigned direct_submits;
+static void *direct_get(void *data, bool rgb32, unsigned dims, size_t *pitch)
+{
+   (void)data;
+   assert(!rgb32 && dims == VIDEO_SCALE_PACK(8, 8));
+   memset(direct_pixels, 0xcd, sizeof(direct_pixels));
+   *pitch = 24;
+   return direct_pixels;
+}
+static void direct_submit(void *data, const void *frame, bool rgb32,
+      unsigned dims, float alpha)
+{
+   unsigned x, y;
+   (void)data;
+   assert(frame == direct_pixels && !rgb32 && dims == VIDEO_SCALE_PACK(8, 8));
+   assert(alpha == 1.0f);
+   for (y = 0; y < 8; y++)
+      for (x = 0; x < 12; x++)
+         assert(direct_pixels[y * 12 + x] == (x < 8
+               ? (uint16_t)(10 + (y / 2) * 4 + x / 2) : 0xcdcd));
+   direct_submits++;
+}
 
 static void check_upscale(thread_video_t *thr)
 {
@@ -88,8 +118,9 @@ static void check_upscale(thread_video_t *thr)
    unsigned level, i, x, y, width, before;
    memset(&rgui, 0, sizeof(rgui));
    poke.set_texture_frame = thread_set_texture_frame;
-   video.poke = &poke;
-   video.data = thr;
+   poke.get_menu_framebuffer = NULL;
+   video_driver_st.poke = &poke;
+   video_driver_st.data = thr;
    rgui.frame_buf.data = pixels;
    for (i = 0; i < 16; i++) pixels[i] = (uint16_t)(i + 10);
    display.framebuf_dims = VIDEO_SCALE_PACK(4, 4);
@@ -125,6 +156,15 @@ static void check_upscale(thread_video_t *thr)
    assert(taken && taken->dims == VIDEO_SCALE_PACK(8, 8));
    assert(!memcmp(taken->frame, rgui.upscale_buf.data, 8 * 8 * sizeof(uint16_t)));
    free(rgui.upscale_buf.data);
+   rgui.upscale_buf.data = NULL;
+   poke.get_menu_framebuffer = direct_get;
+   poke.set_texture_frame = direct_submit;
+   display.flags = GFX_DISP_FLAG_FB_DIRTY;
+   before = copied;
+   rgui_set_texture(&rgui);
+   assert(direct_submits == 1 && copied == before && !rgui.upscale_buf.data);
+   poke.get_menu_framebuffer = NULL;
+   poke.set_texture_frame = thread_set_texture_frame;
    active = true;
    viewport_dims = VIDEO_SCALE_PACK(2, 2);
    display.flags = GFX_DISP_FLAG_FB_DIRTY;
@@ -215,7 +255,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-menu-framebuffer-") as direct
     directory = Path(directory)
     src = directory / "menu.c"
     exe = directory / ("menu.exe" if os.name == "nt" else "menu")
-    src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("RENDER", render), encoding="utf-8")
+    src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("FRONTEND", frontend).replace("RENDER", render), encoding="utf-8")
     subprocess.run(cc + flags + ["-std=gnu89", "-O1", "-Wall", "-Wextra", "-Werror",
                    "-Werror=declaration-after-statement", "-I" + str(root),
                    "-I" + str(root / "libretro-common/include"), str(src), "-o", str(exe)], check=True)
