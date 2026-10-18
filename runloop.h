@@ -842,7 +842,8 @@ enum runloop_frame_work
    RUNLOOP_WORK_CAMERA   = (1 << 3),  /* the core started the camera */
    RUNLOOP_WORK_CHEEVOS  = (1 << 4),  /* achievements attached to content */
    RUNLOOP_WORK_RUN_FRAMES = (1 << 5), /* RUN_FRAMES is advancing frames */
-   RUNLOOP_WORK_PAUSE_LOADED = (1 << 6) /* pause once the content has run */
+   RUNLOOP_WORK_PAUSE_LOADED = (1 << 6), /* pause once the content has run */
+   RUNLOOP_WORK_FREE_FRAME = (1 << 7) /* a frame with no job to tell of */
 };
 
 /* Raise or drop one frame_work bit from the product that owns it.

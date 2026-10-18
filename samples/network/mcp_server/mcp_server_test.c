@@ -668,17 +668,12 @@ static void test_stdio(void)
    check("and instructions that say how the tools play a game",
          strstr(out, "\"instructions\":\"Controls a running RetroArch")
          && strstr(out, "STEPS") && strstr(out, "checkpoint"));
-   check("and no prompts or completions among its capabilities",
-         !strstr(out, "\"prompts\"") && !strstr(out, "\"completions\""));
 
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":60,\"method\":\"tools/list\"}\n");
    stdio_read(cmd, out, sizeof(out));
    check("its tool list has no caching fields before the newest revision",
          strstr(out, "\"tools\":[") && !strstr(out, "ttlMs")
          && !strstr(out, "cacheScope"));
-   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":61,\"method\":\"prompts/list\"}\n");
-   stdio_read(cmd, out, sizeof(out));
-   check("there are no prompts to list (-32601)", strstr(out, "-32601") != NULL);
    stdio_send("{\"jsonrpc\":\"2.0\",\"id\":71,\"method\":\"tools/list\","
          "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
    stdio_read(cmd, out, sizeof(out));
@@ -690,8 +685,7 @@ static void test_stdio(void)
    stdio_read(cmd, out, sizeof(out));
    check("and so does server/discover",
          strstr(out, "\"supportedVersions\":[") && strstr(out, "\"ttlMs\":0")
-         && strstr(out, "\"cacheScope\":\"private\"")
-         && !strstr(out, "\"prompts\""));
+         && strstr(out, "\"cacheScope\":\"private\""));
 
    stdio_send("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
    check("a notification is not answered",

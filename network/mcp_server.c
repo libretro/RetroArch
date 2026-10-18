@@ -85,7 +85,6 @@ static const char *const mcp_versions[] = {
 #define MCP_ERR_INVALID_REQUEST  -32600
 #define MCP_ERR_METHOD           -32601
 #define MCP_ERR_PARAMS           -32602
-#define MCP_ERR_INTERNAL         -32603
 #define MCP_ERR_HEADER_MISMATCH  -32020
 #define MCP_ERR_VERSION          -32022
 
@@ -433,10 +432,44 @@ static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
  * as anything else. @describe is false where an earlier tool in the
  * list described the same columns: every byte of the list is context a
  * client pays for, and five tools answer with what WATCH watches. */
+/* The columns' properties and the ones every row has, as a row's or a
+ * record's schema takes them: "{...},"required":[...]". */
+static void mcp_schema_columns(rjsonwriter_t *w, const struct cmd_rows *rows,
+      bool describe)
+{
+   const struct cmd_column *col;
+   bool first = true;
+   for (col = rows->columns; col && col->name; col++)
+   {
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, col->name);
+      MCP_RAW(w, ":{\"type\":\"string\"");
+      if (describe && col->desc)
+      {
+         MCP_RAW(w, ",\"description\":");
+         rjsonwriter_add_string(w, col->desc);
+      }
+      MCP_RAW(w, "}");
+   }
+   MCP_RAW(w, "},\"required\":[");
+   first = true;
+   for (col = rows->columns; col && col->name; col++)
+   {
+      if (rows->required && (size_t)(col - rows->columns) >= rows->required)
+         break;
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, col->name);
+   }
+   MCP_RAW(w, "]");
+}
+
 static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
       bool describe)
 {
-   const struct cmd_column  *col;
    const struct cmd_trailer *tr;
    bool wrote = false;
 
@@ -444,66 +477,16 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    /* a record: the columns are the fields themselves */
    if (rows->seps)
    {
-      bool first = true;
-      for (col = rows->columns; col && col->name; col++)
-      {
-         if (!first)
-            MCP_RAW(w, ",");
-         first = false;
-         rjsonwriter_add_string(w, col->name);
-         MCP_RAW(w, ":{\"type\":\"string\"");
-         if (describe && col->desc)
-         {
-            MCP_RAW(w, ",\"description\":");
-            rjsonwriter_add_string(w, col->desc);
-         }
-         MCP_RAW(w, "}");
-      }
-      MCP_RAW(w, "},\"required\":[");
-      first = true;
-      for (col = rows->columns; col && col->name; col++)
-      {
-         if (rows->required && (size_t)(col - rows->columns) >= rows->required)
-            break;
-         if (!first)
-            MCP_RAW(w, ",");
-         first = false;
-         rjsonwriter_add_string(w, col->name);
-      }
-      MCP_RAW(w, "]}");
+      mcp_schema_columns(w, rows, describe);
+      MCP_RAW(w, "}");
       return;
    }
    if (rows->columns)
    {
-      bool first = true;
       MCP_RAW(w, "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\","
             "\"properties\":{");
-      for (col = rows->columns; col->name; col++)
-      {
-         if (!first)
-            MCP_RAW(w, ",");
-         first = false;
-         rjsonwriter_add_string(w, col->name);
-         MCP_RAW(w, ":{\"type\":\"string\"");
-         if (describe && col->desc)
-         {
-            MCP_RAW(w, ",\"description\":");
-            rjsonwriter_add_string(w, col->desc);
-         }
-         MCP_RAW(w, "}");
-      }
-      MCP_RAW(w, "},\"required\":[");
-      first = true;
-      for (col = rows->columns; col->name; col++)
-      {
-         if (rows->required && (size_t)(col - rows->columns) >= rows->required)
-            break;
-         if (!first)
-            MCP_RAW(w, ",");
-         first = false;
-         rjsonwriter_add_string(w, col->name);
-      }
-      MCP_RAW(w, "]}}");
+      mcp_schema_columns(w, rows, describe);
+      MCP_RAW(w, "}}");
       wrote = true;
    }
    /* the lines that are not rows, as mcp_structured answers them */
@@ -537,8 +520,7 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
 }
 
 /* What a client is told once, at the handshake: how the tools fit
- * together to play a game, which no one tool's description says. A
- * field run spent its first calls finding this out. */
+ * together to play a game, which no one tool's description says. */
 #define MCP_INSTRUCTIONS \
    "Controls a running RetroArch. To play a game: find it with " \
    "LIST_PLAYLISTS and GET_PLAYLIST, and LOAD_CONTENT it with paused on. " \
@@ -552,7 +534,6 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "pressed but what SET_INPUT holds. STATE " \
    "checkpoint before a risky move, and rollback after a mistake. Tools " \
    "marked destructive can lose unsaved progress or load code."
-
 
 /* A tool's title, from its name: RUN_FRAMES is "Run frames". */
 static void mcp_title(char *s, size_t len, const char *name)
@@ -1770,8 +1751,9 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
          rjsonwriter_add_string(w, mcp_versions[i]);
       }
       rjsonwriter_rawf(w, "],\"capabilities\":{\"tools\":{\"listChanged\":false}%s},"
-            "\"instructions\":\"" MCP_INSTRUCTIONS "\"" MCP_NO_CACHE,
-            c->stdio ? ",\"logging\":{}" : "");
+            "\"instructions\":", c->stdio ? ",\"logging\":{}" : "");
+      rjsonwriter_add_string(w, MCP_INSTRUCTIONS);
+      MCP_RAW(w, MCP_NO_CACHE);
       mcp_result_end(w, true);
       mcp_respond_writer(c, w);
    }
@@ -1798,7 +1780,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       if (c->stdio)
          MCP_RAW(w, ",\"logging\":{}");
       MCP_RAW(w, "},\"serverInfo\":{\"name\":\"RetroArch\",\"version\":\""
-            PACKAGE_VERSION "\"},\"instructions\":\"" MCP_INSTRUCTIONS "\"");
+            PACKAGE_VERSION "\"},\"instructions\":");
+      rjsonwriter_add_string(w, MCP_INSTRUCTIONS);
       mcp_result_end(w, false);
       mcp_respond_writer(c, w);
    }

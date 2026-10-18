@@ -58,7 +58,8 @@ shape in their MCP server configuration:
 
 The server speaks protocol revision 2026-07-28, and 2025-11-25, 2025-06-18
 and 2025-03-26 for clients that open with `initialize`. Its list results
-carry `ttlMs: 0` and `cacheScope: "private"`, as 2026-07-28 requires
+and `server/discover` carry `ttlMs: 0` and `cacheScope: "private"`, as
+2026-07-28 requires
 them: the tools are compiled in and `listChanged` is false, so nothing
 would tell a client holding a list that an upgrade changed it. A client
 that keeps one anyway sees a rebuilt RetroArch's new parameters once it
@@ -110,14 +111,17 @@ having to write the command's own line by hand:
   "arguments": { "core": "/path/to/core.so", "content": "/games/a.rom" } }
 ```
 
-`STATE` takes an `action` and a `slot` number, `GET_PLAYLIST` takes
+`STATE` takes an `action`, and a `slot` number for `save` and `load`,
+`GET_PLAYLIST` takes
 `playlist` and an optional `first`, `SET_OPTION` takes `option` and a
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
 
 A parameter that is needed and left out, one that should be an integer
 and is not, one the tool does not take, a value outside the set a
-parameter offers, and a tool that does not exist are answered before
+parameter offers, one sent as `true`, `false`, `null`, an object or an
+array - no tool takes those - and a tool that does not exist are
+answered before
 anything runs, as JSON-RPC invalid params (`-32602`) rather than as a
 tool failure. The schemas leave other names unforbidden to keep the
 tool list short; the server refuses them instead, so a misspelt
@@ -195,7 +199,7 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
 | `QUEUED 4` | `queued: 4` | the steps a queued `STEPS` has left to run |
-| `IDLE 1830` | `idle: 1830` | milliseconds the content sat paused, the queue run dry, before that request |
+| `IDLE 1830` | `idle: 1830` | milliseconds the content has sat paused since the queue ran dry |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
@@ -255,7 +259,8 @@ and `REINIT audio` for a restart that says nothing itself - while the
 commands sent by name answer as they always have. `DISK` is refused on
 a core with no disk control, where the hotkeys would do nothing. A word
 the tool does not take is invalid params naming the ones it does; on
-the line interfaces it is `STATE ERROR one of save|load`, and so is
+the line interfaces it is `STATE ERROR one of
+save|load|checkpoint|rollback`, and so is
 anything after a word that takes nothing. `REPLAY`'s slot or frame is its `number` parameter.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
@@ -355,8 +360,8 @@ all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
 its place in the list when its address changes; with nothing watched
-it answers `WATCH none`. Values are decimal, 0 to 255, as `RUN_UNTIL`
-takes them; addresses are hexadecimal. A label is up to 15 characters,
+it answers `WATCH none`. Values are decimal, 0 to 255 - or to 65535
+for a `high:low` watch - as `RUN_UNTIL` takes them; addresses are hexadecimal. A label is up to 15 characters,
 with no tab or newline in it. `x 6d:86` watches two bytes as one value,
 high:low, as conditions read them. Sixteen at once. Each is checked when it is
 set - an address nothing maps is refused there -
@@ -416,6 +421,9 @@ STEP 3
 Two presses of the same button in a row get a frame with it let go
 between them, so the game reads two taps rather than one long press -
 also where one request ends on the press and the next starts with it.
+That frame is the second press's own, not taken from it, and is not
+needed where `SET_INPUT` held the button throughout or a frame has run
+since.
 
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
 and `WAITING` when its nine seconds ran out first, each with the frames
@@ -428,21 +436,24 @@ runs.
 **Queued, the content plays on between requests.** `STEPS <steps>|on`
 (`queue: on`) answers at once with `QUEUED` and the steps left to run,
 and its steps go behind those still running, so the game does not pause
-while the next stretch is planned; it pauses once they have all run. A
-list without stops keeps the stops before it, and one with its own
-brings them in when it starts. A stop that held, or a failure, ends the
+while the next stretch is planned; it pauses once they have all run.
+Each list runs with its own stops - none where it has none - and counts
+its own frames. A stop that held, or a failure, ends the
 whole queue, lists behind it too, and is kept and answered to the next
 queued `STEPS` in its place, whose steps are dropped rather than played
 on from a death; its `STEP` counts within the list that step came in,
 stops aside. A rollback, a state load, `RESET` and closing the content
-each end the queue and forget the stop. With no steps it only asks. A
-queue that ran dry says so: `IDLE` is how long, in milliseconds, the
-content sat paused waiting for more before the request that answers it,
-so a client that sees it knows it has fallen behind: two stretches sent
-at once get it ahead again. Nine seconds bound each step, not the queue,
-which holds 64 steps and stops at most. A request that waits -
-`RUN_FRAMES`, `PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the
-queue.
+each end the queue and forget the stop, however they come - a hotkey,
+the menu, a command. With no steps it only asks. A queue that ran dry
+says so: `IDLE` is how long, in milliseconds, the content has sat paused
+since, waiting for more; a frame run meanwhile - the user unpausing -
+ends it. A client that sees it knows it has fallen behind: two
+stretches sent at once get it ahead again. Nine seconds bound each
+step, not the queue: an `until` that has not held by then ends it
+`WAITING`, answered to the next queued `STEPS`. It holds 64 steps and
+stops at most. A request that waits - `RUN_FRAMES`, `PRESS`,
+`RUN_UNTIL`, `STEPS` without `on` - replaces the queue, and with it any
+stop or failure not yet answered.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has

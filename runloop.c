@@ -9914,6 +9914,9 @@ int runloop_iterate(void)
 #ifdef HAVE_COMMAND
    if (frame_advanced && (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES))
       command_run_frames_tick();
+   else if (frame_advanced
+         && (runloop_st->frame_work & RUNLOOP_WORK_FREE_FRAME))
+      command_run_frames_free_frame();
    /* LOAD_CONTENT ... paused, from no running core: pausing waits for
     * the first frame, which is what marks a core running */
    if (frame_advanced && (runloop_st->frame_work & RUNLOOP_WORK_PAUSE_LOADED))

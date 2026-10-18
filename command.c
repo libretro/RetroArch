@@ -1392,6 +1392,14 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
    return ret;
 }
 
+/* Whether @s, after a ";", can be a host or a port rather than a STEPS
+ * step: no space, no "|" (a list's "|on"), and not "checkpoint". */
+static bool command_network_host_like(const char *s)
+{
+   return *s && !strchr(s, ' ') && !strchr(s, '|')
+      && !string_is_equal(s, "checkpoint");
+}
+
 bool command_network_send(const char *cmd_)
 {
    char buf[4096];
@@ -1415,14 +1423,14 @@ bool command_network_send(const char *cmd_)
    memcpy(buf, cmd_, len + 1);
 
    /* ";host;port" ends it, the two read from the end and only where they
-    * hold no space: a STEPS list separates its steps with "; " too */
+    * can be no STEPS step: a list separates its steps with ";" too */
    cmd = buf;
-   if ((ptr = strrchr(buf, ';')) && !strchr(ptr + 1, ' '))
+   if ((ptr = strrchr(buf, ';')) && command_network_host_like(ptr + 1))
    {
       char *prev;
       *ptr = '\0';
       host = ptr + 1;
-      if ((prev = strrchr(buf, ';')) && !strchr(prev + 1, ' '))
+      if ((prev = strrchr(buf, ';')) && command_network_host_like(prev + 1))
       {
          *prev    = '\0';
          port_str = host;
@@ -1571,9 +1579,7 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 }
 
 /* The state STATE checkpoint keeps, in memory rather than a slot's
- * file: what an agent rolls back to when a jump goes wrong, in one
- * request where replaying the level took a dozen. Raw core state - it
- * lives only as long as the content - and dropped when that closes. */
+ * file, for STATE rollback; dropped when the content closes. */
 static struct
 {
    void  *data;
@@ -1657,6 +1663,14 @@ static bool command_checkpoint_state(command_t *cmd, const char *arg,
       command_reply_error(cmd, name, "this core cannot save a state");
       return false;
    }
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      command_reply_error(cmd, name,
+            "achievements hardcore mode forbids states");
+      return false;
+   }
+#endif
    if (!(r = command_reply_new(name)))
    {
       command_reply_error(cmd, name, "out of memory");
@@ -1682,7 +1696,6 @@ bool command_checkpoint_rollback(command_t *cmd, const char *arg)
  * paused is, so nothing runs before the first step. */
 static bool command_reset_start(struct command_reply *r)
 {
-   command_run_frames_forget();
    command_event(CMD_EVENT_RESET, NULL);
    command_reply_done(NULL, NULL, r, NULL);
    return true;
@@ -2641,6 +2654,68 @@ static uint8_t *command_memory_get_pointer(
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len);
 
+/* What RUN_UNTIL, a PRESS that waits after it and a STEPS list wait on:
+ * the byte at @lo, or with @wide the value @hi * 256 + @lo, from two
+ * bytes that need not be adjacent. */
+struct command_cond
+{
+   unsigned hi;
+   unsigned lo;
+   unsigned mask;   /* "& <mask>": the bits compared; 0 for all */
+   unsigned want;
+   uint8_t  op;     /* enum cmd_until_op */
+   bool     wide;
+};
+
+/* "<address>[:<address>]" into @c, @end after it: 0, or 1 where the
+ * first address is not one and 2 where the second is not. */
+static int command_cond_address(const char *s, struct command_cond *c,
+      char **end)
+{
+   unsigned address = 0;
+   if (!command_parse_address(s, &address, end))
+      return 1;
+   c->lo = address;
+   if (**end != ':')
+      return 0;
+   if (     !command_parse_address(*end + 1, &address, end)
+         || (**end && **end != ' '))
+      return 2;
+   c->hi   = c->lo;
+   c->lo   = address;
+   c->wide = true;
+   return 0;
+}
+
+static bool command_cond_read(const struct command_cond *c,
+      unsigned *out, char *why, size_t why_len)
+{
+   unsigned       avail = 0;
+   const rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
+   const uint8_t *lo    = command_memory_get_pointer(sys, c->lo, &avail, 0,
+         why, why_len);
+   const uint8_t *hi    = NULL;
+   if (!lo || (c->wide && !(hi = command_memory_get_pointer(sys, c->hi,
+                  &avail, 0, why, why_len))))
+      return false;
+   *out = hi ? ((unsigned)*hi << 8) | *lo : *lo;
+   if (c->mask)
+      *out &= c->mask;
+   return true;
+}
+
+/* The reason command_memory_get_pointer() wrote, as line clients read
+ * it - " -1 ", why, a newline - trimmed to the why. */
+static const char *command_memory_why(char *reason)
+{
+   char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
+      ? reason + STRLEN_CONST(" -1 ") : reason;
+   char *nl  = strchr(why, '\n');
+   if (nl)
+      *nl = '\0';
+   return *why ? why : "no memory at that address";
+}
+
 /* The bytes a client asked to be told about, by the labels it gave
  * them. A step is a request and a look - press, then read where the
  * player is, then read the enemies, then read the game mode - so the
@@ -2649,13 +2724,13 @@ static uint8_t *command_memory_get_pointer(
  * Each is looked up afresh on every reply rather than kept as a
  * pointer: a core may move its memory without closing the content. */
 #define COMMAND_WATCH_MAX 16
+/* the most one watch's line takes: label, address and value */
+#define COMMAND_WATCH_LINE 48
 
 struct command_watch_entry
 {
-   unsigned address;
-   unsigned hi;      /* with wide, the high byte's address */
-   char     label[16];
-   bool     wide;    /* two bytes read as hi * 256 + address's */
+   struct command_cond where; /* its address or two, read as a condition is */
+   char                label[16];
 };
 static struct command_watch_entry command_watches[COMMAND_WATCH_MAX];
 static unsigned command_watch_count;
@@ -2674,43 +2749,24 @@ static size_t command_watch_lines(char *s, size_t len)
    char      reason[128];
    size_t    _len = 0;
    unsigned  i;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   for (i = 0; i < command_watch_count && _len + 48 < len; i++)
+   for (i = 0; i < command_watch_count && _len + COMMAND_WATCH_LINE < len;
+         i++)
    {
       const struct command_watch_entry *e = &command_watches[i];
-      unsigned       avail = 0;
-      const uint8_t *at    = command_memory_get_pointer(&runloop_st->system,
-            e->address, &avail, 0, reason, sizeof(reason));
-      const uint8_t *hi    = e->wide ? command_memory_get_pointer(
-            &runloop_st->system, e->hi, &avail, 0, reason, sizeof(reason))
-            : NULL;
-      if (at && (!e->wide || hi))
-         snprintf(value, sizeof(value), "%u",
-               hi ? ((unsigned)*hi << 8) | *at : (unsigned)*at);
+      unsigned now = 0;
+      if (command_cond_read(&e->where, &now, reason, sizeof(reason)))
+         snprintf(value, sizeof(value), "%u", now);
       else
          strlcpy(value, "none", sizeof(value));
-      if (e->wide)
-         snprintf(where, sizeof(where), "%x:%x", e->hi, e->address);
+      if (e->where.wide)
+         snprintf(where, sizeof(where), "%x:%x", e->where.hi, e->where.lo);
       else
-         snprintf(where, sizeof(where), "%x", e->address);
+         snprintf(where, sizeof(where), "%x", e->where.lo);
       _len += (size_t)snprintf(s + _len, len - _len, "%s\t%s\t%s\n",
             e->label, where, value);
    }
    return _len;
 }
-
-/* What RUN_UNTIL, a PRESS that waits after it and a STEPS list wait on:
- * the byte at @lo, or with @wide the value @hi * 256 + @lo, from two
- * bytes that need not be adjacent. */
-struct command_cond
-{
-   unsigned hi;
-   unsigned lo;
-   unsigned mask;   /* "& <mask>": the bits compared; 0 for all */
-   unsigned want;
-   uint8_t  op;     /* enum cmd_until_op */
-   bool     wide;
-};
 
 /* How a condition compares, in the order the words below name them. */
 enum cmd_until_op
@@ -2732,31 +2788,19 @@ static const char *const command_until_ops[] = {
 static bool command_cond_parse(const char *s, struct command_cond *c,
       char **end, char *why, size_t why_len)
 {
-   unsigned      address = 0;
    unsigned      i;
    unsigned long num;
    const char   *sp;
+   int           bad;
 
    memset(c, 0, sizeof(*c));
-   if (!command_parse_address(s, &address, end))
+   if ((bad = command_cond_address(s, c, end)))
    {
-      strlcpy(why, "a hexadecimal address, or two as high:low, then a "
-            "condition and a value", why_len);
+      strlcpy(why, bad == 1
+            ? "a hexadecimal address, or two as high:low, then a "
+              "condition and a value"
+            : "a second hexadecimal address after the \":\"", why_len);
       return false;
-   }
-   c->lo = address;
-   if (**end == ':')
-   {
-      if (     !command_parse_address(*end + 1, &address, end)
-            || (**end && **end != ' '))
-      {
-         strlcpy(why, "a second hexadecimal address after the \":\"",
-               why_len);
-         return false;
-      }
-      c->hi   = c->lo;
-      c->lo   = address;
-      c->wide = true;
    }
    while (**end == ' ')
       (*end)++;
@@ -2827,23 +2871,6 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
 /* What @c's memory holds now, looked up afresh as WATCH's bytes are,
  * since a core may move its memory while the content runs; false where
  * nothing maps it, with the reason as line clients read it in @why. */
-static bool command_cond_read(const struct command_cond *c,
-      unsigned *out, char *why, size_t why_len)
-{
-   unsigned       avail = 0;
-   const rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
-   const uint8_t *lo    = command_memory_get_pointer(sys, c->lo, &avail, 0,
-         why, why_len);
-   const uint8_t *hi    = NULL;
-   if (!lo || (c->wide && !(hi = command_memory_get_pointer(sys, c->hi,
-                  &avail, 0, why, why_len))))
-      return false;
-   *out = hi ? ((unsigned)*hi << 8) | *lo : *lo;
-   if (c->mask)
-      *out &= c->mask;
-   return true;
-}
-
 static bool command_cond_met(const struct command_cond *c, unsigned now)
 {
    switch (c->op)
@@ -2867,20 +2894,13 @@ static bool command_cond_mapped(command_t *cmd, const char *name,
 {
    char     reason[128];
    unsigned now = 0;
-   char    *why;
-   char    *nl;
    if (command_cond_read(c, &now, reason, sizeof(reason)))
       return true;
-   /* the helper writes the reason as line clients read it, " -1 " and
-    * then why, ending in a newline */
-   why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
-      ? reason + STRLEN_CONST(" -1 ") : reason;
-   if ((nl = strchr(why, '\n')))
-      *nl = '\0';
-   command_reply_error(cmd, name, "%s", *why ? why
-         : "no memory at that address");
+   command_reply_error(cmd, name, "%s", command_memory_why(reason));
    return false;
 }
+
+static unsigned command_frames_default(void);
 
 /* A frame job is a list of steps run in order, one frame at a time:
  * run some frames, press buttons for some, or run until a condition
@@ -2911,7 +2931,8 @@ struct command_step
 
 #define COMMAND_STEPS_MAX 32
 #define COMMAND_STOPS_MAX 4
-/* steps queued and running, their stops among them */
+/* steps queued and running, their stops among them; each queued list
+ * also has a marker, which does not count */
 #define COMMAND_QUEUE_MAX 64
 
 /* How the job answers: the command's own line (RUN_FRAMES, PRESS), how
@@ -2930,7 +2951,7 @@ enum cmd_job_answer
 static struct
 {
    command_deferred_t  deferred;
-   struct command_step steps[COMMAND_QUEUE_MAX];
+   struct command_step steps[2 * COMMAND_QUEUE_MAX];
    /* STEPS: end the list where any of them holds - a death, the level's
     * end */
    struct command_cond stops[COMMAND_STOPS_MAX];
@@ -2958,7 +2979,7 @@ static struct
    bool                queued;
    /* queued: the answer it ended with, until a queued STEPS reads it;
     * also where that STEPS writes its own */
-   char                report[256 + COMMAND_WATCH_MAX * 48 + 32];
+   char                report[256 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE + 32];
    size_t              report_len;
    bool                report_error;
    /* queued: when it ran dry, and the content paused waiting for more */
@@ -2983,6 +3004,9 @@ static void command_run_frames_finish(void)
    command_run_frames_st.count = 0;
    command_run_frames_st.left  = 0;
    command_run_frames_release();
+   /* a frame run without a job ends what the next one would carry */
+   runloop_frame_work_set(RUNLOOP_WORK_FREE_FRAME,
+         command_run_frames_st.let_go != 0);
 }
 
 /* Ends the job: @first, the watches, and @last after them, unless it
@@ -2993,7 +3017,7 @@ static void command_run_frames_answer(const char *first, const char *last,
 {
    /* the step's own line, then a line for each byte watched: room for
     * the longest reply and every watch */
-   char   out[256 + COMMAND_WATCH_MAX * 48 + 32];
+   char   out[256 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE + 32];
    size_t _len = strlcpy(out, first, sizeof(out));
 
    if (_len >= sizeof(out))
@@ -3030,6 +3054,7 @@ static void command_run_frames_end(const char *how)
    {
       command_run_frames_finish();
       command_run_frames_st.dry_since = cpu_features_get_time_usec();
+      runloop_frame_work_set(RUNLOOP_WORK_FREE_FRAME, true);
       return;
    }
    switch (command_run_frames_st.answer)
@@ -3064,8 +3089,10 @@ static void command_run_frames_end(const char *how)
    }
 }
 
-/* Ends the job on a failure, answered as the job answers. */
-static void command_run_frames_fail(const char *why)
+/* Ends the job on a failure, answered as the job answers: a queued
+ * one's is kept for the next queued STEPS, unless what ended it - a
+ * request replacing it, the content closing - forgets it. */
+void command_run_frames_cancel(const char *why)
 {
    char msg[128];
    snprintf(msg, sizeof(msg), "%s ERROR %s",
@@ -3074,13 +3101,13 @@ static void command_run_frames_fail(const char *why)
    command_run_frames_answer(msg, NULL, true);
 }
 
-void command_run_frames_cancel(const char *why)
+/* A frame has run with no job: a press now is a fresh tap, and the
+ * content is no longer sitting idle where a queue ran dry. */
+void command_run_frames_free_frame(void)
 {
-   /* replaced, or the content closed: no one to tell */
-   if (command_run_frames_st.queued)
-      command_run_frames_finish();
-   else
-      command_run_frames_fail(why);
+   command_run_frames_st.let_go    = 0;
+   command_run_frames_st.dry_since = 0;
+   runloop_frame_work_set(RUNLOOP_WORK_FREE_FRAME, false);
 }
 
 void command_run_frames_forget(void)
@@ -3089,8 +3116,7 @@ void command_run_frames_forget(void)
          && (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES))
       command_run_frames_finish();
    command_run_frames_st.report_len = 0;
-   command_run_frames_st.dry_since  = 0;
-   command_run_frames_st.let_go     = 0;
+   command_run_frames_free_frame();
 }
 
 /* A PRESS step holds its buttons; what SET_INPUT already holds stays
@@ -3121,8 +3147,18 @@ static void command_run_frames_enter(bool safe)
          &command_run_frames_st.steps[command_run_frames_st.cur];
       if (s->kind == CMD_STEP_STOP)
       {
-         command_run_frames_st.stops[s->idx - 1] = s->cond;
-         command_run_frames_st.nstops            = s->idx;
+         /* stop 0 starts a queued list: none of the last one's stops,
+          * and its own count of frames */
+         if (!s->idx)
+         {
+            command_run_frames_st.nstops = 0;
+            command_run_frames_st.ran    = 0;
+         }
+         else
+         {
+            command_run_frames_st.stops[s->idx - 1] = s->cond;
+            command_run_frames_st.nstops            = s->idx;
+         }
          command_run_frames_st.cur++;
          continue;
       }
@@ -3132,7 +3168,7 @@ static void command_run_frames_enter(bool safe)
             return;
          if (!command_checkpoint_take())
          {
-            command_run_frames_fail("the core could not keep a "
+            command_run_frames_cancel("the core could not keep a "
                   "checkpoint");
             return;
          }
@@ -3144,12 +3180,17 @@ static void command_run_frames_enter(bool safe)
          if (!command_cond_read(&s->cond, &command_run_frames_st.value,
                   why, sizeof(why)))
          {
-            command_run_frames_fail("nothing maps the address waited "
+            command_run_frames_cancel("nothing maps the address waited "
                   "on now");
             return;
          }
          if (!command_cond_met(&s->cond, command_run_frames_st.value))
+         {
+            /* a queued list has no request's limit, so each wait has
+             * one of its own */
+            command_run_frames_st.left = command_frames_default();
             return;
+         }
          command_run_frames_st.cur++;
          continue;
       }
@@ -3162,6 +3203,9 @@ static void command_run_frames_enter(bool safe)
                && s->port == command_run_frames_st.let_go_port)
          {
             command_run_frames_st.gap = true;
+            /* that frame is not the press's own */
+            if (command_run_frames_st.budget)
+               command_run_frames_st.budget++;
             return;
          }
          command_run_frames_hold(s);
@@ -3263,7 +3307,7 @@ void command_run_frames_tick(void)
       if (!command_cond_read(&command_run_frames_st.stops[i], &now, why,
                sizeof(why)))
       {
-         command_run_frames_fail("nothing maps the stop address now");
+         command_run_frames_cancel("nothing maps the stop address now");
          return;
       }
       if (command_cond_met(&command_run_frames_st.stops[i], now))
@@ -3288,7 +3332,7 @@ void command_run_frames_tick(void)
       if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
                sizeof(why)))
       {
-         command_run_frames_fail("nothing maps the address waited on "
+         command_run_frames_cancel("nothing maps the address waited on "
                "now");
          return;
       }
@@ -3297,15 +3341,22 @@ void command_run_frames_tick(void)
          command_run_frames_st.cur++;
          command_run_frames_enter(true);
       }
+      else if (command_run_frames_st.queued && !--command_run_frames_st.left)
+      {
+         command_run_frames_end("WAITING");
+         return;
+      }
    }
    else if (!--command_run_frames_st.left)
    {
-      command_run_frames_release();
+      /* only what it let go: a button SET_INPUT holds stays down, and
+       * a press of it needs no frame between */
       if (s->kind == CMD_STEP_PRESS)
       {
-         command_run_frames_st.let_go      = s->mask;
+         command_run_frames_st.let_go      = command_run_frames_st.held;
          command_run_frames_st.let_go_port = s->port;
       }
+      command_run_frames_release();
       command_run_frames_st.cur++;
       command_run_frames_enter(true);
    }
@@ -3602,10 +3653,9 @@ bool command_set_input(command_t *cmd, const char *arg)
 bool command_watch(command_t *cmd, const char *arg)
 {
    struct command_watch_entry next[COMMAND_WATCH_MAX];
-   char      reply[64 + COMMAND_WATCH_MAX * 48];
+   char      reply[64 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE];
    char      label[sizeof(next[0].label)];
    char      reason[128];
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
    size_t    _len  = 0;
    size_t    n;
    unsigned  count = command_watch_count;
@@ -3658,21 +3708,13 @@ bool command_watch(command_t *cmd, const char *arg)
       }
       else
       {
-         unsigned  avail   = 0;
-         unsigned  address = 0;
-         unsigned  hi      = 0;
-         bool      wide    = false;
-         char     *end     = NULL;
-         uint8_t  *at;
-         bool      parsed  = command_parse_address(sp, &address, &end);
+         struct command_cond where;
+         unsigned  now = 0;
+         char     *end = NULL;
+         memset(&where, 0, sizeof(where));
          /* high:low, two bytes as one value, as conditions take them */
-         if (parsed && *end == ':')
-         {
-            hi     = address;
-            wide   = true;
-            parsed = command_parse_address(end + 1, &address, &end);
-         }
-         if (!parsed || end != arg || (*arg && *arg != ' '))
+         if (     command_cond_address(sp, &where, &end) || end != arg
+               || (*arg && *arg != ' '))
          {
             command_reply_error(cmd, "WATCH", "a hexadecimal address, or "
                   "\"off\" to stop watching %s", label);
@@ -3687,25 +3729,15 @@ bool command_watch(command_t *cmd, const char *arg)
          }
          /* found now, as RUN_UNTIL finds the byte it waits on, so an
           * address nothing maps is refused rather than read later */
-         if (     !(at = command_memory_get_pointer(&runloop_st->system,
-                     address, &avail, 0, reason, sizeof(reason)))
-               || (wide && !command_memory_get_pointer(&runloop_st->system,
-                     hi, &avail, 0, reason, sizeof(reason))))
+         if (!command_cond_read(&where, &now, reason, sizeof(reason)))
          {
-            char *why = !strncmp(reason, " -1 ", STRLEN_CONST(" -1 "))
-               ? reason + STRLEN_CONST(" -1 ") : reason;
-            char *nl  = strchr(why, '\n');
-            if (nl)
-               *nl = '\0';
             command_reply_error(cmd, "WATCH", "%s: %s", label,
-                  *why ? why : "no memory at that address");
+                  command_memory_why(reason));
             return false;
          }
          if (i == count)
             count++;
-         next[i].address = address;
-         next[i].hi      = hi;
-         next[i].wide    = wide;
+         next[i].where = where;
          strlcpy(next[i].label, label, sizeof(next[i].label));
       }
    }
@@ -3940,9 +3972,10 @@ bool command_steps(command_t *cmd, const char *arg)
 {
    char                list[1024];
    char                why[160];
-   /* the stops go ahead of the steps, in the slots left before them */
-   struct command_step steps[COMMAND_STOPS_MAX + COMMAND_STEPS_MAX];
-   struct command_step *first = steps + COMMAND_STOPS_MAX;
+   /* the stops go ahead of the steps, in the slots left before them,
+    * and a queued list's marker ahead of those */
+   struct command_step steps[1 + COMMAND_STOPS_MAX + COMMAND_STEPS_MAX];
+   struct command_step *first = steps + 1 + COMMAND_STOPS_MAX;
    struct command_cond stops[COMMAND_STOPS_MAX];
    unsigned            ids[ARRAY_SIZE(command_input_names)];
    unsigned            count    = 0;
@@ -4152,14 +4185,18 @@ bool command_steps(command_t *cmd, const char *arg)
    }
    if (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES)
    {
+      unsigned queued = nstops + count;
       if (!command_run_frames_st.queued)
       {
          command_reply_error(cmd, "STEPS", "a request waits on the steps "
                "running; queue once it is answered");
          return false;
       }
-      if (     command_run_frames_st.count - command_run_frames_st.cur
-             + nstops + count > COMMAND_QUEUE_MAX)
+      for (i = command_run_frames_st.cur; i < command_run_frames_st.count; i++)
+         if (     command_run_frames_st.steps[i].kind != CMD_STEP_STOP
+               || command_run_frames_st.steps[i].idx)
+            queued++;
+      if (queued > COMMAND_QUEUE_MAX)
       {
          command_reply_error(cmd, "STEPS", "the queue is full: %u steps "
                "and stops at most, queued and running",
@@ -4170,8 +4207,11 @@ bool command_steps(command_t *cmd, const char *arg)
    /* a stop the client has not heard about: told now, and these not
     * played on from a death */
    idle = command_steps_idle();
+   /* stop 0 marks where the list starts, so it runs with its own stops
+    * and counts its own frames (memset left its kind and idx) */
+   first[-(int)nstops - 1].kind = CMD_STEP_STOP;
    if (!command_run_frames_st.report_len)
-      command_run_frames_queue(first - nstops, nstops + count);
+      command_run_frames_queue(first - nstops - 1, 1 + nstops + count);
    command_steps_report(cmd, idle);
    return true;
 }

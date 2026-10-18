@@ -452,7 +452,8 @@ int main(int argc, char **argv)
    CHECK(command_release_input(&cmd,""));
    reply[0]=0;
    CHECK(command_press(&cmd,"1 b 1"));
-   runloop_iterate();
+   /* b was let go on this boundary: a frame let go, then the tap */
+   runloop_iterate(); runloop_iterate();
    reply[0]=0;
    CHECK(command_get_input(&cmd,"") && !strcmp(reply,"1\tnone\tnone\n"));
 
@@ -636,6 +637,9 @@ int main(int argc, char **argv)
    /* the controls as resolved, not as written */
    reply[0]=0;
    CHECK(command_press(&cmd,"1 +a++a+ 1"));
+   /* a was let go on this boundary: a frame let go, then the press */
+   runloop_iterate();
+   CHECK(!reply[0] && input_driver_command_held(0,axes) == 0x0100);
    runloop_iterate();
    CHECK(!strcmp(reply,"PRESS 1 a+a 1\n"));
    /* an axis is held at a value, so it is SET_INPUT's */
@@ -845,6 +849,9 @@ int main(int argc, char **argv)
       /* without until it answers as it always has */
       reply[0]=0;
       CHECK(command_press(&cmd,"1 a 1"));
+      /* a tap after the last one let go: its own frame, after a gap */
+      runloop_iterate();
+      CHECK(!reply[0]);
       runloop_iterate();
       CHECK(!strcmp(reply,"PRESS 1 a 1\n"));
       reply[0]=0;
@@ -1089,15 +1096,23 @@ int main(int argc, char **argv)
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
       CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
-      /* a list without stops keeps those before it; with its own, they
-       * take over once it starts */
+      /* each queued list runs with its own stops, none where it has
+       * none, and counts its own frames */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 2; stop 1007 == %u|on",(now + 4) & 0xff);
       CHECK(command_steps(&cmd,req));
       CHECK(command_steps(&cmd,"run 5|on"));
-      for (i=0;i<6;i++) runloop_iterate();
+      for (i=0;i<7;i++) runloop_iterate();
       reply[0]=0;
-      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"STOPPED 4\nSTOP 1\nSTEP 1\n"));
+      CHECK(command_steps(&cmd,"|on") && !strncmp(reply,"QUEUED 0\nIDLE ",14)
+            && ram7(&cmd) == ((now + 7) & 0xff));
+      now=ram7(&cmd); reply[0]=0;
+      CHECK(command_steps(&cmd,"run 3|on"));
+      snprintf(req,sizeof(req),"run 9; stop 1007 == %u|on",(now + 5) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      for (i=0;i<5;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"STOPPED 2\nSTOP 1\nSTEP 1\n"));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 2; stop 1007 == %u|on",(now + 4) & 0xff);
       CHECK(command_steps(&cmd,req));
@@ -1177,6 +1192,50 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(command_steps(&cmd,"run 1|on") && !strcmp(reply,"QUEUED 64\n"));
       command_run_frames_cancel("tidying up");
+      /* what the tidying above left to report */
+      command_run_frames_forget();
+      /* a queued wait that never ends gives up as a request's does */
+      {
+         unsigned n=0;
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"until 1007 > 255|on"));
+         while (n < 700 && (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES))
+         { runloop_iterate(); n++; }
+         reply[0]=0;
+         CHECK(n == 540 && command_steps(&cmd,"|on")
+               && !strcmp(reply,"WAITING 540\nSTEP 1\n"));
+      }
+      /* a reset, by hotkey as much as by command, ends the queue */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate();
+      command_event(CMD_EVENT_RESET,NULL);
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      /* idle is time the content sat paused: a frame it runs ends it */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strncmp(reply,"QUEUED 0\nIDLE ",14));
+      command_event(CMD_EVENT_UNPAUSE,NULL);
+      runloop_iterate();
+      command_event(CMD_EVENT_PAUSE,NULL);
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* and a press after such a frame is a tap with no gap before it */
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 b 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"PRESS 1 b 1\n"));
+      command_event(CMD_EVENT_UNPAUSE,NULL);
+      runloop_iterate();
+      command_event(CMD_EVENT_PAUSE,NULL);
+      reply[0]=0;
+      CHECK(command_press(&cmd,"1 b 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"PRESS 1 b 1\n"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"run 1|maybe") && strstr(reply,"on or off"));
       cmd.error=false;

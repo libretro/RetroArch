@@ -612,17 +612,18 @@ bool command_set_option(command_t *cmd, const char *arg);
 bool command_get_log(command_t *cmd, const char *arg);
 #endif
 
-/* RUN_FRAMES <count>; tick after a frontend advance, cancel on close.
- * between runs before the frame is decided, with the core off the
- * stack, for a STEPS checkpoint the request itself could not keep.
- * forget ends a queued STEPS and drops how it stopped, once the state
- * it was planned from is gone: a state loaded, a reset, a close. */
+/* RUN_FRAMES <count>. The runloop calls: tick after a frame a job ran;
+ * free_frame after one with no job; between before a frame, with the
+ * core off the stack, for a STEPS checkpoint; cancel when the content
+ * closes. forget ends a queued STEPS once the state it was planned
+ * from is gone: a state loaded, a reset, a close. */
 #define COMMAND_RUN_FRAMES_MAX 36000
 bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);
 void command_run_frames_between(void);
 void command_run_frames_cancel(const char *why);
 void command_run_frames_forget(void);
+void command_run_frames_free_frame(void);
 
 /* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player], and
  * GET_INPUT [player] to look without changing anything. */
@@ -826,9 +827,10 @@ static const struct cmd_param cmd_params_steps[] = {
       "four stop <condition> ending it where one holds: \"until 86 >= 200; "
       "press 1 a 20; until 1d == 0; stop e == 11\". 32 at most.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "queue", "on: answer now and run after those queued, pausing once "
-      "all have; idle is the ms it then sat paused. A stop since the last "
-      "answer comes instead, dropping these; empty steps only asks.",
+   { "queue", "on: answer now and run after those queued; pause once all "
+      "have (idle: ms paused since). A stop since the last answer comes "
+      "instead, dropping these. Empty steps only asks; a request not "
+      "queued ends the queue.",
       CMD_PARAM_STRING, false, "|", "on|off", NULL },
    { NULL }
 };
@@ -910,7 +912,8 @@ static const struct cmd_param cmd_params_state[] = {
       "quick retry after a mistake. What SET_INPUT holds stays held.",
       CMD_PARAM_STRING, true, NULL,
       COMMAND_STATE_ACTIONS, NULL },
-   { "slot", "save and load: the slot number.", CMD_PARAM_INT, false,
+   { "slot", "The slot number, for save and load only; leave it out for "
+      "checkpoint and rollback.", CMD_PARAM_INT, false,
       NULL, NULL, NULL },
    { NULL }
 };
@@ -1013,8 +1016,8 @@ static const struct cmd_column cmd_cols_memory[] = {
 static const struct cmd_column cmd_cols_watch[] = {
    { "label", "What the client called it." },
    { "address", "Where it is, in hexadecimal." },
-   { "value", "What the byte holds, in decimal from 0 to 255, or none "
-      "where nothing maps it now." },
+   { "value", "What it holds, in decimal: 0 to 255, or to 65535 for "
+      "high:low; none where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
@@ -1131,7 +1134,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
-   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queue it to play on without pausing. Answers queued (steps left), or done, waiting (ask again from step) or stopped with the frames run; the stop and step (stops aside) it ended on, from 1; and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers queued (steps left), or done, waiting or stopped: the frames run, the stop that held, the step it ended on, and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
