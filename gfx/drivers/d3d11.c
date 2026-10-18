@@ -29,6 +29,7 @@
 
 #include <string.h>
 #include <malloc.h>
+#include <limits.h>
 
 #include <retro_inline.h>
 #include <boolean.h>
@@ -285,6 +286,8 @@ typedef struct
 {
    D3D11Texture2D          handle;
    D3D11Texture2D          staging;
+   void                  *upload_data;
+   size_t                 upload_size;
    D3D11_TEXTURE2D_DESC    desc;
    D3D11RenderTargetView   rt_view;
    D3D11ShaderResourceView view;
@@ -800,6 +803,9 @@ static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
    Release(texture->staging);
    Release(texture->view);
    Release(texture->rt_view);
+   free(texture->upload_data);
+   texture->upload_data = NULL;
+   texture->upload_size = 0;
 }
 
 static bool d3d11_init_shader(
@@ -1012,7 +1018,11 @@ static unsigned d3d11_format_bytes(DXGI_FORMAT format)
          return 4;
       case DXGI_FORMAT_B5G6R5_UNORM:
       case DXGI_FORMAT_B4G4R4A4_UNORM:
+      case DXGI_FORMAT_B5G5R5A1_UNORM:
          return 2;
+      case DXGI_FORMAT_A8_UNORM:
+      case DXGI_FORMAT_R8_UNORM:
+         return 1;
       case DXGI_FORMAT_R16G16B16A16_FLOAT:
          return 8;
       default:
@@ -1044,26 +1054,43 @@ static void d3d11_update_texture(
    frame_box.bottom = height;
    frame_box.back   = 1;
 
-   /* The staging texture the last update copied from may still be the
-    * GPU's, and a plain map waits for it. A frame in the texture's own
-    * format goes in through the driver instead, which never waits;
-    * only one the copy converts waits for its staging texture. */
+   /* Busy staging must not bypass ABI channel conversion. */
    hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
          D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped_texture);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
    {
-      unsigned bytes = d3d11_format_bytes(format);
-      if (format == texture->desc.Format && bytes)
-      {
-         ctx->lpVtbl->UpdateSubresource(ctx,
-               (D3D11Resource)texture->handle, 0, &frame_box, data,
-               pitch ? pitch : width * bytes, 0);
-         if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
-            ctx->lpVtbl->GenerateMips(ctx, texture->view);
+      unsigned bytes = d3d11_format_bytes(texture->desc.Format);
+      if (     !bytes || !width || !height
+            || width > INT_MAX / bytes || height > INT_MAX
+            || pitch > INT_MAX)
          return;
+      if (     format != texture->desc.Format
+            || format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      {
+         unsigned row_pitch = width * bytes;
+         size_t size;
+         if (height > (size_t)-1 / row_pitch)
+            return;
+         size = (size_t)row_pitch * height;
+         if (size > texture->upload_size)
+         {
+            void *grown = realloc(texture->upload_data, size);
+            if (!grown)
+               return;
+            texture->upload_data = grown;
+            texture->upload_size = size;
+         }
+         dxgi_copy(width, height, format, pitch, data,
+               texture->desc.Format, row_pitch, texture->upload_data);
+         data  = texture->upload_data;
+         pitch = row_pitch;
       }
-      hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
-            D3D11_MAP_WRITE, 0, &mapped_texture);
+      ctx->lpVtbl->UpdateSubresource(ctx,
+            (D3D11Resource)texture->handle, 0, &frame_box, data,
+            pitch ? pitch : width * bytes, 0);
+      if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+         ctx->lpVtbl->GenerateMips(ctx, texture->view);
+      return;
    }
    if (FAILED(hr))
       return;
@@ -9030,7 +9057,8 @@ static uintptr_t d3d11_gfx_load_texture_internal(
       return 0;
    }
 
-   if (texture->desc.Format == src_format)
+   if (     texture->desc.Format == src_format
+         && src_format != DXGI_FORMAT_R10G10B10A2_UNORM)
    {
       d3d11->context->lpVtbl->UpdateSubresource(d3d11->context,
             (D3D11Resource)texture->handle, 0, NULL, image->pixels,

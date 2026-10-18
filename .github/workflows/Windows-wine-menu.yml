@@ -167,6 +167,8 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           CC=x86_64-w64-mingw32-gcc RUNNER=wine \
             xvfb-run -a python3 samples/gfx/d3d12_menu_mapping/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
+            xvfb-run -a python3 samples/gfx/d3d_failure_paths/gpu.py
 
       - name: A core writing into the framebuffer d3d9_hlsl lends it (Wine)
         shell: bash

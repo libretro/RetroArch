@@ -1382,6 +1382,9 @@ jobs:
           set -eu
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/run.py
+            CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/upload.py
+            CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/upload.py
+            python3 samples/gfx/d3d_failure_paths/gpu.py
 
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |
