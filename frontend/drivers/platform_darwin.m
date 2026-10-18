@@ -371,6 +371,37 @@ static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor
    return _len;
 }
 
+#if TARGET_OS_OSX
+/* Steam, RAPortableInstall or portable.txt: everything stays in
+ * the application data directory. */
+static bool darwin_portable_install(const char *application_data)
+{
+#if HAVE_STEAM
+   return true;
+#else
+   char portable_buf[PATH_MAX_LENGTH];
+   if ([[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RAPortableInstall"] boolValue])
+      return true;
+   fill_pathname_join(portable_buf, application_data, "portable.txt", sizeof(portable_buf));
+   return path_is_valid(portable_buf);
+#endif
+}
+
+/* The user Documents folder the default directories go under;
+ * false for a portable install, which does not use it. */
+bool frontend_darwin_documents_dir(char *s, size_t len)
+{
+   char application_data[PATH_MAX_LENGTH];
+   application_data[0] = '\0';
+   fill_pathname_application_data(application_data, sizeof(application_data));
+   if (darwin_portable_install(application_data))
+      return false;
+   s[0] = '\0';
+   CFSearchPathForDirectoriesInDomains(s, len);
+   return s[0] != '\0';
+}
+#endif
+
 static void frontend_darwin_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -396,20 +427,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
 #if TARGET_OS_OSX
    fill_pathname_application_data(application_data, sizeof(application_data));
 
-   BOOL portable; /* steam || RAPortableInstall || portable.txt */
-#if HAVE_STEAM
-   /* For Steam, we're going to put everything next to the .app */
-   portable = YES;
-#else
-   portable = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RAPortableInstall"] boolValue];
-   if (!portable)
-   {
-      char portable_buf[PATH_MAX_LENGTH] = {0};
-      fill_pathname_join(portable_buf, application_data, "portable.txt", sizeof(portable_buf));
-      portable = path_is_valid(portable_buf);
-   }
-#endif
-   if (portable)
+   if (darwin_portable_install(application_data))
       strlcpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
    else
    {
