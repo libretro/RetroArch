@@ -18,9 +18,14 @@ parser.add_argument("--resize", action="store_true")
 parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
+parser.add_argument("--hdr-uniforms", choices=("ubo", "push"), help="check existing typed HDR uniforms")
+parser.add_argument("--paper-white", type=float, default=203.0)
+parser.add_argument("--expand-gamut", type=int, choices=(0, 1, 2), default=0)
 args = parser.parse_args()
 if args.overlay:
     args.stock = True
+if args.hdr_uniforms and args.stock:
+    parser.error("--hdr-uniforms requires the checker shader")
 
 executable = args.retroarch.resolve()
 w = args.output.resolve()
@@ -33,7 +38,7 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-I" + str(r / "libretro-common/include"),
                     str(Path(__file__).with_name("fp16_hw_core.c" if args.hardware else "fp16_core.c")),
                     "-o", str(core), "-lm"], check=True)
-(w/'check.slang').write_text("""#version 450
+shader = """#version 450
 #pragma format R16G16B16A16_SFLOAT
 layout(set=0,binding=0) uniform UBO { mat4 MVP; } global;
 #pragma stage vertex
@@ -50,7 +55,17 @@ void main() {
  bool ok=all(lessThan(abs(c-vec3(-0.25,0.5,2.0)),vec3(0.001)));
  FragColor=vec4(ok?vec3(203.0/80.0):vec3(2.5375,0,0),1);
 }
-""",encoding='utf-8')
+"""
+if args.hdr_uniforms:
+    members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if args.hdr_uniforms == "ubo":
+        shader = shader.replace("mat4 MVP;", "mat4 MVP; " + members)
+        prefix = "global."
+    else:
+        shader = shader.replace("#pragma stage vertex", "layout(push_constant) uniform Push { " + members + " } hdr;\n#pragma stage vertex")
+        prefix = "hdr."
+    shader = shader.replace("FragColor=", f"ok = ok && {prefix}HDRMode == 2u && abs({prefix}BrightnessNits - {args.paper_white}) < 0.01 && {prefix}ExpandGamut == {args.expand_gamut}u;\n FragColor=")
+(w/'check.slang').write_text(shader, encoding='utf-8')
 (w/'check.slangp').write_text('shaders = "1"\nshader0 = "check.slang"\n',encoding='utf-8')
 if args.overlay:
     overlay = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
@@ -68,10 +83,10 @@ for driver in drivers:
 video_threaded = "{threaded}"
 video_shader_deferred_loading = "{'true' if args.deferred else 'false'}"
 video_hdr_mode = "2"
-video_hdr_paper_white_nits = "203"
+video_hdr_paper_white_nits = "{args.paper_white}"
 video_hdr_max_nits = "600"
 video_hdr_use_display_peak = "false"
-video_hdr_expand_gamut = "0"
+video_hdr_expand_gamut = "{args.expand_gamut}"
 video_shader_enable = "{'false' if args.stock else 'true'}"
 video_shader = "{(w/'check.slangp').as_posix()}"
 video_gpu_screenshot = "true"

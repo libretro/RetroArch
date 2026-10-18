@@ -61,3 +61,16 @@ rejects it rather than interpreting its rows as RGB565.
 
 The hardware fixture checks a floating-point GLCore framebuffer. Both threaded
 settings are exercised; hardware contexts use the existing unthreaded fallback.
+
+GLCore HDR uniform acceptance:
+
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/hdr-ubo --hdr-uniforms ubo
+    python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/hdr-push --hdr-uniforms push --paper-white 100 --expand-gamut 2
+    python3 run_sdr_uniforms.py --retroarch /path/to/retroarch --output /tmp/hdr-sdr
+
+HDRMode (uint), BrightnessNits (float) and ExpandGamut (uint) use the
+renderer's actual output and the settings carried with the frame. SDR output
+supplies zero for all three, including when the context refused HDR. On a
+machine without HDR output, --requested-hdr 2 checks that fallback. The SDR
+runner covers both storage types, direct/threaded and immediate/deferred.
+These bindings add no texture copies, readbacks or synchronization.

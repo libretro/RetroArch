@@ -132,6 +132,10 @@ void gl3_filter_chain_set_frame_time_delta(
       gl3_filter_chain_t *chain,
       uint32_t time_delta);
 
+void gl3_filter_chain_set_hdr_parameters(
+      gl3_filter_chain_t *chain, unsigned mode,
+      float paper_white_nits, unsigned expand_gamut);
+
 void gl3_filter_chain_set_original_fps(
       gl3_filter_chain_t *chain,
       float fps);

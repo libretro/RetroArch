@@ -7465,6 +7465,10 @@ static bool gl3_frame(void *data, const void *frame,
          gl3_filter_chain_set_frame_time_delta(fc, (uint32_t)video_driver_get_frame_time_delta_usec());
 
          gl3_filter_chain_set_original_fps(fc, video_driver_get_original_fps());
+         gl3_filter_chain_set_hdr_parameters(fc,
+               gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0,
+               gl->scrgb.active ? gl->scrgb.paper_white_nits : 0.0f,
+               gl->scrgb.active ? gl->scrgb.expand_gamut : 0);
 
          {
             uint32_t rot          = gl->rotation_raw;
