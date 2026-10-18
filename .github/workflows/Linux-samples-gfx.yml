@@ -615,6 +615,7 @@ jobs:
           # Compile both loaders' actual uniform maps from
           # gfx/drivers/d3d10.c, gfx/drivers/d3d11.c and gfx/drivers/d3d12.c.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 output_state.py
 
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash

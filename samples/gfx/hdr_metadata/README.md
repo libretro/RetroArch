@@ -62,11 +62,12 @@ rejects it rather than interpreting its rows as RGB565.
 The hardware fixture checks a floating-point GLCore framebuffer. Both threaded
 settings are exercised; hardware contexts use the existing unthreaded fallback.
 
-GLCore HDR uniform acceptance:
+Slang HDR uniform acceptance:
 
     python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/hdr-ubo --hdr-uniforms ubo
     python3 run_fp16.py --retroarch /path/to/retroarch --output /tmp/hdr-push --hdr-uniforms push --paper-white 100 --expand-gamut 2
     python3 run_sdr_uniforms.py --retroarch /path/to/retroarch --output /tmp/hdr-sdr
+    python3 run_sdr_uniforms.py --retroarch /path/to/retroarch --output /tmp/hdr-d3d-sdr --drivers d3d11,d3d12
 
 HDRMode (uint), BrightnessNits (float) and ExpandGamut (uint) use the
 renderer's actual output and the settings carried with the frame. SDR output
@@ -74,6 +75,9 @@ supplies zero for all three, including when the context refused HDR. On a
 machine without HDR output, --requested-hdr 2 checks that fallback. The SDR
 runner covers both storage types, direct/threaded and immediate/deferred.
 These bindings add no texture copies, readbacks or synchronization.
+D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
+SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
+state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
 
 Optional Slang final-pass ownership:
 

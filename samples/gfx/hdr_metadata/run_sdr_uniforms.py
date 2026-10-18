@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Check GLCore HDR uniforms on an actual SDR output, including fallback."""
+"""Check Slang HDR uniforms on an actual SDR output, including fallback."""
 import argparse
+from itertools import product
 import os
 from pathlib import Path
 import shlex
@@ -10,6 +11,7 @@ from PIL import Image
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--retroarch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
+p.add_argument("--drivers", default="glcore")
 p.add_argument("--requested-hdr", choices=(0, 1, 2), type=int, default=0)
 a = p.parse_args()
 exe = a.retroarch.resolve()
@@ -22,7 +24,7 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-I" + str(root / "libretro-common/include"),
                     str(Path(__file__).with_name("live_core.c")),
                     "-o", str(core), "-lm"], check=True)
-for storage in ("ubo", "push"):
+for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
     ubo = "mat4 MVP;" + (members if storage == "ubo" else "")
     hdr = "" if storage == "ubo" else "layout(push_constant) uniform HDR { " + members + " } hdr;"
@@ -49,10 +51,10 @@ void main() {
     preset.write_text('shaders = "1"\nshader0 = "check.slang"\n', encoding="utf-8")
     for threaded in ("false", "true"):
         for deferred in ("false", "true"):
-            lane = f"{storage}-{threaded}-{deferred}"
+            lane = f"{driver}-{storage}-{threaded}-{deferred}"
             config = w / (lane + ".cfg")
             screenshot = w / (lane + ".png")
-            config.write_text(f'''video_driver = "glcore"
+            config.write_text(f'''video_driver = "{driver}"
 video_threaded = "{threaded}"
 video_shader_deferred_loading = "{deferred}"
 video_shader_enable = "true"
@@ -81,7 +83,7 @@ menu_show_start_screen = "false"
                                     stdout=output, stderr=subprocess.STDOUT, timeout=60)
             evidence = log.read_bytes()
             assert result.returncode == 0 and b"[hdr_metadata] PASS:" in evidence, log
-            assert b"Failed to reflect" not in evidence, log
+            assert b"[ERROR] [Slang]" not in evidence and b"Failed to reflect" not in evidence, log
             im = Image.open(screenshot).convert("RGB")
             rgb = im.getpixel((im.width // 2, im.height // 2))
             assert rgb == (255, 255, 255), (lane, rgb)

@@ -7315,13 +7315,20 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
       /* From the driver's latches - the HDR pokes store into
        * hdr.ubo_values and init seeds them - never live settings on
        * the video thread. */
-      pass->hdr_mode = video_info->hdr_mode;
-      if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      pass->hdr_mode = d3d12_hdr_output_mode(d3d12);
+      if (pass->hdr_mode)
       {
          pass->paper_white_nits = d3d12->hdr.ubo_values.paper_white_nits;
          pass->scanlines        = d3d12->hdr.ubo_values.scanlines;
          pass->subpixel_layout  = d3d12->hdr.ubo_values.subpixel_layout;
          pass->expand_gamut     = d3d12->hdr.ubo_values.expand_gamut;
+      }
+      else
+      {
+         pass->paper_white_nits = 0.0f;
+         pass->scanlines        = 0.0f;
+         pass->subpixel_layout  = 0;
+         pass->expand_gamut     = 0;
       }
 #endif
    }
