@@ -840,17 +840,98 @@ void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
    }
 }
 
+#ifdef HAVE_MENU
+static void video_thread_menu_mem_update(thread_video_t *thr)
+{
+   const video_poke_interface_t *poke = thr->poke;
+   unsigned i;
+   unsigned dims = (unsigned)retro_atomic_load_acquire_int(
+         &thr->texture.request_dims);
+   size_t width = VIDEO_SCALE_W(dims);
+   size_t height = VIDEO_SCALE_H(dims);
+   size_t need;
+
+   if (!thr->driver_data || !poke || !poke->menu_mem_alloc
+         || !poke->frame_mem_ready || !poke->frame_mem_free)
+      return;
+   if (!width || !height || width > (size_t)-1 / height / 4)
+      return;
+   need = width * height * 4;
+   if (thr->texture.refused_size != need)
+      thr->texture.refused_size = 0;
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+   {
+      struct video_thread_menu_mem *m = &thr->texture.mem[i];
+      int state = retro_atomic_load_acquire_int(&m->state);
+      if (state == VIDEO_THREAD_MENU_GPU)
+      {
+         if (!poke->frame_mem_ready(thr->driver_data, m->id))
+            continue;
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
+         state = VIDEO_THREAD_MENU_READY;
+      }
+      if (state != VIDEO_THREAD_MENU_EMPTY && state != VIDEO_THREAD_MENU_READY)
+         continue;
+      if (!retro_atomic_cas_int(&m->state, state, VIDEO_THREAD_MENU_BUILD))
+         continue;
+      if (m->size < need && thr->texture.refused_size != need)
+      {
+         if (m->ptr)
+            poke->frame_mem_free(thr->driver_data, m->id);
+         m->id = 0;
+         m->ptr = poke->menu_mem_alloc(thr->driver_data, need, &m->id);
+         m->size = m->ptr ? need : 0;
+         if (!m->ptr)
+            thr->texture.refused_size = need;
+      }
+      retro_atomic_store_release_int(&m->state, m->ptr
+            ? VIDEO_THREAD_MENU_READY : VIDEO_THREAD_MENU_EMPTY);
+   }
+}
+
+/* CMD_FREE runs with the producer parked. */
+static void video_thread_menu_mem_free(thread_video_t *thr)
+{
+   unsigned i;
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+   {
+      struct video_thread_menu_mem *m = &thr->texture.mem[i];
+      if (m->ptr)
+         thr->poke->frame_mem_free(thr->driver_data, m->id);
+      m->ptr = NULL;
+      m->size = 0;
+      m->id = 0;
+      retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_EMPTY);
+   }
+   for (i = 0; i < 3; i++)
+      thr->texture.slot[i].mem = 0;
+   retro_atomic_store_release_int(&thr->texture.request_dims, 0);
+}
+#endif
+
 static void thread_update_driver_state(thread_video_t *thr)
 {
 #ifdef HAVE_MENU
    {
-      const struct video_thread_menu_texture *t =
-         (const struct video_thread_menu_texture*)
+      struct video_thread_menu_texture *t;
+      int enable;
+      video_thread_menu_mem_update(thr);
+      t = (struct video_thread_menu_texture*)
          retro_triple_buffer_take(&thr->texture.frames);
-      int enable = retro_atomic_load_acquire_int(&thr->texture.enable);
+      enable = retro_atomic_load_acquire_int(&thr->texture.enable);
       if (t && thr->driver_data && thr->poke && thr->poke->set_texture_frame)
+      {
+         const void *pixels = t->frame;
+         if (t->mem)
+         {
+            struct video_thread_menu_mem *m = &thr->texture.mem[t->mem - 1];
+            pixels = m->ptr;
+            retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_GPU);
+            t->mem = 0;
+         }
          thr->poke->set_texture_frame(thr->driver_data,
-               t->frame, t->rgb32, t->dims, t->alpha);
+               pixels, t->rgb32, t->dims, t->alpha);
+      }
       if (thr->driver_data && thr->poke && thr->poke->set_texture_enable)
          thr->poke->set_texture_enable(thr->driver_data,
                (enable & VIDEO_THREAD_TEXTURE_ENABLE) != 0,
@@ -1002,6 +1083,9 @@ static bool video_thread_handle_packet(
           * memory */
          video_thread_lend_forget(thr, 0);
          video_thread_mem_unprovision(thr);
+#ifdef HAVE_MENU
+         video_thread_menu_mem_free(thr);
+#endif
          /* The hardware ring's fences belong to the device. */
          video_thread_hw_free(thr);
          if (thr->driver_data && thr->driver && thr->driver->free)
@@ -4884,6 +4968,34 @@ void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32)
    if (!thr || !video_driver_thread_wrapper_active())
       return NULL;
    t = thread_menu_texture_back(thr, rgb32, dims);
+   if (t)
+   {
+      unsigned i;
+      size_t need = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+         * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      if (t->mem)
+      {
+         retro_atomic_store_release_int(&thr->texture.mem[t->mem - 1].state,
+               VIDEO_THREAD_MENU_READY);
+         t->mem = 0;
+      }
+      retro_atomic_store_release_int(&thr->texture.request_dims, (int)dims);
+      for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+      {
+         struct video_thread_menu_mem *m = &thr->texture.mem[i];
+         if (!retro_atomic_cas_int(&m->state,
+                  VIDEO_THREAD_MENU_READY, VIDEO_THREAD_MENU_CPU))
+            continue;
+         if (m->size >= need)
+         {
+            t->mem = i + 1;
+            t->dims = dims;
+            t->rgb32 = rgb32;
+            return m->ptr;
+         }
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
+      }
+   }
    return t ? t->frame : NULL;
 }
 
@@ -4895,7 +5007,19 @@ static void thread_set_texture_frame(void *data, const void *frame,
 
    if (!frame || !(t = thread_menu_texture_back(thr, rgb32, dims)))
       return;
-   if (frame != t->frame)
+   if (t->mem)
+   {
+      struct video_thread_menu_mem *m = &thr->texture.mem[t->mem - 1];
+      if (frame != m->ptr || dims != t->dims || rgb32 != t->rgb32)
+      {
+         bool stale = frame == m->ptr;
+         retro_atomic_store_release_int(&m->state, VIDEO_THREAD_MENU_READY);
+         t->mem = 0;
+         if (stale)
+            return;
+      }
+   }
+   if (!t->mem && frame != t->frame)
       memcpy(t->frame, frame, (size_t)VIDEO_SCALE_W(dims) *
             VIDEO_SCALE_H(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
    t->rgb32 = rgb32;

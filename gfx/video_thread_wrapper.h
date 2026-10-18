@@ -398,10 +398,26 @@ enum video_thread_vp_slot
 
 /* One menu texture frame, owned by whichever side of the triple
  * buffer holds it. */
+#define VIDEO_THREAD_MENU_MEM 6
+#define VIDEO_THREAD_MENU_EMPTY 0
+#define VIDEO_THREAD_MENU_READY 1
+#define VIDEO_THREAD_MENU_CPU   2
+#define VIDEO_THREAD_MENU_GPU   3
+#define VIDEO_THREAD_MENU_BUILD 4
+
+struct video_thread_menu_mem
+{
+   void *ptr;
+   size_t size;
+   uintptr_t id;
+   retro_atomic_int_t state;
+};
+
 struct video_thread_menu_texture
 {
    void *frame;
    size_t frame_cap;
+   unsigned mem;
    unsigned dims;
    float alpha;
    bool rgb32;
@@ -651,12 +667,14 @@ typedef struct thread_video
    /* The menu texture: the main thread fills the next frame in the
     * triple buffer's back slot and publishes it, the video thread takes
     * the newest at its next apply and hands it to the driver, which
-    * copies the pixels there and keeps no pointer. Neither waits on the
-    * other. 'enable' carries the enable and full-screen flags, written
+    * copies CPU slots or retains upload storage until GPU retirement. 'enable' carries the enable and full-screen flags, written
     * by the main thread, read at every apply. */
    struct
    {
       struct video_thread_menu_texture slot[3];
+      struct video_thread_menu_mem mem[VIDEO_THREAD_MENU_MEM];
+      size_t refused_size;
+      retro_atomic_int_t request_dims;
       retro_triple_buffer_t frames;
       retro_atomic_int_t enable;     /* VIDEO_THREAD_TEXTURE_* */
    } texture;

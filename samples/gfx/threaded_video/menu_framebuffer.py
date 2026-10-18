@@ -10,7 +10,14 @@ import tempfile
 root = Path(__file__).resolve().parents[3]
 source = (root / "gfx/video_thread_wrapper.c").read_text(encoding="utf-8")
 header = (root / "gfx/video_thread_wrapper.h").read_text(encoding="utf-8")
-structure = re.search(r"struct video_thread_menu_texture\n\{.*?\n};", header, re.S).group()
+structure = header[header.index("#define VIDEO_THREAD_MENU_MEM"):]
+structure = structure[:structure.index("\ntypedef struct thread_video")]
+wstart = source.index("static void video_thread_menu_mem_update(")
+wend = source.index("\nstatic void thread_update_driver_state(", wstart)
+worker = source[wstart:wend].replace("\n#endif", "")
+wstart = wend + 1
+wend = source.index("\n#ifdef HAVE_OVERLAY", wstart)
+worker += source[wstart:wend] + "\n}\n"
 start = source.index("static struct video_thread_menu_texture *thread_menu_texture_back(")
 end = source.index("\n}\n", source.index("static void thread_set_texture_frame(", start)) + 3
 functions = source[start:end]
@@ -28,12 +35,22 @@ fixture = r'''
 #include <stdlib.h>
 #include <string.h>
 #include <queues/retro_triple_buffer.h>
+#include <rthreads/rthreads.h>
+#define VIDEO_THREAD_TEXTURE_ENABLE 1
+#define VIDEO_THREAD_TEXTURE_FULL_SCREEN 2
 #include "gfx/video_defines.h"
 STRUCTURE
+struct poke;
+typedef struct poke video_poke_interface_t;
 typedef struct {
+   const video_poke_interface_t *poke;
+   void *driver_data;
    struct {
       retro_triple_buffer_t frames;
       struct video_thread_menu_texture slot[3];
+      struct video_thread_menu_mem mem[VIDEO_THREAD_MENU_MEM];
+      size_t refused_size;
+      retro_atomic_int_t request_dims, enable;
    } texture;
 } thread_video_t;
 static thread_video_t *video_thread_thr_capture;
@@ -56,7 +73,6 @@ FUNCTIONS
 #undef memcpy
 #undef realloc
 
-#define HAVE_THREADS
 #define RGUI_UPSCALE_NONE 0
 #define RGUI_UPSCALE_AUTO 1
 #define GFX_DISP_FLAG_FB_DIRTY 1
@@ -67,8 +83,11 @@ typedef struct { struct { unsigned menu_rgui_internal_upscale_level; } uints; } 
 struct poke {
    void (*set_texture_frame)(void*, const void*, bool, unsigned, float);
    void *(*get_menu_framebuffer)(void*, bool, unsigned, size_t*);
+   void *(*menu_mem_alloc)(void*, size_t, uintptr_t*);
+   bool (*frame_mem_ready)(void*, uintptr_t);
+   void (*frame_mem_free)(void*, uintptr_t);
+   void (*set_texture_enable)(void*, bool, bool);
 };
-typedef struct poke video_poke_interface_t;
 typedef struct { void *data; struct poke *poke; } video_driver_state_t;
 static gfx_display_t display;
 static settings_t settings;
@@ -84,6 +103,7 @@ static void video_driver_get_viewport_info(struct video_viewport *vp)
 #define configuration_set_uint(s, field, value) ((field) = (value))
 FRONTEND
 RENDER
+WORKER
 
 static uint16_t direct_pixels[256];
 static unsigned direct_submits;
@@ -174,6 +194,173 @@ static void check_upscale(thread_video_t *thr)
    assert(!memcmp(taken->frame, pixels, sizeof(pixels)));
 }
 
+
+static struct {
+   void *ptr;
+   size_t size, bytes;
+   unsigned busy;
+   uint8_t value;
+} upload[VIDEO_THREAD_MENU_MEM];
+static unsigned uploaded, ready_checks;
+static bool refuse_upload;
+static retro_atomic_int_t producer_done;
+static void *mock_menu_alloc(void *data, size_t size, uintptr_t *id)
+{
+   unsigned i;
+   (void)data;
+   if (refuse_upload) return NULL;
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+      if (!upload[i].ptr)
+      {
+         upload[i].ptr = malloc(size);
+         assert(upload[i].ptr);
+         upload[i].size = size;
+         upload[i].busy = 0;
+         *id = i + 1;
+         return upload[i].ptr;
+      }
+   assert(0);
+   return NULL;
+}
+static bool mock_menu_ready(void *data, uintptr_t id)
+{
+   size_t x;
+   unsigned i = (unsigned)id - 1;
+   (void)data;
+   ready_checks++;
+   assert(i < VIDEO_THREAD_MENU_MEM);
+   for (x = 0; x < upload[i].bytes && upload[i].busy; x++)
+      assert(((uint8_t*)upload[i].ptr)[x] == upload[i].value);
+   if (upload[i].busy) upload[i].busy--;
+   return upload[i].busy == 0;
+}
+static void mock_menu_free(void *data, uintptr_t id)
+{
+   unsigned i = (unsigned)id - 1;
+   (void)data;
+   assert(i < VIDEO_THREAD_MENU_MEM && upload[i].ptr);
+   free(upload[i].ptr);
+   memset(&upload[i], 0, sizeof(upload[i]));
+}
+static void mock_menu_submit(void *data, const void *frame, bool rgb32,
+      unsigned dims, float alpha)
+{
+   unsigned i;
+   size_t x, bytes = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
+   uint8_t value = *(const uint8_t*)frame;
+   (void)data; (void)alpha;
+   for (x = 0; x < bytes; x++) assert(((const uint8_t*)frame)[x] == value);
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+      if (frame == upload[i].ptr)
+      {
+         assert(!upload[i].busy && bytes <= upload[i].size);
+         upload[i].bytes = bytes;
+         upload[i].value = value;
+         upload[i].busy = 4;
+         uploaded++;
+      }
+}
+static void menu_producer(void *data)
+{
+   unsigned j;
+   uint8_t pixels[1024];
+   for (j = 0; j < 100000; j++)
+   {
+      unsigned w = 4u << ((j / 1000) % 3);
+      unsigned dims = VIDEO_SCALE_PACK(w, w);
+      bool rgb32 = (j & 1) != 0;
+      void *ptr = video_thread_get_menu_framebuffer(dims, rgb32);
+      assert(ptr);
+      memset(ptr, (int)(j % 251 + 1), (size_t)w * w * (rgb32 ? 4 : 2));
+      if (j % 13 == 0) continue;
+      if (j % 17 == 0)
+      {
+         memset(pixels, (int)(j % 251 + 1), sizeof(pixels));
+         ptr = pixels;
+      }
+      thread_set_texture_frame(data, ptr, rgb32, dims, 1.0f);
+   }
+   retro_atomic_store_release_int(&producer_done, 1);
+}
+static void check_mapped(thread_video_t *thr)
+{
+   struct poke poke;
+   sthread_t *thread;
+   unsigned i, before;
+   void *ptr;
+   struct video_thread_menu_texture *back;
+   memset(&poke, 0, sizeof(poke));
+   poke.set_texture_frame = mock_menu_submit;
+   poke.menu_mem_alloc = mock_menu_alloc;
+   poke.frame_mem_ready = mock_menu_ready;
+   poke.frame_mem_free = mock_menu_free;
+   thr->poke = &poke;
+   thr->driver_data = thr;
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   assert(ptr);
+   video_thread_menu_mem_update(thr);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+   assert(back->mem && ptr != back->frame);
+   memset(ptr, 7, 32);
+   before = copied;
+   thread_set_texture_frame(thr, ptr, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
+   assert(copied == before);
+   thread_update_driver_state(thr);
+   assert(uploaded == 1);
+   /* Saturate the GPU-held pool and verify CPU fallback, without waiting. */
+   for (i = 1; i < VIDEO_THREAD_MENU_MEM; i++)
+   {
+      ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+      back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+      assert(back->mem);
+      memset(ptr, (int)i, 32);
+      thread_set_texture_frame(thr, ptr, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
+      /* Hold every submitted buffer, regardless of later readiness checks. */
+      thread_update_driver_state(thr);
+      {
+         unsigned k;
+         for (k = 0; k < VIDEO_THREAD_MENU_MEM; k++)
+            if (upload[k].busy) upload[k].busy = 100;
+      }
+   }
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+   assert(!back->mem && ptr == back->frame);
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++) upload[i].busy = 0;
+   video_thread_menu_mem_update(thr);
+   thread = sthread_create(menu_producer, thr);
+   assert(thread);
+   while (!retro_atomic_load_acquire_int(&producer_done)) thread_update_driver_state(thr);
+   sthread_join(thread);
+   thread_update_driver_state(thr);
+   for (i = 0; i < 5; i++) video_thread_menu_mem_update(thr);
+   assert(uploaded > VIDEO_THREAD_MENU_MEM && ready_checks);
+   video_thread_menu_mem_free(thr);
+   assert(!retro_atomic_load_acquire_int(&thr->texture.request_dims));
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+      assert(!thr->texture.mem[i].ptr && !upload[i].ptr);
+   /* Refusal is sticky until the requested size changes. */
+   refuse_upload = true;
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false);
+   assert(ptr);
+   video_thread_menu_mem_update(thr);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false);
+   back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+   assert(ptr == back->frame && !back->mem);
+   refuse_upload = false;
+   video_thread_menu_mem_update(thr);
+   assert(!thr->texture.mem[0].ptr);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   video_thread_menu_mem_update(thr);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+   assert(ptr && back->mem);
+   video_thread_menu_mem_free(thr);
+   thr->poke = NULL;
+   thr->driver_data = NULL;
+}
+
 int main(void)
 {
    thread_video_t thr;
@@ -240,6 +427,7 @@ int main(void)
    thread_set_texture_frame(&thr, NULL, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
    assert(!retro_triple_buffer_take(&thr.texture.frames));
    check_upscale(&thr);
+   check_mapped(&thr);
    active = false;
    assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
    video_thread_thr_capture = NULL;
@@ -255,8 +443,9 @@ with tempfile.TemporaryDirectory(prefix="retroarch-menu-framebuffer-") as direct
     directory = Path(directory)
     src = directory / "menu.c"
     exe = directory / ("menu.exe" if os.name == "nt" else "menu")
-    src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("FRONTEND", frontend).replace("RENDER", render), encoding="utf-8")
+    src.write_text(fixture.replace("STRUCTURE", structure).replace("FUNCTIONS", functions).replace("FRONTEND", frontend).replace("RENDER", render).replace("WORKER", worker), encoding="utf-8")
     subprocess.run(cc + flags + ["-std=gnu89", "-O1", "-Wall", "-Wextra", "-Werror",
-                   "-Werror=declaration-after-statement", "-I" + str(root),
-                   "-I" + str(root / "libretro-common/include"), str(src), "-o", str(exe)], check=True)
-    subprocess.run([str(exe)], check=True)
+                   "-Werror=declaration-after-statement", "-Wno-unused-parameter", "-DHAVE_THREADS", "-DHAVE_MENU", "-I" + str(root),
+                   "-I" + str(root / "libretro-common/include"), str(src), str(root / "libretro-common/rthreads/rthreads.c"),
+                   "-lwinmm" if os.name == "nt" else "-lpthread", "-o", str(exe)], check=True)
+    subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

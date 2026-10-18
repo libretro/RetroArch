@@ -1321,6 +1321,10 @@ typedef struct video_poke_interface
     * The row pitch may include padding. Optional. */
    void *(*get_menu_framebuffer)(void *data, bool rgb32,
          unsigned dims, size_t *pitch);
+   /* Worker-owned, tightly packed menu upload storage. set_texture_frame
+    * retains it until frame_mem_ready; frame_mem_free releases it.
+    * Optional, requires both frame-memory lifetime callbacks. */
+   void *(*menu_mem_alloc)(void *data, size_t size, uintptr_t *id);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2440,7 +2444,7 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch, size_t *out_pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
 
-/* Main-thread menu loan; the wrapper lends CPU storage instead of
+/* Main-thread menu loan; the wrapper lends retired upload or CPU storage without
  * entering the driver. See video_poke_interface::get_menu_framebuffer. */
 void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
       size_t *pitch);

@@ -296,9 +296,8 @@ struct vk_effect_template
 };
 
 /* Frame buffers lent to the threaded wrapper at once: what it takes
- * (VIDEO_THREAD_FRAME_MEM_DRIVER), with room for a set made again at
- * a new size while the old one is still being let go */
-#define VK_FRAME_MEM_MAX 12
+ * (VIDEO_THREAD_FRAME_MEM_DRIVER), the menu pool, and resize headroom. */
+#define VK_FRAME_MEM_MAX 20
 
 enum vulkan_texture_support
 {
@@ -634,7 +633,9 @@ typedef struct vk
    {
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
       struct vk_texture textures_optimal[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      struct vk_texture upload_tex;
       void *loan;
+      unsigned upload;
       unsigned loan_dims;
       unsigned loan_index;
       unsigned last_index;
@@ -704,12 +705,13 @@ typedef struct vk
    /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
     * host buffers a frame is copied out of on the GPU, never by the
     * CPU. index is the frame fence the last copy out of one was
-    * submitted under, -1 when none may still be reading it. Frame-
+    * submitted under, -2 while a menu copy is pending, -1 when retired. Frame-
     * recording thread only. */
    struct vk_frame_mem
    {
       struct vk_texture tex;
       int index;
+      bool menu;
    } frame_mem[VK_FRAME_MEM_MAX];
 
    struct
@@ -2871,13 +2873,9 @@ static bool vulkan_frame_window(const struct vk_texture *tex,
    return true;
 }
 
-/* The threaded wrapper's frame buffers. Each is a buffer of its own,
- * mapped for good, from host memory the CPU reads at cached speed where
- * the device has it: a core rendering into one may read back what it
- * drew. The GPU copies a frame out of one into the frame's texture
- * (vulkan_frame_mem_upload), so the frame is never copied by the CPU on
- * this thread. */
-static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+/* Permanently mapped uploads. Prefer CPU-cached memory because software
+ * cores may read their frame back before the GPU copies it out. */
+static void *vulkan_upload_mem_alloc(void *data, size_t size, uintptr_t *id,
       bool *cached, unsigned *pitch_align)
 {
    unsigned i;
@@ -2888,8 +2886,7 @@ static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    struct vk_texture *tex;
    vk_t *vk = (vk_t*)data;
 
-   if (     !vk || !vk->context || !vk->context->device || !size
-         || (vk->flags & VK_FLAG_HW_ENABLE))
+   if (!vk || !vk->context || !vk->context->device || !size)
       return NULL;
    for (i = 0; i < VK_FRAME_MEM_MAX; i++)
       if (!vk->frame_mem[i].tex.buffer)
@@ -2946,12 +2943,33 @@ static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    if (!(props & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
       tex->flags              |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
    vk->frame_mem[i].index      = -1;
+   vk->frame_mem[i].menu       = false;
    *id                         = (uintptr_t)i + 1;
    *cached                     = (props & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
       ? true : false;
    /* A word, as the RGB565 conversion reads (vulkan_frame_mem_find) */
    *pitch_align                = 4;
    return tex->mapped;
+}
+
+static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || (vk->flags & VK_FLAG_HW_ENABLE))
+      return NULL;
+   return vulkan_upload_mem_alloc(data, size, id, cached, pitch_align);
+}
+
+static void *vulkan_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   vk_t *vk = (vk_t*)data;
+   bool cached;
+   unsigned align;
+   void *ptr = vulkan_upload_mem_alloc(data, size, id, &cached, &align);
+   if (ptr)
+      vk->frame_mem[*id - 1].menu = true;
+   return ptr;
 }
 
 /* Never waits: the fence of the frame that last copied out of the
@@ -2967,7 +2985,9 @@ static bool vulkan_frame_mem_ready(void *data, uintptr_t id)
    if (!vk || !id || id > VK_FRAME_MEM_MAX)
       return true;
    fm  = &vk->frame_mem[id - 1];
-   if ((idx = fm->index) < 0)
+   if ((idx = fm->index) == -2)
+      return false;
+   if (idx < 0)
       return true;
    if (     idx < VULKAN_MAX_SWAPCHAIN_IMAGES
          && vk->context->swapchain_fences_signalled[idx]
@@ -2986,7 +3006,15 @@ static void vulkan_frame_mem_free(void *data, uintptr_t id)
    vk_t *vk = (vk_t*)data;
    if (!vk || !id || id > VK_FRAME_MEM_MAX)
       return;
-   vulkan_texture_defer_copy(vk, &vk->frame_mem[id - 1].tex);
+   if (vk->menu.upload == id)
+   {
+      vk->menu.dirty[vk->menu.last_index] = false;
+      vk->menu.upload = 0;
+   }
+   if (vk->frame_mem[id - 1].menu && vk->frame_mem[id - 1].index < 0)
+      vulkan_destroy_texture(vk->context->device, &vk->frame_mem[id - 1].tex);
+   else
+      vulkan_texture_defer_copy(vk, &vk->frame_mem[id - 1].tex);
    vk->frame_mem[id - 1].index = -1;
 }
 
@@ -11044,6 +11072,41 @@ static void vulkan_movie_input(const struct vk_texture *texture,
    input->format      = texture->format;
 }
 
+#ifdef HAVE_MENU
+static void vulkan_menu_upload(vk_t *vk, unsigned frame_index)
+{
+   if (vk->flags & VK_FLAG_MENU_ENABLE)
+   {
+       if (   vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE
+           || vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE
+           || vk->menu.textures_optimal[vk->menu.last_index].image != VK_NULL_HANDLE)
+       {
+           struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
+           struct vk_texture *texture = &vk->menu.textures[vk->menu.last_index];
+
+           if (optimal->memory != VK_NULL_HANDLE)
+           {
+               if (vk->menu.dirty[vk->menu.last_index])
+               {
+                  struct vk_texture *dynamic = optimal;
+                  struct vk_texture *staging = texture;
+                  if (vk->menu.upload)
+                     staging = &vk->menu.upload_tex;
+                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+                        dynamic, staging, 0, 0);
+                  if (vk->menu.upload)
+                  {
+                     vk->frame_mem[vk->menu.upload - 1].index = (int)frame_index;
+                     vk->menu.upload = 0;
+                  }
+                  vk->menu.dirty[vk->menu.last_index] = false;
+               }
+           }
+       }
+   }
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -12014,28 +12077,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_views_offscreen(vk, video_info, view_chains, view_rects);
 
 #if defined(HAVE_MENU)
-   /* Upload menu texture. */
-   if (vk->flags & VK_FLAG_MENU_ENABLE)
-   {
-       if (   vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE
-           || vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
-       {
-           struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
-           struct vk_texture *texture = &vk->menu.textures[vk->menu.last_index];
-
-           if (optimal->memory != VK_NULL_HANDLE)
-           {
-               if (vk->menu.dirty[vk->menu.last_index])
-               {
-                  struct vk_texture *dynamic = optimal;
-                  struct vk_texture *staging = texture;
-                  vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                        dynamic, staging, 0, 0);
-                  vk->menu.dirty[vk->menu.last_index] = false;
-               }
-           }
-       }
-   }
+   vulkan_menu_upload(vk, frame_index);
 #endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -12287,7 +12329,8 @@ static bool vulkan_frame(void *data, const void *frame,
          menu_driver_frame(menu_is_alive, video_info);
 
          if (vk->menu.textures[vk->menu.last_index].image  != VK_NULL_HANDLE ||
-             vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
+             vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE
+           || vk->menu.textures_optimal[vk->menu.last_index].image != VK_NULL_HANDLE)
          {
             struct vk_draw_quad quad;
             struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
@@ -13144,6 +13187,49 @@ static void *vulkan_menu_frame(void *data,
    idx                 = vk->context->current_frame_index;
    texture             = &vk->menu.textures[idx];
    texture_optimal     = &vk->menu.textures_optimal[idx];
+
+   if (!lend)
+   {
+      unsigned i;
+      if (vk->menu.upload)
+      {
+         vk->menu.dirty[vk->menu.last_index] = false;
+         vk->frame_mem[vk->menu.upload - 1].index = -1;
+         vk->menu.upload = 0;
+      }
+      for (i = 0; do_memcpy && i < VK_FRAME_MEM_MAX; i++)
+      {
+         struct vk_frame_mem *fm = &vk->frame_mem[i];
+         size_t row = (size_t)width * (rgb32 ? 4 : 2);
+         if (!fm->menu || frame != fm->tex.mapped || fm->tex.size / height < row)
+            continue;
+         *texture_optimal = vulkan_create_texture(vk,
+               texture_optimal->memory ? texture_optimal : NULL,
+               width, height, fmt, NULL, ptr_swizzle, VULKAN_TEXTURE_DYNAMIC);
+         if (!texture_optimal->memory)
+            return NULL;
+         if (fm->tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+         {
+            VkMappedMemoryRange range;
+            range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            range.pNext = NULL;
+            range.memory = fm->tex.memory;
+            range.offset = 0;
+            range.size = VK_WHOLE_SIZE;
+            vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+         }
+         vk->menu.upload_tex = fm->tex;
+         vk->menu.upload_tex.dims = dims;
+         vk->menu.upload_tex.stride = row;
+         vk->menu.upload_tex.format = fmt;
+         fm->index = -2;
+         vk->menu.upload = i + 1;
+         vk->menu.last_index = idx;
+         vk->menu.alpha = alpha;
+         vk->menu.dirty[idx] = true;
+         return NULL;
+      }
+   }
 
    if (!loaned)
    {
@@ -15014,7 +15100,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_last_present_sync,
    vulkan_record_read,
    vulkan_import_movie_frame,
-   vulkan_get_menu_framebuffer
+   vulkan_get_menu_framebuffer,
+   vulkan_menu_mem_alloc
 };
 
 static void vulkan_get_poke_interface(void *data,
