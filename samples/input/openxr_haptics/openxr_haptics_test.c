@@ -154,8 +154,16 @@ void video_xr_euler(const video_xr_quat_t *q, float *yaw, float *pitch,
       float *roll)
 { (void)q; *yaw = *pitch = *roll = 0.0f; }
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
-      video_xr_pose_t *pose, video_screen_xr_t *out)
-{ (void)g; (void)out; *pose = *aim; return false; }
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped)
+{
+   (void)g; (void)targets; (void)skip; (void)start; (void)out;
+   if (snapped)
+      *snapped = 0;
+   *pose = *aim;
+   return false;
+}
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale)
 { (void)g; (void)x; (void)y; (void)dt; (void)scale; }

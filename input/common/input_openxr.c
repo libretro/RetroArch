@@ -52,6 +52,9 @@
  * INPUT_OPENXR_HAPTIC_DURATION (ns). */
 #define INPUT_OPENXR_HAPTIC_REFRESH  500000
 #define INPUT_OPENXR_HAPTIC_DURATION 1000000000
+/* A snap's buzz as it takes hold: its strength and length (ns). */
+#define INPUT_OPENXR_SNAP_TICK_AMP 0.5f
+#define INPUT_OPENXR_SNAP_TICK_NS  20000000
 /* Half a stick's travel. */
 #define INPUT_OPENXR_YIELD_STICK   0x4000
 /* Polls in a row with neither of edit mode's grab nor its menu bound
@@ -537,16 +540,19 @@ typedef struct input_openxr
 
 static input_openxr_t input_openxr_st;
 
-/* A hand in edit mode: its hold, the scale of what it holds now and at
- * the grab with its size then, and last poll's grip and reset, for
+/* A hand in edit mode: its hold, where its item was as it took it, the
+ * scale of what it holds now and at the grab with its size then, the
+ * snaps whose buzz may still fire, and last poll's grip and reset, for
  * their presses. */
 typedef struct input_openxr_hold
 {
    video_xr_grab_t g;
+   video_xr_pose_t start;
    float scale;
    float scale0;
    float width0;
    float height0;
+   unsigned armed;
    bool grip;
    bool reset;
 } input_openxr_hold_t;
@@ -565,6 +571,7 @@ typedef struct input_openxr_edit
    bool on;
    bool paused;       /* edit mode paused the content */
    bool changed;      /* it wrote a setting */
+   bool snap;         /* Snap to Screens */
    bool next;         /* last poll's Select Next and Previous */
    bool prev;
 } input_openxr_edit_t;
@@ -2152,6 +2159,46 @@ static void input_openxr_edit_write(input_openxr_edit_t *e,
    e->changed = true;
 }
 
+/* The slots the hands hold, as bits: nothing snaps to them. */
+static unsigned input_openxr_edit_holding(const input_openxr_edit_t *e)
+{
+   unsigned h;
+   unsigned bits = 0;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+      if (     e->hand[h].g.state == VIDEO_XR_GRAB_HELD
+            && e->hand[h].g.slot < VIDEO_XR_MAX_SLOTS)
+         bits |= 1u << e->hand[h].g.slot;
+   return bits;
+}
+
+/* A short buzz on hand h: a snap took hold. */
+static void input_openxr_edit_tick(input_openxr_t *st, unsigned h)
+{
+   XrHapticActionInfo info;
+   XrHapticVibration vib;
+   info.type          = XR_TYPE_HAPTIC_ACTION_INFO;
+   info.next          = NULL;
+   info.action        = st->actions[IXA_RUMBLE];
+   info.subactionPath = st->hands[h];
+   vib.type           = XR_TYPE_HAPTIC_VIBRATION;
+   vib.next           = NULL;
+   vib.duration       = INPUT_OPENXR_SNAP_TICK_NS;
+   vib.frequency      = XR_FREQUENCY_UNSPECIFIED;
+   vib.amplitude      = INPUT_OPENXR_SNAP_TICK_AMP;
+   st->ApplyHapticFeedback(st->session, &info,
+         (const XrHapticBaseHeader*)&vib);
+}
+
+/* The snaps whose buzz may still fire after a move that snapped: one
+ * that took hold is spent until its axis pulls no more. */
+static unsigned input_openxr_edit_armed(unsigned armed, unsigned snapped)
+{
+   unsigned pulling = (snapped >> VIDEO_XR_SNAP_PULL_SHIFT)
+      & VIDEO_XR_SNAP_ALL;
+   return (armed & ~snapped & VIDEO_XR_SNAP_ALL)
+      | (VIDEO_XR_SNAP_ALL & ~pulling);
+}
+
 /* Hand h grabs st->quads' quad target: the item keeps its pose in the
  * aim's frame, wherever the hand is, and its roll. A second hand on an
  * item does nothing. */
@@ -2179,6 +2226,8 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->g.slot   = q->slot;
    hold->g.state  = VIDEO_XR_GRAB_HELD;
    hold->g.tilt   = tilt;
+   hold->start    = q->pose;
+   hold->armed    = VIDEO_XR_SNAP_ALL;
    if (q->slot != VIDEO_XR_MENU_SLOT)
       config_get_video_screen_xr(q->slot, &now);
    else if (!config_get_video_menu_xr(&now))
@@ -2199,14 +2248,17 @@ static void input_openxr_edit_grab(input_openxr_t *st,
    hold->height0 = q->height;
 }
 
-/* A held item to where the hand puts it now, its settings with it. The
- * trigger lets its roll follow from where it is; a clamp holds it
- * again, so it resumes from the limit. */
-static void input_openxr_edit_move(input_openxr_edit_t *e,
+/* A held item to where the hand puts it now, snapped to targets'
+ * screens unless NULL, fading in from where it was taken, its settings
+ * with it. The trigger lets its roll follow from where it is; a clamp
+ * holds it again, so it resumes from the limit. Returns the snaps
+ * engaged or pulling (video_xr_snap). */
+static unsigned input_openxr_edit_move(input_openxr_edit_t *e,
       input_openxr_hold_t *hold, const video_xr_pose_t *aim, bool tilt,
-      const int16_t *stick, double dt)
+      const int16_t *stick, double dt, const video_xr_quad_set_t *targets)
 {
    float yaw, pitch;
+   unsigned snapped;
    video_xr_pose_t inv, pose;
    video_screen_xr_t values;
    video_xr_pose_invert(aim, &inv);
@@ -2222,11 +2274,14 @@ static void input_openxr_edit_move(input_openxr_edit_t *e,
    hold->g.width  = hold->width0 * hold->scale / hold->scale0;
    hold->g.height = hold->height0 * hold->scale / hold->scale0;
    video_views_xr_reset(&values, 1);
-   if (video_xr_grab_pose(&hold->g, aim, &pose, &values))
+   if (video_xr_grab_pose(&hold->g, aim, targets,
+            input_openxr_edit_holding(e), &hold->start, &pose, &values,
+            &snapped))
       video_xr_compose(&inv, &pose, &hold->g.rel);
    hold->g.last = pose;
    values.scale = hold->scale;
    input_openxr_edit_write(e, hold, &values);
+   return snapped;
 }
 
 /* A hold ends. Let go, the item stays where the hand left it, which its
@@ -2249,16 +2304,20 @@ static void input_openxr_edit_let_go(input_openxr_edit_t *e,
    video_driver_headset_edit(e->on, e->seq);
 }
 
-/* What the hands hold and the chosen item, for the frame loop. */
+/* What the hands hold and where they took it, the chosen item and
+ * Snap to Screens, for the frame loop. */
 static void input_openxr_edit_publish(input_openxr_t *st,
       input_openxr_edit_t *e)
 {
    if (!st->frame)
       return;
-   e->grabs.hand[0] = e->hand[0].g;
-   e->grabs.hand[1] = e->hand[1].g;
-   e->grabs.chosen  = (unsigned)(e->chosen + 1);
-   e->grabs.stuck   = e->stuck;
+   e->grabs.hand[0]  = e->hand[0].g;
+   e->grabs.hand[1]  = e->hand[1].g;
+   e->grabs.start[0] = e->hand[0].start;
+   e->grabs.start[1] = e->hand[1].start;
+   e->grabs.chosen   = (unsigned)(e->chosen + 1);
+   e->grabs.stuck    = e->stuck;
+   e->grabs.snap     = e->snap;
    openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
 
@@ -2294,14 +2353,17 @@ static void input_openxr_edit_reset(input_openxr_edit_t *e, unsigned slot)
 }
 
 /* Edit mode's start: the content paused if While Editing Screens asks
- * and nothing paused it already, and the desktop told. Video hears of
- * it first, so the frame the pause draws shows edit mode. */
-static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause)
+ * and nothing paused it already, held screens snapping if Snap to
+ * Screens asks, and the desktop told. Video hears of it first, so the
+ * frame the pause draws shows edit mode. */
+static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause,
+      bool snap)
 {
    unsigned h;
    const char *msg = msg_hash_to_str(MSG_OPENXR_EDIT_ON);
    uint32_t flags  = runloop_get_flags();
    e->on      = true;
+   e->snap    = snap;
    e->changed = false;
    e->unbound = 0;
    e->paused  = false;
@@ -2417,6 +2479,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
       int16_t stick[2];
       video_xr_pose_t aim;
       video_xr_vec3_t o, d;
+      const video_xr_quad_set_t *targets = e->snap ? &st->quads : NULL;
       input_openxr_hold_t *hold = &e->hand[h];
       XrPath hand               = st->hands[h];
       bool grip                 = input_openxr_bool(st, IXA_E_GRAB, hand);
@@ -2454,17 +2517,23 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             {
                stick[0] = 0;
                stick[1] = 0;
-               input_openxr_edit_move(e, hold, &aim, tilt, stick, 0.0);
+               input_openxr_edit_move(e, hold, &aim, tilt, stick, 0.0,
+                     targets);
             }
             input_openxr_edit_let_go(e, hold, shown);
          }
          /* Untracked, the item holds still. */
          else if (tracked)
          {
+            unsigned snapped;
             stick[0] = 0;
             stick[1] = 0;
             input_openxr_stick(st, IXA_E_STICK, hand, stick);
-            input_openxr_edit_move(e, hold, &aim, tilt, stick, dt);
+            snapped = input_openxr_edit_move(e, hold, &aim, tilt, stick,
+                  dt, targets);
+            if (snapped & hold->armed)
+               input_openxr_edit_tick(st, h);
+            hold->armed = input_openxr_edit_armed(hold->armed, snapped);
          }
       }
       /* Taken from anywhere, the hand's aim is needed: untracked, it
@@ -2762,7 +2831,7 @@ bool input_openxr_edit_toggle(void)
    return true;
 }
 
-void input_openxr_edit_begin(bool pause)
+void input_openxr_edit_begin(bool pause, bool snap)
 {
    input_openxr_edit_t *e = &input_openxr_edit;
    if (e->on || !input_openxr_st.frame)
@@ -2777,7 +2846,7 @@ void input_openxr_edit_begin(bool pause)
       return;
    }
 #endif
-   input_openxr_edit_start(e, pause);
+   input_openxr_edit_start(e, pause, snap);
 }
 
 void input_openxr_edit_end(void)

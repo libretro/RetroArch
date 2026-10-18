@@ -911,9 +911,9 @@ static void test_xr_menu_tracked_screen(void)
    video_st->current_video = saved_driver;
 }
 
-/* Edit Screens and While Editing Screens show with Headset Output on;
- * the hotkey exists; without a session the row is refused and the
- * menu stays. */
+/* Edit Screens, While Editing Screens and Snap to Screens show with
+ * Headset Output on; the hotkey exists; without a session the row is
+ * refused and the menu stays. */
 static void test_xr_edit_rows(void)
 {
    settings_t *settings = config_get_ptr();
@@ -923,6 +923,7 @@ static void test_xr_edit_rows(void)
    set_menu_map(1);
    CHECK(!menu_has_setting("video_screen_xr_edit"));
    CHECK(!menu_has_setting("video_openxr_edit_pause"));
+   CHECK(!menu_has_setting("video_openxr_edit_snap"));
    settings->bools.video_openxr_enable = true;
    CHECK(menu_has_setting("video_screen_xr_edit"));
    CHECK(menu_has_setting("video_openxr_edit_pause"));
@@ -930,6 +931,12 @@ static void test_xr_edit_rows(void)
    menu_action("video_openxr_edit_pause", MENU_ACTION_RIGHT);
    CHECK(settings->bools.video_openxr_edit_pause);
    menu_value("video_openxr_edit_pause", "Pause");
+   CHECK(menu_has_setting("video_openxr_edit_snap"));
+   CHECK(settings->bools.video_openxr_edit_snap);
+   menu_value("video_openxr_edit_snap", "ON");
+   menu_action("video_openxr_edit_snap", MENU_ACTION_RIGHT);
+   CHECK(!settings->bools.video_openxr_edit_snap);
+   menu_value("video_openxr_edit_snap", "OFF");
    for (i = 0; input_config_bind_map_get_valid(i); i++)
       if (input_config_bind_map_get_retro_key(i) == RARCH_HEADSET_EDIT_SCREENS)
          base = input_config_bind_map_get_base(i);

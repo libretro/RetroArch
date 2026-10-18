@@ -212,19 +212,65 @@ typedef struct video_xr_grab
 } video_xr_grab_t;
 
 /* Where g puts its item for an aim pose: the aim composed with g->rel,
- * levelled to g->roll unless g->tilt, its offsets from g->base clamped
- * to the settings' range. Writes the pose and, unless out is NULL, the
- * offsets and turn. Returns whether a clamp held it back; the caller
- * then holds g->rel again from pose, so the item resumes from the
- * limit. */
+ * levelled to g->roll unless g->tilt, snapped to the screens of
+ * targets but those in skip, fading in from start, the item's pose as
+ * it was grabbed (video_xr_snap, video_xr_snap_fade; NULL targets:
+ * none, and start unread), its offsets from g->base clamped to the
+ * settings' range. Writes the pose and, unless NULL, the offsets and
+ * turn and the snaps engaged or pulling (video_xr_snap). Returns
+ * whether a clamp held it back, never for a snap alone; the caller then
+ * holds g->rel again from pose, so the item resumes from the limit. */
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
-      video_xr_pose_t *pose, video_screen_xr_t *out);
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped);
 
 /* The stick for dt seconds: past the deadzone y (up, +1) pushes g's
  * item along the aim's ray and x (right, +1) enlarges it, each by how
  * far past it is; *scale stays within the setting's range. */
 void video_xr_grab_stick(video_xr_grab_t *g, float x, float y, double dt,
       float *scale);
+
+/* Snap to Screens. A held screen turns parallel or square (a
+ * quarter turn about the other's up) to a screen within
+ * VIDEO_XR_SNAP_ANGLE degrees, then lines up within VIDEO_XR_SNAP_DIST
+ * metres: into the other's plane, edges or centres level or edge to
+ * edge, square ones meeting at a corner. Each pull is whole within its
+ * range and fades out over as far again; a gap between the screens
+ * past VIDEO_XR_SNAP_NEAR metres fades them all, likewise. Of several,
+ * the turn and each line go to the pull that leaves the least. */
+#define VIDEO_XR_SNAP_DIST  0.03f
+#define VIDEO_XR_SNAP_ANGLE 5.0f
+#define VIDEO_XR_SNAP_NEAR  0.30f
+/* The snaps engaged, each whole: video_xr_snap's low bits. */
+#define VIDEO_XR_SNAP_TURN  1u
+#define VIDEO_XR_SNAP_X     2u
+#define VIDEO_XR_SNAP_Y     4u
+#define VIDEO_XR_SNAP_Z     8u
+#define VIDEO_XR_SNAP_ALL   15u
+/* Each snap pulling at all, whole or fading: its bit shifted up by
+ * this, also in what video_xr_snap returns. */
+#define VIDEO_XR_SNAP_PULL_SHIFT    4
+#define VIDEO_XR_SNAP_PULLING(bits) ((bits) << VIDEO_XR_SNAP_PULL_SHIFT)
+
+/* Snaps a screen in slot, width x height metres, held at pose, to the
+ * other screens of set no hand holds (skip: slots, as bits), every
+ * pull scaled by fade (0 none, 1 whole; a snap is engaged only whole).
+ * Never the menu, held or as a target; a stereo pair is one; a fixed
+ * slot none. Returns the snaps engaged and VIDEO_XR_SNAP_PULLING of
+ * those pulling at all. Keeps nothing between calls. */
+unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float fade,
+      video_xr_pose_t *pose);
+
+/* Snapping fades in from a grab: 0 at start, the item's pose as it was
+ * grabbed, rising evenly to 1 once pose is VIDEO_XR_SNAP_FADE_DIST
+ * metres or VIDEO_XR_SNAP_FADE_ANGLE degrees from it, whichever comes
+ * first, so a screen taken near a line does not hop onto it. */
+#define VIDEO_XR_SNAP_FADE_DIST  0.05f
+#define VIDEO_XR_SNAP_FADE_ANGLE 10.0f
+float video_xr_snap_fade(const video_xr_pose_t *start,
+      const video_xr_pose_t *pose);
 
 void video_xr_pose_identity(video_xr_pose_t *pose);
 

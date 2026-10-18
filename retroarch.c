@@ -6613,7 +6613,8 @@ bool command_event(enum event_command cmd, void *data)
                retroarch_menu_running_finished(false);
 #endif
             input_openxr_edit_begin(
-                  settings->bools.video_openxr_edit_pause);
+                  settings->bools.video_openxr_edit_pause,
+                  settings->bools.video_openxr_edit_snap);
          }
 #endif
          break;

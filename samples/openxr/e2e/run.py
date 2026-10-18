@@ -261,9 +261,13 @@ def run_case(retroarch, root, monado, case, validate):
         os.makedirs(os.path.join(d, sub))
     os.chmod(os.path.join(d, RUNTIME_DIR), 0o700)
 
+    # A screen carried 5 cm or more snaps: in the 3DS layout the other
+    # screen's edge, 3.2 cm off, would pull it 2.8 cm. The snap cases
+    # turn it on.
     settings = {'video_openxr_enable': 'true',
                 'video_openxr_distance': '1.8',
-                'video_openxr_width': '1.6'}
+                'video_openxr_width': '1.6',
+                'video_openxr_edit_snap': 'false'}
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
@@ -5535,6 +5539,76 @@ def check_edit_handle_sticky(stuck):
     return check
 
 
+# Screen 2 grabbed at its spot and held 2-2.5 cm off standing flush
+# right of screen 1, level and in its plane. The buzz is
+# INPUT_OPENXR_SNAP_TICK_AMP for INPUT_OPENXR_SNAP_TICK_NS.
+SNAP_GRAB = (0.0, -0.992, 0.0)
+SNAP_HAND = (1.465, 0.02, 0.02)
+SNAPPED = (1.44, 0.0, -1.8)
+SNAP_TICK = (0.5, 20000000)
+
+
+def straight(p):
+    """The right hand at p aiming straight ahead."""
+    return aim_line(p, (p[0], p[1], p[2] - 1.8))
+
+
+def check_edit_snap(snap):
+    def check(res):
+        """Screen 2, taken at its spot 3.2 cm under screen 1, stays
+        there until carried; held just off flush right of screen 1: with
+        Snap to Screens it shows and is saved touching it, level, in
+        its plane, and the hand gets the snap's buzz; without, it stays
+        where the hand put it, with no buzz."""
+        want = SNAPPED if snap else (SNAP_HAND[0], SNAP_HAND[1],
+                                     SNAP_HAND[2] - 1.8)
+        errors = edit_log_errors(res, ['on', 'off'])
+        errors += pose_errors('screen 2 just taken',
+                              [screen2(f) for f in
+                               between(res, 'grab', 'carry', delay=0.5)],
+                              S1, ID, (1.28, 0.96))
+        errors += pose_errors('screen 2 held',
+                              [screen2(f) for f in
+                               between(res, 'held', 'released', delay=0.5)],
+                              want, ID, (1.28, 0.96))
+        errors += pose_errors('screen 2 let go',
+                              [screen2(f) for f in
+                               between(res, 'released', 'off', delay=0.5)],
+                              want, ID, (1.28, 0.96))
+        errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                               (want, ID), (1.28, 0.96),
+                               last_before(res, 'off', screen2))
+        ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+                 and e['t_us'] > res.marks['grab'] * 1e6
+                 and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+                 and e['duration_ns'] == SNAP_TICK[1]]
+        if snap and not ticks:
+            errors.append('no snap buzz on the right hand: %s'
+                          % haptics(res, 'right'))
+        if not snap and ticks:
+            errors.append('a snap buzz with snapping off: %s' % ticks)
+        return errors
+    return check
+
+
+def check_edit_snap_edge(res):
+    """Screen 2 brought through the fade of its pull to screen 1's
+    edge and rested at the end of its whole pull, swaying across it: one
+    buzz as it takes hold and none while it sways; 7 cm off and back,
+    one more."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    for a, b, what in (('edge', 'away', 'resting at the edge'),
+                       ('away', 'back', 'back from 7 cm off')):
+        ticks = [e for e in haptics(res, 'right') if e['ev'] == 'haptic'
+                 and res.marks[a] * 1e6 < e['t_us'] < res.marks[b] * 1e6
+                 and abs(e['amplitude'] - SNAP_TICK[0]) < 1e-3
+                 and e['duration_ns'] == SNAP_TICK[1]]
+        if len(ticks) != 1:
+            errors.append('%d snap buzzes %s, want 1: %s'
+                          % (len(ticks), what, ticks))
+    return errors
+
+
 def edit_start(first, wait=2):
     """Settle with the hand at first, then start edit mode."""
     return [('wait', 6), ('script', first), ('wait', 1), ('mark', 'on'),
@@ -5557,6 +5631,34 @@ def edit_aim_near(d):
     return aim_line((d, 0.0, d), (d, 0.0, d - 1.8))
 
 
+# Screen 2 taken at its spot and carried round to screen 1's right.
+EDIT_SNAP_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
+    ('mark', 'grab'), ('script', script(straight(SNAP_GRAB), EDIT_GRIP)),
+    ('wait', 1.5), ('mark', 'carry')] + [
+    step for p in ((0.5, -0.6, 0.0), (1.0, -0.2, 0.0), SNAP_HAND)
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.3))
+] + [('mark', 'held'), ('wait', 1.5), ('script', straight(SNAP_HAND)),
+     ('mark', 'released'), ('wait', 1.5), ('send', EDIT), ('wait', 2),
+     ('mark', 'off'), ('wait', 1)]
+# Screen 2 carried 7 cm off flush right of screen 1, then 4.5 cm off,
+# in the edge's fade, then 2.9 cm off, inside its whole pull, swaying
+# 2 mm across its end four times; then 7 cm off again and back.
+EDGE_IN, EDGE_OUT, EDGE_AWAY = (1.469, 0.0, 0.0), (1.471, 0.0, 0.0), \
+    (1.51, 0.0, 0.0)
+EDGE_NEAR = (1.485, 0.0, 0.0)
+EDIT_SNAP_EDGE_STEPS = edit_start(straight(SNAP_GRAB), 1) + [
+    ('mark', 'grab'), ('script', script(straight(SNAP_GRAB), EDIT_GRIP)),
+    ('wait', 1.5)] + [
+    step for p in ((0.5, -0.6, 0.0), (1.0, -0.2, 0.0), EDGE_AWAY)
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.3))
+] + [('wait', 0.5), ('mark', 'edge')] + [
+    step for p in (EDGE_NEAR,) + (EDGE_IN, EDGE_OUT) * 4
+    for step in (('script', script(straight(p), EDIT_GRIP)), ('wait', 0.25))
+] + [('script', script(straight(EDGE_IN), EDIT_GRIP)), ('wait', 0.5),
+     ('mark', 'away'), ('script', script(straight(EDGE_AWAY), EDIT_GRIP)),
+     ('wait', 0.5), ('script', script(straight(EDGE_IN), EDIT_GRIP)),
+     ('wait', 0.5), ('mark', 'back'), ('script', straight(EDGE_IN)),
+     ('wait', 1), ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)]
 EDIT_GRAB_STEPS = edit_start(edit_aim(), 1) + [
     ('mark', 'aimed'), ('wait', 1), ('mark', 'grab'),
     ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
@@ -5911,6 +6013,14 @@ EDIT_CASES += [
     {'name': 'edit-handle-margin', 'map': '3ds', 'settings': UNDER_BAR,
      'steps': sticky_steps(on_handle(0.0, -0.07)),
      'check': check_edit_handle_sticky(False)},
+    {'name': 'edit-snap', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap='true'),
+     'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(True)},
+    {'name': 'edit-snap-off', 'map': '3ds', 'settings': SAVE,
+     'steps': EDIT_SNAP_STEPS, 'check': check_edit_snap(False)},
+    {'name': 'edit-snap-edge', 'map': '3ds',
+     'settings': dict(SAVE, video_openxr_edit_snap='true'),
+     'steps': EDIT_SNAP_EDGE_STEPS, 'check': check_edit_snap_edge},
 ]
 
 
@@ -7196,7 +7306,7 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
            'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
-           'edit-choose']
+           'edit-choose', 'edit-snap']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT

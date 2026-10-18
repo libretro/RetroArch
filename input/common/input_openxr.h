@@ -78,10 +78,11 @@ bool input_openxr_hotkey(unsigned id);
  * Toggle: stops edit mode, false; otherwise whether it can start, the
  * desktop told when not. Begin, once the menu was asked to close: on at
  * once, pausing running content when @pause (While Editing Screens)
- * asks; a menu that stayed open (no content) is told instead. End: off
- * at once, as a video reinit wants. */
+ * asks, held screens snapping when @snap (Snap to Screens) does; a
+ * menu that stayed open (no content) is told instead. End: off at once,
+ * as a video reinit wants. */
 bool input_openxr_edit_toggle(void);
-void input_openxr_edit_begin(bool pause);
+void input_openxr_edit_begin(bool pause, bool snap);
 void input_openxr_edit_end(void);
 
 /* Main thread: what each hand holds is let go where it is, as before a

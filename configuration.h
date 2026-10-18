@@ -718,6 +718,7 @@ typedef struct settings
       bool video_openxr_enable;
       bool video_openxr_perf_boost;
       bool video_openxr_edit_pause;
+      bool video_openxr_edit_snap;
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;

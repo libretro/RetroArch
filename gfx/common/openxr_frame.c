@@ -191,12 +191,15 @@ static void openxr_frame_hold_slot(video_xr_quad_set_t *set, unsigned slot,
  * hand's aim at time puts it, and stays where it was last shown while
  * the hand is not tracked (where the main thread put it, before any
  * frame showed it); one let go stays where it was left until quads
- * planned at its release or later show it. */
+ * planned at its release or later show it. A held screen snaps, as
+ * Snap to Screens asks, to the screens no hand holds, as the main
+ * thread snaps it. */
 static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
       video_xr_quad_set_t *set)
 {
    unsigned h, s;
    video_xr_pose_t inv;
+   unsigned holding = 0;
    XrSpace space = f->screens.view
       ? f->session->view_space : f->session->local_space;
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
@@ -206,6 +209,10 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
             && (int)(set->slots[s].edit_seq - g->release_seq) < 0)
          openxr_frame_hold_slot(set, s, &g->last, g);
    }
+   for (h = 0; h < 2; h++)
+      if (     f->grabs.hand[h].state == VIDEO_XR_GRAB_HELD
+            && f->grabs.hand[h].slot < VIDEO_XR_MAX_SLOTS)
+         holding |= 1u << f->grabs.hand[h].slot;
    video_xr_pose_invert(&f->screens.pose, &inv);
    for (h = 0; h < 2; h++)
    {
@@ -223,7 +230,8 @@ static void openxr_frame_hold(openxr_frame_t *f, XrTime time,
       if (f->aim && time && f->aim(f->extra_user, h, space, time, &aim))
       {
          video_xr_compose(&inv, &aim, &aim);
-         video_xr_grab_pose(g, &aim, &held->pose, NULL);
+         video_xr_grab_pose(g, &aim, f->grabs.snap ? set : NULL, holding,
+               &f->grabs.start[h], &held->pose, NULL, NULL);
       }
       openxr_frame_hold_slot(set, g->slot, &held->pose, g);
    }

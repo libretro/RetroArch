@@ -54,3 +54,8 @@ S_BOOL_EX(video_openxr_edit_pause, VIDEO_OPENXR_EDIT_PAUSE,
       false, SD_FLAG_NONE, 0, 0, NULL, setting_get_string_representation_video_openxr_edit_pause, NULL, NULL, NULL, NULL, 0,
       "While Editing Screens",
       "What the content does while Edit Screens moves the headset's screens: keeps running, or pauses until editing ends. Edit mode resumes only what it paused.")
+S_BOOL(video_openxr_edit_snap, VIDEO_OPENXR_EDIT_SNAP,
+      "video_openxr_edit_snap",
+      true, SD_FLAG_NONE, 0, 0,
+      "Snap to Screens",
+      "Lines up a held screen with the screens near it: parallel or square to one, then in its plane and level, or edge to edge. The holding hand buzzes as a snap takes hold.")

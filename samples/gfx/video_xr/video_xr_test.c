@@ -577,42 +577,42 @@ static void test_grab(void)
    g.base.z = -1.8f;
    video_xr_pose_identity(&g.rel);
    g.rel.position.z = -1.8f;
-   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL));
    CHECK(NEAR(pose.position.z, -1.8) && NEAR(s.x, 0.0) && NEAR(s.z, 0.0));
    /* The hand moves: the item with it. */
    aim.position.x = 0.2f;
-   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL));
    CHECK(NEAR(s.x, 0.2) && NEAR(s.y, 0.0) && NEAR(s.z, 0.0));
    /* The wrist rolls 30 degrees: level, the item does not... */
    aim.orientation.z = (float)sin(M_PI / 12.0);
    aim.orientation.w = (float)cos(M_PI / 12.0);
-   video_xr_grab_pose(&g, &aim, &pose, &s);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.roll, 0.0f) && angle_near(s.yaw, 0.0f)
          && angle_near(s.pitch, 0.0f));
    /* ...tilting, it does. */
    g.tilt = true;
-   video_xr_grab_pose(&g, &aim, &pose, &s);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.roll, 30.0f));
    /* Level again at the roll it was left at. */
    g.tilt            = false;
    g.roll            = 30.0f;
    aim.orientation.z = 0.0f;
    aim.orientation.w = 1.0f;
-   video_xr_grab_pose(&g, &aim, &pose, &s);
+   video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL);
    CHECK(angle_near(s.roll, 30.0f));
    /* At a limit the item stops: 10 m right of its spot at most. */
    aim.position.x = 10.5f;
-   CHECK(video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL));
    CHECK(NEAR(s.x, 10.0) && NEAR(pose.position.x, 10.0));
    /* Held again from there, as the caller does, it resumes from the
     * limit, not from where the hand went. */
    video_xr_pose_invert(&aim, &inv);
    video_xr_compose(&inv, &pose, &g.rel);
    aim.position.x = 10.4f;
-   CHECK(!video_xr_grab_pose(&g, &aim, &pose, &s));
+   CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, NULL));
    CHECK(NEAR(s.x, 9.9));
    /* out may be NULL: only the pose. */
-   CHECK(!video_xr_grab_pose(&g, &aim, &pose, NULL));
+   CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, NULL, NULL));
 }
 
 static void test_grab_stick(void)
@@ -2239,6 +2239,508 @@ static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
       && a->position.z    == b->position.z;
 }
 
+#define SNAP_ALL (VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_X | VIDEO_XR_SNAP_Y \
+      | VIDEO_XR_SNAP_Z)
+
+/* The target: screen 1, 1.6 x 0.9, at 2 m facing ahead. */
+static void snap_set(video_xr_quad_set_t *set)
+{
+   memset(set, 0, sizeof(*set));
+   video_xr_pose_identity(&set->quads[0].pose);
+   set->quads[0].pose.position.z = -2.0f;
+   set->quads[0].width           = 1.6f;
+   set->quads[0].height          = 0.9f;
+   set->quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   set->num_quads                = 1;
+}
+
+/* At x, y, z turned yaw degrees about +Y. */
+static void snap_pose(video_xr_pose_t *pose, double x, double y,
+      double z, double yaw)
+{
+   video_xr_pose_identity(pose);
+   pose->position.x    = (float)x;
+   pose->position.y    = (float)y;
+   pose->position.z    = (float)z;
+   pose->orientation.y = (float)sin(yaw * M_PI / 360.0);
+   pose->orientation.w = (float)cos(yaw * M_PI / 360.0);
+}
+
+/* Screen 2, 1 x 0.6, held at x, y, z turned yaw degrees about +Y,
+ * snapped to set. */
+static unsigned snap_at(const video_xr_quad_set_t *set, double x,
+      double y, double z, double yaw, video_xr_pose_t *pose)
+{
+   snap_pose(pose, x, y, z, yaw);
+   return video_xr_snap(set, 1, 0, 1.0f, 0.6f, 1.0f, pose)
+      & VIDEO_XR_SNAP_ALL;
+}
+
+/* A 0.5 x 0.4 target in slot at x, 0, -2 turned yaw degrees. */
+static void snap_add(video_xr_quad_set_t *set, unsigned slot, double x,
+      double yaw)
+{
+   video_xr_quad_t *q = &set->quads[set->num_quads++];
+   snap_pose(&q->pose, x, 0.0, -2.0, yaw);
+   q->width  = 0.5f;
+   q->height = 0.4f;
+   q->kind   = VIDEO_XR_QUAD_SCREEN;
+   q->slot   = slot;
+   q->screen = slot;
+}
+
+/* Screen 3, 0.5 x 0.4, held likewise. */
+static unsigned snap_small_at(const video_xr_quad_set_t *set, double x,
+      double y, double z, double yaw, video_xr_pose_t *pose)
+{
+   snap_pose(pose, x, y, z, yaw);
+   return video_xr_snap(set, 2, 0, 0.5f, 0.4f, 1.0f, pose)
+      & VIDEO_XR_SNAP_ALL;
+}
+
+static double snap_yaw(const video_xr_pose_t *pose)
+{
+   float yaw, pitch, roll;
+   video_xr_euler(&pose->orientation, &yaw, &pitch, &roll);
+   return yaw;
+}
+
+/* Parallel and near: into its plane, edge to edge or level, each exact
+ * within its range; a quarter turn about its up meets it at a corner. */
+static void test_snap_lines(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   snap_set(&set);
+   CHECK(snap_at(&set, 1.32, 0.01, -1.98, 0.0, &p) == SNAP_ALL);
+   CHECK(vec_is(&p.position, 1.30, 0.0, -2.0));
+   CHECK(snap_at(&set, 0.1, 0.16, -1.99, 0.0, &p)
+         == (VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Y | VIDEO_XR_SNAP_Z));
+   CHECK(vec_is(&p.position, 0.1, 0.15, -2.0));
+   CHECK(snap_at(&set, 0.0, 0.76, -2.0, 0.0, &p) == SNAP_ALL);
+   CHECK(vec_is(&p.position, 0.0, 0.75, -2.0));
+   CHECK(snap_at(&set, 0.82, 0.01, -1.49, 90.0, &p) == SNAP_ALL);
+   CHECK(vec_is(&p.position, 0.8, 0.0, -1.5)
+         && angle_near((float)snap_yaw(&p), 90.0f));
+}
+
+/* Above the snaps engaged, each axis says whether it pulls at all,
+ * whole or fading: the hand's buzz re-arms only once its axis lets go
+ * entirely. */
+static void test_snap_pulling(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   const unsigned no_x = VIDEO_XR_SNAP_TURN | VIDEO_XR_SNAP_Y
+      | VIDEO_XR_SNAP_Z;
+   snap_set(&set);
+   snap_pose(&p, 1.32, 0.01, -1.98, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
+         == (SNAP_ALL | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   /* 4.5 cm off flush: the edge fades, pulling but not engaged. */
+   snap_pose(&p, 1.345, 0.0, -2.0, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
+         == (no_x | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+   /* 7 cm off: the edge lets go, the rest still hold. */
+   snap_pose(&p, 1.37, 0.0, -2.0, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
+         == (no_x | VIDEO_XR_SNAP_PULLING(no_x)));
+   /* Half faded in: every axis pulls, none is engaged. */
+   snap_pose(&p, 1.32, 0.01, -1.98, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 0.5f, &p)
+         == VIDEO_XR_SNAP_PULLING(SNAP_ALL));
+   /* Too far for any pull. */
+   snap_pose(&p, 3.0, 0.0, -2.0, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p) == 0);
+   /* Midway from the edge to a screen's centre 8 cm on: X still pulls
+    * between its two lines, so its buzz stays spent. */
+   snap_add(&set, 2, 1.38, 0.0);
+   snap_pose(&p, 1.34, 0.0, -2.0, 0.0);
+   CHECK(video_xr_snap(&set, 1, 0, 1.0f, 0.6f, 1.0f, &p)
+         == (no_x | VIDEO_XR_SNAP_PULLING(SNAP_ALL)));
+}
+
+/* Within 5 degrees exactly parallel, to 10 closing at twice the hand's
+ * turn, past it as held; lines exact to 3 cm, fading to 6; a 30 to
+ * 60 cm gap fades every pull, past 60 none. */
+static void test_snap_zones(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   snap_set(&set);
+   CHECK(snap_at(&set, 1.30, 0.0, -2.0, 4.0, &p) == SNAP_ALL);
+   CHECK(fabs(snap_yaw(&p)) < 0.01 && vec_is(&p.position, 1.30, 0.0, -2.0));
+   CHECK(snap_at(&set, 1.30, 0.0, -2.0, 7.5, &p) == 0);
+   CHECK(fabs(snap_yaw(&p) - 5.0) < 0.02);
+   CHECK(snap_at(&set, 1.30, 0.0, -2.0, 12.0, &p) == 0);
+   CHECK(fabs(snap_yaw(&p) - 12.0) < 0.01
+         && vec_is(&p.position, 1.30, 0.0, -2.0));
+   snap_at(&set, 1.25, 0.0, -2.0, 0.0, &p);
+   CHECK(NEAR(p.position.x, 1.26));
+   snap_at(&set, 1.33, 0.0, -2.0, 0.0, &p);
+   CHECK(NEAR(p.position.x, 1.30));
+   snap_at(&set, 1.345, 0.0, -2.0, 0.0, &p);
+   CHECK(NEAR(p.position.x, 1.33));
+   snap_at(&set, 1.36, 0.0, -2.0, 0.0, &p);
+   CHECK(NEAR(p.position.x, 1.36));
+   CHECK(snap_at(&set, 1.75, 0.0, -2.0, 4.0, &p) == 0);
+   CHECK(fabs(snap_yaw(&p) - 2.0) < 0.02);
+   CHECK(snap_at(&set, 1.95, 0.0, -2.0, 4.0, &p) == 0);
+   CHECK(fabs(snap_yaw(&p) - 4.0) < 0.01
+         && vec_is(&p.position, 1.95, 0.0, -2.0));
+}
+
+/* No target: the menu, a fixed slot, a held slot, the held screen's own
+ * slot, no set; the menu held snaps to nothing; a stereo pair counts
+ * once. */
+static void test_snap_targets(void)
+{
+   video_xr_quad_set_t set, two;
+   video_xr_pose_t p, q;
+   snap_set(&set);
+   set.quads[0].kind = VIDEO_XR_QUAD_MENU;
+   set.quads[0].slot = VIDEO_XR_MENU_SLOT;
+   CHECK(snap_at(&set, 1.32, 0.01, -1.98, 0.0, &p) == 0);
+   CHECK(vec_is(&p.position, 1.32, 0.01, -1.98));
+   snap_set(&set);
+   set.slots[0].fixed = true;
+   CHECK(snap_at(&set, 1.32, 0.01, -1.98, 0.0, &p) == 0);
+   snap_set(&set);
+   video_xr_pose_identity(&p);
+   p.position.x = 1.32f;
+   p.position.y = 0.01f;
+   p.position.z = -1.98f;
+   CHECK(video_xr_snap(&set, 1, 1u, 1.0f, 0.6f, 1.0f, &p) == 0);
+   CHECK(video_xr_snap(&set, 0, 0, 1.0f, 0.6f, 1.0f, &p) == 0);
+   CHECK(video_xr_snap(&set, VIDEO_XR_MENU_SLOT, 0, 1.0f, 0.6f, 1.0f, &p) == 0);
+   CHECK(video_xr_snap(NULL, 1, 0, 1.0f, 0.6f, 1.0f, &p) == 0);
+   CHECK(vec_is(&p.position, 1.32, 0.01, -1.98));
+   two              = set;
+   two.quads[0].eye = VIDEO_XR_EYE_LEFT;
+   two.quads[1]     = two.quads[0];
+   two.quads[1].eye = VIDEO_XR_EYE_RIGHT;
+   two.num_quads    = 2;
+   snap_at(&set, 1.32, 0.01, -1.98, 0.0, &p);
+   snap_at(&two, 1.32, 0.01, -1.98, 0.0, &q);
+   CHECK(!memcmp(&p, &q, sizeof(p)));
+}
+
+/* No jumps: across every zone's edges the snapped pose moves at most
+ * twice the hand's step. */
+static void test_snap_continuous(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, last;
+   snap_set(&set);
+   video_xr_pose_identity(&last);
+   /* Through the flush line's magnet, both sides: 0.5 mm steps. */
+   for (i = 0; i <= 400; i++)
+   {
+      snap_at(&set, 1.20 + 0.0005 * i, 0.0, -2.0, 0.0, &p);
+      if (i)
+         CHECK(fabs(p.position.x - last.position.x) <= 0.00101);
+      last = p;
+   }
+   /* Turning through 5 and 10 degrees 2 cm off the line. */
+   for (i = 0; i <= 240; i++)
+   {
+      snap_at(&set, 1.32, 0.0, -2.0, 0.05 * i, &p);
+      if (i)
+         CHECK(fabs(snap_yaw(&p) - snap_yaw(&last)) <= 0.101
+               && fabs(p.position.x - last.position.x) <= 0.005
+               && fabs(p.position.z - last.position.z) <= 0.005);
+      last = p;
+   }
+   /* Away through the 30 and 60 cm gaps, turned 4 degrees. */
+   for (i = 0; i <= 450; i++)
+   {
+      snap_at(&set, 1.55 + 0.001 * i, 0.0, -2.0, 4.0, &p);
+      if (i)
+         CHECK(fabs(snap_yaw(&p) - snap_yaw(&last)) <= 0.02);
+      last = p;
+   }
+   /* Square, through the corner's magnet both ways. */
+   for (i = 0; i <= 200; i++)
+   {
+      snap_at(&set, 0.70 + 0.001 * i, 0.0, -1.49, 90.0, &p);
+      if (i)
+         CHECK(fabs(p.position.x - last.position.x) <= 0.0021
+               && fabs(p.position.z - last.position.z) <= 0.0021);
+      last = p;
+   }
+   for (i = 0; i <= 200; i++)
+   {
+      snap_at(&set, 0.81, 0.0, -1.40 - 0.001 * i, 90.0, &p);
+      if (i)
+         CHECK(fabs(p.position.x - last.position.x) <= 0.0021
+               && fabs(p.position.z - last.position.z) <= 0.0021);
+      last = p;
+   }
+}
+
+/* Several targets, each ranked by what its pull leaves: in a row of
+ * screens 5 cm apart, screen 3 held 2 cm right of screen 2 lines up
+ * with it as if alone, in either quad order, though screen 1 is at the
+ * same angle and on the same lines in its 30-60 cm fade; carried right
+ * through screen 1's 60 cm edge in 0.5 mm steps, it never turns and no
+ * step moves it more than twice the hand's. */
+static void test_snap_ranked(void)
+{
+   unsigned i, o;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p, last;
+   for (o = 0; o < 2; o++)
+   {
+      memset(&set, 0, sizeof(set));
+      snap_add(&set, o, o ? 0.0 : -0.55, 0.0);
+      snap_add(&set, !o, o ? -0.55 : 0.0, 0.0);
+      CHECK(snap_small_at(&set, 0.52, 0.01, -1.99, 3.0, &p) == SNAP_ALL);
+      CHECK(fabs(snap_yaw(&p)) < 0.01
+            && vec_is(&p.position, 0.50, 0.0, -2.0));
+      /* Level with both: the tie goes to the whole pull. */
+      CHECK(snap_small_at(&set, 0.52, 0.0, -1.99, 3.0, &p) == SNAP_ALL);
+      video_xr_pose_identity(&last);
+      for (i = 0; i <= 200; i++)
+      {
+         snap_small_at(&set, 0.50 + 0.0005 * i, 0.01, -1.99, 3.0, &p);
+         if (i)
+            CHECK(fabs(snap_yaw(&p) - snap_yaw(&last)) <= 0.01
+                  && fabs(p.position.x - last.position.x) <= 0.00101
+                  && fabs(p.position.y - last.position.y) <= 0.00101
+                  && fabs(p.position.z - last.position.z) <= 0.00101);
+         last = p;
+      }
+      /* The whole pull still wins over one a rounding error nearer. */
+      set.quads[!o].pose.position.y = 2e-6f;
+      CHECK(snap_small_at(&set, 0.52, 0.0, -1.99, 3.0, &p) == SNAP_ALL);
+   }
+   /* Among whole pulls the smallest correction wins: 0.88 high, 1.5 cm
+    * low of a 0.9 high target, its bottom edge levels, not its top. */
+   snap_set(&set);
+   snap_pose(&p, 0.01, -0.015, -1.99, 0.0);
+   CHECK((video_xr_snap(&set, 1, 0, 1.0f, 0.88f, 1.0f, &p)
+            & VIDEO_XR_SNAP_ALL) == SNAP_ALL
+         && vec_is(&p.position, 0.0, -0.01, -2.0));
+}
+
+/* A whole line beats a fading one however near: screen 3 held 2 cm
+ * right of a target at y 0, with another 1 cm higher whose gap is 0.31
+ * or 0.45 m, carried up through that one's line in 1 um steps, stays
+ * level with the whole one in either quad order. */
+static void test_snap_whole_line(void)
+{
+   unsigned i, j, o;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   for (j = 0; j < 2; j++)
+   {
+      for (o = 0; o < 2; o++)
+      {
+         double x = j ? 1.47 : 1.33;
+         memset(&set, 0, sizeof(set));
+         snap_add(&set, o, o ? x : 0.0, 0.0);
+         snap_add(&set, !o, o ? 0.0 : x, 0.0);
+         set.quads[!o].pose.position.y = 0.01f;
+         for (i = 0; i <= 800; i++)
+            CHECK(snap_small_at(&set, 0.52, 0.0096 + 0.000001 * i, -1.99,
+                  0.0, &p) == SNAP_ALL && fabs(p.position.y) < 1e-6);
+      }
+   }
+}
+
+/* A turn tie: targets 3 degrees either way, the near one whole, the
+ * far one in its 30-60 cm fade; the near one turns it, in either quad
+ * order, as it does when the far one is parallel already. Of two whole
+ * ones, the smaller turn wins. */
+static void test_snap_turn_tie(void)
+{
+   unsigned o;
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   for (o = 0; o < 2; o++)
+   {
+      memset(&set, 0, sizeof(set));
+      snap_add(&set, o, o ? 1.45 : 0.0, o ? 3.0 : -3.0);
+      snap_add(&set, !o, o ? 0.0 : 1.45, o ? -3.0 : 3.0);
+      CHECK(snap_small_at(&set, 0.52, 0.0, -2.0, 0.0, &p)
+            & VIDEO_XR_SNAP_TURN);
+      CHECK(angle_near((float)snap_yaw(&p), -3.0f));
+      set.quads[!o].pose.orientation.y = 0.0f;
+      set.quads[!o].pose.orientation.w = 1.0f;
+      CHECK(snap_small_at(&set, 0.52, 0.0, -2.0, 0.0, &p)
+            & VIDEO_XR_SNAP_TURN);
+      CHECK(angle_near((float)snap_yaw(&p), -3.0f));
+      memset(&set, 0, sizeof(set));
+      snap_add(&set, o, o ? 1.04 : 0.0, o ? 1.0 : -4.0);
+      snap_add(&set, !o, o ? 0.0 : 1.04, o ? -4.0 : 1.0);
+      CHECK(snap_small_at(&set, 0.52, 0.0, -2.0, 0.0, &p)
+            & VIDEO_XR_SNAP_TURN);
+      CHECK(angle_near((float)snap_yaw(&p), 1.0f));
+   }
+}
+
+/* A target turned 30 degrees snaps in its own frame: screen 2 held 2 cm
+ * off standing flush right of it, 1 cm high, 2 cm in front and turned
+ * 3 degrees more lands flush, level, in its plane and parallel. */
+static void test_snap_turned(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_pose_t p;
+   double c = cos(M_PI / 6.0);
+   double s = sin(M_PI / 6.0);
+   snap_set(&set);
+   snap_pose(&set.quads[0].pose, 0.0, 0.0, -2.0, 30.0);
+   CHECK(snap_at(&set, 1.32 * c + 0.02 * s, 0.01,
+            -2.0 - 1.32 * s + 0.02 * c, 33.0, &p) == SNAP_ALL);
+   CHECK(vec_is(&p.position, 1.30 * c, 0.0, -2.0 - 1.30 * s)
+         && angle_near((float)snap_yaw(&p), 30.0f));
+}
+
+/* In the grab: snapped after levelling, its settings from the snapped
+ * pose, no clamp for a snap, the clamp still winning; the XR thread's
+ * call shape (no settings, no snaps) gives the same pose. Taken 12 cm
+ * from where the hand now puts it, so the fade-in is whole. */
+static void test_grab_snap(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, bare, start;
+   video_screen_xr_t s;
+   unsigned snapped = 0;
+   snap_set(&set);
+   memset(&g, 0, sizeof(g));
+   video_xr_pose_identity(&g.rel);
+   g.rel.position.z = -2.0f;
+   g.base.z         = -2.0f;
+   g.width          = 1.0f;
+   g.height         = 0.6f;
+   g.slot           = 1;
+   g.state          = VIDEO_XR_GRAB_HELD;
+   video_xr_pose_identity(&start);
+   start.position.x = 1.2f;
+   start.position.z = -2.0f;
+   video_xr_pose_identity(&aim);
+   aim.position.x = 1.32f;
+   aim.position.y = 0.01f;
+   aim.position.z = 0.02f;
+   CHECK(!video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s,
+            &snapped));
+   CHECK((snapped & VIDEO_XR_SNAP_ALL) == SNAP_ALL
+         && vec_is(&pose.position, 1.30, 0.0, -2.0));
+   CHECK(NEAR(s.x, 1.30) && NEAR(s.y, 0.0) && NEAR(s.z, 0.0));
+   CHECK(!video_xr_grab_pose(&g, &aim, &set, 0, &start, &bare, NULL, NULL));
+   CHECK(!memcmp(&pose, &bare, sizeof(pose)));
+   CHECK(!video_xr_grab_pose(&g, &aim, NULL, 0, NULL, &pose, &s, &snapped));
+   CHECK(snapped == 0 && vec_is(&pose.position, 1.32, 0.01, -1.98));
+   video_xr_grab_pose(&g, &aim, &set, 1u, &start, &pose, &s, &snapped);
+   CHECK(snapped == 0 && vec_is(&pose.position, 1.32, 0.01, -1.98));
+   /* A snap past +10 m: the clamp stops it there, and says so. */
+   set.quads[0].pose.position.x = 11.32f;
+   aim.position.x               = 9.995f;
+   aim.position.y               = 0.0f;
+   aim.position.z               = 0.0f;
+   CHECK(video_xr_grab_pose(&g, &aim, &set, 0, &start, &pose, &s,
+            &snapped));
+   CHECK(NEAR(s.x, 10.0) && NEAR(pose.position.x, 10.0));
+}
+
+/* The 3DS layout: screen 1, 1.6 x 0.96 at 1.8 m; screen 2, 1.28 x 0.96,
+ * held by a hand at the origin from its spot 3.2 cm under screen 1,
+ * inside the bottom edge's 3-6 cm fade. */
+static void snap_3ds(video_xr_quad_set_t *set, video_xr_grab_t *g,
+      video_xr_pose_t *start)
+{
+   memset(set, 0, sizeof(*set));
+   video_xr_pose_identity(&set->quads[0].pose);
+   set->quads[0].pose.position.z = -1.8f;
+   set->quads[0].width           = 1.6f;
+   set->quads[0].height          = 0.96f;
+   set->quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   set->num_quads                = 1;
+   memset(g, 0, sizeof(*g));
+   video_xr_pose_identity(&g->rel);
+   g->rel.position.y = -0.992f;
+   g->rel.position.z = -1.8f;
+   g->base.y         = -0.992f;
+   g->base.z         = -1.8f;
+   g->width          = 1.28f;
+   g->height         = 0.96f;
+   g->slot           = 1;
+   g->state          = VIDEO_XR_GRAB_HELD;
+   *start            = g->rel;
+}
+
+/* Grabbing a screen does not move it: a 3DS layout's screen 2, taken
+ * and held still, stays put and engages nothing, where a whole pull
+ * would lift it 2.8 cm onto screen 1's bottom edge; the XR thread's
+ * call shape agrees. */
+static void test_snap_no_hop(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, start, away;
+   video_screen_xr_t s;
+   unsigned snapped = 1;
+   snap_3ds(&set, &g, &start);
+   video_xr_pose_identity(&aim);
+   CHECK(!video_xr_grab_pose(&g, &aim, &set, 2u, &start, &pose, &s,
+            &snapped));
+   CHECK(snapped == 0 && pose_same(&pose, &start));
+   CHECK(NEAR(s.x, 0.0) && NEAR(s.y, 0.0) && NEAR(s.z, 0.0));
+   video_xr_grab_pose(&g, &aim, &set, 2u, &start, &pose, NULL, NULL);
+   CHECK(pose_same(&pose, &start));
+   pose = start;
+   CHECK(video_xr_snap(&set, 1, 2u, 1.28f, 0.96f, 0.0f, &pose) == 0
+         && !memcmp(&pose, &start, sizeof(pose)));
+   /* Had it been taken 1 m away, the pull would be whole. */
+   away             = start;
+   away.position.x  = 1.0f;
+   video_xr_grab_pose(&g, &aim, &set, 2u, &away, &pose, NULL, NULL);
+   CHECK(vec_is(&pose.position, 0.0, -0.964, -1.8));
+}
+
+/* The fade-in: 0 where the screen was taken, rising evenly with travel
+ * or turn, whichever is further on, to 1 at 5 cm or 10 degrees; carried
+ * sideways in 0.5 mm steps, the 3DS screen 2 rises to screen 1's edge
+ * line as the fade grows, no step moving it more than twice the hand's,
+ * and is whole by 5 cm. */
+static void test_snap_fade_in(void)
+{
+   unsigned i;
+   video_xr_quad_set_t set;
+   video_xr_grab_t g;
+   video_xr_pose_t aim, pose, start, last;
+   snap_3ds(&set, &g, &start);
+   pose = start;
+   CHECK(video_xr_snap_fade(&start, &pose) == 0.0f);
+   pose.position.x = 0.025f;
+   CHECK(NEAR(video_xr_snap_fade(&start, &pose), 0.5));
+   pose.position.x = 0.05f;
+   CHECK(NEAR(video_xr_snap_fade(&start, &pose), 1.0));
+   pose.position.x = 0.2f;
+   CHECK(video_xr_snap_fade(&start, &pose) == 1.0f);
+   /* 1 cm along and turned 5 degrees about its up: the turn counts. */
+   pose.position.x    = 0.01f;
+   pose.orientation.y = (float)sin(5.0 * M_PI / 360.0);
+   pose.orientation.w = (float)cos(5.0 * M_PI / 360.0);
+   CHECK(NEAR(video_xr_snap_fade(&start, &pose), 0.5));
+
+   video_xr_pose_identity(&aim);
+   last = start;
+   for (i = 0; i <= 160; i++)
+   {
+      aim.position.x = 0.0005f * i;
+      video_xr_grab_pose(&g, &aim, &set, 2u, &start, &pose, NULL, NULL);
+      CHECK(fabs(pose.position.x - last.position.x) <= 0.00101
+            && fabs(pose.position.y - last.position.y) <= 0.00101);
+      if (i == 50)
+         CHECK(NEAR(pose.position.y, -0.978));
+      last = pose;
+   }
+   CHECK(vec_is(&pose.position, 0.08, -0.964, -1.8));
+}
+
 /* An outline round an item: centred on it, facing as it does, its rim's
  * inner edge with filtering's half texel 5 mm outside the item's; about
  * 4 cm thick at the sides and 2 cm at the top and bottom of a
@@ -2550,6 +3052,18 @@ int main(void)
    test_menu_handle();
    test_handle_first();
    test_handle_sticky();
+   test_snap_lines();
+   test_snap_pulling();
+   test_snap_zones();
+   test_snap_targets();
+   test_snap_continuous();
+   test_snap_ranked();
+   test_snap_whole_line();
+   test_snap_turn_tie();
+   test_snap_turned();
+   test_grab_snap();
+   test_snap_no_hop();
+   test_snap_fade_in();
    test_live_edit();
    test_edit_fixed();
    test_frame_as_screen();

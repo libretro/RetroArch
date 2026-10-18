@@ -119,7 +119,7 @@ class GlLanes(unittest.TestCase):
     def test_extra_cases_gl_only(self):
         names = {c['name'] for c in run.CASES}
         self.assertTrue(all(c['name'] not in names for c in run.GL_EXTRA))
-        self.assertEqual(len(run.CASES), 191)
+        self.assertEqual(len(run.CASES), 194)
 
     def test_edit_lanes(self):
         names = [c['name'] for c in self.gl_cases]
@@ -142,6 +142,8 @@ class GlLanes(unittest.TestCase):
         self.assertIn('gl-egl-edit-choose', names)
         self.assertNotIn('glcore-glx-edit-choose', names)
         self.assertNotIn('glcore-egl-edit-handle-first', names)
+        self.assertIn('glcore-egl-edit-snap', names)
+        self.assertIn('gl-egl-edit-snap', names)
         selected, error = run.select(['edit-grab', 'edit-pause'], False,
                                      False)
         self.assertIsNone(error)

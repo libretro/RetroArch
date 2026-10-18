@@ -1088,14 +1088,371 @@ void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
    out->height = (q->height + 2.0f * VIDEO_XR_OUTLINE_GAP) / inner;
 }
 
+/* A pull's share: whole within r, none from 2r, falling between. */
+static double video_xr_snap_share(double d, double r)
+{
+   d = fabs(d);
+   if (d <= r)
+      return 1.0;
+   if (d >= 2.0 * r)
+      return 0.0;
+   return (2.0 * r - d) / r;
+}
+
+/* How far a snap moves what is d off its line: all the way within r,
+ * then less by as much as d grows, nothing from 2r, so the item
+ * catches up with the hand at twice its speed. */
+static double video_xr_snap_pull(double d, double r)
+{
+   double a = fabs(d);
+   if (a <= r)
+      return d;
+   if (a >= 2.0 * r)
+      return 0.0;
+   return (d < 0.0) ? a - 2.0 * r : 2.0 * r - a;
+}
+
+static double video_xr_quat_dot(const video_xr_quat_t *a,
+      const video_xr_quat_t *b)
+{
+   return (double)a->x * b->x + (double)a->y * b->y
+      + (double)a->z * b->z + (double)a->w * b->w;
+}
+
+/* Degrees between two turns. */
+static double video_xr_quat_angle(const video_xr_quat_t *a,
+      const video_xr_quat_t *b)
+{
+   double d = fabs(video_xr_quat_dot(a, b));
+   return (d >= 1.0) ? 0.0 : 2.0 * acos(d) * 180.0 / VIDEO_XR_PI;
+}
+
+/* q turned k of the way to to, the short way; exactly to from k 1. */
+static void video_xr_quat_toward(video_xr_quat_t *q,
+      const video_xr_quat_t *to, double k)
+{
+   double wq, wt, n;
+   double d = video_xr_quat_dot(q, to);
+   double s = (d < 0.0) ? -1.0 : 1.0;
+   if (k >= 1.0)
+   {
+      *q = *to;
+      return;
+   }
+   if (k <= 0.0)
+      return;
+   d = fabs(d);
+   if (d > 0.9999)
+   {
+      wq = 1.0 - k;
+      wt = k;
+   }
+   else
+   {
+      double a = acos(d);
+      wq       = sin((1.0 - k) * a) / sin(a);
+      wt       = sin(k * a) / sin(a);
+   }
+   wt  *= s;
+   q->x = (float)(wq * q->x + wt * to->x);
+   q->y = (float)(wq * q->y + wt * to->y);
+   q->z = (float)(wq * q->z + wt * to->z);
+   q->w = (float)(wq * q->w + wt * to->w);
+   n    = sqrt(video_xr_quat_dot(q, q));
+   if (n > 0.0)
+   {
+      q->x = (float)(q->x / n);
+      q->y = (float)(q->y / n);
+      q->z = (float)(q->z / n);
+      q->w = (float)(q->w / n);
+   }
+}
+
+float video_xr_snap_fade(const video_xr_pose_t *start,
+      const video_xr_pose_t *pose)
+{
+   double dx   = (double)pose->position.x - start->position.x;
+   double dy   = (double)pose->position.y - start->position.y;
+   double dz   = (double)pose->position.z - start->position.z;
+   double k    = sqrt(dx * dx + dy * dy + dz * dz)
+      / VIDEO_XR_SNAP_FADE_DIST;
+   double turn = video_xr_quat_angle(&start->orientation,
+         &pose->orientation) / VIDEO_XR_SNAP_FADE_ANGLE;
+   if (turn > k)
+      k = turn;
+   return (k < 1.0) ? (float)k : 1.0f;
+}
+
+/* A screen a held one may snap to: the turn it is nearest, parallel or
+ * square, how many degrees off that it is, and the share of its pulls:
+ * the gap's, times the grab's fade-in. */
+typedef struct video_xr_snap_target
+{
+   const video_xr_quad_t *q;
+   video_xr_quat_t goal;
+   double angle;
+   double share;
+   bool square;
+} video_xr_snap_target_t;
+
+/* The best line yet on one of the held screen's axes: how far off it
+ * is, and the share of the pull it gets. */
+typedef struct video_xr_snap_line
+{
+   double d;
+   double k;
+   bool any;
+} video_xr_snap_line_t;
+
+/* Nearer by less than this, in metres or degrees, is rounding: a tie. */
+#define VIDEO_XR_SNAP_TIE 1e-5
+
+/* -1 when a is below b by more than rounding, 1 above, else 0. */
+static int video_xr_snap_cmp(double a, double b)
+{
+   if (a < b - VIDEO_XR_SNAP_TIE)
+      return -1;
+   return (a > b + VIDEO_XR_SNAP_TIE) ? 1 : 0;
+}
+
+/* How far off its line d stays after a pull of share k. */
+static double video_xr_snap_left(double d, double k)
+{
+   return fabs(d) - fabs(video_xr_snap_pull(d, VIDEO_XR_SNAP_DIST)) * k;
+}
+
+/* The line kept is the one left nearest after its pull (a whole pull
+ * leaves exactly 0), then the stronger pull, then the nearest, then
+ * the first. */
+static void video_xr_snap_offer(video_xr_snap_line_t *l, double d,
+      double k)
+{
+   if (k <= 0.0 || fabs(d) >= 2.0 * VIDEO_XR_SNAP_DIST)
+      return;
+   if (l->any)
+   {
+      double e = video_xr_snap_left(d, k);
+      double f = video_xr_snap_left(l->d, l->k);
+      int c    = (e < f) ? -1 : (e > f) ? 1 : 0;
+      if (!c)
+         c = (k > l->k) ? -1 : (k < l->k) ? 1 : 0;
+      if (!c)
+         c = video_xr_snap_cmp(fabs(d), fabs(l->d));
+      if (c >= 0)
+         return;
+   }
+   l->d   = d;
+   l->k   = k;
+   l->any = true;
+}
+
+/* How much of the way to t's goal its pull turns the screen. */
+static double video_xr_snap_turn(const video_xr_snap_target_t *t)
+{
+   return (t->angle > 0.0) ? t->share
+      * video_xr_snap_pull(t->angle, VIDEO_XR_SNAP_ANGLE) / t->angle
+      : t->share;
+}
+
+static double video_xr_snap_nearer(double a, double b)
+{
+   return (fabs(a) <= fabs(b)) ? a : b;
+}
+
+/* q as a target for a screen at pose, a and b its half width and
+ * height; false when too far off in turn or place to pull at all. */
+static bool video_xr_snap_target(const video_xr_quad_t *q,
+      const video_xr_pose_t *pose, double a, double b,
+      video_xr_snap_target_t *t)
+{
+   unsigned i;
+   double gx, gy, gz;
+   video_xr_pose_t inv, rel, turn, goal;
+   t->q      = q;
+   t->goal   = q->pose.orientation;
+   t->angle  = video_xr_quat_angle(&pose->orientation, &t->goal);
+   t->square = false;
+   video_xr_pose_identity(&turn);
+   for (i = 0; i < 2; i++)
+   {
+      double e;
+      /* A quarter turn either way about its up. */
+      turn.orientation.y = i ? -0.70710678f : 0.70710678f;
+      turn.orientation.w = 0.70710678f;
+      video_xr_compose(&q->pose, &turn, &goal);
+      e = video_xr_quat_angle(&pose->orientation, &goal.orientation);
+      if (e < t->angle)
+      {
+         t->goal   = goal.orientation;
+         t->angle  = e;
+         t->square = true;
+      }
+   }
+   if (t->angle >= 2.0 * VIDEO_XR_SNAP_ANGLE)
+      return false;
+   /* The gap as if lined up: square, the held screen's width runs along
+    * the target's facing. */
+   video_xr_pose_invert(&q->pose, &inv);
+   video_xr_compose(&inv, pose, &rel);
+   gx = fabs(rel.position.x) - q->width * 0.5 - (t->square ? 0.0 : a);
+   gy = fabs(rel.position.y) - q->height * 0.5 - b;
+   gz = fabs(rel.position.z) - (t->square ? a : 0.0);
+   if (gx < 0.0)
+      gx = 0.0;
+   if (gy < 0.0)
+      gy = 0.0;
+   if (gz < 0.0)
+      gz = 0.0;
+   t->share = video_xr_snap_share(sqrt(gx * gx + gy * gy + gz * gz),
+         VIDEO_XR_SNAP_NEAR);
+   return t->share > 0.0;
+}
+
+unsigned video_xr_snap(const video_xr_quad_set_t *set, unsigned slot,
+      unsigned skip, float width, float height, float fade,
+      video_xr_pose_t *pose)
+{
+   unsigned i;
+   double e;
+   double turn = 0.0;
+   video_xr_snap_target_t t[RETRO_VIDEO_VIEWS_MAX];
+   video_xr_snap_line_t line[3];
+   video_xr_pose_t inv;
+   video_xr_vec3_t move, world;
+   double pull[3];
+   unsigned n       = 0;
+   unsigned done    = 0;
+   unsigned snapped = 0;
+   int ref          = -1;
+   double a         = width * 0.5;
+   double b         = height * 0.5;
+
+   if (!set || slot >= VIDEO_XR_MENU_SLOT || fade <= 0.0f)
+      return 0;
+   for (i = 0; i < set->num_quads && n < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      if (     q->slot >= VIDEO_XR_MENU_SLOT || q->slot == slot
+            || q->kind == VIDEO_XR_QUAD_MENU
+            || (((skip | done) >> q->slot) & 1u)
+            || set->slots[q->slot].fixed)
+         continue;
+      done |= 1u << q->slot;
+      if (video_xr_snap_target(q, pose, a, b, &t[n]))
+      {
+         t[n].share *= fade;
+         n++;
+      }
+   }
+   if (!n)
+      return 0;
+
+   /* The turn, to the target whose pull leaves it nearest parallel or
+    * square; then the stronger pull, the smaller turn, the first. */
+   for (i = 0; i < n; i++)
+   {
+      double k = video_xr_snap_turn(&t[i]);
+      int c    = (ref < 0) ? -1 : video_xr_snap_cmp(
+            t[i].angle * (1.0 - k), t[ref].angle * (1.0 - turn));
+      if (!c)
+         c = (k > turn) ? -1 : (k < turn) ? 1 : 0;
+      if (!c && t[i].angle < t[ref].angle)
+         c = -1;
+      if (c < 0)
+      {
+         ref  = (int)i;
+         turn = k;
+      }
+   }
+   e = t[ref].angle;
+   video_xr_quat_toward(&pose->orientation, &t[ref].goal, turn);
+   if (e <= VIDEO_XR_SNAP_ANGLE && t[ref].share >= 1.0)
+      snapped |= VIDEO_XR_SNAP_TURN;
+   if (turn > 0.0)
+      snapped |= VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_TURN);
+
+   /* Lines along the held screen's own axes, as now turned; they fade
+    * with each target's turn. */
+   memset(line, 0, sizeof(line));
+   video_xr_pose_invert(pose, &inv);
+   for (i = 0; i < n; i++)
+   {
+      video_xr_pose_t rel;
+      double x, y, z;
+      double A = t[i].q->width * 0.5;
+      double B = t[i].q->height * 0.5;
+      double k = t[i].share
+         * video_xr_snap_share(t[i].angle, VIDEO_XR_SNAP_ANGLE);
+      video_xr_compose(&inv, &t[i].q->pose, &rel);
+      x = rel.position.x;
+      y = rel.position.y;
+      z = rel.position.z;
+      if (!t[i].square)
+      {
+         video_xr_snap_offer(&line[0], x - A + a, k);
+         video_xr_snap_offer(&line[0], x + A - a, k);
+         video_xr_snap_offer(&line[0], x,         k);
+         video_xr_snap_offer(&line[0], x + A + a, k);
+         video_xr_snap_offer(&line[0], x - A - a, k);
+         video_xr_snap_offer(&line[1], y + B - b, k);
+         video_xr_snap_offer(&line[1], y - B + b, k);
+         video_xr_snap_offer(&line[1], y,         k);
+         video_xr_snap_offer(&line[1], y + B + b, k);
+         video_xr_snap_offer(&line[1], y - B - b, k);
+         video_xr_snap_offer(&line[2], z,         k);
+      }
+      else
+      {
+         /* A vertical edge into its plane at one of its vertical edges:
+          * a corner, both together or neither. */
+         double dx = video_xr_snap_nearer(x - a, x + a);
+         double dz = video_xr_snap_nearer(z - A, z + A);
+         video_xr_snap_offer(&line[0], dx,
+               k * video_xr_snap_share(dz, VIDEO_XR_SNAP_DIST));
+         video_xr_snap_offer(&line[2], dz,
+               k * video_xr_snap_share(dx, VIDEO_XR_SNAP_DIST));
+         video_xr_snap_offer(&line[1], y + B - b, k);
+         video_xr_snap_offer(&line[1], y - B + b, k);
+         video_xr_snap_offer(&line[1], y,         k);
+      }
+   }
+   for (i = 0; i < 3; i++)
+   {
+      pull[i] = 0.0;
+      if (!line[i].any)
+         continue;
+      snapped |= VIDEO_XR_SNAP_PULLING(VIDEO_XR_SNAP_X << i);
+      pull[i] = video_xr_snap_pull(line[i].d, VIDEO_XR_SNAP_DIST)
+         * line[i].k;
+      if (fabs(line[i].d) <= VIDEO_XR_SNAP_DIST && line[i].k >= 1.0)
+         snapped |= VIDEO_XR_SNAP_X << i;
+   }
+   move.x = (float)pull[0];
+   move.y = (float)pull[1];
+   move.z = (float)pull[2];
+   video_xr_rotate(&pose->orientation, &move, &world);
+   pose->position.x += world.x;
+   pose->position.y += world.y;
+   pose->position.z += world.z;
+   return snapped;
+}
+
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
-      video_xr_pose_t *pose, video_screen_xr_t *out)
+      const video_xr_quad_set_t *targets, unsigned skip,
+      const video_xr_pose_t *start, video_xr_pose_t *pose,
+      video_screen_xr_t *out, unsigned *snapped)
 {
    video_screen_xr_t s, c;
    bool clamped;
+   unsigned snaps = 0;
    video_xr_compose(aim, &g->rel, pose);
    if (!g->tilt)
       video_xr_level(&pose->orientation, g->roll);
+   if (targets)
+      snaps = video_xr_snap(targets, g->slot, skip, g->width, g->height,
+            video_xr_snap_fade(start, pose), pose);
+   if (snapped)
+      *snapped = snaps;
    video_views_xr_reset(&s, 1);
    video_xr_item_settings(&g->base, pose, &s);
    c = s;

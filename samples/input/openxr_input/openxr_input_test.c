@@ -444,13 +444,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate_joints(XrHandTrackerEXT t,
    return XR_SUCCESS;
 }
 
-/* Each hand's haptics: the last amplitude, 0 once stopped. */
-static float t_amp[3];
+/* Each hand's haptics: the last amplitude, 0 once stopped, and how
+ * many were applied. */
+static float    t_amp[3];
+static unsigned t_applies[3];
 static XRAPI_ATTR XrResult XRAPI_CALL t_apply(XrSession s,
       const XrHapticActionInfo *hi, const XrHapticBaseHeader *h)
 {
    t_amp[t_hand(hi->subactionPath)] =
       ((const XrHapticVibration*)h)->amplitude;
+   t_applies[t_hand(hi->subactionPath)]++;
    return XR_SUCCESS;
 }
 static XRAPI_ATTR XrResult XRAPI_CALL t_stop(XrSession s,
@@ -1988,12 +1991,15 @@ static void test_joypad_wrapped(void)
    t_forget_devices();
 }
 
+/* Snap to Screens, as edit mode starts; off unless a case says. */
+static bool t_snap;
+
 /* As the frontend's command does it, between frames, with the menu
  * closed. */
 static void t_edit_on(bool pause)
 {
    if (input_openxr_edit_toggle())
-      input_openxr_edit_begin(pause);
+      input_openxr_edit_begin(pause, t_snap);
 }
 
 /* Edit Screens: the frontend's command starts it at once, between
@@ -2019,7 +2025,7 @@ static void test_edit_mode(void)
    t_let_go();
    CHECK(input_openxr_edit_toggle(), "a start was refused");
    CHECK(!t_editing, "the toggle alone started it");
-   input_openxr_edit_begin(false);
+   input_openxr_edit_begin(false, false);
    CHECK(t_editing, "did not start at once");
    t_hold("combined/a", 0, 1.0f, 0.0f);
    t_hold("edit/edit_screens", 0, 1.0f, 0.0f);
@@ -2082,7 +2088,7 @@ static void test_edit_mode(void)
    t_menu_open = true;
    t_notices   = 0;
    CHECK(input_openxr_edit_toggle(), "a start was refused with the menu open");
-   input_openxr_edit_begin(false);
+   input_openxr_edit_begin(false, false);
    CHECK(!t_editing && t_notices == 1 && !strcmp(t_notice, "edit no content"),
          "%u notices, the last %s, editing %d", t_notices, t_notice,
          (int)t_editing);
@@ -3878,6 +3884,203 @@ static void test_edit_select_lit(void)
    t_edit_end();
 }
 
+/* Screen 2, 0.8 x 0.6, at its spot 1.245 m right of screen 1's middle,
+ * 4.5 cm off standing flush beside it: inside the edge's 3-6 cm fade,
+ * where a whole pull would move it 1.5 cm. */
+static void t_snap_beside(void)
+{
+   video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
+   memset(q, 0, sizeof(*q));
+   video_xr_pose_identity(&q->pose);
+   q->pose.position.x      = 1.245f;
+   q->pose.position.z      = -1.8f;
+   q->width                = 0.8f;
+   q->height               = 0.6f;
+   q->kind                 = VIDEO_XR_QUAD_SCREEN;
+   q->screen               = 1;
+   q->slot                 = 1;
+   t_quads.slots[1].base.x = 1.245f;
+   t_quads.slots[1].base.z = -1.8f;
+}
+
+/* Snap to Screens on the main thread: a screen taken near a line
+ * stays put; carried 5 cm or more it snaps to one no hand holds and
+ * its settings say so; the hand buzzes once as a snap takes hold, not
+ * while it holds, and again as one takes hold anew; the frame loop is
+ * told the setting and where the screen was taken. Off, nothing snaps
+ * or buzzes. */
+static void test_edit_snap(void)
+{
+   const video_xr_grab_t *g = &input_openxr_edit.hand[1].g;
+   unsigned n;
+   t_snap = true;
+   t_edit_start();
+   CHECK(t_grabs.snap, "the grabs record does not carry Snap to Screens");
+   t_snap_beside();
+   t_aim[2].position.x = 1.245f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(g->state == VIDEO_XR_GRAB_HELD && g->slot == 1,
+         "took slot %u in state %u", g->slot, g->state);
+   CHECK(t_near(t_grabs.start[1].position.x, 1.245f)
+         && t_near(t_grabs.start[1].position.z, -1.8f),
+         "the grabs record has it taken at %.4f %.4f",
+         t_grabs.start[1].position.x, t_grabs.start[1].position.z);
+   n = t_applies[2];
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, 0.0f) && t_applies[2] == n,
+         "taken and held still, it hopped to %.4f, %u buzzes", t_xr[1].x,
+         t_applies[2] - n);
+   /* 5.3 cm from where it was taken: whole. */
+   t_aim[2].position.x = 1.205f;
+   t_aim[2].position.y = 0.025f;
+   t_aim[2].position.z = 0.025f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, -0.045f) && t_near(t_xr[1].y, 0.0f)
+         && t_near(t_xr[1].z, 0.0f),
+         "snapped to %.4f %.4f %.4f", t_xr[1].x, t_xr[1].y, t_xr[1].z);
+   CHECK(t_applies[2] == n + 1
+         && t_near(t_amp[2], INPUT_OPENXR_SNAP_TICK_AMP),
+         "%u buzzes as it took hold, at %.2f", t_applies[2] - n, t_amp[2]);
+   t_aim[2].position.x = 1.20f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, -0.045f) && t_applies[2] == n + 1,
+         "held on the line: at %.4f, %u buzzes", t_xr[1].x,
+         t_applies[2] - n);
+   t_aim[2].position.x = 1.30f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, 0.055f) && t_near(t_xr[1].y, 0.0f)
+         && t_applies[2] == n + 1,
+         "off the edge: at %.4f, %u buzzes", t_xr[1].x, t_applies[2] - n);
+   t_aim[2].position.x = 1.205f;
+   t_edit_poll();
+   CHECK(t_applies[2] == n + 2, "back on the edge: %u buzzes",
+         t_applies[2] - n);
+   t_edit_end();
+
+   t_snap = false;
+   t_edit_start();
+   CHECK(!t_grabs.snap, "the grabs record says snap with it off");
+   t_snap_beside();
+   t_aim[2].position.x = 1.245f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   n                   = t_applies[2];
+   t_aim[2].position.x = 1.205f;
+   t_aim[2].position.y = 0.025f;
+   t_aim[2].position.z = 0.025f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, -0.04f) && t_near(t_xr[1].y, 0.025f)
+         && t_near(t_xr[1].z, 0.025f) && t_applies[2] == n,
+         "off: at %.4f %.4f %.4f, %u buzzes", t_xr[1].x, t_xr[1].y,
+         t_xr[1].z, t_applies[2] - n);
+   t_edit_end();
+}
+
+/* Snapping on, each hand holding a screen: neither snaps to the other,
+ * whichever hand carries its screen to it; the frame loop is told both
+ * holds. */
+static void test_edit_snap_two_hands(void)
+{
+   const video_xr_grab_t *l = &input_openxr_edit.hand[0].g;
+   const video_xr_grab_t *r = &input_openxr_edit.hand[1].g;
+   t_snap = true;
+   t_edit_start();
+   t_snap_beside();
+   t_aim[2].position.x = 1.245f;
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(     l->state == VIDEO_XR_GRAB_HELD && l->slot == 0
+         && r->state == VIDEO_XR_GRAB_HELD && r->slot == 1
+         && t_grabs.snap && t_grabs.hand[0].state == VIDEO_XR_GRAB_HELD
+         && t_grabs.hand[1].state == VIDEO_XR_GRAB_HELD,
+         "took slots %u and %u", l->slot, r->slot);
+   /* Screen 2 carried 5.3 cm, to 4 cm off flush beside screen 1. */
+   t_aim[2].position.x = 1.205f;
+   t_aim[2].position.y = 0.025f;
+   t_aim[2].position.z = 0.025f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, -0.04f) && t_near(t_xr[1].y, 0.025f)
+         && t_near(t_xr[1].z, 0.025f),
+         "screen 2 snapped to a held screen 1: %.4f %.4f %.4f", t_xr[1].x,
+         t_xr[1].y, t_xr[1].z);
+   /* Screen 1 carried 5.2 cm, 2.5 cm into screen 2's edge. */
+   t_aim[1].position.x = 0.03f;
+   t_aim[1].position.y = 0.03f;
+   t_aim[1].position.z = 0.03f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[0].x, 0.03f) && t_near(t_xr[0].y, 0.03f)
+         && t_near(t_xr[0].z, 0.03f),
+         "screen 1 snapped to a held screen 2: %.4f %.4f %.4f", t_xr[0].x,
+         t_xr[0].y, t_xr[0].z);
+   t_edit_end();
+   t_snap = false;
+}
+
+/* Carried in, each snap buzzes as it takes hold, one still fading
+ * staying armed. Resting at the edge of its whole pull, where it takes
+ * hold and lets go poll by poll, no more; again only once that axis has
+ * stopped pulling at all, or after a new grab. */
+static void test_edit_snap_edge(void)
+{
+   unsigned i, n;
+   const input_openxr_hold_t *hold = &input_openxr_edit.hand[1];
+   t_snap = true;
+   t_edit_start();
+   t_snap_beside();
+   /* Screen 2 10 cm right of flush, beyond any pull: taken there. */
+   t_quads.quads[t_quads.num_quads - 1].pose.position.x = 1.30f;
+   t_quads.slots[1].base.x = 1.30f;
+   t_aim[2].position.x     = 1.30f;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(hold->g.state == VIDEO_XR_GRAB_HELD && hold->g.slot == 1
+         && hold->armed == VIDEO_XR_SNAP_ALL,
+         "took slot %u armed %#x", hold->g.slot, hold->armed);
+   n = t_applies[2];
+   /* 4.5 cm off flush, 5.5 cm carried: the turn, Y and Z whole, one
+    * buzz; the edge fades, still armed. */
+   t_aim[2].position.x = 1.245f;
+   t_edit_poll();
+   CHECK(t_applies[2] == n + 1 && hold->armed == VIDEO_XR_SNAP_X,
+         "%u buzzes in the edge's fade, armed %#x", t_applies[2] - n,
+         hold->armed);
+   /* 2.9 cm off: the edge whole, one more. */
+   t_aim[2].position.x = 1.229f;
+   t_edit_poll();
+   CHECK(t_applies[2] == n + 2, "%u buzzes taking hold",
+         t_applies[2] - n);
+   /* 3.1 cm off and back again: the edge's whole pull comes and goes. */
+   for (i = 0; i < 3; i++)
+   {
+      t_aim[2].position.x = 1.231f;
+      t_edit_poll();
+      t_aim[2].position.x = 1.229f;
+      t_edit_poll();
+   }
+   CHECK(t_applies[2] == n + 2, "%u buzzes resting at the edge",
+         t_applies[2] - n);
+   /* 7 cm off the edge lets go; back on it, one more. */
+   t_aim[2].position.x = 1.27f;
+   t_edit_poll();
+   CHECK(hold->armed & VIDEO_XR_SNAP_X, "the edge not re-armed: %#x",
+         hold->armed);
+   t_aim[2].position.x = 1.229f;
+   t_edit_poll();
+   CHECK(t_applies[2] == n + 3, "%u buzzes back on the edge",
+         t_applies[2] - n);
+   /* A new grab re-arms them all. */
+   t_let_go();
+   t_edit_poll();
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(hold->armed == VIDEO_XR_SNAP_ALL, "armed %#x after a new grab",
+         hold->armed);
+   t_edit_end();
+   t_snap = false;
+}
+
 /* Let go with the hand still moving: the release poll's own aim puts
  * the item, so the frame loop, which showed it from each frame's aim,
  * shows no step back to the poll before; the stick moves nothing then.
@@ -4062,6 +4265,9 @@ int main(void)
    test_edit_select_grips();
    test_edit_held_lit();
    test_edit_select_lit();
+   test_edit_snap();
+   test_edit_snap_two_hands();
+   test_edit_snap_edge();
    test_edit_room();
    if (failures)
    {

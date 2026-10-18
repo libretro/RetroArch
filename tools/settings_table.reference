@@ -204,6 +204,7 @@ bool	video_windows_enable	1	1
 bool	video_openxr_enable	1	0
 bool	video_openxr_perf_boost	1	0
 bool	video_openxr_edit_pause	1	0
+bool	video_openxr_edit_snap	1	1
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
@@ -929,6 +930,7 @@ bool	video_stereo_swap_eyes	1	0
 bool	video_openxr_enable	1	0
 bool	video_openxr_perf_boost	1	0
 bool	video_openxr_edit_pause	1	0
+bool	video_openxr_edit_snap	1	1
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
@@ -1654,6 +1656,7 @@ bool	video_stereo_swap_eyes	1	0
 bool	video_openxr_enable	1	0
 bool	video_openxr_perf_boost	1	0
 bool	video_openxr_edit_pause	1	0
+bool	video_openxr_edit_snap	1	1
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0

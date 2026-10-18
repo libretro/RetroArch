@@ -7523,6 +7523,105 @@ static void test_frame_grabs_spaces(void)
    t_grab_free(&rt, &s, &sc, &f);
 }
 
+/* Snap to Screens on the frame loop: taken where it is, the held
+ * screen does not hop; taken further off, it snaps to the one no hand
+ * holds exactly as the main thread's call places it, from the grab's
+ * pose the grabs record carries; off, it goes where the hand puts it. */
+static void test_frame_grabs_snap(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   video_xr_pose_t want;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   grabs.snap = true;
+   /* Screen 0, held 2 x 1.2 m, 1 cm above standing on screen 1, and
+    * taken there. */
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.y = 0.09f;
+   t_aim_pose.position.z = -0.8f;
+   t_aim_ok              = true;
+   video_xr_grab_pose(&grabs.hand[1], &t_aim_pose, NULL, 0, NULL,
+         &grabs.start[1], NULL, NULL);
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.y, 0.09f),
+         "taken where it was, it hopped to %.4f", layers[0].pose.position.y);
+   /* Taken 10 cm lower: the pull is whole. */
+   grabs.start[1].position.y -= 0.1f;
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 2000);
+   openxr_frame_layers(&f, 2000, layers, ptrs);
+   video_xr_grab_pose(&grabs.hand[1], &t_aim_pose, &set, 1u,
+         &grabs.start[1], &want, NULL, NULL);
+   CHECK(t_near(want.position.y, 0.08f)
+         && fabs(layers[0].pose.position.y - want.position.y) < 1e-6
+         && fabs(layers[1].pose.position.y - want.position.y) < 1e-6
+         && fabs(layers[0].pose.position.z - want.position.z) < 1e-6,
+         "the frame loop snapped it to %.5f, the main thread's call to %.5f",
+         layers[0].pose.position.y, want.position.y);
+   grabs.snap = false;
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 3000);
+   openxr_frame_layers(&f, 3000, layers, ptrs);
+   CHECK(t_near(layers[0].pose.position.y, 0.09f),
+         "snapped at %.4f with Snap to Screens off",
+         layers[0].pose.position.y);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
+/* Snapping on, each hand holding a screen: the frame loop snaps neither
+ * to the other. Screen 0 held 1 cm above standing on screen 1, both
+ * taken 10 cm off, so any pull would be whole. */
+static void test_frame_grabs_snap_two(void)
+{
+   unsigned h;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set;
+   openxr_grabs_t grabs;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+
+   t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_grab_held(&grabs);
+   grabs.snap                    = true;
+   grabs.hand[0]                 = grabs.hand[1];
+   grabs.hand[0].slot            = 1;
+   grabs.hand[0].rel.position.y  = -1.09f;
+   grabs.hand[0].last.position.y = -1.0f;
+   grabs.hand[0].width           = 1.6f;
+   grabs.hand[0].height          = 0.96f;
+   video_xr_pose_identity(&t_aim_pose);
+   t_aim_pose.position.y = 0.09f;
+   t_aim_pose.position.z = -0.8f;
+   t_aim_ok              = true;
+   for (h = 0; h < 2; h++)
+   {
+      video_xr_grab_pose(&grabs.hand[h], &t_aim_pose, NULL, 0, NULL,
+            &grabs.start[h], NULL, NULL);
+      grabs.start[h].position.y -= 0.1f;
+   }
+   openxr_frame_publish_grabs(&f, &grabs);
+   openxr_frame_place_screens(&f, 1000);
+   openxr_frame_layers(&f, 1000, layers, ptrs);
+   CHECK(     t_near(layers[0].pose.position.y, 0.09f)
+         && t_near(layers[2].pose.position.y, -1.0f),
+         "both held: screen 0 snapped to %.4f, screen 1 to %.4f",
+         layers[0].pose.position.y, layers[2].pose.position.y);
+   t_grab_free(&rt, &s, &sc, &f);
+}
+
 /* A session that ended mid-grab leaves its last record behind; the
  * next session holds nothing, whatever its input does (here its setup
  * publishes nothing): no item held, and Lazy Follow glides. */
@@ -7832,6 +7931,8 @@ int main(void)
    test_frame_grabs_spaces();
    test_frame_grabs_new_session();
    test_frame_grabs_lazy();
+   test_frame_grabs_snap();
+   test_frame_grabs_snap_two();
    test_frame_grabs_threaded();
    test_frame_layer_budget();
 #ifdef HAVE_OPENXR_GL
