@@ -189,9 +189,13 @@ void gt_async_flush(void)
    }
 }
 unsigned video_driver_get_disp_flags(void) { return 0; }
-void video_driver_get_video_output_size(unsigned *dims,
-      char *n, size_t l) { *dims = VIDEO_SCALE_PACK(1920, 1080); (void)n; (void)l; }
-void video_driver_get_viewport_info(void *vp) { (void)vp; }
+/* Both answer bool in the frontend: a display of 1920x1080 and no
+ * viewport. Declared void, the caller read a stale register for the
+ * display's answer and the downscale cap came out 1920 or 0 by chance. */
+bool video_driver_get_video_output_size(unsigned *dims,
+      char *n, size_t l)
+{ *dims = VIDEO_SCALE_PACK(1920, 1080); (void)n; (void)l; return true; }
+bool video_driver_get_viewport_info(void *vp) { (void)vp; return false; }
 
 /* --- inert frontend surface --- */
 typedef struct { char pad[65536]; } gt_blob_t;

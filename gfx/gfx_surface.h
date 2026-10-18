@@ -345,6 +345,19 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img);
  * to free as before. Main thread. */
 bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img);
 
+/* gfx_surface_submit_image for pixels the caller keeps and may upload
+ * again: @img stays the caller's and is fitted in place. Its pixels
+ * are read before the call returns, or, under threaded video, by the
+ * completion, which calls @payload_free(@payload) on the main thread
+ * when the pixels are no longer read. @payload_free is called exactly
+ * once for a true return, before it or at that completion, and never
+ * for a false one: the surface has an upload in flight, or the image
+ * cannot be sampled or was refused, and the pixels were not kept. For
+ * uncompressed images. Main thread. */
+bool gfx_surface_submit_image_borrowed(gfx_surface_t *s,
+      struct texture_image *img, void *payload,
+      gfx_surface_payload_free_t payload_free);
+
 /* Decode the image of @type held in @buf here and now and upload it
  * as gfx_surface_submit_image does. Main thread. */
 bool gfx_surface_submit_buffer(gfx_surface_t *s,

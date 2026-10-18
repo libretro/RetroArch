@@ -52,9 +52,9 @@ bool video_driver_texture_can_update(void) { return false; }
 int video_driver_texture_update(uintptr_t id, void *data)
 { (void)id; (void)data; return 0; }
 unsigned video_driver_get_disp_flags(void) { return 0; }
-void video_driver_get_video_output_size(unsigned *dims, char *d, size_t l)
-{ *dims = VIDEO_SCALE_PACK(1920, 1080); (void)d; (void)l; }
-void video_driver_get_viewport_info(void *vp) { (void)vp; }
+bool video_driver_get_video_output_size(unsigned *dims, char *d, size_t l)
+{ *dims = VIDEO_SCALE_PACK(1920, 1080); (void)d; (void)l; return true; }
+bool video_driver_get_viewport_info(void *vp) { (void)vp; return false; }
 void *video_state_get_ptr(void) { static char b[4096]; return b; }
 unsigned gfx_display_texture_filter(void) { return 0; }
 /* gfx_thumbnail_draw() reaches the display driver through this rather

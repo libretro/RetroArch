@@ -909,14 +909,17 @@ int main(void)
    }
 
    /* 15. parking: a still requested while parking is on lands with
-    *     nothing uploaded and the thumbnail back at UNKNOWN; the next
-    *     request for the path uploads it with no load pushed, once;
-    *     one parked under another upscale threshold is decoded again;
-    *     parked stills survive frames while content is loaded and go
-    *     at the first frame after it is closed. */
+    *     nothing uploaded and the thumbnail back at UNKNOWN; every
+    *     request for the path while content is loaded uploads it from
+    *     the parked image with no load pushed - the content's close
+    *     reinit included - and the image goes at the first frame after
+    *     the close; one parked under another upscale threshold is
+    *     decoded again; a queued upload keeps the pixels it reads
+    *     past the close until it completes. */
    {
       extern int gt_content_switching, gt_content_loaded;
       char still[256];
+      unsigned crc;
       int ok15 = 1;
       snprintf(still, sizeof(still), "/tmp/gfx_thumb_park_%d.bin",
             (int)getpid());
@@ -953,9 +956,11 @@ int main(void)
       /* a frame while the content runs keeps it */
       gt_content_switching = 0;
       gfx_thumbnail_flush_requests();
-      /* taken back: uploaded, no load */
+      /* shown while the content runs: uploaded from the parked image,
+       * no load */
       gt_still_cb = NULL;
       gfx_thumbnail_request_file(still, &th, 0);
+      crc = gt_last_crc;
       if (     gt_still_cb
             || (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
             || !th.texture || gt_uploads != 1)
@@ -964,18 +969,41 @@ int main(void)
                 gt_still_cb != NULL, (int)th.status, gt_uploads);
          ok15 = 0;
       }
-      /* once only: the next request loads */
+      /* the close reinit: the texture is gone with the driver and the
+       * request uploads the same pixels again, no load */
+      gfx_thumbnail_reset(&th);
+      gt_content_switching = 1;
+      gt_content_loaded    = 0;
+      gt_still_cb          = NULL;
+      gt_last_crc          = 0;
+      gfx_thumbnail_request_file(still, &th, 0);
+      if (     gt_still_cb
+            || (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || !th.texture || gt_uploads != 2 || gt_last_crc != crc)
+      {
+         printf("[FAIL] park: the close's request pushed=%d status=%d "
+                "uploads=%d crc %08x (want %08x)\n", gt_still_cb != NULL,
+                (int)th.status, gt_uploads, gt_last_crc, crc);
+         ok15 = 0;
+      }
+      /* closed: the first frame frees what is parked, the next
+       * request loads */
+      gt_content_switching = 0;
+      gfx_thumbnail_flush_requests();
+      gfx_thumbnail_reset(&th);
       gt_still_cb = NULL;
       gfx_thumbnail_request_file(still, &th, 0);
       if (!gt_still_cb)
       {
-         printf("[FAIL] park: a taken still was handed out twice\n");
+         printf("[FAIL] park: a still outlived the content's close\n");
          ok15 = 0;
       }
       else
          gt_still_cb(NULL, NULL, gt_still_ud, NULL);
       /* parked under another threshold: dropped, decoded again */
       gfx_thumbnail_reset(&th);
+      gt_content_switching = 1;
+      gt_content_loaded    = 1;
       gfx_thumbnail_park_requests(true);
       if (!gt_still_request(still, &th, 0x7000u, 0))
          ok15 = 0;
@@ -990,38 +1018,72 @@ int main(void)
       }
       else
          gt_still_cb(NULL, NULL, gt_still_ud, NULL);
-      /* closed: the first frame frees what is parked */
+      /* queued under threaded video: the request lands PENDING with
+       * the upload reading the parked pixels; the close frees the
+       * slot only once the upload has completed */
       gfx_thumbnail_reset(&th);
       gfx_thumbnail_park_requests(true);
       if (!gt_still_request(still, &th, 0x8000u, 0))
          ok15 = 0;
       gfx_thumbnail_park_requests(false);
-      gt_content_loaded = 0;
+      gt_async_mode    = 1;
+      gt_async_posted  = 0;
+      gt_still_cb      = NULL;
+      gfx_thumbnail_request_file(still, &th, 0);
+      if (     gt_still_cb || (int)th.status != GFX_THUMBNAIL_STATUS_PENDING
+            || gt_async_posted != 1)
+      {
+         printf("[FAIL] park: queued take-back pushed=%d status=%d "
+                "posted=%d\n", gt_still_cb != NULL, (int)th.status,
+                gt_async_posted);
+         ok15 = 0;
+      }
+      gt_content_switching = 0;
+      gt_content_loaded    = 0;
       gfx_thumbnail_flush_requests();
+      gt_last_crc          = 0;
+      gt_async_flush();
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || !th.texture || gt_async_pending || !gt_last_crc)
+      {
+         printf("[FAIL] park: queued upload after the close status=%d "
+                "texture=%lu pending=%d\n", (int)th.status,
+                (unsigned long)th.texture, gt_async_pending);
+         ok15 = 0;
+      }
+      gt_async_mode = 0;
+      gfx_thumbnail_reset(&th);
       gt_still_cb = NULL;
       gfx_thumbnail_request_file(still, &th, 0);
       if (!gt_still_cb)
       {
-         printf("[FAIL] park: a still outlived the content's close\n");
+         printf("[FAIL] park: a still read by a queued upload outlived "
+                "the close\n");
          ok15 = 0;
       }
       else
          gt_still_cb(NULL, NULL, gt_still_ud, NULL);
-      /* parked and never taken: the menu's teardown frees it */
+      /* parked and never shown: the menu's teardown frees it */
       gfx_thumbnail_reset(&th);
+      gt_content_switching = 1;
+      gt_content_loaded    = 1;
       gfx_thumbnail_park_requests(true);
       if (!gt_still_request(still, &th, 0x9000u, 0))
          ok15 = 0;
       gfx_thumbnail_park_requests(false);
       gfx_thumbnail_parked_free();
+      gt_content_switching = 0;
+      gt_content_loaded    = 0;
 
       gfx_thumbnail_reset(&th);
       gt_still_capture = 0;
       task_queue_deinit();
       remove(still);
       if (ok15)
-         printf("[ok]   park: landed without upload, taken back once with "
-                "no load, dropped on another threshold, freed at close\n");
+         printf("[ok]   park: landed without upload, shown from the parked "
+                "image while loaded and at the close with no load, dropped "
+                "on another threshold, kept for a queued upload, freed "
+                "at close\n");
       else
          bad = 1;
    }

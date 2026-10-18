@@ -1171,6 +1171,66 @@ bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img)
    return gfx_surface_submit_image(s, own);
 }
 
+bool gfx_surface_submit_image_borrowed(gfx_surface_t *s,
+      struct texture_image *img, void *payload,
+      gfx_surface_payload_free_t payload_free)
+{
+   bool ok;
+   uintptr_t tex = 0;
+
+   if (     !s || !img || !img->width || !img->height
+         || !img->pixels || img->compressed || img->planar
+         || s->inflight)
+      return false;
+   /* Another size is another texture: no update in place */
+   if (s->dims != VIDEO_SCALE_PACK(img->width, img->height))
+      s->fmt = GFX_SURFACE_FMT_NONE;
+   s->dims = VIDEO_SCALE_PACK(img->width, img->height);
+
+   if (!video_driver_texture_fit(img))
+      return false;
+
+#ifdef HAVE_THREADS
+   if (     VIDEO_SCALE_FITS(img->width, img->height)
+         && video_driver_thread_wrapper_active()
+         && task_is_on_main_thread())
+   {
+      gfx_surface_src_t src;
+      enum gfx_surface_submit_result r;
+      src.pixels       = img->pixels;
+      src.payload      = payload;
+      src.payload_free = payload_free;
+      src.pixfmt       = img->fp16  ? IMAGE_PIXFMT_FP16
+                       : img->pix10 ? IMAGE_PIXFMT_2101010
+                                    : IMAGE_PIXFMT_8888;
+      src.rgba         = img->supports_rgba;
+      r                = gfx_surface_submit_external(s, &src,
+            s->release, s->user);
+      if (r == GFX_SURFACE_SUBMIT_QUEUED)
+         return true;
+      if (r == GFX_SURFACE_SUBMIT_DONE)
+      {
+         if (payload_free)
+            payload_free(payload);
+         return true;
+      }
+      /* Refused: the plain load takes it */
+   }
+#endif
+   ok = video_driver_texture_load(img, s->filter, &tex);
+   if (!ok || !tex)
+      return false;
+   if (payload_free)
+      payload_free(payload);
+   if (s->handle)
+      gfx_surface_unload(&s->handle);
+   s->handle = tex;
+   s->texture_filter = s->filter;
+   /* A plain load's texture is not one an in-place update knows */
+   s->fmt    = GFX_SURFACE_FMT_NONE;
+   return true;
+}
+
 bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       bool supports_rgba)
 {
