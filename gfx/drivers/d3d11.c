@@ -693,6 +693,7 @@ typedef struct
    {
       d3d11_texture_t texture;
       D3D11Buffer     vbo;
+      DXGI_FORMAT   source_format;
    } menu;
 
    struct
@@ -8229,13 +8230,14 @@ static void d3d11_set_menu_texture_frame(
    if (
          d3d11->menu.texture.desc.Width  != width ||
          d3d11->menu.texture.desc.Height != height ||
-         d3d11->menu.texture.desc.Format != format)
+         d3d11->menu.source_format != format)
    {
       d3d11->menu.texture.desc.Format = format;
       d3d11->menu.texture.desc.Width  = width;
       d3d11->menu.texture.desc.Height = height;
       d3d11_release_texture(&d3d11->menu.texture);
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
+      d3d11->menu.source_format = format;
    }
 
    if (d3d11->menu.texture.staging)

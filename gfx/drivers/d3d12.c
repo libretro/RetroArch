@@ -744,6 +744,7 @@ typedef struct
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       d3d12_texture_t          texture;
 
+      DXGI_FORMAT             source_format;
       float alpha;
    } menu;
 
@@ -10515,7 +10516,7 @@ static void d3d12_set_menu_texture_frame(
    if (
          d3d12->menu.texture.desc.Width  != width ||
          d3d12->menu.texture.desc.Height != height ||
-         d3d12->menu.texture.desc.Format != format)
+         d3d12->menu.source_format != format)
    {
       d3d12->menu.texture.desc.Width  = width;
       d3d12->menu.texture.desc.Height = height;
@@ -10523,6 +10524,7 @@ static void d3d12_set_menu_texture_frame(
       d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
       d3d12_release_texture(&d3d12->menu.texture);
       d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
+      d3d12->menu.source_format = format;
    }
 
    if (d3d12->menu.texture.upload_buffer)

@@ -1314,6 +1314,13 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./run.sh
           echo "[pass] dbus_screensaver_test"
 
+      - name: D3D menu source formats (Linux and mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d_menu_format.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d_menu_format.py
+
       - name: D3D8 resource cleanup (Linux and mingw + Wine)
         shell: bash
         run: |
