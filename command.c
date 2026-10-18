@@ -1407,10 +1407,11 @@ static bool udp_send_packet(const char *host, uint16_t port, const char *msg)
 }
 
 /* Whether @s, after a ";", can be a host or a port rather than a STEPS
- * step: no space, no "|" (a list's "|on"), and not "checkpoint". */
+ * step: no space, no "|" (a list's "|on"), and not "checkpoint". Empty
+ * is the default, as in "CMD;;PORT". */
 static bool command_network_host_like(const char *s)
 {
-   return *s && !strchr(s, ' ') && !strchr(s, '|')
+   return !strchr(s, ' ') && !strchr(s, '|')
       && !string_is_equal(s, "checkpoint");
 }
 

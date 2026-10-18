@@ -1373,6 +1373,12 @@ int main(int argc, char **argv)
       udp_line("STEPS |on", out, sizeof(out));
       CHECK(!strncmp(out, "QUEUED 2\n", 9));
       command_run_frames_cancel("tidying up");
+      /* ";;port": the empty host is the default one */
+      udp_line("STEPS |on", out, sizeof(out));
+      CHECK(command_network_send("STEPS run 2|on;;55437"));
+      udp_line("STEPS |on", out, sizeof(out));
+      CHECK(!strncmp(out, "QUEUED 1\n", 9));
+      command_run_frames_cancel("tidying up");
    }
    /* closing the content drops the watches: the next content's
     * addresses mean something else */
