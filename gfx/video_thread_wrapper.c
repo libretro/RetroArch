@@ -845,18 +845,27 @@ static void video_thread_menu_mem_update(thread_video_t *thr)
 {
    const video_poke_interface_t *poke = thr->poke;
    unsigned i;
+   unsigned align;
    unsigned dims = (unsigned)retro_atomic_load_acquire_int(
          &thr->texture.request_dims);
    size_t width = VIDEO_SCALE_W(dims);
    size_t height = VIDEO_SCALE_H(dims);
    size_t need;
+   size_t row_pitch;
 
    if (!thr->driver_data || !poke || !poke->menu_mem_alloc
          || !poke->frame_mem_ready || !poke->frame_mem_free)
       return;
    if (!width || !height || width > (size_t)-1 / height / 4)
       return;
-   need = width * height * 4;
+   align = poke->menu_mem_pitch_align ? poke->menu_mem_pitch_align : 1;
+   if (     (align & (align - 1))
+         || width * 4 > (size_t)-1 - (align - 1))
+      return;
+   row_pitch = (width * 4 + align - 1) & ~((size_t)align - 1);
+   if (row_pitch > (size_t)-1 / height)
+      return;
+   need = row_pitch * height;
    if (thr->texture.refused_size != need)
       thr->texture.refused_size = 0;
    for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
@@ -884,6 +893,7 @@ static void video_thread_menu_mem_update(thread_video_t *thr)
          if (!m->ptr)
             thr->texture.refused_size = need;
       }
+      m->pitch_align = align;
       retro_atomic_store_release_int(&m->state, m->ptr
             ? VIDEO_THREAD_MENU_READY : VIDEO_THREAD_MENU_EMPTY);
    }
@@ -4960,7 +4970,8 @@ static struct video_thread_menu_texture *thread_menu_texture_back(
    return t;
 }
 
-void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32)
+void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32,
+      size_t *pitch)
 {
    struct video_thread_menu_texture *t;
    thread_video_t *thr = video_thread_thr_capture;
@@ -4971,8 +4982,11 @@ void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32)
    if (t)
    {
       unsigned i;
-      size_t need = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+      size_t tight_pitch = (size_t)VIDEO_SCALE_W(dims)
          * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      size_t height = VIDEO_SCALE_H(dims);
+      if (pitch)
+         *pitch = tight_pitch;
       if (t->mem)
       {
          retro_atomic_store_release_int(&thr->texture.mem[t->mem - 1].state,
@@ -4983,11 +4997,18 @@ void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32)
       for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
       {
          struct video_thread_menu_mem *m = &thr->texture.mem[i];
+         size_t row_pitch;
          if (!retro_atomic_cas_int(&m->state,
                   VIDEO_THREAD_MENU_READY, VIDEO_THREAD_MENU_CPU))
             continue;
-         if (m->size >= need)
+         row_pitch = (tight_pitch + m->pitch_align - 1)
+            & ~((size_t)m->pitch_align - 1);
+         if (     row_pitch && row_pitch <= (size_t)-1 / height
+               && m->size >= row_pitch * height
+               && (pitch || row_pitch == tight_pitch))
          {
+            if (pitch)
+               *pitch = row_pitch;
             t->mem = i + 1;
             t->dims = dims;
             t->rgb32 = rgb32;

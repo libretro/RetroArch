@@ -703,13 +703,15 @@ typedef struct
     * WRITE_BACK buffers, as the lent ones are, that a frame is copied
     * out of on the GPU. fence is the value behind the last frame that
     * copied out of one. Frame-recording thread only. */
-#define D3D12_FRAME_MEM_MAX 12
+#define D3D12_FRAME_MEM_MAX 20
    struct
    {
       D3D12Resource                       buffer;
       void                               *mapped;
       UINT64                              size;
       UINT64                              fence;
+      bool                                menu;
+      bool                                pending;
    } frame_mem[D3D12_FRAME_MEM_MAX];
 
 #ifdef HAVE_DXGI_HDR
@@ -746,6 +748,7 @@ typedef struct
 
       DXGI_FORMAT             source_format;
       float alpha;
+      unsigned upload;
    } menu;
 
    struct
@@ -1769,6 +1772,28 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          k ? texture->upload_buffer2 : texture->upload_buffer,
          &texture->layout, NULL);
    texture->lend_fence[k] = texture->upload_fence;
+}
+
+static void d3d12_menu_upload(D3D12GraphicsCommandList cmd,
+      d3d12_video_t *d3d12)
+{
+   if (d3d12->menu.upload)
+   {
+      unsigned slot = d3d12->menu.upload - 1;
+      D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout = d3d12->menu.texture.layout;
+      unsigned bpp = d3d12->menu.source_format == DXGI_FORMAT_B8G8R8A8_UNORM ? 4 : 2;
+      unsigned pitch = (unsigned)d3d12->menu.texture.desc.Width * bpp;
+      layout.Offset = 0;
+      layout.Footprint.RowPitch = (pitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
+         & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+      d3d12_upload_texture_from(cmd, &d3d12->menu.texture, d3d12,
+            d3d12->frame_mem[slot].buffer, &layout, NULL);
+      d3d12->frame_mem[slot].fence = d3d12->menu.texture.upload_fence;
+      d3d12->frame_mem[slot].pending = false;
+      d3d12->menu.upload = 0;
+   }
+   else
+      d3d12_upload_texture(cmd, &d3d12->menu.texture, d3d12);
 }
 
 static void d3d12_update_texture_into(
@@ -7159,7 +7184,7 @@ static bool d3d12_sw_fb_window(d3d12_video_t *d3d12,
  * from one is copied out on the GPU (d3d12_frame_mem_window). Rows
  * are read in place at a multiple of the copy pitch alignment, which
  * the wrapper pads a frame it copies in to. */
-static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+static void *d3d12_upload_mem_alloc(void *data, size_t size, uintptr_t *id,
       bool *cached, unsigned *pitch_align)
 {
    unsigned i;
@@ -7168,9 +7193,7 @@ static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    D3D12_RANGE           read_range;
    d3d12_video_t        *d3d12 = (d3d12_video_t*)data;
 
-   /* Packed sources need the upload's channel repacking. */
-   if (     !d3d12 || !d3d12->device || !size
-         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   if (!d3d12 || !d3d12->device || !size)
       return NULL;
    for (i = 0; i < D3D12_FRAME_MEM_MAX; i++)
       if (!d3d12->frame_mem[i].buffer)
@@ -7223,14 +7246,36 @@ static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    return d3d12->frame_mem[i].mapped;
 }
 
+static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (     !d3d12 || !d3d12->device || !size
+         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      return NULL;
+   return d3d12_upload_mem_alloc(data, size, id, cached, pitch_align);
+}
+
+static void *d3d12_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   bool cached;
+   unsigned pitch_align;
+   void *mapped = d3d12_upload_mem_alloc(data, size, id, &cached, &pitch_align);
+   if (mapped)
+      d3d12->frame_mem[*id - 1].menu = true;
+   return mapped;
+}
+
 /* Never waits: the frame that last copied out of @id has signalled */
 static bool d3d12_frame_mem_ready(void *data, uintptr_t id)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
    if (!d3d12 || !id || id > D3D12_FRAME_MEM_MAX || !d3d12->queue.fence)
       return true;
-   return d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
-      >= d3d12->frame_mem[id - 1].fence;
+   return !d3d12->frame_mem[id - 1].pending
+      && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+         >= d3d12->frame_mem[id - 1].fence;
 }
 
 /* Behind the fence of the frame that last copied out of it */
@@ -7240,8 +7285,19 @@ static void d3d12_frame_mem_free(void *data, uintptr_t id)
    if (!d3d12 || !id || id > D3D12_FRAME_MEM_MAX
          || !d3d12->frame_mem[id - 1].buffer)
       return;
-   d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->frame_mem[id - 1].buffer,
-         d3d12->frame_mem[id - 1].fence);
+   if (d3d12->menu.upload == id)
+   {
+      d3d12->menu.upload = 0;
+      d3d12->menu.texture.dirty = false;
+   }
+   if (     d3d12->frame_mem[id - 1].menu
+         && (!d3d12->frame_mem[id - 1].fence
+            || (d3d12->queue.fence && d3d12->queue.fence->lpVtbl->GetCompletedValue(
+                  d3d12->queue.fence) >= d3d12->frame_mem[id - 1].fence)))
+      Release(d3d12->frame_mem[id - 1].buffer);
+   else
+      d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->frame_mem[id - 1].buffer,
+            d3d12->frame_mem[id - 1].fence);
    memset(&d3d12->frame_mem[id - 1], 0, sizeof(d3d12->frame_mem[0]));
 }
 
@@ -9665,8 +9721,7 @@ recording_resize_deferred:;
    {
       if (d3d12->menu.texture.dirty)
       {
-         d3d12_upload_texture(cmd, &d3d12->menu.texture,
-               d3d12);
+         d3d12_menu_upload(cmd, d3d12);
 
 #ifdef HAVE_DXGI_HDR
          if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
@@ -10499,6 +10554,7 @@ static void d3d12_set_menu_texture_frame(
       unsigned dims, float alpha)
 {
    unsigned slot;
+   unsigned upload = 0;
    bool loan = false;
    bool update_quad;
    unsigned width = VIDEO_SCALE_W(dims);
@@ -10507,6 +10563,8 @@ static void d3d12_set_menu_texture_frame(
    settings_t*    settings = config_get_ptr();
    int            pitch    = width *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   DXGI_FORMAT native_format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
+      : DXGI_FORMAT_B4G4R4A4_UNORM;
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
@@ -10522,7 +10580,29 @@ static void d3d12_set_menu_texture_frame(
          break;
       }
 
-   update_quad = !loan || d3d12->menu.alpha != alpha;
+   for (upload = 0; upload < D3D12_FRAME_MEM_MAX; upload++)
+      if (     d3d12->frame_mem[upload].menu
+            && frame == d3d12->frame_mem[upload].mapped)
+      {
+         pitch = (pitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
+            & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+         if (!width || !height || (UINT64)pitch > d3d12->frame_mem[upload].size / height)
+            return;
+         break;
+      }
+   upload = upload == D3D12_FRAME_MEM_MAX ? 0 : upload + 1;
+   if (frame && d3d12->menu.upload)
+   {
+      d3d12->frame_mem[d3d12->menu.upload - 1].pending = false;
+      d3d12->menu.upload = 0;
+      d3d12->menu.texture.dirty = false;
+   }
+   update_quad = d3d12->menu.alpha != alpha
+      || !(loan || (upload
+            && d3d12->menu.texture.desc.Width == width
+            && d3d12->menu.texture.desc.Height == height
+            && d3d12->menu.source_format == format
+            && d3d12->menu.texture.desc.Format == native_format));
    /* Retired loans need no wait unless the shared quad changes. */
    if (update_quad)
       d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
@@ -10541,7 +10621,14 @@ static void d3d12_set_menu_texture_frame(
       d3d12->menu.source_format = format;
    }
 
-   if (loan)
+   if (     upload && d3d12->menu.texture.handle
+         && d3d12->menu.texture.desc.Format == native_format)
+   {
+      d3d12->menu.upload = upload;
+      d3d12->frame_mem[upload - 1].pending = true;
+      d3d12->menu.texture.dirty = true;
+   }
+   else if (loan)
    {
       d3d12->menu.texture.pending = (uint8_t)slot;
       d3d12->menu.texture.dirty   = true;
@@ -12660,7 +12747,9 @@ static const video_poke_interface_t d3d12_poke_interface = {
 #else
    NULL, /* import_movie_frame */
 #endif
-   d3d12_get_menu_framebuffer
+   d3d12_get_menu_framebuffer,
+   d3d12_menu_mem_alloc,
+   D3D12_TEXTURE_DATA_PITCH_ALIGNMENT
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

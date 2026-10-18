@@ -5111,7 +5111,7 @@ void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
    *pitch = (size_t)VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 #ifdef HAVE_THREADS
    if (video_driver_thread_wrapper_active())
-      return video_thread_get_menu_framebuffer(dims, rgb32);
+      return video_thread_get_menu_framebuffer(dims, rgb32, pitch);
 #endif
    if (!video_st->data || !poke || !poke->get_menu_framebuffer)
       return NULL;

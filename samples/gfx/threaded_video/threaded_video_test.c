@@ -3083,7 +3083,7 @@ static void lane_menu_texture(void)
    retro_atomic_store_release_int(&menutex_frames, 0);
    menutex_slow = true;
 
-   CHECK(!video_thread_get_menu_framebuffer(0, false),
+   CHECK(!video_thread_get_menu_framebuffer(0, false, NULL),
          "empty menu framebuffer was lent");
 
    for (gen = 1; gen <= MENUTEX_PUSHES; gen++)
@@ -3095,7 +3095,7 @@ static void lane_menu_texture(void)
       if (gen & 1)
       {
          pixels = (uint16_t*)video_thread_get_menu_framebuffer(
-               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false);
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false, NULL);
          CHECK(pixels != NULL, "menu framebuffer loan refused");
          if (!pixels)
             pixels = buf;
@@ -3143,7 +3143,7 @@ static void lane_menu_texture(void)
    set_threaded_via_setting(false);
 
    CHECK(!video_thread_get_menu_framebuffer(
-            VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false),
+            VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false, NULL),
          "inactive wrapper lent a menu framebuffer");
 
    if (failures == had)
@@ -10647,7 +10647,7 @@ int main(int argc, char *argv[])
       fprintf(cfg, "menu_driver = \"%s\"\n",
             (getenv("HARNESS_STILL_ONLY") || getenv("HARNESS_PREVIEW_FILE")) ? "ozone" : "rgui");
       if (getenv("HARNESS_MENU_UPSCALE"))
-         fprintf(cfg, "menu_rgui_internal_upscale_level = \"%s\"\n",
+         fprintf(cfg, "rgui_internal_upscale_level = \"%s\"\n",
                getenv("HARNESS_MENU_UPSCALE"));
       fprintf(cfg, "video_threaded = \"false\"\n");
       fprintf(cfg, "video_vsync = \"false\"\n");
@@ -10726,6 +10726,14 @@ int main(int argc, char *argv[])
          failures++;
          goto shutdown;
       }
+   }
+
+   if (getenv("HARNESS_MENU_UPSCALE"))
+   {
+      unsigned requested = (unsigned)strtoul(getenv("HARNESS_MENU_UPSCALE"), NULL, 10);
+      CHECK(config_get_ptr()->uints.menu_rgui_internal_upscale_level == requested,
+            "requested RGUI upscale %u, initialized %u", requested,
+            config_get_ptr()->uints.menu_rgui_internal_upscale_level);
    }
 
    /* The core starts without content and the menu closed. Run it,

@@ -410,6 +410,7 @@ struct video_thread_menu_mem
    void *ptr;
    size_t size;
    uintptr_t id;
+   unsigned pitch_align;
    retro_atomic_int_t state;
 };
 
@@ -1157,7 +1158,8 @@ void video_thread_wait_idle(void);
 /* Main thread: tightly packed menu pixels for set_texture_frame with
  * the same dimensions/format. Valid until another loan request, menu
  * publication or reinit. NULL when unavailable. */
-void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32);
+void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32,
+      size_t *pitch);
 
 /* The wrapper's invalidate_hw_render_cache, and what a hardware core's
  * set_image(NULL) means under the ring. Main thread. On return no

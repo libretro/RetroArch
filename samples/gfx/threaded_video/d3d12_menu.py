@@ -10,7 +10,10 @@ root = Path(__file__).resolve().parents[3]
 source = (root / "gfx/drivers/d3d12.c").read_text(encoding="utf-8")
 functions = ""
 for name in ("static void *d3d12_get_menu_framebuffer(",
-             "static void d3d12_set_menu_texture_frame("):
+             "static void d3d12_set_menu_texture_frame(",
+             "static bool d3d12_frame_mem_ready(",
+             "static void d3d12_menu_upload(",
+             "static void d3d12_frame_mem_free(void *data, uintptr_t id)\n{"):
     start = source.index(name)
     functions += source[start:source.index("\n}\n", start) + 3]
 fixture = r'''
@@ -24,6 +27,11 @@ typedef int bool;
 typedef unsigned DXGI_FORMAT;
 typedef uint64_t UINT64;
 typedef struct { size_t Begin, End; } D3D12_RANGE;
+#define D3D12_FRAME_MEM_MAX 20
+#define D3D12_TEXTURE_DATA_PITCH_ALIGNMENT 256
+typedef void *D3D12GraphicsCommandList;
+typedef void *D3D12Resource;
+typedef struct { size_t Offset; struct { unsigned RowPitch; } Footprint; } D3D12_PLACED_SUBRESOURCE_FOOTPRINT;
 #define DXGI_FORMAT_B8G8R8A8_UNORM 32
 #define DXGI_FORMAT_B4G4R4A4_UNORM 16
 #define DXGI_FORMAT_EX_A4R4G4B4_UNORM 116
@@ -40,7 +48,8 @@ struct fence { struct fence_vtable *lpVtbl; };
 typedef struct {
    void *handle, *upload_buffer, *srv_heap;
    struct { unsigned Width, Height, Format; } desc;
-   struct { struct { unsigned RowPitch; } Footprint; } layout;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+   UINT64 upload_fence;
    uint8_t *lend_mapped[2];
    unsigned lent, pending;
    UINT64 lend_fence[2];
@@ -48,8 +57,9 @@ typedef struct {
    unsigned sampler;
 } d3d12_texture_t;
 typedef struct {
-   struct { d3d12_texture_t texture; DXGI_FORMAT source_format; void *vbo; float alpha; } menu;
-   struct { struct fence *fence; UINT64 frameSignal; } queue;
+   struct { d3d12_texture_t texture; DXGI_FORMAT source_format; void *vbo; float alpha; unsigned upload; } menu;
+   struct { struct fence *fence; UINT64 frameSignal, fenceValue; } queue;
+   struct { D3D12Resource buffer; void *mapped; UINT64 size, fence; bool menu, pending; } frame_mem[D3D12_FRAME_MEM_MAX];
    struct { int srv_heap; } desc;
    void *device;
    unsigned samplers[2][1];
@@ -58,6 +68,7 @@ typedef struct { struct { bool menu_linear_filter; } bools; } settings_t;
 static settings_t settings;
 static UINT64 completed;
 static unsigned copies, maps, releases, waits;
+static int copied_src_pitch;
 static unsigned refuse;
 static uint8_t uploads[2][512 * 4];
 static d3d12_vertex_t vertices[4];
@@ -81,13 +92,14 @@ static void d3d12_init_texture(void *device, d3d12_texture_t *t)
    if (t->desc.Format == DXGI_FORMAT_EX_A4R4G4B4_UNORM)
       t->desc.Format = DXGI_FORMAT_B4G4R4A4_UNORM;
    t->handle = t->upload_buffer = t;
-   t->layout.Footprint.RowPitch = 256;
+   t->layout.Footprint.RowPitch = (t->desc.Width * (t->desc.Format == 16 ? 2 : 4) + 255) & ~255u;
 }
 static void d3d12_update_texture(unsigned w, unsigned h, int pitch,
       DXGI_FORMAT format, const void *frame, d3d12_texture_t *t)
 {
    (void)w; (void)h; (void)pitch; (void)format; (void)frame;
    copies++;
+   copied_src_pitch = pitch;
    t->dirty = true;
 }
 static void dxgi_copy(unsigned w, unsigned h, DXGI_FORMAT src_format,
@@ -97,6 +109,7 @@ static void dxgi_copy(unsigned w, unsigned h, DXGI_FORMAT src_format,
    (void)w; (void)h; (void)src_format; (void)pitch; (void)frame;
    (void)dst_format; (void)dst_pitch; (void)dst;
    copies++;
+   copied_src_pitch = pitch;
 }
 #define D3D12Map(vbo, sub, range, out) ((void)(vbo), (void)(sub), (void)(range), *(out) = vertices)
 #define D3D12Unmap(vbo, sub, range) ((void)(vbo), (void)(sub), (void)(range))
@@ -114,6 +127,34 @@ static void *d3d12_texture_lend(void *data, uintptr_t id, unsigned slot,
    t->lend_mapped[slot] = uploads[slot];
    return uploads[slot];
 }
+typedef void IUnknown;
+static unsigned freed, retired;
+static void release_resource(void *resource) { assert(resource); freed++; }
+#define Release(resource) release_resource(resource)
+static void d3d12_retire(d3d12_video_t *d, void *texture, IUnknown *resource, UINT64 fence)
+{
+   (void)d; (void)texture; (void)resource; (void)fence;
+   retired++;
+}
+static D3D12Resource copied_buffer;
+static unsigned copied_pitch;
+static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t *t, void *data, D3D12Resource buffer,
+      const D3D12_PLACED_SUBRESOURCE_FOOTPRINT *layout, const void *box)
+{
+   d3d12_video_t *d = (d3d12_video_t*)data;
+   (void)cmd; (void)box;
+   assert(!layout->Offset);
+   copied_buffer = buffer;
+   copied_pitch = layout->Footprint.RowPitch;
+   t->upload_fence = d->queue.fenceValue + 1;
+   t->dirty = false;
+}
+static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t *t, void *data)
+{
+   (void)cmd; (void)t; (void)data;
+}
 FUNCTIONS
 int main(void)
 {
@@ -122,10 +163,10 @@ int main(void)
    d3d12_video_t d;
    d3d12_texture_t *t = &d.menu.texture;
    unsigned mode;
-   const unsigned dims = VIDEO_SCALE_PACK(33, 4);
+   const unsigned dims = VIDEO_SCALE_PACK(65, 4);
    size_t pitch;
    void *loan;
-   uint8_t fallback[33 * 4 * 4];
+   uint8_t fallback[65 * 4 * 4];
    memset(fallback, 0x5a, sizeof(fallback));
    for (mode = 0; mode < 2; mode++)
    {
@@ -136,10 +177,10 @@ int main(void)
       d3d12_set_menu_texture_frame(&d, fallback, mode, dims, 1.0f);
       assert(copies == 1 && releases == 1);
       /* Pending normal uploads cannot be overwritten by a loan. */
-      pitch = 33 * (mode ? 4 : 2);
+      pitch = 65 * (mode ? 4 : 2);
       loan = d3d12_get_menu_framebuffer(&d, mode, dims, &pitch);
-      assert(loan == uploads[1] && pitch == 256);
-      memset(loan, 0x71, 256 * 4);
+      assert(loan == uploads[1] && pitch == (mode ? 512 : 256));
+      memset(loan, 0x71, pitch * 4);
       d3d12_set_menu_texture_frame(&d, loan, mode, dims, 0.5f);
       assert(copies == 1 && t->pending == 1 && t->dirty);
       assert(vertices[0].color[3] == 0.5f);
@@ -173,17 +214,65 @@ int main(void)
       assert(pitch == 123);
       refuse = 0;
       assert(!d3d12_get_menu_framebuffer(&d, !mode, dims, &pitch));
-      assert(!d3d12_get_menu_framebuffer(&d, mode, VIDEO_SCALE_PACK(34, 4), &pitch));
+      assert(!d3d12_get_menu_framebuffer(&d, mode, VIDEO_SCALE_PACK(66, 4), &pitch));
       assert(!d3d12_get_menu_framebuffer(NULL, mode, dims, &pitch));
       assert(!d3d12_get_menu_framebuffer(&d, mode, dims, NULL));
       assert(!d3d12_get_menu_framebuffer(&d, mode, 0, &pitch));
+      /* The threaded pool holds unsubmitted sources, then stamps the recorded copy. */
+      d.frame_mem[0].buffer = uploads[0];
+      d.frame_mem[0].mapped = uploads[0];
+      d.frame_mem[0].size = sizeof(uploads[0]);
+      d.frame_mem[0].menu = true;
+      d.frame_mem[1].buffer = uploads[1];
+      d.frame_mem[1].mapped = uploads[1];
+      d.frame_mem[1].size = sizeof(uploads[1]);
+      d.frame_mem[1].menu = true;
+      t->lent = 0;
+      maps = waits;
+      d3d12_set_menu_texture_frame(&d, uploads[0], mode, dims, 1.0f);
+      assert(copies == 2 && waits == maps && d.menu.upload == 1);
+      assert(d.frame_mem[0].pending && !d3d12_frame_mem_ready(&d, 1));
+      d3d12_set_menu_texture_frame(&d, uploads[1], mode, dims, 1.0f);
+      assert(!d.frame_mem[0].pending && d3d12_frame_mem_ready(&d, 1));
+      assert(d.frame_mem[1].pending && !d3d12_frame_mem_ready(&d, 2));
+      d.queue.fenceValue = completed;
+      d3d12_menu_upload(NULL, &d);
+      assert(!d.menu.upload && !d.frame_mem[1].pending && !t->dirty);
+      assert(copied_buffer == uploads[1] && copied_pitch == (mode ? 512 : 256));
+      assert(d.frame_mem[1].fence == completed + 1);
+      assert(!d3d12_frame_mem_ready(&d, 2));
+      completed++;
+      assert(d3d12_frame_mem_ready(&d, 2));
+      /* Converted sources copy with the pooled pitch and are immediately reusable. */
+      t->desc.Format = 99;
+      d3d12_set_menu_texture_frame(&d, uploads[0], mode, dims, 1.0f);
+      assert(copies == 3 && !d.menu.upload && !d.frame_mem[0].pending);
+      assert(copied_src_pitch == (mode ? 512 : 256));
+      d3d12_set_menu_texture_frame(&d, uploads[0], mode,
+            VIDEO_SCALE_PACK(65535, 4), 1.0f);
+      assert(copies == 3 && releases == 1);
+      t->desc.Format = mode ? DXGI_FORMAT_B8G8R8A8_UNORM : DXGI_FORMAT_B4G4R4A4_UNORM;
+      d3d12_set_menu_texture_frame(&d, uploads[0], mode, dims, 1.0f);
+      assert(d.frame_mem[0].pending && d.menu.upload == 1);
+      freed = retired = 0;
+      d3d12_frame_mem_free(&d, 1);
+      assert(freed == 1 && !retired && !d.menu.upload && !t->dirty);
+      assert(!d.frame_mem[0].buffer && !d.frame_mem[0].mapped);
+      d.frame_mem[1].fence = completed + 1;
+      d3d12_frame_mem_free(&d, 2);
+      assert(freed == 1 && retired == 1);
+      t->desc.Format = 99;
+
+      t->lent = 3;
+      t->lend_mapped[0] = uploads[0];
+      t->lend_mapped[1] = uploads[1];
       /* A GPU conversion fallback cannot accept the native source bytes. */
       t->desc.Format = 99;
       assert(!d3d12_get_menu_framebuffer(&d, mode, dims, &pitch));
       /* Mismatched publication of a loan is rejected before recreation. */
       d3d12_set_menu_texture_frame(&d, uploads[0], mode,
-            VIDEO_SCALE_PACK(34, 4), 1.0f);
-      assert(releases == 1 && copies == 2);
+            VIDEO_SCALE_PACK(66, 4), 1.0f);
+      assert(releases == 1 && copies == 3);
    }
    puts("PASS: D3D12 padded menu loans, pending uploads, fences and copy fallback");
    return 0;

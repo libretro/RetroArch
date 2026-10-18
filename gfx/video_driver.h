@@ -1321,10 +1321,12 @@ typedef struct video_poke_interface
     * The row pitch may include padding. Optional. */
    void *(*get_menu_framebuffer)(void *data, bool rgb32,
          unsigned dims, size_t *pitch);
-   /* Worker-owned, tightly packed menu upload storage. set_texture_frame
-    * retains it until frame_mem_ready; frame_mem_free releases it.
+   /* Worker-owned menu uploads; zero pitch alignment means tight rows.
+    * set_texture_frame retains storage until frame_mem_ready;
+    * frame_mem_free releases it.
     * Optional, requires both frame-memory lifetime callbacks. */
    void *(*menu_mem_alloc)(void *data, size_t size, uintptr_t *id);
+   unsigned menu_mem_pitch_align;
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

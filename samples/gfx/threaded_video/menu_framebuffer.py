@@ -84,6 +84,7 @@ struct poke {
    void (*set_texture_frame)(void*, const void*, bool, unsigned, float);
    void *(*get_menu_framebuffer)(void*, bool, unsigned, size_t*);
    void *(*menu_mem_alloc)(void*, size_t, uintptr_t*);
+   unsigned menu_mem_pitch_align;
    bool (*frame_mem_ready)(void*, uintptr_t);
    void (*frame_mem_free)(void*, uintptr_t);
    void (*set_texture_enable)(void*, bool, bool);
@@ -201,7 +202,7 @@ static struct {
    unsigned busy;
    uint8_t value;
 } upload[VIDEO_THREAD_MENU_MEM];
-static unsigned uploaded, ready_checks;
+static unsigned uploaded, ready_checks, mock_align;
 static bool refuse_upload;
 static retro_atomic_int_t producer_done;
 static void *mock_menu_alloc(void *data, size_t size, uintptr_t *id)
@@ -246,8 +247,13 @@ static void mock_menu_submit(void *data, const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
    unsigned i;
-   size_t x, bytes = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
+   size_t x, bytes;
    uint8_t value = *(const uint8_t*)frame;
+   size_t pitch = (size_t)VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
+   for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+      if (frame == upload[i].ptr && mock_align)
+         pitch = (pitch + mock_align - 1) & ~((size_t)mock_align - 1);
+   bytes = pitch * VIDEO_SCALE_H(dims);
    (void)data; (void)alpha;
    for (x = 0; x < bytes; x++) assert(((const uint8_t*)frame)[x] == value);
    for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
@@ -263,15 +269,16 @@ static void mock_menu_submit(void *data, const void *frame, bool rgb32,
 static void menu_producer(void *data)
 {
    unsigned j;
-   uint8_t pixels[1024];
+   uint8_t pixels[68 * 68 * 4];
    for (j = 0; j < 100000; j++)
    {
-      unsigned w = 4u << ((j / 1000) % 3);
+      unsigned w = 17u << ((j / 1000) % 3);
       unsigned dims = VIDEO_SCALE_PACK(w, w);
       bool rgb32 = (j & 1) != 0;
-      void *ptr = video_thread_get_menu_framebuffer(dims, rgb32);
+      size_t pitch;
+      void *ptr = video_thread_get_menu_framebuffer(dims, rgb32, &pitch);
       assert(ptr);
-      memset(ptr, (int)(j % 251 + 1), (size_t)w * w * (rgb32 ? 4 : 2));
+      memset(ptr, (int)(j % 251 + 1), pitch * w);
       if (j % 13 == 0) continue;
       if (j % 17 == 0)
       {
@@ -282,27 +289,43 @@ static void menu_producer(void *data)
    }
    retro_atomic_store_release_int(&producer_done, 1);
 }
-static void check_mapped(thread_video_t *thr)
+static void check_mapped(thread_video_t *thr, unsigned align)
 {
    struct poke poke;
    sthread_t *thread;
    unsigned i, before;
    void *ptr;
+   size_t pitch;
    struct video_thread_menu_texture *back;
    memset(&poke, 0, sizeof(poke));
+   mock_align = align;
+   uploaded = ready_checks = 0;
+   retro_atomic_store_relaxed_int(&producer_done, 0);
+   poke.menu_mem_pitch_align = align;
    poke.set_texture_frame = mock_menu_submit;
    poke.menu_mem_alloc = mock_menu_alloc;
    poke.frame_mem_ready = mock_menu_ready;
    poke.frame_mem_free = mock_menu_free;
    thr->poke = &poke;
    thr->driver_data = thr;
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
    assert(ptr);
+   poke.menu_mem_pitch_align = 3;
    video_thread_menu_mem_update(thr);
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   assert(!thr->texture.mem[0].ptr);
+   poke.menu_mem_pitch_align = align;
+   video_thread_menu_mem_update(thr);
+   if (align)
+   {
+      ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL);
+      back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
+      assert(ptr == back->frame && !back->mem);
+   }
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
    back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
    assert(back->mem && ptr != back->frame);
-   memset(ptr, 7, 32);
+   assert(pitch == (align ? align : 8));
+   memset(ptr, 7, pitch * 4);
    before = copied;
    thread_set_texture_frame(thr, ptr, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
    assert(copied == before);
@@ -311,10 +334,10 @@ static void check_mapped(thread_video_t *thr)
    /* Saturate the GPU-held pool and verify CPU fallback, without waiting. */
    for (i = 1; i < VIDEO_THREAD_MENU_MEM; i++)
    {
-      ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+      ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
       back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
       assert(back->mem);
-      memset(ptr, (int)i, 32);
+      memset(ptr, (int)i, pitch * 4);
       thread_set_texture_frame(thr, ptr, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
       /* Hold every submitted buffer, regardless of later readiness checks. */
       thread_update_driver_state(thr);
@@ -324,7 +347,7 @@ static void check_mapped(thread_video_t *thr)
             if (upload[k].busy) upload[k].busy = 100;
       }
    }
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
    back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
    assert(!back->mem && ptr == back->frame);
    for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++) upload[i].busy = 0;
@@ -342,18 +365,18 @@ static void check_mapped(thread_video_t *thr)
       assert(!thr->texture.mem[i].ptr && !upload[i].ptr);
    /* Refusal is sticky until the requested size changes. */
    refuse_upload = true;
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false, &pitch);
    assert(ptr);
    video_thread_menu_mem_update(thr);
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(8, 8), false, &pitch);
    back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
    assert(ptr == back->frame && !back->mem);
    refuse_upload = false;
    video_thread_menu_mem_update(thr);
    assert(!thr->texture.mem[0].ptr);
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
    video_thread_menu_mem_update(thr);
-   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false);
+   ptr = video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, &pitch);
    back = (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
    assert(ptr && back->mem);
    video_thread_menu_mem_free(thr);
@@ -371,20 +394,20 @@ int main(void)
    memset(&thr, 0, sizeof(thr));
    retro_triple_buffer_init(&thr.texture.frames, &thr.texture.slot[0],
          &thr.texture.slot[1], &thr.texture.slot[2]);
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    video_thread_thr_capture = &thr;
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    active = true;
-   assert(!video_thread_get_menu_framebuffer(0, false));
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(0, 4), false));
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 0), false));
+   assert(!video_thread_get_menu_framebuffer(0, false, NULL));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(0, 4), false, NULL));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 0), false, NULL));
    assert(!allocated);
 
    fail_alloc = true;
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    assert(!retro_triple_buffer_take(&thr.texture.frames));
    fail_alloc = false;
-   loan = (uint32_t*)video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true);
+   loan = (uint32_t*)video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true, NULL);
    assert(loan);
    for (i = 0; i < 16; i++) loan[i] = 0x12345678;
    before = allocated;
@@ -398,7 +421,7 @@ int main(void)
    for (gen = 1; gen <= 1000; gen++)
    {
       uint16_t *pixels = (uint16_t*)video_thread_get_menu_framebuffer(
-            VIDEO_SCALE_PACK(8, 8), false);
+            VIDEO_SCALE_PACK(8, 8), false, NULL);
       assert(pixels && pixels != held->frame);
       for (i = 0; i < 64; i++) pixels[i] = (uint16_t)gen;
       thread_set_texture_frame(&thr, pixels, false, VIDEO_SCALE_PACK(8, 8), 1.0f);
@@ -411,13 +434,13 @@ int main(void)
    assert(!retro_triple_buffer_take(&thr.texture.frames));
 
    /* An abandoned loan stays unpublished, and growth failure preserves it. */
-   loan = (uint32_t*)video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true);
+   loan = (uint32_t*)video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true, NULL);
    assert(loan);
    fail_alloc = true;
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(128, 128), true));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(128, 128), true, NULL));
    assert(!retro_triple_buffer_take(&thr.texture.frames));
    fail_alloc = false;
-   assert(video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true) == loan);
+   assert(video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), true, NULL) == loan);
    for (i = 0; i < 16; i++) copied_frame[i] = (uint16_t)(i + 42);
    thread_set_texture_frame(&thr, copied_frame, false, VIDEO_SCALE_PACK(4, 4), 0.25f);
    assert(copied == 1);
@@ -427,11 +450,12 @@ int main(void)
    thread_set_texture_frame(&thr, NULL, false, VIDEO_SCALE_PACK(4, 4), 1.0f);
    assert(!retro_triple_buffer_take(&thr.texture.frames));
    check_upscale(&thr);
-   check_mapped(&thr);
+   check_mapped(&thr, 0);
+   check_mapped(&thr, 256);
    active = false;
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    video_thread_thr_capture = NULL;
-   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false));
+   assert(!video_thread_get_menu_framebuffer(VIDEO_SCALE_PACK(4, 4), false, NULL));
    for (i = 0; i < 3; i++) free(thr.texture.slot[i].frame);
    puts("PASS: menu loans copy no pixels; ownership, replacement, formats and fallback");
    return 0;
