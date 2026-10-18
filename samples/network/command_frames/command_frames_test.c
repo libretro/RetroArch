@@ -372,10 +372,10 @@ int main(int argc, char **argv)
          && strstr(reply,"WRITE_CORE_MEMORY ERROR"));
    cmd.error=false;
    CHECK(command_write_memory(&cmd,"1000 00"));
-   /* a read past the region it is in stops at its end */
+   /* a read past the region it is in runs on into the next */
    reply[0]=0;
    CHECK(command_read_memory(&cmd,"100e 8")
-         && !strcmp(reply,"READ_CORE_MEMORY 100e 0E 0F\n"));
+         && !strcmp(reply,"READ_CORE_MEMORY 100e 0E 0F 10 11 12 13 14 15\n"));
    /* and one outside every region says so, as it always has */
    reply[0]=0;
    CHECK(!command_read_memory(&cmd,"20000 1")
@@ -386,7 +386,8 @@ int main(int argc, char **argv)
          && !strcmp(reply,
             /* the select mask is RetroArch's, worked out from the
              * region where the core leaves it zero */
-            "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
+            "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"
+            "1010\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
 
    /* GET_INPUT reads what a player holds without changing it, which
     * SET_INPUT cannot do and RELEASE_INPUT undoes before answering */
@@ -670,7 +671,7 @@ int main(int argc, char **argv)
    reply[0]=0;
    /* nine seconds of frames, inside the ten a reply is waited for */
    CHECK(!command_run_frames(&cmd,"36000")
-         && strstr(reply,"at most 540 frames in one request"));
+         && strstr(reply,"a frame count from 1 to 540"));
    CHECK(!command_run_frames(&cmd,"541"));
    CHECK(command_run_frames(&cmd,"540"));
    command_run_frames_cancel("tidying up");
@@ -680,7 +681,7 @@ int main(int argc, char **argv)
    /* and at 50fps, where 600 frames is twelve seconds */
    video_state_get_ptr()->av_info.timing.fps=50.0;
    reply[0]=0;
-   CHECK(!command_run_frames(&cmd,"451") && strstr(reply,"at most 450"));
+   CHECK(!command_run_frames(&cmd,"451") && strstr(reply,"a frame count from 1 to 450"));
    CHECK(!command_press(&cmd,"1 a 451") && strstr(reply,"1 to 450"));
    CHECK(command_run_frames(&cmd,"450"));
    command_run_frames_cancel("tidying up");
@@ -1092,7 +1093,7 @@ int main(int argc, char **argv)
       runloop_iterate(); runloop_iterate();
       CHECK(!reply[0] && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       CHECK(command_steps(&cmd,"run 1|on")
-            && !strcmp(reply,"STOPPED 2\nSTOP 1\nSTEP 1\n")
+            && !strcmp(reply,"DISCARDED 1\nPREVIOUS STOPPED 2 STOP 1 STEP 1\n")
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
       CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
@@ -1112,7 +1113,8 @@ int main(int argc, char **argv)
       CHECK(command_steps(&cmd,req));
       for (i=0;i<5;i++) runloop_iterate();
       reply[0]=0;
-      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"STOPPED 2\nSTOP 1\nSTEP 1\n"));
+      CHECK(command_steps(&cmd,"|on")
+            && !strcmp(reply,"QUEUED 0\nPREVIOUS STOPPED 2 STOP 1 STEP 1\n"));
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 2; stop 1007 == %u|on",(now + 4) & 0xff);
       CHECK(command_steps(&cmd,req));
@@ -1151,7 +1153,7 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(command_state(&cmd,"load 1"));
       for (i=0;i<8 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
-      CHECK(!strcmp(reply,"STATE load 1")
+      CHECK(!strcmp(reply,"STATE load 1, queue ended")
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       remove("command_frames_test.state1");
       remove("command_frames_test.state1.png");
@@ -1170,7 +1172,7 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(command_run_frames(&cmd,"1") && !reply[0]);
       runloop_iterate();
-      CHECK(!strcmp(reply,"RUN_FRAMES 1\n")
+      CHECK(!strcmp(reply,"RUN_FRAMES 1\nPREVIOUS REPLACED 0 STEP 1\n")
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       /* and is not queued behind */
       reply[0]=0;
@@ -1203,7 +1205,7 @@ int main(int argc, char **argv)
          { runloop_iterate(); n++; }
          reply[0]=0;
          CHECK(n == 540 && command_steps(&cmd,"|on")
-               && !strcmp(reply,"WAITING 540\nSTEP 1\n"));
+               && !strcmp(reply,"QUEUED 0\nPREVIOUS WAITING 540 STEP 1\n"));
       }
       /* a reset, by hotkey as much as by command, ends the queue */
       reply[0]=0;
@@ -1238,6 +1240,112 @@ int main(int argc, char **argv)
       CHECK(!strcmp(reply,"PRESS 1 b 1\n"));
       reply[0]=0;
       CHECK(!command_steps(&cmd,"run 1|maybe") && strstr(reply,"on or off"));
+      cmd.error=false;
+
+      /* how a queued list ended reaches whichever call comes next,
+       * labelled PREVIOUS, with whether that call's own steps ran */
+      command_run_frames_forget();
+      /* a: stopped, then a call that is not queued: its steps run */
+      CHECK(command_steps(&cmd,"run 5; stop 1006 == 6|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 1\nPREVIOUS STOPPED 1 STOP 1 STEP 1\nSTEP 1\n"));
+      /* b: stopped, then a queued call: its steps are dropped, and it
+       * says so */
+      CHECK(command_steps(&cmd,"run 5; stop 1006 == 6|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 2; run 3|on")
+            && !strcmp(reply,"DISCARDED 2\nPREVIOUS STOPPED 1 STOP 1 STEP 1\n")
+            && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* c: a queued wait gave up, then a call that is not queued */
+      {
+         unsigned n=0;
+         CHECK(command_steps(&cmd,"until 1007 > 255|on"));
+         while (n < 700 && (loop->frame_work & RUNLOOP_WORK_RUN_FRAMES))
+         { runloop_iterate(); n++; }
+         reply[0]=0;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         CHECK(n == 540 && !strcmp(reply,"RUN_FRAMES 1\nPREVIOUS WAITING 540 STEP 1\n"));
+      }
+      /* d: a queue still running, replaced by a call that is not */
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate(); runloop_iterate(); runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 1\nPREVIOUS REPLACED 3 STEP 1\nSTEP 1\n"));
+      /* and with nothing before it, none */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 1"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 1\nSTEP 1\n"));
+
+      /* values in hexadecimal, as masks are; ram[6] holds 6 */
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 == 0x6") && !strcmp(reply,"MET 0\nVALUE 6\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 & 0xF0 == 0x0") && !strcmp(reply,"MET 0\nVALUE 0\n"));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"until 1006 == 0x06") && !strcmp(reply,"DONE 0\nSTEP 1\n"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 == 0x1ff") && strstr(reply,"0 to 255"));
+      cmd.error=false; reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 == 0x") && strstr(reply,"0 to 255"));
+      cmd.error=false;
+
+      /* a read runs on into the region that follows; where nothing
+       * maps the rest, it says how much it read */
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"100e 4")
+            && !strcmp(reply,"READ_CORE_MEMORY 100e 0E 0F 10 11\n"));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"101e 4")
+            && !strcmp(reply,"READ_CORE_MEMORY 101e 1E 1F\nTRUNCATED 2\n"));
+
+      /* over MCP, one range: the one it takes */
+      cmd.structured=true;
+      reply[0]=0;
+      CHECK(!command_run_frames(&cmd,"-5") && strstr(reply,"a frame count from 1 to 540"));
+      reply[0]=0;
+      CHECK(!command_run_frames(&cmd,"541") && strstr(reply,"a frame count from 1 to 540"));
+      cmd.structured=false;
+      cmd.error=false;
+
+      /* a rollback or a reset that ends a queue says so */
+      reply[0]=0;
+      CHECK(command_state(&cmd,"checkpoint"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_state(&cmd,"rollback"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!strcmp(reply,"STATE rollback, queue ended"));
+      CHECK(command_steps(&cmd,"run 100|on"));
+      runloop_iterate();
+      reply[0]=0;
+      CHECK(command_reset(&cmd,""));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!strcmp(reply,"RESET, queue ended"));
+      /* and with no queue, nothing to say */
+      reply[0]=0;
+      CHECK(command_reset(&cmd,""));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      CHECK(!strcmp(reply,"RESET"));
+
+      /* RESET paused runs no frame after the reset */
+      before=calls; reply[0]=0;
+      CHECK(command_reset(&cmd,"on"));
+      for (i=0;i<8 && !reply[0];i++) task_queue_check();
+      runloop_iterate(); runloop_iterate();
+      CHECK(!strcmp(reply,"RESET") && calls == before
+            && (loop->flags & RUNLOOP_FLAG_PAUSED));
       cmd.error=false;
    }
 
@@ -1286,6 +1394,31 @@ int main(int argc, char **argv)
    /* and a stop no one heard about */
    reply[0]=0;
    CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+   /* LOAD_CONTENT paused from no running content: how many frames the
+    * core has run once it answers - 1007 counts them */
+   {
+      char line[1024];
+      FILE *f = fopen("command_frames_test.bin", "wb");
+      if (f) { fputs("x", f); fclose(f); }
+      snprintf(line, sizeof(line), "%s|command_frames_test.bin|on", argv[1]);
+      cmd.structured=true;
+      reply[0]=0;
+      CHECK(command_load_content(&cmd,line));
+      for (i=0;i<60 && !reply[0];i++) { runloop_iterate(); task_queue_check(); }
+      CHECK(!strncmp(reply,"LOAD_CONTENT ",13));
+      reply[0]=0;
+      CHECK(command_read_memory(&cmd,"1007 1")
+            && !strcmp(reply,"READ_CORE_MEMORY 1007 01\n"));
+      for (i=0;i<5;i++) runloop_iterate();
+      reply[0]=0;
+      /* and one more, the frame the pause waits for, as a core is
+       * only marked running once it has run one */
+      CHECK(command_read_memory(&cmd,"1007 1")
+            && !strcmp(reply,"READ_CORE_MEMORY 1007 02\n"));
+      CHECK(loop->flags & RUNLOOP_FLAG_PAUSED);
+      cmd.structured=false;
+      remove("command_frames_test.bin");
+   }
    main_exit(NULL); remove(cfg_path);
    printf("command_frames: %s (%u failures)\n",failures?"FAIL":"PASS",failures);
    return failures ? 1 : 0;

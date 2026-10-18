@@ -126,6 +126,11 @@ void command_reply_error(command_t *cmd, const char *name,
    cmd->replier(cmd, msg, _len);
 }
 
+#ifdef HAVE_COMMAND
+/* a queued STEPS was dropped since the reply now sent began */
+static bool command_queue_ended;
+#endif
+
 static void command_post_state_loaded(void)
 {
 #ifdef HAVE_COMMAND
@@ -806,7 +811,7 @@ static char *command_family_rename(const struct command_family *f,
    if (!s)
       return NULL;
    if (     len > n && !strncmp(msg, f->name, n)
-         && (msg[n] == ' ' || msg[n] == '\n'))
+         && (msg[n] == ' ' || msg[n] == '\n' || msg[n] == ','))
    {
       msg += n;
       len -= n;
@@ -968,6 +973,7 @@ struct command_reply
    bool                 pause;
    /* what succeeded loaded a state */
    bool                 state_loaded;
+   bool                 reset;
 };
 
 static struct command_reply *command_reply_new(const char *name)
@@ -1000,6 +1006,11 @@ static void command_reply_done(retro_task_t *task, void *task_data,
          strlcpy(msg, r->name, sizeof(msg));
       if (r->state_loaded)
          command_post_state_loaded();
+#ifdef HAVE_COMMAND
+      if (     command_queue_ended
+            && (r->state_loaded || r->reset))
+         strlcat(msg, ", queue ended", sizeof(msg));
+#endif
       /* a pause is dropped with no core running yet, as after a cold
        * start: then it is the first frame's to do */
       if (r->pause)
@@ -1024,6 +1035,9 @@ static void command_reply_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    notify.cb        = command_reply_done;
    notify.user_data = r;
+#ifdef HAVE_COMMAND
+   command_queue_ended = false;
+#endif
    if (!(r->start ? r->start(r) : command_event(r->event, &notify)))
       command_reply_done(NULL, NULL, r, "The command failed.");
 }
@@ -1728,6 +1742,7 @@ bool command_reset(command_t *cmd, const char *arg)
       return false;
    }
    r->pause = pause;
+   r->reset = true;
    r->start = command_reset_start;
    return command_reply_push(cmd, r);
 }
@@ -2783,6 +2798,23 @@ static const char *const command_until_ops[] = {
    "==", "!=", "<", ">", "<=", ">="
 };
 
+/* A number in a condition: "0x" and hexadecimal digits, or decimal.
+ * False where @s starts with neither; @end after it. */
+static bool command_cond_number(const char *s, char **end,
+      unsigned long *out)
+{
+   errno = 0;
+   if (     s[0] == '0' && (s[1] == 'x' || s[1] == 'X')
+         && ((s[2] >= '0' && s[2] <= '9') || (s[2] >= 'a' && s[2] <= 'f')
+            || (s[2] >= 'A' && s[2] <= 'F')))
+      *out = strtoul(s + 2, end, 16);
+   else if (*s >= '0' && *s <= '9' && s[1] != 'x' && s[1] != 'X')
+      *out = strtoul(s, end, 10);
+   else
+      return false;
+   return errno != ERANGE;
+}
+
 /* "<address>[:<address>] <condition> <value>", @end after the value;
  * false with what was wrong in @why. */
 static bool command_cond_parse(const char *s, struct command_cond *c,
@@ -2810,18 +2842,7 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
       const char *m = *end + 1;
       while (*m == ' ')
          m++;
-      errno   = 0;
-      if (     m[0] == '0' && (m[1] == 'x' || m[1] == 'X')
-            && ((m[2] >= '0' && m[2] <= '9') || (m[2] >= 'a' && m[2] <= 'f')
-               || (m[2] >= 'A' && m[2] <= 'F')))
-         num  = strtoul(m + 2, end, 16);
-      else if (m[0] == '0' && (m[1] == 'x' || m[1] == 'X'))
-         *end = (char*)m;
-      else if (*m >= '0' && *m <= '9')
-         num  = strtoul(m, end, 10);
-      else
-         *end = (char*)m;
-      if (     *end == m || errno == ERANGE || !num
+      if (     !command_cond_number(m, end, &num) || !num
             || num > (c->wide ? 65535UL : 255UL))
       {
          strlcpy(why, "a mask after \"&\", such as 0x40 or 64", why_len);
@@ -2853,14 +2874,14 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
    }
    while (*sp == ' ')
       sp++;
-   errno = 0;
-   num   = (*sp >= '0' && *sp <= '9') ? strtoul(sp, end, 10) : 0;
-   if (     *sp < '0' || *sp > '9' || errno == ERANGE
+   /* "== 112" or "== 0x70", as a mask is given */
+   if (     !command_cond_number(sp, end, &num)
          || num > (c->wide ? 65535UL : 255UL))
    {
       strlcpy(why, c->wide
-            ? "a value from 0 to 65535, which is what two bytes hold"
-            : "a value from 0 to 255, which is what a byte holds", why_len);
+            ? "a value from 0 to 65535 (0xFFFF), which is what two bytes hold"
+            : "a value from 0 to 255 (0xFF), which is what a byte holds",
+            why_len);
       return false;
    }
    c->want = (unsigned)num;
@@ -2977,11 +2998,11 @@ static struct
    unsigned            let_go_port;
    char                reply[256]; /* CMD_ANSWER_LINE: the line */
    bool                queued;
-   /* queued: the answer it ended with, until a queued STEPS reads it;
-    * also where that STEPS writes its own */
-   char                report[256 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE + 32];
-   size_t              report_len;
-   bool                report_error;
+   /* how a queued list stopped, gave up or failed, as one PREVIOUS
+    * line, until the next call that runs frames carries it */
+   char                prev[192];
+   /* the PREVIOUS line this job's answer carries */
+   char                carry[192];
    /* queued: when it ran dry, and the content paused waiting for more */
    retro_time_t        dry_since;
 } command_run_frames_st;
@@ -3009,37 +3030,45 @@ static void command_run_frames_finish(void)
          command_run_frames_st.let_go != 0);
 }
 
-/* Ends the job: @first, the watches, and @last after them, unless it
- * failed, when @first is the reason and nothing follows it. A queued
- * job keeps it for the next queued STEPS instead. */
+/* Ends the job a request waits on: @first, the PREVIOUS line it
+ * carries, the watches and @last, or where it failed @first, the
+ * reason, and that line. */
 static void command_run_frames_answer(const char *first, const char *last,
       bool is_error)
 {
    /* the step's own line, then a line for each byte watched: room for
     * the longest reply and every watch */
-   char   out[256 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE + 32];
+   char   out[256 + sizeof(command_run_frames_st.carry)
+      + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE + 32];
    size_t _len = strlcpy(out, first, sizeof(out));
 
    if (_len >= sizeof(out))
       _len = sizeof(out) - 1;
    command_run_frames_finish();
-   if (!is_error)
+   /* how the queued list before it ended, after its own first line */
+   if (_len < sizeof(out))
+      _len += strlcpy(out + _len, command_run_frames_st.carry,
+            sizeof(out) - _len);
+   command_run_frames_st.carry[0] = '\0';
+   if (!is_error && _len < sizeof(out))
    {
       _len += command_watch_lines(out + _len, sizeof(out) - _len);
       if (last && _len < sizeof(out))
          _len += strlcpy(out + _len, last, sizeof(out) - _len);
-      if (_len >= sizeof(out))
-         _len = sizeof(out) - 1;
    }
-   if (command_run_frames_st.queued)
-   {
-      memcpy(command_run_frames_st.report, out, _len);
-      command_run_frames_st.report_len   = _len;
-      command_run_frames_st.report_error = is_error;
-      return;
-   }
+   if (_len >= sizeof(out))
+      _len = sizeof(out) - 1;
    command_deferred_send(&command_run_frames_st.deferred, out, _len,
          is_error);
+}
+
+/* The step the job is on, from 1, as its list numbers it: the last
+ * where all have run. */
+static unsigned command_run_frames_step(void)
+{
+   return command_run_frames_st.steps[
+      command_run_frames_st.cur < command_run_frames_st.count
+      ? command_run_frames_st.cur : command_run_frames_st.count - 1].idx;
 }
 
 /* @how ("MET", "WAITING", "DONE", "STOPPED") and the frames run, as the
@@ -3055,6 +3084,24 @@ static void command_run_frames_end(const char *how)
       command_run_frames_finish();
       command_run_frames_st.dry_since = cpu_features_get_time_usec();
       runloop_frame_work_set(RUNLOOP_WORK_FREE_FRAME, true);
+      return;
+   }
+   /* nothing waits on a queued list: how it ended goes to the next call
+    * that runs frames */
+   if (command_run_frames_st.queued)
+   {
+      size_t n = (size_t)snprintf(command_run_frames_st.prev,
+            sizeof(command_run_frames_st.prev), "PREVIOUS %s %u", how,
+            command_run_frames_st.ran);
+      if (string_is_equal(how, "STOPPED") && n < sizeof(command_run_frames_st.prev))
+         n += (size_t)snprintf(command_run_frames_st.prev + n,
+               sizeof(command_run_frames_st.prev) - n, " STOP %u",
+               command_run_frames_st.stopped);
+      if (n < sizeof(command_run_frames_st.prev))
+         snprintf(command_run_frames_st.prev + n,
+               sizeof(command_run_frames_st.prev) - n, " STEP %u\n",
+               command_run_frames_step());
+      command_run_frames_finish();
       return;
    }
    switch (command_run_frames_st.answer)
@@ -3076,10 +3123,7 @@ static void command_run_frames_end(const char *how)
             _len = (size_t)snprintf(last, sizeof(last), "STOP %u\n",
                   command_run_frames_st.stopped);
          snprintf(last + _len, sizeof(last) - _len, "STEP %u\n",
-               command_run_frames_st.steps[
-                  command_run_frames_st.cur < command_run_frames_st.count
-                  ? command_run_frames_st.cur
-                  : command_run_frames_st.count - 1].idx);
+               command_run_frames_step());
          command_run_frames_answer(first, last, false);
          break;
       default:
@@ -3089,12 +3133,18 @@ static void command_run_frames_end(const char *how)
    }
 }
 
-/* Ends the job on a failure, answered as the job answers: a queued
- * one's is kept for the next queued STEPS, unless what ended it - a
- * request replacing it, the content closing - forgets it. */
+/* Ends the job on a failure, answered as the job answers; a queued
+ * one's goes to the next call as a PREVIOUS ERROR line. */
 void command_run_frames_cancel(const char *why)
 {
    char msg[128];
+   if (command_run_frames_st.queued)
+   {
+      snprintf(command_run_frames_st.prev,
+            sizeof(command_run_frames_st.prev), "PREVIOUS ERROR %s\n", why);
+      command_run_frames_finish();
+      return;
+   }
    snprintf(msg, sizeof(msg), "%s ERROR %s",
          command_run_frames_st.name ? command_run_frames_st.name
                                     : "RUN_FRAMES", why);
@@ -3112,10 +3162,15 @@ void command_run_frames_free_frame(void)
 
 void command_run_frames_forget(void)
 {
+   if (command_run_frames_st.prev[0])
+      command_queue_ended = true;
    if (     command_run_frames_st.queued
          && (runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_RUN_FRAMES))
+   {
       command_run_frames_finish();
-   command_run_frames_st.report_len = 0;
+      command_queue_ended = true;
+   }
+   command_run_frames_st.prev[0] = '\0';
    command_run_frames_free_frame();
 }
 
@@ -3225,17 +3280,32 @@ static void command_run_frames_start(command_t *cmd, const char *name,
       uint8_t answer, const char *line)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+   command_run_frames_st.carry[0] = '\0';
+   if (     (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+         && command_run_frames_st.queued)
+   {
+      /* a queue still playing, which this request ends */
+      snprintf(command_run_frames_st.carry,
+            sizeof(command_run_frames_st.carry),
+            "PREVIOUS REPLACED %u STEP %u\n", command_run_frames_st.ran,
+            command_run_frames_step());
+      command_run_frames_finish();
+   }
+   else if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
    {
       char why[48];
       snprintf(why, sizeof(why), "replaced by %s%s",
             string_is_equal(name, "RUN_FRAMES") ? "another " : "", name);
       command_run_frames_cancel(why);
    }
+   else if (cmd && command_run_frames_st.prev[0])
+      /* how the last queued list ended, not yet told */
+      strlcpy(command_run_frames_st.carry, command_run_frames_st.prev,
+            sizeof(command_run_frames_st.carry));
+   command_run_frames_st.prev[0] = '\0';
    memcpy(command_run_frames_st.steps, steps, count * sizeof(*steps));
    command_run_frames_st.nstops     = 0;
    command_run_frames_st.queued     = !cmd;
-   command_run_frames_st.report_len = 0;
    command_run_frames_st.dry_since  = 0;
    strlcpy(command_run_frames_st.reply, line ? line : "",
          sizeof(command_run_frames_st.reply));
@@ -3428,20 +3498,16 @@ bool command_run_frames(command_t *cmd, const char *arg)
 {
    char                line[48];
    struct command_step step;
-   unsigned            n = 0;
+   unsigned            n   = 0;
+   /* over MCP no more than the reply is waited for, refused now rather
+    * than failed with the frames already running */
+   unsigned            max = cmd->structured
+      ? command_frames_reply_max(cmd) : COMMAND_RUN_FRAMES_MAX;
 
-   if (!command_arg_uint(arg, &n) || n < 1 || n > COMMAND_RUN_FRAMES_MAX)
+   if (!command_arg_uint(arg, &n) || n < 1 || n > max)
    {
-      command_reply_error(cmd, "RUN_FRAMES", "a frame count from 1 to %u",
-            COMMAND_RUN_FRAMES_MAX);
-      return false;
-   }
-   /* more than the reply will be waited for: answered now rather than
-    * as a failure once the frames are already running */
-   if (cmd->structured && n > command_frames_reply_max(cmd))
-   {
-      command_reply_error(cmd, "RUN_FRAMES", "at most %u frames in one "
-            "request; ask again to run more", command_frames_reply_max(cmd));
+      command_reply_error(cmd, "RUN_FRAMES", "a frame count from 1 to %u%s",
+            max, cmd->structured ? "; ask again to run more" : "");
       return false;
    }
    if (!command_frames_ready(cmd, "RUN_FRAMES"))
@@ -3920,36 +3986,45 @@ static long command_steps_idle(void)
             - command_run_frames_st.dry_since) / 1000);
 }
 
-/* The answer of a queued STEPS: how the queued job stopped or failed,
- * where it has since it was last asked, or how many steps it has left
- * to run, what WATCH watches, and how long it sat idle, run dry, before
- * @idle says these came. */
-static void command_steps_report(command_t *cmd, long idle)
+/* The answer of a queued STEPS: how many steps are left to run, or,
+ * where the last queued list stopped, gave up or failed, how many of
+ * this call's @discarded steps were dropped rather than played on from
+ * that, and its PREVIOUS line; what WATCH watches; and how long the
+ * content sat idle, run dry, before @idle says these came. */
+static void command_steps_report(command_t *cmd, long idle,
+      unsigned discarded)
 {
+   char     out[64 + sizeof(command_run_frames_st.prev)
+      + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE];
    size_t   _len;
    unsigned i;
    unsigned left = 0;
-   if (command_run_frames_st.report_len)
+   if (command_run_frames_st.prev[0])
    {
-      cmd->error = command_run_frames_st.report_error;
-      _len       = command_run_frames_st.report_len;
-      command_run_frames_st.report_len = 0;
-      cmd->replier(cmd, command_run_frames_st.report, _len);
-      return;
+      _len = discarded
+         ? (size_t)snprintf(out, sizeof(out), "DISCARDED %u\n", discarded)
+         : strlcpy(out, "QUEUED 0\n", sizeof(out));
+      _len += strlcpy(out + _len, command_run_frames_st.prev,
+            sizeof(out) - _len);
+      command_run_frames_st.prev[0] = '\0';
+      idle = -1;
    }
-   for (i = command_run_frames_st.cur; i < command_run_frames_st.count; i++)
-      if (command_run_frames_st.steps[i].kind != CMD_STEP_STOP)
-         left++;
-   _len  = (size_t)snprintf(command_run_frames_st.report,
-         sizeof(command_run_frames_st.report), "QUEUED %u\n", left);
-   _len += command_watch_lines(command_run_frames_st.report + _len,
-         sizeof(command_run_frames_st.report) - _len);
-   if (idle >= 0 && _len < sizeof(command_run_frames_st.report))
-      _len += (size_t)snprintf(command_run_frames_st.report + _len,
-            sizeof(command_run_frames_st.report) - _len, "IDLE %ld\n", idle);
-   if (_len >= sizeof(command_run_frames_st.report))
-      _len = sizeof(command_run_frames_st.report) - 1;
-   cmd->replier(cmd, command_run_frames_st.report, _len);
+   else
+   {
+      for (i = command_run_frames_st.cur; i < command_run_frames_st.count;
+            i++)
+         if (command_run_frames_st.steps[i].kind != CMD_STEP_STOP)
+            left++;
+      _len = (size_t)snprintf(out, sizeof(out), "QUEUED %u\n", left);
+   }
+   if (_len < sizeof(out))
+      _len += command_watch_lines(out + _len, sizeof(out) - _len);
+   if (idle >= 0 && _len < sizeof(out))
+      _len += (size_t)snprintf(out + _len, sizeof(out) - _len,
+            "IDLE %ld\n", idle);
+   if (_len >= sizeof(out))
+      _len = sizeof(out) - 1;
+   cmd->replier(cmd, out, _len);
 }
 
 /* STEPS <step>[; <step>...][|on]
@@ -4159,7 +4234,7 @@ bool command_steps(command_t *cmd, const char *arg)
    }
    if (queue && !count && !nstops)
    {
-      command_steps_report(cmd, command_steps_idle());
+      command_steps_report(cmd, command_steps_idle(), 0);
       return true;
    }
    if (!frames)
@@ -4210,9 +4285,9 @@ bool command_steps(command_t *cmd, const char *arg)
    /* stop 0 marks where the list starts, so it runs with its own stops
     * and counts its own frames (memset left its kind and idx) */
    first[-(int)nstops - 1].kind = CMD_STEP_STOP;
-   if (!command_run_frames_st.report_len)
+   if (!command_run_frames_st.prev[0])
       command_run_frames_queue(first - nstops - 1, 1 + nstops + count);
-   command_steps_report(cmd, idle);
+   command_steps_report(cmd, idle, count);
    return true;
 }
 
@@ -5394,7 +5469,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
    }
 
    /* Ensure large enough to return all requested bytes or an error message */
-   alloc_size = 64 + nbytes * 3;
+   alloc_size = 96 + nbytes * 3;
    reply      = (char*)malloc(alloc_size);
    
    if (!reply)
@@ -5409,12 +5484,28 @@ bool command_read_memory(command_t *cmd, const char *arg)
                sys_info, address, &max_bytes,
                0, reply_at, alloc_size - strlen(reply))))
    {
-      char *end;
-      if (nbytes > max_bytes)
-          nbytes = max_bytes;
-
-      end                  = command_hex_bytes(reply_at, data, nbytes);
+      char         why[128];
+      char        *end  = reply_at;
+      unsigned int read = 0;
+      /* on into the region that follows, as a core that splits its RAM
+       * maps it; where nothing maps the rest, how much was read */
+      while (data)
+      {
+         unsigned int n = nbytes - read < max_bytes
+            ? nbytes - read : max_bytes;
+         if (!n)
+            break;
+         end   = command_hex_bytes(end, data, n);
+         read += n;
+         if (read >= nbytes)
+            break;
+         data  = command_memory_get_pointer(sys_info, address + read,
+               &max_bytes, 0, why, sizeof(why));
+      }
       *end++               = '\n';
+      if (read < nbytes)
+         end += snprintf(end, alloc_size - (size_t)(end - reply),
+               "TRUNCATED %u\n", read);
       _len                 = (size_t)(end - reply);
    }
    else

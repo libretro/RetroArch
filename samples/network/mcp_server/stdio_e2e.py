@@ -56,11 +56,50 @@ def recv(want_id, timeout=20):
     return None, notes
 
 
+# Every structuredContent a call gets is held to the tool's outputSchema:
+# the required fields, the declared types, and no field it leaves out.
+out_schemas = {}
+schema_errors = []
+schema_checked = set()
+
+
+def conforms(schema, v, path):
+    t = schema.get('type')
+    if t == 'integer':
+        ok = isinstance(v, int) and not isinstance(v, bool)
+    else:
+        ok = t is None or isinstance(v, {'object': dict, 'array': list,
+                                         'string': str, 'boolean': bool}[t])
+    if not ok:
+        return ['%s is not %s' % (path, t)]
+    errs = []
+    if t == 'object':
+        props = schema.get('properties')
+        errs += ['%s.%s missing' % (path, k)
+                 for k in schema.get('required', []) if k not in v]
+        for k, x in v.items():
+            if props is None:
+                continue
+            if k not in props:
+                errs.append('%s.%s undeclared' % (path, k))
+            else:
+                errs += conforms(props[k], x, path + '.' + k)
+    elif t == 'array':
+        for n, x in enumerate(v):
+            errs += conforms(schema.get('items', {}), x, '%s[%d]' % (path, n))
+    return errs
+
+
 def call(i, name, args=None):
     send({'jsonrpc': '2.0', 'id': i, 'method': 'tools/call',
           'params': {'name': name, 'arguments': args or {}}})
     msg, notes = recv(i)
     text = msg and msg['result']['content'][-1]['text']
+    sc = msg and msg['result'].get('structuredContent')
+    if sc is not None and name in out_schemas:
+        schema_checked.add(name)
+        schema_errors.extend(name + ': ' + e
+                             for e in conforms(out_schemas[name], sc, name))
     return msg, text, notes
 
 
@@ -109,7 +148,7 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
 # Every tool's description and schema is context a client pays for
 # before it does anything. The total, 25000 bytes, catches a tool added
 # by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 22898
+# average would not, as folding small tools into one raises it. 23420
 # at 33 tools.
 size = len(json.dumps(msg, separators=(',', ':')))
 check('the tool list stays within budget: %d bytes, %d tools'
@@ -119,6 +158,17 @@ biggest = max(msg['result']['tools'],
 check('and no one tool is over 1800 bytes: %s is %d' % (biggest['name'],
       len(json.dumps(biggest, separators=(',', ':')))),
       len(json.dumps(biggest, separators=(',', ':'))) <= 1800)
+tools = dict((t['name'], t) for t in msg['result']['tools'])
+check('every tool has a title',
+      all(t.get('title') for t in tools.values()))
+props = tools['STEPS']['inputSchema']['properties']
+check('STEPS declares queue, on or off',
+      props.get('queue', {}).get('enum') == ['on', 'off'])
+d = props['steps']['description']
+check('and its steps name checkpoint and the limits',
+      'checkpoint' in d and '32 at most' in d and 'four stop' in d)
+out_schemas = dict((n, t['outputSchema']) for n, t in tools.items()
+                   if t.get('outputSchema'))
 
 # wait for the core to be running
 st = ''
@@ -148,6 +198,8 @@ check('REINIT answers under its own name: ' + (t or '').strip(),
 msg, t, _ = call(241, 'DISK', {'action': 'next'})
 check('DISK is refused where the core has no disks: ' + (t or '').strip(),
       t and t.startswith('DISK ERROR') and msg['result']['isError'])
+check('and a tool failing is a result, not a JSON-RPC error',
+      msg and 'error' not in msg and msg['result']['isError'] is True)
 msg, st, _ = call(201, 'GET_STATUS')
 sc = msg and msg['result'].get('structuredContent')
 check('GET_STATUS is a record: %s' % sc,
@@ -184,7 +236,7 @@ check('and let the buttons go', t and 'none\tnone' in t)
 # than failing ten seconds later with the frames already running.
 _, t, _ = call(216, 'RUN_FRAMES', {'count': 36000})
 check('RUN_FRAMES past what a reply waits for is refused now',
-      t and t.startswith('RUN_FRAMES ERROR') and 'frames in one request' in t)
+      t and t.startswith('RUN_FRAMES ERROR') and 'a frame count from 1 to' in t)
 _, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
 check('and a press is bounded the same way',
       t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)
@@ -213,6 +265,17 @@ msg, t, _ = call(363, 'STEPS', {'steps': '', 'queue': 'on'})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('run dry, it says how long it has sat idle: %s' % sc,
       sc.get('queued') == 0 and sc.get('idle', 0) >= 80)
+# A request not queued ends the queue, and its reply says how the
+# queue ended: replaced, and on which step.
+call(364, 'STEPS', {'steps': 'run 300', 'queue': 'on'})
+msg, t, _ = call(365, 'RUN_FRAMES', {'count': 1})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('a request after a queue says it replaced it: %s' % sc,
+      sc.get('frames') == 1 and 'replaced' in sc.get('previous', {})
+      and sc['previous'].get('step') == 1)
+msg, t, _ = call(366, 'RUN_FRAMES', {'count': 1})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and only once', sc == {'rows': [], 'frames': 1})
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
 check('an axis is SET_INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)
@@ -328,6 +391,13 @@ msg, t, _ = call(249, 'LOAD_CONTENT', {'core': core, 'content': rom,
                                        'paused': ''})
 check('an empty paused is left out, not put on the path: ' + (t or '').strip(),
       t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
+send({'jsonrpc': '2.0', 'id': 254, 'method': 'tools/call',
+      'params': {'name': 'LOAD_CONTENT', 'arguments': {
+          'core': core, 'content': rom, 'paused': True}}})
+msg, _ = recv(254)
+err = (msg or {}).get('error', {})
+check('a JSON true for paused is invalid params: ' + err.get('message', ''),
+      err.get('code') == -32602 and '"paused"' in err.get('message', ''))
 msg, t, _ = call(250, 'LOAD_CONTENT', {'core': core, 'content': rom,
                                        'paused': 'on'}, )
 check('LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
@@ -338,6 +408,12 @@ b = frame_count(252)
 _, st, _ = call(253, 'GET_STATUS')
 check('and stays paused: %s -> %s, %s' % (a, b, (st or '').strip()),
       a is not None and a == b and st and 'PAUSED' in st)
+
+check('replies match their outputSchema: %s' % sorted(schema_checked),
+      not schema_errors and {'GET_STATUS', 'RUN_FRAMES', 'STEPS', 'PRESS',
+                             'SET_INPUT', 'GET_LOG'} <= schema_checked)
+for e in schema_errors[:5]:
+    print('   ', e)
 
 p.stdin.close()
 try:

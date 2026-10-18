@@ -252,6 +252,36 @@ static bool act_steps(command_t *cmd, const char *arg)
    return true;
 }
 
+/* replies carrying how a queued STEPS ended, and a read cut short */
+#define PREVS_TEXT "DISCARDED 2\nPREVIOUS STOPPED 43 STOP 1 STEP 1\n"
+#define PREVF_TEXT "RUN_FRAMES 1\nPREVIOUS WAITING 540 STEP 1\nx\t86\t40\n"
+#define PREVE_TEXT "DONE 1\nPREVIOUS ERROR the content was closed\nSTEP 1\n"
+#define READT_TEXT "READT 101e 1E 1F\nTRUNCATED 2\n"
+static bool act_prevs(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVS_TEXT, sizeof(PREVS_TEXT) - 1);
+   return true;
+}
+static bool act_prevf(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVF_TEXT, sizeof(PREVF_TEXT) - 1);
+   return true;
+}
+static bool act_preve(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVE_TEXT, sizeof(PREVE_TEXT) - 1);
+   return true;
+}
+static bool act_readt(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, READT_TEXT, sizeof(READT_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -329,6 +359,10 @@ static struct cmd_action_map test_actions[] = {
    { "STOPS", act_stops, "No argument", "Answer as STEPS does when stopped.", 0, NULL, &cmd_rows_steps },
    { "STEPS", act_steps, "No argument", "Answer as STEPS does.", 0, NULL, &cmd_rows_steps },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
+   { "PREVS", act_prevs, "No argument", "Answer as a queued STEPS after a stop.", 0, NULL, &cmd_rows_steps },
+   { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
+   { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
+   { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -871,9 +905,9 @@ int main(void)
             && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
-       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS
-       * and STEP */
-      check("only the commands that answer rows declare one", n == 17);
+       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
+       * STEP, PREVS, PREVF, PREVE and READT */
+      check("only the commands that answer rows declare one", n == 21);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1176,6 +1210,28 @@ int main(void)
    check("and a read is its address and its bytes",
          st == 200 && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
                "\"bytes\":\"AA 0F 10\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READT", NULL), out, sizeof(out), NULL);
+   check("a read cut short says so, and how many it read",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
+               "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
+   check("a queued STEPS after a stop: its steps dropped, and the stop",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"discarded\":2,"
+               "\"previous\":{\"stopped\":43,\"stop\":1,\"step\":1}}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVF", NULL), out, sizeof(out), NULL);
+   check("any step after a queue gave up says so as previous",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
+               "\"frames\":1,\"previous\":{\"waiting\":540,\"step\":1}}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVE", NULL), out, sizeof(out), NULL);
+   check("and why, where the queue failed",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"done\":1,"
+               "\"step\":1,\"previous\":{\"error\":"
+               "\"the content was closed\"}}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);

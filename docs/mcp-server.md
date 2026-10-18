@@ -138,7 +138,10 @@ nothing report `Done.`.
 fields of its own: `{"state": "PLAYING", "system": "nes", "content":
 "Super Mario Bros.nes"}` and `{"address": "1000", "bytes": "AA 0F
 10"}`. The last field takes the rest of the line, so a comma in a
-game's name stays in it.
+game's name stays in it. A read that runs past the end of one region
+goes on into the next; where nothing maps the rest it stops there and
+says so, `TRUNCATED 2` after the bytes, given as `truncated: true,
+read: 2`.
 
 ## Results that are rows
 
@@ -199,11 +202,14 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
 | `QUEUED 4` | `queued: 4` | the steps a queued `STEPS` has left to run |
+| `DISCARDED 3` | `discarded: 3` | the steps a queued `STEPS` dropped, as the queue had ended |
+| `PREVIOUS STOPPED 43 STOP 1 STEP 1` | `previous: {"stopped": 43, "stop": 1, "step": 1}` | how a queued `STEPS` ended, on the next reply; `PREVIOUS ERROR <why>` gives `error` |
 | `IDLE 1830` | `idle: 1830` | milliseconds the content has sat paused since the queue ran dry |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
 | `STEP 3` | `step: 3` | the step it ended on, from 1 |
+| `TRUNCATED 2` | `truncated: true`, `read: 2` | a `READ_CORE_MEMORY` that met unmapped memory |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -331,8 +337,9 @@ holds, as `RUN_UNTIL` would, and answers as `RUN_UNTIL` does:
 waited for ten. An MCP client is told the command did not answer after
 ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`,
 `STEPS` and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
-rather than failing later with hundreds of frames already run. Ask
-again to run more.
+rather than failing later with hundreds of frames already run:
+`RUN_FRAMES` answers "a frame count from 1 to 540; ask again to run
+more" for a count of -5 and of 600 alike.
 
 `PRESS` has a limit on every interface - nine seconds of frames over
 MCP, 600 frames on the network and stdin interfaces - because it holds
@@ -372,7 +379,10 @@ content's addresses mean something else.
 
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
-`<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
+`<`, `>`, `<=` or `>=` against a value from 0 to 255, decimal or `0x`
+hexadecimal (`ce & 0xF0 == 0x70`, as `STEPS` and `PRESS ... until`
+take them too; over MCP `RUN_UNTIL`'s `value` is a JSON number) - and
+answers with
 how many frames ran, what `WATCH` watches, and what the byte holds.
 Two addresses as `high:low` read two bytes as one value, 0 to 65535:
 `6d:86 >= 1800` waits for Super Mario Bros.'s Mario to pass x 1800,
@@ -438,22 +448,31 @@ runs.
 and its steps go behind those still running, so the game does not pause
 while the next stretch is planned; it pauses once they have all run.
 Each list runs with its own stops - none where it has none - and counts
-its own frames. A stop that held, or a failure, ends the
-whole queue, lists behind it too, and is kept and answered to the next
-queued `STEPS` in its place, whose steps are dropped rather than played
-on from a death; its `STEP` counts within the list that step came in,
-stops aside. A rollback, a state load, `RESET` and closing the content
-each end the queue and forget the stop, however they come - a hotkey,
-the menu, a command. With no steps it only asks. A queue that ran dry
+its own frames. A stop that held, a wait that ran out or a failure
+ends the whole queue, lists behind it too.
+
+**The next reply, whatever the request, says how the queue ended**, on
+a `PREVIOUS` line after its own first one: `PREVIOUS STOPPED 43 STOP 1
+STEP 1`, `PREVIOUS WAITING 540 STEP 1` or `PREVIOUS ERROR <why>`, given
+as `previous` - its `STEP` counts within the list that step came in,
+stops aside. A queued `STEPS` then runs none of its own steps, which
+would play on from a death: it answers `DISCARDED` with how many it
+dropped, or `QUEUED 0` where it brought none. Any other request runs as
+asked. A request that waits - `RUN_FRAMES`, `PRESS`, `RUN_UNTIL`,
+`STEPS` without `on` - while the queue still runs replaces it, and its
+reply says so: `PREVIOUS REPLACED <frames run> STEP <step>`. Each
+ending is told once.
+
+A rollback, a state load, `RESET` and closing the content each end the
+queue and forget what it came to, however they come - a hotkey, the
+menu, a command; asked for as `STATE` or `RESET`, the reply says so:
+`STATE rollback, queue ended`. With no steps it only asks. A queue that ran dry
 says so: `IDLE` is how long, in milliseconds, the content has sat paused
 since, waiting for more; a frame run meanwhile - the user unpausing -
 ends it. A client that sees it knows it has fallen behind: two
 stretches sent at once get it ahead again. Nine seconds bound each
 step, not the queue: an `until` that has not held by then ends it
-`WAITING`, answered to the next queued `STEPS`. It holds 64 steps and
-stops at most. A request that waits - `RUN_FRAMES`, `PRESS`,
-`RUN_UNTIL`, `STEPS` without `on` - replaces the queue, and with it any
-stop or failure not yet answered.
+`WAITING`. It holds 64 steps and stops at most.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
@@ -542,9 +561,11 @@ the reason:
   that fails to start is an error. `CLOSE_CONTENT`, `CORE unload`: once
   the content is closed. Requests sent while content loads wait for it.
   `LOAD_CONTENT` with `paused` on pauses the content once it has
-  loaded - after its first frame where no content was running before -
-  so nothing runs on between the load and the first step: a title
-  screen's demo starting, say. On the network
+  loaded, so nothing runs on between the load and the first step: a
+  title screen's demo starting, say. The core has run a frame by the
+  answer - two where no content was running before, as a core counts
+  as running after its first - and a game may take a few more to set
+  up its RAM, so run some before reading it. On the network
   and stdin interfaces `<core>|<content>|on` does the same, and is
   answered there too.
 - `STATE`: once the state is applied or written. `STATE checkpoint`
@@ -555,14 +576,17 @@ the reason:
   checkpoint lives as long as the content does; a rollback is refused
   while a replay records, as a load from a slot is.
 - `RESET`: once the content is reset; with `paused` on, paused after
-  it, as `LOAD_CONTENT` is. A queued `STEPS` ends.
+  it before any frame runs, so the game has not set up its RAM yet. A
+  queued `STEPS` ends.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
   has started or the seek or checkpoint has run; `halt` is a hotkey
   press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
 
 A tool that fails says why, as `<NAME> ERROR <reason>`, and the result
-is marked `isError`. Whether a reply is a failure is the command's own
+is marked `isError`. It is a JSON-RPC `result`, not a JSON-RPC
+`error`: those are kept for a request the server could not run at all -
+an unknown tool, invalid params, broken JSON. Whether a reply is a failure is the command's own
 word, not something read out of its text: a screenshot path that holds
 `ERROR` - a game named so - is no error, and a failure whose text says
 nothing about one still is.

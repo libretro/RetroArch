@@ -586,6 +586,9 @@ struct cmd_rows
     * characters in turn - the last column takes what is left - and
     * answered as fields of their own. */
    const char               *seps;
+   /* The reply may carry a "PREVIOUS ..." line: how a queued STEPS no
+    * reply has told of ended. */
+   bool                      previous;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -814,7 +817,7 @@ static const struct cmd_param cmd_params_press[] = {
       "\"right+a\" runs and jumps.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "frames", "Frames to hold them. A tap is 2 to 4; hold longer with "
-      "SET_INPUT.",
+      "SET_INPUT. Right after a press it lets go for a frame first.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "until", "Then run until this holds, as RUN_UNTIL's: \"1d == 0\" "
       "lands a jump.",
@@ -824,13 +827,14 @@ static const struct cmd_param cmd_params_press[] = {
 static const struct cmd_param cmd_params_steps[] = {
    { "steps", "In order, by \";\": run <frames>, press <player> <controls> "
       "<frames>, until <condition> as RUN_UNTIL's, checkpoint, and up to "
-      "four stop <condition> ending it where one holds: \"until 86 >= 200; "
-      "press 1 a 20; until 1d == 0; stop e == 11\". 32 at most.",
+      "four stop <condition> that end it: \"until 86 >= 200; "
+      "press 1 a 20; until 1d == 0; stop e == 11\". 32 at most. A press "
+      "after a press lets go for a frame first.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "queue", "on: answer now and run after those queued; pause once all "
-      "have (idle: ms paused since). A stop since the last answer comes "
-      "instead, dropping these. Empty steps only asks; a request not "
-      "queued ends the queue.",
+   { "queue", "on: answer now, run after those queued, pause when all "
+      "have (idle: ms since). The reply after a queued list ends says how "
+      "(previous); a queued one then drops its steps (discarded). Empty "
+      "steps only asks; a request not queued ends the queue.",
       CMD_PARAM_STRING, false, "|", "on|off", NULL },
    { NULL }
 };
@@ -918,8 +922,9 @@ static const struct cmd_param cmd_params_state[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_reset[] = {
-   { "paused", "on: pause once it has reset, so nothing runs before the "
-      "first step.", CMD_PARAM_STRING, false, NULL, "on|off", NULL },
+   { "paused", "on: pause once it has reset, before a frame runs; the "
+      "game has not set up its RAM yet.", CMD_PARAM_STRING, false, NULL,
+      "on|off", NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_core_family[] = {
@@ -961,8 +966,9 @@ static const struct cmd_param cmd_params_content[] = {
       CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
-   { "paused", "on: pause once it has loaded, before it runs on, so "
-      "nothing happens before the first step.", CMD_PARAM_STRING, false,
+   { "paused", "on: pause once it has loaded. The core has run a frame "
+      "or two; the game may not have set up its RAM yet.",
+      CMD_PARAM_STRING, false,
       "|", "on|off", NULL },
    { NULL }
 };
@@ -1063,6 +1069,7 @@ static const struct cmd_trailer cmd_trailers_press[] = {
 };
 static const struct cmd_trailer cmd_trailers_steps[] = {
    { "QUEUED", NULL, "queued", "Steps left in the queue.", true },
+   { "DISCARDED", NULL, "discarded", "Steps dropped: see previous.", true },
    { "DONE", NULL, "done", "Frames run, all done.", true },
    { "WAITING", NULL, "waiting", "Frames run, out of time.", true },
    { "STOPPED", NULL, "stopped", "Frames run, a stop held.", true },
@@ -1089,10 +1096,10 @@ static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
-static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0 };
-static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0 };
-static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0 };
-static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0 };
+static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0, NULL, true };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
@@ -1111,7 +1118,11 @@ static const struct cmd_column cmd_cols_read[] = {
    { "bytes", "The bytes, in hexadecimal, separated by spaces." },
    { NULL }
 };
-static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, NULL, 0, 0, " " };
+static const struct cmd_trailer cmd_trailers_read[] = {
+   { "TRUNCATED", "truncated", "read", "Bytes read, short of those asked." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_read, 0, 0, " " };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1134,7 +1145,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
-   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers queued (steps left), or done, waiting or stopped: the frames run, the stop that held, the step it ended on, and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
