@@ -6361,6 +6361,8 @@ typedef struct MTLALIGN(16)
       uint32_t current_subframe;
       uint32_t swap_count;
       uint32_t hdr_mode;
+      float scanlines;
+      unsigned subpixel_layout;
       float paper_white_nits;
       unsigned expand_gamut;
       pass_semantics_t semantics;
@@ -7215,6 +7217,7 @@ struct metal_view_chain
            encoder:(id<MTLRenderCommandEncoder>)rce
 {
    int j;
+   const HDRUniforms *hdr = [_context currentHDRUniforms];
    __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
    id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS] = {NULL};
 
@@ -7235,6 +7238,10 @@ struct metal_view_chain
    e->pass[i].hdr_mode = _context.hdrOutputMode;
    e->pass[i].paper_white_nits = e->pass[i].hdr_mode
       ? _hdrPaperWhiteNits : 0.0f;
+   e->pass[i].scanlines = e->pass[i].hdr_mode && hdr
+      ? hdr->Scanlines : 0.0f;
+   e->pass[i].subpixel_layout = e->pass[i].hdr_mode && hdr
+      ? hdr->SubpixelLayout : 0;
    e->pass[i].expand_gamut = e->pass[i].hdr_mode
       ? _hdrExpandGamut : 0;
 
@@ -7912,9 +7919,8 @@ error:
                &_engine.pass[i].current_subframe,/* CurrentSubFrame */
                &_engine.pass[i].hdr_mode,         /* HDRMode */
                &_engine.pass[i].paper_white_nits, /* BrightnessNits */
-               /* Remaining HDR controls and sensors keep zero defaults. */
-               NULL,                             /* Scanlines */
-               NULL,                             /* SubpixelLayout */
+               &_engine.pass[i].scanlines,        /* Scanlines */
+               &_engine.pass[i].subpixel_layout,  /* SubpixelLayout */
                &_engine.pass[i].expand_gamut,     /* ExpandGamut */
                NULL,                             /* InverseTonemap */
                NULL,                             /* HDR10 */

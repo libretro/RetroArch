@@ -79,7 +79,9 @@ D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
 SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
 Metal uses these same typed semantics with frame-carried content paper white
-and gamut. Its negotiated layer encoding supplies HDRMode; failed colorspace
+and gamut. Scanlines and SubpixelLayout use the compositor's render-owned
+latches and become zero on SDR output. Its negotiated layer encoding supplies
+HDRMode; failed colorspace
 setup and compiled-out HDR supply zero. Per-view chains rebase their private
 uniform values. ../slang_hdr_bindings/metal.py checks the shipping bindings,
 frame handoff, neutral values and rebasing with portable toolchains. Native
