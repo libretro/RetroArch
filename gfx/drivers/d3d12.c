@@ -7163,7 +7163,9 @@ static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    D3D12_RANGE           read_range;
    d3d12_video_t        *d3d12 = (d3d12_video_t*)data;
 
-   if (!d3d12 || !d3d12->device || !size)
+   /* Packed sources need the upload's channel repacking. */
+   if (     !d3d12 || !d3d12->device || !size
+         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
       return NULL;
    for (i = 0; i < D3D12_FRAME_MEM_MAX; i++)
       if (!d3d12->frame_mem[i].buffer)

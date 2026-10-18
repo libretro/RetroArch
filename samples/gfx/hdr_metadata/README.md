@@ -160,3 +160,12 @@ Use --source-hdr builtin or parameter in the uniform fixtures. The FP16
 fixture also accepts --source-pq to verify PQ samples and the flag. In the
 SDR fixture, --source-pq requires --requested-hdr 1 or 2 on a display that
 refuses HDR; an initial PQ request with HDR explicitly off is refused.
+
+Framebuffer lending preserves the admitted source format in its descriptor,
+including XRGB2101010 and HDR10_2101010. The threaded wrapper, Vulkan and
+desktop GL2 report packed 10-bit storage without relabeling it as XRGB8888.
+Descriptors retain the loan's pointer, pitch and synchronization. D3D12
+declines mapped wrapper memory for packed 10-bit formats, matching its
+direct callback: those uploads require channel repacking. The wrapper
+still lends a CPU slot and the existing upload performs that packing. Run
+framebuffer_format.py for the shipping descriptor matrix.

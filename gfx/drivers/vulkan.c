@@ -13047,8 +13047,10 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    framebuffer->data         = chain->texture.mapped;
    framebuffer->pitch        = chain->texture.stride;
    framebuffer->format       = vk->video.source_fp16
-      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (vk->video.rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (vk->video.source_hdr10
+      ? RETRO_PIXEL_FORMAT_HDR10_2101010 : (vk->video.source_10bit
+      ? RETRO_PIXEL_FORMAT_XRGB2101010 : (vk->video.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)));
    framebuffer->memory_flags = 0;
 
    if (vk->context->memory_properties.memoryTypes[

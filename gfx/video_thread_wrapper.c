@@ -4962,8 +4962,10 @@ static bool thread_get_current_software_framebuffer(void *data,
    fb->data         = thr->frame.mem[mem].ptr;
    fb->pitch        = (size_t)fb->width * bpp;
    fb->format       = thr->info.source_fp16
-      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (thr->info.rgb32
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
+      ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F : (thr->info.source_hdr10
+      ? RETRO_PIXEL_FORMAT_HDR10_2101010 : (thr->info.source_10bit
+      ? RETRO_PIXEL_FORMAT_XRGB2101010 : (thr->info.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565)));
    /* Driver frame memory may be write-combined: a core that reads its
     * frame back is told so */
    fb->memory_flags = thr->frame.mem[mem].cached

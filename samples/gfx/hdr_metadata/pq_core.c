@@ -17,6 +17,7 @@ RETRO_API void retro_run(void)
    uint8_t *base = (uint8_t*)pixels;
    size_t pitch = WIDTH * sizeof(uint32_t);
    unsigned x, y;
+   bool lent = false;
    memset(&fb, 0, sizeof(fb));
    fb.width = WIDTH;
    fb.height = HEIGHT;
@@ -25,9 +26,14 @@ RETRO_API void retro_run(void)
             RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb))
    {
       if (fb.format != RETRO_PIXEL_FORMAT_HDR10_2101010 || fb.pitch < pitch)
-         abort();
+      {
+         fprintf(stderr, "[pq] FAIL: lent format=%u pitch=%lu\n",
+               (unsigned)fb.format, (unsigned long)fb.pitch);
+         exit(1);
+      }
       base = (uint8_t*)fb.data;
       pitch = fb.pitch;
+      lent = true;
    }
    for (y = 0; y < HEIGHT; y++)
    {
@@ -36,7 +42,8 @@ RETRO_API void retro_run(void)
          row[x] = 0xc0000000u | (128u << 20) | (512u << 10) | 768u;
    }
    if (!frames)
-      fprintf(stderr, "[pq] PASS: native PQ Rec.2020 negotiation\n");
+      fprintf(stderr, "[pq] PASS: native PQ Rec.2020 negotiation; lent=%u pitch=%lu\n",
+            lent ? 1 : 0, (unsigned long)pitch);
    frames++;
    video(base, WIDTH, HEIGHT, pitch);
 }

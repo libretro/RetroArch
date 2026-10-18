@@ -9228,8 +9228,10 @@ static bool gl2_get_current_software_framebuffer(void *data,
       return false;
    fb->data         = p;
    fb->pitch        = (size_t)fb->width * gl->base_size;
-   fb->format       = (gl->base_size == 4)
-      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->format       = gl->video_info.source_hdr10
+      ? RETRO_PIXEL_FORMAT_HDR10_2101010 : (gl->video_info.source_10bit
+      ? RETRO_PIXEL_FORMAT_XRGB2101010 : ((gl->base_size == 4)
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565));
    fb->memory_flags = 0;
    return true;
 }

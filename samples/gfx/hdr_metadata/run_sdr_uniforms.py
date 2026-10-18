@@ -119,7 +119,7 @@ void main() {
         text = text.replace("FragColor=", f"ok=ok && {prefix}.MinNits=={minimum};\n FragColor=")
         shader.write_text(text, encoding="utf-8")
     preset = w / "check.slangp"
-    preset.write_text('shaders = "1"\nshader0 = "check.slang"\n', encoding="utf-8")
+    preset.write_text('shaders = "1"\nshader0 = "check.slang"\n' + ('hdr_mode = "0"\n' if a.source_pq else ''), encoding="utf-8")
     for threaded in ("false", "true"):
         for deferred in ("false", "true"):
             lane = f"{driver}-{storage}-{threaded}-{deferred}"
