@@ -80,9 +80,10 @@ SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
 Metal uses these same typed semantics with frame-carried content paper white
 and gamut. Scanlines and SubpixelLayout use the compositor's render-owned
-latches and become zero on SDR output. Its negotiated layer encoding supplies
-HDRMode; failed colorspace
-setup and compiled-out HDR supply zero. Per-view chains rebase their private
+latches. InverseTonemap and HDR10 use its preset/output conversion policy.
+All four become zero on SDR output or without compositor uniforms. Its
+negotiated layer encoding supplies HDRMode; failed colorspace setup and
+compiled-out HDR supply zero. Per-view chains rebase their private
 uniform values. ../slang_hdr_bindings/metal.py checks the shipping bindings,
 frame handoff, neutral values and rebasing with portable toolchains. Native
 Apple rendering acceptance remains pending.

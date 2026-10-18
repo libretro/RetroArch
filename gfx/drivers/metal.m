@@ -6361,6 +6361,8 @@ typedef struct MTLALIGN(16)
       uint32_t current_subframe;
       uint32_t swap_count;
       uint32_t hdr_mode;
+      float inverse_tonemap;
+      float hdr10;
       float scanlines;
       unsigned subpixel_layout;
       float paper_white_nits;
@@ -7238,6 +7240,10 @@ struct metal_view_chain
    e->pass[i].hdr_mode = _context.hdrOutputMode;
    e->pass[i].paper_white_nits = e->pass[i].hdr_mode
       ? _hdrPaperWhiteNits : 0.0f;
+   e->pass[i].inverse_tonemap = e->pass[i].hdr_mode && hdr
+      ? hdr->InverseTonemap : 0.0f;
+   e->pass[i].hdr10 = e->pass[i].hdr_mode && hdr
+      ? hdr->HDR10 : 0.0f;
    e->pass[i].scanlines = e->pass[i].hdr_mode && hdr
       ? hdr->Scanlines : 0.0f;
    e->pass[i].subpixel_layout = e->pass[i].hdr_mode && hdr
@@ -7922,8 +7928,8 @@ error:
                &_engine.pass[i].scanlines,        /* Scanlines */
                &_engine.pass[i].subpixel_layout,  /* SubpixelLayout */
                &_engine.pass[i].expand_gamut,     /* ExpandGamut */
-               NULL,                             /* InverseTonemap */
-               NULL,                             /* HDR10 */
+               &_engine.pass[i].inverse_tonemap, /* InverseTonemap */
+               &_engine.pass[i].hdr10,            /* HDR10 */
                NULL,                             /* Gyroscope */
                NULL,                             /* Accelerometer */
                NULL,                             /* AccelerometerRest */

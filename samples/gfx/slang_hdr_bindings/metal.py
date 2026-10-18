@@ -30,19 +30,34 @@ assert state and latch and publish, "Metal HDR state assignments are missing"
 start = source.index("- (unsigned)hdrOutputMode\n{")
 getter = source[source.index("{", start) + 1:source.index("\n}", start)]
 
+start = source.index("- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10 emitsHDR16:(bool)emitsHDR16\n{")
+policy = source[source.index("{", start) + 1:source.index("\n}", start)]
+
 fixture = r'''
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 #define METAL_HDR_OUTPUT_OFF 0
+#define METAL_HDR_OUTPUT_HDR10 1
 #define METAL_HDR_OUTPUT_SCRGB 2
 typedef float float_t;
 ENUM
 typedef struct { struct { float size_data[4]; } rt; FIELDS } pass_t;
 typedef struct { struct { float output_size[4]; } frame; pass_t pass[2]; } engine_t;
 struct values { float hdrPaperWhiteNits; unsigned hdrExpandGamut; };
-typedef struct { float Scanlines; unsigned SubpixelLayout; } HDRUniforms;
+typedef struct { float Scanlines; unsigned SubpixelLayout; float InverseTonemap; float HDR10; unsigned HDRMode; } HDRUniforms;
+static HDRUniforms conversion_policy(unsigned _hdrOutputMode, bool emitsHDR10, bool emitsHDR16)
+{
+   HDRUniforms _hdrUniforms = { 0 };
+   bool _hdrShaderEmitsHDR10 = false, _hdrShaderEmitsHDR16 = false;
+   (void)_hdrOutputMode;
+   (void)_hdrShaderEmitsHDR10;
+   (void)_hdrShaderEmitsHDR16;
+POLICY
+   return _hdrUniforms;
+}
 static unsigned output_mode(unsigned _hdrActiveOutputMode)
 {
    (void)_hdrActiveOutputMode;
@@ -89,13 +104,13 @@ int main(void)
    engine_t _engine;
    struct view_chain { engine_t engine; } view;
    struct view_chain *c = &view;
-   void *copy[5];
-   HDRUniforms hdr = { 1.0f, 4 };
-   HDRUniforms other_hdr = { 0.0f, 2 };
+   void *copy[7];
+   HDRUniforms hdr = { 1.0f, 4, 1.0f, 1.0f, 1 };
+   HDRUniforms other_hdr = { 0.0f, 2, 1.0f, 0.0f, 2 };
    float mvp[16] = { 0 };
    const char *lo = (const char *)&_engine;
    const char *hi = lo + sizeof(_engine);
-   unsigned i, mode;
+   unsigned i, mode, encoding;
    struct values frame = latch_frame(203.0f, 2);
    CHECK(publish_mode(2, 1, &view) == 2);
    CHECK(publish_mode(1, 1, &view) == 1);
@@ -115,8 +130,8 @@ BINDINGS
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] == &_engine.pass[i].swap_count);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_SCANLINES] == &_engine.pass[i].scanlines);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT] == &_engine.pass[i].subpixel_layout);
-      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP] == NULL);
-      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR10] == NULL);
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP] == &_engine.pass[i].inverse_tonemap);
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR10] == &_engine.pass[i].hdr10);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_GYROSCOPE] == NULL);
       for (mode = 0; mode <= 2; mode++)
       {
@@ -129,11 +144,31 @@ BINDINGS
          CHECK(*(unsigned*)semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT] == (actual ? 4u : 0u));
          CHECK(*(unsigned*)semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT] == (actual ? 2u : 0u));
       }
+      for (mode = 0; mode <= 2; mode++)
+      {
+         for (encoding = 0; encoding < 4; encoding++)
+         {
+            HDRUniforms policy = conversion_policy(mode, (encoding & 1) != 0,
+                  (encoding & 2) != 0);
+            float inverse = METAL_HDR_AVAILABLE && mode && !encoding ? 1.0f : 0.0f;
+            float pq = METAL_HDR_AVAILABLE && mode == 1 && !encoding ? 1.0f : 0.0f;
+            update(&_engine, i, mode, frame, &policy);
+            CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP] == inverse);
+            CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_HDR10] == pq);
+            if (METAL_HDR_AVAILABLE && mode == 2 && encoding == 1)
+            {
+               CHECK(policy.HDRMode == 3);
+               CHECK(_engine.pass[i].hdr_mode == 2);
+            }
+         }
+      }
       update(&_engine, i, publish_mode(2, 1, NULL), frame, &hdr);
       CHECK(_engine.pass[i].hdr_mode == 0 && _engine.pass[i].paper_white_nits == 0.0f);
       CHECK(_engine.pass[i].expand_gamut == 0);
+      CHECK(_engine.pass[i].inverse_tonemap == 0.0f && _engine.pass[i].hdr10 == 0.0f);
       CHECK(_engine.pass[i].scanlines == 0.0f && _engine.pass[i].subpixel_layout == 0);
       update(&_engine, i, 2, frame, NULL);
+      CHECK(_engine.pass[i].inverse_tonemap == 0.0f && _engine.pass[i].hdr10 == 0.0f);
       CHECK(_engine.pass[i].scanlines == 0.0f && _engine.pass[i].subpixel_layout == 0);
       {
 REBASE_CODE
@@ -142,10 +177,17 @@ REBASE_CODE
          copy[2] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT]);
          copy[3] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_SCANLINES]);
          copy[4] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT]);
+         copy[5] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP]);
+         copy[6] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_HDR10]);
 #undef METAL_REBASE
       }
       update(&_engine, i, 1, frame, &hdr);
       update(&view.engine, i, 2, latch_frame(100.0f, 1), &other_hdr);
+      CHECK(copy[5] == &view.engine.pass[i].inverse_tonemap);
+      CHECK(copy[6] == &view.engine.pass[i].hdr10);
+      CHECK(*(float*)copy[5] == (output_mode(2) ? 1.0f : 0.0f));
+      CHECK(*(float*)copy[6] == 0.0f);
+      CHECK(_engine.pass[i].hdr10 == (output_mode(1) ? 1.0f : 0.0f));
       CHECK(copy[3] == &view.engine.pass[i].scanlines);
       CHECK(copy[4] == &view.engine.pass[i].subpixel_layout);
       CHECK(*(float*)copy[3] == 0.0f);
@@ -166,7 +208,7 @@ REBASE_CODE
 }
 '''
 code = fixture
-for key, value in (("ENUM", semantic_enum), ("FIELDS", fields),
+for key, value in (("ENUM", semantic_enum), ("FIELDS", fields), ("POLICY", policy),
                    ("GETTER", getter), ("LATCH", latch.group()),
                    ("STATE", state.group()), ("BINDINGS", bindings),
                    ("PUBLISH_CODE", publish.group()),
