@@ -8228,7 +8228,8 @@ static void d3d11_set_menu_texture_frame(
 
    if (
          d3d11->menu.texture.desc.Width  != width ||
-         d3d11->menu.texture.desc.Height != height)
+         d3d11->menu.texture.desc.Height != height ||
+         d3d11->menu.texture.desc.Format != format)
    {
       d3d11->menu.texture.desc.Format = format;
       d3d11->menu.texture.desc.Width  = width;

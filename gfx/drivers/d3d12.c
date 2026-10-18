@@ -10514,7 +10514,8 @@ static void d3d12_set_menu_texture_frame(
 
    if (
          d3d12->menu.texture.desc.Width  != width ||
-         d3d12->menu.texture.desc.Height != height)
+         d3d12->menu.texture.desc.Height != height ||
+         d3d12->menu.texture.desc.Format != format)
    {
       d3d12->menu.texture.desc.Width  = width;
       d3d12->menu.texture.desc.Height = height;

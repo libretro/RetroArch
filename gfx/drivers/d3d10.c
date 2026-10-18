@@ -4995,7 +4995,8 @@ static void d3d10_set_menu_texture_frame(
 
    if (
             (d3d10->menu.texture.desc.Width  != width)
-         || (d3d10->menu.texture.desc.Height != height))
+         || (d3d10->menu.texture.desc.Height != height)
+         || (d3d10->menu.texture.desc.Format != format))
    {
       d3d10->menu.texture.desc.Format = format;
       d3d10->menu.texture.desc.Width  = width;
