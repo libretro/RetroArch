@@ -5912,8 +5912,8 @@ static void gl3_views_write(gl3_t *gl, const video_frame_info_t *video_info,
       const void *sw, unsigned pitch)
 {
    unsigned i;
-   unsigned bpp = (gl->video_info.rgb32 || gl->video_info.source_10bit)
-      ? 4 : 2;
+   unsigned bpp = gl->video_info.source_fp16 ? 8
+      : ((gl->video_info.rgb32 || gl->video_info.source_10bit) ? 4 : 2);
    for (i = 0; i < video_info->views.num_views; i++)
    {
       const struct retro_video_view *v = &video_info->views.views[i];

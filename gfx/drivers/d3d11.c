@@ -6309,8 +6309,8 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
          if (sw)
          {
             D3D11_MAPPED_SUBRESOURCE mapped;
-            unsigned bpp = (d3d11->format == DXGI_FORMAT_B5G6R5_UNORM)
-               ? 2 : 4;
+            unsigned bpp = d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT
+               ? 8 : (d3d11->format == DXGI_FORMAT_B5G6R5_UNORM ? 2 : 4);
             if (     c->history[0].handle
                   && SUCCEEDED(d3d11->context->lpVtbl->Map(d3d11->context,
                         (D3D11Resource)c->history[0].handle, 0,

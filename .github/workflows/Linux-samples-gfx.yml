@@ -1322,6 +1322,8 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d_menu_format.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d12_menu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_menu.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/hdr_view_crop.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/hdr_view_crop.py
           python3 samples/gfx/d3d12_menu_mapping/run.py
 
       - name: D3D8 resource cleanup (Linux and mingw + Wine)

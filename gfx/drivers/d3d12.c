@@ -8244,8 +8244,7 @@ static void d3d12_sw_upload(d3d12_video_t *d3d12, d3d12_texture_t *texture,
    if (texture->upload_buffer)
       d3d12_update_texture(w, h, src->pitch, d3d12->format,
             (const uint8_t*)src->frame + (size_t)y * src->pitch
-            + (size_t)x * ((d3d12->format == DXGI_FORMAT_B5G6R5_UNORM)
-               ? 2 : 4), texture);
+            + (size_t)x * d3d12_frame_bpp(d3d12->format), texture);
    d3d12_upload_texture(cmd, texture, d3d12);
 }
 
