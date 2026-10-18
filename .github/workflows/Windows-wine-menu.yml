@@ -30,6 +30,7 @@ on:
       - 'menu/drivers/**'
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
+      - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
       - '.github/workflows/Windows-wine-menu.yml'
@@ -49,6 +50,7 @@ on:
       - 'menu/drivers/**'
       - 'menu/menu_driver.*'
       - 'samples/gfx/menu_wine/**'
+      - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
       - '.github/workflows/Windows-wine-menu.yml'
@@ -156,6 +158,15 @@ jobs:
           WINEDEBUG=-all timeout 120 xvfb-run -a sh -c 'wineboot -i && wineserver -w'
           python3 samples/gfx/menu_wine/run.py ./retroarch.exe \
             "$RUNNER_TEMP/menu-wine" d3d11 d3d10 d3d12 d3d9_hlsl d3d8 gl glcore
+
+      - name: D3D12 menu component mapping on the GPU (Wine)
+        shell: bash
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          export LIBGL_ALWAYS_SOFTWARE=1
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine \
+            xvfb-run -a python3 samples/gfx/d3d12_menu_mapping/run.py
 
       - name: A core writing into the framebuffer d3d9_hlsl lends it (Wine)
         shell: bash

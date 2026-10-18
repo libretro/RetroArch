@@ -10549,6 +10549,24 @@ static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
    *vp = d3d12->vp;
 }
 
+static void d3d12_menu_mapping(D3D12Device device,
+      d3d12_texture_t *texture, bool rgb32)
+{
+   D3D12_SHADER_RESOURCE_VIEW_DESC desc = {0};
+
+   if (rgb32 || !texture->handle
+         || texture->desc.Format != DXGI_FORMAT_B4G4R4A4_UNORM)
+      return;
+   /* Interpret RGUI BGRA4444 without rewriting the upload. */
+   texture->srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(1, 0, 3, 2);
+   desc.Format = texture->desc.Format;
+   desc.Shader4ComponentMapping = texture->srv_mapping;
+   desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+   desc.Texture2D.MipLevels = texture->desc.MipLevels;
+   device->lpVtbl->CreateShaderResourceView(device, texture->handle,
+         &desc, texture->cpu_descriptor[0]);
+}
+
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned dims, float alpha)
@@ -10618,15 +10636,14 @@ static void d3d12_set_menu_texture_frame(
       d3d12->menu.texture.desc.Format = format;
       d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
       d3d12_release_texture(&d3d12->menu.texture);
+      d3d12->menu.texture.srv_mapping = 0;
       d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
+      d3d12_menu_mapping(d3d12->device, &d3d12->menu.texture, rgb32);
       d3d12->menu.source_format = format;
    }
 
-   /* RGUI BGRA4444 and DXGI B4G4R4A4 use different bit positions. */
-   if ((loan || upload) && !rgb32
-         && d3d12->menu.texture.desc.Format == native_format)
-      dxgi_copy(width, height, format, pitch, frame,
-            native_format, pitch, (void*)frame);
+   if (!rgb32 && d3d12->menu.texture.desc.Format == native_format)
+      format = native_format;
 
    if (     upload && d3d12->menu.texture.handle
          && d3d12->menu.texture.desc.Format == native_format)

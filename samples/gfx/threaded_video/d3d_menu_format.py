@@ -12,7 +12,7 @@ fixture = r'''
 #include <stdio.h>
 #include <string.h>
 typedef unsigned DXGI_FORMAT;
-struct texture { struct { unsigned Width, Height, Format; } desc; void *srv_heap; };
+struct texture { struct { unsigned Width, Height, Format; } desc; void *srv_heap; unsigned srv_mapping; };
 struct video {
    struct { struct texture texture; DXGI_FORMAT source_format; } menu;
    struct { int srv_heap; } desc;
@@ -27,10 +27,12 @@ static void release_texture(struct texture *texture)
 static void init_texture(void *device, struct texture *texture)
 {
    (void)device;
+   assert(texture->srv_mapping == 0);
    allocations++;
    if (substitute)
       texture->desc.Format = 32;
 }
+MAPPING
 static void submit(struct video *driver,
       unsigned width, unsigned height, DXGI_FORMAT format)
 {
@@ -76,7 +78,9 @@ with tempfile.TemporaryDirectory(prefix="retroarch-d3d-menu-") as directory:
         allocation = allocation.replace(f"{driver}_release_texture", "release_texture")
         allocation = allocation.replace(f"{driver}_init_texture", "init_texture")
         allocation = allocation.replace(f"{driver}->", "driver->")
-        code = fixture.replace("ALLOCATION", allocation).replace("DRIVER", driver)
+        allocation = allocation.replace("d3d12_menu_mapping", "menu_mapping").replace("rgb32", "(format == 32)")
+        mapping = "static void menu_mapping(void *device, struct texture *t, int rgb32) { (void)device; t->srv_mapping = rgb32 ? 0 : 7; }" if driver == "d3d12" else ""
+        code = fixture.replace("MAPPING", mapping).replace("ALLOCATION", allocation).replace("DRIVER", driver)
         src = Path(directory) / f"{driver}.c"
         exe = Path(directory) / (driver + ".exe")
         src.write_text(code, encoding="utf-8")
