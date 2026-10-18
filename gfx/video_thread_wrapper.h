@@ -648,7 +648,7 @@ typedef struct thread_video
     * at every apply. */
    int *alpha_applied;
 
-   /* The menu texture: the main thread copies each frame into the
+   /* The menu texture: the main thread fills the next frame in the
     * triple buffer's back slot and publishes it, the video thread takes
     * the newest at its next apply and hands it to the driver, which
     * copies the pixels there and keeps no pointer. Neither waits on the
@@ -1135,6 +1135,11 @@ void video_thread_main_pump(void);
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data);
 
 void video_thread_wait_idle(void);
+
+/* Main thread: tightly packed menu pixels for set_texture_frame with
+ * the same dimensions/format. Valid until another loan request, menu
+ * publication or reinit. NULL when unavailable. */
+void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32);
 
 /* The wrapper's invalidate_hw_render_cache, and what a hardware core's
  * set_image(NULL) means under the ring. Main thread. On return no

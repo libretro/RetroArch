@@ -54,6 +54,9 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../gfx/bitmapfont.h"
+#ifdef HAVE_THREADS
+#include "../../gfx/video_thread_wrapper.h"
+#endif
 #ifdef HAVE_LANGEXTRA
 #include "rgui_bitmapfont.h"
 #endif
@@ -7564,6 +7567,7 @@ static void rgui_set_texture(void *data)
          uint32_t x_ratio, y_ratio;
          unsigned x_src, y_src;
          unsigned x_dst, y_dst;
+         uint16_t *out_frame      = NULL;
          frame_buf_t *frame_buf   = &rgui->frame_buf;
          frame_buf_t *upscale_buf = &rgui->upscale_buf;
 
@@ -7579,10 +7583,16 @@ static void rgui_set_texture(void *data)
             out_height = internal_upscale_level * fb_height;
          }
 
+         /* Render into the wrapper's unpublished slot when available. */
+#ifdef HAVE_THREADS
+         if (VIDEO_SCALE_FITS(out_width, out_height))
+            out_frame = (uint16_t*)video_thread_get_menu_framebuffer(
+                  VIDEO_SCALE_PACK(out_width, out_height), false);
+#endif
          /* Allocate upscaling buffer, if required */
-         if (     (upscale_buf->width  != out_width)
+         if (!out_frame && ((upscale_buf->width  != out_width)
                || (upscale_buf->height != out_height)
-               || !upscale_buf->data)
+               || !upscale_buf->data))
          {
             upscale_buf->width  = out_width;
             upscale_buf->height = out_height;
@@ -7608,6 +7618,9 @@ static void rgui_set_texture(void *data)
             }
          }
 
+         if (!out_frame)
+            out_frame = upscale_buf->data;
+
          /* Perform nearest neighbour upscaling
           * NB: We're duplicating code here, but trying to handle
           * this with a polymorphic function is too much of a drag... */
@@ -7620,12 +7633,12 @@ static void rgui_set_texture(void *data)
             for (x_dst = 0; x_dst < out_width; x_dst++)
             {
                x_src = (x_dst * x_ratio) >> 16;
-               upscale_buf->data[(y_dst * out_width) + x_dst] = frame_buf->data[(y_src * fb_width) + x_src];
+               out_frame[(y_dst * out_width) + x_dst] = frame_buf->data[(y_src * fb_width) + x_src];
             }
          }
 
          /* Draw upscaled texture */
-         rgui_set_texture_frame(video_st, upscale_buf->data,
+         rgui_set_texture_frame(video_st, out_frame,
             false, VIDEO_SCALE_PACK(out_width, out_height), 1.0f);
       }
    }

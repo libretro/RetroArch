@@ -4849,16 +4849,18 @@ static float thread_get_headset_refresh(void *data, float *rates,
    return 0.0f;
 }
 
-static void thread_set_texture_frame(void *data, const void *frame,
-      bool rgb32, unsigned dims, float alpha)
+static struct video_thread_menu_texture *thread_menu_texture_back(
+      thread_video_t *thr, bool rgb32, unsigned dims)
 {
-   thread_video_t *thr = (thread_video_t*)data;
    struct video_thread_menu_texture *t;
-   size_t required     = VIDEO_SCALE_AREA(dims) *
-      (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   size_t width        = VIDEO_SCALE_W(dims);
+   size_t height       = VIDEO_SCALE_H(dims);
+   size_t bpp          = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   size_t required;
 
-   if (!thr)
-      return;
+   if (!thr || !width || !height || width > (size_t)-1 / height / bpp)
+      return NULL;
+   required = width * height * bpp;
 
    /* The back slot is the main thread's alone until it is published. */
    t = (struct video_thread_menu_texture*)
@@ -4867,12 +4869,35 @@ static void thread_set_texture_frame(void *data, const void *frame,
    {
       void *tmp_frame = realloc(t->frame, required);
       if (!tmp_frame)
-         return;
+         return NULL;
       t->frame     = tmp_frame;
       t->frame_cap = required;
    }
+   return t;
+}
 
-   memcpy(t->frame, frame, required);
+void *video_thread_get_menu_framebuffer(unsigned dims, bool rgb32)
+{
+   struct video_thread_menu_texture *t;
+   thread_video_t *thr = video_thread_thr_capture;
+
+   if (!thr || !video_driver_thread_wrapper_active())
+      return NULL;
+   t = thread_menu_texture_back(thr, rgb32, dims);
+   return t ? t->frame : NULL;
+}
+
+static void thread_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned dims, float alpha)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   struct video_thread_menu_texture *t;
+
+   if (!frame || !(t = thread_menu_texture_back(thr, rgb32, dims)))
+      return;
+   if (frame != t->frame)
+      memcpy(t->frame, frame, (size_t)VIDEO_SCALE_W(dims) *
+            VIDEO_SCALE_H(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
    t->rgb32 = rgb32;
    t->dims  = dims;
    t->alpha = alpha;

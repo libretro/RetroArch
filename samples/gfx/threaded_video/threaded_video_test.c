@@ -3017,17 +3017,8 @@ static bool menutex_frame(void *data, const void *frame,
    return true;
 }
 
-/* The receiving end. A real driver uploads or copies here and does not
- * keep the pointer, which is what lets the worker drop the lock as soon
- * as this returns; reading the whole buffer is how this one checks the
- * bytes it was handed belong to a single push.
- *
- * The menu is up in this harness and RGUI pushes its own framebuffer
- * through the same entry point, so only this lane's own pushes are
- * checked: they are MENUTEX_W x MENUTEX_H and every pixel carries
- * MENUTEX_MARK. The lock is what keeps the two producers from
- * interleaving, so a buffer is wholly one push's or wholly the other's -
- * a marked buffer holding two generations is the tear this looks for. */
+/* Check one immutable publication. RGUI also publishes here, so only
+ * this lane's dimensions and pixel marker identify a checked image. */
 static void menutex_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
@@ -3092,15 +3083,28 @@ static void lane_menu_texture(void)
    retro_atomic_store_release_int(&menutex_frames, 0);
    menutex_slow = true;
 
+   CHECK(!video_thread_get_menu_framebuffer(0, false),
+         "empty menu framebuffer was lent");
+
    for (gen = 1; gen <= MENUTEX_PUSHES; gen++)
    {
       unsigned pending;
       bool     busy;
+      uint16_t *pixels = buf;
+
+      if (gen & 1)
+      {
+         pixels = (uint16_t*)video_thread_get_menu_framebuffer(
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false);
+         CHECK(pixels != NULL, "menu framebuffer loan refused");
+         if (!pixels)
+            pixels = buf;
+      }
 
       for (i = 0; i < MENUTEX_W * MENUTEX_H; i++)
-         buf[i] = (uint16_t)(MENUTEX_MARK | gen);
+         pixels[i] = (uint16_t)(MENUTEX_MARK | gen);
 
-      video_st->poke->set_texture_frame(video_st->data, buf, false,
+      video_st->poke->set_texture_frame(video_st->data, pixels, false,
             VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), 1.0f);
 
       /* One frame through the real path, then the drain the menu
@@ -3137,6 +3141,10 @@ static void lane_menu_texture(void)
    set_driver(thr, menutex_inner);
    set_poke(thr, menutex_inner_poke);
    set_threaded_via_setting(false);
+
+   CHECK(!video_thread_get_menu_framebuffer(
+            VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false),
+         "inactive wrapper lent a menu framebuffer");
 
    if (failures == had)
       fprintf(stderr, "[pass] menu-texture handoff lane (%d handed over, "

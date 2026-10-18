@@ -607,6 +607,11 @@ jobs:
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 ownership.py
 
+      - name: Menu framebuffer loans (ASan/UBSan)
+        shell: bash
+        run: |
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
+
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash
         working-directory: samples/gfx/slang_hdr_bindings
