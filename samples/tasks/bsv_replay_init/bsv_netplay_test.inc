@@ -16,6 +16,9 @@ static bool bsv_replaying_offline;
 static bool bsv_mask_reads;
 #define NETPLAY_ASSERT_MODUS(m) ((void)0)
 
+#define input_driver_st input_st
+#include "netplay_bsv_frontend.inc"
+#undef input_driver_st
 #include "netplay_bsv_recording.inc"
 #include "netplay_bsv_eligibility.inc"
 
@@ -310,7 +313,7 @@ static void lane_netplay_lifecycle(void)
    CHECK(input_st.bsv_movie_state_handle->frame_counter == 1, "host stall adds no frame");
    netplay_bsv_stop(netplay, "test resynchronization");
    CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END, "deferred stop requested");
-   CHECK(!netplay_bsv_movie(), "stopped recorder cannot capture more input");
+   CHECK(!input_driver_netplay_bsv_recording(), "stopped recorder cannot capture more input");
    CHECK(movie_stop(&input_st), "finish stopped movie outside netplay");
    CHECK(play("bsv_netplay_lifecycle.replay"), "confirmed prefix still playable");
    bsv_movie_dequeue_next(&input_st);

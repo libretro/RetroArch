@@ -57,9 +57,11 @@ endif
 ifeq ($(NETPLAY),1)
    CFLAGS += -DHAVE_NETWORKING -DBSV_TEST_NETPLAY
    BSV_NETPLAY_SRC := $(REPO_ROOT)/network/netplay/netplay_frontend.c
-   BSV_FRAGMENTS := netplay_bsv_recording.inc netplay_bsv_post.inc netplay_bsv_eligibility.inc
+   BSV_FRAGMENTS := netplay_bsv_recording.inc netplay_bsv_post.inc netplay_bsv_eligibility.inc netplay_bsv_frontend.inc
    bsv_replay_init_test.o: $(BSV_FRAGMENTS) bsv_netplay_test.inc
 
+netplay_bsv_frontend.inc: $(REPO_ROOT)/input/input_driver.c
+	sed -n '/===== BEGIN netplay BSV frontend =====/,/===== END netplay BSV frontend =====/p' $< > $@
 netplay_bsv_recording.inc: $(BSV_NETPLAY_SRC)
 	sed -n '/===== BEGIN netplay BSV recording =====/,/===== END netplay BSV recording =====/p' $< > $@
 netplay_bsv_post.inc: $(BSV_NETPLAY_SRC)

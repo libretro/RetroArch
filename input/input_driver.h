@@ -2167,6 +2167,14 @@ void bsv_movie_frame_rewind(input_driver_state_t *input_st);
 /* The replay is over: said by the code that reads it, which is handed
  * the replay and not the input state. */
 void bsv_movie_set_end(void);
+#ifdef HAVE_NETWORKING
+bsv_movie_t *input_driver_netplay_bsv_recording(void);
+void input_driver_netplay_bsv_stop(const char *reason, bool checkpoint_failed);
+bool input_driver_netplay_bsv_take_checkpoint(void);
+bool input_driver_netplay_bsv_next_frame(const void *state, size_t size,
+      bool forced);
+bool input_driver_bsv_stop_recording(void);
+#endif
 /* @checkpoint_interval and @checkpoint_deserialize are the two replay
  * settings, handed over by the run loop, which has them. */
 void bsv_movie_next_frame(input_driver_state_t *input_st,
