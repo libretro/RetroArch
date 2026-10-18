@@ -6337,7 +6337,8 @@ void config_set_defaults(settings_t *target)
             FILE_PATH_BUILTIN,
             sizeof(new_path));
 
-      if (!path_is_directory(new_path))
+      if (     !(retroarch_get_flags() & RARCH_FLAGS_USER_DIRS_HELD)
+            && !path_is_directory(new_path))
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
@@ -7259,7 +7260,8 @@ static bool config_load_file(const char *path, settings_t *settings)
             FILE_PATH_BUILTIN,
             sizeof(new_path));
 
-      if (!path_is_directory(new_path))
+      if (     !(retroarch_get_flags() & RARCH_FLAGS_USER_DIRS_HELD)
+            && !path_is_directory(new_path))
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)

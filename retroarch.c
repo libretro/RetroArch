@@ -2423,6 +2423,43 @@ uint32_t retroarch_get_flags(void)
    return p_rarch->flags;
 }
 
+void retroarch_user_dirs_hold(void)
+{
+   rarch_st.flags |= RARCH_FLAGS_USER_DIRS_HELD;
+}
+
+void retroarch_user_dirs_release(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!(rarch_st.flags & RARCH_FLAGS_USER_DIRS_HELD))
+      return;
+   rarch_st.flags &= ~RARCH_FLAGS_USER_DIRS_HELD;
+   if (!settings)
+      return;
+
+   {
+      char new_path[PATH_MAX_LENGTH];
+      fill_pathname_join_special(new_path,
+            settings->paths.directory_playlist,
+            FILE_PATH_BUILTIN, sizeof(new_path));
+      if (!path_is_directory(new_path))
+         path_mkdir(new_path);
+   }
+
+#ifdef HAVE_MENU
+   retroarch_favorites_init();
+   command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (menu_st->driver_ctx && menu_st->driver_ctx->environ_cb)
+         menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+               NULL, menu_st->userdata);
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   }
+#endif
+}
+
 struct retro_perf_counter **retro_get_perf_counter_rarch(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
@@ -4952,7 +4989,9 @@ bool command_event(enum event_command cmd, void *data)
 
             command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            if (!history_list_enable || !playlist_config.capacity)
+            if (     !history_list_enable
+                  || !playlist_config.capacity
+                  || (rarch_st.flags & RARCH_FLAGS_USER_DIRS_HELD))
                return false;
 
             _msg = msg_hash_to_str(MSG_LOADING_HISTORY_FILE);
@@ -10651,7 +10690,7 @@ void retroarch_favorites_init(void)
    playlist_config.fuzzy_archive_match = settings ? settings->bools.playlist_fuzzy_archive_match : false;
    playlist_config_set_base_content_directory(&playlist_config, NULL);
 
-   if (!settings)
+   if (!settings || (rarch_st.flags & RARCH_FLAGS_USER_DIRS_HELD))
       return;
 
    if (content_favorites_size >= 0)

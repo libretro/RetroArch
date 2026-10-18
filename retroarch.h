@@ -130,7 +130,9 @@ enum rarch_state_flags
    RARCH_FLAGS_INIT_IN_PROGRESS             = (1 << 22),
    /* Content from the command line waited for the startup cloud sync
     * before loading; rarch_main() does not push another. */
-   RARCH_FLAGS_CLOUD_SYNC_AT_INIT           = (1 << 23)
+   RARCH_FLAGS_CLOUD_SYNC_AT_INIT           = (1 << 23),
+   /* See retroarch_user_dirs_hold(). */
+   RARCH_FLAGS_USER_DIRS_HELD               = (1 << 24)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
@@ -291,6 +293,12 @@ void retroarch_fail(int error_code, const char *error);
 bool should_quit_on_close(void);
 
 uint32_t retroarch_get_flags(void);
+
+/* For a platform that asks the user for access to the folder the
+ * user directories live in: until the release, the main thread
+ * leaves them alone and the playlists they hold load afterwards. */
+void retroarch_user_dirs_hold(void);
+void retroarch_user_dirs_release(void);
 
 RETRO_END_DECLS
 

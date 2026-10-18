@@ -108,6 +108,8 @@ static char **waiting_argv;
 static bool cocoa_termination_pending;
 static bool cocoa_window_restored;
 static bool cocoa_started;
+static bool cocoa_launching;
+static bool cocoa_documents_probed;
 
 extern id<ApplePlatform> apple_platform;
 
@@ -802,7 +804,7 @@ static ui_application_t ui_application_cocoa = {
    RARCH_AUTORELEASEPOOL_BEGIN
    if ((dir = opendir([path fileSystemRepresentation])))
       closedir(dir);
-   [self performSelectorOnMainThread:@selector(startRetroArch)
+   [self performSelectorOnMainThread:@selector(documentsProbed)
                           withObject:nil
                        waitUntilDone:NO];
    RARCH_AUTORELEASEPOOL_END
@@ -810,6 +812,8 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)startRetroArch
 {
+   cocoa_launching = true;
+
    _listener = [WindowListener new];
    [_listener setWindow:self.window];
 
@@ -843,6 +847,30 @@ static ui_application_t ui_application_cocoa = {
 #endif
 }
 
+- (void)documentsProbed
+{
+   cocoa_documents_probed = true;
+   if (cocoa_launching)
+      retroarch_user_dirs_release();
+   else
+   {
+      [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                               selector:@selector(startWhileProbing)
+                                                 object:nil];
+      [self startRetroArch];
+   }
+}
+
+/* The probe is still out, so the access prompt is up: start without
+ * the user directories and let the probe's return release them. */
+- (void)startWhileProbing
+{
+   if (cocoa_launching || cocoa_documents_probed)
+      return;
+   retroarch_user_dirs_hold();
+   [self startRetroArch];
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    int i;
@@ -870,9 +898,14 @@ static ui_application_t ui_application_cocoa = {
     * and blocks the touching thread until it is answered, so it is
     * made on a thread of its own while the main one keeps running. */
    if (frontend_darwin_documents_dir(docs, sizeof(docs)))
+   {
       [NSThread detachNewThreadSelector:@selector(probeDocuments:)
                                toTarget:self
                              withObject:BOXSTRING(docs)];
+      [self performSelector:@selector(startWhileProbing)
+                 withObject:nil
+                 afterDelay:0.25];
+   }
    else
       [self startRetroArch];
 }

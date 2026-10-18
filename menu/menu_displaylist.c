@@ -5595,8 +5595,9 @@ static unsigned menu_displaylist_parse_playlists(
 
    if (horizontal)
    {
-      if (!dir_list_initialize(&str_list, path, NULL, true,
-            show_hidden_files, true, false))
+      if (     (retroarch_get_flags() & RARCH_FLAGS_USER_DIRS_HELD)
+            || !dir_list_initialize(&str_list, path, NULL, true,
+               show_hidden_files, true, false))
          return count;
 
       dir_list_sort_ignore_ext(&str_list, true);

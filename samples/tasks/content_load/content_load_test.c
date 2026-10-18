@@ -24,6 +24,10 @@
  *    with the drivers rebuilt and the menu up;
  *  - not a core: a library that opens but lacks retro_init does the
  *    same, and the failure is said;
+ *  - user dirs held: the frontend boots with the user directories
+ *    held - nothing is made or read under the playlist directory,
+ *    the playlists tab lists nothing - and the release makes the
+ *    builtin folder, loads favorites and history, and lists the tab;
  *  - quit waits for a save: a quit from the frame loop while a state
  *    is being written returns to the loop at once, which presents
  *    frames - the core not run - until the state is written, and only
@@ -71,6 +75,7 @@
 #include "../../../playlist.h"
 #include "../../../paths.h"
 #include "../../../content.h"
+#include "../../../defaults.h"
 #include "../../../input/input_driver.h"
 #include "../../../runahead.h"
 #include "../../../state_manager.h"
@@ -244,6 +249,66 @@ static void open_menu(void)
 /* ------------------------------------------------------------------ */
 /* Lane: staged                                                        */
 /* ------------------------------------------------------------------ */
+
+#ifdef HAVE_MENU
+static unsigned playlists_tab_size(const char *dir_playlist)
+{
+   menu_displaylist_info_t info;
+   file_list_t list = {0};
+   unsigned size;
+   menu_displaylist_info_init(&info);
+   info.list         = &list;
+   info.path         = strdup(dir_playlist);
+   info.label        = strdup(MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
+   info.exts         = strdup("lpl");
+   info.type_default = FILE_TYPE_PLAIN;
+   info.enum_idx     = MENU_ENUM_LABEL_PLAYLISTS_TAB;
+   menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL,
+         &info, config_get_ptr());
+   size = (unsigned)list.size;
+   menu_displaylist_info_free(&info);
+   file_list_deinitialize(&list);
+   return size;
+}
+#endif
+
+/* Runs first: main() boots the frontend held. */
+static void lane_user_dirs_held(const char *dir)
+{
+   char dir_playlist[600];
+   char builtin[640];
+   snprintf(dir_playlist, sizeof(dir_playlist), "%s/playlists", dir);
+   snprintf(builtin, sizeof(builtin), "%s/builtin", dir_playlist);
+
+   CHECK(retroarch_get_flags() & RARCH_FLAGS_USER_DIRS_HELD,
+         "held: the boot dropped the hold");
+   CHECK(!path_is_directory(builtin),
+         "held: the builtin playlist folder was made");
+#ifdef HAVE_MENU
+   CHECK(!g_defaults.content_favorites, "held: favorites were loaded");
+   CHECK(!g_defaults.content_history, "held: history was loaded");
+   retroarch_favorites_init();
+   command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   CHECK(!g_defaults.content_favorites && !g_defaults.content_history,
+         "held: a playlist init read the playlist directory");
+   CHECK(playlists_tab_size(dir_playlist) == 0,
+         "held: the playlists tab listed the playlist directory");
+#endif
+
+   retroarch_user_dirs_release();
+
+   CHECK(!(retroarch_get_flags() & RARCH_FLAGS_USER_DIRS_HELD),
+         "release: the hold is still set");
+   CHECK(path_is_directory(builtin),
+         "release: the builtin playlist folder was not made");
+#ifdef HAVE_MENU
+   CHECK(g_defaults.content_favorites, "release: favorites not loaded");
+   CHECK(g_defaults.content_history, "release: history not loaded");
+   CHECK(playlists_tab_size(dir_playlist) == 1,
+         "release: the playlists tab does not list the playlist");
+#endif
+   fprintf(stderr, "user dirs held: ok\n");
+}
 
 static void lane_staged(void)
 {
@@ -2598,7 +2663,20 @@ int main(int argc, char *argv[])
        * the close-waits-for-save lane needs a save that can be
        * written, on every load */
       fprintf(cfg, "savestate_directory = \"%s\"\n", dir);
+      fprintf(cfg, "playlist_directory = \"%s/playlists\"\n", dir);
       fclose(cfg);
+   }
+   {
+      char playlist[600];
+      FILE *lpl;
+      snprintf(playlist, sizeof(playlist), "%s/playlists", dir);
+      path_mkdir(playlist);
+      snprintf(playlist, sizeof(playlist), "%s/playlists/harness.lpl", dir);
+      if ((lpl = fopen(playlist, "wb")))
+      {
+         fprintf(lpl, "{\"version\": \"1.5\", \"items\": []}\n");
+         fclose(lpl);
+      }
    }
 
    if (getenv("HARNESS_VERBOSE"))
@@ -2635,6 +2713,7 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_VERBOSE"))
       rarch_argv[rarch_argc++] = (char*)"-v";
 
+   retroarch_user_dirs_hold();
    if (!retroarch_main_init(rarch_argc, rarch_argv))
    {
       fprintf(stderr, "FAIL: retroarch_main_init failed\n");
@@ -2648,6 +2727,7 @@ int main(int argc, char *argv[])
    CHECK(runloop_state_get_ptr()->current_core_type != CORE_TYPE_DUMMY,
          "harness core did not start (dummy core running)");
 
+   lane_user_dirs_held(dir);
    lane_staged();
    lane_core_opened_once();
 #if defined(HAVE_DYNAMIC)
@@ -2720,6 +2800,26 @@ int main(int argc, char *argv[])
       snprintf(leftover, sizeof(leftover),
             "%s/content_load_harness/content_load_harness.state.png", dir);
       remove(leftover);
+      {
+         static const char *const lpls[] = {
+            "content_favorites.lpl", "content_history.lpl",
+            "content_music_history.lpl", "content_image_history.lpl",
+            "content_video_history.lpl"
+         };
+         unsigned i;
+         for (i = 0; i < sizeof(lpls) / sizeof(lpls[0]); i++)
+         {
+            snprintf(leftover, sizeof(leftover), "%s/playlists/builtin/%s",
+                  dir, lpls[i]);
+            remove(leftover);
+         }
+         snprintf(leftover, sizeof(leftover), "%s/playlists/builtin", dir);
+         rmdir(leftover);
+         snprintf(leftover, sizeof(leftover), "%s/playlists/harness.lpl", dir);
+         remove(leftover);
+         snprintf(leftover, sizeof(leftover), "%s/playlists", dir);
+         rmdir(leftover);
+      }
       /* the per-core save folder a content load makes */
       snprintf(leftover, sizeof(leftover), "%s/content_load_harness", dir);
       rmdir(leftover);
