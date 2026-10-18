@@ -252,6 +252,7 @@ typedef struct video_thread_async_load
    void   *lent_mem[2];
    size_t  lent_pitch[2];
    uint8_t lend_padded;
+   uint8_t lend_refresh;
 } video_thread_async_load_t;
 
 /* Deep enough for the burst an overlay issues between two frames - one
@@ -439,16 +440,20 @@ typedef struct thread_video
    /* Upload memory the driver lent under the wrapper, one record per
     * texture slot. The video thread owns every field but busy, which
     * it sets when an update leaves the GPU reading the slot and clears
-    * once the driver says the read is done; the main thread reads busy
-    * alone, by the index the lend came back with. */
+    * once the driver says the read is done. For per-write mappings it
+    * publishes fresh memory/pitch before clearing busy; the main thread
+    * reads those only after readiness and before posting that slot. */
    struct
    {
       void *mem;
       uintptr_t id;
       size_t pitch;
+      size_t row_pitch;
       retro_atomic_int_t busy;
       unsigned slot;
       bool used;
+      bool refresh;
+      bool padded;
    } lend[VIDEO_THREAD_LEND_MAX];
    unsigned lend_busy;      /* records busy, the video thread's count */
    bool lend_used;          /* anything was ever lent: the video thread's */
@@ -1070,6 +1075,10 @@ bool video_thread_async_post(video_thread_async_load_t *n);
  * written: false while the GPU may still read the last update from
  * it. Never waits. Main thread. */
 bool video_thread_lend_ready(int idx);
+
+/* After readiness, while the surface owns the slot until its next post.
+ * NULL memory revokes a loan whose mapping no longer fits. */
+bool video_thread_lend_get(int idx, void **mem, size_t *pitch);
 
 /* Whether the wrapped driver updates textures in place; false while
  * no wrapper is up. video_driver_texture_can_update() asks this so a

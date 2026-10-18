@@ -149,6 +149,7 @@ struct gfx_surface
     * 0xff = none. */
    uint8_t fmt;
    uint8_t lent;       /* driver slots borrowed, a bit each */
+   uint8_t lend_refresh; /* per-write mappings, a bit each */
    uint8_t lent_cur;   /* one slot: the driver slot slots[0] is */
    /* Under the thread wrapper, the wrapper's record of each driver
     * slot lent, plus one (video_thread_lend_ready); 0 under direct

@@ -378,6 +378,15 @@ static bool vp_job_settled(vp_job_t *job)
    return true;
 }
 
+static void vp_job_publish(vp_job_t *job, int alive)
+{
+   /* Failed decodes may also have written a write-combined slot. */
+   if (!job->gpu)
+      retro_atomic_thread_fence_seq_cst();
+   retro_atomic_store_release_int(&job->status,
+         alive == 2 ? VP_JOB_WAITING : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
+}
+
 static void vp_worker(void *unused)
 {
    (void)unused;
@@ -428,8 +437,7 @@ static void vp_worker(void *unused)
 
       /* Publishes the frame to the poll, and wakes a release waiting
        * the decode out. */
-      retro_atomic_store_release_int(&job->status,
-            alive == 2 ? VP_JOB_WAITING : (alive ? VP_JOB_READY : VP_JOB_FINISHED));
+      vp_job_publish(job, alive);
       retro_eventcount_notify(&vp_worker_done);
    }
 }

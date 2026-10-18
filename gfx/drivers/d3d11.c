@@ -284,10 +284,21 @@ typedef struct d3d11_vertex_t
 
 typedef struct
 {
+   D3D11DeviceContext context;
+   D3D11Texture2D staging[2];
+   D3D11_MAPPED_SUBRESOURCE mapped[2];
+   unsigned valid;
+   unsigned failed;
+} d3d11_texture_lend_t;
+
+typedef struct
+{
    D3D11Texture2D          handle;
    D3D11Texture2D          staging;
    void                  *upload_data;
    size_t                 upload_size;
+   d3d11_texture_lend_t   *lend;
+   unsigned               lend_bpp;
    D3D11_TEXTURE2D_DESC    desc;
    D3D11RenderTargetView   rt_view;
    D3D11ShaderResourceView view;
@@ -799,6 +810,21 @@ static D3D11DeviceContext    cached_context_d3d11;
 
 static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
 {
+   if (texture->lend)
+   {
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         if (texture->lend->valid & (1u << i))
+            texture->lend->context->lpVtbl->Unmap(texture->lend->context,
+                  (D3D11Resource)texture->lend->staging[i], 0);
+         Release(texture->lend->staging[i]);
+      }
+      Release(texture->lend->context);
+      free(texture->lend);
+      texture->lend = NULL;
+   }
+   texture->lend_bpp = 0;
    Release(texture->handle);
    Release(texture->staging);
    Release(texture->view);
@@ -9081,6 +9107,10 @@ static uintptr_t d3d11_gfx_load_texture_internal(
             0, src_format, image->pixels, texture);
    }
 
+   texture->lend_bpp = image->fp16
+      ? (texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 0)
+      : (!image->pix10 && !image->supports_rgba && !image->compressed
+            && texture->desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM ? 4 : 0);
    return (uintptr_t)texture;
 }
 
@@ -9153,6 +9183,80 @@ static uintptr_t d3d11_gfx_load_texture(
    return d3d11_gfx_load_texture_internal(d3d11, image, filter_type);
 }
 
+static bool d3d11_texture_lend_map(d3d11_texture_lend_t *lend, unsigned slot)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   unsigned bit = 1u << slot;
+   HRESULT hr;
+   if (lend->valid & bit || lend->failed & bit)
+      return true;
+   hr = lend->context->lpVtbl->Map(lend->context,
+         (D3D11Resource)lend->staging[slot], 0,
+         D3D11_MAP_READ_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+      return false;
+   if (FAILED(hr))
+      lend->failed |= bit;
+   else
+   {
+      lend->mapped[slot] = mapped;
+      lend->valid |= bit;
+   }
+   return true;
+}
+
+static void *d3d11_gfx_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch, size_t *out_pitch)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   d3d11_texture_t *texture = (d3d11_texture_t*)id;
+   d3d11_texture_lend_t *lend;
+   if (     !d3d11 || !d3d11->context || !texture || slot >= 2
+         || !texture->lend_bpp || !texture->handle
+         || texture->desc.MipLevels != 1
+         || texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS
+         || pitch != (size_t)texture->desc.Width * texture->lend_bpp)
+      return NULL;
+   if (!texture->lend)
+   {
+      if (!(texture->lend = (d3d11_texture_lend_t*)calloc(1,
+                  sizeof(*texture->lend))))
+         return NULL;
+      texture->lend->context = d3d11->context;
+      d3d11->context->lpVtbl->AddRef(d3d11->context);
+   }
+   lend = texture->lend;
+   if (!lend->staging[slot])
+   {
+      D3D11_TEXTURE2D_DESC desc = texture->desc;
+      desc.BindFlags = desc.MiscFlags = 0;
+      desc.Usage = D3D11_USAGE_STAGING;
+      /* Surface replacement may read a loan before retiring it. */
+      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+      d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &desc, NULL,
+            &lend->staging[slot]);
+      if (!lend->staging[slot])
+         return NULL;
+   }
+   if (     !d3d11_texture_lend_map(lend, slot) || lend->failed & (1u << slot)
+         || lend->mapped[slot].RowPitch < pitch
+         || (!out_pitch && lend->mapped[slot].RowPitch != pitch))
+      return NULL;
+   if (out_pitch)
+      *out_pitch = lend->mapped[slot].RowPitch;
+   return lend->mapped[slot].pData;
+}
+
+static bool d3d11_gfx_texture_lend_ready(void *data, uintptr_t id, unsigned slot)
+{
+   d3d11_texture_t *texture = (d3d11_texture_t*)id;
+   (void)data;
+   if (!texture || !texture->lend || slot >= 2
+         || !texture->lend->staging[slot])
+      return true;
+   return d3d11_texture_lend_map(texture->lend, slot);
+}
+
 /* Same-size contents into a texture d3d11_gfx_load_texture made: the
  * staging texture it kept is mapped and copied into the resource, as
  * for the first upload. Immediate-context work, so the video thread's
@@ -9165,6 +9269,7 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    D3D11_BOX box;
    D3D11DeviceContext ctx   = d3d11->context;
    d3d11_texture_t *texture = (d3d11_texture_t*)handle;
+   D3D11Resource upload;
    HRESULT hr;
 
    if (d3d11 && image->planar)
@@ -9179,6 +9284,24 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (texture->lend)
+   {
+      unsigned slot;
+      for (slot = 0; slot < 2; slot++)
+         if (image->pixels && image->pixels == texture->lend->mapped[slot].pData)
+         {
+            if (!(texture->lend->valid & (1u << slot)))
+               return VIDEO_TEXTURE_UPDATE_DROPPED;
+            if (image->pix10 || (image->fp16 ? 8u : 4u) != texture->lend_bpp
+                  || (!image->fp16 && image->supports_rgba))
+               return VIDEO_TEXTURE_UPDATE_REFUSED;
+            upload = (D3D11Resource)texture->lend->staging[slot];
+            ctx->lpVtbl->Unmap(ctx, upload, 0);
+            texture->lend->valid &= ~(1u << slot);
+            texture->lend->mapped[slot].pData = NULL;
+            goto upload;
+         }
+   }
    if (!texture->staging)
       d3d11_init_staging(d3d11->device, texture);
    if (!texture->staging)
@@ -9201,7 +9324,9 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
          : DXGI_FORMAT_B8G8R8A8_UNORM, 0,
          image->pixels, texture->desc.Format, mapped.RowPitch, mapped.pData);
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
+   upload = (D3D11Resource)texture->staging;
 
+upload:
    box.left   = 0;
    box.top    = 0;
    box.front  = 0;
@@ -9209,7 +9334,7 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    box.bottom = image->height;
    box.back   = 1;
    ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)texture->handle,
-         0, 0, 0, 0, (D3D11Resource)texture->staging, 0, &box);
+         0, 0, 0, 0, upload, 0, &box);
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
       ctx->lpVtbl->GenerateMips(ctx, texture->view);
    return VIDEO_TEXTURE_UPDATE_DONE;
@@ -9709,8 +9834,8 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* hw_ring_framebuffer */
    d3d11_gfx_update_texture,
    d3d11_get_swap_interval_cap,
-   NULL, /* texture_lend */
-   NULL, /* texture_lend_ready */
+   d3d11_gfx_texture_lend,
+   d3d11_gfx_texture_lend_ready,
    NULL, /* get_last_present_wait */
    d3d11_set_view_count,
    NULL, /* hw_context_destroying */
@@ -9728,10 +9853,14 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* get_last_present_sync */
    NULL, /* record_read */
 #ifdef D3D11_FRAME_IMPORT
-   d3d11_import_movie_frame
+   d3d11_import_movie_frame,
 #else
-   NULL /* import_movie_frame */
+   NULL, /* import_movie_frame */
 #endif
+   NULL, /* get_menu_framebuffer */
+   NULL, /* menu_mem_alloc */
+   0, /* menu_mem_pitch_align */
+   true /* texture_lend_per_write */
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

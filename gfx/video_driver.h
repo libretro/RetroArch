@@ -1204,7 +1204,9 @@ typedef struct video_poke_interface
     * texture_lend hands out slot @slot of texture @id's upload memory,
     * mapped and writable, when its rows lie the @pitch bytes apart the
     * caller writes them at; NULL, with nothing lent, otherwise. The
-    * memory is the texture's until it is unloaded. Non-NULL @out_pitch
+    * memory is the texture's until it is unloaded. With
+    * texture_lend_per_write it expires on update: readiness then a new
+    * texture_lend call acquires its replacement. Non-NULL @out_pitch
     * permits wider rows and receives their actual pitch; NULL requires
     * an exact match. update_texture given a texture_image whose pixels
     * are a lent slot uploads from there; with any slot lent, an update
@@ -1327,6 +1329,8 @@ typedef struct video_poke_interface
     * Optional, requires both frame-memory lifetime callbacks. */
    void *(*menu_mem_alloc)(void *data, size_t size, uintptr_t *id);
    unsigned menu_mem_pitch_align;
+   /* Lent pointers expire on update; acquire fresh pointer/pitch once ready. */
+   bool texture_lend_per_write;
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2438,6 +2442,8 @@ enum video_texture_update video_driver_texture_update(uintptr_t id,
  * Callers that stream (gfx_surface) decide between an update and a
  * replacement load on this, once per surface rather than per frame. */
 bool video_driver_texture_can_update(void);
+
+bool video_driver_texture_lend_needs_refresh(void);
 
 /* texture_lend / texture_lend_ready of the active driver; NULL and
  * true under the thread wrapper, whose lends come back with an update

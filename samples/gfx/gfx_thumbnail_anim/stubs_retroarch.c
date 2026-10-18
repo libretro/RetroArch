@@ -461,3 +461,12 @@ void gt_lend_reset(void)
       gt_grave_buf[k] = NULL;
    }
 }
+
+bool video_driver_texture_lend_needs_refresh(void) { return false; }
+bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
+{
+   (void)idx;
+   (void)mem;
+   (void)pitch;
+   return false;
+}

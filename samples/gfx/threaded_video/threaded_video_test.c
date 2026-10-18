@@ -6198,9 +6198,22 @@ static void surf_release_cb(void *user, gfx_surface_t *s, unsigned slot)
 
 static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
 {
-   unsigned i, n = VIDEO_SCALE_AREA(s->dims);
-   for (i = 0; i < n; i++)
-      s->slots[slot][i] = 0xff000000u | ((i * 7u + seed * 31u) & 0xffffffu);
+   unsigned x, y, tries;
+   unsigned w = VIDEO_SCALE_W(s->dims), h = VIDEO_SCALE_H(s->dims);
+   uint32_t *pixels;
+   for (tries = 0; tries < 16 && !gfx_surface_slot_writable(s, slot); tries++)
+      run_frames(1);
+   CHECK(gfx_surface_slot_writable(s, slot), "surface fill: slot never writable");
+   if (!gfx_surface_slot_writable(s, slot))
+      return;
+   pixels = gfx_surface_slot_begin(s, slot);
+   for (y = 0; y < h; y++)
+   {
+      uint32_t *row = (uint32_t*)((uint8_t*)pixels + (size_t)y * s->pitch[slot]);
+      for (x = 0; x < w; x++)
+         row[x] = 0xff000000u | (((y * w + x) * 7u + seed * 31u) & 0xffffffu);
+   }
+   gfx_surface_slot_end(s, slot);
 }
 
 /* A texture back end for the null driver, which has none at all. Up to
@@ -7078,6 +7091,7 @@ static void lane_surface_lend(void)
 #ifdef HAVE_GL_TEXTURE_LEND
                     || !strcmp(drv, "gl")     || !strcmp(drv, "glcore")
 #endif
+                    || !strcmp(drv, "d3d11")
                     || !strcmp(drv, "metal")))
       {
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);

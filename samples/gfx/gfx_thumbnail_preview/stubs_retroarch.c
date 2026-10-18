@@ -435,3 +435,12 @@ bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
    (void)id; (void)slot;
    return true;
 }
+
+bool video_driver_texture_lend_needs_refresh(void) { return false; }
+bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
+{
+   (void)idx;
+   (void)mem;
+   (void)pitch;
+   return false;
+}

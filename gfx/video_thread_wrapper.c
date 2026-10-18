@@ -1754,6 +1754,8 @@ static void video_thread_lend_mark(thread_video_t *thr, uintptr_t id,
    if (i < 0 || retro_atomic_load_relaxed_int(&thr->lend[i].busy))
       return;
    retro_atomic_store_release_int(&thr->lend[i].busy, 1);
+   if (thr->lend[i].refresh)
+      thr->lend[i].mem = NULL;
    thr->lend_busy++;
 }
 
@@ -1765,6 +1767,7 @@ static void video_thread_lend_slots(thread_video_t *thr,
 {
    size_t pitch = (size_t)img->width * (img->fp16 ? 8 : 4);
    unsigned slot;
+   n->lend_refresh = 0;
    for (slot = 0; slot < 2; slot++)
    {
       int i;
@@ -1785,6 +1788,8 @@ static void video_thread_lend_slots(thread_video_t *thr,
          n->lent_mem[slot] = thr->lend[i].mem;
          n->lent_pitch[slot] = thr->lend[i].pitch;
          n->lent_idx[slot] = (int8_t)i;
+         if (thr->lend[i].refresh)
+            n->lend_refresh |= (uint8_t)(1u << slot);
          continue;
       }
       for (i = 0; i < VIDEO_THREAD_LEND_MAX && thr->lend[i].used; i++) ;
@@ -1794,13 +1799,18 @@ static void video_thread_lend_slots(thread_video_t *thr,
          continue;
       thr->lend[i].mem  = mem;
       thr->lend[i].pitch = actual;
+      thr->lend[i].row_pitch = pitch;
       thr->lend[i].id   = n->handle;
       thr->lend[i].slot = slot;
       thr->lend[i].used = true;
+      thr->lend[i].refresh = thr->poke->texture_lend_per_write;
+      thr->lend[i].padded = n->lend_padded != 0;
       retro_atomic_store_relaxed_int(&thr->lend[i].busy, 0);
       n->lent_mem[slot] = mem;
       n->lent_pitch[slot] = actual;
       n->lent_idx[slot] = (int8_t)i;
+      if (thr->lend[i].refresh)
+         n->lend_refresh |= (uint8_t)(1u << slot);
    }
 }
 
@@ -1817,6 +1827,16 @@ static void video_thread_lend_poll(thread_video_t *thr)
                   || thr->poke->texture_lend_ready(thr->driver_data,
                      thr->lend[i].id, thr->lend[i].slot)))
       {
+         if (thr->lend[i].refresh)
+         {
+            size_t pitch = thr->lend[i].row_pitch;
+            thr->lend[i].mem = thr->poke && thr->poke->texture_lend
+               ? thr->poke->texture_lend(thr->driver_data,
+                     thr->lend[i].id, thr->lend[i].slot,
+                     thr->lend[i].row_pitch,
+                     thr->lend[i].padded ? &pitch : NULL) : NULL;
+            thr->lend[i].pitch = pitch;
+         }
          retro_atomic_store_release_int(&thr->lend[i].busy, 0);
          thr->lend_busy--;
       }
@@ -2004,6 +2024,20 @@ bool video_thread_lend_ready(int idx)
          || !(thr = (thread_video_t*)video_st->data))
       return true;
    return !retro_atomic_load_acquire_int(&thr->lend[idx].busy);
+}
+
+bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (     idx < 0 || idx >= VIDEO_THREAD_LEND_MAX || !mem || !pitch
+         || !video_st->thread_wrapper_active
+         || !(thr = (thread_video_t*)video_st->data)
+         || retro_atomic_load_acquire_int(&thr->lend[idx].busy))
+      return false;
+   *mem = thr->lend[idx].mem;
+   *pitch = thr->lend[idx].pitch;
+   return true;
 }
 
 bool video_thread_texture_can_update(void)

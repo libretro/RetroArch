@@ -19,11 +19,19 @@
 typedef ID3D11DeviceContext *D3D11DeviceContext;
 typedef ID3D11Resource *D3D11Resource;
 typedef struct {
+   D3D11DeviceContext context;
+   ID3D11Texture2D * staging[2];
+   D3D11_MAPPED_SUBRESOURCE mapped[2];
+   unsigned valid, failed;
+} d3d11_texture_lend_t;
+typedef struct {
    ID3D11Texture2D *handle, *staging;
    ID3D11ShaderResourceView *view;
    ID3D11RenderTargetView *rt_view;
    void *upload_data;
    size_t upload_size;
+   d3d11_texture_lend_t *lend;
+   unsigned lend_bpp;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 #include "copy.inc"

@@ -297,6 +297,8 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
  * marshals each call itself. */
 /* Every slot back on the surface's own memory, before the texture
  * that owns the lent memory is replaced or unloaded. */
+static bool gfx_surface_lend_ready(gfx_surface_t *s, unsigned dslot);
+
 static void gfx_surface_unlend(gfx_surface_t *s, bool preserve)
 {
    unsigned i;
@@ -309,15 +311,20 @@ static void gfx_surface_unlend(gfx_surface_t *s, bool preserve)
             && !(s->writing & (1u << i)))
       {
          unsigned y;
-         for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
-            memcpy((uint8_t*)s->own_slots[i] + (size_t)y * row,
-                  (const uint8_t*)s->slots[i] + (size_t)y * s->pitch[i], row);
+         unsigned dslot = s->num_slots == 1 ? s->lent_cur : i;
+         if ((!(s->lend_refresh & (1u << dslot))
+                  || gfx_surface_lend_ready(s, dslot))
+               && s->slots[i] != s->own_slots[i])
+            for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
+               memcpy((uint8_t*)s->own_slots[i] + (size_t)y * row,
+                     (const uint8_t*)s->slots[i] + (size_t)y * s->pitch[i], row);
       }
       s->slots[i] = s->own_slots[i];
       s->pitch[i] = row;
    }
    s->lent_spare  = NULL;
    s->lent        = 0;
+   s->lend_refresh = 0;
    s->lent_cur    = 0;
    s->lend_rec[0] = 0;
    s->lend_rec[1] = 0;
@@ -325,8 +332,54 @@ static void gfx_surface_unlend(gfx_surface_t *s, bool preserve)
 
 /* Whether lent driver slot @dslot may be written: the wrapper's record
  * says under threaded video, the driver under direct */
-static bool gfx_surface_lend_ready(const gfx_surface_t *s, unsigned dslot)
+static bool gfx_surface_lend_ready(gfx_surface_t *s, unsigned dslot)
 {
+   if (s->lend_refresh & (1u << dslot))
+   {
+      void *mem;
+      size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+      size_t pitch = row;
+#ifdef HAVE_THREADS
+      if (s->lend_rec[dslot])
+      {
+         if (!video_thread_lend_get((int)s->lend_rec[dslot] - 1, &mem, &pitch))
+            return false;
+      }
+      else
+#endif
+      {
+         if (!video_driver_texture_lend_ready(s->handle, dslot))
+            return false;
+         mem = video_driver_texture_lend(s->handle, dslot, row,
+               s->padded ? &pitch : NULL);
+      }
+      if (!mem || pitch < row || (!s->padded && pitch != row))
+      {
+         if (s->num_slots == 1)
+            gfx_surface_unlend(s, false);
+         else
+         {
+            s->slots[dslot] = s->own_slots[dslot];
+            s->pitch[dslot] = row;
+            s->lent &= (uint8_t)~(1u << dslot);
+            s->lend_refresh &= (uint8_t)~(1u << dslot);
+            s->lend_rec[dslot] = 0;
+         }
+         return true;
+      }
+      if (s->num_slots > 1 || dslot == s->lent_cur)
+      {
+         unsigned slot = s->num_slots == 1 ? 0 : dslot;
+         s->slots[slot] = (uint32_t*)mem;
+         s->pitch[slot] = pitch;
+      }
+      else
+      {
+         s->lent_spare = (uint32_t*)mem;
+         s->lent_spare_pitch = pitch;
+      }
+      return true;
+   }
 #ifdef HAVE_THREADS
    if (s->lend_rec[dslot])
       return video_thread_lend_ready((int)s->lend_rec[dslot] - 1);
@@ -362,6 +415,8 @@ static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
          s->slots[slot] = (uint32_t*)mem;
          s->pitch[slot] = actual;
          s->lent       |= 1u << slot;
+         if (video_driver_texture_lend_needs_refresh())
+            s->lend_refresh |= (uint8_t)(1u << slot);
       }
       return;
    }
@@ -376,6 +431,7 @@ static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
       s->lent_spare = (uint32_t*)spare;
       s->lent       = 3;
       s->lent_cur   = 0;
+      s->lend_refresh = video_driver_texture_lend_needs_refresh() ? 3 : 0;
    }
 }
 
@@ -444,6 +500,7 @@ static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
          s->slots[slot]       = (uint32_t*)n->lent_mem[slot];
          s->pitch[slot]       = n->lent_pitch[slot];
          s->lent             |= (uint8_t)(1u << slot);
+         s->lend_refresh     |= (uint8_t)(n->lend_refresh & (1u << slot));
          s->lend_rec[slot]    = (uint8_t)(n->lent_idx[slot] + 1);
       }
       return;
@@ -457,6 +514,7 @@ static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
       s->lent_spare  = (uint32_t*)n->lent_mem[1];
       s->lent        = 3;
       s->lent_cur    = 0;
+      s->lend_refresh = n->lend_refresh;
       s->lend_rec[0] = (uint8_t)(n->lent_idx[0] + 1);
       s->lend_rec[1] = (uint8_t)(n->lent_idx[1] + 1);
    }
@@ -615,6 +673,7 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
        * the same-numbered driver slot for a surface of two, both for a
        * surface of one, until they are lent */
       s->node.lend        = 0;
+      s->node.lend_refresh = 0;
       s->node.lend_padded = s->padded;
       s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
       s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
@@ -803,6 +862,11 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
       return r;
    }
 
+   if (s->lend_refresh && !gfx_surface_slot_writable(s, slot))
+   {
+      gfx_surface_count(GFX_SURFACE_SUBMIT_BUSY);
+      return GFX_SURFACE_SUBMIT_BUSY;
+   }
    s->inflight_slot = slot;
    r = gfx_surface_prepare(s, s->slots[slot], s->pixfmt, rgba, true, &fmt)
       ? gfx_surface_submit_img(s, slot, fmt)
@@ -1440,12 +1504,17 @@ bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
    size_t pitch;
    if (!s || slot >= s->num_slots || !(s->lent & (1u << slot)))
       return true;
+   if (s->lend_refresh && ((s->writing & (1u << slot))
+            || (s->inflight && s->inflight_slot == slot)))
+      return false;
    if (s->num_slots >= 2)
       return gfx_surface_lend_ready(s, slot);
    if (gfx_surface_lend_ready(s, s->lent_cur))
       return true;
    if (!gfx_surface_lend_ready(s, s->lent_cur ^ 1u))
       return false;
+   if (!s->lent)
+      return true;
    /* The other borrowed buffer is free: write that one next. */
    other         = s->lent_spare;
    s->lent_spare = s->slots[0];

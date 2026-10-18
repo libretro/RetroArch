@@ -613,6 +613,9 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/vulkan_menu.py
           CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/menu_framebuffer.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/lend_refresh.py
+          CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' python3 samples/gfx/threaded_video/lend_refresh.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/lend_refresh.py
 
       - name: D3D Slang HDR and SwapCount bindings (ASan/UBSan)
         shell: bash
@@ -1385,6 +1388,9 @@ jobs:
             CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/upload.py
             CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/upload.py
             python3 samples/gfx/d3d_failure_paths/gpu.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/d3d_failure_paths/lend.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/d3d_failure_paths/lend.py
+          python3 samples/gfx/d3d_failure_paths/lend_gpu.py
 
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |
@@ -1928,6 +1934,8 @@ jobs:
           make clean TARGET=gfx_surface_still_test.exe
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 two_frame.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 two_frame.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 remap.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 remap.py
 
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash

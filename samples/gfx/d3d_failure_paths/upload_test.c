@@ -27,9 +27,17 @@ typedef struct { void *pData; unsigned RowPitch; } D3D11_MAPPED_SUBRESOURCE;
 typedef struct { unsigned left,top,front,right,bottom,back; } D3D11_BOX;
 typedef struct context *D3D11DeviceContext;
 typedef struct {
+   D3D11DeviceContext context;
+   void * staging[2];
+   D3D11_MAPPED_SUBRESOURCE mapped[2];
+   unsigned valid, failed;
+} d3d11_texture_lend_t;
+typedef struct {
    void *handle, *staging, *view, *rt_view, *sampler;
    void *upload_data;
    size_t upload_size;
+   d3d11_texture_lend_t *lend;
+   unsigned lend_bpp;
    struct { unsigned Width,Height,MiscFlags; DXGI_FORMAT Format; } desc;
 } d3d11_texture_t;
 enum texture_filter_type { TEXTURE_FILTER_MIPMAP_LINEAR, TEXTURE_FILTER_LINEAR,
@@ -46,7 +54,7 @@ typedef struct {
    void *samplers[2][1];
    d3d11_planar_t *planar;
 } d3d11_video_t;
-struct texture_image { unsigned width,height; uint32_t *pixels; bool pix10,fp16,planar; };
+struct texture_image { unsigned width,height; uint32_t *pixels; bool pix10,fp16,planar,supports_rgba; void *compressed; };
 struct methods {
    HRESULT (*Map)(D3D11DeviceContext,void*,unsigned,unsigned,unsigned,D3D11_MAPPED_SUBRESOURCE*);
    void (*UpdateSubresource)(D3D11DeviceContext,void*,unsigned,const D3D11_BOX*,const void*,unsigned,unsigned);

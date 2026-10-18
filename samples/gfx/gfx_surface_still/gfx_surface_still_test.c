@@ -1025,3 +1025,12 @@ int main(void)
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;
 }
+
+bool video_driver_texture_lend_needs_refresh(void) { return false; }
+bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
+{
+   (void)idx;
+   (void)mem;
+   (void)pitch;
+   return false;
+}

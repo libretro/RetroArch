@@ -5087,6 +5087,12 @@ bool video_driver_texture_can_update(void)
    return poke && poke->update_texture;
 }
 
+bool video_driver_texture_lend_needs_refresh(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->poke && video_st->poke->texture_lend_per_write;
+}
+
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch, size_t *out_pitch)
 {
