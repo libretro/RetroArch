@@ -149,12 +149,17 @@ void create_gl_context(HWND hwnd, bool *quit)
    stub_create_steps |= 1;
 }
 
+/* As the real one answers: no swapchain is made for a window with no
+ * client area, and the surface is refused with it. */
+unsigned stub_vk_surface_dims;
+
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type, void *display, void *surface,
       unsigned dims, int8_t swap_interval)
 {
-   stub_create_steps |= 2;
-   return true;
+   stub_create_steps    |= 2;
+   stub_vk_surface_dims  = dims;
+   return VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims);
 }
 
 /* ---- the Win32 UI ---- */

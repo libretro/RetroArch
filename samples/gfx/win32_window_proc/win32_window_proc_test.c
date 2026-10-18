@@ -564,6 +564,70 @@ int main(int argc, char **argv)
             during ? "yes" : "no");
    }
 
+   /* A window left up while minimised, taken by the next driver of its
+    * family - a device lost or a driver restarted with the window down
+    * on the taskbar. A minimised window has no client area, and the
+    * driver makes its surface for the client area it finds when it is
+    * handed the window: the window is put back up first, as a new
+    * window would be, and the surface is made for a window that has a
+    * size. */
+   {
+      WNDCLASSEX wndclass;
+      HWND kept = NULL, taken = NULL;
+      bool was_kept = false, mode_set = false, iconic = false;
+      unsigned dims = 0;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         kept = win32_get_window();
+         pump();
+         ShowWindow(kept, SW_MINIMIZE);
+         pump();
+         was_kept = win32_window_keep() && IsIconic(kept);
+         pump();
+
+         win32_window_reset();
+         win32_monitor_init();
+         stub_vk_surface_dims = 0;
+         memset(&wndclass, 0, sizeof(wndclass));
+         wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+         if (win32_window_init(&wndclass, true, NULL))
+            mode_set = win32_set_video_mode(NULL,
+                  VIDEO_SCALE_PACK(640, 480), false);
+         taken  = win32_get_window();
+         dims   = stub_vk_surface_dims;
+         iconic = taken && IsIconic(taken);
+         pump();
+
+         win32_window_release_kept();
+         if (taken)
+         {
+            win32_monitor_from_window();
+            win32_destroy_window();
+         }
+         pump();
+      }
+
+      trace_on = true;
+      trace("== a minimised window left up and taken\n");
+      trace(" kept minimised %s, taken %s, mode set %s, still minimised %s,"
+            " surface has a size %s\n",
+            was_kept ? "yes" : "no",
+            (kept && taken == kept) ? "yes" : "no",
+            mode_set ? "yes" : "no", iconic ? "yes" : "no",
+            (VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)) ? "yes" : "no");
+   }
+
    /* A window carries the way it was presented on. A Vulkan or OpenGL
     * window that had a DXGI swap chain is not taken by a driver of the
     * same family presenting natively - DXGI presentation turned off,

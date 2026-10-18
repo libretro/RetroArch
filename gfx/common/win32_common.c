@@ -2020,6 +2020,15 @@ static bool win32_window_create(void *data, unsigned style,
       win32_wnd_taken = true;
       free(title_local);
 
+      /* A window minimised has no client area, and the driver makes
+       * its surface for the one it finds below (a Vulkan swapchain is
+       * refused at 0x0): it is put back up first, as a new window
+       * would be shown, and before it is restyled - a style without
+       * WS_MINIMIZE on a window still minimised leaves the two out of
+       * step. */
+      if (IsIconic(hwnd))
+         ShowWindow(hwnd, SW_RESTORE);
+
       /* win32_set_window() gives a windowed window its menu again:
        * the same one, which is kept in the meantime */
       if (menu)

@@ -2702,6 +2702,8 @@
 == a window left up and not taken
  kept yes, next made yes, kept gone yes
  focus messages from the window going down reached the input driver: no
+== a minimised window left up and taken
+ kept minimised yes, taken yes, mode set yes, still minimised no, surface has a size yes
 == a window kept across a change of presentation
  dxgi window kept yes, native driver made its own yes, dxgi window gone yes
  native window kept yes, next native driver took it yes
