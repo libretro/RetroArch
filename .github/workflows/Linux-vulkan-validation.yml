@@ -1072,6 +1072,9 @@ jobs:
           make -j$(getconf _NPROCESSORS_ONLN)
           make -C samples/cores/video_views
 
+      - name: Pointer helper connection regression
+        run: python3 samples/cores/video_views/e2e/pointer_test.py
+
       - name: Views on SDL3, end to end
         shell: bash
         run: |

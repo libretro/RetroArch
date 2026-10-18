@@ -724,8 +724,9 @@ def release_display(display):
 def xvfb_start(env):
     """An Xvfb of the window's size: its process and DISPLAY."""
     n = free_display()
+    # A client disconnect must not reset the server during startup.
     p = subprocess.Popen(['Xvfb', ':%d' % n, '-screen', '0',
-                          '%dx%dx24' % (W, H), '-nolisten', 'tcp'],
+                          '%dx%dx24' % (W, H), '-nolisten', 'tcp', '-noreset'],
                          stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, env=env,
                          start_new_session=True)
@@ -1351,8 +1352,14 @@ def pointer_helper(d):
     x11.XWarpPointer.argtypes = [ctypes.c_void_p, ctypes.c_ulong,
                                  ctypes.c_ulong] + [ctypes.c_int] * 6
     x11.XSync.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    deadline = time.monotonic() + 5
     dpy = x11.XOpenDisplay(None)
+    while not dpy and time.monotonic() < deadline:
+        time.sleep(0.05)
+        dpy = x11.XOpenDisplay(None)
     if not dpy:
+        print('[e2e] pointer helper cannot open DISPLAY=%s'
+              % os.environ['DISPLAY'], flush=True)
         return 1
     x11.XDefaultRootWindow.restype = ctypes.c_ulong
     x11.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
