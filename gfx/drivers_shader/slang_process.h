@@ -92,10 +92,12 @@ enum slang_semantic
    SLANG_SEMANTIC_MAX_NITS_ALIAS       = 28,
    /* float, active HDR output as 0 or 1 */
    SLANG_SEMANTIC_ENABLE_HDR          = 29,
-   SLANG_NUM_BASE_SEMANTICS        = 30,
+   /* float, minimum luminance in nits; zero when unknown */
+   SLANG_SEMANTIC_MIN_NITS            = 30,
+   SLANG_NUM_BASE_SEMANTICS        = 31,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 30,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 31,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

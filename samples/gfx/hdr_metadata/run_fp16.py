@@ -18,6 +18,7 @@ parser.add_argument("--resize", action="store_true")
 parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
+parser.add_argument("--min-nits", choices=("builtin", "parameter"))
 parser.add_argument("--enable-hdr", choices=("builtin", "parameter"))
 parser.add_argument("--peak-uniforms", choices=("builtin", "parameter"))
 parser.add_argument("--peak-nits", type=float, default=600.0)
@@ -34,7 +35,7 @@ parser.add_argument("--reference", action="store_true", help="declare ownership 
 parser.add_argument("--expect-rejection", action="store_true")
 parser.add_argument("--source-sdr", action="store_true", help="use the XRGB8888 metadata fixture")
 args = parser.parse_args()
-if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr) and not args.hdr_uniforms:
+if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr or args.min_nits) and not args.hdr_uniforms:
     parser.error("HDR alias checks require --hdr-uniforms")
 if args.overlay and args.preset_hdr_mode is None:
     args.stock = True
@@ -82,6 +83,8 @@ if args.no_format:
     shader = shader.replace("#pragma format R16G16B16A16_SFLOAT\n", "")
 if args.hdr_uniforms:
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if args.min_nits:
+        members += " float MinNits;"
     if args.enable_hdr:
         members += " float EnableHDR;"
     if args.paper_white_alias:
@@ -111,6 +114,11 @@ if args.hdr_uniforms:
         if args.enable_hdr == "parameter":
             shader = shader.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         shader = shader.replace("FragColor=", f"ok = ok && {prefix}EnableHDR == {enabled};\n FragColor=")
+    if args.min_nits:
+        minimum = 0.125 if args.min_nits == "parameter" else 0.0
+        if args.min_nits == "parameter":
+            shader = shader.replace("#version 450", '#version 450\n#pragma parameter MinNits "Local minimum" 0.125 0.0 1.0 0.125')
+        shader = shader.replace("FragColor=", f"ok = ok && {prefix}MinNits == {minimum};\n FragColor=")
 (w/'check.slang').write_text(shader, encoding='utf-8')
 preset = 'shaders = "1"\nshader0 = "check.slang"\n'
 if args.scaled:

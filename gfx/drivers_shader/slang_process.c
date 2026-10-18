@@ -99,7 +99,8 @@ static const char *semantic_uniform_names[] = {
    "PaperWhiteNits",
    "PeakNits",
    "MaxNits",
-   "EnableHDR"
+   "EnableHDR",
+   "MinNits"
 };
 
 static bool slang_reflect(
@@ -476,6 +477,7 @@ static bool slang_process_reflection(
       const semantics_map_t* map,
       pass_semantics_t*      out)
 {
+   static const float unknown_min_nits = 0.0f;
    int semantic;
    unsigned i;
    bool ret                    = false;
@@ -580,6 +582,8 @@ static bool slang_process_reflection(
 
          uniform.data  = map->uniforms[semantic];
          uniform.param = NULL;
+         if (_semantic == SLANG_SEMANTIC_MIN_NITS && !uniform.data)
+            uniform.data = (void*)&unknown_min_nits;
          /* A backend that has not wired a source for this semantic leaves
           * the slot NULL; the shader then reads its zero-initialised
           * default rather than the upload copying from NULL. */
@@ -1933,6 +1937,7 @@ static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
       case SLANG_SEMANTIC_PEAK_NITS:
       case SLANG_SEMANTIC_MAX_NITS_ALIAS:
       case SLANG_SEMANTIC_ENABLE_HDR:
+      case SLANG_SEMANTIC_MIN_NITS:
          return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
             &&  spvc_type_get_vector_size(type)  == 1
             &&  spvc_type_get_columns(type)  == 1;

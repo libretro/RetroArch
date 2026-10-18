@@ -4082,6 +4082,7 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
                       pass->common->core_aspect_rot);
 
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_MIN_NITS, 0.0f);
 #ifdef VULKAN_HDR_SWAPCHAIN
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
                       pass->common->hdr_mode);

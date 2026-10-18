@@ -12,6 +12,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--retroarch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="glcore")
+p.add_argument("--min-nits", choices=("builtin", "parameter"))
 p.add_argument("--enable-hdr", choices=("builtin", "parameter"))
 p.add_argument("--peak-uniforms", choices=("builtin", "parameter"))
 p.add_argument("--direct-spirv", action="store_true")
@@ -31,6 +32,8 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-o", str(core), "-lm"], check=True)
 for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if a.min_nits:
+        members += " float MinNits;"
     if a.enable_hdr:
         members += " float EnableHDR;"
     if a.paper_white_alias or a.paper_white_parameter:
@@ -79,6 +82,13 @@ void main() {
         if a.enable_hdr == "parameter":
             text = text.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         text = text.replace("FragColor=", f"ok=ok && {prefix}.EnableHDR=={enabled};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
+    if a.min_nits:
+        text = shader.read_text(encoding="utf-8")
+        minimum = 0.125 if a.min_nits == "parameter" else 0.0
+        if a.min_nits == "parameter":
+            text = text.replace("#version 450", '#version 450\n#pragma parameter MinNits "Local minimum" 0.125 0.0 1.0 0.125')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.MinNits=={minimum};\n FragColor=")
         shader.write_text(text, encoding="utf-8")
     preset = w / "check.slangp"
     preset.write_text('shaders = "1"\nshader0 = "check.slang"\n', encoding="utf-8")

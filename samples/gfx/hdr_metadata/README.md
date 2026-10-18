@@ -78,6 +78,11 @@ These bindings add no texture copies, readbacks or synchronization.
 EnableHDR is an optional scalar float: 1.0 for active HDR output, otherwise
 0.0, including refused HDR. An explicit pragma parameter keeps its value.
 Use --enable-hdr builtin or --enable-hdr parameter in either image runner.
+MinNits is an optional scalar float matching the unknown minimum in the
+metadata query: 0.0 on HDR and SDR output. It uses immutable fallback storage
+on D3D and Metal, and declared-only constant writes on GLCore and Vulkan.
+Explicit pragma parameters retain their value. Use --min-nits builtin or
+--min-nits parameter in either image runner. No panel minimum is inferred.
 D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
 SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
