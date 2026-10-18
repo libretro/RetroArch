@@ -6078,6 +6078,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hdr_paper_white_nits         = settings->floats.video_hdr_paper_white_nits;
    video_info->hdr_expand_gamut             = settings->uints.video_hdr_expand_gamut;
    video_info->hdr_display_peak             = (float)video_driver_display_peak_in_use();
+   video_info->hdr_max_nits                 = video_info->hdr_display_peak > 0.0f
+      ? video_info->hdr_display_peak : settings->floats.video_hdr_max_nits;
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    retro_atomic_store_release_int(&video_sdl_display_server_mode,
          (int)settings->uints.video_sdl_display_server);

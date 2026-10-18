@@ -18,6 +18,8 @@ parser.add_argument("--resize", action="store_true")
 parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
+parser.add_argument("--peak-uniforms", choices=("builtin", "parameter"))
+parser.add_argument("--peak-nits", type=float, default=600.0)
 parser.add_argument("--direct-spirv", action="store_true")
 parser.add_argument("--paper-white-alias", choices=("builtin", "parameter"), help="check PaperWhiteNits alongside BrightnessNits")
 parser.add_argument("--hdr-uniforms", choices=("ubo", "push"), help="check existing typed HDR uniforms")
@@ -31,8 +33,8 @@ parser.add_argument("--reference", action="store_true", help="declare ownership 
 parser.add_argument("--expect-rejection", action="store_true")
 parser.add_argument("--source-sdr", action="store_true", help="use the XRGB8888 metadata fixture")
 args = parser.parse_args()
-if args.paper_white_alias and not args.hdr_uniforms:
-    parser.error("--paper-white-alias requires --hdr-uniforms")
+if (args.paper_white_alias or args.peak_uniforms) and not args.hdr_uniforms:
+    parser.error("HDR alias checks require --hdr-uniforms")
 if args.overlay and args.preset_hdr_mode is None:
     args.stock = True
 if args.source_sdr:
@@ -83,6 +85,10 @@ if args.hdr_uniforms:
         members += " float PaperWhiteNits;"
         if args.paper_white_alias == "parameter":
             shader = shader.replace("#version 450", '#version 450\n#pragma parameter PaperWhiteNits "Local white" 37.0 0.0 1000.0 1.0')
+    if args.peak_uniforms:
+        members += " float PeakNits; float MaxNits;"
+        if args.peak_uniforms == "parameter":
+            shader = shader.replace("#version 450", '#version 450\n#pragma parameter PeakNits "Local peak" 37.0 0.0 2000.0 1.0\n#pragma parameter MaxNits "Local max" 49.0 0.0 2000.0 1.0')
     if args.hdr_uniforms == "ubo":
         shader = shader.replace("mat4 MVP;", "mat4 MVP; " + members)
         prefix = "global."
@@ -93,6 +99,10 @@ if args.hdr_uniforms:
     if args.paper_white_alias:
         expected = 37.0 if args.paper_white_alias == "parameter" else args.paper_white
         shader = shader.replace("FragColor=", f"ok = ok && abs({prefix}PaperWhiteNits - {expected}) < 0.01;\n FragColor=")
+    if args.peak_uniforms:
+        peak = 37.0 if args.peak_uniforms == "parameter" else args.peak_nits
+        maximum = 49.0 if args.peak_uniforms == "parameter" else args.peak_nits
+        shader = shader.replace("FragColor=", f"ok = ok && abs({prefix}PeakNits - {peak}) < 0.01 && abs({prefix}MaxNits - {maximum}) < 0.01;\n FragColor=")
 (w/'check.slang').write_text(shader, encoding='utf-8')
 preset = 'shaders = "1"\nshader0 = "check.slang"\n'
 if args.scaled:
@@ -121,7 +131,7 @@ video_threaded = "{threaded}"
 video_shader_deferred_loading = "{'true' if args.deferred else 'false'}"
 video_hdr_mode = "2"
 video_hdr_paper_white_nits = "{args.paper_white}"
-video_hdr_max_nits = "600"
+video_hdr_max_nits = "{args.peak_nits}"
 video_hdr_use_display_peak = "false"
 video_hdr_expand_gamut = "{args.expand_gamut}"
 video_shader_enable = "{'false' if args.stock else 'true'}"

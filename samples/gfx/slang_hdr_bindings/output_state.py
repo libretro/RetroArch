@@ -32,16 +32,17 @@ fixture = r'''
 #define DXGI_SWAPCHAIN_BIT_DEPTH_16 16
 #define DRIVER_FLAG 1
 typedef struct { unsigned hdr_mode, expand_gamut, subpixel_layout;
-   float paper_white_nits, scanlines, inverse_tonemap, hdr10; } pass_t;
+   float paper_white_nits, scanlines, inverse_tonemap, hdr10, peak_nits; } pass_t;
 typedef struct { unsigned flags, chain_bit_depth;
    struct { unsigned bit_depth; } chain;
    struct { pass_t ubo_values; } hdr; } DRIVER_video_t;
 HELPER
 static void update(DRIVER_video_t *DRIVER, pass_t *pass, unsigned requested)
 {
-   struct { unsigned hdr_mode; } info;
+   struct { unsigned hdr_mode; float hdr_max_nits; } info;
    const void *unused;
    info.hdr_mode = requested;
+   info.hdr_max_nits = 600.0f;
    unused = &info;
    (void)unused;
    (void)DRIVER;
@@ -71,6 +72,7 @@ int main(void)
       pass.hdr10 = 0.5f;
       update(&video, &pass, depth == 10 ? 2 : 1);
       CHECK(pass.hdr_mode == (depth == 10 ? 1u : 2u));
+      CHECK(pass.peak_nits == (DRIVER_hdr_output_mode(&video) ? 600.0f : 0.0f));
       CHECK(pass.paper_white_nits == 203.0f && pass.scanlines == 1.0f);
       CHECK(pass.expand_gamut == 2 && pass.subpixel_layout == 2);
       CHECK(pass.inverse_tonemap == 0.25f && pass.hdr10 == 0.5f);

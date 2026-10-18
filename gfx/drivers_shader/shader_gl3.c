@@ -835,6 +835,7 @@ struct gl3_common_resources
    gl3_buffer_locations quad_loc;
    unsigned hdr_mode;
    float paper_white_nits;
+   float peak_nits;
    unsigned expand_gamut;
 
    /* Frames may come inside a larger texture: passes are built to read
@@ -1693,6 +1694,8 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
    gl3_pass_reflect_parameter(pass, "HDRMode", &pass->reflection.semantics[SLANG_SEMANTIC_HDR]);
    gl3_pass_reflect_parameter(pass, "BrightnessNits", &pass->reflection.semantics[SLANG_SEMANTIC_PAPER_WHITE_NITS]);
    gl3_pass_reflect_parameter(pass, "PaperWhiteNits", &pass->reflection.semantics[SLANG_SEMANTIC_PAPER_WHITE_ALIAS]);
+   gl3_pass_reflect_parameter(pass, "PeakNits", &pass->reflection.semantics[SLANG_SEMANTIC_PEAK_NITS]);
+   gl3_pass_reflect_parameter(pass, "MaxNits", &pass->reflection.semantics[SLANG_SEMANTIC_MAX_NITS_ALIAS]);
    gl3_pass_reflect_parameter(pass, "ExpandGamut", &pass->reflection.semantics[SLANG_SEMANTIC_EXPAND_GAMUT]);
    gl3_pass_reflect_parameter(pass, "Gyroscope", &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
    gl3_pass_reflect_parameter(pass, "Accelerometer", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
@@ -2368,6 +2371,10 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                       pass->common->paper_white_nits);
    gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_ALIAS,
                       pass->common->paper_white_nits);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PEAK_NITS,
+                      pass->common->peak_nits);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_MAX_NITS_ALIAS,
+                      pass->common->peak_nits);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
                       pass->common->expand_gamut);
    /* Each sub-frame is its own present; CurrentSubFrame is 1-based. */
@@ -4414,10 +4421,11 @@ void gl3_filter_chain_set_frame_time_delta(
 
 void gl3_filter_chain_set_hdr_parameters(
       gl3_filter_chain_t *chain, unsigned mode,
-      float paper_white_nits, unsigned expand_gamut)
+      float paper_white_nits, unsigned expand_gamut, float peak_nits)
 {
    chain->common.hdr_mode         = mode;
    chain->common.paper_white_nits = paper_white_nits;
+   chain->common.peak_nits        = peak_nits;
    chain->common.expand_gamut     = expand_gamut;
 }
 

@@ -7506,7 +7506,8 @@ static bool gl3_frame(void *data, const void *frame,
          gl3_filter_chain_set_hdr_parameters(fc,
                gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0,
                gl->scrgb.active ? gl->scrgb.paper_white_nits : 0.0f,
-               gl->scrgb.active ? gl->scrgb.expand_gamut : 0);
+               gl->scrgb.active ? gl->scrgb.expand_gamut : 0,
+               gl->scrgb.active ? video_info->hdr_max_nits : 0.0f);
 
          {
             uint32_t rot          = gl->rotation_raw;

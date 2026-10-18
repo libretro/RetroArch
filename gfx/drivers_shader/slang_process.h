@@ -87,10 +87,13 @@ enum slang_semantic
    SLANG_SEMANTIC_ORIGINAL_TEXELS       = 25,
    /* float, PaperWhiteNits alias of BrightnessNits */
    SLANG_SEMANTIC_PAPER_WHITE_ALIAS    = 26,
-   SLANG_NUM_BASE_SEMANTICS        = 27,
+   /* float, effective HDR target luminance in nits */
+   SLANG_SEMANTIC_PEAK_NITS            = 27,
+   SLANG_SEMANTIC_MAX_NITS_ALIAS       = 28,
+   SLANG_NUM_BASE_SEMANTICS        = 29,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 27,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 29,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

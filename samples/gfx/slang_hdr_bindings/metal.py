@@ -33,7 +33,7 @@ getter = source[source.index("{", start) + 1:source.index("\n}", start)]
 start = source.index("- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10 emitsHDR16:(bool)emitsHDR16\n{")
 policy = source[source.index("{", start) + 1:source.index("\n}", start)]
 
-aliases = re.search(r"         semantics_map\.uniforms\[SLANG_SEMANTIC_PAPER_WHITE_ALIAS\] =.*?;", source, re.S).group()
+aliases = "\n".join(re.findall(r"         semantics_map\.uniforms\[SLANG_SEMANTIC_(?:PAPER_WHITE_ALIAS|PEAK_NITS|MAX_NITS_ALIAS)\] =.*?;", source, re.S))
 
 fixture = r'''
 #include <stdbool.h>
@@ -48,7 +48,7 @@ typedef float float_t;
 ENUM
 typedef struct { struct { float size_data[4]; } rt; FIELDS } pass_t;
 typedef struct { struct { float output_size[4]; } frame; pass_t pass[2]; } engine_t;
-struct values { float hdrPaperWhiteNits; unsigned hdrExpandGamut; };
+struct values { float hdrPaperWhiteNits; unsigned hdrExpandGamut; float hdrPeakNits; };
 typedef struct { float Scanlines; unsigned SubpixelLayout; float InverseTonemap; float HDR10; unsigned HDRMode; } HDRUniforms;
 static HDRUniforms conversion_policy(unsigned _hdrOutputMode, bool emitsHDR10, bool emitsHDR16)
 {
@@ -75,12 +75,13 @@ static unsigned publish_mode(unsigned mode, int wantEnable, const void *newCS)
 PUBLISH_CODE
    return _hdrActiveOutputMode;
 }
-static struct values latch_frame(float paper_white, unsigned gamut)
+static struct values latch_frame(float paper_white, unsigned gamut, float peak)
 {
    struct values _frameView = { 0 };
-   struct { float hdr_paper_white_nits; unsigned hdr_expand_gamut; } info;
+   struct { float hdr_paper_white_nits; unsigned hdr_expand_gamut; float hdr_max_nits; } info;
    info.hdr_paper_white_nits = paper_white;
    info.hdr_expand_gamut = gamut;
+   info.hdr_max_nits = peak;
    (void)info;
 #define video_info (&info)
 LATCH
@@ -91,6 +92,7 @@ static void update(engine_t *e, unsigned i, unsigned requested, struct values fr
 {
    struct { unsigned hdrOutputMode; } _context;
    float _hdrPaperWhiteNits = frame.hdrPaperWhiteNits;
+   float _hdrPeakNits = frame.hdrPeakNits;
    unsigned _hdrExpandGamut = frame.hdrExpandGamut;
    _context.hdrOutputMode = output_mode(requested);
    (void)hdr;
@@ -113,7 +115,7 @@ int main(void)
    const char *lo = (const char *)&_engine;
    const char *hi = lo + sizeof(_engine);
    unsigned i, mode, encoding;
-   struct values frame = latch_frame(203.0f, 2);
+   struct values frame = latch_frame(203.0f, 2, 600.0f);
    CHECK(publish_mode(2, 1, &view) == 2);
    CHECK(publish_mode(1, 1, &view) == 1);
    CHECK(publish_mode(2, 1, NULL) == 0);
@@ -128,6 +130,8 @@ BINDINGS
       }};
 ALIASES
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] == &_engine.pass[i].paper_white_nits);
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] == &_engine.pass[i].peak_nits);
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] == &_engine.pass[i].peak_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR] == &_engine.pass[i].hdr_mode);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS] == &_engine.pass[i].paper_white_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT] == &_engine.pass[i].expand_gamut);
@@ -143,6 +147,7 @@ ALIASES
          CHECK(output_mode(mode) == actual);
          update(&_engine, i, mode, frame, &hdr);
          CHECK(*(uint32_t*)semantics_map.uniforms[SLANG_SEMANTIC_HDR] == actual);
+         CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] == (actual ? 600.0f : 0.0f));
          CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS] == (actual ? 203.0f : 0.0f));
          CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_SCANLINES] == (actual ? 1.0f : 0.0f));
          CHECK(*(unsigned*)semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT] == (actual ? 4u : 0u));
@@ -178,6 +183,8 @@ ALIASES
 REBASE_CODE
          copy[0] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_HDR]);
          copy[1] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS]);
+         CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS]) == &view.engine.pass[i].peak_nits);
+         CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS]) == &view.engine.pass[i].peak_nits);
          CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS]) == copy[1]);
          copy[2] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT]);
          copy[3] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_SCANLINES]);
@@ -187,7 +194,7 @@ REBASE_CODE
 #undef METAL_REBASE
       }
       update(&_engine, i, 1, frame, &hdr);
-      update(&view.engine, i, 2, latch_frame(100.0f, 1), &other_hdr);
+      update(&view.engine, i, 2, latch_frame(100.0f, 1, 1000.0f), &other_hdr);
       CHECK(copy[5] == &view.engine.pass[i].inverse_tonemap);
       CHECK(copy[6] == &view.engine.pass[i].hdr10);
       CHECK(*(float*)copy[5] == (output_mode(2) ? 1.0f : 0.0f));
@@ -199,6 +206,8 @@ REBASE_CODE
       CHECK(*(unsigned*)copy[4] == (output_mode(2) ? 2u : 0u));
       CHECK(_engine.pass[i].scanlines == (output_mode(1) ? 1.0f : 0.0f));
       CHECK(_engine.pass[i].subpixel_layout == (output_mode(1) ? 4u : 0u));
+      CHECK(view.engine.pass[i].peak_nits == (output_mode(2) ? 1000.0f : 0.0f));
+      CHECK(_engine.pass[i].peak_nits == (output_mode(1) ? 600.0f : 0.0f));
       CHECK(copy[0] == &view.engine.pass[i].hdr_mode);
       CHECK(copy[1] == &view.engine.pass[i].paper_white_nits);
       CHECK(copy[2] == &view.engine.pass[i].expand_gamut);
