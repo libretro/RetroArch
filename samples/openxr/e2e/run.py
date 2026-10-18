@@ -3513,10 +3513,10 @@ def check_kept_retry(res):
         errors.append('controllers went %s, want live, released when the '
                       'session ended, live in the new one' % seq)
     # The laser's image is VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H (its
-    # dot, edit mode's outlines and the menu's handle bars); each start
-    # makes one, and each start here made a session.
+    # dot, edit mode's outlines, the menu's handle bars and the beam's
+    # strips); each start makes one, and each start here made a session.
     dots = [e for e in events(res, 'swapchain')
-            if (e['w'], e['h']) == (356, 128)]
+            if (e['w'], e['h']) == (CURSOR_W, CURSOR_H)]
     if len(dots) != 2:
         errors.append('%d laser dot swapchains, want 2 (one per start)'
                       % len(dots))
@@ -4083,10 +4083,29 @@ S0 = (0.0, 0.0, -1.8)
 S1 = (0.0, -0.992, -1.8)
 MENU_SPOT = (0.0, 0.0, -1.7)
 MENU_W, MENU_H = 1.6, 0.96
-# The laser's image: VIDEO_XR_OUTLINE_X(0 and 1), VIDEO_XR_HANDLE_X(0
-# and 1).
-OUTLINE_X = (33, 162)
-HANDLE_X = (291, 324)
+# The laser's image, laid out as gfx/video_xr.h lays it out: its dot,
+# edit mode's faint and bright outlines, the menu's faint and bright
+# handle bars, the beam's strips to the dot and into nothing.
+CURSOR_DIM = 32
+OUTLINE_DIM = 128
+HANDLE_COLS, HANDLE_ROWS = CURSOR_DIM, CURSOR_DIM
+BEAM_LEN, BEAM_ROWS = 128, 4
+OUTLINE_X = tuple(CURSOR_DIM + 1 + k * (OUTLINE_DIM + 1) for k in (0, 1))
+HANDLE_X = tuple(OUTLINE_X[0] + 2 * (OUTLINE_DIM + 1) + k * (HANDLE_COLS + 1)
+                 for k in (0, 1))
+BEAM_X = tuple(HANDLE_X[0] + 2 * (HANDLE_COLS + 1) + k * (BEAM_LEN + 1)
+               for k in (0, 1))
+CURSOR_W = BEAM_X[1] + BEAM_LEN
+CURSOR_H = OUTLINE_DIM
+# The beam: VIDEO_XR_BEAM_WIDTH, _REACH and _LEVEL; AIM_GUN's and
+# AIM_MISS's rays; the head where the beams' cases put it.
+BEAM_WIDTH = 0.004
+BEAM_REACH = 1.5
+BEAM_LEVEL = 160
+GUN_FROM = (0.2, -0.4, -0.3)
+GUN_AT = (-0.4, 0.24, -1.8)
+MISS_AT = (3.0, 0.0, -1.8)
+HEAD_AT_ORIGIN = 'head 0 0 0 0'
 EDIT_POS = 0.012
 
 
@@ -4198,6 +4217,71 @@ def handles(frame, lit=None):
     xs = HANDLE_X if lit is None else (HANDLE_X[lit],)
     return [q for q in quads(frame)
             if q['flags'] & BLEND and q['rect'][0] in xs]
+
+
+def beams(frame, miss=None):
+    """The laser's beams; miss: only those to a dot (0) or into nothing
+    (1)."""
+    xs = BEAM_X if miss is None else (BEAM_X[miss],)
+    return [q for q in quads(frame)
+            if q['flags'] & BLEND and q['rect'][0] in xs]
+
+
+def unit(v):
+    n = math.sqrt(sum(x * x for x in v))
+    return tuple(x / n for x in v)
+
+
+def rect_texel(res, fr, q, tx, ty):
+    """Texel tx, ty of the part of its image a quad shows."""
+    w, h, bpp, rows = read_png(image(res, fr, q))
+    x, y = q['rect'][0] + tx, q['rect'][1] + ty
+    px = rows[y][x * bpp:x * bpp + bpp]
+    return tuple(px[:3]), (px[3] if bpp == 4 else 255)
+
+
+def beam_errors(what, b, p, t, miss, head=(0.0, 0.0, 0.0)):
+    """Beam b on the ray from p towards t: its strip, its middle and
+    length (to t, or BEAM_REACH into nothing), its x down the ray and
+    its face towards head."""
+    d = unit(tuple(y - x for x, y in zip(p, t)))
+    length = (BEAM_REACH if miss
+              else math.sqrt(sum((y - x) ** 2 for x, y in zip(p, t))))
+    mid = tuple(x + y * length / 2.0 for x, y in zip(p, d))
+    to = tuple(a - m for a, m in zip(head, mid))
+    k = sum(a * c for a, c in zip(to, d))
+    face = unit(tuple(a - k * c for a, c in zip(to, d)))
+    q = tuple(b['pose'][3:])
+    errors = []
+    if b['rect'][0] != BEAM_X[miss] or tuple(b['rect'][2:]) != (BEAM_LEN,
+                                                                  BEAM_ROWS):
+        errors.append('%s shows %s of the image' % (what, b['rect']))
+    if not near3(b['pose'][:3], mid) \
+            or not near3(b['size'], (length, BEAM_WIDTH), 0.002):
+        errors.append('%s at %s, %s, want %s, %s' % (
+            what, [round(v, 3) for v in b['pose'][:3]], b['size'],
+            [round(v, 3) for v in mid], (round(length, 3), BEAM_WIDTH)))
+    if sum(a * c for a, c in zip(qrot(q, (1.0, 0.0, 0.0)), d)) < 0.999:
+        errors.append('%s does not run down the ray' % what)
+    if sum(a * c for a, c in zip(qrot(q, (0.0, 0.0, 1.0)), face)) < 0.999:
+        errors.append('%s does not face the head' % what)
+    return errors
+
+
+def strip_errors(res, f, b, miss, what):
+    """The beam's strip: white at BEAM_LEVEL in the middle, faded in at
+    the hand, and on a miss faded out at the far end."""
+    errors = []
+    rgb, alpha = rect_texel(res, f, b, BEAM_LEN // 2, BEAM_ROWS // 2)
+    if abs(alpha - BEAM_LEVEL) > 2 or abs(rgb[0] - BEAM_LEVEL) > 2:
+        errors.append('%s shows %s alpha %d mid-way, want %d' % (
+            what, rgb, alpha, BEAM_LEVEL))
+    if rect_texel(res, f, b, 0, BEAM_ROWS // 2)[1] >= BEAM_LEVEL // 8:
+        errors.append('%s does not fade in at the hand' % what)
+    if miss and rect_texel(res, f, b, BEAM_LEN - 1,
+                           BEAM_ROWS // 2)[1] >= BEAM_LEVEL // 32:
+        errors.append('%s does not fade out at its end' % what)
+    return errors
 
 
 def between(res, start, end=None, pick=quads, delay=0.0):
@@ -4806,6 +4890,81 @@ def check_edit_outlines(menu=True):
     return check
 
 
+def check_edit_beam(res):
+    """Edit Mode Only: the dot alone before edit mode; in it a beam from
+    the hand to the dot facing the head, then 1.5 m into nothing; the dot
+    alone again after."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    before = between(res, 'before', 'on', delay=0.5)
+    if not [f for f in before if cursors(f)]:
+        errors.append('no dot before edit mode')
+    if any(beams(f) for f in before):
+        errors.append('a beam before edit mode')
+    hits = [f for f in between(res, 'aimed', 'miss', delay=0.5)
+            if len(beams(f)) == 1 and cursors(f)]
+    if not hits:
+        return errors + ['no frame with one beam and its dot']
+    errors += beam_errors('the beam', beams(hits[-1])[0], GUN_FROM, GUN_AT, 0)
+    snaps = [f for f in hits if f['snap']]
+    if snaps:
+        errors += strip_errors(res, snaps[-1], beams(snaps[-1])[0], 0,
+                               'the beam')
+    else:
+        errors.append('no snapshot of the beam')
+    misses = [f for f in between(res, 'miss', 'off', delay=0.5)
+              if len(beams(f, 1)) == 1]
+    if not misses:
+        return errors + ['no frame with a beam into nothing']
+    errors += beam_errors('the beam into nothing', beams(misses[-1])[0],
+                          GUN_FROM, MISS_AT, 1)
+    snaps = [f for f in misses if f['snap']]
+    if snaps:
+        errors += strip_errors(res, snaps[-1], beams(snaps[-1])[0], 1,
+                               'the beam into nothing')
+    after = between(res, 'off', delay=1.0)
+    if any(beams(f) for f in after):
+        errors.append('a beam after edit mode')
+    return errors
+
+
+def check_edit_beam_off(res):
+    """Laser Beam Off: edit mode's dot and outlines, never a beam."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    if not [f for f in between(res, 'aimed', 'off', delay=0.5)
+            if cursors(f) and outlines(f)]:
+        errors.append('no frame with the dot and the outlines')
+    if any(beams(f) for f in res.frames):
+        errors.append('a beam with Laser Beam Off')
+    return errors
+
+
+def check_laser_beam_always(res):
+    """Laser Beam Always, out of edit mode: a beam to the light gun's
+    dot, one into nothing beside the screens, none while the laser's
+    hotkey hides it, and back after."""
+    errors = []
+    hits = [f for f in between(res, 'aimed', 'miss', delay=0.5)
+            if len(beams(f)) == 1 and cursors(f)]
+    if hits:
+        errors += beam_errors('the beam', beams(hits[-1])[0], GUN_FROM,
+                              GUN_AT, 0)
+    else:
+        errors.append('no frame with the beam and its dot')
+    misses = [f for f in between(res, 'miss', 'off', delay=0.5)
+              if len(beams(f, 1)) == 1]
+    if misses:
+        errors += beam_errors('the beam into nothing', beams(misses[-1])[0],
+                              GUN_FROM, MISS_AT, 1)
+    else:
+        errors.append('no frame with a beam into nothing')
+    if any(beams(f) or cursors(f)
+           for f in between(res, 'off', 'on', delay=0.5)):
+        errors.append('a beam or dot with the laser hidden')
+    if not [f for f in between(res, 'on', delay=0.5) if beams(f)]:
+        errors.append('no beam once the laser is back')
+    return errors
+
+
 def check_edit_fallback(menu=True):
     def check(res):
         """A views core's frame shown whole (threaded video crops the map
@@ -5296,6 +5455,31 @@ EDIT_CASES += [
          ('script', edit_aim(0.0, EDIT_HANDLE, z=-1.7)), ('mark', 'handle'),
          ('wait', 2), ('send', EDIT), ('mark', 'off'), ('wait', 2)],
      'check': check_edit_outlines()},
+    {'name': 'edit-beam', 'map': '3ds',
+     'settings': {'video_openxr_laser': '1'},
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'before'), ('wait', 2), ('mark', 'on'),
+               ('send', EDIT), ('wait', 1), ('mark', 'aimed'), ('wait', 2),
+               ('mark', 'miss'), ('script', script(HEAD_AT_ORIGIN, AIM_MISS)),
+               ('wait', 2), ('mark', 'off'), ('send', EDIT), ('wait', 2)],
+     'check': check_edit_beam},
+    {'name': 'edit-beam-off', 'map': '3ds',
+     'settings': {'video_openxr_laser_beam': '0'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'on'), ('send', EDIT), ('wait', 1),
+               ('mark', 'aimed'), ('wait', 2), ('mark', 'off'),
+               ('send', EDIT), ('wait', 1)],
+     'check': check_edit_beam_off},
+    {'name': 'laser-beam-always', 'map': '3ds',
+     'settings': {'video_openxr_laser': '1', 'video_openxr_laser_beam': '2'},
+     'steps': [('wait', 6), ('script', script(HEAD_AT_ORIGIN, AIM_GUN)),
+               ('wait', 1), ('mark', 'aimed'), ('wait', 2), ('mark', 'miss'),
+               ('script', script(HEAD_AT_ORIGIN, AIM_MISS)), ('wait', 2),
+               ('mark', 'off'), ('send', 'LASER_POINTER_TOGGLE'),
+               ('wait', 2), ('mark', 'on'),
+               ('send', 'LASER_POINTER_TOGGLE'), ('wait', 2)],
+     'check': check_laser_beam_always},
     {'name': 'edit-fallback', 'map': 'crop',
      'settings': dict(SAVE, video_threaded='true', video_screen1_xr_x='0.5'),
      'steps': edit_start(edit_aim()) + [
@@ -6716,14 +6900,14 @@ GL_BASE = {
            'tracked-reinit-poses', 'tracked-reinit-paused-hw'],
 }
 # The edit cases whose work is a host's or a driver's own: the plan and
-# its edit count, the hold and hand-over, the outlines and the handle,
-# fixed slots, the menu's quad. gl draws the menu in its window: no menu
-# quad to place, outline or take.
+# its edit count, the hold and hand-over, the outlines, the handle and
+# the beam, fixed slots, the menu's quad. gl draws the menu in its
+# window: no menu quad to place, outline or take.
 GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-release-threaded', 'edit-release-moving',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
-           'edit-outlines', 'edit-fallback', 'edit-no-map', 'edit-lazy',
-           'edit-two-hands']
+           'edit-outlines', 'edit-beam', 'edit-fallback', 'edit-no-map',
+           'edit-lazy', 'edit-two-hands']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT

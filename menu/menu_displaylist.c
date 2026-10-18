@@ -12594,6 +12594,10 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
             {
                rarch_setting_t *screen = menu_setting_find_enum(
                      MENU_ENUM_LABEL_VIDEO_SCREEN_SELECTED);

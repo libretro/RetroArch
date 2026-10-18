@@ -7709,12 +7709,14 @@ static void test_frame_layer_budget(void)
    CHECK(t_extra_cap == OPENXR_KEPT_EXTRA_LAYERS,
          "with 7 quads of 8 layers, cap %u", t_extra_cap);
    t_grab_free(&rt, &s, &sc, &f);
+   t_max_layers = 32;
    t_grab_frame(&rt, &s, &sc, &f, &set);
+   t_max_layers = 0;
    f.extra_layers = t_extra_layers;
    openxr_frame_run(&f);
    CHECK(t_extra_cap == OPENXR_MAX_EXTRA_LAYERS
-         && OPENXR_MAX_EXTRA_LAYERS
-            == OPENXR_KEPT_EXTRA_LAYERS + VIDEO_XR_MAX_SLOTS + 1,
+         && OPENXR_MAX_EXTRA_LAYERS == OPENXR_KEPT_EXTRA_LAYERS
+            + OPENXR_BEAM_LAYERS + VIDEO_XR_MAX_SLOTS + 1,
          "with room to spare, cap %u", t_extra_cap);
    t_grab_free(&rt, &s, &sc, &f);
 }

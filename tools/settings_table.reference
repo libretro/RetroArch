@@ -578,6 +578,7 @@ uint	video_openxr_refresh_rate	1	0
 uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
+uint	video_openxr_laser_beam	1	1
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE
@@ -1297,6 +1298,7 @@ uint	video_openxr_refresh_rate	1	0
 uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
+uint	video_openxr_laser_beam	1	1
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE
@@ -2037,6 +2039,7 @@ uint	video_openxr_refresh_rate	1	0
 uint	video_openxr_placement	1	0
 uint	video_openxr_controllers	1	0
 uint	video_openxr_laser	1	0
+uint	video_openxr_laser_beam	1	1
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE

@@ -956,6 +956,84 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
    return (size < VIDEO_XR_CURSOR_MIN) ? VIDEO_XR_CURSOR_MIN : size;
 }
 
+/* The rotation taking X, Y and Z to the orthonormal x, y and z. */
+static void video_xr_quat_axes(const video_xr_vec3_t *x,
+      const video_xr_vec3_t *y, const video_xr_vec3_t *z,
+      video_xr_quat_t *q)
+{
+   double s;
+   double tr = (double)x->x + y->y + z->z;
+   if (tr > 0.0)
+   {
+      s    = sqrt(tr + 1.0) * 2.0;
+      q->w = (float)(0.25 * s);
+      q->x = (float)((y->z - z->y) / s);
+      q->y = (float)((z->x - x->z) / s);
+      q->z = (float)((x->y - y->x) / s);
+   }
+   else if (x->x > y->y && x->x > z->z)
+   {
+      s    = sqrt(1.0 + x->x - y->y - z->z) * 2.0;
+      q->w = (float)((y->z - z->y) / s);
+      q->x = (float)(0.25 * s);
+      q->y = (float)((y->x + x->y) / s);
+      q->z = (float)((z->x + x->z) / s);
+   }
+   else if (y->y > z->z)
+   {
+      s    = sqrt(1.0 + y->y - x->x - z->z) * 2.0;
+      q->w = (float)((z->x - x->z) / s);
+      q->x = (float)((y->x + x->y) / s);
+      q->y = (float)(0.25 * s);
+      q->z = (float)((z->y + y->z) / s);
+   }
+   else
+   {
+      s    = sqrt(1.0 + z->z - x->x - y->y) * 2.0;
+      q->w = (float)((x->y - y->x) / s);
+      q->x = (float)((z->x + x->z) / s);
+      q->y = (float)((z->y + y->z) / s);
+      q->z = (float)(0.25 * s);
+   }
+}
+
+void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose)
+{
+   video_xr_vec3_t y, z;
+   float k, n;
+   pose->position.x = o->x + d->x * len * 0.5f;
+   pose->position.y = o->y + d->y * len * 0.5f;
+   pose->position.z = o->z + d->z * len * 0.5f;
+   z.x              = eye->x - pose->position.x;
+   z.y              = eye->y - pose->position.y;
+   z.z              = eye->z - pose->position.z;
+   k                = z.x * d->x + z.y * d->y + z.z * d->z;
+   z.x             -= d->x * k;
+   z.y             -= d->y * k;
+   z.z             -= d->z * k;
+   n                = (float)sqrt(z.x * z.x + z.y * z.y + z.z * z.z);
+   if (n < 0.0001f)
+   {
+      /* Seen end on: any face square to the ray. */
+      z.x  = 0.0f;
+      z.y  = (fabs(d->y) < 0.9) ? 1.0f : 0.0f;
+      z.z  = 1.0f - z.y;
+      k    = z.y * d->y + z.z * d->z;
+      z.x -= d->x * k;
+      z.y -= d->y * k;
+      z.z -= d->z * k;
+      n    = (float)sqrt(z.x * z.x + z.y * z.y + z.z * z.z);
+   }
+   z.x /= n;
+   z.y /= n;
+   z.z /= n;
+   y.x  = z.y * d->z - z.z * d->y;
+   y.y  = z.z * d->x - z.x * d->z;
+   y.z  = z.x * d->y - z.y * d->x;
+   video_xr_quat_axes(d, &y, &z, &pose->orientation);
+}
+
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       video_xr_pose_t *pose, video_screen_xr_t *out)
 {
@@ -1070,6 +1148,22 @@ void video_xr_cursor_pixels(uint8_t *px)
             video_xr_cursor_texel(px, VIDEO_XR_HANDLE_X(k) + x,
                   VIDEO_XR_CURSOR_Y + y, level, level);
    }
+   for (k = 0; k < 2; k++)
+      for (x = 0; x < VIDEO_XR_BEAM_LEN; x++)
+      {
+         float in  = ((float)x + 0.5f) / VIDEO_XR_BEAM_FADE_IN;
+         float out = ((float)(VIDEO_XR_BEAM_LEN - x) - 0.5f)
+            / VIDEO_XR_BEAM_FADE_OUT;
+         uint8_t level;
+         if (in > 1.0f)
+            in = 1.0f;
+         if (!k || out > 1.0f)
+            out = 1.0f;
+         level = (uint8_t)(in * out * VIDEO_XR_BEAM_LEVEL + 0.5f);
+         for (y = 0; y < VIDEO_XR_BEAM_ROWS; y++)
+            video_xr_cursor_texel(px, VIDEO_XR_BEAM_X(k) + x,
+                  VIDEO_XR_BEAM_Y + y, level, level);
+      }
 }
 
 /* Two rates this close in skew are a tie. */

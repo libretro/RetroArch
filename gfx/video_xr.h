@@ -335,24 +335,37 @@ void video_xr_place_window(const video_xr_params_t *p, bool menu,
  * rows down, mid-height so GL's bottom-up rows find it too; edit mode's
  * faint and bright outlines (lit 0 and 1), each VIDEO_XR_OUTLINE_DIM
  * square with a VIDEO_XR_OUTLINE_EDGE pixel rim; the menu's faint and
- * bright handle bars, at the dot's size and rows. An outline is
- * VIDEO_XR_OUTLINE_MARGIN metres larger than its item on every side. */
+ * bright handle bars, at the dot's size and rows; the beam's strips to
+ * the dot and into nothing (miss 0 and 1), VIDEO_XR_BEAM_LEN long from
+ * the hand along x, mid-height. An outline is VIDEO_XR_OUTLINE_MARGIN
+ * metres larger than its item on every side. */
 #define VIDEO_XR_CURSOR_DIM     32
 #define VIDEO_XR_OUTLINE_DIM    128
 #define VIDEO_XR_OUTLINE_EDGE   3
 #define VIDEO_XR_OUTLINE_MARGIN 0.01f
+#define VIDEO_XR_BEAM_LEN       128
+#define VIDEO_XR_BEAM_ROWS      4
 #define VIDEO_XR_OUTLINE_X(lit) \
    (VIDEO_XR_CURSOR_DIM + 1 + (lit) * (VIDEO_XR_OUTLINE_DIM + 1))
 #define VIDEO_XR_HANDLE_X(lit) \
    (VIDEO_XR_OUTLINE_X(2) + (lit) * (VIDEO_XR_CURSOR_DIM + 1))
-#define VIDEO_XR_CURSOR_W       (VIDEO_XR_HANDLE_X(1) + VIDEO_XR_CURSOR_DIM)
+#define VIDEO_XR_BEAM_X(miss) \
+   (VIDEO_XR_HANDLE_X(2) + (miss) * (VIDEO_XR_BEAM_LEN + 1))
+#define VIDEO_XR_CURSOR_W       (VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN)
 #define VIDEO_XR_CURSOR_H       VIDEO_XR_OUTLINE_DIM
 #define VIDEO_XR_CURSOR_Y       ((VIDEO_XR_CURSOR_H - VIDEO_XR_CURSOR_DIM) / 2)
+#define VIDEO_XR_BEAM_Y         ((VIDEO_XR_CURSOR_H - VIDEO_XR_BEAM_ROWS) / 2)
+/* The beam's strips: white at this level, fading in over their first
+ * FADE_IN texels; the one into nothing out over its last FADE_OUT. */
+#define VIDEO_XR_BEAM_LEVEL     160
+#define VIDEO_XR_BEAM_FADE_IN   8
+#define VIDEO_XR_BEAM_FADE_OUT  32
 
 /* Its pixels, RGBA8 premultiplied, grey so RGBA and BGRA hold the same
  * bytes: a white dot with a dark rim and a one-pixel soft edge; white
- * outline rims and handle bars, the faint ones at a quarter. px holds
- * VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times four bytes. */
+ * outline rims and handle bars, the faint ones at a quarter, and white
+ * beam strips. px holds VIDEO_XR_CURSOR_W by VIDEO_XR_CURSOR_H times
+ * four bytes. */
 void video_xr_cursor_pixels(uint8_t *px);
 
 /* The laser's dot: this wide per metre along the ray, never narrower
@@ -392,6 +405,17 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
  * facing as q does. Returns its width in metres. */
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
       float dist, video_xr_pose_t *pose);
+
+/* The laser's beam: this wide, and this long with nothing under the
+ * laser. */
+#define VIDEO_XR_BEAM_WIDTH 0.004f
+#define VIDEO_XR_BEAM_REACH 1.5f
+
+/* A beam len metres long from o along the unit ray d: its pose at its
+ * middle, its x down the ray, turned about the ray so its face is
+ * towards eye. */
+void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose);
 
 /* Headset pacing. The XR thread's filter over each frame's predicted
  * display period: a period is published once VIDEO_XR_PERIODS frames

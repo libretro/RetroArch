@@ -44,6 +44,11 @@ S_UINT_EX(video_openxr_laser, VIDEO_OPENXR_LASER,
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Laser Pointer",
       "Where a controller's trigger points and touches instead of pressing L2 or R2. Auto: the menu while it is open, and second screens such as a touch screen. Always: every screen, for light guns. Off: nowhere.")
+S_UINT_EX(video_openxr_laser_beam, VIDEO_OPENXR_LASER_BEAM,
+      "video_openxr_laser_beam",
+      1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_laser_beam, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Laser Beam",
+      "A thin line from each controller to where its laser points. Edit Mode Only: while Edit Screens moves the screens. Always: also for the menu and light guns. Off: never.")
 S_BOOL_EX(video_openxr_edit_pause, VIDEO_OPENXR_EDIT_PAUSE,
       "video_openxr_edit_pause",
       false, SD_FLAG_NONE, 0, 0, NULL, setting_get_string_representation_video_openxr_edit_pause, NULL, NULL, NULL, NULL, 0,

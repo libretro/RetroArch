@@ -114,6 +114,9 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser, bool menu,
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
       float t, video_xr_pose_t *pose)
 { (void)q; (void)u; (void)v; (void)t; (void)pose; return 0.01f; }
+void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float len, const video_xr_vec3_t *eye, video_xr_pose_t *pose)
+{ (void)o; (void)d; (void)len; (void)eye; memset(pose, 0, sizeof(*pose)); }
 /* What edit mode reaches, never run here. */
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
 { (void)f; memset(out, 0, sizeof(*out)); }
@@ -253,7 +256,8 @@ static void publish_pointer(unsigned laser, bool menu)
    openxr_frame_t *frame = input_openxr_st.frame;
    test_menu_open = menu;
    input_openxr_st.frame = NULL;
-   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser,
+         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    input_openxr_st.frame = frame;
 }
 static void replace_pointer(void)
@@ -313,14 +317,14 @@ static void pointer_tests(void)
    input_openxr_st.GetActionStateVector2f = read_vector;
    test_navigation = test_menu_open = true;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    picks = 0;
    input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
          layers, 2);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
    input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
-         VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
+         VIDEO_OPENXR_LASER_ALWAYS, VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    input_openxr_frame_layers(NULL, 1, &test_shown, XR_NULL_HANDLE,
          layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
@@ -401,7 +405,8 @@ int main(void)
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 0.0f, "unfocused result cached as applied");
    test_focused = false;
-   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF,
+         VIDEO_OPENXR_LASER_BEAM_EDIT, 0.5f);
    test_focused = true;
    apply_result[0] = XR_SUCCESS;
    service(false, false);

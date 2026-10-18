@@ -1863,6 +1863,79 @@ static void test_cursor(void)
    CHECK(NEAR(pose.orientation.y, 0.70711));
 }
 
+/* One of a pose's own axes, in its space. */
+static void pose_axis(const video_xr_pose_t *pose, float x, float y,
+      float z, video_xr_vec3_t *out)
+{
+   video_xr_vec3_t v;
+   v.x = x;
+   v.y = y;
+   v.z = z;
+   video_xr_rotate(&pose->orientation, &v, out);
+}
+
+/* The laser's beam: centred on its ray, its x down the ray, turned
+ * about it so its face is towards the eye; seen end on, still square to
+ * the ray. */
+static void test_beam(void)
+{
+   video_xr_vec3_t o, d, eye, ax, ay, az;
+   video_xr_pose_t pose;
+   const video_xr_quat_t *q = &pose.orientation;
+
+   o.x   = 0.2f;
+   o.y   = -0.3f;
+   o.z   = 0.0f;
+   d.x   = 0.0f;
+   d.y   = 0.0f;
+   d.z   = -1.0f;
+   eye.x = 0.0f;
+   eye.y = 0.0f;
+   eye.z = 0.0f;
+   video_xr_beam(&o, &d, 1.8f, &eye, &pose);
+   pose_axis(&pose, 1.0f, 0.0f, 0.0f, &ax);
+   pose_axis(&pose, 0.0f, 1.0f, 0.0f, &ay);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(vec_is(&pose.position, 0.2, -0.3, -0.9));
+   CHECK(vec_is(&ax, 0.0, 0.0, -1.0));
+   CHECK(vec_is(&az, -0.5547, 0.8321, 0.0));
+   CHECK(vec_is(&ay, -0.8321, -0.5547, 0.0));
+   CHECK(NEAR(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w, 1.0));
+
+   /* A ray down and to the right, the eye above it. */
+   d.x   = 0.6f;
+   d.z   = -0.8f;
+   eye.y = 1.0f;
+   video_xr_beam(&o, &d, 1.0f, &eye, &pose);
+   pose_axis(&pose, 1.0f, 0.0f, 0.0f, &ax);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(vec_is(&pose.position, 0.5, -0.3, -0.4));
+   CHECK(vec_is(&ax, 0.6, 0.0, -0.8));
+   CHECK(vec_is(&az, -0.0977, 0.9925, -0.0733));
+
+   /* The eye on the ray's line: any face square to the ray. */
+   o.x   = 0.0f;
+   o.y   = 0.0f;
+   d.x   = 0.0f;
+   d.z   = -1.0f;
+   eye.y = 0.0f;
+   eye.z = 0.5f;
+   video_xr_beam(&o, &d, 1.5f, &eye, &pose);
+   pose_axis(&pose, 1.0f, 0.0f, 0.0f, &ax);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(vec_is(&ax, 0.0, 0.0, -1.0));
+   CHECK(vec_is(&az, 0.0, 1.0, 0.0));
+   d.y   = 1.0f;
+   d.z   = 0.0f;
+   eye.y = -1.0f;
+   eye.z = 0.0f;
+   video_xr_beam(&o, &d, 1.0f, &eye, &pose);
+   pose_axis(&pose, 1.0f, 0.0f, 0.0f, &ax);
+   pose_axis(&pose, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(vec_is(&ax, 0.0, 1.0, 0.0));
+   CHECK(vec_is(&az, 0.0, 0.0, 1.0));
+}
+
 static uint8_t t_atlas[VIDEO_XR_CURSOR_W * VIDEO_XR_CURSOR_H * 4];
 
 static const uint8_t *texel(unsigned x, unsigned y)
@@ -1881,8 +1954,8 @@ static int column_clear(unsigned x)
 }
 
 /* The laser's image: the dot, edit mode's faint and bright outlines,
- * the menu's faint and bright handle bars, a clear column between
- * each. */
+ * the menu's faint and bright handle bars, the beam's strips, a clear
+ * column between each. */
 static void test_cursor_pixels(void)
 {
    const uint8_t *centre = texel(VIDEO_XR_CURSOR_DIM / 2,
@@ -1902,6 +1975,16 @@ static void test_cursor_pixels(void)
    const uint8_t *lit    = texel(VIDEO_XR_HANDLE_X(1)
          + VIDEO_XR_CURSOR_DIM - 1, VIDEO_XR_CURSOR_Y
          + VIDEO_XR_CURSOR_DIM - 1);
+   const uint8_t *hit_in   = texel(VIDEO_XR_BEAM_X(0), VIDEO_XR_BEAM_Y + 1);
+   const uint8_t *hit_mid  = texel(VIDEO_XR_BEAM_X(0)
+         + VIDEO_XR_BEAM_LEN / 2, VIDEO_XR_BEAM_Y + 1);
+   const uint8_t *hit_end  = texel(VIDEO_XR_BEAM_X(0)
+         + VIDEO_XR_BEAM_LEN - 1, VIDEO_XR_BEAM_Y + VIDEO_XR_BEAM_ROWS - 1);
+   const uint8_t *miss_in  = texel(VIDEO_XR_BEAM_X(1), VIDEO_XR_BEAM_Y);
+   const uint8_t *miss_mid = texel(VIDEO_XR_BEAM_X(1)
+         + VIDEO_XR_BEAM_LEN / 2, VIDEO_XR_BEAM_Y + 2);
+   const uint8_t *miss_end = texel(VIDEO_XR_BEAM_X(1)
+         + VIDEO_XR_BEAM_LEN - 1, VIDEO_XR_BEAM_Y + 1);
 
    memset(t_atlas, 0x7f, sizeof(t_atlas));
    video_xr_cursor_pixels(t_atlas);
@@ -1932,7 +2015,24 @@ static void test_cursor_pixels(void)
    CHECK(column_clear(VIDEO_XR_OUTLINE_X(1) - 1));
    CHECK(column_clear(VIDEO_XR_HANDLE_X(0) - 1));
    CHECK(column_clear(VIDEO_XR_HANDLE_X(1) - 1));
-   CHECK(VIDEO_XR_HANDLE_X(1) + VIDEO_XR_CURSOR_DIM == VIDEO_XR_CURSOR_W);
+   CHECK(column_clear(VIDEO_XR_BEAM_X(0) - 1));
+   CHECK(column_clear(VIDEO_XR_BEAM_X(1) - 1));
+   CHECK(VIDEO_XR_BEAM_X(1) + VIDEO_XR_BEAM_LEN == VIDEO_XR_CURSOR_W);
+   /* The beam's strips: white, faded in at the hand; the one into
+    * nothing faded out at its far end too; mid-height, nothing above or
+    * below them. */
+   CHECK(hit_mid[0] == VIDEO_XR_BEAM_LEVEL && hit_mid[2] == VIDEO_XR_BEAM_LEVEL
+         && hit_mid[3] == VIDEO_XR_BEAM_LEVEL);
+   CHECK(hit_end[3] == VIDEO_XR_BEAM_LEVEL);
+   CHECK(hit_in[3] > 0 && hit_in[3] < VIDEO_XR_BEAM_LEVEL / 8
+         && hit_in[0] == hit_in[3]);
+   CHECK(miss_mid[3] == VIDEO_XR_BEAM_LEVEL);
+   CHECK(miss_in[3] == hit_in[3]);
+   CHECK(miss_end[3] > 0 && miss_end[3] < VIDEO_XR_BEAM_LEVEL / 32);
+   CHECK(VIDEO_XR_BEAM_Y * 2 + VIDEO_XR_BEAM_ROWS == VIDEO_XR_CURSOR_H);
+   CHECK(!texel(VIDEO_XR_BEAM_X(0) + 64, VIDEO_XR_BEAM_Y - 1)[3]);
+   CHECK(!texel(VIDEO_XR_BEAM_X(1) + 64, VIDEO_XR_BEAM_Y
+            + VIDEO_XR_BEAM_ROWS)[3]);
 }
 
 static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
@@ -2245,6 +2345,7 @@ int main(void)
    test_window_views_3ds();
    test_window_rect_rotation();
    test_cursor();
+   test_beam();
    test_cursor_pixels();
    test_compose();
    test_lazy_follow();

@@ -21,10 +21,18 @@ At run time an OpenXR runtime has to be active (SteamVR or Monado on
 Linux). Then turn on **Settings > Video > Stereo 3D & Screens > Headset
 Output (OpenXR)**. The other rows there are Headset Refresh Rate, Screen
 Distance, Screen Width, Screen Placement (Fixed in Room, Follow Head,
-Lazy Follow), Headset Controllers and Laser Pointer; Edit Screens and
-While Editing Screens are described below. The Recenter Headset Screens,
-Laser Pointer (Toggle) and Edit Headset Screens hotkeys are unbound by
-default.
+Lazy Follow), Headset Controllers, Laser Pointer and Laser Beam; Edit
+Screens and While Editing Screens are described below. The Recenter
+Headset Screens, Laser Pointer (Toggle) and Edit Headset Screens hotkeys
+are unbound by default.
+
+**Laser Beam** draws a thin line from each controller to its laser's
+dot, turned to face you. It shows only where the dot can: outside edit
+mode, Laser Pointer Off, or its hotkey, hides both; while editing, both
+hands always have a laser, and the hotkey only switches Laser Pointer
+for afterwards. Edit Mode Only (the default) shows it while editing
+screens, Always also for the menu and light guns, Off never. Pointing
+at nothing, the line is 1.5 m long and fades out.
 
 Without a runtime or a headset, RetroArch says so once and shows its
 window as usual.
@@ -106,10 +114,11 @@ binding saved in the runtime before RetroArch had them can.
 
 While editing, every item has a faint outline and the one a laser points
 at a bright one, and both hands have a laser whatever **Laser Pointer**
-is set to. The menu also shows a handle bar under it, faint, and bright
-while a laser is on it. The headset's controllers only edit; keyboards
-and other gamepads still reach the content. The desktop window shows a
-notice when editing starts and when it stops.
+is set to, with a beam unless **Laser Beam** is Off. The menu also shows
+a handle bar under it, faint, and bright while a laser is on it. The
+headset's controllers only edit; keyboards and other gamepads still
+reach the content. The desktop window shows a notice when editing starts
+and when it stops.
 
 | Controller | Grab | Tilt | Distance and size | Reset | Menu |
 | --- | --- | --- | --- | --- | --- |

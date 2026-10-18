@@ -45,7 +45,8 @@ enum video_screen_layout
    VIDEO_SCREEN_LAYOUT_LAST
 };
 
-/* Headset input settings (video_openxr_controllers, video_openxr_laser). */
+/* Headset input settings (video_openxr_controllers, video_openxr_laser,
+ * video_openxr_laser_beam). */
 enum video_openxr_controllers
 {
    VIDEO_OPENXR_CONTROLLERS_COMBINED = 0,
@@ -71,6 +72,14 @@ enum video_headset_view
    VIDEO_HEADSET_VIEW_STEREOSCOPIC,
    VIDEO_HEADSET_VIEW_FLAT,
    VIDEO_HEADSET_VIEW_LAST
+};
+
+enum video_openxr_laser_beam
+{
+   VIDEO_OPENXR_LASER_BEAM_OFF = 0,
+   VIDEO_OPENXR_LASER_BEAM_EDIT,
+   VIDEO_OPENXR_LASER_BEAM_ALWAYS,
+   VIDEO_OPENXR_LASER_BEAM_LAST
 };
 
 /* video_openxr_placement: where the headset keeps the screens. */

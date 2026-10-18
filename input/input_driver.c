@@ -15979,7 +15979,8 @@ void input_driver_poll(void)
       input->poll(input_st->current_data);
 #ifdef HAVE_OPENXR
    input_openxr_poll(max_users, settings->uints.video_openxr_controllers,
-         settings->uints.video_openxr_laser, input_axis_threshold);
+         settings->uints.video_openxr_laser,
+         settings->uints.video_openxr_laser_beam, input_axis_threshold);
 #endif
    input_poll_generation++;
    input_port_keys_at_poll(input_st->current_driver,

@@ -949,6 +949,27 @@ static void test_xr_edit_rows(void)
    runloop_msg_queue_deinit();
    settings->bools.video_openxr_enable = false;
 }
+
+/* Laser Beam sits with the headset's rows: Edit Mode Only unless the
+ * config says otherwise; the menu steps through its values. */
+static void test_xr_laser_beam_row(void)
+{
+   settings_t *settings = config_get_ptr();
+   load_fixture("video_driver = \"glcore\"\n");
+   CHECK(menu_has_setting("video_openxr_laser_beam"));
+   CHECK(settings->uints.video_openxr_laser_beam
+         == VIDEO_OPENXR_LASER_BEAM_EDIT);
+   menu_value("video_openxr_laser_beam", "Edit Mode Only");
+   menu_action("video_openxr_laser_beam", MENU_ACTION_RIGHT);
+   CHECK(settings->uints.video_openxr_laser_beam
+         == VIDEO_OPENXR_LASER_BEAM_ALWAYS);
+   menu_value("video_openxr_laser_beam", "Always");
+   load_fixture("video_driver = \"glcore\"\n"
+         "video_openxr_laser_beam = \"0\"\n");
+   CHECK(settings->uints.video_openxr_laser_beam
+         == VIDEO_OPENXR_LASER_BEAM_OFF);
+   menu_value("video_openxr_laser_beam", "Off");
+}
 #endif
 
 #ifdef VIDEO_SCREENS_RUNTIME_TEST
@@ -2213,6 +2234,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_OPENXR
    test_xr_menu_tracked_screen();
    test_xr_edit_rows();
+   test_xr_laser_beam_row();
 #endif
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);

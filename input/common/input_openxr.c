@@ -515,8 +515,10 @@ typedef struct input_openxr
    uint16_t last_buttons[INPUT_OPENXR_PADS];
    unsigned last_sticks[INPUT_OPENXR_PADS];
 
-   /* XR thread: the dots, edit mode's outlines and the menu's handle. */
+   /* XR thread: the dots, the beams, edit mode's outlines and the
+    * menu's handle. */
    XrCompositionLayerQuad cursors[INPUT_OPENXR_HANDS];
+   XrCompositionLayerQuad beams[INPUT_OPENXR_HANDS];
    XrCompositionLayerQuad outlines[VIDEO_XR_MAX_SLOTS + 1];
 } input_openxr_t;
 
@@ -552,9 +554,12 @@ typedef struct input_openxr_edit
 
 static input_openxr_edit_t input_openxr_edit;
 
-/* The main thread's laser mode and menu, for the XR thread's dots. */
+/* The main thread's laser mode, menu and Laser Beam, for the XR
+ * thread's dots and beams. */
 #define INPUT_OPENXR_LASER_MASK 3
 #define INPUT_OPENXR_MENU_OPEN  4
+#define INPUT_OPENXR_BEAM_SHIFT 3
+#define INPUT_OPENXR_BEAM_MASK  3
 static retro_atomic_int_t input_openxr_pointer_config;
 
 /* A core's rumble per pad, strong in the high half and weak in the
@@ -1157,9 +1162,9 @@ static void input_openxr_triggers(input_openxr_t *st, float threshold)
    }
 }
 
-/* A hand's aim pose in space at time, when it is tracked. Either
+/* A space's pose in another at time, when the runtime finds it. Either
  * thread: it only reads what the session hooks wrote. */
-static bool input_openxr_aim(const input_openxr_t *st, unsigned h,
+static bool input_openxr_locate(const input_openxr_t *st, XrSpace what,
       XrSpace space, XrTime time, video_xr_pose_t *pose)
 {
    XrSpaceLocation loc;
@@ -1169,8 +1174,8 @@ static bool input_openxr_aim(const input_openxr_t *st, unsigned h,
    loc.type          = XR_TYPE_SPACE_LOCATION;
    loc.next          = NULL;
    loc.locationFlags = 0;
-   if (     !st->aim[h] || !time
-         || XR_FAILED(st->LocateSpace(st->aim[h], space, time, &loc))
+   if (     !what || !time
+         || XR_FAILED(st->LocateSpace(what, space, time, &loc))
          || (loc.locationFlags & valid) != valid)
       return false;
    pose->orientation.x = loc.pose.orientation.x;
@@ -1181,6 +1186,13 @@ static bool input_openxr_aim(const input_openxr_t *st, unsigned h,
    pose->position.y    = loc.pose.position.y;
    pose->position.z    = loc.pose.position.z;
    return true;
+}
+
+/* A hand's aim pose in space at time, when it is tracked. */
+static bool input_openxr_aim(const input_openxr_t *st, unsigned h,
+      XrSpace space, XrTime time, video_xr_pose_t *pose)
+{
+   return input_openxr_locate(st, st->aim[h], space, time, pose);
 }
 
 /* An aim pose's ray: from its position along its -Z. */
@@ -1512,24 +1524,81 @@ static unsigned input_openxr_outlines(input_openxr_t *st,
    return n;
 }
 
+/* Whether a laser in this mode has anything in set to point at. */
+static bool input_openxr_any_live(const video_xr_quad_set_t *set,
+      unsigned laser, bool menu_open)
+{
+   unsigned i;
+   for (i = 0; i < set->num_quads; i++)
+   {
+      const video_xr_quad_t *q = &set->quads[i];
+      if (     video_xr_quad_live(q, laser, menu_open)
+            && !(laser == VIDEO_XR_LIVE_EDIT && set->slots[q->slot].fixed))
+         return true;
+   }
+   return false;
+}
+
+/* A hand's beam from o along d, reach metres to its dot when it hit
+ * something, facing eye. */
+static const XrCompositionLayerBaseHeader *input_openxr_beam_layer(
+      XrCompositionLayerQuad *l, const video_xr_vec3_t *o,
+      const video_xr_vec3_t *d, float reach, bool hit,
+      const video_xr_vec3_t *eye, XrSpace space, XrSwapchain cursor)
+{
+   video_xr_pose_t pose;
+   video_xr_beam(o, d, reach, eye, &pose);
+   l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
+   l->next                             = NULL;
+   l->subImage.imageArrayIndex         = 0;
+   l->layerFlags                       =
+      XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+   l->space                            = space;
+   l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
+   l->subImage.swapchain               = cursor;
+   l->subImage.imageRect.offset.x      = VIDEO_XR_BEAM_X(hit ? 0 : 1);
+   l->subImage.imageRect.offset.y      = VIDEO_XR_BEAM_Y;
+   l->subImage.imageRect.extent.width  = VIDEO_XR_BEAM_LEN;
+   l->subImage.imageRect.extent.height = VIDEO_XR_BEAM_ROWS;
+   l->pose.orientation.x               = pose.orientation.x;
+   l->pose.orientation.y               = pose.orientation.y;
+   l->pose.orientation.z               = pose.orientation.z;
+   l->pose.orientation.w               = pose.orientation.w;
+   l->pose.position.x                  = pose.position.x;
+   l->pose.position.y                  = pose.position.y;
+   l->pose.position.z                  = pose.position.z;
+   l->size.width                       = reach;
+   l->size.height                      = VIDEO_XR_BEAM_WIDTH;
+   return (const XrCompositionLayerBaseHeader*)l;
+}
+
 /* The XR thread, each headset frame: a dot where each hand points at a
  * live quad of set, from its own locate at the frame's display time;
  * in edit mode an outline round every item first, in the layers the
- * dots do not keep. */
+ * dots do not keep; then, as Laser Beam says, each tracked hand's beam
+ * facing the head, in what the outlines leave. */
 static unsigned input_openxr_frame_layers(void *user, XrTime time,
       const video_xr_quad_set_t *set, XrSpace space,
       const XrCompositionLayerBaseHeader **layers, unsigned cap)
 {
    unsigned h;
    XrSwapchain cursor;
+   video_xr_pose_t head;
+   video_xr_vec3_t o[INPUT_OPENXR_HANDS];
+   video_xr_vec3_t d[INPUT_OPENXR_HANDS];
+   float reach[INPUT_OPENXR_HANDS];
+   bool hit[INPUT_OPENXR_HANDS];
    unsigned n         = 0;
    unsigned dots      = 0;
+   unsigned rays      = 0;
    unsigned lit       = 0;
    input_openxr_t *st = &input_openxr_st;
    int config         = retro_atomic_load_acquire_int(
          &input_openxr_pointer_config);
    int laser          = config & INPUT_OPENXR_LASER_MASK;
    bool menu_open     = (config & INPUT_OPENXR_MENU_OPEN) != 0;
+   unsigned beam      = ((unsigned)config >> INPUT_OPENXR_BEAM_SHIFT)
+      & INPUT_OPENXR_BEAM_MASK;
    (void)user;
 
    if (     !st->frame || laser == VIDEO_OPENXR_LASER_OFF
@@ -1539,13 +1608,18 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    for (h = 0; h < INPUT_OPENXR_HANDS && dots < cap; h++)
    {
       int q;
-      float u, v, t, size;
+      float u, v, size;
+      float t                   = 0.0f;
       video_xr_pose_t pose;
-      video_xr_vec3_t o, d;
       XrCompositionLayerQuad *l = &st->cursors[dots];
-      if (     !input_openxr_ray(st, h, space, time, &o, &d)
-            || (q = video_xr_pick(set, (unsigned)laser, menu_open,
-                  &o, &d, &u, &v, &t)) < 0)
+      if (!input_openxr_ray(st, h, space, time, &o[rays], &d[rays]))
+         continue;
+      q           = video_xr_pick(set, (unsigned)laser, menu_open,
+            &o[rays], &d[rays], &u, &v, &t);
+      hit[rays]   = q >= 0;
+      reach[rays] = (q >= 0) ? t : VIDEO_XR_BEAM_REACH;
+      rays++;
+      if (q < 0)
          continue;
       lit  |= 1u << set->quads[q].slot;
       size  = video_xr_cursor(&set->quads[q], u, v, t, &pose);
@@ -1575,6 +1649,16 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
       n = input_openxr_outlines(st, set, space, cursor, lit, layers,
             cap - OPENXR_KEPT_EXTRA_LAYERS);
+   if (     rays && n + OPENXR_KEPT_EXTRA_LAYERS < cap
+         && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS
+            || (beam == VIDEO_OPENXR_LASER_BEAM_EDIT
+               && laser == VIDEO_XR_LIVE_EDIT))
+         && input_openxr_any_live(set, (unsigned)laser, menu_open)
+         && input_openxr_locate(st, st->frame->session->view_space, space,
+            time, &head))
+      for (h = 0; h < rays && n + OPENXR_KEPT_EXTRA_LAYERS < cap; h++)
+         layers[n++] = input_openxr_beam_layer(&st->beams[h], &o[h], &d[h],
+               reach[h], hit[h], &head.position, space, cursor);
    for (h = 0; h < dots; h++)
       layers[n++] = (const XrCompositionLayerBaseHeader*)&st->cursors[h];
    return n;
@@ -2261,7 +2345,7 @@ static void input_openxr_edit_poll(input_openxr_t *st,
 }
 
 void input_openxr_poll(unsigned max_users, unsigned controllers,
-      unsigned laser, float threshold)
+      unsigned laser, unsigned beam, float threshold)
 {
    unsigned p;
    XrResult res;
@@ -2278,10 +2362,12 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    bool menu_open          = false;
 #endif
 
-   /* A config can hold any value: past the choices is Auto, and never
-    * edit mode's. */
+   /* A config can hold any value: past the laser's choices is Auto, and
+    * never edit mode's; past the beam's, Edit Mode Only. */
    if (laser >= VIDEO_OPENXR_LASER_LAST)
       laser = VIDEO_OPENXR_LASER_AUTO;
+   if (beam >= VIDEO_OPENXR_LASER_BEAM_LAST)
+      beam = VIDEO_OPENXR_LASER_BEAM_EDIT;
 
    input_openxr_devices(max_users, separate);
 
@@ -2304,9 +2390,10 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
    if (!menu_open || laser == VIDEO_OPENXR_LASER_OFF)
       st->yield = false;
    retro_atomic_store_release_int(&input_openxr_pointer_config,
-         e->on ? VIDEO_XR_LIVE_EDIT
+         (e->on ? VIDEO_XR_LIVE_EDIT
          : ((st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser)
-            | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)));
+            | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)))
+         | ((int)beam << INPUT_OPENXR_BEAM_SHIFT));
 
    /* Nothing stops the last rumble of a core closed behind a menu that
     * ran it; no later content may inherit it. */
@@ -2405,7 +2492,8 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
       if (st->yield)
          laser = VIDEO_OPENXR_LASER_OFF;
       retro_atomic_store_release_int(&input_openxr_pointer_config,
-            (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
+            (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0)
+            | ((int)beam << INPUT_OPENXR_BEAM_SHIFT));
       input_openxr_laser_poll(st, laser, menu_open, threshold,
             was_pressed);
       input_openxr_triggers(st, threshold);

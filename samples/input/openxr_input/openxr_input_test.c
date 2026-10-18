@@ -310,9 +310,13 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_get_vec2(XrSession s,
    return XR_SUCCESS;
 }
 
-/* Each hand's aim, by hand, and the space the last locate was in. */
+/* Each hand's aim, by hand; the head, when a case tracks it; and the
+ * space the last locate was in. */
+#define T_VIEW ((XrSpace)(uintptr_t)0x42)
 static bool    t_aim_tracked[3];
 static XrPosef t_aim[3];
+static bool    t_head_tracked;
+static XrPosef t_head = { { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } };
 static XrSpace t_located_base;
 static XRAPI_ATTR XrResult XRAPI_CALL t_locate(XrSpace space, XrSpace base,
       XrTime time, XrSpaceLocation *loc)
@@ -325,9 +329,10 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate(XrSpace space, XrSpace base,
    /* A runtime fills a chained velocity; none is known here. */
    if (vel && vel->type == XR_TYPE_SPACE_VELOCITY)
       vel->velocityFlags = 0;
-   if (hand && t_aim_tracked[hand])
+   if (     (hand && t_aim_tracked[hand])
+         || (space == T_VIEW && t_head_tracked))
    {
-      loc->pose          = t_aim[hand];
+      loc->pose          = hand ? t_aim[hand] : t_head;
       loc->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
          | XR_SPACE_LOCATION_POSITION_VALID_BIT;
    }
@@ -770,7 +775,7 @@ static void t_session(bool frame_controller)
    memset(&t_xr_frame, 0, sizeof(t_xr_frame));
    t_xr_session.session     = T_SESSION;
    t_xr_session.local_space = (XrSpace)(uintptr_t)0x41;
-   t_xr_session.view_space  = (XrSpace)(uintptr_t)0x42;
+   t_xr_session.view_space  = T_VIEW;
    t_xr_frame.session       = &t_xr_session;
    memset(&h, 0, sizeof(h));
    h.frame            = &t_xr_frame;
@@ -879,10 +884,13 @@ static void t_forget_devices(void)
  * next. */
 static bool t_hold_tasks;
 
+/* The Laser Beam setting each poll passes. */
+static unsigned t_beam = VIDEO_OPENXR_LASER_BEAM_EDIT;
+
 static void t_poll(unsigned controllers, unsigned laser)
 {
    t_in_poll = true;
-   input_openxr_poll(4, controllers, laser, 0.5f);
+   input_openxr_poll(4, controllers, laser, t_beam, 0.5f);
    t_in_poll = false;
    if (!t_hold_tasks)
       t_land();
@@ -3185,6 +3193,168 @@ static void test_edit_outlines(void)
    t_edit_end();
 }
 
+/* A layer's own axis (x, y, z), in its space. */
+static void t_layer_axis(const XrCompositionLayerQuad *l, float x, float y,
+      float z, video_xr_vec3_t *out)
+{
+   video_xr_quat_t o;
+   video_xr_vec3_t v;
+   o.x = l->pose.orientation.x;
+   o.y = l->pose.orientation.y;
+   o.z = l->pose.orientation.z;
+   o.w = l->pose.orientation.w;
+   v.x = x;
+   v.y = y;
+   v.z = z;
+   video_xr_rotate(&o, &v, out);
+}
+
+/* The beams: one a tracked hand, from its aim to its dot, or
+ * VIDEO_XR_BEAM_REACH into nothing; along the ray, facing the head;
+ * after the outlines and before the dots, and the first to go when the
+ * layers run short. Off: none; Edit Mode Only: in edit mode alone;
+ * Always: wherever the laser can point. No head, no beam. */
+static void test_edit_beams(void)
+{
+   unsigned n;
+   video_xr_vec3_t ax, az;
+   const XrCompositionLayerQuad *q;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local = XR_NULL_HANDLE;
+   t_edit_start();
+   local               = t_xr_session.local_space;
+   t_aim_tracked[1]    = false;
+   t_aim[2].position.x = 0.2f;
+   t_aim[2].position.y = -0.3f;
+   t_head_tracked      = true;
+   t_cursor            = true;
+
+   /* Straight ahead onto screen 1, 1.8 m away. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 5, "%u layers, want three outlines, a beam and a dot", n);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0)
+         && q->subImage.imageRect.offset.y == VIDEO_XR_BEAM_Y
+         && q->subImage.imageRect.extent.width == VIDEO_XR_BEAM_LEN
+         && q->subImage.imageRect.extent.height == VIDEO_XR_BEAM_ROWS
+         && q->subImage.swapchain == (XrSwapchain)(uintptr_t)0x51
+         && q->space == local
+         && (q->layerFlags
+            & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)
+         && t_near(q->size.width, 1.8f)
+         && t_near(q->size.height, VIDEO_XR_BEAM_WIDTH)
+         && t_near(q->pose.position.x, 0.2f)
+         && t_near(q->pose.position.y, -0.3f)
+         && t_near(q->pose.position.z, -0.9f),
+         "the beam: offset %d, %.3f x %.4f at %.3f,%.3f,%.3f",
+         (int)q->subImage.imageRect.offset.x, q->size.width, q->size.height,
+         q->pose.position.x, q->pose.position.y, q->pose.position.z);
+   t_layer_axis(q, 1.0f, 0.0f, 0.0f, &ax);
+   t_layer_axis(q, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(t_near(ax.z, -1.0f), "the beam's x is not down the ray");
+   CHECK(t_near(az.x, -0.5547f) && t_near(az.y, 0.8321f) && t_near(az.z, 0.0f),
+         "the beam faces %.3f,%.3f,%.3f, not the head", az.x, az.y, az.z);
+   q = (const XrCompositionLayerQuad*)layers[4];
+   CHECK(q->subImage.imageRect.offset.x == 0
+         && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM,
+         "the dot is not last");
+
+   /* Straight up, into nothing: 1.5 m, the strip that fades out. */
+   t_aim[2].orientation.x = 0.70711f;
+   t_aim[2].orientation.w = 0.70711f;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(n == 4 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(1)
+         && t_near(q->size.width, VIDEO_XR_BEAM_REACH)
+         && t_near(q->pose.position.y, -0.3f + 0.5f * VIDEO_XR_BEAM_REACH)
+         && t_near(q->pose.position.z, 0.0f),
+         "%u layers; the missing beam: offset %d, %.3f long at y %.3f", n,
+         (int)q->subImage.imageRect.offset.x, q->size.width,
+         q->pose.position.y);
+   t_layer_axis(q, 0.0f, 0.0f, 1.0f, &az);
+   CHECK(t_near(az.x, -1.0f), "the missing beam does not face the head");
+   t_aim[2].orientation.x = 0.0f;
+   t_aim[2].orientation.w = 1.0f;
+
+   /* Short of layers: the beam goes before any outline; the dot stays. */
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 3);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(n == 4 && q->subImage.imageRect.offset.x == 0,
+         "with room for the outlines and dots: %u layers", n);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 2);
+   CHECK(n == 3, "with room for two outlines: %u layers", n);
+   /* Two hands on screen 1, room for one beam: the first hand's. */
+   t_aim_tracked[1]    = true;
+   t_aim[1].position.x = -0.2f;
+   t_aim[1].position.y = -0.3f;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_KEPT_EXTRA_LAYERS + 4);
+   q = (const XrCompositionLayerQuad*)layers[3];
+   CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0)
+         && t_near(q->pose.position.x, -0.2f),
+         "two hands, one beam's room: %u layers", n);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 7, "two hands with room: %u layers, want 3 + 2 + 2", n);
+   t_aim_tracked[1] = false;
+
+   /* No head: no beam. */
+   t_head_tracked = false;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 4, "%u layers with the head lost", n);
+   t_head_tracked = true;
+
+   /* Off: none. A value past the choices is Edit Mode Only. */
+   t_beam = VIDEO_OPENXR_LASER_BEAM_OFF;
+   t_edit_poll();
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 4, "%u layers with Laser Beam Off", n);
+   t_beam = 7;
+   t_edit_poll();
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 5, "%u layers with Laser Beam 7", n);
+
+   /* Out of edit mode, Laser Pointer Always: Edit Mode Only draws the
+    * dot alone, Always the beam too; Laser Pointer Off neither. */
+   t_beam = VIDEO_OPENXR_LASER_BEAM_EDIT;
+   input_openxr_edit_toggle();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 1, "%u layers out of edit mode, Edit Mode Only", n);
+   t_beam = VIDEO_OPENXR_LASER_BEAM_ALWAYS;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   q = (const XrCompositionLayerQuad*)layers[0];
+   CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0),
+         "%u layers out of edit mode, Always", n);
+   /* Auto with the menu closed: screen 1 is not the laser's, so there is
+    * nothing to point at and no beam. */
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 0, "%u layers with nothing the laser can point at", n);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS);
+   CHECK(n == 0, "%u layers with Laser Pointer Off", n);
+
+   t_beam              = VIDEO_OPENXR_LASER_BEAM_EDIT;
+   t_head_tracked      = false;
+   t_cursor            = false;
+   t_aim[2].position.x = 0.0f;
+   t_aim[2].position.y = 0.0f;
+   t_edit_end();
+}
+
 /* Let go with the hand still moving: the release poll's own aim puts
  * the item, so the frame loop, which showed it from each frame's aim,
  * shows no step back to the poll before; the stick moves nothing then.
@@ -3360,6 +3530,7 @@ int main(void)
    test_edit_regrab();
    test_edit_frame_aim();
    test_edit_outlines();
+   test_edit_beams();
    test_edit_room();
    if (failures)
    {

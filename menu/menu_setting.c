@@ -3950,6 +3950,28 @@ static size_t setting_get_string_representation_video_openxr_laser(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_laser_beam(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_LASER_BEAM_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_OFF), len);
+         case VIDEO_OPENXR_LASER_BEAM_EDIT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_EDIT), len);
+         case VIDEO_OPENXR_LASER_BEAM_ALWAYS:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_BEAM_ALWAYS),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_openxr_edit_pause(
       rarch_setting_t *setting, char *s, size_t len)
 {
