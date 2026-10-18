@@ -11804,6 +11804,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vulkan_filter_chain_set_original_fps(
             fc, video_driver_get_original_fps());
+      vulkan_filter_chain_set_source_hdr(fc,
+            !vk->movie_texture && (vk->flags & VK_FLAG_SOURCE_HDR10) ? 1 : 0);
 
       {
          uint32_t rot          = vk->rotation_raw;

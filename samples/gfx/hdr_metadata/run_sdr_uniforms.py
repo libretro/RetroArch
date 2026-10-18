@@ -12,6 +12,8 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--retroarch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="glcore")
+p.add_argument("--source-pq", action="store_true", help="check native PQ on SDR output")
+p.add_argument("--source-hdr", choices=("builtin", "parameter"))
 p.add_argument("--tonemap-operator", choices=("builtin", "parameter"))
 p.add_argument("--min-nits", choices=("builtin", "parameter"))
 p.add_argument("--enable-hdr", choices=("builtin", "parameter"))
@@ -21,6 +23,8 @@ p.add_argument("--paper-white-alias", action="store_true")
 p.add_argument("--paper-white-parameter", action="store_true")
 p.add_argument("--requested-hdr", choices=(0, 1, 2), type=int, default=0)
 a = p.parse_args()
+if a.source_pq and not a.requested_hdr:
+    p.error("--source-pq requires an HDR request that the display refuses")
 exe = a.retroarch.resolve()
 w = a.output.resolve()
 w.mkdir(parents=True, exist_ok=True)
@@ -29,10 +33,12 @@ core = w / ("hdr-core.dll" if os.name == "nt" else "hdr-core.so")
 cc = shlex.split(os.environ.get("CC", "cc"))
 subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-I" + str(root / "libretro-common/include"),
-                    str(Path(__file__).with_name("live_core.c")),
+                    str(Path(__file__).with_name("pq_core.c" if a.source_pq else "live_core.c")),
                     "-o", str(core), "-lm"], check=True)
 for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if a.source_hdr:
+        members += " float SourceHDR;" if a.source_hdr == "parameter" else " uint SourceHDR;"
     if a.tonemap_operator:
         members += " float TonemapOperator;" if a.tonemap_operator == "parameter" else " uint TonemapOperator;"
     if a.min_nits:
@@ -64,6 +70,11 @@ void main() {
  FragColor.rgb += vec3(vTexCoord,0)*0.000001;
 }
 """.replace("UBO_MEMBERS", ubo).replace("HDR_DECL", hdr).replace("hdr.", prefix + "."), encoding="utf-8")
+    if a.source_pq:
+        text = shader.read_text(encoding="utf-8")
+        text = text.replace("#pragma stage fragment", "#pragma stage fragment\nlayout(set=0,binding=2) uniform sampler2D Original;")
+        text = text.replace("FragColor=", "ok=ok && all(lessThan(abs(texture(Original,vTexCoord).rgb-vec3(128.0,512.0,768.0)/1023.0),vec3(0.003)));\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
     if a.paper_white_alias or a.paper_white_parameter:
         text = shader.read_text(encoding="utf-8")
         expected = 37.0 if a.paper_white_parameter else 0.0
@@ -85,6 +96,13 @@ void main() {
         if a.enable_hdr == "parameter":
             text = text.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         text = text.replace("FragColor=", f"ok=ok && {prefix}.EnableHDR=={enabled};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
+    if a.source_hdr:
+        text = shader.read_text(encoding="utf-8")
+        source_hdr = "0.375" if a.source_hdr == "parameter" else ("1u" if a.source_pq else "0u")
+        if a.source_hdr == "parameter":
+            text = text.replace("#version 450", '#version 450\n#pragma parameter SourceHDR "Local source" 0.375 0.0 1.0 0.125')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.SourceHDR=={source_hdr};\n FragColor=")
         shader.write_text(text, encoding="utf-8")
     if a.tonemap_operator:
         text = shader.read_text(encoding="utf-8")
@@ -136,7 +154,7 @@ menu_show_start_screen = "false"
                                     cwd=w, env=dict(os.environ, HDR_QUERY_REQUESTED_MODE="0"),
                                     stdout=output, stderr=subprocess.STDOUT, timeout=60)
             evidence = log.read_bytes()
-            assert result.returncode == 0 and b"[hdr_metadata] PASS:" in evidence, log
+            assert result.returncode == 0 and (b"[pq] PASS:" if a.source_pq else b"[hdr_metadata] PASS:") in evidence, log
             assert b"[ERROR] [Slang]" not in evidence and b"Failed to reflect" not in evidence, log
             im = Image.open(screenshot).convert("RGB")
             rgb = im.getpixel((im.width // 2, im.height // 2))

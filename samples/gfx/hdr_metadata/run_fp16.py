@@ -18,6 +18,7 @@ parser.add_argument("--resize", action="store_true")
 parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
+parser.add_argument("--source-hdr", choices=("builtin", "parameter"))
 parser.add_argument("--tonemap-operator", choices=("builtin", "parameter"))
 parser.add_argument("--min-nits", choices=("builtin", "parameter"))
 parser.add_argument("--enable-hdr", choices=("builtin", "parameter"))
@@ -34,12 +35,15 @@ parser.add_argument("--no-format", action="store_true", help="omit the format pr
 parser.add_argument("--scaled", action="store_true", help="keep a scaled final target")
 parser.add_argument("--reference", action="store_true", help="declare ownership in a reference override")
 parser.add_argument("--expect-rejection", action="store_true")
+parser.add_argument("--source-pq", action="store_true", help="use native PQ Rec.2020 input")
 parser.add_argument("--source-sdr", action="store_true", help="use the XRGB8888 metadata fixture")
 args = parser.parse_args()
-if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr or args.min_nits or args.tonemap_operator) and not args.hdr_uniforms:
+if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr or args.min_nits or args.tonemap_operator or args.source_hdr) and not args.hdr_uniforms:
     parser.error("HDR alias checks require --hdr-uniforms")
 if args.overlay and args.preset_hdr_mode is None:
     args.stock = True
+if args.source_pq and (args.source_sdr or args.hardware or args.stock):
+    parser.error("--source-pq requires a software checker input")
 if args.source_sdr:
     args.expand_gamut = 2
     args.paper_white = 203.0
@@ -55,7 +59,7 @@ core = w / ("fp16-core.dll" if os.name == "nt" else "fp16-core.so")
 cc = shlex.split(os.environ.get("CC", "cc"))
 subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-I" + str(r / "libretro-common/include"),
-                    str(Path(__file__).with_name("live_core.c" if args.source_sdr else ("fp16_hw_core.c" if args.hardware else "fp16_core.c"))),
+                    str(Path(__file__).with_name("pq_core.c" if args.source_pq else ("live_core.c" if args.source_sdr else ("fp16_hw_core.c" if args.hardware else "fp16_core.c")))),
                     "-o", str(core), "-lm"], check=True)
 shader = """#version 450
 #pragma format R16G16B16A16_SFLOAT
@@ -76,6 +80,8 @@ void main() {
  FragColor.rgb += vec3(vTexCoord,0)*0.0000001;
 }
 """
+if args.source_pq:
+    shader = shader.replace("vec3(-0.25,0.5,2.0)", "vec3(128.0,512.0,768.0)/1023.0").replace("vec3(0.001)", "vec3(0.003)")
 if args.source_sdr:
     shader = shader.replace("all(lessThan(abs(c-vec3(-0.25,0.5,2.0)),vec3(0.001)))", "true")
 if args.shader_sdr:
@@ -84,6 +90,8 @@ if args.no_format:
     shader = shader.replace("#pragma format R16G16B16A16_SFLOAT\n", "")
 if args.hdr_uniforms:
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if args.source_hdr:
+        members += " float SourceHDR;" if args.source_hdr == "parameter" else " uint SourceHDR;"
     if args.tonemap_operator:
         members += " float TonemapOperator;" if args.tonemap_operator == "parameter" else " uint TonemapOperator;"
     if args.min_nits:
@@ -117,6 +125,11 @@ if args.hdr_uniforms:
         if args.enable_hdr == "parameter":
             shader = shader.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         shader = shader.replace("FragColor=", f"ok = ok && {prefix}EnableHDR == {enabled};\n FragColor=")
+    if args.source_hdr:
+        source_hdr = "0.375" if args.source_hdr == "parameter" else ("1u" if args.source_pq else "0u")
+        if args.source_hdr == "parameter":
+            shader = shader.replace("#version 450", '#version 450\n#pragma parameter SourceHDR "Local source" 0.375 0.0 1.0 0.125')
+        shader = shader.replace("FragColor=", f"ok = ok && {prefix}SourceHDR == {source_hdr};\n FragColor=")
     if args.tonemap_operator:
         operator = "1.0" if args.tonemap_operator == "parameter" else "0u"
         if args.tonemap_operator == "parameter":
@@ -185,7 +198,7 @@ input_overlay_opacity = "1.0"
    result=subprocess.run([str(executable),'-v'] + ([] if args.stock else ['--set-shader',str(w/'check.slangp')]) + ['--config',str(cfg),'-L',str(core),'--max-frames',str(args.frames),'--max-frames-ss','--max-frames-ss-path',str(ss)],cwd=w,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60)
    (w/(lane+'.log')).write_bytes(result.stdout)
    assert result.returncode==0,(lane,result.returncode)
-   assert (b'[hdr_metadata] PASS:' if args.source_sdr else b'[fp16] PASS:') in result.stdout,lane
+   assert (b'[pq] PASS:' if args.source_pq else (b'[hdr_metadata] PASS:' if args.source_sdr else b'[fp16] PASS:')) in result.stdout,lane
    assert b'Failed to reflect' not in result.stdout,lane
    if args.expect_rejection:
     assert b'[Shaders] Explicit HDR encoding requires a matching output.' in result.stdout,lane
@@ -196,4 +209,4 @@ input_overlay_opacity = "1.0"
    if args.overlay:
     corner=im.getpixel((10,10))
     assert max(corner) < min(rgb)-10,(lane,"overlay not visible",corner,rgb)
-   print('PASS native FP16 signed/above-white shader samples',lane,rgb,flush=True)
+   print('PASS native PQ shader samples' if args.source_pq else 'PASS native FP16 signed/above-white shader samples',lane,rgb,flush=True)

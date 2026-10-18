@@ -803,6 +803,7 @@ struct CommonResources
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
    bool simulate_scanline;
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
+   unsigned source_hdr;
 #ifdef VULKAN_HDR_SWAPCHAIN
    unsigned hdr_mode;
    float paper_white_nits;
@@ -4084,6 +4085,7 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_MIN_NITS, 0.0f);
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_TONEMAP_OPERATOR, 0);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SOURCE_HDR, pass->common->source_hdr);
 #ifdef VULKAN_HDR_SWAPCHAIN
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
                       pass->common->hdr_mode);
@@ -5329,6 +5331,12 @@ bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain)
 bool vulkan_filter_chain_reads_in_place(vulkan_filter_chain_t *chain)
 {
    return chain->frame_in_place;
+}
+
+void vulkan_filter_chain_set_source_hdr(
+      vulkan_filter_chain_t *chain, unsigned source_hdr)
+{
+   chain->common.source_hdr = source_hdr ? 1 : 0;
 }
 
 void vulkan_filter_chain_set_input_texture(

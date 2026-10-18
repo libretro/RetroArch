@@ -365,6 +365,7 @@ typedef struct d3d11_pass
    uint32_t                   swap_count;
    float                      core_aspect;
    float                      core_aspect_rot;
+   uint32_t                   source_hdr;
 #ifdef HAVE_DXGI_HDR
    unsigned                   hdr_mode;
    float                      paper_white_nits;
@@ -3162,6 +3163,8 @@ static bool d3d11_shader_load_step(void *data,
          semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
                &d3d11->chain.pass[i].enable_hdr;
 #endif
+         semantics_map.uniforms[SLANG_SEMANTIC_SOURCE_HDR] =
+               &d3d11->chain.pass[i].source_hdr;
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d11->chain.pass[i].swap_count;
          d3d11_frame_rect_semantics(d3d11, &semantics_map);
@@ -3461,6 +3464,8 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
    semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
          &d3d11->chain.pass[i].enable_hdr;
 #endif
+   semantics_map.uniforms[SLANG_SEMANTIC_SOURCE_HDR] =
+         &d3d11->chain.pass[i].source_hdr;
    semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
          &d3d11->chain.pass[i].swap_count;
    d3d11_frame_rect_semantics(d3d11, &semantics_map);
@@ -5620,6 +5625,11 @@ static void d3d11_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
          pass->current_subframe = 1;
          pass->swap_count       = (uint32_t)video_info->swap_count;
       }
+      pass->source_hdr = (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10) ? 1 : 0;
+#ifdef D3D11_FRAME_IMPORT
+      if (d3d11->movie_texture)
+         pass->source_hdr = 0;
+#endif
 #ifdef HAVE_DXGI_HDR
       /* From the driver's latches: the HDR pokes store into
        * hdr.ubo_values (blocking commands under the wrapper) and init

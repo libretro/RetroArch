@@ -150,3 +150,13 @@ or change source/final-pass ownership. Explicit float pragma parameters of
 the same name retain their own value. No operator selection is introduced.
 Use --tonemap-operator builtin or --tonemap-operator parameter with the HDR
 uniform fixtures to check UBO/push storage and parameter priority.
+
+SourceHDR is an optional scalar uint: 1 means Original contains native
+HDR10_2101010 PQ Rec.2020 input. It is 0 for SDR, native linear scRGB FP16,
+and imported SDR/scRGB movie textures. It does not describe the swapchain
+or final-pass ownership. Explicit float pragma parameters keep their value.
+D3D10 and Metal currently admit no native PQ core input and bind zero.
+Use --source-hdr builtin or parameter in the uniform fixtures. The FP16
+fixture also accepts --source-pq to verify PQ samples and the flag. In the
+SDR fixture, --source-pq requires --requested-hdr 1 or 2 on a display that
+refuses HDR; an initial PQ request with HDR explicitly off is refused.
