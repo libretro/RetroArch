@@ -301,6 +301,7 @@ static enum video_player_present sink_present(void *user,
    unsigned i;
 
    CHECK(fr->width == W && fr->height == H, "present: dims");
+   CHECK(!k->begun[fr->slot], "present: slot still being written");
    idx = (int)(px[0] & 0xFF) - 1;
    if (!fr->native)
       idx = (int)((px[0] >> 16) & 0xFF) - 1;
@@ -519,6 +520,7 @@ static void lane_fp16(void)
    p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s, VIDEO_PLAYER_INLINE);
    CHECK(video_player_poll(p, 0) == VIDEO_PLAYER_ENDED && k.nseen == 0,
          "fp16: a canvas frame was shown");
+   CHECK(!k.begun[0], "fp16: refused frame holds its slot");
    video_player_free(p);
 
    fake_init(&f, 3, 10);
@@ -736,6 +738,43 @@ static unsigned sink_slot_stride(void *user, unsigned slot)
    return ((sink_t*)user)->stride[slot];
 }
 
+static bool sink_feed_stop(void *user)
+{
+   (void)user;
+   return false;
+}
+
+static void lane_inline_release(void)
+{
+   unsigned mode;
+   for (mode = 0; mode < 3; mode++)
+   {
+      fake_t f;
+      sink_t k;
+      video_player_sink_t s;
+      video_player_t *p;
+      fake_init(&f, 1, 10);
+      f.direct = true;
+      sink_init(&k, &s, true);
+      if (mode == 0)
+         s.feed = sink_feed_stop;
+      else if (mode == 1)
+         f.pos = f.frames;
+      else
+         s.slot_stride = sink_slot_stride;
+      p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+            VIDEO_PLAYER_INLINE);
+      CHECK(p != NULL, "inline release: allocation");
+      if (!p)
+         continue;
+      CHECK(video_player_poll(p, 0) == VIDEO_PLAYER_ENDED,
+            "inline release: mode %u did not end", mode);
+      CHECK(!k.begun[0] && !k.nseen,
+            "inline release: mode %u holds or presents its slot", mode);
+      video_player_free(p);
+   }
+}
+
 static void lane_padded(void)
 {
    unsigned threaded, direct, order;
@@ -772,6 +811,7 @@ static void lane_padded(void)
       CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 6 && !k.bad_px,
             "padded: mode %u/%u/%u showed %d frames, %d wrong pixels",
             threaded, direct, order, k.nseen, k.bad_px);
+      CHECK(!k.begun[0] && !k.begun[1], "padded: unreleased slot");
       for (slot = 0; slot < 2; slot++)
          for (y = 0; y < H; y++)
             for (x = W; x < k.stride[slot]; x++)
@@ -782,6 +822,7 @@ static void lane_padded(void)
 
 int main(void)
 {
+   lane_inline_release();
    lane_padded();
    lane_inline_pacing(false);
    lane_inline_pacing(true);

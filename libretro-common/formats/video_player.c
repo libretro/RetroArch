@@ -745,10 +745,10 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
 
    /* the feed sits beside the decode, as on the worker */
    if (p->sink.feed && !p->sink.feed(p->sink.user))
-      return VIDEO_PLAYER_ENDED;
+      goto ended;
 
    if (!(frame = vp_next(p->stream, p->type, &p->loops_left, &duration_ms)))
-      return VIDEO_PLAYER_ENDED;
+      goto ended;
 
    fr.pixels      = NULL;
    fr.slot        = 0;
@@ -760,7 +760,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    {
       if (     !direct || frame != buf
             || !image_transfer_anim_stream_is_fp16(p->stream, p->type))
-         return VIDEO_PLAYER_ENDED;
+         goto ended;
       fr.how = VIDEO_PLAYER_DIRECT;
    }
    else if (direct && frame == buf)
@@ -788,6 +788,8 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    if (p->sink.decoded)
       p->sink.decoded(p->sink.user, fr.how);
 
+   if (buf && p->sink.slot_end)
+      p->sink.slot_end(p->sink.user, 0);
    res = p->sink.present(p->sink.user, &fr);
    if (res == VIDEO_PLAYER_PRESENT_BUSY)
       return VIDEO_PLAYER_PLAYING;
@@ -797,6 +799,11 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    if (budgeted)
       vp_budget_used_us += cpu_features_get_time_usec() - now;
    return VIDEO_PLAYER_PLAYING;
+
+ended:
+   if (buf && p->sink.slot_end)
+      p->sink.slot_end(p->sink.user, 0);
+   return VIDEO_PLAYER_ENDED;
 }
 
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
