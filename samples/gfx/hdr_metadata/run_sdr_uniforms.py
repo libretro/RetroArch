@@ -12,6 +12,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--retroarch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="glcore")
+p.add_argument("--tonemap-operator", choices=("builtin", "parameter"))
 p.add_argument("--min-nits", choices=("builtin", "parameter"))
 p.add_argument("--enable-hdr", choices=("builtin", "parameter"))
 p.add_argument("--peak-uniforms", choices=("builtin", "parameter"))
@@ -32,6 +33,8 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-o", str(core), "-lm"], check=True)
 for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if a.tonemap_operator:
+        members += " float TonemapOperator;" if a.tonemap_operator == "parameter" else " uint TonemapOperator;"
     if a.min_nits:
         members += " float MinNits;"
     if a.enable_hdr:
@@ -82,6 +85,13 @@ void main() {
         if a.enable_hdr == "parameter":
             text = text.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         text = text.replace("FragColor=", f"ok=ok && {prefix}.EnableHDR=={enabled};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
+    if a.tonemap_operator:
+        text = shader.read_text(encoding="utf-8")
+        operator = "1.0" if a.tonemap_operator == "parameter" else "0u"
+        if a.tonemap_operator == "parameter":
+            text = text.replace("#version 450", '#version 450\n#pragma parameter TonemapOperator "Local operator" 1.0 0.0 2.0 1.0')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.TonemapOperator=={operator};\n FragColor=")
         shader.write_text(text, encoding="utf-8")
     if a.min_nits:
         text = shader.read_text(encoding="utf-8")

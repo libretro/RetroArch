@@ -100,7 +100,8 @@ static const char *semantic_uniform_names[] = {
    "PeakNits",
    "MaxNits",
    "EnableHDR",
-   "MinNits"
+   "MinNits",
+   "TonemapOperator"
 };
 
 static bool slang_reflect(
@@ -478,6 +479,7 @@ static bool slang_process_reflection(
       pass_semantics_t*      out)
 {
    static const float unknown_min_nits = 0.0f;
+   static const uint32_t rational_tonemap_operator = 0;
    int semantic;
    unsigned i;
    bool ret                    = false;
@@ -584,6 +586,8 @@ static bool slang_process_reflection(
          uniform.param = NULL;
          if (_semantic == SLANG_SEMANTIC_MIN_NITS && !uniform.data)
             uniform.data = (void*)&unknown_min_nits;
+         if (_semantic == SLANG_SEMANTIC_TONEMAP_OPERATOR && !uniform.data)
+            uniform.data = (void*)&rational_tonemap_operator;
          /* A backend that has not wired a source for this semantic leaves
           * the slot NULL; the shader then reads its zero-initialised
           * default rather than the upload copying from NULL. */
@@ -1928,6 +1932,7 @@ static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
          return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
             &&  spvc_type_get_vector_size(type)  == 1
             &&  spvc_type_get_columns(type)  == 1;
+      case SLANG_SEMANTIC_TONEMAP_OPERATOR:
       case SLANG_SEMANTIC_HDR:
          return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
             &&  spvc_type_get_vector_size(type)  == 1

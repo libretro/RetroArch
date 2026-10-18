@@ -618,6 +618,7 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 output_state.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 peak.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 min_nits.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 tonemap_operator.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal_constants.py
 

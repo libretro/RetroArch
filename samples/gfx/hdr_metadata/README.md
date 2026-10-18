@@ -142,3 +142,11 @@ ownership.py checks the shipping parser, precision/admission helpers and
 Metal ownership policy. The shader_copy shipping-object harness also checks
 full preset saves and reference overrides, including clearing an inherited
 HDR declaration with auto. Native Metal rendering requires an Apple runner.
+
+TonemapOperator is an optional scalar uint identifying the frontend HDR
+curve: 0 is the current rational operator. It identifies the curve even
+when conversion is bypassed or output is SDR; it does not enable tonemapping
+or change source/final-pass ownership. Explicit float pragma parameters of
+the same name retain their own value. No operator selection is introduced.
+Use --tonemap-operator builtin or --tonemap-operator parameter with the HDR
+uniform fixtures to check UBO/push storage and parameter priority.

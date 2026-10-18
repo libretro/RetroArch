@@ -94,10 +94,12 @@ enum slang_semantic
    SLANG_SEMANTIC_ENABLE_HDR          = 29,
    /* float, minimum luminance in nits; zero when unknown */
    SLANG_SEMANTIC_MIN_NITS            = 30,
-   SLANG_NUM_BASE_SEMANTICS        = 31,
+   /* uint, HDR curve: 0=rational */
+   SLANG_SEMANTIC_TONEMAP_OPERATOR    = 31,
+   SLANG_NUM_BASE_SEMANTICS        = 32,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 31,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 32,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1
