@@ -13117,9 +13117,13 @@ static void *vulkan_menu_frame(void *data,
        if (!supported)
        {
           VkFormatProperties formatProperties;
+          const VkFormatFeatureFlags required =
+               VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+             | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
           vkGetPhysicalDeviceFormatProperties(vk->context->gpu,
                 VK_FORMAT_B4G4R4A4_UNORM_PACK16, &formatProperties);
-          supported = formatProperties.optimalTilingFeatures != 0;
+          supported = (formatProperties.optimalTilingFeatures & required)
+             == required;
        }
        if (supported)
        {

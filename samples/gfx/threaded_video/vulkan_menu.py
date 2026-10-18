@@ -40,7 +40,8 @@ typedef struct {
    } menu;
 } vk_t;
 static uint8_t pixels[3][4096];
-static bool mapped[3], supported16, fail_map, noncoherent;
+static bool mapped[3], fail_map, noncoherent;
+static VkFormatFeatureFlags features16;
 static enum vk_texture_type texture_type;
 static unsigned copies, maps, unmaps, flushes, creates;
 static unsigned memory_index(VkDeviceMemory memory)
@@ -54,7 +55,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
 {
    (void)device; (void)format;
    memset(props, 0, sizeof(*props));
-   props->optimalTilingFeatures = supported16 ? 1 : 0;
+   props->optimalTilingFeatures = features16;
 }
 VKAPI_ATTR VkResult VKAPI_CALL vkMapMemory(VkDevice device,
       VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
@@ -128,7 +129,8 @@ int main(void)
             memset(&vk, 0, sizeof(vk));
             memset(pixels, 0xcd, sizeof(pixels));
             vk.context = &context;
-            supported16 = true;
+            features16 = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+               | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
             noncoherent = cache != 0;
             texture_type = mode ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED;
             copies = maps = unmaps = flushes = 0;
@@ -147,12 +149,16 @@ int main(void)
                for (x = 0; x < pitch; x++)
                   assert(pixels[0][16 + y * pitch + x] == (x < 4 * bytes ? 0x37 : 0xcd));
          }
-   supported16 = false;
-   creates = 0;
-   assert(!vulkan_get_menu_framebuffer(&vk, false, VIDEO_SCALE_PACK(4, 3), &pitch));
-   assert(!creates && !vk.menu.loan);
+   for (mode = 0; mode < 4; mode++)
    {
       uint16_t input[12];
+      features16 = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+      if (mode & 1) features16 |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+      if (mode & 2) features16 |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+      if (mode == 3) features16 = 0;
+      creates = 0;
+      assert(!vulkan_get_menu_framebuffer(&vk, false, VIDEO_SCALE_PACK(4, 3), &pitch));
+      assert(!creates && !vk.menu.loan);
       for (x = 0; x < 12; x++) input[x] = 0xabcd;
       vulkan_set_texture_frame(&vk, input, false, VIDEO_SCALE_PACK(4, 3), 1.0f);
       pitch = vk.menu.textures[0].stride;
@@ -160,7 +166,8 @@ int main(void)
          for (x = 0; x < 4; x++)
             assert(((uint32_t*)(pixels[0] + 16 + y * pitch))[x] == 0xd0c0b0a0);
    }
-   supported16 = true;
+   features16 = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+               | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
    loan = vulkan_get_menu_framebuffer(&vk, true, VIDEO_SCALE_PACK(4, 3), &pitch);
    assert(loan);
    loan = vulkan_get_menu_framebuffer(&vk, false, VIDEO_SCALE_PACK(4, 3), &pitch);
