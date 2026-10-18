@@ -48,7 +48,7 @@ struct pass
    struct { unsigned size_data; } rt;
    unsigned frame_count, frame_direction, frame_time_delta, original_fps;
    unsigned rotation, core_aspect, core_aspect_rot;
-   unsigned total_subframes, current_subframe, swap_count, source_hdr;
+   unsigned total_subframes, current_subframe, swap_count, source_hdr, passthrough;
    unsigned hdr_mode, paper_white_nits, scanlines, subpixel_layout;
    unsigned expand_gamut, inverse_tonemap, hdr10, peak_nits, enable_hdr;
 };
@@ -115,6 +115,8 @@ with tempfile.TemporaryDirectory(prefix="retroarch-slang-bindings-") as temporar
                     checks.append(f"assert(semantics_map.uniforms[SLANG_SEMANTIC_{semantic}] == {expected});")
                 expected_source = f"&{driver}->{chain}.pass[i].source_hdr" if driver != "d3d10" else "NULL"
                 checks.append(f"assert(semantics_map.uniforms[SLANG_SEMANTIC_SOURCE_HDR] == {expected_source});")
+                expected_passthrough = f"&{driver}->{chain}.pass[i].passthrough" if driver != "d3d10" else "NULL"
+                checks.append(f"assert(semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH] == {expected_passthrough});")
                 for semantic in ("GYROSCOPE", "ACCELEROMETER", "ACCELEROMETER_REST"):
                     checks.append(f"assert(semantics_map.uniforms[SLANG_SEMANTIC_{semantic}] == NULL);")
                 label = f"{driver} loader {lane}, DXGI HDR {int(hdr)}"

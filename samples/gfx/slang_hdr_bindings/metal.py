@@ -33,7 +33,7 @@ getter = source[source.index("{", start) + 1:source.index("\n}", start)]
 start = source.index("- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10 emitsHDR16:(bool)emitsHDR16\n{")
 policy = source[source.index("{", start) + 1:source.index("\n}", start)]
 
-aliases = "\n".join(re.findall(r"         semantics_map\.uniforms\[SLANG_SEMANTIC_(?:PAPER_WHITE_ALIAS|PEAK_NITS|MAX_NITS_ALIAS|ENABLE_HDR)\] =.*?;", source, re.S))
+aliases = "\n".join(re.findall(r"         semantics_map\.uniforms\[SLANG_SEMANTIC_(?:PAPER_WHITE_ALIAS|PEAK_NITS|MAX_NITS_ALIAS|ENABLE_HDR|PASSTHROUGH)\] =.*?;", source, re.S))
 
 fixture = r'''
 #include <stdbool.h>
@@ -88,6 +88,7 @@ LATCH
 #undef video_info
    return _frameView;
 }
+static bool _shaderEmitsHDR10, _shaderEmitsHDR16;
 static void update(engine_t *e, unsigned i, unsigned requested, struct values frame, const HDRUniforms *hdr)
 {
    struct { unsigned hdrOutputMode; } _context;
@@ -133,6 +134,7 @@ ALIASES
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] == &_engine.pass[i].peak_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] == &_engine.pass[i].enable_hdr);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] == &_engine.pass[i].peak_nits);
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH] == &_engine.pass[i].passthrough);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR] == &_engine.pass[i].hdr_mode);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS] == &_engine.pass[i].paper_white_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT] == &_engine.pass[i].expand_gamut);
@@ -142,6 +144,7 @@ ALIASES
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP] == &_engine.pass[i].inverse_tonemap);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR10] == &_engine.pass[i].hdr10);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_GYROSCOPE] == NULL);
+      _shaderEmitsHDR10 = _shaderEmitsHDR16 = false;
       for (mode = 0; mode <= 2; mode++)
       {
          unsigned actual = METAL_HDR_AVAILABLE ? mode : 0;
@@ -155,6 +158,7 @@ ALIASES
          CHECK(*(unsigned*)semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT] == (actual ? 4u : 0u));
          CHECK(*(unsigned*)semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT] == (actual ? 2u : 0u));
       }
+      _shaderEmitsHDR10 = _shaderEmitsHDR16 = false;
       for (mode = 0; mode <= 2; mode++)
       {
          for (encoding = 0; encoding < 4; encoding++)
@@ -163,7 +167,10 @@ ALIASES
                   (encoding & 2) != 0);
             float inverse = METAL_HDR_AVAILABLE && mode && !encoding ? 1.0f : 0.0f;
             float pq = METAL_HDR_AVAILABLE && mode == 1 && !encoding ? 1.0f : 0.0f;
+            _shaderEmitsHDR10 = (encoding & 1) != 0;
+            _shaderEmitsHDR16 = (encoding & 2) != 0;
             update(&_engine, i, mode, frame, &policy);
+            CHECK(_engine.pass[i].passthrough == (METAL_HDR_AVAILABLE && mode && encoding ? 1u : 0u));
             CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_INVERSE_TONEMAP] == inverse);
             CHECK(*(float*)semantics_map.uniforms[SLANG_SEMANTIC_HDR10] == pq);
             if (METAL_HDR_AVAILABLE && mode == 2 && encoding == 1)
@@ -183,6 +190,7 @@ ALIASES
       CHECK(_engine.pass[i].scanlines == 0.0f && _engine.pass[i].subpixel_layout == 0);
       {
 REBASE_CODE
+         CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH]) == &view.engine.pass[i].passthrough);
          copy[0] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_HDR]);
          copy[1] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS]);
          CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS]) == &view.engine.pass[i].peak_nits);

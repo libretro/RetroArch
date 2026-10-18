@@ -424,6 +424,7 @@ typedef struct d3d12_pass
    float                           core_aspect;
    float                           core_aspect_rot;
    uint32_t                        source_hdr;
+   uint32_t                        passthrough;
 #ifdef HAVE_DXGI_HDR
    unsigned                        hdr_mode;
    float                           paper_white_nits;
@@ -4084,6 +4085,8 @@ static bool d3d12_shader_load_step(void *data,
 #endif
          semantics_map.uniforms[SLANG_SEMANTIC_SOURCE_HDR] =
                &d3d12->filter.pass[i].source_hdr;
+         semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH] =
+               &d3d12->filter.pass[i].passthrough;
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
          d3d12_frame_rect_semantics(d3d12, &semantics_map);
@@ -4468,6 +4471,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 #endif
       semantics_map.uniforms[SLANG_SEMANTIC_SOURCE_HDR] =
             &d3d12->filter.pass[i].source_hdr;
+      semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH] =
+            &d3d12->filter.pass[i].passthrough;
       semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
       d3d12_frame_rect_semantics(d3d12, &semantics_map);
@@ -7289,6 +7294,31 @@ static bool d3d12_frame_mem_window(d3d12_video_t *d3d12,
    return true;
 }
 
+static unsigned d3d12_chain_passthrough(const d3d12_video_t *video,
+      const d3d12_filter_chain_t *c)
+{
+   enum glslang_format format = SLANG_FORMAT_UNKNOWN;
+   if (!d3d12_hdr_output_mode(video) || !c->shader_preset
+         || !c->shader_preset->passes)
+      return 0;
+#ifdef D3D12_FRAME_IMPORT
+   if (video->movie_texture)
+      return 0;
+#endif
+   if (c->pass[c->shader_preset->passes - 1].semantics.explicit_format)
+      format = c->pass[c->shader_preset->passes - 1].semantics.format;
+   if (format == SLANG_FORMAT_UNKNOWN)
+   {
+      if (video->flags & D3D12_ST_FLAG_SOURCE_FP16)
+         format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else if (video->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+         format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+   }
+   format = glslang_hdr_output_encoding(c->shader_preset, format);
+   return format == SLANG_FORMAT_R16G16B16A16_SFLOAT
+      || format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+}
+
 /* Each pass's values for this frame: every pass of one frame sees the
  * same frame. @one_subframe: shader sub-frames are not drawn. */
 static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
@@ -7296,6 +7326,7 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
       bool one_subframe)
 {
    unsigned i;
+   unsigned passthrough = d3d12_chain_passthrough(d3d12, c);
    uint32_t frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
    float    original_fps     = video_driver_get_original_fps();
    uint32_t rotation         = video_driver_get_rotation_snapshot();
@@ -7340,6 +7371,7 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
          pass->current_subframe = 1;
          pass->swap_count       = (uint32_t)video_info->swap_count;
       }
+      pass->passthrough = passthrough;
       pass->source_hdr = (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10) ? 1 : 0;
 #ifdef D3D12_FRAME_IMPORT
       if (d3d12->movie_texture)

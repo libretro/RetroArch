@@ -11804,6 +11804,13 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vulkan_filter_chain_set_original_fps(
             fc, video_driver_get_original_fps());
+#ifdef VULKAN_HDR_SWAPCHAIN
+      vulkan_filter_chain_set_passthrough(fc,
+            (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && !vk->movie_texture
+            && (vulkan_chain_emits_hdr10(vk, fc) || vulkan_chain_emits_hdr16(vk, fc)));
+#else
+      vulkan_filter_chain_set_passthrough(fc, 0);
+#endif
       vulkan_filter_chain_set_source_hdr(fc,
             !vk->movie_texture && (vk->flags & VK_FLAG_SOURCE_HDR10) ? 1 : 0);
 

@@ -620,6 +620,7 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 min_nits.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 tonemap_operator.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 source_hdr.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 passthrough.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 ../hdr_metadata/framebuffer_format.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal_constants.py

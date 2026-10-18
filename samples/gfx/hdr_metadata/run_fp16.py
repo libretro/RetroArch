@@ -19,6 +19,8 @@ parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
 parser.add_argument("--source-hdr", choices=("builtin", "parameter"))
+parser.add_argument("--passthrough", choices=("builtin", "parameter"))
+parser.add_argument("--expect-passthrough", type=int, choices=(0, 1), default=1)
 parser.add_argument("--tonemap-operator", choices=("builtin", "parameter"))
 parser.add_argument("--min-nits", choices=("builtin", "parameter"))
 parser.add_argument("--enable-hdr", choices=("builtin", "parameter"))
@@ -38,7 +40,7 @@ parser.add_argument("--expect-rejection", action="store_true")
 parser.add_argument("--source-pq", action="store_true", help="use native PQ Rec.2020 input")
 parser.add_argument("--source-sdr", action="store_true", help="use the XRGB8888 metadata fixture")
 args = parser.parse_args()
-if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr or args.min_nits or args.tonemap_operator or args.source_hdr) and not args.hdr_uniforms:
+if (args.paper_white_alias or args.peak_uniforms or args.enable_hdr or args.min_nits or args.tonemap_operator or args.source_hdr or args.passthrough) and not args.hdr_uniforms:
     parser.error("HDR alias checks require --hdr-uniforms")
 if args.overlay and args.preset_hdr_mode is None:
     args.stock = True
@@ -90,6 +92,8 @@ if args.no_format:
     shader = shader.replace("#pragma format R16G16B16A16_SFLOAT\n", "")
 if args.hdr_uniforms:
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if args.passthrough:
+        members += " float Passthrough;" if args.passthrough == "parameter" else " uint Passthrough;"
     if args.source_hdr:
         members += " float SourceHDR;" if args.source_hdr == "parameter" else " uint SourceHDR;"
     if args.tonemap_operator:
@@ -125,6 +129,11 @@ if args.hdr_uniforms:
         if args.enable_hdr == "parameter":
             shader = shader.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         shader = shader.replace("FragColor=", f"ok = ok && {prefix}EnableHDR == {enabled};\n FragColor=")
+    if args.passthrough:
+        passthrough = "0.375" if args.passthrough == "parameter" else str(args.expect_passthrough) + "u"
+        if args.passthrough == "parameter":
+            shader = shader.replace("#version 450", '#version 450\n#pragma parameter Passthrough "Local ownership" 0.375 0.0 1.0 0.125')
+        shader = shader.replace("FragColor=", f"ok = ok && {prefix}Passthrough == {passthrough};\n FragColor=")
     if args.source_hdr:
         source_hdr = "0.375" if args.source_hdr == "parameter" else ("1u" if args.source_pq else "0u")
         if args.source_hdr == "parameter":

@@ -14,6 +14,7 @@ p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="glcore")
 p.add_argument("--source-pq", action="store_true", help="check native PQ on SDR output")
 p.add_argument("--source-hdr", choices=("builtin", "parameter"))
+p.add_argument("--passthrough", choices=("builtin", "parameter"))
 p.add_argument("--tonemap-operator", choices=("builtin", "parameter"))
 p.add_argument("--min-nits", choices=("builtin", "parameter"))
 p.add_argument("--enable-hdr", choices=("builtin", "parameter"))
@@ -37,6 +38,8 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-o", str(core), "-lm"], check=True)
 for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if a.passthrough:
+        members += " float Passthrough;" if a.passthrough == "parameter" else " uint Passthrough;"
     if a.source_hdr:
         members += " float SourceHDR;" if a.source_hdr == "parameter" else " uint SourceHDR;"
     if a.tonemap_operator:
@@ -96,6 +99,13 @@ void main() {
         if a.enable_hdr == "parameter":
             text = text.replace("#version 450", '#version 450\n#pragma parameter EnableHDR "Local HDR" 0.375 0.0 1.0 0.125')
         text = text.replace("FragColor=", f"ok=ok && {prefix}.EnableHDR=={enabled};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
+    if a.passthrough:
+        text = shader.read_text(encoding="utf-8")
+        passthrough = "0.375" if a.passthrough == "parameter" else "0u"
+        if a.passthrough == "parameter":
+            text = text.replace("#version 450", '#version 450\n#pragma parameter Passthrough "Local ownership" 0.375 0.0 1.0 0.125')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.Passthrough=={passthrough};\n FragColor=")
         shader.write_text(text, encoding="utf-8")
     if a.source_hdr:
         text = shader.read_text(encoding="utf-8")

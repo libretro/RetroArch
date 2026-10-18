@@ -98,10 +98,12 @@ enum slang_semantic
    SLANG_SEMANTIC_TONEMAP_OPERATOR    = 31,
    /* uint, Original is native PQ Rec.2020 */
    SLANG_SEMANTIC_SOURCE_HDR          = 32,
-   SLANG_NUM_BASE_SEMANTICS        = 33,
+   /* uint, native HDR ownership without creative curves or white scaling */
+   SLANG_SEMANTIC_PASSTHROUGH         = 33,
+   SLANG_NUM_BASE_SEMANTICS        = 34,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 33,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 34,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

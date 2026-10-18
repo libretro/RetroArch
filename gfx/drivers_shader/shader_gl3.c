@@ -834,6 +834,7 @@ struct gl3_common_resources
    GLuint quad_vbo;
    gl3_buffer_locations quad_loc;
    unsigned source_hdr;
+   unsigned passthrough;
    unsigned hdr_mode;
    float paper_white_nits;
    float peak_nits;
@@ -1700,6 +1701,7 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
    gl3_pass_reflect_parameter(pass, "EnableHDR", &pass->reflection.semantics[SLANG_SEMANTIC_ENABLE_HDR]);
    gl3_pass_reflect_parameter(pass, "MinNits", &pass->reflection.semantics[SLANG_SEMANTIC_MIN_NITS]);
    gl3_pass_reflect_parameter(pass, "SourceHDR", &pass->reflection.semantics[SLANG_SEMANTIC_SOURCE_HDR]);
+   gl3_pass_reflect_parameter(pass, "Passthrough", &pass->reflection.semantics[SLANG_SEMANTIC_PASSTHROUGH]);
    gl3_pass_reflect_parameter(pass, "TonemapOperator", &pass->reflection.semantics[SLANG_SEMANTIC_TONEMAP_OPERATOR]);
    gl3_pass_reflect_parameter(pass, "ExpandGamut", &pass->reflection.semantics[SLANG_SEMANTIC_EXPAND_GAMUT]);
    gl3_pass_reflect_parameter(pass, "Gyroscope", &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
@@ -2373,6 +2375,7 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
    gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_MIN_NITS, 0.0f);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_TONEMAP_OPERATOR, 0);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SOURCE_HDR, pass->common->source_hdr);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_PASSTHROUGH, pass->common->passthrough);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
                       pass->common->hdr_mode);
    gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ENABLE_HDR,
@@ -4387,6 +4390,12 @@ void gl3_filter_chain_set_pass_info(
 bool gl3_filter_chain_init(gl3_filter_chain_t *chain)
 {
    return gl3_chain_init(chain);
+}
+
+void gl3_filter_chain_set_passthrough(
+      gl3_filter_chain_t *chain, unsigned passthrough)
+{
+   chain->common.passthrough = passthrough ? 1 : 0;
 }
 
 void gl3_filter_chain_set_source_hdr(

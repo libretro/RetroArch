@@ -139,6 +139,9 @@ void vulkan_filter_chain_notify_sync_index(vulkan_filter_chain_t *chain,
 
 bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain);
 
+void vulkan_filter_chain_set_passthrough(
+      vulkan_filter_chain_t *chain, unsigned passthrough);
+
 void vulkan_filter_chain_set_source_hdr(
       vulkan_filter_chain_t *chain, unsigned source_hdr);
 

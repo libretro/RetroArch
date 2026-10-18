@@ -6363,6 +6363,7 @@ typedef struct MTLALIGN(16)
       uint32_t current_subframe;
       uint32_t swap_count;
       uint32_t hdr_mode;
+      uint32_t passthrough;
       float inverse_tonemap;
       float hdr10;
       float scanlines;
@@ -7242,6 +7243,8 @@ struct metal_view_chain
    e->pass[i].total_subframes  = _totalSubframes;
    e->pass[i].current_subframe = _currentSubframe;
    e->pass[i].hdr_mode = _context.hdrOutputMode;
+   e->pass[i].passthrough = e->pass[i].hdr_mode
+      && (_shaderEmitsHDR10 || _shaderEmitsHDR16) ? 1 : 0;
    e->pass[i].enable_hdr = e->pass[i].hdr_mode ? 1.0f : 0.0f;
    e->pass[i].paper_white_nits = e->pass[i].hdr_mode
       ? _hdrPaperWhiteNits : 0.0f;
@@ -7951,6 +7954,8 @@ error:
                &_engine.pass[i].peak_nits;
          semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
                semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+         semantics_map.uniforms[SLANG_SEMANTIC_PASSTHROUGH] =
+               &_engine.pass[i].passthrough;
          semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
                &_engine.pass[i].enable_hdr;
 

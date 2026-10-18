@@ -103,6 +103,9 @@ void gl3_filter_chain_set_pass_info(
 
 bool gl3_filter_chain_init(gl3_filter_chain_t *chain);
 
+void gl3_filter_chain_set_passthrough(
+      gl3_filter_chain_t *chain, unsigned passthrough);
+
 void gl3_filter_chain_set_source_hdr(
       gl3_filter_chain_t *chain, unsigned source_hdr);
 
