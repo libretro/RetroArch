@@ -10577,6 +10577,7 @@ static void d3d12_set_menu_texture_frame(
                || d3d12->menu.source_format != format)
             return;
          loan = true;
+         pitch = d3d12->menu.texture.layout.Footprint.RowPitch;
          break;
       }
 
@@ -10620,6 +10621,12 @@ static void d3d12_set_menu_texture_frame(
       d3d12_init_texture(d3d12->device, &d3d12->menu.texture);
       d3d12->menu.source_format = format;
    }
+
+   /* RGUI BGRA4444 and DXGI B4G4R4A4 use different bit positions. */
+   if ((loan || upload) && !rgb32
+         && d3d12->menu.texture.desc.Format == native_format)
+      dxgi_copy(width, height, format, pitch, frame,
+            native_format, pitch, (void*)frame);
 
    if (     upload && d3d12->menu.texture.handle
          && d3d12->menu.texture.desc.Format == native_format)

@@ -16,6 +16,16 @@ for name in ("static void *d3d12_get_menu_framebuffer(",
              "static void d3d12_frame_mem_free(void *data, uintptr_t id)\n{"):
     start = source.index(name)
     functions += source[start:source.index("\n}\n", start) + 3]
+dxgi = (root / "gfx/common/dxgi_common.c").read_text(encoding="utf-8")
+start = dxgi.index("\n      case DXGI_FORMAT_EX_A4R4G4B4_UNORM:", dxgi.index("void dxgi_copy("))
+start = dxgi.index("            case DXGI_FORMAT_B4G4R4A4_UNORM:", start)
+start = dxgi.index("{", dxgi.index("{", start) + 1)
+level = 1
+end = start + 1
+while level:
+    level += (dxgi[end] == "{") - (dxgi[end] == "}")
+    end += 1
+conversion = dxgi[start:end]
 fixture = r'''
 #include <assert.h>
 #include <stdint.h>
@@ -67,7 +77,7 @@ typedef struct {
 typedef struct { struct { bool menu_linear_filter; } bools; } settings_t;
 static settings_t settings;
 static UINT64 completed;
-static unsigned copies, maps, releases, waits;
+static unsigned copies, maps, releases, waits, swizzles;
 static int copied_src_pitch;
 static unsigned refuse;
 static uint8_t uploads[2][512 * 4];
@@ -108,8 +118,24 @@ static void dxgi_copy(unsigned w, unsigned h, DXGI_FORMAT src_format,
 {
    (void)w; (void)h; (void)src_format; (void)pitch; (void)frame;
    (void)dst_format; (void)dst_pitch; (void)dst;
-   copies++;
-   copied_src_pitch = pitch;
+   if (frame == dst)
+   {
+      int i, j;
+      int width = w, height = h;
+      int src_pitch = pitch;
+      const void *src_data = frame;
+      void *dst_data = dst;
+      typedef uint16_t UINT16;
+      typedef uint8_t UINT8;
+      assert(src_format == 116 && dst_format == 16);
+      swizzles++;
+CONVERSION
+   }
+   else
+   {
+      copies++;
+      copied_src_pitch = pitch;
+   }
 }
 #define D3D12Map(vbo, sub, range, out) ((void)(vbo), (void)(sub), (void)(range), *(out) = vertices)
 #define D3D12Unmap(vbo, sub, range) ((void)(vbo), (void)(sub), (void)(range))
@@ -173,7 +199,7 @@ int main(void)
       memset(&d, 0, sizeof(d));
       d.queue.fence = &fence;
       completed = 5;
-      copies = maps = releases = waits = refuse = 0;
+      copies = maps = releases = waits = refuse = swizzles = 0;
       d3d12_set_menu_texture_frame(&d, fallback, mode, dims, 1.0f);
       assert(copies == 1 && releases == 1);
       /* Pending normal uploads cannot be overwritten by a loan. */
@@ -181,9 +207,27 @@ int main(void)
       loan = d3d12_get_menu_framebuffer(&d, mode, dims, &pitch);
       assert(loan == uploads[1] && pitch == (mode ? 512 : 256));
       memset(loan, 0x71, pitch * 4);
+      if (!mode)
+      {
+         unsigned x, y;
+         for (y = 0; y < 4; y++)
+            for (x = 0; x < 65; x++)
+               ((uint16_t*)((uint8_t*)loan + y * pitch))[x] = 0x1234;
+      }
       d3d12_set_menu_texture_frame(&d, loan, mode, dims, 0.5f);
       assert(copies == 1 && t->pending == 1 && t->dirty);
       assert(vertices[0].color[3] == 0.5f);
+      assert(swizzles == (mode ? 0 : 1));
+      if (!mode)
+      {
+         unsigned x, y;
+         for (y = 0; y < 4; y++)
+         {
+            for (x = 0; x < 65; x++)
+               assert(((uint16_t*)((uint8_t*)loan + y * pitch))[x] == 0x4321);
+            assert(((uint8_t*)loan)[y * pitch + 130] == 0x71);
+         }
+      }
       /* Recording a copy stamps the selected slot's retirement fence. */
       t->dirty = false;
       t->lend_fence[1] = 6;
@@ -191,7 +235,7 @@ int main(void)
       maps = 0;
       pitch = 123;
       assert(!d3d12_get_menu_framebuffer(&d, mode, dims, &pitch));
-      assert(!maps && pitch == 123 && ((uint8_t*)loan)[0] == 0x71);
+      assert(!maps && pitch == 123 && ((uint8_t*)loan)[0] == (mode ? 0x71 : 0x21));
       completed = 6;
       assert(d3d12_get_menu_framebuffer(&d, mode, dims, &pitch) == uploads[1]);
       d3d12_set_menu_texture_frame(&d, uploads[1], mode, dims, 1.0f);
@@ -229,7 +273,10 @@ int main(void)
       d.frame_mem[1].menu = true;
       t->lent = 0;
       maps = waits;
+      memset(uploads[0], 0x12, sizeof(uploads[0]));
       d3d12_set_menu_texture_frame(&d, uploads[0], mode, dims, 1.0f);
+      assert(((uint16_t*)uploads[0])[0] == (mode ? 0x1212 : 0x2121));
+      assert(((uint16_t*)uploads[0])[128] == (mode ? 0x1212 : 0x2121));
       assert(copies == 2 && waits == maps && d.menu.upload == 1);
       assert(d.frame_mem[0].pending && !d3d12_frame_mem_ready(&d, 1));
       d3d12_set_menu_texture_frame(&d, uploads[1], mode, dims, 1.0f);
@@ -274,14 +321,14 @@ int main(void)
             VIDEO_SCALE_PACK(66, 4), 1.0f);
       assert(releases == 1 && copies == 3);
    }
-   puts("PASS: D3D12 padded menu loans, pending uploads, fences and copy fallback");
+   puts("PASS: D3D12 padded menu loans, pixel conversion, pending uploads, fences and copy fallback");
    return 0;
 }
 '''
 with tempfile.TemporaryDirectory(prefix="retroarch-d3d12-menu-") as directory:
     src = Path(directory) / "menu.c"
     exe = Path(directory) / "menu.exe"
-    src.write_text(fixture.replace("FUNCTIONS", functions), encoding="utf-8")
+    src.write_text(fixture.replace("FUNCTIONS", functions).replace("CONVERSION", conversion), encoding="utf-8")
     command = shlex.split(os.environ.get("CC", "cc"))
     command += ["-std=gnu89", "-Wall", "-Wextra", "-Werror"]
     command += shlex.split(os.environ.get("CFLAGS", ""))
