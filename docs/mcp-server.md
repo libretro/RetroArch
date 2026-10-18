@@ -86,7 +86,7 @@ Over stdin and stdout RetroArch also offers logging: after
 `logging/setLevel`, what it logs at that level and above arrives as
 `notifications/message`. When the client closes stdin, RetroArch quits.
 
-## The handshake, the prompt and completions
+## The handshake
 
 `initialize` answers with `instructions`: how the tools fit together to
 play a game - find it with `LIST_PLAYLISTS` and `GET_PLAYLIST`, load it
@@ -94,17 +94,6 @@ paused, `WATCH` what each step needs, step with `STEPS` - queued, so
 the game plays on while the next stretch is planned - `PRESS ... until`
 or `RUN_UNTIL`, and `STATE checkpoint` before a risky move. A client
 shows this to the model once rather than in every tool.
-
-One prompt is offered, `play_game`, taking an optional `playlist`,
-`game` and `goal`; it starts a session with the same workflow, naming
-the game. Its `playlist` completes from the playlists, and its `game`
-from the playlist already chosen - matching anywhere in the name, case
-aside, so `mario` finds `Super Mario Bros.`. Both lists are read on a
-task, as `LIST_PLAYLISTS` reads them, and answered when it is through;
-a playlist that cannot be read is answered with an error rather than
-with no matches. A game is looked for in the playlist's first 200
-entries, and `hasMore` says when there were more; a prompt or resource
-there is none of is invalid params.
 
 Every tool also has a `title` for people, made from its name: `Run
 frames` for `RUN_FRAMES`.

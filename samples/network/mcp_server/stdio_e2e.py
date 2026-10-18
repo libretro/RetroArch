@@ -318,11 +318,6 @@ check('RESET paused resets and stays paused: ' + (st or '').strip(),
       st0 and 'PLAYING' in st0
       and t and t.strip().startswith('RESET') and not msg['result']['isError']
       and st and 'PAUSED' in st)
-send({'jsonrpc': '2.0', 'id': 247, 'method': 'prompts/get',
-      'params': {'name': 'play_game', 'arguments': {'game': 'Tetris'}}})
-msg, _ = recv(247)
-check('the play_game prompt names the game',
-      msg and 'Play Tetris' in msg['result']['messages'][0]['content']['text'])
 
 # LOAD_CONTENT with paused on stops the game the frame it has loaded, so
 # nothing runs before the first step: a title screen's demo, say.
