@@ -62,3 +62,43 @@ jobs:
             ${{ matrix.version == 'UWP' }}:
               pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
 
+  msvc2026:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    strategy:
+      matrix:
+        version: [UWP, 2026]
+        configuration: [Debug, Release]
+        platform: [x64]
+        exclude:
+          - version: UWP
+            configuration: Debug
+        include:
+          - version: UWP
+            configuration: ReleaseAngle
+            platform: x64
+        # Qt and Cg builds are excluded for now
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Compile RA
+        working-directory: "${{github.workspace}}/pkg/msvc${{ matrix.version == 'UWP' && '-uwp' || ''}}"
+        run: |
+          msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvc${{matrix.version}}.sln
+
+      - name: Get short SHA
+        id: slug
+        shell: powershell
+        run: echo "sha8=$('${{github.sha}}'.Substring(0,8))"  >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retroarch-${{matrix.version}}-vs2026-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
+          path: |
+            ${{ matrix.version != 'UWP' }}:
+              pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc${{matrix.version}}.exe
+            ${{ matrix.version == 'UWP' }}:
+              pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
