@@ -889,33 +889,43 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
    out->pose.position.z += world.z;
 }
 
-/* Where a ray meets the menu q's handle, as a point in q's own frame. */
+/* Where a ray meets the menu q's handle, or comes within the margin of
+ * it, as a point in q's own frame; *bar whether on the bar itself. */
 static bool video_xr_handle_hit(const video_xr_quad_t *q,
       const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
-      float *u, float *v, float *t)
+      float *u, float *v, float *t, bool *bar)
 {
    float hu, hv;
    video_xr_quad_t handle;
-   if (q->height <= 0.0f)
+   if (q->width <= 0.0f || q->height <= 0.0f)
       return false;
    video_xr_menu_handle(q, &handle);
+   handle.width  += 2.0f * VIDEO_XR_HANDLE_MARGIN;
+   handle.height += 2.0f * VIDEO_XR_HANDLE_MARGIN;
    if (!video_xr_ray_hit(&handle, origin, dir, &hu, &hv, t))
       return false;
-   *u = 0.5f + (hu - 0.5f) * VIDEO_XR_HANDLE_WIDTH;
-   *v = 0.5f + (video_xr_handle_top(q) + hv * VIDEO_XR_HANDLE_HEIGHT)
-      / q->height;
+   *bar = fabs(hu - 0.5f) * handle.width
+         <= handle.width * 0.5f - VIDEO_XR_HANDLE_MARGIN
+      && fabs(hv - 0.5f) * handle.height
+         <= handle.height * 0.5f - VIDEO_XR_HANDLE_MARGIN;
+   *u = 0.5f + (hu - 0.5f) * handle.width / q->width;
+   *v = 0.5f + (video_xr_handle_top(q) - VIDEO_XR_HANDLE_MARGIN
+         + hv * handle.height) / q->height;
    return true;
 }
 
-int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
-      bool menu_open, const video_xr_vec3_t *origin,
-      const video_xr_vec3_t *dir, float *u, float *v, float *t)
+static int video_xr_pick_with(const video_xr_quad_set_t *set,
+      unsigned laser, bool menu_open, bool stuck,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
+      float *u, float *v, float *t, bool *stick)
 {
    unsigned i;
-   int best  = -1;
-   float bu  = 0.0f;
-   float bv  = 0.0f;
-   float bt  = 0.0f;
+   int best   = -1;
+   int handle = -1;
+   bool bar   = false;
+   float bu   = 0.0f;
+   float bv   = 0.0f;
+   float bt   = 0.0f;
    for (i = 0; i < set->num_quads; i++)
    {
       float qu, qv, qt;
@@ -925,10 +935,16 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
          continue;
       if (laser == VIDEO_XR_LIVE_EDIT && q->kind == VIDEO_XR_QUAD_MENU)
       {
-         if (!video_xr_handle_hit(q, origin, dir, &qu, &qv, &qt))
-            continue;
+         if (video_xr_handle_hit(q, origin, dir, &qu, &qv, &qt, &bar))
+         {
+            handle = (int)i;
+            *u     = qu;
+            *v     = qv;
+            *t     = qt;
+         }
+         continue;
       }
-      else if (!video_xr_ray_hit(q, origin, dir, &qu, &qv, &qt))
+      if (!video_xr_ray_hit(q, origin, dir, &qu, &qv, &qt))
          continue;
       if (best < 0 || qt < bt)
       {
@@ -938,6 +954,12 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
          bt   = qt;
       }
    }
+   /* The bar wins over anything the ray meets, its margin over
+    * nothing, or over anything while stuck. */
+   if (stick)
+      *stick = handle >= 0 && (bar || stuck);
+   if (handle >= 0 && (bar || stuck || best < 0))
+      return handle;
    if (best >= 0)
    {
       *u = bu;
@@ -945,6 +967,22 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       *t = bt;
    }
    return best;
+}
+
+int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
+      bool menu_open, const video_xr_vec3_t *origin,
+      const video_xr_vec3_t *dir, float *u, float *v, float *t)
+{
+   return video_xr_pick_with(set, laser, menu_open, false, origin, dir,
+         u, v, t, NULL);
+}
+
+int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
+      float *u, float *v, float *t, bool *stick)
+{
+   return video_xr_pick_with(set, VIDEO_XR_LIVE_EDIT, false, stuck,
+         origin, dir, u, v, t, stick);
 }
 
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,

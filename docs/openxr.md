@@ -113,21 +113,23 @@ binds neither that set's Grab nor its RetroArch Menu, as a controller
 binding saved in the runtime before RetroArch had them can.
 
 While editing, every item has a faint outline just outside it, a light
-line between two dark ones so it shows against any border, and the one a
-laser points at a bright one, and both hands have a laser whatever
-**Laser Pointer** is set to, with a beam unless **Laser Beam** is Off.
-The menu also shows a handle bar under it in the same light and dark,
-faint, and bright while a laser is on it. The headset's controllers only
+line between two dark ones so it shows against any border. It is bright
+on what a hand holds, and on what a laser points at unless an item is
+chosen (below). Both hands have a laser whatever **Laser Pointer** is
+set to, with a beam unless **Laser Beam** is Off. The menu also shows a
+handle bar under it in the same light and dark, faint, and bright when
+the menu's outline is. The headset's controllers only
 edit; keyboards and other gamepads still reach the content. The desktop
-window shows a notice when editing starts and when it stops.
+window shows a notice when editing starts and when it stops. **Select
+Next** and **Select Previous** choose an item, below.
 
-| Controller | Grab | Tilt | Distance and size | Reset | Menu |
-| --- | --- | --- | --- | --- | --- |
-| Steam Frame | grip | trigger | stick | A; left hand: D-pad down | right stick click |
-| Valve Index | grip | trigger | stick | A | left trackpad press |
-| Oculus Touch | grip | trigger | stick | X / A | menu button |
-| HTC Vive | grip | trigger | trackpad | trackpad click | left menu button |
-| Simple controller | select | - | - | - | left menu button |
+| Controller | Grab | Tilt | Distance and size | Reset | Menu | Select Next / Previous |
+| --- | --- | --- | --- | --- | --- | --- |
+| Steam Frame | grip | trigger | stick | A; left hand: D-pad down | right stick click | left D-pad right / left |
+| Valve Index | grip | trigger | stick | A | left trackpad press | right B / left B |
+| Oculus Touch | grip | trigger | stick | X / A | menu button | B / Y |
+| HTC Vive | grip | trigger | trackpad | trackpad click | left menu button | right menu button / - |
+| Simple controller | select | - | - | - | left menu button | - |
 
 - A grip on an item grabs it: it keeps its place relative to the hand
   and follows it. Each hand holds one item; the other hand on the same
@@ -143,11 +145,26 @@ window shows a notice when editing starts and when it stops.
   back.
 - Reset on a screen does what Reset Screen does; on the menu it makes
   the menu follow Screen 1 again.
-- The menu is grabbed by its handle bar; elsewhere on the menu the grip
-  takes the screen behind. Grabbing the menu places it where it shows,
-  even without moving it, so it no longer follows Screen 1. The legacy
-  **gl** driver draws the menu in its window, so only screens can be
-  grabbed there.
+- The menu is grabbed by its handle bar, even where a screen is nearer,
+  and within about 3 cm of the bar where the laser meets no other item;
+  elsewhere on the menu the grip takes the screen behind. Once a laser
+  is on the bar, the bar stays its target while the laser stays within
+  those 3 cm, even over a screen; a laser that comes into the 3 cm from
+  a screen keeps the screen. Grabbing the menu places it where it
+  shows, even without moving it, so it no longer follows Screen 1. The
+  legacy **gl** driver draws the menu in its window, so only screens
+  can be grabbed there.
+- Select Next and Select Previous choose an item: they step from
+  Laser through each screen that can be moved, in number order (a 3D
+  screen is one), then the menu while it is shown, and back to Laser.
+  Laser is the usual way: grip and Reset act on what a laser points at.
+  With an item chosen, its outline is bright and pointing lights
+  nothing else; either hand's grip takes it from wherever the
+  hand is, as if on a stick, and Reset resets it. While one hand holds
+  it, the other points, grabs and resets as usual. The choice stays
+  after letting go, until stepped back to Laser or edit mode ends; a
+  chosen screen that is hidden or goes away goes back to Laser. This
+  takes a screen hidden behind another.
 - A head-tracked core's projection cannot be grabbed, nor can the whole
   frame a views core falls back to when its screens cannot be placed. In
   Follow Head a grabbed screen keeps its place in view; Lazy Follow does

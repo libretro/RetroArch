@@ -976,8 +976,8 @@ static void test_session_made(void)
 {
    t_reset_log();
    t_session(false);
-   CHECK(t_num_sets == 4 && t_num_actions == 45,
-         "%u sets and %u actions made, want 4 and 45", t_num_sets,
+   CHECK(t_num_sets == 4 && t_num_actions == 47,
+         "%u sets and %u actions made, want 4 and 47", t_num_sets,
          t_num_actions);
    CHECK(t_suggested == 4,
          "%u profiles suggested without the Frame's extension, want 4",
@@ -3227,6 +3227,142 @@ static void test_edit_outlines(void)
    t_edit_end();
 }
 
+/* Screen 2, 0.8 x 0.5, 20 cm nearer than the menu and under its
+ * handle bar, its top edge 7 mm above the bar's middle. */
+static void t_screen_under_handle(void)
+{
+   video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
+   memset(q, 0, sizeof(*q));
+   video_xr_pose_identity(&q->pose);
+   q->pose.position.x = 2.0f;
+   q->pose.position.y = t_handle_y(0.6f) + 0.007f - 0.25f;
+   q->pose.position.z = -1.5f;
+   q->width           = 0.8f;
+   q->height          = 0.5f;
+   q->kind            = VIDEO_XR_QUAD_SCREEN;
+   q->screen          = 1;
+   q->slot            = 1;
+   t_quads.slots[1].base = q->pose.position;
+}
+
+/* Whether the bright outlines in the frame loop's layers are only one
+ * w wide (the menu's 1.0, screen 2's 0.8). */
+static bool t_lit_only(const XrCompositionLayerBaseHeader **layers,
+      unsigned n, float w)
+{
+   unsigned i;
+   unsigned lit = 0;
+   for (i = 0; i < n; i++)
+   {
+      const XrCompositionLayerQuad *q =
+         (const XrCompositionLayerQuad*)layers[i];
+      if (     q->subImage.imageRect.offset.x != VIDEO_XR_OUTLINE_X(1)
+            || q->subImage.imageRect.extent.width != VIDEO_XR_OUTLINE_DIM)
+         continue;
+      if (!t_near(q->size.width, t_outline(w)))
+         return false;
+      lit++;
+   }
+   return lit == 1;
+}
+
+/* The menu's handle sticks to a laser that was on its bar: in the 3 cm
+ * margin over screen 2 the grip still takes the menu; arriving there
+ * from screen 2, screen 2. Losing tracking and edit mode's end let go;
+ * the frame loop is told, and lights what is stuck. */
+static void test_edit_handle_sticky(void)
+{
+   unsigned n;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local      = XR_NULL_HANDLE;
+   const float hy     = t_handle_y(0.6f);
+   input_openxr_edit_t *e = &input_openxr_edit;
+   t_edit_start();
+   t_screen_under_handle();
+   t_aim_tracked[1]    = false;
+   t_aim[2].position.x = 2.0f;
+   t_aim[2].position.y = hy;
+   t_edit_poll();
+   CHECK(e->stuck == 2u && t_grabs.stuck == 2u
+         && input_openxr_st.hit[1] == 1,
+         "on the bar: stuck %#x, published %#x, hit %d", e->stuck,
+         t_grabs.stuck, input_openxr_st.hit[1]);
+   t_aim[2].position.y = hy - 0.03f;
+   t_edit_poll();
+   CHECK(e->stuck == 2u && input_openxr_st.hit[1] == 1,
+         "in the margin over screen 2: stuck %#x, hit %d", e->stuck,
+         input_openxr_st.hit[1]);
+   /* The frame loop lights the menu while stuck, screen 2 when not. */
+   local    = t_xr_session.local_space;
+   t_cursor = true;
+   shown    = t_quads;
+   t_xr_frame.grabs = t_grabs;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit_only(layers, n, 1.0f), "stuck: the menu not alone lit");
+   t_xr_frame.grabs.stuck = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit_only(layers, n, 0.8f), "unstuck: screen 2 not alone lit");
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor = false;
+   /* The grip takes the menu. */
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(e->hand[1].g.state == VIDEO_XR_GRAB_HELD
+         && e->hand[1].g.slot == VIDEO_XR_MENU_SLOT,
+         "stuck, the grip took slot %u", e->hand[1].g.slot);
+   t_let_go();
+   t_edit_poll();
+   /* From screen 2 past the margin into it: screen 2's. */
+   t_aim[2].position.y = hy - 0.06f;
+   t_edit_poll();
+   CHECK(!e->stuck && input_openxr_st.hit[1] == 2,
+         "past the margin: stuck %#x, hit %d", e->stuck,
+         input_openxr_st.hit[1]);
+   t_aim[2].position.y = hy - 0.03f;
+   t_edit_poll();
+   CHECK(!e->stuck && input_openxr_st.hit[1] == 2,
+         "arriving from screen 2: stuck %#x, hit %d", e->stuck,
+         input_openxr_st.hit[1]);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(e->hand[1].g.slot == 1, "not stuck, the grip took slot %u",
+         e->hand[1].g.slot);
+   t_let_go();
+   t_edit_poll();
+   /* Untracked, it lets go; edit mode's end clears it. */
+   t_aim[2].position.y = hy;
+   t_edit_poll();
+   t_aim_tracked[2] = false;
+   t_edit_poll();
+   CHECK(!e->stuck && !t_grabs.stuck, "untracked, still stuck %#x",
+         e->stuck);
+   t_aim_tracked[2] = true;
+   t_edit_poll();
+   CHECK(e->stuck == 2u, "back on the bar: %#x", e->stuck);
+   /* Per hand: the left hand in the margin, only the right stuck. */
+   t_aim_tracked[1]    = true;
+   t_aim[1].position.x = 2.0f;
+   t_aim[1].position.y = hy - 0.03f;
+   t_edit_poll();
+   CHECK(e->stuck == 2u && input_openxr_st.hit[0] == 2,
+         "the left hand in the margin: stuck %#x, hit %d", e->stuck,
+         input_openxr_st.hit[0]);
+   t_aim_tracked[2]       = false;
+   t_cursor               = true;
+   shown                  = t_quads;
+   t_xr_frame.grabs.stuck = 2u;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit_only(layers, n, 0.8f), "the left hand lit the menu");
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor = false;
+   t_edit_end();
+   CHECK(!e->stuck, "edit mode ended, still stuck %#x", e->stuck);
+}
+
 /* A layer's own axis (x, y, z), in its space. */
 static void t_layer_axis(const XrCompositionLayerQuad *l, float x, float y,
       float z, video_xr_vec3_t *out)
@@ -3386,6 +3522,359 @@ static void test_edit_beams(void)
    t_cursor            = false;
    t_aim[2].position.x = 0.0f;
    t_aim[2].position.y = 0.0f;
+   t_edit_end();
+}
+
+/* Screen 2 hidden behind screen 1: 1.2 x 0.9 at 2.1 m, its spot. */
+static void t_edit_buried(void)
+{
+   video_xr_quad_t *q = &t_quads.quads[t_quads.num_quads++];
+   memset(q, 0, sizeof(*q));
+   video_xr_pose_identity(&q->pose);
+   q->pose.position.z      = -2.1f;
+   q->width                = 1.2f;
+   q->height               = 0.9f;
+   q->kind                 = VIDEO_XR_QUAD_SCREEN;
+   q->screen               = 1;
+   q->slot                 = 1;
+   t_quads.slots[1].base.z = -2.1f;
+}
+
+/* Select Next (step 1) or Select Previous (-1) pressed and let go;
+ * whatever else was held is let go too. */
+static void t_edit_select(int step)
+{
+   t_hold(step > 0 ? "edit/select_next" : "edit/select_previous", 0,
+         1.0f, 0.0f);
+   t_edit_poll();
+   t_let_go();
+   t_edit_poll();
+}
+
+/* The slots whose outline is bright in the frame loop's layers: a
+ * bright outline shows the image's VIDEO_XR_OUTLINE_X(1) square, as
+ * test_edit_outlines tells it (handles, beams and dots show other
+ * parts); its item told by where it sits: the menu at x 2, screen 2
+ * beyond 2 m, screen 1 else. */
+static unsigned t_lit(const XrCompositionLayerBaseHeader **layers,
+      unsigned n)
+{
+   unsigned i;
+   unsigned lit = 0;
+   for (i = 0; i < n; i++)
+   {
+      const XrCompositionLayerQuad *q =
+         (const XrCompositionLayerQuad*)layers[i];
+      if (     q->subImage.imageRect.offset.x != VIDEO_XR_OUTLINE_X(1)
+            || q->subImage.imageRect.extent.width != VIDEO_XR_OUTLINE_DIM)
+         continue;
+      if (t_near(q->pose.position.x, 2.0f))
+         lit |= 1u << VIDEO_XR_MENU_SLOT;
+      else if (q->pose.position.z < -2.0f)
+         lit |= 1u << 1;
+      else
+         lit |= 1u;
+   }
+   return lit;
+}
+
+/* Select Next and Select Previous: suggested per profile, the Frame's
+ * on the left D-pad beside its Reset, the Vive's next alone, the simple
+ * controller's none. */
+static void test_edit_select_bindings(void)
+{
+   const char *index  = "/interaction_profiles/valve/index_controller";
+   const char *frame  = "/interaction_profiles/valve/frame_controller_valve";
+   const char *vive   = "/interaction_profiles/htc/vive_controller";
+   const char *simple = "/interaction_profiles/khr/simple_controller";
+   t_forget_devices();
+   t_num_sets    = 0;
+   t_num_actions = 0;
+   t_num_bound   = 0;
+   t_spaces_made = 0;
+   t_session(true);
+   CHECK(t_binds(frame, "edit/select_next",
+            "/user/hand/left/input/dpad_right/click")
+         && t_binds(frame, "edit/select_previous",
+            "/user/hand/left/input/dpad_left/click")
+         && t_binds(frame, "edit/reset",
+            "/user/hand/left/input/dpad_down/click"),
+         "the Frame's choice is not the left D-pad's right and left");
+   CHECK(t_touch_binds("edit/select_next", "/user/hand/right/input/b/click")
+         && t_touch_binds("edit/select_previous",
+            "/user/hand/left/input/y/click"),
+         "Touch's choice is not B and Y");
+   CHECK(t_binds(index, "edit/select_next", "/user/hand/right/input/b/click")
+         && t_binds(index, "edit/select_previous",
+            "/user/hand/left/input/b/click"),
+         "Index's choice is not the right and the left B");
+   CHECK(t_binds(vive, "edit/select_next", "/user/hand/right/input/menu/click")
+         && !t_binds(vive, "edit/select_previous", NULL),
+         "the Vive's choice is not the right menu button alone");
+   CHECK(!t_binds(simple, "edit/select_next", NULL)
+         && !t_binds(simple, "edit/select_previous", NULL),
+         "the simple controller has a choice");
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_forget_devices();
+}
+
+/* Select Next steps Laser, the shown screens by number (a stereo pair
+ * one, a hidden or fixed screen none), the menu, Laser again; Select
+ * Previous the other way; a held button steps once. Without the menu's
+ * quad (gl) there is no menu step. */
+static void test_edit_select_cycle(void)
+{
+   input_openxr_edit_t *e = &input_openxr_edit;
+   t_edit_start();
+   CHECK(e->chosen == -1, "edit mode starts on %d, not the laser",
+         e->chosen);
+   /* Screen 1 a stereo pair; screen 2 hidden (no quad in slot 1);
+    * screen 3 shown (slot 2); screen 4 fixed (slot 3). */
+   t_quads.quads[0].eye             = VIDEO_XR_EYE_LEFT;
+   t_quads.quads[2]                 = t_quads.quads[0];
+   t_quads.quads[2].eye             = VIDEO_XR_EYE_RIGHT;
+   t_quads.quads[3]                 = t_quads.quads[0];
+   t_quads.quads[3].eye             = VIDEO_XR_EYE_BOTH;
+   t_quads.quads[3].slot            = 2;
+   t_quads.quads[3].pose.position.x = -2.0f;
+   t_quads.quads[4]                 = t_quads.quads[3];
+   t_quads.quads[4].slot            = 3;
+   t_quads.quads[4].pose.position.x = -4.0f;
+   t_quads.slots[3].fixed           = true;
+   t_quads.num_quads                = 5;
+   t_edit_select(1);
+   CHECK(e->chosen == 0, "next from the laser: %d", e->chosen);
+   t_edit_select(1);
+   CHECK(e->chosen == 2, "next from screen 1: %d", e->chosen);
+   t_edit_select(1);
+   CHECK(e->chosen == VIDEO_XR_MENU_SLOT, "next from screen 3: %d",
+         e->chosen);
+   t_edit_select(1);
+   CHECK(e->chosen == -1, "next from the menu: %d", e->chosen);
+   t_edit_select(-1);
+   CHECK(e->chosen == VIDEO_XR_MENU_SLOT, "previous from the laser: %d",
+         e->chosen);
+   t_edit_select(-1);
+   CHECK(e->chosen == 2, "previous from the menu: %d", e->chosen);
+   t_edit_select(-1);
+   CHECK(e->chosen == 0, "previous from screen 3: %d", e->chosen);
+   t_edit_select(-1);
+   CHECK(e->chosen == -1, "previous from screen 1: %d", e->chosen);
+   t_hold("edit/select_next", 0, 1.0f, 0.0f);
+   t_edit_poll();
+   t_edit_poll();
+   CHECK(e->chosen == 0, "a held Select Next stepped to %d", e->chosen);
+   t_let_go();
+   t_edit_poll();
+   /* No menu quad: screen 3 steps back to the laser. */
+   t_quads.quads[1] = t_quads.quads[2];
+   t_edit_select(1);
+   CHECK(e->chosen == 2, "next from screen 1 without a menu: %d",
+         e->chosen);
+   t_edit_select(1);
+   CHECK(e->chosen == -1, "next from screen 3 without a menu: %d",
+         e->chosen);
+   t_edit_end();
+}
+
+/* A chosen item gone from the cycle falls back to the laser; edit mode
+ * ending forgets the choice, for the frame loop too. */
+static void test_edit_select_fallback(void)
+{
+   input_openxr_edit_t *e = &input_openxr_edit;
+   t_edit_start();
+   t_edit_buried();
+   t_edit_select(1);
+   t_edit_select(1);
+   CHECK(e->chosen == 1 && t_grabs.chosen == 2,
+         "screen 2 not chosen: %d, published %u", e->chosen,
+         t_grabs.chosen);
+   t_quads.num_quads--;
+   t_edit_poll();
+   CHECK(e->chosen == -1 && t_grabs.chosen == 0,
+         "hidden, screen 2 stayed chosen");
+   t_edit_buried();
+   t_edit_select(-1);
+   CHECK(e->chosen == VIDEO_XR_MENU_SLOT, "previous chose %d", e->chosen);
+   input_openxr_edit_toggle();
+   CHECK(!t_editing && t_grabs.chosen == 0,
+         "edit mode ended with %u published", t_grabs.chosen);
+   t_edit_on(false);
+   t_edit_poll();
+   CHECK(e->chosen == -1, "a new edit mode starts on %d", e->chosen);
+   t_edit_end();
+}
+
+/* Screen 2 chosen behind screen 1: the grip takes it from where the
+ * hand is and moves it as on a stick; the other hand takes what its
+ * laser is on meanwhile; let go, it stays chosen; Reset resets it, not
+ * what the laser is on. */
+static void test_edit_select_grab(void)
+{
+   input_openxr_edit_t *e   = &input_openxr_edit;
+   const video_xr_grab_t *l = &e->hand[0].g;
+   const video_xr_grab_t *r = &e->hand[1].g;
+   t_edit_start();
+   t_edit_buried();
+   t_edit_select(1);
+   t_edit_select(1);
+   /* The right hand 0.5 right, 0.2 up, turned 30 degrees left: its
+    * laser on screen 1. */
+   t_aim[2].position.x    = 0.5f;
+   t_aim[2].position.y    = 0.2f;
+   t_aim[2].orientation.y = (float)sin(M_PI / 12.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 12.0);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state == VIDEO_XR_GRAB_HELD && r->slot == 1,
+         "the grip took slot %u in state %u", r->slot, r->state);
+   CHECK(!t_modified, "the grab itself moved something");
+   t_aim[2].position.x = 0.6f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, 0.1f) && t_near(t_xr[1].y, 0.0f)
+         && t_near(t_xr[1].z, 0.0f) && t_near(t_xr[0].x, 0.0f),
+         "screen 2 at %.3f %.3f %.3f, screen 1 at %.3f", t_xr[1].x,
+         t_xr[1].y, t_xr[1].z, t_xr[0].x);
+   /* The hand turns back straight: screen 2 swings round it. */
+   t_aim[2].orientation.y = 0.0f;
+   t_aim[2].orientation.w = 1.0f;
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, 1.2169873f) && t_near(t_xr[1].z, 0.0313467f)
+         && t_near(t_xr[1].yaw, -30.0f),
+         "turned with the hand to %.4f, %.4f, yaw %.2f", t_xr[1].x,
+         t_xr[1].z, t_xr[1].yaw);
+   /* The left hand, its laser on screen 1, takes screen 1. */
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(l->state == VIDEO_XR_GRAB_HELD && l->slot == 0,
+         "the free hand took slot %u in state %u", l->slot, l->state);
+   t_let_go();
+   t_edit_poll();
+   CHECK(e->chosen == 1, "letting go forgot the choice: %d", e->chosen);
+   /* Reset with the right hand's laser on screen 1. */
+   t_xr[0].x = 0.4f;
+   t_hold("edit/reset", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(t_near(t_xr[1].x, 0.0f) && t_near(t_xr[1].yaw, 0.0f)
+         && t_near(t_xr[0].x, 0.4f),
+         "Reset: screen 2 at %.3f, screen 1 at %.3f", t_xr[1].x,
+         t_xr[0].x);
+   t_edit_end();
+}
+
+/* Screen 2 chosen: an untracked hand's grip takes nothing; both grips
+ * in one poll, the left hand's first takes it and the right then takes
+ * what its laser is on. */
+static void test_edit_select_grips(void)
+{
+   input_openxr_edit_t *e   = &input_openxr_edit;
+   const video_xr_grab_t *l = &e->hand[0].g;
+   const video_xr_grab_t *r = &e->hand[1].g;
+   t_edit_start();
+   t_edit_buried();
+   t_edit_select(1);
+   t_edit_select(1);
+   t_aim_tracked[2] = false;
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(r->state != VIDEO_XR_GRAB_HELD && !t_modified,
+         "untracked, the grip took slot %u in state %u", r->slot, r->state);
+   t_let_go();
+   t_edit_poll();
+   t_aim_tracked[2] = true;
+   t_hold("edit/grab", 1, 1.0f, 0.0f);
+   t_hold("edit/grab", 2, 1.0f, 0.0f);
+   t_edit_poll();
+   CHECK(     l->state == VIDEO_XR_GRAB_HELD && l->slot == 1
+         && r->state == VIDEO_XR_GRAB_HELD && r->slot == 0,
+         "both grips: the left took slot %u (%u), the right %u (%u)",
+         l->slot, l->state, r->slot, r->state);
+   CHECK(e->chosen == 1, "the grips changed the choice to %d", e->chosen);
+   t_edit_end();
+}
+
+/* A held item is bright wherever the lasers are: screen 1 held with the
+ * laser turned off it, as a snap can slide it; with screen 2 chosen,
+ * screen 1 held by the other hand too. */
+static void test_edit_held_lit(void)
+{
+   unsigned n;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local;
+   t_edit_start();
+   t_edit_buried();
+   local            = t_xr_session.local_space;
+   t_cursor         = true;
+   t_aim_tracked[1] = false;
+   shown            = t_quads;
+   t_xr_frame.grabs = t_grabs;
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[1].slot  = 0;
+   /* The right hand's laser turned up, off everything. */
+   t_aim[2].orientation.x = (float)sin(M_PI / 4.0);
+   t_aim[2].orientation.w = (float)cos(M_PI / 4.0);
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 1u, "held off its laser, %#x lit",
+         t_lit(layers, n));
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_NONE;
+   t_edit_select(1);
+   t_edit_select(1);
+   t_xr_frame.grabs = t_grabs;
+   t_xr_frame.grabs.hand[0].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[0].slot  = 0;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 3u, "screen 2 chosen, screen 1 held, %#x lit",
+         t_lit(layers, n));
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor = false;
+   t_edit_end();
+}
+
+/* The frame loop's outlines: with an item chosen it alone is bright,
+ * wherever the lasers are; while one hand holds it, what the other
+ * points at is bright too; on the laser, what the lasers are on. */
+static void test_edit_select_lit(void)
+{
+   unsigned n;
+   video_xr_quad_set_t shown;
+   const XrCompositionLayerBaseHeader *layers[OPENXR_MAX_EXTRA_LAYERS];
+   XrSpace local;
+   t_edit_start();
+   t_edit_buried();
+   local            = t_xr_session.local_space;
+   t_cursor         = true;
+   t_aim_tracked[1] = false;
+   shown            = t_quads;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 1u, "the laser on screen 1 lit %#x",
+         t_lit(layers, n));
+   t_edit_select(1);
+   t_edit_select(1);
+   t_xr_frame.grabs = t_grabs;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 2u, "screen 2 chosen, %#x lit",
+         t_lit(layers, n));
+   t_xr_frame.grabs.hand[0].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[0].slot  = 1;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 3u, "the left holding it, %#x lit",
+         t_lit(layers, n));
+   t_xr_frame.grabs.hand[0].state = VIDEO_XR_GRAB_NONE;
+   t_xr_frame.grabs.hand[1].state = VIDEO_XR_GRAB_HELD;
+   t_xr_frame.grabs.hand[1].slot  = 1;
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(t_lit(layers, n) == 2u, "the right holding it, %#x lit",
+         t_lit(layers, n));
+   memset(&t_xr_frame.grabs, 0, sizeof(t_xr_frame.grabs));
+   t_cursor = false;
    t_edit_end();
 }
 
@@ -3564,7 +4053,15 @@ int main(void)
    test_edit_regrab();
    test_edit_frame_aim();
    test_edit_outlines();
+   test_edit_handle_sticky();
    test_edit_beams();
+   test_edit_select_bindings();
+   test_edit_select_cycle();
+   test_edit_select_fallback();
+   test_edit_select_grab();
+   test_edit_select_grips();
+   test_edit_held_lit();
+   test_edit_select_lit();
    test_edit_room();
    if (failures)
    {

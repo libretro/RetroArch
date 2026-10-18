@@ -389,10 +389,13 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
 
 /* Edit mode takes the menu by a handle bar centred under its bottom
  * edge, in its plane: this fraction of its width, this many metres
- * tall and this many below its outline. */
+ * tall and this many below its outline. A ray within
+ * VIDEO_XR_HANDLE_MARGIN metres of the bar on any side takes it where
+ * it meets nothing else. */
 #define VIDEO_XR_HANDLE_WIDTH  0.4f
 #define VIDEO_XR_HANDLE_HEIGHT 0.03f
 #define VIDEO_XR_HANDLE_GAP    0.005f
+#define VIDEO_XR_HANDLE_MARGIN 0.03f
 
 /* The menu quad's handle: the menu's quad, moved and sized to it. */
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
@@ -400,11 +403,21 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out);
 /* The nearest live quad the ray meets, as an index into set->quads, or
  * -1; of a stereo screen's two quads, the first. t is in units of
  * dir's length. Edit mode's laser passes fixed slots' quads and meets
- * the menu only at its handle, at (u, v) in the menu's own frame, v past
- * 1; through the menu, what is behind. */
+ * the menu only around its handle, at (u, v) in the menu's own frame:
+ * on the bar before anything, even a nearer screen; in its margin,
+ * which on a small menu reaches onto the menu's bottom edge, only where
+ * it meets nothing else. Through the menu, what is behind. */
 int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser,
       bool menu_open, const video_xr_vec3_t *origin,
       const video_xr_vec3_t *dir, float *u, float *v, float *t);
+
+/* video_xr_pick with edit mode's laser, for a hand whose laser has the
+ * menu's handle stuck (stuck): its margin then wins over anything the
+ * ray meets, as the bar does. *stick, unless NULL: whether it stays
+ * stuck, the ray on the bar, or stuck and still in its margin. */
+int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
+      const video_xr_vec3_t *origin, const video_xr_vec3_t *dir,
+      float *u, float *v, float *t, bool *stick);
 
 /* The dot where a ray dist metres long meets q at (u, v): its pose,
  * facing as q does. Returns its width in metres. */

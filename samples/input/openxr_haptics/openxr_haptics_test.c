@@ -111,6 +111,16 @@ int video_xr_pick(const video_xr_quad_set_t *set, unsigned laser, bool menu,
    picked_laser = laser; picked_menu = menu; picks++;
    return -1;
 }
+int video_xr_pick_edit(const video_xr_quad_set_t *set, bool stuck,
+      const video_xr_vec3_t *o, const video_xr_vec3_t *d,
+      float *u, float *v, float *t, bool *stick)
+{
+   (void)set; (void)stuck; (void)o; (void)d; (void)u; (void)v; (void)t;
+   if (stick)
+      *stick = false;
+   picked_laser = VIDEO_XR_LIVE_EDIT; picked_menu = false; picks++;
+   return -1;
+}
 float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
       float t, video_xr_pose_t *pose)
 { (void)q; (void)u; (void)v; (void)t; (void)pose; return 0.01f; }

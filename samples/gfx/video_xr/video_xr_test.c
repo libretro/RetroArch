@@ -726,6 +726,143 @@ static void test_menu_handle(void)
    }
 }
 
+/* Edit mode takes the menu by its handle bar before any screen, even a
+ * nearer one; within VIDEO_XR_HANDLE_MARGIN of the bar only where the
+ * ray meets nothing else. */
+static void test_handle_first(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_vec3_t o, d;
+   float u, v, t;
+
+   /* The menu 1.6 x 0.96 at 1.7 m: its bar 0.64 x 0.03, centred 0.531
+    * below its middle. A screen 1.28 x 0.96 at 1.5 m whose top edge is
+    * 7 mm under the bar's middle. */
+   memset(&set, 0, sizeof(set));
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.y = -1.018f;
+   set.quads[0].pose.position.z = -1.5f;
+   set.quads[0].width           = 1.28f;
+   set.quads[0].height          = 0.96f;
+   set.quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   set.quads[0].slot            = 1;
+   video_xr_pose_identity(&set.quads[1].pose);
+   set.quads[1].pose.position.z = -1.7f;
+   set.quads[1].width           = 1.6f;
+   set.quads[1].height          = 0.96f;
+   set.quads[1].kind            = VIDEO_XR_QUAD_MENU;
+   set.quads[1].slot            = VIDEO_XR_MENU_SLOT;
+   set.num_quads                = 2;
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   o.x = 0.0f; o.z = 0.0f;
+
+   /* On the bar, through the nearer screen: the menu. */
+   o.y = -0.541f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 1);
+   CHECK(NEAR(u, 0.5) && NEAR(t, 1.7) && NEAR(v, 0.5 + 0.541 / 0.96));
+   /* 1.5 cm under the bar, in its margin over the screen: the screen. */
+   o.y = -0.561f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
+   CHECK(NEAR(t, 1.5));
+   /* In the margin over nothing, 2.5 cm past the bar's end or 1.5 cm
+    * above it: the menu. */
+   o.x = 0.345f;
+   o.y = -0.531f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 1);
+   CHECK(NEAR(u, 0.5 + 0.345 / 1.6));
+   o.x = 0.0f;
+   o.y = -0.501f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 1);
+   CHECK(NEAR(v, 0.5 + 0.501 / 0.96) && NEAR(t, 1.7));
+   /* Past the margin: the screen below, nothing beside. */
+   o.x = 0.0f;
+   o.y = -0.586f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 0);
+   CHECK(NEAR(t, 1.5));
+   o.x = 0.36f;
+   o.y = -0.531f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == -1);
+   /* Outside edit mode the bar is nothing: the screen. */
+   o.x = 0.0f;
+   o.y = -0.541f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_ALWAYS, false,
+            &o, &d, &u, &v, &t) == 0);
+}
+
+/* Edit mode's sticky pick: a hand whose laser was on the bar keeps the
+ * menu while the ray stays in the bar's 3 cm margin, even over the
+ * nearer screen; it lets go past the margin. Only the bar sticks: the
+ * margin over nothing takes the menu but does not stick, and arriving
+ * from the screen the screen keeps its whole area. */
+static void test_handle_sticky(void)
+{
+   video_xr_quad_set_t set;
+   video_xr_vec3_t o, d;
+   float u, v, t;
+   bool stick = false;
+
+   memset(&set, 0, sizeof(set));
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.y = -1.018f;
+   set.quads[0].pose.position.z = -1.5f;
+   set.quads[0].width           = 1.28f;
+   set.quads[0].height          = 0.96f;
+   set.quads[0].kind            = VIDEO_XR_QUAD_SCREEN;
+   set.quads[0].slot            = 1;
+   video_xr_pose_identity(&set.quads[1].pose);
+   set.quads[1].pose.position.z = -1.7f;
+   set.quads[1].width           = 1.6f;
+   set.quads[1].height          = 0.96f;
+   set.quads[1].kind            = VIDEO_XR_QUAD_MENU;
+   set.quads[1].slot            = VIDEO_XR_MENU_SLOT;
+   set.num_quads                = 2;
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   o.x = 0.0f; o.z = 0.0f;
+
+   /* On the bar: the menu, and it sticks. */
+   o.y = -0.541f;
+   CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, &stick) == 1
+         && stick);
+   /* Stuck, 1.5 cm under the bar over the screen: still the menu. */
+   o.y = -0.561f;
+   CHECK(video_xr_pick_edit(&set, true, &o, &d, &u, &v, &t, &stick) == 1
+         && stick);
+   CHECK(NEAR(t, 1.7) && NEAR(v, 0.5 + 0.561 / 0.96) && NEAR(u, 0.5));
+   /* Not stuck there: the screen, as video_xr_pick. */
+   CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, &stick) == 0
+         && !stick && NEAR(t, 1.5));
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false, &o, &d, &u, &v,
+            &t) == 0);
+   /* Stuck, past the margin: the screen, unstuck. */
+   o.y = -0.586f;
+   CHECK(video_xr_pick_edit(&set, true, &o, &d, &u, &v, &t, &stick) == 0
+         && !stick);
+   /* Stuck, beside the bar past its margin, over nothing: nothing. */
+   o.x = 0.36f;
+   o.y = -0.531f;
+   CHECK(video_xr_pick_edit(&set, true, &o, &d, &u, &v, &t, &stick) == -1
+         && !stick);
+   /* In the margin over nothing: the menu, but it does not stick. */
+   o.x = 0.345f;
+   CHECK(video_xr_pick_edit(&set, false, &o, &d, &u, &v, &t, &stick) == 1
+         && !stick);
+   /* Stuck with the menu gone: the screen, unstuck. */
+   o.x           = 0.0f;
+   o.y           = -0.561f;
+   set.num_quads = 1;
+   CHECK(video_xr_pick_edit(&set, true, &o, &d, &u, &v, &t, &stick) == 0
+         && !stick);
+   /* stick may be NULL. */
+   set.num_quads = 2;
+   CHECK(video_xr_pick_edit(&set, true, &o, &d, &u, &v, &t, NULL) == 1);
+}
+
 static void test_live_edit(void)
 {
    video_views_map_t map;
@@ -759,11 +896,29 @@ static void test_live_edit(void)
    /* The handle is edit mode's alone. */
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
             &o, &d, &u, &v, &t) == 2);
-   /* Between the menu and its handle, what is behind: screen 1. */
-   o.y = 1.47f;
+   /* Through the gap between the menu and its handle, in the bar's
+    * margin and just above it: what is behind, screen 1. */
+   o.y = 1.455f;
    d.x = 0.0f; d.y = -1.15f; d.z = -1.0f;
    CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
             &o, &d, &u, &v, &t) == 2);
+   o.y = 1.472f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 2);
+   /* From the head, screen 1's top middle, 3.2 cm under screen 0: above
+    * and below the bar, in its margin, screen 1; on the bar, the
+    * menu. */
+   o.y = 0.0f;
+   d.x = 0.0f; d.y = -0.53f; d.z = -1.8f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 2);
+   CHECK(NEAR(t, 1.0));
+   d.y = -0.595f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 2);
+   d.y = -0.56f;
+   CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
+            &o, &d, &u, &v, &t) == 3);
    /* Other lasers still see the whole menu. */
    o.y = 0.0f;
    d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
@@ -2393,6 +2548,8 @@ int main(void)
    test_grab();
    test_grab_stick();
    test_menu_handle();
+   test_handle_first();
+   test_handle_sticky();
    test_live_edit();
    test_edit_fixed();
    test_frame_as_screen();

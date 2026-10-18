@@ -45,12 +45,16 @@ RETRO_BEGIN_DECLS
    (OPENXR_KEPT_EXTRA_LAYERS + OPENXR_BEAM_LAYERS + VIDEO_XR_MAX_SLOTS + 1)
 
 /* Edit mode's hands, the main thread's for the frame loop: what each
- * holds, and each slot's last let-go hold, kept after its hand takes
- * another item until quads planned at its release show it. */
+ * holds, each slot's last let-go hold, kept after its hand takes
+ * another item until quads planned at its release show it, the item
+ * chosen to edit (its slot plus one; 0, the laser's), and the hands
+ * whose laser has the menu's handle stuck (bit h for hand h). */
 typedef struct openxr_grabs
 {
    video_xr_grab_t hand[2];
    video_xr_grab_t let_go[VIDEO_XR_MAX_SLOTS];
+   unsigned chosen;
+   unsigned stuck;
 } openxr_grabs_t;
 
 /* Where a hand's held item was last shown, for the hold (slot and

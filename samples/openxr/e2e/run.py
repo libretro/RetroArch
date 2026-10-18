@@ -2123,6 +2123,8 @@ FRAME_BINDS = set([
     ('edit/stick', _FL + 'thumbstick'), ('edit/stick', _FR + 'thumbstick'),
     ('edit/reset', _FL + 'dpad_down/click'), ('edit/reset', _FR + 'a/click'),
     ('edit/menu', _FR + 'thumbstick/click'),
+    ('edit/select_next', _FL + 'dpad_right/click'),
+    ('edit/select_previous', _FL + 'dpad_left/click'),
     ('pointer/aim', _FL + 'aim/pose'), ('pointer/aim', _FR + 'aim/pose'),
     ('pointer/rumble', '/user/hand/left/output/haptic'),
     ('pointer/rumble', '/user/hand/right/output/haptic')])
@@ -4074,6 +4076,7 @@ EDIT_GRIP = 'action edit/grab@right 1'
 EDIT_GRIP_LEFT = 'action edit/grab@left 1'
 EDIT_TILT = 'action edit/tilt@right 1'
 EDIT_RESET = 'action edit/reset@right 1'
+EDIT_NEXT = 'action edit/select_next 1'
 EDIT_SETS = ['edit', 'pointer']
 GAME_SETS = ['combined', 'pointer']
 SAVE = {'config_save_on_exit': 'true'}
@@ -5396,6 +5399,142 @@ def check_edit_no_content(res):
     return errors
 
 
+# Screen 2 straight behind screen 1, hidden by it from the hand.
+BURIED = {'video_screen2_xr_y': '0.992', 'video_screen2_xr_z': '-0.3'}
+BURIED_MOVED = (0.6, 0.0, -2.1)
+# Screen 2 pulled 30 cm nearer, its top edge 7 mm over the middle of
+# the menu's handle bar, in front of it.
+FRONT2 = (0.0, EDIT_HANDLE + 0.007 - 0.48, -1.5)
+
+
+def edit_tap(action, aim):
+    """action pressed once, the hand kept at aim."""
+    return [('script', script(aim, action)), ('wait', 0.5),
+            ('script', aim), ('wait', 0.5)]
+
+
+def on_handle(dx=0.0, dy=0.0):
+    """The right hand aiming straight ahead at the middle of the
+    menu's bar, moved dx right and dy up."""
+    return aim_line((dx, EDIT_HANDLE + dy, 0.0),
+                    (dx, EDIT_HANDLE + dy, -1.8))
+
+
+def check_edit_choose(menu=True):
+    def check(res):
+        """Select Next twice chooses screen 2, behind screen 1: its
+        outline alone is bright while the laser is on screen 1; the grip
+        takes it from there, it moves with the hand and is saved where
+        the headset last showed it; screen 1 stays."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        lit = between(res, 'chosen', 'grab', delay=0.5)
+        items = 3 if menu else 2
+        good = [f for f in lit if len(outlines(f)) == items
+                and len(outlines(f, 1)) == 1
+                and near3(outlines(f, 1)[0]['pose'], (0.0, 0.0, -2.098))]
+        if not good:
+            errors.append('screen 2 not lit alone while chosen: %s' % [
+                [(q['rect'][0], [round(v, 3) for v in q['pose'][:3]])
+                 for q in outlines(f)] for f in lit[-1:]])
+        errors += pose_errors('screen 2 taken from behind screen 1',
+                              [screen2(f) for f in
+                               between(res, 'moved', 'released')],
+                              BURIED_MOVED, ID, (1.28, 0.96))
+        errors += pose_errors('screen 1 while screen 2 moved',
+                              [screen1_left(f) for f in
+                               between(res, 'grab', 'off', edit_screen0)],
+                              S0, ID, (1.6, 0.96))
+        errors += saved_errors(res, 'screen 2', 'video_screen2_xr_', S1,
+                               (BURIED_MOVED, ID), (1.28, 0.96),
+                               last_before(res, 'off', screen2))
+        return errors
+    return check
+
+
+def check_edit_handle_first(res):
+    """A grip aimed at the menu's bar, through screen 2 which is
+    nearer, takes the menu: it moves with the hand and is saved placed;
+    screen 2 stays."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    errors += pose_errors('the menu taken by its handle',
+                          [menu_quad(f) for f in
+                           between(res, 'moved', 'released', delay=0.5)],
+                          (0.3, 0.0, -1.7), ID, (MENU_W, MENU_H))
+    errors += pose_errors('screen 2 in front of the bar',
+                          [screen2(f) for f in
+                           between(res, 'on', 'off', delay=0.5)],
+                          FRONT2, ID, (1.28, 0.96))
+    cfg = saved(res)
+    if cfg.get('video_openxr_menu_placed') != 'true' \
+            or abs(float(cfg.get('video_openxr_menu_xr_x', '0')) - 0.3) \
+            > EDIT_POS:
+        errors.append('the menu saved placed %s at x %s, want true at 0.3'
+                      % (cfg.get('video_openxr_menu_placed'),
+                         cfg.get('video_openxr_menu_xr_x')))
+    return errors
+
+
+# Screen 2 20 cm nearer than the menu, under its handle bar.
+UNDER_BAR = dict(SAVE, video_screen2_xr_y='%g' % (FRONT2[1] - S1[1]),
+                 video_screen2_xr_z='0.3')
+
+
+def sticky_steps(first):
+    """From first, the laser 3 cm under the bar's middle, in its margin
+    over screen 2; the grip there carries what it takes 30 cm right."""
+    return edit_start(first) + [
+        ('script', on_handle(0.0, -0.03)), ('wait', 1), ('mark', 'grab'),
+        ('script', script(on_handle(0.0, -0.03), EDIT_GRIP)), ('wait', 1),
+        ('script', script(on_handle(0.3, -0.03), EDIT_GRIP)), ('wait', 1),
+        ('mark', 'moved'), ('wait', 1), ('script', on_handle(0.3, -0.03)),
+        ('mark', 'released'), ('wait', 1), ('send', EDIT), ('wait', 2),
+        ('mark', 'off'), ('wait', 1)]
+
+
+def check_edit_handle_sticky(stuck):
+    def check(res):
+        """The laser in the bar's margin over screen 2: come from the
+        bar (stuck), the menu is the one lit and the grip takes it;
+        come from screen 2, screen 2 is lit and taken and the menu
+        stays."""
+        errors = edit_log_errors(res, ['on', 'off'])
+        want = outline_size(MENU_W, MENU_H) if stuck \
+            else outline_size(1.28, 0.96)
+        frames = between(res, 'on', 'grab', delay=2.5)
+        if not frames:
+            errors.append('no frame with the laser in the margin')
+        for f in frames:
+            got = [q['size'] for q in outlines(f, 1)]
+            if len(got) != 1 or any(abs(a - b) > 0.002
+                                    for a, b in zip(got[0], want)):
+                errors.append('in the margin %s lit, want only %s'
+                              % (got, want))
+                break
+        if stuck:
+            errors += pose_errors('the menu taken by its stuck bar',
+                                  [menu_quad(f) for f in
+                                   between(res, 'moved', 'released',
+                                           delay=0.5)],
+                                  (0.3, 0.0, -1.7), ID, (MENU_W, MENU_H))
+            errors += pose_errors('screen 2 under the margin',
+                                  [screen2(f) for f in
+                                   between(res, 'on', 'off', delay=0.5)],
+                                  FRONT2, ID, (1.28, 0.96))
+        else:
+            errors += pose_errors('screen 2 taken through the margin',
+                                  [screen2(f) for f in
+                                   between(res, 'moved', 'released',
+                                           delay=0.5)],
+                                  (0.3, FRONT2[1], FRONT2[2]), ID,
+                                  (1.28, 0.96))
+            errors += pose_errors('the menu left in place',
+                                  [menu_quad(f) for f in
+                                   between(res, 'on', 'released', delay=0.5)],
+                                  MENU_SPOT, ID, (MENU_W, MENU_H))
+        return errors
+    return check
+
+
 def edit_start(first, wait=2):
     """Settle with the hand at first, then start edit mode."""
     return [('wait', 6), ('script', first), ('wait', 1), ('mark', 'on'),
@@ -5747,6 +5886,31 @@ EDIT_CASES += [
      'core': '/nonexistent/no_core_libretro.so',
      'steps': [('wait', 8), ('send', EDIT), ('wait', 3)],
      'check': check_edit_no_content},
+    # Two presses of Select Next choose screen 2, buried behind screen 1.
+    {'name': 'edit-choose', 'map': '3ds', 'settings': dict(SAVE, **BURIED),
+     'steps': edit_start(edit_aim()) + edit_tap(EDIT_NEXT, edit_aim())
+     + edit_tap(EDIT_NEXT, edit_aim()) + [
+         ('mark', 'chosen'), ('wait', 1.5), ('mark', 'grab'),
+         ('script', script(edit_aim(), EDIT_GRIP)), ('wait', 1),
+         ('script', script(edit_aim(0.6), EDIT_GRIP)), ('wait', 1),
+         ('mark', 'moved'), ('wait', 1), ('script', edit_aim(0.6)),
+         ('mark', 'released'), ('wait', 1), ('send', EDIT), ('wait', 2),
+         ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_choose()},
+    {'name': 'edit-handle-first', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': edit_start(on_handle()) + [
+         ('mark', 'grab'), ('script', script(on_handle(), EDIT_GRIP)),
+         ('wait', 1), ('script', script(on_handle(0.3), EDIT_GRIP)),
+         ('wait', 1), ('mark', 'moved'), ('wait', 1),
+         ('script', on_handle(0.3)), ('mark', 'released'), ('wait', 1),
+         ('send', EDIT), ('wait', 2), ('mark', 'off'), ('wait', 1)],
+     'check': check_edit_handle_first},
+    {'name': 'edit-handle-sticky', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': sticky_steps(on_handle()),
+     'check': check_edit_handle_sticky(True)},
+    {'name': 'edit-handle-margin', 'map': '3ds', 'settings': UNDER_BAR,
+     'steps': sticky_steps(on_handle(0.0, -0.07)),
+     'check': check_edit_handle_sticky(False)},
 ]
 
 
@@ -7031,7 +7195,8 @@ GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-release-threaded', 'edit-release-moving',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
            'edit-outlines', 'edit-outlines-flush', 'edit-beam',
-           'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands']
+           'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands',
+           'edit-choose']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT
@@ -7082,7 +7247,8 @@ GL_CHECKS = {
            'edit-command': check_edit_command(menu=False),
            'edit-reset': check_edit_reset(menu=False),
            'edit-outlines': check_edit_outlines(menu=False),
-           'edit-fallback': threaded(check_edit_fallback(menu=False))},
+           'edit-fallback': threaded(check_edit_fallback(menu=False)),
+           'edit-choose': check_edit_choose(menu=False)},
 }
 # What a lane cannot run: the unfocus helper sends an X event, and the
 # Wayland lane's window is not an X one. glcore's GLX lane runs only a

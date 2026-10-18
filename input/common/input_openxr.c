@@ -122,6 +122,8 @@ enum input_openxr_action
    IXA_E_RESET,
    IXA_E_MENU,
    IXA_E_EDIT,
+   IXA_E_NEXT,
+   IXA_E_PREV,
    IXA_COUNT
 };
 
@@ -181,7 +183,9 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_EDIT,     "stick",       "Distance and Size", XR_ACTION_TYPE_VECTOR2F_INPUT, true },
    { INPUT_OPENXR_SET_EDIT,     "reset",       "Reset",          XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_EDIT,     "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
-   { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false }
+   { INPUT_OPENXR_SET_EDIT,     "edit_screens", "Edit Screens",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_EDIT,     "select_next", "Select Next",    XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_EDIT,     "select_previous", "Select Previous", XR_ACTION_TYPE_BOOLEAN_INPUT, false }
 };
 
 static const char *const input_openxr_set_names[INPUT_OPENXR_SETS] = {
@@ -325,15 +329,18 @@ static const input_openxr_bind_t input_openxr_simple[] = {
 };
 
 /* Edit mode's: the grip grabs, the trigger tilts, the stick (Vive: the
- * trackpad) pushes and resizes, the main face button resets, and the
- * menu button opens the RetroArch menu, which ends it. Edit Screens is
- * the user's to bind. */
+ * trackpad) pushes and resizes, the main face button resets, the menu
+ * button opens the RetroArch menu, which ends it, and spare buttons
+ * choose the next or previous item. Edit Screens is the user's to
+ * bind. */
 static const input_openxr_bind_t input_openxr_index_edit[] = {
    IXB_BOTH(IXA_E_GRAB,  "squeeze/value"),
    IXB_BOTH(IXA_E_TILT,  "trigger/value"),
    IXB_BOTH(IXA_E_STICK, "thumbstick"),
    IXB_BOTH(IXA_E_RESET, "a/click"),
-   IXB_L(IXA_E_MENU,     "trackpad/force")
+   IXB_L(IXA_E_MENU,     "trackpad/force"),
+   IXB_R(IXA_E_NEXT,     "b/click"),
+   IXB_L(IXA_E_PREV,     "b/click")
 };
 
 static const input_openxr_bind_t input_openxr_touch_edit[] = {
@@ -342,17 +349,22 @@ static const input_openxr_bind_t input_openxr_touch_edit[] = {
    IXB_BOTH(IXA_E_STICK, "thumbstick"),
    IXB_L(IXA_E_RESET,    "x/click"),
    IXB_R(IXA_E_RESET,    "a/click"),
-   IXB_L(IXA_E_MENU,     "menu/click")
+   IXB_L(IXA_E_MENU,     "menu/click"),
+   IXB_R(IXA_E_NEXT,     "b/click"),
+   IXB_L(IXA_E_PREV,     "y/click")
 };
 
-/* The left hand has no face buttons: D-pad down, as Separate's B. */
+/* The left hand has no face buttons: its D-pad resets (down) and
+ * chooses (right, left). */
 static const input_openxr_bind_t input_openxr_frame_edit[] = {
    IXB_BOTH(IXA_E_GRAB,  "squeeze/value"),
    IXB_BOTH(IXA_E_TILT,  "trigger/value"),
    IXB_BOTH(IXA_E_STICK, "thumbstick"),
    IXB_L(IXA_E_RESET,    "dpad_down/click"),
    IXB_R(IXA_E_RESET,    "a/click"),
-   IXB_R(IXA_E_MENU,     "thumbstick/click")
+   IXB_R(IXA_E_MENU,     "thumbstick/click"),
+   IXB_L(IXA_E_NEXT,     "dpad_right/click"),
+   IXB_L(IXA_E_PREV,     "dpad_left/click")
 };
 
 static const input_openxr_bind_t input_openxr_vive_edit[] = {
@@ -360,7 +372,8 @@ static const input_openxr_bind_t input_openxr_vive_edit[] = {
    IXB_BOTH(IXA_E_TILT,  "trigger/value"),
    IXB_BOTH(IXA_E_STICK, "trackpad"),
    IXB_BOTH(IXA_E_RESET, "trackpad/click"),
-   IXB_L(IXA_E_MENU,     "menu/click")
+   IXB_L(IXA_E_MENU,     "menu/click"),
+   IXB_R(IXA_E_NEXT,     "menu/click")
 };
 
 static const input_openxr_bind_t input_openxr_simple_edit[] = {
@@ -547,9 +560,13 @@ typedef struct input_openxr_edit
    openxr_grabs_t grabs; /* as the frame loop is given them */
    unsigned seq;      /* grabs let go so far, for the frame snapshot */
    unsigned unbound;  /* polls in a row with its grab and menu unbound */
+   int chosen;        /* the item Select Next chose: a slot, -1 none */
+   unsigned stuck;    /* hands whose laser has the handle stuck, bits */
    bool on;
    bool paused;       /* edit mode paused the content */
    bool changed;      /* it wrote a setting */
+   bool next;         /* last poll's Select Next and Previous */
+   bool prev;
 } input_openxr_edit_t;
 
 static input_openxr_edit_t input_openxr_edit;
@@ -1576,8 +1593,35 @@ static const XrCompositionLayerBaseHeader *input_openxr_beam_layer(
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
+/* Edit mode's bright items, from the slot each hand's dot is on (-1:
+ * none): every held item; with nothing chosen, those pointed at; else
+ * the chosen item, and what a hand points at while the other holds the
+ * chosen item. */
+static unsigned input_openxr_edit_lit(const openxr_grabs_t *g,
+      const int *pointed)
+{
+   unsigned h;
+   unsigned lit = 0;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+   {
+      const video_xr_grab_t *other = &g->hand[h ^ 1];
+      if (     g->hand[h].state == VIDEO_XR_GRAB_HELD
+            && g->hand[h].slot < VIDEO_XR_MAX_SLOTS)
+         lit |= 1u << g->hand[h].slot;
+      if (     pointed[h] >= 0
+            && (!g->chosen
+               || (other->state == VIDEO_XR_GRAB_HELD
+                  && other->slot == g->chosen - 1)))
+         lit |= 1u << pointed[h];
+   }
+   if (g->chosen)
+      lit |= 1u << (g->chosen - 1);
+   return lit;
+}
+
 /* The XR thread, each headset frame: a dot where each hand points at a
- * live quad of set, from its own locate at the frame's display time;
+ * live quad of set (in edit mode with the menu's handle stuck as the
+ * main thread says), from its own locate at the frame's display time;
  * in edit mode an outline round every item first, in the layers the
  * dots do not keep, the screens' to go under the screens so a flush
  * neighbour covers them; then, as Laser Beam says, each tracked hand's
@@ -1594,10 +1638,11 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    video_xr_vec3_t d[INPUT_OPENXR_HANDS];
    float reach[INPUT_OPENXR_HANDS];
    bool hit[INPUT_OPENXR_HANDS];
+   int pointed[INPUT_OPENXR_HANDS];
+   unsigned lit;
    unsigned n         = 0;
    unsigned dots      = 0;
    unsigned rays      = 0;
-   unsigned lit       = 0;
    input_openxr_t *st = &input_openxr_st;
    int config         = retro_atomic_load_acquire_int(
          &input_openxr_pointer_config);
@@ -1612,6 +1657,8 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
          || !openxr_session_focused(st->frame->session)
          || !(cursor = openxr_frame_cursor(st->frame)))
       return 0;
+   for (h = 0; h < INPUT_OPENXR_HANDS; h++)
+      pointed[h] = -1;
    for (h = 0; h < INPUT_OPENXR_HANDS && dots < cap; h++)
    {
       int q;
@@ -1621,15 +1668,19 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       XrCompositionLayerQuad *l = &st->cursors[dots];
       if (!input_openxr_ray(st, h, space, time, &o[rays], &d[rays]))
          continue;
-      q           = video_xr_pick(set, (unsigned)laser, menu_open,
-            &o[rays], &d[rays], &u, &v, &t);
+      q           = (laser == VIDEO_XR_LIVE_EDIT)
+         ? video_xr_pick_edit(set,
+               ((st->frame->grabs.stuck >> h) & 1u) != 0, &o[rays],
+               &d[rays], &u, &v, &t, NULL)
+         : video_xr_pick(set, (unsigned)laser, menu_open, &o[rays],
+               &d[rays], &u, &v, &t);
       hit[rays]   = q >= 0;
       reach[rays] = (q >= 0) ? t : VIDEO_XR_BEAM_REACH;
       rays++;
       if (q < 0)
          continue;
-      lit  |= 1u << set->quads[q].slot;
-      size  = video_xr_cursor(&set->quads[q], u, v, t, &pose);
+      pointed[h] = (int)set->quads[q].slot;
+      size       = video_xr_cursor(&set->quads[q], u, v, t, &pose);
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->next                             = NULL;
       l->subImage.imageRect.offset.x      = 0;
@@ -1655,6 +1706,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    }
    if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
    {
+      lit    = input_openxr_edit_lit(&st->frame->grabs, pointed);
       n      = input_openxr_outlines(st, set, space, cursor, lit, false,
             layers, 0, cap - OPENXR_KEPT_EXTRA_LAYERS);
       *under = n;
@@ -2038,6 +2090,43 @@ static bool input_openxr_edit_shown(const video_xr_quad_set_t *set,
    return false;
 }
 
+/* The item after chosen, step 1, or before it, -1: the shown items by
+ * slot, so the screens by number and the menu last, then the laser
+ * (-1). */
+static int input_openxr_edit_cycle(const video_xr_quad_set_t *set,
+      int chosen, int step)
+{
+   unsigned n;
+   int i = (chosen < 0) ? VIDEO_XR_MAX_SLOTS : chosen;
+   for (n = 0; n < VIDEO_XR_MAX_SLOTS; n++)
+   {
+      i = (i + step + VIDEO_XR_MAX_SLOTS + 1) % (VIDEO_XR_MAX_SLOTS + 1);
+      if (i == VIDEO_XR_MAX_SLOTS)
+         return -1;
+      if (input_openxr_edit_shown(set, (unsigned)i))
+         return i;
+   }
+   return -1;
+}
+
+/* What hand h's grip and Reset act on, as an index into st->quads: the
+ * chosen item, wherever it is, unless the other hand holds it; else
+ * what h's laser is on. -1: nothing. */
+static int input_openxr_edit_target(const input_openxr_t *st,
+      const input_openxr_edit_t *e, unsigned h)
+{
+   unsigned i;
+   const video_xr_grab_t *other = &e->hand[h ^ 1].g;
+   if (     e->chosen < 0
+         || (other->state == VIDEO_XR_GRAB_HELD
+            && other->slot == (unsigned)e->chosen))
+      return st->hit[h];
+   for (i = 0; i < st->quads.num_quads; i++)
+      if (st->quads.quads[i].slot == (unsigned)e->chosen)
+         return (int)i;
+   return -1;
+}
+
 /* A held item where its hand last put it, both eyes of a stereo screen. */
 static void input_openxr_edit_place(video_xr_quad_set_t *set,
       const video_xr_grab_t *g)
@@ -2063,16 +2152,17 @@ static void input_openxr_edit_write(input_openxr_edit_t *e,
    e->changed = true;
 }
 
-/* Hand h grabs what it points at: the item keeps its pose in the aim's
- * frame, and its roll. A second hand on an item does nothing. */
+/* Hand h grabs st->quads' quad target: the item keeps its pose in the
+ * aim's frame, wherever the hand is, and its roll. A second hand on an
+ * item does nothing. */
 static void input_openxr_edit_grab(input_openxr_t *st,
-      input_openxr_edit_t *e, unsigned h, const video_xr_pose_t *aim,
-      bool tilt)
+      input_openxr_edit_t *e, unsigned h, int target,
+      const video_xr_pose_t *aim, bool tilt)
 {
    float yaw, pitch;
    video_xr_pose_t inv;
    video_screen_xr_t now;
-   const video_xr_quad_t *q         = &st->quads.quads[st->hit[h]];
+   const video_xr_quad_t *q         = &st->quads.quads[target];
    const video_xr_vec3_t *base      = &st->quads.slots[q->slot].base;
    input_openxr_hold_t *hold        = &e->hand[h];
    const input_openxr_hold_t *other = &e->hand[h ^ 1];
@@ -2159,7 +2249,7 @@ static void input_openxr_edit_let_go(input_openxr_edit_t *e,
    video_driver_headset_edit(e->on, e->seq);
 }
 
-/* What the hands hold, for the frame loop. */
+/* What the hands hold and the chosen item, for the frame loop. */
 static void input_openxr_edit_publish(input_openxr_t *st,
       input_openxr_edit_t *e)
 {
@@ -2167,6 +2257,8 @@ static void input_openxr_edit_publish(input_openxr_t *st,
       return;
    e->grabs.hand[0] = e->hand[0].g;
    e->grabs.hand[1] = e->hand[1].g;
+   e->grabs.chosen  = (unsigned)(e->chosen + 1);
+   e->grabs.stuck   = e->stuck;
    openxr_frame_publish_grabs(st->frame, &e->grabs);
 }
 
@@ -2214,6 +2306,8 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause)
    e->unbound = 0;
    e->paused  = false;
    e->last    = 0;
+   e->chosen  = -1;
+   e->stuck   = 0;
    /* Held as it starts (the menu's OK on A, which is Reset): no press
     * until let go. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
@@ -2221,6 +2315,8 @@ static void input_openxr_edit_start(input_openxr_edit_t *e, bool pause)
       e->hand[h].grip  = true;
       e->hand[h].reset = true;
    }
+   e->next = true;
+   e->prev = true;
    RARCH_LOG("[OpenXR] Edit Screens on.\n");
    video_driver_headset_edit(true, e->seq);
    if (     pause
@@ -2242,6 +2338,8 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
 {
    const char *msg = msg_hash_to_str(e->changed
          ? MSG_OPENXR_EDIT_UNSAVED : MSG_OPENXR_EDIT_OFF);
+   e->chosen = -1;
+   e->stuck  = 0;
    input_openxr_edit_let_go_all(e);
    e->on = false;
    if (e->paused && (runloop_get_flags() & RUNLOOP_FLAG_PAUSED))
@@ -2254,15 +2352,18 @@ static void input_openxr_edit_stop(input_openxr_edit_t *e)
 }
 
 /* Edit mode's poll, in the screens' frame, where the quads and the aims
- * are both put: each hand points at an item; a grip grabs it, and while
- * held it goes where the hand puts it and writes its settings; the main
- * button resets what a free hand points at. The RetroArch menu and Edit
- * Screens come from its own set; nothing reaches the pads, whose
- * triggers go unread. */
+ * are both put: Select Next and Previous step the chosen item; each
+ * hand points at an item; a grip grabs the chosen item from anywhere,
+ * or with none chosen (or the other hand holding it) what the hand
+ * points at, and while held it goes where the hand puts it and writes
+ * its settings; the main button resets the chosen item, or what a free
+ * hand points at. The RetroArch menu and Edit Screens come from its own
+ * set; nothing reaches the pads, whose triggers go unread. */
 static void input_openxr_edit_poll(input_openxr_t *st,
       input_openxr_edit_t *e)
 {
    unsigned h;
+   bool next, prev;
    video_xr_pose_t screens, inv;
    XrSpace space    = XR_NULL_HANDLE;
    XrTime time      = openxr_frame_predicted_time(st->frame);
@@ -2277,6 +2378,8 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    input_openxr_triggers_lost(st);
    st->menu_toggle     = input_openxr_bool(st, IXA_E_MENU, XR_NULL_PATH);
    st->edit_toggle     = input_openxr_bool(st, IXA_E_EDIT, XR_NULL_PATH);
+   next                = input_openxr_bool(st, IXA_E_NEXT, XR_NULL_PATH);
+   prev                = input_openxr_bool(st, IXA_E_PREV, XR_NULL_PATH);
    openxr_frame_get_quads(st->frame, &st->quads);
    openxr_frame_get_screens(st->frame, &screens, &space);
    video_xr_pose_invert(&screens, &inv);
@@ -2294,10 +2397,23 @@ static void input_openxr_edit_poll(input_openxr_t *st,
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
       if (e->hand[h].g.state == VIDEO_XR_GRAB_HELD)
          input_openxr_edit_place(&st->quads, &e->hand[h].g);
+   /* The choice: the laser again once its item is gone; a step each
+    * press. */
+   if (     e->chosen >= 0
+         && !input_openxr_edit_shown(&st->quads, (unsigned)e->chosen))
+      e->chosen = -1;
+   if (next && !e->next)
+      e->chosen = input_openxr_edit_cycle(&st->quads, e->chosen, 1);
+   if (prev && !e->prev)
+      e->chosen = input_openxr_edit_cycle(&st->quads, e->chosen, -1);
+   e->next = next;
+   e->prev = prev;
 
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
       float u, v, t;
+      int target;
+      bool sticks;
       int16_t stick[2];
       video_xr_pose_t aim;
       video_xr_vec3_t o, d;
@@ -2312,13 +2428,16 @@ static void input_openxr_edit_poll(input_openxr_t *st,
 
       hold->grip  = grip;
       hold->reset = reset;
+      sticks      = false;
       if (tracked)
       {
          video_xr_compose(&inv, &aim, &aim);
          input_openxr_aim_ray(&aim, &o, &d);
-         st->hit[h] = video_xr_pick(&st->quads, VIDEO_XR_LIVE_EDIT, false,
-               &o, &d, &u, &v, &t);
+         st->hit[h] = video_xr_pick_edit(&st->quads,
+               ((e->stuck >> h) & 1u) != 0, &o, &d, &u, &v, &t, &sticks);
       }
+      e->stuck = sticks ? (e->stuck | (1u << h)) : (e->stuck & ~(1u << h));
+      target = input_openxr_edit_target(st, e, h);
       if (hold->g.state == VIDEO_XR_GRAB_HELD)
       {
          const video_xr_vec3_t *base = &st->quads.slots[hold->g.slot].base;
@@ -2348,10 +2467,12 @@ static void input_openxr_edit_poll(input_openxr_t *st,
             input_openxr_edit_move(e, hold, &aim, tilt, stick, dt);
          }
       }
-      else if (grabbed && st->hit[h] >= 0)
-         input_openxr_edit_grab(st, e, h, &aim, tilt);
-      else if (reset_pressed && st->hit[h] >= 0)
-         input_openxr_edit_reset(e, st->quads.quads[st->hit[h]].slot);
+      /* Taken from anywhere, the hand's aim is needed: untracked, it
+       * takes nothing. */
+      else if (grabbed && tracked && target >= 0)
+         input_openxr_edit_grab(st, e, h, target, &aim, tilt);
+      else if (reset_pressed && target >= 0)
+         input_openxr_edit_reset(e, st->quads.quads[target].slot);
    }
    input_openxr_edit_publish(st, e);
 }
