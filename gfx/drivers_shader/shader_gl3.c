@@ -1696,6 +1696,7 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
    gl3_pass_reflect_parameter(pass, "PaperWhiteNits", &pass->reflection.semantics[SLANG_SEMANTIC_PAPER_WHITE_ALIAS]);
    gl3_pass_reflect_parameter(pass, "PeakNits", &pass->reflection.semantics[SLANG_SEMANTIC_PEAK_NITS]);
    gl3_pass_reflect_parameter(pass, "MaxNits", &pass->reflection.semantics[SLANG_SEMANTIC_MAX_NITS_ALIAS]);
+   gl3_pass_reflect_parameter(pass, "EnableHDR", &pass->reflection.semantics[SLANG_SEMANTIC_ENABLE_HDR]);
    gl3_pass_reflect_parameter(pass, "ExpandGamut", &pass->reflection.semantics[SLANG_SEMANTIC_EXPAND_GAMUT]);
    gl3_pass_reflect_parameter(pass, "Gyroscope", &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
    gl3_pass_reflect_parameter(pass, "Accelerometer", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
@@ -2367,6 +2368,8 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                       pass->current_subframe);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
                       pass->common->hdr_mode);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ENABLE_HDR,
+                      pass->common->hdr_mode ? 1.0f : 0.0f);
    gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       pass->common->paper_white_nits);
    gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_ALIAS,

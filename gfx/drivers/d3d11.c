@@ -369,6 +369,7 @@ typedef struct d3d11_pass
    unsigned                   hdr_mode;
    float                      paper_white_nits;
    float                      peak_nits;
+   float                      enable_hdr;
    unsigned                   expand_gamut;
    float                      scanlines;
    unsigned                   subpixel_layout;
@@ -3158,6 +3159,8 @@ static bool d3d11_shader_load_step(void *data,
                &d3d11->chain.pass[i].peak_nits;
          semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
                semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+         semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
+               &d3d11->chain.pass[i].enable_hdr;
 #endif
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d11->chain.pass[i].swap_count;
@@ -3455,6 +3458,8 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
          &d3d11->chain.pass[i].peak_nits;
    semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
          semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+   semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
+         &d3d11->chain.pass[i].enable_hdr;
 #endif
    semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
          &d3d11->chain.pass[i].swap_count;
@@ -5620,6 +5625,7 @@ static void d3d11_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
        * hdr.ubo_values (blocking commands under the wrapper) and init
        * seeds them, so the frame never reads live settings here. */
       pass->hdr_mode = d3d11_hdr_output_mode(d3d11);
+      pass->enable_hdr = pass->hdr_mode ? 1.0f : 0.0f;
       if (pass->hdr_mode)
       {
          pass->paper_white_nits = d3d11->hdr.ubo_values.paper_white_nits;

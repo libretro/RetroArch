@@ -4085,6 +4085,8 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 #ifdef VULKAN_HDR_SWAPCHAIN
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
                       pass->common->hdr_mode);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ENABLE_HDR,
+                      pass->common->hdr_mode ? 1.0f : 0.0f);
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       pass->common->paper_white_nits);
@@ -4109,6 +4111,9 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_HDR10,
                       pass->common->hdr10);
+#else
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ENABLE_HDR,
+                      0.0f);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Sensor uniforms — one coherent seqlock'd snapshot of the values

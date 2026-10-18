@@ -31,6 +31,7 @@ hdr_fields = {
     "PAPER_WHITE_ALIAS": "paper_white_nits",
     "PEAK_NITS": "peak_nits",
     "MAX_NITS_ALIAS": "peak_nits",
+    "ENABLE_HDR": "enable_hdr",
     "SCANLINES": "scanlines",
     "SUBPIXEL_LAYOUT": "subpixel_layout",
     "EXPAND_GAMUT": "expand_gamut",
@@ -49,7 +50,7 @@ struct pass
    unsigned rotation, core_aspect, core_aspect_rot;
    unsigned total_subframes, current_subframe, swap_count;
    unsigned hdr_mode, paper_white_nits, scanlines, subpixel_layout;
-   unsigned expand_gamut, inverse_tonemap, hdr10, peak_nits;
+   unsigned expand_gamut, inverse_tonemap, hdr10, peak_nits, enable_hdr;
 };
 struct preset { unsigned passes; };
 struct chain

@@ -427,6 +427,7 @@ typedef struct d3d12_pass
    unsigned                        hdr_mode;
    float                           paper_white_nits;
    float                           peak_nits;
+   float                           enable_hdr;
    float                           scanlines;
    unsigned                        subpixel_layout;
    unsigned                        expand_gamut;
@@ -4077,6 +4078,8 @@ static bool d3d12_shader_load_step(void *data,
                &d3d12->filter.pass[i].peak_nits;
          semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
                semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+         semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
+               &d3d12->filter.pass[i].enable_hdr;
 #endif
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
@@ -4457,6 +4460,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->filter.pass[i].peak_nits;
       semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
             semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+      semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
+            &d3d12->filter.pass[i].enable_hdr;
 #endif
       semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
@@ -7333,6 +7338,7 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
        * hdr.ubo_values and init seeds them - never live settings on
        * the video thread. */
       pass->hdr_mode = d3d12_hdr_output_mode(d3d12);
+      pass->enable_hdr = pass->hdr_mode ? 1.0f : 0.0f;
       if (pass->hdr_mode)
       {
          pass->paper_white_nits = d3d12->hdr.ubo_values.paper_white_nits;

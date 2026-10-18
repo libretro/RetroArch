@@ -98,7 +98,8 @@ static const char *semantic_uniform_names[] = {
    SLANG_RECT_NAME_TEXELS,
    "PaperWhiteNits",
    "PeakNits",
-   "MaxNits"
+   "MaxNits",
+   "EnableHDR"
 };
 
 static bool slang_reflect(
@@ -1931,6 +1932,7 @@ static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
       case SLANG_SEMANTIC_PAPER_WHITE_ALIAS:
       case SLANG_SEMANTIC_PEAK_NITS:
       case SLANG_SEMANTIC_MAX_NITS_ALIAS:
+      case SLANG_SEMANTIC_ENABLE_HDR:
          return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
             &&  spvc_type_get_vector_size(type)  == 1
             &&  spvc_type_get_columns(type)  == 1;

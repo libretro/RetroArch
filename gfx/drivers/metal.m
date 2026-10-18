@@ -6369,6 +6369,7 @@ typedef struct MTLALIGN(16)
       unsigned subpixel_layout;
       float paper_white_nits;
       float peak_nits;
+      float enable_hdr;
       unsigned expand_gamut;
       pass_semantics_t semantics;
       MTLViewport viewport;
@@ -7241,6 +7242,7 @@ struct metal_view_chain
    e->pass[i].total_subframes  = _totalSubframes;
    e->pass[i].current_subframe = _currentSubframe;
    e->pass[i].hdr_mode = _context.hdrOutputMode;
+   e->pass[i].enable_hdr = e->pass[i].hdr_mode ? 1.0f : 0.0f;
    e->pass[i].paper_white_nits = e->pass[i].hdr_mode
       ? _hdrPaperWhiteNits : 0.0f;
    e->pass[i].peak_nits = e->pass[i].hdr_mode
@@ -7949,6 +7951,8 @@ error:
                &_engine.pass[i].peak_nits;
          semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
                semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+         semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
+               &_engine.pass[i].enable_hdr;
 
          if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, &_engine.pass[i].semantics))
             return NO;

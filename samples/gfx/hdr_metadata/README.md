@@ -75,6 +75,9 @@ supplies zero for all three, including when the context refused HDR. On a
 machine without HDR output, --requested-hdr 2 checks that fallback. The SDR
 runner covers both storage types, direct/threaded and immediate/deferred.
 These bindings add no texture copies, readbacks or synchronization.
+EnableHDR is an optional scalar float: 1.0 for active HDR output, otherwise
+0.0, including refused HDR. An explicit pragma parameter keeps its value.
+Use --enable-hdr builtin or --enable-hdr parameter in either image runner.
 D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
 SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
