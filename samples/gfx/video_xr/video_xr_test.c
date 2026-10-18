@@ -649,19 +649,20 @@ static void test_menu_handle(void)
    video_views_map_t map;
    video_xr_params_t p;
    video_xr_quad_set_t set;
-   video_xr_quad_t menu, h;
+   video_xr_quad_t menu, h, rim;
    video_xr_vec3_t o, d;
    video_xr_pose_t pose;
    float u, v, t;
+   unsigned i;
 
-   /* Under the menu's bottom edge, 1 cm down, 40% as wide, 3 cm tall. */
+   /* Under the menu's outline, 5 mm clear, 40% as wide, 3 cm tall. */
    map_3ds(&map);
    params_init(&p, &map);
    p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
    video_xr_place(&p, &set);
    CHECK(set.quads[3].kind == VIDEO_XR_QUAD_MENU);
    video_xr_menu_handle(&set.quads[3], &h);
-   CHECK(pos_is(&h, 0.0, -0.505, -1.7));
+   CHECK(pos_is(&h, 0.0, -0.5309, -1.7));
    CHECK(NEAR(h.width, 0.64) && NEAR(h.height, 0.03));
    CHECK(h.kind == VIDEO_XR_QUAD_MENU && h.slot == VIDEO_XR_MENU_SLOT);
    CHECK(NEAR(h.pose.orientation.w, 1.0));
@@ -677,7 +678,7 @@ static void test_menu_handle(void)
    menu.height             = 0.5f;
    menu.kind               = VIDEO_XR_QUAD_MENU;
    video_xr_menu_handle(&menu, &h);
-   CHECK(pos_is(&h, 1.275, 2.0, 3.0));
+   CHECK(pos_is(&h, 1.2886, 2.0, 3.0));
    CHECK(NEAR(h.width, 0.4) && NEAR(h.pose.orientation.z, sin(M_PI / 4.0)));
 
    /* Picked there, 10 cm along it, the point is the menu's; through
@@ -685,13 +686,13 @@ static void test_menu_handle(void)
    memset(&set, 0, sizeof(set));
    set.quads[0]  = menu;
    set.num_quads = 1;
-   o.x = 1.275f; o.y = 2.1f; o.z = 4.0f;
+   o.x = 1.2886f; o.y = 2.1f; o.z = 4.0f;
    d.x = 0.0f;   d.y = 0.0f; d.z = -1.0f;
    CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
             &o, &d, &u, &v, &t) == 0);
-   CHECK(NEAR(u, 0.6) && NEAR(v, 1.05) && NEAR(t, 1.0));
+   CHECK(NEAR(u, 0.6) && NEAR(v, 1.0773) && NEAR(t, 1.0));
    video_xr_cursor(&set.quads[0], u, v, t, &pose);
-   CHECK(NEAR(pose.position.x, 1.275) && NEAR(pose.position.y, 2.1));
+   CHECK(NEAR(pose.position.x, 1.2886) && NEAR(pose.position.y, 2.1));
    o.x = 1.0f; o.y = 2.0f;
    CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
             &o, &d, &u, &v, &t) == -1);
@@ -704,10 +705,25 @@ static void test_menu_handle(void)
    p.anchor.orientation.w = (float)cos(M_PI / 4.0);
    video_xr_place(&p, &set);
    o.x = o.y = o.z = 0.0f;
-   d.x = -1.7f; d.y = -0.505f; d.z = -0.16f;
+   d.x = -1.7f; d.y = -0.5309f; d.z = -0.16f;
    CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
             &o, &d, &u, &v, &t) == 3);
-   CHECK(NEAR(u, 0.6) && NEAR(v, 1.02604) && NEAR(t, 1.0));
+   CHECK(NEAR(u, 0.6) && NEAR(v, 1.0531) && NEAR(t, 1.0));
+
+   /* Its top 5 mm below the outline's outer edge, which grows with the
+    * menu. */
+   for (i = 0; i < 3; i++)
+   {
+      memset(&menu, 0, sizeof(menu));
+      video_xr_pose_identity(&menu.pose);
+      menu.width  = 0.5f + (float)i;
+      menu.height = 0.3f + 0.6f * (float)i;
+      menu.kind   = VIDEO_XR_QUAD_MENU;
+      video_xr_outline(&menu, &rim);
+      video_xr_menu_handle(&menu, &h);
+      CHECK(fabs(-rim.height * 0.5 - 0.005
+               - (h.pose.position.y + h.height * 0.5)) < 1e-5);
+   }
 }
 
 static void test_live_edit(void)
@@ -734,12 +750,12 @@ static void test_live_edit(void)
             &o, &d, &u, &v, &t) == 0);
    /* Its handle, nearer than screen 1 behind it, takes the menu; the
     * point is in the menu's frame, so the dot lands on the handle. */
-   d.x = 0.0f; d.y = -0.505f; d.z = -1.7f;
+   d.x = 0.0f; d.y = -0.5309f; d.z = -1.7f;
    CHECK(video_xr_pick(&set, VIDEO_XR_LIVE_EDIT, false,
             &o, &d, &u, &v, &t) == 3);
-   CHECK(NEAR(u, 0.5) && NEAR(v, 1.02604) && NEAR(t, 1.0));
+   CHECK(NEAR(u, 0.5) && NEAR(v, 1.0531) && NEAR(t, 1.0));
    video_xr_cursor(&set.quads[3], u, v, t, &pose);
-   CHECK(NEAR(pose.position.x, 0.0) && NEAR(pose.position.y, -0.505));
+   CHECK(NEAR(pose.position.x, 0.0) && NEAR(pose.position.y, -0.5309));
    /* The handle is edit mode's alone. */
    CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
             &o, &d, &u, &v, &t) == 2);
@@ -1953,28 +1969,20 @@ static int column_clear(unsigned x)
    return 1;
 }
 
-/* The laser's image: the dot, edit mode's faint and bright outlines,
- * the menu's faint and bright handle bars, the beam's strips, a clear
- * column between each. */
+/* The laser's image: the dot; edit mode's faint and bright outlines,
+ * each rim three bands, dark, light, dark, clear inside; the menu's
+ * faint and bright handle bars, the same bands across; the beam's
+ * strips; a clear column between each. */
 static void test_cursor_pixels(void)
 {
+   const unsigned mid    = VIDEO_XR_OUTLINE_DIM / 2;
+   const unsigned b      = VIDEO_XR_OUTLINE_BAND;
+   const unsigned hx     = VIDEO_XR_HANDLE_COLS / 2;
    const uint8_t *centre = texel(VIDEO_XR_CURSOR_DIM / 2,
          VIDEO_XR_CURSOR_Y + VIDEO_XR_CURSOR_DIM / 2);
    const uint8_t *rim    = texel(VIDEO_XR_CURSOR_DIM / 2,
          VIDEO_XR_CURSOR_Y + 2);
    const uint8_t *corner = texel(0, VIDEO_XR_CURSOR_Y);
-   const uint8_t *faint  = texel(VIDEO_XR_OUTLINE_X(0), 64);
-   const uint8_t *edge   = texel(VIDEO_XR_OUTLINE_X(0)
-         + VIDEO_XR_OUTLINE_DIM - 1, 64);
-   const uint8_t *inside = texel(VIDEO_XR_OUTLINE_X(0)
-         + VIDEO_XR_OUTLINE_EDGE, 64);
-   const uint8_t *bright = texel(VIDEO_XR_OUTLINE_X(1) + 64,
-         VIDEO_XR_OUTLINE_DIM - 1);
-   const uint8_t *bar    = texel(VIDEO_XR_HANDLE_X(0)
-         + VIDEO_XR_CURSOR_DIM / 2, VIDEO_XR_CURSOR_Y);
-   const uint8_t *lit    = texel(VIDEO_XR_HANDLE_X(1)
-         + VIDEO_XR_CURSOR_DIM - 1, VIDEO_XR_CURSOR_Y
-         + VIDEO_XR_CURSOR_DIM - 1);
    const uint8_t *hit_in   = texel(VIDEO_XR_BEAM_X(0), VIDEO_XR_BEAM_Y + 1);
    const uint8_t *hit_mid  = texel(VIDEO_XR_BEAM_X(0)
          + VIDEO_XR_BEAM_LEN / 2, VIDEO_XR_BEAM_Y + 1);
@@ -1985,6 +1993,7 @@ static void test_cursor_pixels(void)
          + VIDEO_XR_BEAM_LEN / 2, VIDEO_XR_BEAM_Y + 2);
    const uint8_t *miss_end = texel(VIDEO_XR_BEAM_X(1)
          + VIDEO_XR_BEAM_LEN - 1, VIDEO_XR_BEAM_Y + 1);
+   unsigned k;
 
    memset(t_atlas, 0x7f, sizeof(t_atlas));
    video_xr_cursor_pixels(t_atlas);
@@ -1998,18 +2007,47 @@ static void test_cursor_pixels(void)
    /* Mid-height: the same rows counted from either end. */
    CHECK(VIDEO_XR_CURSOR_Y + VIDEO_XR_CURSOR_DIM + VIDEO_XR_CURSOR_Y
          == VIDEO_XR_CURSOR_H);
-   /* The outlines: a rim, faint then bright, clear inside. */
-   CHECK(faint[0] == 64 && faint[1] == 64 && faint[3] == 64);
-   CHECK(edge[0] == 64 && edge[3] == 64);
-   CHECK(!inside[0] && !inside[3]);
-   CHECK(bright[0] == 255 && bright[2] == 255 && bright[3] == 255);
-   /* The handle bars: filled at the dot's rows, faint then bright, and
-    * nothing above or below them. */
-   CHECK(bar[0] == 64 && bar[3] == 64);
-   CHECK(lit[0] == 255 && lit[1] == 255 && lit[3] == 255);
-   CHECK(!texel(VIDEO_XR_HANDLE_X(0), VIDEO_XR_CURSOR_Y - 1)[3]);
-   CHECK(!texel(VIDEO_XR_HANDLE_X(1), VIDEO_XR_CURSOR_Y
-            + VIDEO_XR_CURSOR_DIM)[3]);
+   CHECK(VIDEO_XR_HANDLE_Y * 2 + VIDEO_XR_HANDLE_ROWS == VIDEO_XR_CURSOR_H);
+   /* Two texels a band at least, so filtering keeps three. */
+   CHECK(b >= 2 && VIDEO_XR_OUTLINE_EDGE == 3 * b);
+   for (k = 0; k < 2; k++)
+   {
+      unsigned x0     = VIDEO_XR_OUTLINE_X(k);
+      unsigned h0     = VIDEO_XR_HANDLE_X(k);
+      uint8_t  a      = k ? 255 : VIDEO_XR_OUTLINE_FAINT;
+      const uint8_t *top_dark  = texel(x0 + mid, 0);
+      const uint8_t *top_light = texel(x0 + mid, b);
+      const uint8_t *top_inner = texel(x0 + mid, 2 * b);
+      const uint8_t *inside    = texel(x0 + mid, 3 * b);
+      const uint8_t *left      = texel(x0, mid);
+      const uint8_t *left_lit  = texel(x0 + b + 1, mid);
+      const uint8_t *right     = texel(x0 + VIDEO_XR_OUTLINE_DIM - 1, mid);
+      const uint8_t *bottom    = texel(x0 + mid, VIDEO_XR_OUTLINE_DIM - 1);
+      const uint8_t *bot_light = texel(x0 + mid,
+            VIDEO_XR_OUTLINE_DIM - 1 - b);
+      const uint8_t *bar_dark  = texel(h0 + hx, VIDEO_XR_HANDLE_Y);
+      const uint8_t *bar_light = texel(h0 + hx, VIDEO_XR_HANDLE_Y
+            + VIDEO_XR_HANDLE_ROWS / 2);
+      const uint8_t *bar_low   = texel(h0 + hx, VIDEO_XR_HANDLE_Y
+            + VIDEO_XR_HANDLE_ROWS - 1);
+      const uint8_t *bar_end   = texel(h0, VIDEO_XR_HANDLE_Y
+            + VIDEO_XR_HANDLE_ROWS / 2);
+      CHECK(!top_dark[0] && top_dark[3] == a);
+      CHECK(top_light[0] == a && top_light[2] == a && top_light[3] == a);
+      CHECK(!top_inner[0] && top_inner[3] == a);
+      CHECK(!inside[0] && !inside[3]);
+      CHECK(!left[0] && left[3] == a);
+      CHECK(left_lit[0] == a && left_lit[3] == a);
+      CHECK(!right[0] && right[3] == a);
+      CHECK(!bottom[0] && bottom[3] == a);
+      CHECK(bot_light[0] == a && bot_light[3] == a);
+      CHECK(!bar_dark[0] && bar_dark[3] == a);
+      CHECK(bar_light[0] == a && bar_light[3] == a);
+      CHECK(!bar_low[0] && bar_low[3] == a);
+      CHECK(!bar_end[0] && bar_end[3] == a);
+      CHECK(!texel(h0 + hx, VIDEO_XR_HANDLE_Y - 1)[3]);
+      CHECK(!texel(h0 + hx, VIDEO_XR_HANDLE_Y + VIDEO_XR_HANDLE_ROWS)[3]);
+   }
    /* Filtering at a part's edge meets a clear texel, not the next. */
    CHECK(column_clear(VIDEO_XR_CURSOR_DIM));
    CHECK(column_clear(VIDEO_XR_OUTLINE_X(1) - 1));
@@ -2044,6 +2082,42 @@ static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
       && a->position.x    == b->position.x
       && a->position.y    == b->position.y
       && a->position.z    == b->position.z;
+}
+
+/* An outline round an item: centred on it, facing as it does, its rim's
+ * inner edge with filtering's half texel 5 mm outside the item's; about
+ * 4 cm thick at the sides and 2 cm at the top and bottom of a
+ * 1.6 x 0.9 m screen, as before. */
+static void test_outline(void)
+{
+   video_xr_quad_t q, o;
+   const double f = (VIDEO_XR_OUTLINE_EDGE + 0.5)
+      / (double)VIDEO_XR_OUTLINE_DIM;
+   memset(&q, 0, sizeof(q));
+   video_xr_pose_identity(&q.pose);
+   q.pose.position.x = 0.3f;
+   q.pose.position.z = -1.8f;
+   q.pose.orientation.y = 0.38268f;
+   q.pose.orientation.w = 0.92388f;
+   q.width  = 1.6f;
+   q.height = 0.9f;
+   q.slot   = 3;
+   q.kind   = VIDEO_XR_QUAD_SCREEN;
+   video_xr_outline(&q, &o);
+   CHECK(NEAR(o.width * (1.0 - 2.0 * f), 1.61));
+   CHECK(NEAR(o.height * (1.0 - 2.0 * f), 0.91));
+   CHECK(fabs(o.width * VIDEO_XR_OUTLINE_EDGE / VIDEO_XR_OUTLINE_DIM - 0.04)
+         < 0.005);
+   CHECK(fabs(o.height * VIDEO_XR_OUTLINE_EDGE / VIDEO_XR_OUTLINE_DIM
+            - 0.0225) < 0.005);
+   CHECK(pose_same(&o.pose, &q.pose));
+   CHECK(o.slot == 3 && o.kind == VIDEO_XR_QUAD_SCREEN);
+   /* A small item: still 5 mm clear. */
+   q.width  = 0.1f;
+   q.height = 0.05f;
+   video_xr_outline(&q, &o);
+   CHECK(NEAR(o.width * (1.0 - 2.0 * f), 0.11));
+   CHECK(NEAR(o.height * (1.0 - 2.0 * f), 0.06));
 }
 
 static void test_compose(void)
@@ -2347,6 +2421,7 @@ int main(void)
    test_cursor();
    test_beam();
    test_cursor_pixels();
+   test_outline();
    test_compose();
    test_lazy_follow();
    test_lazy_edges();

@@ -36,7 +36,7 @@
 
 RETRO_BEGIN_DECLS
 
-/* Layers the input may put over the screens: the laser's dots, kept
+/* Layers the input may add to the screens: the laser's dots, kept
  * where the screens must make room, then edit mode's outlines and the
  * menu's handle, then the beams, only in room they leave. */
 #define OPENXR_KEPT_EXTRA_LAYERS 2
@@ -116,11 +116,13 @@ typedef struct openxr_frame
    const openxr_runtime_t *rt;
    openxr_session_t *session;
    openxr_swapchains_t *sc;
-   /* Layers after the screens (the laser, its cursor), shown holding
-    * this frame's quads where it shows them, in space; may be NULL. */
+   /* Layers after the screens (the laser, its cursor), the first *under
+    * of them under the screens instead, shown holding this frame's quads
+    * where it shows them, in space; may be NULL. */
    unsigned (*extra_layers)(void *user, XrTime display_time,
          const video_xr_quad_set_t *shown, XrSpace space,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+         const XrCompositionLayerBaseHeader **layers, unsigned cap,
+         unsigned *under);
    /* The input's: a hand's aim pose at a frame's time in space, for what
     * it holds; may be NULL. */
    bool (*aim)(void *user, unsigned hand, XrSpace space, XrTime time,
@@ -246,14 +248,15 @@ typedef struct openxr_input_hooks
    void (*session_created)(void *user, const openxr_input_handles_t *h);
    /* The frame loop has stopped; the session is destroyed next. */
    void (*session_destroying)(void *user);
-   /* The frame loop's thread, each headset frame: up to cap layers over
+   /* The frame loop's thread, each headset frame: up to cap layers with
     * the screens, which shown holds where this frame shows them, in
     * space; the first OPENXR_KEPT_EXTRA_LAYERS for the dots, the rest
     * for what only fits in room the screens leave. Returns how many were
-    * written. */
+    * written: the first *under go under the screens, the rest over. */
    unsigned (*frame_layers)(void *user, XrTime display_time,
          const video_xr_quad_set_t *shown, XrSpace space,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+         const XrCompositionLayerBaseHeader **layers, unsigned cap,
+         unsigned *under);
    /* The two hands' poses and joints in base at time.
     * False when none could be located. */
    bool (*locate_hands)(void *user, XrSpace base, XrTime time,

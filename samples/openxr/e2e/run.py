@@ -4087,8 +4087,14 @@ MENU_W, MENU_H = 1.6, 0.96
 # edit mode's faint and bright outlines, the menu's faint and bright
 # handle bars, the beam's strips to the dot and into nothing.
 CURSOR_DIM = 32
-OUTLINE_DIM = 128
-HANDLE_COLS, HANDLE_ROWS = CURSOR_DIM, CURSOR_DIM
+OUTLINE_DIM = 256
+OUTLINE_BAND = 2
+OUTLINE_EDGE = 3 * OUTLINE_BAND
+HANDLE_COLS, HANDLE_ROWS = 128, 8
+# VIDEO_XR_OUTLINE_GAP, and the rim's fraction of an outline with the
+# half texel filtering adds.
+OUTLINE_GAP = 0.005
+OUTLINE_F = (OUTLINE_EDGE + 0.5) / OUTLINE_DIM
 BEAM_LEN, BEAM_ROWS = 128, 4
 OUTLINE_X = tuple(CURSOR_DIM + 1 + k * (OUTLINE_DIM + 1) for k in (0, 1))
 HANDLE_X = tuple(OUTLINE_X[0] + 2 * (OUTLINE_DIM + 1) + k * (HANDLE_COLS + 1)
@@ -4178,9 +4184,16 @@ def edit_aim(x=0.0, y=0.0, roll=None, z=-1.8):
     return aim_line((x, y, 0.0), (x, y, z), roll=roll)
 
 
+def outline_size(w, h):
+    """An outline's quad round an item w by h."""
+    return tuple((s + 2.0 * OUTLINE_GAP) / (1.0 - 2.0 * OUTLINE_F)
+                 for s in (w, h))
+
+
 def handle_y(menu_y, h):
-    """The height of the handle under a menu at menu_y, h high."""
-    return menu_y - (h + 0.03) / 2.0 - 0.01
+    """The height of the handle under a menu at menu_y, h high: 5 mm
+    below its outline."""
+    return menu_y - (outline_size(0.0, h)[1] + 0.03) / 2.0 - 0.005
 
 
 def edit_screen0(frame):
@@ -4820,16 +4833,120 @@ def check_edit_menu_reset(res):
     return errors
 
 
-def rim_errors(res, f, q, level, what):
-    """The part of the image q shows: its rim, or the bar, at level."""
-    fy = 0.01 if q['rect'][0] < HANDLE_X[0] else 0.5
-    rgb, alpha = rect_colour(res, f, q, 0.5, fy)
-    if abs(alpha - level) > 2 or abs(rgb[0] - level) > 2:
-        return ['%s shows %s alpha %d, want %d' % (what, rgb, alpha, level)]
-    return []
+def band_errors(res, f, q, level, what):
+    """The three bands across the part of the image q shows, from its
+    top edge in, dark, light, dark, at level: through an outline's rim,
+    or across the handle bar."""
+    if q['rect'][3] == OUTLINE_DIM:
+        rows = (0, OUTLINE_BAND, 2 * OUTLINE_BAND)
+    else:
+        rows = (0, HANDLE_ROWS // 2, HANDLE_ROWS - 1)
+    errors = []
+    for row, light in zip(rows, (False, True, False)):
+        rgb, alpha = rect_texel(res, f, q, q['rect'][2] // 2, row)
+        want = level if light else 0
+        if abs(alpha - level) > 2 or abs(rgb[0] - want) > 2:
+            errors.append('%s row %d shows %s alpha %d, want %d alpha %d'
+                          % (what, row, rgb, alpha, want, level))
+    return errors
+
+
+def outline_gap_errors(frame):
+    """Every outline's clear middle, where filtering leaves its rim,
+    OUTLINE_GAP wider each side than the item it is round: the rim never
+    covers the picture."""
+    items = [q for q in quads(frame) if not q['flags'] & BLEND] \
+        + menus(frame)
+    if not items:
+        return ['no items under the outlines']
+    errors = []
+    for o in outlines(frame):
+        q = min(items, key=lambda i: sum(
+            (a - b) ** 2 for a, b in zip(i['pose'][:3], o['pose'][:3])))
+        gaps = [(s * (1.0 - 2.0 * OUTLINE_F) - w) / 2.0
+                for s, w in zip(o['size'], q['size'])]
+        if any(abs(g - OUTLINE_GAP) > 0.001 for g in gaps):
+            errors.append('the outline at %s is %s clear of its item, '
+                          'want %.3f' % (
+                              [round(v, 3) for v in o['pose'][:3]],
+                              [round(g, 4) for g in gaps], OUTLINE_GAP))
+    return errors
 
 
 EDIT_HANDLE = handle_y(0.0, MENU_H)
+# Screen 2 flush against screen 1's right edge, the menu out of the way.
+FLUSH = {'video_screen2_xr_x': '1.44', 'video_screen2_xr_y': '0.992',
+         'video_openxr_menu_placed': 'true', 'video_openxr_menu_xr_x': '-2'}
+
+
+def texel_at(res, fr, q, x, y):
+    """The texel quad q, facing +Z, shows at x, y; None off it."""
+    o = tuple(q['pose'][3:])
+    lx, ly, _ = qrot((-o[0], -o[1], -o[2], o[3]),
+                     (x - q['pose'][0], y - q['pose'][1], 0.0))
+    u, v = lx / q['size'][0] + 0.5, 0.5 - ly / q['size'][1]
+    if not (0.0 <= u < 1.0 and 0.0 <= v < 1.0):
+        return None
+    return rect_texel(res, fr, q, int(u * q['rect'][2]),
+                      int(v * q['rect'][3]))
+
+
+def seen_at(res, fr, x, y):
+    """What frame fr shows at x, y looking down -Z: its layers that face
+    +Z, each in its turn over those before, from black."""
+    out = (0, 0, 0)
+    for q in quads(fr):
+        if qrot(tuple(q['pose'][3:]), (0.0, 0.0, 1.0))[2] < 0.999:
+            continue
+        t = texel_at(res, fr, q, x, y)
+        if t is None:
+            continue
+        rgb, alpha = t
+        out = (tuple(min(255, c + (255 - alpha) * b // 255)
+                     for c, b in zip(rgb, out))
+               if q['flags'] & BLEND else rgb)
+    return out
+
+
+def check_edit_outlines_flush(res):
+    """Screen 2 flush against screen 1's right edge, screen 1 lit: its
+    outline goes under the screens, so screen 2's picture covers that
+    side of its rim; the other three sides still show."""
+    errors = edit_log_errors(res, ['on', 'off'])
+    snaps = [f for f in between(res, 'lit', 'off', delay=0.5)
+             if f['snap'] and len(outlines(f, 1)) == 1 and screen2(f)]
+    if not snaps:
+        return errors + ['no snapshot of screen 1 outlined beside screen 2']
+    f = snaps[-1]
+    o, s2 = outlines(f, 1)[0], screen2(f)
+    if not near3(o['pose'], (0.0, 0.0, -1.798)) \
+            or not near3(s2['pose'], (1.44, 0.0, -1.8)):
+        return errors + ['screen 1\'s outline at %s, screen 2 at %s: not '
+                         'flush' % (o['pose'][:3], s2['pose'][:3])]
+    tw, th = (s / OUTLINE_DIM for s in o['size'])
+    right = o['pose'][0] + o['size'][0] / 2.0
+    covered = []
+    for k in range(OUTLINE_EDGE):
+        for y in (-0.3, 0.0, 0.3):
+            x = right - (k + 0.5) * tw
+            want = texel_at(res, f, s2, x, y)
+            seen = seen_at(res, f, x, y)
+            if want is None or any(abs(a - b) > 2
+                                   for a, b in zip(seen, want[0])):
+                covered.append((round(x, 3), y, seen))
+    if covered:
+        errors.append('screen 1\'s rim over screen 2\'s picture: %s'
+                      % covered[:4])
+    light = OUTLINE_BAND + 0.5
+    for what, x, y in (
+            ('left', o['pose'][0] - o['size'][0] / 2.0 + light * tw, 0.0),
+            ('top', 0.0, o['pose'][1] + o['size'][1] / 2.0 - light * th),
+            ('bottom', 0.0, o['pose'][1] - o['size'][1] / 2.0 + light * th)):
+        seen = seen_at(res, f, x, y)
+        if any(c < 253 for c in seen):
+            errors.append('screen 1\'s rim shows %s on its %s side, want '
+                          'its light band' % (seen, what))
+    return errors
 
 
 def check_edit_outlines(menu=True):
@@ -4849,18 +4966,19 @@ def check_edit_outlines(menu=True):
                         for f in lit[-1:]])]
         b = outlines(good[-1], 1)[0]
         if not near3(b['pose'], (0.0, 0.0, -1.798)) \
-                or not near3(b['size'], (1.62, 0.98)):
+                or not near3(b['size'], outline_size(1.6, 0.96), 0.002):
             errors.append('the bright outline at %s, %s, want screen 1\'s'
                           % (b['pose'][:3], b['size']))
+        errors += outline_gap_errors(good[-1])
         snaps = [f for f in good if f['snap']]
         if snaps:
             s = snaps[-1]
-            errors += rim_errors(res, s, outlines(s, 1)[0], 255,
+            errors += band_errors(res, s, outlines(s, 1)[0], 255,
                                  'the bright outline')
-            errors += rim_errors(res, s, outlines(s, 0)[0], 64,
+            errors += band_errors(res, s, outlines(s, 0)[0], 64,
                                  'a faint outline')
             if menu and handles(s, 0):
-                errors += rim_errors(res, s, handles(s, 0)[0], 64,
+                errors += band_errors(res, s, handles(s, 0)[0], 64,
                                      'the faint handle')
         else:
             errors.append('no snapshot of the outlines')
@@ -4879,7 +4997,7 @@ def check_edit_outlines(menu=True):
                               'menu outline')
             elif [f for f in on if f['snap']]:
                 s = [f for f in on if f['snap']][-1]
-                errors += rim_errors(res, s, handles(s, 1)[0], 255,
+                errors += band_errors(res, s, handles(s, 1)[0], 255,
                                      'the bright handle')
         elif any(handles(f) for f in lit):
             errors.append('a handle without a menu quad')
@@ -5455,6 +5573,12 @@ EDIT_CASES += [
          ('script', edit_aim(0.0, EDIT_HANDLE, z=-1.7)), ('mark', 'handle'),
          ('wait', 2), ('send', EDIT), ('mark', 'off'), ('wait', 2)],
      'check': check_edit_outlines()},
+    {'name': 'edit-outlines-flush', 'map': '3ds', 'settings': FLUSH,
+     'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
+     'steps': edit_start(edit_aim(), 1) + [
+         ('mark', 'lit'), ('wait', 3), ('send', EDIT), ('mark', 'off'),
+         ('wait', 2)],
+     'check': check_edit_outlines_flush},
     {'name': 'edit-beam', 'map': '3ds',
      'settings': {'video_openxr_laser': '1'},
      'env': {'RA_XR_LAYER_SNAP_EVERY': '10'},
@@ -6906,8 +7030,8 @@ GL_BASE = {
 GL_EDIT = ['edit-grab', 'edit-grab-threaded', 'edit-command', 'edit-follow',
            'edit-release-threaded', 'edit-release-moving',
            'edit-regrab-threaded', 'edit-handover-threaded', 'edit-reset',
-           'edit-outlines', 'edit-beam', 'edit-fallback', 'edit-no-map',
-           'edit-lazy', 'edit-two-hands']
+           'edit-outlines', 'edit-outlines-flush', 'edit-beam',
+           'edit-fallback', 'edit-no-map', 'edit-lazy', 'edit-two-hands']
 GL_EDIT_MENU = ['edit-menu-front', 'edit-menu-size']
 for custom_driver in GL_BASE:
     GL_BASE[custom_driver] += [c['name'] for c in CUSTOM_CASES] + GL_EDIT

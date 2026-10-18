@@ -703,16 +703,27 @@ static void openxr_frame_submit(openxr_frame_t *f,
       end_info.layerCount = end;
       if (f->extra_layers)
       {
-         unsigned cap = (f->rt->max_layers > end)
+         unsigned i, n;
+         unsigned under = 0;
+         unsigned cap   = (f->rt->max_layers > end)
             ? (unsigned)(f->rt->max_layers - end) : 0;
          if (cap < OPENXR_KEPT_EXTRA_LAYERS)
             cap = OPENXR_KEPT_EXTRA_LAYERS;
          if (cap > OPENXR_MAX_EXTRA_LAYERS)
             cap = OPENXR_MAX_EXTRA_LAYERS;
-         end_info.layerCount += f->extra_layers(f->extra_user,
-               b->display_time, &f->shown, f->screens.view
+         n = f->extra_layers(f->extra_user, b->display_time, &f->shown,
+               f->screens.view
                ? f->session->view_space : f->session->local_space,
-               ptrs + end_info.layerCount, cap);
+               ptrs + end, cap, &under);
+         end_info.layerCount += n;
+         /* The first under go before the quads. */
+         for (i = 0; i < under && i < n; i++, first++, end++)
+         {
+            const XrCompositionLayerBaseHeader *l = ptrs[end];
+            memmove(&ptrs[first + 1], &ptrs[first],
+                  (end - first) * sizeof(*ptrs));
+            ptrs[first] = l;
+         }
       }
       end_info.layerCount = openxr_frame_fit(f, ptrs,
             end_info.layerCount, first, end);

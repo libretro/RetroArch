@@ -563,6 +563,7 @@ static XrCompositionLayerProjection     t_proj;
 static XrCompositionLayerProjectionView t_proj_views[2];
 static XrStructureType                  t_layer_types[4];
 static XrCompositionLayerQuad           t_quad;   /* the first quad */
+static XrSwapchain                      t_layer_sc[16]; /* each quad's */
 static XRAPI_ATTR XrResult XRAPI_CALL t_end_frame(XrSession s,
       const XrFrameEndInfo *ei)
 {
@@ -574,6 +575,11 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_end_frame(XrSession s,
    memset(t_layer_types, 0, sizeof(t_layer_types));
    for (i = 0; i < ei->layerCount && i < 4; i++)
       t_layer_types[i] = ei->layers[i]->type;
+   memset(t_layer_sc, 0, sizeof(t_layer_sc));
+   for (i = 0; i < ei->layerCount && i < 16; i++)
+      if (ei->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD)
+         t_layer_sc[i] = ((const XrCompositionLayerQuad*)
+               ei->layers[i])->subImage.swapchain;
    for (i = 0; i < ei->layerCount; i++)
       if (ei->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD)
       {
@@ -725,14 +731,35 @@ static video_xr_quad_set_t t_extra_shown;
 static XrSpace             t_extra_space;
 static unsigned t_extra_layers(void *user, XrTime time,
       const video_xr_quad_set_t *shown, XrSpace space,
-      const XrCompositionLayerBaseHeader **layers, unsigned cap)
+      const XrCompositionLayerBaseHeader **layers, unsigned cap,
+      unsigned *under)
 {
    static XrCompositionLayerQuad dot;
    t_extra_cap   = cap;
    t_extra_shown = *shown;
    t_extra_space = space;
    layers[0]     = (const XrCompositionLayerBaseHeader*)&dot;
+   *under        = 0;
    return 1;
+}
+
+/* Edit mode's: two screens' rims, to go under the screens, then the
+ * menu's rim, its handle, a beam and a dot; swapchains 0x700 up. */
+static unsigned t_split_layers(void *user, XrTime time,
+      const video_xr_quad_set_t *shown, XrSpace space,
+      const XrCompositionLayerBaseHeader **layers, unsigned cap,
+      unsigned *under)
+{
+   static XrCompositionLayerQuad l[6];
+   unsigned i;
+   for (i = 0; i < 6 && i < cap; i++)
+   {
+      l[i].type               = XR_TYPE_COMPOSITION_LAYER_QUAD;
+      l[i].subImage.swapchain = (XrSwapchain)(uintptr_t)(0x700 + i);
+      layers[i]               = (const XrCompositionLayerBaseHeader*)&l[i];
+   }
+   *under = 2;
+   return i;
 }
 
 /* The aim hook: a pose, or untracked; the hand and space asked last. */
@@ -1446,6 +1473,24 @@ static void test_frame(void)
             (int)layers[2].eyeVisibility);
    }
 
+   /* The screens' rims before the first quad; the menu's rim, the
+    * handle, the beam and the dot after the last. */
+   f.extra_layers = t_split_layers;
+   openxr_frame_run(&f);
+   CHECK(     t_last_layer_count == 9
+         && t_layer_sc[0] == (XrSwapchain)(uintptr_t)0x700
+         && t_layer_sc[1] == (XrSwapchain)(uintptr_t)0x701
+         && t_layer_sc[2] == sc.slots[1].swapchains[0]
+         && t_layer_sc[3] == sc.slots[3].swapchains[0]
+         && t_layer_sc[4] == sc.slots[3].swapchains[1]
+         && t_layer_sc[5] == (XrSwapchain)(uintptr_t)0x702
+         && t_layer_sc[6] == (XrSwapchain)(uintptr_t)0x703
+         && t_layer_sc[7] == (XrSwapchain)(uintptr_t)0x704
+         && t_layer_sc[8] == (XrSwapchain)(uintptr_t)0x705,
+         "%u layers: the rims not under the screens, or the rest not over",
+         t_last_layer_count);
+   f.extra_layers = t_extra_layers;
+
    /* A recenter makes the tracked head's level pose the anchor; the
     * runtime's recenter and a new session put it back and drop one
     * asked for. The head here is turned a quarter left: level already. */
@@ -1966,6 +2011,17 @@ static void test_projection(void)
          && t_layer_types[1] == XR_TYPE_COMPOSITION_LAYER_QUAD,
          "order: %u layers, the first %d", t_last_layer_count,
          (int)t_layer_types[0]);
+   /* Edit mode's screen rims between the projection and the quads. */
+   f.extra_layers = t_split_layers;
+   openxr_frame_run(&f);
+   CHECK(     t_last_layer_count == 8
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_layer_sc[1] == (XrSwapchain)(uintptr_t)0x700
+         && t_layer_sc[2] == (XrSwapchain)(uintptr_t)0x701
+         && t_layer_sc[3] == sc.slots[1].swapchains[0]
+         && t_layer_sc[4] == (XrSwapchain)(uintptr_t)0x702,
+         "%u layers: the rims not between the projection and the quads",
+         t_last_layer_count);
    f.extra_layers = NULL;
 
    /* A new track space leaves out what was drawn in the last, until

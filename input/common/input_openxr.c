@@ -1452,11 +1452,11 @@ static void input_openxr_yield(input_openxr_t *st, unsigned laser,
       st->yield = true;
 }
 
-/* One of edit mode's layers: the laser's image's part from x, y,
- * size square, over q just in front of it, margin larger each side. */
+/* One of edit mode's layers: the laser's image's w by h part from x, y,
+ * over q, just in front of it. */
 static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
       XrCompositionLayerQuad *l, const video_xr_quad_t *q, XrSpace space,
-      XrSwapchain cursor, int32_t x, int32_t y, int32_t size, float margin)
+      XrSwapchain cursor, int32_t x, int32_t y, int32_t w, int32_t h)
 {
    video_xr_vec3_t lift, world;
    lift.x = 0.0f;
@@ -1473,8 +1473,8 @@ static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
    l->subImage.swapchain               = cursor;
    l->subImage.imageRect.offset.x      = x;
    l->subImage.imageRect.offset.y      = y;
-   l->subImage.imageRect.extent.width  = size;
-   l->subImage.imageRect.extent.height = size;
+   l->subImage.imageRect.extent.width  = w;
+   l->subImage.imageRect.extent.height = h;
    l->pose.orientation.x               = q->pose.orientation.x;
    l->pose.orientation.y               = q->pose.orientation.y;
    l->pose.orientation.z               = q->pose.orientation.z;
@@ -1482,42 +1482,46 @@ static const XrCompositionLayerBaseHeader *input_openxr_edit_layer(
    l->pose.position.x                  = q->pose.position.x + world.x;
    l->pose.position.y                  = q->pose.position.y + world.y;
    l->pose.position.z                  = q->pose.position.z + world.z;
-   l->size.width                       = q->width + 2.0f * margin;
-   l->size.height                      = q->height + 2.0f * margin;
+   l->size.width                       = q->width;
+   l->size.height                      = q->height;
    return (const XrCompositionLayerBaseHeader*)l;
 }
 
-/* Edit mode's outlines, one an item (a stereo screen's two quads are
- * one, a fixed slot none), the menu's handle after its outline: bright
- * for the slots in lit, faint for the rest; at most cap. */
+/* Edit mode's outlines after layers' first n, of the menu or of every
+ * other item: one an item (a stereo screen's two quads are one, a fixed
+ * slot none), each just outside its item, the menu's handle after its
+ * outline: bright for the slots in lit, faint for the rest; up to cap
+ * in all. */
 static unsigned input_openxr_outlines(input_openxr_t *st,
       const video_xr_quad_set_t *set, XrSpace space, XrSwapchain cursor,
-      unsigned lit, const XrCompositionLayerBaseHeader **layers,
-      unsigned cap)
+      unsigned lit, bool menu, const XrCompositionLayerBaseHeader **layers,
+      unsigned n, unsigned cap)
 {
    unsigned i;
-   unsigned n    = 0;
    unsigned done = 0;
    for (i = 0; i < set->num_quads && n < cap; i++)
    {
       const video_xr_quad_t *q = &set->quads[i];
+      video_xr_quad_t outline;
       unsigned bright;
       if (     q->slot >= VIDEO_XR_MAX_SLOTS || (done & (1u << q->slot))
-            || set->slots[q->slot].fixed)
+            || set->slots[q->slot].fixed
+            || (q->kind == VIDEO_XR_QUAD_MENU) != menu)
          continue;
       done     |= 1u << q->slot;
       bright    = (lit >> q->slot) & 1u;
-      layers[n] = input_openxr_edit_layer(&st->outlines[n], q, space,
-            cursor, VIDEO_XR_OUTLINE_X(bright), 0, VIDEO_XR_OUTLINE_DIM,
-            VIDEO_XR_OUTLINE_MARGIN);
+      video_xr_outline(q, &outline);
+      layers[n] = input_openxr_edit_layer(&st->outlines[n], &outline,
+            space, cursor, VIDEO_XR_OUTLINE_X(bright), 0,
+            VIDEO_XR_OUTLINE_DIM, VIDEO_XR_OUTLINE_DIM);
       n++;
       if (q->kind == VIDEO_XR_QUAD_MENU && n < cap)
       {
          video_xr_quad_t handle;
          video_xr_menu_handle(q, &handle);
          layers[n] = input_openxr_edit_layer(&st->outlines[n], &handle,
-               space, cursor, VIDEO_XR_HANDLE_X(bright), VIDEO_XR_CURSOR_Y,
-               VIDEO_XR_CURSOR_DIM, 0.0f);
+               space, cursor, VIDEO_XR_HANDLE_X(bright), VIDEO_XR_HANDLE_Y,
+               VIDEO_XR_HANDLE_COLS, VIDEO_XR_HANDLE_ROWS);
          n++;
       }
    }
@@ -1575,11 +1579,13 @@ static const XrCompositionLayerBaseHeader *input_openxr_beam_layer(
 /* The XR thread, each headset frame: a dot where each hand points at a
  * live quad of set, from its own locate at the frame's display time;
  * in edit mode an outline round every item first, in the layers the
- * dots do not keep; then, as Laser Beam says, each tracked hand's beam
- * facing the head, in what the outlines leave. */
+ * dots do not keep, the screens' to go under the screens so a flush
+ * neighbour covers them; then, as Laser Beam says, each tracked hand's
+ * beam facing the head, in what the outlines leave. */
 static unsigned input_openxr_frame_layers(void *user, XrTime time,
       const video_xr_quad_set_t *set, XrSpace space,
-      const XrCompositionLayerBaseHeader **layers, unsigned cap)
+      const XrCompositionLayerBaseHeader **layers, unsigned cap,
+      unsigned *under)
 {
    unsigned h;
    XrSwapchain cursor;
@@ -1601,6 +1607,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       & INPUT_OPENXR_BEAM_MASK;
    (void)user;
 
+   *under = 0;
    if (     !st->frame || laser == VIDEO_OPENXR_LASER_OFF
          || !openxr_session_focused(st->frame->session)
          || !(cursor = openxr_frame_cursor(st->frame)))
@@ -1647,8 +1654,13 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       dots++;
    }
    if (laser == VIDEO_XR_LIVE_EDIT && cap > OPENXR_KEPT_EXTRA_LAYERS)
-      n = input_openxr_outlines(st, set, space, cursor, lit, layers,
-            cap - OPENXR_KEPT_EXTRA_LAYERS);
+   {
+      n      = input_openxr_outlines(st, set, space, cursor, lit, false,
+            layers, 0, cap - OPENXR_KEPT_EXTRA_LAYERS);
+      *under = n;
+      n      = input_openxr_outlines(st, set, space, cursor, lit, true,
+            layers, n, cap - OPENXR_KEPT_EXTRA_LAYERS);
+   }
    if (     rays && n + OPENXR_KEPT_EXTRA_LAYERS < cap
          && (beam == VIDEO_OPENXR_LASER_BEAM_ALWAYS
             || (beam == VIDEO_OPENXR_LASER_BEAM_EDIT

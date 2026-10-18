@@ -704,6 +704,7 @@ static bool                 t_ended;
 static XrTime               t_time    = 1000000000;
 static video_xr_quad_set_t  t_quads;
 static openxr_input_hooks_t t_hooks;
+static unsigned             t_under;
 bool openxr_session_focused(openxr_session_t *s)
 {
    return s == &t_xr_session && t_focused;
@@ -2054,7 +2055,7 @@ static void test_edit_mode(void)
    t_aim_tracked[2]       = true;
    t_cursor               = true;
    CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &t_quads,
-            t_xr_session.local_space, layers, 4) == 3,
+            t_xr_session.local_space, layers, 4, &t_under) == 3,
          "both hands do not point while editing, after its outline");
 
    /* The menu opens: off, and the laser is the setting's again. */
@@ -2068,7 +2069,7 @@ static void test_edit_mode(void)
          "the laser is %d after editing", config);
    CHECK(!strcmp(t_notice, "edit off"), "notice %s", t_notice);
    CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &t_quads,
-            t_xr_session.local_space, layers, 4) == 0,
+            t_xr_session.local_space, layers, 4, &t_under) == 0,
          "the laser points after editing with the setting Off");
    t_cursor         = false;
    memset(&t_quads, 0, sizeof(t_quads));
@@ -2435,11 +2436,18 @@ static bool t_near(float a, float b)
    return fabs((double)a - (double)b) < 1e-3;
 }
 
+/* An outline's size round an item s metres across. */
+static float t_outline(float s)
+{
+   return (s + 2.0f * VIDEO_XR_OUTLINE_GAP) / (1.0f - 2.0f
+         * (VIDEO_XR_OUTLINE_EDGE + 0.5f) / VIDEO_XR_OUTLINE_DIM);
+}
+
 /* The menu's handle bar's middle, for a menu h metres tall centred at
- * y 0. */
+ * y 0: 5 mm below its outline. */
 static float t_handle_y(float h)
 {
-   return -(h + VIDEO_XR_HANDLE_HEIGHT) * 0.5f - VIDEO_XR_HANDLE_GAP;
+   return -(t_outline(h) + VIDEO_XR_HANDLE_HEIGHT) * 0.5f - 0.005f;
 }
 
 /* Screen 1 1.8 m ahead and the menu placed 2 m to its right, from an
@@ -2960,7 +2968,7 @@ static void test_edit_fallback_frame(void)
    frame           = t_quads;
    frame.num_quads = 1;
    CHECK(t_hooks.frame_layers(t_hooks.user, t_time, &frame,
-            t_xr_session.local_space, layers, 4) == 0,
+            t_xr_session.local_space, layers, 4, &t_under) == 0,
          "a dot or an outline on the fallback frame");
    t_cursor = false;
    t_quads.quads[0].kind  = VIDEO_XR_QUAD_SCREEN;
@@ -3069,7 +3077,9 @@ static void test_edit_frame_aim(void)
 /* Edit mode's layers: a bright outline round what a hand points at, a
  * faint one round every other item, the menu's handle bar after its
  * outline, then the dot; each where the frame shows its item; outlines
- * only in the layers the dots leave; none round a fixed slot. */
+ * only in the layers the dots leave; none round a fixed slot. The
+ * screens' outlines go first, under the screens; the menu's and its
+ * handle over them. */
 static void test_edit_outlines(void)
 {
    unsigned n;
@@ -3083,8 +3093,10 @@ static void test_edit_outlines(void)
    t_cursor         = true;
    shown            = t_quads;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 4, "%u layers, want two outlines, a handle and a dot", n);
+   CHECK(t_under == 1, "%u layers under the screens, want screen 1's "
+         "outline alone", t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
    CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
          && q->subImage.imageRect.offset.y == 0
@@ -3094,19 +3106,22 @@ static void test_edit_outlines(void)
          && q->space == local
          && (q->layerFlags
             & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT)
-         && t_near(q->size.width, 1.62f) && t_near(q->size.height, 0.98f)
+         && t_near(q->size.width, t_outline(1.6f))
+         && t_near(q->size.height, t_outline(0.96f))
          && t_near(q->pose.position.z, -1.8f + VIDEO_XR_CURSOR_LIFT),
          "screen 1's outline: offset %d, %.3f x %.3f at z %.4f",
          (int)q->subImage.imageRect.offset.x, q->size.width,
          q->size.height, q->pose.position.z);
    q = (const XrCompositionLayerQuad*)layers[1];
    CHECK(q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
-         && t_near(q->pose.position.x, 2.0f) && t_near(q->size.width, 1.02f),
+         && t_near(q->pose.position.x, 2.0f)
+         && t_near(q->size.width, t_outline(1.0f)),
          "the menu's outline is not the faint one round it");
    q = (const XrCompositionLayerQuad*)layers[2];
    CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_HANDLE_X(0)
-         && q->subImage.imageRect.offset.y == VIDEO_XR_CURSOR_Y
-         && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+         && q->subImage.imageRect.offset.y == VIDEO_XR_HANDLE_Y
+         && q->subImage.imageRect.extent.width == VIDEO_XR_HANDLE_COLS
+         && q->subImage.imageRect.extent.height == VIDEO_XR_HANDLE_ROWS
          && t_near(q->size.width, 1.0f * VIDEO_XR_HANDLE_WIDTH)
          && t_near(q->size.height, VIDEO_XR_HANDLE_HEIGHT)
          && t_near(q->pose.position.x, 2.0f)
@@ -3123,7 +3138,7 @@ static void test_edit_outlines(void)
    /* The frame shows screen 1 elsewhere: its outline goes there. */
    shown.quads[0].pose.position.x = 0.5f;
    t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
    CHECK(t_near(q->pose.position.x, 0.5f),
          "the outline at %.3f, not where the frame shows screen 1",
@@ -3134,7 +3149,7 @@ static void test_edit_outlines(void)
    t_aim[2].position.x = 2.0f;
    t_aim[2].position.y = t_handle_y(0.6f);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 4
          && ((const XrCompositionLayerQuad*)layers[0])
             ->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
@@ -3146,26 +3161,44 @@ static void test_edit_outlines(void)
    t_aim[2].position.x = 0.0f;
    t_aim[2].position.y = 0.0f;
 
+   /* The menu first among the quads: its outline still over. */
+   shown.quads[0] = t_quads.quads[1];
+   shown.quads[1] = t_quads.quads[0];
+   n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(n == 4 && t_under == 1
+         && ((const XrCompositionLayerQuad*)layers[0])
+            ->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1)
+         && t_near(((const XrCompositionLayerQuad*)layers[1])
+            ->pose.position.x, 2.0f)
+         && ((const XrCompositionLayerQuad*)layers[2])
+            ->subImage.imageRect.offset.x == VIDEO_XR_HANDLE_X(0),
+         "the menu first: %u layers, %u under", n, t_under);
+   shown = t_quads;
+
    /* With the dots' two layers alone: the dot, no outline. */
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_KEPT_EXTRA_LAYERS);
+         OPENXR_KEPT_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
-   CHECK(n == 1 && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
+   CHECK(n == 1 && t_under == 0
+         && q->subImage.imageRect.extent.width == VIDEO_XR_CURSOR_DIM
          && q->subImage.imageRect.offset.x == 0,
          "with two layers: %u, the dot dropped or an outline kept", n);
    /* One more: screen 1's outline first. */
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_KEPT_EXTRA_LAYERS + 1);
+         OPENXR_KEPT_EXTRA_LAYERS + 1, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
-   CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1),
+   CHECK(n == 2 && t_under == 1
+         && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(1),
          "with three layers: %u", n);
 
    /* A frame shown whole without the screens' settings: no outline. */
    shown.slots[0].fixed = true;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
-   CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
+   CHECK(n == 2 && t_under == 0
+         && q->subImage.imageRect.offset.x == VIDEO_XR_OUTLINE_X(0)
          && t_near(q->pose.position.x, 2.0f),
          "%u layers round a fixed slot and the menu", n);
 
@@ -3178,16 +3211,17 @@ static void test_edit_outlines(void)
    shown.quads[1].eye     = VIDEO_XR_EYE_RIGHT;
    shown.quads[1].layer   = 1;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &shown, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
-   CHECK(n == 4, "%u layers round a stereo screen and the menu", n);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
+   CHECK(n == 4 && t_under == 1,
+         "%u layers round a stereo screen and the menu", n);
 
    /* Out of edit mode, Always: the dot alone. */
    input_openxr_edit_toggle();
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
-   CHECK(n == 1 && q->subImage.imageRect.offset.x == 0,
+   CHECK(n == 1 && t_under == 0 && q->subImage.imageRect.offset.x == 0,
          "%u layers out of edit mode", n);
    t_cursor = false;
    t_edit_end();
@@ -3231,7 +3265,7 @@ static void test_edit_beams(void)
 
    /* Straight ahead onto screen 1, 1.8 m away. */
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 5, "%u layers, want three outlines, a beam and a dot", n);
    q = (const XrCompositionLayerQuad*)layers[3];
    CHECK(     q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0)
@@ -3264,7 +3298,7 @@ static void test_edit_beams(void)
    t_aim[2].orientation.x = 0.70711f;
    t_aim[2].orientation.w = 0.70711f;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[3];
    CHECK(n == 4 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(1)
          && t_near(q->size.width, VIDEO_XR_BEAM_REACH)
@@ -3280,32 +3314,32 @@ static void test_edit_beams(void)
 
    /* Short of layers: the beam goes before any outline; the dot stays. */
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_KEPT_EXTRA_LAYERS + 3);
+         OPENXR_KEPT_EXTRA_LAYERS + 3, &t_under);
    q = (const XrCompositionLayerQuad*)layers[3];
    CHECK(n == 4 && q->subImage.imageRect.offset.x == 0,
          "with room for the outlines and dots: %u layers", n);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_KEPT_EXTRA_LAYERS + 2);
+         OPENXR_KEPT_EXTRA_LAYERS + 2, &t_under);
    CHECK(n == 3, "with room for two outlines: %u layers", n);
    /* Two hands on screen 1, room for one beam: the first hand's. */
    t_aim_tracked[1]    = true;
    t_aim[1].position.x = -0.2f;
    t_aim[1].position.y = -0.3f;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_KEPT_EXTRA_LAYERS + 4);
+         OPENXR_KEPT_EXTRA_LAYERS + 4, &t_under);
    q = (const XrCompositionLayerQuad*)layers[3];
    CHECK(n == 6 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0)
          && t_near(q->pose.position.x, -0.2f),
          "two hands, one beam's room: %u layers", n);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 7, "two hands with room: %u layers, want 3 + 2 + 2", n);
    t_aim_tracked[1] = false;
 
    /* No head: no beam. */
    t_head_tracked = false;
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 4, "%u layers with the head lost", n);
    t_head_tracked = true;
 
@@ -3313,12 +3347,12 @@ static void test_edit_beams(void)
    t_beam = VIDEO_OPENXR_LASER_BEAM_OFF;
    t_edit_poll();
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 4, "%u layers with Laser Beam Off", n);
    t_beam = 7;
    t_edit_poll();
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 5, "%u layers with Laser Beam 7", n);
 
    /* Out of edit mode, Laser Pointer Always: Edit Mode Only draws the
@@ -3327,12 +3361,12 @@ static void test_edit_beams(void)
    input_openxr_edit_toggle();
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 1, "%u layers out of edit mode, Edit Mode Only", n);
    t_beam = VIDEO_OPENXR_LASER_BEAM_ALWAYS;
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    q = (const XrCompositionLayerQuad*)layers[0];
    CHECK(n == 2 && q->subImage.imageRect.offset.x == VIDEO_XR_BEAM_X(0),
          "%u layers out of edit mode, Always", n);
@@ -3340,11 +3374,11 @@ static void test_edit_beams(void)
     * nothing to point at and no beam. */
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 0, "%u layers with nothing the laser can point at", n);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    n = t_hooks.frame_layers(t_hooks.user, t_time, &t_quads, local, layers,
-         OPENXR_MAX_EXTRA_LAYERS);
+         OPENXR_MAX_EXTRA_LAYERS, &t_under);
    CHECK(n == 0, "%u layers with Laser Pointer Off", n);
 
    t_beam              = VIDEO_OPENXR_LASER_BEAM_EDIT;

@@ -866,6 +866,14 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
    return laser == VIDEO_OPENXR_LASER_ALWAYS;
 }
 
+/* How far below the menu's middle its handle's top edge is. */
+static float video_xr_handle_top(const video_xr_quad_t *menu)
+{
+   video_xr_quad_t outline;
+   video_xr_outline(menu, &outline);
+   return outline.height * 0.5f + VIDEO_XR_HANDLE_GAP;
+}
+
 void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
 {
    video_xr_vec3_t down, world;
@@ -873,8 +881,7 @@ void video_xr_menu_handle(const video_xr_quad_t *menu, video_xr_quad_t *out)
    out->width  = menu->width * VIDEO_XR_HANDLE_WIDTH;
    out->height = VIDEO_XR_HANDLE_HEIGHT;
    down.x      = 0.0f;
-   down.y      = -(menu->height + VIDEO_XR_HANDLE_HEIGHT) * 0.5f
-      - VIDEO_XR_HANDLE_GAP;
+   down.y      = -video_xr_handle_top(menu) - VIDEO_XR_HANDLE_HEIGHT * 0.5f;
    down.z      = 0.0f;
    video_xr_rotate(&menu->pose.orientation, &down, &world);
    out->pose.position.x += world.x;
@@ -895,7 +902,7 @@ static bool video_xr_handle_hit(const video_xr_quad_t *q,
    if (!video_xr_ray_hit(&handle, origin, dir, &hu, &hv, t))
       return false;
    *u = 0.5f + (hu - 0.5f) * VIDEO_XR_HANDLE_WIDTH;
-   *v = 1.0f + (VIDEO_XR_HANDLE_GAP + hv * VIDEO_XR_HANDLE_HEIGHT)
+   *v = 0.5f + (video_xr_handle_top(q) + hv * VIDEO_XR_HANDLE_HEIGHT)
       / q->height;
    return true;
 }
@@ -1034,6 +1041,15 @@ void video_xr_beam(const video_xr_vec3_t *o, const video_xr_vec3_t *d,
    video_xr_quat_axes(d, &y, &z, &pose->orientation);
 }
 
+void video_xr_outline(const video_xr_quad_t *q, video_xr_quad_t *out)
+{
+   const float inner = 1.0f - 2.0f * (VIDEO_XR_OUTLINE_EDGE + 0.5f)
+      / VIDEO_XR_OUTLINE_DIM;
+   *out        = *q;
+   out->width  = (q->width + 2.0f * VIDEO_XR_OUTLINE_GAP) / inner;
+   out->height = (q->height + 2.0f * VIDEO_XR_OUTLINE_GAP) / inner;
+}
+
 bool video_xr_grab_pose(const video_xr_grab_t *g, const video_xr_pose_t *aim,
       video_xr_pose_t *pose, video_screen_xr_t *out)
 {
@@ -1112,6 +1128,20 @@ static void video_xr_cursor_texel(uint8_t *px, unsigned x, unsigned y,
    p[3]       = alpha;
 }
 
+/* How many texels x, y is in from the nearest edge of a w by h part. */
+static unsigned video_xr_rim_depth(unsigned x, unsigned y, unsigned w,
+      unsigned h)
+{
+   unsigned d = x;
+   if (y < d)
+      d = y;
+   if (w - 1 - x < d)
+      d = w - 1 - x;
+   if (h - 1 - y < d)
+      d = h - 1 - y;
+   return d;
+}
+
 void video_xr_cursor_pixels(uint8_t *px)
 {
    unsigned x, y, k;
@@ -1135,18 +1165,23 @@ void video_xr_cursor_pixels(uint8_t *px)
    }
    for (k = 0; k < 2; k++)
    {
-      uint8_t level = k ? 255 : 64;
+      uint8_t alpha = k ? 255 : VIDEO_XR_OUTLINE_FAINT;
       for (y = 0; y < VIDEO_XR_OUTLINE_DIM; y++)
          for (x = 0; x < VIDEO_XR_OUTLINE_DIM; x++)
-            if (     x < VIDEO_XR_OUTLINE_EDGE || y < VIDEO_XR_OUTLINE_EDGE
-                  || x >= VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_EDGE
-                  || y >= VIDEO_XR_OUTLINE_DIM - VIDEO_XR_OUTLINE_EDGE)
+         {
+            unsigned band = video_xr_rim_depth(x, y, VIDEO_XR_OUTLINE_DIM,
+                  VIDEO_XR_OUTLINE_DIM) / VIDEO_XR_OUTLINE_BAND;
+            if (band < 3)
                video_xr_cursor_texel(px, VIDEO_XR_OUTLINE_X(k) + x, y,
-                     level, level);
-      for (y = 0; y < VIDEO_XR_CURSOR_DIM; y++)
-         for (x = 0; x < VIDEO_XR_CURSOR_DIM; x++)
+                     (band == 1) ? alpha : 0, alpha);
+         }
+      for (y = 0; y < VIDEO_XR_HANDLE_ROWS; y++)
+         for (x = 0; x < VIDEO_XR_HANDLE_COLS; x++)
             video_xr_cursor_texel(px, VIDEO_XR_HANDLE_X(k) + x,
-                  VIDEO_XR_CURSOR_Y + y, level, level);
+                  VIDEO_XR_HANDLE_Y + y,
+                  (video_xr_rim_depth(x, y, VIDEO_XR_HANDLE_COLS,
+                     VIDEO_XR_HANDLE_ROWS) < VIDEO_XR_OUTLINE_BAND)
+                  ? 0 : alpha, alpha);
    }
    for (k = 0; k < 2; k++)
       for (x = 0; x < VIDEO_XR_BEAM_LEN; x++)
