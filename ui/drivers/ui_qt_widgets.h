@@ -448,6 +448,7 @@ private slots:
 private:
    rarch_setting_t *m_setting;
    float *m_value;
+   float m_synced;
    static const QRegularExpression DECIMALS_REGEX;
 };
 
@@ -521,6 +522,7 @@ private:
    float *m_value;
    QRegularExpression m_decimalsRegEx;
    unsigned int m_precision;
+   float m_synced;
 };
 
 class FloatSliderAndSpinBox : public QHBoxLayout

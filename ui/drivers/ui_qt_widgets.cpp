@@ -30,6 +30,7 @@
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
+#include "ui_qt_float_sync.h"
 
 /* RetroArch-internal headers are included here, OUTSIDE the extern "C"
  * block below.  They self-guard their C declarations with
@@ -892,6 +893,7 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
          999.00f);
 
    setValue(*m_value);
+   m_synced = *m_value;
    setSingleStep(setting->step);
 
    connect(this, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
@@ -901,18 +903,22 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
 void FloatSpinBox::onValueChanged(double value)
 {
    *m_value = (float)value;
+   m_synced = *m_value;
 
    setting_generic_handle_change(m_setting);
 }
 
 void FloatSpinBox::paintEvent(QPaintEvent *event)
 {
-   if ((float)value() != *m_value)
+   if (ui_qt_float_resync(&m_synced, *m_value))
    {
       blockSignals(true);
 
       if (*m_value < minimum() || *m_value > maximum())
+      {
          *m_value = m_setting->default_value.fraction;
+         m_synced = *m_value;
+      }
 
       setValue(*m_value);
 
@@ -1020,6 +1026,7 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    setSingleStep(setting->step * m_precision);
 
    setValue(*m_value * m_precision);
+   m_synced = *m_value;
 
    connect(this, SIGNAL(valueChanged(int)), this, SLOT(onValueChanged(int)));
 
@@ -1029,14 +1036,14 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
 void FloatSlider::onValueChanged(int value)
 {
    *m_value = (float)value / m_precision;
+   m_synced = *m_value;
 
    setting_generic_handle_change(m_setting);
 }
 
 void FloatSlider::paintEvent(QPaintEvent *event)
 {
-   /* The same float division onValueChanged stores */
-   if ((float)value() / m_precision != *m_value)
+   if (ui_qt_float_resync(&m_synced, *m_value))
    {
       blockSignals(true);
 
