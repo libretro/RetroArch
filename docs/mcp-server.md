@@ -25,6 +25,10 @@ Restart RetroArch. The log reports the address:
 
     [MCP] Listening on http://127.0.0.1:55357/mcp.
 
+If it cannot listen there - another RetroArch still running holds the
+port, say - it says so on screen as well as in the log, since a client
+would otherwise be talking to that other RetroArch without knowing.
+
 On the first start a random token is made and shown under **MCP Server
 Token**. It is saved with the other passwords in the keychain, never in
 `retroarch.cfg`. A build without the crypto library cannot make one:
@@ -421,7 +425,8 @@ STEP 3
 ```
 
 Two presses of the same button in a row get a frame with it let go
-between them, so the game reads two taps rather than one long press.
+between them, so the game reads two taps rather than one long press -
+also where one request ends on the press and the next starts with it.
 
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
 and `WAITING` when its nine seconds ran out first, each with the frames
@@ -439,15 +444,16 @@ list without stops keeps the stops before it, and one with its own
 brings them in when it starts. A stop that held, or a failure, ends the
 whole queue, lists behind it too, and is kept and answered to the next
 queued `STEPS` in its place, whose steps are dropped rather than played
-on from a death; its `STEP` counts within the list that step came in. A
-rollback, a state load, `RESET` and closing the content each end the
-queue and forget the stop. With no steps it only asks. A queue that ran
-dry says so: `IDLE` is how long, in milliseconds, the content sat paused
-waiting for more before the request that answers it, so a client that
-sees it knows it has fallen behind: two stretches sent at once get it
-ahead again. Nine seconds bound each step, not the queue, which holds 64
-steps and stops at most. A request that waits - `RUN_FRAMES`, `PRESS`,
-`RUN_UNTIL`, `STEPS` without `on` - replaces the queue.
+on from a death; its `STEP` counts within the list that step came in,
+stops aside. A rollback, a state load, `RESET` and closing the content
+each end the queue and forget the stop. With no steps it only asks. A
+queue that ran dry says so: `IDLE` is how long, in milliseconds, the
+content sat paused waiting for more before the request that answers it,
+so a client that sees it knows it has fallen behind: two stretches sent
+at once get it ahead again. Nine seconds bound each step, not the queue,
+which holds 64 steps and stops at most. A request that waits -
+`RUN_FRAMES`, `PRESS`, `RUN_UNTIL`, `STEPS` without `on` - replaces the
+queue.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has

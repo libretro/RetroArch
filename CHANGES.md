@@ -104,6 +104,9 @@
 - NETWORK: New network command WATCH, so RUN_FRAMES, PRESS and RUN_UNTIL carry the bytes an assistant watches along with their own answer instead of needing a read after every step
 - NETWORK: New network command STEPS, a stretch of play (run, press, wait, checkpoint, and stops for a death) as one request, or queued so the content plays on between requests
 - NETWORK: STATE checkpoint and rollback keep one state in memory for the quick retry after a mistake, touching no save slot
+- NETWORK: MCP server says on screen when it cannot listen on its port, such as when another RetroArch holds it
+- NETWORK: --command sends a STEPS list whole, reading HOST and PORT only from the end
+- NETWORK: PRESS and STEPS: a press of the button the last request ended pressing is a fresh tap, not one long press
 - NETWORK: LOAD_CORE says why it failed, and neither it nor LOAD_CONTENT unloads the running core for a path that turns out not to be one
 - NETWORK: SET_INPUT holds several controls at once, joined by "+": "right+a" runs and jumps in one request rather than two
 - NETWORK: LIST_CORES takes a content path, listing only the cores that can load it

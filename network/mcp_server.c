@@ -560,7 +560,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "(approach, jump and land in one request, with a stop for a death; " \
    "queue: on plays on without pausing - send the next stretch as soon " \
    "as one answers), " \
-   "PRESS ... until, or RUN_UNTIL; RUN_FRAMES lets the game run. STATE " \
+   "PRESS ... until, or RUN_UNTIL; RUN_FRAMES runs frames with nothing " \
+   "pressed but what SET_INPUT holds. STATE " \
    "checkpoint before a risky move, and rollback after a mistake. Tools " \
    "marked destructive can lose unsaved progress or load code."
 

@@ -564,9 +564,23 @@ static char *call(const char *name, const char *args)
 static int stdio_in  = -1;   /* the test writes requests here */
 static int stdio_out = -1;   /* and reads answers here */
 
+/* The stdio server polled while a request does not fit the pipe yet */
+static command_t *stdio_cmd;
+
 static void stdio_send(const char *s)
 {
-   if (write(stdio_in, s, (unsigned)strlen(s)) < 0)
+   size_t len  = strlen(s);
+   size_t sent = 0;
+   int    i;
+   for (i = 0; sent < len && i < 1000; i++)
+   {
+      int n = (int)write(stdio_in, s + sent, (unsigned)(len - sent));
+      if (n > 0)
+         sent += (size_t)n;
+      else if (stdio_cmd)
+         stdio_cmd->poll(stdio_cmd);
+   }
+   if (sent < len)
       check("a request was written", false);
 }
 
@@ -644,6 +658,9 @@ static void test_stdio(void)
    SetStdHandle(STD_OUTPUT_HANDLE, (HANDLE)_get_osfhandle(1));
 #else
    fcntl(out_p[0], F_SETFL, fcntl(out_p[0], F_GETFL) | O_NONBLOCK);
+   /* a user over the kernel's pipe budget gets a pipe of a page or two:
+    * stdio_send polls the server for room rather than wait on it */
+   fcntl(in_p[1], F_SETFL, fcntl(in_p[1], F_GETFL) | O_NONBLOCK);
 #endif
    stdio_in  = in_p[1];
    stdio_out = out_p[0];
@@ -651,7 +668,7 @@ static void test_stdio(void)
    check("stdout is claimed", command_mcp_stdio_claim());
    fprintf(stdout, "a stray line for stdout\n");
    fflush(stdout);
-   cmd = command_mcp_stdio_new();
+   cmd = stdio_cmd = command_mcp_stdio_new();
    check("the stdio server starts", cmd != NULL);
    if (!cmd)
       return;
@@ -847,7 +864,7 @@ static void test_stdio(void)
    cmd->destroy(cmd);
    free(later_dest);
    later_dest = NULL;
-   cmd = command_mcp_stdio_new();
+   cmd = stdio_cmd = command_mcp_stdio_new();
    stdio_read(cmd, out, sizeof(out));
    check("torn down meanwhile, it is answered with an error",
          strstr(out, "\"id\":5") && strstr(out, "\"isError\":true"));
@@ -867,6 +884,7 @@ static void test_stdio(void)
    stdio_read(cmd, out, sizeof(out));
    check("stdin closed, RetroArch is asked to quit, once", quits == 1);
    cmd->destroy(cmd);
+   stdio_cmd = NULL;
 }
 
 int main(void)

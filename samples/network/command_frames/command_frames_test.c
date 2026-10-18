@@ -693,7 +693,10 @@ int main(int argc, char **argv)
    runloop_iterate();
    CHECK(!strcmp(reply,"PRESS 1 b 1\n")
          && input_driver_command_held(0,axes) == 0);
-   /* a press over a button SET_INPUT holds leaves that hold in place */
+   /* a press over a button SET_INPUT holds leaves that hold in place;
+    * a frame first, so B's press is not the one just let go */
+   CHECK(command_run_frames(&cmd,"1"));
+   runloop_iterate();
    reply[0]=0;
    CHECK(command_set_input(&cmd,"1 a 1"));
    CHECK(command_press(&cmd,"1 a+b 1")
@@ -942,6 +945,8 @@ int main(int argc, char **argv)
          unsigned want[5] = {1,1,0,1,1};
          unsigned k;
          bool     ok = true;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
          reply[0]=0;
          CHECK(command_steps(&cmd,"press 1 a 2; until 1006 == 6; press 1 a 2"));
          for (k=0;k<5;k++)
@@ -952,6 +957,33 @@ int main(int argc, char **argv)
          }
          CHECK(ok && !strcmp(reply,"DONE 5\nSTEP 3\n"));
       }
+      /* and so are a press ending one request and the same press
+       * starting the next */
+      {
+         unsigned want[5] = {1,1,0,1,1};
+         unsigned k;
+         bool     ok = true;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 2"));
+         for (k=0;k<2;k++)
+         {
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(!strcmp(reply,"DONE 2\nSTEP 1\n"));
+         reply[0]=0;
+         CHECK(command_steps(&cmd,"press 1 a 2"));
+         for (k=2;k<5;k++)
+         {
+            if (((input_driver_command_held(0,axes) >> RETRO_DEVICE_ID_JOYPAD_A) & 1) != want[k])
+               ok = false;
+            runloop_iterate();
+         }
+         CHECK(ok && !strcmp(reply,"DONE 3\nSTEP 1\n"));
+      }
       /* that frame let go counts against the frames a request runs */
       reply[0]=0;
       CHECK(!command_steps(&cmd,"press 1 a 270; press 1 a 270") && strstr(reply,"step 2"));
@@ -959,6 +991,8 @@ int main(int argc, char **argv)
          command_run_frames_cancel("tidying up");
       {
          unsigned n=0;
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
          reply[0]=0;
          CHECK(command_steps(&cmd,"press 1 a 270; press 1 a 269"));
          while (!reply[0] && n < 700) { runloop_iterate(); n++; }
@@ -1165,6 +1199,14 @@ int main(int argc, char **argv)
    loop->current_core.retro_run=counted_run;
    runloop_iterate();
    CHECK(calls-before==1 && !strcmp(reply,"RUN_FRAMES 1\n"));
+   /* --command: a STEPS list's "; " is not where the host starts */
+   {
+      char out[256];
+      CHECK(command_network_send("STEPS run 2; run 1|on;127.0.0.1;55437"));
+      udp_line("STEPS |on", out, sizeof(out));
+      CHECK(!strncmp(out, "QUEUED 2\n", 9));
+      command_run_frames_cancel("tidying up");
+   }
    /* closing the content drops the watches: the next content's
     * addresses mean something else */
    CHECK(command_watch(&cmd,"two 1002"));

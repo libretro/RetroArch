@@ -1414,17 +1414,19 @@ bool command_network_send(const char *cmd_)
 
    memcpy(buf, cmd_, len + 1);
 
+   /* ";host;port" ends it, the two read from the end and only where they
+    * hold no space: a STEPS list separates its steps with "; " too */
    cmd = buf;
-   ptr = strchr(buf, ';');
-   if (ptr)
+   if ((ptr = strrchr(buf, ';')) && !strchr(ptr + 1, ' '))
    {
-      *ptr++ = '\0';
-      host   = ptr;
-      ptr    = strchr(ptr, ';');
-      if (ptr)
+      char *prev;
+      *ptr = '\0';
+      host = ptr + 1;
+      if ((prev = strrchr(buf, ';')) && !strchr(prev + 1, ' '))
       {
-         *ptr++   = '\0';
-         port_str = ptr;
+         *prev    = '\0';
+         port_str = host;
+         host     = prev + 1;
       }
    }
 
@@ -2948,7 +2950,8 @@ static struct
     * one, so the game sees two taps rather than one long press */
    bool                gap;
    /* what a press let go of on the frame boundary being crossed, and
-    * whose: a press starting on the same boundary waits a frame */
+    * whose: a press starting on the same boundary waits a frame, in
+    * this job or the next request's, until a frame has run */
    uint16_t            let_go;
    unsigned            let_go_port;
    char                reply[256]; /* CMD_ANSWER_LINE: the line */
@@ -3087,6 +3090,7 @@ void command_run_frames_forget(void)
       command_run_frames_finish();
    command_run_frames_st.report_len = 0;
    command_run_frames_st.dry_since  = 0;
+   command_run_frames_st.let_go     = 0;
 }
 
 /* A PRESS step holds its buttons; what SET_INPUT already holds stays
@@ -3199,7 +3203,6 @@ static void command_run_frames_start(command_t *cmd, const char *name,
    command_run_frames_st.answer = answer;
    command_run_frames_st.held   = 0;
    command_run_frames_st.gap    = false;
-   command_run_frames_st.let_go = 0;
    if (cmd)
       command_deferred_take(&command_run_frames_st.deferred, cmd);
    runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
@@ -3250,6 +3253,8 @@ void command_run_frames_tick(void)
 
    if (command_run_frames_st.cur >= command_run_frames_st.count)
       return;
+   /* a frame has crossed the boundary a press let go on */
+   command_run_frames_st.let_go = 0;
    command_run_frames_st.ran++;
    if (command_run_frames_st.budget)
       command_run_frames_st.budget--;
@@ -3303,7 +3308,6 @@ void command_run_frames_tick(void)
       }
       command_run_frames_st.cur++;
       command_run_frames_enter(true);
-      command_run_frames_st.let_go = 0;
    }
    /* the frames allowed have run with a step still going: how far it
     * got, so the next request carries on from there */
