@@ -260,10 +260,10 @@ static INLINE int video_shader_get_hdr_mode(const struct video_shader *shader)
 }
 
 static INLINE bool video_shader_hdr_output_compatible(
-      const struct video_shader *shader, unsigned output_mode)
+      const struct video_shader *shader, unsigned active_hdr_mode)
 {
    int mode = video_shader_get_hdr_mode(shader);
-   return mode <= 0 || (unsigned)mode == output_mode;
+   return mode <= 0 || (unsigned)mode == active_hdr_mode;
 }
 
 bool video_shader_check_hdr_output(

@@ -476,6 +476,7 @@ typedef struct metal_view_chain metal_view_chain_t;
 @property(nonatomic, readwrite) uint32_t totalSubframes;
 @property(nonatomic, readwrite) uint32_t currentSubframe;
 @property(nonatomic, readwrite) float hdrPaperWhiteNits;
+@property(nonatomic, readwrite) float hdrPeakNits;
 @property(nonatomic, readwrite) unsigned hdrExpandGamut;
 
 /* Final pass of the shader chain normally renders into the backbuffer
@@ -5962,6 +5963,7 @@ static void metal_views_render(metal_views_t *vs,
                                  ? video_info->shader_subframes : 1;
       _frameView.currentSubframe = video_info->current_subframe + 1;
       _frameView.hdrPaperWhiteNits = video_info->hdr_paper_white_nits;
+      _frameView.hdrPeakNits = video_info->hdr_max_nits;
       _frameView.hdrExpandGamut = video_info->hdr_expand_gamut;
       if (frame && width && height)
       {
@@ -6361,9 +6363,12 @@ typedef struct MTLALIGN(16)
       uint32_t current_subframe;
       uint32_t swap_count;
       uint32_t hdr_mode;
+      float inverse_tonemap;
+      float hdr10;
       float scanlines;
       unsigned subpixel_layout;
       float paper_white_nits;
+      float peak_nits;
       unsigned expand_gamut;
       pass_semantics_t semantics;
       MTLViewport viewport;
@@ -7238,6 +7243,12 @@ struct metal_view_chain
    e->pass[i].hdr_mode = _context.hdrOutputMode;
    e->pass[i].paper_white_nits = e->pass[i].hdr_mode
       ? _hdrPaperWhiteNits : 0.0f;
+   e->pass[i].peak_nits = e->pass[i].hdr_mode
+      ? _hdrPeakNits : 0.0f;
+   e->pass[i].inverse_tonemap = e->pass[i].hdr_mode && hdr
+      ? hdr->InverseTonemap : 0.0f;
+   e->pass[i].hdr10 = e->pass[i].hdr_mode && hdr
+      ? hdr->HDR10 : 0.0f;
    e->pass[i].scanlines = e->pass[i].hdr_mode && hdr
       ? hdr->Scanlines : 0.0f;
    e->pass[i].subpixel_layout = e->pass[i].hdr_mode && hdr
@@ -7922,8 +7933,8 @@ error:
                &_engine.pass[i].scanlines,        /* Scanlines */
                &_engine.pass[i].subpixel_layout,  /* SubpixelLayout */
                &_engine.pass[i].expand_gamut,     /* ExpandGamut */
-               NULL,                             /* InverseTonemap */
-               NULL,                             /* HDR10 */
+               &_engine.pass[i].inverse_tonemap, /* InverseTonemap */
+               &_engine.pass[i].hdr10,            /* HDR10 */
                NULL,                             /* Gyroscope */
                NULL,                             /* Accelerometer */
                NULL,                             /* AccelerometerRest */
@@ -7931,6 +7942,13 @@ error:
             }
          };
          /* clang-format on */
+
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
+         semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] =
+               &_engine.pass[i].peak_nits;
+         semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
 
          if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, &_engine.pass[i].semantics))
             return NO;

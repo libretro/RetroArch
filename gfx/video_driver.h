@@ -702,6 +702,7 @@ typedef struct video_frame_info
    unsigned hdr_mode;
    float hdr_menu_nits;
    float hdr_paper_white_nits;
+   float hdr_max_nits;
    bool overlay_behind_menu;
    bool scan_subframes;
    bool shader_active;

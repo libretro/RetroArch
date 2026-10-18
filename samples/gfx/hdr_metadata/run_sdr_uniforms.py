@@ -12,6 +12,10 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--retroarch", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="glcore")
+p.add_argument("--peak-uniforms", choices=("builtin", "parameter"))
+p.add_argument("--direct-spirv", action="store_true")
+p.add_argument("--paper-white-alias", action="store_true")
+p.add_argument("--paper-white-parameter", action="store_true")
 p.add_argument("--requested-hdr", choices=(0, 1, 2), type=int, default=0)
 a = p.parse_args()
 exe = a.retroarch.resolve()
@@ -26,6 +30,10 @@ subprocess.run(cc + ["-std=gnu89", "-shared", "-fPIC", "-O1",
                     "-o", str(core), "-lm"], check=True)
 for driver, storage in product(a.drivers.split(","), ("ubo", "push")):
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if a.paper_white_alias or a.paper_white_parameter:
+        members += " float PaperWhiteNits;"
+    if a.peak_uniforms:
+        members += " float PeakNits; float MaxNits;"
     ubo = "mat4 MVP;" + (members if storage == "ubo" else "")
     hdr = "" if storage == "ubo" else "layout(push_constant) uniform HDR { " + members + " } hdr;"
     prefix = "global" if storage == "ubo" else "hdr"
@@ -47,6 +55,21 @@ void main() {
  FragColor.rgb += vec3(vTexCoord,0)*0.000001;
 }
 """.replace("UBO_MEMBERS", ubo).replace("HDR_DECL", hdr).replace("hdr.", prefix + "."), encoding="utf-8")
+    if a.paper_white_alias or a.paper_white_parameter:
+        text = shader.read_text(encoding="utf-8")
+        expected = 37.0 if a.paper_white_parameter else 0.0
+        if a.paper_white_parameter:
+            text = text.replace("#version 450", '#version 450\n#pragma parameter PaperWhiteNits "Local white" 37.0 0.0 1000.0 1.0')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.PaperWhiteNits=={expected};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
+    if a.peak_uniforms:
+        text = shader.read_text(encoding="utf-8")
+        peak = 37.0 if a.peak_uniforms == "parameter" else 0.0
+        maximum = 49.0 if a.peak_uniforms == "parameter" else 0.0
+        if a.peak_uniforms == "parameter":
+            text = text.replace("#version 450", '#version 450\n#pragma parameter PeakNits "Local peak" 37.0 0.0 2000.0 1.0\n#pragma parameter MaxNits "Local max" 49.0 0.0 2000.0 1.0')
+        text = text.replace("FragColor=", f"ok=ok && {prefix}.PeakNits=={peak} && {prefix}.MaxNits=={maximum};\n FragColor=")
+        shader.write_text(text, encoding="utf-8")
     preset = w / "check.slangp"
     preset.write_text('shaders = "1"\nshader0 = "check.slang"\n', encoding="utf-8")
     for threaded in ("false", "true"):
@@ -55,6 +78,7 @@ void main() {
             config = w / (lane + ".cfg")
             screenshot = w / (lane + ".png")
             config.write_text(f'''video_driver = "{driver}"
+video_gl_direct_spirv = "{str(a.direct_spirv).lower()}"
 video_threaded = "{threaded}"
 video_shader_deferred_loading = "{deferred}"
 video_shader_enable = "true"

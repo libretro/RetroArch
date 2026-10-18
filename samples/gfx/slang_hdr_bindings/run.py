@@ -28,6 +28,9 @@ fields = {
 hdr_fields = {
     "HDR": "hdr_mode",
     "PAPER_WHITE_NITS": "paper_white_nits",
+    "PAPER_WHITE_ALIAS": "paper_white_nits",
+    "PEAK_NITS": "peak_nits",
+    "MAX_NITS_ALIAS": "peak_nits",
     "SCANLINES": "scanlines",
     "SUBPIXEL_LAYOUT": "subpixel_layout",
     "EXPAND_GAMUT": "expand_gamut",
@@ -46,7 +49,7 @@ struct pass
    unsigned rotation, core_aspect, core_aspect_rot;
    unsigned total_subframes, current_subframe, swap_count;
    unsigned hdr_mode, paper_white_nits, scanlines, subpixel_layout;
-   unsigned expand_gamut, inverse_tonemap, hdr10;
+   unsigned expand_gamut, inverse_tonemap, hdr10, peak_nits;
 };
 struct preset { unsigned passes; };
 struct chain
@@ -66,6 +69,7 @@ int main(void)
    struct deferred deferred = { &preset };
    struct deferred *ds = &deferred;
    unsigned i = 0;
+   assert(SLANG_SEMANTIC_PAPER_WHITE_ALIAS == 26);
    (void)ds;
    video.CHAIN.shader_preset = &preset;
    {
@@ -92,7 +96,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-slang-bindings-") as temporar
         assert len(loaders) == 2, (driver, len(loaders))
         for lane, loader in enumerate(loaders):
             assignments = "\n".join(re.findall(
-                r"semantics_map\.uniforms\[[^]]+\]\s*=\s*[^;]+;",
+                r"#ifdef HAVE_DXGI_HDR|#endif|semantics_map\.uniforms\[[^]]+\]\s*=\s*[^;]+;",
                 loader["after"]))
             for hdr in (False, True):
                 checks = []

@@ -11839,6 +11839,8 @@ static bool vulkan_frame(void *data, const void *frame,
             mode = 0;
          vulkan_filter_chain_set_hdr_mode(
                fc, mode);
+         vulkan_filter_chain_set_peak_nits(
+               fc, mode ? video_info->hdr_max_nits : 0.0f);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }

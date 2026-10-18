@@ -368,6 +368,7 @@ typedef struct d3d11_pass
 #ifdef HAVE_DXGI_HDR
    unsigned                   hdr_mode;
    float                      paper_white_nits;
+   float                      peak_nits;
    unsigned                   expand_gamut;
    float                      scanlines;
    unsigned                   subpixel_layout;
@@ -3150,6 +3151,14 @@ static bool d3d11_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
+#ifdef HAVE_DXGI_HDR
+         semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] =
+               &d3d11->chain.pass[i].peak_nits;
+         semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+#endif
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d11->chain.pass[i].swap_count;
          d3d11_frame_rect_semantics(d3d11, &semantics_map);
@@ -3439,6 +3448,14 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
    };
    /* clang-format on */
 
+   semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
+#ifdef HAVE_DXGI_HDR
+   semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS] =
+         &d3d11->chain.pass[i].peak_nits;
+   semantics_map.uniforms[SLANG_SEMANTIC_MAX_NITS_ALIAS] =
+         semantics_map.uniforms[SLANG_SEMANTIC_PEAK_NITS];
+#endif
    semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
          &d3d11->chain.pass[i].swap_count;
    d3d11_frame_rect_semantics(d3d11, &semantics_map);
@@ -5606,6 +5623,7 @@ static void d3d11_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
       if (pass->hdr_mode)
       {
          pass->paper_white_nits = d3d11->hdr.ubo_values.paper_white_nits;
+         pass->peak_nits        = video_info->hdr_max_nits;
          pass->scanlines        = d3d11->hdr.ubo_values.scanlines;
          pass->subpixel_layout  = d3d11->hdr.ubo_values.subpixel_layout;
          pass->expand_gamut     = d3d11->hdr.ubo_values.expand_gamut;
@@ -5613,6 +5631,7 @@ static void d3d11_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
       else
       {
          pass->paper_white_nits = 0.0f;
+         pass->peak_nits        = 0.0f;
          pass->scanlines        = 0.0f;
          pass->subpixel_layout  = 0;
          pass->expand_gamut     = 0;

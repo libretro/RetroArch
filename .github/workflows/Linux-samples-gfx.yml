@@ -616,6 +616,7 @@ jobs:
           # gfx/drivers/d3d10.c, gfx/drivers/d3d11.c and gfx/drivers/d3d12.c.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 output_state.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 peak.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal_constants.py
 

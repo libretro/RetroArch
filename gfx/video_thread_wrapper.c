@@ -3546,6 +3546,59 @@ static unsigned video_thread_slot_rows(const thread_video_t *thr,
    return s ? (unsigned)(thr->frame.buffer_size / s) : 0;
 }
 
+/* Cached-frame replay stays off the normal handoff path. */
+static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
+      const void *frame_, unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info,
+      unsigned filter_bpp, unsigned convert)
+{
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+
+   thread_update_driver_state(thr);
+   if (video_info)
+      video_info->swap_count = thr->video_st->swap_count;
+
+   if (thr->driver_data && thr->driver && thr->driver->frame)
+   {
+      /* Cropped as a ring frame is, so a frame drawn again from
+       * here, as a screenshot's is, draws as it was shown. */
+      unsigned rows = video_thread_slot_rows(thr, width, filter_bpp,
+            NULL);
+      int hw_slot = video_thread_hw_dupe_slot(thr,
+            !frame_ || frame_ == RETRO_HW_FRAME_BUFFER_VALID);
+      /* cached_frame() represents a hardware replay as NULL. The
+       * ring installs that slot before frame(), whose HW marker
+       * advances GL onto the installed texture. */
+      if (hw_slot >= 0 && !frame_)
+         frame_ = RETRO_HW_FRAME_BUFFER_VALID;
+      if (frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
+         dims = VIDEO_SCALE_PACK(width, rows);
+      if (convert)
+         video_thread_convert(thr, convert, &frame_, dims, &pitch);
+#ifdef HAVE_VIDEO_FILTER
+      if (filter_bpp)
+         video_thread_filter(thr->video_st->state_filter,
+               thr->video_st->state_buffer, thr->video_st->state_out_bpp,
+               &frame_, &dims, &pitch);
+#endif
+      font_driver_frame_begin();
+#ifdef HAVE_OPENXR
+      if (video_info && video_info->vr_give)
+         video_driver_vr_give(video_info->vr_give - 1);
+#endif
+      /* A cached HW frame samples the retained slot again. The
+       * readback completes it before returning; a nested replay is
+       * covered by its enclosing frame's slot fence. */
+      if (hw_slot >= 0)
+         video_thread_hw_before_frame(thr, hw_slot, true);
+      return thr->driver->frame(thr->driver_data, frame_,
+         dims, frame_count, pitch, msg, video_info);
+   }
+
+   return false;
+}
+
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -3597,50 +3650,8 @@ static bool video_thread_frame(void *data, const void *frame_,
     * the video thread sits in a modal loop, and a flag one thread sets
     * is a flag the other can read. */
    if (video_thread_is_self(thr))
-   {
-      thread_update_driver_state(thr);
-      if (video_info)
-         video_info->swap_count = thr->video_st->swap_count;
-
-      if (thr->driver_data && thr->driver && thr->driver->frame)
-      {
-         /* Cropped as a ring frame is, so a frame drawn again from
-          * here, as a screenshot's is, draws as it was shown. */
-         unsigned rows = video_thread_slot_rows(thr, width, filter_bpp,
-               NULL);
-         int hw_slot = video_thread_hw_dupe_slot(thr,
-               !frame_ || frame_ == RETRO_HW_FRAME_BUFFER_VALID);
-         /* cached_frame() represents a hardware replay as NULL. The
-          * ring installs that slot before frame(), whose HW marker
-          * advances GL onto the installed texture. */
-         if (hw_slot >= 0 && !frame_)
-            frame_ = RETRO_HW_FRAME_BUFFER_VALID;
-         if (frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
-            dims = VIDEO_SCALE_PACK(width, rows);
-         if (convert)
-            video_thread_convert(thr, convert, &frame_, dims, &pitch);
-#ifdef HAVE_VIDEO_FILTER
-         if (filter_bpp)
-            video_thread_filter(thr->video_st->state_filter,
-                  thr->video_st->state_buffer, thr->video_st->state_out_bpp,
-                  &frame_, &dims, &pitch);
-#endif
-         font_driver_frame_begin();
-#ifdef HAVE_OPENXR
-         if (video_info && video_info->vr_give)
-            video_driver_vr_give(video_info->vr_give - 1);
-#endif
-         /* A cached HW frame samples the retained slot again. The
-          * readback completes it before returning; a nested replay is
-          * covered by its enclosing frame's slot fence. */
-         if (hw_slot >= 0)
-            video_thread_hw_before_frame(thr, hw_slot, true);
-         return thr->driver->frame(thr->driver_data, frame_,
-            dims, frame_count, pitch, msg, video_info);
-      }
-
-      return false;
-   }
+      return video_thread_frame_replay(thr, frame_, dims, frame_count,
+            pitch, msg, video_info, filter_bpp, convert);
 
    /* Asynchronous uploads that finished since the last frame reach
     * their owners before the frame that may draw with them. Their

@@ -193,6 +193,9 @@ void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *chain,
       unsigned hdr_mode);
 
+void vulkan_filter_chain_set_peak_nits(vulkan_filter_chain_t *chain,
+      float peak_nits);
+
 void vulkan_filter_chain_set_paper_white_nits(vulkan_filter_chain_t *chain,
       float paper_white_nits);
 

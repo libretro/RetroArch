@@ -147,8 +147,11 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-ownership-") as directory
     src = directory / "ownership.c"
     exe = directory / ("ownership.exe" if os.name == "nt" else "ownership")
     src.write_text(fixture, encoding="utf-8")
-    subprocess.run(cc + flags + ["-std=gnu89", "-Wall", "-Wextra",
-                                "-Werror=declaration-after-statement", "-O1",
-                                "-I" + str(root), "-I" + str(root / "libretro-common/include"),
-                                str(src), "-o", str(exe)], check=True)
-    subprocess.run([str(exe)], check=True)
+    ps3 = (root / "libretro-common/include/defines/ps3_defines.h").read_text(encoding="utf-8")
+    alias = re.search(r"^#define output_mode (\w+)$", ps3, re.M).group(1)
+    for defines in ([], ["-Doutput_mode=" + alias]):
+        subprocess.run(cc + flags + defines + ["-std=gnu89", "-Wall", "-Wextra",
+                                    "-Werror=declaration-after-statement", "-O1",
+                                    "-I" + str(root), "-I" + str(root / "libretro-common/include"),
+                                    str(src), "-o", str(exe)], check=True)
+        subprocess.run([str(exe)], check=True)

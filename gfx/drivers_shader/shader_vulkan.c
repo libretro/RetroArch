@@ -806,6 +806,7 @@ struct CommonResources
 #ifdef VULKAN_HDR_SWAPCHAIN
    unsigned hdr_mode;
    float paper_white_nits;
+   float peak_nits;
    unsigned expand_gamut;
    float scanlines;
    unsigned subpixel_layout;
@@ -4087,6 +4088,12 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       pass->common->paper_white_nits);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_ALIAS,
+                      pass->common->paper_white_nits);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PEAK_NITS,
+                      pass->common->peak_nits);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_MAX_NITS_ALIAS,
+                      pass->common->peak_nits);
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_SCANLINES,
                       pass->common->scanlines);
@@ -5426,6 +5433,12 @@ void vulkan_filter_chain_set_hdr_mode(
       unsigned hdr_mode)
 {
    slang_chain_set_hdr_mode(chain, hdr_mode);
+}
+
+void vulkan_filter_chain_set_peak_nits(vulkan_filter_chain_t *chain,
+      float peak_nits)
+{
+   chain->common.peak_nits = peak_nits;
 }
 
 void vulkan_filter_chain_set_paper_white_nits(

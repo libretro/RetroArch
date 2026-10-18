@@ -78,11 +78,21 @@ These bindings add no texture copies, readbacks or synchronization.
 D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
 SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
+PaperWhiteNits is an optional float alias of BrightnessNits on D3D11/12,
+Vulkan, GLCore and Metal. Both names may coexist; an explicit pragma parameter
+named PaperWhiteNits retains its own value. The alias reuses the current
+paper-white snapshot and adds no pixel transfer or frame-path allocation.
+PeakNits and MaxNits are optional float spellings of the effective HDR
+target peak. The frame carries the selected display override or configured
+maximum, and each backend supplies zero without active HDR output. Both
+spellings may coexist or retain independent explicit pragma parameters.
+../slang_hdr_bindings/peak.py checks override selection and frame snapshots.
 Metal uses these same typed semantics with frame-carried content paper white
 and gamut. Scanlines and SubpixelLayout use the compositor's render-owned
-latches and become zero on SDR output. Its negotiated layer encoding supplies
-HDRMode; failed colorspace
-setup and compiled-out HDR supply zero. Per-view chains rebase their private
+latches. InverseTonemap and HDR10 use its preset/output conversion policy.
+All four become zero on SDR output or without compositor uniforms. Its
+negotiated layer encoding supplies HDRMode; failed colorspace setup and
+compiled-out HDR supply zero. Per-view chains rebase their private
 uniform values. ../slang_hdr_bindings/metal.py checks the shipping bindings,
 frame handoff, neutral values and rebasing with portable toolchains. Native
 Apple rendering acceptance remains pending.
