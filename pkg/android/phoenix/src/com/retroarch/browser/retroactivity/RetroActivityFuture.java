@@ -1,16 +1,10 @@
 package com.retroarch.browser.retroactivity;
 
-import android.content.res.Configuration;
-import android.graphics.Rect;
 import android.util.Log;
-import android.view.Display;
-import android.view.DisplayCutout;
-import android.view.Gravity;
 import android.view.PointerIcon;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
-import android.view.WindowMetrics;
 import android.content.Intent;
 import android.content.Context;
 import android.hardware.input.InputManager;
@@ -154,81 +148,22 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     params.layoutInDisplayCutoutMode = writeOverNotch
         ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-    getWindow().setAttributes(params);
 
-    /* Android 15 forces non-floating activities targeting API 35 or later
-     * into every display cutout mode. NativeActivity renders directly into
-     * the window surface, so resize the window to the system-provided safe
-     * area when drawing over the cutout is disabled. */
+    /* Android 15 forces fullscreen activities targeting API 35 or later
+     * into every display cutout mode unless the window fits some insets.
+     * Fitting the cutout insets keeps the requested mode and has the
+     * window manager place the window in the safe area itself, in the
+     * same layout pass that rotates the display, so no frame is shown
+     * under the cutout while the orientation changes. */
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
-        && getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
-      updateDisplayCutoutSafeWindow(!writeOverNotch);
-  }
-
-  @SuppressWarnings("deprecation")
-  private void updateDisplayCutoutSafeWindow(boolean avoidDisplayCutout) {
-    if (!avoidDisplayCutout) {
-      setDisplayCutoutSafeWindow(0, 0, 0, 0);
-      return;
+        && getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      params.setFitInsetsTypes(writeOverNotch
+          ? 0 : WindowInsets.Type.displayCutout());
+      params.setFitInsetsSides(writeOverNotch
+          ? 0 : WindowInsets.Side.all());
     }
 
-    Display display = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        ? getDisplay()
-        : getWindowManager().getDefaultDisplay();
-
-    DisplayCutout cutout = (display != null) ? display.getCutout() : null;
-
-    if (cutout != null)
-      setDisplayCutoutSafeWindow(
-          cutout.getSafeInsetLeft(),
-          cutout.getSafeInsetTop(),
-          cutout.getSafeInsetRight(),
-          cutout.getSafeInsetBottom());
-    else
-      setDisplayCutoutSafeWindow(0, 0, 0, 0);
-  }
-
-  private void setDisplayCutoutSafeWindow(
-      int left, int top, int right, int bottom) {
-    WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
-    Rect bounds = metrics.getBounds();
-    boolean fullDisplay =
-        left == 0 && top == 0 && right == 0 && bottom == 0;
-    int width = fullDisplay
-        ? WindowManager.LayoutParams.MATCH_PARENT
-        : bounds.width() - left - right;
-    int height = fullDisplay
-        ? WindowManager.LayoutParams.MATCH_PARENT
-        : bounds.height() - top - bottom;
-    WindowManager.LayoutParams params = getWindow().getAttributes();
-    int gravity = Gravity.TOP | Gravity.LEFT;
-
-    if (params.width == width
-        && params.height == height
-        && params.x == left
-        && params.y == top
-        && params.gravity == gravity)
-      return;
-
-    params.width = width;
-    params.height = height;
-    params.x = left;
-    params.y = top;
-    params.gravity = gravity;
-    params.layoutInDisplayCutoutMode =
-        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
     getWindow().setAttributes(params);
-  }
-
-  @Override
-  public void onConfigurationChanged(Configuration newConfig) {
-    super.onConfigurationChanged(newConfig);
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        updateDisplayCutoutMode();
-      }
-    });
   }
 
   @Override
