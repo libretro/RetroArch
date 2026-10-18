@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-d3d-menu-") as directory:
     for driver in ("d3d10", "d3d11", "d3d12"):
         source = (root / f"gfx/drivers/{driver}.c").read_text(encoding="utf-8")
         start = source.index(f"static void {driver}_set_menu_texture_frame(")
-        start = source.index("   if (", start)
+        start = source.index("   if (\n", start)
         end = source.index("\n   }", start) + 5
         allocation = source[start:end]
         allocation = allocation.replace(f"{driver}_release_texture", "release_texture")
@@ -78,7 +78,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-d3d-menu-") as directory:
         allocation = allocation.replace(f"{driver}->", "driver->")
         code = fixture.replace("ALLOCATION", allocation).replace("DRIVER", driver)
         src = Path(directory) / f"{driver}.c"
-        exe = Path(directory) / (driver + (".exe" if os.name == "nt" else ""))
+        exe = Path(directory) / (driver + ".exe")
         src.write_text(code, encoding="utf-8")
         command = shlex.split(os.environ.get("CC", "cc"))
         command += ["-std=gnu89", "-Wall", "-Wextra", "-Werror"]

@@ -5232,8 +5232,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->filter.history[0].handle);
    Release(d3d12->filter.history[0].upload_buffer);
    Release(d3d12->menu.vbo);
-   Release(d3d12->menu.texture.handle);
-   Release(d3d12->menu.texture.upload_buffer);
+   d3d12_release_texture(&d3d12->menu.texture);
    d3d12_release_texture(&d3d12->sprites.white);
 
 #ifdef HAVE_DXGI_HDR
@@ -10499,6 +10498,9 @@ static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned dims, float alpha)
 {
+   unsigned slot;
+   bool loan = false;
+   bool update_quad;
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    d3d12_video_t* d3d12    = (d3d12_video_t*)data;
@@ -10508,10 +10510,22 @@ static void d3d12_set_menu_texture_frame(
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
-   /* The upload buffer and the quad are rewritten below: the last frame,
-    * which copied and drew from them, is done first - as the next frame
-    * would wait for it anyway */
-   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
+   for (slot = 0; slot < 2; slot++)
+      if (     (d3d12->menu.texture.lent & (1u << slot))
+            && frame == d3d12->menu.texture.lend_mapped[slot])
+      {
+         if (     d3d12->menu.texture.desc.Width != width
+               || d3d12->menu.texture.desc.Height != height
+               || d3d12->menu.source_format != format)
+            return;
+         loan = true;
+         break;
+      }
+
+   update_quad = !loan || d3d12->menu.alpha != alpha;
+   /* Retired loans need no wait unless the shared quad changes. */
+   if (update_quad)
+      d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
 
    if (
          d3d12->menu.texture.desc.Width  != width ||
@@ -10527,12 +10541,30 @@ static void d3d12_set_menu_texture_frame(
       d3d12->menu.source_format = format;
    }
 
-   if (d3d12->menu.texture.upload_buffer)
-      d3d12_update_texture(width, height, pitch,
-            format, frame, &d3d12->menu.texture);
+   if (loan)
+   {
+      d3d12->menu.texture.pending = (uint8_t)slot;
+      d3d12->menu.texture.dirty   = true;
+   }
+   else if (frame && d3d12->menu.texture.upload_buffer)
+   {
+      d3d12->menu.texture.pending = 0;
+      if (d3d12->menu.texture.lent & 1u)
+      {
+         dxgi_copy(width, height, format, pitch, frame,
+               d3d12->menu.texture.desc.Format,
+               d3d12->menu.texture.layout.Footprint.RowPitch,
+               d3d12->menu.texture.lend_mapped[0]);
+         d3d12->menu.texture.dirty = true;
+      }
+      else
+         d3d12_update_texture(width, height, pitch,
+               format, frame, &d3d12->menu.texture);
+   }
 
    d3d12->menu.alpha = alpha;
 
+   if (update_quad)
    {
       D3D12_RANGE read_range;
       d3d12_vertex_t* v          = NULL;
@@ -12473,6 +12505,47 @@ static bool d3d12_texture_lend_ready(void *data, uintptr_t id,
       >= texture->lend_fence[slot];
 }
 
+static void *d3d12_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   d3d12_texture_t *texture;
+   UINT64 done;
+   unsigned slot;
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   DXGI_FORMAT source_format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
+      : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
+   DXGI_FORMAT native_format = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
+      : DXGI_FORMAT_B4G4R4A4_UNORM;
+
+   if (!d3d12 || !pitch || !width || !height || !d3d12->queue.fence)
+      return NULL;
+   texture = &d3d12->menu.texture;
+   if (     !texture->upload_buffer || !texture->handle
+         || texture->desc.Width != width || texture->desc.Height != height
+         || d3d12->menu.source_format != source_format
+         || texture->desc.Format != native_format)
+      return NULL;
+   done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
+   for (slot = 0; slot < 2; slot++)
+   {
+      void *mapped;
+      size_t upload_pitch;
+      if (     (texture->dirty && texture->pending == slot)
+            || done < texture->lend_fence[slot])
+         continue;
+      mapped = d3d12_texture_lend(data, (uintptr_t)texture, slot,
+            (size_t)width * (rgb32 ? 4 : 2), &upload_pitch);
+      if (mapped)
+      {
+         *pitch = upload_pitch;
+         return mapped;
+      }
+   }
+   return NULL;
+}
+
 /* The frame texture follows each frame's size already; the new format
  * goes into its description and the next frame makes it again, as a
  * new size would, with the history textures after it. */
@@ -12583,10 +12656,11 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* get_last_present_sync */
    NULL, /* record_read */
 #ifdef D3D12_FRAME_IMPORT
-   d3d12_import_movie_frame
+   d3d12_import_movie_frame,
 #else
-   NULL /* import_movie_frame */
+   NULL, /* import_movie_frame */
 #endif
+   d3d12_get_menu_framebuffer
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
