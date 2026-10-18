@@ -7938,6 +7938,9 @@ error:
          };
          /* clang-format on */
 
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
+
          if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, &_engine.pass[i].semantics))
             return NO;
 

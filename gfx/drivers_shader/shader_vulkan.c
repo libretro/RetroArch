@@ -4087,6 +4087,8 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
                       pass->common->paper_white_nits);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_ALIAS,
+                      pass->common->paper_white_nits);
 
    slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_SCANLINES,
                       pass->common->scanlines);

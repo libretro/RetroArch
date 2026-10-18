@@ -4069,6 +4069,8 @@ static bool d3d12_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
          d3d12_frame_rect_semantics(d3d12, &semantics_map);
@@ -4441,6 +4443,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       };
       /* clang-format on */
 
+      semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+            semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
       semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d12->filter.pass[i].swap_count;
       d3d12_frame_rect_semantics(d3d12, &semantics_map);

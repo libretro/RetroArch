@@ -85,7 +85,9 @@ enum slang_semantic
    SLANG_SEMANTIC_ORIGINAL_RECT         = 23,
    SLANG_SEMANTIC_ORIGINAL_CLAMP        = 24,
    SLANG_SEMANTIC_ORIGINAL_TEXELS       = 25,
-   SLANG_NUM_BASE_SEMANTICS        = 26,
+   /* float, PaperWhiteNits alias of BrightnessNits */
+   SLANG_SEMANTIC_PAPER_WHITE_ALIAS    = 26,
+   SLANG_NUM_BASE_SEMANTICS        = 27,
 
    /* float, user defined parameter, arrayed */
    SLANG_SEMANTIC_FLOAT_PARAMETER  = 27,

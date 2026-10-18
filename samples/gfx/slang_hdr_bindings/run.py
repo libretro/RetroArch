@@ -28,6 +28,7 @@ fields = {
 hdr_fields = {
     "HDR": "hdr_mode",
     "PAPER_WHITE_NITS": "paper_white_nits",
+    "PAPER_WHITE_ALIAS": "paper_white_nits",
     "SCANLINES": "scanlines",
     "SUBPIXEL_LAYOUT": "subpixel_layout",
     "EXPAND_GAMUT": "expand_gamut",
@@ -66,6 +67,8 @@ int main(void)
    struct deferred deferred = { &preset };
    struct deferred *ds = &deferred;
    unsigned i = 0;
+   assert(SLANG_SEMANTIC_PAPER_WHITE_ALIAS == 26);
+   assert(SLANG_SEMANTIC_FLOAT_PARAMETER == 27);
    (void)ds;
    video.CHAIN.shader_preset = &preset;
    {

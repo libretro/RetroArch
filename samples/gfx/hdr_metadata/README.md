@@ -78,6 +78,10 @@ These bindings add no texture copies, readbacks or synchronization.
 D3D11/12 take HDRMode from the active swapchain and clear HDR output metadata on
 SDR fallback. ../slang_hdr_bindings/output_state.py exercises the shipping
 state updates through PQ/scRGB-to-SDR transitions and compiled-out HDR.
+PaperWhiteNits is an optional float alias of BrightnessNits on D3D11/12,
+Vulkan, GLCore and Metal. Both names may coexist; an explicit pragma parameter
+named PaperWhiteNits retains its own value. The alias reuses the current
+paper-white snapshot and adds no pixel transfer or frame-path allocation.
 Metal uses these same typed semantics with frame-carried content paper white
 and gamut. Scanlines and SubpixelLayout use the compositor's render-owned
 latches. InverseTonemap and HDR10 use its preset/output conversion policy.

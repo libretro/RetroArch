@@ -33,6 +33,8 @@ getter = source[source.index("{", start) + 1:source.index("\n}", start)]
 start = source.index("- (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10 emitsHDR16:(bool)emitsHDR16\n{")
 policy = source[source.index("{", start) + 1:source.index("\n}", start)]
 
+aliases = re.search(r"         semantics_map\.uniforms\[SLANG_SEMANTIC_PAPER_WHITE_ALIAS\] =.*?;", source, re.S).group()
+
 fixture = r'''
 #include <stdbool.h>
 #include <stdint.h>
@@ -124,6 +126,8 @@ int main(void)
       struct { void *uniforms[SLANG_NUM_BASE_SEMANTICS]; } semantics_map = {{
 BINDINGS
       }};
+ALIASES
+      CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] == &_engine.pass[i].paper_white_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_HDR] == &_engine.pass[i].hdr_mode);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS] == &_engine.pass[i].paper_white_nits);
       CHECK(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT] == &_engine.pass[i].expand_gamut);
@@ -174,6 +178,7 @@ BINDINGS
 REBASE_CODE
          copy[0] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_HDR]);
          copy[1] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS]);
+         CHECK(METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS]) == copy[1]);
          copy[2] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_EXPAND_GAMUT]);
          copy[3] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_SCANLINES]);
          copy[4] = METAL_REBASE(semantics_map.uniforms[SLANG_SEMANTIC_SUBPIXEL_LAYOUT]);
@@ -208,7 +213,7 @@ REBASE_CODE
 }
 '''
 code = fixture
-for key, value in (("ENUM", semantic_enum), ("FIELDS", fields), ("POLICY", policy),
+for key, value in (("ALIASES", aliases), ("ENUM", semantic_enum), ("FIELDS", fields), ("POLICY", policy),
                    ("GETTER", getter), ("LATCH", latch.group()),
                    ("STATE", state.group()), ("BINDINGS", bindings),
                    ("PUBLISH_CODE", publish.group()),

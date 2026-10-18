@@ -18,6 +18,8 @@ parser.add_argument("--resize", action="store_true")
 parser.add_argument("--frames", type=int, default=60)
 parser.add_argument("--threaded", choices=("both", "false", "true"), default="both")
 parser.add_argument("--hardware", action="store_true", help="check the GLCore hardware framebuffer")
+parser.add_argument("--direct-spirv", action="store_true")
+parser.add_argument("--paper-white-alias", choices=("builtin", "parameter"), help="check PaperWhiteNits alongside BrightnessNits")
 parser.add_argument("--hdr-uniforms", choices=("ubo", "push"), help="check existing typed HDR uniforms")
 parser.add_argument("--paper-white", type=float, default=203.0)
 parser.add_argument("--expand-gamut", type=int, choices=(0, 1, 2), default=0)
@@ -29,6 +31,8 @@ parser.add_argument("--reference", action="store_true", help="declare ownership 
 parser.add_argument("--expect-rejection", action="store_true")
 parser.add_argument("--source-sdr", action="store_true", help="use the XRGB8888 metadata fixture")
 args = parser.parse_args()
+if args.paper_white_alias and not args.hdr_uniforms:
+    parser.error("--paper-white-alias requires --hdr-uniforms")
 if args.overlay and args.preset_hdr_mode is None:
     args.stock = True
 if args.source_sdr:
@@ -75,6 +79,10 @@ if args.no_format:
     shader = shader.replace("#pragma format R16G16B16A16_SFLOAT\n", "")
 if args.hdr_uniforms:
     members = "uint HDRMode; float BrightnessNits; uint ExpandGamut;"
+    if args.paper_white_alias:
+        members += " float PaperWhiteNits;"
+        if args.paper_white_alias == "parameter":
+            shader = shader.replace("#version 450", '#version 450\n#pragma parameter PaperWhiteNits "Local white" 37.0 0.0 1000.0 1.0')
     if args.hdr_uniforms == "ubo":
         shader = shader.replace("mat4 MVP;", "mat4 MVP; " + members)
         prefix = "global."
@@ -82,6 +90,9 @@ if args.hdr_uniforms:
         shader = shader.replace("#pragma stage vertex", "layout(push_constant) uniform Push { " + members + " } hdr;\n#pragma stage vertex")
         prefix = "hdr."
     shader = shader.replace("FragColor=", f"ok = ok && {prefix}HDRMode == 2u && abs({prefix}BrightnessNits - {args.paper_white}) < 0.01 && {prefix}ExpandGamut == {args.expand_gamut}u;\n FragColor=")
+    if args.paper_white_alias:
+        expected = 37.0 if args.paper_white_alias == "parameter" else args.paper_white
+        shader = shader.replace("FragColor=", f"ok = ok && abs({prefix}PaperWhiteNits - {expected}) < 0.01;\n FragColor=")
 (w/'check.slang').write_text(shader, encoding='utf-8')
 preset = 'shaders = "1"\nshader0 = "check.slang"\n'
 if args.scaled:
@@ -105,6 +116,7 @@ for driver in drivers:
    lane=('stock-' if args.stock else 'check-')+f'{driver}-{threaded}-{lend}'
    cfg=w/(lane+'.cfg');ss=w/(lane+'.png')
    cfg.write_text(f'''video_driver = "{driver}"
+video_gl_direct_spirv = "{str(args.direct_spirv).lower()}"
 video_threaded = "{threaded}"
 video_shader_deferred_loading = "{'true' if args.deferred else 'false'}"
 video_hdr_mode = "2"

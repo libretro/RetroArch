@@ -3150,6 +3150,8 @@ static bool d3d11_shader_load_step(void *data,
             }
          };
 
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+               semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
          semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
             &d3d11->chain.pass[i].swap_count;
          d3d11_frame_rect_semantics(d3d11, &semantics_map);
@@ -3439,6 +3441,8 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
    };
    /* clang-format on */
 
+   semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_ALIAS] =
+         semantics_map.uniforms[SLANG_SEMANTIC_PAPER_WHITE_NITS];
    semantics_map.uniforms[SLANG_SEMANTIC_SWAP_COUNT] =
          &d3d11->chain.pass[i].swap_count;
    d3d11_frame_rect_semantics(d3d11, &semantics_map);
