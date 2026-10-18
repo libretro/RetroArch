@@ -308,8 +308,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * them.  The composite pass does SDR->HDR10 inverse-tonemap / scRGB scale,
  * or passes through shader-emitted HDR content.
  *
- * hdrOutputMode is one of METAL_HDR_OUTPUT_{OFF,HDR10,SCRGB} — the public
- * settings value.  The composite shader itself also recognises mode 3
+ * hdrOutputMode is the negotiated output encoding, or OFF when colorspace
+ * setup failed. The composite shader itself also recognises mode 3
  * (PQ->scRGB) which is selected internally when the shader chain emits PQ
  * but the swapchain is scRGB.
  *
@@ -475,6 +475,8 @@ typedef struct metal_view_chain metal_view_chain_t;
 @property(nonatomic, readwrite) uint64_t swapCount;
 @property(nonatomic, readwrite) uint32_t totalSubframes;
 @property(nonatomic, readwrite) uint32_t currentSubframe;
+@property(nonatomic, readwrite) float hdrPaperWhiteNits;
+@property(nonatomic, readwrite) unsigned hdrExpandGamut;
 
 /* Final pass of the shader chain normally renders into the backbuffer
  * drawable.  When HDR is on, it must render into the HDR offscreen
@@ -1040,6 +1042,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * together — simpler to reason about. */
    bool _hdrEnabled;
    unsigned _hdrOutputMode;            /* METAL_HDR_OUTPUT_* */
+   unsigned _hdrActiveOutputMode;
    MTLPixelFormat _hdrOffscreenFormat; /* RGBA16Float / RGB10A2Unorm etc. */
    MTLPixelFormat _hdrDrawableFormat;  /* swapchain format when HDR on */
    id<MTLTexture> _hdrReadbackTex;     /* BGRA8 landing pad for screenshots */
@@ -1151,6 +1154,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
        * HDR is never turned on.  Just set defaults. */
       _hdrEnabled         = false;
       _hdrOutputMode      = METAL_HDR_OUTPUT_OFF;
+      _hdrActiveOutputMode = METAL_HDR_OUTPUT_OFF;
       _hdrOffscreenFormat = MTLPixelFormatInvalid;
       _hdrDrawableFormat  = _layer.pixelFormat;
       _hdrUniforms.mvp             = _mvp_no_rot;
@@ -1253,7 +1257,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 - (unsigned)hdrOutputMode
 {
 #if METAL_HDR_AVAILABLE
-   return _hdrOutputMode;
+   return _hdrActiveOutputMode;
 #else
    return METAL_HDR_OUTPUT_OFF;
 #endif
@@ -2001,6 +2005,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
 #endif
    output_mode = (!wantEnable || newCS) ? mode : 0;
+   _hdrActiveOutputMode = output_mode <= METAL_HDR_OUTPUT_SCRGB
+      ? output_mode : METAL_HDR_OUTPUT_OFF;
    if (newCS)
       CGColorSpaceRelease(newCS);
 
@@ -5955,6 +5961,8 @@ static void metal_views_render(metal_views_t *vs,
       _frameView.totalSubframes  = video_info->shader_subframes > 1
                                  ? video_info->shader_subframes : 1;
       _frameView.currentSubframe = video_info->current_subframe + 1;
+      _frameView.hdrPaperWhiteNits = video_info->hdr_paper_white_nits;
+      _frameView.hdrExpandGamut = video_info->hdr_expand_gamut;
       if (frame && width && height)
       {
          struct video_shader *shader = _frameView.shader;
@@ -6351,6 +6359,9 @@ typedef struct MTLALIGN(16)
       uint32_t total_subframes;
       uint32_t current_subframe;
       uint32_t swap_count;
+      uint32_t hdr_mode;
+      float paper_white_nits;
+      unsigned expand_gamut;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -7182,6 +7193,11 @@ struct metal_view_chain
    e->pass[i].swap_count       = (uint32_t)_swapCount;
    e->pass[i].total_subframes  = _totalSubframes;
    e->pass[i].current_subframe = _currentSubframe;
+   e->pass[i].hdr_mode = _context.hdrOutputMode;
+   e->pass[i].paper_white_nits = e->pass[i].hdr_mode
+      ? _hdrPaperWhiteNits : 0.0f;
+   e->pass[i].expand_gamut = e->pass[i].hdr_mode
+      ? _hdrExpandGamut : 0;
 
 #ifdef HAVE_REWIND
    if (state_manager_frame_is_reversed())
@@ -7846,15 +7862,12 @@ error:
                &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */
                &_engine.pass[i].total_subframes, /* TotalSubFrames */
                &_engine.pass[i].current_subframe,/* CurrentSubFrame */
-               /* The HDR and sensor semantics have no Metal source yet;
-                * slang_process leaves an unwired slot at its zero
-                * default. The table is positional, so they are named
-                * here to keep SwapCount at its index. */
-               NULL,                             /* HDRMode */
-               NULL,                             /* BrightnessNits */
+               &_engine.pass[i].hdr_mode,         /* HDRMode */
+               &_engine.pass[i].paper_white_nits, /* BrightnessNits */
+               /* Remaining HDR controls and sensors keep zero defaults. */
                NULL,                             /* Scanlines */
                NULL,                             /* SubpixelLayout */
-               NULL,                             /* ExpandGamut */
+               &_engine.pass[i].expand_gamut,     /* ExpandGamut */
                NULL,                             /* InverseTonemap */
                NULL,                             /* HDR10 */
                NULL,                             /* Gyroscope */
