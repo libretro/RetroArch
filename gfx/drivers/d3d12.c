@@ -1797,6 +1797,31 @@ static void d3d12_menu_upload(D3D12GraphicsCommandList cmd,
       d3d12_upload_texture(cmd, &d3d12->menu.texture, d3d12);
 }
 
+#define D3D12_FRAME_MAPPING_2101010 D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(2, 1, 0, 5)
+
+static void d3d12_frame_mapping(D3D12Device device,
+      d3d12_texture_t *texture, bool software)
+{
+   D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+   UINT mapping = software && texture->desc.Format == DXGI_FORMAT_R10G10B10A2_UNORM
+      ? D3D12_FRAME_MAPPING_2101010 : 0;
+   if (texture->srv_mapping == mapping)
+      return;
+   texture->srv_mapping = mapping;
+   if (!texture->handle)
+      return;
+   desc.Format = texture->desc.Format;
+   desc.Shader4ComponentMapping = mapping
+      ? mapping : D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+   desc.Texture2D.MostDetailedMip = 0;
+   desc.Texture2D.MipLevels = texture->desc.MipLevels;
+   desc.Texture2D.PlaneSlice = 0;
+   desc.Texture2D.ResourceMinLODClamp = 0.0f;
+   device->lpVtbl->CreateShaderResourceView(device, texture->handle,
+         &desc, texture->cpu_descriptor[0]);
+}
+
 static void d3d12_update_texture_into(
       int              width,
       int              height,
@@ -1808,6 +1833,7 @@ static void d3d12_update_texture_into(
 {
    uint8_t *dst;
    D3D12_RANGE read_range;
+   DXGI_FORMAT target_format = texture->desc.Format;
 
    if (!data || !resource)
       return;
@@ -1842,7 +1868,11 @@ static void d3d12_update_texture_into(
    if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
          || !dst)
       return;
-   dxgi_copy(width, height, format, pitch, data, texture->desc.Format,
+   if (     format == DXGI_FORMAT_R10G10B10A2_UNORM
+         && target_format == format
+         && texture->srv_mapping == D3D12_FRAME_MAPPING_2101010)
+      format = target_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   dxgi_copy(width, height, format, pitch, data, target_format,
          texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
    resource->lpVtbl->Unmap(resource, 0, NULL);
    texture->dirty           = true;
@@ -6512,6 +6542,7 @@ static void d3d12_chain_init_history(d3d12_video_t *d3d12,
       c->history[i].desc.Height    = height;
       c->history[i].desc.Format    = c->history[0].desc.Format;
       c->history[i].desc.MipLevels = c->history[0].desc.MipLevels;
+      c->history[i].srv_mapping    = c->history[0].srv_mapping;
       c->history[i].srv_heap       = &d3d12->desc.srv_heap;
       d3d12_release_texture(&c->history[i]);
       d3d12_init_texture(d3d12->device, &c->history[i]);
@@ -7251,8 +7282,7 @@ static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
       bool *cached, unsigned *pitch_align)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
-   if (     !d3d12 || !d3d12->device || !size
-         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   if (!d3d12 || !d3d12->device || !size)
       return NULL;
    return d3d12_upload_mem_alloc(data, size, id, cached, pitch_align);
 }
@@ -8293,6 +8323,7 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
                c->history[k].desc.Width  = v->width;
                c->history[k].desc.Height = v->height;
                c->history[k].desc.Format = format;
+               c->history[k].srv_mapping = d3d12->filter.history[0].srv_mapping;
                c->history[k].srv_heap    = &d3d12->desc.srv_heap;
                d3d12_init_texture(d3d12->device, &c->history[k]);
             }
@@ -8305,6 +8336,8 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
                c->history[k] = c->history[k - 1];
             c->history[0] = tmp;
          }
+         d3d12_frame_mapping(d3d12->device, &c->history[0],
+               d3d12->filter.history[0].srv_mapping == D3D12_FRAME_MAPPING_2101010);
          copy = c->history[0].handle != NULL;
       }
 #ifdef HAVE_SLANG
@@ -9024,18 +9057,17 @@ recording_resize_deferred:;
 
    if (frame && width && height)
    {
-      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      DXGI_FORMAT source_format = frame == RETRO_HW_FRAME_BUFFER_VALID
+         ? d3d12->hw_render_texture_format : d3d12->format;
+      if (d3d12->filter.history[0].desc.Format != source_format)
       {
-         if (d3d12->filter.history[0].desc.Format != d3d12->hw_render_texture_format)
-         {
-            d3d12->filter.history[0].desc.Width  = width;
-            d3d12->filter.history[0].desc.Height = height;
-            d3d12->filter.history[0].desc.Format = d3d12->hw_render_texture_format;
-            d3d12_release_texture(&d3d12->filter.history[0]);
-            d3d12_init_texture(d3d12->device, &d3d12->filter.history[0]);
+         d3d12->filter.history[0].desc.Width  = width;
+         d3d12->filter.history[0].desc.Height = height;
+         d3d12->filter.history[0].desc.Format = source_format;
+         d3d12_release_texture(&d3d12->filter.history[0]);
+         d3d12_init_texture(d3d12->device, &d3d12->filter.history[0]);
 
-            d3d12->flags |= D3D12_ST_FLAG_INIT_HISTORY;
-         }
+         d3d12->flags |= D3D12_ST_FLAG_INIT_HISTORY;
       }
 
       if (d3d12->filter.shader_preset)
@@ -9065,6 +9097,8 @@ recording_resize_deferred:;
          {
             if (d3d12->flags & D3D12_ST_FLAG_INIT_HISTORY)
             {
+               d3d12_frame_mapping(d3d12->device, &d3d12->filter.history[0],
+                     frame != RETRO_HW_FRAME_BUFFER_VALID);
                d3d12_chain_init_history(d3d12, &d3d12->filter, width, height);
                d3d12->flags &= ~D3D12_ST_FLAG_INIT_HISTORY;
             }
@@ -9108,6 +9142,9 @@ recording_resize_deferred:;
           * with the same description), so the GPU copy below is
           * correct without further bookkeeping. */
       }
+
+      d3d12_frame_mapping(d3d12->device, &d3d12->filter.history[0],
+            frame != RETRO_HW_FRAME_BUFFER_VALID);
 
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
       {
@@ -12228,7 +12265,7 @@ static bool d3d12_get_current_software_framebuffer(
    UINT64         done;
    unsigned       slot, k;
 
-   if (!d3d12 || !fb || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   if (!d3d12 || !fb)
       return false;
 
    /* Ensure the lent buffers exist and are sized for the requested
@@ -12272,7 +12309,10 @@ static bool d3d12_get_current_software_framebuffer(
    fb->pitch        = d3d12->sw_fb.layout.Footprint.RowPitch;
    fb->format       = (d3d12->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
       ? RETRO_PIXEL_FORMAT_SCRGB_RGBA16F
-      : ((d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM)
+      : d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM
+      ? (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10
+         ? RETRO_PIXEL_FORMAT_HDR10_2101010 : RETRO_PIXEL_FORMAT_XRGB2101010)
+      : (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565);
    /* The buffers are host-cached (WRITE_BACK).  Report this to the
     * core so it can use them for read-modify-write patterns without

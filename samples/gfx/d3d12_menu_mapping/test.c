@@ -1,4 +1,4 @@
-/* Sample the shipping menu SRV with every BGRA4444 bit pattern. */
+/* Sample shipping menu and packed 10-bit frame SRVs. */
 #include <stdio.h>
 #ifdef _WIN32
 #define COBJMACROS
@@ -17,11 +17,15 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL mode %u line %u: %s\n",mode,(unsigned)__LINE__,#x); goto done; } } while (0)
 #define DROP(x) do { if (x) { (x)->lpVtbl->Release(x); (x)=NULL; } } while (0)
 typedef int bool;
+#define true 1
+#define false 0
 typedef ID3D12Device *D3D12Device;
 typedef struct
 {
    ID3D12Resource *handle;
    D3D12_RESOURCE_DESC desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+   bool dirty;
    UINT srv_mapping;
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_descriptor[1];
 } d3d12_texture_t;
@@ -87,7 +91,8 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
    int result = 1;
    memset(&texture,0,sizeof(texture));
    memset(&support,0,sizeof(support));
-   texture.desc.Format = mode < 2 ? DXGI_FORMAT_B4G4R4A4_UNORM : DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture.desc.Format = mode >= 4 ? DXGI_FORMAT_R10G10B10A2_UNORM
+      : (mode < 2 ? DXGI_FORMAT_B4G4R4A4_UNORM : DXGI_FORMAT_B8G8R8A8_UNORM);
    support.Format = texture.desc.Format;
    support_result = ID3D12Device_CheckFeatureSupport(device,
          D3D12_FEATURE_FORMAT_SUPPORT,&support,sizeof(support));
@@ -136,8 +141,14 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
    srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
    srv.Texture2D.MipLevels = 1;
    ID3D12Device_CreateShaderResourceView(device,texture.handle,&srv,cpu);
-   d3d12_menu_mapping(device,&texture,mode == 3);
-   CHECK((texture.srv_mapping != 0) == (mode < 2));
+   if (mode < 4)
+      d3d12_menu_mapping(device,&texture,mode == 3);
+   else
+   {
+      d3d12_frame_mapping(device,&texture,mode == 7);
+      d3d12_frame_mapping(device,&texture,mode != 6 && mode != 7);
+   }
+   CHECK((texture.srv_mapping != 0) == (mode < 2 || mode == 4 || mode == 5 || mode == 8));
    ID3D12Device_GetCopyableFootprints(device,&texture.desc,0,1,0,
          &footprint,NULL,NULL,&bytes);
    CHECK(footprint.Footprint.RowPitch > W * (mode < 2 ? 2u : 4u));
@@ -155,6 +166,17 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
    {
       unsigned v = i & 65535;
       pixels[i] = (uint16_t)v;
+      if (mode >= 4)
+      {
+         unsigned r = (i * 37 + 3) & 1023;
+         unsigned g = (i >> 2) & 1023;
+         unsigned b = ((i >> 6) * 19 + 7) & 1023;
+         unsigned a = (i >> 4) & 3;
+         pixels32[i] = mode == 6 || mode == 7
+            ? r | (g << 10) | (b << 20) | (a << 30)
+            : (r << 20) | (g << 10) | b | (a << 30);
+         continue;
+      }
       pixels32[i] = (((v >> 12) & 15) * 17)
          | (((v >> 8) & 15) * 17 << 8)
          | (((v >> 4) & 15) * 17 << 16)
@@ -163,7 +185,21 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
    range.Begin = range.End = 0;
    CHECK(SUCCEEDED(ID3D12Resource_Map(upload,0,&range,(void**)&mapped)));
    memset(mapped,0xcd,(size_t)bytes);
-   if (!mode)
+   if (mode == 5)
+   {
+      ID3D12Resource_Unmap(upload,0,NULL);
+      mapped = NULL;
+      texture.layout = footprint;
+      d3d12_update_texture_into(W,H,0,DXGI_FORMAT_R10G10B10A2_UNORM,
+            pixels32,&texture,upload);
+      CHECK(texture.dirty);
+   }
+   else if (mode >= 4)
+   {
+      for (y=0;y<H;y++)
+         memcpy(mapped+y*footprint.Footprint.RowPitch,pixels32+y*W,W*4);
+   }
+   else if (!mode)
    {
       for (y=0;y<H;y++)
          for (x=0;x<W;x++)
@@ -174,7 +210,7 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
             (mode == 2 ? (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM : DXGI_FORMAT_B4G4R4A4_UNORM),
             W * (mode == 3 ? 4 : 2), mode == 3 ? (const void*)pixels32 : (const void*)pixels,
             texture.desc.Format,footprint.Footprint.RowPitch,mapped);
-   ID3D12Resource_Unmap(upload,0,NULL);
+   if (mapped) ID3D12Resource_Unmap(upload,0,NULL);
    mapped = NULL;
    memset(&uav,0,sizeof(uav));
    uav.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -225,12 +261,19 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
       expected[1] = (v >> 8) & 15;
       expected[2] = (v >> 12) & 15;
       expected[3] = v & 15;
+      if (mode >= 4)
+      {
+         expected[0] = (i * 37 + 3) & 1023;
+         expected[1] = (i >> 2) & 1023;
+         expected[2] = ((i >> 6) * 19 + 7) & 1023;
+         expected[3] = mode == 6 || mode == 7 ? ((i >> 4) & 3) * 341 : 1023;
+      }
       for (lane=0;lane<2;lane++)
          for (channel=0;channel<4;channel++)
          {
             float actual = sampled[i*8+lane*4+channel];
-            float wanted = expected[channel] / 15.0f;
-            if (!(fabs(actual-wanted) < 0.001))
+            float wanted = expected[channel] / (mode >= 4 ? 1023.0f : 15.0f);
+            if (!(fabs(actual-wanted) < (mode >= 4 ? 0.0001 : 0.001)))
             {
                fprintf(stderr,"FAIL mode %u pattern %04x lane %u channel %u: %.6f != %.6f\n",
                      mode,v,lane,channel,actual,wanted);
@@ -238,7 +281,9 @@ static int run_case(ID3D12Device *device, ID3D12RootSignature *root,
             }
          }
    }
-   printf("PASS: mode %u, all 65536 BGRA4444 values, padded rows, Load and linear SampleLevel\n",mode);
+   printf("PASS: mode %u, %s, padded rows, Load and linear SampleLevel\n",
+         mode, mode >= 4 ? "all 10-bit channel values and X/alpha codes"
+         : "all 65536 BGRA4444 values");
    result = 0;
 done:
    if (sampled) ID3D12Resource_Unmap(readback,0,NULL);
@@ -302,7 +347,7 @@ int main(void)
    CHECK(SUCCEEDED(ID3D12Device_CreateComputePipelineState(device,&pso,
                &IID_ID3D12PipelineState,(void**)&pipeline)));
    result = 0;
-   for (mode=0;mode<4;mode++) result |= run_case(device,root,pipeline,mode);
+   for (mode=0;mode<9;mode++) result |= run_case(device,root,pipeline,mode);
 done:
    DROP(errors); DROP(serialized); DROP(pipeline); DROP(root); DROP(device);
    return result;

@@ -82,7 +82,7 @@ int main(void)
    struct video v;
    v.device = &v;
    v.format = DXGI_FORMAT_R10G10B10A2_UNORM;
-   if (admit(&v, 4096) != NULL) return 1;
+   if (admit(&v, 4096) != &v) return 1;
    v.format = 87;
    if (admit(&v, 4096) != &v) return 2;
    v.format = 10;
@@ -90,7 +90,7 @@ int main(void)
    if (admit(&v, 0) != NULL || admit(NULL, 4096) != NULL) return 4;
    v.device = NULL;
    if (admit(&v, 4096) != NULL) return 5;
-   puts("PASS D3D12 frame memory rejects packed channel-repacking bypass");
+   puts("PASS D3D12 frame memory admits raw packed frames");
    return 0;
 }
 '''.replace("GUARD", guard)

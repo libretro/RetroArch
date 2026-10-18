@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GPU oracle for the shipping D3D12 menu channel mapping."""
+"""GPU oracle for shipping D3D12 menu and packed 10-bit frame mappings."""
 import argparse
 import ctypes
 import hashlib
@@ -75,6 +75,11 @@ with tempfile.TemporaryDirectory(prefix='retroarch-menu-mapping-') as directory:
                     'static void d3d12_menu_mapping(')
     code += function((root / 'gfx/common/dxgi_common.c').read_text(encoding='utf-8'),
                      'void dxgi_copy(')
+    driver = (root / 'gfx/drivers/d3d12.c').read_text(encoding='utf-8')
+    code += next(line for line in driver.splitlines() if line.startswith('#define D3D12_FRAME_MAPPING_2101010 ')) + '\n'
+    for signature in ('static void d3d12_frame_mapping(',
+                      'static void d3d12_update_texture_into('):
+        code += function(driver, signature)
     (temp / 'driver.inc').write_text(code, encoding='utf-8')
     cc = shlex.split(os.environ.get('CC', 'cc'))
     windows = os.name == 'nt' or 'mingw' in cc[0]
