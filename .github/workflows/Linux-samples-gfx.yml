@@ -617,6 +617,7 @@ jobs:
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 run.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 output_state.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 metal_constants.py
 
       - name: Build and run slang_texture_index_bounds_test (ASan)
         shell: bash

@@ -84,6 +84,14 @@ setup and compiled-out HDR supply zero. Per-view chains rebase their private
 uniform values. ../slang_hdr_bindings/metal.py checks the shipping bindings,
 frame handoff, neutral values and rebasing with portable toolchains. Native
 Apple rendering acceptance remains pending.
+Slang constants are captured per draw before CPU staging is reused. Blocks
+smaller than 4096 bytes use the encoder's byte-copy API; larger blocks use
+an immutable command-retained buffer. Large-block allocation failures skip
+the affected draw, including view placements. This adds no image copy,
+readback or GPU wait. Large constant buffers allocate per draw; reuse needs
+completion-aware ownership and native Apple performance validation.
+../slang_hdr_bindings/metal_constants.py models queued consumption of the
+shipping binding code, including boundary sizes and allocation failures.
 
 Optional Slang final-pass ownership:
 

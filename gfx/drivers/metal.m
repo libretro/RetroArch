@@ -534,7 +534,7 @@ typedef struct metal_view_chain metal_view_chain_t;
 /* The last pass's render target, or nil when the last pass draws into
  * each placement, bound by bindViewChainLast */
 - (id<MTLTexture>)viewChainFinal:(metal_view_chain_t *)c;
-- (void)bindViewChainLast:(metal_view_chain_t *)c
+- (BOOL)bindViewChainLast:(metal_view_chain_t *)c
                   encoder:(id<MTLRenderCommandEncoder>)rce;
 
 @end
@@ -5195,8 +5195,8 @@ static void metal_views_draw_pass(metal_views_t *vs,
             simd_make_float4(0.5f / tw, 0.5f / th,
                1.0f - 0.5f / tw, 1.0f - 0.5f / th));
    }
-   else
-      [vs->frameView bindViewChainLast:c encoder:d->rce];
+   else if (![vs->frameView bindViewChainLast:c encoder:d->rce])
+      return;
    [d->rce setViewport:metal_views_vp(dst)];
    [d->rce setScissorRect:metal_views_sc(cut)];
    [d->rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0
@@ -6342,6 +6342,7 @@ typedef struct MTLALIGN(16)
       texture_t texture[GFX_MAX_FRAME_HISTORY + 1];
       MTLViewport viewport;
       float4_t output_size;
+      bool valid;
    } frame;
 
    struct
@@ -6370,6 +6371,42 @@ typedef struct MTLALIGN(16)
    texture_t luts[GFX_MAX_TEXTURES];
 
 } engine_t;
+
+/* Capture constants before CPU staging is reused by another draw. */
+static bool metal_bind_slang_constants(
+      id<MTLRenderCommandEncoder> rce, id<MTLDevice> device,
+      const cbuffer_sem_t *buffer_sem, id<MTLBuffer> buffer)
+{
+   const void *data;
+   id<MTLBuffer> snapshot;
+   NSUInteger size = buffer_sem->size;
+
+   if (!buffer_sem->stage_mask || !size)
+      return true;
+   if (!rce || !buffer || buffer.length < size || !(data = buffer.contents))
+      return false;
+   if (size < 4096)
+   {
+      if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
+         [rce setVertexBytes:data length:size atIndex:buffer_sem->binding];
+      if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+         [rce setFragmentBytes:data length:size atIndex:buffer_sem->binding];
+      return true;
+   }
+
+   snapshot = RARCH_AUTORELEASE_R([device newBufferWithBytes:data
+         length:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]);
+   if (!snapshot)
+      return false;
+#if !defined(HAVE_COCOATOUCH)
+   [snapshot didModifyRange:NSMakeRange(0, size)];
+#endif
+   if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
+      [rce setVertexBuffer:snapshot offset:0 atIndex:buffer_sem->binding];
+   if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      [rce setFragmentBuffer:snapshot offset:0 atIndex:buffer_sem->binding];
+   return true;
+}
 
 struct metal_view_chain
 {
@@ -7174,13 +7211,15 @@ struct metal_view_chain
 }
 
 /* Pass @i of @e on @rce: its pipeline, constants, textures and quad */
-- (void)_chainBind:(engine_t *)e pass:(size_t)i
+- (BOOL)_chainBind:(engine_t *)e pass:(size_t)i
            encoder:(id<MTLRenderCommandEncoder>)rce
 {
    int j;
    __unsafe_unretained id<MTLTexture> textures[SLANG_NUM_BINDINGS] = {NULL};
    id<MTLSamplerState> samplers[SLANG_NUM_BINDINGS] = {NULL};
 
+   if (!rce)
+      return NO;
    [rce setRenderPipelineState:e->pass[i]._state];
 
    NSURL *shaderPath = [NSURL fileURLWithPath:e->pass[i]._state.label];
@@ -7223,11 +7262,13 @@ struct metal_view_chain
       id<MTLBuffer> buffer      = e->pass[i].buffers[j];
       cbuffer_sem_t *buffer_sem = &e->pass[i].semantics.cbuffers[j];
 
-      if (buffer_sem->stage_mask && buffer_sem->uniforms)
+      if (buffer_sem->size && buffer_sem->stage_mask && buffer_sem->uniforms)
       {
          void             *data = buffer.contents;
          uniform_sem_t *uniform = buffer_sem->uniforms;
 
+         if (!data || buffer.length < buffer_sem->size)
+            return NO;
          while (uniform->size)
          {
             if (uniform->param)
@@ -7240,14 +7281,9 @@ struct metal_view_chain
             uniform++;
          }
 
-         if (buffer_sem->stage_mask & SLANG_STAGE_VERTEX_MASK)
-            [rce setVertexBuffer:buffer offset:0 atIndex:buffer_sem->binding];
-
-         if (buffer_sem->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
-            [rce setFragmentBuffer:buffer offset:0 atIndex:buffer_sem->binding];
-#if !defined(HAVE_COCOATOUCH)
-         [buffer didModifyRange:NSMakeRange(0, buffer.length)];
-#endif
+         if (!metal_bind_slang_constants(rce, _context.device,
+                  buffer_sem, buffer))
+            return NO;
       }
    }
 
@@ -7265,6 +7301,7 @@ struct metal_view_chain
    [rce setFragmentTextures:textures withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
    [rce setFragmentSamplerStates:samplers withRange:NSMakeRange(0, SLANG_NUM_BINDINGS)];
    [rce setVertexBytes:_vertex length:sizeof(_vertex) atIndex:4];
+   return YES;
 }
 
 /* @e's passes drawn, each into its render target; a last pass that has
@@ -7276,6 +7313,7 @@ struct metal_view_chain
    size_t i;
    id<MTLCommandBuffer> cb = ctx.blitCommandBuffer;
 
+   e->frame.valid = false;
    MTLRenderPassDescriptor *rpd        = RARCH_AUTORELEASE_R([MTLRenderPassDescriptor new]);
    rpd.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
@@ -7297,7 +7335,12 @@ struct metal_view_chain
          rce = [cb renderCommandEncoderWithDescriptor:rpd];
       }
 
-      [self _chainBind:e pass:i encoder:rce];
+      if (![self _chainBind:e pass:i encoder:rce])
+      {
+         if (!backBuffer)
+            [rce endEncoding];
+         return nil;
+      }
 
       if (backBuffer)
          [rce setViewport:e->frame.viewport];
@@ -7320,6 +7363,7 @@ struct metal_view_chain
       }
    }
 
+   e->frame.valid = true;
    return e->pass[_shader->passes - 1].rt.view;
 }
 
@@ -7608,6 +7652,7 @@ error:
    unsigned dims      = VIDEO_SCALE_PACK(v->width, v->height);
    id<MTLTexture> src = _engine.frame.texture[0].view;
 
+   c->engine.frame.valid = false;
    if (src && (fresh || !c->history_made))
    {
       unsigned k;
@@ -7727,13 +7772,16 @@ error:
 
 - (id<MTLTexture>)viewChainFinal:(metal_view_chain_t *)c
 {
+   if (!c->engine.frame.valid)
+      return nil;
    return c->engine.pass[_shader->passes - 1].rt.view;
 }
 
-- (void)bindViewChainLast:(metal_view_chain_t *)c
+- (BOOL)bindViewChainLast:(metal_view_chain_t *)c
                   encoder:(id<MTLRenderCommandEncoder>)rce
 {
-   [self _chainBind:&c->engine pass:_shader->passes - 1 encoder:rce];
+   return c->engine.frame.valid
+      && [self _chainBind:&c->engine pass:_shader->passes - 1 encoder:rce];
 }
 
 - (void)_freeVideoShader:(struct video_shader *)shader
