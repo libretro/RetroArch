@@ -20,6 +20,25 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  ps3-user-paths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: User paths and configuration imports (ASan + UBSan)
+        working-directory: samples/frontend/ps3_user_paths
+        run: |
+          make clean
+          make -j2 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./ps3_user_paths_test
+      - name: Build for Windows
+        working-directory: samples/frontend/ps3_user_paths
+        run: |
+          make clean
+          make -j2 CC=x86_64-w64-mingw32-gcc TARGET=ps3_user_paths_test.exe
+
   samples-settings:
     name: Build and run samples/settings
     runs-on: ubuntu-latest
