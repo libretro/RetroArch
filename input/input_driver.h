@@ -1166,6 +1166,11 @@ bool input_bluetooth_host_address(uint8_t *addr, char *name, size_t len);
 
 /* The Bluetooth address a controller connects to, read and set where
  * its driver can (see input_device_driver_t's get_bt_host). */
+/* A device number for a pad of a source beside the joypad driver
+ * (input_device_pool.h), or -1; and giving it back. */
+int input_driver_device_claim(unsigned source, unsigned slot);
+void input_driver_device_release(unsigned source, unsigned slot);
+
 bool input_driver_get_bt_host(unsigned pad, uint8_t *addr);
 bool input_driver_set_bt_host(unsigned pad, const uint8_t *addr);
 bool input_config_get_android_disconnect_workaround(void);

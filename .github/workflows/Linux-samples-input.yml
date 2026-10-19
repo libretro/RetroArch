@@ -592,6 +592,23 @@ jobs:
           make clean
           echo "[pass] device_registry_test (ASan)"
 
+      - name: Build and run device_pool_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/device_pool
+        run: |
+          set -eu
+          # The device numbers shared between the joypad driver and the
+          # sources beside it: the driver's pads keep their slots'
+          # numbers, pads beside it are given free ones from the top
+          # down and their own again when they come back, and a driver
+          # pad arriving on a number one of them holds moves that pad.
+          # Thousands of mixed arrivals and departures never give a
+          # number twice.
+          make clean all SANITIZER=address,undefined
+          timeout 120 ./device_pool_test
+          make clean
+          echo "[pass] device_pool_test (ASan)"
+
       - name: Build and run android_stylus_map_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_stylus_map
