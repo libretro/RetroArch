@@ -465,6 +465,8 @@ typedef struct metal_view_chain metal_view_chain_t;
 @interface FrameView : NSObject
 
 @property(nonatomic, readonly) RPixelFormat format;
+@property(nonatomic, readonly) BOOL movieFrame;
+- (enum video_texture_update)importMovieFrame:(const video_frame_import_t *)frame;
 @property(nonatomic, readonly) RTextureFilter filter;
 @property(nonatomic, readwrite) BOOL visible;
 @property(nonatomic, readwrite) CGRect frame;
@@ -6617,7 +6619,7 @@ static void metal_views_render(metal_views_t *vs,
       _frameView.hdrPaperWhiteNits = video_info->hdr_paper_white_nits;
       _frameView.hdrPeakNits = video_info->hdr_max_nits;
       _frameView.hdrExpandGamut = video_info->hdr_expand_gamut;
-      if (frame && width && height)
+      if (frame && frame != RETRO_HW_FRAME_BUFFER_VALID && width && height)
       {
          struct video_shader *shader = _frameView.shader;
          _frameView.size      = CGSizeMake(width, height);
@@ -6629,6 +6631,8 @@ static void metal_views_render(metal_views_t *vs,
             [_frameView updateFrame:frame pitch:pitch];
          _frameEverUploaded   = true;
       }
+      else if (_frameView.movieFrame)
+         _frameEverUploaded = true;
       else if (!_frameEverUploaded)
       {
          /* Driver just came up (init or post-reinit).  The frontend
@@ -7126,6 +7130,7 @@ struct metal_view_chain
 
    bool resize_render_targets;
    bool init_history;
+   BOOL _movieFrame;
    video_viewport_t *_viewport;
 
    /* HDR state.
@@ -7147,6 +7152,7 @@ struct metal_view_chain
 }
 
 - (BOOL)hdrEnabled { return _hdrEnabled; }
+- (BOOL)movieFrame { return _movieFrame; }
 - (id<MTLTexture>)frameTexture { return _engine.frame.texture[0].view; }
 
 - (id<MTLTexture>)shaderOutputTexture
@@ -7403,7 +7409,8 @@ struct metal_view_chain
          if (init_history)
          {
             int i;
-            MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+            MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+                     _movieFrame ? MTLPixelFormatRGBA8Unorm : MTLPixelFormatBGRA8Unorm
                      width:(NSUInteger)_size.width
                      height:(NSUInteger)_size.height
                      mipmapped:false];
@@ -7435,18 +7442,17 @@ struct metal_view_chain
  * size moved there */
 - (void)_ensureFront
 {
+   MTLPixelFormat wanted = _movieFrame ? MTLPixelFormatRGBA8Unorm
+      : _format == RPixelFormatBGR10A2Unorm ? MTLPixelFormatBGR10A2Unorm : MTLPixelFormatBGRA8Unorm;
    if (   _engine.frame.texture[0].size_data.x != _size.width
-       || _engine.frame.texture[0].size_data.y != _size.height)
+       || _engine.frame.texture[0].size_data.y != _size.height
+       || _engine.frame.texture[0].view.pixelFormat != wanted)
    {
       /* The front slot receives the uploaded source frame directly, so for a
        * native 10-bit source it must be BGR10A2 (which matches the ABI's
        * XRGB2101010 packing with no swizzle); all other formats upload into
        * or convert to BGRA8. */
-      MTLPixelFormat frameFmt =
-            (_format == RPixelFormatBGR10A2Unorm)
-            ? MTLPixelFormatBGR10A2Unorm
-            : MTLPixelFormatBGRA8Unorm;
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:frameFmt
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:wanted
                width:(NSUInteger)_size.width
                height:(NSUInteger)_size.height
                mipmapped:false];
@@ -7581,6 +7587,7 @@ struct metal_view_chain
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
+   _movieFrame = NO;
    [self syncViewport];
 
    [self _updateHistory];
@@ -7636,6 +7643,42 @@ struct metal_view_chain
       }
    }
 }
+
+/* METAL_MOVIE_FRAME_BEGIN */
+- (enum video_texture_update)importMovieFrame:(const video_frame_import_t *)frame
+{
+   metal_frame_sdr_params_t params;
+   RArchMetalFrameLease *lease;
+   id<MTLCommandBuffer> buffer;
+   BOOL previous_movie = _movieFrame;
+   if (!frame)
+   {
+      _movieFrame = NO;
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   buffer = _context.blitCommandBuffer;
+   lease = metal_frame_validate(frame, (__bridge void*)_context.device, (__bridge void*)buffer);
+   if (!lease || !_context.frameSDRPipeline
+         || !metal_frame_sdr_params(&lease->view, &params)
+         || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   _movieFrame = YES;
+   self.size = CGSizeMake(lease->view.width, lease->view.height);
+   [self syncViewport];
+   [self _updateHistory];
+   if (!metal_frame_convert_sdr(frame, (__bridge void*)_context.device,
+            (__bridge void*)buffer, _context.frameSDRPipeline,
+            (__bridge void*)_engine.frame.texture[0].view))
+   {
+      _movieFrame = previous_movie;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   _pendingSrc = NULL;
+   _srcDirty = NO;
+   _loanLast = -1;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+/* METAL_MOVIE_FRAME_END */
 
 /* Where a pushed frame lies in frame memory: the index of the buffer,
  * with the frame's byte offset in it, when @src at @pitch with the
@@ -10248,6 +10291,14 @@ static enum video_texture_update metal_import_texture(void *data, uintptr_t *han
 }
 /* METAL_FRAME_IMPORT_END */
 
+static enum video_texture_update metal_import_movie_frame(void *data,
+      const video_frame_import_t *frame)
+{
+   MetalDriver *md = (__bridge MetalDriver*)data;
+   if (!md || !md.frameView) return VIDEO_TEXTURE_UPDATE_REFUSED;
+   return [md.frameView importMovieFrame:frame];
+}
+
 static bool metal_get_device(void *data, video_device_info_t *info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
@@ -10319,7 +10370,10 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_frame_mem_ready,
    metal_frame_mem_free,
    metal_get_device,
-   metal_import_texture
+   metal_import_texture,
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   metal_import_movie_frame
 };
 
 static void metal_get_poke_interface(void *data,

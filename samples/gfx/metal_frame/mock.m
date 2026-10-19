@@ -259,6 +259,7 @@ static id mock_compute_encoder(MockBuffer *buffer);
 @end
 /* SHIPPING_IMPORT */
 /* SDR_IMPORT_TEST */
+/* MOVIE_IMPORT_TEST */
 
 static bool refuse_encode(void *user, const metal_frame_view_t *view, void *buffer)
 { (void)user; (void)view; (void)buffer; return false; }
@@ -545,6 +546,7 @@ int main(void)
 {
    test_sdr_mock();
    test_sdr_import_mock();
+   test_movie_import_mock();
    test_cv_mock();
    test_cv_color_mock();
    unsigned i, j;
