@@ -44,13 +44,13 @@ static uint32_t hevc_metal_crc(uint32_t crc, unsigned value, unsigned depth)
    return crc;
 }
 
-metal_frame_cv_pool_t *videotoolbox_hevc_test_pool(unsigned count)
+void *videotoolbox_hevc_test_device(void *unused)
 {
    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-   metal_frame_cv_pool_t *pool = metal_frame_cv_pool_create((__bridge void*)device, count);
-   assert(pool);
-   return pool;
+   (void)unused;
+   return device ? (void*)CFRetain((__bridge CFTypeRef)device) : NULL;
 }
+void videotoolbox_hevc_test_device_release(void *device) { CFRelease(device); }
 
 /* Consume an adapter-produced lease after adapter, session and pool teardown.
  * GPU readback and waits are confined to this pixel acceptance fixture. */

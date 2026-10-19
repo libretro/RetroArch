@@ -1,7 +1,8 @@
-#include "../../../gfx/common/videotoolbox_hevc_decoder.h"
+#include "../../../gfx/common/videotoolbox_hevc_backend.h"
 
 #if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
-metal_frame_cv_pool_t *videotoolbox_hevc_test_pool(unsigned count);
+void *videotoolbox_hevc_test_device(void *);
+void videotoolbox_hevc_test_device_release(void *);
 void videotoolbox_hevc_test_export(video_hw_frame_t*, unsigned, unsigned, const uint32_t*);
 
 static void test_native_decoder_adapter(void)
@@ -16,56 +17,69 @@ static void test_native_decoder_adapter(void)
          : which < singles + sequences ? &sequence_cases[which - singles]
          : &reorder_cases[which - singles - sequences];
       const codec_case_t *fixture = sequence ? &sequence->picture : &codec_cases[which];
-      unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, i;
+      unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, input = 0, output = 0, i;
       rh265_video *source = rh265_video_open();
-      rh265_video_params_t *params = (rh265_video_params_t*)malloc(sizeof(*params));
       video_hw_frame_t *frames = (video_hw_frame_t*)calloc(count, sizeof(*frames));
-      metal_frame_cv_pool_t *pool = videotoolbox_hevc_test_pool(count);
-      rh265_hw_ops_t ops;
+      videotoolbox_hevc_backend_t backend;
       owner_queue_t queue;
       sthread_t *worker;
-      assert(source && params && frames && pool);
+      assert(source && frames);
       memset(&queue, 0, sizeof(queue));
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
-      assert(!rh265_video_get_params(source, 0, params));
-      assert(videotoolbox_hevc_decoder_open(source, params, count, pool, owner_enqueue, &queue, &ops));
-      for (i = 0; i < count; i++)
+      rh265_set_hw_backend(NULL); assert(!rh265_video_set_hw(source, 1));
+      videotoolbox_hevc_backend_init(&backend, NULL, videotoolbox_hevc_test_device,
+            videotoolbox_hevc_test_device_release, NULL, owner_enqueue, &queue, true);
+      rh265_set_hw_backend(&backend.offer);
+      assert(rh265_video_set_hw(source, 1) && rh265_video_is_hw(source));
+      /* Withdrawal stops new activation; the active codec owns its operations. */
+      rh265_set_hw_backend(NULL);
+      while (input < count)
       {
-         rh265_hw_picture_t picture;
-         rh265_nal_t slices[8];
-         rh265_access_unit_t au;
-         int status;
-         memset(&picture, 0, sizeof(picture)); picture.slot = i;
-         if (sequence)
-            sequence_access_unit(source, sequence, sequence->packets[i].data,
-                  sequence->packets[i].size, i, slices, &au);
-         else
-            assert(!rh265_video_get_access_unit(source, fixture->sample,
-                     fixture->sample_size, 4, slices, 8, &au));
-         status = ops.decode(ops.decoder, params, &au, slices, &picture);
-         if (status) fprintf(stderr, "%s adapter picture %u: admission %d\n", fixture->name, i, status);
-         assert(!status);
+         const uint8_t *packet = sequence ? sequence->packets[input].data : fixture->sample;
+         size_t size = sequence ? sequence->packets[input].size : fixture->sample_size;
+         int status = rh265_video_decode(source, packet, size);
+         if (status < 0) fprintf(stderr, "%s registered picture %u: decode %d\n", fixture->name, input, status);
+         assert(status >= 0 && status <= 3);
+         if (status == 1 || status == 3)
+         {
+            assert(output < count && !rh265_video_hw_frame(source, &frames[output]));
+            output++;
+         }
+         if (status < 2) input++;
+         else sthread_yield();
       }
-      /* No caller-side FinishDelayedFrames or framework wait before output. */
-      for (i = 0; i < count; i++)
+      /* Only the codec's nonblocking drain; no framework flush or wait. */
+      while (output < count)
       {
-         int status;
-         while ((status = ops.output(ops.decoder, i, &frames[i])) == 1) sthread_yield();
-         if (status) fprintf(stderr, "%s adapter picture %u: output %d\n", fixture->name, i, status);
-         assert(!status && frames[i].image);
+         int status = rh265_video_drain(source);
+         assert(status == 0 || status == 2);
+         if (!status)
+         {
+            assert(!rh265_video_hw_frame(source, &frames[output])); output++;
+         }
+         else sthread_yield();
       }
-      rh265_video_close(source); free(params);
-      videotoolbox_hevc_decoder_close(&ops);
-      assert(!ops.decoder && queue.submitted == 1);
+      assert(rh265_video_drain(source) == -1);
+      rh265_video_close(source);
+      assert(queue.submitted == 1);
       worker = sthread_create(owner_worker, &queue); assert(worker); sthread_join(worker);
       assert(!queue.work);
       for (i = 0; i < count; i++)
+      {
+         unsigned packet = 0;
+         if (sequence)
+         {
+            for (packet = 0; packet < count; packet++)
+               if (sequence->packets[packet].display_index == i) break;
+            assert(packet < count);
+         }
          videotoolbox_hevc_test_export(&frames[i], fixture->depth, fixture->full,
-               sequence ? sequence->packets[i].crc : fixture->crc);
+               sequence ? sequence->packets[packet].crc : fixture->crc);
+      }
       free(frames);
    }
-   puts("VideoToolbox native adapter: twelve Main/Main10 IDR/I-P/B streams passed");
+   puts("VideoToolbox native adapter: twelve registered Main/Main10 IDR/I-P/B streams passed");
 }
 #endif
 
@@ -73,6 +87,22 @@ static void test_native_decoder_adapter(void)
 /* Export scheduling stand-in; real Metal pool ownership has its own fixture. */
 struct metal_frame_cv_pool { int busy, fail; };
 static unsigned decoder_pools;
+static unsigned backend_acquired, backend_released, backend_failure;
+static bool backend_enabled;
+static int backend_device;
+static void *backend_acquire(void *user)
+{ (void)user; backend_acquired++; return backend_failure == 1 ? NULL : &backend_device; }
+static void backend_release(void *device)
+{ assert(device == &backend_device); backend_released++; }
+static bool backend_is_enabled(void *user) { (void)user; return backend_enabled; }
+metal_frame_cv_pool_t *metal_frame_cv_pool_create(void *device, unsigned count)
+{
+   metal_frame_cv_pool_t *pool;
+   assert(device == &backend_device && count == 32);
+   if (backend_failure == 2) return NULL;
+   pool = (metal_frame_cv_pool_t*)calloc(1, sizeof(*pool)); assert(pool);
+   decoder_pools++; return pool;
+}
 void metal_frame_cv_pool_free(metal_frame_cv_pool_t *pool)
 { assert(pool && decoder_pools); decoder_pools--; free(pool); }
 static void decoder_frame_abandon(void *owner, uint64_t done, uint64_t value)
@@ -99,6 +129,70 @@ static void decoder_complete(void)
          0, 0, image, kCMTimeInvalid, kCMTimeInvalid);
    CVPixelBufferRelease(image); CFRelease(pending_sample);
    pending_sample = NULL; pending_session = NULL; pending_frame = NULL;
+}
+
+static void test_registered_backend(void)
+{
+   unsigned which;
+   for (which = 0; which < sizeof(codec_cases) / sizeof(codec_cases[0]); which++)
+   {
+      const codec_case_t *fixture = &codec_cases[which];
+      rh265_video *source = rh265_video_open();
+      videotoolbox_hevc_backend_t backend;
+      owner_queue_t queue;
+      sthread_t *worker;
+      video_hw_frame_t frame;
+      int status;
+      assert(source && !objects && !decoder_pools);
+      memset(&queue, 0, sizeof(queue));
+      backend_acquired = backend_released = backend_failure = 0;
+      backend_enabled = false;
+      assert(!rh265_video_retain_parameter_sets(source));
+      assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
+      assert(!rh265_video_get_parameter_sets(source, 0, wanted_sets));
+      wanted_height = 64;
+      wanted_pixel = fixture->depth == 10 ? (fixture->full ? 0x78663230 : 0x78343230)
+         : (fixture->full ? kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+                          : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange);
+      rh265_set_hw_backend(NULL); assert(!rh265_video_set_hw(source, 1));
+      videotoolbox_hevc_backend_init(&backend, NULL, backend_acquire, backend_release,
+            backend_is_enabled, owner_enqueue, &queue, true);
+      rh265_set_hw_backend(&backend.offer);
+      assert(!rh265_video_set_hw(source, 1) && !backend_acquired);
+      backend_enabled = true; backend_failure = 1;
+      assert(!rh265_video_set_hw(source, 1) && backend_acquired == 1 && !backend_released);
+      backend_failure = 2;
+      assert(!rh265_video_set_hw(source, 1) && backend_acquired == 2 && backend_released == 1);
+      backend_failure = 0;
+      assert(rh265_video_set_hw(source, 1) && rh265_video_is_hw(source));
+      assert(backend_acquired == 3 && backend_released == 2 && decoder_pools == 1);
+      rh265_set_hw_backend(NULL);
+      decode_mode = 0;
+      status = rh265_video_decode(source, fixture->sample, fixture->sample_size);
+      assert(status == 0 || status == 2);
+      decoder_complete();
+      if (status == 2) status = rh265_video_decode(source, fixture->sample, fixture->sample_size);
+      if (!status) { assert(!rh265_video_drain(source)); status = 1; }
+      assert(status == 1 && !rh265_video_hw_frame(source, &frame));
+      assert(frame.image && frame.pixfmt == (fixture->depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12));
+      assert(!rh265_video_plane(source, 0, NULL, NULL, NULL));
+      rh265_video_close(source);
+      assert(queue.submitted == 1 && !decoder_pools);
+      worker = sthread_create(owner_worker, &queue); assert(worker); sthread_join(worker);
+      assert(objects == 1); video_hw_frame_abandon(&frame); assert(!objects);
+      source = rh265_video_open(); assert(source);
+      assert(!rh265_video_retain_parameter_sets(source));
+      assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
+      backend_enabled = false; rh265_set_hw_backend(&backend.offer);
+      assert(!rh265_video_set_hw(source, 1) && !rh265_video_is_hw(source));
+      status = rh265_video_decode(source, fixture->sample, fixture->sample_size);
+      if (!status) { assert(!rh265_video_drain(source)); status = 1; }
+      assert(status == 1 && rh265_video_plane(source, 0, NULL, NULL, NULL));
+      rh265_set_hw_backend(NULL); rh265_video_close(source);
+      assert(!objects && !decoder_pools && backend_acquired == 3);
+   }
+   backend_enabled = false;
+   puts("VideoToolbox registration: four codec activations survive withdrawal and setup refusal");
 }
 #endif
 
@@ -181,6 +275,7 @@ static void test_decoder_adapter(void)
    }
    decode_mode = 0;
    puts("VideoToolbox adapter: eight retry, export pressure, drop and deferred close cases passed");
+   test_registered_backend();
 #endif
 #if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
    test_native_decoder_adapter();
