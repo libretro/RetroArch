@@ -19,7 +19,7 @@ struct object
    void *callback_ref;
    int kind, value, invalidated, refs;
 };
-static int objects, fail_step, step, wanted_pixel;
+static int objects, fail_step, step, wanted_pixel, wanted_height;
 static int sample_fail_step, sample_step, decode_mode, callbacks;
 static CMSampleBufferRef pending_sample;
 static void *pending_frame;
@@ -113,7 +113,7 @@ void VTDecompressionSessionInvalidate(VTDecompressionSessionRef session)
 CMVideoDimensions CMVideoFormatDescriptionGetDimensions(CMVideoFormatDescriptionRef format)
 {
    CMVideoDimensions dims;
-   assert(format->kind == 1); dims.width = 64; dims.height = 48;
+   assert(format->kind == 1); dims.width = 64; dims.height = wanted_height;
    return dims;
 }
 
@@ -333,7 +333,8 @@ static void output(void *ref, void *frame, OSStatus status, VTDecodeInfoFlags fl
    assert(0); /* This fixture never submits compressed frames. */
 }
 
-static void test(const uint8_t *data, size_t size, unsigned depth, int full)
+static void test(const uint8_t *data, size_t size, unsigned depth, int full,
+      unsigned height, bool require_hardware)
 {
    rh265_video *source = rh265_video_open();
    rh265_nal_t sets[3];
@@ -363,6 +364,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
    callback.decompressionOutputCallback = output;
    callback.decompressionOutputRefCon = source;
 #ifndef VT_HEVC_NATIVE
+   wanted_height = (int)height;
    memcpy(wanted_sets, sets, sizeof(sets));
    wanted_pixel = depth == 10 ? (full ? 0x78663230 : 0x78343230)
       : (full ? kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
@@ -379,7 +381,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
 #endif
    assert(!videotoolbox_hevc_format_create(source, 0, &format));
    dims = CMVideoFormatDescriptionGetDimensions(format);
-   assert(dims.width == 64 && dims.height == 48);
+   assert(dims.width == 64 && dims.height == (int)height);
    test_samples(format);
    test_slots(format);
    CFRelease(format); format = NULL;
@@ -391,14 +393,17 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
       exit(77);
    }
 #endif
-   status = videotoolbox_hevc_session_create(source, 0, &callback, &format, &session);
-   if (status)
-      fprintf(stderr, "VideoToolbox parameter-only %dx%d depth %u full %d: session status %ld\n",
-            (int)dims.width, (int)dims.height, depth, full, (long)status);
-   assert(!status);
-   assert(format && session);
-   VTDecompressionSessionInvalidate(session); CFRelease(session); CFRelease(format);
-   format = NULL; session = NULL;
+   if (require_hardware)
+   {
+      status = videotoolbox_hevc_session_create(source, 0, &callback, &format, &session);
+      if (status)
+         fprintf(stderr, "VideoToolbox setup %dx%d depth %u full %d: session status %ld\n",
+               (int)dims.width, (int)dims.height, depth, full, (long)status);
+      assert(!status);
+      assert(format && session);
+      VTDecompressionSessionInvalidate(session); CFRelease(session); CFRelease(format);
+      format = NULL; session = NULL;
+   }
    assert(videotoolbox_hevc_session_create(source, 63, &callback, &format, &session));
    assert(!format && !session);
    assert(videotoolbox_hevc_session_create(source, 0, NULL, &format, &session));
@@ -414,6 +419,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
       assert(rh265_video_decode(source, packet, 65541) == 0);
       assert(!rh265_video_get_params(source, 0, params));
       assert((unsigned)params->bit_depth == depth);
+      assert(params->width == 64 && params->height == (int)height);
       memset(sets, 0xaa, sizeof(sets));
       assert(rh265_video_get_parameter_sets(source, 0, sets) == -1);
       for (i = 0; i < 3; i++) assert(!sets[i].data && !sets[i].size);
@@ -434,6 +440,11 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
 
 int main(void)
 {
+   unsigned i;
+   bool parameter_session = true;
+#ifdef VT_HEVC_NATIVE
+   parameter_session = false;
+#endif
    test_codec_software();
    test_sequence_software();
    test_sequence_hardware_state();
@@ -446,10 +457,13 @@ int main(void)
    test_codec_submission();
    test_codec_batch();
 #endif
-   test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0);
-   test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0);
-   test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1);
-   test(hevc_main10_full, sizeof(hevc_main10_full), 10, 1);
+   test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0, 48, parameter_session);
+   test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0, 48, parameter_session);
+   test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1, 48, parameter_session);
+   test(hevc_main10_full, sizeof(hevc_main10_full), 10, 1, 48, parameter_session);
+   for (i = 0; i < sizeof(codec_cases) / sizeof(codec_cases[0]); i++)
+      test(codec_cases[i].hvcc, codec_cases[i].hvcc_size, codec_cases[i].depth,
+            (int)codec_cases[i].full, 64, true);
 #ifndef VT_HEVC_NATIVE
    test_codec_submission();
    test_codec_batch();
