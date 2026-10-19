@@ -3362,6 +3362,10 @@ MSG_HASH(
    "OpenSL driver."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AAUDIO,
+   "AAudio driver, Android 8.0 and later. Lower latency than OpenSL; surround layouts go to an output that takes only stereo PCM as AC-3 where it decodes it (Android 14 and later)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
    "DirectSound driver. DirectSound is used mainly from Windows 95 to Windows XP."
    )

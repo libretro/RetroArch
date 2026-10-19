@@ -122,6 +122,8 @@ DEVICE_CALLBACK_ENTRIES = (
     "coreaudio_mic_default_listener",
     "coreaudio_mic_default_listener_old",
     "opensl_callback",
+    "aaudio_data_cb",
+    "aaudio_error_cb",
     "ctr_dsp_audio_frame_cb",
     "gx_audio_dma_callback",
     "wiiu_ax_callback",

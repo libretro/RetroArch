@@ -286,6 +286,9 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_SL
    &audio_opensl,
 #endif
+#ifdef HAVE_AAUDIO
+   &audio_aaudio,
+#endif
 #ifdef HAVE_ROAR
    &audio_roar,
 #endif
@@ -366,6 +369,15 @@ audio_driver_t *audio_drivers[] = {
    &audio_null,
    NULL,
 };
+
+void audio_driver_list_remove(const audio_driver_t *drv)
+{
+   size_t i, j;
+   for (i = j = 0; audio_drivers[i]; i++)
+      if (audio_drivers[i] != drv)
+         audio_drivers[j++] = audio_drivers[i];
+   audio_drivers[j] = NULL;
+}
 
 #ifdef HAVE_MICROPHONE
 static microphone_driver_state_t mic_driver_st;

@@ -216,7 +216,9 @@ endif
 
 DEFINES += -DHAVE_7ZIP \
 	   \
-	   -DHAVE_SL
+	   -DHAVE_SL \
+	   -DHAVE_AAUDIO \
+	   -DHAVE_RAC3
 
 ifeq ($(HAVE_CHEEVOS),1)
 DEFINES += -DHAVE_CHEEVOS \

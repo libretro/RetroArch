@@ -1194,6 +1194,10 @@ AUDIO
 #include "../audio/drivers/opensl.c"
 #endif
 
+#ifdef HAVE_AAUDIO
+#include "../audio/drivers/aaudio.c"
+#endif
+
 #ifdef HAVE_PIPEWIRE
 #include "../audio/drivers/pipewire.c"
 #include "../audio/common/pipewire.c"

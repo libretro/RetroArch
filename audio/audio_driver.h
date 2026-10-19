@@ -1483,6 +1483,7 @@ extern audio_driver_t audio_tinyalsa;
 extern audio_driver_t audio_roar;
 extern audio_driver_t audio_openal;
 extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_aaudio;
 extern audio_driver_t audio_jack;
 extern audio_driver_t audio_sdl1;
 extern audio_driver_t audio_sdl2;
@@ -1595,6 +1596,10 @@ double audio_driver_get_sink_alt_ppm(void);
 bool audio_driver_get_device_clock_ppm(double *ppm);
 
 extern audio_driver_t *audio_drivers[];
+
+/* Takes a driver the platform turns out not to have out of
+ * audio_drivers[], before the configuration or the menu reads it. */
+void audio_driver_list_remove(const audio_driver_t *drv);
 
 RETRO_END_DECLS
 
