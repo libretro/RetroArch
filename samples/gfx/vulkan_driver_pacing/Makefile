@@ -24,7 +24,6 @@ SOURCES := vulkan_driver_pacing_test.c \
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_VULKAN -DHAVE_THREADS -DHAVE_DYLIB \
-           -DHAVE_XLIB \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/gfx/include \
            -I$(LIBRETRO_COMM_DIR)/include
