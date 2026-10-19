@@ -210,6 +210,12 @@ static void test_capability(void)
    present_frame(1, 0);
    vulkan_low_latency_mark_main(&vk, 1, VK_LATENCY_MARKER_INPUT_SAMPLE_NV);
    check(num_events == 0, "no extension: nothing called");
+   /* A core that made the device itself, without RetroArch's list */
+   reset(false, 0x100);
+   vk.low_latency.core_device = true;
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_CORE,
+         "a core's device without the extension: the core reason");
 
    reset(true, 0);
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
@@ -221,7 +227,7 @@ static void test_capability(void)
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_SWAPCHAIN,
          "external swapchain (a headset's): the swapchain reason");
-   printf("   capability: device, swapchain and external gates\n");
+   printf("   capability: device, core device, swapchain and external gates\n");
 }
 
 static void test_mode(void)

@@ -6174,7 +6174,8 @@ size_t runloop_driver_pacing_string(char *s, size_t len)
       "no native swapchain",
       "Scanline Sync",
       "driver error",
-      "menu, pause, fast-forward or unfocused"
+      "menu, pause, fast-forward or unfocused",
+      "the core made the device without it"
    };
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned want   = config_get_ptr()->uints.video_driver_pacing;

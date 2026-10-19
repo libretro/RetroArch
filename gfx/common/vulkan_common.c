@@ -1459,6 +1459,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
     * everything the GPU reports (notably robustBufferAccess) changes
     * shader UBO read semantics on some drivers. */
 
+   vk->low_latency.core_device = false;
+   vk->low_latency.noted       = false;
    if (!cached_device_vk && iface && iface->create_device)
    {
       struct retro_vulkan_context context = { 0 };
@@ -1524,6 +1526,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             RARCH_ERR("[Vulkan] Got unexpected VkPhysicalDevice, despite RetroArch using explicit physical device.\n");
 
          vk->context.destroy_device       = iface->destroy_device;
+         /* Made through create_device2's wrapper, the device has
+          * RetroArch's extensions where the GPU offers them */
+         vk->low_latency.core_device      = !vk->low_latency.noted;
 
          vk->context.device               = context.device;
          vk->context.queue                = context.queue;
@@ -4848,6 +4853,7 @@ static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
    bool present_id  = false;
    vk->low_latency.supported    = false;
    vk->low_latency.anti_lag_ext = false;
+   vk->low_latency.noted        = true;
    for (i = 0; i < count; i++)
    {
       if (!strcmp(exts[i], VK_NV_LOW_LATENCY_2_EXTENSION_NAME))
@@ -5211,7 +5217,8 @@ static unsigned vulkan_low_latency_apply_want(gfx_ctx_vulkan_data_t *vk,
    if (!ll->supported && ll->anti_lag)
       return vulkan_anti_lag_apply_want(vk, mode);
    if (!ll->supported)
-      return VIDEO_DRIVER_PACING_REASON_DEVICE;
+      return ll->core_device ? VIDEO_DRIVER_PACING_REASON_CORE
+                             : VIDEO_DRIVER_PACING_REASON_DEVICE;
    /* A replaced swapchain took the mode with it; what is set is
     * what is set on this one. */
    if (ll->swapchain != vk->swapchain)

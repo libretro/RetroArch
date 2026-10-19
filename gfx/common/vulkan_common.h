@@ -492,6 +492,10 @@ typedef struct vulkan_low_latency
    bool publish_pending;
    bool anti_lag;        /* VK_AMD_anti_lag and its feature are on */
    bool anti_lag_ext;    /* the extension is in the device's list */
+   /* The device is a core's, made without RetroArch's list (an older
+    * negotiation interface, or the core's own) */
+   bool core_device;
+   bool noted;           /* this device's extensions were seen */
 } vulkan_low_latency_t;
 
 typedef struct gfx_ctx_vulkan_data

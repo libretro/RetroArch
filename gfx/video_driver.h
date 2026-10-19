@@ -215,6 +215,8 @@ enum video_driver_pacing_reason
    VIDEO_DRIVER_PACING_REASON_FAILED,     /* the backend errored; fell back */
    VIDEO_DRIVER_PACING_REASON_SUSPENDED,  /* menu, pause, fast-forward,
                                              unfocused, no content frame */
+   VIDEO_DRIVER_PACING_REASON_CORE,       /* the core made the device
+                                             without what it needs */
    VIDEO_DRIVER_PACING_REASON_LAST
 };
 
