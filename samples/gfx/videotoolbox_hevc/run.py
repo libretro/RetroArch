@@ -12,12 +12,28 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 
 
+def metal_test_source():
+    source = (ROOT / 'gfx/drivers/metal.m').read_text(encoding='utf8')
+    header = (ROOT / 'gfx/video_driver.h').read_text(encoding='utf8')
+    text = '#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n'
+    text += '#include <defines/cocoa_defines.h>\n'
+    text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
+    text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
+    for section in ('LEASE', 'CV'):
+        text += source.split('/* METAL_FRAME_' + section + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + section + '_END */', 1)[0]
+    text = text.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / 'gfx/common/metal_frame.h').as_posix() + '"')
+    return (HERE / 'metal_test.m').read_text(encoding='utf8').replace('/* SHIPPING_METAL */', text)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--native', action='store_true')
     parser.add_argument('--threadless', action='store_true')
     parser.add_argument('--apple-limits', action='store_true')
+    parser.add_argument('--metal', action='store_true')
     args = parser.parse_args()
+    if args.metal and (not args.native or args.threadless):
+        parser.error('--metal requires --native and threaded slots')
     with tempfile.TemporaryDirectory(prefix='videotoolbox-hevc-') as name:
         tmp = Path(name)
         flags = ['-O2', '-std=c89', '-pedantic', '-Wall', '-Wextra', '-Werror',
@@ -74,6 +90,18 @@ def main():
                 print('+', shlex.join(cmd), flush=True)
                 subprocess.run(cmd, check=True)
         objects = [str(obj)]
+        if args.metal:
+            unit = tmp / 'metal.m'
+            unit.write_text(metal_test_source(), encoding='utf8')
+            metal_obj = tmp / 'metal.o'
+            cmd = compiler + ['-fobjc-arc', '-fblocks', '-Wall', '-Wextra', '-Werror',
+                '-Wno-unused-function', '-Wframe-larger-than=4096', '-mmacosx-version-min=10.14',
+                '-I' + str(ROOT / 'libretro-common/include'), '-c', str(unit), '-o', str(metal_obj)]
+            print('+', shlex.join(cmd), flush=True)
+            subprocess.run(cmd, check=True)
+            objects.append(str(metal_obj))
+            unit_flags += ['-DVT_HEVC_METAL']
+            libs += ['-framework', 'Foundation', '-framework', 'Metal']
         if not args.threadless:
             for source in ('rthreads/rthreads.c', 'rthreads/retro_eventcount.c'):
                 thread_obj = tmp / (Path(source).stem + '.o')

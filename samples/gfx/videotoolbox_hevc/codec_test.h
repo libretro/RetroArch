@@ -67,6 +67,10 @@ static void test_codec_software(void)
 }
 
 #if defined(VT_HEVC_NATIVE) && defined(VIDEOTOOLBOX_HEVC_SLOTS)
+#ifdef VT_HEVC_METAL
+void videotoolbox_hevc_metal_test(CVPixelBufferRef image, unsigned depth,
+      unsigned full, const uint32_t expected[3]);
+#endif
 static void codec_native_pixels(const codec_case_t *fixture, CVPixelBufferRef image)
 {
    unsigned plane;
@@ -199,7 +203,11 @@ static void test_codec_submission(void)
       codec_native_pixels(fixture, result.image);
       printf("VideoToolbox native codec: %s decoded pixels and released-source ownership passed\n", fixture->name);
 #endif
+#ifdef VT_HEVC_METAL
+      videotoolbox_hevc_metal_test(result.image, fixture->depth, fixture->full, fixture->crc);
+#else
       CVPixelBufferRelease(result.image);
+#endif
    }
 #ifndef VT_HEVC_NATIVE
    puts("VideoToolbox codec mock: four real access units preserve owned submission bytes");
