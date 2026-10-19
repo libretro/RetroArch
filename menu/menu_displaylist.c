@@ -8825,6 +8825,33 @@ static unsigned menu_displaylist_parse_settings_rows(
    return count;
 }
 
+/* Monitor Index offers Auto and the monitors the display server
+ * lists, plus the index chosen now whatever it is; a server without
+ * a list keeps the setting's full range. The output table lives in
+ * a frame of its own. */
+static VIDEO_NOINLINE void menu_displaylist_monitor_index_range(void)
+{
+   static float range_max   = -1.0f;
+   video_output_info_t outputs[16];
+   int n, cap;
+   unsigned cur;
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX);
+   if (!setting)
+      return;
+   if (range_max < 0.0f)
+      range_max             = setting->max;
+   cap                      = (int)range_max;
+   if (cap > (int)ARRAY_SIZE(outputs))
+      cap                   = (int)ARRAY_SIZE(outputs);
+   n                        = video_display_server_list_outputs(outputs, cap);
+   cur                      = setting_uint_get(setting);
+   if (n <= 0)
+      setting->max          = range_max;
+   else
+      setting->max          = (float)(cur > (unsigned)n ? cur : (unsigned)n);
+}
+
 unsigned menu_displaylist_build_list(
       file_list_t *list,
       settings_t *settings,
@@ -12039,6 +12066,7 @@ unsigned menu_displaylist_build_list(
                   if (gpu_setting && gpu_devices && gpu_devices->size > 0)
                      gpu_setting->max = (float)(gpu_devices->size - 1);
                }
+               menu_displaylist_monitor_index_range();
             }
 #if defined(WIIU)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
