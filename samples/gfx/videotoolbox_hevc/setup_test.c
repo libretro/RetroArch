@@ -6,8 +6,20 @@
 #include "parameters.h"
 
 #ifndef VT_HEVC_NATIVE
-struct object { int kind, value, invalidated; };
+struct object
+{
+   struct object *block, *format;
+   uint8_t *bytes;
+   size_t size;
+   VTDecompressionOutputCallback callback;
+   void *callback_ref;
+   int kind, value, invalidated, refs;
+};
 static int objects, fail_step, step, wanted_pixel;
+static int sample_fail_step, sample_step, decode_mode, callbacks;
+static CMSampleBufferRef pending_sample;
+static void *pending_frame;
+static VTDecompressionSessionRef pending_session;
 static rh265_nal_t wanted_sets[3];
 
 static struct object *create(int kind, int value)
@@ -16,14 +28,19 @@ static struct object *create(int kind, int value)
    if (++step == fail_step) return NULL;
    p = (struct object*)calloc(1, sizeof(*p));
    assert(p);
-   p->kind = kind; p->value = value; objects++;
+   p->kind = kind; p->value = value; p->refs = 1; objects++;
    return p;
 }
 void CFRelease(void *ref)
 {
    struct object *p = (struct object*)ref;
    assert(p && objects > 0);
+   assert(p->refs > 0);
+   if (--p->refs) return;
    assert(p->kind != 4 || p->invalidated);
+   if (p->block) CFRelease(p->block);
+   if (p->format) CFRelease(p->format);
+   free(p->bytes);
    objects--; free(p);
 }
 OSStatus CMVideoFormatDescriptionCreateFromHEVCParameterSets(void *allocator,
@@ -74,6 +91,11 @@ OSStatus VTDecompressionSessionCreate(void *allocator,
    assert(!allocator && format->kind == 1 && specification->value == 1);
    assert(attributes->value == 2 && callback->decompressionOutputCallback);
    *out = create(4, 0);
+   if (*out)
+   {
+      (*out)->callback = callback->decompressionOutputCallback;
+      (*out)->callback_ref = callback->decompressionOutputRefCon;
+   }
    return *out && fail_step != 6 ? 0 : -1001;
 }
 void VTDecompressionSessionInvalidate(VTDecompressionSessionRef session)
@@ -87,7 +109,187 @@ CMVideoDimensions CMVideoFormatDescriptionGetDimensions(CMVideoFormatDescription
    assert(format->kind == 1); dims.width = 64; dims.height = 48;
    return dims;
 }
+
+static int sample_failure(void) { return ++sample_step == sample_fail_step; }
+OSStatus CMBlockBufferCreateWithMemoryBlock(void *allocator, void *memory,
+      size_t size, void *block_allocator, const void *custom,
+      size_t offset, size_t length, unsigned flags, CMBlockBufferRef *out)
+{
+   assert(!allocator && !memory && !block_allocator && !custom);
+   assert(!offset && length == size && !flags && size);
+   if (sample_failure()) return -2001;
+   *out = create(5, 0); assert(*out); (*out)->size = size;
+   return 0;
+}
+OSStatus CMBlockBufferAssureBlockMemory(CMBlockBufferRef block)
+{
+   if (sample_failure()) return -2002;
+   block->bytes = (uint8_t*)malloc(block->size); assert(block->bytes);
+   return 0;
+}
+OSStatus CMBlockBufferReplaceDataBytes(const void *data, CMBlockBufferRef block,
+      size_t offset, size_t size)
+{
+   assert(offset <= block->size && size <= block->size - offset);
+   if (sample_failure()) return -2003;
+   memcpy(block->bytes + offset, data, size);
+   return 0;
+}
+OSStatus CMBlockBufferCopyDataBytes(CMBlockBufferRef block, size_t offset,
+      size_t size, void *out)
+{
+   assert(offset <= block->size && size <= block->size - offset);
+   memcpy(out, block->bytes + offset, size); return 0;
+}
+OSStatus CMSampleBufferCreateReady(void *allocator, CMBlockBufferRef block,
+      CMVideoFormatDescriptionRef format, long count, long timings,
+      const void *timing, long sizes, const size_t *size, CMSampleBufferRef *out)
+{
+   assert(!allocator && count == 1 && !timings && !timing && sizes == 1);
+   assert(*size == block->size && block->bytes);
+   if (sample_failure()) return -2004;
+   *out = create(6, 0); assert(*out);
+   (*out)->block = block; block->refs++;
+   (*out)->format = format; format->refs++;
+   (*out)->size = *size;
+   return sample_fail_step == 8 ? -2005 : 0;
+}
+CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef sample) { return sample->block; }
+size_t CMSampleBufferGetTotalSampleSize(CMSampleBufferRef sample) { return sample->size; }
+OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
+      CMSampleBufferRef sample, unsigned flags, void *frame, VTDecodeInfoFlags *info)
+{
+   assert(flags == kVTDecodeFrame_EnableAsynchronousDecompression);
+   if (decode_mode == 2) return -2006;
+   if (decode_mode == 1)
+      session->callback(session->callback_ref, frame, 0, 0, NULL, 0, 0);
+   else
+   {
+      assert(!pending_sample);
+      sample->refs++; pending_sample = sample; pending_frame = frame;
+      pending_session = session;
+      if (info) *info = kVTDecodeInfo_Asynchronous;
+   }
+   return 0;
+}
+static void sample_output(void *ref, void *frame, OSStatus status,
+      VTDecodeInfoFlags flags, CVImageBufferRef image, CMTime pts, CMTime duration)
+{
+   assert(ref == &callbacks && frame == &decode_mode && !status);
+   assert(!image); (void)flags; (void)pts; (void)duration;
+   callbacks++;
+}
 #endif
+
+static void test_samples(CMVideoFormatDescriptionRef format)
+{
+   static const uint8_t payload[15] = {38, 1, 0x80, 0, 0, 3, 1, 38, 1, 0x20, 0, 0, 3, 2, 0x80};
+   static const uint8_t expected[23] = {0, 0, 0, 7, 38, 1, 0x80, 0, 0, 3, 1,
+      0, 0, 0, 8, 38, 1, 0x20, 0, 0, 3, 2, 0x80};
+   uint8_t *input = (uint8_t*)malloc(sizeof(payload));
+   uint8_t actual[23];
+   rh265_nal_t slices[2];
+   rh265_access_unit_t au;
+   CMSampleBufferRef sample = NULL;
+   assert(input); memcpy(input, payload, sizeof(payload));
+   memset(&au, 0, sizeof(au)); au.num_slices = 2; au.coded_bytes = 15;
+   au.first.nal_type = 19;
+   slices[0].data = input; slices[0].size = 7;
+   slices[1].data = input + 7; slices[1].size = 8;
+#ifndef VT_HEVC_NATIVE
+   {
+      unsigned i;
+      int baseline = objects;
+      for (i = 1; i <= 8; i++)
+      {
+         sample_fail_step = i; sample_step = 0;
+         assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+         assert(!sample && objects == baseline);
+      }
+      sample_fail_step = sample_step = 0;
+   }
+#endif
+   assert(!videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   memset(input, 0xcc, sizeof(payload)); free(input);
+   assert(CMSampleBufferGetTotalSampleSize(sample) == sizeof(expected));
+   assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(sample),
+            0, sizeof(actual), actual));
+   assert(!memcmp(actual, expected, sizeof(actual)));
+   CFRelease(sample); sample = NULL;
+   slices[0].data = payload; slices[1].data = payload + 7;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 1, &sample));
+   au.coded_bytes++;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   au.coded_bytes--; slices[0].size = 2;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   slices[0].size = 7; slices[0].data = NULL;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   slices[0].data = payload;
+   assert(videotoolbox_hevc_sample_create(NULL, &au, slices, 2, &sample));
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, NULL));
+   assert(videotoolbox_hevc_sample_create(format, NULL, slices, 2, &sample));
+   au.num_slices = 0;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   au.num_slices = 2;
+   {
+      static const uint8_t invalid[7][2] = {{0xa6, 1}, {39, 1}, {64, 1},
+         {18, 1}, {38, 0}, {38, 9}, {38, 2}};
+      uint8_t nal[7];
+      unsigned i;
+      memcpy(nal, payload, sizeof(nal)); slices[0].data = nal;
+      for (i = 0; i < 7; i++)
+      {
+         nal[0] = invalid[i][0]; nal[1] = invalid[i][1];
+         assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+         assert(!sample);
+      }
+      slices[0].data = payload;
+   }
+#if SIZE_MAX > UINT32_MAX
+   slices[0].size = (size_t)UINT32_MAX + 1;
+   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+   slices[0].size = 7;
+#endif
+   au.num_slices = 1; au.coded_bytes = 7;
+   assert(!videotoolbox_hevc_sample_create(format, &au, slices, 1, &sample));
+   assert(CMSampleBufferGetTotalSampleSize(sample) == 11);
+   assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(sample), 0, 11, actual));
+   assert(!memcmp(actual, expected, 11)); CFRelease(sample); sample = NULL;
+   au.num_slices = 2; au.coded_bytes = 15;
+#ifndef VT_HEVC_NATIVE
+   {
+      VTDecompressionSessionRef session = create(4, 0);
+      VTDecodeInfoFlags info = 99;
+      int baseline = objects;
+      assert(session); session->callback = sample_output; session->callback_ref = &callbacks;
+      input = (uint8_t*)malloc(sizeof(payload)); assert(input);
+      memcpy(input, payload, sizeof(payload));
+      slices[0].data = input; slices[1].data = input + 7;
+      callbacks = decode_mode = 0;
+      assert(!videotoolbox_hevc_decode(session, format, &au, slices, 2, &decode_mode, &info));
+      assert(info == kVTDecodeInfo_Asynchronous && !callbacks && pending_sample);
+      memset(input, 0xdd, sizeof(payload)); free(input);
+      assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(pending_sample),
+               0, sizeof(actual), actual));
+      assert(!memcmp(actual, expected, sizeof(actual)));
+      pending_session->callback(pending_session->callback_ref, pending_frame, 0, 0, NULL, 0, 0);
+      CFRelease(pending_sample); pending_sample = NULL;
+      assert(callbacks == 1 && objects == baseline);
+      slices[0].data = payload; slices[1].data = payload + 7;
+      decode_mode = 1; info = 99;
+      assert(!videotoolbox_hevc_decode(session, format, &au, slices, 2, &decode_mode, &info));
+      assert(callbacks == 2 && !info && objects == baseline);
+      decode_mode = 2;
+      assert(videotoolbox_hevc_decode(session, format, &au, slices, 2, &decode_mode, &info));
+      assert(callbacks == 2 && !info && objects == baseline);
+      info = 99;
+      assert(videotoolbox_hevc_decode(NULL, format, &au, slices, 2, NULL, &info));
+      assert(!info);
+      VTDecompressionSessionInvalidate(session); CFRelease(session);
+   }
+#endif
+   puts("VideoToolbox HEVC: owned sample bytes and submission lifetime passed");
+}
 
 static void output(void *ref, void *frame, OSStatus status, VTDecodeInfoFlags flags,
       CVImageBufferRef image, CMTime pts, CMTime duration)
@@ -143,6 +345,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
    assert(!videotoolbox_hevc_format_create(source, 0, &format));
    dims = CMVideoFormatDescriptionGetDimensions(format);
    assert(dims.width == 64 && dims.height == 48);
+   test_samples(format);
    CFRelease(format); format = NULL;
 #ifdef VT_HEVC_NATIVE
    if (!VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC))
