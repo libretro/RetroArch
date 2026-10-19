@@ -12,13 +12,14 @@ typedef struct native_copy
    unsigned count;
 } native_copy_t;
 
-static void encode_copy(void *user, const metal_frame_view_t *view, void *commands)
+static bool encode_copy(void *user, const metal_frame_view_t *view, void *commands)
 {
    native_copy_t *copy = user;
    id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)commands;
    id<MTLBlitCommandEncoder> encoder = [buffer blitCommandEncoder];
    unsigned i;
-   assert(encoder && view->width == 7 && view->height == 5);
+   assert(view->width == 7 && view->height == 5);
+   if (!encoder) return false;
    for (i = 0; i < copy->count; i++)
    {
       id<MTLTexture> input = (__bridge id<MTLTexture>)view->planes[i];
@@ -30,6 +31,7 @@ static void encode_copy(void *user, const metal_frame_view_t *view, void *comman
          destinationOrigin:MTLOriginMake(0, 0, 0)];
    }
    [encoder endEncoding];
+   return true;
 }
 
 static void test(id<MTLDevice> device, unsigned format, bool discard)
@@ -51,7 +53,10 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
       id<MTLTexture> inputs[2], outputs[2];
       unsigned bpp[2];
       memset(&source, 0, sizeof(source)); memset(&copy, 0, sizeof(copy));
-      memset(bytes, 0x35, sizeof(bytes));
+      for (i = 0; i < sizeof(bytes); i++) bytes[i] = (unsigned char)(i * 17);
+      if (format == IMAGE_PIXFMT_FP16)
+         for (i = 0; i < sizeof(bytes); i += 2)
+         { bytes[i] = 0; bytes[i + 1] = (unsigned char)(0x3c + ((i / 8) % 8) * 2); }
       assert(producer && consumer && ready && done && listener);
       for (i = 0; i < count; i++)
       {
@@ -63,9 +68,11 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
          else
          { pixel = format == IMAGE_PIXFMT_FP16 ? MTLPixelFormatRGBA16Float : MTLPixelFormatBGRA8Unorm; bpp[i] = format == IMAGE_PIXFMT_FP16 ? 8 : 4; }
          MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pixel
-            width:i ? 4 : 7 height:i ? 3 : 5 mipmapped:NO];
+            width:i ? 4 : 9 height:i ? 3 : 7 mipmapped:NO];
+         if (count == 2) { desc.width = i ? 4 : 7; desc.height = i ? 3 : 5; }
          desc.storageMode = MTLStorageModeShared;
          inputs[i] = [device newTextureWithDescriptor:desc];
+         if (count == 1) { desc.width = 7; desc.height = 5; }
          outputs[i] = [device newTextureWithDescriptor:desc];
          assert(inputs[i] && outputs[i]);
          [inputs[i] replaceRegion:MTLRegionMake2D(0, 0, inputs[i].width, inputs[i].height)
@@ -75,6 +82,7 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
       }
       source.device = (__bridge void *)device; source.ready = (__bridge void *)ready;
       source.done = (__bridge void *)done; source.listener = (__bridge void *)listener;
+      if (count == 1) { source.crop_x = 2; source.crop_y = 2; }
       source.ready_value = 3; source.done_value = 7; source.width = 7; source.height = 5; source.pixfmt = format;
       CFMutableDataRef backing = CFDataCreateMutable(NULL, 0);
       source.backing[0] = backing;
@@ -85,6 +93,8 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
       imported.image = frame.image; imported.wait = frame.wait; imported.done = frame.done;
       imported.wait_value = frame.wait_value; imported.done_value = frame.done_value;
       imported.owner = frame.owner; imported.abandon = frame.abandon;
+      imported.crop_x = frame.crop_x; imported.crop_y = frame.crop_y;
+      imported.output_pixfmt = format;
       imported.pixfmt = frame.pixfmt; imported.dims = VIDEO_SCALE_PACK(7, 5);
       id<MTLCommandBuffer> buffer = [consumer commandBuffer];
       dispatch_semaphore_t finished = dispatch_semaphore_create(0);
@@ -95,8 +105,12 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
          video_hw_frame_abandon(&frame);
       else
       {
-         assert(metal_frame_encode(&imported, (__bridge void *)device,
-            (__bridge void *)buffer, encode_copy, &copy));
+         if (count == 1)
+            assert(metal_frame_copy(&imported, (__bridge void *)device,
+               (__bridge void *)buffer, copy.textures[0]));
+         else
+            assert(metal_frame_encode(&imported, (__bridge void *)device,
+               (__bridge void *)buffer, encode_copy, &copy));
          [buffer commit];
       }
       /* Test-only waits and readback: production code has neither. */
@@ -113,7 +127,12 @@ static void test(id<MTLDevice> device, unsigned format, bool discard)
             memset(actual, 0, sizeof(actual));
             [outputs[i] getBytes:actual bytesPerRow:outputs[i].width * bpp[i]
                fromRegion:MTLRegionMake2D(0, 0, outputs[i].width, outputs[i].height) mipmapLevel:0];
-            assert(!memcmp(bytes, actual, outputs[i].width * outputs[i].height * bpp[i]));
+            for (NSUInteger row = 0; row < outputs[i].height; row++)
+            {
+               NSUInteger x = count == 1 ? 2 : 0, y = count == 1 ? 2 : 0;
+               assert(!memcmp(bytes + ((row + y) * inputs[i].width + x) * bpp[i],
+                  actual + row * outputs[i].width * bpp[i], outputs[i].width * bpp[i]));
+            }
          }
       }
    }

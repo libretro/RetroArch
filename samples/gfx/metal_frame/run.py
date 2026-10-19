@@ -32,11 +32,15 @@ def main():
         source = (ROOT / "gfx/drivers/metal.m").read_text(encoding="utf-8")
         section = source.split("/* METAL_FRAME_LEASE_BEGIN */", 1)[1].split("/* METAL_FRAME_LEASE_END */", 1)[0]
         section = section.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / "gfx/common/metal_frame.h").as_posix() + '"')
-        carrier = (ROOT / "gfx/video_driver.h").read_text(encoding="utf-8").split("typedef struct video_frame_import\n", 1)[1].split("} video_frame_import_t;", 1)[0]
+        driver_header = (ROOT / "gfx/video_driver.h").read_text(encoding="utf-8")
+        carrier = driver_header.split("typedef struct video_frame_import\n", 1)[1].split("} video_frame_import_t;", 1)[0]
         preamble = '#include <formats/video_hw_frame.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
+        preamble += 'enum video_texture_update' + driver_header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
         preamble += 'typedef struct video_frame_import\n' + carrier + '} video_frame_import_t;\n'
         fixture = HERE / ("mock.m" if args.mock else "native.m")
         text = fixture.read_text(encoding="utf-8").replace("/* SHIPPING_LEASE */", preamble + section)
+        importer = source.split("/* METAL_FRAME_IMPORT_BEGIN */", 1)[1].split("/* METAL_FRAME_IMPORT_END */", 1)[0]
+        text = text.replace("/* SHIPPING_IMPORT */", importer)
         unit = tmp / "lease.m"
         unit.write_text(text, encoding="utf-8")
         flags = shlex.split(os.environ.get("OBJCFLAGS", "")) + ["-fblocks", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-I" + str(ROOT / "libretro-common/include")]

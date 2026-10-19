@@ -229,6 +229,7 @@ typedef NS_ENUM(NSUInteger, MTLCommandBufferStatus) {
 @protocol MTLCommandBuffer <NSObject>
 @property (readonly) id<MTLDevice> device;
 @property (readonly) MTLCommandBufferStatus status;
+@property (readonly) BOOL retainedReferences;
 - (id<MTLRenderCommandEncoder>)renderCommandEncoderWithDescriptor:(id)d;
 - (id<MTLBlitCommandEncoder>)blitCommandEncoder;
 - (id<MTLComputeCommandEncoder>)computeCommandEncoder;

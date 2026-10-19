@@ -237,6 +237,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 /* An RGBA8 texture the planar conversion writes, at @image's size; the
  * frame is the caller's to put in (metal_planar_update). nil when the
  * conversion cannot be had. */
+- (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
+      height:(unsigned)height filter:(enum texture_filter_type)filter;
 - (Texture *)newPlanarTexture:(const struct texture_image *)image filter:(enum texture_filter_type)filter;
 /* The planar conversion, compiled the first time it is asked for; nil
  * from then on when it did not compile */
@@ -820,19 +822,16 @@ bool metal_frame_create(const metal_frame_source_t *source,
    return true;
 }
 
-bool metal_frame_encode(const struct video_frame_import *frame,
-      void *device, void *command_buffer,
-      void (*encode)(void *, const metal_frame_view_t *, void *), void *user)
+static RArchMetalFrameLease *metal_frame_validate(
+      const struct video_frame_import *frame, void *device, void *command_buffer)
 {
    RArchMetalFrameLease *lease;
    id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)command_buffer;
-   void *owner;
    if (!frame || frame->abandon != metal_frame_abandon || !frame->owner
          || frame->image != (uint64_t)(uintptr_t)frame->owner
-         || !buffer || !encode)
-      return false;
-   owner = frame->owner;
-   lease = (__bridge RArchMetalFrameLease *)owner;
+         || !buffer)
+      return nil;
+   lease = (__bridge RArchMetalFrameLease *)frame->owner;
    if ((__bridge void *)lease->device != device || buffer.device != lease->device
          || buffer.status > MTLCommandBufferStatusEnqueued
          || ![buffer respondsToSelector:@selector(encodeWaitForEvent:value:)]
@@ -845,7 +844,23 @@ bool metal_frame_encode(const struct video_frame_import *frame,
          || frame->dims != VIDEO_SCALE_PACK(lease->view.width, lease->view.height)
          || frame->crop_x != lease->view.crop_x || frame->crop_y != lease->view.crop_y
          || frame->layout || frame->array_slice || frame->plane_views[0] || frame->plane_views[1])
+      return nil;
+   return lease;
+}
+
+bool metal_frame_encode(const struct video_frame_import *frame,
+      void *device, void *command_buffer,
+      bool (*encode)(void *, const metal_frame_view_t *, void *), void *user)
+{
+   RArchMetalFrameLease *lease;
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)command_buffer;
+   void *owner;
+   if (!encode || !(lease = metal_frame_validate(frame, device, command_buffer)))
       return false;
+   [(id<RArchMetalEventCommandBuffer>)buffer encodeWaitForEvent:(id)lease->ready value:lease->ready_value];
+   if (!encode(user, &lease->view, command_buffer))
+      return false;
+   owner = frame->owner;
    [buffer addCompletedHandler:^(id<MTLCommandBuffer> completed) {
       @autoreleasepool
       {
@@ -859,10 +874,45 @@ bool metal_frame_encode(const struct video_frame_import *frame,
             metal_frame_abandon(owner, 0, 0);
       }
    }];
-   [(id<RArchMetalEventCommandBuffer>)buffer encodeWaitForEvent:(id)lease->ready value:lease->ready_value];
-   encode(user, &lease->view, command_buffer);
    [(id<RArchMetalEventCommandBuffer>)buffer encodeSignalEvent:(id)lease->done value:lease->done_value];
    return true;
+}
+
+static bool metal_frame_copy_encode(void *user, const metal_frame_view_t *view,
+      void *commands)
+{
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)commands;
+   id<MTLBlitCommandEncoder> encoder = [buffer blitCommandEncoder];
+   if (!encoder)
+      return false;
+   [encoder copyFromTexture:(__bridge id<MTLTexture>)view->planes[0]
+      sourceSlice:0 sourceLevel:0
+      sourceOrigin:MTLOriginMake(view->crop_x, view->crop_y, 0)
+      sourceSize:MTLSizeMake(view->width, view->height, 1)
+      toTexture:(__bridge id<MTLTexture>)user destinationSlice:0
+      destinationLevel:0 destinationOrigin:MTLOriginMake(0, 0, 0)];
+   [encoder endEncoding];
+   return true;
+}
+
+bool metal_frame_copy(const struct video_frame_import *frame,
+      void *device, void *command_buffer, void *destination)
+{
+   RArchMetalFrameLease *lease = metal_frame_validate(frame, device, command_buffer);
+   id<MTLTexture> texture = (__bridge id<MTLTexture>)destination;
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)command_buffer;
+   unsigned output;
+   if (!lease || !texture || !buffer.retainedReferences)
+      return false;
+   output = frame->output_pixfmt ? frame->output_pixfmt : IMAGE_PIXFMT_8888;
+   if ((lease->view.pixfmt != IMAGE_PIXFMT_8888 && lease->view.pixfmt != IMAGE_PIXFMT_FP16)
+         || output != lease->view.pixfmt || texture == lease->planes[0]
+         || !metal_frame_texture_valid(texture, lease->device, lease->planes[0].pixelFormat)
+         || texture.width != lease->view.width || texture.height != lease->view.height
+         || texture.mipmapLevelCount != 1)
+      return false;
+   return metal_frame_encode(frame, device, command_buffer,
+         metal_frame_copy_encode, destination);
 }
 /* METAL_FRAME_LEASE_END */
 
@@ -2604,6 +2654,22 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       ? TEXTURE_FILTER_NEAREST : TEXTURE_FILTER_LINEAR];
    tex->_planar = true;
    return tex;
+}
+
+- (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
+      height:(unsigned)height filter:(enum texture_filter_type)filter
+{
+   MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
+      width:width height:height mipmapped:NO];
+   desc.storageMode = MTLStorageModePrivate;
+   desc.usage = MTLTextureUsageShaderRead;
+   id<MTLTexture> image = RARCH_AUTORELEASE_R([_device newTextureWithDescriptor:desc]);
+   if (!image)
+      return nil;
+   Texture *texture = [Texture new];
+   texture.texture = image;
+   texture.sampler = _samplers[filter];
+   return texture;
 }
 
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped
@@ -9765,6 +9831,44 @@ static bool metal_set_frame_format(void *data, bool rgb32,
    }
 }
 
+/* METAL_FRAME_IMPORT_BEGIN */
+static enum video_texture_update metal_import_texture(void *data, uintptr_t *handle,
+      const video_frame_import_t *frame, enum texture_filter_type filter)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md || !handle || !frame || (filter != TEXTURE_FILTER_LINEAR
+            && filter != TEXTURE_FILTER_NEAREST))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   @autoreleasepool
+   {
+      id<MTLDevice> device = md.context.device;
+      id<MTLCommandBuffer> buffer = md.context.blitCommandBuffer;
+      RArchMetalFrameLease *lease = metal_frame_validate(frame,
+            (__bridge void *)device, (__bridge void *)buffer);
+      Texture *texture = (__bridge Texture *)(void *)*handle;
+      if (!lease || (lease->view.pixfmt != IMAGE_PIXFMT_8888
+               && lease->view.pixfmt != IMAGE_PIXFMT_FP16)
+            || (frame->output_pixfmt ? frame->output_pixfmt : IMAGE_PIXFMT_8888) != lease->view.pixfmt
+            || lease->view.color.primaries != 1
+            || lease->view.color.transfer != (lease->view.pixfmt == IMAGE_PIXFMT_FP16 ? 8u : 13u)
+            || lease->view.color.matrix || lease->view.color.range != 2
+            || (lease->view.pixfmt == IMAGE_PIXFMT_FP16
+               && (!md.context.hdrEnabled || ![md.context linearShader]))
+            || (texture && (texture->_planar || texture->_stagingLent)))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      if (!texture)
+         texture = RARCH_AUTORELEASE_R([md.context newImportedTexture:lease->planes[0].pixelFormat
+            width:lease->view.width height:lease->view.height filter:filter]);
+      if (!texture || !metal_frame_copy(frame, (__bridge void *)device,
+               (__bridge void *)buffer, (__bridge void *)texture.texture))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      if (!*handle)
+         *handle = (uintptr_t)RARCH_BRIDGE_RETAINED(texture);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+}
+/* METAL_FRAME_IMPORT_END */
+
 static bool metal_get_device(void *data, video_device_info_t *info)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
@@ -9835,7 +9939,8 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_frame_mem_alloc,
    metal_frame_mem_ready,
    metal_frame_mem_free,
-   metal_get_device
+   metal_get_device,
+   metal_import_texture
 };
 
 static void metal_get_poke_interface(void *data,

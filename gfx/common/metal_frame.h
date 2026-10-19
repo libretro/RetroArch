@@ -41,12 +41,19 @@ bool metal_frame_create(const metal_frame_source_t *source,
       video_hw_frame_t *output);
 
 /* Success transfers the lease to command-buffer completion. The callback
- * ends its encoders before returning; the caller commits the buffer.
+ * starts with no active encoder and ends its encoders before returning; the caller commits the buffer.
+ * False from the callback must leave no commands using the source planes.
+ * Refusal may leave a harmless readiness wait on the command buffer.
  * Prepare fallible resources first. Views are borrowed for this call only.
  * Failure leaves the lease with the caller. No CPU or GPU round trip. */
 bool metal_frame_encode(const struct video_frame_import *frame,
       void *device, void *command_buffer,
-      void (*encode)(void *, const metal_frame_view_t *, void *), void *user);
+      bool (*encode)(void *, const metal_frame_view_t *, void *), void *user);
+
+/* Same-format packed copy into independent, single-level storage. The
+ * command buffer must retain references. No transfer/color conversion. */
+bool metal_frame_copy(const struct video_frame_import *frame,
+      void *device, void *command_buffer, void *destination);
 
 static INLINE bool metal_frame_geometry_valid(unsigned pixfmt,
       unsigned width, unsigned height, unsigned x, unsigned y,
