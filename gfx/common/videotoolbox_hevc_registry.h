@@ -35,7 +35,7 @@ static bool videotoolbox_hevc_registry_enabled(void *opaque)
 
 /* Single initialization. Storage/lock/callbacks outlive all opened decoders;
  * withdraw and stop setup callers before freeing any of them. */
-static INLINE bool videotoolbox_hevc_registry_init(videotoolbox_hevc_registry_t *registry,
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_registry_init(videotoolbox_hevc_registry_t *registry,
       slock_t *lock, void *(*retain)(void*), void (*release)(void*),
       bool (*enabled)(void*), void *user, videotoolbox_hevc_enqueue_t enqueue,
       void *enqueue_user, bool sdr_only)

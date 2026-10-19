@@ -1644,6 +1644,9 @@ endif
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
    LIBS += -framework Metal -framework MetalKit -framework QuartzCore -framework CoreVideo
+   ifeq ($(HAVE_RMP4), 1)
+      LIBS += -framework CoreMedia -framework VideoToolbox
+   endif
    # metal.m builds under both ARC and MRC (see the M_OBJC_* ownership
    # macros at the top of the file). The top-level Makefile still builds
    # it with a per-file -fobjc-arc override â€” ARC is the preferred mode

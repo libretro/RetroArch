@@ -2,9 +2,9 @@
 #ifndef STUB_COREVIDEO_H
 #define STUB_COREVIDEO_H
 #include <Metal/Metal.h>
-typedef const void *CVPixelBufferRef;
-typedef const void *CVMetalTextureCacheRef;
-typedef const void *CVMetalTextureRef;
+typedef struct __CVBuffer *CVPixelBufferRef;
+typedef struct __CVMetalTextureCache *CVMetalTextureCacheRef;
+typedef struct __CVMetalTexture *CVMetalTextureRef;
 enum { kCVReturnSuccess = 0,
    kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange = 1,
    kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
