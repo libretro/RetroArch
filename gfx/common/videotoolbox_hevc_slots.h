@@ -23,7 +23,7 @@ struct videotoolbox_hevc_slots
 {
    videotoolbox_hevc_slot_t slot[32];
    retro_atomic_int_t refs;
-   unsigned count;
+   unsigned count, closed;
 };
 
 typedef struct videotoolbox_hevc_result
@@ -60,12 +60,18 @@ static INLINE void videotoolbox_hevc_slots_release(videotoolbox_hevc_slots_t *co
    free(context);
 }
 
+/* Owner thread only. Existing tickets and completed results remain valid. */
+static INLINE void videotoolbox_hevc_slots_close(videotoolbox_hevc_slots_t *context)
+{
+   if (context) context->closed = 1;
+}
+
 /* Owner thread only. Reserve before invoking a possibly synchronous callback. */
 static INLINE videotoolbox_hevc_slot_t *videotoolbox_hevc_slots_begin(
       videotoolbox_hevc_slots_t *context, unsigned index)
 {
    videotoolbox_hevc_slot_t *slot;
-   if (!context || index >= 32 || index >= context->count) return NULL;
+   if (!context || context->closed || index >= 32 || index >= context->count) return NULL;
    slot = &context->slot[index];
    if (retro_atomic_load_acquire_int(&slot->state)) return NULL;
    slot->image = NULL; slot->status = 0; slot->flags = 0;
@@ -139,7 +145,7 @@ static INLINE OSStatus videotoolbox_hevc_slots_submit(
    videotoolbox_hevc_slot_t *slot;
    OSStatus status;
    if (info) *info = 0;
-   if (!context || index >= 32 || index >= context->count)
+   if (!context || context->closed || index >= 32 || index >= context->count)
       return kCMFormatDescriptionError_InvalidParameter;
    slot = videotoolbox_hevc_slots_begin(context, index);
    if (!slot) return 1;
