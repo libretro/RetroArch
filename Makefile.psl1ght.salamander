@@ -57,6 +57,8 @@ endif
 OBJ		= frontend/frontend_salamander.o \
 				  frontend/frontend_driver.o \
 				  frontend/drivers/platform_ps3.o \
+				  frontend/drivers/platform_ps3_paths.o \
+				  frontend/drivers/platform_ps3_userinfo.o \
 				  libretro-common/file/file_path.o \
 				  libretro-common/file/file_path_io.o \
 				  libretro-common/lists/dir_list.o \

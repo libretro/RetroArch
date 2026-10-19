@@ -59,6 +59,10 @@
 
 #include "tasks/task_content.h"
 
+#ifdef __PS3__
+#include "frontend/drivers/platform_ps3_paths.h"
+#endif
+
 /* The keychain seals values with libretro-common/crypto, which the
  * small consoles leave out; without it the file stays in the clear. */
 #if defined(HAVE_KEYCHAIN) && !defined(HAVE_CRYPTO)
@@ -1111,7 +1115,12 @@ static bool config_keychain_init(void)
       return false;
 
    fill_pathname_basedir(config_directory,
-         path_get(RARCH_PATH_CONFIG), sizeof(config_directory));
+#ifdef __PS3__
+         g_defaults.path_config,
+#else
+         path_get(RARCH_PATH_CONFIG),
+#endif
+         sizeof(config_directory));
    fill_pathname_join_special(keyfile_path, config_directory,
          "retroarch-keychain.key", sizeof(keyfile_path));
    return keychain_init(keyfile_path);
@@ -8237,6 +8246,22 @@ success:
 static void config_parse_file(void)
 {
    const char *config_path = path_get(RARCH_PATH_CONFIG);
+#ifdef __PS3__
+   char imported_path[PATH_MAX_LENGTH];
+
+   if (   config_path && *config_path
+       && !string_is_equal(config_path, g_defaults.path_config))
+   {
+      if (!ps3_config_import(config_path, imported_path, sizeof(imported_path)))
+      {
+         RARCH_ERR("[Config] Failed to import configuration: %s\n", config_path);
+         path_set(RARCH_PATH_CONFIG, g_defaults.path_config);
+      }
+      else
+         path_set(RARCH_PATH_CONFIG, imported_path);
+      config_path = path_get(RARCH_PATH_CONFIG);
+   }
+#endif
 
    if (!config_load_file(config_path, config_st))
    {
@@ -8866,16 +8891,22 @@ static void config_path_strip_trailing_slash(char *s)
 static size_t config_get_credentials_path(char *s, size_t len)
 {
    char config_directory[DIR_MAX_LENGTH];
+   const char *config_path =
+#ifdef __PS3__
+      g_defaults.path_config;
+#else
+      path_get(RARCH_PATH_CONFIG);
+#endif
    config_directory[0] = '\0';
 
-   if (path_is_empty(RARCH_PATH_CONFIG))
+   if (!config_path || !*config_path)
    {
       s[0] = '\0';
       return 0;
    }
 
    fill_pathname_basedir(config_directory,
-         path_get(RARCH_PATH_CONFIG),
+         config_path,
          sizeof(config_directory));
 
    return fill_pathname_join_special(s, config_directory,
@@ -10272,6 +10303,16 @@ bool config_replace(bool config_replace_save_on_exit, char *path)
 {
    content_ctx_info_t content_info = {0};
    const char *rarch_path_config   = path_get(RARCH_PATH_CONFIG);
+#ifdef __PS3__
+   char imported_path[PATH_MAX_LENGTH];
+
+   if (!ps3_config_import(path, imported_path, sizeof(imported_path)))
+   {
+      RARCH_ERR("[Config] Failed to import configuration: %s\n", path);
+      return false;
+   }
+   path = imported_path;
+#endif
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */

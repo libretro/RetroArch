@@ -1467,6 +1467,7 @@ FRONTEND
 #elif defined(PS2)
 #include "../frontend/drivers/platform_ps2.c"
 #elif defined(__PS3__)
+#include "../frontend/drivers/platform_ps3_paths.c"
 #include "../frontend/drivers/platform_ps3.c"
 #elif defined(ORBIS)
 #include "../frontend/drivers/platform_orbis.c"
