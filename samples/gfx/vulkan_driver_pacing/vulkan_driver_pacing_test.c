@@ -110,9 +110,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_set_sleep_mode(VkDevice device,
       VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV *info)
 {
    (void)device;
+   /* Not optional: NVIDIA's driver reads it whatever the mode, and a
+    * NULL here is a crash on taking the mode off */
+   if (!info)
+   {
+      fprintf(stderr, "FAIL: vkSetLatencySleepModeNV given no pSleepModeInfo\n");
+      abort();
+   }
    ev(EV_MODE, (uint64_t)(uintptr_t)swapchain,
-         info ? (info->lowLatencyMode | (info->lowLatencyBoost << 1)) : 0xff,
-         info ? info->minimumIntervalUs : 0);
+         info->lowLatencyMode | (info->lowLatencyBoost << 1),
+         info->minimumIntervalUs);
    return mode_result;
 }
 
@@ -236,7 +243,8 @@ static void test_mode(void)
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
          == VIDEO_DRIVER_PACING_REASON_OFF, "off: the off reason");
    e = last(EV_MODE);
-   check(count(EV_MODE) == 3 && e && e->b == 0xff, "off: the mode taken off (NULL)");
+   check(count(EV_MODE) == 3 && e && e->b == 0 && e->c == 0,
+         "off: the mode taken off with lowLatencyMode false");
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
          == VIDEO_DRIVER_PACING_REASON_OFF && count(EV_MODE) == 3,
          "off again: nothing called");
@@ -420,7 +428,7 @@ static void test_threaded(void)
          == VIDEO_DRIVER_PACING_REASON_OFF, "threaded off: answered at once");
    num_events = 0;
    present_frame(3, 0);
-   check(count(EV_MODE) == 1 && last(EV_MODE)->b == 0xff && count(EV_SLEEP) == 0,
+   check(count(EV_MODE) == 1 && last(EV_MODE)->b == 0 && count(EV_SLEEP) == 0,
          "the presenter takes the mode off, no sleep");
    printf("   threaded: requests cross to the presenter, answers come back, "
           "a replaced swapchain outlives a marker call on it\n");
@@ -544,7 +552,7 @@ static void test_fallback(void)
          == VIDEO_DRIVER_PACING_REASON_FAILED, "the fourth: failed from then on");
    wait_result = VK_SUCCESS;
    present_frame(2, 0);
-   check(count(EV_SLEEP) == 0 && last(EV_MODE) && last(EV_MODE)->b == 0xff,
+   check(count(EV_SLEEP) == 0 && last(EV_MODE) && last(EV_MODE)->b == 0,
          "the mode comes off: no sleep on a semaphore the driver still owes a signal");
 
    reset(true, 0x100);

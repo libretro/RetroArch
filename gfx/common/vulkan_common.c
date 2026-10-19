@@ -5121,7 +5121,9 @@ void vulkan_low_latency_retire(gfx_ctx_vulkan_data_t *vk,
    vulkan_low_latency_retire_tick(vk);
 }
 
-/* Puts the mode on the current swapchain, or takes it off. */
+/* Puts the mode on the current swapchain, or takes it off: with the
+ * mode's fields cleared, as pSleepModeInfo is not optional and the
+ * driver reads it either way. */
 static bool vulkan_low_latency_apply(gfx_ctx_vulkan_data_t *vk,
       unsigned mode, unsigned min_interval_us)
 {
@@ -5130,12 +5132,11 @@ static bool vulkan_low_latency_apply(gfx_ctx_vulkan_data_t *vk,
    VkResult res;
    mode_info.sType             = VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV;
    mode_info.pNext             = NULL;
-   mode_info.lowLatencyMode    = VK_TRUE;
+   mode_info.lowLatencyMode    = mode ? VK_TRUE : VK_FALSE;
    mode_info.lowLatencyBoost   = (mode == VIDEO_DRIVER_PACING_BOOST) ? VK_TRUE : VK_FALSE;
-   mode_info.minimumIntervalUs = min_interval_us;
+   mode_info.minimumIntervalUs = mode ? min_interval_us : 0;
    res = ((PFN_vkSetLatencySleepModeNV)ll->set_sleep_mode)(
-         vk->context.device, vk->swapchain,
-         mode ? &mode_info : NULL);
+         vk->context.device, vk->swapchain, &mode_info);
    if (res != VK_SUCCESS)
    {
       ll->failed    = true;
