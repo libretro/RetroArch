@@ -146,6 +146,7 @@ static void test_cv_color_mock(void)
 static void test_cv_mock(void)
 {
    unsigned format, action;
+   test_cv_pool_setup();
    for (format = 1; format <= 4; format++) for (action = 0; action < 8; action++)
    {
       @autoreleasepool

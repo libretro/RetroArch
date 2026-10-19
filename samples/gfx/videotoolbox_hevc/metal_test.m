@@ -46,29 +46,10 @@ static uint32_t hevc_metal_crc(uint32_t crc, unsigned value, unsigned depth)
 
 metal_frame_cv_pool_t *videotoolbox_hevc_test_pool(unsigned count)
 {
-   @autoreleasepool
-   {
-      id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-      id<MTLSharedEvent> ready = [device newSharedEvent];
-      id<MTLSharedEvent> events[32] = { nil };
-      void *done[32];
-      CVMetalTextureCacheRef cache = NULL;
-      MTLSharedEventListener *listener = [[MTLSharedEventListener alloc]
-         initWithDispatchQueue:dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)];
-      assert(device && ready && listener && count && count <= 32);
-      assert(!CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache));
-      ready.signaledValue = 1;
-      for (unsigned i = 0; i < count; i++)
-      {
-         events[i] = [device newSharedEvent]; assert(events[i]);
-         done[i] = (__bridge void*)events[i];
-      }
-      metal_frame_cv_pool_t *pool = metal_frame_cv_pool_new((__bridge void*)device,
-            cache, (__bridge void*)ready, (__bridge void*)listener, done, count);
-      CFRelease(cache);
-      assert(pool);
-      return pool;
-   }
+   id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+   metal_frame_cv_pool_t *pool = metal_frame_cv_pool_create((__bridge void*)device, count);
+   assert(pool);
+   return pool;
 }
 
 /* Consume an adapter-produced lease after adapter, session and pool teardown.
