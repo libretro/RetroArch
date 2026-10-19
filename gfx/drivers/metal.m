@@ -707,7 +707,9 @@ static bool metal_frame_event_valid(id event, id device)
       && [event respondsToSelector:@selector(signaledValue)]
       && [event respondsToSelector:@selector(setSignaledValue:)]
       && [event respondsToSelector:@selector(notifyListener:atValue:block:)]
-      && [(id<RArchMetalSharedEvent>)event device] == device;
+      /* Shared events can span devices and report a nil device. */
+      && (![(id<RArchMetalSharedEvent>)event device]
+            || [(id<RArchMetalSharedEvent>)event device] == device);
 }
 
 static bool metal_frame_texture_valid(id<MTLTexture> texture, id device,

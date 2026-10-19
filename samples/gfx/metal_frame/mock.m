@@ -290,7 +290,9 @@ static void test(unsigned format, unsigned action)
          uv->_width = 4; uv->_height = 3;
          uv->_pixelFormat = format == IMAGE_PIXFMT_NV12 ? MTLPixelFormatRG8Unorm : MTLPixelFormatRG16Unorm;
       }
-      ready->_device = [device retain]; done->_device = [device retain];
+      /* Native shared events may have no device. Exercise both forms. */
+      if (action & 1)
+      { ready->_device = [device retain]; done->_device = [device retain]; }
       buffer->_device = [device retain];
       source.device = device; source.planes[0] = y; source.planes[1] = uv;
       source.ready = ready; source.done = done; source.listener = listener;
@@ -311,6 +313,15 @@ static void test(unsigned format, unsigned action)
       assert(!metal_frame_create(&source, &frame)); source.done = done; source.done_value = 7;
       source.ready = other;
       assert(!metal_frame_create(&source, &frame)); source.ready = ready;
+      {
+         MockEvent *foreign = [MockEvent new];
+         foreign->_device = [other retain];
+         source.ready = foreign;
+         assert(!metal_frame_create(&source, &frame)); source.ready = ready;
+         source.done = foreign;
+         assert(!metal_frame_create(&source, &frame)); source.done = done;
+         [foreign release];
+      }
       source.listener = other;
       assert(!metal_frame_create(&source, &frame)); source.listener = listener;
       done->_value = 7;
