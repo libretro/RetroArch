@@ -1015,6 +1015,52 @@ bool metal_frame_convert_sdr(const struct video_frame_import *frame,
 /* METAL_FRAME_SDR_CONVERT_END */
 
 /* METAL_FRAME_CV_BEGIN */
+static bool metal_frame_cv_color(CVPixelBufferRef pixels,
+      video_color_metadata_t *color)
+{
+   struct
+   {
+      CFStringRef key, values[4];
+      unsigned codes[4];
+      unsigned *field;
+   } tags[] = {
+      { kCVImageBufferColorPrimariesKey,
+         { kCVImageBufferColorPrimaries_ITU_R_709_2,
+           kCVImageBufferColorPrimaries_ITU_R_2020, NULL, NULL },
+         { 1, 9, 0, 0 }, &color->primaries },
+      { kCVImageBufferTransferFunctionKey,
+         { kCVImageBufferTransferFunction_ITU_R_709_2,
+           kCVImageBufferTransferFunction_sRGB,
+           kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ,
+           kCVImageBufferTransferFunction_ITU_R_2100_HLG },
+         { 1, 13, 16, 18 }, &color->transfer },
+      { kCVImageBufferYCbCrMatrixKey,
+         { kCVImageBufferYCbCrMatrix_ITU_R_709_2,
+           kCVImageBufferYCbCrMatrix_ITU_R_2020, NULL, NULL },
+         { 1, 9, 0, 0 }, &color->matrix }
+   };
+   unsigned i, j;
+   for (i = 0; i < (sizeof(tags) / sizeof(tags[0])); i++)
+   {
+      /* Borrowed reads preserve the pre-macOS 12 deployment floor. */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      CFTypeRef value = CVBufferGetAttachment(pixels, tags[i].key, NULL);
+#pragma clang diagnostic pop
+      if (!value)
+         continue;
+      for (j = 0; j < (sizeof(tags[i].values) / sizeof(tags[i].values[0])); j++)
+         if (tags[i].values[j] && CFEqual(value, tags[i].values[j]))
+            break;
+      if (j == (sizeof(tags[i].values) / sizeof(tags[i].values[0]))
+            || (*tags[i].field && *tags[i].field != 2
+               && *tags[i].field != tags[i].codes[j]))
+         return false;
+      *tags[i].field = tags[i].codes[j];
+   }
+   return true;
+}
+
 bool metal_frame_create_cv(const metal_frame_source_t *source,
       void *pixel_buffer, void *texture_cache, video_hw_frame_t *output)
 {
@@ -1056,6 +1102,8 @@ bool metal_frame_create_cv(const metal_frame_source_t *source,
       return false;
    local = *source;
    local.color.range = range;
+   if (!metal_frame_cv_color(pixels, &local.color))
+      return false;
    local.yuv = (local.yuv & ~IMAGE_YUV_FLAG_FULL_RANGE)
       | (range == 2 ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
    local.backing[0] = pixels;

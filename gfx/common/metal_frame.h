@@ -42,7 +42,9 @@ bool metal_frame_create(const metal_frame_source_t *source,
 
 /* CoreVideo NV12/P010 plane views. Cache and pixel buffer are borrowed;
  * source planes/backing must be empty. Retains the buffer and both views.
- * Pixel format supplies range; conflicting explicit range is refused. */
+ * Pixel format supplies range; conflicting explicit range is refused.
+ * Known CoreVideo color tags fill absent/unspecified source fields.
+ * Conflicting or unknown attached tags refuse without changing output. */
 bool metal_frame_create_cv(const metal_frame_source_t *source,
       void *pixel_buffer, void *texture_cache, video_hw_frame_t *output);
 

@@ -546,6 +546,7 @@ int main(void)
    test_sdr_mock();
    test_sdr_import_mock();
    test_cv_mock();
+   test_cv_color_mock();
    unsigned i, j;
    const unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };
    for (i = 0; i < 4; i++) for (j = 0; j < 4; j++) test(formats[i], j);

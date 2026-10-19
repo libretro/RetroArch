@@ -74,7 +74,17 @@ static void test_sdr_native(id<MTLDevice> device)
          source.width = 7; source.height = 5; source.crop_x = 2; source.crop_y = 2;
          source.pixfmt = f < 2 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
          source.color.primaries = 1; source.color.matrix = 1; source.color.transfer = srgb ? 13 : 1;
+         CVBufferSetAttachment(pixels, kCVImageBufferColorPrimariesKey,
+            kCVImageBufferColorPrimaries_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
+         CVBufferSetAttachment(pixels, kCVImageBufferTransferFunctionKey,
+            srgb ? kCVImageBufferTransferFunction_sRGB : kCVImageBufferTransferFunction_ITU_R_709_2,
+            kCVAttachmentMode_ShouldPropagate);
+         CVBufferSetAttachment(pixels, kCVImageBufferYCbCrMatrixKey,
+            kCVImageBufferYCbCrMatrix_ITU_R_709_2, kCVAttachmentMode_ShouldPropagate);
+         source.color.primaries = source.color.transfer = source.color.matrix = 0;
          assert(metal_frame_create_cv(&source, pixels, cache, &frame));
+         assert(frame.color.primaries == 1 && frame.color.transfer == (srgb ? 13u : 1u)
+            && frame.color.matrix == 1);
          CFRelease(pixels);
          memset(&imported, 0, sizeof(imported));
          imported.image = frame.image; imported.owner = frame.owner; imported.abandon = frame.abandon;

@@ -19,4 +19,17 @@ extern int CVMetalTextureCacheCreateTextureFromImage(const void *, CVMetalTextur
       CVPixelBufferRef, const void *, MTLPixelFormat, size_t, size_t, size_t, CVMetalTextureRef *);
 extern int CVMetalTextureIsFlipped(CVMetalTextureRef);
 extern id<MTLTexture> CVMetalTextureGetTexture(CVMetalTextureRef);
+extern int CFEqual(CFTypeRef, CFTypeRef);
+extern CFTypeRef CVBufferGetAttachment(CVPixelBufferRef, CFStringRef, void *);
+extern const CFStringRef kCVImageBufferColorPrimariesKey;
+extern const CFStringRef kCVImageBufferTransferFunctionKey;
+extern const CFStringRef kCVImageBufferYCbCrMatrixKey;
+extern const CFStringRef kCVImageBufferColorPrimaries_ITU_R_709_2;
+extern const CFStringRef kCVImageBufferColorPrimaries_ITU_R_2020;
+extern const CFStringRef kCVImageBufferTransferFunction_ITU_R_709_2;
+extern const CFStringRef kCVImageBufferTransferFunction_sRGB;
+extern const CFStringRef kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ;
+extern const CFStringRef kCVImageBufferTransferFunction_ITU_R_2100_HLG;
+extern const CFStringRef kCVImageBufferYCbCrMatrix_ITU_R_709_2;
+extern const CFStringRef kCVImageBufferYCbCrMatrix_ITU_R_2020;
 #endif

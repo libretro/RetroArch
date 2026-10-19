@@ -89,3 +89,15 @@ The mock adds 48 importer replacement/refusal/retirement cases. The native
 pixel fixture runs its eight conversions through the shipping driver callback.
 `import_formats` remains zero: VideoToolbox producer/session integration,
 playback acceptance, HDR conversion and display acceptance remain gated.
+
+CoreVideo leases also reconcile image-buffer primaries, transfer and matrix
+attachments with the source metadata. Supported attachment names map BT.709
+and BT.2020 primaries/matrix plus BT.709, sRGB, PQ and HLG transfer functions.
+Missing attachments preserve the source, including missing fields; they do
+not imply BT.709. Attached values fill absent or unspecified (code point 2)
+fields. Explicit conflicts, unknown names and wrong attachment types refuse
+before plane construction. Other source mastering/content-light metadata is
+preserved. This transports HDR tags without enabling HDR conversion.
+The mock adds 60 attachment and consistency cases across four pixel formats.
+Native CoreVideo fixtures supply real SDR and BT.2020/PQ attachments; the
+SDR importer pixel cases recover their color fields from those attachments.

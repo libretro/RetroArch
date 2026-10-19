@@ -84,7 +84,14 @@ static void test_cv_native(id<MTLDevice> device)
          source.width = 7; source.height = 5; source.crop_x = 2; source.crop_y = 2;
          source.pixfmt = f < 2 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
          source.color.max_cll = 1500; source.color.transfer = 16; source.color.primaries = 9;
+         CVBufferSetAttachment(pixels, kCVImageBufferColorPrimariesKey,
+            kCVImageBufferColorPrimaries_ITU_R_2020, kCVAttachmentMode_ShouldPropagate);
+         CVBufferSetAttachment(pixels, kCVImageBufferTransferFunctionKey,
+            kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ, kCVAttachmentMode_ShouldPropagate);
+         CVBufferSetAttachment(pixels, kCVImageBufferYCbCrMatrixKey,
+            kCVImageBufferYCbCrMatrix_ITU_R_2020, kCVAttachmentMode_ShouldPropagate);
          assert(metal_frame_create_cv(&source, pixels, cache, &frame));
+         assert(frame.color.matrix == 9);
          assert(frame.color.range == (f & 1 ? 2u : 1u) && frame.crop_x == 2 && frame.crop_y == 2);
          CFRelease(pixels); CFRelease(cache);
          dispatch_semaphore_t finished = dispatch_semaphore_create(0);
