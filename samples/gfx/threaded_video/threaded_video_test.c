@@ -899,11 +899,11 @@ static void lane_driver_pacing(void)
       {
          size_t seen_id, seen_frames;
          /* Focus held, as above: the wrapper is the current driver now */
+         video_thread_wait_idle();
          saved_driver            = video_st->current_video;
          focused_driver          = *saved_driver;
          focused_driver.focus    = dplane_focus;
          video_st->current_video = &focused_driver;
-         video_thread_wait_idle();
          dplane_inner                 = thr->driver;
          dplane_driver                = *thr->driver;
          dplane_driver.frame          = dplane_frame;

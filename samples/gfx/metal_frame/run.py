@@ -52,8 +52,11 @@ def main():
             flags += shlex.split(subprocess.check_output(["gnustep-config", "--objc-flags"], text=True))
             flags += ["-I" + str(tmp), "-I" + subprocess.check_output(["gcc", "-print-file-name=include"], text=True).strip()]
             libs = shlex.split(subprocess.check_output(["gnustep-config", "--base-libs"], text=True))
+            objc_library = Path(subprocess.check_output(["gcc", "-print-file-name=libobjc.so"], text=True).strip())
+            if not objc_library.is_file():
+                raise RuntimeError("GCC Objective-C runtime library is unavailable: " + str(objc_library))
             # Link BlocksRuntime first: GNUstep also exports older block helpers.
-            libs = ["-lBlocksRuntime"] + libs
+            libs = ["-lBlocksRuntime", "-L" + str(objc_library.parent)] + libs
         else:
             flags += ["-fobjc-arc", "-mmacosx-version-min=10.14"]
             libs = ["-framework", "Foundation", "-framework", "Metal", "-framework", "CoreFoundation"]

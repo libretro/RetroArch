@@ -112,6 +112,8 @@
 #include "../../../gfx/common/vulkan_common.h"
 #include "../../../configuration.h"
 
+bool video_driver_thread_wrapper_active(void) { return false; }
+
 /* Scored by the RARCH_LOG hook in stubs_retroarch.c. */
 extern int g_vk_validation_errors;
 extern int g_vk_validation_warnings;
