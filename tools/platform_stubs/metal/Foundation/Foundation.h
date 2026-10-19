@@ -70,6 +70,7 @@ void CFRelease(CFTypeRef);
 CFTypeRef CFRetain(CFTypeRef);
 
 @class NSString, NSError, NSArray, NSDictionary, NSURL, NSData, NSBundle, NSCoder;
+Class NSClassFromString(NSString *name);
 @protocol NSObject
 - (id)retain;
 - (oneway void)release;

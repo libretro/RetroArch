@@ -20,6 +20,18 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  metal-frame-lease:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Metal lease mock dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang libgnustep-base-dev libblocksruntime-dev
+      - name: Retained Metal lease ownership and completion
+        run: python3 samples/gfx/metal_frame/run.py --mock
+
   video-thread-state:
     name: The video thread reads its snapshot
     runs-on: ubuntu-latest

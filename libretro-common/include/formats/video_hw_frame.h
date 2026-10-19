@@ -43,7 +43,10 @@
  * of handles, so that a reader keeping what it opened of them opens
  * them again when it changes. D3D12 readers may receive a decoder array:
  * @array_slice selects its element and @crop_x/@crop_y its visible origin.
- * These fields are zero for standalone output textures. */
+ * These fields are zero for standalone output textures.
+ *
+ * Metal: @image is an opaque retained lease from metal_frame_create,
+ * identified by its abandon callback, never a raw MTLTexture pointer. */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -58,7 +61,8 @@ enum video_hw_api
 {
    VIDEO_HW_API_UNKNOWN = 0,
    VIDEO_HW_API_VULKAN = 1,
-   VIDEO_HW_API_D3D11 = 2
+   VIDEO_HW_API_D3D11 = 2,
+   VIDEO_HW_API_METAL = 3
 };
 
 typedef struct video_hw_frame

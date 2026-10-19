@@ -628,6 +628,244 @@ typedef struct metal_view_chain metal_view_chain_t;
  * RARCH_RETURN_INIT_FAILURE); see that header for the semantics of
  * each form and for why the file must compile under both modes. */
 
+/* METAL_FRAME_LEASE_BEGIN */
+#include "../common/metal_frame.h"
+#include <limits.h>
+
+/* Local protocols keep older SDK builds independent of shared-event types. */
+@protocol RArchMetalSharedEvent <NSObject>
+- (id<MTLDevice>)device;
+- (uint64_t)signaledValue;
+- (void)setSignaledValue:(uint64_t)value;
+- (void)notifyListener:(id)listener atValue:(uint64_t)value
+      block:(void (^)(id, uint64_t))block;
+@end
+
+@protocol RArchMetalEventCommandBuffer <MTLCommandBuffer>
+- (void)encodeWaitForEvent:(id)event value:(uint64_t)value;
+- (void)encodeSignalEvent:(id)event value:(uint64_t)value;
+@end
+
+@interface RArchMetalFrameLease : NSObject
+{
+@public
+   id<MTLDevice> device;
+   id<MTLTexture> planes[2];
+   id<RArchMetalSharedEvent> ready;
+   id<RArchMetalSharedEvent> done;
+   id listener;
+   CFTypeRef backing[3];
+   uint64_t ready_value, done_value;
+   metal_frame_view_t view;
+}
+@end
+
+@implementation RArchMetalFrameLease
+- (void)dealloc
+{
+   unsigned i;
+   for (i = 0; i < 3; i++)
+      if (backing[i])
+         CFRelease(backing[i]);
+#if !__has_feature(objc_arc)
+   [device release];
+   [planes[0] release];
+   [planes[1] release];
+   [ready release];
+   [done release];
+   [listener release];
+#endif
+   RARCH_SUPER_DEALLOC();
+}
+@end
+
+static void metal_frame_abandon(void *owner, uint64_t unused_done,
+      uint64_t unused_value)
+{
+   RArchMetalFrameLease *lease = (__bridge RArchMetalFrameLease *)owner;
+   (void)unused_done;
+   (void)unused_value;
+   [lease->ready notifyListener:lease->listener atValue:lease->ready_value
+      block:^(id event, uint64_t value) {
+         @autoreleasepool
+         {
+            RArchMetalFrameLease *finished =
+               RARCH_BRIDGE_TRANSFER(RArchMetalFrameLease *, owner);
+            (void)event;
+            (void)value;
+            [finished->done setSignaledValue:finished->done_value];
+         }
+      }];
+}
+
+static bool metal_frame_event_valid(id event, id device)
+{
+   return event
+      && [event respondsToSelector:@selector(device)]
+      && [event respondsToSelector:@selector(signaledValue)]
+      && [event respondsToSelector:@selector(setSignaledValue:)]
+      && [event respondsToSelector:@selector(notifyListener:atValue:block:)]
+      && [(id<RArchMetalSharedEvent>)event device] == device;
+}
+
+static bool metal_frame_texture_valid(id<MTLTexture> texture, id device,
+      MTLPixelFormat format)
+{
+   return texture && texture.device == device
+      && texture.textureType == MTLTextureType2D
+      && texture.sampleCount == 1 && texture.arrayLength == 1
+      && texture.depth == 1 && texture.pixelFormat == format
+      && texture.width <= UINT_MAX && texture.height <= UINT_MAX;
+}
+
+bool metal_frame_create(const metal_frame_source_t *source,
+      video_hw_frame_t *output)
+{
+   id<MTLDevice> device;
+   id<MTLTexture> y, uv;
+   id<RArchMetalSharedEvent> ready, done;
+   MTLPixelFormat format, uv_format = MTLPixelFormatInvalid;
+   Class listener_class = NSClassFromString(@"MTLSharedEventListener");
+   bool planar;
+   unsigned i;
+   if (!source || !output || !source->device || !source->planes[0]
+         || !source->done_value || !listener_class
+         || ![(__bridge id)source->listener isKindOfClass:listener_class])
+      return false;
+   device = (__bridge id<MTLDevice>)source->device;
+   y      = (__bridge id<MTLTexture>)source->planes[0];
+   uv     = (__bridge id<MTLTexture>)source->planes[1];
+   ready  = (__bridge id<RArchMetalSharedEvent>)source->ready;
+   done   = (__bridge id<RArchMetalSharedEvent>)source->done;
+   planar = source->pixfmt == IMAGE_PIXFMT_NV12
+      || source->pixfmt == IMAGE_PIXFMT_P010;
+   switch (source->pixfmt)
+   {
+      case IMAGE_PIXFMT_8888:
+         format = y.pixelFormat;
+         if (format != MTLPixelFormatBGRA8Unorm
+               && format != MTLPixelFormatRGBA8Unorm)
+            return false;
+         break;
+      case IMAGE_PIXFMT_FP16:
+         format = MTLPixelFormatRGBA16Float;
+         break;
+      case IMAGE_PIXFMT_NV12:
+         format = MTLPixelFormatR8Unorm;
+         uv_format = MTLPixelFormatRG8Unorm;
+         break;
+      case IMAGE_PIXFMT_P010:
+         format = MTLPixelFormatR16Unorm;
+         uv_format = MTLPixelFormatRG16Unorm;
+         break;
+      default:
+         return false;
+   }
+   if (!metal_frame_texture_valid(y, device, format)
+         || (planar ? !metal_frame_texture_valid(uv, device, uv_format) : !!uv)
+         || !metal_frame_geometry_valid(source->pixfmt,
+            source->width, source->height, source->crop_x, source->crop_y,
+            (unsigned)y.width, (unsigned)y.height,
+            planar ? (unsigned)uv.width : 0,
+            planar ? (unsigned)uv.height : 0)
+         || !metal_frame_event_valid(ready, device)
+         || !metal_frame_event_valid(done, device)
+         || done.signaledValue >= source->done_value
+         || (ready == done && source->done_value <= source->ready_value))
+      return false;
+   @autoreleasepool
+   {
+      RArchMetalFrameLease *lease = RARCH_AUTORELEASE_R([RArchMetalFrameLease new]);
+      video_hw_frame_t frame;
+      if (!lease)
+         return false;
+      lease->device = RARCH_RETAIN(device);
+      lease->planes[0] = RARCH_RETAIN(y);
+      lease->planes[1] = RARCH_RETAIN(uv);
+      lease->ready = RARCH_RETAIN(ready);
+      lease->done = RARCH_RETAIN(done);
+      lease->listener = RARCH_RETAIN((__bridge id)source->listener);
+      for (i = 0; i < 3; i++)
+         if (source->backing[i])
+            lease->backing[i] = CFRetain(source->backing[i]);
+      lease->ready_value = source->ready_value;
+      lease->done_value = source->done_value;
+      lease->view.planes[0] = source->planes[0];
+      lease->view.planes[1] = source->planes[1];
+      lease->view.color = source->color;
+      lease->view.pixfmt = source->pixfmt;
+      lease->view.width = source->width;
+      lease->view.height = source->height;
+      lease->view.crop_x = source->crop_x;
+      lease->view.crop_y = source->crop_y;
+      lease->view.yuv = source->yuv;
+      memset(&frame, 0, sizeof(frame));
+      frame.owner = RARCH_BRIDGE_RETAINED(lease);
+      frame.image = (uint64_t)(uintptr_t)frame.owner;
+      frame.wait = (uint64_t)(uintptr_t)source->ready;
+      frame.done = (uint64_t)(uintptr_t)source->done;
+      frame.wait_value = source->ready_value;
+      frame.done_value = source->done_value;
+      frame.abandon = metal_frame_abandon;
+      frame.width = source->width;
+      frame.height = source->height;
+      frame.crop_x = source->crop_x;
+      frame.crop_y = source->crop_y;
+      frame.pixfmt = source->pixfmt;
+      frame.yuv = source->yuv;
+      frame.color = source->color;
+      frame.api = VIDEO_HW_API_METAL;
+      *output = frame;
+   }
+   return true;
+}
+
+bool metal_frame_encode(const struct video_frame_import *frame,
+      void *device, void *command_buffer,
+      void (*encode)(void *, const metal_frame_view_t *, void *), void *user)
+{
+   RArchMetalFrameLease *lease;
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)command_buffer;
+   void *owner;
+   if (!frame || frame->abandon != metal_frame_abandon || !frame->owner
+         || frame->image != (uint64_t)(uintptr_t)frame->owner
+         || !buffer || !encode)
+      return false;
+   owner = frame->owner;
+   lease = (__bridge RArchMetalFrameLease *)owner;
+   if ((__bridge void *)lease->device != device || buffer.device != lease->device
+         || buffer.status > MTLCommandBufferStatusEnqueued
+         || ![buffer respondsToSelector:@selector(encodeWaitForEvent:value:)]
+         || ![buffer respondsToSelector:@selector(encodeSignalEvent:value:)]
+         || frame->wait != (uint64_t)(uintptr_t)(__bridge void *)lease->ready
+         || frame->done != (uint64_t)(uintptr_t)(__bridge void *)lease->done
+         || frame->wait_value != lease->ready_value
+         || frame->done_value != lease->done_value
+         || frame->pixfmt != lease->view.pixfmt
+         || frame->dims != VIDEO_SCALE_PACK(lease->view.width, lease->view.height)
+         || frame->crop_x != lease->view.crop_x || frame->crop_y != lease->view.crop_y
+         || frame->layout || frame->array_slice || frame->plane_views[0] || frame->plane_views[1])
+      return false;
+   [buffer addCompletedHandler:^(id<MTLCommandBuffer> completed) {
+      @autoreleasepool
+      {
+         if (completed.status == MTLCommandBufferStatusCompleted)
+         {
+            RArchMetalFrameLease *finished =
+               RARCH_BRIDGE_TRANSFER(RArchMetalFrameLease *, owner);
+            (void)finished;
+         }
+         else
+            metal_frame_abandon(owner, 0, 0);
+      }
+   }];
+   [(id<RArchMetalEventCommandBuffer>)buffer encodeWaitForEvent:(id)lease->ready value:lease->ready_value];
+   encode(user, &lease->view, command_buffer);
+   [(id<RArchMetalEventCommandBuffer>)buffer encodeSignalEvent:(id)lease->done value:lease->done_value];
+   return true;
+}
+/* METAL_FRAME_LEASE_END */
+
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u
 #define METAL_HDR_MODE_HDR10  1u

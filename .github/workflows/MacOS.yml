@@ -53,6 +53,16 @@ jobs:
         fi
         exit "$rc"
 
+    - name: Retained Metal frame lease on the native GPU
+      run: |
+        rc=0
+        python3 samples/gfx/metal_frame/run.py --native || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::Metal shared events unavailable; lease GPU check did not run"
+          exit 0
+        fi
+        exit "$rc"
+
     - name: iCloud Drive cloud sync driver
       run: |
         set -o pipefail
