@@ -4314,12 +4314,14 @@ static bool d3d12_shader_load_step(void *data,
             d3d12->filter.pass[i].rt.rt_view.ptr +
             d3d12->desc.rtv_heap.stride;
 
+         /* The tables d3d12_init_descriptors() made the pass, which
+          * d3d12_chain_free() forgot */
          d3d12->filter.pass[i].textures.ptr =
             d3d12->desc.srv_heap.gpu.ptr +
-            i * SLANG_NUM_SEMANTICS * d3d12->desc.srv_heap.stride;
+            i * SLANG_NUM_BINDINGS * d3d12->desc.srv_heap.stride;
          d3d12->filter.pass[i].samplers.ptr =
             d3d12->desc.sampler_heap.gpu.ptr +
-            i * SLANG_NUM_SEMANTICS *
+            i * SLANG_NUM_BINDINGS *
             d3d12->desc.sampler_heap.stride;
       }
    }
@@ -4609,10 +4611,12 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
          d3d12->filter.pass[i].feedback.rt_view.ptr = d3d12->filter.pass[i].rt.rt_view.ptr + d3d12->desc.rtv_heap.stride;
 
+         /* The tables d3d12_init_descriptors() made the pass, which
+          * d3d12_chain_free() forgot */
          d3d12->filter.pass[i].textures.ptr =
-            d3d12->desc.srv_heap.gpu.ptr + i * SLANG_NUM_SEMANTICS * d3d12->desc.srv_heap.stride;
+            d3d12->desc.srv_heap.gpu.ptr + i * SLANG_NUM_BINDINGS * d3d12->desc.srv_heap.stride;
          d3d12->filter.pass[i].samplers.ptr = d3d12->desc.sampler_heap.gpu.ptr +
-            i * SLANG_NUM_SEMANTICS * d3d12->desc.sampler_heap.stride;
+            i * SLANG_NUM_BINDINGS * d3d12->desc.sampler_heap.stride;
       }
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
