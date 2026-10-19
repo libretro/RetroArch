@@ -50,7 +50,9 @@ static MTLSize MTLSizeMake(NSUInteger x, NSUInteger y, NSUInteger z)
 @interface MTLSharedEventListener : NSObject @end
 @implementation MTLSharedEventListener @end
 static unsigned live_textures, live_backing;
-@interface MockDevice : NSObject <MTLDevice> @end
+@interface MockDevice : NSObject <MTLDevice>
+{ @public BOOL fail_alloc; }
+@end
 @interface MockTexture : NSObject <MTLTexture>
 {
 @public
@@ -98,6 +100,7 @@ static unsigned live_textures, live_backing;
 @implementation MockDevice
 - (id<MTLTexture>)newTextureWithDescriptor:(MTLTextureDescriptor*)descriptor
 {
+   if (fail_alloc) return nil;
    MockTexture *texture = [MockTexture new];
    texture->_device = [self retain]; texture->_width = descriptor.width;
    texture->_height = descriptor.height; texture->_usage = descriptor.usage;
@@ -257,12 +260,14 @@ static id mock_compute_encoder(MockBuffer *buffer);
 @property(readonly) id<MTLCommandBuffer> blitCommandBuffer;
 @property(readonly) BOOL hdrEnabled;
 @property(readonly) void *frameSDRPipeline;
+@property(readonly) BOOL movieHDRSupported;
 - (id)linearShader;
 - (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
       height:(unsigned)height filter:(enum texture_filter_type)filter;
 @end
 @implementation MockContext
 - (void *)frameSDRPipeline { return _frameSDRPipeline; }
+- (BOOL)movieHDRSupported { return !disable_hdr; }
 - (BOOL)hdrEnabled { return !disable_hdr; }
 - (id)linearShader { return disable_hdr ? nil : self; }
 - (id<MTLDevice>)device { return _device; }

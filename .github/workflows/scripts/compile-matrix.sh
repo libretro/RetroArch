@@ -1106,18 +1106,20 @@ check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahea
 # declaration added there.
 if command -v clang > /dev/null 2>&1; then
    for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS"; do
-   if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks \
+   for metal_ownership in "" "-fobjc-arc"; do
+   if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks $metal_ownership \
          -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \
          -Werror=unused-but-set-variable $HOSTOFF -D__APPLE__ -D__MACH__ \
          -DHAVE_METAL $metal_features -Itools/platform_stubs/metal -Itools/platform_stubs/gcd $INC $BASE \
          gfx/drivers/metal.m 2>&1); then
-      echo "FAIL  metal video (stubs) $metal_features"
+      echo "FAIL  metal video (stubs) $metal_features $metal_ownership"
       echo "      gfx/drivers/metal.m"
       show_out "$out"
       fail=1
    else
-      echo "ok    metal video (stubs) $metal_features"
+      echo "ok    metal video (stubs) $metal_features $metal_ownership"
    fi
+   done
    done
 else
    echo "skip  metal video (stubs) (no clang)"

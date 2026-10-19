@@ -36,7 +36,7 @@ static VIDEOTOOLBOX_HEVC_AVAILABLE void metal_hevc_initialize(void *unused)
    /* Process-lifetime storage/queue survive every driver and queued owner. */
    retro_atomic_store_release_ptr(&metal_hevc_active_registry, &metal_hevc_registry);
 }
-static bool metal_hevc_start(void *owner, void *device, void *sdr_pipeline)
+static bool metal_hevc_start_supported(void *owner, void *device, void *sdr_pipeline, bool hdr_enabled)
 {
    videotoolbox_hevc_registry_t *registry;
    if (!owner || !device || !sdr_pipeline) return false;
@@ -44,9 +44,13 @@ static bool metal_hevc_start(void *owner, void *device, void *sdr_pipeline)
    {
       dispatch_once_f(&metal_hevc_once, NULL, metal_hevc_initialize);
       registry = (videotoolbox_hevc_registry_t*)retro_atomic_load_acquire_ptr(&metal_hevc_active_registry);
-      return registry && videotoolbox_hevc_registry_publish(registry, owner, device);
+      return registry && videotoolbox_hevc_registry_publish_support(registry, owner, device, hdr_enabled);
    }
    return false;
+}
+static bool metal_hevc_start(void *owner, void *device, void *sdr_pipeline)
+{
+   return metal_hevc_start_supported(owner, device, sdr_pipeline, false);
 }
 static void metal_hevc_stop(void *owner)
 {

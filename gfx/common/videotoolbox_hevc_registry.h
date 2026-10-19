@@ -11,6 +11,7 @@ typedef struct videotoolbox_hevc_registry
    videotoolbox_hevc_backend_t backend;
    slock_t *lock;
    retro_atomic_ptr_t owner;
+   retro_atomic_int_t hdr_enabled;
    void *device, *user;
    void *(*retain)(void*);
    void (*release)(void*);
@@ -33,6 +34,13 @@ static bool videotoolbox_hevc_registry_enabled(void *opaque)
    return !registry->enabled || registry->enabled(registry->user);
 }
 
+/* Setup capability snapshot; no renderer/object access from codec setup. */
+static bool videotoolbox_hevc_registry_hdr_enabled(void *opaque)
+{
+   videotoolbox_hevc_registry_t *registry = (videotoolbox_hevc_registry_t*)opaque;
+   return retro_atomic_load_acquire_int(&registry->hdr_enabled) != 0;
+}
+
 /* Single initialization. Storage/lock/callbacks outlive all opened decoders;
  * withdraw and stop setup callers before freeing any of them. */
 static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_registry_init(videotoolbox_hevc_registry_t *registry,
@@ -46,15 +54,17 @@ static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_registry_init(v
    registry->lock = lock; registry->retain = retain; registry->release = release;
    registry->enabled = enabled; registry->user = user;
    retro_atomic_ptr_init(&registry->owner, NULL);
+   retro_atomic_int_init(&registry->hdr_enabled, 0);
    videotoolbox_hevc_backend_init(&registry->backend, registry,
          videotoolbox_hevc_registry_acquire, release,
          videotoolbox_hevc_registry_enabled, enqueue, enqueue_user, sdr_only);
+   registry->backend.hdr_enabled = videotoolbox_hevc_registry_hdr_enabled;
    return true;
 }
 
 /* Driver setup only. Replacement releases its old device after unlocking. */
-static INLINE bool videotoolbox_hevc_registry_publish(videotoolbox_hevc_registry_t *registry,
-      void *owner, void *device)
+static INLINE bool videotoolbox_hevc_registry_publish_support(videotoolbox_hevc_registry_t *registry,
+      void *owner, void *device, bool hdr_enabled)
 {
    void *old, *owned;
    if (!registry || !registry->lock || !owner || !device) return false;
@@ -62,11 +72,18 @@ static INLINE bool videotoolbox_hevc_registry_publish(videotoolbox_hevc_registry
    if (!owned) return false;
    slock_lock(registry->lock);
    old = registry->device; registry->device = owned;
+   retro_atomic_store_release_int(&registry->hdr_enabled, hdr_enabled ? 1 : 0);
    retro_atomic_store_release_ptr(&registry->owner, owner);
    rh265_set_hw_backend(&registry->backend.offer);
    slock_unlock(registry->lock);
    if (old) registry->release(old);
    return true;
+}
+
+static INLINE bool videotoolbox_hevc_registry_publish(videotoolbox_hevc_registry_t *registry,
+      void *owner, void *device)
+{
+   return videotoolbox_hevc_registry_publish_support(registry, owner, device, false);
 }
 
 /* Driver teardown only. Old owners cannot withdraw a replacement driver,
@@ -81,6 +98,7 @@ static INLINE bool videotoolbox_hevc_registry_withdraw(videotoolbox_hevc_registr
    { slock_unlock(registry->lock); return false; }
    rh265_unset_hw_backend(&registry->backend.offer);
    old = registry->device; registry->device = NULL;
+   retro_atomic_store_release_int(&registry->hdr_enabled, 0);
    retro_atomic_store_release_ptr(&registry->owner, NULL);
    slock_unlock(registry->lock);
    if (old) registry->release(old);

@@ -27,6 +27,7 @@ def metal_test_source():
     for part in ('HISTORY', 'FRONT', 'TEXTURE'):
         methods += source.split('/* METAL_FRAME_' + part + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + part + '_END */', 1)[0]
     methods = methods.replace('- (void)_updateHistory\n{', '- (void)_updateHistory\n{\n   history_updates++;')
+    methods += source.split('/* METAL_MOVIE_CLEAR_BEGIN */', 1)[1].split('/* METAL_MOVIE_CLEAR_END */', 1)[0]
     methods += source.split('/* METAL_MOVIE_FRAME_BEGIN */', 1)[1].split('/* METAL_MOVIE_FRAME_END */', 1)[0]
     movie = (HERE / 'movie_test.m').read_text(encoding='utf8')
     frame_view = (HERE.parent / 'metal_frame/frame_view_fixture.m').read_text(encoding='utf8')

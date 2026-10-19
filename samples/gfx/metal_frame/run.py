@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise geometry and the shipping Metal lease with mock or Apple objects."""
 import argparse
+import json
 import os
 from pathlib import Path
 import shlex
@@ -34,6 +35,7 @@ def main():
         for part in ("HISTORY", "FRONT", "TEXTURE"):
             frame_methods += source.split("/* METAL_FRAME_" + part + "_BEGIN */", 1)[1].split("/* METAL_FRAME_" + part + "_END */", 1)[0]
         frame_methods = frame_methods.replace('- (void)_updateHistory\n{', '- (void)_updateHistory\n{\n   history_updates++;')
+        frame_methods += source.split("/* METAL_MOVIE_CLEAR_BEGIN */", 1)[1].split("/* METAL_MOVIE_CLEAR_END */", 1)[0]
         frame_methods += source.split("/* METAL_MOVIE_FRAME_BEGIN */", 1)[1].split("/* METAL_MOVIE_FRAME_END */", 1)[0]
         frame_view = (HERE / "frame_view_fixture.m").read_text(encoding="utf-8").replace("/* SHIPPING_FRAME_METHODS */", frame_methods)
         section = source.split("/* METAL_FRAME_LEASE_BEGIN */", 1)[1].split("/* METAL_FRAME_LEASE_END */", 1)[0]
@@ -63,6 +65,11 @@ def main():
         convert = convert.replace('#include "../common/metal_frame_convert.h"', '#include "' + (ROOT / "gfx/common/metal_frame_convert.h").as_posix() + '"')
         pipeline = source.split("/* METAL_FRAME_SDR_PIPELINE_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_PIPELINE_END */", 1)[0] if args.native else ""
         sdr_fixture = (HERE / ("sdr_mock.m" if args.mock else "sdr_native.m")).read_text(encoding="utf-8")
+        if args.native:
+            run([sys.executable, str(HERE / "hdr_pixels.py"), "--verify"])
+            hdr_fixture = (HERE / "hdr_native.m").read_text(encoding="utf-8")
+            hdr_fixture = hdr_fixture.replace('#include "hdr_pixels.h"', '#include "' + (HERE / "hdr_pixels.h").as_posix() + '"')
+            sdr_fixture = sdr_fixture.replace("/* HDR_NATIVE */", hdr_fixture)
         sdr_fixture = sdr_fixture.replace("/* NATIVE_FRAME_VIEW */", frame_view)
         text = text.replace("/* SDR_CONVERT */", sdr_fixture.replace("/* SHIPPING_SDR */", pipeline + convert))
         if args.native:
@@ -98,6 +105,26 @@ def main():
         if args.native and result.returncode == 77:
             sys.exit(77)
         result.check_returncode()
+        if args.native:
+            # Compile the actual stock MSL and render through its movie entry.
+            header = (ROOT / "gfx/drivers/metal.h").read_text(encoding="utf-8")
+            stock = (ROOT / "gfx/drivers/metal_shaders/Shaders.metal").read_text(encoding="utf-8")
+            stock = stock.replace('#import "../metal.h"', header)
+            stock_file = tmp / "stock.metal"
+            stock_file.write_text(stock, encoding="utf-8")
+            present = (HERE / "hdr_present_native.m").read_text(encoding="utf-8")
+            present = present.replace("/* HDR_METAL_HEADER */", '#include "' + (ROOT / "gfx/drivers/metal.h").as_posix() + '"')
+            present = present.replace("/* HDR_SOURCE_PATH */", json.dumps(stock_file.as_posix()))
+            present_file = tmp / "present.m"
+            present_file.write_text(present, encoding="utf-8")
+            present_exe = tmp / "present"
+            run([os.environ.get("OBJC", "clang")] + flags + [str(present_file), "-o", str(present_exe)]
+                + libs + ["-framework", "MetalKit"])
+            result = subprocess.run([str(present_exe)], check=False)
+            if result.returncode == 77:
+                sys.exit(77)
+            result.check_returncode()
+
 
 
 if __name__ == "__main__":

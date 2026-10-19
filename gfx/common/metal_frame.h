@@ -86,7 +86,8 @@ bool metal_frame_encode(const struct video_frame_import *frame,
 bool metal_frame_copy(const struct video_frame_import *frame,
       void *device, void *command_buffer, void *destination);
 
-/* Create once outside frame submission; returns an owned CFTypeRef. */
+/* Shared SDR/HDR planar pipeline. Create once outside frame submission;
+ * returns an owned CFTypeRef. */
 void *metal_frame_sdr_pipeline_create(void *device);
 
 /* NV12/P010 BT.709 primaries/matrix, explicit limited/full range and
@@ -94,6 +95,13 @@ void *metal_frame_sdr_pipeline_create(void *device);
  * Use the factory pipeline and nearest 2x2 chroma reconstruction.
  * The retained-reference command buffer owns resources after acceptance. */
 bool metal_frame_convert_sdr(const struct video_frame_import *frame,
+      void *device, void *command_buffer, void *pipeline, void *destination);
+
+/* NV12/P010 BT.2020 nonconstant-luminance PQ/HLG, explicit range, to
+ * shader-writable RGBA16Float linear scRGB. PQ preserves absolute nits;
+ * HLG uses the existing 1000-nit, gamma-1.2 display reference. Negative
+ * out-of-gamut components survive. Same single-lease contract as SDR. */
+bool metal_frame_convert_hdr(const struct video_frame_import *frame,
       void *device, void *command_buffer, void *pipeline, void *destination);
 
 static INLINE bool metal_frame_geometry_valid(unsigned pixfmt,

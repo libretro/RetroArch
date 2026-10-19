@@ -46,8 +46,59 @@ static void test_sdr_params(void)
    assert(!metal_frame_sdr_params(&view, &p));
 }
 
+static void test_hdr_params(void)
+{
+   metal_frame_view_t view;
+   metal_frame_sdr_params_t p, unchanged;
+   unsigned ten, full, hlg, bad;
+   memset(&view, 0, sizeof(view));
+   memset(&p, 0x5a, sizeof(p)); unchanged = p;
+   assert(!metal_frame_hdr_params(NULL, &p));
+   assert(!metal_frame_hdr_params(&view, NULL));
+   for (ten = 0; ten < 2; ten++) for (full = 0; full < 2; full++)
+      for (hlg = 0; hlg < 2; hlg++)
+      {
+         double sample = ten ? 65535.0 / 64.0 : 255.0;
+         double black = full ? 0.0 : ten ? 64.0 : 16.0;
+         double white = full ? (ten ? 1023.0 : 255.0) : ten ? 940.0 : 235.0;
+         double center = ten ? 512.0 : 128.0;
+         double at_black, at_white, neutral;
+         view.pixfmt = ten ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
+         view.width = 7; view.height = 5; view.crop_x = view.crop_y = 2;
+         view.color.primaries = view.color.matrix = 9;
+         view.color.transfer = hlg ? 18 : 16; view.color.range = full ? 2 : 1;
+         assert(!metal_frame_sdr_params(&view, &p));
+         assert(metal_frame_hdr_params(&view, &p));
+         assert(p.mode[0] == view.color.transfer && p.dims[0] == 7 && p.dims[2] == 2);
+         assert(p.coefficients[0] > 1.4745f && p.coefficients[0] < 1.4747f);
+         assert(p.coefficients[1] < 0 && p.coefficients[2] < 0 && p.coefficients[3] > 1.8813f);
+         at_black = black / sample * p.levels[0] + p.levels[1];
+         at_white = white / sample * p.levels[0] + p.levels[1];
+         neutral = center / sample * p.levels[2] + p.levels[3];
+         assert(at_black > -0.000001 && at_black < 0.000001);
+         assert(at_white > 0.999999 && at_white < 1.000001);
+         assert(neutral > -0.000001 && neutral < 0.000001);
+         for (bad = 0; bad < 8; bad++)
+         {
+            metal_frame_view_t invalid = view;
+            if (bad == 0) invalid.color.primaries = 1;
+            if (bad == 1) invalid.color.matrix = 10;
+            if (bad == 2) invalid.color.transfer = 1;
+            if (bad == 3) invalid.color.range = 0;
+            if (bad == 4) invalid.pixfmt = IMAGE_PIXFMT_FP16;
+            if (bad == 5) invalid.crop_x = 1;
+            if (bad == 6) invalid.width = 0;
+            if (bad == 7) invalid.height = 65536u;
+            p = unchanged;
+            assert(!metal_frame_hdr_params(&invalid, &p));
+            assert(!memcmp(&p, &unchanged, sizeof(p)));
+         }
+      }
+}
+
 int main(void)
 {
+   test_hdr_params();
    test_sdr_params();
    assert(VIDEO_HW_API_VULKAN == 1 && VIDEO_HW_API_D3D11 == 2
          && VIDEO_HW_API_METAL == 3);
