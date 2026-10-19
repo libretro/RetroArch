@@ -97,4 +97,84 @@ static INLINE OSStatus videotoolbox_hevc_session_create(const rh265_video *sourc
    return status;
 }
 
+/* Copy a parsed access unit before borrowed packet storage may be reused.
+ * One sample contains four-byte lengths and complete escaped VCL NALs. */
+static INLINE OSStatus videotoolbox_hevc_sample_create(
+      CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
+      const rh265_nal_t *slices, unsigned capacity, CMSampleBufferRef *out)
+{
+   CMBlockBufferRef block = NULL;
+   OSStatus status;
+   size_t bytes = 0, total, offset = 0;
+   unsigned i;
+   if (!out) return kCMFormatDescriptionError_InvalidParameter;
+   *out = NULL;
+   if (!format || !au || !slices || !au->num_slices
+         || au->num_slices > capacity)
+      return kCMFormatDescriptionError_InvalidParameter;
+   for (i = 0; i < au->num_slices; i++)
+   {
+      const rh265_nal_t *nal = &slices[i];
+      unsigned type;
+      if (!nal->data || nal->size < 3 || nal->size > UINT32_MAX
+            || nal->size > SIZE_MAX - bytes)
+         return kCMFormatDescriptionError_InvalidParameter;
+      type = (nal->data[0] >> 1) & 63;
+      if ((nal->data[0] & 0x81) || (nal->data[1] >> 3)
+            || !(nal->data[1] & 7)
+            || !(type <= 9 || (type >= 16 && type <= 21))
+            || (int)type != au->first.nal_type
+            || (int)(nal->data[1] & 7) - 1 != au->first.temporal_id)
+         return kCMFormatDescriptionError_InvalidParameter;
+      bytes += nal->size;
+   }
+   if (bytes != au->coded_bytes || au->num_slices > (SIZE_MAX - bytes) / 4)
+      return kCMFormatDescriptionError_InvalidParameter;
+   total = bytes + (size_t)au->num_slices * 4;
+   status = CMBlockBufferCreateWithMemoryBlock(kCFAllocatorDefault, NULL,
+         total, kCFAllocatorDefault, NULL, 0, total, 0, &block);
+   if (!status) status = CMBlockBufferAssureBlockMemory(block);
+   for (i = 0; !status && i < au->num_slices; i++)
+   {
+      uint32_t size = (uint32_t)slices[i].size;
+      uint8_t length[4];
+      length[0] = (uint8_t)(size >> 24); length[1] = (uint8_t)(size >> 16);
+      length[2] = (uint8_t)(size >> 8); length[3] = (uint8_t)size;
+      status = CMBlockBufferReplaceDataBytes(length, block, offset, 4);
+      if (!status)
+         status = CMBlockBufferReplaceDataBytes(slices[i].data, block,
+               offset + 4, slices[i].size);
+      offset += 4 + slices[i].size;
+   }
+   if (!status)
+      status = CMSampleBufferCreateReady(kCFAllocatorDefault, block, format,
+            1, 0, NULL, 1, &total, out);
+   if (block) CFRelease(block);
+   if (status && *out)
+   {
+      CFRelease(*out);
+      *out = NULL;
+   }
+   return status;
+}
+
+/* Callback and frame_ref must survive synchronous or delayed completion.
+ * This owns compressed bytes, not the caller's callback context or slot. */
+static INLINE OSStatus videotoolbox_hevc_decode(VTDecompressionSessionRef session,
+      CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
+      const rh265_nal_t *slices, unsigned capacity, void *frame_ref,
+      VTDecodeInfoFlags *info)
+{
+   CMSampleBufferRef sample = NULL;
+   OSStatus status;
+   if (info) *info = 0;
+   if (!session) return kCMFormatDescriptionError_InvalidParameter;
+   status = videotoolbox_hevc_sample_create(format, au, slices, capacity, &sample);
+   if (status) return status;
+   status = VTDecompressionSessionDecodeFrame(session, sample,
+         kVTDecodeFrame_EnableAsynchronousDecompression, frame_ref, info);
+   CFRelease(sample);
+   return status;
+}
+
 #endif

@@ -8,6 +8,8 @@ typedef struct object *CFDictionaryRef;
 typedef struct object *CFNumberRef;
 typedef struct object *CMVideoFormatDescriptionRef;
 typedef struct object *VTDecompressionSessionRef;
+typedef struct object *CMBlockBufferRef;
+typedef struct object *CMSampleBufferRef;
 typedef void *CVImageBufferRef;
 typedef unsigned VTDecodeInfoFlags;
 typedef int64_t CMTime;
@@ -20,6 +22,8 @@ typedef struct
    void *decompressionOutputRefCon;
 } VTDecompressionOutputCallbackRecord;
 #define kCFAllocatorDefault NULL
+#define kVTDecodeFrame_EnableAsynchronousDecompression 1
+#define kVTDecodeInfo_Asynchronous 1
 #define kCMFormatDescriptionError_InvalidParameter (-12710)
 #define kCMFormatDescriptionError_AllocationFailed (-12711)
 #define kCFNumberSInt32Type 3
@@ -42,4 +46,15 @@ OSStatus VTDecompressionSessionCreate(void*, CMVideoFormatDescriptionRef,
       const VTDecompressionOutputCallbackRecord*, VTDecompressionSessionRef*);
 void VTDecompressionSessionInvalidate(VTDecompressionSessionRef);
 CMVideoDimensions CMVideoFormatDescriptionGetDimensions(CMVideoFormatDescriptionRef);
+OSStatus CMBlockBufferCreateWithMemoryBlock(void*, void*, size_t, void*,
+      const void*, size_t, size_t, unsigned, CMBlockBufferRef*);
+OSStatus CMBlockBufferAssureBlockMemory(CMBlockBufferRef);
+OSStatus CMBlockBufferReplaceDataBytes(const void*, CMBlockBufferRef, size_t, size_t);
+OSStatus CMBlockBufferCopyDataBytes(CMBlockBufferRef, size_t, size_t, void*);
+OSStatus CMSampleBufferCreateReady(void*, CMBlockBufferRef, CMVideoFormatDescriptionRef,
+      long, long, const void*, long, const size_t*, CMSampleBufferRef*);
+CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef);
+size_t CMSampleBufferGetTotalSampleSize(CMSampleBufferRef);
+OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef, CMSampleBufferRef,
+      unsigned, void*, VTDecodeInfoFlags*);
 #endif
