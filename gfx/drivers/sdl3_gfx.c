@@ -109,7 +109,8 @@ static bool sdl3_init_renderer(sdl3_video_t *vid)
          SDL_RENDERER_VSYNC_DISABLED;
 
    if (!SDL_SetRenderVSync(vid->renderer, vsync) && vsync != SDL_RENDERER_VSYNC_DISABLED)
-      SDL_SetRenderVSync(vid->renderer, 1);
+      SDL_SetRenderVSync(vid->renderer, (vsync > (int)vid->swap_interval_cap)
+            ? (int)vid->swap_interval_cap : 1);
 
    SDL_SetRenderDrawColor(vid->renderer, 0, 0, 0, 255);
 
@@ -577,6 +578,13 @@ static void sdl3_views_draw_direct(sdl3_video_t *vid,
       return;
    sdl3_views_frect(dst, &r);
    sdl3_views_rect(cut, &c);
+   /* Setting the clip flushes what is batched, so it is set only for a
+    * placement that reaches past its cut. @r is still the drawn extent:
+    * a turned view fills it. */
+   clip = !(  (float)c.x <= r.x
+           && (float)c.y <= r.y
+           && (float)(c.x + c.w) >= r.x + r.w
+           && (float)(c.y + c.h) >= r.y + r.h);
    if (deg == 90 || deg == 270)
    {
       float w = r.w;
@@ -585,13 +593,6 @@ static void sdl3_views_draw_direct(sdl3_video_t *vid,
       r.w     = r.h;
       r.h     = w;
    }
-   /* Setting the clip flushes what is batched, so it is set only for a
-    * placement that reaches past its cut - side by side, where each
-    * eye fills its own half, reaches past nothing. */
-   clip = !(  (float)c.x <= r.x
-           && (float)c.y <= r.y
-           && (float)(c.x + c.w) >= r.x + r.w
-           && (float)(c.y + c.h) >= r.y + r.h);
    if (clip)
       SDL_SetRenderClipRect(vid->renderer, &c);
    SDL_RenderTextureRotated(vid->renderer, vid->views.tex[view], NULL, &r,
@@ -1056,10 +1057,12 @@ static void sdl3_gfx_set_nonblock_state(void *data, bool toggle,
    if (vid->renderer)
    {
       /* Adaptive vsync and higher intervals aren't supported by every
-       * backend; fall back to a plain 1-frame interval if SDL rejects
-       * the requested value. */
+       * backend; fall back to the largest interval taken, or 1 if SDL
+       * rejects the requested value. */
       if (!SDL_SetRenderVSync(vid->renderer, vsync) && vsync != SDL_RENDERER_VSYNC_DISABLED)
-         SDL_SetRenderVSync(vid->renderer, 1);
+         SDL_SetRenderVSync(vid->renderer,
+               (vsync > (int)vid->swap_interval_cap)
+               ? (int)vid->swap_interval_cap : 1);
    }
 }
 
