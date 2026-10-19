@@ -64,6 +64,8 @@ def main():
         text = text.replace("/* SHIPPING_IMPORT */", importer)
         if args.mock:
             text = text.replace("/* SDR_IMPORT_TEST */", (HERE / "sdr_import_mock.m").read_text(encoding="utf-8"))
+            movie = source.split("/* METAL_MOVIE_FRAME_BEGIN */", 1)[1].split("/* METAL_MOVIE_FRAME_END */", 1)[0]
+            text = text.replace("/* MOVIE_IMPORT_TEST */", (HERE / "movie_mock.m").read_text(encoding="utf-8").replace("/* SHIPPING_MOVIE */", movie))
         text = text.replace('#include "sdr_pixels.h"', '#include "' + (HERE / "sdr_pixels.h").as_posix() + '"')
         unit = tmp / "lease.m"
         unit.write_text(text, encoding="utf-8")
