@@ -11,6 +11,7 @@ int videotoolbox_hevc_test_start(void*, void*);
 void videotoolbox_hevc_test_stop(void*);
 int videotoolbox_hevc_test_owns(void*);
 void videotoolbox_hevc_test_retired(void);
+void videotoolbox_hevc_test_movie_reset(void);
 
 static void test_native_decoder_adapter(void)
 {
@@ -82,6 +83,7 @@ static void test_native_decoder_adapter(void)
          videotoolbox_hevc_test_export(&frames[i], fixture->depth, fixture->full,
                sequence ? sequence->packets[packet].crc : fixture->crc);
       }
+      videotoolbox_hevc_test_movie_reset();
       free(frames);
    }
    puts("Metal HEVC driver: shipping startup, withdrawal and retirement passed");

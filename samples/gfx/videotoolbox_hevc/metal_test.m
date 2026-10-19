@@ -110,8 +110,24 @@ void videotoolbox_hevc_test_export(video_hw_frame_t *frame, unsigned depth,
       imported.wait = frame->wait; imported.wait_value = frame->wait_value;
       imported.done = frame->done; imported.done_value = frame->done_value;
       imported.pixfmt = frame->pixfmt; imported.dims = VIDEO_SCALE_PACK(64, 64);
-      assert(metal_frame_encode(&imported, (__bridge void*)device,
-               (__bridge void*)buffer, hevc_metal_encode, &copy));
+      imported.plane_views[0] = frame->plane_views[0]; imported.plane_views[1] = frame->plane_views[1];
+      imported.layout = frame->layout; imported.yuv = frame->yuv; imported.color = frame->color;
+      imported.array_slice = frame->array_slice; imported.crop_x = frame->crop_x; imported.crop_y = frame->crop_y;
+      /* Test-only source readback before the shipping importer consumes the
+       * one lease. Both operations share its readiness and retained buffer. */
+      [(id<RArchMetalEventCommandBuffer>)buffer encodeWaitForEvent:(id)lease->ready value:frame->wait_value];
+      assert(hevc_metal_encode(&copy, &lease->view, (__bridge void*)buffer));
+      id<MTLTexture> front = hevc_movie_import(device, buffer, &imported);
+      MTLTextureDescriptor *rgb_desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+         MTLPixelFormatRGBA8Unorm width:64 height:64 mipmapped:NO];
+      rgb_desc.storageMode = MTLStorageModeShared;
+      id<MTLTexture> rgb = [device newTextureWithDescriptor:rgb_desc]; assert(rgb);
+      id<MTLBlitCommandEncoder> rgb_copy = [buffer blitCommandEncoder]; assert(rgb_copy);
+      [rgb_copy copyFromTexture:front sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
+         sourceSize:MTLSizeMake(64, 64, 1) toTexture:rgb destinationSlice:0 destinationLevel:0
+         destinationOrigin:MTLOriginMake(0, 0, 0)];
+      [rgb_copy endEncoding];
+      unsigned transfer = frame->color.transfer;
       memset(frame, 0, sizeof(*frame));
       [buffer commit];
       pool_test_wait((__bridge void*)done, (__bridge void*)listener, value);
@@ -135,6 +151,7 @@ void videotoolbox_hevc_test_export(video_hw_frame_t *frame, unsigned depth,
          assert((crc ^ UINT32_MAX) == expected[plane]);
       }
       free(bytes);
+      hevc_movie_pixels(output[0], output[1], rgb, depth, full, transfer);
       puts("VideoToolbox native adapter: exported pixels survive decoder, session and pool teardown");
    }
 }
