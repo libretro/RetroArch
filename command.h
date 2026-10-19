@@ -640,6 +640,7 @@ void command_run_frames_between(void);
  * before the menu runs it, and calls iterated once it has. */
 unsigned command_menu_action(unsigned action);
 void command_menu_iterated(void);
+void command_menu_closed(void);
 #endif
 void command_run_frames_cancel(const char *why);
 void command_run_frames_forget(void);
@@ -1151,7 +1152,8 @@ static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_
 static const struct cmd_column cmd_cols_menu[] = {
    { "index", NULL },
    { "label", NULL },
-   { "value", "A setting's value; \"...\" opens a list." },
+   { "value", "A setting's value; \"...\" opens a list; \"checked\" is "
+      "the current choice." },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_menu[] = {
@@ -1226,7 +1228,7 @@ static const struct cmd_action_map action_map[] = {
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
    { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
-   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection.", 0, cmd_params_menu, &cmd_rows_menu },
+   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection.", CMD_INFO_DESTRUCTIVE, cmd_params_menu, &cmd_rows_menu },
    { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 

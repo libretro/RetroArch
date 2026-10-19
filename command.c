@@ -1319,8 +1319,9 @@ static char *command_menu_answer(bool has_from, unsigned from,
    first = has_from ? from : sel - sel % COMMAND_MENU_PAGE;
    for (i = first; i < count && i < first + COMMAND_MENU_PAGE; i++)
    {
-      char *label;
-      char *value;
+      char       *label;
+      char       *value;
+      const char *shown;
       MENU_ENTRY_INITIALIZE((*entry));
       entry->flags |= MENU_ENTRY_FLAG_PATH_ENABLED
                     | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
@@ -1331,8 +1332,12 @@ static char *command_menu_answer(bool has_from, unsigned from,
          ? entry->password_value : entry->value;
       command_menu_clean(label);
       command_menu_clean(value);
+      /* a choice in a list of them has no value, only whether it is the
+       * one chosen */
+      shown = !*value && (entry->flags & MENU_ENTRY_FLAG_CHECKED)
+         ? "checked" : value;
       _len += (size_t)snprintf(out + _len, size - _len, "%u\t%.255s\t%.255s\n",
-            (unsigned)i, label, value);
+            (unsigned)i, label, shown);
    }
    _len += (size_t)snprintf(out + _len, size - _len, "SELECTED %u\nCOUNT %u\n",
          (unsigned)sel, (unsigned)count);
@@ -1366,6 +1371,16 @@ unsigned command_menu_action(unsigned action)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
    }
    return command_menu_st.action;
+}
+
+/* Before commands are read: a MENU request whose menu closed before
+ * running it - a hotkey, another client - is answered that it is
+ * closed, as no menu frame will answer it. */
+void command_menu_closed(void)
+{
+   if (     command_menu_st.pending
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_menu_iterated();
 }
 
 /* After a menu frame: answers the MENU request it ran. */

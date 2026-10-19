@@ -301,7 +301,8 @@ COUNT 15
 ```
 
 Each entry is its index, its label and its value: a setting's value,
-or `...` for an entry that opens a list. `title`, `rows`, `selected`
+`...` for an entry that opens a list, or `checked` for the current
+choice in a list of them - the driver in use, say. `title`, `rows`, `selected`
 and `count` are its structured fields.
 
 - `show` answers what the menu shows; `from` lists from that entry.
@@ -317,7 +318,9 @@ and `count` are its structured fields.
 The action runs on the menu's next frame as its own input would, and
 the answer comes once that frame has run, so a list an action opens is
 there to read. A second `MENU` while one waits replaces it, answered
-with an error. It is RetroArch's menu, not a game's: a game's menus are
+with an error, and one whose menu closes first - a hotkey, another
+client - is answered `CLOSED`. `MENU` is marked destructive: its
+entries include Quit, Close Content and Delete. It is RetroArch's menu, not a game's: a game's menus are
 its screen and memory, played with `PRESS`, `STEPS` and `WATCH`.
 
 ## Options

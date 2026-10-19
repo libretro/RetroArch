@@ -484,6 +484,15 @@ int main(int argc, char **argv)
    CHECK(strstr(reply,"\nSELECTED 0\n") != NULL);
    reply[0]=0;
    CHECK(!command_menu(&cmd,"select 9999") && strstr(reply,"no entry 9999"));
+   /* one whose menu closes first is told so, not left waiting */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"down") && !reply[0]);
+   command_event(CMD_EVENT_MENU_TOGGLE,NULL);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(!strcmp(reply,"CLOSED\n"));
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"open"));
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
    reply[0]=0; cmd.error=false;
    CHECK(command_menu(&cmd,"close") && !strcmp(reply,"CLOSED\n"));
    reply[0]=0;

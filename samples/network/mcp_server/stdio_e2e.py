@@ -398,6 +398,18 @@ msg, t, _ = call(287, 'MENU', {'action': 'show', 'from': 2})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('show lists from an entry',
       sc.get('rows') and sc['rows'][0]['index'] == '2')
+# Entries are found by label, as a client would: Settings, Drivers,
+# then the menu driver's own list, where the one in use is checked.
+for n, want in enumerate(('Settings', 'Drivers', 'Menu')):
+    rows = sc.get('rows', [])
+    hit = [r['index'] for r in rows if r['label'] == want]
+    if not hit:
+        break
+    msg, t, _ = call(290 + n, 'MENU', {'action': 'a', 'index': int(hit[0])})
+    sc = msg and msg['result'].get('structuredContent') or {}
+check('a list of choices marks the one in use: %s' % sc.get('rows'),
+      {'label': 'rgui', 'value': 'checked'} in
+      [dict((k, r[k]) for k in ('label', 'value')) for r in sc.get('rows', [])])
 msg, t, _ = call(288, 'MENU', {'action': 'close'})
 _, st, _ = call(289, 'GET_OPTION', {'option': 'menu'})
 check('and close closes it: ' + (st or '').strip(),
