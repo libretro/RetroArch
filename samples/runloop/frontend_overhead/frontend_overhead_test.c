@@ -7655,6 +7655,41 @@ static void lane_av_info_keeps_audio(void)
             " once, menu sounds on\n");
 }
 
+/* The frame limit across a core's new frame rate: the rate times the
+ * fast-forward ratio, at the new rate once it is set. */
+static void lane_av_info_frame_limit(void)
+{
+   settings_t *settings             = config_get_ptr();
+   runloop_state_t *runloop_st      = runloop_state_get_ptr();
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info;
+   float ratio                      = settings->floats.fastforward_ratio;
+   retro_time_t want;
+   unsigned had                     = failures;
+
+   settings->floats.fastforward_ratio = 2.0f;
+   command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
+
+   info             = orig;
+   info.timing.fps  = orig.timing.fps / 2.0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+   want = (retro_time_t)roundf(1000000.0f / ((float)info.timing.fps * 2.0f));
+   CHECK(runloop_st->frame_limit_minimum_time == want,
+         "frame limit: a new frame rate left the limit at the old one");
+   if (runloop_st->frame_limit_minimum_time != want)
+      fprintf(stderr, "      %lld us, want %lld\n",
+            (long long)runloop_st->frame_limit_minimum_time, (long long)want);
+
+   settings->floats.fastforward_ratio = ratio;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
+   run_frames(5);
+   if (failures == had)
+      printf("[pass] frame limit: a core's new frame rate sets the limit"
+            " from it\n");
+}
+
 static void lane_sensor_snapshot_idle(void)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -8932,6 +8967,7 @@ int main(int argc, char *argv[])
       lane_input_kept();
       lane_joypad_reinit();
       lane_av_info_keeps_audio();
+      lane_av_info_frame_limit();
    }
 
    lane_sensor_snapshot_idle();
