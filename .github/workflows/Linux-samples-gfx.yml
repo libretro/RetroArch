@@ -28,9 +28,21 @@ jobs:
       - name: Install Metal lease mock dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq clang libgnustep-base-dev libblocksruntime-dev
+          sudo apt-get install -y -qq clang libgnustep-base-dev libblocksruntime-dev ffmpeg
       - name: Strict C89 geometry with Clang
         run: CC=clang python3 samples/gfx/metal_frame/run.py
+      - name: VideoToolbox HEVC parameter ownership and session setup
+        run: |
+          python3 samples/gfx/videotoolbox_hevc/run.py
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/videotoolbox_hevc/run.py
+      - name: HEVC software and hardware sequencing regression
+        working-directory: libretro-common/samples/formats/h265
+        run: |
+          make -j2 all SANITIZER=address,undefined
+          ./rh265_malformed_test
+          ./rh265_lossless_test
+          ./rh265_lossless_test_nothreads
+          ./rh265_lossless_test_volatile
       - name: Retained Metal lease ownership and completion
         run: python3 samples/gfx/metal_frame/run.py --mock
 

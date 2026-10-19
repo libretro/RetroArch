@@ -4059,9 +4059,15 @@ typedef struct rh265_hw
    int pending;
 } rh265_hw_t;
 
+typedef struct rh265_raw_parameters
+{
+   rh265_nal_t vps[16], sps[RH265_MAX_SPS], pps[RH265_MAX_PPS];
+} rh265_raw_parameters_t;
+
 struct rh265_video
 {
    rh265_hw_t *hw;
+   rh265_raw_parameters_t *raw_parameters;
    /* NAL scratch, grown on demand and kept for the decoder's lifetime:
     * the unescaped RBSP followed by the escape-position list. */
    uint8_t  *nal_scratch;
@@ -5081,6 +5087,18 @@ static int rh265_build_ref_lists(rh265_video *v)
    return 0;
 }
 
+static void rh265_raw_parameter_store(rh265_nal_t *slot,
+      const uint8_t *nal, size_t len)
+{
+   uint8_t *copy = NULL;
+   if (len <= 65536)
+      copy = (uint8_t*)malloc(len);
+   if (copy) memcpy(copy, nal, len);
+   free((void*)slot->data);
+   slot->data = copy;
+   slot->size = copy ? len : 0;
+}
+
 /* Handle one NAL unit.  Returns 1 when a picture completed, 0 otherwise,
  * negative on error. */
 static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
@@ -5106,6 +5124,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       if (!(nal[0] & 1) && nal[1] == 1
             && !rh265_parse_vps(nal + 2, len - 2, &info))
       {
+         if (v->raw_parameters)
+            rh265_raw_parameter_store(&v->raw_parameters->vps[id], nal, len);
          v->vps[id] = info;
          v->vps_valid[id] = 1;
       }
@@ -5142,7 +5162,11 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
              sp->pcm_enabled)
             ret = -2;                   /* out of the supported profile */
          else
+         {
+            if (v->raw_parameters)
+               rh265_raw_parameter_store(&v->raw_parameters->sps[id], nal, len);
             memcpy(&v->sps[id], sp, sizeof(*sp));
+         }
       }
    }
    else if (nal_type == RH265_NAL_PPS)
@@ -5152,6 +5176,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       ret = rh265_parse_pps(rbsp, rbsp_size, 0, pp, &id);
       if (ret == 0)
       {
+         if (v->raw_parameters)
+            rh265_raw_parameter_store(&v->raw_parameters->pps[id], nal, len);
          memcpy(&v->pps[id], pp, sizeof(*pp));
       }
    }
@@ -5499,6 +5525,18 @@ rh265_video *rh265_video_open(void)
    return v;
 }
 
+int rh265_video_retain_parameter_sets(rh265_video *v)
+{
+   unsigned i;
+   if (!v || v->hw || v->nal_scratch) return -1;
+   if (v->raw_parameters) return 0;
+   for (i = 0; i < 16; i++)
+      if (v->vps_valid[i]) return -1;
+   v->raw_parameters = (rh265_raw_parameters_t*)calloc(1,
+         sizeof(*v->raw_parameters));
+   return v->raw_parameters ? 0 : -1;
+}
+
 void rh265_video_close(rh265_video *v)
 {
    if (!v)
@@ -5536,6 +5574,17 @@ void rh265_video_close(rh265_video *v)
    }
    rh265_free_frame(v);
    free(v->nal_scratch);
+   if (v->raw_parameters)
+   {
+      unsigned i;
+      for (i = 0; i < 16; i++)
+         free((void*)v->raw_parameters->vps[i].data);
+      for (i = 0; i < RH265_MAX_SPS; i++)
+         free((void*)v->raw_parameters->sps[i].data);
+      for (i = 0; i < RH265_MAX_PPS; i++)
+         free((void*)v->raw_parameters->pps[i].data);
+      free(v->raw_parameters);
+   }
    {
       int k;
       for (k = 0; k < RH265_MAX_CTX; k++)
@@ -5847,6 +5896,27 @@ static const rh265_sps *rh265_sps_for_pps(const rh265_video *v, unsigned pps_id)
    if (sps_id < 0 || sps_id >= RH265_MAX_SPS || !v->sps[sps_id].valid)
       return NULL;
    return &v->sps[sps_id];
+}
+
+int rh265_video_get_parameter_sets(const rh265_video *v, unsigned pps_id,
+      rh265_nal_t out[3])
+{
+   const rh265_sps *s;
+   const rh265_raw_parameters_t *raw;
+   unsigned sps_id, vps_id;
+   if (!out) return -1;
+   memset(out, 0, 3 * sizeof(*out));
+   s = rh265_sps_for_pps(v, pps_id);
+   if (!s || !(raw = v->raw_parameters)) return -1;
+   sps_id = (unsigned)v->pps[pps_id].sps_id;
+   vps_id = s->sequence.vps_id;
+   if (vps_id >= 16 || !v->vps_valid[vps_id]
+         || !raw->vps[vps_id].data || !raw->sps[sps_id].data
+         || !raw->pps[pps_id].data) return -1;
+   out[0] = raw->vps[vps_id];
+   out[1] = raw->sps[sps_id];
+   out[2] = raw->pps[pps_id];
+   return 0;
 }
 
 int rh265_video_get_sequence(const rh265_video *v, unsigned pps_id,
