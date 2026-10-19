@@ -150,6 +150,7 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 @end
 @protocol MTLTexture <MTLResource>
 @property (readonly) MTLTextureType textureType;
+@property (readonly) MTLTextureUsage usage;
 @property (readonly) NSUInteger sampleCount, arrayLength, depth;
 @property (readonly) NSUInteger width;
 @property (readonly) NSUInteger height;
@@ -175,6 +176,7 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 @property (readonly) NSString *label;
 @end
 @protocol MTLComputePipelineState <NSObject>
+@property (readonly) id<MTLDevice> device;
 @property (readonly) NSUInteger maxTotalThreadsPerThreadgroup;
 @property (readonly) NSUInteger threadExecutionWidth;
 @end

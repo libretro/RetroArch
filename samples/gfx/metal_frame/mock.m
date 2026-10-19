@@ -11,6 +11,7 @@ static void CFRelease(CFTypeRef value) { [(id)value release]; }
 typedef enum { MTLPixelFormatInvalid, MTLPixelFormatBGRA8Unorm,
    MTLPixelFormatRGBA8Unorm, MTLPixelFormatRGBA16Float, MTLPixelFormatR8Unorm,
    MTLPixelFormatRG8Unorm, MTLPixelFormatR16Unorm, MTLPixelFormatRG16Unorm } MTLPixelFormat;
+enum { MTLTextureUsageShaderRead = 1, MTLTextureUsageShaderWrite = 2 };
 enum { MTLTextureType2D = 2, MTLCommandBufferStatusNotEnqueued = 0,
    MTLCommandBufferStatusEnqueued = 1, MTLCommandBufferStatusCompleted = 4,
    MTLCommandBufferStatusError = 5 };
@@ -31,13 +32,14 @@ static MTLSize MTLSizeMake(NSUInteger x, NSUInteger y, NSUInteger z)
 @end
 @protocol MTLTexture <NSObject>
 @property(readonly) id<MTLDevice> device;
-@property(readonly) NSUInteger textureType, sampleCount, arrayLength, depth, width, height, mipmapLevelCount;
+@property(readonly) NSUInteger textureType, sampleCount, arrayLength, depth, width, height, mipmapLevelCount, usage;
 @property(readonly) MTLPixelFormat pixelFormat;
 @end
 @protocol MTLCommandBuffer <NSObject>
 @property(readonly) id<MTLDevice> device;
 @property(readonly) NSUInteger status;
 @property(readonly) BOOL retainedReferences;
+- (id)computeCommandEncoder;
 - (id<MTLBlitCommandEncoder>)blitCommandEncoder;
 - (void)addCompletedHandler:(void (^)(id<MTLCommandBuffer>))block;
 @end
@@ -50,13 +52,13 @@ static unsigned live_textures, live_backing;
 {
 @public
    id<MTLDevice> _device;
-   NSUInteger _width, _height, _mips;
+   NSUInteger _width, _height, _mips, _usage;
    MTLPixelFormat _pixelFormat;
    unsigned char pixels[1024];
 }
 @end
 @implementation MockTexture
-- (id)init { if ((self = [super init])) { live_textures++; _mips = 1; } return self; }
+- (id)init { if ((self = [super init])) { live_textures++; _mips = 1; _usage = 3; } return self; }
 - (void)dealloc { live_textures--; [_device release]; [super dealloc]; }
 - (id<MTLDevice>)device { return _device; }
 - (NSUInteger)textureType { return MTLTextureType2D; }
@@ -64,6 +66,7 @@ static unsigned live_textures, live_backing;
 - (NSUInteger)arrayLength { return 1; }
 - (NSUInteger)depth { return 1; }
 - (NSUInteger)mipmapLevelCount { return _mips; }
+- (NSUInteger)usage { return _usage; }
 - (NSUInteger)width { return _width; }
 - (NSUInteger)height { return _height; }
 - (MTLPixelFormat)pixelFormat { return _pixelFormat; }
@@ -148,11 +151,13 @@ static unsigned live_textures, live_backing;
 - (void)encodeSignalEvent:(id)event value:(uint64_t)value;
 - (void)complete:(NSUInteger)status;
 @end
+static id mock_compute_encoder(MockBuffer *buffer);
 @implementation MockBuffer
 - (void)dealloc { assert(!completion); [resources release]; [_device release]; [super dealloc]; }
 - (id<MTLDevice>)device { return _device; }
 - (NSUInteger)status { return _status; }
 - (BOOL)retainedReferences { return !unretained; }
+- (id)computeCommandEncoder { return mock_compute_encoder(self); }
 - (id<MTLBlitCommandEncoder>)blitCommandEncoder
 {
    if (fail_encoder) return nil;
@@ -187,6 +192,7 @@ static unsigned live_textures, live_backing;
 
 /* SHIPPING_LEASE */
 /* COREVIDEO */
+/* SDR_CONVERT */
 
 @interface Texture : NSObject
 {
@@ -533,6 +539,7 @@ static void test(unsigned format, unsigned action)
 }
 int main(void)
 {
+   test_sdr_mock();
    test_cv_mock();
    unsigned i, j;
    const unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };

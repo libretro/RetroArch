@@ -919,6 +919,100 @@ bool metal_frame_copy(const struct video_frame_import *frame,
 }
 /* METAL_FRAME_LEASE_END */
 
+/* METAL_FRAME_SDR_PIPELINE_BEGIN */
+void *metal_frame_sdr_pipeline_create(void *device)
+{
+   static NSString *source = @
+      "#include <metal_stdlib>\n"
+      "using namespace metal;\n"
+      "struct FrameSDRParams { uint4 dims; float4 levels, k; uint4 mode; };\n"
+      "kernel void frame_sdr(texture2d<float, access::read> y [[texture(0)]],\n"
+      " texture2d<float, access::read> uv [[texture(1)]],\n"
+      " texture2d<float, access::write> out [[texture(2)]],\n"
+      " constant FrameSDRParams &p [[buffer(0)]], uint2 id [[thread_position_in_grid]])\n"
+      "{\n"
+      " if (any(id >= p.dims.xy)) return;\n"
+      " uint2 q = id + p.dims.zw;\n"
+      " float luma = y.read(q).r * p.levels.x + p.levels.y;\n"
+      " float2 c = uv.read(q >> 1).rg * p.levels.z + p.levels.w;\n"
+      " float3 rgb = saturate(float3(luma) + float3(p.k.x * c.y,\n"
+      "    p.k.y * c.x + p.k.z * c.y, p.k.w * c.x));\n"
+      " if (p.mode.x == 1u) {\n"
+      "    float3 l = select(pow((rgb + 0.099f) / 1.099f, float3(1.0f / 0.45f)),\n"
+      "       rgb / 4.5f, rgb < float3(0.081f));\n"
+      "    rgb = select(1.055f * pow(l, float3(1.0f / 2.4f)) - 0.055f,\n"
+      "       12.92f * l, l <= float3(0.0031308f));\n"
+      " }\n"
+      " out.write(float4(rgb, 1.0f), id);\n"
+      "}\n";
+   id<MTLDevice> dev = (__bridge id<MTLDevice>)device;
+   if (!dev)
+      return NULL;
+   @autoreleasepool
+   {
+      id<MTLLibrary> library = RARCH_AUTORELEASE_R([dev
+         newLibraryWithSource:source options:nil error:NULL]);
+      id<MTLFunction> function = RARCH_AUTORELEASE_R([library newFunctionWithName:@"frame_sdr"]);
+      id<MTLComputePipelineState> pipeline = function ? RARCH_AUTORELEASE_R([dev
+         newComputePipelineStateWithFunction:function error:NULL]) : nil;
+      if (!pipeline || pipeline.maxTotalThreadsPerThreadgroup < 64)
+         return NULL;
+      return (void *)RARCH_BRIDGE_RETAINED(pipeline);
+   }
+}
+/* METAL_FRAME_SDR_PIPELINE_END */
+
+/* METAL_FRAME_SDR_CONVERT_BEGIN */
+#include "../common/metal_frame_convert.h"
+
+typedef struct metal_frame_sdr_copy
+{
+   void *pipeline, *destination;
+   metal_frame_sdr_params_t params;
+} metal_frame_sdr_copy_t;
+
+static bool metal_frame_sdr_encode(void *user, const metal_frame_view_t *view,
+      void *commands)
+{
+   metal_frame_sdr_copy_t *copy = (metal_frame_sdr_copy_t *)user;
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)commands;
+   id<MTLComputeCommandEncoder> encoder = [buffer computeCommandEncoder];
+   if (!encoder)
+      return false;
+   [encoder setComputePipelineState:(__bridge id<MTLComputePipelineState>)copy->pipeline];
+   [encoder setTexture:(__bridge id<MTLTexture>)view->planes[0] atIndex:0];
+   [encoder setTexture:(__bridge id<MTLTexture>)view->planes[1] atIndex:1];
+   [encoder setTexture:(__bridge id<MTLTexture>)copy->destination atIndex:2];
+   [encoder setBytes:&copy->params length:sizeof(copy->params) atIndex:0];
+   [encoder dispatchThreadgroups:MTLSizeMake((view->width + 7u) / 8u,
+      (view->height + 7u) / 8u, 1) threadsPerThreadgroup:MTLSizeMake(8, 8, 1)];
+   [encoder endEncoding];
+   return true;
+}
+
+bool metal_frame_convert_sdr(const struct video_frame_import *frame,
+      void *device, void *command_buffer, void *pipeline, void *destination)
+{
+   RArchMetalFrameLease *lease = metal_frame_validate(frame, device, command_buffer);
+   id<MTLCommandBuffer> buffer = (__bridge id<MTLCommandBuffer>)command_buffer;
+   id<MTLTexture> texture = (__bridge id<MTLTexture>)destination;
+   id<MTLComputePipelineState> kernel = (__bridge id<MTLComputePipelineState>)pipeline;
+   metal_frame_sdr_copy_t copy;
+   if (!lease || !texture || !kernel || !buffer.retainedReferences
+         || kernel.device != lease->device || kernel.maxTotalThreadsPerThreadgroup < 64
+         || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888)
+         || texture == lease->planes[0] || texture == lease->planes[1]
+         || !metal_frame_texture_valid(texture, lease->device, MTLPixelFormatRGBA8Unorm)
+         || texture.width != lease->view.width || texture.height != lease->view.height
+         || texture.mipmapLevelCount != 1 || !(texture.usage & MTLTextureUsageShaderWrite)
+         || !metal_frame_sdr_params(&lease->view, &copy.params))
+      return false;
+   copy.pipeline = pipeline;
+   copy.destination = destination;
+   return metal_frame_encode(frame, device, command_buffer, metal_frame_sdr_encode, &copy);
+}
+/* METAL_FRAME_SDR_CONVERT_END */
+
 /* METAL_FRAME_CV_BEGIN */
 bool metal_frame_create_cv(const metal_frame_source_t *source,
       void *pixel_buffer, void *texture_cache, video_hw_frame_t *output)

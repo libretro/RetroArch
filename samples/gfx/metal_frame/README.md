@@ -62,3 +62,23 @@ copy/discard cases. The caller releases its pixel buffer and cache references
 before readiness advances. Test-only CPU mapping initializes spatial plane
 patterns; GPU copies and readback compare the active plane bytes exactly.
 This handoff is not a VideoToolbox decoder or a planar RGB converter.
+
+`metal_frame_sdr_pipeline_create` compiles an owned compute pipeline once,
+outside frame submission (release its CFTypeRef when finished).
+`metal_frame_convert_sdr` consumes a lease on successful encoding into an
+independent shader-writable RGBA8Unorm texture. It requires BT.709 primaries
+and matrix, explicit full/limited range, and BT.709 or sRGB transfer metadata.
+BT.709 inverse transfer and sRGB encoding are applied; sRGB input retains its
+transfer. Chroma uses nearest 2x2 reconstruction. P010 high-ten-bit samples
+use their exact ten-bit luma/chroma ranges. HDR and unknown metadata refuse.
+The command buffer must retain resource references. Refusal keeps the lease
+with the caller, following the same harmless-wait rule as packed copying.
+The helper adds no CPU pixel mapping, upload, readback or completion wait.
+
+The mock adds 32 compute-binding, refusal and retirement cases. Native tests
+convert eight spatially varying cropped CoreVideo frames (four pixel formats
+with two transfer functions). Independent reference pixels allow one UNORM8
+code of GPU rounding error. The C89 fixture also verifies the 64-byte constant
+layout and exact black/white/chroma-center levels on Linux and Windows.
+The packed driver callback is unchanged: planar importer integration,
+VideoToolbox sessions, HDR conversion and display acceptance remain gated.

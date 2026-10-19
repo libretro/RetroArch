@@ -61,6 +61,16 @@ bool metal_frame_encode(const struct video_frame_import *frame,
 bool metal_frame_copy(const struct video_frame_import *frame,
       void *device, void *command_buffer, void *destination);
 
+/* Create once outside frame submission; returns an owned CFTypeRef. */
+void *metal_frame_sdr_pipeline_create(void *device);
+
+/* NV12/P010 BT.709 primaries/matrix, explicit limited/full range and
+ * BT.709 or sRGB transfer, to independent shader-writable RGBA8 sRGB.
+ * Use the factory pipeline and nearest 2x2 chroma reconstruction.
+ * The retained-reference command buffer owns resources after acceptance. */
+bool metal_frame_convert_sdr(const struct video_frame_import *frame,
+      void *device, void *command_buffer, void *pipeline, void *destination);
+
 static INLINE bool metal_frame_geometry_valid(unsigned pixfmt,
       unsigned width, unsigned height, unsigned x, unsigned y,
       unsigned plane_width, unsigned plane_height,

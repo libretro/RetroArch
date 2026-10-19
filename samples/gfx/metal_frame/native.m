@@ -6,6 +6,7 @@
 
 /* SHIPPING_LEASE */
 /* COREVIDEO */
+/* SDR_CONVERT */
 /* NATIVE_IMPORT */
 
 typedef struct native_copy
@@ -146,6 +147,7 @@ int main(void)
       id<MTLDevice> device = MTLCreateSystemDefaultDevice();
       if (!device || ![device respondsToSelector:@selector(newSharedEvent)])
       { puts("SKIP: Metal shared events unavailable"); return 77; }
+      test_sdr_native(device);
       test_cv_native(device);
       unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };
       for (unsigned i = 0; i < 4; i++) { test(device, formats[i], false); test(device, formats[i], true); }

@@ -47,8 +47,14 @@ def main():
         cv = source.split("/* METAL_FRAME_CV_BEGIN */", 1)[1].split("/* METAL_FRAME_CV_END */", 1)[0]
         cv_fixture = (HERE / ("cv_mock.m" if args.mock else "cv_native.m")).read_text(encoding="utf-8")
         text = text.replace("/* COREVIDEO */", cv_fixture.replace("/* SHIPPING_CV */", cv))
+        convert = source.split("/* METAL_FRAME_SDR_CONVERT_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_CONVERT_END */", 1)[0]
+        convert = convert.replace('#include "../common/metal_frame_convert.h"', '#include "' + (ROOT / "gfx/common/metal_frame_convert.h").as_posix() + '"')
+        pipeline = source.split("/* METAL_FRAME_SDR_PIPELINE_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_PIPELINE_END */", 1)[0] if args.native else ""
+        sdr_fixture = (HERE / ("sdr_mock.m" if args.mock else "sdr_native.m")).read_text(encoding="utf-8")
+        text = text.replace("/* SDR_CONVERT */", sdr_fixture.replace("/* SHIPPING_SDR */", pipeline + convert))
         importer = source.split("/* METAL_FRAME_IMPORT_BEGIN */", 1)[1].split("/* METAL_FRAME_IMPORT_END */", 1)[0]
         text = text.replace("/* SHIPPING_IMPORT */", importer)
+        text = text.replace('#include "sdr_pixels.h"', '#include "' + (HERE / "sdr_pixels.h").as_posix() + '"')
         unit = tmp / "lease.m"
         unit.write_text(text, encoding="utf-8")
         flags = shlex.split(os.environ.get("OBJCFLAGS", "")) + ["-fblocks", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function", "-I" + str(ROOT / "libretro-common/include")]
