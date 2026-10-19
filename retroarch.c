@@ -3734,6 +3734,34 @@ static void command_event_finish_content_deinit(void)
 
 }
 
+/* What the audio driver's teardown drops, put back once it is up again:
+ * the record that the core is held, the menu's entries, the system
+ * sounds the mixer lost. */
+static void retroarch_audio_restarted(runloop_state_t *runloop_st,
+      settings_t *settings)
+{
+   bool core_held = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         && settings->bools.menu_pause_libretro
+#ifdef HAVE_NETWORKING
+         && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+#endif
+      )
+      core_held = true;
+#endif
+   (void)settings;
+   if (core_held)
+      audio_driver_pause_fade(true);
+#ifdef HAVE_MENU
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+#endif
+#if defined(HAVE_AUDIOMIXER)
+   audio_driver_load_system_sounds();
+#endif
+}
+
 bool command_event(enum event_command cmd, void *data)
 {
    struct rarch_state *p_rarch     = &rarch_st;
@@ -4670,16 +4698,22 @@ bool command_event(enum event_command cmd, void *data)
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
-         command_event_reinit(
-               data ? *(const int*)data : DRIVERS_CMD_ALL);
-
+         {
+            int reinit_flags = data ? *(const int*)data : DRIVERS_CMD_ALL;
+            if (command_event_reinit(reinit_flags))
+            {
+               /* Audio started over with the rest; what its own
+                * reinit restores after the teardown, this does. */
+               if (reinit_flags & DRIVER_AUDIO_MASK)
+                  retroarch_audio_restarted(runloop_st, settings);
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-         /* Menu sounds require audio reinit. */
-         if (     settings->bools.audio_enable_menu
-               && (!data || (*(const int*)data
-                     & (DRIVER_AUDIO_MASK | DRIVER_MENU_MASK))))
-            command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+               /* Menu sounds require audio reinit. */
+               else if (settings->bools.audio_enable_menu
+                     && (reinit_flags & DRIVER_MENU_MASK))
+                  command_event(CMD_EVENT_AUDIO_REINIT, NULL);
 #endif
+            }
+         }
 
          /* Recalibrate frame delay target if not pausing */
          if (settings->bools.video_frame_delay_auto && !video_st->frame_delay_pause)
@@ -5265,27 +5299,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
-         /* The teardown drops the record that the core is held. */
-         {
-            bool core_held = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
-#ifdef HAVE_MENU
-            if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
-                  && settings->bools.menu_pause_libretro
-#ifdef HAVE_NETWORKING
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
-#endif
-               )
-               core_held = true;
-#endif
-            if (core_held)
-               audio_driver_pause_fade(true);
-         }
-#ifdef HAVE_MENU
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-#endif
-#if defined(HAVE_AUDIOMIXER)
-         audio_driver_load_system_sounds();
-#endif
+         retroarch_audio_restarted(runloop_st, settings);
          break;
 #ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_REINIT:

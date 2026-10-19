@@ -1318,7 +1318,9 @@ void command_event_remove_current_config(enum override_type type);
  **/
 bool command_event_disk_control_append_image(const char *path);
 
-void command_event_reinit(const int flags);
+/* Whether the drivers were started over: not while a load is under
+ * way that starts them anyway. */
+bool command_event_reinit(const int flags);
 
 bool command_event_main_state(unsigned cmd);
 

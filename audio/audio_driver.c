@@ -9259,6 +9259,7 @@ struct audio_driver_rate_change
    size_t ring_bytes;
    float input;
    bool hq;
+   bool swap;    /* false: the rate holds, only the ring and slice follow */
    bool applied;
 };
 
@@ -9282,6 +9283,12 @@ static void audio_driver_rate_apply(void *userdata)
       ;
    if (!change->applied)
       return;
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      audio_st->pipe_pass_frames     = change->pass_frames;
+#endif
+   if (!change->swap)
+      return;
 
    res16.data    = audio_st->resampler_data_int16;
    res16.process = audio_st->resampler_int16_process;
@@ -9304,10 +9311,6 @@ static void audio_driver_rate_apply(void *userdata)
       audio_st->resampler_int16_free    = change->res16.free;
       audio_st->resampler_int16_sibling = change->res16.sibling;
    }
-#ifdef HAVE_THREADS
-   if (audio_st->pipe_threaded)
-      audio_st->pipe_pass_frames     = change->pass_frames;
-#endif
    /* The sink estimate's windows are in the old ratio. */
    audio_st->sink_bias               = 1.0;
    retro_atomic_store_release_int(&audio_st->sink_bias_q, 0);
@@ -9344,22 +9347,33 @@ bool audio_driver_set_input_rate(double input)
          || settings->bools.audio_time_stretch
          || settings->bools.audio_time_stretch_lowpass)
       return false;
-   if ((float)input == audio_st->input)
-      return true;
-
    change.input       = (float)input;
    change.ratio       = (double)audio_st->out_rate / change.input;
+   change.swap        = change.input != audio_st->input;
+   change.hq          = false;
    change.pass_frames = 0;
    change.ring_bytes  = 0;
+   change.resampler      = NULL;
+   change.resampler_data = NULL;
+   memset(&change.res16, 0, sizeof(change.res16));
 #ifdef HAVE_THREADS
+   /* Sized in video frames, so a new frame rate moves them too. */
    if (audio_st->pipe_threaded)
       change.ring_bytes = audio_driver_pipe_ring_frames(change.input,
             settings->bools.audio_sync, audio_st->pipe_latency,
             &change.pass_frames) * audio_st->pipe_frame_bytes;
+   if (     !change.swap
+         && (     !audio_st->pipe_threaded
+               || (     change.pass_frames == audio_st->pipe_pass_frames
+                     && change.ring_bytes  <= audio_st->pipe_ring.capacity)))
+      return true;
+#else
+   if (!change.swap)
+      return true;
 #endif
+   if (!change.swap)
+      goto apply;
 
-   change.resampler      = NULL;
-   change.resampler_data = NULL;
    if (!retro_resampler_realloc_hq(&change.resampler_data, &change.resampler,
             audio_st->resampler_ident, audio_st->resampler_quality,
             change.ratio, settings->bools.audio_resampler_hq_oversampling))
@@ -9369,7 +9383,6 @@ bool audio_driver_set_input_rate(double input)
       && change.resampler
       && (change.resampler->caps & RESAMPLER_CAP_HQ_OVERSAMPLE);
 
-   memset(&change.res16, 0, sizeof(change.res16));
    if (audio_st->resampler_data_int16)
    {
       retro_resampler_int16_new(&change.res16, change.resampler->short_ident,
@@ -9381,6 +9394,7 @@ bool audio_driver_set_input_rate(double input)
       }
    }
 
+apply:
 #ifdef HAVE_THREADS
    if (     audio_st->pipe_threaded
          && audio_st->current_audio
@@ -9398,8 +9412,9 @@ bool audio_driver_set_input_rate(double input)
    if (!change.applied)
       return false;
 
-   RARCH_LOG("[Audio] Input rate changed to %.2f Hz; the driver keeps running.\n",
-         input);
+   if (change.swap)
+      RARCH_LOG("[Audio] Input rate changed to %.2f Hz; the driver keeps running.\n",
+            input);
    return true;
 }
 
