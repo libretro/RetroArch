@@ -913,14 +913,14 @@ static const uint8_t sequence_main8_limited_7[] = {
    0xa9, 0x80
 };
 static const sequence_packet_t sequence_main8_limited_packets[] = {
-   {sequence_main8_limited_0, sizeof(sequence_main8_limited_0), {0xbfdfc8e7u, 0xa224380bu, 0xd99f42d2u}},
-   {sequence_main8_limited_1, sizeof(sequence_main8_limited_1), {0x9a1c30e3u, 0x1bc4ae0eu, 0xf6007a12u}},
-   {sequence_main8_limited_2, sizeof(sequence_main8_limited_2), {0x5bdeec60u, 0x4f8dd7b8u, 0xe2221598u}},
-   {sequence_main8_limited_3, sizeof(sequence_main8_limited_3), {0x3e1a1a57u, 0xb360f3fcu, 0x86db4f68u}},
-   {sequence_main8_limited_4, sizeof(sequence_main8_limited_4), {0x04c90b69u, 0xe9f39ba4u, 0x148839e9u}},
-   {sequence_main8_limited_5, sizeof(sequence_main8_limited_5), {0x93da7c98u, 0xa933df49u, 0xd6803ab5u}},
-   {sequence_main8_limited_6, sizeof(sequence_main8_limited_6), {0x501a0cfbu, 0x95834643u, 0x22fd2de5u}},
-   {sequence_main8_limited_7, sizeof(sequence_main8_limited_7), {0x80aeb976u, 0x6ad1f1abu, 0x7c5ca4b3u}},
+   {0, sequence_main8_limited_0, sizeof(sequence_main8_limited_0), {0xbfdfc8e7u, 0xa224380bu, 0xd99f42d2u}, 0, 2},
+   {1001, sequence_main8_limited_1, sizeof(sequence_main8_limited_1), {0x9a1c30e3u, 0x1bc4ae0eu, 0xf6007a12u}, 1, 1},
+   {2002, sequence_main8_limited_2, sizeof(sequence_main8_limited_2), {0x5bdeec60u, 0x4f8dd7b8u, 0xe2221598u}, 2, 1},
+   {3003, sequence_main8_limited_3, sizeof(sequence_main8_limited_3), {0x3e1a1a57u, 0xb360f3fcu, 0x86db4f68u}, 3, 1},
+   {4004, sequence_main8_limited_4, sizeof(sequence_main8_limited_4), {0x04c90b69u, 0xe9f39ba4u, 0x148839e9u}, 4, 1},
+   {5005, sequence_main8_limited_5, sizeof(sequence_main8_limited_5), {0x93da7c98u, 0xa933df49u, 0xd6803ab5u}, 5, 1},
+   {6006, sequence_main8_limited_6, sizeof(sequence_main8_limited_6), {0x501a0cfbu, 0x95834643u, 0x22fd2de5u}, 6, 1},
+   {7007, sequence_main8_limited_7, sizeof(sequence_main8_limited_7), {0x80aeb976u, 0x6ad1f1abu, 0x7c5ca4b3u}, 7, 1},
 };
 static const uint8_t sequence_main10_limited_hvcc[] = {
    0x01, 0x02, 0x20, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1327,14 +1327,14 @@ static const uint8_t sequence_main10_limited_7[] = {
    0x21, 0x02, 0x16, 0x60, 0xbf, 0x01, 0xfc, 0xfe, 0xc9, 0x80
 };
 static const sequence_packet_t sequence_main10_limited_packets[] = {
-   {sequence_main10_limited_0, sizeof(sequence_main10_limited_0), {0x6acc3d0eu, 0x8788cb19u, 0xf0e90bbbu}},
-   {sequence_main10_limited_1, sizeof(sequence_main10_limited_1), {0x1bd76132u, 0x745977cdu, 0x51a1a845u}},
-   {sequence_main10_limited_2, sizeof(sequence_main10_limited_2), {0xa19585adu, 0x1b85d2fcu, 0x4669c97au}},
-   {sequence_main10_limited_3, sizeof(sequence_main10_limited_3), {0x56257038u, 0x4da17375u, 0xc31828acu}},
-   {sequence_main10_limited_4, sizeof(sequence_main10_limited_4), {0x3b104393u, 0x7c991898u, 0x5a66ab3fu}},
-   {sequence_main10_limited_5, sizeof(sequence_main10_limited_5), {0x5593b12bu, 0x66fa73eeu, 0xb75ee8c2u}},
-   {sequence_main10_limited_6, sizeof(sequence_main10_limited_6), {0x084d31a9u, 0x7a888b19u, 0xceb4ca26u}},
-   {sequence_main10_limited_7, sizeof(sequence_main10_limited_7), {0xb6103c87u, 0xecc3d421u, 0x88931fcau}},
+   {0, sequence_main10_limited_0, sizeof(sequence_main10_limited_0), {0x6acc3d0eu, 0x8788cb19u, 0xf0e90bbbu}, 0, 2},
+   {1001, sequence_main10_limited_1, sizeof(sequence_main10_limited_1), {0x1bd76132u, 0x745977cdu, 0x51a1a845u}, 1, 1},
+   {2002, sequence_main10_limited_2, sizeof(sequence_main10_limited_2), {0xa19585adu, 0x1b85d2fcu, 0x4669c97au}, 2, 1},
+   {3003, sequence_main10_limited_3, sizeof(sequence_main10_limited_3), {0x56257038u, 0x4da17375u, 0xc31828acu}, 3, 1},
+   {4004, sequence_main10_limited_4, sizeof(sequence_main10_limited_4), {0x3b104393u, 0x7c991898u, 0x5a66ab3fu}, 4, 1},
+   {5005, sequence_main10_limited_5, sizeof(sequence_main10_limited_5), {0x5593b12bu, 0x66fa73eeu, 0xb75ee8c2u}, 5, 1},
+   {6006, sequence_main10_limited_6, sizeof(sequence_main10_limited_6), {0x084d31a9u, 0x7a888b19u, 0xceb4ca26u}, 6, 1},
+   {7007, sequence_main10_limited_7, sizeof(sequence_main10_limited_7), {0xb6103c87u, 0xecc3d421u, 0x88931fcau}, 7, 1},
 };
 static const uint8_t sequence_main8_full_hvcc[] = {
    0x01, 0x01, 0x60, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -2201,14 +2201,14 @@ static const uint8_t sequence_main8_full_7[] = {
    0x5c, 0x3b, 0x74, 0x75, 0x47, 0xc1, 0x40, 0xa7, 0x80
 };
 static const sequence_packet_t sequence_main8_full_packets[] = {
-   {sequence_main8_full_0, sizeof(sequence_main8_full_0), {0xc5269fc3u, 0x5b4e41acu, 0x39fb08eeu}},
-   {sequence_main8_full_1, sizeof(sequence_main8_full_1), {0xaa406de2u, 0x753bdd9eu, 0x3d3b48b4u}},
-   {sequence_main8_full_2, sizeof(sequence_main8_full_2), {0xe37d86c8u, 0x05ffeb7du, 0x771722a2u}},
-   {sequence_main8_full_3, sizeof(sequence_main8_full_3), {0xdfaf975cu, 0x716f0e64u, 0x241928adu}},
-   {sequence_main8_full_4, sizeof(sequence_main8_full_4), {0x573b0332u, 0xd9578ce3u, 0x4caafc03u}},
-   {sequence_main8_full_5, sizeof(sequence_main8_full_5), {0x2df514d7u, 0xa7ce7e2du, 0x8b71c165u}},
-   {sequence_main8_full_6, sizeof(sequence_main8_full_6), {0xe64fcdd6u, 0x3d14bc0du, 0x32378a25u}},
-   {sequence_main8_full_7, sizeof(sequence_main8_full_7), {0xf9cd9723u, 0xe3cf5537u, 0x99e6ecd8u}},
+   {0, sequence_main8_full_0, sizeof(sequence_main8_full_0), {0xc5269fc3u, 0x5b4e41acu, 0x39fb08eeu}, 0, 2},
+   {1001, sequence_main8_full_1, sizeof(sequence_main8_full_1), {0xaa406de2u, 0x753bdd9eu, 0x3d3b48b4u}, 1, 1},
+   {2002, sequence_main8_full_2, sizeof(sequence_main8_full_2), {0xe37d86c8u, 0x05ffeb7du, 0x771722a2u}, 2, 1},
+   {3003, sequence_main8_full_3, sizeof(sequence_main8_full_3), {0xdfaf975cu, 0x716f0e64u, 0x241928adu}, 3, 1},
+   {4004, sequence_main8_full_4, sizeof(sequence_main8_full_4), {0x573b0332u, 0xd9578ce3u, 0x4caafc03u}, 4, 1},
+   {5005, sequence_main8_full_5, sizeof(sequence_main8_full_5), {0x2df514d7u, 0xa7ce7e2du, 0x8b71c165u}, 5, 1},
+   {6006, sequence_main8_full_6, sizeof(sequence_main8_full_6), {0xe64fcdd6u, 0x3d14bc0du, 0x32378a25u}, 6, 1},
+   {7007, sequence_main8_full_7, sizeof(sequence_main8_full_7), {0xf9cd9723u, 0xe3cf5537u, 0x99e6ecd8u}, 7, 1},
 };
 static const uint8_t sequence_main10_full_hvcc[] = {
    0x01, 0x02, 0x20, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -2581,18 +2581,18 @@ static const uint8_t sequence_main10_full_7[] = {
    0xfc, 0xce, 0x1d, 0xbe, 0x7b, 0x27, 0x38, 0xa0
 };
 static const sequence_packet_t sequence_main10_full_packets[] = {
-   {sequence_main10_full_0, sizeof(sequence_main10_full_0), {0xa7434ccau, 0xcd069eb1u, 0xa815fb4fu}},
-   {sequence_main10_full_1, sizeof(sequence_main10_full_1), {0x2a52b8b5u, 0x02968c7eu, 0x5724f633u}},
-   {sequence_main10_full_2, sizeof(sequence_main10_full_2), {0x17f3fdb3u, 0x7a04ea4eu, 0x32ba62c7u}},
-   {sequence_main10_full_3, sizeof(sequence_main10_full_3), {0xcdc98331u, 0xa3a3a84du, 0xcaf4ccb0u}},
-   {sequence_main10_full_4, sizeof(sequence_main10_full_4), {0x271dad83u, 0x5aac3b27u, 0xc0b4bc74u}},
-   {sequence_main10_full_5, sizeof(sequence_main10_full_5), {0x7e96dedau, 0x78416c3du, 0x4dc9a3cau}},
-   {sequence_main10_full_6, sizeof(sequence_main10_full_6), {0x01179376u, 0x843bb634u, 0xeca75813u}},
-   {sequence_main10_full_7, sizeof(sequence_main10_full_7), {0x91bf0a03u, 0x178d3764u, 0xaf162f0du}},
+   {0, sequence_main10_full_0, sizeof(sequence_main10_full_0), {0xa7434ccau, 0xcd069eb1u, 0xa815fb4fu}, 0, 2},
+   {1001, sequence_main10_full_1, sizeof(sequence_main10_full_1), {0x2a52b8b5u, 0x02968c7eu, 0x5724f633u}, 1, 1},
+   {2002, sequence_main10_full_2, sizeof(sequence_main10_full_2), {0x17f3fdb3u, 0x7a04ea4eu, 0x32ba62c7u}, 2, 1},
+   {3003, sequence_main10_full_3, sizeof(sequence_main10_full_3), {0xcdc98331u, 0xa3a3a84du, 0xcaf4ccb0u}, 3, 1},
+   {4004, sequence_main10_full_4, sizeof(sequence_main10_full_4), {0x271dad83u, 0x5aac3b27u, 0xc0b4bc74u}, 4, 1},
+   {5005, sequence_main10_full_5, sizeof(sequence_main10_full_5), {0x7e96dedau, 0x78416c3du, 0x4dc9a3cau}, 5, 1},
+   {6006, sequence_main10_full_6, sizeof(sequence_main10_full_6), {0x01179376u, 0x843bb634u, 0xeca75813u}, 6, 1},
+   {7007, sequence_main10_full_7, sizeof(sequence_main10_full_7), {0x91bf0a03u, 0x178d3764u, 0xaf162f0du}, 7, 1},
 };
 static const sequence_case_t sequence_cases[] = {
-   {{"sequence_main8_limited", sequence_main8_limited_hvcc, sizeof(sequence_main8_limited_hvcc), sequence_main8_limited_0, sizeof(sequence_main8_limited_0), 8, 0, {0xbfdfc8e7u, 0xa224380bu, 0xd99f42d2u}}, sequence_main8_limited_packets},
-   {{"sequence_main10_limited", sequence_main10_limited_hvcc, sizeof(sequence_main10_limited_hvcc), sequence_main10_limited_0, sizeof(sequence_main10_limited_0), 10, 0, {0x6acc3d0eu, 0x8788cb19u, 0xf0e90bbbu}}, sequence_main10_limited_packets},
-   {{"sequence_main8_full", sequence_main8_full_hvcc, sizeof(sequence_main8_full_hvcc), sequence_main8_full_0, sizeof(sequence_main8_full_0), 8, 1, {0xc5269fc3u, 0x5b4e41acu, 0x39fb08eeu}}, sequence_main8_full_packets},
-   {{"sequence_main10_full", sequence_main10_full_hvcc, sizeof(sequence_main10_full_hvcc), sequence_main10_full_0, sizeof(sequence_main10_full_0), 10, 1, {0xa7434ccau, 0xcd069eb1u, 0xa815fb4fu}}, sequence_main10_full_packets},
+   {{"sequence_main8_limited", sequence_main8_limited_hvcc, sizeof(sequence_main8_limited_hvcc), sequence_main8_limited_0, sizeof(sequence_main8_limited_0), 8, 0, {0xbfdfc8e7u, 0xa224380bu, 0xd99f42d2u}}, sequence_main8_limited_packets, 0},
+   {{"sequence_main10_limited", sequence_main10_limited_hvcc, sizeof(sequence_main10_limited_hvcc), sequence_main10_limited_0, sizeof(sequence_main10_limited_0), 10, 0, {0x6acc3d0eu, 0x8788cb19u, 0xf0e90bbbu}}, sequence_main10_limited_packets, 0},
+   {{"sequence_main8_full", sequence_main8_full_hvcc, sizeof(sequence_main8_full_hvcc), sequence_main8_full_0, sizeof(sequence_main8_full_0), 8, 1, {0xc5269fc3u, 0x5b4e41acu, 0x39fb08eeu}}, sequence_main8_full_packets, 0},
+   {{"sequence_main10_full", sequence_main10_full_hvcc, sizeof(sequence_main10_full_hvcc), sequence_main10_full_0, sizeof(sequence_main10_full_0), 10, 1, {0xa7434ccau, 0xcd069eb1u, 0xa815fb4fu}}, sequence_main10_full_packets, 0},
 };
