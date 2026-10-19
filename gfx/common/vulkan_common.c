@@ -1073,6 +1073,9 @@ static const void *vulkan_anti_lag_chain(gfx_ctx_vulkan_data_t *vk,
       const void *next);
 static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk);
 static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk);
+#ifdef VULKAN_DXGI_PACING
+static void vulkan_dxgi_pacing_deinit(gfx_ctx_vulkan_data_t *vk);
+#endif
 static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
       uint64_t frame_id, unsigned marker);
 
@@ -5023,6 +5026,9 @@ static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
    unsigned i;
+#ifdef VULKAN_DXGI_PACING
+   vulkan_dxgi_pacing_deinit(vk);
+#endif
    /* The device is idle and the frame loop is this thread: whatever
     * was kept for a marker in flight can go. */
    for (i = 0; i < ll->num_retired; i++)
@@ -5200,20 +5206,121 @@ static unsigned vulkan_anti_lag_apply_want(gfx_ctx_vulkan_data_t *vk,
    }
    if (vk->swapchain == VK_NULL_HANDLE || vk->context.swapchain_external)
       return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
-#if defined(_WIN32) && !defined(__WINRT__)
-   if (vk->dxgi_presenter)
-      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
-#endif
    ll->mode = (uint8_t)mode;
    retro_atomic_store_release_int(&ll->amd_mode, (int)mode);
    return VIDEO_DRIVER_PACING_REASON_NONE;
 }
+
+#ifdef VULKAN_DXGI_PACING
+/* COM's first three slots, for the reference held on the device */
+typedef struct
+{
+   struct
+   {
+      void *query_interface;
+      unsigned long (__stdcall *add_ref)(void *self);
+      unsigned long (__stdcall *release)(void *self);
+   } *lpVtbl;
+} vulkan_com_object_t;
+
+/* The D3D12 device the DXGI presenter presents with, referenced until
+ * the context goes so a sleep on it never outlives it. NULL with no
+ * presenter, or with more devices than are kept. */
+static void *vulkan_dxgi_pacing_device(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   void *device;
+   unsigned i;
+   if (!vk->dxgi_presenter)
+      return NULL;
+   if (!(device = ra_vulkan_dxgi_device(
+               (ra_vulkan_dxgi_t*)vk->dxgi_presenter)))
+      return NULL;
+   for (i = 0; i < ll->dxgi_num_held; i++)
+      if (ll->dxgi_held[i] == device)
+         return device;
+   if (ll->dxgi_num_held == ARRAY_SIZE(ll->dxgi_held))
+      return NULL;
+   ((vulkan_com_object_t*)device)->lpVtbl->add_ref(device);
+   ll->dxgi_held[ll->dxgi_num_held++] = device;
+   return device;
+}
+
+/* The presenter's side of a mode request while presenting through
+ * DXGI: the mode goes on the presenting device through NVAPI, and the
+ * frame loop is shown that device while it is in effect. */
+static unsigned vulkan_dxgi_pacing_apply_want(gfx_ctx_vulkan_data_t *vk,
+      unsigned mode)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   void *device             = vulkan_dxgi_pacing_device(vk);
+   unsigned answer;
+   if (!device)
+   {
+      retro_atomic_store_release_size(&ll->dxgi_pub, 0);
+      return mode ? VIDEO_DRIVER_PACING_REASON_SWAPCHAIN
+                  : VIDEO_DRIVER_PACING_REASON_OFF;
+   }
+   if (!mode)
+      retro_atomic_store_release_int(&ll->stalled, 0);
+   else if (retro_atomic_load_acquire_int(&ll->stalled))
+   {
+      /* The frame loop's sleep failed: off until asked for anew */
+      retro_atomic_store_release_size(&ll->dxgi_pub, 0);
+      d3d_driver_pacing_set(&ll->dxgi, device, 0);
+      return VIDEO_DRIVER_PACING_REASON_FAILED;
+   }
+   answer = d3d_driver_pacing_set(&ll->dxgi, device, mode);
+   /* No NVAPI (Anti-Lag, say), where Vulkan's own present would have
+    * a backend: the present is what is in the way */
+   if (     answer == VIDEO_DRIVER_PACING_REASON_DEVICE
+         && (ll->supported || ll->anti_lag))
+      answer = VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
+   retro_atomic_store_release_size(&ll->dxgi_pub,
+         (mode && answer == VIDEO_DRIVER_PACING_REASON_NONE)
+         ? (size_t)device : 0);
+   return answer;
+}
+
+/* The device the presenter put the mode on, when it presents there */
+static void *vulkan_dxgi_pacing_on(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   return (vk->dxgi_presenter && ll->dxgi.mode && !ll->dxgi.failed)
+      ? ll->dxgi.device : NULL;
+}
+
+/* The context goes: the mode comes off and the devices are let go */
+static void vulkan_dxgi_pacing_deinit(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   unsigned i;
+   retro_atomic_store_release_size(&ll->dxgi_pub, 0);
+   if (ll->dxgi.device)
+      d3d_driver_pacing_free(&ll->dxgi, ll->dxgi.device);
+   for (i = 0; i < ll->dxgi_num_held; i++)
+      ((vulkan_com_object_t*)ll->dxgi_held[i])->lpVtbl->release(
+            ll->dxgi_held[i]);
+   ll->dxgi_num_held = 0;
+   memset(&ll->dxgi, 0, sizeof(ll->dxgi));
+}
+#endif
 
 /* The presenter's side of a mode request. */
 static unsigned vulkan_low_latency_apply_want(gfx_ctx_vulkan_data_t *vk,
       unsigned mode)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
+#ifdef VULKAN_DXGI_PACING
+   if (vk->dxgi_presenter)
+      return vulkan_dxgi_pacing_apply_want(vk, mode);
+   /* Native again: the mode left on the DXGI presenter's device goes */
+   if (ll->dxgi.mode && ll->dxgi.device)
+   {
+      retro_atomic_store_release_size(&ll->dxgi_pub, 0);
+      d3d_driver_pacing_set(&ll->dxgi, ll->dxgi.device, 0);
+   }
+#endif
    if (!ll->supported && ll->anti_lag)
       return vulkan_anti_lag_apply_want(vk, mode);
    if (!ll->supported)
@@ -5244,11 +5351,6 @@ static unsigned vulkan_low_latency_apply_want(gfx_ctx_vulkan_data_t *vk,
    }
    if (vk->swapchain == VK_NULL_HANDLE || vk->context.swapchain_external)
       return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
-#if defined(_WIN32) && !defined(__WINRT__)
-   /* Presented through DXGI: vkQueuePresentKHR never runs. */
-   if (vk->dxgi_presenter)
-      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
-#endif
    if (mode == ll->mode)
       return VIDEO_DRIVER_PACING_REASON_NONE;
    if (!vulkan_low_latency_apply(vk, mode, ll->min_interval_us))
@@ -5293,6 +5395,17 @@ void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
       retro_atomic_store_release_int(&ll->answer,
             (int)vulkan_low_latency_apply_want(vk, want));
    }
+#ifdef VULKAN_DXGI_PACING
+   {
+      void *device = vulkan_dxgi_pacing_on(vk);
+      if (device)
+      {
+         d3d_driver_pacing_frame_begin(&ll->dxgi, device, frame_id,
+               min_interval_us);
+         return;
+      }
+   }
+#endif
    if (!ll->supported)
    {
       /* The frame the PRESENT update names, and the frame limit the
@@ -5323,6 +5436,15 @@ void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
 void vulkan_low_latency_present_begin(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
+#ifdef VULKAN_DXGI_PACING
+   if (vk->dxgi_presenter)
+   {
+      void *device = vulkan_dxgi_pacing_on(vk);
+      if (device)
+         d3d_driver_pacing_present_begin(&ll->dxgi, device);
+      return;
+   }
+#endif
    /* Anti-Lag names the frame's own present only; it has no notion of
     * the presents after it */
    if (ll->anti_lag && !ll->supported)
@@ -5351,6 +5473,15 @@ void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
    VkLatencySleepInfoNV sleep_info;
+#ifdef VULKAN_DXGI_PACING
+   if (vk->dxgi_presenter)
+   {
+      void *device = vulkan_dxgi_pacing_on(vk);
+      if (device)
+         d3d_driver_pacing_present_end(&ll->dxgi, device);
+      return;
+   }
+#endif
    if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain || !ll->frame_id)
       return;
    if (ll->stage == 2)
@@ -5388,6 +5519,25 @@ bool vulkan_low_latency_wait(gfx_ctx_vulkan_data_t *vk,
    vulkan_low_latency_t *ll = &vk->low_latency;
    VkSemaphoreWaitInfo wait_info;
    VkResult res;
+#ifdef VULKAN_DXGI_PACING
+   {
+      /* Through DXGI, NvAPI_D3D_Sleep is the hold, on the device the
+       * presenter shows */
+      void *device = (void*)retro_atomic_load_acquire_size(&ll->dxgi_pub);
+      if (device)
+      {
+         if (retro_atomic_load_acquire_int(&ll->answer)
+               != VIDEO_DRIVER_PACING_REASON_NONE)
+            return false;
+         if (d3d_driver_pacing_sleep_on(device))
+            return true;
+         retro_atomic_store_release_int(&ll->stalled, 1);
+         retro_atomic_store_release_int(&ll->answer,
+               VIDEO_DRIVER_PACING_REASON_FAILED);
+         return false;
+      }
+   }
+#endif
    /* Anti-Lag's INPUT update is the hold, inside the driver, for the
     * frame about to sample its input; the device-wide call is safe
     * beside the presenter's on another thread. */
@@ -5458,6 +5608,16 @@ void vulkan_low_latency_mark_main(gfx_ctx_vulkan_data_t *vk,
    VkSetLatencyMarkerInfoNV info;
    VkSwapchainKHR swapchain;
    size_t gen;
+#ifdef VULKAN_DXGI_PACING
+   {
+      void *device = (void*)retro_atomic_load_acquire_size(&ll->dxgi_pub);
+      if (device)
+      {
+         d3d_driver_pacing_mark_on(device, frame_id, marker);
+         return;
+      }
+   }
+#endif
    if (!ll->supported || !frame_id)
       return;
    /* in_call before pub_gen, a full fence between, against the
@@ -5518,9 +5678,13 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
     * resize, never returned. */
 #if defined(_WIN32) && !defined(__WINRT__)
    if (vk->dxgi_presenter)
+   {
+      vulkan_low_latency_present_begin(vk);
       err = ra_vulkan_dxgi_present((ra_vulkan_dxgi_t *)vk->dxgi_presenter,
             index, present.waitSemaphoreCount, present.pWaitSemaphores,
             vk->context.swap_interval > 0 ? (unsigned)vk->context.swap_interval : 0);
+      vulkan_low_latency_present_end(vk);
+   }
    else
 #endif
    {

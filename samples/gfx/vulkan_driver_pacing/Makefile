@@ -22,13 +22,27 @@ SOURCES := vulkan_driver_pacing_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
+# Windows (mingw-w64, run under Wine): Vulkan presenting through DXGI
+# paces through NVAPI, against a stand-in nvapi64.dll beside the test
+ifneq ($(findstring mingw,$(CC)),)
+   EXE     := .exe
+   SOURCES += $(REPO_ROOT)/gfx/common/d3d_driver_pacing.c \
+              $(LIBRETRO_COMM_DIR)/time/rtime.c
+   NVAPI   := nvapi64.dll
+   LDLIBS  := -lm
+else
+   EXE     :=
+   NVAPI   :=
+   LDLIBS  := -lpthread -ldl -lm
+endif
+
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
            -DHAVE_VULKAN -DHAVE_THREADS -DHAVE_DYLIB \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/gfx/include \
            -I$(LIBRETRO_COMM_DIR)/include
 
-LDFLAGS += -lpthread -ldl -lm
+LDFLAGS += $(LDLIBS)
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -37,7 +51,10 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET)$(EXE) $(NVAPI)
+
+nvapi64.dll: fake_nvapi.c
+	$(CC) -shared -O1 -o $@ $<
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -46,14 +63,14 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS)
+$(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-check: $(TARGET)
-	./$(TARGET)
+check: all
+	$(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
-	rm -f $(TARGET) vulkan_driver_pacing_test.o
+	rm -f $(TARGET) $(TARGET).exe nvapi64.dll vulkan_driver_pacing_test.o
 	rm -rf $(SAMPLE_OBJDIR)
 
 .PHONY: all check clean

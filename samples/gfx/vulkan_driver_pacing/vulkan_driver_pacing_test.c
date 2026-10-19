@@ -573,6 +573,196 @@ static void test_fallback(void)
           "the runloop paces as before, off and on tries anew\n");
 }
 
+
+#ifdef VULKAN_DXGI_PACING
+/* --- presented through DXGI: Reflex through NVAPI ------------------ */
+
+#include "../../../gfx/common/win_vulkan_dxgi.h"
+
+/* The presenter's D3D12 device, as far as COM's references go */
+typedef struct fake_com fake_com_t;
+struct fake_com_vtbl
+{
+   void *query_interface;
+   unsigned long (__stdcall *add_ref)(fake_com_t *self);
+   unsigned long (__stdcall *release)(fake_com_t *self);
+};
+struct fake_com
+{
+   const struct fake_com_vtbl *lpVtbl;
+   unsigned long refs;
+};
+static unsigned long __stdcall fake_add_ref(fake_com_t *self)
+{ return ++self->refs; }
+static unsigned long __stdcall fake_release(fake_com_t *self)
+{ return --self->refs; }
+static const struct fake_com_vtbl fake_com_vtbl = { NULL, fake_add_ref,
+   fake_release };
+static fake_com_t fake_d3d12 = { &fake_com_vtbl, 1 };
+
+/* The presenter itself is never driven here: only its device is */
+ra_vulkan_dxgi_t *ra_vulkan_dxgi_create(VkInstance instance,
+      VkPhysicalDevice gpu, VkDevice device, VkQueue queue, unsigned family,
+      HWND window, unsigned width, unsigned height, VkFormat format,
+      void *queue_lock) { return NULL; }
+int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p, unsigned width,
+      unsigned height, VkFormat format) { return 0; }
+int ra_vulkan_dxgi_presentable(ra_vulkan_dxgi_t *p) { return 0; }
+void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *p) { }
+void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *p, float peak) { }
+int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *p) { return 0; }
+VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
+{ return VK_NULL_HANDLE; }
+VkResult ra_vulkan_dxgi_acquire(ra_vulkan_dxgi_t *p, VkSemaphore semaphore,
+      VkFence fence, unsigned *index, unsigned interval)
+{ return VK_ERROR_OUT_OF_DATE_KHR; }
+VkResult ra_vulkan_dxgi_present(ra_vulkan_dxgi_t *p, unsigned index,
+      unsigned count, const VkSemaphore *wait, unsigned interval)
+{ return VK_SUCCESS; }
+void *ra_vulkan_dxgi_device(ra_vulkan_dxgi_t *p)
+{ return p ? (void*)&fake_d3d12 : NULL; }
+
+/* fake_nvapi.c's log, read through the DLL the backend loaded */
+typedef struct
+{
+   int kind;
+   void *device;
+   uint64_t a;
+   unsigned b;
+} nv_event_t;
+enum { NV_MODE, NV_SLEEP, NV_MARK };
+typedef unsigned (*nv_log_t)(const nv_event_t **out, int reset);
+typedef void (*nv_fail_t)(int fail);
+static nv_log_t  nv_log;
+static nv_fail_t nv_fail;
+
+static unsigned nv_count(int kind, const nv_event_t **last)
+{
+   const nv_event_t *e;
+   unsigned i, n = nv_log(&e, 0), c = 0;
+   *last = NULL;
+   for (i = 0; i < n; i++)
+      if (e[i].kind == kind)
+      {
+         c++;
+         *last = &e[i];
+      }
+   return c;
+}
+
+static void nv_reset(void)
+{
+   const nv_event_t *e;
+   nv_log(&e, 1);
+}
+
+static void test_dxgi(void)
+{
+   const nv_event_t *e;
+   HMODULE dll = LoadLibraryA("nvapi64.dll");
+   void *presenter = (void*)(uintptr_t)0x5;
+   check(dll != NULL, "dxgi: the stand-in nvapi64.dll loads");
+   if (!dll)
+      return;
+   nv_log  = (nv_log_t)GetProcAddress(dll, "fake_nvapi_log");
+   nv_fail = (nv_fail_t)GetProcAddress(dll, "fake_nvapi_fail_sleep");
+   if (!nv_log || !nv_fail)
+      return;
+
+   /* Vulkan's own backend is up, but nothing reaches it: the present
+    * is DXGI's, and the mode goes on its D3D12 device */
+   reset(true, 0x100);
+   vk.dxgi_presenter = presenter;
+   nv_reset();
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_NONE, "dxgi: in effect");
+   check(nv_count(NV_MODE, &e) == 1 && e->device == &fake_d3d12
+         && e->a == 1, "dxgi: the mode on the presenter's D3D12 device");
+   check(fake_d3d12.refs == 2, "dxgi: the device held while it is used");
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_BOOST)
+         == VIDEO_DRIVER_PACING_REASON_NONE
+         && nv_count(NV_MODE, &e) == 2 && e->a == 3,
+         "dxgi: boost");
+   check(fake_d3d12.refs == 2, "dxgi: held once");
+
+   /* A frame: the presenter's markers on the device, the frame loop's
+    * sleep and input marker on it too */
+   nv_reset();
+   present_frame(1, 16667);
+   check(nv_count(NV_MODE, &e) == 1 && e->b == 16667,
+         "dxgi: the frame's interval goes to the sleep mode");
+   check(nv_count(NV_MARK, &e) == 5 && e->a == 1 && e->b == 5,
+         "dxgi: simulation end, submit and present markers on frame 1");
+   check(vulkan_low_latency_wait(&vk, 1, 2, 20000)
+         && nv_count(NV_SLEEP, &e) == 1 && e->device == &fake_d3d12,
+         "dxgi: the release is NvAPI_D3D_Sleep on the device");
+   vulkan_low_latency_mark_main(&vk, 2,
+         VIDEO_DRIVER_PACING_MARK_INPUT_SAMPLE);
+   check(nv_count(NV_MARK, &e) == 6 && e->a == 2 && e->b == 6,
+         "dxgi: the frame loop's input marker");
+   check(count(EV_MODE) == 0 && count(EV_SLEEP) == 0
+         && count(EV_MARK) == 0 && count(EV_WAIT) == 0,
+         "dxgi: nothing of VK_NV_low_latency2 is called");
+
+   /* A sleep NVAPI refuses: the frame loop falls back, the mode comes
+    * off at the presenter, and asking anew brings it back */
+   nv_fail(1);
+   check(!vulkan_low_latency_wait(&vk, 2, 3, 20000),
+         "dxgi: a failed sleep releases nothing");
+   nv_fail(0);
+   nv_reset();
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_BOOST)
+         == VIDEO_DRIVER_PACING_REASON_FAILED
+         && nv_count(NV_MODE, &e) == 1 && e->a == 0,
+         "dxgi: failed, and the mode taken off the device");
+   check(!vulkan_low_latency_wait(&vk, 2, 3, 20000)
+         && nv_count(NV_SLEEP, &e) == 0, "dxgi: failed: no sleep");
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
+         == VIDEO_DRIVER_PACING_REASON_OFF
+         && vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_NONE,
+         "dxgi: off and on again: in effect");
+
+   /* Off: taken off, the frame loop not held */
+   nv_reset();
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
+         == VIDEO_DRIVER_PACING_REASON_OFF
+         && nv_count(NV_MODE, &e) == 1 && e->a == 0,
+         "dxgi: off: the mode taken off the device");
+   check(!vulkan_low_latency_wait(&vk, 2, 3, 20000)
+         && nv_count(NV_SLEEP, &e) == 0, "dxgi: off: no sleep");
+
+   /* Threaded: the presenter answers the frame loop's request */
+   threaded = true;
+   nv_reset();
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_PENDING && nv_count(NV_MODE, &e) == 0,
+         "dxgi threaded: pending until the presenter's frame");
+   present_frame(3, 0);
+   check(nv_count(NV_MODE, &e) >= 1 && e->a == 1,
+         "dxgi threaded: the presenter puts the mode on");
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_NONE
+         && vulkan_low_latency_wait(&vk, 3, 4, 20000)
+         && nv_count(NV_SLEEP, &e) == 1,
+         "dxgi threaded: in effect, the frame loop sleeps on the device");
+
+   /* Native again: the device's mode comes off, Vulkan's own goes on */
+   vk.dxgi_presenter = NULL;
+   nv_reset();
+   num_events = 0;
+   present_frame(4, 0);
+   check(nv_count(NV_MODE, &e) == 1 && e->a == 0,
+         "dxgi gone: the mode taken off the D3D12 device");
+   check(count(EV_MODE) == 1 && last(EV_MODE)->b == 1,
+         "dxgi gone: VK_NV_low_latency2's mode on the swapchain");
+   threaded = false;
+   printf("   dxgi: through DXGI the mode, sleep and markers are NVAPI's "
+          "on the presenter's D3D12 device, held while used, and fall "
+          "back like the native path's\n");
+}
+#endif
+
 int main(void)
 {
    printf("vulkan driver pacing backend:\n");
@@ -584,6 +774,9 @@ int main(void)
    test_threaded();
    test_anti_lag();
    test_fallback();
+#ifdef VULKAN_DXGI_PACING
+   test_dxgi();
+#endif
    if (failures)
    {
       printf("FAILED: %u check(s)\n", failures);

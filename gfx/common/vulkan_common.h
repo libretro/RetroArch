@@ -456,6 +456,11 @@ typedef void (VKAPI_PTR *PFN_vkAntiLagUpdateAMD)(VkDevice device,
       const VkAntiLagDataAMD *pData);
 #endif
 
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "d3d_driver_pacing.h"
+#define VULKAN_DXGI_PACING
+#endif
+
 typedef struct vulkan_low_latency
 {
    uint64_t frame_id;
@@ -496,6 +501,17 @@ typedef struct vulkan_low_latency
     * negotiation interface, or the core's own) */
    bool core_device;
    bool noted;           /* this device's extensions were seen */
+#ifdef VULKAN_DXGI_PACING
+   /* Presented through DXGI: Reflex through NVAPI on the D3D12 device
+    * that presents, the presenter's to set as the native path's mode
+    * is. @dxgi_pub is the device the frame loop sleeps and marks on
+    * while the mode is in effect there, 0 otherwise; every device it
+    * has been is referenced in @dxgi_held until the context goes. */
+   d3d_driver_pacing_t dxgi;
+   void *dxgi_held[4];
+   unsigned dxgi_num_held;
+   retro_atomic_size_t dxgi_pub;
+#endif
 } vulkan_low_latency_t;
 
 typedef struct gfx_ctx_vulkan_data

@@ -14,6 +14,8 @@ int ra_vulkan_dxgi_presentable(ra_vulkan_dxgi_t *presenter);
 void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *presenter);
 void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *presenter, float peak);
 int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *presenter);
+/* The ID3D12Device the presenter presents with, for NVAPI */
+void *ra_vulkan_dxgi_device(ra_vulkan_dxgi_t *presenter);
 VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *presenter, unsigned index);
 VkResult ra_vulkan_dxgi_acquire(ra_vulkan_dxgi_t *presenter,
       VkSemaphore semaphore, VkFence fence, unsigned *index, unsigned interval);

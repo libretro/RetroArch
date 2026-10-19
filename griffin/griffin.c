@@ -615,6 +615,9 @@ VIDEO IMAGE
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
+#if defined(_WIN32) && (defined(HAVE_D3D) || defined(HAVE_VULKAN))
+#include "../gfx/common/d3d_driver_pacing.c"
+#endif
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.c"
 

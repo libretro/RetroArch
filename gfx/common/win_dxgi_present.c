@@ -21,6 +21,7 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak) { }
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 { return 2; }
 int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b) { return 0; }
+void *ra_dxgi_bridge_device(ra_dxgi_bridge_t *b) { return NULL; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)
 { return 0; }
 int ra_dxgi_bridge_present(ra_dxgi_bridge_t *b, uint64_t ready,
@@ -473,6 +474,11 @@ int ra_dxgi_bridge_present(ra_dxgi_bridge_t *b, uint64_t ready, unsigned interva
       if (FAILED(b->chain->lpVtbl->GetLastPresentCount(b->chain, &b->present_count)))
          b->present_count = 0;
    return SUCCEEDED(hr);
+}
+
+void *ra_dxgi_bridge_device(ra_dxgi_bridge_t *b)
+{
+   return (b && !b->failed) ? (void *)b->device : NULL;
 }
 
 int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b)

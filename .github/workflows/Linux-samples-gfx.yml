@@ -118,10 +118,22 @@ jobs:
         run: make -C samples/gfx/vulkan_swapchain_extent check
 
   vulkan-driver-pacing:
-    name: Vulkan driver pacing backend (fake VK_NV_low_latency2)
+    name: Vulkan driver pacing backend (fake VK_NV_low_latency2 and NVAPI)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: |
+          set -eu
+          pkgs="gcc-mingw-w64-x86-64 wine64"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            sleep 10
+          done
+          sudo apt-get install -y -qq \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
       - name: Checkout
         uses: actions/checkout@v5
       - name: Regression test
@@ -133,6 +145,11 @@ jobs:
           make -C samples/gfx/vulkan_driver_pacing check
           make -C samples/gfx/vulkan_driver_pacing clean
           make -C samples/gfx/vulkan_driver_pacing SANITIZER=address,undefined check
+          make -C samples/gfx/vulkan_driver_pacing clean
+          # Windows: presenting through DXGI, the mode, sleep and
+          # markers go through NVAPI (a stand-in nvapi64.dll)
+          make -C samples/gfx/vulkan_driver_pacing CC=x86_64-w64-mingw32-gcc RUNNER=wine check
+          make -C samples/gfx/vulkan_driver_pacing clean
 
   slang-rect:
     name: Presets read frames where they lie

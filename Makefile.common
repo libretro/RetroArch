@@ -1943,6 +1943,14 @@ ifeq ($(HAVE_D3D_COMMON), 1)
    OBJ     += gfx/common/d3d_common.o
 endif
 
+# Driver Pacing through NVAPI: the Direct3D drivers', and Vulkan's
+# when it presents through DXGI
+ifneq ($(findstring Win32,$(OS)),)
+   ifneq ($(findstring 1,$(HAVE_D3D_COMMON) $(HAVE_VULKAN)),)
+      OBJ += gfx/common/d3d_driver_pacing.o
+   endif
+endif
+
 ifeq ($(HAVE_CG), 1)
    DEFINES += -DHAVE_CG
    OBJ += gfx/drivers_shader/shader_gl_cg.o
