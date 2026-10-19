@@ -35,6 +35,9 @@ jobs:
         run: |
           python3 samples/gfx/videotoolbox_hevc/run.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/videotoolbox_hevc/run.py
+          python3 samples/gfx/videotoolbox_hevc/run.py --threadless
+          CFLAGS='-DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING' python3 samples/gfx/videotoolbox_hevc/run.py
+          TSAN_OPTIONS=halt_on_error=1 CFLAGS='-fsanitize=thread -fno-omit-frame-pointer' RUNNER="setarch $(uname -m) -R" python3 samples/gfx/videotoolbox_hevc/run.py
       - name: HEVC software and hardware sequencing regression
         working-directory: libretro-common/samples/formats/h265
         run: |
