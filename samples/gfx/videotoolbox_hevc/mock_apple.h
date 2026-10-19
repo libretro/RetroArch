@@ -58,6 +58,7 @@ OSStatus VTDecompressionSessionCreate(void*, CMVideoFormatDescriptionRef,
       CFDictionaryRef, CFDictionaryRef,
       const VTDecompressionOutputCallbackRecord*, VTDecompressionSessionRef*);
 void VTDecompressionSessionInvalidate(VTDecompressionSessionRef);
+OSStatus VTDecompressionSessionWaitForAsynchronousFrames(VTDecompressionSessionRef);
 CMVideoDimensions CMVideoFormatDescriptionGetDimensions(CMVideoFormatDescriptionRef);
 OSStatus CMBlockBufferCreateWithMemoryBlock(void*, void*, size_t, void*,
       const void*, size_t, size_t, unsigned, CMBlockBufferRef*);

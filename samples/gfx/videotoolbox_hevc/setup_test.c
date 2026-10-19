@@ -27,6 +27,7 @@ static VTDecompressionSessionRef pending_session;
 static CMSampleBufferRef batch_samples[VT_HEVC_TEST_BATCH];
 static void *batch_frames[VT_HEVC_TEST_BATCH];
 static unsigned batch_count;
+static int owner_drain_allowed;
 static rh265_nal_t wanted_sets[3];
 
 static struct object *create(int kind, int value)
@@ -109,6 +110,23 @@ void VTDecompressionSessionInvalidate(VTDecompressionSessionRef session)
 {
    assert(session->kind == 4 && !session->invalidated);
    session->invalidated = 1;
+}
+OSStatus VTDecompressionSessionWaitForAsynchronousFrames(VTDecompressionSessionRef session)
+{
+   unsigned i;
+   assert(owner_drain_allowed && session->kind == 4 && !session->invalidated);
+   for (i = batch_count; i > 0; i--)
+   {
+      CMSampleBufferRef sample = batch_samples[i - 1];
+      CVPixelBufferRef image = create(7, 0);
+      assert(sample && image);
+      session->callback(session->callback_ref, batch_frames[i - 1], 0, 0, image,
+            sample->timing.presentationTimeStamp, sample->timing.duration);
+      CVPixelBufferRelease(image); CFRelease(sample);
+      batch_samples[i - 1] = NULL; batch_frames[i - 1] = NULL;
+   }
+   batch_count = 0;
+   return 0;
 }
 CMVideoDimensions CMVideoFormatDescriptionGetDimensions(CMVideoFormatDescriptionRef format)
 {

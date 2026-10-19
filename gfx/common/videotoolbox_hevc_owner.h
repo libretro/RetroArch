@@ -47,10 +47,12 @@ static INLINE videotoolbox_hevc_owner_t *videotoolbox_hevc_owner_new(
    return owner;
 }
 
-/* Retirement executor only. Invalidation stops the session before ticket cancellation. */
+/* Retirement executor only. Drain delayed callbacks before releasing their storage.
+ * This blocking framework operation must never run on the playback thread. */
 static void videotoolbox_hevc_owner_destroy(void *work)
 {
    videotoolbox_hevc_owner_t *owner = (videotoolbox_hevc_owner_t*)work;
+   VTDecompressionSessionWaitForAsynchronousFrames(owner->session);
    VTDecompressionSessionInvalidate(owner->session);
    CFRelease(owner->session);
    CFRelease(owner->format);
