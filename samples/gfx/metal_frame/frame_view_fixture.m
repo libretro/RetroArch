@@ -17,7 +17,9 @@ struct frame_shader { int history_size; };
 {
 @public
    FrameContext *_context;
-   BOOL _movieFrame, _srcDirty;
+   id<MTLTexture> _src;
+   bool resize_render_targets;
+   BOOL _movieFrame, _movieHDR, _srcDirty;
    const void *_pendingSrc;
    int _loanLast, _format;
    unsigned history_updates, viewport_updates;
@@ -25,9 +27,11 @@ struct frame_shader { int history_size; };
    struct frame_shader *_shader;
    bool init_history;
    struct { struct { texture_t texture[4]; } frame; } _engine;
+   texture_t _moviePrevious[4];
 }
 @property(nonatomic) CGSize size;
 - (void)syncViewport;
+- (void)_clearMovieFrame;
 - (void)_updateHistory;
 - (void)_ensureFront;
 - (void)_initTexture:(texture_t*)texture withDescriptor:(MTLTextureDescriptor*)descriptor;
@@ -38,7 +42,12 @@ struct frame_shader { int history_size; };
 - (void)syncViewport { viewport_updates++; }
 - (void)dealloc
 {
-   for (unsigned i = 0; i < 4; i++) RARCH_STRUCT_ASSIGN(_engine.frame.texture[i].view, nil);
+   for (unsigned i = 0; i < 4; i++)
+   {
+      RARCH_STRUCT_ASSIGN(_engine.frame.texture[i].view, nil);
+      RARCH_STRUCT_ASSIGN(_moviePrevious[i].view, nil);
+   }
+   RARCH_RELEASE(_src);
    RARCH_SUPER_DEALLOC();
 }
 /* SHIPPING_FRAME_METHODS */

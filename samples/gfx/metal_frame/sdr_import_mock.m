@@ -1,11 +1,12 @@
 static void test_sdr_import_mock(void)
 {
-   unsigned ten, full, srgb, action;
+   unsigned ten, full, color, action;
    for (ten = 0; ten < 2; ten++) for (full = 0; full < 2; full++)
-      for (srgb = 0; srgb < 2; srgb++) for (action = 0; action < 6; action++)
+      for (color = 0; color < 4; color++) for (action = 0; action < 6; action++)
    {
       @autoreleasepool
       {
+         bool hdr = color >= 2;
          MockDevice *device = [MockDevice new], *other = [MockDevice new];
          MockTexture *y = [MockTexture new], *uv = [MockTexture new], *out = [MockTexture new];
          MockSDRPipeline *pipeline = [MockSDRPipeline new];
@@ -37,8 +38,9 @@ static void test_sdr_import_mock(void)
          source.ready_value = 3; source.done_value = 7;
          source.width = 7; source.height = 5; source.crop_x = 2; source.crop_y = 2;
          source.pixfmt = ten ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
-         source.color.primaries = 1; source.color.matrix = 1;
-         source.color.transfer = action == 3 ? 16 : srgb ? 13 : 1;
+         source.color.primaries = source.color.matrix = hdr ? 9 : 1;
+         source.color.transfer = color == 3 ? 18 : color == 2 ? 16 : color == 1 ? 13 : 1;
+         if (action == 3) source.color.matrix = 10;
          source.color.range = full ? 2 : 1;
          for (unsigned i = 0; i < 3; i++) source.backing[i] = [MockBacking new];
          assert(metal_frame_create(&source, &frame));
@@ -50,7 +52,7 @@ static void test_sdr_import_mock(void)
          imported.done = frame.done; imported.done_value = frame.done_value;
          imported.pixfmt = frame.pixfmt; imported.dims = VIDEO_SCALE_PACK(7, 5);
          imported.crop_x = 2; imported.crop_y = 2;
-         imported.output_pixfmt = IMAGE_PIXFMT_8888;
+         imported.output_pixfmt = hdr ? IMAGE_PIXFMT_FP16 : IMAGE_PIXFMT_8888;
          out->_width = 6;
          out->_pixelFormat = MTLPixelFormatBGRA8Unorm;
          if (action == 4) context->_frameSDRPipeline = NULL;
@@ -68,7 +70,7 @@ static void test_sdr_import_mock(void)
          {
             assert(metal_import_texture(driver, &handle, &imported, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
             assert(handle == (uintptr_t)previous && previous.texture != out);
-            assert(previous.texture.pixelFormat == MTLPixelFormatRGBA8Unorm);
+            assert(previous.texture.pixelFormat == (hdr ? MTLPixelFormatRGBA16Float : MTLPixelFormatRGBA8Unorm));
             assert(buffer->sequence == 3 && buffer->completion);
          }
          [previous release]; [out release]; [pipeline release];
@@ -82,5 +84,5 @@ static void test_sdr_import_mock(void)
          [device release]; [other release];
       }
    }
-   puts("Metal SDR importer mock: 48 replacement/refusal/retirement cases passed");
+   puts("Metal planar importer mock: 96 SDR/PQ/HLG replacement/refusal/retirement cases passed");
 }

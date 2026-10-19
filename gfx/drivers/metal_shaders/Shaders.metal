@@ -883,6 +883,54 @@ fragment float4 stock_fragment_linear(FontFragmentIn  in     [[ stage_in ]],
  *   2 — swapchain is scRGB; source is SDR (inverse_tonemap+hdr10 off) or HDR16
  *   1 — swapchain is HDR10 PQ; source is SDR (inverse_tonemap+hdr10 on) or PQ
  */
+/* Movie sources are linear scRGB independently of core/shader HDR flags.
+ * Existing HDRUniforms layout and core composite semantics remain unchanged. */
+fragment float4 hdr_movie_fragment(
+      HDRVertexOut in [[ stage_in ]],
+      constant HDRUniforms &u [[ buffer(0) ]],
+      texture2d<float> src [[ texture(0) ]],
+      sampler samp [[ sampler(0) ]])
+{
+   float2 frag_px    = in.position.xy;
+   float2 vp_origin  = u.CoreViewport.xy;
+   float2 vp_size    = u.CoreViewport.zw;
+   float2 core_uv    = (frag_px - vp_origin) / vp_size;
+   bool   in_rect    =    all(core_uv >= float2(0.0f))
+                       && all(core_uv <= float2(1.0f));
+
+   if (!in_rect)
+      return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+   /* Rotate sampling coordinates for rotated content (TATE / vertical
+    * games).  Nonzero only on the core pass; the menu pass is never
+    * rotated.  The rect test above stays in screen space (the viewport
+    * already has the rotated aspect); only the sampling rotates.
+    * Mapping is corner-exact with what the SDR blit's rotated MVP
+    * (matrix_rotate_z * matrix_proj_ortho, y-negating ortho) displays:
+    *   rot 1: uv' = (1-v, u)   rot 2: uv' = (1-u, 1-v)
+    *   rot 3: uv' = (v, 1-u) */
+   switch (u.Rotation)
+   {
+      default:
+         break;
+      case 1u:
+         core_uv = float2(1.0f - core_uv.y, core_uv.x);
+         break;
+      case 2u:
+         core_uv = float2(1.0f - core_uv.x, 1.0f - core_uv.y);
+         break;
+      case 3u:
+         core_uv = float2(core_uv.y, 1.0f - core_uv.x);
+         break;
+   }
+
+   float4 value = src.sample(samp, core_uv);
+   if (u.HDRMode == 2u)
+      return value;
+   float3 linear2020 = hdr::k709to2020 * value.rgb * (80.0f / 10000.0f);
+   return float4(hdr::LinearToST2084(clamp(linear2020, float3(0.0f), float3(1.0f))), value.a);
+}
+
 fragment float4 hdr_composite_fragment(
       HDRVertexOut            in       [[ stage_in ]],
       constant HDRUniforms    &u       [[ buffer(0) ]],

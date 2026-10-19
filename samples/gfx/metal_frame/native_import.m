@@ -23,12 +23,14 @@
 @property(readonly) id<MTLCommandBuffer> blitCommandBuffer;
 @property(readonly) BOOL hdrEnabled;
 @property(readonly) void *frameSDRPipeline;
+@property(readonly) BOOL movieHDRSupported;
 - (id)linearShader;
 - (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
       height:(unsigned)height filter:(enum texture_filter_type)filter;
 @end
 @implementation NativeContext
 - (void *)frameSDRPipeline { return _frameSDRPipeline; }
+- (BOOL)movieHDRSupported { return YES; }
 - (id<MTLDevice>)device { return _device; }
 - (id<MTLCommandBuffer>)blitCommandBuffer { return _buffer; }
 - (BOOL)hdrEnabled { return YES; }

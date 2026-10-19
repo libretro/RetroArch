@@ -80,6 +80,13 @@ static void test_registry_lifetime(void)
    assert(videotoolbox_hevc_registry_init(&registry, lock, registry_retain,
             registry_release, NULL, NULL, owner_enqueue, &queue, true));
    assert(!videotoolbox_hevc_registry_publish(&registry, NULL, &first));
+   assert(!registry.backend.hdr_enabled(&registry));
+   assert(videotoolbox_hevc_registry_publish_support(&registry, &first, &first, true));
+   assert(registry.backend.hdr_enabled(&registry));
+   assert(!videotoolbox_hevc_registry_withdraw(&registry, &second));
+   assert(registry.backend.hdr_enabled(&registry));
+   assert(videotoolbox_hevc_registry_withdraw(&registry, &first));
+   assert(!registry.backend.hdr_enabled(&registry));
    assert(!videotoolbox_hevc_registry_publish(&registry, &first, NULL));
    assert(videotoolbox_hevc_registry_publish(&registry, &first, &first));
    snapshot = videotoolbox_hevc_registry_acquire(&registry); assert(snapshot == &first);

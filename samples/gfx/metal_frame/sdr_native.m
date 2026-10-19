@@ -15,6 +15,7 @@ static unsigned sdr_code(unsigned f, unsigned x, unsigned y, unsigned plane, uns
 }
 /* NATIVE_IMPORT */
 /* NATIVE_FRAME_VIEW */
+/* HDR_NATIVE */
 static unsigned sdr_native_finish(id<MTLCommandBuffer> buffer,
       id<MTLCommandQueue> producer, id<MTLSharedEvent> __strong const *ready_events,
       id<MTLSharedEvent> __strong const *done_events, id<MTLTexture> __strong const *readbacks,
@@ -232,6 +233,7 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch, bool movie)
 
 static void test_sdr_native(id<MTLDevice> device)
 {
+   test_hdr_native(device);
    test_sdr_native_mode(device, false, false);
    test_sdr_native_mode(device, true, false);
    test_sdr_native_mode(device, false, true);

@@ -13,7 +13,7 @@ typedef struct metal_frame_sdr_params
    uint32_t mode[4];
 } metal_frame_sdr_params_t;
 
-static INLINE bool metal_frame_sdr_params(const metal_frame_view_t *view,
+static INLINE bool metal_frame_yuv_params(const metal_frame_view_t *view,
       metal_frame_sdr_params_t *output)
 {
    metal_frame_sdr_params_t p;
@@ -21,8 +21,6 @@ static INLINE bool metal_frame_sdr_params(const metal_frame_view_t *view,
    bool ten, full;
    if (!view || !output || (view->pixfmt != IMAGE_PIXFMT_NV12
             && view->pixfmt != IMAGE_PIXFMT_P010)
-         || view->color.primaries != 1 || view->color.matrix != 1
-         || (view->color.transfer != 1 && view->color.transfer != 13)
          || (view->color.range != 1 && view->color.range != 2)
          || !view->width || !view->height
          || !VIDEO_SCALE_FITS(view->width, view->height)
@@ -46,4 +44,26 @@ static INLINE bool metal_frame_sdr_params(const metal_frame_view_t *view,
    *output = p;
    return true;
 }
+/* SDR is encoded sRGB; HDR is linear scRGB (1.0 = 80 nits). */
+static INLINE bool metal_frame_sdr_params(const metal_frame_view_t *view,
+      metal_frame_sdr_params_t *output)
+{
+   return view && view->color.primaries == 1 && view->color.matrix == 1
+      && (view->color.transfer == 1 || view->color.transfer == 13)
+      && metal_frame_yuv_params(view, output);
+}
+static INLINE bool metal_frame_hdr_params(const metal_frame_view_t *view,
+      metal_frame_sdr_params_t *output)
+{
+   metal_frame_sdr_params_t p;
+   if (!output || !view || view->color.primaries != 9 || view->color.matrix != 9
+         || (view->color.transfer != 16 && view->color.transfer != 18)
+         || !metal_frame_yuv_params(view, &p))
+      return false;
+   p.coefficients[0] = 1.4746f; p.coefficients[1] = -0.164553127f;
+   p.coefficients[2] = -0.571353127f; p.coefficients[3] = 1.8814f;
+   *output = p;
+   return true;
+}
+
 #endif

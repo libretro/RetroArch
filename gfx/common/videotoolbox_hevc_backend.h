@@ -15,7 +15,8 @@ typedef struct videotoolbox_hevc_backend
    void (*release)(void *device);
    bool (*enabled)(void *user);
    videotoolbox_hevc_enqueue_t enqueue;
-   bool sdr_only;
+   bool validate_color;
+   bool (*hdr_enabled)(void *user);
 } videotoolbox_hevc_backend_t;
 
 static VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_backend_open(void *opaque, const rh265_video *source,
@@ -30,7 +31,7 @@ static VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_backend_open(void *opa
    if (!backend || !source || !params || !slots || slots > 32
          || !backend->acquire || !backend->release || !backend->enqueue
          || (backend->enabled && !backend->enabled(backend->user))) return false;
-   if (backend->sdr_only)
+   if (backend->validate_color)
    {
       rh265_video_color_t color;
       metal_frame_view_t view;
@@ -49,7 +50,9 @@ static VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_backend_open(void *opa
       view.pixfmt = params->bit_depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12;
       view.color.primaries = color.primaries; view.color.transfer = color.transfer;
       view.color.matrix = color.matrix; view.color.range = color.full_range ? 2 : 1;
-      if (!metal_frame_sdr_params(&view, &conversion)) return false;
+      if (!metal_frame_sdr_params(&view, &conversion)
+            && !(backend->hdr_enabled && backend->hdr_enabled(backend->user)
+               && metal_frame_hdr_params(&view, &conversion))) return false;
    }
    device = backend->acquire(backend->user);
    if (!device) return false;
@@ -67,14 +70,14 @@ static VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_backend_open(void *opa
 static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE void videotoolbox_hevc_backend_init(videotoolbox_hevc_backend_t *backend,
       void *user, void *(*acquire)(void*), void (*release)(void*),
       bool (*enabled)(void*), videotoolbox_hevc_enqueue_t enqueue,
-      void *enqueue_user, bool sdr_only)
+      void *enqueue_user, bool validate_color)
 {
    memset(backend, 0, sizeof(*backend));
    backend->offer.user = backend; backend->offer.open = videotoolbox_hevc_backend_open;
    backend->offer.close = videotoolbox_hevc_decoder_close;
    backend->user = user; backend->acquire = acquire; backend->release = release;
    backend->enabled = enabled; backend->enqueue = enqueue;
-   backend->enqueue_user = enqueue_user; backend->sdr_only = sdr_only;
+   backend->enqueue_user = enqueue_user; backend->validate_color = validate_color;
 }
 #endif
 #endif

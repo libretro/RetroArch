@@ -34,7 +34,7 @@ static unsigned live_sdr_pipelines;
    uint32_t dims[4], mode;
    memcpy(dims, params, sizeof(dims)); memcpy(&mode, params + 48, sizeof(mode));
    assert(bindings == 3 && dims[0] == 7 && dims[1] == 5 && dims[2] == 2 && dims[3] == 2);
-   assert(mode == 1 || mode == 13);
+   assert(mode == 1 || mode == 13 || mode == 16 || mode == 18);
    assert(groups.width == 1 && groups.height == 1 && groups.depth == 1);
    assert(threads.width == 8 && threads.height == 8 && threads.depth == 1);
 }
