@@ -9,7 +9,15 @@ and encoder refusal, then packed copies, cropping, allocation failure, color
 refusal and persistent texture reuse.
 `OBJCFLAGS` can enable sanitizers; GNUstep owns process-lifetime globals.
 `--native` builds with Apple frameworks and runs actual Metal wait, copy,
-signal and discard cases. Exit 77 means shared events are unavailable.
+signal and discard cases. It also extracts the shipping packed importer and
+private-texture allocator into a thin driver/context harness with real Metal
+resources. Five two-frame cases check same-image reuse, width and height
+replacement, BGRA-to-RGBA channel order and FP16 values above reference white.
+Both imports and readbacks are encoded before readiness advances; the public
+handle is released before GPU execution. Exact cropped pixels verify that
+queued commands retain the images they reference. The harness supplies an
+active linear-pipeline gate; it does not test HDR display compositing.
+Exit 77 means shared events are unavailable.
 Only the native fixture performs CPU waits and GPU readback.
 
 The internal factory borrows source objects and exports one retained lease.

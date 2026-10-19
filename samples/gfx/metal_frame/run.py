@@ -39,6 +39,11 @@ def main():
         preamble += 'typedef struct video_frame_import\n' + carrier + '} video_frame_import_t;\n'
         fixture = HERE / ("mock.m" if args.mock else "native.m")
         text = fixture.read_text(encoding="utf-8").replace("/* SHIPPING_LEASE */", preamble + section)
+        if args.native:
+            native_import = (HERE / "native_import.m").read_text(encoding="utf-8")
+            allocation = "- (Texture *)newImportedTexture:" + source.rsplit("- (Texture *)newImportedTexture:", 1)[1].split("\n}", 1)[0] + "\n}"
+            native_import = native_import.replace("/* SHIPPING_IMPORT_ALLOCATION */", allocation)
+            text = text.replace("/* NATIVE_IMPORT */", native_import)
         importer = source.split("/* METAL_FRAME_IMPORT_BEGIN */", 1)[1].split("/* METAL_FRAME_IMPORT_END */", 1)[0]
         text = text.replace("/* SHIPPING_IMPORT */", importer)
         unit = tmp / "lease.m"

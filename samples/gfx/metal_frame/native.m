@@ -5,6 +5,7 @@
 #include <dispatch/dispatch.h>
 
 /* SHIPPING_LEASE */
+/* NATIVE_IMPORT */
 
 typedef struct native_copy
 {
@@ -147,6 +148,12 @@ int main(void)
       unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };
       for (unsigned i = 0; i < 4; i++) { test(device, formats[i], false); test(device, formats[i], true); }
       puts("Metal lease native: eight GPU/discard cases passed");
+      test_import(device, MTLPixelFormatBGRA8Unorm, 7, 5);
+      test_import(device, MTLPixelFormatBGRA8Unorm, 5, 5);
+      test_import(device, MTLPixelFormatBGRA8Unorm, 7, 3);
+      test_import(device, MTLPixelFormatRGBA8Unorm, 7, 5);
+      test_import(device, MTLPixelFormatRGBA16Float, 7, 5);
+      puts("Metal importer native: reuse, width, height, channel order and FP16 replacement passed");
    }
    return 0;
 }
