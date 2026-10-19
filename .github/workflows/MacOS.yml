@@ -147,9 +147,9 @@ jobs:
     - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0
-        python3 samples/gfx/videotoolbox_hevc/run.py --native || rc=$?
+        python3 samples/gfx/videotoolbox_hevc/run.py --native --metal || rc=$?
         if [ "$rc" = 77 ]; then
-          echo "::warning::HEVC hardware decode unavailable; native codec check did not run"
+          echo "::warning::HEVC hardware decode or Metal shared events unavailable; native bridge check did not complete"
           exit 0
         fi
         exit "$rc"

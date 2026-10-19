@@ -142,8 +142,14 @@ static void test_codec_batch(void)
          codec_case_t picture = *fixture;
          if (sequence) memcpy(picture.crc, sequence->packets[i].crc, sizeof(picture.crc));
          codec_native_pixels(&picture, results[i].image);
-#endif
+#ifdef VT_HEVC_METAL
+         videotoolbox_hevc_metal_test(results[i].image, picture.depth, picture.full, picture.crc);
+#else
          CVPixelBufferRelease(results[i].image);
+#endif
+#else
+         CVPixelBufferRelease(results[i].image);
+#endif
       }
 #ifdef VT_HEVC_NATIVE
       if (sequence && sequence->reordered)
