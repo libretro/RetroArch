@@ -728,6 +728,8 @@ static void pause_boundary_run(void);
 static bool pause_boundary_mode;
 static void consumer_exit_run(void);
 static bool consumer_exit_mode;
+static void kept_device_run(void);
+static bool kept_device_mode;
 /* The pause boundary and consumer exit lanes run their one scenario in
  * place of the load sweep's phases. */
 static bool single_lane;
@@ -1130,6 +1132,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       consumer_exit_run();
       frames = 0;
    }
+   if (kept_device_mode)
+   {
+      kept_device_run();
+      frames = 0;
+   }
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
@@ -1390,6 +1397,65 @@ static void consumer_exit_run(void)
          fixture_failures - f0);
 }
 
+/* The device kept across a content switch: the real wrapper stopped,
+ * everything its thread reads rebuilt meanwhile - the ring, both
+ * eventcounts, the resampler - and started again, as the frontend does
+ * when the next core takes the kept device back. The stopped thread
+ * must touch none of it, which is what this lane puts in front of
+ * ThreadSanitizer, and the audio must flow once it is started. */
+static void kept_device_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t per_frame         = (size_t)(CORE_RATE / FPS);
+   size_t ring_bytes        = st->pipe_ring.capacity;
+   size_t writes;
+   unsigned frame;
+
+   for (frame = 0; frame < 8; frame++)
+      submit_frame(per_frame, 1);
+   writes = 0;
+   if (!wait_progress(wrote_since, &writes))
+      fixture_failures++;
+
+   if (!st->current_audio->stop(st->context_audio_data))
+      fixture_failures++;
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_STARTED);
+
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+   st->resampler->free(st->resampler_data);
+   st->resampler_data = NULL;
+   if (     !retro_spsc_init(&st->pipe_ring, ring_bytes)
+         || !retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data)
+         || !retro_resampler_realloc(&st->resampler_data, &st->resampler,
+               st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
+   {
+      fixture_failures++;
+      return;
+   }
+   st->pipe_priming = true;
+
+   audio_driver_publish_runloop();
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
+   if (!st->current_audio->start(st->context_audio_data, false))
+      fixture_failures++;
+   writes = retro_atomic_load_acquire_size(&cnt_writes);
+   for (frame = 0; frame < 8; frame++)
+      submit_frame(per_frame, 1);
+   if (!wait_progress(wrote_since, &writes))
+      fixture_failures++;
+}
+
+static void kept_device_run(void)
+{
+   unsigned f0 = fixture_failures;
+   kept_device_case();
+   printf("kept device: stopped across a rebuild, writing again once started, %u failures\n",
+         fixture_failures - f0);
+}
+
 static void pause_boundary_run(void)
 {
    unsigned f0 = fixture_failures;
@@ -1429,7 +1495,9 @@ int main(int argc, char **argv)
    auto_runloop = getenv("AUTO_RUNLOOP") != NULL;
    pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
    consumer_exit_mode  = getenv("CONSUMER_EXIT") != NULL;
-   single_lane         = pause_boundary_mode || consumer_exit_mode;
+   kept_device_mode    = getenv("KEPT_DEVICE") != NULL;
+   single_lane         = pause_boundary_mode || consumer_exit_mode
+                      || kept_device_mode;
    if (pause_boundary_mode && (!use_wrapper || !transport))
    {
       fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");

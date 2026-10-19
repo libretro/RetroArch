@@ -1071,10 +1071,125 @@ static void audio_driver_pipe_marks_clear(audio_driver_state_t *audio_st)
 }
 #endif
 
+/* A device set aside across a content switch, and what it was opened
+ * with: the next init takes it back when it would open the same, and
+ * frees it otherwise. Stopped while it waits - the threaded wrapper
+ * parked, so its thread reads nothing that is rebuilt meanwhile. */
+static struct
+{
+   const audio_driver_t *driver;
+   void    *data;
+   char     ident[sizeof(((settings_t*)0)->arrays.audio_driver)];
+   char     device[sizeof(((settings_t*)0)->arrays.audio_device)];
+   size_t   device_latency_frames;
+   unsigned rate;
+   unsigned latency;
+   bool     wrapper;
+   bool     priority;
+   bool     fast_cores;
+   bool     requested;
+} audio_driver_kept;
+/* The latency the open device was asked for, and whether it was opened
+ * through the threaded wrapper. */
+static unsigned audio_driver_open_latency;
+static bool     audio_driver_open_wrapper;
+
+void audio_driver_keep_device(bool keep)
+{
+   audio_driver_kept.requested = keep;
+}
+
+void audio_driver_drop_kept(void)
+{
+   if (!audio_driver_kept.driver)
+      return;
+   if (audio_driver_kept.data && audio_driver_kept.driver->free)
+      audio_driver_kept.driver->free(audio_driver_kept.data);
+   audio_driver_kept.driver = NULL;
+   audio_driver_kept.data   = NULL;
+}
+
+/* At teardown: sets the device aside if asked to and it can be. */
+static bool audio_driver_set_aside(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio)
+{
+   settings_t *settings = config_get_ptr();
+   const char *env      = getenv("RETROARCH_AUDIO_KEEP");
+   bool keep            = audio_driver_kept.requested;
+
+   audio_driver_kept.requested = false;
+   if (     !keep
+         || (env && env[0] == '0')
+         || !audio->stop
+         || !audio->start
+#ifdef HAVE_THREADS
+         || (     audio_st->pipe_threaded
+               && retro_atomic_load_acquire_int(
+                     &audio_st->pipe_consumer_gone))
+#endif
+         )
+      return false;
+   if (!audio->stop(audio_st->context_audio_data))
+      return false;
+
+   audio_driver_kept.driver                = audio;
+   audio_driver_kept.data                  = audio_st->context_audio_data;
+   audio_driver_kept.device_latency_frames = audio_st->device_latency_frames;
+   audio_driver_kept.rate       = settings->uints.audio_output_sample_rate;
+   audio_driver_kept.latency    = audio_driver_open_latency;
+   audio_driver_kept.wrapper    = audio_driver_open_wrapper;
+   audio_driver_kept.priority   = settings->bools.audio_thread_priority;
+   audio_driver_kept.fast_cores = settings->bools.thread_prefer_fast_cores;
+   strlcpy(audio_driver_kept.ident, settings->arrays.audio_driver,
+         sizeof(audio_driver_kept.ident));
+   strlcpy(audio_driver_kept.device, settings->arrays.audio_device,
+         sizeof(audio_driver_kept.device));
+   RARCH_LOG("[Audio] Driver \"%s\" kept across the content switch.\n",
+         audio->ident);
+   return true;
+}
+
+/* At init, in place of opening one: the kept device, if it is what
+ * would be opened. A synchronous device comes back running, as from
+ * its init; the wrapper parked, as from its own, for init's start. */
+static bool audio_driver_take_kept(audio_driver_state_t *audio_st,
+      const settings_t *settings, unsigned latency, bool wrapper)
+{
+   if (!audio_driver_kept.driver)
+      return false;
+   if (     wrapper != audio_driver_kept.wrapper
+         || latency != audio_driver_kept.latency
+         || settings->uints.audio_output_sample_rate != audio_driver_kept.rate
+         || !string_is_equal(settings->arrays.audio_driver, audio_driver_kept.ident)
+         || !string_is_equal(settings->arrays.audio_device, audio_driver_kept.device)
+         || (wrapper
+            && (     settings->bools.audio_thread_priority    != audio_driver_kept.priority
+                  || settings->bools.thread_prefer_fast_cores != audio_driver_kept.fast_cores)))
+   {
+      RARCH_LOG("[Audio] The kept driver does not match the new settings; opening another.\n");
+      audio_driver_drop_kept();
+      return false;
+   }
+
+   audio_st->current_audio         = audio_driver_kept.driver;
+   audio_st->context_audio_data    = audio_driver_kept.data;
+   audio_st->device_latency_frames = audio_driver_kept.device_latency_frames;
+   audio_driver_kept.driver        = NULL;
+   audio_driver_kept.data          = NULL;
+   if (!wrapper)
+      audio_st->current_audio->start(audio_st->context_audio_data, false);
+   RARCH_LOG("[Audio] Kept driver \"%s\" taken back; the device stays open.\n",
+         audio_st->current_audio->ident);
+   return true;
+}
+
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    const audio_driver_t *audio    = audio_st->current_audio;
+
+   /* One set aside before and not taken back is not wanted. */
+   audio_driver_drop_kept();
 
    /* Drop the flags that observers gate on before the context and the
     * scratch buffers go away, so a flush that races this teardown bails
@@ -1109,10 +1224,12 @@ static bool audio_driver_deinit_internal(bool audio_enable)
                audio_st->input > 0.0f ? (double)low * 1000.0 / (double)audio_st->input : 0.0);
       }
 #endif
-      if (audio_st->context_audio_data)
+      if (     audio_st->context_audio_data
+            && !audio_driver_set_aside(audio_st, audio))
          audio->free(audio_st->context_audio_data);
       audio_st->context_audio_data = NULL;
    }
+   audio_driver_kept.requested = false;
 
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
@@ -4606,12 +4723,20 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             (unsigned)(audio_driver_st.pipe_ring.capacity / audio_driver_st.pipe_frame_bytes),
             audio_driver_st.pipe_float ? "float" : "int16");
    }
+#endif
 
    /* Before the driver's init, which is where a driver that reports a
     * device stage sets it. */
    audio_driver_st.device_latency_frames = 0;
 
-   if (audio_cb_inited || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED))
+   audio_driver_open_latency = audio_latency;
+   audio_driver_open_wrapper = audio_cb_inited
+      || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED);
+   if (audio_driver_take_kept(&audio_driver_st, settings, audio_latency,
+            audio_driver_open_wrapper))
+      ;
+#ifdef HAVE_THREADS
+   else if (audio_cb_inited || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED))
    {
       RARCH_LOG("[Audio] Starting threaded audio driver...\n");
       if (!audio_init_thread(

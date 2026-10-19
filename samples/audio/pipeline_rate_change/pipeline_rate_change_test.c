@@ -9,7 +9,9 @@
  * new rate. A configuration the change cannot carry - time stretch -
  * must refuse it and leave the driver as it was. And a rate sent from
  * retro_load_game, which brings audio up before drivers_init() does
- * it again, must leave one instance: the first freed, not orphaned. */
+ * it again, must leave one instance: the first freed, not orphaned.
+ * Across a content switch the device is kept and taken back when the
+ * next init would open the same one, and freed when it would not. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +28,7 @@ static float   captured[CAPTURE * 2];
 static float   feed_f[FEED_MAX * 2];
 static int16_t feed_i[FEED_MAX * 2];
 static size_t  captured_frames, device_bytes;
-static unsigned device_opens, device_frees, failures;
+static unsigned device_opens, device_frees, device_stops, device_starts, failures;
 extern unsigned pipeline_control_calls;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
@@ -55,7 +57,8 @@ static size_t test_wait(void *data, size_t len)
 { (void)data; (void)len; return device_bytes; }
 static bool test_float(void *data) { (void)data; return true; }
 static bool test_start(void *data, bool shutdown)
-{ (void)data; (void)shutdown; return true; }
+{ (void)data; (void)shutdown; device_starts++; return true; }
+static bool test_stop(void *data) { (void)data; device_stops++; return true; }
 static void test_free(void *data) { (void)data; device_frees++; }
 
 static void setup(bool floating, bool threaded, bool fastpath, double rate)
@@ -322,6 +325,99 @@ static void second_init_case(bool threaded)
       failures++;
 }
 
+/* A content switch: kept, then taken back at the new core's rate. */
+static void keep_case(bool threaded)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   double phase             = 0.0;
+   size_t split;
+   double after;
+   unsigned starts;
+
+   device_opens = device_frees = device_stops = 0;
+   captured_frames = 0;
+   setup(true, threaded, false, 22050.0);
+   feed(22050.0, true, threaded, &phase);
+
+   audio_driver_keep_device(true);
+   audio_driver_deinit();
+   if (device_frees != 0 || device_stops != 1)
+      failures++;
+
+   starts = device_starts;
+   st->input = 32000.0f;
+   video_state_get_ptr()->av_info.timing.sample_rate = 32000.0;
+   if (!audio_driver_init_internal(config_get_ptr(), false))
+      abort();
+   audio_driver_drop_kept();
+   st->pipe_priming = false;
+   audio_driver_publish_runloop();
+   split = captured_frames;
+   feed(32000.0, true, threaded, &phase);
+   after = measure(split + (captured_frames - split) / 4, captured_frames);
+
+   printf("kept, %s: opens=%u frees=%u stops=%u starts=%u ratio=%.4f tone %.1f Hz\n",
+         threaded ? "threaded" : "inline", device_opens, device_frees,
+         device_stops, device_starts - starts, st->src_ratio_orig, after);
+   if (     device_opens != 1
+         || device_frees != 0
+         /* started again, as a device just opened is */
+         || device_starts - starts != 1
+         || fabs(st->src_ratio_orig - OUT_RATE / 32000.0) > 1e-9
+         || fabs(after - TONE_HZ) > TONE_HZ * 0.01)
+      failures++;
+   audio_driver_deinit();
+   if (device_frees != 1)
+      failures++;
+}
+
+/* What is not taken back is freed: a device the next init would open
+ * differently, one nobody takes, and one not asked to be kept. */
+static void keep_refused_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned ok = 1;
+
+   /* another latency: opened afresh, the kept one freed */
+   device_opens = device_frees = 0;
+   setup(true, false, false, 22050.0);
+   audio_driver_keep_device(true);
+   audio_driver_deinit();
+   settings->uints.audio_latency = 96;
+   if (!audio_driver_init_internal(settings, false))
+      abort();
+   audio_driver_drop_kept();
+   ok &= device_opens == 2 && device_frees == 1;
+   audio_driver_deinit();
+
+   /* nobody takes it */
+   device_opens = device_frees = 0;
+   setup(true, false, false, 22050.0);
+   audio_driver_keep_device(true);
+   audio_driver_deinit();
+   audio_driver_drop_kept();
+   ok &= device_opens == 1 && device_frees == 1;
+
+   /* not asked */
+   device_opens = device_frees = 0;
+   setup(true, false, false, 22050.0);
+   audio_driver_deinit();
+   ok &= device_frees == 1;
+
+   /* switched off */
+   device_opens = device_frees = 0;
+   putenv((char*)"RETROARCH_AUDIO_KEEP=0");
+   setup(true, false, false, 22050.0);
+   audio_driver_keep_device(true);
+   audio_driver_deinit();
+   putenv((char*)"RETROARCH_AUDIO_KEEP=");
+   ok &= device_frees == 1;
+
+   printf("keep refused: %s\n", ok ? "each freed" : "LEAKED OR REUSED");
+   if (!ok)
+      failures++;
+}
+
 int main(void)
 {
    unsigned format, threaded;
@@ -329,6 +425,7 @@ int main(void)
    audio_null.write         = test_write;
    audio_null.free          = test_free;
    audio_null.start         = test_start;
+   audio_null.stop          = test_stop;
    audio_null.use_float     = test_float;
    audio_null.write_avail   = test_avail;
    audio_null.buffer_size   = test_avail;
@@ -354,6 +451,10 @@ int main(void)
    /* 22050 Hz at 60 fps holds 1024 frames; at 15 fps a frame is 1470. */
    fps_case(22050.0, 60.0, 15.0);
    fps_case(22050.0, 60.0, 50.0);
+
+   keep_case(false);
+   keep_case(true);
+   keep_refused_case();
 
    second_init_case(false);
    second_init_case(true);
