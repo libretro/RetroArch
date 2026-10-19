@@ -52,6 +52,7 @@
 #include "../gfx_display.h"
 #include "../video_thread_wrapper.h"
 
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -94,11 +95,10 @@ static bool sdl3_init_renderer(sdl3_video_t *vid)
    if (SDL_SetRenderVSync(vid->renderer, SDL_RENDERER_VSYNC_ADAPTIVE))
       vid->flags |= SDL3_FLAG_ADAPTIVE_VSYNC;
 
-   /* The largest interval the renderer takes, found the same way: the
-    * frontend scales the audio rate by the interval it asked for, so
-    * one it cannot hold a frame for has to be reported rather than
-    * quietly presenting at every refresh. */
-   for (vid->swap_interval_cap = 4; vid->swap_interval_cap > 1;
+   /* The largest interval the renderer takes, found the same way, so
+    * auto swap interval never picks one presented at 1. */
+   for (vid->swap_interval_cap = MAXIMUM_SWAP_INTERVAL;
+         vid->swap_interval_cap > 1;
          vid->swap_interval_cap--)
       if (SDL_SetRenderVSync(vid->renderer, (int)vid->swap_interval_cap))
          break;
@@ -500,8 +500,7 @@ static bool sdl3_views_target_make(sdl3_video_t *vid, SDL_Texture **t,
    return false;
 }
 
-/* The frame's own textures, which a frame drawn whole has no use for */
-static void sdl3_views_drop_tex(sdl3_video_t *vid)
+static void sdl3_views_release(sdl3_video_t *vid)
 {
    unsigned i;
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -511,12 +510,6 @@ static void sdl3_views_drop_tex(sdl3_video_t *vid)
       vid->views.tex[i]      = NULL;
       vid->views.tex_dims[i] = 0;
    }
-   vid->views.tex_held = false;
-}
-
-static void sdl3_views_release(sdl3_video_t *vid)
-{
-   sdl3_views_drop_tex(vid);
    sdl3_vv_target_drop(vid, &vid->views.canvas_target, &vid->views.canvas);
    sdl3_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
 }
@@ -538,9 +531,7 @@ static void sdl3_views_frect(const video_views_rect_t *r, SDL_FRect *out)
    out->h = (float)VIDEO_SCALE_H(r->dims);
 }
 
-/* Quad @n of a geometry batch: x0,y0..x1,y1 over the texture's
- * u0,v0..u1,v1, its colour unmodulated. The winding is the strip
- * layout every other draw in this file uses. */
+/* Quad @n of a geometry batch: x0,y0..x1,y1 over u0,v0..u1,v1, white */
 static void sdl3_quad(SDL_Vertex *verts, int *indices, size_t n,
       float x0, float y0, float x1, float y1,
       float u0, float v0, float u1, float v1)
@@ -654,6 +645,7 @@ static bool sdl3_views_setup(sdl3_video_t *vid,
       sdl3_vv_target_drop(vid, &vid->views.canvas_target,
             &vid->views.canvas);
    views = video_info->views.num_views
+      && !vid->views.write_failed
       && (!offscreen || *blend)
       && (vid->views.layer || !sdl3_views_ui_wanted(vid, video_info, msg,
             video_views_ui_per_eye(&video_info->views, layout, true)))
@@ -672,11 +664,8 @@ static bool sdl3_views_setup(sdl3_video_t *vid,
 
 /* Each drawn view of the frame at @frame, @pitch bytes a row, written
  * straight into its own texture: no copy. An RGB565 view is widened on
- * the way in, its bits repeated as every other driver's are.
- *
- * False when a drawn view has no texture to write into: its placement
- * would draw nothing and leave that part of the window black for every
- * frame after, so the caller draws the frame whole instead. */
+ * the way in, its bits repeated as every other driver's are. False when
+ * a drawn view can't be written. */
 static bool sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
       void *const *chains, const void *frame, unsigned pitch)
 {
@@ -710,7 +699,6 @@ static bool sdl3_views_write(sdl3_video_t *vid, const video_views_map_t *map,
                ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
          SDL_SetTextureBlendMode(vid->views.tex[i], SDL_BLENDMODE_NONE);
          vid->views.tex_dims[i] = dims;
-         vid->views.tex_held    = true;
       }
       if (!SDL_LockTexture(vid->views.tex[i], NULL, &pixels, &out_pitch))
          return false;
@@ -766,8 +754,7 @@ static void sdl3_views_render(sdl3_video_t *vid)
       src.w = w;
       src.h = (float)h;
       SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &src);
-      /* The odd rows as one draw: a row a call is a submission a row,
-       * and there are half the window's height of them. */
+      /* The odd rows as one draw */
       if (     rows
             && cw > 0.0f && ch > 0.0f
             && sdl3_display_geometry_reserve(vid, rows * 4, rows * 6))
@@ -784,20 +771,6 @@ static void sdl3_views_render(sdl3_video_t *vid)
                   u0, (float)y / ch, u1, (float)(y + 1) / ch);
          SDL_RenderGeometry(vid->renderer, vid->views.canvas, verts,
                (int)(n * 4), indices, (int)(n * 6));
-      }
-      else
-      {
-         SDL_FRect dst;
-         src.x = w;
-         src.h = 1.0f;
-         dst.x = 0.0f;
-         dst.w = w;
-         dst.h = 1.0f;
-         for (y = 1; y < h; y += 2)
-         {
-            src.y = dst.y = (float)y;
-            SDL_RenderTexture(vid->renderer, vid->views.canvas, &src, &dst);
-         }
       }
    }
 }
@@ -982,9 +955,20 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
    bool views_per_eye, views_ui, views;
 
    if (frame)
+   {
+      if (dims != vid->views.frame_dims)
+         vid->views.write_failed = false;
       vid->views.frame_dims = dims;
+   }
    views = sdl3_views_setup(vid, video_info, msg, &views_blend,
          view_chains, view_rects);
+   if (     views && frame
+         && !sdl3_views_write(vid, &video_info->views, view_chains,
+            frame, pitch))
+   {
+      vid->views.write_failed = true;
+      views                   = false;
+   }
    /* vid->vp is the whole window while views draw. */
    if (views != vid->views.active)
    {
@@ -1011,31 +995,11 @@ static bool sdl3_gfx_frame(void *data, const void *frame,
       vid->views.blend  = views_blend;
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          vid->views.drawn[i] = view_chains[i];
-      if (     frame
-            && !sdl3_views_write(vid, &video_info->views, view_chains,
-               frame, pitch))
-      {
-         /* This frame draws whole, and so do the frames after it once
-          * the main thread reads the fallback. */
-         sdl3_views_drop_tex(vid);
-         retro_atomic_store_release_int(&vid->views.fallback, 1);
-         vid->views.active = false;
-         views             = false;
-         sdl3_refresh_viewport(vid);
-      }
-   }
-
-   if (views)
-   {
       sdl3_views_render(vid);
       sdl3_refresh_renderer(vid);
    }
    else
    {
-      /* The frame's own textures are of no use to a frame drawn whole. */
-      if (vid->views.tex_held)
-         sdl3_views_drop_tex(vid);
-
       if (frame)
       {
          sdl3_refresh_input_size(vid, false, vid->video.rgb32, width, height);

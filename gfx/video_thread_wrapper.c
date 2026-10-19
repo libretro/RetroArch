@@ -5684,6 +5684,16 @@ static void thread_driver_pacing_mark(void *data, uint64_t frame_id,
       thr->poke->driver_pacing_mark(thr->driver_data, frame_id, marker);
 }
 
+/* Fixed by the driver at init, so read here directly */
+static unsigned thread_get_swap_interval_cap(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (     thr && thr->driver_data
+         && thr->poke && thr->poke->get_swap_interval_cap)
+      return thr->poke->get_swap_interval_cap(thr->driver_data);
+   return 0;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -5726,7 +5736,7 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    thread_update_texture,
-   NULL, /* get_swap_interval_cap */
+   thread_get_swap_interval_cap,
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait: read on the video thread */
