@@ -29,6 +29,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq clang libgnustep-base-dev libblocksruntime-dev
+      - name: Strict C89 geometry with Clang
+        run: CC=clang python3 samples/gfx/metal_frame/run.py
       - name: Retained Metal lease ownership and completion
         run: python3 samples/gfx/metal_frame/run.py --mock
 

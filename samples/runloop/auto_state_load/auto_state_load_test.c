@@ -3,6 +3,7 @@
 #include <assert.h>
 
 static settings_t test_settings;
+static video_driver_state_t test_video;
 static unsigned runs, size_checks, loads, settings_checks, path_checks;
 static unsigned initialize_after;
 #ifdef HAVE_NETWORKING
@@ -24,6 +25,7 @@ settings_t *config_get_ptr(void)
    return &test_settings;
 }
 
+video_driver_state_t *video_state_get_ptr(void) { return &test_video; }
 void input_driver_poll(void) {}
 void input_driver_poll_between_frames(void (*poll)(void)) { poll(); }
 void video_driver_cached_frame(void) {}
@@ -64,6 +66,7 @@ static void reset(unsigned frames, bool quirk)
 {
    memset(&runloop_state, 0, sizeof(runloop_state));
    memset(&test_settings, 0, sizeof(test_settings));
+   memset(&test_video, 0, sizeof(test_video));
    test_settings.bools.savestate_auto_load = true;
    runloop_state.current_core.flags = RETRO_CORE_FLAG_GAME_LOADED;
    runloop_state.current_core.retro_run = mock_run;

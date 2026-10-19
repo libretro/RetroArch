@@ -6402,9 +6402,40 @@ static void lane_upload_batch(void)
  * glcore uploads bytes R,G,B,A and swizzles at sampling, gl uploads
  * the words as BGRA unless the frontend asked for RGBA. */
 static bool lend_gl_readback(const char *drv, uintptr_t id, bool rgba,
-      uint32_t *out)
+      unsigned width, unsigned height, uint32_t *out)
 {
    bool core = !strcmp(drv, "glcore");
+#ifdef HAVE_OPENGLES3
+   GLint read_fbo, draw_fbo, pack_buffer;
+   GLuint fbo;
+   bool ok;
+   size_t i;
+   glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
+   glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_fbo);
+   glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &pack_buffer);
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, (GLuint)id, 0);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+   if (ok) glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, out);
+   ok = glGetError() == GL_NO_ERROR && ok;
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)pack_buffer);
+   glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read_fbo);
+   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)draw_fbo);
+   glDeleteFramebuffers(1, &fbo);
+   if (ok && !core && !rgba)
+      for (i = 0; i < (size_t)width * height; i++)
+      {
+         uint8_t *p = (uint8_t*)&out[i];
+         uint8_t r = p[0]; p[0] = p[2]; p[2] = r;
+      }
+   return ok;
+#else
+   (void)width;
+   (void)height;
    glBindTexture(GL_TEXTURE_2D, (GLuint)id);
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
    glGetTexImage(GL_TEXTURE_2D, 0,
@@ -6413,6 +6444,7 @@ static bool lend_gl_readback(const char *drv, uintptr_t id, bool rgba,
          out);
    glBindTexture(GL_TEXTURE_2D, 0);
    return glGetError() == GL_NO_ERROR;
+#endif
 }
 #endif
 
@@ -7081,9 +7113,14 @@ static void lane_gl2_linear(void)
 
       if (!(out = (float*)malloc((size_t)w * h * 4 * sizeof(float))))
          break;
+#ifdef HAVE_OPENGLES3
+      (void)layer;
+      glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, out);
+#else
       glBindTexture(GL_TEXTURE_2D, layer);
       glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, out);
       glBindTexture(GL_TEXTURE_2D, 0);
+#endif
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       {
          const float *p = out + ((size_t)(h / 2) * w + w / 2) * 4;
@@ -7109,7 +7146,8 @@ static void lane_gl2_linear(void)
 }
 #endif
 
-#ifdef HAVE_GL_TEXTURE_LEND
+/* Fence injection uses the desktop GL symbol table. */
+#if defined(HAVE_GL_TEXTURE_LEND) && !defined(HAVE_OPENGLES)
 static GLsync APIENTRY lend_fence_refused(GLenum cond, GLbitfield flags)
 {
    (void)cond;
@@ -7269,7 +7307,7 @@ static void lane_surface_lend(void)
             if (got && drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
             {
                size_t bad = n;
-               CHECK(lend_gl_readback(drv, s->handle, rgba, got),
+               CHECK(lend_gl_readback(drv, s->handle, rgba, 64, 48, got),
                      "surface lend lane: texture read back failed");
                for (i = 0; i < n && bad == n; i++)
                   if (got[i] != (0xff000000u
@@ -7333,7 +7371,7 @@ static void lane_surface_lend(void)
                "one-slot surface nothing under threaded video", drv);
       }
    }
-#ifdef HAVE_GL_TEXTURE_LEND
+#if defined(HAVE_GL_TEXTURE_LEND) && !defined(HAVE_OPENGLES)
    {
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
       if (drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
@@ -9939,7 +9977,7 @@ static void lane_surface_planar(void)
             bool core    = !strcmp(drv, "glcore");
             image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
                   PW, PH, flags | (core ? IMAGE_YUV_FLAG_RGBA : 0));
-            CHECK(lend_gl_readback(drv, s->handle, false, got),
+            CHECK(lend_gl_readback(drv, s->handle, false, PW, PH, got),
                   "surface planar lane: GL readback failed");
             for (i = 0; i < PW * PH && bad == PW * PH; i++)
                if (!planar_close(got[i], want[i], 2))

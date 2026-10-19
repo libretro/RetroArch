@@ -1,5 +1,11 @@
 #include <assert.h>
 #include <limits.h>
+#ifdef __clang__
+#include <stdbool.h>
+#undef bool
+/* Keep the boolean ABI without silencing other C99 diagnostics. */
+__extension__ typedef _Bool bool;
+#endif
 #include "../../../gfx/common/metal_frame.h"
 
 int main(void)
