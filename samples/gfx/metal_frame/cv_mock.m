@@ -42,7 +42,7 @@ static int CVMetalTextureCacheCreateTextureFromImage(const void *allocator,
    return pixels->fail_plane == i + 1 ? -1 : kCVReturnSuccess;
 }
 static id<MTLTexture> CVMetalTextureGetTexture(CVMetalTextureRef view) { return view->texture; }
-static int CVMetalTextureIsFlipped(CVMetalTextureRef view) { return view->flipped; }
+static int CVMetalTextureIsFlipped(CVMetalTextureRef view) { return !view->flipped; }
 /* SHIPPING_CV */
 static bool cv_encode(void *user, const metal_frame_view_t *view, void *commands)
 {

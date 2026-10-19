@@ -968,10 +968,11 @@ bool metal_frame_create_cv(const metal_frame_source_t *source,
    {
       size_t width = CVPixelBufferGetWidthOfPlane(pixels, i);
       size_t height = CVPixelBufferGetHeightOfPlane(pixels, i);
+      /* CoreVideo calls upper-left texture coordinates flipped. */
       if (!width || !height || width > UINT_MAX || height > UINT_MAX
             || CVMetalTextureCacheCreateTextureFromImage(NULL, cache, pixels,
                NULL, formats[i], width, height, i, &views[i]) != kCVReturnSuccess
-            || !views[i] || CVMetalTextureIsFlipped(views[i]))
+            || !views[i] || !CVMetalTextureIsFlipped(views[i]))
          goto done;
       local.planes[i] = (__bridge void *)CVMetalTextureGetTexture(views[i]);
       local.backing[i + 1] = views[i];

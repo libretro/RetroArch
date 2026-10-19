@@ -52,7 +52,7 @@ and an NV12/P010 CVPixelBuffer (limited or full range). It creates Metal plane
 views and retains the pixel buffer and both CVMetalTexture wrappers in the
 lease. Source planes/backing must be empty; crop, color metadata, events and
 listener come from the caller. Range comes from the pixel format; conflicting
-explicit range is refused. Flipped views and textures from another device are
+explicit range is refused. Bottom-left views and textures from another device are
 refused. No CPU mapping, cache flush, conversion or readiness wait is added.
 The existing producer readiness and per-slot done contract still applies.
 
