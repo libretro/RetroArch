@@ -2,9 +2,18 @@
 #ifndef RETROARCH_VIDEOTOOLBOX_HEVC_H
 #define RETROARCH_VIDEOTOOLBOX_HEVC_H
 
+#if defined(__APPLE__) && !defined(__cplusplus) \
+      && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L) && !defined(inline)
+#define inline __inline__
+#define VIDEOTOOLBOX_HEVC_UNDEF_INLINE
+#endif
 #include <CoreMedia/CoreMedia.h>
 #include <CoreVideo/CoreVideo.h>
 #include <VideoToolbox/VideoToolbox.h>
+#ifdef VIDEOTOOLBOX_HEVC_UNDEF_INLINE
+#undef inline
+#undef VIDEOTOOLBOX_HEVC_UNDEF_INLINE
+#endif
 #include <formats/rh265.h>
 #include <retro_inline.h>
 

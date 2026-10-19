@@ -56,7 +56,9 @@ def main():
                 folder = tmp / framework
                 folder.mkdir()
                 (folder / (framework + '.h')).write_text(
-                    '#include "' + (HERE / 'mock_apple.h').as_posix() + '"\n', encoding='utf8')
+                    '#include "' + (HERE / 'mock_apple.h').as_posix() + '"\n'
+                    + ('#if defined(__APPLE__)\nstatic inline int vt_sdk_inline(void) { return 0; }\n#endif\n'
+                       if framework == 'CoreMedia' else ''), encoding='utf8')
             flags += ['-I' + str(tmp)]
         flags += shlex.split(os.environ.get('CFLAGS', ''))
         exe = tmp / ('setup.exe' if os.name == 'nt' else 'setup')
@@ -79,6 +81,14 @@ def main():
             cmd = compiler + unit_flags + sdk_flags + ['-c', str(probe), '-o', str(tmp / 'apple_probe.o')]
             print('+', shlex.join(cmd), flush=True)
             subprocess.run(cmd, check=True)
+            if not args.native:
+                probe.write_text('#include "' + (ROOT / 'gfx/common/videotoolbox_hevc.h').as_posix()
+                    + '"\n#ifdef inline\n#error SDK inline alias leaked\n#endif\n'
+                    'int vt_sdk_probe(void) { return vt_sdk_inline(); }\n', encoding='utf8')
+                cmd = compiler + flags + sdk_flags + ['-D__APPLE__', '-c', str(probe),
+                    '-o', str(tmp / 'apple_inline.o')]
+                print('+', shlex.join(cmd), flush=True)
+                subprocess.run(cmd, check=True)
             if sys.platform.startswith('linux'):
                 signed = tmp / 'apple_int64.h'
                 signed.write_text('#include <stdint.h>\n#undef INT64_C\n'
