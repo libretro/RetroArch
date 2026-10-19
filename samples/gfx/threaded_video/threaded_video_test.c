@@ -941,17 +941,53 @@ static void lane_driver_pacing(void)
          CHECK(dplane_mark_kind[7] == VIDEO_DRIVER_PACING_MARK_SIMULATION_START
                && dplane_mark_id[7] == runloop_st->driver_pacing_frame_id,
                "threaded: the release marked the start of the released frame");
-         /* Display pacing: the presenter's hold owns the release, the
-          * driver's stands down */
-         settings->bools.video_threaded_display_pacing = true;
-         run_frames(5);
-         CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_SUSPENDED
-               && !(runloop_st->pace & RUNLOOP_PACE_DRIVER),
-               "display pacing on: reason %u, pace 0x%x",
-               video_st->driver_pacing_reason, runloop_st->pace);
-         settings->bools.video_threaded_display_pacing = false;
-         run_frames(5);
-         CHECK(runloop_st->pace & RUNLOOP_PACE_DRIVER, "display pacing off: owned again");
+         /* Display pacing: the driver's sleep is the hold's release.
+          * Every frame is released by the driver, at the content's
+          * period, and the presenter's hold stands aside for each
+          * rather than sleep a second time. */
+         {
+            uint64_t stood  = thr->driver_released;
+            unsigned before = dplane_waits;
+            unsigned content = (unsigned)runloop_content_frame_time_us(
+                  video_st->core_hz);
+            settings->bools.video_threaded_display_pacing = true;
+            run_frames(5);
+            video_thread_wait_idle();
+            CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE
+                  && (runloop_st->pace & RUNLOOP_PACE_DRIVER)
+                  && (runloop_st->pace & RUNLOOP_PACE_DISPLAY),
+                  "display pacing on: reason %u, pace 0x%x",
+                  video_st->driver_pacing_reason, runloop_st->pace);
+            CHECK(dplane_waits - before >= 5,
+                  "display pacing on: %u releases for 5 frames",
+                  dplane_waits - before);
+            CHECK(thr->driver_released - stood >= 4,
+                  "display pacing on: the hold stood aside for %u of 5 frames",
+                  (unsigned)(thr->driver_released - stood));
+            CHECK(video_st->driver_pacing_interval_us == content
+                  && retro_atomic_load_acquire_size(&dplane_seen_interval)
+                     == content,
+                  "display pacing on: the content's period %u us to the"
+                  " driver (asked %u, presenter saw %u)", content,
+                  video_st->driver_pacing_interval_us,
+                  (unsigned)retro_atomic_load_acquire_size(
+                     &dplane_seen_interval));
+            /* A release the driver could not give: the hold holds. The
+             * first frame pushed was released before the answer turned. */
+            stood                   = thr->driver_released;
+            dplane_wait_answer_from = 1;
+            run_frames(3);
+            CHECK(thr->driver_released - stood <= 1,
+                  "display pacing, failed releases: the hold stood aside"
+                  " %u times", (unsigned)(thr->driver_released - stood));
+            dplane_wait_answer_from = 0;
+            settings->bools.video_threaded_display_pacing = false;
+            run_frames(5);
+            CHECK((runloop_st->pace & RUNLOOP_PACE_DRIVER)
+                  && !(runloop_st->pace & RUNLOOP_PACE_DISPLAY),
+                  "display pacing off: the driver alone, pace 0x%x",
+                  runloop_st->pace);
+         }
          video_thread_wait_idle();
          set_driver(thr, dplane_inner);
          set_poke(thr, dplane_inner_poke);

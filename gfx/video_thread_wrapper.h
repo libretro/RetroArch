@@ -540,6 +540,9 @@ typedef struct thread_video
    retro_time_t content_due;
    retro_time_t content_period;
    retro_time_t run_start;
+   /* Frames Driver Pacing released, the driver's sleep in the hold's
+    * place (video_thread_pace_hold). Main thread. */
+   uint64_t driver_released;
    /* Handoff cost, this window and the last full one. Main thread. */
    struct
    {

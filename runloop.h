@@ -454,7 +454,9 @@ enum runloop_pace_source
     * core then runs on the timer's schedule, the handover measures a
     * full period of "core time", reserves all of it, and holds for
     * nothing - which is what happened, and read as "Pacing: Timer" with
-    * display pacing on. */
+    * display pacing on. With RUNLOOP_PACE_DRIVER beside it the release
+    * is the driver's sleep, at the content's period, and the hold
+    * stands aside. */
    RUNLOOP_PACE_DISPLAY  = (1 << 6),
    /* The video driver's low-latency backend (NVIDIA Reflex through
     * VK_NV_low_latency2) owns the release of the next frame: the loop
@@ -781,11 +783,14 @@ typedef unsigned runloop_pace_facts_t;
  * window focused and the menu down. Pause, the menu and fast-forward
  * keep their existing pacing: a cached frame presented for them is
  * not a frame the core made, and a sleep for it would be one too
- * many. Under the threaded wrapper the presenter's own hold (display
- * pacing) and the driver's release are two owners of the same
- * decision, so display pacing keeps it. Vsync and audio may still
- * hold inside their own subsystems; the backend schedules the start
- * of the frame, not its presentation. */
+ * many. Under the threaded wrapper with display pacing on, the
+ * driver's sleep is the hold's release: the presenter's hold stands
+ * aside for a frame the driver released, and the content's period,
+ * which the hold kept, goes to the driver as its minimum interval -
+ * one owner, one cadence. Scanline Sync paces the present to a
+ * scanline, a release of its own. Vsync and audio may still hold
+ * inside their own subsystems; the backend schedules the start of
+ * the frame, not its presentation. */
 static INLINE bool runloop_pace_driver_owns(runloop_pace_facts_t f,
       unsigned pace)
 {
@@ -796,7 +801,7 @@ static INLINE bool runloop_pace_driver_owns(runloop_pace_facts_t f,
           && !(f & PACE_FACT_FASTMOTION)
           && !(f & PACE_FACT_PAUSED)
           && !(f & PACE_FACT_MENU_ALIVE)
-          && !(pace & (RUNLOOP_PACE_DISPLAY | RUNLOOP_PACE_SCANLINE));
+          && !(pace & RUNLOOP_PACE_SCANLINE);
 }
 
 static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)

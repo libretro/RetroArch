@@ -10235,9 +10235,12 @@ end:
    {
       retro_time_t period = runloop_content_frame_time_us(video_st->core_hz);
       /* The interval the next frame's sleep is to keep, carried to the
-       * presenter with that frame */
+       * presenter with that frame: the timer's period where the timer
+       * would hold, the content's under display pacing, whose hold
+       * kept it and stands aside for the driver */
       video_st->driver_pacing_interval_us = (runloop_st->pace & RUNLOOP_PACE_TIMER)
-         ? (unsigned)pace_limit_min : 0;
+         ? (unsigned)pace_limit_min
+         : (runloop_st->pace & RUNLOOP_PACE_DISPLAY) ? (unsigned)period : 0;
       if (video_st->poke->driver_pacing_wait(video_st->data,
             runloop_st->driver_pacing_frame_id,
             runloop_st->driver_pacing_next_id + 1,

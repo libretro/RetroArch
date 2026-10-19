@@ -71,7 +71,7 @@ S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,
       "video_threaded_display_pacing",
       DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Threaded Video Display Pacing",
-      "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. Off: the timer paces, as before.")
+      "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. With Driver Pacing in effect, the driver releases each frame instead. Off: the timer paces, as before.")
 S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       "video_present_timing_from_display",
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
@@ -106,4 +106,4 @@ S_UINT(video_driver_pacing, VIDEO_DRIVER_PACING,
       "video_driver_pacing",
       DEFAULT_VIDEO_DRIVER_PACING, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_driver_pacing,
       "Driver Pacing",
-      "Let the graphics driver schedule core frames, sampling input late and limiting queued work. Uses NVIDIA Reflex (VK_NV_low_latency2 on Vulkan, NVAPI on Direct3D 11/12) or AMD Anti-Lag (VK_AMD_anti_lag on Vulkan). Statistics and System Information report its status. 'On + Boost' holds GPU clocks up. Unavailable with Scanline Sync, or with Threaded Video Display Pacing, which schedules frames itself. Frame Delay stands aside while active.")
+      "Let the graphics driver schedule core frames, sampling input late and limiting queued work. Uses NVIDIA Reflex (VK_NV_low_latency2 on Vulkan, NVAPI on Direct3D 11/12) or AMD Anti-Lag (VK_AMD_anti_lag on Vulkan). Statistics and System Information report its status. 'On + Boost' holds GPU clocks up. Unavailable with Scanline Sync. With Threaded Video Display Pacing, the driver releases the frames at the content's rate. Frame Delay stands aside while active.")

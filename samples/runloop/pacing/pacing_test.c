@@ -178,8 +178,12 @@ static void test_driver_pacing(void)
    DRIVER_ROW(f | PACE_FACT_WRAPPER, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DRIVER,
          "threaded video: the presenter sleeps, this thread waits");
    DRIVER_ROW(f | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY | RUNLOOP_PACE_DRIVER,
+         "display pacing: the driver's sleep is the hold's release");
+   DRIVER_ROW(f | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING
+            | PACE_FACT_MENU_ALIVE,
          RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY,
-         "display pacing: one owner of the release, not two");
+         "display pacing, menu up: the hold alone");
    DRIVER_ROW((f | PACE_FACT_SCANLINE_SYNC | PACE_FACT_SCANLINE_LOCKED)
             & ~PACE_FACT_VSYNC,
          RUNLOOP_PACE_SCANLINE,
@@ -189,8 +193,8 @@ static void test_driver_pacing(void)
          "no window: the wait, not the release");
 
    printf("   driver pacing: owns the release of a content frame only, "
-          "threaded or not, never with display pacing or scanline sync, "
-          "never as a clock\n");
+          "threaded or not, display pacing's included, never with "
+          "scanline sync, never as a clock\n");
 }
 
 /* --- the frame period -------------------------------------------- */

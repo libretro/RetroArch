@@ -3471,14 +3471,36 @@ static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
     * display's vblank with a non-blocking present is the point - the
     * frame goes out on the next scanout, and the core should have
     * started as late as that allowed. With this on nonblock, vsync off
-    * silently turned display pacing off. */
+    * silently turned display pacing off.
+    *
+    * A frame Driver Pacing released (@driver_released: its identity in
+    * the frame info) is the driver's to hold: the runloop sleeps on the
+    * driver before the next frame, at the content's period, which the
+    * runloop gives the driver as its minimum interval, and the hold
+    * stands aside rather than sleep a second time. */
 static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
-      retro_time_t now)
+      retro_time_t now, bool driver_released)
 {
    video_thread_stat_snap_t snap;
 
    if (!thr->display_pacing || thr->fast_forward)
       return;
+
+   if (driver_released)
+   {
+      double fps = thr->video_st->av_info.timing.fps;
+      /* The video thread still judges a queued frame by the content's
+       * period. The schedule starts over when the hold holds again,
+       * and a drain asked for meanwhile went to a queue the driver
+       * keeps. */
+      if (fps > 1.0)
+         retro_atomic_store_release_int(&thr->content_period_us,
+               (int)(1000000.0 / fps));
+      thr->content_due = 0;
+      retro_atomic_fetch_and_int(&thr->drain_pending, 0);
+      thr->driver_released++;
+      return;
+   }
 
    /* The presenter's period, next vblank and render time, as one
     * snapshot from the video thread's last completion */
@@ -4163,7 +4185,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (!dropped)
       thr->hit_count++;
 
-   video_thread_pace_hold(thr, now);
+   video_thread_pace_hold(thr, now, video_info->driver_pacing_id != 0);
 
    thr->last_time = cpu_features_get_time_usec();
    thr->run_start = thr->last_time;
