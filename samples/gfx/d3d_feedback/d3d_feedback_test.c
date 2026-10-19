@@ -140,7 +140,8 @@ static void release_texture(d3d11_texture_t *t)
 #define d3d11_init_texture init_texture
 #define d3d12_init_texture init_texture
 #define d3d11_release_texture release_texture
-#define d3d12_release_texture release_texture
+/* D3D12's takes the driver too, to wait for frames in flight */
+#define d3d12_release_texture(d, t) release_texture(t)
 static unsigned glslang_format_to_dxgi(unsigned format) { return format; }
 static int video_driver_get_rotation_snapshot(void) { return 0; }
 

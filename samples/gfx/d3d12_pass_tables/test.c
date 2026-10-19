@@ -14,13 +14,17 @@
 #define RARCH_WRAP_MAX     4
 #define countof(a) (sizeof(a) / sizeof((a)[0]))
 
+#define D3D12_FRAMES 2
 #define SRV_SLOTS     (SLANG_NUM_BINDINGS * GFX_MAX_SHADERS + 2048 \
-      + 2 * SLANG_NUM_BINDINGS * GFX_MAX_SHADERS)
+      + 2 * SLANG_NUM_BINDINGS * GFX_MAX_SHADERS \
+      + (D3D12_FRAMES - 1) * 3 * SLANG_NUM_BINDINGS * GFX_MAX_SHADERS)
 #define SAMPLER_SLOTS (SLANG_NUM_BINDINGS * GFX_MAX_SHADERS + 2 * RARCH_WRAP_MAX)
 #define CPU_BASE 0x10000u
 #define GPU_BASE 0x900000u
 #define STRIDE   32u
-#define TEXTURE  (GFX_MAX_SHADERS + 1)
+#define TEXTURE  (2 * GFX_MAX_SHADERS + 1)
+/* The owner of a slot of pass @i's second table */
+#define ALT(i)   (GFX_MAX_SHADERS + 1 + (i))
 
 typedef struct { size_t ptr; } D3D12_CPU_DESCRIPTOR_HANDLE;
 typedef struct { size_t ptr; } D3D12_GPU_DESCRIPTOR_HANDLE;
@@ -37,11 +41,15 @@ typedef struct { D3D12_CPU_DESCRIPTOR_HANDLE rt_view; } texture_t;
 typedef struct
 {
    texture_t rt, feedback;
-   D3D12_GPU_DESCRIPTOR_HANDLE textures, samplers;
+   D3D12_GPU_DESCRIPTOR_HANDLE textures, textures_alt, samplers;
 } pass_t;
 typedef struct
 {
-   struct { d3d12_descriptor_heap_t rtv_heap, srv_heap, sampler_heap; } desc;
+   struct
+   {
+      d3d12_descriptor_heap_t rtv_heap, srv_heap, sampler_heap;
+      D3D12_CPU_DESCRIPTOR_HANDLE pass_tables_alt;
+   } desc;
    struct { int renderTargets[2]; } chain;
    struct { pass_t pass[GFX_MAX_SHADERS]; } filter;
 } driver_t;
@@ -78,23 +86,26 @@ static void install_set_shader(driver_t *d3d12, unsigned i)
 #include "set_shader.inc"
 }
 
-/* Each pass's two tables lie on the slots made for it */
+/* Each pass's three tables lie on the slots made for it */
 static void check(const driver_t *d3d12, const char *how)
 {
    unsigned i, b;
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       size_t t = (d3d12->filter.pass[i].textures.ptr - GPU_BASE) / STRIDE;
+      size_t a = (d3d12->filter.pass[i].textures_alt.ptr - GPU_BASE) / STRIDE;
       size_t s = (d3d12->filter.pass[i].samplers.ptr - GPU_BASE) / STRIDE;
       for (b = 0; b < SLANG_NUM_BINDINGS; b++)
       {
          if (     t + b >= SRV_SLOTS || srv_owner[t + b] != i + 1
+               || a + b >= SRV_SLOTS || srv_owner[a + b] != ALT(i)
                || s + b >= SAMPLER_SLOTS || sampler_owner[s + b] != i + 1)
          {
-            fprintf(stderr, "%s: pass %u binding %u lies on slot %u/%u"
-                  " (owners %u/%u)\n", how, i, b,
-                  (unsigned)(t + b), (unsigned)(s + b),
+            fprintf(stderr, "%s: pass %u binding %u lies on slot %u/%u/%u"
+                  " (owners %u/%u/%u)\n", how, i, b,
+                  (unsigned)(t + b), (unsigned)(a + b), (unsigned)(s + b),
                   t + b < SRV_SLOTS ? srv_owner[t + b] : 0,
+                  a + b < SRV_SLOTS ? srv_owner[a + b] : 0,
                   s + b < SAMPLER_SLOTS ? sampler_owner[s + b] : 0);
             assert(0);
          }
@@ -115,13 +126,20 @@ int main(void)
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       size_t t = (d3d12.filter.pass[i].textures.ptr - GPU_BASE) / STRIDE;
+      size_t a = (d3d12.filter.pass[i].textures_alt.ptr - GPU_BASE) / STRIDE;
       size_t s = (d3d12.filter.pass[i].samplers.ptr - GPU_BASE) / STRIDE;
+      assert(d3d12.filter.pass[i].textures_alt.ptr);
       for (k = 0; k < SLANG_NUM_BINDINGS; k++)
       {
          assert(srv_map[t + k] && !srv_owner[t + k]);
          assert(sampler_map[s + k] && !sampler_owner[s + k]);
          srv_owner[t + k]     = i + 1;
          sampler_owner[s + k] = i + 1;
+      }
+      for (k = 0; k < SLANG_NUM_BINDINGS; k++)
+      {
+         assert(srv_map[a + k] && !srv_owner[a + k]);
+         srv_owner[a + k]     = ALT(i);
       }
    }
    /* Then the textures the driver makes take the rest */

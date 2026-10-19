@@ -100,9 +100,9 @@ static d3d12_texture_t *d3d12_import_new(d3d12_video_t *v, unsigned w,
 {
    (void)v; (void)w; (void)h; (void)filter; (void)output_format; failures++; return NULL;
 }
-static void d3d12_release_texture(d3d12_texture_t *t)
+static void d3d12_release_texture(d3d12_video_t *v, d3d12_texture_t *t)
 {
-   (void)t; failures++;
+   (void)v; (void)t; failures++;
 }
 static IUnknown *retired[16];
 static unsigned num_retired;

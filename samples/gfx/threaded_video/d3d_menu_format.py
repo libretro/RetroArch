@@ -78,6 +78,8 @@ with tempfile.TemporaryDirectory(prefix="retroarch-d3d-menu-") as directory:
         allocation = allocation.replace(f"{driver}_release_texture", "release_texture")
         allocation = allocation.replace(f"{driver}_init_texture", "init_texture")
         allocation = allocation.replace(f"{driver}->", "driver->")
+        # D3D12's release takes the driver, to wait for frames in flight
+        allocation = allocation.replace("release_texture(d3d12, ", "release_texture(")
         allocation = allocation.replace("d3d12_menu_mapping", "menu_mapping").replace("rgb32", "(format == 32)")
         mapping = "static void menu_mapping(void *device, struct texture *t, int rgb32) { (void)device; t->srv_mapping = rgb32 ? 0 : 7; }" if driver == "d3d12" else ""
         code = fixture.replace("MAPPING", mapping).replace("ALLOCATION", allocation).replace("DRIVER", driver)

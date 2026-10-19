@@ -22,8 +22,13 @@ def between(text, start, end, after=0):
 alloc = between(source,
                 'static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(',
                 '\n   return handle;\n}\n')
+alloc += between(source,
+                 'static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_range_alloc(',
+                 '\n   return handle;\n}\n')
 init_at = source.index('static void d3d12_init_descriptors(')
 init = between(source, '   for (i = 0; i < GFX_MAX_SHADERS; i++)\n', '\n   }\n', init_at)
+# The second slot's tables (D3D12_FRAMES), made after
+init += between(source, "   /* The passes' second texture tables", '         : 0;\n', init_at)
 # The deferred install: the per-pass loop's descriptor pointers
 deferred_at = source.index('/* Install per-pass state */')
 deferred = between(source, '         /* Set up descriptor heap pointers */',

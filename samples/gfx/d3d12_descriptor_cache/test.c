@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define SLANG_NUM_BINDINGS 16
+#define D3D12_FRAMES 2
 #define D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING 5768
 #define D3D12_SRV_DIMENSION_TEXTURE2D 3
 #define SWAP_RB_OPAQUE 6666
@@ -11,6 +12,7 @@
 typedef unsigned UINT;
 typedef unsigned DXGI_FORMAT;
 typedef struct { size_t ptr; } D3D12_CPU_DESCRIPTOR_HANDLE;
+typedef D3D12_CPU_DESCRIPTOR_HANDLE D3D12_GPU_DESCRIPTOR_HANDLE;
 typedef struct resource { unsigned refs, identity; } *D3D12Resource;
 typedef struct
 {
@@ -27,16 +29,17 @@ typedef struct
 } D3D12_SHADER_RESOURCE_VIEW_DESC;
 typedef struct
 {
-   D3D12_CPU_DESCRIPTOR_HANDLE textures;
-   struct
+   D3D12_CPU_DESCRIPTOR_HANDLE textures, textures_alt;
+   struct d3d12_pass_desc_cache
    {
       D3D12Resource srv_resource[SLANG_NUM_BINDINGS];
       DXGI_FORMAT srv_format[SLANG_NUM_BINDINGS];
       UINT srv_mip_levels[SLANG_NUM_BINDINGS];
       UINT srv_mapping[SLANG_NUM_BINDINGS];
-   } desc_cache;
+   } desc_cache[D3D12_FRAMES];
 } pass_t;
 static unsigned writes, descriptor_identity, descriptor_mapping;
+static size_t last_handle;
 typedef struct device device_t;
 struct device
 {
@@ -50,6 +53,7 @@ typedef struct
 {
    device_t *device;
    chain_t filter;
+   struct { unsigned slot; } queue;
    struct
    {
       struct
@@ -67,7 +71,9 @@ static void create_srv(device_t *device, D3D12Resource resource,
 {
    (void)device;
    assert(desc->Texture2D.MipLevels);
-   assert(handle.ptr == 102);
+   /* binding 2 of the first table, or of the second */
+   assert(handle.ptr == 102 || handle.ptr == 152);
+   last_handle = handle.ptr;
    descriptor_identity = resource ? resource->identity : 0;
    descriptor_mapping = desc->Shader4ComponentMapping;
    writes++;
@@ -80,7 +86,10 @@ static void bind_texture(driver_t *d3d12, pass_t *pass, chain_t *c,
    semantic.binding = 2;
    texture_sem = &semantic;
    {
+#include "select.inc"
+      {
 #include "cache.inc"
+      }
    }
 }
 static void bind(driver_t *d3d12, pass_t *pass, D3D12Resource resource,
@@ -97,7 +106,7 @@ static void bind(driver_t *d3d12, pass_t *pass, D3D12Resource resource,
 }
 static void clear(pass_t *pass)
 {
-   unsigned i = 0, j;
+   unsigned i = 0, j, k;
    /* The production teardown loop needs only the chain's pass array. */
    struct chain_view { pass_t *pass; } view;
    struct chain_view *c = &view;
@@ -134,7 +143,7 @@ int main(void)
    bind(&driver, &pass, replacement, 10, 2);
    assert(writes == 4 && replacement->refs == 2);
    clear(&pass);
-   assert(replacement->refs == 1 && !pass.desc_cache.srv_resource[2]);
+   assert(replacement->refs == 1 && !pass.desc_cache[0].srv_resource[2]);
    bind(&driver, &pass, replacement, 10, 2);
    bind(&driver, &pass, NULL, 10, 2);
    assert(writes == 6 && replacement->refs == 1 && !descriptor_identity);
@@ -186,6 +195,40 @@ int main(void)
       clear(&pass);
       assert(resources[0].refs == 1 && resources[1].refs == 1);
    }
-   puts("D3D12 SRV cache: mapping, history, frame override, reuse and ownership PASS");
+   {
+      /* A frame of the second slot (D3D12_FRAMES) writes its own
+       * table, which the GPU's reading of the first's does not see,
+       * and keeps its own cache of it */
+      struct resource r = {1, 7};
+      unsigned base;
+      memset(&pass, 0, sizeof(pass));
+      pass.textures.ptr     = 200;
+      pass.textures_alt.ptr = 250;
+      base                  = writes;
+      driver.queue.slot     = 0;
+      bind(&driver, &pass, &r, 28, 1);
+      assert(writes == base + 1 && last_handle == 102);
+      driver.queue.slot     = 1;
+      bind(&driver, &pass, &r, 28, 1);
+      assert(writes == base + 2 && last_handle == 152);
+      bind(&driver, &pass, &r, 28, 1);
+      assert(writes == base + 2 && r.refs == 3);
+      driver.queue.slot     = 0;
+      bind(&driver, &pass, &r, 28, 1);
+      assert(writes == base + 2);
+      /* A pass without a second table stays on the first, its cache
+       * with it */
+      pass.textures_alt.ptr = 0;
+      driver.queue.slot     = 1;
+      bind(&driver, &pass, &r, 28, 1);
+      assert(writes == base + 2);
+      bind(&driver, &pass, &r, 10, 1);
+      assert(writes == base + 3 && last_handle == 102);
+      clear(&pass);
+      assert(r.refs == 1);
+      driver.queue.slot     = 0;
+   }
+   puts("D3D12 SRV cache: mapping, history, frame override, reuse,"
+         " ownership and a cache a slot PASS");
    return 0;
 }

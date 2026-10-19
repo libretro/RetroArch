@@ -297,6 +297,12 @@ void d3d_driver_pacing_present_end(d3d_driver_pacing_t *s, void *device)
       d3d_driver_pacing_marker(device, s->frame_id, 12); /* OUT_OF_BAND_PRESENT_END */
 }
 
+bool d3d_driver_pacing_paced(d3d_driver_pacing_t *s, uint64_t frame_id)
+{
+   return frame_id != 0
+      && retro_atomic_load_acquire_int(&s->mode_pub) != 0;
+}
+
 void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device)
 {
    if (s->mode && !s->failed && s->device == device && device)
@@ -337,6 +343,11 @@ void d3d_driver_pacing_present_begin(d3d_driver_pacing_t *s, void *device)
 void d3d_driver_pacing_present_end(d3d_driver_pacing_t *s, void *device)
 {
    (void)s; (void)device;
+}
+bool d3d_driver_pacing_paced(d3d_driver_pacing_t *s, uint64_t frame_id)
+{
+   (void)s; (void)frame_id;
+   return false;
 }
 void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device)
 {

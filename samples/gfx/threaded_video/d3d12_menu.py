@@ -99,8 +99,9 @@ static void d3d12_fence_wait(d3d12_video_t *d, UINT64 value)
    (void)value;
    waits++;
 }
-static void d3d12_release_texture(d3d12_texture_t *t)
+static void d3d12_release_texture(d3d12_video_t *d, d3d12_texture_t *t)
 {
+   (void)d;
    releases++;
    t->lent = 0;
    t->lend_mapped[0] = t->lend_mapped[1] = NULL;

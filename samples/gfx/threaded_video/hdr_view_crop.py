@@ -63,6 +63,15 @@ static void d3d12_update_texture(unsigned w, unsigned h, unsigned pitch,
    for (y = 0; y < h; y++)
       memcpy(output + y * row, (const unsigned char*)frame + y * pitch, row);
 }
+/* The upload buffer is always free here: one frame in flight */
+static int d3d12_texture_upload_turn(d3d12_video_t *video,
+      d3d12_texture_t *texture, int wait)
+{
+   (void)video;
+   (void)texture;
+   (void)wait;
+   return 1;
+}
 static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t *texture, d3d12_video_t *video)
 {

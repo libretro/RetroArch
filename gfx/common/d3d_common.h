@@ -104,6 +104,9 @@ void d3d_driver_pacing_frame_begin(d3d_driver_pacing_t *s, void *device,
       uint64_t frame_id, unsigned min_interval_us);
 void d3d_driver_pacing_present_begin(d3d_driver_pacing_t *s, void *device);
 void d3d_driver_pacing_present_end(d3d_driver_pacing_t *s, void *device);
+/* The presenter's view: whether the frame with @frame_id from its info
+ * was released by the driver's sleep, the mode on and the frame named. */
+bool d3d_driver_pacing_paced(d3d_driver_pacing_t *s, uint64_t frame_id);
 /* The driver goes: the mode is taken off its device. */
 void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device);
 
