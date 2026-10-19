@@ -2074,6 +2074,9 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
+
+   # Hidden, so a core bundling glslang can't bind to this copy.
+   $(addprefix $(OBJDIR)/,$(GLSLANG_SOURCES:.cpp=.o)): CXXFLAGS += -fvisibility=hidden
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
