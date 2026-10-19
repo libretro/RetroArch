@@ -4332,6 +4332,37 @@ static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st,
 
 static bool audio_driver_transport_configure(const settings_t *settings);
 
+#ifdef HAVE_THREADS
+/* Frames of core audio at @input the threaded pipeline's ring has to
+ * hold, and in @pass_frames the consumer's pass: a video frame's worth,
+ * capped to a slice. fps comes from the av_info @input was derived
+ * from. */
+static size_t audio_driver_pipe_ring_frames(double input, bool audio_sync,
+      unsigned latency, size_t *pass_frames)
+{
+   double fps       = video_state_get_ptr()->av_info.timing.fps;
+   size_t per_frame = (fps > 0.0) ? (size_t)(input / fps) : 1024;
+   size_t frames    = per_frame * AUDIO_PIPE_RING_FRAMES;
+   /* With a non-blocking writer the ring holds a buffer's worth on
+    * purpose - see audio_driver_pipe_target_frames() - on top of
+    * the frames it holds for the pass; the setting says how much
+    * that is, before the driver has said what it made of it. */
+   if (!audio_sync)
+   {
+      size_t latency_frames = (size_t)(input * latency / 1000.0);
+      if (latency_frames < per_frame)
+         latency_frames = per_frame;
+      frames       += latency_frames * 2;
+   }
+   if (per_frame > AUDIO_PIPE_SLICE_INT16S / 2)
+      per_frame     = AUDIO_PIPE_SLICE_INT16S / 2;
+   if (per_frame < 64)
+      per_frame     = 64;
+   *pass_frames     = per_frame;
+   return frames;
+}
+#endif
+
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
@@ -4493,25 +4524,13 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          && !audio_cb_inited
          && audio_driver_st.current_audio->wait_writable)
    {
-      /* Capacity in bytes of int16 stereo frames at the core's rate.
-       * audio_driver_st.input is already set by the caller
-       * (driver_adjust_system_rates); fps comes from the same av_info. */
-      double fps       = video_state_get_ptr()->av_info.timing.fps;
-      size_t per_frame = (fps > 0.0)
-            ? (size_t)(audio_driver_st.input / fps) : 1024;
-      size_t frames    = per_frame * AUDIO_PIPE_RING_FRAMES;
+      /* audio_driver_st.input is already set by the caller
+       * (driver_adjust_system_rates). */
+      size_t pass_frames;
+      size_t frames    = audio_driver_pipe_ring_frames(audio_driver_st.input,
+            audio_sync, audio_latency, &pass_frames);
       size_t bytes;
-      /* With a non-blocking writer the ring holds a buffer's worth on
-       * purpose - see audio_driver_pipe_target_frames() - on top of
-       * the frames it holds for the pass; the setting says how much
-       * that is, before the driver has said what it made of it. */
-      if (!settings->bools.audio_sync)
-      {
-         size_t latency_frames = (size_t)(audio_driver_st.input * audio_latency / 1000.0);
-         if (latency_frames < per_frame)
-            latency_frames = per_frame;
-         frames       += latency_frames * 2;
-      }
+      audio_driver_st.pipe_latency     = audio_latency;
       audio_driver_st.pipe_float       = audio_driver_st.core_float;
       /* a multi-channel core's ring carries the canonical wide frame */
       audio_driver_st.pipe_channels    = audio_driver_st.core_multi
@@ -4529,11 +4548,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          return false;
       }
       audio_driver_pipe_marks_clear(&audio_driver_st);
-      audio_driver_st.pipe_pass_frames    = per_frame;
-      if (audio_driver_st.pipe_pass_frames > AUDIO_PIPE_SLICE_INT16S / 2)
-         audio_driver_st.pipe_pass_frames = AUDIO_PIPE_SLICE_INT16S / 2;
-      if (audio_driver_st.pipe_pass_frames < 64)
-         audio_driver_st.pipe_pass_frames = 64;
+      audio_driver_st.pipe_pass_frames    = pass_frames;
       /* A pass of the widest frame for the consumer's front split and
        * parked write tail, and the producer's staging, whichever format
        * the ring carries. */
@@ -9223,6 +9238,162 @@ static void audio_driver_pipe_set_format(void *userdata)
    }
 }
 #endif
+
+/* The resamplers for the new ratio go in; the old ones come back out
+ * to be freed once the consumer no longer runs them. */
+struct audio_driver_rate_change
+{
+   double ratio;
+   const retro_resampler_t *resampler;
+   void *resampler_data;
+   retro_resampler_int16_t res16;
+   size_t pass_frames;
+   size_t ring_bytes;
+   float input;
+   bool hq;
+   bool applied;
+};
+
+static void audio_driver_rate_apply(void *userdata)
+{
+   struct audio_driver_rate_change *change =
+         (struct audio_driver_rate_change*)userdata;
+   audio_driver_state_t *audio_st         = &audio_driver_st;
+   const retro_resampler_t *resampler     = audio_st->resampler;
+   void *resampler_data                   = audio_st->resampler_data;
+   retro_resampler_int16_t res16;
+
+   /* Consumer state: read only while it is parked. */
+   change->applied = !audio_st->extra.nres
+#ifdef HAVE_THREADS
+      && !audio_st->pipe_transport
+      && !audio_st->pipe_transport_suspended
+      && (!audio_st->pipe_threaded
+         || retro_spsc_grow(&audio_st->pipe_ring, change->ring_bytes))
+#endif
+      ;
+   if (!change->applied)
+      return;
+
+   res16.data    = audio_st->resampler_data_int16;
+   res16.process = audio_st->resampler_int16_process;
+   res16.reset   = audio_st->resampler_int16_reset;
+   res16.free    = audio_st->resampler_int16_free;
+   res16.sibling = audio_st->resampler_int16_sibling;
+
+   audio_st->input                   = change->input;
+   audio_st->src_ratio_orig          = change->ratio;
+   audio_st->src_ratio_curr          = change->ratio;
+   audio_st->resampler               = change->resampler;
+   audio_st->resampler_data          = change->resampler_data;
+   audio_st->resampler_hq            = change->hq;
+   audio_st->resampler_bypassed      = false;
+   if (res16.data)
+   {
+      audio_st->resampler_data_int16    = change->res16.data;
+      audio_st->resampler_int16_process = change->res16.process;
+      audio_st->resampler_int16_reset   = change->res16.reset;
+      audio_st->resampler_int16_free    = change->res16.free;
+      audio_st->resampler_int16_sibling = change->res16.sibling;
+   }
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      audio_st->pipe_pass_frames     = change->pass_frames;
+#endif
+   /* The sink estimate's windows are in the old ratio. */
+   audio_st->sink_bias               = 1.0;
+   retro_atomic_store_release_int(&audio_st->sink_bias_q, 0);
+   audio_st->sink_started            = 0;
+   audio_st->sink_offered            = 0.0;
+   audio_st->sink_offered_raw        = 0;
+   audio_st->sink_accepted           = 0;
+   audio_st->sink_applied            = 0;
+   audio_st->sink_rate_hz            = 0.0;
+   audio_st->sink_source_hz          = 0.0;
+   audio_driver_update_drc_threshold(audio_st);
+
+   change->resampler      = resampler;
+   change->resampler_data = resampler_data;
+   change->res16          = res16;
+}
+
+bool audio_driver_set_input_rate(double input)
+{
+   struct audio_driver_rate_change change;
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   settings_t *settings           = config_get_ptr();
+
+   if (!(input > 0.0))
+      return false;
+   if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         || !audio_st->context_audio_data
+         || !audio_st->resampler_data
+         || audio_st->callback.callback
+         || audio_st->inline_transport
+#ifdef HAVE_DSP_FILTER
+         || audio_st->dsp
+#endif
+         || settings->bools.audio_time_stretch
+         || settings->bools.audio_time_stretch_lowpass)
+      return false;
+   if ((float)input == audio_st->input)
+      return true;
+
+   change.input       = (float)input;
+   change.ratio       = (double)audio_st->out_rate / change.input;
+   change.pass_frames = 0;
+   change.ring_bytes  = 0;
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      change.ring_bytes = audio_driver_pipe_ring_frames(change.input,
+            settings->bools.audio_sync, audio_st->pipe_latency,
+            &change.pass_frames) * audio_st->pipe_frame_bytes;
+#endif
+
+   change.resampler      = NULL;
+   change.resampler_data = NULL;
+   if (!retro_resampler_realloc_hq(&change.resampler_data, &change.resampler,
+            audio_st->resampler_ident, audio_st->resampler_quality,
+            change.ratio, settings->bools.audio_resampler_hq_oversampling))
+      return false;
+   change.hq = settings->bools.audio_resampler_hq_oversampling
+      && change.ratio >= 2.0
+      && change.resampler
+      && (change.resampler->caps & RESAMPLER_CAP_HQ_OVERSAMPLE);
+
+   memset(&change.res16, 0, sizeof(change.res16));
+   if (audio_st->resampler_data_int16)
+   {
+      retro_resampler_int16_new(&change.res16, change.resampler->short_ident,
+            audio_st->resampler_quality, change.ratio, change.hq);
+      if (!change.res16.data)
+      {
+         change.resampler->free(change.resampler_data);
+         return false;
+      }
+   }
+
+#ifdef HAVE_THREADS
+   if (     audio_st->pipe_threaded
+         && audio_st->current_audio
+         && string_is_equal(audio_st->current_audio->ident, "audio-thread"))
+      audio_thread_apply_control(audio_st->context_audio_data,
+            audio_driver_rate_apply, &change);
+   else
+#endif
+      audio_driver_rate_apply(&change);
+
+   if (change.resampler && change.resampler_data)
+      change.resampler->free(change.resampler_data);
+   if (change.res16.data && change.res16.free)
+      change.res16.free(change.res16.data);
+   if (!change.applied)
+      return false;
+
+   RARCH_LOG("[Audio] Input rate changed to %.2f Hz; the driver keeps running.\n",
+         input);
+   return true;
+}
 
 void audio_driver_set_core_float(bool core_float)
 {

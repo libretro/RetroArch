@@ -1554,10 +1554,13 @@ static void driver_headset_notice(runloop_state_t *runloop_st,
 }
 #endif
 
+/* @audio_input, when set, receives the audio input rate instead of the
+ * audio driver: the caller hands it over itself. */
 static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
-      settings_t *settings)
+      settings_t *settings,
+      double *audio_input)
 {
    double input_sample_rate               = video_st->av_info.timing.sample_rate;
    double input_fps                       = video_st->av_info.timing.fps;
@@ -1638,10 +1641,9 @@ static void driver_adjust_system_rates(
    if (input_sample_rate > 0.0)
    {
       audio_driver_state_t *audio_st      = audio_state_get_ptr();
-      if (sync_plan & RUNLOOP_SYNC_EXACT_RATE)
-         audio_st->input = input_sample_rate;
-      else
-         audio_st->input =
+      double input                        = input_sample_rate;
+      if (!(sync_plan & RUNLOOP_SYNC_EXACT_RATE))
+         input =
             audio_driver_monitor_adjust_system_rates(
                   input_sample_rate,
                   input_fps,
@@ -1651,8 +1653,12 @@ static void driver_adjust_system_rates(
                   shader_subframes,
                   audio_max_timing_skew);
 
-      RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n",
-            audio_st->input);
+      if (audio_input)
+         *audio_input    = input;
+      else
+         audio_st->input = input;
+
+      RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n", input);
    }
 
    runloop_st->flags &= ~RUNLOOP_FLAG_FORCE_NONBLOCK;
@@ -1678,6 +1684,14 @@ static void driver_adjust_system_rates(
 
    if (video_st->data)
       driver_set_nonblock_state();
+}
+
+bool driver_set_audio_input_rate(void)
+{
+   double input = 0.0;
+   driver_adjust_system_rates(runloop_state_get_ptr(), video_state_get_ptr(),
+         config_get_ptr(), &input);
+   return audio_driver_set_input_rate(input);
 }
 
 /**
@@ -1850,7 +1864,7 @@ void drivers_init(
 
    /* Adjust rates */
    if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(runloop_st, video_st, settings);
+      driver_adjust_system_rates(runloop_st, video_st, settings, NULL);
 
    /* Initialize audio driver */
    if (flags & DRIVER_AUDIO_MASK)
@@ -2373,7 +2387,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                   && runloop_st->current_core_type == CORE_TYPE_DUMMY)
                video_st->av_info.timing.fps = *hz;
 
-            driver_adjust_system_rates(runloop_st, video_st, settings);
+            driver_adjust_system_rates(runloop_st, video_st, settings, NULL);
 
             /* Use the input rate adjusted for the new display timing. */
             audio_st->src_ratio_orig   =

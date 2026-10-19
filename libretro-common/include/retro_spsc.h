@@ -245,6 +245,25 @@ void retro_spsc_free(retro_spsc_t *q);
 void retro_spsc_clear(retro_spsc_t *q);
 
 /**
+ * retro_spsc_grow:
+ * @q             : The queue.
+ * @min_capacity  : Requested capacity in bytes, rounded up as for
+ *                  retro_spsc_init.
+ *
+ * Moves the queue to a larger buffer of the same kind, mirrored or
+ * not.  The unread data and both cursors carry over unchanged, so a
+ * position the caller recorded in the ring still names the same byte.
+ * A queue already holding @min_capacity is left as it is.
+ *
+ * SAFETY: as retro_spsc_clear, both the producer and the consumer must
+ * be quiesced, and any span either holds is invalid afterwards.
+ *
+ * Returns: true on success; false on allocation failure, with the
+ * queue untouched.
+ */
+bool retro_spsc_grow(retro_spsc_t *q, size_t min_capacity);
+
+/**
  * retro_spsc_write_avail:
  * @q : The queue.
  *

@@ -39,9 +39,28 @@
 static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec);
 #define retro_eventcount_commit_wait_timeout test_wait_timeout
 
+/* The modelled cases drive the hardware through fake_pos, and the
+ * driver reads the time between two samples of it to tell a lap lost
+ * to a stall: a host that holds this process for longer than a small
+ * loop between two pumps would read as one. Those cases run on a clock
+ * that moves only as the model waits; the refill thread runs on the
+ * real one. */
+#include <features/features_cpu.h>
+retro_time_t test_time_usec(void);
+#define cpu_features_get_time_usec test_time_usec
+
 /* The driver whole, as wdmks_abi_check.c includes it. */
 #include "audio/drivers/wdmks.c"
 #undef retro_eventcount_commit_wait_timeout
+#undef cpu_features_get_time_usec
+
+static bool         real_clock;
+static retro_time_t model_usec = 1000000;
+
+retro_time_t test_time_usec(void)
+{
+   return real_clock ? cpu_features_get_time_usec() : model_usec;
+}
 
 /* What the driver reaches for in RetroArch. */
 void RARCH_LOG(const char *f, ...)  { (void)f; }
@@ -131,6 +150,7 @@ static int64_t wait_elapsed;
 
 static bool test_wait_timeout(retro_eventcount_t *ec, int key, int64_t usec)
 {
+   model_usec += usec;
    if (wait_model)
    {
       unsigned char drained[RATE / 200 * FRAME];
@@ -688,15 +708,28 @@ static void run_refill_thread(bool priority, bool mmcss)
     * on a host that holds the process for a slice or two. */
    retro_time_t run_usec  = slice * 8;
    unsigned     expect    = 8;
+   unsigned     waited;
 
    printf("-- refill thread, priority %s, Pro Audio class %s --\n",
          priority ? "on" : "off", mmcss ? "on" : "off");
+   real_clock = true;
    loop_setup(&w);
    w.thread_priority = priority;
    w.mmcss           = mmcss;
    retro_atomic_store_release_int(&w.rt_run, 1);
    t = sthread_create(wdmks_rt_refill_thread, &w);
    check(t != NULL, "the refill thread starts");
+   /* The window opens once the thread has set itself up: raising
+    * itself, or loading the class library, takes as long as the host
+    * lets it, which on a busy one is longer than the window. */
+   for (waited = 0; waited < 10000; waited++)
+   {
+      int grant = retro_atomic_load_acquire_int(&w.rt_grant);
+      if (     grant != AUDIO_THREAD_GRANT_NONE
+            && (!priority || grant != AUDIO_THREAD_GRANT_NORMAL))
+         break;
+      retro_sleep_us(1000);
+   }
    retro_sleep_us((unsigned)run_usec);
    retro_atomic_store_release_int(&w.rt_run, 0);
    sthread_join(t);
@@ -712,6 +745,7 @@ static void run_refill_thread(bool priority, bool mmcss)
    check(w.rt_gap_max_usec > 0 && w.rt_gap_max_usec < 1000000,
          "the worst gap between passes is recorded");
    loop_teardown(&w);
+   real_clock = false;
 }
 
 /* ------------------------------------------------------------------ */
