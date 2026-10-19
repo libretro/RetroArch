@@ -19,9 +19,10 @@ def metal_test_source():
     text += '#include <defines/cocoa_defines.h>\n'
     text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
     text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
-    for section in ('LEASE', 'CV'):
+    for section in ('LEASE', 'CV', 'CV_POOL'):
         text += source.split('/* METAL_FRAME_' + section + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + section + '_END */', 1)[0]
     text = text.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / 'gfx/common/metal_frame.h').as_posix() + '"')
+    text += (HERE.parent / 'metal_frame/pool_test.m').read_text(encoding='utf8')
     return (HERE / 'metal_test.m').read_text(encoding='utf8').replace('/* SHIPPING_METAL */', text)
 
 

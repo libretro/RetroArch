@@ -44,6 +44,8 @@ def main():
             allocation = "- (Texture *)newImportedTexture:" + source.rsplit("- (Texture *)newImportedTexture:", 1)[1].split("\n}", 1)[0] + "\n}"
             native_import = native_import.replace("/* SHIPPING_IMPORT_ALLOCATION */", allocation)
         cv = source.split("/* METAL_FRAME_CV_BEGIN */", 1)[1].split("/* METAL_FRAME_CV_END */", 1)[0]
+        cv += source.split("/* METAL_FRAME_CV_POOL_BEGIN */", 1)[1].split("/* METAL_FRAME_CV_POOL_END */", 1)[0]
+        cv += (HERE / "pool_test.m").read_text(encoding="utf-8")
         cv_fixture = (HERE / ("cv_mock.m" if args.mock else "cv_native.m")).read_text(encoding="utf-8")
         text = text.replace("/* COREVIDEO */", cv_fixture.replace("/* SHIPPING_CV */", cv))
         convert = source.split("/* METAL_FRAME_SDR_CONVERT_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_CONVERT_END */", 1)[0]
