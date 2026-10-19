@@ -683,6 +683,9 @@ typedef struct
     * here rather than read from settings there; a changed setting
     * reaches it through the reinit that makes it real. */
    unsigned out_rate;
+   /* The latency, in ms, the threaded pipeline's ring was sized with;
+    * an input rate change resizes it with the same. */
+   unsigned pipe_latency;
    bool     core_multi;   /* the multi-channel entry was negotiated */
    /* Whether the ring carries float frames - the core negotiated float
     * output - or int16. Decided before any audio flows: at pipe init
@@ -1533,6 +1536,22 @@ audio_driver_state_t *audio_state_get_ptr(void);
  * reinit.
  **/
 void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
+
+/**
+ * audio_driver_set_input_rate:
+ * @input              : the core's audio rate, as driver_adjust_system_rates
+ *                       derives it.
+ *
+ * Moves the running driver to a new input rate without reopening the
+ * device: a resampler for the new ratio, the threaded pipeline's pass
+ * and ring, and the rate control threshold. The consumer is parked
+ * while the state changes hands.
+ *
+ * Returns: false when the configuration needs the full reinit instead
+ * (a DSP filter, time stretch, a core audio callback or discrete extra
+ * channels); nothing is changed then.
+ **/
+bool audio_driver_set_input_rate(double input);
 
 const char *audio_driver_get_ident(void);
 

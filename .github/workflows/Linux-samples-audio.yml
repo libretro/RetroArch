@@ -1258,6 +1258,17 @@ jobs:
           # the integer front pair exists only behind its hint.
           make -j$(nproc) check SANITIZER=address,undefined
 
+      - name: Build and run pipeline_rate_change_test (ASan + UBSan, mingw)
+        working-directory: samples/audio/pipeline_rate_change
+        run: |
+          # A core rate change taken by the running driver: one device
+          # open, the tone at its pitch on both sides, the ring grown
+          # where the new rate needs it, time stretch refused.
+          make -j$(nproc) check SANITIZER=address,undefined
+          make clean
+          WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
+            LDFLAGS="-lm -static" RUN="wine ./pipeline_rate_change_test.exe"
+
       - name: Build and run unity_identity_test (plain, ASan + UBSan)
         working-directory: samples/audio/unity_identity
         run: |

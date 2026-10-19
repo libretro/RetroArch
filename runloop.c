@@ -3409,6 +3409,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             bool video_frame_delay_auto           = settings->bools.video_frame_delay_auto;
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit                  = true;
+            bool audio_rate_only                  = false;
 
             /* Refresh rate switch for regular displays */
             if (video_display_server_has_resolution_list())
@@ -3460,9 +3461,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.fps,
                   (*info)->timing.sample_rate);
 
+            /* A new audio rate alone moves the running audio driver to it;
+             * nothing else has a reason to start over. */
+            audio_rate_only                       = no_video_reinit
+                  && ((*info)->timing.fps == av_info->timing.fps);
+
             memcpy(av_info, *info, sizeof(*av_info));
 
-            command_event(CMD_EVENT_REINIT, &reinit_flags);
+            if (!audio_rate_only || !driver_set_audio_input_rate())
+               command_event(CMD_EVENT_REINIT, &reinit_flags);
 
             if (no_video_reinit)
                command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);

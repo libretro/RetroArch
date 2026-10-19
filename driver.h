@@ -166,6 +166,10 @@ int driver_find_index(const char *label, const char *drv);
  * audio and video drivers instead. */
 void driver_set_nonblock_state(void);
 
+/* Carries a new core audio rate to the running audio driver, keeping the
+ * device open. Returns false when the drivers need the reinit for it. */
+bool driver_set_audio_input_rate(void);
+
 /**
  * drivers_init:
  * @flags              : Bitmask of drivers to initialize.

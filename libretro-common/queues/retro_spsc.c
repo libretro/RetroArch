@@ -313,6 +313,47 @@ void retro_spsc_clear(retro_spsc_t *q)
    retro_atomic_size_init(&q->tail, 0);
 }
 
+bool retro_spsc_grow(retro_spsc_t *q, size_t min_capacity)
+{
+   retro_spsc_t n;
+   size_t       head, tail, pos;
+
+   if (!q || !q->buffer)
+      return false;
+   if (min_capacity <= q->capacity)
+      return true;
+   if (!(q->mirror
+         ? retro_spsc_init_mirrored(&n, min_capacity)
+         : retro_spsc_init(&n, min_capacity)))
+      return false;
+
+   head = retro_atomic_load_acquire_size(&q->head);
+   tail = retro_atomic_load_acquire_size(&q->tail);
+   for (pos = tail; pos != head; )
+   {
+      size_t from = pos & q->mask;
+      size_t to   = pos & n.mask;
+      size_t run  = head - pos;
+      if (!q->mirror && run > q->mask + 1 - from)
+         run      = q->mask + 1 - from;
+      if (!n.mirror && run > n.mask + 1 - to)
+         run      = n.mask + 1 - to;
+      memcpy(n.buffer + to, q->buffer + from, run);
+      pos        += run;
+   }
+
+   retro_spsc_free(q);
+   q->buffer      = n.buffer;
+   q->capacity    = n.capacity;
+   q->mask        = n.mask;
+   q->mirror      = n.mirror;
+   q->cached_tail = tail;
+   q->cached_head = head;
+   retro_atomic_size_init(&q->head, head);
+   retro_atomic_size_init(&q->tail, tail);
+   return true;
+}
+
 size_t retro_spsc_write_avail(const retro_spsc_t *q)
 {
    /* Producer query.  We read our own head (which we wrote) and the
