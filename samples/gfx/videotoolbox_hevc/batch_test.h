@@ -1,4 +1,4 @@
-/* Several owned IDR submissions before any owner-side result consumption. */
+/* Several owned submissions before any owner-side result consumption. */
 #ifdef VIDEOTOOLBOX_HEVC_SLOTS
 static CMSampleTimingInfo batch_timing(unsigned index)
 {
@@ -17,9 +17,12 @@ static void test_codec_batch(void)
 {
 #ifdef VIDEOTOOLBOX_HEVC_SLOTS
    unsigned which;
-   for (which = 0; which < sizeof(codec_cases) / sizeof(codec_cases[0]); which++)
+   unsigned singles = sizeof(codec_cases) / sizeof(codec_cases[0]);
+   unsigned sequences = sizeof(sequence_cases) / sizeof(sequence_cases[0]);
+   for (which = 0; which < singles + sequences; which++)
    {
-      const codec_case_t *fixture = &codec_cases[which];
+      const sequence_case_t *sequence = which < singles ? NULL : &sequence_cases[which - singles];
+      const codec_case_t *fixture = sequence ? &sequence->picture : &codec_cases[which];
       rh265_video *source = rh265_video_open();
       videotoolbox_hevc_slots_t *context = videotoolbox_hevc_slots_new(VT_HEVC_TEST_BATCH);
       videotoolbox_hevc_result_t results[VT_HEVC_TEST_BATCH];
@@ -28,11 +31,15 @@ static void test_codec_batch(void)
       CMVideoFormatDescriptionRef format = NULL;
       rh265_access_unit_t au;
       rh265_nal_t slices[8];
-      uint8_t *packet = (uint8_t*)malloc(fixture->sample_size);
+      size_t packet_capacity = fixture->sample_size;
+      uint8_t *packet;
       CMSampleTimingInfo timing;
       VTDecodeInfoFlags info;
       OSStatus status;
       unsigned i;
+      for (i = 0; sequence && i < VT_HEVC_TEST_BATCH; i++)
+         if (sequence->packets[i].size > packet_capacity) packet_capacity = sequence->packets[i].size;
+      packet = (uint8_t*)malloc(packet_capacity);
       assert(source && context && packet);
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
@@ -54,6 +61,12 @@ static void test_codec_batch(void)
       assert(!status);
       for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
       {
+         if (sequence)
+         {
+            memset(packet, 0xa5, packet_capacity);
+            memcpy(packet, sequence->packets[i].data, sequence->packets[i].size);
+            sequence_access_unit(source, packet, sequence->packets[i].size, i, slices, &au);
+         }
          timing = batch_timing(i);
          status = videotoolbox_hevc_slots_submit_timed(context, i, session, format,
                &au, slices, 8, &timing, &info);
@@ -67,7 +80,7 @@ static void test_codec_batch(void)
                &au, slices, 8, &info) == 1);
       assert(!info);
       videotoolbox_hevc_slots_close(context);
-      memset(packet, 0xa5, fixture->sample_size); free(packet);
+      memset(packet, 0xa5, packet_capacity); free(packet);
       rh265_video_close(source); CFRelease(format);
 #ifndef VT_HEVC_NATIVE
       assert(batch_count == VT_HEVC_TEST_BATCH);
@@ -75,12 +88,14 @@ static void test_codec_batch(void)
       {
          CMSampleBufferRef sample = batch_samples[i - 1];
          CVPixelBufferRef image = slot_image();
-         uint8_t *bytes = (uint8_t*)malloc(fixture->sample_size);
+         const uint8_t *expected = sequence ? sequence->packets[i - 1].data : fixture->sample;
+         size_t expected_size = sequence ? sequence->packets[i - 1].size : fixture->sample_size;
+         uint8_t *bytes = (uint8_t*)malloc(expected_size);
          assert(image && bytes && sample);
-         assert(CMSampleBufferGetTotalSampleSize(sample) == fixture->sample_size);
+         assert(CMSampleBufferGetTotalSampleSize(sample) == expected_size);
          assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(sample),
-                  0, fixture->sample_size, bytes));
-         assert(!memcmp(bytes, fixture->sample, fixture->sample_size)); free(bytes);
+                  0, expected_size, bytes));
+         assert(!memcmp(bytes, expected, expected_size)); free(bytes);
          session->callback(context, batch_frames[i - 1], 0, 0, image,
                sample->timing.presentationTimeStamp, sample->timing.duration);
          CVPixelBufferRelease(image); CFRelease(sample);
@@ -111,15 +126,23 @@ static void test_codec_batch(void)
       for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
       {
 #ifdef VT_HEVC_NATIVE
-         codec_native_pixels(fixture, results[i].image);
+         codec_case_t picture = *fixture;
+         if (sequence) memcpy(picture.crc, sequence->packets[i].crc, sizeof(picture.crc));
+         codec_native_pixels(&picture, results[i].image);
 #endif
          CVPixelBufferRelease(results[i].image);
       }
 #ifdef VT_HEVC_NATIVE
-      printf("VideoToolbox native batch: %s eight timed images survive source and session release\n", fixture->name);
+      if (sequence)
+         printf("VideoToolbox native sequence: %s eight dependent pictures match FFmpeg\n", fixture->name);
+      else
+         printf("VideoToolbox native batch: %s eight timed images survive source and session release\n", fixture->name);
 #else
       assert(!objects);
-      printf("VideoToolbox mock batch: %s eight owned samples complete in reverse order\n", fixture->name);
+      if (sequence)
+         printf("VideoToolbox mock sequence: %s eight owned samples complete in reverse order\n", fixture->name);
+      else
+         printf("VideoToolbox mock batch: %s eight owned samples complete in reverse order\n", fixture->name);
 #endif
    }
 #endif

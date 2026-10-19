@@ -211,6 +211,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 
 #include "slots_test.h"
 #include "codec_test.h"
+#include "sequence_test.h"
 #include "batch_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
@@ -428,6 +429,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
 int main(void)
 {
    test_codec_software();
+   test_sequence_software();
    test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0);
    test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0);
    test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1);
