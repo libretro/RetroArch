@@ -6809,9 +6809,9 @@ static bool d3d11_gfx_frame_body(
     * that the hardware handles — no hidden HDR pass needed. */
    DXGI_FORMAT swapchain_format   = d3d11->chain_formats[d3d11->chain_bit_depth];
    bool use_back_buffer           = shader_hdr_mode == 0
-      || back_buffer_format != swapchain_format
-      && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
-           && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
+      || (back_buffer_format != swapchain_format
+         && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
+            && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM));
 #endif
 
    /* The released frame's simulation ends where its Direct3D work

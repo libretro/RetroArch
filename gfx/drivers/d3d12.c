@@ -9103,9 +9103,9 @@ static bool d3d12_gfx_frame_body(
     * that the hardware handles — no hidden HDR pass needed. */
    DXGI_FORMAT swapchain_format   = d3d12->chain.formats[d3d12->chain.bit_depth];
    bool use_back_buffer           = shader_hdr_mode == 0
-      || back_buffer_format != swapchain_format
-      && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
-            && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
+      || (back_buffer_format != swapchain_format
+         && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
+            && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM));
 
    /* When HDR is on and a menu or overlay is up, the frame is composited
     * from back_buffer to the swapchain (the "Copy over back buffer" pass
