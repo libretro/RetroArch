@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """retroarch --mcp-stdio, end to end, against the video_views test core:
 the handshake, the tool list, RUN_FRAMES stepping a running core,
-SET_INPUT reaching it (it logs the pad it reads), GET_LOG, log lines as
+INPUT reaching it (it logs the pad it reads), GET_LOG, log lines as
 notifications/message, and quitting when stdin closes.
 
 The harness core, from samples/network/command_frames, maps memory, which
@@ -141,13 +141,15 @@ names = [t['name'] for t in msg['result']['tools']] if msg else []
 titles = dict((t['name'], t.get('title')) for t in msg['result']['tools']) if msg else {}
 check('a tool has a title for people: %s' % titles.get('RUN_FRAMES'),
       titles.get('RUN_FRAMES') == 'Run frames')
-for n in ('RUN_FRAMES', 'SET_INPUT', 'RELEASE_INPUT', 'GET_LOG',
-          'GET_CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
-          'GET_INPUT', 'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
+for n in ('RUN_FRAMES', 'INPUT', 'OPTION', 'GET_LOG',
+          'CORE_OPTION', 'GET_MEMORY_MAP', 'PRESS', 'RUN_UNTIL',
+          'WATCH', 'MENU', 'DISK', 'REINIT', 'STATE',
           'REPLAY', 'STEPS', 'CORE'):
     check('tool %s listed' % n, n in names)
 # A family of hotkeys is one tool with a choice, not a tool apiece.
 for n in ('MENU_UP', 'DISK_NEXT', 'VIDEO_REINIT', 'SAVE_STATE_SLOT',
+          'SET_INPUT', 'RELEASE_INPUT', 'GET_INPUT', 'GET_OPTION',
+          'SET_OPTION', 'GET_CORE_OPTION', 'SET_CORE_OPTION',
           'LOAD_CORE', 'START_CORE', 'UNLOAD_CORE',
           'SEEK_REPLAY', 'HALT_REPLAY', 'SAVE_FILES'):
     check('%s is not a tool of its own' % n, n not in names)
@@ -166,16 +168,23 @@ check('and calling one is an unknown tool',
 # there is no header to carry it on every request.
 schemas = [t['name'] for t in msg['result']['tools'] if t.get('outputSchema')]
 check('the rows commands declare an outputSchema: %d' % len(schemas),
-      'GET_LOG' in schemas and 'SET_INPUT' in schemas
+      'GET_LOG' in schemas and 'INPUT' in schemas
       and 'GET_PLAYLIST' in schemas)
-# Every tool's description and schema is context a client pays for
-# before it does anything. The total, 25000 bytes, catches a tool added
-# by accident; the ceiling of 1800 on each one catches prose, which an
-# average would not, as folding small tools into one raises it. 23420
-# at 33 tools.
+# What a model is handed of each tool is its name, description and
+# input schema: that is context a client pays for before it does
+# anything, 11512 bytes at 29 tools, held under 15000. Titles,
+# annotations and output schemas are for the client and cost the model
+# nothing, so the whole list has a looser ceiling, 25000 (21370 now),
+# and the 1800 on each tool catches prose an average would not.
+seen = sum(len(json.dumps({'name': t['name'],
+                           'description': t.get('description', ''),
+                           'input_schema': t['inputSchema']},
+                          separators=(',', ':')))
+           for t in msg['result']['tools'])
+check('what a model sees of the tools stays within budget: %d bytes, '
+      '%d tools' % (seen, len(names)), seen < 15000)
 size = len(json.dumps(msg, separators=(',', ':')))
-check('the tool list stays within budget: %d bytes, %d tools'
-      % (size, len(names)), size < 25000)
+check('and the whole list: %d bytes' % size, size < 25000)
 biggest = max(msg['result']['tools'],
               key=lambda t: len(json.dumps(t, separators=(',', ':'))))
 check('and no one tool is over 1800 bytes: %s is %d' % (biggest['name'],
@@ -204,7 +213,7 @@ check('content running: ' + (st or '').strip(), st and 'PLAYING' in st)
 
 
 def frame_count(i):
-    _, t, _ = call(i, 'GET_OPTION', {'option': 'frame_count'})
+    _, t, _ = call(i, 'OPTION', {'action': 'show', 'option': 'frame_count'})
     try:
         return int(t.split('\t')[1])
     except Exception:
@@ -236,15 +245,15 @@ time.sleep(0.5)
 c = frame_count(205)
 check('and none while paused after', c == b)
 
-msg, t, _ = call(210, 'SET_INPUT', {'player': 1, 'control': 'a', 'value': 1})
-check('SET_INPUT: ' + (t or '').strip(), t and t.startswith('1\ta\t'))
+msg, t, _ = call(210, 'INPUT', {'action': 'set', 'player': 1, 'control': 'a', 'value': 1})
+check('INPUT set: ' + (t or '').strip(), t and t.startswith('1\ta\t'))
 sc = msg and msg['result'].get('structuredContent')
 check('and the same reply in fields',
       sc and sc['rows'] == [{'player': '1', 'buttons': 'a', 'axes': 'none'}])
-msg, t, _ = call(211, 'RELEASE_INPUT', {})
-check('RELEASE_INPUT', t and 'none\tnone' in t)
+msg, t, _ = call(211, 'INPUT', {'action': 'release'})
+check('INPUT release', t and 'none\tnone' in t)
 
-# PRESS is SET_INPUT, RUN_FRAMES, SET_INPUT and RUN_FRAMES in one. The
+# PRESS is INPUT set, RUN_FRAMES, INPUT set and RUN_FRAMES in one. The
 # content is paused by here, so the frames it runs are its own.
 a = frame_count(212)
 msg, t, notes = call(213, 'PRESS', {'player': 1, 'control': 'right+a',
@@ -253,7 +262,7 @@ b = frame_count(214)
 check('PRESS answers after its frames: ' + (t or '').strip(),
       t and t.strip() == 'PRESS 1 right+a 4' and not msg['result']['isError'])
 check('and ran exactly those: %s -> %s' % (a, b), b - a == 4)
-_, t, _ = call(215, 'RELEASE_INPUT', {})
+_, t, _ = call(215, 'INPUT', {'action': 'release'})
 check('and let the buttons go', t and 'none\tnone' in t)
 # More frames than the reply is waited for is refused outright, rather
 # than failing ten seconds later with the frames already running.
@@ -262,7 +271,7 @@ check('RUN_FRAMES past what a reply waits for is refused now',
       t and t.startswith('RUN_FRAMES ERROR') and 'a frame count from 1 to' in t)
 _, t, _ = call(217, 'PRESS', {'player': 1, 'control': 'a', 'frames': 601})
 check('and a press is bounded the same way',
-      t and t.startswith('PRESS ERROR') and 'SET_INPUT' in t)
+      t and t.startswith('PRESS ERROR') and 'INPUT set' in t)
 # A stretch of play as one request: this core maps no memory to wait
 # on, so the steps that need none. The frame after the press lets the
 # core log A let go, which the log checks below read changes of.
@@ -300,7 +309,7 @@ msg, t, _ = call(366, 'RUN_FRAMES', {'count': 1})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('and only once', sc == {'rows': [], 'frames': 1})
 _, t, _ = call(218, 'PRESS', {'player': 1, 'control': 'left_x', 'frames': 2})
-check('an axis is SET_INPUT\'s, not PRESS\'s',
+check('an axis is INPUT\'s, not PRESS\'s',
       t and t.startswith('PRESS ERROR') and 'axis' in t)
 
 # This core maps no memory, so RUN_UNTIL cannot wait on a byte here -
@@ -318,14 +327,14 @@ err = (msg or {}).get('error', {})
 check('and a condition it does not take is invalid params',
       err.get('code') == -32602 and '==' in err.get('message', ''))
 
-# GET_INPUT looks without touching: SET_INPUT must set to answer and
-# RELEASE_INPUT lets go before it does.
-_, t, _ = call(223, 'SET_INPUT', {'player': 1, 'control': 'start', 'value': 1})
-_, t2, _ = call(224, 'GET_INPUT', {})
-_, t3, _ = call(225, 'GET_INPUT', {'player': 1})
-check('GET_INPUT reads what is held, twice the same: ' + (t2 or '').strip(),
+# INPUT show looks without touching: set must set to answer and release
+# lets go before it does.
+_, t, _ = call(223, 'INPUT', {'action': 'set', 'player': 1, 'control': 'start', 'value': 1})
+_, t2, _ = call(224, 'INPUT', {'action': 'show'})
+_, t3, _ = call(225, 'INPUT', {'action': 'show', 'player': 1})
+check('INPUT show reads what is held, twice the same: ' + (t2 or '').strip(),
       t2 and t2 == t and t3 == t2)
-call(226, 'RELEASE_INPUT', {})
+call(226, 'INPUT', {'action': 'release'})
 # A path that is not a core is refused before the running core goes.
 _, t, _ = call(227, 'CORE', {'action': 'load', 'core': '/no/such/core.so'})
 check('CORE load says why: ' + (t or '').strip(),
@@ -351,16 +360,16 @@ check('and an empty one is not one of them',
 # A refused preset leaves the shader setting as it was. A build without
 # shaders offers neither SET_SHADER nor the option.
 if 'SET_SHADER' in names:
-    _, before, _ = call(234, 'GET_OPTION', {'option': 'shader'})
+    _, before, _ = call(234, 'OPTION', {'action': 'show', 'option': 'shader'})
     msg, t, _ = call(235, 'SET_SHADER', {'preset': '/no/such/preset.slangp'})
-    _, after, _ = call(236, 'GET_OPTION', {'option': 'shader'})
+    _, after, _ = call(236, 'OPTION', {'action': 'show', 'option': 'shader'})
     check('a refused SET_SHADER changes nothing: ' + (after or '').strip(),
           msg and msg['result']['isError'] and before and 'off' in before
           and before == after)
     # The null video driver runs no shader, so there is none to toggle:
     # the toggle used to dereference the menu's shader, which no such
     # driver has.
-    call(237, 'SET_OPTION', {'option': 'shader', 'state': 'on'})
+    call(237, 'OPTION', {'action': 'set', 'option': 'shader', 'state': 'on'})
     _, st, _ = call(238, 'GET_STATUS')
     check('and turning shaders on where none run does not crash',
           st and st.startswith('GET_STATUS'))
@@ -456,8 +465,8 @@ msg, t, _ = call(302, 'MENU', {'action': 'type', 'text': 'x'})
 check('type with no keyboard open is refused: ' + (t or '').strip(),
       msg and msg['result']['isError'] and 'no keyboard' in t)
 call(303, 'MENU', {'action': 'close'})
-# MENU open and close are the menu's switch: SET_OPTION has none.
-msg, t, _ = call(304, 'GET_OPTION', {'option': 'menu'})
+# MENU open and close are the menu's switch: OPTION has none.
+msg, t, _ = call(304, 'OPTION', {'action': 'show', 'option': 'menu'})
 check('menu is no longer an option', msg and msg['result']['isError'])
 
 _, t, _ = call(230, 'WATCH', {})
@@ -491,7 +500,7 @@ check('log lines arrive as notifications after setLevel',
       any(n.get('method') == 'notifications/message' for n in notes))
 
 # RESET with paused on is a fresh start that waits for the first step.
-call(244, 'SET_OPTION', {'option': 'pause', 'state': 'off'})
+call(244, 'OPTION', {'action': 'set', 'option': 'pause', 'state': 'off'})
 _, st0, _ = call(248, 'GET_STATUS')
 msg, t, _ = call(245, 'RESET', {'paused': 'on'})
 _, st, _ = call(246, 'GET_STATUS')
@@ -535,8 +544,8 @@ msg, t, _ = call(272, 'GET_PLAYLIST', {'playlist': 'e2e.lpl'})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('and GET_PLAYLIST its entry: %s' % sc.get('rows'),
       [r.get('label') for r in sc.get('rows', [])] == ['Blank'])
-msg, t, _ = call(273, 'GET_CORE_OPTION', {})
-check('GET_CORE_OPTION lists the core\'s options',
+msg, t, _ = call(273, 'CORE_OPTION', {'action': 'show'})
+check('CORE_OPTION show lists the core\'s options',
       msg and not msg['result']['isError']
       and msg['result'].get('structuredContent', {}).get('rows'))
 msg, t, _ = call(274, 'LOAD_CONTENT', {'core': mem_core, 'content': rom,
@@ -601,7 +610,7 @@ check('cold LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),
 send({'jsonrpc': '2.0', 'id': 3, 'method': 'logging/setLevel',
       'params': {'level': 'info'}})
 _, notes = recv(3)
-_, _, n2 = call(4, 'SET_INPUT', {'player': 1, 'control': 'a', 'value': 1})
+_, _, n2 = call(4, 'INPUT', {'action': 'set', 'player': 1, 'control': 'a', 'value': 1})
 notes += n2
 time.sleep(1)
 _, st, n2 = call(5, 'GET_STATUS')

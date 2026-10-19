@@ -495,6 +495,24 @@ int main(int argc, char **argv)
    for (i=0;i<8 && !reply[0];i++) runloop_iterate();
    reply[0]=0; cmd.error=false;
    CHECK(command_menu(&cmd,"close") && !strcmp(reply,"CLOSED\n"));
+   /* INPUT, OPTION and CORE_OPTION: their rows as they are, their
+    * errors under their own names */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_input(&cmd,"show 1") && !strcmp(reply,"1\tnone\tnone\n"));
+   reply[0]=0;
+   CHECK(!command_input(&cmd,"set 1 a") && !strncmp(reply,"INPUT ERROR ",12));
+   reply[0]=0; cmd.error=false;
+   CHECK(command_option(&cmd,"show pause") && !strncmp(reply,"pause\t",6));
+   reply[0]=0;
+   CHECK(!command_option(&cmd,"set nope on") && strstr(reply,
+         "OPTION ERROR no such option nope; OPTION show lists them"));
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_option(&cmd,"toggle") && strstr(reply,
+         "OPTION ERROR one of show|set"));
+   reply[0]=0; cmd.error=false;
+   CHECK(!command_core_option(&cmd,"show nope") && strstr(reply,
+         "CORE_OPTION ERROR "));
+   cmd.error=false;
    reply[0]=0;
    CHECK(!command_replay(&cmd,"record 3") && strstr(reply,"nothing after record"));
    reply[0]=0;
@@ -681,7 +699,7 @@ int main(int argc, char **argv)
    /* a press holds input for every frame it runs, so it is bounded by
     * what a client waits for, not by RUN_FRAMES' ten minutes */
    reply[0]=0;
-   CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"SET_INPUT"));
+   CHECK(!command_press(&cmd,"1 a 601") && strstr(reply,"INPUT set"));
    /* a player past 32 bits is refused, not taken as player 1 */
    reply[0]=0;
    CHECK(!command_press(&cmd,"4294967297 a 1") && strstr(reply,"a player from 1"));

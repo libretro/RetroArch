@@ -747,6 +747,8 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 #define COMMAND_STATE_ACTIONS  "save|load|checkpoint|rollback"
 #define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
 #define COMMAND_CORE_ACTIONS   "load|start|unload"
+#define COMMAND_INPUT_ACTIONS  "set|release|show"
+#define COMMAND_OPTION_ACTIONS "show|set"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
@@ -760,6 +762,11 @@ bool command_checkpoint_rollback(command_t *cmd, const char *arg);
 void command_checkpoint_clear(void);
 bool command_core(command_t *cmd, const char *arg);
 bool command_replay(command_t *cmd, const char *arg);
+/* INPUT, OPTION and CORE_OPTION: SET_INPUT, RELEASE_INPUT, GET_INPUT,
+ * GET_OPTION, SET_OPTION, GET_CORE_OPTION and SET_CORE_OPTION */
+bool command_input(command_t *cmd, const char *arg);
+bool command_option(command_t *cmd, const char *arg);
+bool command_core_option(command_t *cmd, const char *arg);
 
 /* The parameters of the commands that take any. Several commands take
  * the same ones; what tells READ_CORE_RAM from READ_CORE_MEMORY is the
@@ -789,7 +796,7 @@ static const struct cmd_param cmd_params_option_set[] = {
 };
 #ifdef HAVE_MCP
 static const struct cmd_param cmd_params_log[] = {
-   { "since", "The first line wanted, as NEXT gave it; 0 when left out.",
+   { "since", "The first line wanted, as next gave it; 0 when left out.",
       CMD_PARAM_INT, false, NULL, NULL, "0" },
    { NULL }
 };
@@ -811,36 +818,67 @@ static const struct cmd_param cmd_params_input[] = {
       "to 32767, 0 letting it go.", CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
+static const struct cmd_param cmd_params_input_family[] = {
+   { "action", "set holds or lets go of controls; release lets go of all "
+      "a player holds; show reads it.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_INPUT_ACTIONS, NULL },
+   { "player", "From 1. Left out, release frees every player and show "
+      "reads the first.", CMD_PARAM_INT, false, NULL, NULL, NULL },
+   /* No enum: a combination is not one of the names, and a client that
+    * held the schema to one would refuse to send it. */
+   { "control", "For set: a button or stick axis, or several joined by "
+      "\"+\": b, y, select, start, up, down, left, right, a, x, l, r, l2, "
+      "r2, l3, r3, left_x, left_y, right_x, right_y.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { "value", "For set: 1 holds a button, 0 lets go; an axis takes "
+      "-32768 to 32767.", CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_option_family[] = {
+   { "action", "show one option, or all; set one.", CMD_PARAM_STRING,
+      true, NULL, COMMAND_OPTION_ACTIONS, NULL },
+   { "option", "An option name, as show lists it.", CMD_PARAM_STRING,
+      false, NULL, NULL, NULL },
+   { "state", "For set.", CMD_PARAM_STRING, false, NULL, "on|off", NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_core_option_family[] = {
+   { "action", "show the core's options, or one with the values it "
+      "takes; set one.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_OPTION_ACTIONS, NULL },
+   { "option", "A key, as show lists it.", CMD_PARAM_STRING, false, NULL,
+      NULL, NULL },
+   { "value", "For set: one of the values show lists for the key.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
 static const struct cmd_param cmd_params_watch[] = {
-   { "watches", "Labels and system addresses in hexadecimal, as "
-      "GET_MEMORY_MAP gives them, in pairs: \"x 86 mode 770\" on a NES, "
-      "\"x 7e0086\" on a SNES; \"x 6d:86\" reads two bytes as one value. A "
-      "label already watched is replaced, and off for its address stops "
-      "watching it. 16 at most.",
+   { "watches", "Label and hexadecimal address pairs, as GET_MEMORY_MAP "
+      "gives them: \"x 86 mode 770\"; \"x 6d:86\" reads two bytes as one "
+      "value. A label watched again is replaced; off as its address stops "
+      "it. 16 at most.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
-   { "address", "A system address in hexadecimal, as GET_MEMORY_MAP "
-      "gives them; high:low, such as 6d:86, reads two bytes as one "
-      "value, and & 0x40 after it compares only those bits.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "address", "Hexadecimal, as GET_MEMORY_MAP gives it; high:low "
+      "(6d:86) reads two bytes as one value; & 0x40 after it compares "
+      "only those bits.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
-   { "value", "What to compare it with: 0 to 255, or 0 to 65535 for "
-      "high:low.",
+   { "value", "0 to 255, or 65535 for high:low.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "frames", "Frames to wait at most; as many as a request runs when "
+   { "frames", "Frames to wait at most; a request's nine seconds when "
       "left out.", CMD_PARAM_INT, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_press[] = {
-   { "player", "The player, from 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
-   { "control", "A RetroPad button, or several joined by \"+\": b, y, "
-      "select, start, up, down, left, right, a, x, l, r, l2, r2, l3, r3. "
+   { "player", "From 1.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "control", "Buttons as INPUT names them, joined by \"+\": "
       "\"right+a\" runs and jumps.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "frames", "Frames to hold them. A tap is 2 to 4; hold longer with "
-      "SET_INPUT. Right after a press it lets go for a frame first.",
+   { "frames", "Frames to hold them: a tap is 2 to 4. Right after a "
+      "press it lets go for a frame first.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "until", "Then run until this holds, as RUN_UNTIL's: \"1d == 0\" "
       "lands a jump.",
@@ -896,14 +934,14 @@ static const struct cmd_param cmd_params_playlist[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_message[] = {
-   { "message", "The text to show on screen.",
+   { "message", "The text.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_read[] = {
    { "address", "The address to read from, in hexadecimal.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
-   { "bytes", "How many bytes to read, a count.",
+   { "bytes", "How many.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { NULL }
 };
@@ -931,8 +969,8 @@ static const struct cmd_param cmd_params_menu[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_disk[] = {
-   { "action", "Eject or insert the disc, or select the next or previous "
-      "image.", CMD_PARAM_STRING, true, NULL, COMMAND_DISK_ACTIONS, NULL },
+   { "action", "eject ejects or inserts it.", CMD_PARAM_STRING, true,
+      NULL, COMMAND_DISK_ACTIONS, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_reinit[] = {
@@ -941,13 +979,11 @@ static const struct cmd_param cmd_params_reinit[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_state[] = {
-   { "action", "Save to the slot or load from it; or checkpoint, kept "
-      "in memory until the content closes, and rollback to it, the "
-      "quick retry after a mistake. What SET_INPUT holds stays held.",
+   { "action", "checkpoint keeps a state in memory until the content "
+      "closes; rollback returns to it, the quick retry after a mistake.",
       CMD_PARAM_STRING, true, NULL,
       COMMAND_STATE_ACTIONS, NULL },
-   { "slot", "The slot number, for save and load only; leave it out for "
-      "checkpoint and rollback.", CMD_PARAM_INT, false,
+   { "slot", "For save and load.", CMD_PARAM_INT, false,
       NULL, NULL, NULL },
    { NULL }
 };
@@ -958,17 +994,16 @@ static const struct cmd_param cmd_params_reset[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_core_family[] = {
-   { "action", "Load a core library, start the loaded one without "
-      "content, or close the content and unload the core.",
+   { "action", "unload closes the content too.",
       CMD_PARAM_STRING, true, NULL, COMMAND_CORE_ACTIONS, NULL },
    { "core", "load: the path, as LIST_CORES gives it.", CMD_PARAM_STRING,
       false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_replay[] = {
-   { "action", "Play the replay in a slot, seek the playing one to a "
-      "frame, record one to the current slot, halt playing or recording, "
-      "or add a checkpoint to the one recording.", CMD_PARAM_STRING, true,
+   { "action", "seek moves the playing replay to a frame; record uses "
+      "the current slot; checkpoint marks the one recording.",
+      CMD_PARAM_STRING, true,
       NULL, COMMAND_REPLAY_ACTIONS, NULL },
    { "number", "The slot to play, or the frame to seek to.",
       CMD_PARAM_INT, false, NULL, NULL, NULL },
@@ -979,8 +1014,7 @@ static const struct cmd_param cmd_params_frame[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_cores[] = {
-   { "content", "A content path. Left out, every installed core; given, "
-      "only the cores that support it.",
+   { "content", "Only the cores that support this content path.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
@@ -990,9 +1024,8 @@ static const struct cmd_param cmd_params_core[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_content[] = {
-   { "core", "Path to the core to load it with, as LIST_CORES and "
-      "GET_PLAYLIST give it; DETECT, as a playlist entry with no core "
-      "of its own gives it, picks a core that supports the content.",
+   { "core", "A core's path, as LIST_CORES and GET_PLAYLIST give it; "
+      "DETECT picks one that supports the content.",
       CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
@@ -1006,7 +1039,7 @@ static const struct cmd_param cmd_params_content[] = {
 /* The replies that are rows of named columns, in the order the line
  * gives the fields. */
 static const struct cmd_column cmd_cols_option[] = {
-   { "option", "The option's name, as SET_OPTION takes it." },
+   { "option", "The option's name, as OPTION set takes it." },
    { "value", "Its state - on or off - or, for one that only reports, "
       "what it reports." },
    { NULL }
@@ -1030,7 +1063,7 @@ static const struct cmd_column cmd_cols_entry[] = {
 };
 
 static const struct cmd_column cmd_cols_core_option[] = {
-   { "key", "The option's key, as SET_CORE_OPTION takes it." },
+   { "key", "The option's key, as CORE_OPTION set takes it." },
    { "value", "The value it has now." },
    { "description", "What the option is called in the menu." },
    { "values", "The values it takes, separated by \"|\"; given only "
@@ -1181,25 +1214,25 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
-   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
-   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
+   { "GET_STATUS",       command_get_status,       "No argument", "Whether content is playing, paused or not loaded, with its system and file name.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
+   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_option, &cmd_rows_option },
+   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", CMD_INFO_NO_TOOL, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
 #ifdef HAVE_MCP
-   { "GET_LOG",          command_get_log,          "[since]", "Report the lines RetroArch has logged since the given line, then where to ask from next time (next), and how many of the lines asked for were already gone (skipped).", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
+   { "GET_LOG",          command_get_log,          "[since]", "The lines RetroArch has logged since a line, where to ask from next (next), and how many asked for were gone (skipped).", CMD_INFO_READ_ONLY, cmd_params_log, &cmd_rows_log },
 #endif
-   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content by the given number of frontend frames, excluding speculative replay calls; finish paused. Over MCP one request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
-   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. The core is given exactly what is held: opposing directions are not cleaned and the D-Pad is not turned with the picture. Under netplay the player is this machine's, and what is held is sent like a press. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
-   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
-   { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
+   { "RUN_FRAMES",       command_run_frames,       "<count>", "Pause and advance the content some frames; it finishes paused. One request runs nine seconds of frames at most (540 at 60fps), as PRESS, RUN_UNTIL and STEPS do.", 0, cmd_params_run_frames, &cmd_rows_frames },
+   { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. The core is given exactly what is held: opposing directions are not cleaned and the D-Pad is not turned with the picture. Under netplay the player is this machine's, and what is held is sent like a press. Answers with the player, the buttons held and the axes held, none for either where nothing is.", CMD_INFO_NO_TOOL, cmd_params_input, &cmd_rows_input },
+   { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press buttons for some frames and let go; with until, run on until a condition holds. What INPUT holds stays held. Answers with what WATCH watches; finishes paused.", 0, cmd_params_press, &cmd_rows_press },
+   { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run until memory meets a condition. Answers met or waiting (ask again) with the frames run, what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
    { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
-   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
-   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
-   { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
-   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
-   { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
+   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes under labels, so every step answers with them and needs no read after it. With none, answers what is watched and each value, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", CMD_INFO_NO_TOOL, cmd_params_input_release, &cmd_rows_input },
+   { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_input_get, &cmd_rows_input },
+   { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_core_option, &cmd_rows_core_option },
+   { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", CMD_INFO_NO_TOOL, cmd_params_core_option_set },
    { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
    { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, 200 at a time, and where to go on from when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
@@ -1228,8 +1261,11 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "INPUT", command_input, "<set|release|show> [player] [control] [value]", "Hold RetroPad buttons or stick axes over a player's own input until set again or released, or show what is held. Answers with the player and the buttons and axes held.", 0, cmd_params_input_family, &cmd_rows_input },
+   { "OPTION", command_option, "<show|set> [option] [on|off]", "Show RetroArch's options - pause, fast-forward, the frame count, the slots and more - or turn one on or off.", 0, cmd_params_option_family, &cmd_rows_option },
+   { "CORE_OPTION", command_core_option, "<show|set> [key] [value]", "Show the running core's options - key, value and description - or set one to one of its values.", 0, cmd_params_core_option_family, &cmd_rows_core_option },
    { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load content with a core, or with one that supports it where core is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "RESET", command_reset, "[on|off]", "Reset the running content; with paused on, pause once it has.", CMD_INFO_DESTRUCTIVE, cmd_params_reset },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },

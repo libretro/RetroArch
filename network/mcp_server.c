@@ -566,7 +566,7 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "queue: on plays on without pausing - send the next stretch as soon " \
    "as one answers), " \
    "PRESS ... until, or RUN_UNTIL; RUN_FRAMES runs frames with nothing " \
-   "pressed but what SET_INPUT holds. STATE " \
+   "pressed but what INPUT holds. STATE " \
    "checkpoint before a risky move, and rollback after a mistake. MENU " \
    "reads and drives RetroArch's own menu - settings, playlists, cores - " \
    "and answers with what it shows. Tools " \
@@ -646,13 +646,14 @@ static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
    if (rows && structured)
       mcp_schema_rows(w, rows, describe);
    /* Only what a client acts on: readOnlyHint where it is true, and
-    * destructiveHint, which defaults to true, either way. openWorldHint
-    * is left at its default - every tool's annotations are context a
-    * client pays for, 770 bytes of it for that hint alone. */
-   MCP_RAW(w, ",\"annotations\":{");
+    * otherwise destructiveHint, which defaults to true and means nothing
+    * for a tool that changes nothing. openWorldHint is left at its
+    * default. */
    if (ro)
-      MCP_RAW(w, "\"readOnlyHint\":true,");
-   rjsonwriter_rawf(w, "\"destructiveHint\":%s}}", de ? "true" : "false");
+      MCP_RAW(w, ",\"annotations\":{\"readOnlyHint\":true}}");
+   else
+      rjsonwriter_rawf(w, ",\"annotations\":{\"destructiveHint\":%s}}",
+            de ? "true" : "false");
 }
 
 static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,

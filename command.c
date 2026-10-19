@@ -800,7 +800,7 @@ struct command_family
 static struct command_family command_family_now;
 
 /* @msg under @f's name, allocated, its length in @out_len; NULL where
- * it could not be. */
+ * it could not be, or where it is to go as it is. */
 static char *command_family_rename(const struct command_family *f,
       const char *msg, size_t len, size_t *out_len)
 {
@@ -823,9 +823,12 @@ static char *command_family_rename(const struct command_family *f,
    }
    else if (len == n && !strncmp(msg, f->name, n))
       _len = snprintf(s, size, "%s %s", f->family, f->word);
+   /* rows, which name nothing, are the tool's answer as they are */
    else
-      _len = snprintf(s, size, "%s %s %.*s", f->family, f->word,
-            (int)len, msg);
+   {
+      free(s);
+      return NULL;
+   }
    if (_len <= 0 || (size_t)_len >= size)
    {
       free(s);
@@ -1662,6 +1665,37 @@ bool command_replay(command_t *cmd, const char *arg)
    };
    return command_run_choice(cmd, "REPLAY", choices, ARRAY_SIZE(choices),
          COMMAND_REPLAY_ACTIONS, arg);
+}
+
+bool command_input(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "set",     "SET_INPUT",     true },
+      { "release", "RELEASE_INPUT", true },
+      { "show",    "GET_INPUT",     true }
+   };
+   return command_run_choice(cmd, "INPUT", choices, ARRAY_SIZE(choices),
+         COMMAND_INPUT_ACTIONS, arg);
+}
+
+bool command_option(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "show", "GET_OPTION", true },
+      { "set",  "SET_OPTION", true }
+   };
+   return command_run_choice(cmd, "OPTION", choices, ARRAY_SIZE(choices),
+         COMMAND_OPTION_ACTIONS, arg);
+}
+
+bool command_core_option(command_t *cmd, const char *arg)
+{
+   static const struct cmd_choice choices[] = {
+      { "show", "GET_CORE_OPTION", true },
+      { "set",  "SET_CORE_OPTION", true }
+   };
+   return command_run_choice(cmd, "CORE_OPTION", choices,
+         ARRAY_SIZE(choices), COMMAND_OPTION_ACTIONS, arg);
 }
 
 bool command_interfaces_held(void)
@@ -2862,7 +2896,7 @@ bool command_get_option(command_t *cmd, const char *arg)
    {
       free(reply);
       command_reply_error(cmd, "GET_OPTION",
-            "no such option %s; GET_OPTION with no argument lists them", arg);
+            "no such option %s; OPTION show lists them", arg);
       return false;
    }
 
@@ -2889,7 +2923,7 @@ bool command_set_option(command_t *cmd, const char *arg)
    if (!arg || !*arg || !(sp = strchr(arg, ' ')))
    {
       command_reply_error(cmd, "SET_OPTION",
-            "an option and on or off, as in SET_OPTION pause on");
+            "an option and on or off, as in OPTION set pause on");
       return false;
    }
    if ((size_t)(sp - arg) >= sizeof(name))
@@ -2916,7 +2950,7 @@ bool command_set_option(command_t *cmd, const char *arg)
    if (!(o = command_option_find(name, false)))
    {
       command_reply_error(cmd, "SET_OPTION",
-            "no such option %s; GET_OPTION with no argument lists them",
+            "no such option %s; OPTION show lists them",
             name);
       return false;
    }
@@ -4262,7 +4296,7 @@ bool command_press(command_t *cmd, const char *arg)
    if (frames < 1 || frames > (long)command_frames_reply_max(cmd))
    {
       command_reply_error(cmd, "PRESS", "a frame count from 1 to %u; a "
-            "longer hold is SET_INPUT with RUN_FRAMES",
+            "longer hold is INPUT set with RUN_FRAMES",
             command_frames_reply_max(cmd));
       return false;
    }
@@ -4270,7 +4304,7 @@ bool command_press(command_t *cmd, const char *arg)
       if (ids[i] >= 16)
       {
          command_reply_error(cmd, "PRESS",
-               "%s is an axis, which SET_INPUT holds at a value",
+               "%s is an axis, which INPUT set holds at a value",
                command_input_names[ids[i]]);
          return false;
       }
@@ -4499,7 +4533,7 @@ bool command_steps(command_t *cmd, const char *arg)
                if (ids[i] >= 16)
                {
                   command_reply_error(cmd, "STEPS", "step %u: %s is an "
-                        "axis, which SET_INPUT holds at a value", count,
+                        "axis, which INPUT set holds at a value", count,
                         command_input_names[ids[i]]);
                   return false;
                }
@@ -4686,8 +4720,7 @@ static bool command_core_option_find(command_t *cmd, const char *name,
    if (key && !core_option_manager_get_idx(*opt, key, idx))
    {
       command_reply_error(cmd, name,
-            "no such core option %s; GET_CORE_OPTION with no argument lists "
-            "them", key);
+            "no such core option %s; CORE_OPTION show lists them", key);
       return false;
    }
    return true;
