@@ -9190,6 +9190,33 @@ static retro_time_t vulkan_get_last_present_time(void *data)
    return 0;
 }
 
+static unsigned vulkan_driver_pacing_set(void *data, unsigned mode)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context)
+      return VIDEO_DRIVER_PACING_REASON_DRIVER;
+   return vulkan_low_latency_set(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context), mode);
+}
+
+static uint64_t vulkan_driver_pacing_wait(void *data, unsigned min_interval_us,
+      unsigned max_wait_us)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context)
+      return 0;
+   return vulkan_low_latency_sleep(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
+         min_interval_us, max_wait_us);
+}
+
+static void vulkan_driver_pacing_mark(void *data, uint64_t frame_id, unsigned marker)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context)
+      return;
+   vulkan_low_latency_marker(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
+         frame_id, marker);
+}
+
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 {
    VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
@@ -11222,6 +11249,9 @@ static bool vulkan_frame(void *data, const void *frame,
 
    frame = vulkan_movie_prepare(vk, frame);
    vk->movie_pending = false;
+
+   /* The released frame's simulation ends where its Vulkan work begins */
+   vulkan_low_latency_render_begin(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context));
 
    /* A swapchain the context makes while this frame draws is made from
     * the frame's settings */
@@ -15101,7 +15131,12 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_record_read,
    vulkan_import_movie_frame,
    vulkan_get_menu_framebuffer,
-   vulkan_menu_mem_alloc
+   vulkan_menu_mem_alloc,
+   0,     /* menu_mem_pitch_align */
+   false, /* texture_lend_per_write */
+   vulkan_driver_pacing_set,
+   vulkan_driver_pacing_wait,
+   vulkan_driver_pacing_mark
 };
 
 static void vulkan_get_poke_interface(void *data,

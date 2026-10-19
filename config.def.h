@@ -1746,6 +1746,10 @@
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
 
+/* Driver Pacing (NVIDIA Reflex through VK_NV_low_latency2): off, so pacing is
+ * what it was; VIDEO_DRIVER_PACING_ON or VIDEO_DRIVER_PACING_BOOST to use it. */
+#define DEFAULT_VIDEO_DRIVER_PACING 0
+
 /* The menu runs at the display's refresh rate while content is loaded */
 #define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY
 

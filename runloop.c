@@ -6043,8 +6043,64 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
 static unsigned runloop_menu_rate(settings_t *settings,
       runloop_state_t *runloop_st, bool menu_pause_libretro);
 
+/* The low-latency release, asked of the video driver for this iteration
+ * from what the pace decision already knows: the mode the setting
+ * wants where a content frame will follow at normal speed, nothing
+ * otherwise. What the driver answers, and why nothing was asked, is
+ * kept on video_st for the statistics line. Returns the facts with
+ * PACE_FACT_DRIVER_PACING added when the mode is in effect. */
+static runloop_pace_facts_t runloop_driver_pacing_gather(settings_t *settings,
+      runloop_state_t *runloop_st, video_driver_state_t *video_st,
+      runloop_pace_facts_t f)
+{
+   unsigned want                  = settings->uints.video_driver_pacing;
+   unsigned reason                = VIDEO_DRIVER_PACING_REASON_NONE;
+   const video_poke_interface_t *poke = video_st->poke;
+   if (want >= VIDEO_DRIVER_PACING_LAST)
+      want = VIDEO_DRIVER_PACING_OFF;
+   if (!want)
+      reason = VIDEO_DRIVER_PACING_REASON_OFF;
+   else if (f & PACE_FACT_WRAPPER)
+      reason = VIDEO_DRIVER_PACING_REASON_THREADED;
+   else if (!poke || !poke->driver_pacing_set || !video_st->data)
+      reason = VIDEO_DRIVER_PACING_REASON_DRIVER;
+   /* More than one present a content frame, or a present paced to a
+    * scanline: the backend's one sleep between presents does not map
+    * onto them yet. */
+   else if (   settings->uints.video_black_frame_insertion
+            || settings->uints.video_shader_subframes > 1
+            || settings->bools.video_scanline_sync
+            || runloop_get_video_swap_interval(
+                  settings->uints.video_swap_interval) > 1)
+      reason = VIDEO_DRIVER_PACING_REASON_MODE;
+   else if (!runloop_pace_driver_owns(f | PACE_FACT_DRIVER_PACING,
+            runloop_pace_sources(f)))
+      reason = VIDEO_DRIVER_PACING_REASON_SUSPENDED;
+   if (reason != VIDEO_DRIVER_PACING_REASON_NONE)
+      want = VIDEO_DRIVER_PACING_OFF;
+   /* The driver keeps the mode on its swapchain; it is told OFF once,
+    * and asked again every frame while wanted, since a replaced
+    * swapchain comes up without it. */
+   if (want || video_st->driver_pacing_mode)
+   {
+      unsigned answer = (poke && poke->driver_pacing_set && video_st->data)
+         ? poke->driver_pacing_set(video_st->data, want)
+         : (unsigned)VIDEO_DRIVER_PACING_REASON_DRIVER;
+      if (want)
+         reason = answer;
+      video_st->driver_pacing_mode = (uint8_t)
+         ((answer == VIDEO_DRIVER_PACING_REASON_NONE) ? want : VIDEO_DRIVER_PACING_OFF);
+   }
+   video_st->driver_pacing_reason = (uint8_t)reason;
+   if (reason == VIDEO_DRIVER_PACING_REASON_NONE)
+      f |= PACE_FACT_DRIVER_PACING;
+   else
+      runloop_st->driver_pacing_frame_id = 0;
+   return f;
+}
+
 static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
-      bool menu_pause_libretro)
+      bool menu_pause_libretro, bool core_ran)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -6075,7 +6131,8 @@ static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
    if (settings->bools.audio_rate_control)                 f |= PACE_FACT_RATE_CONTROL;
    if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
    if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;
-   return f;
+   if (core_ran)                                           f |= PACE_FACT_CORE_RAN;
+   return runloop_driver_pacing_gather(settings, runloop_st, video_st, f);
 }
 
 size_t runloop_pace_string(char *s, size_t len)
@@ -6099,10 +6156,45 @@ size_t runloop_pace_string(char *s, size_t len)
       _len += strlcpy(s + _len, _len ? "+Display" : "Display", len - _len);
    if (pace & RUNLOOP_PACE_TIMER)
       _len += strlcpy(s + _len, _len ? "+Timer" : "Timer", len - _len);
+   if (pace & RUNLOOP_PACE_DRIVER)
+      _len += strlcpy(s + _len, _len ? "+Driver" : "Driver", len - _len);
    if (pace & RUNLOOP_PACE_NOWINDOW)
       _len += strlcpy(s + _len, _len ? "+NoWindow" : "NoWindow", len - _len);
    if (!_len)
       _len  = strlcpy(s, "None", len);
+   return _len;
+}
+
+size_t runloop_driver_pacing_string(char *s, size_t len)
+{
+   static const char *modes[VIDEO_DRIVER_PACING_LAST] = { "Off", "On", "On+Boost" };
+   /* Indexed by enum video_driver_pacing_reason; the first is "in effect" */
+   static const char *reasons[VIDEO_DRIVER_PACING_REASON_LAST] = {
+      NULL,
+      NULL,
+      "no backend in this video driver",
+      "threaded video",
+      "not offered by the GPU driver",
+      "no native swapchain",
+      "BFI, sub-frames, Scanline Sync or swap interval",
+      "driver error",
+      "menu, pause, fast-forward or unfocused"
+   };
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned want   = config_get_ptr()->uints.video_driver_pacing;
+   unsigned reason = video_st->driver_pacing_reason;
+   size_t _len;
+   if (want >= VIDEO_DRIVER_PACING_LAST)
+      want = VIDEO_DRIVER_PACING_OFF;
+   if (reason >= VIDEO_DRIVER_PACING_REASON_LAST)
+      reason = VIDEO_DRIVER_PACING_REASON_NONE;
+   _len = strlcpy(s, modes[want], len);
+   if (want && reason != VIDEO_DRIVER_PACING_REASON_NONE && reasons[reason])
+   {
+      _len += strlcpy(s + _len, " (off: ", len - _len);
+      _len += strlcpy(s + _len, reasons[reason], len - _len);
+      _len += strlcpy(s + _len, ")", len - _len);
+   }
    return _len;
 }
 
@@ -6243,6 +6335,20 @@ static INLINE enum poll_type core_poll_type_current(void)
       : (enum poll_type)(runloop_state.current_core.poll_type);
 }
 
+/* The content frame's input sample, wherever the poll type puts it:
+ * the marker the low-latency backend wants at exactly that point. */
+static INLINE void runloop_driver_pacing_input_sampled(void)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   if (runloop_st->driver_pacing_frame_id)
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      if (video_st->poke && video_st->poke->driver_pacing_mark)
+         video_st->poke->driver_pacing_mark(video_st->data,
+               runloop_st->driver_pacing_frame_id, VIDEO_DRIVER_PACING_MARK_INPUT_SAMPLE);
+   }
+}
+
 /* The core's input_state callback, in every poll mode.
  *
  * Under late polling the frame's first query polls. Whether late
@@ -6266,6 +6372,7 @@ static int16_t core_input_state_cb(unsigned port,
    if (     !(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED)
          && core_poll_type_current() == POLL_TYPE_LATE)
    {
+      runloop_driver_pacing_input_sampled();
       input_driver_poll();
       runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
    }
@@ -6277,6 +6384,7 @@ static void core_input_state_poll_maybe(void)
 {
    if (core_poll_type_current() == POLL_TYPE_NORMAL)
    {
+      runloop_driver_pacing_input_sampled();
       input_driver_poll();
       runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
    }
@@ -9524,7 +9632,7 @@ int runloop_iterate(void)
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    bool audio_sync                        = settings->bools.audio_sync;
-   bool frame_advanced;
+   bool frame_advanced                    = false;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
    record_nvenc_poll();
@@ -10072,7 +10180,8 @@ end:
     * runloop_pace_decide() in runloop.h, and the table in
     * samples/runloop/pacing that pins it row by row. The audio write
     * flag is read by the gather and cleared here. */
-   pace_facts       = runloop_pace_gather(settings, menu_pause_libretro);
+   pace_facts       = runloop_pace_gather(settings, menu_pause_libretro,
+         frame_advanced);
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
    runloop_st->pace = runloop_pace_sources(pace_facts);
 
@@ -10117,6 +10226,33 @@ end:
             (video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
+   }
+
+   /* The low-latency backend releases the next frame: the hold is the
+    * driver's signal, taken here where the frame delay would have
+    * slept, before the next iteration samples input. The timer's
+    * period, where the timer would hold, goes to it as the minimum
+    * present interval; nothing is slept twice. A release the driver
+    * could not give leaves the frame to the pacing below, and the
+    * limiter's schedule restarts rather than catching up. */
+   if (runloop_st->pace & RUNLOOP_PACE_DRIVER)
+   {
+      retro_time_t period = runloop_content_frame_time_us(video_st->core_hz);
+      uint64_t id         = video_st->poke->driver_pacing_wait(video_st->data,
+            (runloop_st->pace & RUNLOOP_PACE_TIMER)
+               ? (unsigned)pace_limit_min : 0,
+            (unsigned)(2 * period + 10000));
+      if (id)
+      {
+         runloop_st->driver_pacing_frame_id       = id;
+         runloop_st->frame_limit_anchor_ns = 0;
+         if (video_st->poke->driver_pacing_mark)
+            video_st->poke->driver_pacing_mark(video_st->data, id,
+                  VIDEO_DRIVER_PACING_MARK_SIMULATION_START);
+         goto driver_paced;
+      }
+      runloop_st->driver_pacing_frame_id = 0;
+      runloop_st->pace           &= ~RUNLOOP_PACE_DRIVER;
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
@@ -10176,6 +10312,7 @@ end:
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
       video_frame_delay(video_st, settings);
 
+driver_paced:
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)
    {
@@ -10875,6 +11012,7 @@ bool core_run(void)
     * and input_poll or the first input_state sets it. */
    if (early_polling)
    {
+      runloop_driver_pacing_input_sampled();
       input_driver_poll();
       current_core->flags |=  RETRO_CORE_FLAG_INPUT_POLLED;
    }

@@ -389,10 +389,39 @@ struct vulkan_emulated_mailbox
    bool has_pending_request;
 };
 
+/* VK_NV_low_latency2 (NVIDIA Reflex) on the native swapchain. The
+ * mode is a property of one swapchain: a replacement starts from
+ * nothing, and @swapchain records which one the mode was set on so a
+ * sleep or a marker never names an obsolete one. Every sleep signals
+ * @semaphore, a timeline semaphore of the device, to the next value
+ * of @sleep_value; the frame it releases is numbered by @frame_id.
+ * @stage says how far the released frame's markers have gone: 0 the
+ * sleep returned, 1 its render submission began, 2 it was presented.
+ * @failed latches on a backend error or a sleep the driver never
+ * signalled, until the device goes; the semaphore is then left to it. */
+typedef struct vulkan_low_latency
+{
+   uint64_t sleep_value;
+   uint64_t frame_id;
+   VkSemaphore semaphore;        /* 64-bit handle */
+   VkSwapchainKHR swapchain;     /* 64-bit handle */
+   PFN_vkVoidFunction set_sleep_mode;
+   PFN_vkVoidFunction sleep;
+   PFN_vkVoidFunction set_marker;
+   PFN_vkVoidFunction wait_semaphores;
+   uint32_t min_interval_us;
+   uint32_t spec_version;
+   uint8_t mode;        /* enum video_driver_pacing_mode set on @swapchain */
+   uint8_t stage;
+   bool supported;
+   bool failed;
+} vulkan_low_latency_t;
+
 typedef struct gfx_ctx_vulkan_data
 {
    struct string_list *gpu_list;
    vulkan_context_t context;
+   vulkan_low_latency_t low_latency;
    VkSurfaceKHR vk_surface;      /* ptr alignment */
    VkSwapchainKHR swapchain;     /* ptr alignment */
    struct vulkan_emulated_mailbox mailbox;
@@ -577,6 +606,18 @@ unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
  * leaves the extent to the swapchain. */
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned dims, int8_t swap_interval);
+
+/* The low-latency release, behind the video driver's driver_pacing_* pokes
+ * (gfx/video_driver.h says what each does and answers). All on the
+ * thread that owns the swapchain. */
+unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode);
+uint64_t vulkan_low_latency_sleep(gfx_ctx_vulkan_data_t *vk,
+      unsigned min_interval_us, unsigned max_wait_us);
+void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned marker);
+/* The released frame's render submission begins: the driver's frame
+ * says so once, at its first Vulkan call. */
+void vulkan_low_latency_render_begin(gfx_ctx_vulkan_data_t *vk);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

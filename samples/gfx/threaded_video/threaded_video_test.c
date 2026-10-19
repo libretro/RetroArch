@@ -620,6 +620,220 @@ static void lane_toggle_in_game(unsigned cycles)
       fprintf(stderr, "[pass] toggle-in-game lane (%u cycles)\n", cycles);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Lane: driver pacing                                                */
+/*   The runloop's side of Driver Pacing against a fake backend in    */
+/*   the driver's poke slots: one wait a content frame with a fresh   */
+/*   identity, the input and simulation markers on that identity in   */
+/*   order, the mode asked for while owned and taken off once when    */
+/*   not - the menu, threaded video, BFI, a backend that fails - and  */
+/*   the pacing record saying so. On a real driver without the       */
+/*   extension (lavapipe) the device reason is reported and nothing   */
+/*   is released.                                                     */
+/* ------------------------------------------------------------------ */
+
+static video_poke_interface_t         dplane_poke;
+static const video_poke_interface_t  *dplane_saved_poke;
+static unsigned dplane_sets, dplane_last_mode, dplane_set_answer;
+static unsigned dplane_waits, dplane_last_interval, dplane_last_max;
+static uint64_t dplane_last_id, dplane_wait_answer_from;
+static unsigned dplane_marks;
+/* (id, marker) of the last few markers, oldest first */
+static uint64_t dplane_mark_id[8];
+static unsigned dplane_mark_kind[8];
+
+static unsigned dplane_set(void *data, unsigned mode)
+{
+   (void)data;
+   dplane_sets++;
+   dplane_last_mode = mode;
+   if (!mode)
+      return VIDEO_DRIVER_PACING_REASON_OFF;
+   return dplane_set_answer;
+}
+
+static uint64_t dplane_wait(void *data, unsigned min_interval_us,
+      unsigned max_wait_us)
+{
+   (void)data;
+   dplane_waits++;
+   dplane_last_interval = min_interval_us;
+   dplane_last_max      = max_wait_us;
+   if (dplane_wait_answer_from)
+      return 0;
+   return ++dplane_last_id;
+}
+
+static void dplane_mark(void *data, uint64_t id, unsigned marker)
+{
+   (void)data;
+   memmove(dplane_mark_id,   dplane_mark_id + 1,   7 * sizeof(dplane_mark_id[0]));
+   memmove(dplane_mark_kind, dplane_mark_kind + 1, 7 * sizeof(dplane_mark_kind[0]));
+   dplane_mark_id[7]   = id;
+   dplane_mark_kind[7] = marker;
+   dplane_marks++;
+}
+
+static void lane_driver_pacing(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   unsigned had                   = failures;
+   unsigned saved_bfi             = settings->uints.video_black_frame_insertion;
+   enum poll_type_override_t saved_poll = runloop_st->core_poll_type_override;
+   unsigned waits;
+
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "driver pacing lane: menu still up");
+   /* The harness core never polls itself: early polling puts the
+    * frame's input sample where the runloop makes it. */
+   runloop_st->core_poll_type_override = POLL_TYPE_OVERRIDE_EARLY;
+   set_threaded_via_setting(false);
+   run_frames(3);
+   expect_wrapper(false, "driver pacing lane");
+
+   /* Asked for on a driver without a backend: reported, nothing
+    * released, the frame paced as before. */
+   settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_ON;
+   run_frames(5);
+   CHECK(video_st->driver_pacing_reason == (real_driver()
+            ? VIDEO_DRIVER_PACING_REASON_DEVICE
+            : VIDEO_DRIVER_PACING_REASON_DRIVER)
+         || video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_SWAPCHAIN,
+         "no backend: reason %u", video_st->driver_pacing_reason);
+   CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER), "no backend: paced by the driver");
+   CHECK(runloop_st->driver_pacing_frame_id == 0, "no backend: a frame identity");
+
+   /* A backend that answers */
+   dplane_saved_poke  = video_st->poke;
+   dplane_poke        = *video_st->poke;
+   dplane_poke.driver_pacing_set  = dplane_set;
+   dplane_poke.driver_pacing_wait = dplane_wait;
+   dplane_poke.driver_pacing_mark = dplane_mark;
+   video_st->poke     = &dplane_poke;
+   dplane_sets = dplane_waits = dplane_marks = 0;
+   dplane_last_id = dplane_wait_answer_from = 0;
+   dplane_set_answer  = VIDEO_DRIVER_PACING_REASON_NONE;
+
+   run_frames(20);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE,
+         "backend up: reason %u", video_st->driver_pacing_reason);
+   CHECK(video_st->driver_pacing_mode == VIDEO_DRIVER_PACING_ON, "backend up: mode");
+   CHECK(dplane_last_mode == VIDEO_DRIVER_PACING_ON, "backend up: asked for On");
+   CHECK(runloop_st->pace & RUNLOOP_PACE_DRIVER, "backend up: the pacing record");
+   CHECK(dplane_waits == 20, "backend up: %u waits for 20 frames", dplane_waits);
+   CHECK(dplane_last_id == 20 && runloop_st->driver_pacing_frame_id == 20,
+         "backend up: identity %llu, runloop holds %llu",
+         (unsigned long long)dplane_last_id,
+         (unsigned long long)runloop_st->driver_pacing_frame_id);
+   CHECK(dplane_last_max >= 20000 && dplane_last_max <= 210000,
+         "backend up: the wait bound %u us", dplane_last_max);
+   /* The last frame: released (SIMULATION_START on 20) after the
+    * frame before it sampled input on 19 */
+   CHECK(dplane_mark_kind[7] == VIDEO_DRIVER_PACING_MARK_SIMULATION_START
+         && dplane_mark_id[7] == 20,
+         "the release marks the start of frame 20 (got %u on %llu)",
+         dplane_mark_kind[7], (unsigned long long)dplane_mark_id[7]);
+   CHECK(dplane_mark_kind[6] == VIDEO_DRIVER_PACING_MARK_INPUT_SAMPLE
+         && dplane_mark_id[6] == 19,
+         "frame 19 sampled its input before frame 20 was released (got %u on %llu)",
+         dplane_mark_kind[6], (unsigned long long)dplane_mark_id[6]);
+   CHECK(dplane_mark_kind[5] == VIDEO_DRIVER_PACING_MARK_SIMULATION_START
+         && dplane_mark_id[5] == 19,
+         "frame 19 was released before it sampled input");
+   {
+      char pbuf[64];
+      runloop_pace_string(pbuf, sizeof(pbuf));
+      CHECK(strstr(pbuf, "Driver") != NULL, "pacing string: %s", pbuf);
+      runloop_driver_pacing_string(pbuf, sizeof(pbuf));
+      CHECK(!strcmp(pbuf, "On"), "status string: %s", pbuf);
+   }
+
+   /* The menu up: the mode is taken off, once, and nothing released */
+   waits       = dplane_waits;
+   dplane_sets = 0;
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(5);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_SUSPENDED,
+         "menu: reason %u", video_st->driver_pacing_reason);
+   CHECK(dplane_sets == 1 && dplane_last_mode == VIDEO_DRIVER_PACING_OFF,
+         "menu: the mode taken off once (%u sets, last %u)",
+         dplane_sets, dplane_last_mode);
+   CHECK(dplane_waits == waits, "menu: a release");
+   CHECK(runloop_st->driver_pacing_frame_id == 0, "menu: an identity kept");
+   CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER), "menu: the pacing record");
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(5);
+   CHECK(dplane_waits == waits + 5 && dplane_last_mode == VIDEO_DRIVER_PACING_ON,
+         "back in game: releases resume");
+
+   /* Black Frame Insertion: an incompatible mode */
+   waits = dplane_waits;
+   settings->uints.video_black_frame_insertion = 1;
+   run_frames(3);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_MODE
+         && dplane_waits == waits && dplane_last_mode == VIDEO_DRIVER_PACING_OFF,
+         "BFI: reason %u, %u releases", video_st->driver_pacing_reason,
+         dplane_waits - waits);
+   settings->uints.video_black_frame_insertion = saved_bfi;
+   run_frames(3);
+   CHECK(dplane_waits == waits + 3, "BFI off: releases resume");
+
+   /* A release the backend could not give: that frame paces as
+    * before, the next is asked again */
+   waits = dplane_waits;
+   dplane_wait_answer_from = 1;
+   run_frames(3);
+   CHECK(dplane_waits == waits + 3, "failed releases: still asked");
+   CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER)
+         && runloop_st->driver_pacing_frame_id == 0,
+         "failed release: paced as before, no identity");
+   dplane_wait_answer_from = 0;
+
+   /* A backend that refuses the mode */
+   dplane_set_answer = VIDEO_DRIVER_PACING_REASON_FAILED;
+   waits = dplane_waits;
+   run_frames(3);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_FAILED
+         && dplane_waits == waits,
+         "backend failed: reason %u, %u releases",
+         video_st->driver_pacing_reason, dplane_waits - waits);
+   dplane_set_answer = VIDEO_DRIVER_PACING_REASON_NONE;
+   run_frames(2);
+
+   /* Off: taken off once, then left alone */
+   dplane_sets = 0;
+   settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_OFF;
+   run_frames(5);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_OFF
+         && video_st->driver_pacing_mode == VIDEO_DRIVER_PACING_OFF,
+         "off: reason %u mode %u", video_st->driver_pacing_reason,
+         video_st->driver_pacing_mode);
+   CHECK(dplane_sets == 1 && dplane_last_mode == VIDEO_DRIVER_PACING_OFF,
+         "off: taken off once (%u sets)", dplane_sets);
+
+   video_st->poke = dplane_saved_poke;
+
+   /* Threaded video: never, whatever the driver offers */
+   settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_ON;
+   set_threaded_via_setting(true);
+   run_frames(5);
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_THREADED,
+         "threaded: reason %u", video_st->driver_pacing_reason);
+   CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER), "threaded: the pacing record");
+   settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_OFF;
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   runloop_st->core_poll_type_override = saved_poll;
+
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] driver pacing lane\n");
+}
+
 /* ------------------------------------------------------------------ */
 /* Lane: swap counter                                                 */
 /*   Advances by presents-per-frame on both paths, and by exactly one */
@@ -10825,6 +11039,7 @@ int main(int argc, char *argv[])
    lane_threaded_off_in_flight();
 #endif
    lane_toggle_in_game(cycles);
+   lane_driver_pacing();
    lane_swap_count();
    lane_replay_swap_count();
    lane_stats_snapshot();

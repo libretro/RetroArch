@@ -7872,6 +7872,24 @@ static size_t setting_get_string_representation_uint_menu_frame_rate(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_video_driver_pacing(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_DRIVER_PACING_ON:
+            return strlcpy(s, msg_hash_to_str(MSG_VIDEO_DRIVER_PACING_ON), len);
+         case VIDEO_DRIVER_PACING_BOOST:
+            return strlcpy(s, msg_hash_to_str(MSG_VIDEO_DRIVER_PACING_BOOST), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_sdl_display_server(
       rarch_setting_t *setting, char *s, size_t len)
 {

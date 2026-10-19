@@ -102,3 +102,8 @@ S_UINT(video_scanline_sync_offset, VIDEO_SCANLINE_SYNC_OFFSET,
       DEFAULT_SCANLINE_SYNC_OFFSET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, MAXIMUM_SCANLINE_SYNC_OFFSET, 1, 0, setting_action_ok_uint, NULL,
       "Scanline Sync Offset",
       "Adjust Scanline Sync offset manually. Otherwise offset is calculated based on vertical blanking and frame cache sizes.")
+S_UINT(video_driver_pacing, VIDEO_DRIVER_PACING,
+      "video_driver_pacing",
+      DEFAULT_VIDEO_DRIVER_PACING, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_driver_pacing,
+      "Driver Pacing",
+      "Let the graphics driver decide when each core frame starts, so input is sampled as late as the frame allows and less work queues up before presentation. Provided by NVIDIA Reflex (VK_NV_low_latency2) on the Vulkan driver; the statistics overlay and System Information say whether it is in effect. 'On + Boost' also asks the GPU to hold its clocks up. Not applied with threaded video, Black Frame Insertion, Shader Sub-frames, Scanline Sync or a swap interval above one; Frame Delay stands aside while it runs.")

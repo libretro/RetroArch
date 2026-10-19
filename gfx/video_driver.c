@@ -7962,6 +7962,12 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          runloop_pace_string(pbuf, sizeof(pbuf));
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Pacing: %s\n", pbuf);
+         if (settings->uints.video_driver_pacing)
+         {
+            runloop_driver_pacing_string(pbuf, sizeof(pbuf));
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
+                  " Driver Pacing: %s\n", pbuf);
+         }
       }
 
 #ifdef HAVE_THREADS

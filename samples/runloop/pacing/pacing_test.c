@@ -66,7 +66,7 @@ static void test_gap_predicate(void)
    int nb, fm, ss, rc;
    unsigned engaged = 0;
 
-   for (pace = 0; pace < 64; pace++)
+   for (pace = 0; pace < 256; pace++)
       for (nb = 0; nb < 2; nb++)
          for (fm = 0; fm < 2; fm++)
             for (ss = 0; ss < 2; ss++)
@@ -74,7 +74,7 @@ static void test_gap_predicate(void)
                {
                   bool got  = runloop_pace_gap_engages(pace,
                         nb != 0, fm != 0, ss != 0, rc != 0);
-                  bool want = (pace == RUNLOOP_PACE_NONE)
+                  bool want = ((pace & ~RUNLOOP_PACE_DRIVER) == RUNLOOP_PACE_NONE)
                         && !nb && !fm && (ss || rc);
                   char msg[128];
 
@@ -87,9 +87,10 @@ static void test_gap_predicate(void)
                   check(got == want, msg);
                }
 
-   /* Three of the 512 combinations may engage: nothing pacing, not
-    * fast-forwarding, with rate control, Scanline Sync, or both. */
-   check(engaged == 3, "exactly three combinations engage the gap limiter");
+   /* Six of the 2048 combinations may engage: nothing pacing, not
+    * fast-forwarding, with rate control, Scanline Sync, or both - with
+    * or without the driver's release, which is not a clock. */
+   check(engaged == 6, "exactly six combinations engage the gap limiter");
 
    /* Named cases, so a failure above reads as something rather than a
     * bit pattern. */
@@ -114,8 +115,81 @@ static void test_gap_predicate(void)
          "display pacing keeps the gap limiter out");
    check(!runloop_pace_gap_engages(RUNLOOP_PACE_NOWINDOW, false, false, false, true),
          "the no-window wait already paces: must not double up");
+   check(runloop_pace_gap_engages(RUNLOOP_PACE_DRIVER, false, false, false, true),
+         "driver pacing alone is not a clock: the timer's period goes to it");
 
-   printf("   gap predicate: 512 combinations, exactly three engage\n");
+   printf("   gap predicate: 2048 combinations, exactly six engage\n");
+}
+
+/* --- driver pacing ------------------------------------------------ */
+
+/* The facts of a content frame on the unthreaded path with the
+ * driver's release available: who owns the release, per state. */
+static runloop_pace_facts_t driver_facts(bool vsync, bool audio, bool vrr)
+{
+   runloop_pace_facts_t f = PACE_FACT_FOCUSED | PACE_FACT_CORE_RAN
+      | PACE_FACT_DRIVER_PACING | PACE_FACT_RATE_CONTROL
+      | PACE_FACT_PRESENTABLE;
+   if (vsync) f |= PACE_FACT_VSYNC;
+   if (audio) f |= PACE_FACT_AUDIO_HOLDING;
+   if (vrr)   f |= PACE_FACT_VRR | PACE_FACT_FRAME_LIMIT;
+   return f;
+}
+
+#define DRIVER_ROW(f, want, what) \
+   check(runloop_pace_decide(f) == (want), what)
+
+static void test_driver_pacing(void)
+{
+   runloop_pace_facts_t f;
+   /* In effect: the driver releases beside whatever else holds; the
+    * release is not a clock, so what paced before still does. */
+   DRIVER_ROW(driver_facts(true, false, false),
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DRIVER,
+         "vsync: VSync+Driver");
+   DRIVER_ROW(driver_facts(false, true, false),
+         RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_DRIVER,
+         "audio sync: Audio+Driver");
+   DRIVER_ROW(driver_facts(false, false, false),
+         RUNLOOP_PACE_TIMER | RUNLOOP_PACE_DRIVER,
+         "nothing else: the gap limiter's period goes to the driver");
+   DRIVER_ROW(driver_facts(false, false, true),
+         RUNLOOP_PACE_TIMER | RUNLOOP_PACE_DRIVER,
+         "VRR: the content period goes to the driver");
+   DRIVER_ROW(driver_facts(true, false, false) & ~PACE_FACT_DRIVER_PACING,
+         RUNLOOP_PACE_VSYNC,
+         "backend not in effect: VSync alone");
+
+   /* Suspended: the existing pacing, nothing more. */
+   f = driver_facts(true, false, false);
+   DRIVER_ROW(f | PACE_FACT_MENU_ALIVE, RUNLOOP_PACE_VSYNC,
+         "menu up: no release");
+   DRIVER_ROW(f | PACE_FACT_PAUSED | PACE_FACT_FRAME_LIMIT,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "paused: no release");
+   DRIVER_ROW((f | PACE_FACT_FASTMOTION | PACE_FACT_NONBLOCKING
+            | PACE_FACT_FRAME_LIMIT) & ~PACE_FACT_VSYNC,
+         RUNLOOP_PACE_TIMER,
+         "fast-forward: no release");
+   DRIVER_ROW(f & ~PACE_FACT_FOCUSED, RUNLOOP_PACE_VSYNC,
+         "unfocused: no release");
+   DRIVER_ROW(f & ~PACE_FACT_CORE_RAN, RUNLOOP_PACE_VSYNC,
+         "no content frame this iteration: no release");
+   DRIVER_ROW(f | PACE_FACT_WRAPPER, RUNLOOP_PACE_VSYNC,
+         "threaded video: no release");
+   DRIVER_ROW(f | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY,
+         "display pacing: one owner of the release, not two");
+   DRIVER_ROW((f | PACE_FACT_SCANLINE_SYNC | PACE_FACT_SCANLINE_LOCKED)
+            & ~PACE_FACT_VSYNC,
+         RUNLOOP_PACE_SCANLINE,
+         "scanline sync: no release");
+   DRIVER_ROW((f & ~PACE_FACT_PRESENTABLE) & ~PACE_FACT_VSYNC,
+         RUNLOOP_PACE_DRIVER | RUNLOOP_PACE_NOWINDOW,
+         "no window: the wait, not the release");
+
+   printf("   driver pacing: owns the release of a content frame only, "
+          "never with display pacing or scanline sync, never as a clock\n");
 }
 
 /* --- the frame period -------------------------------------------- */
@@ -792,6 +866,7 @@ int main(void)
    test_swap_interval();
    test_sync_plan();
    test_menu_table();
+   test_driver_pacing();
 
    if (failures)
    {

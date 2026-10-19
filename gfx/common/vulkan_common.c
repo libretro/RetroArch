@@ -879,7 +879,13 @@ static const char *vulkan_optional_device_extensions[] = {
    "VK_GOOGLE_display_timing",
    /* What imported frames (a hardware decoder's) synchronise with */
    "VK_KHR_timeline_semaphore",
-   VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME
+   VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME,
+   /* The low-latency release (NVIDIA Reflex); present_id is what the
+    * extension requires beside the timeline semaphore above. Must
+    * stay ahead of the Win32 entries vulkan_optional_device_count()
+    * counts off the end. */
+   VK_KHR_PRESENT_ID_EXTENSION_NAME,
+   VK_NV_LOW_LATENCY_2_EXTENSION_NAME
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Lets the app signal SMPTE-2086 mastering-display metadata to the
     * compositor via vkSetHdrMetadataEXT. Optional: if absent (common on
@@ -1059,6 +1065,11 @@ end:
    return ok;
 }
 
+static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
+      const char * const *exts, unsigned count);
+static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk);
+static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk);
+
 static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 {
    unsigned count = ARRAY_SIZE(vulkan_optional_device_extensions);
@@ -1147,6 +1158,27 @@ static void vulkan_context_openxr_device_exts(gfx_ctx_vulkan_data_t *vk,
 }
 #endif
 
+/* Whether a core device's chain asks for timeline semaphores, through
+ * either struct that can; silent when neither is in it. */
+static bool vulkan_chain_names_timeline(const void *pnext, bool *enabled)
+{
+   const VkBaseInStructure *chain;
+   for (chain = (const VkBaseInStructure*)pnext; chain; chain = chain->pNext)
+   {
+      if (chain->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR)
+      {
+         *enabled = ((const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR*)chain)->timelineSemaphore != 0;
+         return true;
+      }
+      if (chain->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+      {
+         *enabled = ((const VkPhysicalDeviceVulkan12Features*)chain)->timelineSemaphore != 0;
+         return true;
+      }
+   }
+   return false;
+}
+
 static VkDevice vulkan_context_create_device_wrapper(
       VkPhysicalDevice gpu, void *opaque,
       const VkDeviceCreateInfo *create_info)
@@ -1155,6 +1187,8 @@ static VkDevice vulkan_context_create_device_wrapper(
    gfx_ctx_vulkan_data_t *vk      = (gfx_ctx_vulkan_data_t*)opaque;
    VkDeviceCreateInfo info        = *create_info;
    VkDevice device                = VK_NULL_HANDLE;
+   VkPhysicalDeviceTimelineSemaphoreFeaturesKHR ll_timeline;
+   bool timeline_named            = false;
    const char **device_extensions = (const char **)malloc(
          (info.enabledExtensionCount +
                ARRAY_SIZE(vulkan_device_extensions) +
@@ -1177,6 +1211,8 @@ static VkDevice vulkan_context_create_device_wrapper(
 
    vk->context.gpu = gpu;
    vkGetPhysicalDeviceProperties(gpu, &vk->context.gpu_properties);
+   vulkan_low_latency_note_exts(vk, device_extensions,
+         info.enabledExtensionCount);
    /* Reserve video queues without sharing the core's graphics queue. */
    if (info.queueCreateInfoCount == 1)
    {
@@ -1294,6 +1330,38 @@ static VkDevice vulkan_context_create_device_wrapper(
          }
       }
       vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   }
+   /* The low-latency release waits on a timeline semaphore: one the
+    * core asked for itself is noted, one it did not is asked for on
+    * its behalf where the GPU has the feature. */
+   if (vk->low_latency.supported)
+   {
+      if (vulkan_chain_names_timeline(info.pNext, &timeline_named))
+      {
+         if (timeline_named)
+            vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+      }
+      else
+      {
+         VkPhysicalDeviceFeatures2 f2;
+         PFN_vkGetPhysicalDeviceFeatures2 get_features =
+            (PFN_vkGetPhysicalDeviceFeatures2)
+            vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+                  "vkGetPhysicalDeviceFeatures2");
+         ll_timeline.sType             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+         ll_timeline.pNext             = NULL;
+         ll_timeline.timelineSemaphore = VK_FALSE;
+         f2.sType                      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+         f2.pNext                      = &ll_timeline;
+         if (get_features)
+            get_features(gpu, &f2);
+         if (ll_timeline.timelineSemaphore)
+         {
+            ll_timeline.pNext  = (void*)info.pNext;
+            info.pNext         = &ll_timeline;
+            vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+         }
+      }
    }
    if ((res = vulkan_context_create_device(vk, gpu, &info, &device)) != VK_SUCCESS)
    {
@@ -1610,6 +1678,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             break;
          }
       }
+      vulkan_low_latency_note_exts(vk, enabled_device_extensions,
+            enabled_device_extension_count);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Note whether the extension was enabled; the actual entrypoint is
@@ -1798,6 +1868,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       vk->display_timing_query = vkGetDeviceProcAddr(vk->context.device,
                "vkGetPastPresentationTimingGOOGLE");
 #endif
+
+   vulkan_low_latency_device_init(vk);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Now that the device exists, resolve vkSetHdrMetadataEXT if the
@@ -2444,6 +2516,8 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
+      vk->low_latency.swapchain          = VK_NULL_HANDLE;
+      vk->low_latency.mode               = 0;
       vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    }
 
@@ -3286,6 +3360,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSurfaceFormatKHR format;
    VkSwapchainKHR old_swapchain;
    VkSwapchainCreateInfoKHR info;
+   VkSwapchainLatencyCreateInfoNV latency_info;
    VkSurfaceTransformFlagBitsKHR pre_transform;
    uint32_t present_mode_count             = 0;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -4043,6 +4118,15 @@ dxgi_unavailable:
       info.pNext              = &fse_info;
    }
 #endif
+   /* Only a swapchain made with this can be put in low-latency mode;
+    * whether it is, is set on it later. */
+   if (vk->low_latency.supported)
+   {
+      latency_info.sType             = VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV;
+      latency_info.pNext             = info.pNext;
+      latency_info.latencyModeEnable = VK_TRUE;
+      info.pNext                     = &latency_info;
+   }
 
    {
       VkResult res = vkCreateSwapchainKHR(vk->context.device,
@@ -4113,6 +4197,11 @@ dxgi_unavailable:
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 #endif
+
+   /* A new swapchain, in no mode yet; the handle may be a reused one */
+   vk->low_latency.swapchain          = VK_NULL_HANDLE;
+   vk->low_latency.mode               = 0;
+   vk->low_latency.stage              = 0;
 
    vk->context.swapchain_dims         = VIDEO_SCALE_PACK(swapchain_size.width,
          swapchain_size.height);
@@ -4614,6 +4703,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    vk->context.present_pending = false;
 
    vulkan_destroy_swapchain(vk);
+   vulkan_low_latency_device_deinit(vk);
 
    if (vk->context.present_fence != VK_NULL_HANDLE)
    {
@@ -4743,6 +4833,269 @@ retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk)
    return (retro_time_t)(latest / 1000);
 }
 
+/* Whether the device was made with VK_NV_low_latency2 and what it
+ * needs, from the list a device was created with; resolves the entry
+ * points once the device exists (vulkan_low_latency_device_init). */
+static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
+      const char * const *exts, unsigned count)
+{
+   unsigned i;
+   bool low_latency = false;
+   bool present_id  = false;
+   vk->low_latency.supported = false;
+   for (i = 0; i < count; i++)
+   {
+      if (!strcmp(exts[i], VK_NV_LOW_LATENCY_2_EXTENSION_NAME))
+         low_latency = true;
+      else if (!strcmp(exts[i], VK_KHR_PRESENT_ID_EXTENSION_NAME))
+         present_id  = true;
+   }
+   vk->low_latency.supported = low_latency && present_id;
+}
+
+static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkSemaphoreTypeCreateInfo type_info;
+   VkSemaphoreCreateInfo info;
+   uint32_t count = 0;
+   VkExtensionProperties *props;
+   unsigned i;
+
+   ll->set_sleep_mode  = NULL;
+   ll->sleep           = NULL;
+   ll->set_marker      = NULL;
+   ll->wait_semaphores = NULL;
+   ll->semaphore       = VK_NULL_HANDLE;
+   ll->swapchain       = VK_NULL_HANDLE;
+   ll->sleep_value     = 0;
+   ll->frame_id        = 0;
+   ll->min_interval_us = 0;
+   ll->spec_version    = 0;
+   ll->mode            = 0;
+   ll->stage           = 0;
+   ll->failed          = false;
+
+   if (!ll->supported)
+      return;
+   /* The sleep signals a timeline semaphore and nothing else can
+    * wait for it. */
+   if (!(vk->context.flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE))
+   {
+      ll->supported = false;
+      return;
+   }
+
+   ll->set_sleep_mode  = vkGetDeviceProcAddr(vk->context.device,
+         "vkSetLatencySleepModeNV");
+   ll->sleep           = vkGetDeviceProcAddr(vk->context.device,
+         "vkLatencySleepNV");
+   ll->set_marker      = vkGetDeviceProcAddr(vk->context.device,
+         "vkSetLatencyMarkerNV");
+   ll->wait_semaphores = vkGetDeviceProcAddr(vk->context.device,
+         "vkWaitSemaphoresKHR");
+   if (!ll->wait_semaphores)
+      ll->wait_semaphores = vkGetDeviceProcAddr(vk->context.device,
+            "vkWaitSemaphores");
+   if (     !ll->set_sleep_mode || !ll->sleep || !ll->set_marker
+         || !ll->wait_semaphores)
+   {
+      ll->supported = false;
+      return;
+   }
+
+   type_info.sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+   type_info.pNext         = NULL;
+   type_info.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+   type_info.initialValue  = 0;
+   info.sType              = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   info.pNext              = &type_info;
+   info.flags              = 0;
+   if (vkCreateSemaphore(vk->context.device, &info, NULL,
+            &ll->semaphore) != VK_SUCCESS)
+   {
+      ll->semaphore = VK_NULL_HANDLE;
+      ll->supported = false;
+      return;
+   }
+
+   /* Revision 3 is where explicit submission attribution starts being
+    * honoured; the implicit rules are what this backend relies on, so
+    * the revision is logged for the record, not acted on. */
+   if (     vkEnumerateDeviceExtensionProperties(vk->context.gpu, NULL,
+               &count, NULL) == VK_SUCCESS
+         && count
+         && (props = (VkExtensionProperties*)malloc(
+               count * sizeof(*props))))
+   {
+      if (vkEnumerateDeviceExtensionProperties(vk->context.gpu, NULL,
+               &count, props) == VK_SUCCESS)
+         for (i = 0; i < count; i++)
+            if (!strcmp(props[i].extensionName,
+                     VK_NV_LOW_LATENCY_2_EXTENSION_NAME))
+            {
+               ll->spec_version = props[i].specVersion;
+               break;
+            }
+      free(props);
+   }
+   RARCH_LOG("[Vulkan] Low-latency release available (VK_NV_low_latency2 revision %u).\n",
+         (unsigned)ll->spec_version);
+}
+
+static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   /* A sleep the driver never signalled may still signal: its
+    * semaphore is left to the device. */
+   if (ll->semaphore != VK_NULL_HANDLE && !ll->failed)
+      vkDestroySemaphore(vk->context.device, ll->semaphore, NULL);
+   ll->semaphore = VK_NULL_HANDLE;
+   ll->supported = false;
+   ll->swapchain = VK_NULL_HANDLE;
+   ll->mode      = 0;
+}
+
+/* Puts the mode on the current swapchain, or takes it off. */
+static bool vulkan_low_latency_apply(gfx_ctx_vulkan_data_t *vk,
+      unsigned mode, unsigned min_interval_us)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkLatencySleepModeInfoNV mode_info;
+   VkResult res;
+   mode_info.sType             = VK_STRUCTURE_TYPE_LATENCY_SLEEP_MODE_INFO_NV;
+   mode_info.pNext             = NULL;
+   mode_info.lowLatencyMode    = VK_TRUE;
+   mode_info.lowLatencyBoost   = (mode == VIDEO_DRIVER_PACING_BOOST) ? VK_TRUE : VK_FALSE;
+   mode_info.minimumIntervalUs = min_interval_us;
+   res = ((PFN_vkSetLatencySleepModeNV)ll->set_sleep_mode)(
+         vk->context.device, vk->swapchain,
+         mode ? &mode_info : NULL);
+   if (res != VK_SUCCESS)
+   {
+      ll->failed    = true;
+      ll->mode      = 0;
+      ll->swapchain = VK_NULL_HANDLE;
+      return false;
+   }
+   ll->mode            = (uint8_t)mode;
+   ll->min_interval_us = min_interval_us;
+   ll->swapchain       = mode ? vk->swapchain : VK_NULL_HANDLE;
+   return true;
+}
+
+unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   if (!ll->supported)
+      return VIDEO_DRIVER_PACING_REASON_DEVICE;
+   if (ll->failed)
+      return VIDEO_DRIVER_PACING_REASON_FAILED;
+   /* A replaced swapchain took the mode with it; what is set is
+    * what is set on this one. */
+   if (ll->swapchain != vk->swapchain)
+   {
+      ll->swapchain = VK_NULL_HANDLE;
+      ll->mode      = 0;
+   }
+   if (!mode)
+   {
+      if (ll->mode && !vulkan_low_latency_apply(vk, 0, 0))
+         return VIDEO_DRIVER_PACING_REASON_FAILED;
+      return VIDEO_DRIVER_PACING_REASON_OFF;
+   }
+   if (vk->swapchain == VK_NULL_HANDLE || vk->context.swapchain_external)
+      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
+#if defined(_WIN32) && !defined(__WINRT__)
+   /* Presented through DXGI: vkQueuePresentKHR never runs. */
+   if (vk->dxgi_presenter)
+      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
+#endif
+   if (mode == ll->mode)
+      return VIDEO_DRIVER_PACING_REASON_NONE;
+   if (!vulkan_low_latency_apply(vk, mode, ll->min_interval_us))
+      return VIDEO_DRIVER_PACING_REASON_FAILED;
+   return VIDEO_DRIVER_PACING_REASON_NONE;
+}
+
+uint64_t vulkan_low_latency_sleep(gfx_ctx_vulkan_data_t *vk,
+      unsigned min_interval_us, unsigned max_wait_us)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkLatencySleepInfoNV sleep_info;
+   VkSemaphoreWaitInfo wait_info;
+   VkResult res;
+   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain)
+      return 0;
+   if (     min_interval_us != ll->min_interval_us
+         && !vulkan_low_latency_apply(vk, ll->mode, min_interval_us))
+      return 0;
+
+   sleep_info.sType           = VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV;
+   sleep_info.pNext           = NULL;
+   sleep_info.signalSemaphore = ll->semaphore;
+   sleep_info.value           = ++ll->sleep_value;
+   res = ((PFN_vkLatencySleepNV)ll->sleep)(vk->context.device,
+         vk->swapchain, &sleep_info);
+   if (res != VK_SUCCESS)
+   {
+      ll->failed = true;
+      return 0;
+   }
+
+   /* The hold: the driver signals when the frame should start. A
+    * signal that does not come within the bound is a driver that has
+    * stopped pacing - a lost device, a sleeping display - and this
+    * thread is not held for it again; the runloop paces as before. */
+   wait_info.sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+   wait_info.pNext          = NULL;
+   wait_info.flags          = 0;
+   wait_info.semaphoreCount = 1;
+   wait_info.pSemaphores    = &ll->semaphore;
+   wait_info.pValues        = &sleep_info.value;
+   res = ((PFN_vkWaitSemaphores)ll->wait_semaphores)(vk->context.device,
+         &wait_info, (uint64_t)max_wait_us * 1000);
+   if (res != VK_SUCCESS)
+   {
+      ll->failed = true;
+      return 0;
+   }
+   ll->stage = 0;
+   return ++ll->frame_id;
+}
+
+void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned marker)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkSetLatencyMarkerInfoNV info;
+   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain || !frame_id)
+      return;
+   info.sType     = VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV;
+   info.pNext     = NULL;
+   info.presentID = frame_id;
+   info.marker    = (VkLatencyMarkerNV)marker;
+   ((PFN_vkSetLatencyMarkerNV)ll->set_marker)(vk->context.device,
+         vk->swapchain, &info);
+}
+
+/* The render and present markers of the released frame, each once:
+ * a second present of the same frame (a core that presents twice, a
+ * repeat) is a new application-rendered frame to the driver, which
+ * is what the attribution rules make of a present after the frame's
+ * PRESENT_START has been mapped. */
+void vulkan_low_latency_render_begin(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   if (ll->stage != 0)
+      return;
+   ll->stage = 1;
+   vulkan_low_latency_marker(vk, ll->frame_id,
+         VK_LATENCY_MARKER_SIMULATION_END_NV);
+   vulkan_low_latency_marker(vk, ll->frame_id,
+         VK_LATENCY_MARKER_RENDERSUBMIT_START_NV);
+}
+
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
    VkPresentInfoKHR present;
@@ -4788,6 +5141,15 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    else
 #endif
    {
+      bool mark = vk->low_latency.stage == 1;
+      if (mark)
+      {
+         vk->low_latency.stage = 2;
+         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
+               VK_LATENCY_MARKER_RENDERSUBMIT_END_NV);
+         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
+               VK_LATENCY_MARKER_PRESENT_START_NV);
+      }
 #ifdef HAVE_THREADS
       slock_lock(vk->context.queue_lock);
 #endif
@@ -4795,6 +5157,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context.queue_lock);
 #endif
+      if (mark)
+         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
+               VK_LATENCY_MARKER_PRESENT_END_NV);
    }
    /* Queued whatever it returned: a failed present has still put its
     * semaphore wait on the queue, or may have, and the fence taken

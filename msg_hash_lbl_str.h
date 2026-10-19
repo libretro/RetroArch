@@ -1681,6 +1681,7 @@
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE_STR "video_dingux_refresh_rate"
 #define MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE_STR "video_dingux_rs90_softfilter_type"
 #define MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION_STR "video_disable_composition"
+#define MENU_ENUM_LABEL_VIDEO_DRIVER_PACING_STR "video_driver_pacing"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_STR "video_filter"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_DIR_STR "video_filter_dir"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE_STR "filter_enable"

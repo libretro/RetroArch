@@ -278,6 +278,7 @@ typedef struct settings
       unsigned video_max_swapchain_images;
       unsigned video_filter_threads;
       unsigned video_swap_interval;
+      unsigned video_driver_pacing;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_scanline_sync_offset;

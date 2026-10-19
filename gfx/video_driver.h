@@ -189,6 +189,46 @@ enum video_driver_state_flags
    VIDEO_FLAG_FF_DECIDED                          = (1 << 25)
 };
 
+/* Driver pacing: the graphics driver releases each frame (NVIDIA
+ * Reflex through VK_NV_low_latency2 today), video_driver_pacing */
+enum video_driver_pacing_mode
+{
+   VIDEO_DRIVER_PACING_OFF = 0,
+   VIDEO_DRIVER_PACING_ON,
+   VIDEO_DRIVER_PACING_BOOST,
+   VIDEO_DRIVER_PACING_LAST
+};
+
+/* Why the requested mode is not in effect; the first is "it is".
+ * Reported beside the requested mode so a setting that reads On is
+ * never taken for one that is working. */
+enum video_driver_pacing_reason
+{
+   VIDEO_DRIVER_PACING_REASON_NONE = 0,   /* in effect */
+   VIDEO_DRIVER_PACING_REASON_OFF,        /* not asked for */
+   VIDEO_DRIVER_PACING_REASON_DRIVER,     /* the video driver has no backend */
+   VIDEO_DRIVER_PACING_REASON_THREADED,   /* threaded video presents elsewhere */
+   VIDEO_DRIVER_PACING_REASON_DEVICE,     /* the GPU driver does not offer it */
+   VIDEO_DRIVER_PACING_REASON_SWAPCHAIN,  /* no native swapchain to pace */
+   VIDEO_DRIVER_PACING_REASON_MODE,       /* BFI, sub-frames, scanline sync,
+                                             a swap interval above one */
+   VIDEO_DRIVER_PACING_REASON_FAILED,     /* the backend errored; fell back */
+   VIDEO_DRIVER_PACING_REASON_SUSPENDED,  /* menu, pause, fast-forward,
+                                             unfocused, no content frame */
+   VIDEO_DRIVER_PACING_REASON_LAST
+};
+
+/* The latency markers the runloop reports through driver_pacing_mark;
+ * the values are VkLatencyMarkerNV's and NV_LATENCY_MARKER_TYPE's,
+ * which agree this far. The driver reports the render and present
+ * ones itself. */
+enum video_driver_pacing_mark
+{
+   VIDEO_DRIVER_PACING_MARK_SIMULATION_START = 0,
+   VIDEO_DRIVER_PACING_MARK_SIMULATION_END   = 1,
+   VIDEO_DRIVER_PACING_MARK_INPUT_SAMPLE     = 6
+};
+
 enum video_driver_scanline
 {
    SCANLINE_TARGET = 0,
@@ -1333,6 +1373,39 @@ typedef struct video_poke_interface
    unsigned menu_mem_pitch_align;
    /* Lent pointers expire on update; acquire fresh pointer/pitch once ready. */
    bool texture_lend_per_write;
+
+   /* Driver Pacing: the graphics driver's release of each frame, where
+    * the driver's presentation API has one (NVIDIA Reflex through
+    * VK_NV_low_latency2, NVAPI). All optional; a driver without them
+    * leaves the runloop on its own pacing.
+    *
+    * driver_pacing_set asks for @mode (enum video_driver_pacing_mode)
+    * and answers with the enum video_driver_pacing_reason it ended up
+    * in: NONE when the mode is in effect, the reason otherwise. Called
+    * on the thread that runs the frame loop, every frame while the
+    * mode is wanted, since a replaced swapchain comes up without it.
+    * Never blocks on the GPU.
+    *
+    * driver_pacing_wait is the release: called once per content frame,
+    * before that frame's input is sampled, and only while
+    * driver_pacing_set answered NONE. It asks the driver for one
+    * latency signal and holds the calling thread for it, @max_wait_us
+    * at most, with @min_interval_us (0 for none) as the minimum
+    * interval the driver keeps between presents in place of a frontend
+    * timer. Returns the frame's presentation identity, nonzero, or 0
+    * when the backend could not release and the caller is to pace as
+    * before. The identity is what the driver attributes the following
+    * frame's markers and present to.
+    *
+    * driver_pacing_mark reports the latency marker @marker (enum
+    * video_driver_pacing_mark) for the frame @frame_id; the runloop
+    * reports the input sample and simulation boundaries, the driver
+    * its own render and present ones. Cheap, never blocks, ignored
+    * when the mode is not in effect. */
+   unsigned (*driver_pacing_set)(void *data, unsigned mode);
+   uint64_t (*driver_pacing_wait)(void *data, unsigned min_interval_us,
+         unsigned max_wait_us);
+   void (*driver_pacing_mark)(void *data, uint64_t frame_id, unsigned marker);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1847,6 +1920,11 @@ typedef struct
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
+   /* What the driver pacing backend last answered: the mode the
+    * runloop asked it for, and why it is or is not in effect. Main
+    * thread. */
+   uint8_t driver_pacing_mode;
+   uint8_t driver_pacing_reason;
 
    bool threaded;
 

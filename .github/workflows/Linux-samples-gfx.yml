@@ -115,6 +115,23 @@ jobs:
       - name: Regression test
         run: make -C samples/gfx/vulkan_swapchain_extent check
 
+  vulkan-driver-pacing:
+    name: Vulkan driver pacing backend (fake VK_NV_low_latency2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Regression test
+        run: |
+          # The mode and sleep state machine of the Driver Pacing
+          # backend, on fake entry points: one sleep and one bounded
+          # wait a content frame, markers on the released frame only,
+          # a replaced swapchain starting over, errors falling back.
+          make -C samples/gfx/vulkan_driver_pacing check
+          make -C samples/gfx/vulkan_driver_pacing clean
+          make -C samples/gfx/vulkan_driver_pacing SANITIZER=address,undefined check
+
   slang-rect:
     name: Presets read frames where they lie
     runs-on: ubuntu-latest

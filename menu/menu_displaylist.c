@@ -2324,6 +2324,22 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
             MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;
+      /* Whether the low-latency release the setting asks for is in
+       * effect, and why not when it is not: asked for and working
+       * are two different things. */
+      if (config_get_ptr()->uints.video_driver_pacing)
+      {
+         runloop_driver_pacing_string(pbuf, sizeof(pbuf));
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DRIVER_PACING),
+               sizeof(entry));
+         _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+         strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
    }
 
    /* Display Width / Height (mm), DPI: the context's metrics */
@@ -12196,6 +12212,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,          PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_VIDEO_DRIVER_PACING,               PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,         PARSE_ONLY_BOOL, true},
             };
 
@@ -12262,6 +12279,11 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
                      build_list[i].checked = swapchain_images;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_DRIVER_PACING:
+                     /* Only the Vulkan driver has a backend for the release */
+                     build_list[i].checked = string_is_equal(
+                           video_driver_get_ident(), "vulkan");
                      break;
                   case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
                   case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET:
