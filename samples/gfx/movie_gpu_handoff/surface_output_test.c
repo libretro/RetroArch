@@ -6,6 +6,9 @@ static unsigned formats, shown, failures;
 static bool hdr_source, requirements_ok;
 static gfx_surface_t surface;
 static video_frame_import_t captured;
+static enum gfx_surface_submit_result result = GFX_SURFACE_SUBMIT_DONE;
+static unsigned submitted, abandoned, released;
+static video_player_t *player;
 #define CHECK(c) do { if (!(c)) { failures++; fprintf(stderr, "FAIL %d: %s\n", __LINE__, #c); } } while (0)
 bool gfx_surface_query_requirements(unsigned width, gfx_surface_requirements_t *req)
 {
@@ -31,9 +34,76 @@ static void saw(void *user, gfx_surface_t *s)
 enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *s,
       const video_frame_import_t *frame)
 {
-   CHECK(s == &surface); captured = *frame; return GFX_SURFACE_SUBMIT_DONE;
+   CHECK(s == &surface); captured = *frame; submitted++;
+   return result;
+}
+enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
+      unsigned slot, bool rgba)
+{
+   (void)s; (void)slot; (void)rgba;
+   CHECK(false);
+   return GFX_SURFACE_SUBMIT_FAILED;
+}
+bool gfx_surface_wants_rgba(void) { return false; }
+void video_player_slot_released(video_player_t *vp, unsigned slot)
+{
+   CHECK(vp == player && slot == 3);
+   released++;
+}
+static void abandon(void *owner, uint64_t done, uint64_t value)
+{
+   CHECK(owner == &abandoned && done == 88 && value == 7);
+   abandoned++;
 }
 #include "surface.inc"
+static void retry_ownership(void)
+{
+   static const enum gfx_surface_submit_result results[] = {
+      GFX_SURFACE_SUBMIT_DONE, GFX_SURFACE_SUBMIT_QUEUED,
+      GFX_SURFACE_SUBMIT_BUSY, GFX_SURFACE_SUBMIT_DROPPED,
+      GFX_SURFACE_SUBMIT_FAILED
+   };
+   gfx_surface_player_t gsp;
+   unsigned i, mode;
+   for (mode = 0; mode < 3; mode++)
+      for (i = 0; i < sizeof(results) / sizeof(results[0]); i++)
+      {
+         bool queued;
+         bool retry = mode == 0;
+         memset(&gsp, 0, sizeof(gsp));
+         memset(&surface, 0, sizeof(surface));
+         player = (video_player_t*)&gsp;
+         gsp.vp = player;
+         gsp.hw_slot = 3;
+         gsp.hw_resent = mode == 1;
+         surface.imported = surface.dropped = true;
+         surface.import.owner = &abandoned;
+         surface.import.abandon = abandon;
+         surface.import.done = 88;
+         surface.import.done_value = 7;
+         result = results[i];
+         submitted = abandoned = released = 0;
+         queued = gfx_surface_player_release(mode == 2 ? NULL : &gsp,
+               &surface, 0);
+         CHECK(submitted == (retry ? 1u : 0u));
+         CHECK(queued == (retry && result == GFX_SURFACE_SUBMIT_QUEUED));
+         CHECK(abandoned == ((!retry || (result != GFX_SURFACE_SUBMIT_DONE
+                     && result != GFX_SURFACE_SUBMIT_QUEUED)) ? 1u : 0u));
+         CHECK(released == (mode != 2 && !queued ? 1u : 0u));
+         if (retry && result == GFX_SURFACE_SUBMIT_DONE)
+            CHECK(!surface.dropped);
+         if (queued)
+         {
+            CHECK(gsp.hw_resent);
+            /* The accepted retry is still pending; the first release
+             * must not return its decoder slot or signal abandonment. */
+            surface.dropped = false;
+            CHECK(!gfx_surface_player_release(&gsp, &surface, 0));
+            CHECK(!abandoned && released == 1 && submitted == 1);
+         }
+      }
+}
+
 int main(void)
 {
    gfx_surface_player_t gsp;
@@ -58,6 +128,7 @@ int main(void)
       CHECK(captured.image == 17 && captured.color.transfer == 16);
    }
    CHECK(shown == 8);
+   retry_ownership();
    puts(failures ? "Surface import output: FAIL" : "Surface import output: PASS");
    return failures ? 1 : 0;
 }

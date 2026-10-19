@@ -35,7 +35,8 @@ with tempfile.TemporaryDirectory() as directory:
     source = (root / 'gfx/gfx_surface_player.c').read_text()
     (tmp / 'surface.inc').write_text('\n'.join(body(source, s) for s in
         ('static int gfx_surface_player_start_hw(',
-         'static enum video_player_present gfx_surface_player_present_hw(')))
+         'static enum video_player_present gfx_surface_player_present_hw(',
+         'bool gfx_surface_player_release(')))
     exe = tmp / ('surface.exe' if 'mingw' in cc[0] or os.name == 'nt' else 'surface')
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root),
         '-I' + str(root / 'libretro-common/include'),

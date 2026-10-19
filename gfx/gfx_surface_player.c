@@ -279,14 +279,19 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
        * goes back to its decoder unread */
       if (s->dropped)
       {
-         if (     gsp && !gsp->hw_resent
-               && gfx_surface_submit_import(s, &s->import)
-                  == GFX_SURFACE_SUBMIT_QUEUED)
+         if (gsp && !gsp->hw_resent)
          {
-            gsp->hw_resent = true;
-            return true;
+            enum gfx_surface_submit_result r =
+                  gfx_surface_submit_import(s, &s->import);
+            if (r == GFX_SURFACE_SUBMIT_QUEUED)
+            {
+               gsp->hw_resent = true;
+               return true;
+            }
+            if (r == GFX_SURFACE_SUBMIT_DONE)
+               s->dropped = 0;
          }
-         if (s->import.abandon)
+         if (s->dropped && s->import.abandon)
             s->import.abandon(s->import.owner, s->import.done,
                   s->import.done_value);
       }
