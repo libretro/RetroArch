@@ -77,7 +77,7 @@ def main():
         unit_flags = flags + ([] if args.threadless else ['-DHAVE_THREADS'])
         if args.apple_limits:
             probe = tmp / 'apple_probe.c'
-            probe.write_text('#include "' + (ROOT / 'gfx/common/videotoolbox_hevc_decoder.h').as_posix()
+            probe.write_text('#include "' + (ROOT / 'gfx/common/videotoolbox_hevc_backend.h').as_posix()
                              + '"\n', encoding='utf8')
             cmd = compiler + unit_flags + sdk_flags + ['-c', str(probe), '-o', str(tmp / 'apple_probe.o')]
             print('+', shlex.join(cmd), flush=True)
