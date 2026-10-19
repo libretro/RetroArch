@@ -35,6 +35,7 @@ jobs:
         run: |
           python3 samples/gfx/videotoolbox_hevc/codec_fixtures.py --verify
           python3 samples/gfx/videotoolbox_hevc/sequence_fixtures.py --verify
+          CC=clang python3 samples/gfx/videotoolbox_hevc/run.py --apple-limits
           python3 samples/gfx/videotoolbox_hevc/run.py
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/videotoolbox_hevc/run.py
           python3 samples/gfx/videotoolbox_hevc/run.py --threadless

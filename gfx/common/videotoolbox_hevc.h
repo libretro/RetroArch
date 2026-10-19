@@ -119,7 +119,7 @@ static INLINE OSStatus videotoolbox_hevc_sample_create_timed(
       const rh265_nal_t *nal = &slices[i];
       unsigned type;
       if (!nal->data || nal->size < 3 || nal->size > UINT32_MAX
-            || nal->size > SIZE_MAX - bytes)
+            || nal->size > (size_t)-1 - bytes)
          return kCMFormatDescriptionError_InvalidParameter;
       type = (nal->data[0] >> 1) & 63;
       if ((nal->data[0] & 0x81) || (nal->data[1] >> 3)
@@ -130,7 +130,7 @@ static INLINE OSStatus videotoolbox_hevc_sample_create_timed(
          return kCMFormatDescriptionError_InvalidParameter;
       bytes += nal->size;
    }
-   if (bytes != au->coded_bytes || au->num_slices > (SIZE_MAX - bytes) / 4)
+   if (bytes != au->coded_bytes || au->num_slices > ((size_t)-1 - bytes) / 4)
       return kCMFormatDescriptionError_InvalidParameter;
    total = bytes + (size_t)au->num_slices * 4;
    status = CMBlockBufferCreateWithMemoryBlock(kCFAllocatorDefault, NULL,
