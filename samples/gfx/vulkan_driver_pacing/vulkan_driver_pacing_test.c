@@ -52,7 +52,7 @@ bool video_driver_thread_wrapper_active(void) { return threaded; }
 /* --- the fake driver --------------------------------------------- */
 
 #define MAX_EVENTS 64
-enum { EV_MODE, EV_SLEEP, EV_WAIT, EV_MARK, EV_DESTROY };
+enum { EV_MODE, EV_SLEEP, EV_WAIT, EV_MARK, EV_DESTROY, EV_ANTILAG };
 struct event { int kind; uint64_t a; unsigned b; unsigned c; };
 static struct event events[MAX_EVENTS];
 static unsigned num_events;
@@ -148,6 +148,19 @@ static VKAPI_ATTR void VKAPI_CALL fake_destroy_swapchain(VkDevice device,
    ev(EV_DESTROY, (uint64_t)(uintptr_t)swapchain, 0, 0);
 }
 
+/* EV_ANTILAG: a = frame index, b = mode | stage << 4 (stage 0xf: no
+ * presentation info), c = maxFPS */
+static VKAPI_ATTR void VKAPI_CALL fake_anti_lag(VkDevice device,
+      const VkAntiLagDataAMD *data)
+{
+   (void)device;
+   ev(EV_ANTILAG,
+         data->pPresentationInfo ? data->pPresentationInfo->frameIndex : 0,
+         (unsigned)data->mode
+         | ((data->pPresentationInfo ? (unsigned)data->pPresentationInfo->stage : 0xfu) << 4),
+         data->maxFPS);
+}
+
 static gfx_ctx_vulkan_data_t vk;
 
 static void reset(bool supported, uintptr_t swapchain)
@@ -186,7 +199,7 @@ static void test_capability(void)
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_DEVICE,
          "no extension: the device reason");
-   check(!vulkan_low_latency_wait(&vk, 1, 20000), "no extension: no release");
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000), "no extension: no release");
    present_frame(1, 0);
    vulkan_low_latency_mark_main(&vk, 1, VK_LATENCY_MARKER_INPUT_SAMPLE_NV);
    check(num_events == 0, "no extension: nothing called");
@@ -230,7 +243,7 @@ static void test_mode(void)
    present_frame(1, 0);
    check(count(EV_SLEEP) == 0 && count(EV_MARK) == 0,
          "off: a frame is presented with no sleep and no marker");
-   check(!vulkan_low_latency_wait(&vk, 1, 20000), "off: no release");
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000), "off: no release");
    printf("   mode: set once per change, taken off once, boost carried\n");
 }
 
@@ -239,14 +252,14 @@ static void test_release(void)
    const struct event *e;
    reset(true, 0x100);
    vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON);
-   check(vulkan_low_latency_wait(&vk, 0, 20000) && count(EV_WAIT) == 0,
+   check(vulkan_low_latency_wait(&vk, 0, 1, 20000) && count(EV_WAIT) == 0,
          "nothing handed over yet: released at once, no wait");
 
    present_frame(1, 0);
    e = last(EV_SLEEP);
    check(count(EV_SLEEP) == 1 && e && e->a == 1,
          "frame 1 presented: one sleep, signalling 1");
-   check(vulkan_low_latency_wait(&vk, 1, 20000), "frame 1: released");
+   check(vulkan_low_latency_wait(&vk, 1, 2, 20000), "frame 1: released");
    e = last(EV_WAIT);
    check(count(EV_WAIT) == 1 && e && e->a == 1 && e->b == 1,
          "frame 1: one wait, for value 1");
@@ -362,7 +375,7 @@ static void test_threaded(void)
          "threaded: asked from the frame loop, pending until the presenter answers");
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_PENDING, "threaded: still pending");
-   check(!vulkan_low_latency_wait(&vk, 0, 20000), "threaded: no release while pending");
+   check(!vulkan_low_latency_wait(&vk, 0, 1, 20000), "threaded: no release while pending");
    present_frame(0, 0);
    e = last(EV_MODE);
    check(count(EV_MODE) == 1 && e && e->a == 0x100 && e->b == 1,
@@ -376,7 +389,7 @@ static void test_threaded(void)
          "the frame loop's marker reaches the published swapchain");
    present_frame(1, 0);
    check(last(EV_SLEEP) && last(EV_SLEEP)->a == 1, "frame 1 presented: its sleep");
-   check(vulkan_low_latency_wait(&vk, 1, 20000) && last(EV_WAIT)->a == 1,
+   check(vulkan_low_latency_wait(&vk, 1, 2, 20000) && last(EV_WAIT)->a == 1,
          "the frame loop waits for frame 1");
 
    /* The presenter replaces the swapchain while the frame loop may be
@@ -413,6 +426,90 @@ static void test_threaded(void)
           "a replaced swapchain outlives a marker call on it\n");
 }
 
+static void reset_amd(uintptr_t swapchain)
+{
+   reset(false, swapchain);
+   vk.low_latency.anti_lag        = true;
+   vk.low_latency.anti_lag_update = (PFN_vkVoidFunction)fake_anti_lag;
+}
+
+#define AL(mode, stage) ((unsigned)(mode) | ((unsigned)(stage) << 4))
+
+static void test_anti_lag(void)
+{
+   const struct event *e;
+   reset_amd(0x100);
+   check(!vulkan_low_latency_wait(&vk, 0, 1, 20000) && count(EV_ANTILAG) == 0,
+         "anti-lag off: no release, no update");
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_NONE && count(EV_ANTILAG) == 0,
+         "anti-lag on: in effect, nothing sent until a frame");
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_BOOST)
+         == VIDEO_DRIVER_PACING_REASON_NONE, "anti-lag boost: in effect (as On)");
+   vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON);
+
+   check(vulkan_low_latency_wait(&vk, 0, 1, 20000), "frame 1: released");
+   e = last(EV_ANTILAG);
+   check(count(EV_ANTILAG) == 1 && e && e->a == 1
+         && e->b == AL(VK_ANTI_LAG_MODE_ON_AMD, VK_ANTI_LAG_STAGE_INPUT_AMD)
+         && e->c == 0,
+         "frame 1's INPUT update: on, the identity it will carry, no limit");
+   present_frame(1, 16667);
+   e = last(EV_ANTILAG);
+   check(count(EV_ANTILAG) == 2 && e && e->a == 1
+         && e->b == AL(VK_ANTI_LAG_MODE_ON_AMD, VK_ANTI_LAG_STAGE_PRESENT_AMD),
+         "frame 1's PRESENT update names the same frame");
+   check(count(EV_SLEEP) == 0 && count(EV_MARK) == 0 && count(EV_MODE) == 0,
+         "anti-lag: none of low_latency2's calls");
+   /* A second present of frame 1: nothing */
+   vulkan_low_latency_present_begin(&vk);
+   vulkan_low_latency_present_end(&vk);
+   check(count(EV_ANTILAG) == 2, "a repeat of frame 1: no second PRESENT update");
+   vulkan_low_latency_wait(&vk, 1, 2, 20000);
+   e = last(EV_ANTILAG);
+   check(e && e->a == 2 && e->c == 60,
+         "frame 2's INPUT update carries the limit frame 1 brought: 60 fps");
+   present_frame(2, 0);
+   vulkan_low_latency_wait(&vk, 2, 3, 20000);
+   check(last(EV_ANTILAG)->c == 0, "the limit goes when the timer stands down");
+   vulkan_low_latency_mark_main(&vk, 3, VK_LATENCY_MARKER_INPUT_SAMPLE_NV);
+   check(count(EV_MARK) == 0, "anti-lag: no markers");
+
+   num_events = 0;
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
+         == VIDEO_DRIVER_PACING_REASON_OFF, "anti-lag off");
+   e = last(EV_ANTILAG);
+   check(count(EV_ANTILAG) == 1 && e && e->b == AL(VK_ANTI_LAG_MODE_OFF_AMD, 0xf),
+         "off: one update taking the mode off, with no frame");
+   check(!vulkan_low_latency_wait(&vk, 3, 4, 20000) && count(EV_ANTILAG) == 1,
+         "off: no release, no INPUT update");
+   present_frame(4, 0);
+   check(count(EV_ANTILAG) == 1, "off: no PRESENT update");
+
+   /* Threaded: the request crosses to the presenter */
+   reset_amd(0x100);
+   threaded = true;
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_PENDING, "threaded anti-lag: pending");
+   check(!vulkan_low_latency_wait(&vk, 0, 1, 20000), "threaded anti-lag: no release while pending");
+   present_frame(0, 0);
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_NONE, "threaded anti-lag: answered");
+   check(vulkan_low_latency_wait(&vk, 0, 1, 20000)
+         && last(EV_ANTILAG)->b == AL(VK_ANTI_LAG_MODE_ON_AMD, VK_ANTI_LAG_STAGE_INPUT_AMD),
+         "threaded anti-lag: the frame loop's INPUT update");
+
+   reset_amd(0);
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_SWAPCHAIN, "anti-lag, no swapchain: the swapchain reason");
+   reset(false, 0x100);
+   check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
+         == VIDEO_DRIVER_PACING_REASON_DEVICE, "neither extension: the device reason");
+   printf("   anti-lag: INPUT update as the hold naming the next frame, "
+          "PRESENT update on that frame once, limit from the timer, off "
+          "with one update, requests cross to the presenter\n");
+}
+
 static void test_fallback(void)
 {
    reset(true, 0x100);
@@ -423,7 +520,7 @@ static void test_fallback(void)
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_FAILED && count(EV_MODE) == 1,
          "failed latches: not asked again");
-   check(!vulkan_low_latency_wait(&vk, 1, 20000), "failed: no release");
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000), "failed: no release");
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_OFF)
          == VIDEO_DRIVER_PACING_REASON_OFF
          && vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
@@ -434,14 +531,14 @@ static void test_fallback(void)
    vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON);
    present_frame(1, 0);
    wait_result = VK_TIMEOUT;
-   check(!vulkan_low_latency_wait(&vk, 1, 20000)
-         && !vulkan_low_latency_wait(&vk, 1, 20000)
-         && !vulkan_low_latency_wait(&vk, 1, 20000),
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000)
+         && !vulkan_low_latency_wait(&vk, 1, 2, 20000)
+         && !vulkan_low_latency_wait(&vk, 1, 2, 20000),
          "signals that do not come: no release, within the bound");
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_NONE,
          "three strikes: still in effect");
-   check(!vulkan_low_latency_wait(&vk, 1, 20000), "the fourth: no release");
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000), "the fourth: no release");
    num_events = 0;
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_FAILED, "the fourth: failed from then on");
@@ -454,7 +551,7 @@ static void test_fallback(void)
    vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON);
    sleep_result = VK_ERROR_DEVICE_LOST;
    present_frame(1, 0);
-   check(!vulkan_low_latency_wait(&vk, 1, 20000) && count(EV_WAIT) == 0,
+   check(!vulkan_low_latency_wait(&vk, 1, 2, 20000) && count(EV_WAIT) == 0,
          "a failed sleep: no wait, no release");
    check(vulkan_low_latency_set(&vk, VIDEO_DRIVER_PACING_ON)
          == VIDEO_DRIVER_PACING_REASON_FAILED, "a failed sleep: failed");
@@ -471,6 +568,7 @@ int main(void)
    test_markers();
    test_generation();
    test_threaded();
+   test_anti_lag();
    test_fallback();
    if (failures)
    {

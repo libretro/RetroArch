@@ -885,7 +885,8 @@ static const char *vulkan_optional_device_extensions[] = {
     * stay ahead of the Win32 entries vulkan_optional_device_count()
     * counts off the end. */
    VK_KHR_PRESENT_ID_EXTENSION_NAME,
-   VK_NV_LOW_LATENCY_2_EXTENSION_NAME
+   VK_NV_LOW_LATENCY_2_EXTENSION_NAME,
+   VK_AMD_ANTI_LAG_EXTENSION_NAME
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Lets the app signal SMPTE-2086 mastering-display metadata to the
     * compositor via vkSetHdrMetadataEXT. Optional: if absent (common on
@@ -1067,6 +1068,9 @@ end:
 
 static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
       const char * const *exts, unsigned count);
+static const void *vulkan_anti_lag_chain(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, VkPhysicalDeviceAntiLagFeaturesAMD *feat,
+      const void *next);
 static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk);
 static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk);
 static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
@@ -1190,6 +1194,7 @@ static VkDevice vulkan_context_create_device_wrapper(
    VkDeviceCreateInfo info        = *create_info;
    VkDevice device                = VK_NULL_HANDLE;
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR ll_timeline;
+   VkPhysicalDeviceAntiLagFeaturesAMD anti_lag_features;
    bool timeline_named            = false;
    const char **device_extensions = (const char **)malloc(
          (info.enabledExtensionCount +
@@ -1365,6 +1370,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          }
       }
    }
+   info.pNext = vulkan_anti_lag_chain(vk, gpu, &anti_lag_features, info.pNext);
    if ((res = vulkan_context_create_device(vk, gpu, &info, &device)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create device (%d).\n", res);
@@ -1395,6 +1401,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    VkPhysicalDeviceFeatures features       = { false };
    VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline;
+   VkPhysicalDeviceAntiLagFeaturesAMD anti_lag_features;
 
    unsigned enabled_device_extension_count = 0;
 
@@ -1736,6 +1743,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          device_info.pNext  = &timeline;
          vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
       }
+      device_info.pNext = vulkan_anti_lag_chain(vk, vk->context.gpu,
+            &anti_lag_features, device_info.pNext);
 
       device_info.queueCreateInfoCount    = 1;
       device_info.pQueueCreateInfos       = &queue_info;
@@ -4837,15 +4846,58 @@ static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
    unsigned i;
    bool low_latency = false;
    bool present_id  = false;
-   vk->low_latency.supported = false;
+   vk->low_latency.supported    = false;
+   vk->low_latency.anti_lag_ext = false;
    for (i = 0; i < count; i++)
    {
       if (!strcmp(exts[i], VK_NV_LOW_LATENCY_2_EXTENSION_NAME))
          low_latency = true;
       else if (!strcmp(exts[i], VK_KHR_PRESENT_ID_EXTENSION_NAME))
          present_id  = true;
+      else if (!strcmp(exts[i], VK_AMD_ANTI_LAG_EXTENSION_NAME))
+         vk->low_latency.anti_lag_ext = true;
    }
    vk->low_latency.supported = low_latency && present_id;
+}
+
+/* VK_AMD_anti_lag's feature, chained in front of @next where the GPU
+ * has it and the device has the extension (and not low_latency2,
+ * which is used instead). The feature struct must outlive the device
+ * creation call. Returns the chain to create with. */
+static const void *vulkan_anti_lag_chain(gfx_ctx_vulkan_data_t *vk,
+      VkPhysicalDevice gpu, VkPhysicalDeviceAntiLagFeaturesAMD *feat,
+      const void *next)
+{
+   const VkBaseInStructure *chain;
+   VkPhysicalDeviceFeatures2 f2;
+   PFN_vkGetPhysicalDeviceFeatures2 get_features;
+   vk->low_latency.anti_lag = false;
+   if (!vk->low_latency.anti_lag_ext || vk->low_latency.supported)
+      return next;
+   /* A core that asked for it itself */
+   for (chain = (const VkBaseInStructure*)next; chain; chain = chain->pNext)
+      if (chain->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD)
+      {
+         vk->low_latency.anti_lag =
+            ((const VkPhysicalDeviceAntiLagFeaturesAMD*)chain)->antiLag != 0;
+         return next;
+      }
+   get_features = (PFN_vkGetPhysicalDeviceFeatures2)
+      vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+            "vkGetPhysicalDeviceFeatures2");
+   if (!get_features)
+      return next;
+   feat->sType   = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD;
+   feat->pNext   = NULL;
+   feat->antiLag = VK_FALSE;
+   f2.sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+   f2.pNext      = feat;
+   get_features(gpu, &f2);
+   if (!feat->antiLag)
+      return next;
+   feat->pNext              = (void*)next;
+   vk->low_latency.anti_lag = true;
+   return feat;
 }
 
 static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk)
@@ -4881,6 +4933,18 @@ static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk)
    retro_atomic_store_release_int(&ll->answer, VIDEO_DRIVER_PACING_REASON_OFF);
    retro_atomic_store_release_int(&ll->in_call, 0);
    retro_atomic_store_release_int(&ll->stalled, 0);
+   retro_atomic_store_release_int(&ll->amd_mode, 0);
+   retro_atomic_store_release_int(&ll->amd_max_fps, 0);
+   ll->anti_lag_update = NULL;
+   if (ll->anti_lag && !ll->supported)
+   {
+      ll->anti_lag_update = vkGetDeviceProcAddr(vk->context.device,
+            "vkAntiLagUpdateAMD");
+      if (ll->anti_lag_update)
+         RARCH_LOG("[Vulkan] Driver Pacing available (VK_AMD_anti_lag).\n");
+   }
+   if (!ll->anti_lag_update)
+      ll->anti_lag = false;
 
    if (!ll->supported)
       return;
@@ -4962,10 +5026,12 @@ static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
     * semaphore is left to the device. */
    if (ll->semaphore != VK_NULL_HANDLE && !ll->failed)
       vkDestroySemaphore(vk->context.device, ll->semaphore, NULL);
-   ll->semaphore = VK_NULL_HANDLE;
-   ll->supported = false;
-   ll->swapchain = VK_NULL_HANDLE;
-   ll->mode      = 0;
+   ll->semaphore       = VK_NULL_HANDLE;
+   ll->supported       = false;
+   ll->anti_lag        = false;
+   ll->anti_lag_update = NULL;
+   ll->swapchain       = VK_NULL_HANDLE;
+   ll->mode            = 0;
 }
 
 /* Whether the frame loop is outside a marker call now, in the sense
@@ -5086,11 +5152,63 @@ static bool vulkan_low_latency_apply(gfx_ctx_vulkan_data_t *vk,
    return true;
 }
 
+/* One vkAntiLagUpdateAMD: @stage the stage, or ~0u for a mode update
+ * with no frame (the mode taken off) */
+static void vulkan_anti_lag_update(gfx_ctx_vulkan_data_t *vk,
+      unsigned mode, unsigned stage, uint64_t frame_index)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkAntiLagPresentationInfoAMD info;
+   VkAntiLagDataAMD data;
+   info.sType        = VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD;
+   info.pNext        = NULL;
+   info.stage        = (VkAntiLagStageAMD)stage;
+   info.frameIndex   = frame_index;
+   data.sType        = VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD;
+   data.pNext        = NULL;
+   data.mode         = mode ? VK_ANTI_LAG_MODE_ON_AMD : VK_ANTI_LAG_MODE_OFF_AMD;
+   data.maxFPS       = mode
+      ? (uint32_t)retro_atomic_load_acquire_int(&ll->amd_max_fps) : 0;
+   data.pPresentationInfo = (stage == ~0u) ? NULL : &info;
+   ((PFN_vkAntiLagUpdateAMD)ll->anti_lag_update)(vk->context.device, &data);
+}
+
+/* The presenter's side of a mode request on VK_AMD_anti_lag: the mode
+ * is the device's, so it is recorded for the frame loop's INPUT update
+ * and taken off with one update of its own. Boost has nothing to ask
+ * for here and reads as On. */
+static unsigned vulkan_anti_lag_apply_want(gfx_ctx_vulkan_data_t *vk,
+      unsigned mode)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   if (!mode)
+   {
+      if (ll->mode)
+      {
+         retro_atomic_store_release_int(&ll->amd_mode, 0);
+         vulkan_anti_lag_update(vk, 0, ~0u, 0);
+      }
+      ll->mode = 0;
+      return VIDEO_DRIVER_PACING_REASON_OFF;
+   }
+   if (vk->swapchain == VK_NULL_HANDLE || vk->context.swapchain_external)
+      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (vk->dxgi_presenter)
+      return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
+#endif
+   ll->mode = (uint8_t)mode;
+   retro_atomic_store_release_int(&ll->amd_mode, (int)mode);
+   return VIDEO_DRIVER_PACING_REASON_NONE;
+}
+
 /* The presenter's side of a mode request. */
 static unsigned vulkan_low_latency_apply_want(gfx_ctx_vulkan_data_t *vk,
       unsigned mode)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
+   if (!ll->supported && ll->anti_lag)
+      return vulkan_anti_lag_apply_want(vk, mode);
    if (!ll->supported)
       return VIDEO_DRIVER_PACING_REASON_DEVICE;
    /* A replaced swapchain took the mode with it; what is set is
@@ -5168,7 +5286,18 @@ void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
             (int)vulkan_low_latency_apply_want(vk, want));
    }
    if (!ll->supported)
+   {
+      /* The frame the PRESENT update names, and the frame limit the
+       * frame loop's next INPUT update carries */
+      if (ll->anti_lag && ll->mode && frame_id && frame_id != ll->frame_id)
+      {
+         ll->frame_id    = frame_id;
+         ll->stage       = 1;
+         retro_atomic_store_release_int(&ll->amd_max_fps, min_interval_us
+            ? (int)((1000000 + min_interval_us / 2) / min_interval_us) : 0);
+      }
       return;
+   }
    vulkan_low_latency_retire_tick(vk);
    if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain)
       return;
@@ -5186,6 +5315,18 @@ void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
 void vulkan_low_latency_present_begin(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
+   /* Anti-Lag names the frame's own present only; it has no notion of
+    * the presents after it */
+   if (ll->anti_lag && !ll->supported)
+   {
+      if (ll->mode && ll->frame_id && ll->stage == 1)
+      {
+         ll->stage = 2;
+         vulkan_anti_lag_update(vk, ll->mode, VK_ANTI_LAG_STAGE_PRESENT_AMD,
+               ll->frame_id);
+      }
+      return;
+   }
    if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain || !ll->frame_id)
       return;
    if (ll->stage == 1)
@@ -5234,11 +5375,24 @@ void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk)
 }
 
 bool vulkan_low_latency_wait(gfx_ctx_vulkan_data_t *vk,
-      uint64_t frame_id, unsigned max_wait_us)
+      uint64_t frame_id, uint64_t next_id, unsigned max_wait_us)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
    VkSemaphoreWaitInfo wait_info;
    VkResult res;
+   /* Anti-Lag's INPUT update is the hold, inside the driver, for the
+    * frame about to sample its input; the device-wide call is safe
+    * beside the presenter's on another thread. */
+   if (ll->anti_lag && !ll->supported)
+   {
+      unsigned mode = (unsigned)retro_atomic_load_acquire_int(&ll->amd_mode);
+      if (!mode || retro_atomic_load_acquire_int(&ll->answer)
+            != VIDEO_DRIVER_PACING_REASON_NONE)
+         return false;
+      vulkan_anti_lag_update(vk, mode, VK_ANTI_LAG_STAGE_INPUT_AMD, next_id);
+      return true;
+   }
+   (void)next_id;
    if (!ll->supported || ll->semaphore == VK_NULL_HANDLE)
       return false;
    if (retro_atomic_load_acquire_int(&ll->answer) != VIDEO_DRIVER_PACING_REASON_NONE)

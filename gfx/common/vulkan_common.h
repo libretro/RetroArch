@@ -411,6 +411,51 @@ struct vulkan_emulated_mailbox
  * on a backend error, or on sleeps the driver stopped signalling,
  * until the mode is asked for again; the semaphore is then left to the
  * device. */
+/* VK_AMD_anti_lag postdates the tree's Vulkan headers; the types it
+ * uses are the registry's, declared here when the headers lack them */
+#ifndef VK_AMD_anti_lag
+#define VK_AMD_ANTI_LAG_EXTENSION_NAME "VK_AMD_anti_lag"
+#define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD ((VkStructureType)1000476000)
+#define VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD                     ((VkStructureType)1000476001)
+#define VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD        ((VkStructureType)1000476002)
+typedef enum VkAntiLagModeAMD
+{
+   VK_ANTI_LAG_MODE_DRIVER_CONTROL_AMD = 0,
+   VK_ANTI_LAG_MODE_ON_AMD             = 1,
+   VK_ANTI_LAG_MODE_OFF_AMD            = 2,
+   VK_ANTI_LAG_MODE_MAX_ENUM_AMD       = 0x7FFFFFFF
+} VkAntiLagModeAMD;
+typedef enum VkAntiLagStageAMD
+{
+   VK_ANTI_LAG_STAGE_INPUT_AMD    = 0,
+   VK_ANTI_LAG_STAGE_PRESENT_AMD  = 1,
+   VK_ANTI_LAG_STAGE_MAX_ENUM_AMD = 0x7FFFFFFF
+} VkAntiLagStageAMD;
+typedef struct VkPhysicalDeviceAntiLagFeaturesAMD
+{
+   VkStructureType sType;
+   void           *pNext;
+   VkBool32        antiLag;
+} VkPhysicalDeviceAntiLagFeaturesAMD;
+typedef struct VkAntiLagPresentationInfoAMD
+{
+   VkStructureType   sType;
+   void             *pNext;
+   VkAntiLagStageAMD stage;
+   uint64_t          frameIndex;
+} VkAntiLagPresentationInfoAMD;
+typedef struct VkAntiLagDataAMD
+{
+   VkStructureType                     sType;
+   const void                         *pNext;
+   VkAntiLagModeAMD                    mode;
+   uint32_t                            maxFPS;
+   const VkAntiLagPresentationInfoAMD *pPresentationInfo;
+} VkAntiLagDataAMD;
+typedef void (VKAPI_PTR *PFN_vkAntiLagUpdateAMD)(VkDevice device,
+      const VkAntiLagDataAMD *pData);
+#endif
+
 typedef struct vulkan_low_latency
 {
    uint64_t frame_id;
@@ -424,11 +469,18 @@ typedef struct vulkan_low_latency
    PFN_vkVoidFunction sleep;
    PFN_vkVoidFunction set_marker;
    PFN_vkVoidFunction wait_semaphores;
+   /* VK_AMD_anti_lag, where the device has it and not the above: the
+    * frame loop's INPUT update is the hold, the presenter's PRESENT
+    * update names the same frame. Device-wide, no swapchain, so the
+    * mode crosses threads as @amd_mode alone. */
+   PFN_vkVoidFunction anti_lag_update;
    retro_atomic_size_t pub_gen;
    retro_atomic_int_t want;
    retro_atomic_int_t answer;
    retro_atomic_int_t in_call;
    retro_atomic_int_t stalled;   /* the frame loop gave up waiting */
+   retro_atomic_int_t amd_mode;  /* enum video_driver_pacing_mode in effect */
+   retro_atomic_int_t amd_max_fps; /* the frame limit, from the presenter */
    uint32_t min_interval_us;
    uint32_t spec_version;
    unsigned num_retired;
@@ -438,6 +490,8 @@ typedef struct vulkan_low_latency
    bool supported;
    bool failed;
    bool publish_pending;
+   bool anti_lag;        /* VK_AMD_anti_lag and its feature are on */
+   bool anti_lag_ext;    /* the extension is in the device's list */
 } vulkan_low_latency_t;
 
 typedef struct gfx_ctx_vulkan_data
@@ -636,7 +690,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
  * presenter's; the rest run on the presenter's thread. */
 unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode);
 bool vulkan_low_latency_wait(gfx_ctx_vulkan_data_t *vk,
-      uint64_t frame_id, unsigned max_wait_us);
+      uint64_t frame_id, uint64_t next_id, unsigned max_wait_us);
 void vulkan_low_latency_mark_main(gfx_ctx_vulkan_data_t *vk,
       uint64_t frame_id, unsigned marker);
 /* The driver's frame begins, with the frame's identity and interval

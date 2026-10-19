@@ -5443,12 +5443,12 @@ static unsigned thread_driver_pacing_set(void *data, unsigned mode)
 }
 
 static bool thread_driver_pacing_wait(void *data, uint64_t frame_id,
-      unsigned max_wait_us)
+      uint64_t next_id, unsigned max_wait_us)
 {
    thread_video_t *thr = (thread_video_t*)data;
    if (thr && thr->driver_data && thr->poke && thr->poke->driver_pacing_wait)
       return thr->poke->driver_pacing_wait(thr->driver_data, frame_id,
-            max_wait_us);
+            next_id, max_wait_us);
    return false;
 }
 

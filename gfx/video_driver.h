@@ -1402,8 +1402,10 @@ typedef struct video_poke_interface
     * next frame's input is sampled, only while driver_pacing_set
     * answered NONE. It holds the calling thread, @max_wait_us at most,
     * until that frame has been presented and the driver's sleep that
-    * follows it says the next frame may start. Returns false when the
-    * backend could not release and the caller is to pace as before.
+    * follows it says the next frame may start; @next_id is the identity
+    * the released frame will carry, for a backend that names it at its
+    * input. Returns false when the backend could not release and the
+    * caller is to pace as before.
     * The identity of each frame, and the minimum present interval the
     * driver is to keep after it, travel in video_frame_info_t
     * (driver_pacing_id, driver_pacing_interval_us), so the presenter
@@ -1416,7 +1418,7 @@ typedef struct video_poke_interface
     * when the mode is not in effect. */
    unsigned (*driver_pacing_set)(void *data, unsigned mode);
    bool (*driver_pacing_wait)(void *data, uint64_t frame_id,
-         unsigned max_wait_us);
+         uint64_t next_id, unsigned max_wait_us);
    void (*driver_pacing_mark)(void *data, uint64_t frame_id, unsigned marker);
 } video_poke_interface_t;
 

@@ -10240,6 +10240,7 @@ end:
          ? (unsigned)pace_limit_min : 0;
       if (video_st->poke->driver_pacing_wait(video_st->data,
             runloop_st->driver_pacing_frame_id,
+            runloop_st->driver_pacing_next_id + 1,
             (unsigned)(2 * period + 10000)))
       {
          uint64_t id                        = ++runloop_st->driver_pacing_next_id;

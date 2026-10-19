@@ -9199,13 +9199,13 @@ static unsigned vulkan_driver_pacing_set(void *data, unsigned mode)
 }
 
 static bool vulkan_driver_pacing_wait(void *data, uint64_t frame_id,
-      unsigned max_wait_us)
+      uint64_t next_id, unsigned max_wait_us)
 {
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
       return false;
    return vulkan_low_latency_wait(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
-         frame_id, max_wait_us);
+         frame_id, next_id, max_wait_us);
 }
 
 static void vulkan_driver_pacing_mark(void *data, uint64_t frame_id, unsigned marker)

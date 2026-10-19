@@ -5522,11 +5522,12 @@ static unsigned d3d11_driver_pacing_set(void *data, unsigned mode)
 }
 
 static bool d3d11_driver_pacing_wait(void *data, uint64_t frame_id,
-      unsigned max_wait_us)
+      uint64_t next_id, unsigned max_wait_us)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    if (!d3d11)
       return false;
+   (void)next_id;
    return d3d_driver_pacing_wait(&d3d11->driver_pacing, d3d11->device,
          frame_id, max_wait_us);
 }

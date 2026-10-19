@@ -657,13 +657,15 @@ static unsigned dplane_set(void *data, unsigned mode)
 
 /* The identity the frame loop waits for: the frame it handed over
  * last, which its next release names plus one */
-static uint64_t dplane_last_wait_id;
+static uint64_t dplane_last_wait_id, dplane_last_next_id;
 /* On the video thread, the identities the frames arrive with */
 static retro_atomic_size_t dplane_seen_id, dplane_seen_frames, dplane_seen_interval;
 
-static bool dplane_wait(void *data, uint64_t frame_id, unsigned max_wait_us)
+static bool dplane_wait(void *data, uint64_t frame_id, uint64_t next_id,
+      unsigned max_wait_us)
 {
    (void)data;
+   dplane_last_next_id = next_id;
    dplane_waits++;
    dplane_last_wait_id  = frame_id;
    dplane_last_max      = max_wait_us;
@@ -777,6 +779,10 @@ static void lane_driver_pacing(void)
    CHECK(dplane_last_wait_id == 19,
          "backend up: the last wait named the frame handed over, %llu",
          (unsigned long long)dplane_last_wait_id);
+   CHECK(dplane_last_next_id == runloop_st->driver_pacing_frame_id,
+         "backend up: the wait named the identity it released, %llu vs %llu",
+         (unsigned long long)dplane_last_next_id,
+         (unsigned long long)runloop_st->driver_pacing_frame_id);
    CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE,
          "backend up: reason %u", video_st->driver_pacing_reason);
    CHECK(video_st->driver_pacing_mode == VIDEO_DRIVER_PACING_ON, "backend up: mode");
