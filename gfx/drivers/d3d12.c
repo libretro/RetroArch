@@ -935,6 +935,7 @@ typedef struct
       } retired[D3D12_RECORD_RETIRED];
       unsigned      retired_count;
    } record;
+   d3d_driver_pacing_t driver_pacing;
 } d3d12_video_t;
 
 #ifdef D3D12_FRAME_IMPORT
@@ -5384,6 +5385,7 @@ static void d3d12_gfx_free(void* data)
 #endif
 
    Release(d3d12->factory);
+   d3d_driver_pacing_free(&d3d12->driver_pacing, d3d12->device);
    Release(d3d12->device);
    Release(d3d12->adapter);
 
@@ -7084,6 +7086,34 @@ static unsigned d3d12_present_last(void *data)
  * display's grid the longer it stays. Then, and whenever the statistics
  * cannot be had, the compositor's own last vblank, as the Vulkan
  * driver reads it on Windows. */
+static unsigned d3d12_driver_pacing_set(void *data, unsigned mode)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return VIDEO_DRIVER_PACING_REASON_DRIVER;
+   return d3d_driver_pacing_set(&d3d12->driver_pacing, d3d12->device, mode);
+}
+
+static uint64_t d3d12_driver_pacing_wait(void *data, unsigned min_interval_us,
+      unsigned max_wait_us)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return 0;
+   return d3d_driver_pacing_wait(&d3d12->driver_pacing, d3d12->device,
+         min_interval_us, max_wait_us);
+}
+
+static void d3d12_driver_pacing_mark(void *data, uint64_t frame_id,
+      unsigned marker)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return;
+   d3d_driver_pacing_mark(&d3d12->driver_pacing, d3d12->device,
+         frame_id, marker);
+}
+
 static retro_time_t d3d12_get_last_present_time(void *data)
 {
    DXGI_FRAME_STATISTICS stats;
@@ -8786,6 +8816,10 @@ static bool d3d12_gfx_frame_body(
 #endif
    cmd                            = d3d12->queue.cmd;
 
+   /* The released frame's simulation ends where its Direct3D work
+    * begins */
+   d3d_driver_pacing_render_begin(&d3d12->driver_pacing, d3d12->device);
+
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       WaitForSingleObjectEx(
             d3d12->chain.frameLatencyWaitableObject,
@@ -10082,6 +10116,7 @@ recording_resize_deferred:;
                d3d12->hw_v2.done, ++d3d12->hw_v2.done_value);
    }
 
+   d3d_driver_pacing_present_begin(&d3d12->driver_pacing, d3d12->device);
    if (vsync && d3d12->wait_for_vblank < 0)
    {
       d3d12_wait_for_vblank(d3d12);
@@ -10089,6 +10124,7 @@ recording_resize_deferred:;
    }
    else
       DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, present_flags);
+   d3d_driver_pacing_present_end(&d3d12->driver_pacing, d3d12->device);
 
    if (vsync && d3d12->wait_for_vblank > 0)
       d3d12_wait_for_vblank(d3d12);
@@ -12817,7 +12853,11 @@ static const video_poke_interface_t d3d12_poke_interface = {
 #endif
    d3d12_get_menu_framebuffer,
    d3d12_menu_mem_alloc,
-   D3D12_TEXTURE_DATA_PITCH_ALIGNMENT
+   D3D12_TEXTURE_DATA_PITCH_ALIGNMENT,
+   false, /* texture_lend_per_write */
+   d3d12_driver_pacing_set,
+   d3d12_driver_pacing_wait,
+   d3d12_driver_pacing_mark
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

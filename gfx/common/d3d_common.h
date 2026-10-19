@@ -66,6 +66,38 @@ typedef struct
 
 int32_t d3d_translate_filter(unsigned type);
 
+/* Driver Pacing on the Direct3D drivers, through NVAPI's Reflex entry
+ * points (NvAPI_D3D_SetSleepMode / NvAPI_D3D_Sleep /
+ * NvAPI_D3D_SetLatencyMarker), which take any Direct3D 9 to 12
+ * device. nvapi is resolved at runtime by its published interface ids
+ * and never linked; a machine without it reports the device reason.
+ * One of these per driver instance, zeroed with it; the mode is a
+ * property of @device, the device it was set on. The functions follow
+ * the driver_pacing_* pokes (gfx/video_driver.h). */
+typedef struct d3d_driver_pacing
+{
+   uint64_t frame_id;
+   void *device;
+   uint32_t min_interval_us;
+   uint8_t mode;      /* enum video_driver_pacing_mode set on @device */
+   uint8_t stage;     /* 0 released, 1 rendering, 2 presented */
+   bool failed;
+} d3d_driver_pacing_t;
+
+unsigned d3d_driver_pacing_set(d3d_driver_pacing_t *s, void *device,
+      unsigned mode);
+uint64_t d3d_driver_pacing_wait(d3d_driver_pacing_t *s, void *device,
+      unsigned min_interval_us, unsigned max_wait_us);
+void d3d_driver_pacing_mark(d3d_driver_pacing_t *s, void *device,
+      uint64_t frame_id, unsigned marker);
+/* The released frame's render submission begins, once; and its
+ * present, around the driver's content present, once. */
+void d3d_driver_pacing_render_begin(d3d_driver_pacing_t *s, void *device);
+void d3d_driver_pacing_present_begin(d3d_driver_pacing_t *s, void *device);
+void d3d_driver_pacing_present_end(d3d_driver_pacing_t *s, void *device);
+/* The driver goes: the mode is taken off its device. */
+void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device);
+
 RETRO_END_DECLS
 
 #endif

@@ -12281,9 +12281,14 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = swapchain_images;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_DRIVER_PACING:
-                     /* Only the Vulkan driver has a backend for the release */
-                     build_list[i].checked = string_is_equal(
-                           video_driver_get_ident(), "vulkan");
+                     /* The drivers with a backend for the release */
+                     {
+                        const char *ident = video_driver_get_ident();
+                        build_list[i].checked =
+                              string_is_equal(ident, "vulkan")
+                           || string_is_equal(ident, "d3d11")
+                           || string_is_equal(ident, "d3d12");
+                     }
                      break;
                   case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
                   case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET:

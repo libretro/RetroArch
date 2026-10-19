@@ -741,6 +741,7 @@ typedef struct
       DXGI_FORMAT     format;
       bool            enable;
    } record;
+   d3d_driver_pacing_t   driver_pacing;
 } d3d11_video_t;
 
 #ifdef D3D11_FRAME_IMPORT
@@ -3929,6 +3930,7 @@ static void d3d11_gfx_free(void* data)
    }
    else
    {
+      d3d_driver_pacing_free(&d3d11->driver_pacing, d3d11->device);
       Release(d3d11->context);
       Release(d3d11->device);
    }
@@ -5501,6 +5503,34 @@ static unsigned d3d11_present_last_body(void *data)
  * display's grid the longer it stays. Then, and whenever the statistics
  * cannot be had, the compositor's own last vblank, as the Vulkan
  * driver reads it on Windows. */
+static unsigned d3d11_driver_pacing_set(void *data, unsigned mode)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11)
+      return VIDEO_DRIVER_PACING_REASON_DRIVER;
+   return d3d_driver_pacing_set(&d3d11->driver_pacing, d3d11->device, mode);
+}
+
+static uint64_t d3d11_driver_pacing_wait(void *data, unsigned min_interval_us,
+      unsigned max_wait_us)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11)
+      return 0;
+   return d3d_driver_pacing_wait(&d3d11->driver_pacing, d3d11->device,
+         min_interval_us, max_wait_us);
+}
+
+static void d3d11_driver_pacing_mark(void *data, uint64_t frame_id,
+      unsigned marker)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11)
+      return;
+   d3d_driver_pacing_mark(&d3d11->driver_pacing, d3d11->device,
+         frame_id, marker);
+}
+
 static retro_time_t d3d11_get_last_present_time(void *data)
 {
    DXGI_FRAME_STATISTICS stats;
@@ -6773,6 +6803,10 @@ static bool d3d11_gfx_frame_body(
            && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 #endif
 
+   /* The released frame's simulation ends where its Direct3D work
+    * begins */
+   d3d_driver_pacing_render_begin(&d3d11->driver_pacing, d3d11->device);
+
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
    {
       d3d11_hw_v2_yield_begin(d3d11);
@@ -7833,9 +7867,11 @@ static bool d3d11_gfx_frame_body(
       d3d11_hw_v2_yield_begin(d3d11);
       d3d11_wait_for_vblank(d3d11);
       d3d11_hw_v2_yield_end(d3d11);
+      d3d_driver_pacing_present_begin(&d3d11->driver_pacing, d3d11->device);
       DXGIPresent(d3d11->swapChain, 0,
             present_flags | ((d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING) ? DXGI_PRESENT_ALLOW_TEARING : 0)
       );
+      d3d_driver_pacing_present_end(&d3d11->driver_pacing, d3d11->device);
    }
    else
    {
@@ -7843,7 +7879,9 @@ static bool d3d11_gfx_frame_body(
        * the call. */
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_begin(d3d11);
+      d3d_driver_pacing_present_begin(&d3d11->driver_pacing, d3d11->device);
       DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      d3d_driver_pacing_present_end(&d3d11->driver_pacing, d3d11->device);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_end(d3d11);
    }
@@ -9860,7 +9898,10 @@ static const video_poke_interface_t d3d11_poke_interface = {
    NULL, /* get_menu_framebuffer */
    NULL, /* menu_mem_alloc */
    0, /* menu_mem_pitch_align */
-   true /* texture_lend_per_write */
+   true, /* texture_lend_per_write */
+   d3d11_driver_pacing_set,
+   d3d11_driver_pacing_wait,
+   d3d11_driver_pacing_mark
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,
