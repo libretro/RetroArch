@@ -649,6 +649,8 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          const rmp4_track *t = rmp4_get_track(s->demux, s->track);
          if (!(s->h265 = rh265_video_open()))
             return false;
+         if (s->want_hw)
+            rh265_video_retain_parameter_sets(s->h265);
          if (t && t->codec_private && t->codec_private_size)
             rh265_video_set_extradata(s->h265, t->codec_private,
                   t->codec_private_size);
@@ -1418,14 +1420,12 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
       return s->h265 ? rh265_video_is_hw(s->h265)
          : s->h264 && rh264_video_is_hw(s->h264);
    s->want_hw = 1;
-   /* a stream already under way starts over: the decoder takes the
-    * backend only before its first picture */
-   if (s->disp_idx || s->rndr_kind)
+   /* HEVC setup needs a fresh parse retaining the parameter NALs.
+    * An already-running stream also restarts before changing backends. */
+   if (s->h265 || s->disp_idx || s->rndr_kind)
       rmp4_video_stream_rewind(s);
    else if (s->h264)
       rh264_video_set_hw(s->h264, 1);
-   else if (s->h265)
-      rh265_video_set_hw(s->h265, 1);
    return s->h265 ? rh265_video_is_hw(s->h265)
          : s->h264 && rh264_video_is_hw(s->h264);
 }
