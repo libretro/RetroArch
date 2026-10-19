@@ -549,7 +549,9 @@ struct cmd_column
  * @flag is a field the word alone sets true, for a word that can come
  * without a number - a bare "MORE", from a reply with no resume point.
  * @name is the field its number is answered as. Either may be NULL.
- * @first is a word that opens the reply instead of closing it. */
+ * @first is a word that opens the reply instead of closing it. @text
+ * makes the rest of the line, on whichever line it comes, the field's
+ * text: "MESSAGE Press again to quit" rather than a number. */
 struct cmd_trailer
 {
    const char *word;
@@ -557,6 +559,7 @@ struct cmd_trailer
    const char *name;
    const char *desc;
    bool        first;
+   bool        text;
 };
 
 /* The shape of a reply that is rows of named columns - the lines of
@@ -736,7 +739,7 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 /* MENU <button>, DISK <action>, REINIT <driver>, STATE <action> <slot>,
  * REPLAY <action> [slot|frame]: the hotkeys and commands of one family
  * behind one name, as one tool. */
-#define COMMAND_MENU_ACTIONS   "show|open|close|select|up|down|left|right|a|b"
+#define COMMAND_MENU_ACTIONS   "show|open|close|select|up|down|left|right|a|b|type"
 /* the entries MENU answers with at once */
 #define COMMAND_MENU_PAGE      50
 #define COMMAND_DISK_ACTIONS   "eject|next|prev"
@@ -917,8 +920,10 @@ static const struct cmd_param cmd_params_slot[] = {
 };
 static const struct cmd_param cmd_params_menu[] = {
    { "action", "select moves to index; left and right change a value, a "
-      "confirms, b goes back.", CMD_PARAM_STRING, true, NULL,
-      COMMAND_MENU_ACTIONS, NULL },
+      "confirms, b goes back, type answers a keyboard.",
+      CMD_PARAM_STRING, true, NULL, COMMAND_MENU_ACTIONS, NULL },
+   { "text", "For type: the text, typed and confirmed.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { "index", "An entry: select, left, right and a act on it.",
       CMD_PARAM_INT, false, NULL, NULL, NULL },
    { "from", "The first entry listed; else the page with the selection.",
@@ -1158,6 +1163,10 @@ static const struct cmd_column cmd_cols_menu[] = {
 };
 static const struct cmd_trailer cmd_trailers_menu[] = {
    { "CLOSED", "closed", NULL, "The menu is closed.", true },
+   { "KEYBOARD", NULL, "keyboard", "Text asked for: type it, or b.",
+      false, true },
+   { "MESSAGE", NULL, "message", "Shown over the list: a confirms, b "
+      "dismisses.", false, true },
    { "SELECTED", NULL, "selected", "The selected index." },
    { "COUNT", NULL, "count", "Entries in the list." },
    { NULL }

@@ -1255,15 +1255,17 @@ static bool command_run_choice(command_t *cmd, const char *family,
 
 #ifdef HAVE_MENU
 /* MENU: the request whose action the next menu frame runs, as the
- * menu's own input would, answered once that frame has run with what
- * the menu shows then - an action can open a list the menu fills as it
- * runs. */
+ * menu's own input would, answered a frame after that with what the
+ * menu shows then: a list or a message an action opens is filled in by
+ * the frame that follows it. */
 static struct
 {
    command_deferred_t deferred;
    size_t             index;
    unsigned           from;
    unsigned           action;
+   /* menu frames still to run before the answer: the action's, then one */
+   unsigned           frames;
    bool               pending;
    bool               has_index;
    bool               has_from;
@@ -1290,7 +1292,7 @@ static char *command_menu_answer(bool has_from, unsigned from,
       ? MENU_LIST_GET_SELECTION(list, (unsigned)0) : NULL;
    size_t             count   = buf ? buf->size : 0;
    size_t             sel     = menu_st->selection_ptr;
-   size_t             size    = 1024 + COMMAND_MENU_PAGE * 560;
+   size_t             size    = 2048 + COMMAND_MENU_PAGE * 560;
    size_t             _len;
    size_t             i;
    size_t             first;
@@ -1315,6 +1317,24 @@ static char *command_menu_answer(bool has_from, unsigned from,
       menu_entries_get_title(title, sizeof(title));
       command_menu_clean(title);
       _len = (size_t)snprintf(out, size, "MENU %s\n", title);
+   }
+   /* what waits on the user over the list: typing, or a message that a
+    * second a confirms - "Press again to quit" */
+   if (menu_input_dialog_get_display_kb())
+   {
+      char label[sizeof(menu_st->input_dialog_kb_label)];
+      strlcpy(label, menu_st->input_dialog_kb_label, sizeof(label));
+      command_menu_clean(label);
+      _len += (size_t)snprintf(out + _len, size - _len, "KEYBOARD %s\n",
+            label);
+   }
+   else if (menu_st->driver_data && *menu_st->driver_data->menu_state_msg)
+   {
+      char msg[sizeof(menu_st->driver_data->menu_state_msg)];
+      strlcpy(msg, menu_st->driver_data->menu_state_msg, sizeof(msg));
+      command_menu_clean(msg);
+      _len += (size_t)snprintf(out + _len, size - _len, "MESSAGE %s\n",
+            msg);
    }
    first = has_from ? from : sel - sel % COMMAND_MENU_PAGE;
    for (i = first; i < count && i < first + COMMAND_MENU_PAGE; i++)
@@ -1351,7 +1371,7 @@ static char *command_menu_answer(bool has_from, unsigned from,
 unsigned command_menu_action(unsigned action)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   if (!command_menu_st.pending)
+   if (!command_menu_st.pending || command_menu_st.frames < 2)
       return action;
    if (command_menu_st.has_index)
    {
@@ -1389,6 +1409,9 @@ void command_menu_iterated(void)
    char  *out;
    size_t _len = 0;
    if (!command_menu_st.pending)
+      return;
+   if (     --command_menu_st.frames
+         && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
       return;
    command_menu_st.pending = false;
    if (command_menu_st.lost)
@@ -1430,7 +1453,8 @@ bool command_menu(command_t *cmd, const char *arg)
       { "left",   MENU_ACTION_LEFT,   true  },
       { "right",  MENU_ACTION_RIGHT,  true  },
       { "a",      MENU_ACTION_OK,     true  },
-      { "b",      MENU_ACTION_CANCEL, false }
+      { "b",      MENU_ACTION_CANCEL, false },
+      { "type",   MENU_ACTION_NOOP,   false }
    };
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t       *list    = menu_st->entries.list;
@@ -1460,7 +1484,20 @@ bool command_menu(command_t *cmd, const char *arg)
    }
    for (p += n; *p == ' '; p++)
       ;
-   if (*p >= '0' && *p <= '9')
+   /* the rest of the line is the text, spaces and all */
+   if (string_is_equal(actions[i].word, "type"))
+   {
+      if (!alive || !menu_input_dialog_get_display_kb())
+      {
+         command_reply_error(cmd, "MENU", "no keyboard is open: a on an "
+               "entry that asks for text opens one");
+         return false;
+      }
+      input_driver_keyboard_line_set(p, strlen(p));
+      input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      p += strlen(p);
+   }
+   else if (*p >= '0' && *p <= '9')
    {
       index     = strtoul(p, &end, 10);
       has_index = true;
@@ -1552,6 +1589,7 @@ bool command_menu(command_t *cmd, const char *arg)
    command_menu_st.has_index = has_index;
    command_menu_st.from      = (unsigned)from;
    command_menu_st.has_from  = has_from;
+   command_menu_st.frames    = 2;
    command_menu_st.pending   = true;
    command_deferred_take(&command_menu_st.deferred, cmd);
    return true;
@@ -2394,7 +2432,6 @@ enum cmd_option_id
    CMD_OPT_FPS,
    CMD_OPT_STATISTICS,
    CMD_OPT_FULLSCREEN,
-   CMD_OPT_MENU,
    CMD_OPT_SHADER,
    CMD_OPT_VIDEO_FILTER,
    CMD_OPT_REWIND,
@@ -2484,14 +2521,6 @@ static bool command_option_read(const struct cmd_option_map *o,
          break;
       case CMD_OPT_FULLSCREEN:
          on   = settings->bools.video_fullscreen;
-         break;
-      case CMD_OPT_MENU:
-#ifdef HAVE_MENU
-         {
-            struct menu_state *menu_st = menu_state_get_ptr();
-            on = menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE);
-         }
-#endif
          break;
       case CMD_OPT_SHADER:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2689,10 +2718,6 @@ static const struct cmd_option_map option_map[] = {
       "The technical statistics are shown on screen." },
    { "fullscreen", "video_fullscreen", CMD_OPT_FULLSCREEN, true,
       CMD_EVENT_FULLSCREEN_TOGGLE, "The window is fullscreen." },
-#ifdef HAVE_MENU
-   { "menu", "menu_active", CMD_OPT_MENU, true, CMD_EVENT_MENU_TOGGLE,
-      "The menu is open." },
-#endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { "shader", NULL, CMD_OPT_SHADER, true, CMD_EVENT_SHADER_TOGGLE,
       "The shader preset is applied." },

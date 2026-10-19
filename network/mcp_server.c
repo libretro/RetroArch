@@ -534,7 +534,10 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
             MCP_RAW(w, ",");
          wrote = true;
          rjsonwriter_add_string(w, tr->name);
-         MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
+         if (tr->text)
+            MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
+         else
+            MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
          rjsonwriter_add_string(w, tr->desc ? tr->desc : "");
          MCP_RAW(w, "}");
       }
@@ -1037,7 +1040,7 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
       size_t j;
       size_t k;
       size_t wl = strlen(tr[i].word);
-      if (tr[i].first ? !opening : !closing)
+      if (tr[i].text || (tr[i].first ? !opening : !closing))
          continue;
       if (len < wl || strncmp(line, tr[i].word, wl))
          continue;
@@ -1202,11 +1205,16 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    const char *prev_stop = NULL;
    const char *opening  = NULL;
    const char *opening_stop = NULL;
+   /* a text field's line, per trailer, where one came */
+   const char *text_at[8];
+   const char *text_stop[8];
 
    while (rows->columns && rows->columns[ncol].name)
       ncol++;
    while (rows->trailers && rows->trailers[ntr].word)
       ntr++;
+   for (i = 0; i < 8; i++)
+      text_at[i] = text_stop[i] = NULL;
    for (i = 0; i < 3; i++)
    {
       found[i]   = -1;
@@ -1230,6 +1238,20 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       p = eol ? eol + 1 : end;
       if (stop == line)
          continue;
+      for (i = 0; i < ntr && i < 8; i++)
+      {
+         size_t wl = strlen(rows->trailers[i].word);
+         if (     rows->trailers[i].text && (size_t)(stop - line) > wl
+               && !strncmp(line, rows->trailers[i].word, wl)
+               && line[wl] == ' ')
+            break;
+      }
+      if (i < ntr && i < 8)
+      {
+         text_at[i]   = line + strlen(rows->trailers[i].word) + 1;
+         text_stop[i] = stop;
+         continue;
+      }
       if (     rows->previous && (size_t)(stop - line) > 9
             && !strncmp(line, "PREVIOUS ", 9))
       {
@@ -1312,6 +1334,17 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          rjsonwriter_raw(w, num[slot], (int)num_len[slot]);
       }
    }
+   for (i = 0; i < ntr && i < 8; i++)
+      if (text_at[i])
+      {
+         if (wrote)
+            MCP_RAW(w, ",");
+         wrote = true;
+         rjsonwriter_add_string(w, rows->trailers[i].name);
+         MCP_RAW(w, ":");
+         rjsonwriter_add_string_len(w, text_at[i],
+               (int)(text_stop[i] - text_at[i]));
+      }
    if (opening)
    {
       MCP_RAW(w, ",");

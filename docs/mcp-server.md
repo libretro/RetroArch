@@ -217,6 +217,8 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `CLOSED` | `closed: true` | `MENU` with the menu closed |
 | `SELECTED 3` | `selected: 3` | the menu entry selected |
 | `COUNT 40` | `count: 40` | the entries in the menu's list |
+| `MESSAGE Press again to quit` | `message: "Press again to quit"` | a message over the menu, on any line |
+| `KEYBOARD Username` | `keyboard: "Username"` | the menu asking for text, on any line |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -314,10 +316,19 @@ and `count` are its structured fields.
   `left` and `right` change a value, `a` confirms, `b` goes back. `left`,
   `right` and `a` take an index too, acting on that entry: `MENU a 3`
   opens Save States.
+- `type <text>` answers a keyboard: the text is entered whole and
+  confirmed, as a platform's own keyboard hands it over.
+
+What waits on the user comes as a line of its own after the title. A
+message - `MESSAGE Press again to close content...`, the confirmation
+Close Content, Reset and Quit ask for - is confirmed with `a` and
+dismissed with `b`. An entry that asks for text - a username, a search
+- answers `KEYBOARD Username`, and `type` or `b` ends it.
 
 The action runs on the menu's next frame as its own input would, and
-the answer comes once that frame has run, so a list an action opens is
-there to read. A second `MENU` while one waits replaces it, answered
+the answer comes a frame after that, so a list or a message an action
+opens is there to read. `MENU open` and `close` are the menu's switch:
+`menu` is not an option of `SET_OPTION`. A second `MENU` while one waits replaces it, answered
 with an error, and one whose menu closes first - a hotkey, another
 client - is answered `CLOSED`. `MENU` is marked destructive: its
 entries include Quit, Close Content and Delete. It is RetroArch's menu, not a game's: a game's menus are
@@ -341,7 +352,7 @@ Each option is read where its state lives rather than from the setting
 behind it, so `GET_OPTION` reports what is true now and not what was
 configured. Which options a build has depends on what it was built with,
 so `GET_OPTION` with no argument is the list: it covers what is on or off
-(pausing, fast-forward, mute, the menu, the shader, recording), what the
+(pausing, fast-forward, mute, the shader, recording), what the
 frontend is doing (the frame count, the state and replay slots, whether
 content is loading), and the configured directories. Some only report,
 and `SET_OPTION` says so for them.

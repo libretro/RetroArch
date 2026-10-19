@@ -398,23 +398,67 @@ msg, t, _ = call(287, 'MENU', {'action': 'show', 'from': 2})
 sc = msg and msg['result'].get('structuredContent') or {}
 check('show lists from an entry',
       sc.get('rows') and sc['rows'][0]['index'] == '2')
-# Entries are found by label, as a client would: Settings, Drivers,
-# then the menu driver's own list, where the one in use is checked.
-for n, want in enumerate(('Settings', 'Drivers', 'Menu')):
-    rows = sc.get('rows', [])
-    hit = [r['index'] for r in rows if r['label'] == want]
-    if not hit:
-        break
-    msg, t, _ = call(290 + n, 'MENU', {'action': 'a', 'index': int(hit[0])})
+
+
+def menu_walk(sc, labels, first_id):
+    """Presses a on each label in turn, found as a client finds it."""
+    for n, want in enumerate(labels):
+        hit = [r['index'] for r in sc.get('rows', []) if r['label'] == want]
+        if not hit:
+            return {}
+        msg, _, _ = call(first_id + n, 'MENU',
+                         {'action': 'a', 'index': int(hit[0])})
+        sc = msg and msg['result'].get('structuredContent') or {}
+    return sc
+
+
+def menu_home(first_id):
+    """Opens the menu and goes back to Main Menu: it opens where it was."""
+    msg, _, _ = call(first_id, 'MENU', {'action': 'open'})
     sc = msg and msg['result'].get('structuredContent') or {}
+    for n in range(8):
+        if sc.get('title') == 'Main Menu':
+            break
+        msg, _, _ = call(first_id + 1 + n, 'MENU', {'action': 'b'})
+        sc = msg and msg['result'].get('structuredContent') or {}
+    return sc
+
+
+# Settings, Drivers, then the menu driver's own list, where the one in
+# use is checked.
+sc = menu_walk(sc, ('Settings', 'Drivers', 'Menu'), 290)
 check('a list of choices marks the one in use: %s' % sc.get('rows'),
       {'label': 'rgui', 'value': 'checked'} in
       [dict((k, r[k]) for k in ('label', 'value')) for r in sc.get('rows', [])])
 msg, t, _ = call(288, 'MENU', {'action': 'close'})
-_, st, _ = call(289, 'GET_OPTION', {'option': 'menu'})
-check('and close closes it: ' + (st or '').strip(),
-      msg and msg['result'].get('structuredContent', {}).get('closed')
-      and st and 'off' in st)
+check('and close closes it',
+      msg and msg['result'].get('structuredContent', {}).get('closed'))
+# What waits on a second press says so, and b lets it go.
+sc = menu_walk(menu_home(310), ('Quick Menu', 'Close Content'), 294)
+check('a confirmation is a message over the list: %s' % sc.get('message'),
+      'close content' in sc.get('message', '').lower())
+msg, _, _ = call(295, 'MENU', {'action': 'b'})
+sc = msg and msg['result'].get('structuredContent') or {}
+_, st, _ = call(296, 'GET_STATUS')
+check('and b dismisses it, closing nothing: %s' % sc.get('title'),
+      'message' not in sc and st and 'CONTENTLESS' not in st)
+# An entry that asks for text opens a keyboard, which type answers.
+sc = menu_walk(menu_home(320), ('Settings', 'User', 'Username'), 298)
+check('an entry that asks for text says so: %s' % sc.get('keyboard'),
+      sc.get('keyboard') == 'Username')
+msg, t, _ = call(301, 'MENU', {'action': 'type', 'text': 'e2e player'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and type enters it',
+      'keyboard' not in sc and {'label': 'Username', 'value': 'e2e player'}
+      in [dict((k, r[k]) for k in ('label', 'value'))
+          for r in sc.get('rows', [])])
+msg, t, _ = call(302, 'MENU', {'action': 'type', 'text': 'x'})
+check('type with no keyboard open is refused: ' + (t or '').strip(),
+      msg and msg['result']['isError'] and 'no keyboard' in t)
+call(303, 'MENU', {'action': 'close'})
+# MENU open and close are the menu's switch: SET_OPTION has none.
+msg, t, _ = call(304, 'GET_OPTION', {'option': 'menu'})
+check('menu is no longer an option', msg and msg['result']['isError'])
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)

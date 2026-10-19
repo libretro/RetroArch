@@ -286,6 +286,16 @@ static bool act_readt(command_t *cmd, const char *arg)
 #define MENUS_TEXT "MENUS Main Menu\n0\tQuick Menu\t...\n1\tLoad Content\t\n" \
                    "SELECTED 1\nCOUNT 2\n"
 #define MENUC_TEXT "CLOSED\n"
+/* what waits on the user, as text anywhere in the reply */
+#define MENUD_TEXT "MENUD User\nKEYBOARD Username: any\t1 text\n" \
+                   "MESSAGE Press again to quit\n0\tUsername\t\n" \
+                   "SELECTED 0\nCOUNT 1\n"
+static bool act_menud(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUD_TEXT, sizeof(MENUD_TEXT) - 1);
+   return true;
+}
 static bool act_menus(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -382,6 +392,7 @@ static struct cmd_action_map test_actions[] = {
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
    { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
+   { "MENUD", act_menud, "No argument", "Answer as MENU does over a dialog.", 0, NULL, &cmd_rows_menu },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -925,8 +936,8 @@ int main(void)
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
        * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
-       * STEP, PREVS, PREVF, PREVE, READT, MENUS and MENUC */
-      check("only the commands that answer rows declare one", n == 23);
+       * STEP, PREVS, PREVF, PREVE, READT, MENUS, MENUC and MENUD */
+      check("only the commands that answer rows declare one", n == 24);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1245,6 +1256,14 @@ int main(void)
    check("and a closed menu says so",
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":[],\"closed\":true}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUD", NULL), out, sizeof(out), NULL);
+   check("a text line is a field on any line, a tab in it and all",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"index\":\"0\",\"label\":\"Username\",\"value\":\"\"}],"
+               "\"selected\":0,\"count\":1,"
+               "\"keyboard\":\"Username: any\\t1 text\","
+               "\"message\":\"Press again to quit\",\"title\":\"User\"}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
@@ -1253,6 +1272,8 @@ int main(void)
       check("a flag that is not a cut says what it means",
             m && strstr(m, "\"closed\":{\"type\":\"boolean\","
                   "\"description\":\"The menu is closed.\"}"));
+      check("and a text line is declared a string",
+            m && strstr(m, "\"message\":{\"type\":\"string\","));
    }
    st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
    check("a queued STEPS after a stop: its steps dropped, and the stop",
