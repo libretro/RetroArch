@@ -6,6 +6,8 @@
 #include "../../../gfx/common/videotoolbox_hevc_slots.h"
 #include "parameters.h"
 
+enum { VT_HEVC_TEST_BATCH = 8 };
+
 #ifndef VT_HEVC_NATIVE
 struct object
 {
@@ -22,6 +24,9 @@ static int sample_fail_step, sample_step, decode_mode, callbacks;
 static CMSampleBufferRef pending_sample;
 static void *pending_frame;
 static VTDecompressionSessionRef pending_session;
+static CMSampleBufferRef batch_samples[VT_HEVC_TEST_BATCH];
+static void *batch_frames[VT_HEVC_TEST_BATCH];
+static unsigned batch_count;
 static rh265_nal_t wanted_sets[3];
 
 static struct object *create(int kind, int value)
@@ -163,6 +168,15 @@ OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
       CMSampleBufferRef sample, unsigned flags, void *frame, VTDecodeInfoFlags *info)
 {
    assert(flags == kVTDecodeFrame_EnableAsynchronousDecompression);
+   if (decode_mode == 4)
+   {
+      assert(batch_count < VT_HEVC_TEST_BATCH && !pending_sample);
+      sample->refs++;
+      batch_samples[batch_count] = sample;
+      batch_frames[batch_count++] = frame;
+      if (info) *info = kVTDecodeInfo_Asynchronous;
+      return 0;
+   }
    if (decode_mode == 2) return -2006;
    if (decode_mode == 3)
    {
@@ -197,6 +211,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 
 #include "slots_test.h"
 #include "codec_test.h"
+#include "batch_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
 {
@@ -418,6 +433,7 @@ int main(void)
    test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1);
    test(hevc_main10_full, sizeof(hevc_main10_full), 10, 1);
    test_codec_submission();
+   test_codec_batch();
    puts("VideoToolbox HEVC: owned parameters and Main/Main10 session setup passed");
    return 0;
 }
