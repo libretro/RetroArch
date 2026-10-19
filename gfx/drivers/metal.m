@@ -1257,6 +1257,21 @@ done:
 }
 /* METAL_FRAME_CV_POOL_SETUP_END */
 
+#if defined(HAVE_RMP4) && defined(HAVE_THREADS) \
+      && ((defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101300) \
+         || (defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000) \
+         || (defined(__TV_OS_VERSION_MAX_ALLOWED) && __TV_OS_VERSION_MAX_ALLOWED >= 110000))
+#include "../common/metal_hevc_driver.h"
+#ifdef METAL_HEVC_DRIVER
+static bool metal_hevc_decode_enabled(void *unused)
+{
+   const settings_t *settings = config_get_ptr();
+   (void)unused;
+   return !settings || settings->uints.video_hw_decode != VIDEO_HW_DECODE_OFF;
+}
+#endif
+#endif
+
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u
 #define METAL_HDR_MODE_HDR10  1u
@@ -9200,6 +9215,10 @@ static void metal_init_mainthread(void *userdata)
 
    /* Store reference for context swap_buffers calls */
    metal_ctx_data = (__bridge void *)md;
+#ifdef METAL_HEVC_DRIVER
+   metal_hevc_start((__bridge void*)md, (__bridge void*)md.context.device,
+         md.context.frameSDRPipeline);
+#endif
 
    args->result   = RARCH_BRIDGE_RETAINED(RARCH_AUTORELEASE_R(md));
 }
@@ -9381,6 +9400,9 @@ static void metal_free(void *data)
    @autoreleasepool
    {
       __attribute__((unused)) MetalDriver *md = RARCH_BRIDGE_TRANSFER(MetalDriver *, data);
+#ifdef METAL_HEVC_DRIVER
+      metal_hevc_stop((__bridge void*)md);
+#endif
       metal_ctx_data = NULL;
       md = nil;
    }
@@ -10322,6 +10344,10 @@ static bool metal_get_device(void *data, video_device_info_t *info)
    info->get_instance_proc_addr  = NULL;
    info->queue_family           = 0;
    info->import_formats         = 0;
+#ifdef METAL_HEVC_DRIVER
+   if (metal_hevc_owns((__bridge void*)md))
+      info->import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
+#endif
    return true;
 }
 

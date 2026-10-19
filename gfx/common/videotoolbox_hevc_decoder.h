@@ -90,7 +90,7 @@ static INLINE void videotoolbox_hevc_decoder_close(rh265_hw_ops_t *ops)
  * Parsed params must come from the source query (including zeroed padding).
  * Frontend supplies a nonblocking retirement executor and a completed-image
  * Metal pool. Registration and driver lifetime are handled by the caller. */
-static INLINE bool videotoolbox_hevc_decoder_open(const rh265_video *source,
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_decoder_open(const rh265_video *source,
       const rh265_video_params_t *params, unsigned slots, metal_frame_cv_pool_t *pool,
       videotoolbox_hevc_enqueue_t enqueue, void *user, rh265_hw_ops_t *ops)
 {

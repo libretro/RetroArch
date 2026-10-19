@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EA2026102000000000000001 /* VideoToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA2026102000000000000002 /* VideoToolbox.framework */; };
 		0714E7182983A7F400E6B45B /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 0714E7172983A7F400E6B45B /* libMoltenVK.dylib */; };
 		0714E7192983A7FB00E6B45B /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 0714E7172983A7F400E6B45B /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		072DA119299B307500619B75 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072DA118299B307500619B75 /* CoreHaptics.framework */; };
@@ -113,6 +114,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EA2026102000000000000002 /* VideoToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = VideoToolbox.framework; path = System/Library/Frameworks/VideoToolbox.framework; sourceTree = SDKROOT; };
 		0714E7172983A7F400E6B45B /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = tvOS/modules/libMoltenVK.dylib; sourceTree = "<group>"; };
 		072DA118299B307500619B75 /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		073EEE04296A189800224668 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/iOS/libMoltenVK.dylib; sourceTree = "<group>"; };
@@ -393,6 +395,7 @@
 				9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */,
 				9204BE161D319EF300BD49DB /* CoreLocation.framework in Frameworks */,
 				9204BE171D319EF300BD49DB /* CoreMedia.framework in Frameworks */,
+				EA2026102000000000000001 /* VideoToolbox.framework in Frameworks */,
 				9204BE181D319EF300BD49DB /* AVFoundation.framework in Frameworks */,
 				9204BE191D319EF300BD49DB /* CoreVideo.framework in Frameworks */,
 				9204BE1A1D319EF300BD49DB /* AudioToolbox.framework in Frameworks */,
@@ -1048,6 +1051,7 @@
 				963C3C33186E3DED00A6EB1E /* GameController.framework */,
 				50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */,
 				501881ED184BB54C006F665D /* CoreMedia.framework */,
+				EA2026102000000000000002 /* VideoToolbox.framework */,
 				501881EB184BAD6D006F665D /* AVFoundation.framework */,
 				50E7189E184B88AA001956CE /* CoreVideo.framework */,
 				96366C5816C9ACF500D64A22 /* AudioToolbox.framework */,

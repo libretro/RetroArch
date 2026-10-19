@@ -9,6 +9,28 @@
 
 /* SHIPPING_METAL */
 
+static bool metal_hevc_decode_enabled(void *unused) { (void)unused; return true; }
+static void hevc_test_barrier(void *unused) { (void)unused; }
+int videotoolbox_hevc_test_start(void *owner, void *device)
+{
+   void *pipeline = metal_frame_sdr_pipeline_create(device);
+   bool started;
+   assert(!metal_hevc_start(NULL, device, pipeline));
+   assert(!metal_hevc_start(owner, NULL, pipeline));
+   assert(!metal_hevc_start(owner, device, NULL));
+   started = metal_hevc_start(owner, device, pipeline);
+   if (pipeline) CFRelease(pipeline);
+   return started;
+}
+void videotoolbox_hevc_test_stop(void *owner) { metal_hevc_stop(owner); }
+int videotoolbox_hevc_test_owns(void *owner) { return metal_hevc_owns(owner); }
+void videotoolbox_hevc_test_retired(void)
+{
+   /* Fixture-only barrier: production retirement remains asynchronous. */
+   dispatch_sync_f(metal_hevc_retirement_queue, NULL, hevc_test_barrier);
+}
+
+
 typedef struct hevc_metal_copy
 {
    void *output[2];

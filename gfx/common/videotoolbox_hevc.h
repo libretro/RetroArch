@@ -17,8 +17,16 @@
 #include <formats/rh265.h>
 #include <retro_inline.h>
 
+/* HEVC format construction requires these OS versions; older Metal drivers
+ * may include the helpers but must guard setup before calling them. */
+#if defined(__APPLE__) && defined(__clang__)
+#define VIDEOTOOLBOX_HEVC_AVAILABLE __attribute__((availability(macos,introduced=10.13), availability(ios,introduced=11.0), availability(tvos,introduced=11.0)))
+#else
+#define VIDEOTOOLBOX_HEVC_AVAILABLE
+#endif
+
 /* Setup only. The source must have retained its original parameter NALs. */
-static INLINE OSStatus videotoolbox_hevc_format_create(const rh265_video *source,
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE OSStatus videotoolbox_hevc_format_create(const rh265_video *source,
       unsigned pps_id, CMVideoFormatDescriptionRef *out)
 {
    rh265_nal_t sets[3];
@@ -40,7 +48,7 @@ static INLINE OSStatus videotoolbox_hevc_format_create(const rh265_video *source
 
 /* No frames are submitted here. Caller owns the returned session and format;
  * callback/refcon lifetime must cover every later submission and teardown. */
-static INLINE OSStatus videotoolbox_hevc_session_create(const rh265_video *source,
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE OSStatus videotoolbox_hevc_session_create(const rh265_video *source,
       unsigned pps_id, const VTDecompressionOutputCallbackRecord *callback,
       CMVideoFormatDescriptionRef *format_out, VTDecompressionSessionRef *out)
 {

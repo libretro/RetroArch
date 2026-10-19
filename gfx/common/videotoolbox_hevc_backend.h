@@ -18,7 +18,7 @@ typedef struct videotoolbox_hevc_backend
    bool sdr_only;
 } videotoolbox_hevc_backend_t;
 
-static bool videotoolbox_hevc_backend_open(void *opaque, const rh265_video *source,
+static VIDEOTOOLBOX_HEVC_AVAILABLE bool videotoolbox_hevc_backend_open(void *opaque, const rh265_video *source,
       const rh265_video_params_t *params, unsigned slots, rh265_hw_ops_t *ops)
 {
    videotoolbox_hevc_backend_t *backend = (videotoolbox_hevc_backend_t*)opaque;
@@ -64,7 +64,7 @@ static bool videotoolbox_hevc_backend_open(void *opaque, const rh265_video *sour
 
 /* Caller owns stable storage until withdrawal and setup calls finish.
  * Existing codec sessions copy their close operation and own all resources. */
-static INLINE void videotoolbox_hevc_backend_init(videotoolbox_hevc_backend_t *backend,
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE void videotoolbox_hevc_backend_init(videotoolbox_hevc_backend_t *backend,
       void *user, void *(*acquire)(void*), void (*release)(void*),
       bool (*enabled)(void*), videotoolbox_hevc_enqueue_t enqueue,
       void *enqueue_user, bool sdr_only)

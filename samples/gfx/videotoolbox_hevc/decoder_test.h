@@ -7,6 +7,11 @@ void *videotoolbox_hevc_test_device_retain(void *);
 void videotoolbox_hevc_test_device_release(void *);
 void videotoolbox_hevc_test_export(video_hw_frame_t*, unsigned, unsigned, const uint32_t*);
 
+int videotoolbox_hevc_test_start(void*, void*);
+void videotoolbox_hevc_test_stop(void*);
+int videotoolbox_hevc_test_owns(void*);
+void videotoolbox_hevc_test_retired(void);
+
 static void test_native_decoder_adapter(void)
 {
    unsigned which;
@@ -22,26 +27,20 @@ static void test_native_decoder_adapter(void)
       unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, input = 0, output = 0, i;
       rh265_video *source = rh265_video_open();
       video_hw_frame_t *frames = (video_hw_frame_t*)calloc(count, sizeof(*frames));
-      videotoolbox_hevc_registry_t registry;
-      slock_t *lock = slock_new();
       void *device = videotoolbox_hevc_test_device(NULL);
       owner_queue_t queue;
-      sthread_t *worker;
-      assert(source && frames && lock && device);
+      assert(source && frames && device);
       memset(&queue, 0, sizeof(queue));
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
       rh265_set_hw_backend(NULL); assert(!rh265_video_set_hw(source, 1));
-      assert(videotoolbox_hevc_registry_init(&registry, lock,
-               videotoolbox_hevc_test_device_retain, videotoolbox_hevc_test_device_release,
-               NULL, NULL, owner_enqueue, &queue, true));
-      assert(videotoolbox_hevc_registry_publish(&registry, &queue, device));
+      assert(videotoolbox_hevc_test_start(&queue, device));
       videotoolbox_hevc_test_device_release(device);
-      assert(videotoolbox_hevc_registry_is_owner(&registry, &queue));
+      assert(videotoolbox_hevc_test_owns(&queue));
       assert(rh265_video_set_hw(source, 1) && rh265_video_is_hw(source));
       /* Withdrawal stops new activation; the active codec owns its operations. */
-      assert(videotoolbox_hevc_registry_withdraw(&registry, &queue));
-      assert(!videotoolbox_hevc_registry_is_owner(&registry, &queue));
+      videotoolbox_hevc_test_stop(&queue);
+      assert(!videotoolbox_hevc_test_owns(&queue));
       while (input < count)
       {
          const uint8_t *packet = sequence ? sequence->packets[input].data : fixture->sample;
@@ -70,10 +69,7 @@ static void test_native_decoder_adapter(void)
       }
       assert(rh265_video_drain(source) == -1);
       rh265_video_close(source);
-      assert(queue.submitted == 1);
-      worker = sthread_create(owner_worker, &queue); assert(worker); sthread_join(worker);
-      assert(!queue.work);
-      slock_free(lock);
+      videotoolbox_hevc_test_retired();
       for (i = 0; i < count; i++)
       {
          unsigned packet = 0;
@@ -88,6 +84,7 @@ static void test_native_decoder_adapter(void)
       }
       free(frames);
    }
+   puts("Metal HEVC driver: shipping startup, withdrawal and retirement passed");
    puts("VideoToolbox native adapter: twelve registered Main/Main10 IDR/I-P/B streams passed");
 }
 #endif

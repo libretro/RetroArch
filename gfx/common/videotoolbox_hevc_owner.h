@@ -18,7 +18,7 @@ typedef struct videotoolbox_hevc_owner
    void *user;
 } videotoolbox_hevc_owner_t;
 
-static INLINE videotoolbox_hevc_owner_t *videotoolbox_hevc_owner_new(
+static INLINE VIDEOTOOLBOX_HEVC_AVAILABLE videotoolbox_hevc_owner_t *videotoolbox_hevc_owner_new(
       const rh265_video *source, unsigned pps, unsigned count,
       videotoolbox_hevc_enqueue_t enqueue, void *user, OSStatus *status)
 {

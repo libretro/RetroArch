@@ -19,9 +19,10 @@ def metal_test_source():
     text += '#include <defines/cocoa_defines.h>\n'
     text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
     text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
-    for section in ('LEASE', 'CV', 'CV_POOL', 'CV_POOL_SETUP'):
+    for section in ('LEASE', 'CV', 'CV_POOL', 'CV_POOL_SETUP', 'SDR_PIPELINE'):
         text += source.split('/* METAL_FRAME_' + section + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + section + '_END */', 1)[0]
     text = text.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / 'gfx/common/metal_frame.h').as_posix() + '"')
+    text += '#include "' + (ROOT / 'gfx/common/metal_hevc_driver.h').as_posix() + '"\n'
     text += (HERE.parent / 'metal_frame/pool_test.m').read_text(encoding='utf8')
     return (HERE / 'metal_test.m').read_text(encoding='utf8').replace('/* SHIPPING_METAL */', text)
 
@@ -109,10 +110,21 @@ def main():
                 subprocess.run(cmd, check=True)
         objects = [str(obj)]
         if args.metal:
+            # Verify startup remains legal below the shared-event OS gate.
+            probe = tmp / 'bootstrap.m'
+            probe.write_text('#include "' + (ROOT / 'gfx/common/metal_hevc_driver.h').as_posix()
+                + '"\nstatic bool metal_hevc_decode_enabled(void *p) { (void)p; return true; }\n'
+                  'int bootstrap_probe(void *o, void *d, void *p) { return metal_hevc_start(o, d, p); }\n', encoding='utf8')
+            cmd = compiler + ['-DHAVE_THREADS', '-fobjc-arc', '-fblocks', '-Wall', '-Wextra',
+                '-Werror', '-Wno-unused-function', '-Werror=unguarded-availability',
+                '-mmacosx-version-min=10.13', '-I' + str(ROOT / 'libretro-common/include'),
+                '-c', str(probe), '-o', str(tmp / 'bootstrap.o')]
+            print('+', shlex.join(cmd), flush=True)
+            subprocess.run(cmd, check=True)
             unit = tmp / 'metal.m'
             unit.write_text(metal_test_source(), encoding='utf8')
             metal_obj = tmp / 'metal.o'
-            cmd = compiler + ['-fobjc-arc', '-fblocks', '-Wall', '-Wextra', '-Werror',
+            cmd = compiler + ['-DHAVE_THREADS', '-fobjc-arc', '-fblocks', '-Wall', '-Wextra', '-Werror',
                 '-Wno-unused-function', '-Wframe-larger-than=4096', '-mmacosx-version-min=10.14',
                 '-I' + str(ROOT / 'libretro-common/include'), '-c', str(unit), '-o', str(metal_obj)]
             print('+', shlex.join(cmd), flush=True)
