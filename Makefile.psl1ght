@@ -69,7 +69,8 @@ LIBCO_OBJ = libretro-common/libco/ps3.o
 
 # memmap.o is not listed here: griffin.c includes memmap.c, so
 # building it separately as well would define every symbol twice.
-OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) griffin/griffin.o
+OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) \
+      frontend/drivers/platform_ps3_userinfo.o griffin/griffin.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
