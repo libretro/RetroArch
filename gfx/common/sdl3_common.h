@@ -73,7 +73,13 @@ typedef struct _sdl3_video
 
    SDL_Renderer *renderer;
 
-   /* Display draw geometry, grown to the largest draw */
+   /* The largest swap interval the renderer took at init. A backend
+    * that holds a frame for one refresh only would otherwise present
+    * at one while the audio rate was scaled for the whole multiple. */
+   unsigned swap_interval_cap;
+
+   /* What SDL_RenderGeometry is handed, grown to the largest batch:
+    * the display draws, and the interlaced placement's rows */
    SDL_Vertex *display_verts;
    int *display_indices;
    size_t display_verts_cap;
@@ -102,6 +108,9 @@ typedef struct _sdl3_video
       /* Each view of the frame, written straight into its own texture */
       SDL_Texture          *tex[RETRO_VIDEO_VIEWS_MAX];
       unsigned              tex_dims[RETRO_VIDEO_VIEWS_MAX];
+      /* Whether any of them is held, so a frame drawn whole knows to
+       * let them go without walking the array every time */
+      bool                  tex_held;
       SDL_Texture          *canvas;
       SDL_Texture          *ui;
       SDL_BlendMode         premultiplied;
@@ -192,7 +201,16 @@ void sdl3_show_mouse(void *data, bool state);
 
 /* Returns the active SDL_Window, whether it belongs to the sdl3
  * video driver or one of the gl/vk sdl3 context drivers. NULL when
- * SDL3 isn't driving the window. */
+ * SDL3 isn't driving the window.
+ *
+ * Under the threaded video wrapper this window was made on the video
+ * thread, while the input driver reads it from the main thread each
+ * poll - SDL asks for most window calls to be made on the main thread
+ * alone. What keeps that working is that only one of the two pumps the
+ * queue (sdl3_pump_input_events) and that the backends this driver is
+ * built for tolerate the rest; Cocoa, which does not, has the SDL3
+ * drivers left out of the build. Anything added here that touches the
+ * window from the input side is on that footing. */
 SDL_Window *sdl3_get_window(void);
 
 /* True when SDL_StartTextInput() on this device pops up a system
