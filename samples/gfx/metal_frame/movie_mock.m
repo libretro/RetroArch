@@ -1,27 +1,42 @@
-typedef NSSize CGSize;
-#define CGSizeMake NSMakeSize
-@interface FrameView : NSObject
+/* SHIPPING_FRAME_VIEW */
+
+static void test_movie_history_storage_mock(void)
 {
-@public
-   MockContext *_context;
-   BOOL _movieFrame, _srcDirty;
-   const void *_pendingSrc;
-   int _loanLast;
-   unsigned history_updates, viewport_updates;
-   CGSize _size;
-   struct { struct { struct { id<MTLTexture> view; } texture[1]; } frame; } _engine;
+   MockDevice *device = [MockDevice new];
+   @autoreleasepool
+   {
+   MockContext *context = [MockContext new];
+   FrameView *view = [FrameView new];
+   struct frame_shader shader = { 2 };
+   id<MTLTexture> first[3];
+   context->_device = device; view->_context = context;
+   view->_shader = &shader; view->init_history = YES;
+   view->_movieFrame = YES; view.size = CGSizeMake(7, 5);
+   [view _updateHistory];
+   for (unsigned i = 0; i < 3; i++)
+   {
+      first[i] = view->_engine.frame.texture[i].view;
+      assert(first[i] && first[i].pixelFormat == MTLPixelFormatRGBA8Unorm);
+      for (unsigned j = 0; j < i; j++) assert(first[i] != first[j]);
+   }
+   [view _updateHistory];
+   assert(view->_engine.frame.texture[0].view == first[2]);
+   assert(view->_engine.frame.texture[1].view == first[0]);
+   assert(view->_engine.frame.texture[2].view == first[1]);
+   view->_movieFrame = NO; view->_format = RPixelFormatBGRA8Unorm;
+   [view _ensureFront];
+   assert(view->_engine.frame.texture[0].view.pixelFormat == MTLPixelFormatBGRA8Unorm);
+   assert(view->_engine.frame.texture[1].view == first[0]);
+   view->_format = RPixelFormatBGR10A2Unorm; [view _ensureFront];
+   assert(view->_engine.frame.texture[0].view.pixelFormat == MTLPixelFormatBGR10A2Unorm);
+   view->_movieFrame = YES; view.size = CGSizeMake(9, 6); [view _updateHistory];
+   assert(view->_engine.frame.texture[0].view.pixelFormat == MTLPixelFormatRGBA8Unorm);
+   assert(view->_engine.frame.texture[0].view.width == 9 && view->_engine.frame.texture[0].view.height == 6);
+   [view release]; [context release];
+   }
+   assert(!live_textures && [device retainCount] == 1); [device release];
+   puts("Metal movie history mock: independent slots, rotation, resize and same-size CPU formats passed");
 }
-@property(nonatomic) CGSize size;
-- (void)syncViewport;
-- (void)_updateHistory;
-- (enum video_texture_update)importMovieFrame:(const video_frame_import_t*)frame;
-@end
-@implementation FrameView
-@synthesize size = _size;
-- (void)syncViewport { viewport_updates++; }
-- (void)_updateHistory { history_updates++; }
-/* SHIPPING_MOVIE */
-@end
 
 static void test_movie_import_mock(void)
 {
@@ -44,7 +59,7 @@ static void test_movie_import_mock(void)
          video_frame_import_t imported;
          context->_device = device; context->_buffer = buffer;
          context->_frameSDRPipeline = action == 4 ? NULL : pipeline;
-         view->_context = context; view->_engine.frame.texture[0].view = out;
+         view->_context = context; RARCH_STRUCT_ASSIGN(view->_engine.frame.texture[0].view, out);
          view->_pendingSrc = (const void*)1; view->_srcDirty = YES; view->_loanLast = 3;
          assert([view importMovieFrame:NULL] == VIDEO_TEXTURE_UPDATE_DONE);
          assert(view->_srcDirty && view->_pendingSrc == (const void*)1);
@@ -103,4 +118,5 @@ static void test_movie_import_mock(void)
       }
    }
    puts("Metal movie importer mock: 48 conversion, refusal, clear and retirement cases passed");
+   test_movie_history_storage_mock();
 }

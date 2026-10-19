@@ -14,6 +14,7 @@ static unsigned sdr_code(unsigned f, unsigned x, unsigned y, unsigned plane, uns
    return channel ? cr[(x * 2 + y * 3) % 5] : cb[(x + y) % 5];
 }
 /* NATIVE_IMPORT */
+/* NATIVE_FRAME_VIEW */
 static unsigned sdr_native_finish(id<MTLCommandBuffer> buffer,
       id<MTLCommandQueue> producer, id<MTLSharedEvent> __strong const *ready_events,
       id<MTLSharedEvent> __strong const *done_events, id<MTLTexture> __strong const *readbacks,
@@ -55,7 +56,7 @@ static unsigned sdr_native_finish(id<MTLCommandBuffer> buffer,
    return worst;
 }
 
-static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
+static void test_sdr_native_mode(id<MTLDevice> device, bool batch, bool movie)
 {
    const OSType formats[] = { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
       kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
@@ -72,6 +73,10 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
    id<MTLCommandBuffer> buffer = [consumer commandBuffer];
    NativeContext *context = [NativeContext new];
    MetalDriver *driver = [MetalDriver new];
+   FrameView *movie_view = [FrameView new];
+   struct frame_shader history = { 2 };
+   movie_view->_context = context; movie_view->_shader = &history;
+   movie_view->init_history = YES;
    uintptr_t handle = 0, original = 0;
    __weak id<MTLTexture> previous = nil;
    context->_device = device; context->_frameSDRPipeline = pipeline;
@@ -149,23 +154,33 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
          id<MTLTexture> readback = [device newTextureWithDescriptor:desc];
          assert(readback && buffer.retainedReferences);
          readbacks[index] = readback;
-         assert(metal_import_texture((__bridge void *)driver, &handle, &imported,
-            TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
-         if (!original) original = handle;
-         assert(original == handle);
-         Texture *texture = (__bridge Texture *)(void *)handle;
-         id<MTLTexture> output = texture.texture;
+         Texture *texture = nil;
+         id<MTLTexture> output;
+         if (movie)
+         {
+            assert([movie_view importMovieFrame:&imported] == VIDEO_TEXTURE_UPDATE_DONE);
+            output = movie_view->_engine.frame.texture[0].view;
+            if (index) assert(movie_view->_engine.frame.texture[1].view == previous);
+         }
+         else
+         {
+            assert(metal_import_texture((__bridge void *)driver, &handle, &imported,
+               TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
+            if (!original) original = handle;
+            assert(original == handle);
+            texture = (__bridge Texture *)(void *)handle; output = texture.texture;
+         }
          if (index)
          {
-            bool replaced = width != widths[index - 1] || height != heights[index - 1];
+            bool replaced = movie || width != widths[index - 1] || height != heights[index - 1];
             assert(previous && (output != previous) == replaced);
          }
          previous = output;
          assert(output.pixelFormat == MTLPixelFormatRGBA8Unorm
-            && output.storageMode == MTLStorageModePrivate
+            && (movie || output.storageMode == MTLStorageModePrivate)
             && output.width == width && output.height == height
             && (output.usage & MTLTextureUsageShaderWrite));
-         if (f == 3 && srgb) { CFRelease((CFTypeRef)(void *)handle); handle = 0; }
+         if (!movie && f == 3 && srgb) { CFRelease((CFTypeRef)(void *)handle); handle = 0; }
 
          id<MTLBlitCommandEncoder> blit = [buffer blitCommandEncoder];
          assert(blit);
@@ -188,6 +203,16 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
       }
    }
    assert(!handle);
+   if (movie)
+   {
+      id<MTLTexture> previous_front = movie_view->_engine.frame.texture[0].view;
+      assert([movie_view importMovieFrame:NULL] == VIDEO_TEXTURE_UPDATE_DONE);
+      movie_view->_format = RPixelFormatBGRA8Unorm; [movie_view _ensureFront];
+      assert(movie_view->_engine.frame.texture[0].view.pixelFormat == MTLPixelFormatBGRA8Unorm);
+      assert(movie_view->_engine.frame.texture[0].view != previous_front);
+      movie_view->_format = RPixelFormatBGR10A2Unorm; [movie_view _ensureFront];
+      assert(movie_view->_engine.frame.texture[0].view.pixelFormat == MTLPixelFormatBGR10A2Unorm);
+   }
    context->_frameSDRPipeline = NULL;
    CFRelease((CFTypeRef)pipeline);
    if (batch)
@@ -197,7 +222,9 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
          readbacks, widths, heights, 0, 8);
    }
    CFRelease(cache);
-   if (batch)
+   if (movie)
+      printf("Metal movie native: eight cropped conversions, history and same-size CPU transitions passed (%s), max error %u/255\n", batch ? "batch" : "serial", worst);
+   else if (batch)
       printf("Metal SDR batch native: eight pending leases, five replacements, two reuses and unload passed, max error %u/255\n", worst);
    else
       printf("Metal SDR importer native: eight cropped NV12/P010 conversions passed, max error %u/255\n", worst);
@@ -205,6 +232,8 @@ static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
 
 static void test_sdr_native(id<MTLDevice> device)
 {
-   test_sdr_native_mode(device, false);
-   test_sdr_native_mode(device, true);
+   test_sdr_native_mode(device, false, false);
+   test_sdr_native_mode(device, true, false);
+   test_sdr_native_mode(device, false, true);
+   test_sdr_native_mode(device, true, true);
 }
