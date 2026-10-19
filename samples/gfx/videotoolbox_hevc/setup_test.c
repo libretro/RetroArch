@@ -9,6 +9,7 @@
 #ifndef VT_HEVC_NATIVE
 struct object
 {
+   CMSampleTimingInfo timing;
    struct object *block, *format;
    uint8_t *bytes;
    size_t size;
@@ -144,15 +145,16 @@ OSStatus CMBlockBufferCopyDataBytes(CMBlockBufferRef block, size_t offset,
 }
 OSStatus CMSampleBufferCreateReady(void *allocator, CMBlockBufferRef block,
       CMVideoFormatDescriptionRef format, long count, long timings,
-      const void *timing, long sizes, const size_t *size, CMSampleBufferRef *out)
+      const CMSampleTimingInfo *timing, long sizes, const size_t *size, CMSampleBufferRef *out)
 {
-   assert(!allocator && count == 1 && !timings && !timing && sizes == 1);
+   assert(!allocator && count == 1 && timings == (timing ? 1 : 0) && sizes == 1);
    assert(*size == block->size && block->bytes);
    if (sample_failure()) return -2004;
    *out = create(6, 0); assert(*out);
    (*out)->block = block; block->refs++;
    (*out)->format = format; format->refs++;
    (*out)->size = *size;
+   if (timing) (*out)->timing = *timing;
    return sample_fail_step == 8 ? -2005 : 0;
 }
 CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef sample) { return sample->block; }
@@ -168,7 +170,8 @@ OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
       return 0;
    }
    if (decode_mode == 1)
-      session->callback(session->callback_ref, frame, 0, 0, NULL, 0, 0);
+      session->callback(session->callback_ref, frame, 0, 0, NULL,
+            sample->timing.presentationTimeStamp, sample->timing.duration);
    else
    {
       assert(!pending_sample);
@@ -286,7 +289,7 @@ static void test_samples(CMVideoFormatDescriptionRef format)
       assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(pending_sample),
                0, sizeof(actual), actual));
       assert(!memcmp(actual, expected, sizeof(actual)));
-      pending_session->callback(pending_session->callback_ref, pending_frame, 0, 0, NULL, 0, 0);
+      pending_session->callback(pending_session->callback_ref, pending_frame, 0, 0, NULL, kCMTimeInvalid, kCMTimeInvalid);
       CFRelease(pending_sample); pending_sample = NULL;
       assert(callbacks == 1 && objects == baseline);
       slices[0].data = payload; slices[1].data = payload + 7;

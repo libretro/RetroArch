@@ -13,7 +13,18 @@ typedef struct object *CMSampleBufferRef;
 typedef void *CVImageBufferRef;
 typedef struct object *CVPixelBufferRef;
 typedef unsigned VTDecodeInfoFlags;
-typedef int64_t CMTime;
+typedef struct
+{
+   int64_t value;
+   int32_t timescale;
+   uint32_t flags;
+   int64_t epoch;
+} CMTime;
+static const CMTime kCMTimeInvalid = {0, 0, 0, 0};
+typedef struct
+{
+   CMTime duration, presentationTimeStamp, decodeTimeStamp;
+} CMSampleTimingInfo;
 typedef struct { int32_t width, height; } CMVideoDimensions;
 typedef void (*VTDecompressionOutputCallback)(void*, void*, OSStatus,
       VTDecodeInfoFlags, CVImageBufferRef, CMTime, CMTime);
@@ -54,7 +65,7 @@ OSStatus CMBlockBufferAssureBlockMemory(CMBlockBufferRef);
 OSStatus CMBlockBufferReplaceDataBytes(const void*, CMBlockBufferRef, size_t, size_t);
 OSStatus CMBlockBufferCopyDataBytes(CMBlockBufferRef, size_t, size_t, void*);
 OSStatus CMSampleBufferCreateReady(void*, CMBlockBufferRef, CMVideoFormatDescriptionRef,
-      long, long, const void*, long, const size_t*, CMSampleBufferRef*);
+      long, long, const CMSampleTimingInfo*, long, const size_t*, CMSampleBufferRef*);
 CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef);
 size_t CMSampleBufferGetTotalSampleSize(CMSampleBufferRef);
 OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef, CMSampleBufferRef,

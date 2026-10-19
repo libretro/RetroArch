@@ -12,6 +12,7 @@
 typedef struct videotoolbox_hevc_slots videotoolbox_hevc_slots_t;
 typedef struct videotoolbox_hevc_slot
 {
+   CMTime pts, duration;
    videotoolbox_hevc_slots_t *context;
    CVPixelBufferRef image;
    OSStatus status;
@@ -28,6 +29,7 @@ struct videotoolbox_hevc_slots
 
 typedef struct videotoolbox_hevc_result
 {
+   CMTime pts, duration;
    CVPixelBufferRef image;
    OSStatus status;
    VTDecodeInfoFlags flags;
@@ -75,6 +77,7 @@ static INLINE videotoolbox_hevc_slot_t *videotoolbox_hevc_slots_begin(
    slot = &context->slot[index];
    if (retro_atomic_load_acquire_int(&slot->state)) return NULL;
    slot->image = NULL; slot->status = 0; slot->flags = 0;
+   slot->pts = slot->duration = kCMTimeInvalid;
    retro_atomic_fetch_add_int(&context->refs, 1);
    retro_atomic_store_release_int(&slot->state, 1);
    return slot;
@@ -94,26 +97,29 @@ static INLINE void videotoolbox_hevc_slots_output(void *ref, void *frame,
 {
    videotoolbox_hevc_slots_t *context = (videotoolbox_hevc_slots_t*)ref;
    videotoolbox_hevc_slot_t *slot = (videotoolbox_hevc_slot_t*)frame;
-   (void)pts; (void)duration;
    if (!slot || slot->context != context) return;
    slot->image = !status && image ? CVPixelBufferRetain((CVPixelBufferRef)image) : NULL;
    slot->status = status; slot->flags = flags;
+   slot->pts = pts; slot->duration = duration;
    retro_atomic_store_release_int(&slot->state, 2);
    videotoolbox_hevc_slots_release(context);
 }
 
 /* Owner thread only: 1 complete (including error/drop), 0 pending, -1 invalid.
- * A successful take transfers an owned image reference, if present. */
+ * A successful take transfers an owned image reference, if present,
+ * and copies callback timing verbatim, including invalid times. */
 static INLINE int videotoolbox_hevc_slots_take(videotoolbox_hevc_slots_t *context,
       unsigned index, videotoolbox_hevc_result_t *out)
 {
    videotoolbox_hevc_slot_t *slot;
    if (!out) return -1;
    out->image = NULL; out->status = 0; out->flags = 0;
+   out->pts = out->duration = kCMTimeInvalid;
    if (!context || index >= 32 || index >= context->count) return -1;
    slot = &context->slot[index];
    if (retro_atomic_load_acquire_int(&slot->state) != 2) return 0;
    out->image = slot->image; out->status = slot->status; out->flags = slot->flags;
+   out->pts = slot->pts; out->duration = slot->duration;
    slot->image = NULL;
    retro_atomic_store_release_int(&slot->state, 0);
    return 1;
@@ -136,10 +142,11 @@ static INLINE void videotoolbox_hevc_slots_quiesce(videotoolbox_hevc_slots_t *co
 }
 
 /* 0 accepted, 1 busy without submission, otherwise the framework error. */
-static INLINE OSStatus videotoolbox_hevc_slots_submit(
+static INLINE OSStatus videotoolbox_hevc_slots_submit_timed(
       videotoolbox_hevc_slots_t *context, unsigned index,
       VTDecompressionSessionRef session, CMVideoFormatDescriptionRef format,
       const rh265_access_unit_t *au, const rh265_nal_t *slices, unsigned capacity,
+      const CMSampleTimingInfo *timing,
       VTDecodeInfoFlags *info)
 {
    videotoolbox_hevc_slot_t *slot;
@@ -149,9 +156,19 @@ static INLINE OSStatus videotoolbox_hevc_slots_submit(
       return kCMFormatDescriptionError_InvalidParameter;
    slot = videotoolbox_hevc_slots_begin(context, index);
    if (!slot) return 1;
-   status = videotoolbox_hevc_decode(session, format, au, slices, capacity, slot, info);
+   status = videotoolbox_hevc_decode_timed(session, format, au, slices, capacity, timing, slot, info);
    if (status) videotoolbox_hevc_slots_reject(slot);
    return status;
+}
+
+static INLINE OSStatus videotoolbox_hevc_slots_submit(
+      videotoolbox_hevc_slots_t *context, unsigned index,
+      VTDecompressionSessionRef session, CMVideoFormatDescriptionRef format,
+      const rh265_access_unit_t *au, const rh265_nal_t *slices, unsigned capacity,
+      VTDecodeInfoFlags *info)
+{
+   return videotoolbox_hevc_slots_submit_timed(context, index, session, format,
+         au, slices, capacity, NULL, info);
 }
 
 #endif

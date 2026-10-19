@@ -121,6 +121,7 @@ static void test_codec_submission(void)
       rh265_nal_t slices[8];
       uint8_t *packet = (uint8_t*)malloc(fixture->sample_size);
       VTDecodeInfoFlags info;
+      CMSampleTimingInfo timing, expected;
       OSStatus status;
       assert(source && context && packet);
       assert(!rh265_video_retain_parameter_sets(source));
@@ -141,12 +142,21 @@ static void test_codec_submission(void)
             &callback, &format, &session);
       if (status) fprintf(stderr, "%s: session setup status %ld\n", fixture->name, (long)status);
       assert(!status);
-      status = videotoolbox_hevc_slots_submit(context, 0, session, format, &au, slices, 8, &info);
+      timing.presentationTimeStamp = slot_time(i, 0);
+      timing.presentationTimeStamp.value = (int64_t)i * 1001;
+      timing.presentationTimeStamp.flags = 1;
+      timing.presentationTimeStamp.epoch = 0;
+      timing.duration = slot_time(0, 1);
+      timing.decodeTimeStamp = kCMTimeInvalid;
+      expected = timing;
+      status = videotoolbox_hevc_slots_submit_timed(context, 0, session, format,
+            &au, slices, 8, &timing, &info);
       if (status) fprintf(stderr, "%s: decode admission status %ld\n", fixture->name, (long)status);
       assert(!status);
       if (info & kVTDecodeInfo_FrameDropped)
          fprintf(stderr, "%s: decode admission dropped the picture, flags %u\n", fixture->name, (unsigned)info);
       assert(!(info & kVTDecodeInfo_FrameDropped));
+      memset(&timing, 0xa5, sizeof(timing));
       videotoolbox_hevc_slots_close(context);
       memset(packet, 0xa5, fixture->sample_size); free(packet);
       rh265_video_close(source); CFRelease(format);
@@ -159,7 +169,9 @@ static void test_codec_submission(void)
          assert(!CMBlockBufferCopyDataBytes(CMSampleBufferGetDataBuffer(pending_sample),
                   0, fixture->sample_size, bytes));
          assert(!memcmp(bytes, fixture->sample, fixture->sample_size)); free(bytes);
-         session->callback(context, pending_frame, 0, 0, image, 0, 0);
+         slot_check_time(pending_sample->timing.decodeTimeStamp, expected.decodeTimeStamp);
+         session->callback(context, pending_frame, 0, 0, image,
+               pending_sample->timing.presentationTimeStamp, pending_sample->timing.duration);
          CVPixelBufferRelease(image);
          CFRelease(pending_sample); pending_sample = NULL;
       }
@@ -172,6 +184,15 @@ static void test_codec_submission(void)
          fprintf(stderr, "%s: decode callback status %ld, image %p, flags %u\n",
                fixture->name, (long)result.status, (void*)result.image, (unsigned)result.flags);
       assert(!result.status && result.image && !(result.flags & kVTDecodeInfo_FrameDropped));
+#ifdef VT_HEVC_NATIVE
+      assert(CMTIME_IS_NUMERIC(result.pts) && CMTIME_IS_NUMERIC(result.duration));
+      assert(!CMTimeCompare(result.pts, expected.presentationTimeStamp));
+      assert(!CMTimeCompare(result.duration, expected.duration));
+#else
+      slot_check_time(result.pts, expected.presentationTimeStamp);
+      slot_check_time(result.duration, expected.duration);
+#endif
+      printf("VideoToolbox codec timing: %s rational presentation and duration passed\n", fixture->name);
       VTDecompressionSessionInvalidate(session); CFRelease(session);
       videotoolbox_hevc_slots_release(context);
 #ifdef VT_HEVC_NATIVE

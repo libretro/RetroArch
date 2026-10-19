@@ -98,10 +98,12 @@ static INLINE OSStatus videotoolbox_hevc_session_create(const rh265_video *sourc
 }
 
 /* Copy a parsed access unit before borrowed packet storage may be reused.
- * One sample contains four-byte lengths and complete escaped VCL NALs. */
-static INLINE OSStatus videotoolbox_hevc_sample_create(
+ * One sample contains four-byte lengths and complete escaped VCL NALs.
+ * Optional timing is copied by Core Media. */
+static INLINE OSStatus videotoolbox_hevc_sample_create_timed(
       CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
-      const rh265_nal_t *slices, unsigned capacity, CMSampleBufferRef *out)
+      const rh265_nal_t *slices, unsigned capacity,
+      const CMSampleTimingInfo *timing, CMSampleBufferRef *out)
 {
    CMBlockBufferRef block = NULL;
    OSStatus status;
@@ -148,7 +150,7 @@ static INLINE OSStatus videotoolbox_hevc_sample_create(
    }
    if (!status)
       status = CMSampleBufferCreateReady(kCFAllocatorDefault, block, format,
-            1, 0, NULL, 1, &total, out);
+            1, timing ? 1 : 0, timing, 1, &total, out);
    if (block) CFRelease(block);
    if (status && *out)
    {
@@ -158,23 +160,39 @@ static INLINE OSStatus videotoolbox_hevc_sample_create(
    return status;
 }
 
+static INLINE OSStatus videotoolbox_hevc_sample_create(
+      CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
+      const rh265_nal_t *slices, unsigned capacity, CMSampleBufferRef *out)
+{
+   return videotoolbox_hevc_sample_create_timed(format, au, slices, capacity, NULL, out);
+}
+
 /* Callback and frame_ref must survive synchronous or delayed completion.
  * This owns compressed bytes, not the caller's callback context or slot. */
-static INLINE OSStatus videotoolbox_hevc_decode(VTDecompressionSessionRef session,
+static INLINE OSStatus videotoolbox_hevc_decode_timed(VTDecompressionSessionRef session,
       CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
-      const rh265_nal_t *slices, unsigned capacity, void *frame_ref,
+      const rh265_nal_t *slices, unsigned capacity,
+      const CMSampleTimingInfo *timing, void *frame_ref,
       VTDecodeInfoFlags *info)
 {
    CMSampleBufferRef sample = NULL;
    OSStatus status;
    if (info) *info = 0;
    if (!session) return kCMFormatDescriptionError_InvalidParameter;
-   status = videotoolbox_hevc_sample_create(format, au, slices, capacity, &sample);
+   status = videotoolbox_hevc_sample_create_timed(format, au, slices, capacity, timing, &sample);
    if (status) return status;
    status = VTDecompressionSessionDecodeFrame(session, sample,
          kVTDecodeFrame_EnableAsynchronousDecompression, frame_ref, info);
    CFRelease(sample);
    return status;
+}
+
+static INLINE OSStatus videotoolbox_hevc_decode(VTDecompressionSessionRef session,
+      CMVideoFormatDescriptionRef format, const rh265_access_unit_t *au,
+      const rh265_nal_t *slices, unsigned capacity, void *frame_ref,
+      VTDecodeInfoFlags *info)
+{
+   return videotoolbox_hevc_decode_timed(session, format, au, slices, capacity, NULL, frame_ref, info);
 }
 
 #endif
