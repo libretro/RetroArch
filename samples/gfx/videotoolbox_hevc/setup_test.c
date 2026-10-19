@@ -213,6 +213,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 #include "codec_test.h"
 #include "sequence_test.h"
 #include "batch_test.h"
+#include "owner_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
 {
@@ -456,6 +457,7 @@ int main(void)
    }
    test_codec_submission();
    test_codec_batch();
+   test_session_owner();
 #endif
    test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0, 48, parameter_session);
    test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0, 48, parameter_session);
@@ -467,6 +469,7 @@ int main(void)
 #ifndef VT_HEVC_NATIVE
    test_codec_submission();
    test_codec_batch();
+   test_session_owner();
 #endif
    puts("VideoToolbox HEVC: owned parameters and Main/Main10 session setup passed");
    return 0;
