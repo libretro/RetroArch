@@ -337,6 +337,24 @@ int main(void)
          "the buttons are not the newest report's");
    x = hidraw_hid.axis(hid, 0, AXIS_POS(0));
    CHECK(x > 30000, "the stick is not the newest report's");
+
+   /* the left stick half up and the right one fully down: up is
+    * negative, down positive, neither turned round */
+   ds3->reads = 0;
+   queue_report(ds3, 0, 128);
+   ds3->queue[ds3->queued - 1][7] = 64;
+   ds3->queue[ds3->queued - 1][9] = 255;
+   hidraw_hid.poll(hid);
+   CHECK(hidraw_hid.axis(hid, 0, AXIS_NEG(1)) < -15000
+         && !hidraw_hid.axis(hid, 0, AXIS_POS(1)),
+         "the left stick held half up does not read up");
+   CHECK(hidraw_hid.axis(hid, 0, AXIS_POS(3)) > 32000,
+         "the right stick held down does not read fully down");
+   CHECK(!hidraw_hid.axis(hid, 0, AXIS_NEG(0))
+         && hidraw_hid.axis(hid, 0, AXIS_POS(0)) < 1000,
+         "the centred left stick reads off centre");
+   queue_report(ds3, circle, 255);
+   hidraw_hid.poll(hid);
    /* pressures: axes 4 to 15, circle the eighth */
    CHECK(hidraw_hid.axis(hid, 0, AXIS_POS(7)) == ((200 << 7) | (200 >> 1)),
          "circle's pressure is not axis 7");

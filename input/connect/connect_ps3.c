@@ -235,18 +235,11 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
 {
    int pad_axis;
 
+   /* The pad's 0 is left and up, as libretro's negative is: no axis is
+    * turned round. [stick][1] is X and [stick][0] Y. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
-   {
-      unsigned axis                       = (pad_axis % 2) ? 0 : 1;
-      unsigned stick                      = pad_axis / 2;
-      int16_t interpolated                = instance->data[6 + pad_axis];
-
-      /* libretro requires "up" to be negative, so we invert the y axis */
-      interpolated                        = axis
-         ? ((interpolated - 128) *  256)
-         : ((interpolated - 128) * -256);
-      instance->analog_state[stick][axis] = interpolated;
-   }
+      instance->analog_state[pad_axis / 2][(pad_axis % 2) ? 0 : 1] =
+         (int16_t)(instance->data[6 + pad_axis] * 257 - 32768);
 }
 
 
@@ -302,12 +295,9 @@ static void ds3_packet_handler(void *device_data,
       device->led_set = true;
    }
 
-   if (size > sizeof(device->data))
-   {
-      RARCH_ERR("[Sixaxis] Expecting packet to be %ld but was %d.\n",
-            (long)sizeof(device->data), size);
+   /* the input report, whole; nothing else is the pad's state */
+   if (size < 49 || size > sizeof(device->data) || packet[0] != 0x01)
       return;
-   }
 
    memcpy(device->data, packet, size);
    ds3_update_pad_state(device);
