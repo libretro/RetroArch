@@ -2055,6 +2055,16 @@ jobs:
           echo "[pass] badge_cache_test (ASan)"
           make clean
 
+      - name: Build and run PSL1GHT rcheevos mutex tests
+        shell: bash
+        working-directory: samples/cheevos/psl1ght_mutex
+        run: |
+          make check
+          make CC=x86_64-w64-mingw32-gcc
+          test -f psl1ght_mutex_test.exe
+          make clean
+          make clean CC=x86_64-w64-mingw32-gcc
+
       - name: Build and run progress_bounds_test (ASan + UBSan)
         shell: bash
         working-directory: samples/cheevos/progress_bounds
