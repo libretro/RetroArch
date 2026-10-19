@@ -6,7 +6,7 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
-    - 'samples/gfx/metal_frame/pool_test.m'
+    - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/drivers/metal.m'
@@ -19,7 +19,7 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
-    - 'samples/gfx/metal_frame/pool_test.m'
+    - 'samples/gfx/metal_frame/**'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/drivers/metal.m'
@@ -48,3 +48,6 @@ jobs:
           exit 0
         fi
         exit "$rc"
+    - name: Metal movie import, history and GPU pixel acceptance
+      if: ${{ !cancelled() }}
+      run: python3 samples/gfx/metal_frame/run.py --native

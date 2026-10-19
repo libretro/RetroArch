@@ -7400,6 +7400,7 @@ struct metal_view_chain
 
 - (CGRect)frame { return _frame; }
 
+/* METAL_FRAME_HISTORY_BEGIN */
 - (void)_updateHistory
 {
    if (_shader)
@@ -7437,9 +7438,11 @@ struct metal_view_chain
 
    [self _ensureFront];
 }
+/* METAL_FRAME_HISTORY_END */
 
 /* The front slot at the frame's size: no history, or one of another
  * size moved there */
+/* METAL_FRAME_FRONT_BEGIN */
 - (void)_ensureFront
 {
    MTLPixelFormat wanted = _movieFrame ? MTLPixelFormatRGBA8Unorm
@@ -7460,6 +7463,7 @@ struct metal_view_chain
       [self _initTexture:&_engine.frame.texture[0] withDescriptor:td];
    }
 }
+/* METAL_FRAME_FRONT_END */
 
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle
 {
@@ -7647,36 +7651,39 @@ struct metal_view_chain
 /* METAL_MOVIE_FRAME_BEGIN */
 - (enum video_texture_update)importMovieFrame:(const video_frame_import_t *)frame
 {
-   metal_frame_sdr_params_t params;
-   RArchMetalFrameLease *lease;
-   id<MTLCommandBuffer> buffer;
-   BOOL previous_movie = _movieFrame;
-   if (!frame)
+   @autoreleasepool
    {
-      _movieFrame = NO;
+      metal_frame_sdr_params_t params;
+      RArchMetalFrameLease *lease;
+      id<MTLCommandBuffer> buffer;
+      BOOL previous_movie = _movieFrame;
+      if (!frame)
+      {
+         _movieFrame = NO;
+         return VIDEO_TEXTURE_UPDATE_DONE;
+      }
+      buffer = _context.blitCommandBuffer;
+      lease = metal_frame_validate(frame, (__bridge void*)_context.device, (__bridge void*)buffer);
+      if (!lease || !_context.frameSDRPipeline
+            || !metal_frame_sdr_params(&lease->view, &params)
+            || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      _movieFrame = YES;
+      self.size = CGSizeMake(lease->view.width, lease->view.height);
+      [self syncViewport];
+      [self _updateHistory];
+      if (!metal_frame_convert_sdr(frame, (__bridge void*)_context.device,
+               (__bridge void*)buffer, _context.frameSDRPipeline,
+               (__bridge void*)_engine.frame.texture[0].view))
+      {
+         _movieFrame = previous_movie;
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      }
+      _pendingSrc = NULL;
+      _srcDirty = NO;
+      _loanLast = -1;
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
-   buffer = _context.blitCommandBuffer;
-   lease = metal_frame_validate(frame, (__bridge void*)_context.device, (__bridge void*)buffer);
-   if (!lease || !_context.frameSDRPipeline
-         || !metal_frame_sdr_params(&lease->view, &params)
-         || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888))
-      return VIDEO_TEXTURE_UPDATE_REFUSED;
-   _movieFrame = YES;
-   self.size = CGSizeMake(lease->view.width, lease->view.height);
-   [self syncViewport];
-   [self _updateHistory];
-   if (!metal_frame_convert_sdr(frame, (__bridge void*)_context.device,
-            (__bridge void*)buffer, _context.frameSDRPipeline,
-            (__bridge void*)_engine.frame.texture[0].view))
-   {
-      _movieFrame = previous_movie;
-      return VIDEO_TEXTURE_UPDATE_REFUSED;
-   }
-   _pendingSrc = NULL;
-   _srcDirty = NO;
-   _loanLast = -1;
-   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 /* METAL_MOVIE_FRAME_END */
 
@@ -7849,6 +7856,7 @@ struct metal_view_chain
    return false;
 }
 
+/* METAL_FRAME_TEXTURE_BEGIN */
 - (void)_initTexture:(texture_t *)t withDescriptor:(MTLTextureDescriptor *)td
 {
    RARCH_STRUCT_ASSIGN(t->view, RARCH_AUTORELEASE_R([_context.device newTextureWithDescriptor:td]));
@@ -7857,6 +7865,7 @@ struct metal_view_chain
    t->size_data.z = 1.0f / td.width;
    t->size_data.w = 1.0f / td.height;
 }
+/* METAL_FRAME_TEXTURE_END */
 
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {

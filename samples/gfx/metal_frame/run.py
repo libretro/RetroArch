@@ -30,6 +30,12 @@ def main():
         if not args.mock and not args.native:
             return
         source = (ROOT / "gfx/drivers/metal.m").read_text(encoding="utf-8")
+        frame_methods = ""
+        for part in ("HISTORY", "FRONT", "TEXTURE"):
+            frame_methods += source.split("/* METAL_FRAME_" + part + "_BEGIN */", 1)[1].split("/* METAL_FRAME_" + part + "_END */", 1)[0]
+        frame_methods = frame_methods.replace('- (void)_updateHistory\n{', '- (void)_updateHistory\n{\n   history_updates++;')
+        frame_methods += source.split("/* METAL_MOVIE_FRAME_BEGIN */", 1)[1].split("/* METAL_MOVIE_FRAME_END */", 1)[0]
+        frame_view = (HERE / "frame_view_fixture.m").read_text(encoding="utf-8").replace("/* SHIPPING_FRAME_METHODS */", frame_methods)
         section = source.split("/* METAL_FRAME_LEASE_BEGIN */", 1)[1].split("/* METAL_FRAME_LEASE_END */", 1)[0]
         section = section.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / "gfx/common/metal_frame.h").as_posix() + '"')
         driver_header = (ROOT / "gfx/video_driver.h").read_text(encoding="utf-8")
@@ -57,6 +63,7 @@ def main():
         convert = convert.replace('#include "../common/metal_frame_convert.h"', '#include "' + (ROOT / "gfx/common/metal_frame_convert.h").as_posix() + '"')
         pipeline = source.split("/* METAL_FRAME_SDR_PIPELINE_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_PIPELINE_END */", 1)[0] if args.native else ""
         sdr_fixture = (HERE / ("sdr_mock.m" if args.mock else "sdr_native.m")).read_text(encoding="utf-8")
+        sdr_fixture = sdr_fixture.replace("/* NATIVE_FRAME_VIEW */", frame_view)
         text = text.replace("/* SDR_CONVERT */", sdr_fixture.replace("/* SHIPPING_SDR */", pipeline + convert))
         if args.native:
             text = text.replace("/* NATIVE_IMPORT */", native_import)
@@ -64,8 +71,7 @@ def main():
         text = text.replace("/* SHIPPING_IMPORT */", importer)
         if args.mock:
             text = text.replace("/* SDR_IMPORT_TEST */", (HERE / "sdr_import_mock.m").read_text(encoding="utf-8"))
-            movie = source.split("/* METAL_MOVIE_FRAME_BEGIN */", 1)[1].split("/* METAL_MOVIE_FRAME_END */", 1)[0]
-            text = text.replace("/* MOVIE_IMPORT_TEST */", (HERE / "movie_mock.m").read_text(encoding="utf-8").replace("/* SHIPPING_MOVIE */", movie))
+            text = text.replace("/* MOVIE_IMPORT_TEST */", (HERE / "movie_mock.m").read_text(encoding="utf-8").replace("/* SHIPPING_FRAME_VIEW */", frame_view))
         text = text.replace('#include "sdr_pixels.h"', '#include "' + (HERE / "sdr_pixels.h").as_posix() + '"')
         unit = tmp / "lease.m"
         unit.write_text(text, encoding="utf-8")
