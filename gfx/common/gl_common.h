@@ -29,8 +29,7 @@ void gl_flush(void);
 
 /* Upload memory mapped for good: GL 4.4 or ARB_buffer_storage on the
  * desktop, GLES 3.0 with EXT_buffer_storage (checked at run time).
- * Texture lending also sizes the texture it lends for (its level
- * parameters, GLES 3.1), so it stays on the desktop. */
+ * Texture lending additionally requires GLES 3.1 level queries. */
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)) \
       && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
 #define HAVE_GL_FRAME_MEM
@@ -38,6 +37,7 @@ void gl_flush(void);
 #elif defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES2) \
       && !defined(HAVE_PSGL)
 #define HAVE_GL_FRAME_MEM
+#define HAVE_GL_TEXTURE_LEND
 #endif
 
 #ifdef HAVE_GL_FRAME_MEM

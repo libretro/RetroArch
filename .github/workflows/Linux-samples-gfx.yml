@@ -226,6 +226,13 @@ jobs:
           WINEDEBUG=-all timeout 300 wine ./gl3_last_pass_fbo_test.exe
           make clean
 
+      - name: GLES texture loan capability and ownership (mingw-w64, Wine)
+        shell: bash
+        run: |
+          set -eu
+          CC=x86_64-w64-mingw32-gcc RUNNER="wine" WINEDEBUG=-all \
+             python3 samples/gfx/gles_texture_lend/run.py
+
       - name: Build and run gl2_pbo_readback_test (mingw-w64, Wine)
         shell: bash
         working-directory: samples/gfx/gl2_pbo_readback
@@ -293,7 +300,7 @@ jobs:
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
-          pkgs="$pkgs libwayland-dev"
+          pkgs="$pkgs libwayland-dev libegl-dev libgles-dev"
           pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
@@ -576,6 +583,28 @@ jobs:
           test -x vulkan_texture_size_test
           timeout 60 ./vulkan_texture_size_test
           echo "[pass] vulkan_texture_size_test"
+
+      - name: GLES persistent loan pixel oracle (Mesa EGL)
+        shell: bash
+        run: |
+          set -eu
+          T=$(mktemp -d)
+          cc -std=gnu89 -O1 -g1 -Wall -Werror=implicit-function-declaration \
+             -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL \
+             -Ilibretro-common/include -Igfx/include \
+             samples/gfx/gles_texture_lend/gpu_test.c gfx/common/gl_common.c \
+             libretro-common/glsym/glsym_es3.c libretro-common/glsym/rglgen.c \
+             -lEGL -lGLESv2 -o "$T/gles_lend"
+          EGL_PLATFORM=surfaceless LIBGL_ALWAYS_SOFTWARE=1 "$T/gles_lend"
+          rm -rf "$T"
+
+      - name: GLES texture loan capability and ownership (ASan + UBSan)
+        shell: bash
+        run: |
+          set -eu
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+             ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+             python3 samples/gfx/gles_texture_lend/run.py
 
       - name: Build and run gl2_pbo_readback_test (plain, ASan + UBSan)
         shell: bash

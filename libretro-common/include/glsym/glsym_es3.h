@@ -648,6 +648,10 @@ extern RGLSYMGLTEXTUREVIEWEXTPROC __rglgen_glTextureViewEXT;
 extern RGLSYMGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC __rglgen_glFramebufferTextureMultiviewOVR;
 extern RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC __rglgen_glFramebufferTextureMultisampleMultiviewOVR;
 
+typedef void (GL_APIENTRYP RGLSYMGLGETTEXLEVELPARAMETERIVPROC) (GLenum target, GLint level, GLenum pname, GLint *params);
+#define glGetTexLevelParameteriv __rglgen_glGetTexLevelParameteriv
+extern RGLSYMGLGETTEXLEVELPARAMETERIVPROC __rglgen_glGetTexLevelParameteriv;
+
 struct rglgen_sym_map { const char *sym; void *ptr; };
 extern const struct rglgen_sym_map rglgen_symbol_map[];
 #ifdef __cplusplus

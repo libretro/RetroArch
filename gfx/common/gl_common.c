@@ -143,6 +143,27 @@ static bool gl_buffer_storage_supported(void)
 #ifdef HAVE_GL_TEXTURE_LEND
 #define GL_LEND_SLOTS 2
 
+#ifndef GL_TEXTURE_WIDTH
+#define GL_TEXTURE_WIDTH 0x1000
+#endif
+#ifndef GL_TEXTURE_HEIGHT
+#define GL_TEXTURE_HEIGHT 0x1001
+#endif
+
+static bool gl_texture_lend_supported(void)
+{
+#ifdef HAVE_OPENGLES
+   const char *ver = (const char*)glGetString(GL_VERSION);
+   if (!glGetTexLevelParameteriv || !ver
+         || strncmp(ver, "OpenGL ES ", 10)
+         || ver[10] < '3' || ver[10] > '9'
+         || (ver[10] == '3' && (ver[11] != '.'
+               || ver[12] < '1' || ver[12] > '9')))
+      return false;
+#endif
+   return gl_buffer_storage_supported();
+}
+
 struct gl_texture_lend
 {
    GLsync   fence[GL_LEND_SLOTS];
@@ -184,10 +205,10 @@ static gl_texture_lend_t *gl_texture_lend_new(unsigned tex, size_t pitch)
    GLint w = 0, h = 0, ifmt = 0;
    size_t bpp;
    gl_texture_lend_t *st;
-   GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT
-      | GL_MAP_COHERENT_BIT;
+   GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT
+      | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 
-   if (!gl_buffer_storage_supported())
+   if (!gl_texture_lend_supported())
       return NULL;
    glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);

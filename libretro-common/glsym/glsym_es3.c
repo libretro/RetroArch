@@ -2,6 +2,7 @@
 #include <stddef.h>
 #define SYM(x) { "gl" #x, &(gl##x) }
 const struct rglgen_sym_map rglgen_symbol_map[] = {
+    SYM(GetTexLevelParameteriv),
     SYM(BlendBarrierKHR),
     SYM(DebugMessageControlKHR),
     SYM(DebugMessageInsertKHR),
@@ -411,3 +412,5 @@ RGLSYMGLTEXTURESTORAGE3DEXTPROC __rglgen_glTextureStorage3DEXT;
 RGLSYMGLTEXTUREVIEWEXTPROC __rglgen_glTextureViewEXT;
 RGLSYMGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC __rglgen_glFramebufferTextureMultiviewOVR;
 RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC __rglgen_glFramebufferTextureMultisampleMultiviewOVR;
+
+RGLSYMGLGETTEXLEVELPARAMETERIVPROC __rglgen_glGetTexLevelParameteriv;
