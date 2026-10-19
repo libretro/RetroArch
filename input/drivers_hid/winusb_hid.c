@@ -37,6 +37,7 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
+#include <features/features_cpu.h>
 
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
@@ -125,6 +126,13 @@ typedef struct winusb_device
    int read_idx;    /* the frontend's */
    retro_atomic_int_t quit;
    retro_atomic_int_t gone;
+   /* for the log when the pad goes: the reader's, read after the join */
+   unsigned reports;
+   unsigned unseen;       /* replaced before the poll took them */
+   retro_time_t gap_max;  /* longest wait between two reports */
+   retro_time_t last;
+   /* the poll's */
+   unsigned taken;
 } winusb_device_t;
 
 typedef struct winusb_hid
@@ -224,6 +232,9 @@ static void winusb_hid_reader(void *data)
    }
    events[0] = dev->quit_event;
    events[1] = ov.hEvent;
+   /* as the main, video and audio threads are: a report waiting
+    * behind them is a press or release seen late */
+   sthread_raise_current_priority();
 
    while (!retro_atomic_load_acquire_int(&dev->quit))
    {
@@ -253,9 +264,18 @@ static void winusb_hid_reader(void *data)
       }
       if (got)
       {
+         int old;
+         retro_time_t now = cpu_features_get_time_usec();
          dev->len[w]    = got;
-         dev->write_idx = retro_atomic_exchange_int(&dev->middle,
-               w | WINUSB_FRESH) & 3;
+         old            = retro_atomic_exchange_int(&dev->middle,
+               w | WINUSB_FRESH);
+         dev->write_idx = old & 3;
+         dev->reports++;
+         if (old & WINUSB_FRESH)
+            dev->unseen++;
+         if (dev->last && now - dev->last > dev->gap_max)
+            dev->gap_max = now - dev->last;
+         dev->last = now;
       }
    }
    CloseHandle(ov.hEvent);
@@ -268,6 +288,10 @@ static void winusb_hid_close(winusb_device_t *dev)
       retro_atomic_store_release_int(&dev->quit, 1);
       SetEvent(dev->quit_event);
       sthread_join(dev->reader);
+      RARCH_DBG("[WinUSB] \"%s\": %u reports, %u taken by the poll, %u replaced"
+            " before it took them; %u ms at most between two.\n",
+            dev->name, dev->reports, dev->taken, dev->unseen,
+            (unsigned)(dev->gap_max / 1000));
    }
    if (dev->usb)
       winusb_api.Free(dev->usb);
@@ -597,6 +621,7 @@ static void winusb_hid_poll(void *data)
       {
          dev->read_idx = retro_atomic_exchange_int(&dev->middle,
                dev->read_idx) & 3;
+         dev->taken++;
          pad_connection_packet(&hid->slots[dev->slot], dev->slot,
                dev->buf[dev->read_idx], (uint32_t)dev->len[dev->read_idx]);
       }
