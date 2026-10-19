@@ -1,5 +1,74 @@
 #include "../../../gfx/common/videotoolbox_hevc_decoder.h"
 
+#if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
+metal_frame_cv_pool_t *videotoolbox_hevc_test_pool(unsigned count);
+void videotoolbox_hevc_test_export(video_hw_frame_t*, unsigned, unsigned, const uint32_t*);
+
+static void test_native_decoder_adapter(void)
+{
+   unsigned which;
+   unsigned singles = sizeof(codec_cases) / sizeof(codec_cases[0]);
+   unsigned sequences = sizeof(sequence_cases) / sizeof(sequence_cases[0]);
+   unsigned reorders = sizeof(reorder_cases) / sizeof(reorder_cases[0]);
+   for (which = 0; which < singles + sequences + reorders; which++)
+   {
+      const sequence_case_t *sequence = which < singles ? NULL
+         : which < singles + sequences ? &sequence_cases[which - singles]
+         : &reorder_cases[which - singles - sequences];
+      const codec_case_t *fixture = sequence ? &sequence->picture : &codec_cases[which];
+      unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, i;
+      rh265_video *source = rh265_video_open();
+      rh265_video_params_t *params = (rh265_video_params_t*)malloc(sizeof(*params));
+      video_hw_frame_t *frames = (video_hw_frame_t*)calloc(count, sizeof(*frames));
+      metal_frame_cv_pool_t *pool = videotoolbox_hevc_test_pool(count);
+      rh265_hw_ops_t ops;
+      owner_queue_t queue;
+      sthread_t *worker;
+      assert(source && params && frames && pool);
+      memset(&queue, 0, sizeof(queue));
+      assert(!rh265_video_retain_parameter_sets(source));
+      assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
+      assert(!rh265_video_get_params(source, 0, params));
+      assert(videotoolbox_hevc_decoder_open(source, params, count, pool, owner_enqueue, &queue, &ops));
+      for (i = 0; i < count; i++)
+      {
+         rh265_hw_picture_t picture;
+         rh265_nal_t slices[8];
+         rh265_access_unit_t au;
+         int status;
+         memset(&picture, 0, sizeof(picture)); picture.slot = i;
+         if (sequence)
+            sequence_access_unit(source, sequence, sequence->packets[i].data,
+                  sequence->packets[i].size, i, slices, &au);
+         else
+            assert(!rh265_video_get_access_unit(source, fixture->sample,
+                     fixture->sample_size, 4, slices, 8, &au));
+         status = ops.decode(ops.decoder, params, &au, slices, &picture);
+         if (status) fprintf(stderr, "%s adapter picture %u: admission %d\n", fixture->name, i, status);
+         assert(!status);
+      }
+      /* No caller-side FinishDelayedFrames or framework wait before output. */
+      for (i = 0; i < count; i++)
+      {
+         int status;
+         while ((status = ops.output(ops.decoder, i, &frames[i])) == 1) sthread_yield();
+         if (status) fprintf(stderr, "%s adapter picture %u: output %d\n", fixture->name, i, status);
+         assert(!status && frames[i].image);
+      }
+      rh265_video_close(source); free(params);
+      videotoolbox_hevc_decoder_close(&ops);
+      assert(!ops.decoder && queue.submitted == 1);
+      worker = sthread_create(owner_worker, &queue); assert(worker); sthread_join(worker);
+      assert(!queue.work);
+      for (i = 0; i < count; i++)
+         videotoolbox_hevc_test_export(&frames[i], fixture->depth, fixture->full,
+               sequence ? sequence->packets[i].crc : fixture->crc);
+      free(frames);
+   }
+   puts("VideoToolbox native adapter: twelve Main/Main10 IDR/I-P/B streams passed");
+}
+#endif
+
 #if defined(VIDEOTOOLBOX_HEVC_SLOTS) && !defined(VT_HEVC_NATIVE)
 /* Export scheduling stand-in; real Metal pool ownership has its own fixture. */
 struct metal_frame_cv_pool { int busy, fail; };
@@ -112,5 +181,8 @@ static void test_decoder_adapter(void)
    }
    decode_mode = 0;
    puts("VideoToolbox adapter: eight retry, export pressure, drop and deferred close cases passed");
+#endif
+#if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
+   test_native_decoder_adapter();
 #endif
 }
