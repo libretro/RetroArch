@@ -144,12 +144,12 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
-    - name: VideoToolbox HEVC hardware session setup
+    - name: VideoToolbox HEVC hardware decode and pixel ownership
       run: |
         rc=0
         python3 samples/gfx/videotoolbox_hevc/run.py --native || rc=$?
         if [ "$rc" = 77 ]; then
-          echo "::warning::no HEVC hardware decoder; session setup check did not run"
+          echo "::warning::HEVC hardware decode unavailable; native codec check did not run"
           exit 0
         fi
         exit "$rc"
