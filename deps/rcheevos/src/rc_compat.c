@@ -323,6 +323,32 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
   RecursiveLock_Unlock(mutex);
 }
 
+#elif defined(__PSL1GHT__)
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  sys_lwmutex_attr_t attr;
+  attr.attr_protocol = SYS_LWMUTEX_PROTOCOL_PRIO;
+  attr.attr_recursive = SYS_LWMUTEX_ATTR_RECURSIVE;
+  memset(attr.name, 0, sizeof(attr.name));
+  sysLwMutexCreate(mutex, &attr);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  sysLwMutexDestroy(mutex);
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  sysLwMutexLock(mutex, 0);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  sysLwMutexUnlock(mutex);
+}
+
 #else
 
 void rc_mutex_init(rc_mutex_t* mutex)
