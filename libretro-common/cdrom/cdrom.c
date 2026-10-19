@@ -2403,52 +2403,34 @@ size_t cdrom_device_fillimagepath(char *s, size_t len, char drive)
    return 0;
 }
 
-size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char track, bool is_cue)
+size_t cdrom_device_fillpath(char *s, size_t len, char drive,
+      unsigned char track, bool is_cue)
 {
-   if (s && len > 0)
+   int _len = -1;
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+#if defined(_WIN32)
+   if (is_cue)
+      _len = snprintf(s, len, "cdrom://%c:/drive.cue", drive);
+   else
+      _len = snprintf(s, len, "cdrom://%c:/drive-track%02d.bin",
+            drive, track);
+#elif defined(__linux__) || defined(__APPLE__)
+   if (is_cue)
+      _len = snprintf(s, len, "cdrom://drive%c.cue", drive);
+   else
+      _len = snprintf(s, len, "cdrom://drive%c-track%02d.bin",
+            drive, track);
+#else
+   (void)drive;
+   (void)track;
+   (void)is_cue;
+#endif
+   if (_len < 0)
    {
-      if (is_cue)
-      {
-#ifdef _WIN32
-         size_t _len = strlcpy_lit(s, "cdrom://", len);
-         if (len > _len)
-            s[_len++] = drive;
-         _len += strlcpy_lit(s + _len, ":/drive.cue", len - _len);
-         return _len;
-#else
-#if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
-         if (len > _len + 1)
-         {
-            s[_len++] = drive;
-            s[_len]   = '\0';
-         }
-         _len += strlcpy_lit(s + _len, ".cue", len - _len);
-         return _len;
-#endif
-#endif
-      }
-      else
-      {
-#ifdef _WIN32
-         size_t _len = strlcpy_lit(s, "cdrom://", len);
-         if (len > _len + 1)
-         {
-            s[_len++] = drive;
-            s[_len]   = '\0';
-         }
-         _len += snprintf(s + _len, len - _len, ":/drive-track%02d.bin", track);
-         return _len;
-#else
-#if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
-         if (len > _len)
-            s[_len++] = drive;
-         _len += snprintf(s + _len, len - _len, "-track%02d.bin", track);
-         return _len;
-#endif
-#endif
-      }
+      s[0] = '\0';
+      return 0;
    }
-   return 0;
+   return (size_t)_len;
 }

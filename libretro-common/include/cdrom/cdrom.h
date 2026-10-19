@@ -149,6 +149,10 @@ size_t cdrom_device_filldevicepath(char *s, size_t len, char drive);
  * length excluding NUL, or zero for invalid/unsupported arguments. */
 size_t cdrom_device_fillimagepath(char *s, size_t len, char drive);
 
+/* Build a cue or track URI for a drive. Same contract as
+ * cdrom_device_fillimagepath: output is always NUL-terminated and the
+ * required length excluding NUL is returned, so a result >= len means
+ * the path was truncated. */
 size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char track, bool is_cue);
 
 RETRO_END_DECLS

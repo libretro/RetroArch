@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <boolean.h>
 #include <vfs/vfs.h>
 
 /* Forward-declare the function we're testing.  The real declaration
@@ -44,6 +45,10 @@
  * platform headers we don't want to drag in for a unit test. */
 int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       void *s, uint64_t len);
+int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence);
+size_t cdrom_device_fillpath(char *s, size_t len, char drive,
+      unsigned char track, bool is_cue);
 
 static int failures = 0;
 
@@ -164,9 +169,115 @@ static void test_cuesheet_byte_pos_wrap(void)
    free(stream.orig_path);
 }
 
+/* A refused cue seek must report failure and leave the position alone. */
+static void check_cue_seek(libretro_vfs_implementation_file *stream,
+      int64_t start, int64_t offset, int whence, int64_t want_rc,
+      int64_t want_pos, const char *what)
+{
+   int64_t rc;
+   stream->cdrom->byte_pos = start;
+   rc = retro_vfs_file_seek_cdrom(stream, offset, whence);
+   if (rc != want_rc || stream->cdrom->byte_pos != want_pos)
+   {
+      printf("[ERROR] cue seek %s: rc=%lld pos=%lld, want rc=%lld pos=%lld\n",
+            what, (long long)rc, (long long)stream->cdrom->byte_pos,
+            (long long)want_rc, (long long)want_pos);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] cue seek %s\n", what);
+}
+
+static void test_cuesheet_seek_bounds(void)
+{
+   libretro_vfs_implementation_file stream;
+   vfs_cdrom_t cdrom_state;
+   char path[]       = "test.cue";
+   char cue[]        = "FILE \"track01.bin\" BINARY\n";
+   int64_t cue_end   = (int64_t)sizeof(cue) - 1;
+
+   memset(&stream, 0, sizeof(stream));
+   memset(&cdrom_state, 0, sizeof(cdrom_state));
+   stream.cdrom          = &cdrom_state;
+   stream.orig_path      = path;
+   cdrom_state.cue_buf   = cue;
+   cdrom_state.cue_len   = sizeof(cue);
+
+   check_cue_seek(&stream, 3, 7, SEEK_SET, 0, 7, "SEEK_SET");
+   check_cue_seek(&stream, 3, 4, SEEK_CUR, 0, 7, "SEEK_CUR");
+   check_cue_seek(&stream, 3, -2, SEEK_END, 0, cue_end - 2, "SEEK_END");
+   check_cue_seek(&stream, 3, 0, 99, -1, 3, "invalid whence");
+   check_cue_seek(&stream, INT64_MAX, 1, SEEK_CUR, -1, INT64_MAX,
+         "SEEK_CUR(+1) from INT64_MAX");
+   check_cue_seek(&stream, 3, -4, SEEK_CUR, -1, 3, "SEEK_CUR before start");
+   check_cue_seek(&stream, 3, -1, SEEK_SET, -1, 3, "negative SEEK_SET");
+   check_cue_seek(&stream, 3, INT64_MAX, SEEK_END, -1, 3,
+         "SEEK_END(INT64_MAX)");
+   cdrom_state.cue_len = 0;
+   check_cue_seek(&stream, 3, 0, SEEK_END, 0, 0, "SEEK_END on empty sheet");
+}
+
+/* Each destination is allocated at its exact size so ASan sees any
+ * write past it. */
+static void check_fillpath(char drive, unsigned char track, bool is_cue)
+{
+   char full[64];
+   size_t want = cdrom_device_fillpath(full, sizeof(full), drive, track,
+         is_cue);
+   size_t len;
+
+   if (!want || want >= sizeof(full) || strlen(full) != want)
+   {
+      printf("[ERROR] fillpath: full-size build returned %u\n",
+            (unsigned)want);
+      failures++;
+      return;
+   }
+   if (cdrom_device_fillpath(full, 0, drive, track, is_cue) != 0)
+   {
+      printf("[ERROR] fillpath: zero-length destination not refused\n");
+      failures++;
+   }
+   for (len = 1; len <= want + 1; len++)
+   {
+      char *dst = (char*)malloc(len);
+      size_t rc;
+      if (!dst)
+      {
+         failures++;
+         return;
+      }
+      rc = cdrom_device_fillpath(dst, len, drive, track, is_cue);
+      if (     rc != want
+            || strlen(dst) != len - 1
+            || memcmp(dst, full, len - 1))
+      {
+         printf("[ERROR] fillpath %s len=%u: rc=%u \"%s\"\n",
+               is_cue ? "cue" : "track", (unsigned)len, (unsigned)rc, dst);
+         failures++;
+      }
+      free(dst);
+   }
+   printf("[SUCCESS] fillpath %s \"%s\" bounded at every size\n",
+         is_cue ? "cue" : "track", full);
+}
+
+static void test_fillpath_small_destinations(void)
+{
+#if defined(_WIN32)
+   const char drive = 'D';
+#else
+   const char drive = '0';
+#endif
+   check_fillpath(drive, 0, true);
+   check_fillpath(drive, 7, false);
+}
+
 int main(void)
 {
    test_cuesheet_byte_pos_wrap();
+   test_cuesheet_seek_bounds();
+   test_fillpath_small_destinations();
 
    if (failures)
    {

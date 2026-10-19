@@ -82,18 +82,26 @@ int64_t retro_vfs_file_seek_cdrom(
          && (ext[2] == 'e' || ext[2] == 'E')
          &&  ext[3] == '\0')
    {
+      int64_t base;
       switch (whence)
       {
          case SEEK_SET:
-            stream->cdrom->byte_pos = offset;
+            base = 0;
             break;
          case SEEK_CUR:
-            stream->cdrom->byte_pos += offset;
+            base = stream->cdrom->byte_pos;
             break;
          case SEEK_END:
-            stream->cdrom->byte_pos  = (stream->cdrom->cue_len - 1) + offset;
+            /* cue_len counts the buffer's terminating NUL. */
+            base = stream->cdrom->cue_len
+               ? (int64_t)stream->cdrom->cue_len - 1 : 0;
             break;
+         default:
+            return -1;
       }
+      if (offset < -base || offset > INT64_MAX - base)
+         return -1;
+      stream->cdrom->byte_pos = base + offset;
 #ifdef CDROM_DEBUG
       printf("[CDROM] Seek: Path %s Offset %" PRIu64 " is now at %" PRIu64 "\n",
             stream->orig_path,
