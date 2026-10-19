@@ -493,14 +493,6 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
       MCP_RAW(w, "}}");
    }
    wrote = rows->columns != NULL;
-   if (rows->opening)
-   {
-      if (wrote)
-         MCP_RAW(w, ",");
-      wrote = true;
-      rjsonwriter_add_string(w, rows->opening);
-      MCP_RAW(w, ":{\"type\":\"string\"}");
-   }
    if (rows->previous)
    {
       if (wrote)
@@ -508,9 +500,8 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
       wrote = true;
       MCP_RAW(w, "\"previous\":{\"type\":\"object\"");
       if (describe)
-         MCP_RAW(w, ",\"description\":\"How a queued STEPS ended that "
-               "no reply told of: stopped, waiting, replaced or error, "
-               "with stop and step.\"");
+         MCP_RAW(w, ",\"description\":\"How the queued STEPS before "
+               "it ended.\"");
       MCP_RAW(w, "}");
    }
    /* the lines that are not rows, as mcp_structured answers them */
@@ -535,10 +526,15 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
          wrote = true;
          rjsonwriter_add_string(w, tr->name);
          if (tr->text)
-            MCP_RAW(w, ":{\"type\":\"string\",\"description\":");
+            MCP_RAW(w, ":{\"type\":\"string\"");
          else
-            MCP_RAW(w, ":{\"type\":\"integer\",\"description\":");
-         rjsonwriter_add_string(w, tr->desc ? tr->desc : "");
+            MCP_RAW(w, ":{\"type\":\"integer\"");
+         /* none where the name says it all */
+         if (tr->desc)
+         {
+            MCP_RAW(w, ",\"description\":");
+            rjsonwriter_add_string(w, tr->desc);
+         }
          MCP_RAW(w, "}");
       }
    }
@@ -1069,6 +1065,30 @@ static int mcp_trailer(const struct cmd_trailer *tr, size_t n,
    return -1;
 }
 
+/* A trailer found, as fields: its flag, and the number it carried. */
+static void mcp_trailer_fields(rjsonwriter_t *w,
+      const struct cmd_trailer *tr, const char *num, size_t num_len,
+      bool *wrote)
+{
+   if (tr->flag)
+   {
+      if (*wrote)
+         MCP_RAW(w, ",");
+      *wrote = true;
+      rjsonwriter_add_string(w, tr->flag);
+      MCP_RAW(w, ":true");
+   }
+   if (tr->name && num_len)
+   {
+      if (*wrote)
+         MCP_RAW(w, ",");
+      *wrote = true;
+      rjsonwriter_add_string(w, tr->name);
+      MCP_RAW(w, ":");
+      rjsonwriter_raw(w, num, (int)num_len);
+   }
+}
+
 /* ,"previous":{...} from "PREVIOUS STOPPED 3 STOP 1 STEP 2" - each
  * word and its number, in lower case - or "PREVIOUS ERROR <why>". */
 static void mcp_structured_previous(rjsonwriter_t *w, const char *p,
@@ -1122,6 +1142,7 @@ static void mcp_structured_record(rjsonwriter_t *w,
    size_t      name_len = strlen(name);
    size_t      i        = 0;
    bool        first    = true;
+   bool        wrote;
 
    if (eol)
       end = eol;
@@ -1148,6 +1169,7 @@ static void mcp_structured_record(rjsonwriter_t *w,
       rjsonwriter_add_string_len(w, p, (int)(stop - p));
       p = stop < end ? stop + 1 : end;
    }
+   wrote = !first;
    for (p = end; p < text + len; )
    {
       const char *line = p + 1;
@@ -1162,21 +1184,8 @@ static void mcp_structured_record(rjsonwriter_t *w,
       while (rows->trailers && rows->trailers[ntr].word)
          ntr++;
       if ((t = mcp_trailer(rows->trailers, ntr, line, p, false, true,
-            &num, &num_len)) < 0)
-         continue;
-      if (rows->trailers[t].flag)
-      {
-         MCP_RAW(w, ",");
-         rjsonwriter_add_string(w, rows->trailers[t].flag);
-         MCP_RAW(w, ":true");
-      }
-      if (rows->trailers[t].name && num_len)
-      {
-         MCP_RAW(w, ",");
-         rjsonwriter_add_string(w, rows->trailers[t].name);
-         MCP_RAW(w, ":");
-         rjsonwriter_raw(w, num, (int)num_len);
-      }
+            &num, &num_len)) >= 0)
+         mcp_trailer_fields(w, &rows->trailers[t], num, num_len, &wrote);
    }
    MCP_RAW(w, "}");
 }
@@ -1206,17 +1215,15 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    bool        wrote    = false;
    const char *prev     = NULL;
    const char *prev_stop = NULL;
-   const char *opening  = NULL;
-   const char *opening_stop = NULL;
    /* a text field's line, per trailer, where one came */
-   const char *text_at[8];
-   const char *text_stop[8];
+   const char *text_at[16];
+   const char *text_stop[16];
 
    while (rows->columns && rows->columns[ncol].name)
       ncol++;
    while (rows->trailers && rows->trailers[ntr].word)
       ntr++;
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < 16; i++)
       text_at[i] = text_stop[i] = NULL;
    for (i = 0; i < 16; i++)
    {
@@ -1250,7 +1257,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       if (stop == line)
          continue;
       at++;
-      for (i = 0; i < ntr && i < 8; i++)
+      for (i = 0; i < ntr && i < 16; i++)
       {
          size_t wl = strlen(rows->trailers[i].word);
          if (     rows->trailers[i].text && (size_t)(stop - line) > wl
@@ -1258,7 +1265,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
                && line[wl] == ' ')
             break;
       }
-      if (i < ntr && i < 8)
+      if (i < ntr && i < 16)
       {
          text_at[i]   = line + strlen(rows->trailers[i].word) + 1;
          text_stop[i] = stop;
@@ -1288,14 +1295,7 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       /* the command opens a line that is not a row with its own name */
       if (     (size_t)(stop - line) > name_len
             && !strncmp(line, name, name_len) && line[name_len] == ' ')
-      {
-         if (rows->opening && line == text)
-         {
-            opening      = line + name_len + 1;
-            opening_stop = stop;
-         }
          continue;
-      }
       for (f = line; f < stop; f++)
          if (*f == '\t')
             tabs++;
@@ -1320,28 +1320,10 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    }
    /* in the order the table names them, whichever line they came on */
    for (i = 0; i < ntr && i < 16; i++)
-   {
-      if (!found[i])
-         continue;
-      if (rows->trailers[i].flag)
-      {
-         if (wrote)
-            MCP_RAW(w, ",");
-         wrote = true;
-         rjsonwriter_add_string(w, rows->trailers[i].flag);
-         MCP_RAW(w, ":true");
-      }
-      if (num_len[i] && rows->trailers[i].name)
-      {
-         if (wrote)
-            MCP_RAW(w, ",");
-         wrote = true;
-         rjsonwriter_add_string(w, rows->trailers[i].name);
-         MCP_RAW(w, ":");
-         rjsonwriter_raw(w, num[i], (int)num_len[i]);
-      }
-   }
-   for (i = 0; i < ntr && i < 8; i++)
+      if (found[i])
+         mcp_trailer_fields(w, &rows->trailers[i], num[i], num_len[i],
+               &wrote);
+   for (i = 0; i < ntr && i < 16; i++)
       if (text_at[i])
       {
          if (wrote)
@@ -1352,13 +1334,6 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          rjsonwriter_add_string_len(w, text_at[i],
                (int)(text_stop[i] - text_at[i]));
       }
-   if (opening)
-   {
-      MCP_RAW(w, ",");
-      rjsonwriter_add_string(w, rows->opening);
-      MCP_RAW(w, ":");
-      rjsonwriter_add_string_len(w, opening, (int)(opening_stop - opening));
-   }
    /* after the rows, which every reply with one has */
    if (prev)
       mcp_structured_previous(w, prev, prev_stop);

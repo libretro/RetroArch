@@ -599,9 +599,6 @@ struct cmd_rows
    /* The reply may carry a "PREVIOUS ..." line: how a queued STEPS no
     * reply has told of ended. */
    bool                      previous;
-   /* Set, the rest of the line the command opens with its own name is
-    * answered as this field: MENU's title. */
-   const char               *opening;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -1194,18 +1191,19 @@ static const struct cmd_column cmd_cols_menu[] = {
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_menu[] = {
+   { "MENU", NULL, "title", NULL, false, true },
    { "CLOSED", "closed", NULL, "The menu is closed.", true },
-   { "KEYBOARD", NULL, "keyboard", "Text asked for: type it, or b.",
+   { "KEYBOARD", NULL, "keyboard", "Asks for text: type, or b.",
       false, true },
-   { "MESSAGE", NULL, "message", "Shown over the list: a confirms, b "
-      "dismisses.", false, true },
+   { "MESSAGE", NULL, "message", "Over the list: a confirms, b dismisses.",
+      false, true },
    { "PATH", NULL, "path", "The lists above it.", false, true },
-   { "SELECTED", NULL, "selected", "The selected index." },
-   { "COUNT", NULL, "count", "Entries in the list." },
+   { "SELECTED", NULL, "selected", NULL },
+   { "COUNT", NULL, "count", NULL },
    { "MORE", "more", "next", "from for the next page." },
    { NULL }
 };
-static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL, false, "title" };
+static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL, false };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1229,14 +1227,14 @@ static const struct cmd_action_map action_map[] = {
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press buttons for some frames and let go; with until, run on until a condition holds. What INPUT holds stays held. Answers with what WATCH watches; finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run until memory meets a condition. Answers met or waiting (ask again) with the frames run, what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
    { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
-   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes under labels, so every step answers with them and needs no read after it. With none, answers what is watched and each value, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
+   { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes under labels: every step answers with them, so needs no read after. With none, answers each value, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", CMD_INFO_NO_TOOL, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", CMD_INFO_NO_TOOL, cmd_params_core_option_set },
-   { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
+   { "LIST_CORES",       command_list_cores,       "[content path]", "The installed cores: name, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
-   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, 200 at a time, and where to go on from when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "A playlist's entries, 200 at a time: index, label, content and core paths, and next where there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
@@ -1245,7 +1243,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
    { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read, &cmd_rows_read },
-   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: a region's start, length, select and disconnect are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
+   { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "The core's memory map: start, length, select and disconnect in hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
@@ -1274,7 +1272,7 @@ static const struct cmd_action_map action_map[] = {
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
    { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
-   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection. On Ozone, left moves to the tabs, up and down pick one, right returns; on XMB left and right switch tabs.", CMD_INFO_DESTRUCTIVE, cmd_params_menu, &cmd_rows_menu },
+   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection. Ozone: left reaches the tabs, up and down pick one, right returns. XMB: left and right switch tabs.", CMD_INFO_DESTRUCTIVE, cmd_params_menu, &cmd_rows_menu },
    { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 

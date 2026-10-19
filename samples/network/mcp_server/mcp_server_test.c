@@ -283,12 +283,12 @@ static bool act_readt(command_t *cmd, const char *arg)
 }
 
 /* the menu: its title opens the reply, and a closed one says so */
-#define MENUS_TEXT "MENUS Main Menu\nPATH Main Menu > Settings\n" \
+#define MENUS_TEXT "MENU Main Menu\nPATH Main Menu > Settings\n" \
                    "0\tQuick Menu\t...\n1\tLoad Content\t\n" \
                    "SELECTED 1\nCOUNT 60\nMORE 50\n"
 #define MENUC_TEXT "CLOSED\n"
 /* what waits on the user, as text anywhere in the reply */
-#define MENUD_TEXT "MENUD User\nKEYBOARD Username: any\t1 text\n" \
+#define MENUD_TEXT "MENU User\nKEYBOARD Username: any\t1 text\n" \
                    "MESSAGE Press again to quit\n0\tUsername\t\n" \
                    "SELECTED 0\nCOUNT 1\n"
 static bool act_menud(command_t *cmd, const char *arg)
@@ -1253,7 +1253,7 @@ int main(void)
                "{\"index\":\"0\",\"label\":\"Quick Menu\",\"value\":\"...\"},"
                "{\"index\":\"1\",\"label\":\"Load Content\",\"value\":\"\"}],"
                "\"selected\":1,\"count\":60,\"more\":true,\"next\":50,"
-               "\"path\":\"Main Menu > Settings\",\"title\":\"Main Menu\"}"));
+               "\"title\":\"Main Menu\",\"path\":\"Main Menu > Settings\"}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUC", NULL), out, sizeof(out), NULL);
    check("and a closed menu says so",
          st == 200 && json_valid(body_of(out))
@@ -1263,9 +1263,9 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"index\":\"0\",\"label\":\"Username\",\"value\":\"\"}],"
-               "\"selected\":0,\"count\":1,"
+               "\"selected\":0,\"count\":1,\"title\":\"User\","
                "\"keyboard\":\"Username: any\\t1 text\","
-               "\"message\":\"Press again to quit\",\"title\":\"User\"}"));
+               "\"message\":\"Press again to quit\"}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
