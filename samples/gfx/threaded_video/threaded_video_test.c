@@ -675,6 +675,12 @@ static void dplane_mark(void *data, uint64_t id, unsigned marker)
    dplane_marks++;
 }
 
+static bool dplane_focus(void *data)
+{
+   (void)data;
+   return true;
+}
+
 static void lane_driver_pacing(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -684,6 +690,8 @@ static void lane_driver_pacing(void)
    unsigned saved_bfi             = settings->uints.video_black_frame_insertion;
    enum poll_type_override_t saved_poll = runloop_st->core_poll_type_override;
    unsigned waits;
+   video_driver_t *saved_driver;
+   video_driver_t focused_driver;
 
    command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    CHECK(!menu_is_up(), "driver pacing lane: menu still up");
@@ -693,22 +701,29 @@ static void lane_driver_pacing(void)
    set_threaded_via_setting(false);
    run_frames(3);
    expect_wrapper(false, "driver pacing lane");
+   /* This lane tests pacing policy with a focused game. Desktop focus
+    * may change asynchronously while the synthetic backend runs. */
+   saved_driver         = video_st->current_video;
+   focused_driver       = *saved_driver;
+   focused_driver.focus = dplane_focus;
+   video_st->current_video = &focused_driver;
 
-   /* Asked for on a driver without a backend: reported, nothing
-    * released, the frame paced as before. */
+   /* Explicitly remove the backend: capable hardware may otherwise
+    * satisfy this request through the real driver's pacing hooks. */
+   dplane_saved_poke = video_st->poke;
+   dplane_poke       = *video_st->poke;
+   dplane_poke.driver_pacing_set  = NULL;
+   dplane_poke.driver_pacing_wait = NULL;
+   dplane_poke.driver_pacing_mark = NULL;
+   video_st->poke = &dplane_poke;
    settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_ON;
    run_frames(5);
-   CHECK(video_st->driver_pacing_reason == (real_driver()
-            ? VIDEO_DRIVER_PACING_REASON_DEVICE
-            : VIDEO_DRIVER_PACING_REASON_DRIVER)
-         || video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_SWAPCHAIN,
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_DRIVER,
          "no backend: reason %u", video_st->driver_pacing_reason);
    CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER), "no backend: paced by the driver");
    CHECK(runloop_st->driver_pacing_frame_id == 0, "no backend: a frame identity");
 
    /* A backend that answers */
-   dplane_saved_poke  = video_st->poke;
-   dplane_poke        = *video_st->poke;
    dplane_poke.driver_pacing_set  = dplane_set;
    dplane_poke.driver_pacing_wait = dplane_wait;
    dplane_poke.driver_pacing_mark = dplane_mark;
@@ -815,6 +830,7 @@ static void lane_driver_pacing(void)
          "off: taken off once (%u sets)", dplane_sets);
 
    video_st->poke = dplane_saved_poke;
+   video_st->current_video = saved_driver;
 
    /* Threaded video: never, whatever the driver offers */
    settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_ON;
