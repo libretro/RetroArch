@@ -389,32 +389,55 @@ struct vulkan_emulated_mailbox
    bool has_pending_request;
 };
 
-/* VK_NV_low_latency2 (NVIDIA Reflex) on the native swapchain. The
- * mode is a property of one swapchain: a replacement starts from
- * nothing, and @swapchain records which one the mode was set on so a
- * sleep or a marker never names an obsolete one. Every sleep signals
- * @semaphore, a timeline semaphore of the device, to the next value
- * of @sleep_value; the frame it releases is numbered by @frame_id.
- * @stage says how far the released frame's markers have gone: 0 the
- * sleep returned, 1 its render submission began, 2 it was presented.
- * @failed latches on a backend error or a sleep the driver never
- * signalled, until the device goes; the semaphore is then left to it. */
+/* VK_NV_low_latency2 (NVIDIA Reflex) on the native swapchain, behind
+ * the driver_pacing_* pokes. The mode is a property of one swapchain:
+ * a replacement starts from nothing, and @swapchain records which one
+ * the mode was set on so a sleep or a marker never names an obsolete
+ * one. Each content frame's present is followed by one sleep that
+ * signals @semaphore, a timeline semaphore of the device, to the
+ * frame's identity; the frame loop waits for the identity of the frame
+ * it last handed over. @frame_id is the identity the presenter is on
+ * and @stage how far its markers have gone: 1 its render submission
+ * began, 2 it was presented (any present after that is out of band:
+ * a repeat, a dark frame, a sub-frame, the same frame again).
+ *
+ * The presenter's thread owns everything above; under the threaded
+ * wrapper the frame loop is another thread, and what crosses is
+ * lock-free: @want and @answer carry the mode request and the answer
+ * the presenter gave it; @pub_gen and @pub_table publish the swapchain
+ * the mode is on for the frame loop's own markers, written only while
+ * that thread is seen out of a call (@in_call), and @retired keeps a
+ * replaced swapchain alive until it is (vulkan_low_latency_mark_main). @failed latches
+ * on a backend error, or on sleeps the driver stopped signalling,
+ * until the mode is asked for again; the semaphore is then left to the
+ * device. */
 typedef struct vulkan_low_latency
 {
-   uint64_t sleep_value;
    uint64_t frame_id;
+   uint64_t sleep_value;
    VkSemaphore semaphore;        /* 64-bit handle */
    VkSwapchainKHR swapchain;     /* 64-bit handle */
+   VkSwapchainKHR pub_table[2];
+   VkSwapchainKHR pub_pending;
+   VkSwapchainKHR retired[4];
    PFN_vkVoidFunction set_sleep_mode;
    PFN_vkVoidFunction sleep;
    PFN_vkVoidFunction set_marker;
    PFN_vkVoidFunction wait_semaphores;
+   retro_atomic_size_t pub_gen;
+   retro_atomic_int_t want;
+   retro_atomic_int_t answer;
+   retro_atomic_int_t in_call;
+   retro_atomic_int_t stalled;   /* the frame loop gave up waiting */
    uint32_t min_interval_us;
    uint32_t spec_version;
+   unsigned num_retired;
+   unsigned timeouts;
    uint8_t mode;        /* enum video_driver_pacing_mode set on @swapchain */
    uint8_t stage;
    bool supported;
    bool failed;
+   bool publish_pending;
 } vulkan_low_latency_t;
 
 typedef struct gfx_ctx_vulkan_data
@@ -607,17 +630,31 @@ unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned dims, int8_t swap_interval);
 
-/* The low-latency release, behind the video driver's driver_pacing_* pokes
- * (gfx/video_driver.h says what each does and answers). All on the
- * thread that owns the swapchain. */
+/* The low-latency release, behind the video driver's driver_pacing_*
+ * pokes (gfx/video_driver.h says what each does and answers). The
+ * three below are the frame loop's, safe from a thread other than the
+ * presenter's; the rest run on the presenter's thread. */
 unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode);
-uint64_t vulkan_low_latency_sleep(gfx_ctx_vulkan_data_t *vk,
-      unsigned min_interval_us, unsigned max_wait_us);
-void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
+bool vulkan_low_latency_wait(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned max_wait_us);
+void vulkan_low_latency_mark_main(gfx_ctx_vulkan_data_t *vk,
       uint64_t frame_id, unsigned marker);
-/* The released frame's render submission begins: the driver's frame
- * says so once, at its first Vulkan call. */
-void vulkan_low_latency_render_begin(gfx_ctx_vulkan_data_t *vk);
+/* The driver's frame begins, with the frame's identity and interval
+ * from its info: applies a mode the frame loop asked for, takes the
+ * identity, and says the frame's simulation ended and its render
+ * submission began, once per identity. */
+void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned min_interval_us);
+/* Around every present of the swapchain: the released frame's own
+ * present gets its markers and the sleep that follows; any other is
+ * marked out of band on the same identity. */
+void vulkan_low_latency_present_begin(gfx_ctx_vulkan_data_t *vk);
+void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk);
+/* A swapchain goes: destroyed now, or once the frame loop is seen out
+ * of a marker call that may name it. Every swapchain destroy of the
+ * context goes through here. */
+void vulkan_low_latency_retire(gfx_ctx_vulkan_data_t *vk,
+      VkSwapchainKHR swapchain);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

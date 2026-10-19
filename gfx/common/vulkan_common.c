@@ -1069,6 +1069,8 @@ static void vulkan_low_latency_note_exts(gfx_ctx_vulkan_data_t *vk,
       const char * const *exts, unsigned count);
 static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk);
 static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk);
+static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned marker);
 
 static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
 {
@@ -2513,11 +2515,9 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
        * a rebuild after an out-of-date acquire, or a resize, does
        * not, and a threaded hardware core's work goes on. */
       vulkan_context_wait_frames(vk);
-      vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
+      vulkan_low_latency_retire(vk, vk->swapchain);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
-      vk->low_latency.swapchain          = VK_NULL_HANDLE;
-      vk->low_latency.mode               = 0;
       vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
    }
 
@@ -3906,8 +3906,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       if (vk->dxgi_presenter)
          vulkan_destroy_swapchain(vk);
 #endif
-      if (vk->swapchain != VK_NULL_HANDLE)
-         vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
+      vulkan_low_latency_retire(vk, vk->swapchain);
       vk->swapchain                    = VK_NULL_HANDLE;
       vk->context.swapchain_dims       = dims;
       vk->context.num_swapchain_images = 1;
@@ -4102,8 +4101,7 @@ dxgi_unavailable:
     */
 #ifdef __APPLE__
    info.oldSwapchain           = NULL;
-   if (old_swapchain != VK_NULL_HANDLE)
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+   vulkan_low_latency_retire(vk, old_swapchain);
    old_swapchain               = VK_NULL_HANDLE;
 #else
    info.oldSwapchain           = old_swapchain;
@@ -4142,7 +4140,7 @@ dxgi_unavailable:
       {
          RARCH_WARN("[Vulkan] Swapchain replacement failed (err = %d); "
                "retrying without oldSwapchain.\n", (int)res);
-         vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+         vulkan_low_latency_retire(vk, old_swapchain);
          old_swapchain     = VK_NULL_HANDLE;
          info.oldSwapchain = VK_NULL_HANDLE;
          vk->swapchain     = VK_NULL_HANDLE;
@@ -4159,8 +4157,7 @@ dxgi_unavailable:
           * zero-extent path uses, so the acquire path retries the
           * create on a later frame instead of presenting to a retired
           * or undefined handle. */
-         if (old_swapchain != VK_NULL_HANDLE)
-            vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+         vulkan_low_latency_retire(vk, old_swapchain);
          vk->swapchain                    = VK_NULL_HANDLE;
          vk->context.num_swapchain_images = 1;
          memset(vk->context.swapchain_images, 0,
@@ -4194,14 +4191,12 @@ dxgi_unavailable:
 
    /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
 #ifndef __APPLE__
-   if (old_swapchain != VK_NULL_HANDLE)
-      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+   vulkan_low_latency_retire(vk, old_swapchain);
 #endif
 
    /* A new swapchain, in no mode yet; the handle may be a reused one */
    vk->low_latency.swapchain          = VK_NULL_HANDLE;
    vk->low_latency.mode               = 0;
-   vk->low_latency.stage              = 0;
 
    vk->context.swapchain_dims         = VIDEO_SCALE_PACK(swapchain_size.width,
          swapchain_size.height);
@@ -4872,9 +4867,20 @@ static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk)
    ll->frame_id        = 0;
    ll->min_interval_us = 0;
    ll->spec_version    = 0;
+   ll->num_retired     = 0;
+   ll->timeouts        = 0;
    ll->mode            = 0;
    ll->stage           = 0;
    ll->failed          = false;
+   ll->pub_table[0]    = VK_NULL_HANDLE;
+   ll->pub_table[1]    = VK_NULL_HANDLE;
+   ll->pub_pending     = VK_NULL_HANDLE;
+   ll->publish_pending = false;
+   retro_atomic_store_release_size(&ll->pub_gen, 0);
+   retro_atomic_store_release_int(&ll->want, 0);
+   retro_atomic_store_release_int(&ll->answer, VIDEO_DRIVER_PACING_REASON_OFF);
+   retro_atomic_store_release_int(&ll->in_call, 0);
+   retro_atomic_store_release_int(&ll->stalled, 0);
 
    if (!ll->supported)
       return;
@@ -4946,6 +4952,12 @@ static void vulkan_low_latency_device_init(gfx_ctx_vulkan_data_t *vk)
 static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
+   unsigned i;
+   /* The device is idle and the frame loop is this thread: whatever
+    * was kept for a marker in flight can go. */
+   for (i = 0; i < ll->num_retired; i++)
+      vkDestroySwapchainKHR(vk->context.device, ll->retired[i], NULL);
+   ll->num_retired = 0;
    /* A sleep the driver never signalled may still signal: its
     * semaphore is left to the device. */
    if (ll->semaphore != VK_NULL_HANDLE && !ll->failed)
@@ -4954,6 +4966,93 @@ static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
    ll->supported = false;
    ll->swapchain = VK_NULL_HANDLE;
    ll->mode      = 0;
+}
+
+/* Whether the frame loop is outside a marker call now, in the sense
+ * that matters: its store to in_call is fenced before its read of
+ * pub_gen, and the presenter's last publication fenced before this
+ * read, so a 0 here means any call it enters from now on reads the
+ * current publication. */
+static bool vulkan_low_latency_reader_out(vulkan_low_latency_t *ll)
+{
+   retro_atomic_thread_fence_seq_cst();
+   return retro_atomic_load_acquire_int(&ll->in_call) == 0;
+}
+
+/* The swapchain the frame loop's markers may name: the one the mode is
+ * on, or none. Two slots under a generation; a slot is rewritten only
+ * while the frame loop is out, so no call reads a slot being written,
+ * and a publication that finds it in a call waits for the next frame
+ * (the old swapchain stays alive meanwhile, see retire). */
+static void vulkan_low_latency_publish_tick(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   size_t gen;
+   if (!ll->publish_pending)
+      return;
+   if (!vulkan_low_latency_reader_out(ll))
+      return;
+   gen                    = retro_atomic_load_relaxed_size(&ll->pub_gen) + 1;
+   ll->pub_table[gen & 1] = ll->pub_pending;
+   retro_atomic_store_release_size(&ll->pub_gen, gen);
+   ll->publish_pending    = false;
+}
+
+static void vulkan_low_latency_publish(gfx_ctx_vulkan_data_t *vk,
+      VkSwapchainKHR swapchain)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   ll->pub_pending     = swapchain;
+   ll->publish_pending = true;
+   vulkan_low_latency_publish_tick(vk);
+}
+
+/* Retired swapchains go once nothing pending points at them and the
+ * frame loop is out of any call that could. */
+static void vulkan_low_latency_retire_tick(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   unsigned i;
+   vulkan_low_latency_publish_tick(vk);
+   if (!ll->num_retired || ll->publish_pending)
+      return;
+   if (!vulkan_low_latency_reader_out(ll))
+      return;
+   for (i = 0; i < ll->num_retired; i++)
+      vkDestroySwapchainKHR(vk->context.device, ll->retired[i], NULL);
+   ll->num_retired = 0;
+}
+
+/* A swapchain goes: destroyed now unless the frame loop may be inside
+ * a marker call with it, then kept until it is seen outside one. */
+void vulkan_low_latency_retire(gfx_ctx_vulkan_data_t *vk,
+      VkSwapchainKHR swapchain)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   if (swapchain == VK_NULL_HANDLE)
+      return;
+   if (ll->swapchain == swapchain)
+   {
+      ll->swapchain = VK_NULL_HANDLE;
+      ll->mode      = 0;
+      vulkan_low_latency_publish(vk, VK_NULL_HANDLE);
+   }
+   if (!ll->supported)
+   {
+      vkDestroySwapchainKHR(vk->context.device, swapchain, NULL);
+      return;
+   }
+   if (ll->num_retired == ARRAY_SIZE(ll->retired))
+   {
+      /* Four replacements inside one marker call: the oldest has been
+       * out of reach for all of them. */
+      vkDestroySwapchainKHR(vk->context.device, ll->retired[0], NULL);
+      memmove(ll->retired, ll->retired + 1,
+            (ll->num_retired - 1) * sizeof(ll->retired[0]));
+      ll->num_retired--;
+   }
+   ll->retired[ll->num_retired++] = swapchain;
+   vulkan_low_latency_retire_tick(vk);
 }
 
 /* Puts the mode on the current swapchain, or takes it off. */
@@ -4976,21 +5075,24 @@ static bool vulkan_low_latency_apply(gfx_ctx_vulkan_data_t *vk,
       ll->failed    = true;
       ll->mode      = 0;
       ll->swapchain = VK_NULL_HANDLE;
+      vulkan_low_latency_publish(vk, VK_NULL_HANDLE);
       return false;
    }
+   if ((mode != 0) != (ll->mode != 0))
+      vulkan_low_latency_publish(vk, mode ? vk->swapchain : VK_NULL_HANDLE);
    ll->mode            = (uint8_t)mode;
    ll->min_interval_us = min_interval_us;
    ll->swapchain       = mode ? vk->swapchain : VK_NULL_HANDLE;
    return true;
 }
 
-unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode)
+/* The presenter's side of a mode request. */
+static unsigned vulkan_low_latency_apply_want(gfx_ctx_vulkan_data_t *vk,
+      unsigned mode)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
    if (!ll->supported)
       return VIDEO_DRIVER_PACING_REASON_DEVICE;
-   if (ll->failed)
-      return VIDEO_DRIVER_PACING_REASON_FAILED;
    /* A replaced swapchain took the mode with it; what is set is
     * what is set on this one. */
    if (ll->swapchain != vk->swapchain)
@@ -5002,7 +5104,17 @@ unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode)
    {
       if (ll->mode && !vulkan_low_latency_apply(vk, 0, 0))
          return VIDEO_DRIVER_PACING_REASON_FAILED;
+      /* Asked for again is the way back from a failure */
+      ll->failed = false;
+      retro_atomic_store_release_int(&ll->stalled, 0);
       return VIDEO_DRIVER_PACING_REASON_OFF;
+   }
+   if (ll->failed || retro_atomic_load_acquire_int(&ll->stalled))
+   {
+      /* Nothing more is slept on a semaphore the driver still owes */
+      if (ll->mode)
+         vulkan_low_latency_apply(vk, 0, 0);
+      return VIDEO_DRIVER_PACING_REASON_FAILED;
    }
    if (vk->swapchain == VK_NULL_HANDLE || vk->context.swapchain_external)
       return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
@@ -5018,53 +5130,151 @@ unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode)
    return VIDEO_DRIVER_PACING_REASON_NONE;
 }
 
-uint64_t vulkan_low_latency_sleep(gfx_ctx_vulkan_data_t *vk,
-      unsigned min_interval_us, unsigned max_wait_us)
+unsigned vulkan_low_latency_set(gfx_ctx_vulkan_data_t *vk, unsigned mode)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   unsigned answer;
+   /* The presenter's thread is another one: the request is left for
+    * it, and the answer is the one it last gave. A request it has not
+    * seen yet reads as pending, never as in effect. */
+   if (video_driver_thread_wrapper_active())
+   {
+      if ((unsigned)retro_atomic_load_relaxed_int(&ll->want) != mode)
+      {
+         retro_atomic_store_release_int(&ll->want, (int)mode);
+         return mode ? VIDEO_DRIVER_PACING_REASON_PENDING
+                     : VIDEO_DRIVER_PACING_REASON_OFF;
+      }
+      answer = (unsigned)retro_atomic_load_acquire_int(&ll->answer);
+      if (mode && answer == VIDEO_DRIVER_PACING_REASON_OFF)
+         return VIDEO_DRIVER_PACING_REASON_PENDING;
+      return answer;
+   }
+   retro_atomic_store_relaxed_int(&ll->want, (int)mode);
+   answer = vulkan_low_latency_apply_want(vk, mode);
+   retro_atomic_store_relaxed_int(&ll->answer, (int)answer);
+   return answer;
+}
+
+void vulkan_low_latency_frame_begin(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned min_interval_us)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   /* A request from the frame loop's thread, answered here */
+   if (video_driver_thread_wrapper_active())
+   {
+      unsigned want = (unsigned)retro_atomic_load_acquire_int(&ll->want);
+      retro_atomic_store_release_int(&ll->answer,
+            (int)vulkan_low_latency_apply_want(vk, want));
+   }
+   if (!ll->supported)
+      return;
+   vulkan_low_latency_retire_tick(vk);
+   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain)
+      return;
+   if (!frame_id || frame_id == ll->frame_id)
+      return;
+   if (     min_interval_us != ll->min_interval_us
+         && !vulkan_low_latency_apply(vk, ll->mode, min_interval_us))
+      return;
+   ll->frame_id = frame_id;
+   ll->stage    = 1;
+   vulkan_low_latency_marker(vk, frame_id, VK_LATENCY_MARKER_SIMULATION_END_NV);
+   vulkan_low_latency_marker(vk, frame_id, VK_LATENCY_MARKER_RENDERSUBMIT_START_NV);
+}
+
+void vulkan_low_latency_present_begin(gfx_ctx_vulkan_data_t *vk)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain || !ll->frame_id)
+      return;
+   if (ll->stage == 1)
+   {
+      vulkan_low_latency_marker(vk, ll->frame_id, VK_LATENCY_MARKER_RENDERSUBMIT_END_NV);
+      vulkan_low_latency_marker(vk, ll->frame_id, VK_LATENCY_MARKER_PRESENT_START_NV);
+   }
+   else if (ll->stage == 2)
+      vulkan_low_latency_marker(vk, ll->frame_id,
+            VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_START_NV);
+}
+
+void vulkan_low_latency_present_end(gfx_ctx_vulkan_data_t *vk)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
    VkLatencySleepInfoNV sleep_info;
-   VkSemaphoreWaitInfo wait_info;
-   VkResult res;
-   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain)
-      return 0;
-   if (     min_interval_us != ll->min_interval_us
-         && !vulkan_low_latency_apply(vk, ll->mode, min_interval_us))
-      return 0;
-
+   if (!ll->mode || ll->failed || ll->swapchain != vk->swapchain || !ll->frame_id)
+      return;
+   if (ll->stage == 2)
+   {
+      vulkan_low_latency_marker(vk, ll->frame_id,
+            VK_LATENCY_MARKER_OUT_OF_BAND_PRESENT_END_NV);
+      return;
+   }
+   if (ll->stage != 1)
+      return;
+   ll->stage = 2;
+   vulkan_low_latency_marker(vk, ll->frame_id, VK_LATENCY_MARKER_PRESENT_END_NV);
+   /* The one sleep between this present and the next: it signals the
+    * frame's identity when the next frame may start, which is what
+    * the frame loop waits for. */
+   if (ll->frame_id <= ll->sleep_value)
+      return;
    sleep_info.sType           = VK_STRUCTURE_TYPE_LATENCY_SLEEP_INFO_NV;
    sleep_info.pNext           = NULL;
    sleep_info.signalSemaphore = ll->semaphore;
-   sleep_info.value           = ++ll->sleep_value;
-   res = ((PFN_vkLatencySleepNV)ll->sleep)(vk->context.device,
-         vk->swapchain, &sleep_info);
-   if (res != VK_SUCCESS)
+   sleep_info.value           = ll->frame_id;
+   if (((PFN_vkLatencySleepNV)ll->sleep)(vk->context.device,
+            vk->swapchain, &sleep_info) != VK_SUCCESS)
    {
       ll->failed = true;
-      return 0;
+      retro_atomic_store_release_int(&ll->answer, VIDEO_DRIVER_PACING_REASON_FAILED);
+      return;
    }
+   ll->sleep_value = ll->frame_id;
+}
 
-   /* The hold: the driver signals when the frame should start. A
-    * signal that does not come within the bound is a driver that has
-    * stopped pacing - a lost device, a sleeping display - and this
-    * thread is not held for it again; the runloop paces as before. */
+bool vulkan_low_latency_wait(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned max_wait_us)
+{
+   vulkan_low_latency_t *ll = &vk->low_latency;
+   VkSemaphoreWaitInfo wait_info;
+   VkResult res;
+   if (!ll->supported || ll->semaphore == VK_NULL_HANDLE)
+      return false;
+   if (retro_atomic_load_acquire_int(&ll->answer) != VIDEO_DRIVER_PACING_REASON_NONE)
+      return false;
+   if (!frame_id)
+      return true;
+   /* The hold: the driver signals when the next frame should start.
+    * A signal that does not come within the bound is a driver that has
+    * stopped pacing - a lost device, a sleeping display - or a frame
+    * that never reached a present; a few in a row and this thread is
+    * not held for it again until the mode is asked for anew. */
    wait_info.sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
    wait_info.pNext          = NULL;
    wait_info.flags          = 0;
    wait_info.semaphoreCount = 1;
    wait_info.pSemaphores    = &ll->semaphore;
-   wait_info.pValues        = &sleep_info.value;
+   wait_info.pValues        = &frame_id;
    res = ((PFN_vkWaitSemaphores)ll->wait_semaphores)(vk->context.device,
          &wait_info, (uint64_t)max_wait_us * 1000);
-   if (res != VK_SUCCESS)
+   if (res == VK_SUCCESS)
    {
-      ll->failed = true;
-      return 0;
+      ll->timeouts = 0;
+      return true;
    }
-   ll->stage = 0;
-   return ++ll->frame_id;
+   /* The presenter's thread reads stalled where it answers the mode
+    * request; this thread owns nothing else here. */
+   if (res != VK_TIMEOUT || ++ll->timeouts >= 4)
+   {
+      ll->timeouts = 0;
+      retro_atomic_store_release_int(&ll->stalled, 1);
+      retro_atomic_store_release_int(&ll->answer, VIDEO_DRIVER_PACING_REASON_FAILED);
+   }
+   return false;
 }
 
-void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
+static void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
       uint64_t frame_id, unsigned marker)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
@@ -5079,21 +5289,32 @@ void vulkan_low_latency_marker(gfx_ctx_vulkan_data_t *vk,
          vk->swapchain, &info);
 }
 
-/* The render and present markers of the released frame, each once:
- * a second present of the same frame (a core that presents twice, a
- * repeat) is a new application-rendered frame to the driver, which
- * is what the attribution rules make of a present after the frame's
- * PRESENT_START has been mapped. */
-void vulkan_low_latency_render_begin(gfx_ctx_vulkan_data_t *vk)
+void vulkan_low_latency_mark_main(gfx_ctx_vulkan_data_t *vk,
+      uint64_t frame_id, unsigned marker)
 {
    vulkan_low_latency_t *ll = &vk->low_latency;
-   if (ll->stage != 0)
+   VkSetLatencyMarkerInfoNV info;
+   VkSwapchainKHR swapchain;
+   size_t gen;
+   if (!ll->supported || !frame_id)
       return;
-   ll->stage = 1;
-   vulkan_low_latency_marker(vk, ll->frame_id,
-         VK_LATENCY_MARKER_SIMULATION_END_NV);
-   vulkan_low_latency_marker(vk, ll->frame_id,
-         VK_LATENCY_MARKER_RENDERSUBMIT_START_NV);
+   /* in_call before pub_gen, a full fence between, against the
+    * presenter's publish, fence, read of in_call: see
+    * vulkan_low_latency_reader_out */
+   retro_atomic_store_release_int(&ll->in_call, 1);
+   retro_atomic_thread_fence_seq_cst();
+   gen       = retro_atomic_load_acquire_size(&ll->pub_gen);
+   swapchain = ll->pub_table[gen & 1];
+   if (swapchain != VK_NULL_HANDLE)
+   {
+      info.sType     = VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV;
+      info.pNext     = NULL;
+      info.presentID = frame_id;
+      info.marker    = (VkLatencyMarkerNV)marker;
+      ((PFN_vkSetLatencyMarkerNV)ll->set_marker)(vk->context.device,
+            swapchain, &info);
+   }
+   retro_atomic_store_release_int(&ll->in_call, 0);
 }
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
@@ -5141,15 +5362,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    else
 #endif
    {
-      bool mark = vk->low_latency.stage == 1;
-      if (mark)
-      {
-         vk->low_latency.stage = 2;
-         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
-               VK_LATENCY_MARKER_RENDERSUBMIT_END_NV);
-         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
-               VK_LATENCY_MARKER_PRESENT_START_NV);
-      }
+      vulkan_low_latency_present_begin(vk);
 #ifdef HAVE_THREADS
       slock_lock(vk->context.queue_lock);
 #endif
@@ -5157,9 +5370,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context.queue_lock);
 #endif
-      if (mark)
-         vulkan_low_latency_marker(vk, vk->low_latency.frame_id,
-               VK_LATENCY_MARKER_PRESENT_END_NV);
+      vulkan_low_latency_present_end(vk);
    }
    /* Queued whatever it returned: a failed present has still put its
     * semaphore wait on the queue, or may have, and the fence taken

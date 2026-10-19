@@ -215,8 +215,10 @@ struct runloop
    retro_time_t pace_iter_last;
    retro_time_t pace_period_usec;
    /* The frame the low-latency backend last released, for its input
-    * and simulation markers; 0 while it is not releasing. */
+    * and simulation markers; 0 while it is not releasing. Identities
+    * come from driver_pacing_next_id and only ever grow. */
    uint64_t     driver_pacing_frame_id;
+   uint64_t     driver_pacing_next_id;
    unsigned     pace;                           /* enum runloop_pace_source bits */
    /* Optional products with a per-frame hook in runloop_iterate().
     * Each bit is raised when its product comes up and dropped when it
@@ -775,22 +777,21 @@ typedef unsigned runloop_pace_facts_t;
  * the bits - the wait ends the iteration, the gap limiter sets the
  * period the timer sleeps to. */
 /* Whether the low-latency backend releases this iteration's successor:
- * only a content frame the core produced, on the unthreaded path (the
- * wrapper presents from its own thread, where the backend's exactly-
- * once-between-presents sleep cannot be kept), at normal speed, with
- * the window focused and the menu down. Pause, the menu and
- * fast-forward keep their existing pacing: a cached frame presented
- * for them is not a frame the core made, and a sleep for it would be
- * one too many. Vsync and audio may still hold inside their own
- * subsystems; the backend schedules the start of the frame, not its
- * presentation. */
+ * only a content frame the core produced, at normal speed, with the
+ * window focused and the menu down. Pause, the menu and fast-forward
+ * keep their existing pacing: a cached frame presented for them is
+ * not a frame the core made, and a sleep for it would be one too
+ * many. Under the threaded wrapper the presenter's own hold (display
+ * pacing) and the driver's release are two owners of the same
+ * decision, so display pacing keeps it. Vsync and audio may still
+ * hold inside their own subsystems; the backend schedules the start
+ * of the frame, not its presentation. */
 static INLINE bool runloop_pace_driver_owns(runloop_pace_facts_t f,
       unsigned pace)
 {
    return    (f & PACE_FACT_DRIVER_PACING)
           && (f & PACE_FACT_CORE_RAN)
           && (f & PACE_FACT_FOCUSED)
-          && !(f & PACE_FACT_WRAPPER)
           && !(f & PACE_FACT_NONBLOCKING)
           && !(f & PACE_FACT_FASTMOTION)
           && !(f & PACE_FACT_PAUSED)

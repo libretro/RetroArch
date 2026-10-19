@@ -6060,18 +6060,10 @@ static runloop_pace_facts_t runloop_driver_pacing_gather(settings_t *settings,
       want = VIDEO_DRIVER_PACING_OFF;
    if (!want)
       reason = VIDEO_DRIVER_PACING_REASON_OFF;
-   else if (f & PACE_FACT_WRAPPER)
-      reason = VIDEO_DRIVER_PACING_REASON_THREADED;
    else if (!poke || !poke->driver_pacing_set || !video_st->data)
       reason = VIDEO_DRIVER_PACING_REASON_DRIVER;
-   /* More than one present a content frame, or a present paced to a
-    * scanline: the backend's one sleep between presents does not map
-    * onto them yet. */
-   else if (   settings->uints.video_black_frame_insertion
-            || settings->uints.video_shader_subframes > 1
-            || settings->bools.video_scanline_sync
-            || runloop_get_video_swap_interval(
-                  settings->uints.video_swap_interval) > 1)
+   /* A present paced to a scanline is its own release */
+   else if (settings->bools.video_scanline_sync)
       reason = VIDEO_DRIVER_PACING_REASON_MODE;
    else if (!runloop_pace_driver_owns(f | PACE_FACT_DRIVER_PACING,
             runloop_pace_sources(f)))
@@ -6095,7 +6087,11 @@ static runloop_pace_facts_t runloop_driver_pacing_gather(settings_t *settings,
    if (reason == VIDEO_DRIVER_PACING_REASON_NONE)
       f |= PACE_FACT_DRIVER_PACING;
    else
-      runloop_st->driver_pacing_frame_id = 0;
+   {
+      runloop_st->driver_pacing_frame_id     = 0;
+      video_st->driver_pacing_id             = 0;
+      video_st->driver_pacing_interval_us    = 0;
+   }
    return f;
 }
 
@@ -6173,10 +6169,10 @@ size_t runloop_driver_pacing_string(char *s, size_t len)
       NULL,
       NULL,
       "no backend in this video driver",
-      "threaded video",
+      "waiting for the video thread",
       "not offered by the GPU driver",
       "no native swapchain",
-      "BFI, sub-frames, Scanline Sync or swap interval",
+      "Scanline Sync",
       "driver error",
       "menu, pause, fast-forward or unfocused"
    };
@@ -10238,21 +10234,26 @@ end:
    if (runloop_st->pace & RUNLOOP_PACE_DRIVER)
    {
       retro_time_t period = runloop_content_frame_time_us(video_st->core_hz);
-      uint64_t id         = video_st->poke->driver_pacing_wait(video_st->data,
-            (runloop_st->pace & RUNLOOP_PACE_TIMER)
-               ? (unsigned)pace_limit_min : 0,
-            (unsigned)(2 * period + 10000));
-      if (id)
+      /* The interval the next frame's sleep is to keep, carried to the
+       * presenter with that frame */
+      video_st->driver_pacing_interval_us = (runloop_st->pace & RUNLOOP_PACE_TIMER)
+         ? (unsigned)pace_limit_min : 0;
+      if (video_st->poke->driver_pacing_wait(video_st->data,
+            runloop_st->driver_pacing_frame_id,
+            (unsigned)(2 * period + 10000)))
       {
-         runloop_st->driver_pacing_frame_id       = id;
-         runloop_st->frame_limit_anchor_ns = 0;
+         uint64_t id                        = ++runloop_st->driver_pacing_next_id;
+         runloop_st->driver_pacing_frame_id = id;
+         video_st->driver_pacing_id         = id;
+         runloop_st->frame_limit_anchor_ns  = 0;
          if (video_st->poke->driver_pacing_mark)
             video_st->poke->driver_pacing_mark(video_st->data, id,
                   VIDEO_DRIVER_PACING_MARK_SIMULATION_START);
          goto driver_paced;
       }
       runloop_st->driver_pacing_frame_id = 0;
-      runloop_st->pace           &= ~RUNLOOP_PACE_DRIVER;
+      video_st->driver_pacing_id         = 0;
+      runloop_st->pace                  &= ~RUNLOOP_PACE_DRIVER;
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */

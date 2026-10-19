@@ -6020,6 +6020,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    else
 #endif
       video_info->swap_count               = video_st->swap_count;
+   video_info->driver_pacing_id            = video_st->driver_pacing_id;
+   video_info->driver_pacing_interval_us   = video_st->driver_pacing_interval_us;
    video_info->retain_output               = false;
    video_info->threaded_present_repeat     = settings->bools.video_threaded_present_repeat;
    /* Set only while the threaded presenter is there to do the pacing,

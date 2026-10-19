@@ -420,6 +420,8 @@ static void lane_toggle_cycle(unsigned cycles)
 #include "../../../gfx/gfx_widgets.h"
 
 static void set_driver(thread_video_t *thr, const video_driver_t *driver);
+static void set_poke(thread_video_t *thr, const video_poke_interface_t *poke);
+static void set_poke_from(thread_video_t *thr, const video_driver_t *driver);
 
 /* ------------------------------------------------------------------ */
 /* Lane: the widgets go only once no frame draws them                 */
@@ -653,16 +655,22 @@ static unsigned dplane_set(void *data, unsigned mode)
    return dplane_set_answer;
 }
 
-static uint64_t dplane_wait(void *data, unsigned min_interval_us,
-      unsigned max_wait_us)
+/* The identity the frame loop waits for: the frame it handed over
+ * last, which its next release names plus one */
+static uint64_t dplane_last_wait_id;
+/* On the video thread, the identities the frames arrive with */
+static retro_atomic_size_t dplane_seen_id, dplane_seen_frames, dplane_seen_interval;
+
+static bool dplane_wait(void *data, uint64_t frame_id, unsigned max_wait_us)
 {
    (void)data;
    dplane_waits++;
-   dplane_last_interval = min_interval_us;
+   dplane_last_wait_id  = frame_id;
    dplane_last_max      = max_wait_us;
    if (dplane_wait_answer_from)
-      return 0;
-   return ++dplane_last_id;
+      return false;
+   dplane_last_id = frame_id + 1;
+   return true;
 }
 
 static void dplane_mark(void *data, uint64_t id, unsigned marker)
@@ -679,6 +687,39 @@ static bool dplane_focus(void *data)
 {
    (void)data;
    return true;
+}
+
+/* The fake driver under the wrapper: the null driver with the
+ * pacing pokes, and a frame that notes what the packet carried */
+static const video_driver_t          *dplane_inner;
+static video_driver_t                 dplane_driver;
+static const video_poke_interface_t  *dplane_inner_poke;
+static video_poke_interface_t         dplane_thread_poke;
+
+static bool dplane_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   if (video_info && video_info->driver_pacing_id)
+   {
+      retro_atomic_store_release_size(&dplane_seen_id,
+            (size_t)video_info->driver_pacing_id);
+      retro_atomic_store_release_size(&dplane_seen_interval,
+            (size_t)video_info->driver_pacing_interval_us);
+      retro_atomic_fetch_add_size(&dplane_seen_frames, 1);
+   }
+   return dplane_inner->frame(data, frame, dims, frame_count, pitch, msg,
+         video_info);
+}
+
+static void dplane_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   dplane_inner->poke_interface(data, &dplane_inner_poke);
+   dplane_thread_poke                    = *dplane_inner_poke;
+   dplane_thread_poke.driver_pacing_set  = dplane_set;
+   dplane_thread_poke.driver_pacing_wait = dplane_wait;
+   dplane_thread_poke.driver_pacing_mark = dplane_mark;
+   *iface                                = &dplane_thread_poke;
 }
 
 static void lane_driver_pacing(void)
@@ -733,6 +774,9 @@ static void lane_driver_pacing(void)
    dplane_set_answer  = VIDEO_DRIVER_PACING_REASON_NONE;
 
    run_frames(20);
+   CHECK(dplane_last_wait_id == 19,
+         "backend up: the last wait named the frame handed over, %llu",
+         (unsigned long long)dplane_last_wait_id);
    CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE,
          "backend up: reason %u", video_st->driver_pacing_reason);
    CHECK(video_st->driver_pacing_mode == VIDEO_DRIVER_PACING_ON, "backend up: mode");
@@ -784,17 +828,27 @@ static void lane_driver_pacing(void)
    CHECK(dplane_waits == waits + 5 && dplane_last_mode == VIDEO_DRIVER_PACING_ON,
          "back in game: releases resume");
 
-   /* Black Frame Insertion: an incompatible mode */
+   /* Black Frame Insertion: its extra presents go out of band on the
+    * same frame, so the release stays owned */
    waits = dplane_waits;
    settings->uints.video_black_frame_insertion = 1;
    run_frames(3);
-   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_MODE
-         && dplane_waits == waits && dplane_last_mode == VIDEO_DRIVER_PACING_OFF,
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE
+         && dplane_waits == waits + 3,
          "BFI: reason %u, %u releases", video_st->driver_pacing_reason,
          dplane_waits - waits);
    settings->uints.video_black_frame_insertion = saved_bfi;
+   /* Scanline Sync paces the present itself */
+   waits = dplane_waits;
+   settings->bools.video_scanline_sync = true;
    run_frames(3);
-   CHECK(dplane_waits == waits + 3, "BFI off: releases resume");
+   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_MODE
+         && dplane_waits == waits && dplane_last_mode == VIDEO_DRIVER_PACING_OFF,
+         "Scanline Sync: reason %u, %u releases", video_st->driver_pacing_reason,
+         dplane_waits - waits);
+   settings->bools.video_scanline_sync = false;
+   run_frames(3);
+   CHECK(dplane_waits == waits + 3, "Scanline Sync off: releases resume");
 
    /* A release the backend could not give: that frame paces as
     * before, the next is asked again */
@@ -832,13 +886,72 @@ static void lane_driver_pacing(void)
    video_st->poke = dplane_saved_poke;
    video_st->current_video = saved_driver;
 
-   /* Threaded video: never, whatever the driver offers */
+   /* Threaded video: the pokes cross the wrapper to the driver, the
+    * identity rides the frame packet to the video thread, and the
+    * wait names the frame handed over */
    settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_ON;
    set_threaded_via_setting(true);
-   run_frames(5);
-   CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_THREADED,
-         "threaded: reason %u", video_st->driver_pacing_reason);
-   CHECK(!(runloop_st->pace & RUNLOOP_PACE_DRIVER), "threaded: the pacing record");
+   run_frames(3);
+   expect_wrapper(true, "driver pacing lane, threaded");
+   {
+      thread_video_t *thr = (thread_video_t*)video_st->data;
+      if (thr)
+      {
+         size_t seen_id, seen_frames;
+         /* Focus held, as above: the wrapper is the current driver now */
+         saved_driver            = video_st->current_video;
+         focused_driver          = *saved_driver;
+         focused_driver.focus    = dplane_focus;
+         video_st->current_video = &focused_driver;
+         video_thread_wait_idle();
+         dplane_inner                 = thr->driver;
+         dplane_driver                = *thr->driver;
+         dplane_driver.frame          = dplane_frame;
+         dplane_driver.poke_interface = dplane_get_poke;
+         set_driver(thr, &dplane_driver);
+         set_poke_from(thr, &dplane_driver);
+         retro_atomic_store_release_size(&dplane_seen_id, 0);
+         retro_atomic_store_release_size(&dplane_seen_frames, 0);
+         dplane_sets = dplane_waits = dplane_marks = 0;
+         dplane_last_id = dplane_last_wait_id = 0;
+         run_frames(20);
+         video_thread_wait_idle();
+         seen_id     = retro_atomic_load_acquire_size(&dplane_seen_id);
+         seen_frames = retro_atomic_load_acquire_size(&dplane_seen_frames);
+         CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_NONE,
+               "threaded: reason %u", video_st->driver_pacing_reason);
+         CHECK(runloop_st->pace & RUNLOOP_PACE_DRIVER, "threaded: the pacing record");
+         CHECK(dplane_waits >= 19 && dplane_last_wait_id + 1 == runloop_st->driver_pacing_frame_id,
+               "threaded: %u waits, the last for frame %llu with %llu released",
+               dplane_waits, (unsigned long long)dplane_last_wait_id,
+               (unsigned long long)runloop_st->driver_pacing_frame_id);
+         /* The fake backend releases at once, so the loop runs ahead
+          * and a slow presenter (lavapipe) drops frames: what it draws
+          * carries an identity the loop released, never one ahead */
+         CHECK(seen_frames >= 1 && seen_id <= runloop_st->driver_pacing_frame_id,
+               "threaded: the video thread saw %u frames with an identity, last %u, loop at %llu",
+               (unsigned)seen_frames, (unsigned)seen_id,
+               (unsigned long long)runloop_st->driver_pacing_frame_id);
+         CHECK(dplane_mark_kind[7] == VIDEO_DRIVER_PACING_MARK_SIMULATION_START
+               && dplane_mark_id[7] == runloop_st->driver_pacing_frame_id,
+               "threaded: the release marked the start of the released frame");
+         /* Display pacing: the presenter's hold owns the release, the
+          * driver's stands down */
+         settings->bools.video_threaded_display_pacing = true;
+         run_frames(5);
+         CHECK(video_st->driver_pacing_reason == VIDEO_DRIVER_PACING_REASON_SUSPENDED
+               && !(runloop_st->pace & RUNLOOP_PACE_DRIVER),
+               "display pacing on: reason %u, pace 0x%x",
+               video_st->driver_pacing_reason, runloop_st->pace);
+         settings->bools.video_threaded_display_pacing = false;
+         run_frames(5);
+         CHECK(runloop_st->pace & RUNLOOP_PACE_DRIVER, "display pacing off: owned again");
+         video_thread_wait_idle();
+         set_driver(thr, dplane_inner);
+         set_poke(thr, dplane_inner_poke);
+         video_st->current_video = saved_driver;
+      }
+   }
    settings->uints.video_driver_pacing = VIDEO_DRIVER_PACING_OFF;
    run_frames(2);
    set_threaded_via_setting(false);

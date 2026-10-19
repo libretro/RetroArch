@@ -175,8 +175,8 @@ static void test_driver_pacing(void)
          "unfocused: no release");
    DRIVER_ROW(f & ~PACE_FACT_CORE_RAN, RUNLOOP_PACE_VSYNC,
          "no content frame this iteration: no release");
-   DRIVER_ROW(f | PACE_FACT_WRAPPER, RUNLOOP_PACE_VSYNC,
-         "threaded video: no release");
+   DRIVER_ROW(f | PACE_FACT_WRAPPER, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DRIVER,
+         "threaded video: the presenter sleeps, this thread waits");
    DRIVER_ROW(f | PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING,
          RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY,
          "display pacing: one owner of the release, not two");
@@ -189,7 +189,8 @@ static void test_driver_pacing(void)
          "no window: the wait, not the release");
 
    printf("   driver pacing: owns the release of a content frame only, "
-          "never with display pacing or scanline sync, never as a clock\n");
+          "threaded or not, never with display pacing or scanline sync, "
+          "never as a clock\n");
 }
 
 /* --- the frame period -------------------------------------------- */

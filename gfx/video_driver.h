@@ -207,11 +207,11 @@ enum video_driver_pacing_reason
    VIDEO_DRIVER_PACING_REASON_NONE = 0,   /* in effect */
    VIDEO_DRIVER_PACING_REASON_OFF,        /* not asked for */
    VIDEO_DRIVER_PACING_REASON_DRIVER,     /* the video driver has no backend */
-   VIDEO_DRIVER_PACING_REASON_THREADED,   /* threaded video presents elsewhere */
+   VIDEO_DRIVER_PACING_REASON_PENDING,    /* asked; the driver's thread has
+                                             not answered yet */
    VIDEO_DRIVER_PACING_REASON_DEVICE,     /* the GPU driver does not offer it */
    VIDEO_DRIVER_PACING_REASON_SWAPCHAIN,  /* no native swapchain to pace */
-   VIDEO_DRIVER_PACING_REASON_MODE,       /* BFI, sub-frames, scanline sync,
-                                             a swap interval above one */
+   VIDEO_DRIVER_PACING_REASON_MODE,       /* Scanline Sync paces the present */
    VIDEO_DRIVER_PACING_REASON_FAILED,     /* the backend errored; fell back */
    VIDEO_DRIVER_PACING_REASON_SUSPENDED,  /* menu, pause, fast-forward,
                                              unfocused, no content frame */
@@ -556,6 +556,13 @@ typedef struct video_frame_info
     * Owned by whichever thread presents: video_driver_frame() on the
     * direct path, the video thread under the threaded wrapper. */
    uint64_t swap_count;
+   /* Driver Pacing: the identity the runloop released this frame under,
+    * 0 when the driver's release does not own the frame, and the
+    * minimum present interval it wants kept after this frame's
+    * present (0 for none). The presenter attributes the frame's
+    * markers, its present and the sleep that follows to the identity,
+    * whichever thread it is on. */
+   uint64_t driver_pacing_id;
    uint64_t recording_gpu_timestamp;
    void *recording_gpu;
    void *userdata;
@@ -572,6 +579,7 @@ typedef struct video_frame_info
    unsigned runahead_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
+   unsigned driver_pacing_interval_us;
    unsigned fse_negotiation;
    /* Settings a driver reads while it draws a frame: they arrive with
     * the frame, so the thread that draws never reads what the menu
@@ -1384,18 +1392,22 @@ typedef struct video_poke_interface
     * in: NONE when the mode is in effect, the reason otherwise. Called
     * on the thread that runs the frame loop, every frame while the
     * mode is wanted, since a replaced swapchain comes up without it.
-    * Never blocks on the GPU.
+    * Never blocks on the GPU. All three are called on the frame loop's
+    * thread while the driver's frame may be running on the video
+    * thread; a driver whose mode lives with its swapchain applies the
+    * answer from its own thread and reports the last one it gave.
     *
     * driver_pacing_wait is the release: called once per content frame,
-    * before that frame's input is sampled, and only while
-    * driver_pacing_set answered NONE. It asks the driver for one
-    * latency signal and holds the calling thread for it, @max_wait_us
-    * at most, with @min_interval_us (0 for none) as the minimum
-    * interval the driver keeps between presents in place of a frontend
-    * timer. Returns the frame's presentation identity, nonzero, or 0
-    * when the backend could not release and the caller is to pace as
-    * before. The identity is what the driver attributes the following
-    * frame's markers and present to.
+    * after the frame @frame_id was handed to the driver and before the
+    * next frame's input is sampled, only while driver_pacing_set
+    * answered NONE. It holds the calling thread, @max_wait_us at most,
+    * until that frame has been presented and the driver's sleep that
+    * follows it says the next frame may start. Returns false when the
+    * backend could not release and the caller is to pace as before.
+    * The identity of each frame, and the minimum present interval the
+    * driver is to keep after it, travel in video_frame_info_t
+    * (driver_pacing_id, driver_pacing_interval_us), so the presenter
+    * attributes markers, present and sleep whichever thread it is on.
     *
     * driver_pacing_mark reports the latency marker @marker (enum
     * video_driver_pacing_mark) for the frame @frame_id; the runloop
@@ -1403,7 +1415,7 @@ typedef struct video_poke_interface
     * its own render and present ones. Cheap, never blocks, ignored
     * when the mode is not in effect. */
    unsigned (*driver_pacing_set)(void *data, unsigned mode);
-   uint64_t (*driver_pacing_wait)(void *data, unsigned min_interval_us,
+   bool (*driver_pacing_wait)(void *data, uint64_t frame_id,
          unsigned max_wait_us);
    void (*driver_pacing_mark)(void *data, uint64_t frame_id, unsigned marker);
 } video_poke_interface_t;
@@ -1680,6 +1692,9 @@ typedef struct
    uint64_t frame_count;
    /* See video_frame_info_t::swap_count. */
    uint64_t swap_count;
+   /* See video_frame_info_t::driver_pacing_id; the runloop's, set at
+    * the release and built into the next frame's info. */
+   uint64_t driver_pacing_id;
    /* Display timestamp of the previous present, when the refresh-rate
     * estimate is measured from the display rather than the frame loop;
     * 0 when it is not, or before the driver reports one. */
@@ -1923,6 +1938,7 @@ typedef struct
    /* What the driver pacing backend last answered: the mode the
     * runloop asked it for, and why it is or is not in effect. Main
     * thread. */
+   unsigned driver_pacing_interval_us;
    uint8_t driver_pacing_mode;
    uint8_t driver_pacing_reason;
 

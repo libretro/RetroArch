@@ -9198,14 +9198,14 @@ static unsigned vulkan_driver_pacing_set(void *data, unsigned mode)
    return vulkan_low_latency_set(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context), mode);
 }
 
-static uint64_t vulkan_driver_pacing_wait(void *data, unsigned min_interval_us,
+static bool vulkan_driver_pacing_wait(void *data, uint64_t frame_id,
       unsigned max_wait_us)
 {
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
-      return 0;
-   return vulkan_low_latency_sleep(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
-         min_interval_us, max_wait_us);
+      return false;
+   return vulkan_low_latency_wait(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
+         frame_id, max_wait_us);
 }
 
 static void vulkan_driver_pacing_mark(void *data, uint64_t frame_id, unsigned marker)
@@ -9213,7 +9213,7 @@ static void vulkan_driver_pacing_mark(void *data, uint64_t frame_id, unsigned ma
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
       return;
-   vulkan_low_latency_marker(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
+   vulkan_low_latency_mark_main(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
          frame_id, marker);
 }
 
@@ -11251,7 +11251,8 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->movie_pending = false;
 
    /* The released frame's simulation ends where its Vulkan work begins */
-   vulkan_low_latency_render_begin(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context));
+   vulkan_low_latency_frame_begin(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context),
+         video_info->driver_pacing_id, video_info->driver_pacing_interval_us);
 
    /* A swapchain the context makes while this frame draws is made from
     * the frame's settings */

@@ -5430,6 +5430,36 @@ static unsigned thread_present_last(void *data)
    return ret;
 }
 
+/* Driver Pacing's three, straight to the driver on this thread: the
+ * contract (gfx/video_driver.h) has the driver keep them safe beside
+ * its own frame on the video thread, and the frame's identity and
+ * interval ride in the slot's video_frame_info_t. */
+static unsigned thread_driver_pacing_set(void *data, unsigned mode)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr && thr->driver_data && thr->poke && thr->poke->driver_pacing_set)
+      return thr->poke->driver_pacing_set(thr->driver_data, mode);
+   return VIDEO_DRIVER_PACING_REASON_DRIVER;
+}
+
+static bool thread_driver_pacing_wait(void *data, uint64_t frame_id,
+      unsigned max_wait_us)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr && thr->driver_data && thr->poke && thr->poke->driver_pacing_wait)
+      return thr->poke->driver_pacing_wait(thr->driver_data, frame_id,
+            max_wait_us);
+   return false;
+}
+
+static void thread_driver_pacing_mark(void *data, uint64_t frame_id,
+      unsigned marker)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr && thr->driver_data && thr->poke && thr->poke->driver_pacing_mark)
+      thr->poke->driver_pacing_mark(thr->driver_data, frame_id, marker);
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -5487,7 +5517,14 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* import_texture: a node (VIDEO_THREAD_ASYNC_IMPORT) */
    NULL, /* get_last_present_sync: read on the video thread */
    NULL, /* record_read: read on the video thread */
-   thread_import_movie_frame
+   thread_import_movie_frame,
+   NULL, /* get_menu_framebuffer */
+   NULL, /* menu_mem_alloc */
+   0,    /* menu_mem_pitch_align */
+   false, /* texture_lend_per_write */
+   thread_driver_pacing_set,
+   thread_driver_pacing_wait,
+   thread_driver_pacing_mark
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the

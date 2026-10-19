@@ -5394,6 +5394,16 @@ static void     d3d11_hw_v2_wait_sync_index(void *data)     { (void)data; }
  * refresh the frame does not: at 120 Hz under a 60 fps core that is
  * every other one. It gives the lock up around its waits as the frame
  * does (d3d11_hw_v2_yield_begin). */
+/* Every present of the swapchain, with Driver Pacing's markers
+ * around it: the frame's own, or one out of band on the same frame */
+static void d3d11_present(d3d11_video_t *d3d11, unsigned sync_interval,
+      unsigned flags)
+{
+   d3d_driver_pacing_present_begin(&d3d11->driver_pacing, d3d11->device);
+   DXGIPresent(d3d11->swapChain, sync_interval, flags);
+   d3d_driver_pacing_present_end(&d3d11->driver_pacing, d3d11->device);
+}
+
 static unsigned d3d11_present_last_body(void *data);
 
 static unsigned d3d11_present_last(void *data)
@@ -5451,7 +5461,7 @@ static unsigned d3d11_present_last_body(void *data)
       Release(back_buffer);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_begin(d3d11);
-      DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      d3d11_present(d3d11, d3d11->swap_interval, present_flags);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_end(d3d11);
       done++;
@@ -5482,7 +5492,7 @@ static unsigned d3d11_present_last_body(void *data)
       context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_begin(d3d11);
-      DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      d3d11_present(d3d11, d3d11->swap_interval, present_flags);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_end(d3d11);
       Release(rtv);
@@ -5511,14 +5521,14 @@ static unsigned d3d11_driver_pacing_set(void *data, unsigned mode)
    return d3d_driver_pacing_set(&d3d11->driver_pacing, d3d11->device, mode);
 }
 
-static uint64_t d3d11_driver_pacing_wait(void *data, unsigned min_interval_us,
+static bool d3d11_driver_pacing_wait(void *data, uint64_t frame_id,
       unsigned max_wait_us)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    if (!d3d11)
-      return 0;
+      return false;
    return d3d_driver_pacing_wait(&d3d11->driver_pacing, d3d11->device,
-         min_interval_us, max_wait_us);
+         frame_id, max_wait_us);
 }
 
 static void d3d11_driver_pacing_mark(void *data, uint64_t frame_id,
@@ -6805,7 +6815,8 @@ static bool d3d11_gfx_frame_body(
 
    /* The released frame's simulation ends where its Direct3D work
     * begins */
-   d3d_driver_pacing_render_begin(&d3d11->driver_pacing, d3d11->device);
+   d3d_driver_pacing_frame_begin(&d3d11->driver_pacing, d3d11->device,
+         video_info->driver_pacing_id, video_info->driver_pacing_interval_us);
 
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
    {
@@ -7867,11 +7878,9 @@ static bool d3d11_gfx_frame_body(
       d3d11_hw_v2_yield_begin(d3d11);
       d3d11_wait_for_vblank(d3d11);
       d3d11_hw_v2_yield_end(d3d11);
-      d3d_driver_pacing_present_begin(&d3d11->driver_pacing, d3d11->device);
-      DXGIPresent(d3d11->swapChain, 0,
+      d3d11_present(d3d11, 0,
             present_flags | ((d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING) ? DXGI_PRESENT_ALLOW_TEARING : 0)
       );
-      d3d_driver_pacing_present_end(&d3d11->driver_pacing, d3d11->device);
    }
    else
    {
@@ -7879,9 +7888,7 @@ static bool d3d11_gfx_frame_body(
        * the call. */
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_begin(d3d11);
-      d3d_driver_pacing_present_begin(&d3d11->driver_pacing, d3d11->device);
-      DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
-      d3d_driver_pacing_present_end(&d3d11->driver_pacing, d3d11->device);
+      d3d11_present(d3d11, d3d11->swap_interval, present_flags);
       if (d3d11->hw_v2.present_unlocked)
          d3d11_hw_v2_yield_end(d3d11);
    }
@@ -7930,7 +7937,7 @@ static bool d3d11_gfx_frame_body(
          {
             context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
             context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
-            DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+            d3d11_present(d3d11, d3d11->swap_interval, present_flags);
          }
       }
 

@@ -106,4 +106,4 @@ S_UINT(video_driver_pacing, VIDEO_DRIVER_PACING,
       "video_driver_pacing",
       DEFAULT_VIDEO_DRIVER_PACING, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_driver_pacing,
       "Driver Pacing",
-      "Let the graphics driver schedule core frames, sampling input late and limiting queued work. NVIDIA Reflex uses VK_NV_low_latency2 on Vulkan and NVAPI on Direct3D 11/12. Statistics and System Information report its status. 'On + Boost' holds GPU clocks up. Unavailable with threaded video, Black Frame Insertion, Shader Sub-frames, Scanline Sync or swap intervals above one. Frame Delay stands aside while active.")
+      "Let the graphics driver schedule core frames, sampling input late and limiting queued work. NVIDIA Reflex uses VK_NV_low_latency2 on Vulkan and NVAPI on Direct3D 11/12. Statistics and System Information report its status. 'On + Boost' holds GPU clocks up. Unavailable with Scanline Sync, or with Threaded Video Display Pacing, which schedules frames itself. Frame Delay stands aside while active.")

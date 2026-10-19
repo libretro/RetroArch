@@ -15,16 +15,16 @@
 #include <string.h>
 #include <string/stdstring.h>
 
-#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
-#include <windows.h>
-#endif
-
 #include "../../configuration.h"
 #include "../../input/input_driver.h"
 #include "../../verbosity.h"
 
 #include "d3d_common.h"
 #include "../video_driver.h"
+
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
+#include <windows.h>
+#endif
 
 #define D3D_TEXTURE_FILTER_LINEAR 2
 #define D3D_TEXTURE_FILTER_POINT  1
@@ -155,19 +155,19 @@ static bool d3d_driver_pacing_apply(d3d_driver_pacing_t *s, void *device,
       s->failed = true;
       s->mode   = 0;
       s->device = NULL;
+      retro_atomic_store_release_int(&s->mode_pub, 0);
       return false;
    }
    s->mode            = (uint8_t)mode;
    s->min_interval_us = min_interval_us;
    s->device          = mode ? device : NULL;
+   retro_atomic_store_release_int(&s->mode_pub, (int)mode);
    return true;
 }
 
 unsigned d3d_driver_pacing_set(d3d_driver_pacing_t *s, void *device,
       unsigned mode)
 {
-   if (s->failed)
-      return VIDEO_DRIVER_PACING_REASON_FAILED;
    if (!device)
       return VIDEO_DRIVER_PACING_REASON_SWAPCHAIN;
    if (s->device != device)
@@ -179,8 +179,12 @@ unsigned d3d_driver_pacing_set(d3d_driver_pacing_t *s, void *device,
    {
       if (s->mode && !d3d_driver_pacing_apply(s, device, 0, 0))
          return VIDEO_DRIVER_PACING_REASON_FAILED;
+      /* Asked for again is the way back from a failure */
+      s->failed = false;
       return VIDEO_DRIVER_PACING_REASON_OFF;
    }
+   if (s->failed)
+      return VIDEO_DRIVER_PACING_REASON_FAILED;
    if (!d3d_driver_pacing_probe())
       return VIDEO_DRIVER_PACING_REASON_DEVICE;
    if (mode == s->mode)
@@ -190,65 +194,107 @@ unsigned d3d_driver_pacing_set(d3d_driver_pacing_t *s, void *device,
    return VIDEO_DRIVER_PACING_REASON_NONE;
 }
 
-uint64_t d3d_driver_pacing_wait(d3d_driver_pacing_t *s, void *device,
-      unsigned min_interval_us, unsigned max_wait_us)
+bool d3d_driver_pacing_wait(d3d_driver_pacing_t *s, void *device,
+      uint64_t frame_id, unsigned max_wait_us)
 {
    /* NvAPI_D3D_Sleep holds the thread itself, for as long as the
-    * driver's own schedule says and no longer; it takes no bound. */
+    * driver's own schedule says and no longer; it takes no bound and
+    * names no frame. */
+   (void)frame_id;
    (void)max_wait_us;
    if (!s->mode || s->failed || s->device != device)
-      return 0;
-   if (     min_interval_us != s->min_interval_us
-         && !d3d_driver_pacing_apply(s, device, s->mode, min_interval_us))
-      return 0;
+      return false;
    if (nvapi_sleep(device) != 0)
    {
       s->failed = true;
-      return 0;
+      return false;
    }
-   s->stage = 0;
-   return ++s->frame_id;
+   return true;
+}
+
+static void d3d_driver_pacing_marker(void *device, uint64_t frame_id,
+      unsigned marker)
+{
+   nvapi_latency_marker_params_t params;
+   memset(&params, 0, sizeof(params));
+   params.version     = NVAPI_LATENCY_MARKER_PARAMS_VER;
+   params.frame_id    = frame_id;
+   params.marker_type = marker;
+   nvapi_set_latency_marker(device, &params);
 }
 
 void d3d_driver_pacing_mark(d3d_driver_pacing_t *s, void *device,
       uint64_t frame_id, unsigned marker)
 {
-   nvapi_latency_marker_params_t params;
    if (!s->mode || s->failed || s->device != device || !frame_id)
       return;
-   memset(&params, 0, sizeof(params));
-   params.version     = NVAPI_LATENCY_MARKER_PARAMS_VER;
-   params.frame_id    = frame_id;
    /* NV_LATENCY_MARKER_TYPE matches VkLatencyMarkerNV through
     * INPUT_SAMPLE, which is as far as the pokes go */
-   params.marker_type = marker;
-   nvapi_set_latency_marker(device, &params);
+   d3d_driver_pacing_marker(device, frame_id, marker);
 }
 
-void d3d_driver_pacing_render_begin(d3d_driver_pacing_t *s, void *device)
+/* The presenter's view of the mode: what the frame loop last put on
+ * this device. */
+static bool d3d_driver_pacing_presenting(d3d_driver_pacing_t *s,
+      void *device)
 {
-   if (s->stage != 0 || !s->mode)
+   return retro_atomic_load_acquire_int(&s->mode_pub) != 0
+      && s->frame_id != 0 && device != NULL;
+}
+
+void d3d_driver_pacing_frame_begin(d3d_driver_pacing_t *s, void *device,
+      uint64_t frame_id, unsigned min_interval_us)
+{
+   if (!retro_atomic_load_acquire_int(&s->mode_pub) || !device)
       return;
-   s->stage = 1;
-   d3d_driver_pacing_mark(s, device, s->frame_id, 1); /* SIMULATION_END */
-   d3d_driver_pacing_mark(s, device, s->frame_id, 2); /* RENDERSUBMIT_START */
+   if (!frame_id || frame_id == s->frame_id)
+      return;
+   /* The interval is a sleep-mode parameter: set from here, where
+    * the frame that wants it arrives, which NVAPI allows from any
+    * thread. */
+   if (min_interval_us != s->min_interval_us)
+   {
+      nvapi_sleep_mode_params_t params;
+      memset(&params, 0, sizeof(params));
+      params.version                 = NVAPI_SLEEP_MODE_PARAMS_VER;
+      params.low_latency_mode        = 1;
+      params.low_latency_boost       =
+         (retro_atomic_load_acquire_int(&s->mode_pub) == VIDEO_DRIVER_PACING_BOOST) ? 1 : 0;
+      params.minimum_interval_us     = min_interval_us;
+      params.use_markers_to_optimize = 1;
+      if (nvapi_set_sleep_mode(device, &params) == 0)
+         s->min_interval_us = min_interval_us;
+   }
+   s->frame_id = frame_id;
+   s->stage    = 1;
+   d3d_driver_pacing_marker(device, frame_id, 1); /* SIMULATION_END */
+   d3d_driver_pacing_marker(device, frame_id, 2); /* RENDERSUBMIT_START */
 }
 
 void d3d_driver_pacing_present_begin(d3d_driver_pacing_t *s, void *device)
 {
-   if (s->stage != 1)
+   if (!d3d_driver_pacing_presenting(s, device))
       return;
-   s->stage = 2;
-   d3d_driver_pacing_mark(s, device, s->frame_id, 3); /* RENDERSUBMIT_END */
-   d3d_driver_pacing_mark(s, device, s->frame_id, 4); /* PRESENT_START */
+   if (s->stage == 1)
+   {
+      d3d_driver_pacing_marker(device, s->frame_id, 3);  /* RENDERSUBMIT_END */
+      d3d_driver_pacing_marker(device, s->frame_id, 4);  /* PRESENT_START */
+   }
+   else if (s->stage == 2)
+      d3d_driver_pacing_marker(device, s->frame_id, 11); /* OUT_OF_BAND_PRESENT_START */
 }
 
 void d3d_driver_pacing_present_end(d3d_driver_pacing_t *s, void *device)
 {
-   if (s->stage != 2)
+   if (!d3d_driver_pacing_presenting(s, device))
       return;
-   s->stage = 3;
-   d3d_driver_pacing_mark(s, device, s->frame_id, 5); /* PRESENT_END */
+   if (s->stage == 1)
+   {
+      s->stage = 2;
+      d3d_driver_pacing_marker(device, s->frame_id, 5);  /* PRESENT_END */
+   }
+   else if (s->stage == 2)
+      d3d_driver_pacing_marker(device, s->frame_id, 12); /* OUT_OF_BAND_PRESENT_END */
 }
 
 void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device)
@@ -257,6 +303,7 @@ void d3d_driver_pacing_free(d3d_driver_pacing_t *s, void *device)
       d3d_driver_pacing_apply(s, device, 0, 0);
    s->mode   = 0;
    s->device = NULL;
+   retro_atomic_store_release_int(&s->mode_pub, 0);
 }
 
 #else
@@ -267,20 +314,21 @@ unsigned d3d_driver_pacing_set(d3d_driver_pacing_t *s, void *device,
    (void)s; (void)device; (void)mode;
    return VIDEO_DRIVER_PACING_REASON_DEVICE;
 }
-uint64_t d3d_driver_pacing_wait(d3d_driver_pacing_t *s, void *device,
-      unsigned min_interval_us, unsigned max_wait_us)
+bool d3d_driver_pacing_wait(d3d_driver_pacing_t *s, void *device,
+      uint64_t frame_id, unsigned max_wait_us)
 {
-   (void)s; (void)device; (void)min_interval_us; (void)max_wait_us;
-   return 0;
+   (void)s; (void)device; (void)frame_id; (void)max_wait_us;
+   return false;
 }
 void d3d_driver_pacing_mark(d3d_driver_pacing_t *s, void *device,
       uint64_t frame_id, unsigned marker)
 {
    (void)s; (void)device; (void)frame_id; (void)marker;
 }
-void d3d_driver_pacing_render_begin(d3d_driver_pacing_t *s, void *device)
+void d3d_driver_pacing_frame_begin(d3d_driver_pacing_t *s, void *device,
+      uint64_t frame_id, unsigned min_interval_us)
 {
-   (void)s; (void)device;
+   (void)s; (void)device; (void)frame_id; (void)min_interval_us;
 }
 void d3d_driver_pacing_present_begin(d3d_driver_pacing_t *s, void *device)
 {

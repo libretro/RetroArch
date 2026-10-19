@@ -938,6 +938,16 @@ typedef struct
    d3d_driver_pacing_t driver_pacing;
 } d3d12_video_t;
 
+/* Every present of the swapchain, with Driver Pacing's markers
+ * around it: the frame's own, or one out of band on the same frame */
+static void d3d12_present(d3d12_video_t *d3d12, unsigned sync_interval,
+      unsigned flags)
+{
+   d3d_driver_pacing_present_begin(&d3d12->driver_pacing, d3d12->device);
+   DXGIPresent(d3d12->chain.handle, sync_interval, flags);
+   d3d_driver_pacing_present_end(&d3d12->driver_pacing, d3d12->device);
+}
+
 #ifdef D3D12_FRAME_IMPORT
 static void d3d12_frame_import_init(d3d12_video_t *d3d12);
 static void d3d12_frame_import_deinit(d3d12_video_t *d3d12);
@@ -7039,7 +7049,7 @@ static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
          D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
 
    d3d12_cmd_execute(d3d12);
-   DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
+   d3d12_present(d3d12, d3d12->chain.swap_interval, 0);
    return true;
 }
 
@@ -7094,14 +7104,14 @@ static unsigned d3d12_driver_pacing_set(void *data, unsigned mode)
    return d3d_driver_pacing_set(&d3d12->driver_pacing, d3d12->device, mode);
 }
 
-static uint64_t d3d12_driver_pacing_wait(void *data, unsigned min_interval_us,
+static bool d3d12_driver_pacing_wait(void *data, uint64_t frame_id,
       unsigned max_wait_us)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
    if (!d3d12)
-      return 0;
+      return false;
    return d3d_driver_pacing_wait(&d3d12->driver_pacing, d3d12->device,
-         min_interval_us, max_wait_us);
+         frame_id, max_wait_us);
 }
 
 static void d3d12_driver_pacing_mark(void *data, uint64_t frame_id,
@@ -7170,7 +7180,7 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
          D3D12_RESOURCE_STATE_PRESENT);
 
    d3d12_cmd_execute(d3d12);
-   DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
+   d3d12_present(d3d12, d3d12->chain.swap_interval, 0);
 
 }
 
@@ -8818,7 +8828,8 @@ static bool d3d12_gfx_frame_body(
 
    /* The released frame's simulation ends where its Direct3D work
     * begins */
-   d3d_driver_pacing_render_begin(&d3d12->driver_pacing, d3d12->device);
+   d3d_driver_pacing_frame_begin(&d3d12->driver_pacing, d3d12->device,
+         video_info->driver_pacing_id, video_info->driver_pacing_interval_us);
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       WaitForSingleObjectEx(
@@ -10116,15 +10127,13 @@ recording_resize_deferred:;
                d3d12->hw_v2.done, ++d3d12->hw_v2.done_value);
    }
 
-   d3d_driver_pacing_present_begin(&d3d12->driver_pacing, d3d12->device);
    if (vsync && d3d12->wait_for_vblank < 0)
    {
       d3d12_wait_for_vblank(d3d12);
-      DXGIPresent(d3d12->chain.handle, 0, (present_flags | DXGI_PRESENT_ALLOW_TEARING));
+      d3d12_present(d3d12, 0, (present_flags | DXGI_PRESENT_ALLOW_TEARING));
    }
    else
-      DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, present_flags);
-   d3d_driver_pacing_present_end(&d3d12->driver_pacing, d3d12->device);
+      d3d12_present(d3d12, d3d12->chain.swap_interval, present_flags);
 
    if (vsync && d3d12->wait_for_vblank > 0)
       d3d12_wait_for_vblank(d3d12);
