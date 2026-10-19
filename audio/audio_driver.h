@@ -1553,6 +1553,15 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
  **/
 bool audio_driver_set_input_rate(double input);
 
+/* Asked before a teardown: keep the device for the next init to take
+ * back, when that teardown is a content switch. A device the next init
+ * would open differently, or that nobody takes, is freed. Off with
+ * RETROARCH_AUDIO_KEEP=0 in the environment. */
+void audio_driver_keep_device(bool keep);
+
+/* Frees a kept device that was not taken back. */
+void audio_driver_drop_kept(void);
+
 const char *audio_driver_get_ident(void);
 
 /* The speaker path in effect, in a few words, for the statistics

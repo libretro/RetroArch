@@ -65,6 +65,7 @@
 #include "../../../frontend/frontend.h"
 #include "../../../verbosity.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../audio/audio_driver.h"
 #include "../../../gfx/video_defines.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
@@ -418,6 +419,83 @@ static void lane_core_opened_once(void)
    if (failures == had)
       fprintf(stderr, "[pass] core opened once lane\n");
 }
+
+/* The audio device across a content load: kept and taken back, not
+ * closed and opened again; with RETROARCH_AUDIO_KEEP=0, closed and
+ * opened again. The null driver gets a device that counts. */
+extern audio_driver_t audio_null;
+static unsigned kept_opens, kept_frees;
+static int      kept_token;
+static void *kept_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
+{
+   (void)device; (void)latency;
+   *new_rate = rate;
+   kept_opens++;
+   return &kept_token;
+}
+static ssize_t kept_write(void *data, const void *buf, size_t len)
+{ (void)data; (void)buf; return (ssize_t)len; }
+static bool kept_true(void *data) { (void)data; return true; }
+static bool kept_start(void *data, bool shutdown)
+{ (void)data; (void)shutdown; return true; }
+static void kept_nonblock(void *data, bool state) { (void)data; (void)state; }
+static bool kept_float(void *data) { (void)data; return false; }
+static void kept_free(void *data) { (void)data; kept_frees++; }
+
+static void lane_audio_kept(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   audio_driver_t saved = audio_null;
+   unsigned had         = failures;
+   unsigned n;
+
+   audio_null.init               = kept_init;
+   audio_null.write              = kept_write;
+   audio_null.stop               = kept_true;
+   audio_null.start              = kept_start;
+   audio_null.alive              = kept_true;
+   audio_null.set_nonblock_state = kept_nonblock;
+   audio_null.free               = kept_free;
+   audio_null.use_float          = kept_float;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   pump(5);
+   CHECK(audio_state_get_ptr()->context_audio_data == &kept_token,
+         "the counting audio device did not come up");
+
+   kept_opens = kept_frees = 0;
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the load did not bring the core up within %u frames", LOAD_FRAMES);
+   CHECK(kept_opens == 0 && kept_frees == 0
+         && audio_state_get_ptr()->context_audio_data == &kept_token,
+         "across the load the audio device was closed %u and opened %u time(s)",
+         kept_frees, kept_opens);
+
+   kept_opens = kept_frees = 0;
+   putenv((char*)"RETROARCH_AUDIO_KEEP=0");
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the second load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   putenv((char*)"RETROARCH_AUDIO_KEEP=");
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the second load did not bring the core up within %u frames", LOAD_FRAMES);
+   CHECK(kept_opens == 1 && kept_frees == 1,
+         "kept off, across the load the audio device was closed %u and opened %u time(s)",
+         kept_frees, kept_opens);
+
+   audio_null = saved;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   pump(5);
+   if (failures == had)
+      fprintf(stderr, "[pass] audio kept lane: the device stays open across"
+            " a content load; with keeping off it is closed and opened\n");
+}
+
 
 #if defined(HAVE_DYNAMIC)
 static void harness_sibling(char *s, size_t len, const char *name)
@@ -2730,6 +2808,7 @@ int main(int argc, char *argv[])
    lane_user_dirs_held(dir);
    lane_staged();
    lane_core_opened_once();
+   lane_audio_kept();
 #if defined(HAVE_DYNAMIC)
    lane_probe_cached();
 #endif

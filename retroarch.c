@@ -1872,6 +1872,7 @@ void drivers_init(
       audio_driver_init_internal(
             settings,
             audio_st->callback.callback != NULL);
+      audio_driver_drop_kept();
       /* Whether or not init succeeded: the list is how the user gets
        * out of a failed device choice. */
       audio_driver_refresh_devices_list();
@@ -2220,7 +2221,13 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    }
 
    if (flags & DRIVER_AUDIO_MASK)
+   {
+      /* Content loaded or closed: the device is kept for drivers_init()
+       * to take back, when it would open the same one. */
+      audio_driver_keep_device(
+            (lifetime_flags & DRIVER_LIFETIME_SESSION_SWITCH) != 0);
       audio_driver_deinit();
+   }
 
    /* (a driver kept across the restart keeps its data) */
    if (     (flags & DRIVER_INPUT_MASK)
