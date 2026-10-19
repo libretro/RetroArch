@@ -14,16 +14,29 @@ static CVPixelBufferRef slot_image(void)
 #endif
 }
 
+static CMTime slot_time(unsigned serial, int duration)
+{
+   CMTime time;
+   time.value = duration ? 2002 : ((int64_t)serial - 50000) * 1001001;
+   time.timescale = duration ? 60000 : 30000;
+   time.flags = 1u | (serial & 2u);
+   time.epoch = duration ? 0 : serial / 3;
+   return time;
+}
+
+static void slot_check_time(CMTime actual, CMTime expected)
+{
+   assert(actual.value == expected.value && actual.timescale == expected.timescale);
+   assert(actual.flags == expected.flags && actual.epoch == expected.epoch);
+}
+
 static void slot_complete(videotoolbox_hevc_slots_t *context,
       videotoolbox_hevc_slot_t *slot, OSStatus status,
       VTDecodeInfoFlags flags, CVPixelBufferRef image)
 {
-#ifdef VT_HEVC_NATIVE
+   unsigned serial = status < 0 ? (unsigned)-(int64_t)status : flags;
    videotoolbox_hevc_slots_output(context, slot, status, flags, image,
-         kCMTimeInvalid, kCMTimeInvalid);
-#else
-   videotoolbox_hevc_slots_output(context, slot, status, flags, image, 0, 0);
-#endif
+         slot_time(serial, 0), slot_time(serial, 1));
 }
 
 static void slot_worker(void *ref)
@@ -57,12 +70,16 @@ static void test_slots(CMVideoFormatDescriptionRef format)
    context = videotoolbox_hevc_slots_new(32); assert(context);
    assert(videotoolbox_hevc_slots_take(context, 32, &result) == -1);
    assert(!result.image && !result.status && !result.flags);
+   slot_check_time(result.pts, kCMTimeInvalid);
+   slot_check_time(result.duration, kCMTimeInvalid);
    assert(!videotoolbox_hevc_slots_begin(context, 32));
    for (i = 0; i < 32; i++)
    {
       tickets[i] = videotoolbox_hevc_slots_begin(context, i); assert(tickets[i]);
       assert(!videotoolbox_hevc_slots_begin(context, i));
       assert(!videotoolbox_hevc_slots_take(context, i, &result));
+      slot_check_time(result.pts, kCMTimeInvalid);
+      slot_check_time(result.duration, kCMTimeInvalid);
    }
    videotoolbox_hevc_slots_close(NULL);
    videotoolbox_hevc_slots_close(context);
@@ -75,7 +92,11 @@ static void test_slots(CMVideoFormatDescriptionRef format)
    {
       assert(videotoolbox_hevc_slots_take(context, i, &result) == 1);
       assert(result.status == -(OSStatus)i - 1 && result.flags == i + 1 && !result.image);
+      slot_check_time(result.pts, slot_time(i + 1, 0));
+      slot_check_time(result.duration, slot_time(i + 1, 1));
       assert(!videotoolbox_hevc_slots_take(context, i, &result));
+      slot_check_time(result.pts, kCMTimeInvalid);
+      slot_check_time(result.duration, kCMTimeInvalid);
       assert(!videotoolbox_hevc_slots_begin(context, i));
    }
    videotoolbox_hevc_slots_release(context);
@@ -87,6 +108,8 @@ static void test_slots(CMVideoFormatDescriptionRef format)
    videotoolbox_hevc_slots_close(context);
    assert(videotoolbox_hevc_slots_take(context, 0, &result) == 1);
    assert(result.image && !result.status && !result.flags);
+   slot_check_time(result.pts, slot_time(0, 0));
+   slot_check_time(result.duration, slot_time(0, 1));
    image = result.image;
    videotoolbox_hevc_slots_release(context);
    CVPixelBufferRelease(image);
@@ -110,6 +133,8 @@ static void test_slots(CMVideoFormatDescriptionRef format)
    CVPixelBufferRelease(image);
    assert(videotoolbox_hevc_slots_take(context, 0, &result) == 1);
    assert(result.status == -42 && !result.image);
+   slot_check_time(result.pts, slot_time(42, 0));
+   slot_check_time(result.duration, slot_time(42, 1));
    slot_complete(context, tickets[1], 0, kVTDecodeInfo_FrameDropped, NULL);
    assert(videotoolbox_hevc_slots_take(context, 1, &result) == 1);
    assert(!result.status && !result.image && result.flags == kVTDecodeInfo_FrameDropped);
@@ -133,6 +158,8 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       decode_mode = 1;
       assert(!videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info));
       assert(videotoolbox_hevc_slots_take(context, 0, &result) == 1);
+      slot_check_time(result.pts, kCMTimeInvalid);
+      slot_check_time(result.duration, kCMTimeInvalid);
       decode_mode = 2;
       assert(videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info));
       decode_mode = 0;
@@ -140,9 +167,11 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       assert(info == kVTDecodeInfo_Asynchronous);
       assert(videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info) == 1);
       assert(!info);
-      session->callback(context, pending_frame, 0, 0, NULL, 0, 0);
+      session->callback(context, pending_frame, 0, 0, NULL, kCMTimeInvalid, kCMTimeInvalid);
       CFRelease(pending_sample); pending_sample = NULL;
       assert(videotoolbox_hevc_slots_take(context, 0, &result) == 1);
+      slot_check_time(result.pts, kCMTimeInvalid);
+      slot_check_time(result.duration, kCMTimeInvalid);
       decode_mode = 3;
       assert(!videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info));
       assert(info == kVTDecodeInfo_FrameDropped);
@@ -167,6 +196,8 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       while (!videotoolbox_hevc_slots_take(context, 0, &result))
          sthread_yield();
       assert(!result.image && result.status == -(OSStatus)i - 1 && result.flags == (i & 1));
+      slot_check_time(result.pts, slot_time(i + 1, 0));
+      slot_check_time(result.duration, slot_time(i + 1, 1));
    }
    sthread_join(thread);
    videotoolbox_hevc_slots_release(context);
@@ -181,6 +212,7 @@ static void test_slots(CMVideoFormatDescriptionRef format)
    }
    puts("VideoToolbox HEVC slots: ownership and 100000 concurrent publications passed");
    puts("VideoToolbox HEVC slots: closed admission preserves completion and drain");
+   puts("VideoToolbox HEVC slots: exact callback timing survives reordered and concurrent publication");
 }
 #else
 static void test_slots(CMVideoFormatDescriptionRef format)
