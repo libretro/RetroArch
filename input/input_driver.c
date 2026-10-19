@@ -63,6 +63,7 @@
 #include "input_osk.h"
 #include "input_output_store.h"
 #include "input_registry.h"
+#include "input_device_pool.h"
 #include "input_types.h"
 
 #ifdef HAVE_MIST
@@ -8566,6 +8567,34 @@ static void input_sensor_update_rest_capture(settings_t *settings)
  * before. */
 static input_registry_t input_registry;
 
+/* The device numbers, shared with the sources beside the joypad
+ * driver (input_device_pool.h). */
+static input_device_pool_t input_device_pool;
+static bool input_device_pool_ready;
+
+typedef char input_device_pool_fits[
+   (MAX_USERS <= INPUT_POOL_DEVICES) ? 1 : -1];
+
+static input_device_pool_t *input_driver_device_pool(void)
+{
+   if (!input_device_pool_ready)
+   {
+      input_device_pool_init(&input_device_pool);
+      input_device_pool_ready = true;
+   }
+   return &input_device_pool;
+}
+
+int input_driver_device_claim(unsigned source, unsigned slot)
+{
+   return input_device_pool_claim(input_driver_device_pool(), source, slot);
+}
+
+void input_driver_device_release(unsigned source, unsigned slot)
+{
+   input_device_pool_release(input_driver_device_pool(), source, slot);
+}
+
 const struct input_registry *input_driver_get_registry(void)
 {
    return &input_registry;
@@ -8610,6 +8639,9 @@ void input_driver_registry_restart(void)
    unsigned i;
    uint8_t port_of_slot[MAX_USERS];
    settings_t *settings = config_get_ptr();
+
+   /* the joypad driver reports its pads afresh */
+   input_driver_device_pool()->driver = 0;
 
    memset(port_of_slot, INPUT_REGISTRY_NO_PORT, sizeof(port_of_slot));
    for (i = 0; i < MAX_USERS; i++)
@@ -8706,6 +8738,18 @@ void input_driver_registry_connect(unsigned slot, const char *provider,
                > INPUT_REGISTRY_RESTART_USEC)
       input_registry_restart_cancel(&input_registry);
 
+   /* the joypad driver's own pads keep their slot as their number */
+   if (     input_driver_st.primary_joypad
+         && string_is_equal(provider, input_driver_st.primary_joypad->ident))
+   {
+      unsigned source, beside_slot;
+      if (input_device_pool_driver_connect(input_driver_device_pool(),
+               slot, &source, &beside_slot))
+         RARCH_LOG("[Input] Device number %u was a pad beside the joypad"
+               " driver's (source %u, slot %u); it moves.\n",
+               slot, source, beside_slot);
+   }
+
    handle = input_registry_connect(
          &input_registry, provider, slot, name, phys, vid, pid, &returned);
    rec    = input_registry_get(&input_registry, handle);
@@ -8728,6 +8772,10 @@ void input_driver_registry_disconnect(unsigned slot)
 {
    const input_device_record_t *rec = input_registry_at_slot(
          &input_registry, slot);
+
+   if (     rec && input_driver_st.primary_joypad
+         && string_is_equal(rec->provider, input_driver_st.primary_joypad->ident))
+      input_device_pool_driver_disconnect(input_driver_device_pool(), slot);
 
    if (rec)
       RARCH_LOG("[Input] Device %u, \"%s\": left slot %u.\n",
