@@ -9846,6 +9846,7 @@ static enum video_texture_update metal_import_texture(void *data, uintptr_t *han
       RArchMetalFrameLease *lease = metal_frame_validate(frame,
             (__bridge void *)device, (__bridge void *)buffer);
       Texture *texture = (__bridge Texture *)(void *)*handle;
+      Texture *target = texture;
       if (!lease || (lease->view.pixfmt != IMAGE_PIXFMT_8888
                && lease->view.pixfmt != IMAGE_PIXFMT_FP16)
             || (frame->output_pixfmt ? frame->output_pixfmt : IMAGE_PIXFMT_8888) != lease->view.pixfmt
@@ -9856,14 +9857,22 @@ static enum video_texture_update metal_import_texture(void *data, uintptr_t *han
                && (!md.context.hdrEnabled || ![md.context linearShader]))
             || (texture && (texture->_planar || texture->_stagingLent)))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
-      if (!texture)
-         texture = RARCH_AUTORELEASE_R([md.context newImportedTexture:lease->planes[0].pixelFormat
+      if (!target || target.texture.width != lease->view.width
+            || target.texture.height != lease->view.height
+            || target.texture.pixelFormat != lease->planes[0].pixelFormat)
+         target = RARCH_AUTORELEASE_R([md.context newImportedTexture:lease->planes[0].pixelFormat
             width:lease->view.width height:lease->view.height filter:filter]);
-      if (!texture || !metal_frame_copy(frame, (__bridge void *)device,
-               (__bridge void *)buffer, (__bridge void *)texture.texture))
+      if (!target || !metal_frame_copy(frame, (__bridge void *)device,
+               (__bridge void *)buffer, (__bridge void *)target.texture))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
-      if (!*handle)
-         *handle = (uintptr_t)RARCH_BRIDGE_RETAINED(texture);
+      if (!texture)
+         *handle = (uintptr_t)RARCH_BRIDGE_RETAINED(target);
+      else if (target != texture)
+      {
+         /* Encoded readers retain the old image; keep the public handle. */
+         texture.texture = target.texture;
+         texture.sampler = target.sampler;
+      }
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
 }

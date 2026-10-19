@@ -29,7 +29,8 @@ FP16 into a persistent private texture. It requires explicit full-range RGB
 metadata and an equal output format (FP16 also requires an active HDR linear
 pipeline), and refuses mismatched or unknown color,
 mipmapped output, planar sources and active CPU loans. Size/format changes
-require releasing the old texture handle before renegotiation. Allocation or encoder
+prepare a replacement image before encoding. Success preserves the public
+handle while queued GPU readers retain the old image. Allocation or encoder
 failure leaves the handle and producer ownership intact. GPU copying preserves
 FP16 values without a transfer curve or paper-white scaling. The command buffer
 must retain its referenced resources; destination storage must not alias source.

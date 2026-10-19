@@ -110,7 +110,9 @@ static unsigned live_textures, live_backing;
    _notify = Block_copy(block);
 }
 @end
-@interface MockBlit : NSObject <MTLBlitCommandEncoder> @end
+@interface MockBlit : NSObject <MTLBlitCommandEncoder>
+{ @public NSMutableArray *resources; }
+@end
 @implementation MockBlit
 - (void)copyFromTexture:(id<MTLTexture>)source sourceSlice:(NSUInteger)slice
    sourceLevel:(NSUInteger)level sourceOrigin:(MTLOrigin)origin sourceSize:(MTLSize)size
@@ -120,6 +122,7 @@ static unsigned live_textures, live_backing;
    MockTexture *input = (MockTexture *)source, *output = (MockTexture *)destination;
    unsigned bpp = source.pixelFormat == MTLPixelFormatRGBA16Float ? 8 : 4;
    NSUInteger row;
+   [resources addObject:source]; [resources addObject:destination];
    assert(!slice && !level && !outSlice && !outLevel && !origin.z
          && !outOrigin.x && !outOrigin.y && !outOrigin.z && size.depth == 1);
    assert(origin.x + size.width <= input.width && origin.y + size.height <= input.height);
@@ -136,6 +139,7 @@ static unsigned live_textures, live_backing;
    NSUInteger _status;
    unsigned sequence;
    BOOL fail_encoder, unretained;
+   NSMutableArray *resources;
    MockEvent *wait, *signal;
    uint64_t wait_value, signal_value;
    void (^completion)(id<MTLCommandBuffer>);
@@ -145,7 +149,7 @@ static unsigned live_textures, live_backing;
 - (void)complete:(NSUInteger)status;
 @end
 @implementation MockBuffer
-- (void)dealloc { assert(!completion); [_device release]; [super dealloc]; }
+- (void)dealloc { assert(!completion); [resources release]; [_device release]; [super dealloc]; }
 - (id<MTLDevice>)device { return _device; }
 - (NSUInteger)status { return _status; }
 - (BOOL)retainedReferences { return !unretained; }
@@ -153,7 +157,10 @@ static unsigned live_textures, live_backing;
 {
    if (fail_encoder) return nil;
    assert(sequence++ == 1);
-   return [[[MockBlit alloc] init] autorelease];
+   if (!resources) resources = [NSMutableArray new];
+   MockBlit *encoder = [[[MockBlit alloc] init] autorelease];
+   encoder->resources = resources;
+   return encoder;
 }
 - (void)addCompletedHandler:(void (^)(id<MTLCommandBuffer>))block
 { assert(!completion); completion = Block_copy(block); }
@@ -174,6 +181,7 @@ static unsigned live_textures, live_backing;
    completion = NULL;
    block(self);
    Block_release(block);
+   [resources removeAllObjects];
 }
 @end
 
@@ -185,12 +193,15 @@ static unsigned live_textures, live_backing;
    BOOL _planar;
    unsigned _stagingLent;
    id<MTLTexture> _texture;
+   id _sampler;
 }
-@property(readonly) id<MTLTexture> texture;
+@property(nonatomic, retain) id<MTLTexture> texture;
+@property(nonatomic, retain) id sampler;
 @end
 @implementation Texture
-- (id<MTLTexture>)texture { return _texture; }
-- (void)dealloc { [_texture release]; [super dealloc]; }
+@synthesize texture = _texture;
+@synthesize sampler = _sampler;
+- (void)dealloc { [_texture release]; [_sampler release]; [super dealloc]; }
 @end
 @interface MockContext : NSObject
 {
@@ -311,7 +322,7 @@ static void test(unsigned format, unsigned action)
          uv->_width = 3;
          assert(!metal_frame_create(&source, &frame)); uv->_width = 4;
       }
-      if (action >= 4 && action < 10)
+      if (action >= 4 && action != 10)
       {
          y->_width = 9; y->_height = 7; source.crop_x = 2; source.crop_y = 2;
          source.color.primaries = 1; source.color.transfer = format == IMAGE_PIXFMT_FP16 ? 8 : 13;
@@ -364,6 +375,7 @@ static void test(unsigned format, unsigned action)
          MockContext *context = [MockContext new];
          MetalDriver *driver = [MetalDriver new];
          uintptr_t handle = 0, original_handle;
+         MockTexture *old_image = nil;
          Texture *texture;
          context->_device = device; context->_buffer = buffer; driver->_context = context;
          imported.output_pixfmt = format;
@@ -400,6 +412,14 @@ static void test(unsigned format, unsigned action)
          {
             handle = (uintptr_t)[context newImportedTexture:y->_pixelFormat width:7 height:5 filter:TEXTURE_FILTER_LINEAR];
             memset(((MockTexture *)((Texture *)handle).texture)->pixels, 0xa5, 1024);
+            if (action >= 11)
+            {
+               old_image = [(MockTexture *)((Texture *)handle).texture retain];
+               if (action <= 13) old_image->_width = 6;
+               else if (action <= 16) old_image->_height = 4;
+               else old_image->_pixelFormat = format == IMAGE_PIXFMT_FP16
+                  ? MTLPixelFormatRGBA8Unorm : MTLPixelFormatRGBA16Float;
+            }
          }
          original_handle = handle;
          if (handle)
@@ -413,7 +433,9 @@ static void test(unsigned format, unsigned action)
                   == VIDEO_TEXTURE_UPDATE_REFUSED && handle == original_handle && !buffer->sequence);
             held->_planar = NO;
          }
-         buffer->fail_encoder = action == 5 || action == 9;
+         context->fail_texture = action == 12 || action == 15 || action == 18;
+         buffer->fail_encoder = action == 5 || action == 9
+            || action == 13 || action == 16 || action == 19;
          assert(metal_import_texture(driver, &handle, &imported, TEXTURE_FILTER_MIPMAP_LINEAR)
                == VIDEO_TEXTURE_UPDATE_REFUSED && handle == original_handle);
          if (action == 7)
@@ -422,11 +444,13 @@ static void test(unsigned format, unsigned action)
                   == VIDEO_TEXTURE_UPDATE_REFUSED && !handle && !buffer->sequence);
             video_hw_frame_abandon(&frame); [ready setSignaledValue:3];
          }
-         else if (action == 5 || action == 9)
+         else if (action == 5 || action == 9
+               || action == 12 || action == 13 || action == 15
+               || action == 16 || action == 18 || action == 19)
          {
             assert(metal_import_texture(driver, &handle, &imported, TEXTURE_FILTER_LINEAR)
                   == VIDEO_TEXTURE_UPDATE_REFUSED && handle == original_handle && !buffer->completion);
-            assert(buffer->sequence == 1 && live_backing == 3);
+            assert(buffer->sequence == (context->fail_texture ? 0u : 1u) && live_backing == 3);
             if (handle)
             {
                texture = (Texture *)handle;
@@ -440,15 +464,28 @@ static void test(unsigned format, unsigned action)
             assert(metal_import_texture(driver, &handle, &imported, TEXTURE_FILTER_LINEAR)
                   == VIDEO_TEXTURE_UPDATE_DONE && handle);
             assert(!original_handle || handle == original_handle);
+            assert(context->allocations == (old_image ? 3u : 2u));
             texture = (Texture *)handle;
+            if (old_image)
+            {
+               assert(texture.texture != old_image);
+               assert(context->allocations == 3);
+               for (i = 0; i < 1024; i++) assert(old_image->pixels[i] == 0xa5);
+            }
             for (i = 0; i < 5; i++)
             {
                unsigned bpp = format == IMAGE_PIXFMT_FP16 ? 8 : 4;
                assert(!memcmp(((MockTexture *)texture.texture)->pixels + i * 7 * bpp,
                      ((MockTexture *)source.planes[0])->pixels + ((i + 2) * 9 + 2) * bpp, 7 * bpp));
             }
+            if (old_image) [texture release];
             [ready setSignaledValue:3]; [buffer complete:MTLCommandBufferStatusCompleted];
-            [texture release];
+            if (!old_image) [texture release];
+         }
+         if (old_image)
+         {
+            for (i = 0; i < 1024; i++) assert(old_image->pixels[i] == 0xa5);
+            [old_image release];
          }
          [context release]; [driver release];
       }
@@ -476,6 +513,7 @@ static void test(unsigned format, unsigned action)
          }
       }
       assert(done.signaledValue == 7);
+      if (live_backing || live_textures) fprintf(stderr, "format %u action %u: %u textures, %u backing\n", format, action, live_textures, live_backing);
       assert(!live_backing && !live_textures);
       [buffer release]; [ready release]; [done release];
       [device release]; [other release];
@@ -493,6 +531,11 @@ int main(void)
    test(IMAGE_PIXFMT_8888, 8); test(IMAGE_PIXFMT_8888, 9);
    test(IMAGE_PIXFMT_FP16, 8); test(IMAGE_PIXFMT_FP16, 9);
    for (i = 0; i < 4; i++) test(formats[i], 10);
-   puts("Metal packed import: 30 ownership/copy/refusal combinations passed");
+   for (j = 11; j < 20; j++)
+   {
+      test(IMAGE_PIXFMT_8888, j);
+      test(IMAGE_PIXFMT_FP16, j);
+   }
+   puts("Metal packed import: 48 ownership/copy/refusal/replacement combinations passed");
    return 0;
 }
