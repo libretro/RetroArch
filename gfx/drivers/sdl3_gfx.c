@@ -1167,18 +1167,17 @@ static void sdl3_gfx_viewport_info(void *data, struct video_viewport *vp)
    *vp = vid->vp;
 }
 
-static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* The backbuffer contents after SDL_RenderPresent are undefined on
+ * several backends, so the presented frame can't be read directly.
+ * The last core frame is still retained in vid->frame.tex, though:
+ * redraw it into the backbuffer and capture that. Nothing here is
+ * presented - the next real frame starts with a full clear - so
+ * this scratch rendering is never visible. Menu/widget/OSD passes
+ * are not replayed; the capture is the raw game viewport, or the
+ * views. */
+static bool sdl3_gfx_redraw_and_capture(sdl3_video_t *vid, uint8_t *buffer,
+      bool bgrx)
 {
-   sdl3_video_t *vid = (sdl3_video_t*)data;
-
-   /* The backbuffer contents after SDL_RenderPresent are undefined on
-    * several backends, so the presented frame can't be read directly.
-    * The last core frame is still retained in vid->frame.tex, though:
-    * redraw it into the backbuffer and capture that. Nothing here is
-    * presented - the next real frame starts with a full clear - so
-    * this scratch rendering is never visible. Menu/widget/OSD passes
-    * are not replayed; the capture is the raw game viewport, or the
-    * views. */
    SDL_RenderClear(vid->renderer);
    if (vid->views.active)
    {
@@ -1188,26 +1187,19 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    else
       sdl3_blit_frame(vid);
 
-   return sdl3_capture_viewport(vid, buffer, false);
+   return sdl3_capture_viewport(vid, buffer, bgrx);
+}
+
+static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   return sdl3_gfx_redraw_and_capture((sdl3_video_t*)data, buffer, false);
 }
 
 static bool sdl3_gfx_read_viewport_bgrx(void *data, uint8_t *buffer,
       bool is_idle, bool *bottom_up)
 {
-   sdl3_video_t *vid = (sdl3_video_t*)data;
-
-   /* Same redraw-and-capture as sdl3_gfx_read_viewport(). */
-   SDL_RenderClear(vid->renderer);
-   if (vid->views.active)
-   {
-      sdl3_views_render(vid);
-      sdl3_refresh_renderer(vid);
-   }
-   else
-      sdl3_blit_frame(vid);
-
    *bottom_up = false;
-   return sdl3_capture_viewport(vid, buffer, true);
+   return sdl3_gfx_redraw_and_capture((sdl3_video_t*)data, buffer, true);
 }
 
 /* Applies a new window size / fullscreen in place, without tearing

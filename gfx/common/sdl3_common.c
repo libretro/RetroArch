@@ -259,6 +259,20 @@ static void sdl3_window_move_to_monitor(SDL_Window *win,
    SDL_SyncWindow(win);
 }
 
+/* The display a window's size and mode are decided against: the one it
+ * is on once it exists - the user may have dragged it - and before
+ * that the configured monitor, which is where it is put. */
+static SDL_DisplayID sdl3_target_display(SDL_Window *win)
+{
+   SDL_DisplayID display;
+
+   if (win)
+      return SDL_GetDisplayForWindow(win);
+
+   display = sdl3_monitor_display(config_get_ptr()->uints.video_monitor_index);
+   return display ? display : SDL_GetPrimaryDisplay();
+}
+
 /* Creates the SDL3 window. */
 static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
       bool fullscreen, SDL_WindowFlags backend_flags)
@@ -278,10 +292,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
        * monitor's, which is where the window goes below. */
       if (settings->bools.video_windowed_fullscreen)
       {
-         SDL_DisplayID display = sdl3_monitor_display(
-               settings->uints.video_monitor_index);
          const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(
-               display ? display : SDL_GetPrimaryDisplay());
+               sdl3_target_display(NULL));
          if (mode)
          {
             width  = (unsigned)mode->w;
@@ -334,7 +346,7 @@ static void sdl3_window_apply_fullscreen(SDL_Window *win,
    bool exclusive = fullscreen
          && !settings->bools.video_windowed_fullscreen
          && SDL_GetClosestFullscreenDisplayMode(
-               SDL_GetDisplayForWindow(win),
+               sdl3_target_display(win),
                width, height,
                settings->floats.video_refresh_rate, false, &mode);
 
