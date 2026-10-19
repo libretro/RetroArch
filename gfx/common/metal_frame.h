@@ -40,6 +40,12 @@ struct video_frame_import;
 bool metal_frame_create(const metal_frame_source_t *source,
       video_hw_frame_t *output);
 
+/* CoreVideo NV12/P010 plane views. Cache and pixel buffer are borrowed;
+ * source planes/backing must be empty. Retains the buffer and both views.
+ * Pixel format supplies range; conflicting explicit range is refused. */
+bool metal_frame_create_cv(const metal_frame_source_t *source,
+      void *pixel_buffer, void *texture_cache, video_hw_frame_t *output);
+
 /* Success transfers the lease to command-buffer completion. The callback
  * starts with no active encoder and ends its encoders before returning; the caller commits the buffer.
  * False from the callback must leave no commands using the source planes.

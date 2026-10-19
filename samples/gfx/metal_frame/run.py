@@ -34,7 +34,7 @@ def main():
         section = section.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / "gfx/common/metal_frame.h").as_posix() + '"')
         driver_header = (ROOT / "gfx/video_driver.h").read_text(encoding="utf-8")
         carrier = driver_header.split("typedef struct video_frame_import\n", 1)[1].split("} video_frame_import_t;", 1)[0]
-        preamble = '#include <formats/video_hw_frame.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
+        preamble = '#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
         preamble += 'enum video_texture_update' + driver_header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
         preamble += 'typedef struct video_frame_import\n' + carrier + '} video_frame_import_t;\n'
         fixture = HERE / ("mock.m" if args.mock else "native.m")
@@ -44,6 +44,9 @@ def main():
             allocation = "- (Texture *)newImportedTexture:" + source.rsplit("- (Texture *)newImportedTexture:", 1)[1].split("\n}", 1)[0] + "\n}"
             native_import = native_import.replace("/* SHIPPING_IMPORT_ALLOCATION */", allocation)
             text = text.replace("/* NATIVE_IMPORT */", native_import)
+        cv = source.split("/* METAL_FRAME_CV_BEGIN */", 1)[1].split("/* METAL_FRAME_CV_END */", 1)[0]
+        cv_fixture = (HERE / ("cv_mock.m" if args.mock else "cv_native.m")).read_text(encoding="utf-8")
+        text = text.replace("/* COREVIDEO */", cv_fixture.replace("/* SHIPPING_CV */", cv))
         importer = source.split("/* METAL_FRAME_IMPORT_BEGIN */", 1)[1].split("/* METAL_FRAME_IMPORT_END */", 1)[0]
         text = text.replace("/* SHIPPING_IMPORT */", importer)
         unit = tmp / "lease.m"
@@ -64,7 +67,7 @@ def main():
             libs = ["-lBlocksRuntime", "-L" + str(objc_library.parent)] + libs
         else:
             flags += ["-fobjc-arc", "-mmacosx-version-min=10.14"]
-            libs = ["-framework", "Foundation", "-framework", "Metal", "-framework", "CoreFoundation"]
+            libs = ["-framework", "Foundation", "-framework", "Metal", "-framework", "CoreFoundation", "-framework", "CoreVideo"]
         exe = tmp / "lease"
         run([os.environ.get("OBJC", "clang")] + flags + [str(unit), "-o", str(exe)] + libs)
         result = subprocess.run([str(exe)], check=False)

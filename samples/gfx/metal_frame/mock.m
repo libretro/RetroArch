@@ -186,6 +186,7 @@ static unsigned live_textures, live_backing;
 @end
 
 /* SHIPPING_LEASE */
+/* COREVIDEO */
 
 @interface Texture : NSObject
 {
@@ -532,6 +533,7 @@ static void test(unsigned format, unsigned action)
 }
 int main(void)
 {
+   test_cv_mock();
    unsigned i, j;
    const unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };
    for (i = 0; i < 4; i++) for (j = 0; j < 4; j++) test(formats[i], j);

@@ -52,6 +52,7 @@
 		0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0720994D29B1258C001642BB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		C0DE20261019000000000000 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		0720995129B1258C001642BB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
 		0720995229B1258C001642BB /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
@@ -99,6 +100,7 @@
 		07F2BBD42BE83A4700FD1295 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		07F2BBD52BE83A4700FD1295 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		07F2BBD72BE83A4700FD1295 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		C0DE20261019000000000001 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		07F2BBD82BE83A4700FD1295 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		07F2BBD92BE83A4700FD1295 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
 		07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
@@ -121,8 +123,10 @@
 		9254B33125FA0BA300A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		9254B33825FA72F100A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		D27C50882228360000113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		C0DE20261019000000000002 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		C0DE20261019000000000003 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5E9E1A88E45B007336C1 /* CoreVideo.framework */; };
 		D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 /* End PBXBuildFile section */
 
@@ -489,6 +493,7 @@
 				076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */,
 				D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */,
 				D27C50882228360000113BC0 /* AVFoundation.framework in Frameworks */,
+				C0DE20261019000000000002 /* CoreVideo.framework in Frameworks */,
 				076E640D2BF30A9200681536 /* GameController.framework in Frameworks */,
 				053FC275214341F000D98D46 /* QtCore.framework in Frameworks */,
 				053FC270214340F500D98D46 /* QtGui.framework in Frameworks */,
@@ -515,6 +520,7 @@
 				0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */,
 				0720994D29B1258C001642BB /* GameController.framework in Frameworks */,
 				0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */,
+				C0DE20261019000000000000 /* CoreVideo.framework in Frameworks */,
 				0703E3292D76B6ED00D7B9BE /* CoreMedia.framework in Frameworks */,
 				0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */,
 				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
@@ -543,6 +549,7 @@
 				074A924C2D76B18D0084364A /* Accelerate.framework in Frameworks */,
 				0703E32B2D76B6FA00D7B9BE /* CoreMedia.framework in Frameworks */,
 				07F2BBD72BE83A4700FD1295 /* AVFoundation.framework in Frameworks */,
+				C0DE20261019000000000001 /* CoreVideo.framework in Frameworks */,
 				07F2BBD82BE83A4700FD1295 /* QuartzCore.framework in Frameworks */,
 				07F2BBD92BE83A4700FD1295 /* IOSurface.framework in Frameworks */,
 				07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */,
@@ -570,6 +577,7 @@
 				074A924B2D76B1850084364A /* Accelerate.framework in Frameworks */,
 				0703E32A2D76B6F400D7B9BE /* CoreMedia.framework in Frameworks */,
 				D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */,
+				C0DE20261019000000000003 /* CoreVideo.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
 				0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */,

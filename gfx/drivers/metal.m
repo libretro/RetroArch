@@ -17,6 +17,7 @@
 #include "../../apple_runtime.h"
 #include <Metal/Metal.h>
 #include <MetalKit/MetalKit.h>
+#include <CoreVideo/CoreVideo.h>
 #include <QuartzCore/QuartzCore.h>
 
 #include <stdio.h>
@@ -917,6 +918,72 @@ bool metal_frame_copy(const struct video_frame_import *frame,
          metal_frame_copy_encode, destination);
 }
 /* METAL_FRAME_LEASE_END */
+
+/* METAL_FRAME_CV_BEGIN */
+bool metal_frame_create_cv(const metal_frame_source_t *source,
+      void *pixel_buffer, void *texture_cache, video_hw_frame_t *output)
+{
+   CVPixelBufferRef pixels = (CVPixelBufferRef)pixel_buffer;
+   CVMetalTextureCacheRef cache = (CVMetalTextureCacheRef)texture_cache;
+   CVMetalTextureRef views[2] = { NULL, NULL };
+   metal_frame_source_t local;
+   MTLPixelFormat formats[2];
+   unsigned range, pixfmt, i;
+   bool result = false;
+   if (!source || !pixels || !cache || !output || source->planes[0]
+         || source->planes[1] || source->backing[0] || source->backing[1]
+         || source->backing[2] || !CVPixelBufferIsPlanar(pixels)
+         || CVPixelBufferGetPlaneCount(pixels) != 2)
+      return false;
+   switch (CVPixelBufferGetPixelFormatType(pixels))
+   {
+      case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+      case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
+         pixfmt = IMAGE_PIXFMT_NV12;
+         range = CVPixelBufferGetPixelFormatType(pixels)
+            == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange ? 2 : 1;
+         formats[0] = MTLPixelFormatR8Unorm;
+         formats[1] = MTLPixelFormatRG8Unorm;
+         break;
+      case kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange:
+      case kCVPixelFormatType_420YpCbCr10BiPlanarFullRange:
+         pixfmt = IMAGE_PIXFMT_P010;
+         range = CVPixelBufferGetPixelFormatType(pixels)
+            == kCVPixelFormatType_420YpCbCr10BiPlanarFullRange ? 2 : 1;
+         formats[0] = MTLPixelFormatR16Unorm;
+         formats[1] = MTLPixelFormatRG16Unorm;
+         break;
+      default:
+         return false;
+   }
+   if (source->pixfmt != pixfmt
+         || (source->color.range && source->color.range != range))
+      return false;
+   local = *source;
+   local.color.range = range;
+   local.yuv = (local.yuv & ~IMAGE_YUV_FLAG_FULL_RANGE)
+      | (range == 2 ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+   local.backing[0] = pixels;
+   for (i = 0; i < 2; i++)
+   {
+      size_t width = CVPixelBufferGetWidthOfPlane(pixels, i);
+      size_t height = CVPixelBufferGetHeightOfPlane(pixels, i);
+      if (!width || !height || width > UINT_MAX || height > UINT_MAX
+            || CVMetalTextureCacheCreateTextureFromImage(NULL, cache, pixels,
+               NULL, formats[i], width, height, i, &views[i]) != kCVReturnSuccess
+            || !views[i] || CVMetalTextureIsFlipped(views[i]))
+         goto done;
+      local.planes[i] = (__bridge void *)CVMetalTextureGetTexture(views[i]);
+      local.backing[i + 1] = views[i];
+   }
+   result = metal_frame_create(&local, output);
+done:
+   for (i = 0; i < 2; i++)
+      if (views[i])
+         CFRelease(views[i]);
+   return result;
+}
+/* METAL_FRAME_CV_END */
 
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u

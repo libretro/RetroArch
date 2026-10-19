@@ -46,3 +46,19 @@ must retain its referenced resources; destination storage must not alias source.
 The Metal driver has an import callback but still advertises zero import formats. CoreVideo plane
 creation, conversion, importer integration and native HDR acceptance remain
 separate gates. This change makes no copy-count or performance claim.
+
+`metal_frame_create_cv` accepts a caller-owned reusable CVMetalTextureCache
+and an NV12/P010 CVPixelBuffer (limited or full range). It creates Metal plane
+views and retains the pixel buffer and both CVMetalTexture wrappers in the
+lease. Source planes/backing must be empty; crop, color metadata, events and
+listener come from the caller. Range comes from the pixel format; conflicting
+explicit range is refused. Flipped views and textures from another device are
+refused. No CPU mapping, cache flush, conversion or readiness wait is added.
+The existing producer readiness and per-slot done contract still applies.
+
+The mock adds 32 CoreVideo ownership/refusal cases, including partial view
+creation failures and GPU error before readiness. Native coverage adds eight real IOSurface-backed NV12/P010
+copy/discard cases. The caller releases its pixel buffer and cache references
+before readiness advances. Test-only CPU mapping initializes spatial plane
+patterns; GPU copies and readback compare the active plane bytes exactly.
+This handoff is not a VideoToolbox decoder or a planar RGB converter.
