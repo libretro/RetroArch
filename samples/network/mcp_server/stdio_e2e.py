@@ -435,7 +435,10 @@ def menu_home(first_id):
 
 # Settings, Drivers, then the menu driver's own list, where the one in
 # use is checked.
-sc = menu_walk(sc, ('Settings', 'Drivers', 'Menu'), 290)
+sc = menu_walk(sc, ('Settings', 'Drivers'), 290)
+check('a list says the lists above it: %s' % sc.get('path'),
+      sc.get('path') == 'Main Menu > Settings > Drivers')
+sc = menu_walk(sc, ('Menu',), 292)
 check('a list of choices marks the one in use: %s' % sc.get('rows'),
       {'label': 'rgui', 'value': 'checked'} in
       [dict((k, r[k]) for k in ('label', 'value')) for r in sc.get('rows', [])])
@@ -600,6 +603,15 @@ send({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize',
                  'clientInfo': {'name': 'e2e', 'version': '1'}}})
 recv(1, 60)
 send({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
+# With nothing running the menu cannot close, and there is no core to
+# ask for options: both say so, and what to do.
+msg, t, _ = call(7, 'MENU', {'action': 'close'})
+check('MENU close with no content says the menu stays open: '
+      + (t or '').strip(),
+      msg and msg['result']['isError'] and 'stays open' in t)
+msg, t, _ = call(8, 'CORE_OPTION', {'action': 'show'})
+check('CORE_OPTION with no core running says so: ' + (t or '').strip(),
+      msg and msg['result']['isError'] and 'no core is running' in t)
 msg, t, _ = call(2, 'LOAD_CONTENT', {'core': core, 'content': rom,
                                      'paused': 'on'})
 check('cold LOAD_CONTENT paused answers once loaded: ' + (t or '').strip(),

@@ -1190,8 +1190,7 @@ static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_
 static const struct cmd_column cmd_cols_menu[] = {
    { "index", NULL },
    { "label", NULL },
-   { "value", "A setting's value; \"...\" opens a list; \"checked\" is "
-      "the current choice." },
+   { "value", "\"...\" opens a list; \"checked\" is the choice in use." },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_menu[] = {
@@ -1200,8 +1199,10 @@ static const struct cmd_trailer cmd_trailers_menu[] = {
       false, true },
    { "MESSAGE", NULL, "message", "Shown over the list: a confirms, b "
       "dismisses.", false, true },
+   { "PATH", NULL, "path", "The lists above it.", false, true },
    { "SELECTED", NULL, "selected", "The selected index." },
    { "COUNT", NULL, "count", "Entries in the list." },
+   { "MORE", "more", "next", "from for the next page." },
    { NULL }
 };
 static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL, false, "title" };
@@ -1214,7 +1215,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Whether content is playing, paused or not loaded, with its system and file name.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
+   { "GET_STATUS",       command_get_status,       "No argument", "PLAYING, PAUSED or CONTENTLESS, with the system and the content's file name.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_option, &cmd_rows_option },
    { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", CMD_INFO_NO_TOOL, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
@@ -1261,7 +1262,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
-   { "INPUT", command_input, "<set|release|show> [player] [control] [value]", "Hold RetroPad buttons or stick axes over a player's own input until set again or released, or show what is held. Answers with the player and the buttons and axes held.", 0, cmd_params_input_family, &cmd_rows_input },
+   { "INPUT", command_input, "<set|release|show> [player] [control] [value]", "Hold RetroPad buttons or stick axes over a player's own input until set again or released, or show what is held. Answers player, buttons and axes, tab separated, none where nothing is held.", 0, cmd_params_input_family, &cmd_rows_input },
    { "OPTION", command_option, "<show|set> [option] [on|off]", "Show RetroArch's options - pause, fast-forward, the frame count, the slots and more - or turn one on or off.", 0, cmd_params_option_family, &cmd_rows_option },
    { "CORE_OPTION", command_core_option, "<show|set> [key] [value]", "Show the running core's options - key, value and description - or set one to one of its values.", 0, cmd_params_core_option_family, &cmd_rows_core_option },
    { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
@@ -1273,7 +1274,7 @@ static const struct cmd_action_map action_map[] = {
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
    { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
-   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection.", CMD_INFO_DESTRUCTIVE, cmd_params_menu, &cmd_rows_menu },
+   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection. On Ozone, left moves to the tabs, up and down pick one, right returns; on XMB left and right switch tabs.", CMD_INFO_DESTRUCTIVE, cmd_params_menu, &cmd_rows_menu },
    { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 

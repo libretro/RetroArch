@@ -1282,6 +1282,40 @@ static void command_menu_clean(char *s)
          *s = ' ';
 }
 
+/* The title of the list @i deep in @stack. A playlist's tab is titled
+ * "Horizontal Menu" there; its playlist's name says which it is. */
+static void command_menu_level_title(const file_list_t *stack, size_t i,
+      char *s, size_t len)
+{
+   struct menu_state       *menu_st = menu_state_get_ptr();
+   const menu_ctx_driver_t *drv     = menu_st->driver_ctx;
+   menu_file_list_cbs_t    *cbs     =
+      (menu_file_list_cbs_t*)stack->list[i].actiondata;
+   s[0] = '\0';
+   if (     stack->list[i].type == MENU_SETTING_HORIZONTAL_MENU
+         && drv && drv->list_get_entry && drv->list_get_selection
+         && drv->list_get_size)
+   {
+      size_t sel  = drv->list_get_selection(menu_st->userdata);
+      size_t tabs = drv->list_get_size(menu_st->userdata, MENU_LIST_TABS);
+      struct item_file *item = sel > tabs
+         ? (struct item_file*)drv->list_get_entry(menu_st->userdata,
+               MENU_LIST_HORIZONTAL, (unsigned)(sel - (tabs + 1)))
+         : NULL;
+      if (item && item->path && *item->path)
+      {
+         strlcpy(s, path_basename(item->path), len);
+         path_remove_extension(s);
+         return;
+      }
+   }
+   if (i + 1 == stack->size)
+      menu_entries_get_title(s, len);
+   else if (cbs && cbs->action_get_title)
+      cbs->action_get_title(stack->list[i].path, stack->list[i].label,
+            stack->list[i].type, s, len);
+}
+
 /* What the menu shows: its title, a page of entries - number, label
  * and value - holding the selection, or from @from, and which entry is
  * selected of how many. NULL where out of memory; the length in
@@ -1295,7 +1329,7 @@ static char *command_menu_answer(bool has_from, unsigned from,
       ? MENU_LIST_GET_SELECTION(list, (unsigned)0) : NULL;
    size_t             count   = buf ? buf->size : 0;
    size_t             sel     = menu_st->selection_ptr;
-   size_t             size    = 2048 + COMMAND_MENU_PAGE * 560;
+   size_t             size    = 8192 + COMMAND_MENU_PAGE * 560;
    size_t             _len;
    size_t             i;
    size_t             first;
@@ -1315,11 +1349,28 @@ static char *command_menu_answer(bool has_from, unsigned from,
       return NULL;
    }
    {
-      char title[512];
+      file_list_t *stack = MENU_LIST_GET(list, 0);
+      char         title[256];
       title[0] = '\0';
-      menu_entries_get_title(title, sizeof(title));
+      if (stack && stack->size)
+         command_menu_level_title(stack, stack->size - 1, title,
+               sizeof(title));
       command_menu_clean(title);
       _len = (size_t)snprintf(out, size, "MENU %s\n", title);
+      /* how it got there: the open menu remembers where it was left */
+      if (stack && stack->size > 1)
+      {
+         size_t d;
+         _len += strlcpy(out + _len, "PATH ", size - _len);
+         for (d = 0; d < stack->size && d < 16; d++)
+         {
+            command_menu_level_title(stack, d, title, sizeof(title));
+            command_menu_clean(title);
+            _len += (size_t)snprintf(out + _len, size - _len, "%s%s",
+                  d ? " > " : "", title);
+         }
+         _len += strlcpy(out + _len, "\n", size - _len);
+      }
    }
    /* what waits on the user over the list: typing, or a message that a
     * second a confirms - "Press again to quit" */
@@ -1364,6 +1415,9 @@ static char *command_menu_answer(bool has_from, unsigned from,
    }
    _len += (size_t)snprintf(out + _len, size - _len, "SELECTED %u\nCOUNT %u\n",
          (unsigned)sel, (unsigned)count);
+   if (i < count)
+      _len += (size_t)snprintf(out + _len, size - _len, "MORE %u\n",
+            (unsigned)i);
    free(entry);
    *out_len = _len;
    return out;
@@ -1543,6 +1597,12 @@ bool command_menu(command_t *cmd, const char *arg)
       size_t _len = 0;
       if (alive)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+      {
+         command_reply_error(cmd, "MENU", "the menu stays open with no "
+               "content running");
+         return false;
+      }
       if (!(out = command_menu_answer(false, 0, &_len)))
          return false;
       cmd->replier(cmd, out, _len);
@@ -4712,6 +4772,12 @@ static bool command_core_option_find(command_t *cmd, const char *name,
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
+   if (!(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, name, "no core is running: LOAD_CONTENT or "
+            "CORE start starts one");
+      return false;
+   }
    if (!(*opt = runloop_st ? runloop_st->core_options : NULL) || !(*opt)->size)
    {
       command_reply_error(cmd, name, "the running core has no options");

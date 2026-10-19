@@ -218,6 +218,8 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `COUNT 40` | `count: 40` | the entries in the menu's list |
 | `MESSAGE Press again to quit` | `message: "Press again to quit"` | a message over the menu, on any line |
 | `KEYBOARD Username` | `keyboard: "Username"` | the menu asking for text, on any line |
+| `PATH Main Menu > Settings` | `path: "Main Menu > Settings"` | the lists above the menu's own, on any line |
+| `MORE 50` | `more: true`, `next: 50` | the menu's next page, as `from` takes it |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -304,6 +306,17 @@ SELECTED 1
 COUNT 15
 ```
 
+The menu opens where it was left, so below the title `PATH` names the
+lists above it - `PATH Main Menu > Settings > Drivers` - and `b` goes
+back up them. Where the list runs past the page, `MORE 50` says where
+the next one starts, for `from`.
+
+XMB and Ozone keep their top level in tabs - Main Menu, Settings,
+History, the playlists - rather than in one list. On XMB, `left` and
+`right` at the top switch tabs. On Ozone, `left` moves to the tabs,
+`up` and `down` pick one, and `right` returns to its list; `a` there
+only returns too. A playlist's tab is titled with the playlist's name.
+
 Each entry is its index, its label and its value: a setting's value,
 `...` for an entry that opens a list, or `checked` for the current
 choice in a list of them - the driver in use, say. `title`, `rows`, `selected`
@@ -311,7 +324,8 @@ and `count` are its structured fields.
 
 - `show` answers what the menu shows; `from` lists from that entry.
 - `open` and `close` open and close it. With it closed, `show` and
-  `close` answer `CLOSED`, and the rest are refused.
+  `close` answer `CLOSED`, and the rest are refused. With no content
+  running the menu cannot close, and `close` says so.
 - `select <index>` moves straight to an entry, rather than pressing
   `down` 137 times.
 - `up`, `down`, `left`, `right`, `a` and `b` press the menu's buttons:

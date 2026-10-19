@@ -283,8 +283,9 @@ static bool act_readt(command_t *cmd, const char *arg)
 }
 
 /* the menu: its title opens the reply, and a closed one says so */
-#define MENUS_TEXT "MENUS Main Menu\n0\tQuick Menu\t...\n1\tLoad Content\t\n" \
-                   "SELECTED 1\nCOUNT 2\n"
+#define MENUS_TEXT "MENUS Main Menu\nPATH Main Menu > Settings\n" \
+                   "0\tQuick Menu\t...\n1\tLoad Content\t\n" \
+                   "SELECTED 1\nCOUNT 60\nMORE 50\n"
 #define MENUC_TEXT "CLOSED\n"
 /* what waits on the user, as text anywhere in the reply */
 #define MENUD_TEXT "MENUD User\nKEYBOARD Username: any\t1 text\n" \
@@ -1246,12 +1247,13 @@ int main(void)
          && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
                "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
-   check("the menu's title opens its reply, before its entries",
+   check("the menu's title, path, and three closing lines",
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"index\":\"0\",\"label\":\"Quick Menu\",\"value\":\"...\"},"
                "{\"index\":\"1\",\"label\":\"Load Content\",\"value\":\"\"}],"
-               "\"selected\":1,\"count\":2,\"title\":\"Main Menu\"}"));
+               "\"selected\":1,\"count\":60,\"more\":true,\"next\":50,"
+               "\"path\":\"Main Menu > Settings\",\"title\":\"Main Menu\"}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUC", NULL), out, sizeof(out), NULL);
    check("and a closed menu says so",
          st == 200 && json_valid(body_of(out))
@@ -1301,13 +1303,16 @@ int main(void)
       /* the tool after BARE answers rows, so BARE's own ends there */
       const char *nx = br ? strstr(br, "\"name\":\"UNTIL\"") : NULL;
       const char *rw = br ? strstr(br, "\"rows\"") : NULL;
+      /* LOGR's own entry: the tools after it may well cut short */
+      const char *ln = lg ? strstr(lg + 1, "\"name\":\"") : NULL;
+      const char *mo = lg ? strstr(lg, "\"more\"") : NULL;
       check("its schema declares the trailers and no rows",
             br && strstr(br, "\"next\":{\"type\":\"integer\"")
             && (!rw || (nx && rw > nx)));
       check("its schema declares both trailers and no more",
             lg && strstr(lg, "\"next\":{\"type\":\"integer\"")
             && strstr(lg, "\"lost\":{\"type\":\"integer\"")
-            && !strstr(lg, "\"more\""));
+            && (!mo || (ln && mo > ln)));
    }
 
    printf("commands that are not tools\n");
