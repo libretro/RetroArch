@@ -1208,6 +1208,53 @@ int metal_frame_cv_pool_export(metal_frame_cv_pool_t *pool,
 }
 /* METAL_FRAME_CV_POOL_END */
 
+/* METAL_FRAME_CV_POOL_SETUP_BEGIN */
+#include <dispatch/dispatch.h>
+@protocol RArchMetalPoolDevice <MTLDevice>
+- (id)newSharedEvent;
+@end
+@protocol RArchMetalPoolListener <NSObject>
+- (id)initWithDispatchQueue:(dispatch_queue_t)queue;
+@end
+
+metal_frame_cv_pool_t *metal_frame_cv_pool_create(void *opaque, unsigned count)
+{
+   @autoreleasepool
+   {
+      id<RArchMetalPoolDevice> device = (__bridge id<RArchMetalPoolDevice>)opaque;
+      Class listener_class = NSClassFromString(@"MTLSharedEventListener");
+      id<RArchMetalSharedEvent> ready = nil;
+      id events[32] = { nil }, listener = nil;
+      void *done[32];
+      CVMetalTextureCacheRef cache = NULL;
+      metal_frame_cv_pool_t *pool = NULL;
+      unsigned i;
+      if (!device || !count || count > 32 || !listener_class
+            || ![device respondsToSelector:@selector(newSharedEvent)]) return NULL;
+      ready = [device newSharedEvent];
+      listener = [(id<RArchMetalPoolListener>)[listener_class alloc]
+         initWithDispatchQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
+      if (!ready || !listener
+            || CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache) != kCVReturnSuccess
+            || !cache) goto done;
+      [ready setSignaledValue:1];
+      for (i = 0; i < count; i++)
+      {
+         events[i] = [device newSharedEvent];
+         if (!events[i]) goto done;
+         done[i] = (__bridge void*)events[i];
+      }
+      pool = metal_frame_cv_pool_new(opaque, cache, (__bridge void*)ready,
+            (__bridge void*)listener, done, count);
+done:
+      if (cache) CFRelease(cache);
+      for (i = 0; i < count; i++) RARCH_RELEASE(events[i]);
+      RARCH_RELEASE(ready); RARCH_RELEASE(listener);
+      return pool;
+   }
+}
+/* METAL_FRAME_CV_POOL_SETUP_END */
+
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u
 #define METAL_HDR_MODE_HDR10  1u

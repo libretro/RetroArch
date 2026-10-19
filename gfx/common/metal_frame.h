@@ -50,6 +50,11 @@ bool metal_frame_create_cv(const metal_frame_source_t *source,
 
 typedef struct metal_frame_cv_pool metal_frame_cv_pool_t;
 
+/* Setup for already-decoded CoreVideo images on this device. Creates the
+ * cache, ready event, listener and private completion events outside export.
+ * NULL means setup/capability refusal; caller retains device ownership. */
+metal_frame_cv_pool_t *metal_frame_cv_pool_create(void *device, unsigned count);
+
 /* Setup only. Borrowed cache, device, listener and events are retained.
  * Ready must already be signaled to at least 1: export only decoded images.
  * Supply 1..32 distinct, initially zero done events, separate from ready.
