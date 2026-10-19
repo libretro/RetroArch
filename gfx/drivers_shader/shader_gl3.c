@@ -2682,6 +2682,7 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
 
 struct gl3_filter_chain
 {
+   struct glslang_last_pass last_pass;
    struct gl3_pass **passes;
    size_t num_passes;
    gl3_filter_chain_pass_info *pass_info;
@@ -2713,6 +2714,24 @@ static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pas
       unsigned index, const char *id);
 static bool gl3_chain_init(struct gl3_filter_chain *chain);
 static bool gl3_chain_init_single_pass(struct gl3_filter_chain *chain, unsigned pass_idx);
+static bool gl3_chain_check_last_pass(struct gl3_filter_chain *chain,
+      const glslang_output *output, unsigned pass)
+{
+   if (!slang_last_pass_feedback(&chain->last_pass, output))
+      return false;
+   if (pass == chain->last_pass.index && chain->last_pass.inspect_feedback
+         && !chain->last_pass.needs_target
+         && chain->num_passes == pass + 2)
+   {
+      unsigned copy = pass + 1;
+      gl3_pass_free(chain->passes[copy]);
+      chain->passes[copy] = NULL;
+      chain->num_passes--;
+      chain->passes[pass]->final_pass = true;
+   }
+   return true;
+}
+
 static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned pass_idx,
       glslang_filter_chain_filter default_filter);
 static bool gl3_chain_init_alias_early(struct gl3_filter_chain *chain);
@@ -3307,7 +3326,13 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
    const struct video_shader_pass *next_pass;
    struct video_shader *shader = chain->common.shader_preset;
 
-   if (!shader || pass_idx >= chain->num_passes)
+   if (!shader)
+      return false;
+   /* A pruned copy still occupies its originally scheduled compile step. */
+   if (pass_idx == shader->passes && chain->num_passes == shader->passes
+         && chain->last_pass.inspect_feedback)
+      return true;
+   if (pass_idx >= chain->num_passes)
       return false;
 
    /* For the extra opaque pass appended when last_pass_is_fbo,
@@ -3325,6 +3350,12 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
    {
       RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
             pass->source.path);
+      return false;
+   }
+
+   if (!gl3_chain_check_last_pass(chain, &output, pass_idx))
+   {
+      glslang_output_free(&output);
       return false;
    }
 
@@ -3907,6 +3938,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    size_t j;
    unsigned i;
    bool last_pass_is_fbo;
+   struct glslang_last_pass last_pass;
    bool explicit_format;
    struct video_shader_parameter *itr;
    struct gl3_filter_chain *chain;
@@ -3928,7 +3960,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
     * chain and preset it already releases. */
    include_cache    = glslang_include_cache_new();
 
-   last_pass_is_fbo = glslang_last_pass_needs_target(shader, include_cache);
+   glslang_last_pass_init(shader, include_cache, &last_pass);
+   last_pass_is_fbo = last_pass.needs_target || last_pass.inspect_feedback;
 
    chain = gl3_chain_new(shader->passes + (last_pass_is_fbo ? 1 : 0));
    if (!chain)
@@ -3939,6 +3972,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          return NULL;
       }
    chain->common.frame_rect = frame_rect;
+   chain->last_pass = last_pass;
 
    if (      shader->luts
          && !gl3_filter_chain_load_luts(chain, shader))
@@ -3982,6 +4016,16 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          return NULL;
       }
       }
+
+      if (!gl3_chain_check_last_pass(chain, &output, i))
+      {
+         glslang_output_free(&output);
+         glslang_include_cache_free(include_cache);
+         free(shader);
+         gl3_chain_free(chain);
+         return NULL;
+      }
+      last_pass_is_fbo = chain->num_passes > shader->passes;
 
       for (j = 0; j < output.meta.num_parameters; j++)
       {
@@ -4253,6 +4297,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    unsigned i;
    unsigned total_passes;
    bool last_pass_is_fbo;
+   struct glslang_last_pass last_pass;
    struct gl3_filter_chain *chain;
    struct video_shader *shader = (struct video_shader*)calloc(1, sizeof(*shader));
    if (!shader)
@@ -4264,7 +4309,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       return NULL;
    }
 
-   last_pass_is_fbo = glslang_last_pass_needs_target(shader, NULL);
+   glslang_last_pass_init(shader, NULL, &last_pass);
+   last_pass_is_fbo = last_pass.needs_target || last_pass.inspect_feedback;
 
    total_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
    chain = gl3_chain_new(total_passes);
@@ -4275,6 +4321,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
          return NULL;
       }
    chain->common.frame_rect = frame_rect;
+   chain->last_pass = last_pass;
 
    if (      shader->luts
          && !gl3_filter_chain_load_luts(chain, shader))
@@ -4294,6 +4341,9 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       if (*shader->pass[i].alias)
          gl3_chain_set_pass_name(chain, i, shader->pass[i].alias);
    }
+
+   if (last_pass.name[0])
+      gl3_chain_set_pass_name(chain, shader->passes - 1, last_pass.name);
 
    if (last_pass_is_fbo)
    {

@@ -338,6 +338,10 @@ typedef struct glslang_output
    glslang_meta meta;
 } glslang_output;
 
+/* Accumulate active feedback resources from the compiled stages. */
+bool slang_last_pass_feedback(struct glslang_last_pass *state,
+      const glslang_output *output);
+
 void glslang_output_init(glslang_output *output);
 void glslang_output_free(glslang_output *output);
 

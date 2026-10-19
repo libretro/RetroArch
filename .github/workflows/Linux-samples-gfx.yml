@@ -196,7 +196,7 @@ jobs:
         timeout-minutes: 10
         run: |
           set -eu
-          pkgs="build-essential libgl-dev gcc-mingw-w64-x86-64 wine64"
+          pkgs="build-essential libgl-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -215,7 +215,7 @@ jobs:
           set -eu
           # The Vulkan and glcore slang chains give a preset's last pass
           # a render target and a hidden copy to the backbuffer only when
-          # glslang_last_pass_needs_target() says so: viewport at 1.0
+          # scale/format or compiled feedback requires it: viewport at 1.0
           # renders direct; other scales, a preset or shader format, and
           # a read of the last pass's feedback keep the target.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
@@ -228,7 +228,7 @@ jobs:
         working-directory: samples/gfx/slang_last_pass_target
         run: |
           set -eu
-          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          make clean CC=x86_64-w64-mingw32-gcc && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="-static -Wl,--gc-sections"
           WINEDEBUG=-all timeout 300 wine ./slang_last_pass_target_test.exe
           make clean
 

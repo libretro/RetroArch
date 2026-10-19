@@ -243,14 +243,18 @@ void glslang_include_cache_free(void *cache);
 bool glslang_read_shader_pragmas_cached(const char *path,
       struct shader_line_buf *output, void *cache);
 
-/* Whether the last pass of @shader needs a render target of its own,
- * copied to the backbuffer by a hidden pass after it.  A last pass
- * scaled to exactly the viewport renders straight to the backbuffer
- * unless the preset or its shader asks for a render target format, or
- * some pass of the preset reads its feedback.  Reads the passes through
- * @cache, which may be NULL. */
-bool glslang_last_pass_needs_target(const struct video_shader *shader,
-      void *cache);
+struct glslang_last_pass
+{
+   unsigned index;
+   char name[64];
+   bool needs_target;
+   bool inspect_feedback;
+};
+
+/* Scale and format requirements are known before compilation. Reserve
+ * an optional final copy until compiled feedback usage is known. */
+void glslang_last_pass_init(const struct video_shader *shader,
+      void *cache, struct glslang_last_pass *state);
 
 /* As glslang_read_shader_file(), but reads through @cache. */
 bool glslang_read_shader_file_cached(const char *path,

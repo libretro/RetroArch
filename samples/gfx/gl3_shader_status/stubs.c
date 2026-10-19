@@ -27,8 +27,10 @@ int  glslang_compile_shader_cached(void) { return 0; }
 const char *glslang_format_to_string(int f) { (void)f; return ""; }
 void *glslang_include_cache_new(void) { return NULL; }
 void glslang_include_cache_free(void *c) { (void)c; }
-int  glslang_last_pass_needs_target(const void *s, void *c)
-{ (void)s; (void)c; return 0; }
+void glslang_last_pass_init(const void *s, void *c, void *state)
+{ (void)s; (void)c; (void)state; }
+int slang_last_pass_feedback(void *s, const void *o)
+{ (void)s; (void)o; return 0; }
 unsigned glslang_num_miplevels(unsigned w, unsigned h) { (void)w; (void)h; return 1; }
 void glslang_output_free(void *o) { (void)o; }
 int  slang_reflect_spirv(void) { return 0; }

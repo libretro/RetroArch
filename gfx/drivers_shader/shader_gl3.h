@@ -231,6 +231,7 @@ struct video_shader *gl3_filter_chain_get_preset(
  * compile any shader passes. Returns NULL on failure.
  * The returned chain is NOT yet usable for rendering.
  **/
+/* The scheduled count may include a copy step pruned after reflection. */
 gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       const char *path,
       enum glslang_filter_chain_filter filter,

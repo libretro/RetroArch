@@ -1,12 +1,12 @@
-/* gfx/drivers_shader/glslang_util.c's glslang_last_pass_needs_target().
+/* Last-pass target requirements and compiled feedback resources.
  *
  * The slang chains give the last pass of a preset a render target of
  * its own, copied to the backbuffer by a hidden pass, exactly when this
  * says so.  A last pass scaled to the viewport at 1.0 renders straight
  * to the backbuffer; any other scale, a render target format asked for
  * by the preset or by the shader, and any pass reading the last pass's
- * feedback keep the target.  The include cache the chain shares reads
- * each file once for the whole check.
+ * feedback keep the target. The setup check reads metadata through an
+ * include cache; feedback_test.c compiles real stages for resource usage.
  *
  * The sources are served from memory in place of video_shader_parse.c,
  * so nothing here touches the file system. */
@@ -21,6 +21,7 @@
 #include "gfx/drivers_shader/glslang_util.h"
 
 static unsigned failures = 0;
+unsigned test_compiled_feedback(void);
 
 #define CHECK(cond, msg) \
    do { \
@@ -169,7 +170,10 @@ static void preset(struct video_shader *s, const char *first,
 static void expect(const struct video_shader *s, bool needs,
       const char *tag)
 {
-   bool got = glslang_last_pass_needs_target(s, NULL);
+   struct glslang_last_pass state;
+   bool got;
+   glslang_last_pass_init(s, NULL, &state);
+   got = state.needs_target;
    CHECK(got == needs, tag);
    printf("      %-52s %s\n", tag, got ? "target" : "direct");
 }
@@ -239,43 +243,25 @@ int main(void)
    preset(s, "format_last.slang", "last.slang");
    expect(s, false, "#pragma format in an earlier pass");
 
-   /* Feedback */
-   preset(s, "reads_index.slang", "last.slang");
-   expect(s, true,  "PassFeedback1 read by an earlier pass");
-
-   preset(s, "reads_size.slang", "last.slang");
-   expect(s, true,  "PassFeedbackSize1 read by an earlier pass");
-
-   preset(s, "first.slang", "self_feedback.slang");
-   expect(s, true,  "the last pass reads its own feedback");
-
-   preset(s, "reads_other.slang", "last.slang");
-   expect(s, false, "the feedback of other passes");
-
-   preset(s, "reads_other.slang", "last.slang");
-   strcpy(s->pass[1].alias, "Final");
-   expect(s, false, "a longer name that starts with it");
-
-   preset(s, "reads_name.slang", "named_last.slang");
-   expect(s, true,  "named by its #pragma name");
-
-   preset(s, "reads_name.slang", "last.slang");
-   strcpy(s->pass[1].alias, "Final");
-   expect(s, true,  "named by the preset's alias");
-
-   preset(s, "reads_name.slang", "named_last.slang");
-   strcpy(s->pass[1].alias, "Other");
-   expect(s, false, "the alias names it ahead of the pragma");
-
-   preset(s, "reads_name.slang", "last.slang");
-   expect(s, false, "a name nothing carries");
+   /* Names are resolved before deferred compilation, without scanning GLSL. */
+   {
+      struct glslang_last_pass state;
+      preset(s, "reads_name.slang", "named_last.slang");
+      glslang_last_pass_init(s, NULL, &state);
+      CHECK(state.inspect_feedback && !state.needs_target,
+            "feedback is decided from compiled resources");
+      CHECK(!strcmp(state.name, "Final"), "last pass pragma name");
+      strcpy(s->pass[1].alias, "Other");
+      glslang_last_pass_init(s, NULL, &state);
+      CHECK(!strcmp(state.name, "Other"), "preset alias overrides pragma name");
+   }
 
    /* A pass that cannot be read keeps the target; its compile reports. */
    preset(s, "first.slang", "missing.slang");
    expect(s, true,  "the last pass cannot be read");
 
    preset(s, "missing.slang", "last.slang");
-   expect(s, true,  "an earlier pass cannot be read");
+   expect(s, false, "earlier sources are not scanned before compilation");
 
    /* One cache over the check reads each file once. */
    {
@@ -285,15 +271,20 @@ int main(void)
       {
          preset(s, "first.slang", "last.slang");
          reset_reads();
-         CHECK(!glslang_last_pass_needs_target(s, cache),
+         {
+         struct glslang_last_pass state;
+         glslang_last_pass_init(s, cache, &state);
+         CHECK(!state.needs_target,
                "viewport at 1.0, through the caller's cache");
          CHECK(source_find("common.inc")->reads == 1,
                "the shared include is read once for the whole check");
+         }
          glslang_include_cache_free(cache);
          printf("      %-52s done\n", "the caller's cache");
       }
    }
 
+   failures += test_compiled_feedback();
    free(s);
 
    if (failures)

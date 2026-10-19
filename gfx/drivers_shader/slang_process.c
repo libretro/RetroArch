@@ -2537,6 +2537,83 @@ static bool slang_reflect(
    return true;
 }
 
+static bool slang_feedback_name(const struct glslang_last_pass *state,
+      const char *name, bool size)
+{
+   char expected[96];
+   snprintf(expected, sizeof(expected), size ? "PassFeedbackSize%u"
+         : "PassFeedback%u", state->index);
+   if (!strcmp(name, expected))
+      return true;
+   if (!state->name[0])
+      return false;
+   snprintf(expected, sizeof(expected), size ? "%sFeedbackSize"
+         : "%sFeedback", state->name);
+   return !strcmp(name, expected);
+}
+
+bool slang_last_pass_feedback(struct glslang_last_pass *state,
+      const glslang_output *output)
+{
+   spvc_context ctx = NULL;
+   unsigned stage, kind;
+   bool ret = false;
+   if (!state->inspect_feedback || state->needs_target)
+      return true;
+   if (spvc_context_create(&ctx) != SPVC_SUCCESS)
+      return false;
+   for (stage = 0; stage < 2 && !state->needs_target; stage++)
+   {
+      spvc_parsed_ir ir;
+      spvc_compiler compiler;
+      spvc_set active;
+      spvc_resources resources;
+      const uint32_t *words = stage ? output->fragment : output->vertex;
+      size_t length = stage ? output->fragment_len : output->vertex_len;
+      if (spvc_context_parse_spirv(ctx, (const SpvId*)words, length,
+               &ir) != SPVC_SUCCESS
+            || spvc_context_create_compiler(ctx, SPVC_BACKEND_NONE, ir,
+               SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &compiler) != SPVC_SUCCESS
+            || spvc_compiler_get_active_interface_variables(compiler,
+               &active) != SPVC_SUCCESS
+            || spvc_compiler_create_shader_resources_for_active_variables(
+               compiler, &resources, active) != SPVC_SUCCESS)
+         goto end;
+      for (kind = 0; kind < 3 && !state->needs_target; kind++)
+      {
+         const spvc_reflected_resource *list;
+         size_t count, i;
+         spvc_resource_type type = kind == 0 ? SPVC_RESOURCE_TYPE_SAMPLED_IMAGE
+            : kind == 1 ? SPVC_RESOURCE_TYPE_UNIFORM_BUFFER
+            : SPVC_RESOURCE_TYPE_PUSH_CONSTANT;
+         if (spvc_resources_get_resource_list_for_type(resources, type,
+                  &list, &count) != SPVC_SUCCESS)
+            goto end;
+         for (i = 0; i < count && !state->needs_target; i++)
+         {
+            if (!kind)
+               state->needs_target = slang_feedback_name(state, list[i].name, false);
+            else
+            {
+               const spvc_buffer_range *ranges;
+               size_t num_ranges, j;
+               if (spvc_compiler_get_active_buffer_ranges(compiler, list[i].id,
+                        &ranges, &num_ranges) != SPVC_SUCCESS)
+                  goto end;
+               for (j = 0; j < num_ranges && !state->needs_target; j++)
+                  state->needs_target = slang_feedback_name(state,
+                        spvc_compiler_get_member_name(compiler,
+                           list[i].base_type_id, ranges[j].index), true);
+            }
+         }
+      }
+   }
+   ret = true;
+end:
+   spvc_context_destroy(ctx);
+   return ret;
+}
+
 bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,
       const uint32_t *fragment, size_t fragment_len,
       slang_reflection *reflection)

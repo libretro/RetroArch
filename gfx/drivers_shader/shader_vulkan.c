@@ -953,6 +953,7 @@ static INLINE const char *slang_pass_get_name(
 /* struct here since we're implementing the opaque typedef from C. */
 struct vulkan_filter_chain
 {
+   struct glslang_last_pass last_pass;
    VkDevice device;
    VkPhysicalDevice gpu;
    VkPhysicalDeviceMemoryProperties memory_properties;
@@ -1017,6 +1018,24 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain);
 static bool slang_chain_init_single_pass(struct vulkan_filter_chain *chain,
       unsigned pass_idx);
 static bool slang_chain_init_alias_early(struct vulkan_filter_chain *chain);
+static bool slang_chain_check_last_pass(struct vulkan_filter_chain *chain,
+      const glslang_output *output, unsigned pass)
+{
+   if (!slang_last_pass_feedback(&chain->last_pass, output))
+      return false;
+   if (pass == chain->last_pass.index && chain->last_pass.inspect_feedback
+         && !chain->last_pass.needs_target
+         && chain->pass_count == pass + 2)
+   {
+      unsigned copy = pass + 1;
+      slang_pass_free(chain->passes[copy]);
+      chain->passes[copy] = NULL;
+      chain->pass_count--;
+      chain->passes[pass]->final_pass = true;
+   }
+   return true;
+}
+
 static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       unsigned pass_idx, enum glslang_filter_chain_filter default_filter);
 static bool slang_chain_finalize(struct vulkan_filter_chain *chain);
@@ -2410,7 +2429,13 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
    bool explicit_format;
    struct video_shader *shader = chain->common.shader_preset;
 
-   if (!shader || pass_idx >= chain->pass_count)
+   if (!shader)
+      return false;
+   /* A pruned copy still occupies its originally scheduled compile step. */
+   if (pass_idx == shader->passes && chain->pass_count == shader->passes
+         && chain->last_pass.inspect_feedback)
+      return true;
+   if (pass_idx >= chain->pass_count)
       return false;
 
    /* Extra opaque pass (last_pass_is_fbo) — SPIRV already set */
@@ -2427,6 +2452,12 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
    {
       RARCH_ERR("[Vulkan] Failed to compile shader: \"%s\".\n",
             pass->source.path);
+      return false;
+   }
+
+   if (!slang_chain_check_last_pass(chain, &output, pass_idx))
+   {
+      glslang_output_free(&output);
       return false;
    }
 
@@ -4815,6 +4846,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 {
    unsigned i;
    bool last_pass_is_fbo;
+   struct glslang_last_pass last_pass;
    glslang_output output;
    struct vulkan_filter_chain_create_info tmpinfo;
    void *include_cache = NULL;
@@ -4837,13 +4869,15 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
     * the error paths below. */
    include_cache      = glslang_include_cache_new();
 
-   last_pass_is_fbo   = glslang_last_pass_needs_target(shader, include_cache);
+   glslang_last_pass_init(shader, include_cache, &last_pass);
+   last_pass_is_fbo = last_pass.needs_target || last_pass.inspect_feedback;
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
    chain = slang_chain_new(&tmpinfo);
    if (!chain)
       goto error;
+   chain->last_pass = last_pass;
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
       goto error;
@@ -4877,6 +4911,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                pass->source.path);
          goto error;
       }
+
+      if (!slang_chain_check_last_pass(chain, &output, i))
+         goto error;
+      last_pass_is_fbo = chain->pass_count > shader->passes;
 
       {
       size_t j;
@@ -5176,6 +5214,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
 {
    unsigned i;
    bool last_pass_is_fbo;
+   struct glslang_last_pass last_pass;
    struct vulkan_filter_chain_create_info tmpinfo;
    vulkan_filter_chain *chain = NULL;
    struct video_shader *shader = (struct video_shader*)
@@ -5190,7 +5229,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       return NULL;
    }
 
-   last_pass_is_fbo   = glslang_last_pass_needs_target(shader, NULL);
+   glslang_last_pass_init(shader, NULL, &last_pass);
+   last_pass_is_fbo = last_pass.needs_target || last_pass.inspect_feedback;
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
@@ -5208,6 +5248,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       return NULL;
    }
 
+   chain->last_pass = last_pass;
+
    shader->num_parameters = 0;
 
    /* Set pass names from preset aliases only */
@@ -5216,6 +5258,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       if (*shader->pass[i].alias)
          slang_chain_set_pass_name(chain, i, shader->pass[i].alias);
    }
+
+   if (last_pass.name[0])
+      slang_chain_set_pass_name(chain, shader->passes - 1, last_pass.name);
 
    if (last_pass_is_fbo)
    {

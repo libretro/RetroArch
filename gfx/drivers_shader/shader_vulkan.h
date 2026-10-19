@@ -257,6 +257,7 @@ bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain);
 
 /* ---- Deferred (per-frame) filter chain construction ---- */
 
+/* The scheduled count may include a copy step pruned after reflection. */
 vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       const struct vulkan_filter_chain_create_info *info,
       const char *path,
