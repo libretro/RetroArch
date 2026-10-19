@@ -69,6 +69,12 @@ void videotoolbox_hevc_metal_test(CVPixelBufferRef image, unsigned depth,
       hevc_metal_copy_t copy;
       assert(queue && ready && done[0] && done[1] && listener);
       assert(!CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache));
+      {
+         static unsigned pool_cases;
+         if (pool_cases++ < 4)
+            test_cv_pool((__bridge void*)device, cache, image,
+                  depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, 64, 64);
+      }
       memset(&source, 0, sizeof(source));
       source.device = (__bridge void *)device;
       source.ready = (__bridge void *)ready;

@@ -6,6 +6,7 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/metal_frame/pool_test.m'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/drivers/metal.m'
@@ -18,6 +19,7 @@ on:
     paths:
     - '.github/workflows/MacOS-videotoolbox-hevc.yml'
     - 'samples/gfx/videotoolbox_hevc/**'
+    - 'samples/gfx/metal_frame/pool_test.m'
     - 'gfx/common/videotoolbox_hevc*.h'
     - 'gfx/common/metal_frame*.h'
     - 'gfx/drivers/metal.m'

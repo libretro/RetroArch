@@ -1129,6 +1129,85 @@ done:
 }
 /* METAL_FRAME_CV_END */
 
+/* METAL_FRAME_CV_POOL_BEGIN */
+struct metal_frame_cv_pool
+{
+   const void *device, *cache, *ready, *listener, *done[32];
+   uint64_t value[32];
+   unsigned count, next;
+};
+
+void metal_frame_cv_pool_free(metal_frame_cv_pool_t *pool)
+{
+   unsigned i;
+   if (!pool) return;
+   for (i = 0; i < pool->count; i++)
+      if (pool->done[i]) CFRelease(pool->done[i]);
+   if (pool->listener) CFRelease(pool->listener);
+   if (pool->ready) CFRelease(pool->ready);
+   if (pool->cache) CFRelease(pool->cache);
+   if (pool->device) CFRelease(pool->device);
+   free(pool);
+}
+
+metal_frame_cv_pool_t *metal_frame_cv_pool_new(void *device, void *cache,
+      void *ready, void *listener, void *const *done, unsigned count)
+{
+   metal_frame_cv_pool_t *pool;
+   unsigned i, j;
+   Class listener_class = NSClassFromString(@"MTLSharedEventListener");
+   if (!device || !cache || !listener_class || !listener || !done
+         || !count || count > 32
+         || ![(__bridge id)listener isKindOfClass:listener_class]
+         || !metal_frame_event_valid((__bridge id)ready, (__bridge id)device)
+         || [(id<RArchMetalSharedEvent>)(__bridge id)ready signaledValue] < 1)
+      return NULL;
+   for (i = 0; i < count; i++)
+   {
+      if (done[i] == ready
+            || !metal_frame_event_valid((__bridge id)done[i], (__bridge id)device)
+            || [(id<RArchMetalSharedEvent>)(__bridge id)done[i] signaledValue])
+         return NULL;
+      for (j = 0; j < i; j++) if (done[i] == done[j]) return NULL;
+   }
+   pool = (metal_frame_cv_pool_t*)calloc(1, sizeof(*pool));
+   if (!pool) return NULL;
+   pool->count = count;
+   pool->device = CFRetain(device); pool->cache = CFRetain(cache);
+   pool->ready = CFRetain(ready); pool->listener = CFRetain(listener);
+   for (i = 0; i < count; i++) pool->done[i] = CFRetain(done[i]);
+   return pool;
+}
+
+int metal_frame_cv_pool_export(metal_frame_cv_pool_t *pool,
+      const metal_frame_view_t *metadata, void *image, video_hw_frame_t *out)
+{
+   unsigned n;
+   if (!pool || !metadata || !image || !out
+         || metadata->planes[0] || metadata->planes[1]) return -1;
+   for (n = 0; n < pool->count; n++)
+   {
+      unsigned i = (pool->next + n) % pool->count;
+      id<RArchMetalSharedEvent> done = (__bridge id<RArchMetalSharedEvent>)pool->done[i];
+      metal_frame_source_t source;
+      if (pool->value[i] == ~(uint64_t)0 || done.signaledValue < pool->value[i])
+         continue;
+      memset(&source, 0, sizeof(source));
+      source.device = (void*)pool->device; source.ready = (void*)pool->ready;
+      source.done = (void*)pool->done[i]; source.listener = (void*)pool->listener;
+      source.ready_value = 1; source.done_value = pool->value[i] + 1;
+      source.pixfmt = metadata->pixfmt; source.width = metadata->width;
+      source.height = metadata->height; source.crop_x = metadata->crop_x;
+      source.crop_y = metadata->crop_y; source.yuv = metadata->yuv;
+      source.color = metadata->color;
+      if (!metal_frame_create_cv(&source, image, (void*)pool->cache, out)) return -1;
+      pool->value[i] = source.done_value; pool->next = (i + 1) % pool->count;
+      return 0;
+   }
+   return 1;
+}
+/* METAL_FRAME_CV_POOL_END */
+
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u
 #define METAL_HDR_MODE_HDR10  1u

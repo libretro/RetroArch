@@ -48,6 +48,24 @@ bool metal_frame_create(const metal_frame_source_t *source,
 bool metal_frame_create_cv(const metal_frame_source_t *source,
       void *pixel_buffer, void *texture_cache, video_hw_frame_t *output);
 
+typedef struct metal_frame_cv_pool metal_frame_cv_pool_t;
+
+/* Setup only. Borrowed cache, device, listener and events are retained.
+ * Ready must already be signaled to at least 1: export only decoded images.
+ * Supply 1..32 distinct, initially zero done events, separate from ready.
+ * Done events are exclusive to this pool and its leases; do not signal
+ * them externally or share them with another pool.
+ * All operations on a pool belong to one producer thread. */
+metal_frame_cv_pool_t *metal_frame_cv_pool_new(void *device, void *cache,
+      void *ready, void *listener, void *const *done, unsigned count);
+void metal_frame_cv_pool_free(metal_frame_cv_pool_t *pool);
+
+/* 0 exported lease, 1 all slots occupied/exhausted, -1 invalid/refused.
+ * Metadata planes must be empty. Image is borrowed; out is untouched on
+ * busy/error. One bounded slot scan, no wait. Exported leases survive free. */
+int metal_frame_cv_pool_export(metal_frame_cv_pool_t *pool,
+      const metal_frame_view_t *metadata, void *image, video_hw_frame_t *out);
+
 /* Success transfers the lease to command-buffer completion. The callback
  * starts with no active encoder and ends its encoders before returning; the caller commits the buffer.
  * False from the callback must leave no commands using the source planes.

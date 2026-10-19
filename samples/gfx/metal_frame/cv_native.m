@@ -51,6 +51,8 @@ static void test_cv_native(id<MTLDevice> device)
          assert(producer && consumer && ready && done && listener);
          assert(CVPixelBufferCreate(NULL, 10, 8, formats[f], (__bridge CFDictionaryRef)attrs, &pixels) == kCVReturnSuccess);
          assert(CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache) == kCVReturnSuccess);
+         test_cv_pool((__bridge void*)device, cache, pixels,
+               f < 2 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010, 10, 8);
          assert(CVPixelBufferLockBaseAddress(pixels, 0) == kCVReturnSuccess);
          for (unsigned i = 0; i < 2; i++)
          {
