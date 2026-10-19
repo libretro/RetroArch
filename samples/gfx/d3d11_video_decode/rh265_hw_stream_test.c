@@ -10,7 +10,7 @@
 #include "../../../libretro-common/formats/h265/rh265.c"
 
 static unsigned failures, opened, closed, accepted, calls, abandoned, exported;
-static int decode_busy, output_busy, refuse;
+static int decode_busy, output_busy, refuse, require_sets;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %u: %s\n", \
       (unsigned)__LINE__, #c); failures++; } } while (0)
 
@@ -55,6 +55,14 @@ static bool open_backend(void *user, const rh265_video *source, const rh265_vide
    mock_decoder_t *d;
    CHECK(source != NULL);
    CHECK(user == &opened && slots == (unsigned)params->max_dec_pic_buffering + 1);
+   if (require_sets)
+   {
+      rh265_nal_t sets[3];
+      unsigned i;
+      CHECK(!rh265_video_get_parameter_sets(source, (unsigned)params->pps_id, sets));
+      for (i = 0; i < 3; i++)
+         CHECK(sets[i].data && sets[i].size > 2 && ((sets[i].data[0] >> 1) & 63u) == 32u + i);
+   }
    if (refuse) return false;
    d = (mock_decoder_t*)calloc(1, sizeof(*d));
    if (!d) return false;
@@ -196,6 +204,7 @@ static void check_mp4(void)
    bytes = (uint8_t*)malloc((size_t)size);
    CHECK(bytes != NULL); if (!bytes) { fclose(f); return; }
    CHECK(fread(bytes, 1, (size_t)size, f) == (size_t)size); fclose(f);
+   require_sets = 1;
    stream = rmp4_video_stream_open(bytes, (size_t)size);
    CHECK(stream != NULL); if (!stream) { free(bytes); return; }
    CHECK(rmp4_video_stream_set_hw(stream, 1));
@@ -224,6 +233,19 @@ static void check_mp4(void)
    /* Leave this export untaken: rewind owns its abandonment. */
    rmp4_video_stream_rewind(stream);
    rmp4_video_stream_close(stream);
+   refuse = 1;
+   stream = rmp4_video_stream_open(bytes, (size_t)size);
+   CHECK(stream != NULL);
+   if (stream)
+   {
+      CHECK(!rmp4_video_stream_set_hw(stream, 1));
+      rmp4_video_stream_set_output(stream, pixels);
+      CHECK(rmp4_video_stream_skip(stream, &duration) == 1);
+      CHECK(!rmp4_video_stream_hw_frame(stream, &frame));
+      CHECK(rmp4_video_stream_render(stream) == pixels);
+      rmp4_video_stream_close(stream);
+   }
+   refuse = require_sets = 0;
    free(bytes);
 }
 
