@@ -219,26 +219,38 @@ void sdl3_set_handles(SDL_Window *window)
    }
 }
 
-/* Moves the window to the provided 1-based monitor. If 0
- * is provided, leave as is. */
-static void sdl3_window_move_to_monitor(SDL_Window *win,
-      unsigned monitor_index)
+/* The display the 1-based @monitor_index names, or 0 for the index
+ * the system chooses - none configured, or one that is not there. */
+static SDL_DisplayID sdl3_monitor_display(unsigned monitor_index)
 {
    int count;
    SDL_DisplayID *displays;
    SDL_DisplayID display = 0;
 
-   if (!win || monitor_index == 0)
-      return;
+   if (monitor_index == 0)
+      return 0;
 
    displays = SDL_GetDisplays(&count);
    if (displays && (int)monitor_index <= count)
       display = displays[monitor_index - 1];
    SDL_free(displays);
 
+   return display;
+}
+
+/* Moves the window to the provided 1-based monitor. If 0
+ * is provided, leave as is. */
+static void sdl3_window_move_to_monitor(SDL_Window *win,
+      unsigned monitor_index)
+{
+   SDL_DisplayID display;
+
+   if (!win || monitor_index == 0)
+      return;
+
    /* Out-of-range index (e.g. the configured monitor was unplugged):
     * leave the window where the system placed it. */
-   if (display == 0)
+   if (!(display = sdl3_monitor_display(monitor_index)))
       return;
 
    SDL_SetWindowPosition(win,
@@ -262,11 +274,14 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
       flags |= SDL_WINDOW_FULLSCREEN;
       /* Desktop full screen at the desktop's size: a window made
        * smaller is only grown by a window manager, and without one it
-       * keeps the size it was made at. */
+       * keeps the size it was made at. The size is the configured
+       * monitor's, which is where the window goes below. */
       if (settings->bools.video_windowed_fullscreen)
       {
+         SDL_DisplayID display = sdl3_monitor_display(
+               settings->uints.video_monitor_index);
          const SDL_DisplayMode *mode = SDL_GetDesktopDisplayMode(
-               SDL_GetPrimaryDisplay());
+               display ? display : SDL_GetPrimaryDisplay());
          if (mode)
          {
             width  = (unsigned)mode->w;
