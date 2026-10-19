@@ -19,9 +19,19 @@ def metal_test_source():
     text += '#include <defines/cocoa_defines.h>\n'
     text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
     text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
-    for section in ('LEASE', 'CV', 'CV_POOL', 'CV_POOL_SETUP', 'SDR_PIPELINE'):
+    for section in ('LEASE', 'CV', 'CV_POOL', 'CV_POOL_SETUP', 'SDR_PIPELINE', 'SDR_CONVERT'):
         text += source.split('/* METAL_FRAME_' + section + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + section + '_END */', 1)[0]
     text = text.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / 'gfx/common/metal_frame.h').as_posix() + '"')
+    text = text.replace('#include "../common/metal_frame_convert.h"', '#include "' + (ROOT / 'gfx/common/metal_frame_convert.h').as_posix() + '"')
+    methods = ''
+    for part in ('HISTORY', 'FRONT', 'TEXTURE'):
+        methods += source.split('/* METAL_FRAME_' + part + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + part + '_END */', 1)[0]
+    methods = methods.replace('- (void)_updateHistory\n{', '- (void)_updateHistory\n{\n   history_updates++;')
+    methods += source.split('/* METAL_MOVIE_FRAME_BEGIN */', 1)[1].split('/* METAL_MOVIE_FRAME_END */', 1)[0]
+    movie = (HERE / 'movie_test.m').read_text(encoding='utf8')
+    frame_view = (HERE.parent / 'metal_frame/frame_view_fixture.m').read_text(encoding='utf8')
+    movie = movie.replace('#include "movie_reference.h"', '#include "' + (HERE / 'movie_reference.h').as_posix() + '"')
+    text += movie.replace('/* SHIPPING_FRAME_VIEW */', frame_view.replace('/* SHIPPING_FRAME_METHODS */', methods))
     text += '#include "' + (ROOT / 'gfx/common/metal_hevc_driver.h').as_posix() + '"\n'
     text += (HERE.parent / 'metal_frame/pool_test.m').read_text(encoding='utf8')
     return (HERE / 'metal_test.m').read_text(encoding='utf8').replace('/* SHIPPING_METAL */', text)
@@ -63,6 +73,13 @@ def main():
                        if framework == 'CoreMedia' else ''), encoding='utf8')
             flags += ['-I' + str(tmp)]
         flags += shlex.split(os.environ.get('CFLAGS', ''))
+        compiler = shlex.split(os.environ.get('CC', 'cc'))
+        reference = tmp / ('reference.exe' if os.name == 'nt' else 'reference')
+        cmd = compiler + flags + [str(HERE / 'movie_reference_test.c'), '-o', str(reference), '-lm']
+        print('+', shlex.join(cmd), flush=True)
+        subprocess.run(cmd, check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(reference)], check=True)
+
         exe = tmp / ('setup.exe' if os.name == 'nt' else 'setup')
         compiler = shlex.split(os.environ.get('CC', 'cc'))
         obj = tmp / 'rh265.o'
