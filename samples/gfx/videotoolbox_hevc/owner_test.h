@@ -23,10 +23,113 @@ static void owner_worker(void *user)
       videotoolbox_hevc_owner_t *owner = (videotoolbox_hevc_owner_t*)queue->work;
       slot_complete(owner->slots, &owner->slots->slot[1], 0, kVTDecodeInfo_FrameDropped, NULL);
    }
+#ifndef VT_HEVC_NATIVE
+   owner_drain_allowed = 1;
+#endif
    queue->run(queue->work);
+#ifndef VT_HEVC_NATIVE
+   owner_drain_allowed = 0;
+#endif
    queue->run = NULL; queue->work = NULL;
 }
 #endif
+
+static void test_owner_delayed_frames(void)
+{
+#ifdef VIDEOTOOLBOX_HEVC_SLOTS
+   unsigned which, pending = 0;
+   for (which = 0; which < sizeof(reorder_cases) / sizeof(reorder_cases[0]); which++)
+   {
+      const sequence_case_t *sequence = &reorder_cases[which];
+      rh265_video *source = rh265_video_open();
+      videotoolbox_hevc_owner_t *owner;
+      videotoolbox_hevc_slots_t *slots;
+      owner_queue_t queue;
+      sthread_t *thread;
+      OSStatus status;
+      unsigned i;
+      memset(&queue, 0, sizeof(queue));
+      assert(source && !rh265_video_retain_parameter_sets(source));
+      assert(!rh265_video_set_extradata(source,
+               sequence->picture.hvcc, sequence->picture.hvcc_size));
+#ifndef VT_HEVC_NATIVE
+      assert(!rh265_video_get_parameter_sets(source, 0, wanted_sets));
+      wanted_pixel = sequence->picture.depth == 10
+         ? (sequence->picture.full ? 0x78663230 : 0x78343230)
+         : (sequence->picture.full ? kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+                                  : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange);
+      wanted_height = 64; decode_mode = 4;
+      assert(!batch_count && !pending_sample);
+#endif
+      owner = videotoolbox_hevc_owner_new(source, 0, VT_HEVC_TEST_BATCH,
+            owner_enqueue, &queue, &status);
+      if (!owner) fprintf(stderr, "%s delayed owner: status %ld\n",
+            sequence->picture.name, (long)status);
+      assert(owner && !status);
+      slots = owner->slots;
+      /* Observer keeps results alive after the executor releases its owner. */
+      retro_atomic_fetch_add_int(&slots->refs, 1);
+      for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
+      {
+         rh265_nal_t slices[8];
+         rh265_access_unit_t au;
+         CMSampleTimingInfo timing = batch_timing(i, sequence);
+         VTDecodeInfoFlags info;
+         sequence_access_unit(source, sequence, sequence->packets[i].data,
+               sequence->packets[i].size, i, slices, &au);
+         status = videotoolbox_hevc_slots_submit_timed(slots, i, owner->session,
+               owner->format, &au, slices, 8, &timing, &info);
+         assert(!status && !(info & kVTDecodeInfo_FrameDropped));
+      }
+      rh265_video_close(source);
+      /* Do not finish frames or wait/take on the submitting thread. */
+      for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
+         pending += retro_atomic_load_acquire_int(&slots->slot[i].state) == 1;
+      videotoolbox_hevc_owner_retire(&owner);
+      assert(!owner && queue.submitted == 1 && slots->closed);
+#ifndef VT_HEVC_NATIVE
+      assert(batch_count == VT_HEVC_TEST_BATCH && !owner_drain_allowed);
+      assert(!((videotoolbox_hevc_owner_t*)queue.work)->session->invalidated);
+#endif
+      thread = sthread_create(owner_worker, &queue); assert(thread);
+      sthread_join(thread);
+      assert(!queue.work && retro_atomic_load_acquire_int(&slots->refs) == 1);
+      for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
+      {
+         videotoolbox_hevc_result_t result;
+         CMSampleTimingInfo timing = batch_timing(i, sequence);
+         assert(videotoolbox_hevc_slots_take(slots, i, &result) == 1);
+         assert(!result.status && result.image && !(result.flags & kVTDecodeInfo_FrameDropped));
+#ifdef VT_HEVC_NATIVE
+         {
+            codec_case_t picture = sequence->picture;
+            assert(!CMTimeCompare(result.pts, timing.presentationTimeStamp));
+            assert(!CMTimeCompare(result.duration, timing.duration));
+            memcpy(picture.crc, sequence->packets[i].crc, sizeof(picture.crc));
+            codec_native_pixels(&picture, result.image);
+#ifdef VT_HEVC_METAL
+            videotoolbox_hevc_metal_test(result.image, picture.depth, picture.full, picture.crc);
+#else
+            CVPixelBufferRelease(result.image);
+#endif
+         }
+#else
+         slot_check_time(result.pts, timing.presentationTimeStamp);
+         slot_check_time(result.duration, timing.duration);
+         CVPixelBufferRelease(result.image);
+#endif
+      }
+      videotoolbox_hevc_slots_release(slots);
+#ifndef VT_HEVC_NATIVE
+      assert(!objects && !batch_count); decode_mode = 0;
+#endif
+   }
+#ifndef VT_HEVC_NATIVE
+   assert(pending == 4 * VT_HEVC_TEST_BATCH);
+#endif
+   printf("VideoToolbox owner drain: 32 reordered images survive retirement; %u tickets observed pending\n", pending);
+#endif
+}
 
 static void test_session_owner(void)
 {
@@ -128,4 +231,5 @@ static void test_session_owner(void)
 #else
    puts("VideoToolbox owner: deferred retirement unavailable without lock-free threads");
 #endif
+   test_owner_delayed_frames();
 }
