@@ -25,6 +25,10 @@ Restart RetroArch. The log reports the address:
 
     [MCP] Listening on http://127.0.0.1:55357/mcp.
 
+If it cannot listen there - another RetroArch still running holds the
+port, say - it says so on screen as well as in the log, since a client
+would otherwise be talking to that other RetroArch without knowing.
+
 On the first start a random token is made and shown under **MCP Server
 Token**. It is saved with the other passwords in the keychain, never in
 `retroarch.cfg`. A build without the crypto library cannot make one:
@@ -53,7 +57,13 @@ shape in their MCP server configuration:
 ```
 
 The server speaks protocol revision 2026-07-28, and 2025-11-25, 2025-06-18
-and 2025-03-26 for clients that open with `initialize`.
+and 2025-03-26 for clients that open with `initialize`. Its list results
+and `server/discover` carry `ttlMs: 0` and `cacheScope: "private"`, as
+2026-07-28 requires
+them: the tools are compiled in and `listChanged` is false, so nothing
+would tell a client holding a list that an upgrade changed it. A client
+that keeps one anyway sees a rebuilt RetroArch's new parameters once it
+reconnects.
 
 ## Over stdin and stdout
 
@@ -77,6 +87,18 @@ Over stdin and stdout RetroArch also offers logging: after
 `logging/setLevel`, what it logs at that level and above arrives as
 `notifications/message`. When the client closes stdin, RetroArch quits.
 
+## The handshake
+
+`initialize` answers with `instructions`: how the tools fit together to
+play a game - find it with `LIST_PLAYLISTS` and `GET_PLAYLIST`, load it
+paused, `WATCH` what each step needs, step with `STEPS` - queued, so
+the game plays on while the next stretch is planned - `PRESS ... until`
+or `RUN_UNTIL`, and `STATE checkpoint` before a risky move. A client
+shows this to the model once rather than in every tool.
+
+Every tool also has a `title` for people, made from its name: `Run
+frames` for `RUN_FRAMES`.
+
 ## What the tools do
 
 A tool is named as its command (`GET_STATUS`, `STATE`,
@@ -89,14 +111,17 @@ having to write the command's own line by hand:
   "arguments": { "core": "/path/to/core.so", "content": "/games/a.rom" } }
 ```
 
-`STATE` takes an `action` and a `slot` number, `GET_PLAYLIST` takes
+`STATE` takes an `action`, and a `slot` number for `save` and `load`,
+`GET_PLAYLIST` takes
 `playlist` and an optional `first`, `SET_OPTION` takes `option` and a
 `state` of `on` or `off` - which the schema gives as the only two values
 it accepts. `tools/list` describes every one of them.
 
 A parameter that is needed and left out, one that should be an integer
 and is not, one the tool does not take, a value outside the set a
-parameter offers, and a tool that does not exist are answered before
+parameter offers, one sent as `true`, `false`, `null`, an object or an
+array - no tool takes those - and a tool that does not exist are
+answered before
 anything runs, as JSON-RPC invalid params (`-32602`) rather than as a
 tool failure. The schemas leave other names unforbidden to keep the
 tool list short; the server refuses them instead, so a misspelt
@@ -108,6 +133,15 @@ reads the new one.
 
 The tool's result is what the command answers; commands that answer
 nothing report `Done.`.
+
+`GET_STATUS` and `READ_CORE_MEMORY` answer one line, and give it as
+fields of its own: `{"state": "PLAYING", "system": "nes", "content":
+"Super Mario Bros.nes"}` and `{"address": "1000", "bytes": "AA 0F
+10"}`. The last field takes the rest of the line, so a comma in a
+game's name stays in it. A read that runs past the end of one region
+goes on into the next; where nothing maps the rest it stops there and
+says so, `TRUNCATED 2` after the bytes, given as `truncated: true,
+read: 2`.
 
 ## Results that are rows
 
@@ -167,9 +201,15 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `MET 12` | `met: 12` | the frames `RUN_UNTIL` ran until the byte met it |
 | `WAITING 540` | `waiting: 540` | the frames it ran without that |
 | `VALUE 5` | `value: 5` | what `RUN_UNTIL`, or a `PRESS` with `until`, waited on holds |
+| `QUEUED 4` | `queued: 4` | the steps a queued `STEPS` has left to run |
+| `DISCARDED 3` | `discarded: 3` | the steps a queued `STEPS` dropped, as the queue had ended |
+| `PREVIOUS STOPPED 43 STOP 1 STEP 1` | `previous: {"stopped": 43, "stop": 1, "step": 1}` | how a queued `STEPS` ended, on the next reply; `PREVIOUS ERROR <why>` gives `error` |
+| `IDLE 1830` | `idle: 1830` | milliseconds the content has sat paused since the queue ran dry |
 | `DONE 30` | `done: 30` | the frames `STEPS` ran when every step had |
 | `STOPPED 12` | `stopped: 12` | the frames it ran when its `stop` held |
+| `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
 | `STEP 3` | `step: 3` | the step it ended on, from 1 |
+| `TRUNCATED 2` | `truncated: true`, `read: 2` | a `READ_CORE_MEMORY` that met unmapped memory |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -225,7 +265,8 @@ and `REINIT audio` for a restart that says nothing itself - while the
 commands sent by name answer as they always have. `DISK` is refused on
 a core with no disk control, where the hotkeys would do nothing. A word
 the tool does not take is invalid params naming the ones it does; on
-the line interfaces it is `STATE ERROR one of save|load`, and so is
+the line interfaces it is `STATE ERROR one of
+save|load|checkpoint|rollback`, and so is
 anything after a word that takes nothing. `REPLAY`'s slot or frame is its `number` parameter.
 
 `SAVE_FILES` and `LOAD_FILES` are not tools: the core writes its save
@@ -296,8 +337,9 @@ holds, as `RUN_UNTIL` would, and answers as `RUN_UNTIL` does:
 waited for ten. An MCP client is told the command did not answer after
 ten seconds and the frames run on regardless, so `RUN_FRAMES`, `PRESS`,
 `STEPS` and `RUN_UNTIL`'s `[max frames]` all refuse more than that outright
-rather than failing later with hundreds of frames already run. Ask
-again to run more.
+rather than failing later with hundreds of frames already run:
+`RUN_FRAMES` answers "a frame count from 1 to 540; ask again to run
+more" for a count of -5 and of 600 alike.
 
 `PRESS` has a limit on every interface - nine seconds of frames over
 MCP, 600 frames on the network and stdin interfaces - because it holds
@@ -325,9 +367,10 @@ all of them or, where one is refused, none. `WATCH` with nothing
 answers what is watched and what each byte holds now, `off` in place of
 an address stops watching that label, and a label already watched keeps
 its place in the list when its address changes; with nothing watched
-it answers `WATCH none`. Values are decimal, 0 to 255, as `RUN_UNTIL`
-takes them; addresses are hexadecimal. A label is up to 15 characters,
-with no tab or newline in it. Sixteen at once. Each is checked when it is
+it answers `WATCH none`. Values are decimal, 0 to 255 - or to 65535
+for a `high:low` watch - as `RUN_UNTIL` takes them; addresses are hexadecimal. A label is up to 15 characters,
+with no tab or newline in it. `x 6d:86` watches two bytes as one value,
+high:low, as conditions read them. Sixteen at once. Each is checked when it is
 set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
@@ -336,12 +379,17 @@ content's addresses mean something else.
 
 `RUN_UNTIL <address> <condition> <value> [max frames]` runs the content
 until the byte at a system address meets the condition - `==`, `!=`,
-`<`, `>`, `<=` or `>=` against a value from 0 to 255 - and answers with
+`<`, `>`, `<=` or `>=` against a value from 0 to 255, decimal or `0x`
+hexadecimal (`ce & 0xF0 == 0x70`, as `STEPS` and `PRESS ... until`
+take them too; over MCP `RUN_UNTIL`'s `value` is a JSON number) - and
+answers with
 how many frames ran, what `WATCH` watches, and what the byte holds.
 Two addresses as `high:low` read two bytes as one value, 0 to 65535:
 `6d:86 >= 1800` waits for Super Mario Bros.'s Mario to pass x 1800,
 which the game keeps as a page in one byte and a place on it in
-another.
+another. `& <mask>` after the address compares only those bits, as a
+game keeps its flags: `1d & 0x40 != 0`; the value it answers is the
+masked one.
 
 ```
 MET 12
@@ -366,10 +414,12 @@ so the next request carries on from there instead of the client being
 told it failed.
 
 `STEPS <step>[; <step>...]` runs a stretch of play as one request. Each
-step is `run <frames>`, `press <player> <controls> <frames>` or `until
-<condition>`, in order; one `stop <condition>` anywhere in the list ends
-it after any frame where that holds, so a death does not play out the
-rest:
+step is `run <frames>`, `press <player> <controls> <frames>`, `until
+<condition>` or `checkpoint`, in order; up to four `stop <condition>`
+entries anywhere in the list end it after any frame where one holds - a
+death, the level's end - so neither plays out the rest. `checkpoint`
+keeps the state `STATE rollback` returns to, where the list has got to,
+so a stretch can mark its own retry point:
 
 ```
 STEPS until 6d:86 >= 1500; press 1 a 20; until 1d == 0; stop e == 11
@@ -379,15 +429,50 @@ STEP 3
 ```
 
 Two presses of the same button in a row get a frame with it let go
-between them, so the game reads two taps rather than one long press.
+between them, so the game reads two taps rather than one long press -
+also where one request ends on the press and the next starts with it.
+That frame is the second press's own, not taken from it, and is not
+needed where `SET_INPUT` held the button throughout or a frame has run
+since.
 
 It answers `DONE` when every step has run, `STOPPED` when `stop` held,
 and `WAITING` when its nine seconds ran out first, each with the frames
 run, what `WATCH` watches, and the `STEP` it ended on - so after
-`WAITING` the client asks again with the steps from that one. Sixteen
+`WAITING` the client asks again with the steps from that one. 32
 steps at most; the frames `run` and `press` ask for must fit in the
 nine seconds, and an address nothing maps is refused before any frame
 runs.
+
+**Queued, the content plays on between requests.** `STEPS <steps>|on`
+(`queue: on`) answers at once with `QUEUED` and the steps left to run,
+and its steps go behind those still running, so the game does not pause
+while the next stretch is planned; it pauses once they have all run.
+Each list runs with its own stops - none where it has none - and counts
+its own frames. A stop that held, a wait that ran out or a failure
+ends the whole queue, lists behind it too.
+
+**The next reply, whatever the request, says how the queue ended**, on
+a `PREVIOUS` line after its own first one: `PREVIOUS STOPPED 43 STOP 1
+STEP 1`, `PREVIOUS WAITING 540 STEP 1` or `PREVIOUS ERROR <why>`, given
+as `previous` - its `STEP` counts within the list that step came in,
+stops aside. A queued `STEPS` then runs none of its own steps, which
+would play on from a death: it answers `DISCARDED` with how many it
+dropped, or `QUEUED 0` where it brought none. Any other request runs as
+asked. A request that waits - `RUN_FRAMES`, `PRESS`, `RUN_UNTIL`,
+`STEPS` without `on` - while the queue still runs replaces it, and its
+reply says so: `PREVIOUS REPLACED <frames run> STEP <step>`. Each
+ending is told once.
+
+A rollback, a state load, `RESET` and closing the content each end the
+queue and forget what it came to, however they come - a hotkey, the
+menu, a command; asked for as `STATE` or `RESET`, the reply says so:
+`STATE rollback, queue ended`. With no steps it only asks. A queue that ran dry
+says so: `IDLE` is how long, in milliseconds, the content has sat paused
+since, waiting for more; a frame run meanwhile - the user unpausing -
+ends it. A client that sees it knows it has fallen behind: two
+stretches sent at once get it ahead again. Nine seconds bound each
+step, not the queue: an `until` that has not held by then ends it
+`WAITING`. It holds 64 steps and stops at most.
 
 `RUN_FRAMES <count>` pauses the content, if it is running, and runs it
 that many frames, one per frame advance, answering once the last has
@@ -406,7 +491,8 @@ and to put a stick anywhere but centre.
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets
 it go) for the core, over the player's own controller, until it is set
-again or `RELEASE_INPUT [player]` lets go of it. Both answer with the
+again, `RELEASE_INPUT [player]` lets go of it, or the content closes -
+the next content does not start with a button held for this one. Both answer with the
 player, the buttons held and the axes held, tab separated, and `none`
 for either where nothing is held. `RELEASE_INPUT` with no player lets
 go for every player and answers for the first of them. Achievements
@@ -474,26 +560,42 @@ the reason:
 - `LOAD_CONTENT`, `CORE start`: the content's path once it runs; a core
   that fails to start is an error. `CLOSE_CONTENT`, `CORE unload`: once
   the content is closed. Requests sent while content loads wait for it.
-  `LOAD_CONTENT` with `paused` on pauses the content the frame it has
-  loaded, before the answer goes, so nothing runs between the load and
-  the first step - a title screen's demo starting, say. On the network
+  `LOAD_CONTENT` with `paused` on pauses the content once it has
+  loaded, so nothing runs on between the load and the first step: a
+  title screen's demo starting, say. The core has run a frame by the
+  answer - two where no content was running before, as a core counts
+  as running after its first - and a game may take a few more to set
+  up its RAM, so run some before reading it. On the network
   and stdin interfaces `<core>|<content>|on` does the same, and is
   answered there too.
-- `STATE`: once the state is applied or written.
+- `STATE`: once the state is applied or written. `STATE checkpoint`
+  keeps one state in memory, not in a slot's file, and `STATE rollback`
+  restores it: the retry after a mistake, in one request where
+  replaying the level took a dozen. What `SET_INPUT` holds stays held
+  through it; a queued `STEPS` ends, as it does on any load. The
+  checkpoint lives as long as the content does; a rollback is refused
+  while a replay records, as a load from a slot is.
+- `RESET`: once the content is reset; with `paused` on, paused after
+  it before any frame runs, so the game has not set up its RAM yet. A
+  queued `STEPS` ends.
 - `REPLAY`: `play`, `seek`, `record` and `checkpoint` once the replay
   has started or the seek or checkpoint has run; `halt` is a hotkey
   press, answered at once.
 - `SET_SHADER`: the preset's path once it has compiled.
 
 A tool that fails says why, as `<NAME> ERROR <reason>`, and the result
-is marked `isError`. Whether a reply is a failure is the command's own
+is marked `isError`. It is a JSON-RPC `result`, not a JSON-RPC
+`error`: those are kept for a request the server could not run at all -
+an unknown tool, invalid params, broken JSON. Whether a reply is a failure is the command's own
 word, not something read out of its text: a screenshot path that holds
 `ERROR` - a game named so - is no error, and a failure whose text says
 nothing about one still is.
 
-Work that takes longer than ten seconds, such as a slow load, is
-answered with an error saying so; the work goes on, and `GET_STATUS`
-tells when it is through. A request still waiting for its answer when
+A content load is answered when it finishes, however long it takes:
+the server is not polled while one runs, and requests sent meanwhile
+wait for it. Other work that takes longer than ten seconds - a shader
+that is slow to compile, say - is answered with an error saying so;
+the work goes on, and `GET_STATUS` tells when it is through. A request still waiting for its answer when
 the server goes is answered with an error rather than left without one.
 
 A request over HTTP is at most 64 KiB, headers and body together, and a
@@ -502,7 +604,7 @@ Over stdio a line past 64 KiB is answered with a parse error and skipped
 to its newline, and a `\r` before the newline is taken as part of it.
 Batch requests are refused as invalid.
 
-Hotkey tools (`QUIT`, `RESET`), and the hotkeys behind `MENU`, `DISK`
+Hotkey tools (`QUIT`), and the hotkeys behind `MENU`, `DISK`
 and `REPLAY halt`, press for one frame. `SCREENSHOT` is the exception: it
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as

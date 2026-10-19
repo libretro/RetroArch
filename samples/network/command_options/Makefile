@@ -4,7 +4,8 @@ TARGET := command_options_test
 TEARDOWN_TARGET := command_teardown_test
 SOURCES := command_options_test.c $(ROOT)/command.c $(ROOT)/runloop.c \
    $(ROOT)/libretro-common/string/stdstring.c \
-   $(ROOT)/libretro-common/compat/compat_strl.c
+   $(ROOT)/libretro-common/compat/compat_strl.c \
+   $(ROOT)/libretro-common/features/features_cpu.c
 CFLAGS += -std=gnu89 -Wall -g1 -O1 -flto -ffunction-sections -fdata-sections \
    -I$(ROOT) -I$(ROOT)/libretro-common/include -I$(ROOT)/deps \
    -I$(ROOT)/deps/rcheevos/include -I$(ROOT)/input/include \

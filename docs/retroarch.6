@@ -209,6 +209,7 @@ The command is formatted as "COMMAND;HOST;PORT".
 HOST and PORT are both optional. "COMMAND;HOST" will set PORT to
 "network_cmd_port" default setting.
 If only "COMMAND" is used, HOST and PORT will be assumed to be "localhost" and "network_cmd_port" respectively.
+HOST and PORT are read from the end, and only where they cannot be part of a STEPS list (no space, no "|", not "checkpoint"), so such a list is sent whole.
 
 The available commands are listed if "COMMAND" is invalid.
 

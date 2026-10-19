@@ -1189,6 +1189,10 @@ void input_driver_command_release(unsigned port);
 /* The buttons a command holds for a port, one bit each, and the four
  * axes into analog. */
 uint16_t input_driver_command_held(unsigned port, int16_t *analog);
+
+/* Whether a replay is being recorded: what a state restored outside
+ * the replay's own data would break. */
+bool input_driver_replay_recording(void);
 void input_driver_set_native_keyboard_shown(bool shown);
 bool input_driver_native_keyboard_shown(void);
 bool input_driver_keyboard_mapping_blocked(void);

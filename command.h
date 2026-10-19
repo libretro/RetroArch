@@ -581,6 +581,14 @@ struct cmd_rows
    const struct cmd_trailer *trailers;
    unsigned                  slack;
    unsigned                  required;
+   /* Set, the reply is one record rather than rows: the line the
+    * command opens with its own name, split into @columns by these
+    * characters in turn - the last column takes what is left - and
+    * answered as fields of their own. */
+   const char               *seps;
+   /* The reply may carry a "PREVIOUS ..." line: how a queued STEPS no
+    * reply has told of ended. */
+   bool                      previous;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -607,11 +615,18 @@ bool command_set_option(command_t *cmd, const char *arg);
 bool command_get_log(command_t *cmd, const char *arg);
 #endif
 
-/* RUN_FRAMES <count>; tick after a frontend advance, cancel on close. */
+/* RUN_FRAMES <count>. The runloop calls: tick after a frame a job ran;
+ * free_frame after one with no job; between before a frame, with the
+ * core off the stack, for a STEPS checkpoint; cancel when the content
+ * closes. forget ends a queued STEPS once the state it was planned
+ * from is gone: a state loaded, a reset, a close. */
 #define COMMAND_RUN_FRAMES_MAX 36000
 bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);
+void command_run_frames_between(void);
 void command_run_frames_cancel(const char *why);
+void command_run_frames_forget(void);
+void command_run_frames_free_frame(void);
 
 /* SET_INPUT <player> <control> <value> / RELEASE_INPUT [player], and
  * GET_INPUT [player] to look without changing anything. */
@@ -634,8 +649,9 @@ bool command_press(command_t *cmd, const char *arg);
  * conditions it takes are command.c's, which is all that compares them. */
 bool command_run_until(command_t *cmd, const char *arg);
 
-/* STEPS <step>[; <step>...]: run, press and until steps, and a stop, as
- * one request. */
+/* STEPS <step>[; <step>...][|on]: run, press, until and checkpoint
+ * steps, and a stop, as one request; with on, queued behind those
+ * still running, answered at once. */
 bool command_steps(command_t *cmd, const char *arg);
 
 /* WATCH [<label> <address|off>]...: the bytes RUN_FRAMES, PRESS and
@@ -705,13 +721,20 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 #define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
 #define COMMAND_DISK_ACTIONS   "eject|next|prev"
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
-#define COMMAND_STATE_ACTIONS  "save|load"
+#define COMMAND_STATE_ACTIONS  "save|load|checkpoint|rollback"
 #define COMMAND_REPLAY_ACTIONS "play|seek|record|halt|checkpoint"
 #define COMMAND_CORE_ACTIONS   "load|start|unload"
 bool command_menu(command_t *cmd, const char *arg);
 bool command_disk(command_t *cmd, const char *arg);
 bool command_reinit(command_t *cmd, const char *arg);
 bool command_state(command_t *cmd, const char *arg);
+/* CHECKPOINT_STATE and ROLLBACK_STATE: one state kept in memory for
+ * the content's life, which command_checkpoint_clear() drops. */
+bool command_checkpoint_save(command_t *cmd, const char *arg);
+/* RESET [on|off]: the hotkey's reset, paused after it with on. */
+bool command_reset(command_t *cmd, const char *arg);
+bool command_checkpoint_rollback(command_t *cmd, const char *arg);
+void command_checkpoint_clear(void);
 bool command_core(command_t *cmd, const char *arg);
 bool command_replay(command_t *cmd, const char *arg);
 
@@ -768,15 +791,16 @@ static const struct cmd_param cmd_params_input[] = {
 static const struct cmd_param cmd_params_watch[] = {
    { "watches", "Labels and system addresses in hexadecimal, as "
       "GET_MEMORY_MAP gives them, in pairs: \"x 86 mode 770\" on a NES, "
-      "\"x 7e0086\" on a SNES. A label already watched is replaced, and "
-      "off for its address stops watching it. 16 at most.",
+      "\"x 7e0086\" on a SNES; \"x 6d:86\" reads two bytes as one value. A "
+      "label already watched is replaced, and off for its address stops "
+      "watching it. 16 at most.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_until[] = {
    { "address", "A system address in hexadecimal, as GET_MEMORY_MAP "
       "gives them; high:low, such as 6d:86, reads two bytes as one "
-      "value.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+      "value, and & 0x40 after it compares only those bits.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "condition", "How it compares with the value.",
       CMD_PARAM_STRING, true, NULL, "==|!=|<|>|<=|>=", NULL },
    { "value", "What to compare it with: 0 to 255, or 0 to 65535 for "
@@ -793,7 +817,7 @@ static const struct cmd_param cmd_params_press[] = {
       "\"right+a\" runs and jumps.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "frames", "Frames to hold them. A tap is 2 to 4; hold longer with "
-      "SET_INPUT.",
+      "SET_INPUT. Right after a press it lets go for a frame first.",
       CMD_PARAM_INT, true, NULL, NULL, NULL },
    { "until", "Then run until this holds, as RUN_UNTIL's: \"1d == 0\" "
       "lands a jump.",
@@ -801,11 +825,17 @@ static const struct cmd_param cmd_params_press[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_steps[] = {
-   { "steps", "In order, separated by \";\": run <frames>, press <player> "
-      "<controls> <frames>, until <condition> as RUN_UNTIL's, and one stop "
-      "<condition> that ends the list where it holds: \"until 86 >= 200; "
-      "press 1 a 20; until 1d == 0; stop e == 11\".",
+   { "steps", "In order, by \";\": run <frames>, press <player> <controls> "
+      "<frames>, until <condition> as RUN_UNTIL's, checkpoint, and up to "
+      "four stop <condition> that end it: \"until 86 >= 200; "
+      "press 1 a 20; until 1d == 0; stop e == 11\". 32 at most. A press "
+      "after a press lets go for a frame first.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "queue", "on: answer now, run after those queued, pause when all "
+      "have (idle: ms since). The reply after a queued list ends says how "
+      "(previous); a queued one then drops its steps (discarded). Empty "
+      "steps only asks; a request not queued ends the queue.",
+      CMD_PARAM_STRING, false, "|", "on|off", NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_input_release[] = {
@@ -881,10 +911,20 @@ static const struct cmd_param cmd_params_reinit[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_state[] = {
-   { "action", "Save to the slot, overwriting it, or load from it, "
-      "replacing the game state.", CMD_PARAM_STRING, true, NULL,
+   { "action", "Save to the slot or load from it; or checkpoint, kept "
+      "in memory until the content closes, and rollback to it, the "
+      "quick retry after a mistake. What SET_INPUT holds stays held.",
+      CMD_PARAM_STRING, true, NULL,
       COMMAND_STATE_ACTIONS, NULL },
-   { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { "slot", "The slot number, for save and load only; leave it out for "
+      "checkpoint and rollback.", CMD_PARAM_INT, false,
+      NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_reset[] = {
+   { "paused", "on: pause once it has reset, before a frame runs; the "
+      "game has not set up its RAM yet.", CMD_PARAM_STRING, false, NULL,
+      "on|off", NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_core_family[] = {
@@ -926,8 +966,9 @@ static const struct cmd_param cmd_params_content[] = {
       CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
-   { "paused", "on: pause once it has loaded, before it runs on, so "
-      "nothing happens before the first step.", CMD_PARAM_STRING, false,
+   { "paused", "on: pause once it has loaded. The core has run a frame "
+      "or two; the game may not have set up its RAM yet.",
+      CMD_PARAM_STRING, false,
       "|", "on|off", NULL },
    { NULL }
 };
@@ -981,8 +1022,8 @@ static const struct cmd_column cmd_cols_memory[] = {
 static const struct cmd_column cmd_cols_watch[] = {
    { "label", "What the client called it." },
    { "address", "Where it is, in hexadecimal." },
-   { "value", "What the byte holds, in decimal from 0 to 255, or none "
-      "where nothing maps it now." },
+   { "value", "What it holds, in decimal: 0 to 255, or to 65535 for "
+      "high:low; none where nothing maps it now." },
    { NULL }
 };
 static const struct cmd_column cmd_cols_input[] = {
@@ -1027,10 +1068,14 @@ static const struct cmd_trailer cmd_trailers_press[] = {
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_steps[] = {
-   { "DONE", NULL, "done", "Frames run, every step done.", true },
-   { "WAITING", NULL, "waiting", "Frames run before time ran out.", true },
-   { "STOPPED", NULL, "stopped", "Frames run when stop held.", true },
-   { "STEP", NULL, "step", "The step it ended on, from 1." },
+   { "QUEUED", NULL, "queued", "Steps left in the queue.", true },
+   { "DISCARDED", NULL, "discarded", "Steps dropped: see previous.", true },
+   { "DONE", NULL, "done", "Frames run, all done.", true },
+   { "WAITING", NULL, "waiting", "Frames run, out of time.", true },
+   { "STOPPED", NULL, "stopped", "Frames run, a stop held.", true },
+   { "IDLE", NULL, "idle", "Ms the queue sat dry before this." },
+   { "STOP", NULL, "stop", "Which stop held, from 1." },
+   { "STEP", NULL, "step", "Step it ended on, from 1." },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_log[] = {
@@ -1051,14 +1096,33 @@ static const struct cmd_rows cmd_rows_memory    = { cmd_cols_memory, NULL, 7, 0 
 static const struct cmd_rows cmd_rows_entries   = { cmd_cols_entry, cmd_trailers_page, 1, 0 };
 static const struct cmd_rows cmd_rows_input     = { cmd_cols_input, NULL, 0, 0 };
 static const struct cmd_rows cmd_rows_watch     = { cmd_cols_watch, NULL, 0, 0 };
-static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0 };
-static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0 };
-static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0 };
-static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0 };
+static const struct cmd_rows cmd_rows_frames    = { cmd_cols_watch, cmd_trailers_frames, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_press     = { cmd_cols_watch, cmd_trailers_press, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_until     = { cmd_cols_watch, cmd_trailers_until, 0, 0, NULL, true };
+static const struct cmd_rows cmd_rows_steps     = { cmd_cols_watch, cmd_trailers_steps, 0, 0, NULL, true };
 /* No columns: the lines are the text, and splitting a 60k page into a
  * row apiece would answer with it twice over. What a client cannot read
  * off the text is how far the log got, which is what the trailers say. */
 static const struct cmd_rows cmd_rows_log       = { NULL, cmd_trailers_log, 0, 0 };
+/* "GET_STATUS PLAYING nes,Super Mario Bros.": a comma in the game's
+ * name stays in it, as the last field takes the rest */
+static const struct cmd_column cmd_cols_status[] = {
+   { "state", "PLAYING, PAUSED or CONTENTLESS." },
+   { "system", "The content's system, or the core's name." },
+   { "content", "The content's file name." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_status    = { cmd_cols_status, NULL, 0, 1, " ," };
+static const struct cmd_column cmd_cols_read[] = {
+   { "address", "Where the bytes were read, in hexadecimal." },
+   { "bytes", "The bytes, in hexadecimal, separated by spaces." },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_read[] = {
+   { "TRUNCATED", "truncated", "read", "Bytes read, short of those asked." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_read, 0, 0, " " };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1068,7 +1132,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
    { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option, &cmd_rows_option },
    { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set, &cmd_rows_option },
    /* GET_OPTION reports these and more; this stays for the clients that
@@ -1081,7 +1145,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. Answers with the player, the buttons held and the axes held, none for either where nothing is.", 0, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press RetroPad buttons for some frames and let go, in one request; with until, run on until a condition holds. What SET_INPUT holds stays held. Answers with what WATCH watches; the content finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run the content until memory meets a condition, in one request rather than running frames and reading again. Answers with the frames run - met, or waiting: ask again - what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
-   { "STEPS",            command_steps,            "<step>[; <step>...]", "Run a stretch of play - approach, jump, land - in one request. Answers done, waiting (time ran out: ask again from step) or stopped, with the frames run, what WATCH watches and the step it ended on.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes at system addresses under labels, so RUN_FRAMES, PRESS, RUN_UNTIL and STEPS answer with them and a step needs no reads after it. With none, answers what is watched and what each holds now, in decimal. 16 at most; cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", 0, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
@@ -1097,13 +1161,15 @@ static const struct cmd_action_map action_map[] = {
    { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_read },
    { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address. Answers with the address and the bytes, in hexadecimal.", CMD_INFO_READ_ONLY, cmd_params_read, &cmd_rows_read },
    { "GET_MEMORY_MAP",   command_get_memory_map,   "No argument", "List the core's memory map: a region's start, length, select and disconnect are hexadecimal, as READ_CORE_MEMORY takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_memory },
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address. Answers with the address and how many bytes were written.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
-   { "STATE",         command_state,         "<save|load> <slot>", "Save a state to a slot, or load the one in it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
+   { "CHECKPOINT_STATE", command_checkpoint_save, "No argument", "Keep a state in memory, for ROLLBACK_STATE, until the content closes.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "ROLLBACK_STATE", command_checkpoint_rollback, "No argument", "Restore the state CHECKPOINT_STATE kept.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
+   { "STATE",         command_state,         "<save|load|checkpoint|rollback> [slot]", "Save a state to a slot, or load the one in it; or checkpoint one in memory and roll back to it.", CMD_INFO_DESTRUCTIVE, cmd_params_state },
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_slot },
    { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, cmd_params_frame },
    { "REPLAY",        command_replay,        "<play|seek|record|halt|checkpoint> [slot|frame]", "Play, seek, record, halt or checkpoint a replay.", CMD_INFO_DESTRUCTIVE, cmd_params_replay },
@@ -1115,6 +1181,7 @@ static const struct cmd_action_map action_map[] = {
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "CORE", command_core, "<load|start|unload> [core path]", "Load a core library, start it without content, or unload it.", CMD_INFO_DESTRUCTIVE, cmd_params_core_family },
    { "LOAD_CONTENT", command_load_content, "<core path>|<content path>[|on]", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "RESET", command_reset, "[on|off]", "Reset the running content; with paused on, pause once it has.", CMD_INFO_DESTRUCTIVE, cmd_params_reset },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", CMD_INFO_NO_TOOL, NULL },
@@ -1128,7 +1195,8 @@ static const struct cmd_action_map action_map[] = {
 static const struct cmd_map map[] = {
    { "MENU_TOGGLE", RARCH_MENU_TOGGLE, "Open or close the menu.", CMD_INFO_NO_TOOL },
    { "QUIT", RARCH_QUIT_KEY, "Quit RetroArch.", CMD_INFO_DESTRUCTIVE },
-   { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE },
+   /* the tool is the action RESET, which takes paused */
+   { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE | CMD_INFO_NO_TOOL },
 
    { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", CMD_INFO_NO_TOOL },
    { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", CMD_INFO_NO_TOOL },

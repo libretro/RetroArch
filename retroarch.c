@@ -4199,6 +4199,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESET:
          {
             const char *_msg = msg_hash_to_str(MSG_RESET);
+#ifdef HAVE_COMMAND
+            /* steps queued for the game before the reset, however it
+             * came - hotkey, menu, command - would play on from it */
+            command_run_frames_forget();
+#endif
             RARCH_LOG("[Core] %s.\n", _msg);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

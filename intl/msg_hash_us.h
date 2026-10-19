@@ -33052,6 +33052,10 @@ MSG_HASH(
    MSG_SENDING_COMMAND,
    "Sending command"
    )
+MSG_HASH( /* %s is the address and %u the port the MCP server was set to listen on */
+   MSG_MCP_SERVER_NOT_LISTENING,
+   "MCP server could not listen on %s:%u. Is another RetroArch running?"
+   )
 MSG_HASH(
    MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
    "Several patches are explicitly defined, ignoring all..."

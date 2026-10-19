@@ -4397,6 +4397,10 @@ void video_shader_toggle(settings_t *settings, bool write)
    struct video_shader *menu_shdr  = menu_shader_get();
    struct menu_state *menu_st      = menu_state_get_ptr();
 
+   /* a video driver that runs no shader has none to toggle */
+   if (!menu_shdr)
+      return;
+
    menu_shdr->flags               &= ~SHDR_FLAG_MODIFIED;
    menu_shdr->flags               &= ~SHDR_FLAG_TEMPORARY;
 #endif

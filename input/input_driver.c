@@ -10579,7 +10579,19 @@ void input_driver_init_command(input_driver_state_t *input_st,
                   (uint16_t)settings->uints.mcp_server_port,
                   settings->arrays.mcp_server_bind_address, token)))
       {
+         /* on screen too: a client talking to another RetroArch on
+          * that port would otherwise never know */
+         char msg[256];
+         const char *addr = settings->arrays.mcp_server_bind_address;
+         size_t _len      = (size_t)snprintf(msg, sizeof(msg),
+               msg_hash_to_str(MSG_MCP_SERVER_NOT_LISTENING),
+               *addr ? addr : "127.0.0.1",
+               settings->uints.mcp_server_port);
          RARCH_ERR("[MCP] Failed to start the MCP server.\n");
+         if (_len >= sizeof(msg))
+            _len = sizeof(msg) - 1;
+         runloop_msg_queue_push(msg, _len, 1, 300, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
          started = false;
       }
    }
@@ -15667,6 +15679,16 @@ void input_driver_command_release(unsigned port)
       memset(input_st->cmd_analog,  0, sizeof(input_st->cmd_analog));
    }
    input_cmd_update(input_st);
+}
+
+bool input_driver_replay_recording(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   input_driver_state_t *input_st = &input_driver_st;
+   return BSV_MOVIE_IS_RECORDING();
+#else
+   return false;
+#endif
 }
 
 uint16_t input_driver_command_held(unsigned port, int16_t *analog)

@@ -14,6 +14,9 @@ static uint32_t pixels[64];
  * frontend must not make; the rest stays as retro_init left it, which
  * the memory tests read. */
 static uint8_t ram[16];
+/* a second region straight after the first, at 1010, as a core that
+ * splits its RAM maps it: a read may run across the two */
+static uint8_t ram2[16];
 static int inited;
 void retro_set_environment(retro_environment_t cb)
 {
@@ -21,7 +24,7 @@ void retro_set_environment(retro_environment_t cb)
       ram[9]++;
    bool no_game=true;
    enum retro_pixel_format fmt=RETRO_PIXEL_FORMAT_XRGB8888;
-   static struct retro_memory_descriptor desc[1];
+   static struct retro_memory_descriptor desc[2];
    static struct retro_memory_map map;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME,&no_game);
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,&fmt);
@@ -29,7 +32,10 @@ void retro_set_environment(retro_environment_t cb)
    desc[0].ptr=ram; desc[0].len=sizeof(ram); desc[0].start=0x1000;
    desc[0].select=0; desc[0].addrspace="ram";
    desc[0].flags=RETRO_MEMDESC_SYSTEM_RAM;
-   map.descriptors=desc; map.num_descriptors=1;
+   desc[1].ptr=ram2; desc[1].len=sizeof(ram2); desc[1].start=0x1010;
+   desc[1].select=0; desc[1].addrspace="ram";
+   desc[1].flags=RETRO_MEMDESC_SYSTEM_RAM;
+   map.descriptors=desc; map.num_descriptors=2;
    cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS,&map);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video=cb; }
@@ -43,6 +49,7 @@ void retro_init(void)
    frame=0;
    /* 00 01 02 ... so a read's bytes say which ones they are */
    for (i=0;i<sizeof(ram);i++) ram[i]=(uint8_t)i;
+   for (i=0;i<sizeof(ram2);i++) ram2[i]=(uint8_t)(0x10 + i);
    ram[9]=0; inited=1;
 }
 void retro_deinit(void) { inited=0; }
@@ -66,9 +73,12 @@ void retro_run(void)
    frame++; pixels[0]=frame; video(pixels,8,8,8*sizeof(*pixels));
    ram[7]=(uint8_t)frame;
 }
-size_t retro_serialize_size(void) { return sizeof(frame); }
-bool retro_serialize(void *p,size_t n) { if(n<sizeof(frame))return false; memcpy(p,&frame,sizeof(frame));return true; }
-bool retro_unserialize(const void *p,size_t n) { if(n<sizeof(frame))return false; memcpy(&frame,p,sizeof(frame));return true; }
+/* the frame counter, padded to 8 bytes: a state is never shorter than
+ * the header the frontend looks for in one */
+#define STATE_SIZE 8
+size_t retro_serialize_size(void) { return STATE_SIZE; }
+bool retro_serialize(void *p,size_t n) { if(n<STATE_SIZE)return false; memset(p,0,STATE_SIZE); memcpy(p,&frame,sizeof(frame));return true; }
+bool retro_unserialize(const void *p,size_t n) { if(n<STATE_SIZE)return false; memcpy(&frame,p,sizeof(frame));return true; }
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned i,bool b,const char *c) { (void)i;(void)b;(void)c; }
 bool retro_load_game(const struct retro_game_info *g) { (void)g;return true; }

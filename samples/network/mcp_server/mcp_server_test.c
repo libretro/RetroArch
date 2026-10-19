@@ -67,6 +67,14 @@ static bool act_ping(command_t *cmd, const char *arg)
 #define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
 static bool act_moji(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
+/* a status with a comma in the name, and a read, as the real commands
+ * answer */
+#define STAT_TEXT "GET_STATUS PLAYING nes,Mario, Luigi & Co.nes\n"
+#define READ_TEXT "READ_CORE_MEMORY 1000 AA 0F 10\n"
+static bool act_stat(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, STAT_TEXT, sizeof(STAT_TEXT) - 1); return true; }
+static bool act_read(command_t *cmd, const char *arg)
+{ (void)arg; cmd->replier(cmd, READ_TEXT, sizeof(READ_TEXT) - 1); return true; }
 static bool act_wipe(command_t *cmd, const char *arg)
 { (void)cmd; (void)arg; return true; }
 static bool act_fail(command_t *cmd, const char *arg)
@@ -224,16 +232,53 @@ static bool act_press(command_t *cmd, const char *arg)
 /* a PRESS that waited after it, and a STEPS list */
 #define PRESSU_TEXT "MET 5\nVALUE 0\n"
 #define STEPS_TEXT  "DONE 6\nx\t86\t40\nSTEP 3\n"
+#define STOPS_TEXT  "STOPPED 4\nx\t86\t40\nSTOP 2\nSTEP 3\n"
 static bool act_pressu(command_t *cmd, const char *arg)
 {
    (void)arg;
    cmd->replier(cmd, PRESSU_TEXT, sizeof(PRESSU_TEXT) - 1);
    return true;
 }
+static bool act_stops(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, STOPS_TEXT, sizeof(STOPS_TEXT) - 1);
+   return true;
+}
 static bool act_steps(command_t *cmd, const char *arg)
 {
    (void)arg;
    cmd->replier(cmd, STEPS_TEXT, sizeof(STEPS_TEXT) - 1);
+   return true;
+}
+
+/* replies carrying how a queued STEPS ended, and a read cut short */
+#define PREVS_TEXT "DISCARDED 2\nPREVIOUS STOPPED 43 STOP 1 STEP 1\n"
+#define PREVF_TEXT "RUN_FRAMES 1\nPREVIOUS WAITING 540 STEP 1\nx\t86\t40\n"
+#define PREVE_TEXT "DONE 1\nPREVIOUS ERROR the content was closed\nSTEP 1\n"
+#define READT_TEXT "READT 101e 1E 1F\nTRUNCATED 2\n"
+static bool act_prevs(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVS_TEXT, sizeof(PREVS_TEXT) - 1);
+   return true;
+}
+static bool act_prevf(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVF_TEXT, sizeof(PREVF_TEXT) - 1);
+   return true;
+}
+static bool act_preve(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, PREVE_TEXT, sizeof(PREVE_TEXT) - 1);
+   return true;
+}
+static bool act_readt(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, READT_TEXT, sizeof(READT_TEXT) - 1);
    return true;
 }
 
@@ -294,6 +339,8 @@ static struct cmd_action_map test_actions[] = {
    { "FAIL",  act_fail,  "No argument", "Fail.",              0, NULL },
    { "BAD",   act_bad,   "No argument", "Reply an error.",    0, NULL },
    { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
+   { "GET_STATUS", act_stat, "No argument", "Report the status.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
+   { "READ_CORE_MEMORY", act_read, "No argument", "Read bytes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
@@ -309,8 +356,13 @@ static struct cmd_action_map test_actions[] = {
    { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
    { "PRESS", act_press, "No argument", "Answer as PRESS does.", 0, NULL, &cmd_rows_press },
    { "PRESSU", act_pressu, "No argument", "Answer as PRESS with until does.", 0, NULL, &cmd_rows_press },
+   { "STOPS", act_stops, "No argument", "Answer as STEPS does when stopped.", 0, NULL, &cmd_rows_steps },
    { "STEPS", act_steps, "No argument", "Answer as STEPS does.", 0, NULL, &cmd_rows_steps },
    { "STEP",  act_step,  "No argument", "Answer as a step with watches.", 0, NULL, &cmd_rows_watch },
+   { "PREVS", act_prevs, "No argument", "Answer as a queued STEPS after a stop.", 0, NULL, &cmd_rows_steps },
+   { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
+   { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
+   { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -528,9 +580,23 @@ static char *call(const char *name, const char *args)
 static int stdio_in  = -1;   /* the test writes requests here */
 static int stdio_out = -1;   /* and reads answers here */
 
+/* The stdio server polled while a request does not fit the pipe yet */
+static command_t *stdio_cmd;
+
 static void stdio_send(const char *s)
 {
-   if (write(stdio_in, s, (unsigned)strlen(s)) < 0)
+   size_t len  = strlen(s);
+   size_t sent = 0;
+   int    i;
+   for (i = 0; sent < len && i < 1000; i++)
+   {
+      int n = (int)write(stdio_in, s + sent, (unsigned)(len - sent));
+      if (n > 0)
+         sent += (size_t)n;
+      else if (stdio_cmd)
+         stdio_cmd->poll(stdio_cmd);
+   }
+   if (sent < len)
       check("a request was written", false);
 }
 
@@ -608,6 +674,9 @@ static void test_stdio(void)
    SetStdHandle(STD_OUTPUT_HANDLE, (HANDLE)_get_osfhandle(1));
 #else
    fcntl(out_p[0], F_SETFL, fcntl(out_p[0], F_GETFL) | O_NONBLOCK);
+   /* a user over the kernel's pipe budget gets a pipe of a page or two:
+    * stdio_send polls the server for room rather than wait on it */
+   fcntl(in_p[1], F_SETFL, fcntl(in_p[1], F_GETFL) | O_NONBLOCK);
 #endif
    stdio_in  = in_p[1];
    stdio_out = out_p[0];
@@ -615,7 +684,7 @@ static void test_stdio(void)
    check("stdout is claimed", command_mcp_stdio_claim());
    fprintf(stdout, "a stray line for stdout\n");
    fflush(stdout);
-   cmd = command_mcp_stdio_new();
+   cmd = stdio_cmd = command_mcp_stdio_new();
    check("the stdio server starts", cmd != NULL);
    if (!cmd)
       return;
@@ -630,6 +699,27 @@ static void test_stdio(void)
          !strstr(out, "stray"));
    check("with logging among its capabilities",
          strstr(out, "\"logging\":{}") != NULL);
+   check("and instructions that say how the tools play a game",
+         strstr(out, "\"instructions\":\"Controls a running RetroArch")
+         && strstr(out, "STEPS") && strstr(out, "checkpoint"));
+
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":60,\"method\":\"tools/list\"}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("its tool list has no caching fields before the newest revision",
+         strstr(out, "\"tools\":[") && !strstr(out, "ttlMs")
+         && !strstr(out, "cacheScope"));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":71,\"method\":\"tools/list\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("in the newest revision it says how long to cache it, and for whom",
+         strstr(out, "\"tools\":[") && strstr(out, "\"ttlMs\":0")
+         && strstr(out, "\"cacheScope\":\"private\""));
+   stdio_send("{\"jsonrpc\":\"2.0\",\"id\":73,\"method\":\"server/discover\","
+         "\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\"}}}\n");
+   stdio_read(cmd, out, sizeof(out));
+   check("and so does server/discover",
+         strstr(out, "\"supportedVersions\":[") && strstr(out, "\"ttlMs\":0")
+         && strstr(out, "\"cacheScope\":\"private\""));
 
    stdio_send("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
    check("a notification is not answered",
@@ -703,7 +793,7 @@ static void test_stdio(void)
    cmd->destroy(cmd);
    free(later_dest);
    later_dest = NULL;
-   cmd = command_mcp_stdio_new();
+   cmd = stdio_cmd = command_mcp_stdio_new();
    stdio_read(cmd, out, sizeof(out));
    check("torn down meanwhile, it is answered with an error",
          strstr(out, "\"id\":5") && strstr(out, "\"isError\":true"));
@@ -723,6 +813,7 @@ static void test_stdio(void)
    stdio_read(cmd, out, sizeof(out));
    check("stdin closed, RetroArch is asked to quit, once", quits == 1);
    cmd->destroy(cmd);
+   stdio_cmd = NULL;
 }
 
 int main(void)
@@ -808,14 +899,15 @@ int main(void)
          n++;
          q = strstr(q + 1, "\"outputSchema\"");
       }
+      const char *rs = rw ? strstr(rw, "\"outputSchema\"") : NULL;
       check("a command answering rows declares an outputSchema",
-            rw && s && s > rw
-            && strstr(s, "\"index\":{\"type\":\"string\"")
-            && strstr(s, "\"required\":[\"index\",\"label\",\"path\"]")
-            && strstr(s, "\"next\":{\"type\":\"integer\""));
-      /* ROWS, LROWS, SHORT, ONE, LOGR, BARE, UNTIL, NOW, WAIT, RUN_FRAMES,
-       * PRESS, PRESSU, STEPS and STEP, and none before them */
-      check("only the commands that answer rows declare one", n == 14);
+            rw && rs && strstr(rs, "\"index\":{\"type\":\"string\"")
+            && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
+            && strstr(rs, "\"next\":{\"type\":\"integer\""));
+      /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
+       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
+       * STEP, PREVS, PREVF, PREVE and READT */
+      check("only the commands that answer rows declare one", n == 21);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -922,8 +1014,8 @@ int main(void)
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"a\":\"one\",\"b\":\"\",\"mode\":\"\"}"),
          out, sizeof(out), NULL);
-   check("empty later operands retain their positions",
-         st == 200 && strstr(out, "JOIN[one| 0 ]"));
+   check("empty later operands retain their positions, an empty last one goes",
+         st == 200 && strstr(out, "JOIN[one| 0]"));
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"a\":\"one\",\"b\":\"two\"}"),
          out, sizeof(out), NULL);
@@ -1006,6 +1098,12 @@ int main(void)
          out, sizeof(out), NULL);
    check("and so is a value outside the set it offers",
          strstr(out, "-32602") && strstr(out, "fast|slow")
+         && !strstr(out, "JOIN["));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mode\":true}"),
+         out, sizeof(out), NULL);
+   check("a value that is neither a string nor a number is refused",
+         strstr(out, "-32602") && strstr(out, "string or a number")
          && !strstr(out, "JOIN["));
    st = post(cmd, PORT_OPEN, NULL, call("PAUSE_TOGGLE", "{\"x\":1}"),
          out, sizeof(out), NULL);
@@ -1099,6 +1197,41 @@ int main(void)
          && strstr(out, "\"structuredContent\":{\"rows\":["
                "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
                "\"done\":6,\"step\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("STOPS", NULL), out, sizeof(out), NULL);
+   check("a STEPS that stopped says which stop, the line before the last",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"stopped\":4,\"stop\":2,\"step\":3}"));
+   st = post(cmd, PORT_OPEN, NULL, call("GET_STATUS", NULL), out, sizeof(out), NULL);
+   check("a one-line reply is a record, its last field taking the rest",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"state\":\"PLAYING\","
+               "\"system\":\"nes\",\"content\":\"Mario, Luigi & Co.nes\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READ_CORE_MEMORY", NULL), out, sizeof(out), NULL);
+   check("and a read is its address and its bytes",
+         st == 200 && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA 0F 10\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READT", NULL), out, sizeof(out), NULL);
+   check("a read cut short says so, and how many it read",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
+               "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
+   check("a queued STEPS after a stop: its steps dropped, and the stop",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"discarded\":2,"
+               "\"previous\":{\"stopped\":43,\"stop\":1,\"step\":1}}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVF", NULL), out, sizeof(out), NULL);
+   check("any step after a queue gave up says so as previous",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"label\":\"x\",\"address\":\"86\",\"value\":\"40\"}],"
+               "\"frames\":1,\"previous\":{\"waiting\":540,\"step\":1}}"));
+   st = post(cmd, PORT_OPEN, NULL, call("PREVE", NULL), out, sizeof(out), NULL);
+   check("and why, where the queue failed",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"done\":1,"
+               "\"step\":1,\"previous\":{\"error\":"
+               "\"the content was closed\"}}"));
    st = post(cmd, PORT_OPEN, NULL,
          "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
          out, sizeof(out), NULL);
