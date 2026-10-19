@@ -3409,6 +3409,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             bool video_frame_delay_auto           = settings->bools.video_frame_delay_auto;
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit                  = true;
+            bool fps_changed                      = false;
 
             /* Refresh rate switch for regular displays */
             if (video_display_server_has_resolution_list())
@@ -3460,6 +3461,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   (*info)->timing.fps,
                   (*info)->timing.sample_rate);
 
+            fps_changed = (*info)->timing.fps != av_info->timing.fps;
             memcpy(av_info, *info, sizeof(*av_info));
 
             /* With video kept, only audio has anything to follow - the
@@ -3467,6 +3469,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
              * running driver takes both in place; nothing starts over. */
             if (!no_video_reinit || !driver_set_audio_input_rate())
                command_event(CMD_EVENT_REINIT, &reinit_flags);
+
+            /* The frame limit is the frame rate times the fast-forward
+             * ratio; nothing else recomputes it while the core runs. */
+            if (fps_changed)
+               command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
 
             if (no_video_reinit)
                command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
