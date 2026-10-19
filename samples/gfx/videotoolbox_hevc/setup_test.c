@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../../gfx/common/videotoolbox_hevc.h"
+#include "../../../gfx/common/videotoolbox_hevc_slots.h"
 #include "parameters.h"
 
 #ifndef VT_HEVC_NATIVE
@@ -161,6 +162,11 @@ OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef session,
 {
    assert(flags == kVTDecodeFrame_EnableAsynchronousDecompression);
    if (decode_mode == 2) return -2006;
+   if (decode_mode == 3)
+   {
+      if (info) *info = kVTDecodeInfo_FrameDropped;
+      return 0;
+   }
    if (decode_mode == 1)
       session->callback(session->callback_ref, frame, 0, 0, NULL, 0, 0);
    else
@@ -179,7 +185,14 @@ static void sample_output(void *ref, void *frame, OSStatus status,
    assert(!image); (void)flags; (void)pts; (void)duration;
    callbacks++;
 }
+CVPixelBufferRef CVPixelBufferRetain(CVPixelBufferRef image)
+{
+   assert(image && image->kind == 7); image->refs++; return image;
+}
+void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 #endif
+
+#include "slots_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
 {
@@ -346,6 +359,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
    dims = CMVideoFormatDescriptionGetDimensions(format);
    assert(dims.width == 64 && dims.height == 48);
    test_samples(format);
+   test_slots(format);
    CFRelease(format); format = NULL;
 #ifdef VT_HEVC_NATIVE
    if (!VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC))

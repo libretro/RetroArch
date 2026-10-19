@@ -11,6 +11,7 @@ typedef struct object *VTDecompressionSessionRef;
 typedef struct object *CMBlockBufferRef;
 typedef struct object *CMSampleBufferRef;
 typedef void *CVImageBufferRef;
+typedef struct object *CVPixelBufferRef;
 typedef unsigned VTDecodeInfoFlags;
 typedef int64_t CMTime;
 typedef struct { int32_t width, height; } CMVideoDimensions;
@@ -24,6 +25,7 @@ typedef struct
 #define kCFAllocatorDefault NULL
 #define kVTDecodeFrame_EnableAsynchronousDecompression 1
 #define kVTDecodeInfo_Asynchronous 1
+#define kVTDecodeInfo_FrameDropped 2
 #define kCMFormatDescriptionError_InvalidParameter (-12710)
 #define kCMFormatDescriptionError_AllocationFailed (-12711)
 #define kCFNumberSInt32Type 3
@@ -57,4 +59,6 @@ CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef);
 size_t CMSampleBufferGetTotalSampleSize(CMSampleBufferRef);
 OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef, CMSampleBufferRef,
       unsigned, void*, VTDecodeInfoFlags*);
+CVPixelBufferRef CVPixelBufferRetain(CVPixelBufferRef);
+void CVPixelBufferRelease(CVPixelBufferRef);
 #endif

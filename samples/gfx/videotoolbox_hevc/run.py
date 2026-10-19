@@ -14,6 +14,7 @@ ROOT = HERE.parents[2]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--native', action='store_true')
+    parser.add_argument('--threadless', action='store_true')
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='videotoolbox-hevc-') as name:
         tmp = Path(name)
@@ -39,14 +40,26 @@ def main():
         # boolean.h uses Clang's stdbool.h, including in the C89 decoder build.
         if 'clang' in subprocess.check_output(compiler + ['--version'], text=True).lower():
             decoder_flags += ['-Wno-c99-extensions']
+            flags += ['-Wno-c99-extensions']
         cmd = compiler + flags + decoder_flags + [
             '-c', str(ROOT / 'libretro-common/formats/h265/rh265.c'), '-o', str(obj)]
         print('+', shlex.join(cmd), flush=True)
         subprocess.run(cmd, check=True)
-        cmd = compiler + flags + [str(HERE / 'setup_test.c'), str(obj), '-o', str(exe)] + libs
+        unit_flags = flags + ([] if args.threadless else ['-DHAVE_THREADS'])
+        objects = [str(obj)]
+        if not args.threadless:
+            for source in ('rthreads/rthreads.c', 'rthreads/retro_eventcount.c'):
+                thread_obj = tmp / (Path(source).stem + '.o')
+                cmd = compiler + unit_flags + ['-Wno-unused-parameter', '-c',
+                    str(ROOT / 'libretro-common' / source), '-o', str(thread_obj)]
+                print('+', shlex.join(cmd), flush=True)
+                subprocess.run(cmd, check=True)
+                objects.append(str(thread_obj))
+            libs += ['-lpthread']
+        cmd = compiler + unit_flags + [str(HERE / 'setup_test.c')] + objects + ['-o', str(exe)] + libs
         print('+', shlex.join(cmd), flush=True)
         subprocess.run(cmd, check=True)
-        result = subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=False)
+        result = subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=False, timeout=180)
         raise SystemExit(result.returncode)
 
 
