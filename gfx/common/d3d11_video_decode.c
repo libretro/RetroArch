@@ -1157,7 +1157,7 @@ void d3d11_video_decode_deinit(void)
    if (!d3d11vd.up)
       return;
    rh264_set_hw_backend(NULL);
-   rh265_set_hw_backend(NULL);
+   rh265_unset_hw_backend(&d3d11vd.hevc);
 #ifdef HAVE_RVP9
    rvp9_set_hw_backend(NULL);
 #endif

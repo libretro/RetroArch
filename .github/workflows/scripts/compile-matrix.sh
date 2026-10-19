@@ -1108,7 +1108,7 @@ if command -v clang > /dev/null 2>&1; then
    if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks \
          -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \
          -Werror=unused-but-set-variable $HOSTOFF -D__APPLE__ -D__MACH__ \
-         -DHAVE_METAL -Itools/platform_stubs/metal $INC $BASE \
+         -DHAVE_METAL -Itools/platform_stubs/metal -Itools/platform_stubs/gcd $INC $BASE \
          gfx/drivers/metal.m 2>&1); then
       echo "FAIL  metal video (stubs)"
       echo "      gfx/drivers/metal.m"

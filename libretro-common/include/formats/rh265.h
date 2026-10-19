@@ -292,6 +292,8 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
  * withdraws the offer; existing sessions retain their callbacks. */
 struct rh265_hw_backend;
 void rh265_set_hw_backend(const struct rh265_hw_backend *backend);
+/* Withdraw only this offer; never remove a replacement backend. */
+int rh265_unset_hw_backend(const struct rh265_hw_backend *backend);
 /* Opt in before the first picture, after parameter sets. Returns 1 on
  * hardware, 0 on software; disabling an active session requires reopen. */
 int rh265_video_set_hw(rh265_video *v, int enable);
