@@ -890,9 +890,9 @@ static const struct cmd_param cmd_params_steps[] = {
       "after a press lets go for a frame first.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "queue", "on: answer now, run after those queued, pause when all "
-      "have (idle: ms since). The reply after a queued list ends says how "
-      "(previous); a queued one then drops its steps (discarded). Empty "
-      "steps only asks; a request not queued ends the queue.",
+      "have (idle: ms since). After a queued list ends the next reply says "
+      "how (previous), and a queued call drops its steps (discarded). "
+      "Empty steps asks; a call not queued ends the queue.",
       CMD_PARAM_STRING, false, "|", "on|off", NULL },
    { NULL }
 };
@@ -1128,14 +1128,14 @@ static const struct cmd_trailer cmd_trailers_press[] = {
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_steps[] = {
-   { "QUEUED", NULL, "queued", "Steps left in the queue.", true },
-   { "DISCARDED", NULL, "discarded", "Steps dropped: see previous.", true },
-   { "DONE", NULL, "done", "Frames run, all done.", true },
-   { "WAITING", NULL, "waiting", "Frames run, out of time.", true },
-   { "STOPPED", NULL, "stopped", "Frames run, a stop held.", true },
-   { "IDLE", NULL, "idle", "Ms the queue sat dry before this." },
-   { "STOP", NULL, "stop", "Which stop held, from 1." },
-   { "STEP", NULL, "step", "Step it ended on, from 1." },
+   { "QUEUED", NULL, "queued", "Steps left.", true },
+   { "DISCARDED", NULL, "discarded", "Steps dropped.", true },
+   { "DONE", NULL, "done", "Frames run.", true },
+   { "WAITING", NULL, "waiting", "Frames run; ask again.", true },
+   { "STOPPED", NULL, "stopped", "Frames run.", true },
+   { "IDLE", NULL, "idle", "Ms paused, run dry." },
+   { "STOP", NULL, "stop", NULL },
+   { "STEP", NULL, "step", NULL },
    { NULL }
 };
 static const struct cmd_trailer cmd_trailers_log[] = {
@@ -1226,7 +1226,7 @@ static const struct cmd_action_map action_map[] = {
    { "SET_INPUT",        command_set_input,        "<player> <control>[+<control>...] <value>", "Hold RetroPad buttons or stick axes for the core, over the player's own input, until set again or released. The core is given exactly what is held: opposing directions are not cleaned and the D-Pad is not turned with the picture. Under netplay the player is this machine's, and what is held is sent like a press. Answers with the player, the buttons held and the axes held, none for either where nothing is.", CMD_INFO_NO_TOOL, cmd_params_input, &cmd_rows_input },
    { "PRESS",            command_press,            "<player> <control>[+<control>...] <frames> [until <condition>]", "Press buttons for some frames and let go; with until, run on until a condition holds. What INPUT holds stays held. Answers with what WATCH watches; finishes paused.", 0, cmd_params_press, &cmd_rows_press },
    { "RUN_UNTIL",        command_run_until,        "<address>[:<address>] <condition> <value> [max frames]", "Run until memory meets a condition. Answers met or waiting (ask again) with the frames run, what WATCH watches and the value.", 0, cmd_params_until, &cmd_rows_until },
-   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch - approach, jump, land - in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
+   { "STEPS",            command_steps,            "<step>[; <step>...][|on]", "Play a stretch in one request, or queued to play on unpaused. Answers with how it ended and what WATCH watches.", 0, cmd_params_steps, &cmd_rows_steps },
    { "WATCH",            command_watch,            "[<label> <address|off>]...", "Watch bytes under labels: every step answers with them, so needs no read after. With none, answers each value, in decimal. Cleared when content closes.", 0, cmd_params_watch, &cmd_rows_watch },
    { "RELEASE_INPUT",    command_release_input,    "[player]", "Let go of everything SET_INPUT holds, for one player, or every player when given none. Answers as GET_INPUT does, for that player or the first.", CMD_INFO_NO_TOOL, cmd_params_input_release, &cmd_rows_input },
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_input_get, &cmd_rows_input },
