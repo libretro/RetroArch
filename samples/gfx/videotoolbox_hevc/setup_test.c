@@ -341,6 +341,7 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
    VTDecompressionSessionRef session = NULL;
    VTDecompressionOutputCallbackRecord callback;
    CMVideoDimensions dims;
+   OSStatus status;
    uint8_t *copy = (uint8_t*)malloc(size);
    unsigned i;
    size_t pos;
@@ -390,7 +391,11 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
       exit(77);
    }
 #endif
-   assert(!videotoolbox_hevc_session_create(source, 0, &callback, &format, &session));
+   status = videotoolbox_hevc_session_create(source, 0, &callback, &format, &session);
+   if (status)
+      fprintf(stderr, "VideoToolbox parameter-only %dx%d depth %u full %d: session status %ld\n",
+            (int)dims.width, (int)dims.height, depth, full, (long)status);
+   assert(!status);
    assert(format && session);
    VTDecompressionSessionInvalidate(session); CFRelease(session); CFRelease(format);
    format = NULL; session = NULL;
@@ -431,12 +436,23 @@ int main(void)
 {
    test_codec_software();
    test_sequence_software();
+#ifdef VT_HEVC_NATIVE
+   if (!VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC))
+   {
+      puts("VideoToolbox HEVC: no hardware decoder; native codec check unavailable");
+      return 77;
+   }
+   test_codec_submission();
+   test_codec_batch();
+#endif
    test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0);
    test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0);
    test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1);
    test(hevc_main10_full, sizeof(hevc_main10_full), 10, 1);
+#ifndef VT_HEVC_NATIVE
    test_codec_submission();
    test_codec_batch();
+#endif
    puts("VideoToolbox HEVC: owned parameters and Main/Main10 session setup passed");
    return 0;
 }
