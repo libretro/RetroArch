@@ -436,6 +436,7 @@ int main(void)
 {
    test_codec_software();
    test_sequence_software();
+   test_sequence_hardware_state();
 #ifdef VT_HEVC_NATIVE
    if (!VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC))
    {
