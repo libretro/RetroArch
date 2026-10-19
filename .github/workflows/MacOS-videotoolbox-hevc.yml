@@ -1,0 +1,48 @@
+name: CI VideoToolbox HEVC and Metal
+
+on:
+  push:
+    branches: [master]
+    paths:
+    - '.github/workflows/MacOS-videotoolbox-hevc.yml'
+    - 'samples/gfx/videotoolbox_hevc/**'
+    - 'gfx/common/videotoolbox_hevc*.h'
+    - 'gfx/common/metal_frame*.h'
+    - 'gfx/drivers/metal.m'
+    - 'gfx/video_driver.h'
+    - 'gfx/video_defines.h'
+    - 'libretro-common/formats/h265/**'
+    - 'libretro-common/rthreads/**'
+    - 'libretro-common/include/**'
+  pull_request:
+    paths:
+    - '.github/workflows/MacOS-videotoolbox-hevc.yml'
+    - 'samples/gfx/videotoolbox_hevc/**'
+    - 'gfx/common/videotoolbox_hevc*.h'
+    - 'gfx/common/metal_frame*.h'
+    - 'gfx/drivers/metal.m'
+    - 'gfx/video_driver.h'
+    - 'gfx/video_defines.h'
+    - 'libretro-common/formats/h265/**'
+    - 'libretro-common/rthreads/**'
+    - 'libretro-common/include/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  videotoolbox-hevc:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v6
+    - name: VideoToolbox HEVC hardware decode and pixel ownership
+      run: |
+        rc=0
+        python3 samples/gfx/videotoolbox_hevc/run.py --native --metal || rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::HEVC hardware decode or Metal shared events unavailable; native bridge check did not complete"
+          exit 0
+        fi
+        exit "$rc"

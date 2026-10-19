@@ -138,18 +138,3 @@ jobs:
         set -o pipefail
         SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" check-driver
         HARNESS_CORE_XRGB8888=1 SAN=none GFX_INSTRUMENT=1 DRIVER=metal CYCLES=1 make -C samples/gfx/threaded_video MINVERFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" check-driver
-
-  videotoolbox-hevc:
-    runs-on: macos-latest
-    timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@v6
-    - name: VideoToolbox HEVC hardware decode and pixel ownership
-      run: |
-        rc=0
-        python3 samples/gfx/videotoolbox_hevc/run.py --native --metal || rc=$?
-        if [ "$rc" = 77 ]; then
-          echo "::warning::HEVC hardware decode or Metal shared events unavailable; native bridge check did not complete"
-          exit 0
-        fi
-        exit "$rc"
