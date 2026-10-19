@@ -195,6 +195,19 @@ int rh265_video_get_access_unit(rh265_video *v, const uint8_t *data,
       size_t size, unsigned length_size, rh265_nal_t *slices,
       unsigned capacity, rh265_access_unit_t *out);
 
+/* Opt in before supplying parameter sets. Retained complete NALs include
+ * their headers and escape bytes; software-only decoders allocate nothing.
+ * Owner thread only. Returns 0 on success, -1 on failure or late opt-in. */
+int rh265_video_retain_parameter_sets(rh265_video *v);
+
+/* Borrow the selected PPS -> SPS -> VPS chain, in VPS/SPS/PPS order.
+ * Valid until the next parameter update or close. No allocation. Failure
+ * clears all three entries; missing/invalid/unretained chains return -1.
+ * A failed copy or NAL over 64 KiB disables that chain until replacement,
+ * without changing software parameter parsing. */
+int rh265_video_get_parameter_sets(const rh265_video *v, unsigned pps_id,
+      rh265_nal_t out[3]);
+
 /* Create a decoder. Returns NULL on allocation failure. */
 rh265_video *rh265_video_open(void);
 
