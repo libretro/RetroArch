@@ -981,7 +981,8 @@ enum video_device_api
    VIDEO_DEVICE_NONE = 0,
    VIDEO_DEVICE_VULKAN,
    VIDEO_DEVICE_D3D11,
-   VIDEO_DEVICE_D3D12
+   VIDEO_DEVICE_D3D12,
+   VIDEO_DEVICE_METAL
 };
 
 typedef struct video_device_info
@@ -989,7 +990,8 @@ typedef struct video_device_info
    enum video_device_api api;
    /* Vulkan: VkInstance, VkPhysicalDevice, VkDevice, and the loader's
     * vkGetInstanceProcAddr. D3D11, D3D12: the ID3D11Device or
-    * ID3D12Device in @device. */
+    * ID3D12Device in @device. Metal: borrowed id<MTLDevice> in
+    * @device, valid until driver teardown; no ownership transfer. */
    void *instance;
    void *physical_device;
    void *device;

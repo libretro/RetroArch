@@ -9527,6 +9527,23 @@ static bool metal_set_frame_format(void *data, bool rgb32,
    }
 }
 
+static bool metal_get_device(void *data, video_device_info_t *info)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   id<MTLDevice> device = md.context.device;
+   if (!device || !info)
+      return false;
+   info->api                    = VIDEO_DEVICE_METAL;
+   info->instance               = NULL;
+   info->physical_device        = NULL;
+   info->device                 = (__bridge void *)device;
+   info->queue                  = NULL;
+   info->get_instance_proc_addr  = NULL;
+   info->queue_family           = 0;
+   info->import_formats         = 0;
+   return true;
+}
+
 static const video_poke_interface_t metal_poke_interface = {
    metal_get_flags,
    metal_load_texture,
@@ -9579,7 +9596,8 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_set_frame_format,
    metal_frame_mem_alloc,
    metal_frame_mem_ready,
-   metal_frame_mem_free
+   metal_frame_mem_free,
+   metal_get_device
 };
 
 static void metal_get_poke_interface(void *data,
