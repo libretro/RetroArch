@@ -147,6 +147,7 @@ static void test_codec_submission(void)
       if (info & kVTDecodeInfo_FrameDropped)
          fprintf(stderr, "%s: decode admission dropped the picture, flags %u\n", fixture->name, (unsigned)info);
       assert(!(info & kVTDecodeInfo_FrameDropped));
+      videotoolbox_hevc_slots_close(context);
       memset(packet, 0xa5, fixture->sample_size); free(packet);
       rh265_video_close(source); CFRelease(format);
 #ifndef VT_HEVC_NATIVE

@@ -64,6 +64,11 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       assert(!videotoolbox_hevc_slots_begin(context, i));
       assert(!videotoolbox_hevc_slots_take(context, i, &result));
    }
+   videotoolbox_hevc_slots_close(NULL);
+   videotoolbox_hevc_slots_close(context);
+   videotoolbox_hevc_slots_close(context);
+   for (i = 0; i < 32; i++)
+      assert(!videotoolbox_hevc_slots_begin(context, i));
    for (i = 32; i > 0; i--)
       slot_complete(context, tickets[i - 1], -(OSStatus)i, i, NULL);
    for (i = 0; i < 32; i++)
@@ -71,11 +76,15 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       assert(videotoolbox_hevc_slots_take(context, i, &result) == 1);
       assert(result.status == -(OSStatus)i - 1 && result.flags == i + 1 && !result.image);
       assert(!videotoolbox_hevc_slots_take(context, i, &result));
+      assert(!videotoolbox_hevc_slots_begin(context, i));
    }
+   videotoolbox_hevc_slots_release(context);
+   context = videotoolbox_hevc_slots_new(1); assert(context);
    image = slot_image(); assert(image);
    tickets[0] = videotoolbox_hevc_slots_begin(context, 0); assert(tickets[0]);
    slot_complete(context, tickets[0], 0, 0, image);
    CVPixelBufferRelease(image);
+   videotoolbox_hevc_slots_close(context);
    assert(videotoolbox_hevc_slots_take(context, 0, &result) == 1);
    assert(result.image && !result.status && !result.flags);
    image = result.image;
@@ -138,6 +147,11 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       assert(!videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info));
       assert(info == kVTDecodeInfo_FrameDropped);
       assert(!videotoolbox_hevc_slots_take(context, 0, &result));
+      videotoolbox_hevc_slots_close(context);
+      info = 99;
+      assert(videotoolbox_hevc_slots_submit(context, 0, session, format, &au, &nal, 1, &info)
+            == kCMFormatDescriptionError_InvalidParameter);
+      assert(!info);
       VTDecompressionSessionInvalidate(session);
       videotoolbox_hevc_slots_quiesce(context);
       videotoolbox_hevc_slots_release(context);
@@ -161,10 +175,12 @@ static void test_slots(CMVideoFormatDescriptionRef format)
       context = videotoolbox_hevc_slots_new(1); assert(context);
       assert(videotoolbox_hevc_slots_begin(context, 0));
       thread = sthread_create(slot_unload_worker, context); assert(thread);
+      videotoolbox_hevc_slots_close(context);
       videotoolbox_hevc_slots_release(context);
       sthread_join(thread);
    }
    puts("VideoToolbox HEVC slots: ownership and 100000 concurrent publications passed");
+   puts("VideoToolbox HEVC slots: closed admission preserves completion and drain");
 }
 #else
 static void test_slots(CMVideoFormatDescriptionRef format)
