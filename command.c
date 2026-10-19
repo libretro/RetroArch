@@ -6903,7 +6903,7 @@ static void command_reinit_snapshot_cb(void *userdata,
    ctx->size = want;
 }
 
-void command_event_reinit(const int flags)
+bool command_event_reinit(const int flags)
 {
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -6962,14 +6962,14 @@ void command_event_reinit(const int flags)
     * drivers, so there is nothing to put right about the grab here:
     * the next video driver has them applied to it. */
    if (!video_st->data)
-      return;
+      return false;
 
    /* A staged content load ends in a reinit of every driver against
     * the new core: one asked for before then - the old override
     * unloading, the new core's SET_SYSTEM_AV_INFO - would rebuild
     * the drivers the stage is about to rebuild again. */
    if (runloop_is_content_switching())
-      return;
+      return false;
 
 
 
@@ -7093,4 +7093,5 @@ void command_event_reinit(const int flags)
             && adaptive_vsync,
             runloop_get_video_swap_interval(swap_interval_config));
 #endif
+   return true;
 }

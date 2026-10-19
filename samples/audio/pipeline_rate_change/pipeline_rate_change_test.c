@@ -218,6 +218,79 @@ static void refused_case(const char *what, bool threaded, bool stretch,
    audio_driver_deinit();
 }
 
+/* A new frame rate at the same audio rate: the threaded ring and slice
+ * are sized in video frames and follow it; the resamplers stay. */
+static void fps_case(double rate, double from_fps, double to_fps)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   audio_driver_t wrapper;
+   const audio_driver_t *saved;
+   void *resampler;
+   double phase = 0.0;
+   size_t split, per_frame = (size_t)(rate / to_fps);
+   double after;
+   bool ok;
+   unsigned frame, i;
+
+   device_opens           = 0;
+   pipeline_control_calls = 0;
+   captured_frames        = 0;
+   setup(true, true, false, rate);
+   video_state_get_ptr()->av_info.timing.fps = from_fps;
+   audio_driver_deinit();
+   device_opens = 0;
+   if (!audio_driver_init_internal(config_get_ptr(), false))
+      abort();
+   st->pipe_priming = false;
+   audio_driver_publish_runloop();
+   resampler = st->resampler_data;
+
+   video_state_get_ptr()->av_info.timing.fps = to_fps;
+   wrapper       = *st->current_audio;
+   saved         = st->current_audio;
+   wrapper.ident = "audio-thread";
+   st->current_audio = &wrapper;
+   ok = audio_driver_set_input_rate(rate);
+   st->current_audio = saved;
+
+   /* A frame's worth of audio per video frame at the new rate. */
+   split = captured_frames;
+   for (frame = 0; frame < (unsigned)to_fps; frame++)
+   {
+      unsigned passes = 0;
+      for (i = 0; i < per_frame; i++)
+      {
+         float v = (float)(0.5 * sin(phase));
+         phase  += 2.0 * M_PI * TONE_HZ / rate;
+         feed_f[i * 2] = feed_f[i * 2 + 1] = v;
+      }
+      audio_driver_sample_batch_float(feed_f, per_frame);
+      while (retro_spsc_read_avail(&st->pipe_ring))
+      {
+         if (++passes > 64)
+            abort();
+         audio_driver_pipeline_consume(st);
+      }
+   }
+   after = measure(split + (captured_frames - split) / 4, captured_frames);
+
+   printf("%.0f Hz, %.0f -> %.0f fps: %s, opens=%u parks=%u pass=%u ring=%u"
+         " tone %.1f Hz\n", rate, from_fps, to_fps, ok ? "taken" : "refused",
+         device_opens, pipeline_control_calls, (unsigned)st->pipe_pass_frames,
+         (unsigned)(st->pipe_ring.capacity / st->pipe_frame_bytes), after);
+   if (     !ok
+         || device_opens != 1
+         || pipeline_control_calls != 1
+         || st->resampler_data != resampler
+         || st->pipe_pass_frames != (per_frame < AUDIO_PIPE_SLICE_INT16S / 2
+               ? per_frame : AUDIO_PIPE_SLICE_INT16S / 2)
+         || st->pipe_ring.capacity
+               < per_frame * AUDIO_PIPE_RING_FRAMES * st->pipe_frame_bytes
+         || fabs(after - TONE_HZ) > TONE_HZ * 0.01)
+      failures++;
+   audio_driver_deinit();
+}
+
 /* Audio brought up twice without a teardown between. */
 static void second_init_case(bool threaded)
 {
@@ -277,6 +350,10 @@ int main(void)
 
    refused_case("inline time stretch", false, true, 22050.0, 32000.0);
    refused_case("threaded time stretch", true, true, 22050.0, 32000.0);
+
+   /* 22050 Hz at 60 fps holds 1024 frames; at 15 fps a frame is 1470. */
+   fps_case(22050.0, 60.0, 15.0);
+   fps_case(22050.0, 60.0, 50.0);
 
    second_init_case(false);
    second_init_case(true);

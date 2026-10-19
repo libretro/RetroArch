@@ -105,6 +105,7 @@
 #include "../../../verbosity.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../audio/audio_driver.h"
 #include "../../../input/input_driver.h"
 #include "../../../input/input_registry.h"
 #include "../../../input/input_remapping.h"
@@ -7566,6 +7567,94 @@ static void lane_aim_stick(void)
 
 /* The sensor snapshot is made for a shader that reads sensors, and
  * for nobody else: with no such shader the poll publishes nothing. */
+/* The audio device across what does not change it: a core's new frame
+ * rate, base size or sample rate leaves it open, and a driver restart
+ * opens it once, menu sounds on. The null driver gets a device that
+ * counts, for the lane. */
+extern audio_driver_t audio_null;
+static unsigned avd_opens;
+static int      avd_token;
+static void *avd_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
+{
+   (void)device; (void)latency;
+   *new_rate = rate;
+   avd_opens++;
+   return &avd_token;
+}
+static ssize_t avd_write(void *data, const void *buf, size_t len)
+{ (void)data; (void)buf; return (ssize_t)len; }
+static bool avd_true(void *data) { (void)data; return true; }
+static bool avd_start(void *data, bool shutdown)
+{ (void)data; (void)shutdown; return true; }
+static void avd_nonblock(void *data, bool state) { (void)data; (void)state; }
+static bool avd_float(void *data) { (void)data; return false; }
+static void avd_free(void *data) { (void)data; }
+
+static void lane_av_info_keeps_audio(void)
+{
+   settings_t *settings             = config_get_ptr();
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   audio_driver_t saved             = audio_null;
+   struct retro_system_av_info orig = video_st->av_info;
+   struct retro_system_av_info info;
+   bool menu_sounds                 = settings->bools.audio_enable_menu;
+   unsigned had                     = failures;
+   unsigned opens;
+
+   audio_null.init               = avd_init;
+   audio_null.write              = avd_write;
+   audio_null.stop               = avd_true;
+   audio_null.start              = avd_start;
+   audio_null.alive              = avd_true;
+   audio_null.set_nonblock_state = avd_nonblock;
+   audio_null.free               = avd_free;
+   audio_null.use_float          = avd_float;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   run_frames(5);
+   CHECK(audio_state_get_ptr()->context_audio_data == &avd_token,
+         "av info: the counting device did not come up");
+
+   /* A new frame rate and base size, the maximum as it was. */
+   avd_opens = 0;
+   info = orig;
+   info.timing.fps           = orig.timing.fps / 2.0;
+   info.geometry.base_width  = orig.geometry.base_width  / 2;
+   info.geometry.base_height = orig.geometry.base_height / 2;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+   run_frames(5);
+   opens = avd_opens;
+   CHECK(opens == 0 && video_st->av_info.timing.fps == info.timing.fps,
+         "av info: a new frame rate and base size reopened the audio device");
+
+   /* A new sample rate. */
+   info.timing.sample_rate   = orig.timing.sample_rate / 2.0;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+   run_frames(5);
+   CHECK(avd_opens == opens,
+         "av info: a new sample rate reopened the audio device");
+
+   /* A driver restart, menu sounds on: one teardown, one open. */
+   settings->bools.audio_enable_menu = true;
+   avd_opens = 0;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   CHECK(avd_opens == 1,
+         "av info: a driver restart with menu sounds on opened the audio device more than once");
+   if (avd_opens != 1)
+      fprintf(stderr, "      opened %u times\n", avd_opens);
+
+   settings->bools.audio_enable_menu = menu_sounds;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &orig);
+   audio_null = saved;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   run_frames(5);
+   if (failures == had)
+      printf("[pass] av info: a core's new frame rate, base size or sample"
+            " rate leaves the audio device open; a driver restart opens it"
+            " once, menu sounds on\n");
+}
+
 static void lane_sensor_snapshot_idle(void)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -8842,6 +8931,7 @@ int main(int argc, char *argv[])
       /* last: these restart the drivers */
       lane_input_kept();
       lane_joypad_reinit();
+      lane_av_info_keeps_audio();
    }
 
    lane_sensor_snapshot_idle();
