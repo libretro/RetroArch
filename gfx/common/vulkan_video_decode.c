@@ -1837,7 +1837,7 @@ void vulkan_video_decode_deinit(void)
    rav1_set_hw_backend(NULL);
 #endif
    rh264_set_hw_backend(NULL);
-   rh265_set_hw_backend(NULL);
+   rh265_unset_hw_backend(&vvd.hevc);
 #ifdef HAVE_RVP9
    rvp9_set_hw_backend(NULL);
 #endif

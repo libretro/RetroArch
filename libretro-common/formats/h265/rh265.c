@@ -5378,6 +5378,18 @@ void rh265_set_hw_backend(const rh265_hw_backend_t *backend)
 #endif
 }
 
+int rh265_unset_hw_backend(const rh265_hw_backend_t *backend)
+{
+   if (!backend) return 0;
+#ifdef RETRO_ATOMIC_HAS_PTR
+   return retro_atomic_cas_ptr(&rh265_hw_backend, (void*)backend, NULL) ? 1 : 0;
+#else
+   if (rh265_hw_backend != backend) return 0;
+   rh265_hw_backend = NULL;
+   return 1;
+#endif
+}
+
 int rh265_video_is_hw(const rh265_video *v)
 {
    return v && v->hw;

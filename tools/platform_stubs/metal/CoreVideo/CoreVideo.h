@@ -17,6 +17,8 @@ extern size_t CVPixelBufferGetWidthOfPlane(CVPixelBufferRef, size_t);
 extern size_t CVPixelBufferGetHeightOfPlane(CVPixelBufferRef, size_t);
 extern int CVMetalTextureCacheCreateTextureFromImage(const void *, CVMetalTextureCacheRef,
       CVPixelBufferRef, const void *, MTLPixelFormat, size_t, size_t, size_t, CVMetalTextureRef *);
+extern int CVMetalTextureCacheCreate(const void *, const void *, id<MTLDevice>,
+      const void *, CVMetalTextureCacheRef *);
 extern int CVMetalTextureIsFlipped(CVMetalTextureRef);
 extern id<MTLTexture> CVMetalTextureGetTexture(CVMetalTextureRef);
 extern int CFEqual(CFTypeRef, CFTypeRef);

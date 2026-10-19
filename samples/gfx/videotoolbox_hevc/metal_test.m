@@ -51,6 +51,7 @@ void *videotoolbox_hevc_test_device(void *unused)
    return device ? (void*)CFRetain((__bridge CFTypeRef)device) : NULL;
 }
 void videotoolbox_hevc_test_device_release(void *device) { CFRelease(device); }
+void *videotoolbox_hevc_test_device_retain(void *device) { return (void*)CFRetain(device); }
 
 /* Consume an adapter-produced lease after adapter, session and pool teardown.
  * GPU readback and waits are confined to this pixel acceptance fixture. */

@@ -1,7 +1,9 @@
-#include "../../../gfx/common/videotoolbox_hevc_backend.h"
+#include "../../../gfx/common/videotoolbox_hevc_registry.h"
+#include "registry_test.h"
 
-#if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
+#if defined(VIDEOTOOLBOX_HEVC_REGISTRY) && defined(VT_HEVC_METAL)
 void *videotoolbox_hevc_test_device(void *);
+void *videotoolbox_hevc_test_device_retain(void *);
 void videotoolbox_hevc_test_device_release(void *);
 void videotoolbox_hevc_test_export(video_hw_frame_t*, unsigned, unsigned, const uint32_t*);
 
@@ -20,20 +22,26 @@ static void test_native_decoder_adapter(void)
       unsigned count = sequence ? VT_HEVC_TEST_BATCH : 1, input = 0, output = 0, i;
       rh265_video *source = rh265_video_open();
       video_hw_frame_t *frames = (video_hw_frame_t*)calloc(count, sizeof(*frames));
-      videotoolbox_hevc_backend_t backend;
+      videotoolbox_hevc_registry_t registry;
+      slock_t *lock = slock_new();
+      void *device = videotoolbox_hevc_test_device(NULL);
       owner_queue_t queue;
       sthread_t *worker;
-      assert(source && frames);
+      assert(source && frames && lock && device);
       memset(&queue, 0, sizeof(queue));
       assert(!rh265_video_retain_parameter_sets(source));
       assert(!rh265_video_set_extradata(source, fixture->hvcc, fixture->hvcc_size));
       rh265_set_hw_backend(NULL); assert(!rh265_video_set_hw(source, 1));
-      videotoolbox_hevc_backend_init(&backend, NULL, videotoolbox_hevc_test_device,
-            videotoolbox_hevc_test_device_release, NULL, owner_enqueue, &queue, true);
-      rh265_set_hw_backend(&backend.offer);
+      assert(videotoolbox_hevc_registry_init(&registry, lock,
+               videotoolbox_hevc_test_device_retain, videotoolbox_hevc_test_device_release,
+               NULL, NULL, owner_enqueue, &queue, true));
+      assert(videotoolbox_hevc_registry_publish(&registry, &queue, device));
+      videotoolbox_hevc_test_device_release(device);
+      assert(videotoolbox_hevc_registry_is_owner(&registry, &queue));
       assert(rh265_video_set_hw(source, 1) && rh265_video_is_hw(source));
       /* Withdrawal stops new activation; the active codec owns its operations. */
-      rh265_set_hw_backend(NULL);
+      assert(videotoolbox_hevc_registry_withdraw(&registry, &queue));
+      assert(!videotoolbox_hevc_registry_is_owner(&registry, &queue));
       while (input < count)
       {
          const uint8_t *packet = sequence ? sequence->packets[input].data : fixture->sample;
@@ -65,6 +73,7 @@ static void test_native_decoder_adapter(void)
       assert(queue.submitted == 1);
       worker = sthread_create(owner_worker, &queue); assert(worker); sthread_join(worker);
       assert(!queue.work);
+      slock_free(lock);
       for (i = 0; i < count; i++)
       {
          unsigned packet = 0;
@@ -277,7 +286,9 @@ static void test_decoder_adapter(void)
    puts("VideoToolbox adapter: eight retry, export pressure, drop and deferred close cases passed");
    test_registered_backend();
 #endif
-#if defined(VIDEOTOOLBOX_HEVC_SLOTS) && defined(VT_HEVC_METAL)
+#if defined(VIDEOTOOLBOX_HEVC_REGISTRY) && defined(VT_HEVC_METAL)
    test_native_decoder_adapter();
 #endif
+   test_backend_withdrawal();
+   test_registry_lifetime();
 }

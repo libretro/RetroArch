@@ -9,6 +9,7 @@ typedef struct dispatch_queue_s *dispatch_queue_t;
 typedef void (^dispatch_block_t)(void);
 #define DISPATCH_TIME_NOW ((dispatch_time_t)0)
 #define QOS_CLASS_USER_INITIATED 0x19
+#define DISPATCH_QUEUE_PRIORITY_DEFAULT 0
 dispatch_queue_t dispatch_get_global_queue(long identifier, unsigned long flags);
 void dispatch_async(dispatch_queue_t queue, dispatch_block_t block);
 dispatch_time_t dispatch_time(dispatch_time_t when, int64_t delta);
