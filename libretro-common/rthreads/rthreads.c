@@ -3741,11 +3741,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   seconds              = timeout_us / INT64_C(1000000);
-   remainder            = timeout_us % INT64_C(1000000);
+   seconds              = timeout_us / 1000000;
+   remainder            = timeout_us % 1000000;
 
    now.tv_sec          += seconds;
-   now.tv_nsec         += remainder * INT64_C(1000);
+   now.tv_nsec         += remainder * 1000;
 
    if (now.tv_nsec >= 1000000000)
    {

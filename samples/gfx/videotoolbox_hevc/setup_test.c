@@ -278,11 +278,12 @@ static void test_samples(CMVideoFormatDescriptionRef format)
       }
       slices[0].data = payload;
    }
-#if SIZE_MAX > UINT32_MAX
-   slices[0].size = (size_t)UINT32_MAX + 1;
-   assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
-   slices[0].size = 7;
-#endif
+   if ((size_t)-1 > UINT32_MAX)
+   {
+      slices[0].size = (size_t)UINT32_MAX + 1;
+      assert(videotoolbox_hevc_sample_create(format, &au, slices, 2, &sample));
+      slices[0].size = 7;
+   }
    au.num_slices = 1; au.coded_bytes = 7;
    assert(!videotoolbox_hevc_sample_create(format, &au, slices, 1, &sample));
    assert(CMSampleBufferGetTotalSampleSize(sample) == 11);
