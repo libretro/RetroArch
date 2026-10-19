@@ -215,17 +215,20 @@ static id mock_compute_encoder(MockBuffer *buffer);
 @public
    id<MTLDevice> _device;
    MockBuffer *_buffer;
+   void *_frameSDRPipeline;
    BOOL fail_texture, disable_hdr;
    unsigned allocations;
 }
 @property(readonly) id<MTLDevice> device;
 @property(readonly) id<MTLCommandBuffer> blitCommandBuffer;
 @property(readonly) BOOL hdrEnabled;
+@property(readonly) void *frameSDRPipeline;
 - (id)linearShader;
 - (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
       height:(unsigned)height filter:(enum texture_filter_type)filter;
 @end
 @implementation MockContext
+- (void *)frameSDRPipeline { return _frameSDRPipeline; }
 - (BOOL)hdrEnabled { return !disable_hdr; }
 - (id)linearShader { return disable_hdr ? nil : self; }
 - (id<MTLDevice>)device { return _device; }
@@ -255,6 +258,7 @@ static id mock_compute_encoder(MockBuffer *buffer);
 - (MockContext *)context { return _context; }
 @end
 /* SHIPPING_IMPORT */
+/* SDR_IMPORT_TEST */
 
 static bool refuse_encode(void *user, const metal_frame_view_t *view, void *buffer)
 { (void)user; (void)view; (void)buffer; return false; }
@@ -540,6 +544,7 @@ static void test(unsigned format, unsigned action)
 int main(void)
 {
    test_sdr_mock();
+   test_sdr_import_mock();
    test_cv_mock();
    unsigned i, j;
    const unsigned formats[] = { IMAGE_PIXFMT_8888, IMAGE_PIXFMT_FP16, IMAGE_PIXFMT_NV12, IMAGE_PIXFMT_P010 };

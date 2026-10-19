@@ -7,7 +7,6 @@
 /* SHIPPING_LEASE */
 /* COREVIDEO */
 /* SDR_CONVERT */
-/* NATIVE_IMPORT */
 
 typedef struct native_copy
 {

@@ -13,6 +13,7 @@ static unsigned sdr_code(unsigned f, unsigned x, unsigned y, unsigned plane, uns
    if (!plane) return ys[(x + y * 3) % 10];
    return channel ? cr[(x * 2 + y * 3) % 5] : cb[(x + y) % 5];
 }
+/* NATIVE_IMPORT */
 static void test_sdr_native(id<MTLDevice> device)
 {
    const OSType formats[] = { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
@@ -22,6 +23,14 @@ static void test_sdr_native(id<MTLDevice> device)
    CVMetalTextureCacheRef cache = NULL;
    void *pipeline = metal_frame_sdr_pipeline_create((__bridge void *)device);
    unsigned worst = 0;
+   NativeContext *context = [NativeContext new];
+   MetalDriver *driver = [MetalDriver new];
+   uintptr_t handle = 0, original = 0;
+   __weak id<MTLTexture> previous = nil;
+   context->_device = device; context->_frameSDRPipeline = pipeline;
+   driver.context = context;
+   MTLSamplerDescriptor *sampler = [MTLSamplerDescriptor new];
+   context->_samplers[TEXTURE_FILTER_LINEAR] = [device newSamplerStateWithDescriptor:sampler];
    assert(pipeline && !metal_frame_sdr_pipeline_create(NULL));
    assert(CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache) == kCVReturnSuccess);
    for (unsigned f = 0; f < 4; f++) for (unsigned srgb = 0; srgb < 2; srgb++)
@@ -77,20 +86,31 @@ static void test_sdr_native(id<MTLDevice> device)
             width:7 height:5 mipmapped:NO];
          desc.storageMode = MTLStorageModePrivate;
          desc.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
-         id<MTLTexture> output = [device newTextureWithDescriptor:desc];
+
          desc.storageMode = MTLStorageModeShared; desc.usage = MTLTextureUsageShaderRead;
          id<MTLTexture> readback = [device newTextureWithDescriptor:desc];
          id<MTLCommandBuffer> buffer = [consumer commandBuffer];
-         assert(output && readback && buffer.retainedReferences);
-         assert(metal_frame_convert_sdr(&imported, (__bridge void *)device,
-            (__bridge void *)buffer, pipeline, (__bridge void *)output));
+         assert(readback && buffer.retainedReferences);
+         context->_buffer = buffer;
+         assert(metal_import_texture((__bridge void *)driver, &handle, &imported,
+            TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
+         if (!original) original = handle;
+         assert(original == handle);
+         Texture *texture = (__bridge Texture *)(void *)handle;
+         id<MTLTexture> output = texture.texture;
+         if (f || srgb) assert(output == previous);
+         previous = output;
+         assert(output.pixelFormat == MTLPixelFormatRGBA8Unorm
+            && output.storageMode == MTLStorageModePrivate);
+         if (f == 3 && srgb) { CFRelease((CFTypeRef)(void *)handle); handle = 0; }
+
          id<MTLBlitCommandEncoder> blit = [buffer blitCommandEncoder];
          assert(blit);
          [blit copyFromTexture:output sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
             sourceSize:MTLSizeMake(7, 5, 1) toTexture:readback destinationSlice:0 destinationLevel:0
             destinationOrigin:MTLOriginMake(0, 0, 0)];
          [blit endEncoding];
-         output = nil;
+         output = nil; texture = nil;
          dispatch_semaphore_t finished = dispatch_semaphore_create(0);
          [buffer addCompletedHandler:^(id<MTLCommandBuffer> completed) {
             (void)completed; dispatch_semaphore_signal(finished);
@@ -114,6 +134,7 @@ static void test_sdr_native(id<MTLDevice> device)
          }
       }
    }
+   assert(!handle);
    CFRelease(cache); CFRelease((CFTypeRef)pipeline);
-   printf("Metal SDR native: eight cropped NV12/P010 conversions passed, max error %u/255\n", worst);
+   printf("Metal SDR importer native: eight cropped NV12/P010 conversions passed, max error %u/255\n", worst);
 }

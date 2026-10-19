@@ -80,5 +80,12 @@ convert eight spatially varying cropped CoreVideo frames (four pixel formats
 with two transfer functions). Independent reference pixels allow one UNORM8
 code of GPU rounding error. The C89 fixture also verifies the 64-byte constant
 layout and exact black/white/chroma-center levels on Linux and Windows.
-The packed driver callback is unchanged: planar importer integration,
-VideoToolbox sessions, HDR conversion and display acceptance remain gated.
+The driver importer now accepts these explicit SDR planar leases into a
+persistent RGBA8 texture. Its context creates the conversion pipeline during
+setup; pipeline failure leaves planar imports refused. Allocation or encoder
+refusal preserves the prior public handle/image and caller lease. Compatible
+images are reused, and format/size replacements publish only after encoding.
+The mock adds 48 importer replacement/refusal/retirement cases. The native
+pixel fixture runs its eight conversions through the shipping driver callback.
+`import_formats` remains zero: VideoToolbox producer/session integration,
+playback acceptance, HDR conversion and display acceptance remain gated.

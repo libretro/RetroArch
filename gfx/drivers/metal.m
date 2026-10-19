@@ -209,6 +209,7 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 
 @property (nonatomic, readonly) id<MTLDevice> device;
 @property (nonatomic, readonly) id<MTLLibrary> library;
+@property (nonatomic, readonly) void *frameSDRPipeline;
 @property (nonatomic, readwrite) MTLClearColor clearColor;
 @property (nonatomic, readwrite) video_viewport_t *viewport;
 @property (nonatomic, readonly) Uniforms *uniforms;
@@ -1444,6 +1445,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
 @implementation Context
 {
+   void *_frameSDRPipeline;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
    id<CAMetalDrawable> _drawable;
@@ -1546,6 +1548,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       int i;
 
       _device                    = RARCH_RETAIN(d);
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(12, 0, 0), APPLE_RUNTIME_VER(12, 0, 0)))
+         _frameSDRPipeline = metal_frame_sdr_pipeline_create((__bridge void *)d);
       _layer                     = RARCH_RETAIN(layer);
 #ifdef RETRO_ATOMIC_HAS_64
       retro_atomic_store_release_64(&metal_presented_at, 0);
@@ -1627,9 +1631,13 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    return self;
 }
 
+- (void *)frameSDRPipeline { return _frameSDRPipeline; }
+
 - (void)dealloc
 {
    int i;
+   if (_frameSDRPipeline)
+      CFRelease(_frameSDRPipeline);
    /* The buffer chains are C aggregates whose MTLBuffer references are
     * owned through RARCH_STRUCT_ASSIGN; drop them explicitly in both modes. */
    for (i = 0; i < CHAIN_LENGTH; i++)
@@ -2827,6 +2835,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       width:width height:height mipmapped:NO];
    desc.storageMode = MTLStorageModePrivate;
    desc.usage = MTLTextureUsageShaderRead;
+   if (format == MTLPixelFormatRGBA8Unorm)
+      desc.usage |= MTLTextureUsageShaderWrite;
    id<MTLTexture> image = RARCH_AUTORELEASE_R([_device newTextureWithDescriptor:desc]);
    if (!image)
       return nil;
@@ -10011,22 +10021,44 @@ static enum video_texture_update metal_import_texture(void *data, uintptr_t *han
             (__bridge void *)device, (__bridge void *)buffer);
       Texture *texture = (__bridge Texture *)(void *)*handle;
       Texture *target = texture;
-      if (!lease || (lease->view.pixfmt != IMAGE_PIXFMT_8888
-               && lease->view.pixfmt != IMAGE_PIXFMT_FP16)
-            || (frame->output_pixfmt ? frame->output_pixfmt : IMAGE_PIXFMT_8888) != lease->view.pixfmt
-            || lease->view.color.primaries != 1
-            || lease->view.color.transfer != (lease->view.pixfmt == IMAGE_PIXFMT_FP16 ? 8u : 13u)
-            || lease->view.color.matrix || lease->view.color.range != 2
-            || (lease->view.pixfmt == IMAGE_PIXFMT_FP16
-               && (!md.context.hdrEnabled || ![md.context linearShader]))
-            || (texture && (texture->_planar || texture->_stagingLent)))
+      bool planar = lease && (lease->view.pixfmt == IMAGE_PIXFMT_NV12
+            || lease->view.pixfmt == IMAGE_PIXFMT_P010);
+      MTLPixelFormat format;
+      metal_frame_sdr_params_t params;
+      if (!lease || (texture && (texture->_planar || texture->_stagingLent)))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
+      if (planar)
+      {
+         if (!md.context.frameSDRPipeline
+               || !metal_frame_sdr_params(&lease->view, &params)
+               || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+         format = MTLPixelFormatRGBA8Unorm;
+      }
+      else
+      {
+         if ((lease->view.pixfmt != IMAGE_PIXFMT_8888
+                  && lease->view.pixfmt != IMAGE_PIXFMT_FP16)
+               || (frame->output_pixfmt ? frame->output_pixfmt : IMAGE_PIXFMT_8888) != lease->view.pixfmt
+               || lease->view.color.primaries != 1
+               || lease->view.color.transfer != (lease->view.pixfmt == IMAGE_PIXFMT_FP16 ? 8u : 13u)
+               || lease->view.color.matrix || lease->view.color.range != 2
+               || (lease->view.pixfmt == IMAGE_PIXFMT_FP16
+                  && (!md.context.hdrEnabled || ![md.context linearShader])))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+         format = lease->planes[0].pixelFormat;
+      }
       if (!target || target.texture.width != lease->view.width
             || target.texture.height != lease->view.height
-            || target.texture.pixelFormat != lease->planes[0].pixelFormat)
-         target = RARCH_AUTORELEASE_R([md.context newImportedTexture:lease->planes[0].pixelFormat
+            || target.texture.pixelFormat != format)
+         target = RARCH_AUTORELEASE_R([md.context newImportedTexture:format
             width:lease->view.width height:lease->view.height filter:filter]);
-      if (!target || !metal_frame_copy(frame, (__bridge void *)device,
+      if (!target)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      if (planar ? !metal_frame_convert_sdr(frame, (__bridge void *)device,
+               (__bridge void *)buffer, md.context.frameSDRPipeline,
+               (__bridge void *)target.texture)
+            : !metal_frame_copy(frame, (__bridge void *)device,
                (__bridge void *)buffer, (__bridge void *)target.texture))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
       if (!texture)

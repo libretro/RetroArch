@@ -43,7 +43,6 @@ def main():
             native_import = (HERE / "native_import.m").read_text(encoding="utf-8")
             allocation = "- (Texture *)newImportedTexture:" + source.rsplit("- (Texture *)newImportedTexture:", 1)[1].split("\n}", 1)[0] + "\n}"
             native_import = native_import.replace("/* SHIPPING_IMPORT_ALLOCATION */", allocation)
-            text = text.replace("/* NATIVE_IMPORT */", native_import)
         cv = source.split("/* METAL_FRAME_CV_BEGIN */", 1)[1].split("/* METAL_FRAME_CV_END */", 1)[0]
         cv_fixture = (HERE / ("cv_mock.m" if args.mock else "cv_native.m")).read_text(encoding="utf-8")
         text = text.replace("/* COREVIDEO */", cv_fixture.replace("/* SHIPPING_CV */", cv))
@@ -52,8 +51,12 @@ def main():
         pipeline = source.split("/* METAL_FRAME_SDR_PIPELINE_BEGIN */", 1)[1].split("/* METAL_FRAME_SDR_PIPELINE_END */", 1)[0] if args.native else ""
         sdr_fixture = (HERE / ("sdr_mock.m" if args.mock else "sdr_native.m")).read_text(encoding="utf-8")
         text = text.replace("/* SDR_CONVERT */", sdr_fixture.replace("/* SHIPPING_SDR */", pipeline + convert))
+        if args.native:
+            text = text.replace("/* NATIVE_IMPORT */", native_import)
         importer = source.split("/* METAL_FRAME_IMPORT_BEGIN */", 1)[1].split("/* METAL_FRAME_IMPORT_END */", 1)[0]
         text = text.replace("/* SHIPPING_IMPORT */", importer)
+        if args.mock:
+            text = text.replace("/* SDR_IMPORT_TEST */", (HERE / "sdr_import_mock.m").read_text(encoding="utf-8"))
         text = text.replace('#include "sdr_pixels.h"', '#include "' + (HERE / "sdr_pixels.h").as_posix() + '"')
         unit = tmp / "lease.m"
         unit.write_text(text, encoding="utf-8")
