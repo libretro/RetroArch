@@ -3,8 +3,9 @@
  * stand-in for winusb.dll put in its table before it starts.
  *
  *   start       -> a DualShock 3 is started on the control pipe: its LED
- *                  report written, 0xF4 set, 0xF2 and 0xF5 read, as HID
- *                  class requests with the report's type and ID
+ *                  report written, 0xF2 and 0xF5 read, as HID class
+ *                  requests with the report's type and ID; 0xF4 is
+ *                  tried and refused, as a pad on USB refuses it
  *   poll        -> the newest report the reader has had is the pad's
  *                  state, taken without a call into the driver
  *   bluetooth   -> the address the pad connects to is feature 0xF5
@@ -88,6 +89,12 @@ static BOOL WINAPI f_control(void *usb, winusb_setup_packet_t s,
    if ((s.Value & 0xff) == 0xf5 && s.RequestType == 0x21)
       memcpy(bt_host, data + 2, 6);
    ctrl_len = len;
+   /* a DualShock 3 on USB stalls 0xF4, Bluetooth's start */
+   if (s.RequestType == 0x21 && s.Value == 0x03f4)
+   {
+      SetLastError(ERROR_GEN_FAILURE);
+      return FALSE;
+   }
    return TRUE;
 }
 
@@ -264,7 +271,7 @@ int main(void)
          f5++;
    }
    CHECK(led == 1, "the LED report for port 1 was not sent as SET_REPORT");
-   CHECK(f4 == 1, "0xF4 was not set");
+   CHECK(f4 == 1, "0xF4 was not tried");
    CHECK(f2 == 1 && f5 == 1, "0xF2 and 0xF5 were not read");
 
    /* the newest report is the state */

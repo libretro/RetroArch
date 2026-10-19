@@ -201,6 +201,12 @@ int __wrap_ioctl(int fd, unsigned long req, ...)
    {
       memcpy(nd->feature_set, buf, size < 8 ? size : 8);
       nd->features_set++;
+      /* a DualShock 3 on USB stalls 0xF4, Bluetooth's start */
+      if (buf[0] == 0xf4)
+      {
+         errno = EPIPE;
+         return -1;
+      }
       return (int)size;
    }
    if (req == HIDIOCGFEATURE(size))
@@ -310,7 +316,7 @@ int main(void)
          "the LED report for port 1 was not written");
    CHECK(ds3->features_set == 1 && ds3->feature_set[0] == 0xf4
          && ds3->feature_set[1] == 0x42,
-         "0xF4 was not set");
+         "0xF4 was not tried");
    CHECK(ds3->features_got[0xf2] == 1 && ds3->features_got[0xf5] == 1,
          "0xF2 and 0xF5 were not read");
 

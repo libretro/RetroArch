@@ -92,7 +92,7 @@ static int ds3_set_operational(ds3_instance_t *instance)
    static const union sixaxis_activation_report_f4 ds3_activation_packet = {
       { 0xf4, 0x42, 0x0c, 0x00, 0x00 }
    };
-   int ret;
+   int ret_f2, ret_f4;
    uint8_t usb_packet[64] = { 0x00 };
 
    if (     !instance->driver->set_report
@@ -106,40 +106,32 @@ static int ds3_set_operational(ds3_instance_t *instance)
       return -1;
    }
 
-   ret = instance->driver->set_report(instance->handle,
-         HID_REPORT_FEATURE,
-         ds3_activation_packet.data.report_id,
-         (uint8_t*)ds3_activation_packet.buf,
-         sizeof(ds3_activation_packet.buf));
-   if (ret < 0)
-   {
-      RARCH_LOG("[Sixaxis] Failed to send activation packet.\n");
-      return ret;
-   }
-
-   ret = instance->driver->get_report(
+   /* On USB the pad starts when 0xF2 is read; over Bluetooth, when
+    * 0xF4 is set. A pad on USB refuses 0xF4, so either one is enough. */
+   ret_f2 = instance->driver->get_report(
          instance->handle,
          HID_REPORT_FEATURE,
          0xf2,
          (uint8_t*)&usb_packet,
          SIXAXIS_REPORT_0xF2_SIZE);
-   if (ret < 0)
+   ret_f4 = instance->driver->set_report(instance->handle,
+         HID_REPORT_FEATURE,
+         ds3_activation_packet.data.report_id,
+         (uint8_t*)ds3_activation_packet.buf,
+         sizeof(ds3_activation_packet.buf));
+   if (ret_f2 < 0 && ret_f4 < 0)
    {
-      RARCH_LOG("[Sixaxis] Failed to read feature report 0xf2.\n");
-      return ret;
+      RARCH_LOG("[Sixaxis] Neither 0xf2 could be read nor 0xf4 set.\n");
+      return -1;
    }
 
-   ret = instance->driver->get_report(
+   if (instance->driver->get_report(
          instance->handle,
          HID_REPORT_FEATURE,
          0xf5,
          (uint8_t*)&usb_packet,
-         SIXAXIS_REPORT_0xF5_SIZE);
-   if (ret < 0)
-   {
-      RARCH_LOG("[Sixaxis] Failed to read feature report 0xf5.\n");
-      return ret;
-   }
+         SIXAXIS_REPORT_0xF5_SIZE) < 0)
+      RARCH_DBG("[Sixaxis] Feature report 0xf5 could not be read.\n");
 
    return 0;
 }
