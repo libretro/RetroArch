@@ -190,6 +190,8 @@ static INLINE OSStatus videotoolbox_hevc_decode_timed(VTDecompressionSessionRef 
    if (!session) return kCMFormatDescriptionError_InvalidParameter;
    status = videotoolbox_hevc_sample_create_timed(format, au, slices, capacity, timing, &sample);
    if (status) return status;
+   /* Keep temporal processing disabled: the shared codec state owns display
+    * order and final pictures must complete without a frame-path drain. */
    status = VTDecompressionSessionDecodeFrame(session, sample,
          kVTDecodeFrame_EnableAsynchronousDecompression, frame_ref, info);
    CFRelease(sample);

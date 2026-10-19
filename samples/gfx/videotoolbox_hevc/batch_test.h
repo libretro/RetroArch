@@ -112,10 +112,8 @@ static void test_codec_batch(void)
       }
       batch_count = 0;
 #endif
-#ifdef VT_HEVC_NATIVE
-      if (sequence && sequence->reordered)
-         assert(!VTDecompressionSessionFinishDelayedFrames(session));
-#endif
+      /* Temporal processing is disabled at submission. Even the final B
+       * pictures must complete without a producer-thread flush or wait. */
       for (i = 0; i < VT_HEVC_TEST_BATCH; i++)
       {
          while (!videotoolbox_hevc_slots_take(context, i, &results[i])) sthread_yield();

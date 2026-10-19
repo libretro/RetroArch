@@ -115,6 +115,15 @@ OSStatus VTDecompressionSessionWaitForAsynchronousFrames(VTDecompressionSessionR
 {
    unsigned i;
    assert(owner_drain_allowed && session->kind == 4 && !session->invalidated);
+   if (pending_sample)
+   {
+      CVPixelBufferRef image = create(7, 0);
+      assert(pending_session == session && image);
+      session->callback(session->callback_ref, pending_frame, 0, 0, image,
+            pending_sample->timing.presentationTimeStamp, pending_sample->timing.duration);
+      CVPixelBufferRelease(image); CFRelease(pending_sample);
+      pending_sample = NULL; pending_frame = NULL; pending_session = NULL;
+   }
    for (i = batch_count; i > 0; i--)
    {
       CMSampleBufferRef sample = batch_samples[i - 1];
@@ -232,6 +241,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 #include "sequence_test.h"
 #include "batch_test.h"
 #include "owner_test.h"
+#include "decoder_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
 {
@@ -490,5 +500,6 @@ int main(void)
    test_session_owner();
 #endif
    puts("VideoToolbox HEVC: owned parameters and Main/Main10 session setup passed");
+   test_decoder_adapter();
    return 0;
 }
