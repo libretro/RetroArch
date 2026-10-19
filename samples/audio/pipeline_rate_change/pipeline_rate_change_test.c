@@ -7,7 +7,9 @@
  * sides of the change, for the float and integer paths, threaded and
  * inline, and where the threaded pipeline's ring has to grow for the
  * new rate. A configuration the change cannot carry - time stretch -
- * must refuse it and leave the driver as it was. */
+ * must refuse it and leave the driver as it was. And a rate sent from
+ * retro_load_game, which brings audio up before drivers_init() does
+ * it again, must leave one instance: the first freed, not orphaned. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +26,7 @@ static float   captured[CAPTURE * 2];
 static float   feed_f[FEED_MAX * 2];
 static int16_t feed_i[FEED_MAX * 2];
 static size_t  captured_frames, device_bytes;
-static unsigned device_opens, failures;
+static unsigned device_opens, device_frees, failures;
 extern unsigned pipeline_control_calls;
 
 static void *test_init(const char *device, unsigned rate, unsigned latency,
@@ -54,7 +56,7 @@ static size_t test_wait(void *data, size_t len)
 static bool test_float(void *data) { (void)data; return true; }
 static bool test_start(void *data, bool shutdown)
 { (void)data; (void)shutdown; return true; }
-static void test_free(void *data) { (void)data; }
+static void test_free(void *data) { (void)data; device_frees++; }
 
 static void setup(bool floating, bool threaded, bool fastpath, double rate)
 {
@@ -216,6 +218,37 @@ static void refused_case(const char *what, bool threaded, bool stretch,
    audio_driver_deinit();
 }
 
+/* Audio brought up twice without a teardown between. */
+static void second_init_case(bool threaded)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   double phase             = 0.0;
+   size_t split;
+   double after;
+
+   device_opens    = 0;
+   device_frees    = 0;
+   captured_frames = 0;
+   setup(true, threaded, false, 22050.0);
+   if (!audio_driver_init_internal(config_get_ptr(), false))
+      abort();
+   st->pipe_priming = false;
+   audio_driver_publish_runloop();
+   split = captured_frames;
+   feed(22050.0, true, threaded, &phase);
+   after = measure(split + (captured_frames - split) / 4, captured_frames);
+
+   printf("second init, %s: opens=%u frees=%u tone %.1f Hz\n",
+         threaded ? "threaded" : "inline", device_opens, device_frees, after);
+   if (     device_opens != 2
+         || device_frees != 1
+         || fabs(after - TONE_HZ) > TONE_HZ * 0.01)
+      failures++;
+   audio_driver_deinit();
+   if (device_frees != 2)
+      failures++;
+}
+
 int main(void)
 {
    unsigned format, threaded;
@@ -244,6 +277,9 @@ int main(void)
 
    refused_case("inline time stretch", false, true, 22050.0, 32000.0);
    refused_case("threaded time stretch", true, true, 22050.0, 32000.0);
+
+   second_init_case(false);
+   second_init_case(true);
 
    printf("%u failures\n", failures);
    return failures ? 1 : 0;

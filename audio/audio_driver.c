@@ -4420,6 +4420,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    float *arena_float             = (float*)memalign_alloc(64,
          f32_total * sizeof(float));
 
+   /* An instance already up goes first, as driver_uninit() would take
+    * it: one overwritten here is never freed, and on the threaded
+    * pipeline its thread goes on consuming the ring beside the new
+    * one's. A core that sends SET_SYSTEM_AV_INFO from retro_load_game
+    * has audio brought up by that reinit and again by drivers_init(). */
+   if (audio_driver_st.context_audio_data)
+      audio_driver_deinit();
+
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
    audio_driver_clamp_init_simd();
