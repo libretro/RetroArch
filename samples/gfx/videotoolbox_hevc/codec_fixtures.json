@@ -1,0 +1,56 @@
+{
+  "width": 64,
+  "height": 64,
+  "cases": [
+    {
+      "name": "main8_limited",
+      "depth": 8,
+      "full": 0,
+      "crc": [
+        146955123,
+        2913096984,
+        2333425713
+      ],
+      "hvcc_sha256": "19e0008078fa12397b8276b8671258ec0560b0e9e72fe4a7543486ba46c5761f",
+      "sample_sha256": "8624bd370496a312d89a655bf74a40a7d4b7e5cc37e16a52cd81848f3490e813"
+    },
+    {
+      "name": "main10_limited",
+      "depth": 10,
+      "full": 0,
+      "crc": [
+        3690857534,
+        884596867,
+        3344675743
+      ],
+      "hvcc_sha256": "402bb0d2de9ef317fce189f50fb9ea37087b5eb4ab6d5953eb847d9d9e92dd03",
+      "sample_sha256": "a7db7e72abb7b0ba0e8eef2f5fc93ca599cf3ea8dd53acfa130b08318038d5df"
+    },
+    {
+      "name": "main8_full",
+      "depth": 8,
+      "full": 1,
+      "crc": [
+        4119191905,
+        390388905,
+        2425504453
+      ],
+      "hvcc_sha256": "fcca0387571e7c4fbe5ba2204b02fc0be65ccf8fe5ed9a404fbeb844e7c8821f",
+      "sample_sha256": "9e8e7a691ac42def4db18b5f75ed91f94747c10a9f6475cd413f11f9595a5dab"
+    },
+    {
+      "name": "main10_full",
+      "depth": 10,
+      "full": 1,
+      "crc": [
+        4117625780,
+        961642324,
+        3880685820
+      ],
+      "hvcc_sha256": "90115c6bd22549e5aafca66aad8b1b69d64a4e421f4e60ed29cc4102b77649c4",
+      "sample_sha256": "bc21db6d26fc128b627601a72ba3b04c2ef5c628384dbf31c9d6ee2d2751d91f"
+    }
+  ],
+  "header_sha256": "6cc34ab841abbe55df50a08cded4381ff42c194d9fe2a6f2632b3900013828f3",
+  "ffmpeg_version": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+}

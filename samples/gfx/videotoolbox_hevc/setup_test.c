@@ -193,6 +193,7 @@ void CVPixelBufferRelease(CVPixelBufferRef image) { CFRelease(image); }
 #endif
 
 #include "slots_test.h"
+#include "codec_test.h"
 
 static void test_samples(CMVideoFormatDescriptionRef format)
 {
@@ -408,10 +409,12 @@ static void test(const uint8_t *data, size_t size, unsigned depth, int full)
 
 int main(void)
 {
+   test_codec_software();
    test(hevc_main8_limited, sizeof(hevc_main8_limited), 8, 0);
    test(hevc_main10_limited, sizeof(hevc_main10_limited), 10, 0);
    test(hevc_main8_full, sizeof(hevc_main8_full), 8, 1);
    test(hevc_main10_full, sizeof(hevc_main10_full), 10, 1);
+   test_codec_submission();
    puts("VideoToolbox HEVC: owned parameters and Main/Main10 session setup passed");
    return 0;
 }
