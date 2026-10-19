@@ -14,7 +14,48 @@ static unsigned sdr_code(unsigned f, unsigned x, unsigned y, unsigned plane, uns
    return channel ? cr[(x * 2 + y * 3) % 5] : cb[(x + y) % 5];
 }
 /* NATIVE_IMPORT */
-static void test_sdr_native(id<MTLDevice> device)
+static unsigned sdr_native_finish(id<MTLCommandBuffer> buffer,
+      id<MTLCommandQueue> producer, id<MTLSharedEvent> __strong const *ready_events,
+      id<MTLSharedEvent> __strong const *done_events, id<MTLTexture> __strong const *readbacks,
+      const unsigned *widths, const unsigned *heights, unsigned first, unsigned count)
+{
+   unsigned worst = 0;
+   /* Test-only bounded completion; every import is pending together. */
+   dispatch_semaphore_t finished = dispatch_semaphore_create(0);
+   [buffer addCompletedHandler:^(id<MTLCommandBuffer> completed) {
+      (void)completed; dispatch_semaphore_signal(finished);
+   }];
+   [buffer commit];
+   for (unsigned i = first; i < first + count; i++) assert(!done_events[i].signaledValue);
+   id<MTLCommandBuffer> write = [producer commandBuffer];
+   for (unsigned i = first; i < first + count; i++) [write encodeSignalEvent:ready_events[i] value:3];
+   [write commit];
+   assert(!dispatch_semaphore_wait(finished, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)));
+   assert(buffer.status == MTLCommandBufferStatusCompleted);
+   for (unsigned i = first; i < first + count; i++)
+   {
+      unsigned char actual[140];
+      unsigned width = widths[i], height = heights[i];
+      assert(done_events[i].signaledValue == 7);
+      [readbacks[i] getBytes:actual bytesPerRow:width * 4
+         fromRegion:MTLRegionMake2D(0, 0, width, height) mipmapLevel:0];
+      for (unsigned y = 0; y < height; y++) for (unsigned x = 0; x < width; x++)
+         for (unsigned channel = 0; channel < 4; channel++)
+      {
+         unsigned offset = (y * width + x) * 4 + channel;
+         unsigned expected = sdr_expected[i][(y * 7 + x) * 4 + channel];
+         int delta = (int)actual[offset] - (int)expected;
+         unsigned error = (unsigned)(delta < 0 ? -delta : delta);
+         if (error > worst) worst = error;
+         if (error > 1) fprintf(stderr, "SDR batch frame %u pixel %u,%u channel %u: %u expected %u\n",
+            i, x, y, channel, (unsigned)actual[offset], expected);
+         assert(error <= 1);
+      }
+   }
+   return worst;
+}
+
+static void test_sdr_native_mode(id<MTLDevice> device, bool batch)
 {
    const OSType formats[] = { kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
       kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
@@ -23,12 +64,20 @@ static void test_sdr_native(id<MTLDevice> device)
    CVMetalTextureCacheRef cache = NULL;
    void *pipeline = metal_frame_sdr_pipeline_create((__bridge void *)device);
    unsigned worst = 0;
+   const unsigned widths[8] = { 7, batch ? 6u : 7u, 7, 7, batch ? 6u : 7u, 7, 7, 7 };
+   const unsigned heights[8] = { 5, 5, batch ? 4u : 5u, 5, batch ? 4u : 5u, 5, 5, 5 };
+   id<MTLTexture> readbacks[8];
+   id<MTLSharedEvent> ready_events[8], done_events[8];
+   id<MTLCommandQueue> producer = [device newCommandQueue], consumer = [device newCommandQueue];
+   id<MTLCommandBuffer> buffer = [consumer commandBuffer];
    NativeContext *context = [NativeContext new];
    MetalDriver *driver = [MetalDriver new];
    uintptr_t handle = 0, original = 0;
    __weak id<MTLTexture> previous = nil;
    context->_device = device; context->_frameSDRPipeline = pipeline;
    driver.context = context;
+   context->_buffer = buffer;
+   assert(producer && consumer && buffer.retainedReferences);
    MTLSamplerDescriptor *sampler = [MTLSamplerDescriptor new];
    context->_samplers[TEXTURE_FILTER_LINEAR] = [device newSamplerStateWithDescriptor:sampler];
    assert(pipeline && !metal_frame_sdr_pipeline_create(NULL));
@@ -40,14 +89,16 @@ static void test_sdr_native(id<MTLDevice> device)
          CVPixelBufferRef pixels = NULL;
          NSDictionary *attrs = @{ (__bridge id)kCVPixelBufferMetalCompatibilityKey: @YES,
             (__bridge id)kCVPixelBufferIOSurfacePropertiesKey: @{} };
+         unsigned index = f * 2 + srgb;
+         unsigned width = widths[index], height = heights[index];
          metal_frame_source_t source;
          video_hw_frame_t frame;
          video_frame_import_t imported;
-         id<MTLCommandQueue> producer = [device newCommandQueue], consumer = [device newCommandQueue];
          id<MTLSharedEvent> ready = [device newSharedEvent], done = [device newSharedEvent];
          MTLSharedEventListener *listener = [[MTLSharedEventListener alloc]
             initWithDispatchQueue:dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)];
-         assert(producer && consumer && ready && done && listener);
+         assert(ready && done && listener);
+         ready_events[index] = ready; done_events[index] = done;
          assert(CVPixelBufferCreate(NULL, 10, 8, formats[f], (__bridge CFDictionaryRef)attrs, &pixels) == kCVReturnSuccess);
          assert(CVPixelBufferLockBaseAddress(pixels, 0) == kCVReturnSuccess);
          for (unsigned plane = 0; plane < 2; plane++)
@@ -71,7 +122,7 @@ static void test_sdr_native(id<MTLDevice> device)
          source.device = (__bridge void *)device; source.ready = (__bridge void *)ready;
          source.done = (__bridge void *)done; source.listener = (__bridge void *)listener;
          source.ready_value = 3; source.done_value = 7;
-         source.width = 7; source.height = 5; source.crop_x = 2; source.crop_y = 2;
+         source.width = width; source.height = height; source.crop_x = 2; source.crop_y = 2;
          source.pixfmt = f < 2 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010;
          source.color.primaries = 1; source.color.matrix = 1; source.color.transfer = srgb ? 13 : 1;
          CVBufferSetAttachment(pixels, kCVImageBufferColorPrimariesKey,
@@ -91,60 +142,69 @@ static void test_sdr_native(id<MTLDevice> device)
          imported.wait = frame.wait; imported.wait_value = frame.wait_value;
          imported.done = frame.done; imported.done_value = frame.done_value;
          imported.pixfmt = frame.pixfmt; imported.output_pixfmt = IMAGE_PIXFMT_8888;
-         imported.dims = VIDEO_SCALE_PACK(7, 5); imported.crop_x = 2; imported.crop_y = 2;
+         imported.dims = VIDEO_SCALE_PACK(width, height); imported.crop_x = 2; imported.crop_y = 2;
          MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-            width:7 height:5 mipmapped:NO];
-         desc.storageMode = MTLStorageModePrivate;
-         desc.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
-
+            width:width height:height mipmapped:NO];
          desc.storageMode = MTLStorageModeShared; desc.usage = MTLTextureUsageShaderRead;
          id<MTLTexture> readback = [device newTextureWithDescriptor:desc];
-         id<MTLCommandBuffer> buffer = [consumer commandBuffer];
          assert(readback && buffer.retainedReferences);
-         context->_buffer = buffer;
+         readbacks[index] = readback;
          assert(metal_import_texture((__bridge void *)driver, &handle, &imported,
             TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
          if (!original) original = handle;
          assert(original == handle);
          Texture *texture = (__bridge Texture *)(void *)handle;
          id<MTLTexture> output = texture.texture;
-         if (f || srgb) assert(output == previous);
+         if (index)
+         {
+            bool replaced = width != widths[index - 1] || height != heights[index - 1];
+            assert(previous && (output != previous) == replaced);
+         }
          previous = output;
          assert(output.pixelFormat == MTLPixelFormatRGBA8Unorm
-            && output.storageMode == MTLStorageModePrivate);
+            && output.storageMode == MTLStorageModePrivate
+            && output.width == width && output.height == height
+            && (output.usage & MTLTextureUsageShaderWrite));
          if (f == 3 && srgb) { CFRelease((CFTypeRef)(void *)handle); handle = 0; }
 
          id<MTLBlitCommandEncoder> blit = [buffer blitCommandEncoder];
          assert(blit);
          [blit copyFromTexture:output sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0, 0, 0)
-            sourceSize:MTLSizeMake(7, 5, 1) toTexture:readback destinationSlice:0 destinationLevel:0
+            sourceSize:MTLSizeMake(width, height, 1) toTexture:readback destinationSlice:0 destinationLevel:0
             destinationOrigin:MTLOriginMake(0, 0, 0)];
          [blit endEncoding];
          output = nil; texture = nil;
-         dispatch_semaphore_t finished = dispatch_semaphore_create(0);
-         [buffer addCompletedHandler:^(id<MTLCommandBuffer> completed) {
-            (void)completed; dispatch_semaphore_signal(finished);
-         }];
-         [buffer commit];
-         assert(!done.signaledValue);
-         id<MTLCommandBuffer> write = [producer commandBuffer];
-         [write encodeSignalEvent:ready value:3]; [write commit];
-         assert(!dispatch_semaphore_wait(finished, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC)));
-         assert(buffer.status == MTLCommandBufferStatusCompleted && done.signaledValue == 7);
-         unsigned char actual[140];
-         [readback getBytes:actual bytesPerRow:28 fromRegion:MTLRegionMake2D(0, 0, 7, 5) mipmapLevel:0];
-         for (unsigned i = 0; i < sizeof(actual); i++)
+         if (!batch)
          {
-            int delta = (int)actual[i] - (int)sdr_expected[f * 2 + srgb][i];
-            unsigned error = (unsigned)(delta < 0 ? -delta : delta);
+            unsigned error = sdr_native_finish(buffer, producer, ready_events, done_events,
+               readbacks, widths, heights, index, 1);
             if (error > worst) worst = error;
-            if (error > 1) fprintf(stderr, "SDR format %u transfer %u byte %u: %u expected %u\n",
-               f, srgb ? 13 : 1, i, (unsigned)actual[i], (unsigned)sdr_expected[f * 2 + srgb][i]);
-            assert(error <= 1);
+            if (index < 7)
+            {
+               buffer = [consumer commandBuffer];
+               context->_buffer = buffer;
+            }
          }
       }
    }
    assert(!handle);
-   CFRelease(cache); CFRelease((CFTypeRef)pipeline);
-   printf("Metal SDR importer native: eight cropped NV12/P010 conversions passed, max error %u/255\n", worst);
+   context->_frameSDRPipeline = NULL;
+   CFRelease((CFTypeRef)pipeline);
+   if (batch)
+   {
+      assert(previous);
+      worst = sdr_native_finish(buffer, producer, ready_events, done_events,
+         readbacks, widths, heights, 0, 8);
+   }
+   CFRelease(cache);
+   if (batch)
+      printf("Metal SDR batch native: eight pending leases, five replacements, two reuses and unload passed, max error %u/255\n", worst);
+   else
+      printf("Metal SDR importer native: eight cropped NV12/P010 conversions passed, max error %u/255\n", worst);
+}
+
+static void test_sdr_native(id<MTLDevice> device)
+{
+   test_sdr_native_mode(device, false);
+   test_sdr_native_mode(device, true);
 }

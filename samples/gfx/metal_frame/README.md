@@ -101,3 +101,12 @@ preserved. This transports HDR tags without enabling HDR conversion.
 The mock adds 60 attachment and consistency cases across four pixel formats.
 Native CoreVideo fixtures supply real SDR and BT.2020/PQ attachments; the
 SDR importer pixel cases recover their color fields from those attachments.
+
+Native SDR acceptance runs both the original eight serial 7x5 pixel cases
+and an additional eight-frame batch. The batch encodes all leases and
+readbacks before committing, delays producer readiness until after submission,
+and checks five dimension replacements plus two image reuses under one stable
+public handle. The handle and setup-owned pipeline are released before GPU
+execution. Each readback is compared with its own cropped reference after
+bounded test-only completion, including reads of replaced images. This adds
+no production frame-path waits or readbacks.
