@@ -100,6 +100,13 @@ def main():
                     '-o', str(tmp / 'apple_pthread.o')]
                 print('+', shlex.join(cmd), flush=True)
                 subprocess.run(cmd, check=True)
+            if not args.native and not args.threadless:
+                # Compile the native adapter control flow against framework
+                # declarations; this does not execute Metal or prove pixels.
+                cmd = compiler + unit_flags + ['-DVT_HEVC_METAL', '-c',
+                    str(HERE / 'setup_test.c'), '-o', str(tmp / 'adapter_control.o')]
+                print('+', shlex.join(cmd), flush=True)
+                subprocess.run(cmd, check=True)
         objects = [str(obj)]
         if args.metal:
             unit = tmp / 'metal.m'

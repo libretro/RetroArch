@@ -44,6 +44,97 @@ static uint32_t hevc_metal_crc(uint32_t crc, unsigned value, unsigned depth)
    return crc;
 }
 
+metal_frame_cv_pool_t *videotoolbox_hevc_test_pool(unsigned count)
+{
+   @autoreleasepool
+   {
+      id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+      id<MTLSharedEvent> ready = [device newSharedEvent];
+      id<MTLSharedEvent> events[32] = { nil };
+      void *done[32];
+      CVMetalTextureCacheRef cache = NULL;
+      MTLSharedEventListener *listener = [[MTLSharedEventListener alloc]
+         initWithDispatchQueue:dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)];
+      assert(device && ready && listener && count && count <= 32);
+      assert(!CVMetalTextureCacheCreate(NULL, NULL, device, NULL, &cache));
+      ready.signaledValue = 1;
+      for (unsigned i = 0; i < count; i++)
+      {
+         events[i] = [device newSharedEvent]; assert(events[i]);
+         done[i] = (__bridge void*)events[i];
+      }
+      metal_frame_cv_pool_t *pool = metal_frame_cv_pool_new((__bridge void*)device,
+            cache, (__bridge void*)ready, (__bridge void*)listener, done, count);
+      CFRelease(cache);
+      assert(pool);
+      return pool;
+   }
+}
+
+/* Consume an adapter-produced lease after adapter, session and pool teardown.
+ * GPU readback and waits are confined to this pixel acceptance fixture. */
+void videotoolbox_hevc_test_export(video_hw_frame_t *frame, unsigned depth,
+      unsigned full, const uint32_t expected[3])
+{
+   @autoreleasepool
+   {
+      RArchMetalFrameLease *lease = (__bridge RArchMetalFrameLease*)frame->owner;
+      id<MTLDevice> device = lease->device;
+      id done = lease->done, listener = lease->listener;
+      uint64_t value = frame->done_value;
+      id<MTLCommandQueue> queue = [device newCommandQueue];
+      id<MTLCommandBuffer> buffer = [queue commandBuffer];
+      id<MTLTexture> output[2];
+      hevc_metal_copy_t copy;
+      assert(frame->width == 64 && frame->height == 64 && !frame->crop_x && !frame->crop_y);
+      assert(frame->color.range == (full ? 2u : 1u));
+      assert(frame->pixfmt == (depth == 10 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12));
+      for (unsigned i = 0; i < 2; i++)
+      {
+         MTLPixelFormat format = depth == 10
+            ? (i ? MTLPixelFormatRG16Unorm : MTLPixelFormatR16Unorm)
+            : (i ? MTLPixelFormatRG8Unorm : MTLPixelFormatR8Unorm);
+         MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
+            width:i ? 32 : 64 height:i ? 32 : 64 mipmapped:NO];
+         desc.storageMode = MTLStorageModeShared;
+         output[i] = [device newTextureWithDescriptor:desc]; assert(output[i]);
+         copy.output[i] = (__bridge void*)output[i];
+      }
+      video_frame_import_t imported;
+      memset(&imported, 0, sizeof(imported));
+      imported.image = frame->image; imported.owner = frame->owner; imported.abandon = frame->abandon;
+      imported.wait = frame->wait; imported.wait_value = frame->wait_value;
+      imported.done = frame->done; imported.done_value = frame->done_value;
+      imported.pixfmt = frame->pixfmt; imported.dims = VIDEO_SCALE_PACK(64, 64);
+      assert(metal_frame_encode(&imported, (__bridge void*)device,
+               (__bridge void*)buffer, hevc_metal_encode, &copy));
+      memset(frame, 0, sizeof(*frame));
+      [buffer commit];
+      pool_test_wait((__bridge void*)done, (__bridge void*)listener, value);
+      [buffer waitUntilCompleted]; assert(buffer.status == MTLCommandBufferStatusCompleted);
+      uint8_t *bytes = malloc(8192); assert(bytes);
+      for (unsigned plane = 0; plane < 3; plane++)
+      {
+         unsigned index = plane ? 1 : 0, width = plane ? 32 : 64;
+         unsigned step = plane ? 2 : 1, component = plane == 2 ? 1 : 0;
+         unsigned stride = width * step * (depth == 10 ? 2 : 1);
+         uint32_t crc = UINT32_MAX;
+         [output[index] getBytes:bytes bytesPerRow:stride
+            fromRegion:MTLRegionMake2D(0, 0, width, width) mipmapLevel:0];
+         for (unsigned y = 0; y < width; y++) for (unsigned x = 0; x < width; x++)
+         {
+            const uint8_t *row = bytes + y * stride;
+            unsigned sample = depth == 10 ? ((const uint16_t*)row)[x * step + component] >> 6
+               : row[x * step + component];
+            crc = hevc_metal_crc(crc, sample, depth);
+         }
+         assert((crc ^ UINT32_MAX) == expected[plane]);
+      }
+      free(bytes);
+      puts("VideoToolbox native adapter: exported pixels survive decoder, session and pool teardown");
+   }
+}
+
 /* Consumes the callback's owned image after decoder and slot teardown. */
 void videotoolbox_hevc_metal_test(CVPixelBufferRef image, unsigned depth,
       unsigned full, const uint32_t expected[3])

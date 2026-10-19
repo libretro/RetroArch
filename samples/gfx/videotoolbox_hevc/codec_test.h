@@ -66,11 +66,11 @@ static void test_codec_software(void)
    puts("VideoToolbox codec software: four spatial Main/Main10 fixtures match FFmpeg pixels");
 }
 
-#if defined(VT_HEVC_NATIVE) && defined(VIDEOTOOLBOX_HEVC_SLOTS)
 #ifdef VT_HEVC_METAL
 void videotoolbox_hevc_metal_test(CVPixelBufferRef image, unsigned depth,
       unsigned full, const uint32_t expected[3]);
 #endif
+#if defined(VT_HEVC_NATIVE) && defined(VIDEOTOOLBOX_HEVC_SLOTS)
 static void codec_native_pixels(const codec_case_t *fixture, CVPixelBufferRef image)
 {
    unsigned plane;
