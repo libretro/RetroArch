@@ -596,6 +596,9 @@ struct cmd_rows
    /* The reply may carry a "PREVIOUS ..." line: how a queued STEPS no
     * reply has told of ended. */
    bool                      previous;
+   /* Set, the rest of the line the command opens with its own name is
+    * answered as this field: MENU's title. */
+   const char               *opening;
 };
 
 /* A command with its own handler; @arg_desc names the argument, or
@@ -631,6 +634,13 @@ bool command_get_log(command_t *cmd, const char *arg);
 bool command_run_frames(command_t *cmd, const char *arg);
 void command_run_frames_tick(void);
 void command_run_frames_between(void);
+
+#ifdef HAVE_MENU
+/* MENU: the runloop hands action the menu's own action for a frame,
+ * before the menu runs it, and calls iterated once it has. */
+unsigned command_menu_action(unsigned action);
+void command_menu_iterated(void);
+#endif
 void command_run_frames_cancel(const char *why);
 void command_run_frames_forget(void);
 void command_run_frames_free_frame(void);
@@ -725,7 +735,9 @@ bool command_drivers_reinit(command_t *cmd, const char* arg);
 /* MENU <button>, DISK <action>, REINIT <driver>, STATE <action> <slot>,
  * REPLAY <action> [slot|frame]: the hotkeys and commands of one family
  * behind one name, as one tool. */
-#define COMMAND_MENU_BUTTONS   "up|down|left|right|a|b"
+#define COMMAND_MENU_ACTIONS   "show|open|close|select|up|down|left|right|a|b"
+/* the entries MENU answers with at once */
+#define COMMAND_MENU_PAGE      50
 #define COMMAND_DISK_ACTIONS   "eject|next|prev"
 #define COMMAND_REINIT_DRIVERS "video|audio|all"
 #define COMMAND_STATE_ACTIONS  "save|load|checkpoint|rollback"
@@ -903,8 +915,13 @@ static const struct cmd_param cmd_params_slot[] = {
    { NULL }
 };
 static const struct cmd_param cmd_params_menu[] = {
-   { "button", "The menu button to press.", CMD_PARAM_STRING, true, NULL,
-      COMMAND_MENU_BUTTONS, NULL },
+   { "action", "select moves to index; left and right change a value, a "
+      "confirms, b goes back.", CMD_PARAM_STRING, true, NULL,
+      COMMAND_MENU_ACTIONS, NULL },
+   { "index", "An entry: select, left, right and a act on it.",
+      CMD_PARAM_INT, false, NULL, NULL, NULL },
+   { "from", "The first entry listed; else the page with the selection.",
+      CMD_PARAM_INT, false, " from ", NULL, NULL },
    { NULL }
 };
 static const struct cmd_param cmd_params_disk[] = {
@@ -1130,6 +1147,20 @@ static const struct cmd_trailer cmd_trailers_read[] = {
    { NULL }
 };
 static const struct cmd_rows cmd_rows_read      = { cmd_cols_read, cmd_trailers_read, 0, 0, " " };
+/* "MENU Main Menu", the entries, then which is selected of how many */
+static const struct cmd_column cmd_cols_menu[] = {
+   { "index", NULL },
+   { "label", NULL },
+   { "value", "A setting's value; \"...\" opens a list." },
+   { NULL }
+};
+static const struct cmd_trailer cmd_trailers_menu[] = {
+   { "CLOSED", "closed", NULL, "The menu is closed.", true },
+   { "SELECTED", NULL, "selected", "The selected index." },
+   { "COUNT", NULL, "count", "Entries in the list." },
+   { NULL }
+};
+static const struct cmd_rows cmd_rows_menu      = { cmd_cols_menu, cmd_trailers_menu, 1, 0, NULL, false, "title" };
 
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
@@ -1195,7 +1226,7 @@ static const struct cmd_action_map action_map[] = {
    { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", CMD_INFO_NO_TOOL, NULL },
    { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", CMD_INFO_NO_TOOL, NULL },
    { "REINIT",       command_reinit,       "<video|audio|all>", "Restart the video or audio driver, or all drivers.", 0, cmd_params_reinit },
-   { "MENU",         command_menu,         "<up|down|left|right|a|b>", "Press a menu button: move, confirm (a) or back (b).", 0, cmd_params_menu },
+   { "MENU",         command_menu,         "<action> [index] [from <entry>]", "RetroArch's own menu, not a game's. Answers with what it shows after the action: title, a page of entries, the selection.", 0, cmd_params_menu, &cmd_rows_menu },
    { "DISK",         command_disk,         "<eject|next|prev>", "Eject or insert the virtual disc, or select the next or previous disc image.", 0, cmd_params_disk },
 };
 

@@ -149,7 +149,7 @@ The replies that are lines of tab-separated fields - `GET_OPTION`,
 `SET_OPTION`, `LIST_CORES`, `LIST_PLAYLISTS`, `GET_PLAYLIST`,
 `GET_CORE_OPTION`, `GET_MEMORY_MAP`, `GET_LOG`, `SET_INPUT`,
 `RELEASE_INPUT`, `GET_INPUT`, `WATCH`, `RUN_FRAMES`, `PRESS`,
-`RUN_UNTIL` and `STEPS` - come
+`RUN_UNTIL`, `STEPS` and `MENU` - come
 with `structuredContent` beside the text, so a client is handed the
 rows rather than splitting them itself. Each of those tools declares an
 `outputSchema` naming its columns, described by the first tool in the
@@ -170,13 +170,17 @@ and `core` for a playlist's entries, `key`, `value`, `description` and
 `values` for a core's options, `start`, `length`, `select`,
 `disconnect`, `kind`, `access`, `order` and `space` for the memory map,
 `player`, `buttons` and `axes` for what a player holds, and `label`,
-`address` and `value` for the bytes `WATCH` watches. Every field
+`address` and `value` for the bytes `WATCH` watches, and `index`,
+`label` and `value` for the menu's entries. Every field
 is a string: it is the text's own field, which the server does not read
 as anything else.
 
 **A tool answers with `structuredContent` exactly when it declared an
 `outputSchema` and succeeded**, so a client reads the schema it was
-handed at `tools/list` and does not have to probe each reply. A reply
+handed at `tools/list` and does not have to probe each reply. The
+end-to-end test calls every tool that declares one and holds each reply
+to it: the required fields, the declared types, and no field it leaves
+out. A reply
 marked `isError` is its reason as text, with no `structuredContent`. A tool with no
 `outputSchema` answers with text alone, because its reply is prose or a
 confirmation rather than rows.
@@ -210,6 +214,9 @@ ending the line, so `PRESS 1 right+a 4` gives `frames: 4`:
 | `STOP 2` | `stop: 2` | which `stop` held, from 1, when `STEPS` stopped |
 | `STEP 3` | `step: 3` | the step it ended on, from 1 |
 | `TRUNCATED 2` | `truncated: true`, `read: 2` | a `READ_CORE_MEMORY` that met unmapped memory |
+| `CLOSED` | `closed: true` | `MENU` with the menu closed |
+| `SELECTED 3` | `selected: 3` | the menu entry selected |
+| `COUNT 40` | `count: 40` | the entries in the menu's list |
 
 `GET_LOG` always says where to go on from, so it carries `next` without
 carrying `more`: a client asks again from `next` and gets whatever has
@@ -252,10 +259,10 @@ achievement address, which looks like `READ_CORE_MEMORY`'s system
 address and is not one, and `GET_MEMORY_MAP` answers the addresses
 `READ_CORE_MEMORY` takes.
 
-The disc and the menu are the exceptions: `DISK` and `MENU` step blind,
-and until something answers where they landed, stepping is all there is
-- and a disc swap is part of playing a game. Each is one tool taking a
-choice - `MENU down`, `DISK next` - rather than a tool per hotkey.
+The disc is the exception: `DISK` steps blind, and a disc swap is part
+of playing a game. It is one tool taking a choice - `DISK next` -
+rather than a tool per hotkey; `MENU`, below, answers with where it
+landed.
 `REINIT`, `STATE`, `REPLAY` and `CORE` stand for their families
 likewise: `STATE load 3` is `LOAD_STATE_SLOT 3`, `REPLAY seek 600` is
 `SEEK_REPLAY 600`, and `CORE load <path>` is `LOAD_CORE <path>`. Each
@@ -274,6 +281,44 @@ files itself, and playing a game does not need them.
 
 All of them are still commands on the network and stdin interfaces,
 where a person is typing and can see what happened.
+
+## The menu
+
+`MENU <action> [index] [from <entry>]` reads and drives RetroArch's own
+menu - settings, playlists, cores, the Quick Menu - and answers with
+what it shows once the action has run: its title, a page of 50 entries
+holding the selection, which entry is selected and how many there are.
+
+```
+MENU down
+MENU Quick Menu
+0	Resume	
+1	Reset	
+2	Close Content	
+3	Save States	...
+SELECTED 1
+COUNT 15
+```
+
+Each entry is its index, its label and its value: a setting's value,
+or `...` for an entry that opens a list. `title`, `rows`, `selected`
+and `count` are its structured fields.
+
+- `show` answers what the menu shows; `from` lists from that entry.
+- `open` and `close` open and close it. With it closed, `show` and
+  `close` answer `CLOSED`, and the rest are refused.
+- `select <index>` moves straight to an entry, rather than pressing
+  `down` 137 times.
+- `up`, `down`, `left`, `right`, `a` and `b` press the menu's buttons:
+  `left` and `right` change a value, `a` confirms, `b` goes back. `left`,
+  `right` and `a` take an index too, acting on that entry: `MENU a 3`
+  opens Save States.
+
+The action runs on the menu's next frame as its own input would, and
+the answer comes once that frame has run, so a list an action opens is
+there to read. A second `MENU` while one waits replaces it, answered
+with an error. It is RetroArch's menu, not a game's: a game's menus are
+its screen and memory, played with `PRESS`, `STEPS` and `WATCH`.
 
 ## Options
 
@@ -604,8 +649,8 @@ Over stdio a line past 64 KiB is answered with a parse error and skipped
 to its newline, and a `\r` before the newline is taken as part of it.
 Batch requests are refused as invalid.
 
-Hotkey tools (`QUIT`), and the hotkeys behind `MENU`, `DISK`
-and `REPLAY halt`, press for one frame. `SCREENSHOT` is the exception: it
+Hotkey tools (`QUIT`), and the hotkeys behind `DISK` and `REPLAY
+halt`, press for one frame. `SCREENSHOT` is the exception: it
 takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with

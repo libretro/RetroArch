@@ -282,6 +282,23 @@ static bool act_readt(command_t *cmd, const char *arg)
    return true;
 }
 
+/* the menu: its title opens the reply, and a closed one says so */
+#define MENUS_TEXT "MENUS Main Menu\n0\tQuick Menu\t...\n1\tLoad Content\t\n" \
+                   "SELECTED 1\nCOUNT 2\n"
+#define MENUC_TEXT "CLOSED\n"
+static bool act_menus(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUS_TEXT, sizeof(MENUS_TEXT) - 1);
+   return true;
+}
+static bool act_menuc(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, MENUC_TEXT, sizeof(MENUC_TEXT) - 1);
+   return true;
+}
+
 static bool act_wait(command_t *cmd, const char *arg)
 {
    (void)arg;
@@ -363,6 +380,8 @@ static struct cmd_action_map test_actions[] = {
    { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
    { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
+   { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -906,8 +925,8 @@ int main(void)
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
        * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
-       * STEP, PREVS, PREVF, PREVE and READT */
-      check("only the commands that answer rows declare one", n == 21);
+       * STEP, PREVS, PREVF, PREVE, READT, MENUS and MENUC */
+      check("only the commands that answer rows declare one", n == 23);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1215,6 +1234,26 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
                "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
+   check("the menu's title opens its reply, before its entries",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":["
+               "{\"index\":\"0\",\"label\":\"Quick Menu\",\"value\":\"...\"},"
+               "{\"index\":\"1\",\"label\":\"Load Content\",\"value\":\"\"}],"
+               "\"selected\":1,\"count\":2,\"title\":\"Main Menu\"}"));
+   st = post(cmd, PORT_OPEN, NULL, call("MENUC", NULL), out, sizeof(out), NULL);
+   check("and a closed menu says so",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],\"closed\":true}"));
+   st = post(cmd, PORT_OPEN, NULL,
+         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}",
+         out, sizeof(out), NULL);
+   {
+      const char *m = strstr(out, "\"name\":\"MENUC\"");
+      check("a flag that is not a cut says what it means",
+            m && strstr(m, "\"closed\":{\"type\":\"boolean\","
+                  "\"description\":\"The menu is closed.\"}"));
+   }
    st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
    check("a queued STEPS after a stop: its steps dropped, and the stop",
          st == 200 && json_valid(body_of(out))

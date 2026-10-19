@@ -1253,15 +1253,297 @@ static bool command_run_choice(command_t *cmd, const char *family,
    return false;
 }
 
+#ifdef HAVE_MENU
+/* MENU: the request whose action the next menu frame runs, as the
+ * menu's own input would, answered once that frame has run with what
+ * the menu shows then - an action can open a list the menu fills as it
+ * runs. */
+static struct
+{
+   command_deferred_t deferred;
+   size_t             index;
+   unsigned           from;
+   unsigned           action;
+   bool               pending;
+   bool               has_index;
+   bool               has_from;
+   bool               lost;
+} command_menu_st;
+
+static void command_menu_clean(char *s)
+{
+   for (; *s; s++)
+      if (*s == '\t' || *s == '\n' || *s == '\r')
+         *s = ' ';
+}
+
+/* What the menu shows: its title, a page of entries - number, label
+ * and value - holding the selection, or from @from, and which entry is
+ * selected of how many. NULL where out of memory; the length in
+ * @out_len. */
+static char *command_menu_answer(bool has_from, unsigned from,
+      size_t *out_len)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t       *list    = menu_st->entries.list;
+   file_list_t       *buf     = list
+      ? MENU_LIST_GET_SELECTION(list, (unsigned)0) : NULL;
+   size_t             count   = buf ? buf->size : 0;
+   size_t             sel     = menu_st->selection_ptr;
+   size_t             size    = 1024 + COMMAND_MENU_PAGE * 560;
+   size_t             _len;
+   size_t             i;
+   size_t             first;
+   char              *out;
+   menu_entry_t      *entry;
+
+   if (!(out = (char*)malloc(size)))
+      return NULL;
+   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE) || !buf)
+   {
+      *out_len = strlcpy(out, "CLOSED\n", size);
+      return out;
+   }
+   if (!(entry = (menu_entry_t*)malloc(sizeof(*entry))))
+   {
+      free(out);
+      return NULL;
+   }
+   {
+      char title[512];
+      title[0] = '\0';
+      menu_entries_get_title(title, sizeof(title));
+      command_menu_clean(title);
+      _len = (size_t)snprintf(out, size, "MENU %s\n", title);
+   }
+   first = has_from ? from : sel - sel % COMMAND_MENU_PAGE;
+   for (i = first; i < count && i < first + COMMAND_MENU_PAGE; i++)
+   {
+      char *label;
+      char *value;
+      MENU_ENTRY_INITIALIZE((*entry));
+      entry->flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                    | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                    | MENU_ENTRY_FLAG_VALUE_ENABLED;
+      menu_entry_get(entry, 0, i, NULL, true);
+      label = *entry->rich_label ? entry->rich_label : entry->path;
+      value = entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD
+         ? entry->password_value : entry->value;
+      command_menu_clean(label);
+      command_menu_clean(value);
+      _len += (size_t)snprintf(out + _len, size - _len, "%u\t%.255s\t%.255s\n",
+            (unsigned)i, label, value);
+   }
+   _len += (size_t)snprintf(out + _len, size - _len, "SELECTED %u\nCOUNT %u\n",
+         (unsigned)sel, (unsigned)count);
+   free(entry);
+   *out_len = _len;
+   return out;
+}
+
+/* The menu's own action for this frame, or the one a MENU request
+ * asks for in its place: on the entry it names, where it names one. */
+unsigned command_menu_action(unsigned action)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (!command_menu_st.pending)
+      return action;
+   if (command_menu_st.has_index)
+   {
+      command_menu_st.has_index = false;
+      /* the list may have changed since the request checked it: then
+       * nothing is done to whichever entry took that place */
+      if (     !menu_st->entries.list
+            || command_menu_st.index
+               >= MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size)
+      {
+         command_menu_st.lost   = true;
+         command_menu_st.action = MENU_ACTION_NOOP;
+         return action;
+      }
+      menu_st->selection_ptr = command_menu_st.index;
+      if (menu_st->driver_ctx && menu_st->driver_ctx->navigation_set)
+         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+   }
+   return command_menu_st.action;
+}
+
+/* After a menu frame: answers the MENU request it ran. */
+void command_menu_iterated(void)
+{
+   char  *out;
+   size_t _len = 0;
+   if (!command_menu_st.pending)
+      return;
+   command_menu_st.pending = false;
+   if (command_menu_st.lost)
+   {
+      command_menu_st.lost = false;
+      command_deferred_send(&command_menu_st.deferred,
+            "MENU ERROR the list changed before the entry could be "
+            "reached\n", STRLEN_CONST("MENU ERROR the list changed before "
+               "the entry could be reached\n"), true);
+      return;
+   }
+   if ((out = command_menu_answer(command_menu_st.has_from,
+               command_menu_st.from, &_len)))
+      command_deferred_send(&command_menu_st.deferred, out, _len, false);
+   else
+      command_deferred_send(&command_menu_st.deferred,
+            "MENU ERROR out of memory\n",
+            STRLEN_CONST("MENU ERROR out of memory\n"), true);
+   free(out);
+}
+#endif
+
+/* MENU <action> [index] [from <entry>] */
 bool command_menu(command_t *cmd, const char *arg)
 {
-   static const struct cmd_choice choices[] = {
-      { "up",    "MENU_UP",    false }, { "down",  "MENU_DOWN",  false },
-      { "left",  "MENU_LEFT",  false }, { "right", "MENU_RIGHT", false },
-      { "a",     "MENU_A",     false }, { "b",     "MENU_B",     false }
+#ifdef HAVE_MENU
+   static const struct
+   {
+      const char *word;
+      unsigned    action;
+      bool        index;
+   } actions[] = {
+      { "show",   MENU_ACTION_NOOP,   false },
+      { "open",   MENU_ACTION_NOOP,   false },
+      { "close",  MENU_ACTION_NOOP,   false },
+      { "select", MENU_ACTION_NOOP,   true  },
+      { "up",     MENU_ACTION_UP,     false },
+      { "down",   MENU_ACTION_DOWN,   false },
+      { "left",   MENU_ACTION_LEFT,   true  },
+      { "right",  MENU_ACTION_RIGHT,  true  },
+      { "a",      MENU_ACTION_OK,     true  },
+      { "b",      MENU_ACTION_CANCEL, false }
    };
-   return command_run_choice(cmd, "MENU", choices, ARRAY_SIZE(choices),
-         COMMAND_MENU_BUTTONS, arg);
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t       *list    = menu_st->entries.list;
+   file_list_t       *buf     = list
+      ? MENU_LIST_GET_SELECTION(list, (unsigned)0) : NULL;
+   bool               alive   = (menu_st->flags & MENU_ST_FLAG_ALIVE) && buf;
+   const char        *p       = arg ? arg : "";
+   char              *end;
+   unsigned long      index   = 0;
+   unsigned long      from    = 0;
+   bool               has_index = false;
+   bool               has_from  = false;
+   size_t             n;
+   size_t             i;
+
+   while (*p == ' ')
+      p++;
+   for (n = 0; p[n] && p[n] != ' '; n++)
+      ;
+   for (i = 0; i < ARRAY_SIZE(actions); i++)
+      if (!strncmp(p, actions[i].word, n) && !actions[i].word[n])
+         break;
+   if (!n || i == ARRAY_SIZE(actions))
+   {
+      command_reply_error(cmd, "MENU", "one of %s", COMMAND_MENU_ACTIONS);
+      return false;
+   }
+   for (p += n; *p == ' '; p++)
+      ;
+   if (*p >= '0' && *p <= '9')
+   {
+      index     = strtoul(p, &end, 10);
+      has_index = true;
+      for (p = end; *p == ' '; p++)
+         ;
+   }
+   if (!strncmp(p, "from ", 5))
+   {
+      for (p += 5; *p == ' '; p++)
+         ;
+      if (*p < '0' || *p > '9')
+      {
+         command_reply_error(cmd, "MENU", "an entry number after from");
+         return false;
+      }
+      from     = strtoul(p, &end, 10);
+      has_from = true;
+      for (p = end; *p == ' '; p++)
+         ;
+   }
+   if (*p)
+   {
+      command_reply_error(cmd, "MENU", "%s [index] [from <entry>], not %s",
+            actions[i].word, p);
+      return false;
+   }
+   if (has_index && !actions[i].index)
+   {
+      command_reply_error(cmd, "MENU", "%s takes no index", actions[i].word);
+      return false;
+   }
+   if (!has_index && string_is_equal(actions[i].word, "select"))
+   {
+      command_reply_error(cmd, "MENU", "select needs an index");
+      return false;
+   }
+   if (string_is_equal(actions[i].word, "close"))
+   {
+      char  *out;
+      size_t _len = 0;
+      if (alive)
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      if (!(out = command_menu_answer(false, 0, &_len)))
+         return false;
+      cmd->replier(cmd, out, _len);
+      free(out);
+      return true;
+   }
+   if (string_is_equal(actions[i].word, "open"))
+   {
+      if (!alive)
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      {
+         command_reply_error(cmd, "MENU", "the menu cannot open now");
+         return false;
+      }
+   }
+   else if (!alive && !string_is_equal(actions[i].word, "show"))
+   {
+      command_reply_error(cmd, "MENU", "the menu is closed: MENU open "
+            "opens it");
+      return false;
+   }
+   else if (has_index && index >= buf->size)
+   {
+      command_reply_error(cmd, "MENU", "no entry %lu: the list has %u",
+            index, (unsigned)buf->size);
+      return false;
+   }
+   /* what nothing changes is answered now */
+   if (string_is_equal(actions[i].word, "show"))
+   {
+      char  *out;
+      size_t _len = 0;
+      if (!(out = command_menu_answer(has_from, (unsigned)from, &_len)))
+         return false;
+      cmd->replier(cmd, out, _len);
+      free(out);
+      return true;
+   }
+   if (command_menu_st.pending)
+      command_deferred_send(&command_menu_st.deferred,
+            "MENU ERROR replaced by another MENU request\n",
+            STRLEN_CONST("MENU ERROR replaced by another MENU request\n"),
+            true);
+   command_menu_st.action    = actions[i].action;
+   command_menu_st.index     = (size_t)index;
+   command_menu_st.has_index = has_index;
+   command_menu_st.from      = (unsigned)from;
+   command_menu_st.has_from  = has_from;
+   command_menu_st.pending   = true;
+   command_deferred_take(&command_menu_st.deferred, cmd);
+   return true;
+#else
+   command_reply_error(cmd, "MENU", "this build has no menu");
+   return false;
+#endif
 }
 
 bool command_disk(command_t *cmd, const char *arg)

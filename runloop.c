@@ -8598,16 +8598,26 @@ static enum runloop_state_enum runloop_check_state(
          }
          return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
-      else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
-               settings, action, current_time))
+      else
       {
-         if (err_on_init)
+#ifdef HAVE_COMMAND
+         /* a MENU request's action, run as the menu's own input is */
+         action = (enum menu_action)command_menu_action(action);
+#endif
+         if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
+                  settings, action, current_time))
          {
-            content_ctx_info_t content_info = {0};
-            task_push_start_dummy_core(&content_info);
+            if (err_on_init)
+            {
+               content_ctx_info_t content_info = {0};
+               task_push_start_dummy_core(&content_info);
+            }
+            else
+               retroarch_menu_running_finished(false);
          }
-         else
-            retroarch_menu_running_finished(false);
+#ifdef HAVE_COMMAND
+         command_menu_iterated();
+#endif
       }
 
       /* Handle pending core reload separately after menu driver iterate */

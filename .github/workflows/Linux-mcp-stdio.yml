@@ -62,6 +62,10 @@ jobs:
           grep -q '^HAVE_MCP = 1' config.mk
           make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"
           make -C samples/cores/video_views
+          # a core that maps memory, for the tools that read it
+          gcc -O1 -shared -fPIC -Ilibretro-common/include \
+            -o samples/network/command_frames/harness_core.so \
+            samples/network/command_frames/harness_core.c
 
       - name: MCP over stdin and stdout, end to end
         shell: bash
@@ -69,4 +73,5 @@ jobs:
           set -eu
           # null drivers: no display on the runner
           timeout 300 python3 samples/network/mcp_server/stdio_e2e.py \
-            ./retroarch samples/cores/video_views/video_views_libretro.so
+            ./retroarch samples/cores/video_views/video_views_libretro.so \
+            samples/network/command_frames/harness_core.so

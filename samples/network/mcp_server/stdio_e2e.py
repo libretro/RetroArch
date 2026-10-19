@@ -4,18 +4,37 @@ the handshake, the tool list, RUN_FRAMES stepping a running core,
 SET_INPUT reaching it (it logs the pad it reads), GET_LOG, log lines as
 notifications/message, and quitting when stdin closes.
 
-Usage: stdio_e2e.py <retroarch> <video_views_libretro.so>
-"""
-import json, os, subprocess, sys, tempfile, time, select
+The harness core, from samples/network/command_frames, maps memory, which
+the tools that read it need.
 
-ra, core = sys.argv[1], sys.argv[2]
+Usage: stdio_e2e.py <retroarch> <video_views_libretro.so> <harness_core.so>
+"""
+import json, os, shutil, subprocess, sys, tempfile, time, select
+
+ra, core, mem_core = sys.argv[1], sys.argv[2], sys.argv[3]
 cfgdir = tempfile.mkdtemp()
 cfg = os.path.join(cfgdir, 'retroarch.cfg')
+# a cores directory for LIST_CORES, and a playlist for the playlist tools
+coredir = os.path.join(cfgdir, 'cores')
+listdir = os.path.join(cfgdir, 'playlists')
+os.mkdir(coredir)
+os.mkdir(listdir)
+shutil.copy(core, coredir)
+rom = os.path.join(cfgdir, 'blank.bin')
+with open(rom, 'wb') as f:
+    f.write(b'\0' * 16)
+with open(os.path.join(listdir, 'e2e.lpl'), 'w') as f:
+    json.dump({'version': '1.5', 'items': [
+        {'path': rom, 'label': 'Blank', 'core_path': core,
+         'core_name': 'video_views', 'crc32': 'DETECT', 'db_name': 'e2e.lpl'}]},
+        f)
 with open(cfg, 'w') as f:
     f.write('video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\n'
             'menu_driver = "rgui"\nlog_verbosity = "true"\nfrontend_log_level = "1"\n'
             'pause_nonactive = "false"\nconfig_save_on_exit = "false"\n'
-            'video_shader_enable = "false"\n')
+            'video_shader_enable = "false"\n'
+            'libretro_directory = "%s"\nplaylist_directory = "%s"\n'
+            % (coredir, listdir))
 p = subprocess.Popen([ra, '--mcp-stdio', '-v', '-c', cfg, '-L', core],
                      stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                      stderr=open(os.path.join(cfgdir, 'stderr.log'), 'wb'))
@@ -100,6 +119,10 @@ def call(i, name, args=None):
         schema_checked.add(name)
         schema_errors.extend(name + ': ' + e
                              for e in conforms(out_schemas[name], sc, name))
+    elif sc is not None and out_schemas:
+        schema_errors.append(name + ': structuredContent with no schema')
+    if sc is not None and msg['result'].get('isError'):
+        schema_errors.append(name + ': structuredContent on an error')
     return msg, text, notes
 
 
@@ -315,13 +338,13 @@ check('and the content it was running is still running',
 # it. This core maps no memory, so the refusal is what is checkable
 # here; command_frames covers the carrying.
 send({'jsonrpc': '2.0', 'id': 232, 'method': 'tools/call',
-      'params': {'name': 'MENU', 'arguments': {'button': 'toggle'}}})
+      'params': {'name': 'MENU', 'arguments': {'action': 'toggle'}}})
 msg, _ = recv(232)
 err = (msg or {}).get('error', {})
-check('MENU names the buttons it takes: ' + err.get('message', ''),
+check('MENU names the actions it takes: ' + err.get('message', ''),
       err.get('code') == -32602 and 'up|down' in err.get('message', ''))
 send({'jsonrpc': '2.0', 'id': 233, 'method': 'tools/call',
-      'params': {'name': 'MENU', 'arguments': {'button': ''}}})
+      'params': {'name': 'MENU', 'arguments': {'action': ''}}})
 msg, _ = recv(233)
 check('and an empty one is not one of them',
       (msg or {}).get('error', {}).get('code') == -32602)
@@ -341,6 +364,45 @@ if 'SET_SHADER' in names:
     _, st, _ = call(238, 'GET_STATUS')
     check('and turning shaders on where none run does not crash',
           st and st.startswith('GET_STATUS'))
+
+# RetroArch's own menu, read and driven: every action answers with what
+# the menu shows once it has run.
+msg, t, _ = call(280, 'MENU', {'action': 'show'})
+check('MENU show says when the menu is closed',
+      msg and msg['result'].get('structuredContent') == {'rows': [],
+                                                          'closed': True})
+msg, t, _ = call(281, 'MENU', {'action': 'down'})
+check('and refuses to press into a closed menu: ' + (t or '').strip(),
+      msg and msg['result']['isError'] and 'MENU open' in t)
+msg, t, _ = call(282, 'MENU', {'action': 'open'})
+sc = msg and msg['result'].get('structuredContent') or {}
+labels = [r['label'] for r in sc.get('rows', [])]
+check('MENU open answers with what it shows: %s' % sc.get('title'),
+      sc.get('title') and labels and sc.get('selected') == 0
+      and sc.get('count') == len(labels))
+msg, t, _ = call(283, 'MENU', {'action': 'down'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('a press answers after it has moved: %s' % sc.get('selected'),
+      sc.get('selected') == 1)
+msg, t, _ = call(284, 'MENU', {'action': 'select', 'index': 0})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('select moves straight to an entry', sc.get('selected') == 0)
+msg, t, _ = call(285, 'MENU', {'action': 'select', 'index': 999})
+check('and refuses one the list does not have: ' + (t or '').strip(),
+      msg and msg['result']['isError'] and 'no entry 999' in t)
+msg, t, _ = call(286, 'MENU', {'action': 'b'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('b goes back a list: %s' % sc.get('title'),
+      sc.get('title') and sc.get('title') != 'Quick Menu' and sc.get('rows'))
+msg, t, _ = call(287, 'MENU', {'action': 'show', 'from': 2})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('show lists from an entry',
+      sc.get('rows') and sc['rows'][0]['index'] == '2')
+msg, t, _ = call(288, 'MENU', {'action': 'close'})
+_, st, _ = call(289, 'GET_OPTION', {'option': 'menu'})
+check('and close closes it: ' + (st or '').strip(),
+      msg and msg['result'].get('structuredContent', {}).get('closed')
+      and st and 'off' in st)
 
 _, t, _ = call(230, 'WATCH', {})
 check('WATCH starts empty: ' + (t or '').strip(), t and 'none' in t)
@@ -384,9 +446,6 @@ check('RESET paused resets and stays paused: ' + (st or '').strip(),
 
 # LOAD_CONTENT with paused on stops the game the frame it has loaded, so
 # nothing runs before the first step: a title screen's demo, say.
-rom = os.path.join(cfgdir, 'blank.bin')
-with open(rom, 'wb') as f:
-    f.write(b'\0' * 16)
 msg, t, _ = call(249, 'LOAD_CONTENT', {'core': core, 'content': rom,
                                        'paused': ''})
 check('an empty paused is left out, not put on the path: ' + (t or '').strip(),
@@ -409,9 +468,47 @@ _, st, _ = call(253, 'GET_STATUS')
 check('and stays paused: %s -> %s, %s' % (a, b, (st or '').strip()),
       a is not None and a == b and st and 'PAUSED' in st)
 
-check('replies match their outputSchema: %s' % sorted(schema_checked),
-      not schema_errors and {'GET_STATUS', 'RUN_FRAMES', 'STEPS', 'PRESS',
-                             'SET_INPUT', 'GET_LOG'} <= schema_checked)
+# The lists and the core's options, then the memory tools, on a core
+# that maps some.
+msg, t, _ = call(270, 'LIST_CORES', {})
+check('LIST_CORES finds the core in its directory',
+      t and 'video_views' in t)
+msg, t, _ = call(271, 'LIST_PLAYLISTS', {})
+check('LIST_PLAYLISTS finds the playlist', t and 'e2e.lpl' in t)
+msg, t, _ = call(272, 'GET_PLAYLIST', {'playlist': 'e2e.lpl'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and GET_PLAYLIST its entry: %s' % sc.get('rows'),
+      [r.get('label') for r in sc.get('rows', [])] == ['Blank'])
+msg, t, _ = call(273, 'GET_CORE_OPTION', {})
+check('GET_CORE_OPTION lists the core\'s options',
+      msg and not msg['result']['isError']
+      and msg['result'].get('structuredContent', {}).get('rows'))
+msg, t, _ = call(274, 'LOAD_CONTENT', {'core': mem_core, 'content': rom,
+                                       'paused': 'on'})
+check('a core that maps memory loads: ' + (t or '').strip(),
+      t and t.startswith('LOAD_CONTENT') and not msg['result']['isError'])
+msg, t, _ = call(275, 'GET_MEMORY_MAP', {})
+check('GET_MEMORY_MAP lists its regions',
+      len((msg and msg['result'].get('structuredContent') or {})
+          .get('rows', [])) == 2)
+msg, t, _ = call(276, 'READ_CORE_MEMORY', {'address': '1000', 'bytes': 4})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('READ_CORE_MEMORY is a record: %s' % sc,
+      sc == {'address': '1000', 'bytes': '00 01 02 03'})
+msg, t, _ = call(277, 'READ_CORE_MEMORY', {'address': '101e', 'bytes': 4})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('and says where memory ran out: %s' % sc,
+      sc.get('truncated') is True and sc.get('read') == 2)
+msg, t, _ = call(278, 'RUN_UNTIL', {'address': '1007', 'condition': '!=',
+                                    'value': 0})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('RUN_UNTIL waits on a byte: %s' % sc,
+      'met' in sc and sc.get('value', 0) != 0)
+
+missing = sorted(set(out_schemas) - schema_checked)
+check('every tool with an outputSchema was checked: %s' % (missing or 'all'),
+      not missing)
+check('and every reply matched it', not schema_errors)
 for e in schema_errors[:5]:
     print('   ', e)
 

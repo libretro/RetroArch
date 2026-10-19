@@ -266,7 +266,7 @@ int main(int argc, char **argv)
    CHECK(!command_replay(&cmd,"seek 600") && !strncmp(reply,"REPLAY ERROR ",13));
    cmd.structured=true;
    reply[0]=0;
-   CHECK(command_menu(&cmd,"up") && !strcmp(reply,"MENU up pressed\n"));
+   CHECK(command_menu(&cmd,"show") && !strcmp(reply,"CLOSED\n"));
    /* a command that answers nothing of its own answers as the tool */
    reply[0]=0;
    CHECK(command_reinit(&cmd,"audio") && !strcmp(reply,"REINIT audio\n"));
@@ -461,9 +461,31 @@ int main(int argc, char **argv)
    /* a family of commands as one: the word picks the command, and only
     * the ones that take a number take what follows */
    reply[0]=0; cmd.error=false;
-   CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of up|"));
+   CHECK(!command_menu(&cmd,"toggle") && strstr(reply,"MENU ERROR one of show|"));
    reply[0]=0;
-   CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"nothing after up"));
+   CHECK(!command_menu(&cmd,"up 5") && strstr(reply,"up takes no index"));
+   reply[0]=0;
+   CHECK(!command_menu(&cmd,"down") && strstr(reply,"the menu is closed"));
+   /* MENU answers once the menu has run its action, with what it shows */
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"open") && !reply[0]);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(!strncmp(reply,"MENU ",5) && strstr(reply,"\nSELECTED 0\nCOUNT "));
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"down") && !reply[0]);
+   /* a second request replaces the first, which is told */
+   CHECK(command_menu(&cmd,"down") && strstr(reply,"replaced by another"));
+   reply[0]=0;
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(strstr(reply,"\nSELECTED 1\n") != NULL);
+   reply[0]=0;
+   CHECK(command_menu(&cmd,"select 0") && !reply[0]);
+   for (i=0;i<8 && !reply[0];i++) runloop_iterate();
+   CHECK(strstr(reply,"\nSELECTED 0\n") != NULL);
+   reply[0]=0;
+   CHECK(!command_menu(&cmd,"select 9999") && strstr(reply,"no entry 9999"));
+   reply[0]=0; cmd.error=false;
+   CHECK(command_menu(&cmd,"close") && !strcmp(reply,"CLOSED\n"));
    reply[0]=0;
    CHECK(!command_replay(&cmd,"record 3") && strstr(reply,"nothing after record"));
    reply[0]=0;

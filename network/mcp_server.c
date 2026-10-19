@@ -493,6 +493,14 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
       MCP_RAW(w, "}}");
    }
    wrote = rows->columns != NULL;
+   if (rows->opening)
+   {
+      if (wrote)
+         MCP_RAW(w, ",");
+      wrote = true;
+      rjsonwriter_add_string(w, rows->opening);
+      MCP_RAW(w, ":{\"type\":\"string\"}");
+   }
    if (rows->previous)
    {
       if (wrote)
@@ -514,8 +522,11 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
             MCP_RAW(w, ",");
          wrote = true;
          rjsonwriter_add_string(w, tr->flag);
-         MCP_RAW(w, ":{\"type\":\"boolean\",\"description\":\"The reply "
-               "was cut short.\"}");
+         MCP_RAW(w, ":{\"type\":\"boolean\",\"description\":");
+         /* where it carries a number too, that one's is the number's */
+         rjsonwriter_add_string(w, tr->name || !tr->desc
+               ? "The reply was cut short." : tr->desc);
+         MCP_RAW(w, "}");
       }
       if (tr->name)
       {
@@ -553,7 +564,9 @@ static void mcp_schema_rows(rjsonwriter_t *w, const struct cmd_rows *rows,
    "as one answers), " \
    "PRESS ... until, or RUN_UNTIL; RUN_FRAMES runs frames with nothing " \
    "pressed but what SET_INPUT holds. STATE " \
-   "checkpoint before a risky move, and rollback after a mistake. Tools " \
+   "checkpoint before a risky move, and rollback after a mistake. MENU " \
+   "reads and drives RetroArch's own menu - settings, playlists, cores - " \
+   "and answers with what it shows. Tools " \
    "marked destructive can lose unsaved progress or load code."
 
 /* A tool's title, from its name: RUN_FRAMES is "Run frames". */
@@ -1187,6 +1200,8 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
    bool        wrote    = false;
    const char *prev     = NULL;
    const char *prev_stop = NULL;
+   const char *opening  = NULL;
+   const char *opening_stop = NULL;
 
    while (rows->columns && rows->columns[ncol].name)
       ncol++;
@@ -1241,7 +1256,14 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
       /* the command opens a line that is not a row with its own name */
       if (     (size_t)(stop - line) > name_len
             && !strncmp(line, name, name_len) && line[name_len] == ' ')
+      {
+         if (rows->opening && line == text)
+         {
+            opening      = line + name_len + 1;
+            opening_stop = stop;
+         }
          continue;
+      }
       for (f = line; f < stop; f++)
          if (*f == '\t')
             tabs++;
@@ -1289,6 +1311,13 @@ static void mcp_structured(rjsonwriter_t *w, const struct cmd_rows *rows,
          MCP_RAW(w, ":");
          rjsonwriter_raw(w, num[slot], (int)num_len[slot]);
       }
+   }
+   if (opening)
+   {
+      MCP_RAW(w, ",");
+      rjsonwriter_add_string(w, rows->opening);
+      MCP_RAW(w, ":");
+      rjsonwriter_add_string_len(w, opening, (int)(opening_stop - opening));
    }
    /* after the rows, which every reply with one has */
    if (prev)
