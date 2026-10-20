@@ -143,6 +143,18 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window);
 
 bool egl_destroy_surface(egl_ctx_data_t *egl);
 
+/* A secondary window's surface on egl's config, with the main window's
+ * attributes. Bind makes egl->ctx current on it, giving it swap interval
+ * 0 when 'interval' is set (once is enough, the interval is the
+ * surface's), or on egl->surf for EGL_NO_SURFACE. Free puts the context
+ * back on egl->surf first where the surface is current. None of them
+ * log. */
+EGLSurface egl_window_surface_new(egl_ctx_data_t *egl, void *native_window);
+bool egl_window_surface_bind(egl_ctx_data_t *egl, EGLSurface surf,
+      bool interval);
+bool egl_window_surface_swap(egl_ctx_data_t *egl, EGLSurface surf);
+void egl_window_surface_free(egl_ctx_data_t *egl, EGLSurface surf);
+
 bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
 bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,

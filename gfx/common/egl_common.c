@@ -970,23 +970,31 @@ void egl_set_surface_opaque(bool opaque)
    egl_surface_opaque = opaque;
 }
 
-bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
+/* A window surface's attributes, five of them, for the main window and
+ * secondary ones alike. */
+static void egl_window_attribs(egl_ctx_data_t *egl, EGLint *window_attribs)
 {
-   EGLint window_attribs[] = {
-	   EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
-	   EGL_NONE, EGL_NONE,
-	   EGL_NONE,
-   };
-
-   if (!egl_destroy_surface(egl))
-      return false;
-
+   window_attribs[0] = EGL_RENDER_BUFFER;
+   window_attribs[1] = EGL_BACK_BUFFER;
+   window_attribs[2] = EGL_NONE;
+   window_attribs[3] = EGL_NONE;
+   window_attribs[4] = EGL_NONE;
    if (     egl_surface_opaque
          && egl_display_has_extension(egl->dpy, "EGL_EXT_present_opaque"))
    {
       window_attribs[2] = EGL_PRESENT_OPAQUE_EXT;
       window_attribs[3] = EGL_TRUE;
    }
+}
+
+bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
+{
+   EGLint window_attribs[5];
+
+   if (!egl_destroy_surface(egl))
+      return false;
+
+   egl_window_attribs(egl, window_attribs);
 
    egl->surf = _egl_create_window_surface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
@@ -1019,6 +1027,43 @@ bool egl_destroy_surface(egl_ctx_data_t *egl)
 
    egl->surf = EGL_NO_SURFACE;
    return true;
+}
+
+EGLSurface egl_window_surface_new(egl_ctx_data_t *egl, void *native_window)
+{
+   EGLint window_attribs[5];
+   if (egl->dpy == EGL_NO_DISPLAY || egl->ctx == EGL_NO_CONTEXT)
+      return EGL_NO_SURFACE;
+   egl_window_attribs(egl, window_attribs);
+   return _egl_create_window_surface(egl->dpy, egl->config,
+         (NativeWindowType)native_window, window_attribs);
+}
+
+bool egl_window_surface_bind(egl_ctx_data_t *egl, EGLSurface surf,
+      bool interval)
+{
+   EGLSurface target = surf != EGL_NO_SURFACE ? surf : egl->surf;
+   if (     egl->dpy == EGL_NO_DISPLAY
+         || egl->ctx == EGL_NO_CONTEXT
+         || target   == EGL_NO_SURFACE
+         || !_egl_make_current(egl->dpy, target, target, egl->ctx))
+      return false;
+   /* The interval is the current draw surface's own */
+   if (interval && surf != EGL_NO_SURFACE)
+      _egl_swap_interval(egl->dpy, 0);
+   return true;
+}
+
+bool egl_window_surface_swap(egl_ctx_data_t *egl, EGLSurface surf)
+{
+   return _egl_swap_buffers(egl->dpy, surf) == EGL_TRUE;
+}
+
+void egl_window_surface_free(egl_ctx_data_t *egl, EGLSurface surf)
+{
+   if (_egl_get_current_surface(EGL_DRAW) == surf)
+      egl_window_surface_bind(egl, EGL_NO_SURFACE, false);
+   _egl_destroy_surface(egl->dpy, surf);
 }
 
 #ifndef EGL_COLOR_COMPONENT_TYPE_EXT
