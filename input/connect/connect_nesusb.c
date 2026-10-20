@@ -25,9 +25,9 @@
 struct hidpad_nesusb_data
 {
    struct pad_connection* connection;
-   uint8_t data[64];
    uint32_t slot;
    uint32_t buttons;
+   uint8_t axis[2];
 };
 
 static void* hidpad_nesusb_init(void *data,
@@ -79,7 +79,7 @@ static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)
    if (!device || axis >= 2)
       return 0;
 
-   val = device->data[3 + axis];
+   val = device->axis[axis];
    val = (val << 8) - 0x8000;
 
    if (abs(val) > 0x1000)
@@ -112,13 +112,14 @@ static void hidpad_nesusb_packet_handler(void *data,
    };
    struct hidpad_nesusb_data *device = (struct hidpad_nesusb_data*)data;
 
-   if (!device)
+   if (!device || size < 7)
       return;
 
-   memcpy(device->data, packet, size);
+   device->axis[0] = packet[3];
+   device->axis[1] = packet[4];
 
    device->buttons = 0;
-   pressed_keys    = device->data[6] | (device->data[5] << 8);
+   pressed_keys    = packet[6] | (packet[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -139,7 +140,7 @@ static int32_t hidpad_nesusb_button(void *data, uint16_t joykey)
    struct hidpad_nesusb_data *pad = (struct hidpad_nesusb_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_nesusb = {

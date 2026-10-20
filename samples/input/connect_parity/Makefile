@@ -10,6 +10,8 @@ SOURCES := connect_parity_test.c \
            $(ROOT)/input/connect/connect_wiiugca.c \
            $(ROOT)/input/connect/connect_ps2adapter.c \
            $(ROOT)/input/connect/connect_psxadapter.c \
+           $(ROOT)/input/connect/connect_snesusb.c \
+           $(ROOT)/input/connect/connect_nesusb.c \
            $(ROOT)/input/common/input_hid_common.c
 ifneq ($(SANITIZER),)
 CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

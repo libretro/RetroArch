@@ -432,6 +432,100 @@ static void test_adapter(const pad_connection_interface_t *ifc,
          failures == had ? "pass" : "fail", name);
 }
 
+/* ---- SNES and NES USB pads: the old handlers' report and reads -- */
+
+static const uint32_t ref_snesusb_map[16] =
+{
+   RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R, NO_BTN, NO_BTN,
+   RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+   NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN,
+   RETRO_DEVICE_ID_JOYPAD_X, RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y
+};
+
+static const uint32_t ref_nesusb_map[16] =
+{
+   RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2,
+   RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R,
+   RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+   NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN, NO_BTN,
+   RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A,
+   RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_X
+};
+
+static void ref_usbpad_take(struct ref_adapter *r, const uint32_t *map,
+      const uint8_t *p, unsigned size)
+{
+   unsigned i, keys;
+   memcpy(r->data, p, size);
+   keys       = r->data[6] | (r->data[5] << 8);
+   r->buttons = 0;
+   for (i = 0; i < 16; i++)
+      if (map[i] != NO_BTN && (keys & (1u << i)))
+         r->buttons |= 1u << map[i];
+}
+
+static int16_t ref_usbpad_axis(const struct ref_adapter *r, unsigned at,
+      unsigned axis)
+{
+   int val;
+   if (axis >= 2)
+      return 0;
+   val = (r->data[at + axis] << 8) - 0x8000;
+   return abs(val) > 0x1000 ? (int16_t)val : 0;
+}
+
+static unsigned usbpad_mismatches(const pad_connection_interface_t *ifc,
+      void *dev, const struct ref_adapter *r, unsigned at)
+{
+   unsigned k, bad = 0;
+   input_bits_t bits;
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 32; k++)
+   {
+      int want = !!(r->buttons & (1u << k));
+      if (!!ifc->button(dev, (uint16_t)k) != want
+            || (k < 16 && !!BIT256_GET(bits, k) != want))
+         bad++;
+   }
+   for (k = 0; k < 3; k++)
+      if (ifc->get_axis(dev, k) != ref_usbpad_axis(r, at, k))
+         bad++;
+   return bad;
+}
+
+static void test_usbpad(const pad_connection_interface_t *ifc,
+      const char *name, const uint32_t *map, unsigned at, unsigned seed)
+{
+   uint8_t p[64];
+   struct ref_adapter ref;
+   unsigned n, i, bad = 0, had = failures;
+   int dummy_connection;
+   void *dev = ifc->init(&dummy_connection, 0, &stub_hid);
+
+   CHECK(dev != NULL, "%s: no device", name);
+   if (!dev)
+      return;
+   memset(&ref, 0, sizeof(ref));
+   srand(seed);
+   for (n = 0; n < 20000; n++)
+   {
+      unsigned size = 7 + (unsigned)rand() % (sizeof(p) - 6);
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      ifc->packet_handler(dev, p, (uint16_t)size);
+      ref_usbpad_take(&ref, map, p, size);
+      bad += usbpad_mismatches(ifc, dev, &ref, at);
+   }
+   CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
+   memset(p, 0xff, sizeof(p));
+   ifc->packet_handler(dev, p, 6);
+   CHECK(!usbpad_mismatches(ifc, dev, &ref, at), "%s: a short report was taken", name);
+   ifc->deinit(dev);
+   printf("[%s] %s: every button, the set and the axes as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail", name);
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -439,6 +533,8 @@ int main(void)
    test_wiiugca();
    test_adapter(&pad_connection_ps2adapter, "ps2adapter", false);
    test_adapter(&pad_connection_psxadapter, "psxadapter", true);
+   test_usbpad(&pad_connection_snesusb, "snesusb", ref_snesusb_map, 0, 5);
+   test_usbpad(&pad_connection_nesusb, "nesusb", ref_nesusb_map, 3, 6);
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }
