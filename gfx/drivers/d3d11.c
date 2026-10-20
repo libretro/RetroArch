@@ -8069,6 +8069,7 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    ID3D11Resource* BackBufferResource = NULL;
    D3D11_TEXTURE2D_DESC StagingDesc;
    D3D11_MAPPED_SUBRESOURCE Map;
+   unsigned read_dims;
    bool is_scrgb;
    bool ret = false;
    float max_cll  = 0.0f;
@@ -8081,6 +8082,14 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    if (!(d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
       return false;
 
+   /* The redraw may resize the swapchain. Do not retain a backbuffer
+    * across it, or copy a changed extent into the caller's old buffer. */
+   read_dims = d3d11->vp.dims;
+   if (!is_idle)
+      video_driver_cached_frame();
+   if (d3d11->vp.dims != read_dims)
+      return false;
+
    m_SwapChain = d3d11->swapChain;
 #ifdef __cplusplus
    m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, IID_ID3D11Texture2D, (void**)(&BackBuffer));
@@ -8090,9 +8099,6 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 
    if (!BackBuffer)
       return false;
-
-   if (!is_idle)
-      video_driver_cached_frame();
 
    BackBuffer->lpVtbl->GetDesc(BackBuffer, &StagingDesc);
 
@@ -8179,6 +8185,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    const uint8_t* BackBufferData;
    uint8_t* bufferRow;
    unsigned slot;
+   unsigned read_dims;
    uint32_t y;
    uint32_t x;
    bool wait;
@@ -8187,6 +8194,8 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
    if (!d3d11)
       return false;
+
+   read_dims = d3d11->vp.dims;
 
    if (d3d11->record.enable)
    {
@@ -8203,6 +8212,14 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       d3d11->flags |= D3D11_ST_FLAG_READBACK_PENDING;
       if (!is_idle)
          video_driver_cached_frame();
+      /* A cached redraw can apply a pending resize. The caller sized its
+       * buffer from the viewport before this call, so a different extent
+       * cannot be copied into it. */
+      if (d3d11->vp.dims != read_dims)
+      {
+         d3d11->flags &= ~D3D11_ST_FLAG_READBACK_PENDING;
+         return false;
+      }
       if (d3d11->flags & D3D11_ST_FLAG_READBACK_PENDING)
       {
          d3d11->flags &= ~D3D11_ST_FLAG_READBACK_PENDING;

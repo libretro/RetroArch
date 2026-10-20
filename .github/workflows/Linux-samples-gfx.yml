@@ -2341,6 +2341,9 @@ jobs:
       - name: Vulkan synchronous readback slot
         run: python3 samples/gfx/vulkan_readback_slot/run.py
 
+      - name: D3D11 resized readback destination guard
+        run: python3 samples/gfx/d3d11_readback_resize/run.py
+
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/hw_ring_fence
