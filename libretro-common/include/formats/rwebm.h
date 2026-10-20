@@ -136,6 +136,12 @@ int64_t rwebm_duration_ns(const rwebm_t *webm);
 
 int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt);
 
+/* After READ_AGAIN on an element body, name the complete required encoded
+ * span, including the cursor needed to retry. Zero/zero for an incomplete
+ * header or no blocked element. Metadata only; the owner admits this span
+ * with its ordinary I/O budget. Success, rewind and seek clear the request. */
+void rwebm_read_span(const rwebm_t *webm, size_t *lo, size_t *hi);
+
 /* Open against a partially-read buffer: only the first 'avail' bytes
  * are valid (the rest may be uninitialised); the parse never touches
  * them.  On failure, *need_more (when non-NULL) is set when the

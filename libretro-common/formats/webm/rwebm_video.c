@@ -951,6 +951,12 @@ void rwebm_video_stream_pin_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi
    }
 }
 
+void rwebm_video_stream_read_span(rwebm_video_stream_t *s, size_t *lo, size_t *hi)
+{
+   rwebm_read_span(s ? ((s->seek_scan || s->timing_active)
+            ? s->timing : s->demux) : NULL, lo, hi);
+}
+
 int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *s)
 {
    return (s && s->demux) ? rwebm_duration_ns(s->demux) : 0;

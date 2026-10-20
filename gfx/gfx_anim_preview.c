@@ -488,10 +488,14 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
        * extend, exactly the burst a lap or an open already pays. */
       image_transfer_anim_stream_next_span(p->stream, p->type,
             &span_lo, &span_hi);
-      if (span_hi > span_lo && span_hi > anchor + ahead)
+      if (span_hi > span_lo && span_hi > anchor && span_hi - anchor > ahead)
       {
          ahead  = span_hi - anchor;
-         budget = 0;
+         /* A WebM BlockGroup may exceed ordinary lookahead. Admit its
+          * exact metadata-declared span over successive bounded reads,
+          * never as an unpaced burst on the decode worker. */
+         budget = p->type == IMAGE_TYPE_WEBM
+            ? GFX_ANIM_PREVIEW_FEED_BUDGET : 0;
       }
       /* The paced budget is sized for a decoder that takes one sample
        * a tick. One catching up takes three or four - it passes the

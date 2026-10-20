@@ -85,10 +85,26 @@ static int check_lacing(unsigned mode)
       used += n;
    }
    finish(block); finish(cluster); finish(segment);
-   p.webm = rwebm_open_memory(file, used);
+   p.webm = rwebm_open_memory_avail(file, used, first + n, NULL);
    CHECK(p.webm);
    floor = rwebm_consumed(p.webm);
+   {
+      size_t lo, hi;
+      CHECK(rwebm_read_packet(p.webm, &packet) == RWEBM_READ_AGAIN);
+      rwebm_read_span(p.webm, &lo, &hi);
+      CHECK(lo == floor && hi == used);
+      rwebm_rewind(p.webm);
+      rwebm_read_span(p.webm, &lo, &hi);
+      CHECK(!lo && !hi);
+      CHECK(rwebm_read_packet(p.webm, &packet) == RWEBM_READ_AGAIN);
+      rwebm_set_avail(p.webm, used);
+   }
    CHECK(rwebm_read_packet(p.webm, &packet) == 1);
+   {
+      size_t lo, hi;
+      rwebm_read_span(p.webm, &lo, &hi);
+      CHECK(!lo && !hi);
+   }
    CHECK(packet.data == file + first && packet.size == n);
    CHECK(rwebm_tell(p.webm) - MEDIA_DISCARD_MARGIN > first + n);
    CHECK(rwebm_consumed(p.webm) == first + n);

@@ -295,6 +295,10 @@ size_t rwebm_video_stream_consumed(rwebm_video_stream_t *stream);
 size_t rwebm_video_stream_feed_frontier(rwebm_video_stream_t *stream);
 void rwebm_video_stream_pin_span(rwebm_video_stream_t *stream,
       size_t *lo, size_t *hi);
+/* Exclusively owned feeder query: pending complete element, not a release
+ * frontier. Keep the normal per-poll I/O budget while admitting its span. */
+void rwebm_video_stream_read_span(rwebm_video_stream_t *stream,
+      size_t *lo, size_t *hi);
 
 /* Container duration in nanoseconds, 0 when the file does not say. */
 int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *stream);

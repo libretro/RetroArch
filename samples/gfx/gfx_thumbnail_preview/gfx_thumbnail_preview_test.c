@@ -653,6 +653,37 @@ static bool cpu_media_capture(void *user, const video_player_frame_t *frame)
    return true;
 }
 
+static void lane_group_feed_budget(const char *path)
+{
+   gfx_anim_preview_t *p = gfx_anim_preview_open(path, -1);
+   unsigned frames = 0, bounded = 0;
+   int i;
+   size_t peak_step = 0;
+   check("group feed", "owner session opened", p != NULL);
+   if (!p) return;
+   for (i = 0; i < 4000 && frames < 48; i++)
+   {
+      size_t lo, hi, old = p->feed_res_hi;
+      size_t anchor = image_transfer_anim_stream_feed_frontier(p->stream, p->type);
+      image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+      if (!gfx_anim_preview_feed(p)) break;
+      if (hi > lo && hi > anchor && hi - anchor > p->feed_ahead
+            && old >= anchor && p->feed_res_hi > old)
+      {
+         size_t step = p->feed_res_hi - old;
+         if (step > peak_step) peak_step = step;
+         bounded++;
+      }
+      if (gfx_anim_preview_next(p, NULL, NULL)) frames++;
+   }
+   printf("group feed: frames=%u paced_steps=%u largest_step=%lu\n",
+         frames, bounded, (unsigned long)peak_step);
+   check("group feed", "large group admitted over multiple polls", frames >= 48 && bounded > 1);
+   check("group feed", "each blocked-element refill respects I/O budget",
+         peak_step && peak_step <= GFX_ANIM_PREVIEW_FEED_BUDGET);
+   gfx_anim_preview_close(p);
+}
+
 static void lane_cpu_gap(const char *path)
 {
    gfx_anim_preview_t *session = gfx_anim_preview_open(path, -1);
@@ -661,6 +692,7 @@ static void lane_cpu_gap(const char *path)
    int tick;
    size_t peak = 0, bound;
    unsigned target = getenv("CPU_GAP_FRAMES") ? (unsigned)strtoul(getenv("CPU_GAP_FRAMES"), NULL, 10) : 8;
+   if (getenv("CPU_GROUP")) lane_group_feed_budget(path);
    if (target < 8 || target > 1000) target = 8;
    memset(&capture, 0, sizeof(capture));
    check("cpu gap", "windowed session opened", session != NULL);
@@ -690,6 +722,15 @@ static void lane_cpu_gap(const char *path)
         + (size_t)VIDEO_SCALE_W(session->dims) * VIDEO_SCALE_H(session->dims) * 4
         + GFX_ANIM_PREVIEW_FEED_BUDGET + 128 * 1024;
    printf("cpu gap: observed footprint bound=%lu\n", (unsigned long)bound);
+   if (getenv("CPU_GROUP"))
+   {
+      /* One checked-size key picture and 12 MiB of legal group padding.
+       * Account for this complete element instead of ordinary lookahead. */
+      size_t group = 12 * 1024 * 1024
+         + (size_t)VIDEO_SCALE_W(session->dims) * VIDEO_SCALE_H(session->dims) * 4 + 32;
+      if (group > session->feed_ahead) bound += group - session->feed_ahead;
+      printf("cpu group: declared-element footprint bound=%lu\n", (unsigned long)bound);
+   }
    check("cpu gap", "observed footprint stays within retained-window budget", peak < bound);
    gfx_media_cpu_retire(player);
    gfx_thumbnail_anim_worker_deinit();

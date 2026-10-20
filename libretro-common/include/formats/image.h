@@ -693,8 +693,9 @@ void image_transfer_anim_stream_set_avail(void *stream,
  * feeder can make a frame larger than its lookahead resident before
  * asking for it - without this a lossless 4K frame past the lookahead
  * would never become readable and the stream would sit at the wall
- * forever.  0/0 for the video types (packet-sized reads well inside
- * any lookahead) and for a frame not indexed yet. */
+ * forever. WebM reports a blocked complete element (a BlockGroup can
+ * exceed ordinary lookahead); admit it with bounded I/O over subsequent
+ * polls. Other video types and unindexed frames report 0/0. */
 size_t image_transfer_anim_stream_media_floor(void *stream,
       enum image_type_enum type);
 /* Container duration in nanoseconds for the video types, 0 for the

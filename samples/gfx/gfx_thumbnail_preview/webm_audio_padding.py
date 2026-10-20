@@ -60,7 +60,8 @@ def pad(source, destination, amount=512 * 1024):
     Path(destination).write_bytes(output)
 
 
-def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2):
+def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2,
+                in_group=False):
     """Put legal padding after picture two; preserve playable codec bytes."""
     output = bytearray()
     seen = 0
@@ -75,11 +76,24 @@ def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2):
             if child == 0x1F43B675:
                 cluster = bytearray()
                 for block, packet in elements(payload):
-                    cluster += element(block, packet)
                     if block == 0xA3 and vint(packet, 0)[0] == 1:
                         seen += 1
+                        if seen == after_picture and in_group:
+                            # A Block has no SimpleBlock keyframe flag. An
+                            # independent BlockGroup has no ReferenceBlock.
+                            flags = vint(packet, 0)[1] + 2
+                            if not packet[flags] & 0x80:
+                                raise ValueError('group fixture must wrap a key picture')
+                            packet = bytearray(packet)
+                            packet[flags] &= 0x0f
+                            cluster += element(0xA0, element(0xA1, packet)
+                                               + element(0xEC, bytes(amount)))
+                            continue
+                        cluster += element(block, packet)
                         if seen == after_picture:
                             cluster += element(0xEC, bytes(amount))
+                    else:
+                        cluster += element(block, packet)
                 payload = cluster
             segment += element(child, payload)
         output += element(ident, segment)
@@ -89,7 +103,11 @@ def insert_void(source, destination, amount=12 * 1024 * 1024, after_picture=2):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == '--void':
+    if sys.argv[1] == '--group-void':
+        insert_void(sys.argv[2], sys.argv[3],
+                    after_picture=int(sys.argv[4]) if len(sys.argv) > 4 else 31,
+                    in_group=True)
+    elif sys.argv[1] == '--void':
         insert_void(sys.argv[2], sys.argv[3], after_picture=int(sys.argv[4]) if len(sys.argv) > 4 else 2)
     else:
         pad(sys.argv[1], sys.argv[2])

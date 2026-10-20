@@ -287,6 +287,7 @@ struct rwebm
    const uint8_t *avail_end;
    /* Packet-read cursor. */
    const uint8_t *cur;              /* walk position inside the segment    */
+   size_t         need_hi;          /* blocked element end, or zero         */
    int64_t        cluster_ts;       /* current cluster timestamp (ticks)   */
    /* Lacing: a SimpleBlock may carry several frames; we emit them one at a
     * time, so remember where we are within a block. */
@@ -683,6 +684,7 @@ static int64_t webm_select_time_ns(rwebm_t *webm, int64_t ns, int resident)
    webm->lace_count      = 0;
    webm->lace_index      = 0;
    webm->pending_discard = 0;
+   webm->need_hi         = 0;
    return webm->cues[best].time_ticks * webm->timestamp_scale;
 }
 
@@ -704,6 +706,16 @@ void rwebm_rewind(rwebm_t *webm)
    webm->cluster_ts = 0;
    webm->lace_count = 0;
    webm->lace_index = 0;
+   webm->need_hi    = 0;
+}
+
+void rwebm_read_span(const rwebm_t *webm, size_t *lo, size_t *hi)
+{
+   if (lo) *lo = 0;
+   if (hi) *hi = 0;
+   if (!webm || !lo || !hi || !webm->need_hi) return;
+   *lo = (size_t)(webm->cur - webm->data);
+   *hi = webm->need_hi;
 }
 
 /* DiscardPadding for the Block just parsed: the element may sit before
@@ -736,6 +748,7 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
    ebml_reader r;
    if (!webm || !pkt)
       return -1;
+   webm->need_hi = 0;
 
    /* Drain a laced block first. */
    if (webm->lace_index < webm->lace_count)
@@ -779,9 +792,8 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
           * established context-free resume (the cursor lands after
           * each block, mid-cluster, every call) makes re-entry at the
           * wall safe. */
-         const uint8_t *cend = body + sz;
-         if (cend > webm->segment_end)
-            cend = webm->segment_end;   /* malformed/overlong: clamp  */
+         const uint8_t *cend = sz > (uint64_t)(webm->segment_end - body)
+            ? webm->segment_end : body + (size_t)sz;
          r.p   = body;
          r.end = cend < r.end ? cend : r.end;
          continue;
@@ -797,7 +809,8 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
          webm->cur = r.p;
          continue;
       }
-      if (body + sz > r.end)
+      if (sz > (uint64_t)(webm->segment_end - body)) return -1;
+      if (sz > (uint64_t)(r.end - body))
       {
          /* Truncated at the wall: if the file continues past it, the
           * element is merely not buffered yet - consume nothing (the
@@ -811,7 +824,10 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
           * group could yield a different DiscardPadding than the
           * fully-resident decode. */
          if (webm->avail_end < webm->segment_end)
+         {
+            webm->need_hi = (size_t)(body - webm->data) + (size_t)sz;
             return RWEBM_READ_AGAIN;
+         }
          webm->cur = r.end;
          return 0;
       }

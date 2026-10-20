@@ -469,6 +469,7 @@ def main():
     assert max(int(packet['size']) for packet in packets) <= 640 * 360 * 4
     insert_void(noise_seed, j('video_gap_head.webm'), after_picture=2)
     insert_void(noise_seed, j('video_gap_pin.webm'), after_picture=40)
+    insert_void(noise_seed, j('video_group.webm'), after_picture=31, in_group=True)
     os.unlink(noise_seed)
 
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')

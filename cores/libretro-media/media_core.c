@@ -807,6 +807,20 @@ static size_t media_native_consumed(media_player_t *p)
    return consumed;
 }
 
+static size_t media_native_read_end(media_player_t *p)
+{
+   size_t lo, hi, end;
+   if (p->webmvs) rwebm_video_stream_read_span(p->webmvs, &lo, &hi);
+   else rwebm_read_span(p->webm, &lo, &hi);
+   end = hi;
+   if (p->wgather)
+   {
+      rwebm_read_span(p->wgather, &lo, &hi);
+      if (hi > end) end = hi;
+   }
+   return end;
+}
+
 static void media_free_player(media_player_t *p)
 {
    media_close_webm_hw(p);
@@ -1832,6 +1846,7 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
          && !data_transfer_failed(p->dt)
          && !data_transfer_capped(p->dt)
          && (   p->pending_seek_ns >= 0
+             || data_transfer_avail(p->dt) < media_native_read_end(p)
              || data_transfer_avail(p->dt)
                 < (p->webmvs ? rwebm_video_stream_feed_frontier(p->webmvs)
                    : rwebm_tell(p->webm)) + MEDIA_FILL_LOOKAHEAD))
