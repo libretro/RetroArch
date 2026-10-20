@@ -25,17 +25,10 @@ jobs:
     timeout-minutes: 90
     strategy:
       matrix:
-        version: [UWP, 2019, 2022]
+        version: [2019, 2022]
         configuration: [Debug, Release]
         platform: [x64]
-        exclude:
-          - version: UWP
-            configuration: Debug
-        include:
-          - version: UWP
-            configuration: ReleaseAngle
-            platform: x64
-        # Qt and Cg builds are excluded for now
+      # Qt and Cg builds are excluded for now
     steps:
       - uses: actions/checkout@v5
 
@@ -43,24 +36,19 @@ jobs:
         uses: microsoft/setup-msbuild@v1
 
       - name: Compile RA
-        working-directory: "${{github.workspace}}/pkg/msvc${{ matrix.version == 'UWP' && '-uwp' || ''}}"
+        working-directory: "${{github.workspace}}/pkg/msvc"
         run: |
           msbuild -p:"Configuration=${{matrix.configuration}}" -p:"Platform=${{matrix.platform}}" .\RetroArch-msvc${{matrix.version}}.sln
 
       - name: Get short SHA
         id: slug
         shell: powershell
-        run: echo "sha8=$('${{github.sha}}'.Substring(0,8))"  >> $env:GITHUB_OUTPUT
-        # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
+        run: echo "sha8=$('${{github.sha}}'.Substring(0,8))" >> $env:GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
         with:
           name: retroarch-${{matrix.version}}-${{matrix.configuration}}-${{matrix.platform}}-${{ steps.slug.outputs.sha8 }}
-          path: |
-            ${{ matrix.version != 'UWP' }}:
-              pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc${{matrix.version}}.exe
-            ${{ matrix.version == 'UWP' }}:
-              pkg/msvc-uwp/AppPackages/RetroArch-msvcUWP
+          path: pkg/msvc/${{matrix.platform}}/${{matrix.configuration}}/RetroArch-msvc${{matrix.version}}.exe
 
   msvc2026:
     runs-on: windows-2025
