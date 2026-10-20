@@ -259,8 +259,21 @@ int main(void)
    CHECK(hid != NULL, "init failed");
    if (!hid)
       return 1;
+
+   /* held by another program: left to it, said once, taken when free */
+   {
+      HANDLE other = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, 0,
+            NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+      CHECK(other != INVALID_HANDLE_VALUE, "the stand-in could not be held");
+      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
+      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
+      CHECK(!hid->devices && connected_port == -1 && hid->busy_count == 1,
+            "a pad another program has open was not left to it, once");
+      CloseHandle(other);
+   }
    winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
    CHECK(hid->devices && connected_port == 0, "the pad is not on port 1");
+   CHECK(hid->busy_count == 0, "the pad was still counted as held elsewhere");
    dev = hid->devices;
 
    /* start */

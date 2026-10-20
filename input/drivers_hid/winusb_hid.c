@@ -135,10 +135,18 @@ typedef struct winusb_device
    unsigned taken;
 } winusb_device_t;
 
+/* pads another program has open: WinUSB lets one program at a time
+ * have a device, so one held elsewhere (ScpToolkit, an SDL with
+ * libusb) is left to it, said once, and tried again at each rescan */
+#define WINUSB_BUSY_MAX 4
+
 typedef struct winusb_hid
 {
    joypad_connection_t *slots;
    winusb_device_t *devices;
+   char busy[WINUSB_BUSY_MAX][MAX_PATH];
+   unsigned busy_count;
+   unsigned busy_seen; /* bit n: busy[n] was there at this scan */
    HMODULE cfgmgr;
    winusb_cm_unregister_t cm_unregister;
    HANDLE notification;
@@ -316,6 +324,29 @@ static winusb_device_t *winusb_hid_find(winusb_hid_t *hid,
 
 /* A pad's interface opened, its reader started and its handler given
  * it. */
+static int winusb_hid_busy_find(winusb_hid_t *hid, const char *instance)
+{
+   unsigned i;
+   for (i = 0; i < hid->busy_count; i++)
+      if (string_is_equal(hid->busy[i], instance))
+         return (int)i;
+   return -1;
+}
+
+static void winusb_hid_busy_drop(winusb_hid_t *hid, unsigned i)
+{
+   unsigned last = --hid->busy_count;
+   if (i != last)
+   {
+      memcpy(hid->busy[i], hid->busy[last], sizeof(hid->busy[i]));
+      if (hid->busy_seen & (1u << last))
+         hid->busy_seen |= (1u << i);
+      else
+         hid->busy_seen &= ~(1u << i);
+   }
+   hid->busy_seen &= ~(1u << last);
+}
+
 static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       const char *instance, uint16_t vid, uint16_t pid)
 {
@@ -343,10 +374,29 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
    if (dev->file == INVALID_HANDLE_VALUE)
    {
-      RARCH_WARN("[WinUSB] %s cannot be opened (error %lu).\n",
-            path, (unsigned long)GetLastError());
+      DWORD err = GetLastError();
+      if (err == ERROR_ACCESS_DENIED || err == ERROR_SHARING_VIOLATION)
+      {
+         if (     winusb_hid_busy_find(hid, instance) < 0
+               && hid->busy_count < WINUSB_BUSY_MAX)
+         {
+            strlcpy(hid->busy[hid->busy_count++], instance,
+                  sizeof(hid->busy[0]));
+            RARCH_LOG("[WinUSB] \"%s\" (%s) is in use by another"
+                  " program; it is left to that one.\n",
+                  dev->name, instance);
+         }
+      }
+      else
+         RARCH_WARN("[WinUSB] %s cannot be opened (error %lu).\n",
+               path, (unsigned long)err);
       free(dev);
       return;
+   }
+   {
+      int busy = winusb_hid_busy_find(hid, instance);
+      if (busy >= 0)
+         winusb_hid_busy_drop(hid, (unsigned)busy);
    }
    if (     !(dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL))
          || !(dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL))
@@ -519,6 +569,7 @@ static void winusb_hid_scan(winusb_hid_t *hid)
 
    if (devs == INVALID_HANDLE_VALUE)
       return;
+   hid->busy_seen = 0;
    for (i = 0; ; i++)
    {
       SP_DEVINFO_DATA info;
@@ -545,11 +596,20 @@ static void winusb_hid_scan(winusb_hid_t *hid)
          RARCH_LOG("[WinUSB] %s is not bound to WinUSB.\n", instance);
          continue;
       }
+      {
+         int busy = winusb_hid_busy_find(hid, instance);
+         if (busy >= 0)
+            hid->busy_seen |= (1u << busy);
+      }
       if (winusb_hid_interface_path(devs, &info, instance,
                path, sizeof(path)))
          winusb_hid_open(hid, path, instance, (uint16_t)vid, (uint16_t)pid);
    }
    SetupDiDestroyDeviceInfoList(devs);
+   /* one unplugged while held elsewhere is said again when it is back */
+   for (i = hid->busy_count; i-- > 0; )
+      if (!(hid->busy_seen & (1u << i)))
+         winusb_hid_busy_drop(hid, (unsigned)i);
 }
 
 static DWORD CALLBACK winusb_hid_notified(HANDLE notification,
