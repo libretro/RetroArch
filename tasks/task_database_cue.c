@@ -16,6 +16,7 @@
  */
 
 #include <ctype.h>
+#include <errno.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
@@ -1447,6 +1448,7 @@ static bool cue_is_jaguar_cd(const char *cue_path)
    intfstream_t *track_fd = NULL;
    uint8_t *buf           = NULL;
    bool found             = false;
+   int64_t track_size     = -1;
 
    info.type              = INTFSTREAM_FILE;
 
@@ -1469,12 +1471,12 @@ static bool cue_is_jaguar_cd(const char *cue_path)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
-         int64_t sz = -1;
          task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(track_path, cue_dir,
                tmp_token, sizeof(track_path));
          cue_track_stream_close(track_fd);
-         track_fd = cue_track_stream_open(track_path, &sz);
+         track_size = -1;
+         track_fd = cue_track_stream_open(track_path, &track_size);
          /* File type */
          task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
       }
@@ -1482,22 +1484,37 @@ static bool cue_is_jaguar_cd(const char *cue_path)
       {
          long _m, _s, _f;
          char *end = NULL;
+         const char *start;
+         uint64_t offset;
 
          /* Index number, then its time stamp */
          task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
-         _m = strtol(tmp_token, &end, 10);
-         if (!end || *end != ':')
+         /* Require all three fields, their delimiters and valid ranges.
+          * Bound minutes by the file size before calculating an offset:
+          * an unchecked strtol result can overflow even 64-bit arithmetic. */
+         errno = 0;
+         start = tmp_token;
+         _m = strtol(start, &end, 10);
+         if (errno == ERANGE || end == start || *end != ':' || _m < 0
+               || track_size < 0
+               || (uint64_t)_m > (uint64_t)track_size / 2352 / (60 * 75))
             continue;
-         _s = strtol(end + 1, &end, 10);
-         if (!end || *end != ':')
+         start = end + 1;
+         _s = strtol(start, &end, 10);
+         if (errno == ERANGE || end == start || *end != ':'
+               || _s < 0 || _s >= 60)
             continue;
-         _f = strtol(end + 1, &end, 10);
+         start = end + 1;
+         _f = strtol(start, &end, 10);
+         if (errno == ERANGE || end == start || *end != '\0'
+               || _f < 0 || _f >= 75)
+            continue;
 
-         if (track_fd)
-            found = jagcd_probe_stream(track_fd,
-                  (int64_t)((_m * 60 + _s) * 75 + _f) * 2352, buf);
+         offset = (((uint64_t)_m * 60 + _s) * 75 + _f) * 2352;
+         if (track_fd && offset < (uint64_t)track_size)
+            found = jagcd_probe_stream(track_fd, (int64_t)offset, buf);
       }
    }
 

@@ -44,6 +44,7 @@
 
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../tasks/task_database_cue.h"
 #include "../../../manual_content_scan.h"
 #include "../../../list_special.h"
 #include "../../../configuration.h"
@@ -626,6 +627,42 @@ int main(int argc, char **argv)
             "  TRACK 02 AUDIO\n"
             "    INDEX 01 00:00:00\n");
       fclose(f);
+   }
+
+   /* Invalid times must not be interpreted as the start of the boot
+    * track, or overflow the Jaguar probe's byte offset calculation. */
+   {
+      static const char *probe_times[] = {
+         "00:00:00", "-1:60:00", "00::00", "00:00:",
+         "9223372036854775807:00:00",
+         "999999999999999999999999999999:00:00"
+      };
+      size_t i;
+      for (i = 0; i < sizeof(probe_times) / sizeof(probe_times[0]); i++)
+      {
+         uint32_t crc = 0;
+         uint64_t size = 0;
+         FILE *f;
+         sprintf(p, "%s/invalid_jag.cue", root);
+         f = fopen(p, "w");
+         if (!f)
+         { check(0, "fixture", "could not write cue"); return 1; }
+         fprintf(f,
+               "FILE \"scan_content/07_jag (Track 1).bin\" BINARY\n"
+               "  TRACK 01 AUDIO\n"
+               "    INDEX 01 00:00:00\n"
+               "FILE \"scan_content/07_jag (Track 2).bin\" BINARY\n"
+               "  TRACK 02 AUDIO\n"
+               "    INDEX 01 %s\n", probe_times[i]);
+         fclose(f);
+         if (i == 0)
+            check(task_database_cue_get_crc_and_size(p, &crc, &size)
+                  && crc == crc_j && size == sz_j,
+                  "Jaguar probe fixture matches valid time", probe_times[i]);
+         else
+            check(!task_database_cue_get_crc_and_size(p, &crc, &size),
+                  "Jaguar probe rejects malformed time", probe_times[i]);
+      }
    }
 
    /* The audio CD: the same shape, no boot header. */
