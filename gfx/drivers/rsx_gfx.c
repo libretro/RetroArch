@@ -408,7 +408,7 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       rsx->texture_vert_idx = 0;
       end_vert_idx          = rsx->texture_vert_idx + draw->coords->vertices;
    }
-   vertices                 = &rsx->texture_vertices[rsx->texture_vert_idx];
+   vertices                 = rsx->texture_vertices;
 #else
    /* Smoother gfx at the cost of unmanaged rsx memory */
    rsx->texture_vert_idx    = 0;
@@ -707,7 +707,7 @@ static void rsx_font_draw_vertices(
       end_vert_idx                  = rsx->font_vert_idx + coords->vertices;
    }
 
-   vertices = &font->vertices[rsx->font_vert_idx];
+   vertices = font->vertices;
 
    for (i = rsx->font_vert_idx; i < end_vert_idx; i++)
    {
@@ -2462,6 +2462,7 @@ static bool rsx_frame(void* data, const void* frame,
    if (gcm->menu_frame_enable && menu_is_alive)
    {
       menu_driver_frame(menu_is_alive, video_info);
+      draw = true;
       if (gcm->menu_texture.data)
       {
          /* TODO/FIXME - pipeline ID being used here
@@ -2503,7 +2504,6 @@ static bool rsx_frame(void* data, const void* frame,
       rsx_clear_surface(gcm);
    }
    gcm->vert_idx         = 0;
-   gcm->texture_vert_idx = 0;
    gcm->font_vert_idx    = 0;
 
    return true;

@@ -148,7 +148,9 @@ u32  gcmGetFlipStatus(void) { return 0; }
 void gcmResetFlipStatus(void) { }
 s32  gcmSetDisplayBuffer(const u8 bufferId, const u32 offset,
       const u32 pitch, const u32 width, const u32 height) { return 0; }
-s32  gcmSetFlip(gcmContextData *context, const u8 bufferId) { return 0; }
+static unsigned rsx_flip_calls;
+s32  gcmSetFlip(gcmContextData *context, const u8 bufferId)
+{ rsx_flip_calls++; return 0; }
 void gcmSetFlipMode(const u32 mode) { }
 void gcmSetWaitFlip(gcmContextData *context) { }
 
@@ -582,6 +584,175 @@ static void test_overlay_sweep(void)
    printf("overlay_sweep: ok (%u allocations)\n", allocs);
 }
 
+static void test_native_menu_frame(void)
+{
+   rsx_t *rsx = driver_up();
+   video_frame_info_t info;
+   unsigned flips;
+
+   memset(&info, 0, sizeof(info));
+   info.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   rsx->menu_frame_enable = true;
+   flips = rsx_flip_calls;
+   CHECK(rsx_frame(rsx, NULL, 0, 0, 0, NULL, &info),
+         "native_menu_frame: frame callback");
+   CHECK(rsx_flip_calls == flips + 1,
+         "native_menu_frame: menu without a core frame was not presented");
+   rsx->menu_frame_enable = false;
+   flips = rsx_flip_calls;
+   rsx_frame(rsx, NULL, 0, 1, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "native_menu_frame: disabled menu was presented");
+   rsx->menu_frame_enable = true;
+   info.menu_st_flags = 0;
+   rsx_frame(rsx, NULL, 0, 2, 0, NULL, &info);
+   CHECK(rsx_flip_calls == flips,
+         "native_menu_frame: inactive menu was presented");
+   driver_down(rsx);
+   printf("native_menu_frame: ok\n");
+}
+
+static void check_vertices(const rsx_vertex_t *vertices, unsigned start,
+      const video_coords_t *coords)
+{
+   unsigned i;
+   for (i = 0; i < coords->vertices; i++)
+   {
+      const rsx_vertex_t *v = &vertices[start + i];
+      CHECK(v->x == coords->vertex[2 * i] &&
+            v->y == coords->vertex[2 * i + 1] &&
+            v->u == coords->tex_coord[2 * i] &&
+            v->v == coords->tex_coord[2 * i + 1] &&
+            v->r == coords->color[4 * i] &&
+            v->g == coords->color[4 * i + 1] &&
+            v->b == coords->color[4 * i + 2] &&
+            v->a == coords->color[4 * i + 3],
+            "vertices: wrong data at vertex %u", start + i);
+   }
+}
+
+static void test_menu_vertices(void)
+{
+   static const float vertex[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+   static const float texcoord[] = { 0, 1, 1, 1, 0, 0, 1, 0 };
+   static const float color[] = {
+      1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1
+   };
+   video_coords_t coords;
+   gfx_display_ctx_draw_t draw;
+   rsx_t *rsx = driver_up();
+   unsigned i, start, finishes = rsx_finish_calls;
+   u32 expected;
+
+   memset(&coords, 0, sizeof(coords));
+   memset(&draw, 0, sizeof(draw));
+   memset(rsx->texture_vertices, 0,
+         sizeof(rsx_vertex_t) * RSX_MAX_TEXTURE_VERTICES);
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = texcoord;
+   coords.color = color;
+   draw.coords = &coords;
+   draw.dims = VIDEO_SCALE_PACK(64, 48);
+   for (i = 0; i < RSX_MAX_TEXTURE_VERTICES / 4 + 2; i++)
+   {
+      start = (i * 4) % RSX_MAX_TEXTURE_VERTICES;
+      gfx_display_rsx_draw(&draw, rsx, draw.dims);
+      check_vertices(rsx->texture_vertices, start, &coords);
+      rsxAddressToOffset(&rsx->texture_vertices[start].x, &expected);
+      CHECK(rsx->pos_offset[RSX_SHADER_STOCK_BLEND] == expected,
+            "menu_vertices: wrong GPU offset at vertex %u", start);
+   }
+   CHECK(rsx_finish_calls == finishes, "menu_vertices: waits for the GPU");
+   driver_down(rsx);
+   printf("menu_vertices: ok\n");
+}
+
+static void test_font_vertices(void)
+{
+   static const float vertex[] = { 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1 };
+   static const float color[] = {
+      1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1,
+      1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1
+   };
+   video_coords_t coords;
+   rsx_t *rsx = driver_up();
+   rsx_font_t *font = (rsx_font_t*)rsx_font_init(rsx, NULL, 12.0f, false);
+   unsigned i, start = 0, finishes = rsx_finish_calls;
+   u32 expected;
+
+   CHECK(font != NULL, "font_vertices: font initialization");
+   if (!font)
+   {
+      driver_down(rsx);
+      return;
+   }
+   memset(&coords, 0, sizeof(coords));
+   memset(font->vertices, 0, sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES);
+   coords.vertices = 6;
+   coords.vertex = vertex;
+   coords.tex_coord = vertex;
+   coords.color = color;
+   for (i = 0; i < RSX_MAX_FONT_VERTICES / 6 + 2; i++)
+   {
+      if (start + 6 > RSX_MAX_FONT_VERTICES)
+         start = 0;
+      rsx_font_draw_vertices(rsx, font, &coords);
+      check_vertices(font->vertices, start, &coords);
+      rsxAddressToOffset(&font->vertices[start].x, &expected);
+      CHECK(font->pos_offset == expected,
+            "font_vertices: wrong GPU offset at vertex %u", start);
+      start += 6;
+   }
+   CHECK(rsx_finish_calls == finishes, "font_vertices: waits for the GPU");
+   rsx_font_free(font, false);
+   driver_down(rsx);
+   printf("font_vertices: ok\n");
+}
+
+static void test_menu_frame_vertices(void)
+{
+   static const float vertex[] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+   static const float texcoord[] = { 0, 1, 1, 1, 0, 0, 1, 0 };
+   float color[16];
+   video_coords_t coords;
+   gfx_display_ctx_draw_t draw;
+   video_frame_info_t info;
+   rsx_t *rsx = driver_up();
+   rsx_vertex_t *previous = NULL;
+   float previous_color = 0;
+   unsigned i, j, start, finishes = rsx_finish_calls;
+
+   memset(&coords, 0, sizeof(coords));
+   memset(&draw, 0, sizeof(draw));
+   memset(&info, 0, sizeof(info));
+   info.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   rsx->menu_frame_enable = true;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = texcoord;
+   coords.color = color;
+   draw.coords = &coords;
+   draw.dims = VIDEO_SCALE_PACK(64, 48);
+   for (i = 0; i < RSX_MAX_TEXTURE_VERTICES / 4 + 2; i++)
+   {
+      for (j = 0; j < 16; j++)
+         color[j] = (float)i;
+      start = (i * 4) % RSX_MAX_TEXTURE_VERTICES;
+      gfx_display_rsx_draw(&draw, rsx, draw.dims);
+      if (previous)
+         CHECK(previous[0].r == previous_color,
+               "menu_frame_vertices: queued frame overwritten at frame %u", i);
+      check_vertices(rsx->texture_vertices, start, &coords);
+      previous = &rsx->texture_vertices[start];
+      previous_color = color[0];
+      rsx_frame(rsx, NULL, 0, i, 0, NULL, &info);
+   }
+   CHECK(rsx_finish_calls == finishes, "menu_frame_vertices: waits for the GPU");
+   driver_down(rsx);
+   printf("menu_frame_vertices: ok\n");
+}
+
 int main(int argc, char **argv)
 {
    static const struct
@@ -595,6 +766,10 @@ int main(int argc, char **argv)
       { "init_sweep",    test_init_sweep    },
       { "font_sweep",    test_font_sweep    },
       { "overlay_sweep", test_overlay_sweep },
+      { "menu_vertices", test_menu_vertices },
+      { "font_vertices", test_font_vertices },
+      { "native_menu_frame", test_native_menu_frame },
+      { "menu_frame_vertices", test_menu_frame_vertices },
    };
    unsigned i;
 
