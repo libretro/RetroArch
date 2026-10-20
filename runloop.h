@@ -464,7 +464,9 @@ enum runloop_pace_source
     * the frame delay and the gap limiter's sleep stand aside for it.
     * The timer's period, when the timer would otherwise hold, is
     * handed to the backend as the minimum present interval instead of
-    * being slept here, so there is still one clock. */
+    * being slept here, so there is still one clock; with nothing else
+    * holding the loop, the content's period is, so the release keeps
+    * the content's rate (runloop_pace_driver_interval). */
    RUNLOOP_PACE_DRIVER   = (1 << 7)
 };
 
@@ -802,6 +804,23 @@ static INLINE bool runloop_pace_driver_owns(runloop_pace_facts_t f,
           && !(f & PACE_FACT_PAUSED)
           && !(f & PACE_FACT_MENU_ALIVE)
           && !(pace & RUNLOOP_PACE_SCANLINE);
+}
+
+/* The minimum interval handed to the low-latency backend with a release
+ * it owns: the timer's period where the timer would hold; the
+ * content's under display pacing, whose hold kept it, and where
+ * nothing else holds the loop, which would otherwise run unthrottled;
+ * none where vsync, audio or a scanline already hold it. */
+static INLINE unsigned runloop_pace_driver_interval(unsigned pace,
+      retro_time_t timer_period, retro_time_t content_period)
+{
+   if (pace & RUNLOOP_PACE_TIMER)
+      return (unsigned)timer_period;
+   if (     !(pace & RUNLOOP_PACE_DISPLAY)
+         &&  (pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
+                    | RUNLOOP_PACE_SCANLINE)))
+      return 0;
+   return (unsigned)content_period;
 }
 
 static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)

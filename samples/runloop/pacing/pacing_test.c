@@ -197,6 +197,44 @@ static void test_driver_pacing(void)
           "scanline sync, never as a clock\n");
 }
 
+/* The interval each owned release hands the driver, from the whole
+ * decision: a release with nothing else holding the loop keeps the
+ * content's rate rather than none. */
+static void test_driver_interval(void)
+{
+   const retro_time_t timer = 8333, content = 16667;
+   runloop_pace_facts_t th = PACE_FACT_FOCUSED | PACE_FACT_CORE_RAN
+      | PACE_FACT_DRIVER_PACING | PACE_FACT_PRESENTABLE | PACE_FACT_WRAPPER;
+   unsigned pace;
+
+   /* Threaded, vsync and audio sync off, no rate control, display
+    * pacing off: nothing but the release holds the loop */
+   pace = runloop_pace_decide(th);
+   check(pace == RUNLOOP_PACE_DRIVER, "driver alone: Driver");
+   check(runloop_pace_driver_interval(pace, timer, content) == content,
+         "driver alone: the content's period, not unthrottled");
+   pace = runloop_pace_decide(th | PACE_FACT_DISPLAY_PACING);
+   check(runloop_pace_driver_interval(pace, timer, content) == content,
+         "display pacing: the content's period");
+   pace = runloop_pace_decide(th | PACE_FACT_DISPLAY_PACING | PACE_FACT_VSYNC);
+   check(runloop_pace_driver_interval(pace, timer, content) == content,
+         "display pacing with vsync: the content's period");
+   pace = runloop_pace_decide(th | PACE_FACT_RATE_CONTROL);
+   check(pace == (RUNLOOP_PACE_TIMER | RUNLOOP_PACE_DRIVER)
+         && runloop_pace_driver_interval(pace, timer, content) == timer,
+         "gap limiter: the timer's period");
+   pace = runloop_pace_decide(th | PACE_FACT_VSYNC);
+   check(runloop_pace_driver_interval(pace, timer, content) == 0,
+         "vsync holds: no interval");
+   pace = runloop_pace_decide(th | PACE_FACT_AUDIO_HOLDING);
+   check(runloop_pace_driver_interval(pace, timer, content) == 0,
+         "audio holds: no interval");
+
+   printf("   driver pacing interval: the timer's where it holds, the "
+          "content's under display pacing or with nothing else holding, "
+          "none beside vsync or audio\n");
+}
+
 /* --- the frame period -------------------------------------------- */
 
 static void test_frame_period(void)
@@ -872,6 +910,7 @@ int main(void)
    test_sync_plan();
    test_menu_table();
    test_driver_pacing();
+   test_driver_interval();
 
    if (failures)
    {
