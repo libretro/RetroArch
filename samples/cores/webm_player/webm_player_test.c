@@ -6,6 +6,7 @@
 #include <stdarg.h>
 
 #include <libretro.h>
+#include "../../../cores/libretro-media/media_hw.h"
 
 static unsigned failures;
 static unsigned frames;
@@ -216,6 +217,54 @@ static void run_clip(const char *dir, const char *name)
 #ifdef HAVE_RMP4
 /* The seek path skips pictures outside retro_run's normal counter.
  * A state saved there must still restore the exact video/audio pair. */
+static void run_backend_restart(const char *dir, const char *name, int seek)
+{
+   char path[512];
+   struct retro_game_info game;
+   uint32_t picture[12], pcm[12];
+   uint64_t lengths[12];
+   unsigned pass, i;
+   current = name;
+   snprintf(path, sizeof(path), "%s/%s", dir, name);
+   memset(&game, 0, sizeof(game));
+   game.path = path;
+   for (pass = 0; pass < 2; pass++)
+   {
+      bool loaded;
+      clear_capture();
+      loaded = retro_load_game(&game);
+      check(loaded, "backend restart fixture did not load");
+      if (!loaded)
+         return;
+      for (i = 0; i < 12; i++)
+      {
+         if (seek && i == 3)
+            buttons = 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+         if (pass && (i == 5 || i == 9))
+            media_suspend_video_hw();
+         samples = 0;
+         audio_hash = 2166136261u;
+         retro_run();
+         buttons = 0;
+         if (!pass)
+         {
+            picture[i] = frame_hash;
+            pcm[i] = audio_hash;
+            lengths[i] = samples;
+         }
+         else
+         {
+            check(frame_hash == picture[i], "backend restart changed the next picture");
+            check(samples == lengths[i], "backend restart changed audio length");
+            check(audio_hash == pcm[i], "backend restart changed PCM");
+         }
+      }
+      check(!shutdowns, "backend restart ended playback");
+      retro_unload_game();
+   }
+   printf("checked backend restart %s seek=%d\n", name, seek);
+}
+
 static void run_seek_restore(const char *dir, const char *name)
 {
    char path[512];
@@ -290,6 +339,10 @@ int main(int argc, char **argv)
    run_clip(dir, "h264-aac.mp4");
    run_clip(dir, "h264-aac.mkv");
    run_clip(dir, "hevc-aac.mp4");
+   run_backend_restart(dir, "hevc-seek-aac.mp4", 0);
+   run_backend_restart(dir, "h264-seek-aac.mp4", 0);
+   run_backend_restart(dir, "hevc-seek-aac.mp4", 1);
+   run_backend_restart(dir, "h264-seek-aac.mp4", 1);
    run_seek_restore(dir, "hevc-seek-aac.mp4");
    run_seek_restore(dir, "h264-seek-aac.mp4");
 #endif
