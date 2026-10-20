@@ -1699,6 +1699,19 @@ typedef struct video_window_layouts
    unsigned held;                 /* the main thread's: slot + 1 */
 } video_window_layouts_t;
 
+/* The platform's displays, handed over by index as the window layouts
+ * are: the UI thread fills a slot no reader holds and exchanges its
+ * index into 'published'; the app thread takes it at its frame. */
+typedef struct video_window_displays
+{
+   video_window_display_t slot[3][VIDEO_WINDOW_DISPLAYS_MAX];
+   unsigned count[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the publisher's: slot to fill */
+   unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned held;                 /* the app thread's: slot + 1 */
+} video_window_displays_t;
+
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk.
@@ -2029,6 +2042,9 @@ typedef struct
 #endif
    unsigned windows_forced_attached;
    unsigned windows_restore;
+   /* The main thread's last route, which a redraw keeps; written only
+    * when it changes, as Win32's redraws run beside the main thread */
+   video_windows_route_t windows_route;
    bool views_presented;
    /* The driver drew frames with the map whole
     * (GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK), so touch, overlays and the
@@ -2061,6 +2077,10 @@ typedef struct
    bool frame_repeat;
    /* Each secondary's published layouts */
    video_window_layouts_t window_layouts[RETRO_VIDEO_VIEWS_MAX - 1];
+   video_window_displays_t window_displays;
+   /* Screens video_driver_attach_windows() sent back, for the next
+    * frame */
+   retro_atomic_int_t windows_failed;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

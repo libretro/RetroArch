@@ -313,6 +313,14 @@ static void test_window_layout(void)
    CHECK(layout.num_placements == 1 && layout.placements[0].view == 2);
    CHECK(layout.placements[0].dst.dims == VIDEO_SCALE_PACK(200, 200));
    CHECK(layout.placements[0].dst.pos == VIDEO_POS_PACK(50, 0));
+   /* One window for screens 1 and 2, stacked */
+   video_driver_window_layout_screens(&frame, 6u,
+         VIDEO_SCALE_PACK(300, 200), &layout);
+   CHECK(layout.num_placements == 2);
+   CHECK(layout.placements[0].view == 3 && layout.placements[1].view == 2);
+   CHECK(layout.placements[0].dst.pos == VIDEO_POS_PACK(100, 0));
+   CHECK(layout.placements[1].dst.pos == VIDEO_POS_PACK(100, 100));
+   CHECK(layout.placements[1].dst.dims == VIDEO_SCALE_PACK(100, 100));
    frame.stretch = true;
    video_driver_window_layout(&frame, 2, VIDEO_SCALE_PACK(300, 200), &layout);
    CHECK(layout.placements[0].dst.dims == VIDEO_SCALE_PACK(300, 200));
@@ -395,6 +403,108 @@ static void test_window_frame(void)
    window_test_run();
    CHECK(window_test_placements() == 2);
    CHECK(window_test_handed == NULL);
+   window_test_end();
+}
+
+static void window_test_display(video_window_display_t *d,
+      unsigned ordinal, unsigned connection, bool own, const char *name)
+{
+   memset(d, 0, sizeof(*d));
+   d->ordinal    = ordinal;
+   d->connection = connection;
+   d->own        = own;
+   d->valid      = true;
+   d->on         = true;
+   d->physical   = true;
+   strlcpy(d->name, name, sizeof(d->name));
+}
+
+/* A platform's display list routes the Separate screens into one
+ * window for the display; a window the renderer could not make goes
+ * back to the main one until the next list */
+static void test_window_displays(void)
+{
+   video_window_display_t displays[3];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_views_layout_t layout;
+   unsigned restore;
+   /* The Thor: its own panel, then Screen-2 */
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT,
+         false, "HDMI");
+   displays[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   window_test_begin();
+   /* No list: a window a screen, as on the desktop */
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   restore = window_test_seen.restore;
+
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.display == 2);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[0] == 0u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   CHECK(window_test_seen.restore == restore + 1);
+   CHECK(window_test_placements() == 1);
+   video_driver_window_layout_screens(&window_test_seen, 2u,
+         VIDEO_SCALE_PACK(400, 200), &layout);
+   CHECK(layout.num_placements == 1 && layout.placements[0].view == 1);
+   video_driver_window_layout_screens(&window_test_seen, 3u,
+         VIDEO_SCALE_PACK(400, 200), &layout);
+   CHECK(layout.num_placements == 2);
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 2);
+   CHECK(got[1].ordinal == 2 && !strcmp(got[1].name, "Screen-2"));
+   CHECK(got[1].dims == VIDEO_SCALE_PACK(1240, 1080));
+   CHECK(video_driver_get_window_displays(got, 1) == 1);
+   /* A list is taken once */
+   window_test_run();
+   CHECK(window_test_seen.restore == restore + 1);
+
+   /* The renderer could not make it: attached until the next list */
+   video_driver_attach_windows(2u);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(window_test_seen.window_screens[1] == 0u);
+   CHECK(window_test_placements() == 2);
+   window_test_run();
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+
+   /* An external monitor takes screen 0; screen 1 stays, with touch */
+   video_driver_publish_window_displays(displays, 3);
+   window_test_run();
+   CHECK(window_test_seen.display == 3);
+   CHECK(window_test_seen.plan.main_mask == 2u);
+   CHECK(window_test_seen.plan.separate_mask == 1u);
+   CHECK(window_test_seen.window_screens[0] == 0u);
+   CHECK(window_test_seen.window_screens[1] == 1u);
+   CHECK(window_test_placements() == 1
+         && video_driver_get_views_layout()->placements[0].view == 1);
+
+   /* Nowhere to go: the screen stays attached */
+   displays[1].on = false;
+   video_driver_publish_window_displays(displays, 2);
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   CHECK(window_test_seen.plan.main_mask == 3u);
+   CHECK(window_test_seen.window_screens[1] == 0u);
+
+   /* An empty list stops routing */
+   video_driver_publish_window_displays(NULL, 0);
+   window_test_run();
+   CHECK(window_test_seen.display == 0);
+   CHECK(window_test_seen.plan.separate_mask == 2u);
+   CHECK(window_test_seen.window_screens[1] == 2u);
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX)
+         == 0);
    window_test_end();
 }
 
@@ -838,6 +948,98 @@ static void test_window_frame_snapshot(void)
 #endif
 }
 
+#ifdef HAVE_THREADS
+static void redraw_viewport(void *data, struct video_viewport *vp)
+{
+   (void)data;
+   (void)vp;
+}
+
+/* As gl2 and vulkan read a screenshot: the cached frame drawn again,
+ * here on the video thread */
+static bool redraw_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   (void)data;
+   (void)buffer;
+   (void)is_idle;
+   window_test_run();
+   return true;
+}
+
+/* A screenshot through the threaded wrapper, back on the main thread */
+static void window_test_redraw(const video_driver_t *threaded, void *data)
+{
+   static uint8_t buffer[3];
+   video_driver_state_t *video_st  = video_state_get_ptr();
+   video_st->current_video         = (video_driver_t*)threaded;
+   video_st->data                  = data;
+   video_st->thread_wrapper_active = true;
+   CHECK(threaded->read_viewport(data, buffer, false));
+   video_st->current_video         = &window_test_driver;
+   video_st->data                  = &window_test_driver;
+   video_st->thread_wrapper_active = false;
+   CHECK(window_test_handed == &video_st->windows_redraw);
+}
+#endif
+
+/* A redraw of the cached frame, as a threaded screenshot or GPU
+ * recording has, keeps the last frame's route */
+static void test_window_redraw(void)
+{
+#ifdef HAVE_THREADS
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   void *data                     = NULL;
+   video_window_display_t displays[3];
+   video_info_t info;
+   window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         true, "Built-in Screen");
+   window_test_display(&displays[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+         false, "Screen-2");
+   window_test_display(&displays[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT,
+         false, "HDMI");
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   driver.init          = snapshot_init;
+   driver.frame         = window_test_frame;
+   driver.free          = snapshot_free;
+   driver.viewport_info = redraw_viewport;
+   driver.read_viewport = redraw_read_viewport;
+   driver.ident         = "redraw";
+   info.input_scale     = 1;
+   info.rgb32           = true;
+   window_test_begin();
+   if (video_init_thread(&threaded, &data, &driver, info))
+   {
+      /* An external monitor takes screen 0 */
+      video_driver_publish_window_displays(displays, 3);
+      window_test_run();
+      CHECK(window_test_seen.display == 3);
+      window_test_redraw(threaded, data);
+      CHECK(window_test_seen.display == 3);
+      CHECK(window_test_seen.plan.main_mask == 2u);
+      CHECK(window_test_seen.plan.separate_mask == 1u);
+      CHECK(window_test_seen.window_screens[1] == 1u);
+
+      /* Nowhere to go: still attached */
+      displays[1].on = false;
+      video_driver_publish_window_displays(displays, 2);
+      window_test_run();
+      window_test_redraw(threaded, data);
+      CHECK(window_test_seen.display == 0);
+      CHECK(window_test_seen.plan.main_mask == 3u);
+      CHECK(window_test_seen.window_screens[1] == 0u);
+
+      video_driver_publish_window_displays(NULL, 0);
+      window_test_run();
+      threaded->free(data);
+   }
+   else
+      CHECK(false);
+   window_test_end();
+#endif
+}
+
 int main(int argc, char **argv)
 {
    if (argc != 2)
@@ -855,9 +1057,11 @@ int main(int argc, char **argv)
    test_window_config();
    test_window_layout();
    test_window_frame();
+   test_window_displays();
    test_window_pointer_mapping();
    test_window_generation();
    test_window_frame_snapshot();
+   test_window_redraw();
    menu_setting_free(menu_state_get_ptr()->entries.list_settings);
    free(menu_state_get_ptr()->entries.list_settings);
    menu_state_get_ptr()->entries.list_settings = NULL;

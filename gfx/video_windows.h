@@ -42,7 +42,8 @@ enum video_window_native_kind
    VIDEO_WINDOW_NATIVE_WAYLAND,
    VIDEO_WINDOW_NATIVE_WIN32,
    VIDEO_WINDOW_NATIVE_SDL2,
-   VIDEO_WINDOW_NATIVE_SDL3
+   VIDEO_WINDOW_NATIVE_SDL3,
+   VIDEO_WINDOW_NATIVE_ANDROID
 };
 
 enum video_window_event_kind
@@ -60,6 +61,9 @@ typedef struct video_window_request
    unsigned screen;
    unsigned generation;
    video_window_settings_t settings;
+   /* The display it goes on: an ordinal of the published list, 0 where
+    * the native layer places it */
+   unsigned display;
 } video_window_request_t;
 
 typedef struct video_window_native
@@ -223,6 +227,12 @@ typedef struct video_windows_frame
    unsigned core_dims;
    /* Counts video_driver_restore_windows() */
    unsigned restore;
+   /* Where the platform puts the windows: a display's ordinal, 0 where
+    * the native layer places each one itself */
+   unsigned display;
+   /* The screens each window shows, by window id; [0] is the main
+    * window's and stays 0 */
+   unsigned window_screens[RETRO_VIDEO_VIEWS_MAX];
    /* The main window's layout parameters, for a window's own */
    float single_aspect;
    unsigned stereo_mode;
@@ -259,6 +269,28 @@ void video_driver_window_layout(const video_windows_frame_t *frame,
 /* Main thread: screens a close attached go back to their windows, and
  * the frame's restore count asks drivers to place them again. */
 void video_driver_restore_windows(void);
+
+/* UI thread, the only publisher: the platform's displays, latest wins,
+ * at most VIDEO_WINDOW_DISPLAYS_MAX kept. Once a list is published,
+ * every frame routes the Separate screens through video_windows_route();
+ * count 0 stops routing. */
+void video_driver_publish_window_displays(
+      const video_window_display_t *displays, unsigned count);
+
+/* App thread: the newest published list, at most @capacity entries;
+ * returns how many. For the menu's picker. */
+unsigned video_driver_get_window_displays(video_window_display_t *out,
+      unsigned capacity);
+
+/* A window showing @screens, from @frame's snapshot at @dims: the map
+ * with every screen outside @screens left out. Any thread. */
+void video_driver_window_layout_screens(const video_windows_frame_t *frame,
+      unsigned screens, unsigned dims, video_views_layout_t *out);
+
+/* Any thread: the screens in @screens go back to the main window until
+ * video_driver_restore_windows(). For a window the renderer could not
+ * make or keep. */
+void video_driver_attach_windows(unsigned screens);
 
 /* Window @window's layout as drawn, from the thread that runs the
  * context, one at a time per window; latest wins. @window_dims are

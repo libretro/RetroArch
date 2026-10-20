@@ -949,6 +949,67 @@ void video_driver_restore_windows(void)
    video_st->windows_restore++;
 }
 
+/* The three-slot protocol of video_driver_publish_window_layout() */
+void video_driver_publish_window_displays(
+      const video_window_display_t *displays, unsigned count)
+{
+   video_window_displays_t *box = &video_driver_st.window_displays;
+   unsigned pub                 = box->next;
+   int prev;
+   if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
+   if (count)
+      memcpy(box->slot[pub], displays, count * sizeof(*displays));
+   box->count[pub] = count;
+   prev = retro_atomic_exchange_int(&box->published, (int)pub + 1);
+   if (prev)
+      /* never taken, so no reader holds it */
+      box->next = (unsigned)prev - 1;
+   else if (box->last)
+      /* the app thread took the last one and may be reading it */
+      box->next = 3u - pub - (box->last - 1);
+   else
+      box->next = (pub + 1) % 3;
+   box->last = pub + 1;
+}
+
+/* App thread: the newest list, or NULL with *count 0. Taking a new one
+ * gives the screens a close attached another try. */
+static const video_window_display_t *video_driver_take_window_displays(
+      video_driver_state_t *video_st, unsigned *count)
+{
+   video_window_displays_t *box = &video_st->window_displays;
+   if (retro_atomic_load_acquire_int(&box->published))
+   {
+      int taken = retro_atomic_exchange_int(&box->published, 0);
+      if (taken)
+      {
+         box->held = (unsigned)taken;
+         video_driver_restore_windows();
+      }
+   }
+   *count = box->held ? box->count[box->held - 1] : 0;
+   return *count ? box->slot[box->held - 1] : NULL;
+}
+
+unsigned video_driver_get_window_displays(video_window_display_t *out,
+      unsigned capacity)
+{
+   unsigned count;
+   const video_window_display_t *list =
+      video_driver_take_window_displays(&video_driver_st, &count);
+   if (count > capacity)
+      count = capacity;
+   if (count)
+      memcpy(out, list, count * sizeof(*out));
+   return count;
+}
+
+void video_driver_attach_windows(unsigned screens)
+{
+   retro_atomic_fetch_or_int(&video_driver_st.windows_failed, (int)screens);
+}
+
 /* The three-slot protocol of video_title_publish(), latest wins */
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, const video_views_layout_t *layout,
@@ -3700,6 +3761,13 @@ void video_driver_views_layout_flat(const video_views_map_t *map,
 void video_driver_window_layout(const video_windows_frame_t *frame,
       unsigned screen, unsigned dims, video_views_layout_t *out)
 {
+   video_driver_window_layout_screens(frame,
+         (screen < RETRO_VIDEO_VIEWS_MAX) ? 1u << screen : 0, dims, out);
+}
+
+void video_driver_window_layout_screens(const video_windows_frame_t *frame,
+      unsigned screens, unsigned dims, video_views_layout_t *out)
+{
    video_views_layout_params_t params;
    params.map             = &frame->core;
    params.custom_vp       = NULL;
@@ -3708,8 +3776,7 @@ void video_driver_window_layout(const video_windows_frame_t *frame,
    params.dims            = dims;
    params.stereo_mode     = frame->stereo_mode;
    params.screen_layout   = frame->screen_layout;
-   params.exclude_screens = (screen < RETRO_VIDEO_VIEWS_MAX)
-      ? ~(1u << screen) : ~0u;
+   params.exclude_screens = ~screens;
    params.rotation        = frame->rotation;
    params.swap_eyes       = frame->swap_eyes;
    params.scale_integer   = frame->scale_integer;
@@ -3724,7 +3791,9 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
       uint32_t flags, bool redraw)
 {
    video_views_layout_params_t params;
+   video_windows_route_t route;
    unsigned i;
+   unsigned forced            = video_st->windows_forced_attached;
    video_windows_frame_t *out = &video_st->windows;
    if (     !settings->bools.video_windows_enable
          || !BIT32_GET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS))
@@ -3744,7 +3813,6 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    }
    out->core          = video_st->views_core;
    out->core_dims     = video_st->views_frame_dims;
-   out->restore       = video_st->windows_restore;
    video_driver_views_params(settings, &params);
    out->single_aspect = params.single_aspect;
    out->stereo_mode   = params.stereo_mode;
@@ -3753,8 +3821,48 @@ static VIDEO_NOINLINE const video_windows_frame_t *video_driver_windows_frame(
    out->stretch       = params.stretch;
    out->scale_integer = params.scale_integer;
    out->swap_eyes     = params.swap_eyes;
+   /* Only the app thread takes display lists; a redraw keeps the last route */
+   if (redraw)
+      route = video_st->windows_route;
+   else
+   {
+      unsigned count;
+      const video_window_display_t *list;
+      memset(&route, 0, sizeof(route));
+      video_st->windows_forced_attached |= (unsigned)
+         retro_atomic_exchange_int(&video_st->windows_failed, 0);
+      list   = video_driver_take_window_displays(video_st, &count);
+      forced = video_st->windows_forced_attached;
+      if (list)
+         video_windows_route(list, count, out->settings,
+               out->core.num_screens, &route);
+      if (memcmp(&route, &video_st->windows_route, sizeof(route)))
+         video_st->windows_route = route;
+   }
+   forced      |= route.unplaced;
+   out->restore = video_st->windows_restore;
    video_windows_plan(&out->core, out->settings, true, true,
-         video_st->windows_forced_attached, 0, &out->plan);
+         forced, route.attached, &out->plan);
+   out->display = route.display;
+   memset(out->window_screens, 0, sizeof(out->window_screens));
+   if (out->display)
+   {
+      /* One window for the display, led by its lowest screen; screen 0
+       * leads from the attached screen's id, id 0 being the main
+       * window's */
+      unsigned lead = 0;
+      while (     lead < RETRO_VIDEO_VIEWS_MAX
+            && !(out->plan.separate_mask & (1u << lead)))
+         lead++;
+      if (!lead)
+         lead = route.attached;
+      if (lead && lead < RETRO_VIDEO_VIEWS_MAX)
+         out->window_screens[lead] = out->plan.separate_mask;
+   }
+   else
+      for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+         if (out->plan.separate_mask & (1u << i))
+            out->window_screens[i] = 1u << i;
    return out;
 }
 
