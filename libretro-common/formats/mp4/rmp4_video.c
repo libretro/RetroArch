@@ -531,6 +531,10 @@ whole:
 /* ------------------------------------------------------------------ */
 static bool rmp4_video_hw_color_allowed(const rmp4_video_stream_t *s)
 {
+   if (rmp4_video_stream_is_hdr(s))
+      return (s->matrix == 0 || s->matrix == 1 || s->matrix == 9)
+         && (s->primaries == 0 || s->primaries == 2
+               || s->primaries == 1 || s->primaries == 9);
    return (s->matrix == 0 || s->matrix == 1 || s->matrix == 5 || s->matrix == 6)
       && !rmp4_video_stream_is_hdr(s);
 }
@@ -1412,8 +1416,8 @@ int rmp4_video_stream_set_hw(rmp4_video_stream_t *s, int enable)
    if (!enable)
       return s->h265 ? rh265_video_is_hw(s->h265)
          : s->h264 && rh264_video_is_hw(s->h264);
-   /* the GPU frame carries the BT.601 and BT.709 matrices only, and
-    * no transfer of its own: anything else is the blit's */
+   /* Exported frames carry the source color metadata. Importers handle
+    * PQ/HLG or refuse the image, preserving the software fallback. */
    if (!rmp4_video_hw_color_allowed(s))
       return 0;
    if (s->want_hw)

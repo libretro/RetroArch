@@ -666,6 +666,37 @@ static void rwebm_hbd_matrix(unsigned matrix, int *re, int *gd, int *ge, int *bd
    }
 }
 
+/* HDR transfer curves magnify rounding of encoded RGB near a gamut
+ * boundary. Keep the YCbCr conversion in Q16 until the transfer lookup.
+ * Entries are Y, Cr->R, Cb->G, Cr->G, Cb->B, in 10-bit RGB units. */
+static const int *rwebm_hbd_hdr_matrix(unsigned matrix, int full)
+{
+   static const int coefficients[3][2][5] = {
+      {{76533,104905,25750,53435,132590},
+       {65536,91881,22553,46802,116130}},
+      {{76533,117835,14017,35027,138846},
+       {65536,103206,12276,30679,121609}},
+      {{76533,110337,12313,42752,140776},
+       {65536,96639,10784,37444,123299}}
+   };
+   unsigned row = matrix == 5 || matrix == 6 ? 0
+      : matrix == 9 || matrix == 10 ? 2 : 1;
+   return coefficients[row][full ? 1 : 0];
+}
+
+static int rwebm_hbd_hdr_lookup(const uint16_t *lut, int encoded)
+{
+   unsigned index, fraction;
+   if (encoded <= 0)
+      return lut[0];
+   if (encoded >= 1023 * 65536)
+      return lut[1023];
+   index = (unsigned)encoded >> 16;
+   fraction = (unsigned)encoded & 65535u;
+   return (int)lut[index] + (int)(((unsigned)(lut[index + 1] - lut[index])
+            * fraction + 32768u) >> 16);
+}
+
 void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
@@ -678,6 +709,8 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
                            : (transfer == 18) ? rwebm_hbd_hlg_lut : NULL;
    int is_pq   = (transfer == 16);
    int full    = (range == 2);
+   const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
+         matrix ? matrix : 9u, full);
    unsigned j, i;
 
    if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
@@ -715,9 +748,15 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
          if (hdr_lut)
          {
             /* tone-mapped linear, then 2020 -> 709 gamut, then sRGB */
-            int lr = hdr_lut[r];
-            int lg = hdr_lut[g];
-            int lb = hdr_lut[b];
+            int yy = ((int)yr[i] - (full ? 0 : 64)) * hdr_coefficients[0];
+            int cb = (int)ur[i >> 1] - 512;
+            int cr = (int)vr[i >> 1] - 512;
+            int lr = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy + hdr_coefficients[1] * cr);
+            int lg = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
+            int lb = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy + hdr_coefficients[4] * cb);
             int xr = (6801 * lr - 2407 * lg -  298 * lb) >> 12;
             int xg = ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
             int xb = (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
@@ -765,6 +804,8 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
                            : (transfer == 18) ? rwebm_hbd_hlg_lut : NULL;
    int is_pq   = (transfer == 16);
    int full    = (range == 2);
+   const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
+         matrix ? matrix : 9u, full);
    unsigned j, i;
 
    if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
@@ -802,9 +843,15 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
          {
             /* tone-mapped linear, then 2020 -> 709 gamut, then sRGB,
              * emitted at 10-bit precision. */
-            int lr = hdr_lut[r];
-            int lg = hdr_lut[g];
-            int lb = hdr_lut[b];
+            int yy = ((int)yr[i] - (full ? 0 : 64)) * hdr_coefficients[0];
+            int cb = (int)ur[i >> 1] - 512;
+            int cr = (int)vr[i >> 1] - 512;
+            int lr = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy + hdr_coefficients[1] * cr);
+            int lg = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
+            int lb = rwebm_hbd_hdr_lookup(hdr_lut,
+                  yy + hdr_coefficients[4] * cb);
             int xr = (6801 * lr - 2407 * lg -  298 * lb) >> 12;
             int xg = ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
             int xb = (  -75 * lr -  412 * lg + 4583 * lb) >> 12;

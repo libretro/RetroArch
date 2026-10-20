@@ -22,6 +22,20 @@
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../audio/audio_driver.h"
 #include "../../../tasks/tasks_internal.h"
+static unsigned saved_input_users;
+/* No logical input ports: a null joypad request may fall back to a live
+ * controller, and a source beside it can bypass a driver's state hook.
+ * Keep real polling/lifecycle while excluding hotkeys from this probe. */
+static void quiet_input_begin(void)
+{
+   settings_t *settings=config_get_ptr();
+   saved_input_users=settings->uints.input_max_users;
+   settings->uints.input_max_users=0;
+}
+static void quiet_input_end(void)
+{
+   config_get_ptr()->uints.input_max_users=saved_input_users;
+}
 static const video_poke_interface_t *real_poke;
 static unsigned reject_next, rejected;
 static enum video_texture_update reject_movie(void *data,const video_frame_import_t *frame)
@@ -132,7 +146,7 @@ int main(int argc,char **argv)
    snprintf(cfg_path,sizeof(cfg_path),"%s/window.cfg",argv[3]);
    f=fopen(cfg_path,"wb");if(!f)return 2;
    fprintf(f,"video_driver = \"%s\"\n",argv[2]);
-   fputs("audio_driver = \"null\"\ninput_driver = \"null\"\ninput_joypad_driver = \"null\"\nmenu_driver = \"rgui\"\nvideo_vsync = \"true\"\nvideo_fullscreen = \"false\"\nvideo_windowed_fullscreen = \"true\"\nvideo_scale = \"1\"\nvideo_smooth = \"false\"\npause_nonactive = \"false\"\nconfig_save_on_exit = \"false\"\nthreaded_data_runloop_enable = \"false\"\n",f);fclose(f);
+   fputs("audio_driver = \"null\"\ninput_driver = \"null\"\ninput_joypad_driver = \"null\"\nmenu_driver = \"rgui\"\nvideo_vsync = \"true\"\nvideo_fullscreen = \"false\"\nvideo_windowed_fullscreen = \"true\"\nvideo_scale = \"1\"\nvideo_smooth = \"false\"\npause_nonactive = \"false\"\nconfig_save_on_exit = \"false\"\nthreaded_data_runloop_enable = \"false\"\nvideo_hdr_mode = \"0\"\n",f);fclose(f);
    f=fopen(cfg_path,"ab");if(!f)return 2;
    fprintf(f,"video_threaded = \"%s\"\n",threaded?"true":"false");
    fputs("video_window_custom_size_enable = \"true\"\nvideo_window_width = \"256\"\nvideo_window_height = \"192\"\nvideo_window_save_positions = \"false\"\nvideo_font_enable = \"false\"\n",f);fclose(f);
@@ -141,6 +155,7 @@ int main(int argc,char **argv)
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
    args[0]=(char*)"retroarch";args[1]=(char*)"--config";args[2]=cfg_path;args[3]=argv[1];args[4]=NULL;
    if(!retroarch_main_init(4,args))return 2;
+   quiet_input_begin();
    CHECK(video_driver_thread_wrapper_active()==threaded);
    loop=runloop_state_get_ptr();CHECK(loop->current_core_type==CORE_TYPE_WEBM);
    CHECK(strcmp(video_driver_get_ident(),argv[2])==0);
@@ -167,7 +182,9 @@ int main(int argc,char **argv)
       if(i==9)
       {
          video_state_get_ptr()->poke=real_poke;
+         quiet_input_end();
          CHECK(command_event(CMD_EVENT_REINIT,NULL));
+         quiet_input_begin();
          CHECK(!video_state_get_ptr()->movie_refused);
          CHECK(video_driver_thread_wrapper_active()==threaded);
          loop->current_core.retro_set_video_refresh(video);
@@ -177,6 +194,7 @@ int main(int argc,char **argv)
       retro_sleep_until_us(cpu_features_get_time_usec()+frame_us);
       iterate_result=runloop_iterate();
       CHECK(iterate_result>=0);task_queue_check();
+      CHECK(!(loop->flags&(RUNLOOP_FLAG_PAUSED|RUNLOOP_FLAG_FASTMOTION)));
       printf("ITER_STATE tick=%u rc=%d flags=%x focus=%u callbacks=%u samples=%lu\n",
             i,iterate_result,(unsigned)loop->flags,video_driver_has_focus()?1:0,frames,(unsigned long)samples);
 #ifdef HAVE_MENU
@@ -206,6 +224,7 @@ int main(int argc,char **argv)
    if(strcmp(argv[2],"gl")==0){CHECK(gpu==0);CHECK(cpu>=12);}
    else {CHECK(gpu>=7);CHECK(cpu>=4);}
    CHECK(samples>0);
+   quiet_input_end();
    main_exit(NULL);
    if(pcm_file){CHECK(fclose(pcm_file)==0);pcm_file=NULL;}
    printf("window movie: %u GPU, %u CPU, %lu audio samples, %u failures\n",gpu,cpu,(unsigned long)samples,failures);

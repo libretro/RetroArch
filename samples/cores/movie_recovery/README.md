@@ -80,3 +80,16 @@ Each run also saves the exact stereo S16 core callback stream as `audio.s16`.
 Per-tick callback counts, runloop flags, menu flags and focus state distinguish
 core progress from a cached picture that is still being presented. The null
 audio driver does not establish physical audio-device delivery.
+
+For coded HDR input, run `python samples/cores/movie_recovery/mkhdrfixtures.py DIR`.
+It generates Main10 BT.2020 PQ and HLG movies in `DIR/pq` and `DIR/hlg`, with
+fixed RGB references from FFmpeg-decoded YUV planes and the double-precision
+import color oracle. Pass either directory to `run.py --fixtures`. The probe
+selects SDR output (`video_hdr_mode = 0`), so this covers HDR input conversion,
+hardware import, CPU fallback and recovery, rather than HDR display luminance.
+
+The probe temporarily sets the logical input-port count to zero while retaining
+device polling and cleanup. Requesting a nonexistent null joypad driver can otherwise
+fall back to a connected controller and let live hotkeys change playback or
+window geometry. The original port count is restored for driver replacement
+and final cleanup; the suppression exists only in the sample process.

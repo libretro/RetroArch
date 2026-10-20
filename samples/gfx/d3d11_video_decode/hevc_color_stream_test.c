@@ -20,10 +20,24 @@ static void color_stream(const uint8_t *data, size_t size, unsigned matrix,
    rmp4_video_stream_set_argb(s, 1);
    if (hdr)
    {
+      unsigned primaries = s->primaries;
+      s->matrix = 10; /* constant-luminance conversion is not supported */
       CHECK(!rmp4_video_stream_set_hw(s, 1) && opened == before);
-      s->want_hw = 1;
-      rmp4_video_stream_rewind(s);
-      CHECK(!rh265_video_is_hw(s->h265) && opened == before);
+      s->matrix = matrix;
+      s->primaries = 12;
+      CHECK(!rmp4_video_stream_set_hw(s, 1) && opened == before);
+      s->primaries = primaries;
+      CHECK(rmp4_video_stream_set_hw(s, 1) && opened == before + 1);
+      CHECK(rmp4_video_stream_skip(s, &duration) == 1);
+      memset(&frame, 0, sizeof(frame));
+      CHECK(rmp4_video_stream_hw_frame(s, &frame));
+      CHECK(frame.color.primaries == primaries
+            && frame.color.matrix == matrix && frame.color.transfer == transfer
+            && frame.color.range == (range ? 2u : 1u));
+      video_hw_frame_abandon(&frame);
+      /* A consumer refusal can still return to the software HDR path. */
+      rmp4_video_stream_stop_hw(s);
+      CHECK(!rh265_video_is_hw(s->h265));
       rmp4_video_stream_set_output(s, (uint32_t*)linear);
       rmp4_video_stream_set_want_fp16(s, 1);
       CHECK(rmp4_video_stream_skip(s, &duration) == 1);

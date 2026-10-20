@@ -191,6 +191,93 @@ static void lane_hlg_tonemapped(void)
             top);
 }
 
+static double tone_curve(double x)
+{
+   return (x * (0.15 * x + 0.05) + 0.004)
+      / (x * (0.15 * x + 0.5) + 0.06) - 0.02 / 0.3;
+}
+
+/* Reference starts at normalized source code values, without the
+ * production integer matrix or transfer/output lookup tables. */
+static void reference_sdr(unsigned y, unsigned u, unsigned v,
+      unsigned full, unsigned transfer, double rgb[3])
+{
+   static const double gamut[3][3] = {
+      {6801.0/4096,-2407.0/4096,-298.0/4096},
+      {-510.0/4096,4640.0/4096,-34.0/4096},
+      {-75.0/4096,-412.0/4096,4583.0/4096}
+   };
+   double yy = ((double)y - (full ? 0 : 64)) / (full ? 1023 : 876);
+   double cb = ((double)u - 512) / (full ? 1023 : 896);
+   double cr = ((double)v - 512) / (full ? 1023 : 896);
+   double linear[3], lo = 1, hi = 8, gain = 2, norm;
+   unsigned i, j;
+   rgb[0] = yy + 1.4746 * cr;
+   rgb[1] = yy - 0.16455313 * cb - 0.57135313 * cr;
+   rgb[2] = yy + 1.8814 * cb;
+   for (i = 0; i < 48; i++)
+   {
+      gain = (lo + hi) / 2;
+      if (tone_curve(gain) / tone_curve(gain * 1000 / 203) < 0.8)
+         lo = gain;
+      else
+         hi = gain;
+   }
+   norm = tone_curve(gain * 1000 / 203);
+   for (i = 0; i < 3; i++)
+   {
+      double e = rgb[i] < 0 ? 0 : rgb[i] > 1 ? 1 : rgb[i];
+      double light = transfer == 16 ? pq_nits(e)
+         : 1000 * pow(hlg_scene(e), 1.2);
+      linear[i] = tone_curve(gain * light / 203) / norm;
+      if (linear[i] > 1) linear[i] = 1;
+   }
+   for (i = 0; i < 3; i++)
+   {
+      double x = 0;
+      for (j = 0; j < 3; j++) x += gamut[i][j] * linear[j];
+      if (x < 0) x = 0;
+      if (x > 1) x = 1;
+      rgb[i] = x <= 0.0031308 ? 12.92 * x
+         : 1.055 * pow(x, 1.0 / 2.4) - 0.055;
+   }
+}
+
+static void lane_sdr_color_precision(void)
+{
+   unsigned transfer, full, y, u, v, c, i;
+   int worst8 = 0, worst10 = 0;
+   for (transfer = 16; transfer <= 18; transfer += 2)
+      for (full = 0; full < 2; full++)
+         for (y = full ? 0 : 64; y <= (full ? 1023 : 940); y += 17)
+            for (u = 448; u <= 576; u += 64)
+               for (v = 448; v <= 576; v += 64)
+               {
+                  uint16_t luma[4], cb = (uint16_t)u, cr = (uint16_t)v;
+                  uint32_t got8[4], got10[4];
+                  double ref[3];
+                  reference_sdr(y, u, v, full, transfer, ref);
+                  for (i = 0; i < 4; i++) luma[i] = (uint16_t)y;
+                  rwebm_video_blit_i420_hbd(got8, 2, 2, 2, luma, 2,
+                        &cb, &cr, 1, 9, transfer, full ? 2 : 1, 0, 0);
+                  rwebm_video_blit_i420_10bit(got10, 2, 2, 2, luma, 2,
+                        &cb, &cr, 1, 9, transfer, full ? 2 : 1, 0);
+                  for (c = 0; c < 3; c++)
+                  {
+                     int e8 = abs((int)((got8[0] >> (16 - 8 * c)) & 255)
+                           - (int)(ref[c] * 255 + 0.5));
+                     int e10 = abs((int)((got10[0] >> (20 - 10 * c)) & 1023)
+                           - (int)(ref[c] * 1023 + 0.5));
+                     if (e8 > worst8) worst8 = e8;
+                     if (e10 > worst10) worst10 = e10;
+                  }
+               }
+   CHECK(worst8 <= 2, "PQ/HLG SDR color differs by %d eight-bit units", worst8);
+   CHECK(worst10 <= 6, "PQ/HLG SDR color differs by %d ten-bit units", worst10);
+   printf("[info] PQ/HLG full/limited color precision: max %d / %d units\n",
+         worst8, worst10);
+}
+
 int main(void)
 {
    lane_fp16_ramp(16, "PQ");
@@ -198,6 +285,7 @@ int main(void)
    lane_fp16_gamut();
    lane_fp16_refuses_sdr();
    lane_hlg_tonemapped();
+   lane_sdr_color_precision();
    if (failures)
    {
       fprintf(stderr, "%u failure(s)\n", failures);
