@@ -1964,6 +1964,11 @@ int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
    return rmp4_video_stream_seek_frame(s, tidx);
 }
 
+int rmp4_video_stream_frame_index(const rmp4_video_stream_t *s)
+{
+   return s ? s->disp_idx : -1;
+}
+
 /* ------------------------------------------------------------------ */
 /* Still image (first displayed frame)                                 */
 /* ------------------------------------------------------------------ */

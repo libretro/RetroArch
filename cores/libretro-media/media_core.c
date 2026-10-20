@@ -1083,6 +1083,9 @@ static int64_t media_seek_internal(media_player_t *p, int64_t target_ns,
       int64_t ms;
       media_drop_hw(p);
       ms = rmp4_video_stream_seek_ms(p->mp4vs, target_ns / 1000000);
+      /* States restore by display ordinal. Seeking consumes pictures
+       * without passing through the normal playback counter. */
+      p->vshown = rmp4_video_stream_frame_index(p->mp4vs);
       p->hw_video = media_hw_refresh && rmp4_video_stream_set_hw(p->mp4vs, 0);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
       p->play_ns = p->vpts_ns;

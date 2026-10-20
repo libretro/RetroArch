@@ -267,6 +267,10 @@ int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *stream, int64_t ms);
  * decode returns that frame. As seek_ms, returns its timestamp in ms. */
 int64_t rmp4_video_stream_seek_frame(rmp4_video_stream_t *stream, int frame);
 
+/* Zero-based ordinal of the next displayed picture, including pictures
+ * consumed while seeking. Returns -1 for a null stream. */
+int rmp4_video_stream_frame_index(const rmp4_video_stream_t *stream);
+
 /* Timestamp span of the display timeline: last frame's presentation
  * time minus the first's, in ms.  (frames-1)/span is the stream's true
  * mean rate; the track duration also counts the final frame's own
