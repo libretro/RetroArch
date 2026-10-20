@@ -35,7 +35,8 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 { (void)port; (void)driver; }
 
 pad_connection_interface_t pad_connection_wii, pad_connection_wiiupro,
-   pad_connection_ps3, pad_connection_ps4, pad_connection_snesusb,
+   pad_connection_ps3, pad_connection_ps4, pad_connection_ps5,
+   pad_connection_snesusb,
    pad_connection_nesusb, pad_connection_wiiugca, pad_connection_ps2adapter,
    pad_connection_psxadapter, pad_connection_retrode,
    pad_connection_ps4_hori_mini, pad_connection_kade,

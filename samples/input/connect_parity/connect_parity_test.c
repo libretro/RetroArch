@@ -5,7 +5,8 @@
  * report copied into the old struct and read through it - and the real
  * handler are given the same reports, and every button, the whole set
  * and every axis must agree. Random reports, and the edges (every hat
- * value, every bit alone, a report too short to be one). */
+ * value, every bit alone, a report too short to be one). The DualSense
+ * handler is new, so it is held to the reports' layout instead. */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -17,8 +18,17 @@ static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { printf("[FAIL] "); printf(__VA_ARGS__); \
    printf("\n"); failures++; } } while (0)
 
+static uint8_t  sent[128];
+static size_t   sent_len;
+static unsigned sent_count;
+
 static void stub_send_control(void *handle, uint8_t *s, size_t len)
-{ (void)handle; (void)s; (void)len; }
+{
+   (void)handle;
+   sent_len = len < sizeof(sent) ? len : sizeof(sent);
+   memcpy(sent, s, sent_len);
+   sent_count++;
+}
 
 static hid_driver_t stub_hid;
 
@@ -760,6 +770,178 @@ static void test_retrode(void)
          failures == had ? "pass" : "fail");
 }
 
+/* ---- DualSense: a new handler, so held to the report's layout ------ */
+
+/* The pad's state as the three report shapes carry it. */
+struct ps5_state
+{
+   uint8_t sticks[4];
+   uint8_t triggers[2];
+   uint8_t b[3];
+};
+
+static unsigned ps5_report(uint8_t *p, const struct ps5_state *st, int shape)
+{
+   unsigned i;
+   for (i = 0; i < 80; i++)
+      p[i] = (uint8_t)rand(); /* what is not read is noise */
+   switch (shape)
+   {
+      case 0: /* USB */
+         p[0] = 0x01;
+         memcpy(p + 1, st->sticks, 4);
+         memcpy(p + 5, st->triggers, 2);
+         memcpy(p + 8, st->b, 3);
+         return 64;
+      case 1: /* Bluetooth, before any output */
+         p[0] = 0x01;
+         memcpy(p + 1, st->sticks, 4);
+         memcpy(p + 5, st->b, 3);
+         memcpy(p + 8, st->triggers, 2);
+         return 10;
+      default: /* Bluetooth's full report, from a stack with its header */
+         p[0] = 0xa1;
+         p[1] = 0x31;
+         memcpy(p + 3, st->sticks, 4);
+         memcpy(p + 7, st->triggers, 2);
+         memcpy(p + 10, st->b, 3);
+         return 78;
+   }
+}
+
+static uint32_t ps5_want(const struct ps5_state *st)
+{
+   static const uint8_t hat[16] = { 1, 9, 8, 10, 2, 6, 4, 5 };
+   static const unsigned ids[16] = {
+      0, 0, 0, 0,
+      RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_L3, RETRO_DEVICE_ID_JOYPAD_R3 };
+   uint32_t r = 0;
+   unsigned i, h = hat[st->b[0] & 15], word = st->b[0] | (st->b[1] << 8);
+   if (h & 1) r |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   if (h & 2) r |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   if (h & 4) r |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   if (h & 8) r |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   for (i = 4; i < 16; i++)
+      if (word & (1u << i))
+         r |= 1u << ids[i];
+   for (i = 0; i < 3; i++)
+      if (st->b[2] & (1u << i))
+         r |= 1u << (16 + i);
+   return r;
+}
+
+static unsigned ps5_mismatches(const pad_connection_interface_t *ifc,
+      void *dev, const struct ps5_state *st)
+{
+   unsigned k, bad = 0;
+   uint32_t want = ps5_want(st);
+   input_bits_t bits;
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 32; k++)
+      if (   !!ifc->button(dev, (uint16_t)k) != !!(want & (1u << k))
+          || !!BIT256_GET(bits, k) != !!(want & (1u << k)))
+         bad++;
+   if (!!BIT256_GET(bits, RARCH_MENU_TOGGLE) != !!(st->b[2] & 1))
+      bad++;
+   for (k = 0; k < 4; k++)
+      if (ifc->get_axis(dev, k) != (int16_t)((st->sticks[k] << 8) - 0x8000))
+         bad++;
+   for (k = 0; k < 2; k++)
+      if (ifc->get_axis(dev, 4 + k)
+            != (int16_t)((st->triggers[k] << 7) | (st->triggers[k] >> 1)))
+         bad++;
+   if (ifc->get_axis(dev, 6))
+      bad++;
+   return bad;
+}
+
+static void test_ps5(void)
+{
+   uint8_t p[80];
+   struct ps5_state st;
+   unsigned n, i, bad = 0, had = failures;
+   const pad_connection_interface_t *ifc = &pad_connection_ps5;
+   int dummy_connection;
+   void *dev;
+
+   /* Bluetooth: read in both shapes, nothing sent */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 1, &stub_hid);
+   CHECK(dev != NULL, "ps5: no device");
+   if (!dev)
+      return;
+   srand(11);
+   for (n = 0; n < 20000; n++)
+   {
+      unsigned len;
+      for (i = 0; i < 4; i++) st.sticks[i]   = (uint8_t)rand();
+      for (i = 0; i < 2; i++) st.triggers[i] = (uint8_t)rand();
+      for (i = 0; i < 3; i++) st.b[i]        = (uint8_t)rand();
+      st.b[2] &= 0x07;
+      len = ps5_report(p, &st, 1 + (int)(n & 1));
+      ifc->packet_handler(dev, p, (uint16_t)len);
+      bad += ps5_mismatches(ifc, dev, &st);
+   }
+   CHECK(!bad, "ps5: %u reads over Bluetooth disagree with the report", bad);
+   CHECK(sent_count == 0, "ps5: an output report went over Bluetooth");
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
+   ps5_report(p, &st, 1);
+   ifc->packet_handler(dev, p, 10);
+   CHECK(sent_count == 0, "ps5: rumble went over Bluetooth");
+
+   /* reports that are not the pad's state, or too short to be */
+   memset(p, 0xff, sizeof(p));
+   p[0] = 0x01;
+   ifc->packet_handler(dev, p, 9);
+   p[0] = 0x31;
+   ifc->packet_handler(dev, p, 11);
+   p[0] = 0x05;
+   ifc->packet_handler(dev, p, 64);
+   CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: a short or foreign report was taken");
+   ifc->deinit(dev);
+
+   /* USB: read, and the first report lights player 2 */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 1, &stub_hid);
+   bad = 0;
+   for (n = 0; n < 20000; n++)
+   {
+      for (i = 0; i < 4; i++) st.sticks[i]   = (uint8_t)rand();
+      for (i = 0; i < 2; i++) st.triggers[i] = (uint8_t)rand();
+      for (i = 0; i < 3; i++) st.b[i]        = (uint8_t)rand();
+      st.b[2] &= 0x07;
+      ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+      bad += ps5_mismatches(ifc, dev, &st);
+      if (n == 0)
+         CHECK(   sent_count == 1 && sent_len == 48 && sent[0] == 0x02
+               && (sent[2] & 0x14) == 0x14 && sent[44] == 0x0a
+               && sent[45] == 0x40 && sent[46] == 0 && sent[47] == 0,
+               "ps5: the first USB report did not light player 2");
+   }
+   CHECK(!bad, "ps5: %u reads over USB disagree with the report", bad);
+   CHECK(sent_count == 1, "ps5: output went with no change to send");
+
+   /* rumble: one report at the next poll, however often it is asked */
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0x8000);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0xff00);
+   ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0xff00);
+   CHECK(sent_count == 1, "ps5: rumble was sent outside the poll");
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(   sent_count == 2 && sent[0] == 0x02 && (sent[1] & 3) == 3
+         && sent[4] == 0x80 && sent[3] == 0xff && sent[2] == 0,
+         "ps5: the rumble report is not the motors asked for");
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(sent_count == 2, "ps5: rumble was sent again unchanged");
+   ifc->deinit(dev);
+   printf("[%s] ps5: USB and both Bluetooth shapes read as laid out, on 40000 reports; lights once, rumble at the poll, nothing over Bluetooth\n",
+         failures == had ? "pass" : "fail");
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -776,6 +958,7 @@ int main(void)
    test_pad(&pad_connection_kade, "kade", 3, 16, 10,
          ref_kade_take, ref_no_axis);
    test_retrode();
+   test_ps5();
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }
