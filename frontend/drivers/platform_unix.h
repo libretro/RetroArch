@@ -45,6 +45,7 @@
 
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#include <retro_spsc.h>
 
 #include "android_lifecycle.h"
 
@@ -67,6 +68,47 @@ char internal_storage_app_path[PATH_MAX_LENGTH];
 
 struct android_app;
 
+#define ANDROID_DISPLAY_OWN      (1 << 0)
+#define ANDROID_DISPLAY_VALID    (1 << 1)
+#define ANDROID_DISPLAY_ON       (1 << 2)
+#define ANDROID_DISPLAY_PRIVATE  (1 << 3)
+#define ANDROID_DISPLAY_PHYSICAL (1 << 4)
+
+/* A touch on the second display, UI thread to the input poll */
+typedef struct android_second_touch
+{
+   int32_t pointer_id;
+   int32_t x;          /* surface pixels */
+   int32_t y;
+   int32_t generation; /* nativeSurfaceChanged()'s, for the surface */
+   int32_t down;
+} android_second_touch_t;
+
+/* A surface the second display handed over; owns one ANativeWindow
+ * reference */
+struct android_second_surface
+{
+   ANativeWindow *window;
+   unsigned dims;       /* VIDEO_SCALE_PACK */
+   int generation;
+};
+
+struct android_second_display
+{
+   /* android_second_touch_t records, UI thread to app thread */
+   retro_spsc_t touches;
+   /* The newest surface not yet taken, struct android_second_surface *;
+    * the taker owns it. UI thread in, video thread out. */
+   retro_atomic_ptr_t surface;
+   /* UI thread: the last surface generation handed out */
+   retro_atomic_int_t surface_generation;
+   /* Video thread: what the renderer shows, for the input poll */
+   retro_atomic_int_t bound_surface;     /* surface generation, 0 none */
+   retro_atomic_int_t bound_window;      /* window id */
+   retro_atomic_int_t bound_generation;  /* window generation */
+   /* App thread: a retire the video thread could not take yet */
+   bool retire_due;
+};
 
 struct android_app
 {
@@ -118,6 +160,11 @@ struct android_app
    /* UI thread only: the window last handed to the app thread, which
     * a change of window has it give up first. */
    ANativeWindow *posted_window;
+
+   /* UI thread only: the second display's window last handed over, and
+    * its size, VIDEO_SCALE_PACK */
+   ANativeWindow *posted_second_window;
+   unsigned posted_second_dims;
 
    /* Set by android_app_free() before it asks the app thread to shut
     * down, so android_app_destroy() knows the activity is already being
@@ -189,6 +236,7 @@ struct android_app
 
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
+   jmethodID setSecondDisplay;
 
    /* Written by the Android UI thread in onContentRectChanged(), read by
     * the video thread in the context drivers, with no lock on either
@@ -204,6 +252,7 @@ struct android_app
       retro_atomic_int_t dims;
       retro_atomic_int_t changed;
    } content_rect;
+   struct android_second_display second_display;
    uint16_t rumble_last_strength_strong[MAX_USERS];
    uint16_t rumble_last_strength_weak[MAX_USERS];
    uint16_t rumble_last_strength[MAX_USERS];
@@ -322,7 +371,22 @@ enum
     */
    APP_CMD_DESTROY,
 
-   APP_CMD_REINIT_DONE
+   APP_CMD_REINIT_DONE,
+
+   /**
+    * Command from the second display's controller, no ticket: its
+    * surface or the display list changed, so the screens' windows get
+    * another try.
+    */
+   APP_CMD_SECOND_WINDOW_CHANGED,
+
+   /**
+    * Command from the second display's controller, ticketed: its
+    * surface is going away. The app thread has the renderer let go of
+    * it; the thread that lets go acknowledges, and the UI thread waits
+    * for that.
+    */
+   APP_CMD_SECOND_TERM_WINDOW
 };
 
 /* The JNI exception guard and call wrappers live in
@@ -376,6 +440,18 @@ void android_run_lifecycle_hook(struct android_app *android_app,
 #endif
 
 extern struct android_app *g_android;
+
+/* Any native thread, never waits: asks Java to show the second display
+ * on display @ordinal of the last published list, or to hide it for 0. */
+void android_second_display_request(unsigned ordinal);
+
+/* App thread, APP_CMD_SECOND_TERM_WINDOW, and again while
+ * retire_due: lets go of the second display's surface and has the
+ * renderer let go of its windows, without waiting for it. */
+void android_second_display_retire(struct android_app *android_app);
+
+/* Releases a surface's window and frees it. Any thread that owns it. */
+void android_second_surface_free(struct android_second_surface *node);
 
 void frontend_android_get_name(char *s, size_t len);
 

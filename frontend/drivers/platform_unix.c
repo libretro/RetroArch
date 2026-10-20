@@ -50,6 +50,7 @@
 
 #ifdef ANDROID
 #include <android/log.h>
+#include <android/native_window_jni.h>
 #include <sys/system_properties.h>
 #include <lists/string_list.h>
 #include "../../audio/common/android_audio.h"
@@ -336,6 +337,215 @@ static void android_app_set_window(struct android_app *android_app,
          (int)ticket, true, -1);
 }
 
+/* Set while the renderer lets go of the second display's windows for a
+ * surface that is going: Java keeps its choice of display, so the
+ * windows' destroy asks it for nothing. */
+static retro_atomic_int_t android_second_retiring;
+
+void android_second_surface_free(struct android_second_surface *node)
+{
+   ANativeWindow_release(node->window);
+   free(node);
+}
+
+void android_second_display_request(unsigned ordinal)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (     !android_app
+         || !android_app->setSecondDisplay
+         || retro_atomic_load_acquire_int(&android_second_retiring))
+      return;
+   if (!(env = jni_thread_getenv()))
+      return;
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->setSecondDisplay, (jint)ordinal);
+}
+
+/* On the thread letting go of the windows; done acknowledges
+ * APP_CMD_SECOND_TERM_WINDOW */
+static void android_second_retire_hook(void *data, bool done)
+{
+   struct android_app *android_app = (struct android_app*)data;
+   retro_atomic_store_release_int(&android_second_retiring, done ? 0 : 1);
+   if (done)
+   {
+      retro_atomic_store_release_int(
+            &android_app->second_display.bound_surface, 0);
+      android_lifecycle_done(&android_app->lc);
+   }
+}
+
+void android_second_display_retire(struct android_app *android_app)
+{
+   struct android_second_display *second = &android_app->second_display;
+   struct android_second_surface *node   = (struct android_second_surface*)
+      retro_atomic_exchange_ptr(&second->surface, NULL);
+
+   /* Before the retire: no frame after it may take this surface */
+   if (node)
+      android_second_surface_free(node);
+   second->retire_due = !video_driver_windows_retire(
+         android_second_retire_hook, android_app);
+}
+
+/* UI thread: the second display's window goes; returns once the app
+ * thread holds nothing of it, as android_app_set_window() does. */
+static void android_second_surface_term(struct android_app *android_app)
+{
+   unsigned ticket = android_lifecycle_last_ticket(&android_app->lc);
+
+   if (     !android_app_thread_gone(android_app)
+         && android_app_write_cmd(android_app, APP_CMD_SECOND_TERM_WINDOW))
+      ticket = android_lifecycle_ticket(&android_app->lc);
+   else
+   {
+      /* Nobody left to take it */
+      struct android_second_surface *node = (struct android_second_surface*)
+         retro_atomic_exchange_ptr(&android_app->second_display.surface,
+               NULL);
+      if (node)
+         android_second_surface_free(node);
+   }
+
+   android_app->posted_second_window = NULL;
+   android_app->posted_second_dims   = 0;
+
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
+         (int)ticket, true, -1);
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeDisplaysChanged(
+      JNIEnv *env, jclass clazz, jintArray connections, jintArray flags,
+      jintArray widths, jintArray heights, jobjectArray names)
+{
+   video_window_display_t list[VIDEO_WINDOW_DISPLAYS_MAX];
+   jint conn[VIDEO_WINDOW_DISPLAYS_MAX];
+   jint bits[VIDEO_WINDOW_DISPLAYS_MAX];
+   jint w[VIDEO_WINDOW_DISPLAYS_MAX];
+   jint h[VIDEO_WINDOW_DISPLAYS_MAX];
+   jsize i, count;
+   struct android_app *android_app = g_android_early;
+
+   if (     !android_app || !connections || !flags || !widths || !heights
+         || !names)
+      return;
+   count = (*env)->GetArrayLength(env, connections);
+   if (count > VIDEO_WINDOW_DISPLAYS_MAX)
+      count = VIDEO_WINDOW_DISPLAYS_MAX;
+   if (     (*env)->GetArrayLength(env, flags)   < count
+         || (*env)->GetArrayLength(env, widths)  < count
+         || (*env)->GetArrayLength(env, heights) < count
+         || (*env)->GetArrayLength(env, names)   < count)
+      return;
+   (*env)->GetIntArrayRegion(env, connections, 0, count, conn);
+   (*env)->GetIntArrayRegion(env, flags, 0, count, bits);
+   (*env)->GetIntArrayRegion(env, widths, 0, count, w);
+   (*env)->GetIntArrayRegion(env, heights, 0, count, h);
+
+   for (i = 0; i < count; i++)
+   {
+      video_window_display_t *d = &list[i];
+      jstring name              = (jstring)
+         (*env)->GetObjectArrayElement(env, names, i);
+      memset(d, 0, sizeof(*d));
+      d->ordinal    = (unsigned)i + 1;
+      d->connection = (conn[i] >= 0
+            && conn[i] <= VIDEO_WINDOW_CONNECTION_TRANSITIVE)
+         ? (unsigned)conn[i] : VIDEO_WINDOW_CONNECTION_UNKNOWN;
+      d->own        = (bits[i] & ANDROID_DISPLAY_OWN)      != 0;
+      d->valid      = (bits[i] & ANDROID_DISPLAY_VALID)    != 0;
+      d->on         = (bits[i] & ANDROID_DISPLAY_ON)       != 0;
+      d->is_private = (bits[i] & ANDROID_DISPLAY_PRIVATE)  != 0;
+      d->physical   = (bits[i] & ANDROID_DISPLAY_PHYSICAL) != 0;
+      d->dims       = (w[i] > 0 && h[i] > 0)
+         ? VIDEO_SCALE_PACK(w[i], h[i]) : 0;
+      if (name)
+      {
+         const char *utf = (*env)->GetStringUTFChars(env, name, NULL);
+         if (utf)
+         {
+            strlcpy(d->name, utf, sizeof(d->name));
+            (*env)->ReleaseStringUTFChars(env, name, utf);
+         }
+         else
+            JNI_EXCEPTION(env);
+         (*env)->DeleteLocalRef(env, name);
+      }
+   }
+
+   video_driver_publish_window_displays(list, (unsigned)count);
+   android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
+}
+
+JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceChanged(
+      JNIEnv *env, jclass clazz, jobject surface, jint width, jint height)
+{
+   ANativeWindow *window;
+   struct android_second_surface *node;
+   struct android_second_surface *stale;
+   unsigned dims;
+   int generation;
+   struct android_app *android_app = g_android_early;
+   struct android_second_display *second;
+
+   if (!android_app || !surface || width <= 0 || height <= 0)
+      return 0;
+   if (!(window = ANativeWindow_fromSurface(env, surface)))
+   {
+      RARCH_ERR("[Android] Second display: its surface has no window.\n");
+      return 0;
+   }
+   second     = &android_app->second_display;
+   dims       = VIDEO_SCALE_PACK(width, height);
+   generation = retro_atomic_load_acquire_int(&second->surface_generation);
+
+   if (window == android_app->posted_second_window)
+   {
+      if (dims == android_app->posted_second_dims)
+      {
+         ANativeWindow_release(window);
+         return generation;
+      }
+   }
+   else
+   {
+      if (android_app->posted_second_window)
+         android_second_surface_term(android_app);
+      if (++generation <= 0)
+         generation = 1;
+      retro_atomic_store_release_int(&second->surface_generation,
+            generation);
+   }
+
+   if (!(node = (struct android_second_surface*)malloc(sizeof(*node))))
+   {
+      ANativeWindow_release(window);
+      return 0;
+   }
+   node->window                      = window;
+   node->dims                        = dims;
+   node->generation                  = generation;
+   android_app->posted_second_window = window;
+   android_app->posted_second_dims   = dims;
+
+   if ((stale = (struct android_second_surface*)retro_atomic_exchange_ptr(
+               &second->surface, node)))
+      android_second_surface_free(stale);
+   android_app_write_cmd(android_app, APP_CMD_SECOND_WINDOW_CHANGED);
+   return generation;
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceDestroyed(
+      JNIEnv *env, jclass clazz)
+{
+   struct android_app *android_app = g_android_early;
+
+   if (android_app && android_app->posted_second_window)
+      android_second_surface_term(android_app);
+}
+
 /* Upper bound on how long a lifecycle callback will block waiting for the
  * app thread to pick the command up. The app thread only reads the command
  * pipe between frames, so anything that keeps it out of the looper - a core
@@ -421,7 +631,18 @@ static void android_app_free(struct android_app* android_app)
    close(android_app->msgread);
    close(android_app->msgwrite);
    android_lifecycle_free(&android_app->lc);
+   {
+      struct android_second_surface *node = (struct android_second_surface*)
+         retro_atomic_exchange_ptr(&android_app->second_display.surface,
+               NULL);
+      if (node)
+         android_second_surface_free(node);
+   }
+   retro_spsc_free(&android_app->second_display.touches);
 
+   /* A re-created activity's create may have replaced it already */
+   if (g_android_early == android_app)
+      g_android_early = NULL;
    free(android_app);
 }
 
@@ -691,6 +912,11 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->msgread  = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
+   /* A ring that cannot be made drops every touch on the second
+    * display; nothing else depends on it */
+   retro_spsc_init(&android_app->second_display.touches,
+         64 * sizeof(android_second_touch_t));
+
    android_app->thread   = sthread_create(android_app_entry, android_app);
    /* NULL-check sthread_create: on OOM the thread won't be
     * spawned and nothing will set ANDROID_LC_RUNNING, so the wait
@@ -703,6 +929,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       close(msgpipe[1]);
       if (android_app->savedState)
          free(android_app->savedState);
+      retro_spsc_free(&android_app->second_display.touches);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -737,6 +964,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       close(android_app->msgwrite);
       if (android_app->savedState)
          free(android_app->savedState);
+      retro_spsc_free(&android_app->second_display.touches);
       android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
@@ -3680,6 +3908,8 @@ static void frontend_unix_init(void *data)
          "showKeyboard", "(Ljava/lang/String;Ljava/lang/String;)V");
    GET_METHOD_ID(env, android_app->hideKeyboard, class,
          "hideKeyboard", "()V");
+   GET_METHOD_ID(env, android_app->setSecondDisplay, class,
+         "setSecondDisplay", "(I)V");
 
    CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build,
          android_app->activity->clazz, android_app->isPlayStoreBuild);

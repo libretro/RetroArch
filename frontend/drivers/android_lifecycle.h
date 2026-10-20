@@ -29,9 +29,10 @@
  * The commands themselves go through the command pipe, which the app
  * thread's looper polls. Every answer comes back through an atomic
  * here - a completion count, the acknowledged activity state, a few
- * flags - stored by the app thread and followed by a notify of the one
- * eventcount every waiter blocks on. A waiter re-tests its own
- * predicate after each wake, so one eventcount serves all of them.
+ * flags - stored by the thread that did the work, mostly the app
+ * thread, and followed by a notify of the one eventcount every waiter
+ * blocks on. A waiter re-tests its own predicate after each wake, so
+ * one eventcount serves all of them.
  *
  * The current window is here too: the app thread publishes it, and a
  * thread that uses it across a span (the video context, setting the
@@ -53,8 +54,8 @@ typedef struct android_lifecycle
    retro_atomic_int_t flags;
    /* Activity state the app thread has acknowledged, -1 for none. */
    retro_atomic_int_t state;
-   /* Ticketed commands the app thread has finished: window and input
-    * queue changes. Compared wrap-safely against a ticket. */
+   /* Ticketed commands that have finished: window and input queue
+    * changes. Compared wrap-safely against a ticket. */
    retro_atomic_int_t done_seq;
    retro_atomic_ptr_t window;
    retro_atomic_int_t window_users;

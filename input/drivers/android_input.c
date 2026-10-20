@@ -1094,6 +1094,14 @@ static void android_input_poll_main_cmd(void)
          android_keypress_vibrate_pending = false;
          android_app->destroyRequested = 1;
          break;
+
+      case APP_CMD_SECOND_WINDOW_CHANGED:
+         video_driver_restore_windows();
+         break;
+
+      case APP_CMD_SECOND_TERM_WINDOW:
+         android_second_display_retire(android_app);
+         break;
    }
 }
 
@@ -2980,7 +2988,9 @@ static void android_input_poll(void *data)
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
     * in one call. In the foreground it never waits: the input block
     * timeout keeps presses back instead (android_press_group.h). */
-   android_poll_waits((runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0,
+   /* A retire still due is tried again below */
+   android_poll_waits((runloop_get_flags() & RUNLOOP_FLAG_IDLE) != 0
+         && !(android_app && android_app->second_display.retire_due),
          &timeout, &then);
    android_press_window_ns =
       (int64_t)input_config_get_block_timeout() * 1000000;
@@ -3014,6 +3024,9 @@ static void android_input_poll(void *data)
          return;
       }
    }
+
+   if (android_app && android_app->second_display.retire_due)
+      android_second_display_retire(android_app);
 
    android_input_poll_press_groups();
 }
