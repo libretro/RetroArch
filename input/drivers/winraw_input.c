@@ -2367,6 +2367,17 @@ static void winraw_poll(void *data)
    bool cursor_for_all;
 
    wr->focus              = winraw_focus;
+   /* The flag is the window's focus messages, and a video driver
+    * restart can leave it saying unfocused while the window is in
+    * front: the keyboard was then dead until the next Alt-Tab. When it
+    * says unfocused, Windows is asked; only for this poll, so that a
+    * loss the window procedure is about to store is not overwritten. */
+   if (!wr->focus)
+   {
+      HWND wnd            = (HWND)video_driver_window_get();
+      if (wnd && GetForegroundWindow() == wnd)
+         wr->focus        = true;
+   }
 
    /* asked here for every report read below, and until the next poll */
    cursor_for_all = input_config_overlay_configured();

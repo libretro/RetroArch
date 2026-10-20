@@ -153,7 +153,9 @@ void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down)
 { (void)pos; (void)count; (void)present; (void)down; }
 unsigned input_driver_pointer_read_as(unsigned i) { (void)i; return 0; }
-uintptr_t video_driver_window_get(void) { return 0; }
+/* the main window, as the video driver has it */
+static HWND stub_video_window;
+uintptr_t video_driver_window_get(void) { return (uintptr_t)stub_video_window; }
 void win32_clip_window(bool grab) { (void)grab; }
 void win32_hotplug_arm(void) { }
 bool win32_hotplug_due(void) { return false; }
@@ -658,6 +660,37 @@ int main(void)
       memset(wr->kb_keys, 0, SC_LAST);
       printf("   ok   focus: read once a poll, and the frame goes by it\n");
    }
+
+   /* ---- focus left unfocused by a restart ------------------------ */
+   /* A video driver restart can leave the focus flag unfocused with
+    * the main window in front, and no message comes to put it right:
+    * the window is asked when the flag says unfocused. */
+   if (vt_window && GetForegroundWindow() == vt_window)
+   {
+      static const uint16_t key  = RETROK_a;
+      static const uint8_t  bind = RARCH_FIRST_META_KEY;
+      uint32_t down              = 0;
+
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
+      stub_video_window = vt_window;
+      winraw_poll(wr);
+      wr->kb_keys[rarch_keysym_lut[RETROK_a]] = 1;
+      winraw_keys_down(wr, 0, &key, &bind, 1, &down);
+      CHECK(down == 1, "the main window in front, a stale unfocused flag kept the key");
+      CHECK(!retro_atomic_load_acquire_int(&winraw_focus_flag),
+            "the poll wrote the flag the window procedure owns");
+      /* a main window that is not in front stays unfocused */
+      stub_video_window = raw_window;
+      winraw_poll(wr);
+      down = 0;
+      winraw_keys_down(wr, 0, &key, &bind, 1, &down);
+      CHECK(down == 0, "a main window not in front was taken as focused");
+      stub_video_window = NULL;
+      memset(wr->kb_keys, 0, SC_LAST);
+      printf("   ok   focus: a stale unfocused flag with the main window in front\n");
+   }
+   else
+      printf("   note no foreground window: the stale focus lane is not checked\n");
 
    /* ---- free ----------------------------------------------------- */
    winraw_free(wr);
