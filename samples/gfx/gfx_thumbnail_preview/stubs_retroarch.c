@@ -354,6 +354,12 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
 void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
 {
    (void)i;
+   if (getenv("FRONTEND_TIMELINE") && hp_pcm_voice)
+   {
+      audio_mixer_voice_set_avail(hp_pcm_voice, avail);
+      hp.audio_avail_raises++;
+      return;
+   }
    if (avail > hp_alen)
       avail = hp_alen;
    if (avail > hp_aavail)
@@ -368,7 +374,31 @@ bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16)
 { *rate = 48000; *s16 = false; return true; }
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial)
-{ *voice = NULL; *serial = 0; return audio_driver_mixer_add_stream(params); }
+{
+   *voice = NULL; *serial = 0;
+   if (getenv("FRONTEND_TIMELINE"))
+   {
+      hp.audio_streams++; hp.last_audio_bytes = params->bufsize;
+      hp_pcm_sound = params->type == AUDIO_MIXER_TYPE_WEBA
+         ? audio_mixer_load_weba_avail(params->buf, params->bufsize, params->avail)
+         : audio_mixer_load_m4a(params->buf, params->bufsize);
+      audio_mixer_sound_set_data_owner(hp_pcm_sound, params->buf_owner, params->buf_owner_free);
+      if (!hp_pcm_sound) return false;
+      audio_mixer_sound_set_avail(hp_pcm_sound, params->avail);
+      hp_pcm_voice = audio_mixer_play(hp_pcm_sound, true, params->volume,
+            "sinc", RESAMPLER_QUALITY_NORMAL, NULL);
+      if (hp_pcm_voice && audio_mixer_voice_clock(hp_pcm_voice, NULL, NULL, serial))
+      {
+         *voice = hp_pcm_voice;
+         if (params->out_slot) *params->out_slot = 7;
+         return true;
+      }
+      if (hp_pcm_voice) audio_mixer_stop(hp_pcm_voice);
+      audio_mixer_destroy(hp_pcm_sound); hp_pcm_sound = NULL; hp_pcm_voice = NULL;
+      return false;
+   }
+   return audio_driver_mixer_add_stream(params);
+}
 /* Seek transport uses actual PCM; the initial byte-feeder model above
  * stays independent so it can still deliberately touch promised bytes. */
 bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,

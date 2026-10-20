@@ -73,6 +73,7 @@ typedef struct
    int wait_at;
    bool waiting;
    int duration_ms;
+   int64_t movie_ns, lead_ns;
    int catchup;        /* last value set */
    int catchup_sets;
    int argb;
@@ -88,6 +89,22 @@ typedef struct
    int hw_fail_from;   /* 0 never */
    bool hw_pending;
 } fake_t;
+
+int64_t image_transfer_anim_stream_duration_ns(void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   return ((fake_t*)stream)->movie_ns;
+}
+
+int64_t image_transfer_anim_stream_frame_time_ns(void *stream,
+      enum image_type_enum type)
+{
+   fake_t *f = (fake_t*)stream;
+   (void)type;
+   return f->pos ? f->lead_ns + (int64_t)(f->pos - 1)
+      * f->duration_ms * 1000000 : -1;
+}
 
 static uint32_t frame_px(int k, bool argb)
 {
@@ -1092,8 +1109,109 @@ static void lane_seek_stop(bool threaded)
          "seek stop: callback not run after stream released");
 }
 
+/* A short video track inside a longer movie must preserve both its
+ * leading interval and the audio tail on every loop. Test the clock
+ * independently of decode speed by polling each timestamp repeatedly. */
+static void lane_movie(bool threaded, bool hardware, bool pause_lead)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   enum video_player_state state = VIDEO_PLAYER_PLAYING;
+   int tick, retry;
+   const int64_t origin = 1000000;
+   int64_t now;
+   fake_init(&f, 2, 100);
+   f.direct = true;
+   f.movie_ns = (int64_t)4000000 * 1000;
+   f.lead_ns = 1000000000;
+   if (hardware)
+   {
+      f.hw_can = true;
+      sink_init_hw(&k, &s);
+      k.hw_busy_every = 2;
+   }
+   else sink_init(&k, &s, true);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "movie: allocation");
+   if (!p) return;
+   CHECK(!video_player_started(p), "movie: sink not ready before poll");
+   for (tick = 0; tick <= 800; tick++)
+   {
+      int expected = tick < 100 ? 0 : tick < 110 ? 1
+         : tick < 500 ? 2 : tick < 510 ? 3 : 4;
+      now = origin + (int64_t)tick * 10000;
+      if (pause_lead && tick == 50)
+      {
+         video_player_set_paused(p, true, now);
+         for (retry = 0; retry < 8; retry++)
+            video_player_poll(p, now + 1000000);
+         CHECK(!k.nseen, "movie: pause preserves leading gap");
+         video_player_set_paused(p, false, now + 2000000);
+      }
+      if (pause_lead && tick >= 50) now += 2000000;
+      for (retry = 0; retry < 12; retry++)
+      {
+         state = video_player_poll(p, now);
+         if (threaded) retro_sleep(1);
+      }
+      CHECK(k.nseen == expected, "movie: tick %d pictures %d expected %d",
+            tick, k.nseen, expected);
+      CHECK(video_player_has_presented(p) == (expected != 0),
+            "movie: due time is not a presentation");
+      CHECK(video_player_started(p), "movie: ready during leading interval");
+      CHECK(state == (tick < 800 ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED),
+            "movie: complete period at tick %d", tick);
+   }
+   CHECK(k.seen[0] == 0 && k.seen[1] == 1
+         && k.seen[2] == 0 && k.seen[3] == 1 && !k.bad_px,
+         "movie: repeated picture sequence");
+   video_player_free(p);
+   video_player_worker_deinit();
+   CHECK(!hardware || f.hw_made == f.hw_abandoned + k.hw_taken,
+         "movie: every hardware lease accounted for");
+}
+
+static void lane_movie_stop(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   unsigned i;
+   fake_init(&f, 2, 100);
+   f.movie_ns = (int64_t)4000000 * 1000;
+   f.lead_ns = 1000000000;
+   f.hw_can = true;
+   sink_init_hw(&k, &s);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 0, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "movie stop: allocation");
+   if (!p) return;
+   for (i = 0; i < 30; i++)
+   {
+      video_player_poll(p, 1000000);
+      if (threaded) retro_sleep(1);
+   }
+   while (!video_player_stop(p)) retro_sleep(1);
+   video_player_free(p);
+   video_player_worker_deinit();
+   CHECK(!k.nseen && f.hw_made && f.hw_abandoned == f.hw_made,
+         "movie stop: future hardware leases returned once");
+}
+
 int main(void)
 {
+   lane_movie_stop(false);
+   lane_movie(false, false, false);
+   lane_movie(false, true, true);
+#ifdef HAVE_THREADS
+   lane_movie_stop(true);
+   lane_movie(true, false, true);
+   lane_movie(true, true, false);
+#endif
    lane_input_wait(false, false);
    lane_input_wait(false, true);
    lane_seek(false, false);

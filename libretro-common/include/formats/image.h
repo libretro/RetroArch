@@ -728,6 +728,12 @@ void image_transfer_anim_stream_complete_scan(void *stream,
  * The owner feeds the stream's selected byte frontier between steps. */
 /* Exclusive-owner query; cache before handing the decoder to a worker. */
 int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum type);
+/* Most recently decoded display frame in movie time. Decoder-owner
+ * query only; -1 before a frame or when the format has no such query.
+ * Currently MP4. Still-image decoding and decoder-specific raw seek
+ * coordinates do not change. The generic MP4 seek below uses movie time. */
+int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_enum type);
+
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type);
 bool image_transfer_anim_stream_seek_begin(void *stream,
       enum image_type_enum type, int64_t target_us);

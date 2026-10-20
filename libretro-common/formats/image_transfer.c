@@ -1598,6 +1598,16 @@ int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum t
    return 0;
 }
 
+int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_enum type)
+{
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_frame_time_ns((rmp4_video_stream_t*)stream);
+#endif
+   (void)stream; (void)type;
+   return -1;
+}
+
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type)
 {
    if (!stream) return false;
@@ -1622,7 +1632,7 @@ bool image_transfer_anim_stream_seek_begin(void *stream,
 #endif
 #ifdef HAVE_RMP4
    if (type == IMAGE_TYPE_MP4)
-      return rmp4_video_stream_seek_begin_ns((rmp4_video_stream_t*)stream,
+      return rmp4_video_stream_seek_movie_begin_ns((rmp4_video_stream_t*)stream,
             target_us * 1000) != 0;
 #endif
 #ifdef HAVE_RWEBM
@@ -1639,7 +1649,7 @@ int image_transfer_anim_stream_seek_step(void *stream,
 {
 #ifdef HAVE_RMP4
    if (type == IMAGE_TYPE_MP4)
-      return rmp4_video_stream_seek_step((rmp4_video_stream_t*)stream, position_us);
+      return rmp4_video_stream_seek_movie_step((rmp4_video_stream_t*)stream, position_us);
 #endif
 #ifdef HAVE_RWEBM
    if (type == IMAGE_TYPE_WEBM)

@@ -825,6 +825,230 @@ static void lane_cpu_gap(const char *path)
    gfx_media_cpu_reap();
 }
 
+typedef struct frontend_timeline_capture
+{
+   unsigned frames;
+   int64_t now, first, second;
+} frontend_timeline_capture_t;
+
+static bool frontend_timeline_present(void *user, const video_player_frame_t *frame)
+{
+   frontend_timeline_capture_t *c = (frontend_timeline_capture_t*)user;
+   if (!frame->pixels || frame->hw) return false;
+   if (!c->frames) c->first = c->now;
+   if (c->frames == 24) c->second = c->now;
+   c->frames++;
+   return true;
+}
+
+/* Video occupies movie seconds 1..3; audio occupies 0..4. The next
+ * video loop must begin at second5, including the movie tail and lead. */
+static void lane_frontend_timeline(const char *path)
+{
+   gfx_anim_preview_t *session;
+   gfx_media_cpu_t *player;
+   frontend_timeline_capture_t capture;
+   float *pcm;
+   int tick, before_video_audio = 0, startup_voice = 0;
+   int old_audio = hp.force_preview_audio;
+   int64_t first_audio = -1;
+   const int64_t origin = 1000000;
+   memset(&capture,0,sizeof(capture));capture.first=capture.second=-1;
+   hp.force_preview_audio=1;audio_mixer_init(48000);
+   {
+      gfx_anim_preview_t *reference=gfx_anim_preview_open(path,-1);
+      check("frontend timeline","still-reference session opened",reference!=NULL);
+      if(reference)
+      {
+         unsigned i;
+         check("frontend timeline","timestamp unavailable before first decode",
+               image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==-1);
+         check("frontend timeline","movie duration includes continuous audio",
+               image_transfer_anim_stream_duration_ns(reference->stream,reference->type)==4000000000);
+         for(i=0;i<24;i++)
+         {
+            bool native=false;
+            const uint32_t *pixels;
+            int tries;
+            for(tries=0;tries<100;tries++)
+            {
+               gfx_anim_preview_feed(reference);
+               pixels=gfx_anim_preview_next(reference,NULL,&native);
+               if(pixels)break;
+            }
+            check("frontend timeline","still/reference decode remains immediately available",tries<100);
+            check("frontend timeline","decoded frame exposes exact movie timestamp",
+                  image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)
+                     ==1000000000+(int64_t)i*1000000000/12);
+         }
+         image_transfer_anim_stream_rewind(reference->stream,reference->type);
+         check("frontend timeline","rewind clears current-frame timestamp",
+               image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==-1);
+         check("frontend timeline","movie-coordinate reference seek accepted",
+               image_transfer_anim_stream_seek_begin(reference->stream,reference->type,1500000));
+         for(i=0;i<100;i++)
+         {
+            int64_t position=0;
+            gfx_anim_preview_feed(reference);
+            if(image_transfer_anim_stream_seek_step(reference->stream,reference->type,&position)==1)
+            {
+               check("frontend timeline","seek translates movie to decoder coordinates",position==1500000);
+               break;
+            }
+         }
+         check("frontend timeline","bounded reference seek finishes",i<100);
+         for(i=0;i<100;i++)
+         {
+            bool native=false;
+            gfx_anim_preview_feed(reference);
+            if(gfx_anim_preview_next(reference,NULL,&native))break;
+         }
+         check("frontend timeline","next reference picture retains movie timestamp",
+               i<100&&image_transfer_anim_stream_frame_time_ns(reference->stream,reference->type)==1500000000);
+         gfx_anim_preview_close(reference);
+      }
+   }
+   session=gfx_anim_preview_open(path,-1);
+   check("frontend timeline","real session opened",session!=NULL);
+   if(!session){audio_mixer_done();hp.force_preview_audio=old_audio;return;}
+   pcm=(float*)calloc(960,sizeof(*pcm));
+   player=gfx_media_cpu_new(session,frontend_timeline_present,&capture,0);
+   check("frontend timeline","actual CPU owner and mixer buffer",player&&pcm);
+   if(!player||!pcm)
+   {
+      if(player)gfx_media_cpu_retire(player);else gfx_anim_preview_close(session);
+      free(pcm);audio_mixer_done();hp.force_preview_audio=old_audio;return;
+   }
+   for(tick=0;tick<=600;tick++)
+   {
+      unsigned i;
+      capture.now=(int64_t)tick*10000;
+      gfx_media_cpu_poll(player,origin+capture.now);
+      if(tick==10)startup_voice=session->audio_voice!=NULL;
+      memset(pcm,0,960*sizeof(*pcm));
+      audio_mixer_mix(pcm,480,1.0f,false);
+      for(i=0;i<960;i++)if(pcm[i]>0.00001f||pcm[i]<-0.00001f)
+      {
+         if(first_audio<0)first_audio=capture.now;
+         if(!capture.frames)before_video_audio=1;
+         break;
+      }
+      retro_sleep(1);
+   }
+   check("frontend timeline","audio voice exists by 100ms",startup_voice);
+   check("frontend timeline","audible PCM precedes first video",before_video_audio);
+   check("frontend timeline","audio starts near movie origin",first_audio>=0&&first_audio<=100000);
+   check("frontend timeline","video first interval starts at one second",
+         capture.first>=950000&&capture.first<=1100000);
+   check("frontend timeline","second video loop keeps full movie period",
+         capture.second>=4950000&&capture.second<=5100000);
+   {
+      gfx_media_playback_state_t state;
+      check("frontend timeline","looping controls expose current movie position",
+            gfx_media_cpu_state(player,origin+6000000,&state)
+            &&state.position_us>=1990000&&state.position_us<=2030000);
+   }
+   printf("frontend timeline: first_video=%ld second_video=%ld first_audio=%ld pictures=%u voice_at100ms=%d audio_before_video=%d\n",
+         (long)capture.first,(long)capture.second,(long)first_audio,capture.frames,startup_voice,before_video_audio);
+   {
+      gfx_media_playback_state_t state;
+      unsigned held = capture.frames;
+      int64_t resumed_first = -1;
+      const int64_t wall = origin + 6000000;
+      check("frontend timeline","pause before leading-gap seek",gfx_media_cpu_pause(player,true,wall));
+      check("frontend timeline","seek movie 500ms",gfx_media_cpu_seek(player,500000,48000,false,wall));
+      for(tick=0;tick<2000;tick++)
+      {
+         gfx_media_cpu_poll(player,wall);
+         if(!session->seeking)break;
+         retro_sleep(1);
+      }
+      check("frontend timeline","leading-gap seek completes while paused",tick<2000);
+      check("frontend timeline","leading-gap seek preserves requested movie/audio position",
+            gfx_media_cpu_state(player,wall,&state)&&state.position_us==500000&&state.paused);
+      for(tick=0;tick<10;tick++)gfx_media_cpu_poll(player,wall+1000000);
+      check("frontend timeline","paused leading gap does not expose future video",capture.frames==held);
+      gfx_media_cpu_pause(player,false,wall+2000000);
+      for(tick=0;tick<=70;tick++)
+      {
+         capture.now=(int64_t)tick*10000;
+         gfx_media_cpu_poll(player,wall+2000000+capture.now);
+         if(capture.frames>held&&resumed_first<0)resumed_first=capture.now;
+         memset(pcm,0,960*sizeof(*pcm));
+         audio_mixer_mix(pcm,480,1.0f,false);
+         retro_sleep(1);
+      }
+      check("frontend timeline","resume preserves remaining 500ms video gap",
+            resumed_first>=490000&&resumed_first<=550000);
+      printf("frontend leading seek: position=%ld resumed_first=%ld\n",
+            (long)state.position_us,(long)resumed_first);
+      gfx_media_cpu_pause(player,true,wall+2700000);
+      held=capture.frames;
+      check("frontend timeline","seek into video tail accepted",
+            gfx_media_cpu_seek(player,3500000,48000,false,wall+2700000));
+      for(tick=0;tick<2000;tick++)
+      {
+         gfx_media_cpu_poll(player,wall+2700000);
+         if(!session->seeking)break;
+         retro_sleep(1);
+      }
+      check("frontend timeline","tail seek holds last picture at requested audio position",
+            tick<2000&&capture.frames==held+1
+            &&gfx_media_cpu_state(player,wall+2700000,&state)&&state.position_us==3500000&&state.paused);
+      held=capture.frames;resumed_first=-1;
+      gfx_media_cpu_pause(player,false,wall+3000000);
+      for(tick=0;tick<=170;tick++)
+      {
+         capture.now=(int64_t)tick*10000;
+         gfx_media_cpu_poll(player,wall+3000000+capture.now);
+         if(capture.frames>held&&resumed_first<0)resumed_first=capture.now;
+         memset(pcm,0,960*sizeof(*pcm));audio_mixer_mix(pcm,480,1.0f,false);
+         retro_sleep(1);
+      }
+      check("frontend timeline","tail seek retains tail and next-loop lead",
+            resumed_first>=1490000&&resumed_first<=1550000);
+      printf("frontend tail seek: position=%ld resumed_first=%ld\n",
+            (long)state.position_us,(long)resumed_first);
+   }
+   gfx_media_cpu_retire(player);gfx_thumbnail_anim_worker_deinit();gfx_media_cpu_reap();
+   audio_mixer_done();free(pcm);hp.force_preview_audio=old_audio;
+}
+
+/* Exercise the actual thumbnail/surface owner as used by texture menus,
+ * independently of the CPU owner used by RGUI. No GPU readback. */
+static void lane_frontend_texture_timeline(const char *path)
+{
+   gfx_thumbnail_t th;
+   float *pcm = (float*)calloc(960,sizeof(*pcm));
+   int tick, first = -1, second = -1, audio_before = 0;
+   memset(&th,0,sizeof(th));memset(&hp,0,sizeof(hp));
+   hp.force_preview_audio=1;audio_mixer_init(48000);
+   gfx_thumbnail_init_blank(&th);
+   gfx_thumbnail_request_file(path,&th,0);
+   check("texture timeline","actual texture owner opened",th.anim_player!=NULL&&pcm!=NULL);
+   if(th.anim_player&&pcm)
+      for(tick=0;tick<=600;tick++)
+      {
+         unsigned i;
+         gfx_thumbnail_animate(&th,1000000+(int64_t)tick*10000);
+         if(hp.texture_uploads&&first<0)first=tick*10000;
+         if(hp.texture_uploads>=25&&second<0)second=tick*10000;
+         memset(pcm,0,960*sizeof(*pcm));audio_mixer_mix(pcm,480,1.0f,false);
+         if(!hp.texture_uploads)
+            for(i=0;i<960;i++)if(pcm[i]>0.00001f||pcm[i]<-0.00001f){audio_before=1;break;}
+         retro_sleep(1);
+      }
+   check("texture timeline","audio precedes first texture",audio_before);
+   check("texture timeline","first texture at one second",first>=950000&&first<=1100000);
+   check("texture timeline","second texture loop at five seconds",second>=4950000&&second<=5100000);
+   check("texture timeline","first due picture becomes drawable",
+         th.texture&&th.status==GFX_THUMBNAIL_STATUS_AVAILABLE&&(th.alpha>0.0f||hp.fade_pushes));
+   printf("texture timeline: first=%d second=%d uploads=%d audio_before=%d\n",
+         first,second,hp.texture_uploads,audio_before);
+   gfx_thumbnail_reset(&th);gfx_thumbnail_anim_worker_deinit();
+   audio_mixer_done();free(pcm);
+}
+
 static void lane_cpu_media(const char *path)
 {
    gfx_anim_preview_t *reference = gfx_anim_preview_open(path, -1);
@@ -944,6 +1168,12 @@ int main(int argc, char **argv)
    {
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
+   }
+   if (getenv("FRONTEND_TIMELINE"))
+   {
+      lane_frontend_timeline(argv[1]);
+      lane_frontend_texture_timeline(argv[1]);
+      return fails ? 1 : 0;
    }
    if (getenv("GROUP_SEEK"))
    {

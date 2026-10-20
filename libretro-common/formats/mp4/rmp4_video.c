@@ -94,6 +94,7 @@ struct rmp4_video_stream
    int          disp_idx;   /* ordinal of the next displayed picture  */
    int          seek_state, seek_target, seek_scan;
    int64_t      seek_position_us;
+   int64_t      movie_seek_target_ns;
    /* The displayed picture most recently produced by a step.  Its
     * planes stay inside the decoder until the next decode or drain
     * call, so colour conversion into 'frame' is deferred to
@@ -1898,6 +1899,58 @@ int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *s)
    if (!s || !s->demux) return 0;
    track = rmp4_get_track(s->demux, s->track);
    return track ? track->presentation_delay_ns : 0;
+}
+
+static int64_t rmp4_video_stream_movie_time_ns(const rmp4_video_stream_t *s,
+      int index)
+{
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int64_t first, time, delta, delay;
+   if (!s || index < 0 || index >= s->ts_count) return -1;
+   first = s->ts[0]; time = s->ts[index];
+   if (time < first || (first < 0 && time > maximum + first)) return -1;
+   delta = time - first;
+   delay = rmp4_video_stream_presentation_delay_ns(s);
+   if (delay < 0 || delta > maximum - delay) return -1;
+   return delay + delta;
+}
+
+int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *s)
+{
+   return s ? rmp4_video_stream_movie_time_ns(s, s->disp_idx - 1) : -1;
+}
+
+int rmp4_video_stream_seek_movie_begin_ns(rmp4_video_stream_t *s, int64_t ns)
+{
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int64_t delay, delta, first;
+   if (!s || !s->ts_count) return 0;
+   if (ns < 0) ns = 0;
+   s->movie_seek_target_ns = ns;
+   delay = rmp4_video_stream_presentation_delay_ns(s);
+   delta = ns > delay ? ns - delay : 0;
+   first = s->ts[0];
+   if (first > 0 && delta > maximum - first) delta = maximum;
+   else delta += first;
+   return rmp4_video_stream_seek_begin_ns(s, delta);
+}
+
+int rmp4_video_stream_seek_movie_step(rmp4_video_stream_t *s,
+      int64_t *position_us)
+{
+   int64_t time, last;
+   int result = rmp4_video_stream_seek_step(s, NULL);
+   if (position_us) *position_us = 0;
+   if (result != 1) return result;
+   time = rmp4_video_stream_movie_time_ns(s, s->disp_idx);
+   last = rmp4_video_stream_movie_time_ns(s, s->ts_count - 1);
+   if (time < 0 || last < 0) return -1;
+   /* Seeking within an empty interval preserves movie/audio position.
+    * The next picture can still lie in the future, or in the tail. */
+   if (s->movie_seek_target_ns < time || s->movie_seek_target_ns > last)
+      time = s->movie_seek_target_ns;
+   if (position_us) *position_us = time / 1000;
+   return 1;
 }
 
 int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)

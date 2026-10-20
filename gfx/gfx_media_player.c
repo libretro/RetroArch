@@ -42,6 +42,10 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
    state->position_us = session->seeking ? session->media_requested_us
       : session->media_origin_us > maximum - elapsed ? maximum
       : session->media_origin_us + elapsed;
+   if (!session->seeking && session->type == IMAGE_TYPE_MP4
+         && !session->loop_count && state->duration_us
+         && state->position_us > state->duration_us)
+      state->position_us %= state->duration_us;
    if (state->duration_us && state->position_us > state->duration_us)
       state->position_us = state->duration_us;
    state->paused = session->paused;
@@ -73,7 +77,7 @@ enum video_player_state gfx_media_player_poll(gfx_anim_preview_t *session,
 {
    int64_t now = session ? gfx_anim_preview_clock(session, wall_us) : wall_us;
    enum video_player_state result = video_player_poll(player, now);
-   if (result != VIDEO_PLAYER_ENDED && session && video_player_has_presented(player))
+   if (result != VIDEO_PLAYER_ENDED && session && video_player_started(player))
    {
       int64_t position_us;
       if (session->seeking && video_player_seek_position(player, &position_us))

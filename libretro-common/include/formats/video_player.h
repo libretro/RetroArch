@@ -38,6 +38,12 @@
  * slot_begin, slot_end and present run on that thread, feed and
  * decoded on the thread that decodes. No lock is taken anywhere. */
 
+/* MP4 movies with a declared duration use movie-relative picture
+ * timestamps and the full movie period. The first picture waits through
+ * a leading empty edit; the last picture is held through the video tail
+ * and the next loop's leading interval. Still/reference decoding is
+ * independent of this presentation schedule. */
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -101,7 +107,8 @@ typedef struct video_player_frame
    /* A frame decoded on the GPU (start_hw), NULL otherwise. DONE or
     * QUEUED makes it the sink's, to read or abandon; on BUSY a frame
     * decoded on the worker is offered again, any other is given back
-    * by the player. */
+    * by the player. A movie frame decoded ahead on the polling thread
+    * is also retained for retry until taken, replaced by a seek or freed. */
    const video_hw_frame_t *hw;
 } video_player_frame_t;
 
@@ -171,6 +178,10 @@ bool video_player_paused(const video_player_t *p);
  * (a QUEUED picture may still be in flight to the graphics driver). */
 bool video_player_has_presented(const video_player_t *p);
 
+/* Sink resources are ready. Audio may start at the movie origin before
+ * a delayed first video picture is due. Polling thread only. */
+bool video_player_started(const video_player_t *p);
+
 /* One bounded seek step on the decoding thread: -1 failed, 0 needs
  * another step, 1 positioned for the next frame. restart begins a new
  * request, including replacing an unfinished one. The callback owns
@@ -186,7 +197,10 @@ bool video_player_set_seek_handler(video_player_t *p,
  * accepted frame may still be in flight to its driver. */
 bool video_player_seek(video_player_t *p, int64_t target_us);
 bool video_player_seeking(const video_player_t *p);
-/* Last completed request, false while a newer request is pending. */
+/* Last completed request. Normal seeks complete when their replacement
+ * picture is accepted; a leading-gap seek can complete when the next
+ * picture is decoded and known to lie in the future. False while a newer
+ * request is pending. */
 bool video_player_seek_position(const video_player_t *p, int64_t *position_us);
 
 /* When the next frame is due on that clock; 0 at once, INT64_MAX while

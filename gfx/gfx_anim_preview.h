@@ -115,7 +115,7 @@ typedef struct gfx_anim_preview
    size_t audio_tell;   /* the decoder's position at the last feed */
    int    audio_slot;
    bool   paused;               /* main-thread media transport state */
-   bool   playback_started;     /* first picture accepted, main thread */
+   bool   playback_started;     /* playback sink ready, main thread */
    bool   clock_initialized;
    bool   clock_audio;
    int64_t clock_us, clock_wall_us;

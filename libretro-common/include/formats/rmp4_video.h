@@ -289,6 +289,19 @@ int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *stream);
  * and raw decoder seek coordinates remain relative to the video track. */
 int64_t rmp4_video_stream_presentation_delay_ns(const rmp4_video_stream_t *stream);
 
+/* Movie-relative timestamp of the most recently decoded display frame,
+ * including the leading empty edit. Query only on the decoder owner,
+ * after a successful next/skip. -1 before a frame, after rewind, or
+ * when no timestamp is available. Decoder-relative seek APIs are unchanged. */
+int64_t rmp4_video_stream_frame_time_ns(const rmp4_video_stream_t *stream);
+
+/* Movie-relative bounded seek, including leading and trailing empty
+ * video intervals. The decoder-relative APIs below remain unchanged. */
+int rmp4_video_stream_seek_movie_begin_ns(rmp4_video_stream_t *stream, int64_t ns);
+int rmp4_video_stream_seek_movie_step(rmp4_video_stream_t *stream,
+      int64_t *position_us);
+
+
 
 RETRO_END_DECLS
 

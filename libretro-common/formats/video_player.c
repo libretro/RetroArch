@@ -74,9 +74,8 @@ enum vp_job_status
    VP_JOB_DROPPED      /* the worker came to it and let it go        */
 };
 
-/* A player's two jobs come out of one block, the second a cache line
- * in: the worker and the poll hand them back and forth, so they must
- * not share a line. */
+/* A player's two jobs come out of one block, at separate cache-line
+ * offsets: the worker and the poll hand them back and forth. */
 #define VP_JOB_STRIDE 64
 
 typedef struct vp_job
@@ -86,11 +85,12 @@ typedef struct vp_job
                               waiting on a cancelled job            */
    video_player_t *owner;  /* read by the worker only while RUNNING */
    uint32_t *frame;        /* the slot this job decodes into        */
+   int64_t time_us;        /* movie time, published with READY      */
    unsigned stride;        /* row stride in pixels, for this job    */
    int duration_ms;        /* of the READY frame                    */
    int32_t loops_left;     /* -1 forever                            */
    /* enum vp_job_status. The worker's READY / FINISHED store is a
-    * release made after frame, duration_ms and loops_left; the poll's
+    * release made after frame, duration_ms, time_us and loops_left; the poll's
     * acquire that sees it sees them whole. Every other field belongs
     * to the side the status names: the worker from RUNNING to that
     * store, the poll otherwise. */
@@ -100,6 +100,7 @@ typedef struct vp_job
    bool gpu;               /* frames come on the GPU (VP_HW)        */
    bool hw;                /* the READY frame is the player's hw[]   */
    bool seek;              /* a bounded transport step, no slot */
+   bool behind;            /* polling-side catch-up request */
 } vp_job_t;
 
 struct video_player
@@ -107,12 +108,22 @@ struct video_player
    int64_t next_us;        /* when the next frame is due, 0 at once */
    int64_t pause_left_us;  /* remaining picture duration at pause */
    bool paused;           /* polling thread only */
+   bool presented;
+   bool inline_ready, inline_finished;
+   video_player_frame_t inline_frame;
+   int64_t movie_us;       /* immutable full movie period, or zero */
+   int64_t origin_us;      /* polling clock's movie origin */
+   int64_t pause_us;
+   /* The exclusive decode owner advances this only when rewinding.
+    * The poll reads job->time_us, never this cursor while decoding. */
+   int64_t decode_epoch_us;
+   bool decode_behind;     /* exclusive decoder owner's last setting */
    video_player_seek_cb_t seek_cb;
    void *seek_user;
    int64_t seek_target, seek_run_target, seek_position;
    int32_t initial_loops;
    bool seek_pending, seek_dirty, seek_active, seek_restart;
-   bool seek_valid, seek_show;
+   bool seek_valid, seek_show, seek_gap;
    void *stream;
    vp_job_t *job[2];       /* one block; NULL until a threaded start */
    video_player_sink_t sink;
@@ -132,9 +143,11 @@ static int64_t vp_budget_used_us  = 0;
 
 /* One pass ended: count the loop down and rewind. The next frame, or
  * NULL when the loops are done or the stream fails. */
-static const uint32_t *vp_next(void *stream, enum image_type_enum type,
+static const uint32_t *vp_next(video_player_t *p,
       int32_t *loops_left, int *duration_ms)
 {
+   void *stream = p->stream;
+   enum image_type_enum type = p->type;
    const uint32_t *frame = image_transfer_anim_stream_next(stream, type,
          duration_ms);
    if (frame)
@@ -145,8 +158,48 @@ static const uint32_t *vp_next(void *stream, enum image_type_enum type,
       (*loops_left)--;
    if (*loops_left == 0)
       return NULL;
+   if (p->movie_us)
+   {
+      if (p->decode_epoch_us > VP_TIME_MAX - p->movie_us)
+         return NULL;
+      p->decode_epoch_us += p->movie_us;
+   }
    image_transfer_anim_stream_rewind(stream, type);
    return image_transfer_anim_stream_next(stream, type, duration_ms);
+}
+
+/* Called only by the decoder owner. A finished finite loop holds its
+ * last picture through the movie's audio tail. */
+static int64_t vp_frame_time(video_player_t *p, bool finished)
+{
+   int64_t time;
+   if (!p->movie_us) return -1;
+   time = finished ? p->movie_us
+      : image_transfer_anim_stream_frame_time_ns(p->stream, p->type);
+   if (!finished && time >= 0) time /= 1000;
+   if (time < 0 || time > VP_TIME_MAX - p->decode_epoch_us) return -1;
+   return p->decode_epoch_us + time;
+}
+
+static int64_t vp_deadline(video_player_t *p, int64_t time)
+{
+   if (time < 0) return p->next_us;
+   return p->origin_us > VP_TIME_MAX - time
+      ? VP_TIME_MAX : p->origin_us + time;
+}
+
+static void vp_movie_deadline(video_player_t *p, int64_t time, int64_t now)
+{
+   p->next_us = vp_deadline(p, time);
+   if (p->seek_show && time >= 0)
+      p->seek_gap = time > p->seek_position;
+   if (p->paused)
+   {
+      uint64_t left = p->next_us > now
+         ? (uint64_t)p->next_us - (uint64_t)now : 0;
+      p->pause_left_us = left > (uint64_t)VP_TIME_MAX
+         ? VP_TIME_MAX : (int64_t)left;
+   }
 }
 
 static void vp_swizzle(uint32_t *dst, const uint32_t *src, size_t n)
@@ -220,14 +273,18 @@ static void vp_schedule(video_player_t *p, int duration_ms, int64_t now)
    }
 
    p->seek_show = false;
+   p->presented = true;
    if (p->paused)
       p->pause_left_us = (int64_t)duration_ms * 1000;
 
    if (behind != (p->flags & VP_BEHIND))
    {
       p->flags = (p->flags & ~VP_BEHIND) | behind;
-      image_transfer_anim_stream_set_catchup(p->stream, p->type,
-            behind ? 1 : 0);
+      /* A threaded decoder can be rewinding or reading its references
+       * now. Its next job carries this request to the decode owner. */
+      if (!(p->flags & VP_THREADED))
+         image_transfer_anim_stream_set_catchup(p->stream, p->type,
+               behind ? 1 : 0);
    }
 }
 
@@ -237,7 +294,7 @@ static int vp_step_hw(video_player_t *p, unsigned idx, int32_t *loops_left,
 {
    if (p->sink.feed && !p->sink.feed(p->sink.user))
       return false;
-   if (!vp_next(p->stream, p->type, loops_left, duration_ms))
+   if (!vp_next(p, loops_left, duration_ms))
       return image_transfer_anim_stream_waiting(p->stream, p->type) ? 2 : 0;
    /* a frame that came in software, which a backend that took the
     * stream once and not after a rewind gives, ends the playback */
@@ -310,6 +367,11 @@ static int vp_job_step(vp_job_t *job)
    bool native, direct;
    enum video_player_how how;
 
+   if (p->decode_behind != job->behind)
+   {
+      image_transfer_anim_stream_set_catchup(stream, type, job->behind ? 1 : 0);
+      p->decode_behind = job->behind;
+   }
    if (job->seek)
    {
       int r = p->seek_cb(p->seek_user, p->seek_run_target,
@@ -322,6 +384,7 @@ static int vp_job_step(vp_job_t *job)
             &job->loops_left, &duration_ms);
       job->hw = r == 1;
       job->duration_ms = duration_ms;
+      job->time_us = vp_frame_time(p, !r);
       return r;
    }
    /* Every stream emits the order asked for; one that cannot is
@@ -344,8 +407,12 @@ static int vp_job_step(vp_job_t *job)
    if (p->sink.feed && !p->sink.feed(p->sink.user))
       return false;
 
-   if (!(frame = vp_next(stream, type, &job->loops_left, &duration_ms)))
+   if (!(frame = vp_next(p, &job->loops_left, &duration_ms)))
+   {
+      job->time_us = vp_frame_time(p, true);
       return image_transfer_anim_stream_waiting(stream, type) ? 2 : 0;
+   }
+   job->time_us = vp_frame_time(p, false);
 
    if (job->fp16)
    {
@@ -563,6 +630,7 @@ static bool vp_job_start(video_player_t *p, vp_job_t *job)
    uint32_t *buf = NULL;
    job->hw       = false;
    job->seek     = false;
+   job->behind   = (p->flags & VP_BEHIND) != 0;
    if (     !(p->flags & VP_HW)
          && !(buf = p->sink.slot_begin(p->sink.user, slot)))
       return false;
@@ -647,6 +715,8 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       vp_job_start(p, jo);
    }
 
+   if (p->movie_us && (su == VP_JOB_READY || su == VP_JOB_FINISHED))
+      vp_movie_deadline(p, ju->time_us, now);
    if (p->next_us != 0 && now < p->next_us)
       return VIDEO_PLAYER_PLAYING;
    /* loops done or the stream failed: the sibling holds only a frame
@@ -714,7 +784,16 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    int duration_ms      = 0;
    int64_t budget_now   = 0;
 
-   if (p->next_us != 0 && now < p->next_us)
+   if (p->inline_ready)
+   {
+      if (now < p->next_us) return VIDEO_PLAYER_PLAYING;
+      fr = p->inline_frame;
+      budgeted = false;
+      goto present_frame;
+   }
+   if (p->inline_finished)
+      return now < p->next_us ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
+   if (!p->movie_us && p->next_us != 0 && now < p->next_us)
       return VIDEO_PLAYER_PLAYING;
 
    if (budgeted)
@@ -737,7 +816,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       if (r == 2)
          return VIDEO_PLAYER_PLAYING;
       if (!r)
-         return VIDEO_PLAYER_ENDED;
+         goto finished;
       fr.pixels      = NULL;
       fr.slot        = 0;
       fr.width       = p->width;
@@ -746,19 +825,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       fr.native      = true;
       fr.how         = VIDEO_PLAYER_DIRECT;
       fr.hw          = &p->hw[0];
-      res            = p->sink.present(p->sink.user, &fr);
-      /* decoded in line, a frame not taken now is gone */
-      if (     res == VIDEO_PLAYER_PRESENT_BUSY
-            || res == VIDEO_PLAYER_PRESENT_FAILED)
-         video_hw_frame_abandon(fr.hw);
-      if (res == VIDEO_PLAYER_PRESENT_BUSY)
-         return VIDEO_PLAYER_PLAYING;
-      if (res == VIDEO_PLAYER_PRESENT_FAILED)
-         return VIDEO_PLAYER_ENDED;
-      vp_schedule(p, duration_ms, now);
-      if (budgeted)
-         vp_budget_used_us += cpu_features_get_time_usec() - budget_now;
-      return VIDEO_PLAYER_PLAYING;
+      goto decoded_frame;
    }
 
    native = image_transfer_anim_stream_set_argb(p->stream, p->type,
@@ -781,12 +848,13 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
    if (p->sink.feed && !p->sink.feed(p->sink.user))
       goto ended;
 
-   if (!(frame = vp_next(p->stream, p->type, &p->loops_left, &duration_ms)))
+   if (!(frame = vp_next(p, &p->loops_left, &duration_ms)))
    {
       if (buf && p->sink.slot_end)
          p->sink.slot_end(p->sink.user, 0);
-      return image_transfer_anim_stream_waiting(p->stream, p->type)
-         ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
+      if (image_transfer_anim_stream_waiting(p->stream, p->type))
+         return VIDEO_PLAYER_PLAYING;
+      goto finished;
    }
 
    fr.pixels      = NULL;
@@ -829,16 +897,40 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
 
    if (buf && p->sink.slot_end)
       p->sink.slot_end(p->sink.user, 0);
-   res = p->sink.present(p->sink.user, &fr);
-   if (res == VIDEO_PLAYER_PRESENT_BUSY)
-      return VIDEO_PLAYER_PLAYING;
-   if (res == VIDEO_PLAYER_PRESENT_FAILED)
-      return VIDEO_PLAYER_ENDED;
-   vp_schedule(p, duration_ms, now);
+decoded_frame:
    if (budgeted)
       vp_budget_used_us += cpu_features_get_time_usec() - budget_now;
+   if (p->movie_us)
+   {
+      p->inline_frame = fr;
+      p->inline_ready = true;
+      vp_movie_deadline(p, vp_frame_time(p, false), now);
+      if (now < p->next_us) return VIDEO_PLAYER_PLAYING;
+   }
+present_frame:
+   res = p->sink.present(p->sink.user, &fr);
+   if (res == VIDEO_PLAYER_PRESENT_BUSY)
+   {
+      if (fr.hw && !p->inline_ready) video_hw_frame_abandon(fr.hw);
+      return VIDEO_PLAYER_PLAYING;
+   }
+   p->inline_ready = false;
+   if (res == VIDEO_PLAYER_PRESENT_FAILED)
+   {
+      if (fr.hw) video_hw_frame_abandon(fr.hw);
+      return VIDEO_PLAYER_ENDED;
+   }
+   vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;
 
+finished:
+   if (p->movie_us)
+   {
+      p->inline_finished = true;
+      vp_movie_deadline(p, vp_frame_time(p, true), now);
+      return now < p->next_us ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
+   }
+   return VIDEO_PLAYER_ENDED;
 ended:
    if (buf && p->sink.slot_end)
       p->sink.slot_end(p->sink.user, 0);
@@ -847,7 +939,7 @@ ended:
 
 /* Quiesce the old decode without waiting, then reuse its worker slot
  * for bounded seek steps. The polling thread alone changes requests. */
-static int vp_poll_seek(video_player_t *p)
+static int vp_poll_seek(video_player_t *p, int64_t now)
 {
    int result;
 #ifdef VIDEO_PLAYER_WORKER
@@ -926,6 +1018,11 @@ finished:
    }
    p->seek_valid = p->seek_show = true;
    p->next_us = p->pause_left_us = 0;
+   p->decode_epoch_us = 0;
+   p->inline_finished = false;
+   if (p->paused) p->pause_us = now;
+   p->origin_us = now < -VP_TIME_MAX + p->seek_position
+      ? -VP_TIME_MAX : now - p->seek_position;
    p->loops_left = p->initial_loops;
 #ifdef VIDEO_PLAYER_WORKER
    if (p->flags & VP_THREADED)
@@ -961,6 +1058,11 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
          | VIDEO_PLAYER_INLINE);
    p->loops_left = (loop_count == 0) ? -1 : loop_count;
    p->initial_loops = p->loops_left;
+   if (type == IMAGE_TYPE_MP4)
+   {
+      int64_t duration = image_transfer_anim_stream_duration_ns(stream, type);
+      if (duration > 0) p->movie_us = duration / 1000;
+   }
    image_transfer_anim_stream_get_info(stream, type, &p->width,
          &p->height, &num_frames, &loops);
    return p;
@@ -997,6 +1099,7 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       /* told once, before any decode */
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
+      p->origin_us = now_us;
 #ifdef VIDEO_PLAYER_WORKER
       if (threaded)
       {
@@ -1012,10 +1115,11 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 
    if (p->seek_pending)
    {
-      int r = vp_poll_seek(p);
+      int r = vp_poll_seek(p, now_us);
       if (r <= 0)
          return r < 0 ? VIDEO_PLAYER_ENDED : VIDEO_PLAYER_PLAYING;
    }
+   if (p->paused && p->movie_us) now_us = p->pause_us;
 
 #ifdef VIDEO_PLAYER_WORKER
    if (p->flags & VP_THREADED)
@@ -1038,9 +1142,13 @@ bool video_player_seek(video_player_t *p, int64_t target_us)
 {
    if (!p || !p->seek_cb || (p->flags & VP_STOPPED))
       return false;
+   if (p->inline_ready && p->inline_frame.hw)
+      video_hw_frame_abandon(p->inline_frame.hw);
+   p->inline_ready = false;
    p->seek_target = target_us < 0 ? 0 : target_us;
    p->seek_pending = p->seek_dirty = true;
    p->seek_valid = p->seek_show = false;
+   p->seek_gap = false;
    return true;
 }
 
@@ -1052,7 +1160,8 @@ bool video_player_seeking(const video_player_t *p)
 bool video_player_seek_position(const video_player_t *p, int64_t *position_us)
 {
    if (position_us) *position_us = 0;
-   if (!p || p->seek_pending || !p->seek_valid || (p->flags & VP_STOPPED))
+   if (!p || p->seek_pending || !p->seek_valid
+         || (p->seek_show && !p->seek_gap) || (p->flags & VP_STOPPED))
       return false;
    if (position_us) *position_us = p->seek_position;
    return true;
@@ -1068,10 +1177,21 @@ void video_player_set_paused(video_player_t *p, bool paused, int64_t now_us)
          ? (uint64_t)p->next_us - (uint64_t)now_us : 0;
       p->pause_left_us = left > (uint64_t)VP_TIME_MAX
          ? VP_TIME_MAX : (int64_t)left;
+      p->pause_us = now_us;
    }
-   else if (p->next_us)
-      p->next_us = now_us > VP_TIME_MAX - p->pause_left_us
-         ? VP_TIME_MAX : now_us + p->pause_left_us;
+   else
+   {
+      if (p->movie_us && now_us > p->pause_us)
+      {
+         uint64_t elapsed = (uint64_t)now_us - (uint64_t)p->pause_us;
+         p->origin_us = elapsed > (uint64_t)VP_TIME_MAX
+            || p->origin_us > VP_TIME_MAX - (int64_t)elapsed
+            ? VP_TIME_MAX : p->origin_us + (int64_t)elapsed;
+      }
+      if (p->next_us)
+         p->next_us = now_us > VP_TIME_MAX - p->pause_left_us
+            ? VP_TIME_MAX : now_us + p->pause_left_us;
+   }
    p->paused = paused;
 }
 
@@ -1082,7 +1202,12 @@ bool video_player_paused(const video_player_t *p)
 
 bool video_player_has_presented(const video_player_t *p)
 {
-   return p && p->next_us != 0;
+   return p && p->presented;
+}
+
+bool video_player_started(const video_player_t *p)
+{
+   return p && (p->flags & VP_STARTED) && !(p->flags & VP_STOPPED);
 }
 
 int64_t video_player_due(const video_player_t *p)
@@ -1137,6 +1262,8 @@ void video_player_free(video_player_t *p)
 {
    if (!p)
       return;
+   if (p->inline_ready && p->inline_frame.hw)
+      video_hw_frame_abandon(p->inline_frame.hw);
 #ifdef VIDEO_PLAYER_WORKER
    if (p->job[0])
    {
