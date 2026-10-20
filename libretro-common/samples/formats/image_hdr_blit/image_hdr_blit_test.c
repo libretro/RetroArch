@@ -200,7 +200,8 @@ static double tone_curve(double x)
 /* Reference starts at normalized source code values, without the
  * production integer matrix or transfer/output lookup tables. */
 static void reference_sdr(unsigned y, unsigned u, unsigned v,
-      unsigned full, unsigned transfer, double rgb[3])
+      unsigned full, unsigned transfer, unsigned primaries,
+      unsigned peak_nits, double rgb[3])
 {
    static const double gamut[3][3] = {
       {6801.0/4096,-2407.0/4096,-298.0/4096},
@@ -218,12 +219,12 @@ static void reference_sdr(unsigned y, unsigned u, unsigned v,
    for (i = 0; i < 48; i++)
    {
       gain = (lo + hi) / 2;
-      if (tone_curve(gain) / tone_curve(gain * 1000 / 203) < 0.8)
+      if (tone_curve(gain) / tone_curve(gain * peak_nits / 203) < 0.8)
          lo = gain;
       else
          hi = gain;
    }
-   norm = tone_curve(gain * 1000 / 203);
+   norm = tone_curve(gain * peak_nits / 203);
    for (i = 0; i < 3; i++)
    {
       double e = rgb[i] < 0 ? 0 : rgb[i] > 1 ? 1 : rgb[i];
@@ -235,7 +236,10 @@ static void reference_sdr(unsigned y, unsigned u, unsigned v,
    for (i = 0; i < 3; i++)
    {
       double x = 0;
-      for (j = 0; j < 3; j++) x += gamut[i][j] * linear[j];
+      if (primaries == 1)
+         x = linear[i];
+      else
+         for (j = 0; j < 3; j++) x += gamut[i][j] * linear[j];
       if (x < 0) x = 0;
       if (x > 1) x = 1;
       rgb[i] = x <= 0.0031308 ? 12.92 * x
@@ -256,7 +260,7 @@ static void lane_sdr_color_precision(void)
                   uint16_t luma[4], cb = (uint16_t)u, cr = (uint16_t)v;
                   uint32_t got8[4], got10[4];
                   double ref[3];
-                  reference_sdr(y, u, v, full, transfer, ref);
+                  reference_sdr(y, u, v, full, transfer, 9, 1000, ref);
                   for (i = 0; i < 4; i++) luma[i] = (uint16_t)y;
                   rwebm_video_blit_i420_hbd(got8, 2, 2, 2, luma, 2,
                         &cb, &cr, 1, 9, transfer, full ? 2 : 1, 0, 0);
@@ -278,6 +282,89 @@ static void lane_sdr_color_precision(void)
          worst8, worst10);
 }
 
+static void lane_source_primaries(void)
+{
+   unsigned transfer, full, primaries, peak, c, i;
+   static const unsigned values[][3] = {
+      {128,448,576}, {253,568,448}, {400,448,576},
+      {512,576,448}, {700,448,576}, {900,576,448}
+   };
+   int worst8 = 0, worst10 = 0;
+   for (transfer = 16; transfer <= 18; transfer += 2)
+      for (full = 0; full < 2; full++)
+         for (primaries = 1; primaries <= 9; primaries += 8)
+            for (peak = 1000; peak <= 4000; peak += 3000)
+               for (i = 0; i < sizeof(values) / sizeof(values[0]); i++)
+               {
+                  uint16_t luma[4], cb = (uint16_t)values[i][1];
+                  uint16_t cr = (uint16_t)values[i][2];
+                  uint32_t got8[4], got10[4], legacy[4];
+                  double ref[3];
+                  unsigned k;
+                  reference_sdr(values[i][0], cb, cr, full, transfer,
+                        primaries, transfer == 16 ? peak : 1000, ref);
+                  for (k = 0; k < 4; k++) luma[k] = (uint16_t)values[i][0];
+                  rwebm_video_blit_i420_hbd_color(got8, 2, 2, 2, luma, 2,
+                        &cb, &cr, 1, 9, transfer, full ? 2 : 1, peak, primaries, 0);
+                  rwebm_video_blit_i420_10bit_color(got10, 2, 2, 2, luma, 2,
+                        &cb, &cr, 1, 9, transfer, full ? 2 : 1, peak, primaries);
+                  for (c = 0; c < 3; c++)
+                  {
+                     int e8 = abs((int)((got8[0] >> (16 - 8 * c)) & 255)
+                           - (int)(ref[c] * 255 + 0.5));
+                     int e10 = abs((int)((got10[0] >> (20 - 10 * c)) & 1023)
+                           - (int)(ref[c] * 1023 + 0.5));
+                     if (e8 > worst8) worst8 = e8;
+                     if (e10 > worst10) worst10 = e10;
+                  }
+                  if (primaries == 9)
+                  {
+                     rwebm_video_blit_i420_hbd(legacy, 2, 2, 2, luma, 2,
+                           &cb, &cr, 1, 9, transfer, full ? 2 : 1, peak, 0);
+                     CHECK(!memcmp(legacy, got8, sizeof(legacy)), "legacy 8-bit wrapper changed");
+                     rwebm_video_blit_i420_10bit(legacy, 2, 2, 2, luma, 2,
+                           &cb, &cr, 1, 9, transfer, full ? 2 : 1, peak);
+                     CHECK(!memcmp(legacy, got10, sizeof(legacy)), "legacy 10-bit wrapper changed");
+                  }
+               }
+   CHECK(worst8 <= 2 && worst10 <= 6,
+         "source-primary/peak SDR mismatch %d / %d", worst8, worst10);
+   printf("[info] source primaries and peak: max %d / %d units\n", worst8, worst10);
+}
+
+static void lane_709_scrgb(void)
+{
+   uint16_t y[4] = {400,400,400,400}, u = 448, v = 576;
+   uint16_t out[16];
+   unsigned transfer, c;
+   /* The unchanged linear blit's quantized encoded RGB step. The
+    * reference then evaluates PQ/HLG directly in the source primaries. */
+   double encoded[3] = {
+      ((298 * (400-64) + 431 * (576-512) + 128) >> 8) / 1023.0,
+      ((298 * (400-64) - 48 * (448-512) - 167 * (576-512) + 128) >> 8) / 1023.0,
+      ((298 * (400-64) + 548 * (448-512) + 128) >> 8) / 1023.0
+   };
+   for (transfer = 16; transfer <= 18; transfer += 2)
+   {
+      double ref[3];
+      CHECK(rwebm_video_blit_i420_fp16_color(out, 2, 2, 2, y, 2,
+            &u, &v, 1, 9, transfer, 1, 1), "BT709 HDR linear blit refused");
+      if (transfer == 16)
+         for (c = 0; c < 3; c++) ref[c] = pq_nits(encoded[c]) / 80;
+      else
+      {
+         double scene[3], ys;
+         for (c = 0; c < 3; c++) scene[c] = hlg_scene(encoded[c]);
+         ys = .2126 * scene[0] + .7152 * scene[1] + .0722 * scene[2];
+         for (c = 0; c < 3; c++) ref[c] = scene[c] * 1000 / 80 * pow(ys, .2);
+      }
+      for (c = 0; c < 3; c++)
+         CHECK(fabs(half_to_double(out[c]) - ref[c]) <= fabs(ref[c]) * .002 + .002,
+               "BT709 linear HDR changed primaries: transfer %u channel %u", transfer, c);
+      CHECK(out[3] == 0x3c00, "BT709 linear HDR alpha changed");
+   }
+}
+
 int main(void)
 {
    lane_fp16_ramp(16, "PQ");
@@ -286,6 +373,8 @@ int main(void)
    lane_fp16_refuses_sdr();
    lane_hlg_tonemapped();
    lane_sdr_color_precision();
+   lane_source_primaries();
+   lane_709_scrgb();
    if (failures)
    {
       fprintf(stderr, "%u failure(s)\n", failures);

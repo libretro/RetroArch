@@ -1541,7 +1541,7 @@ typedef struct
    unsigned dst_stride, w;
    int ys, uvs;
    int chsh, cvsh, bd;
-   unsigned matrix, transfer, range;
+   unsigned matrix, transfer, range, primaries;
    int argb;
    int kind;  /* 0: 8-bit yuv (cvsh), 1: 8-bit 4:4:4, 2: hbd to 8-bit,
                  3: webm hbd to 8-bit, 4: webm 10-bit, 5: HDR to scRGB
@@ -1577,27 +1577,29 @@ static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                c->chsh, c->cvsh, c->bd, c->matrix, c->range, c->argb);
          break;
       case 3:
-         rwebm_video_blit_i420_hbd(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_hbd_color(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range ? 2 : 1, 0, c->argb);
+               c->matrix, c->transfer, c->range ? 2 : 1,
+               0, c->primaries, c->argb);
          break;
       case 4:
-         rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_10bit_color(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range ? 2 : 1, 0);
+               c->matrix, c->transfer, c->range ? 2 : 1,
+               0, c->primaries);
          break;
       default:
-         rwebm_video_blit_i420_fp16(
+         rwebm_video_blit_i420_fp16_color(
                (uint16_t*)c->dst + (size_t)row0 * c->dst_stride * 4,
                c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range ? 2 : 1);
+               c->matrix, c->transfer, c->range ? 2 : 1, c->primaries);
          break;
    }
 }
@@ -1619,6 +1621,7 @@ static int rmp4_video_wants_fp16(const rmp4_video_stream_t *s)
 static void rmp4_video_blit_frame(rmp4_video_stream_t *s,
       rmp4_blit_ctx_t *c, unsigned h)
 {
+   c->primaries = s->primaries;
    if (c->kind <= 2 && !(c->matrix == 1 || c->matrix == 5
             || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
       c->matrix = h >= 720 ? 1 : 5;

@@ -574,21 +574,21 @@ static int media_present_vp9(media_player_t *p, int show)
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
       if (p->pix10)
-         rwebm_video_blit_i420_10bit(p->fb, p->width, w, h,
+         rwebm_video_blit_i420_10bit_color(p->fb, p->width, w, h,
             (const uint16_t*)fb->y, p->vp9->ys,
             (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
             ct ? ct->matrix_coefficients : 0,
             ct ? ct->transfer_characteristics : 0,
             ct ? ct->colour_range : 0,
-            ct ? ct->max_cll : 0);
+            ct ? ct->max_cll : 0, ct ? ct->primaries : 0);
       else
-         rwebm_video_blit_i420_hbd(p->fb, p->width, w, h,
+         rwebm_video_blit_i420_hbd_color(p->fb, p->width, w, h,
             (const uint16_t*)fb->y, p->vp9->ys,
             (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
             ct ? ct->matrix_coefficients : 0,
             ct ? ct->transfer_characteristics : 0,
             ct ? ct->colour_range : 0,
-            ct ? ct->max_cll : 0, 0);
+            ct ? ct->max_cll : 0, ct ? ct->primaries : 0, 0);
    }
    else
       {

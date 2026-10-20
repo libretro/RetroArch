@@ -87,6 +87,8 @@ fixed RGB references from FFmpeg-decoded YUV planes and the double-precision
 import color oracle. Pass either directory to `run.py --fixtures`. The probe
 selects SDR output (`video_hdr_mode = 0`), so this covers HDR input conversion,
 hardware import, CPU fallback and recovery, rather than HDR display luminance.
+Use `mkhdrfixtures.py DIR --primaries bt709` for explicitly signalled BT.709 HDR,
+which must retain BT.709 primaries during both GPU import and CPU fallback.
 
 The probe temporarily sets the logical input-port count to zero while retaining
 device polling and cleanup. Requesting a nonexistent null joypad driver can otherwise

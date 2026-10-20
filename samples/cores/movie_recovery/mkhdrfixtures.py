@@ -11,7 +11,11 @@ import tempfile
 
 parser=argparse.ArgumentParser()
 parser.add_argument("output",type=Path)
+parser.add_argument("--primaries",choices=("bt2020","bt709"),default="bt2020")
 args=parser.parse_args()
+primaries = 1 if args.primaries == "bt709" else 9
+matrix = 1 if primaries == 1 else 9
+matrix_name = "bt709" if matrix == 1 else "bt2020nc"
 reference_file=Path(__file__).resolve().parents[2]/"gfx/d3d_p010_import/hdr_reference.py"
 spec=importlib.util.spec_from_file_location("movie_hdr_reference",reference_file)
 module=importlib.util.module_from_spec(spec)
@@ -48,15 +52,15 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
             '-pix_fmt', 'yuv420p10le', '-s', '256x192', '-r', '12', '-i', str(raw),
             '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=16',
             '-t', '16', '-c:v', 'libx265', '-preset', 'fast', '-x265-params',
-            'pools=1:frame-threads=1:log-level=error:range=limited:colorprim=bt2020:'
-            'transfer=' + tag + ':colormatrix=bt2020nc', '-color_range', 'tv',
-            '-colorspace', 'bt2020nc', '-color_primaries', 'bt2020', '-color_trc',
+            'pools=1:frame-threads=1:log-level=error:range=limited:colorprim=' + args.primaries +
+            ':transfer=' + tag + ':colormatrix=' + matrix_name, '-color_range', 'tv',
+            '-colorspace', matrix_name, '-color_primaries', args.primaries, '-color_trc',
             tag, '-c:a', 'aac', '-b:a', '96k', str(movie)]
         subprocess.run(command,check=True)
         probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=profile,pix_fmt,color_range,color_space,color_transfer,color_primaries','-of','json',str(movie)]))
         stream=probe['streams'][0]
         assert stream['profile']=='Main 10' and stream['pix_fmt']=='yuv420p10le' and stream['color_range']=='tv'
-        assert stream['color_transfer']==tag and stream['color_space']=='bt2020nc' and stream['color_primaries']=='bt2020'
+        assert stream['color_transfer']==tag and stream['color_space']==matrix_name and stream['color_primaries']==args.primaries
         decoded=subprocess.check_output(['ffmpeg','-v','error','-i',str(movie),'-frames:v','12','-an','-pix_fmt','yuv420p10le','-f','rawvideo','-'])
         assert len(decoded)==12*256*192*3
         reference = bytearray()
@@ -67,7 +71,8 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
                 for x in range(256):
                     at=(y//2)*128+x//2
                     key=(values[y*256+x],values[49152+at],values[61440+at])
-                    if key not in cache:cache[key]=bytes(scope['reference'](1,False,transfer,*key))
+                    if key not in cache:
+                        cache[key]=bytes(scope['reference'](1,False,transfer,*key,primaries,matrix))
                     reference+=cache[key]
         (d/'reference.rgb').write_bytes(reference)
         manifest = dict(

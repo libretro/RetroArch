@@ -697,11 +697,11 @@ static int rwebm_hbd_hdr_lookup(const uint16_t *lut, int encoded)
             * fraction + 32768u) >> 16);
 }
 
-void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
+void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
       unsigned matrix, unsigned transfer, unsigned range,
-      unsigned max_cll, int abgr)
+      unsigned max_cll, unsigned primaries, int abgr)
 {
    int re, gd, ge, bd;
    /* PQ and HLG are HDR, tone-mapped to SDR; anything else is SDR */
@@ -757,9 +757,9 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
                   yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
             int lb = rwebm_hbd_hdr_lookup(hdr_lut,
                   yy + hdr_coefficients[4] * cb);
-            int xr = (6801 * lr - 2407 * lg -  298 * lb) >> 12;
-            int xg = ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
-            int xb = (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
+            int xr = primaries == 1 ? lr : (6801 * lr - 2407 * lg -  298 * lb) >> 12;
+            int xg = primaries == 1 ? lg : ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
+            int xb = primaries == 1 ? lb : (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
             if (xr < 0) xr = 0; else if (xr > 65535) xr = 65535;
             if (xg < 0) xg = 0; else if (xg > 65535) xg = 65535;
             if (xb < 0) xb = 0; else if (xb > 65535) xb = 65535;
@@ -792,11 +792,11 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
 /* deliberately does NOT pass PQ through; it only raises the source bit  */
 /* depth. Used when the frontend accepts RETRO_PIXEL_FORMAT_XRGB2101010. */
 /* ------------------------------------------------------------------ */
-void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
+void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
       unsigned matrix, unsigned transfer, unsigned range,
-      unsigned max_cll)
+      unsigned max_cll, unsigned primaries)
 {
    int re, gd, ge, bd;
    /* PQ and HLG are HDR, tone-mapped to SDR; anything else is SDR */
@@ -852,9 +852,9 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
                   yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
             int lb = rwebm_hbd_hdr_lookup(hdr_lut,
                   yy + hdr_coefficients[4] * cb);
-            int xr = (6801 * lr - 2407 * lg -  298 * lb) >> 12;
-            int xg = ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
-            int xb = (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
+            int xr = primaries == 1 ? lr : (6801 * lr - 2407 * lg -  298 * lb) >> 12;
+            int xg = primaries == 1 ? lg : ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
+            int xb = primaries == 1 ? lb : (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
             if (xr < 0) xr = 0; else if (xr > 65535) xr = 65535;
             if (xg < 0) xg = 0; else if (xg > 65535) xg = 65535;
             if (xb < 0) xb = 0; else if (xb > 65535) xb = 65535;
@@ -914,10 +914,10 @@ static uint16_t image_hdr_half(float f)
    return (uint16_t)(sign | h);
 }
 
-int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
+int rwebm_video_blit_i420_fp16_color(uint16_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
-      unsigned matrix, unsigned transfer, unsigned range)
+      unsigned matrix, unsigned transfer, unsigned range, unsigned primaries)
 {
    int re, gd, ge, bd;
    int full   = (range == 2);
@@ -963,7 +963,9 @@ int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
             float er = image_hdr_hlg_scene[r];
             float eg = image_hdr_hlg_scene[g];
             float eb = image_hdr_hlg_scene[b];
-            float ys_ = 0.2627f * er + 0.6780f * eg + 0.0593f * eb;
+            float ys_ = primaries == 1
+               ? 0.2126f * er + 0.7152f * eg + 0.0722f * eb
+               : 0.2627f * er + 0.6780f * eg + 0.0593f * eb;
             float k   = ys_ > 0.0f
                ? (float)(1000.0 / 80.0 * pow((double)ys_, 0.2)) : 0.0f;
             lr = er * k;
@@ -976,11 +978,44 @@ int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
             lg = image_hdr_pq_scrgb[g];
             lb = image_hdr_pq_scrgb[b];
          }
-         dr[i * 4 + 0] = image_hdr_half( 1.660491f * lr - 0.587641f * lg - 0.072850f * lb);
-         dr[i * 4 + 1] = image_hdr_half(-0.124550f * lr + 1.132900f * lg - 0.008349f * lb);
-         dr[i * 4 + 2] = image_hdr_half(-0.018151f * lr - 0.100579f * lg + 1.118730f * lb);
+         dr[i * 4 + 0] = image_hdr_half(primaries == 1 ? lr
+               : 1.660491f * lr - 0.587641f * lg - 0.072850f * lb);
+         dr[i * 4 + 1] = image_hdr_half(primaries == 1 ? lg
+               : -0.124550f * lr + 1.132900f * lg - 0.008349f * lb);
+         dr[i * 4 + 2] = image_hdr_half(primaries == 1 ? lb
+               : -0.018151f * lr - 0.100579f * lg + 1.118730f * lb);
          dr[i * 4 + 3] = 0x3c00u; /* 1.0 */
       }
    }
    return 1;
+}
+
+/* Legacy entry points assume BT.2020 for HDR, as before. New callers
+ * with explicit source primaries use the color-aware variants above. */
+void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, int abgr)
+{
+   rwebm_video_blit_i420_hbd_color(dst, dst_stride, w, h, y, ys, u, v,
+         uvs, matrix, transfer, range, max_cll, 9, abgr);
+}
+
+void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range, unsigned max_cll)
+{
+   rwebm_video_blit_i420_10bit_color(dst, dst_stride, w, h, y, ys, u, v,
+         uvs, matrix, transfer, range, max_cll, 9);
+}
+
+int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range)
+{
+   return rwebm_video_blit_i420_fp16_color(dst, dst_stride, w, h, y, ys,
+         u, v, uvs, matrix, transfer, range, 9);
 }

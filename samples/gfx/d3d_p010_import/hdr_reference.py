@@ -13,12 +13,15 @@ for _ in range(48):
     else: hi = gain
 normal = hable(gain*1000/203)
 
-def reference(depth, full, transfer, y, u, v):
+def reference(depth, full, transfer, y, u, v, primaries=9, matrix=9):
     scale = 4 if depth else 1
     ym = (1023 if depth else 255) if full else 219*scale
     cm = ym if full else 224*scale
     yy, cb, cr = (y - (0 if full else 16*scale))/ym, (u-128*scale)/cm, (v-128*scale)/cm
-    encoded = [yy+1.4746*cr, yy-.16455313*cb-.57135313*cr, yy+1.8814*cb]
+    if matrix == 1:
+        encoded = [yy+1.5748*cr, yy-.1873242729*cb-.4681242729*cr, yy+1.8556*cb]
+    else:
+        encoded = [yy+1.4746*cr, yy-.16455313*cb-.57135313*cr, yy+1.8814*cb]
     linear = []
     for x in encoded:
         x = max(0., min(1., x))
@@ -30,7 +33,9 @@ def reference(depth, full, transfer, y, u, v):
             light = scene**1.2*1000/203
         linear.append(max(0., min(1., hable(gain*light)/normal)))
     result = []
-    for row in [(6801,-2407,-298),(-510,4640,-34),(-75,-412,4583)]:
+    gamut = ([(4096,0,0),(0,4096,0),(0,0,4096)] if primaries == 1 else
+             [(6801,-2407,-298),(-510,4640,-34),(-75,-412,4583)])
+    for row in gamut:
         x = max(0., min(1., sum(a*b for a,b in zip(linear,row))/4096))
         srgb = 12.92*x if x <= .0031308 else 1.055*x**(1/2.4)-.055
         result.append(int(srgb*255+.5))

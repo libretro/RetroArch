@@ -799,7 +799,7 @@ typedef struct
    const uint8_t *y, *u, *v;
    unsigned dst_stride, w;
    int ys, uvs;
-   unsigned matrix, transfer, range, max_cll;
+   unsigned matrix, transfer, range, max_cll, primaries;
    int argb;
    int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit,
                                3: HDR to scRGB half floats, whose
@@ -820,27 +820,27 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                c->matrix, c->argb);
          break;
       case 1:
-         rwebm_video_blit_i420_hbd(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_hbd_color(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, c->max_cll, c->argb);
+               c->matrix, c->transfer, c->range, c->max_cll, c->primaries, c->argb);
          break;
       case 2:
-         rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_10bit_color(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, c->max_cll);
+               c->matrix, c->transfer, c->range, c->max_cll, c->primaries);
          break;
       default:
-         rwebm_video_blit_i420_fp16(
+         rwebm_video_blit_i420_fp16_color(
                (uint16_t*)c->dst + (size_t)row0 * c->dst_stride * 4,
                c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range);
+               c->matrix, c->transfer, c->range, c->primaries);
          break;
    }
 }
@@ -853,6 +853,8 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
 static void rwebm_video_blit_frame(rwebm_video_stream_t *s,
       rwebm_blit_ctx_t *c, unsigned h)
 {
+   const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
+   c->primaries = ct ? ct->primaries : 0;
    if (c->kind == 0 && !(c->matrix == 1 || c->matrix == 5
             || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
       c->matrix = h >= 720 ? 1 : 5;
