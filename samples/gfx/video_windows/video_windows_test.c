@@ -346,6 +346,86 @@ static void test_selected_layout(void)
    CHECK(layout.placements[1].dst.pos == VIDEO_POS_PACK(213, 225));
 }
 
+static void stacked_map(video_views_map_t *map, unsigned count)
+{
+   unsigned i;
+   memset(map, 0, sizeof(*map));
+   for (i = 0; i < count; i++)
+   {
+      map->views[i].screen = i;
+      map->views[i].y      = i * 192;
+      map->views[i].width  = 256;
+      map->views[i].height = 192;
+   }
+   map->num_views = map->num_screens = count;
+}
+
+/* A touch on a second display, through the layout its output draws
+ * there, lands in the touched screen's part of the packed frame */
+static void test_second_output_touch(void)
+{
+   const uint32_t oob = VIDEO_POS_PACK(-0x8000, -0x8000);
+   video_views_map_t map;
+   video_views_layout_params_t p;
+   video_views_layout_t layout;
+   uint32_t point;
+
+   /* Two screens, the lower on the Thor's lower panel */
+   stacked_map(&map, 2);
+   memset(&p, 0, sizeof(p));
+   p.map             = &map;
+   p.dims            = VIDEO_SCALE_PACK(1240, 1080);
+   p.exclude_screens = ~2u;
+   video_views_layout(&p, &layout);
+   CHECK(layout.num_placements == 1 && layout.placements[0].view == 1);
+   CHECK(layout.placements[0].dst.dims == VIDEO_SCALE_PACK(1240, 930));
+   CHECK(layout.placements[0].dst.pos == VIDEO_POS_PACK(0, 75));
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 384),
+            620, 540, true, &point));
+   CHECK(VIDEO_POS_X(point) > -300 && VIDEO_POS_X(point) < 300);
+   CHECK(VIDEO_POS_Y(point) > 16000 && VIDEO_POS_Y(point) < 16800);
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 384),
+            0, 75, true, &point));
+   CHECK(VIDEO_POS_X(point) < -32500);
+   CHECK(VIDEO_POS_Y(point) > -200 && VIDEO_POS_Y(point) < 200);
+   /* The letterbox: off-screen, or held to the screen */
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 384),
+            620, 10, true, &point));
+   CHECK(point == oob);
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 384),
+            620, 10, false, &point));
+   CHECK(VIDEO_POS_Y(point) > -200 && VIDEO_POS_Y(point) < 200);
+
+   /* Screens 1 and 2 share the display, one above the other */
+   stacked_map(&map, 3);
+   p.exclude_screens = ~6u;
+   video_views_layout(&p, &layout);
+   CHECK(layout.num_placements == 2);
+   CHECK(layout.placements[0].view == 1 && layout.placements[1].view == 2);
+   CHECK(layout.placements[0].dst.pos == VIDEO_POS_PACK(260, 0));
+   CHECK(layout.placements[1].dst.pos == VIDEO_POS_PACK(260, 540));
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 576),
+            620, 270, true, &point));
+   CHECK(VIDEO_POS_Y(point) > -300 && VIDEO_POS_Y(point) < 300);
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 576),
+            620, 810, true, &point));
+   CHECK(VIDEO_POS_Y(point) > 21500 && VIDEO_POS_Y(point) < 22200);
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 576),
+            100, 540, true, &point));
+   CHECK(point == oob);
+
+   /* Screen 0 on an external monitor */
+   stacked_map(&map, 2);
+   p.dims            = VIDEO_SCALE_PACK(1920, 1080);
+   p.exclude_screens = ~1u;
+   video_views_layout(&p, &layout);
+   CHECK(layout.num_placements == 1 && layout.placements[0].view == 0);
+   CHECK(layout.placements[0].dst.pos == VIDEO_POS_PACK(240, 0));
+   CHECK(video_views_map_point(&layout, &map, VIDEO_SCALE_PACK(256, 384),
+            960, 540, true, &point));
+   CHECK(VIDEO_POS_Y(point) > -16800 && VIDEO_POS_Y(point) < -16000);
+}
+
 /* Native layers' bookkeeping: two windows of one owner, one of another */
 static video_window_common_t test_windows[RETRO_VIDEO_VIEWS_MAX];
 static video_window_native_t test_natives[RETRO_VIDEO_VIEWS_MAX];
@@ -510,6 +590,7 @@ int main(void)
    test_windows_attached();
    test_windows_route();
    test_selected_layout();
+   test_second_output_touch();
    test_window_events();
    test_window_place();
    if (failures)
