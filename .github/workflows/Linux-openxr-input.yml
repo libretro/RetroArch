@@ -230,6 +230,13 @@ jobs:
           test -f obj-unix/release/gfx/common/gl_openxr.o
           test -f obj-unix/release/gfx/common/openxr_binding_gl.o
 
+      - name: Build and run video_screens_test
+        shell: bash
+        run: |
+          set -eu
+          python3 samples/settings/video_screens/build.py \
+            --output-dir "$RUNNER_TEMP/video-screens"
+
       - name: Build and run stereo_headset_test
         shell: bash
         run: |
@@ -311,6 +318,13 @@ jobs:
           test -f obj-unix/release/gfx/common/openxr_frame.o
           test -f obj-unix/release/gfx/common/gl_openxr.o
           test ! -e obj-unix/release/gfx/common/vulkan_openxr.o
+
+      - name: Build and run video_screens_test
+        shell: bash
+        run: |
+          set -eu
+          python3 samples/settings/video_screens/build.py \
+            --output-dir "$RUNNER_TEMP/video-screens"
 
       - name: Build and run stereo_headset_test
         shell: bash
