@@ -1191,6 +1191,106 @@ static bool t_pose_is(const video_xr_pose_t *p, float qy, float qw,
        && t_near(p->position.z, z);
 }
 
+/* The latched seqlock the frame's shared state goes through: a writer
+ * stopped part way through a publication holds no reader up - they
+ * read the last whole one - and readers on two threads, with a writer
+ * going as fast as it can, never read two publications mixed. */
+#define T_LATCH_N 24
+static retro_atomic_int_t t_latch_seq;
+static retro_atomic_int_t t_latch_words[2 * T_LATCH_N];
+static retro_atomic_int_t t_latch_done;
+static unsigned t_latch_mixed[2], t_latch_back[2];
+
+static void t_latch_writer(void *data)
+{
+   int v[T_LATCH_N];
+   int n, i;
+   (void)data;
+   for (n = 1; n <= 100000; n++)
+   {
+      for (i = 0; i < T_LATCH_N; i++)
+         v[i] = n;
+      openxr_seq_publish(&t_latch_seq, t_latch_words, v, sizeof(v));
+   }
+   retro_atomic_store_release_int(&t_latch_done, 1);
+}
+
+static void t_latch_reader(void *data)
+{
+   unsigned who = *(unsigned*)data;
+   int last     = 0;
+   while (!retro_atomic_load_acquire_int(&t_latch_done))
+   {
+      int v[T_LATCH_N];
+      int i;
+      openxr_seq_read(&t_latch_seq, t_latch_words, v, sizeof(v));
+      for (i = 1; i < T_LATCH_N; i++)
+         if (v[i] != v[0])
+            t_latch_mixed[who]++;
+      if (v[0] < last)
+         t_latch_back[who]++;
+      last = v[0];
+   }
+}
+
+static void test_seq_latch(void)
+{
+   int a[T_LATCH_N], b[T_LATCH_N], got[T_LATCH_N];
+   unsigned i, who[2] = { 0, 1 };
+   sthread_t *w, *r0, *r1;
+
+   for (i = 0; i < T_LATCH_N; i++)
+   {
+      a[i] = (int)i + 1;
+      b[i] = (int)i + 100;
+   }
+   openxr_seq_publish(&t_latch_seq, t_latch_words, a, sizeof(a));
+   openxr_seq_read(&t_latch_seq, t_latch_words, got, sizeof(got));
+   CHECK(!memcmp(a, got, sizeof(a)), "latch: a publication not read back");
+
+   /* a writer stopped half way through copy 0: the reader goes on with
+    * the last whole publication, at once */
+   {
+      int s = retro_atomic_load_relaxed_int(&t_latch_seq);
+      retro_atomic_store_release_int(&t_latch_seq, s + 1);
+      for (i = 0; i < T_LATCH_N / 2; i++)
+         retro_atomic_store_relaxed_int(&t_latch_words[i], -1);
+      openxr_seq_read(&t_latch_seq, t_latch_words, got, sizeof(got));
+      CHECK(!memcmp(a, got, sizeof(a)),
+            "latch: a writer stopped part way through was read");
+      retro_atomic_store_release_int(&t_latch_seq, s);
+   }
+   openxr_seq_publish(&t_latch_seq, t_latch_words, b, sizeof(b));
+   openxr_seq_read(&t_latch_seq, t_latch_words, got, sizeof(got));
+   CHECK(!memcmp(b, got, sizeof(b)), "latch: the next publication not read back");
+
+   /* one writer, two readers */
+   for (i = 0; i < T_LATCH_N; i++)
+      a[i] = 0;
+   openxr_seq_publish(&t_latch_seq, t_latch_words, a, sizeof(a));
+   retro_atomic_store_release_int(&t_latch_done, 0);
+   r0 = sthread_create(t_latch_reader, &who[0]);
+   r1 = sthread_create(t_latch_reader, &who[1]);
+   w  = sthread_create(t_latch_writer, NULL);
+   CHECK(r0 && r1 && w, "latch: no threads");
+   if (w)
+      sthread_join(w);
+   else
+      retro_atomic_store_release_int(&t_latch_done, 1);
+   if (r0)
+      sthread_join(r0);
+   if (r1)
+      sthread_join(r1);
+   CHECK(!t_latch_mixed[0] && !t_latch_mixed[1],
+         "latch: a read mixed two publications (%u, %u)",
+         t_latch_mixed[0], t_latch_mixed[1]);
+   CHECK(!t_latch_back[0] && !t_latch_back[1],
+         "latch: a read went back to an older publication");
+   openxr_seq_read(&t_latch_seq, t_latch_words, got, sizeof(got));
+   CHECK(got[0] == 100000 && got[T_LATCH_N - 1] == 100000,
+         "latch: the newest was not read once the writer stopped");
+}
+
 static void test_frame(void)
 {
    openxr_runtime_t rt;
@@ -6293,6 +6393,7 @@ int main(void)
    test_ring_threads();
    test_session();
    test_swapchain();
+   test_seq_latch();
    test_frame();
    test_frame_thread_hooks();
    test_frame_carried_seq();

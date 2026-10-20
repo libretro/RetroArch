@@ -36,23 +36,36 @@ typedef char openxr_seq_fits[
        && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t))
       ? 1 : -1];
 
-/* One writer stamps odd, stores the words, stamps even; a reader that
- * sees the stamp move across its copy starts over. */
+/* A latched seqlock: two copies of the words, one writer, any number
+ * of readers. The writer stamps odd and stores copy 0, stamps even and
+ * stores copy 1; a reader reads the copy the stamp says is not being
+ * stored - copy 1 while it is odd, copy 0 while it is even - so a
+ * writer stopped part way through holds no reader up. A reader starts
+ * over only when the writer has got through a whole copy during its
+ * read, which is the writer going on, never waiting for it. */
+static void openxr_seq_store(retro_atomic_int_t *words,
+      const int *tmp, size_t n)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+      retro_atomic_store_relaxed_int(&words[i], tmp[i]);
+}
+
 static void openxr_seq_publish(retro_atomic_int_t *seq,
       retro_atomic_int_t *words, const void *src, size_t len)
 {
    int tmp[OPENXR_WORDS(video_xr_quad_set_t)];
    size_t n = (len + sizeof(int) - 1) / sizeof(int);
-   size_t i;
    int s    = retro_atomic_load_relaxed_int(seq);
 
    tmp[n - 1] = 0;
    memcpy(tmp, src, len);
-   retro_atomic_store_release_int(seq, s + 1);
+   retro_atomic_store_release_int(seq, (int)((unsigned)s + 1u));
    retro_atomic_thread_fence_release();
-   for (i = 0; i < n; i++)
-      retro_atomic_store_relaxed_int(&words[i], tmp[i]);
-   retro_atomic_store_release_int(seq, s + 2);
+   openxr_seq_store(words, tmp, n);
+   retro_atomic_store_release_int(seq, (int)((unsigned)s + 2u));
+   retro_atomic_thread_fence_release();
+   openxr_seq_store(words + n, tmp, n);
 }
 
 static void openxr_seq_read(retro_atomic_int_t *seq,
@@ -63,14 +76,11 @@ static void openxr_seq_read(retro_atomic_int_t *seq,
    for (;;)
    {
       size_t i;
-      int s1 = retro_atomic_load_acquire_int(seq);
-      if (s1 & 1)
-      {
-         retro_cpu_relax();
-         continue;
-      }
+      int s1                         = retro_atomic_load_acquire_int(seq);
+      const retro_atomic_int_t *copy = words + ((s1 & 1) ? n : 0);
       for (i = 0; i < n; i++)
-         tmp[i] = retro_atomic_load_relaxed_int(&words[i]);
+         tmp[i] = retro_atomic_load_relaxed_int(
+               (retro_atomic_int_t*)&copy[i]);
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(seq) == s1)
          break;

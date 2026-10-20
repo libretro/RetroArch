@@ -112,22 +112,22 @@ typedef struct openxr_frame
     * frame, no XR thread. */
    bool inline_host;
    bool repeating;                 /* inside openxr_frame_repeat */
-   /* A seqlock over its words like video_driver.c's viewport
-    * parameters: the writer's own copy, the stamp and the words. */
+   /* A latched seqlock over two copies of its words (openxr_frame.c):
+    * the writer's own copy, the stamp and the words. */
    openxr_tracked_t tracked;       /* the frame loop's thread */
    retro_atomic_int_t tracked_seq;
-   retro_atomic_int_t tracked_words[OPENXR_WORDS(openxr_tracked_t)];
+   retro_atomic_int_t tracked_words[2 * OPENXR_WORDS(openxr_tracked_t)];
    /* The screens as each frame submits them, the same way. */
    openxr_screens_t screens;       /* the frame loop's thread */
    retro_atomic_int_t screens_seq;
-   retro_atomic_int_t screens_words[OPENXR_WORDS(openxr_screens_t)];
+   retro_atomic_int_t screens_words[2 * OPENXR_WORDS(openxr_screens_t)];
    /* The drawing thread's quads for the XR thread and the pointer, the
     * same way. */
    retro_atomic_int_t quads_seq;
-   retro_atomic_int_t quads_words[OPENXR_WORDS(video_xr_quad_set_t)];
+   retro_atomic_int_t quads_words[2 * OPENXR_WORDS(video_xr_quad_set_t)];
    /* The drawing thread's projection, the same way. */
    retro_atomic_int_t proj_seq;
-   retro_atomic_int_t proj_words[OPENXR_WORDS(openxr_projection_t)];
+   retro_atomic_int_t proj_words[2 * OPENXR_WORDS(openxr_projection_t)];
    /* Consecutive carried spaces, under the graphics lock. */
    int carry_from;
    int carry_to;
