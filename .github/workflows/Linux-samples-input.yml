@@ -694,6 +694,17 @@ jobs:
           WINEDEBUG=-all wine ./winraw_mouse_buttons_test.exe
           make clean
 
+      - name: Check converted pad handlers against the copying ones
+        working-directory: samples/input/connect_parity
+        shell: bash
+        run: |
+          set -eu
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 ./connect_parity_test
+          make clean CC=x86_64-w64-mingw32-gcc LDFLAGS=-static && make -j$(nproc) all CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          WINEDEBUG=-all wine ./connect_parity_test.exe
+          make clean
+
       - name: Check the sensor snapshot hand-over
         working-directory: samples/input/sensor_snap
         shell: bash

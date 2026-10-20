@@ -21,90 +21,28 @@
 #include <boolean.h>
 #include <retro_environment.h>
 #include <retro_miscellaneous.h>
-#include <retro_endianness.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
 #include "../../driver.h"
 
-enum connect_ps4_dpad_states
-{
-   DPAD_UP         = 0x0,
-   DPAD_UP_RIGHT   = 0x1,
-   DPAD_RIGHT      = 0x2,
-   DPAD_RIGHT_DOWN = 0x3,
-   DPAD_DOWN       = 0x4,
-   DPAD_DOWN_LEFT  = 0x5,
-   DPAD_LEFT       = 0x6,
-   DPAD_LEFT_UP    = 0x7,
-   DPAD_OFF        = 0x8
-};
-
-#if (__STDC_VERSION__ >= 199901L) || defined(__cplusplus)
-typedef uint8_t bf_uint8_t;
-#else
-typedef int bf_uint8_t;
-#endif
-
-struct ps4buttons
-{
-#ifdef MSB_FIRST
-   bf_uint8_t triangle      : 1;
-   bf_uint8_t circle        : 1;
-   bf_uint8_t cross         : 1;
-   bf_uint8_t square        : 1;
-   bf_uint8_t dpad          : 4;
-
-   bf_uint8_t r3            : 1;
-   bf_uint8_t l3            : 1;
-   bf_uint8_t options       : 1;
-   bf_uint8_t share         : 1;
-   bf_uint8_t r2            : 1;
-   bf_uint8_t l2            : 1;
-   bf_uint8_t r1            : 1;
-   bf_uint8_t l1            : 1;
-
-   bf_uint8_t reportcounter : 6;
-   bf_uint8_t touchpad      : 1;
-   bf_uint8_t ps            : 1;
-#else
-   bf_uint8_t dpad          : 4;
-   bf_uint8_t square        : 1;
-   bf_uint8_t cross         : 1;
-   bf_uint8_t circle        : 1;
-   bf_uint8_t triangle      : 1;
-
-   bf_uint8_t l1            : 1;
-   bf_uint8_t r1            : 1;
-   bf_uint8_t l2            : 1;
-   bf_uint8_t r2            : 1;
-   bf_uint8_t share         : 1;
-   bf_uint8_t options       : 1;
-   bf_uint8_t l3            : 1;
-   bf_uint8_t r3            : 1;
-
-   bf_uint8_t ps            : 1;
-   bf_uint8_t touchpad      : 1;
-   bf_uint8_t reportcounter : 6;
-#endif
-}__attribute__((packed));
-
-/* NOTE: This needs to be aligned
- * exactly like this, don't change this */
-struct ps4
-{
-   uint8_t hatvalue[4];
-   struct ps4buttons btn;
-   uint8_t trigger[2];
-};
+/* The input report after its ID: the sticks' four bytes, then
+ * - byte 4: the hat in the low four bits, then square, cross, circle
+ *   and triangle;
+ * - byte 5: L1, R1, L2, R2, share, options, L3, R3, from bit 0;
+ * - byte 6: PS in bit 0, the touchpad's click in bit 1;
+ * - bytes 7 and 8: L2 and R2's travel. */
+#define PS4_REPORT_LEN 9
 
 struct hidpad_ps4_data
 {
    struct pad_connection* connection;
    hid_driver_t *driver;
    uint32_t slot;
+   uint32_t buttons;    /* the RetroPad's, decoded from the report */
    uint16_t motors[2];
-   struct ps4 data;     /* uint8_t alignment */
+   uint8_t hatvalue[4];
+   bool ps;
    bool have_led;
 };
 
@@ -169,67 +107,53 @@ static void hidpad_ps4_deinit(void *data)
       free(device);
 }
 
-static bool hidpad_ps4_check_dpad(struct ps4 *rpt, unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_JOYPAD_UP:
-         return (rpt->btn.dpad == DPAD_LEFT_UP)    || (rpt->btn.dpad == DPAD_UP)    || (rpt->btn.dpad == DPAD_UP_RIGHT);
-      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-         return (rpt->btn.dpad == DPAD_UP_RIGHT)   || (rpt->btn.dpad == DPAD_RIGHT) || (rpt->btn.dpad == DPAD_RIGHT_DOWN);
-      case RETRO_DEVICE_ID_JOYPAD_DOWN:
-         return (rpt->btn.dpad == DPAD_RIGHT_DOWN) || (rpt->btn.dpad == DPAD_DOWN)  || (rpt->btn.dpad == DPAD_DOWN_LEFT);
-      case RETRO_DEVICE_ID_JOYPAD_LEFT:
-         return (rpt->btn.dpad == DPAD_DOWN_LEFT)  || (rpt->btn.dpad == DPAD_LEFT)  || (rpt->btn.dpad == DPAD_LEFT_UP);
-   }
+/* The hat's eight ways and its rest (8), as RetroPad directions. */
+static const uint8_t hidpad_ps4_hat[16] = {
+   1 << 0,              /* up         */
+   (1 << 0) | (1 << 3), /* up, right  */
+   1 << 3,              /* right      */
+   (1 << 3) | (1 << 1), /* right, down*/
+   1 << 1,              /* down       */
+   (1 << 1) | (1 << 2), /* down, left */
+   1 << 2,              /* left       */
+   (1 << 2) | (1 << 0), /* left, up   */
+   0, 0, 0, 0, 0, 0, 0, 0
+};
 
-   return false;
+/* The report's buttons as the RetroPad's, once, when it comes. */
+static uint32_t hidpad_ps4_decode(const uint8_t *r)
+{
+   uint32_t b   = 0;
+   unsigned hat = hidpad_ps4_hat[r[4] & 0x0f];
+   if (hat & 1)         b |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   if (hat & 2)         b |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   if (hat & 4)         b |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   if (hat & 8)         b |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   if (r[4] & 0x10)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_Y;      /* square   */
+   if (r[4] & 0x20)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_B;      /* cross    */
+   if (r[4] & 0x40)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_A;      /* circle   */
+   if (r[4] & 0x80)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_X;      /* triangle */
+   if (r[5] & 0x01)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_L;
+   if (r[5] & 0x02)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_R;
+   if (r[5] & 0x04)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_L2;
+   if (r[5] & 0x08)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_R2;
+   if (r[5] & 0x10)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_SELECT; /* share    */
+   if (r[5] & 0x20)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_START;  /* options  */
+   if (r[5] & 0x40)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_L3;
+   if (r[5] & 0x80)     b |= 1u << RETRO_DEVICE_ID_JOYPAD_R3;
+   return b;
 }
 
 static void hidpad_ps4_get_buttons(void *data, input_bits_t* state)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4                *rpt = device ?
-      (struct ps4*)&device->data : NULL;
 
-   if (!device || !rpt)
+   if (!device)
       return;
 
    BIT256_CLEAR_ALL_PTR( state );
-
-   if (rpt->btn.r3)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R3 );
-   if (rpt->btn.l3)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L3 );
-   if (rpt->btn.options)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_START );
-   if ( rpt->btn.share)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_SELECT );
-   if ( rpt->btn.r2)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R2 );
-   if (rpt->btn.l2)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L2 );
-   if (rpt->btn.r1)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_R );
-   if (rpt->btn.l1)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_L );
-   if (rpt->btn.triangle)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_X );
-   if (rpt->btn.circle)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_A );
-   if (rpt->btn.cross)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_B );
-   if (rpt->btn.square)
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_Y );
-   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_LEFT)))
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_LEFT );
-   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_DOWN)))
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_DOWN );
-   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_RIGHT)))
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_RIGHT );
-   if ((hidpad_ps4_check_dpad(rpt, RETRO_DEVICE_ID_JOYPAD_UP)))
-      BIT256_SET_PTR( state, RETRO_DEVICE_ID_JOYPAD_UP );
-   if (rpt->btn.ps)
+   BITS_COPY32_PTR( state, device->buttons );
+   if (device->ps)
       BIT256_SET_PTR( state, RARCH_MENU_TOGGLE );
 }
 
@@ -239,9 +163,7 @@ static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 
    if (device && (axis < 4))
    {
-      struct ps4 *rpt = device ? (struct ps4*)&device->data : NULL;
-      int val         = rpt ? rpt->hatvalue[axis] : 0;
-      val             = (val << 8) - 0x8000;
+      int val = ((int)device->hatvalue[axis] << 8) - 0x8000;
       if (abs(val) > 0x1000)
          return val;
    }
@@ -265,7 +187,13 @@ static void hidpad_ps4_packet_handler(void *data,
    }
 #endif
 
-   memcpy(&device->data, packet+1, sizeof(struct ps4));
+   /* read where it lies: the buttons decoded and the sticks kept, not
+    * the report */
+   if (size < 1 + PS4_REPORT_LEN)
+      return;
+   memcpy(device->hatvalue, packet + 1, sizeof(device->hatvalue));
+   device->buttons = hidpad_ps4_decode(packet + 1);
+   device->ps      = (packet[1 + 6] & 0x01) != 0;
 }
 
 static void hidpad_ps4_set_rumble(void *data,
@@ -287,49 +215,9 @@ static void hidpad_ps4_set_rumble(void *data,
 static int32_t hidpad_ps4_button(void *data, uint16_t joykey)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
-   struct ps4             *rpt    = device ?
-      (struct ps4*)&device->data : NULL;
-   if (!device || !rpt || joykey > 31)
+   if (!device || joykey > 31)
       return 0;
-
-   switch (joykey)
-   {
-      case RETRO_DEVICE_ID_JOYPAD_R3:
-         return rpt->btn.r3;
-      case RETRO_DEVICE_ID_JOYPAD_L3:
-         return rpt->btn.l3;
-      case RETRO_DEVICE_ID_JOYPAD_START:
-         return rpt->btn.options;
-      case RETRO_DEVICE_ID_JOYPAD_SELECT:
-         return rpt->btn.share;
-      case RETRO_DEVICE_ID_JOYPAD_R2:
-         return rpt->btn.r2;
-      case RETRO_DEVICE_ID_JOYPAD_L2:
-         return rpt->btn.l2;
-      case RETRO_DEVICE_ID_JOYPAD_R:
-         return rpt->btn.r1;
-      case RETRO_DEVICE_ID_JOYPAD_L:
-         return rpt->btn.l1;
-      case RETRO_DEVICE_ID_JOYPAD_X:
-         return rpt->btn.triangle;
-      case RETRO_DEVICE_ID_JOYPAD_A:
-         return rpt->btn.circle;
-      case RETRO_DEVICE_ID_JOYPAD_B:
-         return rpt->btn.cross;
-      case RETRO_DEVICE_ID_JOYPAD_Y:
-         return rpt->btn.square;
-      case RETRO_DEVICE_ID_JOYPAD_LEFT:
-      case RETRO_DEVICE_ID_JOYPAD_RIGHT:
-      case RETRO_DEVICE_ID_JOYPAD_DOWN:
-      case RETRO_DEVICE_ID_JOYPAD_UP:
-         return hidpad_ps4_check_dpad(rpt, joykey);
-      case RARCH_MENU_TOGGLE:
-         return rpt->btn.ps;
-      default:
-         break;
-   }
-
-   return 0;
+   return (device->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_ps4 = {
