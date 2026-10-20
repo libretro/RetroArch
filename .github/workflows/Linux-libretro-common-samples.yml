@@ -278,6 +278,10 @@ jobs:
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
+            # The C++11 backend's value macros given enumerators, and
+            # parsed against a pre-P0558R1 <atomic> that deduces from
+            # the value too, as libstdc++ 8 does.
+            retro_atomic_cxx11_old_stl_test
             # The PS2 EE backend, built off-target against a stub
             # <kernel.h>: the PS2 CI lane compiles it, this runs it.
             retro_atomic_ps2_backend_test
