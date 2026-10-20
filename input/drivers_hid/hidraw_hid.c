@@ -190,7 +190,11 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
          dev->slot, vid, pid);
 }
 
-static void hidraw_hid_remove(hidraw_hid_t *hid, hidraw_device_t *dev)
+/* A pad let go: @gone when it left, and is said to have; not when the
+ * driver is only stopping, as every joypad driver does at a restart -
+ * the pad is still there, and is reported again when one starts. */
+static void hidraw_hid_remove(hidraw_hid_t *hid, hidraw_device_t *dev,
+      bool gone)
 {
    hidraw_device_t **link;
 
@@ -199,7 +203,8 @@ static void hidraw_hid_remove(hidraw_hid_t *hid, hidraw_device_t *dev)
       if (*link != dev)
          continue;
       *link = dev->next;
-      input_autoconfigure_disconnect(dev->slot, dev->name);
+      if (gone)
+         input_autoconfigure_disconnect(dev->slot, dev->name);
       pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
       close(dev->fd);
       free(dev);
@@ -251,7 +256,7 @@ static void hidraw_hid_hotplug(hidraw_hid_t *hid)
          if (string_is_equal(action, "remove"))
          {
             if (dev)
-               hidraw_hid_remove(hid, dev);
+               hidraw_hid_remove(hid, dev, true);
          }
          else if (!dev)
             hidraw_hid_add(hid, devnode);
@@ -268,7 +273,7 @@ static void hidraw_hid_free(const void *data)
    if (!hid)
       return;
    while (hid->devices)
-      hidraw_hid_remove(hid, hid->devices);
+      hidraw_hid_remove(hid, hid->devices, false);
 #ifdef HAVE_UDEV
    if (hid->monitor)
       udev_monitor_unref(hid->monitor);
@@ -339,7 +344,7 @@ static void hidraw_hid_poll(void *data)
       {
          RARCH_LOG("[hidraw] \"%s\" at %s is gone (%s).\n",
                dev->name, dev->devnode, strerror(errno));
-         hidraw_hid_remove(hid, dev);
+         hidraw_hid_remove(hid, dev, true);
       }
    }
 }

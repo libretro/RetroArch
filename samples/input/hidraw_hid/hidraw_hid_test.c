@@ -439,10 +439,11 @@ int main(void)
    CHECK(connected_port == 0 && ds3->opens == 2,
          "the pad did not come back on port 1");
 
-   /* free */
+   /* free: the node closed, and the pad not said to have left - it is
+    * still plugged in, and the next driver reports it again */
    hidraw_hid.free(hid);
-   CHECK(ds3->closes == 2 && disconnects == 2,
-         "free left the node open or the pad connected");
+   CHECK(ds3->closes == 2 && disconnects == 1,
+         "free left the node open, or said a pad still there had left");
 
    if (failures)
    {

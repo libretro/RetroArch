@@ -632,7 +632,11 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
          (unsigned)number, vid, pid);
 }
 
-static void winusb_hid_remove(winusb_hid_t *hid, winusb_device_t *dev)
+/* A pad let go: @gone when it left, and is said to have; not when the
+ * driver is only stopping, as every joypad driver does at a restart -
+ * the pad is still there, and is reported again when one starts. */
+static void winusb_hid_remove(winusb_hid_t *hid, winusb_device_t *dev,
+      bool gone)
 {
    int number;
    winusb_device_t **link;
@@ -642,7 +646,8 @@ static void winusb_hid_remove(winusb_hid_t *hid, winusb_device_t *dev)
       if (*link != dev)
          continue;
       *link = dev->next;
-      if ((number = input_driver_hid_number(hid, (unsigned)dev->slot)) >= 0)
+      if (     gone
+            && (number = input_driver_hid_number(hid, (unsigned)dev->slot)) >= 0)
          input_autoconfigure_disconnect((unsigned)number, dev->name);
       input_driver_hid_release(hid, (unsigned)dev->slot);
       pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
@@ -898,7 +903,7 @@ static void winusb_hid_free(const void *data)
    if (hid->cfgmgr)
       FreeLibrary(hid->cfgmgr);
    while (hid->devices)
-      winusb_hid_remove(hid, hid->devices);
+      winusb_hid_remove(hid, hid->devices, false);
    if (hid->slots)
       pad_connection_destroy(hid->slots);
    free(hid);
@@ -1030,7 +1035,7 @@ static void winusb_hid_poll(void *data)
       if (retro_atomic_load_acquire_int(&dev->gone))
       {
          RARCH_LOG("%s \"%s\" is gone.\n", dev->tag, dev->name);
-         winusb_hid_remove(hid, dev);
+         winusb_hid_remove(hid, dev, true);
       }
    }
 }

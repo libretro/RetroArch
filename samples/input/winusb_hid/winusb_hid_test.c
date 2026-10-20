@@ -717,8 +717,9 @@ int main(void)
    if (!stopped)
       f_abort((void*)0x1234, WINUSB_EP_IN);
    sthread_join(closer);
-   CHECK(aborts >= 1 && frees == 2 && disconnects == 2,
-         "free did not stop the reader and let the pad go");
+   /* let go, and not said to have left: it is still plugged in */
+   CHECK(aborts >= 1 && frees == 2 && disconnects == 1,
+         "free did not stop the reader and let the pad go quietly");
 
    test_hidclass(path);
 
