@@ -313,6 +313,272 @@ static void clear_screen(switch_video_t *sw)
     framebufferEnd(&sw->fb);
 }
 
+#ifdef HAVE_OVERLAY
+static void switch_overlay_free(switch_video_t *sw)
+{
+   unsigned i;
+   for (i = 0; i < sw->overlays_size; i++)
+      free(sw->overlays[i].pixels);
+   free(sw->overlays);
+   sw->overlays      = NULL;
+   sw->overlays_size = 0;
+}
+
+static void switch_overlay_enable(void *data, bool state)
+{
+   switch_video_t *sw = (switch_video_t *)data;
+   if (sw)
+      sw->overlay_enabled = state;
+}
+
+/* The page is copied once, into the framebuffer's channel order: the
+ * pack's pixels are not this driver's to keep, and a frame blends
+ * without a swizzle. */
+static bool switch_overlay_load(void *data,
+            const void *image_data, unsigned num_images)
+{
+   unsigned i;
+   switch_video_t                   *sw = (switch_video_t *)data;
+   const struct texture_image   *images = (const struct texture_image *)image_data;
+
+   if (!sw)
+      return false;
+
+   switch_overlay_free(sw);
+   if (!num_images || !images)
+      return true;
+
+   if (!(sw->overlays = (switch_overlay_t*)calloc(num_images,
+               sizeof(*sw->overlays))))
+      return false;
+   sw->overlays_size = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      size_t p, n;
+      unsigned r;
+      const uint32_t *src;
+      uint32_t *dst;
+      switch_overlay_t *o = &sw->overlays[i];
+
+      o->tex[2]  = o->tex[3]  = 1.0f;
+      o->vert[2] = o->vert[3] = 1.0f;
+      o->alpha   = 1.0f;
+      if (     !images[i].pixels || !images[i].width || !images[i].height
+            || !VIDEO_SCALE_FITS(images[i].width, images[i].height))
+         continue;
+      n = (size_t)images[i].width * images[i].height;
+      /* the pixels, then the row spans after them */
+      if (!(o->pixels = (uint32_t*)malloc(n * sizeof(uint32_t)
+                  + (size_t)images[i].height * 2 * sizeof(uint16_t))))
+      {
+         switch_overlay_free(sw);
+         return false;
+      }
+      o->spans = (uint16_t*)(o->pixels + n);
+      o->dims  = VIDEO_SCALE_PACK(images[i].width, images[i].height);
+      src      = images[i].pixels;
+      dst      = o->pixels;
+      /* R in the low byte, as the framebuffer and its scaler output */
+      if (images[i].supports_rgba)
+         memcpy(dst, src, n * sizeof(uint32_t));
+      else
+         for (p = 0; p < n; p++)
+            dst[p] =  (src[p] & 0xff00ff00u)
+                   | ((src[p] >> 16) & 0xffu)
+                   | ((src[p] & 0xffu) << 16);
+      for (r = 0; r < images[i].height; r++)
+      {
+         const uint32_t *row = dst + (size_t)r * images[i].width;
+         unsigned first      = 0;
+         unsigned last       = images[i].width;
+         while (first < last && !(row[first] >> 24))
+            first++;
+         while (last > first && !(row[last - 1] >> 24))
+            last--;
+         o->spans[2 * r]     = (uint16_t)first;
+         o->spans[2 * r + 1] = (uint16_t)last;
+      }
+   }
+
+   return true;
+}
+
+static void switch_overlay_tex_geom(void *data,
+            unsigned idx, float x, float y, float w, float h)
+{
+   switch_video_t *sw = (switch_video_t *)data;
+   if (!sw || idx >= sw->overlays_size)
+      return;
+   sw->overlays[idx].tex[0] = x;
+   sw->overlays[idx].tex[1] = y;
+   sw->overlays[idx].tex[2] = w;
+   sw->overlays[idx].tex[3] = h;
+}
+
+/* y-down from the top left, as the frontend gives it and the
+ * framebuffer is laid out */
+static void switch_overlay_vertex_geom(void *data,
+            unsigned idx, float x, float y, float w, float h)
+{
+   switch_video_t *sw = (switch_video_t *)data;
+   if (!sw || idx >= sw->overlays_size)
+      return;
+   sw->overlays[idx].vert[0] = x;
+   sw->overlays[idx].vert[1] = y;
+   sw->overlays[idx].vert[2] = w;
+   sw->overlays[idx].vert[3] = h;
+}
+
+static void switch_overlay_full_screen(void *data, bool enable)
+{
+   switch_video_t *sw = (switch_video_t *)data;
+   if (sw)
+      sw->overlay_full_screen = enable;
+}
+
+static void switch_overlay_set_alpha(void *data, unsigned idx, float mod)
+{
+   switch_video_t *sw = (switch_video_t *)data;
+   if (!sw || idx >= sw->overlays_size)
+      return;
+   sw->overlays[idx].alpha = mod;
+}
+
+/* Blend the page over @buf, @pitch pixels a row: across @screen_dims,
+ * or the frame at @frame_pos, @frame_dims unless full screen. Nearest
+ * sampling at pixel centres, stepped in 16.16 once per row and once
+ * per image for the columns; opaque texels are stored, transparent
+ * ones skipped. */
+static void switch_overlay_render(switch_video_t *sw, uint32_t *buf,
+      unsigned pitch, unsigned screen_dims, unsigned frame_pos,
+      unsigned frame_dims)
+{
+   unsigned i;
+   int screen_w = (int)VIDEO_SCALE_W(screen_dims);
+   int screen_h = (int)VIDEO_SCALE_H(screen_dims);
+   int base_x   = sw->overlay_full_screen ? 0 : VIDEO_POS_X(frame_pos);
+   int base_y   = sw->overlay_full_screen ? 0 : VIDEO_POS_Y(frame_pos);
+   int base_w   = sw->overlay_full_screen ? screen_w
+      : (int)VIDEO_SCALE_W(frame_dims);
+   int base_h   = sw->overlay_full_screen ? screen_h
+      : (int)VIDEO_SCALE_H(frame_dims);
+
+   for (i = 0; i < sw->overlays_size; i++)
+   {
+      int x, y, dst_x, dst_y, dst_w, dst_h, x0, y0, x1, y1, x_first, x_last;
+      int64_t sx, sx_step, sy_step, sy;
+      unsigned mod;
+      const switch_overlay_t *o = &sw->overlays[i];
+      int ol_w                  = (int)VIDEO_SCALE_W(o->dims);
+      int ol_h                  = (int)VIDEO_SCALE_H(o->dims);
+      uint16_t *cols            = sw->overlay_cols;
+
+      if (     !o->pixels || o->alpha <= 0.0f
+            || o->tex[2] <= 0.0f || o->tex[3] <= 0.0f)
+         continue;
+      dst_x = base_x + (int)floor(o->vert[0] * (double)base_w + 0.5);
+      dst_y = base_y + (int)floor(o->vert[1] * (double)base_h + 0.5);
+      dst_w = (int)(o->vert[2] * (float)base_w + 0.5f);
+      dst_h = (int)(o->vert[3] * (float)base_h + 0.5f);
+      if (dst_w <= 0 || dst_h <= 0)
+         continue;
+      x0 = dst_x < 0 ? 0 : dst_x;
+      y0 = dst_y < 0 ? 0 : dst_y;
+      x1 = dst_x + dst_w > screen_w ? screen_w : dst_x + dst_w;
+      y1 = dst_y + dst_h > screen_h ? screen_h : dst_y + dst_h;
+      if (x1 > (int)ARRAY_SIZE(sw->overlay_cols))
+         x1 = (int)ARRAY_SIZE(sw->overlay_cols);
+      if (x0 >= x1 || y0 >= y1)
+         continue;
+      mod      = o->alpha >= 1.0f ? 255u
+         : (unsigned)(o->alpha * 255.0f + 0.5f);
+
+      sx_step  = (int64_t)((double)o->tex[2] * ol_w * 65536.0 / dst_w);
+      sy_step  = (int64_t)((double)o->tex[3] * ol_h * 65536.0 / dst_h);
+      sx       = (int64_t)((double)o->tex[0] * ol_w * 65536.0)
+         + sx_step / 2 + (int64_t)(x0 - dst_x) * sx_step;
+      sy       = (int64_t)((double)o->tex[1] * ol_h * 65536.0)
+         + sy_step / 2 + (int64_t)(y0 - dst_y) * sy_step;
+      for (x = x0; x < x1; x++, sx += sx_step)
+      {
+         int col = (int)(sx >> 16);
+         cols[x] = (uint16_t)(col < 0 ? 0 : col >= ol_w ? ol_w - 1 : col);
+      }
+
+      for (y = y0; y < y1; y++, sy += sy_step)
+      {
+         int lo, hi, row    = (int)(sy >> 16);
+         unsigned first, last;
+         const uint32_t *in;
+         uint32_t *out      = buf + (size_t)y * pitch;
+         if (row < 0)
+            row = 0;
+         else if (row >= ol_h)
+            row = ol_h - 1;
+         first = o->spans[2 * row];
+         last  = o->spans[2 * row + 1];
+         if (first >= last)
+            continue;
+         /* The screen columns the row's span maps to: cols[] only
+          * ever grows */
+         lo = x0;
+         hi = x1;
+         while (lo < hi)
+         {
+            int mid = (lo + hi) >> 1;
+            if (cols[mid] < first)
+               lo = mid + 1;
+            else
+               hi = mid;
+         }
+         x_first = lo;
+         hi      = x1;
+         while (lo < hi)
+         {
+            int mid = (lo + hi) >> 1;
+            if (cols[mid] < last)
+               lo = mid + 1;
+            else
+               hi = mid;
+         }
+         x_last = lo;
+         in     = o->pixels + (size_t)row * ol_w;
+
+         for (x = x_first; x < x_last; x++)
+         {
+            uint32_t s = in[cols[x]];
+            uint32_t d, rb, g, t;
+            unsigned a = s >> 24, ia;
+            if (!a)
+               continue;
+            if (mod != 255u)
+            {
+               /* exact a * mod / 255, rounded */
+               t = a * mod + 128u;
+               a = (t + (t >> 8)) >> 8;
+               if (!a)
+                  continue;
+            }
+            d = out[x];
+            if (a == 255u)
+            {
+               out[x] = (s & 0x00ffffffu) | (d & 0xff000000u);
+               continue;
+            }
+            /* exact x / 255, two channels at once */
+            ia = 255u - a;
+            rb = (s & 0x00ff00ffu) * a + (d & 0x00ff00ffu) * ia + 0x00800080u;
+            rb = ((rb + ((rb >> 8) & 0x00ff00ffu)) >> 8) & 0x00ff00ffu;
+            g  = ((s >> 8) & 0xffu) * a + ((d >> 8) & 0xffu) * ia + 0x80u;
+            g  = ((g + (g >> 8)) >> 8) & 0xffu;
+            out[x] = rb | (g << 8) | (d & 0xff000000u);
+         }
+      }
+   }
+}
+#endif
+
 static void *switch_init(const video_info_t *video)
 {
     switch_video_t *sw = (switch_video_t *)calloc(1, sizeof(*sw));
@@ -328,7 +594,6 @@ static void *switch_init(const video_info_t *video)
     sw->o_dims          = video->dims;
     sw->vp.dims         = video->dims;
     sw->overlay_enabled = false;
-    sw->overlay         = NULL;
 #ifdef HAVE_MENU
     sw->in_menu         = false;
 #endif
@@ -561,6 +826,30 @@ static bool switch_frame(void *data, const void *frame,
          gfx_cpy_dsp_buf(out_buffer, sw->image, VIDEO_SCALE_W(sw->vp.full_dims), VIDEO_SCALE_H(sw->vp.full_dims), stride, false);
       }
 
+#ifdef HAVE_OVERLAY
+   if (sw->overlay_enabled && sw->overlays)
+   {
+      bool on_menu = false;
+#ifdef HAVE_MENU
+      on_menu      = sw->menu_texture.enable;
+#endif
+      /* The scaled-up frame is the framebuffer's top left, the window
+       * cropped to it; the menu and the unscaled frame fill it */
+      if (!(on_menu && video_info->overlay_behind_menu))
+      {
+         if (on_menu || !sw->smooth)
+            switch_overlay_render(sw, out_buffer, stride / sizeof(uint32_t),
+                  sw->vp.full_dims, sw->vp.pos, sw->vp.dims);
+         else
+            switch_overlay_render(sw, out_buffer, stride / sizeof(uint32_t),
+                  sw->hw_scale.dims,
+                  VIDEO_POS_PACK(sw->hw_scale.x_offset, 0),
+                  VIDEO_SCALE_PACK(sw->scaler.out_width,
+                     sw->scaler.out_height));
+      }
+   }
+#endif
+
    if (statistics_show && !sw->smooth)
    {
       if (osd_params)
@@ -592,7 +881,12 @@ static void switch_free(void *data)
     switch_video_t *sw = data;
 
     framebufferClose(&sw->fb);
+    scaler_ctx_gen_reset(&sw->scaler);
+    scaler_ctx_gen_reset(&sw->menu_texture.scaler);
 
+#ifdef HAVE_OVERLAY
+    switch_overlay_free(sw);
+#endif
     if (sw->menu_texture.pixels)
         free(sw->menu_texture.pixels);
 
@@ -706,38 +1000,6 @@ static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 }
 
 #ifdef HAVE_OVERLAY
-static void switch_overlay_enable(void *data, bool state)
-{
-    switch_video_t *swa = (switch_video_t *)data;
-
-    if (!swa)
-        return;
-
-    swa->overlay_enabled = state;
-}
-
-static bool switch_overlay_load(void *data,
-            const void *image_data, unsigned num_images)
-{
-    switch_video_t          *swa = (switch_video_t *)data;
-    struct texture_image *images = (struct texture_image *)image_data;
-
-    if (!swa)
-        return false;
-
-    swa->overlay         = images;
-    swa->overlay_enabled = true;
-
-    return true;
-}
-
-static void switch_overlay_tex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h) { }
-static void switch_overlay_vertex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h) { }
-static void switch_overlay_full_screen(void *data, bool enable) { }
-static void switch_overlay_set_alpha(void *data, unsigned idx, float mod) { }
-
 static const video_overlay_interface_t switch_overlay = {
     switch_overlay_enable,
     switch_overlay_load,

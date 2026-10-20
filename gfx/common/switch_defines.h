@@ -8,6 +8,22 @@
 #include "../common/egl_common.h"
 #endif
 
+/* An overlay image as the software driver draws it: its own copy of
+ * the page's pixels in the framebuffer's channel order, and the
+ * rectangles the frontend set, each x, y, w, h in 0..1. */
+typedef struct
+{
+   uint32_t *pixels;
+   /* Per image row, the first and one past the last column a texel
+    * shows in; equal for a row with nothing to draw. */
+   uint16_t *spans;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
+   float tex[4];
+   float vert[4];
+   float alpha;
+} switch_overlay_t;
+
 typedef struct
 {
    bool vsync;
@@ -15,8 +31,10 @@ typedef struct
    bool smooth; /* bilinear */
    unsigned rotation;
    struct video_viewport vp;
-   struct texture_image *overlay;
+   switch_overlay_t *overlays;
+   unsigned overlays_size;
    bool overlay_enabled;
+   bool overlay_full_screen;
 #ifdef HAVE_MENU
    bool in_menu;
 #endif
@@ -43,6 +61,9 @@ typedef struct
       uint32_t x_offset;
    } hw_scale;
 
+   /* The overlay image column each screen column samples, for the
+    * image being drawn */
+   uint16_t overlay_cols[1280];
    uint32_t image[1280 * 720];
    uint32_t tmp_image[1280 * 720];
    u32 cnt;
