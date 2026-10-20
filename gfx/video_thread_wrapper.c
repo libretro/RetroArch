@@ -1223,6 +1223,24 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_POLL_PRESENTABLE:
+         /* The runloop read "nothing to present to" and is waiting a
+          * frame on it. That answer was published after the last frame
+          * this thread drew; a swapchain or presenter rebuilt since, or
+          * a window shown again, has not been seen if no frame has come
+          * in between. Asked again here, as a frame's would be, without
+          * waiting for one. This thread is the word's only writer. */
+         {
+            int f = retro_atomic_load_acquire_int(&thr->win_flags)
+               & ~VIDEO_THREAD_WIN_PRESENTABLE;
+            if (     !thr->driver_data
+                  || video_context_driver_presentable_direct())
+               f |= VIDEO_THREAD_WIN_PRESENTABLE;
+            retro_atomic_store_release_int(&thr->win_flags, f);
+         }
+         video_thread_reply(thr, &pkt);
+         break;
+
 #ifdef HAVE_OVERLAY
       case CMD_OVERLAY_ENABLE:
          if (thr->driver_data && thr->overlay && thr->overlay->enable)
@@ -5915,8 +5933,23 @@ bool video_thread_presentable(void)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return video_context_driver_presentable_direct();
 
-   return (retro_atomic_load_acquire_int(&thr->win_flags)
-         & VIDEO_THREAD_WIN_PRESENTABLE) != 0;
+   if (retro_atomic_load_acquire_int(&thr->win_flags)
+         & VIDEO_THREAD_WIN_PRESENTABLE)
+      return true;
+
+   /* Not presentable as of the last frame. The runloop waits a frame on
+    * that and asks again; the video thread is asked to look again in
+    * the meantime, so the next answer is the context's own and not the
+    * last frame's - a window that came back is seen whether or not a
+    * frame comes. Queued, never waited on, and only on this path: a
+    * presentable window costs the load above and nothing else. A full
+    * queue just leaves it to the next frame's answer. */
+   {
+      thread_packet_t pkt;
+      pkt.type = CMD_POLL_PRESENTABLE;
+      video_thread_defer_packet(thr, &pkt);
+   }
+   return false;
 }
 
 /* Presenter statistics for the overlay: repeats made this session, and

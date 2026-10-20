@@ -91,6 +91,7 @@ enum thread_cmd
    CMD_POKE_SET_VIEW_COUNT,
    CMD_POKE_HW_CONTEXT_DESTROYING,
    CMD_POKE_SET_FRAME_FORMAT,
+   CMD_POLL_PRESENTABLE, /* Re-asks the context, deferred: no frame needed. */
 
    CMD_DUMMY = INT_MAX
 };

@@ -6419,9 +6419,15 @@ bool video_context_driver_presentable_direct(void)
  *
  * With threaded video the context belongs to the video thread, which
  * polls it after each frame beside alive and focus and publishes the
- * answer under the wrapper's lock; that published value is what the
- * runloop gets. Asking the context from the runloop thread would read
- * its state while the video thread rebuilds it. */
+ * answer in an atomic word; that published value is what the runloop
+ * gets, and while it says false the video thread is asked to poll again
+ * without waiting for a frame. Asking the context from the runloop
+ * thread would read its state while the video thread rebuilds it.
+ *
+ * "Busy" is not "nothing to present to": a presenter whose next target
+ * the GPU has not finished with is a window that is there. The runloop
+ * sleeps a whole content frame on false, so a context that said false
+ * for that turned every GPU-bound frame into two. */
 bool video_context_driver_presentable(void)
 {
 #ifdef HAVE_THREADS

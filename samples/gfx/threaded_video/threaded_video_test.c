@@ -5016,6 +5016,68 @@ static void lane_window_answers(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* "Nothing to present to" is asked again without a frame              */
+/*                                                                    */
+/*   The runloop reads presentable from the word the video thread     */
+/*   published after its last frame, and on false sleeps a content    */
+/*   frame ("Pacing: NoWindow"). A presenter rebuilt, or a window     */
+/*   shown again, after that frame was not seen until another frame   */
+/*   came - and with none coming the loop sat in NoWindow for good.   */
+/*   Here the context says false for a frame, then true, and no frame */
+/*   is run: the runloop's read alone has to bring the true answer.   */
+/* ------------------------------------------------------------------ */
+
+static volatile int prlane_presentable;
+
+static bool prlane_presentable_cb(void *data)
+{
+   (void)data;
+   return prlane_presentable != 0;
+}
+
+static void lane_presentable_refresh(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st;
+   bool (*saved)(void *);
+   uint64_t frames;
+   int i;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "presentable refresh lane");
+   video_st = video_state_get_ptr();
+   video_thread_wait_idle();
+   saved    = video_st->current_video_context.presentable;
+
+   /* The context goes away for a frame, which publishes it. */
+   prlane_presentable = 0;
+   video_st->current_video_context.presentable = prlane_presentable_cb;
+   run_frames(2);
+   video_thread_wait_idle();
+   CHECK(!video_context_driver_presentable(),
+         "presentable refresh lane: a context that said false read true");
+
+   /* It is back, and no frame comes. */
+   prlane_presentable = 1;
+   frames = core_frames();
+   for (i = 0; i < 1000 && !video_context_driver_presentable(); i++)
+      retro_sleep(1);
+   CHECK(video_context_driver_presentable(),
+         "presentable refresh lane: still not presentable %d ms after "
+         "the context came back, with no frame to refresh it", i);
+   CHECK(core_frames() == frames,
+         "presentable refresh lane: a frame ran during the no-frame wait");
+
+   video_thread_wait_idle();
+   video_st->current_video_context.presentable = saved;
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] presentable refresh lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* suppress_screensaver under the wrapper reaches the driver           */
 /*                                                                    */
 /*   The screensaver inhibit is the window's, so it has to reach the  */
@@ -11520,6 +11582,7 @@ int main(int argc, char *argv[])
       lane_movie_ring();
       lane_suppress_screensaver();
       lane_window_answers();
+      lane_presentable_refresh();
       lane_size_pair_round_trip();
    }
    else
