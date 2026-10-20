@@ -28,15 +28,15 @@ output = a.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
 results = []
 for driver in a.drivers.split(","):
-    if driver not in ("d3d11", "d3d12"):
-        p.error("supported native acceptance drivers: d3d11,d3d12")
+    if driver not in ("d3d11", "d3d12", "vulkan"):
+        p.error("supported native acceptance drivers: d3d11,d3d12,vulkan")
     directory = output / driver
     directory.mkdir()
     cmd = [os.environ.get("GDB", "gdb"), "--batch", "-return-child-result", "-ex", "run",
            "-ex", "thread apply all bt", "--args", str(a.harness.resolve()),
            str(fixtures / "hevc-aac.mp4"), driver, str(directory)]
     with (directory / "runtime.log").open("wb") as log:
-        child = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
+        child = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                  creationflags=subprocess.CREATE_NO_WINDOW)
         try:
             code = child.wait(timeout=90)
@@ -47,6 +47,7 @@ for driver in a.drivers.split(","):
             raise RuntimeError("native probe timed out: " + driver)
     if code:
         raise RuntimeError("native probe failed: " + str(directory / "runtime.log"))
+    restart_hold = "RECOVERY_HOLD tick=9" in (directory / "runtime.log").read_text(errors="replace")
     frames = []
     for index in range(12):
         raw = (directory / ("frame-%02d.ppm" % index)).read_bytes()
@@ -55,7 +56,9 @@ for driver in a.drivers.split(","):
         assert header == b"P6" and limit == b"255" and len(actual) == width * height * 3
         # The rejected picture repeats the preceding front; the next ordinal
         # must then recover without searching or shifting the reference.
-        ordinal = 3 if index == 4 else index
+        # Only the explicitly reported replacement stall repeats ordinal 8;
+        # the next tick must catch up to ordinal 10.
+        ordinal = 3 if index == 4 else (8 if index == 9 and restart_hold else index)
         expected = reference[ordinal * stride:(ordinal + 1) * stride]
         errors = []
         for y in range(3, 189, 2):
@@ -73,7 +76,7 @@ for driver in a.drivers.split(","):
         assert len(errors) >= 20
         frames.append({"frame": index, "reference_ordinal": ordinal, "points": len(errors),
                        "max_error": max(errors), "failed_points": sum(v > 3 for v in errors)})
-    result = {"driver": driver, "frames": frames, "gdb_exit": code}
+    result = {"driver": driver, "frames": frames, "gdb_exit": code, "restart_hold": restart_hold}
     results.append(result)
     (output / "result.json").write_text(json.dumps(results, indent=2))
     if any(frame["failed_points"] for frame in frames):

@@ -184,6 +184,17 @@ int main(void)
    memset(&held, 0, sizeof(held));
    media_suspend_video_hw();
    sink_ready = 1;
+   restart_clock = media_player.play_ns;
+   restart_pts = media_player.vpts_ns;
+   restart_ordinal = media_player.vshown;
+   before = cpu_ticks;
+   decode_busy = output_busy = 100;
+   retro_run();
+   CHECK(media_player.hw_restart == 2 && cpu_ticks == before + 1);
+   CHECK(media_player.play_ns == restart_clock + media_player.frame_ns
+         && media_player.vpts_ns == restart_pts
+         && media_player.vshown == restart_ordinal);
+   decode_busy = output_busy = 0;
    media_video_hw_ready();
    CHECK(media_player.hw_video && media_player.hw_started);
    retro_unload_game();

@@ -1562,7 +1562,12 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
 
       if (p->hw_restart)
       {
-         MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+         /* Decoder catch-up may span runs. Keep wall time moving so the
+          * next ready picture catches up with audio, and supply the last
+          * CPU picture if the replacement renderer has no cached frame. */
+         p->play_ns += p->frame_ns;
+         MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+               p->fb ? p->width * sizeof(uint32_t) : 0);
          goto audio;
       }
 

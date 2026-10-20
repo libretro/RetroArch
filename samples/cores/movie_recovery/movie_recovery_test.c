@@ -67,7 +67,7 @@ static void capture(unsigned index,const char *out)
 }
 int main(int argc,char **argv)
 {
-   char cfg_path[1024];char *args[6];FILE *f;unsigned i;
+   char cfg_path[1024];char *args[6];FILE *f;unsigned i, restart_hold = 0;
    runloop_state_t *loop;
    video_poke_interface_t fault_poke;
    if(argc!=4)return 2;
@@ -100,9 +100,15 @@ int main(int argc,char **argv)
          loop->current_core.retro_set_video_refresh(video);
          loop->current_core.retro_set_audio_sample_batch(audio);
       }
-      CHECK(runloop_iterate()>=0);task_queue_check();capture(i,argv[3]);
+      CHECK(runloop_iterate()>=0);task_queue_check();
+      if(i==9 && cpu==5 && gpu==5)
+      {
+         restart_hold=1;
+         printf("RECOVERY_HOLD tick=9\n");
+      }
+      capture(i,argv[3]);
    }
-   CHECK(rejected==1);CHECK(cpu==4);CHECK(gpu==8);
+   CHECK(rejected==1);CHECK(cpu==4+restart_hold);CHECK(gpu==8-restart_hold);
    CHECK(frames>=12);
    if(strcmp(argv[2],"gl")==0){CHECK(gpu==0);CHECK(cpu>=12);}
    else {CHECK(gpu>=7);CHECK(cpu>=4);}
