@@ -1397,7 +1397,8 @@ endif
 ifeq ($(HAVE_WINUSB), 1)
    HAVE_HID=1
    DEFINES += -DHAVE_WINUSB
-   OBJ += input/drivers_hid/winusb_hid.o
+   OBJ += input/drivers_hid/winusb_hid.o \
+          input/drivers_hid/winusb_bind.o
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)

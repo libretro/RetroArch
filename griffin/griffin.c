@@ -984,6 +984,7 @@ INPUT (HID)
 
 #if defined(HAVE_WINUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/winusb_hid.c"
+#include "../input/drivers_hid/winusb_bind.c"
 #endif
 
 #ifdef HAVE_BTSTACK

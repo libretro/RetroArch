@@ -123,6 +123,8 @@
 #include "../../steam/steam.h"
 #endif
 
+#include "../../input/drivers_hid/winusb_bind.h"
+
 enum
 {
    ACTION_OK_LOAD_PRESET = 0,
@@ -4870,6 +4872,24 @@ static int action_ok_input_bt_pair(const char *path,
    menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    return 0;
 }
+
+#ifdef HAVE_WINUSB_BIND
+/* Information > Input Information: every DualShock 3 plugged in moved
+ * to WinUSB, or given back to Windows' own driver. */
+static int action_ok_input_ds3_enable(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   winusb_bind_request(true);
+   return 0;
+}
+
+static int action_ok_input_ds3_restore(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   winusb_bind_request(false);
+   return 0;
+}
+#endif
 
 static int action_ok_start_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -9715,6 +9735,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          {MENU_ENUM_LABEL_RUN_MUSIC,                           action_ok_audio_run},
          {MENU_ENUM_LABEL_INPUT_BT_PAIR,                       action_ok_input_bt_pair},
+#ifdef HAVE_WINUSB_BIND
+         {MENU_ENUM_LABEL_INPUT_DS3_ENABLE,                    action_ok_input_ds3_enable},
+         {MENU_ENUM_LABEL_INPUT_DS3_RESTORE,                   action_ok_input_ds3_restore},
+#endif
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,action_ok_audio_add_to_mixer_and_collection_and_play},
