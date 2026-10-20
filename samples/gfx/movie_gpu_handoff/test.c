@@ -7,7 +7,10 @@
 #include <formats/video_hw_frame.h>
 #include "gfx/video_defines.h"
 #include "frame.inc"
+#ifndef HAVE_THREADS
 #define HAVE_THREADS
+#endif
+#include <rthreads/rthreads.h>
 #define HAVE_VIDEO_FILTER
 #define RETRO_HW_FRAME_BUFFER_VALID ((void*)-1)
 enum video_texture_update { VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DONE, VIDEO_TEXTURE_UPDATE_DROPPED };
@@ -17,10 +20,23 @@ typedef struct
 {
    const video_poke_interface_t *poke;
    void *data, *state_filter, *record_gpu_buffer;
-   bool movie_frame;
+   bool movie_frame, movie_refused;
 } video_driver_state_t;
+#include "gfx/video_thread_movie.h"
+typedef struct
+{
+   const video_poke_interface_t *poke;
+   void *driver_data;
+   retro_atomic_int_t movie_capable;
+   video_thread_movie_state_t movie_state;
+   video_thread_movie_t movie_next;
+   bool self;
+} thread_video_t;
+static thread_video_t *video_thread_thr_capture;
+static bool video_thread_is_self(thread_video_t *thr) { return thr->self; }
+#include "wrapper.inc"
 static video_driver_state_t video_driver_st;
-static bool threaded, device_ok = true, movie_capable = true;
+static bool threaded, device_ok = true;
 static uint32_t formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
 static struct { bool enable, streaming_enable; } recorder;
 static unsigned failures, abandoned, imports, invalidated;
@@ -28,7 +44,7 @@ static enum video_texture_update outcome;
 static video_frame_import_t captured;
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); failures++; } } while (0)
 static bool video_driver_thread_wrapper_active(void) { return threaded; }
-static bool video_thread_movie_supported(void) { return movie_capable; }
+
 static bool video_driver_get_device(video_device_info_t *info) { info->import_formats = formats; return device_ok; }
 #define recording_state_get_ptr() (&recorder)
 static void video_driver_cached_frame_invalidate(void) { invalidated++; }
@@ -49,14 +65,20 @@ static void frontend(void)
 {
    video_hw_frame_t hw;
    video_poke_interface_t poke;
+   thread_video_t thr;
+   unsigned before;
+   memset(&thr, 0, sizeof(thr));
+   retro_atomic_int_init(&thr.movie_capable, 1);
+   video_thread_movie_state_init(&thr.movie_state);
+   video_thread_thr_capture = &thr;
    memset(&hw, 0, sizeof(hw)); memset(&poke, 0, sizeof(poke));
    CHECK(!video_driver_movie_refresh(NULL, NULL));
    poke.import_movie_frame = import; video_driver_st.poke = &poke;
    video_driver_st.data = &imports;
    CHECK(video_driver_movie_refresh(NULL, NULL));
    threaded = true; CHECK(video_driver_movie_refresh(NULL, NULL));
-   movie_capable = false; CHECK(!video_driver_movie_refresh(NULL, NULL));
-   movie_capable = true; threaded = false;
+   retro_atomic_store_release_int(&thr.movie_capable, 0); CHECK(!video_driver_movie_refresh(NULL, NULL));
+   retro_atomic_store_release_int(&thr.movie_capable, 1); threaded = false;
    video_driver_st.state_filter = &imports;
    CHECK(!video_driver_movie_refresh(NULL, NULL)); video_driver_st.state_filter = NULL;
    recorder.enable = true; CHECK(!video_driver_movie_refresh(NULL, NULL));
@@ -85,6 +107,16 @@ static void frontend(void)
    CHECK(captured.pixfmt == IMAGE_PIXFMT_P010);
    outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
    CHECK(video_driver_movie_refresh(NULL, &hw) && abandoned == 1);
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(video_driver_movie_refresh(NULL, &hw) && abandoned == 2);
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   threaded = true;
+   before = imports;
+   video_driver_movie_clear();
+   CHECK(imports == before + 1);
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   threaded = false;
    video_driver_movie_clear(); CHECK(!video_driver_st.movie_frame && invalidated == 1);
 }
 
@@ -213,7 +245,6 @@ static void vulkan_movie(void)
          && !vk.movie_texture && !vk.movie_pending);
    CHECK(vulkan_import_movie_frame(&vk, NULL) == outcome && retired == 2);
 }
-#include "gfx/video_thread_movie.h"
 static unsigned queued_imports, queued_clears, queued_abandons;
 static enum video_texture_update queued_outcome;
 static void queued_abandon(void *owner, uint64_t done, uint64_t value)
@@ -232,49 +263,202 @@ static enum video_texture_update queued_import(void *data, const video_frame_imp
 static void movie_queue(void)
 {
    video_thread_movie_t next, slot;
+   video_thread_movie_state_t state;
    video_frame_import_t f;
    video_poke_interface_t poke;
+   video_thread_movie_state_init(&state);
    memset(&next, 0, sizeof(next)); memset(&slot, 0, sizeof(slot));
    memset(&f, 0, sizeof(f)); memset(&poke, 0, sizeof(poke));
    poke.import_movie_frame = queued_import;
    f.image = 12; f.wait = 34; f.wait_value = 56; f.done = 88; f.done_value = 7;
    f.owner = &queued_abandons; f.abandon = queued_abandon;
-   CHECK(video_thread_movie_stage(&next, &f) == VIDEO_TEXTURE_UPDATE_DONE);
-   CHECK(video_thread_movie_stage(&next, &f) == VIDEO_TEXTURE_UPDATE_DROPPED);
+   CHECK(video_thread_movie_stage(&state, &next, &f) == VIDEO_TEXTURE_UPDATE_DONE);
+   CHECK(video_thread_movie_stage(&state, &next, &f) == VIDEO_TEXTURE_UPDATE_DROPPED);
    CHECK(!queued_abandons);
    video_thread_movie_move(&slot, &next);
    CHECK(slot.pending && !next.pending && !queued_abandons);
    queued_outcome = VIDEO_TEXTURE_UPDATE_DONE;
-   video_thread_movie_apply(&slot, &queued_imports, &poke);
+   video_thread_movie_apply(&state, &slot, &queued_imports, &poke);
    CHECK(queued_imports == 1 && !queued_abandons && !slot.pending);
-   video_thread_movie_stage(&next, &f);
+   video_thread_movie_stage(&state, &next, &f);
    video_thread_movie_move(&slot, &next);
    queued_outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
-   video_thread_movie_apply(&slot, &queued_imports, &poke);
+   video_thread_movie_apply(&state, &slot, &queued_imports, &poke);
    CHECK(queued_abandons == 1 && !slot.pending);
-   video_thread_movie_stage(&next, &f);
-   video_thread_movie_stage(&next, NULL);
+   video_thread_movie_stage(&state, &next, &f);
+   video_thread_movie_stage(&state, &next, NULL);
    CHECK(queued_abandons == 2 && next.reset && !next.pending);
    video_thread_movie_move(&slot, &next);
-   video_thread_movie_stage(&next, &f);
+   video_thread_movie_stage(&state, &next, &f);
    video_thread_movie_move(&slot, &next);
    CHECK(slot.reset && slot.pending);
    queued_outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
-   video_thread_movie_apply(&slot, &queued_imports, &poke);
+   video_thread_movie_apply(&state, &slot, &queued_imports, &poke);
    CHECK(queued_clears == 1 && queued_abandons == 3 && !slot.pending && !slot.reset);
-   video_thread_movie_stage(&next, &f);
+   CHECK(!video_thread_movie_ready(&state));
+   video_thread_movie_stage(&state, &next, NULL);
+   video_thread_movie_stage(&state, &next, &f);
    video_thread_movie_move(&slot, &next);
-   video_thread_movie_stage(&next, &f);
+   video_thread_movie_stage(&state, &next, &f);
    video_thread_movie_move(&slot, &next);
    CHECK(queued_abandons == 4);
-   video_thread_movie_apply(&slot, NULL, NULL);
-   CHECK(queued_abandons == 5);
-   video_thread_movie_stage(&next, &f);
+   video_thread_movie_apply(&state, &slot, NULL, NULL);
+   CHECK(queued_abandons == 5 && !video_thread_movie_ready(&state));
+   video_thread_movie_stage(&state, &next, NULL);
+   video_thread_movie_stage(&state, &next, &f);
    video_thread_movie_discard(&next);
    video_thread_movie_discard(&next);
    CHECK(queued_abandons == 6);
 }
+static void wrapper_failure(void)
+{
+   thread_video_t thr;
+   video_thread_movie_t slot;
+   video_poke_interface_t outer, inner;
+   video_hw_frame_t hw;
+   unsigned before;
+   memset(&thr, 0, sizeof(thr)); memset(&slot, 0, sizeof(slot));
+   memset(&hw, 0, sizeof(hw));
+   memset(&outer, 0, sizeof(outer)); memset(&inner, 0, sizeof(inner));
+   retro_atomic_int_init(&thr.movie_capable, 1);
+   video_thread_movie_state_init(&thr.movie_state);
+   outer.import_movie_frame = thread_import_movie_frame;
+   inner.import_movie_frame = queued_import;
+   thr.poke = &inner; thr.driver_data = &queued_imports;
+   video_thread_thr_capture = &thr;
+   video_driver_st.poke = &outer; video_driver_st.data = &thr;
+   video_driver_st.movie_frame = video_driver_st.movie_refused = false;
+   threaded = true;
+   hw.image = 12; hw.wait = 34; hw.wait_value = 56;
+   hw.done = 88; hw.done_value = 7;
+   hw.owner = &queued_abandons; hw.abandon = queued_abandon;
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   video_thread_movie_move(&slot, &thr.movie_next);
+   video_driver_movie_clear();
+   queued_outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
+   before = queued_abandons;
+   video_thread_movie_apply(&thr.movie_state, &slot, thr.driver_data, thr.poke);
+   CHECK(queued_abandons == before + 1);
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   video_thread_movie_move(&slot, &thr.movie_next);
+   queued_outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
+   video_thread_movie_apply(&thr.movie_state, &slot, thr.driver_data, thr.poke);
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   video_thread_movie_move(&slot, &thr.movie_next);
+   queued_outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
+   video_thread_movie_apply(&thr.movie_state, &slot, thr.driver_data, thr.poke);
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   before = queued_imports;
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   CHECK(video_driver_st.movie_refused && queued_imports == before);
+   retro_atomic_store_release_int(&thr.movie_capable, 0);
+   video_driver_movie_clear();
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   retro_atomic_store_release_int(&thr.movie_capable, 1);
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   video_thread_movie_move(&slot, &thr.movie_next);
+   queued_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   video_thread_movie_apply(&thr.movie_state, &slot, thr.driver_data, thr.poke);
+   queued_abandon(hw.owner, hw.done, hw.done_value);
+   retro_atomic_store_release_size(&thr.movie_state.epoch, (size_t)-2);
+   video_driver_movie_clear();
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   CHECK(!video_driver_st.movie_refused);
+   CHECK(video_driver_movie_refresh(NULL, &hw));
+   CHECK(video_driver_st.movie_refused);
+   video_driver_movie_clear();
+   CHECK(!video_driver_movie_refresh(NULL, NULL));
+   video_thread_movie_state_init(&thr.movie_state);
+   CHECK(video_driver_movie_refresh(NULL, NULL));
+   video_thread_movie_discard(&thr.movie_next);
+   threaded = false;
+}
+
+typedef struct
+{
+   thread_video_t thr;
+   video_thread_movie_t slot;
+   slock_t *lock;
+   scond_t *cond;
+   int entered, resume;
+} movie_race_t;
+
+static enum video_texture_update blocked_import(void *data,
+      const video_frame_import_t *frame)
+{
+   movie_race_t *race = (movie_race_t*)data;
+   if (!frame) return VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(frame->image == 12);
+   slock_lock(race->lock);
+   race->entered = 1;
+   scond_signal(race->cond);
+   while (!race->resume)
+      scond_wait(race->cond, race->lock);
+   slock_unlock(race->lock);
+   return VIDEO_TEXTURE_UPDATE_REFUSED;
+}
+
+static void delayed_refusal(void *data)
+{
+   movie_race_t *race = (movie_race_t*)data;
+   video_thread_movie_apply(&race->thr.movie_state, &race->slot,
+         race->thr.driver_data, race->thr.poke);
+}
+
+static void replacement_race(void)
+{
+   movie_race_t race;
+   video_poke_interface_t outer, inner;
+   video_hw_frame_t hw;
+   unsigned i, before = queued_abandons;
+   memset(&race, 0, sizeof(race)); memset(&hw, 0, sizeof(hw));
+   memset(&outer, 0, sizeof(outer)); memset(&inner, 0, sizeof(inner));
+   race.lock = slock_new(); race.cond = scond_new();
+   CHECK(race.lock && race.cond);
+   if (!race.lock || !race.cond) return;
+   retro_atomic_int_init(&race.thr.movie_capable, 1);
+   video_thread_movie_state_init(&race.thr.movie_state);
+   inner.import_movie_frame = blocked_import;
+   outer.import_movie_frame = thread_import_movie_frame;
+   race.thr.poke = &inner; race.thr.driver_data = &race;
+   video_thread_thr_capture = &race.thr;
+   video_driver_st.poke = &outer; video_driver_st.data = &race.thr;
+   video_driver_st.movie_refused = video_driver_st.movie_frame = false;
+   threaded = true;
+   hw.image = 12; hw.done = 88; hw.done_value = 7;
+   hw.owner = &queued_abandons; hw.abandon = queued_abandon;
+   for (i = 0; i < 100; i++)
+   {
+      sthread_t *worker;
+      race.entered = race.resume = 0;
+      CHECK(video_driver_movie_refresh(NULL, &hw));
+      video_thread_movie_move(&race.slot, &race.thr.movie_next);
+      worker = sthread_create(delayed_refusal, &race);
+      CHECK(worker != NULL);
+      if (!worker) break;
+      slock_lock(race.lock);
+      while (!race.entered)
+         scond_wait(race.cond, race.lock);
+      video_driver_movie_clear();
+      CHECK(video_driver_movie_refresh(NULL, NULL));
+      race.resume = 1;
+      scond_signal(race.cond);
+      slock_unlock(race.lock);
+      sthread_join(worker);
+      CHECK(video_driver_movie_refresh(NULL, NULL));
+   }
+   CHECK(i == 100 && queued_abandons == before + 100);
+   video_thread_movie_discard(&race.thr.movie_next);
+   slock_free(race.lock); scond_free(race.cond);
+   threaded = false;
+   printf("Movie refusal: 100 delayed worker results preserve replacement readiness\n");
+}
+
 int main(void)
 {
-   frontend(); drivers(); vulkan_movie(); movie_queue(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
+   frontend(); drivers(); vulkan_movie(); movie_queue(); wrapper_failure(); replacement_race(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
 }

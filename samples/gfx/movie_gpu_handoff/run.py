@@ -13,6 +13,10 @@ with tempfile.TemporaryDirectory() as directory:
     source = (root / 'gfx/video_driver.c').read_text()
     (tmp / 'front.inc').write_text('\n'.join(body(source, s) for s in
         ('bool video_driver_movie_refresh(', 'void video_driver_movie_clear(')))
+    source = (root / 'gfx/video_thread_wrapper.c').read_text()
+    (tmp / 'wrapper.inc').write_text('\n'.join(body(source, sig) for sig in
+        ('bool video_thread_movie_supported(',
+         'static enum video_texture_update thread_import_movie_frame(')))
     for api in ('d3d11', 'd3d12', 'vulkan'):
         source = (root / 'gfx/drivers' / (api + '.c')).read_text()
         (tmp / (api + '.inc')).write_text('\n'.join(body(source, s) for s in
@@ -27,7 +31,12 @@ with tempfile.TemporaryDirectory() as directory:
     flags = shlex.split(os.environ.get('CFLAGS', '-O1 -g -std=c89 -Wall -Wextra'))
     exe = tmp / ('test.exe' if 'mingw' in cc[0] or os.name == 'nt' else 'test')
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root), '-I' + str(root / 'libretro-common/include'),
-        str(Path(__file__).with_name('test.c')), '-o', str(exe)], check=True)
+        '-DHAVE_THREADS', '-D_GNU_SOURCE', str(Path(__file__).with_name('test.c'))] +
+        [str(root / ('libretro-common/' + p)) for p in
+         ('rthreads/rthreads.c', 'rthreads/retro_eventcount.c',
+          'features/features_cpu.c', 'time/rtime.c')] +
+        ['-lpthread', '-lm'] + (['-lwinmm'] if 'mingw' in cc[0] or os.name == 'nt' else []) +
+        ['-o', str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
 
 with tempfile.TemporaryDirectory() as directory:

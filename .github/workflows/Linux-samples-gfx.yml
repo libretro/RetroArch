@@ -1468,6 +1468,7 @@ jobs:
         run: |
           set -eu
           CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/movie_gpu_handoff/run.py
+          CFLAGS="-O1 -g -std=c89 -Wall -Wextra -fsanitize=thread -fno-omit-frame-pointer" python3 samples/gfx/movie_gpu_handoff/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/movie_gpu_handoff/run.py
 
       - name: D3D12 descriptor cache resource lifetime (Linux and mingw + Wine)

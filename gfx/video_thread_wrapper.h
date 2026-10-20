@@ -519,6 +519,7 @@ typedef struct thread_video
    /* Video thread sets it, the hold takes it with a fetch_and */
    retro_atomic_int_t drain_pending;
    retro_atomic_int_t movie_capable;
+   video_thread_movie_state_t movie_state;
    video_thread_movie_t movie_next;
    /* Fast-forward, from the frame info at the push: the hold stands
     * down for it. Distinct from nonblock, which vsync-off also sets. */

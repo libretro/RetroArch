@@ -2756,7 +2756,8 @@ static void video_thread_loop(void *data)
           * keeps no pointer, so the slot taken here is free again by
           * the next take. */
          thread_update_driver_state(thr);
-         video_thread_movie_apply(&thr->frame.slot[slot].movie,
+         video_thread_movie_apply(&thr->movie_state,
+               &thr->frame.slot[slot].movie,
                thr->driver_data, thr->poke);
 
          if (thr->driver_data && thr->driver)
@@ -4291,6 +4292,8 @@ static bool video_thread_init(thread_video_t *thr,
    retro_atomic_int_init(&thr->repeat_request, 0);
    retro_atomic_int_init(&thr->repeat_group, 0);
    retro_atomic_int_init(&thr->drain_pending, 0);
+   retro_atomic_int_init(&thr->movie_capable, 0);
+   video_thread_movie_state_init(&thr->movie_state);
    retro_atomic_int_init(&thr->core_time_us, 0);
    retro_atomic_int_init(&thr->display_pacing_pub, 0);
    retro_atomic_int_init(&thr->content_period_us, 0);
@@ -5371,20 +5374,25 @@ static bool thread_supports_texture_format(void *video_data,
 bool video_thread_movie_supported(void)
 {
    thread_video_t *thr = video_thread_thr_capture;
-   return thr && retro_atomic_load_acquire_int(&thr->movie_capable);
+   return thr && retro_atomic_load_acquire_int(&thr->movie_capable)
+      && video_thread_movie_ready(&thr->movie_state);
 }
 
 static enum video_texture_update thread_import_movie_frame(void *data,
       const video_frame_import_t *frame)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   if (!thr || !retro_atomic_load_acquire_int(&thr->movie_capable))
+   if (!thr)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!frame && !video_thread_is_self(thr))
+      return video_thread_movie_stage(&thr->movie_state, &thr->movie_next, NULL);
+   if (!retro_atomic_load_acquire_int(&thr->movie_capable))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (video_thread_is_self(thr))
       return thr->driver_data && thr->poke && thr->poke->import_movie_frame
          ? thr->poke->import_movie_frame(thr->driver_data, frame)
          : VIDEO_TEXTURE_UPDATE_REFUSED;
-   return video_thread_movie_stage(&thr->movie_next, frame);
+   return video_thread_movie_stage(&thr->movie_state, &thr->movie_next, frame);
 }
 
 static bool thread_get_device(void *video_data, video_device_info_t *info)

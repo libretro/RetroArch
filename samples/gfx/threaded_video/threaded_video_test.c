@@ -10897,7 +10897,7 @@ static void lane_display_past_top(void)
             unthreaded, threaded);
 }
 
-#define MOVIE_RING_FRAMES 130
+#define MOVIE_RING_FRAMES 132
 static retro_atomic_int_t movie_ring_released[MOVIE_RING_FRAMES + 1];
 static retro_atomic_int_t movie_ring_errors;
 static video_driver_t movie_ring_driver;
@@ -10990,17 +10990,37 @@ static void lane_movie_ring(void)
    hw.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
    hw.color.mastering.chromaticity[0] = 25000;
    hw.color.mastering.luminance_max = 10240000;
-   for (i = 1; i <= MOVIE_RING_FRAMES - 2; i++)
+   for (i = 1; i <= MOVIE_RING_FRAMES - 4; i++)
    {
       hw.image = i; hw.wait_value = hw.done_value = i;
       hw.color.transfer = i % 2 ? 16 : 18;
       hw.color.max_cll = i + 100; hw.color.max_fall = i + 50;
       hw.plane_views[0] = i + 1000; hw.plane_views[1] = i + 2000;
+      if (!video_driver_movie_refresh(NULL, NULL))
+         video_driver_movie_clear();
       CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: staging refused %u", i);
-      CHECK(!video_driver_movie_refresh(NULL, &hw), "movie ring: staging overwrite %u", i);
+      if (thr->movie_next.pending)
+         CHECK(!video_driver_movie_refresh(NULL, &hw), "movie ring: staging overwrite %u", i);
+      else
+         CHECK(!video_driver_movie_refresh(NULL, NULL), "movie ring: refusal not latched");
       video_driver_frame(NULL, 1920, 1080, 0);
    }
    video_thread_wait_idle();
+   video_driver_movie_clear();
+   for (i = MOVIE_RING_FRAMES - 3; i <= MOVIE_RING_FRAMES - 2; i++)
+   {
+      hw.image = hw.wait_value = hw.done_value = i;
+      hw.color.transfer = i % 2 ? 16 : 18;
+      hw.color.max_cll = i + 100; hw.color.max_fall = i + 50;
+      hw.plane_views[0] = i + 1000; hw.plane_views[1] = i + 2000;
+      CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: controlled stage %u", i);
+      video_driver_frame(NULL, 1920, 1080, 0);
+      video_thread_wait_idle();
+      CHECK(video_driver_movie_refresh(NULL, NULL) == (i % 3 == 0),
+            "movie ring: busy/refused readiness %u", i);
+   }
+   video_driver_movie_clear();
+   CHECK(video_driver_movie_refresh(NULL, NULL), "movie ring: clear did not restore readiness");
    /* Clear releases a staged lease before its frame is published. */
    hw.image = hw.wait_value = hw.done_value = MOVIE_RING_FRAMES - 1;
    hw.color.transfer = hw.image % 2 ? 16 : 18;
@@ -11026,7 +11046,7 @@ static void lane_movie_ring(void)
    CHECK(!retro_atomic_load_acquire_int(&movie_ring_errors), "movie ring: ordering or duplicate release");
    run_frames(2);
    if (menu_was_up && !menu_is_up()) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-   if (failures == had) fprintf(stderr, "[pass] threaded movie ring: metadata, backpressure, clear and teardown\n");
+   if (failures == had) fprintf(stderr, "[pass] threaded movie ring: metadata, backpressure, refusal recovery, clear and teardown\n");
 }
 
 #include "hdr_surface.h"
