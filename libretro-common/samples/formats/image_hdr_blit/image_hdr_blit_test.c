@@ -398,6 +398,49 @@ static void lane_unspecified_hdr_matrix(void)
          }
 }
 
+static void lane_prepared_tone(void)
+{
+   static rwebm_video_hdr_tone_t tone;
+   static const unsigned peaks[] = {0, 399, 400, 1000, 4000, 10000, 10001, 65535};
+   static const uint16_t y[4] = {256, 400, 600, 900}, u[1] = {448}, v[1] = {576};
+   uint32_t expected[4], actual[4];
+   unsigned p, transfer, range, primaries;
+   for (p = 0; p < sizeof(peaks) / sizeof(peaks[0]); p++)
+   {
+      rwebm_video_hdr_tone_init(&tone, peaks[p]);
+      for (transfer = 16; transfer <= 18; transfer += 2)
+         for (range = 1; range <= 2; range++)
+            for (primaries = 1; primaries <= 9; primaries += 8)
+            {
+               rwebm_video_blit_i420_hbd_color(expected, 2, 2, 2, y, 2, u, v, 1,
+                     9, transfer, range, peaks[p], primaries, 0);
+               rwebm_video_blit_i420_hbd_tone(actual, 2, 2, 2, y, 2, u, v, 1,
+                     9, transfer, range, peaks[p], primaries, 0, &tone);
+               CHECK(!memcmp(expected, actual, sizeof(actual)), "prepared SDR8 peak %u", peaks[p]);
+               rwebm_video_blit_i420_10bit_color(expected, 2, 2, 2, y, 2, u, v, 1,
+                     9, transfer, range, peaks[p], primaries);
+               rwebm_video_blit_i420_10bit_tone(actual, 2, 2, 2, y, 2, u, v, 1,
+                     9, transfer, range, peaks[p], primaries, &tone);
+               CHECK(!memcmp(expected, actual, sizeof(actual)), "prepared SDR10 peak %u", peaks[p]);
+            }
+   }
+}
+
+static void lane_metadata_peak(void)
+{
+   video_mastering_display_t mastering;
+   memset(&mastering, 0, sizeof(mastering));
+   mastering.present = 0x100u;
+   mastering.luminance_max = 40000000;
+   CHECK(video_color_tonemap_peak_nits(16, 0, &mastering) == 4000, "mastering peak fallback");
+   CHECK(video_color_tonemap_peak_nits(16, 400, &mastering) == 400, "content peak precedes mastering");
+   CHECK(video_color_tonemap_peak_nits(16, 399, &mastering) == 1000, "invalid signalled content peak defaults");
+   CHECK(video_color_tonemap_peak_nits(18, 400, &mastering) == 1000, "HLG ignores source peak metadata");
+   mastering.present = 0;
+   CHECK(video_color_tonemap_peak_nits(16, 0, &mastering) == 1000, "absent mastering maximum");
+   CHECK(video_color_tonemap_peak_nits(16, 0, NULL) == 1000, "absent peak metadata");
+}
+
 int main(void)
 {
    lane_fp16_ramp(16, "PQ");
@@ -409,6 +452,8 @@ int main(void)
    lane_source_primaries();
    lane_709_scrgb();
    lane_unspecified_hdr_matrix();
+   lane_prepared_tone();
+   lane_metadata_peak();
    if (failures)
    {
       fprintf(stderr, "%u failure(s)\n", failures);

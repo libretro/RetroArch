@@ -88,6 +88,30 @@ int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
  * The legacy entry points above retain their BT.2020 HDR assumption.
  * Primaries affect HDR gamut conversion and the linear HLG OOTF only;
  * matrix remains the independent YCbCr matrix code point. */
+/* Caller-owned PQ table. Initialize before publishing it to row-band
+ * workers; keep immutable until those workers finish. The legacy blits
+ * remain stateless and need no shared cache or allocation. */
+typedef struct rwebm_video_hdr_tone
+{
+   uint16_t pq[1024];
+   unsigned peak;
+   int ready;
+} rwebm_video_hdr_tone_t;
+
+void rwebm_video_hdr_tone_init(rwebm_video_hdr_tone_t *tone, unsigned max_cll);
+void rwebm_video_blit_i420_hbd_tone(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, unsigned primaries, int abgr,
+      const rwebm_video_hdr_tone_t *tone);
+void rwebm_video_blit_i420_10bit_tone(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, unsigned primaries,
+      const rwebm_video_hdr_tone_t *tone);
+
 void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,

@@ -86,3 +86,5 @@ samples/midi/fmsynth_queue fmsynth_queue_test
 samples/input/joypad_slots joypad_slots_test
 samples/audio/rsound_thread rsound_thread_test
 samples/runloop/log_ring log_ring_test
+libretro-common/samples/formats/image_hdr_blit image_hdr_blit_test
+libretro-common/samples/formats/image_hdr_blit image_hdr_blit_thread_test

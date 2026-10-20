@@ -32,6 +32,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include <math.h>
 
 #include <formats/rwebm_video.h>
@@ -575,12 +576,12 @@ static const float image_hdr_hlg_scene[1024] =
    0.984121293f, 0.989385299f, 0.994678158f, 1.00000003f
 };
 
-static uint16_t rwebm_hbd_pq_lut[1024];   /* PQ' -> tone-mapped linear */
-static uint16_t rwebm_hbd_hlg_lut[1024];  /* HLG' -> tone-mapped linear */
-static uint8_t  rwebm_hbd_out_lut[8193];  /* linear -> sRGB' 8-bit     */
-static uint16_t rwebm_hbd_out_lut10[8193];/* linear -> sRGB' 10-bit    */
-static int      rwebm_hbd_lut_ready;
-static unsigned rwebm_hbd_lut_peak;       /* nits the PQ LUT was built for */
+#include "image_hdr_tone_lut.h"
+
+typedef struct
+{
+   double gain, denominator;
+} rwebm_hdr_curve_t;
 
 static double rwebm_hbd_hable(double x)
 {
@@ -605,51 +606,61 @@ static double rwebm_hbd_exposure(double peak)
    return g;
 }
 
-static void rwebm_hbd_init_luts(unsigned peak_cll)
+static unsigned rwebm_hbd_peak(unsigned max_cll)
+{
+   return max_cll >= 400 && max_cll <= 10000 ? max_cll : 1000;
+}
+
+static void rwebm_hbd_curve(rwebm_hdr_curve_t *curve, unsigned max_cll)
+{
+   double peak = (double)rwebm_hbd_peak(max_cll) / 203.0;
+   curve->gain = rwebm_hbd_exposure(peak);
+   curve->denominator = rwebm_hbd_hable(curve->gain * peak);
+}
+
+static uint16_t rwebm_hbd_pq_sample(const rwebm_hdr_curve_t *curve, unsigned i)
 {
    const double m1 = 0.1593017578125, m2 = 78.84375;
    const double c1 = 0.8359375, c2 = 18.8515625, c3 = 18.6875;
-   const double sdr_white = 203.0;
-   /* MaxCLL when signalled, else assume a 1000-nit grade; clamp to a
-    * sane window so absurd metadata cannot wreck the curve */
-   const double peak_nits =
-      (peak_cll >= 400 && peak_cll <= 10000) ? (double)peak_cll : 1000.0;
-   const double peak = peak_nits / sdr_white;
-   /* HLG is graded for a 1000-nit display and carries no MaxCLL */
-   const double hlg_peak = 1000.0 / sdr_white;
-   double g     = rwebm_hbd_exposure(peak);
-   double g_hlg = rwebm_hbd_exposure(hlg_peak);
-   int i;
+   double ep = pow(i / 1023.0, 1.0 / m2);
+   double num = ep - c1;
+   double light, out;
+   if (num < 0.0) num = 0.0;
+   light = pow(num / (c2 - c3 * ep), 1.0 / m1);
+   light = (10000.0 * light) / 203.0;
+   out = rwebm_hbd_hable(curve->gain * light) / curve->denominator;
+   if (out > 1.0) out = 1.0;
+   return (uint16_t)(out * 65535.0 + 0.5);
+}
 
-   for (i = 0; i < 1024; i++)
+void rwebm_video_hdr_tone_init(rwebm_video_hdr_tone_t *tone, unsigned max_cll)
+{
+   rwebm_hdr_curve_t curve;
+   unsigned i;
+   if (!tone) return;
+   if (rwebm_hbd_peak(max_cll) == 1000)
+      memcpy(tone->pq, image_hdr_pq_default, sizeof(tone->pq));
+   else
    {
-      double ep = pow(i / 1023.0, 1.0 / m2);
-      double num = ep - c1;
-      double y, l, o;
-      if (num < 0.0) num = 0.0;
-      y = pow(num / (c2 - c3 * ep), 1.0 / m1);        /* 0..1 of 10000 */
-      l = (10000.0 * y) / sdr_white;                  /* SDR-white rel */
-      o = rwebm_hbd_hable(g * l) / rwebm_hbd_hable(g * peak);
-      if (o > 1.0) o = 1.0;
-      rwebm_hbd_pq_lut[i] = (uint16_t)(o * 65535.0 + 0.5);
-      /* HLG: inverse OETF, then the 1000-nit system gamma of 1.2 taken
-       * per channel - the luminance-driven OOTF approximated the way
-       * the gamut step below is, per channel and LUT-foldable. */
-      l = 1000.0 * pow((double)image_hdr_hlg_scene[i], 1.2) / sdr_white;
-      o = rwebm_hbd_hable(g_hlg * l) / rwebm_hbd_hable(g_hlg * hlg_peak);
-      if (o > 1.0) o = 1.0;
-      rwebm_hbd_hlg_lut[i] = (uint16_t)(o * 65535.0 + 0.5);
+      rwebm_hbd_curve(&curve, max_cll);
+      for (i = 0; i < 1024; i++)
+         tone->pq[i] = rwebm_hbd_pq_sample(&curve, i);
    }
-   for (i = 0; i <= 8192; i++)
-   {
-      double lin = i / 8192.0;
-      double s   = lin <= 0.0031308
-         ? 12.92 * lin : 1.055 * pow(lin, 1.0 / 2.4) - 0.055;
-      rwebm_hbd_out_lut[i]   = (uint8_t)(s * 255.0 + 0.5);
-      rwebm_hbd_out_lut10[i] = (uint16_t)(s * 1023.0 + 0.5);
-   }
-   rwebm_hbd_lut_ready = 1;
-   rwebm_hbd_lut_peak  = peak_cll;
+   tone->peak = max_cll;
+   tone->ready = 1;
+}
+
+static const uint16_t *rwebm_hbd_tone_lut(unsigned transfer, unsigned max_cll,
+      const rwebm_video_hdr_tone_t *tone, rwebm_hdr_curve_t *curve)
+{
+   if (transfer == 18) return image_hdr_hlg_default;
+   if (transfer != 16) return NULL;
+   if (tone && tone->ready && tone->peak == max_cll) return tone->pq;
+   if (rwebm_hbd_peak(max_cll) == 1000) return image_hdr_pq_default;
+   /* Compatibility calls without a prepared table evaluate the same
+    * samples locally. Stream renderers prepare their own table once. */
+   rwebm_hbd_curve(curve, max_cll);
+   return NULL;
 }
 
 /* limited-range 10-bit YCbCr coefficients, <<8 */
@@ -684,39 +695,40 @@ static const int *rwebm_hbd_hdr_matrix(unsigned matrix, int full)
    return coefficients[row][full ? 1 : 0];
 }
 
-static int rwebm_hbd_hdr_lookup(const uint16_t *lut, int encoded)
+static int rwebm_hbd_hdr_lookup(const uint16_t *lut, int encoded,
+      const rwebm_hdr_curve_t *curve)
 {
-   unsigned index, fraction;
+   unsigned index, fraction, first, next;
    if (encoded <= 0)
-      return lut[0];
+      return lut ? lut[0] : rwebm_hbd_pq_sample(curve, 0);
    if (encoded >= 1023 * 65536)
-      return lut[1023];
+      return lut ? lut[1023] : rwebm_hbd_pq_sample(curve, 1023);
    index = (unsigned)encoded >> 16;
    fraction = (unsigned)encoded & 65535u;
-   return (int)lut[index] + (int)(((unsigned)(lut[index + 1] - lut[index])
-            * fraction + 32768u) >> 16);
+   first = lut ? lut[index] : rwebm_hbd_pq_sample(curve, index);
+   next = lut ? lut[index + 1] : rwebm_hbd_pq_sample(curve, index + 1);
+   return (int)first + (int)(((next - first) * fraction + 32768u) >> 16);
 }
 
-void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
+void rwebm_video_blit_i420_hbd_tone(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
       unsigned matrix, unsigned transfer, unsigned range,
-      unsigned max_cll, unsigned primaries, int abgr)
+      unsigned max_cll, unsigned primaries, int abgr,
+      const rwebm_video_hdr_tone_t *tone)
 {
    int re, gd, ge, bd;
    /* PQ and HLG are HDR, tone-mapped to SDR; anything else is SDR */
-   const uint16_t *hdr_lut = (transfer == 16) ? rwebm_hbd_pq_lut
-                           : (transfer == 18) ? rwebm_hbd_hlg_lut : NULL;
-   int is_pq   = (transfer == 16);
+   rwebm_hdr_curve_t curve;
+   const uint16_t *hdr_lut = rwebm_hbd_tone_lut(transfer, max_cll, tone, &curve);
+   int is_hdr  = transfer == 16 || transfer == 18;
    int full    = (range == 2);
    const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
          matrix && matrix != 2 ? matrix : 9u, full);
    unsigned j, i;
 
-   if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
-      rwebm_hbd_init_luts(max_cll);
    /* HDR without an explicit matrix is BT.2020-ncl in practice */
-   rwebm_hbd_matrix(matrix ? matrix : (hdr_lut ? 9u : 1u), &re, &gd, &ge, &bd);
+   rwebm_hbd_matrix(matrix ? matrix : (is_hdr ? 9u : 1u), &re, &gd, &ge, &bd);
 
    for (j = 0; j < h; j++)
    {
@@ -745,27 +757,27 @@ void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
          if (r < 0) r = 0; else if (r > 1023) r = 1023;
          if (g < 0) g = 0; else if (g > 1023) g = 1023;
          if (b < 0) b = 0; else if (b > 1023) b = 1023;
-         if (hdr_lut)
+         if (is_hdr)
          {
             /* tone-mapped linear, then 2020 -> 709 gamut, then sRGB */
             int yy = ((int)yr[i] - (full ? 0 : 64)) * hdr_coefficients[0];
             int cb = (int)ur[i >> 1] - 512;
             int cr = (int)vr[i >> 1] - 512;
             int lr = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy + hdr_coefficients[1] * cr);
+                  yy + hdr_coefficients[1] * cr, &curve);
             int lg = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
+                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr, &curve);
             int lb = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy + hdr_coefficients[4] * cb);
+                  yy + hdr_coefficients[4] * cb, &curve);
             int xr = primaries == 1 ? lr : (6801 * lr - 2407 * lg -  298 * lb) >> 12;
             int xg = primaries == 1 ? lg : ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
             int xb = primaries == 1 ? lb : (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
             if (xr < 0) xr = 0; else if (xr > 65535) xr = 65535;
             if (xg < 0) xg = 0; else if (xg > 65535) xg = 65535;
             if (xb < 0) xb = 0; else if (xb > 65535) xb = 65535;
-            r = rwebm_hbd_out_lut[xr >> 3];
-            g = rwebm_hbd_out_lut[xg >> 3];
-            b = rwebm_hbd_out_lut[xb >> 3];
+            r = image_hdr_out8[xr >> 3];
+            g = image_hdr_out8[xg >> 3];
+            b = image_hdr_out8[xb >> 3];
          }
          else
          {
@@ -792,25 +804,24 @@ void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
 /* deliberately does NOT pass PQ through; it only raises the source bit  */
 /* depth. Used when the frontend accepts RETRO_PIXEL_FORMAT_XRGB2101010. */
 /* ------------------------------------------------------------------ */
-void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
+void rwebm_video_blit_i420_10bit_tone(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
       unsigned matrix, unsigned transfer, unsigned range,
-      unsigned max_cll, unsigned primaries)
+      unsigned max_cll, unsigned primaries,
+      const rwebm_video_hdr_tone_t *tone)
 {
    int re, gd, ge, bd;
    /* PQ and HLG are HDR, tone-mapped to SDR; anything else is SDR */
-   const uint16_t *hdr_lut = (transfer == 16) ? rwebm_hbd_pq_lut
-                           : (transfer == 18) ? rwebm_hbd_hlg_lut : NULL;
-   int is_pq   = (transfer == 16);
+   rwebm_hdr_curve_t curve;
+   const uint16_t *hdr_lut = rwebm_hbd_tone_lut(transfer, max_cll, tone, &curve);
+   int is_hdr  = transfer == 16 || transfer == 18;
    int full    = (range == 2);
    const int *hdr_coefficients = rwebm_hbd_hdr_matrix(
          matrix && matrix != 2 ? matrix : 9u, full);
    unsigned j, i;
 
-   if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
-      rwebm_hbd_init_luts(max_cll);
-   rwebm_hbd_matrix(matrix ? matrix : (hdr_lut ? 9u : 1u), &re, &gd, &ge, &bd);
+   rwebm_hbd_matrix(matrix ? matrix : (is_hdr ? 9u : 1u), &re, &gd, &ge, &bd);
 
    for (j = 0; j < h; j++)
    {
@@ -839,7 +850,7 @@ void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
          if (r < 0) r = 0; else if (r > 1023) r = 1023;
          if (g < 0) g = 0; else if (g > 1023) g = 1023;
          if (b < 0) b = 0; else if (b > 1023) b = 1023;
-         if (hdr_lut)
+         if (is_hdr)
          {
             /* tone-mapped linear, then 2020 -> 709 gamut, then sRGB,
              * emitted at 10-bit precision. */
@@ -847,20 +858,20 @@ void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
             int cb = (int)ur[i >> 1] - 512;
             int cr = (int)vr[i >> 1] - 512;
             int lr = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy + hdr_coefficients[1] * cr);
+                  yy + hdr_coefficients[1] * cr, &curve);
             int lg = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr);
+                  yy - hdr_coefficients[2] * cb - hdr_coefficients[3] * cr, &curve);
             int lb = rwebm_hbd_hdr_lookup(hdr_lut,
-                  yy + hdr_coefficients[4] * cb);
+                  yy + hdr_coefficients[4] * cb, &curve);
             int xr = primaries == 1 ? lr : (6801 * lr - 2407 * lg -  298 * lb) >> 12;
             int xg = primaries == 1 ? lg : ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
             int xb = primaries == 1 ? lb : (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
             if (xr < 0) xr = 0; else if (xr > 65535) xr = 65535;
             if (xg < 0) xg = 0; else if (xg > 65535) xg = 65535;
             if (xb < 0) xb = 0; else if (xb > 65535) xb = 65535;
-            r = rwebm_hbd_out_lut10[xr >> 3];
-            g = rwebm_hbd_out_lut10[xg >> 3];
-            b = rwebm_hbd_out_lut10[xb >> 3];
+            r = image_hdr_out10[xr >> 3];
+            g = image_hdr_out10[xg >> 3];
+            b = image_hdr_out10[xb >> 3];
          }
          /* non-PQ: r/g/b are already 10-bit SDR-encoded, keep as-is */
          /* Pack XRGB2101010: bits [29:20]=R [19:10]=G [9:0]=B; top 2
@@ -994,6 +1005,28 @@ int rwebm_video_blit_i420_fp16_color(uint16_t *dst, unsigned dst_stride,
 
 /* Legacy entry points assume BT.2020 for HDR, as before. New callers
  * with explicit source primaries use the color-aware variants above. */
+/* Compatibility entry points are stateless. Prepared stream tables avoid
+ * repeated PQ evaluation for explicitly signalled non-default peaks. */
+void rwebm_video_blit_i420_hbd_color(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, unsigned primaries, int abgr)
+{
+   rwebm_video_blit_i420_hbd_tone(dst, dst_stride, w, h, y, ys, u, v,
+         uvs, matrix, transfer, range, max_cll, primaries, abgr, NULL);
+}
+
+void rwebm_video_blit_i420_10bit_color(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, unsigned primaries)
+{
+   rwebm_video_blit_i420_10bit_tone(dst, dst_stride, w, h, y, ys, u, v,
+         uvs, matrix, transfer, range, max_cll, primaries, NULL);
+}
+
 void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,

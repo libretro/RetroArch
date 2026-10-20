@@ -98,6 +98,9 @@ presenting current CPU pictures while the replacement GPU decoder catches up.
 The probe requires the GPU to resume by the final tick, checks every fixed
 picture ordinal, and records each intermediate `RECOVERY_CPU` tick. The
 existing MP4 replacement hold remains explicitly checked against ordinal 8.
+For MP4 content-peak conformance, `--max-cll 4000` adds a container `clli`
+box without changing coded packets and generates the matching PQ reference.
+HLG keeps its 1000-nit reference curve regardless of that metadata.
 
 The probe temporarily sets the logical input-port count to zero while retaining
 device polling and cleanup. Requesting a nonexistent null joypad driver can otherwise

@@ -2,6 +2,7 @@
 """Double-precision code-value references for the import HDR shaders."""
 from pathlib import Path
 import math
+from functools import lru_cache
 
 def hable(x):
     return (x * (.15*x + .05) + .004)/(x * (.15*x + .5) + .06) - .02/.30
@@ -13,7 +14,20 @@ for _ in range(48):
     else: hi = gain
 normal = hable(gain*1000/203)
 
-def reference(depth, full, transfer, y, u, v, primaries=9, matrix=9):
+@lru_cache(maxsize=64)
+def peak_curve(peak):
+    low, high = 1., 8.
+    for _ in range(48):
+        value = (low + high)/2
+        if hable(value)/hable(value*peak/203) < .8: low = value
+        else: high = value
+    return value, hable(value*peak/203)
+
+
+def reference(depth, full, transfer, y, u, v, primaries=9, matrix=9, max_cll=0):
+    tone_gain, tone_normal = gain, normal
+    if transfer == 16 and 400 <= max_cll <= 10000 and max_cll != 1000:
+        tone_gain, tone_normal = peak_curve(max_cll)
     scale = 4 if depth else 1
     ym = (1023 if depth else 255) if full else 219*scale
     cm = ym if full else 224*scale
@@ -31,7 +45,7 @@ def reference(depth, full, transfer, y, u, v, primaries=9, matrix=9):
         else:
             scene = x*x/3 if x <= .5 else (math.exp((x-.55991073)/.17883277)+.28466892)/12
             light = scene**1.2*1000/203
-        linear.append(max(0., min(1., hable(gain*light)/normal)))
+        linear.append(max(0., min(1., hable(tone_gain*light)/tone_normal)))
     result = []
     gamut = ([(4096,0,0),(0,4096,0),(0,0,4096)] if primaries == 1 else
              [(6801,-2407,-298),(-510,4640,-34),(-75,-412,4583)])

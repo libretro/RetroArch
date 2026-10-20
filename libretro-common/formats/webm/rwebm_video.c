@@ -84,6 +84,7 @@ struct rwebm_video_stream
    video_color_metadata_t hw_color;
 #endif
    int waiting;
+   rwebm_video_hdr_tone_t tone;
    uint32_t    *frame;      /* width * height ABGR words              */
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
@@ -800,6 +801,7 @@ typedef struct
    unsigned dst_stride, w;
    int ys, uvs;
    unsigned matrix, transfer, range, max_cll, primaries;
+   const rwebm_video_hdr_tone_t *tone;
    int argb;
    int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit,
                                3: HDR to scRGB half floats, whose
@@ -820,18 +822,18 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                c->matrix, c->argb);
          break;
       case 1:
-         rwebm_video_blit_i420_hbd_color(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_hbd_tone(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, c->max_cll, c->primaries, c->argb);
+               c->matrix, c->transfer, c->range, c->max_cll, c->primaries, c->argb, c->tone);
          break;
       case 2:
-         rwebm_video_blit_i420_10bit_color(dst, c->dst_stride, c->w, rows,
+         rwebm_video_blit_i420_10bit_tone(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
-               c->matrix, c->transfer, c->range, c->max_cll, c->primaries);
+               c->matrix, c->transfer, c->range, c->max_cll, c->primaries, c->tone);
          break;
       default:
          rwebm_video_blit_i420_fp16_color(
@@ -845,21 +847,22 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
    }
 }
 
-/* Run the frame's blit, in bands on the stream's pool when it has
- * one. An untagged 8-bit matrix is decided by the frame's height here
- * (rwebm_video_coefs); the HDR blits take theirs from the transfer
- * and lazily build their tables, so those are warmed with a
- * zero-row call before any band can race the build. */
+/* Decide coefficients for the full frame and prepare its stream-owned
+ * immutable PQ table before dispatching chroma-aligned row bands. */
 static void rwebm_video_blit_frame(rwebm_video_stream_t *s,
       rwebm_blit_ctx_t *c, unsigned h)
 {
    const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
    c->primaries = ct ? ct->primaries : 0;
+   c->max_cll = video_color_tonemap_peak_nits(c->transfer,
+         ct ? ct->max_cll : 0, ct ? &ct->mastering : NULL);
+   c->tone = &s->tone;
+   if (c->kind > 0 && c->kind < 3 && c->transfer == 16
+         && (!s->tone.ready || s->tone.peak != c->max_cll))
+      rwebm_video_hdr_tone_init(&s->tone, c->max_cll);
    if (c->kind == 0 && !(c->matrix == 1 || c->matrix == 5
             || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
       c->matrix = h >= 720 ? 1 : 5;
-   else if (c->kind != 0 && s->blit_pool && s->blit_bands > 1)
-      rwebm_video_blit_rows(c, 0, 0);
    image_blit_bands(s->blit_pool, s->blit_bands, h, 2,
          rwebm_video_blit_rows, c);
 }

@@ -24,6 +24,7 @@
 #define __LIBRETRO_SDK_FORMAT_VIDEO_COLOR_H__
 
 #include <stdint.h>
+#include <retro_inline.h>
 
 /* RGB and white xy coordinates in 1/50000 units; luminance in 1/10000
  * cd/m2. Present bits 0..7 name xy values, 8 max, 9 min; zero is valid. */
@@ -45,5 +46,16 @@ typedef struct video_color_metadata
    unsigned primaries, transfer, matrix, range;
    unsigned max_cll, max_fall;
 } video_color_metadata_t;
+
+/* PQ uses signalled content peak, then mastering maximum when content
+ * peak is absent. HLG and missing/out-of-range metadata use 1000 nits. */
+static INLINE unsigned video_color_tonemap_peak_nits(unsigned transfer,
+      unsigned max_cll, const video_mastering_display_t *mastering)
+{
+   if (transfer != 16) return 1000;
+   if (!max_cll && mastering && (mastering->present & 0x100u))
+      max_cll = mastering->luminance_max / 10000u;
+   return max_cll >= 400 && max_cll <= 10000 ? max_cll : 1000;
+}
 
 #endif

@@ -218,6 +218,7 @@ typedef struct
    int64_t      dur_ns;              /* stream duration, 0 if unknown   */
    unsigned     last_input;          /* previous frame's buttons        */
    int          seeking;             /* suppress presentation           */
+   rwebm_video_hdr_tone_t tone;
    int          pix10;               /* frontend accepted XRGB2101010   */
 } media_player_t;
 
@@ -576,22 +577,28 @@ static int media_present_vp9(media_player_t *p, int show)
    if (p->vp9->hd.bit_depth == 10)
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+      unsigned peak = video_color_tonemap_peak_nits(
+            ct ? ct->transfer_characteristics : 0,
+            ct ? ct->max_cll : 0, ct ? &ct->mastering : NULL);
+      if (ct && ct->transfer_characteristics == 16
+            && (!p->tone.ready || p->tone.peak != peak))
+         rwebm_video_hdr_tone_init(&p->tone, peak);
       if (p->pix10)
-         rwebm_video_blit_i420_10bit_color(p->fb, p->width, w, h,
+         rwebm_video_blit_i420_10bit_tone(p->fb, p->width, w, h,
             (const uint16_t*)fb->y, p->vp9->ys,
             (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
             ct ? ct->matrix_coefficients : 0,
             ct ? ct->transfer_characteristics : 0,
             ct ? ct->colour_range : 0,
-            ct ? ct->max_cll : 0, ct ? ct->primaries : 0);
+            peak, ct ? ct->primaries : 0, &p->tone);
       else
-         rwebm_video_blit_i420_hbd_color(p->fb, p->width, w, h,
+         rwebm_video_blit_i420_hbd_tone(p->fb, p->width, w, h,
             (const uint16_t*)fb->y, p->vp9->ys,
             (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
             ct ? ct->matrix_coefficients : 0,
             ct ? ct->transfer_characteristics : 0,
             ct ? ct->colour_range : 0,
-            ct ? ct->max_cll : 0, ct ? ct->primaries : 0, 0);
+            peak, ct ? ct->primaries : 0, 0, &p->tone);
    }
    else
       {

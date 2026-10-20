@@ -13,33 +13,74 @@ def emit(name, data):
                  for i in range(0, len(data), 16))
     lines.append('};')
 
-with tempfile.TemporaryDirectory() as tmp:
-    for name, depth, tags in [
-        ('full', 8, 'range=full:colorprim=bt709:transfer=bt709:colormatrix=bt709'),
-        ('range', 8, 'range=full'),
-        ('full10', 10, 'range=full:colorprim=bt709:transfer=bt709:colormatrix=bt709'),
-        ('pq', 10, 'range=limited:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc'),
-        ('hlg', 10, 'range=limited:colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc')]:
-        raw = Path(tmp)/'input.yuv'; out = Path(tmp)/'out.mp4'
-        y = 32 if depth == 8 else 128 if name == 'full10' else 400
-        uv = 128 if depth == 8 else 512
-        raw.write_bytes((bytes([y])*4096 + bytes([uv])*2048) if depth == 8 else
-                        struct.pack('<H', y)*4096 + struct.pack('<H', uv)*2048)
-        subprocess.run(['ffmpeg','-v','error','-y','-f','rawvideo','-pix_fmt',
-                        'yuv420p' if depth == 8 else 'yuv420p10le','-s','64x64','-r','25',
-                        '-i',str(raw),'-frames:v','1','-c:v','libx265','-tag:v','hvc1',
-                        '-x265-params','pools=none:frame-threads=1:ctu=32:wpp=0:lossless=1:log-level=error:'+tags,
-                        '-movflags','write_colr',str(out)],check=True)
-        data = bytearray(out.read_bytes()); at = data.index(b'colr')
-        assert data[at+4:at+8] == b'nclx'
-        if name == 'full':
-            override = data.copy()
-            override[at+8:at+14] = struct.pack('>HHH', 6, 1, 6)
-            override[at+14] = 0
-            emit('override', override)
-            unspecified = data.copy()
-            unspecified[at+8:at+14] = struct.pack('>HHH', 2, 2, 2)
-            emit('unspecified', unspecified)
-        data[at:at+4] = b'free'
-        emit(name, data)
-Path(__file__).with_name('hevc_color_data.h').write_text('\n'.join(lines)+'\n')
+def with_hdr_box(data, replacement):
+    """Replace colr/free-nclx in a video-only, tail-moov fixture."""
+    data = bytes(data)
+    marker = b'colrnclx' if b'colrnclx' in data else b'freenclx'
+    assert data.count(marker) == 1
+    at = data.index(marker) - 4
+    size = struct.unpack_from('>I', data, at)[0]
+    assert size == 19 and data.index(b'mdat') < data.index(b'moov')
+    delta = len(replacement) - size
+    result = bytearray(data[:at] + replacement + data[at+size:])
+    for kind in [b'moov', b'trak', b'mdia', b'minf', b'stbl', b'stsd', b'hvc1']:
+        candidates = []
+        for match in range(4, at):
+            if data[match:match+4] == kind:
+                old = struct.unpack_from('>I', data, match-4)[0]
+                if old >= 8 and at+size <= match-4+old <= len(data):
+                    candidates.append((match-4, old))
+        assert len(candidates) == 1, (kind, candidates)
+        offset, old = candidates[0]
+        struct.pack_into('>I', result, offset, old+delta)
+    return result
+
+
+def with_peak(data, max_cll, max_fall):
+    return with_hdr_box(data, struct.pack('>I4sHH', 12, b'clli', max_cll, max_fall))
+
+
+def with_mastering(data, peak):
+    return with_hdr_box(data, struct.pack('>I4s8HII', 32, b'mdcv',
+        8500, 39850, 6550, 2300, 35400, 14600, 15635, 16450, peak*10000, 50))
+
+
+def main():
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, depth, tags in [
+            ('full', 8, 'range=full:colorprim=bt709:transfer=bt709:colormatrix=bt709'),
+            ('range', 8, 'range=full'),
+            ('full10', 10, 'range=full:colorprim=bt709:transfer=bt709:colormatrix=bt709'),
+            ('pq', 10, 'range=limited:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc'),
+            ('hlg', 10, 'range=limited:colorprim=bt2020:transfer=arib-std-b67:colormatrix=bt2020nc')]:
+            raw = Path(tmp)/'input.yuv'; out = Path(tmp)/'out.mp4'
+            y = 32 if depth == 8 else 128 if name == 'full10' else 400
+            uv = 128 if depth == 8 else 512
+            raw.write_bytes((bytes([y])*4096 + bytes([uv])*2048) if depth == 8 else
+                            struct.pack('<H', y)*4096 + struct.pack('<H', uv)*2048)
+            subprocess.run(['ffmpeg','-v','error','-y','-f','rawvideo','-pix_fmt',
+                            'yuv420p' if depth == 8 else 'yuv420p10le','-s','64x64','-r','25',
+                            '-i',str(raw),'-frames:v','1','-c:v','libx265','-tag:v','hvc1',
+                            '-x265-params','pools=none:frame-threads=1:ctu=32:wpp=0:lossless=1:log-level=error:'+tags,
+                            '-movflags','write_colr',str(out)],check=True)
+            data = bytearray(out.read_bytes()); at = data.index(b'colr')
+            assert data[at+4:at+8] == b'nclx'
+            if name == 'full':
+                override = data.copy()
+                override[at+8:at+14] = struct.pack('>HHH', 6, 1, 6)
+                override[at+14] = 0
+                emit('override', override)
+                unspecified = data.copy()
+                unspecified[at+8:at+14] = struct.pack('>HHH', 2, 2, 2)
+                emit('unspecified', unspecified)
+            if name == 'pq':
+                for peak in [400, 4000, 10000]:
+                    emit('pq_peak%d' % peak, with_peak(data, peak, peak//4))
+                emit('pq_mastering4000', with_mastering(data, 4000))
+            data[at:at+4] = b'free'
+            emit(name, data)
+    Path(__file__).with_name('hevc_color_data.h').write_text('\n'.join(lines)+'\n')
+
+
+if __name__ == "__main__":
+    main()

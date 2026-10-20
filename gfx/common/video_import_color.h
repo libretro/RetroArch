@@ -33,19 +33,12 @@ static INLINE bool video_import_color(unsigned *yuv,
    if (is_hdr)
    {
       double lo = 1.0, hi = 8.0, gain = 2.0;
-      double peak = 1000.0;
+      double peak = (double)video_color_tonemap_peak_nits(transfer,
+            color->max_cll, &color->mastering);
       unsigned i;
       if (color->primaries != 0 && color->primaries != 2
             && color->primaries != 1 && color->primaries != 9)
          return false;
-      if (transfer == 16)
-      {
-         unsigned cll = color->max_cll;
-         if (!cll && (color->mastering.present & 0x100u))
-            cll = color->mastering.luminance_max / 10000u;
-         if (cll >= 400 && cll <= 10000)
-            peak = cll;
-      }
       peak /= 203.0;
       for (i = 0; i < 48; i++)
       {

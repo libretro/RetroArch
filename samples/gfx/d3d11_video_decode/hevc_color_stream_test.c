@@ -62,6 +62,42 @@ static void color_stream(const uint8_t *data, size_t size, unsigned matrix,
    rmp4_video_stream_close(s);
 }
 
+static void peak_stream(const uint8_t *data, size_t size, unsigned peak, int mastering_only)
+{
+   static uint32_t pixels[64 * 64];
+   static const uint16_t y[4] = {400, 400, 400, 400};
+   static const uint16_t uv[1] = {512};
+   uint32_t expected8[4], expected10[4], default8[4];
+   rmp4_video_stream_t *s = rmp4_video_stream_open(data, size);
+   unsigned i;
+   int duration;
+   CHECK(s != NULL); if (!s) return;
+   if (mastering_only)
+      CHECK(!s->max_cll && (s->mastering.present & 0x100u)
+            && s->mastering.luminance_max == peak * 10000u);
+   else
+      CHECK(s->max_cll == peak && s->max_fall == peak / 4);
+   rwebm_video_blit_i420_hbd_color(expected8, 2, 2, 2, y, 2, uv, uv, 1,
+         9, 16, 1, peak, 9, 0);
+   rwebm_video_blit_i420_10bit_color(expected10, 2, 2, 2, y, 2, uv, uv, 1,
+         9, 16, 1, peak, 9);
+   rwebm_video_blit_i420_hbd_color(default8, 2, 2, 2, y, 2, uv, uv, 1,
+         9, 16, 1, 0, 9, 0);
+   CHECK(expected8[0] != default8[0]);
+   rmp4_video_stream_set_output(s, pixels);
+   CHECK(rmp4_video_stream_skip(s, &duration) == 1);
+   CHECK(rmp4_video_stream_render(s) == pixels);
+   for (i = 0; i < 64 * 64; i++)
+      if (pixels[i] != expected8[0])
+      { CHECK(pixels[i] == expected8[0]); break; }
+   s->want10 = 1;
+   CHECK(rmp4_video_stream_render(s) == pixels && s->is10);
+   for (i = 0; i < 64 * 64; i++)
+      if (pixels[i] != expected10[0])
+      { CHECK(pixels[i] == expected10[0]); break; }
+   rmp4_video_stream_close(s);
+}
+
 static int clamp_rgb(double value)
 {
    int result = (int)floor(value + 0.5);
@@ -116,6 +152,10 @@ int main(void)
 {
    rh265_set_hw_backend(&backend);
    color_blits();
+   peak_stream(color_pq_peak400, sizeof(color_pq_peak400), 400, 0);
+   peak_stream(color_pq_peak4000, sizeof(color_pq_peak4000), 4000, 0);
+   peak_stream(color_pq_peak10000, sizeof(color_pq_peak10000), 10000, 0);
+   peak_stream(color_pq_mastering4000, sizeof(color_pq_mastering4000), 4000, 1);
 #define COLOR(n, m, t, r, h, g) color_stream(color_##n, sizeof(color_##n), m, t, r, h, g)
    COLOR(full, 1, 1, 1, 0, 32);
    COLOR(full10, 1, 1, 1, 0, 32);

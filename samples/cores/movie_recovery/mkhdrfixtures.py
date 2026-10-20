@@ -14,9 +14,40 @@ parser.add_argument("output",type=Path)
 parser.add_argument("--primaries",choices=("bt2020","bt709"),default="bt2020")
 parser.add_argument("--codec",choices=("hevc","vp9"),default="hevc")
 parser.add_argument("--unspecified-matrix",action="store_true")
+parser.add_argument("--max-cll",type=int,default=0)
 args=parser.parse_args()
 if args.unspecified_matrix and (args.codec != "vp9" or args.primaries != "bt2020"):
     parser.error("--unspecified-matrix requires --codec vp9 --primaries bt2020")
+if not 0 <= args.max_cll <= 65535 or (args.max_cll and args.codec != 'hevc'):
+    parser.error("--max-cll requires HEVC MP4 and a value from 0 to 65535")
+
+
+def mp4_add_clli(data, peak):
+    """Append clli to the sole HEVC sample entry, preserving coded data."""
+    assert data.index(b'mdat') < data.index(b'moov')
+    count = 0
+    def rewrite(children, path, prefix=0):
+        nonlocal count
+        result = bytearray(children[:prefix])
+        offset = prefix
+        while offset < len(children):
+            size, kind = struct.unpack_from('>I4s', children, offset)
+            assert size >= 8 and offset + size <= len(children)
+            payload = children[offset+8:offset+size]
+            if kind == path[0] or (len(path) == 1 and path[0] == b'hvc1' and kind == b'hev1'):
+                if len(path) == 1:
+                    payload += struct.pack('>I4sHH', 12, b'clli', peak, peak//4)
+                    count += 1
+                else:
+                    payload = rewrite(payload, path[1:], 8 if kind == b'stsd' else 0)
+            result += struct.pack('>I4s', len(payload)+8, kind) + payload
+            offset += size
+        return bytes(result)
+    result = rewrite(data, [b'moov',b'trak',b'mdia',b'minf',b'stbl',b'stsd',b'hvc1'])
+    assert count == 1, count
+    return result
+
+
 primaries = 1 if args.primaries == "bt709" else 9
 matrix = 1 if primaries == 1 else 9
 matrix_name = "bt709" if matrix == 1 else "bt2020nc"
@@ -68,6 +99,8 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
                 '-profile:v', '2', '-g', '48', '-crf', '18', '-b:v', '0']
             command[command.index('-c:a') + 1] = 'libopus'
         subprocess.run(command,check=True)
+        if args.max_cll:
+            movie.write_bytes(mp4_add_clli(movie.read_bytes(), args.max_cll))
         if args.unspecified_matrix:
             # Keep every coded packet intact: only the same-size EBML
             # MatrixCoefficients value changes from BT.2020 NCL to code 2.
@@ -90,7 +123,7 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
                     at=(y//2)*128+x//2
                     key=(values[y*256+x],values[49152+at],values[61440+at])
                     if key not in cache:
-                        cache[key]=bytes(scope['reference'](1,False,transfer,*key,primaries,matrix))
+                        cache[key]=bytes(scope['reference'](1,False,transfer,*key,primaries,matrix,args.max_cll))
                     reference+=cache[key]
         (d/'reference.rgb').write_bytes(reference)
         manifest = dict(
@@ -103,5 +136,8 @@ with tempfile.TemporaryDirectory(prefix="movie-hdr-fixtures-") as temporary:
         if args.codec == 'vp9':
             manifest['movie_file'] = movie.name
             manifest['matrix_coefficients'] = 2 if args.unspecified_matrix else matrix
+        if args.max_cll:
+            manifest['max_cll'] = args.max_cll
+            manifest['max_fall'] = args.max_cll//4
         (d/'fixture.json').write_text(json.dumps(manifest,indent=2))
         print('Generated',d.name,'reference colors',len(cache),flush=True)
