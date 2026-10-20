@@ -309,13 +309,23 @@ static void test_mp4(void)
    CHECK(rmp4_num_tracks(m) == 1 && track && track->codec == RMP4_CODEC_AV1 &&
          !strcmp(track->codec_id, "av01") && track->width == 192 &&
          track->height == 128);
-   CHECK(track && track->codec_private == bytes + config_at &&
+   CHECK(track && track->codec_private &&
+         track->codec_private != bytes + config_at &&
          track->codec_private_size == sizeof(config) &&
+         !memcmp(track->codec_private, config, sizeof(config)) &&
          rav1_config_parse(&cfg, track->codec_private,
                            track->codec_private_size));
    CHECK(track && track->color_primaries == 1 && track->matrix_coefficients == 9 &&
          track->transfer_characteristics == 16 && track->full_range &&
          track->color_description_present && track->range_present);
+   /* Streaming callers may discard the consumed moov pages. Decoder
+    * setup must survive while packet payloads still borrow the input. */
+   memset(bytes + config_at, 0, sizeof(config));
+   CHECK(track && track->codec_private &&
+         track->codec_private_size == sizeof(config) &&
+         !memcmp(track->codec_private, config, sizeof(config)) &&
+         rav1_config_parse(&cfg, track->codec_private,
+                           track->codec_private_size));
    CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN);
    CHECK(rmp4_read_packet(m, &pkt) == RMP4_READ_AGAIN);
    rmp4_set_avail(m, used);
@@ -575,7 +585,7 @@ int main(int argc, char **argv)
    test_mp4();
    test_webm();
    test_static_metadata();
-   printf("AV1 MP4/Matroska borrowed configuration and packets: %u failures\n",
+   printf("AV1 MP4/Matroska configuration lifetime and borrowed packets: %u failures\n",
           failures);
    return failures ? 1 : 0;
 }
