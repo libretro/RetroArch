@@ -684,6 +684,92 @@ static void lane_group_feed_budget(const char *path)
    gfx_anim_preview_close(p);
 }
 
+static bool group_reference(const char *path, unsigned index, uint32_t *hash)
+{
+   gfx_anim_preview_t *p = gfx_anim_preview_open(path, -1);
+   unsigned frame = 0;
+   int tick;
+   bool ok = false;
+   if (!p) return false;
+   for (tick = 0; tick < 5000; tick++)
+   {
+      bool native = false;
+      const uint32_t *pixels;
+      if (!gfx_anim_preview_feed(p)) break;
+      pixels = gfx_anim_preview_next(p, NULL, &native);
+      if (pixels && frame++ == index)
+      {
+         *hash = cpu_media_hash(pixels, VIDEO_SCALE_W(p->dims), VIDEO_SCALE_H(p->dims), native);
+         ok = true; break;
+      }
+   }
+   gfx_anim_preview_close(p);
+   return ok;
+}
+
+static void lane_group_seek(const char *path)
+{
+   unsigned pass;
+   uint32_t expected[2] = { 0, 0 };
+   if (!group_reference(path, 36, &expected[0]) || !group_reference(path, 12, &expected[1]))
+   { check("group seek", "sequential reference pictures available", false); return; }
+   for (pass = 0; pass < 3; pass++)
+   {
+      gfx_anim_preview_t *p = gfx_anim_preview_open(path, -1);
+      int result = 0, tick;
+      int64_t position = -1;
+      int64_t target = pass ? 400000 : 1200000;
+      bool blocked = false, native = false;
+      const uint32_t *pixels = NULL;
+      size_t lo = 0, hi = 0, old_hi = 0;
+      check("group seek", "windowed owner opened", p != NULL);
+      if (!p) continue;
+      gfx_anim_preview_set_paused(p, true);
+      check("group seek", "seek request accepted", gfx_anim_preview_seek_request(p, 0, false));
+      for (tick = 0; tick < 512 && !result; tick++)
+      {
+         result = gfx_anim_preview_seek_step(p, 1200000, tick == 0, &position);
+         image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+         if (hi > lo && hi > p->feed_res_hi && hi - lo > p->feed_ahead)
+         {
+            blocked = true; old_hi = hi;
+            if (pass) break;
+         }
+      }
+      check("group seek", "large admission actually encountered", blocked);
+      if (pass == 2)
+      {
+         gfx_anim_preview_close(p);
+         check("group seek", "owner closes during incomplete admission", blocked);
+         continue;
+      }
+      if (pass)
+      {
+         result = gfx_anim_preview_seek_step(p, target, true, &position);
+         image_transfer_anim_stream_next_span(p->stream, p->type, &lo, &hi);
+         check("group seek", "replacement clears old element request", hi != old_hi);
+         for (tick = 0; tick < 512 && !result; tick++)
+            result = gfx_anim_preview_seek_step(p, target, false, &position);
+      }
+      printf("group seek: replacement=%u result=%d polls=%d position=%ld\n",
+            pass, result, tick, (long)position);
+      check("group seek", "seek completes at selected target", result == 1 && position == target);
+      if (result == 1)
+      {
+         gfx_anim_preview_seek_commit(p, position);
+         for (tick = 0; tick < 512 && !pixels; tick++)
+         {
+            gfx_anim_preview_feed(p);
+            pixels = gfx_anim_preview_next(p, NULL, &native);
+         }
+         check("group seek", "accepted target matches sequential picture",
+               pixels && cpu_media_hash(pixels, VIDEO_SCALE_W(p->dims),
+                  VIDEO_SCALE_H(p->dims), native) == expected[pass]);
+      }
+      gfx_anim_preview_close(p);
+   }
+}
+
 static void lane_cpu_gap(const char *path)
 {
    gfx_anim_preview_t *session = gfx_anim_preview_open(path, -1);
@@ -692,6 +778,8 @@ static void lane_cpu_gap(const char *path)
    int tick;
    size_t peak = 0, bound;
    unsigned target = getenv("CPU_GAP_FRAMES") ? (unsigned)strtoul(getenv("CPU_GAP_FRAMES"), NULL, 10) : 8;
+   int max_ticks = getenv("CPU_GAP_TICKS") ? atoi(getenv("CPU_GAP_TICKS")) : 4000;
+   if (max_ticks < 4000 || max_ticks > 60000) max_ticks = 4000;
    if (getenv("CPU_GROUP")) lane_group_feed_budget(path);
    if (target < 8 || target > 1000) target = 8;
    memset(&capture, 0, sizeof(capture));
@@ -700,7 +788,7 @@ static void lane_cpu_gap(const char *path)
    player = gfx_media_cpu_new(session, cpu_media_capture, &capture, 0);
    check("cpu gap", "CPU player created", player != NULL);
    if (!player) { gfx_anim_preview_close(session); return; }
-   for (tick = 0; tick < 4000 && capture.frames < target; tick++)
+   for (tick = 0; tick < max_ticks && capture.frames < target; tick++)
    {
       size_t resident;
       gfx_media_cpu_poll(player, 1000000 + tick * 2000);
@@ -856,6 +944,11 @@ int main(int argc, char **argv)
    {
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
+   }
+   if (getenv("GROUP_SEEK"))
+   {
+      lane_group_seek(argv[1]);
+      return fails ? 1 : 0;
    }
    if (getenv("CPU_GAP"))
    {

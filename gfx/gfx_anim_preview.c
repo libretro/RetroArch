@@ -966,10 +966,14 @@ bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
 
 static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
 {
-   size_t anchor, hi, res_hi;
+   size_t anchor, hi, res_hi, ahead, span_lo = 0, span_hi = 0;
    if (!p->windowed || !p->dt) return true;
    anchor = image_transfer_anim_stream_consumed(p->stream, p->type);
    if (!anchor) anchor = image_transfer_anim_stream_media_floor(p->stream, p->type);
+   ahead = p->feed_ahead;
+   image_transfer_anim_stream_next_span(p->stream, p->type, &span_lo, &span_hi);
+   if (span_hi > span_lo && span_hi > anchor && span_hi - anchor > ahead)
+      ahead = span_hi - anchor;
    if (anchor > p->seek_feed_hi || anchor < p->seek_feed_anchor)
       data_transfer_window_rewind(p->dt);
    data_transfer_window_rebase(p->dt, anchor);
@@ -977,7 +981,7 @@ static bool gfx_anim_preview_seek_feed(gfx_anim_preview_t *p)
       ? p->len : anchor + GFX_ANIM_PREVIEW_FEED_BUDGET;
    if (hi > p->len) hi = p->len;
    if (!data_transfer_window_extend(p->dt, hi)
-         || !data_transfer_window_feed_budget(p->dt, anchor, p->feed_ahead,
+         || !data_transfer_window_feed_budget(p->dt, anchor, ahead,
             p->feed_back, GFX_ANIM_PREVIEW_FEED_BUDGET, &res_hi))
       return false;
    p->seek_feed_hi = p->feed_res_hi = res_hi;
