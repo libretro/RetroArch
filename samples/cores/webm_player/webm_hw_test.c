@@ -160,13 +160,15 @@ int main(void)
    rh265_set_hw_backend(&backend);
    retro_run();
    CHECK(media_player.hw_video && !media_player.hw_restart && opened == closed + 1);
-   media_suspend_video_hw();
-   CHECK(opened == closed && exported == abandoned);
-   memset(&held, 0, sizeof(held));
    sink_ready = 0;
    expect_software = 1;
+   before = sink_calls;
    retro_run();
    CHECK(!media_player.hw_video && media_player.hw_started);
+   CHECK(opened == closed && exported == abandoned && sink_calls == before);
+   CHECK(!media_player.hw_frame.image && !media_player.hw_restart);
+   CHECK(media_player.fb && media_player.fb[0] != 0);
+   memset(&held, 0, sizeof(held));
    media_suspend_video_hw();
    sink_ready = 1;
    media_video_hw_ready();

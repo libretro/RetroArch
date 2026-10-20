@@ -1300,6 +1300,16 @@ void media_video_hw_ready(void)
 #endif
 {
    media_player_t *p = &media_player;
+   if (p->hw_video && (!media_hw_refresh
+            || !media_hw_refresh(media_hw_user, NULL)))
+   {
+#ifdef RARCH_INTERNAL
+      libretro_media_suspend_video_hw();
+#else
+      media_suspend_video_hw();
+#endif
+   }
+
    if (p->webm && (p->codec == RWEBM_CODEC_VP9
             || p->webm_hw_required) && !p->hw_started)
    {
