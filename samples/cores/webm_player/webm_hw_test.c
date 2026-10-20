@@ -70,6 +70,7 @@ static bool start_core(int hardware)
 int main(void)
 {
    unsigned i, before, decoded;
+   int64_t restart_clock, restart_pts, restart_ordinal;
    uint8_t state[40];
    hevc_stream_checks_main();
    rh265_set_hw_backend(&backend);
@@ -158,6 +159,18 @@ int main(void)
    memset(&held, 0, sizeof(held));
    rh265_set_hw_backend(NULL);
    rh265_set_hw_backend(&backend);
+   restart_clock = media_player.play_ns;
+   restart_pts = media_player.vpts_ns;
+   restart_ordinal = media_player.vshown;
+   decode_busy = output_busy = 1;
+   media_video_hw_ready();
+   CHECK(media_player.hw_restart == 2);
+   decoded = opened;
+   media_video_hw_ready();
+   CHECK(!media_player.hw_restart && opened == decoded);
+   CHECK(media_player.play_ns == restart_clock
+         && media_player.vpts_ns == restart_pts
+         && media_player.vshown == restart_ordinal);
    retro_run();
    CHECK(media_player.hw_video && !media_player.hw_restart && opened == closed + 1);
    sink_ready = 0;

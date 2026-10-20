@@ -1356,18 +1356,55 @@ void media_video_hw_ready(void)
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
+      if (p->hw_restart && p->dt && p->discarded)
+      {
+         if (!data_transfer_refill(p->dt, 0))
+         {
+            p->hw_restart = 0;
+            p->eof = 1;
+            return;
+         }
+         p->discarded = 0;
+      }
       if (!p->hw_started)
       {
          bool ready = media_hw_refresh
             && media_hw_refresh(media_hw_user, NULL);
          p->hw_started = 1;
          p->hw_video = ready && rmp4_video_stream_set_hw(p->mp4vs, 1);
-         if (p->hw_restart)
+      }
+      if (p->hw_restart)
+      {
+         /* A backend replacement is not a user seek. Resume at the next
+          * display ordinal and leave the video clock and PCM state intact.
+          * Millisecond timestamps lose the fractional frame duration and
+          * can include an MP4 composition offset. */
+         if (p->vshown > INT_MAX || (p->hw_restart == 1
+               && rmp4_video_stream_seek_frame(p->mp4vs,
+                     (int)p->vshown) < 0))
          {
-            int64_t target = p->hw_restart_ns;
             p->hw_restart = 0;
-            if (media_seek(p, target) + 500000000 < target)
-               p->pending_seek_ns = target;
+            p->eof = 1;
+            return;
+         }
+         p->hw_restart = 2;
+         while (rmp4_video_stream_frame_index(p->mp4vs) < p->vshown)
+         {
+            int result = rmp4_video_stream_discard(p->mp4vs, NULL);
+            if (result == 2)
+               break;
+            if (result != 1)
+            {
+               p->hw_restart = 0;
+               p->eof = 1;
+               return;
+            }
+         }
+         if (rmp4_video_stream_frame_index(p->mp4vs) == p->vshown)
+         {
+            p->hw_video = media_hw_refresh
+               && rmp4_video_stream_set_hw(p->mp4vs, 0);
+            p->hw_restart = 0;
          }
       }
    }
@@ -1521,6 +1558,12 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
             media_mp4_audio_pump(p);
          }
 #endif
+      }
+
+      if (p->hw_restart)
+      {
+         MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+         goto audio;
       }
 
       /* Terminal short states are latched outside the fill block:
