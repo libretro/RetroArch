@@ -97,6 +97,11 @@ typedef struct
          PUSHORT, PHIDP_PREPARSED_DATA);
    BOOLEAN (WINAPI *GetFeature)(HANDLE, PVOID, ULONG);
    BOOLEAN (WINAPI *SetFeature)(HANDLE, PVOID, ULONG);
+   BOOLEAN (WINAPI *GetProductString)(HANDLE, PVOID, ULONG);
+   NTSTATUS (WINAPI *GetUsages)(HIDP_REPORT_TYPE, USAGE, USHORT, PUSAGE,
+         PULONG, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
+   NTSTATUS (WINAPI *GetUsageValue)(HIDP_REPORT_TYPE, USAGE, USHORT, USAGE,
+         PULONG, PHIDP_PREPARSED_DATA, PCHAR, ULONG);
    BOOL (WINAPI *Read)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
    BOOL (WINAPI *Write)(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
    BOOL (WINAPI *Result)(HANDLE, LPOVERLAPPED, LPDWORD, BOOL);
@@ -139,6 +144,40 @@ typedef DWORD (WINAPI *winusb_cm_unregister_t)(HANDLE);
  * there the frontend has not taken */
 #define WINUSB_FRESH      4
 
+/* A pad on Windows' HID driver with no handler, read from the layout
+ * its report descriptor gives, as the Mac's driver reads such a pad -
+ * and numbered as it does, so a profile made there serves here: its
+ * buttons in usage order, its axes X, Y, Rx, Ry, Z, Rz then rudder,
+ * throttle, steering, accelerator and brake, its first hat as the
+ * D-pad. Windows parses the descriptor; nothing here does. */
+#define WINUSB_GEN_AXES    11
+#define WINUSB_GEN_VALUES  16
+#define WINUSB_GEN_HAT     0xff
+
+typedef struct
+{
+   USAGE page;
+   USAGE usage;
+   LONG min;
+   LONG max;
+   USHORT bits;
+   uint8_t id;          /* the axis, or WINUSB_GEN_HAT */
+} winusb_gen_value_t;
+
+typedef struct winusb_generic
+{
+   struct winusb_device *dev;
+   PHIDP_PREPARSED_DATA pp;
+   USAGE btn_page;      /* 0: none */
+   USAGE btn_min;
+   unsigned values;
+   winusb_gen_value_t value[WINUSB_GEN_VALUES];
+   uint32_t buttons;
+   int16_t axes[WINUSB_GEN_AXES];
+   int8_t hat_x;        /* -1 left, 1 right */
+   int8_t hat_y;        /* -1 up, 1 down */
+} winusb_generic_t;
+
 typedef struct winusb_device
 {
    struct winusb_device *next;
@@ -151,6 +190,8 @@ typedef struct winusb_device
    bool hidclass;       /* on Windows' HID driver */
    bool strip_id;       /* its reports have no ID: Windows puts a 0 first */
    bool bluetooth;      /* on Windows' HID driver, through Bluetooth */
+   bool generic;        /* there, with no handler: read as gen says */
+   winusb_generic_t gen;
    ULONG in_len;        /* what a read asks for */
    ULONG out_len;       /* an output report's length on this device */
 
@@ -234,6 +275,16 @@ static bool winusb_hidclass_api_load(void)
             ULONG))GetProcAddress(lib, "HidD_GetFeature");
    winusb_hidclass_api.SetFeature        = (BOOLEAN (WINAPI*)(HANDLE, PVOID,
             ULONG))GetProcAddress(lib, "HidD_SetFeature");
+   winusb_hidclass_api.GetProductString  = (BOOLEAN (WINAPI*)(HANDLE, PVOID,
+            ULONG))GetProcAddress(lib, "HidD_GetProductString");
+   winusb_hidclass_api.GetUsages         = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, USAGE, USHORT, PUSAGE, PULONG,
+            PHIDP_PREPARSED_DATA, PCHAR, ULONG))
+      GetProcAddress(lib, "HidP_GetUsages");
+   winusb_hidclass_api.GetUsageValue     = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, USAGE, USHORT, USAGE, PULONG,
+            PHIDP_PREPARSED_DATA, PCHAR, ULONG))
+      GetProcAddress(lib, "HidP_GetUsageValue");
    if (     !winusb_hidclass_api.GetAttributes
          || !winusb_hidclass_api.GetPreparsedData
          || !winusb_hidclass_api.FreePreparsedData
@@ -241,7 +292,10 @@ static bool winusb_hidclass_api_load(void)
          || !winusb_hidclass_api.GetButtonCaps
          || !winusb_hidclass_api.GetValueCaps
          || !winusb_hidclass_api.GetFeature
-         || !winusb_hidclass_api.SetFeature)
+         || !winusb_hidclass_api.SetFeature
+         || !winusb_hidclass_api.GetProductString
+         || !winusb_hidclass_api.GetUsages
+         || !winusb_hidclass_api.GetUsageValue)
    {
       FreeLibrary(lib);
       memset(&winusb_hidclass_api, 0, sizeof(winusb_hidclass_api));
@@ -290,18 +344,12 @@ static bool winusb_api_load(void)
    return true;
 }
 
-/* The pads whose handlers this driver can start: on WinUSB, the
- * DualShock 3; on Windows' HID driver, every other. */
+/* The DualShock 3: on WinUSB, and only there. Every other pad is
+ * taken on Windows' HID driver. */
 static bool winusb_hid_handled(uint16_t vid, uint16_t pid)
 {
    joypad_connection_entry_t *entry = find_connection_entry(vid, pid, "");
    return entry && entry->iface == &pad_connection_ps3;
-}
-
-static bool winusb_hidclass_handled(uint16_t vid, uint16_t pid)
-{
-   joypad_connection_entry_t *entry = find_connection_entry(vid, pid, "");
-   return entry && entry->iface != &pad_connection_ps3;
 }
 
 /* A control transfer on the default pipe, waited for: the length moved,
@@ -432,6 +480,8 @@ static void winusb_hid_close(winusb_device_t *dev)
       winusb_hidclass_api.Cancel(dev->file);
       winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, TRUE);
    }
+   if (dev->gen.pp)
+      winusb_hidclass_api.FreePreparsedData(dev->gen.pp);
    if (dev->usb)
       winusb_api.Free(dev->usb);
    if (dev->file != INVALID_HANDLE_VALUE)
@@ -480,6 +530,208 @@ static void winusb_hid_busy_drop(winusb_hid_t *hid, unsigned i)
    hid->busy_seen &= ~(1u << last);
 }
 
+/* The generic pad's layout: where its buttons start, and which of its
+ * values are axes, in the Mac's order, and its hat. */
+static void winusb_generic_setup(winusb_generic_t *gen,
+      PHIDP_PREPARSED_DATA pp, const HIDP_BUTTON_CAPS *bcaps, USHORT nb,
+      const HIDP_VALUE_CAPS *vcaps, USHORT nv)
+{
+   static const USAGE axis_page[WINUSB_GEN_AXES] = {
+      0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02 };
+   static const USAGE axis_usage[WINUSB_GEN_AXES] = {
+      0x30, 0x31, 0x33, 0x34, 0x32, 0x35, /* X, Y, Rx, Ry, Z, Rz */
+      0xba, 0xbb, 0xc8, 0xc4, 0xc5 };     /* rudder ... brake */
+   bool taken[WINUSB_GEN_AXES];
+   bool hat = false;
+   USHORT i;
+   unsigned a;
+
+   gen->pp      = pp;
+   gen->hat_x   = gen->hat_y = 0;
+   gen->buttons = 0;
+   gen->values  = 0;
+   for (a = 0; a < WINUSB_GEN_AXES; a++)
+   {
+      taken[a]      = false;
+      gen->axes[a]  = 0;
+   }
+   gen->btn_page = 0;
+   for (i = 0; i < nb && !gen->btn_page; i++)
+   {
+      if (bcaps[i].UsagePage != 0x09)
+         continue;
+      gen->btn_page = 0x09;
+      gen->btn_min  = bcaps[i].IsRange
+         ? bcaps[i].Range.UsageMin : bcaps[i].NotRange.Usage;
+   }
+   for (i = 0; i < nv && gen->values < WINUSB_GEN_VALUES; i++)
+   {
+      winusb_gen_value_t *v = &gen->value[gen->values];
+      USAGE usage           = vcaps[i].IsRange
+         ? vcaps[i].Range.UsageMin : vcaps[i].NotRange.Usage;
+
+      v->page  = vcaps[i].UsagePage;
+      v->usage = usage;
+      v->min   = vcaps[i].LogicalMin;
+      v->max   = vcaps[i].LogicalMax;
+      v->bits  = vcaps[i].BitSize;
+      if (v->page == 0x01 && usage == 0x39)
+      {
+         if (hat)
+            continue;
+         hat   = true;
+         v->id = WINUSB_GEN_HAT;
+         gen->values++;
+         continue;
+      }
+      for (a = 0; a < WINUSB_GEN_AXES; a++)
+         if (axis_page[a] == v->page && axis_usage[a] == usage)
+            break;
+      if (a == WINUSB_GEN_AXES)
+         continue;
+      /* an axis named twice takes the first free one, as on the Mac */
+      if (taken[a])
+      {
+         a = 0;
+         while (a < WINUSB_GEN_AXES && taken[a])
+            a++;
+      }
+      if (a == WINUSB_GEN_AXES)
+         continue;
+      taken[a] = true;
+      v->id    = (uint8_t)a;
+      gen->values++;
+   }
+}
+
+static int16_t winusb_generic_scale(LONG v, LONG min, LONG max)
+{
+   LONG range = max - min;
+   if (range <= 0)
+      return 0;
+   if (v < min)
+      v = min;
+   else if (v > max)
+      v = max;
+   return (int16_t)((((int64_t)(v - min) * 65534) / range) - 32767);
+}
+
+/* One report into the pad's state; a report that does not carry a
+ * value - a device that splits its state across report IDs - leaves
+ * it as it was. */
+static void winusb_generic_packet(void *data, uint8_t *report,
+      uint16_t size)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   unsigned i;
+
+   if (!gen || !gen->pp)
+      return;
+   if (gen->btn_page)
+   {
+      USAGE usages[64];
+      ULONG n = 64;
+      if (winusb_hidclass_api.GetUsages(HidP_Input, gen->btn_page, 0,
+               usages, &n, gen->pp, (PCHAR)report, size)
+            == HIDP_STATUS_SUCCESS)
+      {
+         uint32_t b = 0;
+         ULONG k;
+         for (k = 0; k < n; k++)
+         {
+            unsigned idx = (unsigned)(USAGE)(usages[k] - gen->btn_min);
+            if (idx < 32)
+               b |= 1u << idx;
+         }
+         gen->buttons = b;
+      }
+   }
+   for (i = 0; i < gen->values; i++)
+   {
+      const winusb_gen_value_t *v = &gen->value[i];
+      ULONG raw                   = 0;
+      LONG val;
+
+      if (winusb_hidclass_api.GetUsageValue(HidP_Input, v->page, 0, v->usage,
+               &raw, gen->pp, (PCHAR)report, size) != HIDP_STATUS_SUCCESS)
+         continue;
+      val = (LONG)raw;
+      /* a signed field comes unsigned: extended from its width */
+      if (v->min < 0 && v->bits > 0 && v->bits < 32
+            && (raw & (1UL << (v->bits - 1))))
+         val = (LONG)(raw | ~((1UL << v->bits) - 1));
+      if (v->id == WINUSB_GEN_HAT)
+      {
+         /* eight ways from the top, clockwise; out of range is rest */
+         static const int8_t hx[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+         static const int8_t hy[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+         LONG way = val - v->min;
+         if (v->max - v->min == 3)
+            way *= 2;
+         if (val < v->min || val > v->max || way < 0 || way > 7)
+            gen->hat_x = gen->hat_y = 0;
+         else
+         {
+            gen->hat_x = hx[way];
+            gen->hat_y = hy[way];
+         }
+      }
+      else
+         gen->axes[v->id] = winusb_generic_scale(val, v->min, v->max);
+   }
+}
+
+static void *winusb_generic_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   winusb_device_t *dev = (winusb_device_t*)data;
+   dev->gen.dev         = dev;
+   return &dev->gen;
+}
+
+static void winusb_generic_deinit(void *data) { }
+
+static void winusb_generic_rumble(void *data,
+      enum retro_rumble_effect effect, uint16_t strength) { }
+
+static void winusb_generic_get_buttons(void *data, input_bits_t *state)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   BIT256_CLEAR_ALL_PTR(state);
+   if (gen)
+      BITS_COPY32_PTR(state, gen->buttons);
+}
+
+static int16_t winusb_generic_axis(void *data, unsigned axis)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   return (gen && axis < WINUSB_GEN_AXES) ? gen->axes[axis] : 0;
+}
+
+static const char *winusb_generic_name(void *data)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   return gen ? gen->dev->name : NULL;
+}
+
+static int32_t winusb_generic_button(void *data, uint16_t joykey)
+{
+   winusb_generic_t *gen = (winusb_generic_t*)data;
+   return (gen && joykey < 32) ? (int32_t)((gen->buttons >> joykey) & 1) : 0;
+}
+
+static pad_connection_interface_t winusb_generic_iface = {
+   winusb_generic_init,
+   winusb_generic_deinit,
+   winusb_generic_packet,
+   winusb_generic_rumble,
+   winusb_generic_get_buttons,
+   winusb_generic_axis,
+   winusb_generic_name,
+   winusb_generic_button,
+   false
+};
+
 /* A pad on Windows' HID driver: how long its reports are, and whether
  * they have IDs - without, Windows puts a 0 first, which hidraw does
  * not, and the handlers are given the report without it. */
@@ -515,11 +767,18 @@ static bool winusb_hidclass_setup(winusb_device_t *dev)
             ids |= vcaps[i].ReportID != 0;
       dev->in_len   = caps.InputReportByteLength;
       dev->out_len  = caps.OutputReportByteLength;
-      dev->strip_id = !ids;
+      /* Windows' parser wants the report as Windows gave it */
+      dev->strip_id = !ids && !dev->generic;
       ok            =    dev->in_len  > 1 && dev->in_len  <= WINUSB_REPORT_MAX
                       && dev->out_len <= WINUSB_OUT_MAX;
+      if (ok && dev->generic)
+      {
+         winusb_generic_setup(&dev->gen, pp, bcaps, nb, vcaps, nv);
+         pp = NULL; /* the pad's now, freed with it */
+      }
    }
-   winusb_hidclass_api.FreePreparsedData(pp);
+   if (pp)
+      winusb_hidclass_api.FreePreparsedData(pp);
    return ok;
 }
 
@@ -547,8 +806,9 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
    retro_atomic_int_init(&dev->middle, 2);
    retro_atomic_int_init(&dev->quit, 0);
    retro_atomic_int_init(&dev->gone, 0);
+   dev->generic   = hidclass && !entry;
    strlcpy(dev->instance, instance, sizeof(dev->instance));
-   strlcpy(dev->name, entry ? entry->name : "", sizeof(dev->name));
+   strlcpy(dev->name, entry ? entry->name : "HID Gamepad", sizeof(dev->name));
    /* the Bluetooth HID service's id is in a Bluetooth pad's instance */
    dev->bluetooth = hidclass && compat_strcasestr(instance,
          "00001124-0000-1000-8000-00805f9b34fb") != NULL;
@@ -596,9 +856,32 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       return;
    }
 
+   /* known by the name it gives, as on the Mac */
+   if (dev->generic)
+   {
+      WCHAR wname[128];
+      memset(wname, 0, sizeof(wname));
+      if (     winusb_hidclass_api.GetProductString(dev->file, wname,
+                  sizeof(wname) - sizeof(WCHAR))
+            && wname[0])
+         WideCharToMultiByte(CP_UTF8, 0, wname, -1, dev->name,
+               sizeof(dev->name) - 1, NULL, NULL);
+   }
+
    /* the pad's handler starts it here */
-   dev->slot = pad_connection_pad_init(hid->slots, dev->name, vid, pid,
-         dev, &winusb_hid);
+   if (dev->generic)
+   {
+      joypad_connection_entry_t gen_entry;
+      gen_entry.name  = dev->name;
+      gen_entry.vid   = vid;
+      gen_entry.pid   = pid;
+      gen_entry.iface = &winusb_generic_iface;
+      dev->slot       = pad_connection_pad_init_entry(hid->slots, &gen_entry,
+            dev, &winusb_hid);
+   }
+   else
+      dev->slot = pad_connection_pad_init(hid->slots, dev->name, vid, pid,
+            dev, &winusb_hid);
    if (dev->slot < 0 || !hid->slots[dev->slot].connection)
    {
       RARCH_ERR("%s \"%s\" could not be started.\n", dev->tag, dev->name);
@@ -752,9 +1035,9 @@ static bool winusb_hid_interface_path(HDEVINFO devs, SP_DEVINFO_DATA *info,
       && winusb_hid_class_path(&guid, instance, path, len);
 }
 
-/* Pads on Windows' HID driver whose ids name a handled pad - a
- * gamepad or joystick collection of it, not the touchpad or audio
- * controls a pad may add beside. Each is looked at through a handle
+/* Pads on Windows' HID driver: every gamepad or joystick collection,
+ * not the touchpad or audio controls a pad may add beside, read
+ * through its handler or, with none, from its layout. Each is looked at through a handle
  * that may neither read nor write, which any program may open. */
 static void winusb_hidclass_scan(winusb_hid_t *hid)
 {
@@ -808,8 +1091,10 @@ static void winusb_hidclass_scan(winusb_hid_t *hid)
       if (probe == INVALID_HANDLE_VALUE)
          continue;
       attr.Size = sizeof(attr);
+      /* a pad with a handler, or none - read from its layout - but
+       * not the DualShock 3, which Windows' HID driver will not start */
       if (     winusb_hidclass_api.GetAttributes(probe, &attr)
-            && winusb_hidclass_handled(attr.VendorID, attr.ProductID)
+            && !winusb_hid_handled(attr.VendorID, attr.ProductID)
             && winusb_hidclass_api.GetPreparsedData(probe, &pp))
       {
          if (winusb_hidclass_api.GetCaps(pp, &caps) == HIDP_STATUS_SUCCESS)
@@ -1067,8 +1352,33 @@ static int16_t winusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
+   unsigned hat_dir;
 
-   if (port >= MAX_USERS || GET_HAT_DIR(joykey) || joykey >= 32)
+   if (port >= MAX_USERS)
+      return 0;
+   /* the hat of a pad read from its layout; handlers give theirs as
+    * the RetroPad's D-pad */
+   if ((hat_dir = GET_HAT_DIR(joykey)))
+   {
+      winusb_hid_t *hid = (winusb_hid_t*)data;
+      winusb_device_t *dev;
+      if (!hid || GET_HAT(joykey) != 0)
+         return 0;
+      for (dev = hid->devices; dev; dev = dev->next)
+      {
+         if (dev->slot != (int32_t)port || !dev->generic)
+            continue;
+         switch (hat_dir)
+         {
+            case HAT_UP_MASK:    return dev->gen.hat_y < 0;
+            case HAT_DOWN_MASK:  return dev->gen.hat_y > 0;
+            case HAT_LEFT_MASK:  return dev->gen.hat_x < 0;
+            case HAT_RIGHT_MASK: return dev->gen.hat_x > 0;
+         }
+      }
+      return 0;
+   }
+   if (joykey >= 32)
       return 0;
    winusb_hid_joypad_get_buttons(data, port, &buttons);
    return BIT256_GET(buttons, joykey) != 0;

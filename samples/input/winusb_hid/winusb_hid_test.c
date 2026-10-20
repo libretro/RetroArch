@@ -260,6 +260,7 @@ static BOOLEAN WINAPI h_pp(HANDLE h, PHIDP_PREPARSED_DATA *pp)
    return TRUE;
 }
 static BOOLEAN WINAPI h_free_pp(PHIDP_PREPARSED_DATA pp) { return TRUE; }
+static bool generic_mode;
 static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
 {
    memset(c, 0, sizeof(*c));
@@ -268,24 +269,88 @@ static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
    c->InputReportByteLength  = caps_in;
    c->OutputReportByteLength = caps_out;
    c->NumberInputButtonCaps  = 1;
-   c->NumberInputValueCaps   = 1;
+   c->NumberInputValueCaps   = generic_mode ? 5 : 1;
    return HIDP_STATUS_SUCCESS;
 }
+/* a pad with no handler: twelve buttons, X, Y and Rz from 0 to 255,
+ * a signed Rx, and a hat of eight ways */
+static USAGE g_pressed[8];
+static ULONG g_npressed;
+static ULONG g_value[0x40];
+static int frees_pp;
+
+static BOOLEAN WINAPI h_free_pp_counted(PHIDP_PREPARSED_DATA pp)
+{
+   frees_pp++;
+   return TRUE;
+}
+
 static NTSTATUS WINAPI h_bcaps(HIDP_REPORT_TYPE t, PHIDP_BUTTON_CAPS c,
       PUSHORT n, PHIDP_PREPARSED_DATA pp)
 {
    memset(c, 0, sizeof(*c) * *n);
    *n          = 1;
    c->ReportID = caps_id;
+   if (generic_mode)
+   {
+      c->UsagePage      = 0x09;
+      c->IsRange        = TRUE;
+      c->Range.UsageMin = 1;
+      c->Range.UsageMax = 12;
+   }
    return HIDP_STATUS_SUCCESS;
 }
 static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
       PUSHORT n, PHIDP_PREPARSED_DATA pp)
 {
+   static const USAGE usage[5] = { 0x30, 0x31, 0x35, 0x33, 0x39 };
+   USHORT i;
    memset(c, 0, sizeof(*c) * *n);
-   *n          = 1;
-   c->ReportID = caps_id;
+   if (!generic_mode)
+   {
+      *n          = 1;
+      c->ReportID = caps_id;
+      return HIDP_STATUS_SUCCESS;
+   }
+   for (i = 0; i < 5 && i < *n; i++)
+   {
+      c[i].UsagePage       = 0x01;
+      c[i].NotRange.Usage  = usage[i];
+      c[i].BitSize         = 8;
+      c[i].LogicalMin      = 0;
+      c[i].LogicalMax      = 255;
+   }
+   c[3].LogicalMin = -128;   /* Rx, signed */
+   c[3].LogicalMax = 127;
+   c[4].BitSize    = 4;      /* the hat */
+   c[4].LogicalMax = 7;
+   *n              = i;
    return HIDP_STATUS_SUCCESS;
+}
+static NTSTATUS WINAPI h_usages(HIDP_REPORT_TYPE t, USAGE page, USHORT lc,
+      PUSAGE list, PULONG n, PHIDP_PREPARSED_DATA pp, PCHAR r, ULONG len)
+{
+   ULONG i;
+   if (page != 0x09)
+      return HIDP_STATUS_USAGE_NOT_FOUND;
+   for (i = 0; i < g_npressed && i < *n; i++)
+      list[i] = g_pressed[i];
+   *n = i;
+   return HIDP_STATUS_SUCCESS;
+}
+static NTSTATUS WINAPI h_value(HIDP_REPORT_TYPE t, USAGE page, USHORT lc,
+      USAGE usage, PULONG v, PHIDP_PREPARSED_DATA pp, PCHAR r, ULONG len)
+{
+   if (page != 0x01 || usage >= 0x40)
+      return HIDP_STATUS_USAGE_NOT_FOUND;
+   *v = g_value[usage];
+   return HIDP_STATUS_SUCCESS;
+}
+static BOOLEAN WINAPI h_product(HANDLE h, PVOID buf, ULONG len)
+{
+   static const WCHAR name[] = { 'G','e','n','e','r','i','c',' ','P','a','d',0 };
+   memcpy(buf, name, sizeof(name) < len ? sizeof(name) : len);
+   return TRUE;
 }
 static BOOLEAN WINAPI h_get_feature(HANDLE h, PVOID buf, ULONG len)
 {
@@ -453,6 +518,9 @@ static void test_hidclass(const char *path)
    winusb_hidclass_api.Write             = h_write;
    winusb_hidclass_api.Result            = h_result;
    winusb_hidclass_api.Cancel            = h_cancel;
+   winusb_hidclass_api.GetProductString  = h_product;
+   winusb_hidclass_api.GetUsages         = h_usages;
+   winusb_hidclass_api.GetUsageValue     = h_value;
 
    hid = (winusb_hid_t*)winusb_hid.init();
    CHECK(hid != NULL, "hid class: init failed");
@@ -549,6 +617,58 @@ static void test_hidclass(const char *path)
       Sleep(1);
    winusb_hid.poll(hid);
    h_unplugged = false;
+
+   /* a pad with no handler: read from its layout, numbered as the
+    * Mac numbers it, named as it names itself */
+   generic_mode = true;
+   caps_in = 9; caps_out = 0; caps_id = 0;
+   winusb_hidclass_api.FreePreparsedData = h_free_pp_counted;
+   frees_pp = 0;
+   winusb_hid_open(hid, path, "HID\\VID_1234&PID_5678\\1",
+         0x1234, 0x5678, true);
+   CHECK(hid->devices && hid->devices->generic && !hid->devices->strip_id
+         && !strcmp(hid->devices->name, "Generic Pad"),
+         "hid class: a pad with no handler was not taken, read whole, by its name");
+   g_pressed[0] = 1; g_pressed[1] = 3; g_npressed = 2;
+   g_value[0x30] = 255;  /* X: full right */
+   g_value[0x31] = 0;    /* Y: full up */
+   g_value[0x35] = 128;  /* Rz: centre */
+   g_value[0x33] = 0x80; /* Rx: -128, signed */
+   g_value[0x39] = 2;    /* hat: right */
+   memset(r, 0, sizeof(r));
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(   winusb_hid.button(hid, 0, 0) && !winusb_hid.button(hid, 0, 1)
+         && winusb_hid.button(hid, 0, 2),
+         "hid class: the buttons are not numbered by usage");
+   CHECK(   winusb_hid.axis(hid, 0, AXIS_POS(0)) == 32767
+         && winusb_hid.axis(hid, 0, AXIS_NEG(1)) == -32767
+         && winusb_hid.axis(hid, 0, AXIS_NEG(2)) == -32767
+         && winusb_hid.axis(hid, 0, AXIS_POS(5)) < 200
+         && winusb_hid.axis(hid, 0, AXIS_NEG(5)) > -200,
+         "hid class: the axes are not X, Y, Rx, Ry, Z, Rz as on the Mac, or a signed one misread");
+   CHECK(   winusb_hid.button(hid, 0, HAT_MAP(0, HAT_RIGHT_MASK))
+         && !winusb_hid.button(hid, 0, HAT_MAP(0, HAT_UP_MASK)),
+         "hid class: the hat is not read");
+   g_value[0x39] = 8;    /* at rest: out of the hat's range */
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(!winusb_hid.button(hid, 0, HAT_MAP(0, HAT_RIGHT_MASK)),
+         "hid class: a hat at rest still reads a way");
+   dev = hid->devices;
+   EnterCriticalSection(&q_lock);
+   h_unplugged = true;
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+   for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+      Sleep(1);
+   winusb_hid.poll(hid);
+   h_unplugged = false;
+   CHECK(frees_pp == 1, "hid class: the pad's layout was not let go with it");
+   winusb_hidclass_api.FreePreparsedData = h_free_pp;
+   generic_mode = false;
 
    /* freed with a write in flight: the write is cancelled, the reader
     * stopped. This one is on Bluetooth: the service's id is in its
