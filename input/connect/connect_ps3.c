@@ -37,7 +37,8 @@ typedef struct ds3_instance
    uint32_t buttons;
    int16_t analog_state[3][2];
    uint16_t motors[2];
-   uint8_t data[64];
+   /* the pressures, in ds3_pressure_byte[]'s order */
+   uint8_t pressure[12];
 } ds3_instance_t;
 
 struct __attribute__((__packed__)) sixaxis_led
@@ -194,7 +195,8 @@ static int ds3_send_output_report(ds3_instance_t *instance)
    return instance->driver->set_report(instance->handle, HID_REPORT_OUTPUT, report.report_id, packet, sizeof(report));
 }
 
-static void ds3_update_pad_state(ds3_instance_t *instance)
+static void ds3_update_pad_state(ds3_instance_t *instance,
+      const uint8_t *report)
 {
    uint32_t i, pressed_keys;
 
@@ -222,16 +224,17 @@ static void ds3_update_pad_state(ds3_instance_t *instance)
    instance->buttons     = 0;
 
    pressed_keys          = 
-          instance->data[2]
-      |  (instance->data[3]         << 8)
-      | ((instance->data[4] & 0x01) << 16);
+          report[2]
+      |  (report[3]         << 8)
+      | ((report[4] & 0x01) << 16);
 
    for (i = 0; i < 17; i++)
       instance->buttons |= (pressed_keys & (1 << i)) ?
          (1 << button_mapping[i]) : 0;
 }
 
-static void ds3_update_analog_state(ds3_instance_t *instance)
+static void ds3_update_analog_state(ds3_instance_t *instance,
+      const uint8_t *report)
 {
    int pad_axis;
 
@@ -239,7 +242,7 @@ static void ds3_update_analog_state(ds3_instance_t *instance)
     * turned round. [stick][1] is X and [stick][0] Y. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
       instance->analog_state[pad_axis / 2][(pad_axis % 2) ? 0 : 1] =
-         (int16_t)(instance->data[6 + pad_axis] * 257 - 32768);
+         (int16_t)(report[6 + pad_axis] * 257 - 32768);
 }
 
 
@@ -281,6 +284,13 @@ static void ds3_deinit(void *device_data)
       free(device_data);
 }
 
+/* The input report's bytes with the pressure of L2 and R2, then
+ * cross, circle, square, triangle, L1, R1, up, down, left and right:
+ * axes 4 to 15, as SDL gives them. */
+static const uint8_t ds3_pressure_byte[12] = {
+   18, 19, 24, 23, 25, 22, 20, 21, 14, 16, 17, 15
+};
+
 static void ds3_packet_handler(void *device_data,
       uint8_t *packet, uint16_t size)
 {
@@ -295,13 +305,19 @@ static void ds3_packet_handler(void *device_data,
       device->led_set = true;
    }
 
-   /* the input report, whole; nothing else is the pad's state */
-   if (size < 49 || size > sizeof(device->data) || packet[0] != 0x01)
+   /* the input report, whole; nothing else is the pad's state. It is
+    * the backend's, read where it lies: what the getters answer from
+    * is taken out of it here, not the report kept. */
+   if (size < 49 || packet[0] != 0x01)
       return;
 
-   memcpy(device->data, packet, size);
-   ds3_update_pad_state(device);
-   ds3_update_analog_state(device);
+   ds3_update_pad_state(device, packet);
+   ds3_update_analog_state(device, packet);
+   {
+      unsigned i;
+      for (i = 0; i < 12; i++)
+         device->pressure[i] = packet[ds3_pressure_byte[i]];
+   }
 }
 
 static void ds3_set_rumble(void *device_data,
@@ -322,13 +338,6 @@ static void ds3_get_buttons(void *device_data, input_bits_t *state)
       BIT256_CLEAR_ALL_PTR(state);
 }
 
-/* The input report's bytes with the pressure of L2 and R2, then
- * cross, circle, square, triangle, L1, R1, up, down, left and right:
- * axes 4 to 15, as SDL gives them. */
-static const uint8_t ds3_pressure_byte[12] = {
-   18, 19, 24, 23, 25, 22, 20, 21, 14, 16, 17, 15
-};
-
 static int16_t ds3_get_axis(void *device_data, unsigned axis)
 {
    union joyaxis
@@ -342,7 +351,7 @@ static int16_t ds3_get_axis(void *device_data, unsigned axis)
    joyaxis.encoded        = axis;
    if (device && axis >= 4 && axis < 16)
    {
-      unsigned b = device->data[ds3_pressure_byte[axis - 4]];
+      unsigned b = device->pressure[axis - 4];
       return (int16_t)((b << 7) | (b >> 1));
    }
    gamepad_read_axis_data(axis, &axis_data);

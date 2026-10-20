@@ -363,6 +363,31 @@ int main(void)
    CHECK(!hidraw_hid.axis(hid, 0, AXIS_POS(6)),
          "cross has pressure without being pressed");
 
+   /* every pressure from its byte - L2, R2, cross, circle, square,
+    * triangle, L1, R1, up, down, left, right - and kept, not the
+    * report: a report that is not the input report leaves them */
+   {
+      static const uint8_t byte_of[12] = {
+         18, 19, 24, 23, 25, 22, 20, 21, 14, 16, 17, 15 };
+      unsigned a;
+      bool all = true;
+      queue_report(ds3, circle, 128);
+      for (a = 0; a < 12; a++)
+         ds3->queue[ds3->queued - 1][byte_of[a]] = (uint8_t)(10 + a * 20);
+      hidraw_hid.poll(hid);
+      ds3->queue[ds3->queued][0] = 0x02;
+      ds3->queued++;
+      hidraw_hid.poll(hid);
+      for (a = 0; a < 12; a++)
+      {
+         unsigned b = 10 + a * 20;
+         if (hidraw_hid.axis(hid, 0, AXIS_POS(4 + a))
+               != (int16_t)((b << 7) | (b >> 1)))
+            all = false;
+      }
+      CHECK(all, "a pressure is not from its byte, or another report changed it");
+   }
+
    /* nothing waiting */
    ds3->reads = 0;
    hidraw_hid.poll(hid);
