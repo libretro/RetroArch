@@ -73,6 +73,24 @@ int main(void)
    CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 5);
    CHECK(winraw_mouse_buttons_snapshot(&buttons, false) == 0);
 
+   /* A click shorter than a frame: pressed and let go before the
+    * poll, it reads as down once, then up. */
+   winraw_mouse_buttons_update(&buttons, 1, 0);
+   winraw_mouse_buttons_update(&buttons, 0, 1);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 1);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 0);
+   /* ... and one held across the poll reads as down until let go */
+   winraw_mouse_buttons_update(&buttons, 2, 0);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 2);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 2);
+   winraw_mouse_buttons_update(&buttons, 0, 2);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 0);
+   /* focus lost takes the latch with the rest */
+   winraw_mouse_buttons_update(&buttons, 1, 0);
+   winraw_mouse_buttons_update(&buttons, 0, 1);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, false) == 0);
+   CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 0);
+
    worker = sthread_create(reports, NULL);
    CHECK(worker != NULL);
    if (worker)
@@ -85,6 +103,9 @@ int main(void)
       }
       sthread_join(worker);
    }
+   /* the last click may still be latched: it reads once, then not */
+   value = winraw_mouse_buttons_snapshot(&buttons, true);
+   CHECK(value == 0 || value == 3);
    CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 0);
    winraw_mouse_buttons_update(&buttons, 16, 0);
    CHECK(winraw_mouse_buttons_snapshot(&buttons, true) == 16);
