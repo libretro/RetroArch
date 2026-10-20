@@ -572,12 +572,15 @@ void gfx_anim_preview_rewind(gfx_anim_preview_t *p)
 typedef struct
 {
    struct data_transfer *dt;
+   retro_atomic_int_t refs; /* session and mixer each retain the window */
 } gfx_anim_preview_audio_win_t;
 
 static void gfx_anim_preview_audio_win_release(void *owner)
 {
    gfx_anim_preview_audio_win_t *w = (gfx_anim_preview_audio_win_t*)owner;
    if (!w)
+      return;
+   if (retro_atomic_fetch_sub_int(&w->refs, 1) != 1)
       return;
    if (w->dt)
       data_transfer_free(w->dt);
@@ -628,12 +631,21 @@ static void gfx_anim_preview_audio_stop_slot(gfx_anim_preview_t *p)
 {
    if (p->audio_slot >= 0)
    {
-      /* Only touch the slot if it still holds our stream. */
-      const char *name = audio_driver_mixer_get_stream_name((unsigned)p->audio_slot);
-      if (name && string_is_equal(name, GFX_ANIM_PREVIEW_AUDIO_NAME))
-         audio_driver_mixer_remove_stream((unsigned)p->audio_slot);
+      if (p->audio_voice)
+         audio_driver_mixer_remove_stream_clocked((unsigned)p->audio_slot,
+               p->audio_voice, p->audio_serial);
+      else
+      {
+         /* Non-clocked stand-ins and a stream that created no voice. */
+         const char *name = audio_driver_mixer_get_stream_name((unsigned)p->audio_slot);
+         if (name && string_is_equal(name, GFX_ANIM_PREVIEW_AUDIO_NAME))
+            audio_driver_mixer_remove_stream((unsigned)p->audio_slot);
+      }
    }
-   /* the mixer owns (and frees) the audio window through buf_owner */
+   gfx_anim_preview_audio_win_release(p->audio_owner);
+   p->audio_owner = NULL;
+   p->audio_voice = NULL;
+   p->audio_serial = 0;
    p->audio_dt   = NULL;
    p->audio_hi   = 0;
    p->audio_tell = 0;
@@ -678,6 +690,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
 
    if (!(w = (gfx_anim_preview_audio_win_t*)calloc(1, sizeof(*w))))
       return;
+   retro_atomic_store_relaxed_int(&w->refs, 1);
    if (!(w->dt = data_transfer_open_window(p->path, keep)))
    {
       free(w);
@@ -770,15 +783,18 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       params.state               = AUDIO_STREAM_STATE_PLAYING_LOOPED;
       params.end_granule         = 0;
       params.avail               = p->audio_hi;
-      if (!audio_driver_mixer_add_stream(&params))
+      retro_atomic_fetch_add_int(&w->refs, 1);
+      if (!audio_driver_mixer_add_stream_clocked(&params,
+               &p->audio_voice, &p->audio_serial))
       {
-         /* buf_owner transfers on the call in every outcome: the
-          * mixer has already released w. */
+         /* The mixer returned its reference; release the session's. */
+         gfx_anim_preview_audio_win_release(w);
          free(params.basename);
          p->audio_hi = 0;
          return;
       }
       free(params.basename);
+      p->audio_owner = w;
       p->audio_dt   = w->dt;
       p->audio_slot = out_slot;
       if (island_hi)
@@ -789,7 +805,11 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
        * it loops and reads the head at once, before the feeder's next
        * tick has brought the head back, into pages given up long ago.
        * The bound is what makes it stand at the wall instead. */
-      audio_driver_mixer_stream_set_avail((unsigned)out_slot, p->audio_hi);
+      if (p->audio_voice)
+         audio_mixer_voice_set_avail_bound(p->audio_voice,
+               p->audio_hi, p->audio_serial);
+      else
+         audio_driver_mixer_stream_set_avail((unsigned)out_slot, p->audio_hi);
    }
 #else
    (void)p;
@@ -802,9 +822,31 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
    int64_t tell;
    if (!p || !p->audio_dt || p->audio_slot < 0)
       return true;
+   if (p->audio_voice)
+   {
+      size_t serial;
+      if (!audio_mixer_voice_clock(p->audio_voice, NULL, NULL, &serial)
+            || serial != p->audio_serial)
+      {
+         gfx_anim_preview_audio_stop_slot(p);
+         return false;
+      }
+   }
    /* The decoder runs on the audio thread out of this mapping: feed
     * first, then raise the bound to what the feed actually committed. */
-   tell = audio_driver_mixer_stream_byte_tell((unsigned)p->audio_slot);
+   tell = p->audio_voice
+      ? (int64_t)audio_mixer_voice_buffer_tell(p->audio_voice)
+      : audio_driver_mixer_stream_byte_tell((unsigned)p->audio_slot);
+   if (p->audio_voice)
+   {
+      size_t serial;
+      if (!audio_mixer_voice_clock(p->audio_voice, NULL, NULL, &serial)
+            || serial != p->audio_serial)
+      {
+         gfx_anim_preview_audio_stop_slot(p);
+         return false;
+      }
+   }
    if (tell >= 0)
    {
       size_t anchor = (size_t)tell;
@@ -838,7 +880,11 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
       if (hi > p->audio_hi)
       {
          p->audio_hi = hi;
-         audio_driver_mixer_stream_set_avail((unsigned)p->audio_slot, hi);
+         if (p->audio_voice)
+            audio_mixer_voice_set_avail_bound(p->audio_voice,
+                  hi, p->audio_serial);
+         else
+            audio_driver_mixer_stream_set_avail((unsigned)p->audio_slot, hi);
       }
    }
    return true;
@@ -862,6 +908,69 @@ void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused)
          audio_driver_mixer_stream_set_paused((unsigned)p->audio_slot, paused);
    }
 #endif
+}
+
+int64_t gfx_anim_preview_clock(gfx_anim_preview_t *p, int64_t wall_us)
+{
+   const uint64_t maximum = (~(uint64_t)0) >> 1;
+   uint64_t advance;
+   size_t frames = 0;
+   size_t serial = 0;
+   unsigned rate = 0;
+   bool audio = false;
+   if (!p)
+      return wall_us;
+   if (!p->clock_initialized)
+   {
+      p->clock_initialized = true;
+      p->clock_us = p->clock_wall_us = wall_us;
+   }
+   advance = wall_us > p->clock_wall_us
+      ? (uint64_t)wall_us - (uint64_t)p->clock_wall_us : 0;
+#if defined(GFX_ANIM_PREVIEW_AUDIO)
+   audio = p->audio_voice
+      && audio_mixer_voice_clock(p->audio_voice, &frames, &rate, &serial)
+      && serial == p->audio_serial && rate;
+#endif
+   if (audio)
+   {
+      size_t delta;
+      uint64_t fraction, seconds, tail;
+      if (!p->clock_audio || p->clock_serial != serial)
+      {
+         p->clock_frames = 0;
+         p->clock_fraction = 0;
+      }
+      else if (p->clock_rate != rate)
+      {
+         p->clock_frames = frames;
+         p->clock_fraction = 0;
+      }
+      delta = frames - p->clock_frames;
+      fraction = (uint64_t)(delta % rate) * 1000000
+         + p->clock_fraction;
+      seconds = delta / rate;
+      tail = fraction / rate;
+      advance = seconds > maximum / 1000000 ? maximum
+         : seconds * 1000000;
+      advance = advance > maximum - tail ? maximum : advance + tail;
+      if (!p->paused)
+         p->clock_fraction = (unsigned)(fraction % rate);
+      p->clock_frames = frames;
+      p->clock_rate = rate;
+      p->clock_serial = serial;
+   }
+   else
+      p->clock_fraction = 0;
+   if (advance > maximum)
+      advance = maximum;
+   if (!p->paused)
+      p->clock_us = p->clock_us > (int64_t)(maximum - advance)
+         ? (int64_t)maximum : p->clock_us + (int64_t)advance;
+   if (wall_us > p->clock_wall_us)
+      p->clock_wall_us = wall_us;
+   p->clock_audio = audio;
+   return p->clock_us;
 }
 
 void gfx_anim_preview_audio_stop(gfx_anim_preview_t *p)

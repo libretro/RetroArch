@@ -402,6 +402,19 @@ static int mix_repeating(audio_mixer_sound_t *sound, int s16,
                nonzero = 1;
                break;
             }
+      if (expect_audio && !voice_ended)
+      {
+         size_t frames = 0;
+         unsigned rate = 0;
+         if (!audio_mixer_voice_clock(voice, &frames, &rate, NULL)
+               || frames != (size_t)(i + 1) * MIX_FRAMES || rate != MIX_RATE)
+         {
+            printf("  %s: clock counted %lu frames at %u Hz after %d blocks\n",
+                  what, (unsigned long)frames, rate, i + 1);
+            audio_mixer_stop(voice);
+            return 0;
+         }
+      }
    }
 
    if (!voice_ended)
@@ -452,7 +465,7 @@ static int check_feed_bound(const uint8_t *lpcm, size_t len)
    const size_t b0 = len / 6, b1 = len / 2;
    audio_mixer_sound_t *snd = audio_mixer_load_lpcm(dup_bytes(lpcm, len), len);
    audio_mixer_voice_t *voice;
-   size_t top;
+   size_t top, serial = 0, next_serial = 0;
    int ok = 1;
 
    if (!snd)
@@ -463,6 +476,9 @@ static int check_feed_bound(const uint8_t *lpcm, size_t len)
       audio_mixer_destroy(snd);
       return 0;
    }
+
+   if (!audio_mixer_voice_clock(voice, NULL, NULL, &serial))
+      ok = 0;
 
    /* a bound set with no position read stands on its own, across the
     * loops this run makes */
@@ -519,8 +535,40 @@ static int check_feed_bound(const uint8_t *lpcm, size_t len)
    }
    audio_mixer_stop(voice);
    audio_mixer_destroy(snd);
+   snd = audio_mixer_load_lpcm(dup_bytes(lpcm, len), len);
+   if (!snd)
+      return 0;
+   voice = audio_mixer_play(snd, true, 1.0f, NULL,
+         RESAMPLER_QUALITY_DONTCARE, NULL);
+   if (!voice)
+   {
+      audio_mixer_destroy(snd);
+      return 0;
+   }
+   if (!audio_mixer_voice_clock(voice, NULL, NULL, &next_serial)
+         || !next_serial || next_serial == serial)
+      ok = 0;
+   audio_mixer_voice_set_avail_bound(voice, b0, next_serial);
+   top = feed_run(voice, 60);
+   if (!top || top > b0)
+      ok = 0;
+   audio_mixer_voice_set_avail_bound(voice, b1, serial);
+   top = feed_run(voice, 60);
+   if (!top || top > b0)
+   {
+      printf("  a stale play bound reached %u (initial bound %u)\n",
+            (unsigned)top, (unsigned)b0);
+      ok = 0;
+   }
+   (void)audio_mixer_voice_buffer_tell(voice);
+   audio_mixer_voice_set_avail_bound(voice, b1, next_serial);
+   top = feed_run(voice, 120);
+   if (top <= b0 || top > b1)
+      ok = 0;
+   audio_mixer_stop(voice);
+   audio_mixer_destroy(snd);
    if (ok)
-      printf("  bounds applied by the mix, a stale one dropped\n");
+      printf("  bounds applied by the mix, stale loop/play bounds dropped\n");
    return ok;
 }
 #endif

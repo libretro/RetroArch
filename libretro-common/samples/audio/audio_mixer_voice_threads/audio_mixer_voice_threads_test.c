@@ -114,11 +114,21 @@ static unsigned             odd_reads;
 
 static void *reader_thread(void *arg)
 {
+   size_t previous = 0;
+   size_t serial = 0;
    (void)arg;
    while (retro_atomic_load_acquire_int(&mixing))
    {
       float   v = audio_mixer_voice_get_volume(voice);
       int32_t g = audio_mixer_voice_get_gain(voice);
+      size_t frames;
+      size_t generation;
+      unsigned rate;
+      if (!audio_mixer_voice_clock(voice, &frames, &rate, &generation)
+            || rate != MIX_RATE || frames < previous || !generation
+            || (serial && serial != generation)) odd_reads++;
+      previous = frames;
+      serial = generation;
       if (     (v != 0.0f && v != 1.0f)
             || (g != 0 && g != AUDIO_MIXER_GAIN_UNITY))
          odd_reads++;

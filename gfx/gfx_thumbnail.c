@@ -723,8 +723,6 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
          return false;
       }
    }
-   if (thumbnail->anim_sess && !thumbnail->anim_read_pending)
-      gfx_anim_preview_audio_begin((gfx_anim_preview_t*)thumbnail->anim_sess);
    return true;
 
 fail:
@@ -984,17 +982,19 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
 {
    gfx_surface_player_t *player;
    gfx_anim_preview_t *session;
+   int64_t now = (int64_t)current_time;
    if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
          || !(player = (gfx_surface_player_t*)thumbnail->anim_player))
       return false;
    session = (gfx_anim_preview_t*)thumbnail->anim_sess;
    if (session)
    {
+      now = gfx_anim_preview_clock(session, now);
       gfx_anim_preview_set_paused(session, paused);
-      if (!paused && !thumbnail->anim_read_pending)
+      if (!paused && session->playback_started && !thumbnail->anim_read_pending)
          gfx_anim_preview_audio_begin(session);
    }
-   video_player_set_paused(player->vp, paused, (int64_t)current_time);
+   video_player_set_paused(player->vp, paused, now);
    return true;
 }
 
@@ -1076,17 +1076,29 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
        * truncated, so pacing matches a fully-read open exactly. */
       image_transfer_anim_stream_complete_scan(thumbnail->anim, type,
             thumbnail->anim_buf, thumbnail->anim_buf_len);
-      if (thumbnail->anim_sess)
-         gfx_anim_preview_audio_begin((gfx_anim_preview_t*)thumbnail->anim_sess);
    }
 
    video_player_set_threads(gfx_thumbnail_anim_threads_wanted());
+   if (thumbnail->anim_sess)
+      now = gfx_anim_preview_clock((gfx_anim_preview_t*)thumbnail->anim_sess,
+            now);
    /* Loops done or the stream failed: the last frame's texture stays,
     * the decoder and the file buffer go. */
    if (video_player_poll(
             ((gfx_surface_player_t*)thumbnail->anim_player)->vp, now)
          == VIDEO_PLAYER_ENDED)
       gfx_thumbnail_anim_close(thumbnail);
+   else if (thumbnail->anim_sess
+         && video_player_has_presented(
+            ((gfx_surface_player_t*)thumbnail->anim_player)->vp))
+   {
+      gfx_anim_preview_t *session = (gfx_anim_preview_t*)thumbnail->anim_sess;
+      if (!session->playback_started)
+      {
+         session->playback_started = true;
+         gfx_anim_preview_audio_begin(session);
+      }
+   }
 }
 
 /* A still's decode has come back, the image (NULL: nothing) the

@@ -913,6 +913,11 @@ bool video_player_paused(const video_player_t *p)
    return p && p->paused && !(p->flags & VP_STOPPED);
 }
 
+bool video_player_has_presented(const video_player_t *p)
+{
+   return p && p->next_us != 0;
+}
+
 int64_t video_player_due(const video_player_t *p)
 {
    return p ? (video_player_paused(p) ? VP_TIME_MAX : p->next_us) : 0;

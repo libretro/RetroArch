@@ -105,10 +105,20 @@ typedef struct gfx_anim_preview
 
    /* preview audio (WEBM / MP4), main thread */
    struct data_transfer *audio_dt;
+   void *audio_owner;            /* retains the audio window independently */
+   struct audio_mixer_voice *audio_voice; /* static-pool clock binding */
+   size_t audio_serial;
    size_t audio_hi;
    size_t audio_tell;   /* the decoder's position at the last feed */
    int    audio_slot;
    bool   paused;               /* main-thread media transport state */
+   bool   playback_started;     /* first picture accepted, main thread */
+   bool   clock_initialized;
+   bool   clock_audio;
+   int64_t clock_us, clock_wall_us;
+   size_t clock_frames;
+   size_t clock_serial;
+   unsigned clock_rate, clock_fraction;
 } gfx_anim_preview_t;
 
 /* Open @path for animated playback. @png_probe: what a still-load task
@@ -185,6 +195,11 @@ void gfx_anim_preview_audio_stop(gfx_anim_preview_t *p);
 /* Main thread: preserve audio position, including an audio voice that
  * begins later when a pending file read completes. */
 void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused);
+
+/* Main thread: one logical clock for video and transport. Follows actual
+ * mixed PCM while audio is live; monotonic wall time otherwise. Pauses
+ * freeze it. This is not the hardware audio-device play cursor. */
+int64_t gfx_anim_preview_clock(gfx_anim_preview_t *p, int64_t wall_us);
 
 /* Close: audio, stream, mapping. */
 void gfx_anim_preview_close(gfx_anim_preview_t *p);

@@ -8318,7 +8318,9 @@ static bool audio_driver_mixer_get_free_stream_slot(
    return false;
 }
 
-bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
+static bool audio_driver_mixer_add_stream_internal(
+      audio_mixer_stream_params_t *params, audio_mixer_voice_t **out_voice,
+      size_t *out_serial)
 {
    unsigned free_slot            = 0;
    audio_mixer_voice_t *voice    = NULL;
@@ -8328,6 +8330,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
    bool use_s16;
    void *buf                     = NULL;
+   if (out_voice) *out_voice = NULL;
+   if (out_serial) *out_serial = 0;
 
    /* Ownership of params->buf_owner transfers on this call in every
     * outcome: each failure return releases it. */
@@ -8554,9 +8558,27 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (params->out_slot)
       *params->out_slot = (int)free_slot;
 
+   /* Capture the static-pool voice and its play identity while the
+    * existing state lock still excludes mixer retirement. A session
+    * can then read its atomic clock without borrowing slot metadata. */
+   if (out_voice && out_serial && voice
+         && audio_mixer_voice_clock(voice, NULL, NULL, out_serial))
+      *out_voice = voice;
+
    audio_driver_state_unlock();
 
    return true;
+}
+
+bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
+{
+   return audio_driver_mixer_add_stream_internal(params, NULL, NULL);
+}
+
+bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial)
+{
+   return audio_driver_mixer_add_stream_internal(params, voice, serial);
 }
 
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
@@ -8921,6 +8943,20 @@ static void audio_driver_mixer_remove_stream_locked(unsigned i)
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
+}
+
+void audio_driver_mixer_remove_stream_clocked(unsigned i,
+      audio_mixer_voice_t *voice, size_t serial)
+{
+   size_t current = 0;
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS || !voice || !serial)
+      return;
+   audio_driver_state_lock();
+   if (audio_driver_st.mixer_streams[i].voice == voice
+         && audio_mixer_voice_clock(voice, NULL, NULL, &current)
+         && current == serial)
+      audio_driver_mixer_remove_stream_locked(i);
+   audio_driver_state_unlock();
 }
 
 void audio_driver_mixer_remove_stream(unsigned i)

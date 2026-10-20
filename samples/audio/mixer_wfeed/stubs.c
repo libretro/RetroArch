@@ -34,6 +34,12 @@ int64_t stub_tell = -1;
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i) { (void)i; return stub_tell; }
 void   audio_driver_mixer_stream_set_avail(unsigned i, size_t avail) { (void)i; (void)avail; }
 void   audio_driver_mixer_stream_set_paused(unsigned i, bool paused) { (void)i; (void)paused; }
+bool audio_driver_mixer_add_stream_clocked(void *params, void **voice,
+      size_t *serial)
+{ *voice = NULL; *serial = 0; return audio_driver_mixer_add_stream(params); }
+void audio_driver_mixer_remove_stream_clocked(unsigned i,
+      void *voice, size_t serial)
+{ (void)i; (void)voice; (void)serial; }
 
 /* Codec probes the feeder uses to decide whether a file is windowable. */
 int    audio_transfer_ogg_audio_type(const uint8_t *b, size_t l) { (void)b; (void)l; return 0; }

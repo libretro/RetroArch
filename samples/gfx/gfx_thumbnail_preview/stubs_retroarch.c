@@ -360,6 +360,14 @@ void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
 }
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
 { (void)i; (void)paused; }
+/* This edge simulates byte residency, not PCM playback. It has no
+ * clock binding; the real clock oracle lives in preview_audio_feed. */
+bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial)
+{ *voice = NULL; *serial = 0; return audio_driver_mixer_add_stream(params); }
+void audio_driver_mixer_remove_stream_clocked(unsigned i,
+      audio_mixer_voice_t *voice, size_t serial)
+{ (void)i; (void)voice; (void)serial; }
 void audio_driver_mixer_stop_stream(unsigned i) { (void)i; hp.audio_stops++; }
 void audio_driver_mixer_remove_stream(unsigned i)
 {

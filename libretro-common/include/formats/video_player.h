@@ -167,6 +167,10 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us);
 void video_player_set_paused(video_player_t *p, bool paused, int64_t now_us);
 bool video_player_paused(const video_player_t *p);
 
+/* Whether a picture has been accepted by the sink on the polling thread
+ * (a QUEUED picture may still be in flight to the graphics driver). */
+bool video_player_has_presented(const video_player_t *p);
+
 /* When the next frame is due on that clock; 0 at once, INT64_MAX while
  * paused. A paused poll returns PLAYING without presenting or feeding. */
 int64_t video_player_due(const video_player_t *p);

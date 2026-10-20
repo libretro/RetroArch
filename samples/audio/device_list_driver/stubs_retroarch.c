@@ -331,3 +331,14 @@ void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused)
    (void)voice;
    (void)paused;
 }
+
+/* No real PCM is mixed by this stand-in, so no mix clock is available. */
+bool audio_mixer_voice_clock(audio_mixer_voice_t *voice,
+      size_t *frames, unsigned *rate, size_t *serial)
+{
+   (void)voice;
+   if (frames) *frames = 0;
+   if (rate) *rate = 0;
+   if (serial) *serial = 0;
+   return false;
+}

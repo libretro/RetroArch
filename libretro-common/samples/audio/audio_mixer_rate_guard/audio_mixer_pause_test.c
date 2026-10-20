@@ -8,6 +8,7 @@
 #define FRAMES 512
 #define BLOCK 32
 static unsigned failures;
+static size_t previous_serial;
 static float baseline_f[BLOCK * 2 * 4], actual_f[BLOCK * 2 * 4];
 static int16_t baseline_i[BLOCK * 2 * 4], actual_i[BLOCK * 2 * 4];
 static unsigned char *wav(void)
@@ -36,6 +37,7 @@ static void render(bool s16, bool stream, bool pause, unsigned rate)
    audio_mixer_sound_t *sound;
    audio_mixer_voice_t *v;
    unsigned block, i;
+   size_t serial = 0;
    static float silence_f[BLOCK * 2];
    static int16_t silence_i[BLOCK * 2];
    if (!data) { failures++; return; }
@@ -49,11 +51,24 @@ static void render(bool s16, bool stream, bool pause, unsigned rate)
       : audio_mixer_play(sound, false, 1.0f, "sinc",
             RESAMPLER_QUALITY_NORMAL, NULL);
    if (!v) failures++;
+   if (v)
+   {
+      size_t frames;
+      unsigned hz;
+      if (!audio_mixer_voice_clock(v, &frames, &hz, &serial)
+            || frames || hz != rate || !serial || serial == previous_serial)
+         failures++;
+      previous_serial = serial;
+   }
    for (block = 0; block < 4 && v; block++)
    {
       if (pause && (block == 0 || block == 2))
       {
          size_t before = audio_mixer_voice_buffer_tell(v);
+         size_t clock_before, clock_after;
+         unsigned hz;
+         if (!audio_mixer_voice_clock(v, &clock_before, &hz, NULL)
+               || hz != rate) failures++;
          audio_mixer_voice_set_paused(v, true);
          audio_mixer_voice_set_paused(v, true);
          for (i = 0; i < 8; i++)
@@ -68,6 +83,8 @@ static void render(bool s16, bool stream, bool pause, unsigned rate)
                if (silence_i[j] || silence_f[j] != 0.0f) failures++;
          }
          if (before != audio_mixer_voice_buffer_tell(v)) failures++;
+         if (!audio_mixer_voice_clock(v, &clock_after, &hz, NULL)
+               || clock_after != clock_before) failures++;
          audio_mixer_voice_set_paused(v, false);
          audio_mixer_voice_set_paused(v, false);
       }
@@ -75,6 +92,19 @@ static void render(bool s16, bool stream, bool pause, unsigned rate)
             + block * BLOCK * 2, BLOCK, AUDIO_MIXER_GAIN_UNITY, false);
       else audio_mixer_mix((pause ? actual_f : baseline_f)
             + block * BLOCK * 2, BLOCK, 1.0f, false);
+      {
+         size_t frames = 0;
+         size_t generation = 0;
+         unsigned hz = 0;
+         if (!audio_mixer_voice_clock(v, &frames, &hz, &generation)
+               || frames != (block + 1) * BLOCK || hz != rate
+               || generation != serial)
+         {
+            printf("clock block: s16=%u stream=%u pause=%u rate=%u block=%u frames=%lu hz=%u\n",
+                  s16, stream, pause, rate, block, (unsigned long)frames, hz);
+            failures++;
+         }
+      }
    }
    if (v) audio_mixer_stop(v);
    audio_mixer_destroy(sound);
@@ -98,7 +128,11 @@ int main(void)
          render(s16 != 0, stream != 0, false, rate);
          render(s16 != 0, stream != 0, true, rate);
          if (memcmp(baseline_f, actual_f, sizeof(actual_f))
-               || memcmp(baseline_i, actual_i, sizeof(actual_i))) failures++;
+               || memcmp(baseline_i, actual_i, sizeof(actual_i)))
+         {
+            printf("PCM mismatch: s16=%u stream=%u rate=%u\n",s16,stream,rate);
+            failures++;
+         }
          for (i = 0; i < BLOCK * 2 * 4; i++)
             if (s16 ? baseline_i[i] != 0 : baseline_f[i] != 0.0f) active++;
          if (!active) failures++;

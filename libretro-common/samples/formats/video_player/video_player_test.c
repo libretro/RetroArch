@@ -840,6 +840,7 @@ static void lane_pause(bool threaded)
    video_player_set_paused(p, true, now);
    video_player_set_paused(p, true, now + 10000);
    CHECK(video_player_paused(p), "pause: before first poll");
+   CHECK(!video_player_has_presented(p), "pause: no accepted picture yet");
    for (i = 0; i < 10; i++)
       CHECK(video_player_poll(p, now + i * 1000) == VIDEO_PLAYER_PLAYING,
             "pause: stays live");
@@ -852,6 +853,7 @@ static void lane_pause(bool threaded)
       if (threaded) retro_sleep(1);
    }
    CHECK(k.nseen == 1, "pause: first picture");
+   CHECK(video_player_has_presented(p), "pause: first picture accepted");
    CHECK(video_player_due(p) == now + 40000, "pause: initial duration");
    video_player_set_paused(p, true, now + 10000);
    for (i = 0; i < 10; i++)

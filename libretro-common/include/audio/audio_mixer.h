@@ -143,6 +143,11 @@ void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);
  * rewinds. */
 void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail);
 
+/* A retained session's bound: requests for a retired play are ignored
+ * by a reused voice. serial is captured with audio_mixer_voice_clock. */
+void audio_mixer_voice_set_avail_bound(audio_mixer_voice_t *voice,
+      size_t avail, size_t serial);
+
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       bool repeat, float volume,
       const char *resampler_ident,
@@ -156,6 +161,17 @@ void audio_mixer_stop(audio_mixer_voice_t* voice);
  * The caller owns this live voice until stopped, as for gain/volume.
  * NULL is harmless. A newly played voice always starts unpaused. */
 void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused);
+
+/* PCM frames contributed to the mix, at the output sample rate. This
+ * advances only for actual PCM, not pauses, starvation or decode-ahead,
+ * and continues across loops. The count wraps modulo SIZE_MAX+1; poll
+ * often enough to accumulate unsigned deltas across a wrap. One live
+ * voice per caller, as for pause/gain. False for an idle/NULL voice.
+ * serial distinguishes separate plays, including voice/slot reuse and
+ * mixer restart. False during a reset; retry next poll, never spin.
+ * This is a mix clock, not a physical audio-device play cursor. */
+bool audio_mixer_voice_clock(audio_mixer_voice_t *voice,
+      size_t *frames, unsigned *rate, size_t *serial);
 
 float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice);
 

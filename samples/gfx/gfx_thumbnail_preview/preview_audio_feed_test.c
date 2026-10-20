@@ -4,11 +4,11 @@
 #include <string.h>
 #include <audio/audio_mixer.h>
 #include <formats/rmp4.h>
+#include <formats/data_transfer.h>
 #include "../../../gfx/gfx_anim_preview.h"
 #include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
 
-#define RATE 48000
 #define FRAMES 800
 
 static settings_t settings;
@@ -88,6 +88,27 @@ void audio_driver_mixer_stream_set_avail(unsigned slot, size_t avail)
 void audio_driver_mixer_stream_set_paused(unsigned slot, bool paused)
 { (void)slot; audio_mixer_voice_set_paused(voice, paused); }
 
+bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **out_voice, size_t *serial)
+{
+   bool ok = audio_driver_mixer_add_stream(params);
+   *out_voice = NULL;
+   *serial = 0;
+   if (ok && audio_mixer_voice_clock(voice, NULL, NULL, serial))
+      *out_voice = voice;
+   return ok;
+}
+
+void audio_driver_mixer_remove_stream_clocked(unsigned slot,
+      audio_mixer_voice_t *expected, size_t serial)
+{
+   size_t current = 0;
+   if (voice == expected
+         && audio_mixer_voice_clock(voice, NULL, NULL, &current)
+         && current == serial)
+      audio_driver_mixer_remove_stream(slot);
+}
+
 const char *audio_driver_mixer_get_stream_name(unsigned slot)
 { (void)slot; return voice ? "__gfx_thumb_preview" : NULL; }
 
@@ -113,7 +134,7 @@ int config_userdata_get_int_array(void *u, const char *k, int **v, unsigned *n)
 int config_userdata_get_string(void *u, const char *k, char **v, const char *d)
 { (void)u; (void)k; (void)v; (void)d; return 0; }
 
-static int run_one(const char *path)
+static int run_one(const char *path, unsigned rate)
 {
    FILE *f = fopen(path, "rb");
    uint8_t *buf;
@@ -124,6 +145,9 @@ static int run_one(const char *path)
    float out[FRAMES * 2];
    double energy = 0.0;
    int failed = 0;
+   int64_t wall = 1000000;
+   size_t previous_frames = 0;
+   unsigned starved_blocks = 0;
    if (!f) return 1;
    fseek(f, 0, SEEK_END);
    len = (size_t)ftell(f);
@@ -144,8 +168,9 @@ static int run_one(const char *path)
    if (!p) { rmp4_close(demux); free(buf); return 1; }
    ticks = (size_t)((double)ns / 1000000000.0 * 60 * 3.5);
    repeats = finishes = 0;
-   audio_mixer_init(RATE);
+   audio_mixer_init(rate);
    settings.bools.menu_thumbnail_preview_audio = true;
+   if (gfx_anim_preview_clock(p, wall) != wall) failed = 1;
    gfx_anim_preview_set_paused(p, true);
    gfx_anim_preview_audio_begin(p);
    if (p->audio_dt || voice) failed = 1;
@@ -157,6 +182,7 @@ static int run_one(const char *path)
       if (i == 120 && voice)
       {
          size_t at = audio_mixer_voice_buffer_tell(voice);
+         int64_t before = gfx_anim_preview_clock(p, wall);
          unsigned n;
          gfx_anim_preview_set_paused(p, true);
          for (n = 0; n < 8; n++)
@@ -165,6 +191,8 @@ static int run_one(const char *path)
             audio_mixer_mix(out, FRAMES, 1.0f, false);
             for (j = 0; j < FRAMES * 2; j++)
                if (out[j] != 0.0f) failed = 1;
+            wall += 33000;
+            if (gfx_anim_preview_clock(p, wall) != before) failed = 1;
          }
          if (audio_mixer_voice_buffer_tell(voice) != at) failed = 1;
          gfx_anim_preview_set_paused(p, false);
@@ -172,11 +200,69 @@ static int run_one(const char *path)
       if (!gfx_anim_preview_audio_feed(p)) break;
       memset(out, 0, sizeof(out));
       audio_mixer_mix(out, FRAMES, 1.0f, false);
+      wall += 33000;
+      {
+         size_t mixed = 0;
+         unsigned hz = 0;
+         int64_t actual = gfx_anim_preview_clock(p, wall);
+         int64_t expected;
+         if (!audio_mixer_voice_clock(voice, &mixed, &hz, NULL) || hz != rate)
+            failed = 1;
+         expected = 1000000 + (int64_t)((uint64_t)mixed * 1000000 / rate);
+         if (mixed == previous_frames)
+         {
+            starved_blocks++;
+            for (j = 0; j < FRAMES * 2; j++)
+               if (out[j] != 0.0f) failed = 1;
+         }
+         previous_frames = mixed;
+         if (actual != expected)
+         {
+            if (!failed)
+               printf("clock mismatch at tick %lu: actual=%lld expected=%lld audio=%u\n",
+                     (unsigned long)i, (long long)actual, (long long)expected,
+                     p->clock_audio);
+            failed = 1;
+         }
+      }
       for (j = 0; j < FRAMES * 2; j++) energy += out[j] * out[j];
    }
    failed |= i != ticks || finishes || repeats < 3 || energy <= 0;
-   printf("%s: ticks=%lu repeats=%u finishes=%u energy=%.1f %s\n",
-         path, (unsigned long)i, repeats, finishes, energy,
+   if (voice)
+   {
+      int64_t before = gfx_anim_preview_clock(p, wall);
+      size_t serial = p->clock_serial;
+      gfx_anim_preview_audio_stop(p);
+      gfx_anim_preview_audio_begin(p);
+      wall += 33000;
+      if (!voice || gfx_anim_preview_clock(p, wall) != before
+            || !p->clock_serial || p->clock_serial == serial) failed = 1;
+      if (voice && gfx_anim_preview_audio_feed(p))
+      {
+         memset(out, 0, sizeof(out));
+         audio_mixer_mix(out, FRAMES, 1.0f, false);
+         wall += 33000;
+         if (gfx_anim_preview_clock(p, wall) != before
+               + (int64_t)((uint64_t)FRAMES * 1000000 / rate)) failed = 1;
+      }
+      else failed = 1;
+   }
+   if (p->audio_dt && voice)
+   {
+      size_t resident = 0;
+      const uint8_t *base;
+      audio_driver_mixer_remove_stream((unsigned)p->audio_slot);
+      base = data_transfer_window_base(p->audio_dt, &resident);
+      if (!base || !resident || !p->audio_owner)
+         failed = 1;
+      if (gfx_anim_preview_audio_feed(p) || p->audio_dt
+            || p->audio_owner || p->audio_voice)
+         failed = 1;
+   }
+   else failed = 1;
+   printf("%s: rate=%u ticks=%lu repeats=%u finishes=%u energy=%.1f starved=%u %s\n",
+         path, rate, (unsigned long)i, repeats, finishes, energy,
+         starved_blocks,
          failed ? "FAIL" : "PASS");
    gfx_anim_preview_release(p);
    audio_mixer_done();
@@ -188,6 +274,22 @@ static int run_one(const char *path)
 int main(int argc, char **argv)
 {
    int i, failed = argc < 2;
-   for (i = 1; i < argc; i++) failed |= run_one(argv[i]);
+   gfx_anim_preview_t fallback;
+   memset(&fallback, 0, sizeof(fallback));
+   fallback.audio_slot = -1;
+   if (gfx_anim_preview_clock(&fallback, 1000) != 1000
+         || gfx_anim_preview_clock(&fallback, 2000) != 2000) failed = 1;
+   if (gfx_anim_preview_clock(&fallback, 1900) != 2000
+         || gfx_anim_preview_clock(&fallback, 2000) != 2000) failed = 1;
+   gfx_anim_preview_set_paused(&fallback, true);
+   if (gfx_anim_preview_clock(&fallback, 3000) != 2000
+         || gfx_anim_preview_clock(&fallback, 9000) != 2000) failed = 1;
+   gfx_anim_preview_set_paused(&fallback, false);
+   if (gfx_anim_preview_clock(&fallback, 10000) != 3000) failed = 1;
+   for (i = 1; i < argc; i++)
+   {
+      failed |= run_one(argv[i], 48000);
+      failed |= run_one(argv[i], 44100);
+   }
    return failed;
 }

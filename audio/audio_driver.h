@@ -1329,6 +1329,18 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
+/* As add_stream, with a clock binding captured before the existing
+ * state lock is released. The static-pool voice stays addressable;
+ * compare its serial before using a later clock snapshot. Outputs
+ * are NULL/0 when no live voice was created. Ownership is unchanged. */
+bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial);
+
+/* Session teardown: remove only the play captured at add_stream_clocked.
+ * Uses the existing stream-removal state lock, on the main thread. */
+void audio_driver_mixer_remove_stream_clocked(unsigned i,
+      audio_mixer_voice_t *voice, size_t serial);
+
 /* Compressed-byte read position of the stream in 'slot' (its
  * decoder's offset within the source buffer), or -1 when the slot
  * holds no live stream.  The windowed-source feeder's polling
@@ -1338,6 +1350,7 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
 /* Main-thread transport request; retains queued PCM and decoder state.
  * The mixer applies it at the next block boundary without waiting. */
 void audio_driver_mixer_stream_set_paused(unsigned i, bool paused);
+
 
 /* Raise a windowed stream's resident prefix as its feeder slides the
  * window forward.  The mirror of audio_driver_mixer_stream_byte_tell. */
