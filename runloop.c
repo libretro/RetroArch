@@ -112,6 +112,15 @@
 #include "input/drivers/android_input.h"
 #endif
 
+/* Android publishes the device's GLES level as a system property;
+ * SET_HW_RENDER grants GLES versions against it. */
+#if defined(ANDROID) && !defined(RUNLOOP_GLES_VERSION_PROPERTY)
+#define RUNLOOP_GLES_VERSION_PROPERTY
+#endif
+#ifdef RUNLOOP_GLES_VERSION_PROPERTY
+#include <sys/system_properties.h>
+#endif
+
 #if defined(ANDROID) && defined(HAVE_SAF)
 bool android_get_vfs_authorized_locations(
       struct retro_vfs_authorized_locations *locations);
@@ -1253,6 +1262,35 @@ static bool dynamic_verify_hw_context(
    return true;
 }
 
+#if defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
+/* The highest GLES version a core may be granted, as major * 100 +
+ * minor. A device that publishes its GLES level is taken at its word,
+ * so a core walking down a version list stops at one the context can
+ * really give; otherwise the build decides. A GLES2 build already
+ * grants OPENGLES3, so 3.0 is its ceiling as well. */
+static unsigned runloop_gles_version_ceiling(void)
+{
+#if defined(HAVE_OPENGLES3_2)
+   unsigned ceiling = 302;
+#elif defined(HAVE_OPENGLES3_1)
+   unsigned ceiling = 301;
+#else
+   unsigned ceiling = 300;
+#endif
+#ifdef RUNLOOP_GLES_VERSION_PROPERTY
+   char value[PROP_VALUE_MAX];
+   /* ro.opengles.version is major << 16 | minor */
+   if (__system_property_get("ro.opengles.version", value) > 0)
+   {
+      unsigned long v = strtoul(value, NULL, 10);
+      if (v >> 16)
+         ceiling = (unsigned)((v >> 16) * 100 + (v & 0xFFFF));
+   }
+#endif
+   return ceiling;
+}
+#endif
+
 static bool dynamic_request_hw_context(enum retro_hw_context_type type,
       unsigned minor, unsigned major)
 {
@@ -1276,39 +1314,33 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
-         RARCH_LOG("[HW] Requesting OpenGLES%u context.\n",
-               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
-         break;
-
-#if defined(HAVE_OPENGLES3)
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-#ifndef HAVE_OPENGLES3_2
-         if (major == 3 && minor == 2)
          {
-            RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
-                  major, minor);
-            return false;
+            unsigned ceiling = runloop_gles_version_ceiling();
+
+            if (type == RETRO_HW_CONTEXT_OPENGLES2)
+            {
+               major = 2;
+               minor = 0;
+            }
+            else if (type == RETRO_HW_CONTEXT_OPENGLES3)
+            {
+               major = 3;
+               minor = 0;
+            }
+
+            if (major * 100 + minor > ceiling)
+            {
+               RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but "
+                     "only OpenGLES%u.%u is available. Cannot use HW "
+                     "context.\n", major, minor,
+                     ceiling / 100, ceiling % 100);
+               return false;
+            }
          }
-#endif
-#if !defined(HAVE_OPENGLES3_2) && !defined(HAVE_OPENGLES3_1)
-         if (major == 3 && minor == 1)
-         {
-            RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch is compiled against a lesser version. Cannot use HW context.\n",
-                  major, minor);
-            return false;
-         }
-#endif
          RARCH_LOG("[HW] Requesting OpenGLES%u.%u context.\n",
                major, minor);
          break;
-#else
-      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         RARCH_WARN("[HW] Requesting OpenGLES%u.%u context, but RetroArch "
-               "is compiled against OpenGLES2. Cannot use HW context.\n",
-               major, minor);
-         return false;
-#endif
-
 #endif
       case RETRO_HW_CONTEXT_OPENGL:
       case RETRO_HW_CONTEXT_OPENGL_CORE:
