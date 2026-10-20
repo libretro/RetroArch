@@ -328,7 +328,7 @@ static int vp_job_step(vp_job_t *job)
       return false;
 
    if (!(frame = vp_next(stream, type, &job->loops_left, &duration_ms)))
-      return false;
+      return image_transfer_anim_stream_waiting(stream, type) ? 2 : 0;
 
    if (job->fp16)
    {
@@ -761,7 +761,12 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       goto ended;
 
    if (!(frame = vp_next(p->stream, p->type, &p->loops_left, &duration_ms)))
-      goto ended;
+   {
+      if (buf && p->sink.slot_end)
+         p->sink.slot_end(p->sink.user, 0);
+      return image_transfer_anim_stream_waiting(p->stream, p->type)
+         ? VIDEO_PLAYER_PLAYING : VIDEO_PLAYER_ENDED;
+   }
 
    fr.pixels      = NULL;
    fr.slot        = 0;

@@ -885,10 +885,41 @@ static void lane_pause(bool threaded)
    video_player_free(p);
 }
 
+static void lane_input_wait(bool threaded, bool slots)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int tick, state = VIDEO_PLAYER_PLAYING;
+   fake_init(&f, 5, 10);
+   f.direct = true;
+   f.wait_at = 2;
+   f.wait_left = 3;
+   sink_init(&k, &s, slots);
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "input wait: allocation");
+   if (!p) return;
+   for (tick = 0; tick < 1000 && state != VIDEO_PLAYER_ENDED; tick++)
+   {
+      state = video_player_poll(p, (int64_t)tick * 1000);
+      if (threaded) retro_sleep(1);
+   }
+   video_player_free(p);
+   CHECK(state == VIDEO_PLAYER_ENDED && k.nseen == 5
+         && seen_in_order(&k, 5) && !k.bad_px,
+         "input wait: mode %d/%d ended after %d frames", threaded, slots, k.nseen);
+   CHECK(!k.begun[0] && !k.begun[1], "input wait: slots released");
+}
+
 int main(void)
 {
+   lane_input_wait(false, false);
+   lane_input_wait(false, true);
    lane_pause(false);
 #ifdef HAVE_THREADS
+   lane_input_wait(true, true);
    lane_pause(true);
 #endif
    lane_inline_release();
