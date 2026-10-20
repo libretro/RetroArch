@@ -8873,6 +8873,11 @@ static bool input_beside_owns(const void *hid_data)
       && (input_beside.starting || hid_data == input_beside.data);
 }
 
+bool input_driver_hid_beside(const void *hid_data)
+{
+   return input_beside_owns(hid_data);
+}
+
 int input_driver_hid_claim(const void *hid_data, unsigned slot,
       const char *name, uint16_t vid, uint16_t pid)
 {

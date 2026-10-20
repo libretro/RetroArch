@@ -11,9 +11,16 @@
  *   bluetooth   -> the address the pad connects to is feature 0xF5
  *   gone        -> a read failing disconnects the pad and frees its port
  *   free        -> the reader stopped through the pipe's abort, joined,
- *                  and everything given back */
+ *                  and everything given back
+ *   hid class   -> a DualSense on Windows' own HID driver: read through
+ *                  ReadFile, lit and rumbled through writes that never
+ *                  wait, the newest waiting behind one in flight; a pad
+ *                  whose reports have no ID given them without
+ *                  Windows' leading 0; gone, and freed with a write in
+ *                  flight */
 
 #include "input/drivers_hid/winusb_hid.c"
+#include "input/common/sony_pad_output.h"
 
 static int failures;
 #define CHECK(cond, msg) do { if (!(cond)) { \
@@ -49,6 +56,8 @@ int input_driver_hid_number(const void *hid_data, unsigned slot)
    return (int)slot;
 }
 void input_driver_hid_release(const void *hid_data, unsigned slot) { }
+static bool beside;
+bool input_driver_hid_beside(const void *hid_data) { return beside; }
 
 /* ---- winusb.dll ---- */
 
@@ -223,6 +232,347 @@ static void wait_reader(void)
    }
 }
 
+/* ---- hid.dll and the device's reads and writes ---- */
+
+static uint8_t hq[16][80];
+static DWORD hq_len[16];
+static int hq_head, hq_tail;
+static bool h_pending, h_ok, h_unplugged;
+static uint8_t *h_buf;
+static DWORD h_len;
+static OVERLAPPED *h_ov;
+static volatile LONG h_waiting;
+static int cancels;
+/* the pad's report lengths and whether its reports have IDs */
+static USHORT caps_in, caps_out;
+static UCHAR caps_id;
+/* writes seen; held in flight while write_hold */
+static uint8_t writes[16][WINUSB_OUT_MAX];
+static DWORD write_len[16];
+static int n_writes;
+static bool write_hold, write_pending;
+static unsigned firmware;
+
+static BOOLEAN WINAPI h_attr(HANDLE h, PHIDD_ATTRIBUTES a) { return FALSE; }
+static BOOLEAN WINAPI h_pp(HANDLE h, PHIDP_PREPARSED_DATA *pp)
+{
+   *pp = (PHIDP_PREPARSED_DATA)0x5678;
+   return TRUE;
+}
+static BOOLEAN WINAPI h_free_pp(PHIDP_PREPARSED_DATA pp) { return TRUE; }
+static NTSTATUS WINAPI h_caps(PHIDP_PREPARSED_DATA pp, PHIDP_CAPS c)
+{
+   memset(c, 0, sizeof(*c));
+   c->UsagePage              = 0x01;
+   c->Usage                  = 0x05;
+   c->InputReportByteLength  = caps_in;
+   c->OutputReportByteLength = caps_out;
+   c->NumberInputButtonCaps  = 1;
+   c->NumberInputValueCaps   = 1;
+   return HIDP_STATUS_SUCCESS;
+}
+static NTSTATUS WINAPI h_bcaps(HIDP_REPORT_TYPE t, PHIDP_BUTTON_CAPS c,
+      PUSHORT n, PHIDP_PREPARSED_DATA pp)
+{
+   memset(c, 0, sizeof(*c) * *n);
+   *n          = 1;
+   c->ReportID = caps_id;
+   return HIDP_STATUS_SUCCESS;
+}
+static NTSTATUS WINAPI h_vcaps(HIDP_REPORT_TYPE t, PHIDP_VALUE_CAPS c,
+      PUSHORT n, PHIDP_PREPARSED_DATA pp)
+{
+   memset(c, 0, sizeof(*c) * *n);
+   *n          = 1;
+   c->ReportID = caps_id;
+   return HIDP_STATUS_SUCCESS;
+}
+static BOOLEAN WINAPI h_get_feature(HANDLE h, PVOID buf, ULONG len)
+{
+   uint8_t *b = (uint8_t*)buf;
+   if (b[0] != 0x20 || len < 64 || !firmware)
+      return FALSE;
+   memset(b + 1, 0, len - 1);
+   b[44] = (uint8_t)firmware;
+   b[45] = (uint8_t)(firmware >> 8);
+   return TRUE;
+}
+static BOOLEAN WINAPI h_set_feature(HANDLE h, PVOID buf, ULONG len) { return TRUE; }
+
+static void h_complete(void)
+{
+   if (!h_pending || (!h_unplugged && hq_head == hq_tail))
+      return;
+   h_ok = !h_unplugged;
+   if (h_ok)
+   {
+      int i = hq_head++ & 15;
+      memcpy(h_buf, hq[i], hq_len[i]);
+      h_len = hq_len[i];
+   }
+   h_pending = false;
+   InterlockedExchange(&h_waiting, 0);
+   SetEvent(h_ov->hEvent);
+}
+
+static BOOL WINAPI h_read(HANDLE file, LPVOID buf, DWORD len, LPDWORD got,
+      LPOVERLAPPED ov)
+{
+   EnterCriticalSection(&q_lock);
+   h_ov      = ov;
+   h_buf     = (uint8_t*)buf;
+   h_pending = true;
+   h_ok      = false;
+   h_complete();
+   if (!h_pending)
+   {
+      BOOL ok = h_ok;
+      LeaveCriticalSection(&q_lock);
+      if (!ok)
+         SetLastError(ERROR_DEVICE_NOT_CONNECTED);
+      return ok;
+   }
+   InterlockedExchange(&h_waiting, 1);
+   LeaveCriticalSection(&q_lock);
+   SetLastError(ERROR_IO_PENDING);
+   return FALSE;
+}
+
+static BOOL WINAPI h_write(HANDLE file, LPCVOID buf, DWORD len, LPDWORD got,
+      LPOVERLAPPED ov)
+{
+   int i = n_writes++ & 15;
+   memcpy(writes[i], buf, len < WINUSB_OUT_MAX ? len : WINUSB_OUT_MAX);
+   write_len[i] = len;
+   if (write_hold)
+   {
+      write_pending = true;
+      SetLastError(ERROR_IO_PENDING);
+      return FALSE;
+   }
+   return TRUE;
+}
+
+static BOOL WINAPI h_result(HANDLE file, LPOVERLAPPED ov, LPDWORD got,
+      BOOL wait)
+{
+   BOOL ok;
+   if (ov != h_ov)
+   {
+      /* a write */
+      if (write_pending && !wait)
+      {
+         SetLastError(ERROR_IO_INCOMPLETE);
+         return FALSE;
+      }
+      write_pending = false;
+      return TRUE;
+   }
+   if (wait)
+      WaitForSingleObject(ov->hEvent, INFINITE);
+   EnterCriticalSection(&q_lock);
+   *got = h_len;
+   ok   = h_ok;
+   LeaveCriticalSection(&q_lock);
+   if (!ok)
+      SetLastError(ERROR_OPERATION_ABORTED);
+   return ok;
+}
+
+static BOOL WINAPI h_cancel(HANDLE file)
+{
+   cancels++;
+   write_pending = false;
+   EnterCriticalSection(&q_lock);
+   if (h_pending)
+   {
+      h_pending = false;
+      h_ok      = false;
+      InterlockedExchange(&h_waiting, 0);
+      SetEvent(h_ov->hEvent);
+   }
+   LeaveCriticalSection(&q_lock);
+   return TRUE;
+}
+
+static void push_hreport(const uint8_t *r, DWORD len)
+{
+   int i;
+   EnterCriticalSection(&q_lock);
+   i = hq_tail++ & 15;
+   memcpy(hq[i], r, len);
+   hq_len[i] = len;
+   InterlockedExchange(&h_waiting, 0);
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+}
+
+static void wait_hreader(void)
+{
+   int i;
+   for (i = 0; i < 2000; i++)
+   {
+      bool idle;
+      EnterCriticalSection(&q_lock);
+      idle = (hq_head == hq_tail) && h_waiting;
+      LeaveCriticalSection(&q_lock);
+      if (idle)
+         return;
+      Sleep(1);
+   }
+}
+
+/* the last write is the shared builder's report for this state, padded
+ * to the device's length */
+static bool written_is(bool v2, uint8_t strong, uint8_t weak, int player)
+{
+   uint8_t want[SONY_PAD_REPORT_MAX];
+   int i      = (n_writes - 1) & 15;
+   size_t len = sony_pad_output_report(want, sizeof(want),
+         SONY_PAD_DUALSENSE, false, v2, strong, weak, player);
+   return n_writes && write_len[i] == caps_out
+      && !memcmp(writes[i], want, len);
+}
+
+static void test_hidclass(const char *path)
+{
+   winusb_hid_t *hid;
+   winusb_device_t *dev;
+   uint8_t r[80];
+   int i, base_disconnects;
+
+   winusb_hidclass_api.GetAttributes     = h_attr;
+   winusb_hidclass_api.GetPreparsedData  = h_pp;
+   winusb_hidclass_api.FreePreparsedData = h_free_pp;
+   winusb_hidclass_api.GetCaps           = h_caps;
+   winusb_hidclass_api.GetButtonCaps     = h_bcaps;
+   winusb_hidclass_api.GetValueCaps      = h_vcaps;
+   winusb_hidclass_api.GetFeature        = h_get_feature;
+   winusb_hidclass_api.SetFeature        = h_set_feature;
+   winusb_hidclass_api.Read              = h_read;
+   winusb_hidclass_api.Write             = h_write;
+   winusb_hidclass_api.Result            = h_result;
+   winusb_hidclass_api.Cancel            = h_cancel;
+
+   hid = (winusb_hid_t*)winusb_hid.init();
+   CHECK(hid != NULL, "hid class: init failed");
+   if (!hid)
+      return;
+
+   /* a DualSense on USB, firmware 2.24: lit as player 1 at its first
+    * report, the newer motor control */
+   caps_in = 64; caps_out = 48; caps_id = 1; firmware = 0x0224;
+   connected_port = -1;
+   winusb_hid_open(hid, path, "HID\\VID_054C&PID_0CE6&MI_03\\1",
+         0x054c, 0x0ce6, true);
+   CHECK(hid->devices && connected_port == 0, "hid class: the pad is not on port 1");
+   if (!hid->devices)
+      return;
+   dev = hid->devices;
+   CHECK(!strcmp(dev->name, "DualSense Wireless Controller"),
+         "hid class: the pad is not known by its name");
+   memset(r, 0, sizeof(r));
+   r[0] = 0x01;
+   r[1] = r[2] = r[3] = r[4] = 0x80;
+   r[8] = 0x08 | 0x20; /* hat at rest, cross */
+   push_hreport(r, 64);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(winusb_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_B)
+         && !winusb_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_A),
+         "hid class: the report was not read");
+   CHECK(n_writes == 1 && written_is(true, 0, 0, 1),
+         "hid class: the first report did not light player 1, at the device's length");
+
+   /* rumble with a write in flight: the newest waits, and goes at a
+    * later poll */
+   write_hold = true;
+   winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0x4000);
+   push_hreport(r, 64);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(n_writes == 2 && written_is(true, 0x40, 0, 0), "hid class: rumble was not written");
+   winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0x8000);
+   push_hreport(r, 64);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   winusb_hid.set_rumble(hid, 0, RETRO_RUMBLE_STRONG, 0xc000);
+   push_hreport(r, 64);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(n_writes == 2 && dev->out_waiting,
+         "hid class: a write went out over one in flight, or none waits");
+   write_hold    = false;
+   write_pending = false;
+   winusb_hid.poll(hid);
+   CHECK(n_writes == 3 && written_is(true, 0xc0, 0, 0) && !dev->out_waiting,
+         "hid class: the newest rumble did not go once the write was done");
+
+   /* gone */
+   base_disconnects = disconnects;
+   EnterCriticalSection(&q_lock);
+   h_unplugged = true;
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+   for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
+      Sleep(1);
+   winusb_hid.poll(hid);
+   CHECK(disconnects == base_disconnects + 1 && !hid->devices,
+         "hid class: the pad was not disconnected");
+   h_unplugged = false;
+
+   /* a pad whose reports have no ID: Windows puts a 0 first; the
+    * handler is given the report hidraw would give */
+   caps_in = 9; caps_out = 0; caps_id = 0;
+   winusb_hid_open(hid, path, "HID\\VID_081F&PID_E401\\1",
+         0x081f, 0xe401, true);
+   CHECK(hid->devices && hid->devices->strip_id && hid->devices->in_len == 9,
+         "hid class: a pad without report IDs was not known as one");
+   memset(r, 0, sizeof(r));
+   r[1 + 6] = 0x20;   /* start: bit 5 of the SNES pad's byte 6 */
+   r[1 + 0] = r[1 + 1] = 0x7f;
+   push_hreport(r, 9);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   CHECK(winusb_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_START),
+         "hid class: Windows' leading 0 reached the handler");
+
+   CHECK(!winusb_hid_is_bluetooth(hid->devices),
+         "hid class: a pad on USB is said to be on Bluetooth");
+   /* the stand-in has one device's reads at a time: this one goes */
+   dev = hid->devices;
+   EnterCriticalSection(&q_lock);
+   h_unplugged = true;
+   h_complete();
+   LeaveCriticalSection(&q_lock);
+   for (i = 0; i < 2000 && dev && !retro_atomic_load_acquire_int(&dev->gone); i++)
+      Sleep(1);
+   winusb_hid.poll(hid);
+   h_unplugged = false;
+
+   /* freed with a write in flight: the write is cancelled, the reader
+    * stopped. This one is on Bluetooth: the service's id is in its
+    * instance. */
+   caps_in = 78; caps_out = 78; caps_id = 1;
+   winusb_hid_open(hid, path,
+         "HID\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0002054C_PID&0CE6\\2",
+         0x054c, 0x0ce6, true);
+   CHECK(hid->devices && winusb_hid_is_bluetooth(hid->devices),
+         "hid class: a pad on Bluetooth is not said to be");
+   r[0] = 0x01;
+   write_hold = true;
+   push_hreport(r, 78);
+   wait_hreader();
+   winusb_hid.poll(hid);
+   cancels = 0;
+   CHECK(hid->devices && hid->devices->out_busy, "hid class: no write in flight to free with");
+   winusb_hid.free(hid);
+   CHECK(cancels >= 2 && !write_pending,
+         "hid class: free did not cancel the read and the write in flight");
+   write_hold = false;
+   firmware   = 0;
+}
+
 int main(void)
 {
    char path[MAX_PATH], dir[MAX_PATH];
@@ -265,13 +615,16 @@ int main(void)
       HANDLE other = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, 0,
             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
       CHECK(other != INVALID_HANDLE_VALUE, "the stand-in could not be held");
-      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
-      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
+      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
+            false);
+      winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
+            false);
       CHECK(!hid->devices && connected_port == -1 && hid->busy_count == 1,
             "a pad another program has open was not left to it, once");
       CloseHandle(other);
    }
-   winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
+   winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
+            false);
    CHECK(hid->devices && connected_port == 0, "the pad is not on port 1");
    CHECK(hid->busy_count == 0, "the pad was still counted as held elsewhere");
    dev = hid->devices;
@@ -345,7 +698,8 @@ int main(void)
    /* back, then the driver freed with it: the reader is aborted */
    unplugged = 0;
    InterlockedExchange(&pause_submit, 1);
-   winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
+   winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268,
+            false);
    CHECK(hid->devices != NULL, "the pad did not come back");
    CHECK(WaitForSingleObject(submit_entered, 2000) == WAIT_OBJECT_0,
          "the reader did not reach the submission gate");
@@ -365,6 +719,8 @@ int main(void)
    sthread_join(closer);
    CHECK(aborts >= 1 && frees == 2 && disconnects == 2,
          "free did not stop the reader and let the pad go");
+
+   test_hidclass(path);
 
    CloseHandle(submit_entered);
    CloseHandle(allow_submit);

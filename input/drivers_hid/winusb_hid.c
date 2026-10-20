@@ -13,11 +13,19 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Pads bound to Windows' own WinUSB driver, reached through winusb.dll,
- * which is loaded when the driver starts: nothing is linked, and a
- * Windows without it has no pads here. Windows' HID driver will not
- * pass a DualShock 3 the report that starts it; bound to WinUSB, the
- * pad is the program's, and its handler starts it.
+/* Pads with a handler in input/connect, two ways:
+ *
+ * - on Windows' own HID driver, as Windows installs every pad: opened
+ *   through its HID interface and read as hidraw is on Linux, nothing
+ *   to set up. Not while beside another joypad driver, which sees them
+ *   too.
+ * - bound to Windows' WinUSB driver, reached through winusb.dll: the
+ *   DualShock 3, which Windows' HID driver will not pass the report
+ *   that starts it. Bound to WinUSB, the pad is the program's, and its
+ *   handler starts it.
+ *
+ * winusb.dll and hid.dll are loaded when the driver starts: nothing is
+ * linked, and a Windows without one has no pads that way.
  *
  * Each pad has a thread of its own that waits on its reports and hands
  * the newest to the frontend through three buffers swapped with an
@@ -30,9 +38,12 @@
 
 #include <windows.h>
 #include <setupapi.h>
+#include <hidsdi.h>
+#include <hidpi.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 #include <string/stdstring.h>
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
@@ -71,6 +82,27 @@ typedef struct
    BOOL (WINAPI *GetOverlappedResult)(void*, OVERLAPPED*, ULONG*, BOOL);
 } winusb_api_t;
 
+/* hid.dll's, and kernel32's reads and writes, for a pad on Windows'
+ * HID driver: a test stands in for the device through them. */
+typedef struct
+{
+   HMODULE lib;
+   BOOLEAN (WINAPI *GetAttributes)(HANDLE, PHIDD_ATTRIBUTES);
+   BOOLEAN (WINAPI *GetPreparsedData)(HANDLE, PHIDP_PREPARSED_DATA*);
+   BOOLEAN (WINAPI *FreePreparsedData)(PHIDP_PREPARSED_DATA);
+   NTSTATUS (WINAPI *GetCaps)(PHIDP_PREPARSED_DATA, PHIDP_CAPS);
+   NTSTATUS (WINAPI *GetButtonCaps)(HIDP_REPORT_TYPE, PHIDP_BUTTON_CAPS,
+         PUSHORT, PHIDP_PREPARSED_DATA);
+   NTSTATUS (WINAPI *GetValueCaps)(HIDP_REPORT_TYPE, PHIDP_VALUE_CAPS,
+         PUSHORT, PHIDP_PREPARSED_DATA);
+   BOOLEAN (WINAPI *GetFeature)(HANDLE, PVOID, ULONG);
+   BOOLEAN (WINAPI *SetFeature)(HANDLE, PVOID, ULONG);
+   BOOL (WINAPI *Read)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+   BOOL (WINAPI *Write)(HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED);
+   BOOL (WINAPI *Result)(HANDLE, LPOVERLAPPED, LPDWORD, BOOL);
+   BOOL (WINAPI *Cancel)(HANDLE);
+} winusb_hidclass_api_t;
+
 /* cfgmgr32.h's, from Windows 8: told of a device interface arriving, a
  * pad bound while the driver runs is looked for. */
 typedef struct
@@ -96,7 +128,12 @@ typedef DWORD (WINAPI *winusb_cm_unregister_t)(HANDLE);
 #define WINUSB_CM_DEVICEINTERFACE       0
 #define WINUSB_CM_INTERFACE_ARRIVAL     0
 
-#define WINUSB_REPORT_MAX 64
+/* WinUSB's reads are a DualShock 3's 64; Windows' HID driver asks for
+ * a device's longest input report, which a DualShock 4 over Bluetooth
+ * declares at 547 bytes */
+#define WINUSB_REPORT_MAX 640
+#define WINUSB_USB_REPORT 64
+#define WINUSB_OUT_MAX    640
 #define WINUSB_EP_IN      0x81
 /* an index into buf, with this set when the writer has left a report
  * there the frontend has not taken */
@@ -107,9 +144,21 @@ typedef struct winusb_device
    struct winusb_device *next;
    struct winusb_hid *hid;
    HANDLE file;
-   void *usb;
+   void *usb;           /* WinUSB's; NULL on Windows' HID driver */
    HANDLE ctrl_event;
    HANDLE quit_event;
+   const char *tag;     /* for the log */
+   bool hidclass;       /* on Windows' HID driver */
+   bool strip_id;       /* its reports have no ID: Windows puts a 0 first */
+   bool bluetooth;      /* on Windows' HID driver, through Bluetooth */
+   ULONG in_len;        /* what a read asks for */
+   ULONG out_len;       /* an output report's length on this device */
+
+   /* writes, the frontend's: one in flight, the newest waiting behind */
+   OVERLAPPED out_ov;
+   bool out_busy;
+   bool out_waiting;
+   uint8_t out[2][WINUSB_OUT_MAX];
    sthread_t *reader;
    int32_t slot;
    uint16_t vid;
@@ -157,6 +206,54 @@ extern hid_driver_t winusb_hid;
 
 /* filled in by the driver's start, or by a test before it */
 static winusb_api_t winusb_api;
+static winusb_hidclass_api_t winusb_hidclass_api;
+
+static bool winusb_hidclass_api_load(void)
+{
+   HMODULE lib;
+
+   if (winusb_hidclass_api.GetAttributes)
+      return true;
+   if (!(lib = LoadLibraryA("hid.dll")))
+      return false;
+   winusb_hidclass_api.GetAttributes     = (BOOLEAN (WINAPI*)(HANDLE,
+            PHIDD_ATTRIBUTES))GetProcAddress(lib, "HidD_GetAttributes");
+   winusb_hidclass_api.GetPreparsedData  = (BOOLEAN (WINAPI*)(HANDLE,
+            PHIDP_PREPARSED_DATA*))GetProcAddress(lib, "HidD_GetPreparsedData");
+   winusb_hidclass_api.FreePreparsedData = (BOOLEAN (WINAPI*)(
+            PHIDP_PREPARSED_DATA))GetProcAddress(lib, "HidD_FreePreparsedData");
+   winusb_hidclass_api.GetCaps           = (NTSTATUS (WINAPI*)(
+            PHIDP_PREPARSED_DATA, PHIDP_CAPS))GetProcAddress(lib, "HidP_GetCaps");
+   winusb_hidclass_api.GetButtonCaps     = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, PHIDP_BUTTON_CAPS, PUSHORT,
+            PHIDP_PREPARSED_DATA))GetProcAddress(lib, "HidP_GetButtonCaps");
+   winusb_hidclass_api.GetValueCaps      = (NTSTATUS (WINAPI*)(
+            HIDP_REPORT_TYPE, PHIDP_VALUE_CAPS, PUSHORT,
+            PHIDP_PREPARSED_DATA))GetProcAddress(lib, "HidP_GetValueCaps");
+   winusb_hidclass_api.GetFeature        = (BOOLEAN (WINAPI*)(HANDLE, PVOID,
+            ULONG))GetProcAddress(lib, "HidD_GetFeature");
+   winusb_hidclass_api.SetFeature        = (BOOLEAN (WINAPI*)(HANDLE, PVOID,
+            ULONG))GetProcAddress(lib, "HidD_SetFeature");
+   if (     !winusb_hidclass_api.GetAttributes
+         || !winusb_hidclass_api.GetPreparsedData
+         || !winusb_hidclass_api.FreePreparsedData
+         || !winusb_hidclass_api.GetCaps
+         || !winusb_hidclass_api.GetButtonCaps
+         || !winusb_hidclass_api.GetValueCaps
+         || !winusb_hidclass_api.GetFeature
+         || !winusb_hidclass_api.SetFeature)
+   {
+      FreeLibrary(lib);
+      memset(&winusb_hidclass_api, 0, sizeof(winusb_hidclass_api));
+      return false;
+   }
+   winusb_hidclass_api.Read   = ReadFile;
+   winusb_hidclass_api.Write  = WriteFile;
+   winusb_hidclass_api.Result = GetOverlappedResult;
+   winusb_hidclass_api.Cancel = CancelIo;
+   winusb_hidclass_api.lib    = lib;
+   return true;
+}
 
 static bool winusb_api_load(void)
 {
@@ -193,11 +290,18 @@ static bool winusb_api_load(void)
    return true;
 }
 
-/* The pads whose handlers this driver can start. */
+/* The pads whose handlers this driver can start: on WinUSB, the
+ * DualShock 3; on Windows' HID driver, every other. */
 static bool winusb_hid_handled(uint16_t vid, uint16_t pid)
 {
    joypad_connection_entry_t *entry = find_connection_entry(vid, pid, "");
    return entry && entry->iface == &pad_connection_ps3;
+}
+
+static bool winusb_hidclass_handled(uint16_t vid, uint16_t pid)
+{
+   joypad_connection_entry_t *entry = find_connection_entry(vid, pid, "");
+   return entry && entry->iface != &pad_connection_ps3;
 }
 
 /* A control transfer on the default pipe, waited for: the length moved,
@@ -251,18 +355,38 @@ static void winusb_hid_reader(void *data)
       BOOL ok;
 
       ResetEvent(ov.hEvent);
-      ok = winusb_api.ReadPipe(dev->usb, WINUSB_EP_IN, dev->buf[w],
-            WINUSB_REPORT_MAX, NULL, &ov);
-      if (!ok && GetLastError() == ERROR_IO_PENDING)
+      if (dev->hidclass)
       {
-         /* Abort only after the reader has submitted its operation. */
-         if (WaitForMultipleObjects(2, events, FALSE, INFINITE)
-               != WAIT_OBJECT_0 + 1)
-            winusb_api.AbortPipe(dev->usb, WINUSB_EP_IN);
-         ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+         DWORD n = 0;
+         ok = winusb_hidclass_api.Read(dev->file, dev->buf[w], dev->in_len,
+               NULL, &ov);
+         if (!ok && GetLastError() == ERROR_IO_PENDING)
+         {
+            /* cancelled by this thread, which made the read */
+            if (WaitForMultipleObjects(2, events, FALSE, INFINITE)
+                  != WAIT_OBJECT_0 + 1)
+               winusb_hidclass_api.Cancel(dev->file);
+            ok = winusb_hidclass_api.Result(dev->file, &ov, &n, TRUE);
+         }
+         else if (ok)
+            ok = winusb_hidclass_api.Result(dev->file, &ov, &n, TRUE);
+         got = n;
       }
-      else if (ok)
-         ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+      else
+      {
+         ok = winusb_api.ReadPipe(dev->usb, WINUSB_EP_IN, dev->buf[w],
+               dev->in_len, NULL, &ov);
+         if (!ok && GetLastError() == ERROR_IO_PENDING)
+         {
+            /* Abort only after the reader has submitted its operation. */
+            if (WaitForMultipleObjects(2, events, FALSE, INFINITE)
+                  != WAIT_OBJECT_0 + 1)
+               winusb_api.AbortPipe(dev->usb, WINUSB_EP_IN);
+            ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+         }
+         else if (ok)
+            ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+      }
       if (!ok)
       {
          /* stopped by the frontend, or the pad is gone */
@@ -296,15 +420,24 @@ static void winusb_hid_close(winusb_device_t *dev)
       retro_atomic_store_release_int(&dev->quit, 1);
       SetEvent(dev->quit_event);
       sthread_join(dev->reader);
-      RARCH_DBG("[WinUSB] \"%s\": %u reports, %u taken by the poll, %u replaced"
+      RARCH_DBG("%s \"%s\": %u reports, %u taken by the poll, %u replaced"
             " before it took them; %u ms at most between two.\n",
-            dev->name, dev->reports, dev->taken, dev->unseen,
+            dev->tag, dev->name, dev->reports, dev->taken, dev->unseen,
             (unsigned)(dev->gap_max / 1000));
+   }
+   if (dev->out_busy)
+   {
+      DWORD n;
+      /* the frontend's thread made the write */
+      winusb_hidclass_api.Cancel(dev->file);
+      winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, TRUE);
    }
    if (dev->usb)
       winusb_api.Free(dev->usb);
    if (dev->file != INVALID_HANDLE_VALUE)
       CloseHandle(dev->file);
+   if (dev->out_ov.hEvent)
+      CloseHandle(dev->out_ov.hEvent);
    if (dev->ctrl_event)
       CloseHandle(dev->ctrl_event);
    if (dev->quit_event)
@@ -347,27 +480,78 @@ static void winusb_hid_busy_drop(winusb_hid_t *hid, unsigned i)
    hid->busy_seen &= ~(1u << last);
 }
 
+/* A pad on Windows' HID driver: how long its reports are, and whether
+ * they have IDs - without, Windows puts a 0 first, which hidraw does
+ * not, and the handlers are given the report without it. */
+static bool winusb_hidclass_setup(winusb_device_t *dev)
+{
+   PHIDP_PREPARSED_DATA pp = NULL;
+   HIDP_CAPS caps;
+   bool ok = false;
+
+   if (!winusb_hidclass_api.GetPreparsedData(dev->file, &pp))
+      return false;
+   if (winusb_hidclass_api.GetCaps(pp, &caps) == HIDP_STATUS_SUCCESS)
+   {
+      HIDP_BUTTON_CAPS bcaps[16];
+      HIDP_VALUE_CAPS vcaps[16];
+      USHORT nb = caps.NumberInputButtonCaps;
+      USHORT nv = caps.NumberInputValueCaps;
+      bool ids  = false;
+      USHORT i;
+
+      if (nb > 16)
+         nb = 16;
+      if (nv > 16)
+         nv = 16;
+      /* asked for no more than fit: the rest are the same report's */
+      if (nb && winusb_hidclass_api.GetButtonCaps(HidP_Input, bcaps, &nb, pp)
+            == HIDP_STATUS_SUCCESS)
+         for (i = 0; i < nb; i++)
+            ids |= bcaps[i].ReportID != 0;
+      if (nv && winusb_hidclass_api.GetValueCaps(HidP_Input, vcaps, &nv, pp)
+            == HIDP_STATUS_SUCCESS)
+         for (i = 0; i < nv; i++)
+            ids |= vcaps[i].ReportID != 0;
+      dev->in_len   = caps.InputReportByteLength;
+      dev->out_len  = caps.OutputReportByteLength;
+      dev->strip_id = !ids;
+      ok            =    dev->in_len  > 1 && dev->in_len  <= WINUSB_REPORT_MAX
+                      && dev->out_len <= WINUSB_OUT_MAX;
+   }
+   winusb_hidclass_api.FreePreparsedData(pp);
+   return ok;
+}
+
 static void winusb_hid_open(winusb_hid_t *hid, const char *path,
-      const char *instance, uint16_t vid, uint16_t pid)
+      const char *instance, uint16_t vid, uint16_t pid, bool hidclass)
 {
    int number;
    winusb_device_t *dev;
+   joypad_connection_entry_t *entry;
 
    if (winusb_hid_find(hid, instance))
       return;
    if (!(dev = (winusb_device_t*)calloc(1, sizeof(*dev))))
       return;
+   entry          = find_connection_entry(vid, pid, "");
    dev->hid       = hid;
    dev->slot      = -1;
    dev->vid       = vid;
    dev->pid       = pid;
+   dev->hidclass  = hidclass;
+   dev->tag       = hidclass ? "[HID]" : "[WinUSB]";
+   dev->in_len    = WINUSB_USB_REPORT;
    dev->read_idx  = 0;
    dev->write_idx = 1;
    retro_atomic_int_init(&dev->middle, 2);
    retro_atomic_int_init(&dev->quit, 0);
    retro_atomic_int_init(&dev->gone, 0);
    strlcpy(dev->instance, instance, sizeof(dev->instance));
-   strlcpy(dev->name, "PLAYSTATION(R)3 Controller", sizeof(dev->name));
+   strlcpy(dev->name, entry ? entry->name : "", sizeof(dev->name));
+   /* the Bluetooth HID service's id is in a Bluetooth pad's instance */
+   dev->bluetooth = hidclass && compat_strcasestr(instance,
+         "00001124-0000-1000-8000-00805f9b34fb") != NULL;
 
    dev->file = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
@@ -382,14 +566,14 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
          {
             strlcpy(hid->busy[hid->busy_count++], instance,
                   sizeof(hid->busy[0]));
-            RARCH_LOG("[WinUSB] \"%s\" (%s) is in use by another"
+            RARCH_LOG("%s \"%s\" (%s) is in use by another"
                   " program; it is left to that one.\n",
-                  dev->name, instance);
+                  dev->tag, dev->name, instance);
          }
       }
       else
-         RARCH_WARN("[WinUSB] %s cannot be opened (error %lu).\n",
-               path, (unsigned long)err);
+         RARCH_WARN("%s %s cannot be opened (error %lu).\n",
+               dev->tag, path, (unsigned long)err);
       free(dev);
       return;
    }
@@ -398,23 +582,26 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       if (busy >= 0)
          winusb_hid_busy_drop(hid, (unsigned)busy);
    }
-   if (     !(dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL))
-         || !(dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL))
-         || !winusb_api.Initialize(dev->file, &dev->usb))
+   if (     !(dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL))
+         || (hidclass
+            ?    !(dev->out_ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL))
+              || !winusb_hidclass_setup(dev)
+            :    !(dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL))
+              || !winusb_api.Initialize(dev->file, &dev->usb)))
    {
-      RARCH_WARN("[WinUSB] %s cannot be used (error %lu).\n",
-            path, (unsigned long)GetLastError());
+      RARCH_WARN("%s %s cannot be used (error %lu).\n",
+            dev->tag, path, (unsigned long)GetLastError());
       dev->usb = NULL;
       winusb_hid_close(dev);
       return;
    }
 
-   /* the pad's handler starts it here, through the control pipe */
+   /* the pad's handler starts it here */
    dev->slot = pad_connection_pad_init(hid->slots, dev->name, vid, pid,
          dev, &winusb_hid);
    if (dev->slot < 0 || !hid->slots[dev->slot].connection)
    {
-      RARCH_ERR("[WinUSB] \"%s\" could not be started.\n", dev->name);
+      RARCH_ERR("%s \"%s\" could not be started.\n", dev->tag, dev->name);
       if (dev->slot >= 0)
          pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
       winusb_hid_close(dev);
@@ -432,7 +619,7 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
    if ((number = input_driver_hid_claim(hid, (unsigned)dev->slot,
                dev->name, vid, pid)) < 0)
    {
-      RARCH_WARN("[WinUSB] \"%s\": no device number left.\n", dev->name);
+      RARCH_WARN("%s \"%s\": no device number left.\n", dev->tag, dev->name);
       pad_connection_pad_deinit(&hid->slots[dev->slot], dev->slot);
       winusb_hid_close(dev);
       return;
@@ -440,7 +627,7 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
 
    dev->next    = hid->devices;
    hid->devices = dev;
-   RARCH_LOG("[WinUSB] \"%s\" is device %d.\n", dev->name, number + 1);
+   RARCH_LOG("%s \"%s\" is device %d.\n", dev->tag, dev->name, number + 1);
    input_autoconfigure_connect(dev->name, NULL, NULL, "hid",
          (unsigned)number, vid, pid);
 }
@@ -560,17 +747,92 @@ static bool winusb_hid_interface_path(HDEVINFO devs, SP_DEVINFO_DATA *info,
       && winusb_hid_class_path(&guid, instance, path, len);
 }
 
+/* Pads on Windows' HID driver whose ids name a handled pad - a
+ * gamepad or joystick collection of it, not the touchpad or audio
+ * controls a pad may add beside. Each is looked at through a handle
+ * that may neither read nor write, which any program may open. */
+static void winusb_hidclass_scan(winusb_hid_t *hid)
+{
+   /* GUID_DEVINTERFACE_HID */
+   static const GUID hid_guid = { 0x4d1e55b2, 0xf16f, 0x11cf,
+      { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
+   HDEVINFO ifs;
+   DWORD i;
+
+   if (!winusb_hidclass_api.GetAttributes || input_driver_hid_beside(hid))
+      return;
+   ifs = SetupDiGetClassDevsA(&hid_guid, NULL, NULL,
+         DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+   if (ifs == INVALID_HANDLE_VALUE)
+      return;
+   for (i = 0; ; i++)
+   {
+      SP_DEVICE_INTERFACE_DATA ifd;
+      SP_DEVINFO_DATA info;
+      HIDD_ATTRIBUTES attr;
+      PHIDP_PREPARSED_DATA pp;
+      HIDP_CAPS caps;
+      HANDLE probe;
+      bool pad = false;
+      char instance[MAX_PATH];
+      union
+      {
+         SP_DEVICE_INTERFACE_DETAIL_DATA_A d;
+         char b[sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_A) + MAX_PATH];
+      } detail;
+
+      ifd.cbSize = sizeof(ifd);
+      if (!SetupDiEnumDeviceInterfaces(ifs, NULL, &hid_guid, i, &ifd))
+         break;
+      info.cbSize     = sizeof(info);
+      detail.d.cbSize = sizeof(detail.d);
+      if (     !SetupDiGetDeviceInterfaceDetailA(ifs, &ifd, &detail.d,
+                  sizeof(detail), NULL, &info)
+            || !SetupDiGetDeviceInstanceIdA(ifs, &info, instance,
+                  sizeof(instance), NULL))
+         continue;
+      if (winusb_hid_find(hid, instance))
+         continue;
+      {
+         int busy = winusb_hid_busy_find(hid, instance);
+         if (busy >= 0)
+            hid->busy_seen |= (1u << busy);
+      }
+      probe = CreateFileA(detail.d.DevicePath, 0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+      if (probe == INVALID_HANDLE_VALUE)
+         continue;
+      attr.Size = sizeof(attr);
+      if (     winusb_hidclass_api.GetAttributes(probe, &attr)
+            && winusb_hidclass_handled(attr.VendorID, attr.ProductID)
+            && winusb_hidclass_api.GetPreparsedData(probe, &pp))
+      {
+         if (winusb_hidclass_api.GetCaps(pp, &caps) == HIDP_STATUS_SUCCESS)
+            pad =    caps.UsagePage == 0x01
+                  && (caps.Usage == 0x04 || caps.Usage == 0x05
+                     || caps.Usage == 0x08);
+         winusb_hidclass_api.FreePreparsedData(pp);
+      }
+      CloseHandle(probe);
+      if (pad)
+         winusb_hid_open(hid, detail.d.DevicePath, instance,
+               attr.VendorID, attr.ProductID, true);
+   }
+   SetupDiDestroyDeviceInfoList(ifs);
+}
+
 /* USB devices bound to WinUSB whose ids name a handled pad. */
 static void winusb_hid_scan(winusb_hid_t *hid)
 {
    DWORD i;
-   HDEVINFO devs = SetupDiGetClassDevsA(NULL, "USB", NULL,
-         DIGCF_ALLCLASSES | DIGCF_PRESENT);
+   HDEVINFO devs;
 
-   if (devs == INVALID_HANDLE_VALUE)
-      return;
    hid->busy_seen = 0;
-   for (i = 0; ; i++)
+   devs           = winusb_api.Initialize
+      ? SetupDiGetClassDevsA(NULL, "USB", NULL,
+            DIGCF_ALLCLASSES | DIGCF_PRESENT)
+      : INVALID_HANDLE_VALUE;
+   for (i = 0; devs != INVALID_HANDLE_VALUE; i++)
    {
       SP_DEVINFO_DATA info;
       char service[64];
@@ -603,9 +865,12 @@ static void winusb_hid_scan(winusb_hid_t *hid)
       }
       if (winusb_hid_interface_path(devs, &info, instance,
                path, sizeof(path)))
-         winusb_hid_open(hid, path, instance, (uint16_t)vid, (uint16_t)pid);
+         winusb_hid_open(hid, path, instance, (uint16_t)vid, (uint16_t)pid,
+               false);
    }
-   SetupDiDestroyDeviceInfoList(devs);
+   if (devs != INVALID_HANDLE_VALUE)
+      SetupDiDestroyDeviceInfoList(devs);
+   winusb_hidclass_scan(hid);
    /* one unplugged while held elsewhere is said again when it is back */
    for (i = hid->busy_count; i-- > 0; )
       if (!(hid->busy_seen & (1u << i)))
@@ -643,7 +908,11 @@ static void *winusb_hid_init(void)
 {
    winusb_hid_t *hid;
 
-   if (!winusb_api_load())
+   /* either way of reaching pads will do */
+   bool usb_ok = winusb_api_load();
+   bool hid_ok = winusb_hidclass_api_load();
+
+   if (!usb_ok && !hid_ok)
       return NULL;
    if (!(hid = (winusb_hid_t*)calloc(1, sizeof(*hid))))
       return NULL;
@@ -678,6 +947,59 @@ static void *winusb_hid_init(void)
    return hid;
 }
 
+/* Writes to a pad on Windows' HID driver, from the frontend's thread,
+ * which never waits on one: a write goes out at once if none is in
+ * flight, and otherwise waits behind it, the newest replacing the one
+ * waiting, to go at a later poll. Windows wants each output report at
+ * the device's length, so it goes padded with noughts. */
+static bool winusb_hidclass_in_flight(winusb_device_t *dev)
+{
+   DWORD n;
+   if (!dev->out_busy)
+      return false;
+   if (     !winusb_hidclass_api.Result(dev->file, &dev->out_ov, &n, FALSE)
+         && GetLastError() == ERROR_IO_INCOMPLETE)
+      return true;
+   dev->out_busy = false;
+   return false;
+}
+
+static void winusb_hidclass_start_write(winusb_device_t *dev)
+{
+   ResetEvent(dev->out_ov.hEvent);
+   if (     winusb_hidclass_api.Write(dev->file, dev->out[0], dev->out_len,
+               NULL, &dev->out_ov)
+         || GetLastError() == ERROR_IO_PENDING)
+      dev->out_busy = true;
+}
+
+static void winusb_hidclass_flush(winusb_device_t *dev)
+{
+   if (winusb_hidclass_in_flight(dev))
+      return;
+   memcpy(dev->out[0], dev->out[1], dev->out_len);
+   dev->out_waiting = false;
+   winusb_hidclass_start_write(dev);
+}
+
+static void winusb_hidclass_write(winusb_device_t *dev,
+      const uint8_t *s, size_t len)
+{
+   if (!dev->out_len || len > dev->out_len)
+      return;
+   if (winusb_hidclass_in_flight(dev))
+   {
+      memcpy(dev->out[1], s, len);
+      memset(dev->out[1] + len, 0, dev->out_len - len);
+      dev->out_waiting = true;
+      return;
+   }
+   memcpy(dev->out[0], s, len);
+   memset(dev->out[0] + len, 0, dev->out_len - len);
+   dev->out_waiting = false;
+   winusb_hidclass_start_write(dev);
+}
+
 static void winusb_hid_poll(void *data)
 {
    winusb_hid_t *hid = (winusb_hid_t*)data;
@@ -694,15 +1016,20 @@ static void winusb_hid_poll(void *data)
       next = dev->next;
       if (retro_atomic_load_acquire_int(&dev->middle) & WINUSB_FRESH)
       {
+         unsigned skip;
          dev->read_idx = retro_atomic_exchange_int(&dev->middle,
                dev->read_idx) & 3;
          dev->taken++;
+         skip = (dev->strip_id && dev->len[dev->read_idx]) ? 1 : 0;
          pad_connection_packet(&hid->slots[dev->slot], dev->slot,
-               dev->buf[dev->read_idx], (uint32_t)dev->len[dev->read_idx]);
+               dev->buf[dev->read_idx] + skip,
+               (uint32_t)dev->len[dev->read_idx] - skip);
       }
+      if (dev->out_waiting)
+         winusb_hidclass_flush(dev);
       if (retro_atomic_load_acquire_int(&dev->gone))
       {
-         RARCH_LOG("[WinUSB] \"%s\" is gone.\n", dev->name);
+         RARCH_LOG("%s \"%s\" is gone.\n", dev->tag, dev->name);
          winusb_hid_remove(hid, dev);
       }
    }
@@ -810,6 +1137,18 @@ static int32_t winusb_hid_set_report(void *handle, uint8_t report_type,
    winusb_device_t *dev = (winusb_device_t*)handle;
    if (!dev || !len || s[0] != report_id)
       return -1;
+   if (dev->hidclass)
+   {
+      if (report_type == HID_REPORT_OUTPUT)
+      {
+         winusb_hidclass_write(dev, s, len);
+         return (int32_t)len;
+      }
+      if (report_type == HID_REPORT_FEATURE)
+         return winusb_hidclass_api.SetFeature(dev->file, s, (ULONG)len)
+            ? (int32_t)len : -1;
+      return -1;
+   }
    return winusb_hid_control(dev, 0x21, 0x09,
          (USHORT)((report_type << 8) | report_id), s, len);
 }
@@ -820,6 +1159,14 @@ static int32_t winusb_hid_get_report(void *handle, uint8_t report_type,
    winusb_device_t *dev = (winusb_device_t*)handle;
    if (!dev || !len)
       return -1;
+   if (dev->hidclass)
+   {
+      if (report_type != HID_REPORT_FEATURE)
+         return -1;
+      s[0] = report_id;
+      return winusb_hidclass_api.GetFeature(dev->file, s, (ULONG)len)
+         ? (int32_t)len : -1;
+   }
    return winusb_hid_control(dev, 0xa1, 0x01,
          (USHORT)((report_type << 8) | report_id), s, len);
 }
@@ -828,6 +1175,12 @@ static void winusb_hid_send_control(void *handle, uint8_t *s, size_t len)
 {
    if (len)
       winusb_hid_set_report(handle, HID_REPORT_OUTPUT, s[0], s, len);
+}
+
+static bool winusb_hid_is_bluetooth(void *handle)
+{
+   winusb_device_t *dev = (winusb_device_t*)handle;
+   return dev && dev->bluetooth;
 }
 
 static winusb_device_t *winusb_hid_pad(void *data, unsigned pad)
@@ -893,5 +1246,6 @@ hid_driver_t winusb_hid = {
    NULL, /* set_protocol */
    NULL, /* read */
    winusb_hid_get_bt_host,
-   winusb_hid_set_bt_host
+   winusb_hid_set_bt_host,
+   winusb_hid_is_bluetooth
 };
