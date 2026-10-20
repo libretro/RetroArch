@@ -412,6 +412,13 @@ struct rarch_state;
  **/
 bool command_event(enum event_command action, void *data);
 
+/* @action, with @arg (or NULL) as its int argument, carried out on the
+ * main thread when it next retires finished tasks: for a thread that
+ * is not the main one - the video thread - asking for what only the
+ * main thread may do, such as starting the drivers again. Callable
+ * from any thread. False if it could not be asked for. */
+bool command_event_later(enum event_command action, const int *arg);
+
 /* Constructors for the supported drivers */
 #ifdef HAVE_NETWORK_CMD
 /* bind_address may be NULL or empty to listen on every interface, or an

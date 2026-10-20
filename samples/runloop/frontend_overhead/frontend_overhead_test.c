@@ -6303,6 +6303,47 @@ static void lane_entries(void)
             " them back\n");
 }
 
+/* A command asked for from another thread - the Vulkan context's
+ * restart for a refresh rate change, raised on the video thread - is
+ * carried out on the main thread, after the asking thread has gone
+ * on, and not on the thread that asked. */
+#ifdef HAVE_THREADS
+static void later_thread(void *data)
+{
+   (void)data;
+   command_event_later(CMD_EVENT_PAUSE, NULL);
+}
+#endif
+
+static void lane_command_later(void)
+{
+#ifdef HAVE_THREADS
+   unsigned had = failures;
+   sthread_t *t;
+
+   if (hf_paused())
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+   CHECK(!hf_paused_now(), "command later: paused to begin with");
+   CHECK((t = sthread_create(later_thread, NULL)) != NULL,
+         "command later: no thread");
+   if (!t)
+      return;
+   sthread_join(t);
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_PAUSED),
+         "command later: done on the thread that asked");
+   run_loop_frames(3);
+   CHECK(hf_paused_now(), "command later: not done on the main thread");
+   command_event(CMD_EVENT_UNPAUSE, NULL);
+   run_loop_frames(2);
+   if (failures == had)
+      printf("[pass] command later: a command asked for from another"
+            " thread is carried out on the main thread, not on the one"
+            " that asked\n");
+#else
+   printf("[skip] command later: no threads\n");
+#endif
+}
+
 /* Macros: buttons of the RetroPad pressed for a user a step at a time
  * (input_macro_N in the configuration), started by an entry. Held to
  * what a macro says, by what the core is given frame by frame, read a
@@ -9159,6 +9200,7 @@ int main(int argc, char *argv[])
       lane_bind_names();
       lane_binds_shared_rows();
       lane_entries();
+      lane_command_later();
       lane_macros();
       lane_macro_modes();
       lane_entries_kept();

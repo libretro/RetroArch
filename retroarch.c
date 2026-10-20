@@ -3770,6 +3770,58 @@ static void retroarch_audio_restarted(runloop_state_t *runloop_st,
 #endif
 }
 
+typedef struct
+{
+   int  cmd;
+   int  arg;
+   bool has_arg;
+} command_later_t;
+
+static void command_event_later_handler(retro_task_t *task)
+{
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* on the main thread, where finished tasks are retired */
+static void command_event_later_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   command_later_t *later = (command_later_t*)task->state;
+   if (later)
+      command_event((enum event_command)later->cmd,
+            later->has_arg ? &later->arg : NULL);
+}
+
+static void command_event_later_cleanup(retro_task_t *task)
+{
+   free(task->state);
+   task->state = NULL;
+}
+
+bool command_event_later(enum event_command cmd, const int *arg)
+{
+   retro_task_t *task;
+   command_later_t *later = (command_later_t*)malloc(sizeof(*later));
+
+   if (!later)
+      return false;
+   later->cmd     = (int)cmd;
+   later->arg     = arg ? *arg : 0;
+   later->has_arg = arg != NULL;
+   if (!(task = task_init()))
+   {
+      free(later);
+      return false;
+   }
+   task->handler  = command_event_later_handler;
+   task->callback = command_event_later_callback;
+   task->cleanup  = command_event_later_cleanup;
+   task->state    = later;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+   return true;
+}
+
 bool command_event(enum event_command cmd, void *data)
 {
    struct rarch_state *p_rarch     = &rarch_st;
