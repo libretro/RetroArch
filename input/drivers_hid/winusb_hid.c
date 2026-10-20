@@ -1267,7 +1267,7 @@ static void winusb_hidclass_flush(winusb_device_t *dev)
 {
    if (winusb_hidclass_in_flight(dev))
       return;
-   memcpy(dev->out[0], dev->out[1], dev->out_len);
+   memmove(dev->out[0], dev->out[1], dev->out_len);
    dev->out_waiting = false;
    winusb_hidclass_start_write(dev);
 }

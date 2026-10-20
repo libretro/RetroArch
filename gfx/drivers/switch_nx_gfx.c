@@ -405,29 +405,29 @@ static bool switch_overlay_load(void *data,
 }
 
 static void switch_overlay_tex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h)
+            unsigned index, float x, float y, float w, float h)
 {
    switch_video_t *sw = (switch_video_t *)data;
-   if (!sw || idx >= sw->overlays_size)
+   if (!sw || index >= sw->overlays_size)
       return;
-   sw->overlays[idx].tex[0] = x;
-   sw->overlays[idx].tex[1] = y;
-   sw->overlays[idx].tex[2] = w;
-   sw->overlays[idx].tex[3] = h;
+   sw->overlays[index].tex[0] = x;
+   sw->overlays[index].tex[1] = y;
+   sw->overlays[index].tex[2] = w;
+   sw->overlays[index].tex[3] = h;
 }
 
 /* y-down from the top left, as the frontend gives it and the
  * framebuffer is laid out */
 static void switch_overlay_vertex_geom(void *data,
-            unsigned idx, float x, float y, float w, float h)
+            unsigned index, float x, float y, float w, float h)
 {
    switch_video_t *sw = (switch_video_t *)data;
-   if (!sw || idx >= sw->overlays_size)
+   if (!sw || index >= sw->overlays_size)
       return;
-   sw->overlays[idx].vert[0] = x;
-   sw->overlays[idx].vert[1] = y;
-   sw->overlays[idx].vert[2] = w;
-   sw->overlays[idx].vert[3] = h;
+   sw->overlays[index].vert[0] = x;
+   sw->overlays[index].vert[1] = y;
+   sw->overlays[index].vert[2] = w;
+   sw->overlays[index].vert[3] = h;
 }
 
 static void switch_overlay_full_screen(void *data, bool enable)
@@ -437,12 +437,12 @@ static void switch_overlay_full_screen(void *data, bool enable)
       sw->overlay_full_screen = enable;
 }
 
-static void switch_overlay_set_alpha(void *data, unsigned idx, float mod)
+static void switch_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    switch_video_t *sw = (switch_video_t *)data;
-   if (!sw || idx >= sw->overlays_size)
+   if (!sw || index >= sw->overlays_size)
       return;
-   sw->overlays[idx].alpha = mod;
+   sw->overlays[index].alpha = mod;
 }
 
 /* Blend the page over @buf, @pitch pixels a row: across @screen_dims,
