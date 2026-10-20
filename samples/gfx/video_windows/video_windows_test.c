@@ -118,6 +118,172 @@ static void test_windows_attached(void)
    CHECK(plan.main_mask == 1u && plan.separate_mask == 6u);
 }
 
+static void test_display(video_window_display_t *d, unsigned ordinal,
+      unsigned connection, bool own)
+{
+   memset(d, 0, sizeof(*d));
+   d->ordinal    = ordinal;
+   d->connection = connection;
+   d->own        = own;
+   d->valid      = true;
+   d->on         = true;
+   d->physical   = true;
+}
+
+static bool test_routed(const video_windows_route_t *r, unsigned display,
+      unsigned screens, unsigned unplaced, unsigned attached)
+{
+   if (     r->display == display && r->screens == screens
+         && r->unplaced == unplaced && r->attached == attached)
+      return true;
+   printf("routed display %u screens %u unplaced %u attached %u\n",
+         r->display, r->screens, r->unplaced, r->attached);
+   return false;
+}
+
+/* Which display the separate screens go to */
+static void test_windows_route(void)
+{
+   video_window_display_t d[4];
+   video_window_settings_t screens[RETRO_VIDEO_VIEWS_MAX];
+   video_windows_route_t r;
+   unsigned i;
+   memset(screens, 0, sizeof(screens));
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      screens[i].mode = VIDEO_WINDOW_SEPARATE;
+
+   /* A built-in second panel takes screen 1 */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_BUILT_IN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 2, 2u, 0u, 0));
+
+   /* The Thor: both panels' connection is unknown; a size changes
+    * nothing */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   d[0].dims = VIDEO_SCALE_PACK(1920, 1080);
+   d[1].dims = VIDEO_SCALE_PACK(1240, 1080);
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 2, 2u, 0u, 0));
+
+   /* The Thor with a monitor: the DIRECT display beats Screen-2 and
+    * takes screen 0, and screen 1 stays */
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT, false);
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 1u, 0u, 1));
+   d[2].connection = VIDEO_WINDOW_CONNECTION_TRANSITIVE;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 1u, 0u, 1));
+   /* ahead of a built-in one listed after it */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_DIRECT, false);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 1, 1u, 0u, 1));
+   /* Every Auto screen goes with screen 0 */
+   video_windows_route(d, 3, screens, 3, &r);
+   CHECK(test_routed(&r, 1, 5u, 0u, 1));
+
+   /* No product info, as a cast or below API 31: not for Auto */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   d[1].physical = false;
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[0].physical = false;
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_UNKNOWN, false);
+   d[2].physical = false;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+
+   /* Private, off, invalid and the main window's own: not for Auto */
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   d[1].is_private = true;
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].is_private = false;
+   d[1].on         = false;
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].on         = true;
+   d[1].valid      = false;
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].valid      = true;
+   d[1].own        = true;
+   video_windows_route(d, 2, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   video_windows_route(d, 0, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   video_windows_route(NULL, 0, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+
+   /* Several: the lowest ordinal, whatever the list's order */
+   test_display(&d[0], 4, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   test_display(&d[1], 1, VIDEO_WINDOW_CONNECTION_BUILT_IN, true);
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 2u, 0u, 0));
+   d[0].connection = d[2].connection = VIDEO_WINDOW_CONNECTION_DIRECT;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 1u, 0u, 1));
+
+   /* The picker: display N takes the screen that names it, and the
+    * external rule is Auto's alone */
+   test_display(&d[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN, true);
+   test_display(&d[1], 2, VIDEO_WINDOW_CONNECTION_BUILT_IN, false);
+   test_display(&d[2], 3, VIDEO_WINDOW_CONNECTION_DIRECT, false);
+   screens[1].monitor = 2;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 2, 2u, 0u, 0));
+   screens[1].monitor = 3;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 3, 2u, 0u, 0));
+   /* even without product info, and below API 31 */
+   d[1].physical = false;
+   screens[1].monitor = 2;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 2, 2u, 0u, 0));
+   d[1].physical = true;
+   /* N the main window's own display, or missing: the screen stays */
+   screens[1].monitor = 1;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   screens[1].monitor = 7;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].valid = false;
+   screens[1].monitor = 2;
+   video_windows_route(d, 3, screens, 2, &r);
+   CHECK(test_routed(&r, 0, 0u, 2u, 0));
+   d[1].valid = true;
+
+   /* One display at a time: a screen bound for another stays */
+   screens[1].monitor = 2;
+   screens[2].monitor = 3;
+   video_windows_route(d, 3, screens, 3, &r);
+   CHECK(test_routed(&r, 2, 2u, 4u, 0));
+   /* Auto screen 1 on the monitor, screen 2 named to it: shared */
+   screens[1].monitor = 0;
+   video_windows_route(d, 3, screens, 3, &r);
+   CHECK(test_routed(&r, 3, 5u, 0u, 1));
+   screens[2].monitor = 0;
+
+   /* Only Separate screens go; screen 0 only by the external rule */
+   screens[1].mode = VIDEO_WINDOW_ATTACHED;
+   screens[2].mode = VIDEO_WINDOW_HIDDEN;
+   video_windows_route(d, 3, screens, 3, &r);
+   CHECK(test_routed(&r, 0, 0u, 0u, 0));
+   screens[1].mode = screens[2].mode = VIDEO_WINDOW_SEPARATE;
+   video_windows_route(d, 3, screens, 1, &r);
+   CHECK(test_routed(&r, 0, 0u, 0u, 0));
+   video_windows_route(d, 3, NULL, 3, &r);
+   CHECK(test_routed(&r, 0, 0u, 0u, 0));
+   video_windows_route(d, 3, screens, 99, &r);
+   CHECK(test_routed(&r, 3, 0xfdu, 0u, 1));
+}
+
 static void test_selected_layout(void)
 {
    video_views_map_t map;
@@ -342,6 +508,7 @@ int main(void)
 {
    test_windows_policy();
    test_windows_attached();
+   test_windows_route();
    test_selected_layout();
    test_window_events();
    test_window_place();

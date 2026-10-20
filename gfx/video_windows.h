@@ -167,6 +167,51 @@ typedef struct video_windows_plan
    unsigned hidden_mask;
 } video_windows_plan_t;
 
+/* A display a platform lists for the screens' windows. connection
+ * takes Android's DeviceProductInfo values. */
+enum video_window_connection
+{
+   VIDEO_WINDOW_CONNECTION_UNKNOWN = 0,
+   VIDEO_WINDOW_CONNECTION_BUILT_IN,
+   VIDEO_WINDOW_CONNECTION_DIRECT,
+   VIDEO_WINDOW_CONNECTION_TRANSITIVE
+};
+
+#define VIDEO_WINDOW_DISPLAYS_MAX      8
+#define VIDEO_WINDOW_DISPLAY_NAME_SIZE 64
+
+typedef struct video_window_display
+{
+   /* 1-based place in the platform's list, as the monitor setting
+    * counts */
+   unsigned ordinal;
+   unsigned connection;
+   /* The main window is on it */
+   bool own;
+   bool valid;
+   bool on;
+   bool is_private;
+   /* A real panel or monitor: false for casts, and where unknown */
+   bool physical;
+   char name[VIDEO_WINDOW_DISPLAY_NAME_SIZE];
+   /* VIDEO_SCALE_PACK of its size in the platform's logical pixels,
+    * 0 where unknown */
+   unsigned dims;
+} video_window_display_t;
+
+/* Where the Separate screens go: one display at a time */
+typedef struct video_windows_route
+{
+   /* The display's ordinal, 0 for none */
+   unsigned display;
+   /* A bit a screen: those that go to it */
+   unsigned screens;
+   /* A bit a screen: Separate, with no display to go to */
+   unsigned unplaced;
+   /* video_windows_plan()'s @attached */
+   unsigned attached;
+} video_windows_route_t;
+
 /* What a driver needs to make, place and lay out the screens' own
  * windows for one frame, without reading settings */
 typedef struct video_windows_frame
@@ -197,6 +242,14 @@ void video_windows_plan(const video_views_map_t *map,
       const video_window_settings_t *settings, bool enabled,
       bool supported, unsigned forced_attached, unsigned attached,
       video_windows_plan_t *out);
+
+/* Which display the Separate screens of a @num_screens map go to. A
+ * screen's monitor N names the display of ordinal N; 0 is Auto: an
+ * external display before a built-in one, then the lowest ordinal. On
+ * an external one Auto puts screen 0, and screen 1 stays attached. */
+void video_windows_route(const video_window_display_t *displays,
+      unsigned count, const video_window_settings_t *settings,
+      unsigned num_screens, video_windows_route_t *out);
 
 /* Screen @screen's own window at @dims, from a frame's snapshot: its
  * map with every other screen left out. */

@@ -48,6 +48,85 @@ void video_windows_plan(const video_views_map_t *map,
    }
 }
 
+/* Auto's display: an external one before a built-in one, the lowest
+ * ordinal among equals; 0 for none */
+static unsigned video_windows_auto_display(
+      const video_window_display_t *displays, unsigned count,
+      bool *external)
+{
+   unsigned i;
+   unsigned best = 0;
+   *external     = false;
+   for (i = 0; i < count; i++)
+   {
+      const video_window_display_t *d = &displays[i];
+      bool ext;
+      if (     !d->ordinal || d->own || !d->valid || !d->on
+            || d->is_private || !d->physical)
+         continue;
+      ext = d->connection == VIDEO_WINDOW_CONNECTION_DIRECT
+         || d->connection == VIDEO_WINDOW_CONNECTION_TRANSITIVE;
+      if (     !best
+            || (ext && !*external)
+            || (ext == *external && d->ordinal < best))
+      {
+         best      = d->ordinal;
+         *external = ext;
+      }
+   }
+   return best;
+}
+
+/* Display @ordinal, named by a screen's setting */
+static bool video_windows_named(const video_window_display_t *displays,
+      unsigned count, unsigned ordinal)
+{
+   unsigned i;
+   for (i = 0; i < count; i++)
+      if (displays[i].ordinal == ordinal)
+         return !displays[i].own && displays[i].valid
+            && !displays[i].is_private;
+   return false;
+}
+
+void video_windows_route(const video_window_display_t *displays,
+      unsigned count, const video_window_settings_t *settings,
+      unsigned num_screens, video_windows_route_t *out)
+{
+   unsigned s;
+   bool external;
+   unsigned automatic = video_windows_auto_display(displays, count,
+         &external);
+   memset(out, 0, sizeof(*out));
+   if (!settings)
+      return;
+   if (num_screens > RETRO_VIDEO_VIEWS_MAX)
+      num_screens = RETRO_VIDEO_VIEWS_MAX;
+   for (s = 1; s < num_screens; s++)
+   {
+      unsigned monitor = settings[s].monitor;
+      unsigned display = monitor ? monitor : automatic;
+      if (settings[s].mode != VIDEO_WINDOW_SEPARATE)
+         continue;
+      if (     !display
+            || (monitor && !video_windows_named(displays, count, monitor))
+            || (out->display && display != out->display))
+      {
+         out->unplaced |= 1u << s;
+         continue;
+      }
+      out->display  = display;
+      out->screens |= 1u << s;
+   }
+   /* An external monitor takes screen 0; screen 1 stays, with touch */
+   if (     external && out->display == automatic
+         && !settings[1].monitor && (out->screens & 2u))
+   {
+      out->screens  = (out->screens & ~2u) | 1u;
+      out->attached = 1;
+   }
+}
+
 void video_window_mark_closed(video_window_common_t *window)
 {
    video_window_native_t *native = window->native;
