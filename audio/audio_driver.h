@@ -1335,6 +1335,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
  * input. */
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
 
+/* Main-thread transport request; retains queued PCM and decoder state.
+ * The mixer applies it at the next block boundary without waiting. */
+void audio_driver_mixer_stream_set_paused(unsigned i, bool paused);
+
 /* Raise a windowed stream's resident prefix as its feeder slides the
  * window forward.  The mirror of audio_driver_mixer_stream_byte_tell. */
 void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail);

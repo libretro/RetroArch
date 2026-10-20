@@ -482,6 +482,12 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
 void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       retro_time_t current_time);
 
+/* Main-thread media command: retain the current picture and preview PCM.
+ * Uses the same monotonic clock as animate. False for a still or a
+ * thumbnail whose animation session has not been installed yet. */
+bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
+      retro_time_t current_time);
+
 /* Stream processing */
 
 /* Requests loading of the specified thumbnail via

@@ -244,6 +244,9 @@ struct audio_mixer_voice
     * volume holds the float's bits, gain the Q16.16 value. */
    retro_atomic_int_t volume;
    retro_atomic_int_t gain;
+   /* A transport pause preserves decoder, resampler and buffered PCM.
+    * The owner requests it; the mixer samples it once per block. */
+   retro_atomic_int_t paused;
    /* What a windowed source's feeder exchanges with the mix, without
     * owning the voice. tell is the decoder's byte position as of the last mix
     * and lap counts the stream's start and its rewinds; avail_req is
@@ -1632,6 +1635,7 @@ static int audio_mixer_lap_next(int lap)
  * the store that publishes the voice's type. */
 static void audio_mixer_feed_reset(audio_mixer_voice_t *voice)
 {
+   retro_atomic_store_relaxed_int(&voice->paused, 0);
    retro_atomic_store_release_int(&voice->avail_lap, -1);
    retro_atomic_store_relaxed_int(&voice->feeder_lap, 0);
    retro_atomic_store_release_size(&voice->tell, 0);
@@ -2951,7 +2955,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             || !audio_mixer_voice_try_own(voice))
          continue;
 
-      if (voice->is_s16)
+      if (voice->is_s16 || retro_atomic_load_acquire_int(&voice->paused))
       {
          audio_mixer_voice_disown(voice);
          continue;
@@ -3048,7 +3052,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             || !audio_mixer_voice_try_own(voice))
          continue;
 
-      if (!voice->is_s16)
+      if (!voice->is_s16 || retro_atomic_load_acquire_int(&voice->paused))
       {
          audio_mixer_voice_disown(voice);
          continue;
@@ -3164,6 +3168,12 @@ int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice)
       return 0;
 
    return (int32_t)retro_atomic_load_relaxed_int(&voice->gain);
+}
+
+void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused)
+{
+   if (voice)
+      retro_atomic_store_release_int(&voice->paused, paused ? 1 : 0);
 }
 
 void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain)

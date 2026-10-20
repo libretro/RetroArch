@@ -655,7 +655,7 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
    const uint8_t *base = NULL;
    size_t blen = 0, floor_off, keep, island_hi = 0, prime_hi, ahead;
 
-   if (!p || !p->stream || !p->path || !*p->path)
+   if (!p || p->paused || !p->stream || !p->path || !*p->path)
       return;
    if (   (p->type != IMAGE_TYPE_WEBM && p->type != IMAGE_TYPE_MP4)
        || !config_get_ptr()->bools.menu_thumbnail_preview_audio)
@@ -845,6 +845,22 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
 #else
    (void)p;
    return true;
+#endif
+}
+
+void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused)
+{
+   if (!p)
+      return;
+   p->paused = paused;
+#if defined(GFX_ANIM_PREVIEW_AUDIO)
+   if (p->audio_slot >= 0)
+   {
+      const char *name = audio_driver_mixer_get_stream_name(
+            (unsigned)p->audio_slot);
+      if (name && string_is_equal(name, GFX_ANIM_PREVIEW_AUDIO_NAME))
+         audio_driver_mixer_stream_set_paused((unsigned)p->audio_slot, paused);
+   }
 #endif
 }
 

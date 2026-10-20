@@ -358,6 +358,8 @@ void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
       hp_aavail = avail;
    hp.audio_avail_raises++;
 }
+void audio_driver_mixer_stream_set_paused(unsigned i, bool paused)
+{ (void)i; (void)paused; }
 void audio_driver_mixer_stop_stream(unsigned i) { (void)i; hp.audio_stops++; }
 void audio_driver_mixer_remove_stream(unsigned i)
 {

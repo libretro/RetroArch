@@ -820,8 +820,75 @@ static void lane_padded(void)
    }
 }
 
+/* A long pause must retain the remainder of the displayed picture,
+ * without catch-up, skipped ordinals or presenting a ready worker job. */
+static void lane_pause(bool threaded)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int i;
+   int64_t now = 1000000;
+   fake_init(&f, 5, 40);
+   sink_init(&k, &s, true);
+   f.direct = true;
+   p = video_player_new(&f, IMAGE_TYPE_WEBM, 1, &s,
+         threaded ? 0 : VIDEO_PLAYER_INLINE);
+   CHECK(p != NULL, "pause: allocation");
+   if (!p) return;
+   video_player_set_paused(p, true, now);
+   video_player_set_paused(p, true, now + 10000);
+   CHECK(video_player_paused(p), "pause: before first poll");
+   for (i = 0; i < 10; i++)
+      CHECK(video_player_poll(p, now + i * 1000) == VIDEO_PLAYER_PLAYING,
+            "pause: stays live");
+   CHECK(k.nseen == 0, "pause: no initial presentation");
+   CHECK(video_player_due(p) == INT64_MAX, "pause: no deadline");
+   video_player_set_paused(p, false, now);
+   for (i = 0; i < 1000 && k.nseen == 0; i++)
+   {
+      video_player_poll(p, now);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 1, "pause: first picture");
+   CHECK(video_player_due(p) == now + 40000, "pause: initial duration");
+   video_player_set_paused(p, true, now + 10000);
+   for (i = 0; i < 10; i++)
+   {
+      video_player_poll(p, now + 10000000 + i * 1000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 1, "pause: pending picture not presented");
+   video_player_set_paused(p, false, now + 10000000);
+   CHECK(video_player_due(p) == now + 10030000,
+         "pause: remaining 30ms preserved");
+   video_player_set_paused(p, false, now + 10010000);
+   CHECK(video_player_due(p) == now + 10030000,
+         "pause: repeated resume does not shift clock");
+   video_player_poll(p, now + 10029999);
+   CHECK(k.nseen == 1, "pause: not before deadline");
+   for (i = 0; i < 1000 && k.nseen == 1; i++)
+   {
+      video_player_poll(p, now + 10030000);
+      if (threaded) retro_sleep(1);
+   }
+   CHECK(k.nseen == 2 && seen_in_order(&k, 5), "pause: resumes next ordinal");
+   CHECK(f.catchup_sets == 0, "pause: elapsed wall time is not catch-up");
+   video_player_set_paused(p, true, now + 10040000);
+   while (!video_player_stop(p)) retro_sleep(1);
+   video_player_set_paused(p, false, now + 20000000);
+   CHECK(video_player_poll(p, now + 20000000) == VIDEO_PLAYER_ENDED,
+         "pause: stop cannot resume");
+   video_player_free(p);
+}
+
 int main(void)
 {
+   lane_pause(false);
+#ifdef HAVE_THREADS
+   lane_pause(true);
+#endif
    lane_inline_release();
    lane_padded();
    lane_inline_pacing(false);

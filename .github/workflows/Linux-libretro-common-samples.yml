@@ -317,6 +317,7 @@ jobs:
             # values set.
             audio_mixer_voice_threads_test
             audio_mixer_rate_guard_test
+            audio_mixer_pause_test
             # The AC-3 / E-AC-3 frame layer against ffmpeg's streams:
             # ffmpeg is in the package list above for it.
             rac3_frame_test

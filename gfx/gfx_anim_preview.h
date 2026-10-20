@@ -108,6 +108,7 @@ typedef struct gfx_anim_preview
    size_t audio_hi;
    size_t audio_tell;   /* the decoder's position at the last feed */
    int    audio_slot;
+   bool   paused;               /* main-thread media transport state */
 } gfx_anim_preview_t;
 
 /* Open @path for animated playback. @png_probe: what a still-load task
@@ -180,6 +181,10 @@ bool gfx_anim_preview_windowed(const gfx_anim_preview_t *p);
 void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p);
 bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p);
 void gfx_anim_preview_audio_stop(gfx_anim_preview_t *p);
+
+/* Main thread: preserve audio position, including an audio voice that
+ * begins later when a pending file read completes. */
+void gfx_anim_preview_set_paused(gfx_anim_preview_t *p, bool paused);
 
 /* Close: audio, stream, mapping. */
 void gfx_anim_preview_close(gfx_anim_preview_t *p);

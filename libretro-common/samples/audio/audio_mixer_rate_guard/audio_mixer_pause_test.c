@@ -1,0 +1,108 @@
+/* A transport pause must retain queued PCM and resampler history,
+ * rather than muting and continuing to consume the compressed stream. */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <audio/audio_mixer.h>
+
+#define FRAMES 512
+#define BLOCK 32
+static unsigned failures;
+static float baseline_f[BLOCK * 2 * 4], actual_f[BLOCK * 2 * 4];
+static int16_t baseline_i[BLOCK * 2 * 4], actual_i[BLOCK * 2 * 4];
+static unsigned char *wav(void)
+{
+   unsigned char *p = (unsigned char*)calloc(1, 44 + FRAMES * 4);
+   unsigned i;
+   if (!p) return NULL;
+   memcpy(p, "RIFF", 4); p[4] = 36; p[5] = 8;
+   memcpy(p + 8, "WAVEfmt ", 8); p[16] = 16; p[20] = 1;
+   p[22] = 2; p[24] = 0x80; p[25] = 0xbb;
+   p[28] = 0; p[29] = 0xee; p[30] = 2;
+   p[32] = 4; p[34] = 16;
+   memcpy(p + 36, "data", 4); p[41] = 8;
+   for (i = 0; i < FRAMES * 2; i++)
+   {
+      unsigned v = (unsigned)(int16_t)((int)i * 23 - 12000);
+      p[44 + i * 2] = (unsigned char)v;
+      p[45 + i * 2] = (unsigned char)(v >> 8);
+   }
+   return p;
+}
+
+static void render(bool s16, bool stream, bool pause, unsigned rate)
+{
+   unsigned char *data = wav();
+   audio_mixer_sound_t *sound;
+   audio_mixer_voice_t *v;
+   unsigned block, i;
+   static float silence_f[BLOCK * 2];
+   static int16_t silence_i[BLOCK * 2];
+   if (!data) { failures++; return; }
+   audio_mixer_init(rate);
+   sound = stream ? audio_mixer_load_wav_stream(data, 44 + FRAMES * 4)
+      : audio_mixer_load_wav(data, 44 + FRAMES * 4, "sinc",
+            RESAMPLER_QUALITY_NORMAL, s16);
+   if (!sound) { free(data); failures++; audio_mixer_done(); return; }
+   v = s16 ? audio_mixer_play_s16(sound, false, AUDIO_MIXER_GAIN_UNITY,
+         "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
+      : audio_mixer_play(sound, false, 1.0f, "sinc",
+            RESAMPLER_QUALITY_NORMAL, NULL);
+   if (!v) failures++;
+   for (block = 0; block < 4 && v; block++)
+   {
+      if (pause && (block == 0 || block == 2))
+      {
+         size_t before = audio_mixer_voice_buffer_tell(v);
+         audio_mixer_voice_set_paused(v, true);
+         audio_mixer_voice_set_paused(v, true);
+         for (i = 0; i < 8; i++)
+         {
+            unsigned j;
+            memset(silence_f, 0, sizeof(silence_f));
+            memset(silence_i, 0, sizeof(silence_i));
+            if (s16) audio_mixer_mix_s16(silence_i, BLOCK,
+                  AUDIO_MIXER_GAIN_UNITY, false);
+            else audio_mixer_mix(silence_f, BLOCK, 1.0f, false);
+            for (j = 0; j < BLOCK * 2; j++)
+               if (silence_i[j] || silence_f[j] != 0.0f) failures++;
+         }
+         if (before != audio_mixer_voice_buffer_tell(v)) failures++;
+         audio_mixer_voice_set_paused(v, false);
+         audio_mixer_voice_set_paused(v, false);
+      }
+      if (s16) audio_mixer_mix_s16((pause ? actual_i : baseline_i)
+            + block * BLOCK * 2, BLOCK, AUDIO_MIXER_GAIN_UNITY, false);
+      else audio_mixer_mix((pause ? actual_f : baseline_f)
+            + block * BLOCK * 2, BLOCK, 1.0f, false);
+   }
+   if (v) audio_mixer_stop(v);
+   audio_mixer_destroy(sound);
+   if (!stream) free(data);
+   audio_mixer_done();
+}
+
+int main(void)
+{
+   unsigned s16, stream, rate;
+   audio_mixer_voice_set_paused(NULL, true);
+   for (s16 = 0; s16 < 2; s16++)
+      for (stream = 0; stream < 2; stream++)
+      for (rate = 44100; rate <= 48000; rate += 3900)
+      {
+         unsigned i, active = 0;
+         memset(baseline_f, 0, sizeof(baseline_f));
+         memset(actual_f, 0, sizeof(actual_f));
+         memset(baseline_i, 0, sizeof(baseline_i));
+         memset(actual_i, 0, sizeof(actual_i));
+         render(s16 != 0, stream != 0, false, rate);
+         render(s16 != 0, stream != 0, true, rate);
+         if (memcmp(baseline_f, actual_f, sizeof(actual_f))
+               || memcmp(baseline_i, actual_i, sizeof(actual_i))) failures++;
+         for (i = 0; i < BLOCK * 2 * 4; i++)
+            if (s16 ? baseline_i[i] != 0 : baseline_f[i] != 0.0f) active++;
+         if (!active) failures++;
+      }
+   printf("audio_mixer pause: %u failures\n", failures);
+   return failures != 0;
+}

@@ -140,6 +140,7 @@ static void *feeder_thread(void *arg)
       if (at > stream_size)
          odd_tells++;
       audio_mixer_voice_set_avail(stream_voice, at + 4096);
+      audio_mixer_voice_set_paused(stream_voice, (tells & 1) != 0);
       tells++;
    }
    return NULL;

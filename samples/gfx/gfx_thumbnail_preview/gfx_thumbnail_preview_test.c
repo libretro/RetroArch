@@ -266,6 +266,21 @@ static void run(const char *path, const char *label, int expect_video)
             hp.audio_avail_raises, hp.audio_stalls);
    }
 
+   if (getenv("TRANSPORT_PAUSE"))
+   {
+      retro_time_t pause_now = cpu_features_get_time_usec();
+      int uploads = hp.texture_uploads;
+      int tick;
+      check(label, "transport session exists", th.anim_player != NULL);
+      check(label, "transport pause accepted",
+            gfx_thumbnail_set_paused(&th, true, pause_now));
+      for (tick = 0; tick < 10; tick++)
+         gfx_thumbnail_animate(&th, pause_now + 1000000 + tick * 1000);
+      check(label, "transport pause holds displayed texture",
+            hp.texture_uploads == uploads);
+      check(label, "transport resume accepted",
+            gfx_thumbnail_set_paused(&th, false, pause_now + 2000000));
+   }
    gfx_thumbnail_reset(&th);
 }
 

@@ -85,6 +85,9 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned slot)
 void audio_driver_mixer_stream_set_avail(unsigned slot, size_t avail)
 { (void)slot; audio_mixer_voice_set_avail(voice, avail); }
 
+void audio_driver_mixer_stream_set_paused(unsigned slot, bool paused)
+{ (void)slot; audio_mixer_voice_set_paused(voice, paused); }
+
 const char *audio_driver_mixer_get_stream_name(unsigned slot)
 { (void)slot; return voice ? "__gfx_thumb_preview" : NULL; }
 
@@ -120,7 +123,7 @@ static int run_one(const char *path)
    gfx_anim_preview_t *p;
    float out[FRAMES * 2];
    double energy = 0.0;
-   int failed;
+   int failed = 0;
    if (!f) return 1;
    fseek(f, 0, SEEK_END);
    len = (size_t)ftell(f);
@@ -143,16 +146,35 @@ static int run_one(const char *path)
    repeats = finishes = 0;
    audio_mixer_init(RATE);
    settings.bools.menu_thumbnail_preview_audio = true;
+   gfx_anim_preview_set_paused(p, true);
+   gfx_anim_preview_audio_begin(p);
+   if (p->audio_dt || voice) failed = 1;
+   gfx_anim_preview_set_paused(p, false);
    gfx_anim_preview_audio_begin(p);
    for (i = 0; i < ticks && p->audio_dt; i++)
    {
       size_t j;
+      if (i == 120 && voice)
+      {
+         size_t at = audio_mixer_voice_buffer_tell(voice);
+         unsigned n;
+         gfx_anim_preview_set_paused(p, true);
+         for (n = 0; n < 8; n++)
+         {
+            memset(out, 0, sizeof(out));
+            audio_mixer_mix(out, FRAMES, 1.0f, false);
+            for (j = 0; j < FRAMES * 2; j++)
+               if (out[j] != 0.0f) failed = 1;
+         }
+         if (audio_mixer_voice_buffer_tell(voice) != at) failed = 1;
+         gfx_anim_preview_set_paused(p, false);
+      }
       if (!gfx_anim_preview_audio_feed(p)) break;
       memset(out, 0, sizeof(out));
       audio_mixer_mix(out, FRAMES, 1.0f, false);
       for (j = 0; j < FRAMES * 2; j++) energy += out[j] * out[j];
    }
-   failed = i != ticks || finishes || repeats < 3 || energy <= 0;
+   failed |= i != ticks || finishes || repeats < 3 || energy <= 0;
    printf("%s: ticks=%lu repeats=%u finishes=%u energy=%.1f %s\n",
          path, (unsigned long)i, repeats, finishes, energy,
          failed ? "FAIL" : "PASS");

@@ -44,6 +44,9 @@
  * poll are passed over by the deadline, whatever its rate. */
 #define VP_DUR_DEFAULT 100
 #define VP_DUR_MIN     1
+/* System INT64_MAX can expand to a C99 long-long literal (Apple SDKs).
+ * Keep this implementation usable by strict C89 builds too. */
+#define VP_TIME_MAX ((int64_t)((~(uint64_t)0) >> 1))
 
 /* Decode time a tick shared by every player decoding on the polling
  * thread for want of the worker; past it, animations run slower
@@ -101,6 +104,8 @@ typedef struct vp_job
 struct video_player
 {
    int64_t next_us;        /* when the next frame is due, 0 at once */
+   int64_t pause_left_us;  /* remaining picture duration at pause */
+   bool paused;           /* polling thread only */
    void *stream;
    vp_job_t *job[2];       /* one block; NULL until a threaded start */
    video_player_sink_t sink;
@@ -839,6 +844,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
 {
    if (!p || (p->flags & VP_STOPPED))
       return VIDEO_PLAYER_ENDED;
+   if (p->paused)
+      return VIDEO_PLAYER_PLAYING;
 
    if (!(p->flags & VP_STARTED))
    {
@@ -884,9 +891,31 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
    return vp_poll_inline(p, now_us);
 }
 
+void video_player_set_paused(video_player_t *p, bool paused, int64_t now_us)
+{
+   if (!p || (p->flags & VP_STOPPED) || p->paused == paused)
+      return;
+   if (paused)
+   {
+      uint64_t left = p->next_us && p->next_us > now_us
+         ? (uint64_t)p->next_us - (uint64_t)now_us : 0;
+      p->pause_left_us = left > (uint64_t)VP_TIME_MAX
+         ? VP_TIME_MAX : (int64_t)left;
+   }
+   else if (p->next_us)
+      p->next_us = now_us > VP_TIME_MAX - p->pause_left_us
+         ? VP_TIME_MAX : now_us + p->pause_left_us;
+   p->paused = paused;
+}
+
+bool video_player_paused(const video_player_t *p)
+{
+   return p && p->paused && !(p->flags & VP_STOPPED);
+}
+
 int64_t video_player_due(const video_player_t *p)
 {
-   return p ? p->next_us : 0;
+   return p ? (video_player_paused(p) ? VP_TIME_MAX : p->next_us) : 0;
 }
 
 void video_player_slot_released(video_player_t *p, unsigned slot)

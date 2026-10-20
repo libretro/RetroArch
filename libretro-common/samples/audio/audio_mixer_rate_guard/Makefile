@@ -53,7 +53,10 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) audio_mixer_pause_test
+
+audio_mixer_pause_test: audio_mixer_pause_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -68,5 +71,6 @@ $(TARGET): $(OBJS)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
+	rm -f audio_mixer_pause_test audio_mixer_pause_test.o
 
 .PHONY: clean

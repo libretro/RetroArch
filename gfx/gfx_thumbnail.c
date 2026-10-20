@@ -977,6 +977,27 @@ static bool gfx_thumb_frame_budget(void *ud, size_t avail, size_t len)
    return cpu_features_get_time_usec() - *(int64_t*)ud < 2000;
 }
 
+/* Main-thread transport command; the audio mixer applies its request
+ * at a block boundary while video retains the current display slot. */
+bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
+      retro_time_t current_time)
+{
+   gfx_surface_player_t *player;
+   gfx_anim_preview_t *session;
+   if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+         || !(player = (gfx_surface_player_t*)thumbnail->anim_player))
+      return false;
+   session = (gfx_anim_preview_t*)thumbnail->anim_sess;
+   if (session)
+   {
+      gfx_anim_preview_set_paused(session, paused);
+      if (!paused && !thumbnail->anim_read_pending)
+         gfx_anim_preview_audio_begin(session);
+   }
+   video_player_set_paused(player->vp, paused, (int64_t)current_time);
+   return true;
+}
+
 /* Advances an animated thumbnail: at most one frame shown a call, once
  * its duration has elapsed. The decode runs on video_player's worker
  * where there is one, a frame ahead of the clock, and this only shows

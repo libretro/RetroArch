@@ -151,6 +151,12 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 
 void audio_mixer_stop(audio_mixer_voice_t* voice);
 
+/* Retain the exact decoder/resampler/PCM position while paused. Applied
+ * at the next mix block boundary; an already mixing block may finish.
+ * The caller owns this live voice until stopped, as for gain/volume.
+ * NULL is harmless. A newly played voice always starts unpaused. */
+void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused);
+
 float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice);
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val);

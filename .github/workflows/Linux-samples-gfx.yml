@@ -2303,6 +2303,8 @@ jobs:
              ./preview_audio_oracle_test fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
           echo "[pass] preview_audio_oracle_test (ASan)"
           ./preview_audio_feed_test fixtures/audio_large_packet.m4a
+          TRANSPORT_PAUSE=1 ./gfx_thumbnail_preview_test fixtures/trailing_small.mp4
+          TRANSPORT_PAUSE=1 ./gfx_thumbnail_preview_test_threaded fixtures/trailing_small.mp4
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean SANITIZER=thread && make -j$(nproc) all SANITIZER=thread

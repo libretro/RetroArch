@@ -159,7 +159,16 @@ bool video_player_stop(video_player_t *p);
  * due. */
 enum video_player_state video_player_poll(video_player_t *p, int64_t now_us);
 
-/* When the next frame is due on that clock; 0 at once. */
+/* Polling-thread transport primitive. Pausing keeps the current picture
+ * and remaining display duration; a decode already queued/running may
+ * finish but is not presented until resumed. Does not stop or seek audio:
+ * the owning media session coordinates its audio on the same clock.
+ * Repeated requests are idempotent. A stopped player cannot resume. */
+void video_player_set_paused(video_player_t *p, bool paused, int64_t now_us);
+bool video_player_paused(const video_player_t *p);
+
+/* When the next frame is due on that clock; 0 at once, INT64_MAX while
+ * paused. A paused poll returns PLAYING without presenting or feeding. */
 int64_t video_player_due(const video_player_t *p);
 
 /* A frame presented as QUEUED has been taken: its slot may be decoded
