@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <file/config_file.h>
 #include <time/rtime.h>
+#include <features/features_cpu.h>
 #include <verbosity.h>
 #include "../../../retroarch.h"
 #include "../../../command.h"
@@ -68,23 +69,34 @@ static void capture(unsigned index,const char *out)
 int main(int argc,char **argv)
 {
    char cfg_path[1024];char *args[6];FILE *f;unsigned i, restart_hold = 0;
+   bool threaded;
+   struct retro_system_av_info av;
+   retro_time_t frame_us;
    runloop_state_t *loop;
    video_poke_interface_t fault_poke;
-   if(argc!=4)return 2;
+   if(argc!=4 && argc!=5)return 2;
+   threaded=argc==5 && strcmp(argv[4],"true")==0;
    snprintf(cfg_path,sizeof(cfg_path),"%s/window.cfg",argv[3]);
    f=fopen(cfg_path,"wb");if(!f)return 2;
    fprintf(f,"video_driver = \"%s\"\n",argv[2]);
-   fputs("audio_driver = \"null\"\ninput_driver = \"null\"\ninput_joypad_driver = \"null\"\nmenu_driver = \"rgui\"\nvideo_threaded = \"false\"\nvideo_vsync = \"false\"\nvideo_fullscreen = \"false\"\nvideo_scale = \"1\"\nvideo_smooth = \"false\"\npause_nonactive = \"false\"\nconfig_save_on_exit = \"false\"\nthreaded_data_runloop_enable = \"false\"\n",f);fclose(f);
+   fputs("audio_driver = \"null\"\ninput_driver = \"null\"\ninput_joypad_driver = \"null\"\nmenu_driver = \"rgui\"\nvideo_vsync = \"true\"\nvideo_fullscreen = \"false\"\nvideo_scale = \"1\"\nvideo_smooth = \"false\"\npause_nonactive = \"false\"\nconfig_save_on_exit = \"false\"\nthreaded_data_runloop_enable = \"false\"\n",f);fclose(f);
    f=fopen(cfg_path,"ab");if(!f)return 2;
+   fprintf(f,"video_threaded = \"%s\"\n",threaded?"true":"false");
    fputs("video_window_custom_size_enable = \"true\"\nvideo_window_width = \"256\"\nvideo_window_height = \"192\"\nvideo_window_save_positions = \"false\"\nvideo_font_enable = \"false\"\n",f);fclose(f);
    verbosity_enable();
    config_file_set_io_default(config_file_io_filestream());rtime_init();retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
    args[0]=(char*)"retroarch";args[1]=(char*)"--config";args[2]=cfg_path;args[3]=argv[1];args[4]=NULL;
    if(!retroarch_main_init(4,args))return 2;
+   CHECK(video_driver_thread_wrapper_active()==threaded);
    loop=runloop_state_get_ptr();CHECK(loop->current_core_type==CORE_TYPE_WEBM);
-   CHECK(strcmp(video_state_get_ptr()->current_video->ident,argv[2])==0);
+   CHECK(strcmp(video_driver_get_ident(),argv[2])==0);
    loop->current_core.retro_set_video_refresh(video);loop->current_core.retro_set_audio_sample_batch(audio);
+   memset(&av,0,sizeof(av));
+   loop->current_core.retro_get_system_av_info(&av);
+   CHECK(av.timing.fps>0.0 && av.timing.fps<=1000.0);
+   if(av.timing.fps<=0.0 || av.timing.fps>1000.0)return 2;
+   frame_us=(retro_time_t)(1000000.0/av.timing.fps+0.5);
    real_poke=video_state_get_ptr()->poke;CHECK(real_poke && real_poke->import_movie_frame);
    fault_poke=*real_poke;fault_poke.import_movie_frame=reject_movie;
    video_state_get_ptr()->poke=&fault_poke;
@@ -97,9 +109,12 @@ int main(int argc,char **argv)
          video_state_get_ptr()->poke=real_poke;
          CHECK(command_event(CMD_EVENT_REINIT,NULL));
          CHECK(!video_state_get_ptr()->movie_refused);
+         CHECK(video_driver_thread_wrapper_active()==threaded);
          loop->current_core.retro_set_video_refresh(video);
          loop->current_core.retro_set_audio_sample_batch(audio);
       }
+      /* Null audio supplies no throttle. Pace this test at the core rate. */
+      retro_sleep_until_us(cpu_features_get_time_usec()+frame_us);
       CHECK(runloop_iterate()>=0);task_queue_check();
       if(i==9 && cpu==5 && gpu==5)
       {

@@ -35,3 +35,28 @@ an ongoing frame offset. Replacement must keep wall time and audio moving,
 resume GPU delivery, and keep the exact total CPU/GPU callback counts for the
 observed immediate or one-tick-stalled replacement. A missing cached picture
 in the replacement renderer must not turn the retained CPU picture black.
+
+Add --threaded to exercise the actual video-thread wrapper. The harness asserts
+that the requested wrapper state is active before and after driver replacement.
+Use a separate output directory for each direct/threaded run.
+
+Generate --depth 10 for Main10, or --range full for explicitly converted
+full-range samples (the options can be combined). The generator verifies the
+coded profile, bit depth, range and BT.709 metadata with FFprobe before saving
+the manifest. These remain SDR transfer-function fixtures, including Main10;
+they do not establish PQ/HDR movie output acceptance.
+The capture fixture enables vsync: Vulkan synchronous readback can report
+no acquired image with Windows mailbox emulation when vsync is disabled.
+A failed or unavailable readback fails this numerical fixture; it is not
+counted as a successful picture or silently retried with another ordinal.
+
+Because null audio supplies no device throttle, the fixture waits one nominal
+core frame interval before each run. This is test-only pacing, preserving the
+production rule against adding waits to the frame path. It does not measure
+audio-device synchronization.
+
+The independent RGB reference explicitly uses bilinear chroma interpolation,
+accurate rounding and full chroma precision. Default bicubic interpolation can
+overshoot near saturated chroma boundaries, even where clipped RGB patches
+appear flat. Decoded Main10 YUV samples and a double-precision BT.709 matrix
+confirmed this distinction; the three-value comparison tolerance is unchanged.

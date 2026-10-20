@@ -13,6 +13,7 @@ p.add_argument("--harness", type=Path, default=here / "movie_recovery_test.exe")
 p.add_argument("--fixtures", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--drivers", default="d3d11,d3d12")
+p.add_argument("--threaded", action="store_true")
 a = p.parse_args()
 if os.name != "nt":
     p.error("native Windows hardware is required")
@@ -34,7 +35,7 @@ for driver in a.drivers.split(","):
     directory.mkdir()
     cmd = [os.environ.get("GDB", "gdb"), "--batch", "-return-child-result", "-ex", "run",
            "-ex", "thread apply all bt", "--args", str(a.harness.resolve()),
-           str(fixtures / "hevc-aac.mp4"), driver, str(directory)]
+           str(fixtures / "hevc-aac.mp4"), driver, str(directory), "true" if a.threaded else "false"]
     with (directory / "runtime.log").open("wb") as log:
         child = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                  creationflags=subprocess.CREATE_NO_WINDOW)
@@ -76,7 +77,7 @@ for driver in a.drivers.split(","):
         assert len(errors) >= 20
         frames.append({"frame": index, "reference_ordinal": ordinal, "points": len(errors),
                        "max_error": max(errors), "failed_points": sum(v > 3 for v in errors)})
-    result = {"driver": driver, "frames": frames, "gdb_exit": code, "restart_hold": restart_hold}
+    result = {"driver": driver, "frames": frames, "gdb_exit": code, "restart_hold": restart_hold, "threaded": a.threaded}
     results.append(result)
     (output / "result.json").write_text(json.dumps(results, indent=2))
     if any(frame["failed_points"] for frame in frames):
