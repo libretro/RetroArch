@@ -15292,6 +15292,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
       bool is_idle, bool bgrx)
 {
    VkFormat format;
+   unsigned readback_slot;
    struct vk_texture *staging       = NULL;
 
    if (!vk)
@@ -15311,7 +15312,8 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
       }
    }
 
-   staging = &vk->readback.staging[vk->context->current_frame_index];
+   readback_slot = vk->context->current_frame_index;
+   staging = &vk->readback.staging[readback_slot];
    format  = vk->context->swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* HDR readback is implemented through format conversion on the GPU */
@@ -15400,9 +15402,11 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
       {
          /* Wait specifically on the frame submission that recorded
           * the readback copy.  vulkan_frame attaches its fence at
-          * swapchain_fences[current_frame_index] and sets the
-          * matching swapchain_fences_signalled[] entry to true, so
-          * waiting on that fence guarantees the readback copy
+          * swapchain_fences[readback_slot] and sets the
+          * matching swapchain_fences_signalled[] entry to true. Present
+          * may advance current_frame_index before cached_frame returns,
+          * so retain the staging slot selected before rendering.
+          * Waiting on that fence guarantees the readback copy
           * recorded into vk->cmd has completed -- without draining
           * the entire queue or holding queue_lock across the wait.
           *
@@ -15410,7 +15414,7 @@ static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
           * startup, or the is_idle path where no new submission
           * happened on this slot), fall back to a queue drain so
           * synchronisation remains correct. */
-         unsigned slot       = vk->context->current_frame_index;
+         unsigned slot       = readback_slot;
          VkFence frame_fence = vk->context->swapchain_fences[slot];
 
          if (     frame_fence != VK_NULL_HANDLE
@@ -15652,6 +15656,7 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
    struct vk_texture *staging = NULL;
    vk_t *vk                   = (vk_t*)data;
    bool is_scrgb;
+   unsigned readback_slot;
 
    if (!vk)
       return false;
@@ -15677,13 +15682,14 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
     * runs and then advances the index for the next frame, so reading the slot
     * afterwards (as an earlier version did) would look at the wrong, empty
     * staging and always fall back to SDR. This mirrors vulkan_read_viewport. */
-   staging = &vk->readback.staging[vk->context->current_frame_index];
+   readback_slot = vk->context->current_frame_index;
+   staging = &vk->readback.staging[readback_slot];
 
    if (!is_idle)
       video_driver_cached_frame();
 
    {
-      unsigned slot       = vk->context->current_frame_index;
+      unsigned slot       = readback_slot;
       VkFence frame_fence = vk->context->swapchain_fences[slot];
       if (     frame_fence != VK_NULL_HANDLE
             && vk->context->swapchain_fences_signalled[slot])
