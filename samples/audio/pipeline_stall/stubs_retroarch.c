@@ -304,3 +304,10 @@ void audio_thread_apply_control(void *data,
    (void)data;
    if (control) control(userdata);
 }
+
+/* The driver exposes transport pause; these harnesses stub mixer I/O. */
+void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused)
+{
+   (void)voice;
+   (void)paused;
+}

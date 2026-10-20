@@ -280,3 +280,10 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
  * reads the device's transfer granularity from here, and no platform
  * in a harness reports one. */
 struct defaults g_defaults;
+
+/* The driver exposes transport pause; these harnesses stub mixer I/O. */
+void audio_mixer_voice_set_paused(audio_mixer_voice_t *voice, bool paused)
+{
+   (void)voice;
+   (void)paused;
+}
