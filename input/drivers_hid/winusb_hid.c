@@ -338,7 +338,7 @@ static void winusb_hid_busy_drop(winusb_hid_t *hid, unsigned i)
    unsigned last = --hid->busy_count;
    if (i != last)
    {
-      memcpy(hid->busy[i], hid->busy[last], sizeof(hid->busy[i]));
+      memmove(hid->busy[i], hid->busy[last], sizeof(hid->busy[i]));
       if (hid->busy_seen & (1u << last))
          hid->busy_seen |= (1u << i);
       else
