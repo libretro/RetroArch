@@ -645,6 +645,31 @@ int main(void)
       printf("   ok   background input: refused, unless a sink with the main window focused\n");
    }
 
+   /* ---- focus, read once a poll ---------------------------------- */
+   {
+      static const uint16_t key  = RETROK_a;
+      static const uint8_t  bind = RARCH_FIRST_META_KEY;
+      uint32_t down              = 0;
+
+      retro_atomic_store_release_int(&winraw_focus_flag, 1);
+      winraw_poll(wr);
+      wr->kb_keys[rarch_keysym_lut[RETROK_a]] = 1;
+      winraw_keys_down(wr, 0, &key, &bind, 1, &down);
+      CHECK(down == 1, "a key held with the window focused is not down");
+      /* the focus goes between polls: the frame goes by its poll's */
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
+      down = 0;
+      winraw_keys_down(wr, 0, &key, &bind, 1, &down);
+      CHECK(down == 1, "a frame read two focus values");
+      /* ... and the next poll by the new one */
+      winraw_poll(wr);
+      down = 0;
+      winraw_keys_down(wr, 0, &key, &bind, 1, &down);
+      CHECK(down == 0, "the poll after the focus went still had it");
+      memset(wr->kb_keys, 0, SC_LAST);
+      printf("   ok   focus: read once a poll, and the frame goes by it\n");
+   }
+
    /* ---- free ----------------------------------------------------- */
    winraw_free(wr);
    CHECK(!IsWindow(raw_window), "free left the window");

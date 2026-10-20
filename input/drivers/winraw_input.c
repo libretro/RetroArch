@@ -262,6 +262,9 @@ typedef struct
    uint8_t kb_keys[SC_LAST];
    uint8_t flags;
    bool last_focus;
+   /* the window's focus, read once a poll: what the poll and the reads
+    * of its frame go by, so that one frame does not act on two */
+   bool focus;
    bool kb_clear_pending;
    /* "Background Keyboard Input": key reports are taken while the
     * window is not the active one too (as a sink only); kb_taking is
@@ -1676,7 +1679,7 @@ static void winraw_kev_deliver(winraw_input_t *wr)
       return;
 #ifdef HAVE_MENU
    /* keys typed elsewhere are not typed into the menu */
-   if (     !winraw_focus
+   if (     !wr->focus
          && menu_driver_alive())
    {
       wr->kev_n = 0;
@@ -2188,6 +2191,7 @@ static void *winraw_init(const char *joypad_driver)
 
    if (!wr)
       return NULL;
+   wr->focus = winraw_focus;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_winraw);
 
@@ -2362,6 +2366,8 @@ static void winraw_poll(void *data)
    winraw_input_t *wr     = (winraw_input_t*)data;
    bool cursor_for_all;
 
+   wr->focus              = winraw_focus;
+
    /* asked here for every report read below, and until the next poll */
    cursor_for_all = input_config_overlay_configured();
 #ifdef HAVE_MENU
@@ -2428,7 +2434,7 @@ static void winraw_poll(void *data)
       winraw_init_mouse_xy_mapping(wr);
 
    /* Sync coordinates when window regains focus */
-   if (winraw_focus && !wr->last_focus)
+   if (wr->focus && !wr->last_focus)
       winraw_sync_mouse_to_cursor(wr);
 
    /* Release any keys still held at the moment focus is lost.
@@ -2444,7 +2450,7 @@ static void winraw_poll(void *data)
     * missed on exactly the Alt-Tab case that needs it and the
     * keys stay latched until focus returns. */
    {
-      bool taking       = winraw_focus || wr->kb_background;
+      bool taking       = wr->focus || wr->kb_background;
       if (!taking && wr->kb_taking)
          wr->kb_clear_pending = true;
       wr->kb_taking     = taking;
@@ -2466,7 +2472,7 @@ static void winraw_poll(void *data)
       wr->kb_clear_pending = false;
    }
 
-   wr->last_focus = winraw_focus;
+   wr->last_focus = wr->focus;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
@@ -2532,7 +2538,7 @@ static void winraw_poll(void *data)
       wr->mice[i].dlt     = dlt;
       wr->mice[i].whl     = retro_atomic_exchange_int(&g_mice[i].whl, 0);
       wr->mice[i].flags   = (uint8_t)winraw_mouse_buttons_snapshot(
-            &g_mice[i].buttons, winraw_focus);
+            &g_mice[i].buttons, wr->focus);
    }
 
    winraw_publish_pointers(wr);
@@ -2577,8 +2583,8 @@ static void winraw_keys_down(void *data, unsigned port,
    unsigned i;
    winraw_input_t *wr = (winraw_input_t*)data;
    const uint8_t *own = winraw_port_keys(wr, port);
-   bool keys_ok       = winraw_focus;
-   bool meta_ok       = winraw_focus;
+   bool keys_ok       = wr->focus;
+   bool meta_ok       = wr->focus;
 
 #ifdef HAVE_MENU
    if (!keys_ok && wr->kb_background)
@@ -2618,8 +2624,8 @@ static int16_t winraw_input_state(
       const uint8_t *own    = winraw_port_keys(wr, port);
       /* In the background, keys play the game only: they work no
        * hotkey, and nothing while the menu is up. */
-      bool keys_ok          = winraw_focus;
-      bool meta_ok          = winraw_focus;
+      bool keys_ok          = wr->focus;
+      bool meta_ok          = wr->focus;
       bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
