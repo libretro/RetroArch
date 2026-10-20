@@ -14,7 +14,10 @@
  *                  read and set most significant byte first
  *   gone        -> a read failing with ENODEV disconnects the pad, frees
  *                  its port and closes the node
- *   free        -> every node closed */
+ *   free        -> every node closed
+ *   dualsense   -> any pad with a handler is taken, not the DualShock 3
+ *                  alone: a DualSense's node is opened, on port 1 with
+ *                  its ids, and a report read through its handler */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -444,6 +447,35 @@ int main(void)
    hidraw_hid.free(hid);
    CHECK(ds3->closes == 2 && disconnects == 1,
          "free left the node open, or said a pad still there had left");
+
+   /* a DualSense where the keyboard was */
+   kbd->uevent = "DRIVER=playstation\nHID_ID=0003:0000054C:00000CE6\n"
+                 "HID_NAME=Sony Interactive Entertainment DualSense Wireless Controller\n";
+   ds3->uevent = nodes[0].uevent;
+   ds3->open_errno = EACCES;
+   kbd->opens = kbd->closes = 0;
+   connected_port = -1;
+   warnings       = 0;
+   hid = hidraw_hid.init();
+   CHECK(kbd->opens == 1 && connected_port == 0 && connected_vid == 0x054c
+         && connected_pid == 0x0ce6,
+         "a DualSense's node was not opened, on port 1 with its ids");
+   {
+      /* the stand-in reads 49 bytes: under USB's 64, so read as
+       * Bluetooth's short report - cross, the hat at rest */
+      memset(kbd->queue[0], 0, sizeof(kbd->queue[0]));
+      kbd->queue[0][0] = 0x01;
+      kbd->queue[0][1] = kbd->queue[0][2] = kbd->queue[0][3] = kbd->queue[0][4] = 0x80;
+      kbd->queue[0][5] = 0x08 | 0x20;
+      kbd->queued      = 1;
+      hidraw_hid.poll(hid);
+      hidraw_hid.get_buttons(hid, 0, &bits);
+      CHECK(BIT256_GET(bits, RETRO_DEVICE_ID_JOYPAD_B)
+            && !BIT256_GET(bits, RETRO_DEVICE_ID_JOYPAD_A),
+            "the DualSense's report was not read through its handler");
+   }
+   hidraw_hid.free(hid);
+   CHECK(kbd->closes == 1, "the DualSense's node was not closed");
 
    if (failures)
    {

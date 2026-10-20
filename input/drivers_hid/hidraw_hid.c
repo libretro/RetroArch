@@ -77,12 +77,12 @@ typedef struct hidraw_hid
 
 extern hid_driver_t hidraw_hid;
 
-/* The pads whose handlers frame their reports as hidraw does: the
- * report ID first. */
+/* Every pad with a handler: hidraw hands a report over as the device
+ * sent it, its ID first where it has one, which is how the handlers
+ * read them. */
 static bool hidraw_hid_handled(uint16_t vid, uint16_t pid, const char *name)
 {
-   joypad_connection_entry_t *entry = find_connection_entry(vid, pid, name);
-   return entry && entry->iface == &pad_connection_ps3;
+   return find_connection_entry(vid, pid, name) != NULL;
 }
 
 /* The ids and name the node's HID device reports through sysfs, read
