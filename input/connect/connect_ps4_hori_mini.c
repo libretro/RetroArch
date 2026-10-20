@@ -27,7 +27,7 @@ struct hidpad_ps4_hori_mini_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
-   uint8_t data[512];
+   uint8_t axis[4];
 };
 
 static void* hidpad_ps4_hori_mini_init(void *data, uint32_t slot,
@@ -86,7 +86,7 @@ static int16_t hidpad_ps4_hori_mini_get_axis(void *data, unsigned axis)
    if (!device || axis >= 4)
       return 0;
 
-   val = (device->data[1 + axis] << 8) - 0x8000;
+   val = (device->axis[axis] << 8) - 0x8000;
 
    if (abs(val) > 0x1000)
       return val;
@@ -119,14 +119,14 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
    struct hidpad_ps4_hori_mini_data *device = 
       (struct hidpad_ps4_hori_mini_data*)data;
 
-   if (!device)
+   if (!device || size < 8)
       return;
 
-   memcpy(device->data, packet, size);
+   memcpy(device->axis, packet + 1, sizeof(device->axis));
 
    device->buttons = 0;
 
-   dpad            = device->data[5] & 0xF;
+   dpad            = packet[5] & 0xF;
 
    switch(dpad)
    {
@@ -161,9 +161,9 @@ static void hidpad_ps4_hori_mini_packet_handler(void *data,
    }
 
    pressed_keys           = (
-                          (device->data[5] & 0xF0) >> 4)
-                        | (device->data[6] << 4)
-                        | (device->data[7] << 12);
+                          (packet[5] & 0xF0) >> 4)
+                        | (packet[6] << 4)
+                        | (packet[7] << 12);
 
    for (i = 0; i < 15; i++)
       device->buttons |= (pressed_keys & (1 << i)) ?
@@ -185,7 +185,7 @@ static int32_t hidpad_ps4_hori_mini_button(void *data, uint16_t joykey)
       (struct hidpad_ps4_hori_mini_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_ps4_hori_mini = {

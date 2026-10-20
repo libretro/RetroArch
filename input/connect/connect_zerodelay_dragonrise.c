@@ -27,7 +27,8 @@ struct hidpad_dragonrise_data
    struct pad_connection* connection;
    uint32_t slot;
    uint32_t buttons;
-   uint8_t data[64];
+   uint8_t axis[2];
+   bool analog;
 };
 
 static void* hidpad_dragonrise_init(void* data, uint32_t slot, hid_driver_t* driver)
@@ -79,12 +80,10 @@ static int16_t hidpad_dragonrise_get_axis(void* data, unsigned axis)
    struct hidpad_dragonrise_data* device =
       (struct hidpad_dragonrise_data*)data;
 
-   if (!device
-      || axis >= 2
-      || (device->data[3] != 0x7F)) /* analog mode detection */
+   if (!device || axis >= 2 || !device->analog)
       return 0;
 
-   val = device->data[axis];
+   val = device->axis[axis];
    val = (val << 8) - 0x8000;
 
    /* hard coded deadzone */
@@ -126,23 +125,25 @@ static void hidpad_dragonrise_packet_handler(void* data,
    struct hidpad_dragonrise_data* device =
       (struct hidpad_dragonrise_data*)data;
 
-   if (!device)
+   if (!device || size < 7)
       return;
 
-   memcpy(device->data, packet, size);
+   device->axis[0] = packet[0];
+   device->axis[1] = packet[1];
+   device->analog  = packet[3] == 0x7F;
 
    device->buttons = 0;
 
-   pressed_keys = device->data[6] | (device->data[5] << 8);
+   pressed_keys = packet[6] | (packet[5] << 8);
 
    for (i = 0; i < 16; i++)
       if (button_mapping[i] != NO_BTN)
          device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 
-   if (device->data[3] != 0x7F) /* digital mode detection */
+   if (!device->analog)
    {
       /* We're in digital mode, process the hat values*/
-      hat_value = DRAGONRISE_H_GET(device->data[5]);
+      hat_value = DRAGONRISE_H_GET(packet[5]);
       device->buttons |= DRAGONRISE_H_LEFT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       device->buttons |= DRAGONRISE_H_RIGHT(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
       device->buttons |= DRAGONRISE_H_UP(hat_value) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
@@ -165,7 +166,7 @@ static int32_t hidpad_dragonrise_button(void* data, uint16_t joykey)
       (struct hidpad_dragonrise_data*)data;
    if (!pad || joykey > 31)
       return 0;
-   return pad->buttons & (1 << joykey);
+   return (pad->buttons >> joykey) & 1;
 }
 
 pad_connection_interface_t pad_connection_dragonrise = {

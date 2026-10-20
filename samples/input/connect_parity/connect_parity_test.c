@@ -526,6 +526,123 @@ static void test_usbpad(const pad_connection_interface_t *ifc,
          failures == had ? "pass" : "fail", name);
 }
 
+/* ---- DragonRise encoder and HORI mini: the old handlers' report and
+ * reads ------------------------------------------------------------- */
+
+static void ref_dragonrise_take(struct ref_adapter *r, const uint8_t *p,
+      unsigned size)
+{
+   memcpy(r->data, p, size);
+   ref_adapter_keys(r, r->data[6] | (r->data[5] << 8));
+   if (r->data[3] != 0x7F)
+      ref_adapter_hat(r, r->data[5] & 15);
+}
+
+static int16_t ref_dragonrise_axis(const struct ref_adapter *r, unsigned axis)
+{
+   int val;
+   if (axis >= 2 || r->data[3] != 0x7F)
+      return 0;
+   val = (r->data[axis] << 8) - 0x8000;
+   return abs(val) > 0x1000 ? (int16_t)val : 0;
+}
+
+static void ref_hori_take(struct ref_adapter *r, const uint8_t *p,
+      unsigned size)
+{
+   static const uint32_t map[15] =
+   {
+      RETRO_DEVICE_ID_JOYPAD_Y, RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_L, RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_L2, RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_L3, RETRO_DEVICE_ID_JOYPAD_R3, 16, 17, 18
+   };
+   static const uint8_t dpad[8] = { 1, 1|8, 8, 8|2, 2, 2|4, 4, 4|1 };
+   unsigned i, keys;
+   memcpy(r->data, p, size);
+   r->buttons = 0;
+   if ((r->data[5] & 15) < 8)
+   {
+      unsigned d = dpad[r->data[5] & 15];
+      if (d & 1) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+      if (d & 2) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+      if (d & 4) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+      if (d & 8) r->buttons |= 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   }
+   keys = ((r->data[5] & 0xF0) >> 4) | (r->data[6] << 4) | (r->data[7] << 12);
+   for (i = 0; i < 15; i++)
+      if (keys & (1u << i))
+         r->buttons |= 1u << map[i];
+}
+
+static int16_t ref_hori_axis(const struct ref_adapter *r, unsigned axis)
+{
+   int val;
+   if (axis >= 4)
+      return 0;
+   val = (r->data[1 + axis] << 8) - 0x8000;
+   return abs(val) > 0x1000 ? (int16_t)val : 0;
+}
+
+static unsigned pad_mismatches(const pad_connection_interface_t *ifc,
+      void *dev, const struct ref_adapter *r, unsigned set_bits,
+      int16_t (*axis)(const struct ref_adapter*, unsigned))
+{
+   unsigned k, bad = 0;
+   input_bits_t bits;
+   ifc->get_buttons(dev, &bits);
+   for (k = 0; k < 32; k++)
+   {
+      int want = !!(r->buttons & (1u << k));
+      if (!!ifc->button(dev, (uint16_t)k) != want
+            || (k < set_bits && !!BIT256_GET(bits, k) != want))
+         bad++;
+   }
+   for (k = 0; k < 5; k++)
+      if (ifc->get_axis(dev, k) != axis(r, k))
+         bad++;
+   return bad;
+}
+
+static void test_pad(const pad_connection_interface_t *ifc, const char *name,
+      unsigned min, unsigned set_bits, unsigned seed,
+      void (*take)(struct ref_adapter*, const uint8_t*, unsigned),
+      int16_t (*axis)(const struct ref_adapter*, unsigned))
+{
+   uint8_t p[64];
+   struct ref_adapter ref;
+   unsigned n, i, bad = 0, had = failures;
+   int dummy_connection;
+   void *dev = ifc->init(&dummy_connection, 0, &stub_hid);
+
+   CHECK(dev != NULL, "%s: no device", name);
+   if (!dev)
+      return;
+   memset(&ref, 0, sizeof(ref));
+   srand(seed);
+   for (n = 0; n < 20000; n++)
+   {
+      unsigned size = min + (unsigned)rand() % (sizeof(p) + 1 - min);
+      for (i = 0; i < sizeof(p); i++)
+         p[i] = (uint8_t)rand();
+      if (rand() & 1)
+         p[3] = 0x7F; /* the DragonRise's analog mode */
+      ifc->packet_handler(dev, p, (uint16_t)size);
+      take(&ref, p, size);
+      bad += pad_mismatches(ifc, dev, &ref, set_bits, axis);
+   }
+   CHECK(!bad, "%s: %u reads disagree with the copying handler", name, bad);
+   memset(p, 0x7F, sizeof(p));
+   ifc->packet_handler(dev, p, (uint16_t)(min - 1));
+   CHECK(!pad_mismatches(ifc, dev, &ref, set_bits, axis),
+         "%s: a short report was taken", name);
+   ifc->deinit(dev);
+   printf("[%s] %s: every button, the set and the axes as the copying handler, on 20000 reports\n",
+         failures == had ? "pass" : "fail", name);
+}
+
 int main(void)
 {
    stub_hid.send_control = stub_send_control;
@@ -535,6 +652,10 @@ int main(void)
    test_adapter(&pad_connection_psxadapter, "psxadapter", true);
    test_usbpad(&pad_connection_snesusb, "snesusb", ref_snesusb_map, 0, 5);
    test_usbpad(&pad_connection_nesusb, "nesusb", ref_nesusb_map, 3, 6);
+   test_pad(&pad_connection_dragonrise, "dragonrise", 7, 16, 7,
+         ref_dragonrise_take, ref_dragonrise_axis);
+   test_pad(&pad_connection_ps4_hori_mini, "ps4_hori_mini", 8, 32, 8,
+         ref_hori_take, ref_hori_axis);
    puts(failures ? "FAIL connect_parity_test" : "PASS connect_parity_test");
    return failures ? 1 : 0;
 }
