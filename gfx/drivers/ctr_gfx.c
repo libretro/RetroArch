@@ -293,9 +293,11 @@ static bool ctr_bottom_screen_enabled  = true;
 
 #ifdef HAVE_OVERLAY
 static void ctr_render_overlay(ctr_video_t *ctr);
+#endif
 static uintptr_t ctr_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type);
-#endif
+static void ctr_unload_texture(void *data, bool threaded,
+      uintptr_t handle);
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
 /*
@@ -902,12 +904,11 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 
 /* The png at @name under @dir, decoded here and uploaded through the
  * driver's own load. False when there is no such file. */
-static bool ctr_load_png_texture(const char *name, const char *dir,
-      uintptr_t *tex)
+static bool ctr_load_png_texture(ctr_video_t *ctr, const char *name,
+      const char *dir, uintptr_t *tex)
 {
    char path[PATH_MAX_LENGTH];
    struct texture_image ti;
-   bool ok;
 
    if (!name || !*name)
       return false;
@@ -916,9 +917,9 @@ static bool ctr_load_png_texture(const char *name, const char *dir,
    ti.supports_rgba = gfx_surface_wants_rgba();
    if (!image_texture_load(&ti, path))
       return false;
-   ok = video_driver_texture_load(&ti, TEXTURE_FILTER_MIPMAP_LINEAR, tex);
+   *tex = ctr_load_texture(ctr, &ti, false, TEXTURE_FILTER_MIPMAP_LINEAR);
    image_texture_free(&ti);
-   return ok;
+   return *tex != 0;
 }
 
 static const char *ctr_texture_path(unsigned id)
@@ -1061,7 +1062,7 @@ static bool ctr_load_bottom_texture(void *data)
       else
          dir_assets = settings->paths.directory_bottom_assets;
 
-      if (ctr_load_png_texture(ctr_texture_path(i), dir_assets,
+      if (ctr_load_png_texture(ctr, ctr_texture_path(i), dir_assets,
             &ctr->bottom_textures[i].texture))
       {
          struct ctr_bottom_texture_data *o = &ctr->bottom_textures[i];
@@ -1295,14 +1296,14 @@ static void ctr_bottom_menu_control(void* data,
 
       if (texture)
       {
-         linearFree(texture->data);
+         ctr_unload_texture(ctr, false, o->texture);
          linearFree(o->frame_coords);
          o->texture = 0;
       }
 
       if (ctr_update_state_date_from_file(ctr))
       {
-         if (ctr_load_png_texture(
+         if (ctr_load_png_texture(ctr,
                   ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
                   dir_get_ptr(RARCH_DIR_SAVESTATE), &o->texture))
          {
@@ -2750,7 +2751,7 @@ static void ctr_free(void* data)
       ctr_texture_t *texture = (ctr_texture_t *) o->texture;
       if (texture)
       {
-         linearFree(texture->data);
+         ctr_unload_texture(ctr, false, o->texture);
          linearFree(o->frame_coords);
          o->texture = 0;
       }
