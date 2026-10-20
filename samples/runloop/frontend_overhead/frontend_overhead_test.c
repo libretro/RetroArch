@@ -87,6 +87,7 @@
 #include <queues/task_queue.h>
 #include "../../../core.h"
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <boolean.h>
 #include <features/features_cpu.h>
 #include <time/rtime.h>
@@ -2199,6 +2200,143 @@ static unsigned pressure_frame(uint32_t buttons, int a2, int a3,
                   | (1u << RETRO_DEVICE_ID_JOYPAD_B));
 }
 #endif
+
+
+#ifdef HAVE_HID
+/* A source beside the joypad driver, stood in for: one pad, in its
+ * slot 0, whose buttons are beside_buttons. */
+static uint32_t beside_buttons;
+static int beside_init_number = -2;
+
+/* a pad already there is found in init, as WinUSB's are */
+static void *beside_init(void)
+{
+   beside_init_number = input_driver_hid_claim(&beside_buttons, 0,
+         "Beside Pad", 0x1234, 0x5678);
+   return &beside_buttons;
+}
+static void beside_free(const void *data) { (void)data; }
+static bool beside_query(void *data, unsigned pad) { return pad < 16; }
+static int16_t beside_button(void *data, unsigned pad, uint16_t key)
+{
+   return pad == 0 && key < 32 && ((beside_buttons >> key) & 1);
+}
+static void beside_get_buttons(void *data, unsigned pad, input_bits_t *state)
+{
+   BIT256_CLEAR_ALL_PTR(state);
+   if (pad == 0)
+      BITS_COPY32_PTR(state, beside_buttons);
+}
+static int16_t beside_axis(void *data, unsigned pad, uint32_t axis) { return 0; }
+static int16_t beside_state(void *data, rarch_joypad_info_t *info,
+      const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
+{
+   unsigned i;
+   int16_t ret = 0;
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      if (joykeys[i] != NO_BTN && beside_button(data, info->joy_idx, joykeys[i]))
+         ret |= (int16_t)(1 << i);
+   return ret;
+}
+static void beside_poll(void *data) { (void)data; }
+static const char *beside_name(void *data, unsigned pad)
+{
+   return pad == 0 ? "Beside Pad" : NULL;
+}
+static hid_driver_t beside_hid = {
+   beside_init, beside_query, beside_free, beside_button, beside_state,
+   beside_get_buttons, beside_axis, beside_poll, NULL, beside_name, "beside"
+};
+#endif
+
+/* A pad beside the joypad driver - one no joypad driver sees, as a
+ * DualShock 3 bound to WinUSB is - takes a device number from the
+ * shared pool, and while it has one the driver is reached through a
+ * stand-in that hands that number's reads to the source; the driver's
+ * own pads read as before. Without it the driver is reached directly. */
+static void lane_beside_source(void)
+{
+#ifdef HAVE_HID
+   input_driver_state_t *input_st     = input_state_get_ptr();
+   settings_t *settings               = config_get_ptr();
+   const input_device_driver_t *real  = input_st->primary_joypad;
+   struct retro_keybind *b_bind       = &input_autoconf_binds[15][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind saved_b       = *b_bind;
+   unsigned saved_index               = settings->uints.input_joypad_index[1];
+   unsigned had                       = failures;
+   int n;
+
+   if (!real || string_is_equal(real->ident, "hid"))
+   {
+      printf("[skip] beside source: no joypad driver, or it is HID's own\n");
+      return;
+   }
+   input_driver_beside_override(&beside_hid);
+   run_loop_frames(1);
+   CHECK(beside_init_number == 15,
+         "beside source: a pad found in its init did not get the top device"
+         " number");
+   input_driver_hid_release(&beside_buttons, 0);
+   run_loop_frames(1);
+   CHECK(input_st->primary_joypad == real,
+         "beside source: the driver is stood in for with no pad beside it");
+
+   n = input_driver_hid_claim(&beside_buttons, 0, "Beside Pad", 0x1234, 0x5678);
+   CHECK(n == 15, "beside source: its pad did not get the top device number");
+   CHECK(input_st->primary_joypad == real,
+         "beside source: the driver was stood in for before the next poll");
+   run_loop_frames(1);
+   CHECK(   input_st->primary_joypad != real
+         && string_is_equal(input_st->primary_joypad->ident, real->ident),
+         "beside source: the driver is not stood in for with a pad beside it");
+
+   /* port 2 on device 16 reads the source's pad, port 1 does not */
+   settings->uints.input_joypad_index[1] = 15;
+   b_bind->joykey                        = 0;
+   beside_buttons                        = 1;
+   run_loop_frames(1);
+   CHECK(input_driver_state_wrapper(1, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B),
+         "beside source: the pad's press does not reach its port");
+   CHECK(!input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B),
+         "beside source: the pad's press reaches the driver's port");
+   beside_buttons = 0;
+   run_loop_frames(1);
+   CHECK(!input_driver_state_wrapper(1, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_B),
+         "beside source: the pad's release does not reach its port");
+
+   /* gone: the driver is reached directly again */
+   input_driver_hid_release(&beside_buttons, 0);
+   run_loop_frames(1);
+   CHECK(input_st->primary_joypad == real,
+         "beside source: the driver is still stood in for with no pad beside it");
+
+   /* the driver's pad arriving on its number moves it */
+   CHECK(input_driver_hid_claim(&beside_buttons, 0, "Beside Pad", 0x1234,
+            0x5678) == 15, "beside source: the pad back did not get its number");
+   input_driver_registry_connect(15, real->ident, "Driver Pad", "", 1, 2);
+   CHECK(input_driver_hid_number(&beside_buttons, 0) == 14,
+         "beside source: the driver's pad on its number did not move it");
+   input_driver_registry_disconnect(15);
+   input_driver_hid_release(&beside_buttons, 0);
+   input_autoconfigure_disconnect(14, "Beside Pad");
+
+   settings->uints.input_joypad_index[1] = saved_index;
+   *b_bind = saved_b;
+   input_driver_beside_override(NULL);
+   run_loop_frames(2);
+   CHECK(input_st->primary_joypad == real,
+         "beside source: stopping the source left the driver stood in for");
+   if (failures == had)
+      printf("[pass] beside source: a pad beside the joypad driver takes a"
+            " pooled device number, its port reads it, the driver's ports"
+            " do not, and the driver is reached directly once it is gone\n");
+#else
+   printf("[skip] beside source: no HID\n");
+#endif
+}
 
 /* A button remapped onto another carries its pressure with it. */
 static void lane_remap_pressure(void)
@@ -8926,6 +9064,7 @@ int main(int argc, char *argv[])
       lane_input_rotation();
       lane_triggers();
       lane_remap_pressure();
+      lane_beside_source();
       lane_network_retropad();
       lane_pointer_capture();
       lane_menu_combo_gate();
