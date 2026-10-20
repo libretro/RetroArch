@@ -541,10 +541,10 @@ struct input_driver
     * the video driver is restarted: nothing it holds belongs to the video
     * driver, its window or its thread, and it needs no restart to notice
     * anything a restart used to make it notice. The joypad driver in use
-    * is its to answer for as well, since the two are kept or restarted
-    * together. NULL, which every driver that does not name it has, means
-    * no: the driver is freed with the video driver
-    * and started again, as it always was. See
+    * is kept or restarted with it, and answers for itself
+    * (rarch_joypad_driver::survives_video). NULL, which every driver
+    * that does not name it has, means no: the driver is freed with the
+    * video driver and started again, as it always was. See
     * input_driver_keep_for_video_restart().
     *
     * @param data  The input state struct
@@ -628,6 +628,11 @@ struct rarch_joypad_driver
     * byte first. NULL, or false, where the pad has none. */
    bool (*get_bt_host)(unsigned pad, uint8_t *addr);
    bool (*set_bt_host)(unsigned pad, const uint8_t *addr);
+
+   /* Whether the driver, as it runs now, can be left running with the
+    * input driver across a video driver restart: it holds nothing of
+    * the video driver's. NULL means no, and both are restarted. */
+   bool (*survives_video)(void);
 };
 
 /**

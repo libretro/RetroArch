@@ -2215,12 +2215,10 @@ static bool winraw_joypad_poll_window_up(void)
    return true;
 }
 
-/* For winraw_input.c's answer to whether the input driver can be left
- * running across a video driver restart: this driver is kept or
- * restarted with it, and can stay when it is the joypad driver in use
- * and read by the poll - its window is then the polling thread's, and
- * it holds nothing of the video driver's. */
-bool winraw_joypad_survives_video(void)
+/* Whether this driver can be kept across a video driver restart: when
+ * read by the poll - its window is then the polling thread's, and it
+ * holds nothing of the video driver's. */
+static bool winraw_joypad_survives_video(void)
 {
    return winraw_joypad_initialised && winraw_joypad_by_poll;
 }
@@ -2414,4 +2412,7 @@ input_device_driver_t winraw_joypad = {
    winraw_joypad_joypad_get_sensor_input,
    winraw_joypad_joypad_name,
    "winraw_joypad",
+   NULL,                         /* get_bt_host  */
+   NULL,                         /* set_bt_host  */
+   winraw_joypad_survives_video
 };

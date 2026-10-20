@@ -8817,6 +8817,7 @@ static void input_beside_route(input_driver_state_t *st)
       input_beside_joypad.get_sensor_input = input_beside_get_sensor_input;
       input_beside_joypad.name             = input_beside_name;
       input_beside_joypad.ident            = real->ident;
+      input_beside_joypad.survives_video   = real->survives_video;
       input_beside_joypad.get_bt_host      = input_beside_get_bt_host;
       input_beside_joypad.set_bt_host      = input_beside_set_bt_host;
       input_beside.real                    = real;
@@ -9731,7 +9732,9 @@ void input_driver_keep_for_video_restart(bool restart,
             " driver.\n");
       return;
    }
-   if (!drv->survives_video(data))
+   if (     !drv->survives_video(data)
+         || !input_st->primary_joypad->survives_video
+         || !input_st->primary_joypad->survives_video())
       return;
 
    if (     (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)

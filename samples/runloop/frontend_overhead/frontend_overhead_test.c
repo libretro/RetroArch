@@ -1785,6 +1785,11 @@ static void kept_joy_destroy(void)
    kept_joy_destroy_real();
 }
 
+/* the joypad driver's own say: it is kept with the input driver only
+ * when both can stay */
+static bool kept_joy_answer = true;
+static bool kept_joy_survives(void) { return kept_joy_answer; }
+
 /* the joypad driver in use, with its destroy counted */
 static void kept_wrap_joypad(input_driver_state_t *input_st)
 {
@@ -1793,6 +1798,7 @@ static void kept_wrap_joypad(input_driver_state_t *input_st)
    kept_joy_wrap            = *input_st->primary_joypad;
    kept_joy_destroy_real    = kept_joy_wrap.destroy;
    kept_joy_wrap.destroy    = kept_joy_destroy;
+   kept_joy_wrap.survives_video = kept_joy_survives;
    input_st->primary_joypad = &kept_joy_wrap;
 }
 #endif
@@ -8646,11 +8652,22 @@ static void lane_input_kept(void)
    KEPT_CHECK(rec && rec->handle == handle0 && pad_connected(0),
          "kept input: a controller did not come through content loaded or closed as it was");
 
+   /* 1c. The input driver can stay, but its joypad driver cannot:
+    *     both are restarted, together. */
+   kept_joy_answer = false;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 1 && kept_inits == 1 && kept_joy_destroys == 1,
+         "kept input: with a joypad driver that cannot stay it was freed %u, started %u, joypads destroyed %u time(s)",
+         kept_frees, kept_inits, kept_joy_destroys);
+   kept_joy_answer = true;
+   kept_wrap_joypad(input_st);
+
    /* 2. It says it does not: freed and started again, as always. */
    kept_answer = false;
    command_event(CMD_EVENT_REINIT, NULL);
    run_frames(5);
-   KEPT_CHECK(kept_frees == 1 && kept_inits == 1 && kept_joy_destroys == 1,
+   KEPT_CHECK(kept_frees == 2 && kept_inits == 2 && kept_joy_destroys == 2,
          "kept input: a driver that does not survive was freed %u, started %u, its joypads destroyed %u time(s)",
          kept_frees, kept_inits, kept_joy_destroys);
    KEPT_CHECK(input_st->current_driver && input_st->current_data && input_st->primary_joypad,
@@ -8665,7 +8682,7 @@ static void lane_input_kept(void)
          sizeof(input_st->joypad_setting_at_init));
    command_event(CMD_EVENT_REINIT, NULL);
    run_frames(5);
-   KEPT_CHECK(kept_frees == 2 && kept_inits == 2 && kept_joy_destroys == 2,
+   KEPT_CHECK(kept_frees == 3 && kept_inits == 3 && kept_joy_destroys == 3,
          "kept input: with the joypad setting changed it was freed %u, started %u, joypads destroyed %u time(s) in all",
          kept_frees, kept_inits, kept_joy_destroys);
    KEPT_CHECK(!strcmp(input_st->joypad_setting_at_init,
@@ -8686,7 +8703,7 @@ static void lane_input_kept(void)
       strlcpy(settings->arrays.input_driver, saved,
             sizeof(settings->arrays.input_driver));
    }
-   KEPT_CHECK(kept_frees == 3 && kept_inits == 3,
+   KEPT_CHECK(kept_frees == 4 && kept_inits == 4,
          "kept input: with the input driver setting changed it was freed %u, started %u time(s) in all",
          kept_frees, kept_inits);
 
@@ -8695,7 +8712,7 @@ static void lane_input_kept(void)
    kept_wrap_joypad(input_st);
    kept_answer = true;
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
-   KEPT_CHECK(kept_frees == 4 && kept_joy_destroys == 4 && !input_st->kept_driver,
+   KEPT_CHECK(kept_frees == 5 && kept_joy_destroys == 5 && !input_st->kept_driver,
          "kept input: shut down, it was freed %u, joypads destroyed %u time(s) in all",
          kept_frees, kept_joy_destroys);
    drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
@@ -8709,7 +8726,7 @@ static void lane_input_kept(void)
    data = input_st->current_data;
    command_event(CMD_EVENT_REINIT, NULL);
    run_frames(5);
-   KEPT_CHECK(kept_frees == 4 && kept_inits == 4 && kept_joy_destroys == 4
+   KEPT_CHECK(kept_frees == 5 && kept_inits == 5 && kept_joy_destroys == 5
          && input_st->current_data == data && pad_connected(0),
          "kept input: kept again after the others, it was freed %u, started %u time(s) in all",
          kept_frees, kept_inits);
@@ -8720,13 +8737,13 @@ static void lane_input_kept(void)
    input_driver_restart_with_next_video_restart();
    command_event(CMD_EVENT_REINIT, NULL);
    run_frames(5);
-   KEPT_CHECK(kept_frees == 5 && kept_inits == 5,
+   KEPT_CHECK(kept_frees == 6 && kept_inits == 6,
          "kept input: asked to restart with the next restart, it was freed %u, started %u time(s) in all",
          kept_frees, kept_inits);
    kept_wrap_joypad(input_st);
    command_event(CMD_EVENT_REINIT, NULL);
    run_frames(5);
-   KEPT_CHECK(kept_frees == 5 && kept_inits == 5 && pad_connected(0),
+   KEPT_CHECK(kept_frees == 6 && kept_inits == 6 && pad_connected(0),
          "kept input: the restart after that one did not keep it (freed %u, started %u)",
          kept_frees, kept_inits);
 
@@ -8743,14 +8760,14 @@ static void lane_input_kept(void)
       driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
       drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
       run_frames(5);
-      KEPT_CHECK(kept_frees == 6 && kept_inits == 6 && kept_joy_destroys == 6,
+      KEPT_CHECK(kept_frees == 7 && kept_inits == 7 && kept_joy_destroys == 7,
             "kept input: with a port reservation changed it was freed %u, started %u, joypads destroyed %u time(s) in all",
             kept_frees, kept_inits, kept_joy_destroys);
       kept_wrap_joypad(input_st);
       driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
       drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
       run_frames(5);
-      KEPT_CHECK(kept_frees == 6 && kept_inits == 6 && pad_connected(0),
+      KEPT_CHECK(kept_frees == 7 && kept_inits == 7 && pad_connected(0),
             "kept input: with the reservation as the new driver found it, it was not kept (freed %u, started %u)",
             kept_frees, kept_inits);
       /* back as it was, by the same road */
@@ -8758,7 +8775,7 @@ static void lane_input_kept(void)
       driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
       drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
       run_frames(5);
-      KEPT_CHECK(kept_frees == 7 && kept_inits == 7,
+      KEPT_CHECK(kept_frees == 8 && kept_inits == 8,
             "kept input: with the reservation put back it was freed %u, started %u time(s) in all",
             kept_frees, kept_inits);
    }
