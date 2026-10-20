@@ -1967,6 +1967,7 @@ typedef struct
    struct font_data *osd_font;
    void             *osd_font_owner;
    bool              movie_frame;
+   bool              movie_refused;
    bool              window_refresh_known;
 
    /* The core's view map, and what the last frame presented with views

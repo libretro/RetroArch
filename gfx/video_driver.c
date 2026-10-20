@@ -2953,6 +2953,7 @@ void video_driver_free_internal(void)
    if (video_st->movie_frame)
       video_driver_cached_frame_invalidate();
    video_st->movie_frame = false;
+   video_st->movie_refused = false;
 
    if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
@@ -5147,6 +5148,8 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
       return false;
    if (!hw)
    {
+      if (video_st->movie_refused)
+         return false;
 #ifdef HAVE_THREADS
       if (video_driver_thread_wrapper_active() && !video_thread_movie_supported())
          return false;
@@ -5178,11 +5181,15 @@ bool video_driver_movie_refresh(void *user, const video_hw_frame_t *hw)
    f.crop_y = hw->crop_y;
    f.abandon = hw->abandon;
    f.owner = hw->owner;
-   result = poke->import_movie_frame(video_st->data, &f);
+   result = video_st->movie_refused ? VIDEO_TEXTURE_UPDATE_REFUSED
+      : poke->import_movie_frame(video_st->data, &f);
    if (result == VIDEO_TEXTURE_UPDATE_DROPPED)
       return false;
    if (result == VIDEO_TEXTURE_UPDATE_REFUSED)
+   {
+      video_st->movie_refused = true;
       video_hw_frame_abandon(hw);
+   }
    else
       video_st->movie_frame = true;
    return true;
@@ -5194,10 +5201,7 @@ void video_driver_movie_clear(void)
    if (video_st->movie_frame)
       video_driver_cached_frame_invalidate();
    video_st->movie_frame = false;
-#ifdef HAVE_THREADS
-   if (video_driver_thread_wrapper_active())
-      return;
-#endif
+   video_st->movie_refused = false;
    if (video_st->data && video_st->poke && video_st->poke->import_movie_frame)
       video_st->poke->import_movie_frame(video_st->data, NULL);
 }
@@ -7130,6 +7134,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 #endif
 
+   video_st->movie_refused = false;
    /* Bound before any driver or wrapper exists: under threaded video
     * the OSD fonts live on the video thread, and the font driver
     * reaches ra-video state through this capture, not the getter. */
