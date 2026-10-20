@@ -3188,12 +3188,21 @@ retry:
 #ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan] Failed to create new swapchain.\n");
 #endif
-         /* No wait here. A window with no swapchain is paced by the
+         /* No sleep here. A window with no swapchain is paced by the
           * runloop, which asks the context driver whether it has
           * anything to present (gfx_ctx_driver_t::presentable) and
           * waits a frame when it has not - one throttle, at the layer
           * that knows what else is already holding the loop. A sleep
-          * in here would stack on top of it. */
+          * in here would stack on top of it.
+          *
+          * The frame is still drawn, minimised or not, so it moves on
+          * to the next frame slot and waits for that slot's last
+          * submission, as an acquire does: the frame re-records the
+          * slot's command buffer and rewrites its buffers and
+          * descriptors, and the slot's fence is what says the GPU is
+          * done with them. */
+         if (vk->context.num_swapchain_images)
+            vulkan_acquire_wait_fences(vk);
          return;
       }
 
