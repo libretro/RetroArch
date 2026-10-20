@@ -34,6 +34,7 @@ jobs:
       - name: VideoToolbox HEVC parameter ownership and session setup
         run: |
           python3 samples/gfx/videotoolbox_hevc/codec_fixtures.py --verify
+          python3 samples/gfx/videotoolbox_hevc/hdr_codec_fixtures.py --verify
           python3 samples/gfx/videotoolbox_hevc/sequence_fixtures.py --verify
           CC=clang python3 samples/gfx/videotoolbox_hevc/run.py --apple-limits
           python3 samples/gfx/videotoolbox_hevc/run.py

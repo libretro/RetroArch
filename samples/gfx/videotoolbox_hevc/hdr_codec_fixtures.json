@@ -1,0 +1,112 @@
+{
+  "width": 64,
+  "height": 64,
+  "cases": [
+    {
+      "name": "main8_limited_pq",
+      "depth": 8,
+      "full": 0,
+      "transfer": 16,
+      "crc": [
+        146955123,
+        2913096984,
+        2333425713
+      ],
+      "hvcc_sha256": "4f4d513254c405d76e59f675cf842c75b382229549bd0877f6c4245cb35570e9",
+      "sample_sha256": "8624bd370496a312d89a655bf74a40a7d4b7e5cc37e16a52cd81848f3490e813"
+    },
+    {
+      "name": "main8_limited_hlg",
+      "depth": 8,
+      "full": 0,
+      "transfer": 18,
+      "crc": [
+        146955123,
+        2913096984,
+        2333425713
+      ],
+      "hvcc_sha256": "f27b1560c1ad320c9f6717cf2bcecb0f5abb4bbc507c6861bfc0f2789cbbb4b0",
+      "sample_sha256": "8624bd370496a312d89a655bf74a40a7d4b7e5cc37e16a52cd81848f3490e813"
+    },
+    {
+      "name": "main8_full_pq",
+      "depth": 8,
+      "full": 1,
+      "transfer": 16,
+      "crc": [
+        4119191905,
+        390388905,
+        2425504453
+      ],
+      "hvcc_sha256": "2bbfb58726c2d0a50bdcd34c7c6a7901dd16455d5289150c75f021418beb826e",
+      "sample_sha256": "9e8e7a691ac42def4db18b5f75ed91f94747c10a9f6475cd413f11f9595a5dab"
+    },
+    {
+      "name": "main8_full_hlg",
+      "depth": 8,
+      "full": 1,
+      "transfer": 18,
+      "crc": [
+        4119191905,
+        390388905,
+        2425504453
+      ],
+      "hvcc_sha256": "55cac967d9f11deb1b9581ca1821f4ae62e6b6d75aec9ca9b7758ef0bdcb4eab",
+      "sample_sha256": "9e8e7a691ac42def4db18b5f75ed91f94747c10a9f6475cd413f11f9595a5dab"
+    },
+    {
+      "name": "main10_limited_pq",
+      "depth": 10,
+      "full": 0,
+      "transfer": 16,
+      "crc": [
+        3690857534,
+        884596867,
+        3344675743
+      ],
+      "hvcc_sha256": "808d4e37b47e3e5948fade75da088c17bc14842bf2b515ccf3dffeecc9c7e57e",
+      "sample_sha256": "a7db7e72abb7b0ba0e8eef2f5fc93ca599cf3ea8dd53acfa130b08318038d5df"
+    },
+    {
+      "name": "main10_limited_hlg",
+      "depth": 10,
+      "full": 0,
+      "transfer": 18,
+      "crc": [
+        3690857534,
+        884596867,
+        3344675743
+      ],
+      "hvcc_sha256": "2bb288412cd49b8c933c98fe30236c2333e757b8ac762c25afeec40b6e5ac292",
+      "sample_sha256": "a7db7e72abb7b0ba0e8eef2f5fc93ca599cf3ea8dd53acfa130b08318038d5df"
+    },
+    {
+      "name": "main10_full_pq",
+      "depth": 10,
+      "full": 1,
+      "transfer": 16,
+      "crc": [
+        4117625780,
+        961642324,
+        3880685820
+      ],
+      "hvcc_sha256": "74adb88f26696b37d656180dd86851aa17f7af7717d0e06bec798d55f559c25b",
+      "sample_sha256": "bc21db6d26fc128b627601a72ba3b04c2ef5c628384dbf31c9d6ee2d2751d91f"
+    },
+    {
+      "name": "main10_full_hlg",
+      "depth": 10,
+      "full": 1,
+      "transfer": 18,
+      "crc": [
+        4117625780,
+        961642324,
+        3880685820
+      ],
+      "hvcc_sha256": "5a0cb2f34fcce16eaf5120e1ebc87b4fdc4bf6174ce949e76c0b18e528dba890",
+      "sample_sha256": "bc21db6d26fc128b627601a72ba3b04c2ef5c628384dbf31c9d6ee2d2751d91f"
+    }
+  ],
+  "header_sha256": "98334555eba3f69186887a792c495e8c0f1ddb004f4e55ae086e801de8168088",
+  "ffmpeg_version": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+}

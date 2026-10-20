@@ -47,7 +47,9 @@ static id<MTLTexture> hevc_movie_import(id<MTLDevice> device,
    assert(hevc_movie_view->_movieFrame && !hevc_movie_view->_srcDirty);
    assert(hevc_movie_view->history_updates == previous + 1);
    id<MTLTexture> front = hevc_movie_view->_engine.frame.texture[0].view;
-   assert(front && front.pixelFormat == MTLPixelFormatRGBA8Unorm);
+   bool hdr = frame->color.transfer == 16 || frame->color.transfer == 18;
+   assert(hevc_movie_view->_movieHDR == hdr);
+   assert(front && front.pixelFormat == (hdr ? MTLPixelFormatRGBA16Float : MTLPixelFormatRGBA8Unorm));
    return front;
 }
 
@@ -74,19 +76,40 @@ static unsigned hevc_movie_code(const unsigned char *data, unsigned index, unsig
 static void hevc_movie_pixels(id<MTLTexture> y_texture, id<MTLTexture> uv_texture,
       id<MTLTexture> rgba_texture, unsigned depth, unsigned full, unsigned transfer)
 {
-   unsigned char *y = malloc(8192), *uv = malloc(4096), *rgba = malloc(16384);
+   bool hdr = transfer == 16 || transfer == 18;
+   unsigned char *y = malloc(8192), *uv = malloc(4096), *rgba = malloc(hdr ? 32768 : 16384);
    unsigned worst = 0;
-   assert(y && uv && rgba && (transfer == 1 || transfer == 13));
+   assert(y && uv && rgba && (transfer == 1 || transfer == 13 || hdr));
    [y_texture getBytes:y bytesPerRow:64 * (depth == 10 ? 2 : 1)
       fromRegion:MTLRegionMake2D(0, 0, 64, 64) mipmapLevel:0];
    [uv_texture getBytes:uv bytesPerRow:64 * (depth == 10 ? 2 : 1)
       fromRegion:MTLRegionMake2D(0, 0, 32, 32) mipmapLevel:0];
-   [rgba_texture getBytes:rgba bytesPerRow:256
+   [rgba_texture getBytes:rgba bytesPerRow:hdr ? 512 : 256
       fromRegion:MTLRegionMake2D(0, 0, 64, 64) mipmapLevel:0];
    for (unsigned row = 0; row < 64; row++) for (unsigned col = 0; col < 64; col++)
    {
       unsigned chroma = (row / 2 * 32 + col / 2) * 2;
       unsigned char reference[4];
+      if (hdr)
+      {
+         double expected[4];
+         const uint16_t *actual = (const uint16_t*)rgba + (row * 64 + col) * 4;
+         hevc_movie_hdr_reference(hevc_movie_code(y, row * 64 + col, depth),
+               hevc_movie_code(uv, chroma, depth), hevc_movie_code(uv, chroma + 1, depth),
+               depth, full, transfer, expected);
+         for (unsigned c = 0; c < 3; c++)
+         {
+            double value = hevc_movie_half(actual[c]);
+            assert(((actual[c] >> 10) & 31) != 31);
+            double tolerance = fmax(0.002, fabs(expected[c]) * 0.002);
+            if (fabs(value - expected[c]) > tolerance)
+               fprintf(stderr, "Decoded HDR transfer %u pixel %u,%u channel %u: %.9g expected %.9g\n",
+                     transfer, col, row, c, value, expected[c]);
+            assert(fabs(value - expected[c]) <= tolerance);
+         }
+         assert(actual[3] == 0x3c00);
+         continue;
+      }
       hevc_movie_reference(hevc_movie_code(y, row * 64 + col, depth),
             hevc_movie_code(uv, chroma, depth), hevc_movie_code(uv, chroma + 1, depth),
             depth, full, transfer, reference);
@@ -102,5 +125,8 @@ static void hevc_movie_pixels(id<MTLTexture> y_texture, id<MTLTexture> uv_textur
       assert(rgba[(row * 64 + col) * 4 + 3] == 255);
    }
    free(y); free(uv); free(rgba);
-   printf("VideoToolbox movie: decoded image through shipping FrameView, max error %u/255\n", worst);
+   if (hdr)
+      puts("VideoToolbox movie HDR: coded PQ/HLG through shipping FrameView preserves linear scRGB");
+   else
+      printf("VideoToolbox movie: decoded image through shipping FrameView, max error %u/255\n", worst);
 }

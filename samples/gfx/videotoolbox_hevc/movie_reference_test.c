@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "movie_reference.h"
 #include "../metal_frame/sdr_pixels.h"
+#include "../metal_frame/hdr_pixels.h"
 
 static unsigned code(unsigned f, unsigned x, unsigned y, unsigned plane, unsigned channel)
 {
@@ -19,6 +20,9 @@ static unsigned code(unsigned f, unsigned x, unsigned y, unsigned plane, unsigne
 int main(void)
 {
    unsigned f, transfer, x, y, channel;
+   assert(hevc_movie_half(0x0000) == 0.0 && hevc_movie_half(0x3c00) == 1.0);
+   assert(hevc_movie_half(0xbc00) == -1.0 && hevc_movie_half(0x3e00) == 1.5);
+   assert(hevc_movie_half(0x0400) == ldexp(1.0, -14) && hevc_movie_half(0x0001) == ldexp(1.0, -24));
    for (f = 0; f < 4; f++) for (transfer = 0; transfer < 2; transfer++)
       for (y = 0; y < 5; y++) for (x = 0; x < 7; x++)
       {
@@ -31,5 +35,29 @@ int main(void)
             assert(actual[channel] == sdr_expected[f * 2 + transfer][(y * 7 + x) * 4 + channel]);
       }
    puts("HEVC movie reference: 1120 fixed BT.709/sRGB RGBA components passed");
+   for (f = 0; f < 4; f++) for (transfer = 0; transfer < 2; transfer++)
+      for (y = 0; y < 5; y++) for (x = 0; x < 7; x++)
+      {
+         double actual[4];
+         hevc_movie_hdr_reference(code(f, x + 2, y + 2, 0, 0),
+               code(f, (x + 2) / 2, (y + 2) / 2, 1, 0),
+               code(f, (x + 2) / 2, (y + 2) / 2, 1, 1),
+               f < 2 ? 8 : 10, f & 1, transfer ? 18 : 16, actual);
+         for (channel = 0; channel < 4; channel++)
+         {
+            double expected = hdr_expected[f * 2 + transfer][(y * 7 + x) * 4 + channel];
+            assert(fabs(actual[channel] - expected) <= 0.000001 * (1.0 + fabs(expected)));
+         }
+      }
+   for (f = 0; f < 4; f++) for (transfer = 0; transfer < 2; transfer++)
+   {
+      double actual[4];
+      unsigned scale = f < 2 ? 1 : 4;
+      unsigned white = f & 1 ? (f < 2 ? 255 : 1023) : 235 * scale;
+      hevc_movie_hdr_reference(white, 128 * scale, 128 * scale,
+            f < 2 ? 8 : 10, f & 1, transfer ? 18 : 16, actual);
+      for (channel = 0; channel < 3; channel++) assert(fabs(actual[channel] - (transfer ? 12.5 : 125.0)) < 0.001);
+   }
+   puts("HEVC HDR reference: 1120 PQ/HLG float components and absolute whites passed");
    return 0;
 }
