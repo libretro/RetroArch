@@ -183,9 +183,9 @@ static void setup(void)
    memset(stops, 0, sizeof(stops));
    for (h = 0; h < 2; h++)
       apply_result[h] = stop_result[h] = XR_SUCCESS;
+   input_openxr_slots_publish();
    for (p = 0; p < INPUT_OPENXR_PADS; p++)
-      for (h = 0; h < 2; h++)
-         retro_atomic_store_release_int(&input_openxr_rumble[p][h], 0);
+      retro_atomic_store_release_int(&input_openxr_rumble[p], 0);
    retro_atomic_store_release_int(&input_openxr_ready, 1);
    test_now = 1000000;
    test_focused = true;
@@ -282,9 +282,10 @@ int main(void)
          "invalid slot accepted");
    CHECK(!set_rumble((unsigned)-1, RETRO_RUMBLE_STRONG, 65535),
          "negative slot accepted");
-   CHECK(retro_atomic_load_acquire_int(&input_openxr_rumble[0][0]) == 10000
-         && retro_atomic_load_acquire_int(&input_openxr_rumble[0][1]) == 20000,
-         "invalid effect altered a valid motor");
+   CHECK((unsigned)retro_atomic_load_acquire_int(&input_openxr_rumble[0])
+         == ((10000u << 16) | 20000u),
+         "invalid effect altered a valid motor, or the two motors are not"
+         " kept together");
    setup();
    set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    set_rumble(0, RETRO_RUMBLE_WEAK, 32768);

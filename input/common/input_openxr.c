@@ -437,9 +437,12 @@ static input_openxr_t input_openxr_st;
 #define INPUT_OPENXR_MENU_OPEN  4
 static retro_atomic_int_t input_openxr_pointer_config;
 
-/* A core's rumble per pad, strong then weak, and whether a session's
+/* A core's rumble per pad, strong in the high half and weak in the
+ * low, so the two are read together; the pads' slots, each plus one
+ * a byte, as the main thread last gave them; and whether a session's
  * controllers exist: asked from any thread. */
-static retro_atomic_int_t input_openxr_rumble[INPUT_OPENXR_PADS][2];
+static retro_atomic_int_t input_openxr_rumble[INPUT_OPENXR_PADS];
+static retro_atomic_int_t input_openxr_rumble_slots;
 static retro_atomic_int_t input_openxr_ready;
 
 /* The pads as joypad devices. Main thread; apart from input_openxr_st,
@@ -471,6 +474,10 @@ static unsigned input_openxr_wrap_cur;
 static void input_openxr_clear(input_openxr_t *st)
 {
    memset(st, 0, sizeof(*st));
+   /* a trigger held across a session's restart is no new pull: none
+    * until it is let go, as after a loss */
+   st->trig_down[0] = true;
+   st->trig_down[1] = true;
    st->mode    = -1;
    st->hit[0]  = -1;
    st->hit[1]  = -1;
@@ -1309,14 +1316,16 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
          s = 0;
       else if (separate)
       {
-         int strong = retro_atomic_load_acquire_int(
-               &input_openxr_rumble[h][0]);
-         int weak   = retro_atomic_load_acquire_int(
-               &input_openxr_rumble[h][1]);
-         s          = MAX(strong, weak);
+         unsigned both = (unsigned)retro_atomic_load_acquire_int(
+               &input_openxr_rumble[h]);
+         s             = (int)MAX(both >> 16, both & 0xffff);
       }
       else
-         s = retro_atomic_load_acquire_int(&input_openxr_rumble[0][h]);
+      {
+         unsigned both = (unsigned)retro_atomic_load_acquire_int(
+               &input_openxr_rumble[0]);
+         s             = (int)(h ? (both & 0xffff) : (both >> 16));
+      }
       amp = (float)s / 65535.0f;
       if (st->haptic_retry[h])
       {
@@ -1362,6 +1371,28 @@ static int input_openxr_pad_of(unsigned slot)
       if (input_openxr_devs.slot[p] == (int)slot)
          return (int)p;
    return -1;
+}
+
+/* The same, from any thread: the slots as the main thread last gave
+ * them. */
+static int input_openxr_pad_of_any(unsigned slot)
+{
+   unsigned p;
+   unsigned slots = (unsigned)retro_atomic_load_acquire_int(
+         &input_openxr_rumble_slots);
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      if (((slots >> (p * 8)) & 0xff) == slot + 1)
+         return (int)p;
+   return -1;
+}
+
+static void input_openxr_slots_publish(void)
+{
+   unsigned p, slots = 0;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      if (input_openxr_devs.slot[p] >= 0)
+         slots |= ((unsigned)input_openxr_devs.slot[p] + 1) << (p * 8);
+   retro_atomic_store_release_int(&input_openxr_rumble_slots, (int)slots);
 }
 
 static const char *input_openxr_device_name(unsigned p)
@@ -1425,6 +1456,7 @@ static void input_openxr_devices(unsigned max_users, bool separate)
    if (!want)
    {
       dv->warned = false;
+      input_openxr_slots_publish();
       return;
    }
    /* A mode switch renames the first in place, so the left hand keeps
@@ -1469,6 +1501,7 @@ static void input_openxr_devices(unsigned max_users, bool separate)
          dv->warned = true;
       }
    }
+   input_openxr_slots_publish();
 }
 
 /* The joypad driver readers get while the devices have slots: theirs
@@ -1576,13 +1609,22 @@ static bool input_openxr_joypad_rumble(unsigned pad,
    if (pad >= MAX_USERS
          || (effect != RETRO_RUMBLE_STRONG && effect != RETRO_RUMBLE_WEAK))
       return false;
-   p = input_openxr_pad_of(pad);
+   p = input_openxr_pad_of_any(pad);
    if (p < 0)
       return input_openxr_inner->set_rumble
          && input_openxr_inner->set_rumble(pad, effect, strength);
-   retro_atomic_store_release_int(
-         &input_openxr_rumble[p][(effect == RETRO_RUMBLE_STRONG) ? 0 : 1],
-         (int)strength);
+   {
+      /* one half changed, the other kept: rumble may come from any
+       * thread */
+      unsigned shift = (effect == RETRO_RUMBLE_STRONG) ? 16 : 0;
+      int old, now;
+      do
+      {
+         old = retro_atomic_load_relaxed_int(&input_openxr_rumble[p]);
+         now = (int)(((unsigned)old & ~(0xffffu << shift))
+             | ((unsigned)strength << shift));
+      } while (!retro_atomic_cas_int(&input_openxr_rumble[p], old, now));
+   }
    return input_openxr_active();
 }
 
@@ -1625,10 +1667,7 @@ void input_openxr_poll(unsigned max_users, unsigned controllers,
     * ran it; no later content may inherit it. */
    if (!(run_flags & RUNLOOP_FLAG_CORE_RUNNING))
       for (p = 0; p < INPUT_OPENXR_PADS; p++)
-      {
-         retro_atomic_store_release_int(&input_openxr_rumble[p][0], 0);
-         retro_atomic_store_release_int(&input_openxr_rumble[p][1], 0);
-      }
+         retro_atomic_store_release_int(&input_openxr_rumble[p], 0);
 
    memset(st->pads, 0, sizeof(st->pads));
    memset(st->trig, 0, sizeof(st->trig));
@@ -1736,9 +1775,10 @@ const input_device_driver_t *input_openxr_joypad(
    return &input_openxr_wrap[input_openxr_wrap_cur];
 }
 
+/* From any thread: input_driver_set_rumble()'s. */
 bool input_openxr_has_slot(unsigned slot)
 {
-   return input_openxr_pad_of(slot) >= 0;
+   return input_openxr_pad_of_any(slot) >= 0;
 }
 
 void input_openxr_slot_connected(unsigned slot, const char *provider)
@@ -1754,6 +1794,7 @@ void input_openxr_slot_connected(unsigned slot, const char *provider)
       input_openxr_devs.lost[p]   = (int)slot;
       input_openxr_devs.slot[p]   = -1;
       input_openxr_devs.landed[p] = false;
+      input_openxr_slots_publish();
    }
 }
 

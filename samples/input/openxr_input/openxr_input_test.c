@@ -1318,6 +1318,54 @@ static void t_fresh_session(void)
    t_session(false);
 }
 
+/* A trigger held across a session's restart is no new pull: none until
+ * it is let go, as after a loss. */
+static void test_session_restart_trigger(void)
+{
+   float u      = 0.0f;
+   float v      = 0.0f;
+   bool pressed = true;
+
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 1;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.7f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_MENU;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[2]       = true;
+   t_menu_open            = true;
+   t_let_go();
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("combined/r2", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(input_openxr_menu_pointer(&u, &v, &pressed) && pressed,
+         "restart: a pull did not press on the menu");
+
+   /* the session goes and comes back with the trigger still held */
+   t_hooks.session_destroying(t_hooks.user);
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(input_openxr_menu_pointer(&u, &v, &pressed) && !pressed,
+         "a trigger held across a session restart pressed the menu");
+
+   /* let go and pulled again: that one presses */
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hold("combined/r2", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   CHECK(input_openxr_menu_pointer(&u, &v, &pressed) && pressed,
+         "after a session restart a new pull did not press on the menu");
+   t_let_go();
+   t_menu_open = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_AUTO);
+   t_hooks.session_destroying(t_hooks.user);
+   memset(&t_quads, 0, sizeof(t_quads));
+}
+
 /* With XR_EXT_palm_pose, the palm too; a runtime that refuses it keeps
  * the rest of each profile. */
 static void test_palm(void)
@@ -1770,6 +1818,7 @@ int main(void)
    test_device_taken();
    test_joypad_wrapped();
    test_joints();
+   test_session_restart_trigger();
    if (failures)
    {
       printf("%d failure(s)\n", failures);
