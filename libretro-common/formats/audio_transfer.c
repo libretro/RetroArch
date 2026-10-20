@@ -1831,6 +1831,46 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
 }
 #endif
 
+int audio_transfer_demuxed_packet_frames(void *data, enum audio_type_enum type,
+      const void *packet, size_t size, size_t index)
+{
+   if (!data || !packet || !size) return -1;
+   switch (type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_TYPE_VORBIS:
+      {
+         struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
+         int frames;
+         if (!v->handle || !v->setup) return -1;
+         frames = rvorbis_packet_frames(v->handle, packet, size);
+         return frames < 0 ? -1 : index ? frames : 0;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *o = (struct audio_transfer_opus*)data;
+         int64_t frames;
+         if (!o->setup || !o->handle) return -1;
+         frames = audio_transfer_opus_pkt_frames((const uint8_t*)packet, size);
+         return frames > 0 && frames <= 5760 ? (int)frames : -1;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *a = (struct audio_transfer_aac*)data;
+         if (!a->setup || !a->handle) return -1;
+         return 1024;
+      }
+#endif
+      default: break;
+   }
+   (void)index;
+   return -1;
+}
+
 bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
       const void *setup, size_t setup_size,
       const void *packets, size_t packets_size,

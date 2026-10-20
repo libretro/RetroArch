@@ -106,6 +106,7 @@ static int check_lacing(unsigned mode)
       CHECK(!lo && !hi);
    }
    CHECK(packet.data == file + first && packet.size == n);
+   CHECK(!packet.timestamp_continuation);
    CHECK(rwebm_tell(p.webm) - MEDIA_DISCARD_MARGIN > first + n);
    CHECK(rwebm_consumed(p.webm) == first + n);
    CHECK(media_native_consumed(&p) == first + n);
@@ -119,11 +120,13 @@ static int check_lacing(unsigned mode)
    CHECK(consumed - MEDIA_DISCARD_MARGIN <= first + n);
    CHECK(rwebm_read_packet(p.webm, &packet) == 1);
    CHECK(packet.data == file + first + n && packet.data[0] == 0x32);
+   CHECK(packet.timestamp_continuation);
    CHECK(media_native_consumed(&p) == consumed);
    CHECK(rwebm_read_packet(p.wgather, &packet) == 1);
    CHECK(media_native_consumed(&p) == first + 2 * n);
    CHECK(rwebm_read_packet(p.webm, &packet) == 1);
    CHECK(packet.data == file + first + 2 * n && packet.data[n - 1] == 0x33);
+   CHECK(packet.timestamp_continuation);
    CHECK(media_native_consumed(&p) == first + 2 * n);
    rwebm_close(p.wgather); p.wgather = NULL;
    CHECK(media_native_consumed(&p) == rwebm_tell(p.webm));

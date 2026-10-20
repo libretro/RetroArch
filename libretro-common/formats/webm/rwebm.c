@@ -759,6 +759,7 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
    if (!webm || !pkt)
       return -1;
    webm->need_hi = 0;
+   pkt->timestamp_continuation = 0;
 
    /* Drain a laced block first. */
    if (webm->lace_index < webm->lace_count)
@@ -768,6 +769,7 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       pkt->size      = webm->lace_frame[i];
       pkt->track     = webm->lace_track;
       pkt->timestamp = webm->lace_ts;
+      pkt->timestamp_continuation = 1;
       pkt->keyframe  = webm->lace_keyframe;
       pkt->discard_padding = (webm->lace_index == webm->lace_count)
          ? webm->lace_discard : 0;

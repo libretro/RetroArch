@@ -151,6 +151,16 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
       const void *packets, size_t packets_size,
       const uint32_t *sizes, size_t num_packets);
 
+/* Exact decoded contribution of one borrowed demuxed packet, without
+ * decoding or changing the active cursor. Call after start(). index is
+ * its zero-based position since the stream head: Vorbis packet zero
+ * primes overlap and yields no frames. Counts precede start/end trim.
+ * Returns -1 when a measurement is unavailable. This is not a full
+ * coded-payload validation; the decoder still validates each packet. */
+int audio_transfer_demuxed_packet_frames(void *data, enum audio_type_enum type,
+      const void *packet, size_t size, size_t index);
+
+
 /* Frames the container trims from the start of the stream (e.g. the
  * AAC encoder delay from an MP4 edit list).  Call between
  * set_demuxed_ptr and audio_transfer_start; only codecs whose trim is

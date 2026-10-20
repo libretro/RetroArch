@@ -80,7 +80,8 @@ typedef struct
    unsigned               channels;
    /* Media-timescale units the track's edit list trims from the
     * start (the usual encoder-delay edit; sample count for audio).
-    * Zero when absent. Only the common single-entry shape is read. */
+    * Zero when absent. A leading empty edit may precede this trim;
+    * arbitrary multi-entry or non-unity-rate edits remain unsupported. */
    uint64_t               media_skip;
    /* Decoder setup data, owned by the demuxer until rmp4_close.
     * Opus: repacked OpusHead; Vorbis: xiph-laced headers from esds;
@@ -89,6 +90,8 @@ typedef struct
    size_t                 codec_private_size;
    /* Sample-entry fourcc, NUL-terminated (e.g. "vp09", "avc1"). */
    char                   codec_id[24];
+   /* Leading empty edit in movie time, converted to nanoseconds. */
+   int64_t                presentation_delay_ns;
 } rmp4_track;
 
 typedef struct

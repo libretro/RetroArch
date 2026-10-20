@@ -332,11 +332,101 @@ static void test_countless(void)
    printf("countless: ok (%.3f s)\n", secs);
 }
 
+#ifdef RMP4_TEST_ALLOCATOR
+static void edit_entry(buf_t *w, unsigned version, uint64_t duration,
+      uint64_t media, uint32_t rate)
+{
+   if (version) { put64(w, duration); put64(w, media); }
+   else { put32(w, (uint32_t)duration); put32(w, (uint32_t)media); }
+   put32(w, rate);
+}
+
+/* Construct actual box bytes, including child order and malformed sizes;
+ * expectations are track trim/delay values, not a replay of parser logic. */
+static void test_edit_lists(void)
+{
+   static buf_t w, edit;
+   unsigned version, mutation;
+   for (version = 0; version <= 1; version++)
+      for (mutation = 0; mutation < 12; mutation++)
+      {
+         rmp4_box moov, trak, mvhd;
+         size_t moov_at, trak_at, insert, outer, inner;
+         uint32_t count = mutation == 1 ? 1 : mutation == 6 ? 3 : 2;
+         uint64_t delay = mutation == 9 ? ((~(uint64_t)0) >> 1) : 1500;
+         uint64_t media = mutation == 5 ? (uint64_t)-2 : 128;
+         int valid = mutation == 0 || mutation == 1 || mutation == 7
+            || (mutation == 9 && !version);
+         int parsed;
+         rmp4_t *m;
+         memset(&w, 0, sizeof(w)); head(&w, 4, 40);
+         CHECK(rmp4_find_child(w.b, w.n, RMP4_FOURCC('m','o','o','v'), &moov), "edit moov");
+         CHECK(rmp4_find_child(moov.body, moov.size, RMP4_FOURCC('t','r','a','k'), &trak), "edit trak");
+         moov_at = (size_t)(moov.body - w.b) - 8;
+         trak_at = (size_t)(trak.body - w.b) - 8;
+         insert = (size_t)(trak.body - w.b) + (size_t)trak.size;
+         memset(&edit, 0, sizeof(edit));
+         outer = box(&edit, "edts"); inner = box(&edit, "elst");
+         put32(&edit, (mutation == 2 ? 2 : version) << 24); put32(&edit, count);
+         if (count > 1)
+            edit_entry(&edit, version, delay, mutation == 10 ? 0 : (uint64_t)-1,
+                  mutation == 11 ? 0x00018000u : 0x00010000u);
+         if (count > 2) edit_entry(&edit, version, 500, 0, 0x00010000u);
+         edit_entry(&edit, version, 1000, media, mutation == 3 ? 0 : 0x00010000u);
+         box_end(&edit, inner); box_end(&edit, outer);
+         if (mutation == 4) edit.n--;
+         memmove(w.b + insert + edit.n, w.b + insert, w.n - insert);
+         memcpy(w.b + insert, edit.b, edit.n); w.n += edit.n;
+         /* Patch just the two enclosing sizes. */
+         {
+            size_t end = w.n;
+            w.n = insert + edit.n; box_end(&w, trak_at);
+            w.n = end; box_end(&w, moov_at);
+         }
+         CHECK(rmp4_find_child(w.b, w.n, RMP4_FOURCC('m','o','o','v'), &moov), "edited moov");
+         CHECK(rmp4_find_child(moov.body, moov.size, RMP4_FOURCC('m','v','h','d'), &mvhd), "edit mvhd");
+         if (mutation == 8)
+         {
+            size_t scale = (size_t)(mvhd.body - w.b) + 12;
+            memset(w.b + scale, 0, 4);
+         }
+         if (mutation == 7)
+         {
+            uint8_t header[128];
+            size_t start = (size_t)(mvhd.body - w.b) - 8;
+            size_t n = (size_t)mvhd.size + 8;
+            memcpy(header, w.b + start, n);
+            memmove(w.b + start, w.b + start + n, w.n - start - n);
+            memcpy(w.b + w.n - n, header, n);
+         }
+         m = (rmp4_t*)calloc(1, sizeof(*m));
+         CHECK(m != NULL, "edit allocation");
+         if (!m) continue;
+         parsed = rmp4_parse_moov(m, w.b + moov_at + 8, w.n - moov_at - 8);
+         if (mutation == 8 || (mutation == 9 && version))
+            CHECK(!parsed, "edit v%u mutation%u must reject unrepresentable delay", version, mutation);
+         else
+         {
+            CHECK(parsed && m->num_tracks == 1, "edit v%u mutation%u parse", version, mutation);
+            CHECK(m->trk[0].pub.media_skip == (valid ? 128u : 0u),
+                  "edit v%u mutation%u trim", version, mutation);
+            CHECK(m->trk[0].pub.presentation_delay_ns == (mutation == 9 && !version
+                     ? (int64_t)4294967295u * 1000000
+                     : valid && mutation != 1 ? 1500000000 : 0),
+                  "edit v%u mutation%u delay", version, mutation);
+         }
+         rmp4_close(m);
+      }
+   puts("MP4 edit-list v0/v1, bounds, rate, child order and delay overflow cases complete");
+}
+#endif
+
 int main(void)
 {
    test_valid();
 #ifdef RMP4_TEST_ALLOCATOR
    test_track_selection();
+   test_edit_lists();
 #endif
    test_wrap();
    test_countless();

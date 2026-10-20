@@ -125,6 +125,7 @@ typedef struct
 {
    rmp4_track  pub;
    uint32_t    timescale;      /* mdhd media timescale               */
+   uint64_t    empty_edit_ticks; /* leading empty edit, movie scale  */
    /* Per-sample tables (parallel arrays, 'count' entries). */
    uint64_t   *off;
    uint32_t   *size;
@@ -767,10 +768,9 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
    memset(t, 0, sizeof(*t));
    t->pub.number = m->num_tracks + 1;
 
-   /* edts/elst: the common single-entry edit that trims the codec's
-    * startup samples (media_time > 0, e.g. the AAC encoder delay).
-    * Recorded in media-timescale units for decoders to drop; edits
-    * beyond that shape (multi-entry, dwell) stay unsupported. */
+   /* The common edit is a unity-rate priming trim, optionally after
+    * one empty edit delaying this track in movie time. Keep ticks until
+    * mvhd is known: moov children may arrive in either order. */
    if (rmp4_find_child(body, size, RMP4_FOURCC('e','d','t','s'), &b))
    {
       rmp4_box elst;
@@ -778,14 +778,31 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
             RMP4_FOURCC('e','l','s','t'), &elst) && elst.size >= 8)
       {
          unsigned version = elst.body[0];
-         uint32_t count   = rmp4_be32(elst.body + 4);
-         if (count == 1 && elst.size >= (version ? 28u : 20u))
+         uint32_t count = rmp4_be32(elst.body + 4);
+         size_t entry = version ? 20 : 12;
+         if (version <= 1 && (count == 1 || count == 2)
+               && elst.size >= 8 + count * entry)
          {
-            int64_t media_time = version
-                  ? (int64_t)rmp4_be64(elst.body + 16)
-                  : (int32_t)rmp4_be32(elst.body + 12);
-            if (media_time > 0)
-               t->pub.media_skip = (uint64_t)media_time;
+            const uint8_t *first = elst.body + 8;
+            const uint8_t *last = first + (count - 1) * entry;
+            uint64_t media = version ? rmp4_be64(last + 8) : rmp4_be32(last + 4);
+            uint64_t empty = 0;
+            int valid = rmp4_be32(last + entry - 4) == 0x00010000u;
+            if (count == 2)
+            {
+               uint64_t first_media = version ? rmp4_be64(first + 8) : rmp4_be32(first + 4);
+               empty = version ? rmp4_be64(first) : rmp4_be32(first);
+               if (first_media != (version ? (uint64_t)-1 : (uint64_t)0xffffffffu)
+                     || rmp4_be32(first + entry - 4) != 0x00010000u)
+                  valid = 0;
+            }
+            if ((version && (media >> 63 || empty >> 63))
+                  || (!version && media > 0x7fffffffu)) valid = 0;
+            if (valid)
+            {
+               t->pub.media_skip = media;
+               t->empty_edit_ticks = empty;
+            }
          }
       }
    }
@@ -906,6 +923,22 @@ static int rmp4_parse_moov(rmp4_t *m, const uint8_t *body, uint64_t size)
       if (next <= pos)
          break;
       pos = next;
+   }
+   {
+      int i;
+      for (i = 0; i < m->num_tracks; i++)
+      {
+         uint64_t ticks = m->trk[i].empty_edit_ticks;
+         uint64_t seconds, fraction, limit = (~(uint64_t)0) >> 1;
+         if (!ticks) continue;
+         if (!m->movie_timescale) return 0;
+         seconds = ticks / m->movie_timescale;
+         fraction = (ticks % m->movie_timescale) * 1000000000u / m->movie_timescale;
+         if (seconds > limit / 1000000000u) return 0;
+         seconds *= 1000000000u;
+         if (seconds > limit - fraction) return 0;
+         m->trk[i].pub.presentation_delay_ns = (int64_t)(seconds + fraction);
+      }
    }
    /* mvex marks a fragmented movie; its trex boxes carry per-track
     * defaults the fragments inherit. Applied after the walk since box

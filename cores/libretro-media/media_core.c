@@ -111,6 +111,14 @@ static retro_input_poll_t MEDIA_CORE_PREFIX(input_poll_cb);
 static retro_input_state_t MEDIA_CORE_PREFIX(input_state_cb);
 static retro_environment_t MEDIA_CORE_PREFIX(environ_cb);
 
+#ifdef MEDIA_HAVE_AUDIO
+struct media_audio_time
+{
+   int64_t pts, source, end, media, prior_end;
+   int continued;
+};
+#endif
+
 typedef struct
 {
    uint8_t     *file_buf;
@@ -171,6 +179,13 @@ typedef struct
                                         file it came from - so growth
                                         never copies and never spikes  */
    uint32_t    *asizes;
+   struct media_audio_time *atimes;
+   size_t       amapped, amap_bytes, atime_cursor;
+   int64_t      araw_frames, asource, atime_bias, atime_end;
+   int          atime_ready, atime_failed;
+   size_t       aorigin_scan, aorigin_bytes;
+   int64_t      avorbis_origin;
+   int          aorigin_ready;
 #ifdef HAVE_RMP4
    rmp4_t      *agather;             /* persistent audio-gather demuxer
                                         for the progressive MP4 path    */
@@ -181,7 +196,8 @@ typedef struct
    int64_t      atoc;                /* opus TOC frame sum so far       */
    int64_t      apreskip;
    int64_t      adiscard_ns;         /* webm DiscardPadding sum         */
-   uint64_t     atrim;               /* AAC start trim (frames)         */
+   uint64_t     atrim_left;          /* owner-side trim beyond codec pre-skip */
+   uint64_t     atrim;               /* container start trim (frames)   */
    unsigned     ach;                 /* decoded channels (1 or 2)       */
    unsigned     arate;
    int64_t      apos;                /* frames emitted so far           */
@@ -267,6 +283,283 @@ static bool media_audio_may_grow(media_player_t *p)
 #endif
    return true;
 }
+static bool media_audio_ns_frames(int64_t ns, unsigned rate, int64_t *frames);
+
+/* An MP4 edit and codec pre-skip address the same original sample
+ * clock. Apply their maximum, not their sum; AAC/Vorbis setup has no
+ * built-in pre-skip. The decoder has already handled Opus's portion. */
+static int64_t media_audio_trim_frames(media_player_t *p)
+{
+   const uint64_t maximum = (~(uint64_t)0) >> 1;
+   int64_t trim;
+   if (p->atrim > maximum || p->apreskip < 0)
+   { p->atime_failed = 1; return 0; }
+   trim = (int64_t)p->atrim;
+   if (p->atype == AUDIO_TYPE_VORBIS && trim && p->actx)
+   {
+      unsigned walked;
+      for (walked = 0; !p->aorigin_ready && p->aorigin_scan < p->anpkts
+            && walked < 256; walked++)
+      {
+         size_t i = p->aorigin_scan;
+         int frames = audio_transfer_demuxed_packet_frames(p->actx, p->atype,
+               p->apkts + p->aorigin_bytes, p->asizes[i], i);
+         if (frames < 0) { p->atime_failed = 1; return 0; }
+         if (frames)
+         {
+            /* Overlap priming consumes media time but emits no PCM.
+             * A trim is relative to that first producing packet's PTS. */
+            if (!media_audio_ns_frames(p->atimes[i].pts, p->arate, &p->avorbis_origin))
+            { p->atime_failed = 1; return 0; }
+            p->aorigin_ready = 1;
+         }
+         p->aorigin_bytes += p->asizes[p->aorigin_scan++];
+      }
+      if (!p->aorigin_ready && p->aorigin_scan == p->anpkts && !media_audio_may_grow(p))
+         p->aorigin_ready = 1;
+      if (p->avorbis_origin < 0 && trim > (int64_t)maximum + p->avorbis_origin)
+      { p->atime_failed = 1; return 0; }
+      trim = p->avorbis_origin < trim ? trim - p->avorbis_origin : 0;
+   }
+   if (p->atype == AUDIO_TYPE_OPUS && p->apreskip > trim) trim = p->apreskip;
+   return trim;
+}
+
+static void media_audio_trim_reset(media_player_t *p)
+{
+   int64_t trim = media_audio_trim_frames(p);
+   p->atrim_left = 0;
+   if (p->atype == AUDIO_TYPE_VORBIS) p->atrim_left = (uint64_t)trim;
+   else if (p->atype == AUDIO_TYPE_OPUS && trim > p->apreskip)
+      p->atrim_left = (uint64_t)(trim - p->apreskip);
+}
+
+/* Both arrays grow under the core owner; borrowed decoder bindings are
+ * refreshed by the pump after a successful append. */
+static bool media_audio_packet_reserve(media_player_t *p)
+{
+   size_t cap;
+   uint32_t *sizes;
+   struct media_audio_time *times;
+   if (p->atime_failed) goto failed;
+   if (p->anpkts < p->anpkts_cap) return true;
+   cap = p->anpkts_cap ? p->anpkts_cap : 2048;
+   if (cap > (size_t)-1 / 2 / sizeof(*times)) goto failed;
+   cap *= 2;
+   sizes = (uint32_t*)malloc(cap * sizeof(*sizes));
+   times = (struct media_audio_time*)malloc(cap * sizeof(*times));
+   if (!sizes || !times) { free(sizes); free(times); goto failed; }
+   if (p->anpkts)
+   {
+      memcpy(sizes, p->asizes, p->anpkts * sizeof(*sizes));
+      memcpy(times, p->atimes, p->anpkts * sizeof(*times));
+   }
+   free(p->asizes); free(p->atimes);
+   p->asizes = sizes; p->atimes = times;
+   /* A later append can fail before the pump's final growth update.
+    * Refresh borrowed table pointers immediately, even at old count. */
+   if (p->actx)
+   {
+      const void *setup = NULL;
+      size_t size = 0;
+      if (p->wgather)
+      {
+         const rwebm_track *at = rwebm_get_track(p->wgather, p->atrack);
+         setup = at->codec_private; size = at->codec_private_size;
+      }
+#ifdef HAVE_RMP4
+      else if (p->agather)
+      {
+         const rmp4_track *at = rmp4_get_track(p->agather, p->agtrack);
+         setup = at->codec_private; size = at->codec_private_size;
+      }
+#endif
+      if (!audio_transfer_set_demuxed_ptr(p->actx, p->atype, setup, size,
+               p->apkts, p->apkts_used, p->asizes, p->anpkts)) goto failed;
+   }
+   p->anpkts_cap = cap;
+   return true;
+failed:
+   p->atime_failed = 1;
+   return false;
+}
+
+static bool media_audio_ns_frames(int64_t ns, unsigned rate, int64_t *frames)
+{
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int64_t seconds = ns / 1000000000;
+   int64_t fraction = (ns % 1000000000) * (int64_t)rate;
+   fraction = (fraction + (fraction >= 0 ? 500000000 : -500000000)) / 1000000000;
+   if (!rate || seconds > maximum / rate || seconds < -maximum / rate)
+      return false;
+   seconds *= rate;
+   if ((fraction > 0 && seconds > maximum - fraction)
+         || (fraction < 0 && seconds < -maximum - fraction)) return false;
+   *frames = seconds + fraction;
+   return true;
+}
+
+/* Packet timestamps are quantised, but cumulative codec sample counts
+ * are exact. Snap only rounding jitter; retain real discontinuities. A
+ * fixed metadata slice bounds each query over a newly grown prefix. */
+static int media_audio_map(media_player_t *p)
+{
+   const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+   int origin_before = p->aorigin_ready;
+   int64_t trim = media_audio_trim_frames(p);
+   int64_t jitter = (int64_t)p->arate / 1000 + 1;
+   unsigned walked;
+   if (p->atype == AUDIO_TYPE_VORBIS && p->atrim)
+   {
+      if (!p->aorigin_ready) return p->atime_failed ? -1 : 0;
+      if (!origin_before) p->atrim_left = (uint64_t)trim;
+   }
+   if (p->atime_failed || p->apreskip < 0
+         || (p->atype != AUDIO_TYPE_OPUS && p->atrim > (uint64_t)maximum)) goto failed;
+   for (walked = 0; p->amapped < p->anpkts && walked < 256; walked++)
+   {
+      struct media_audio_time *t = &p->atimes[p->amapped];
+      int frames = audio_transfer_demuxed_packet_frames(p->actx, p->atype,
+            p->apkts + p->amap_bytes, p->asizes[p->amapped], p->amapped);
+      int64_t pts, skip, start, anchor;
+      if (frames < 0 || p->araw_frames > maximum - frames
+            || !media_audio_ns_frames(t->pts, p->arate, &pts)) goto failed;
+      t->source = p->araw_frames > trim ? p->araw_frames - trim : 0;
+      p->araw_frames += frames;
+      t->end = p->araw_frames > trim ? p->araw_frames - trim : 0;
+      t->prior_end = p->atime_end;
+      t->media = p->atime_end;
+      skip = trim > p->araw_frames - frames ? trim - (p->araw_frames - frames) : 0;
+      if (skip > frames) skip = frames;
+      if (t->end > t->source)
+      {
+         if (pts > maximum - skip) goto failed;
+         start = pts + skip;
+         if (!p->atime_ready)
+         {
+            if (p->atype == AUDIO_TYPE_VORBIS) anchor = start;
+            else if (!media_audio_ns_frames(p->atimes[0].pts, p->arate, &anchor)
+                  || anchor > maximum - trim) goto failed;
+            /* MP4 sample-table times still include the edit-list
+             * priming samples. WebM already subtracts CodecDelay. */
+#ifdef HAVE_RMP4
+            if (p->agather)
+            {
+               const rmp4_track *at = rmp4_get_track(p->agather, p->agtrack);
+               int64_t delay;
+               if (p->atype == AUDIO_TYPE_VORBIS && p->atrim)
+                  anchor = p->avorbis_origin > (int64_t)p->atrim
+                     ? p->avorbis_origin - (int64_t)p->atrim : 0;
+               if (!media_audio_ns_frames(at->presentation_delay_ns, p->arate, &delay)
+                     || delay < 0 || anchor > maximum - delay) goto failed;
+               anchor += delay;
+            }
+            else
+#endif
+               anchor += trim;
+            if (anchor >= -jitter && anchor <= jitter) anchor = 0;
+            if ((start < 0 && anchor > maximum + start)
+                  || (start > 0 && anchor < -maximum + start)) goto failed;
+            p->atime_bias = anchor - start;
+            p->atime_ready = 1;
+         }
+         if ((p->atime_bias > 0 && start > maximum - p->atime_bias)
+               || (p->atime_bias < 0 && start < -maximum - p->atime_bias)) goto failed;
+         start += p->atime_bias;
+         if (t->continued || (start >= p->atime_end - jitter
+                  && start - jitter <= p->atime_end)) start = p->atime_end;
+         t->media = start;
+         if (start > maximum - (t->end - t->source)) goto failed;
+         if (start + (t->end - t->source) > p->atime_end)
+            p->atime_end = start + (t->end - t->source);
+      }
+      p->amap_bytes += p->asizes[p->amapped++];
+   }
+   return p->amapped == p->anpkts;
+failed:
+   p->atime_failed = 1;
+   return -1;
+}
+
+static int64_t media_audio_timeline_total(media_player_t *p)
+{
+   size_t lo = 0, hi = p->amapped;
+   struct media_audio_time *t;
+   int64_t end;
+   if (p->atotal < 0 || !hi || p->amapped != p->anpkts) return -1;
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      if (p->atimes[mid].end < p->atotal) lo = mid + 1;
+      else hi = mid;
+   }
+   if (lo == p->amapped) return p->atime_end;
+   t = &p->atimes[lo];
+   end = p->atotal < t->end ? p->atotal : t->end;
+   if (end < t->source) end = t->source;
+   end = t->media + (end - t->source);
+   return end > t->prior_end ? end : t->prior_end;
+}
+
+/* One shared reader for playback and seek. apos is the presentation
+ * position; asource is the decoder position. A positive jump emits
+ * silence; a negative jump discards only the overlapping source frames.
+ * No decoder call crosses a packet timing boundary. */
+static int media_audio_read(media_player_t *p, int16_t *out, size_t want, size_t *got)
+{
+   unsigned walked;
+   int mapped = media_audio_map(p);
+   *got = 0;
+   if (mapped < 0) return AUDIO_PROCESS_ERROR_END;
+   if (!mapped && p->atime_cursor >= p->amapped) return AUDIO_PROCESS_NEXT;
+   for (walked = 0; walked < 16; walked++)
+   {
+      struct media_audio_time *t;
+      int64_t end, position;
+      size_t count;
+      int ret;
+      /* Keep trim beyond codec pre-skip in the core owner, preserving
+       * each decoder's prediction/overlap history while discarding. */
+      if (p->atrim_left)
+      {
+         size_t dropped = 0;
+         count = p->atrim_left < (uint64_t)want ? (size_t)p->atrim_left : want;
+         ret = audio_transfer_read_s16(p->actx, p->atype, out, count, &dropped);
+         p->atrim_left -= dropped;
+         if (ret != AUDIO_PROCESS_NEXT || !dropped) return ret;
+         continue;
+      }
+      if (p->atime_cursor >= p->amapped)
+         return mapped ? AUDIO_PROCESS_END : AUDIO_PROCESS_NEXT;
+      t = &p->atimes[p->atime_cursor];
+      end = t->end;
+      if (p->atotal >= 0 && end > p->atotal) end = p->atotal;
+      if (p->asource >= end)
+      {
+         p->atime_cursor++;
+         continue;
+      }
+      position = t->media + (p->asource - t->source);
+      if (position > p->apos)
+      {
+         count = position - p->apos < (int64_t)want
+            ? (size_t)(position - p->apos) : want;
+         memset(out, 0, count * p->ach * sizeof(*out));
+         *got = count;
+         return AUDIO_PROCESS_NEXT;
+      }
+      count = end - p->asource < (int64_t)want ? (size_t)(end - p->asource) : want;
+      if (position < p->apos && position > p->apos - (int64_t)count)
+         count = (size_t)(p->apos - position);
+      ret = audio_transfer_read_s16(p->actx, p->atype, out, count, got);
+      p->asource += (int64_t)*got;
+      if (position == p->apos) return ret;
+      *got = 0;
+      if (ret != AUDIO_PROCESS_NEXT) return ret;
+   }
+   return AUDIO_PROCESS_NEXT;
+}
+
 #endif
 
 static void media_drop_hw(media_player_t *p)
@@ -858,6 +1151,8 @@ static void media_free_player(media_player_t *p)
       audio_transfer_free(p->actx, p->atype);
    data_transfer_arena_release(&p->aark);
    free(p->asizes);
+   free(p->atimes);
+   p->atimes = NULL;
 #if defined(HAVE_RMP4)
    if (p->agather)
       rmp4_close(p->agather);
@@ -1032,6 +1327,9 @@ void MEDIA_CORE_PREFIX(retro_reset)(void)
 #ifdef MEDIA_HAVE_AUDIO
    if (p->actx)
       audio_transfer_seek(p->actx, p->atype, 0);
+   p->asource = 0;
+   media_audio_trim_reset(p);
+   p->atime_cursor = 0;
    p->apos    = 0;
    p->aeof    = 0;
 #endif
@@ -1055,18 +1353,40 @@ static bool media_seek_audio(media_player_t *p, int64_t want)
    if (!audio_transfer_seek(p->actx, p->atype, 0))
       return false;
    p->apos = 0;
+   p->asource = 0;
+   media_audio_trim_reset(p);
+   p->atime_cursor = 0;
    p->aeof = 0;
-   if (p->atotal >= 0 && want > p->atotal)
-      want = p->atotal;
+   {
+      int64_t total;
+      media_audio_map(p);
+      total = media_audio_timeline_total(p);
+      if (total >= 0 && want > total) want = total;
+   }
    while (p->apos < want)
    {
       size_t chunk = (size_t)(want - p->apos);
       size_t got   = 0;
       int r;
+      int64_t source_before = p->asource;
+      uint64_t trim_before = p->atrim_left;
+      size_t mapped_before = p->amapped, cursor_before = p->atime_cursor;
+      size_t origin_before = p->aorigin_scan;
       if (chunk > MEDIA_AUDIO_CHUNK)
          chunk = MEDIA_AUDIO_CHUNK;
-      r = audio_transfer_read_s16(p->actx, p->atype, scratch, chunk, &got);
+      r = media_audio_read(p, scratch, chunk, &got);
       p->apos += (int64_t)got;
+      if (r == AUDIO_PROCESS_NEXT && !got)
+      {
+         /* A seek already walks decoded source frames synchronously.
+          * Continue a bounded metadata/trim/overlap slice only when it
+          * made progress; a true resident wall must return to its feeder. */
+         if (p->asource != source_before || p->atrim_left != trim_before
+               || p->amapped != mapped_before || p->atime_cursor != cursor_before
+               || p->aorigin_scan != origin_before)
+            continue;
+         return false;
+      }
       if (r != AUDIO_PROCESS_NEXT || !got)
       {
          p->aeof = 1;
@@ -1932,11 +2252,14 @@ audio:
        * time - and the audience's audio - keeps moving */
       int64_t target = (int64_t)(((double)p->play_ns * 1e-9 + 1.0 / p->fps)
          * (double)p->arate);
+      int64_t timeline_total;
       if (p->eof)
          target = p->apos + (int64_t)((double)p->arate / p->fps) + 1;
-      if (p->atotal >= 0 && target > p->atotal)
-         target = p->atotal;
-      if (p->atotal >= 0 && p->apos >= p->atotal
+      media_audio_map(p);
+      timeline_total = media_audio_timeline_total(p);
+      if (timeline_total >= 0 && target > timeline_total)
+         target = timeline_total;
+      if (timeline_total >= 0 && p->apos >= timeline_total
             && !media_audio_may_grow(p))
          p->aeof = 1;
       while (p->apos < target)
@@ -1946,7 +2269,7 @@ audio:
          int r;
          if (want > MEDIA_AUDIO_CHUNK)
             want = MEDIA_AUDIO_CHUNK;
-         r = audio_transfer_read_s16(p->actx, p->atype, buf, want, &got);
+         r = media_audio_read(p, buf, want, &got);
          if (got)
          {
             const int16_t *out = buf;
@@ -1960,6 +2283,7 @@ audio:
             MEDIA_CORE_PREFIX(audio_batch_cb)(out, got);
             p->apos += (int64_t)got;
          }
+         if (r == AUDIO_PROCESS_NEXT && !got) break;
          if (r != AUDIO_PROCESS_NEXT || !got)
          {
             /* A demuxed progressive source can grow after this read.
@@ -2001,15 +2325,15 @@ static void media_native_pump(media_player_t *p)
                p->apkts_used + pkt.size))
             return;
          p->apkts = p->aark.base;
-         if (p->anpkts >= p->anpkts_cap)
+         if (!media_audio_packet_reserve(p)) return;
          {
-            size_t nc = p->anpkts_cap ? p->anpkts_cap * 2 : 4096;
-            uint32_t *ns;
-            if (!(ns = (uint32_t*)realloc(p->asizes,
-                  nc * sizeof(uint32_t))))
-               return;
-            p->asizes     = ns;
-            p->anpkts_cap = nc;
+            const rwebm_track *at = rwebm_get_track(p->wgather, p->atrack);
+            const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
+            if (at->codec_delay_ns > (uint64_t)maximum
+                  || pkt.timestamp < -maximum + (int64_t)at->codec_delay_ns)
+            { p->atime_failed = 1; return; }
+            p->atimes[p->anpkts].pts = pkt.timestamp - (int64_t)at->codec_delay_ns;
+            p->atimes[p->anpkts].continued = pkt.timestamp_continuation;
          }
          memcpy(p->apkts + p->apkts_used, pkt.data, pkt.size);
          p->asizes[p->anpkts++] = (uint32_t)pkt.size;
@@ -2052,7 +2376,7 @@ static void media_native_pump(media_player_t *p)
        * after the fill has finished) */
       if (p->atype == AUDIO_TYPE_OPUS && p->atoc > 0)
       {
-         p->atotal = p->atoc - p->apreskip
+         p->atotal = p->atoc - media_audio_trim_frames(p)
             - (p->adiscard_ns * 48000 + 500000000) / 1000000000;
          if (p->atotal < 0)
             p->atotal = 0;
@@ -2104,15 +2428,9 @@ static void media_mp4_audio_pump(media_player_t *p)
             p->apkts_used + pkt.size))
          return;
       p->apkts = p->aark.base;
-      if (p->anpkts >= p->anpkts_cap)
-      {
-         size_t nc = p->anpkts_cap ? p->anpkts_cap * 2 : 4096;
-         uint32_t *ns;
-         if (!(ns = (uint32_t*)realloc(p->asizes, nc * sizeof(uint32_t))))
-            return;
-         p->asizes     = ns;
-         p->anpkts_cap = nc;
-      }
+      if (!media_audio_packet_reserve(p)) return;
+      p->atimes[p->anpkts].pts = pkt.timestamp;
+      p->atimes[p->anpkts].continued = 0;
       memcpy(p->apkts + p->apkts_used, pkt.data, pkt.size);
       p->asizes[p->anpkts++] = (uint32_t)pkt.size;
       p->apkts_used         += pkt.size;
@@ -2122,15 +2440,23 @@ static void media_mp4_audio_pump(media_player_t *p)
 #endif
       grew = 1;
    }
-   if (grew && p->actx)
+   if (grew)
    {
-      const rmp4_track *at = rmp4_get_track(p->agather, p->agtrack);
-      audio_transfer_set_demuxed_ptr(p->actx, p->atype,
-            at->codec_private, at->codec_private_size,
-            p->apkts, p->apkts_used, p->asizes, p->anpkts);
+      if (p->actx)
+      {
+         const rmp4_track *at = rmp4_get_track(p->agather, p->agtrack);
+         audio_transfer_set_demuxed_ptr(p->actx, p->atype,
+               at->codec_private, at->codec_private_size,
+               p->apkts, p->apkts_used, p->asizes, p->anpkts);
+      }
 #ifdef HAVE_ROPUS
+      /* Initial gathering can finish before a decoder exists. The
+       * playable total must not remain zero for a resident Opus track. */
       if (p->atype == AUDIO_TYPE_OPUS)
-         p->atotal = p->atoc - p->apreskip;
+      {
+         p->atotal = p->atoc - media_audio_trim_frames(p);
+         if (p->atotal < 0) p->atotal = 0;
+      }
 #endif
    }
 }
@@ -2265,6 +2591,7 @@ static bool media_load_mp4(media_player_t *p)
                 * presentation timeline.  For AAC it comes straight
                 * from the sample tables - no packet walk; for Opus it
                 * accumulates from each appended packet's TOC. */
+               p->atrim = at->media_skip;
                p->atotal = -1;
                if (p->atype == AUDIO_TYPE_AAC)
                   p->atotal = (int64_t)tcount * 1024
@@ -2290,6 +2617,7 @@ static bool media_load_mp4(media_player_t *p)
                         &p->ach, &p->arate, NULL)
                      && p->ach >= 1 && p->ach <= 2 && p->arate)
                {
+                  media_audio_trim_reset(p);
                   if (MEDIA_CORE_PREFIX(log_cb))
                      MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                         "[media] mp4 audio: %s, %u Hz, %u ch, "
@@ -2310,6 +2638,8 @@ static bool media_load_mp4(media_player_t *p)
                   p->actx = NULL;
                   data_transfer_arena_release(&p->aark);
                   free(p->asizes);
+                  free(p->atimes);
+                  p->atimes = NULL;
                   p->apkts  = NULL;
                   p->asizes = NULL;
                   p->apkts_used = p->anpkts = p->anpkts_cap = 0;
@@ -2616,6 +2946,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
                   &p->ach, &p->arate, NULL)
                && p->ach >= 1 && p->ach <= 2 && p->arate)
          {
+            media_audio_trim_reset(p);
             if (MEDIA_CORE_PREFIX(log_cb))
                MEDIA_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                   "[media] audio: %s, %u Hz, %u ch.\n",
@@ -2633,6 +2964,8 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             p->actx = NULL;
             data_transfer_arena_release(&p->aark);
             free(p->asizes);
+            free(p->atimes);
+            p->atimes = NULL;
             p->apkts  = NULL;
             p->asizes = NULL;
             p->atrack = -1;   /* the pump stops gathering it */

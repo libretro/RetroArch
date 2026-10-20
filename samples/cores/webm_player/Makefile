@@ -90,10 +90,19 @@ $(HW_TARGET): webm_hw_test.c $(ROOT)/cores/libretro-media/media_core.c $(ROOT)/c
 	$(CC) $(CFLAGS) -o $@ webm_hw_test.c $(HW_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
 
+ifeq ($(AUDIO),1)
+TIMELINE_TARGET := webm_audio_timeline_test$(EXE)
+TIMELINE_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
+TIMELINE_OBJS := $(call sample_objs,$(TIMELINE_SOURCES:.c=.o))
+$(TIMELINE_TARGET): webm_audio_timeline_test.c $(ROOT)/cores/libretro-media/media_core.c $(TIMELINE_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_audio_timeline_test.c $(TIMELINE_OBJS) $(LDFLAGS) $(LDLIBS)
+endif
+
 ifeq ($(MP4)$(AUDIO),11)
 AUDIO_START_TARGET := webm_audio_start_test$(EXE)
 AUDIO_START_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
 AUDIO_START_OBJS := $(call sample_objs,$(AUDIO_START_SOURCES:.c=.o))
+
 $(AUDIO_START_TARGET): webm_audio_start_test.c $(ROOT)/cores/libretro-media/media_core.c $(AUDIO_START_OBJS)
 	$(CC) $(CFLAGS) -o $@ webm_audio_start_test.c $(AUDIO_START_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
@@ -169,10 +178,24 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
-check: $(PROGRESSIVE_GROUP_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET)
 	$(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-group.webm
 	CORE_SPARSE=1 $(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-sparse.webm
 ifeq ($(AUDIO),1)
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-0.webm 0
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-1.webm 48000
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-2.webm 96000
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-gap-libopus.webm 0 50048 93952
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-gap-libvorbis.webm 0 50048 93952
+	EXPECT_OVERLAP_FRAMES=24000 $(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-overlap.webm 0
+ifeq ($(MP4),1)
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-0.mp4 0
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-1.mp4 48000
+	EXPECT_START_TRIM=4801 $(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-vorbis-trim.mp4 0
+	EXPECT_START_TRIM=4801 $(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-opus-trim.mp4 0
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-opus.mp4 0
+	$(RUNNER) ./$(TIMELINE_TARGET) fixtures/timeline-vorbis.mp4 0
+endif
 	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
 endif
@@ -194,6 +217,7 @@ ifeq ($(MP4),1)
 endif
 
 clean:
+	rm -f webm_audio_timeline_test webm_audio_timeline_test.exe
 	rm -f $(PROGRESSIVE_GROUP_TARGET)
 	rm -f webm_timing_test webm_timing_test.exe
 	rm -f vorbis_seek_test vorbis_seek_test.exe
