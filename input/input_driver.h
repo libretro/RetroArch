@@ -2382,6 +2382,8 @@ size_t input_entry_target(unsigned number, char *s, size_t len);
  * second (0: at once); and set. */
 unsigned input_entry_hold(unsigned number);
 bool input_entry_set_hold(unsigned number, unsigned tenths);
+unsigned input_entry_depth(unsigned number);
+bool input_entry_set_depth(unsigned number, unsigned percent);
 size_t input_entry_spec(unsigned number, char *s, size_t len);
 /* The entries and macros written into a configuration to be saved. */
 void input_entries_write(void *conf);
