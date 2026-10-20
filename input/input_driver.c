@@ -15211,6 +15211,17 @@ static bool input_remap_user_has_work(const settings_t *settings,
    return false;
 }
 
+/* Hardcore mode forbids input from a command: what was held before it
+ * began is not applied, and is let go at the next poll. */
+static INLINE bool input_cmd_forbidden(void)
+{
+#ifdef HAVE_CHEEVOS
+   return rcheevos_hardcore_active();
+#else
+   return false;
+#endif
+}
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -15237,6 +15248,9 @@ void input_driver_poll(void)
       joypad                      = input_st->primary_joypad;
    }
 #endif
+
+   if (input_st->cmd_input && input_cmd_forbidden())
+      input_driver_command_release(MAX_USERS);
 
 #ifdef HAVE_HID
    /* the source beside the joypad driver first: what it finds decides
@@ -16379,7 +16393,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       }
    }
 
-   if (input_st->cmd_input)
+   if (input_st->cmd_input && !input_cmd_forbidden())
       result = input_cmd_state(input_st, port, device, idx, id, result);
 
    /* Register any analog stick input requests for
