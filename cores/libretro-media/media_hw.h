@@ -7,7 +7,7 @@
 #include <retro_common_api.h>
 #include <formats/video_hw_frame.h>
 RETRO_BEGIN_DECLS
-/* NULL queries consumer readiness before hardware startup.
+/* NULL queries consumer readiness before and during hardware playback.
  * true transfers the lease; false leaves it with the core for retry.
  * On false, issue no GPU reads or completion signal.
  * The consumer never blocks and must read/signal or abandon accepted

@@ -318,6 +318,20 @@ static void test_container(void)
       CHECK(media_player.hw_video && media_player.vshown == 1);
       unload();
    }
+   if (!load())
+      goto done;
+   sink_busy = 100;
+   retro_run();
+   CHECK(media_player.hw_video && media_player.hw_frame.image);
+   before = abandoned;
+   ready = 0;
+   retro_run();
+   CHECK(stopped && !media_player.hw_video && !media_player.hw_frame.image);
+   CHECK(abandoned > before && !media_player.fb);
+   memset(&retry, 0, sizeof(retry));
+   unload();
+   ready = 1;
+   sink_busy = 0;
    refuse = 1;
    if (!load())
       goto done;

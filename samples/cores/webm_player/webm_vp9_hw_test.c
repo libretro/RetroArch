@@ -315,10 +315,9 @@ int main(void)
    finish_seek();
    CHECK(media_player.webmvs && media_player.webm_hw_shown > 0);
    before = closes;
-   media_suspend_video_hw();
-   CHECK(!media_player.webmvs && !media_player.hw_frame.image && closes > before);
    ready = 0;
    retro_run();
+   CHECK(!media_player.webmvs && !media_player.hw_frame.image && closes > before);
    CHECK(cpu_frames && !media_player.webmvs && !media_player.hw_restart);
    media_suspend_video_hw();
    ready = 1;
