@@ -1591,8 +1591,8 @@ void MEDIA_CORE_PREFIX(retro_run)(void)
       /* Bounded-memory streaming: release the pages behind what the
        * video stream has fully consumed (audio packets are copied
        * into the pump's blob as they arrive, so the gather region
-       * needs no residency of its own).  The metadata floor - sample
-       * tables, codec private data - always stays. */
+       * needs no residency of its own). The demuxer owns its sample
+       * tables and decoder setup independently of these file pages. */
       if (p->dt && p->pending_seek_ns < 0)
       {
          size_t mfloor  = rmp4_video_stream_media_floor(p->mp4vs);

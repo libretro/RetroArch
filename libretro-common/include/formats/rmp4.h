@@ -23,10 +23,9 @@
  * The whole input buffer is supplied up front (memory-only, like the
  * rest of libretro-common's format layer) and is borrowed, not copied:
  * it must outlive the demuxer, and returned packet pointers alias into
- * it.  The one exception is Opus codec_private: MP4 stores the decoder
- * setup as a dOps box, which is repacked into the OpusHead layout the
- * Opus decoders expect; that buffer lives inside the demuxer and is
- * valid until rmp4_close.
+ * it. Decoder configuration records are owned by the demuxer and remain
+ * valid until rmp4_close, including when a streaming caller releases
+ * consumed input pages. Opus setup is repacked from dOps to OpusHead.
  */
 #ifndef __LIBRETRO_SDK_FORMAT_RMP4_H__
 #define __LIBRETRO_SDK_FORMAT_RMP4_H__
@@ -83,10 +82,9 @@ typedef struct
     * start (the usual encoder-delay edit; sample count for audio).
     * Zero when absent. Only the common single-entry shape is read. */
    uint64_t               media_skip;
-   /* Decoder setup data (Opus: an OpusHead repacked from the dOps box,
-    * owned by the demuxer; Vorbis: the xiph-laced 3 headers from the
-    * esds DecoderSpecificInfo, aliasing the input; VP8/VP9: usually
-    * empty; AV1: the av1C configuration record, aliasing the input). */
+   /* Decoder setup data, owned by the demuxer until rmp4_close.
+    * Opus: repacked OpusHead; Vorbis: xiph-laced headers from esds;
+    * H.264/HEVC/AV1: avcC/hvcC/av1C. VP8/VP9: usually empty. */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
    /* Sample-entry fourcc, NUL-terminated (e.g. "vp09", "avc1"). */

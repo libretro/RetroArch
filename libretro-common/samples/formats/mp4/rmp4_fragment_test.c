@@ -17,6 +17,22 @@
 
 #include <formats/rmp4.h>
 
+#ifdef RMP4_TEST_ALLOCATOR
+static unsigned fail_next_malloc;
+static void *rmp4_test_malloc(size_t size)
+{
+   if (fail_next_malloc)
+   {
+      fail_next_malloc = 0;
+      return NULL;
+   }
+   return malloc(size);
+}
+#define malloc rmp4_test_malloc
+#include "../../../formats/mp4/rmp4.c"
+#undef malloc
+#endif
+
 static int failures;
 
 #define CHECK(cond, ...) do { if (!(cond)) { \
@@ -46,7 +62,8 @@ static void box_end(buf_t *w, size_t at)
 
 /* ftyp + moov for one audio track (ID 1, timescale 1000) with an empty
  * sample table and trex defaults of @dflt_size bytes, @dflt_dur ticks */
-static void head(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur)
+static void head_private(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur,
+      const char *sample, const char *config, size_t *config_pos)
 {
    size_t moov, trak, mdia, minf, stbl, b, mvex;
    b = box(w, "ftyp"); put4cc(w, "iso6"); put32(w, 0); put4cc(w, "iso6");
@@ -58,17 +75,68 @@ static void head(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur)
    b = box(w, "tkhd"); putz(w, 12); put32(w, 1); putz(w, 68); box_end(w, b);
    mdia = box(w, "mdia");
    b = box(w, "mdhd"); putz(w, 12); put32(w, 1000); putz(w, 8); box_end(w, b);
-   b = box(w, "hdlr"); putz(w, 8); put4cc(w, "soun"); putz(w, 13);
+   b = box(w, "hdlr"); putz(w, 8); put4cc(w, sample ? "vide" : "soun"); putz(w, 13);
    box_end(w, b);
    minf = box(w, "minf");
    stbl = box(w, "stbl");
-   b = box(w, "stsd"); putz(w, 8); box_end(w, b);
+   b = box(w, "stsd"); put32(w, 0); put32(w, sample ? 1 : 0);
+   if (sample)
+   {
+      size_t entry = box(w, sample), child;
+      putz(w, 78);
+      child = box(w, config);
+      *config_pos = w->n;
+      put32(w, 0x01020304);
+      box_end(w, child); box_end(w, entry);
+   }
+   box_end(w, b);
    box_end(w, stbl); box_end(w, minf); box_end(w, mdia); box_end(w, trak);
    mvex = box(w, "mvex");
    b = box(w, "trex"); putz(w, 4); put32(w, 1); put32(w, 1);
    put32(w, dflt_dur); put32(w, dflt_size); put32(w, 0); box_end(w, b);
    box_end(w, mvex);
    box_end(w, moov);
+}
+
+static void head(buf_t *w, uint32_t dflt_size, uint32_t dflt_dur)
+{
+   head_private(w, dflt_size, dflt_dur, NULL, NULL, NULL);
+}
+
+/* A released metadata page can disappear while decoder configuration must
+ * remain usable by a later seek or backend replacement. */
+static void test_private(const char *sample, const char *config,
+      enum rmp4_codec codec)
+{
+   static buf_t w;
+   static const uint8_t expected[] = { 1, 2, 3, 4 };
+   size_t config_pos = 0;
+   rmp4_t *m;
+   const rmp4_track *track;
+   memset(&w, 0, sizeof(w));
+   head_private(&w, 0, 10, sample, config, &config_pos);
+   m = rmp4_open_memory(w.b, w.n);
+   CHECK(m != NULL, "%s: metadata fixture opens", sample);
+   if (!m) return;
+   track = rmp4_get_track(m, 0);
+   CHECK(track && track->codec == codec, "%s: codec recognised", sample);
+   CHECK(track && track->codec_private_size == sizeof(expected),
+         "%s: configuration length", sample);
+   memset(w.b + config_pos, 0, sizeof(expected));
+   rmp4_rewind(m);
+   if (track && track->codec_private_size == sizeof(expected))
+      CHECK(!memcmp(track->codec_private, expected, sizeof(expected)),
+            "%s: decoder configuration survives released input", sample);
+   rmp4_close(m);
+#ifdef RMP4_TEST_ALLOCATOR
+   memset(&w, 0, sizeof(w));
+   head_private(&w, 0, 10, sample, config, &config_pos);
+   fail_next_malloc = 1;
+   m = rmp4_open_memory(w.b, w.n);
+   CHECK(!fail_next_malloc, "%s: configuration allocation failure injected", sample);
+   CHECK(!m || !rmp4_num_tracks(m), "%s: allocation failure rejects track", sample);
+   rmp4_close(m);
+#endif
 }
 
 /* Every packet the demuxer gives, checked to lie inside the file */
@@ -194,6 +262,9 @@ int main(void)
    test_valid();
    test_wrap();
    test_countless();
+   test_private("avc1", "avcC", RMP4_CODEC_H264);
+   test_private("hvc1", "hvcC", RMP4_CODEC_H265);
+   test_private("av01", "av1C", RMP4_CODEC_AV1);
    if (failures)
    {
       printf("%d failure(s)\n", failures);

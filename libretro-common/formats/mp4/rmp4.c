@@ -136,6 +136,7 @@ typedef struct
    /* Movie-fragment state: trex defaults and the running decode time. */
    uint32_t    trex_dur, trex_size, trex_flags;
    uint64_t    frag_dts;       /* ticks; tfdt resets it              */
+   uint8_t    *codec_private_owned;
    uint8_t     opus_head[RMP4_OPUS_HEAD_MAX];
 } rmp4_itrack;
 
@@ -721,6 +722,23 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
 
 /* ===== moov parsing ===== */
 
+/* Streaming may release the moov pages after parsing. Decoder restarts
+ * still need these small configuration records, just as sample tables do. */
+static int rmp4_keep_codec_private(rmp4_itrack *t)
+{
+   uint8_t *copy;
+   if (!t->pub.codec_private || !t->pub.codec_private_size
+         || t->pub.codec_private == t->opus_head)
+      return 1;
+   copy = (uint8_t*)malloc(t->pub.codec_private_size);
+   if (!copy)
+      return 0;
+   memcpy(copy, t->pub.codec_private, t->pub.codec_private_size);
+   t->codec_private_owned = copy;
+   t->pub.codec_private = copy;
+   return 1;
+}
+
 static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 {
    rmp4_box mdia, mdhd, hdlr, minf, stbl, b;
@@ -840,7 +858,8 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
       pos = next;
    }
 
-   if (!rmp4_build_samples(t, &tabs, (uint64_t)m->len))
+   if (!rmp4_build_samples(t, &tabs, (uint64_t)m->len)
+         || !rmp4_keep_codec_private(t))
    {
       free(t->off);  t->off  = NULL;
       free(t->size); t->size = NULL;
@@ -1255,6 +1274,7 @@ void rmp4_close(rmp4_t *m)
       free(m->trk[i].size);
       free(m->trk[i].pts);
       free(m->trk[i].key);
+      free(m->trk[i].codec_private_owned);
    }
    free(m);
 }
