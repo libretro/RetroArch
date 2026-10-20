@@ -116,16 +116,20 @@ def grab(display, out):
     hdr = struct.unpack(">25I", data[:100])
     header_size, depth, width, height = hdr[0], hdr[3], hdr[4], hdr[5]
     byte_order, bpp, bpl, ncolors     = hdr[7], hdr[11], hdr[12], hdr[19]
-    if bpp != 32:
+    if bpp not in (24, 32):
         raise SystemExit("unexpected xwd depth: %d bpp" % bpp)
+    # (24: what the screen is left in after Wine's fullscreen mode set)
+    step = bpp // 8
+    pad  = step - 3
     off  = header_size + ncolors * 12
     rows = []
     for y in range(height):
-        line = data[off + y * bpl: off + y * bpl + width * 4]
-        if byte_order == 0:   # LSBFirst: B G R x
-            rows.append([(line[i + 2], line[i + 1], line[i]) for i in range(0, len(line), 4)])
-        else:                 # MSBFirst: x R G B
-            rows.append([(line[i + 1], line[i + 2], line[i + 3]) for i in range(0, len(line), 4)])
+        line = data[off + y * bpl: off + y * bpl + width * step]
+        if byte_order == 0:   # LSBFirst: B G R [x]
+            rows.append([(line[i + 2], line[i + 1], line[i]) for i in range(0, len(line), step)])
+        else:                 # MSBFirst: [x] R G B
+            rows.append([(line[i + pad], line[i + pad + 1], line[i + pad + 2])
+                         for i in range(0, len(line), step)])
     return width, height, rows
 
 

@@ -106,18 +106,32 @@ void input_overlay_release_textures(input_overlay_t *ol)
        * without pixels, as after input_overlay_drop_pixels(). */
       for (i = 0; i < ol->num_images; i++)
       {
-         uint32_t *pixels = ol->images[i] ? ol->images[i]->pixels : NULL;
+         bool atlas       = ol->anim_2frame
+            && ol->anim_2frame[i] == INPUT_OVERLAY_2FRAME_ATLAS;
+         uint32_t *pixels = atlas ? ol->anim_2frame_pix[i]
+            : ol->images[i] ? ol->images[i]->pixels : NULL;
          if (gfx_surface_free_adopt((gfx_surface_t*)ol->surfaces[i], pixels))
          {
-            input_overlay_forget_pixels(ol, pixels);
-            ol->images[i]->pixels = NULL;
+            if (atlas)
+               ol->anim_2frame_pix[i] = NULL;
+            else
+            {
+               input_overlay_forget_pixels(ol, pixels);
+               ol->images[i]->pixels = NULL;
+            }
          }
+         /* asked again at the next upload */
+         if (atlas)
+            ol->anim_2frame[i] = INPUT_OVERLAY_2FRAME_PAIR;
       }
       free(ol->surfaces);
       ol->surfaces = NULL;
    }
    for (i = 0; i < ol->size; i++)
-      ol->overlays[i].textures = NULL;
+   {
+      ol->overlays[i].textures       = NULL;
+      ol->overlays[i].texture_images = NULL;
+   }
    free(ol->page_textures);
    ol->page_textures = NULL;
 }
@@ -183,6 +197,37 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
    {
       gfx_surface_src_t src;
       bool animated    = ol->anim_stream && ol->anim_stream[i];
+      /* A two-frame image as one texture with both frames stacked, a
+       * press then moving its rectangle: where the driver can move it,
+       * and the stack is no taller than a console's textures go. */
+      unsigned rows    = INPUT_OVERLAY_2FRAME_ROWS(ol->images[i]->height);
+      bool atlas       = animated
+         && ol->anim_2frame && ol->anim_2frame[i]
+         && ol->anim_2frame_pix[i]
+         && ol->iface && ol->iface->tex_geom
+         && rows <= 1024
+         && VIDEO_SCALE_FITS(ol->images[i]->width, rows);
+      if (atlas)
+      {
+         gfx_surface_t *s = gfx_surface_new_static(
+               VIDEO_SCALE_PACK(ol->images[i]->width, rows),
+               TEXTURE_FILTER_LINEAR);
+         GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
+         ol->surfaces[i]  = s;
+         if (!s)
+            return false;
+         ol->anim_2frame[i]     = INPUT_OVERLAY_2FRAME_ATLAS;
+         ol->anim_2frame_cur[i] = 0;
+         src.pixels       = ol->anim_2frame_pix[i];
+         src.payload      = NULL;
+         src.payload_free = NULL;
+         src.pixfmt       = IMAGE_PIXFMT_8888;
+         src.rgba         = ol->images[i]->supports_rgba;
+         if (gfx_surface_submit_external(s, &src, NULL, NULL)
+               == GFX_SURFACE_SUBMIT_FAILED)
+            return false;
+         continue;
+      }
       /* One slot: a frame is composed here and submitted immediately,
        * and a surface with a submit in flight refuses every slot, so
        * a second one could never be reached - it would be a frame's
@@ -280,6 +325,7 @@ static enum overlay_textures_state input_overlay_collect_textures(
       input_overlay_t *ol)
 {
    uintptr_t *tex;
+   uint32_t *images;
    size_t i, j, k, total = ol->num_images;
 
    for (i = 0; i < ol->num_images; i++)
@@ -296,8 +342,11 @@ static enum overlay_textures_state input_overlay_collect_textures(
 
    for (i = 0; i < ol->size; i++)
       total += ol->overlays[i].load_images_size;
-   if (!(tex = (uintptr_t*)calloc(total, sizeof(*tex))))
+   /* the handles, then the unique image behind each */
+   if (!(tex = (uintptr_t*)calloc(total,
+               sizeof(*tex) + sizeof(uint32_t))))
       return OVERLAY_TEXTURES_FAILED;
+   images = (uint32_t*)(tex + total);
    for (i = 0; i < ol->num_images; i++)
       tex[i] = ((gfx_surface_t*)ol->surfaces[i])->handle;
 
@@ -321,7 +370,8 @@ static enum overlay_textures_state input_overlay_collect_textures(
             if (     o->load_images[j].pixels
                   && ol->images[u]->pixels == o->load_images[j].pixels)
             {
-               tex[k] = tex[u];
+               tex[k]    = tex[u];
+               images[k] = (uint32_t)u;
                break;
             }
          }
@@ -335,8 +385,9 @@ static enum overlay_textures_state input_overlay_collect_textures(
    k = ol->num_images;
    for (i = 0; i < ol->size; i++)
    {
-      ol->overlays[i].textures = &tex[k];
-      k                       += ol->overlays[i].load_images_size;
+      ol->overlays[i].textures       = &tex[k];
+      ol->overlays[i].texture_images = &images[k];
+      k                             += ol->overlays[i].load_images_size;
    }
    ol->page_textures = tex;
    return OVERLAY_TEXTURES_READY;
@@ -431,6 +482,13 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
 
    for (i = 0; i < ol->num_images; i++)
    {
+      /* a stacked pair is in its texture: its frames go too */
+      if (     ol->anim_2frame
+            && ol->anim_2frame[i] == INPUT_OVERLAY_2FRAME_ATLAS)
+      {
+         free(ol->anim_2frame_pix[i]);
+         ol->anim_2frame_pix[i] = NULL;
+      }
       unsigned width  = ol->images[i]->width;
       unsigned height = ol->images[i]->height;
       if (!ol->images[i]->pixels)
@@ -452,6 +510,31 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
    }
 }
 
+/* The rectangle of the stack each two-frame entry of the active page
+ * shows: a press moves it, uploading nothing. */
+void input_overlay_atlas_frames(input_overlay_t *ol, size_t image)
+{
+   unsigned j;
+   const struct overlay *o = ol ? ol->active : NULL;
+
+   if (     !o || !o->texture_images || !ol->anim_2frame
+         || !ol->iface || !ol->iface->tex_geom)
+      return;
+   for (j = 0; j < o->load_images_size; j++)
+   {
+      uint32_t u = o->texture_images[j];
+      float rows, h;
+      if (     (image != (size_t)-1 && u != image)
+            || ol->anim_2frame[u] != INPUT_OVERLAY_2FRAME_ATLAS)
+         continue;
+      h    = (float)ol->images[u]->height;
+      rows = (float)INPUT_OVERLAY_2FRAME_ROWS(ol->images[u]->height);
+      ol->iface->tex_geom(ol->iface_data, j, 0.0f,
+            ol->anim_2frame_cur[u] ? (h + 2.0f) / rows : 0.0f,
+            1.0f, h / rows);
+   }
+}
+
 enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
 {
    /* Whatever the driver ends up with, it is not what it held. */
@@ -465,6 +548,7 @@ enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
       {
          GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
          input_overlay_drop_pixels(ol);
+         input_overlay_atlas_frames(ol, (size_t)-1);
          return INPUT_OVERLAY_PAGE_TEXTURES;
       }
       /* The wrapper's table answers for any driver; the one beneath
@@ -504,6 +588,7 @@ bool input_overlay_promote_textures(input_overlay_t *ol)
             ol->active->textures, ol->active->load_images_size))
    {
       input_overlay_drop_pixels(ol);
+      input_overlay_atlas_frames(ol, (size_t)-1);
       return true;
    }
    input_overlay_decline_textures(ol);

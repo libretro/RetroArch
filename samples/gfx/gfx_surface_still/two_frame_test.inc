@@ -10,13 +10,14 @@ int main(void)
    input_overlay_t ol;
    struct texture_image image, *images[1];
    void *surfaces[1];
-   uint32_t frames[16],saved[16],own[8],*canvases[1];
+   uint32_t frames[24],saved[24],own[8],*canvases[1];
    gfx_surface_t *s;
    unsigned i;
    int current=1,before;
    if (baseline_main()) return 1;
    memset(&image,0,sizeof(image));
-   for (i=0;i<16;i++) frames[i]=0x10203040+i;
+   /* stacked: frame 0's 8, its last row, frame 1's first row, frame 1's 8 */
+   for (i=0;i<24;i++) frames[i]=0x10203040+i;
    memcpy(saved,frames,sizeof(saved));
    canvases[0]=frames; images[0]=&image;
    ol.surfaces=surfaces; ol.anim_2frame_pix=canvases; ol.images=images;
@@ -28,7 +29,7 @@ int main(void)
    for (i=0;i<2;i++)
    {
       CHECK(input_overlay_update_apng_frame(&ol,0,(int)i),"direct frame");
-      CHECK(st_last_pixels==frames+i*8 && st_px_first==frames[i*8] && st_px_last==frames[i*8+7],"canvas not uploaded directly");
+      CHECK(st_last_pixels==frames+i*16 && st_px_first==frames[i*16] && st_px_last==frames[i*16+7],"canvas not uploaded directly");
       CHECK(!memcmp(s->slots[0],own,sizeof(own)),"redundant own-slot copy");
    }
    image.supports_rgba=true;
@@ -44,7 +45,7 @@ int main(void)
    if (input_overlay_update_apng_frame(&ol,0,0)) current=0;
    CHECK(current==0 && st_last_pixels==frames,"drop not retried");
    st_refuse=1;
-   CHECK(input_overlay_update_apng_frame(&ol,0,1) && st_last_pixels==frames+8,"replacement lost canvas");
+   CHECK(input_overlay_update_apng_frame(&ol,0,1) && st_last_pixels==frames+16,"replacement lost canvas");
    s->inflight=1; before=st_updates;
    CHECK(!input_overlay_update_apng_frame(&ol,0,0) && st_updates==before,"inflight changed");
    s->inflight=0;
@@ -58,8 +59,8 @@ int main(void)
    CHECK(gfx_surface_submit(s,0,false)==GFX_SURFACE_SUBMIT_DONE && s->lent,"loan seed");
    memset(st_lent_pixels,0xa5,sizeof(st_lent_pixels));
    CHECK(input_overlay_update_apng_frame(&ol,0,1),"loan submit");
-   CHECK(st_lent_pixels[0][0]==frames[8] && st_lent_pixels[0][3]==frames[11]
-         && st_lent_pixels[0][8]==frames[12] && st_lent_pixels[0][11]==frames[15]
+   CHECK(st_lent_pixels[0][0]==frames[16] && st_lent_pixels[0][3]==frames[19]
+         && st_lent_pixels[0][8]==frames[20] && st_lent_pixels[0][11]==frames[23]
          && st_lent_pixels[0][4]==0xa5a5a5a5,"padded rows");
    st_lend_busy=1;
    CHECK(input_overlay_update_apng_frame(&ol,0,0),"spare loan submit");
@@ -76,9 +77,9 @@ int main(void)
    st_async=1;
    CHECK(input_overlay_update_apng_frame(&ol,0,1) && s->inflight,"not queued");
    CHECK(!input_overlay_update_apng_frame(&ol,0,0),"queued slot overwritten");
-   frames[8]=0x55667788;
+   frames[16]=0x55667788;
    st_flush();
-   CHECK(st_px_first==saved[8] && st_px_last==saved[15] && st_last_pixels==s->slots[0],"queued canvas not owned");
+   CHECK(st_px_first==saved[16] && st_px_last==saved[23] && st_last_pixels==s->slots[0],"queued canvas not owned");
    st_async=0; gfx_surface_free(s);
    CHECK(st_live==0,"texture leak");
    printf("%s: two-frame canvas, padded loans, retry and queue ownership\n",failures ? "FAILED" : "PASS");

@@ -234,6 +234,13 @@ static void pack_free(input_overlay_t *ol)
    free(ol->anim_stream);
    free(ol->anim_player);
    free(ol->anim_resend);
+   if (ol->anim_2frame_pix)
+      for (i = 0; i < ol->num_images; i++)
+         free(ol->anim_2frame_pix[i]);
+   free(ol->anim_2frame_pix);
+   free(ol->anim_2frame);
+   free(ol->anim_2frame_cur);
+   free(ol->anim_2frame_pressed);
    free(ol);
 }
 
@@ -620,6 +627,118 @@ static void lane_anim_dropped(bool threaded)
    printf("[%s] %s lane\n", failures == before ? "pass" : "fail", lane);
 }
 
+/* A two-frame image is one texture, both frames stacked with a row of
+ * each repeated between them: a page that shows it is pointed at the
+ * frame it shows, and a press moves the rectangle and uploads nothing.
+ * The stacked frames go once the texture is in. Direct, and under the
+ * wrapper. */
+static unsigned atlas_geoms;
+static int      atlas_entry;
+static float    atlas_v, atlas_h;
+
+static void drv_tex_geom(void *data, unsigned image,
+      float x, float y, float w, float h)
+{
+   (void)data; (void)x; (void)w;
+   atlas_geoms++;
+   atlas_entry = (int)image;
+   atlas_v     = y;
+   atlas_h     = h;
+}
+
+static const video_overlay_interface_t iface_atlas = {
+   NULL, drv_load, drv_load_tex, drv_tex_geom, NULL, NULL, NULL
+};
+
+static void lane_two_frame_atlas(bool threaded)
+{
+   static int dummy_stream;
+   unsigned before = failures;
+   const char *lane = threaded ? "threaded, two-frame atlas"
+                               : "two-frame atlas";
+   unsigned w = img_w[0], h = img_h[0], rows = 2 * h + 2;
+   uint32_t *stack, sum;
+   struct texture_image want;
+   input_overlay_t *ol;
+   gfx_surface_t *s;
+   size_t p;
+
+   drv_reset();
+   atlas_geoms = 0;
+   atlas_entry = -1;
+#ifdef HAVE_THREADS
+   stub_thread_active    = threaded;
+   stub_thread_wins_race = threaded;
+#endif
+   ol = pack_new(&iface_atlas, NUM_IMAGES);
+   ol->anim_stream         = (void**)calloc(NUM_IMAGES, sizeof(void*));
+   ol->anim_player         = (void**)calloc(NUM_IMAGES, sizeof(void*));
+   ol->anim_resend         = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
+   ol->anim_2frame         = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
+   ol->anim_2frame_cur     = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
+   ol->anim_2frame_pressed = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
+   ol->anim_2frame_pix     = (uint32_t**)calloc(NUM_IMAGES, sizeof(uint32_t*));
+   ol->anim_stream[0]      = &dummy_stream; /* image 0 is a pair */
+   ol->anim_2frame[0]      = INPUT_OVERLAY_2FRAME_PAIR;
+   stack = (uint32_t*)malloc((size_t)w * rows * sizeof(uint32_t));
+   for (p = 0; p < (size_t)w * rows; p++)
+      stack[p] = 0xff000000u | (uint32_t)(p * 2654435761u);
+   ol->anim_2frame_pix[0] = stack;
+   memset(&want, 0, sizeof(want));
+   want.width  = w;
+   want.height = rows;
+   want.pixels = stack;
+   sum         = stub_checksum(&want);
+
+   pack_show(ol, 0);
+   input_overlay_load_page(ol);
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      video_thread_async_poll();
+      input_overlay_promote_textures(ol);
+   }
+#endif
+   s = ol->surfaces ? (gfx_surface_t*)ol->surfaces[0] : NULL;
+   CHECK(s && s->handle && !s->num_slots
+         && VIDEO_SCALE_W(s->dims) == w && VIDEO_SCALE_H(s->dims) == rows,
+         "%s: not one texture of both frames", lane);
+   CHECK(ol->anim_2frame[0] == INPUT_OVERLAY_2FRAME_ATLAS,
+         "%s: not marked as stacked", lane);
+   if (s && s->handle)
+      CHECK(stub_texture_get(s->handle)->checksum == sum,
+            "%s: the texture is not the stack", lane);
+   CHECK(!ol->anim_2frame_pix[0], "%s: the stack was kept after its upload", lane);
+   CHECK(atlas_geoms == 1 && atlas_entry == 0 && atlas_v == 0.0f
+         && atlas_h == (float)h / (float)rows,
+         "%s: the page was not pointed at the first frame (%u calls, entry %d, %f+%f)",
+         lane, atlas_geoms, atlas_entry, atlas_v, atlas_h);
+
+   /* pressed: the rectangle moves past the first frame and the two
+    * repeated rows; nothing is uploaded */
+   {
+      unsigned loads = stub_tex_loads;
+      ol->anim_2frame_cur[0] = 1;
+      input_overlay_atlas_frames(ol, 0);
+      CHECK(atlas_geoms == 2 && atlas_entry == 0
+            && atlas_v == (float)(h + 2) / (float)rows
+            && atlas_h == (float)h / (float)rows,
+            "%s: a press did not move the rectangle to the second frame", lane);
+      CHECK(stub_tex_loads == loads
+            && (!s || !s->handle || stub_texture_get(s->handle)->checksum == sum),
+            "%s: a press uploaded something", lane);
+      /* the other page does not show it: nothing to point */
+      pack_show(ol, 1);
+      input_overlay_atlas_frames(ol, 0);
+      CHECK(atlas_geoms == 2, "%s: a page without the image was pointed", lane);
+   }
+   pack_free(ol);
+#ifdef HAVE_THREADS
+   stub_thread_active = stub_thread_wins_race = false;
+#endif
+   printf("[%s] %s lane\n", failures == before ? "pass" : "fail", lane);
+}
+
 int main(void)
 {
    lane_textures();
@@ -629,8 +748,10 @@ int main(void)
    lane_load_fails();
    lane_no_images();
    lane_anim_dropped(false);
+   lane_two_frame_atlas(false);
 #ifdef HAVE_THREADS
    lane_anim_dropped(true);
+   lane_two_frame_atlas(true);
    lane_threaded_prompt();
    lane_threaded_late();
    lane_threaded_late_refused("threaded, late and declined", true,  false);

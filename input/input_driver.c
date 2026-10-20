@@ -5883,7 +5883,8 @@ static bool input_overlay_update_apng_frame(input_overlay_t *ol,
    if (!pix || !s || !s->num_slots || s->inflight)
       return false;
 
-   frame_len = VIDEO_SCALE_AREA(s->dims);
+   /* the second frame is past the first and the two shared rows */
+   frame_len = VIDEO_SCALE_AREA(s->dims) + 2 * VIDEO_SCALE_W(s->dims);
    switch (gfx_surface_submit_pixels(s,
             pix + (target_frame ? frame_len : 0),
             ol->images[i]->supports_rgba))
@@ -5913,9 +5914,17 @@ static void input_overlay_update_2frame(input_overlay_t *ol)
          continue;
 
       target = ol->anim_2frame_pressed[i] ? 1 : 0;
-      if (     ol->anim_2frame_cur[i] != target
-            && input_overlay_update_apng_frame(ol, i, target))
-         ol->anim_2frame_cur[i] = target;
+      if (ol->anim_2frame_cur[i] != target)
+      {
+         /* one texture with both: the rectangle moves */
+         if (ol->anim_2frame[i] == INPUT_OVERLAY_2FRAME_ATLAS)
+         {
+            ol->anim_2frame_cur[i] = target;
+            input_overlay_atlas_frames(ol, i);
+         }
+         else if (input_overlay_update_apng_frame(ol, i, target))
+            ol->anim_2frame_cur[i] = target;
+      }
       ol->anim_2frame_pressed[i] = 0;
    }
 }
@@ -11365,21 +11374,27 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
                      && h == ol->images[i]->height)
                {
                   size_t frame_len = (size_t)w * h;
-                  uint32_t *pix    = (uint32_t*)malloc(
-                        frame_len * 2 * sizeof(uint32_t));
+                  uint32_t *pix    = (uint32_t*)malloc((size_t)w
+                        * INPUT_OVERLAY_2FRAME_ROWS(h) * sizeof(uint32_t));
                   const uint32_t *frame;
                   int duration_ms  = 0;
 
                   if (     pix
                         && (frame = rpng_apng_stream_next(st, &duration_ms)))
                   {
+                     /* stacked: the frame, its last row, the next
+                      * frame's first row, the next frame */
                      memcpy(pix, frame, frame_len * sizeof(uint32_t));
+                     memcpy(pix + frame_len, frame + frame_len - w,
+                           w * sizeof(uint32_t));
                      if ((frame = rpng_apng_stream_next(st, &duration_ms)))
                      {
-                        memcpy(pix + frame_len, frame,
+                        memcpy(pix + frame_len + w, frame,
+                              w * sizeof(uint32_t));
+                        memcpy(pix + frame_len + 2 * w, frame,
                               frame_len * sizeof(uint32_t));
                         ol->anim_2frame_pix[i] = pix;
-                        ol->anim_2frame[i]     = 1;
+                        ol->anim_2frame[i]     = INPUT_OVERLAY_2FRAME_PAIR;
                         pix                    = NULL;
                      }
                   }
