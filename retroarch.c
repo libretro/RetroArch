@@ -165,6 +165,7 @@
 #endif
 
 #include "input/input_remapping.h"
+#include "input/drivers_hid/winusb_bind.h"
 #ifdef HAVE_OPENXR
 #include "input/common/input_openxr.h"
 #include "gfx/video_xr.h"
@@ -7355,6 +7356,13 @@ extern "C"
 #endif
 int main(int argc, char *argv[])
 {
+#ifdef HAVE_WINUSB_BIND
+   /* the copy started with administrator rights to move a DualShock 3
+    * to WinUSB or back (winusb_bind_request()), or an installer's */
+   int ret;
+   if (argc == 2 && winusb_bind_command(argv[1], &ret))
+      return ret;
+#endif
    return rarch_main(argc, argv, NULL);
 }
 #endif

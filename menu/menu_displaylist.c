@@ -175,6 +175,8 @@
 #include <net/net_ifinfo.h>
 #endif
 
+#include "../input/drivers_hid/winusb_bind.h"
+
 /* TODO/FIXME - globals - need to find a way to
  * get rid of these */
 struct menu_displaylist_state
@@ -3010,6 +3012,25 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
                count++;
          }
       }
+
+#ifdef HAVE_WINUSB_BIND
+      /* A DualShock 3: on Windows' own driver, which cannot start it,
+       * a row to move it to WinUSB; on WinUSB, read by the HID driver,
+       * one to give it back */
+      if (winusb_bind_is_ds3(input_config_get_device_vid(port),
+               input_config_get_device_pid(port)))
+      {
+         bool on_winusb = string_is_equal(
+               input_config_get_device_joypad_driver(port), "hid");
+         if (menu_entries_append(list, msg_hash_to_str(on_winusb
+                     ? MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE
+                     : MENU_ENUM_LABEL_VALUE_PORT_DS3_ENABLE), "",
+               on_winusb ? MENU_ENUM_LABEL_INPUT_DS3_RESTORE
+                         : MENU_ENUM_LABEL_INPUT_DS3_ENABLE,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+            count++;
+      }
+#endif
    }
 
    /* This computer's Bluetooth */

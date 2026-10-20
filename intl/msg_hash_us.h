@@ -31697,6 +31697,14 @@ MSG_HASH( /* Under the same entry: selecting it makes the controller connect to 
    MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    "- Pair with This Computer"
    )
+MSG_HASH( /* Under a DualShock 3 that Windows' own driver cannot start: selecting it moves every DualShock 3 plugged in to Windows' WinUSB driver, after one administrator prompt */
+   MENU_ENUM_LABEL_VALUE_PORT_DS3_ENABLE,
+   "- Enable DualShock 3 Support"
+   )
+MSG_HASH( /* Under a DualShock 3 on WinUSB: selecting it gives every DualShock 3 plugged in back to the driver Windows chooses itself */
+   MENU_ENUM_LABEL_VALUE_PORT_DS3_RESTORE,
+   "- Restore Windows Driver"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"
@@ -32943,6 +32951,30 @@ MSG_HASH( /* %u is the controller's port */
 MSG_HASH(
    MSG_INPUT_BT_PAIR_FAILED,
    "Port %u's controller could not be paired with this computer."
+   )
+MSG_HASH(
+   MSG_INPUT_DS3_ASKING,
+   "Changing the DualShock 3 driver: allow it in the Windows prompt."
+   )
+MSG_HASH(
+   MSG_INPUT_DS3_ENABLED,
+   "DualShock 3 support enabled. The controller reconnects by itself."
+   )
+MSG_HASH(
+   MSG_INPUT_DS3_RESTORED,
+   "DualShock 3 given back to the Windows driver."
+   )
+MSG_HASH(
+   MSG_INPUT_DS3_NOT_CHANGED,
+   "The DualShock 3 driver could not be changed."
+   )
+MSG_HASH(
+   MSG_INPUT_DS3_DECLINED,
+   "The DualShock 3 driver was not changed: administrator rights were not given."
+   )
+MSG_HASH( /* %s is the controller's name, %u its port */
+   MSG_INPUT_DS3_NEEDS_ENABLING,
+   "%s (port %u) needs enabling: Information > Input Information > Enable DualShock 3 Support."
    )
 MSG_HASH(
    MSG_INPUT_COMBO_SET_BUTTONS,

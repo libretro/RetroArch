@@ -37,6 +37,7 @@
 #include "../input/input_remapping.h"
 
 #include "tasks_internal.h"
+#include "../input/drivers_hid/winusb_bind.h"
 #ifdef HAVE_BLISSBOX
 #include "../input/include/blissbox.h"
 #endif
@@ -1671,6 +1672,21 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                   device_display_name,
                   autoconfig_handle->device_info.vid,
                   autoconfig_handle->device_info.pid);
+
+#ifdef HAVE_WINUSB_BIND
+   /* A DualShock 3 that Windows' own driver has: it cannot be started
+    * there, whatever its profile says, until it is moved to WinUSB */
+   if (     winusb_bind_is_ds3(autoconfig_handle->device_info.vid,
+               autoconfig_handle->device_info.pid)
+         && !string_is_equal(autoconfig_handle->device_info.joypad_driver,
+               "hid"))
+   {
+      task->style = TASK_STYLE_NEGATIVE;
+      snprintf(task_title, sizeof(task_title),
+            msg_hash_to_str(MSG_INPUT_DS3_NEEDS_ENABLING),
+            device_display_name, autoconfig_handle->port + 1);
+   }
+#endif
 
    /* Update task title */
    task_free_title(task);
