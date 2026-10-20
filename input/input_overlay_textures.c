@@ -196,6 +196,7 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
    for (i = 0; i < ol->num_images; i++)
    {
       gfx_surface_src_t src;
+      gfx_surface_t *s;
       bool animated    = ol->anim_stream && ol->anim_stream[i];
       /* A two-frame image as one texture with both frames stacked, a
        * press then moving its rectangle: where the driver can move it,
@@ -232,7 +233,7 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
        * and a surface with a submit in flight refuses every slot, so
        * a second one could never be reached - it would be a frame's
        * worth of memory per animated image, for nothing. */
-      gfx_surface_t *s = !VIDEO_SCALE_FITS(ol->images[i]->width,
+      s = !VIDEO_SCALE_FITS(ol->images[i]->width,
                ol->images[i]->height)
          ? NULL
          : animated
@@ -482,6 +483,8 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
 
    for (i = 0; i < ol->num_images; i++)
    {
+      unsigned width  = ol->images[i]->width;
+      unsigned height = ol->images[i]->height;
       /* a stacked pair is in its texture: its frames go too */
       if (     ol->anim_2frame
             && ol->anim_2frame[i] == INPUT_OVERLAY_2FRAME_ATLAS)
@@ -489,8 +492,6 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
          free(ol->anim_2frame_pix[i]);
          ol->anim_2frame_pix[i] = NULL;
       }
-      unsigned width  = ol->images[i]->width;
-      unsigned height = ol->images[i]->height;
       if (!ol->images[i]->pixels)
          continue;
       GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
