@@ -949,28 +949,49 @@ void video_driver_restore_windows(void)
    video_st->windows_restore++;
 }
 
-/* The three-slot protocol of video_driver_publish_window_layout() */
+/* The three-slot protocol of video_title_publish(), latest wins: hands
+ * over the slot just filled and picks the next one to fill */
+static void video_window_slot_publish(retro_atomic_int_t *published,
+      unsigned *next, unsigned *last)
+{
+   unsigned pub = *next;
+   int prev     = retro_atomic_exchange_int(published, (int)pub + 1);
+   if (prev)
+      /* never taken, so no reader holds it */
+      *next = (unsigned)prev - 1;
+   else if (*last)
+      /* the reader took the last one and may be reading it */
+      *next = 3u - pub - (*last - 1);
+   else
+      *next = (pub + 1) % 3;
+   *last = pub + 1;
+}
+
+/* The reader's side: holds the newest slot, if one was published since
+ * the last take; true when it took one */
+static bool video_window_slot_take(retro_atomic_int_t *published,
+      unsigned *held)
+{
+   int taken;
+   if (!retro_atomic_load_acquire_int(published))
+      return false;
+   if (!(taken = retro_atomic_exchange_int(published, 0)))
+      return false;
+   *held = (unsigned)taken;
+   return true;
+}
+
 void video_driver_publish_window_displays(
       const video_window_display_t *displays, unsigned count)
 {
    video_window_displays_t *box = &video_driver_st.window_displays;
    unsigned pub                 = box->next;
-   int prev;
    if (!displays || count > VIDEO_WINDOW_DISPLAYS_MAX)
       count = displays ? VIDEO_WINDOW_DISPLAYS_MAX : 0;
    if (count)
       memcpy(box->slot[pub], displays, count * sizeof(*displays));
    box->count[pub] = count;
-   prev = retro_atomic_exchange_int(&box->published, (int)pub + 1);
-   if (prev)
-      /* never taken, so no reader holds it */
-      box->next = (unsigned)prev - 1;
-   else if (box->last)
-      /* the app thread took the last one and may be reading it */
-      box->next = 3u - pub - (box->last - 1);
-   else
-      box->next = (pub + 1) % 3;
-   box->last = pub + 1;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
 /* App thread: the newest list, or NULL with *count 0. Taking a new one
@@ -979,15 +1000,8 @@ static const video_window_display_t *video_driver_take_window_displays(
       video_driver_state_t *video_st, unsigned *count)
 {
    video_window_displays_t *box = &video_st->window_displays;
-   if (retro_atomic_load_acquire_int(&box->published))
-   {
-      int taken = retro_atomic_exchange_int(&box->published, 0);
-      if (taken)
-      {
-         box->held = (unsigned)taken;
-         video_driver_restore_windows();
-      }
-   }
+   if (video_window_slot_take(&box->published, &box->held))
+      video_driver_restore_windows();
    *count = box->held ? box->count[box->held - 1] : 0;
    return *count ? box->slot[box->held - 1] : NULL;
 }
@@ -1010,7 +1024,6 @@ void video_driver_attach_windows(unsigned screens)
    retro_atomic_fetch_or_int(&video_driver_st.windows_failed, (int)screens);
 }
 
-/* The three-slot protocol of video_title_publish(), latest wins */
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
@@ -1018,13 +1031,10 @@ void video_driver_publish_window_layout(unsigned window,
 {
    video_window_layouts_t *box;
    video_window_layout_t *slot;
-   unsigned pub;
-   int prev;
    if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
       return;
    box  = &video_driver_st.window_layouts[window - 1];
-   pub  = box->next;
-   slot = &box->slot[pub];
+   slot = &box->slot[box->next];
    if (layout && core_map)
    {
       slot->layout      = *layout;
@@ -1035,16 +1045,7 @@ void video_driver_publish_window_layout(unsigned window,
    }
    else
       slot->generation  = 0;
-   prev = retro_atomic_exchange_int(&box->published, (int)pub + 1);
-   if (prev)
-      /* never taken, so no reader holds it */
-      box->next = (unsigned)prev - 1;
-   else if (box->last)
-      /* the main thread took the last one and may be reading it */
-      box->next = 3u - pub - (box->last - 1);
-   else
-      box->next = (pub + 1) % 3;
-   box->last = pub + 1;
+   video_window_slot_publish(&box->published, &box->next, &box->last);
 }
 
 /* Once the driver has gone, with no publisher left: no window has a
@@ -1088,12 +1089,7 @@ bool video_driver_translate_window_point(unsigned window,
    if (window >= RETRO_VIDEO_VIEWS_MAX)
       return false;
    box = &video_driver_st.window_layouts[window - 1];
-   if (retro_atomic_load_acquire_int(&box->published))
-   {
-      int taken = retro_atomic_exchange_int(&box->published, 0);
-      if (taken)
-         box->held = (unsigned)taken;
-   }
+   video_window_slot_take(&box->published, &box->held);
    if (!box->held)
       return false;
    slot = &box->slot[box->held - 1];

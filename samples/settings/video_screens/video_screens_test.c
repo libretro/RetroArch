@@ -425,9 +425,11 @@ static void window_test_display(video_window_display_t *d,
 static void test_window_displays(void)
 {
    video_window_display_t displays[3];
-   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX];
+   video_window_display_t many[VIDEO_WINDOW_DISPLAYS_MAX + 1];
+   video_window_display_t got[VIDEO_WINDOW_DISPLAYS_MAX + 1];
    video_views_layout_t layout;
    unsigned restore;
+   unsigned i;
    /* The Thor: its own panel, then Screen-2 */
    window_test_display(&displays[0], 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
          true, "Built-in Screen");
@@ -461,7 +463,10 @@ static void test_window_displays(void)
          == 2);
    CHECK(got[1].ordinal == 2 && !strcmp(got[1].name, "Screen-2"));
    CHECK(got[1].dims == VIDEO_SCALE_PACK(1240, 1080));
+   memset(got, 0, sizeof(got));
    CHECK(video_driver_get_window_displays(got, 1) == 1);
+   CHECK(got[0].ordinal == 1 && !strcmp(got[0].name, "Built-in Screen"));
+   CHECK(got[1].ordinal == 0);
    /* A list is taken once */
    window_test_run();
    CHECK(window_test_seen.restore == restore + 1);
@@ -496,6 +501,16 @@ static void test_window_displays(void)
    CHECK(window_test_seen.display == 0);
    CHECK(window_test_seen.plan.main_mask == 3u);
    CHECK(window_test_seen.window_screens[1] == 0u);
+
+   /* A longer list keeps its first VIDEO_WINDOW_DISPLAYS_MAX */
+   for (i = 0; i <= VIDEO_WINDOW_DISPLAYS_MAX; i++)
+      window_test_display(&many[i], i + 1, VIDEO_WINDOW_CONNECTION_UNKNOWN,
+            false, "Screen");
+   video_driver_publish_window_displays(many, VIDEO_WINDOW_DISPLAYS_MAX + 1);
+   CHECK(video_driver_get_window_displays(got, VIDEO_WINDOW_DISPLAYS_MAX + 1)
+         == VIDEO_WINDOW_DISPLAYS_MAX);
+   CHECK(got[VIDEO_WINDOW_DISPLAYS_MAX - 1].ordinal
+         == VIDEO_WINDOW_DISPLAYS_MAX);
 
    /* An empty list stops routing */
    video_driver_publish_window_displays(NULL, 0);
