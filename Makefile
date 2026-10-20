@@ -131,6 +131,9 @@ ifneq ($(CXX_BUILD), 1)
       # string literal, which no declaration of ours can help: this lane
       # is here for declarations, comments and C99 syntax.
       CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros -Wno-overlength-strings
+      ifneq ($(findstring Win32,$(OS)),)
+         CFLAGS += -include libretro-common/include/compat/mingw_math.h
+      endif
       ifeq ($(HAVE_PIPEWIRE), 1)
          # The SPA headers are C99: read them as system headers, which
          # takes them out of -pedantic, and give them __inline__.
