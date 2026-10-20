@@ -104,7 +104,7 @@ static joypad_connection_entry_t pad_map[] = {
    { "DualSense Edge Wireless Controller",
       VID_SONY,
       PID_SONY_DS5_EDGE,
-      &pad_connection_ps5
+      &pad_connection_ps5_edge
    },
    { "PLAYSTATION(R)3 Controller",
       VID_SONY,

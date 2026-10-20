@@ -25,9 +25,10 @@
  * - byte 1: L1, R1, L2, R2, create, options, L3, R3, from bit 0;
  * - byte 2: PS, the touchpad's click, mute.
  *
- * Output (rumble, the player lights) goes as USB's report 0x02 only:
- * Bluetooth's needs a checksum and its framing differs between the
- * Bluetooth backends. */
+ * Output - rumble and the player lights - is the report raw input's
+ * driver sends (input/common/sony_pad_output.h), over USB or
+ * Bluetooth as the input came. Not behind a Bluetooth stack's own
+ * header, whose framing of output is that stack's. */
 
 #include <stdint.h>
 #include <string.h>
@@ -38,21 +39,17 @@
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
+#include "../common/sony_pad_output.h"
 
 #define PS5_USB_REPORT_LEN    64
 #define PS5_BT_SHORT_LEN      10
 #define PS5_BT_FULL_LEN       12 /* what is read of report 0x31 */
-#define PS5_USB_OUTPUT_LEN    48
 
-/* bytes of the USB output report, its ID at 0 */
-#define PS5_OUT_FLAGS0        1  /* 0x01 rumble, 0x02 rumble not haptics */
-#define PS5_OUT_FLAGS1        2  /* 0x04 lightbar, 0x10 player lights */
-#define PS5_OUT_MOTOR_WEAK    3
-#define PS5_OUT_MOTOR_STRONG  4
-#define PS5_OUT_FLAGS2        39 /* 0x02 lightbar setup */
-#define PS5_OUT_LIGHT_SETUP   42 /* 0x02: the start-up glow fades out */
-#define PS5_OUT_PLAYER_LIGHTS 44
-#define PS5_OUT_LIGHTBAR      45 /* red, green, blue */
+/* how the pad came: its output goes the same way */
+#define PS5_LINK_NONE         0
+#define PS5_LINK_USB          1
+#define PS5_LINK_BT           2
+#define PS5_LINK_STACK        3  /* behind a Bluetooth stack's header */
 
 struct hidpad_ps5_data
 {
@@ -64,13 +61,17 @@ struct hidpad_ps5_data
    uint8_t sticks[4];
    uint8_t triggers[2];
    uint8_t motors[2];   /* strong, weak: what the core asked last */
+   uint8_t link;
+   bool edge;
+   bool bluetooth;      /* the driver says so: its reports' lengths do not */
+   bool vibration_v2;   /* the newer way of driving the motors */
    bool ps;
-   bool usb;            /* the reports come over USB: output can go */
    bool lights_sent;
    bool motors_due;
 };
 
-static void *hidpad_ps5_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void *hidpad_ps5_start(void *data, uint32_t slot,
+      hid_driver_t *driver, bool edge)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct hidpad_ps5_data *device;
@@ -81,12 +82,38 @@ static void *hidpad_ps5_init(void *data, uint32_t slot, hid_driver_t *driver)
             calloc(1, sizeof(struct hidpad_ps5_data))))
       return NULL;
 
-   device->connection = connection;
-   device->driver     = driver;
-   device->slot       = slot;
-   device->sticks[0]  = device->sticks[1] = 0x80;
-   device->sticks[2]  = device->sticks[3] = 0x80;
+   device->connection   = connection;
+   device->driver       = driver;
+   device->slot         = slot;
+   device->edge         = edge;
+   device->bluetooth    = driver && driver->is_bluetooth
+      && driver->is_bluetooth(connection);
+   device->sticks[0]    = device->sticks[1] = 0x80;
+   device->sticks[2]    = device->sticks[3] = 0x80;
+   /* the Edge drives its motors the newer way; a DualSense from
+    * firmware 2.21, which its feature report 0x20 tells */
+   device->vibration_v2 = edge;
+   if (!edge && driver && driver->get_report)
+   {
+      uint8_t feature[64];
+      memset(feature, 0, sizeof(feature));
+      if (driver->get_report(connection, HID_REPORT_FEATURE, 0x20,
+               feature, sizeof(feature)) >= 46)
+         device->vibration_v2 =
+            (unsigned)(feature[44] | (feature[45] << 8)) > 0x0215;
+   }
    return device;
+}
+
+static void *hidpad_ps5_init(void *data, uint32_t slot, hid_driver_t *driver)
+{
+   return hidpad_ps5_start(data, slot, driver, false);
+}
+
+static void *hidpad_ps5_edge_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
+{
+   return hidpad_ps5_start(data, slot, driver, true);
 }
 
 static void hidpad_ps5_deinit(void *data)
@@ -126,33 +153,19 @@ static uint32_t hidpad_ps5_decode(const uint8_t *b)
    return r;
 }
 
-/* One USB output report: the rumble, and the first time the player's
+/* One output report: the rumble, and the first time the player's
  * lights. Sent from the poll, so a core changing its rumble every frame
  * costs one report a poll at most. */
 static void hidpad_ps5_send(struct hidpad_ps5_data *device)
 {
-   static const uint8_t player_lights[4] = { 0x04, 0x0a, 0x15, 0x1b };
-   static const uint8_t lightbar[4][3]   = {
-      { 0x00, 0x00, 0x40 }, { 0x40, 0x00, 0x00 },
-      { 0x00, 0x40, 0x00 }, { 0x20, 0x00, 0x20 } };
-   uint8_t r[PS5_USB_OUTPUT_LEN];
-   unsigned player = device->slot & 3;
+   uint8_t r[SONY_PAD_REPORT_MAX];
+   size_t len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE,
+         device->link == PS5_LINK_BT, device->vibration_v2,
+         device->motors[0], device->motors[1],
+         device->lights_sent ? 0 : (int)(device->slot % 4) + 1);
 
-   memset(r, 0, sizeof(r));
-   r[0]                    = 0x02;
-   r[PS5_OUT_FLAGS0]       = 0x01 | 0x02;
-   r[PS5_OUT_MOTOR_STRONG] = device->motors[0];
-   r[PS5_OUT_MOTOR_WEAK]   = device->motors[1];
-   if (!device->lights_sent)
-   {
-      r[PS5_OUT_FLAGS1]        = 0x04 | 0x10;
-      r[PS5_OUT_FLAGS2]        = 0x02;
-      r[PS5_OUT_LIGHT_SETUP]   = 0x02;
-      r[PS5_OUT_PLAYER_LIGHTS] = player_lights[player];
-      memcpy(&r[PS5_OUT_LIGHTBAR], lightbar[player], 3);
-   }
-   if (device->driver && device->driver->send_control)
-      device->driver->send_control(device->connection, r, sizeof(r));
+   if (len && device->driver && device->driver->send_control)
+      device->driver->send_control(device->connection, r, len);
    device->lights_sent = true;
    device->motors_due  = false;
 }
@@ -164,6 +177,7 @@ static void hidpad_ps5_packet_handler(void *data,
    const uint8_t *r               = packet;
    const uint8_t *buttons, *triggers;
    unsigned len                   = size;
+   uint8_t link                   = PS5_LINK_NONE;
 
    if (!device || !r)
       return;
@@ -173,15 +187,17 @@ static void hidpad_ps5_packet_handler(void *data,
    {
       r++;
       len--;
+      link = PS5_LINK_STACK;
    }
    if (!len)
       return;
 
-   if (r[0] == 0x01 && len >= PS5_USB_REPORT_LEN)
+   if (r[0] == 0x01 && len >= PS5_USB_REPORT_LEN && !device->bluetooth)
    {
       triggers    = r + 5;
       buttons     = r + 8;
-      device->usb = true;
+      if (!link)
+         link     = PS5_LINK_USB;
    }
    else if (r[0] == 0x01 && len >= PS5_BT_SHORT_LEN)
    {
@@ -196,13 +212,15 @@ static void hidpad_ps5_packet_handler(void *data,
    }
    else
       return;
+   device->link = link ? link : PS5_LINK_BT;
 
    memcpy(device->sticks, r + 1, sizeof(device->sticks));
    memcpy(device->triggers, triggers, sizeof(device->triggers));
    device->buttons = hidpad_ps5_decode(buttons);
    device->ps      = (buttons[2] & 0x01) != 0;
 
-   if (device->usb && (!device->lights_sent || device->motors_due))
+   if (     device->link != PS5_LINK_STACK
+         && (!device->lights_sent || device->motors_due))
       hidpad_ps5_send(device);
 }
 
@@ -252,8 +270,10 @@ static int16_t hidpad_ps5_get_axis(void *data, unsigned axis)
 
 static const char *hidpad_ps5_get_name(void *data)
 {
-   (void)data;
-   return "DualSense Wireless Controller";
+   struct hidpad_ps5_data *device = (struct hidpad_ps5_data*)data;
+   return (device && device->edge)
+      ? "DualSense Edge Wireless Controller"
+      : "DualSense Wireless Controller";
 }
 
 static int32_t hidpad_ps5_button(void *data, uint16_t joykey)
@@ -266,6 +286,18 @@ static int32_t hidpad_ps5_button(void *data, uint16_t joykey)
 
 pad_connection_interface_t pad_connection_ps5 = {
    hidpad_ps5_init,
+   hidpad_ps5_deinit,
+   hidpad_ps5_packet_handler,
+   hidpad_ps5_set_rumble,
+   hidpad_ps5_get_buttons,
+   hidpad_ps5_get_axis,
+   hidpad_ps5_get_name,
+   hidpad_ps5_button,
+   false
+};
+
+pad_connection_interface_t pad_connection_ps5_edge = {
+   hidpad_ps5_edge_init,
    hidpad_ps5_deinit,
    hidpad_ps5_packet_handler,
    hidpad_ps5_set_rumble,

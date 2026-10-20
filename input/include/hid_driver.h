@@ -58,6 +58,11 @@ struct hid_driver
    /* as input_device_driver_t's */
    bool (*get_bt_host)(void *handle, unsigned pad, uint8_t *addr);
    bool (*set_bt_host)(void *handle, unsigned pad, const uint8_t *addr);
+   /* Whether the device - send_control's handle - is on Bluetooth, for
+    * a handler whose reports differ by the way the pad came and which
+    * cannot tell it by their length: Windows gives every report at the
+    * longest one's length. NULL where the lengths tell. */
+   bool (*is_bluetooth)(void *handle);
 };
 
 #endif /* HID_DRIVER_H__ */

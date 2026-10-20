@@ -18,7 +18,8 @@ SOURCES := \
 	$(LRC)/string/stdstring.c \
 	$(LRC)/rthreads/rthreads.c \
 	$(LRC)/features/features_cpu.c \
-	$(LRC)/encodings/encoding_utf.c
+	$(LRC)/encodings/encoding_utf.c \
+	$(LRC)/encodings/encoding_crc32.c
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

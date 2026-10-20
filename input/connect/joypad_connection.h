@@ -122,6 +122,7 @@ extern pad_connection_interface_t pad_connection_wiiupro;
 extern pad_connection_interface_t pad_connection_ps3;
 extern pad_connection_interface_t pad_connection_ps4;
 extern pad_connection_interface_t pad_connection_ps5;
+extern pad_connection_interface_t pad_connection_ps5_edge;
 extern pad_connection_interface_t pad_connection_snesusb;
 extern pad_connection_interface_t pad_connection_nesusb;
 extern pad_connection_interface_t pad_connection_wiiugca;

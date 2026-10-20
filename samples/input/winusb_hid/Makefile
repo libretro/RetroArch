@@ -17,7 +17,8 @@ SOURCES   := winusb_hid_test.c \
 	$(LRC)/rthreads/rthreads.c \
 	$(LRC)/features/features_cpu.c \
 	$(LRC)/time/rtime.c \
-	$(LRC)/encodings/encoding_utf.c
+	$(LRC)/encodings/encoding_utf.c \
+	$(LRC)/encodings/encoding_crc32.c
 # wine goes by several names; the first one found is used
 WINE ?= $(shell for w in wine wine64 /usr/lib/wine/wine64; do \
            command -v $$w >/dev/null 2>&1 && { echo $$w; break; }; done)

@@ -13,6 +13,7 @@
 
 #include "input/connect/joypad_connection.h"
 #include "input/include/gamepad.h"
+#include "input/common/sony_pad_output.h"
 
 static unsigned failures;
 #define CHECK(c, ...) do { if (!(c)) { printf("[FAIL] "); printf(__VA_ARGS__); \
@@ -799,6 +800,12 @@ static unsigned ps5_report(uint8_t *p, const struct ps5_state *st, int shape)
          memcpy(p + 5, st->b, 3);
          memcpy(p + 8, st->triggers, 2);
          return 10;
+      case 3: /* Bluetooth's full report, as the system gives it */
+         p[0] = 0x31;
+         memcpy(p + 2, st->sticks, 4);
+         memcpy(p + 6, st->triggers, 2);
+         memcpy(p + 9, st->b, 3);
+         return 78;
       default: /* Bluetooth's full report, from a stack with its header */
          p[0] = 0xa1;
          p[1] = 0x31;
@@ -860,16 +867,54 @@ static unsigned ps5_mismatches(const pad_connection_interface_t *ifc,
    return bad;
 }
 
+/* a DualSense's feature report 0x20, its firmware at 44 */
+static unsigned feature_firmware;
+
+static int32_t stub_get_report(void *handle, uint8_t type, uint8_t id,
+      uint8_t *s, size_t len)
+{
+   (void)handle;
+   if (!feature_firmware || type != HID_REPORT_FEATURE || id != 0x20 || len < 64)
+      return -1;
+   memset(s, 0, len);
+   s[0]  = 0x20;
+   s[44] = (uint8_t)feature_firmware;
+   s[45] = (uint8_t)(feature_firmware >> 8);
+   return 64;
+}
+
+static bool stub_is_bluetooth(void *handle) { (void)handle; return true; }
+
+/* the last report sent is the shared builder's for this state */
+static bool ps5_sent_is(bool bluetooth, bool v2, uint8_t strong,
+      uint8_t weak, int player)
+{
+   uint8_t want[SONY_PAD_REPORT_MAX];
+   size_t len = sony_pad_output_report(want, sizeof(want),
+         SONY_PAD_DUALSENSE, bluetooth, v2, strong, weak, player);
+   return len && sent_len == len && !memcmp(sent, want, len);
+}
+
+static void ps5_random_state(struct ps5_state *st)
+{
+   unsigned i;
+   for (i = 0; i < 4; i++) st->sticks[i]   = (uint8_t)rand();
+   for (i = 0; i < 2; i++) st->triggers[i] = (uint8_t)rand();
+   for (i = 0; i < 3; i++) st->b[i]        = (uint8_t)rand();
+   st->b[2] &= 0x07;
+}
+
 static void test_ps5(void)
 {
-   uint8_t p[80];
+   uint8_t p[81]; /* one more: a report can follow a stack's header */
    struct ps5_state st;
-   unsigned n, i, bad = 0, had = failures;
+   unsigned n, bad = 0, had = failures;
    const pad_connection_interface_t *ifc = &pad_connection_ps5;
    int dummy_connection;
    void *dev;
 
-   /* Bluetooth: read in both shapes, nothing sent */
+   /* behind a Bluetooth stack's header: read in both shapes, nothing
+    * sent, the stack frames output its own way */
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 1, &stub_hid);
    CHECK(dev != NULL, "ps5: no device");
@@ -879,20 +924,20 @@ static void test_ps5(void)
    for (n = 0; n < 20000; n++)
    {
       unsigned len;
-      for (i = 0; i < 4; i++) st.sticks[i]   = (uint8_t)rand();
-      for (i = 0; i < 2; i++) st.triggers[i] = (uint8_t)rand();
-      for (i = 0; i < 3; i++) st.b[i]        = (uint8_t)rand();
-      st.b[2] &= 0x07;
-      len = ps5_report(p, &st, 1 + (int)(n & 1));
+      ps5_random_state(&st);
+      if (n & 1)
+         len = ps5_report(p, &st, 2);
+      else
+      {
+         /* the short report, with the stack's header */
+         len = ps5_report(p + 1, &st, 1) + 1;
+         p[0] = 0xa1;
+      }
       ifc->packet_handler(dev, p, (uint16_t)len);
       bad += ps5_mismatches(ifc, dev, &st);
    }
    CHECK(!bad, "ps5: %u reads over Bluetooth disagree with the report", bad);
-   CHECK(sent_count == 0, "ps5: an output report went over Bluetooth");
-   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0xffff);
-   ps5_report(p, &st, 1);
-   ifc->packet_handler(dev, p, 10);
-   CHECK(sent_count == 0, "ps5: rumble went over Bluetooth");
+   CHECK(sent_count == 0, "ps5: output went out behind a Bluetooth stack's header");
 
    /* reports that are not the pad's state, or too short to be */
    memset(p, 0xff, sizeof(p));
@@ -905,22 +950,46 @@ static void test_ps5(void)
    CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: a short or foreign report was taken");
    ifc->deinit(dev);
 
+   /* Bluetooth through the system (hidraw, Windows): the lights, then
+    * rumble, as the shared builder makes them, with their checksum */
+   sent_count = 0;
+   dev = ifc->init(&dummy_connection, 1, &stub_hid);
+   ps5_random_state(&st);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 1));
+   CHECK(sent_count == 1 && ps5_sent_is(true, false, 0, 0, 2),
+         "ps5: the first Bluetooth report did not light player 2");
+   ifc->set_rumble(dev, RETRO_RUMBLE_STRONG, 0x8000);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 3));
+   CHECK(sent_count == 2 && ps5_sent_is(true, false, 0x80, 0, 0),
+         "ps5: Bluetooth rumble is not the shared builder's report");
+   CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: Bluetooth's full report misread");
+   ifc->deinit(dev);
+
+   /* Bluetooth through Windows: every report at the longest one's
+    * length, so the driver says it is Bluetooth */
+   sent_count            = 0;
+   stub_hid.is_bluetooth = stub_is_bluetooth;
+   dev = ifc->init(&dummy_connection, 1, &stub_hid);
+   ps5_random_state(&st);
+   ps5_report(p, &st, 1);
+   ifc->packet_handler(dev, p, 78);
+   CHECK(!ps5_mismatches(ifc, dev, &st), "ps5: Windows' padded Bluetooth report was read as USB's");
+   CHECK(sent_count == 1 && ps5_sent_is(true, false, 0, 0, 2),
+         "ps5: output to a pad the driver says is on Bluetooth is not Bluetooth's");
+   ifc->deinit(dev);
+   stub_hid.is_bluetooth = NULL;
+
    /* USB: read, and the first report lights player 2 */
    sent_count = 0;
    dev = ifc->init(&dummy_connection, 1, &stub_hid);
    bad = 0;
    for (n = 0; n < 20000; n++)
    {
-      for (i = 0; i < 4; i++) st.sticks[i]   = (uint8_t)rand();
-      for (i = 0; i < 2; i++) st.triggers[i] = (uint8_t)rand();
-      for (i = 0; i < 3; i++) st.b[i]        = (uint8_t)rand();
-      st.b[2] &= 0x07;
+      ps5_random_state(&st);
       ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
       bad += ps5_mismatches(ifc, dev, &st);
       if (n == 0)
-         CHECK(   sent_count == 1 && sent_len == 48 && sent[0] == 0x02
-               && (sent[2] & 0x14) == 0x14 && sent[44] == 0x0a
-               && sent[45] == 0x40 && sent[46] == 0 && sent[47] == 0,
+         CHECK(sent_count == 1 && ps5_sent_is(false, false, 0, 0, 2),
                "ps5: the first USB report did not light player 2");
    }
    CHECK(!bad, "ps5: %u reads over USB disagree with the report", bad);
@@ -932,13 +1001,38 @@ static void test_ps5(void)
    ifc->set_rumble(dev, RETRO_RUMBLE_WEAK, 0xff00);
    CHECK(sent_count == 1, "ps5: rumble was sent outside the poll");
    ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
-   CHECK(   sent_count == 2 && sent[0] == 0x02 && (sent[1] & 3) == 3
-         && sent[4] == 0x80 && sent[3] == 0xff && sent[2] == 0,
+   CHECK(sent_count == 2 && ps5_sent_is(false, false, 0x80, 0xff, 0),
          "ps5: the rumble report is not the motors asked for");
    ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
    CHECK(sent_count == 2, "ps5: rumble was sent again unchanged");
    ifc->deinit(dev);
-   printf("[%s] ps5: USB and both Bluetooth shapes read as laid out, on 40000 reports; lights once, rumble at the poll, nothing over Bluetooth\n",
+
+   /* the newer motor control: an Edge always, a DualSense from
+    * firmware 2.21 */
+   sent_count = 0;
+   dev = pad_connection_ps5_edge.init(&dummy_connection, 0, &stub_hid);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(ps5_sent_is(false, true, 0, 0, 1), "ps5: an Edge's motors are not the newer way");
+   CHECK(!strcmp(ifc->get_name(dev), "DualSense Edge Wireless Controller"),
+         "ps5: an Edge is not named one");
+   ifc->deinit(dev);
+   stub_hid.get_report = stub_get_report;
+   feature_firmware    = 0x0221;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(ps5_sent_is(false, true, 0, 0, 1), "ps5: firmware 2.21's motors are not the newer way");
+   ifc->deinit(dev);
+   feature_firmware    = 0x0215;
+   dev = ifc->init(&dummy_connection, 0, &stub_hid);
+   ifc->packet_handler(dev, p, (uint16_t)ps5_report(p, &st, 0));
+   CHECK(ps5_sent_is(false, false, 0, 0, 1), "ps5: older firmware's motors are the newer way");
+   ifc->deinit(dev);
+   stub_hid.get_report = NULL;
+   feature_firmware    = 0;
+
+   printf("[%s] ps5: USB and both Bluetooth shapes read as laid out, on 40000 reports;"
+         " lights once and rumble at the poll as the shared builder makes them,"
+         " the Edge and firmware 2.21 the newer way, nothing behind a stack's header\n",
          failures == had ? "pass" : "fail");
 }
 
