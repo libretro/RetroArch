@@ -229,7 +229,19 @@ int main(void)
                CHECK(rwebm_video_stream_consumed(s) == first_floor);
             }
          }
-         else { CHECK(frames == 2); rwebm_video_stream_set_avail(s, used); }
+         if (s->timing_active && !s->timing_ready && s->avail < used)
+         {
+            size_t lo, hi;
+            /* A held packet can need the next packet timestamp before
+             * decode. Feed the next header without dropping its pin. */
+            rwebm_video_stream_read_span(s, &lo, &hi);
+            CHECK(frames == 1 && s->pending);
+            /* At an exact prefix boundary the next header is absent,
+             * so no complete element span has been declared yet. */
+            CHECK(!lo && !hi && rwebm_tell(s->timing) == s->avail);
+            CHECK(calls == 6 && decodes == 3 && exports == 1);
+            rwebm_video_stream_set_avail(s, used);
+         }
          continue;
       }
       CHECK(token == &s->hw_marker && !s->frame);
@@ -292,13 +304,16 @@ int main(void)
       }
       CHECK(ret == 1 && decodes == decoded + 3 && duration == 40);
       CHECK(!rwebm_video_stream_hw_frame(s, &frame));
+      CHECK(!rwebm_video_stream_next(s, NULL));
+      CHECK(rwebm_video_stream_waiting(s) && s->pending
+            && s->timing_active && !s->timing_ready);
+      CHECK(exports == before && decodes == decoded + 3);
+      rwebm_video_stream_set_avail(s, used);
       for (tries = 0; tries < 30; tries++)
          if (rwebm_video_stream_next(s, NULL)) break;
       CHECK(tries < 30 && rwebm_video_stream_hw_frame(s, &frame));
       CHECK(exports == before + 1 && decodes == decoded + 3);
       held = frame;
-      CHECK(rwebm_video_stream_skip(s, NULL) == 2 && !s->pending);
-      rwebm_video_stream_set_avail(s, used);
       CHECK(rwebm_video_stream_skip(s, &duration) == 1 && exports == before + 1);
       CHECK(!rwebm_video_stream_hw_frame(s, &frame));
       for (tries = 0; tries < 30; tries++)
