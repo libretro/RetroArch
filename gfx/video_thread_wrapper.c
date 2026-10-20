@@ -3723,7 +3723,7 @@ static VIDEO_NOINLINE bool video_thread_frame_replay(thread_video_t *thr,
        * advances GL onto the installed texture. */
       if (hw_slot >= 0 && !frame_)
          frame_ = RETRO_HW_FRAME_BUFFER_VALID;
-      if (frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
+      if (frame_ && frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
          dims = VIDEO_SCALE_PACK(width, rows);
       if (convert)
          video_thread_convert(thr, convert, &frame_, dims, &pitch);
@@ -4000,7 +4000,10 @@ static bool video_thread_frame(void *data, const void *frame_,
       rows                 = video_thread_slot_rows(thr, width,
             filter_bpp, &copy_stride);
 
-      if (hw_slot < 0 && !thr->movie_next.pending && height > rows)
+      /* NULL repeats read no CPU slot pixels. In particular, a movie
+       * import refused after admission still repeats the previous GPU
+       * image at its original dimensions. */
+      if (src && hw_slot < 0 && !thr->movie_next.pending && height > rows)
       {
          if (!thr->clamp_logged)
          {

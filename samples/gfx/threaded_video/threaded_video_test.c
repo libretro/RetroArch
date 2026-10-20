@@ -10900,6 +10900,7 @@ static void lane_display_past_top(void)
 #define MOVIE_RING_FRAMES 132
 static retro_atomic_int_t movie_ring_released[MOVIE_RING_FRAMES + 1];
 static retro_atomic_int_t movie_ring_errors;
+static retro_atomic_int_t movie_ring_geometry_errors;
 static video_driver_t movie_ring_driver;
 static video_poke_interface_t movie_ring_poke;
 static const video_driver_t *movie_ring_inner;
@@ -10955,8 +10956,14 @@ static bool movie_ring_frame(void *data, const void *frame, unsigned dims,
       uint64_t count, unsigned pitch, const char *msg, video_frame_info_t *info)
 {
    if (movie_ring_active && (frame || dims != VIDEO_SCALE_PACK(1920, 1080)))
-      retro_atomic_fetch_add_int(&movie_ring_errors, 1);
+      retro_atomic_fetch_add_int(&movie_ring_geometry_errors, 1);
    return movie_ring_inner->frame(data, NULL, dims, count, pitch, msg, info);
+}
+static uintptr_t movie_ring_replay(void *data)
+{
+   (void)data;
+   video_driver_cached_frame();
+   return 0;
 }
 static void lane_movie_ring(void)
 {
@@ -10990,7 +10997,7 @@ static void lane_movie_ring(void)
    hw.color.mastering.present = VIDEO_MASTERING_DISPLAY_COMPLETE;
    hw.color.mastering.chromaticity[0] = 25000;
    hw.color.mastering.luminance_max = 10240000;
-   for (i = 1; i <= MOVIE_RING_FRAMES - 4; i++)
+   for (i = 1; i <= MOVIE_RING_FRAMES - 6; i++)
    {
       hw.image = i; hw.wait_value = hw.done_value = i;
       hw.color.transfer = i % 2 ? 16 : 18;
@@ -11007,7 +11014,7 @@ static void lane_movie_ring(void)
    }
    video_thread_wait_idle();
    video_driver_movie_clear();
-   for (i = MOVIE_RING_FRAMES - 3; i <= MOVIE_RING_FRAMES - 2; i++)
+   for (i = MOVIE_RING_FRAMES - 5; i <= MOVIE_RING_FRAMES - 2; i++)
    {
       hw.image = hw.wait_value = hw.done_value = i;
       hw.color.transfer = i % 2 ? 16 : 18;
@@ -11016,9 +11023,14 @@ static void lane_movie_ring(void)
       CHECK(video_driver_movie_refresh(NULL, &hw), "movie ring: controlled stage %u", i);
       video_driver_frame(NULL, 1920, 1080, 0);
       video_thread_wait_idle();
-      CHECK(video_driver_movie_refresh(NULL, NULL) == (i % 3 == 0),
+      CHECK(video_driver_movie_refresh(NULL, NULL) == (i % 3 == 0 || i % 5 != 0),
             "movie ring: busy/refused readiness %u", i);
    }
+   video_thread_run_blocking(movie_ring_replay, NULL);
+   /* The accepted image before the busy/refused imports remains active.
+    * A NULL repeat carries no CPU pixels and must retain movie geometry. */
+   video_driver_frame(NULL, 1920, 1080, 0);
+   video_thread_wait_idle();
    video_driver_movie_clear();
    CHECK(video_driver_movie_refresh(NULL, NULL), "movie ring: clear did not restore readiness");
    /* Clear releases a staged lease before its frame is published. */
@@ -11044,6 +11056,8 @@ static void lane_movie_ring(void)
       CHECK(retro_atomic_load_acquire_int(&movie_ring_released[i]) != 0,
             "movie ring: lease %u not released", i);
    CHECK(!retro_atomic_load_acquire_int(&movie_ring_errors), "movie ring: ordering or duplicate release");
+   CHECK(!retro_atomic_load_acquire_int(&movie_ring_geometry_errors),
+         "movie ring: duplicate changed image or geometry");
    run_frames(2);
    if (menu_was_up && !menu_is_up()) command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    if (failures == had) fprintf(stderr, "[pass] threaded movie ring: metadata, backpressure, refusal recovery, clear and teardown\n");
