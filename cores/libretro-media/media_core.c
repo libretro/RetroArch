@@ -807,6 +807,11 @@ static size_t media_native_consumed(media_player_t *p)
    return consumed;
 }
 
+static int media_native_inert(void *user, size_t lo, size_t hi)
+{
+   return data_transfer_prefix_inert((data_transfer_t*)user, lo, hi);
+}
+
 static size_t media_native_read_end(media_player_t *p)
 {
    size_t lo, hi, end;
@@ -815,8 +820,12 @@ static size_t media_native_read_end(media_player_t *p)
    end = hi;
    if (p->wgather)
    {
+      size_t cursor = rwebm_tell(p->wgather);
       rwebm_read_span(p->wgather, &lo, &hi);
       if (hi > end) end = hi;
+      /* A metadata-only skip can leave the gather waiting for a header
+       * beyond the prefix without a complete-element request yet. */
+      if (cursor > end) end = cursor;
    }
    return end;
 }
@@ -2561,6 +2570,7 @@ bool MEDIA_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             data_transfer_avail(p->dt), &need_more);
       if (!p->wgather)
          goto error;
+      rwebm_set_inert_callback(p->wgather, media_native_inert, p->dt);
 #ifdef MEDIA_HAVE_AUDIO
       if (p->atrack >= 0)
       {

@@ -288,6 +288,8 @@ struct rwebm
    /* Packet-read cursor. */
    const uint8_t *cur;              /* walk position inside the segment    */
    size_t         need_hi;          /* blocked element end, or zero         */
+   rwebm_inert_range_cb_t inert_cb;
+   void *inert_user;
    int64_t        cluster_ts;       /* current cluster timestamp (ticks)   */
    /* Lacing: a SimpleBlock may carry several frames; we emit them one at a
     * time, so remember where we are within a block. */
@@ -718,6 +720,14 @@ void rwebm_read_span(const rwebm_t *webm, size_t *lo, size_t *hi)
    *hi = webm->need_hi;
 }
 
+void rwebm_set_inert_callback(rwebm_t *webm,
+      rwebm_inert_range_cb_t callback, void *user)
+{
+   if (!webm) return;
+   webm->inert_cb = callback;
+   webm->inert_user = user;
+}
+
 /* DiscardPadding for the Block just parsed: the element may sit before
  * the Block (already captured in pending_discard) or after it within
  * the same BlockGroup, so scan the remaining group siblings. */
@@ -805,6 +815,9 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
           * not make a bounded feeder load a large padding body merely
           * to discover that it contains no data. */
          if (sz > (uint64_t)(webm->segment_end - body)) return -1;
+         if (webm->inert_cb && !webm->inert_cb(webm->inert_user,
+                  (size_t)(body - webm->data),
+                  (size_t)(body - webm->data) + (size_t)sz)) return -1;
          r.p = body + (size_t)sz;
          webm->cur = r.p;
          continue;

@@ -135,6 +135,13 @@ int64_t rwebm_duration_ns(const rwebm_t *webm);
 #define RWEBM_READ_AGAIN 2
 
 int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt);
+/* Optional exclusive-owner notification for validated Void payloads.
+ * All cursors over the borrowed buffer must skip these inert bytes.
+ * Return zero to refuse the packet walk. Callback/user are borrowed
+ * until close or replacement; cursor clones preserve the notification. */
+typedef int (*rwebm_inert_range_cb_t)(void *user, size_t lo, size_t hi);
+void rwebm_set_inert_callback(rwebm_t *webm,
+      rwebm_inert_range_cb_t callback, void *user);
 
 /* After READ_AGAIN on an element body, name the complete required encoded
  * span, including the cursor needed to retry. Zero/zero for an incomplete

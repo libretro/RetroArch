@@ -298,17 +298,22 @@ void data_transfer_pool_flush(void) { }
 #endif
 
 
+struct data_transfer_inert { size_t lo, hi; };
+
 struct data_transfer
 {
    /* file-backed reader (open_prefix, and open_window over it)      */
    RFILE  *f;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
    size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
-   size_t  committed;/* bytes with physical backing                  */
+   size_t  committed;/* commit high-water mark; discards/inert holes
+                       * may have released pages below it             */
    size_t  cap;      /* commit ceiling (buffer size in fallback)     */
    size_t  len;      /* full file length, fixed at open              */
    size_t  avail;    /* bytes valid at the front; monotonic          */
    size_t  low;      /* lowest readable offset after discards       */
+   struct data_transfer_inert *inert;
+   size_t inert_count, inert_cap;
    size_t  page;     /* page size for the discard granularity        */
    uint8_t done;     /* the operation is over                        */
    uint8_t failed;   /* ...but delivered less than the file          */
@@ -1078,7 +1083,7 @@ static void data_transfer_pool_scrub(data_transfer_t *dt)
 static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
       size_t max_bytes, data_transfer_continue_t cb, void *ud)
 {
-   size_t start = dt->avail;
+   size_t spent = 0;
    while (!dt->done && !dt->capped)
    {
       size_t chunk = DT_READ_CHUNK, got;
@@ -1092,12 +1097,42 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          dt->capped = 1;
          break;
       }
-      /* Asked before each read, the first one included: a caller
-       * already out of budget does no work at all.  A stop here
-       * settles nothing - the fill simply pauses and the next
-       * iterate carries on from the same place. */
-      if (cb && !cb(ud, dt->avail, dt->len))
-         break;
+      /* A caller out of time must not seek across an inert range
+       * either. With no inert ranges this is the ordinary read hook. */
+      if (cb && !cb(ud, dt->avail, dt->len)) break;
+      if (dt->inert_count)
+      {
+         size_t lo = 0, hi = dt->inert_count;
+         while (lo < hi)
+         {
+            size_t mid = lo + (hi - lo) / 2;
+            if (dt->inert[mid].hi <= dt->avail) lo = mid + 1;
+            else hi = mid;
+         }
+         if (lo < dt->inert_count)
+         {
+            if (dt->avail >= dt->inert[lo].lo)
+            {
+               size_t end = dt->inert[lo].hi;
+               size_t release_end;
+               if (dt->cap && end > dt->cap) end = dt->cap;
+               if (filestream_seek(dt->f, (int64_t)end, RETRO_VFS_SEEK_POSITION_START) < 0)
+               { dt->done = dt->failed = 1; break; }
+               /* Commit growth may have armed pages past the preceding
+                * read. Keep an inert interval unreadable after crossing
+                * it, including in strict builds and after refill. */
+               release_end = end < dt->committed ? end : dt->committed;
+               release_end = release_end / dt->page * dt->page;
+               if (release_end > dt->inert[lo].lo)
+                  data_transfer_wrelease(dt, dt->inert[lo].lo, release_end);
+               dt->avail = end;
+               if (dt->committed < end) dt->committed = end;
+               continue;
+            }
+            if (chunk > dt->inert[lo].lo - dt->avail)
+               chunk = dt->inert[lo].lo - dt->avail;
+         }
+      }
       if (chunk > dt->len - dt->avail)
          chunk = dt->len - dt->avail;
       if (dt->cap && chunk > dt->cap - dt->avail)
@@ -1128,6 +1163,7 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
             break;
          }
          dt->avail += got;
+         spent += got;
          if (got == 0)
          {
             if (dt->avail < dt->len)
@@ -1137,7 +1173,7 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
             }
             break;
          }
-         if (max_bytes && dt->avail - start >= max_bytes)
+         if (max_bytes && spent >= max_bytes)
             break;
          continue;
       }
@@ -1147,6 +1183,7 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          got = r > 0 ? (size_t)r : 0;
       }
       dt->avail += got;
+      spent += got;
       if (got < chunk)
       {
          /* The file ended short of its opening length (I/O error,
@@ -1155,7 +1192,7 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          dt->failed = 1;
          break;
       }
-      if (max_bytes && dt->avail - start >= max_bytes)
+      if (max_bytes && spent >= max_bytes)
          break;
    }
    if (dt->avail >= dt->len && !dt->failed)
@@ -1183,6 +1220,45 @@ static int data_transfer_read_at(data_transfer_t *dt, size_t off,
    return r == (int64_t)n;
 }
 
+bool data_transfer_prefix_inert(data_transfer_t *dt, size_t from, size_t to)
+{
+   size_t lo, hi, first, last, count;
+   if (!dt || !dt->f || dt->window || dt->failed || from > to || to > dt->len)
+      return false;
+   if (!dt->map_len || dt->pooled) return true;
+   lo = (from / dt->page + (from % dt->page != 0)) * dt->page;
+   hi = to / dt->page * dt->page;
+   if (lo >= hi) return true;
+   first = 0;
+   while (first < dt->inert_count && dt->inert[first].hi < lo) first++;
+   last = first;
+   while (last < dt->inert_count && dt->inert[last].lo <= hi)
+   {
+      if (dt->inert[last].lo < lo) lo = dt->inert[last].lo;
+      if (dt->inert[last].hi > hi) hi = dt->inert[last].hi;
+      last++;
+   }
+   count = dt->inert_count - (last - first) + 1;
+   if (count > dt->inert_cap)
+   {
+      size_t cap = dt->inert_cap ? dt->inert_cap : 8;
+      struct data_transfer_inert *ranges;
+      if (cap > (size_t)-1 / 2 / sizeof(*ranges))
+      { dt->done = dt->failed = 1; return false; }
+      if (cap < count) cap *= 2;
+      ranges = (struct data_transfer_inert*)realloc(dt->inert, cap * sizeof(*ranges));
+      if (!ranges) { dt->done = dt->failed = 1; return false; }
+      dt->inert = ranges; dt->inert_cap = cap;
+   }
+   memmove(dt->inert + first + 1, dt->inert + last,
+         (dt->inert_count - last) * sizeof(*dt->inert));
+   dt->inert[first].lo = lo; dt->inert[first].hi = hi;
+   dt->inert_count = count;
+   if (hi > dt->committed) hi = dt->committed / dt->page * dt->page;
+   if (hi > lo) data_transfer_wrelease(dt, lo, hi);
+   return true;
+}
+
 void data_transfer_discard(data_transfer_t *dt, size_t up_to)
 {
    size_t lo;
@@ -1205,7 +1281,7 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to)
 
 bool data_transfer_refill(data_transfer_t *dt, size_t from)
 {
-   size_t lo, end;
+   size_t lo, end, at, i;
    if (!dt)
       return false;
    if (!dt->f || !dt->map_len || dt->window || from >= dt->low)
@@ -1219,15 +1295,24 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
     * unreadable.  Only on POSIX without DT_STRICT is this a cheap
     * no-op: MADV_DONTNEED alone leaves them committed to refault as
     * zeros. */
-   if (!memcommit(dt->map + lo, end - lo))
-      return false;
-   if (end > lo && !data_transfer_read_at(dt, lo, dt->map + lo, end - lo))
+   at = lo;
+   for (i = 0; at < end; i++)
    {
-      /* the file shrank or errored underneath a re-read: the honest
-       * frozen-short state, same as a fill ending early */
-      dt->done   = 1;
-      dt->failed = 1;
-      return false;
+      size_t stop = end;
+      if (i < dt->inert_count)
+      {
+         if (dt->inert[i].hi <= at) continue;
+         if (dt->inert[i].lo < stop) stop = dt->inert[i].lo;
+      }
+      if (stop > at)
+      {
+         if (!memcommit(dt->map + at, stop - at)) return false;
+         if (!data_transfer_read_at(dt, at, dt->map + at, stop - at))
+         { dt->done = dt->failed = 1; return false; }
+         at = stop;
+      }
+      if (i < dt->inert_count && dt->inert[i].hi > at)
+         at = dt->inert[i].hi < end ? dt->inert[i].hi : end;
    }
    dt->low = lo;
    return true;
@@ -1306,6 +1391,7 @@ void data_transfer_free(data_transfer_t *dt)
       return;
    if (dt->f)
       filestream_close(dt->f);
+   free(dt->inert);
    if (dt->map)
    {
       if (dt->map_len)

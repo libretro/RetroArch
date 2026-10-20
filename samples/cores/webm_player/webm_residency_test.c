@@ -133,9 +133,18 @@ static int check_lacing(unsigned mode)
    return 0;
 }
 
+struct void_notice { size_t lo, hi; unsigned calls; int refuse; };
+static int notice_void(void *user, size_t lo, size_t hi)
+{
+   struct void_notice *notice = (struct void_notice*)user;
+   notice->lo = lo; notice->hi = hi; notice->calls++;
+   return !notice->refuse;
+}
+
 static int check_void_frontier(void)
 {
-   rwebm_t *demux;
+   rwebm_t *demux, *clone;
+   struct void_notice notice;
    rwebm_packet packet;
    size_t at, segment, tracks, track, video, cluster, block, padding;
    size_t prefix, resume;
@@ -162,8 +171,17 @@ static int check_void_frontier(void)
    finish(cluster); finish(segment);
    demux = rwebm_open_memory_avail(file, used, prefix, NULL);
    CHECK(demux);
+   memset(&notice, 0, sizeof(notice)); notice.refuse = 1;
+   rwebm_set_inert_callback(demux, notice_void, &notice);
    CHECK(rwebm_read_packet(demux, &packet) == 1 && packet.data[0] == 0x31);
+   clone = rwebm_cursor_clone(demux);
+   CHECK(clone);
+   CHECK(rwebm_read_packet(clone, &packet) == -1);
+   CHECK(notice.calls == 1 && notice.lo == prefix && notice.hi == resume);
+   rwebm_close(clone);
+   notice.refuse = 0;
    CHECK(rwebm_read_packet(demux, &packet) == RWEBM_READ_AGAIN);
+   CHECK(notice.calls == 2 && notice.lo == prefix && notice.hi == resume);
    CHECK(rwebm_consumed(demux) == resume);
    rwebm_set_avail(demux, used);
    CHECK(rwebm_read_packet(demux, &packet) == 1
@@ -172,8 +190,11 @@ static int check_void_frontier(void)
    size_vint(padding, used + 1024);
    demux = rwebm_open_memory(file, used);
    CHECK(demux);
+   memset(&notice, 0, sizeof(notice));
+   rwebm_set_inert_callback(demux, notice_void, &notice);
    CHECK(rwebm_read_packet(demux, &packet) == 1);
    CHECK(rwebm_read_packet(demux, &packet) == -1);
+   CHECK(!notice.calls);
    rwebm_close(demux);
    return 0;
 }

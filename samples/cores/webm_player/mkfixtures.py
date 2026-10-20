@@ -45,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "gfx/gfx_thumbnail_
 from webm_audio_padding import insert_void
 insert_void(out / "core-group-seed.webm", out / "core-group.webm",
             amount=24 * 1024 * 1024, after_picture=541, in_group=True)
+insert_void(out / "core-group-seed.webm", out / "core-sparse.webm",
+            amount=96 * 1024 * 1024, after_picture=541)
 
 subprocess.run([sys.executable, str(Path(__file__).with_name("mp4_audio_gap.py")),
                 str(out / "hevc-seek-aac.mp4"), str(out / "hevc-audio-gap.mp4")], check=True)

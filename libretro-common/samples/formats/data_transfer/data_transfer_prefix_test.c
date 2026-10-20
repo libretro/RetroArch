@@ -49,6 +49,22 @@
 #include <string.h>
 #include <stdint.h>
 #include <formats/data_transfer.h>
+#include <memmap.h>
+#ifdef DT_COUNT_IO
+#include <streams/file_stream.h>
+static uint64_t inert_io_bytes, inert_io_calls;
+int64_t __real_filestream_read(RFILE *stream, void *data, int64_t length);
+int64_t __wrap_filestream_read(RFILE *stream, void *data, int64_t length)
+{
+   int64_t got = __real_filestream_read(stream, data, length);
+   inert_io_calls++;
+   if (got > 0) inert_io_bytes += (uint64_t)got;
+   return got;
+}
+#endif
+#if defined(__linux__)
+#include <sys/mman.h>
+#endif
 
 static int bad = 0;
 static void ok(const char *what) { printf("[ok]   %s\n", what); }
@@ -459,11 +475,201 @@ static int continue_hook_check(void)
    return rv;
 }
 
+static void inert_mark(data_transfer_t *dt, uint8_t *live, size_t pages,
+      size_t page, size_t from, size_t to)
+{
+   size_t i;
+   if (!data_transfer_prefix_inert(dt, from, to))
+   { fail("register inert prefix interval"); return; }
+   for (i = 0; i < pages; i++)
+      if (i * page >= from && (i + 1) * page <= to) live[i] = 0;
+}
+
+static void inert_physical_check(const uint8_t *base, const uint8_t *live,
+      size_t pages, size_t page)
+{
+#if defined(__linux__)
+   unsigned char *state;
+   size_t i;
+   if (!data_transfer_reserve_supported() || (uintptr_t)base % page)
+   { printf("[skip] inert physical probe: no page reservation\n"); return; }
+   state = (unsigned char*)calloc(pages, 1);
+   if (!state) { fail("inert residency vector allocation"); return; }
+   if (mincore((void*)base, pages * page, state)) fail("inert mincore query");
+   else
+   {
+      for (i = 0; i < pages; i++)
+         if (!live[i] && (state[i] & 1)) break;
+      if (i < pages) fail("inert fill/refill materialized a skipped page");
+      else ok("inert pages have no resident backing");
+   }
+   free(state);
+#else
+   (void)base; (void)live; (void)pages; (void)page;
+   printf("[skip] inert physical probe: Linux mincore only\n");
+#endif
+}
+
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define PREFIX_TEST_ASAN 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__)
+#define PREFIX_TEST_ASAN 1
+#endif
+static void inert_fault_check(const uint8_t *inert)
+{
+#if defined(DT_STRICT) && !defined(PREFIX_TEST_ASAN) \
+      && (defined(__unix__) || defined(__APPLE__))
+   pid_t child = fork();
+   int status;
+   if (child < 0) { printf("[skip] inert fault check: fork unavailable\n"); return; }
+   if (!child)
+   {
+      volatile uint8_t byte;
+      signal(SIGSEGV, SIG_DFL); signal(SIGBUS, SIG_DFL);
+      alarm(3); byte = *inert; (void)byte; _exit(99);
+   }
+   if (waitpid(child, &status, 0) != child || !WIFSIGNALED(status)
+         || (WTERMSIG(status) != SIGSEGV && WTERMSIG(status) != SIGBUS))
+      fail("inert body became readable after fill/refill");
+   else ok("strict inert body faults after fill/refill");
+#elif defined(_WIN32)
+   MEMORY_BASIC_INFORMATION info;
+   if (VirtualQuery(inert, &info, sizeof(info)) != sizeof(info)
+         || info.State != MEM_RESERVE)
+      fail("inert body retains committed Windows backing");
+   else ok("inert body remains reserved without committed Windows backing");
+#else
+   (void)inert;
+   printf("[skip] inert fault check: needs non-ASan strict Unix build\n");
+#endif
+}
+
+static void inert_prefix_check(void)
+{
+   const char *path = "dt-prefix-inert.bin";
+   size_t page = mempagesize(), n, i, total, before;
+   uint8_t *ref = NULL, *live = NULL;
+   const uint8_t *base;
+   data_transfer_t *dt = NULL, *window = NULL;
+   int interval;
+   unsigned ticks = 0;
+#ifdef DT_COUNT_IO
+   uint64_t start_bytes = inert_io_bytes, refill_bytes, expected = 0;
+#endif
+   if (!page) page = 4096;
+   n = page * 1024;
+   ref = (uint8_t*)malloc(n);
+   live = (uint8_t*)malloc(1024);
+   if (!ref || !live) { fail("inert fixture allocation"); goto finish; }
+   memset(live, 1, 1024);
+   mkfile(path, ref, n);
+   dt = data_transfer_open_prefix(path, 0);
+   if (!dt) { fail("inert prefix open"); goto finish; }
+   base = data_transfer_ptr(dt, &total);
+   if (total != n) { fail("inert declared length"); goto finish; }
+   data_transfer_iterate(dt, page * 16);
+   before = data_transfer_avail(dt);
+   /* Reverse insertion grows the index; duplicate and overlap must
+    * preserve guards without relying on the implementation's rounding. */
+   for (interval = 11; interval >= 0; interval--)
+      inert_mark(dt, live, 1024, page,
+            ((size_t)interval * 64 + 2) * page + 1,
+            ((size_t)interval * 64 + 32) * page + 17);
+   inert_mark(dt, live, 1024, page, (5 * 64 + 2) * page + 1,
+         (5 * 64 + 32) * page + 17);
+   inert_mark(dt, live, 1024, page, (5 * 64 + 16) * page + 3,
+         (6 * 64 + 17) * page + 21);
+   if (data_transfer_avail(dt) != before
+         || data_transfer_prefix_inert(dt, 3, 2)
+         || data_transfer_prefix_inert(dt, 0, n + 1)
+         || data_transfer_prefix_inert(NULL, 0, 0)
+         || data_transfer_failed(dt)) fail("inert registration changes prefix or accepts bad bounds");
+   {
+      int reads = 0;
+      data_transfer_iterate_while(dt, 0, hook_stop_after, &reads);
+      if (data_transfer_avail(dt) != before) fail("stopped hook still skips inert bytes");
+   }
+   while (!data_transfer_complete(dt) && !data_transfer_failed(dt) && ticks++ < 1024)
+   {
+      int reads = 1;
+#ifdef DT_COUNT_IO
+      uint64_t calls = inert_io_calls;
+#endif
+      data_transfer_iterate_while(dt, 0, hook_stop_after, &reads);
+#ifdef DT_COUNT_IO
+      if (inert_io_calls - calls > 1) fail("inert skip bypasses read budget hook");
+#endif
+   }
+   if (!data_transfer_complete(dt) || data_transfer_avail(dt) != n)
+   { fail("inert prefix does not complete"); goto finish; }
+   for (i = 0; i < 1024; i++)
+      if (live[i] && memcmp(base + i * page, ref + i * page, page))
+      { fail("inert fill changed a live or boundary page"); goto finish; }
+   inert_physical_check(base, live, 1024, page);
+   if (data_transfer_reserve_supported()) inert_fault_check(base + (11 * 64 + 31) * page);
+#ifdef DT_COUNT_IO
+   if (data_transfer_reserve_supported() && (uintptr_t)base % page == 0)
+   {
+      for (i = 0; i < 1024; i++)
+         if (live[i]) expected += page;
+         else if (i * page < before)
+            expected += before - i * page < page ? before - i * page : page;
+      if (inert_io_bytes - start_bytes != expected) fail("inert fill read skipped bytes");
+      else ok("inert fill reads only live bytes plus the prefix read before registration");
+   }
+   refill_bytes = inert_io_bytes;
+#endif
+   data_transfer_discard(dt, n - page);
+   if (!data_transfer_refill(dt, 0)) { fail("inert refill"); goto finish; }
+   for (i = 0; i < 1024; i++)
+      if (live[i] && memcmp(base + i * page, ref + i * page, page))
+      { fail("inert refill changed a live or boundary page"); goto finish; }
+   inert_physical_check(base, live, 1024, page);
+   if (data_transfer_reserve_supported()) inert_fault_check(base + (11 * 64 + 31) * page);
+#ifdef DT_COUNT_IO
+   if (data_transfer_reserve_supported() && (uintptr_t)base % page == 0)
+   {
+      expected = 0;
+      for (i = 0; i < 1023; i++) if (live[i]) expected += page;
+      if (inert_io_bytes - refill_bytes != expected) fail("inert refill read skipped bytes");
+      else ok("inert refill never reads inert payloads");
+   }
+#endif
+   ok("inert intervals: reverse/duplicate/overlap, late registration and refill retain all live pages");
+   data_transfer_free(dt); dt = data_transfer_open_prefix(path, page * 512);
+   if (!dt) { fail("inert capped open"); goto finish; }
+   if (!data_transfer_prefix_inert(dt, page * 256 + 1, page * 600 + 17))
+      fail("inert capped registration");
+   while (!data_transfer_capped(dt) && !data_transfer_complete(dt) && !data_transfer_failed(dt))
+      data_transfer_iterate(dt, page * 16);
+   if (!data_transfer_capped(dt) || data_transfer_complete(dt)
+         || data_transfer_avail(dt) != page * 512) fail("inert skip crosses logical cap");
+   else ok("inert skip preserves cap terminal");
+   data_transfer_free(dt); dt = data_transfer_open_prefix(path, 0);
+   if (!dt) { fail("inert EOF open"); goto finish; }
+   if (!data_transfer_prefix_inert(dt, page * 900 + 1, n)) fail("inert EOF registration");
+   data_transfer_iterate(dt, 0);
+   if (!data_transfer_complete(dt) || data_transfer_avail(dt) != n) fail("inert EOF does not complete");
+   else ok("inert tail reaches EOF without changing completion semantics");
+   window = data_transfer_open_window(path, page * 8);
+   if (!window || data_transfer_prefix_inert(window, page * 16, page * 32))
+      fail("window accepted prefix inert contract");
+   else ok("window refuses prefix inert contract");
+finish:
+   data_transfer_free(window); data_transfer_free(dt);
+   free(ref); free(live); remove(path);
+}
+
 int main(void)
 {
    const char *path = "/tmp/dtprefix.bin";
    size_t n = 3u << 20;                 /* 3 MiB */
    uint8_t *ref = malloc(n);
+   if (getenv("INERT_ONLY"))
+   { free(ref); inert_prefix_check(); return bad; }
    mkfile(path, ref, n);
 
    /* 1. budgeted fill delivers the file, contents intact */
@@ -550,6 +756,7 @@ int main(void)
 
    /* 8. the continue hook pauses finely and resumes cleanly */
    bad |= continue_hook_check();
+   inert_prefix_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

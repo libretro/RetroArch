@@ -47,6 +47,11 @@ $(TARGET): data_transfer_source_test.o $(COMMON_OBJS)
 $(TARGET_TEST2): data_transfer_prefix_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+ifeq ($(COUNT_IO),1)
+data_transfer_prefix_test.o: CFLAGS += -DDT_COUNT_IO
+$(TARGET_TEST2): LDFLAGS += -Wl,--wrap=filestream_read
+endif
+
 $(TARGET_TEST3): data_transfer_window_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 

@@ -171,6 +171,7 @@ endif
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
 check: $(PROGRESSIVE_GROUP_TARGET)
 	$(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-group.webm
+	CORE_SPARSE=1 $(RUNNER) ./$(PROGRESSIVE_GROUP_TARGET) fixtures/core-group-seed.webm fixtures/core-sparse.webm
 ifeq ($(AUDIO),1)
 	$(RUNNER) ./$(VORBIS_SEEK_TARGET) fixtures/vp9-vorbis.webm fixtures/vp9-seek-vorbis.webm
 	$(RUNNER) ./$(OPUS_SEEK_TARGET) fixtures/vp8-opus.webm fixtures/vp8-seek-opus.webm
